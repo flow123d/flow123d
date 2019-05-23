@@ -149,21 +149,21 @@ void RichardsLMH::read_initial_condition()
          for (unsigned int i=0; i<ele_ac.element_accessor()->n_sides(); i++) {
              int edge_row = ele_ac.edge_row(i);
              uint n_sides_of_edge =  ele_ac.element_accessor().side(i)->edge()->n_sides;
-             VecSetValue(schur0->get_solution(),edge_row, init_value/n_sides_of_edge, ADD_VALUES);
+             VecSetValue(data_->data_vec_.petsc_vec(),edge_row, init_value/n_sides_of_edge, ADD_VALUES);
          }
-         VecSetValue(schur0->get_solution(),ele_ac.ele_row(), init_value,ADD_VALUES);
+         VecSetValue(data_->data_vec_.petsc_vec(),ele_ac.ele_row(), init_value,ADD_VALUES);
     }
-    VecAssemblyBegin(schur0->get_solution());
-    VecAssemblyEnd(schur0->get_solution());
+    VecAssemblyBegin(data_->data_vec_.petsc_vec());
+    VecAssemblyEnd(data_->data_vec_.petsc_vec());
 
     // set water_content
     // pretty ugly since postprocess change fluxes, which cause bad balance, so we must set them back
-    VecCopy(schur0->get_solution(), previous_solution); // store solution vector
+    VecCopy(data_->data_vec_.petsc_vec(), previous_solution); // store solution vector
     postprocess();
-    VecSwap(schur0->get_solution(), previous_solution); // restore solution vector
+    VecSwap(data_->data_vec_.petsc_vec(), previous_solution); // restore solution vector
 
     //DebugOut() << "init sol:\n";
-    //VecView( schur0->get_solution(),   PETSC_VIEWER_STDOUT_WORLD);
+    //VecView( data_->data_vec_.petsc_vec(),   PETSC_VIEWER_STDOUT_WORLD);
     //DebugOut() << "init water content:\n";
     //VecView( data_->water_content_previous_it.petsc_vec(),   PETSC_VIEWER_STDOUT_WORLD);
 
@@ -173,9 +173,9 @@ void RichardsLMH::read_initial_condition()
 
 void RichardsLMH::prepare_new_time_step()
 {
-    VecCopy(schur0->get_solution(), previous_solution);
+    VecCopy(data_->data_vec_.petsc_vec(), previous_solution);
     data_->water_content_previous_time.copy(data_->water_content_previous_it);
-    //VecCopy(schur0->get_solution(), previous_solution);
+    //VecCopy(data_->data_vec_.petsc_vec(), previous_solution);
 }
 
 bool RichardsLMH::zero_time_term(bool time_global) {
@@ -294,12 +294,12 @@ void RichardsLMH::postprocess() {
 
           values[i] = ele_scale * ele_source - ele_scale * (water_content - water_content_previous_time) / time_->dt();
       }
-      VecSetValues(schur0->get_solution(), ele_ac.n_sides(), side_rows, values, ADD_VALUES);
+      VecSetValues(data_->data_vec_.petsc_vec(), ele_ac.n_sides(), side_rows, values, ADD_VALUES);
     }
 
 
-    VecAssemblyBegin(schur0->get_solution());
+    VecAssemblyBegin(data_->data_vec_.petsc_vec());
     //VecRestoreArray(previous_solution, &loc_prev_sol);
-    VecAssemblyEnd(schur0->get_solution());
+    VecAssemblyEnd(data_->data_vec_.petsc_vec());
 
 }

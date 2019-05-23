@@ -473,7 +473,7 @@ void DarcyMH::initialize() {
 
 
     // allocate time term vectors
-    VecDuplicate(schur0->get_solution(), &previous_solution);
+    VecDuplicate(data_->data_vec_.petsc_vec(), &previous_solution);
     VecCreateMPI(PETSC_COMM_WORLD, data_->dh_->distr()->lsize(),PETSC_DETERMINE,&(steady_diagonal));
     VecDuplicate(steady_diagonal,& new_diagonal);
     VecZeroEntries(new_diagonal);
@@ -515,13 +515,13 @@ void DarcyMH::zero_time_step()
 
     if (zero_time_term_from_right) {
         // steady case
-        VecZeroEntries(schur0->get_solution());
+        data_->data_vec_.zero_entries();
         VecZeroEntries(schur_compl->get_solution());
         //read_initial_condition(); // Possible solution guess for steady case.
         use_steady_assembly_ = true;
         solve_nonlinear(); // with right limit data
     } else {
-        VecZeroEntries(schur0->get_solution());
+        data_->data_vec_.zero_entries();
         VecZeroEntries(schur_compl->get_solution());
         VecZeroEntries(previous_solution);
         read_initial_condition();
@@ -622,7 +622,7 @@ void DarcyMH::solve_nonlinear()
     vector<double> convergence_history;
 
     Vec save_solution;
-    VecDuplicate(schur0->get_solution(), &save_solution);
+    VecDuplicate(data_->data_vec_.petsc_vec(), &save_solution);
     while (nonlinear_iteration_ < this->min_n_it_ ||
            (residual_norm > this->tolerance_ &&  nonlinear_iteration_ < this->max_n_it_ )) {
     	OLD_ASSERT_EQUAL( convergence_history.size(), nonlinear_iteration_ );
@@ -642,13 +642,13 @@ void DarcyMH::solve_nonlinear()
         }
 
         if (! is_linear_common)
-            VecCopy( schur0->get_solution(), save_solution);
+            VecCopy( data_->data_vec_.petsc_vec(), save_solution);
         LinSys::SolveInfo si = schur0->solve();
 
-        LinSys::SolveInfo si_schur = schur_compl->solve();        
-        MessageOut().fmt("[schur solver] lin. it: {}, reason: {}, residual: {}\n",
-        		si_schur.n_iterations, si_schur.converged_reason, schur_compl->compute_residual());
-        reconstruct_solution_from_schur(data_->multidim_assembler);
+//         LinSys::SolveInfo si_schur = schur_compl->solve();        
+//         MessageOut().fmt("[schur solver] lin. it: {}, reason: {}, residual: {}\n",
+//         		si_schur.n_iterations, si_schur.converged_reason, schur_compl->compute_residual());
+//         reconstruct_solution_from_schur(data_->multidim_assembler);
         
         nonlinear_iteration_++;
 
@@ -663,7 +663,7 @@ void DarcyMH::solve_nonlinear()
         data_changed_=true; // force reassembly for non-linear case
 
         double alpha = 1; // how much of new solution
-        VecAXPBY(schur0->get_solution(), (1-alpha), alpha, save_solution);
+        VecAXPBY(data_->data_vec_.petsc_vec(), (1-alpha), alpha, save_solution);
 
         //LogOut().fmt("Linear solver ended with reason: {} \n", si.converged_reason );
         //OLD_ASSERT( si.converged_reason >= 0, "Linear solver failed to converge. Convergence reason %d \n", si.converged_reason );
@@ -692,7 +692,7 @@ void DarcyMH::solve_nonlinear()
 
 void DarcyMH::prepare_new_time_step()
 {
-    //VecSwap(previous_solution, schur0->get_solution());
+    //VecSwap(previous_solution, data_->data_vec_.petsc_vec());
 }
 
 void DarcyMH::postprocess() 
@@ -722,10 +722,10 @@ void DarcyMH::postprocess()
               data.water_source_density.value(ele_ac.centre(), ele_ac.element_accessor()) /
               ele_ac.n_sides();
         }
-        VecSetValues(schur0->get_solution(), ele_ac.n_sides(), side_rows, values, ADD_VALUES);
+        VecSetValues(data_->data_vec_.petsc_vec(), ele_ac.n_sides(), side_rows, values, ADD_VALUES);
     }
-    VecAssemblyBegin(schur0->get_solution());
-    VecAssemblyEnd(schur0->get_solution());
+    VecAssemblyBegin(data_->data_vec_.petsc_vec());
+    VecAssemblyEnd(data_->data_vec_.petsc_vec());
     */
 }
 
@@ -740,8 +740,8 @@ void DarcyMH::output_data() {
 
 
     START_TIMER("Darcy balance output");
-    balance_->calculate_cumulative(data_->water_balance_idx, schur0->get_solution());
-    balance_->calculate_instant(data_->water_balance_idx, schur0->get_solution());
+    balance_->calculate_cumulative(data_->water_balance_idx, data_->data_vec_.petsc_vec());
+    balance_->calculate_instant(data_->water_balance_idx, data_->data_vec_.petsc_vec());
     balance_->output();
 }
 
@@ -760,8 +760,8 @@ void  DarcyMH::get_solution_vector(double * &vec, unsigned int &vec_size)
     if (solution_changed_for_scatter) {
 
         // scatter solution to all procs
-        VecScatterBegin(par_to_all, schur0->get_solution(), sol_vec, INSERT_VALUES, SCATTER_FORWARD);
-        VecScatterEnd(  par_to_all, schur0->get_solution(), sol_vec, INSERT_VALUES, SCATTER_FORWARD);
+        VecScatterBegin(par_to_all, data_->data_vec_.petsc_vec(), sol_vec, INSERT_VALUES, SCATTER_FORWARD);
+        VecScatterEnd(  par_to_all, data_->data_vec_.petsc_vec(), sol_vec, INSERT_VALUES, SCATTER_FORWARD);
         solution_changed_for_scatter=false;
     }
 
@@ -996,7 +996,7 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
                     1,  // 1 == number of subdomains per process
                     true); // swap signs of matrix and rhs to make the matrix SPD
             ls->set_from_input(in_rec);
-            ls->set_solution( ele_flux_ptr->get_data_vec().petsc_vec() );
+            ls->set_solution( data_->data_vec_.petsc_vec() );
             // possible initialization particular to BDDC
             START_TIMER("BDDC set mesh data");
             set_mesh_data_for_bddc(ls);
@@ -1031,7 +1031,7 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
                     ls->LinSys::set_from_input(in_rec); // get only common options
                 }
 
-                ls->set_solution( ele_flux_ptr->get_data_vec().petsc_vec() );
+                ls->set_solution( data_->data_vec_.petsc_vec() );
                 schur0=ls;
             } else {
                 IS is;
@@ -1076,7 +1076,7 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
                 }
                 ls->set_complement( schur1 );
                 ls->set_from_input(in_rec);
-                ls->set_solution( ele_flux_ptr->get_data_vec().petsc_vec() );
+                ls->set_solution( data_->data_vec_.petsc_vec() );
                 schur0=ls;
             }
 
@@ -1087,7 +1087,7 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
             
             allocate_mh_matrix();
             
-    	    VecZeroEntries(schur0->get_solution());
+    	    VecZeroEntries(data_->data_vec_.petsc_vec());
             VecZeroEntries(schur_compl->get_solution());
             END_TIMER("PETSC PREALLOCATION");
         }
@@ -1201,8 +1201,8 @@ void DarcyMH::print_matlab_matrix(std::string matlab_file)
         PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_MATLAB);
         MatView( *const_cast<Mat*>(schur0->get_matrix()), viewer);
         VecView( *const_cast<Vec*>(schur0->get_rhs()), viewer);
-        VecView( *const_cast<Vec*>(schur0->get_rhs()), viewer);
-        VecView( *const_cast<Vec*>(&(schur0->get_solution())), viewer);
+//         VecView( *const_cast<Vec*>(schur0->get_rhs()), viewer);
+        VecView( *const_cast<Vec*>(&(data_->data_vec_.petsc_vec())), viewer);
     }
 //     else{
 //         WarningOut() << "No matrix output available for the current solver.";
@@ -1495,7 +1495,7 @@ void DarcyMH::make_serial_scatter() {
             //DBGPRINT_INT("loc_idx",size,loc_idx);
             ISCreateGeneral(PETSC_COMM_SELF, size, loc_idx, PETSC_COPY_VALUES, &(is_loc));
             delete [] loc_idx;
-            VecScatterCreate(schur0->get_solution(), is_loc, sol_vec,
+            VecScatterCreate(data_->data_vec_.petsc_vec(), is_loc, sol_vec,
                     PETSC_NULL, &par_to_all);
             chkerr(ISDestroy(&(is_loc)));
     }
@@ -1610,11 +1610,11 @@ void DarcyMH::modify_system() {
 
     // modify RHS - add previous solution
     //VecPointwiseMult(*( schur0->get_rhs()), new_diagonal, previous_solution);
-	VecPointwiseMult(*( schur0->get_rhs()), new_diagonal, schur0->get_solution());
+	VecPointwiseMult(*( schur0->get_rhs()), new_diagonal, data_->data_vec_.petsc_vec());
     VecAXPY(*( schur0->get_rhs()), 1.0, steady_rhs);
     schur0->set_rhs_changed();
 
-    //VecSwap(previous_solution, schur0->get_solution());
+    //VecSwap(previous_solution, data_->data_vec_.petsc_vec());
 }
 
 
