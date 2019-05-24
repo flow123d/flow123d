@@ -184,6 +184,8 @@ const Selection & Elasticity::EqData::get_bc_type_selection() {
     return Selection("Elasticity_BC_Type", "Types of boundary conditions for heat transfer model.")
             .add_value(bc_type_displacement, "displacement",
                   "Prescribed displacement.")
+            .add_value(bc_type_displacement_normal, "displacement_n",
+                  "Prescribed displacement in the normal direction to the boundary.")
             .add_value(bc_type_traction, "traction",
                   "Prescribed traction.")
             .close();
@@ -227,14 +229,14 @@ Elasticity::EqData::EqData()
         .description("Young modulus.")
         .units( UnitSI().Pa() )
          .input_default("0.0")
-        .flags_add(in_main_matrix);
+        .flags_add(in_main_matrix & in_rhs);
     
     *this+=poisson_ratio
         .name("poisson_ratio")
         .description("Poisson ratio.")
         .units( UnitSI().dimensionless() )
          .input_default("0.0")
-        .flags_add(in_main_matrix);
+        .flags_add(in_main_matrix & in_rhs);
         
     *this+=fracture_sigma
             .name("fracture_sigma")
@@ -758,7 +760,12 @@ void Elasticity::set_sources()
 
 
 
-
+double Elasticity::dirichlet_penalty(SideIter side)
+{
+    double young = data_.young_modulus.value(side->centre(), side->element());
+    double poisson = data_.poisson_ratio.value(side->centre(), side->element());
+    return 1e3*(2*lame_mu(young, poisson) + lame_lambda(young, poisson)) / side->measure();
+}
 
 
 
@@ -767,9 +774,10 @@ void Elasticity::assemble_fluxes_boundary()
 {
     FESideValues<dim,3> fe_values_side(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe<dim>(),
     		update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
-    const unsigned int ndofs = feo->fe<dim>()->n_dofs();
+    const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim-1>()->size();
     vector<int> side_dof_indices(ndofs);
     PetscScalar local_matrix[ndofs*ndofs];
+    auto vec = fe_values_side.vector_view(0);
 
     // assemble boundary integral
     for (unsigned int iedg=0; iedg<feo->dh()->n_loc_edges(); iedg++)
@@ -785,13 +793,28 @@ void Elasticity::assemble_fluxes_boundary()
         ElementAccessor<3> cell = side->element();
         feo->dh()->cell_accessor_from_element(cell.idx()).get_dof_indices(side_dof_indices);
         fe_values_side.reinit(cell, side->side_idx());
-//         unsigned int bc_type = data_.bc_type.value(side->centre(), side->cond()->element_accessor());
- 
-//         for (unsigned int i=0; i<ndofs; i++)
-//             for (unsigned int j=0; j<ndofs; j++)
-//                 local_matrix[i*ndofs+j] = 0;
-//         
-//         ls->mat_set_values(ndofs, side_dof_indices.data(), ndofs, side_dof_indices.data(), local_matrix);
+        unsigned int bc_type = data_.bc_type.value(side->centre(), side->cond()->element_accessor());
+
+        for (unsigned int i=0; i<ndofs; i++)
+            for (unsigned int j=0; j<ndofs; j++)
+                local_matrix[i*ndofs+j] = 0;
+        
+        if (bc_type == EqData::bc_type_displacement)
+        {
+            for (unsigned int k=0; k<qsize; k++)
+                for (unsigned int i=0; i<ndofs; i++)
+                    for (unsigned int j=0; j<ndofs; j++)
+                        local_matrix[i*ndofs+j] += dirichlet_penalty(side)*arma::dot(vec.value(i,k),vec.value(j,k))*fe_values_side.JxW(k);
+        }
+        else if (bc_type == EqData::bc_type_displacement_normal)
+        {
+            for (unsigned int k=0; k<qsize; k++)
+                for (unsigned int i=0; i<ndofs; i++)
+                    for (unsigned int j=0; j<ndofs; j++)
+                        local_matrix[i*ndofs+j] += dirichlet_penalty(side)*arma::dot(vec.value(i,k),fe_values_side.normal_vector(k))*arma::dot(vec.value(j,k),fe_values_side.normal_vector(k))*fe_values_side.JxW(k);
+        }
+        
+        ls->mat_set_values(ndofs, side_dof_indices.data(), ndofs, side_dof_indices.data(), local_matrix);
     }
 }
 
@@ -996,29 +1019,15 @@ void Elasticity::set_boundary_conditions()
 
             if (bc_type == EqData::bc_type_displacement)
             {
-                // We solve a local problem to determine which local dof 
-                // to assign the boundary value to.
-                // TODO: Should be possibly optimized by inverting the matrix only once within reference element.
-                arma::mat d_mat(ndofs,ndofs);
-                arma::vec d_vec(ndofs);
-                for (unsigned int i=0; i<ndofs; i++)
-                {
-                    d_vec(i) = 0;
-                    for (unsigned int k=0; k<qsize; k++)
-                        d_vec(i) += arma::dot(vec.value(i,k),bc_values[k])*fe_values_side.JxW(k);
-                    for (unsigned int j=i; j<ndofs; j++)
-                    {
-                        d_mat(i,j) = 0;
-                        for (unsigned int k=0; k<qsize; k++)
-                            d_mat(i,j) += arma::dot(vec.value(i,k),vec.value(j,k))*fe_values_side.JxW(k);
-                        d_mat(j,i) = d_mat(i,j);
-                    }
-                }
-                arma::vec d_val = pinv(d_mat)*d_vec;
-                
-                for (unsigned int i=0; i<ndofs; i++)
-                    if (norm(d_mat.row(i)) > 0)
-                        ls->add_constraint(side_dof_indices[i], d_val(i));
+                for (unsigned int k=0; k<qsize; k++)
+                    for (unsigned int i=0; i<ndofs; i++)
+                        local_rhs[i] += dirichlet_penalty(side)*arma::dot(bc_values[k],vec.value(i,k))*fe_values_side.JxW(k);
+            }
+            else if (bc_type == EqData::bc_type_displacement_normal)
+            {
+                for (unsigned int k=0; k<qsize; k++)
+                    for (unsigned int i=0; i<ndofs; i++)
+                        local_rhs[i] += dirichlet_penalty(side)*arma::dot(bc_values[k],fe_values_side.normal_vector(k))*arma::dot(vec.value(i,k),fe_values_side.normal_vector(k))*fe_values_side.JxW(k);
             }
             else if (bc_type == EqData::bc_type_traction)
             {
@@ -1028,7 +1037,7 @@ void Elasticity::set_boundary_conditions()
                   local_rhs[i] += csection[k]*arma::dot(vec.value(i,k),bc_traction[k])*fe_values_side.JxW(k);
               }
             }
-            ls->rhs_set_values(ndofs, &(side_dof_indices[0]), local_rhs);
+            ls->rhs_set_values(ndofs, side_dof_indices.data(), local_rhs);
 
 
             

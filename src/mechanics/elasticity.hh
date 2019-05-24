@@ -112,6 +112,7 @@ public:
       
         enum Bc_types {
           bc_type_displacement,
+          bc_type_displacement_normal,
           bc_type_traction
         };
 
@@ -279,7 +280,10 @@ private:
 	 */
 	template<unsigned int dim>
 	void set_boundary_conditions();
-
+    
+    /** @brief Penalty to enforce boundary value in weak sense. */
+    double dirichlet_penalty(SideIter side);
+    
     
 
 
