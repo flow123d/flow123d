@@ -21,6 +21,7 @@
 
 #include "fields/bc_field.hh"
 #include "fields/field.hh"
+#include "fields/field_fe.hh"
 #include "fields/multi_field.hh"
 #include "la/linsys.hh"
 #include "la/vector_mpi.hh"
@@ -142,6 +143,10 @@ public:
         Field<3, FieldValue<3>::VectorFixed> output_field;
         Field<3, FieldValue<3>::TensorFixed> output_stress;
         Field<3, FieldValue<3>::Scalar> output_von_mises_stress;
+        
+        std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed> > output_field_ptr;
+        std::shared_ptr<FieldFE<3, FieldValue<3>::TensorFixed> > output_stress_ptr;
+        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_von_mises_stress_ptr;
 
         EquationOutput output_fields;
 
@@ -315,11 +320,6 @@ private:
 	/// @name Output to file
 	// @{
 
-	/// Vector of solution data.
-	VectorMPI output_vec;
-    VectorMPI output_stress_vec;
-    VectorMPI output_von_mises_stress_vec;
-    
     std::shared_ptr<OutputTime> output_stream_;
 
 	/// Record with input specification.

@@ -340,19 +340,19 @@ void Elasticity::initialize()
 //     balance_->units(UnitSI().kg().m().s(-2));
 
     // create shared pointer to a FieldFE, pass FE data and push this FieldFE to output_field on all regions
-    std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed> > output_field_ptr(new FieldFE<3, FieldValue<3>::VectorFixed>);
-    output_vec = output_field_ptr->set_fe_data(feo->dh());
-    data_.output_field.set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0.);
+    data_.output_field_ptr = std::make_shared<FieldFE<3, FieldValue<3>::VectorFixed> >();
+    VectorMPI output_vec = data_.output_field_ptr->set_fe_data(feo->dh());
+    data_.output_field.set_field(mesh_->region_db().get_region_set("ALL"), data_.output_field_ptr, 0.);
     
     // setup output stress
-    shared_ptr<FieldFE<3, FieldValue<3>::TensorFixed> > output_stress_ptr = make_shared<FieldFE<3, FieldValue<3>::TensorFixed> >();
-    output_stress_vec = output_stress_ptr->set_fe_data(feo->dh_tensor());
-    data_.output_stress.set_field(mesh_->region_db().get_region_set("ALL"), output_stress_ptr);
+    data_.output_stress_ptr = make_shared<FieldFE<3, FieldValue<3>::TensorFixed> >();
+    data_.output_stress_ptr->set_fe_data(feo->dh_tensor());
+    data_.output_stress.set_field(mesh_->region_db().get_region_set("ALL"), data_.output_stress_ptr);
     
     // setup output von Mises stress
-    shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_von_mises_stress_ptr = make_shared<FieldFE<3, FieldValue<3>::Scalar> >();
-    output_von_mises_stress_vec = output_von_mises_stress_ptr->set_fe_data(feo->dh_scalar());
-    data_.output_von_mises_stress.set_field(mesh_->region_db().get_region_set("ALL"), output_von_mises_stress_ptr);
+    data_.output_von_mises_stress_ptr = make_shared<FieldFE<3, FieldValue<3>::Scalar> >();
+    data_.output_von_mises_stress_ptr->set_fe_data(feo->dh_scalar());
+    data_.output_von_mises_stress.set_field(mesh_->region_db().get_region_set("ALL"), data_.output_von_mises_stress_ptr);
     
     data_.output_field.output_type(OutputTime::CORNER_DATA);
 
@@ -390,16 +390,16 @@ Elasticity::~Elasticity()
 
 void Elasticity::output_vector_gather()
 {
-    output_vec.local_to_ghost_begin();
-    output_vec.local_to_ghost_end();
+    data_.output_field_ptr->get_data_vec().local_to_ghost_begin();
+    data_.output_field_ptr->get_data_vec().local_to_ghost_end();
     
     update_output_stress<1>();
     update_output_stress<2>();
     update_output_stress<3>();
-    output_stress_vec.local_to_ghost_begin();
-    output_stress_vec.local_to_ghost_end();
-    output_von_mises_stress_vec.local_to_ghost_begin();
-    output_von_mises_stress_vec.local_to_ghost_end();
+    data_.output_stress_ptr->get_data_vec().local_to_ghost_begin();
+    data_.output_stress_ptr->get_data_vec().local_to_ghost_end();
+    data_.output_von_mises_stress_ptr->get_data_vec().local_to_ghost_begin();
+    data_.output_von_mises_stress_ptr->get_data_vec().local_to_ghost_end();
 }
 
 
@@ -554,6 +554,9 @@ void Elasticity::update_output_stress()
     const unsigned int ndofs = feo->fe<dim>()->n_dofs();
     std::vector<int> dof_indices(ndofs), dof_indices_scalar(1), dof_indices_tensor(9);
     auto vec = fv.vector_view(0);
+    VectorMPI output_vec = data_.output_field_ptr->get_data_vec();
+    VectorMPI output_stress_vec = data_.output_stress_ptr->get_data_vec();
+    VectorMPI output_von_mises_stress_vec = data_.output_von_mises_stress_ptr->get_data_vec();
     
     DHCellAccessor cell_tensor = *feo->dh_tensor()->own_range().begin();
     DHCellAccessor cell_scalar = *feo->dh_scalar()->own_range().begin();
