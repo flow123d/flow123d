@@ -244,7 +244,7 @@ Elasticity::EqData::EqData()
             "Coefficient of diffusive transfer through fractures (for each substance).")
             .units( UnitSI::dimensionless() )
             .input_default("1.0")
-            .flags_add(FieldFlag::in_main_matrix);
+            .flags_add(in_main_matrix & in_rhs);
 
     *this += region_id.name("region_id")
     	        .units( UnitSI::dimensionless())
@@ -257,7 +257,7 @@ Elasticity::EqData::EqData()
     *this+=cross_section
       .name("cross_section")
       .units( UnitSI().m(3).md() )
-      .flags(input_copy & in_time_term & in_main_matrix);
+      .flags(input_copy & in_time_term & in_main_matrix & in_rhs);
       
     *this+=potential_load
       .name("potential_load")
@@ -433,10 +433,8 @@ void Elasticity::zero_time_step()
     ls->mat_zero_entries();
     ls->rhs_zero_entries();
     assemble_stiffness_matrix();
-	set_sources();
-	set_boundary_conditions();
+    assemble_rhs();
     ls->finish_assembly();
-    ls->apply_constrains(1.0);
     ls->solve();
     output_data();
 }
@@ -451,8 +449,7 @@ void Elasticity::preallocate()
     rhs = NULL;
 
 	assemble_stiffness_matrix();
-	set_sources();
-	set_boundary_conditions();
+    assemble_rhs();
 
 	allocation_done = true;
 }
@@ -490,32 +487,34 @@ void Elasticity::solve_linear_system()
     END_TIMER("data reinit");
     
     // assemble stiffness matrix
-    if (stiffness_matrix == NULL || rhs == NULL
-    		|| data_.subset(FieldFlag::in_main_matrix).changed()
-            || data_.subset(FieldFlag::in_rhs).changed()
-    		|| flux_changed)
+    if (stiffness_matrix == NULL
+        || data_.subset(FieldFlag::in_main_matrix).changed())
     {
-        DebugOut() << "Mechanics: Reassembling system.\n";
+        DebugOut() << "Mechanics: Reassembling matrix.\n";
         ls->start_add_assembly();
         ls->mat_zero_entries();
-        ls->rhs_zero_entries();
         assemble_stiffness_matrix();
-        set_sources();
-    	set_boundary_conditions();
         ls->finish_assembly();
-        ls->apply_constrains(1.0);
 
         if (stiffness_matrix == NULL)
             MatConvert(*( ls->get_matrix() ), MATSAME, MAT_INITIAL_MATRIX, &stiffness_matrix);
         else
             MatCopy(*( ls->get_matrix() ), stiffness_matrix, DIFFERENT_NONZERO_PATTERN);
-        
+    }
+
+    // assemble right hand side (due to sources and boundary conditions)
+    if (rhs == NULL
+        || data_.subset(FieldFlag::in_rhs).changed())
+    {
+        DebugOut() << "Mechanics: Reassembling right hand side.\n";
+        ls->start_add_assembly();
+        ls->rhs_zero_entries();
+    	assemble_rhs();
+        ls->finish_assembly();
+
         if (rhs == nullptr) VecDuplicate(*( ls->get_rhs() ), &rhs);
         VecCopy(*( ls->get_rhs() ), rhs);
     }
-
-    flux_changed = false;
-
 
     START_TIMER("solve");
     ls->solve();
@@ -633,11 +632,11 @@ void Elasticity::assemble_stiffness_matrix()
     assemble_fluxes_boundary<3>();
    END_TIMER("assemble_fluxes_boundary");
 
-   START_TIMER("assemble_fluxes_elem_side");
-    assemble_fluxes_element_side<1>();
-    assemble_fluxes_element_side<2>();
-    assemble_fluxes_element_side<3>();
-   END_TIMER("assemble_fluxes_elem_side");
+   START_TIMER("assemble_matrix_elem_side");
+    assemble_matrix_element_side<1>();
+    assemble_matrix_element_side<2>();
+    assemble_matrix_element_side<3>();
+   END_TIMER("assemble_matrix_elem_side");
   END_TIMER("assemble_stiffness");
 }
 
@@ -692,20 +691,28 @@ void Elasticity::assemble_volume_integrals()
 
 
 
-void Elasticity::set_sources()
+void Elasticity::assemble_rhs()
 {
-  START_TIMER("assemble_sources");
+  START_TIMER("assemble_rhs");
 //     balance_->start_source_assembly(subst_idx);
-	set_sources<1>();
-	set_sources<2>();
-	set_sources<3>();
+//     balance_->start_flux_assembly(subst_idx);
+	assemble_sources<1>();
+	assemble_sources<2>();
+	assemble_sources<3>();
+    assemble_rhs_element_side<1>();
+    assemble_rhs_element_side<2>();
+    assemble_rhs_element_side<3>();
+    assemble_boundary_conditions<1>();
+    assemble_boundary_conditions<2>();
+    assemble_boundary_conditions<3>();
+// 	balance_->finish_flux_assembly(subst_idx);
 // 	balance_->finish_source_assembly(subst_idx);
-  END_TIMER("assemble_sources");
+  END_TIMER("assemble_rhs");
 }
 
 
 template<unsigned int dim>
-void Elasticity::set_sources()
+void Elasticity::assemble_sources()
 {
     FEValues<dim,3> fe_values(*feo->mapping<dim>(), *feo->q<dim>(), *feo->fe<dim>(),
     		update_values | update_gradients | update_JxW_values | update_quadrature_points);
@@ -827,7 +834,7 @@ arma::mat33 mat_t(const arma::mat33 &m, const arma::vec3 &n)
 
 
 template<unsigned int dim>
-void Elasticity::assemble_fluxes_element_side()
+void Elasticity::assemble_matrix_element_side()
 {
 	if (dim == 1) return;
     FEValues<dim-1,3> fe_values_sub(*feo->mapping<dim-1>(), *feo->q<dim-1>(), *feo->fe<dim-1>(),
@@ -835,16 +842,14 @@ void Elasticity::assemble_fluxes_element_side()
     FESideValues<dim,3> fe_values_side(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe<dim>(),
     		update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
  
-    vector<FEValuesSpaceBase<3>*> fv_sb(2);
     const unsigned int ndofs_side = feo->fe<dim>()->n_dofs();    // number of local dofs
     const unsigned int ndofs_sub  = feo->fe<dim-1>()->n_dofs();
     const unsigned int qsize = feo->q<dim-1>()->size();     // number of quadrature points
     vector<vector<int> > side_dof_indices(2);
     vector<unsigned int> n_dofs = { ndofs_sub, ndofs_side };
-	vector<double> frac_sigma(qsize), potential(qsize);
+	vector<double> frac_sigma(qsize);
 	vector<double> csection_lower(qsize), csection_higher(qsize), young(qsize), poisson(qsize), alpha(qsize);
     PetscScalar local_matrix[2][2][(ndofs_side)*(ndofs_side)];
-    PetscScalar local_rhs[2][ndofs_side];
     auto vec_side = fe_values_side.vector_view(0);
     auto vec_sub = fe_values_sub.vector_view(0);
 
@@ -852,8 +857,6 @@ void Elasticity::assemble_fluxes_element_side()
     // index 1 = side of element with higher dimension
     side_dof_indices[0].resize(ndofs_sub);
     side_dof_indices[1].resize(ndofs_side);
-    fv_sb[0] = &fe_values_sub;
-    fv_sb[1] = &fe_values_side;
 
     // assemble integral over sides
     for (unsigned int inb=0; inb<feo->dh()->n_loc_nb(); inb++)
@@ -880,20 +883,12 @@ void Elasticity::assemble_fluxes_element_side()
  		data_.fracture_sigma.value_list(fe_values_sub.point_list(), cell_sub, frac_sigma);
         data_.young_modulus.value_list(fe_values_sub.point_list(), cell_sub, young);
         data_.poisson_ratio.value_list(fe_values_sub.point_list(), cell_sub, poisson);
-        data_.potential_load.value_list(fe_values_sub.point_list(), cell, potential);
         
         for (unsigned int n=0; n<2; ++n)
-        {
             for (unsigned int i=0; i<ndofs_side; i++)
-            {
                 for (unsigned int m=0; m<2; ++m)
-                {
                     for (unsigned int j=0; j<ndofs_side; j++)
                         local_matrix[n][m][i*(ndofs_side)+j] = 0;
-                }
-                local_rhs[n][i] = 0;
-            }
-        }
 
         // set transmission conditions
         for (unsigned int k=0; k<qsize; k++)
@@ -927,21 +922,93 @@ void Elasticity::assemble_fluxes_element_side()
                                       + lambda*divuit*nv
                                      )
                                      - arma::dot(gvft, mu*arma::kron(nv,ui.t()) + lambda*arma::dot(ui,nv)*arma::eye(3,3))
-                                    )*fv_sb[0]->JxW(k);
+                                    )*fe_values_sub.JxW(k);
                         }
                     
-                    local_rhs[n][i] -= frac_sigma[k]*arma::dot(vf-vi,potential[k]*nv)*fv_sb[0]->JxW(k);
                 }
             }
         }
-            
+        
         for (unsigned int n=0; n<2; ++n)
-        {
             for (unsigned int m=0; m<2; ++m)
                 ls->mat_set_values(n_dofs[n], side_dof_indices[n].data(), n_dofs[m], side_dof_indices[m].data(), local_matrix[n][m]);
+    }
+}
+
+
+
+template<unsigned int dim>
+void Elasticity::assemble_rhs_element_side()
+{
+	if (dim == 1) return;
+    FEValues<dim-1,3> fe_values_sub(*feo->mapping<dim-1>(), *feo->q<dim-1>(), *feo->fe<dim-1>(),
+    		update_values | update_gradients | update_JxW_values | update_quadrature_points);
+    FESideValues<dim,3> fe_values_side(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe<dim>(),
+    		update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
+ 
+    const unsigned int ndofs_side = feo->fe<dim>()->n_dofs();    // number of local dofs
+    const unsigned int ndofs_sub  = feo->fe<dim-1>()->n_dofs();
+    const unsigned int qsize = feo->q<dim-1>()->size();     // number of quadrature points
+    vector<vector<int> > side_dof_indices(2);
+    vector<unsigned int> n_dofs = { ndofs_sub, ndofs_side };
+	vector<double> frac_sigma(qsize), potential(qsize);
+    PetscScalar local_rhs[2][ndofs_side];
+    auto vec_side = fe_values_side.vector_view(0);
+    auto vec_sub = fe_values_sub.vector_view(0);
+
+    // index 0 = element with lower dimension,
+    // index 1 = side of element with higher dimension
+    side_dof_indices[0].resize(ndofs_sub);
+    side_dof_indices[1].resize(ndofs_side);
+
+    // assemble integral over sides
+    for (unsigned int inb=0; inb<feo->dh()->n_loc_nb(); inb++)
+    {
+    	Neighbour *nb = &mesh_->vb_neighbours_[feo->dh()->nb_index(inb)];
+        // skip neighbours of different dimension
+        if (nb->element()->dim() != dim-1) continue;
+
+		ElementAccessor<3> cell_sub = nb->element();
+		feo->dh()->cell_accessor_from_element(cell_sub.idx()).get_dof_indices(side_dof_indices[0]);
+		fe_values_sub.reinit(cell_sub);
+
+		ElementAccessor<3> cell = nb->side()->element();
+		feo->dh()->cell_accessor_from_element(cell.idx()).get_dof_indices(side_dof_indices[1]);
+		fe_values_side.reinit(cell, nb->side()->side_idx());
+
+		// Element id's for testing if they belong to local partition.
+		bool own_element_id[2];
+		own_element_id[0] = feo->dh()->cell_accessor_from_element(cell_sub.idx()).is_own();
+		own_element_id[1] = feo->dh()->cell_accessor_from_element(cell.idx()).is_own();
+        
+ 		data_.fracture_sigma.value_list(fe_values_sub.point_list(), cell_sub, frac_sigma);
+        data_.potential_load.value_list(fe_values_sub.point_list(), cell, potential);
+        
+        for (unsigned int n=0; n<2; ++n)
+            for (unsigned int i=0; i<ndofs_side; i++)
+                local_rhs[n][i] = 0;
+
+        // set transmission conditions
+        for (unsigned int k=0; k<qsize; k++)
+        {
+            arma::vec3 nv = fe_values_side.normal_vector(k);
             
-            ls->rhs_set_values(n_dofs[n], side_dof_indices[n].data(), local_rhs[n]);
+            for (int n=0; n<2; n++)
+            {
+                if (!own_element_id[n]) continue;
+
+                for (unsigned int i=0; i<n_dofs[n]; i++)
+                {
+                    arma::vec3 vi = (n==0)?arma::zeros(3):vec_side.value(i,k);
+                    arma::vec3 vf = (n==1)?arma::zeros(3):vec_sub.value(i,k);
+                    
+                    local_rhs[n][i] -= frac_sigma[k]*arma::dot(vf-vi,potential[k]*nv)*fe_values_sub.JxW(k);
+                }
+            }
         }
+        
+        for (unsigned int n=0; n<2; ++n)
+            ls->rhs_set_values(n_dofs[n], side_dof_indices[n].data(), local_rhs[n]);
     }
 }
 
@@ -949,23 +1016,8 @@ void Elasticity::assemble_fluxes_element_side()
 
 
 
-
-
-void Elasticity::set_boundary_conditions()
-{
-  START_TIMER("assemble_bc");
-//     balance_->start_flux_assembly(subst_idx);
-	set_boundary_conditions<1>();
-	set_boundary_conditions<2>();
-	set_boundary_conditions<3>();
-// 	balance_->finish_flux_assembly(subst_idx);
-  END_TIMER("assemble_bc");
-}
-
-
-
 template<unsigned int dim>
-void Elasticity::set_boundary_conditions()
+void Elasticity::assemble_boundary_conditions()
 {
     FESideValues<dim,3> fe_values_side(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe<dim>(),
     		update_values | update_gradients | update_normal_vectors | update_side_JxW_values | update_quadrature_points);

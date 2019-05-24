@@ -242,17 +242,15 @@ private:
 	void assemble_volume_integrals();
 
 	/**
-	 * @brief Assembles the right hand side due to volume sources.
-	 *
-	 * This method just calls set_sources() for each space dimension.
+	 * @brief Assembles the right hand side (forces, boundary conditions, tractions).
 	 */
-	void set_sources();
+	void assemble_rhs();
 
 	/**
 	 * @brief Assembles the right hand side vector due to volume sources.
 	 */
 	template<unsigned int dim>
-	void set_sources();
+	void assemble_sources();
     
     /**
      * @brief Assembles the fluxes on the boundary.
@@ -261,25 +259,22 @@ private:
     void assemble_fluxes_boundary();
 
 	/**
-	 * @brief Assembles the fluxes between elements of different dimensions.
+	 * @brief Assembles the fluxes between elements of different dimensions depending on displacement.
 	 */
 	template<unsigned int dim>
-	void assemble_fluxes_element_side();
+	void assemble_matrix_element_side();
+    
+    /** @brief Assemble fluxes between different dimensions that are independent of displacement. */
+    template<unsigned int dim>
+    void assemble_rhs_element_side();
 
-
-	/**
-	 * @brief Assembles the r.h.s. components corresponding to the Dirichlet boundary conditions.
-	 *
-	 * The routine just calls templated method set_boundary_condition() for each space dimension.
-	 */
-	void set_boundary_conditions();
 
 	/**
 	 * @brief Assembles the r.h.s. components corresponding to the Dirichlet boundary conditions
 	 * for a given space dimension.
 	 */
 	template<unsigned int dim>
-	void set_boundary_conditions();
+	void assemble_boundary_conditions();
     
     /** @brief Penalty to enforce boundary value in weak sense. */
     double dirichlet_penalty(SideIter side);
@@ -341,9 +336,6 @@ private:
     /// Indicates whether matrices have been preallocated.
     bool allocation_done;
     
-    /// Indicator of change in advection vector field.
-    bool flux_changed;
-
     // @}
 };
 
