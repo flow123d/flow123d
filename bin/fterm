@@ -108,6 +108,9 @@ usage:
       pass remaining arguments to the [options] section 
       of the docker run command
       docker run [options] <predefined-image>
+      
+    ${bold}--no-term${reset}
+      For 'run' and 'exec' command omit the terminal. Necessary for call from another process.
                      
     ${bold}--detach <name> [<opts> ...]${reset}
       will execute docker as a deamon in the background.
