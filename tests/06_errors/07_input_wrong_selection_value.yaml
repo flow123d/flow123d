@@ -2,9 +2,8 @@ flow123d_version: 3.1.0
 problem: !Coupling_Sequential
   description: Wrong value 'FieldInterpolatedP1' of the Selection - wrong descendant of Abstract
   mesh:
-    mesh_file: ../00_mesh/cube_1x1x1_frac21_shift.msh
+    mesh_file: ../00_mesh/prism_3el.msh
   flow_equation: !Flow_Darcy_MH
-    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-07
@@ -19,7 +18,6 @@ problem: !Coupling_Sequential
     output:
       fields:
         - piezo_head_p0
-    balance: {}
     output_stream:
       file: ./small_cube.pvd
       format: !vtk

@@ -91,6 +91,7 @@ public:
     PetscErrorCode mat_zero_entries() override
     {
         matrix_changed_ = true;
+        constraints_.clear();
     	return MatZeroEntries(matrix_);
     }
 

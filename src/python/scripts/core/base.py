@@ -9,9 +9,10 @@ import re
 import platform
 import datetime
 import math
-import time
 import json
+import threading
 # ----------------------------------------------
+from loggers import printf
 from simplejson import JSONEncoder
 # ----------------------------------------------
 
@@ -245,10 +246,6 @@ class Printer(object):
         except:
             cls.set_level(cls.LEVEL_CONSOLE)
 
-        try:
-            _Printer.log_file = parser.log
-        except: pass
-
 
 def make_relative(f):
     """
@@ -383,7 +380,7 @@ class Paths(object):
         for path in paths:
             filename = getattr(cls, path)()
             if not cls.exists(filename):
-                Printer.all.err('Error: file {:10s} ({}) does not exists!', path, filename)
+                printf.error('Error: file {:10s} ({}) does not exists!', path, filename)
                 status = False
 
         return status
@@ -642,7 +639,7 @@ class DynamicSleep(object):
     beginning of an operation.
     """
 
-    def __init__(self, min=100, max=5000, steps=13):
+    def __init__(self, min=250, max=1*3000, steps=50):
         # -c * Math.cos(t/d * (Math.PI/2)) + c + b;
         # t: current time, b: begInnIng value, c: change In value, d: duration
         c = float(max - min)
@@ -655,10 +652,12 @@ class DynamicSleep(object):
             )) / 1000)
         self.current = -1
         self.total = len(self.steps)
+        self.event = threading.Event()
 
     def sleep(self):
+        self.event.clear()
         sleep_duration = self.next()
-        time.sleep(sleep_duration)
+        self.event.wait(sleep_duration)
 
     def next(self):
         self.current += 1
@@ -699,10 +698,9 @@ class TestPrinterStatus(object):
             return ''
 
         result = '| wrong result: '
-        with Printer.all.with_level(3):
-            for t in thread.comp.threads:
-                if t.returncode != 0:
-                    result += '\n{}[ WRONG ] in {}'.format(Printer.indent(), t.name)
+        for t in thread.comp.threads:
+            if t.returncode != 0:
+                result += '\n{:18s}FAILED comprasion in {}'.format('', t.name)
         return result
 
     @classmethod
@@ -733,7 +731,7 @@ class TestPrinterStatus(object):
 
 
 class RunnerFormatter(object):
-    template = '{status_name:11s} | passed={passed}, failed={failed}, skipped={skipped} in [{runner.duration:5.2f} sec]'
+    template = '{status_name:11s} | passed={passed}, failed={failed}, skipped={skipped} in              [{runner.duration:5.2f} sec]'
 
 
 class StatusPrinter(object):
@@ -764,7 +762,7 @@ class StatusPrinter(object):
             if subthread.returncode.failed:
                 sub_detail = thread_msg[ti]
                 detail = formatter.errors[ti].format(**locals())
-                Printer.all.out(formatter.template.format(**locals()))
+                printf.error(formatter.template.format(**locals()))
                 return
 
         # first non empty detail
@@ -773,10 +771,13 @@ class StatusPrinter(object):
             sub_detail = thread_msg[ti]
             if sub_detail:
                 detail = formatter.errors[ti].format(**locals())
-                Printer.all.out(formatter.template.format(**locals()))
+                printf.out(formatter.template.format(**locals()))
                 return
 
-        Printer.all.out(formatter.template.format(**locals()))
+        if str(thread.returncode).upper() == 'NONE':
+            printf.warning(formatter.template.format(**locals()))
+        else:
+            printf.success(formatter.template.format(**locals()))
 
     @classmethod
     def print_runner_stat(cls, runner, formatter=RunnerFormatter):
@@ -792,7 +793,10 @@ class StatusPrinter(object):
 
         result = 0 if len(returncodes) == passed else 1
         status_name = '[ {} ]'.format(TestPrinterStatus.get(str(result))).upper()
-        Printer.all.out(formatter.template.format(**locals()))
+        if result == 0:
+            printf.success(formatter.template.format(**locals()))
+        else:
+            printf.error(formatter.template.format(**locals()))
 
 
 class System(object):

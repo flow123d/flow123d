@@ -6,7 +6,6 @@ problem: !Coupling_Sequential
   mesh:
     mesh_file: ../00_mesh/cube_1x1x1_frac21.msh
   flow_equation: !Flow_Darcy_MH
-    output_specific:
     nonlinear_solver:
       linear_solver: !Bddc
         r_tol: 1.0e-11
@@ -44,7 +43,6 @@ problem: !Coupling_Sequential
         bc_type: dirichlet
         bc_pressure: !FieldFormula
           value: x-z
-    balance: {}
     output:
       fields:
         - piezo_head_p0
@@ -55,4 +53,3 @@ problem: !Coupling_Sequential
       file: ./test1.pvd
       format: !vtk
         variant: ascii
-      name: flow_output_stream

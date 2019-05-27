@@ -21,7 +21,7 @@ const int block_count = 1;
 class SchurComplementTest : public SchurComplement {
 public:
 	SchurComplementTest(IS ia, Distribution *ds)
-	: SchurComplement(ia, ds)
+	: SchurComplement(ds, ia)
 	{}
 
 	Mat get_a_inv() const {return (IA);}

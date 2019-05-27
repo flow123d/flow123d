@@ -102,17 +102,35 @@ void FEValuesBase<dim,spacedim>::ViewsCache::initialize(FEValuesBase<dim,spacedi
       tensors.push_back(FEValuesViews::Tensor<dim,spacedim>(fv, 0));
       break;
     case FEType::FEMixedSystem:
-      FESystem<dim> *fe = dynamic_cast<FESystem<dim>*>(fv.get_fe());
-      OLD_ASSERT(fe != nullptr, "Mixed system must be represented by FESystem.");
-      std::vector<unsigned int> sc = fe->get_scalar_components();
-      std::vector<unsigned int> vc = fe->get_vector_components();
-      std::vector<unsigned int> tc = fe->get_tensor_components();
-      for (auto si : sc)
-        scalars.push_back(FEValuesViews::Scalar<dim,spacedim>(fv,si));
-      for (auto vi : vc)
-        vectors.push_back(FEValuesViews::Vector<dim,spacedim>(fv,vi));
-      for (auto ti : tc)
-        tensors.push_back(FEValuesViews::Tensor<dim,spacedim>(fv,ti));
+      FESystem<dim> *fe_sys = dynamic_cast<FESystem<dim>*>(fv.get_fe());
+      ASSERT_DBG(fe_sys != nullptr).error("Mixed system must be represented by FESystem.");
+      
+      // Loop through sub-elements and add views according to their types.
+      // Note that the component index is calculated using fe->n_space_components(),
+      // not fe->n_components()!
+      unsigned int comp_offset = 0;
+      for (auto fe : fe_sys->fe())
+      {
+          switch (fe->type_)
+          {
+          case FEType::FEScalar:
+              scalars.push_back(FEValuesViews::Scalar<dim,spacedim>(fv,comp_offset));
+              break;
+          case FEType::FEVector:
+          case FEType::FEVectorContravariant:
+          case FEType::FEVectorPiola:
+              vectors.push_back(FEValuesViews::Vector<dim,spacedim>(fv,comp_offset));
+              break;
+          case FEType::FETensor:
+              tensors.push_back(FEValuesViews::Tensor<dim,spacedim>(fv,comp_offset));
+              break;
+          default:
+              ASSERT_DBG(false).error("Not implemented.");
+              break;
+          }
+
+          comp_offset += fe->n_space_components(spacedim);
+      }
       break;
   }
 }
@@ -143,31 +161,17 @@ void FEValuesBase<dim,spacedim>::allocate(Mapping<dim,spacedim> & _mapping,
 {
     // For FEVector and FETensor check number of components.
     // This cannot be done in FiniteElement since it does not know spacedim.
-    if (_fe.type_ == FEVector)
+    if (_fe.type_ == FEVector) {
         ASSERT_DBG(_fe.n_components() == spacedim).error("FEVector must have spacedim components.");
-    else if (_fe.type_ == FETensor)
+    } else if (_fe.type_ == FETensor) {
         ASSERT_DBG(_fe.n_components() == spacedim*spacedim).error("FETensor must have spacedim*spacedim components.");
+    }
     
     mapping = &_mapping;
     quadrature = &_quadrature;
     fe = &_fe;
-
-    switch (fe->type_) {
-        case FEScalar:
-            n_components_ = 1;
-            break;
-        case FEVector:
-        case FEVectorContravariant:
-        case FEVectorPiola:
-            n_components_ = spacedim;
-            break;
-        case FETensor:
-            n_components_ = spacedim*spacedim;
-            break;
-        case FEMixedSystem:
-            n_components_ = fe->n_components();
-            break;
-    }
+    n_components_ = fe->n_space_components(spacedim);
+    
     // add flags required by the finite element or mapping
     data.allocate(quadrature->size(), update_each(_flags), fe->n_dofs()*n_components_);
     
@@ -423,6 +427,8 @@ void FEValuesBase<dim,spacedim>::fill_system_data(const FEInternalData &fe_data)
         fe_values_vec[f]->fill_data(*fe_values_vec[f]->fe_data);
     }
     
+    unsigned int n_space_components = fe->n_space_components(spacedim);
+    
     // shape values
     if (data.update_flags & update_values)
     {
@@ -431,14 +437,16 @@ void FEValuesBase<dim,spacedim>::fill_system_data(const FEInternalData &fe_data)
         unsigned int shape_offset = 0;
         for (unsigned int f=0; f<fe_sys->fe().size(); f++)
         {
+            unsigned int n_sub_space_components = fe_sys->fe()[f]->n_space_components(spacedim);
+            
             // gather fe_values in vectors for FESystem
             for (unsigned int i=0; i<fe_data.n_points; i++)
                 for (unsigned int n=0; n<fe_sys->fe()[f]->n_dofs(); n++)
-                    for (unsigned int c=0; c<fe_sys->fe()[f]->n_components(); c++)
-                        data.shape_values[i][shape_offset+fe_sys->function_space_->n_components()*n+comp_offset+c] = fe_values_vec[f]->data.shape_values[i][n*fe_sys->fe()[f]->n_components()+c];
+                    for (unsigned int c=0; c<n_sub_space_components; c++)
+                        data.shape_values[i][shape_offset+n_space_components*n+comp_offset+c] = fe_values_vec[f]->data.shape_values[i][n*n_sub_space_components+c];
             
-            comp_offset += fe_sys->fe()[f]->n_components();
-            shape_offset += fe_sys->fe()[f]->n_dofs()*fe_sys->function_space_->n_components();
+            comp_offset += n_sub_space_components;
+            shape_offset += fe_sys->fe()[f]->n_dofs()*n_space_components;
         }
     }
 
@@ -450,14 +458,16 @@ void FEValuesBase<dim,spacedim>::fill_system_data(const FEInternalData &fe_data)
         unsigned int shape_offset = 0;
         for (unsigned int f=0; f<fe_sys->fe().size(); f++)
         {
+            unsigned int n_sub_space_components = fe_sys->fe()[f]->n_space_components(spacedim);
+            
             // gather fe_values in vectors for FESystem
             for (unsigned int i=0; i<fe_data.n_points; i++)
                 for (unsigned int n=0; n<fe_sys->fe()[f]->n_dofs(); n++)
-                    for (unsigned int c=0; c<fe_sys->fe()[f]->n_components(); c++)
-                        data.shape_gradients[i][shape_offset+fe_sys->function_space_->n_components()*n+comp_offset+c] = fe_values_vec[f]->data.shape_gradients[i][n*fe_sys->fe()[f]->n_components()+c];
+                    for (unsigned int c=0; c<n_sub_space_components; c++)
+                        data.shape_gradients[i][shape_offset+n_space_components*n+comp_offset+c] = fe_values_vec[f]->data.shape_gradients[i][n*n_sub_space_components+c];
             
-            comp_offset += fe_sys->fe()[f]->n_components();
-            shape_offset += fe_sys->fe()[f]->n_dofs()*fe_sys->function_space_->n_components();
+            comp_offset += n_sub_space_components;
+            shape_offset += fe_sys->fe()[f]->n_dofs()*n_space_components;
         }
     }
     

@@ -14,7 +14,6 @@ problem: !Coupling_Sequential
   mesh:
     mesh_file: ../00_mesh/square_xz_1x1.msh
   flow_equation: !Flow_Darcy_MH
-    output_specific:
     n_schurs: 2
     input_fields:
       - region: plane
@@ -54,7 +53,6 @@ problem: !Coupling_Sequential
         - pressure_p0
         - pressure_p1
         - velocity_p0
-    balance: {}
     nonlinear_solver:
       tolerance: 1e-6
       linear_solver: !Petsc

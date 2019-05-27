@@ -1,27 +1,19 @@
-flow123d_version: 2.0.0
+# Test goal: Log redirection to a file given by a command parameter.
+# Author: David Flanderka
+# Source for reference: regex check rules of log file
+
+flow123d_version: 3.1.0
 problem: !Coupling_Sequential
   description: Test of redirect log to file given with command parameter.
   mesh:
-    mesh_file: ../00_mesh/cube_1x1x1_frac21_shift.msh
+    mesh_file: ../00_mesh/triangle.msh
   flow_equation: !Flow_Darcy_MH
-    output_specific:
-    nonlinear_solver:
-      linear_solver: !Petsc
-        a_tol: 1.0e-07
     input_fields:
-      - region: .IMPLICIT_BOUNDARY
+      - region: .BOUNDARY
         bc_type: dirichlet
         bc_piezo_head: 2
-      - region: BULK
-        anisotropy: 1
-        sigma: 0.5
-    n_schurs: 2
     output:
-      fields:
-        - pressure_p0
-    balance: {}
+      fields: []
     output_stream: 
-      file: ./small_cube.msh
+      file: ./flow.msh
       format: !gmsh
-        variant: ascii
-      name: flow_output_stream

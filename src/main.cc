@@ -32,6 +32,9 @@
 #include <boost/program_options/variables_map.hpp>
 #include <boost/program_options/options_description.hpp>
 #include <boost/filesystem.hpp>
+#include <thread>         // std::this_thread::sleep_for
+#include <chrono>         // std::chrono::seconds
+
 
 #include "main.h"
 
@@ -367,7 +370,18 @@ void Application::after_run() {
 
 
 void Application::terminate() {
-    MPI_Abort( MPI_COMM_WORLD, ApplicationBase::exit_failure);
+    // Test if all processes are in the exception.
+    MPI_Request request;
+    MPI_Ibarrier(MPI_COMM_WORLD, &request);
+    std::this_thread::sleep_for(std::chrono::microseconds(10));
+    int done;
+    MPI_Status status;
+    MPI_Test(&request, &done, &status);
+    if (! done) {
+        // Kill all if we can not synchronize.
+        MPI_Abort( MPI_COMM_WORLD, ApplicationBase::exit_failure);
+    }
+    // Peacefull end.
 }
 
 
