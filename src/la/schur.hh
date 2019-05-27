@@ -155,6 +155,8 @@ protected:
 
     Vec RHS1, RHS2;             // A and B - part of the RHS
     Vec Sol1, Sol2;             // A and B part of solution
+    VecScatter rhs1sc, rhs2sc;  // scatter to parts of rhs
+    VecScatter sol1sc, sol2sc;  // scatter to parts of solution
 
     SchurState state;           // object internal state
     int orig_lsize;             ///< Size of local vector part of original system

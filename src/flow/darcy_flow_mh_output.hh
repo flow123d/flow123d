@@ -81,10 +81,10 @@ public:
 
 		OutputFields();
 
-	    Field<3, FieldValue<3>::Scalar> field_ele_pressure;
-	    Field<3, FieldValue<3>::Scalar> field_node_pressure;
-	    Field<3, FieldValue<3>::Scalar> field_ele_piezo_head;
-	    Field<3, FieldValue<3>::VectorFixed> field_ele_flux;
+// 	    Field<3, FieldValue<3>::Scalar> field_ele_pressure;
+// 	    Field<3, FieldValue<3>::Scalar> field_node_pressure;
+// 	    Field<3, FieldValue<3>::Scalar> field_ele_piezo_head;
+// 	    Field<3, FieldValue<3>::VectorFixed> field_ele_flux;
 	    Field<3, FieldValue<3>::Scalar> subdomain;
 	    Field<3, FieldValue<3>::Scalar> region_id;
 	};
@@ -118,7 +118,6 @@ protected:
     virtual void prepare_output(Input::Record in_rec);
     virtual void prepare_specific_output(Input::Record in_rec);
     
-    void make_side_flux();
     void make_element_scalar(ElementSetRef element_indices);
     
     /** Computes fluxes at the barycenters of elements.
@@ -127,16 +126,15 @@ protected:
      *  but we still use MHDofHandler. Once we are able to make output routines
      *  parallel, we can use simply FieldFE for velocity here.
      */
-    void make_element_vector(ElementSetRef element_indices);
+//     void make_element_vector(ElementSetRef element_indices);
 
-    //void make_sides_scalar();
     /**
      * \brief Calculate nodes scalar,
      * store it in double* node_scalars instead of node->scalar
      *  */
-    void make_node_scalar_param(ElementSetRef element_indices);
+    //void make_node_scalar_param(ElementSetRef element_indices);
     //void make_node_scalar();
-    void make_corner_scalar(vector<double> &node_scalar);
+    //void make_corner_scalar(vector<double> &node_scalar);
     //void make_neighbour_flux();
     void output_internal_flow_data();
 
@@ -173,16 +171,16 @@ protected:
     /** Average flux in barycenter of every element. Indexed as elements in the mesh. */
     // TODO: Definitely we need more general (templated) implementation of Output that accept arbitrary containers. So
     // that we can pass there directly vector< arma:: vec3 >
-    VectorMPI ele_flux;
+//     VectorMPI ele_flux;
 
     // Temporary objects holding pointers to appropriate FieldFE
     // TODO remove after final fix of equations
-    std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> ele_pressure_ptr;   ///< Field of pressure head in barycenters of elements.
-    std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> ele_piezo_head_ptr; ///< Field of piezo-metric head in barycenters of elements.
-    std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> ele_flux_ptr;  ///< Field of flux in barycenter of every element.
+//     std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> ele_pressure_ptr;   ///< Field of pressure head in barycenters of elements.
+//     std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> ele_piezo_head_ptr; ///< Field of piezo-metric head in barycenters of elements.
+//     std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> ele_flux_ptr;  ///< Field of flux in barycenter of every element.
 
     // A vector of all element indexes
-    std::vector<unsigned int> all_element_idx_;
+//     std::vector<unsigned int> all_element_idx_;
 
     // integrals of squared differences on individual elements - error indicators, can be written out into VTK files
     std::vector<double>     l2_diff_pressure, l2_diff_velocity, l2_diff_divergence;

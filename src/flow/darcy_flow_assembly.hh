@@ -60,7 +60,7 @@ public:
 
     // compute velocity value in the barycenter
     // TODO: implement and use general interpolations between discrete spaces
-    virtual arma::vec3 make_element_vector(ElementAccessor<3> ele) = 0;
+    virtual arma::vec3 make_element_vector(LocalElementAccessorBase<3> ele_ac) = 0;
 
     virtual void update_water_content(LocalElementAccessorBase<3> ele)
     {}
@@ -210,17 +210,19 @@ public:
     }
 
 
-    arma::vec3 make_element_vector(ElementAccessor<3> ele) override
+    arma::vec3 make_element_vector(LocalElementAccessorBase<3> ele_ac) override
     {
         //START_TIMER("Assembly<dim>::make_element_vector");
         arma::vec3 flux_in_center;
         flux_in_center.zeros();
+        auto ele = ele_ac.element_accessor();
 
         velocity_interpolation_fv_.reinit(ele);
         for (unsigned int li = 0; li < ele->n_sides(); li++) {
-            flux_in_center += ad_->mh_dh->side_flux( *(ele.side( li ) ) )
+            flux_in_center += ad_->data_vec_[ ele_ac.side_local_row(li) ]
                         * velocity_interpolation_fv_.vector_view(0).value(li,0);
         }
+
 
         flux_in_center /= ad_->cross_section.value(ele.centre(), ele );
         return flux_in_center;
@@ -471,7 +473,12 @@ protected:
             ngh = ele_ac.element_accessor()->neigh_vb[i];
             loc_system_vb_.reset();
             loc_system_vb_.row_dofs[0] = loc_system_vb_.col_dofs[0] = ele_row;
-            loc_system_vb_.row_dofs[1] = loc_system_vb_.col_dofs[1] = ele_ac.edge_row( ngh->edge_idx() );
+            LocalElementAccessorBase<3> acc_higher_dim( ele_ac.dh_cell().dh()->cell_accessor_from_element(ngh->edge()->side(0)->element().idx()) );
+            for (unsigned int j = 0; j < ngh->edge()->side(0)->element().dim()+1; j++)
+            	if (ngh->edge()->side(0)->element()->edge_idx(j) == ngh->edge_idx()) {
+                    loc_system_vb_.row_dofs[1] = loc_system_vb_.col_dofs[1] = acc_higher_dim.edge_row(j);
+            		break;
+            	}
 
             assembly_local_vb(ele, ngh);
 
@@ -493,13 +500,6 @@ protected:
             Boundary* bcd = ele_ac.side(i)->cond();
 
             if (bcd) {
-                /*
-                    DebugOut().fmt("add_flux: {} {} {} {}\n",
-                            ad_->mh_dh->el_ds->myp(),
-                            ele_ac.ele_global_idx(),
-                            ad_->local_boundary_index,
-                            ele_ac.side_row(i));
-                 */
                 ad_->balance->add_flux_matrix_values(ad_->water_balance_idx, ad_->local_boundary_index,
                                                      {(LongIdx)(ele_ac.side_row(i))}, {1});
                 ++(ad_->local_boundary_index);

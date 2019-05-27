@@ -699,6 +699,14 @@ inline unsigned int FieldFE<spacedim, Value>::data_size() const {
 
 
 template <int spacedim, class Value>
+void FieldFE<spacedim, Value>::local_to_ghost_data_scatter() {
+	data_vec_.local_to_ghost_begin();
+	data_vec_.local_to_ghost_end();
+}
+
+
+
+template <int spacedim, class Value>
 FieldFE<spacedim, Value>::~FieldFE()
 {}
 

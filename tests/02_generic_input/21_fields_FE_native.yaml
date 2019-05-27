@@ -24,7 +24,6 @@ problem: !Coupling_Sequential
     output:
       fields:
         - pressure_p0
-        - pressure_p1
         - velocity_p0
         - field: init_pressure
           interpolation: Native

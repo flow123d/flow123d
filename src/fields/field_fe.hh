@@ -142,6 +142,9 @@ public:
     	return data_vec_;
     }
 
+    /// Call scatter functions (local to ghost) on data vector
+    void local_to_ghost_data_scatter();
+
 
     /// Destructor.
 	virtual ~FieldFE();
