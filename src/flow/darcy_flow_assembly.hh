@@ -455,14 +455,44 @@ protected:
     
     void assemble_source_term(LocalElementAccessorBase<3> ele_ac)
     {
-        double cs = ad_->cross_section.value(ele_ac.centre(), ele_ac.element_accessor());
-
-        // set sources
-        double source = ele_ac.measure() * cs *
-                ad_->water_source_density.value(ele_ac.centre(), ele_ac.element_accessor());
-        loc_system_.add_value(loc_ele_dof, -1.0 * source);
-
-        ad_->balance->add_source_values(ad_->water_balance_idx, ele_ac.region().bulk_idx(), {(LongIdx) ele_ac.ele_local_idx()}, {0}, {source});
+        ElementAccessor<3> ele =ele_ac.element_accessor();
+        
+        // compute lumped source
+        double alpha = 1.0 / ele_ac.n_sides();
+        double cross_section = ad_->cross_section.value(ele.centre(), ele);
+        double coef = alpha * ele.measure() * cross_section;
+        
+        double source = ad_->water_source_density.value(ele_ac.centre(), ele_ac.element_accessor());
+        double source_term = coef * source;
+        
+        // in unsteady, compute time term
+        double storativity = 0.0;
+        double time_term = 0.0;
+        
+        if(! ad_->use_steady_assembly_)
+        {
+            DebugOut() << "assemble time term\n";
+            storativity = ad_->storativity.value(ele_ac.centre(), ele_ac.element_accessor());
+            time_term = coef * storativity ;
+        }
+        
+        for (unsigned int i=0; i<ele_ac.n_sides(); i++)
+        {
+//             if (dirichlet_edge[i] == 0)
+            {
+                
+                this->loc_system_.add_value(loc_edge_dofs[i], loc_edge_dofs[i],
+                                                -time_term / ad_->time_step_,
+                                                -source_term);
+            }
+            
+            if (ad_->balance != nullptr)
+            {
+                ad_->balance->add_source_values(ad_->water_balance_idx, ele.region().bulk_idx(), {(LongIdx) ele_ac.edge_local_idx(i)}, {0},{source_term});
+                if( ! ad_->use_steady_assembly_)
+                    ad_->balance->add_mass_vec_value(ad_->water_balance_idx, ele.region().bulk_idx(), time_term);
+            }
+        }
     }
 
     void assembly_dim_connections(LocalElementAccessorBase<3> ele_ac){

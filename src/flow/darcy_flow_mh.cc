@@ -431,7 +431,7 @@ void DarcyMH::zero_time_step()
         // steady case
         VecZeroEntries(schur0->get_solution());
         //read_initial_condition(); // Possible solution guess for steady case.
-        use_steady_assembly_ = true;
+        data_->use_steady_assembly_ = true;
         solve_nonlinear(); // with right limit data
     } else {
         VecZeroEntries(schur0->get_solution());
@@ -464,7 +464,7 @@ void DarcyMH::update_solution()
         // Unsteady solution up to the T.
 
         // this flag is necesssary for switching BC to avoid setting zero neumann on the whole boundary in the steady case
-        use_steady_assembly_ = false;
+        data_->use_steady_assembly_ = false;
         prepare_new_time_step(); //SWAP
 
         solve_nonlinear(); // with left limit data
@@ -486,7 +486,7 @@ void DarcyMH::update_solution()
     bool zero_time_term_from_right=zero_time_term();
     if (zero_time_term_from_right) {
         // this flag is necesssary for switching BC to avoid setting zero neumann on the whole boundary in the steady case
-        use_steady_assembly_ = true;
+        data_->use_steady_assembly_ = true;
         solve_nonlinear(); // with right limit data
 
     } else if (! zero_time_term_from_left && jump_time) {
@@ -605,7 +605,7 @@ void DarcyMH::solve_nonlinear()
 
 void DarcyMH::prepare_new_time_step()
 {
-    //VecSwap(previous_solution, schur0->get_solution());
+    VecSwap(previous_solution, schur0->get_solution());
 }
 
 void DarcyMH::postprocess() 
@@ -621,25 +621,31 @@ void DarcyMH::postprocess()
             multidim_assembler[dim-1]->fix_velocity(ele_ac);
         }
     }
-    //ElementAccessor<3> ele;
 
-    // modify side fluxes in parallel
-    // for every local edge take time term on digonal and add it to the corresponding flux
-    /*
-    for (unsigned int i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
-        ele = mesh_->element_accessor(el_4_loc[i_loc]);
-        for (unsigned int i=0; i<ele->n_sides(); i++) {
-            side_rows[i] = side_row_4_id[ mh_dh.side_dof( ele_ac.side(i) ) ];
-            values[i] = -1.0 * ele_ac.measure() *
-              data.cross_section.value(ele_ac.centre(), ele_ac.element_accessor()) *
-              data.water_source_density.value(ele_ac.centre(), ele_ac.element_accessor()) /
-              ele_ac.n_sides();
-        }
-        VecSetValues(schur0->get_solution(), ele_ac.n_sides(), side_rows, values, ADD_VALUES);
+    // postprocess sources (lumping)
+    int side_rows[4];
+    double values[4];
+    for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
+      auto ele_ac = mh_dh.accessor(i_loc);
+
+      double ele_scale = ele_ac.measure() *
+              data_->cross_section.value(ele_ac.centre(), ele_ac.element_accessor()) / ele_ac.n_sides();
+      double ele_source = data_->water_source_density.value(ele_ac.centre(), ele_ac.element_accessor());
+      double storativity = data_->storativity.value(ele_ac.centre(), ele_ac.element_accessor());
+
+      for (unsigned int i=0; i<ele_ac.element_accessor()->n_sides(); i++) {
+          side_rows[i] = ele_ac.side_row(i);
+          
+          double water_content = data_->water_content_previous_it[ele_ac.side_local_idx(i)];
+          
+          values[i] = ele_scale * ele_source;
+      }
+      VecSetValues(schur0->get_solution(), ele_ac.n_sides(), side_rows, values, ADD_VALUES);
     }
+
+
     VecAssemblyBegin(schur0->get_solution());
     VecAssemblyEnd(schur0->get_solution());
-    */
 }
 
 
@@ -698,7 +704,7 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembly& assembler)
     START_TIMER("DarcyFlowMH_Steady::assembly_steady_mh_matrix");
 
     // set auxiliary flag for switchting Dirichlet like BC
-    data_->force_bc_switch = use_steady_assembly_ && (nonlinear_iteration_ == 0);
+    data_->force_bc_switch = data_->use_steady_assembly_ && (nonlinear_iteration_ == 0);
     data_->n_schur_compls = n_schur_compls;
     
 
@@ -938,8 +944,9 @@ void DarcyMH::assembly_linear_system() {
     data_->is_linear=true;
     bool is_steady = zero_time_term();
 	//DebugOut() << "Assembly linear system\n";
-	if (data_changed_) {
-	    data_changed_ = false;
+// 	if (data_changed_) {
+// 	    data_changed_ = false;
+    {
 	    //DebugOut()  << "Data changed\n";
 		// currently we have no optimization for cases when just time term data or RHS data are changed
 	    START_TIMER("full assembly");
@@ -949,38 +956,42 @@ void DarcyMH::assembly_linear_system() {
 
         schur0->mat_zero_entries();
         schur0->rhs_zero_entries();
+        balance_->start_mass_assembly(data_->water_balance_idx);
         
+        data_->time_step_ = time_->dt();
         auto multidim_assembler =  AssemblyBase::create< AssemblyMH >(data_);
 	    assembly_mh_matrix( multidim_assembler ); // fill matrix
 
+        balance_->finish_mass_assembly(data_->water_balance_idx);
 	    schur0->finish_assembly();
 //         print_matlab_matrix("matrix");
 	    schur0->set_matrix_changed();
             //MatView( *const_cast<Mat*>(schur0->get_matrix()), PETSC_VIEWER_STDOUT_WORLD  );
             //VecView( *const_cast<Vec*>(schur0->get_rhs()),   PETSC_VIEWER_STDOUT_WORLD);
 
-	    if (! is_steady) {
-	        START_TIMER("fix time term");
-	    	//DebugOut() << "setup time term\n";
-	    	// assembly time term and rhs
-	    	setup_time_term();
-	    	modify_system();
-	    }
-	    else
-	    {
-	    	balance_->start_mass_assembly(data_->water_balance_idx);
-	    	balance_->finish_mass_assembly(data_->water_balance_idx);
-	    }
-	    END_TIMER("full assembly");
-	} else {
-		START_TIMER("modify system");
-		if (! is_steady) {
-			modify_system();
-		} else {
-			//xprintf(PrgErr, "Planned computation time for steady solver, but data are not changed.\n");
-		}
-		END_TIMER("modiffy system");
+// 	    if (! is_steady) {
+// 	        START_TIMER("fix time term");
+// 	    	//DebugOut() << "setup time term\n";
+// 	    	// assembly time term and rhs
+// 	    	setup_time_term();
+// 	    	modify_system();
+// 	    }
+// 	    else
+// 	    {
+// 	    	
+// 	    	
+// 	    }
+// 	    END_TIMER("full assembly");
 	}
+// 	else {
+// 		START_TIMER("modify system");
+// 		if (! is_steady) {
+// 			modify_system();
+// 		} else {
+// 			//xprintf(PrgErr, "Planned computation time for steady solver, but data are not changed.\n");
+// 		}
+// 		END_TIMER("modiffy system");
+// 	}
 
 }
 
