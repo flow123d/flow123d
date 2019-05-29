@@ -51,6 +51,14 @@ public:
 	/// If we find more candidates we pass in the closest one.
 	double distance_;
 
+	/// Actual process of the observe point.
+	unsigned int proc_;
+
+	/// Global index of the observe point.
+	unsigned int global_idx_;
+
+	/// Local index on actual process of the observe point.
+	unsigned int local_idx_;
 };
 
 
@@ -170,7 +178,7 @@ protected:
     /// Helper object stored projection data
     ObservePointData observe_data_;
 
-    /// Only Observe should use this class directly.
+	/// Only Observe should use this class directly.
     friend class Observe;
 
 };
@@ -272,6 +280,12 @@ protected:
     
     // Warn for no observe fields only once.
     bool no_fields_warning=false;
+
+	/// Index set assigning to local point index its global index.
+    std::vector<unsigned int> point_4_loc_;
+
+	/// Parallel distribution of observe points.
+	Distribution *point_ds_;
 
 };
 

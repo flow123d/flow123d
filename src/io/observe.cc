@@ -54,6 +54,7 @@ public:
 		data.local_coords_ = projection.rows(1, elm.dim());
 		data.global_coords_ = elm_map*projection;
 		data.distance_ = arma::norm(data.global_coords_ - input_point, 2);
+		data.proc_ = elm.proc();
 
 		return data;
 	}
@@ -257,6 +258,7 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
 			observe_data_.element_idx_ = candidate_data.element_idx_;
 			observe_data_.local_coords_ = candidate_data.local_coords_;
 			observe_data_.global_coords_ = candidate_data.global_coords_;
+			observe_data_.proc_ = candidate_data.proc_;
             break;
         }
 
@@ -339,16 +341,28 @@ ObservePointData ObservePoint::point_projection(unsigned int i_elm, ElementAcces
 Observe::Observe(string observe_name, Mesh &mesh, Input::Array in_array, unsigned int precision, std::string unit_str)
 : observe_values_time_(numeric_limits<double>::signaling_NaN()),
   observe_name_(observe_name),
-  precision_(precision)
+  precision_(precision),
+  point_ds_(nullptr)
 {
-    // in_rec is Output input record.
+    unsigned int global_point_idx=0, local_point_idx=0;
 
+    // in_rec is Output input record.
     for(auto it = in_array.begin<Input::Record>(); it != in_array.end(); ++it) {
         ObservePoint point(*it, mesh, points_.size());
         point.find_observe_point(mesh);
+        point.observe_data_.global_idx_ = global_point_idx++;
+        if (point.observe_data_.proc_ == mesh.element_accessor(point.observe_data_.element_idx_).proc()) {
+        	point.observe_data_.local_idx_ = local_point_idx++;
+        	point_4_loc_.push_back(point.observe_data_.global_idx_);
+        }
+        else
+        	point.observe_data_.local_idx_ = -1;
         points_.push_back( point );
         observed_element_indices_.push_back(point.observe_data_.element_idx_);
     }
+    // make local to global map, distribution
+    point_ds_ = new Distribution(point_4_loc_.size(), PETSC_COMM_WORLD);
+
     // make indices unique
     std::sort(observed_element_indices_.begin(), observed_element_indices_.end());
     auto last = std::unique(observed_element_indices_.begin(), observed_element_indices_.end());
@@ -373,6 +387,7 @@ Observe::Observe(string observe_name, Mesh &mesh, Input::Array in_array, unsigne
 
 Observe::~Observe() {
     observe_file_.close();
+    if (point_ds_!=nullptr) delete point_ds_;
 }
 
 
