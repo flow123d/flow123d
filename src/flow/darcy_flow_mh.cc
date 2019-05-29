@@ -434,7 +434,7 @@ void DarcyMH::zero_time_step()
         // steady case
         VecZeroEntries(schur0->get_solution());
         //read_initial_condition(); // Possible solution guess for steady case.
-        use_steady_assembly_ = true;
+        data_->use_steady_assembly_ = true;
         solve_nonlinear(); // with right limit data
     } else {
         VecZeroEntries(schur0->get_solution());
@@ -468,7 +468,7 @@ void DarcyMH::update_solution()
         // Unsteady solution up to the T.
 
         // this flag is necesssary for switching BC to avoid setting zero neumann on the whole boundary in the steady case
-        use_steady_assembly_ = false;
+        data_->use_steady_assembly_ = false;
         prepare_new_time_step(); //SWAP
 
         solve_nonlinear(); // with left limit data
@@ -490,7 +490,7 @@ void DarcyMH::update_solution()
     bool zero_time_term_from_right=zero_time_term();
     if (zero_time_term_from_right) {
         // this flag is necesssary for switching BC to avoid setting zero neumann on the whole boundary in the steady case
-        use_steady_assembly_ = true;
+        data_->use_steady_assembly_ = true;
         solve_nonlinear(); // with right limit data
 
     } else if (! zero_time_term_from_left && jump_time) {
@@ -704,7 +704,7 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembly& assembler)
     START_TIMER("DarcyFlowMH_Steady::assembly_steady_mh_matrix");
 
     // set auxiliary flag for switchting Dirichlet like BC
-    data_->force_bc_switch = use_steady_assembly_ && (nonlinear_iteration_ == 0);
+    data_->force_bc_switch = data_->use_steady_assembly_ && (nonlinear_iteration_ == 0);
     data_->n_schur_compls = n_schur_compls;
     
 
