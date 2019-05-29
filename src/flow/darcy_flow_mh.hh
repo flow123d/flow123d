@@ -55,6 +55,7 @@
 #include "petscvec.h"                           // for Vec, _p_Vec, VecScatter
 #include "system/exceptions.hh"                 // for ExcStream, operator<<
 #include "tools/time_governor.hh"               // for TimeGovernor
+#include "la/vector_mpi.hh"                     // for VectorMPI
 
 class AssemblyBase;
 class Balance;
@@ -202,8 +203,7 @@ public:
         std::shared_ptr<Balance> balance;
         LinSys *lin_sys;
         
-        VectorMPI* previous_solution;
-        VectorMPI* previous_solution_nonlinear;
+        VectorMPI previous_solution;
         
         unsigned int n_schur_compls;
         int is_linear;              ///< Hack fo BDDC solver.
@@ -373,7 +373,6 @@ protected:
 	Vec steady_diagonal;
     Vec steady_rhs;
     Vec new_diagonal;
-    VectorMPI previous_solution;
     VectorMPI previous_solution_nonlinear;
 
 	std::shared_ptr<EqData> data_;
