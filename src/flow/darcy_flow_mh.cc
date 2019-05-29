@@ -370,8 +370,8 @@ void DarcyMH::initialize() {
     output_object = new DarcyFlowMHOutput(this, input_record_);
 
     mh_dh.reinit(mesh_);
-    data_->previous_solution.resize(mh_dh.rows_ds->lsize());
-    previous_solution_nonlinear.resize(mh_dh.rows_ds->lsize());
+    data_->previous_solution = VectorMPI(mh_dh.rows_ds->lsize());
+    previous_solution_nonlinear = VectorMPI(mh_dh.rows_ds->lsize());
 //     data_->previous_solution = data_->dh_->create_vector();
 //     previous_solution_nonlinear = data_->dh_->create_vector();
     

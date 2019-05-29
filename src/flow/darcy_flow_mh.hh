@@ -209,6 +209,10 @@ public:
         int is_linear;              ///< Hack fo BDDC solver.
         bool force_bc_switch;       ///< auxiliary flag for switchting Dirichlet like BC
         
+        // Propagate test for the time term to the assembly.
+        // This flag is necessary for switching BC to avoid setting zero neumann on the whole boundary in the steady case.
+        bool use_steady_assembly_;
+        
         /// Idicator of dirichlet or neumann type of switch boundary conditions.
         std::vector<char> bc_switch_dirichlet;
         
@@ -357,7 +361,6 @@ protected:
 	int  n_schur_compls;  	    // number of shur complements to make
 	double  *solution; 			// sequantial scattered solution vector
 
-	// Propagate test for the time term to the assembly.
 	bool data_changed_;
 
 	// Setting of the nonlinear solver. TODO: Move to the solver class later on.
