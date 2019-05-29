@@ -216,9 +216,6 @@ public:
         /// Idicator of dirichlet or neumann type of switch boundary conditions.
         std::vector<char> bc_switch_dirichlet;
         
-        // This flag is necessary for switching BC to avoid setting zero neumann on the whole boundary in the steady case.
-        bool use_steady_assembly_;
-    
         // for time term assembly
         double time_step_;
     };
