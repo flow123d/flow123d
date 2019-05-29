@@ -280,6 +280,7 @@ TEST(Observe, all) {
     str_obs_file_ref << obs_file_ref.rdbuf();
     obs_file_ref.close();
 
-    EXPECT_EQ(str_obs_file_ref.str(), str_obs_file.str());
+    if (mesh->get_el_ds()->myp()==0)
+        EXPECT_EQ(str_obs_file_ref.str(), str_obs_file.str());
 }
 
