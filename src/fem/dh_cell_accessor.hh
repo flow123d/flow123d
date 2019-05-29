@@ -75,11 +75,11 @@ public:
      *
      * @param indices Vector of dof indices on the cell.
      */
-    unsigned int get_dof_indices(std::vector<int> &indices) const
+    unsigned int get_dof_indices(std::vector<LongIdx> &indices) const
     { return dof_handler_->get_dof_indices( *this, indices ); }
 
     /**
-     * @brief Returns the indices of dofs associated to the cell on the local process.
+     * @brief Returns the local indices of dofs associated to the cell on the local process.
      *
      * @param indices Array of dof indices on the cell.
      */
@@ -146,6 +146,7 @@ public:
     bool operator==(const DHCellAccessor& other) {
     	return (loc_ele_idx_ == other.loc_ele_idx_);
     }
+
 
 private:
     /// Pointer to the DOF handler owning the element.

@@ -139,6 +139,11 @@ public:
 
     UpdateFlags update_each(UpdateFlags flags) override;
     
+    /// Get barycentric coordinates of the points on the reference element associated with the dofs.
+    /// Used in BDDC for unknown reason.
+    virtual std::vector< arma::vec::fixed<dim+1> > dof_points() const;
+
+
     const std::vector<std::shared_ptr<FiniteElement<dim> > > &fe()
     { return fe_; }
     
