@@ -370,11 +370,11 @@ void DarcyMH::initialize() {
     output_object = new DarcyFlowMHOutput(this, input_record_);
 
     mh_dh.reinit(mesh_);
-    previous_solution = data_->dh_->create_vector();
-    previous_solution_nonlinear = data_->dh_->create_vector();
+    data_->previous_solution.resize(mh_dh.rows_ds->lsize());
+    previous_solution_nonlinear.resize(mh_dh.rows_ds->lsize());
+//     data_->previous_solution = data_->dh_->create_vector();
+//     previous_solution_nonlinear = data_->dh_->create_vector();
     
-    data_->previous_solution = &previous_solution;
-    data_->previous_solution_nonlinear = &previous_solution_nonlinear;
     // Initialize bc_switch_dirichlet to size of global boundary.
     data_->bc_switch_dirichlet.resize(mesh_->n_elements()+mesh_->n_elements(true), 1);
 
@@ -438,7 +438,7 @@ void DarcyMH::zero_time_step()
         solve_nonlinear(); // with right limit data
     } else {
         VecZeroEntries(schur0->get_solution());
-        previous_solution.zero_entries();
+        data_->previous_solution.zero_entries();
         
         read_initial_condition();
         assembly_linear_system(); // in particular due to balance
@@ -611,7 +611,7 @@ void DarcyMH::solve_nonlinear()
 
 void DarcyMH::prepare_new_time_step()
 {
-    VecSwap(previous_solution.petsc_vec(), schur0->get_solution());
+    VecSwap(data_->previous_solution.petsc_vec(), schur0->get_solution());
 }
 
 void DarcyMH::postprocess() 
@@ -641,8 +641,6 @@ void DarcyMH::postprocess()
 
       for (unsigned int i=0; i<ele_ac.element_accessor()->n_sides(); i++) {
           side_rows[i] = ele_ac.side_row(i);
-          
-          double water_content = data_->water_content_previous_it[ele_ac.side_local_idx(i)];
           
           values[i] = ele_scale * ele_source;
       }
@@ -1394,12 +1392,9 @@ void DarcyMH::modify_system() {
 	}
 
     // modify RHS - add previous solution
-    //VecPointwiseMult(*( schur0->get_rhs()), new_diagonal, previous_solution);
 	VecPointwiseMult(*( schur0->get_rhs()), new_diagonal, schur0->get_solution());
     VecAXPY(*( schur0->get_rhs()), 1.0, steady_rhs);
     schur0->set_rhs_changed();
-
-    //VecSwap(previous_solution, schur0->get_solution());
 }
 
 
