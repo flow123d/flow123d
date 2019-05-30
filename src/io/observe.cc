@@ -351,7 +351,7 @@ Observe::Observe(string observe_name, Mesh &mesh, Input::Array in_array, unsigne
         ObservePoint point(*it, mesh, points_.size());
         point.find_observe_point(mesh);
         point.observe_data_.global_idx_ = global_point_idx++;
-        if (point.observe_data_.proc_ == mesh.element_accessor(point.observe_data_.element_idx_).proc()) {
+        if (point.observe_data_.proc_ == mesh.get_el_ds()->myp()) {
         	point.observe_data_.local_idx_ = local_point_idx++;
         	point_4_loc_.push_back(point.observe_data_.global_idx_);
         }
@@ -463,3 +463,10 @@ void Observe::output_time_frame(double time) {
     observe_values_time_ = numeric_limits<double>::signaling_NaN();
 
 }
+
+Range<ObservePointAccessor> Observe::local_range() const {
+	auto bgn_it = make_iter<ObservePointAccessor>( ObservePointAccessor(this, 0) );
+	auto end_it = make_iter<ObservePointAccessor>( ObservePointAccessor(this, point_4_loc_.size()) );
+    return Range<ObservePointAccessor>(bgn_it, end_it);
+}
+
