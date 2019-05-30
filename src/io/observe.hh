@@ -19,6 +19,8 @@
 #include "input/accessors.hh"                // for Array (ptr only), Record
 #include "input/input_exception.hh"          // for DECLARE_INPUT_EXCEPTION
 #include "system/exceptions.hh"              // for operator<<, ExcStream, EI
+#include "mesh/range_wrapper.hh"
+#include "tools/general_iterator.hh"
 
 class ElementDataCacheBase;
 class Mesh;
@@ -169,11 +171,12 @@ protected:
 };
 
 
+class ObservePointAccessor;
+
 /**
  * This class takes care about the observe points in the output stream, storing observe values of the fields and
  * their output in the YAML format.
  */
-
 class Observe {
 public:
 
@@ -216,6 +219,9 @@ public:
      */
     inline const std::vector<ObservePoint> & points() const
     { return points_; }
+
+    /// Returns local range of observe points
+    Range<ObservePointAccessor> local_range() const;
 
     /**
      * Prepare data for computing observe values.
@@ -272,7 +278,69 @@ protected:
 	/// Parallel distribution of observe points.
 	Distribution *point_ds_;
 
+	friend class ObservePointAccessor;
 };
+
+
+/**
+ * @brief Point accessor allow iterate over local Observe points.
+ *
+ * Iterator is defined by:
+ *  - Observe object
+ *  - local index of observe point (iterated value)
+ */
+class ObservePointAccessor {
+public:
+    /// Default invalid accessor.
+	ObservePointAccessor()
+    : observe_(NULL)
+    {}
+
+    /**
+     * Observe point accessor.
+     */
+	ObservePointAccessor(const Observe *observe, unsigned int loc_idx)
+    : observe_(observe), loc_point_idx_(loc_idx)
+    {}
+
+    /// Return local index to point.
+    inline unsigned int local_idx() const {
+        return loc_point_idx_;
+    }
+
+    /// Return global index to point.
+    inline unsigned int global_idx() const {
+        return observe_->point_4_loc_[loc_point_idx_];
+    }
+
+    /// Return ElementAccessor to element of loc_ele_idx_.
+    inline const ObservePoint observe_point() const {
+    	return observe_->points_[ this->global_idx() ];
+    }
+
+    /// Check validity of accessor (see default constructor)
+    inline bool is_valid() const {
+        return observe_ != NULL;
+    }
+
+    /// Iterates to next local point.
+    inline void inc() {
+    	loc_point_idx_++;
+    }
+
+    /// Comparison of accessors.
+    bool operator==(const ObservePointAccessor& other) {
+    	return (loc_point_idx_ == other.loc_point_idx_);
+    }
+
+protected:
+    /// Pointer to the Observe owning the point.
+    const Observe * observe_;
+    /// Index into Observe::point_4_loc_ array.
+    unsigned int loc_point_idx_;
+
+};
+
 
 
 
