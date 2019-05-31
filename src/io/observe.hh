@@ -22,6 +22,7 @@
 #include "system/armadillo_tools.hh"         // for Armadillo vec string
 #include "mesh/range_wrapper.hh"
 #include "tools/general_iterator.hh"
+#include "la/distribution.hh"
 
 class ElementDataCacheBase;
 class Mesh;
@@ -235,6 +236,12 @@ public:
     inline const std::vector<ObservePoint> & points() const
     { return points_; }
 
+    /**
+     * Return point distribution
+     */
+    inline const Distribution * point_ds() const
+    { return point_ds_; }
+
     /// Returns local range of observe points
     Range<ObservePointAccessor> local_range() const;
 
@@ -256,6 +263,9 @@ public:
 
 
 protected:
+    /// Maximal size of observe values times vector
+    static const unsigned int max_observe_value_time;
+
     // MPI rank.
     int rank_;
 
@@ -292,6 +302,9 @@ protected:
 
 	/// Parallel distribution of observe points.
 	Distribution *point_ds_;
+
+	/// Index of actual (last) time in \p observe_values_time_ vector
+	unsigned int observe_time_idx_;
 
 	friend class ObservePointAccessor;
 };
@@ -331,6 +344,11 @@ public:
     /// Return ElementAccessor to element of loc_ele_idx_.
     inline const ObservePoint observe_point() const {
     	return observe_->points_[ this->global_idx() ];
+    }
+
+    /// Return local index in data cache (combination of local point index and index of stored time)
+    inline unsigned int loc_point_time_index() const {
+        return (observe_->point_ds()->lsize() * observe_->observe_time_idx_) + loc_point_idx_;
     }
 
     /// Check validity of accessor (see default constructor)
