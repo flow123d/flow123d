@@ -439,6 +439,11 @@ void Observe::output_time_frame(double time) {
         return;        
     }    
     
+    for(auto &field_data : observe_field_values_) {
+    	auto serial_data = field_data.second->gather(point_ds_, &(point_4_loc_[0]));
+    	if (rank_==0) field_data.second = serial_data;
+    }
+
     if (rank_ == 0) {
         unsigned int indent = 2;
         observe_file_ << setw(indent) << "" << "- time: " << observe_values_time_[0] << endl;

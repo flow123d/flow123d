@@ -19,6 +19,7 @@
 #include "input/accessors.hh"                // for Array (ptr only), Record
 #include "input/input_exception.hh"          // for DECLARE_INPUT_EXCEPTION
 #include "system/exceptions.hh"              // for operator<<, ExcStream, EI
+#include "mesh/long_idx.hh"                  // for LongIdx
 #include "mesh/range_wrapper.hh"
 #include "tools/general_iterator.hh"
 #include "la/distribution.hh"
@@ -57,10 +58,10 @@ public:
 	unsigned int proc_;
 
 	/// Global index of the observe point.
-	unsigned int global_idx_;
+	LongIdx global_idx_;
 
 	/// Local index on actual process of the observe point.
-	unsigned int local_idx_;
+	LongIdx local_idx_;
 };
 
 
@@ -283,7 +284,7 @@ protected:
     bool no_fields_warning=false;
 
 	/// Index set assigning to local point index its global index.
-    std::vector<unsigned int> point_4_loc_;
+    std::vector<LongIdx> point_4_loc_;
 
 	/// Parallel distribution of observe points.
 	Distribution *point_ds_;
