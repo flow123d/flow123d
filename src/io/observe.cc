@@ -342,12 +342,14 @@ const unsigned int Observe::max_observe_value_time = 1; //change to 1000
 
 
 Observe::Observe(string observe_name, Mesh &mesh, Input::Array in_array, unsigned int precision, std::string unit_str)
-: observe_values_time_(numeric_limits<double>::signaling_NaN()),
-  observe_name_(observe_name),
+: observe_name_(observe_name),
   precision_(precision),
   point_ds_(nullptr),
   observe_time_idx_(0)
 {
+    observe_values_time_.reserve(max_observe_value_time);
+    observe_values_time_.push_back(numeric_limits<double>::signaling_NaN());
+
     unsigned int global_point_idx=0, local_point_idx=0;
 
     // in_rec is Output input record.
@@ -399,16 +401,20 @@ template <typename T>
 ElementDataCache<T> & Observe::prepare_compute_data(std::string field_name, double field_time, unsigned int n_rows,
 		unsigned int n_cols)
 {
-    if ( std::isnan(observe_values_time_) )
-        observe_values_time_ = field_time / time_unit_seconds_;
-    else
-        ASSERT(fabs(field_time / time_unit_seconds_ - observe_values_time_) < 2*numeric_limits<double>::epsilon())
-              (field_time)(observe_values_time_);
+    if ( std::isnan(observe_values_time_[observe_time_idx_]) )
+        observe_values_time_[observe_time_idx_] = field_time / time_unit_seconds_;
+    else if ( (field_time / time_unit_seconds_ - observe_values_time_[observe_time_idx_]) > 2*numeric_limits<double>::epsilon() ) {
+    	observe_values_time_.push_back( field_time / time_unit_seconds_ );
+    	++observe_time_idx_;
+    	// TODO check idx and maximal size of observe output buffer
+    } else
+        ASSERT(fabs(field_time / time_unit_seconds_ - observe_values_time_[observe_time_idx_]) < 2*numeric_limits<double>::epsilon())
+              (field_time)(observe_values_time_[observe_time_idx_]);
 
     OutputDataFieldMap::iterator it=observe_field_values_.find(field_name);
     if (it == observe_field_values_.end()) {
         observe_field_values_[field_name]
-					= std::make_shared< ElementDataCache<T> >(field_name, n_rows * n_cols, points_.size());
+					= std::make_shared< ElementDataCache<T> >(field_name, n_rows * n_cols, Observe::max_observe_value_time * point_ds_->lsize());
         it=observe_field_values_.find(field_name);
     }
     return dynamic_cast<ElementDataCache<T> &>(*(it->second));
@@ -442,21 +448,21 @@ void Observe::output_time_frame(double time) {
     if ( ! no_fields_warning ) {
         no_fields_warning=true;
         // check that observe fields are set
-        if (std::isnan(observe_values_time_)) {
+        if (std::isnan(observe_values_time_[0])) {
             // first call and no fields
             ASSERT(observe_field_values_.size() == 0);
             WarningOut() << "No observe fields for the observation stream: " << observe_name_ << endl;
         }
     }
     
-    if (std::isnan(observe_values_time_)) {
+    if (std::isnan(observe_values_time_[0])) {
         ASSERT(observe_field_values_.size() == 0);
         return;        
     }    
     
     if (rank_ == 0) {
         unsigned int indent = 2;
-        observe_file_ << setw(indent) << "" << "- time: " << observe_values_time_ << endl;
+        observe_file_ << setw(indent) << "" << "- time: " << observe_values_time_[0] << endl;
         for(auto &field_data : observe_field_values_) {
             observe_file_ << setw(indent) << "" << "  " << field_data.second->field_input_name() << ": ";
             field_data.second->print_all_yaml(observe_file_, precision_);
@@ -464,7 +470,7 @@ void Observe::output_time_frame(double time) {
         }
     }
 
-    observe_values_time_ = numeric_limits<double>::signaling_NaN();
+    observe_values_time_[0] = numeric_limits<double>::signaling_NaN();
 
 }
 
