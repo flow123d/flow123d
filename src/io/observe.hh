@@ -264,7 +264,7 @@ protected:
 
 
     /// Common evaluation time of the fields for single time frame.
-    double observe_values_time_;
+    std::vector<double> observe_values_time_;
 
     // Name of the observation stream. Base for the output filename.
     std::string observe_name_;
