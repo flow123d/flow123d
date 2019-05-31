@@ -317,11 +317,16 @@ ObservePointData ObservePoint::point_projection(unsigned int i_elm, ElementAcces
  * implementation of Observe
  */
 
+const unsigned int Observe::max_observe_value_time = 1; //change to 1000
+
+
 Observe::Observe(string observe_name, Mesh &mesh, Input::Array in_array, unsigned int precision, std::string unit_str)
 : observe_values_time_(numeric_limits<double>::signaling_NaN()),
   observe_name_(observe_name),
   precision_(precision),
   point_ds_(nullptr)
+  point_ds_(nullptr),
+  observe_time_idx_(0)
 {
     unsigned int global_point_idx=0, local_point_idx=0;
 
