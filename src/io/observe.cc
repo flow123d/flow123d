@@ -324,7 +324,6 @@ Observe::Observe(string observe_name, Mesh &mesh, Input::Array in_array, unsigne
 : observe_values_time_(numeric_limits<double>::signaling_NaN()),
   observe_name_(observe_name),
   precision_(precision),
-  point_ds_(nullptr)
   point_ds_(nullptr),
   observe_time_idx_(0)
 {
