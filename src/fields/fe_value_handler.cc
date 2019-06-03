@@ -142,8 +142,10 @@ void FEValueHandler<elemdim, spacedim, Value>::value_list(const std::vector< Poi
 		Value envelope(value_list[k]);
 		envelope.zeros();
 		for (unsigned int i=0; i<dh_->ds()->fe<elemdim>(elm)->n_dofs(); i++) {
-			value_list[k] += data_vec_[dof_indices[i]]
-										  * FEShapeHandler<Value::rank_, elemdim, spacedim, Value>::fe_value(fe_values, i, 0, comp_index_);
+		    auto shape_value = FEShapeHandler<Value::rank_, elemdim, spacedim, Value>::fe_value(fe_values, i, 0, comp_index_);
+		    auto dof_value = data_vec_[dof_indices[i]];
+		    DebugOut() << "\n   k: " << i << " shape: " << shape_value  << " dof: " << dof_value;
+			value_list[k] += dof_value * shape_value;
 		}
 	}
 }
