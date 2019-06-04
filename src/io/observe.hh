@@ -227,9 +227,10 @@ public:
     void output_header();
 
     /**
-     * Write field values to the output file. Using the YAML format.
+     * Sets next output time frame of observe. If the table is full, writes field values to the output
+     * file. Using the YAML format. Argument write_automaticcaly starts writing to output file explicitly.
      */
-    void output_time_frame(double time);
+    void output_time_frame(double time, bool write_automaticcaly);
 
     /**
      * Return \p points_ vector
@@ -349,7 +350,7 @@ public:
 
     /// Return local index in data cache (combination of local point index and index of stored time)
     inline unsigned int loc_point_time_index() const {
-        return (observe_->point_ds()->lsize() * observe_->observe_time_idx_) + loc_point_idx_;
+        return (observe_->point_4_loc_.size() * observe_->observe_time_idx_) + loc_point_idx_;
     }
 
     /// Check validity of accessor (see default constructor)
