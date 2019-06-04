@@ -258,7 +258,7 @@ TEST(Observe, all) {
     field_set.enum_field.observe_output(obs);
     field_set.vector_field.observe_output(obs);
     field_set.tensor_field.observe_output(obs);
-    obs->output_time_frame( tg.t() );
+    obs->output_time_frame( tg.t(), true );
 
     tg.next_time();
     field_set.set_time( tg.step(), LimitSide::right);
@@ -266,7 +266,7 @@ TEST(Observe, all) {
     field_set.enum_field.observe_output(obs);
     field_set.vector_field.observe_output(obs);
     field_set.tensor_field.observe_output(obs);
-    obs->output_time_frame( tg.t() );
+    obs->output_time_frame( tg.t(), true );
     }
     // closed observe file 'test_eq_observe.yaml'
     // check results
