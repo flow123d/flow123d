@@ -387,12 +387,6 @@ void DarcyMH::init_eq_data()
 
 void DarcyMH::initialize() {
 
-    init_eq_data();
-    data_->multidim_assembler =  AssemblyBase::create< AssemblyMH >(data_);
-    output_object = new DarcyFlowMHOutput(this, input_record_);
-
-    mh_dh.reinit(mesh_);
-
     { // init DOF handler for pressure fields
 // 		std::shared_ptr< FiniteElement<0> > fe0_rt = std::make_shared<FE_RT0_disc<0>>();
 		std::shared_ptr< FiniteElement<1> > fe1_rt = std::make_shared<FE_RT0_disc<1>>();
@@ -414,7 +408,15 @@ void DarcyMH::initialize() {
 		std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh_, &fe0_sys, &fe1_sys, &fe2_sys, &fe3_sys);
 		data_->dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
 		data_->dh_->distribute_dofs(ds);
+    }
 
+    init_eq_data();
+    data_->multidim_assembler =  AssemblyBase::create< AssemblyMH >(data_);
+    output_object = new DarcyFlowMHOutput(this, input_record_);
+
+    mh_dh.reinit(mesh_);
+
+    { // construct pressure, velocity and piezo head fields
 		ele_flux_ptr = std::make_shared< FieldFE<3, FieldValue<3>::VectorFixed> >();
 		uint rt_component = 0;
 		ele_flux_ptr->set_fe_data(data_->dh_, rt_component);

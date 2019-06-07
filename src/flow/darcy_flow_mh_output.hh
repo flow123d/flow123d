@@ -202,9 +202,6 @@ protected:
     struct DiffData {
         double pressure_error[3], velocity_error[3], div_error[3];
         double mask_vel_error;
-        VectorMPI pressure_diff;
-        VectorMPI velocity_diff;
-        VectorMPI div_diff;
 
         // Temporary objects holding pointers to appropriate FieldFE
         // TODO remove after final fix of equations
@@ -213,7 +210,7 @@ protected:
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> div_diff_ptr;
 
         double * solution;
-        const MH_DofHandler * dh;
+        std::shared_ptr<SubDOFHandlerMultiDim> dh_;
 
         std::vector<int> velocity_mask;
         DarcyMH *darcy;
@@ -249,7 +246,7 @@ protected:
     
     /// Computes L2 error on an element.
     template <int dim>
-    void l2_diff_local(ElementAccessor<3> &ele,
+    void l2_diff_local(DHCellAccessor dh_cell,
                       FEValues<dim,3> &fe_values, FEValues<dim,3> &fv_rt,
                       FieldPython<3, FieldValue<3>::Vector > &anal_sol,  DiffData &result);
 };
