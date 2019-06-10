@@ -18,4 +18,4 @@ fi
     shift
 
 # call flow123d under valgrind
-valgrind $VALGRIND_ARGS --suppressions=${0%/*}/python.supp ${0%/*}/flow123d --no_signal_handler "$@"
+valgrind $VALGRIND_ARGS --suppressions=${0%/*}/python.supp ${0%/*}/../build_tree/bin/flow123d --no_signal_handler "$@"
