@@ -275,7 +275,7 @@ public:
      * @param function_no Number of the shape function.
      * @param point_no Number of the quadrature point.
      */
-    double shape_value(const unsigned int function_no, const unsigned int point_no);
+    double shape_value(const unsigned int function_no, const unsigned int point_no) override;
 
 
     /**
@@ -285,7 +285,7 @@ public:
      * @param function_no Number of the shape function.
      * @param point_no Number of the quadrature point.
      */
-    arma::vec::fixed<spacedim> shape_grad(const unsigned int function_no, const unsigned int point_no);
+    arma::vec::fixed<spacedim> shape_grad(const unsigned int function_no, const unsigned int point_no) override;
 
     /**
      * @brief Return the value of the @p function_no-th shape function at
@@ -333,7 +333,7 @@ public:
      *
      * @param point_no Number of the quadrature point.
      */
-    inline double JxW(const unsigned int point_no)
+    inline double JxW(const unsigned int point_no) override
     {
         ASSERT_LT_DBG(point_no, quadrature->size());
         return data.JxW_values[point_no];
@@ -365,7 +365,7 @@ public:
      *
      * @param point_no Number of the quadrature point.
      */
-	inline arma::vec::fixed<spacedim> normal_vector(unsigned int point_no)
+	inline arma::vec::fixed<spacedim> normal_vector(unsigned int point_no) override
 	{
         ASSERT_LT_DBG(point_no, quadrature->size());
 	    return data.normal_vectors[point_no];
@@ -412,7 +412,7 @@ public:
     /**
      * @brief Returns the number of shape functions.
      */
-    inline unsigned int n_dofs()
+    inline unsigned int n_dofs() override
     {
         return fe->n_dofs();
     }
