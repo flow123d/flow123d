@@ -119,7 +119,7 @@ public:
      */
     void print_binary_all(ostream &out_stream, bool print_data_size = true) override;
 
-    void print_all_yaml(ostream &out_stream, unsigned int precision) override;
+    void print_yaml_subarray(ostream &out_stream, unsigned int precision, unsigned int begin, unsigned int end) override;
 
     /**
      * Store data element of given data value under given index.

@@ -63,7 +63,7 @@ public:
         ASSERT(false).error("Not implemented.");
     }
 
-    void print_all_yaml(ostream &out_stream, unsigned int precision) override
+    void print_yaml_subarray(ostream &out_stream, unsigned int precision, unsigned int begin, unsigned int end) override
     {}
 
     void get_min_max_range(double &min, double &max) override
