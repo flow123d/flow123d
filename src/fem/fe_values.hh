@@ -257,7 +257,7 @@ public:
      * @param flags The update flags.
      */
     void allocate(Mapping<dim,spacedim> &_mapping,
-            Quadrature<dim> &_quadrature,
+            unsigned int n_points,
             FiniteElement<dim> &_fe,
             UpdateFlags flags);
     
@@ -275,7 +275,7 @@ public:
      * @param function_no Number of the shape function.
      * @param point_no Number of the quadrature point.
      */
-    double shape_value(const unsigned int function_no, const unsigned int point_no);
+    double shape_value(const unsigned int function_no, const unsigned int point_no) override;
 
 
     /**
@@ -285,7 +285,7 @@ public:
      * @param function_no Number of the shape function.
      * @param point_no Number of the quadrature point.
      */
-    arma::vec::fixed<spacedim> shape_grad(const unsigned int function_no, const unsigned int point_no);
+    arma::vec::fixed<spacedim> shape_grad(const unsigned int function_no, const unsigned int point_no) override;
 
     /**
      * @brief Return the value of the @p function_no-th shape function at
@@ -323,7 +323,7 @@ public:
      */
     inline double determinant(const unsigned int point_no)
     {
-        ASSERT_LT_DBG(point_no, quadrature->size());
+        ASSERT_LT_DBG(point_no, n_points_);
         return data.determinants[point_no];
     }
 
@@ -333,9 +333,9 @@ public:
      *
      * @param point_no Number of the quadrature point.
      */
-    inline double JxW(const unsigned int point_no)
+    inline double JxW(const unsigned int point_no) override
     {
-        ASSERT_LT_DBG(point_no, quadrature->size());
+        ASSERT_LT_DBG(point_no, n_points_);
         return data.JxW_values[point_no];
     }
 
@@ -346,7 +346,7 @@ public:
      */
     inline arma::vec::fixed<spacedim> point(const unsigned int point_no)
     {
-        ASSERT_LT_DBG(point_no, quadrature->size());
+        ASSERT_LT_DBG(point_no, n_points_);
         return data.points[point_no];
     }
 
@@ -365,9 +365,9 @@ public:
      *
      * @param point_no Number of the quadrature point.
      */
-	inline arma::vec::fixed<spacedim> normal_vector(unsigned int point_no)
+	inline arma::vec::fixed<spacedim> normal_vector(unsigned int point_no) override
 	{
-        ASSERT_LT_DBG(point_no, quadrature->size());
+        ASSERT_LT_DBG(point_no, n_points_);
 	    return data.normal_vectors[point_no];
 	}
 	
@@ -405,14 +405,12 @@ public:
      * @brief Returns the number of quadrature points.
      */
     inline unsigned int n_points()
-    {
-        return quadrature->size();
-    }
+    { return n_points_; }
 
     /**
      * @brief Returns the number of shape functions.
      */
-    inline unsigned int n_dofs()
+    inline unsigned int n_dofs() override
     {
         return fe->n_dofs();
     }
@@ -421,10 +419,7 @@ public:
     /**
      * @brief Returns the quadrature in use.
      */
-    inline Quadrature<dim> * get_quadrature() const
-    {
-        return quadrature;
-    }
+    virtual const Quadrature<dim> * get_quadrature() const = 0;
     
     /**
      * @brief Returns the finite element in use.
@@ -479,10 +474,8 @@ protected:
      */
     Mapping<dim,spacedim> *mapping;
 
-    /**
-     * @brief The quadrature rule used to calculate integrals.
-     */
-    Quadrature<dim> *quadrature;
+    /** @brief Number of integration points. */
+    unsigned int n_points_;
 
     /**
      * @brief The used finite element.
@@ -555,6 +548,18 @@ public:
      * @param cell The actual cell.
      */
     void reinit(ElementAccessor<3> &cell);
+    
+    const Quadrature<dim> *get_quadrature() const override
+    { return quadrature; }
+    
+    
+    
+private:
+    
+    /**
+     * @brief The quadrature rule used to calculate integrals.
+     */
+    Quadrature<dim> *quadrature;
 
 
 };
@@ -607,6 +612,8 @@ public:
     void reinit(ElementAccessor<3> &cell,
         		unsigned int sid);
 
+    const Quadrature<dim> *get_quadrature() const override
+    { return &side_quadrature[side_idx_][side_perm_]; }
 
 
 private:
@@ -621,6 +628,12 @@ private:
     MappingInternalData *side_mapping_data[RefElement<dim>::n_sides][RefElement<dim>::n_side_permutations];
 
     FEInternalData *side_fe_data[RefElement<dim>::n_sides][RefElement<dim>::n_side_permutations];
+    
+    /// Current side on which FESideValues was recomputed.
+    unsigned int side_idx_;
+    
+    /// Permutation index of current side.
+    unsigned int side_perm_;
 
 };
 
