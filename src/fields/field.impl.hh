@@ -597,7 +597,7 @@ void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_t
     ASSERT(output_mesh);
 
     ElementDataCache<ElemType> &output_data = stream->prepare_compute_data<ElemType>(this->name(), space_type,
-    		(unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
+    		(unsigned int)Value::NRows_, (unsigned int)Value::NCols_, this->time());
 
     /* Copy data to array */
     switch(space_type) {
@@ -641,7 +641,7 @@ void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_t
 
         if (field_fe_ptr) {
             ElementDataCache<double> &native_output_data = stream->prepare_compute_data<double>(this->name(), space_type,
-                    (unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
+                    (unsigned int)Value::NRows_, (unsigned int)Value::NCols_, this->time());
             field_fe_ptr->native_data_to_cache(native_output_data);
         } else {
             WarningOut().fmt("Field '{}' of native data space type is not of type FieldFE. Output will be skipped.\n", this->name());

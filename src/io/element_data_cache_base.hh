@@ -59,6 +59,10 @@ public:
 	double get_time()
 	{ return time_; }
 
+	/// Setter for time of cache
+	void set_time(double time)
+	{ time_ = time; }
+
 	/// Getter for quantity name of cache
 	std::string field_input_name()
 	{ return field_input_name_; }

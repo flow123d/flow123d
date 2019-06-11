@@ -193,10 +193,10 @@ public:
      * @param space_type Output discrete space
      * @param n_rows     Count of rows of data cache (used only if new cache is created)
      * @param n_cols     Count of columns of data cache (used only if new cache is created)
-     * @param size       Size of data cache (used only if new cache is created and only for native data)
+     * @param time       Actual field time
      */
     template <typename T>
-    ElementDataCache<T> & prepare_compute_data(std::string field_name, DiscreteSpace space_type, unsigned int n_rows, unsigned int n_cols);
+    ElementDataCache<T> & prepare_compute_data(std::string field_name, DiscreteSpace space_type, unsigned int n_rows, unsigned int n_cols, double time);
 
     /**
      * Return if output is serial or parallel

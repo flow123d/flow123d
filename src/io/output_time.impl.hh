@@ -76,7 +76,7 @@
 
 template <typename T>
 ElementDataCache<T> & OutputTime::prepare_compute_data(std::string field_name, DiscreteSpace space_type, unsigned int n_rows,
-		unsigned int n_cols)
+		unsigned int n_cols, double time)
 {
     // get possibly existing data for the same field, check both name and type
     unsigned int size;
@@ -104,6 +104,7 @@ ElementDataCache<T> & OutputTime::prepare_compute_data(std::string field_name, D
         od_vec.push_back( std::make_shared< ElementDataCache<T> >(field_name, n_rows*n_cols, size) );
         it=--od_vec.end();
     }
+    (*it)->set_time(time);
     return dynamic_cast<ElementDataCache<T> &>(*(*it));
 }
 
