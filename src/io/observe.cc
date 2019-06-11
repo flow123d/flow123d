@@ -438,7 +438,7 @@ void Observe::output_header() {
 
 }
 
-void Observe::output_time_frame(double time, bool write_automaticcaly) {
+void Observe::output_time_frame(double time, bool flush) {
     if (points_.size() == 0) return;
     
     if ( ! no_fields_warning ) {
@@ -457,7 +457,7 @@ void Observe::output_time_frame(double time, bool write_automaticcaly) {
     }
     
     observe_time_idx_++;
-    if ( (observe_time_idx_==Observe::max_observe_value_time) || write_automaticcaly ) {
+    if ( (observe_time_idx_==Observe::max_observe_value_time) || flush ) {
     	std::vector<LongIdx> local_to_global(Observe::max_observe_value_time*point_4_loc_.size());
     	for (unsigned int i=0; i<Observe::max_observe_value_time; ++i)
     	    for (unsigned int j=0; j<point_4_loc_.size(); ++j) local_to_global[i*point_4_loc_.size()+j] = i*points_.size()+point_4_loc_[j];

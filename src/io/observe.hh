@@ -228,9 +228,9 @@ public:
 
     /**
      * Sets next output time frame of observe. If the table is full, writes field values to the output
-     * file. Using the YAML format. Argument write_automaticcaly starts writing to output file explicitly.
+     * file. Using the YAML format. Argument flush starts writing to output file explicitly.
      */
-    void output_time_frame(double time, bool write_automaticcaly);
+    void output_time_frame(double time, bool flush);
 
     /**
      * Return \p points_ vector
