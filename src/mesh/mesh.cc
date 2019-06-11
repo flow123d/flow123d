@@ -1212,7 +1212,7 @@ void Mesh::distribute_nodes() {
         i_proc = elm.proc();
         for (elm_node=0; elm_node<elm->n_nodes(); elm_node++) {
             i_node = elm->node_idx(elm_node);
-            local_node_flag[i_node] = true;
+            if (i_proc == my_proc) local_node_flag[i_node] = true;
             if (i_proc < node_proc[i_node]) node_proc[i_node] = i_proc;
         }
     }
@@ -1239,6 +1239,7 @@ void Mesh::distribute_nodes() {
     node_ds_ = new Distribution(n_own_nodes, PETSC_COMM_WORLD);
     node_ds_->get_lsizes_array(); // need to initialize lsizes data member
     n_local_nodes_ = n_local_nodes;
+
 }
 
 //-----------------------------------------------------------------------------
