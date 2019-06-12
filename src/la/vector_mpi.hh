@@ -198,9 +198,19 @@ public:
     }
 
     /**
-     * Access to the vector element on index @p idx.
+     * Access to the vector element on local index @p idx.
      */
     inline double &operator[](unsigned int idx)
+    {
+        ASSERT_DBG(data_ptr_);
+        ASSERT_DBG(idx < data_ptr_->size()) (idx) (data_ptr_->size());
+        return (*data_ptr_)[idx];
+    }
+    
+    /**
+     * Access to the vector element on local index @p idx (const version).
+     */
+    inline double &operator[](unsigned int idx) const
     {
         ASSERT_DBG(data_ptr_);
         ASSERT_DBG(idx < data_ptr_->size()) (idx) (data_ptr_->size());
