@@ -251,6 +251,10 @@ public:
        return mh_dh;
     }
 
+    double last_t() override {
+        return time_->last_t();
+    }
+
     std::shared_ptr< FieldFE<3, FieldValue<3>::VectorFixed> > get_velocity_field(); //override
 
     void init_eq_data();

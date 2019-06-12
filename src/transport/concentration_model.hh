@@ -37,7 +37,6 @@
 #include "transport/transport_operator_splitting.hh"  // for ConcentrationTr...
 
 class Balance;
-class MH_DofHandler;
 class Mesh;
 class OutputTime;
 namespace Input { class Record; }
@@ -160,10 +159,9 @@ public:
 	 * (So far it does not work since the flow module returns a vector of zeros.)
 	 * @param velocity_vector Input array of velocity values.
 	 */
-	inline void set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field, const MH_DofHandler &dh) override
+	inline void set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field, double velocity_last_t) override
 	{
 		velocity_field_ptr_ = flux_field;
-		mh_dh = &dh;
 		flux_changed = true;
 	}
 
@@ -236,13 +234,6 @@ protected:
 
 	/// Density of liquid (a global constant).
 	double solvent_density_;
-
-    /**
-     * Temporary solution how to pass velocity field form the flow model.
-     * TODO: introduce FieldDiscrete -containing true DOFHandler and data vector and pass such object together with other
-     * data. Possibly make more general set_data method, allowing setting data given by name. needs support from EqDataBase.
-     */
-    const MH_DofHandler *mh_dh;
 
 	std::shared_ptr<OutputTime> output_stream_;
 

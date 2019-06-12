@@ -47,7 +47,6 @@ class OutputTime;
 class Mesh;
 class Distribution;
 class Balance;
-class MH_DofHandler;
 namespace Input {
 	namespace Type {
 		class Record;
@@ -225,8 +224,8 @@ public:
      */
     virtual void output_data() override;
 
-    inline void set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field, const MH_DofHandler &dh) override
-    { velocity_field_ptr_ = flux_field; mh_dh=&dh; }
+    inline void set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field, double velocity_last_t) override
+    { velocity_field_ptr_ = flux_field; velocity_last_time_ = velocity_last_t; }
 
     void set_output_stream(std::shared_ptr<OutputTime> stream) override
     { output_stream_ = stream; }
@@ -389,7 +388,6 @@ private:
      * TODO: introduce FieldDiscrete -containing true DOFHandler and data vector and pass such object together with other
      * data. Possibly make more general set_data method, allowing setting data given by name. needs support from EqDataBase.
      */
-    const MH_DofHandler *mh_dh;
     std::shared_ptr<DOFHandlerMultiDim> dh_;
 
 	/// List of indices used to call balance methods for a set of quantities.
@@ -397,6 +395,9 @@ private:
 
 	/// Pointer to velocity field given from Flow equation.
 	std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> velocity_field_ptr_;
+
+	/// Hold last time of velocity field store
+	double velocity_last_time_;
 
 	/// Finite element objects
 	FETransportObjects feo_;

@@ -32,6 +32,9 @@ public:
 
     virtual const MH_DofHandler &get_mh_dofhandler() =0;
 
+    /// Return last time of TimeGovernor.
+    virtual double last_t() =0;
+
     //virtual std::shared_ptr< FieldFE<3, FieldValue<3>::VectorFixed> > get_velocity_field() =0;
 
     virtual ~DarcyFlowInterface()

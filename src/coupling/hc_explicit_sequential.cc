@@ -175,7 +175,7 @@ void HC_ExplicitSequential::advection_process_step(AdvectionData &pdata)
         // for simplicity we use only last velocity field
         if (pdata.velocity_changed) {
             //DBGMSG("velocity update\n");
-            pdata.process->set_velocity_field( std::dynamic_pointer_cast<DarcyMH>(water)->get_velocity_field(), water->get_mh_dofhandler() );
+            pdata.process->set_velocity_field( std::dynamic_pointer_cast<DarcyMH>(water)->get_velocity_field(), water->last_t() );
             pdata.velocity_changed = false;
         }
         if (pdata.process->time().tlevel() == 0) pdata.process->zero_time_step();

@@ -143,6 +143,12 @@ const MH_DofHandler & HM_Iterative::get_mh_dofhandler()
 }
 
 
+double HM_Iterative::last_t()
+{
+    return flow_->last_t();
+}
+
+
 HM_Iterative::~HM_Iterative() {
 	flow_.reset();
     mechanics_.reset();
