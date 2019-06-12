@@ -108,8 +108,7 @@ public:
         if (genuchten_on) {
             conductivity=0;
             head=0;
-            std::vector<LongIdx> indices(ad_->dh_cr_->max_elem_dofs());
-            ele.dh_cell().cell_with_other_dh(ad_->dh_cr_.get()).get_loc_dof_indices(indices);
+            std::vector<int> &indices = ele.dh_cell().cell_with_other_dh(ad_->dh_cr_.get()).get_loc_dof_indices();
             for (unsigned int i=0; i<ele.element_accessor()->n_sides(); i++)
             {
                 double phead = ad_->phead_edge_[ indices[i] ];

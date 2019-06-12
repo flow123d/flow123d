@@ -49,7 +49,7 @@ public:
      * DOF cell accessor.
      */
 	DHCellAccessor(const DOFHandlerMultiDim *dof_handler, unsigned int loc_idx)
-    : dof_handler_(dof_handler), loc_ele_idx_(loc_idx)
+    : dof_handler_(dof_handler), loc_ele_idx_(loc_idx), dof_indices_(dof_handler->max_elem_dofs())
     {}
 
     /// Return local index to element (index of DOF handler).
@@ -74,17 +74,35 @@ public:
      * @brief Fill vector of the global indices of dofs associated to the cell.
      *
      * @param indices Vector of dof indices on the cell.
+     * OBSOLETE, will be replaced with bellow implemented get_dof_indices method.
      */
     unsigned int get_dof_indices(std::vector<int> &indices) const
     { return dof_handler_->get_dof_indices( *this, indices ); }
 
     /**
+     * @brief Return reference to vector of the global indices of dofs associated to the cell.
+     */
+    std::vector<int> & get_dof_indices() const {
+        dof_handler_->get_dof_indices( *this, dof_indices_ );
+        return dof_indices_;
+    }
+
+    /**
      * @brief Returns the indices of dofs associated to the cell on the local process.
      *
      * @param indices Array of dof indices on the cell.
+     * OBSOLETE, will be replaced with bellow implemented get_loc_dof_indices method.
      */
     unsigned int get_loc_dof_indices(std::vector<LongIdx> &indices) const
     { return dof_handler_->get_loc_dof_indices( *this, indices ); }
+
+    /**
+     * @brief Return reference to vector of the local indices of dofs associated to the cell.
+     */
+    std::vector<int> & get_loc_dof_indices() const {
+        dof_handler_->get_loc_dof_indices( *this, dof_indices_ );
+        return dof_indices_;
+    }
 
     /// Return number of dofs on given cell.
     unsigned int n_dofs() const;
@@ -152,6 +170,8 @@ private:
     const DOFHandlerMultiDim * dof_handler_;
     /// Index into DOFHandler::el_4_loc array.
     unsigned int loc_ele_idx_;
+    /// Vector of DOF indices, it is allocate in constructor
+    mutable std::vector<int> dof_indices_;
 
     friend class DHCellSide;
     friend class DHEdgeSide;
