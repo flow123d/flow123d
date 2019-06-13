@@ -128,8 +128,16 @@ HM_Iterative::EqData::EqData()
                      .input_default("0.0")
                      .flags_add(FieldFlag::in_rhs);
     
+    *this += beta.name("relaxation_beta")
+                     .units(UnitSI().dimensionless())
+                     .flags(FieldFlag::equation_external_output);
+    
     *this += pressure_potential.name("pressure_potential")
                      .units(UnitSI().m())
+                     .flags(FieldFlag::equation_result);
+    
+    *this += flow_source.name("extra_flow_source")
+                     .units(UnitSI().s(-1))
                      .flags(FieldFlag::equation_result);
 }
 
@@ -138,8 +146,20 @@ void HM_Iterative::EqData::initialize(Mesh &mesh)
 {
     // initialize coupling fields with FieldFE
     set_mesh(mesh);
+    
     potential_ptr_ = create_field<3, FieldValue<3>::Scalar>(mesh, 1);
     pressure_potential.set_field(mesh.region_db().get_region_set("ALL"), potential_ptr_);
+    
+    beta_ptr_ = create_field<3, FieldValue<3>::Scalar>(mesh, 1);
+    beta.set_field(mesh.region_db().get_region_set("ALL"), beta_ptr_);
+    
+    flow_source_ptr_ = create_field<3, FieldValue<3>::Scalar>(mesh, 1);
+    flow_source.set_field(mesh.region_db().get_region_set("ALL"), flow_source_ptr_);
+    
+    old_pressure_ptr_ = create_field<3, FieldValue<3>::Scalar>(mesh, 1);
+    old_iter_pressure_ptr_ = create_field<3, FieldValue<3>::Scalar>(mesh, 1);
+    div_u_ptr_ = create_field<3, FieldValue<3>::Scalar>(mesh, 1);
+    old_div_u_ptr_ = create_field<3, FieldValue<3>::Scalar>(mesh, 1);
 }
 
                                     
@@ -189,6 +209,111 @@ void HM_Iterative::initialize()
 }
 
 
+template<int dim, class Value>
+void copy_field(const Field<dim, Value> &from_field, FieldFE<dim, Value> &to_field)
+{
+    auto dh = to_field.get_dofhandler();
+    auto vec = to_field.get_data_vec();
+    
+    for ( auto cell : dh->own_range() )
+        vec[cell.local_idx()] = from_field.value(cell.elm().centre(), cell.elm());
+    
+//     vec.local_to_ghost_begin();
+//     vec.local_to_ghost_end();
+}
+
+
+template<int dim, class Value>
+void update_field_from_mh_dofhandler(const MH_DofHandler &mh_dh, FieldFE<dim, Value> &field)
+{
+    auto dh = field.get_dofhandler();
+    auto vec = field.get_data_vec();
+    
+    for ( auto cell : dh->own_range() )
+    {
+        auto elm = cell.elm();
+        vec[cell.local_idx()] = mh_dh.element_scalar(elm);
+    }
+}
+
+
+template<unsigned int dim>
+class VectorValueHandler
+{
+public:
+    
+    VectorValueHandler(FiniteElement<dim> &fe)
+    : q(1)
+    {
+        ASSERT(fe.n_space_components(3) == 3);
+        arma::vec::fixed<dim> p;
+        p.ones();
+        p /= dim + 1;
+        q.set_point(0, p);
+        fe_values = std::make_shared<FEValues<dim,3>>(map, q, fe, update_gradients);
+    }
+    
+    void reinit(const ElementAccessor<3> &elm)
+    {
+        fe_values->reinit(const_cast<ElementAccessor<3> &>(elm));
+    }
+    
+    double divergence(unsigned int i)
+    {
+        return fe_values->vector_view(0).divergence(i, 0);
+    }
+    
+private:
+    
+    MappingP1<dim,3> map;
+    Quadrature<dim> q;
+    std::shared_ptr<FEValues<dim,3>> fe_values;
+};
+
+
+void update_div_from_field_fe(const FieldFE<3, FieldValue<3>::VectorFixed> &from_field, FieldFE<3, FieldValue<3>::Scalar> &div_field)
+{
+    auto vec_dh  = from_field.get_dofhandler();
+    auto vec_vec = from_field.get_data_vec();
+    auto div_dh  = div_field.get_dofhandler();
+    auto div_vec = div_field.get_data_vec();
+    
+    ElementAccessor<3> dummy_elm;
+    EqualOrderDiscreteSpace *ds = dynamic_cast<EqualOrderDiscreteSpace *>(vec_dh->ds().get());
+    VectorValueHandler<1> value_handler1(*ds->fe<1>(dummy_elm));
+    VectorValueHandler<2> value_handler2(*ds->fe<2>(dummy_elm));
+    VectorValueHandler<3> value_handler3(*ds->fe<3>(dummy_elm));
+    
+    for ( auto cell : div_dh->own_range() )
+    {
+        double div = 0;
+        vector<int> loc_dof_indices(vec_dh->max_elem_dofs());
+        vec_dh->cell_accessor_from_element(cell.elm_idx()).get_loc_dof_indices(loc_dof_indices);
+        switch (cell.dim())
+        {
+            case 1:
+                value_handler1.reinit(cell.elm());
+                for (unsigned int i=0; i<ds->fe<1>(cell.elm())->n_dofs(); i++)
+                    div += value_handler1.divergence(i)*vec_vec[loc_dof_indices[i]];
+                break;
+            case 2:
+                value_handler2.reinit(cell.elm());
+                for (unsigned int i=0; i<ds->fe<2>(cell.elm())->n_dofs(); i++)
+                    div += value_handler2.divergence(i)*vec_vec[loc_dof_indices[i]];
+                break;
+            case 3:
+                value_handler3.reinit(cell.elm());
+                for (unsigned int i=0; i<ds->fe<3>(cell.elm())->n_dofs(); i++)
+                    div += value_handler3.divergence(i)*vec_vec[loc_dof_indices[i]];
+                break;
+            default:
+                ASSERT( false ).error("Unsupported element dimension.");
+        }
+        div_vec[cell.local_idx()] = div;
+    }
+}
+
+
 void HM_Iterative::zero_time_step()
 {
     data_.set_time(time_->step(), LimitSide::right);
@@ -199,6 +324,10 @@ void HM_Iterative::zero_time_step()
     flow_->zero_time_step();
     update_potential();
     mechanics_->zero_time_step();
+    
+    copy_field(flow_->output_fields().field_ele_pressure, *data_.old_pressure_ptr_);
+    update_field_from_mh_dofhandler(flow_->get_mh_dofhandler(), *data_.old_iter_pressure_ptr_);
+    update_div_from_field_fe(*mechanics_->data().output_field_ptr, *data_.div_u_ptr_);
 }
 
 
@@ -206,28 +335,44 @@ void HM_Iterative::update_solution()
 {
     unsigned it = 0;
     double difference = 0;
-    double init_difference = 1;
+    double norm = 1;
     
     time_->next_time();
     time_->view("HM");
     data_.set_time(time_->step(), LimitSide::right);
     
     while (it < min_it_ || 
-           (it < max_it_ && difference > a_tol_ && difference/init_difference > r_tol_)
+           (it < max_it_ && difference > a_tol_ && difference/norm > r_tol_)
           )
     {
         it++;
-        
+
+        // pass displacement (divergence) to flow
+        // and solve flow problem
+        update_flow_fields();        
         flow_->solve_time_step(false);
-        // TODO: pass pressure to mechanics
-        update_potential();
         
+        // pass pressure to mechanics and solve mechanics
+        update_potential();
         mechanics_->solve_linear_system();
-        // TODO: pass displacement (divergence) to flow
+        mechanics_->output_vector_gather();
+        
+        // update displacement divergence
+        update_div_from_field_fe(*mechanics_->data().output_field_ptr, *data_.div_u_ptr_);
+        
         // TODO: compute difference of iterates
+        compute_iteration_error(difference, norm);
+        
+        MessageOut().fmt("HM Iteration {} abs. difference: {}  rel. difference: {}\n", it, difference, difference/norm);
+        printf("--------------------------------------------------------\n");
+        update_field_from_mh_dofhandler(flow_->get_mh_dofhandler(), *data_.old_iter_pressure_ptr_);
     }
+    
     flow_->output_data();
     mechanics_->output_data();
+    
+    update_field_from_mh_dofhandler(flow_->get_mh_dofhandler(), *data_.old_pressure_ptr_);
+    update_div_from_field_fe(*mechanics_->data().output_field_ptr, *data_.old_div_u_ptr_);
 }
 
 
@@ -240,7 +385,7 @@ void HM_Iterative::update_potential()
     {
         auto elm = ele.elm();
         double alpha = data_.alpha.value(elm.centre(), elm);
-        double pressure = flow_->output_fields().field_ele_pressure.value(elm.centre(), elm);
+        double pressure = flow_->get_mh_dofhandler().element_scalar(elm);
         double potential = -alpha*pressure;
         difference2 += pow(potential_vec_[ele.local_idx()] - potential,2);
         norm2 += pow(potential,2);
@@ -260,6 +405,83 @@ void HM_Iterative::update_potential()
         mechanics_->set_potential_load(data_.pressure_potential);
     }
 }
+
+
+void HM_Iterative::update_flow_fields()
+{
+    auto beta_vec = data_.beta_ptr_->get_data_vec();
+    auto src_vec = data_.flow_source_ptr_->get_data_vec();
+    auto dh = data_.beta_ptr_->get_dofhandler();
+    double beta_diff2 = 0, beta_norm2 = 0, src_diff2 = 0, src_norm2 = 0;
+    for ( auto ele : dh->own_range() )
+    {
+        auto elm = ele.elm();
+        
+        double alpha = data_.alpha.value(elm.centre(), elm);
+        double young = mechanics_->data().young_modulus.value(elm.centre(), elm);
+        double poisson = mechanics_->data().poisson_ratio.value(elm.centre(), elm);
+        double beta = 0.5*alpha*alpha/(2*lame_mu(young, poisson)/elm.dim() + lame_lambda(young, poisson));
+        beta_diff2 += pow(beta_vec[ele.local_idx()] - beta,2);
+        beta_norm2 += pow(beta,2);
+        beta_vec[ele.local_idx()] = beta;
+        
+        double old_p = data_.old_pressure_ptr_->value(elm.centre(), elm);
+        double p = flow_->get_mh_dofhandler().element_scalar(elm);
+        double div_u = data_.div_u_ptr_->value(elm.centre(), elm);
+        double old_div_u = data_.old_div_u_ptr_->value(elm.centre(), elm);
+        double src = (
+                     - beta*old_p
+                     + alpha*old_div_u
+                     + beta*p
+                     - alpha*div_u
+                     ) / time_->dt();
+        src_diff2 += pow(src_vec[ele.local_idx()] - src,2);
+        src_norm2 += pow(src,2);
+        src_vec[ele.local_idx()] = src;
+    }
+    
+    double beta_dif2norm, src_dif2norm;
+    if (beta_norm2 == 0)
+        beta_dif2norm = (beta_diff2 == 0)?0:numeric_limits<double>::max();
+    else 
+        beta_dif2norm = sqrt(beta_diff2/beta_norm2);
+    if (src_norm2 == 0)
+        src_dif2norm = (src_diff2 == 0)?0:numeric_limits<double>::max();
+    else 
+        src_dif2norm = sqrt(src_diff2/src_norm2);
+    DebugOut() << "Relative difference in beta: " << beta_dif2norm << endl;
+    DebugOut() << "Relative difference in extra_source: " << src_dif2norm << endl;
+    
+    if (beta_dif2norm > numeric_limits<double>::epsilon())
+    {
+        data_.beta.set_time_result_changed();
+        flow_->set_extra_storativity(data_.beta);
+    }
+    if (src_dif2norm > numeric_limits<double>::epsilon())
+    {
+        data_.flow_source.set_time_result_changed();
+        flow_->set_extra_source(data_.flow_source);
+    }
+}
+
+
+void HM_Iterative::compute_iteration_error(double& difference, double& norm)
+{
+    auto dh = data_.beta_ptr_->get_dofhandler();
+    double p_dif2 = 0, p_norm2 = 0;
+    for (auto cell : dh->own_range())
+    {
+        auto elm = cell.elm();
+        double new_p = flow_->get_mh_dofhandler().element_scalar(elm);
+        double old_p = data_.old_iter_pressure_ptr_->value(elm.centre(), elm);
+        p_dif2 += pow(new_p - old_p, 2)*elm.measure();
+        p_norm2 += pow(old_p, 2)*elm.measure();
+    }
+    
+    difference = sqrt(p_dif2);
+    norm = sqrt(p_norm2);
+}
+
 
 
 const MH_DofHandler & HM_Iterative::get_mh_dofhandler()

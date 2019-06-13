@@ -56,12 +56,20 @@ public:
         
         /// Biot coefficient.
         Field<3, FieldValue<3>::Scalar> alpha;
+        Field<3, FieldValue<3>::Scalar> beta;
         
         /// Potential -alpha*pressure whose gradient is passed to mechanics as additional load.
         Field<3, FieldValue<3>::Scalar> pressure_potential;
+        Field<3, FieldValue<3>::Scalar> flow_source;
         
         /// FieldFE for pressure_potential field.
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > potential_ptr_;
+        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > beta_ptr_;
+        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > flow_source_ptr_;
+        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > old_pressure_ptr_;
+        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > old_iter_pressure_ptr_;
+        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > div_u_ptr_;
+        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > old_div_u_ptr_;
     };
     
     /// Define input record.
@@ -77,6 +85,10 @@ public:
 private:
     
     void update_potential();
+    
+    void update_flow_fields();
+    
+    void compute_iteration_error(double &difference, double &norm);
     
     static const int registrar;
 
