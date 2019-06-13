@@ -49,7 +49,7 @@ public:
      * DOF cell accessor.
      */
 	DHCellAccessor(const DOFHandlerMultiDim *dof_handler, unsigned int loc_idx)
-    : dof_handler_(dof_handler), loc_ele_idx_(loc_idx)
+    : dof_handler_(dof_handler), loc_ele_idx_(loc_idx), dof_indices_(dof_handler->max_elem_dofs())
     {}
 
     /// Return local index to element (index of DOF handler).
@@ -152,6 +152,8 @@ private:
     const DOFHandlerMultiDim * dof_handler_;
     /// Index into DOFHandler::el_4_loc array.
     unsigned int loc_ele_idx_;
+    /// Vector of DOF indices, it is allocate in constructor
+    mutable std::vector<int> dof_indices_;
 
     friend class DHCellSide;
     friend class DHEdgeSide;
