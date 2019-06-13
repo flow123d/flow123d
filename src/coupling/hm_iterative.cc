@@ -420,7 +420,7 @@ void HM_Iterative::update_flow_fields()
         double alpha = data_.alpha.value(elm.centre(), elm);
         double young = mechanics_->data().young_modulus.value(elm.centre(), elm);
         double poisson = mechanics_->data().poisson_ratio.value(elm.centre(), elm);
-        double beta = 0.5*alpha*alpha/(2*lame_mu(young, poisson)/elm.dim() + lame_lambda(young, poisson));
+        double beta = beta_ * 0.5*alpha*alpha/(2*lame_mu(young, poisson)/elm.dim() + lame_lambda(young, poisson));
         beta_diff2 += pow(beta_vec[ele.local_idx()] - beta,2);
         beta_norm2 += pow(beta,2);
         beta_vec[ele.local_idx()] = beta;
@@ -429,12 +429,7 @@ void HM_Iterative::update_flow_fields()
         double p = flow_->get_mh_dofhandler().element_scalar(elm);
         double div_u = data_.div_u_ptr_->value(elm.centre(), elm);
         double old_div_u = data_.old_div_u_ptr_->value(elm.centre(), elm);
-        double src = (
-                     - beta*old_p
-                     + alpha*old_div_u
-                     + beta*p
-                     - alpha*div_u
-                     ) / time_->dt();
+        double src = (beta*(p-old_p) + alpha*(old_div_u - div_u)) / time_->dt();
         src_diff2 += pow(src_vec[ele.local_idx()] - src,2);
         src_norm2 += pow(src,2);
         src_vec[ele.local_idx()] = src;
