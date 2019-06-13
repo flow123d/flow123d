@@ -942,9 +942,9 @@ void Elasticity::assemble_rhs_element_side()
 {
 	if (dim == 1) return;
     FEValues<dim-1,3> fe_values_sub(*feo->mapping<dim-1>(), *feo->q<dim-1>(), *feo->fe<dim-1>(),
-    		update_values | update_gradients | update_JxW_values | update_quadrature_points);
+    		update_values | update_JxW_values | update_quadrature_points);
     FESideValues<dim,3> fe_values_side(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe<dim>(),
-    		update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
+    		update_values | update_normal_vectors);
  
     const unsigned int ndofs_side = feo->fe<dim>()->n_dofs();    // number of local dofs
     const unsigned int ndofs_sub  = feo->fe<dim-1>()->n_dofs();
@@ -1020,7 +1020,7 @@ template<unsigned int dim>
 void Elasticity::assemble_boundary_conditions()
 {
     FESideValues<dim,3> fe_values_side(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe<dim>(),
-    		update_values | update_gradients | update_normal_vectors | update_side_JxW_values | update_quadrature_points);
+    		update_values | update_normal_vectors | update_side_JxW_values | update_quadrature_points);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim-1>()->size();
     vector<int> side_dof_indices(ndofs);
     unsigned int loc_b=0;
