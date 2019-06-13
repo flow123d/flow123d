@@ -257,6 +257,18 @@ DarcyMH::EqData::EqData()
             .description("Storativity (in time dependent problems).")
             .input_default("0.0")
             .units( UnitSI().m(-1) );
+    
+    *this += extra_storativity.name("extra_storativity")
+            .description("Storativity added from upstream equation.")
+            .units( UnitSI().m(-1) )
+            .input_default("0.0")
+            .flags( input_copy );
+    
+    *this += extra_source.name("extra_water_source_density")
+            .description("Water source density added from upstream equation.")
+            .input_default("0.0")
+            .units( UnitSI().s(-1) )
+            .flags( input_copy );
 
     //time_term_fields = this->subset({"storativity"});
     //main_matrix_fields = this->subset({"anisotropy", "conductivity", "cross_section", "sigma", "bc_type", "bc_robin_sigma"});
@@ -853,7 +865,8 @@ void DarcyMH::assembly_source_term()
 
         // set sources
         double source = ele_ac.measure() * cs *
-                data_->water_source_density.value(ele_ac.centre(), ele_ac.element_accessor());
+                (data_->water_source_density.value(ele_ac.centre(), ele_ac.element_accessor())
+                +data_->extra_source.value(ele_ac.centre(), ele_ac.element_accessor()));
         schur0->rhs_set_value(ele_ac.ele_row(), -1.0 * source );
 
         balance_->add_source_values(data_->water_balance_idx, ele_ac.region().bulk_idx(), {(LongIdx) ele_ac.ele_local_row()}, {0}, {source});
@@ -1386,7 +1399,9 @@ void DarcyMH::setup_time_term() {
 
         // set new diagonal
         double diagonal_coeff = data_->cross_section.value(ele_ac.centre(), ele_ac.element_accessor())
-        		* data_->storativity.value(ele_ac.centre(), ele_ac.element_accessor())
+        		* ( data_->storativity.value(ele_ac.centre(), ele_ac.element_accessor())
+                   +data_->extra_storativity.value(ele_ac.centre(), ele_ac.element_accessor())
+                  )
 				* ele_ac.measure();
         local_diagonal[ele_ac.ele_local_row()]= - diagonal_coeff / time_->dt();
 
