@@ -55,6 +55,7 @@
 #include "petscvec.h"                           // for Vec, _p_Vec, VecScatter
 #include "system/exceptions.hh"                 // for ExcStream, operator<<
 #include "tools/time_governor.hh"               // for TimeGovernor
+#include "la/vector_mpi.hh"                     // for VectorMPI
 
 class AssemblyBase;
 class Balance;
@@ -212,9 +213,15 @@ public:
         std::shared_ptr<Balance> balance;
         LinSys *lin_sys;
         
+        VectorMPI previous_solution;
+        
         unsigned int n_schur_compls;
         int is_linear;              ///< Hack fo BDDC solver.
         bool force_bc_switch;       ///< auxiliary flag for switchting Dirichlet like BC
+        
+        // Propagate test for the time term to the assembly.
+        // This flag is necessary for switching BC to avoid setting zero neumann on the whole boundary in the steady case.
+        bool use_steady_assembly_;
         
         /// Idicator of dirichlet or neumann type of switch boundary conditions.
         std::vector<char> bc_switch_dirichlet;
@@ -338,9 +345,6 @@ protected:
      */
     void assembly_mh_matrix(MultidimAssembly& assembler);
 
-    /// Source term is implemented differently in LMH version.
-    virtual void assembly_source_term();
-
     /**
      * Assembly or update whole linear system.
      */
@@ -373,9 +377,6 @@ protected:
 	int  n_schur_compls;  	    // number of shur complements to make
 	double  *solution; 			// sequantial scattered solution vector
 
-	// Propagate test for the time term to the assembly.
-	// This flag is necessary for switching BC to avoid setting zero neumann on the whole boundary in the steady case.
-	bool use_steady_assembly_;
 	bool data_changed_;
 
 	// Setting of the nonlinear solver. TODO: Move to the solver class later on.
@@ -395,7 +396,7 @@ protected:
 	Vec steady_diagonal;
     Vec steady_rhs;
     Vec new_diagonal;
-    Vec previous_solution;
+    VectorMPI previous_solution_nonlinear;
 
     // Temporary objects holding pointers to appropriate FieldFE
     // TODO remove after final fix of equations

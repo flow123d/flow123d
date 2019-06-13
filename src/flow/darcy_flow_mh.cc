@@ -308,7 +308,6 @@ DarcyMH::DarcyMH(Mesh &mesh_in, const Input::Record in_rec)
 	steady_diagonal(nullptr),
 	steady_rhs(nullptr),
 	new_diagonal(nullptr),
-	previous_solution(nullptr),
 	par_to_all(nullptr)
 {
 
@@ -415,6 +414,10 @@ void DarcyMH::initialize() {
     output_object = new DarcyFlowMHOutput(this, input_record_);
 
     mh_dh.reinit(mesh_);
+    
+    data_->previous_solution = data_->dh_->create_vector();
+    previous_solution_nonlinear = data_->dh_->create_vector();
+    
 
     { // construct pressure, velocity and piezo head fields
 		ele_flux_ptr = std::make_shared< FieldFE<3, FieldValue<3>::VectorFixed> >();
@@ -465,7 +468,6 @@ void DarcyMH::initialize() {
 
 
     // allocate time term vectors
-    VecDuplicate(schur0->get_solution(), &previous_solution);
     VecCreateMPI(PETSC_COMM_WORLD, data_->dh_->distr()->lsize(),PETSC_DETERMINE,&(steady_diagonal));
     VecDuplicate(steady_diagonal,& new_diagonal);
     VecZeroEntries(new_diagonal);
@@ -509,11 +511,12 @@ void DarcyMH::zero_time_step()
         // steady case
         VecZeroEntries(schur0->get_solution());
         //read_initial_condition(); // Possible solution guess for steady case.
-        use_steady_assembly_ = true;
+        data_->use_steady_assembly_ = true;
         solve_nonlinear(); // with right limit data
     } else {
         VecZeroEntries(schur0->get_solution());
-        VecZeroEntries(previous_solution);
+        data_->previous_solution.zero_entries();
+        
         read_initial_condition();
         assembly_linear_system(); // in particular due to balance
 //         print_matlab_matrix("matrix_zero");
@@ -542,7 +545,7 @@ void DarcyMH::update_solution()
         // Unsteady solution up to the T.
 
         // this flag is necesssary for switching BC to avoid setting zero neumann on the whole boundary in the steady case
-        use_steady_assembly_ = false;
+        data_->use_steady_assembly_ = false;
         prepare_new_time_step(); //SWAP
 
         solve_nonlinear(); // with left limit data
@@ -564,7 +567,7 @@ void DarcyMH::update_solution()
     bool zero_time_term_from_right=zero_time_term();
     if (zero_time_term_from_right) {
         // this flag is necesssary for switching BC to avoid setting zero neumann on the whole boundary in the steady case
-        use_steady_assembly_ = true;
+        data_->use_steady_assembly_ = true;
         solve_nonlinear(); // with right limit data
 
     } else if (! zero_time_term_from_left && jump_time) {
@@ -610,8 +613,9 @@ void DarcyMH::solve_nonlinear()
     }
     vector<double> convergence_history;
 
-    Vec save_solution;
-    VecDuplicate(schur0->get_solution(), &save_solution);
+//     Vec save_solution;
+//     VecDuplicate(schur0->get_solution(), &save_solution);
+    VecCopy( schur0->get_solution(), previous_solution_nonlinear.petsc_vec());
     while (nonlinear_iteration_ < this->min_n_it_ ||
            (residual_norm > this->tolerance_ &&  nonlinear_iteration_ < this->max_n_it_ )) {
     	OLD_ASSERT_EQUAL( convergence_history.size(), nonlinear_iteration_ );
@@ -631,7 +635,8 @@ void DarcyMH::solve_nonlinear()
         }
 
         if (! is_linear_common)
-            VecCopy( schur0->get_solution(), save_solution);
+            VecCopy( schur0->get_solution(), previous_solution_nonlinear.petsc_vec());
+//             VecCopy( schur0->get_solution(), save_solution);
         LinSys::SolveInfo si = schur0->solve();
         nonlinear_iteration_++;
 
@@ -646,7 +651,7 @@ void DarcyMH::solve_nonlinear()
         data_changed_=true; // force reassembly for non-linear case
 
         double alpha = 1; // how much of new solution
-        VecAXPBY(schur0->get_solution(), (1-alpha), alpha, save_solution);
+        VecAXPBY(schur0->get_solution(), (1-alpha), alpha, previous_solution_nonlinear.petsc_vec());
 
         //LogOut().fmt("Linear solver ended with reason: {} \n", si.converged_reason );
         //OLD_ASSERT( si.converged_reason >= 0, "Linear solver failed to converge. Convergence reason %d \n", si.converged_reason );
@@ -656,7 +661,7 @@ void DarcyMH::solve_nonlinear()
         MessageOut().fmt("[nonlinear solver] it: {} lin. it: {}, reason: {}, residual: {}\n",
         		nonlinear_iteration_, si.n_iterations, si.converged_reason, residual_norm);
     }
-    chkerr(VecDestroy(&save_solution));
+//     chkerr(VecDestroy(&save_solution));
     this -> postprocess();
 
     // adapt timestep
@@ -765,11 +770,12 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembly& assembler)
     START_TIMER("DarcyFlowMH_Steady::assembly_steady_mh_matrix");
 
     // set auxiliary flag for switchting Dirichlet like BC
-    data_->force_bc_switch = use_steady_assembly_ && (nonlinear_iteration_ == 0);
+    data_->force_bc_switch = data_->use_steady_assembly_ && (nonlinear_iteration_ == 0);
     data_->n_schur_compls = n_schur_compls;
     
 
     balance_->start_flux_assembly(data_->water_balance_idx);
+    balance_->start_source_assembly(data_->water_balance_idx);
 
     // TODO: try to move this into balance, or have it in the generic assembler class, that should perform the cell loop
     // including various pre- and post-actions
@@ -781,6 +787,7 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembly& assembler)
     }    
     
 
+    balance_->finish_source_assembly(data_->water_balance_idx);
     balance_->finish_flux_assembly(data_->water_balance_idx);
 
 }
@@ -894,28 +901,6 @@ void DarcyMH::allocate_mh_matrix()
         P1_CouplingAssembler(*this).assembly(*ls);
     }*/
 }
-
-void DarcyMH::assembly_source_term()
-{
-    START_TIMER("assembly source term");
-   	balance_->start_source_assembly(data_->water_balance_idx);
-
-   	for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
-        LocalElementAccessorBase<3> ele_ac(dh_cell);
-
-        double cs = data_->cross_section.value(ele_ac.centre(), ele_ac.element_accessor());
-
-        // set sources
-        double source = ele_ac.measure() * cs *
-                data_->water_source_density.value(ele_ac.centre(), ele_ac.element_accessor());
-        schur0->rhs_set_value(ele_ac.ele_row(), -1.0 * source );
-
-        balance_->add_source_values(data_->water_balance_idx, ele_ac.region().bulk_idx(), {(LongIdx) ele_ac.ele_local_row()}, {0}, {source});
-    }
-
-    balance_->finish_source_assembly(data_->water_balance_idx);
-}
-
 
 
 
@@ -1056,8 +1041,6 @@ void DarcyMH::assembly_linear_system() {
 
         schur0->mat_zero_entries();
         schur0->rhs_zero_entries();
-
-        assembly_source_term();
         
 
 	    assembly_mh_matrix( data_->multidim_assembler ); // fill matrix
@@ -1318,7 +1301,6 @@ void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
 // DESTROY WATER MH SYSTEM STRUCTURE
 //=============================================================================
 DarcyMH::~DarcyMH() {
-	if (previous_solution != nullptr) chkerr(VecDestroy(&previous_solution));
 	if (steady_diagonal != nullptr) chkerr(VecDestroy(&steady_diagonal));
 	if (new_diagonal != nullptr) chkerr(VecDestroy(&new_diagonal));
 	if (steady_rhs != nullptr) chkerr(VecDestroy(&steady_rhs));
@@ -1492,12 +1474,9 @@ void DarcyMH::modify_system() {
 	}
 
     // modify RHS - add previous solution
-    //VecPointwiseMult(*( schur0->get_rhs()), new_diagonal, previous_solution);
 	VecPointwiseMult(*( schur0->get_rhs()), new_diagonal, schur0->get_solution());
     VecAXPY(*( schur0->get_rhs()), 1.0, steady_rhs);
     schur0->set_rhs_changed();
-
-    //VecSwap(previous_solution, schur0->get_solution());
 }
 
 
