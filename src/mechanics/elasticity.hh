@@ -199,6 +199,8 @@ public:
 
 	void initialize() override;
     
+    void output_vector_gather();
+    
     void set_potential_load(const Field<3, FieldValue<3>::Scalar> &potential)
     { data_.potential_load = potential; }
 
@@ -219,7 +221,7 @@ private:
     /// Registrar of class to factory
     static const int registrar;
 
-	void output_vector_gather();
+    void update_output_fields();
     
     template<unsigned int dim>
     void update_output_stress();
@@ -338,6 +340,11 @@ private:
     
     // @}
 };
+
+
+
+double lame_mu(double young, double poisson);
+double lame_lambda(double young, double poisson);
 
 
 
