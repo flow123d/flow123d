@@ -74,35 +74,17 @@ public:
      * @brief Fill vector of the global indices of dofs associated to the cell.
      *
      * @param indices Vector of dof indices on the cell.
-     * OBSOLETE, will be replaced with bellow implemented get_dof_indices method.
      */
     unsigned int get_dof_indices(std::vector<int> &indices) const
     { return dof_handler_->get_dof_indices( *this, indices ); }
 
     /**
-     * @brief Return reference to vector of the global indices of dofs associated to the cell.
-     */
-    std::vector<int> & get_dof_indices() const {
-        dof_handler_->get_dof_indices( *this, dof_indices_ );
-        return dof_indices_;
-    }
-
-    /**
      * @brief Returns the indices of dofs associated to the cell on the local process.
      *
      * @param indices Array of dof indices on the cell.
-     * OBSOLETE, will be replaced with bellow implemented get_loc_dof_indices method.
      */
     unsigned int get_loc_dof_indices(std::vector<LongIdx> &indices) const
     { return dof_handler_->get_loc_dof_indices( *this, indices ); }
-
-    /**
-     * @brief Return reference to vector of the local indices of dofs associated to the cell.
-     */
-    std::vector<int> & get_loc_dof_indices() const {
-        dof_handler_->get_loc_dof_indices( *this, dof_indices_ );
-        return dof_indices_;
-    }
 
     /// Return number of dofs on given cell.
     unsigned int n_dofs() const;
