@@ -42,7 +42,7 @@ problem: !Coupling_Sequential
     output:
       fields:
         - { field: pressure_p0, interpolation: P0_value }
-        - { field: pressure_p1, interpolation: P0_value }
+        #- { field: pressure_p2_disc, interpolation: P0_value }
         - { field: velocity_p0, interpolation: P0_value }
         - { field: anisotropy, interpolation: P0_value }
     output_stream:

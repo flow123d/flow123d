@@ -1487,17 +1487,16 @@ void TransportDG<Model>::calculate_velocity(const ElementAccessor<3> &cell,
                                             vector<arma::vec3> &velocity, 
                                             FEValuesBase<dim,3> &fv)
 {
-    OLD_ASSERT(cell->dim() == dim, "Element dimension mismatch!");
+    ASSERT_EQ(cell->dim(), dim).error("Element dimension mismatch!");
 
     velocity.resize(fv.n_points());
-
+    auto quad = fv.get_quadrature();
+    arma::mat map_mat = feo->mapping<dim>()->element_map(cell);
+    vector<arma::vec3> point_list;
+    point_list.resize(fv.n_points());
     for (unsigned int k=0; k<fv.n_points(); k++)
-    {
-        velocity[k].zeros();
-        for (unsigned int sid=0; sid<cell->n_sides(); sid++)
-          for (unsigned int c=0; c<3; ++c)
-            velocity[k][c] += fv.shape_value_component(sid,k,c) * Model::mh_dh->side_flux( *(cell.side(sid)) );
-    }
+    	point_list[k] = feo->mapping<dim>()->project_unit_to_real(RefElement<dim>::local_to_bary(fv.get_quadrature()->point(k)), map_mat);
+    Model::velocity_field_ptr_->value_list(point_list, cell, velocity);
 }
 
 

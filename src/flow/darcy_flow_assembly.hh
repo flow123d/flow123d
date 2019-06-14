@@ -60,7 +60,7 @@ public:
 
     // compute velocity value in the barycenter
     // TODO: implement and use general interpolations between discrete spaces
-    virtual arma::vec3 make_element_vector(ElementAccessor<3> ele) = 0;
+    virtual arma::vec3 make_element_vector(LocalElementAccessorBase<3> ele_ac) = 0;
 
     virtual void update_water_content(LocalElementAccessorBase<3> ele)
     {}
@@ -108,7 +108,8 @@ public:
 
         ad_(data),
         loc_system_(size(), size()),
-        loc_system_vb_(2,2)
+        loc_system_vb_(2,2),
+        indices_(dim+1)
     {
         // local numbering of dofs for MH system
         unsigned int nsides = dim+1;
@@ -210,17 +211,19 @@ public:
     }
 
 
-    arma::vec3 make_element_vector(ElementAccessor<3> ele) override
+    arma::vec3 make_element_vector(LocalElementAccessorBase<3> ele_ac) override
     {
         //START_TIMER("Assembly<dim>::make_element_vector");
         arma::vec3 flux_in_center;
         flux_in_center.zeros();
+        auto ele = ele_ac.element_accessor();
 
         velocity_interpolation_fv_.reinit(ele);
         for (unsigned int li = 0; li < ele->n_sides(); li++) {
-            flux_in_center += ad_->mh_dh->side_flux( *(ele.side( li ) ) )
+            flux_in_center += ad_->data_vec_[ ele_ac.side_local_row(li) ]
                         * velocity_interpolation_fv_.vector_view(0).value(li,0);
         }
+
 
         flux_in_center /= ad_->cross_section.value(ele.centre(), ele );
         return flux_in_center;
@@ -291,7 +294,7 @@ protected:
                         // check and possibly switch to flux BC
                         // The switch raise error on the corresponding edge row.
                         // Magnitude of the error is abs(solution_flux - side_flux).
-                        ASSERT_DBG(ad_->mh_dh->rows_ds->is_local(ele_ac.side_row(i)))(ele_ac.side_row(i));
+                        ASSERT_DBG(ad_->dh_->distr()->is_local(ele_ac.side_row(i)))(ele_ac.side_row(i));
                         unsigned int loc_side_row = ele_ac.side_local_row(i);
                         double & solution_flux = ls->get_solution_array()[loc_side_row];
 
@@ -310,7 +313,7 @@ protected:
                         // cause that a solution  with the flux violating the
                         // flux inequality leading may be accepted, while the error
                         // in pressure inequality is always satisfied.
-                        ASSERT_DBG(ad_->mh_dh->rows_ds->is_local(ele_ac.edge_row(i)))(ele_ac.edge_row(i));
+                        ASSERT_DBG(ad_->dh_->distr()->is_local(ele_ac.edge_row(i)))(ele_ac.edge_row(i));
                         unsigned int loc_edge_row = ele_ac.edge_local_row(i);
                         double & solution_head = ls->get_solution_array()[loc_edge_row];
 
@@ -338,7 +341,7 @@ protected:
                     double bc_switch_pressure = ad_->bc_switch_pressure.value(b_ele.centre(), b_ele);
                     double bc_flux = -ad_->bc_flux.value(b_ele.centre(), b_ele);
                     double bc_sigma = ad_->bc_robin_sigma.value(b_ele.centre(), b_ele);
-                    ASSERT_DBG(ad_->mh_dh->rows_ds->is_local(ele_ac.edge_row(i)))(ele_ac.edge_row(i));
+                    ASSERT_DBG(ad_->dh_->distr()->is_local(ele_ac.edge_row(i)))(ele_ac.edge_row(i));
                     unsigned int loc_edge_row = ele_ac.edge_local_row(i);
                     double & solution_head = ls->get_solution_array()[loc_edge_row];
 
@@ -452,6 +455,8 @@ protected:
     {
         ElementAccessor<3> ele =ele_ac.element_accessor();
         
+        ele_ac.dh_cell().cell_with_other_dh(ad_->dh_cr_.get()).get_loc_dof_indices(indices_);
+        
         // compute lumped source
         double alpha = 1.0 / ele_ac.n_sides();
         double cross_section = ad_->cross_section.value(ele.centre(), ele);
@@ -483,7 +488,7 @@ protected:
             
             if (ad_->balance != nullptr)
             {
-                ad_->balance->add_source_values(ad_->water_balance_idx, ele.region().bulk_idx(), {(LongIdx) ele_ac.edge_local_idx(i)}, {0},{source_term});
+                ad_->balance->add_source_values(ad_->water_balance_idx, ele.region().bulk_idx(), {(LongIdx)indices_[i]}, {0},{source_term});
                 if( ! ad_->use_steady_assembly_)
                     ad_->balance->add_mass_vec_value(ad_->water_balance_idx, ele.region().bulk_idx(), time_term);
             }
@@ -507,7 +512,12 @@ protected:
             ngh = ele_ac.element_accessor()->neigh_vb[i];
             loc_system_vb_.reset();
             loc_system_vb_.row_dofs[0] = loc_system_vb_.col_dofs[0] = ele_row;
-            loc_system_vb_.row_dofs[1] = loc_system_vb_.col_dofs[1] = ad_->mh_dh->row_4_edge[ ngh->edge_idx() ];
+            LocalElementAccessorBase<3> acc_higher_dim( ele_ac.dh_cell().dh()->cell_accessor_from_element(ngh->edge()->side(0)->element().idx()) );
+            for (unsigned int j = 0; j < ngh->edge()->side(0)->element().dim()+1; j++)
+            	if (ngh->edge()->side(0)->element()->edge_idx(j) == ngh->edge_idx()) {
+                    loc_system_vb_.row_dofs[1] = loc_system_vb_.col_dofs[1] = acc_higher_dim.edge_row(j);
+            		break;
+            	}
 
             assembly_local_vb(ele, ngh);
 
@@ -529,13 +539,6 @@ protected:
             Boundary* bcd = ele_ac.side(i)->cond();
 
             if (bcd) {
-                /*
-                    DebugOut().fmt("add_flux: {} {} {} {}\n",
-                            ad_->mh_dh->el_ds->myp(),
-                            ele_ac.ele_global_idx(),
-                            ad_->local_boundary_index,
-                            ele_ac.side_row(i));
-                 */
                 ad_->balance->add_flux_matrix_values(ad_->water_balance_idx, ad_->local_boundary_index,
                                                      {(LongIdx)(ele_ac.side_row(i))}, {1});
                 ++(ad_->local_boundary_index);
@@ -567,6 +570,8 @@ protected:
     unsigned int loc_ele_dof;
 
     std::shared_ptr<MortarAssemblyBase> mortar_assembly;
+    
+    std::vector<int> indices_;
 };
 
 

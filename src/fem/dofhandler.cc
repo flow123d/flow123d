@@ -892,7 +892,7 @@ void SubDOFHandlerMultiDim::send_sub_ghost_dofs(unsigned int proc, const map<Lon
 }
 
 
-VectorMPI SubDOFHandlerMultiDim::update_subvector(const VectorMPI &vec, VectorMPI &subvec)
+void SubDOFHandlerMultiDim::update_subvector(const VectorMPI &vec, VectorMPI &subvec)
 {
     ASSERT_DBG( vec.size() == parent_->local_to_global_dof_idx_.size() ).error("Incompatible parent vector in update_subvector()!");
     ASSERT_DBG( subvec.size() == local_to_global_dof_idx_.size() ).error("Incompatible subvector in update_subvector()!");

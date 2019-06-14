@@ -128,27 +128,10 @@ void RichardsLMH::initialize_specific() {
         ASSERT(false);
 
     // create edge vectors
-    unsigned int n_local_edges = mh_dh.edge_new_local_4_mesh_idx_.size();
-    unsigned int n_local_sides = mh_dh.side_ds->lsize();
-    data_->phead_edge_.resize( n_local_edges);
-    data_->water_content_previous_it.resize(n_local_sides);
-    data_->water_content_previous_time.resize(n_local_sides);
-    data_->capacity.resize(n_local_sides);
-
-    Distribution ds_split_edges(n_local_edges, PETSC_COMM_WORLD);
-    vector<int> local_edge_rows(n_local_edges);
-
-    IS is_loc;
-    for(auto  item : mh_dh.edge_new_local_4_mesh_idx_) {
-        local_edge_rows[item.second]=mh_dh.row_4_edge[item.first];
-    }
-    ISCreateGeneral(PETSC_COMM_SELF, local_edge_rows.size(),
-            &(local_edge_rows[0]), PETSC_COPY_VALUES, &(is_loc));
-
-    VecScatterCreate(schur0->get_solution(), is_loc,
-            data_->phead_edge_.petsc_vec(), PETSC_NULL, &solution_2_edge_scatter_);
-    chkerr(ISDestroy(&is_loc));
-
+    data_->phead_edge_ = data_->dh_cr_->create_vector();
+    data_->water_content_previous_it = data_->dh_cr_disc_->create_vector();
+    data_->water_content_previous_time = data_->dh_cr_disc_->create_vector();
+    data_->capacity = data_->dh_cr_disc_->create_vector();
 }
 
 
@@ -158,8 +141,8 @@ void RichardsLMH::read_initial_condition()
     // cycle over local element rows
     double init_value;
 
-    for (unsigned int i_loc_el = 0; i_loc_el < mh_dh.el_ds->lsize(); i_loc_el++) {
-         auto ele_ac = mh_dh.accessor(i_loc_el);
+    for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
+         LocalElementAccessorBase<3> ele_ac(dh_cell);
 
          init_value = data_->init_pressure.value(ele_ac.centre(), ele_ac.element_accessor());
 
@@ -213,8 +196,13 @@ void RichardsLMH::assembly_linear_system()
 
     START_TIMER("RicharsLMH::assembly_linear_system");
 
-    VecScatterBegin(solution_2_edge_scatter_, schur0->get_solution(), data_->phead_edge_.petsc_vec() , INSERT_VALUES, SCATTER_FORWARD);
-    VecScatterEnd(solution_2_edge_scatter_, schur0->get_solution(), data_->phead_edge_.petsc_vec() , INSERT_VALUES, SCATTER_FORWARD);
+    data_->data_vec_.ghost_to_local_begin();
+    data_->data_vec_.ghost_to_local_end();
+    
+    data_->dh_cr_->update_subvector(data_->data_vec_, data_->phead_edge_);
+    
+    data_->phead_edge_.local_to_ghost_begin();
+    data_->phead_edge_.local_to_ghost_end();
 
     data_->is_linear = data_->genuchten_p_head_scale.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
 
@@ -271,11 +259,15 @@ void RichardsLMH::postprocess() {
 
     int side_rows[4];
     double values[4];
+    std::vector<LongIdx> side_indices(this->data_->dh_cr_disc_->max_elem_dofs());
 
-
-    VecScatterBegin(solution_2_edge_scatter_, schur0->get_solution(), data_->phead_edge_.petsc_vec() , INSERT_VALUES, SCATTER_FORWARD);
-    VecScatterEnd(solution_2_edge_scatter_, schur0->get_solution(), data_->phead_edge_.petsc_vec() , INSERT_VALUES, SCATTER_FORWARD);
-
+    data_->data_vec_.ghost_to_local_begin();
+    data_->data_vec_.ghost_to_local_end();
+    
+    data_->dh_cr_->update_subvector(data_->data_vec_, data_->phead_edge_);
+    
+    data_->phead_edge_.local_to_ghost_begin();
+    data_->phead_edge_.local_to_ghost_end();
 
   // modify side fluxes in parallel
   // for every local edge take time term on digonal and add it to the corresponding flux
@@ -283,8 +275,9 @@ void RichardsLMH::postprocess() {
     auto multidim_assembler = AssemblyBase::create< AssemblyLMH >(data_);
 
     //VecGetArray(previous_solution, &loc_prev_sol);
-    for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
-      auto ele_ac = mh_dh.accessor(i_loc);
+    for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
+      dh_cell.cell_with_other_dh(this->data_->dh_cr_disc_.get()).get_loc_dof_indices(side_indices);
+      LocalElementAccessorBase<3> ele_ac(dh_cell);
       multidim_assembler[ele_ac.dim()-1]->update_water_content(ele_ac);
 
       double ele_scale = ele_ac.measure() *
@@ -295,8 +288,8 @@ void RichardsLMH::postprocess() {
       for (unsigned int i=0; i<ele_ac.element_accessor()->n_sides(); i++) {
           //unsigned int loc_edge_row = ele_ac.edge_local_row(i);
           side_rows[i] = ele_ac.side_row(i);
-          double water_content = data_->water_content_previous_it[ele_ac.side_local_idx(i)];
-          double water_content_previous_time = data_->water_content_previous_time[ele_ac.side_local_idx(i)];
+          double water_content = data_->water_content_previous_it[ side_indices[i] ];
+          double water_content_previous_time = data_->water_content_previous_time[ side_indices[i] ];
 
           values[i] = ele_scale * ele_source - ele_scale * (water_content - water_content_previous_time) / time_->dt();
       }

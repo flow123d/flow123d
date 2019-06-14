@@ -62,6 +62,7 @@ public:
     void zero_time_step() override;
     void update_solution() override;
     const MH_DofHandler & get_mh_dofhandler() override;
+    double last_t() override;
     ~HM_Iterative();
 
 private:

@@ -234,6 +234,21 @@ public:
     /// Returns range over ghosts DOF handler cells
     Range<DHCellAccessor> ghost_range() const;
 
+    /// Return size of own range (number of own cells)
+    inline unsigned int own_size() const {
+        return el_ds_->lsize();
+    }
+
+    /// Return size of local range (number of local cells)
+    inline unsigned int local_size() const {
+        return el_ds_->lsize()+ghost_4_loc.size();
+    }
+
+    /// Return size of ghost range (number of ghost cells)
+    inline unsigned int ghost_size() const {
+        return ghost_4_loc.size();
+    }
+
     /// Return DHCellAccessor appropriate to ElementAccessor of given idx
     const DHCellAccessor cell_accessor_from_element(unsigned int elm_idx) const;
 
@@ -457,7 +472,7 @@ public:
      * @p vec    Vector aligned with the parent dof handler.
      * @p subvec Vctor aligned with the current sub-handler.
      */
-    VectorMPI update_subvector(const VectorMPI &vec, VectorMPI &subvec);
+    void update_subvector(const VectorMPI &vec, VectorMPI &subvec);
     
     /** @brief Update values in parent vector from values of subvector.
      * 

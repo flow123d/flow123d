@@ -251,8 +251,7 @@ IT::Selection HeatTransferModel::ModelEqData::get_output_selection()
 
 HeatTransferModel::HeatTransferModel(Mesh &mesh, const Input::Record in_rec) :
 		AdvectionProcessBase(mesh, in_rec),
-		flux_changed(true),
-		mh_dh(nullptr)
+		flux_changed(true)
 {
 	time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
 	substances_.initialize({""});

@@ -77,10 +77,13 @@ public:
     void update_water_content(LocalElementAccessorBase<3> ele) override {
         reset_soil_model(ele);
         double storativity = this->ad_->storativity.value(ele.centre(), ele.element_accessor());
+        ele.dh_cell().cell_with_other_dh(ad_->dh_cr_.get()).get_loc_dof_indices(this->indices_);
+        std::vector<LongIdx> side_indices(ad_->dh_cr_disc_->max_elem_dofs());
+        ele.dh_cell().cell_with_other_dh(ad_->dh_cr_disc_.get()).get_loc_dof_indices(side_indices);
         for (unsigned int i=0; i<ele.element_accessor()->n_sides(); i++) {
             double capacity = 0;
             double water_content = 0;
-            double phead = ad_->phead_edge_[ele.edge_local_idx(i)];
+            double phead = ad_->phead_edge_[ this->indices_[i] ];
             if (genuchten_on) {
 
                   fadbad::B<double> x_phead(phead);
@@ -89,8 +92,8 @@ public:
                   water_content = evaluated.val();
                   capacity = x_phead.d(0);
             }
-            ad_->capacity[ele.side_local_idx(i)] = capacity + storativity;
-            ad_->water_content_previous_it[ele.side_local_idx(i)] = water_content + storativity * phead;
+            ad_->capacity[ side_indices[i] ] = capacity + storativity;
+            ad_->water_content_previous_it[ side_indices[i] ] = water_content + storativity * phead;
         }
     }
 
@@ -104,12 +107,12 @@ public:
         if (genuchten_on) {
             conductivity=0;
             head=0;
+            ele.dh_cell().cell_with_other_dh(ad_->dh_cr_.get()).get_loc_dof_indices(this->indices_);
             for (unsigned int i=0; i<ele.element_accessor()->n_sides(); i++)
             {
-                uint local_edge = ele.edge_local_idx(i);
-                double phead = ad_->phead_edge_[local_edge];
+                double phead = ad_->phead_edge_[ this->indices_[i] ];
                 conductivity += soil_model->conductivity(phead);
-                head += ad_->phead_edge_[local_edge];
+                head += ad_->phead_edge_[ this->indices_[i] ];
             }
             conductivity /= ele.n_sides();
             head /= ele.n_sides();
@@ -135,11 +138,13 @@ public:
         double source_diagonal = diagonal_coef * this->ad_->water_source_density.value(ele.centre(), ele.element_accessor());
 
         update_water_content(ele);
+        ele.dh_cell().cell_with_other_dh(ad_->dh_cr_.get()).get_loc_dof_indices(this->indices_);
+        std::vector<LongIdx> side_indices(ad_->dh_cr_disc_->max_elem_dofs());
+        ele.dh_cell().cell_with_other_dh(ad_->dh_cr_disc_.get()).get_loc_dof_indices(side_indices);
         for (unsigned int i=0; i<ele.element_accessor()->n_sides(); i++)
         {
 
-            uint local_edge = ele.edge_local_idx(i);
-            uint local_side = ele.side_local_idx(i);
+            uint local_side = side_indices[i];
             
             double capacity = this->ad_->capacity[local_side];
             double water_content_diff = -ad_->water_content_previous_it[local_side] + ad_->water_content_previous_time[local_side];
@@ -157,7 +162,7 @@ public:
             */
 
 
-            double mass_rhs = mass_diagonal * ad_->phead_edge_[local_edge] / this->ad_->time_step_
+                double mass_rhs = mass_diagonal * ad_->phead_edge_[ this->indices_[i] ] / this->ad_->time_step_
                                 + diagonal_coef * water_content_diff / this->ad_->time_step_;
 
 //                 DBGCOUT(<< "source [" << loc_system_.row_dofs[this->loc_edge_dofs[i]] << ", " << loc_system_.row_dofs[this->loc_edge_dofs[i]]
@@ -171,7 +176,7 @@ public:
             if (ad_->balance != nullptr) {
                 ad_->balance->add_mass_vec_value(ad_->water_balance_idx, ele.region().bulk_idx(),
                         diagonal_coef*ad_->water_content_previous_it[local_side]);
-                ad_->balance->add_source_values(ad_->water_balance_idx, ele.region().bulk_idx(), {(LongIdx)local_edge},{0},{source_diagonal});
+                ad_->balance->add_source_values(ad_->water_balance_idx, ele.region().bulk_idx(), {(LongIdx)this->indices_[i]},{0},{source_diagonal});
             }
         }
 

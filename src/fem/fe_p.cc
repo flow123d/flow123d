@@ -326,3 +326,9 @@ template class FE_CR<1>;
 template class FE_CR<2>;
 template class FE_CR<3>;
 
+
+template class FE_CR_disc<0>;
+template class FE_CR_disc<1>;
+template class FE_CR_disc<2>;
+template class FE_CR_disc<3>;
+
