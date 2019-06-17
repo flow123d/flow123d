@@ -139,7 +139,7 @@ void FEValuesBase<dim,spacedim>::ViewsCache::initialize(FEValuesBase<dim,spacedi
 
 template<unsigned int dim,unsigned int spacedim>
 FEValuesBase<dim,spacedim>::FEValuesBase()
-: mapping(NULL), quadrature(NULL), fe(NULL), mapping_data(NULL), fe_data(NULL)
+: mapping(NULL), n_points_(0), fe(NULL), mapping_data(NULL), fe_data(NULL)
 {
 }
 
@@ -155,7 +155,7 @@ FEValuesBase<dim,spacedim>::~FEValuesBase() {
 
 template<unsigned int dim, unsigned int spacedim>
 void FEValuesBase<dim,spacedim>::allocate(Mapping<dim,spacedim> & _mapping,
-        Quadrature<dim> & _quadrature,
+        unsigned int n_points,
         FiniteElement<dim> & _fe,
         UpdateFlags _flags)
 {
@@ -168,12 +168,12 @@ void FEValuesBase<dim,spacedim>::allocate(Mapping<dim,spacedim> & _mapping,
     }
     
     mapping = &_mapping;
-    quadrature = &_quadrature;
+    n_points_ = n_points;
     fe = &_fe;
     n_components_ = fe->n_space_components(spacedim);
     
     // add flags required by the finite element or mapping
-    data.allocate(quadrature->size(), update_each(_flags), fe->n_dofs()*n_components_);
+    data.allocate(n_points_, update_each(_flags), fe->n_dofs()*n_components_);
     
     views_cache_.initialize(*this);
 }
@@ -228,7 +228,7 @@ template<unsigned int dim, unsigned int spacedim>
 double FEValuesBase<dim,spacedim>::shape_value(const unsigned int function_no, const unsigned int point_no)
 {
   ASSERT_LT_DBG(function_no, fe->n_dofs());
-  ASSERT_LT_DBG(point_no, quadrature->size());
+  ASSERT_LT_DBG(point_no, n_points_);
   return data.shape_values[point_no][function_no];
 }
 
@@ -237,7 +237,7 @@ template<unsigned int dim, unsigned int spacedim>
 arma::vec::fixed<spacedim> FEValuesBase<dim,spacedim>::shape_grad(const unsigned int function_no, const unsigned int point_no)
 {
   ASSERT_LT_DBG(function_no, fe->n_dofs());
-  ASSERT_LT_DBG(point_no, quadrature->size());
+  ASSERT_LT_DBG(point_no, n_points_);
   return data.shape_gradients[point_no][function_no];
 }
 
@@ -248,7 +248,7 @@ double FEValuesBase<dim,spacedim>::shape_value_component(const unsigned int func
                                     const unsigned int comp) const
 {
   ASSERT_LT_DBG(function_no, fe->n_dofs());
-  ASSERT_LT_DBG(point_no, quadrature->size());
+  ASSERT_LT_DBG(point_no, n_points_);
   ASSERT_LT_DBG(comp, n_components_);
   return data.shape_values[point_no][function_no*n_components_+comp];
 }
@@ -260,7 +260,7 @@ arma::vec::fixed<spacedim> FEValuesBase<dim,spacedim>::shape_grad_component(cons
                                                         const unsigned int comp) const
 {
   ASSERT_LT_DBG(function_no, fe->n_dofs());
-  ASSERT_LT_DBG(point_no, quadrature->size());
+  ASSERT_LT_DBG(point_no, n_points_);
   ASSERT_LT_DBG(comp, n_components_);
   return data.shape_gradients[point_no][function_no*n_components_+comp];
 }
@@ -513,13 +513,14 @@ FEValues<dim,spacedim>::FEValues(Mapping<dim,spacedim> &_mapping,
          Quadrature<dim> &_quadrature,
          FiniteElement<dim> &_fe,
          UpdateFlags _flags)
-:FEValuesBase<dim, spacedim>()
+: FEValuesBase<dim, spacedim>(),
+  quadrature(&_quadrature)
 {
-    this->allocate(_mapping, _quadrature, _fe, _flags);
+    this->allocate(_mapping, _quadrature.size(), _fe, _flags);
 
     // precompute the maping data and finite element data
-    this->mapping_data = this->mapping->initialize(*this->quadrature, this->data.update_flags);
-    this->fe_data = this->init_fe_data(this->quadrature);
+    this->mapping_data = this->mapping->initialize(*quadrature, this->data.update_flags);
+    this->fe_data = this->init_fe_data(quadrature);
     
     // In case of mixed system allocate data for sub-elements.
     if (this->fe->type_ == FEMixedSystem)
@@ -565,8 +566,7 @@ FESideValues<dim,spacedim>::FESideValues(Mapping<dim,spacedim> & _mapping,
 :FEValuesBase<dim,spacedim>()
 {
     sub_quadrature = &_sub_quadrature;
-    Quadrature<dim> *q = new Quadrature<dim>(_sub_quadrature.size());
-    this->allocate(_mapping, *q, _fe, _flags);
+    this->allocate(_mapping, _sub_quadrature.size(), _fe, _flags);
 
     for (unsigned int sid = 0; sid < RefElement<dim>::n_sides; sid++)
     {
@@ -603,10 +603,6 @@ FESideValues<dim,spacedim>::~FESideValues()
 			delete side_fe_data[sid][pid];
 		}
 	}
-
-    // Since quadrature is an auxiliary internal variable allocated
-    // by the constructor, it must be destroyed here.
-    delete this->quadrature;
 }
 
 
@@ -618,17 +614,18 @@ void FESideValues<dim,spacedim>::reinit(ElementAccessor<3> & cell,
     ASSERT_EQ_DBG(dim, cell->dim());
     this->data.present_cell = &cell;
 
-    unsigned int pid = cell->permutation_idx(sid);
-    ASSERT_LT_DBG(pid, RefElement<dim>::n_side_permutations);
+    side_idx_ = sid;
+    side_perm_ = cell->permutation_idx(sid);
+    ASSERT_LT_DBG(side_perm_, RefElement<dim>::n_side_permutations);
     // calculate Jacobian of mapping, JxW, inverse Jacobian, normal vector(s)
     this->mapping->fill_fe_side_values(cell,
                                  sid,
-                                 side_quadrature[sid][pid],
-                                 *side_mapping_data[sid][pid],
+                                 side_quadrature[sid][side_perm_],
+                                 *side_mapping_data[sid][side_perm_],
                                  this->data);
 
     // calculation of finite element data
-    this->fill_data(*side_fe_data[sid][pid]);
+    this->fill_data(*side_fe_data[sid][side_perm_]);
 }
 
 
