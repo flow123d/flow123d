@@ -64,9 +64,9 @@ public:
 		return map_;
 	}
     /// Returns one value in one given point.
-    typename Value::return_type const &value(const Point &p, const ElementAccessor<spacedim> &elm);
+    virtual typename Value::return_type const &value(const Point &p, const ElementAccessor<spacedim> &elm);
     /// Returns std::vector of scalar values in several points at once.
-    void value_list (const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
+    virtual void value_list (const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
                        std::vector<typename Value::return_type> &value_list);
     /// Compute real coordinates and weights (use QGauss) for given element
     unsigned int compute_quadrature(std::vector<arma::vec::fixed<3>> & q_points, std::vector<double> & q_weights,
@@ -82,7 +82,7 @@ public:
 
 	/// TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
 	unsigned int get_dof_indices(const ElementAccessor<3> &cell, std::vector<LongIdx> &indices) const;
-private:
+protected:
 	/// DOF handler object
     std::shared_ptr<DOFHandlerMultiDim> dh_;
     /// Store data of Field
@@ -164,6 +164,45 @@ private:
      * TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
      */
     std::shared_ptr< std::vector<LongIdx> > boundary_dofs_;
+};
+
+
+/**
+ * Helper class that allows compute finite element values specified by element dimension.
+ */
+template <int elemdim, int spacedim, class Value>
+class FieldEvaluate : public FEValueHandler<elemdim, spacedim, Value>
+{
+public:
+    typedef typename Space<spacedim>::Point Point;
+
+    /// Constructor.
+    FieldEvaluate(const Quadrature<elemdim> * quadrature);
+
+    /// Returns one value in one given point.
+    typename Value::return_type const &value(const Point &p, const ElementAccessor<spacedim> &elm) override
+    { ASSERT(false).error("Use 'FieldEvaluate::value(ElementAccessor)' method!"); }
+
+    /// Returns std::vector of values in all local points.
+    std::vector<typename Value::return_type> &value(const ElementAccessor<spacedim> &elm);
+
+    /// Returns std::vector of scalar values in several points at once.
+    void value_list (const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
+                       std::vector<typename Value::return_type> &value_list) override
+    { ASSERT(false).error("Use 'FieldEvaluate::value(ElementAccessor)' method!"); }
+
+    /// Destructor.
+    ~FieldEvaluate();
+
+private:
+    /// Vector of points of evaluation.
+    std::vector< Point > local_points_;
+    /// Vector of evaluated values.
+    std::vector<typename Value::return_type> value_list_;
+    /// General FE values object.
+    FEValues<elemdim,3> *fe_values_;
+    /// Pointer to Quadrature
+    const Quadrature<elemdim> * quad_;
 };
 
 

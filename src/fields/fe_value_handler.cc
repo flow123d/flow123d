@@ -227,6 +227,46 @@ FEValueHandler<elemdim, spacedim, Value>::~FEValueHandler()
 {}
 
 
+
+template <int elemdim, int spacedim, class Value>
+FieldEvaluate<elemdim, spacedim, Value>::FieldEvaluate(const Quadrature<elemdim> * quadrature)
+: FEValueHandler<elemdim, spacedim, Value>(),
+  local_points_(quadrature->get_points()), value_list_(quadrature->size(), this->r_value_), fe_values_(nullptr), quad_(quadrature)
+{}
+
+
+template <int elemdim, int spacedim, class Value>
+std::vector<typename Value::return_type> &FieldEvaluate<elemdim, spacedim, Value>::value(const ElementAccessor<spacedim> &elm)
+{
+    if (fe_values_==nullptr) { // initialize fe_values object
+    	fe_values_ = new FEValues<elemdim,3>(*this->get_mapping(), quad_, *this->dh_->ds()->fe<elemdim>(elm), update_values);
+    }
+
+    const DHCellAccessor cell = this->dh_->cell_accessor_from_element( elm.idx() );
+    if (this->boundary_dofs_) this->get_dof_indices( elm, this->dof_indices);
+    else cell.get_loc_dof_indices( this->dof_indices );
+    fe_values_->reinit( const_cast<ElementAccessor<spacedim> &>(elm) );
+
+    for (unsigned int k=0; k<quad_->size(); k++) {
+		Value envelope(value_list_[k]);
+		envelope.zeros();
+		for (unsigned int i=0; i<this->dh_->ds()->fe<elemdim>(elm)->n_dofs(); i++) {
+			value_list_[k] += this->data_vec_[this->dof_indices[i]]
+										  * FEShapeHandler<Value::rank_, elemdim, spacedim, Value>::fe_value(*fe_values_, i, 0, this->comp_index_);
+		}
+    }
+
+	return value_list_;
+}
+
+
+template <int elemdim, int spacedim, class Value>
+FieldEvaluate<elemdim, spacedim, Value>::~FieldEvaluate()
+{
+    if (fe_values_!=nullptr) delete fe_values_;
+}
+
+
 // Instantiations of FEValueHandler and FEShapeHandler
 #define INSTANCE_VALUE_HANDLER_ALL(dim, spacedim)                                     \
 template class FEValueHandler<dim, spacedim, FieldValue<0>::Enum >;                   \
