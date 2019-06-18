@@ -149,21 +149,23 @@ void RichardsLMH::read_initial_condition()
          for (unsigned int i=0; i<ele_ac.element_accessor()->n_sides(); i++) {
              int edge_row = ele_ac.edge_row(i);
              uint n_sides_of_edge =  ele_ac.element_accessor().side(i)->edge()->n_sides;
-             VecSetValue(schur0->get_solution(),edge_row, init_value/n_sides_of_edge, ADD_VALUES);
+             VecSetValue(data_->data_vec_.petsc_vec(),edge_row, init_value/n_sides_of_edge, ADD_VALUES);
          }
-         VecSetValue(schur0->get_solution(),ele_ac.ele_row(), init_value,ADD_VALUES);
+         VecSetValue(data_->data_vec_.petsc_vec(),ele_ac.ele_row(), init_value,ADD_VALUES);
     }
-    VecAssemblyBegin(schur0->get_solution());
-    VecAssemblyEnd(schur0->get_solution());
+    VecAssemblyBegin(data_->data_vec_.petsc_vec());
+    VecAssemblyEnd(data_->data_vec_.petsc_vec());
 
     // set water_content
     // pretty ugly since postprocess change fluxes, which cause bad balance, so we must set them back
-    VecCopy(schur0->get_solution(), data_->previous_solution.petsc_vec()); // store solution vector
+//     VecCopy(schur0->get_solution(), data_->previous_solution.petsc_vec()); // store solution vector
+    data_->previous_solution.copy(data_->data_vec_); // store solution vector
     postprocess();
+//     data_->previous_solution.swap(data_->data_vec_); // restore solution vector
     VecSwap(schur0->get_solution(), data_->previous_solution.petsc_vec()); // restore solution vector
 
     //DebugOut() << "init sol:\n";
-    //VecView( schur0->get_solution(),   PETSC_VIEWER_STDOUT_WORLD);
+    //VecView( data_->data_vec_.petsc_vec(),   PETSC_VIEWER_STDOUT_WORLD);
     //DebugOut() << "init water content:\n";
     //VecView( data_->water_content_previous_it.petsc_vec(),   PETSC_VIEWER_STDOUT_WORLD);
 
@@ -173,7 +175,7 @@ void RichardsLMH::read_initial_condition()
 
 void RichardsLMH::prepare_new_time_step()
 {
-    VecCopy(schur0->get_solution(), data_->previous_solution.petsc_vec());
+    data_->previous_solution.copy(data_->data_vec_);
     data_->water_content_previous_time.copy(data_->water_content_previous_it);
 }
 
@@ -256,7 +258,6 @@ void RichardsLMH::postprocess() {
     assembly_linear_system();
 
 
-
     int side_rows[4];
     double values[4];
     std::vector<LongIdx> side_indices(this->data_->dh_cr_disc_->max_elem_dofs());
@@ -269,12 +270,10 @@ void RichardsLMH::postprocess() {
     data_->phead_edge_.local_to_ghost_begin();
     data_->phead_edge_.local_to_ghost_end();
 
-  // modify side fluxes in parallel
-  // for every local edge take time term on digonal and add it to the corresponding flux
-    //PetscScalar *loc_prev_sol;
+    // modify side fluxes in parallel
+    // for every local edge take time term on diagonal and add it to the corresponding flux
     auto multidim_assembler = AssemblyBase::create< AssemblyLMH >(data_);
 
-    //VecGetArray(previous_solution, &loc_prev_sol);
     for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
       dh_cell.cell_with_other_dh(this->data_->dh_cr_disc_.get()).get_loc_dof_indices(side_indices);
       LocalElementAccessorBase<3> ele_ac(dh_cell);
@@ -283,22 +282,18 @@ void RichardsLMH::postprocess() {
       double ele_scale = ele_ac.measure() *
               data_->cross_section.value(ele_ac.centre(), ele_ac.element_accessor()) / ele_ac.n_sides();
       double ele_source = data_->water_source_density.value(ele_ac.centre(), ele_ac.element_accessor());
-      //double storativity = data_->storativity.value(ele_ac.centre(), ele_ac.element_accessor());
 
       for (unsigned int i=0; i<ele_ac.element_accessor()->n_sides(); i++) {
-          //unsigned int loc_edge_row = ele_ac.edge_local_row(i);
           side_rows[i] = ele_ac.side_row(i);
           double water_content = data_->water_content_previous_it[ side_indices[i] ];
           double water_content_previous_time = data_->water_content_previous_time[ side_indices[i] ];
 
           values[i] = ele_scale * ele_source - ele_scale * (water_content - water_content_previous_time) / time_->dt();
       }
-      VecSetValues(schur0->get_solution(), ele_ac.n_sides(), side_rows, values, ADD_VALUES);
+      VecSetValues(data_->data_vec_.petsc_vec(), ele_ac.n_sides(), side_rows, values, ADD_VALUES);
     }
 
-
-    VecAssemblyBegin(schur0->get_solution());
-    //VecRestoreArray(previous_solution, &loc_prev_sol);
-    VecAssemblyEnd(schur0->get_solution());
+    VecAssemblyBegin(data_->data_vec_.petsc_vec());
+    VecAssemblyEnd(data_->data_vec_.petsc_vec());
 
 }
