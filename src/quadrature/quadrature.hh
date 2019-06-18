@@ -224,7 +224,7 @@ Quadrature<dim>::Quadrature(const Quadrature<dim-1> &subq, unsigned int sid, uns
         
         //permute
         for (unsigned int i=0; i<RefElement<dim>::n_nodes_per_side; i++) {
-            pp(i) = p(RefElement<dim>::side_permutations[pid][i]);
+            pp(RefElement<dim>::side_permutations[pid][i]) = p(i);
         }
         
         el_bar_coords = RefElement<dim>::template interpolate<dim-1>(pp,sid);
