@@ -197,12 +197,9 @@ void RichardsLMH::assembly_linear_system()
 {
 
     START_TIMER("RicharsLMH::assembly_linear_system");
-
-    data_->data_vec_.ghost_to_local_begin();
-    data_->data_vec_.ghost_to_local_end();
     
+    // update the subvector with edge pressure for solution vector
     data_->dh_cr_->update_subvector(data_->data_vec_, data_->phead_edge_);
-    
     data_->phead_edge_.local_to_ghost_begin();
     data_->phead_edge_.local_to_ghost_end();
 
@@ -261,12 +258,9 @@ void RichardsLMH::postprocess() {
     int side_rows[4];
     double values[4];
     std::vector<LongIdx> side_indices(this->data_->dh_cr_disc_->max_elem_dofs());
-
-    data_->data_vec_.ghost_to_local_begin();
-    data_->data_vec_.ghost_to_local_end();
     
+    // update the subvector with edge pressure for solution vector
     data_->dh_cr_->update_subvector(data_->data_vec_, data_->phead_edge_);
-    
     data_->phead_edge_.local_to_ghost_begin();
     data_->phead_edge_.local_to_ghost_end();
 
