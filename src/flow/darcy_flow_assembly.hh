@@ -467,30 +467,34 @@ protected:
         
         // in unsteady, compute time term
         double storativity = 0.0;
-        double time_term = 0.0;
+        double time_term_diag = 0.0, time_term = 0.0, time_term_rhs = 0.0;
         
         if(! ad_->use_steady_assembly_)
         {
-            DebugOut() << "assemble time term\n";
             storativity = ad_->storativity.value(ele_ac.centre(), ele_ac.element_accessor());
-            time_term = coef * storativity ;
+            time_term = coef * storativity;
         }
         
         for (unsigned int i=0; i<ele_ac.n_sides(); i++)
         {
-//             if (dirichlet_edge[i] == 0)
+            if(! ad_->use_steady_assembly_)
             {
-                
-                this->loc_system_.add_value(loc_edge_dofs[i], loc_edge_dofs[i],
-                                                -time_term / ad_->time_step_,
-                                                -source_term);
+                time_term_diag = time_term / ad_->time_step_;
+                time_term_rhs = time_term_diag * ad_->previous_solution[ele_ac.edge_local_row(i)];
             }
-            
+
+            this->loc_system_.add_value(loc_edge_dofs[i], loc_edge_dofs[i],
+                                        -time_term_diag,
+                                        -source_term - time_term_rhs);
+                
             if (ad_->balance != nullptr)
             {
                 ad_->balance->add_source_values(ad_->water_balance_idx, ele.region().bulk_idx(), {(LongIdx)indices_[i]}, {0},{source_term});
                 if( ! ad_->use_steady_assembly_)
-                    ad_->balance->add_mass_vec_value(ad_->water_balance_idx, ele.region().bulk_idx(), time_term);
+                {
+                    ad_->balance->add_mass_matrix_values(ad_->water_balance_idx, ele_ac.region().bulk_idx(), { LongIdx(ele_ac.edge_row(i)) },
+                                                         {time_term});
+                }
             }
         }
     }

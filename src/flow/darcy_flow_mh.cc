@@ -514,6 +514,7 @@ void DarcyMH::zero_time_step()
         data_->use_steady_assembly_ = true;
         solve_nonlinear(); // with right limit data
     } else {
+        data_->use_steady_assembly_ = false;
         VecZeroEntries(schur0->get_solution());
         data_->previous_solution.zero_entries();
         
@@ -593,6 +594,7 @@ void DarcyMH::solve_nonlinear()
 {
 
     assembly_linear_system();
+    print_matlab_matrix("matrix_" + std::to_string(time_->step().index()));
     double residual_norm = schur0->compute_residual();
     nonlinear_iteration_ = 0;
     MessageOut().fmt("[nonlinear solver] norm of initial residual: {}\n", residual_norm);
@@ -680,12 +682,16 @@ void DarcyMH::solve_nonlinear()
 
 void DarcyMH::prepare_new_time_step()
 {
-    VecSwap(data_->previous_solution.petsc_vec(), schur0->get_solution());
+    DebugOut() << "DarcyMH::prepare_new_time_step\n";
+//     VecSwap(data_->previous_solution.petsc_vec(), schur0->get_solution());
+    VecCopy(schur0->get_solution(), data_->previous_solution.petsc_vec());
 }
 
 void DarcyMH::postprocess() 
 {
     START_TIMER("postprocess");
+    
+    DebugOut() << "DarcyMH::postprocess\n";
 
     //fix velocity when mortar method is used
     if(data_->mortar_method_ != MortarMethod::NoMortar){
@@ -697,30 +703,62 @@ void DarcyMH::postprocess()
         }
     }
 
+//     std::string output_file = FilePath("before_postprocess_" + std::to_string(time_->step().index()) + ".m", FilePath::output_file);
+//     PetscViewer    viewer;
+//     PetscViewerASCIIOpen(PETSC_COMM_WORLD, output_file.c_str(), &viewer);
+//     PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_MATLAB);
+//     VecView( schur0->get_solution(), viewer);
+//     VecView( data_->previous_solution.petsc_vec(), viewer);
+
+    // after solving, update ghost values
+    data_->data_vec_.local_to_ghost_begin();
+    data_->data_vec_.local_to_ghost_end();
+    
+    data_->previous_solution.local_to_ghost_begin();
+    data_->previous_solution.local_to_ghost_end();
+    
+    double ele_scale, source_term;
+    double storativity, new_pressure, old_pressure, time_term = 0.0;
+    unsigned int edge_local_row;
+
     // postprocess sources (lumping)
     int side_rows[4];
     double values[4];
-//     for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
-//       auto ele_ac = mh_dh.accessor(i_loc);
     for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
         LocalElementAccessorBase<3> ele_ac(dh_cell);
 
-        double ele_scale = ele_ac.measure() *
-                data_->cross_section.value(ele_ac.centre(), ele_ac.element_accessor()) / ele_ac.n_sides();
-        double ele_source = data_->water_source_density.value(ele_ac.centre(), ele_ac.element_accessor());
-        double storativity = data_->storativity.value(ele_ac.centre(), ele_ac.element_accessor());
+        ele_scale = ele_ac.measure() / ele_ac.n_sides() *
+            data_->cross_section.value(ele_ac.centre(), ele_ac.element_accessor());
+        source_term = ele_scale * data_->water_source_density.value(ele_ac.centre(), ele_ac.element_accessor());
+      
+        storativity = data_->storativity.value(ele_ac.centre(), ele_ac.element_accessor());
 
         for (unsigned int i=0; i<ele_ac.element_accessor()->n_sides(); i++) {
+            
             side_rows[i] = ele_ac.side_row(i);
             
-            values[i] = ele_scale * ele_source;
+            if( ! data_->use_steady_assembly_)
+            {
+                edge_local_row = ele_ac.edge_local_row(i);
+                new_pressure = data_->data_vec_[edge_local_row];
+                old_pressure = data_->previous_solution[edge_local_row];
+                time_term = ele_scale * storativity / data_->time_step_ * (new_pressure - old_pressure);
+            }
+            
+            values[i] = source_term - time_term;
         }
         VecSetValues(schur0->get_solution(), ele_ac.n_sides(), side_rows, values, ADD_VALUES);
     }
-
-
+    
     VecAssemblyBegin(schur0->get_solution());
     VecAssemblyEnd(schur0->get_solution());
+    
+//     output_file = FilePath("postprocess_" + std::to_string(time_->step().index()) + ".m", FilePath::output_file);
+// //     PetscViewer    viewer;
+//     PetscViewerASCIIOpen(PETSC_COMM_WORLD, output_file.c_str(), &viewer);
+//     PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_MATLAB);
+//     VecView( schur0->get_solution(), viewer);
+//     VecView( data_->previous_solution.petsc_vec(), viewer);
 }
 
 
@@ -782,6 +820,7 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembly& assembler)
 
     balance_->start_flux_assembly(data_->water_balance_idx);
     balance_->start_source_assembly(data_->water_balance_idx);
+    balance_->start_mass_assembly(data_->water_balance_idx);
 
     // TODO: try to move this into balance, or have it in the generic assembler class, that should perform the cell loop
     // including various pre- and post-actions
@@ -793,6 +832,7 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembly& assembler)
     }    
     
 
+    balance_->finish_mass_assembly(data_->water_balance_idx);
     balance_->finish_source_assembly(data_->water_balance_idx);
     balance_->finish_flux_assembly(data_->water_balance_idx);
 
@@ -1033,6 +1073,11 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
 void DarcyMH::assembly_linear_system() {
     START_TIMER("DarcyFlowMH_Steady::assembly_linear_system");
 
+//     DebugOut() << "DarcyMH::assembly_linear_system\n";
+    
+    data_->previous_solution.local_to_ghost_begin();
+    data_->previous_solution.local_to_ghost_end();
+    
     data_->is_linear=true;
     bool is_steady = zero_time_term();
 	//DebugOut() << "Assembly linear system\n";
@@ -1048,18 +1093,20 @@ void DarcyMH::assembly_linear_system() {
 
         schur0->mat_zero_entries();
         schur0->rhs_zero_entries();
-        balance_->start_mass_assembly(data_->water_balance_idx);
         
         data_->time_step_ = time_->dt();
 	    assembly_mh_matrix( data_->multidim_assembler ); // fill matrix
 
-        balance_->finish_mass_assembly(data_->water_balance_idx);
 	    schur0->finish_assembly();
 //         print_matlab_matrix("matrix");
 	    schur0->set_matrix_changed();
             //MatView( *const_cast<Mat*>(schur0->get_matrix()), PETSC_VIEWER_STDOUT_WORLD  );
             //VecView( *const_cast<Vec*>(schur0->get_rhs()),   PETSC_VIEWER_STDOUT_WORLD);
 
+        if (! is_steady) {
+            solution_changed_for_scatter=true;
+        }
+        
 // 	    if (! is_steady) {
 // 	        START_TIMER("fix time term");
 // 	    	//DebugOut() << "setup time term\n";
@@ -1105,8 +1152,7 @@ void DarcyMH::print_matlab_matrix(std::string matlab_file)
         PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_MATLAB);
         MatView( *const_cast<Mat*>(schur0->get_matrix()), viewer);
         VecView( *const_cast<Vec*>(schur0->get_rhs()), viewer);
-        VecView( *const_cast<Vec*>(schur0->get_rhs()), viewer);
-        VecView( *const_cast<Vec*>(&(schur0->get_solution())), viewer);
+        VecView( schur0->get_solution(), viewer);
     }
 //     else{
 //         WarningOut() << "No matrix output available for the current solver.";
@@ -1419,19 +1465,26 @@ void mat_count_off_proc_values(Mat m, Vec v) {
 
 void DarcyMH::read_initial_condition()
 {
-	double *local_sol = schur0->get_solution_array();
-
-	// cycle over local element rows
-
-	DebugOut().fmt("Setup with dt: {}\n", time_->dt());
+	DebugOut().fmt("Read initial condition\n");
+    
 	for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
 		LocalElementAccessorBase<3> ele_ac(dh_cell);
 		// set initial condition
-		local_sol[ele_ac.ele_local_row()] = data_->init_pressure.value(ele_ac.centre(),ele_ac.element_accessor());
+        double init_value = data_->init_pressure.value(ele_ac.centre(),ele_ac.element_accessor());
+        data_->data_vec_[ele_ac.ele_local_row()] = init_value;
+        
+//         uint n_sides_of_edge =  ele_ac.element_accessor()->n_sides();
+        for (unsigned int i=0; i<ele_ac.element_accessor()->n_sides(); i++) {
+            int edge_local_row = ele_ac.edge_local_row(i);
+             uint n_sides_of_edge =  ele_ac.element_accessor().side(i)->edge()->n_sides;
+             data_->data_vec_[edge_local_row] += init_value/n_sides_of_edge;
+         }
 	}
 
 	solution_changed_for_scatter=true;
-
+    
+    data_->data_vec_.ghost_to_local_begin();
+    data_->data_vec_.ghost_to_local_end();
 }
 
 void DarcyMH::setup_time_term() {
