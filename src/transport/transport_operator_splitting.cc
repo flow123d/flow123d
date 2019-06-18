@@ -366,8 +366,6 @@ void TransportOperatorSplitting::update_solution() {
 
 void TransportOperatorSplitting::set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field, double velocity_last_t)
 {
-	flux_field->local_to_ghost_data_scatter_begin();
-	flux_field->local_to_ghost_data_scatter_end();
 	convection->set_velocity_field( flux_field, velocity_last_t );
 };
 
