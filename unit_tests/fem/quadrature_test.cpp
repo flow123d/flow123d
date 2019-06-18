@@ -85,7 +85,7 @@ TEST(Quadrature, midpoint){
 }
 
 
-/// Map lower dimensional quadrature to element quadrature to element quadrature
+/// Map lower dimensional quadrature to element quadrature
 /// using all sides and their permutations. Test equality of node coordinates
 /// for both quadratures.
 template<unsigned int dim>
