@@ -85,36 +85,70 @@ TEST(Quadrature, midpoint){
 }
 
 
+/// Map lower dimensional quadrature to element quadrature to element quadrature
+/// using all sides and their permutations. Test equality of node coordinates
+/// for both quadratures.
+template<unsigned int dim>
+void test_side_projection(Quadrature<dim-1> &subq)
+{
+    for (unsigned int sid=0; sid<RefElement<dim>::n_sides; sid++)
+    {
+        for (unsigned int pid=0; pid<RefElement<dim>::n_side_permutations; pid++)
+        {
+            Quadrature<dim> q(subq, sid, pid);
+            
+            std::vector<arma::vec::fixed<dim>> bary_subq;
+            std::vector<arma::vec::fixed<dim+1>> bary_q;
+            arma::mat::fixed<3,dim> coords_subq;
+            arma::mat::fixed<3,dim+1> coords_q;
+            
+            // Setup coordinate matrices for mapping of reference points from side to 3d space.
+            // We use the reference simplex as the 'spacial' element.
+            for (unsigned int i=0; i<RefElement<dim>::n_nodes_per_side; i++)
+            {
+                unsigned int side_node_idx = RefElement<dim>::side_permutations[pid][i]; // index of permuted node within side
+                unsigned int node_idx = RefElement<dim>::nodes_of_subelements[dim-1][sid][side_node_idx]; // index of node within element
+                coords_subq.col(i) = arma::eye(3,dim)*RefElement<dim>::node_coords(node_idx);
+            }
+            // The same as above for mapping of reference element to 3d space.
+            for (unsigned int i=0; i<RefElement<dim>::n_nodes; i++)
+                coords_q.col(i) = arma::eye(3,dim)*RefElement<dim>::node_coords(i);
+
+            // Setup barycentric coordinates of quadrature points.
+            for (unsigned int i=0; i<subq.size(); i++)
+            {
+                bary_subq.push_back(RefElement<dim-1>::local_to_bary(subq.point(i)));
+                bary_q.push_back(RefElement<dim>::local_to_bary(q.point(i)));
+            }
+            
+            // Map barycentric coordinates of subquadrature and quadrature points to 3d space
+            // and test their equality.
+            for (unsigned int i=0; i<subq.size(); i++)
+            {
+                arma::vec3 sub_pts = coords_subq*bary_subq[i];
+                arma::vec3 pts = coords_q*bary_q[i];
+                EXPECT_ARMA_EQ( sub_pts, pts );
+            }
+        }
+    }
+}
+
+
 TEST(Quadrature, side_projections){
     {
-    QMidpoint qm(4);
-    
-    Quadrature<2> quad(qm,0,0);
-    EXPECT_ARMA_EQ(arma::vec("0.125 0"), quad.point(0));
-    EXPECT_ARMA_EQ(arma::vec("0.375 0"), quad.point(1));
-    EXPECT_ARMA_EQ(arma::vec("0.625 0"), quad.point(2));
-    EXPECT_ARMA_EQ(arma::vec("0.875 0"), quad.point(3));
-    quad = Quadrature<2>(qm,1,0);
-    EXPECT_ARMA_EQ(arma::vec("0 0.125"), quad.point(0));
-    EXPECT_ARMA_EQ(arma::vec("0 0.625"), quad.point(2));
-    quad = Quadrature<2>(qm,2,0);
-    EXPECT_ARMA_EQ(arma::vec("0.875 0.125"), quad.point(0));
-    EXPECT_ARMA_EQ(arma::vec("0.375 0.625"), quad.point(2));
-    quad = Quadrature<2>(qm,2,1);
-    EXPECT_ARMA_EQ(arma::vec("0.125 0.875"), quad.point(0));
-    EXPECT_ARMA_EQ(arma::vec("0.625 0.375"), quad.point(2));
+        for (unsigned int n_points=1; n_points<=10; n_points++)
+        {
+            QMidpoint qm(n_points);
+            test_side_projection<2>(qm);
+        }
     }
     
     {
-    QGauss<2> qg(1);
-    Quadrature<3> quad(qg, 0, 0);
-    EXPECT_ARMA_EQ(arma::vec({1./3, 1./3, 0}), quad.point(0));
-    quad = Quadrature<3>(qg, 1, 0);
-    EXPECT_ARMA_EQ(arma::vec({1./3, 0, 1./3}), quad.point(0));
-    quad = Quadrature<3>(qg, 2, 0);
-    EXPECT_ARMA_EQ(arma::vec({0, 1./3, 1./3}), quad.point(0));
-    quad = Quadrature<3>(qg, 3, 0);
-    EXPECT_ARMA_EQ(arma::vec({1./3, 1./3, 1./3}), quad.point(0));
+        for (unsigned order=1; order<=10; order++)
+        {
+            QGauss<2> qg(order);
+            test_side_projection<3>(qg);
+        }
     }
 }
 
