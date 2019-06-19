@@ -1,6 +1,6 @@
 flow123d_version: 2.0.0
 problem: !Coupling_Sequential
-  description: Injection into well.
+  description: Injection into 2 fractures differing in cross section.
   mesh:
     mesh_file: ../00_mesh/square_2frac.msh
   flow_equation: !Coupling_Iterative
