@@ -299,12 +299,6 @@ protected:
     /// Solve method common to zero_time_step and update solution.
     void solve_nonlinear();
     void make_serial_scatter();
-    void modify_system();
-    virtual void setup_time_term();
-
-
-    //void prepare_parallel();
-    //void make_row_numberings();
 
     /**
      * Create and preallocate MH linear system (including matrix, rhs and solution vectors)
@@ -319,16 +313,6 @@ protected:
      * restart simulation or use results of one simulation as initial condition for other one.
      */
     virtual void read_initial_condition();
-
-    /**
-     * Part of per element assembly that is specific for MH and LMH respectively.
-     *
-     * This implemnets MH case:
-     * - compute conductivity scaling
-     * - assembly source term
-     * - no time term, managed by diagonal extraction etc.
-     */
-    //virtual void local_assembly_specific(AssemblyData &local_data);
    
     /**
      * Allocates linear system matrix for MH.
@@ -342,7 +326,7 @@ protected:
      * Element by element assembly is done using dim-template assembly class.
      * Assembles only steady part of the equation.
      * TODO:
-     * - include time term
+     * - include time term - DONE
      * - add support for Robin type sources
      * - support for nonlinear solvers - assembly either residual vector, matrix, or both (using FADBAD++)
      */
@@ -396,9 +380,6 @@ protected:
 	Vec sol_vec;			                 //< vector over solution array
 	VecScatter par_to_all;
 
-	Vec steady_diagonal;
-    Vec steady_rhs;
-    Vec new_diagonal;
     VectorMPI previous_solution_nonlinear;
 
     // Temporary objects holding pointers to appropriate FieldFE

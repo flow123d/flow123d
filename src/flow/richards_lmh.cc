@@ -240,15 +240,6 @@ void RichardsLMH::assembly_linear_system()
 
 
 
-void RichardsLMH::setup_time_term()
-{
-    FEAL_ASSERT(false).error("Shold not be called.");
-}
-
-
-
-
-
 void RichardsLMH::postprocess() {
 
     // update structures for balance of water volume

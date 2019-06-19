@@ -305,9 +305,6 @@ DarcyMH::DarcyMH(Mesh &mesh_in, const Input::Record in_rec)
     solution(nullptr),
     data_changed_(false),
     schur0(nullptr),
-	steady_diagonal(nullptr),
-	steady_rhs(nullptr),
-	new_diagonal(nullptr),
 	par_to_all(nullptr)
 {
 
@@ -466,14 +463,6 @@ void DarcyMH::initialize() {
     create_linear_system(rec);
 
 
-
-    // allocate time term vectors
-    VecCreateMPI(PETSC_COMM_WORLD, data_->dh_->distr()->lsize(),PETSC_DETERMINE,&(steady_diagonal));
-    VecDuplicate(steady_diagonal,& new_diagonal);
-    VecZeroEntries(new_diagonal);
-    VecDuplicate(steady_diagonal, &steady_rhs);
-
-
     // initialization of balance object
     balance_ = std::make_shared<Balance>("water", mesh_);
     balance_->init_from_input(input_record_.val<Input::Record>("balance"), time());
@@ -491,6 +480,30 @@ void DarcyMH::initialize() {
 
 void DarcyMH::initialize_specific()
 {}
+
+void DarcyMH::read_initial_condition()
+{
+	DebugOut().fmt("Read initial condition\n");
+    
+	for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
+		LocalElementAccessorBase<3> ele_ac(dh_cell);
+		// set initial condition
+        double init_value = data_->init_pressure.value(ele_ac.centre(),ele_ac.element_accessor());
+        data_->data_vec_[ele_ac.ele_local_row()] = init_value;
+        
+//         uint n_sides_of_edge =  ele_ac.element_accessor()->n_sides();
+        for (unsigned int i=0; i<ele_ac.element_accessor()->n_sides(); i++) {
+            int edge_local_row = ele_ac.edge_local_row(i);
+             uint n_sides_of_edge =  ele_ac.element_accessor().side(i)->edge()->n_sides;
+             data_->data_vec_[edge_local_row] += init_value/n_sides_of_edge;
+         }
+	}
+
+	solution_changed_for_scatter=true;
+    
+    data_->data_vec_.ghost_to_local_begin();
+    data_->data_vec_.ghost_to_local_end();
+}
 
 void DarcyMH::zero_time_step()
 {
@@ -590,7 +603,7 @@ void DarcyMH::solve_nonlinear()
 {
 
     assembly_linear_system();
-    print_matlab_matrix("matrix_" + std::to_string(time_->step().index()));
+//     print_matlab_matrix("matrix_" + std::to_string(time_->step().index()));
     double residual_norm = schur0->compute_residual();
     nonlinear_iteration_ = 0;
     MessageOut().fmt("[nonlinear solver] norm of initial residual: {}\n", residual_norm);
@@ -675,7 +688,7 @@ void DarcyMH::solve_nonlinear()
 
 void DarcyMH::prepare_new_time_step()
 {
-    DebugOut() << "DarcyMH::prepare_new_time_step\n";
+//     DebugOut() << "DarcyMH::prepare_new_time_step\n";
     data_->previous_solution.copy(data_->data_vec_);
 }
 
@@ -683,7 +696,7 @@ void DarcyMH::postprocess()
 {
     START_TIMER("postprocess");
     
-    DebugOut() << "DarcyMH::postprocess\n";
+//     DebugOut() << "DarcyMH::postprocess\n";
 
     //fix velocity when mortar method is used
     if(data_->mortar_method_ != MortarMethod::NoMortar){
@@ -756,7 +769,7 @@ void DarcyMH::postprocess()
 void DarcyMH::output_data() {
     START_TIMER("Darcy output data");
     
-    print_matlab_matrix("matrix_" + std::to_string(time_->step().index()));
+//     print_matlab_matrix("matrix_" + std::to_string(time_->step().index()));
     
     //time_->view("DARCY"); //time governor information output
 	this->output_object->output();
@@ -1070,8 +1083,7 @@ void DarcyMH::assembly_linear_system() {
     data_->previous_solution.local_to_ghost_end();
     
     data_->is_linear=true;
-    bool is_steady = zero_time_term();
-	//DebugOut() << "Assembly linear system\n";
+
 // 	if (data_changed_) {
 // 	    data_changed_ = false;
     {
@@ -1089,39 +1101,15 @@ void DarcyMH::assembly_linear_system() {
 	    assembly_mh_matrix( data_->multidim_assembler ); // fill matrix
 
 	    schur0->finish_assembly();
-//         print_matlab_matrix("matrix");
 	    schur0->set_matrix_changed();
+//         print_matlab_matrix("matrix");
             //MatView( *const_cast<Mat*>(schur0->get_matrix()), PETSC_VIEWER_STDOUT_WORLD  );
             //VecView( *const_cast<Vec*>(schur0->get_rhs()),   PETSC_VIEWER_STDOUT_WORLD);
 
-        if (! is_steady) {
+        if (! zero_time_term()) {
             solution_changed_for_scatter=true;
         }
-        
-// 	    if (! is_steady) {
-// 	        START_TIMER("fix time term");
-// 	    	//DebugOut() << "setup time term\n";
-// 	    	// assembly time term and rhs
-// 	    	setup_time_term();
-// 	    	modify_system();
-// 	    }
-// 	    else
-// 	    {
-// 	    	
-// 	    	
-// 	    }
-// 	    END_TIMER("full assembly");
 	}
-// 	else {
-// 		START_TIMER("modify system");
-// 		if (! is_steady) {
-// 			modify_system();
-// 		} else {
-// 			//xprintf(PrgErr, "Planned computation time for steady solver, but data are not changed.\n");
-// 		}
-// 		END_TIMER("modiffy system");
-// 	}
-
 }
 
 
@@ -1348,10 +1336,6 @@ void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
 // DESTROY WATER MH SYSTEM STRUCTURE
 //=============================================================================
 DarcyMH::~DarcyMH() {
-	if (steady_diagonal != nullptr) chkerr(VecDestroy(&steady_diagonal));
-	if (new_diagonal != nullptr) chkerr(VecDestroy(&new_diagonal));
-	if (steady_rhs != nullptr) chkerr(VecDestroy(&steady_rhs));
-    
     
     if (schur0 != NULL) {
         delete schur0;
@@ -1443,95 +1427,6 @@ void mat_count_off_proc_values(Mat m, Vec v) {
 }
 */
 
-
-
-
-
-
-
-
-
-
-
-
-void DarcyMH::read_initial_condition()
-{
-	DebugOut().fmt("Read initial condition\n");
-    
-	for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
-		LocalElementAccessorBase<3> ele_ac(dh_cell);
-		// set initial condition
-        double init_value = data_->init_pressure.value(ele_ac.centre(),ele_ac.element_accessor());
-        data_->data_vec_[ele_ac.ele_local_row()] = init_value;
-        
-//         uint n_sides_of_edge =  ele_ac.element_accessor()->n_sides();
-        for (unsigned int i=0; i<ele_ac.element_accessor()->n_sides(); i++) {
-            int edge_local_row = ele_ac.edge_local_row(i);
-             uint n_sides_of_edge =  ele_ac.element_accessor().side(i)->edge()->n_sides;
-             data_->data_vec_[edge_local_row] += init_value/n_sides_of_edge;
-         }
-	}
-
-	solution_changed_for_scatter=true;
-    
-    data_->data_vec_.ghost_to_local_begin();
-    data_->data_vec_.ghost_to_local_end();
-}
-
-void DarcyMH::setup_time_term() {
-    // save diagonal of steady matrix
-    MatGetDiagonal(*( schur0->get_matrix() ), steady_diagonal);
-    // save RHS
-    VecCopy(*( schur0->get_rhs()), steady_rhs);
-
-
-    PetscScalar *local_diagonal;
-    VecGetArray(new_diagonal,& local_diagonal);
-
-    DebugOut().fmt("Setup with dt: {}\n", time_->dt());
-
-   	balance_->start_mass_assembly(data_->water_balance_idx);
-
-   	for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
-        LocalElementAccessorBase<3> ele_ac(dh_cell);
-
-        // set new diagonal
-        double diagonal_coeff = data_->cross_section.value(ele_ac.centre(), ele_ac.element_accessor())
-        		* data_->storativity.value(ele_ac.centre(), ele_ac.element_accessor())
-				* ele_ac.measure();
-        local_diagonal[ele_ac.ele_local_row()]= - diagonal_coeff / time_->dt();
-
-       	balance_->add_mass_matrix_values(data_->water_balance_idx,
-       	        ele_ac.region().bulk_idx(), { LongIdx(ele_ac.ele_row()) }, {diagonal_coeff});
-    }
-    VecRestoreArray(new_diagonal,& local_diagonal);
-    MatDiagonalSet(*( schur0->get_matrix() ), new_diagonal, ADD_VALUES);
-
-    solution_changed_for_scatter=true;
-    schur0->set_matrix_changed();
-
-    balance_->finish_mass_assembly(data_->water_balance_idx);
-}
-
-void DarcyMH::modify_system() {
-	START_TIMER("modify system");
-	if (time_->is_changed_dt() && time_->step().index()>0) {
-        double scale_factor=time_->step(-2).length()/time_->step().length();
-        if (scale_factor != 1.0) {
-            // if time step has changed and setup_time_term not called
-            MatDiagonalSet(*( schur0->get_matrix() ),steady_diagonal, INSERT_VALUES);
-
-            VecScale(new_diagonal, time_->last_dt()/time_->dt());
-            MatDiagonalSet(*( schur0->get_matrix() ),new_diagonal, ADD_VALUES);
-            schur0->set_matrix_changed();
-        }
-	}
-
-    // modify RHS - add previous solution
-	VecPointwiseMult(*( schur0->get_rhs()), new_diagonal, data_->data_vec_.petsc_vec());
-    VecAXPY(*( schur0->get_rhs()), 1.0, steady_rhs);
-    schur0->set_rhs_changed();
-}
 
 
 std::shared_ptr< FieldFE<3, FieldValue<3>::VectorFixed> > DarcyMH::get_velocity_field() {
