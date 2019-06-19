@@ -222,6 +222,7 @@ unsigned int FEValueHandler<0, spacedim, Value>::get_dof_indices(const ElementAc
 }
 
 
+/* Implementation of FieldEvaluate */
 template <int elemdim, int spacedim, class Value>
 FEValueHandler<elemdim, spacedim, Value>::~FEValueHandler()
 {}
@@ -229,34 +230,46 @@ FEValueHandler<elemdim, spacedim, Value>::~FEValueHandler()
 
 
 template <int elemdim, int spacedim, class Value>
-FieldEvaluate<elemdim, spacedim, Value>::FieldEvaluate(const Quadrature<elemdim> * quadrature)
-: FEValueHandler<elemdim, spacedim, Value>(),
-  local_points_(quadrature->get_points()), value_list_(quadrature->size(), this->r_value_), fe_values_(nullptr), quad_(quadrature)
+FieldEvaluate<elemdim, spacedim, Value>::FieldEvaluate(Quadrature<elemdim> * quadrature)
+: local_points_(quadrature->get_points()), value_list_(quadrature->size()), fe_values_(nullptr), quad_(quadrature)
 {}
+
+
+template <int elemdim, int spacedim, class Value>
+void FieldEvaluate<elemdim, spacedim, Value>::initialize(FEValueInitData init_data)
+{
+    if (dof_indices.size() > 0)
+        WarningOut() << "Multiple initialization of FieldEvaluate!";
+
+    dh_ = init_data.dh;
+    data_vec_ = init_data.data_vec;
+    dof_indices.resize(init_data.ndofs);
+    comp_index_ = init_data.comp_index;
+    map_ = new MappingP1<elemdim,3>();
+}
 
 
 template <int elemdim, int spacedim, class Value>
 std::vector<typename Value::return_type> &FieldEvaluate<elemdim, spacedim, Value>::value(const ElementAccessor<spacedim> &elm)
 {
     if (fe_values_==nullptr) { // initialize fe_values object
-    	fe_values_ = new FEValues<elemdim,3>(*this->get_mapping(), quad_, *this->dh_->ds()->fe<elemdim>(elm), update_values);
+        fe_values_ = new FEValues<elemdim,3>(*this->get_mapping(), *quad_, *dh_->ds()->fe<elemdim>(elm), update_values);
     }
 
     const DHCellAccessor cell = this->dh_->cell_accessor_from_element( elm.idx() );
-    if (this->boundary_dofs_) this->get_dof_indices( elm, this->dof_indices);
-    else cell.get_loc_dof_indices( this->dof_indices );
+    cell.get_loc_dof_indices( this->dof_indices );
     fe_values_->reinit( const_cast<ElementAccessor<spacedim> &>(elm) );
 
     for (unsigned int k=0; k<quad_->size(); k++) {
-		Value envelope(value_list_[k]);
-		envelope.zeros();
-		for (unsigned int i=0; i<this->dh_->ds()->fe<elemdim>(elm)->n_dofs(); i++) {
-			value_list_[k] += this->data_vec_[this->dof_indices[i]]
-										  * FEShapeHandler<Value::rank_, elemdim, spacedim, Value>::fe_value(*fe_values_, i, 0, this->comp_index_);
-		}
+        Value envelope(value_list_[k]);
+        envelope.zeros();
+        for (unsigned int i=0; i<dh_->ds()->fe<elemdim>(elm)->n_dofs(); i++) {
+            value_list_[k] += this->data_vec_[this->dof_indices[i]]
+                                        * FEShapeHandler<Value::rank_, elemdim, spacedim, Value>::fe_value(*fe_values_, i, 0, this->comp_index_);
+        }
     }
 
-	return value_list_;
+    return value_list_;
 }
 
 
@@ -288,3 +301,18 @@ INSTANCE_VALUE_HANDLER(0);
 INSTANCE_VALUE_HANDLER(1);
 INSTANCE_VALUE_HANDLER(2);
 INSTANCE_VALUE_HANDLER(3);
+
+
+#define INSTANCE_FIELD_EVALUATE_ALL(dim, spacedim)                                    \
+template class FieldEvaluate<dim, spacedim, FieldValue<0>::Enum >;                    \
+template class FieldEvaluate<dim, spacedim, FieldValue<0>::Integer >;                 \
+template class FieldEvaluate<dim, spacedim, FieldValue<0>::Scalar >;                  \
+template class FieldEvaluate<dim, spacedim, FieldValue<spacedim>::VectorFixed >;      \
+template class FieldEvaluate<dim, spacedim, FieldValue<spacedim>::TensorFixed >;
+
+#define INSTANCE_FIELD_EVALUATE(dim) \
+INSTANCE_FIELD_EVALUATE_ALL(dim,3)
+
+INSTANCE_FIELD_EVALUATE(1);
+INSTANCE_FIELD_EVALUATE(2);
+INSTANCE_FIELD_EVALUATE(3);

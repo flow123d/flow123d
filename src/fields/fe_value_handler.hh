@@ -147,7 +147,7 @@ public:
 	/// TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
 	unsigned int get_dof_indices(const ElementAccessor<3> &cell, std::vector<LongIdx> &indices) const;
 
-private:
+protected:
 	/// DOF handler object
     std::shared_ptr<DOFHandlerMultiDim> dh_;
     /// Store data of Field
@@ -171,38 +171,47 @@ private:
  * Helper class that allows compute finite element values specified by element dimension.
  */
 template <int elemdim, int spacedim, class Value>
-class FieldEvaluate : public FEValueHandler<elemdim, spacedim, Value>
+class FieldEvaluate
 {
 public:
     typedef typename Space<spacedim>::Point Point;
 
     /// Constructor.
-    FieldEvaluate(const Quadrature<elemdim> * quadrature);
+    FieldEvaluate(Quadrature<elemdim> * quadrature);
 
-    /// Returns one value in one given point.
-    typename Value::return_type const &value(const Point &p, const ElementAccessor<spacedim> &elm) override
-    { ASSERT(false).error("Use 'FieldEvaluate::value(ElementAccessor)' method!"); }
-
+    /// Initialize data members
+    void initialize(FEValueInitData init_data);
+    /// Return mapping object
+    inline MappingP1<elemdim,3> *get_mapping() {
+        ASSERT_PTR(map_).error("Uninitialized FEValueHandler!\n");
+        return map_;
+    }
     /// Returns std::vector of values in all local points.
     std::vector<typename Value::return_type> &value(const ElementAccessor<spacedim> &elm);
-
-    /// Returns std::vector of scalar values in several points at once.
-    void value_list (const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
-                       std::vector<typename Value::return_type> &value_list) override
-    { ASSERT(false).error("Use 'FieldEvaluate::value(ElementAccessor)' method!"); }
 
     /// Destructor.
     ~FieldEvaluate();
 
 private:
+    /// DOF handler object
+    std::shared_ptr<DOFHandlerMultiDim> dh_;
+    /// Store data of Field
+    VectorMPI data_vec_;
+    /// Array of indexes to data_vec_, used for get/set values
+    std::vector<LongIdx> dof_indices;
+    /// Mapping object.
+    MappingP1<elemdim,3> *map_;
+    /// Index of component (of vector_value/tensor_value)
+    unsigned int comp_index_;
+
     /// Vector of points of evaluation.
-    std::vector< Point > local_points_;
+    std::vector< arma::vec::fixed<elemdim> > local_points_;
     /// Vector of evaluated values.
     std::vector<typename Value::return_type> value_list_;
     /// General FE values object.
     FEValues<elemdim,3> *fe_values_;
     /// Pointer to Quadrature
-    const Quadrature<elemdim> * quad_;
+    Quadrature<elemdim> * quad_;
 };
 
 
