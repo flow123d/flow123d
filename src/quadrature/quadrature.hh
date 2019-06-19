@@ -180,6 +180,9 @@ Quadrature<dim>::~Quadrature()
 template<unsigned int dim> inline
 Quadrature<dim>::Quadrature(const Quadrature<dim-1> &subq, unsigned int sid, unsigned int pid)
 {
+    // Below we permute point coordinates according to permutation
+    // of nodes on side. We just check that these numbers equal.
+    ASSERT_DBG( RefElement<dim>::n_nodes_per_side == dim );
     resize(subq.size());
 
 //     double lambda;
