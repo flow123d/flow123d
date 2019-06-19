@@ -517,11 +517,11 @@ void DarcyMH::zero_time_step()
     data_changed_ = data_->set_time(time_->step(), LimitSide::right) || data_changed_;
 
     // zero_time_term means steady case
-    bool use_steady_assembly_ = zero_time_term();
+    data_->use_steady_assembly_ = zero_time_term();
 
     data_->data_vec_.zero_entries();
     
-    if (use_steady_assembly_) { // steady case
+    if (data_->use_steady_assembly_) { // steady case
         //read_initial_condition(); // Possible solution guess for steady case.
         solve_nonlinear(); // with right limit data
     } else {
