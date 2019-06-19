@@ -5,8 +5,6 @@ common_config:
 test_cases:
   - files:
     - 01_source.yaml
-    - 02_unsteady.yaml
-    - 06_unsteady_MH_exact.yaml
     - 07_unsteady_init_piezo.yaml
     - 08_gravity.yaml
   - files:
@@ -16,3 +14,6 @@ test_cases:
   - files:
     - 05_unsteady_LMH_exact.yaml
     time_limit: 120
+    ### the following solved only by lumped DarcyMH now (corresponds to tests 03,05)
+    #- 02_unsteady.yaml
+    #- 06_unsteady_MH_exact.yaml

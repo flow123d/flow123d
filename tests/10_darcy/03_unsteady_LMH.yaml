@@ -11,7 +11,7 @@ problem: !Coupling_Sequential
   description: Unsteady Darcy flow in 2D, Lumped Mixed Hybrid
   mesh:
     mesh_file: ../00_mesh/square_1x1_xy.msh
-  flow_equation: !Flow_Richards_LMH
+  flow_equation: !Flow_Darcy_MH
     input_fields:
       - region: bulk
         anisotropy: 0.02
