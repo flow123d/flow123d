@@ -148,6 +148,14 @@ public:
     /// Call end scatter functions (local to ghost) on data vector
     void local_to_ghost_data_scatter_end();
 
+    template<int elemdim>
+    std::shared_ptr<FieldEvaluate<elemdim, spacedim, Value>> get_evaluate(Quadrature<elemdim> * quadrature)  {
+    	std::shared_ptr< FieldEvaluate<elemdim, spacedim, Value> > field_eval = std::make_shared< FieldEvaluate<elemdim, spacedim, Value> >(quadrature);
+    	field_eval->initialize(this->init_data);
+    	return field_eval;
+    }
+
+
     /// Destructor.
 	virtual ~FieldFE();
 
@@ -231,6 +239,9 @@ private:
      * TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
      */
     std::shared_ptr< std::vector<LongIdx> > boundary_dofs_;
+
+    /// Hold init data for create FieldEvaluate objects.
+    FEValueInitData init_data;
 
     /// Registrar of class to factory
     static const int registrar;

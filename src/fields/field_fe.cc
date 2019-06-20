@@ -148,7 +148,6 @@ VectorMPI FieldFE<spacedim, Value>::set_fe_data(std::shared_ptr<DOFHandlerMultiD
     dof_indices_.resize(ndofs);
 
     // initialization data of value handlers
-	FEValueInitData init_data;
 	init_data.dh = dh_;
 	init_data.data_vec = data_vec_;
 	init_data.ndofs = ndofs;
@@ -360,7 +359,6 @@ void FieldFE<spacedim, Value>::make_dof_handler(const Mesh *mesh) {
 	else data_vec_ = VectorMPI::sequential( dh_->n_global_dofs() ); // allocate data_vec_
 
 	// initialization data of value handlers
-	FEValueInitData init_data;
 	init_data.dh = dh_;
 	init_data.data_vec = data_vec_;
 	init_data.ndofs = ndofs;
