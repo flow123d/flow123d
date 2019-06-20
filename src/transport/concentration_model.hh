@@ -189,6 +189,10 @@ public:
 	std::shared_ptr<OutputTime> output_stream() override
 	{ return output_stream_; }
 
+    std::shared_ptr<Balance> balance() const override {
+        return this->balance_;
+    }
+
 
 
 protected:

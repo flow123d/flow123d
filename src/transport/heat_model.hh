@@ -234,12 +234,19 @@ public:
 	}
 
     /// Returns number of transported substances.
-    inline unsigned int n_substances()
+    inline unsigned int n_substances() override
     { return 1; }
 
     /// Returns reference to the vector of substance names.
     inline SubstanceList &substances()
     { return substances_; }
+
+    const vector<unsigned int> &get_subst_idx() override
+	{ return subst_idx; }
+
+    std::shared_ptr<Balance> balance() const override {
+        return this->balance_;
+    }
 
 
 protected:
