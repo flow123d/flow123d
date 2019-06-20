@@ -88,6 +88,12 @@ public:
 	template<unsigned int dim>
 	inline MappingP1<dim,3> *mapping();
 
+	template<unsigned int dim>
+	inline AssemblyDG<dim> &assembly_dg();
+
+	template<unsigned int dim>
+	inline std::shared_ptr<FieldEvaluate<dim, 3, FieldValue<3>::VectorFixed>> field_evaluation();
+
 	inline std::shared_ptr<DOFHandlerMultiDim> dh();
 
 private:
@@ -97,10 +103,10 @@ private:
 	AssemblyDG<2> assembly2_;
 	AssemblyDG<3> assembly3_;
 
-	/// Finite elements for the solution of the advection-diffusion equation.
+	/// Finite element of dim=0 for the solution of the advection-diffusion equation.
 	FiniteElement<0> *fe0_;
 
-	/// Quadratures used in assembling methods.
+	/// Quadrature of dim=0 used in assembling methods.
 	Quadrature<0> *q0_;
 
     std::shared_ptr<DiscreteSpace> ds_;
@@ -243,6 +249,9 @@ private:
     static const int registrar;
 
 	inline typename Model::ModelEqData &data() { return data_; }
+
+	/// Implement Model::set_field_evals.
+	void set_field_evals() override;
 
 	void preallocate();
 

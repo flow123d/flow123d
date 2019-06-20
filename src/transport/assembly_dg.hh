@@ -35,10 +35,15 @@ public:
 
     /// Constructor.
     AssemblyDG(unsigned int fe_order) {
-    	fe_ = new FE_P_disc<dim>(fe_order);
-    	fe_rt_ = new FE_RT0<dim>;
-    	quad_ = new QGauss<dim>(2*fe_order);
-    	mapping_ = new MappingP1<dim,3>;
+        fe_ = new FE_P_disc<dim>(fe_order);
+        fe_rt_ = new FE_RT0<dim>;
+        quad_ = new QGauss<dim>(2*fe_order);
+       	mapping_ = new MappingP1<dim,3>;
+    }
+
+    /// Set FieldEvaluate object
+    void set_field_evaluation( std::shared_ptr<FieldEvaluate<dim, 3, FieldValue<3>::VectorFixed>> field_eval) {
+        this->field_eval_ = field_eval;
     }
 
     /// Destructor.
@@ -51,12 +56,15 @@ public:
 
 private:
 
-	FiniteElement<dim> *fe_;     ///< Finite element for the solution of the advection-diffusion equation.
-	FiniteElement<dim> *fe_rt_;  ///< Finite element for the water velocity field.
-	Quadrature<dim> *quad_;      ///< Quadrature used in assembling methods.
-	MappingP1<dim,3> *mapping_;  ///< Auxiliary mapping of reference elements.
+    FiniteElement<dim> *fe_;     ///< Finite element for the solution of the advection-diffusion equation.
+    FiniteElement<dim> *fe_rt_;  ///< Finite element for the water velocity field.
+    Quadrature<dim> *quad_;      ///< Quadrature used in assembling methods.
+    MappingP1<dim,3> *mapping_;  ///< Auxiliary mapping of reference elements.
 
-	friend class FEObjects;
+    /// Evaluate values of velocity field.
+    std::shared_ptr<FieldEvaluate<dim, 3, FieldValue<3>::VectorFixed>> field_eval_;
+
+    friend class FEObjects;
 };
 
 

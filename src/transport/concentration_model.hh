@@ -162,6 +162,7 @@ public:
 	inline void set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field, double velocity_last_t) override
 	{
 		velocity_field_ptr_ = flux_field;
+		this->set_field_evals();
 		flux_changed = true;
 	}
 
@@ -195,6 +196,9 @@ protected:
 
 	/// Derived class should implement getter for ModelEqData instance.
 	virtual ModelEqData &data() = 0;
+
+	/// Derived class should implement method that create FieldEvaluate objects.
+	virtual void set_field_evals() = 0;
 
 	/**
 	 * Create input type that can be passed to the derived class.

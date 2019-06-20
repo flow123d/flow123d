@@ -143,6 +143,14 @@ template<> MappingP1<1,3> *FEObjects::mapping<1>() { return assembly1_.mapping_;
 template<> MappingP1<2,3> *FEObjects::mapping<2>() { return assembly2_.mapping_; }
 template<> MappingP1<3,3> *FEObjects::mapping<3>() { return assembly3_.mapping_; }
 
+template<> AssemblyDG<1> &FEObjects::assembly_dg<1>() { return assembly1_; }
+template<> AssemblyDG<2> &FEObjects::assembly_dg<2>() { return assembly2_; }
+template<> AssemblyDG<3> &FEObjects::assembly_dg<3>() { return assembly3_; }
+
+template<> std::shared_ptr<FieldEvaluate<1, 3, FieldValue<3>::VectorFixed>> FEObjects::field_evaluation<1>() { return assembly1_.field_eval_; }
+template<> std::shared_ptr<FieldEvaluate<2, 3, FieldValue<3>::VectorFixed>> FEObjects::field_evaluation<2>() { return assembly2_.field_eval_; }
+template<> std::shared_ptr<FieldEvaluate<3, 3, FieldValue<3>::VectorFixed>> FEObjects::field_evaluation<3>() { return assembly3_.field_eval_; }
+
 std::shared_ptr<DOFHandlerMultiDim> FEObjects::dh() { return dh_; }
 
 
@@ -1461,7 +1469,6 @@ void TransportDG<Model>::calculate_velocity(const ElementAccessor<3> &cell,
     ASSERT_EQ(cell->dim(), dim).error("Element dimension mismatch!");
 
     velocity.resize(fv.n_points());
-    auto quad = fv.get_quadrature();
     arma::mat map_mat = feo->mapping<dim>()->element_map(cell);
     vector<arma::vec3> point_list;
     point_list.resize(fv.n_points());
@@ -1638,6 +1645,14 @@ template<class Model>
 LongIdx *TransportDG<Model>::get_row_4_el()
 {
     return Model::mesh_->get_row_4_el();
+}
+
+
+template<class Model>
+void TransportDG<Model>::set_field_evals() {
+	feo->assembly_dg<1>().set_field_evaluation( Model::velocity_field_ptr_->template get_evaluate<1>(feo->q<1>()) );
+	feo->assembly_dg<2>().set_field_evaluation( Model::velocity_field_ptr_->template get_evaluate<2>(feo->q<2>()) );
+	feo->assembly_dg<3>().set_field_evaluation( Model::velocity_field_ptr_->template get_evaluate<3>(feo->q<3>()) );
 }
 
 
