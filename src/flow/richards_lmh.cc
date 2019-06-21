@@ -135,41 +135,14 @@ void RichardsLMH::initialize_specific() {
 }
 
 
-void RichardsLMH::read_initial_condition()
+void RichardsLMH::initial_condition_postprocess()
 {
-    // apply initial condition
-    // cycle over local element rows
-    double init_value;
-
-    for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
-         LocalElementAccessorBase<3> ele_ac(dh_cell);
-
-         init_value = data_->init_pressure.value(ele_ac.centre(), ele_ac.element_accessor());
-
-         for (unsigned int i=0; i<ele_ac.element_accessor()->n_sides(); i++) {
-             int edge_row = ele_ac.edge_row(i);
-             uint n_sides_of_edge =  ele_ac.element_accessor().side(i)->edge()->n_sides;
-             VecSetValue(data_->data_vec_.petsc_vec(),edge_row, init_value/n_sides_of_edge, ADD_VALUES);
-         }
-         VecSetValue(data_->data_vec_.petsc_vec(),ele_ac.ele_row(), init_value,ADD_VALUES);
-    }
-    VecAssemblyBegin(data_->data_vec_.petsc_vec());
-    VecAssemblyEnd(data_->data_vec_.petsc_vec());
-
     // set water_content
     // pretty ugly since postprocess change fluxes, which cause bad balance, so we must set them back
-//     VecCopy(schur0->get_solution(), data_->previous_solution.petsc_vec()); // store solution vector
     data_->previous_solution.copy(data_->data_vec_); // store solution vector
     postprocess();
-//     data_->previous_solution.swap(data_->data_vec_); // restore solution vector
+//     data_->previous_solution.swap(data_->data_vec_); // currently does not mimic VecSwap
     VecSwap(schur0->get_solution(), data_->previous_solution.petsc_vec()); // restore solution vector
-
-    //DebugOut() << "init sol:\n";
-    //VecView( data_->data_vec_.petsc_vec(),   PETSC_VIEWER_STDOUT_WORLD);
-    //DebugOut() << "init water content:\n";
-    //VecView( data_->water_content_previous_it.petsc_vec(),   PETSC_VIEWER_STDOUT_WORLD);
-
-    solution_changed_for_scatter=true;
 }
 
 

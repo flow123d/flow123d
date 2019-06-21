@@ -510,12 +510,17 @@ void DarcyMH::read_initial_condition()
              data_->data_vec_[l_idx] += init_value/n_sides_of_edge;
          }
 	}
-
-	solution_changed_for_scatter=true;
     
     data_->data_vec_.ghost_to_local_begin();
     data_->data_vec_.ghost_to_local_end();
+    
+    initial_condition_postprocess();
+    
+    solution_changed_for_scatter=true;
 }
+
+void DarcyMH::initial_condition_postprocess()
+{}
 
 void DarcyMH::zero_time_step()
 {

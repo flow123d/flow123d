@@ -101,7 +101,7 @@ protected:
 
     void initialize_specific() override;
 
-    void read_initial_condition() override;
+    void initial_condition_postprocess() override;
     void assembly_linear_system() override;
     void prepare_new_time_step() override;
     void postprocess() override;
