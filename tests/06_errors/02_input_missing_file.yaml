@@ -8,7 +8,7 @@ problem: !Coupling_Sequential
   mesh:
 ### ERROR missing mesh file
     mesh_file: ../00_mesh/square_1x1_42el.msh
-  flow_equation: !Flow_Richards_LMH
+  flow_equation: !Flow_Darcy_MH
     input_fields:
       - region: ALL
         storativity: 1.0

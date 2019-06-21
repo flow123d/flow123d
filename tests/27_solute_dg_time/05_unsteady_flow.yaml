@@ -3,7 +3,7 @@ problem: !Coupling_Sequential
   description: Test15 - 2D unsteady flow LM
   mesh:
     mesh_file: ../00_mesh/rectangle_16x1_str.msh
-  flow_equation: !Flow_Richards_LMH
+  flow_equation: !Flow_Darcy_MH
     output_specific:
       raw_flow_output: ./raw_output.txt
     input_fields:
