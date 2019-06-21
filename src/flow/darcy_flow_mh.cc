@@ -434,6 +434,11 @@ void DarcyMH::initialize() {
 		data_->field_ele_piezo_head.set_field(mesh_->region_db().get_region_set("ALL"), ele_piezo_head_ptr);
     }
 
+    { // init DOF handlers represents element pressure DOFs
+        uint p_element_component = 1;
+        data_->dh_p_ = std::make_shared<SubDOFHandlerMultiDim>(data_->dh_,p_element_component);
+    }
+    
     { // init DOF handlers represents edge DOFs
         uint p_edge_component = 2;
         data_->dh_cr_ = std::make_shared<SubDOFHandlerMultiDim>(data_->dh_,p_edge_component);
@@ -485,17 +490,24 @@ void DarcyMH::read_initial_condition()
 {
 	DebugOut().fmt("Read initial condition\n");
     
+    std::vector<LongIdx> p_indices(data_->dh_p_->max_elem_dofs()); ASSERT_DBG(p_indices.size() == 1);
+    std::vector<LongIdx> l_indices(data_->dh_cr_->max_elem_dofs());
+    
 	for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
-		LocalElementAccessorBase<3> ele_ac(dh_cell);
-		// set initial condition
-        double init_value = data_->init_pressure.value(ele_ac.centre(),ele_ac.element_accessor());
-        data_->data_vec_[ele_ac.ele_local_row()] = init_value;
         
-//         uint n_sides_of_edge =  ele_ac.element_accessor()->n_sides();
-        for (unsigned int i=0; i<ele_ac.element_accessor()->n_sides(); i++) {
-            int edge_local_row = ele_ac.edge_local_row(i);
-             uint n_sides_of_edge =  ele_ac.element_accessor().side(i)->edge()->n_sides;
-             data_->data_vec_[edge_local_row] += init_value/n_sides_of_edge;
+        dh_cell.cell_with_other_dh(data_->dh_p_.get()).get_loc_dof_indices(p_indices);
+        dh_cell.cell_with_other_dh(data_->dh_cr_.get()).get_loc_dof_indices(l_indices);
+        ElementAccessor<3> ele = dh_cell.elm();
+        
+		// set initial condition
+        double init_value = data_->init_pressure.value(ele.centre(),ele);
+        unsigned int p_idx = data_->dh_p_->parent_indices()[p_indices[0]];
+        data_->data_vec_[p_idx] = init_value;
+        
+        for (unsigned int i=0; i<ele->n_sides(); i++) {
+             uint n_sides_of_edge =  ele.side(i)->edge()->n_sides;
+             unsigned int l_idx = data_->dh_cr_->parent_indices()[l_indices[i]];
+             data_->data_vec_[l_idx] += init_value/n_sides_of_edge;
          }
 	}
 

@@ -202,6 +202,7 @@ public:
         MH_DofHandler *mh_dh;
         std::shared_ptr<DOFHandlerMultiDim> dh_;         ///< full DOF handler represents DOFs of sides, elements and edges
         std::shared_ptr<SubDOFHandlerMultiDim> dh_cr_;   ///< DOF handler represents DOFs of edges
+        std::shared_ptr<SubDOFHandlerMultiDim> dh_p_;    ///< DOF handler represents DOFs of element pressure
         std::shared_ptr<DOFHandlerMultiDim> dh_cr_disc_; ///< DOF handler represents DOFs of sides
 
 
