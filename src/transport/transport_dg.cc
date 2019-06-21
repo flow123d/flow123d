@@ -764,6 +764,7 @@ void TransportDG<Model>::assemble_volume_integrals()
         cell.get_dof_indices(dof_indices);
 
         calculate_velocity(elm, velocity, fv_rt);
+        //vector<arma::vec3> &velocity = calculate_velocity_new<dim>(elm);
         Model::compute_advection_diffusion_coefficients(fe_values.point_list(), velocity, elm, ad_coef, dif_coef);
         Model::compute_sources_sigma(fe_values.point_list(), elm, sources_sigma);
 
@@ -1233,6 +1234,8 @@ void TransportDG<Model>::assemble_fluxes_element_side()
             fv_rt.reinit(elm_lower_dim);
             calculate_velocity(elm_higher_dim, velocity_higher, fsv_rt);
             calculate_velocity(elm_lower_dim, velocity_lower, fv_rt);
+            //vector<arma::vec3> &velocity_lower = calculate_velocity_new<dim-1>(elm_lower_dim);
+
             Model::compute_advection_diffusion_coefficients(fe_values_vb.point_list(), velocity_lower, elm_lower_dim, ad_coef_edg[0], dif_coef_edg[0]);
             Model::compute_advection_diffusion_coefficients(fe_values_vb.point_list(), velocity_higher, elm_higher_dim, ad_coef_edg[1], dif_coef_edg[1]);
             data_.cross_section.value_list(fe_values_vb.point_list(), elm_lower_dim, csection_lower);
@@ -1475,6 +1478,16 @@ void TransportDG<Model>::calculate_velocity(const ElementAccessor<3> &cell,
     for (unsigned int k=0; k<fv.n_points(); k++)
     	point_list[k] = feo->mapping<dim>()->project_unit_to_real(RefElement<dim>::local_to_bary(fv.get_quadrature()->point(k)), map_mat);
     Model::velocity_field_ptr_->value_list(point_list, cell, velocity);
+}
+
+
+
+template<class Model>
+template<unsigned int dim>
+vector<arma::vec3> &TransportDG<Model>::calculate_velocity_new(const ElementAccessor<3> &cell)
+{
+    ASSERT_EQ(cell->dim(), dim).error("Element dimension mismatch!");
+	return feo->field_evaluation<dim>()->value(cell);
 }
 
 

@@ -341,6 +341,9 @@ private:
 	template<unsigned int dim>
 	void calculate_velocity(const ElementAccessor<3> &cell, std::vector<arma::vec3> &velocity, FEValuesBase<dim,3> &fv);
 
+	template<unsigned int dim>
+	vector<arma::vec3> &calculate_velocity_new(const ElementAccessor<3> &cell);
+
 	/**
 	 * @brief Calculates the dispersivity (diffusivity) tensor from the velocity field.
 	 *
