@@ -350,7 +350,6 @@ void DarcyMH::init_eq_data()
 
     START_TIMER("data init");
     data_->mesh = mesh_;
-    data_->mh_dh = &mh_dh;
     data_->set_mesh(*mesh_);
 
     auto gravity_array = input_record_.val<Input::Array>("gravity");

@@ -137,12 +137,6 @@ void HM_Iterative::update_solution()
 }
 
 
-const MH_DofHandler & HM_Iterative::get_mh_dofhandler()
-{ 
-    return flow_->get_mh_dofhandler(); 
-}
-
-
 double HM_Iterative::last_t()
 {
     return flow_->last_t();
