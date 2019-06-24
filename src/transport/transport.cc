@@ -833,7 +833,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
                     if ( flux2 > 0)  edg_flux+= flux2;
                 }
                 for( DHCellSide edge_side : cell_side.edge_sides() )
-                    if (SideIter( *edge_side.side() ) != SideIter( *cell_side.side() )) {
+                    if ( !(edge_side==cell_side) ) {
                         j = edge_side.side()->element().idx();
                         new_j = row_4_el[j];
 

@@ -222,7 +222,7 @@ public:
 
     /// Comparison of accessors.
     bool operator==(const DHCellSide& other) {
-    	return (side_idx_ == other.side_idx_);
+    	return (dh_cell_accessor_ == other.dh_cell_accessor_) && (side_idx_ == other.side_idx_);
     }
 
 private:
