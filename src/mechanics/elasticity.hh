@@ -144,10 +144,12 @@ public:
         Field<3, FieldValue<3>::VectorFixed> output_field;
         Field<3, FieldValue<3>::TensorFixed> output_stress;
         Field<3, FieldValue<3>::Scalar> output_von_mises_stress;
+        Field<3, FieldValue<3>::Scalar> output_cross_section;
         
         std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed> > output_field_ptr;
         std::shared_ptr<FieldFE<3, FieldValue<3>::TensorFixed> > output_stress_ptr;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_von_mises_stress_ptr;
+        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_cross_section_ptr;
 
         EquationOutput output_fields;
 
@@ -224,7 +226,7 @@ private:
     void update_output_fields();
     
     template<unsigned int dim>
-    void update_output_stress();
+    void compute_output_fields();
 
 	void preallocate();
 

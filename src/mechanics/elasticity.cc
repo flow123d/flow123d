@@ -279,6 +279,10 @@ Elasticity::EqData::EqData()
             .units( UnitSI().Pa() )
             .flags(equation_result);
     
+    *this += output_cross_section
+            .name("cross_section_updated")
+            .units( UnitSI().m() )
+            .flags(equation_result);
 
     // add all input fields to the output list
     output_fields += *this;
@@ -356,6 +360,11 @@ void Elasticity::initialize()
     data_.output_von_mises_stress_ptr->set_fe_data(feo->dh_scalar());
     data_.output_von_mises_stress.set_field(mesh_->region_db().get_region_set("ALL"), data_.output_von_mises_stress_ptr);
     
+    // setup output cross-section
+    data_.output_cross_section_ptr = make_shared<FieldFE<3, FieldValue<3>::Scalar> >();
+    data_.output_cross_section_ptr->set_fe_data(feo->dh_scalar());
+    data_.output_cross_section.set_field(mesh_->region_db().get_region_set("ALL"), data_.output_cross_section_ptr);
+    
     data_.output_field.output_type(OutputTime::CORNER_DATA);
 
     // set time marks for writing the output
@@ -399,13 +408,16 @@ void Elasticity::output_vector_gather()
 
 void Elasticity::update_output_fields()
 {
-    update_output_stress<1>();
-    update_output_stress<2>();
-    update_output_stress<3>();
+    data_.output_cross_section_ptr->get_data_vec().zero_entries();
+    compute_output_fields<1>();
+    compute_output_fields<2>();
+    compute_output_fields<3>();
     data_.output_stress_ptr->get_data_vec().local_to_ghost_begin();
     data_.output_stress_ptr->get_data_vec().local_to_ghost_end();
     data_.output_von_mises_stress_ptr->get_data_vec().local_to_ghost_begin();
     data_.output_von_mises_stress_ptr->get_data_vec().local_to_ghost_end();
+    data_.output_cross_section_ptr->get_data_vec().local_to_ghost_begin();
+    data_.output_cross_section_ptr->get_data_vec().local_to_ghost_end();
 }
 
 
@@ -552,52 +564,73 @@ void Elasticity::output_data()
 
 
 template<unsigned int dim>
-void Elasticity::update_output_stress()
+void Elasticity::compute_output_fields()
 {
     QGauss<dim> q(0);
+    QGauss<dim-1> q_sub(0);
     FEValues<dim,3> fv(*feo->mapping<dim>(), q, *feo->fe<dim>(),
-    		update_values | update_gradients | update_JxW_values);
+    		update_values | update_gradients | update_quadrature_points);
+    FESideValues<dim,3> fsv(*feo->mapping<dim>(), q_sub, *feo->fe<dim>(),
+    		update_values | update_normal_vectors);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs();
     std::vector<int> dof_indices(ndofs), dof_indices_scalar(1), dof_indices_tensor(9);
     auto vec = fv.vector_view(0);
+    auto vec_side = fsv.vector_view(0);
     VectorMPI output_vec = data_.output_field_ptr->get_data_vec();
     VectorMPI output_stress_vec = data_.output_stress_ptr->get_data_vec();
     VectorMPI output_von_mises_stress_vec = data_.output_von_mises_stress_ptr->get_data_vec();
+    VectorMPI output_cross_sec_vec = data_.output_cross_section_ptr->get_data_vec();
     
     DHCellAccessor cell_tensor = *feo->dh_tensor()->own_range().begin();
     DHCellAccessor cell_scalar = *feo->dh_scalar()->own_range().begin();
     for (auto cell : feo->dh()->own_range())
     {
-        if (cell.dim() != dim)
+        if (cell.dim() == dim)
         {
-            cell_scalar.inc();
-            cell_tensor.inc();
-            continue;
+            auto elm = cell.elm();
+            
+            double poisson = data_.poisson_ratio.value(elm.centre(), elm);
+            double young = data_.young_modulus.value(elm.centre(), elm);
+            double mu = lame_mu(young, poisson);
+            double lambda = lame_lambda(young, poisson);
+            
+            fv.reinit(elm);
+            cell.get_loc_dof_indices(dof_indices);
+            cell_scalar.get_loc_dof_indices(dof_indices_scalar);
+            cell_tensor.get_loc_dof_indices(dof_indices_tensor);
+            
+            arma::mat33 stress = arma::zeros(3,3);
+            for (unsigned int i=0; i<ndofs; i++)
+                stress += (2*mu*vec.sym_grad(i,0) + lambda*vec.divergence(i,0)*arma::eye(3,3))*output_vec[dof_indices[i]];
+            
+            arma::mat33 stress_dev = stress - arma::trace(stress)/3*arma::eye(3,3);
+            double von_mises_stress = sqrt(1.5*arma::dot(stress_dev, stress_dev));
+            
+            for (unsigned int i=0; i<3; i++)
+                for (unsigned int j=0; j<3; j++)
+                    output_stress_vec[dof_indices_tensor[i*3+j]] = stress(i,j);
+            output_von_mises_stress_vec[dof_indices_scalar[0]] = von_mises_stress;
+            
+            output_cross_sec_vec[dof_indices_scalar[0]] += data_.cross_section.value(fv.point(0), elm);
+        } 
+        else if (cell.dim() == dim-1)
+        {
+            auto elm = cell.elm();
+            vector<int> side_dof_indices(ndofs);
+            double normal_displacement = 0;
+            for (unsigned int inb=0; inb<elm->n_neighs_vb(); inb++)
+            {
+                auto side = elm->neigh_vb[inb]->side();
+                auto cell_side = side->element();
+                fsv.reinit(cell_side, side->side_idx());
+                feo->dh()->cell_accessor_from_element(cell_side.idx()).get_loc_dof_indices(side_dof_indices);
+                
+                for (unsigned int i=0; i<ndofs; i++)
+                    normal_displacement -= arma::dot(vec_side.value(i,0)*output_vec[side_dof_indices[i]], fsv.normal_vector(0));
+            }
+            cell_scalar.get_loc_dof_indices(dof_indices_scalar);
+            output_cross_sec_vec[dof_indices_scalar[0]] += normal_displacement;
         }
-        
-        auto elm = cell.elm();
-        
-        double poisson = data_.poisson_ratio.value(elm.centre(), elm);
-        double young = data_.young_modulus.value(elm.centre(), elm);
-        double mu = lame_mu(young, poisson);
-        double lambda = lame_lambda(young, poisson);
-        
-        fv.reinit(elm);
-        cell.get_loc_dof_indices(dof_indices);
-        cell_scalar.get_loc_dof_indices(dof_indices_scalar);
-        cell_tensor.get_loc_dof_indices(dof_indices_tensor);
-        
-        arma::mat33 stress = arma::zeros(3,3);
-        for (unsigned int i=0; i<ndofs; i++)
-            stress += (2*mu*vec.sym_grad(i,0) + lambda*vec.divergence(i,0)*arma::eye(3,3))*output_vec[dof_indices[i]];
-        
-        arma::mat33 stress_dev = stress - arma::trace(stress)/3*arma::eye(3,3);
-        double von_mises_stress = sqrt(1.5*arma::dot(stress_dev, stress_dev));
-        
-        for (unsigned int i=0; i<3; i++)
-            for (unsigned int j=0; j<3; j++)
-                output_stress_vec[dof_indices_tensor[i*3+j]] = stress(i,j);
-        output_von_mises_stress_vec[dof_indices_scalar[0]] = von_mises_stress;
         cell_scalar.inc();
         cell_tensor.inc();
     }
