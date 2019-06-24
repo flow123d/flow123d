@@ -660,7 +660,7 @@ void DarcyMH::solve_nonlinear()
         }
 
         if (! is_linear_common)
-            VecCopy( schur0->get_solution(), previous_solution_nonlinear.petsc_vec());
+            previous_solution_nonlinear.copy(data_->data_vec_);
         
         LinSys::SolveInfo si = schur0->solve();
         nonlinear_iteration_++;
@@ -676,7 +676,7 @@ void DarcyMH::solve_nonlinear()
         data_changed_=true; // force reassembly for non-linear case
 
         double alpha = 1; // how much of new solution
-        VecAXPBY(schur0->get_solution(), (1-alpha), alpha, previous_solution_nonlinear.petsc_vec());
+        VecAXPBY(data_->data_vec_.petsc_vec(), (1-alpha), alpha, previous_solution_nonlinear.petsc_vec());
 
         //LogOut().fmt("Linear solver ended with reason: {} \n", si.converged_reason );
         //OLD_ASSERT( si.converged_reason >= 0, "Linear solver failed to converge. Convergence reason %d \n", si.converged_reason );
