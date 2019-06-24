@@ -1066,7 +1066,7 @@ void Elasticity::assemble_boundary_conditions()
     vector<PetscScalar> local_flux_balance_vector(ndofs);
     PetscScalar local_flux_balance_rhs;
     vector<arma::vec3> bc_values(qsize), bc_traction(qsize);
-    vector<double> csection(qsize);
+    vector<double> csection(qsize), bc_potential(qsize);
     auto vec = fe_values_side.vector_view(0);
 
     for (auto cell : feo->dh()->own_range())
@@ -1100,6 +1100,7 @@ void Elasticity::assemble_boundary_conditions()
 			// different bc_type for each substance.
 			data_.bc_displacement.value_list(fe_values_side.point_list(), bc_cell, bc_values);
             data_.bc_traction.value_list(fe_values_side.point_list(), bc_cell, bc_traction);
+            data_.potential_load.value_list(fe_values_side.point_list(), cell, bc_potential);
 
 			feo->dh()->cell_accessor_from_element(cell.idx()).get_dof_indices(side_dof_indices);
 
@@ -1124,7 +1125,7 @@ void Elasticity::assemble_boundary_conditions()
               for (unsigned int k=0; k<qsize; k++)
               {
                 for (unsigned int i=0; i<ndofs; i++)
-                  local_rhs[i] += csection[k]*arma::dot(vec.value(i,k),bc_traction[k])*fe_values_side.JxW(k);
+                  local_rhs[i] += csection[k]*arma::dot(vec.value(i,k),bc_traction[k] + bc_potential[k]*fe_values_side.normal_vector(k))*fe_values_side.JxW(k);
               }
             }
             ls->rhs_set_values(ndofs, side_dof_indices.data(), local_rhs);
