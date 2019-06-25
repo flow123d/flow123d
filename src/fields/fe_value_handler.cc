@@ -55,7 +55,7 @@ class FEShapeHandler<0, elemdim, spacedim, Value> {
 public:
 	inline static typename Value::return_type fe_value(FEValues<elemdim,3> &fe_val, unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
 	{
-		return fe_val.shape_value(i_dof, i_qp);
+		return fe_val.scalar_view(comp_index).value(i_dof, i_qp);
 	}
 };
 

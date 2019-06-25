@@ -47,7 +47,7 @@
 #include "fields/field_set.hh"                  // for FieldSet
 #include "fields/field_values.hh"               // for FieldValue<>::Scalar
 #include "flow/darcy_flow_interface.hh"         // for DarcyFlowInterface
-#include "flow/mh_dofhandler.hh"                // for MH_DofHandler, uint
+#include "flow/mh_dofhandler.hh"                // for LocalElementAccessorBase, uint
 #include "input/input_exception.hh"             // for DECLARE_INPUT_EXCEPTION
 #include "input/type_base.hh"                   // for Array
 #include "input/type_generic.hh"                // for Instance
@@ -71,6 +71,8 @@ namespace Input {
 		class Selection;
 	}
 }
+template<int spacedim, class Value> class FieldAddPotential;
+template<int spacedim, class Value> class FieldDivide;
 
 /**
  * @brief Mixed-hybrid model of linear Darcy flow, possibly unsteady.
@@ -182,6 +184,10 @@ public:
         Field<3, FieldValue<3>::Scalar > init_pressure;
         Field<3, FieldValue<3>::Scalar > storativity;
 
+	    Field<3, FieldValue<3>::Scalar> field_ele_pressure;
+	    Field<3, FieldValue<3>::Scalar> field_ele_piezo_head;
+        Field<3, FieldValue<3>::VectorFixed > field_ele_velocity;
+
         /**
          * Gravity vector and constant shift of pressure potential. Used to convert piezometric head
          * to pressure head and vice versa.
@@ -192,7 +198,9 @@ public:
         // Mirroring the following members of DarcyMH:
         Mesh *mesh;
         MultidimAssembly multidim_assembler;
-        MH_DofHandler *mh_dh;
+        std::shared_ptr<DOFHandlerMultiDim> dh_;         ///< full DOF handler represents DOFs of sides, elements and edges
+        std::shared_ptr<SubDOFHandlerMultiDim> dh_cr_;   ///< DOF handler represents DOFs of edges
+        std::shared_ptr<DOFHandlerMultiDim> dh_cr_disc_; ///< DOF handler represents DOFs of sides
 
 
         uint water_balance_idx;
@@ -209,6 +217,8 @@ public:
         
         /// Idicator of dirichlet or neumann type of switch boundary conditions.
         std::vector<char> bc_switch_dirichlet;
+
+    	VectorMPI data_vec_;
     };
 
     /// Selection for enum MortarMethod.
@@ -223,22 +233,11 @@ public:
     static const Input::Type::Record & type_field_descriptor();
     static const Input::Type::Record & get_input_type();
 
-    const MH_DofHandler &get_mh_dofhandler()  override {
-        double *array;
-        unsigned int size;
-        get_solution_vector(array, size);
-
-        // here assume that velocity field is extended as constant
-        // to the previous time, so here we set left bound of the interval where the velocity
-        // has current value; this may not be good for every transport !!
-        // we can resolve this when we use FieldFE to store computed velocities in few last steps and
-        // let every equation set time according to nature of the time scheme
-
-        // in particular this setting is necessary to prevent ConvectinTransport to recreate the transport matrix
-        // every timestep ( this may happen for unsteady flow if we would use time->t() here since it returns infinity.
-        mh_dh.set_solution(time_->last_t(), array, solution_precision());
-       return mh_dh;
+    double last_t() override {
+        return time_->last_t();
     }
+
+    std::shared_ptr< FieldFE<3, FieldValue<3>::VectorFixed> > get_velocity_field(); //override
 
     void init_eq_data();
     void initialize() override;
@@ -246,8 +245,11 @@ public:
     void zero_time_step() override;
     void update_solution() override;
 
-    void get_solution_vector(double * &vec, unsigned int &vec_size) override;
-    void get_parallel_solution_vector(Vec &vector) override;
+    /**
+     * Getter for sequential solution vector.
+     * DEPRECATED
+     */
+    void get_solution_vector(double * &vec, unsigned int &vec_size);
     
     /// postprocess velocity field (add sources)
     virtual void prepare_new_time_step();
@@ -275,8 +277,6 @@ protected:
 
     //void prepare_parallel();
     //void make_row_numberings();
-    /// Initialize global_row_4_sub_row.
-    //void prepare_parallel_bddc();
 
     /**
      * Create and preallocate MH linear system (including matrix, rhs and solution vectors)
@@ -339,6 +339,9 @@ protected:
     /// Print darcy flow matrix in matlab format into a file.
     void print_matlab_matrix(string matlab_file);
 
+    /// Get vector of all DOF indices of given component (0..side, 1..element, 2..edge)
+    std::vector<int> get_component_indices_vec(unsigned int component) const;
+
     bool solution_changed_for_scatter;
     //Vec velocity_vector;
     MH_DofHandler mh_dh;    // provides access to seq. solution fluxes and pressures on sides
@@ -375,6 +378,13 @@ protected:
     Vec steady_rhs;
     Vec new_diagonal;
     Vec previous_solution;
+
+    // Temporary objects holding pointers to appropriate FieldFE
+    // TODO remove after final fix of equations
+    std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> ele_pressure_ptr;             ///< Field of pressure head in barycenters of elements.
+    std::shared_ptr<FieldAddPotential<3, FieldValue<3>::Scalar>> ele_piezo_head_ptr; ///< Field of piezo-metric head in barycenters of elements.
+    std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> ele_flux_ptr;            ///< Field of flux in barycenter of every element.
+    std::shared_ptr<FieldDivide<3, FieldValue<3>::VectorFixed>> ele_velocity_ptr;    ///< Field of velocity in barycenter of every element.
 
 	std::shared_ptr<EqData> data_;
 

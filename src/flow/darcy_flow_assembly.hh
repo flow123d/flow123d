@@ -56,11 +56,11 @@ public:
     virtual void assemble(LocalElementAccessorBase<3> ele_ac) = 0;
         
     // assembly compatible neighbourings
-    virtual void assembly_local_vb(ElementAccessor<3> ele, Neighbour *ngh) = 0;
+    virtual void assembly_local_vb(ElementAccessor<3> ele, DHCellSide neighb_side) = 0;
 
     // compute velocity value in the barycenter
     // TODO: implement and use general interpolations between discrete spaces
-    virtual arma::vec3 make_element_vector(ElementAccessor<3> ele) = 0;
+    virtual arma::vec3 make_element_vector(LocalElementAccessorBase<3> ele_ac) = 0;
 
     virtual void update_water_content(LocalElementAccessorBase<3> ele)
     {}
@@ -184,24 +184,24 @@ public:
             mortar_assembly->assembly(ele_ac);
     }
 
-    void assembly_local_vb(ElementAccessor<3> ele, Neighbour *ngh) override
+    void assembly_local_vb(ElementAccessor<3> ele, DHCellSide neighb_side) override
     {
         ASSERT_LT_DBG(ele->dim(), 3);
         //DebugOut() << "alv " << print_var(this);
         //START_TIMER("Assembly<dim>::assembly_local_vb");
         // compute normal vector to side
         arma::vec3 nv;
-        ElementAccessor<3> ele_higher = ad_->mesh->element_accessor( ngh->side()->element().idx() );
-        ngh_values_.fe_side_values_.reinit(ele_higher, ngh->side()->side_idx());
+        ElementAccessor<3> ele_higher = ad_->mesh->element_accessor( neighb_side.side()->element().idx() );
+        ngh_values_.fe_side_values_.reinit(ele_higher, neighb_side.side()->side_idx());
         nv = ngh_values_.fe_side_values_.normal_vector(0);
 
         double value = ad_->sigma.value( ele.centre(), ele) *
                         2*ad_->conductivity.value( ele.centre(), ele) *
                         arma::dot(ad_->anisotropy.value( ele.centre(), ele)*nv, nv) *
-                        ad_->cross_section.value( ngh->side()->centre(), ele_higher ) * // cross-section of higher dim. (2d)
-                        ad_->cross_section.value( ngh->side()->centre(), ele_higher ) /
+                        ad_->cross_section.value( neighb_side.side()->centre(), ele_higher ) * // cross-section of higher dim. (2d)
+                        ad_->cross_section.value( neighb_side.side()->centre(), ele_higher ) /
                         ad_->cross_section.value( ele.centre(), ele ) *      // crossection of lower dim.
-                        ngh->side()->measure();
+						neighb_side.side()->measure();
 
         loc_system_vb_.add_value(0,0, -value);
         loc_system_vb_.add_value(0,1,  value);
@@ -210,17 +210,19 @@ public:
     }
 
 
-    arma::vec3 make_element_vector(ElementAccessor<3> ele) override
+    arma::vec3 make_element_vector(LocalElementAccessorBase<3> ele_ac) override
     {
         //START_TIMER("Assembly<dim>::make_element_vector");
         arma::vec3 flux_in_center;
         flux_in_center.zeros();
+        auto ele = ele_ac.element_accessor();
 
         velocity_interpolation_fv_.reinit(ele);
         for (unsigned int li = 0; li < ele->n_sides(); li++) {
-            flux_in_center += ad_->mh_dh->side_flux( *(ele.side( li ) ) )
+            flux_in_center += ad_->data_vec_[ ele_ac.side_local_row(li) ]
                         * velocity_interpolation_fv_.vector_view(0).value(li,0);
         }
+
 
         flux_in_center /= ad_->cross_section.value(ele.centre(), ele );
         return flux_in_center;
@@ -295,7 +297,7 @@ protected:
                         // check and possibly switch to flux BC
                         // The switch raise error on the corresponding edge row.
                         // Magnitude of the error is abs(solution_flux - side_flux).
-                        ASSERT_DBG(ad_->mh_dh->rows_ds->is_local(ele_ac.side_row(i)))(ele_ac.side_row(i));
+                        ASSERT_DBG(ad_->dh_->distr()->is_local(ele_ac.side_row(i)))(ele_ac.side_row(i));
                         unsigned int loc_side_row = ele_ac.side_local_row(i);
                         double & solution_flux = ls->get_solution_array()[loc_side_row];
 
@@ -314,7 +316,7 @@ protected:
                         // cause that a solution  with the flux violating the
                         // flux inequality leading may be accepted, while the error
                         // in pressure inequality is always satisfied.
-                        ASSERT_DBG(ad_->mh_dh->rows_ds->is_local(ele_ac.edge_row(i)))(ele_ac.edge_row(i));
+                        ASSERT_DBG(ad_->dh_->distr()->is_local(ele_ac.edge_row(i)))(ele_ac.edge_row(i));
                         unsigned int loc_edge_row = ele_ac.edge_local_row(i);
                         double & solution_head = ls->get_solution_array()[loc_edge_row];
 
@@ -343,7 +345,7 @@ protected:
                     double bc_switch_pressure = ad_->bc_switch_pressure.value(b_ele.centre(), b_ele);
                     double bc_flux = -ad_->bc_flux.value(b_ele.centre(), b_ele);
                     double bc_sigma = ad_->bc_robin_sigma.value(b_ele.centre(), b_ele);
-                    ASSERT_DBG(ad_->mh_dh->rows_ds->is_local(ele_ac.edge_row(i)))(ele_ac.edge_row(i));
+                    ASSERT_DBG(ad_->dh_->distr()->is_local(ele_ac.edge_row(i)))(ele_ac.edge_row(i));
                     unsigned int loc_edge_row = ele_ac.edge_local_row(i);
                     double & solution_head = ls->get_solution_array()[loc_edge_row];
 
@@ -456,24 +458,32 @@ protected:
 
     void assembly_dim_connections(LocalElementAccessorBase<3> ele_ac){
         //D, E',E block: compatible connections: element-edge
-        ElementAccessor<3> ele = ele_ac.element_accessor();
+        auto ele = ele_ac.element_accessor(); //ElementAccessor<3>
+        DHCellAccessor dh_cell = ele_ac.dh_cell();
         
         // no Neighbours => nothing to asssemble here
-        if(ele->n_neighs_vb() == 0) return;
+        if(dh_cell.elm()->n_neighs_vb() == 0) return;
         
         int ele_row = ele_ac.ele_row();
         Neighbour *ngh;
 
         //DebugOut() << "adc " << print_var(this) << print_var(side_quad_.size());
-        for (unsigned int i = 0; i < ele->n_neighs_vb(); i++) {
+        unsigned int i = 0;
+        for ( DHCellSide neighb_side : dh_cell.neighb_sides() ) {
             // every compatible connection adds a 2x2 matrix involving
             // current element pressure  and a connected edge pressure
             ngh = ele_ac.element_accessor()->neigh_vb[i];
             loc_system_vb_.reset();
             loc_system_vb_.row_dofs[0] = loc_system_vb_.col_dofs[0] = ele_row;
-            loc_system_vb_.row_dofs[1] = loc_system_vb_.col_dofs[1] = ad_->mh_dh->row_4_edge[ ngh->edge_idx() ];
+            DHCellAccessor cell_higher_dim = ele_ac.dh_cell().dh()->cell_accessor_from_element(neighb_side.side()->elem_idx());
+            LocalElementAccessorBase<3> acc_higher_dim( cell_higher_dim );
+            for (unsigned int j = 0; j < neighb_side.side()->element().dim()+1; j++)
+            	if (neighb_side.side()->element()->edge_idx(j) == ngh->edge_idx()) {
+                    loc_system_vb_.row_dofs[1] = loc_system_vb_.col_dofs[1] = acc_higher_dim.edge_row(j);
+            		break;
+            	}
 
-            assembly_local_vb(ele, ngh);
+            assembly_local_vb(ele, neighb_side);
 
             ad_->lin_sys->set_local_system(loc_system_vb_);
 
@@ -484,6 +494,7 @@ protected:
                double new_val = loc_system_vb_.get_matrix()(0,0);
                static_cast<LinSys_BDDC*>(ad_->lin_sys)->diagonal_weights_set_value( ind, new_val );
             }
+            ++i;
         }
     }
 
@@ -493,13 +504,6 @@ protected:
             Boundary* bcd = ele_ac.side(i)->cond();
 
             if (bcd) {
-                /*
-                    DebugOut().fmt("add_flux: {} {} {} {}\n",
-                            ad_->mh_dh->el_ds->myp(),
-                            ele_ac.ele_global_idx(),
-                            ad_->local_boundary_index,
-                            ele_ac.side_row(i));
-                 */
                 ad_->balance->add_flux_matrix_values(ad_->water_balance_idx, ad_->local_boundary_index,
                                                      {(LongIdx)(ele_ac.side_row(i))}, {1});
                 ++(ad_->local_boundary_index);

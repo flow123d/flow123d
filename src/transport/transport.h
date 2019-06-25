@@ -47,7 +47,6 @@ class OutputTime;
 class Mesh;
 class Distribution;
 class Balance;
-class MH_DofHandler;
 namespace Input {
 	namespace Type {
 		class Record;
@@ -71,6 +70,55 @@ template <int spacedim, class Value> class FieldFE;
  *   : field->next_change_time() - returns time jump or actual time in case of time dep. field
  */
 
+
+
+/**
+ * Auxiliary container class for Finite element and related objects of all dimensions.
+ * Its purpose is to provide templated access to these objects, applicable in
+ * the assembling methods.
+ */
+class FETransportObjects {
+public:
+
+	FETransportObjects();
+	~FETransportObjects();
+
+	template<unsigned int dim>
+	inline FiniteElement<dim> *fe();
+
+	template<unsigned int dim>
+	inline Quadrature<dim> *q();
+
+	template<unsigned int dim>
+	inline MappingP1<dim,3> *mapping();
+
+	template<unsigned int dim>
+	inline FESideValues<dim,3> *fe_values();
+
+private:
+
+	/// Finite elements for the solution of the advection-diffusion equation.
+	FiniteElement<0> *fe0_;
+	FiniteElement<1> *fe1_;
+	FiniteElement<2> *fe2_;
+	FiniteElement<3> *fe3_;
+
+	/// Quadratures used in assembling methods.
+	Quadrature<0> *q0_;
+	Quadrature<1> *q1_;
+	Quadrature<2> *q2_;
+	Quadrature<3> *q3_;
+
+	/// Auxiliary mappings of reference elements.
+	MappingP1<1,3> *map1_;
+	MappingP1<2,3> *map2_;
+	MappingP1<3,3> *map3_;
+
+    /// FESideValues objects for side flux calculating.
+	FESideValues<1,3> *fe_values1_;
+    FESideValues<2,3> *fe_values2_;
+    FESideValues<3,3> *fe_values3_;
+};
 
 
 /**
@@ -176,8 +224,8 @@ public:
      */
     virtual void output_data() override;
 
-    inline void set_velocity_field(const MH_DofHandler &dh) override
-    { mh_dh=&dh; }
+    inline void set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field, double velocity_last_t) override
+    { velocity_field_ptr_ = flux_field; velocity_last_time_ = velocity_last_t; }
 
     void set_output_stream(std::shared_ptr<OutputTime> stream) override
     { output_stream_ = stream; }
@@ -245,6 +293,17 @@ private:
 	 * Communicate parallel concentration vectors into sequential output vector.
 	 */
 	void output_vector_gather();
+
+	/**
+	 * @brief Wrapper of following method, call side_flux with correct template parameter.
+	 */
+	double side_flux(ElementAccessor<3> &cell, unsigned int i_side);
+
+	/**
+	 * @brief Calculate flux on side of given element specified by dimension.
+	 */
+	template<unsigned int dim>
+	double calculate_side_flux(ElementAccessor<3> &cell, unsigned int i_side);
 
 
 
@@ -329,11 +388,19 @@ private:
      * TODO: introduce FieldDiscrete -containing true DOFHandler and data vector and pass such object together with other
      * data. Possibly make more general set_data method, allowing setting data given by name. needs support from EqDataBase.
      */
-    const MH_DofHandler *mh_dh;
     std::shared_ptr<DOFHandlerMultiDim> dh_;
 
 	/// List of indices used to call balance methods for a set of quantities.
 	vector<unsigned int> subst_idx;
+
+	/// Pointer to velocity field given from Flow equation.
+	std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> velocity_field_ptr_;
+
+	/// Hold last time of velocity field store
+	double velocity_last_time_;
+
+	/// Finite element objects
+	FETransportObjects feo_;
 
     friend class TransportOperatorSplitting;
 };
