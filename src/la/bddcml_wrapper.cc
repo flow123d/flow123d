@@ -1,6 +1,8 @@
 //! @author Jakub Sistek
 //! @date   7/2012
 
+#include "la/bddcml_wrapper.hh"
+
 //------------------------------------------------------------------------------
 /** Constructor for the BDDCML solver object
  */
@@ -223,9 +225,14 @@ void la::BddcmlWrapper::insertToRhs( const SubVec_  & subVec,
 
         // map global dof index to subdomain dof
         Global2LocalMap_::iterator pos = global2LocalDofMap_.find( dofIndices[i] );
+        /*
         OLD_ASSERT( pos != global2LocalDofMap_.end(),
                                 "Cannot remap index %d to local indices in right-hand side," 
                                 " perhaps missing call to loadMesh() member function. \n ", dofIndices[i] );
+        */
+        if (pos == global2LocalDofMap_.end()) {
+            DebugOut().every_proc() << "RHS, Missing map to local for idx: " << dofIndices[i];
+        }
         const unsigned indLoc = pos -> second;
 
         rhsVec_[ indLoc ] += subVec[i];
@@ -615,25 +622,3 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
     return;
 }
 
-//------------------------------------------------------------------------------
-template<typename VEC1,typename VEC2>
-void la::BddcmlWrapper::giveSolution( const VEC1 & dofIndices,
-                                      VEC2 & result ) const
-{
-    // simply get the dof solutions by using the local indices
-    typename VEC1::const_iterator dofIter = dofIndices.begin();
-    typename VEC1::const_iterator dofEnd  = dofIndices.end();
-    typename VEC2::iterator valIter = result.begin();
-    for ( ; dofIter != dofEnd; ++dofIter ) {
-
-        // map it to local dof
-        Global2LocalMap_::const_iterator pos = global2LocalDofMap_.find( *dofIter );
-        OLD_ASSERT( pos != global2LocalDofMap_.end(),
-                                "Cannot remap index %d to local indices in solution distribution. \n ", *dofIter );
-        unsigned indLoc = pos -> second;
-
-        // give solution
-        *valIter++ = sol_[ indLoc ];
-    }
-
-}

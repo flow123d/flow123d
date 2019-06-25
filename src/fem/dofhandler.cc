@@ -541,10 +541,11 @@ VectorMPI DOFHandlerMultiDim::create_vector()
 }
 
 
-unsigned int DOFHandlerMultiDim::get_dof_indices(const DHCellAccessor &cell, std::vector<int> &indices) const
+unsigned int DOFHandlerMultiDim::get_dof_indices(const DHCellAccessor &cell, std::vector<LongIdx> &indices) const
 {
   unsigned int ndofs = 0;
   ndofs = cell_starts[cell.local_idx()+1]-cell_starts[cell.local_idx()];
+  indices.resize(ndofs);
   for (unsigned int k=0; k<ndofs; k++)
     indices[k] = local_to_global_dof_idx_[dof_indices[cell_starts[cell.local_idx()]+k]];
   
@@ -557,6 +558,7 @@ unsigned int DOFHandlerMultiDim::get_loc_dof_indices(const DHCellAccessor &cell,
 {
   unsigned int ndofs = 0;
   ndofs = cell_starts[cell.local_idx()+1]-cell_starts[cell.local_idx()];
+  indices.resize(ndofs);
   for (unsigned int k=0; k<ndofs; k++)
     indices[k] = dof_indices[cell_starts[cell.local_idx()]+k];
 
