@@ -649,68 +649,15 @@ void TransportDG<Model>::calculate_cumulative_balance()
 template<class Model>
 void TransportDG<Model>::assemble_mass_matrix()
 {
-  START_TIMER("assemble_mass");
+    START_TIMER("assemble_mass");
     Model::balance_->start_mass_assembly(Model::subst_idx);
-    assemble_mass_matrix<1>();
-    assemble_mass_matrix<2>();
-    assemble_mass_matrix<3>();
-    Model::balance_->finish_mass_assembly(Model::subst_idx);
-  END_TIMER("assemble_mass");
-}
-
-
-template<class Model> template<unsigned int dim>
-void TransportDG<Model>::assemble_mass_matrix()
-{
-    FEValues<dim,3> fe_values(*feo->mapping<dim>(), *feo->q<dim>(), *feo->fe<dim>(), update_values | update_JxW_values | update_quadrature_points);
-    const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim>()->size();
-    vector<LongIdx> dof_indices(ndofs);
-    PetscScalar local_mass_matrix[ndofs*ndofs], local_retardation_balance_vector[ndofs];
-    vector<PetscScalar> local_mass_balance_vector(ndofs);
-
-    // assemble integral over elements
     for (auto cell : feo->dh()->own_range() )
     {
-        if (cell.dim() != dim) continue;
-        ElementAccessor<3> elm = cell.elm();
-
-        fe_values.reinit(elm);
-        cell.get_dof_indices(dof_indices);
-
-        Model::compute_mass_matrix_coefficient(fe_values.point_list(), elm, mm_coef);
-        Model::compute_retardation_coefficient(fe_values.point_list(), elm, ret_coef);
-
-        for (unsigned int sbi=0; sbi<Model::n_substances(); ++sbi)
-        {
-            // assemble the local mass matrix
-            for (unsigned int i=0; i<ndofs; i++)
-            {
-                for (unsigned int j=0; j<ndofs; j++)
-                {
-                    local_mass_matrix[i*ndofs+j] = 0;
-                    for (unsigned int k=0; k<qsize; k++)
-                        local_mass_matrix[i*ndofs+j] += (mm_coef[k]+ret_coef[sbi][k])*fe_values.shape_value(j,k)*fe_values.shape_value(i,k)*fe_values.JxW(k);
-                }
-            }
-
-            for (unsigned int i=0; i<ndofs; i++)
-            {
-                    local_mass_balance_vector[i] = 0;
-                    local_retardation_balance_vector[i] = 0;
-                    for (unsigned int k=0; k<qsize; k++)
-                    {
-                        local_mass_balance_vector[i] += mm_coef[k]*fe_values.shape_value(i,k)*fe_values.JxW(k);
-                        local_retardation_balance_vector[i] -= ret_coef[sbi][k]*fe_values.shape_value(i,k)*fe_values.JxW(k);
-                    }
-            }
-            
-            Model::balance_->add_mass_matrix_values(Model::subst_idx[sbi], elm.region().bulk_idx(), dof_indices, local_mass_balance_vector);
-            ls_dt[sbi]->mat_set_values(ndofs, &(dof_indices[0]), ndofs, &(dof_indices[0]), local_mass_matrix);
-            VecSetValues(ret_vec[sbi], ndofs, &(dof_indices[0]), local_retardation_balance_vector, ADD_VALUES);
-        }
+        feo->multidim_assembly()[ cell.dim()-1 ]->assemble_mass_matrix(cell, ret_vec, ls_dt);
     }
+    Model::balance_->finish_mass_assembly(Model::subst_idx);
+    END_TIMER("assemble_mass");
 }
-
 
 
 

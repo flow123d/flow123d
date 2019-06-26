@@ -253,15 +253,9 @@ private:
 	/**
 	 * @brief Assembles the mass matrix.
 	 *
-	 * The routine just calls templated method assemble_mass_matrix() for each
-	 * space dimension.
+	 * Loops through local cells and calls assemble_mass_matrix() method of AssemblyDG
+	 * object of appropriate dimension.
 	 */
-	void assemble_mass_matrix();
-
-	/**
-	 * @brief Assembles the mass matrix for the given dimension.
-	 */
-	template<unsigned int dim>
 	void assemble_mass_matrix();
 
 	/**
