@@ -41,7 +41,6 @@
 #include "la/local_to_global_map.hh"
 #include "system/system.hh"
 #include "la/linsys.hh"
-#include "la/linsys_BDDC.hh"
 #include "la/schur.hh"
 
 /**

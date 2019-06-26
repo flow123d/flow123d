@@ -47,7 +47,7 @@
 #include "fields/field_set.hh"                  // for FieldSet
 #include "fields/field_values.hh"               // for FieldValue<>::Scalar
 #include "flow/darcy_flow_interface.hh"         // for DarcyFlowInterface
-#include "flow/mh_dofhandler.hh"                // for MH_DofHandler, uint
+#include "flow/mh_dofhandler.hh"                // for LocalElementAccessorBase, uint
 #include "input/input_exception.hh"             // for DECLARE_INPUT_EXCEPTION
 #include "input/type_base.hh"                   // for Array
 #include "input/type_generic.hh"                // for Instance
@@ -199,7 +199,6 @@ public:
         // Mirroring the following members of DarcyMH:
         Mesh *mesh;
         MultidimAssembly multidim_assembler;
-        MH_DofHandler *mh_dh;
         std::shared_ptr<DOFHandlerMultiDim> dh_;         ///< full DOF handler represents DOFs of sides, elements and edges
         std::shared_ptr<SubDOFHandlerMultiDim> dh_cr_;   ///< DOF handler represents DOFs of edges
         std::shared_ptr<SubDOFHandlerMultiDim> dh_p_;    ///< DOF handler represents DOFs of element pressure
@@ -244,23 +243,6 @@ public:
 
     static const Input::Type::Record & type_field_descriptor();
     static const Input::Type::Record & get_input_type();
-
-    const MH_DofHandler &get_mh_dofhandler()  override {
-        double *array;
-        unsigned int size;
-        get_solution_vector(array, size);
-
-        // here assume that velocity field is extended as constant
-        // to the previous time, so here we set left bound of the interval where the velocity
-        // has current value; this may not be good for every transport !!
-        // we can resolve this when we use FieldFE to store computed velocities in few last steps and
-        // let every equation set time according to nature of the time scheme
-
-        // in particular this setting is necessary to prevent ConvectinTransport to recreate the transport matrix
-        // every timestep ( this may happen for unsteady flow if we would use time->t() here since it returns infinity.
-        mh_dh.set_solution(time_->last_t(), array);
-       return mh_dh;
-    }
 
     double last_t() override {
         return time_->last_t();

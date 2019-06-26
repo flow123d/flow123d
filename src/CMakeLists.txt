@@ -150,6 +150,7 @@ add_library(la_lib
     la/local_to_global_map.cc
     la/schur.cc
     la/linsys.cc
+    la/bddcml_wrapper.cc
     la/linsys_BDDC.cc
     la/linsys_PETSC.cc
     la/sparse_graph.cc

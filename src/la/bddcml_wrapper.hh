@@ -298,7 +298,28 @@ private:
 
 //-----------------------------------------------------------------------------
 
-#include "bddcml_wrapper.ipp"
+//------------------------------------------------------------------------------
+template<typename VEC1,typename VEC2>
+void la::BddcmlWrapper::giveSolution( const VEC1 & dofIndices,
+                                      VEC2 & result ) const
+{
+    // simply get the dof solutions by using the local indices
+    typename VEC1::const_iterator dofIter = dofIndices.begin();
+    typename VEC1::const_iterator dofEnd  = dofIndices.end();
+    typename VEC2::iterator valIter = result.begin();
+    for ( ; dofIter != dofEnd; ++dofIter ) {
+
+        // map it to local dof
+        Global2LocalMap_::const_iterator pos = global2LocalDofMap_.find( *dofIter );
+        OLD_ASSERT( pos != global2LocalDofMap_.end(),
+                                "Cannot remap index %d to local indices in solution distribution. \n ", *dofIter );
+        unsigned indLoc = pos -> second;
+
+        // give solution
+        *valIter++ = sol_[ indLoc ];
+    }
+
+}
 
 //-----------------------------------------------------------------------------
 
