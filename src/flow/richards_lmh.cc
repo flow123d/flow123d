@@ -218,9 +218,6 @@ void RichardsLMH::postprocess() {
     // update structures for balance of water volume
     assembly_linear_system();
 
-
-    int side_rows[4];
-    double values[4];
     std::vector<LongIdx> side_indices(this->data_->dh_cr_disc_->max_elem_dofs());
     
     // update the subvector with edge pressure for solution vector
@@ -242,16 +239,11 @@ void RichardsLMH::postprocess() {
       double ele_source = data_->water_source_density.value(ele_ac.centre(), ele_ac.element_accessor());
 
       for (unsigned int i=0; i<ele_ac.element_accessor()->n_sides(); i++) {
-          side_rows[i] = ele_ac.side_row(i);
           double water_content = data_->water_content_previous_it[ side_indices[i] ];
           double water_content_previous_time = data_->water_content_previous_time[ side_indices[i] ];
 
-          values[i] = ele_scale * ele_source - ele_scale * (water_content - water_content_previous_time) / time_->dt();
+          data_->data_vec_[ele_ac.side_local_row(i)] +=
+                ele_scale * ele_source - ele_scale * (water_content - water_content_previous_time) / time_->dt();
       }
-      VecSetValues(data_->data_vec_.petsc_vec(), ele_ac.n_sides(), side_rows, values, ADD_VALUES);
     }
-
-    VecAssemblyBegin(data_->data_vec_.petsc_vec());
-    VecAssemblyEnd(data_->data_vec_.petsc_vec());
-
 }

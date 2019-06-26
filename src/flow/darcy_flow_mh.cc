@@ -744,8 +744,6 @@ void DarcyMH::postprocess()
     unsigned int edge_local_row;
 
     // postprocess sources (lumping)
-    int side_rows[4];
-    double values[4];
     for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
         LocalElementAccessorBase<3> ele_ac(dh_cell);
 
@@ -757,8 +755,6 @@ void DarcyMH::postprocess()
 
         for (unsigned int i=0; i<ele_ac.element_accessor()->n_sides(); i++) {
             
-            side_rows[i] = ele_ac.side_row(i);
-            
             if( ! data_->use_steady_assembly_)
             {
                 edge_local_row = ele_ac.edge_local_row(i);
@@ -767,12 +763,9 @@ void DarcyMH::postprocess()
                 time_term = ele_scale * storativity / data_->time_step_ * (new_pressure - old_pressure);
             }
             
-            values[i] = source_term - time_term;
+            data_->data_vec_[ele_ac.side_local_row(i)] += source_term - time_term;
         }
-        VecSetValues(data_->data_vec_.petsc_vec(), ele_ac.n_sides(), side_rows, values, ADD_VALUES);
     }
-    VecAssemblyBegin(data_->data_vec_.petsc_vec());
-    VecAssemblyEnd(data_->data_vec_.petsc_vec());
     
 //     output_file = FilePath("postprocess_" + std::to_string(time_->step().index()) + ".m", FilePath::output_file);
 // //     PetscViewer    viewer;
