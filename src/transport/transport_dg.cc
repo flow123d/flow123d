@@ -30,10 +30,11 @@
 #include "fields/fe_value_handler.hh"
 #include "la/linsys_PETSC.hh"
 #include "flow/mh_dofhandler.hh"
+#include "coupling/balance.hh"
 #include "transport/advection_diffusion_model.hh"
 #include "transport/concentration_model.hh"
 #include "transport/heat_model.hh"
-#include "coupling/balance.hh"
+#include "transport/assembly_dg.hh"
 
 #include "fields/multi_field.hh"
 #include "fields/generic_field.hh"
@@ -105,30 +106,19 @@ const int TransportDG<Model>::registrar =
 
 
 
-FEObjects::FEObjects(Mesh *mesh_, unsigned int fe_order)
+FEObjects::FEObjects(Mesh *mesh_, unsigned int fe_order, AdvectionDiffusionModel &adm)
 {
-    unsigned int q_order;
+	assembly1_ = std::make_shared<AssemblyDG<1>>(fe_order, adm);
+	assembly2_ = std::make_shared<AssemblyDG<2>>(fe_order, adm);
+	assembly3_ = std::make_shared<AssemblyDG<3>>(fe_order, adm);
+	multidim_assembly_.push_back( std::dynamic_pointer_cast<AssemblyDGBase>(assembly1_) );
+	multidim_assembly_.push_back( std::dynamic_pointer_cast<AssemblyDGBase>(assembly2_) );
+	multidim_assembly_.push_back( std::dynamic_pointer_cast<AssemblyDGBase>(assembly3_) );
 
-    q_order = 2*fe_order;
     fe0_ = new FE_P_disc<0>(fe_order);
-    fe1_ = new FE_P_disc<1>(fe_order);
-    fe2_ = new FE_P_disc<2>(fe_order);
-    fe3_ = new FE_P_disc<3>(fe_order);
+    q0_ = new QGauss<0>(2*fe_order);
 
-    fe_rt1_ = new FE_RT0<1>;
-    fe_rt2_ = new FE_RT0<2>;
-    fe_rt3_ = new FE_RT0<3>;
-    
-    q0_ = new QGauss<0>(q_order);
-    q1_ = new QGauss<1>(q_order);
-    q2_ = new QGauss<2>(q_order);
-    q3_ = new QGauss<3>(q_order);
-
-    map1_ = new MappingP1<1,3>;
-    map2_ = new MappingP1<2,3>;
-    map3_ = new MappingP1<3,3>;
-
-    ds_ = std::make_shared<EqualOrderDiscreteSpace>(mesh_, fe0_, fe1_, fe2_, fe3_);
+    ds_ = std::make_shared<EqualOrderDiscreteSpace>(mesh_, fe0_, assembly1_->fe_, assembly2_->fe_, assembly3_->fe_);
 	dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
 
     dh_->distribute_dofs(ds_);
@@ -138,39 +128,35 @@ FEObjects::FEObjects(Mesh *mesh_, unsigned int fe_order)
 FEObjects::~FEObjects()
 {
     delete fe0_;
-    delete fe1_;
-    delete fe2_;
-    delete fe3_;
-    delete fe_rt1_;
-    delete fe_rt2_;
-    delete fe_rt3_;
     delete q0_;
-    delete q1_;
-    delete q2_;
-    delete q3_;
-    delete map1_;
-    delete map2_;
-    delete map3_;
 }
 
+void FEObjects::initialize_data_members()
+{
+    for (unsigned int i=0; i<multidim_assembly_.size(); ++i)
+    	multidim_assembly_[i]->initialize();
+}
+
+AssemblyDGBase::MultidimAssemblyDG FEObjects::multidim_assembly() { return multidim_assembly_; }
+
 template<> FiniteElement<0> *FEObjects::fe<0>() { return fe0_; }
-template<> FiniteElement<1> *FEObjects::fe<1>() { return fe1_; }
-template<> FiniteElement<2> *FEObjects::fe<2>() { return fe2_; }
-template<> FiniteElement<3> *FEObjects::fe<3>() { return fe3_; }
+template<> FiniteElement<1> *FEObjects::fe<1>() { return assembly1_->fe_; }
+template<> FiniteElement<2> *FEObjects::fe<2>() { return assembly2_->fe_; }
+template<> FiniteElement<3> *FEObjects::fe<3>() { return assembly3_->fe_; }
 
 template<> FiniteElement<0> *FEObjects::fe_rt<0>() { return 0; }
-template<> FiniteElement<1> *FEObjects::fe_rt<1>() { return fe_rt1_; }
-template<> FiniteElement<2> *FEObjects::fe_rt<2>() { return fe_rt2_; }
-template<> FiniteElement<3> *FEObjects::fe_rt<3>() { return fe_rt3_; }
+template<> FiniteElement<1> *FEObjects::fe_rt<1>() { return assembly1_->fe_rt_; }
+template<> FiniteElement<2> *FEObjects::fe_rt<2>() { return assembly2_->fe_rt_; }
+template<> FiniteElement<3> *FEObjects::fe_rt<3>() { return assembly3_->fe_rt_; }
 
 template<> Quadrature<0> *FEObjects::q<0>() { return q0_; }
-template<> Quadrature<1> *FEObjects::q<1>() { return q1_; }
-template<> Quadrature<2> *FEObjects::q<2>() { return q2_; }
-template<> Quadrature<3> *FEObjects::q<3>() { return q3_; }
+template<> Quadrature<1> *FEObjects::q<1>() { return assembly1_->quad_; }
+template<> Quadrature<2> *FEObjects::q<2>() { return assembly2_->quad_; }
+template<> Quadrature<3> *FEObjects::q<3>() { return assembly3_->quad_; }
 
-template<> MappingP1<1,3> *FEObjects::mapping<1>() { return map1_; }
-template<> MappingP1<2,3> *FEObjects::mapping<2>() { return map2_; }
-template<> MappingP1<3,3> *FEObjects::mapping<3>() { return map3_; }
+template<> MappingP1<1,3> *FEObjects::mapping<1>() { return assembly1_->mapping_; }
+template<> MappingP1<2,3> *FEObjects::mapping<2>() { return assembly2_->mapping_; }
+template<> MappingP1<3,3> *FEObjects::mapping<3>() { return assembly3_->mapping_; }
 
 std::shared_ptr<DOFHandlerMultiDim> FEObjects::dh() { return dh_; }
 
@@ -239,7 +225,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
     Model::init_from_input(in_rec);
 
     // create finite element structures and distribute DOFs
-    feo = new FEObjects(Model::mesh_, dg_order);
+    feo = new FEObjects(Model::mesh_, dg_order, *this);
     //DebugOut().fmt("TDG: solution size {}\n", feo->dh()->n_global_dofs());
 
 }
@@ -248,6 +234,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
 template<class Model>
 void TransportDG<Model>::initialize()
 {
+    feo->initialize_data_members();
     data_.set_components(Model::substances_.names());
     data_.set_input_list( input_rec.val<Input::Array>("input_fields"), *(Model::time_) );
 
@@ -1490,7 +1477,6 @@ void TransportDG<Model>::calculate_velocity(const ElementAccessor<3> &cell,
     ASSERT_EQ(cell->dim(), dim).error("Element dimension mismatch!");
 
     velocity.resize(fv.n_points());
-    auto quad = fv.get_quadrature();
     arma::mat map_mat = feo->mapping<dim>()->element_map(cell);
     vector<arma::vec3> point_list;
     point_list.resize(fv.n_points());

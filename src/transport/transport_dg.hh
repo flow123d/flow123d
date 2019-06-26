@@ -51,6 +51,7 @@
 #include "petscvec.h"                          // for Vec, VecDestroy, VecSc...
 #include "transport/concentration_model.hh"    // for ConcentrationTransport...
 #include "transport/heat_model.hh"             // for HeatTransferModel, Hea...
+#include "transport/assembly_dg.hh"
 
 class DiscreteSpace;
 class Distribution;
@@ -72,8 +73,12 @@ namespace Input { namespace Type { class Selection; } }
 class FEObjects {
 public:
 
-	FEObjects(Mesh *mesh_, unsigned int fe_order);
+	FEObjects(Mesh *mesh_, unsigned int fe_order, AdvectionDiffusionModel &adm);
 	~FEObjects();
+
+	void initialize_data_members();
+
+	inline AssemblyDGBase::MultidimAssemblyDG multidim_assembly();
 
 	template<unsigned int dim>
 	inline FiniteElement<dim> *fe();
@@ -91,32 +96,21 @@ public:
 
 private:
 
-	/// Finite elements for the solution of the advection-diffusion equation.
-	FiniteElement<0> *fe0_;
-	FiniteElement<1> *fe1_;
-	FiniteElement<2> *fe2_;
-	FiniteElement<3> *fe3_;
+    AssemblyDGBase::MultidimAssemblyDG multidim_assembly_;
+    std::shared_ptr<AssemblyDG<1>> assembly1_;
+    std::shared_ptr<AssemblyDG<2>> assembly2_;
+    std::shared_ptr<AssemblyDG<3>> assembly3_;
 
-	/// Finite elements for the water velocity field.
-	FiniteElement<1> *fe_rt1_;
-	FiniteElement<2> *fe_rt2_;
-	FiniteElement<3> *fe_rt3_;
+    /// Finite elements for the solution of the advection-diffusion equation.
+    FiniteElement<0> *fe0_;
 
-	/// Quadratures used in assembling methods.
-	Quadrature<0> *q0_;
-	Quadrature<1> *q1_;
-	Quadrature<2> *q2_;
-	Quadrature<3> *q3_;
+    /// Quadratures used in assembling methods.
+    Quadrature<0> *q0_;
 
-	/// Auxiliary mappings of reference elements.
-	MappingP1<1,3> *map1_;
-	MappingP1<2,3> *map2_;
-	MappingP1<3,3> *map3_;
-    
-        std::shared_ptr<DiscreteSpace> ds_;
+    std::shared_ptr<DiscreteSpace> ds_;
 
-	/// Object for distribution of dofs.
-	std::shared_ptr<DOFHandlerMultiDim> dh_;
+    /// Object for distribution of dofs.
+    std::shared_ptr<DOFHandlerMultiDim> dh_;
 };
 
 
