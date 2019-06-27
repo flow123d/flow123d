@@ -67,4 +67,5 @@ problem: !Coupling_Sequential
           fields:
             - displacement
             - stress
+            - cross_section_updated
             - region_id
