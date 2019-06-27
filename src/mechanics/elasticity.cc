@@ -953,8 +953,8 @@ void Elasticity::assemble_matrix_element_side()
                             double divuit = (m==1)?arma::trace(guit):0;
                             
                             local_matrix[n][m][i*n_dofs[m] + j] +=
-                                    (
-                                     frac_sigma[k]*arma::dot(vf-vi,
+                                    frac_sigma[k]*(
+                                     arma::dot(vf-vi,
                                       2/csection_lower[k]*(mu*(uf-ui)+(mu+lambda)*(arma::dot(uf-ui,nv)*nv))
                                       + mu*arma::trans(guit)*nv
                                       + lambda*divuit*nv
