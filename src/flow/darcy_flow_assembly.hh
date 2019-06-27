@@ -17,6 +17,7 @@
 #include "fem/fe_values.hh"
 #include "fem/fe_rt.hh"
 #include "fem/fe_values_views.hh"
+#include "fem/fe_system.hh"
 #include "quadrature/quadrature_lib.hh"
 #include "flow/mh_dofhandler.hh"
 
@@ -119,17 +120,15 @@ public:
         edge_indices_(dim+1)
     {
         // local numbering of dofs for MH system
-//         auto fe_system = static_cast<FESystem<dim>*> data_->dh_->ds().fe(ele);
-//         auto v_fe_dofs = fe_system->fe_dofs();
+        // note: this shortcut supposes that the fe_system is the same on all elements
+        // the function DiscreteSpace.fe(ElementAccessor) does not in fact depend on the element accessor
+        FiniteElement<dim>* fe = ad_->dh_->ds()->fe<dim>(ad_->dh_->own_range().begin()->elm());
+        FESystem<dim>* fe_system = dynamic_cast<FESystem<dim>*>(fe);
+        loc_side_dofs = fe_system->fe_dofs(0);;
+        loc_ele_dof = fe_system->fe_dofs(1)[0];
+        loc_edge_dofs = fe_system->fe_dofs(2);;
+        
         unsigned int nsides = dim+1;
-        loc_side_dofs.resize(nsides);
-        loc_ele_dof = nsides;
-        loc_edge_dofs.resize(nsides);
-        for(unsigned int i = 0; i < nsides; i++){
-            loc_side_dofs[i] = i;
-            loc_edge_dofs[i] = nsides + i + 1;
-        }
-        //DebugOut() << print_var(this) << print_var(side_quad_.size());
         
         // create local sparsity pattern
         arma::umat sp(size(),size());
