@@ -217,8 +217,6 @@ void RichardsLMH::postprocess() {
 
     // update structures for balance of water volume
     assembly_linear_system();
-
-    std::vector<LongIdx> side_indices(this->data_->dh_cr_disc_->max_elem_dofs());
     
     // update the subvector with edge pressure for solution vector
     data_->dh_cr_->update_subvector(data_->data_vec_, data_->phead_edge_);
@@ -228,22 +226,8 @@ void RichardsLMH::postprocess() {
     // modify side fluxes in parallel
     // for every local edge take time term on diagonal and add it to the corresponding flux
     auto multidim_assembler = AssemblyBase::create< AssemblyLMH >(data_);
-
+    
     for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
-      dh_cell.cell_with_other_dh(this->data_->dh_cr_disc_.get()).get_loc_dof_indices(side_indices);
-      LocalElementAccessorBase<3> ele_ac(dh_cell);
-      multidim_assembler[ele_ac.dim()-1]->update_water_content(ele_ac);
-
-      double ele_scale = ele_ac.measure() *
-              data_->cross_section.value(ele_ac.centre(), ele_ac.element_accessor()) / ele_ac.n_sides();
-      double ele_source = data_->water_source_density.value(ele_ac.centre(), ele_ac.element_accessor());
-
-      for (unsigned int i=0; i<ele_ac.element_accessor()->n_sides(); i++) {
-          double water_content = data_->water_content_previous_it[ side_indices[i] ];
-          double water_content_previous_time = data_->water_content_previous_time[ side_indices[i] ];
-
-          data_->data_vec_[ele_ac.side_local_row(i)] +=
-                ele_scale * ele_source - ele_scale * (water_content - water_content_previous_time) / time_->dt();
-      }
+        multidim_assembler[dh_cell.elm().dim()-1]->postprocess_velocity(dh_cell);
     }
 }

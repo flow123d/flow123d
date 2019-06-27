@@ -62,15 +62,22 @@ public:
     // TODO: implement and use general interpolations between discrete spaces
     virtual arma::vec3 make_element_vector(LocalElementAccessorBase<3> ele_ac) = 0;
 
-    virtual void update_water_content(LocalElementAccessorBase<3> ele)
-    {}
-
+    /// Postprocess the velocity due to lumping.
+    virtual void postprocess_velocity(const DHCellAccessor& dh_cell) = 0;
+    
 protected:
 
     virtual void assemble_sides(LocalElementAccessorBase<3> ele) =0;
     
-    virtual void assemble_source_term(LocalElementAccessorBase<3> ele)
-    {}
+    virtual void assemble_source_term(LocalElementAccessorBase<3> ele) = 0;
+    
+    /// Postprocess the velocity due to lumping.
+    /**
+     * @p edge_scale is the coeficient scaling an element quantity to an element edge
+     * @p edge_source_term is the source term scaled to an element edge
+     */
+    virtual void postprocess_velocity_specific(const DHCellAccessor& dh_cell,
+                                               double edge_scale, double edge_source_term) = 0;
 };
 
 
@@ -109,9 +116,11 @@ public:
         ad_(data),
         loc_system_(size(), size()),
         loc_system_vb_(2,2),
-        indices_(dim+1)
+        edge_indices_(dim+1)
     {
         // local numbering of dofs for MH system
+//         auto fe_system = static_cast<FESystem<dim>*> data_->dh_->ds().fe(ele);
+//         auto v_fe_dofs = fe_system->fe_dofs();
         unsigned int nsides = dim+1;
         loc_side_dofs.resize(nsides);
         loc_ele_dof = nsides;
@@ -229,7 +238,21 @@ public:
         return flux_in_center;
     }
 
+    void postprocess_velocity(const DHCellAccessor& dh_cell)
+    {
+        ElementAccessor<3> ele = dh_cell.elm();
+        
+        double edge_scale = ele.measure()
+                              * ad_->cross_section.value(ele.centre(), ele)
+                              / ele->n_sides();
+        
+        double edge_source_term = edge_scale * ad_->water_source_density.value(ele.centre(), ele);
+      
+        postprocess_velocity_specific(dh_cell, edge_scale, edge_source_term);
+    }
+    
 protected:
+    
     static const unsigned int size()
     {
         // dofs: velocity, pressure, edge pressure
@@ -451,11 +474,11 @@ protected:
         }
     }
     
-    void assemble_source_term(LocalElementAccessorBase<3> ele_ac)
+    void assemble_source_term(LocalElementAccessorBase<3> ele_ac) override
     {
         ElementAccessor<3> ele =ele_ac.element_accessor();
         
-        ele_ac.dh_cell().cell_with_other_dh(ad_->dh_cr_.get()).get_loc_dof_indices(indices_);
+        ele_ac.dh_cell().cell_with_other_dh(ad_->dh_cr_.get()).get_loc_dof_indices(edge_indices_);
         
         // compute lumped source
         double alpha = 1.0 / ele_ac.n_sides();
@@ -489,7 +512,7 @@ protected:
                 
             if (ad_->balance != nullptr)
             {
-                ad_->balance->add_source_values(ad_->water_balance_idx, ele.region().bulk_idx(), {(LongIdx)indices_[i]}, {0},{source_term});
+                ad_->balance->add_source_values(ad_->water_balance_idx, ele.region().bulk_idx(), {(LongIdx)edge_indices_[i]}, {0},{source_term});
                 if( ! ad_->use_steady_assembly_)
                 {
                     ad_->balance->add_mass_matrix_values(ad_->water_balance_idx, ele_ac.region().bulk_idx(), { LongIdx(ele_ac.edge_row(i)) },
@@ -555,6 +578,26 @@ protected:
     }
 
 
+    void postprocess_velocity_specific(const DHCellAccessor& dh_cell, double edge_scale, double edge_source_term) override
+    {
+        dh_cell.get_loc_dof_indices(indices_);
+        ElementAccessor<3> ele = dh_cell.elm();
+        
+        double storativity = ad_->storativity.value(ele.centre(), ele);
+        double new_pressure, old_pressure, time_term = 0.0;
+        
+        for (unsigned int i=0; i<ele->n_sides(); i++) {
+            
+            if( ! ad_->use_steady_assembly_)
+            {
+                new_pressure = ad_->data_vec_[         indices_[loc_edge_dofs[i]] ];
+                old_pressure = ad_->previous_solution[ indices_[loc_edge_dofs[i]] ];
+                time_term = edge_scale * storativity / ad_->time_step_ * (new_pressure - old_pressure);
+            }
+            
+            ad_->data_vec_[indices_[loc_side_dofs[i]]] += edge_source_term - time_term;
+        }
+    }
 
     // assembly volume integrals
     FE_RT0<dim> fe_rt_;
@@ -579,7 +622,9 @@ protected:
 
     std::shared_ptr<MortarAssemblyBase> mortar_assembly;
     
+    // TODO: Update dofs only once, use the dofs from LocalSystem.
     std::vector<int> indices_;
+    std::vector<int> edge_indices_;
 };
 
 

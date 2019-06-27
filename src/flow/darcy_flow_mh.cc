@@ -738,32 +738,10 @@ void DarcyMH::postprocess()
     data_->previous_solution.local_to_ghost_begin();
     data_->previous_solution.local_to_ghost_end();
     
-    double ele_scale, source_term;
-    double storativity, new_pressure, old_pressure, time_term = 0.0;
-    unsigned int edge_local_row;
-
-    // postprocess sources (lumping)
+    auto multidim_assembler = AssemblyBase::create< AssemblyMH >(data_);
+    
     for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
-        LocalElementAccessorBase<3> ele_ac(dh_cell);
-
-        ele_scale = ele_ac.measure() / ele_ac.n_sides() *
-            data_->cross_section.value(ele_ac.centre(), ele_ac.element_accessor());
-        source_term = ele_scale * data_->water_source_density.value(ele_ac.centre(), ele_ac.element_accessor());
-      
-        storativity = data_->storativity.value(ele_ac.centre(), ele_ac.element_accessor());
-
-        for (unsigned int i=0; i<ele_ac.element_accessor()->n_sides(); i++) {
-            
-            if( ! data_->use_steady_assembly_)
-            {
-                edge_local_row = ele_ac.edge_local_row(i);
-                new_pressure = data_->data_vec_[edge_local_row];
-                old_pressure = data_->previous_solution[edge_local_row];
-                time_term = ele_scale * storativity / data_->time_step_ * (new_pressure - old_pressure);
-            }
-            
-            data_->data_vec_[ele_ac.side_local_row(i)] += source_term - time_term;
-        }
+        multidim_assembler[dh_cell.elm().dim()-1]->postprocess_velocity(dh_cell);
     }
     
 //     output_file = FilePath("postprocess_" + std::to_string(time_->step().index()) + ".m", FilePath::output_file);
