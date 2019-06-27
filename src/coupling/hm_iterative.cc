@@ -80,7 +80,7 @@ std::shared_ptr<FieldFE<spacedim, Value> > create_field(Mesh & mesh, unsigned in
 
 	// Construct FieldFE
 	std::shared_ptr< FieldFE<spacedim, Value> > field_ptr = std::make_shared< FieldFE<spacedim, Value> >();
-	field_ptr->set_fe_data( dh_par, 0, VectorMPI(dh_par->lsize()) );
+	field_ptr->set_fe_data( dh_par, 0, dh_par->create_vector() );
 	return field_ptr;
 }
 
@@ -109,7 +109,7 @@ const it::Record & HM_Iterative::get_input_type() {
                 "Maximal count of HM iterations." )
         .declare_key( "min_it", it::Integer(0), it::Default("1"),
                 "Minimal count of HM iterations." )
-        .declare_key( "a_tol", it::Double(0), it::Default("1e-7"),
+        .declare_key( "a_tol", it::Double(0), it::Default("0"),
                 "Absolute tolerance for difference in HM iteration." )
         .declare_key( "r_tol", it::Double(0), it::Default("1e-7"),
                 "Relative tolerance for difference in HM iteration." )
@@ -349,7 +349,7 @@ void HM_Iterative::update_solution()
 
         // pass displacement (divergence) to flow
         // and solve flow problem
-        update_flow_fields();        
+        update_flow_fields();
         flow_->solve_time_step(false);
         
         // pass pressure to mechanics and solve mechanics
@@ -381,16 +381,27 @@ void HM_Iterative::update_potential()
     auto potential_vec_ = data_.potential_ptr_->get_data_vec();
     auto dh = data_.potential_ptr_->get_dofhandler();
     double difference2 = 0, norm2 = 0;
-    for ( auto ele : dh->own_range() )
+    for ( auto ele : dh->local_range() )
     {
         auto elm = ele.elm();
         double alpha = data_.alpha.value(elm.centre(), elm);
         double pressure = flow_->get_mh_dofhandler().element_scalar(elm);
         double potential = -alpha*pressure;
-        difference2 += pow(potential_vec_[ele.local_idx()] - potential,2);
-        norm2 += pow(potential,2);
+        
+        if (ele.is_own())
+        {
+            difference2 += pow(potential_vec_[ele.local_idx()] - potential,2);
+            norm2 += pow(potential,2);
+        }
+        
         potential_vec_[ele.local_idx()] = potential;
     }
+    
+    double send_data[] = { difference2, norm2 };
+    double recv_data[2];
+    MPI_Allreduce(&send_data, &recv_data, 2, MPI_DOUBLE, MPI_SUM, PETSC_COMM_WORLD);
+    difference2 = recv_data[0];
+    norm2       = recv_data[1];
 
     double dif2norm;
     if (norm2 == 0)
@@ -413,7 +424,7 @@ void HM_Iterative::update_flow_fields()
     auto src_vec = data_.flow_source_ptr_->get_data_vec();
     auto dh = data_.beta_ptr_->get_dofhandler();
     double beta_diff2 = 0, beta_norm2 = 0, src_diff2 = 0, src_norm2 = 0;
-    for ( auto ele : dh->own_range() )
+    for ( auto ele : dh->local_range() )
     {
         auto elm = ele.elm();
         
@@ -421,19 +432,32 @@ void HM_Iterative::update_flow_fields()
         double young = mechanics_->data().young_modulus.value(elm.centre(), elm);
         double poisson = mechanics_->data().poisson_ratio.value(elm.centre(), elm);
         double beta = beta_ * 0.5*alpha*alpha/(2*lame_mu(young, poisson)/elm.dim() + lame_lambda(young, poisson));
-        beta_diff2 += pow(beta_vec[ele.local_idx()] - beta,2);
-        beta_norm2 += pow(beta,2);
-        beta_vec[ele.local_idx()] = beta;
         
         double old_p = data_.old_pressure_ptr_->value(elm.centre(), elm);
         double p = flow_->get_mh_dofhandler().element_scalar(elm);
         double div_u = data_.div_u_ptr_->value(elm.centre(), elm);
         double old_div_u = data_.old_div_u_ptr_->value(elm.centre(), elm);
         double src = (beta*(p-old_p) + alpha*(old_div_u - div_u)) / time_->dt();
-        src_diff2 += pow(src_vec[ele.local_idx()] - src,2);
-        src_norm2 += pow(src,2);
+        
+        if (ele.is_own())
+        {
+            beta_diff2 += pow(beta_vec[ele.local_idx()] - beta,2);
+            beta_norm2 += pow(beta,2);
+            src_diff2 += pow(src_vec[ele.local_idx()] - src,2);
+            src_norm2 += pow(src,2);
+        }
+        
+        beta_vec[ele.local_idx()] = beta;
         src_vec[ele.local_idx()] = src;
     }
+    
+    double send_data[] = { beta_diff2, beta_norm2, src_diff2, src_norm2 };
+    double recv_data[4];
+    MPI_Allreduce(&send_data, &recv_data, 4, MPI_DOUBLE, MPI_SUM, PETSC_COMM_WORLD);
+    beta_diff2 = recv_data[0];
+    beta_norm2 = recv_data[1];
+    src_diff2  = recv_data[2];
+    src_norm2  = recv_data[3];
     
     double beta_dif2norm, src_dif2norm;
     if (beta_norm2 == 0)
@@ -473,8 +497,11 @@ void HM_Iterative::compute_iteration_error(double& difference, double& norm)
         p_norm2 += pow(old_p, 2)*elm.measure();
     }
     
-    difference = sqrt(p_dif2);
-    norm = sqrt(p_norm2);
+    double send_data[] = { p_dif2, p_norm2 };
+    double recv_data[2];
+    MPI_Allreduce(&send_data, &recv_data, 2, MPI_DOUBLE, MPI_SUM, PETSC_COMM_WORLD);
+    difference = sqrt(recv_data[0]);
+    norm = sqrt(recv_data[1]);
 }
 
 
