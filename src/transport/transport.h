@@ -225,7 +225,7 @@ public:
     virtual void output_data() override;
 
     inline void set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field, double velocity_last_t) override
-    { velocity_field_ptr_ = flux_field; velocity_last_time_ = velocity_last_t; }
+    { velocity_field_ptr_ = flux_field; velocity_last_time_ = velocity_last_t; changed_ = true; }
 
     void set_output_stream(std::shared_ptr<OutputTime> stream) override
     { output_stream_ = stream; }
@@ -398,6 +398,8 @@ private:
 
 	/// Hold last time of velocity field store
 	double velocity_last_time_;
+	/// Indicator of change in velocity field.
+	bool changed_;
 
 	/// Finite element objects
 	FETransportObjects feo_;
