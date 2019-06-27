@@ -458,10 +458,6 @@ private:
 	/// @name Auxiliary fields used during assembly
 	// @{
 
-	/// Mass matrix coefficients.
-	vector<double> mm_coef;
-	/// Retardation coefficient due to sorption.
-	vector<vector<double> > ret_coef;
 	/// Temporary values of increments due to retardation (e.g. sorption)
     vector<double> ret_sources, ret_sources_prev;
 	/// Advection coefficients.

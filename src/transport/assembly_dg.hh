@@ -133,24 +133,21 @@ private:
     Quadrature<dim> *quad_;      ///< Quadrature used in assembling methods.
     MappingP1<dim,3> *mapping_;  ///< Auxiliary mapping of reference elements.
 
+    /// Reference to model (we must use common ancestor of concentration and heat model)
     AdvectionDiffusionModel &model_;
 
-    unsigned int ndofs_;
-    unsigned int qsize_;
-    FEValues<dim,3> fe_values_;
-    vector<LongIdx> dof_indices_;
-    vector<PetscScalar> local_mass_matrix_;
-    vector<PetscScalar> local_retardation_balance_vector_;
-    vector<PetscScalar> local_mass_balance_vector_;
+    unsigned int ndofs_;                                      ///< Number of dofs
+    unsigned int qsize_;                                      ///< Size of FEValues quadrature
+    FEValues<dim,3> fe_values_;                               ///< FEValues of object (assemble_mass_matrix method)
+    vector<LongIdx> dof_indices_;                             ///< Vector of global DOF indices
+    vector<PetscScalar> local_mass_matrix_;                   ///< Helper vector for assembly mass matrix
+    vector<PetscScalar> local_retardation_balance_vector_;    ///< Same as previous.
+    vector<PetscScalar> local_mass_balance_vector_;           ///< Same as previous.
 
 	/// Mass matrix coefficients.
 	vector<double> mm_coef_;
 	/// Retardation coefficient due to sorption.
 	vector<vector<double> > ret_coef_;
-	/// Reference to transport DG object, allow set data
-	//std::vector<Vec> &ret_vec_;
-	/// Pointer to transport DG object, allow set data
-	LinSys **ls_dt_;
 
     friend class FEObjects;
 };

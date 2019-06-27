@@ -246,15 +246,12 @@ void TransportDG<Model>::initialize()
     // Resize coefficient arrays
     int qsize = max(feo->q<0>()->size(), max(feo->q<1>()->size(), max(feo->q<2>()->size(), feo->q<3>()->size())));
     int max_edg_sides = max(Model::mesh_->max_edge_sides(1), max(Model::mesh_->max_edge_sides(2), Model::mesh_->max_edge_sides(3)));
-    mm_coef.resize(qsize);
-    ret_coef.resize(Model::n_substances());
     ret_sources.resize(Model::n_substances());
     ret_sources_prev.resize(Model::n_substances());
     ad_coef.resize(Model::n_substances());
     dif_coef.resize(Model::n_substances());
     for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
     {
-        ret_coef[sbi].resize(qsize);
         ad_coef[sbi].resize(qsize);
         dif_coef[sbi].resize(qsize);
     }
