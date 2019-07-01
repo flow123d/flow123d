@@ -209,13 +209,14 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
     // Check that Model is derived from AdvectionDiffusionModel.
     static_assert(std::is_base_of<AdvectionDiffusionModel, Model>::value, "");
 
-    this->eq_data_ = &data_;
+    data_ = make_shared<EqData>();
+    this->eq_data_ = data_.get();
 
 
     // Set up physical parameters.
-    data_.set_mesh(init_mesh);
-    data_.region_id = GenericField<3>::region_id(*Model::mesh_);
-    data_.subdomain = GenericField<3>::subdomain(*Model::mesh_);
+    data_->set_mesh(init_mesh);
+    data_->region_id = GenericField<3>::region_id(*Model::mesh_);
+    data_->subdomain = GenericField<3>::subdomain(*Model::mesh_);
 
 
     // DG variant and order
@@ -235,8 +236,8 @@ template<class Model>
 void TransportDG<Model>::initialize()
 {
     feo->initialize_data_members();
-    data_.set_components(Model::substances_.names());
-    data_.set_input_list( input_rec.val<Input::Array>("input_fields"), *(Model::time_) );
+    data_->set_components(Model::substances_.names());
+    data_->set_input_list( input_rec.val<Input::Array>("input_fields"), *(Model::time_) );
 
     // DG stabilization parameters on boundary edges
     gamma.resize(Model::n_substances());
@@ -269,21 +270,21 @@ void TransportDG<Model>::initialize()
     }
 
     output_vec.resize(Model::n_substances());
-    data_.output_field.set_components(Model::substances_.names());
-    data_.output_field.set_mesh(*Model::mesh_);
-    data_.output_type(OutputTime::CORNER_DATA);
+    data_->output_field.set_components(Model::substances_.names());
+    data_->output_field.set_mesh(*Model::mesh_);
+    data_->output_type(OutputTime::CORNER_DATA);
 
-    data_.output_field.setup_components();
+    data_->output_field.setup_components();
     for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
     {
         // create shared pointer to a FieldFE, pass FE data and push this FieldFE to output_field on all regions
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_field_ptr(new FieldFE<3, FieldValue<3>::Scalar>);
         output_vec[sbi] = output_field_ptr->set_fe_data(feo->dh());
-        data_.output_field[sbi].set_field(Model::mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
+        data_->output_field[sbi].set_field(Model::mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
     }
 
     // set time marks for writing the output
-    data_.output_fields.initialize(Model::output_stream_, Model::mesh_, input_rec.val<Input::Record>("output"), this->time());
+    data_->output_fields.initialize(Model::output_stream_, Model::mesh_, input_rec.val<Input::Record>("output"), this->time());
 
     // equation default PETSc solver options
     std::string petsc_default_opts;
@@ -293,26 +294,26 @@ void TransportDG<Model>::initialize()
       petsc_default_opts = "-ksp_type bcgs -ksp_diagonal_scale_fix -pc_type asm -pc_asm_overlap 4 -sub_pc_type ilu -sub_pc_factor_levels 3 -sub_pc_factor_fill 6.0";
     
     // allocate matrix and vector structures
-    ls    = new LinSys*[Model::n_substances()];
-    ls_dt = new LinSys*[Model::n_substances()];
+    data_->ls    = new LinSys*[Model::n_substances()];
+    data_->ls_dt = new LinSys*[Model::n_substances()];
     solution_elem_ = new double*[Model::n_substances()];
 
     stiffness_matrix.resize(Model::n_substances(), nullptr);
     mass_matrix.resize(Model::n_substances(), nullptr);
     rhs.resize(Model::n_substances(), nullptr);
     mass_vec.resize(Model::n_substances(), nullptr);
-    ret_vec.resize(Model::n_substances(), nullptr);
+    data_->ret_vec.resize(Model::n_substances(), nullptr);
 
     for (unsigned int sbi = 0; sbi < Model::n_substances(); sbi++) {
-        ls[sbi] = new LinSys_PETSC(feo->dh()->distr().get(), petsc_default_opts);
-        ( (LinSys_PETSC *)ls[sbi] )->set_from_input( input_rec.val<Input::Record>("solver") );
-        ls[sbi]->set_solution(output_vec[sbi].petsc_vec());
+    	data_->ls[sbi] = new LinSys_PETSC(feo->dh()->distr().get(), petsc_default_opts);
+        ( (LinSys_PETSC *)data_->ls[sbi] )->set_from_input( input_rec.val<Input::Record>("solver") );
+        data_->ls[sbi]->set_solution(output_vec[sbi].petsc_vec());
 
-        ls_dt[sbi] = new LinSys_PETSC(feo->dh()->distr().get(), petsc_default_opts);
-        ( (LinSys_PETSC *)ls_dt[sbi] )->set_from_input( input_rec.val<Input::Record>("solver") );
+        data_->ls_dt[sbi] = new LinSys_PETSC(feo->dh()->distr().get(), petsc_default_opts);
+        ( (LinSys_PETSC *)data_->ls_dt[sbi] )->set_from_input( input_rec.val<Input::Record>("solver") );
         solution_elem_[sbi] = new double[Model::mesh_->get_el_ds()->lsize()];
         
-        VecDuplicate(ls[sbi]->get_solution(), &ret_vec[sbi]);
+        VecDuplicate(data_->ls[sbi]->get_solution(), &data_->ret_vec[sbi]);
     }
 
 
@@ -333,9 +334,9 @@ TransportDG<Model>::~TransportDG()
 
         for (unsigned int i=0; i<Model::n_substances(); i++)
         {
-            delete ls[i];
+            delete data_->ls[i];
             delete[] solution_elem_[i];
-            delete ls_dt[i];
+            delete data_->ls_dt[i];
 
             if (stiffness_matrix[i])
                 chkerr(MatDestroy(&stiffness_matrix[i]));
@@ -345,12 +346,12 @@ TransportDG<Model>::~TransportDG()
             	chkerr(VecDestroy(&rhs[i]));
             if (mass_vec[i])
             	chkerr(VecDestroy(&mass_vec[i]));
-            if (ret_vec[i])
-            	chkerr(VecDestroy(&ret_vec[i]));
+            if (data_->ret_vec[i])
+            	chkerr(VecDestroy(&data_->ret_vec[i]));
         }
-        delete[] ls;
+        delete[] data_->ls;
         delete[] solution_elem_;
-        delete[] ls_dt;
+        delete[] data_->ls_dt;
         //delete[] stiffness_matrix;
         //delete[] mass_matrix;
         //delete[] rhs;
@@ -367,8 +368,8 @@ template<class Model>
 void TransportDG<Model>::zero_time_step()
 {
     START_TIMER(Model::ModelEqData::name());
-    data_.mark_input_times( *(Model::time_) );
-    data_.set_time(Model::time_->step(), LimitSide::left);
+    data_->mark_input_times( *(Model::time_) );
+    data_->set_time(Model::time_->step(), LimitSide::left);
     std::stringstream ss; // print warning message with table of uninitialized fields
     if ( FieldCommon::print_message_table(ss, "transport DG") ) {
         WarningOut() << ss.str();
@@ -378,7 +379,7 @@ void TransportDG<Model>::zero_time_step()
     // set initial conditions
     set_initial_condition();
     for (unsigned int sbi = 0; sbi < Model::n_substances(); sbi++)
-        ( (LinSys_PETSC *)ls[sbi] )->set_initial_guess_nonzero();
+        ( (LinSys_PETSC *)data_->ls[sbi] )->set_initial_guess_nonzero();
 
     // check first time assembly - needs preallocation
     if (!allocation_done) preallocate();
@@ -386,7 +387,7 @@ void TransportDG<Model>::zero_time_step()
     // after preallocation we assemble the matrices and vectors required for mass balance
     for (unsigned int sbi=0; sbi<Model::n_substances(); ++sbi)
     {
-        Model::balance_->calculate_instant(Model::subst_idx[sbi], ls[sbi]->get_solution());
+        Model::balance_->calculate_instant(Model::subst_idx[sbi], data_->ls[sbi]->get_solution());
 
         // add sources due to sorption
         ret_sources_prev[sbi] = 0;
@@ -403,14 +404,14 @@ void TransportDG<Model>::preallocate()
     for (unsigned int i=0; i<Model::n_substances(); i++)
     {
         // preallocate system matrix
-        ls[i]->start_allocation();
+    	data_->ls[i]->start_allocation();
         stiffness_matrix[i] = NULL;
         rhs[i] = NULL;
 
         // preallocate mass matrix
-        ls_dt[i]->start_allocation();
+        data_->ls_dt[i]->start_allocation();
         mass_matrix[i] = NULL;
-        VecZeroEntries(ret_vec[i]);
+        VecZeroEntries(data_->ret_vec[i]);
     }
     assemble_stiffness_matrix();
     assemble_mass_matrix();
@@ -418,8 +419,8 @@ void TransportDG<Model>::preallocate()
     set_boundary_conditions();
     for (unsigned int i=0; i<Model::n_substances(); i++)
     {
-      VecAssemblyBegin(ret_vec[i]);
-      VecAssemblyEnd(ret_vec[i]);
+      VecAssemblyBegin(data_->ret_vec[i]);
+      VecAssemblyEnd(data_->ret_vec[i]);
     }
 
     allocation_done = true;
@@ -436,78 +437,78 @@ void TransportDG<Model>::update_solution()
     Model::time_->view("TDG");
     
     START_TIMER("data reinit");
-    data_.set_time(Model::time_->step(), LimitSide::left);
+    data_->set_time(Model::time_->step(), LimitSide::left);
     END_TIMER("data reinit");
     
     // assemble mass matrix
-    if (mass_matrix[0] == NULL || data_.subset(FieldFlag::in_time_term).changed() )
+    if (mass_matrix[0] == NULL || data_->subset(FieldFlag::in_time_term).changed() )
     {
         for (unsigned int i=0; i<Model::n_substances(); i++)
         {
-            ls_dt[i]->start_add_assembly();
-            ls_dt[i]->mat_zero_entries();
-            VecZeroEntries(ret_vec[i]);
+        	data_->ls_dt[i]->start_add_assembly();
+        	data_->ls_dt[i]->mat_zero_entries();
+            VecZeroEntries(data_->ret_vec[i]);
         }
         assemble_mass_matrix();
         for (unsigned int i=0; i<Model::n_substances(); i++)
         {
-            ls_dt[i]->finish_assembly();
-            VecAssemblyBegin(ret_vec[i]);
-            VecAssemblyEnd(ret_vec[i]);
+        	data_->ls_dt[i]->finish_assembly();
+            VecAssemblyBegin(data_->ret_vec[i]);
+            VecAssemblyEnd(data_->ret_vec[i]);
             // construct mass_vec for initial time
             if (mass_matrix[i] == NULL)
             {
-                VecDuplicate(ls[i]->get_solution(), &mass_vec[i]);
-                MatMult(*(ls_dt[i]->get_matrix()), ls[i]->get_solution(), mass_vec[i]);
-                MatConvert(*( ls_dt[i]->get_matrix() ), MATSAME, MAT_INITIAL_MATRIX, &mass_matrix[i]);
+                VecDuplicate(data_->ls[i]->get_solution(), &mass_vec[i]);
+                MatMult(*(data_->ls_dt[i]->get_matrix()), data_->ls[i]->get_solution(), mass_vec[i]);
+                MatConvert(*( data_->ls_dt[i]->get_matrix() ), MATSAME, MAT_INITIAL_MATRIX, &mass_matrix[i]);
             }
             else
-                MatCopy(*( ls_dt[i]->get_matrix() ), mass_matrix[i], DIFFERENT_NONZERO_PATTERN);
+                MatCopy(*( data_->ls_dt[i]->get_matrix() ), mass_matrix[i], DIFFERENT_NONZERO_PATTERN);
         }
     }
 
     // assemble stiffness matrix
     if (stiffness_matrix[0] == NULL
-            || data_.subset(FieldFlag::in_main_matrix).changed()
+            || data_->subset(FieldFlag::in_main_matrix).changed()
             || Model::flux_changed)
     {
         // new fluxes can change the location of Neumann boundary,
         // thus stiffness matrix must be reassembled
         for (unsigned int i=0; i<Model::n_substances(); i++)
         {
-            ls[i]->start_add_assembly();
-            ls[i]->mat_zero_entries();
+            data_->ls[i]->start_add_assembly();
+            data_->ls[i]->mat_zero_entries();
         }
         assemble_stiffness_matrix();
         for (unsigned int i=0; i<Model::n_substances(); i++)
         {
-            ls[i]->finish_assembly();
+        	data_->ls[i]->finish_assembly();
 
             if (stiffness_matrix[i] == NULL)
-                MatConvert(*( ls[i]->get_matrix() ), MATSAME, MAT_INITIAL_MATRIX, &stiffness_matrix[i]);
+                MatConvert(*( data_->ls[i]->get_matrix() ), MATSAME, MAT_INITIAL_MATRIX, &stiffness_matrix[i]);
             else
-                MatCopy(*( ls[i]->get_matrix() ), stiffness_matrix[i], DIFFERENT_NONZERO_PATTERN);
+                MatCopy(*( data_->ls[i]->get_matrix() ), stiffness_matrix[i], DIFFERENT_NONZERO_PATTERN);
         }
     }
 
     // assemble right hand side (due to sources and boundary conditions)
     if (rhs[0] == NULL
-            || data_.subset(FieldFlag::in_rhs).changed()
+            || data_->subset(FieldFlag::in_rhs).changed()
             || Model::flux_changed)
     {
         for (unsigned int i=0; i<Model::n_substances(); i++)
         {
-            ls[i]->start_add_assembly();
-            ls[i]->rhs_zero_entries();
+            data_->ls[i]->start_add_assembly();
+            data_->ls[i]->rhs_zero_entries();
         }
         set_sources();
         set_boundary_conditions();
         for (unsigned int i=0; i<Model::n_substances(); i++)
         {
-            ls[i]->finish_assembly();
+            data_->ls[i]->finish_assembly();
 
-            if (rhs[i] == nullptr) VecDuplicate(*( ls[i]->get_rhs() ), &rhs[i]);
-            VecCopy(*( ls[i]->get_rhs() ), rhs[i]);
+            if (rhs[i] == nullptr) VecDuplicate(*( data_->ls[i]->get_rhs() ), &rhs[i]);
+            VecCopy(*( data_->ls[i]->get_rhs() ), rhs[i]);
         }
     }
     
@@ -536,19 +537,19 @@ void TransportDG<Model>::update_solution()
     {
         MatConvert(stiffness_matrix[i], MATSAME, MAT_INITIAL_MATRIX, &m);
         MatAXPY(m, 1./Model::time_->dt(), mass_matrix[i], SUBSET_NONZERO_PATTERN);
-        ls[i]->set_matrix(m, DIFFERENT_NONZERO_PATTERN);
+        data_->ls[i]->set_matrix(m, DIFFERENT_NONZERO_PATTERN);
         Vec w;
         VecDuplicate(rhs[i], &w);
         VecWAXPY(w, 1./Model::time_->dt(), mass_vec[i], rhs[i]);
-        ls[i]->set_rhs(w);
+        data_->ls[i]->set_rhs(w);
 
         VecDestroy(&w);
         chkerr(MatDestroy(&m));
 
-        ls[i]->solve();
+        data_->ls[i]->solve();
 
         // update mass_vec due to possible changes in mass matrix
-        MatMult(*(ls_dt[i]->get_matrix()), ls[i]->get_solution(), mass_vec[i]);
+        MatMult(*(data_->ls_dt[i]->get_matrix()), data_->ls[i]->get_solution(), mass_vec[i]);
     }
     END_TIMER("solve");
 
@@ -588,7 +589,7 @@ void TransportDG<Model>::calculate_concentration_matrix()
             solution_elem_[sbi][i_cell] = 0;
 
             for (unsigned int j=0; j<n_dofs; ++j)
-                solution_elem_[sbi][i_cell] += ls[sbi]->get_solution_array()[dof_indices[j]-feo->dh()->distr()->begin()];
+                solution_elem_[sbi][i_cell] += data_->ls[sbi]->get_solution_array()[dof_indices[j]-feo->dh()->distr()->begin()];
 
             solution_elem_[sbi][i_cell] = max(solution_elem_[sbi][i_cell]/n_dofs, 0.);
         }
@@ -608,15 +609,15 @@ void TransportDG<Model>::output_data()
     START_TIMER("DG-OUTPUT");
 
     // gather the solution from all processors
-    data_.output_fields.set_time( this->time().step(), LimitSide::left);
-    //if (data_.output_fields.is_field_output_time(data_.output_field, this->time().step()) )
-    data_.output_fields.output(this->time().step());
+    data_->output_fields.set_time( this->time().step(), LimitSide::left);
+    //if (data_->output_fields.is_field_output_time(data_->output_field, this->time().step()) )
+    data_->output_fields.output(this->time().step());
 
     Model::output_data();
     
     START_TIMER("TOS-balance");
     for (unsigned int sbi=0; sbi<Model::n_substances(); ++sbi)
-      Model::balance_->calculate_instant(Model::subst_idx[sbi], ls[sbi]->get_solution());
+      Model::balance_->calculate_instant(Model::subst_idx[sbi], data_->ls[sbi]->get_solution());
     Model::balance_->output();
     END_TIMER("TOS-balance");
 
@@ -631,10 +632,10 @@ void TransportDG<Model>::calculate_cumulative_balance()
     {
         for (unsigned int sbi=0; sbi<Model::n_substances(); ++sbi)
         {
-            Model::balance_->calculate_cumulative(Model::subst_idx[sbi], ls[sbi]->get_solution());
+            Model::balance_->calculate_cumulative(Model::subst_idx[sbi], data_->ls[sbi]->get_solution());
 
             // update source increment due to retardation
-            VecDot(ret_vec[sbi], ls[sbi]->get_solution(), &ret_sources[sbi]);
+            VecDot(data_->ret_vec[sbi], data_->ls[sbi]->get_solution(), &ret_sources[sbi]);
 
             Model::balance_->add_cumulative_source(Model::subst_idx[sbi], (ret_sources[sbi]-ret_sources_prev[sbi])/Model::time_->dt());
             ret_sources_prev[sbi] = ret_sources[sbi];
@@ -650,7 +651,7 @@ void TransportDG<Model>::assemble_mass_matrix()
     Model::balance_->start_mass_assembly(Model::subst_idx);
     for (auto cell : feo->dh()->own_range() )
     {
-        feo->multidim_assembly()[ cell.dim()-1 ]->assemble_mass_matrix(cell, ret_vec, ls_dt);
+        feo->multidim_assembly()[ cell.dim()-1 ]->assemble_mass_matrix(cell, data_->ret_vec, data_->ls_dt);
     }
     Model::balance_->finish_mass_assembly(Model::subst_idx);
     END_TIMER("assemble_mass");
@@ -739,7 +740,7 @@ void TransportDG<Model>::assemble_volume_integrals()
                                                   +sources_sigma[sbi][k]*fe_values.shape_value(j,k)*fe_values.shape_value(i,k))*fe_values.JxW(k);
                 }
             }
-			ls[sbi]->mat_set_values(ndofs, &(dof_indices[0]), ndofs, &(dof_indices[0]), local_matrix);
+            data_->ls[sbi]->mat_set_values(ndofs, &(dof_indices[0]), ndofs, &(dof_indices[0]), local_matrix);
         }
     }
 }
@@ -800,7 +801,7 @@ void TransportDG<Model>::set_sources()
                 for (unsigned int i=0; i<ndofs; i++)
                     local_rhs[i] += source*fe_values.shape_value(i,k);
             }
-            ls[sbi]->rhs_set_values(ndofs, &(dof_indices[0]), local_rhs);
+            data_->ls[sbi]->rhs_set_values(ndofs, &(dof_indices[0]), local_rhs);
 
             for (unsigned int i=0; i<ndofs; i++)
             {
@@ -876,7 +877,7 @@ void TransportDG<Model>::assemble_fluxes_element_element()
                 Model::compute_advection_diffusion_coefficients(fe_values[sid]->point_list(), side_velocity[sid], cell, ad_coef_edg[sid], dif_coef_edg[sid]);
                 dg_penalty[sid].resize(Model::n_substances());
                 for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
-                    dg_penalty[sid][sbi] = data_.dg_penalty[sbi].value(cell.centre(), cell);
+                    dg_penalty[sid][sbi] = data_->dg_penalty[sbi].value(cell.centre(), cell);
                 ++sid;
             }
             arma::vec3 normal_vector = fe_values[0]->normal_vector(0);
@@ -997,7 +998,7 @@ void TransportDG<Model>::assemble_fluxes_element_element()
                                         }
                                     }
                                 }
-    							ls[sbi]->mat_set_values(fe_values[sd[n]]->n_dofs(), &(side_dof_indices[sd[n]][0]), fe_values[sd[m]]->n_dofs(), &(side_dof_indices[sd[m]][0]), local_matrix);
+                                data_->ls[sbi]->mat_set_values(fe_values[sd[n]]->n_dofs(), &(side_dof_indices[sd[n]][0]), fe_values[sd[m]]->n_dofs(), &(side_dof_indices[sd[m]][0]), local_matrix);
                             }
                         }
 #undef AVERAGE
@@ -1055,7 +1056,7 @@ void TransportDG<Model>::assemble_fluxes_boundary()
             Model::compute_advection_diffusion_coefficients(fe_values_side.point_list(), side_velocity, elm_acc, ad_coef, dif_coef);
             arma::uvec bc_type;
             Model::get_bc_type(side->cond()->element_accessor(), bc_type);
-            data_.cross_section.value_list(fe_values_side.point_list(), elm_acc, csection);
+            data_->cross_section.value_list(fe_values_side.point_list(), elm_acc, csection);
 
             for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
             {
@@ -1073,7 +1074,7 @@ void TransportDG<Model>::assemble_fluxes_boundary()
                 if (bc_type[sbi] == AdvectionDiffusionModel::abc_dirichlet)
                 {
                     // set up the parameters for DG method
-                    set_DG_parameters_boundary(side, qsize, dif_coef[sbi], transport_flux, fe_values_side.normal_vector(0), data_.dg_penalty[sbi].value(elm_acc.centre(), elm_acc), gamma_l);
+                    set_DG_parameters_boundary(side, qsize, dif_coef[sbi], transport_flux, fe_values_side.normal_vector(0), data_->dg_penalty[sbi].value(elm_acc.centre(), elm_acc), gamma_l);
                     gamma[sbi][side->cond_idx()] = gamma_l;
                     transport_flux += gamma_l;
                 }
@@ -1113,7 +1114,7 @@ void TransportDG<Model>::assemble_fluxes_boundary()
                     }
                 }
 
-		    	ls[sbi]->mat_set_values(ndofs, &(side_dof_indices[0]), ndofs, &(side_dof_indices[0]), local_matrix);
+                data_->ls[sbi]->mat_set_values(ndofs, &(side_dof_indices[0]), ndofs, &(side_dof_indices[0]), local_matrix);
             }
         }
     }
@@ -1187,8 +1188,8 @@ void TransportDG<Model>::assemble_fluxes_element_side()
             calculate_velocity(elm_lower_dim, velocity_lower, fv_rt);
             Model::compute_advection_diffusion_coefficients(fe_values_vb.point_list(), velocity_lower, elm_lower_dim, ad_coef_edg[0], dif_coef_edg[0]);
             Model::compute_advection_diffusion_coefficients(fe_values_vb.point_list(), velocity_higher, elm_higher_dim, ad_coef_edg[1], dif_coef_edg[1]);
-            data_.cross_section.value_list(fe_values_vb.point_list(), elm_lower_dim, csection_lower);
-            data_.cross_section.value_list(fe_values_vb.point_list(), elm_higher_dim, csection_higher);
+            data_->cross_section.value_list(fe_values_vb.point_list(), elm_lower_dim, csection_lower);
+            data_->cross_section.value_list(fe_values_vb.point_list(), elm_higher_dim, csection_higher);
 
             for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++) // Optimize: SWAP LOOPS
             {
@@ -1196,7 +1197,7 @@ void TransportDG<Model>::assemble_fluxes_element_side()
                     for (unsigned int j=0; j<n_dofs[0]+n_dofs[1]; j++)
                         local_matrix[i*(n_dofs[0]+n_dofs[1])+j] = 0;
 
-                data_.fracture_sigma[sbi].value_list(fe_values_vb.point_list(), elm_lower_dim, frac_sigma);
+                data_->fracture_sigma[sbi].value_list(fe_values_vb.point_list(), elm_lower_dim, frac_sigma);
 
                 // set transmission conditions
                 for (unsigned int k=0; k<qsize; k++)
@@ -1230,7 +1231,7 @@ void TransportDG<Model>::assemble_fluxes_element_side()
                                             comm_flux[m][n]*fv_sb[m]->shape_value(j,k)*fv_sb[n]->shape_value(i,k);
                     }
                 }
-    			ls[sbi]->mat_set_values(n_dofs[0]+n_dofs[1], side_dof_indices, n_dofs[0]+n_dofs[1], side_dof_indices, local_matrix);
+                data_->ls[sbi]->mat_set_values(n_dofs[0]+n_dofs[1], side_dof_indices, n_dofs[0]+n_dofs[1], side_dof_indices, local_matrix);
             }
         }
 
@@ -1304,7 +1305,7 @@ void TransportDG<Model>::set_boundary_conditions()
             calculate_velocity(elm, velocity, fsv_rt);
 
             Model::compute_advection_diffusion_coefficients(fe_values_side.point_list(), velocity, side->element(), ad_coef, dif_coef);
-            data_.cross_section.value_list(fe_values_side.point_list(), side->element(), csection);
+            data_->cross_section.value_list(fe_values_side.point_list(), side->element(), csection);
 
             auto dh_cell = feo->dh()->cell_accessor_from_element( side->element().idx() );
             dh_cell.get_dof_indices(side_dof_indices);
@@ -1317,7 +1318,7 @@ void TransportDG<Model>::set_boundary_conditions()
                 
                 // The b.c. data are fetched for all possible b.c. types since we allow
                 // different bc_type for each substance.
-                data_.bc_dirichlet_value[sbi].value_list(fe_values_side.point_list(), ele_acc, bc_values);
+                data_->bc_dirichlet_value[sbi].value_list(fe_values_side.point_list(), ele_acc, bc_values);
 
                 double side_flux = 0;
                 for (unsigned int k=0; k<qsize; k++)
@@ -1400,7 +1401,7 @@ void TransportDG<Model>::set_boundary_conditions()
                             local_flux_balance_vector[i] += arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k))*fe_values_side.JxW(k)*fe_values_side.shape_value(i,k);
                     }
                 }
-                ls[sbi]->rhs_set_values(ndofs, &(side_dof_indices[0]), local_rhs);
+                data_->ls[sbi]->rhs_set_values(ndofs, &(side_dof_indices[0]), local_rhs);
 
                 Model::balance_->add_flux_matrix_values(Model::subst_idx[sbi], loc_b, side_dof_indices, local_flux_balance_vector);
                 Model::balance_->add_flux_vec_value(Model::subst_idx[sbi], loc_b, local_flux_balance_rhs);
@@ -1471,21 +1472,21 @@ void TransportDG<Model>::set_initial_condition()
 {
     START_TIMER("set_init_cond");
     for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
-        ls[sbi]->start_allocation();
+        data_->ls[sbi]->start_allocation();
     prepare_initial_condition<1>();
     prepare_initial_condition<2>();
     prepare_initial_condition<3>();
 
     for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
-        ls[sbi]->start_add_assembly();
+        data_->ls[sbi]->start_add_assembly();
     prepare_initial_condition<1>();
     prepare_initial_condition<2>();
     prepare_initial_condition<3>();
 
     for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
     {
-        ls[sbi]->finish_assembly();
-        ls[sbi]->solve();
+        data_->ls[sbi]->finish_assembly();
+        data_->ls[sbi]->solve();
     }
     END_TIMER("set_init_cond");
 }
@@ -1535,7 +1536,7 @@ void TransportDG<Model>::prepare_initial_condition()
                     rhs[i] += fe_values.shape_value(i,k)*rhs_term;
                 }
             }
-    		ls[sbi]->set_values(ndofs, &(dof_indices[0]), ndofs, &(dof_indices[0]), matrix, rhs);
+            data_->ls[sbi]->set_values(ndofs, &(dof_indices[0]), ndofs, &(dof_indices[0]), matrix, rhs);
         }
     }
 }
@@ -1579,18 +1580,18 @@ void TransportDG<Model>::update_after_reactions(bool solution_changed)
             {
                 double old_average = 0;
                 for (unsigned int j=0; j<n_dofs; ++j)
-                    old_average += ls[sbi]->get_solution_array()[dof_indices[j]-feo->dh()->distr()->begin()];
+                    old_average += data_->ls[sbi]->get_solution_array()[dof_indices[j]-feo->dh()->distr()->begin()];
                 old_average /= n_dofs;
 
                 for (unsigned int j=0; j<n_dofs; ++j)
-                    ls[sbi]->get_solution_array()[dof_indices[j]-feo->dh()->distr()->begin()] += solution_elem_[sbi][i_cell] - old_average;
+                    data_->ls[sbi]->get_solution_array()[dof_indices[j]-feo->dh()->distr()->begin()] += solution_elem_[sbi][i_cell] - old_average;
             }
             ++i_cell;
         }
     }
     // update mass_vec for the case that mass matrix changes in next time step
     for (unsigned int sbi=0; sbi<Model::n_substances(); ++sbi)
-        MatMult(*(ls_dt[sbi]->get_matrix()), ls[sbi]->get_solution(), mass_vec[sbi]);
+        MatMult(*(data_->ls_dt[sbi]->get_matrix()), data_->ls[sbi]->get_solution(), mass_vec[sbi]);
 }
 
 template<class Model>

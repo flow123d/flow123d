@@ -166,6 +166,15 @@ public:
 
         EquationOutput output_fields;
 
+        /// Auxiliary vectors for calculation of sources in balance due to retardation (e.g. sorption).
+    	std::vector<Vec> ret_vec;
+
+    	/// Linear algebra system for the transport equation.
+    	LinSys **ls;
+
+    	/// Linear algebra system for the time derivative (actually it is used only for handling the matrix structures).
+    	LinSys **ls_dt;
+
 	};
 
 
@@ -226,7 +235,7 @@ public:
     void calculate_cumulative_balance();
 
 	const Vec &get_solution(unsigned int sbi)
-	{ return ls[sbi]->get_solution(); }
+	{ return data_->ls[sbi]->get_solution(); }
 
 	double **get_concentration_matrix()
 	{ return solution_elem_; }
@@ -246,7 +255,7 @@ private:
     /// Registrar of class to factory
     static const int registrar;
 
-	inline typename Model::ModelEqData &data() { return data_; }
+	inline typename Model::ModelEqData &data() { return *data_; }
 
 	void preallocate();
 
@@ -385,7 +394,7 @@ private:
 	// @{
 
 	/// Field data for model parameters.
-	EqData data_;
+	std::shared_ptr<EqData> data_;
 
 	// @}
 
@@ -424,15 +433,6 @@ private:
 	/// Mass from previous time instant (necessary when coefficients of mass matrix change in time).
 	std::vector<Vec> mass_vec;
     
-    /// Auxiliary vectors for calculation of sources in balance due to retardation (e.g. sorption).
-	std::vector<Vec> ret_vec;
-
-	/// Linear algebra system for the transport equation.
-	LinSys **ls;
-
-	/// Linear algebra system for the time derivative (actually it is used only for handling the matrix structures).
-	LinSys **ls_dt;
-
 	/// Element averages of solution (the array is passed to reactions in operator splitting).
 	double **solution_elem_;
 
