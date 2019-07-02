@@ -53,7 +53,8 @@ public:
 
     /// Constructor.
     AssemblyDG(unsigned int fe_order, AdvectionDiffusionModel &adm)
-    : fe_(new FE_P_disc<dim>(fe_order)), fe_rt_(new FE_RT0<dim>),
+    : fe_(new FE_P_disc<dim>(fe_order)), fe_low_(new FE_P_disc<dim-1>(fe_order)),
+	  fe_rt_(new FE_RT0<dim>), fe_rt_low_(new FE_RT0<dim-1>),
 	  quad_(new QGauss<dim>(2*fe_order)), mapping_(new MappingP1<dim,3>),
 	  model_(adm), fe_values_(*mapping_, *quad_, *fe_, update_values | update_JxW_values | update_quadrature_points) {
 
@@ -65,9 +66,31 @@ public:
     /// Destructor.
     ~AssemblyDG() {
         delete fe_;
+        delete fe_low_;
         delete fe_rt_;
+        delete fe_rt_low_;
         delete quad_;
         delete mapping_;
+    }
+
+    /// Getter for FE_P_disc.
+    inline FiniteElement<dim> *fe() const {
+        return fe_;
+    }
+
+    /// Getter for FE_P_disc of lower dim.
+    inline FiniteElement<dim-1> *fe_low() const {
+        return fe_low_;
+    }
+
+    /// Getter for FE_RT0.
+    inline FiniteElement<dim> *fe_rt() const {
+        return fe_rt_;
+    }
+
+    /// Getter for FE_RT0 of lower dim.
+    inline FiniteElement<dim-1> *fe_rt_low() const {
+        return fe_rt_low_;
     }
 
     /// Initialize auxiliary vectors and other data members
@@ -132,6 +155,13 @@ private:
     FiniteElement<dim> *fe_rt_;  ///< Finite element for the water velocity field.
     Quadrature<dim> *quad_;      ///< Quadrature used in assembling methods.
     MappingP1<dim,3> *mapping_;  ///< Auxiliary mapping of reference elements.
+
+    FiniteElement<dim> *fe_;            ///< Finite element for the solution of the advection-diffusion equation.
+    FiniteElement<dim-1> *fe_low_;      ///< Finite element for the solution of the advection-diffusion equation.
+    FiniteElement<dim> *fe_rt_;         ///< Finite element for the water velocity field.
+    FiniteElement<dim-1> *fe_rt_low_;   ///< Finite element for the water velocity field.
+    Quadrature<dim> *quad_;             ///< Quadrature used in assembling methods.
+    MappingP1<dim,3> *mapping_;         ///< Auxiliary mapping of reference elements.
 
     /// Reference to model (we must use common ancestor of concentration and heat model)
     AdvectionDiffusionModel &model_;

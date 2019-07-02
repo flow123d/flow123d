@@ -115,10 +115,9 @@ FEObjects::FEObjects(Mesh *mesh_, unsigned int fe_order, AdvectionDiffusionModel
 	multidim_assembly_.push_back( std::dynamic_pointer_cast<AssemblyDGBase>(assembly2_) );
 	multidim_assembly_.push_back( std::dynamic_pointer_cast<AssemblyDGBase>(assembly3_) );
 
-    fe0_ = new FE_P_disc<0>(fe_order);
     q0_ = new QGauss<0>(2*fe_order);
 
-    ds_ = std::make_shared<EqualOrderDiscreteSpace>(mesh_, fe0_, assembly1_->fe_, assembly2_->fe_, assembly3_->fe_);
+    ds_ = std::make_shared<EqualOrderDiscreteSpace>(mesh_, assembly1_->fe_low_, assembly1_->fe_, assembly2_->fe_, assembly3_->fe_);
 	dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
 
     dh_->distribute_dofs(ds_);
@@ -127,7 +126,6 @@ FEObjects::FEObjects(Mesh *mesh_, unsigned int fe_order, AdvectionDiffusionModel
 
 FEObjects::~FEObjects()
 {
-    delete fe0_;
     delete q0_;
 }
 
@@ -139,15 +137,10 @@ void FEObjects::initialize_data_members()
 
 AssemblyDGBase::MultidimAssemblyDG FEObjects::multidim_assembly() { return multidim_assembly_; }
 
-template<> FiniteElement<0> *FEObjects::fe<0>() { return fe0_; }
-template<> FiniteElement<1> *FEObjects::fe<1>() { return assembly1_->fe_; }
-template<> FiniteElement<2> *FEObjects::fe<2>() { return assembly2_->fe_; }
-template<> FiniteElement<3> *FEObjects::fe<3>() { return assembly3_->fe_; }
-
-template<> FiniteElement<0> *FEObjects::fe_rt<0>() { return 0; }
-template<> FiniteElement<1> *FEObjects::fe_rt<1>() { return assembly1_->fe_rt_; }
-template<> FiniteElement<2> *FEObjects::fe_rt<2>() { return assembly2_->fe_rt_; }
-template<> FiniteElement<3> *FEObjects::fe_rt<3>() { return assembly3_->fe_rt_; }
+template<> std::shared_ptr<AssemblyDG<0>> FEObjects::assembly<0>() { return NULL; }
+template<> std::shared_ptr<AssemblyDG<1>> FEObjects::assembly<1>() { return assembly1_; }
+template<> std::shared_ptr<AssemblyDG<2>> FEObjects::assembly<2>() { return assembly2_; }
+template<> std::shared_ptr<AssemblyDG<3>> FEObjects::assembly<3>() { return assembly3_; }
 
 template<> Quadrature<0> *FEObjects::q<0>() { return q0_; }
 template<> Quadrature<1> *FEObjects::q<1>() { return assembly1_->quad_; }
@@ -319,7 +312,7 @@ void TransportDG<Model>::initialize()
 
     // initialization of balance object
     Model::balance_->allocate(feo->dh()->distr()->lsize(),
-            max(feo->fe<1>()->n_dofs(), max(feo->fe<2>()->n_dofs(), feo->fe<3>()->n_dofs())));
+            max(feo->assembly1_->fe()->n_dofs(), max(feo->assembly2_->fe()->n_dofs(), feo->assembly3_->fe()->n_dofs())));
 
 }
 
@@ -571,13 +564,13 @@ void TransportDG<Model>::calculate_concentration_matrix()
         switch (cell.dim())
         {
         case 1:
-            n_dofs = feo->fe<1>()->n_dofs();
+            n_dofs = feo->assembly1_->fe()->n_dofs();
             break;
         case 2:
-            n_dofs = feo->fe<2>()->n_dofs();
+            n_dofs = feo->assembly2_->fe()->n_dofs();
             break;
         case 3:
-            n_dofs = feo->fe<3>()->n_dofs();
+            n_dofs = feo->assembly3_->fe()->n_dofs();
             break;
         }
 
@@ -695,11 +688,11 @@ template<class Model>
 template<unsigned int dim>
 void TransportDG<Model>::assemble_volume_integrals()
 {
-    FEValues<dim,3> fv_rt(*feo->mapping<dim>(), *feo->q<dim>(), *feo->fe_rt<dim>(),
+    FEValues<dim,3> fv_rt(*feo->mapping<dim>(), *feo->q<dim>(), *feo->assembly<dim>()->fe_rt(),
             update_values | update_gradients);
-    FEValues<dim,3> fe_values(*feo->mapping<dim>(), *feo->q<dim>(), *feo->fe<dim>(),
+    FEValues<dim,3> fe_values(*feo->mapping<dim>(), *feo->q<dim>(), *feo->assembly<dim>()->fe(),
             update_values | update_gradients | update_JxW_values | update_quadrature_points);
-    const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim>()->size();
+    const unsigned int ndofs = feo->assembly<dim>()->fe()->n_dofs(), qsize = feo->q<dim>()->size();
     std::vector<LongIdx> dof_indices(ndofs);
     vector<arma::vec3> velocity(qsize);
     vector<vector<double> > sources_sigma(Model::n_substances(), std::vector<double>(qsize));
@@ -762,9 +755,9 @@ template<class Model>
 template<unsigned int dim>
 void TransportDG<Model>::set_sources()
 {
-    FEValues<dim,3> fe_values(*feo->mapping<dim>(), *feo->q<dim>(), *feo->fe<dim>(),
+    FEValues<dim,3> fe_values(*feo->mapping<dim>(), *feo->q<dim>(), *feo->assembly<dim>()->fe(),
             update_values | update_JxW_values | update_quadrature_points);
-    const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim>()->size();
+    const unsigned int ndofs = feo->assembly<dim>()->fe()->n_dofs(), qsize = feo->q<dim>()->size();
     vector<std::vector<double> > sources_conc(Model::n_substances(), std::vector<double>(qsize)),
             sources_density(Model::n_substances(), std::vector<double>(qsize)),
             sources_sigma(Model::n_substances(), std::vector<double>(qsize));
@@ -838,9 +831,9 @@ template<unsigned int dim>
 void TransportDG<Model>::assemble_fluxes_element_element()
 {
     vector<FESideValues<dim,3>*> fe_values;
-    FESideValues<dim,3> fsv_rt(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe_rt<dim>(),
+    FESideValues<dim,3> fsv_rt(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->assembly<dim>()->fe_rt(),
             update_values);
-    const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim-1>()->size(),
+    const unsigned int ndofs = feo->assembly<dim>()->fe()->n_dofs(), qsize = feo->q<dim-1>()->size(),
             n_max_sides = ad_coef_edg.size();
     vector< vector<LongIdx> > side_dof_indices;
     PetscScalar local_matrix[ndofs*ndofs];
@@ -852,7 +845,7 @@ void TransportDG<Model>::assemble_fluxes_element_element()
     for (unsigned int sid=0; sid<n_max_sides; sid++) // Optimize: SWAP LOOPS
     {
     	side_dof_indices.push_back( vector<LongIdx>(ndofs) );
-        fe_values.push_back(new FESideValues<dim,3>(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe<dim>(),
+        fe_values.push_back(new FESideValues<dim,3>(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->assembly<dim>()->fe(),
                 update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points));
     }
 
@@ -1022,11 +1015,11 @@ template<class Model>
 template<unsigned int dim>
 void TransportDG<Model>::assemble_fluxes_boundary()
 {
-    FESideValues<dim,3> fe_values_side(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe<dim>(),
+    FESideValues<dim,3> fe_values_side(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->assembly<dim>()->fe(),
             update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
-    FESideValues<dim,3> fsv_rt(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe_rt<dim>(),
+    FESideValues<dim,3> fsv_rt(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->assembly<dim>()->fe_rt(),
             update_values);
-    const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim-1>()->size();
+    const unsigned int ndofs = feo->assembly<dim>()->fe()->n_dofs(), qsize = feo->q<dim-1>()->size();
     std::vector<LongIdx> side_dof_indices(ndofs);
     PetscScalar local_matrix[ndofs*ndofs];
     vector<arma::vec3> side_velocity;
@@ -1127,17 +1120,17 @@ void TransportDG<Model>::assemble_fluxes_element_side()
 {
 
     if (dim == 1) return;
-    FEValues<dim-1,3> fe_values_vb(*feo->mapping<dim-1>(), *feo->q<dim-1>(), *feo->fe<dim-1>(),
+    FEValues<dim-1,3> fe_values_vb(*feo->mapping<dim-1>(), *feo->q<dim-1>(), *feo->assembly<dim>()->fe_low(),
             update_values | update_gradients | update_JxW_values | update_quadrature_points);
-    FESideValues<dim,3> fe_values_side(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe<dim>(),
+    FESideValues<dim,3> fe_values_side(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->assembly<dim>()->fe(),
             update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
-    FESideValues<dim,3> fsv_rt(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe_rt<dim>(),
+    FESideValues<dim,3> fsv_rt(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->assembly<dim>()->fe_rt(),
             update_values);
-    FEValues<dim-1,3> fv_rt(*feo->mapping<dim-1>(), *feo->q<dim-1>(), *feo->fe_rt<dim-1>(),
+    FEValues<dim-1,3> fv_rt(*feo->mapping<dim-1>(), *feo->q<dim-1>(), *feo->assembly<dim>()->fe_rt_low(),
             update_values);
 
     vector<FEValuesSpaceBase<3>*> fv_sb(2);
-    const unsigned int ndofs = feo->fe<dim>()->n_dofs();    // number of local dofs
+    const unsigned int ndofs = feo->assembly<dim>()->fe()->n_dofs();    // number of local dofs
     const unsigned int qsize = feo->q<dim-1>()->size();     // number of quadrature points
     int side_dof_indices[2*ndofs];
     vector<LongIdx> indices(ndofs);
@@ -1259,11 +1252,11 @@ template<class Model>
 template<unsigned int dim>
 void TransportDG<Model>::set_boundary_conditions()
 {
-    FESideValues<dim,3> fe_values_side(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe<dim>(),
+    FESideValues<dim,3> fe_values_side(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->assembly<dim>()->fe(),
             update_values | update_gradients | update_normal_vectors | update_side_JxW_values | update_quadrature_points);
-    FESideValues<dim,3> fsv_rt(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe_rt<dim>(),
+    FESideValues<dim,3> fsv_rt(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->assembly<dim>()->fe_rt(),
                 update_values);
-    const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim-1>()->size();
+    const unsigned int ndofs = feo->assembly<dim>()->fe()->n_dofs(), qsize = feo->q<dim-1>()->size();
     vector<LongIdx> side_dof_indices(ndofs);
     unsigned int loc_b=0;
     double local_rhs[ndofs];
@@ -1495,9 +1488,9 @@ template<class Model>
 template<unsigned int dim>
 void TransportDG<Model>::prepare_initial_condition()
 {
-    FEValues<dim,3> fe_values(*feo->mapping<dim>(), *feo->q<dim>(), *feo->fe<dim>(),
+    FEValues<dim,3> fe_values(*feo->mapping<dim>(), *feo->q<dim>(), *feo->assembly<dim>()->fe(),
             update_values | update_JxW_values | update_quadrature_points);
-    const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim>()->size();
+    const unsigned int ndofs = feo->assembly<dim>()->fe()->n_dofs(), qsize = feo->q<dim>()->size();
     std::vector<LongIdx> dof_indices(ndofs);
     double matrix[ndofs*ndofs], rhs[ndofs];
     std::vector<std::vector<double> > init_values(Model::n_substances());
@@ -1563,13 +1556,13 @@ void TransportDG<Model>::update_after_reactions(bool solution_changed)
             switch (cell.dim())
             {
             case 1:
-                n_dofs = feo->fe<1>()->n_dofs();
+                n_dofs = feo->assembly1_->fe()->n_dofs();
                 break;
             case 2:
-                n_dofs = feo->fe<2>()->n_dofs();
+                n_dofs = feo->assembly2_->fe()->n_dofs();
                 break;
             case 3:
-                n_dofs = feo->fe<3>()->n_dofs();
+                n_dofs = feo->assembly3_->fe()->n_dofs();
                 break;
             }
 

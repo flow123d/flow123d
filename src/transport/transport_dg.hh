@@ -81,10 +81,7 @@ public:
 	inline AssemblyDGBase::MultidimAssemblyDG multidim_assembly();
 
 	template<unsigned int dim>
-	inline FiniteElement<dim> *fe();
-
-	template<unsigned int dim>
-	inline FiniteElement<dim> *fe_rt();
+	inline std::shared_ptr<AssemblyDG<dim>> assembly();
 
 	template<unsigned int dim>
 	inline Quadrature<dim> *q();
@@ -94,15 +91,12 @@ public:
 
 	inline std::shared_ptr<DOFHandlerMultiDim> dh();
 
-private:
-
-    AssemblyDGBase::MultidimAssemblyDG multidim_assembly_;
+    AssemblyDGBase::MultidimAssemblyDG multidim_assembly_; //Temporary solution - should be private
     std::shared_ptr<AssemblyDG<1>> assembly1_;
     std::shared_ptr<AssemblyDG<2>> assembly2_;
     std::shared_ptr<AssemblyDG<3>> assembly3_;
 
-    /// Finite elements for the solution of the advection-diffusion equation.
-    FiniteElement<0> *fe0_;
+private:
 
     /// Quadratures used in assembling methods.
     Quadrature<0> *q0_;
