@@ -95,7 +95,7 @@ public:
 
     /// Initialize auxiliary vectors and other data members
     void initialize() override {
-        local_mass_matrix_.resize(ndofs_*ndofs_);
+        local_matrix_.resize(ndofs_*ndofs_);
         local_retardation_balance_vector_.resize(ndofs_);
         local_mass_balance_vector_.resize(ndofs_);
 
@@ -126,9 +126,9 @@ public:
             {
                 for (unsigned int j=0; j<ndofs_; j++)
                 {
-                    local_mass_matrix_[i*ndofs_+j] = 0;
+                    local_matrix_[i*ndofs_+j] = 0;
                     for (unsigned int k=0; k<qsize_; k++)
-                        local_mass_matrix_[i*ndofs_+j] += (mm_coef_[k]+ret_coef_[sbi][k])*fe_values_.shape_value(j,k)*fe_values_.shape_value(i,k)*fe_values_.JxW(k);
+                        local_matrix_[i*ndofs_+j] += (mm_coef_[k]+ret_coef_[sbi][k])*fe_values_.shape_value(j,k)*fe_values_.shape_value(i,k)*fe_values_.JxW(k);
                 }
             }
 
@@ -144,17 +144,13 @@ public:
             }
 
             model_.balance()->add_mass_matrix_values(model_.get_subst_idx()[sbi], elm.region().bulk_idx(), dof_indices_, local_mass_balance_vector_);
-            ls_dt[sbi]->mat_set_values(ndofs_, &(dof_indices_[0]), ndofs_, &(dof_indices_[0]), &(local_mass_matrix_[0]));
+            ls_dt[sbi]->mat_set_values(ndofs_, &(dof_indices_[0]), ndofs_, &(dof_indices_[0]), &(local_matrix_[0]));
             VecSetValues(ret_vec[sbi], ndofs_, &(dof_indices_[0]), &(local_retardation_balance_vector_[0]), ADD_VALUES);
         }
     }
 
 private:
 
-    FiniteElement<dim> *fe_;     ///< Finite element for the solution of the advection-diffusion equation.
-    FiniteElement<dim> *fe_rt_;  ///< Finite element for the water velocity field.
-    Quadrature<dim> *quad_;      ///< Quadrature used in assembling methods.
-    MappingP1<dim,3> *mapping_;  ///< Auxiliary mapping of reference elements.
 
     FiniteElement<dim> *fe_;            ///< Finite element for the solution of the advection-diffusion equation.
     FiniteElement<dim-1> *fe_low_;      ///< Finite element for the solution of the advection-diffusion equation.
@@ -170,8 +166,8 @@ private:
     unsigned int qsize_;                                      ///< Size of FEValues quadrature
     FEValues<dim,3> fe_values_;                               ///< FEValues of object (assemble_mass_matrix method)
     vector<LongIdx> dof_indices_;                             ///< Vector of global DOF indices
-    vector<PetscScalar> local_mass_matrix_;                   ///< Helper vector for assembly mass matrix
-    vector<PetscScalar> local_retardation_balance_vector_;    ///< Same as previous.
+    vector<PetscScalar> local_matrix_;                        ///< Helper vector for assemble methods
+    vector<PetscScalar> local_retardation_balance_vector_;    ///< Helper vector for assemble mass matrix.
     vector<PetscScalar> local_mass_balance_vector_;           ///< Same as previous.
 
 	/// Mass matrix coefficients.
