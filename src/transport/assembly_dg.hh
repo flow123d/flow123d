@@ -54,11 +54,12 @@ public:
     /// Constructor.
     AssemblyDG(unsigned int fe_order, AdvectionDiffusionModel &adm)
     : fe_(new FE_P_disc<dim>(fe_order)), fe_low_(new FE_P_disc<dim-1>(fe_order)),
-	  fe_rt_(new FE_RT0<dim>), fe_rt_low_(new FE_RT0<dim-1>),
-	  quad_(new QGauss<dim>(2*fe_order)), mapping_(new MappingP1<dim,3>),
 	  model_(adm), fe_values_(*mapping_, *quad_, *fe_, update_values | update_JxW_values | update_quadrature_points) {
+      fe_rt_(new FE_RT0<dim>), fe_rt_low_(new FE_RT0<dim-1>),
+      quad_(new QGauss<dim>(2*fe_order)), quad_low_(new QGauss<dim-1>(2*fe_order)),
+      mapping_(new MappingP1<dim,3>), mapping_low_(new MappingP1<dim-1,3>),
 
-    	ndofs_ = fe_->n_dofs();
+        ndofs_ = fe_->n_dofs();
         qsize_ = quad_->size();
         dof_indices_.resize(ndofs_);
     }
@@ -70,7 +71,9 @@ public:
         delete fe_rt_;
         delete fe_rt_low_;
         delete quad_;
+        delete quad_low_;
         delete mapping_;
+        delete mapping_low_;
     }
 
     /// Getter for FE_P_disc.
@@ -91,6 +94,26 @@ public:
     /// Getter for FE_RT0 of lower dim.
     inline FiniteElement<dim-1> *fe_rt_low() const {
         return fe_rt_low_;
+    }
+
+    /// Getter for quadrature.
+    inline Quadrature<dim> *quad() const {
+        return quad_;
+    }
+
+    /// Getter for quadrature of lower dim.
+    inline Quadrature<dim-1> *quad_low() const {
+        return quad_low_;
+    }
+
+    /// Getter for mapping.
+    inline MappingP1<dim,3> *mapping() const {
+        return mapping_;
+    }
+
+    /// Getter for mapping of lower dim.
+    inline MappingP1<dim-1,3> *mapping_low() const {
+        return mapping_low_;
     }
 
     /// Initialize auxiliary vectors and other data members
@@ -153,11 +176,13 @@ private:
 
 
     FiniteElement<dim> *fe_;            ///< Finite element for the solution of the advection-diffusion equation.
-    FiniteElement<dim-1> *fe_low_;      ///< Finite element for the solution of the advection-diffusion equation.
+    FiniteElement<dim-1> *fe_low_;      ///< Finite element for the solution of the advection-diffusion equation (dim-1).
     FiniteElement<dim> *fe_rt_;         ///< Finite element for the water velocity field.
-    FiniteElement<dim-1> *fe_rt_low_;   ///< Finite element for the water velocity field.
+    FiniteElement<dim-1> *fe_rt_low_;   ///< Finite element for the water velocity field (dim-1).
     Quadrature<dim> *quad_;             ///< Quadrature used in assembling methods.
+    Quadrature<dim-1> *quad_low_;       ///< Quadrature used in assembling methods (dim-1).
     MappingP1<dim,3> *mapping_;         ///< Auxiliary mapping of reference elements.
+    MappingP1<dim-1,3> *mapping_low_;   ///< Auxiliary mapping of reference elements (dim-1).
 
     /// Reference to model (we must use common ancestor of concentration and heat model)
     AdvectionDiffusionModel &model_;

@@ -83,12 +83,6 @@ public:
 	template<unsigned int dim>
 	inline std::shared_ptr<AssemblyDG<dim>> assembly();
 
-	template<unsigned int dim>
-	inline Quadrature<dim> *q();
-
-	template<unsigned int dim>
-	inline MappingP1<dim,3> *mapping();
-
 	inline std::shared_ptr<DOFHandlerMultiDim> dh();
 
     AssemblyDGBase::MultidimAssemblyDG multidim_assembly_; //Temporary solution - should be private
@@ -97,9 +91,6 @@ public:
     std::shared_ptr<AssemblyDG<3>> assembly3_;
 
 private:
-
-    /// Quadratures used in assembling methods.
-    Quadrature<0> *q0_;
 
     std::shared_ptr<DiscreteSpace> ds_;
 
