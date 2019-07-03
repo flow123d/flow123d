@@ -54,10 +54,11 @@ public:
     /// Constructor.
     AssemblyDG(unsigned int fe_order, AdvectionDiffusionModel &adm)
     : fe_(new FE_P_disc<dim>(fe_order)), fe_low_(new FE_P_disc<dim-1>(fe_order)),
-	  model_(adm), fe_values_(*mapping_, *quad_, *fe_, update_values | update_JxW_values | update_quadrature_points) {
       fe_rt_(new FE_RT0<dim>), fe_rt_low_(new FE_RT0<dim-1>),
       quad_(new QGauss<dim>(2*fe_order)), quad_low_(new QGauss<dim-1>(2*fe_order)),
       mapping_(new MappingP1<dim,3>), mapping_low_(new MappingP1<dim-1,3>),
+      model_(adm), fv_rt_(*mapping_, *quad_, *fe_rt_, update_values | update_gradients),
+      fe_values_(*mapping_, *quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points) {
 
         ndofs_ = fe_->n_dofs();
         qsize_ = quad_->size();
@@ -189,7 +190,9 @@ private:
 
     unsigned int ndofs_;                                      ///< Number of dofs
     unsigned int qsize_;                                      ///< Size of FEValues quadrature
-    FEValues<dim,3> fe_values_;                               ///< FEValues of object (assemble_mass_matrix method)
+    FEValues<dim,3> fv_rt_;                                   ///< FEValues of object (of RT0 finite element type)
+    FEValues<dim,3> fe_values_;                               ///< FEValues of object (of P disc finite element type)
+
     vector<LongIdx> dof_indices_;                             ///< Vector of global DOF indices
     vector<PetscScalar> local_matrix_;                        ///< Helper vector for assemble methods
     vector<PetscScalar> local_retardation_balance_vector_;    ///< Helper vector for assemble mass matrix.
