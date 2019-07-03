@@ -66,41 +66,6 @@ namespace Input { namespace Type { class Selection; } }
 
 
 /**
- * Auxiliary container class for Finite element and related objects of all dimensions.
- * Its purpose is to provide templated access to these objects, applicable in
- * the assembling methods.
- */
-class FEObjects {
-public:
-
-	FEObjects(Mesh *mesh_, unsigned int fe_order, AdvectionDiffusionModel &adm);
-	~FEObjects();
-
-	void initialize_data_members();
-
-	inline AssemblyDGBase::MultidimAssemblyDG multidim_assembly();
-
-	template<unsigned int dim>
-	inline std::shared_ptr<AssemblyDG<dim>> assembly();
-
-	inline std::shared_ptr<DOFHandlerMultiDim> dh();
-
-    AssemblyDGBase::MultidimAssemblyDG multidim_assembly_; //Temporary solution - should be private
-    std::shared_ptr<AssemblyDG<1>> assembly1_;
-    std::shared_ptr<AssemblyDG<2>> assembly2_;
-    std::shared_ptr<AssemblyDG<3>> assembly3_;
-
-private:
-
-    std::shared_ptr<DiscreteSpace> ds_;
-
-    /// Object for distribution of dofs.
-    std::shared_ptr<DOFHandlerMultiDim> dh_;
-};
-
-
-
-/**
  * @brief Transport with dispersion implemented using discontinuous Galerkin method.
  *
  * TransportDG implements the discontinuous Galerkin method for the transport and diffusion of substances.
@@ -374,6 +339,13 @@ private:
 	void prepare_initial_condition();
 
 
+	/// Initialize AssemblyDG object off all dimension
+	void initialize_assembly_objects();
+
+	/// Return AssemblyDG object of appropriate dim
+	template<unsigned int dim>
+	inline std::shared_ptr<AssemblyDG<dim>> assembly();
+
 
 	/// @name Physical parameters
 	// @{
@@ -386,9 +358,6 @@ private:
 
 	/// @name Parameters of the numerical method
 	// @{
-
-	/// Finite element objects
-	FEObjects *feo;
 
 	/// Penalty parameters.
 	std::vector<std::vector<double> > gamma;
@@ -466,6 +435,16 @@ private:
     bool allocation_done;
 
     // @}
+
+    /// Assembly objects, hold data members and methods of appropriate dimension
+    AssemblyDGBase::MultidimAssemblyDG multidim_assembly_;
+    std::shared_ptr<AssemblyDG<1>> assembly1_;
+    std::shared_ptr<AssemblyDG<2>> assembly2_;
+    std::shared_ptr<AssemblyDG<3>> assembly3_;
+
+    /// Object for distribution of dofs.
+    std::shared_ptr<DOFHandlerMultiDim> dh_;
+
 };
 
 

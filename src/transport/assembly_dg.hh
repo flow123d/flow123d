@@ -199,8 +199,6 @@ private:
 	vector<double> mm_coef_;
 	/// Retardation coefficient due to sorption.
 	vector<vector<double> > ret_coef_;
-
-    friend class FEObjects;
 };
 
 
