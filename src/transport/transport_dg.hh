@@ -128,6 +128,19 @@ public:
     	/// Linear algebra system for the time derivative (actually it is used only for handling the matrix structures).
     	LinSys **ls_dt;
 
+    	/// @name Auxiliary fields used during assembly
+    	// @{
+
+    	/// Advection coefficients.
+    	vector<vector<arma::vec3> > ad_coef;
+    	/// Diffusion coefficients.
+    	vector<vector<arma::mat33> > dif_coef;
+    	/// Advection coefficients on edges.
+    	vector<vector<vector<arma::vec3> > > ad_coef_edg;
+    	/// Diffusion coefficients on edges.
+    	vector<vector<vector<arma::mat33> > > dif_coef_edg;
+
+    	// @}
 	};
 
 
@@ -417,14 +430,6 @@ private:
 
 	/// Temporary values of increments due to retardation (e.g. sorption)
     vector<double> ret_sources, ret_sources_prev;
-	/// Advection coefficients.
-	vector<vector<arma::vec3> > ad_coef;
-	/// Diffusion coefficients.
-	vector<vector<arma::mat33> > dif_coef;
-	/// Advection coefficients on edges.
-	vector<vector<vector<arma::vec3> > > ad_coef_edg;
-	/// Diffusion coefficients on edges.
-	vector<vector<vector<arma::mat33> > > dif_coef_edg;
 
 	// @}
 
