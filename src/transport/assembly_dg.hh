@@ -19,6 +19,7 @@
 #define ASSEMBLY_DG_HH_
 
 #include "transport/advection_diffusion_model.hh"
+#include "transport/transport_dg.hh"
 #include "fem/mapping_p1.hh"
 #include "fem/fe_p.hh"
 #include "fem/fe_rt.hh"
@@ -33,31 +34,30 @@
 class AssemblyDGBase
 {
 public:
-    typedef std::vector<std::shared_ptr<AssemblyDGBase> > MultidimAssemblyDG;
-
     virtual ~AssemblyDGBase() {}
 
     virtual void initialize() = 0;
 
-    virtual void assemble_mass_matrix(DHCellAccessor cell, std::vector<Vec> &ret_vec, LinSys **ls_dt) = 0;
+    virtual void assemble_mass_matrix(DHCellAccessor cell) = 0;
 };
 
 
 /**
  * Auxiliary container class for Finite element and related objects of given dimension.
  */
-template <unsigned int dim>
+template <unsigned int dim, class Model>
 class AssemblyDG : public AssemblyDGBase
 {
 public:
+    typedef typename TransportDG<Model>::EqData EqDataDG;
 
     /// Constructor.
-    AssemblyDG(unsigned int fe_order, AdvectionDiffusionModel &adm)
+    AssemblyDG(std::shared_ptr<EqDataDG> data, unsigned int fe_order, AdvectionDiffusionModel &adm)
     : fe_(new FE_P_disc<dim>(fe_order)), fe_low_(new FE_P_disc<dim-1>(fe_order)),
       fe_rt_(new FE_RT0<dim>), fe_rt_low_(new FE_RT0<dim-1>),
       quad_(new QGauss<dim>(2*fe_order)), quad_low_(new QGauss<dim-1>(2*fe_order)),
       mapping_(new MappingP1<dim,3>), mapping_low_(new MappingP1<dim-1,3>),
-      model_(adm), fv_rt_(*mapping_, *quad_, *fe_rt_, update_values | update_gradients),
+      model_(adm), data_(data), fv_rt_(*mapping_, *quad_, *fe_rt_, update_values | update_gradients),
       fe_values_(*mapping_, *quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points) {
 
         ndofs_ = fe_->n_dofs();
@@ -132,7 +132,7 @@ public:
     }
 
     /// Assemble integral over element
-    void assemble_mass_matrix(DHCellAccessor cell, std::vector<Vec> &ret_vec, LinSys **ls_dt) override
+    void assemble_mass_matrix(DHCellAccessor cell) override
     {
         ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
         ElementAccessor<3> elm = cell.elm();
@@ -168,8 +168,8 @@ public:
             }
 
             model_.balance()->add_mass_matrix_values(model_.get_subst_idx()[sbi], elm.region().bulk_idx(), dof_indices_, local_mass_balance_vector_);
-            ls_dt[sbi]->mat_set_values(ndofs_, &(dof_indices_[0]), ndofs_, &(dof_indices_[0]), &(local_matrix_[0]));
-            VecSetValues(ret_vec[sbi], ndofs_, &(dof_indices_[0]), &(local_retardation_balance_vector_[0]), ADD_VALUES);
+            data_->ls_dt[sbi]->mat_set_values(ndofs_, &(dof_indices_[0]), ndofs_, &(dof_indices_[0]), &(local_matrix_[0]));
+            VecSetValues(data_->ret_vec[sbi], ndofs_, &(dof_indices_[0]), &(local_retardation_balance_vector_[0]), ADD_VALUES);
         }
     }
 
@@ -187,6 +187,8 @@ private:
 
     /// Reference to model (we must use common ancestor of concentration and heat model)
     AdvectionDiffusionModel &model_;
+
+    std::shared_ptr<EqDataDG> data_;
 
     unsigned int ndofs_;                                      ///< Number of dofs
     unsigned int qsize_;                                      ///< Size of FEValues quadrature

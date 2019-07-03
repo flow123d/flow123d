@@ -51,17 +51,20 @@
 #include "petscvec.h"                          // for Vec, VecDestroy, VecSc...
 #include "transport/concentration_model.hh"    // for ConcentrationTransport...
 #include "transport/heat_model.hh"             // for HeatTransferModel, Hea...
-#include "transport/assembly_dg.hh"
 
 class DiscreteSpace;
 class Distribution;
 class OutputTime;
 class DOFHandlerMultiDim;
+class AssemblyDGBase;
+template<unsigned int dim, class Model> class AssemblyDG;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim> class FiniteElement;
 template<unsigned int dim, unsigned int spacedim> class Mapping;
 template<unsigned int dim> class Quadrature;
 namespace Input { namespace Type { class Selection; } }
+
+typedef std::vector<std::shared_ptr<AssemblyDGBase> > MultidimAssemblyDG;
 
 
 
@@ -344,7 +347,7 @@ private:
 
 	/// Return AssemblyDG object of appropriate dim
 	template<unsigned int dim>
-	inline std::shared_ptr<AssemblyDG<dim>> assembly();
+	inline std::shared_ptr<AssemblyDG<dim, Model>> assembly();
 
 
 	/// @name Physical parameters
@@ -437,10 +440,10 @@ private:
     // @}
 
     /// Assembly objects, hold data members and methods of appropriate dimension
-    AssemblyDGBase::MultidimAssemblyDG multidim_assembly_;
-    std::shared_ptr<AssemblyDG<1>> assembly1_;
-    std::shared_ptr<AssemblyDG<2>> assembly2_;
-    std::shared_ptr<AssemblyDG<3>> assembly3_;
+    MultidimAssemblyDG multidim_assembly_;
+    std::shared_ptr<AssemblyDG<1, Model>> assembly1_;
+    std::shared_ptr<AssemblyDG<2, Model>> assembly2_;
+    std::shared_ptr<AssemblyDG<3, Model>> assembly3_;
 
     /// Object for distribution of dofs.
     std::shared_ptr<DOFHandlerMultiDim> dh_;

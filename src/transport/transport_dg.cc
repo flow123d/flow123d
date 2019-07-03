@@ -171,9 +171,9 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
     Model::init_from_input(in_rec);
 
     // create finite element structures and distribute DOFs
-	assembly1_ = std::make_shared<AssemblyDG<1>>(dg_order, *this);
-	assembly2_ = std::make_shared<AssemblyDG<2>>(dg_order, *this);
-	assembly3_ = std::make_shared<AssemblyDG<3>>(dg_order, *this);
+	assembly1_ = std::make_shared<AssemblyDG<1, Model>>(data_, dg_order, *this);
+	assembly2_ = std::make_shared<AssemblyDG<2, Model>>(data_, dg_order, *this);
+	assembly3_ = std::make_shared<AssemblyDG<3, Model>>(data_, dg_order, *this);
 	multidim_assembly_.push_back( std::dynamic_pointer_cast<AssemblyDGBase>(assembly1_) );
 	multidim_assembly_.push_back( std::dynamic_pointer_cast<AssemblyDGBase>(assembly2_) );
 	multidim_assembly_.push_back( std::dynamic_pointer_cast<AssemblyDGBase>(assembly3_) );
@@ -603,7 +603,7 @@ void TransportDG<Model>::assemble_mass_matrix()
     Model::balance_->start_mass_assembly(Model::subst_idx);
     for (auto cell : dh_->own_range() )
     {
-        multidim_assembly_[ cell.dim()-1 ]->assemble_mass_matrix(cell, data_->ret_vec, data_->ls_dt);
+        multidim_assembly_[ cell.dim()-1 ]->assemble_mass_matrix(cell);
     }
     Model::balance_->finish_mass_assembly(Model::subst_idx);
     END_TIMER("assemble_mass");
@@ -1561,8 +1561,8 @@ void TransportDG<Model>::initialize_assembly_objects()
 
 template<class Model>
 template<unsigned int dim>
-std::shared_ptr<AssemblyDG<dim>> TransportDG<Model>::assembly() {
-    return std::dynamic_pointer_cast<AssemblyDG<dim>>(multidim_assembly_[dim-1]);
+std::shared_ptr<AssemblyDG<dim, Model>> TransportDG<Model>::assembly() {
+    return std::dynamic_pointer_cast<AssemblyDG<dim, Model>>(multidim_assembly_[dim-1]);
 }
 
 
