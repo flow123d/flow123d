@@ -21,6 +21,7 @@
 
 #include <armadillo>
 #include <vector>
+#include "fields/field_fe.hh"
 
 class SubstanceList;
 class Balance;
@@ -170,6 +171,9 @@ public:
 
     /// Return balance object.
     virtual std::shared_ptr<Balance> balance() const = 0;
+
+    /// Return velocity field object.
+    virtual std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> velocity_field_ptr() const = 0;
 
 	/// Destructor.
 	virtual ~AdvectionDiffusionModel() {};

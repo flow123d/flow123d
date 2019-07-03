@@ -243,12 +243,6 @@ private:
 	void assemble_stiffness_matrix();
 
 	/**
-	 * @brief Assembles the volume integrals into the stiffness matrix.
-	*/
-	template<unsigned int dim>
-	void assemble_volume_integrals();
-
-	/**
 	 * @brief Assembles the right hand side due to volume sources.
 	 *
 	 * This method just calls set_sources() for each space dimension.

@@ -39,6 +39,8 @@ public:
     virtual void initialize() = 0;
 
     virtual void assemble_mass_matrix(DHCellAccessor cell) = 0;
+
+    virtual void assemble_volume_integrals(DHCellAccessor cell) = 0;
 };
 
 
@@ -122,6 +124,8 @@ public:
         local_matrix_.resize(ndofs_*ndofs_);
         local_retardation_balance_vector_.resize(ndofs_);
         local_mass_balance_vector_.resize(ndofs_);
+        velocity_.resize(qsize_);
+        sources_sigma_.resize(model_.n_substances(), std::vector<double>(qsize_));
 
         mm_coef_.resize(qsize_);
         ret_coef_.resize(model_.n_substances());
@@ -173,7 +177,68 @@ public:
         }
     }
 
+    /// Assembles the volume integrals into the stiffness matrix.
+    void assemble_volume_integrals(DHCellAccessor cell) override
+    {
+        ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
+        if (!cell.is_own()) return;
+
+        ElementAccessor<3> elm = cell.elm();
+
+        fe_values_.reinit(elm);
+        fv_rt_.reinit(elm);
+        cell.get_dof_indices(dof_indices_);
+
+        calculate_velocity(elm, velocity_, fv_rt_);
+        model_.compute_advection_diffusion_coefficients(fe_values_.point_list(), velocity_, elm, data_->ad_coef, data_->dif_coef);
+        model_.compute_sources_sigma(fe_values_.point_list(), elm, sources_sigma_);
+
+        // assemble the local stiffness matrix
+        for (unsigned int sbi=0; sbi<model_.n_substances(); sbi++)
+        {
+            for (unsigned int i=0; i<ndofs_; i++)
+                for (unsigned int j=0; j<ndofs_; j++)
+                    local_matrix_[i*ndofs_+j] = 0;
+
+            for (unsigned int k=0; k<qsize_; k++)
+            {
+                for (unsigned int i=0; i<ndofs_; i++)
+                {
+                    arma::vec3 Kt_grad_i = data_->dif_coef[sbi][k].t()*fe_values_.shape_grad(i,k);
+                    double ad_dot_grad_i = arma::dot(data_->ad_coef[sbi][k], fe_values_.shape_grad(i,k));
+
+                    for (unsigned int j=0; j<ndofs_; j++)
+                        local_matrix_[i*ndofs_+j] += (arma::dot(Kt_grad_i, fe_values_.shape_grad(j,k))
+                                                  -fe_values_.shape_value(j,k)*ad_dot_grad_i
+                                                  +sources_sigma_[sbi][k]*fe_values_.shape_value(j,k)*fe_values_.shape_value(i,k))*fe_values_.JxW(k);
+                }
+            }
+            data_->ls[sbi]->mat_set_values(ndofs_, &(dof_indices_[0]), ndofs_, &(dof_indices_[0]), &(local_matrix_[0]));
+        }
+    }
+
 private:
+	/**
+	 * @brief Calculates the velocity field on a given cell.
+	 *
+	 * @param cell     The cell.
+	 * @param velocity The computed velocity field (at quadrature points).
+	 * @param fv       The FEValues class providing the quadrature points
+	 *                 and the shape functions for velocity.
+	 */
+    void calculate_velocity(const ElementAccessor<3> &cell, vector<arma::vec3> &velocity,
+                            FEValuesBase<dim,3> &fv)
+    {
+        ASSERT_EQ_DBG(cell->dim(), dim).error("Element dimension mismatch!");
+
+        velocity.resize(fv.n_points());
+        arma::mat map_mat = mapping_->element_map(cell);
+        vector<arma::vec3> point_list;
+        point_list.resize(fv.n_points());
+        for (unsigned int k=0; k<fv.n_points(); k++)
+        	point_list[k] = mapping_->project_unit_to_real(RefElement<dim>::local_to_bary(fv.get_quadrature()->point(k)), map_mat);
+        model_.velocity_field_ptr()->value_list(point_list, cell, velocity);
+    }
 
 
     FiniteElement<dim> *fe_;            ///< Finite element for the solution of the advection-diffusion equation.
@@ -188,6 +253,7 @@ private:
     /// Reference to model (we must use common ancestor of concentration and heat model)
     AdvectionDiffusionModel &model_;
 
+    /// Data object shared with TransportDG
     std::shared_ptr<EqDataDG> data_;
 
     unsigned int ndofs_;                                      ///< Number of dofs
@@ -199,6 +265,8 @@ private:
     vector<PetscScalar> local_matrix_;                        ///< Helper vector for assemble methods
     vector<PetscScalar> local_retardation_balance_vector_;    ///< Helper vector for assemble mass matrix.
     vector<PetscScalar> local_mass_balance_vector_;           ///< Same as previous.
+    vector<arma::vec3> velocity_;                             ///< Velocity results.
+    vector<vector<double> > sources_sigma_;                   ///< Helper vectors for assemble volume integrals.
 
 	/// Mass matrix coefficients.
 	vector<double> mm_coef_;

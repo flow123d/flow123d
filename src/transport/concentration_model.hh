@@ -193,6 +193,10 @@ public:
         return this->balance_;
     }
 
+    std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> velocity_field_ptr() const override {
+        return this->velocity_field_ptr_;
+    }
+
 
 
 protected:

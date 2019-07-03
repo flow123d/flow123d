@@ -616,9 +616,10 @@ void TransportDG<Model>::assemble_stiffness_matrix()
 {
   START_TIMER("assemble_stiffness");
   START_TIMER("assemble_volume_integrals");
-    assemble_volume_integrals<1>();
-    assemble_volume_integrals<2>();
-    assemble_volume_integrals<3>();
+  for (auto cell : dh_->own_range() )
+  {
+      multidim_assembly_[ cell.dim()-1 ]->assemble_volume_integrals(cell);
+  }
   END_TIMER("assemble_volume_integrals");
 
   START_TIMER("assemble_fluxes_boundary");
@@ -641,61 +642,6 @@ void TransportDG<Model>::assemble_stiffness_matrix()
   END_TIMER("assemble_stiffness");
 }
 
-
-
-template<class Model>
-template<unsigned int dim>
-void TransportDG<Model>::assemble_volume_integrals()
-{
-    FEValues<dim,3> fv_rt(*assembly<dim>()->mapping(), *assembly<dim>()->quad(), *assembly<dim>()->fe_rt(),
-            update_values | update_gradients);
-    FEValues<dim,3> fe_values(*assembly<dim>()->mapping(), *assembly<dim>()->quad(), *assembly<dim>()->fe(),
-            update_values | update_gradients | update_JxW_values | update_quadrature_points);
-    const unsigned int ndofs = assembly<dim>()->fe()->n_dofs(), qsize = assembly<dim>()->quad()->size();
-    std::vector<LongIdx> dof_indices(ndofs);
-    vector<arma::vec3> velocity(qsize);
-    vector<vector<double> > sources_sigma(Model::n_substances(), std::vector<double>(qsize));
-    PetscScalar local_matrix[ndofs*ndofs];
-
-    // assemble integral over elements
-    for (auto cell : dh_->local_range() )
-    {
-        if (!cell.is_own()) continue;
-        if (cell.dim() != dim) continue;
-        ElementAccessor<3> elm = cell.elm();
-
-        fe_values.reinit(elm);
-        fv_rt.reinit(elm);
-        cell.get_dof_indices(dof_indices);
-
-        calculate_velocity(elm, velocity, fv_rt);
-        Model::compute_advection_diffusion_coefficients(fe_values.point_list(), velocity, elm, data_->ad_coef, data_->dif_coef);
-        Model::compute_sources_sigma(fe_values.point_list(), elm, sources_sigma);
-
-        // assemble the local stiffness matrix
-        for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
-        {
-            for (unsigned int i=0; i<ndofs; i++)
-                for (unsigned int j=0; j<ndofs; j++)
-                    local_matrix[i*ndofs+j] = 0;
-
-            for (unsigned int k=0; k<qsize; k++)
-            {
-                for (unsigned int i=0; i<ndofs; i++)
-                {
-                    arma::vec3 Kt_grad_i = data_->dif_coef[sbi][k].t()*fe_values.shape_grad(i,k);
-                    double ad_dot_grad_i = arma::dot(data_->ad_coef[sbi][k], fe_values.shape_grad(i,k));
-
-                    for (unsigned int j=0; j<ndofs; j++)
-                        local_matrix[i*ndofs+j] += (arma::dot(Kt_grad_i, fe_values.shape_grad(j,k))
-                                                  -fe_values.shape_value(j,k)*ad_dot_grad_i
-                                                  +sources_sigma[sbi][k]*fe_values.shape_value(j,k)*fe_values.shape_value(i,k))*fe_values.JxW(k);
-                }
-            }
-            data_->ls[sbi]->mat_set_values(ndofs, &(dof_indices[0]), ndofs, &(dof_indices[0]), local_matrix);
-        }
-    }
-}
 
 
 template<class Model>
