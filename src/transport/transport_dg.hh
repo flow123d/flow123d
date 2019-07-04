@@ -112,12 +112,50 @@ public:
 
 		EqData();
 
+		/**
+		 * @brief Sets up parameters of the DG method on a given boundary edge.
+		 *
+		 * Assumption is that the edge consists of only 1 side.
+		 * @param side       		The boundary side.
+		 * @param K_size            Size of vector of tensors K.
+		 * @param K					Dispersivity tensor.
+		 * @param ad_vector         Advection vector.
+		 * @param normal_vector		Normal vector (assumed constant along the edge).
+		 * @param alpha				Penalty parameter that influences the continuity
+		 * 							of the solution (large value=more continuity).
+		 * @param gamma				Computed penalty parameters.
+		 */
+		void set_DG_parameters_boundary(const Side *side,
+				    const int K_size,
+		            const std::vector<arma::mat33> &K,
+		            const double flux,
+		            const arma::vec3 &normal_vector,
+		            const double alpha,
+		            double &gamma);
+
+
 		MultiField<3, FieldValue<3>::Scalar> fracture_sigma;    ///< Transition parameter for diffusive transfer on fractures (for each substance).
 		MultiField<3, FieldValue<3>::Scalar> dg_penalty;        ///< Penalty enforcing inter-element continuity of solution (for each substance).
         Field<3, FieldValue<3>::Scalar> region_id;
         Field<3, FieldValue<3>::Scalar> subdomain;
 
         EquationOutput output_fields;
+
+
+    	/// @name Parameters of the numerical method
+    	// @{
+
+    	/// Penalty parameters.
+    	std::vector<std::vector<double> > gamma;
+
+    	/// DG variant ((non-)symmetric/incomplete
+    	int dg_variant;
+
+    	/// Polynomial order of finite elements.
+    	unsigned int dg_order;
+
+    	// @}
+
 
         /// Auxiliary vectors for calculation of sources in balance due to retardation (e.g. sorption).
     	std::vector<Vec> ret_vec;
@@ -256,12 +294,6 @@ private:
 	void set_sources();
 
 	/**
-	 * @brief Assembles the fluxes on the boundary.
-	 */
-	template<unsigned int dim>
-	void assemble_fluxes_boundary();
-
-	/**
 	 * @brief Assembles the fluxes between elements of the same dimension.
 	 */
 	template<unsigned int dim>
@@ -315,28 +347,6 @@ private:
 // 			double cross_cut);
 
 	/**
-	 * @brief Sets up parameters of the DG method on a given boundary edge.
-	 *
-	 * Assumption is that the edge consists of only 1 side.
-	 * @param side       		The boundary side.
-	 * @param K_size            Size of vector of tensors K.
-	 * @param K					Dispersivity tensor.
-	 * @param ad_vector         Advection vector.
-	 * @param normal_vector		Normal vector (assumed constant along the edge).
-	 * @param alpha				Penalty parameter that influences the continuity
-	 * 							of the solution (large value=more continuity).
-	 * @param gamma				Computed penalty parameters.
-	 */
-	void set_DG_parameters_boundary(const Side *side,
-			    const int K_size,
-	            const std::vector<arma::mat33> &K,
-	            const double flux,
-	            const arma::vec3 &normal_vector,
-	            const double alpha,
-	            double &gamma);
-
-
-	/**
 	 * @brief Sets the initial condition.
 	 */
 	void set_initial_condition();
@@ -362,21 +372,6 @@ private:
 
 	/// Field data for model parameters.
 	std::shared_ptr<EqData> data_;
-
-	// @}
-
-
-	/// @name Parameters of the numerical method
-	// @{
-
-	/// Penalty parameters.
-	std::vector<std::vector<double> > gamma;
-
-	/// DG variant ((non-)symmetric/incomplete
-	int dg_variant;
-
-	/// Polynomial order of finite elements.
-	unsigned int dg_order;
 
 	// @}
 

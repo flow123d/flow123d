@@ -142,6 +142,58 @@ TransportDG<Model>::EqData::EqData() : Model::ModelEqData()
 
 }
 
+
+
+// return the ratio of longest and shortest edge
+double elem_anisotropy(ElementAccessor<3> e)
+{
+    double h_max = 0, h_min = numeric_limits<double>::infinity();
+    for (unsigned int i=0; i<e->n_nodes(); i++)
+        for (unsigned int j=i+1; j<e->n_nodes(); j++)
+        {
+            h_max = max(h_max, e.node(i)->distance(*e.node(j)));
+            h_min = min(h_min, e.node(i)->distance(*e.node(j)));
+        }
+    return h_max/h_min;
+}
+
+
+
+template<class Model>
+void TransportDG<Model>::EqData::set_DG_parameters_boundary(const Side *side,
+            const int K_size,
+            const vector<arma::mat33> &K,
+            const double flux,
+            const arma::vec3 &normal_vector,
+            const double alpha,
+            double &gamma)
+{
+    double delta = 0, h = 0;
+
+    // calculate the side diameter
+    if (side->dim() == 0)
+    {
+        h = 1;
+    }
+    else
+    {
+        for (unsigned int i=0; i<side->n_nodes(); i++)
+            for (unsigned int j=i+1; j<side->n_nodes(); j++)
+                h = max(h, side->node(i)->distance( *side->node(j).node() ));
+    }
+
+    // delta is set to the average value of Kn.n on the side
+    for (int k=0; k<K_size; k++)
+        delta += dot(K[k]*normal_vector,normal_vector);
+    delta /= K_size;
+
+    gamma = 0.5*fabs(flux) + alpha/h*delta*elem_anisotropy(side->element());
+}
+
+
+
+
+
 template<class Model>
 TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
         : Model(init_mesh, in_rec),
@@ -165,15 +217,15 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
 
 
     // DG variant and order
-    dg_variant = in_rec.val<DGVariant>("dg_variant");
-    dg_order = in_rec.val<unsigned int>("dg_order");
+    data_->dg_variant = in_rec.val<DGVariant>("dg_variant");
+    data_->dg_order = in_rec.val<unsigned int>("dg_order");
     
     Model::init_from_input(in_rec);
 
     // create finite element structures and distribute DOFs
-	assembly1_ = std::make_shared<AssemblyDG<1, Model>>(data_, dg_order, *this);
-	assembly2_ = std::make_shared<AssemblyDG<2, Model>>(data_, dg_order, *this);
-	assembly3_ = std::make_shared<AssemblyDG<3, Model>>(data_, dg_order, *this);
+	assembly1_ = std::make_shared<AssemblyDG<1, Model>>(data_, *this);
+	assembly2_ = std::make_shared<AssemblyDG<2, Model>>(data_, *this);
+	assembly3_ = std::make_shared<AssemblyDG<3, Model>>(data_, *this);
 	multidim_assembly_.push_back( std::dynamic_pointer_cast<AssemblyDGBase>(assembly1_) );
 	multidim_assembly_.push_back( std::dynamic_pointer_cast<AssemblyDGBase>(assembly2_) );
 	multidim_assembly_.push_back( std::dynamic_pointer_cast<AssemblyDGBase>(assembly3_) );
@@ -193,9 +245,9 @@ void TransportDG<Model>::initialize()
     data_->set_input_list( input_rec.val<Input::Array>("input_fields"), *(Model::time_) );
 
     // DG stabilization parameters on boundary edges
-    gamma.resize(Model::n_substances());
+    data_->gamma.resize(Model::n_substances());
     for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
-        gamma[sbi].resize(Model::mesh_->boundary_.size());
+    	data_->gamma[sbi].resize(Model::mesh_->boundary_.size());
 
     // Resize coefficient arrays
     int qsize = max(assembly1_->quad_low()->size(), max(assembly1_->quad()->size(), max(assembly2_->quad()->size(), assembly3_->quad()->size())));
@@ -282,7 +334,7 @@ TransportDG<Model>::~TransportDG()
 {
     delete Model::time_;
 
-    if (gamma.size() > 0) {
+    if (data_->gamma.size() > 0) {
         // initialize called
 
         for (unsigned int i=0; i<Model::n_substances(); i++)
@@ -615,18 +667,16 @@ template<class Model>
 void TransportDG<Model>::assemble_stiffness_matrix()
 {
   START_TIMER("assemble_stiffness");
-  START_TIMER("assemble_volume_integrals");
-  for (auto cell : dh_->own_range() )
-  {
-      multidim_assembly_[ cell.dim()-1 ]->assemble_volume_integrals(cell);
-  }
-  END_TIMER("assemble_volume_integrals");
+    for (auto cell : dh_->own_range() )
+    {
+        START_TIMER("assemble_volume_integrals");
+        multidim_assembly_[ cell.dim()-1 ]->assemble_volume_integrals(cell);
+        END_TIMER("assemble_volume_integrals");
 
-  START_TIMER("assemble_fluxes_boundary");
-    assemble_fluxes_boundary<1>();
-    assemble_fluxes_boundary<2>();
-    assemble_fluxes_boundary<3>();
-  END_TIMER("assemble_fluxes_boundary");
+        START_TIMER("assemble_fluxes_boundary");
+        multidim_assembly_[ cell.dim()-1 ]->assemble_fluxes_boundary(cell);
+        END_TIMER("assemble_fluxes_boundary");
+    }
 
   START_TIMER("assemble_fluxes_elem_elem");
     assemble_fluxes_element_element<1>();
@@ -712,21 +762,6 @@ void TransportDG<Model>::set_sources()
                                                local_source_balance_vector, local_source_balance_rhs);
         }
     }
-}
-
-
-
-// return the ratio of longest and shortest edge
-double elem_anisotropy(ElementAccessor<3> e)
-{
-    double h_max = 0, h_min = numeric_limits<double>::infinity();
-    for (unsigned int i=0; i<e->n_nodes(); i++)
-        for (unsigned int j=i+1; j<e->n_nodes(); j++)
-        {
-            h_max = max(h_max, e.node(i)->distance(*e.node(j)));
-            h_min = min(h_min, e.node(i)->distance(*e.node(j)));
-        }
-    return h_max/h_min;
 }
 
 
@@ -878,7 +913,7 @@ void TransportDG<Model>::assemble_fluxes_element_element()
                                         double flux_JxW_jump_i = flux_times_JxW*JUMP(i,k,n);
                                         double gamma_JxW_jump_i = gamma_times_JxW*JUMP(i,k,n);
                                         double JxW_jump_i = fe_values[0]->JxW(k)*JUMP(i,k,n);
-                                        double JxW_var_wavg_i = fe_values[0]->JxW(k)*WAVERAGE(i,k,n)*dg_variant;
+                                        double JxW_var_wavg_i = fe_values[0]->JxW(k)*WAVERAGE(i,k,n)*data_->dg_variant;
 
                                         for (unsigned int j=0; j<fe_values[sd[m]]->n_dofs(); j++)
                                         {
@@ -912,109 +947,6 @@ void TransportDG<Model>::assemble_fluxes_element_element()
     for (unsigned int i=0; i<n_max_sides; i++)
     {
         delete fe_values[i];
-    }
-}
-
-
-template<class Model>
-template<unsigned int dim>
-void TransportDG<Model>::assemble_fluxes_boundary()
-{
-    FESideValues<dim,3> fe_values_side(*assembly<dim>()->mapping(), *assembly<dim>()->quad_low(), *assembly<dim>()->fe(),
-            update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
-    FESideValues<dim,3> fsv_rt(*assembly<dim>()->mapping(), *assembly<dim>()->quad_low(), *assembly<dim>()->fe_rt(),
-            update_values);
-    const unsigned int ndofs = assembly<dim>()->fe()->n_dofs(), qsize = assembly<dim>()->quad_low()->size();
-    std::vector<LongIdx> side_dof_indices(ndofs);
-    PetscScalar local_matrix[ndofs*ndofs];
-    vector<arma::vec3> side_velocity;
-    vector<double> robin_sigma(qsize);
-    vector<double> csection(qsize);
-    double gamma_l;
-
-    // assemble boundary integral
-    for (auto cell : dh_->local_range() )
-    {
-    	if (!cell.is_own()) continue;
-        for( DHCellSide cell_side : cell.side_range() )
-        {
-            const Side *side = cell_side.side();
-            if (side->edge()->n_sides > 1) continue;
-            // check spatial dimension
-            if (side->dim() != dim-1) continue;
-            // skip edges lying not on the boundary
-            if (side->cond() == NULL) continue;
-
-            ElementAccessor<3> elm_acc = cell.elm();
-            cell.get_dof_indices(side_dof_indices);
-            fe_values_side.reinit(elm_acc, side->side_idx());
-            fsv_rt.reinit(elm_acc, side->side_idx());
-
-            calculate_velocity(elm_acc, side_velocity, fsv_rt);
-            Model::compute_advection_diffusion_coefficients(fe_values_side.point_list(), side_velocity, elm_acc, data_->ad_coef, data_->dif_coef);
-            arma::uvec bc_type;
-            Model::get_bc_type(side->cond()->element_accessor(), bc_type);
-            data_->cross_section.value_list(fe_values_side.point_list(), elm_acc, csection);
-
-            for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
-            {
-                for (unsigned int i=0; i<ndofs; i++)
-                    for (unsigned int j=0; j<ndofs; j++)
-                        local_matrix[i*ndofs+j] = 0;
-
-                // On Neumann boundaries we have only term from integrating by parts the advective term,
-                // on Dirichlet boundaries we additionally apply the penalty which enforces the prescribed value.
-                double side_flux = 0;
-                for (unsigned int k=0; k<qsize; k++)
-                    side_flux += arma::dot(data_->ad_coef[sbi][k], fe_values_side.normal_vector(k))*fe_values_side.JxW(k);
-                double transport_flux = side_flux/side->measure();
-
-                if (bc_type[sbi] == AdvectionDiffusionModel::abc_dirichlet)
-                {
-                    // set up the parameters for DG method
-                    set_DG_parameters_boundary(side, qsize, data_->dif_coef[sbi], transport_flux, fe_values_side.normal_vector(0), data_->dg_penalty[sbi].value(elm_acc.centre(), elm_acc), gamma_l);
-                    gamma[sbi][side->cond_idx()] = gamma_l;
-                    transport_flux += gamma_l;
-                }
-
-                // fluxes and penalty
-                for (unsigned int k=0; k<qsize; k++)
-                {
-                    double flux_times_JxW;
-                    if (bc_type[sbi] == AdvectionDiffusionModel::abc_total_flux)
-                    {
-                        Model::get_flux_bc_sigma(sbi, fe_values_side.point_list(), side->cond()->element_accessor(), robin_sigma);
-                        flux_times_JxW = csection[k]*robin_sigma[k]*fe_values_side.JxW(k);
-                    }
-                    else if (bc_type[sbi] == AdvectionDiffusionModel::abc_diffusive_flux)
-                    {
-                        Model::get_flux_bc_sigma(sbi, fe_values_side.point_list(), side->cond()->element_accessor(), robin_sigma);
-                        flux_times_JxW = (transport_flux + csection[k]*robin_sigma[k])*fe_values_side.JxW(k);
-                    }
-                    else if (bc_type[sbi] == AdvectionDiffusionModel::abc_inflow && side_flux < 0)
-                        flux_times_JxW = 0;
-                    else
-                        flux_times_JxW = transport_flux*fe_values_side.JxW(k);
-
-                    for (unsigned int i=0; i<ndofs; i++)
-                    {
-                        for (unsigned int j=0; j<ndofs; j++)
-                        {
-                            // flux due to advection and penalty
-                            local_matrix[i*ndofs+j] += flux_times_JxW*fe_values_side.shape_value(i,k)*fe_values_side.shape_value(j,k);
-
-                            // flux due to diffusion (only on dirichlet and inflow boundary)
-                            if (bc_type[sbi] == AdvectionDiffusionModel::abc_dirichlet)
-                                local_matrix[i*ndofs+j] -= (arma::dot(data_->dif_coef[sbi][k]*fe_values_side.shape_grad(j,k),fe_values_side.normal_vector(k))*fe_values_side.shape_value(i,k)
-                                        + arma::dot(data_->dif_coef[sbi][k]*fe_values_side.shape_grad(i,k),fe_values_side.normal_vector(k))*fe_values_side.shape_value(j,k)*dg_variant
-                                        )*fe_values_side.JxW(k);
-                        }
-                    }
-                }
-
-                data_->ls[sbi]->mat_set_values(ndofs, &(side_dof_indices[0]), ndofs, &(side_dof_indices[0]), local_matrix);
-            }
-        }
     }
 }
 
@@ -1238,8 +1170,8 @@ void TransportDG<Model>::set_boundary_conditions()
                 {
                     for (unsigned int k=0; k<qsize; k++)
                     {
-                        double bc_term = gamma[sbi][side->cond_idx()]*bc_values[k]*fe_values_side.JxW(k);
-                        arma::vec3 bc_grad = -bc_values[k]*fe_values_side.JxW(k)*dg_variant*(arma::trans(data_->dif_coef[sbi][k])*fe_values_side.normal_vector(k));
+                        double bc_term = data_->gamma[sbi][side->cond_idx()]*bc_values[k]*fe_values_side.JxW(k);
+                        arma::vec3 bc_grad = -bc_values[k]*fe_values_side.JxW(k)*data_->dg_variant*(arma::trans(data_->dif_coef[sbi][k])*fe_values_side.normal_vector(k));
                         for (unsigned int i=0; i<ndofs; i++)
                             local_rhs[i] += bc_term*fe_values_side.shape_value(i,k)
                                     + arma::dot(bc_grad,fe_values_side.shape_grad(i,k));
@@ -1250,7 +1182,7 @@ void TransportDG<Model>::set_boundary_conditions()
                         {
                             local_flux_balance_vector[i] += (arma::dot(data_->ad_coef[sbi][k], fe_values_side.normal_vector(k))*fe_values_side.shape_value(i,k)
                                     - arma::dot(data_->dif_coef[sbi][k]*fe_values_side.shape_grad(i,k),fe_values_side.normal_vector(k))
-                                    + gamma[sbi][side->cond_idx()]*fe_values_side.shape_value(i,k))*fe_values_side.JxW(k);
+                                    + data_->gamma[sbi][side->cond_idx()]*fe_values_side.shape_value(i,k))*fe_values_side.JxW(k);
                         }
                     }
                     if (Model::time_->tlevel() > 0)
@@ -1327,41 +1259,6 @@ void TransportDG<Model>::calculate_velocity(const ElementAccessor<3> &cell,
     	point_list[k] = assembly<dim>()->mapping()->project_unit_to_real(RefElement<dim>::local_to_bary(fv.get_quadrature()->point(k)), map_mat);
     Model::velocity_field_ptr_->value_list(point_list, cell, velocity);
 }
-
-
-
-template<class Model>
-void TransportDG<Model>::set_DG_parameters_boundary(const Side *side,
-            const int K_size,
-            const vector<arma::mat33> &K,
-            const double flux,
-            const arma::vec3 &normal_vector,
-            const double alpha,
-            double &gamma)
-{
-    double delta = 0, h = 0;
-
-    // calculate the side diameter
-    if (side->dim() == 0)
-    {
-        h = 1;
-    }
-    else
-    {
-        for (unsigned int i=0; i<side->n_nodes(); i++)
-            for (unsigned int j=i+1; j<side->n_nodes(); j++)
-                h = max(h, side->node(i)->distance( *side->node(j).node() ));
-    }
-
-    // delta is set to the average value of Kn.n on the side
-    for (int k=0; k<K_size; k++)
-        delta += dot(K[k]*normal_vector,normal_vector);
-    delta /= K_size;
-
-    gamma = 0.5*fabs(flux) + alpha/h*delta*elem_anisotropy(side->element());
-}
-
-
 
 
 

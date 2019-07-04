@@ -41,6 +41,8 @@ public:
     virtual void assemble_mass_matrix(DHCellAccessor cell) = 0;
 
     virtual void assemble_volume_integrals(DHCellAccessor cell) = 0;
+
+    virtual void assemble_fluxes_boundary(DHCellAccessor cell) = 0;
 };
 
 
@@ -54,16 +56,19 @@ public:
     typedef typename TransportDG<Model>::EqData EqDataDG;
 
     /// Constructor.
-    AssemblyDG(std::shared_ptr<EqDataDG> data, unsigned int fe_order, AdvectionDiffusionModel &adm)
-    : fe_(new FE_P_disc<dim>(fe_order)), fe_low_(new FE_P_disc<dim-1>(fe_order)),
+    AssemblyDG(std::shared_ptr<EqDataDG> data, AdvectionDiffusionModel &adm)
+    : fe_(new FE_P_disc<dim>(data->dg_order)), fe_low_(new FE_P_disc<dim-1>(data->dg_order)),
       fe_rt_(new FE_RT0<dim>), fe_rt_low_(new FE_RT0<dim-1>),
-      quad_(new QGauss<dim>(2*fe_order)), quad_low_(new QGauss<dim-1>(2*fe_order)),
+      quad_(new QGauss<dim>(2*data->dg_order)), quad_low_(new QGauss<dim-1>(2*data->dg_order)),
       mapping_(new MappingP1<dim,3>), mapping_low_(new MappingP1<dim-1,3>),
       model_(adm), data_(data), fv_rt_(*mapping_, *quad_, *fe_rt_, update_values | update_gradients),
-      fe_values_(*mapping_, *quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points) {
+      fe_values_(*mapping_, *quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points),
+      fe_values_side_(*mapping_, *quad_low_, *fe_, update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points),
+      fsv_rt_(*mapping_, *quad_low_, *fe_rt_, update_values) {
 
         ndofs_ = fe_->n_dofs();
         qsize_ = quad_->size();
+        qsize_lower_dim_ = quad_low_->size();
         dof_indices_.resize(ndofs_);
     }
 
@@ -126,6 +131,8 @@ public:
         local_mass_balance_vector_.resize(ndofs_);
         velocity_.resize(qsize_);
         sources_sigma_.resize(model_.n_substances(), std::vector<double>(qsize_));
+        robin_sigma_.resize(qsize_lower_dim_);
+        csection_.resize(qsize_lower_dim_);
 
         mm_coef_.resize(qsize_);
         ret_coef_.resize(model_.n_substances());
@@ -217,6 +224,93 @@ public:
         }
     }
 
+    /// Assembles the fluxes on the boundary.
+    void assemble_fluxes_boundary(DHCellAccessor cell) override
+    {
+        ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
+        if (!cell.is_own()) return;
+
+        for( DHCellSide cell_side : cell.side_range() )
+        {
+            const Side *side = cell_side.side();
+            if (side->edge()->n_sides > 1) continue;
+            // check spatial dimension
+            if (side->dim() != dim-1) continue;
+            // skip edges lying not on the boundary
+            if (side->cond() == NULL) continue;
+
+            ElementAccessor<3> elm_acc = cell.elm();
+            cell.get_dof_indices(dof_indices_);
+            fe_values_side_.reinit(elm_acc, side->side_idx());
+            fsv_rt_.reinit(elm_acc, side->side_idx());
+
+            calculate_velocity(elm_acc, velocity_, fsv_rt_);
+            model_.compute_advection_diffusion_coefficients(fe_values_side_.point_list(), velocity_, elm_acc, data_->ad_coef, data_->dif_coef);
+            arma::uvec bc_type;
+            model_.get_bc_type(side->cond()->element_accessor(), bc_type);
+            data_->cross_section.value_list(fe_values_side_.point_list(), elm_acc, csection_);
+
+            for (unsigned int sbi=0; sbi<model_.n_substances(); sbi++)
+            {
+            	std::fill(local_matrix_.begin(), local_matrix_.end(), 0);
+
+                // On Neumann boundaries we have only term from integrating by parts the advective term,
+                // on Dirichlet boundaries we additionally apply the penalty which enforces the prescribed value.
+                double side_flux = 0;
+                for (unsigned int k=0; k<qsize_lower_dim_; k++)
+                    side_flux += arma::dot(data_->ad_coef[sbi][k], fe_values_side_.normal_vector(k))*fe_values_side_.JxW(k);
+                double transport_flux = side_flux/side->measure();
+
+                if (bc_type[sbi] == AdvectionDiffusionModel::abc_dirichlet)
+                {
+                    // set up the parameters for DG method
+                    double gamma_l;
+                    data_->set_DG_parameters_boundary(side, qsize_lower_dim_, data_->dif_coef[sbi], transport_flux, fe_values_side_.normal_vector(0), data_->dg_penalty[sbi].value(elm_acc.centre(), elm_acc), gamma_l);
+                    data_->gamma[sbi][side->cond_idx()] = gamma_l;
+                    transport_flux += gamma_l;
+                }
+
+                // fluxes and penalty
+                for (unsigned int k=0; k<qsize_lower_dim_; k++)
+                {
+                    double flux_times_JxW;
+                    if (bc_type[sbi] == AdvectionDiffusionModel::abc_total_flux)
+                    {
+                        model_.get_flux_bc_sigma(sbi, fe_values_side_.point_list(), side->cond()->element_accessor(), robin_sigma_);
+                        flux_times_JxW = csection_[k]*robin_sigma_[k]*fe_values_side_.JxW(k);
+                    }
+                    else if (bc_type[sbi] == AdvectionDiffusionModel::abc_diffusive_flux)
+                    {
+                        model_.get_flux_bc_sigma(sbi, fe_values_side_.point_list(), side->cond()->element_accessor(), robin_sigma_);
+                        flux_times_JxW = (transport_flux + csection_[k]*robin_sigma_[k])*fe_values_side_.JxW(k);
+                    }
+                    else if (bc_type[sbi] == AdvectionDiffusionModel::abc_inflow && side_flux < 0)
+                        flux_times_JxW = 0;
+                    else
+                        flux_times_JxW = transport_flux*fe_values_side_.JxW(k);
+
+                    for (unsigned int i=0; i<ndofs_; i++)
+                    {
+                        for (unsigned int j=0; j<ndofs_; j++)
+                        {
+                            // flux due to advection and penalty
+                            local_matrix_[i*ndofs_+j] += flux_times_JxW*fe_values_side_.shape_value(i,k)*fe_values_side_.shape_value(j,k);
+
+                            // flux due to diffusion (only on dirichlet and inflow boundary)
+                            if (bc_type[sbi] == AdvectionDiffusionModel::abc_dirichlet)
+                                local_matrix_[i*ndofs_+j] -= (arma::dot(data_->dif_coef[sbi][k]*fe_values_side_.shape_grad(j,k),fe_values_side_.normal_vector(k))*fe_values_side_.shape_value(i,k)
+                                        + arma::dot(data_->dif_coef[sbi][k]*fe_values_side_.shape_grad(i,k),fe_values_side_.normal_vector(k))*fe_values_side_.shape_value(j,k)*data_->dg_variant
+                                        )*fe_values_side_.JxW(k);
+                        }
+                    }
+                }
+
+                data_->ls[sbi]->mat_set_values(ndofs_, &(dof_indices_[0]), ndofs_, &(dof_indices_[0]), &(local_matrix_[0]));
+            }
+        }
+    }
+
+
 private:
 	/**
 	 * @brief Calculates the velocity field on a given cell.
@@ -257,9 +351,12 @@ private:
     std::shared_ptr<EqDataDG> data_;
 
     unsigned int ndofs_;                                      ///< Number of dofs
-    unsigned int qsize_;                                      ///< Size of FEValues quadrature
+    unsigned int qsize_;                                      ///< Size of quadrature of actual dim
+    unsigned int qsize_lower_dim_;                            ///< Size of quadrature of dim-1
     FEValues<dim,3> fv_rt_;                                   ///< FEValues of object (of RT0 finite element type)
     FEValues<dim,3> fe_values_;                               ///< FEValues of object (of P disc finite element type)
+    FESideValues<dim,3> fe_values_side_;                      ///< FESide Values of object (of P disc finite element type)
+    FESideValues<dim,3> fsv_rt_;                              ///< FESide Values of object (of RT0 finite element type)
 
     vector<LongIdx> dof_indices_;                             ///< Vector of global DOF indices
     vector<PetscScalar> local_matrix_;                        ///< Helper vector for assemble methods
@@ -267,6 +364,8 @@ private:
     vector<PetscScalar> local_mass_balance_vector_;           ///< Same as previous.
     vector<arma::vec3> velocity_;                             ///< Velocity results.
     vector<vector<double> > sources_sigma_;                   ///< Helper vectors for assemble volume integrals.
+    vector<double> robin_sigma_;                              ///< Helper vectors for assemble boundary fluxes
+    vector<double> csection_;                                 ///< Same as previous.
 
 	/// Mass matrix coefficients.
 	vector<double> mm_coef_;
