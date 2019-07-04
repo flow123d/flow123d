@@ -179,6 +179,9 @@ public:
     	vector<vector<vector<arma::mat33> > > dif_coef_edg;
 
     	// @}
+
+        /// Object for distribution of dofs.
+        std::shared_ptr<DOFHandlerMultiDim> dh_;
 	};
 
 
@@ -438,9 +441,6 @@ private:
     std::shared_ptr<AssemblyDG<1, Model>> assembly1_;
     std::shared_ptr<AssemblyDG<2, Model>> assembly2_;
     std::shared_ptr<AssemblyDG<3, Model>> assembly3_;
-
-    /// Object for distribution of dofs.
-    std::shared_ptr<DOFHandlerMultiDim> dh_;
 
 };
 

@@ -230,9 +230,9 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
 	multidim_assembly_.push_back( std::dynamic_pointer_cast<AssemblyDGBase>(assembly2_) );
 	multidim_assembly_.push_back( std::dynamic_pointer_cast<AssemblyDGBase>(assembly3_) );
 	shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>(Model::mesh_, assembly1_->fe_low(), assembly1_->fe(), assembly2_->fe(), assembly3_->fe());
-	dh_ = make_shared<DOFHandlerMultiDim>(*Model::mesh_);
-    dh_->distribute_dofs(ds);
-    //DebugOut().fmt("TDG: solution size {}\n", dh_->n_global_dofs());
+	data_->dh_ = make_shared<DOFHandlerMultiDim>(*Model::mesh_);
+	data_->dh_->distribute_dofs(ds);
+    //DebugOut().fmt("TDG: solution size {}\n", data_->dh_->n_global_dofs());
 
 }
 
@@ -284,7 +284,7 @@ void TransportDG<Model>::initialize()
     {
         // create shared pointer to a FieldFE, pass FE data and push this FieldFE to output_field on all regions
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_field_ptr(new FieldFE<3, FieldValue<3>::Scalar>);
-        output_vec[sbi] = output_field_ptr->set_fe_data(dh_);
+        output_vec[sbi] = output_field_ptr->set_fe_data(data_->dh_);
         data_->output_field[sbi].set_field(Model::mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
     }
 
@@ -293,7 +293,7 @@ void TransportDG<Model>::initialize()
 
     // equation default PETSc solver options
     std::string petsc_default_opts;
-    if (dh_->distr()->np() == 1)
+    if (data_->dh_->distr()->np() == 1)
       petsc_default_opts = "-ksp_type bcgs -pc_type ilu -pc_factor_levels 2 -ksp_diagonal_scale_fix -pc_factor_fill 6.0";
     else
       petsc_default_opts = "-ksp_type bcgs -ksp_diagonal_scale_fix -pc_type asm -pc_asm_overlap 4 -sub_pc_type ilu -sub_pc_factor_levels 3 -sub_pc_factor_fill 6.0";
@@ -310,11 +310,11 @@ void TransportDG<Model>::initialize()
     data_->ret_vec.resize(Model::n_substances(), nullptr);
 
     for (unsigned int sbi = 0; sbi < Model::n_substances(); sbi++) {
-    	data_->ls[sbi] = new LinSys_PETSC(dh_->distr().get(), petsc_default_opts);
+    	data_->ls[sbi] = new LinSys_PETSC(data_->dh_->distr().get(), petsc_default_opts);
         ( (LinSys_PETSC *)data_->ls[sbi] )->set_from_input( input_rec.val<Input::Record>("solver") );
         data_->ls[sbi]->set_solution(output_vec[sbi].petsc_vec());
 
-        data_->ls_dt[sbi] = new LinSys_PETSC(dh_->distr().get(), petsc_default_opts);
+        data_->ls_dt[sbi] = new LinSys_PETSC(data_->dh_->distr().get(), petsc_default_opts);
         ( (LinSys_PETSC *)data_->ls_dt[sbi] )->set_from_input( input_rec.val<Input::Record>("solver") );
         solution_elem_[sbi] = new double[Model::mesh_->get_el_ds()->lsize()];
         
@@ -323,7 +323,7 @@ void TransportDG<Model>::initialize()
 
 
     // initialization of balance object
-    Model::balance_->allocate(dh_->distr()->lsize(),
+    Model::balance_->allocate(data_->dh_->distr()->lsize(),
             max(assembly1_->fe()->n_dofs(), max(assembly2_->fe()->n_dofs(), assembly3_->fe()->n_dofs())));
 
 }
@@ -568,7 +568,7 @@ void TransportDG<Model>::calculate_concentration_matrix()
 {
     // calculate element averages of solution
 	unsigned int i_cell=0;
-	for (auto cell : dh_->own_range() )
+	for (auto cell : data_->dh_->own_range() )
     {
 
         unsigned int n_dofs;
@@ -593,7 +593,7 @@ void TransportDG<Model>::calculate_concentration_matrix()
             solution_elem_[sbi][i_cell] = 0;
 
             for (unsigned int j=0; j<n_dofs; ++j)
-                solution_elem_[sbi][i_cell] += data_->ls[sbi]->get_solution_array()[dof_indices[j]-dh_->distr()->begin()];
+                solution_elem_[sbi][i_cell] += data_->ls[sbi]->get_solution_array()[dof_indices[j]-data_->dh_->distr()->begin()];
 
             solution_elem_[sbi][i_cell] = max(solution_elem_[sbi][i_cell]/n_dofs, 0.);
         }
@@ -653,7 +653,7 @@ void TransportDG<Model>::assemble_mass_matrix()
 {
     START_TIMER("assemble_mass");
     Model::balance_->start_mass_assembly(Model::subst_idx);
-    for (auto cell : dh_->own_range() )
+    for (auto cell : data_->dh_->own_range() )
     {
         multidim_assembly_[ cell.dim()-1 ]->assemble_mass_matrix(cell);
     }
@@ -667,7 +667,7 @@ template<class Model>
 void TransportDG<Model>::assemble_stiffness_matrix()
 {
   START_TIMER("assemble_stiffness");
-    for (auto cell : dh_->own_range() )
+    for (auto cell : data_->dh_->own_range() )
     {
         START_TIMER("assemble_volume_integrals");
         multidim_assembly_[ cell.dim()-1 ]->assemble_volume_integrals(cell);
@@ -723,7 +723,7 @@ void TransportDG<Model>::set_sources()
     double source;
 
     // assemble integral over elements
-    for (auto cell : dh_->own_range() )
+    for (auto cell : data_->dh_->own_range() )
     {
         if (cell.dim() != dim) continue;
         ElementAccessor<3> elm = cell.elm();
@@ -791,7 +791,7 @@ void TransportDG<Model>::assemble_fluxes_element_element()
 
     // assemble integral over sides
     int sid, s1, s2;
-    for ( DHCellAccessor dh_cell : dh_->local_range() ) {
+    for ( DHCellAccessor dh_cell : data_->dh_->local_range() ) {
     	if (dh_cell.dim() != dim) continue;
         for( DHCellSide cell_side : dh_cell.side_range() )
         {
@@ -801,7 +801,7 @@ void TransportDG<Model>::assemble_fluxes_element_element()
     	    sid=0;
         	for( DHCellSide edge_side : cell_side.edge_sides() )
             {
-        	    auto dh_edge_cell = dh_->cell_accessor_from_element( edge_side.side()->elem_idx() );
+        	    auto dh_edge_cell = data_->dh_->cell_accessor_from_element( edge_side.side()->elem_idx() );
                 ElementAccessor<3> cell = dh_edge_cell.elm();
                 dh_edge_cell.get_dof_indices(side_dof_indices[sid]);
                 fe_values[sid]->reinit(cell, edge_side.side()->side_idx());
@@ -984,7 +984,7 @@ void TransportDG<Model>::assemble_fluxes_element_side()
     fv_sb[1] = &fe_values_side;
 
     // assemble integral over sides
-    for (DHCellAccessor cell_lower_dim : dh_->local_range() )
+    for (DHCellAccessor cell_lower_dim : data_->dh_->local_range() )
         for( DHCellSide neighb_side : cell_lower_dim.neighb_sides() )
         {
             // skip neighbours of different dimension
@@ -998,7 +998,7 @@ void TransportDG<Model>::assemble_fluxes_element_side()
             fe_values_vb.reinit(elm_lower_dim);
             n_dofs[0] = fv_sb[0]->n_dofs();
 
-            DHCellAccessor cell_higher_dim = dh_->cell_accessor_from_element( neighb_side.side()->element().idx() );
+            DHCellAccessor cell_higher_dim = data_->dh_->cell_accessor_from_element( neighb_side.side()->element().idx() );
             ElementAccessor<3> elm_higher_dim = cell_higher_dim.elm();
             n_indices = cell_higher_dim.get_dof_indices(indices);
     		for(unsigned int i=0; i<n_indices; ++i) {
@@ -1106,7 +1106,7 @@ void TransportDG<Model>::set_boundary_conditions()
     vector<double> csection(qsize);
     vector<arma::vec3> velocity;
 
-    for (auto cell : dh_->own_range() )
+    for (auto cell : data_->dh_->own_range() )
     {
         if (cell.elm()->boundary_idx_ == nullptr) continue;
 
@@ -1137,7 +1137,7 @@ void TransportDG<Model>::set_boundary_conditions()
             Model::compute_advection_diffusion_coefficients(fe_values_side.point_list(), velocity, side->element(), data_->ad_coef, data_->dif_coef);
             data_->cross_section.value_list(fe_values_side.point_list(), side->element(), csection);
 
-            auto dh_cell = dh_->cell_accessor_from_element( side->element().idx() );
+            auto dh_cell = data_->dh_->cell_accessor_from_element( side->element().idx() );
             dh_cell.get_dof_indices(side_dof_indices);
 
             for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
@@ -1300,7 +1300,7 @@ void TransportDG<Model>::prepare_initial_condition()
     for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++) // Optimize: SWAP LOOPS
         init_values[sbi].resize(qsize);
 
-    for (auto cell : dh_->own_range() )
+    for (auto cell : data_->dh_->own_range() )
     {
         if (cell.dim() != dim) continue;
         ElementAccessor<3> elem = cell.elm();
@@ -1351,7 +1351,7 @@ void TransportDG<Model>::update_after_reactions(bool solution_changed)
     if (solution_changed)
     {
     	unsigned int i_cell=0;
-    	for (auto cell : dh_->own_range() )
+    	for (auto cell : data_->dh_->own_range() )
         {
 
             unsigned int n_dofs;
@@ -1375,11 +1375,11 @@ void TransportDG<Model>::update_after_reactions(bool solution_changed)
             {
                 double old_average = 0;
                 for (unsigned int j=0; j<n_dofs; ++j)
-                    old_average += data_->ls[sbi]->get_solution_array()[dof_indices[j]-dh_->distr()->begin()];
+                    old_average += data_->ls[sbi]->get_solution_array()[dof_indices[j]-data_->dh_->distr()->begin()];
                 old_average /= n_dofs;
 
                 for (unsigned int j=0; j<n_dofs; ++j)
-                    data_->ls[sbi]->get_solution_array()[dof_indices[j]-dh_->distr()->begin()] += solution_elem_[sbi][i_cell] - old_average;
+                    data_->ls[sbi]->get_solution_array()[dof_indices[j]-data_->dh_->distr()->begin()] += solution_elem_[sbi][i_cell] - old_average;
             }
             ++i_cell;
         }
