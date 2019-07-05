@@ -506,7 +506,7 @@ void Elasticity::solve_linear_system()
     if (stiffness_matrix == NULL
         || data_.subset(FieldFlag::in_main_matrix).changed())
     {
-        DebugOut() << "Mechanics: Reassembling matrix.\n";
+        DebugOut() << "Mechanics: Assembling matrix.\n";
         ls->start_add_assembly();
         ls->mat_zero_entries();
         assemble_stiffness_matrix();
@@ -522,7 +522,7 @@ void Elasticity::solve_linear_system()
     if (rhs == NULL
         || data_.subset(FieldFlag::in_rhs).changed())
     {
-        DebugOut() << "Mechanics: Reassembling right hand side.\n";
+        DebugOut() << "Mechanics: Assembling right hand side.\n";
         ls->start_add_assembly();
         ls->rhs_zero_entries();
     	assemble_rhs();
