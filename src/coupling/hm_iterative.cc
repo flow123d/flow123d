@@ -32,7 +32,7 @@ namespace it = Input::Type;
 
 /** Create elementwise FieldFE with parallel VectorMPI */
 template <int spacedim, class Value>
-std::shared_ptr<FieldFE<spacedim, Value> > create_field(Mesh & mesh, unsigned int n_comp)
+std::shared_ptr<FieldFE<spacedim, Value> > create_field(Mesh & mesh, int n_comp)
 {
 	FiniteElement<0> *fe0; // Finite element objects (allow to create DOF handler)
 	FiniteElement<1> *fe1;
@@ -45,6 +45,13 @@ std::shared_ptr<FieldFE<spacedim, Value> > create_field(Mesh & mesh, unsigned in
 			fe1 = new FE_P_disc<1>(0);
 			fe2 = new FE_P_disc<2>(0);
 			fe3 = new FE_P_disc<3>(0);
+			break;
+		}
+		case -1: { // scalar with dof on sides
+			fe0 = new FE_CR<0>;
+			fe1 = new FE_CR<1>;
+			fe2 = new FE_CR<2>;
+			fe3 = new FE_CR<3>;
 			break;
 		}
 		case 3: { // vector
@@ -147,7 +154,7 @@ void HM_Iterative::EqData::initialize(Mesh &mesh)
     // initialize coupling fields with FieldFE
     set_mesh(mesh);
     
-    potential_ptr_ = create_field<3, FieldValue<3>::Scalar>(mesh, 1);
+    potential_ptr_ = create_field<3, FieldValue<3>::Scalar>(mesh, -1);
     pressure_potential.set_field(mesh.region_db().get_region_set("ALL"), potential_ptr_);
     
     beta_ptr_ = create_field<3, FieldValue<3>::Scalar>(mesh, 1);
@@ -381,20 +388,25 @@ void HM_Iterative::update_potential()
     auto potential_vec_ = data_.potential_ptr_->get_data_vec();
     auto dh = data_.potential_ptr_->get_dofhandler();
     double difference2 = 0, norm2 = 0;
+    std::vector<int> dof_indices(dh->max_elem_dofs());
     for ( auto ele : dh->local_range() )
     {
         auto elm = ele.elm();
-        double alpha = data_.alpha.value(elm.centre(), elm);
-        double pressure = flow_->get_mh_dofhandler().element_scalar(elm);
-        double potential = -alpha*pressure;
-        
-        if (ele.is_own())
+        ele.get_loc_dof_indices(dof_indices);
+        for ( auto side : ele.side_range() )
         {
-            difference2 += pow(potential_vec_[ele.local_idx()] - potential,2);
-            norm2 += pow(potential,2);
-        }
+            double alpha = data_.alpha.value(side.side()->centre(), elm);
+            double pressure = flow_->get_mh_dofhandler().side_scalar(*side.side());
+            double potential = -alpha*pressure;
         
-        potential_vec_[ele.local_idx()] = potential;
+            if (ele.is_own())
+            {
+                difference2 += pow(potential_vec_[dof_indices[side.side()->side_idx()]] - potential,2);
+                norm2 += pow(potential,2);
+            }
+        
+            potential_vec_[dof_indices[side.side()->side_idx()]] = potential;
+        }
     }
     
     double send_data[] = { difference2, norm2 };
