@@ -668,7 +668,7 @@ template<class Model>
 void TransportDG<Model>::assemble_stiffness_matrix()
 {
   START_TIMER("assemble_stiffness");
-    for (auto cell : data_->dh_->own_range() )
+    for (auto cell : data_->dh_->local_range() )
     {
         START_TIMER("assemble_volume_integrals");
         multidim_assembly_[ cell.dim()-1 ]->assemble_volume_integrals(cell);
