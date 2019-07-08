@@ -134,6 +134,11 @@ public:
 		            double &gamma);
 
 
+		/// Compute and return anisotropy of given element
+		double elem_anisotropy(ElementAccessor<3> e) const;
+
+
+
 		MultiField<3, FieldValue<3>::Scalar> fracture_sigma;    ///< Transition parameter for diffusive transfer on fractures (for each substance).
 		MultiField<3, FieldValue<3>::Scalar> dg_penalty;        ///< Penalty enforcing inter-element continuity of solution (for each substance).
         Field<3, FieldValue<3>::Scalar> region_id;
@@ -295,12 +300,6 @@ private:
 	 */
 	template<unsigned int dim>
 	void set_sources();
-
-	/**
-	 * @brief Assembles the fluxes between elements of the same dimension.
-	 */
-	template<unsigned int dim>
-	void assemble_fluxes_element_element();
 
 	/**
 	 * @brief Assembles the fluxes between elements of different dimensions.
