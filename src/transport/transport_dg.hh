@@ -302,13 +302,6 @@ private:
 	void set_sources();
 
 	/**
-	 * @brief Assembles the fluxes between elements of different dimensions.
-	 */
-	template<unsigned int dim>
-	void assemble_fluxes_element_side();
-
-
-	/**
 	 * @brief Assembles the r.h.s. components corresponding to the Dirichlet boundary conditions.
 	 *
 	 * The routine just calls templated method set_boundary_condition() for each space dimension.

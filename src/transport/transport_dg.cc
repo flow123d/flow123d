@@ -681,13 +681,15 @@ void TransportDG<Model>::assemble_stiffness_matrix()
         START_TIMER("assemble_fluxes_elem_elem");
         multidim_assembly_[ cell.dim()-1 ]->assemble_fluxes_element_element(cell);
         END_TIMER("assemble_fluxes_elem_elem");
+
+        START_TIMER("assemble_fluxes_elem_side");
+        if (cell.dim()<3) multidim_assembly_[ cell.dim() ]->assemble_fluxes_element_side(cell);
+        END_TIMER("assemble_fluxes_elem_side");
     }
 
-  START_TIMER("assemble_fluxes_elem_side");
-    assemble_fluxes_element_side<1>();
-    assemble_fluxes_element_side<2>();
-    assemble_fluxes_element_side<3>();
-  END_TIMER("assemble_fluxes_elem_side");
+    //assemble_fluxes_element_side<1>();
+    //assemble_fluxes_element_side<2>();
+    //assemble_fluxes_element_side<3>();
   END_TIMER("assemble_stiffness");
 }
 
@@ -762,126 +764,6 @@ void TransportDG<Model>::set_sources()
         }
     }
 }
-
-
-
-template<class Model>
-template<unsigned int dim>
-void TransportDG<Model>::assemble_fluxes_element_side()
-{
-
-    if (dim == 1) return;
-    FEValues<dim-1,3> fe_values_vb(*assembly<dim>()->mapping_low(), *assembly<dim>()->quad_low(), *assembly<dim>()->fe_low(),
-            update_values | update_gradients | update_JxW_values | update_quadrature_points);
-    FESideValues<dim,3> fe_values_side(*assembly<dim>()->mapping(), *assembly<dim>()->quad_low(), *assembly<dim>()->fe(),
-            update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
-    FESideValues<dim,3> fsv_rt(*assembly<dim>()->mapping(), *assembly<dim>()->quad_low(), *assembly<dim>()->fe_rt(),
-            update_values);
-    FEValues<dim-1,3> fv_rt(*assembly<dim>()->mapping_low(), *assembly<dim>()->quad_low(), *assembly<dim>()->fe_rt_low(),
-            update_values);
-
-    vector<FEValuesSpaceBase<3>*> fv_sb(2);
-    const unsigned int ndofs = assembly<dim>()->fe()->n_dofs();    // number of local dofs
-    const unsigned int qsize = assembly<dim>()->quad_low()->size();     // number of quadrature points
-    int side_dof_indices[2*ndofs];
-    vector<LongIdx> indices(ndofs);
-    unsigned int n_dofs[2], n_indices;
-    vector<arma::vec3> velocity_higher, velocity_lower;
-    vector<double> frac_sigma(qsize);
-    vector<double> csection_lower(qsize), csection_higher(qsize);
-    PetscScalar local_matrix[4*ndofs*ndofs];
-    double comm_flux[2][2];
-
-    // index 0 = element with lower dimension,
-    // index 1 = side of element with higher dimension
-    fv_sb[0] = &fe_values_vb;
-    fv_sb[1] = &fe_values_side;
-
-    // assemble integral over sides
-    for (DHCellAccessor cell_lower_dim : data_->dh_->local_range() )
-        for( DHCellSide neighb_side : cell_lower_dim.neighb_sides() )
-        {
-            // skip neighbours of different dimension
-            if (cell_lower_dim.elm().dim() != dim-1) continue;
-
-            ElementAccessor<3> elm_lower_dim = cell_lower_dim.elm();
-            n_indices = cell_lower_dim.get_dof_indices(indices);
-    		for(unsigned int i=0; i<n_indices; ++i) {
-    			side_dof_indices[i] = indices[i];
-    		}
-            fe_values_vb.reinit(elm_lower_dim);
-            n_dofs[0] = fv_sb[0]->n_dofs();
-
-            DHCellAccessor cell_higher_dim = data_->dh_->cell_accessor_from_element( neighb_side.side()->element().idx() );
-            ElementAccessor<3> elm_higher_dim = cell_higher_dim.elm();
-            n_indices = cell_higher_dim.get_dof_indices(indices);
-    		for(unsigned int i=0; i<n_indices; ++i) {
-    			side_dof_indices[i+n_dofs[0]] = indices[i];
-    		}
-            fe_values_side.reinit(elm_higher_dim, neighb_side.side()->side_idx());
-            n_dofs[1] = fv_sb[1]->n_dofs();
-
-            // Testing element if they belong to local partition.
-            bool own_element_id[2];
-            own_element_id[0] = cell_lower_dim.is_own();
-            own_element_id[1] = cell_higher_dim.is_own();
-
-            fsv_rt.reinit(elm_higher_dim, neighb_side.side()->side_idx());
-            fv_rt.reinit(elm_lower_dim);
-            calculate_velocity(elm_higher_dim, velocity_higher, fsv_rt);
-            calculate_velocity(elm_lower_dim, velocity_lower, fv_rt);
-            Model::compute_advection_diffusion_coefficients(fe_values_vb.point_list(), velocity_lower, elm_lower_dim, data_->ad_coef_edg[0], data_->dif_coef_edg[0]);
-            Model::compute_advection_diffusion_coefficients(fe_values_vb.point_list(), velocity_higher, elm_higher_dim, data_->ad_coef_edg[1], data_->dif_coef_edg[1]);
-            data_->cross_section.value_list(fe_values_vb.point_list(), elm_lower_dim, csection_lower);
-            data_->cross_section.value_list(fe_values_vb.point_list(), elm_higher_dim, csection_higher);
-
-            for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++) // Optimize: SWAP LOOPS
-            {
-                for (unsigned int i=0; i<n_dofs[0]+n_dofs[1]; i++)
-                    for (unsigned int j=0; j<n_dofs[0]+n_dofs[1]; j++)
-                        local_matrix[i*(n_dofs[0]+n_dofs[1])+j] = 0;
-
-                data_->fracture_sigma[sbi].value_list(fe_values_vb.point_list(), elm_lower_dim, frac_sigma);
-
-                // set transmission conditions
-                for (unsigned int k=0; k<qsize; k++)
-                {
-                    /* The communication flux has two parts:
-                    * - "diffusive" term containing sigma
-                    * - "advective" term representing usual upwind
-                    *
-                    * The calculation differs from the reference manual, since ad_coef and dif_coef have different meaning
-                    * than b and A in the manual.
-                    * In calculation of sigma there appears one more csection_lower in the denominator.
-                    */
-                    double sigma = frac_sigma[k]*arma::dot(data_->dif_coef_edg[0][sbi][k]*fe_values_side.normal_vector(k),fe_values_side.normal_vector(k))*
-                            2*csection_higher[k]*csection_higher[k]/(csection_lower[k]*csection_lower[k]);
-
-                    double transport_flux = arma::dot(data_->ad_coef_edg[1][sbi][k], fe_values_side.normal_vector(k));
-
-                    comm_flux[0][0] =  (sigma-min(0.,transport_flux))*fv_sb[0]->JxW(k);
-                    comm_flux[0][1] = -(sigma-min(0.,transport_flux))*fv_sb[0]->JxW(k);
-                    comm_flux[1][0] = -(sigma+max(0.,transport_flux))*fv_sb[0]->JxW(k);
-                    comm_flux[1][1] =  (sigma+max(0.,transport_flux))*fv_sb[0]->JxW(k);
-
-                    for (int n=0; n<2; n++)
-                    {
-                        if (!own_element_id[n]) continue;
-
-                        for (unsigned int i=0; i<n_dofs[n]; i++)
-                            for (int m=0; m<2; m++)
-                                for (unsigned int j=0; j<n_dofs[m]; j++)
-                                    local_matrix[(i+n*n_dofs[0])*(n_dofs[0]+n_dofs[1]) + m*n_dofs[0] + j] +=
-                                            comm_flux[m][n]*fv_sb[m]->shape_value(j,k)*fv_sb[n]->shape_value(i,k);
-                    }
-                }
-                data_->ls[sbi]->mat_set_values(n_dofs[0]+n_dofs[1], side_dof_indices, n_dofs[0]+n_dofs[1], side_dof_indices, local_matrix);
-            }
-        }
-
-}
-
-
 
 
 
