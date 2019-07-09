@@ -686,10 +686,6 @@ void TransportDG<Model>::assemble_stiffness_matrix()
         if (cell.dim()<3) multidim_assembly_[ cell.dim() ]->assemble_fluxes_element_side(cell);
         END_TIMER("assemble_fluxes_elem_side");
     }
-
-    //assemble_fluxes_element_side<1>();
-    //assemble_fluxes_element_side<2>();
-    //assemble_fluxes_element_side<3>();
   END_TIMER("assemble_stiffness");
 }
 
@@ -700,69 +696,12 @@ void TransportDG<Model>::set_sources()
 {
   START_TIMER("assemble_sources");
     Model::balance_->start_source_assembly(Model::subst_idx);
-    set_sources<1>();
-    set_sources<2>();
-    set_sources<3>();
-    Model::balance_->finish_source_assembly(Model::subst_idx);
-  END_TIMER("assemble_sources");
-}
-
-template<class Model>
-template<unsigned int dim>
-void TransportDG<Model>::set_sources()
-{
-    FEValues<dim,3> fe_values(*assembly<dim>()->mapping(), *assembly<dim>()->quad(), *assembly<dim>()->fe(),
-            update_values | update_JxW_values | update_quadrature_points);
-    const unsigned int ndofs = assembly<dim>()->fe()->n_dofs(), qsize = assembly<dim>()->quad()->size();
-    vector<std::vector<double> > sources_conc(Model::n_substances(), std::vector<double>(qsize)),
-            sources_density(Model::n_substances(), std::vector<double>(qsize)),
-            sources_sigma(Model::n_substances(), std::vector<double>(qsize));
-    vector<LongIdx> dof_indices(ndofs);
-    vector<LongIdx> loc_dof_indices(ndofs);
-    PetscScalar local_rhs[ndofs];
-    vector<PetscScalar> local_source_balance_vector(ndofs), local_source_balance_rhs(ndofs);
-    double source;
-
-    // assemble integral over elements
     for (auto cell : data_->dh_->own_range() )
     {
-        if (cell.dim() != dim) continue;
-        ElementAccessor<3> elm = cell.elm();
-
-        fe_values.reinit(elm);
-        cell.get_dof_indices(dof_indices);
-        cell.get_loc_dof_indices(loc_dof_indices);
-
-        Model::compute_source_coefficients(fe_values.point_list(), elm, sources_conc, sources_density, sources_sigma);
-
-        // assemble the local stiffness matrix
-        for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
-        {
-            fill_n(local_rhs, ndofs, 0);
-            local_source_balance_vector.assign(ndofs, 0);
-            local_source_balance_rhs.assign(ndofs, 0);
-
-            // compute sources
-            for (unsigned int k=0; k<qsize; k++)
-            {
-                source = (sources_density[sbi][k] + sources_conc[sbi][k]*sources_sigma[sbi][k])*fe_values.JxW(k);
-
-                for (unsigned int i=0; i<ndofs; i++)
-                    local_rhs[i] += source*fe_values.shape_value(i,k);
-            }
-            data_->ls[sbi]->rhs_set_values(ndofs, &(dof_indices[0]), local_rhs);
-
-            for (unsigned int i=0; i<ndofs; i++)
-            {
-                for (unsigned int k=0; k<qsize; k++)
-                    local_source_balance_vector[i] -= sources_sigma[sbi][k]*fe_values.shape_value(i,k)*fe_values.JxW(k);
-
-                local_source_balance_rhs[i] += local_rhs[i];
-            }
-            Model::balance_->add_source_values(Model::subst_idx[sbi], elm.region().bulk_idx(), loc_dof_indices,
-                                               local_source_balance_vector, local_source_balance_rhs);
-        }
+        multidim_assembly_[ cell.dim()-1 ]->set_sources(cell);
     }
+    Model::balance_->finish_source_assembly(Model::subst_idx);
+  END_TIMER("assemble_sources");
 }
 
 

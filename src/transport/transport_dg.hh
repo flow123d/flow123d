@@ -291,14 +291,8 @@ private:
 	/**
 	 * @brief Assembles the right hand side due to volume sources.
 	 *
-	 * This method just calls set_sources() for each space dimension.
+	 * This method just calls AssemblyDG::set_sources() for each elements.
 	 */
-	void set_sources();
-
-	/**
-	 * @brief Assembles the right hand side vector due to volume sources.
-	 */
-	template<unsigned int dim>
 	void set_sources();
 
 	/**

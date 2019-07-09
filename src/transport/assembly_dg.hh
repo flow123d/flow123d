@@ -47,6 +47,8 @@ public:
     virtual void assemble_fluxes_element_element(DHCellAccessor cell) = 0;
 
     virtual void assemble_fluxes_element_side(DHCellAccessor cell_lower_dim) = 0;
+
+    virtual void set_sources(DHCellAccessor cell) = 0;
 };
 
 
@@ -80,6 +82,7 @@ public:
         qsize_ = quad_->size();
         qsize_lower_dim_ = quad_low_->size();
         dof_indices_.resize(ndofs_);
+        loc_dof_indices_.resize(ndofs_);
         side_dof_indices_vb_.resize(2*ndofs_);
     }
 
@@ -147,8 +150,13 @@ public:
         local_matrix_.resize(4*ndofs_*ndofs_);
         local_retardation_balance_vector_.resize(ndofs_);
         local_mass_balance_vector_.resize(ndofs_);
+        local_rhs_.resize(ndofs_);
+        local_source_balance_vector_.resize(ndofs_);
+        local_source_balance_rhs_.resize(ndofs_);
         velocity_.resize(qsize_);
         side_velocity_vec_.resize(data_->ad_coef_edg.size());
+        sources_conc_.resize(model_.n_substances(), std::vector<double>(qsize_));
+        sources_density_.resize(model_.n_substances(), std::vector<double>(qsize_));
         sources_sigma_.resize(model_.n_substances(), std::vector<double>(qsize_));
         sigma_.resize(qsize_lower_dim_);
         csection_.resize(qsize_lower_dim_);
@@ -596,6 +604,49 @@ public:
     }
 
 
+    /// Assembles the right hand side vector due to volume sources.
+    void set_sources(DHCellAccessor cell) override
+    {
+    	ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
+
+        ElementAccessor<3> elm = cell.elm();
+
+        fe_values_.reinit(elm);
+        cell.get_dof_indices(dof_indices_);
+        cell.get_loc_dof_indices(loc_dof_indices_);
+
+        model_.compute_source_coefficients(fe_values_.point_list(), elm, sources_conc_, sources_density_, sources_sigma_);
+
+        // assemble the local stiffness matrix
+        for (unsigned int sbi=0; sbi<model_.n_substances(); sbi++)
+        {
+            fill_n( &(local_rhs_[0]), ndofs_, 0 );
+            local_source_balance_vector_.assign(ndofs_, 0);
+            local_source_balance_rhs_.assign(ndofs_, 0);
+
+            // compute sources
+            for (unsigned int k=0; k<qsize_; k++)
+            {
+                source = (sources_density_[sbi][k] + sources_conc_[sbi][k]*sources_sigma_[sbi][k])*fe_values_.JxW(k);
+
+                for (unsigned int i=0; i<ndofs_; i++)
+                    local_rhs_[i] += source*fe_values_.shape_value(i,k);
+            }
+            data_->ls[sbi]->rhs_set_values(ndofs_, &(dof_indices_[0]), &(local_rhs_[0]));
+
+            for (unsigned int i=0; i<ndofs_; i++)
+            {
+                for (unsigned int k=0; k<qsize_; k++)
+                    local_source_balance_vector_[i] -= sources_sigma_[sbi][k]*fe_values_.shape_value(i,k)*fe_values_.JxW(k);
+
+                local_source_balance_rhs_[i] += local_rhs_[i];
+            }
+            model_.balance()->add_source_values(model_.get_subst_idx()[sbi], elm.region().bulk_idx(), loc_dof_indices_,
+                                               local_source_balance_vector_, local_source_balance_rhs_);
+        }
+    }
+
+
 private:
 	/**
 	 * @brief Calculates the velocity field on a given cell of dim dimension.
@@ -670,15 +721,21 @@ private:
     vector<FEValuesSpaceBase<3>*> fv_sb_;                     ///< Helper vector, holds FEValues objects for assemble element-side
 
     vector<LongIdx> dof_indices_;                             ///< Vector of global DOF indices
+    vector<LongIdx> loc_dof_indices_;                         ///< Vector of local DOF indices
     vector< vector<LongIdx> > side_dof_indices_;              ///< Vector of vectors of side DOF indices
     vector<LongIdx> side_dof_indices_vb_;                     ///< Vector of side DOF indices (assemble element-side fluxex)
     vector<PetscScalar> local_matrix_;                        ///< Helper vector for assemble methods
     vector<PetscScalar> local_retardation_balance_vector_;    ///< Helper vector for assemble mass matrix.
     vector<PetscScalar> local_mass_balance_vector_;           ///< Same as previous.
+    vector<PetscScalar> local_rhs_;                           ///< Helper vector for set_sources method.
+    vector<PetscScalar> local_source_balance_vector_;         ///< Helper vector for set_sources method.
+    vector<PetscScalar> local_source_balance_rhs_;            ///< Helper vector for set_sources method.
     vector<arma::vec3> velocity_;                             ///< Velocity results.
     vector<arma::vec3> velocity_higher_;                      ///< Velocity results of higher dim element (element-side computation).
     vector<vector<arma::vec3> > side_velocity_vec_;           ///< Vector of velocities results.
-    vector<vector<double> > sources_sigma_;                   ///< Helper vectors for assemble volume integrals.
+    vector<vector<double> > sources_conc_;                    ///< Helper vectors for set_sources method.
+    vector<vector<double> > sources_density_;                 ///< Helper vectors for set_sources method.
+    vector<vector<double> > sources_sigma_;                   ///< Helper vectors for assemble volume integrals and set_sources method.
     vector<double> sigma_;                                    ///< Helper vector for assemble boundary fluxes (robin sigma) and element-side fluxes (frac sigma)
     vector<double> csection_;                                 ///< Helper vector for assemble boundary fluxes and element-side fluxes
     vector<double> csection_higher_;                          ///< Helper vector for assemble element-side fluxes
@@ -703,6 +760,13 @@ private:
 
     unsigned int n_dofs[2], n_indices;
     double comm_flux[2][2];
+
+	// @}
+
+	/// @name Auxiliary variables used during set sources
+	// @{
+
+    double source;
 
 	// @}
 
