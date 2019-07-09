@@ -197,6 +197,14 @@ public:
         return this->velocity_field_ptr_;
     }
 
+    Mesh *mesh() const override {
+        return this->mesh_;
+    }
+
+    TimeGovernor *tg() const override {
+        return this->time_;
+    }
+
 
 
 protected:

@@ -25,6 +25,7 @@
 
 class SubstanceList;
 class Balance;
+class TimeGovernor;
 
 namespace IT = Input::Type;
 
@@ -174,6 +175,12 @@ public:
 
     /// Return velocity field object.
     virtual std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> velocity_field_ptr() const = 0;
+
+    /// Return mesh object.
+    virtual Mesh *mesh() const = 0;
+
+    /// Return time object.
+    virtual TimeGovernor *tg() const = 0;
 
 	/// Destructor.
 	virtual ~AdvectionDiffusionModel() {};
