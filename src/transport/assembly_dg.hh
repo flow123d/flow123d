@@ -49,6 +49,8 @@ public:
     virtual void assemble_fluxes_element_side(DHCellAccessor cell_lower_dim) = 0;
 
     virtual void set_sources(DHCellAccessor cell) = 0;
+
+    virtual void set_boundary_conditions(DHCellAccessor cell) = 0;
 };
 
 
@@ -153,6 +155,7 @@ public:
         local_rhs_.resize(ndofs_);
         local_source_balance_vector_.resize(ndofs_);
         local_source_balance_rhs_.resize(ndofs_);
+        local_flux_balance_vector_.resize(ndofs_);
         velocity_.resize(qsize_);
         side_velocity_vec_.resize(data_->ad_coef_edg.size());
         sources_conc_.resize(model_.n_substances(), std::vector<double>(qsize_));
@@ -162,6 +165,9 @@ public:
         csection_.resize(qsize_lower_dim_);
         csection_higher_.resize(qsize_lower_dim_);
         dg_penalty_.resize(data_->ad_coef_edg.size());
+        bc_values_.resize(qsize_lower_dim_);
+        bc_fluxes_.resize(qsize_lower_dim_);
+        bc_ref_values_.resize(qsize_lower_dim_);
 
         mm_coef_.resize(qsize_);
         ret_coef_.resize(model_.n_substances());
@@ -647,6 +653,141 @@ public:
     }
 
 
+    void set_boundary_conditions(DHCellAccessor cell) override
+    {
+        if (cell.elm()->boundary_idx_ == nullptr) return;
+
+        for (unsigned int si=0; si<cell.elm()->n_sides(); si++)
+        {
+            const Edge *edg = cell.elm().side(si)->edge();
+            if (edg->n_sides > 1) continue;
+            // skip edges lying not on the boundary
+            if (edg->side(0)->cond() == NULL) continue;
+
+            if (edg->side(0)->dim() != dim-1)
+            {
+                if (edg->side(0)->cond() != nullptr) ++data_->loc_b_;
+                continue;
+            }
+
+            SideIter side = edg->side(0);
+            ElementAccessor<3> elm = model_.mesh()->element_accessor( side->element().idx() );
+            ElementAccessor<3> ele_acc = side->cond()->element_accessor();
+
+            arma::uvec bc_type;
+            model_.get_bc_type(ele_acc, bc_type);
+
+            fe_values_side_.reinit(elm, side->side_idx());
+            fsv_rt_.reinit(elm, side->side_idx());
+            calculate_velocity(elm, velocity_, fsv_rt_);
+
+            model_.compute_advection_diffusion_coefficients(fe_values_side_.point_list(), velocity_, side->element(), data_->ad_coef, data_->dif_coef);
+            data_->cross_section.value_list(fe_values_side_.point_list(), side->element(), csection_);
+
+            DHCellAccessor dh_side_cell = data_->dh_->cell_accessor_from_element( side->element().idx() );
+            dh_side_cell.get_dof_indices(dof_indices_);
+
+            for (unsigned int sbi=0; sbi<model_.n_substances(); sbi++)
+            {
+                fill_n(&(local_rhs_[0]), ndofs_, 0);
+                local_flux_balance_vector_.assign(ndofs_, 0);
+                local_flux_balance_rhs_ = 0;
+
+                // The b.c. data are fetched for all possible b.c. types since we allow
+                // different bc_type for each substance.
+                data_->bc_dirichlet_value[sbi].value_list(fe_values_side_.point_list(), ele_acc, bc_values_);
+
+                double side_flux = 0;
+                for (unsigned int k=0; k<qsize_lower_dim_; k++)
+                    side_flux += arma::dot(data_->ad_coef[sbi][k], fe_values_side_.normal_vector(k))*fe_values_side_.JxW(k);
+                double transport_flux = side_flux/side->measure();
+
+                if (bc_type[sbi] == AdvectionDiffusionModel::abc_inflow && side_flux < 0)
+                {
+                    for (unsigned int k=0; k<qsize_lower_dim_; k++)
+                    {
+                        double bc_term = -transport_flux*bc_values_[k]*fe_values_side_.JxW(k);
+                        for (unsigned int i=0; i<ndofs_; i++)
+                            local_rhs_[i] += bc_term*fe_values_side_.shape_value(i,k);
+                    }
+                    for (unsigned int i=0; i<ndofs_; i++)
+                        local_flux_balance_rhs_ -= local_rhs_[i];
+                }
+                else if (bc_type[sbi] == AdvectionDiffusionModel::abc_dirichlet)
+                {
+                    for (unsigned int k=0; k<qsize_lower_dim_; k++)
+                    {
+                        double bc_term = data_->gamma[sbi][side->cond_idx()]*bc_values_[k]*fe_values_side_.JxW(k);
+                        arma::vec3 bc_grad = -bc_values_[k]*fe_values_side_.JxW(k)*data_->dg_variant*(arma::trans(data_->dif_coef[sbi][k])*fe_values_side_.normal_vector(k));
+                        for (unsigned int i=0; i<ndofs_; i++)
+                            local_rhs_[i] += bc_term*fe_values_side_.shape_value(i,k)
+                                    + arma::dot(bc_grad,fe_values_side_.shape_grad(i,k));
+                    }
+                    for (unsigned int k=0; k<qsize_lower_dim_; k++)
+                    {
+                        for (unsigned int i=0; i<ndofs_; i++)
+                        {
+                            local_flux_balance_vector_[i] += (arma::dot(data_->ad_coef[sbi][k], fe_values_side_.normal_vector(k))*fe_values_side_.shape_value(i,k)
+                                    - arma::dot(data_->dif_coef[sbi][k]*fe_values_side_.shape_grad(i,k),fe_values_side_.normal_vector(k))
+                                    + data_->gamma[sbi][side->cond_idx()]*fe_values_side_.shape_value(i,k))*fe_values_side_.JxW(k);
+                        }
+                    }
+                    if (model_.tg()->tlevel() > 0)
+                        for (unsigned int i=0; i<ndofs_; i++)
+                            local_flux_balance_rhs_ -= local_rhs_[i];
+                }
+                else if (bc_type[sbi] == AdvectionDiffusionModel::abc_total_flux)
+                {
+                	model_.get_flux_bc_data(sbi, fe_values_side_.point_list(), ele_acc, bc_fluxes_, sigma_, bc_ref_values_);
+                    for (unsigned int k=0; k<qsize_lower_dim_; k++)
+                    {
+                        double bc_term = csection_[k]*(sigma_[k]*bc_ref_values_[k]+bc_fluxes_[k])*fe_values_side_.JxW(k);
+                        for (unsigned int i=0; i<ndofs_; i++)
+                            local_rhs_[i] += bc_term*fe_values_side_.shape_value(i,k);
+                    }
+
+                    for (unsigned int i=0; i<ndofs_; i++)
+                    {
+                        for (unsigned int k=0; k<qsize_lower_dim_; k++)
+                            local_flux_balance_vector_[i] += csection_[k]*sigma_[k]*fe_values_side_.JxW(k)*fe_values_side_.shape_value(i,k);
+                        local_flux_balance_rhs_ -= local_rhs_[i];
+                    }
+                }
+                else if (bc_type[sbi] == AdvectionDiffusionModel::abc_diffusive_flux)
+                {
+                	model_.get_flux_bc_data(sbi, fe_values_side_.point_list(), ele_acc, bc_fluxes_, sigma_, bc_ref_values_);
+                    for (unsigned int k=0; k<qsize_lower_dim_; k++)
+                    {
+                        double bc_term = csection_[k]*(sigma_[k]*bc_ref_values_[k]+bc_fluxes_[k])*fe_values_side_.JxW(k);
+                        for (unsigned int i=0; i<ndofs_; i++)
+                            local_rhs_[i] += bc_term*fe_values_side_.shape_value(i,k);
+                    }
+
+                    for (unsigned int i=0; i<ndofs_; i++)
+                    {
+                        for (unsigned int k=0; k<qsize_lower_dim_; k++)
+                            local_flux_balance_vector_[i] += csection_[k]*(arma::dot(data_->ad_coef[sbi][k], fe_values_side_.normal_vector(k)) + sigma_[k])*fe_values_side_.JxW(k)*fe_values_side_.shape_value(i,k);
+                        local_flux_balance_rhs_ -= local_rhs_[i];
+                    }
+                }
+                else if (bc_type[sbi] == AdvectionDiffusionModel::abc_inflow && side_flux >= 0)
+                {
+                    for (unsigned int k=0; k<qsize_lower_dim_; k++)
+                    {
+                        for (unsigned int i=0; i<ndofs_; i++)
+                            local_flux_balance_vector_[i] += arma::dot(data_->ad_coef[sbi][k], fe_values_side_.normal_vector(k))*fe_values_side_.JxW(k)*fe_values_side_.shape_value(i,k);
+                    }
+                }
+                data_->ls[sbi]->rhs_set_values(ndofs_, &(dof_indices_[0]), &(local_rhs_[0]));
+
+                model_.balance()->add_flux_matrix_values(model_.get_subst_idx()[sbi], data_->loc_b_, dof_indices_, local_flux_balance_vector_);
+                model_.balance()->add_flux_vec_value(model_.get_subst_idx()[sbi], data_->loc_b_, local_flux_balance_rhs_);
+            }
+            ++data_->loc_b_;
+        }
+    }
+
+
 private:
 	/**
 	 * @brief Calculates the velocity field on a given cell of dim dimension.
@@ -718,28 +859,33 @@ private:
     FESideValues<dim,3> fe_values_side_;                      ///< FESideValues of object (of P disc finite element type)
     FESideValues<dim,3> fsv_rt_;                              ///< FESideValues of object (of RT0 finite element type)
     vector<FESideValues<dim,3>*> fe_values_vec_;              ///< Vector of FESideValues of object (of P disc finite element types)
-    vector<FEValuesSpaceBase<3>*> fv_sb_;                     ///< Helper vector, holds FEValues objects for assemble element-side
+    vector<FEValuesSpaceBase<3>*> fv_sb_;                     ///< Auxiliary vector, holds FEValues objects for assemble element-side
 
     vector<LongIdx> dof_indices_;                             ///< Vector of global DOF indices
     vector<LongIdx> loc_dof_indices_;                         ///< Vector of local DOF indices
     vector< vector<LongIdx> > side_dof_indices_;              ///< Vector of vectors of side DOF indices
     vector<LongIdx> side_dof_indices_vb_;                     ///< Vector of side DOF indices (assemble element-side fluxex)
-    vector<PetscScalar> local_matrix_;                        ///< Helper vector for assemble methods
-    vector<PetscScalar> local_retardation_balance_vector_;    ///< Helper vector for assemble mass matrix.
+    vector<PetscScalar> local_matrix_;                        ///< Auxiliary vector for assemble methods
+    vector<PetscScalar> local_retardation_balance_vector_;    ///< Auxiliary vector for assemble mass matrix.
     vector<PetscScalar> local_mass_balance_vector_;           ///< Same as previous.
-    vector<PetscScalar> local_rhs_;                           ///< Helper vector for set_sources method.
-    vector<PetscScalar> local_source_balance_vector_;         ///< Helper vector for set_sources method.
-    vector<PetscScalar> local_source_balance_rhs_;            ///< Helper vector for set_sources method.
-    vector<arma::vec3> velocity_;                             ///< Velocity results.
+    vector<PetscScalar> local_rhs_;                           ///< Auxiliary vector for set_sources method.
+    vector<PetscScalar> local_source_balance_vector_;         ///< Auxiliary vector for set_sources method.
+    vector<PetscScalar> local_source_balance_rhs_;            ///< Auxiliary vector for set_sources method.
+    vector<PetscScalar> local_flux_balance_vector_;           ///< Auxiliary vector for set_boundary_conditions method.
+    PetscScalar local_flux_balance_rhs_;                      ///< Auxiliary variable for set_boundary_conditions method.
+    vector<arma::vec3> velocity_;                             ///< Auxiliary results.
     vector<arma::vec3> velocity_higher_;                      ///< Velocity results of higher dim element (element-side computation).
     vector<vector<arma::vec3> > side_velocity_vec_;           ///< Vector of velocities results.
-    vector<vector<double> > sources_conc_;                    ///< Helper vectors for set_sources method.
-    vector<vector<double> > sources_density_;                 ///< Helper vectors for set_sources method.
-    vector<vector<double> > sources_sigma_;                   ///< Helper vectors for assemble volume integrals and set_sources method.
-    vector<double> sigma_;                                    ///< Helper vector for assemble boundary fluxes (robin sigma) and element-side fluxes (frac sigma)
-    vector<double> csection_;                                 ///< Helper vector for assemble boundary fluxes and element-side fluxes
-    vector<double> csection_higher_;                          ///< Helper vector for assemble element-side fluxes
-    vector<vector<double> > dg_penalty_;                      ///< Helper vectors for assemble element-element fluxes
+    vector<vector<double> > sources_conc_;                    ///< Auxiliary vectors for set_sources method.
+    vector<vector<double> > sources_density_;                 ///< Auxiliary vectors for set_sources method.
+    vector<vector<double> > sources_sigma_;                   ///< Auxiliary vectors for assemble volume integrals and set_sources method.
+    vector<double> sigma_;                                    ///< Auxiliary vector for assemble boundary fluxes (robin sigma), element-side fluxes (frac sigma) and set boundary conditions method
+    vector<double> csection_;                                 ///< Auxiliary vector for assemble boundary fluxes, element-side fluxes and set boundary conditions
+    vector<double> csection_higher_;                          ///< Auxiliary vector for assemble element-side fluxes
+    vector<vector<double> > dg_penalty_;                      ///< Auxiliary vectors for assemble element-element fluxes
+    vector<double> bc_values_;                                ///< Auxiliary vector for set boundary conditions method
+    vector<double> bc_fluxes_;                                ///< Same as previous
+    vector<double> bc_ref_values_;                            ///< Same as previous
 
 	/// Mass matrix coefficients.
 	vector<double> mm_coef_;

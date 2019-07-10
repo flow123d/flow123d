@@ -187,6 +187,9 @@ public:
 
         /// Object for distribution of dofs.
         std::shared_ptr<DOFHandlerMultiDim> dh_;
+
+        /// Counter used in method set_boundary_condition
+        unsigned int loc_b_;
 	};
 
 
@@ -298,15 +301,8 @@ private:
 	/**
 	 * @brief Assembles the r.h.s. components corresponding to the Dirichlet boundary conditions.
 	 *
-	 * The routine just calls templated method set_boundary_condition() for each space dimension.
+	 * The routine just calls AssemblyDG::set_boundary_condition() for each element.
 	 */
-	void set_boundary_conditions();
-
-	/**
-	 * @brief Assembles the r.h.s. components corresponding to the Dirichlet boundary conditions
-	 * for a given space dimension.
-	 */
-	template<unsigned int dim>
 	void set_boundary_conditions();
 
 	/**
