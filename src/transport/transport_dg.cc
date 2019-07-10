@@ -749,15 +749,17 @@ void TransportDG<Model>::set_initial_condition()
     START_TIMER("set_init_cond");
     for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
         data_->ls[sbi]->start_allocation();
-    prepare_initial_condition<1>();
-    prepare_initial_condition<2>();
-    prepare_initial_condition<3>();
+    for (auto cell : data_->dh_->own_range() )
+    {
+        multidim_assembly_[ cell.dim()-1 ]->prepare_initial_condition(cell);
+    }
 
     for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
         data_->ls[sbi]->start_add_assembly();
-    prepare_initial_condition<1>();
-    prepare_initial_condition<2>();
-    prepare_initial_condition<3>();
+    for (auto cell : data_->dh_->own_range() )
+    {
+        multidim_assembly_[ cell.dim()-1 ]->prepare_initial_condition(cell);
+    }
 
     for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
     {
@@ -765,56 +767,6 @@ void TransportDG<Model>::set_initial_condition()
         data_->ls[sbi]->solve();
     }
     END_TIMER("set_init_cond");
-}
-
-template<class Model>
-template<unsigned int dim>
-void TransportDG<Model>::prepare_initial_condition()
-{
-    FEValues<dim,3> fe_values(*assembly<dim>()->mapping(), *assembly<dim>()->quad(), *assembly<dim>()->fe(),
-            update_values | update_JxW_values | update_quadrature_points);
-    const unsigned int ndofs = assembly<dim>()->fe()->n_dofs(), qsize = assembly<dim>()->quad()->size();
-    std::vector<LongIdx> dof_indices(ndofs);
-    double matrix[ndofs*ndofs], rhs[ndofs];
-    std::vector<std::vector<double> > init_values(Model::n_substances());
-
-    for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++) // Optimize: SWAP LOOPS
-        init_values[sbi].resize(qsize);
-
-    for (auto cell : data_->dh_->own_range() )
-    {
-        if (cell.dim() != dim) continue;
-        ElementAccessor<3> elem = cell.elm();
-
-        cell.get_dof_indices(dof_indices);
-        fe_values.reinit(elem);
-
-        Model::compute_init_cond(fe_values.point_list(), elem, init_values);
-
-        for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
-        {
-            for (unsigned int i=0; i<ndofs; i++)
-            {
-                rhs[i] = 0;
-                for (unsigned int j=0; j<ndofs; j++)
-                    matrix[i*ndofs+j] = 0;
-            }
-
-            for (unsigned int k=0; k<qsize; k++)
-            {
-                double rhs_term = init_values[sbi][k]*fe_values.JxW(k);
-
-                for (unsigned int i=0; i<ndofs; i++)
-                {
-                    for (unsigned int j=0; j<ndofs; j++)
-                        matrix[i*ndofs+j] += fe_values.shape_value(i,k)*fe_values.shape_value(j,k)*fe_values.JxW(k);
-
-                    rhs[i] += fe_values.shape_value(i,k)*rhs_term;
-                }
-            }
-            data_->ls[sbi]->set_values(ndofs, &(dof_indices[0]), ndofs, &(dof_indices[0]), matrix, rhs);
-        }
-    }
 }
 
 

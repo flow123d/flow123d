@@ -51,6 +51,8 @@ public:
     virtual void set_sources(DHCellAccessor cell) = 0;
 
     virtual void set_boundary_conditions(DHCellAccessor cell) = 0;
+
+    virtual void prepare_initial_condition(DHCellAccessor cell) = 0;
 };
 
 
@@ -168,6 +170,7 @@ public:
         bc_values_.resize(qsize_lower_dim_);
         bc_fluxes_.resize(qsize_lower_dim_);
         bc_ref_values_.resize(qsize_lower_dim_);
+        init_values_.resize(model_.n_substances(), std::vector<double>(qsize_));
 
         mm_coef_.resize(qsize_);
         ret_coef_.resize(model_.n_substances());
@@ -788,6 +791,45 @@ public:
     }
 
 
+	/**
+	 * @brief Assembles the auxiliary linear system to calculate the initial solution
+	 * as L^2-projection of the prescribed initial condition.
+	 */
+    void prepare_initial_condition(DHCellAccessor cell) override
+    {
+        ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
+
+        ElementAccessor<3> elem = cell.elm();
+        cell.get_dof_indices(dof_indices_);
+        fe_values_.reinit(elem);
+        model_.compute_init_cond(fe_values_.point_list(), elem, init_values_);
+
+        for (unsigned int sbi=0; sbi<model_.n_substances(); sbi++)
+        {
+            for (unsigned int i=0; i<ndofs_; i++)
+            {
+                local_rhs_[i] = 0;
+                for (unsigned int j=0; j<ndofs_; j++)
+                    local_matrix_[i*ndofs_+j] = 0;
+            }
+
+            for (unsigned int k=0; k<qsize_; k++)
+            {
+                double rhs_term = init_values_[sbi][k]*fe_values_.JxW(k);
+
+                for (unsigned int i=0; i<ndofs_; i++)
+                {
+                    for (unsigned int j=0; j<ndofs_; j++)
+                        local_matrix_[i*ndofs_+j] += fe_values_.shape_value(i,k)*fe_values_.shape_value(j,k)*fe_values_.JxW(k);
+
+                    local_rhs_[i] += fe_values_.shape_value(i,k)*rhs_term;
+                }
+            }
+            data_->ls[sbi]->set_values(ndofs_, &(dof_indices_[0]), ndofs_, &(dof_indices_[0]), &(local_matrix_[0]), &(local_rhs_[0]));
+        }
+    }
+
+
 private:
 	/**
 	 * @brief Calculates the velocity field on a given cell of dim dimension.
@@ -886,6 +928,7 @@ private:
     vector<double> bc_values_;                                ///< Auxiliary vector for set boundary conditions method
     vector<double> bc_fluxes_;                                ///< Same as previous
     vector<double> bc_ref_values_;                            ///< Same as previous
+    std::vector<std::vector<double> > init_values_;           ///< Auxiliary vectors for prepare initial condition
 
 	/// Mass matrix coefficients.
 	vector<double> mm_coef_;
