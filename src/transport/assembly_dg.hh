@@ -109,46 +109,6 @@ public:
         }
     }
 
-    /// Getter for FE_P_disc.
-    inline FiniteElement<dim> *fe() const {
-        return fe_;
-    }
-
-    /// Getter for FE_P_disc of lower dim.
-    inline FiniteElement<dim-1> *fe_low() const {
-        return fe_low_;
-    }
-
-    /// Getter for FE_RT0.
-    inline FiniteElement<dim> *fe_rt() const {
-        return fe_rt_;
-    }
-
-    /// Getter for FE_RT0 of lower dim.
-    inline FiniteElement<dim-1> *fe_rt_low() const {
-        return fe_rt_low_;
-    }
-
-    /// Getter for quadrature.
-    inline Quadrature<dim> *quad() const {
-        return quad_;
-    }
-
-    /// Getter for quadrature of lower dim.
-    inline Quadrature<dim-1> *quad_low() const {
-        return quad_low_;
-    }
-
-    /// Getter for mapping.
-    inline MappingP1<dim,3> *mapping() const {
-        return mapping_;
-    }
-
-    /// Getter for mapping of lower dim.
-    inline MappingP1<dim-1,3> *mapping_low() const {
-        return mapping_low_;
-    }
-
     /// Initialize auxiliary vectors and other data members
     void initialize() override {
         local_matrix_.resize(4*ndofs_*ndofs_);
@@ -958,6 +918,8 @@ private:
     double source;
 
 	// @}
+
+    friend class TransportDG<Model>;
 
 };
 

@@ -230,7 +230,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
 	multidim_assembly_.push_back( std::dynamic_pointer_cast<AssemblyDGBase>(assembly1_) );
 	multidim_assembly_.push_back( std::dynamic_pointer_cast<AssemblyDGBase>(assembly2_) );
 	multidim_assembly_.push_back( std::dynamic_pointer_cast<AssemblyDGBase>(assembly3_) );
-	shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>(Model::mesh_, assembly1_->fe_low(), assembly1_->fe(), assembly2_->fe(), assembly3_->fe());
+	shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>(Model::mesh_, assembly1_->fe_low_, assembly1_->fe_, assembly2_->fe_, assembly3_->fe_);
 	data_->dh_ = make_shared<DOFHandlerMultiDim>(*Model::mesh_);
 	data_->dh_->distribute_dofs(ds);
     //DebugOut().fmt("TDG: solution size {}\n", data_->dh_->n_global_dofs());
@@ -250,7 +250,7 @@ void TransportDG<Model>::initialize()
     	data_->gamma[sbi].resize(Model::mesh_->boundary_.size());
 
     // Resize coefficient arrays
-    int qsize = max(assembly1_->quad_low()->size(), max(assembly1_->quad()->size(), max(assembly2_->quad()->size(), assembly3_->quad()->size())));
+    int qsize = max(assembly1_->quad_low_->size(), max(assembly1_->quad_->size(), max(assembly2_->quad_->size(), assembly3_->quad_->size())));
     int max_edg_sides = max(Model::mesh_->max_edge_sides(1), max(Model::mesh_->max_edge_sides(2), Model::mesh_->max_edge_sides(3)));
     ret_sources.resize(Model::n_substances());
     ret_sources_prev.resize(Model::n_substances());
@@ -324,7 +324,7 @@ void TransportDG<Model>::initialize()
 
     // initialization of balance object
     Model::balance_->allocate(data_->dh_->distr()->lsize(),
-            max(assembly1_->fe()->n_dofs(), max(assembly2_->fe()->n_dofs(), assembly3_->fe()->n_dofs())));
+            max(assembly1_->fe_->n_dofs(), max(assembly2_->fe_->n_dofs(), assembly3_->fe_->n_dofs())));
 
     initialize_assembly_objects();
 }
@@ -576,13 +576,13 @@ void TransportDG<Model>::calculate_concentration_matrix()
         switch (cell.dim())
         {
         case 1:
-            n_dofs = assembly1_->fe()->n_dofs();
+            n_dofs = assembly1_->fe_->n_dofs();
             break;
         case 2:
-            n_dofs = assembly2_->fe()->n_dofs();
+            n_dofs = assembly2_->fe_->n_dofs();
             break;
         case 3:
-            n_dofs = assembly3_->fe()->n_dofs();
+            n_dofs = assembly3_->fe_->n_dofs();
             break;
         }
 
@@ -772,13 +772,13 @@ void TransportDG<Model>::update_after_reactions(bool solution_changed)
             switch (cell.dim())
             {
             case 1:
-                n_dofs = assembly1_->fe()->n_dofs();
+                n_dofs = assembly1_->fe_->n_dofs();
                 break;
             case 2:
-                n_dofs = assembly2_->fe()->n_dofs();
+                n_dofs = assembly2_->fe_->n_dofs();
                 break;
             case 3:
-                n_dofs = assembly3_->fe()->n_dofs();
+                n_dofs = assembly3_->fe_->n_dofs();
                 break;
             }
 
