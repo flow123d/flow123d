@@ -306,17 +306,6 @@ private:
 	void set_boundary_conditions();
 
 	/**
-	 * @brief Calculates the velocity field on a given @p dim dimensional cell.
-	 *
-	 * @param cell     The cell.
-	 * @param velocity The computed velocity field (at quadrature points).
-	 * @param fv       The FEValues class providing the quadrature points
-	 *                 and the shape functions for velocity.
-	 */
-	template<unsigned int dim>
-	void calculate_velocity(const ElementAccessor<3> &cell, std::vector<arma::vec3> &velocity, FEValuesBase<dim,3> &fv);
-
-	/**
 	 * @brief Calculates the dispersivity (diffusivity) tensor from the velocity field.
 	 *
 	 * @param K        The computed dispersivity tensor.
@@ -341,10 +330,6 @@ private:
 
 	/// Initialize AssemblyDG object off all dimension
 	void initialize_assembly_objects();
-
-	/// Return AssemblyDG object of appropriate dim
-	template<unsigned int dim>
-	inline std::shared_ptr<AssemblyDG<dim, Model>> assembly();
 
 
 	/// @name Physical parameters

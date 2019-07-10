@@ -725,25 +725,6 @@ void TransportDG<Model>::set_boundary_conditions()
 
 
 template<class Model>
-template<unsigned int dim>
-void TransportDG<Model>::calculate_velocity(const ElementAccessor<3> &cell, 
-                                            vector<arma::vec3> &velocity, 
-                                            FEValuesBase<dim,3> &fv)
-{
-    ASSERT_EQ(cell->dim(), dim).error("Element dimension mismatch!");
-
-    velocity.resize(fv.n_points());
-    arma::mat map_mat = assembly<dim>()->mapping()->element_map(cell);
-    vector<arma::vec3> point_list;
-    point_list.resize(fv.n_points());
-    for (unsigned int k=0; k<fv.n_points(); k++)
-    	point_list[k] = assembly<dim>()->mapping()->project_unit_to_real(RefElement<dim>::local_to_bary(fv.get_quadrature()->point(k)), map_mat);
-    Model::velocity_field_ptr_->value_list(point_list, cell, velocity);
-}
-
-
-
-template<class Model>
 void TransportDG<Model>::set_initial_condition()
 {
     START_TIMER("set_init_cond");
@@ -834,13 +815,6 @@ void TransportDG<Model>::initialize_assembly_objects()
     for (unsigned int i=0; i<multidim_assembly_.size(); ++i)
     	multidim_assembly_[i]->initialize();
 }
-
-template<class Model>
-template<unsigned int dim>
-std::shared_ptr<AssemblyDG<dim, Model>> TransportDG<Model>::assembly() {
-    return std::dynamic_pointer_cast<AssemblyDG<dim, Model>>(multidim_assembly_[dim-1]);
-}
-
 
 
 
