@@ -135,6 +135,16 @@ HM_Iterative::EqData::EqData()
                      .input_default("0.0")
                      .flags_add(FieldFlag::in_rhs);
     
+    *this += density.name("fluid_density")
+                     .units(UnitSI().kg().m(-3))
+                     .input_default("0.0")
+                     .flags_add(FieldFlag::in_rhs);
+    
+    *this += gravity.name("gravity")
+                     .units(UnitSI().m().s(-2))
+                     .input_default("9.81")
+                     .flags_add(FieldFlag::in_rhs);
+    
     *this += beta.name("relaxation_beta")
                      .units(UnitSI().dimensionless())
                      .flags(FieldFlag::equation_external_output);
@@ -332,7 +342,7 @@ void HM_Iterative::zero_time_step()
     update_potential();
     mechanics_->zero_time_step();
     
-    copy_field(flow_->output_fields().field_ele_pressure, *data_.old_pressure_ptr_);
+    update_field_from_mh_dofhandler(flow_->get_mh_dofhandler(), *data_.old_pressure_ptr_);
     update_field_from_mh_dofhandler(flow_->get_mh_dofhandler(), *data_.old_iter_pressure_ptr_);
     update_div_from_field_fe(*mechanics_->data().output_field_ptr, *data_.div_u_ptr_);
 }
@@ -397,8 +407,10 @@ void HM_Iterative::update_potential()
         for ( auto side : ele.side_range() )
         {
             double alpha = data_.alpha.value(side.side()->centre(), elm);
+            double density = data_.density.value(side.side()->centre(), elm);
+            double gravity = data_.gravity.value(side.side()->centre(), elm);
             double pressure = flow_->get_mh_dofhandler().side_scalar(*side.side());
-            double potential = -alpha*pressure;
+            double potential = -alpha*density*gravity*pressure;
         
             if (ele.is_own())
             {

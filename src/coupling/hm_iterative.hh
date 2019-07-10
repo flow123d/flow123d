@@ -54,8 +54,9 @@ public:
         
         void initialize(Mesh &mesh);
         
-        /// Biot coefficient.
-        Field<3, FieldValue<3>::Scalar> alpha;
+        Field<3, FieldValue<3>::Scalar> alpha;   ///< Biot coefficient.
+        Field<3, FieldValue<3>::Scalar> density; ///< Density of fluid.
+        Field<3, FieldValue<3>::Scalar> gravity; ///< Standard gravity.
         Field<3, FieldValue<3>::Scalar> beta;
         
         /// Potential -alpha*pressure whose gradient is passed to mechanics as additional load.
