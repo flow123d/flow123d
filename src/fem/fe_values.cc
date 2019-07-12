@@ -19,6 +19,7 @@
  */
 
 #include "fem/mapping.hh"
+#include "fem/mapping_p1.hh"
 #include "quadrature/quadrature.hh"
 #include "fem/finite_element.hh"
 #include "fem/fe_values.hh"
@@ -138,7 +139,7 @@ FEValuesBase<dim,spacedim>::~FEValuesBase() {
 template<unsigned int dim, unsigned int spacedim>
 void FEValuesBase<dim,spacedim>::allocate(Mapping<dim,spacedim> & _mapping,
         Quadrature<dim> & _quadrature,
-        const FiniteElement<dim> & _fe,
+        FiniteElement<dim> & _fe,
         UpdateFlags _flags)
 {
     // For FEVector and FETensor check number of components.
@@ -543,7 +544,7 @@ void FEValues<dim,spacedim>::reinit(ElementAccessor<3> & cell)
 
 
 Mixed<FEValues> mixed_fe_values(
-        Mixed<Mapping> &mapping,
+        Mixed<MappingP1> &mapping,
         Mixed<Quadrature> &quadrature,
         Mixed<FiniteElement> &fe,
         UpdateFlags flags)

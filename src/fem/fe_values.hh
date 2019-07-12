@@ -37,6 +37,7 @@ template<unsigned int dim> class Quadrature;
 template<unsigned int dim> class FiniteElement;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim, unsigned int spacedim> class Mapping;
+template<unsigned int dim, unsigned int spacedim> class MappingP1;
 
 struct MappingInternalData;
 
@@ -534,6 +535,9 @@ class FEValues : public FEValuesBase<dim,spacedim>
 {
 public:
 
+    /// Default invalid constructor.
+	FEValues() {}
+
 	/**
 	 * @brief Constructor.
 	 *
@@ -562,7 +566,7 @@ public:
 
 
 Mixed<FEValues> mixed_fe_values(
-        Mixed<Mapping> &mapping,
+        Mixed<MappingP1> &mapping,
         Mixed<Quadrature> &quadrature,
         Mixed<FiniteElement> &fe,
         UpdateFlags flags);

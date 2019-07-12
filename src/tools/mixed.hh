@@ -38,6 +38,16 @@ class Mixed : public _MixedBase<T> {
  *
  */
 public:
+    template < template<Dim...> class TT>
+    static Mixed<T> cast_to_parent_template(const Mixed<TT> &other)
+    {
+        return Mixed<T>(
+        		dynamic_cast<const T<0> &>(other.get<0>()),
+				dynamic_cast<const T<1> &>(other.get<1>()),
+				dynamic_cast<const T<2> &>(other.get<2>()),
+				dynamic_cast<const T<3> &>(other.get<3>()));
+    }
+
     Mixed(const T<0> &p0,const T<1> &p1,const T<2> &p2,const T<3> &p3)
     : _MixedBase<T>(p0, p1, p2, p3)
     {}
