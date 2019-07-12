@@ -7,6 +7,7 @@
 #include <mesh_constructor.hh>
 #include "fem/dofhandler.hh"
 #include "fem/dh_cell_accessor.hh"
+#include "tools/mixed.hh"
 
 
 
@@ -34,11 +35,8 @@ TEST(DOFHandler, test_all) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     Mesh * mesh = mesh_full_constructor("{mesh_file=\"fem/small_mesh.msh\"}");
     
-    FE_P<0> fe0(1);
-    FE_P<1> fe1(1);
-    FE_P<2> fe2(1);
-    FE_P<3> fe3(1);
-    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, &fe0, &fe1, &fe2, &fe3);
+    MixedPtr<FE_P> fe(1);
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, fe);
     DOFHandlerMultiDim dh(*mesh);
     dh.distribute_dofs(ds);
     
@@ -105,11 +103,8 @@ TEST(DOFHandler, test_all) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     Mesh * mesh = mesh_full_constructor("{mesh_file=\"fem/small_mesh_junction.msh\"}");
     
-    FE_P<0> fe0(1);
-    FE_P<1> fe1(1);
-    FE_P<2> fe2(1);
-    FE_P<3> fe3(1);
-    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, &fe0, &fe1, &fe2, &fe3);
+    MixedPtr<FE_P> fe(1);
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, fe);
     DOFHandlerMultiDim dh(*mesh);
     dh.distribute_dofs(ds);
     
@@ -175,15 +170,17 @@ TEST(DOFHandler, test_rt)
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     Mesh * mesh = mesh_full_constructor("{mesh_file=\"fem/small_mesh_junction.msh\"}");
 
-    FE_RT0<0> fe0;
-    FE_RT0<1> fe1;
-    FE_RT0<2> fe2;
-    FE_RT0<3> fe3;
-    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, &fe0, &fe1, &fe2, &fe3);
+    MixedPtr<FE_RT0> fe;
+    std::cout << "1" << std::endl;
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, fe);
+    std::cout << "2" << std::endl;
     DOFHandlerMultiDim dh(*mesh);
+    std::cout << "3" << std::endl;
     dh.distribute_dofs(ds);
+    std::cout << "4" << std::endl;
 
      EXPECT_EQ( 17, dh.n_global_dofs() );
+     std::cout << "3" << std::endl;
 
     dh.print();
 
@@ -219,11 +216,8 @@ TEST(DHAccessors, dh_cell_accessors) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     Mesh * mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
 
-    FE_P<0> fe0(1);
-    FE_P<1> fe1(1);
-    FE_P<2> fe2(1);
-    FE_P<3> fe3(1);
-    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, &fe0, &fe1, &fe2, &fe3);
+    MixedPtr<FE_P> fe(1);
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, fe);
     DOFHandlerMultiDim dh(*mesh);
     dh.distribute_dofs(ds);
     auto el_ds = mesh->get_el_ds();
