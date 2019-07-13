@@ -251,6 +251,24 @@ void FESystem<dim>::compute_node_matrix()
 
 
 
+template<unsigned int dim>
+std::vector<unsigned int> FESystem<dim>::fe_dofs(unsigned int fe_index)
+{
+    auto fs = dynamic_cast<FESystemFunctionSpace *>(this->function_space_.get());
+    std::vector<unsigned int> fe_dof_indices;
+    
+    for (unsigned int i=0; i<fs->dof_indices().size(); i++)
+    {
+        if (fs->dof_indices()[i].fe_index == fe_index)
+            fe_dof_indices.push_back(i);
+    }
+    
+    return fe_dof_indices;
+}
+
+
+
+
 
 
 

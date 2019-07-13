@@ -142,6 +142,9 @@ public:
     const std::vector<std::shared_ptr<FiniteElement<dim> > > &fe()
     { return fe_; }
     
+    /// Return dof indices belonging to given sub-FE.
+    std::vector<unsigned int> fe_dofs(unsigned int fe_index);
+    
 
 private:
 
