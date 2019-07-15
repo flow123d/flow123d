@@ -187,7 +187,8 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record in
 : ConcentrationTransportBase(init_mesh, in_rec),
   is_mass_diag_changed(false),
   input_rec(in_rec),
-  sources_corr(nullptr)
+  sources_corr(nullptr),
+  changed_(true)
 {
 	START_TIMER("ConvectionTransport");
 	this->eq_data_ = &data_;
@@ -589,7 +590,7 @@ bool ConvectionTransport::evaluate_time_constraint(double& time_constraint)
     bool cfl_changed = false;
     
     // if FLOW or DATA changed ---------------------> recompute transport matrix
-    if (velocity_last_time_ > transport_matrix_time)
+    if (changed_)
     {
         create_transport_matrix_mpi();
         is_convection_matrix_scaled=false;
@@ -628,7 +629,7 @@ bool ConvectionTransport::evaluate_time_constraint(double& time_constraint)
     }
     
     // although it does not influence CFL, compute BC so the full system is assembled
-    if ( (velocity_last_time_ > transport_bc_time)
+    if ( changed_
         || data_.porosity.changed()
         || data_.water_content.changed()
         || data_.bc_conc.changed() )
@@ -641,6 +642,7 @@ bool ConvectionTransport::evaluate_time_constraint(double& time_constraint)
     
     // return time constraint
     time_constraint = cfl_max_step;
+    changed_ = false;
     return cfl_changed;
 }
 
