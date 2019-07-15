@@ -18,7 +18,6 @@
 #ifndef ASSEMBLY_DG_HH_
 #define ASSEMBLY_DG_HH_
 
-#include "transport/advection_diffusion_model.hh"
 #include "transport/transport_dg.hh"
 #include "fem/mapping_p1.hh"
 #include "fem/fe_p.hh"
@@ -66,12 +65,12 @@ public:
     typedef typename TransportDG<Model>::EqData EqDataDG;
 
     /// Constructor.
-    AssemblyDG(std::shared_ptr<EqDataDG> data, AdvectionDiffusionModel &adm)
+    AssemblyDG(std::shared_ptr<EqDataDG> data, TransportDG<Model> &model)
     : fe_(new FE_P_disc<dim>(data->dg_order)), fe_low_(new FE_P_disc<dim-1>(data->dg_order)),
       fe_rt_(new FE_RT0<dim>), fe_rt_low_(new FE_RT0<dim-1>),
       quad_(new QGauss<dim>(2*data->dg_order)), quad_low_(new QGauss<dim-1>(2*data->dg_order)),
       mapping_(new MappingP1<dim,3>), mapping_low_(new MappingP1<dim-1,3>),
-      model_(adm), data_(data), fv_rt_(*mapping_, *quad_, *fe_rt_, update_values | update_gradients),
+      model_(model), data_(data), fv_rt_(*mapping_, *quad_, *fe_rt_, update_values | update_gradients),
       fe_values_(*mapping_, *quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points),
       fv_rt_vb_(nullptr), fe_values_vb_(nullptr),
       fe_values_side_(*mapping_, *quad_low_, *fe_, update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points),
@@ -627,12 +626,6 @@ public:
             // skip edges lying not on the boundary
             if (edg->side(0)->cond() == NULL) continue;
 
-            if (edg->side(0)->dim() != dim-1)
-            {
-                if (edg->side(0)->cond() != nullptr) ++data_->loc_b_;
-                continue;
-            }
-
             SideIter side = edg->side(0);
             ElementAccessor<3> elm = model_.mesh()->element_accessor( side->element().idx() );
             ElementAccessor<3> ele_acc = side->cond()->element_accessor();
@@ -846,7 +839,7 @@ private:
     MappingP1<dim-1,3> *mapping_low_;   ///< Auxiliary mapping of reference elements (dim-1).
 
     /// Reference to model (we must use common ancestor of concentration and heat model)
-    AdvectionDiffusionModel &model_;
+    TransportDG<Model> &model_;
 
     /// Data object shared with TransportDG
     std::shared_ptr<EqDataDG> data_;
