@@ -21,11 +21,7 @@
 
 #include <armadillo>
 #include <vector>
-#include "fields/field_fe.hh"
 
-class SubstanceList;
-class Balance;
-class TimeGovernor;
 
 namespace IT = Input::Type;
 
@@ -163,12 +159,6 @@ public:
 	virtual void compute_sources_sigma(const std::vector<arma::vec3> &point_list,
 			const ElementAccessor<3> &ele_acc,
 			std::vector<std::vector<double> > &sources_sigma) = 0;
-
-    /// Returns number of substances.
-    virtual unsigned int n_substances() = 0;
-
-    /// Return substance indices used in balance.
-    virtual const vector<unsigned int> &get_subst_idx() = 0;
 
 	/// Destructor.
 	virtual ~AdvectionDiffusionModel() {};

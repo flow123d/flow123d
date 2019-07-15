@@ -234,14 +234,14 @@ public:
 	}
 
     /// Returns number of transported substances.
-    inline unsigned int n_substances() override
+    inline unsigned int n_substances()
     { return 1; }
 
     /// Returns reference to the vector of substance names.
     inline SubstanceList &substances()
     { return substances_; }
 
-    const vector<unsigned int> &get_subst_idx() override
+    const vector<unsigned int> &get_subst_idx()
 	{ return subst_idx; }
 
     std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> velocity_field_ptr() const {
