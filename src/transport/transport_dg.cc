@@ -711,21 +711,21 @@ void TransportDG<Model>::output_region_statistics()
     // output values to yaml file
     if (Model::mesh_->get_el_ds()->myp() == 0)
     {
-        reg_stat_stream << " - time: " << this->time().t() << endl;
+
         for (unsigned int r=0; r<nreg; r++)
         {
             if (!active_region[r]) continue;
-            
-            reg_stat_stream << "   - region: " << Model::mesh_->region_db().get_label(r) << endl
-                            << "     area: " << r_area[r] << endl
-                            << "     average: [ ";
+            reg_stat_stream << " - time: " << this->time().t() << endl;
+            reg_stat_stream << "   region: " << Model::mesh_->region_db().get_label(r) << endl
+                            << "   area: " << r_area[r] << endl
+                            << "   average: [ ";
             for (auto v : r_avg[r]) reg_stat_stream << v / r_area[r];
             reg_stat_stream << " ]" << endl;
             
-            reg_stat_stream << "     min: [ ";
+            reg_stat_stream << "   min: [ ";
             for (auto v : r_min[r]) reg_stat_stream << v;
             reg_stat_stream << " ]" << endl;
-            reg_stat_stream << "     max: [ ";
+            reg_stat_stream << "   max: [ ";
             for (auto v : r_max[r]) reg_stat_stream << v;
             reg_stat_stream << " ]" << endl;
         }
