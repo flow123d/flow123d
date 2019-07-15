@@ -244,20 +244,8 @@ public:
     const vector<unsigned int> &get_subst_idx() override
 	{ return subst_idx; }
 
-    std::shared_ptr<Balance> balance() const override {
-        return this->balance_;
-    }
-
-    std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> velocity_field_ptr() const override {
+    std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> velocity_field_ptr() const {
         return this->velocity_field_ptr_;
-    }
-
-    Mesh *mesh() const override {
-        return this->mesh_;
-    }
-
-    TimeGovernor *tg() const override {
-        return this->time_;
     }
 
 

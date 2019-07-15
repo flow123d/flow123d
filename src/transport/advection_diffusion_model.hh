@@ -170,18 +170,6 @@ public:
     /// Return substance indices used in balance.
     virtual const vector<unsigned int> &get_subst_idx() = 0;
 
-    /// Return balance object.
-    virtual std::shared_ptr<Balance> balance() const = 0;
-
-    /// Return velocity field object.
-    virtual std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> velocity_field_ptr() const = 0;
-
-    /// Return mesh object.
-    virtual Mesh *mesh() const = 0;
-
-    /// Return time object.
-    virtual TimeGovernor *tg() const = 0;
-
 	/// Destructor.
 	virtual ~AdvectionDiffusionModel() {};
 

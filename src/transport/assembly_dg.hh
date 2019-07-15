@@ -627,7 +627,7 @@ public:
             if (edg->side(0)->cond() == NULL) continue;
 
             SideIter side = edg->side(0);
-            ElementAccessor<3> elm = model_.mesh()->element_accessor( side->element().idx() );
+            ElementAccessor<3> elm = model_.mesh().element_accessor( side->element().idx() );
             ElementAccessor<3> ele_acc = side->cond()->element_accessor();
 
             arma::uvec bc_type;
@@ -688,7 +688,7 @@ public:
                                     + data_->gamma[sbi][side->cond_idx()]*fe_values_side_.shape_value(i,k))*fe_values_side_.JxW(k);
                         }
                     }
-                    if (model_.tg()->tlevel() > 0)
+                    if (model_.time().tlevel() > 0)
                         for (unsigned int i=0; i<ndofs_; i++)
                             local_flux_balance_rhs_ -= local_rhs_[i];
                 }
