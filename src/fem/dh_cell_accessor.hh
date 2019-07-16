@@ -22,6 +22,7 @@
 #include "mesh/accessors.hh"
 #include "mesh/side_impl.hh"
 #include "mesh/neighbours.h"
+#include "fem/finite_element.hh"
 #include "fem/dofhandler.hh"
 
 class DHCellSide;
@@ -48,7 +49,7 @@ public:
      * DOF cell accessor.
      */
 	DHCellAccessor(const DOFHandlerMultiDim *dof_handler, unsigned int loc_idx)
-    : dof_handler_(dof_handler), loc_ele_idx_(loc_idx)
+    : dof_handler_(dof_handler), loc_ele_idx_(loc_idx), dof_indices_(dof_handler->max_elem_dofs())
     {}
 
     /// Return local index to element (index of DOF handler).
@@ -74,11 +75,11 @@ public:
      *
      * @param indices Vector of dof indices on the cell.
      */
-    unsigned int get_dof_indices(std::vector<int> &indices) const
+    unsigned int get_dof_indices(std::vector<LongIdx> &indices) const
     { return dof_handler_->get_dof_indices( *this, indices ); }
 
     /**
-     * @brief Returns the indices of dofs associated to the cell on the local process.
+     * @brief Returns the local indices of dofs associated to the cell on the local process.
      *
      * @param indices Array of dof indices on the cell.
      */
@@ -97,6 +98,11 @@ public:
     /// Return dimension of element appropriate to cell.
     inline unsigned int dim() const {
     	return elm().dim();
+    }
+
+    /// Return DOF handler
+    inline const DOFHandlerMultiDim *dh() {
+        return dof_handler_;
     }
 
     /**
@@ -124,6 +130,13 @@ public:
     	return (loc_ele_idx_ < dof_handler_->el_ds_->lsize());
     }
 
+    /// Create new accessor with same local idx and given DOF handler. Actual and given DOF handler must be create on same Mesh.
+    DHCellAccessor cell_with_other_dh(const DOFHandlerMultiDim * dh) {
+    	ASSERT( (dh->mesh()->n_nodes() == dof_handler_->mesh()->n_nodes()) && (dh->mesh()->n_elements() == dof_handler_->mesh()->n_elements()) )
+    			.error("Incompatible DOF handlers!");
+    	return DHCellAccessor(dh, loc_ele_idx_);
+    }
+
     /// Iterates to next local element.
     inline void inc() {
         loc_ele_idx_++;
@@ -134,11 +147,14 @@ public:
     	return (loc_ele_idx_ == other.loc_ele_idx_);
     }
 
+
 private:
     /// Pointer to the DOF handler owning the element.
     const DOFHandlerMultiDim * dof_handler_;
     /// Index into DOFHandler::el_4_loc array.
     unsigned int loc_ele_idx_;
+    /// Vector of DOF indices, it is allocate in constructor
+    mutable std::vector<int> dof_indices_;
 
     friend class DHCellSide;
     friend class DHEdgeSide;
@@ -207,7 +223,7 @@ public:
 
     /// Comparison of accessors.
     bool operator==(const DHCellSide& other) {
-    	return (side_idx_ == other.side_idx_);
+    	return (dh_cell_accessor_ == other.dh_cell_accessor_) && (side_idx_ == other.side_idx_);
     }
 
 private:

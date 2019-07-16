@@ -163,12 +163,12 @@ void ElementDataCache<T>::print_binary_all(ostream &out_stream, bool print_data_
 
 
 template <typename T>
-void ElementDataCache<T>::print_all_yaml(ostream &out_stream, unsigned int precision)
+void ElementDataCache<T>::print_yaml_subarray(ostream &out_stream, unsigned int precision, unsigned int begin, unsigned int end)
 {
     out_stream << "[ ";
 	std::vector<T> &vec = *( this->data_[0].get() );
-    for(unsigned int idx = 0; idx < this->n_values_; idx++) {
-        if (idx != 0) out_stream << " , ";
+    for(unsigned int idx = begin; idx < end; idx++) {
+        if (idx != begin) out_stream << " , ";
         unsigned int vec_pos = n_comp_ * idx; // position of element value in data cache
         switch (this->n_comp_) {
             case NumCompValueType::N_SCALAR: {
@@ -216,7 +216,7 @@ void ElementDataCache<T>::get_min_max_range(double &min, double &max)
  */
 template <typename T>
 void ElementDataCache<T>::store_value(unsigned int idx, const T * value) {
-    ASSERT_LT_DBG(idx, this->n_values_);
+    ASSERT_LT_DBG(idx, this->n_values_)(this->field_name_);
     std::vector<T> &vec = *( this->data_[0].get() );
     unsigned int vec_idx = idx*this->n_comp_;
     for(unsigned int i = 0; i < this->n_comp_; i++, vec_idx++) {

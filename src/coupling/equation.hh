@@ -197,20 +197,6 @@ public:
     }
 
     /**
-     * Child class have to implement getter for sequential solution vector.
-     * DEPRECATED
-     */
-    virtual void get_solution_vector(double * &vector, unsigned int &size)
-    { OLD_ASSERT(0, "If using, needs to be implemented in ancestors!"); };
-
-    /**
-     * Child class have to implement getter for parallel solution vector.
-     * DEPRECATED
-     */
-    virtual void get_parallel_solution_vector(Vec &vector)
-    { OLD_ASSERT(0, "If using, needs to be implemented in ancestors!"); };
-
-    /**
      * @brief Write computed fields.
      */
     virtual void output_data() {

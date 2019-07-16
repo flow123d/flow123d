@@ -97,7 +97,7 @@ public:
      * Print stored values in the YAML format (using JSON like arrays).
      * Used for output of observe values.
      */
-    virtual void print_all_yaml(ostream &out_stream, unsigned int precision) = 0;
+    virtual void print_yaml_subarray(ostream &out_stream, unsigned int precision, unsigned int begin, unsigned int end) = 0;
 
     /**
      * Find minimal and maximal range of stored data

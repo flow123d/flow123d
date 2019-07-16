@@ -26,6 +26,7 @@
 #include "input/accessors_forward.hh"
 #include "coupling/equation.hh"
 #include "flow/darcy_flow_interface.hh"
+#include "mechanics/elasticity.hh"
 
 class Mesh;
 class FieldCommon;
@@ -38,20 +39,25 @@ class RichardsLMH;
  * Flow and mechanics are solved separately and within each iteration the coupling terms are updated.
  * Here we use the fixed-stress splitting [see Mikelic&Wheeler, Comput. Geosci. 17(3), 2013] which uses
  * a tuning parameter "beta" to speed up the convergence.
- * 
- * TODO: The class is currently inherited from DarcyFlowInterface in order to provide MH_DofHandler for
- * transport processes. This should be changed as soon as we replace MH_DofHandler by fields for velocity
- * and pressure.
  */
 class HM_Iterative : public DarcyFlowInterface {
 public:
+    
+    class EqData : public FieldSet
+    {
+    public:
+        EqData();
+        
+    };
+    
     /// Define input record.
     static const Input::Type::Record & get_input_type();
 
     HM_Iterative(Mesh &mesh, Input::Record in_record);
+    void initialize() override;
     void zero_time_step() override;
     void update_solution() override;
-    const MH_DofHandler & get_mh_dofhandler() override;
+    double last_t() override;
     ~HM_Iterative();
 
 private:
@@ -62,7 +68,9 @@ private:
     std::shared_ptr<RichardsLMH> flow_;
 
     /// solute transport with chemistry through operator splitting
-    std::shared_ptr<EquationBase> mechanics_;
+    std::shared_ptr<Elasticity> mechanics_;
+    
+    EqData data_;
 
     /// Tuning parameter for iterative splitting.
     double beta_;

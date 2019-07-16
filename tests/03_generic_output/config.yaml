@@ -24,7 +24,7 @@ test_cases:
   memory_limit: 1300
   
 - files: 02_richards_nobalance.yaml
-  time_limit: 35
+  time_limit: 45
     
 # parallel VTK tests
 - files:
@@ -60,4 +60,9 @@ test_cases:
     - 52_darcy_fv_output_mesh_1d_parallel.yaml
     - 54_darcy_fv_output_mesh_2d_parallel.yaml
     - 56_darcy_fv_output_mesh_3d_parallel.yaml
+  proc: [2]
+
+# test of generic fields subdomain and region_id
+- files:
+    - 13_generic_fields
   proc: [2]

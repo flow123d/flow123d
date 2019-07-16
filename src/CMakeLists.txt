@@ -150,6 +150,7 @@ add_library(la_lib
     la/local_to_global_map.cc
     la/schur.cc
     la/linsys.cc
+    la/bddcml_wrapper.cc
     la/linsys_BDDC.cc
     la/linsys_PETSC.cc
     la/sparse_graph.cc
@@ -301,6 +302,7 @@ add_library(coupling_lib
     # fields/field_interpolated_p0.cc
     fields/table_function.cc
     fields/field_time_function.cc
+    fields/field_divide.cc
     fields/field_fe.cc
     fields/fe_value_handler.cc
     fields/surface_depth.cc
@@ -356,6 +358,8 @@ add_library(flow123d_lib
     transport/transport_dg.cc
     
     transport/substance.cc
+
+    mechanics/elasticity.cc
 
     coupling/hc_explicit_sequential.cc
     coupling/hm_iterative.cc

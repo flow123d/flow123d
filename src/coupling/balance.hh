@@ -281,18 +281,6 @@ public:
 			const std::vector<LongIdx> &dof_indices,
 			const std::vector<double> &values);
 
-	/**
-	 * Adds elements into matrix for computing source.
-	 * @param quantity_idx  Index of quantity.
-	 * @param region_idx    Index of bulk region.
-	 * @param dof_indices   Dof indices to be added.
-	 * @param values        Values to be added.
-	 */
-	void add_source_matrix_values(unsigned int quantity_idx,
-			unsigned int region_idx,
-			const std::vector<LongIdx> &dof_indices,
-			const std::vector<double> &values);
-    
     /**
      * Adds element into vector for computing mass.
      * @param quantity_idx  Index of quantity.
@@ -303,6 +291,20 @@ public:
             unsigned int region_idx,
             double value);
 
+    /**
+	 * Adds elements into matrix and vector for computing source.
+	 * @param quantity_idx  Index of quantity.
+	 * @param region_idx    Index of bulk region.
+	 * @param dof_indices   Local dof indices to be added.
+	 * @param mat_values    Values to be added into matrix.
+     * @param vec_values    Values to be added into vector.
+	 */
+	void add_source_values(unsigned int quantity_idx,
+			unsigned int region_idx,
+			const std::vector<LongIdx> &loc_dof_indices,
+			const std::vector<double> &mat_values,
+            const std::vector<double> &vec_values);
+    
 	/**
 	 * Adds element into vector for computing (outgoing) flux.
 	 * @param quantity_idx  Index of quantity.
@@ -314,18 +316,6 @@ public:
 	void add_flux_vec_value(unsigned int quantity_idx,
 			unsigned int boundary_idx,
 			double value);
-
-	/**
-	 * Adds elements into vector for computing source.
-	 * @param quantity_idx  Index of quantity.
-	 * @param region_idx    Index of bulk region.
-	 * @param dof_indices   Dof indices to be added.
-	 * @param values        Values to be added.
-	 */
-	void add_source_vec_values(unsigned int quantity_idx,
-			unsigned int region_idx,
-			const std::vector<LongIdx> &dof_values,
-			const std::vector<double> &values);
 
 	/// This method must be called after assembling the matrix for computing mass.
 	void finish_mass_assembly(unsigned int quantity_idx);
@@ -481,18 +471,6 @@ private:
     /// Vectors for calculation of mass (n_bulk_regions).
     Vec *region_mass_vec_;
 
-    /// Vectors for calculation of source (n_bulk_regions).
-    Vec *region_source_vec_;
-
-    /**
-     * Auxiliary matrix for transfer of quantities between boundary edges and regions
-     * (n_boundary_edges x n_boundary_regions).
-     */
-    Mat region_be_matrix_;
-
-    /// auxiliary vectors for summation of matrix columns
-    Vec ones_, ones_be_;
-
     /// Number of boundary region for each local boundary edge.
     std::vector<unsigned int> be_regions_;
 
@@ -506,7 +484,6 @@ private:
     std::vector<std::vector<double> > fluxes_in_;
     std::vector<std::vector<double> > fluxes_out_;
     std::vector<std::vector<double> > masses_;
-    std::vector<std::vector<double> > sources_;
     std::vector<std::vector<double> > sources_in_;
     std::vector<std::vector<double> > sources_out_;
 

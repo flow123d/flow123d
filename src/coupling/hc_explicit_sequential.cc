@@ -18,7 +18,7 @@
 
 #include "hc_explicit_sequential.hh"
 #include "flow/darcy_flow_interface.hh"
-//#include "flow/darcy_flow_mh_output.hh"
+#include "flow/darcy_flow_mh.hh"
 // TODO:
 // After having general default values:
 // make TransportNoting default for AdvectionProcessBase abstract
@@ -175,7 +175,9 @@ void HC_ExplicitSequential::advection_process_step(AdvectionData &pdata)
         // for simplicity we use only last velocity field
         if (pdata.velocity_changed) {
             //DBGMSG("velocity update\n");
-            pdata.process->set_velocity_field( water->get_mh_dofhandler() );
+        	std::dynamic_pointer_cast<DarcyMH>(water)->get_velocity_field()->local_to_ghost_data_scatter_begin();
+        	std::dynamic_pointer_cast<DarcyMH>(water)->get_velocity_field()->local_to_ghost_data_scatter_end();
+            pdata.process->set_velocity_field( std::dynamic_pointer_cast<DarcyMH>(water)->get_velocity_field() );
             pdata.velocity_changed = false;
         }
         if (pdata.process->time().tlevel() == 0) pdata.process->zero_time_step();

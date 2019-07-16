@@ -229,6 +229,18 @@ UpdateFlags FESystem<dim>::update_each(UpdateFlags flags)
     return f;
 }
 
+template<unsigned int dim>
+vector< arma::vec::fixed<dim+1> > FESystem<dim>::dof_points() const {
+    std::vector<arma::vec::fixed<dim+1>> points(20);
+    points.resize(0);
+    for (unsigned int i = 0; i < fe_.size(); i++)
+    {
+        auto fe_points = fe_[i]->dof_points();
+        points.insert(points.end(), fe_points.begin(), fe_points.end());
+    }
+    return points;
+}
+
 
 template<unsigned int dim>
 void FESystem<dim>::compute_node_matrix()
@@ -246,6 +258,24 @@ void FESystem<dim>::compute_node_matrix()
       
     offset += fe_[i]->n_dofs();
   }
+}
+
+
+
+
+template<unsigned int dim>
+std::vector<unsigned int> FESystem<dim>::fe_dofs(unsigned int fe_index)
+{
+    auto fs = dynamic_cast<FESystemFunctionSpace *>(this->function_space_.get());
+    std::vector<unsigned int> fe_dof_indices;
+    
+    for (unsigned int i=0; i<fs->dof_indices().size(); i++)
+    {
+        if (fs->dof_indices()[i].fe_index == fe_index)
+            fe_dof_indices.push_back(i);
+    }
+    
+    return fe_dof_indices;
 }
 
 

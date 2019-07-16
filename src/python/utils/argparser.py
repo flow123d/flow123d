@@ -5,6 +5,7 @@
 import argparse
 # ----------------------------------------------
 from scripts.core.base import System
+from loggers import printf
 from utils.events import Event
 
 
@@ -165,6 +166,7 @@ class RuntestArgs(ParserArgs):
      :type list              : bool
      :type dump              : str
      :type log               : str
+     :type verbosity         : printf.OutputVerbosity
 
      :type save_to_db        : bool
      :type random_output_dir : str
@@ -187,6 +189,7 @@ class RuntestArgs(ParserArgs):
         self.batch = None
         self.include = None
         self.exclude = None
+        self.verbosity = None
 
         self.cpu = None
         self.queue = None

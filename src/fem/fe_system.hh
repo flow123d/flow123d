@@ -73,6 +73,8 @@ public:
 
     const unsigned int dim() const override { return dim_; }
     
+    const std::vector<DofComponentData> &dof_indices() { return dof_indices_; }
+    
     virtual ~FESystemFunctionSpace() {};
 
 private:
@@ -137,8 +139,16 @@ public:
 
     UpdateFlags update_each(UpdateFlags flags) override;
     
+    /// Get barycentric coordinates of the points on the reference element associated with the dofs.
+    /// Used in BDDC for unknown reason.
+    virtual std::vector< arma::vec::fixed<dim+1> > dof_points() const;
+
+
     const std::vector<std::shared_ptr<FiniteElement<dim> > > &fe()
     { return fe_; }
+    
+    /// Return dof indices belonging to given sub-FE.
+    std::vector<unsigned int> fe_dofs(unsigned int fe_index);
     
 
 private:

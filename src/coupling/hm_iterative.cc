@@ -36,8 +36,8 @@ const it::Record & HM_Iterative::get_input_type() {
 		.declare_key("flow_equation", RichardsLMH::get_input_type(),
 		        it::Default::obligatory(),
 				"Flow equation, provides the velocity field as a result.")
-// 		.declare_key("mechanics_equation", Mechanics::get_input_type(),
-// 				"Mechanics, provides the displacement field.")
+		.declare_key("mechanics_equation", Elasticity::get_input_type(),
+				"Mechanics, provides the displacement field.")
         .declare_key( "iteration_parameter", it::Double(), it::Default("1"),
                 "Tuning parameter for iterative splitting. Its default value"
                 "corresponds to a theoretically optimal value with fastest convergence." )
@@ -57,6 +57,11 @@ const int HM_Iterative::registrar = Input::register_class< HM_Iterative, Mesh &,
                                     + HM_Iterative::get_input_type().size();
 
 
+HM_Iterative::EqData::EqData()
+{
+}
+
+                                    
 
 HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
 : DarcyFlowInterface(mesh, in_record)
@@ -65,18 +70,20 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
     using namespace Input;
 
     // setup flow equation
-    Record prim_eq = in_record.val<Record>("flow_equation");
+    Record flow_rec = in_record.val<Record>("flow_equation");
     // Need explicit template types here, since reference is used (automatically passing by value)
-    flow_ = std::make_shared<RichardsLMH>(*mesh_, prim_eq);
+    flow_ = std::make_shared<RichardsLMH>(*mesh_, flow_rec);
     flow_->initialize();
     std::stringstream ss; // print warning message with table of uninitialized fields
-    if ( FieldCommon::print_message_table(ss, "HM iterative") ) {
+    if ( FieldCommon::print_message_table(ss, "flow") ) {
         WarningOut() << ss.str();
     }
     
     // setup mechanics
-    // TODO: supply real equation
-    mechanics_ = std::make_shared<EquationBase>();
+    Record mech_rec = in_record.val<Record>("mechanics_equation");
+    mechanics_ = std::make_shared<Elasticity>(*mesh_, mech_rec);
+    mechanics_->data()["cross_section"].copy_from(flow_->data()["cross_section"]);
+    mechanics_->initialize();
     
     // read parameters controlling the iteration
     beta_ = in_record.val<double>("iteration_parameter");
@@ -84,15 +91,28 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
     max_it_ = in_record.val<unsigned int>("max_it");
     a_tol_ = in_record.val<double>("a_tol");
     r_tol_ = in_record.val<double>("r_tol");
+
+    this->eq_data_ = &data_;
     
-    this->eq_data_ = std::make_shared<FieldSet>().get();
     this->time_ = &flow_->time();
+    
+    // synchronize time marks of flow and mechanics
+    for (auto mark = TimeGovernor::marks().begin(flow_->mark_type()); mark != TimeGovernor::marks().end(flow_->mark_type()); ++mark )
+        TimeGovernor::marks().add( TimeMark(mark->time(), mechanics_->time().equation_fixed_mark_type()) );
+    for (auto mark = TimeGovernor::marks().begin(mechanics_->mark_type()); mark != TimeGovernor::marks().end(mechanics_->mark_type()); ++mark )
+        TimeGovernor::marks().add( TimeMark(mark->time(), flow_->time().equation_fixed_mark_type()) );
+}
+
+
+void HM_Iterative::initialize()
+{
 }
 
 
 void HM_Iterative::zero_time_step()
 {
     flow_->zero_time_step();
+    mechanics_->zero_time_step();
 }
 
 
@@ -108,18 +128,18 @@ void HM_Iterative::update_solution()
     {
         it++;
         
-        mechanics_->update_solution();
-        // TODO: pass displacement (divergence) to flow
         flow_->update_solution();
         // TODO: pass pressure to mechanics
+        mechanics_->update_solution();
+        // TODO: pass displacement (divergence) to flow
         // TODO: compute difference of iterates
     }
 }
 
 
-const MH_DofHandler & HM_Iterative::get_mh_dofhandler()
-{ 
-    return flow_->get_mh_dofhandler(); 
+double HM_Iterative::last_t()
+{
+    return flow_->last_t();
 }
 
 

@@ -2,17 +2,51 @@
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
 # ----------------------------------------------
-import shutil
 import importlib
-# ----------------------------------------------
+import shutil
+
 import scripts.comparisons.modules as modules
-from scripts.core.base import Paths, Printer
-from scripts.core.threads import PyPy, ExtendedThread, ComparisonMultiThread
+# ----------------------------------------------
+from loggers import printf
+from scripts.core.base import Paths
 from scripts.core.execution import BinExecutor, OutputMode
+from scripts.core.pypy import PyPy
+from scripts.core.returncode import RC, RC_OK
+from scripts.core.threads import ComparisonMultiThread, ExtendedThread
 from scripts.prescriptions import AbstractRun
 from scripts.yamlc import REF_OUTPUT_DIR
-from scripts.core.returncode import RC, RC_NONE, RC_OK, RC_BROKEN
+
+
 # ----------------------------------------------
+
+# this format is used if we are not running in TTY (meaning Jenkins or tee)
+# this line will be printed once
+_start_format = (
+    'exec [{monitor.pypy.extra[index]:02d} of {monitor.pypy.extra[runner].total:02d}] '
+    '{monitor.pypy} '
+    '[{monitor.process_runtime_formatted}] '
+    '[{monitor.process_memory_usage_formatted}]'
+)
+
+# this format is used if we are running in TTY (meaning user, or better terminal)
+# this line will be updated over and over, until process ends (or is terminated)
+_update_format = (
+    '{monitor.animation} [{monitor.pypy.extra[index]:02d} of {monitor.pypy.extra[runner].total:02d}] '
+    '{monitor.pypy} '
+    '[{monitor.process_runtime_formatted}] '
+    '[{monitor.process_memory_usage_formatted}]'
+)
+
+# this format will be used in both TTY and non TTY mode
+# it'll be printed always
+#   in TTY mode it will rewrite last _update_format line
+#   in non TTY mode this line will be appended
+_complete_format = (
+    'done [{monitor.pypy.extra[index]:02d} of {monitor.pypy.extra[runner].total:02d}] '
+    '{monitor.pypy} '
+    '[{monitor.process_runtime_formatted}] '
+    '[{monitor.process_memory_used_formatted}] exitcode {monitor.pypy.returncode}'
+)
 
 
 class LocalRun(AbstractRun):
@@ -24,7 +58,6 @@ class LocalRun(AbstractRun):
 
     def __init__(self, case):
         super(LocalRun, self).__init__(case)
-        self.progress = False
 
     @classmethod
     def get_module(cls, compare_method):
@@ -34,20 +67,21 @@ class LocalRun(AbstractRun):
         try:
             package = importlib.import_module('{}.{}'.format(cls.module_path, compare_method))
             return getattr(package, compare_method)()
-        except: return None
+        except:
+            return None
 
     def create_pypy(self, arg_rest):
         executor = BinExecutor(self.get_command(arg_rest))
         pypy = PyPy(executor)
+
+        if printf.tty():
+            pypy.monitor.update_format = _update_format
+        else:
+            pypy.monitor.start_format = _start_format
+
+        pypy.monitor.color_complete_format = _complete_format
         pypy.case = self.case
-
-        pypy.limit_monitor.set_limits(self.case)
-        pypy.end_monitor.deactivate()
-
-        cmd = pypy.escaped_command.replace(Paths.flow123d_root()+'/', '') if self.progress else pypy.escaped_command
-        pypy.start_monitor.format = 'Running: {}\n{}'.format(self.case, cmd)
-
-        pypy.progress = self.progress
+        pypy.monitor.set_limits(self.case)
         pypy.executor.output = OutputMode.file_write(self.case.fs.job_output)
         pypy.full_output = pypy.executor.output.filename
 
@@ -58,15 +92,17 @@ class LocalRun(AbstractRun):
         return pypy
 
     def create_comparisons(self):
-        comparisons = ComparisonMultiThread(self.case.fs.ndiff_log)
-        comparisons.thread_name_property = True
+        comparisons = ComparisonMultiThread(
+            self.case.fs.ndiff_log,
+            progress=printf.verbosity() is printf.OutputVerbosity.FULL
+        )
 
         for check_rule in self.case.check_rules:
             method = str(list(check_rule.keys())[0])
             module = self.get_module(method)
             comp_data = check_rule[method]
             if not module:
-                Printer.all.err('Warning! No module for check_rule method "{}"', method)
+                printf.error('Warning! No module for check_rule method "{}"', method)
                 continue
 
             pairs = self._get_ref_output_files(comp_data)
@@ -77,31 +113,30 @@ class LocalRun(AbstractRun):
                     # exec comparison or inplace comparison
                     if issubclass(module.__class__, modules.ExecComparison):
                         command = module.get_command(*pair, **comp_data)
-                        pm = PyPy(BinExecutor(command), progress=True)
+                        pm = PyPy(BinExecutor(command))
                         pm.executor.output = OutputMode.variable_output()
                     else:
                         module = self.get_module(method)
                         module.prepare(*pair, **comp_data)
-                        pm = PyPy(module, progress=True)
+                        pm = PyPy(module)
                         pm.executor.output = OutputMode.dummy_output()
-                        pm.error_monitor.deactivate()
+                        # pm.error_monitor.deactivate()
 
                     # if we fail, set error to 13
                     pm.custom_error = 13
-                    pm.start_monitor.deactivate()
-                    pm.end_monitor.deactivate()
-                    pm.progress_monitor.deactivate()
-                    pm.limit_monitor.deactivate()  # TODO: maybe some time limit would be useful
-                    pm.output_monitor.policy = pm.output_monitor.POLICY_BATCH_OR_ERROR
-
-                    pm.error_monitor.message = 'Comparison using method {} failed!'.format(method)
-                    pm.error_monitor.indent = 1
+                    # TODO: maybe some time limit would be useful
                     pm.full_output = self.case.fs.ndiff_log
 
                     path = Paths.path_end_until(pair[0], REF_OUTPUT_DIR)
                     test_name = Paths.basename(Paths.dirname(Paths.dirname(self.case.fs.ref_output)))
                     size = Paths.filesize(pair[0], True)
                     pm.name = '{}: {} ({})'.format(test_name, path, size)
+
+                    if printf.verbosity() is printf.OutputVerbosity.FULL:
+                        pm.monitor.color_complete_format = '{}: {} ({})'.format(test_name, path, size)
+                    else:
+                        pm.monitor.error_complete_format = '{}: {} ({})'.format(test_name, path, size)
+
                     comparisons.add(pm)
 
         return comparisons

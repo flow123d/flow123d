@@ -55,24 +55,24 @@ auto GenericField<spacedim>::region_id(Mesh &mesh) -> IndexField {
 
 template <int spacedim>
 auto GenericField<spacedim>::subdomain(Mesh &mesh) -> IndexField {
-	MixedPtr<FE_P_disc> fe(0);
-    DOFHandlerMultiDim dh_par(mesh);
+    MixedPtr<FE_P_disc> fe(0);
+    std::shared_ptr<DOFHandlerMultiDim> dh = std::make_shared<DOFHandlerMultiDim>(mesh);
     std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( &mesh, fe);
-    dh_par.distribute_dofs(ds);
-    std::shared_ptr<DOFHandlerMultiDim> dh = dh_par.sequential();
+    dh->distribute_dofs(ds);
 
 	auto field_subdomain_data = mesh.get_part()->subdomain_id_field_data();
 	std::vector<LongIdx> indices(1);
-	VectorMPI *data_vec = new VectorMPI(mesh.n_elements());
+	unsigned int data_size = field_subdomain_data->size();
+	VectorMPI data_vec(data_size);
 	ASSERT_EQ(dh->max_elem_dofs(), 1);
 	unsigned int i_ele=0;
 	for (auto cell : dh->own_range()) {
 		cell.get_loc_dof_indices(indices);
-		(*data_vec)[ indices[0] ] = (*field_subdomain_data)[i_ele];
+		data_vec[ indices[0] ] = (*field_subdomain_data)[i_ele];
 		++i_ele;
 	}
     std::shared_ptr< FieldFE<spacedim, DoubleScalar> > field_ptr = std::make_shared< FieldFE<spacedim, DoubleScalar> >();
-    field_ptr->set_fe_data(dh);
+    field_ptr->set_fe_data(dh, 0, data_vec);
 
 	IndexField subdomain;
 	subdomain.name("subdomain");
