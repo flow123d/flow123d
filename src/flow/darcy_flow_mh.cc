@@ -400,11 +400,13 @@ void DarcyMH::initialize() {
 		std::shared_ptr< FiniteElement<2> > fe2_cr = std::make_shared<FE_CR<2>>();
 		std::shared_ptr< FiniteElement<3> > fe3_cr = std::make_shared<FE_CR<3>>();
 // 	    static FiniteElement<0> fe0_sys = FE_P_disc<0>(0); //TODO fix and use solution with FESystem<0>( {fe0_rt, fe0_disc, fe0_cr} )
-        static FESystem<0> fe0_sys( {fe0_disc, fe0_disc, fe0_cr} );
-		static FESystem<1> fe1_sys( {fe1_rt, fe1_disc, fe1_cr} );
-		static FESystem<2> fe2_sys( {fe2_rt, fe2_disc, fe2_cr} );
-		static FESystem<3> fe3_sys( {fe3_rt, fe3_disc, fe3_cr} );
-		std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh_, &fe0_sys, &fe1_sys, &fe2_sys, &fe3_sys);
+		FESystem<0> fe0_sys( {fe0_disc, fe0_disc, fe0_cr} );
+		FESystem<1> fe1_sys( {fe1_rt, fe1_disc, fe1_cr} );
+		FESystem<2> fe2_sys( {fe2_rt, fe2_disc, fe2_cr} );
+		FESystem<3> fe3_sys( {fe3_rt, fe3_disc, fe3_cr} );
+	    MixedPtr<FESystem> fe_sys( std::make_shared<FESystem<0>>(fe0_sys), std::make_shared<FESystem<1>>(fe1_sys),
+	                                    std::make_shared<FESystem<2>>(fe2_sys), std::make_shared<FESystem<3>>(fe3_sys) );
+		std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh_, fe_sys);
 		data_->dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
 		data_->dh_->distribute_dofs(ds);
     }
@@ -439,11 +441,8 @@ void DarcyMH::initialize() {
     }
 
     { // init DOF handlers represents side DOFs
-	    static FE_CR_disc<0> fe0_cr_disc;
-		static FE_CR_disc<1> fe1_cr_disc;
-		static FE_CR_disc<2> fe2_cr_disc;
-		static FE_CR_disc<3> fe3_cr_disc;
-		std::shared_ptr<DiscreteSpace> ds_cr_disc = std::make_shared<EqualOrderDiscreteSpace>( mesh_, &fe0_cr_disc, &fe1_cr_disc, &fe2_cr_disc, &fe3_cr_disc);
+		MixedPtr<FE_CR_disc> fe_cr_disc;
+		std::shared_ptr<DiscreteSpace> ds_cr_disc = std::make_shared<EqualOrderDiscreteSpace>( mesh_, fe_cr_disc);
 		data_->dh_cr_disc_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
 		data_->dh_cr_disc_->distribute_dofs(ds_cr_disc);
     }
