@@ -39,6 +39,7 @@
 
 #include "io/output_time.hh"
 #include "tools/time_governor.hh"
+#include "tools/mixed.hh"
 #include "coupling/balance.hh"
 #include "input/accessors.hh"
 #include "input/input_type.hh"
@@ -200,12 +201,9 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record in
     is_bc_term_scaled = false;
 
     //initialization of DOF handler
-    static FE_P_disc<0> fe0(0);
-    static FE_P_disc<1> fe1(0);
-    static FE_P_disc<2> fe2(0);
-    static FE_P_disc<3> fe3(0);
+    MixedPtr<FE_P_disc> fe(0);
     dh_ = make_shared<DOFHandlerMultiDim>(init_mesh);
-    shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>( &init_mesh, &fe0, &fe1, &fe2, &fe3);
+    shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>( &init_mesh, fe);
     dh_->distribute_dofs(ds);
 
 }
