@@ -11,6 +11,7 @@
 #include <tuple>
 #include <memory>
 #include <iostream>
+#include <type_traits>
 
 const int __spacedim = 3;
 
@@ -41,11 +42,12 @@ public:
     template < template<Dim...> class TT>
     static Mixed<T> cast_to_parent_template(const Mixed<TT> &other)
     {
+    	//bool parent = std::is_base_of<T, TT>::value;
         return Mixed<T>(
-        		dynamic_cast<const T<0> &>(other.get<0>()),
-				dynamic_cast<const T<1> &>(other.get<1>()),
-				dynamic_cast<const T<2> &>(other.get<2>()),
-				dynamic_cast<const T<3> &>(other.get<3>()));
+        		T<0>(other.get<0>()),
+				T<1>(other.get<1>()),
+				T<2>(other.get<2>()),
+				T<3>(other.get<3>()));
     }
 
     Mixed(const T<0> &p0,const T<1> &p1,const T<2> &p2,const T<3> &p3)
@@ -74,6 +76,18 @@ public:
     template<Dim i_dim>
     const T<i_dim> &get() const {
         return std::get<i_dim>(*this);
+    }
+
+    //template< template<Dim...> class TParent, typename std::enable_if<std::is_convertible<double, int>::value, int >::type > // COMPILABLE
+    //template< template<Dim...> class TParent, typename std::enable_if<std::is_convertible<TParent, T>::value, T >::type > // NOT COMPILABLE
+    template < template<Dim...> class TParent>
+    operator Mixed<TParent> () const {
+    	//ASSERT(std::is_base_of<TParent, T>::value);
+        return Mixed<TParent>(
+        		TParent<0>(this->get<0>()),
+				TParent<1>(this->get<1>()),
+				TParent<2>(this->get<2>()),
+				TParent<3>(this->get<3>()));
     }
 
     // Possible collective methods must be implemented in MixedPtr childs.
