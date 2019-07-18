@@ -70,4 +70,5 @@ problem: !Coupling_Sequential
             - displacement
             - stress
             - cross_section_updated
+            - displacement_divergence
             - region_id
