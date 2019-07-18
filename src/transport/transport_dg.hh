@@ -56,20 +56,15 @@ class DiscreteSpace;
 class Distribution;
 class OutputTime;
 class DOFHandlerMultiDim;
+class AssemblyDGBase;
+template<unsigned int dim, class Model> class AssemblyDG;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim> class FiniteElement;
 template<unsigned int dim, unsigned int spacedim> class Mapping;
 template<unsigned int dim> class Quadrature;
 namespace Input { namespace Type { class Selection; } }
 
-
-
-/**
- * Auxiliary container class for Finite element and related objects of all dimensions.
- * Its purpose is to provide templated access to these objects, applicable in
- * the assembling methods.
- */
-class FEObjects {
+/*class FEObjects {
 public:
 
 	inline FEObjects(Mesh *mesh_, unsigned int fe_order)
@@ -93,7 +88,9 @@ public:
 
 	/// Object for distribution of dofs.
 	std::shared_ptr<DOFHandlerMultiDim> dh;
-};
+};*/
+
+typedef std::vector<std::shared_ptr<AssemblyDGBase> > MultidimAssemblyDG;
 
 
 
@@ -141,6 +138,33 @@ public:
 
 		EqData();
 
+		/**
+		 * @brief Sets up parameters of the DG method on a given boundary edge.
+		 *
+		 * Assumption is that the edge consists of only 1 side.
+		 * @param side       		The boundary side.
+		 * @param K_size            Size of vector of tensors K.
+		 * @param K					Dispersivity tensor.
+		 * @param ad_vector         Advection vector.
+		 * @param normal_vector		Normal vector (assumed constant along the edge).
+		 * @param alpha				Penalty parameter that influences the continuity
+		 * 							of the solution (large value=more continuity).
+		 * @param gamma				Computed penalty parameters.
+		 */
+		void set_DG_parameters_boundary(const Side *side,
+				    const int K_size,
+		            const std::vector<arma::mat33> &K,
+		            const double flux,
+		            const arma::vec3 &normal_vector,
+		            const double alpha,
+		            double &gamma);
+
+
+		/// Compute and return anisotropy of given element
+		double elem_anisotropy(ElementAccessor<3> e) const;
+
+
+
 		MultiField<3, FieldValue<3>::Scalar> fracture_sigma;    ///< Transition parameter for diffusive transfer on fractures (for each substance).
 		MultiField<3, FieldValue<3>::Scalar> dg_penalty;        ///< Penalty enforcing inter-element continuity of solution (for each substance).
         Field<3, FieldValue<3>::Scalar> region_id;
@@ -148,6 +172,50 @@ public:
 
         EquationOutput output_fields;
 
+
+    	/// @name Parameters of the numerical method
+    	// @{
+
+    	/// Penalty parameters.
+    	std::vector<std::vector<double> > gamma;
+
+    	/// DG variant ((non-)symmetric/incomplete
+    	int dg_variant;
+
+    	/// Polynomial order of finite elements.
+    	unsigned int dg_order;
+
+    	// @}
+
+
+        /// Auxiliary vectors for calculation of sources in balance due to retardation (e.g. sorption).
+    	std::vector<Vec> ret_vec;
+
+    	/// Linear algebra system for the transport equation.
+    	LinSys **ls;
+
+    	/// Linear algebra system for the time derivative (actually it is used only for handling the matrix structures).
+    	LinSys **ls_dt;
+
+    	/// @name Auxiliary fields used during assembly
+    	// @{
+
+    	/// Advection coefficients.
+    	vector<vector<arma::vec3> > ad_coef;
+    	/// Diffusion coefficients.
+    	vector<vector<arma::mat33> > dif_coef;
+    	/// Advection coefficients on edges.
+    	vector<vector<vector<arma::vec3> > > ad_coef_edg;
+    	/// Diffusion coefficients on edges.
+    	vector<vector<vector<arma::mat33> > > dif_coef_edg;
+
+    	// @}
+
+        /// Object for distribution of dofs.
+        std::shared_ptr<DOFHandlerMultiDim> dh_;
+
+        /// Counter used in method set_boundary_condition
+        unsigned int loc_b_;
 	};
 
 
@@ -208,7 +276,7 @@ public:
     void calculate_cumulative_balance();
 
 	const Vec &get_solution(unsigned int sbi)
-	{ return ls[sbi]->get_solution(); }
+	{ return data_->ls[sbi]->get_solution(); }
 
 	double **get_concentration_matrix()
 	{ return solution_elem_; }
@@ -228,22 +296,16 @@ private:
     /// Registrar of class to factory
     static const int registrar;
 
-	inline typename Model::ModelEqData &data() { return data_; }
+	inline typename Model::ModelEqData &data() { return *data_; }
 
 	void preallocate();
 
 	/**
 	 * @brief Assembles the mass matrix.
 	 *
-	 * The routine just calls templated method assemble_mass_matrix() for each
-	 * space dimension.
+	 * Loops through local cells and calls assemble_mass_matrix() method of AssemblyDG
+	 * object of appropriate dimension.
 	 */
-	void assemble_mass_matrix();
-
-	/**
-	 * @brief Assembles the mass matrix for the given dimension.
-	 */
-	template<unsigned int dim>
 	void assemble_mass_matrix();
 
 	/**
@@ -256,67 +318,18 @@ private:
 	void assemble_stiffness_matrix();
 
 	/**
-	 * @brief Assembles the volume integrals into the stiffness matrix.
-	*/
-	template<unsigned int dim>
-	void assemble_volume_integrals();
-
-	/**
 	 * @brief Assembles the right hand side due to volume sources.
 	 *
-	 * This method just calls set_sources() for each space dimension.
+	 * This method just calls AssemblyDG::set_sources() for each elements.
 	 */
 	void set_sources();
-
-	/**
-	 * @brief Assembles the right hand side vector due to volume sources.
-	 */
-	template<unsigned int dim>
-	void set_sources();
-
-	/**
-	 * @brief Assembles the fluxes on the boundary.
-	 */
-	template<unsigned int dim>
-	void assemble_fluxes_boundary();
-
-	/**
-	 * @brief Assembles the fluxes between elements of the same dimension.
-	 */
-	template<unsigned int dim>
-	void assemble_fluxes_element_element();
-
-	/**
-	 * @brief Assembles the fluxes between elements of different dimensions.
-	 */
-	template<unsigned int dim>
-	void assemble_fluxes_element_side();
-
 
 	/**
 	 * @brief Assembles the r.h.s. components corresponding to the Dirichlet boundary conditions.
 	 *
-	 * The routine just calls templated method set_boundary_condition() for each space dimension.
+	 * The routine just calls AssemblyDG::set_boundary_condition() for each element.
 	 */
 	void set_boundary_conditions();
-
-	/**
-	 * @brief Assembles the r.h.s. components corresponding to the Dirichlet boundary conditions
-	 * for a given space dimension.
-	 */
-	template<unsigned int dim>
-	void set_boundary_conditions();
-
-	/**
-	 * @brief Calculates the velocity field on a given @p dim dimensional cell.
-	 *
-	 * @param cell     The cell.
-	 * @param velocity The computed velocity field (at quadrature points).
-	 * @param fv       The FEValues class providing the quadrature points
-	 *                 and the shape functions for velocity.
-	 */
-	template<unsigned int dim>
-	void calculate_velocity(const ElementAccessor<3> &cell, std::vector<arma::vec3> &velocity, FEValuesBase<dim,3> &fv);
 
 	/**
 	 * @brief Calculates the dispersivity (diffusivity) tensor from the velocity field.
@@ -334,64 +347,22 @@ private:
 // 			double cross_cut);
 
 	/**
-	 * @brief Sets up parameters of the DG method on a given boundary edge.
-	 *
-	 * Assumption is that the edge consists of only 1 side.
-	 * @param side       		The boundary side.
-	 * @param K_size            Size of vector of tensors K.
-	 * @param K					Dispersivity tensor.
-	 * @param ad_vector         Advection vector.
-	 * @param normal_vector		Normal vector (assumed constant along the edge).
-	 * @param alpha				Penalty parameter that influences the continuity
-	 * 							of the solution (large value=more continuity).
-	 * @param gamma				Computed penalty parameters.
-	 */
-	void set_DG_parameters_boundary(const Side *side,
-			    const int K_size,
-	            const std::vector<arma::mat33> &K,
-	            const double flux,
-	            const arma::vec3 &normal_vector,
-	            const double alpha,
-	            double &gamma);
-
-
-	/**
 	 * @brief Sets the initial condition.
+	 *
+	 * This method just calls AssemblyDG::prepare_initial_condition() for each elements.
 	 */
 	void set_initial_condition();
 
-	/**
-	 * @brief Assembles the auxiliary linear system to calculate the initial solution
-	 * as L^2-projection of the prescribed initial condition.
-	 */
-	template<unsigned int dim>
-	void prepare_initial_condition();
 
+	/// Initialize AssemblyDG object off all dimension
+	void initialize_assembly_objects();
 
 
 	/// @name Physical parameters
 	// @{
 
 	/// Field data for model parameters.
-	EqData data_;
-
-	// @}
-
-
-	/// @name Parameters of the numerical method
-	// @{
-
-	/// Finite element objects
-	FEObjects *feo;
-
-	/// Penalty parameters.
-	std::vector<std::vector<double> > gamma;
-
-	/// DG variant ((non-)symmetric/incomplete
-	int dg_variant;
-
-	/// Polynomial order of finite elements.
-	unsigned int dg_order;
+	std::shared_ptr<EqData> data_;
 
 	// @}
 
@@ -412,15 +383,6 @@ private:
 	/// Mass from previous time instant (necessary when coefficients of mass matrix change in time).
 	std::vector<Vec> mass_vec;
     
-    /// Auxiliary vectors for calculation of sources in balance due to retardation (e.g. sorption).
-	std::vector<Vec> ret_vec;
-
-	/// Linear algebra system for the transport equation.
-	LinSys **ls;
-
-	/// Linear algebra system for the time derivative (actually it is used only for handling the matrix structures).
-	LinSys **ls_dt;
-
 	/// Element averages of solution (the array is passed to reactions in operator splitting).
 	double **solution_elem_;
 
@@ -446,20 +408,8 @@ private:
 	/// @name Auxiliary fields used during assembly
 	// @{
 
-	/// Mass matrix coefficients.
-	vector<double> mm_coef;
-	/// Retardation coefficient due to sorption.
-	vector<vector<double> > ret_coef;
 	/// Temporary values of increments due to retardation (e.g. sorption)
     vector<double> ret_sources, ret_sources_prev;
-	/// Advection coefficients.
-	vector<vector<arma::vec3> > ad_coef;
-	/// Diffusion coefficients.
-	vector<vector<arma::mat33> > dif_coef;
-	/// Advection coefficients on edges.
-	vector<vector<vector<arma::vec3> > > ad_coef_edg;
-	/// Diffusion coefficients on edges.
-	vector<vector<vector<arma::mat33> > > dif_coef_edg;
 
 	// @}
 
@@ -473,6 +423,13 @@ private:
     bool allocation_done;
 
     // @}
+
+    /// Assembly objects, hold data members and methods of appropriate dimension
+    MultidimAssemblyDG multidim_assembly_;
+    std::shared_ptr<AssemblyDG<1, Model>> assembly1_;
+    std::shared_ptr<AssemblyDG<2, Model>> assembly2_;
+    std::shared_ptr<AssemblyDG<3, Model>> assembly3_;
+
 };
 
 

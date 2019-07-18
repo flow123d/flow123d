@@ -179,6 +179,14 @@ public:
     }
 
     /**
+     * This getter method provides the balance object.
+     */
+    inline std::shared_ptr<Balance> balance() const
+    {
+        return balance_;
+    }
+
+    /**
      * Getter for equation time mark type.
      */
     inline TimeMark::Type mark_type()

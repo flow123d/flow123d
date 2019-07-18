@@ -180,7 +180,7 @@ public:
 
 	void set_balance_object(std::shared_ptr<Balance> balance) override;
 
-    const vector<unsigned int> &get_subst_idx() override
+    const vector<unsigned int> &get_subst_idx()
 	{ return subst_idx; }
 
     void set_output_stream(std::shared_ptr<OutputTime> stream)
@@ -188,6 +188,10 @@ public:
 
 	std::shared_ptr<OutputTime> output_stream() override
 	{ return output_stream_; }
+
+    std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> velocity_field_ptr() const {
+        return this->velocity_field_ptr_;
+    }
 
 
 
