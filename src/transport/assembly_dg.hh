@@ -66,7 +66,7 @@ public:
 
     /// Constructor.
     AssemblyDG(std::shared_ptr<EqDataDG> data, TransportDG<Model> &model)
-    : fe_(new FE_P_disc<dim>(data->dg_order)), fe_low_(new FE_P_disc<dim-1>(data->dg_order)),
+    : fe_(make_shared< FE_P_disc<dim> >(data->dg_order)), fe_low_(make_shared< FE_P_disc<dim-1> >(data->dg_order)),
       fe_rt_(new FE_RT0<dim>), fe_rt_low_(new FE_RT0<dim-1>),
       quad_(new QGauss<dim>(2*data->dg_order)), quad_low_(new QGauss<dim-1>(2*data->dg_order)),
       mapping_(new MappingP1<dim,3>), mapping_low_(new MappingP1<dim-1,3>),
@@ -91,8 +91,6 @@ public:
 
     /// Destructor.
     ~AssemblyDG() {
-        delete fe_;
-        delete fe_low_;
         delete fe_rt_;
         delete fe_rt_low_;
         delete quad_;
@@ -829,14 +827,14 @@ private:
     }
 
 
-    FiniteElement<dim> *fe_;            ///< Finite element for the solution of the advection-diffusion equation.
-    FiniteElement<dim-1> *fe_low_;      ///< Finite element for the solution of the advection-diffusion equation (dim-1).
-    FiniteElement<dim> *fe_rt_;         ///< Finite element for the water velocity field.
-    FiniteElement<dim-1> *fe_rt_low_;   ///< Finite element for the water velocity field (dim-1).
-    Quadrature<dim> *quad_;             ///< Quadrature used in assembling methods.
-    Quadrature<dim-1> *quad_low_;       ///< Quadrature used in assembling methods (dim-1).
-    MappingP1<dim,3> *mapping_;         ///< Auxiliary mapping of reference elements.
-    MappingP1<dim-1,3> *mapping_low_;   ///< Auxiliary mapping of reference elements (dim-1).
+    shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
+    shared_ptr<FiniteElement<dim-1>> fe_low_;   ///< Finite element for the solution of the advection-diffusion equation (dim-1).
+    FiniteElement<dim> *fe_rt_;                 ///< Finite element for the water velocity field.
+    FiniteElement<dim-1> *fe_rt_low_;           ///< Finite element for the water velocity field (dim-1).
+    Quadrature<dim> *quad_;                     ///< Quadrature used in assembling methods.
+    Quadrature<dim-1> *quad_low_;               ///< Quadrature used in assembling methods (dim-1).
+    MappingP1<dim,3> *mapping_;                 ///< Auxiliary mapping of reference elements.
+    MappingP1<dim-1,3> *mapping_low_;           ///< Auxiliary mapping of reference elements (dim-1).
 
     /// Reference to model (we must use common ancestor of concentration and heat model)
     TransportDG<Model> &model_;
