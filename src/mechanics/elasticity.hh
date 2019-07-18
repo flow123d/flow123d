@@ -29,6 +29,7 @@
 #include "fem/mapping_p1.hh"
 #include "coupling/equation.hh"
 #include "fem/fe_values_views.hh"
+#include "tools/mixed.hh"
 
 class Distribution;
 class OutputTime;
@@ -54,10 +55,10 @@ public:
 	~FEObjects();
 
 	template<unsigned int dim>
-	inline FiniteElement<dim> *fe();
+	inline std::shared_ptr<FiniteElement<dim>> fe();
 
 	template<unsigned int dim>
-	inline Quadrature<dim> *q();
+	inline std::shared_ptr<Quadrature<dim>> q();
 
 	template<unsigned int dim>
 	inline MappingP1<dim,3> *mapping();
@@ -68,17 +69,8 @@ public:
 
 private:
 
-	/// Finite elements for the solution of the advection-diffusion equation.
-    FiniteElement<0> *fe0_;
-	FiniteElement<1> *fe1_;
-	FiniteElement<2> *fe2_;
-	FiniteElement<3> *fe3_;
-
-	/// Quadratures used in assembling methods.
-	Quadrature<0> *q0_;
-	Quadrature<1> *q1_;
-	Quadrature<2> *q2_;
-	Quadrature<3> *q3_;
+    MixedPtr<FiniteElement> fe_;  ///< Finite elements for the solution of the advection-diffusion equation.
+    MixedPtr<Quadrature> q_;      ///< Quadratures used in assembling methods.
 
 	/// Auxiliary mappings of reference elements.
 	MappingP1<1,3> *map1_;
