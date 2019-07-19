@@ -196,11 +196,11 @@ protected:
         // following is used for calculation of postprocessed pressure difference
         // and comparison to analytical solution
         MixedPtr<FE_P_disc> fe_p0;
-        Mixed<FEValues> fe_values;
+        MixedPtr<FEValues> fe_values;
         
         // FEValues for velocity.
         MixedPtr<FE_RT0> fe_rt;
-        Mixed<FEValues> fv_rt;
+        MixedPtr<FEValues> fv_rt;
     };
     
     FEData fe_data;

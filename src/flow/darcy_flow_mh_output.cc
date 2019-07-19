@@ -458,10 +458,8 @@ DarcyFlowMHOutput::FEData::FEData()
   fe_p1(0), fe_p0(0)
 {
 	Mixed<Quadrature> q_base = Mixed<Quadrature>::cast_to_parent_template<QGauss>(quad);
-	Mixed<FiniteElement> p0_base = *(MixedPtr<FiniteElement>(fe_p0));
-	Mixed<FiniteElement> rt_base = *(MixedPtr<FiniteElement>(fe_rt));
-    fe_values = mixed_fe_values(mapp, q_base, *p0_base, update_JxW_values | update_quadrature_points);
-    fv_rt = mixed_fe_values(mapp, q_base, *rt_base, update_JxW_values | update_quadrature_points);
+    fe_values = mixed_fe_values(mapp, q_base, fe_p0, update_JxW_values | update_quadrature_points);
+    fv_rt = mixed_fe_values(mapp, q_base, fe_rt, update_JxW_values | update_quadrature_points);
 }
 
 
@@ -496,13 +494,13 @@ void DarcyFlowMHOutput::compute_l2_difference() {
 
     	switch (dh_cell.dim()) {
         case 1:
-            l2_diff_local<1>( dh_cell, fe_data.fe_values.get<1>(), fe_data.fv_rt.get<1>(), anal_sol_1d, diff_data);
+            l2_diff_local<1>( dh_cell, *fe_data.fe_values.get<1>(), *fe_data.fv_rt.get<1>(), anal_sol_1d, diff_data);
             break;
         case 2:
-            l2_diff_local<2>( dh_cell, fe_data.fe_values.get<2>(), fe_data.fv_rt.get<2>(), anal_sol_2d, diff_data);
+            l2_diff_local<2>( dh_cell, *fe_data.fe_values.get<2>(), *fe_data.fv_rt.get<2>(), anal_sol_2d, diff_data);
             break;
         case 3:
-            l2_diff_local<3>( dh_cell, fe_data.fe_values.get<3>(), fe_data.fv_rt.get<3>(), anal_sol_3d, diff_data);
+            l2_diff_local<3>( dh_cell, *fe_data.fe_values.get<3>(), *fe_data.fv_rt.get<3>(), anal_sol_3d, diff_data);
             break;
         }
     }

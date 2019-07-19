@@ -570,10 +570,10 @@ private:
 };
 
 
-Mixed<FEValues> mixed_fe_values(
+MixedPtr<FEValues> mixed_fe_values(
         Mixed<MappingP1> &mapping,
         Mixed<Quadrature> &quadrature,
-        Mixed<FiniteElement> &fe,
+        MixedPtr<FiniteElement> fe,
         UpdateFlags flags);
 
 

@@ -24,6 +24,7 @@
 #include "fem/finite_element.hh"
 #include "fem/fe_values.hh"
 #include "fem/fe_system.hh"
+#include "fem/fe_p.hh"
 
 
 
@@ -553,17 +554,18 @@ void FEValues<dim,spacedim>::reinit(ElementAccessor<3> & cell)
 
 
 
-Mixed<FEValues> mixed_fe_values(
+MixedPtr<FEValues> mixed_fe_values(
         Mixed<MappingP1> &mapping,
         Mixed<Quadrature> &quadrature,
-        Mixed<FiniteElement> &fe,
+        MixedPtr<FiniteElement> fe,
         UpdateFlags flags)
 {
-    return Mixed<FEValues>(
-      FEValues<0>(mapping.get<0>(), quadrature.get<0>(), fe.get<0>(), flags),
-      FEValues<1>(mapping.get<1>(), quadrature.get<1>(), fe.get<1>(), flags),
-      FEValues<2>(mapping.get<2>(), quadrature.get<2>(), fe.get<2>(), flags),
-      FEValues<3>(mapping.get<3>(), quadrature.get<3>(), fe.get<3>(), flags)
+	std::shared_ptr< FiniteElement<0> > fe0 = std::make_shared< FE_P<0> >(0);
+    return MixedPtr<FEValues>(
+      std::make_shared<FEValues<0>>(mapping.get<0>(), quadrature.get<0>(), *fe0, flags),
+	  std::make_shared<FEValues<1>>(mapping.get<1>(), quadrature.get<1>(), *fe.get<1>(), flags),
+	  std::make_shared<FEValues<2>>(mapping.get<2>(), quadrature.get<2>(), *fe.get<2>(), flags),
+	  std::make_shared<FEValues<3>>(mapping.get<3>(), quadrature.get<3>(), *fe.get<3>(), flags)
       );
 }
 
