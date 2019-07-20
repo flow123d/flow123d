@@ -254,81 +254,6 @@ void update_field_from_mh_dofhandler(const MH_DofHandler &mh_dh, FieldFE<dim, Va
 }
 
 
-template<unsigned int dim>
-class VectorValueHandler
-{
-public:
-    
-    VectorValueHandler(FiniteElement<dim> &fe)
-    : q(1)
-    {
-        ASSERT(fe.n_space_components(3) == 3);
-        arma::vec::fixed<dim> p;
-        p.ones();
-        p /= dim + 1;
-        q.set_point(0, p);
-        fe_values = std::make_shared<FEValues<dim,3>>(map, q, fe, update_gradients);
-    }
-    
-    void reinit(const ElementAccessor<3> &elm)
-    {
-        fe_values->reinit(const_cast<ElementAccessor<3> &>(elm));
-    }
-    
-    double divergence(unsigned int i)
-    {
-        return fe_values->vector_view(0).divergence(i, 0);
-    }
-    
-private:
-    
-    MappingP1<dim,3> map;
-    Quadrature<dim> q;
-    std::shared_ptr<FEValues<dim,3>> fe_values;
-};
-
-
-void update_div_from_field_fe(const FieldFE<3, FieldValue<3>::VectorFixed> &from_field, FieldFE<3, FieldValue<3>::Scalar> &div_field)
-{
-    auto vec_dh  = from_field.get_dofhandler();
-    auto vec_vec = from_field.get_data_vec();
-    auto div_dh  = div_field.get_dofhandler();
-    auto div_vec = div_field.get_data_vec();
-    
-    ElementAccessor<3> dummy_elm;
-    EqualOrderDiscreteSpace *ds = dynamic_cast<EqualOrderDiscreteSpace *>(vec_dh->ds().get());
-    VectorValueHandler<1> value_handler1(*ds->fe<1>(dummy_elm));
-    VectorValueHandler<2> value_handler2(*ds->fe<2>(dummy_elm));
-    VectorValueHandler<3> value_handler3(*ds->fe<3>(dummy_elm));
-    
-    for ( auto cell : div_dh->own_range() )
-    {
-        double div = 0;
-        vector<int> loc_dof_indices(vec_dh->max_elem_dofs());
-        vec_dh->cell_accessor_from_element(cell.elm_idx()).get_loc_dof_indices(loc_dof_indices);
-        switch (cell.dim())
-        {
-            case 1:
-                value_handler1.reinit(cell.elm());
-                for (unsigned int i=0; i<ds->fe<1>(cell.elm())->n_dofs(); i++)
-                    div += value_handler1.divergence(i)*vec_vec[loc_dof_indices[i]];
-                break;
-            case 2:
-                value_handler2.reinit(cell.elm());
-                for (unsigned int i=0; i<ds->fe<2>(cell.elm())->n_dofs(); i++)
-                    div += value_handler2.divergence(i)*vec_vec[loc_dof_indices[i]];
-                break;
-            case 3:
-                value_handler3.reinit(cell.elm());
-                for (unsigned int i=0; i<ds->fe<3>(cell.elm())->n_dofs(); i++)
-                    div += value_handler3.divergence(i)*vec_vec[loc_dof_indices[i]];
-                break;
-            default:
-                ASSERT( false ).error("Unsupported element dimension.");
-        }
-        div_vec[cell.local_idx()] = div;
-    }
-}
 
 
 void HM_Iterative::zero_time_step()
@@ -344,7 +269,7 @@ void HM_Iterative::zero_time_step()
     
     update_field_from_mh_dofhandler(flow_->get_mh_dofhandler(), *data_.old_pressure_ptr_);
     update_field_from_mh_dofhandler(flow_->get_mh_dofhandler(), *data_.old_iter_pressure_ptr_);
-    update_div_from_field_fe(*mechanics_->data().output_field_ptr, *data_.div_u_ptr_);
+    copy_field(mechanics_->data().output_divergence, *data_.div_u_ptr_);
 }
 
 
@@ -375,7 +300,7 @@ void HM_Iterative::update_solution()
         mechanics_->output_vector_gather();
         
         // update displacement divergence
-        update_div_from_field_fe(*mechanics_->data().output_field_ptr, *data_.div_u_ptr_);
+        copy_field(mechanics_->data().output_divergence, *data_.div_u_ptr_);
         
         // TODO: compute difference of iterates
         compute_iteration_error(difference, norm);
@@ -390,7 +315,7 @@ void HM_Iterative::update_solution()
     mechanics_->output_data();
     
     update_field_from_mh_dofhandler(flow_->get_mh_dofhandler(), *data_.old_pressure_ptr_);
-    update_div_from_field_fe(*mechanics_->data().output_field_ptr, *data_.old_div_u_ptr_);
+    copy_field(mechanics_->data().output_divergence, *data_.old_div_u_ptr_);
 }
 
 

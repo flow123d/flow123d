@@ -145,11 +145,13 @@ public:
         Field<3, FieldValue<3>::TensorFixed> output_stress;
         Field<3, FieldValue<3>::Scalar> output_von_mises_stress;
         Field<3, FieldValue<3>::Scalar> output_cross_section;
+        Field<3, FieldValue<3>::Scalar> output_divergence;
         
         std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed> > output_field_ptr;
         std::shared_ptr<FieldFE<3, FieldValue<3>::TensorFixed> > output_stress_ptr;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_von_mises_stress_ptr;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_cross_section_ptr;
+        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_div_ptr;
 
         EquationOutput output_fields;
 

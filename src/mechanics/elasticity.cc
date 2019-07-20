@@ -283,6 +283,11 @@ Elasticity::EqData::EqData()
             .name("cross_section_updated")
             .units( UnitSI().m() )
             .flags(equation_result);
+            
+    *this += output_divergence
+            .name("displacement_divergence")
+            .units( UnitSI().dimensionless() )
+            .flags(equation_result);
 
     // add all input fields to the output list
     output_fields += *this;
@@ -365,6 +370,11 @@ void Elasticity::initialize()
     data_.output_cross_section_ptr->set_fe_data(feo->dh_scalar());
     data_.output_cross_section.set_field(mesh_->region_db().get_region_set("ALL"), data_.output_cross_section_ptr);
     
+    // setup output divergence
+    data_.output_div_ptr = make_shared<FieldFE<3, FieldValue<3>::Scalar> >();
+    data_.output_div_ptr->set_fe_data(feo->dh_scalar());
+    data_.output_divergence.set_field(mesh_->region_db().get_region_set("ALL"), data_.output_div_ptr);
+    
     data_.output_field.output_type(OutputTime::CORNER_DATA);
 
     // set time marks for writing the output
@@ -409,6 +419,7 @@ void Elasticity::output_vector_gather()
 void Elasticity::update_output_fields()
 {
     data_.output_cross_section_ptr->get_data_vec().zero_entries();
+    data_.output_div_ptr->get_data_vec().zero_entries();
     compute_output_fields<1>();
     compute_output_fields<2>();
     compute_output_fields<3>();
@@ -418,6 +429,8 @@ void Elasticity::update_output_fields()
     data_.output_von_mises_stress_ptr->get_data_vec().local_to_ghost_end();
     data_.output_cross_section_ptr->get_data_vec().local_to_ghost_begin();
     data_.output_cross_section_ptr->get_data_vec().local_to_ghost_end();
+    data_.output_div_ptr->get_data_vec().local_to_ghost_begin();
+    data_.output_div_ptr->get_data_vec().local_to_ghost_end();
 }
 
 
@@ -571,7 +584,7 @@ void Elasticity::compute_output_fields()
     FEValues<dim,3> fv(*feo->mapping<dim>(), q, *feo->fe<dim>(),
     		update_values | update_gradients | update_quadrature_points);
     FESideValues<dim,3> fsv(*feo->mapping<dim>(), q_sub, *feo->fe<dim>(),
-    		update_values | update_normal_vectors);
+    		update_values | update_normal_vectors | update_quadrature_points);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs();
     std::vector<int> dof_indices(ndofs), dof_indices_scalar(1), dof_indices_tensor(9);
     auto vec = fv.vector_view(0);
@@ -580,6 +593,7 @@ void Elasticity::compute_output_fields()
     VectorMPI output_stress_vec = data_.output_stress_ptr->get_data_vec();
     VectorMPI output_von_mises_stress_vec = data_.output_von_mises_stress_ptr->get_data_vec();
     VectorMPI output_cross_sec_vec = data_.output_cross_section_ptr->get_data_vec();
+    VectorMPI output_div_vec = data_.output_div_ptr->get_data_vec();
     
     DHCellAccessor cell_tensor = *feo->dh_tensor()->own_range().begin();
     DHCellAccessor cell_scalar = *feo->dh_scalar()->own_range().begin();
@@ -600,11 +614,16 @@ void Elasticity::compute_output_fields()
             cell_tensor.get_loc_dof_indices(dof_indices_tensor);
             
             arma::mat33 stress = arma::zeros(3,3);
+            double div = 0;
             for (unsigned int i=0; i<ndofs; i++)
+            {
                 stress += (2*mu*vec.sym_grad(i,0) + lambda*vec.divergence(i,0)*arma::eye(3,3))*output_vec[dof_indices[i]];
+                div += vec.divergence(i,0)*output_vec[dof_indices[i]];
+            }
             
             arma::mat33 stress_dev = stress - arma::trace(stress)/3*arma::eye(3,3);
             double von_mises_stress = sqrt(1.5*arma::dot(stress_dev, stress_dev));
+            output_div_vec[dof_indices_scalar[0]] += div;
             
             for (unsigned int i=0; i<3; i++)
                 for (unsigned int j=0; j<3; j++)
@@ -630,6 +649,7 @@ void Elasticity::compute_output_fields()
             }
             cell_scalar.get_loc_dof_indices(dof_indices_scalar);
             output_cross_sec_vec[dof_indices_scalar[0]] += normal_displacement;
+            output_div_vec[dof_indices_scalar[0]] += normal_displacement / data_.cross_section.value(fsv.point(0), elm);
         }
         cell_scalar.inc();
         cell_tensor.inc();
