@@ -311,20 +311,18 @@ double ElementAccessor<spacedim>::quality_measure_smooth(SideIter side) const {
                 arma::vec line = *node(RefElement<3>::interact(Interaction<0,1>(i_line))[1]) - *node(RefElement<3>::interact(Interaction<0,1>(i_line))[0]);
                 sum_pairs += face[i]*face[j]*arma::dot(line, line);
             }
+        sum_pairs = max(sum_pairs, 1e-300);
         double regular = (2.0*sqrt(2.0/3.0)/9.0); // regular tetrahedron
-        return fabs( measure()
-                * pow( sum_faces/sum_pairs, 3.0/4.0))/ regular;
+        return fabs( measure()) * pow(sum_faces/sum_pairs, 3.0/4.0) / regular;
 
     }
     if (dim_==2) {
-        return fabs(
-                measure()/
-                pow(
-                         arma::norm(*node(1) - *node(0), 2)
-                        *arma::norm(*node(2) - *node(1), 2)
-                        *arma::norm(*node(0) - *node(2), 2)
-                        , 2.0/3.0)
-               ) / ( sqrt(3.0) / 4.0 ); // regular triangle
+    	double prod_edges = arma::norm(*node(1) - *node(0), 2)
+        				*arma::norm(*node(2) - *node(1), 2)
+        				*arma::norm(*node(0) - *node(2), 2);
+    	prod_edges = max(prod_edges, 1e-300);
+        return fabs(measure()) / pow(prod_edges, 2.0/3.0)
+                / ( sqrt(3.0) / 4.0 ); // regular triangle
     }
     return 1.0;
 }
