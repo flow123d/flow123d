@@ -19,6 +19,7 @@
 #ifndef DH_CELL_ACCESSOR_HH_
 #define DH_CELL_ACCESSOR_HH_
 
+#include <armadillo>
 #include "mesh/accessors.hh"
 #include "mesh/sides.h"
 #include "mesh/neighbours.h"
@@ -27,6 +28,7 @@
 class DHCellSide;
 class DHNeighbSide;
 class DHEdgeSide;
+template <int spacedim> class ElementAccessor;
 
 /**
  * @brief Cell accessor allow iterate over DOF handler cells.
@@ -175,9 +177,9 @@ public:
     }
 
     /// Return Side of given cell and side_idx.
-    inline const Side * side() const {
+    inline Side side() const {
     	ASSERT( this->is_valid() );
-   		return new Side( const_cast<const Mesh*>(dh_cell_accessor_.dof_handler_->mesh()), dh_cell_accessor_.elm_idx(), side_idx_ );
+   		return Side(dh_cell_accessor_.dof_handler_->mesh(), dh_cell_accessor_.elm_idx(), side_idx_ );
     }
 
     /// Return DHCellAccessor appropriate to the side.
@@ -189,6 +191,36 @@ public:
     inline unsigned int dim() const {
     	return cell().dim();
     }
+
+    /// Side centre.
+    inline arma::vec3 centre() const {
+    	return side().centre();
+    }
+
+    inline ElementAccessor<3> element() const {
+    	return side().element();
+    }
+
+    inline unsigned int elem_idx() const {
+    	return side().elem_idx();
+    }
+
+    inline Boundary * cond() const {
+    	side().cond();
+    }
+
+	inline unsigned int side_idx() const {
+	   return side_idx_;
+	}
+
+	inline double measure() const {
+	   return side().measure();
+	}
+
+	inline double diameter() const {
+	   return side().diameter();
+	}
+
 
     /// Returns range of all sides looped over common Edge.
     RangeConvert<DHEdgeSide, DHCellSide> edge_sides() const;
@@ -206,9 +238,13 @@ public:
     }
 
     /// Comparison of accessors.
-    bool operator==(const DHCellSide& other) {
-    	return (side_idx_ == other.side_idx_);
-    }
+	inline bool operator ==(const DHCellSide &other) {
+		return this->elem_idx() == other.elem_idx() && side_idx_ == other.side_idx_;
+	}
+
+	inline bool operator !=(const DHCellSide &other) {
+		return this->elem_idx() != other.elem_idx() || side_idx_ != other.side_idx_;
+	}
 
 private:
     /// Appropriate DHCellAccessor.

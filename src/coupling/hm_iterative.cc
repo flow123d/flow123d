@@ -305,7 +305,7 @@ void HM_Iterative::update_solution()
         // TODO: compute difference of iterates
         compute_iteration_error(difference, norm);
         
-        DebugOut().fmt("HM Iteration {} abs. difference: {}  rel. difference: {}\n"
+        LogOut().fmt("HM Iteration {} abs. difference: {}  rel. difference: {}\n"
                          "--------------------------------------------------------",
                          it, difference, difference/norm);
         update_field_from_mh_dofhandler(flow_->get_mh_dofhandler(), *data_.old_iter_pressure_ptr_);
@@ -331,19 +331,19 @@ void HM_Iterative::update_potential()
         ele.get_loc_dof_indices(dof_indices);
         for ( auto side : ele.side_range() )
         {
-            double alpha = data_.alpha.value(side.side()->centre(), elm);
-            double density = data_.density.value(side.side()->centre(), elm);
-            double gravity = data_.gravity.value(side.side()->centre(), elm);
-            double pressure = flow_->get_mh_dofhandler().side_scalar(*side.side());
+            double alpha = data_.alpha.value(side.centre(), elm);
+            double density = data_.density.value(side.centre(), elm);
+            double gravity = data_.gravity.value(side.centre(), elm);
+            double pressure = flow_->get_mh_dofhandler().side_scalar(side.side());
             double potential = -alpha*density*gravity*pressure;
         
             if (ele.is_own())
             {
-                difference2 += pow(potential_vec_[dof_indices[side.side()->side_idx()]] - potential,2);
+                difference2 += pow(potential_vec_[dof_indices[side.side_idx()]] - potential,2);
                 norm2 += pow(potential,2);
             }
         
-            potential_vec_[dof_indices[side.side()->side_idx()]] = potential;
+            potential_vec_[dof_indices[side.side_idx()]] = potential;
         }
     }
     
