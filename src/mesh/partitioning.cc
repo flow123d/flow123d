@@ -238,20 +238,12 @@ void Partitioning::id_maps(int n_ids, LongIdx *id_4_old,  Distribution * &new_ds
 
 
 shared_ptr< vector<int> > Partitioning::subdomain_id_field_data() {
-	OLD_ASSERT(loc_part_, "Partition is not yet computed.\n");
+    ASSERT(loc_part_).error("Partition is not yet computed.\n");
     if (!seq_part_) {
-    	unsigned int seq_size=(init_el_ds_->myp() == 0) ? init_el_ds_->size() : 1;
-    	//seq_part_.resize(seq_size);
-    	seq_part_ = make_shared< vector<int> >(seq_size);
-        std::vector<int> &vec = *( seq_part_.get() );
-
-        MPI_Gatherv(loc_part_, init_el_ds_->lsize(), MPI_INT,
-                &vec[0],
-                (int *)(init_el_ds_->get_lsizes_array()),
-                (int *)(init_el_ds_->get_starts_array()),
-                MPI_INT, 0,init_el_ds_->get_comm() );
-
+    	unsigned int seq_size=mesh_->get_el_ds()->lsize();
+    	seq_part_ = make_shared< vector<int> >(seq_size, mesh_->get_el_ds()->myp());
     }
+
     return seq_part_;
 
 }
