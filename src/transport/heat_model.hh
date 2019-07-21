@@ -241,6 +241,13 @@ public:
     inline SubstanceList &substances()
     { return substances_; }
 
+    const vector<unsigned int> &get_subst_idx()
+	{ return subst_idx; }
+
+    std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> velocity_field_ptr() const {
+        return this->velocity_field_ptr_;
+    }
+
 
 protected:
 
