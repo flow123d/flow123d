@@ -9,7 +9,6 @@ problem: !Coupling_Sequential
   mesh:
     mesh_file: ../00_mesh/cube_20x20x20.msh
   flow_equation: !Flow_Darcy_MH
-    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-12     # 1.0e-7
@@ -27,8 +26,6 @@ problem: !Coupling_Sequential
         - pressure_p0
         - pressure_p1
         - velocity_p0
-    balance: {}
     output_stream:
       file: ./large_cube.msh
       format: !gmsh
-        variant: ascii

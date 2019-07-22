@@ -9,7 +9,6 @@ problem: !Coupling_Sequential
   mesh:
     mesh_file: ../00_mesh/line_x_20el.msh
   flow_equation: !Flow_Darcy_MH
-    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-07
@@ -58,7 +57,6 @@ problem: !Coupling_Sequential
         - pressure_p1
         - velocity_p0
       add_input_times: true
-    balance: {}
     output_stream:
       format: !vtk
         variant: ascii

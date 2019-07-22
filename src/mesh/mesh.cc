@@ -1201,40 +1201,45 @@ void Mesh::distribute_nodes() {
 
     unsigned int i_proc, i_node, i_ghost_node, elm_node;
     unsigned int my_proc = el_ds->myp();
+    unsigned int n_proc = el_ds->np();
 
     // distribute nodes between processes, every node is assigned to minimal process of elements that own node
     // fill min_node_proc vector with same values on all processes
-    std::vector<unsigned int> min_node_proc( this->n_nodes(), Mesh::undef_idx );
-    std::vector<bool> ghost_node_flag( this->n_nodes(), false );
-    unsigned int n_own_nodes=0, n_ghost_nodes=0; // number of own and ghost nodes
-    for ( elm : this->elements_range() ) {
+    std::vector<unsigned int> node_proc( this->n_nodes(), n_proc );
+    std::vector<bool> local_node_flag( this->n_nodes(), false );
+
+    for ( auto elm : this->elements_range() ) {
         i_proc = elm.proc();
         for (elm_node=0; elm_node<elm->n_nodes(); elm_node++) {
             i_node = elm->node_idx(elm_node);
-            if ( (min_node_proc[i_node]==Mesh::undef_idx) || (min_node_proc[i_node]>i_proc) ) {
-                if (i_proc==my_proc) n_own_nodes++;
-                else if (min_node_proc[i_node]==my_proc) { n_own_nodes--; n_ghost_nodes++; ghost_node_flag[i_node] = true; }
-                min_node_proc[i_node] = i_proc;
-            } else if ( !ghost_node_flag[i_node] && (i_proc==my_proc) && (min_node_proc[i_node]!=my_proc) ) {
-                n_ghost_nodes++;
-                ghost_node_flag[i_node] = true;
-            }
+            if (i_proc == my_proc) local_node_flag[i_node] = true;
+            if (i_proc < node_proc[i_node]) node_proc[i_node] = i_proc;
         }
     }
 
+    unsigned int n_own_nodes=0, n_local_nodes=0; // number of own and ghost nodes
+    for(uint i_proc : node_proc) if (i_proc == my_proc) n_own_nodes++;
+    for(uint loc_flag : local_node_flag) if (loc_flag) n_local_nodes++;
+
+    //DebugOut() << print_var(n_own_nodes) << print_var(n_local_nodes) << this->n_nodes();
     // create and fill node_4_loc_ (mapping local to global indexes)
-    node_4_loc_ = new LongIdx [ n_own_nodes+n_ghost_nodes ];
+    node_4_loc_ = new LongIdx [ n_local_nodes ];
     i_node=0;
     i_ghost_node = n_own_nodes;
     for (unsigned int i=0; i<this->n_nodes(); ++i) {
-        if (min_node_proc[i]==my_proc) node_4_loc_[i_node++] = i;
-        if (ghost_node_flag[i]) node_4_loc_[i_ghost_node++] = i;
+        if (local_node_flag[i]) {
+            if (node_proc[i]==my_proc)
+                node_4_loc_[i_node++] = i;
+            else
+                node_4_loc_[i_ghost_node++] = i;
+        }
     }
 
     // Construct node distribution object, set number of local nodes (own+ghost)
     node_ds_ = new Distribution(n_own_nodes, PETSC_COMM_WORLD);
     node_ds_->get_lsizes_array(); // need to initialize lsizes data member
-    n_local_nodes_ = n_own_nodes+n_ghost_nodes;
+    n_local_nodes_ = n_local_nodes;
+
 }
 
 //-----------------------------------------------------------------------------

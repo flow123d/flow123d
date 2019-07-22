@@ -191,7 +191,7 @@ public:
     /**
      * @brief Allocates PETSc vector according to the dof distribution.
      */
-    VectorMPI create_vector();
+    virtual VectorMPI create_vector();
     
     /**
      * @brief Returns the global index of local edge.
@@ -201,11 +201,11 @@ public:
     inline LongIdx edge_index(int loc_edg) const { return edg_4_loc[loc_edg]; }
 
     /**
-	 * @brief Returns the global index of local neighbour.
-	 *
-	 * @param loc_nb Local index of neighbour.
-	 */
-	inline LongIdx nb_index(int loc_nb) const { return nb_4_loc[loc_nb]; }
+     * @brief Returns the global index of local neighbour.
+     *
+     * @param loc_nb Local index of neighbour.
+     */
+    inline LongIdx nb_index(int loc_nb) const { return nb_4_loc[loc_nb]; }
 	
 	/**
 	 * @brief Returns number of local edges.
@@ -249,8 +249,9 @@ public:
     friend class DHCellAccessor;
     friend class DHCellSide;
     friend class DHNeighbSide;
+    friend class SubDOFHandlerMultiDim;
 
-private:
+protected:
 
     /**
      * Returns true if element is on local process.
@@ -361,10 +362,10 @@ private:
      * 
      * INVALID_DOF    marks dofs whose global number has to be set by neighbouring processor.
      */
-    static const int INVALID_NFACE  = 1;
-    static const int VALID_NFACE    = 2;
-    static const int ASSIGNED_NFACE = 3;
-    static const int INVALID_DOF   = -1;
+    static const int INVALID_NFACE;
+    static const int VALID_NFACE;
+    static const int ASSIGNED_NFACE;
+    static const int INVALID_DOF;
     
     
     /// Pointer to the discrete space for which the handler distributes dofs.
@@ -435,6 +436,56 @@ private:
     /// Arrays of ghost cells for each neighbouring processor.
     map<unsigned int, vector<LongIdx> > ghost_proc_el;
 
+};
+
+
+class SubDOFHandlerMultiDim : public DOFHandlerMultiDim
+{
+public:
+    
+    /** @brief Creates a new dof handler for a component of FESystem.
+     * 
+     * The @p component_idx indicates the index of finite-element
+     * from @p dh for which the new sub- handler is made.
+     * The numbering of dofs in sub-handler is compatible
+     * with the original handler.
+     */
+    SubDOFHandlerMultiDim(std::shared_ptr<DOFHandlerMultiDim> dh, unsigned int component_idx);
+    
+    /** @brief Update values in subvector from parent vector.
+     * 
+     * @p vec    Vector aligned with the parent dof handler.
+     * @p subvec Vctor aligned with the current sub-handler.
+     */
+    VectorMPI update_subvector(const VectorMPI &vec, VectorMPI &subvec);
+    
+    /** @brief Update values in parent vector from values of subvector.
+     * 
+     * @p vec    Vector aligned with parent dof handler.
+     * @p subvec Vector aligned with the current sub-handler.
+     */
+    void update_parent_vector(VectorMPI &vec, const VectorMPI &subvec);
+    
+    /// Local indices in the parent handler.
+    const std::vector<LongIdx> &parent_indices() { return parent_dof_idx_; }
+    
+    
+private:
+
+    /// Get global dof indices of ghost dofs for sub-handler.
+    void receive_sub_ghost_dofs(unsigned int proc, vector<LongIdx> &dofs);
+    
+    /// Send global indices of dofs that are ghost on other processors.
+    void send_sub_ghost_dofs(unsigned int proc, const map<LongIdx,LongIdx> &global_to_local_dof_idx);
+
+    /// Parent dof handler.
+    std::shared_ptr<DOFHandlerMultiDim> parent_;
+    
+    /// Index of FE in parent FESystem.
+    unsigned int fe_idx_;
+    
+    /// Local indices in the parent handler.
+    std::vector<LongIdx> parent_dof_idx_;
 };
 
 

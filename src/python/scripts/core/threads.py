@@ -2,19 +2,15 @@
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
 # ----------------------------------------------
-import json
 import math
 import time
 import threading
-
 # ----------------------------------------------
-from scripts.yamlc.yaml_config import ConfigCase
-from scripts.core import monitors
-from scripts.core.base import Printer, Paths, Command, DynamicSleep, IO, PathFilters
-from scripts.serialization import PyPyResult, ResultHolderResult, RuntestTripletResult, ResultParallelThreads
+from loggers import printf
+from scripts.core.base import IO
+from scripts.serialization import ResultHolderResult, RuntestTripletResult, ResultParallelThreads
 from utils.counter import ProgressCounter
 from utils.events import Event
-from utils.globals import wait_for
 from scripts.core.returncode import RC, RC_NONE, RC_OK, RC_BROKEN
 # ----------------------------------------------
 
@@ -162,7 +158,7 @@ class MultiThreads(ExtendedThread):
 
         if self.counter:
             if self.separate:
-                Printer.all.sep()
+                printf.sep()
             self.counter.next(locals())
 
         self.threads[self.index - 1].start()
@@ -233,7 +229,7 @@ class SequentialThreads(MultiThreads):
             else:
                 self.counter = ProgressCounter('{self.name}: {:02d} of {self.total:02d}')
 
-        with Printer.all.with_level(1 if self.indent else 0):
+        with printf:
             while True:
                 if not self.run_next():
                     break
@@ -260,12 +256,15 @@ class ParallelThreads(MultiThreads):
     Class ParallelThreads run multiple threads in parallel fashion
     """
 
-    def __init__(self, n=4, name='runner', progress=True):
+    def __init__(self, n=4, name='runner', progress=True, case_format=False):
         super(ParallelThreads, self).__init__(name, progress)
         self.n = n if type(n) is int else 1
-        self.counter = ProgressCounter('Case {:02d} of {self.total:02d}')
+        if case_format:
+            self.counter = ProgressCounter('[{:02d} of {self.total:02d}] {self.current_thread.pypy}')
+        else:
+            self.counter = ProgressCounter(printer=None)
         self.stop_on_error = True
-        self.separate = True
+        self.i = 0
 
     def ensure_run_count(self):
         if self.stopped:
@@ -300,173 +299,6 @@ class ParallelThreads(MultiThreads):
         return ResultParallelThreads(self)
 
 
-class PyPy(ExtendedThread):
-    """
-    Class PyPy is main class which executes command having multiple monitors registered
-    PyPy = BinExecutor + monitors
-
-    :type executor : scripts.core.execution.BinExecutor
-    :type case     : ConfigCase
-    """
-
-    returncode_map = {
-        '0': 'SUCCESS',
-        '1': 'ERROR',
-        '5': 'TERM',
-        'None': 'SKIP',
-        '-1': 'SKIP',
-    }
-
-    def __init__(self, executor, progress=False, period=.5):
-        super(PyPy, self).__init__(name='pypy')
-        self.executor = executor
-        self.period = period
-        self.case = None
-        self._progress = None
-        self.status_file = None
-
-        self.on_process_start = Event()
-        self.on_process_complete = Event()
-        self.on_process_update = Event()
-
-        self.on_process_complete += self.generate_status_file
-
-        # register monitors
-        self.limit_monitor = monitors.LimitMonitor(self)
-        self.start_monitor = monitors.StartInfoMonitor(self)
-        self.end_monitor = monitors.EndInfoMonitor(self)
-        self.progress_monitor = monitors.ProgressMonitor(self)
-        self.output_monitor = monitors.OutputMonitor(self)
-        self.error_monitor = monitors.ErrorMonitor(self)
-
-        self.end_monitor.deactivate()
-
-        self.log = False
-        self.custom_error = None
-
-        # different settings in batched mode
-        self.progress = progress
-
-        # dynamic sleeper
-        self.sleeper = DynamicSleep()
-
-        # path to full output
-        self.full_output = None
-
-    @property
-    def escaped_command(self):
-        return self.executor.escaped_command
-
-    @property
-    def progress(self):
-        return self._progress
-
-    @progress.setter
-    def progress(self, value):
-        self._progress = value
-
-    def _run(self):
-        # start executor
-        self.executor.start()
-        wait_for(self.executor, 'process')
-
-        if self.executor.broken:
-            Printer.all.err('Could not start command "{}": {}',
-                            Command.to_string(self.executor.command),
-                            self.executor.exception)
-            self.returncode = RC(self.executor.returncode)
-
-        # if process is not broken, propagate start event
-        self.on_process_start(self)
-
-        while self.executor.is_running():
-            self.on_process_update(self)
-            self.sleeper.sleep()
-
-        # get return code
-        rc = getattr(self.executor, 'returncode', None)
-        self.returncode = RC(rc if self.custom_error is None or str(rc) == "0" else self.custom_error)
-
-        # reverse return code if death test is set
-        if self.case and self.case.death_test is not None:
-            self.returncode = RC(self.case.death_test.reverse_return_code(self.returncode))
-            self.returncode.reversed = self.case.death_test.value != self.case.death_test.FALSE
-
-        # propagate on_complete event
-        self.on_process_complete(self)
-
-    def status(self):
-        import getpass
-        import platform
-        result = dict(
-            returncode=self.returncode(),
-            duration=self.duration,
-            username=getpass.getuser(),
-            hostname=platform.node(),
-            nodename=platform.node().split('.')[0].strip('0123456789'),
-            commit=self.get_commit(),
-        )
-
-        if self.case:
-            result.update(self.case.info)
-        return result
-
-    def to_json(self):
-        if self.case:
-            return dict(
-                returncode=self.returncode(),
-                name=self.case.as_string,
-                case=self.case,
-                log=self.full_output
-            )
-        json = super(PyPy, self).to_json()
-        json['log'] = self.full_output
-        json['type'] = 'exec'
-        return json
-
-    def dump(self):
-        return PyPyResult(self)
-
-    @classmethod
-    def get_commit(cls):
-        """
-        Calls git show on git root to determine unix timestamp of the current commit (HEAD)
-        :return:
-        """
-        import subprocess
-        try:
-            root = Paths.flow123d_root()
-            # get current hash(%H) and date(%ct) from git repo
-            result = subprocess.check_output('git show -s --format=%H,%ct HEAD'.split(), cwd=root).decode()
-            sha, date = str(result).strip().split(',')
-            return dict(
-                hash=sha,
-                date=int(date)
-            )
-        except:
-            return None
-
-    @classmethod
-    def generate_status_file(cls, target):
-        """
-        Will generate status file if target has option turned on
-        :type target: PyPy
-        """
-        if target.status_file:
-            IO.write(
-                target.status_file,
-                json.dumps(target.status(), indent=4)
-            )
-            output_dir = Paths.dirname(target.status_file)
-            files = Paths.browse(
-                output_dir,
-                [PathFilters.filter_wildcards('*/profiler_info_*.log.json')]
-            )
-            # profiler json is missing?
-            if not files:
-                IO.write(Paths.join(output_dir, 'profiler_info_dummy.log.json'), '{}')
-
-
 class ComparisonMultiThread(SequentialThreads):
     """
     Class ComparisonMultiThread hold comparison results and writes them to a file
@@ -478,7 +310,7 @@ class ComparisonMultiThread(SequentialThreads):
 
     def on_thread_complete(self, thread):
         """
-        :type thread: PyPy
+        :type thread: scripts.core.pypy.PyPy
         """
         super(ComparisonMultiThread, self).on_thread_complete(thread)
 
@@ -513,7 +345,7 @@ class RuntestMultiThread(SequentialThreads):
     Class RuntestMultiThread is simple triplet holding single ConfigCase results
     (CleanThread, PyPy, ComparisonMultiThread)
     :type clean  : scripts.prescriptions.local_run.CleanThread
-    :type pypy   : PyPy
+    :type pypy   : scripts.core.pypy.PyPy
     :type comp   : ComparisonMultiThread
     """
 

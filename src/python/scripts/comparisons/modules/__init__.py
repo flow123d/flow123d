@@ -3,8 +3,6 @@
 # author:   Jan Hybs
 # ----------------------------------------------
 from scripts.core.threads import ExtendedThread, BrokenProcess
-
-
 # ----------------------------------------------
 
 

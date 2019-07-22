@@ -301,6 +301,9 @@ public:
     inline const Dof &dof(unsigned int i) const
     { return dofs_[i]; }
     
+    /// Number of components of FE in a mapped space with dimension @p spacedim.
+    unsigned int n_space_components(unsigned int spacedim);
+    
     /**
      * @brief Destructor.
      */
@@ -391,6 +394,7 @@ protected:
     friend class FEValues<dim,3>;
     friend class FESideValues<dim,3>;
     friend class FE_P_disc<dim>;
+    friend class SubDOFHandlerMultiDim;
 };
 
 

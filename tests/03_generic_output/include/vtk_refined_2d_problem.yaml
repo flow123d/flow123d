@@ -25,7 +25,6 @@ flow_equation: !Flow_Darcy_MH
     file: ./flow.pvd
     format: !vtk
       variant: ascii
-    name: flow_output_stream
     output_mesh:
       max_level: 3 # default value
       refine_by_error: true

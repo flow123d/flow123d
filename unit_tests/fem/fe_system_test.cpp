@@ -200,6 +200,10 @@ TEST_F(FESystemTest, test_mixed_system) {
   FESystem<3> fe_sys({ std::make_shared<FE_P<3> >(0), std::make_shared<FESystem<3> >(fe_vec), std::make_shared<FE_RT0<3> >() });
   FEValues<3,3> fe_values(map, q, fe_sys, update_values | update_gradients);
   
+  std::vector<std::vector<unsigned int> > fe_dof_indices = { fe_sys.fe_dofs(0), fe_sys.fe_dofs(1), fe_sys.fe_dofs(2) };
+  std::vector<std::vector<unsigned int> > ref_indices = { {0}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}, {13, 14, 15, 16} };
+  EXPECT_EQ( ref_indices, fe_dof_indices );
+  
   fe_values.reinit(ele);
   
   auto vec_view = fe_values.vector_view(0);

@@ -1,21 +1,9 @@
 flow123d_version: 3.1.0
-output_streams:
-  - file: test_20.pvd
-    format: !vtk
-      variant: ascii
-    name: flow_output_stream
-  - file: transport_test_20.pvd
-    format: !vtk
-      variant: ascii
-    time_step: 0.5
-    name: transport_output_stream
-
 problem: !Coupling_Sequential
   description: Adsorption all
   mesh:
     mesh_file: ../00_mesh/rectangle_5x1.msh
   flow_equation: !Flow_Darcy_MH
-    output_specific:
     input_fields:
       - region: rectangle
         conductivity: 0.125
@@ -28,7 +16,6 @@ problem: !Coupling_Sequential
         - pressure_p0
         - pressure_p1
         - velocity_p0
-    balance: {}
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-07
@@ -53,7 +40,6 @@ problem: !Coupling_Sequential
       file: transport_test_20.pvd
       format: !vtk
         variant: ascii
-      name: transport_output_stream
       times:
         - step: 0.5
     time:

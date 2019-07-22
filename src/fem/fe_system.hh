@@ -73,6 +73,8 @@ public:
 
     const unsigned int dim() const override { return dim_; }
     
+    const std::vector<DofComponentData> &dof_indices() { return dof_indices_; }
+    
     virtual ~FESystemFunctionSpace() {};
 
 private:
@@ -139,6 +141,9 @@ public:
     
     const std::vector<std::shared_ptr<FiniteElement<dim> > > &fe()
     { return fe_; }
+    
+    /// Return dof indices belonging to given sub-FE.
+    std::vector<unsigned int> fe_dofs(unsigned int fe_index);
     
 
 private:

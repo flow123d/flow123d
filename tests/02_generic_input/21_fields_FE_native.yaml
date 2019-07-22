@@ -10,7 +10,6 @@ problem: !Coupling_Sequential
     mesh_file: ../00_mesh/square_0.2x0.2.msh
   # steady velocity field, with velocity v:0.1
   flow_equation: !Flow_Darcy_MH
-    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-12
@@ -42,6 +41,5 @@ problem: !Coupling_Sequential
       file: ./test21.pvd
       format: !vtk
         variant: ascii
-      name: flow_output_stream
       times:
         - step: 0.25
