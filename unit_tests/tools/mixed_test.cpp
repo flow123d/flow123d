@@ -76,14 +76,14 @@ TEST(Mixed, mixed) {
         EXPECT_EQ(16, mixed_fe.get<3>()._a);
     }
 
-    /*{
+    {
         Mixed<FE_XY>  mixed_fe_xy( 3, vec);
-        Mixed<FE> mixed_fe = mixed_fe_xy.template operator()<FE>();
+        Mixed<FE> mixed_fe = mixed_fe_xy;
         EXPECT_EQ(13, mixed_fe.get<0>()._a);
         EXPECT_EQ(14, mixed_fe.get<1>()._a);
         EXPECT_EQ(15, mixed_fe.get<2>()._a);
         EXPECT_EQ(16, mixed_fe.get<3>()._a);
-    } // */
+    }
 
     // dim and spacedim templates
     {
