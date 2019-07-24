@@ -175,10 +175,12 @@ TEST(DOFHandler, test_sub_handler)
     FESystem<3> fe_sys3({ std::make_shared<FE_RT0<3> >(),
                           std::make_shared<FE_P<3> >(0),
                           std::make_shared<FE_CR<3> >() });
-    
+    MixedPtr<FESystem> fe_sys( std::make_shared<FESystem<0>>(fe_sys0), std::make_shared<FESystem<1>>(fe_sys1),
+    	                                    std::make_shared<FESystem<2>>(fe_sys2), std::make_shared<FESystem<3>>(fe_sys3) );
+
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     Mesh * mesh = mesh_full_constructor("{mesh_file=\"fem/small_mesh_junction.msh\"}");
-    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, &fe_sys0, &fe_sys1, &fe_sys2, &fe_sys3);
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, fe_sys);
     std::shared_ptr<DOFHandlerMultiDim> dh = std::make_shared<DOFHandlerMultiDim>(*mesh);
     dh->distribute_dofs(ds);
     std::shared_ptr<SubDOFHandlerMultiDim> sub_dh = std::make_shared<SubDOFHandlerMultiDim>(dh, 0);
@@ -298,10 +300,6 @@ TEST(DHAccessors, dh_cell_accessors) {
     }
     DOFHandlerMultiDim dh_2(*mesh); // test cell_with_other_dh method
     {
-        /*FE_RT0<0> fe0;
-        FE_RT0<1> fe1;
-        FE_RT0<2> fe2;
-        FE_RT0<3> fe3;*/
         MixedPtr<FE_RT0> fe;
         std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, fe);
         dh_2.distribute_dofs(ds);

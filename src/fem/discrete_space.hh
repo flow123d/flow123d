@@ -122,7 +122,7 @@ private:
       for (unsigned int d=0; d < fe_ptr->n_dofs(); d++) {
           if (fe_ptr->dof(d).dim == 0)
               _n_elem_dofs[dim]++;
-          if (fe_ptr->dof(d).dim == dim && fe_ptr->dof(d).n_face_idx == 0)
+          if (fe_ptr->dof(d).dim == dim-1 && fe_ptr->dof(d).n_face_idx == 0)
               _n_edge_dofs[dim]++;
           if (fe_ptr->dof(d).dim == 0 && fe_ptr->dof(d).n_face_idx == 0)
               _n_node_dofs[dim]++;
