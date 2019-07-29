@@ -70,7 +70,7 @@ bool Tuple::operator==(const TypeBase &other) const
 const Tuple &Tuple::close() const {
     data_->closed_=true;
 
-    bool allow_auto_conversion = true; // if no key or only first key is obligatory, tuple is auto convertible
+    bool allow_auto_conversion = (data_->keys.size() > 0); // if no key or only first key is obligatory, tuple is auto convertible
     for (vector<Key>::iterator it=data_->keys.begin(); it!=data_->keys.end(); it++)
 		if ( it->default_.is_obligatory() ) {
 			if (it != data_->keys.begin()) {
