@@ -236,7 +236,7 @@ public:
     virtual MakeInstanceReturnType make_instance(ParameterVector vec = ParameterVector()) =0;
 
     /// Indicates if type is marked with flag @p root_of_generic_subtree_
-    inline bool is_root_of_generic_subtree() {
+    inline bool is_root_of_generic_subtree() const {
     	return root_of_generic_subtree_;
     }
 
