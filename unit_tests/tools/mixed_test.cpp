@@ -33,6 +33,7 @@ public:
     }
 
     int _a;
+    int _b;
 };
 
 
@@ -41,7 +42,7 @@ class FE_XY : public FE<dim> {
 public:
     FE_XY(int a, std::vector<int> b)
     : FE<dim>(a, b)
-      {}
+      { this->_b = 2*this->_a; }
 };
 
 
@@ -74,6 +75,10 @@ TEST(Mixed, mixed) {
         EXPECT_EQ(14, mixed_fe.get<1>()._a);
         EXPECT_EQ(15, mixed_fe.get<2>()._a);
         EXPECT_EQ(16, mixed_fe.get<3>()._a);
+        EXPECT_EQ(26, mixed_fe.get<0>()._b);
+        EXPECT_EQ(28, mixed_fe.get<1>()._b);
+        EXPECT_EQ(30, mixed_fe.get<2>()._b);
+        EXPECT_EQ(32, mixed_fe.get<3>()._b);
     }
 
     {
@@ -83,6 +88,10 @@ TEST(Mixed, mixed) {
         EXPECT_EQ(14, mixed_fe.get<1>()._a);
         EXPECT_EQ(15, mixed_fe.get<2>()._a);
         EXPECT_EQ(16, mixed_fe.get<3>()._a);
+        EXPECT_EQ(26, mixed_fe.get<0>()._b);
+        EXPECT_EQ(28, mixed_fe.get<1>()._b);
+        EXPECT_EQ(30, mixed_fe.get<2>()._b);
+        EXPECT_EQ(32, mixed_fe.get<3>()._b);
     }
 
     // dim and spacedim templates
