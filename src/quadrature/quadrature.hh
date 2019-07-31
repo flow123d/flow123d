@@ -143,6 +143,7 @@ inline const unsigned int Quadrature<dim>::size() const {
 template<unsigned int dim>
 inline const arma::vec::fixed<dim> & Quadrature<dim>::point(
         const unsigned int i) const {
+    ASSERT_LT_DBG(i, quadrature_points.size());
     return quadrature_points[i];
 }
 
@@ -154,11 +155,13 @@ inline const std::vector<arma::vec::fixed<dim> > & Quadrature<dim>::get_points()
 template<unsigned int dim>
 inline void Quadrature<dim>::set_point(const unsigned int i, const arma::vec::fixed<dim> &p)
 {
+    ASSERT_LT_DBG(i, quadrature_points.size());
     quadrature_points[i] = p;
 }
 
 template<unsigned int dim>
 inline double Quadrature<dim>::weight(const unsigned int i) const {
+    ASSERT_LT_DBG(i, weights.size());
     return weights[i];
 }
 
@@ -170,6 +173,7 @@ inline const std::vector<double> & Quadrature<dim>::get_weights() const {
 template<unsigned int dim>
 inline void Quadrature<dim>::set_weight(const unsigned int i, const double w)
 {
+    ASSERT_LT_DBG(i, weights.size());
     weights[i] = w;
 }
 
