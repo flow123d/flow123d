@@ -455,24 +455,26 @@ DarcyFlowMHOutput::FEData::FEData()
 : order(4),
   quad(order),
   mapp(),
-  fe_p1(0), fe_p0(0)
+  fe_p1(0), fe_p0(0),
+  fe_rt( )
 {
+	// TODO Need to fix usage of mixed_fe_values methods. The problem is related with cast Mixed<QGauss> to Mixed<Quadrature>
     //Mixed<Quadrature> q_base = quad;
-    UpdateFlags flags = update_JxW_values | update_quadrature_points;
+    UpdateFlags flags = update_values | update_JxW_values | update_quadrature_points;
     fe_values = MixedPtr<FEValues>(
     	      std::make_shared<FEValues<0>>(mapp.get<0>(), quad.get<0>(), *fe_p0.get<0>(), flags),
     		  std::make_shared<FEValues<1>>(mapp.get<1>(), quad.get<1>(), *fe_p0.get<1>(), flags),
     		  std::make_shared<FEValues<2>>(mapp.get<2>(), quad.get<2>(), *fe_p0.get<2>(), flags),
     		  std::make_shared<FEValues<3>>(mapp.get<3>(), quad.get<3>(), *fe_p0.get<3>(), flags)
     	      );
-    //fe_values = mixed_fe_values(mapp, q_base, fe_p0, update_JxW_values | update_quadrature_points);
+    //fe_values = mixed_fe_values(mapp, q_base, fe_p0, flags);
     fv_rt = MixedPtr<FEValues>(
     	      std::make_shared<FEValues<0>>(mapp.get<0>(), quad.get<0>(), *fe_rt.get<0>(), flags),
     		  std::make_shared<FEValues<1>>(mapp.get<1>(), quad.get<1>(), *fe_rt.get<1>(), flags),
     		  std::make_shared<FEValues<2>>(mapp.get<2>(), quad.get<2>(), *fe_rt.get<2>(), flags),
     		  std::make_shared<FEValues<3>>(mapp.get<3>(), quad.get<3>(), *fe_rt.get<3>(), flags)
     	      );
-    //fv_rt = mixed_fe_values(mapp, q_base, fe_rt, update_JxW_values | update_quadrature_points);
+    //fv_rt = mixed_fe_values(mapp, q_base, fe_rt, flags);
 }
 
 
