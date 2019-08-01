@@ -18,10 +18,7 @@
 
 #include "fem/discrete_space.hh"
 
-template<> FEPtr<0> DiscreteSpace::fe(const ElementAccessor<3> &cell) const { return fe0d(cell); }
-template<> FEPtr<1> DiscreteSpace::fe(const ElementAccessor<3> &cell) const { return fe1d(cell); }
-template<> FEPtr<2> DiscreteSpace::fe(const ElementAccessor<3> &cell) const { return fe2d(cell); }
-template<> FEPtr<3> DiscreteSpace::fe(const ElementAccessor<3> &cell) const { return fe3d(cell); }
+MixedPtr<FiniteElement> EqualOrderDiscreteSpace::fe(const ElementAccessor<3> &cell) const { return fe_; }
 
 
 

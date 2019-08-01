@@ -58,9 +58,8 @@ public:
     return 0;
   }
   
-  /// Return finite element object for given element.
-  template<unsigned int dim>
-  FEPtr<dim> fe(const ElementAccessor<3> &) const;
+  /// Return Mixed of finite element objects.
+  virtual MixedPtr<FiniteElement> fe(const ElementAccessor<3> &) const = 0;
 
   /// Destructor.
   virtual ~DiscreteSpace() {};
@@ -71,11 +70,6 @@ protected:
   /// Constructor.
   DiscreteSpace(Mesh *mesh)
   : mesh_(mesh) {}
-  
-  virtual FEPtr<0> fe0d(const ElementAccessor<3> &) const = 0;
-  virtual FEPtr<1> fe1d(const ElementAccessor<3> &) const = 0;
-  virtual FEPtr<2> fe2d(const ElementAccessor<3> &) const = 0;
-  virtual FEPtr<3> fe3d(const ElementAccessor<3> &) const = 0;
   
   Mesh *mesh_;
 
@@ -109,10 +103,7 @@ public:
   unsigned int n_node_dofs(unsigned int nid) const override
   {return _n_node_dofs[mesh_->tree->node_dim()[nid]];}
   
-  FEPtr<0> fe0d(const ElementAccessor<3> &cell) const override { return fe_.get<0>(); }
-  FEPtr<1> fe1d(const ElementAccessor<3> &cell) const override { return fe_.get<1>(); }
-  FEPtr<2> fe2d(const ElementAccessor<3> &cell) const override { return fe_.get<2>(); }
-  FEPtr<3> fe3d(const ElementAccessor<3> &cell) const override { return fe_.get<3>(); }
+  MixedPtr<FiniteElement> fe(const ElementAccessor<3> &cell) const override;
   
   
 private:

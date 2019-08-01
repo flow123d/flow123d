@@ -111,7 +111,7 @@ public:
     template<unsigned int dim>
     FEPtr<dim> fe() const {
         ElementAccessor<3> elm_acc = this->elm();
-        return dof_handler_->ds_->fe<dim>(elm_acc);
+        return dof_handler_->ds_->fe(elm_acc).get<dim>();
     }
 
     /// Check validity of accessor (see default constructor)
