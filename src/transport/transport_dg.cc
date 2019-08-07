@@ -1471,8 +1471,8 @@ void TransportDG<Model>::set_boundary_conditions()
                 }
                 ls[sbi]->rhs_set_values(ndofs, &(side_dof_indices[0]), local_rhs);
 
-                Model::balance_->add_flux_matrix_values(Model::subst_idx[sbi], loc_b, side_dof_indices, local_flux_balance_vector);
-                Model::balance_->add_flux_vec_value(Model::subst_idx[sbi], loc_b, local_flux_balance_rhs);
+                Model::balance_->add_flux_matrix_values(Model::subst_idx[sbi], side, side_dof_indices, local_flux_balance_vector);
+                Model::balance_->add_flux_vec_value(Model::subst_idx[sbi], side, local_flux_balance_rhs);
             }
             ++loc_b;
         }
