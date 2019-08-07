@@ -356,7 +356,7 @@ void ConvectionTransport::set_boundary_conditions()
 
     ElementAccessor<3> elm;
 
-    unsigned int sbi, loc_el, loc_b = 0;
+    unsigned int sbi, loc_el;
     
     // Assembly bcvcorr vector
     for(sbi=0; sbi < n_substances(); sbi++) VecZeroEntries(bcvcorr[sbi]);
@@ -396,7 +396,6 @@ void ConvectionTransport::set_boundary_conditions()
                             balance_->add_flux_vec_value(subst_idx[sbi], elm.side(si), 0);
                         }
                     }
-                    ++loc_b;
                 }
             }
 

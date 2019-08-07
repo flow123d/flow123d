@@ -1261,7 +1261,6 @@ void TransportDG<Model>::set_boundary_conditions()
                 update_values);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim-1>()->size();
     vector<LongIdx> side_dof_indices(ndofs);
-    unsigned int loc_b=0;
     double local_rhs[ndofs];
     vector<PetscScalar> local_flux_balance_vector(ndofs);
     PetscScalar local_flux_balance_rhs;
@@ -1283,11 +1282,8 @@ void TransportDG<Model>::set_boundary_conditions()
             // skip edges lying not on the boundary
             if (edg->side(0)->cond() == NULL) continue;
 
-            if (edg->side(0)->dim() != dim-1)
-            {
-                if (edg->side(0)->cond() != nullptr) ++loc_b;
-                continue;
-            }
+            // skip edges of different dimension
+            if (edg->side(0)->dim() != dim-1) continue;
 
             SideIter side = edg->side(0);
             ElementAccessor<3> elm = Model::mesh_->element_accessor( side->element().idx() );
@@ -1402,7 +1398,6 @@ void TransportDG<Model>::set_boundary_conditions()
                 Model::balance_->add_flux_matrix_values(Model::subst_idx[sbi], side, side_dof_indices, local_flux_balance_vector);
                 Model::balance_->add_flux_vec_value(Model::subst_idx[sbi], side, local_flux_balance_rhs);
             }
-            ++loc_b;
         }
     }
 }
