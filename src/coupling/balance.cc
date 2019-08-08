@@ -222,7 +222,7 @@ void Balance::lazy_initialize()
             {
                 Boundary *b = elm.side(si)->cond();
                 if (b != nullptr){
-                    unsigned int ele_side_uid = get_boundary_edge_uid(elm.side(si));
+                    LongIdx ele_side_uid = get_boundary_edge_uid(elm.side(si));
                     be_id_map_[ele_side_uid] = be_id;
                     be_regions_.push_back(b->region().boundary_idx());
                     be_id++;
