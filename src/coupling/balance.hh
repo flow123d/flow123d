@@ -267,16 +267,12 @@ public:
 	/**
 	 * Adds elements into matrix for computing (outgoing) flux.
 	 * @param quantity_idx  Index of quantity.
-	 * @param boundary_idx  Local index of boundary edge.
-	 * @param dof_indices   Dof indices to be added.
+	 * @param side          Element side iterator.
+	 * @param dof_indices   Dof indices (to the solution vector) to be added.
 	 * @param values        Values to be added.
      * 
-     * The order of local boundary edges is given by traversing
-     * the local elements and their sides.
-     * 
-     * TODO: Think of less error-prone way of finding the local
-     * boundary index for a given Boundary object. It can be 
-     * possibly done when we will have a boundary mesh.
+     * TODO: Instead of SideIter and dof_indices, use DHCellSide,
+     * when it is available in all equations.
 	 */
 	void add_flux_matrix_values(unsigned int quantity_idx,
 			SideIter side,
@@ -308,10 +304,9 @@ public:
 	/**
 	 * Adds element into vector for computing (outgoing) flux.
 	 * @param quantity_idx  Index of quantity.
-	 * @param boundary_idx  Local index of boundary edge.
+	 * @param side          Element side iterator.
 	 * @param value         Value to be added.
      * 
-     * For determining the local boundary index see @ref add_flux_matrix_values.
 	 */
 	void add_flux_vec_value(unsigned int quantity_idx,
 			SideIter side,
@@ -431,8 +426,11 @@ private:
 	/// Format double value of csv output. If delimiter is space, align text to column.
 	std::string format_csv_val(double val, char delimiter, bool initial = false);
 
-    /// Computes unique id of local boundary edge from local element index and element side index
-    inline unsigned int get_boundary_edge_uid(SideIter side)
+    /** Computes unique id of local boundary edge from local element index and element side index
+     * 
+     * @param side is a side of locally owned element
+    */
+    inline LongIdx get_boundary_edge_uid(SideIter side)
     { return 4*side->elem_idx() + side->side_idx();}    // 4 is maximum of sides per element
 
 	//**********************************************
@@ -498,7 +496,11 @@ private:
     /// auxiliary vectors for summation of matrix columns
     Vec ones_, ones_be_;
 
-    /// Maps unique identifier of (local bulk element idx, side idx) to local boundary edge.
+    /** Maps unique identifier of (local bulk element idx, side idx) returned by @p get_boundary_edge_uid(side)
+     * to local boundary edge.
+     * Example usage:
+     *     be_id = be_id_map_[get_boundary_edge_uid(side)]
+     */
     std::unordered_map<LongIdx, unsigned int> be_id_map_;
 
     /// Maps local boundary edge to its region boundary index.
