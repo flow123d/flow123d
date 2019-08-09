@@ -305,7 +305,7 @@ void HM_Iterative::update_solution()
         // TODO: compute difference of iterates
         compute_iteration_error(difference, norm);
         
-        LogOut().fmt("HM Iteration {} abs. difference: {}  rel. difference: {}\n"
+        MessageOut().fmt("HM Iteration {} abs. difference: {}  rel. difference: {}\n"
                          "--------------------------------------------------------",
                          it, difference, difference/norm);
         update_field_from_mh_dofhandler(flow_->get_mh_dofhandler(), *data_.old_iter_pressure_ptr_);
