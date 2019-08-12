@@ -627,7 +627,7 @@ public:
             if (edg->side(0)->cond() == NULL) continue;
 
 
-            SideIter side = *(edg->side(0));
+            Side side = *(edg->side(0));
             ElementAccessor<3> elm = model_.mesh().element_accessor( side.element().idx() );
             ElementAccessor<3> ele_acc = side.cond()->element_accessor();
 
