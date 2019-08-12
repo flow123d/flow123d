@@ -68,7 +68,21 @@ bool Tuple::operator==(const TypeBase &other) const
 
 
 const Tuple &Tuple::close() const {
+	ASSERT_GT(data_->keys.size(), 0)(this->type_name()).error("Empty Tuple!\n");
     data_->closed_=true;
+
+    bool allow_auto_conversion = true; // if no key or only first key is obligatory, tuple is auto convertible
+    for (vector<Key>::iterator it=data_->keys.begin(); it!=data_->keys.end(); it++)
+		if ( it->default_.is_obligatory() ) {
+			if (it != data_->keys.begin()) {
+				allow_auto_conversion = false;
+			}
+		}
+    if (allow_auto_conversion) { // Add autoconvertibility
+        data_->auto_conversion_key_idx = 0;
+        data_->auto_conversion_key=data_->keys.begin()->key_;
+    }
+
     return *( Input::TypeRepository<Tuple>::get_instance().add_type( *this ) );
 }
 
@@ -87,14 +101,10 @@ FinishStatus Tuple::finish(FinishStatus finish_type)
 
     // iterates through keys
     bool obligatory_keys = true; // check order of keys (at first obligatory keys are defined, then other keys)
-    bool allow_auto_conversion = true;
     for (vector<Key>::iterator it=data_->keys.begin(); it!=data_->keys.end(); it++) {
     	// Performs check order of keys and check auto-conversion
     	Default dflt = it->default_;
 		if ( dflt.is_obligatory() ) {
-			if (it != data_->keys.begin()) {
-				allow_auto_conversion = false;
-			}
 			if ( !obligatory_keys ) {
 				THROW( ExcTupleWrongKeysOrder() << EI_TupleName(this->type_name()) );
 			}
@@ -112,12 +122,6 @@ FinishStatus Tuple::finish(FinishStatus finish_type)
 		it->type_->finish(finish_type);
 		ASSERT(it->type_->is_finished()).error();
 		if (finish_type == FinishStatus::delete_) it->type_.reset();
-    }
-
-    // Add autoconvertibility
-    if (allow_auto_conversion) {
-        data_->auto_conversion_key_idx = 0;
-        data_->auto_conversion_key=data_->keys.begin()->key_;
     }
 
     data_->finish_status_ = finish_type;
