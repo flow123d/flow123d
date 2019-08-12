@@ -313,12 +313,12 @@ TEST(DHAccessors, dh_cell_accessors) {
     	EXPECT_EQ( cell.elm_idx(), dh.mesh()->get_el_4_loc()[i_distr] );
 
     	for( DHCellSide cell_side : cell.side_range() ) {
-            EXPECT_EQ( cell.elm_idx(), cell_side.side()->elem_idx() );
+            EXPECT_EQ( cell.elm_idx(), cell_side.elem_idx() );
         	side_elm_idx.clear();
         	for( DHCellSide edge_side : cell_side.edge_sides() ) {
-        		side_elm_idx.push_back( edge_side.side()->elem_idx() );
+        		side_elm_idx.push_back( edge_side.elem_idx() );
         	}
-            const Edge *edg = cell_side.side()->edge();
+            const Edge *edg = cell_side.side().edge();
             EXPECT_EQ( side_elm_idx.size(), edg->n_sides);
             for (int sid=0; sid<edg->n_sides; sid++) {
             	EXPECT_EQ( side_elm_idx[sid], edg->side(sid)->element().idx());
@@ -327,7 +327,7 @@ TEST(DHAccessors, dh_cell_accessors) {
 
         neigh_elem_idx.clear();
         for( DHCellSide neighb_side : cell.neighb_sides() ) {
-        	neigh_elem_idx.push_back( neighb_side.side()->elem_idx() );
+        	neigh_elem_idx.push_back( neighb_side.elem_idx() );
         }
         EXPECT_EQ( neigh_elem_idx.size(), cell.elm()->n_neighs_vb());
         for (int nid=0; nid<cell.elm()->n_neighs_vb(); nid++) {
