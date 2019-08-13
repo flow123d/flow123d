@@ -70,19 +70,6 @@ TEST(Mixed, mixed) {
 
     {
         Mixed<FE_XY>  mixed_fe_xy( 3, vec);
-        Mixed<FE> mixed_fe = Mixed<FE>::cast_to_parent_template<FE_XY>(mixed_fe_xy);
-        EXPECT_EQ(13, mixed_fe.get<0>()._a);
-        EXPECT_EQ(14, mixed_fe.get<1>()._a);
-        EXPECT_EQ(15, mixed_fe.get<2>()._a);
-        EXPECT_EQ(16, mixed_fe.get<3>()._a);
-        EXPECT_EQ(26, mixed_fe.get<0>()._b);
-        EXPECT_EQ(28, mixed_fe.get<1>()._b);
-        EXPECT_EQ(30, mixed_fe.get<2>()._b);
-        EXPECT_EQ(32, mixed_fe.get<3>()._b);
-    }
-
-    {
-        Mixed<FE_XY>  mixed_fe_xy( 3, vec);
         Mixed<FE> mixed_fe = mixed_fe_xy;
         EXPECT_EQ(13, mixed_fe.get<0>()._a);
         EXPECT_EQ(14, mixed_fe.get<1>()._a);
@@ -93,6 +80,12 @@ TEST(Mixed, mixed) {
         EXPECT_EQ(30, mixed_fe.get<2>()._b);
         EXPECT_EQ(32, mixed_fe.get<3>()._b);
     }
+
+// Compilation must failed on static assert (Non-convertible types!)
+//    {
+//        Mixed<FE>  mixed_fe(3);
+//        Mixed<Mapping> mixed_map = mixed_fe;
+//    }
 
     // dim and spacedim templates
     {
