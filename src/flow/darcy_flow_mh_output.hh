@@ -188,7 +188,7 @@ protected:
         FEData();
         
         const unsigned int order; // order of Gauss quadrature
-        Mixed<QGauss> quad;
+        MixedPtr<QGauss> quad;
         Mixed<MappingP1> mapp;
 
         MixedPtr<FE_P_disc> fe_p1;

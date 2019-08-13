@@ -40,23 +40,12 @@ class Mixed : public _MixedBase<T> {
  */
 public:
     template < template<Dim...> class TT>
-    static Mixed<T> cast_to_parent_template(const Mixed<TT> &other)
-    {
-    	//bool parent = std::is_base_of<T<0>, TT<0>>::value;
-        return Mixed<T>(
-        		T<0>(other.get<0>()),
-				T<1>(other.get<1>()),
-				T<2>(other.get<2>()),
-				T<3>(other.get<3>()));
-    }
-
-    template < template<Dim...> class TT>
     Mixed(const Mixed<TT> &other)
     : _MixedBase<T>(
-            other.get<0>(),
-            other.get<1>(),
-            other.get<2>(),
-            other.get<3>())
+    		T<0>(other.get<0>()),
+			T<1>(other.get<1>()),
+			T<2>(other.get<2>()),
+			T<3>(other.get<3>()) )
     { static_assert(std::is_convertible<TT<0>, T<0>>::value, "Non-convertible types!"); }
 
     Mixed(const T<0> &p0,const T<1> &p1,const T<2> &p2,const T<3> &p3)
