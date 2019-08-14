@@ -225,7 +225,7 @@ unsigned int FEValueHandler<0, spacedim, Value>::get_dof_indices(const ElementAc
 template <int elemdim, int spacedim, class Value>
 FEValueHandler<elemdim, spacedim, Value>::~FEValueHandler()
 {
-	if (map_ == nullptr) delete map_;
+	if (map_ != nullptr) delete map_;
 }
 
 
