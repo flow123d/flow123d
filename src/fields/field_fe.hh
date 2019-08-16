@@ -291,10 +291,9 @@ std::shared_ptr<FieldFE<spacedim, Value> > create_field(VectorMPI & vec_seq, Mes
 	}
 
 	// Prepare DOF handler
-	DOFHandlerMultiDim dh_par(mesh);
+	dh = std::make_shared<DOFHandlerMultiDim>(mesh);
 	std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( &mesh, fe0, fe1, fe2, fe3);
-	dh_par.distribute_dofs(ds);
-    dh = dh_par.sequential();
+	dh->distribute_dofs(ds);
 
 	// Construct FieldFE
 	std::shared_ptr< FieldFE<spacedim, Value> > field_ptr = std::make_shared< FieldFE<spacedim, Value> >();
@@ -318,16 +317,16 @@ void fill_output_data(VectorMPI & vec_seq, std::shared_ptr<FieldFE<spacedim, Val
 	unsigned int idof; // iterate over indices
 	std::vector<LongIdx> indices(ndofs);
 
-	/*for (auto cell : dh->own_range()) {
+	for (auto cell : dh->own_range()) {
 		cell.get_loc_dof_indices(indices);
 		for(idof=0; idof<ndofs; idof++) field_ptr->get_data_vec()[ indices[idof] ] = (*vec_seq.data_ptr())[ ndofs*cell.elm_idx()+idof ];
-	}*/
+	}
 
 	// Fill DOF handler of FieldFE with correct permutation of data corresponding with DOFs.
-	for (auto ele : dh->mesh()->elements_range()) {
+	/*for (auto ele : dh->mesh()->elements_range()) {
 		dh->cell_accessor_from_element(ele.idx()).get_loc_dof_indices(indices);
 		for(idof=0; idof<ndofs; idof++) field_ptr->get_data_vec()[ indices[idof] ] = (*vec_seq.data_ptr())[ ndofs*ele.idx()+idof ];
-	}
+	}*/
 }
 
 
