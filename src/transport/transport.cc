@@ -234,7 +234,8 @@ void ConvectionTransport::initialize()
 	for (unsigned int sbi=0; sbi<n_substances(); sbi++)
 	{
 		// create shared pointer to a FieldFE and push this Field to output_field on all regions
-		output_field_ptr[sbi] = create_field<3, FieldValue<3>::Scalar>(out_conc[sbi], *mesh_, 1);
+		output_field_ptr[sbi] = std::make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
+		output_field_ptr[sbi]->set_fe_data(dh_ );
 		data_.conc_mobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr[sbi], 0);
 	}
 	//output_stream_->add_admissible_field_names(input_rec.val<Input::Array>("output_fields"));
@@ -937,8 +938,14 @@ void ConvectionTransport::output_data() {
     output_vector_gather();
     //}
 
+	unsigned int ndofs = dh_->max_elem_dofs();
+	unsigned int idof; // iterate over indices
+	std::vector<LongIdx> indices(ndofs);
     for (unsigned int sbi = 0; sbi < n_substances(); sbi++) {
-    	fill_output_data(out_conc[sbi], output_field_ptr[sbi]);
+        for (auto cell : dh_->own_range()) {
+            cell.get_loc_dof_indices(indices);
+            for(idof=0; idof<ndofs; idof++) output_field_ptr[sbi]->get_data_vec()[ indices[idof] ] = (*out_conc[sbi].data_ptr())[ ndofs*cell.elm_idx()+idof ];
+        }
     }
 
 	data_.output_fields.output(time().step());
