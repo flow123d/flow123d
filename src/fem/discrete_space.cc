@@ -16,6 +16,7 @@
  * @author  Jan Stebel
  */
 
+#include "mesh/side_impl.hh"
 #include "fem/discrete_space.hh"
 #include "fem/finite_element.hh"
 #include "mesh/mesh.h"
