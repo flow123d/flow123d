@@ -6,6 +6,7 @@
  */
 
 #include "mesh/region_set.hh"
+#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include <string>
 #include <sstream>

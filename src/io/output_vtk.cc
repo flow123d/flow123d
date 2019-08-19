@@ -19,6 +19,7 @@
 #include "element_data_cache_base.hh"
 #include "element_data_cache.hh"
 #include "output_mesh.hh"
+#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 
 #include <limits.h>

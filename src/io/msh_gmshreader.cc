@@ -28,6 +28,7 @@
 #include "system/tokenizer.hh"
 #include "boost/lexical_cast.hpp"
 
+#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "mesh/nodes.hh"
 
