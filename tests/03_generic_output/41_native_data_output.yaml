@@ -5,11 +5,10 @@
 
 flow123d_version: 3.1.0
 problem: !Coupling_Sequential
-  description: Test of FieldFE native data - init_pressure, init_conc fields
+  description: Test of FieldFE native data - init_pressure, native output is used in test 02 / 21 (native data input)
   mesh:
     mesh_file: ../00_mesh/square_0.2x0.2.msh
   # steady velocity field, with velocity v:0.1
-  #flow_equation: !Flow_Richards_LMH
   flow_equation: !Flow_Darcy_MH
     output_specific:
     nonlinear_solver:

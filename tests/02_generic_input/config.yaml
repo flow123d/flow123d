@@ -10,6 +10,7 @@ test_cases:
   - 12_time_unit_nested_equation.yaml
   - 13_time_steps_func.yaml
   - 14_time_steps_func_include.yaml
+  - 21_fields_FE_native.yaml
   proc: [1]
   
   
@@ -20,7 +21,7 @@ test_cases:
 - files: 
    - 03_field_descriptors.yaml   
    - 07_bulk_interpolation_cube.yaml
-   - 15_formula_surface_depth.yaml   
+   - 15_formula_surface_depth.yaml
    - 22_elementwise_fields.yaml
    - 23_elementwise_bc.yaml
    - 24_elementwise_integer_field.yaml
