@@ -77,6 +77,7 @@ SchurComplement::SchurComplement(Distribution *ds, IS ia, IS ib)
         RHS2    = NULL;
         Sol1    = NULL;
         Sol2    = NULL;
+        ds_     = NULL;
 
         // create A block index set
         ISGetLocalSize(IsA, &loc_size_A);
@@ -100,6 +101,7 @@ SchurComplement::SchurComplement(Distribution *ds, IS ia, IS ib)
             for(uint i=0, j=0; i < ds->lsize(); i++)
                 if (! a_used[i]) b_indices[j++] = i + ds->begin();
             ISCreateGeneral(PETSC_COMM_WORLD, loc_size_B, b_indices, PETSC_COPY_VALUES, &IsB);
+            PetscFree(b_indices);
         } else {
             ISGetLocalSize(IsB, &loc_size_B);
         }
@@ -284,6 +286,7 @@ void SchurComplement::set_complement(LinSys_PETSC *ls)
 
 Distribution *SchurComplement::make_complement_distribution()
 {
+	if (ds_ != NULL) delete ds_;
     ds_ = new Distribution(loc_size_B, PETSC_COMM_WORLD);
 	return ds_;
 }
@@ -439,5 +442,6 @@ SchurComplement :: ~SchurComplement() {
     if ( IA != NULL )             chkerr(MatDestroy(&IA));
 
     if (Compl != NULL)            delete Compl;
+    if (ds_ != NULL)              delete ds_;
 
 }

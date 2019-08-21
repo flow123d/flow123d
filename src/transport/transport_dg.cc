@@ -931,16 +931,16 @@ void TransportDG<Model>::assemble_fluxes_element_element()
         for( DHCellSide cell_side : dh_cell.side_range() )
         {
         	if (cell_side.n_edge_sides() < 2) continue;
-            bool unique_edge = (cell_side.edge_sides().begin()->side()->element().idx() != dh_cell.elm_idx());
+            bool unique_edge = (cell_side.edge_sides().begin()->element().idx() != dh_cell.elm_idx());
     	    if ( unique_edge ) continue;
     	    sid=0;
         	for( DHCellSide edge_side : cell_side.edge_sides() )
             {
-        	    auto dh_edge_cell = feo->dh()->cell_accessor_from_element( edge_side.side()->elem_idx() );
+        	    auto dh_edge_cell = feo->dh()->cell_accessor_from_element( edge_side.elem_idx() );
                 ElementAccessor<3> cell = dh_edge_cell.elm();
                 dh_edge_cell.get_dof_indices(side_dof_indices[sid]);
-                fe_values[sid]->reinit(cell, edge_side.side()->side_idx());
-                fsv_rt.reinit(cell, edge_side.side()->side_idx());
+                fe_values[sid]->reinit(cell, edge_side.side_idx());
+                fsv_rt.reinit(cell, edge_side.side_idx());
                 calculate_velocity(cell, side_velocity[sid], fsv_rt);
                 Model::compute_advection_diffusion_coefficients(fe_values[sid]->point_list(), side_velocity[sid], cell, ad_coef_edg[sid], dif_coef_edg[sid]);
                 dg_penalty[sid].resize(Model::n_substances());
@@ -961,7 +961,7 @@ void TransportDG<Model>::assemble_fluxes_element_element()
                     fluxes[sid] = 0;
                     for (unsigned int k=0; k<qsize; k++)
                         fluxes[sid] += arma::dot(ad_coef_edg[sid][sbi][k], fe_values[sid]->normal_vector(k))*fe_values[sid]->JxW(k);
-                    fluxes[sid] /= edge_side.side()->measure();
+                    fluxes[sid] /= edge_side.measure();
                     if (fluxes[sid] > 0)
                         pflux += fluxes[sid];
                     else
@@ -977,7 +977,7 @@ void TransportDG<Model>::assemble_fluxes_element_element()
                     {
                 		s2++;
                 		if (s2<=s1) continue;
-                        ASSERT(edge_side1.side()->valid()).error("Invalid side of edge.");
+                        ASSERT(edge_side1.is_valid()).error("Invalid side of edge.");
 
                         arma::vec3 nv = fe_values[s1]->normal_vector(0);
 
@@ -1010,9 +1010,9 @@ void TransportDG<Model>::assemble_fluxes_element_element()
                             omega[0] = delta[1]/delta_sum;
                             omega[1] = delta[0]/delta_sum;
                             double local_alpha = max(dg_penalty[s1][sbi], dg_penalty[s2][sbi]);
-                            double h = edge_side1.side()->diameter();
-                            aniso1 = elem_anisotropy(edge_side1.side()->element());
-                            aniso2 = elem_anisotropy(edge_side2.side()->element());
+                            double h = edge_side1.diameter();
+                            aniso1 = elem_anisotropy(edge_side1.element());
+                            aniso2 = elem_anisotropy(edge_side2.element());
                             gamma_l += local_alpha/h*aniso1*aniso2*(delta[0]*delta[1]/delta_sum);
                         }
                         else
@@ -1108,22 +1108,22 @@ void TransportDG<Model>::assemble_fluxes_boundary()
     	if (!cell.is_own()) continue;
         for( DHCellSide cell_side : cell.side_range() )
         {
-            const Side *side = cell_side.side();
-            if (side->edge()->n_sides > 1) continue;
+            Side side = cell_side.side();
+            if (side.edge()->n_sides > 1) continue;
             // check spatial dimension
-            if (side->dim() != dim-1) continue;
+            if (side.dim() != dim-1) continue;
             // skip edges lying not on the boundary
-            if (side->cond() == NULL) continue;
+            if (side.cond() == NULL) continue;
 
             ElementAccessor<3> elm_acc = cell.elm();
             cell.get_dof_indices(side_dof_indices);
-            fe_values_side.reinit(elm_acc, side->side_idx());
-            fsv_rt.reinit(elm_acc, side->side_idx());
+            fe_values_side.reinit(elm_acc, side.side_idx());
+            fsv_rt.reinit(elm_acc, side.side_idx());
 
             calculate_velocity(elm_acc, side_velocity, fsv_rt);
             Model::compute_advection_diffusion_coefficients(fe_values_side.point_list(), side_velocity, elm_acc, ad_coef, dif_coef);
             arma::uvec bc_type;
-            Model::get_bc_type(side->cond()->element_accessor(), bc_type);
+            Model::get_bc_type(side.cond()->element_accessor(), bc_type);
             data_.cross_section.value_list(fe_values_side.point_list(), elm_acc, csection);
 
             for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
@@ -1137,13 +1137,13 @@ void TransportDG<Model>::assemble_fluxes_boundary()
                 double side_flux = 0;
                 for (unsigned int k=0; k<qsize; k++)
                     side_flux += arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k))*fe_values_side.JxW(k);
-                double transport_flux = side_flux/side->measure();
+                double transport_flux = side_flux/side.measure();
 
                 if (bc_type[sbi] == AdvectionDiffusionModel::abc_dirichlet)
                 {
                     // set up the parameters for DG method
                     set_DG_parameters_boundary(side, qsize, dif_coef[sbi], transport_flux, fe_values_side.normal_vector(0), data_.dg_penalty[sbi].value(elm_acc.centre(), elm_acc), gamma_l);
-                    gamma[sbi][side->cond_idx()] = gamma_l;
+                    gamma[sbi][side.cond_idx()] = gamma_l;
                     transport_flux += gamma_l;
                 }
 
@@ -1153,12 +1153,12 @@ void TransportDG<Model>::assemble_fluxes_boundary()
                     double flux_times_JxW;
                     if (bc_type[sbi] == AdvectionDiffusionModel::abc_total_flux)
                     {
-                        Model::get_flux_bc_sigma(sbi, fe_values_side.point_list(), side->cond()->element_accessor(), robin_sigma);
+                        Model::get_flux_bc_sigma(sbi, fe_values_side.point_list(), side.cond()->element_accessor(), robin_sigma);
                         flux_times_JxW = csection[k]*robin_sigma[k]*fe_values_side.JxW(k);
                     }
                     else if (bc_type[sbi] == AdvectionDiffusionModel::abc_diffusive_flux)
                     {
-                        Model::get_flux_bc_sigma(sbi, fe_values_side.point_list(), side->cond()->element_accessor(), robin_sigma);
+                        Model::get_flux_bc_sigma(sbi, fe_values_side.point_list(), side.cond()->element_accessor(), robin_sigma);
                         flux_times_JxW = (transport_flux + csection[k]*robin_sigma[k])*fe_values_side.JxW(k);
                     }
                     else if (bc_type[sbi] == AdvectionDiffusionModel::abc_inflow && side_flux < 0)
@@ -1236,13 +1236,13 @@ void TransportDG<Model>::assemble_fluxes_element_side()
             fe_values_vb.reinit(elm_lower_dim);
             n_dofs[0] = fv_sb[0]->n_dofs();
 
-            DHCellAccessor cell_higher_dim = feo->dh()->cell_accessor_from_element( neighb_side.side()->element().idx() );
+            DHCellAccessor cell_higher_dim = feo->dh()->cell_accessor_from_element( neighb_side.element().idx() );
             ElementAccessor<3> elm_higher_dim = cell_higher_dim.elm();
             n_indices = cell_higher_dim.get_dof_indices(indices);
     		for(unsigned int i=0; i<n_indices; ++i) {
     			side_dof_indices[i+n_dofs[0]] = indices[i];
     		}
-            fe_values_side.reinit(elm_higher_dim, neighb_side.side()->side_idx());
+            fe_values_side.reinit(elm_higher_dim, neighb_side.side_idx());
             n_dofs[1] = fv_sb[1]->n_dofs();
 
             // Testing element if they belong to local partition.
@@ -1250,7 +1250,7 @@ void TransportDG<Model>::assemble_fluxes_element_side()
             own_element_id[0] = cell_lower_dim.is_own();
             own_element_id[1] = cell_higher_dim.is_own();
 
-            fsv_rt.reinit(elm_higher_dim, neighb_side.side()->side_idx());
+            fsv_rt.reinit(elm_higher_dim, neighb_side.side_idx());
             fv_rt.reinit(elm_lower_dim);
             calculate_velocity(elm_higher_dim, velocity_higher, fsv_rt);
             calculate_velocity(elm_lower_dim, velocity_lower, fv_rt);
@@ -1357,21 +1357,22 @@ void TransportDG<Model>::set_boundary_conditions()
             // skip edges of different dimension
             if (edg->side(0)->dim() != dim-1) continue;
 
-            SideIter side = edg->side(0);
-            ElementAccessor<3> elm = Model::mesh_->element_accessor( side->element().idx() );
-            ElementAccessor<3> ele_acc = side->cond()->element_accessor();
+
+            Side side = *(edg->side(0));
+            ElementAccessor<3> elm = Model::mesh_->element_accessor( side.element().idx() );
+            ElementAccessor<3> ele_acc = side.cond()->element_accessor();
 
             arma::uvec bc_type;
             Model::get_bc_type(ele_acc, bc_type);
 
-            fe_values_side.reinit(elm, side->side_idx());
-            fsv_rt.reinit(elm, side->side_idx());
+            fe_values_side.reinit(elm, side.side_idx());
+            fsv_rt.reinit(elm, side.side_idx());
             calculate_velocity(elm, velocity, fsv_rt);
 
-            Model::compute_advection_diffusion_coefficients(fe_values_side.point_list(), velocity, side->element(), ad_coef, dif_coef);
-            data_.cross_section.value_list(fe_values_side.point_list(), side->element(), csection);
+            Model::compute_advection_diffusion_coefficients(fe_values_side.point_list(), velocity, side.element(), ad_coef, dif_coef);
+            data_.cross_section.value_list(fe_values_side.point_list(), side.element(), csection);
 
-            auto dh_cell = feo->dh()->cell_accessor_from_element( side->element().idx() );
+            auto dh_cell = feo->dh()->cell_accessor_from_element( side.element().idx() );
             dh_cell.get_dof_indices(side_dof_indices);
 
             for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
@@ -1387,7 +1388,7 @@ void TransportDG<Model>::set_boundary_conditions()
                 double side_flux = 0;
                 for (unsigned int k=0; k<qsize; k++)
                     side_flux += arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k))*fe_values_side.JxW(k);
-                double transport_flux = side_flux/side->measure();
+                double transport_flux = side_flux/side.measure();
 
                 if (bc_type[sbi] == AdvectionDiffusionModel::abc_inflow && side_flux < 0)
                 {
@@ -1404,7 +1405,7 @@ void TransportDG<Model>::set_boundary_conditions()
                 {
                     for (unsigned int k=0; k<qsize; k++)
                     {
-                        double bc_term = gamma[sbi][side->cond_idx()]*bc_values[k]*fe_values_side.JxW(k);
+                        double bc_term = gamma[sbi][side.cond_idx()]*bc_values[k]*fe_values_side.JxW(k);
                         arma::vec3 bc_grad = -bc_values[k]*fe_values_side.JxW(k)*dg_variant*(arma::trans(dif_coef[sbi][k])*fe_values_side.normal_vector(k));
                         for (unsigned int i=0; i<ndofs; i++)
                             local_rhs[i] += bc_term*fe_values_side.shape_value(i,k)
@@ -1416,7 +1417,7 @@ void TransportDG<Model>::set_boundary_conditions()
                         {
                             local_flux_balance_vector[i] += (arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k))*fe_values_side.shape_value(i,k)
                                     - arma::dot(dif_coef[sbi][k]*fe_values_side.shape_grad(i,k),fe_values_side.normal_vector(k))
-                                    + gamma[sbi][side->cond_idx()]*fe_values_side.shape_value(i,k))*fe_values_side.JxW(k);
+                                    + gamma[sbi][side.cond_idx()]*fe_values_side.shape_value(i,k))*fe_values_side.JxW(k);
                         }
                     }
                     if (Model::time_->tlevel() > 0)
@@ -1498,7 +1499,7 @@ void TransportDG<Model>::calculate_velocity(const ElementAccessor<3> &cell,
 
 
 template<class Model>
-void TransportDG<Model>::set_DG_parameters_boundary(const Side *side,
+void TransportDG<Model>::set_DG_parameters_boundary(Side side,
             const int K_size,
             const vector<arma::mat33> &K,
             const double flux,
@@ -1509,15 +1510,15 @@ void TransportDG<Model>::set_DG_parameters_boundary(const Side *side,
     double delta = 0, h = 0;
 
     // calculate the side diameter
-    if (side->dim() == 0)
+    if (side.dim() == 0)
     {
         h = 1;
     }
     else
     {
-        for (unsigned int i=0; i<side->n_nodes(); i++)
-            for (unsigned int j=i+1; j<side->n_nodes(); j++)
-                h = max(h, side->node(i)->distance( *side->node(j).node() ));
+        for (unsigned int i=0; i<side.n_nodes(); i++)
+            for (unsigned int j=i+1; j<side.n_nodes(); j++)
+                h = max(h, side.node(i)->distance( *side.node(j).node() ));
     }
 
     // delta is set to the average value of Kn.n on the side
@@ -1525,7 +1526,7 @@ void TransportDG<Model>::set_DG_parameters_boundary(const Side *side,
         delta += dot(K[k]*normal_vector,normal_vector);
     delta /= K_size;
 
-    gamma = 0.5*fabs(flux) + alpha/h*delta*elem_anisotropy(side->element());
+    gamma = 0.5*fabs(flux) + alpha/h*delta*elem_anisotropy(side.element());
 }
 
 
