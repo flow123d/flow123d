@@ -36,5 +36,5 @@ problem: !Coupling_Sequential
       format: !vtk
         variant: ascii
       name: flow_output_stream
-      times:
-        - step: 0.25
+#      times:
+#        - step: 0.25
