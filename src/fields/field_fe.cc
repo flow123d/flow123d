@@ -251,7 +251,6 @@ void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) 
 	if ( flags_.match(FieldFlag::equation_input) && flags_.match(FieldFlag::declare_input) ) {
 		ASSERT(field_name_ != "").error("Uninitialized FieldFE, did you call init_from_input()?\n");
 		this->boundary_domain_ = boundary_domain;
-		this->make_dof_handler(mesh);
 		switch (this->interpolation_) {
 			case DataInterpolation::identic_msh:
 				ReaderCache::get_element_ids(reader_file_, *mesh);
@@ -280,6 +279,7 @@ void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) 
 				break;
 			}
 		}
+		this->make_dof_handler(mesh);
 	}
 }
 
@@ -352,8 +352,9 @@ void FieldFE<spacedim, Value>::make_dof_handler(const Mesh *mesh) {
 	std::shared_ptr<DOFHandlerMultiDim> dh_par = std::make_shared<DOFHandlerMultiDim>( const_cast<Mesh &>(*mesh) );
     std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( &const_cast<Mesh &>(*mesh), fe0_, fe1_, fe2_, fe3_);
 	dh_par->distribute_dofs(ds);
-	if (this->discretization_ == OutputTime::DiscreteSpace::NATIVE_DATA) dh_ = dh_par;
-	else dh_ = dh_par->sequential();
+	//if (this->discretization_ == OutputTime::DiscreteSpace::NATIVE_DATA)
+		dh_ = dh_par;
+	//else dh_ = dh_par->sequential();
     unsigned int ndofs = dh_->max_elem_dofs();
     dof_indices_.resize(ndofs);
 
@@ -675,7 +676,7 @@ void FieldFE<spacedim, Value>::calculate_elementwise_values(ElementDataCache<dou
 	Mesh *mesh;
 	if (this->boundary_domain_) mesh = dh_->mesh()->get_bc_mesh();
 	else mesh = dh_->mesh();
-	for (auto ele : mesh->elements_range()) { // remove special case for rank == 0 - necessary for correct output
+	/*for (auto ele : mesh->elements_range()) { // remove special case for rank == 0 - necessary for correct output
 		if (this->boundary_domain_) dof_size = value_handler1_.get_dof_indices( ele, dof_indices_ );
 		else dof_size = dh_->cell_accessor_from_element(ele.idx()).get_loc_dof_indices( dof_indices_ );
 		data_vec_i = ele.idx() * dof_indices_.size();
@@ -683,17 +684,17 @@ void FieldFE<spacedim, Value>::calculate_elementwise_values(ElementDataCache<dou
 			(*data_vector)[ dof_indices_[i] ] += (*data_cache)[data_vec_i];
 			++count_vector[ dof_indices_[i] ];
 		}
-	}
+	}*/
 
 	// iterate through cells, assembly global vector and count number of writes - prepared solution for further development
-	/*for (auto cell : dh_->own_range()) {
+	for (auto cell : dh_->own_range()) {
 		dof_size = cell.get_loc_dof_indices(dof_indices_);
 		data_vec_i = cell.elm_idx() * dof_indices_.size();
 		for (unsigned int i=0; i<dof_size; ++i, ++data_vec_i) {
 			(*data_vector)[ dof_indices_[i] ] += (*data_cache)[data_vec_i];
 			++count_vector[ dof_indices_[i] ];
 		}
-	}*/
+	}
 
 	// compute averages of values
 	for (unsigned int i=0; i<data_vec_.size(); ++i) {
