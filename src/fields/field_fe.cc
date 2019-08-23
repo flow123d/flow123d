@@ -454,9 +454,10 @@ void FieldFE<spacedim, Value>::interpolate_gauss(ElementDataCache<double>::Compo
 	Mesh *mesh;
 	if (this->boundary_domain_) mesh = dh_->mesh()->get_bc_mesh();
 	else mesh = dh_->mesh();
-	for (auto ele : mesh->elements_range()) {
+	for (auto cell : dh_->own_range()) {
+		auto ele = cell.elm();
 		std::fill(elem_value.begin(), elem_value.end(), 0.0);
-		switch (ele->dim()) {
+		switch (cell.dim()) {
 		case 0:
 			quadrature_size = 1;
 			q_points[0] = ele.node(0)->point();
@@ -515,10 +516,7 @@ void FieldFE<spacedim, Value>::interpolate_gauss(ElementDataCache<double>::Compo
 		}
 
 		if (this->boundary_domain_) value_handler1_.get_dof_indices( ele, dof_indices_);
-		else {
-		    DHCellAccessor cell = dh_->cell_accessor_from_element(ele.idx());
-		    cell.get_loc_dof_indices(dof_indices_);
-		}
+		else cell.get_loc_dof_indices(dof_indices_);
 		for (unsigned int i=0; i < elem_value.size(); i++) {
 			ASSERT_LT_DBG( dof_indices_[i], (int)data_vec_.size());
 			data_vec_[dof_indices_[i]] = elem_value[i] * this->unit_conversion_coefficient_;

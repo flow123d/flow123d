@@ -19,6 +19,7 @@ test_cases:
 
 - files: 
    - 03_field_descriptors.yaml   
+   - 06_bulk_interpolated.yaml
    - 07_bulk_interpolation_cube.yaml
    - 15_formula_surface_depth.yaml
    - 21_fields_FE_native.yaml
@@ -29,6 +30,5 @@ test_cases:
 
 # Temporary turn off native input/output tests  
 - files:
-    - 06_bulk_interpolated.yaml
     - 21_fields_FE_native.yaml
   proc: []  
