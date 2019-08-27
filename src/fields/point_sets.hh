@@ -21,7 +21,7 @@
 
 #include <memory>
 #include <armadillo>
-#include "mesh/range_Wrapper.hh"
+#include "mesh/range_wrapper.hh"
 
 
 class Side;
