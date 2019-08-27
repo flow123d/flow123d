@@ -305,6 +305,8 @@ add_library(coupling_lib
     fields/field_divide.cc
     fields/field_fe.cc
     fields/fe_value_handler.cc
+    fields/point_sets.cc
+    fields/field_evaluator.cc
     fields/surface_depth.cc
     coupling/equation.cc
     coupling/balance.cc
