@@ -44,7 +44,18 @@ BulkPointSet<dim> FieldEvaluator<dim>::add_bulk_fields(const Quadrature<dim> &qu
 template <unsigned int dim>
 SidePointSet<dim> FieldEvaluator<dim>::add_side_fields(const Quadrature<dim-1> &quad, std::vector<FieldCommon *> field_vec)
 {
-    // Not implemented yet!
+    ASSERT(side_set_.f_eval_==nullptr).error("Multiple initialization of side point set!\n");
+
+    side_set_.f_eval_ = std::shared_ptr< FieldEvaluator<dim> >(this); //std::enable_shared_from_this< FieldEvaluator<dim> >::shared_from_this();
+    side_field_vec_ = field_vec;
+
+    for (unsigned int i=0; i<dim+1; ++i) {
+        Quadrature<dim> high_dim_q(quad, i, 0); // set correct permutation id
+        side_ranges_[i] = local_points_.size();
+        for (auto p : high_dim_q.get_points()) local_points_.push_back(p);
+    }
+    side_ranges_[dim+1] = local_points_.size();
+
     return side_set_;
 }
 
