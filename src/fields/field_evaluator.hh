@@ -23,9 +23,11 @@
 #include <vector>
 #include <memory>
 #include <armadillo>
+#include "mesh/range_wrapper.hh"
 #include "system/asserts.hh"
 
 class FieldCommon;
+class Side;
 template <unsigned int dim> class BulkPointSet;
 template <unsigned int dim> class SidePointSet;
 template <unsigned int dim> class PointAccessor;
@@ -62,6 +64,18 @@ public:
     /// The point sets are created for each field by joining bulk and side points
     /// respecting the side permutation.
     void reinit(ElementAccessor<3> &);
+
+    /// Returns range loop over all points
+    Range<PointAccessor<dim>> points_range() const;
+
+    /// Returns range loop over all bulk points
+    Range<PointAccessor<dim>> bulk_range() const;
+
+    /// Returns range loop over all side points
+    Range<PointAccessor<dim>> sides_range() const;
+
+    /// Returns range of points for given side and its permutation
+    Range<PointAccessor<dim>> side_range(const Side &) const;
 
 private:
     BulkPointSet<dim> bulk_set_;

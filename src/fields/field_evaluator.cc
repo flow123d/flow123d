@@ -65,6 +65,30 @@ void FieldEvaluator<dim>::reinit(ElementAccessor<3> &elm)
     // Not implemented yet!
 }
 
+template <unsigned int dim>
+Range< PointAccessor<dim> > FieldEvaluator<dim>::points_range() const {
+    auto bgn_it = make_iter<PointAccessor<dim>>( PointAccessor<dim>(this->bulk_point_set().field_evaluator(), 0) );
+    auto end_it = make_iter<PointAccessor<dim>>( PointAccessor<dim>(this->bulk_point_set().field_evaluator(), local_points_.size()) );
+    return Range<PointAccessor<dim>>(bgn_it, end_it);
+}
+
+template <unsigned int dim>
+Range< PointAccessor<dim> > FieldEvaluator<dim>::bulk_range() const {
+    return this->bulk_point_set().points();
+}
+
+template <unsigned int dim>
+Range< PointAccessor<dim> > FieldEvaluator<dim>::sides_range() const {
+    auto bgn_it = make_iter<PointAccessor<dim>>( PointAccessor<dim>(this->side_point_set().field_evaluator(), side_ranges_[0]) );
+    auto end_it = make_iter<PointAccessor<dim>>( PointAccessor<dim>(this->side_point_set().field_evaluator(), side_ranges_[dim+2]) );
+    return Range<PointAccessor<dim>>(bgn_it, end_it);
+}
+
+template <unsigned int dim>
+Range< PointAccessor<dim> > FieldEvaluator<dim>::side_range(const Side &side) const {
+    return this->side_point_set().points(side);
+}
+
 
 template class FieldEvaluator<1>;
 template class FieldEvaluator<2>;
