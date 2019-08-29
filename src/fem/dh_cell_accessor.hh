@@ -206,12 +206,7 @@ public:
     }
 
     inline Boundary * cond() const {
-    	//     	side().cond();
-        unsigned int cond_idx = side().cond_idx();
-        Boundary* cptr;
-        if (cond_idx == Mesh::undef_idx) cptr = NULL;
-        else cptr = &( dh_cell_accessor_.dof_handler_->mesh()->boundary_[ cond_idx ] );
-        return cptr;
+        return side().cond();
     }
 
 	inline unsigned int side_idx() const {
