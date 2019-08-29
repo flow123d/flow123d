@@ -251,7 +251,6 @@ void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) 
 	if ( flags_.match(FieldFlag::equation_input) && flags_.match(FieldFlag::declare_input) ) {
 		ASSERT(field_name_ != "").error("Uninitialized FieldFE, did you call init_from_input()?\n");
 		this->boundary_domain_ = boundary_domain;
-		this->make_dof_handler(mesh);
 		switch (this->interpolation_) {
 			case DataInterpolation::identic_msh:
 				ReaderCache::get_element_ids(reader_file_, *mesh);
@@ -280,6 +279,7 @@ void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) 
 				break;
 			}
 		}
+		this->make_dof_handler(mesh);
 	}
 }
 
@@ -349,15 +349,17 @@ void FieldFE<spacedim, Value>::make_dof_handler(const Mesh *mesh) {
 			ASSERT(false).error("Should not happen!\n");
 	}
 
-	DOFHandlerMultiDim dh_par( const_cast<Mesh &>(*mesh) );
+	std::shared_ptr<DOFHandlerMultiDim> dh_par = std::make_shared<DOFHandlerMultiDim>( const_cast<Mesh &>(*mesh) );
     std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( &const_cast<Mesh &>(*mesh), fe0_, fe1_, fe2_, fe3_);
-	dh_par.distribute_dofs(ds);
-    dh_ = dh_par.sequential();
+	dh_par->distribute_dofs(ds);
+	//if (this->discretization_ == OutputTime::DiscreteSpace::NATIVE_DATA)
+		dh_ = dh_par;
+	//else dh_ = dh_par->sequential();
     unsigned int ndofs = dh_->max_elem_dofs();
     dof_indices_.resize(ndofs);
 
 	if (this->boundary_domain_) fill_boundary_dofs(); // temporary solution for boundary mesh
-	else data_vec_ = VectorMPI::sequential( dh_->n_global_dofs() ); // allocate data_vec_
+	else data_vec_ = VectorMPI::sequential( dh_->lsize() ); // allocate data_vec_
 
 	// initialization data of value handlers
 	FEValueInitData init_data;
@@ -412,8 +414,10 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 	        THROW( ExcUndefElementValue() << EI_Field(field_name_) );
 	    }
 
-		if (is_native || this->interpolation_==DataInterpolation::identic_msh || this->interpolation_==DataInterpolation::equivalent_msh) {
+		if (is_native) {
 			this->calculate_native_values(input_data_cache);
+		} else if (this->interpolation_==DataInterpolation::identic_msh || this->interpolation_==DataInterpolation::equivalent_msh) {
+			this->calculate_elementwise_values(input_data_cache);
 		} else if (this->interpolation_==DataInterpolation::gauss_p0) {
 			this->interpolate_gauss(input_data_cache);
 		} else { // DataInterpolation::interp_p0
@@ -450,9 +454,10 @@ void FieldFE<spacedim, Value>::interpolate_gauss(ElementDataCache<double>::Compo
 	Mesh *mesh;
 	if (this->boundary_domain_) mesh = dh_->mesh()->get_bc_mesh();
 	else mesh = dh_->mesh();
-	for (auto ele : mesh->elements_range()) {
+	for (auto cell : dh_->own_range()) {
+		auto ele = cell.elm();
 		std::fill(elem_value.begin(), elem_value.end(), 0.0);
-		switch (ele->dim()) {
+		switch (cell.dim()) {
 		case 0:
 			quadrature_size = 1;
 			q_points[0] = ele.node(0)->point();
@@ -511,10 +516,7 @@ void FieldFE<spacedim, Value>::interpolate_gauss(ElementDataCache<double>::Compo
 		}
 
 		if (this->boundary_domain_) value_handler1_.get_dof_indices( ele, dof_indices_);
-		else {
-		    DHCellAccessor cell = dh_->cell_accessor_from_element(ele.idx());
-		    cell.get_loc_dof_indices(dof_indices_);
-		}
+		else cell.get_loc_dof_indices(dof_indices_);
 		for (unsigned int i=0; i < elem_value.size(); i++) {
 			ASSERT_LT_DBG( dof_indices_[i], (int)data_vec_.size());
 			data_vec_[dof_indices_[i]] = elem_value[i] * this->unit_conversion_coefficient_;
@@ -639,30 +641,58 @@ void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>:
 	std::vector<unsigned int> count_vector(data_vec_.size(), 0);
 	data_vec_.zero_entries();
 	VectorMPI::VectorDataPtr data_vector = data_vec_.data_ptr();
+	std::vector<LongIdx> global_dof_indices(dof_indices_);
 
-	// iterate through elements, assembly global vector and count number of writes
-	Mesh *mesh;
-	if (this->boundary_domain_) mesh = dh_->mesh()->get_bc_mesh();
-	else mesh = dh_->mesh();
-	for (auto ele : mesh->elements_range()) { // remove special case for rank == 0 - necessary for correct output
-		if (this->boundary_domain_) dof_size = value_handler1_.get_dof_indices( ele, dof_indices_ );
-		else dof_size = dh_->cell_accessor_from_element(ele.idx()).get_loc_dof_indices( dof_indices_ );
-		data_vec_i = ele.idx() * dof_indices_.size();
+	// iterate through cells, assembly MPIVector
+	for (auto cell : dh_->own_range()) {
+		cell.get_dof_indices(global_dof_indices);
+		dof_size = cell.get_loc_dof_indices(dof_indices_);
+		data_vec_i = cell.elm_idx() * dof_indices_.size();
 		for (unsigned int i=0; i<dof_size; ++i, ++data_vec_i) {
-			(*data_vector)[ dof_indices_[i] ] += (*data_cache)[data_vec_i];
+			(*data_vector)[ dof_indices_[i] ] += (*data_cache)[ global_dof_indices[i] ];
 			++count_vector[ dof_indices_[i] ];
 		}
 	}
 
-	// iterate through cells, assembly global vector and count number of writes - prepared solution for further development
-	/*for (auto cell : dh_->own_range()) {
-		dof_size = cell.get_loc_dof_indices(dof_indices_);
-		data_vec_i = cell.elm_idx() * dof_indices_.size();
-		for (unsigned int i=0; i<dof_size; ++i, ++data_vec_i) {
-			(*data_vector)[ dof_indices_[i] ] += (*data_cache)[data_vec_i];
-			++count_vector[ dof_indices_[i] ];
+	// compute averages of values
+	for (unsigned int i=0; i<data_vec_.size(); ++i) {
+		if (count_vector[i]>0) (*data_vector)[i] /= count_vector[i];
+	}
+}
+
+
+template <int spacedim, class Value>
+void FieldFE<spacedim, Value>::calculate_elementwise_values(ElementDataCache<double>::ComponentDataPtr data_cache)
+{
+	// Same algorithm as in output of Node_data. Possibly code reuse.
+	unsigned int dof_size, data_vec_i;
+	std::vector<unsigned int> count_vector(data_vec_.size(), 0);
+	data_vec_.zero_entries();
+	VectorMPI::VectorDataPtr data_vector = data_vec_.data_ptr();
+
+	// iterate through elements, assembly global vector and count number of writes
+	if (this->boundary_domain_) {
+		Mesh *mesh = dh_->mesh()->get_bc_mesh();
+		for (auto ele : mesh->elements_range()) { // remove special case for rank == 0 - necessary for correct output
+			dof_size = value_handler1_.get_dof_indices( ele, dof_indices_ );
+			data_vec_i = ele.idx() * dof_indices_.size();
+			for (unsigned int i=0; i<dof_size; ++i, ++data_vec_i) {
+				(*data_vector)[ dof_indices_[i] ] += (*data_cache)[data_vec_i];
+				++count_vector[ dof_indices_[i] ];
+			}
 		}
-	}*/
+	}
+	else {
+		// iterate through cells, assembly global vector and count number of writes - prepared solution for further development
+		for (auto cell : dh_->own_range()) {
+			dof_size = cell.get_loc_dof_indices(dof_indices_);
+			data_vec_i = cell.elm_idx() * dof_indices_.size();
+			for (unsigned int i=0; i<dof_size; ++i, ++data_vec_i) {
+				(*data_vector)[ dof_indices_[i] ] += (*data_cache)[data_vec_i];
+				++count_vector[ dof_indices_[i] ];
+			}
+		}
+	}
 
 	// compute averages of values
 	for (unsigned int i=0; i<data_vec_.size(); ++i) {
