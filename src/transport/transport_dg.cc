@@ -161,7 +161,7 @@ double TransportDG<Model>::EqData::elem_anisotropy(ElementAccessor<3> e) const
 
 
 template<class Model>
-void TransportDG<Model>::EqData::set_DG_parameters_boundary(const Side *side,
+void TransportDG<Model>::EqData::set_DG_parameters_boundary(Side side,
             const int K_size,
             const vector<arma::mat33> &K,
             const double flux,
@@ -172,15 +172,15 @@ void TransportDG<Model>::EqData::set_DG_parameters_boundary(const Side *side,
     double delta = 0, h = 0;
 
     // calculate the side diameter
-    if (side->dim() == 0)
+    if (side.dim() == 0)
     {
         h = 1;
     }
     else
     {
-        for (unsigned int i=0; i<side->n_nodes(); i++)
-            for (unsigned int j=i+1; j<side->n_nodes(); j++)
-                h = max(h, side->node(i)->distance( *side->node(j).node() ));
+        for (unsigned int i=0; i<side.n_nodes(); i++)
+            for (unsigned int j=i+1; j<side.n_nodes(); j++)
+                h = max(h, side.node(i)->distance( *side.node(j).node() ));
     }
 
     // delta is set to the average value of Kn.n on the side
@@ -188,7 +188,7 @@ void TransportDG<Model>::EqData::set_DG_parameters_boundary(const Side *side,
         delta += dot(K[k]*normal_vector,normal_vector);
     delta /= K_size;
 
-    gamma = 0.5*fabs(flux) + alpha/h*delta*elem_anisotropy(side->element());
+    gamma = 0.5*fabs(flux) + alpha/h*delta*elem_anisotropy(side.element());
 }
 
 

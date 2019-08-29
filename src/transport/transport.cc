@@ -826,21 +826,21 @@ void ConvectionTransport::create_transport_matrix_mpi() {
         new_i = row_4_el[ dh_cell.elm_idx() ];
         elm = dh_cell.elm();
         for( DHCellSide cell_side : dh_cell.side_range() ) {
-            flux = this->side_flux(elm, cell_side.side()->side_idx());
-            if (cell_side.side()->cond() == NULL) {
+            flux = this->side_flux(elm, cell_side.side_idx());
+            if (cell_side.cond() == NULL) {
                 edg_flux = 0;
                 for( DHCellSide edge_side : cell_side.edge_sides() ) {
-                    el2 = edge_side.side()->element();
-                    flux2 = this->side_flux(el2, edge_side.side()->side_idx());
+                    el2 = edge_side.element();
+                    flux2 = this->side_flux(el2, edge_side.side_idx());
                     if ( flux2 > 0)  edg_flux+= flux2;
                 }
                 for( DHCellSide edge_side : cell_side.edge_sides() )
-                    if ( !(edge_side==cell_side) ) {
-                        j = edge_side.side()->element().idx();
+                    if (edge_side != cell_side) {
+                        j = edge_side.element().idx();
                         new_j = row_4_el[j];
 
-                        el2 = edge_side.side()->element();
-                        flux2 = this->side_flux(el2, edge_side.side()->side_idx());
+                        el2 = edge_side.element();
+                        flux2 = this->side_flux(el2, edge_side.side_idx());
                         if ( flux2 > 0.0 && flux <0.0)
                             aij = -(flux * flux2 / ( edg_flux * dh_cell.elm().measure() ) );
                         else aij =0;
@@ -853,10 +853,10 @@ void ConvectionTransport::create_transport_matrix_mpi() {
 
         for( DHCellSide neighb_side : dh_cell.neighb_sides() ) // dh_cell lower dim
         {
-            ASSERT( neighb_side.side()->elem_idx() != dh_cell.elm_idx() ).error("Elm. same\n");
-            new_j = row_4_el[ neighb_side.side()->elem_idx() ];
-            el2 = neighb_side.side()->element();
-            flux = this->side_flux(el2, neighb_side.side()->side_idx());
+            ASSERT( neighb_side.elem_idx() != dh_cell.elm_idx() ).error("Elm. same\n");
+            new_j = row_4_el[ neighb_side.elem_idx() ];
+            el2 = neighb_side.element();
+            flux = this->side_flux(el2, neighb_side.side_idx());
 
             // volume source - out-flow from higher dimension
             if (flux > 0.0)  aij = flux / dh_cell.elm().measure();
@@ -867,7 +867,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
             // volume drain - in-flow to higher dimension
             if (flux < 0.0) {
                 aii -= (-flux) / dh_cell.elm().measure();                           // diagonal drain
-                aij = (-flux) / neighb_side.side()->element().measure();
+                aij = (-flux) / neighb_side.element().measure();
             } else aij=0;
             MatSetValue(tm, new_j, new_i, aij, INSERT_VALUES);
         }
