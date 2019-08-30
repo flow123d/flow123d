@@ -833,10 +833,10 @@ void DarcyMH::allocate_mh_matrix()
             // every compatible connection adds a 2x2 matrix involving
             // current element pressure  and a connected edge pressure
             Neighbour *ngh = ele_ac.element_accessor()->neigh_vb[i];
-            DHCellAccessor cell_higher_dim = data_->dh_->cell_accessor_from_element(neighb_side.side()->elem_idx());
+            DHCellAccessor cell_higher_dim = data_->dh_->cell_accessor_from_element(neighb_side.elem_idx());
             LocalElementAccessorBase<3> acc_higher_dim( cell_higher_dim );
-            for (unsigned int j = 0; j < neighb_side.side()->element().dim()+1; j++)
-            	if (neighb_side.side()->element()->edge_idx(j) == ngh->edge_idx()) {
+            for (unsigned int j = 0; j < neighb_side.element().dim()+1; j++)
+            	if (neighb_side.element()->edge_idx(j) == ngh->edge_idx()) {
             		int neigh_edge_row = acc_higher_dim.edge_row(j);
             		tmp_rows.push_back(neigh_edge_row);
             		break;
@@ -1229,8 +1229,8 @@ void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
         for(DHCellSide side : dh_cell.neighb_sides()) {
             uint neigh_dim = side.cell().elm().dim();
             side.cell().get_dof_indices(cell_dofs_global);
-            int edge_row = cell_dofs_global[neigh_dim+2+side.side()->side_idx()];
-            localDofMap.insert( std::make_pair( edge_row, side.side()->centre() ) );
+            int edge_row = cell_dofs_global[neigh_dim+2+side.side_idx()];
+            localDofMap.insert( std::make_pair( edge_row, side.centre() ) );
             inet.push_back( edge_row );
             n_inet++;
         }

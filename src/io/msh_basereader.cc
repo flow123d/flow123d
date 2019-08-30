@@ -21,6 +21,7 @@
 #include "io/msh_gmshreader.h"
 #include "io/msh_vtkreader.hh"
 #include "io/msh_pvdreader.hh"
+#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "system/sys_profiler.hh"
 
