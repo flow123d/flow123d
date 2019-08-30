@@ -25,6 +25,7 @@
 #include "fem/fe_values.hh"
 #include "fem/fe_p.hh"
 #include "fem/fe_rt.hh"
+#include "mesh/side_impl.hh"                   // for Side::cond, Side::cond...
 #include "fem/dh_cell_accessor.hh"
 #include "fields/field_fe.hh"
 #include "fields/fe_value_handler.hh"
@@ -102,6 +103,9 @@ template<class Model>
 const int TransportDG<Model>::registrar =
         Input::register_class< TransportDG<Model>, Mesh &, const Input::Record>(std::string(Model::ModelEqData::name()) + "_DG") +
         TransportDG<Model>::get_input_type().size();
+
+
+
 
 
 
@@ -230,7 +234,8 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
 	multidim_assembly_.push_back( std::dynamic_pointer_cast<AssemblyDGBase>(assembly1_) );
 	multidim_assembly_.push_back( std::dynamic_pointer_cast<AssemblyDGBase>(assembly2_) );
 	multidim_assembly_.push_back( std::dynamic_pointer_cast<AssemblyDGBase>(assembly3_) );
-	shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>(Model::mesh_, assembly1_->fe_low_, assembly1_->fe_, assembly2_->fe_, assembly3_->fe_);
+	MixedPtr<FiniteElement> fe(assembly1_->fe_low_, assembly1_->fe_, assembly2_->fe_, assembly3_->fe_);
+	shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>(Model::mesh_, fe);
 	data_->dh_ = make_shared<DOFHandlerMultiDim>(*Model::mesh_);
 	data_->dh_->distribute_dofs(ds);
     //DebugOut().fmt("TDG: solution size {}\n", data_->dh_->n_global_dofs());

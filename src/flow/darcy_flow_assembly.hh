@@ -28,6 +28,7 @@
 #include "la/local_system.hh"
 
 #include "coupling/balance.hh"
+#include "flow/darcy_flow_mh.hh"
 #include "flow/mortar_assembly.hh"
 
 
@@ -35,7 +36,6 @@ class AssemblyBase
 {
 public:
     typedef std::shared_ptr<DarcyMH::EqData> AssemblyDataPtr;
-    typedef std::vector<std::shared_ptr<AssemblyBase> > MultidimAssembly;
 
     virtual ~AssemblyBase() {}
 

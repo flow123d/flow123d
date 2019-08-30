@@ -21,7 +21,7 @@
 
 #include <armadillo>
 #include "mesh/accessors.hh"
-#include "mesh/sides.h"
+#include "mesh/side_impl.hh"
 #include "mesh/neighbours.h"
 #include "fem/finite_element.hh"
 #include "fem/dofhandler.hh"
@@ -111,9 +111,9 @@ public:
      * @brief Returns finite element object for given space dimension.
      */
     template<unsigned int dim>
-    FiniteElement<dim> *fe() const {
+    FEPtr<dim> fe() const {
         ElementAccessor<3> elm_acc = this->elm();
-        return dof_handler_->ds_->fe<dim>(elm_acc);
+        return dof_handler_->ds_->fe(elm_acc).get<dim>();
     }
 
     /// Check validity of accessor (see default constructor)

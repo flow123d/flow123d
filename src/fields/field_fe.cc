@@ -317,32 +317,17 @@ void FieldFE<spacedim, Value>::make_dof_handler(const Mesh *mesh) {
 	// temporary solution - these objects will be set through FieldCommon
 	switch (this->value_.n_rows() * this->value_.n_cols()) { // by number of components
 		case 1: { // scalar
-			fe0_ = new FE_P_disc<0>(0);
-			fe1_ = new FE_P_disc<1>(0);
-			fe2_ = new FE_P_disc<2>(0);
-			fe3_ = new FE_P_disc<3>(0);
+			fe_ = MixedPtr<FE_P_disc>(0);
 			break;
 		}
 		case 3: { // vector
-			std::shared_ptr< FiniteElement<0> > fe0_ptr = std::make_shared< FE_P_disc<0> >(0);
-			std::shared_ptr< FiniteElement<1> > fe1_ptr = std::make_shared< FE_P_disc<1> >(0);
-			std::shared_ptr< FiniteElement<2> > fe2_ptr = std::make_shared< FE_P_disc<2> >(0);
-			std::shared_ptr< FiniteElement<3> > fe3_ptr = std::make_shared< FE_P_disc<3> >(0);
-			fe0_ = new FESystem<0>(fe0_ptr, FEType::FEVector, 3);
-			fe1_ = new FESystem<1>(fe1_ptr, FEType::FEVector, 3);
-			fe2_ = new FESystem<2>(fe2_ptr, FEType::FEVector, 3);
-			fe3_ = new FESystem<3>(fe3_ptr, FEType::FEVector, 3);
+			 MixedPtr<FE_P_disc>   fe_base(0) ;
+			fe_ = mixed_fe_system(fe_base, FEType::FEVector, 3);
 			break;
 		}
 		case 9: { // tensor
-			std::shared_ptr< FiniteElement<0> > fe0_ptr = std::make_shared< FE_P_disc<0> >(0);
-			std::shared_ptr< FiniteElement<1> > fe1_ptr = std::make_shared< FE_P_disc<1> >(0);
-			std::shared_ptr< FiniteElement<2> > fe2_ptr = std::make_shared< FE_P_disc<2> >(0);
-			std::shared_ptr< FiniteElement<3> > fe3_ptr = std::make_shared< FE_P_disc<3> >(0);
-			fe0_ = new FESystem<0>(fe0_ptr, FEType::FETensor, 9);
-			fe1_ = new FESystem<1>(fe1_ptr, FEType::FETensor, 9);
-			fe2_ = new FESystem<2>(fe2_ptr, FEType::FETensor, 9);
-			fe3_ = new FESystem<3>(fe3_ptr, FEType::FETensor, 9);
+		    MixedPtr<FE_P_disc>   fe_base(0) ;
+            fe_ = mixed_fe_system(fe_base, FEType::FETensor, 9);
 			break;
 		}
 		default:
@@ -350,11 +335,9 @@ void FieldFE<spacedim, Value>::make_dof_handler(const Mesh *mesh) {
 	}
 
 	std::shared_ptr<DOFHandlerMultiDim> dh_par = std::make_shared<DOFHandlerMultiDim>( const_cast<Mesh &>(*mesh) );
-    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( &const_cast<Mesh &>(*mesh), fe0_, fe1_, fe2_, fe3_);
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( &const_cast<Mesh &>(*mesh), fe_);
 	dh_par->distribute_dofs(ds);
-	//if (this->discretization_ == OutputTime::DiscreteSpace::NATIVE_DATA)
-		dh_ = dh_par;
-	//else dh_ = dh_par->sequential();
+	dh_ = dh_par;
     unsigned int ndofs = dh_->max_elem_dofs();
     dof_indices_.resize(ndofs);
 

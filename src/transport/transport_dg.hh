@@ -44,14 +44,14 @@
 #include "mesh/accessors.hh"                   // for ElementAccessor
 #include "mesh/elements.h"                     // for Element::dim, Element:...
 #include "mesh/neighbours.h"                   // for Neighbour::element
-#include "mesh/side_impl.hh"                   // for Side::cond, Side::cond...
-#include "mesh/sides.h"                        // for SideIter
+
+//#include "mesh/sides.h"                        // for SideIter
 #include "mpi.h"                               // for MPI_Comm_rank
 #include "petscmat.h"                          // for Mat, MatDestroy
 #include "petscvec.h"                          // for Vec, VecDestroy, VecSc...
 #include "transport/concentration_model.hh"    // for ConcentrationTransport...
 #include "transport/heat_model.hh"             // for HeatTransferModel, Hea...
-
+#include "tools/mixed.hh"
 class DiscreteSpace;
 class Distribution;
 class OutputTime;
@@ -63,6 +63,32 @@ template<unsigned int dim> class FiniteElement;
 template<unsigned int dim, unsigned int spacedim> class Mapping;
 template<unsigned int dim> class Quadrature;
 namespace Input { namespace Type { class Selection; } }
+
+/*class FEObjects {
+public:
+
+	inline FEObjects(Mesh *mesh_, unsigned int fe_order)
+	{
+        fe = MixedPtr<FE_P_disc>(fe_order);
+        fe_rt = MixedPtr<FE_RT0>();
+        q = MixedPtr<QGauss>(2*fe_order);
+        mapping = MixedSpaceDimPtr<MappingP1>();
+
+        auto ds = std::make_shared<EqualOrderDiscreteSpace>(mesh_, fe);
+        dh = std::make_shared<DOFHandlerMultiDim>(*mesh_);
+        dh->distribute_dofs(ds_);
+    }
+
+	~FEObjects();
+
+	MixedPtr<FiniteElement> fe;
+	MixedPtr<FiniteElement> fe_rt;
+	MixedPtr<Quadrature> q;
+	MixedSpaceDimPtr<Mapping> mapping;
+
+	/// Object for distribution of dofs.
+	std::shared_ptr<DOFHandlerMultiDim> dh;
+};*/
 
 typedef std::vector<std::shared_ptr<AssemblyDGBase> > MultidimAssemblyDG;
 
