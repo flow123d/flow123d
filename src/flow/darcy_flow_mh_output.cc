@@ -127,7 +127,6 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
 : darcy_flow(flow),
   mesh_(&darcy_flow->mesh()),
   compute_errors_(false),
-  fe0(1),
   is_output_specific_fields(false)
 {
     Input::Record in_rec_output = main_mh_in_rec.val<Input::Record>("output");
@@ -452,11 +451,17 @@ void DarcyFlowMHOutput::l2_diff_local(DHCellAccessor dh_cell,
 
 }
 
-template<int dim> DarcyFlowMHOutput::FEData<dim>::FEData()
-: fe_p0(0), fe_p1(1), order(4), quad(order),
-  fe_values(mapp,quad,fe_p0,update_JxW_values | update_quadrature_points),
-  fv_rt(mapp,quad,fe_rt,update_values | update_quadrature_points)
-{}
+DarcyFlowMHOutput::FEData::FEData()
+: order(4),
+  quad(order),
+  mapp(),
+  fe_p1(0), fe_p0(0),
+  fe_rt( )
+{
+    UpdateFlags flags = update_values | update_JxW_values | update_quadrature_points;
+    fe_values = mixed_fe_values(mapp, quad, fe_p0, flags);
+    fv_rt = mixed_fe_values(mapp, quad, fe_rt, flags);
+}
 
 
 void DarcyFlowMHOutput::compute_l2_difference() {
@@ -490,13 +495,13 @@ void DarcyFlowMHOutput::compute_l2_difference() {
 
     	switch (dh_cell.dim()) {
         case 1:
-            l2_diff_local<1>( dh_cell, fe_data_1d.fe_values, fe_data_1d.fv_rt, anal_sol_1d, diff_data);
+            l2_diff_local<1>( dh_cell, *fe_data.fe_values.get<1>(), *fe_data.fv_rt.get<1>(), anal_sol_1d, diff_data);
             break;
         case 2:
-            l2_diff_local<2>( dh_cell, fe_data_2d.fe_values, fe_data_2d.fv_rt, anal_sol_2d, diff_data);
+            l2_diff_local<2>( dh_cell, *fe_data.fe_values.get<2>(), *fe_data.fv_rt.get<2>(), anal_sol_2d, diff_data);
             break;
         case 3:
-            l2_diff_local<3>( dh_cell, fe_data_3d.fe_values, fe_data_3d.fv_rt, anal_sol_3d, diff_data);
+            l2_diff_local<3>( dh_cell, *fe_data.fe_values.get<3>(), *fe_data.fv_rt.get<3>(), anal_sol_3d, diff_data);
             break;
         }
     }

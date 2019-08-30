@@ -25,6 +25,7 @@
 #include "fem/fe_values.hh"
 #include "fem/fe_p.hh"
 #include "fem/fe_rt.hh"
+#include "mesh/side_impl.hh"                   // for Side::cond, Side::cond...
 #include "fem/dh_cell_accessor.hh"
 #include "fields/field_fe.hh"
 #include "fields/fe_value_handler.hh"
@@ -106,6 +107,9 @@ const int TransportDG<Model>::registrar =
 
 
 
+
+
+
 template<class Model>
 TransportDG<Model>::EqData::EqData() : Model::ModelEqData()
 {
@@ -161,7 +165,7 @@ double TransportDG<Model>::EqData::elem_anisotropy(ElementAccessor<3> e) const
 
 
 template<class Model>
-void TransportDG<Model>::EqData::set_DG_parameters_boundary(const Side *side,
+void TransportDG<Model>::EqData::set_DG_parameters_boundary(Side side,
             const int K_size,
             const vector<arma::mat33> &K,
             const double flux,
@@ -172,15 +176,15 @@ void TransportDG<Model>::EqData::set_DG_parameters_boundary(const Side *side,
     double delta = 0, h = 0;
 
     // calculate the side diameter
-    if (side->dim() == 0)
+    if (side.dim() == 0)
     {
         h = 1;
     }
     else
     {
-        for (unsigned int i=0; i<side->n_nodes(); i++)
-            for (unsigned int j=i+1; j<side->n_nodes(); j++)
-                h = max(h, side->node(i)->distance( *side->node(j).node() ));
+        for (unsigned int i=0; i<side.n_nodes(); i++)
+            for (unsigned int j=i+1; j<side.n_nodes(); j++)
+                h = max(h, side.node(i)->distance( *side.node(j).node() ));
     }
 
     // delta is set to the average value of Kn.n on the side
@@ -188,7 +192,7 @@ void TransportDG<Model>::EqData::set_DG_parameters_boundary(const Side *side,
         delta += dot(K[k]*normal_vector,normal_vector);
     delta /= K_size;
 
-    gamma = 0.5*fabs(flux) + alpha/h*delta*elem_anisotropy(side->element());
+    gamma = 0.5*fabs(flux) + alpha/h*delta*elem_anisotropy(side.element());
 }
 
 
@@ -230,7 +234,8 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
 	multidim_assembly_.push_back( std::dynamic_pointer_cast<AssemblyDGBase>(assembly1_) );
 	multidim_assembly_.push_back( std::dynamic_pointer_cast<AssemblyDGBase>(assembly2_) );
 	multidim_assembly_.push_back( std::dynamic_pointer_cast<AssemblyDGBase>(assembly3_) );
-	shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>(Model::mesh_, assembly1_->fe_low_, assembly1_->fe_, assembly2_->fe_, assembly3_->fe_);
+	MixedPtr<FiniteElement> fe(assembly1_->fe_low_, assembly1_->fe_, assembly2_->fe_, assembly3_->fe_);
+	shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>(Model::mesh_, fe);
 	data_->dh_ = make_shared<DOFHandlerMultiDim>(*Model::mesh_);
 	data_->dh_->distribute_dofs(ds);
     //DebugOut().fmt("TDG: solution size {}\n", data_->dh_->n_global_dofs());

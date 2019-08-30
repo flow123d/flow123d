@@ -400,17 +400,19 @@ void DarcyMH::initialize() {
 		std::shared_ptr< FiniteElement<2> > fe2_cr = std::make_shared<FE_CR<2>>();
 		std::shared_ptr< FiniteElement<3> > fe3_cr = std::make_shared<FE_CR<3>>();
 // 	    static FiniteElement<0> fe0_sys = FE_P_disc<0>(0); //TODO fix and use solution with FESystem<0>( {fe0_rt, fe0_disc, fe0_cr} )
-        static FESystem<0> fe0_sys( {fe0_disc, fe0_disc, fe0_cr} );
-		static FESystem<1> fe1_sys( {fe1_rt, fe1_disc, fe1_cr} );
-		static FESystem<2> fe2_sys( {fe2_rt, fe2_disc, fe2_cr} );
-		static FESystem<3> fe3_sys( {fe3_rt, fe3_disc, fe3_cr} );
-		std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh_, &fe0_sys, &fe1_sys, &fe2_sys, &fe3_sys);
+		FESystem<0> fe0_sys( {fe0_disc, fe0_disc, fe0_cr} );
+		FESystem<1> fe1_sys( {fe1_rt, fe1_disc, fe1_cr} );
+		FESystem<2> fe2_sys( {fe2_rt, fe2_disc, fe2_cr} );
+		FESystem<3> fe3_sys( {fe3_rt, fe3_disc, fe3_cr} );
+	    MixedPtr<FESystem> fe_sys( std::make_shared<FESystem<0>>(fe0_sys), std::make_shared<FESystem<1>>(fe1_sys),
+	                                    std::make_shared<FESystem<2>>(fe2_sys), std::make_shared<FESystem<3>>(fe3_sys) );
+		std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh_, fe_sys);
 		data_->dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
 		data_->dh_->distribute_dofs(ds);
     }
 
     init_eq_data();
-    data_->multidim_assembler =  AssemblyBase::create< AssemblyMH >(data_);
+    this->data_->multidim_assembler =  AssemblyBase::create< AssemblyMH >(data_);
     output_object = new DarcyFlowMHOutput(this, input_record_);
 
     mh_dh.reinit(mesh_);
@@ -439,11 +441,8 @@ void DarcyMH::initialize() {
     }
 
     { // init DOF handlers represents side DOFs
-	    static FE_CR_disc<0> fe0_cr_disc;
-		static FE_CR_disc<1> fe1_cr_disc;
-		static FE_CR_disc<2> fe2_cr_disc;
-		static FE_CR_disc<3> fe3_cr_disc;
-		std::shared_ptr<DiscreteSpace> ds_cr_disc = std::make_shared<EqualOrderDiscreteSpace>( mesh_, &fe0_cr_disc, &fe1_cr_disc, &fe2_cr_disc, &fe3_cr_disc);
+		MixedPtr<FE_CR_disc> fe_cr_disc;
+		std::shared_ptr<DiscreteSpace> ds_cr_disc = std::make_shared<EqualOrderDiscreteSpace>( mesh_, fe_cr_disc);
 		data_->dh_cr_disc_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
 		data_->dh_cr_disc_->distribute_dofs(ds_cr_disc);
     }
@@ -834,10 +833,10 @@ void DarcyMH::allocate_mh_matrix()
             // every compatible connection adds a 2x2 matrix involving
             // current element pressure  and a connected edge pressure
             Neighbour *ngh = ele_ac.element_accessor()->neigh_vb[i];
-            DHCellAccessor cell_higher_dim = data_->dh_->cell_accessor_from_element(neighb_side.side()->elem_idx());
+            DHCellAccessor cell_higher_dim = data_->dh_->cell_accessor_from_element(neighb_side.elem_idx());
             LocalElementAccessorBase<3> acc_higher_dim( cell_higher_dim );
-            for (unsigned int j = 0; j < neighb_side.side()->element().dim()+1; j++)
-            	if (neighb_side.side()->element()->edge_idx(j) == ngh->edge_idx()) {
+            for (unsigned int j = 0; j < neighb_side.element().dim()+1; j++)
+            	if (neighb_side.element()->edge_idx(j) == ngh->edge_idx()) {
             		int neigh_edge_row = acc_higher_dim.edge_row(j);
             		tmp_rows.push_back(neigh_edge_row);
             		break;
@@ -1230,8 +1229,8 @@ void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
         for(DHCellSide side : dh_cell.neighb_sides()) {
             uint neigh_dim = side.cell().elm().dim();
             side.cell().get_dof_indices(cell_dofs_global);
-            int edge_row = cell_dofs_global[neigh_dim+2+side.side()->side_idx()];
-            localDofMap.insert( std::make_pair( edge_row, side.side()->centre() ) );
+            int edge_row = cell_dofs_global[neigh_dim+2+side.side_idx()];
+            localDofMap.insert( std::make_pair( edge_row, side.centre() ) );
             inet.push_back( edge_row );
             n_inet++;
         }

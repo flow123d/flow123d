@@ -39,6 +39,7 @@
 
 #include "io/output_time.hh"
 #include "tools/time_governor.hh"
+#include "tools/mixed.hh"
 #include "coupling/balance.hh"
 #include "input/accessors.hh"
 #include "input/input_type.hh"
@@ -200,12 +201,9 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record in
     is_bc_term_scaled = false;
 
     //initialization of DOF handler
-    static FE_P_disc<0> fe0(0);
-    static FE_P_disc<1> fe1(0);
-    static FE_P_disc<2> fe2(0);
-    static FE_P_disc<3> fe3(0);
+    MixedPtr<FE_P_disc> fe(0);
     dh_ = make_shared<DOFHandlerMultiDim>(init_mesh);
-    shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>( &init_mesh, &fe0, &fe1, &fe2, &fe3);
+    shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>( &init_mesh, fe);
     dh_->distribute_dofs(ds);
 
 }
@@ -827,21 +825,21 @@ void ConvectionTransport::create_transport_matrix_mpi() {
         new_i = row_4_el[ dh_cell.elm_idx() ];
         elm = dh_cell.elm();
         for( DHCellSide cell_side : dh_cell.side_range() ) {
-            flux = this->side_flux(elm, cell_side.side()->side_idx());
-            if (cell_side.side()->cond() == NULL) {
+            flux = this->side_flux(elm, cell_side.side_idx());
+            if (cell_side.cond() == NULL) {
                 edg_flux = 0;
                 for( DHCellSide edge_side : cell_side.edge_sides() ) {
-                    el2 = edge_side.side()->element();
-                    flux2 = this->side_flux(el2, edge_side.side()->side_idx());
+                    el2 = edge_side.element();
+                    flux2 = this->side_flux(el2, edge_side.side_idx());
                     if ( flux2 > 0)  edg_flux+= flux2;
                 }
                 for( DHCellSide edge_side : cell_side.edge_sides() )
-                    if ( !(edge_side==cell_side) ) {
-                        j = edge_side.side()->element().idx();
+                    if (edge_side != cell_side) {
+                        j = edge_side.element().idx();
                         new_j = row_4_el[j];
 
-                        el2 = edge_side.side()->element();
-                        flux2 = this->side_flux(el2, edge_side.side()->side_idx());
+                        el2 = edge_side.element();
+                        flux2 = this->side_flux(el2, edge_side.side_idx());
                         if ( flux2 > 0.0 && flux <0.0)
                             aij = -(flux * flux2 / ( edg_flux * dh_cell.elm().measure() ) );
                         else aij =0;
@@ -854,10 +852,10 @@ void ConvectionTransport::create_transport_matrix_mpi() {
 
         for( DHCellSide neighb_side : dh_cell.neighb_sides() ) // dh_cell lower dim
         {
-            ASSERT( neighb_side.side()->elem_idx() != dh_cell.elm_idx() ).error("Elm. same\n");
-            new_j = row_4_el[ neighb_side.side()->elem_idx() ];
-            el2 = neighb_side.side()->element();
-            flux = this->side_flux(el2, neighb_side.side()->side_idx());
+            ASSERT( neighb_side.elem_idx() != dh_cell.elm_idx() ).error("Elm. same\n");
+            new_j = row_4_el[ neighb_side.elem_idx() ];
+            el2 = neighb_side.element();
+            flux = this->side_flux(el2, neighb_side.side_idx());
 
             // volume source - out-flow from higher dimension
             if (flux > 0.0)  aij = flux / dh_cell.elm().measure();
@@ -868,7 +866,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
             // volume drain - in-flow to higher dimension
             if (flux < 0.0) {
                 aii -= (-flux) / dh_cell.elm().measure();                           // diagonal drain
-                aij = (-flux) / neighb_side.side()->element().measure();
+                aij = (-flux) / neighb_side.element().measure();
             } else aij=0;
             MatSetValue(tm, new_j, new_i, aij, INSERT_VALUES);
         }

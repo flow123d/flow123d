@@ -28,6 +28,7 @@
 #include "la/local_system.hh"
 
 #include "coupling/balance.hh"
+#include "flow/darcy_flow_mh.hh"
 #include "flow/mortar_assembly.hh"
 
 
@@ -35,7 +36,6 @@ class AssemblyBase
 {
 public:
     typedef std::shared_ptr<DarcyMH::EqData> AssemblyDataPtr;
-    typedef std::vector<std::shared_ptr<AssemblyBase> > MultidimAssembly;
 
     virtual ~AssemblyBase() {}
 
@@ -191,17 +191,17 @@ public:
         //START_TIMER("Assembly<dim>::assembly_local_vb");
         // compute normal vector to side
         arma::vec3 nv;
-        ElementAccessor<3> ele_higher = ad_->mesh->element_accessor( neighb_side.side()->element().idx() );
-        ngh_values_.fe_side_values_.reinit(ele_higher, neighb_side.side()->side_idx());
+        ElementAccessor<3> ele_higher = ad_->mesh->element_accessor( neighb_side.element().idx() );
+        ngh_values_.fe_side_values_.reinit(ele_higher, neighb_side.side_idx());
         nv = ngh_values_.fe_side_values_.normal_vector(0);
 
         double value = ad_->sigma.value( ele.centre(), ele) *
                         2*ad_->conductivity.value( ele.centre(), ele) *
                         arma::dot(ad_->anisotropy.value( ele.centre(), ele)*nv, nv) *
-                        ad_->cross_section.value( neighb_side.side()->centre(), ele_higher ) * // cross-section of higher dim. (2d)
-                        ad_->cross_section.value( neighb_side.side()->centre(), ele_higher ) /
+                        ad_->cross_section.value( neighb_side.centre(), ele_higher ) * // cross-section of higher dim. (2d)
+                        ad_->cross_section.value( neighb_side.centre(), ele_higher ) /
                         ad_->cross_section.value( ele.centre(), ele ) *      // crossection of lower dim.
-						neighb_side.side()->measure();
+						neighb_side.measure();
 
         loc_system_vb_.add_value(0,0, -value);
         loc_system_vb_.add_value(0,1,  value);
@@ -475,10 +475,10 @@ protected:
             ngh = ele_ac.element_accessor()->neigh_vb[i];
             loc_system_vb_.reset();
             loc_system_vb_.row_dofs[0] = loc_system_vb_.col_dofs[0] = ele_row;
-            DHCellAccessor cell_higher_dim = ele_ac.dh_cell().dh()->cell_accessor_from_element(neighb_side.side()->elem_idx());
+            DHCellAccessor cell_higher_dim = ele_ac.dh_cell().dh()->cell_accessor_from_element(neighb_side.elem_idx());
             LocalElementAccessorBase<3> acc_higher_dim( cell_higher_dim );
-            for (unsigned int j = 0; j < neighb_side.side()->element().dim()+1; j++)
-            	if (neighb_side.side()->element()->edge_idx(j) == ngh->edge_idx()) {
+            for (unsigned int j = 0; j < neighb_side.element().dim()+1; j++)
+            	if (neighb_side.element()->edge_idx(j) == ngh->edge_idx()) {
                     loc_system_vb_.row_dofs[1] = loc_system_vb_.col_dofs[1] = acc_higher_dim.edge_row(j);
             		break;
             	}

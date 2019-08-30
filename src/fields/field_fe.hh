@@ -164,6 +164,9 @@ private:
 	/// Calculate native data over all elements of target mesh.
 	void calculate_native_values(ElementDataCache<double>::ComponentDataPtr data_cache);
 
+	/// Calculate elementwise data over all elements of target mesh.
+	void calculate_elementwise_values(ElementDataCache<double>::ComponentDataPtr data_cache);
+
 	/**
 	 * Fill data to boundary_dofs_ vector.
 	 *
@@ -193,13 +196,7 @@ private:
      *
      * For correct functionality must be created proper descendant of FiniteElement class.
      */
-    FiniteElement<0> *fe0_;
-    /// Same as previous, but represents 1D element.
-    FiniteElement<1> *fe1_;
-    /// Same as previous, but represents 2D element.
-    FiniteElement<2> *fe2_;
-    /// Same as previous, but represents 3D element.
-    FiniteElement<3> *fe3_;
+    MixedPtr<FiniteElement> fe_;
 
 	/// mesh reader file
 	FilePath reader_file_;
