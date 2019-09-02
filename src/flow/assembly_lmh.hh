@@ -142,33 +142,35 @@ protected:
         {
 
             uint local_side = cr_disc_dofs[i];
-            
-            double capacity = this->ad_->capacity[local_side];
-            double water_content_diff = -ad_->water_content_previous_it[local_side] + ad_->water_content_previous_time[local_side];
-            double mass_diagonal = diagonal_coef * capacity;
+            if (this->dirichlet_edge[i] == 0) {
 
-            /*
-            DebugOut().fmt("w diff: {:g}  mass: {:g} w prev: {:g} w time: {:g} c: {:g} p: {:g} z: {:g}",
-                    water_content_diff,
-                    mass_diagonal * ad_->phead_edge_[local_edge],
-                    -ad_->water_content_previous_it[local_side],
-                    ad_->water_content_previous_time[local_side],
-                    capacity,
-                    ad_->phead_edge_[local_edge],
-                    ele.centre()[0] );
-            */
+                double capacity = this->ad_->capacity[local_side];
+                double water_content_diff = -ad_->water_content_previous_it[local_side] + ad_->water_content_previous_time[local_side];
+                double mass_diagonal = diagonal_coef * capacity;
+
+                /*
+                DebugOut().fmt("w diff: {:g}  mass: {:g} w prev: {:g} w time: {:g} c: {:g} p: {:g} z: {:g}",
+                      water_content_diff,
+                      mass_diagonal * ad_->phead_edge_[local_edge],
+                     -ad_->water_content_previous_it[local_side],
+                      ad_->water_content_previous_time[local_side],
+                      capacity,
+                      ad_->phead_edge_[local_edge],
+                      ele.centre()[0] );
+                */
 
 
                 double mass_rhs = mass_diagonal * ad_->phead_edge_[ this->edge_indices_[i] ] / this->ad_->time_step_
-                                + diagonal_coef * water_content_diff / this->ad_->time_step_;
+                                  + diagonal_coef * water_content_diff / this->ad_->time_step_;
 
 //                 DBGCOUT(<< "source [" << loc_system_.row_dofs[this->loc_edge_dofs[i]] << ", " << loc_system_.row_dofs[this->loc_edge_dofs[i]]
 //                             << "] mat: " << -mass_diagonal/this->ad_->time_step_
 //                             << " rhs: " << -source_diagonal - mass_rhs
 //                             << "\n");
-            this->loc_system_.add_value(this->loc_edge_dofs[i], this->loc_edge_dofs[i],
-                                        -mass_diagonal/this->ad_->time_step_,
-                                        -source_diagonal - mass_rhs);
+                this->loc_system_.add_value(this->loc_edge_dofs[i], this->loc_edge_dofs[i],
+                                            -mass_diagonal/this->ad_->time_step_,
+                                            -source_diagonal - mass_rhs);
+            }
 
             if (ad_->balance != nullptr) {
                 ad_->balance->add_mass_vec_value(ad_->water_balance_idx, ele.region().bulk_idx(),

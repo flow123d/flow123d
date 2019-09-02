@@ -272,6 +272,7 @@ protected:
         Boundary *bcd;
         unsigned int side_row, edge_row;
         
+        dirichlet_edge.resize(nsides);
         for (unsigned int i = 0; i < nsides; i++) {
 
             side_row = loc_side_dofs[i];    //local
@@ -280,6 +281,7 @@ protected:
             loc_system_.row_dofs[edge_row] = loc_system_.col_dofs[edge_row] = ele_ac.edge_row(i);    //global
             
             bcd = ele_ac.side(i)->cond();
+            dirichlet_edge[i] = 0;
             if (bcd) {
                 ElementAccessor<3> b_ele = bcd->element_accessor();
                 DarcyMH::EqData::BC_Type type = (DarcyMH::EqData::BC_Type)ad_->bc_type.value(b_ele.centre(), b_ele);
@@ -291,6 +293,7 @@ protected:
                 } else if ( type == DarcyMH::EqData::dirichlet ) {
                     double bc_pressure = ad_->bc_pressure.value(b_ele.centre(), b_ele);
                     loc_system_.set_solution(loc_edge_dofs[i],bc_pressure,-1);
+                    dirichlet_edge[i] = 1;
                     
                 } else if ( type == DarcyMH::EqData::total_flux) {
                     // internally we work with outward flux
@@ -298,6 +301,7 @@ protected:
                     double bc_pressure = ad_->bc_pressure.value(b_ele.centre(), b_ele);
                     double bc_sigma = ad_->bc_robin_sigma.value(b_ele.centre(), b_ele);
                     
+                    dirichlet_edge[i] = 2;  // to be skipped in LMH source assembly
                     loc_system_.add_value(edge_row, edge_row,
                                             -b_ele.measure() * bc_sigma * cross_section,
                                             (bc_flux - bc_sigma * bc_pressure) * b_ele.measure() * cross_section);
@@ -351,6 +355,7 @@ protected:
                         if (switch_dirichlet || ad_->force_bc_switch ) {
                             //DebugOut().fmt("x: {}, dirich, bcp: {}\n", b_ele.centre()[0], bc_pressure);
                             loc_system_.set_solution(loc_edge_dofs[i],bc_pressure, -1);
+                            dirichlet_edge[i] = 1;
                         } else {
                             //DebugOut()("x: {}, neuman, q: {}  bcq: {}\n", b_ele.centre()[0], side_flux, bc_flux);
                             loc_system_.add_value(edge_row, side_flux);
@@ -612,6 +617,7 @@ protected:
 
     // data shared by assemblers of different dimension
     AssemblyDataPtr ad_;
+    std::vector<unsigned int> dirichlet_edge;
 
     LocalSystem loc_system_;
     LocalSystem loc_system_vb_;
