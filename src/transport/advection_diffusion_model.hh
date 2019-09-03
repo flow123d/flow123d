@@ -22,7 +22,6 @@
 #include <armadillo>
 #include <vector>
 
-class SubstanceList;
 
 namespace IT = Input::Type;
 

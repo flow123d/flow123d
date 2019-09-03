@@ -72,6 +72,8 @@ namespace Input {
 		class Selection;
 	}
 }
+typedef std::vector<std::shared_ptr<AssemblyBase> > MultidimAssembly;
+
 template<int spacedim, class Value> class FieldAddPotential;
 template<int spacedim, class Value> class FieldDivide;
 

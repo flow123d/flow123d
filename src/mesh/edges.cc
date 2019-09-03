@@ -17,6 +17,7 @@
  */
 
 #include "system/system.hh"
+#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 
 

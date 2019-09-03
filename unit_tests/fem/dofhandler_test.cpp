@@ -8,6 +8,7 @@
 #include <mesh_constructor.hh>
 #include "fem/dofhandler.hh"
 #include "fem/dh_cell_accessor.hh"
+#include "tools/mixed.hh"
 
 
 
@@ -35,11 +36,8 @@ TEST(DOFHandler, test_all) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     Mesh * mesh = mesh_full_constructor("{mesh_file=\"fem/small_mesh.msh\"}");
     
-    FE_P<0> fe0(1);
-    FE_P<1> fe1(1);
-    FE_P<2> fe2(1);
-    FE_P<3> fe3(1);
-    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, &fe0, &fe1, &fe2, &fe3);
+    MixedPtr<FE_P> fe(1);
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, fe);
     DOFHandlerMultiDim dh(*mesh);
     dh.distribute_dofs(ds);
     
@@ -106,11 +104,8 @@ TEST(DOFHandler, test_all) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     Mesh * mesh = mesh_full_constructor("{mesh_file=\"fem/small_mesh_junction.msh\"}");
     
-    FE_P<0> fe0(1);
-    FE_P<1> fe1(1);
-    FE_P<2> fe2(1);
-    FE_P<3> fe3(1);
-    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, &fe0, &fe1, &fe2, &fe3);
+    MixedPtr<FE_P> fe(1);
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, fe);
     DOFHandlerMultiDim dh(*mesh);
     dh.distribute_dofs(ds);
     
@@ -180,10 +175,12 @@ TEST(DOFHandler, test_sub_handler)
     FESystem<3> fe_sys3({ std::make_shared<FE_RT0<3> >(),
                           std::make_shared<FE_P<3> >(0),
                           std::make_shared<FE_CR<3> >() });
-    
+    MixedPtr<FESystem> fe_sys( std::make_shared<FESystem<0>>(fe_sys0), std::make_shared<FESystem<1>>(fe_sys1),
+    	                                    std::make_shared<FESystem<2>>(fe_sys2), std::make_shared<FESystem<3>>(fe_sys3) );
+
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     Mesh * mesh = mesh_full_constructor("{mesh_file=\"fem/small_mesh_junction.msh\"}");
-    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, &fe_sys0, &fe_sys1, &fe_sys2, &fe_sys3);
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, fe_sys);
     std::shared_ptr<DOFHandlerMultiDim> dh = std::make_shared<DOFHandlerMultiDim>(*mesh);
     dh->distribute_dofs(ds);
     std::shared_ptr<SubDOFHandlerMultiDim> sub_dh = std::make_shared<SubDOFHandlerMultiDim>(dh, 0);
@@ -254,11 +251,8 @@ TEST(DOFHandler, test_rt)
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     Mesh * mesh = mesh_full_constructor("{mesh_file=\"fem/small_mesh_junction.msh\"}");
 
-    FE_RT0<0> fe0;
-    FE_RT0<1> fe1;
-    FE_RT0<2> fe2;
-    FE_RT0<3> fe3;
-    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, &fe0, &fe1, &fe2, &fe3);
+    MixedPtr<FE_RT0> fe;
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, fe);
     DOFHandlerMultiDim dh(*mesh);
     dh.distribute_dofs(ds);
 
@@ -300,21 +294,15 @@ TEST(DHAccessors, dh_cell_accessors) {
 
     DOFHandlerMultiDim dh(*mesh);
     {
-        FE_P<0> fe0(1);
-        FE_P<1> fe1(1);
-        FE_P<2> fe2(1);
-        FE_P<3> fe3(1);
-        std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, &fe0, &fe1, &fe2, &fe3);
-    dh.distribute_dofs(ds);
+        MixedPtr<FE_P> fe(1);
+        std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, fe);
+        dh.distribute_dofs(ds);
     }
     DOFHandlerMultiDim dh_2(*mesh); // test cell_with_other_dh method
     {
-        FE_RT0<0> fe0;
-        FE_RT0<1> fe1;
-        FE_RT0<2> fe2;
-        FE_RT0<3> fe3;
-        std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, &fe0, &fe1, &fe2, &fe3);
-    dh_2.distribute_dofs(ds);
+        MixedPtr<FE_RT0> fe;
+        std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, fe);
+        dh_2.distribute_dofs(ds);
     }
     auto el_ds = mesh->get_el_ds();
     unsigned int i_distr=0;
@@ -326,12 +314,12 @@ TEST(DHAccessors, dh_cell_accessors) {
     	EXPECT_EQ( cell.local_idx(), cell_2.local_idx() );
 
     	for( DHCellSide cell_side : cell.side_range() ) {
-            EXPECT_EQ( cell.elm_idx(), cell_side.side()->elem_idx() );
+            EXPECT_EQ( cell.elm_idx(), cell_side.elem_idx() );
         	side_elm_idx.clear();
         	for( DHCellSide edge_side : cell_side.edge_sides() ) {
-        		side_elm_idx.push_back( edge_side.side()->elem_idx() );
+        		side_elm_idx.push_back( edge_side.elem_idx() );
         	}
-            const Edge *edg = cell_side.side()->edge();
+            const Edge *edg = cell_side.side().edge();
             EXPECT_EQ( side_elm_idx.size(), edg->n_sides);
             for (int sid=0; sid<edg->n_sides; sid++) {
             	EXPECT_EQ( side_elm_idx[sid], edg->side(sid)->element().idx());
@@ -340,7 +328,7 @@ TEST(DHAccessors, dh_cell_accessors) {
 
         neigh_elem_idx.clear();
         for( DHCellSide neighb_side : cell.neighb_sides() ) {
-        	neigh_elem_idx.push_back( neighb_side.side()->elem_idx() );
+        	neigh_elem_idx.push_back( neighb_side.elem_idx() );
         }
         EXPECT_EQ( neigh_elem_idx.size(), cell.elm()->n_neighs_vb());
         for (int nid=0; nid<cell.elm()->n_neighs_vb(); nid++) {

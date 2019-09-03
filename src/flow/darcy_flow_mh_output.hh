@@ -150,7 +150,6 @@ protected:
     std::vector<double>     l2_diff_pressure, l2_diff_velocity, l2_diff_divergence;
 
     std::shared_ptr<DOFHandlerMultiDim> dh_;
-    FE_P_disc<0> fe0; //TODO temporary solution - add support of FEData<0>
     std::shared_ptr<DiscreteSpace> ds;
 
     OutputFields output_fields;
@@ -181,32 +180,30 @@ protected:
         DarcyMH::EqData *data_;
     } diff_data;
     
+    //MixedPtr<FE_P_disc> fe_p0;
     
     /// Struct containing all dim dependent FE classes needed for output
     /// (and for computing solution error).
-    template<int dim> struct FEData{
+    struct FEData{
         FEData();
         
-        // we create trivial Dofhandler , for P0 elements, to get access to, FEValues on individual elements
-        // this we use to integrate our own functions - difference of postprocessed pressure and analytical solution
-        FE_P_disc<dim> fe_p0;
-        FE_P_disc<dim> fe_p1;
-
         const unsigned int order; // order of Gauss quadrature
-        QGauss<dim> quad;
+        MixedPtr<QGauss> quad;
+        Mixed<MappingP1> mapp;
 
-        MappingP1<dim,3> mapp;
+        MixedPtr<FE_P_disc> fe_p1;
 
-        FEValues<dim,3> fe_values;
+        // following is used for calculation of postprocessed pressure difference
+        // and comparison to analytical solution
+        MixedPtr<FE_P_disc> fe_p0;
+        MixedPtr<FEValues> fe_values;
         
         // FEValues for velocity.
-        FE_RT0<dim> fe_rt;
-        FEValues<dim, 3> fv_rt;
+        MixedPtr<FE_RT0> fe_rt;
+        MixedPtr<FEValues> fv_rt;
     };
     
-    FEData<1> fe_data_1d;
-    FEData<2> fe_data_2d;
-    FEData<3> fe_data_3d;
+    FEData fe_data;
     
     /// Computes L2 error on an element.
     template <int dim>
