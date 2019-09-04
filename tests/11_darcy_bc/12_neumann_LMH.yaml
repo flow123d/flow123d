@@ -1,6 +1,11 @@
-# Test goal: Darcy flow Neumann boundary condition.
+# Test goal: Darcy flow Neumann boundary condition, solved by Lumped Mixed Hybrid method.
 # Author: Pavel Exner
 # Source for reference:
+#   It is the same problem as in test 02_neumann.
+#   Difference between MH and LMH:
+#       water balance: 0.0 (ndiff)
+#       greater difference in flow near the boundary
+#       caused most probably due the prescribed source term
 #   analytical solution available: p=(x-0.5)^2 + y^2, u=-K*(2x-1,2y)
 #   analytical boundary conditions: Dirichlet: p, Neumann: -q.n
 #       x=0:    0.25+y^1 (Dir.)
@@ -11,10 +16,10 @@
 
 flow123d_version: 3.1.0
 problem: !Coupling_Sequential
-  description: Test05 - Steady flow with Dirichlet/Neumann/Newton boundary condition
+  description: Steady flow with Dirichlet/Neumann/Newton boundary condition
   mesh:
     mesh_file: ../00_mesh/square_1x1_xy.msh
-  flow_equation: !Flow_Darcy_MH
+  flow_equation: !Flow_Darcy_LMH
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-07
@@ -59,6 +64,6 @@ problem: !Coupling_Sequential
         - pressure_p0
         - velocity_p0
     output_stream:
-      file: ./test05.pvd
+      file: ./flow.pvd
       format: !vtk
         variant: ascii
