@@ -303,14 +303,14 @@ void DarcyFlowMHOutput::output_internal_flow_data()
     if(DarcyMH* d = dynamic_cast<DarcyMH*>(darcy_flow))
     {
         data = d->data_.get();
-        auto ma = AssemblyBaseMH::create< AssemblyMH >(d->data_);
+        auto ma = AssemblyBase::create< AssemblyMH >(d->data_);
         for (auto a: ma)
             multidim_assembler.push_back(a);
     }
     else if(DarcyLMH* d = dynamic_cast<DarcyLMH*>(darcy_flow))
     {
         data = d->data_.get();
-        auto ma = AssemblyBaseLMH::create< AssemblyLMH >(d->data_);
+        auto ma = AssemblyBase::create< AssemblyLMH >(d->data_);
         for (auto a: ma)
             multidim_assembler.push_back(a);
     }

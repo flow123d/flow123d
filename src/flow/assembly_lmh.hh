@@ -48,9 +48,9 @@ template<int dim>
 class AssemblyRichards : public AssemblyLMH<dim> {
 public:
 
-    typedef std::shared_ptr<RichardsLMH::EqData> AssemblyDataPtr;
+    typedef std::shared_ptr<RichardsLMH::EqData> AssemblyDataPtrRichards;
 
-    AssemblyRichards(AssemblyDataPtr data)
+    AssemblyRichards(AssemblyDataPtrRichards data)
     : AssemblyLMH<dim>(data),
       ad_(data),
       genuchten_on(false),
@@ -207,7 +207,7 @@ protected:
         }
     }
 
-    AssemblyDataPtr ad_;
+    AssemblyDataPtrRichards ad_;
 
     bool genuchten_on;
     double cross_section;

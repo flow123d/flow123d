@@ -185,7 +185,7 @@ void RichardsLMH::assembly_linear_system()
             schur0->start_add_assembly(); // finish allocation and create matrix
         }
         data_->time_step_ = time_->dt();
-        auto multidim_assembler = AssemblyBaseLMH::create< AssemblyRichards >(data_);
+        auto multidim_assembler = AssemblyBase::create< AssemblyRichards >(data_);
 
 
         schur0->mat_zero_entries();
@@ -225,7 +225,7 @@ void RichardsLMH::postprocess() {
 
     // modify side fluxes in parallel
     // for every local edge take time term on diagonal and add it to the corresponding flux
-    auto multidim_assembler = AssemblyBaseLMH::create< AssemblyRichards >(data_);
+    auto multidim_assembler = AssemblyBase::create< AssemblyRichards >(data_);
     
     for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
         multidim_assembler[dh_cell.elm().dim()-1]->postprocess_velocity(dh_cell);

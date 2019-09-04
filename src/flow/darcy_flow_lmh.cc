@@ -316,7 +316,7 @@ void DarcyLMH::initialize() {
     }
 
     init_eq_data();
-    this->data_->multidim_assembler =  AssemblyBaseLMH::create< AssemblyLMH >(data_);
+    this->data_->multidim_assembler =  AssemblyBase::create< AssemblyLMH >(data_);
     output_object = new DarcyFlowMHOutput(this, input_record_);
 
     mh_dh.reinit(mesh_);
@@ -623,7 +623,7 @@ void DarcyLMH::postprocess()
 
     //fix velocity when mortar method is used
     if(data_->mortar_method_ != MortarMethod::NoMortar){
-        auto multidim_assembler =  AssemblyBaseLMH::create< AssemblyLMH >(data_);
+        auto multidim_assembler =  AssemblyBase::create< AssemblyLMH >(data_);
         for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
             LocalElementAccessorBase<3> ele_ac(dh_cell);
             unsigned int dim = ele_ac.dim();
@@ -645,7 +645,7 @@ void DarcyLMH::postprocess()
     data_->previous_solution.local_to_ghost_begin();
     data_->previous_solution.local_to_ghost_end();
     
-    auto multidim_assembler = AssemblyBaseLMH::create< AssemblyLMH >(data_);
+    auto multidim_assembler = AssemblyBase::create< AssemblyLMH >(data_);
     
     for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
         multidim_assembler[dh_cell.elm().dim()-1]->postprocess_velocity(dh_cell);
@@ -707,7 +707,7 @@ void  DarcyLMH::get_solution_vector(double * &vec, unsigned int &vec_size)
 //   are in fact pointers to allocating or filling functions - this is governed by Linsystem roitunes
 //
 // =======================================================================================
-void DarcyLMH::assembly_mh_matrix(MultidimAssemblyLMH& assembler)
+void DarcyLMH::assembly_mh_matrix(MultidimAssembly& assembler)
 {
     START_TIMER("DarcyLMH::assembly_steady_mh_matrix");
 

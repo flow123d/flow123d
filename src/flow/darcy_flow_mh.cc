@@ -414,7 +414,7 @@ void DarcyMH::initialize() {
     }
 
     init_eq_data();
-    this->data_->multidim_assembler =  AssemblyBaseMH::create< AssemblyMH >(data_);
+    this->data_->multidim_assembler =  AssemblyBase::create< AssemblyMH >(data_);
     output_object = new DarcyFlowMHOutput(this, input_record_);
 
     mh_dh.reinit(mesh_);
@@ -684,7 +684,7 @@ void DarcyMH::postprocess()
 
     //fix velocity when mortar method is used
     if(data_->mortar_method_ != MortarMethod::NoMortar){
-        auto multidim_assembler =  AssemblyBaseMH::create< AssemblyMH >(data_);
+        auto multidim_assembler =  AssemblyBase::create< AssemblyMH >(data_);
         for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
             LocalElementAccessorBase<3> ele_ac(dh_cell);
             unsigned int dim = ele_ac.dim();

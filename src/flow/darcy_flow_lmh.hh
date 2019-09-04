@@ -59,9 +59,8 @@
 
 #include "flow/darcy_flow_mh.hh"                // for DarcyMH::EqData
 
-class AssemblyBaseLMH;
 class Balance;
-class DarcyFlowLMHOutput;
+class DarcyFlowMHOutput;
 class Element;
 class Intersection;
 class LinSys;
@@ -74,7 +73,6 @@ namespace Input {
 		class Selection;
 	}
 }
-typedef std::vector<std::shared_ptr<AssemblyBaseLMH> > MultidimAssemblyLMH;
 
 template<int spacedim, class Value> class FieldAddPotential;
 template<int spacedim, class Value> class FieldDivide;
@@ -149,7 +147,7 @@ public:
         EqData();
         
         std::shared_ptr<SubDOFHandlerMultiDim> dh_p_;    ///< DOF handler represents DOFs of element pressure
-        MultidimAssemblyLMH multidim_assembler;
+        MultidimAssembly multidim_assembler;
         
         VectorMPI previous_solution;
         
@@ -249,7 +247,7 @@ protected:
      * - add support for Robin type sources
      * - support for nonlinear solvers - assembly either residual vector, matrix, or both (using FADBAD++)
      */
-    void assembly_mh_matrix(MultidimAssemblyLMH& assembler);
+    void assembly_mh_matrix(MultidimAssembly& assembler);
 
     /**
      * Assembly or update whole linear system.

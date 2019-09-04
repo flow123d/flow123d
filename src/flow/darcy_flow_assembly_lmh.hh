@@ -34,46 +34,13 @@
 #include "flow/mortar_assembly.hh"
 
 
-class AssemblyBaseLMH : public AssemblyBase
-{
-public:
-    typedef std::shared_ptr<DarcyLMH::EqData> AssemblyDataPtr;
-
-    virtual ~AssemblyBaseLMH() {}
-
-    /**
-        * Generic creator of multidimensional assembly, i.e. vector of
-        * particular assembly objects.
-        */
-    template< template<int dim> class Impl >
-    static MultidimAssemblyLMH create(typename Impl<1>::AssemblyDataPtr data) {
-        return { std::make_shared<Impl<1> >(data),
-            std::make_shared<Impl<2> >(data),
-            std::make_shared<Impl<3> >(data) };
-
-    }
-
-    /// Postprocess the velocity due to lumping.
-    virtual void postprocess_velocity(const DHCellAccessor& dh_cell) = 0;
-    
-protected:
-    
-    /// Postprocess the velocity due to lumping.
-    /**
-     * @p edge_scale is the coeficient scaling an element quantity to an element edge
-     * @p edge_source_term is the source term scaled to an element edge
-     */
-    virtual void postprocess_velocity_specific(const DHCellAccessor& dh_cell,
-                                               double edge_scale, double edge_source_term) = 0;
-};
-
-
-
 template<int dim>
-class AssemblyLMH : public AssemblyBaseLMH
+class AssemblyLMH : public AssemblyBase
 {
 public:
-    AssemblyLMH<dim>(AssemblyDataPtr data)
+    typedef std::shared_ptr<DarcyLMH::EqData> AssemblyDataPtrLMH;
+    
+    AssemblyLMH<dim>(AssemblyDataPtrLMH data)
     : quad_(3),
         fe_values_(map_, quad_, fe_rt_,
                 update_values | update_gradients | update_JxW_values | update_quadrature_points),
@@ -549,7 +516,7 @@ protected:
     }
 
 
-    void postprocess_velocity_specific(const DHCellAccessor& dh_cell, double edge_scale, double edge_source_term) override
+    virtual void postprocess_velocity_specific(const DHCellAccessor& dh_cell, double edge_scale, double edge_source_term)// override
     {
         dh_cell.get_loc_dof_indices(indices_);
         ElementAccessor<3> ele = dh_cell.elm();
@@ -583,7 +550,7 @@ protected:
     FEValues<dim,3> velocity_interpolation_fv_;
 
     // data shared by assemblers of different dimension
-    AssemblyDataPtr ad_;
+    AssemblyDataPtrLMH ad_;
     std::vector<unsigned int> dirichlet_edge;
 
     LocalSystem loc_system_;

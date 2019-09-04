@@ -31,6 +31,7 @@
 #include "flow/darcy_flow_mh.hh"
 #include "flow/mortar_assembly.hh"
 
+
 class AssemblyBase
 {
 public:
@@ -43,37 +44,29 @@ public:
     // compute velocity value in the barycenter
     // TODO: implement and use general interpolations between discrete spaces
     virtual arma::vec3 make_element_vector(LocalElementAccessorBase<3> ele_ac) = 0;
+    
+    /// Postprocess the velocity due to lumping.
+    /// It is used in LMH and Richards only.
+    virtual void postprocess_velocity(const DHCellAccessor& dh_cell) = 0;
 
+    /**
+        * Generic creator of multidimensional assembly, i.e. vector of
+        * particular assembly objects.
+        */
+    template< template<int dim> class Impl, class Data>
+    static MultidimAssembly create(Data data) {
+        return { std::make_shared<Impl<1> >(data),
+            std::make_shared<Impl<2> >(data),
+            std::make_shared<Impl<3> >(data) };
+    }
+
+    virtual ~AssemblyBase() {}
 protected:
 
     virtual void assemble_sides(LocalElementAccessorBase<3> ele) =0;
     
     virtual void assemble_source_term(LocalElementAccessorBase<3> ele) = 0;
 };
-
-class AssemblyBaseMH : public AssemblyBase
-{
-public:
-    typedef std::shared_ptr<DarcyMH::EqData> AssemblyDataPtr;
-
-    virtual ~AssemblyBaseMH() {}
-
-    /**
-        * Generic creator of multidimensional assembly, i.e. vector of
-        * particular assembly objects.
-        */
-    template< template<int dim> class Impl >
-    static MultidimAssembly create(typename Impl<1>::AssemblyDataPtr data) {
-        return { std::make_shared<Impl<1> >(data),
-            std::make_shared<Impl<2> >(data),
-            std::make_shared<Impl<3> >(data) };
-
-    }
-
-    virtual void assemble_source_term(LocalElementAccessorBase<3> ele) override
-    {}
-};
-
 
 
 template <int dim>
@@ -96,10 +89,12 @@ public:
 
 
 template<int dim>
-class AssemblyMH : public AssemblyBaseMH
+class AssemblyMH : public AssemblyBase
 {
 public:
-    AssemblyMH<dim>(AssemblyDataPtr data)
+    typedef std::shared_ptr<DarcyMH::EqData>  AssemblyDataPtrMH;
+    
+    AssemblyMH<dim>(AssemblyDataPtrMH data)
     : quad_(3),
         fe_values_(map_, quad_, fe_rt_,
                 update_values | update_gradients | update_JxW_values | update_quadrature_points),
@@ -150,6 +145,8 @@ public:
 
     }
 
+    void postprocess_velocity(const DHCellAccessor& dh_cell) override
+    {};
 
     ~AssemblyMH<dim>() override
     {}
@@ -230,6 +227,9 @@ public:
     }
 
 protected:
+    void assemble_source_term(LocalElementAccessorBase<3> ele) override
+    {}
+    
     static const unsigned int size()
     {
         // dofs: velocity, pressure, edge pressure
@@ -527,7 +527,7 @@ protected:
     FEValues<dim,3> velocity_interpolation_fv_;
 
     // data shared by assemblers of different dimension
-    AssemblyDataPtr ad_;
+    AssemblyDataPtrMH ad_;
     std::vector<unsigned int> dirichlet_edge;
 
     LocalSystem loc_system_;
