@@ -87,36 +87,6 @@ const it::Selection & DarcyLMH::get_mh_mortar_selection() {
 		.close();
 }
 
-
-// const it::Selection & DarcyLMH::EqData::get_bc_type_selection() {
-// 	return it::Selection("Flow_Darcy_BC_Type")
-//         .add_value(none, "none",
-//             "Homogeneous Neumann boundary condition\n(zero normal flux over the boundary).")
-//         .add_value(dirichlet, "dirichlet",
-//             "Dirichlet boundary condition. "
-//             "Specify the pressure head through the ``bc_pressure`` field "
-//             "or the piezometric head through the ``bc_piezo_head`` field.")
-//         .add_value(total_flux, "total_flux", "Flux boundary condition (combines Neumann and Robin type). "
-//             "Water inflow equal to (($ \\delta_d(q_d^N + \\sigma_d (h_d^R - h_d) )$)). "
-//             "Specify the water inflow by the ``bc_flux`` field, the transition coefficient by ``bc_robin_sigma`` "
-//             "and the reference pressure head or piezometric head through ``bc_pressure`` or ``bc_piezo_head`` respectively.")
-//         .add_value(seepage, "seepage",
-//             "Seepage face boundary condition. Pressure and inflow bounded from above. Boundary with potential seepage flow "
-//             "is described by the pair of inequalities: "
-//             "(($h_d \\le h_d^D$)) and (($ -\\boldsymbol q_d\\cdot\\boldsymbol n \\le \\delta q_d^N$)), where the equality holds in at least one of them. "
-//             "Caution: setting (($q_d^N$)) strictly negative "
-//             "may lead to an ill posed problem since a positive outflow is enforced. "
-//             "Parameters (($h_d^D$)) and (($q_d^N$)) are given by the fields ``bc_switch_pressure`` (or ``bc_switch_piezo_head``) and ``bc_flux`` respectively."
-//             )
-//         .add_value(river, "river",
-//             "River boundary condition. For the water level above the bedrock, (($H_d > H_d^S$)), the Robin boundary condition is used with the inflow given by: "
-//             "(( $ \\delta_d(q_d^N + \\sigma_d(H_d^D - H_d) )$)). For the water level under the bedrock, constant infiltration is used: "
-//             "(( $ \\delta_d(q_d^N + \\sigma_d(H_d^D - H_d^S) )$)). Parameters: ``bc_pressure``, ``bc_switch_pressure``, "
-//             " ``bc_sigma``, ``bc_flux``."
-//             )
-//         .close();
-// }
-
 const it::Record & DarcyLMH::type_field_descriptor() {
 
         const it::Record &field_descriptor =
@@ -186,7 +156,7 @@ const int DarcyLMH::registrar =
 
 
 DarcyLMH::EqData::EqData()
-: DarcyMH::EqDataBase::EqDataBase()
+: DarcyMH::EqData::EqData()
 {
 }
 
@@ -1328,51 +1298,9 @@ void DarcyLMH::make_serial_scatter() {
 }
 
 
-/*
-void mat_count_off_proc_values(Mat m, Vec v) {
-    int n, first, last;
-    const PetscInt *cols;
-    Distribution distr(v);
-
-    int n_off = 0;
-    int n_on = 0;
-    int n_off_rows = 0;
-    MatGetOwnershipRange(m, &first, &last);
-    for (int row = first; row < last; row++) {
-        MatGetRow(m, row, &n, &cols, PETSC_NULL);
-        bool exists_off = false;
-        for (int i = 0; i < n; i++)
-            if (distr.get_proc(cols[i]) != distr.myp())
-                n_off++, exists_off = true;
-            else
-                n_on++;
-        if (exists_off)
-            n_off_rows++;
-        MatRestoreRow(m, row, &n, &cols, PETSC_NULL);
-    }
-}
-*/
-
-
-
 std::shared_ptr< FieldFE<3, FieldValue<3>::VectorFixed> > DarcyLMH::get_velocity_field() {
     return ele_flux_ptr;
 }
-
-
-// /// Helper method fills range (min and max) of given component
-// void dofs_range(unsigned int n_dofs, unsigned int &min, unsigned int &max, unsigned int component) {
-//     if (component==0) {
-//         min = 0;
-//         max = n_dofs/2;
-//     } else if (component==1) {
-//         min = n_dofs/2;
-//         max = (n_dofs+1)/2;
-//     } else {
-//         min = (n_dofs+1)/2;
-//         max = n_dofs;
-//     }
-// }
 
 
 std::vector<int> DarcyLMH::get_component_indices_vec(unsigned int component) const {

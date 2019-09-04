@@ -141,13 +141,12 @@ public:
     /// Class with all fields used in the equation DarcyFlow.
     /// This is common to all implementations since this provides interface
     /// to this equation for possible coupling.
-    class EqData : public DarcyMH::EqDataBase {
+    class EqData : public DarcyMH::EqData {
     public:
         
         EqData();
         
         std::shared_ptr<SubDOFHandlerMultiDim> dh_p_;    ///< DOF handler represents DOFs of element pressure
-        MultidimAssembly multidim_assembler;
         
         VectorMPI previous_solution;
         

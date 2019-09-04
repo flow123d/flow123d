@@ -88,7 +88,7 @@ const it::Selection & DarcyMH::get_mh_mortar_selection() {
 }
 
 
-const it::Selection & DarcyMH::EqDataBase::get_bc_type_selection() {
+const it::Selection & DarcyMH::EqData::get_bc_type_selection() {
 	return it::Selection("Flow_Darcy_BC_Type")
         .add_value(none, "none",
             "Homogeneous Neumann boundary condition\n(zero normal flux over the boundary).")
@@ -185,7 +185,7 @@ const int DarcyMH::registrar =
 
 
 
-DarcyMH::EqDataBase::EqDataBase()
+DarcyMH::EqData::EqData()
 {
     mortar_method_=NoMortar;
 
@@ -281,11 +281,6 @@ DarcyMH::EqDataBase::EqDataBase()
     //main_matrix_fields = this->subset({"anisotropy", "conductivity", "cross_section", "sigma", "bc_type", "bc_robin_sigma"});
     //rhs_fields = this->subset({"water_source_density", "bc_pressure", "bc_flux"});
 }
-
-
-DarcyMH::EqData::EqData()
-:EqDataBase()
-{}
 
 
 

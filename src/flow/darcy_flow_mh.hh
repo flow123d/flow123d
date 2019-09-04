@@ -140,7 +140,7 @@ public:
     /// Class with all fields used in the equation DarcyFlow.
     /// This is common to all implementations since this provides interface
     /// to this equation for possible coupling.
-    class EqDataBase : public FieldSet {
+    class EqData : public FieldSet {
     public:
 
         /**
@@ -158,7 +158,7 @@ public:
         static const Input::Type::Selection & get_bc_type_selection();
 
         /// Creation of all fields.
-        EqDataBase();
+        EqData();
 
 
         Field<3, FieldValue<3>::TensorFixed > anisotropy;
@@ -210,11 +210,7 @@ public:
         std::vector<char> bc_switch_dirichlet;
 
     	VectorMPI data_vec_;
-    };
-    
-    class EqData : public EqDataBase {
-    public:
-        EqData();
+        
         MultidimAssembly multidim_assembler;
     };
 

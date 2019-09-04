@@ -298,7 +298,7 @@ void DarcyFlowMHOutput::output_internal_flow_data()
     raw_output_file <<  fmt::format("{}\n" , mesh_->n_elements() );
 
     
-    DarcyMH::EqDataBase* data = nullptr;
+    DarcyMH::EqData* data = nullptr;
     std::vector<shared_ptr<AssemblyBase>> multidim_assembler;
     if(DarcyMH* d = dynamic_cast<DarcyMH*>(darcy_flow))
     {
