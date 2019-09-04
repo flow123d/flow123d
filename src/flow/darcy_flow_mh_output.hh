@@ -44,7 +44,7 @@
 #include "system/exceptions.hh"          // for ExcAssertMsg::~ExcAssertMsg
 
 class DOFHandlerMultiDim;
-class DarcyMH;
+class DarcyFlowInterface;
 class Mesh;
 class OutputTime;
 namespace Input {
@@ -95,7 +95,7 @@ public:
             Field<3, FieldValue<3>::Scalar> div_diff;
     };
 
-    DarcyFlowMHOutput(DarcyMH *flow, Input::Record in_rec) ;
+    DarcyFlowMHOutput(DarcyFlowInterface *flow, Input::Record in_rec) ;
     virtual ~DarcyFlowMHOutput();
 
     static const Input::Type::Instance & get_input_type();
@@ -132,7 +132,7 @@ protected:
     void compute_l2_difference();
 
 
-    DarcyMH *darcy_flow;
+    DarcyFlowInterface *darcy_flow;
     Mesh *mesh_;
 
     /// Specific experimental error computing.
@@ -176,8 +176,7 @@ protected:
         std::shared_ptr<SubDOFHandlerMultiDim> dh_;
 
         std::vector<int> velocity_mask;
-        DarcyMH *darcy;
-        DarcyMH::EqData *data_;
+        DarcyMH::EqDataBase* data_;
     } diff_data;
     
     //MixedPtr<FE_P_disc> fe_p0;

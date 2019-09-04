@@ -25,7 +25,9 @@
 #include <system/global_defs.h>
 
 #include "flow/darcy_flow_mh.hh"
+#include "flow/darcy_flow_lmh.hh"
 #include "flow/darcy_flow_assembly.hh"
+#include "flow/darcy_flow_assembly_lmh.hh"
 #include "flow/darcy_flow_mh_output.hh"
 
 #include "io/output_time.hh"
@@ -123,7 +125,7 @@ DarcyFlowMHOutput::OutputSpecificFields::OutputSpecificFields()
              .description("Error norm of the divergence of the velocity solution. [Experimental]");
 }
 
-DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec)
+DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowInterface *flow, Input::Record main_mh_in_rec)
 : darcy_flow(flow),
   mesh_(&darcy_flow->mesh()),
   compute_errors_(false),
@@ -187,12 +189,20 @@ void DarcyFlowMHOutput::prepare_output(Input::Record in_rec)
 
 void DarcyFlowMHOutput::prepare_specific_output(Input::Record in_rec)
 {
-    diff_data.darcy = darcy_flow;
-    diff_data.data_ = darcy_flow->data_.get();
+    diff_data.data_ = nullptr;
+    if(DarcyMH* d = dynamic_cast<DarcyMH*>(darcy_flow))
+    {
+        diff_data.data_ = d->data_.get();
+    }
+    else if(DarcyLMH* d = dynamic_cast<DarcyLMH*>(darcy_flow))
+    {
+        diff_data.data_ = d->data_.get();
+    }
+    ASSERT_PTR(diff_data.data_);
 
     { // init DOF handlers represents element DOFs
         uint p_elem_component = 1;
-        diff_data.dh_ = std::make_shared<SubDOFHandlerMultiDim>(darcy_flow->data_->dh_, p_elem_component);
+        diff_data.dh_ = std::make_shared<SubDOFHandlerMultiDim>(diff_data.data_->dh_, p_elem_component);
     }
 
     // mask 2d elements crossing 1d
@@ -287,8 +297,29 @@ void DarcyFlowMHOutput::output_internal_flow_data()
     raw_output_file <<  fmt::format("$FlowField\nT={}\n", darcy_flow->time().t());
     raw_output_file <<  fmt::format("{}\n" , mesh_->n_elements() );
 
-    std::shared_ptr<DarcyMH::EqData> data = darcy_flow->data_;
-    auto multidim_assembler = AssemblyBase::create< AssemblyMH >(data);
+    
+    DarcyMH::EqDataBase* data = nullptr;
+    std::vector<shared_ptr<AssemblyBase>> multidim_assembler;
+    if(DarcyMH* d = dynamic_cast<DarcyMH*>(darcy_flow))
+    {
+        data = d->data_.get();
+        auto ma = AssemblyBaseMH::create< AssemblyMH >(d->data_);
+        for (auto a: ma)
+            multidim_assembler.push_back(a);
+    }
+    else if(DarcyLMH* d = dynamic_cast<DarcyLMH*>(darcy_flow))
+    {
+        data = d->data_.get();
+        auto ma = AssemblyBaseLMH::create< AssemblyLMH >(d->data_);
+        for (auto a: ma)
+            multidim_assembler.push_back(a);
+    }
+    ASSERT_PTR(data);
+    ASSERT_EQ(multidim_assembler.size(),3);
+    
+    
+//     std::shared_ptr<DarcyMH::EqData> data = darcy_flow->data_;
+//     auto multidim_assembler = AssemblyBase::create< AssemblyMH >(data);
     arma::vec3 flux_in_center;
     
     int cit = 0;
@@ -491,7 +522,7 @@ void DarcyFlowMHOutput::compute_l2_difference() {
     darcy_flow->get_solution_vector(diff_data.solution, solution_size);
 
 
-    for (DHCellAccessor dh_cell : darcy_flow->data_->dh_->own_range()) {
+    for (DHCellAccessor dh_cell : diff_data.data_->dh_->own_range()) {
 
     	switch (dh_cell.dim()) {
         case 1:

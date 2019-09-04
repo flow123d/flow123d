@@ -16,7 +16,7 @@
 #include <vector>
 
 
-typedef std::shared_ptr<DarcyMH::EqData> AssemblyDataPtr;
+typedef std::shared_ptr<DarcyMH::EqDataBase> AssemblyDataPtr;
 
 
 class MortarAssemblyBase {

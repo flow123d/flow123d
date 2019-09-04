@@ -336,6 +336,7 @@ add_library(flow123d_lib
     flow/mh_dofhandler.cc
     flow/darcy_flow_mh_output.cc
     flow/darcy_flow_mh.cc
+    flow/darcy_flow_lmh.cc
     flow/soil_models.cc
     flow/richards_lmh.cc
     flow/mortar_assembly.cc

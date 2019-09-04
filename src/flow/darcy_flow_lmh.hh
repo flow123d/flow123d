@@ -11,7 +11,7 @@
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
  * 
- * @file    darcy_flow_mh.hh
+ * @file    darcy_flow_lmh.hh
  * @brief   mixed-hybrid model of linear Darcy flow, possibly unsteady.
  * @author  Jan Brezina
  *
@@ -30,8 +30,8 @@
  */
 
 
-#ifndef DARCY_FLOW_MH_HH
-#define DARCY_FLOW_MH_HH
+#ifndef DARCY_FLOW_LMH_HH
+#define DARCY_FLOW_LMH_HH
 
 #include <petscmat.h>                           // for Mat
 #include <string.h>                             // for memcpy
@@ -55,10 +55,13 @@
 #include "petscvec.h"                           // for Vec, _p_Vec, VecScatter
 #include "system/exceptions.hh"                 // for ExcStream, operator<<
 #include "tools/time_governor.hh"               // for TimeGovernor
+#include "la/vector_mpi.hh"                     // for VectorMPI
 
-class AssemblyBase;
+#include "flow/darcy_flow_mh.hh"                // for DarcyMH::EqData
+
+class AssemblyBaseLMH;
 class Balance;
-class DarcyFlowMHOutput;
+class DarcyFlowLMHOutput;
 class Element;
 class Intersection;
 class LinSys;
@@ -71,7 +74,7 @@ namespace Input {
 		class Selection;
 	}
 }
-typedef std::vector<std::shared_ptr<AssemblyBase> > MultidimAssembly;
+typedef std::vector<std::shared_ptr<AssemblyBaseLMH> > MultidimAssemblyLMH;
 
 template<int spacedim, class Value> class FieldAddPotential;
 template<int spacedim, class Value> class FieldDivide;
@@ -127,7 +130,7 @@ template<int spacedim, class Value> class FieldDivide;
  *
  */
 
-class DarcyMH : public DarcyFlowInterface
+class DarcyLMH : public DarcyFlowInterface
 {
 public:
     TYPEDEF_ERR_INFO( EI_Reason, string);
@@ -140,82 +143,22 @@ public:
     /// Class with all fields used in the equation DarcyFlow.
     /// This is common to all implementations since this provides interface
     /// to this equation for possible coupling.
-    class EqDataBase : public FieldSet {
+    class EqData : public DarcyMH::EqDataBase {
     public:
-
-        /**
-         * For compatibility with old BCD file we have to assign integer codes starting from 1.
-         */
-        enum BC_Type {
-            none=0,
-            dirichlet=1,
-            total_flux=4,
-            seepage=5,
-            river=6
-        };
-
-        /// Return a Selection corresponding to enum BC_Type.
-        static const Input::Type::Selection & get_bc_type_selection();
-
-        /// Creation of all fields.
-        EqDataBase();
-
-
-        Field<3, FieldValue<3>::TensorFixed > anisotropy;
-        Field<3, FieldValue<3>::Scalar > conductivity;
-        Field<3, FieldValue<3>::Scalar > cross_section;
-        Field<3, FieldValue<3>::Scalar > water_source_density;
-        Field<3, FieldValue<3>::Scalar > sigma;
         
-        BCField<3, FieldValue<3>::Enum > bc_type; // Discrete need Selection for initialization
-        BCField<3, FieldValue<3>::Scalar > bc_pressure; 
-        BCField<3, FieldValue<3>::Scalar > bc_flux;
-        BCField<3, FieldValue<3>::Scalar > bc_robin_sigma;
-        BCField<3, FieldValue<3>::Scalar > bc_switch_pressure;
-        
-        Field<3, FieldValue<3>::Scalar > init_pressure;
-        Field<3, FieldValue<3>::Scalar > storativity;
-
-	    Field<3, FieldValue<3>::Scalar> field_ele_pressure;
-	    Field<3, FieldValue<3>::Scalar> field_ele_piezo_head;
-        Field<3, FieldValue<3>::VectorFixed > field_ele_velocity;
-
-        /**
-         * Gravity vector and constant shift of pressure potential. Used to convert piezometric head
-         * to pressure head and vice versa.
-         */
-        arma::vec4 gravity_;
-        arma::vec3 gravity_vec_;
-
-        // Mirroring the following members of DarcyMH:
-        Mesh *mesh;
-        std::shared_ptr<DOFHandlerMultiDim> dh_;         ///< full DOF handler represents DOFs of sides, elements and edges
-        std::shared_ptr<SubDOFHandlerMultiDim> dh_cr_;   ///< DOF handler represents DOFs of edges
-        std::shared_ptr<DOFHandlerMultiDim> dh_cr_disc_; ///< DOF handler represents DOFs of sides
-
-
-        uint water_balance_idx;
-
-        MortarMethod mortar_method_;
-
-        unsigned int local_boundary_index;
-        std::shared_ptr<Balance> balance;
-        LinSys *lin_sys;
-        
-        unsigned int n_schur_compls;
-        int is_linear;              ///< Hack fo BDDC solver.
-        bool force_bc_switch;       ///< auxiliary flag for switchting Dirichlet like BC
-        
-        /// Idicator of dirichlet or neumann type of switch boundary conditions.
-        std::vector<char> bc_switch_dirichlet;
-
-    	VectorMPI data_vec_;
-    };
-    
-    class EqData : public EqDataBase {
-    public:
         EqData();
-        MultidimAssembly multidim_assembler;
+        
+        std::shared_ptr<SubDOFHandlerMultiDim> dh_p_;    ///< DOF handler represents DOFs of element pressure
+        MultidimAssemblyLMH multidim_assembler;
+        
+        VectorMPI previous_solution;
+        
+        // Propagate test for the time term to the assembly.
+        // This flag is necessary for switching BC to avoid setting zero neumann on the whole boundary in the steady case.
+        bool use_steady_assembly_;
+        
+        // for time term assembly
+        double time_step_;
     };
 
     /// Selection for enum MortarMethod.
@@ -225,7 +168,7 @@ public:
 
 
 
-    DarcyMH(Mesh &mesh, const Input::Record in_rec);
+    DarcyLMH(Mesh &mesh, const Input::Record in_rec);
 
     static const Input::Type::Record & type_field_descriptor();
     static const Input::Type::Record & get_input_type();
@@ -253,7 +196,7 @@ public:
     virtual void postprocess();
     virtual void output_data() override;
 
-    virtual ~DarcyMH() override;
+    virtual ~DarcyLMH() override;
 
 
 protected:
@@ -268,12 +211,6 @@ protected:
     /// Solve method common to zero_time_step and update solution.
     void solve_nonlinear();
     void make_serial_scatter();
-    void modify_system();
-    virtual void setup_time_term();
-
-
-    //void prepare_parallel();
-    //void make_row_numberings();
 
     /**
      * Create and preallocate MH linear system (including matrix, rhs and solution vectors)
@@ -287,17 +224,14 @@ protected:
      * For the LMH scheme we have to be able to save edge pressures in order to
      * restart simulation or use results of one simulation as initial condition for other one.
      */
-    virtual void read_initial_condition();
-
+    void read_initial_condition();
+    
     /**
-     * Part of per element assembly that is specific for MH and LMH respectively.
-     *
-     * This implemnets MH case:
-     * - compute conductivity scaling
-     * - assembly source term
-     * - no time term, managed by diagonal extraction etc.
+     * In some circumstances, the intial condition must be processed.
+     * It is called at the end of @p read_initial_condition().
+     * This is used in Richards equation due the update of water content.
      */
-    //virtual void local_assembly_specific(AssemblyData &local_data);
+    virtual void initial_condition_postprocess();
    
     /**
      * Allocates linear system matrix for MH.
@@ -311,14 +245,11 @@ protected:
      * Element by element assembly is done using dim-template assembly class.
      * Assembles only steady part of the equation.
      * TODO:
-     * - include time term
+     * - include time term - DONE
      * - add support for Robin type sources
      * - support for nonlinear solvers - assembly either residual vector, matrix, or both (using FADBAD++)
      */
-    void assembly_mh_matrix(MultidimAssembly& assembler);
-
-    /// Source term is implemented differently in LMH version.
-    virtual void assembly_source_term();
+    void assembly_mh_matrix(MultidimAssemblyLMH& assembler);
 
     /**
      * Assembly or update whole linear system.
@@ -352,9 +283,6 @@ protected:
 	int  n_schur_compls;  	    // number of shur complements to make
 	double  *solution; 			// sequantial scattered solution vector
 
-	// Propagate test for the time term to the assembly.
-	// This flag is necessary for switching BC to avoid setting zero neumann on the whole boundary in the steady case.
-	bool use_steady_assembly_;
 	bool data_changed_;
 
 	// Setting of the nonlinear solver. TODO: Move to the solver class later on.
@@ -371,10 +299,7 @@ protected:
 	Vec sol_vec;			                 //< vector over solution array
 	VecScatter par_to_all;
 
-	Vec steady_diagonal;
-    Vec steady_rhs;
-    Vec new_diagonal;
-    Vec previous_solution;
+    VectorMPI previous_solution_nonlinear;
 
     // Temporary objects holding pointers to appropriate FieldFE
     // TODO remove after final fix of equations
@@ -397,11 +322,9 @@ private:
 
 
 void mat_count_off_proc_values(Mat m, Vec v);
-/// Helper method fills range (min and max) of given component
-void dofs_range(unsigned int n_dofs, unsigned int &min, unsigned int &max, unsigned int component);
 
 
-#endif  //DARCY_FLOW_MH_HH
+#endif  //DARCY_FLOW_LMH_HH
 //-----------------------------------------------------------------------------
 // vim: set cindent:
 

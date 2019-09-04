@@ -71,7 +71,7 @@ RichardsLMH::EqData::EqData()
 
 const it::Record & RichardsLMH::get_input_type() {
     it::Record field_descriptor = it::Record("RichardsLMH_Data",FieldCommon::field_descriptor_record_description("RichardsLMH_Data"))
-    .copy_keys( DarcyMH::type_field_descriptor() )
+    .copy_keys( DarcyLMH::type_field_descriptor() )
     .copy_keys( RichardsLMH::EqData().make_field_descriptor_type("RichardsLMH_Data_aux") )
     .close();
 
@@ -91,7 +91,7 @@ const it::Record & RichardsLMH::get_input_type() {
 
     return it::Record("Flow_Richards_LMH", "Lumped Mixed-Hybrid solver for unsteady unsaturated Darcy flow.")
         .derive_from(DarcyFlowInterface::get_input_type())
-        .copy_keys(DarcyMH::get_input_type())
+        .copy_keys(DarcyLMH::get_input_type())
         .declare_key("input_fields", it::Array( field_descriptor ), it::Default::obligatory(),
                 "Input data for Darcy flow model.")
         .declare_key("soil_model", soil_rec, it::Default("\"van_genuchten\""),
@@ -107,10 +107,10 @@ const int RichardsLMH::registrar =
 
 
 RichardsLMH::RichardsLMH(Mesh &mesh_in, const  Input::Record in_rec)
-    : DarcyMH(mesh_in, in_rec)
+    : DarcyLMH(mesh_in, in_rec)
 {
     data_ = make_shared<EqData>();
-    DarcyMH::data_ = data_;
+    DarcyLMH::data_ = data_;
     EquationBase::eq_data_ = data_.get();
     //data_->edge_new_local_4_mesh_idx_ = &(this->edge_new_local_4_mesh_idx_);
 }
@@ -185,7 +185,7 @@ void RichardsLMH::assembly_linear_system()
             schur0->start_add_assembly(); // finish allocation and create matrix
         }
         data_->time_step_ = time_->dt();
-        auto multidim_assembler = AssemblyBase::create< AssemblyLMH >(data_);
+        auto multidim_assembler = AssemblyBaseLMH::create< AssemblyRichards >(data_);
 
 
         schur0->mat_zero_entries();
@@ -225,7 +225,7 @@ void RichardsLMH::postprocess() {
 
     // modify side fluxes in parallel
     // for every local edge take time term on diagonal and add it to the corresponding flux
-    auto multidim_assembler = AssemblyBase::create< AssemblyLMH >(data_);
+    auto multidim_assembler = AssemblyBaseLMH::create< AssemblyRichards >(data_);
     
     for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
         multidim_assembler[dh_cell.elm().dim()-1]->postprocess_velocity(dh_cell);

@@ -13,7 +13,7 @@
 #include "fields/field.hh"           // for Field
 #include "fields/field_values.hh"    // for FieldValue<>::Scalar, FieldValue
 #include "la/vector_mpi.hh"          // for VectorMPI
-#include "flow/darcy_flow_mh.hh"     // for DarcyMH, DarcyMH::EqData
+#include "flow/darcy_flow_lmh.hh"    // for DarcyLMH, DarcyLMH::EqData
 #include "input/type_base.hh"        // for Array
 #include "input/type_generic.hh"     // for Instance
 
@@ -57,13 +57,13 @@ namespace Input {
  * -# Nonlinear solve.
  * -# In case of slow convergence, use shorter time-step, within estimated limits. Otherwise there is a different problem.
  */
-class RichardsLMH : public DarcyMH
+class RichardsLMH : public DarcyLMH
 {
 public:
     /// Class with all fields used in the equation DarcyFlow.
     /// This is common to all implementations since this provides interface
     /// to this equation for possible coupling.
-    class EqData : public DarcyMH::EqData {
+    class EqData : public DarcyLMH::EqData {
     public:
         EqData();
         // input fields

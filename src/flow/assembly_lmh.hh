@@ -9,7 +9,7 @@
 #define SRC_FLOW_ASSEMBLY_LMH_HH_
 
 #include "mesh/long_idx.hh"
-#include "flow/darcy_flow_assembly.hh"
+#include "flow/darcy_flow_assembly_lmh.hh"
 #include "soil_models.hh"
 #include "coupling/balance.hh"
 
@@ -45,13 +45,13 @@
 
 
 template<int dim>
-class AssemblyLMH : public AssemblyMH<dim> {
+class AssemblyRichards : public AssemblyLMH<dim> {
 public:
 
     typedef std::shared_ptr<RichardsLMH::EqData> AssemblyDataPtr;
 
-    AssemblyLMH(AssemblyDataPtr data)
-    : AssemblyMH<dim>(data),
+    AssemblyRichards(AssemblyDataPtr data)
+    : AssemblyLMH<dim>(data),
       ad_(data),
       genuchten_on(false),
       cross_section(1.0),
