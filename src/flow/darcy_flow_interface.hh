@@ -41,7 +41,7 @@ public:
 
     // TODO: remove! Due to MH and LMH Darcy flow versions.
     virtual std::shared_ptr< FieldFE<3, FieldValue<3>::VectorFixed> > get_velocity_field()
-    {}
+    { return nullptr; }
     
     /**
      * Getter for sequential solution vector.

@@ -302,10 +302,10 @@ DarcyMH::DarcyMH(Mesh &mesh_in, const Input::Record in_rec)
     solution(nullptr),
     data_changed_(false),
     schur0(nullptr),
+    par_to_all(nullptr),
 	steady_diagonal(nullptr),
 	steady_rhs(nullptr),
 	new_diagonal(nullptr),
-	par_to_all(nullptr),
 	previous_solution(nullptr)
 {
 
