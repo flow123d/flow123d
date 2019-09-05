@@ -8,12 +8,17 @@ test_cases:
     - 07_unsteady_init_piezo.yaml
     - 08_gravity.yaml
   - files:
+    - 02_unsteady.yaml
     - 03_unsteady_LMH.yaml
     - 04_source_LMH.yaml
     time_limit: 60
   - files:
     - 05_unsteady_LMH_exact.yaml
+    - 06_unsteady_MH_exact.yaml
     time_limit: 120
-    ### the following solved only by lumped DarcyMH now (corresponds to tests 03,05)
-    #- 02_unsteady.yaml
-    #- 06_unsteady_MH_exact.yaml
+  - files:
+    - 12_gravity_LMH.yaml
+    - 13_anisotropic_2d_x_LMH.yaml
+    - 14_anisotropic_2d_y_LMH.yaml
+    - 15_anisotropic_3d_z_LMH.yaml
+
