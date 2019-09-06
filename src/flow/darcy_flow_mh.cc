@@ -151,6 +151,8 @@ const it::Record & DarcyMH::get_input_type() {
             "ends with convergence success on stagnation, but it reports warning about it.")
         .close();
 
+    DarcyMH::EqData eq_data;
+    
     return it::Record("Flow_Darcy_MH", "Mixed-Hybrid  solver for saturated Darcy flow.")
 		.derive_from(DarcyFlowInterface::get_input_type())
         .declare_key("gravity", it::Array(it::Double(), 3,3), it::Default("[ 0, 0, -1]"),
@@ -162,7 +164,8 @@ const it::Record & DarcyMH::get_input_type() {
         .declare_key("output_stream", OutputTime::get_input_type(), it::Default("{}"),
                 "Output stream settings.\n Specify file format, precision etc.")
 
-        .declare_key("output", DarcyFlowMHOutput::get_input_type(), IT::Default("{ \"fields\": [ \"pressure_p0\", \"velocity_p0\" ] }"),
+        .declare_key("output", DarcyFlowMHOutput::get_input_type(eq_data, "Flow_Darcy_MH"),
+                IT::Default("{ \"fields\": [ \"pressure_p0\", \"velocity_p0\" ] }"),
                 "Specification of output fields and output times.")
         .declare_key("output_specific", DarcyFlowMHOutput::get_input_type_specific(), it::Default::optional(),
                 "Output settings specific to Darcy flow model.\n"

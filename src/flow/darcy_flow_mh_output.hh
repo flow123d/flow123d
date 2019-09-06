@@ -98,7 +98,7 @@ public:
     DarcyFlowMHOutput(DarcyFlowInterface *flow, Input::Record in_rec) ;
     virtual ~DarcyFlowMHOutput();
 
-    static const Input::Type::Instance & get_input_type();
+    static const Input::Type::Instance & get_input_type(FieldSet& eq_data, const std::string &equation_name);
     static const Input::Type::Instance & get_input_type_specific();
 
     /** \brief Calculate values for output.  **/

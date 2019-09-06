@@ -59,11 +59,10 @@
 namespace it = Input::Type;
 
 
-const it::Instance & DarcyFlowMHOutput::get_input_type() {
+const it::Instance & DarcyFlowMHOutput::get_input_type(FieldSet& eq_data, const std::string &equation_name) {
 	OutputFields output_fields;
-	DarcyMH::EqData eq_data;
 	output_fields += eq_data;
-	return output_fields.make_output_type("Flow_Darcy_MH", "");
+	return output_fields.make_output_type(equation_name, "");
 }
 
 

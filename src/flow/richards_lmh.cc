@@ -89,11 +89,16 @@ const it::Record & RichardsLMH::get_input_type() {
                 "Fraction of the water content where we cut  and rescale the curve.")
         .close();
 
+    RichardsLMH::EqData eq_data;
+    
     return it::Record("Flow_Richards_LMH", "Lumped Mixed-Hybrid solver for unsteady unsaturated Darcy flow.")
         .derive_from(DarcyFlowInterface::get_input_type())
         .copy_keys(DarcyLMH::get_input_type())
         .declare_key("input_fields", it::Array( field_descriptor ), it::Default::obligatory(),
                 "Input data for Darcy flow model.")
+        .declare_key("output", DarcyFlowMHOutput::get_input_type(eq_data, "Flow_Richards_LMH"),
+                IT::Default("{ \"fields\": [ \"pressure_p0\", \"velocity_p0\" ] }"),
+                "Specification of output fields and output times.")
         .declare_key("soil_model", soil_rec, it::Default("\"van_genuchten\""),
                 "Soil model settings.")
         .close();
