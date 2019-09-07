@@ -212,7 +212,7 @@ protected:
     bool genuchten_on;
     double cross_section;
     std::shared_ptr<SoilModelBase> soil_model;
-    std::vector<LongIdx> cr_disc_dofs;
+    std::vector<LongIdx> cr_disc_dofs;  ///< Dofs of discontinuous fields on element edges.
 };
 
 

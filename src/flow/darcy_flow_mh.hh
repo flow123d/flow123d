@@ -125,6 +125,10 @@ template<int spacedim, class Value> class FieldDivide;
  * TODO:
  * - how we can reuse field values computed during assembly
  *
+ * TODO: Remove in future. It is supposed not to be improved anymore,
+ * however it is kept functioning aside of the LMH lumped version until
+ * the LMH version is stable and optimized.
+ */
  */
 
 class DarcyMH : public DarcyFlowInterface
@@ -137,9 +141,14 @@ public:
     DECLARE_INPUT_EXCEPTION(ExcMissingTimeGovernor,
             << "Missing the key 'time', obligatory for the transient problems.");
 
-    /// Class with all fields used in the equation DarcyFlow.
-    /// This is common to all implementations since this provides interface
-    /// to this equation for possible coupling.
+    /** Class with all fields used in the equation DarcyFlow.
+    * This is common to all implementations since this provides interface
+    * to this equation for possible coupling.
+    * 
+    * This class is the base class for equation data also in DarcyLMH and RichardsLMH classes
+    * especially due to the common output class DarcyFlowMHOutput.
+    * This is the only dependence between DarcyMH and DarcyLMH classes.
+    */
     class EqData : public FieldSet {
     public:
 

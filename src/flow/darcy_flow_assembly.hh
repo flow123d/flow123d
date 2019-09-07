@@ -32,6 +32,10 @@
 #include "flow/mortar_assembly.hh"
 
 
+/** Common abstract class for the assembly routines in Darcy flow. 
+ * Is implemented in DarcyMH, DarcyLMH and RichardsLMH assembly classes,
+ * which are independent of each other.
+ */
 class AssemblyBase
 {
 public:
@@ -87,7 +91,10 @@ public:
 };
 
 
-
+/** MH version of Darcy flow assembly. It is supposed not to be improved anymore,
+ * however it is kept functioning aside of the LMH lumped version until
+ * the LMH version is stable and optimized.
+ */
 template<int dim>
 class AssemblyMH : public AssemblyBase
 {

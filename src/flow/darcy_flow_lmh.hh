@@ -138,9 +138,14 @@ public:
     DECLARE_INPUT_EXCEPTION(ExcMissingTimeGovernor,
             << "Missing the key 'time', obligatory for the transient problems.");
 
-    /// Class with all fields used in the equation DarcyFlow.
-    /// This is common to all implementations since this provides interface
-    /// to this equation for possible coupling.
+    /** Class with all fields used in the equation DarcyFlow.
+    * This is common to all implementations since this provides interface
+    * to this equation for possible coupling.
+    * 
+    * This class is derived from DarcyMH::EqData especially due to the common output class DarcyFlowMHOutput.
+    * This is the only dependence between DarcyMH and DarcyLMH classes.
+    * It is also base class of RichardsLMH::EqData.
+    * */
     class EqData : public DarcyMH::EqData {
     public:
         

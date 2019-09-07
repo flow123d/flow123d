@@ -33,7 +33,10 @@
 #include "flow/darcy_flow_lmh.hh"
 #include "flow/mortar_assembly.hh"
 
-
+/** Copy of the assembly class for MH implementation,
+ * with Lumping and further improvements.
+ * Used also for Richards.
+ */
 template<int dim>
 class AssemblyLMH : public AssemblyBase
 {
@@ -551,6 +554,11 @@ protected:
 
     // data shared by assemblers of different dimension
     AssemblyDataPtrLMH ad_;
+    
+    /** TODO: Investigate why the hell do we need this flag.
+    *  If removed, it does not break any of the integration tests,
+    * however it must influence the Dirichlet rows in matrix.
+    */
     std::vector<unsigned int> dirichlet_edge;
 
     LocalSystem loc_system_;
@@ -561,9 +569,9 @@ protected:
 
     std::shared_ptr<MortarAssemblyBase> mortar_assembly;
     
-    // TODO: Update dofs only once, use the dofs from LocalSystem.
+    // TODO: Update dofs only once, use the dofs from LocalSystem, once set_dofs and set_bc is separated.
     std::vector<int> indices_;
-    std::vector<int> edge_indices_;
+    std::vector<int> edge_indices_; ///< Dofs of discontinuous fields on element edges.
 };
 
 
