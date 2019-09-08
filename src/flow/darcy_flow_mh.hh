@@ -129,7 +129,6 @@ template<int spacedim, class Value> class FieldDivide;
  * however it is kept functioning aside of the LMH lumped version until
  * the LMH version is stable and optimized.
  */
- */
 
 class DarcyMH : public DarcyFlowInterface
 {

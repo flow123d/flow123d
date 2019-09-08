@@ -9,10 +9,13 @@
 #include "system/global_defs.h"
 #include "system/sys_profiler.hh"
 
+#include "coupling/balance.hh"
 
 #include "input/input_type.hh"
 #include "input/factory.hh"
 #include "flow/richards_lmh.hh"
+#include "flow/soil_models.hh"
+#include "flow/assembly_richards.hh"
 #include "flow/darcy_flow_mh_output.hh"
 #include "tools/time_governor.hh"
 
@@ -22,9 +25,6 @@
 #include <armadillo>
 
 #include "la/schur.hh"
-
-#include "coupling/balance.hh"
-
 #include "la/vector_mpi.hh"
 
 // in the third_party/FADBAD++ dir, namespace "fadbad"

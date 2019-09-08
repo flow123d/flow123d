@@ -46,11 +46,11 @@
 #include "la/schur.hh"
 //#include "la/sparse_graph.hh"
 #include "la/local_to_global_map.hh"
+#include "la/vector_mpi.hh"
 
+#include "flow/assembly_mh.hh"
 #include "flow/darcy_flow_mh.hh"
-
 #include "flow/darcy_flow_mh_output.hh"
-
 
 #include "tools/time_governor.hh"
 #include "fields/field_algo_base.hh"
@@ -61,10 +61,6 @@
 #include "fields/field_divide.hh"
 
 #include "coupling/balance.hh"
-
-#include "la/vector_mpi.hh"
-
-#include "darcy_flow_assembly.hh"
 
 #include "intersection/mixed_mesh_intersections.hh"
 #include "intersection/intersection_local.hh"
