@@ -103,7 +103,7 @@ public:
     }
 
     /// Return DOF handler
-    inline const DOFHandlerMultiDim *dh() {
+    inline const DOFHandlerMultiDim *dh() const{
         return dof_handler_;
     }
 
@@ -133,7 +133,7 @@ public:
     }
 
     /// Create new accessor with same local idx and given DOF handler. Actual and given DOF handler must be create on same Mesh.
-    DHCellAccessor cell_with_other_dh(const DOFHandlerMultiDim * dh) {
+    DHCellAccessor cell_with_other_dh(const DOFHandlerMultiDim * dh) const{
     	ASSERT( (dh->mesh()->n_nodes() == dof_handler_->mesh()->n_nodes()) && (dh->mesh()->n_elements() == dof_handler_->mesh()->n_elements()) )
     			.error("Incompatible DOF handlers!");
     	return DHCellAccessor(dh, loc_ele_idx_);

@@ -46,11 +46,11 @@
 #include "la/schur.hh"
 //#include "la/sparse_graph.hh"
 #include "la/local_to_global_map.hh"
+#include "la/vector_mpi.hh"
 
+#include "flow/assembly_mh.hh"
 #include "flow/darcy_flow_mh.hh"
-
 #include "flow/darcy_flow_mh_output.hh"
-
 
 #include "tools/time_governor.hh"
 #include "fields/field_algo_base.hh"
@@ -61,10 +61,6 @@
 #include "fields/field_divide.hh"
 
 #include "coupling/balance.hh"
-
-#include "la/vector_mpi.hh"
-
-#include "darcy_flow_assembly.hh"
 
 #include "intersection/mixed_mesh_intersections.hh"
 #include "intersection/intersection_local.hh"
@@ -151,6 +147,8 @@ const it::Record & DarcyMH::get_input_type() {
             "ends with convergence success on stagnation, but it reports warning about it.")
         .close();
 
+    DarcyMH::EqData eq_data;
+    
     return it::Record("Flow_Darcy_MH", "Mixed-Hybrid  solver for saturated Darcy flow.")
 		.derive_from(DarcyFlowInterface::get_input_type())
         .declare_key("gravity", it::Array(it::Double(), 3,3), it::Default("[ 0, 0, -1]"),
@@ -162,7 +160,8 @@ const it::Record & DarcyMH::get_input_type() {
         .declare_key("output_stream", OutputTime::get_input_type(), it::Default("{}"),
                 "Output stream settings.\n Specify file format, precision etc.")
 
-        .declare_key("output", DarcyFlowMHOutput::get_input_type(), IT::Default("{ \"fields\": [ \"pressure_p0\", \"velocity_p0\" ] }"),
+        .declare_key("output", DarcyFlowMHOutput::get_input_type(eq_data, "Flow_Darcy_MH"),
+                IT::Default("{ \"fields\": [ \"pressure_p0\", \"velocity_p0\" ] }"),
                 "Specification of output fields and output times.")
         .declare_key("output_specific", DarcyFlowMHOutput::get_input_type_specific(), it::Default::optional(),
                 "Output settings specific to Darcy flow model.\n"
@@ -284,9 +283,6 @@ DarcyMH::EqData::EqData()
 
 
 
-
-
-
 //=============================================================================
 // CREATE AND FILL GLOBAL MH MATRIX OF THE WATER MODEL
 // - do it in parallel:
@@ -305,11 +301,11 @@ DarcyMH::DarcyMH(Mesh &mesh_in, const Input::Record in_rec)
     solution(nullptr),
     data_changed_(false),
     schur0(nullptr),
+    par_to_all(nullptr),
 	steady_diagonal(nullptr),
 	steady_rhs(nullptr),
 	new_diagonal(nullptr),
-	previous_solution(nullptr),
-	par_to_all(nullptr)
+	previous_solution(nullptr)
 {
 
     START_TIMER("Darcy constructor");

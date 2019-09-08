@@ -32,26 +32,13 @@
 #include "flow/mortar_assembly.hh"
 
 
+/** Common abstract class for the assembly routines in Darcy flow. 
+ * Is implemented in DarcyMH, DarcyLMH and RichardsLMH assembly classes,
+ * which are independent of each other.
+ */
 class AssemblyBase
 {
 public:
-    typedef std::shared_ptr<DarcyMH::EqData> AssemblyDataPtr;
-
-    virtual ~AssemblyBase() {}
-
-    /**
-        * Generic creator of multidimensional assembly, i.e. vector of
-        * particular assembly objects.
-        */
-    template< template<int dim> class Impl >
-    static MultidimAssembly create(typename Impl<1>::AssemblyDataPtr data) {
-        return { std::make_shared<Impl<1> >(data),
-            std::make_shared<Impl<2> >(data),
-            std::make_shared<Impl<3> >(data) };
-
-    }
-
-//     virtual LocalSystem & get_local_system() = 0;
     virtual void fix_velocity(LocalElementAccessorBase<3> ele_ac) = 0;
     virtual void assemble(LocalElementAccessorBase<3> ele_ac) = 0;
         
@@ -61,18 +48,29 @@ public:
     // compute velocity value in the barycenter
     // TODO: implement and use general interpolations between discrete spaces
     virtual arma::vec3 make_element_vector(LocalElementAccessorBase<3> ele_ac) = 0;
+    
+    /// Postprocess the velocity due to lumping.
+    /// It is used in LMH and Richards only.
+    virtual void postprocess_velocity(const DHCellAccessor& dh_cell) = 0;
 
-    virtual void update_water_content(LocalElementAccessorBase<3> ele)
-    {}
+    /**
+        * Generic creator of multidimensional assembly, i.e. vector of
+        * particular assembly objects.
+        */
+    template< template<int dim> class Impl, class Data>
+    static MultidimAssembly create(Data data) {
+        return { std::make_shared<Impl<1> >(data),
+            std::make_shared<Impl<2> >(data),
+            std::make_shared<Impl<3> >(data) };
+    }
 
+    virtual ~AssemblyBase() {}
 protected:
 
     virtual void assemble_sides(LocalElementAccessorBase<3> ele) =0;
     
-    virtual void assemble_source_term(LocalElementAccessorBase<3> ele)
-    {}
+    virtual void assemble_source_term(LocalElementAccessorBase<3> ele) = 0;
 };
-
 
 
 template <int dim>
@@ -93,12 +91,17 @@ public:
 };
 
 
-
+/** MH version of Darcy flow assembly. It is supposed not to be improved anymore,
+ * however it is kept functioning aside of the LMH lumped version until
+ * the LMH version is stable and optimized.
+ */
 template<int dim>
 class AssemblyMH : public AssemblyBase
 {
 public:
-    AssemblyMH<dim>(AssemblyDataPtr data)
+    typedef std::shared_ptr<DarcyMH::EqData>  AssemblyDataPtrMH;
+    
+    AssemblyMH<dim>(AssemblyDataPtrMH data)
     : quad_(3),
         fe_values_(map_, quad_, fe_rt_,
                 update_values | update_gradients | update_JxW_values | update_quadrature_points),
@@ -141,14 +144,16 @@ public:
         sp.ones(2,2);
         loc_system_vb_.set_sparsity(sp);
 
-        if (ad_->mortar_method_ == DarcyMH::MortarP0) {
+        if (ad_->mortar_method_ == DarcyFlowInterface::MortarP0) {
             mortar_assembly = std::make_shared<P0_CouplingAssembler>(ad_);
-        } else if (ad_->mortar_method_ == DarcyMH::MortarP1) {
+        } else if (ad_->mortar_method_ == DarcyFlowInterface::MortarP1) {
             mortar_assembly = std::make_shared<P1_CouplingAssembler>(ad_);
         }
 
     }
 
+    void postprocess_velocity(const DHCellAccessor& dh_cell) override
+    {};
 
     ~AssemblyMH<dim>() override
     {}
@@ -229,6 +234,9 @@ public:
     }
 
 protected:
+    void assemble_source_term(LocalElementAccessorBase<3> ele) override
+    {}
+    
     static const unsigned int size()
     {
         // dofs: velocity, pressure, edge pressure
@@ -526,7 +534,7 @@ protected:
     FEValues<dim,3> velocity_interpolation_fv_;
 
     // data shared by assemblers of different dimension
-    AssemblyDataPtr ad_;
+    AssemblyDataPtrMH ad_;
     std::vector<unsigned int> dirichlet_edge;
 
     LocalSystem loc_system_;
