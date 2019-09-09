@@ -39,6 +39,7 @@
 
 #include "io/output_time.hh"
 #include "tools/time_governor.hh"
+#include "tools/mixed.hh"
 #include "coupling/balance.hh"
 #include "input/accessors.hh"
 #include "input/input_type.hh"
@@ -187,8 +188,8 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record in
 : ConcentrationTransportBase(init_mesh, in_rec),
   is_mass_diag_changed(false),
   input_rec(in_rec),
-  mh_dh(nullptr),
-  sources_corr(nullptr)
+  sources_corr(nullptr),
+  changed_(true)
 {
 	START_TIMER("ConvectionTransport");
 	this->eq_data_ = &data_;
@@ -200,12 +201,9 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record in
     is_bc_term_scaled = false;
 
     //initialization of DOF handler
-    static FE_P_disc<0> fe0(0);
-    static FE_P_disc<1> fe1(0);
-    static FE_P_disc<2> fe2(0);
-    static FE_P_disc<3> fe3(0);
+    MixedPtr<FE_P_disc> fe(0);
     dh_ = make_shared<DOFHandlerMultiDim>(init_mesh);
-    shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>( &init_mesh, &fe0, &fe1, &fe2, &fe3);
+    shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>( &init_mesh, fe);
     dh_->distribute_dofs(ds);
 
 }
@@ -331,16 +329,13 @@ ConvectionTransport::~ConvectionTransport()
 
 void ConvectionTransport::set_initial_condition()
 {
-	for (auto elem : mesh_->elements_range()) {
-    	if (!el_ds->is_local(row_4_el[ elem.idx() ])) continue;
-
-    	LongIdx index = row_4_el[ elem.idx() ] - el_ds->begin();
-    	ElementAccessor<3> ele_acc = mesh_->element_accessor( elem.idx() );
+	for ( DHCellAccessor dh_cell : dh_->own_range() ) {
+		LongIdx index = dh_cell.local_idx();
+		ElementAccessor<3> ele_acc = mesh_->element_accessor( dh_cell.elm_idx() );
 
 		for (unsigned int sbi=0; sbi<n_substances(); sbi++) // Optimize: SWAP LOOPS
-			conc[sbi][index] = data_.init_conc[sbi].value(elem.centre(), ele_acc);
-    }
-
+			conc[sbi][index] = data_.init_conc[sbi].value(ele_acc.centre(), ele_acc);
+	}
 }
 
 //=============================================================================
@@ -585,7 +580,7 @@ void ConvectionTransport::zero_time_step()
 
 bool ConvectionTransport::evaluate_time_constraint(double& time_constraint)
 {
-	OLD_ASSERT(mh_dh, "Null MH object.\n" );
+	ASSERT_PTR(dh_).error( "Null DOF handler object.\n" );
     data_.set_time(time_->step(), LimitSide::right); // set to the last computed time
     
     START_TIMER("data reinit");
@@ -593,7 +588,7 @@ bool ConvectionTransport::evaluate_time_constraint(double& time_constraint)
     bool cfl_changed = false;
     
     // if FLOW or DATA changed ---------------------> recompute transport matrix
-    if (mh_dh->time_changed() > transport_matrix_time)
+    if (changed_)
     {
         create_transport_matrix_mpi();
         is_convection_matrix_scaled=false;
@@ -632,7 +627,7 @@ bool ConvectionTransport::evaluate_time_constraint(double& time_constraint)
     }
     
     // although it does not influence CFL, compute BC so the full system is assembled
-    if ( (mh_dh->time_changed() > transport_bc_time)
+    if ( changed_
         || data_.porosity.changed()
         || data_.water_content.changed()
         || data_.bc_conc.changed() )
@@ -645,6 +640,7 @@ bool ConvectionTransport::evaluate_time_constraint(double& time_constraint)
     
     // return time constraint
     time_constraint = cfl_max_step;
+    changed_ = false;
     return cfl_changed;
 }
 
@@ -828,21 +824,21 @@ void ConvectionTransport::create_transport_matrix_mpi() {
         new_i = row_4_el[ dh_cell.elm_idx() ];
         elm = dh_cell.elm();
         for( DHCellSide cell_side : dh_cell.side_range() ) {
-            flux = this->side_flux(elm, cell_side.side()->side_idx());
-            if (cell_side.side()->cond() == NULL) {
+            flux = this->side_flux(elm, cell_side.side_idx());
+            if (cell_side.cond() == NULL) {
                 edg_flux = 0;
                 for( DHCellSide edge_side : cell_side.edge_sides() ) {
-                    el2 = edge_side.side()->element();
-                    flux2 = this->side_flux(el2, edge_side.side()->side_idx());
+                    el2 = edge_side.element();
+                    flux2 = this->side_flux(el2, edge_side.side_idx());
                     if ( flux2 > 0)  edg_flux+= flux2;
                 }
                 for( DHCellSide edge_side : cell_side.edge_sides() )
-                    if (SideIter( *edge_side.side() ) != SideIter( *cell_side.side() )) {
-                        j = edge_side.side()->element().idx();
+                    if (edge_side != cell_side) {
+                        j = edge_side.element().idx();
                         new_j = row_4_el[j];
 
-                        el2 = edge_side.side()->element();
-                        flux2 = this->side_flux(el2, edge_side.side()->side_idx());
+                        el2 = edge_side.element();
+                        flux2 = this->side_flux(el2, edge_side.side_idx());
                         if ( flux2 > 0.0 && flux <0.0)
                             aij = -(flux * flux2 / ( edg_flux * dh_cell.elm().measure() ) );
                         else aij =0;
@@ -855,10 +851,10 @@ void ConvectionTransport::create_transport_matrix_mpi() {
 
         for( DHCellSide neighb_side : dh_cell.neighb_sides() ) // dh_cell lower dim
         {
-            ASSERT( neighb_side.side()->elem_idx() != dh_cell.elm_idx() ).error("Elm. same\n");
-            new_j = row_4_el[ neighb_side.side()->elem_idx() ];
-            el2 = neighb_side.side()->element();
-            flux = this->side_flux(el2, neighb_side.side()->side_idx());
+            ASSERT( neighb_side.elem_idx() != dh_cell.elm_idx() ).error("Elm. same\n");
+            new_j = row_4_el[ neighb_side.elem_idx() ];
+            el2 = neighb_side.element();
+            flux = this->side_flux(el2, neighb_side.side_idx());
 
             // volume source - out-flow from higher dimension
             if (flux > 0.0)  aij = flux / dh_cell.elm().measure();
@@ -869,7 +865,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
             // volume drain - in-flow to higher dimension
             if (flux < 0.0) {
                 aii -= (-flux) / dh_cell.elm().measure();                           // diagonal drain
-                aij = (-flux) / neighb_side.side()->element().measure();
+                aij = (-flux) / neighb_side.element().measure();
             } else aij=0;
             MatSetValue(tm, new_j, new_i, aij, INSERT_VALUES);
         }
@@ -971,7 +967,7 @@ double ConvectionTransport::calculate_side_flux(ElementAccessor<3> &cell, unsign
     ASSERT_EQ(cell->dim(), dim).error("Element dimension mismatch!");
 
     feo_.fe_values<dim>()->reinit(cell, i_side);
-    auto vel = velocity_field_ptr_->value(cell.centre(), cell);
+    auto vel = velocity_field_ptr_->value(cell.side(i_side)->centre(), cell);
     double side_flux = arma::dot(vel, feo_.fe_values<dim>()->normal_vector(0)) * feo_.fe_values<dim>()->JxW(0);
     return side_flux;
 }

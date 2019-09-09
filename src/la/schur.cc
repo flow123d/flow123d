@@ -41,7 +41,6 @@
 #include "la/local_to_global_map.hh"
 #include "system/system.hh"
 #include "la/linsys.hh"
-#include "la/linsys_BDDC.hh"
 #include "la/schur.hh"
 
 /**
@@ -105,6 +104,7 @@ SchurComplement::SchurComplement(Distribution *ds, IS ia, IS ib)
             for(uint i=0, j=0; i < ds->lsize(); i++)
                 if (! a_used[i]) b_indices[j++] = i + ds->begin();
             ISCreateGeneral(PETSC_COMM_WORLD, loc_size_B, b_indices, PETSC_COPY_VALUES, &IsB);
+            PetscFree(b_indices);
         } else {
             ISGetLocalSize(IsB, &loc_size_B);
         }

@@ -347,21 +347,21 @@ void Field<spacedim, Value>::observe_output(std::shared_ptr<Observe> observe)
 {
 	typedef typename Value::element_type ElemType;
 
-    if (observe->points().size() == 0) return;
+    if (observe->point_ds()->lsize() == 0) return;
 
     ElementDataCache<ElemType> &output_data = observe->prepare_compute_data<ElemType>(this->name(), this->time(),
     						(unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
 
-    unsigned int i_data=0;
-    for(const ObservePoint &o_point : observe->points()) {
-        unsigned int ele_index = o_point.element_idx();
+    unsigned int loc_point_time_index, ele_index;
+    for(ObservePointAccessor op_acc : observe->local_range()) {
+        loc_point_time_index = op_acc.loc_point_time_index();
+		ele_index = op_acc.observe_point().element_idx();
         const Value &obs_value =
                         Value( const_cast<typename Value::return_type &>(
-                                this->value(o_point.global_coords(),
+                                this->value(op_acc.observe_point().global_coords(),
                                         ElementAccessor<spacedim>(this->mesh(), ele_index)) ));
         ASSERT_EQ(output_data.n_comp(), obs_value.n_rows()*obs_value.n_cols()).error();
-        output_data.store_value(i_data,  obs_value.mem_ptr());
-        i_data++;
+        output_data.store_value(loc_point_time_index, obs_value.mem_ptr());
     }
 }
 

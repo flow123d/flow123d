@@ -541,10 +541,11 @@ VectorMPI DOFHandlerMultiDim::create_vector()
 }
 
 
-unsigned int DOFHandlerMultiDim::get_dof_indices(const DHCellAccessor &cell, std::vector<int> &indices) const
+unsigned int DOFHandlerMultiDim::get_dof_indices(const DHCellAccessor &cell, std::vector<LongIdx> &indices) const
 {
   unsigned int ndofs = 0;
   ndofs = cell_starts[cell.local_idx()+1]-cell_starts[cell.local_idx()];
+  indices.resize(ndofs);
   for (unsigned int k=0; k<ndofs; k++)
     indices[k] = local_to_global_dof_idx_[dof_indices[cell_starts[cell.local_idx()]+k]];
   
@@ -557,6 +558,7 @@ unsigned int DOFHandlerMultiDim::get_loc_dof_indices(const DHCellAccessor &cell,
 {
   unsigned int ndofs = 0;
   ndofs = cell_starts[cell.local_idx()+1]-cell_starts[cell.local_idx()];
+  indices.resize(ndofs);
   for (unsigned int k=0; k<ndofs; k++)
     indices[k] = dof_indices[cell_starts[cell.local_idx()]+k];
 
@@ -747,19 +749,19 @@ SubDOFHandlerMultiDim::SubDOFHandlerMultiDim(std::shared_ptr<DOFHandlerMultiDim>
     ASSERT_DBG( dynamic_cast<EqualOrderDiscreteSpace *>(dh->ds().get()) != nullptr )
                 .error("sub_handler can be used only with dof handler using EqualOrderDiscreteSpace!");
     ElementAccessor<3> acc;
-    FESystem<0> *fe_sys0 = dynamic_cast<FESystem<0>*>( dh->ds()->fe<0>(acc) );
-    FESystem<1> *fe_sys1 = dynamic_cast<FESystem<1>*>( dh->ds()->fe<1>(acc) );
-    FESystem<2> *fe_sys2 = dynamic_cast<FESystem<2>*>( dh->ds()->fe<2>(acc) );
-    FESystem<3> *fe_sys3 = dynamic_cast<FESystem<3>*>( dh->ds()->fe<3>(acc) );
+    FESystem<0> *fe_sys0 = dynamic_cast<FESystem<0>*>( dh->ds()->fe(acc).get<0>().get() );
+    FESystem<1> *fe_sys1 = dynamic_cast<FESystem<1>*>( dh->ds()->fe(acc).get<1>().get() );
+    FESystem<2> *fe_sys2 = dynamic_cast<FESystem<2>*>( dh->ds()->fe(acc).get<2>().get() );
+    FESystem<3> *fe_sys3 = dynamic_cast<FESystem<3>*>( dh->ds()->fe(acc).get<3>().get() );
     ASSERT_DBG( fe_sys0 != nullptr ).error("sub_handler assumes that dof handler uses FESystem<0>!");
     ASSERT_DBG( fe_sys1 != nullptr ).error("sub_handler assumes that dof handler uses FESystem<1>!");
     ASSERT_DBG( fe_sys2 != nullptr ).error("sub_handler assumes that dof handler uses FESystem<2>!");
     ASSERT_DBG( fe_sys3 != nullptr ).error("sub_handler assumes that dof handler uses FESystem<3>!");
-    ds_ = std::make_shared<EqualOrderDiscreteSpace>( mesh_,
-                                                     fe_sys0->fe()[component_idx].get(),
-                                                     fe_sys1->fe()[component_idx].get(),
-                                                     fe_sys2->fe()[component_idx].get(),
-                                                     fe_sys3->fe()[component_idx].get() );
+    MixedPtr<FiniteElement> sub_mixed(fe_sys0->fe()[component_idx],
+                                      fe_sys1->fe()[component_idx],
+                                      fe_sys2->fe()[component_idx],
+                                      fe_sys3->fe()[component_idx]);
+    ds_ = std::make_shared<EqualOrderDiscreteSpace>( mesh_, sub_mixed);
     
     is_parallel_ = dh->is_parallel_;
     

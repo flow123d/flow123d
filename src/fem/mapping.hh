@@ -114,7 +114,7 @@ public:
  * reference cell to the actual cell, such as Jacobian and normal
  * vectors.
  */
-template<unsigned int dim, unsigned int spacedim>
+template<unsigned int dim, unsigned int spacedim = 3>
 class Mapping
 {
 public:

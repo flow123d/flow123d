@@ -1,12 +1,12 @@
 /*
- * darcy_flow_assembly.hh
+ * assembly_lmh.hh
  *
  *  Created on: Apr 21, 2016
  *      Author: jb
  */
 
-#ifndef SRC_FLOW_DARCY_FLOW_ASSEMBLY_HH_
-#define SRC_FLOW_DARCY_FLOW_ASSEMBLY_HH_
+#ifndef SRC_ASSEMBLY_LMH_HH_
+#define SRC_ASSEMBLY_LMH_HH_
 
 #include "mesh/long_idx.hh"
 #include "mesh/mesh.h"
@@ -17,6 +17,7 @@
 #include "fem/fe_values.hh"
 #include "fem/fe_rt.hh"
 #include "fem/fe_values_views.hh"
+#include "fem/fe_system.hh"
 #include "quadrature/quadrature_lib.hh"
 #include "flow/mh_dofhandler.hh"
 
@@ -24,82 +25,27 @@
 #include "la/linsys_PETSC.hh"
 #include "la/linsys_BDDC.hh"
 #include "la/schur.hh"
-
 #include "la/local_system.hh"
 
+
+
+
 #include "coupling/balance.hh"
+#include "flow/assembly_mh.hh"
+#include "flow/darcy_flow_lmh.hh"
 #include "flow/mortar_assembly.hh"
 
-
-class AssemblyBase
-{
-public:
-    typedef std::shared_ptr<DarcyMH::EqData> AssemblyDataPtr;
-    typedef std::vector<std::shared_ptr<AssemblyBase> > MultidimAssembly;
-
-    virtual ~AssemblyBase() {}
-
-    /**
-        * Generic creator of multidimensional assembly, i.e. vector of
-        * particular assembly objects.
-        */
-    template< template<int dim> class Impl >
-    static MultidimAssembly create(typename Impl<1>::AssemblyDataPtr data) {
-        return { std::make_shared<Impl<1> >(data),
-            std::make_shared<Impl<2> >(data),
-            std::make_shared<Impl<3> >(data) };
-
-    }
-
-//     virtual LocalSystem & get_local_system() = 0;
-    virtual void fix_velocity(LocalElementAccessorBase<3> ele_ac) = 0;
-    virtual void assemble(LocalElementAccessorBase<3> ele_ac) = 0;
-    virtual void assemble_reconstruct(LocalElementAccessorBase<3> ele_ac) = 0;
-        
-    // assembly compatible neighbourings
-//     virtual void assembly_local_vb(ElementAccessor<3> ele, Neighbour *ngh) = 0;
-
-    // compute velocity value in the barycenter
-    // TODO: implement and use general interpolations between discrete spaces
-    virtual arma::vec3 make_element_vector(LocalElementAccessorBase<3> ele_ac) = 0;
-
-    virtual void update_water_content(LocalElementAccessorBase<3> ele)
-    {}
-
-protected:
-
-    virtual void assemble_sides(LocalElementAccessorBase<3> ele) =0;
-    
-    virtual void assemble_source_term(LocalElementAccessorBase<3> ele)
-    {}
-};
-
-
-
+/** Copy of the assembly class for MH implementation,
+ * with Lumping and further improvements.
+ * Used also for Richards.
+ */
 template <int dim>
-class NeighSideValues {
-private:
-    // assembly face integrals (BC)
-    MappingP1<dim+1,3> side_map_;
-    QGauss<dim> side_quad_;
-    FE_P_disc<dim+1> fe_p_disc_;
-public:
-    NeighSideValues<dim>()
-    :  side_quad_(1),
-       fe_p_disc_(0),
-       fe_side_values_(side_map_, side_quad_, fe_p_disc_, update_normal_vectors)
-    {}
-    FESideValues<dim+1,3> fe_side_values_;
-
-};
-
-
-
-template<int dim>
-class AssemblyMH : public AssemblyBase
+class AssemblyLMH : public AssemblyBase
 {
 public:
-    AssemblyMH<dim>(AssemblyDataPtr data)
+    typedef std::shared_ptr<DarcyLMH::EqData> AssemblyDataPtrLMH;
+    
+    AssemblyLMH<dim>(AssemblyDataPtrLMH data)
     : quad_(3),
         fe_values_(map_, quad_, fe_rt_,
                 update_values | update_gradients | update_JxW_values | update_quadrature_points),
@@ -108,18 +54,19 @@ public:
         velocity_interpolation_fv_(map_,velocity_interpolation_quad_, fe_rt_, update_values | update_quadrature_points),
 
         ad_(data),
-        loc_system_(size(), size())
+        loc_system_(size(), size()),
+        edge_indices_(dim+1)
     {
         // local numbering of dofs for MH system
+        // note: this shortcut supposes that the fe_system is the same on all elements
+        // the function DiscreteSpace.fe(ElementAccessor) does not in fact depend on the element accessor
+        auto fe = ad_->dh_->ds()->fe(ad_->dh_->own_range().begin()->elm()).get<dim>();
+        FESystem<dim>* fe_system = dynamic_cast<FESystem<dim>*>(fe.get());
+        loc_side_dofs = fe_system->fe_dofs(0);;
+        loc_ele_dof = fe_system->fe_dofs(1)[0];
+        loc_edge_dofs = fe_system->fe_dofs(2);;
+        
         unsigned int nsides = dim+1;
-        loc_side_dofs.resize(nsides);
-        loc_ele_dof = nsides;
-        loc_edge_dofs.resize(nsides);
-        for(unsigned int i = 0; i < nsides; i++){
-            loc_side_dofs[i] = i;
-            loc_edge_dofs[i] = nsides + i + 1;
-        }
-        //DebugOut() << print_var(this) << print_var(side_quad_.size());
         
         // create local sparsity pattern
         base_local_sp_.set_size(size(),size());
@@ -140,16 +87,15 @@ public:
         schur_sp_.ones(nsides, nsides);
         loc_schur_.set_sparsity(schur_sp_);
 
-        if (ad_->mortar_method_ == DarcyMH::MortarP0) {
+        if (ad_->mortar_method_ == DarcyFlowInterface::MortarP0) {
             mortar_assembly = std::make_shared<P0_CouplingAssembler>(ad_);
-        } else if (ad_->mortar_method_ == DarcyMH::MortarP1) {
+        } else if (ad_->mortar_method_ == DarcyFlowInterface::MortarP1) {
             mortar_assembly = std::make_shared<P1_CouplingAssembler>(ad_);
         }
-
     }
 
 
-    ~AssemblyMH<dim>() override
+    ~AssemblyLMH<dim>() override
     {}
 
 //     LocalSystem& get_local_system() override
@@ -189,10 +135,10 @@ public:
         for(unsigned int i=0; i<n; i++)
         {
             // read the computed edge pressures
-            schur_solution(i) = (*ad_->schur_solution_)[dofs_schur[i]];
+            schur_solution(i) = ad_->schur_solution[dofs_schur[i]];
             // write the computed edge pressures
             unsigned int loc_row = dofs[off+i];
-            (*ad_->full_solution_)[loc_row] = schur_solution(i);
+            ad_->full_solution[loc_row] = schur_solution(i);
         }
         
         // reconstruct the velocity and pressure
@@ -203,7 +149,7 @@ public:
         {
             // write the velocity and pressure
             unsigned int loc_row = dofs[i];
-            (*ad_->full_solution_)[loc_row] += reconstructed_solution(i);
+            ad_->full_solution[loc_row] += reconstructed_solution(i);
         }
         
 //         if (mortar_assembly)
@@ -237,24 +183,24 @@ public:
             mortar_assembly->assembly(ele_ac);
     }
 
-//     void assembly_local_vb(ElementAccessor<3> ele, Neighbour *ngh) override
+//     void assembly_local_vb(ElementAccessor<3> ele, DHCellSide neighb_side) override
 //     {
 //         ASSERT_LT_DBG(ele->dim(), 3);
 //         //DebugOut() << "alv " << print_var(this);
 //         //START_TIMER("Assembly<dim>::assembly_local_vb");
 //         // compute normal vector to side
 //         arma::vec3 nv;
-//         ElementAccessor<3> ele_higher = ad_->mesh->element_accessor( ngh->side()->element().idx() );
-//         ngh_values_.fe_side_values_.reinit(ele_higher, ngh->side()->side_idx());
+//         ElementAccessor<3> ele_higher = ad_->mesh->element_accessor( neighb_side.element().idx() );
+//         ngh_values_.fe_side_values_.reinit(ele_higher, neighb_side.side_idx());
 //         nv = ngh_values_.fe_side_values_.normal_vector(0);
 // 
 //         double value = ad_->sigma.value( ele.centre(), ele) *
 //                         2*ad_->conductivity.value( ele.centre(), ele) *
 //                         arma::dot(ad_->anisotropy.value( ele.centre(), ele)*nv, nv) *
-//                         ad_->cross_section.value( ngh->side()->centre(), ele_higher ) * // cross-section of higher dim. (2d)
-//                         ad_->cross_section.value( ngh->side()->centre(), ele_higher ) /
+//                         ad_->cross_section.value( neighb_side.centre(), ele_higher ) * // cross-section of higher dim. (2d)
+//                         ad_->cross_section.value( neighb_side.centre(), ele_higher ) /
 //                         ad_->cross_section.value( ele.centre(), ele ) *      // crossection of lower dim.
-//                         ngh->side()->measure();
+// 						neighb_side.measure();
 // 
 //         loc_system_vb_.add_value(0,0, -value);
 //         loc_system_vb_.add_value(0,1,  value);
@@ -281,13 +227,26 @@ public:
         return flux_in_center;
     }
 
+    void postprocess_velocity(const DHCellAccessor& dh_cell)
+    {
+        ElementAccessor<3> ele = dh_cell.elm();
+        
+        double edge_scale = ele.measure()
+                              * ad_->cross_section.value(ele.centre(), ele)
+                              / ele->n_sides();
+        
+        double edge_source_term = edge_scale * ad_->water_source_density.value(ele.centre(), ele);
+      
+        postprocess_velocity_specific(dh_cell, edge_scale, edge_source_term);
+    }
+
 protected:
     static const unsigned int size()
     {
         // dofs: velocity, pressure, edge pressure
         return RefElement<dim>::n_sides + 1 + RefElement<dim>::n_sides;
     }
-    
+
     void set_loc_dofs_vec(LocalElementAccessorBase<3> ele_ac, arma::Col<LongIdx>& dofs, arma::Col<LongIdx>& dofs_schur){
         ElementAccessor<3> ele = ele_ac.element_accessor();
         
@@ -568,8 +527,8 @@ protected:
 //         cout << "\n";
     }
         
-     void assemble_sides(LocalElementAccessorBase<3> ele_ac) override
-     {
+    void assemble_sides(LocalElementAccessorBase<3> ele_ac) override
+    {
         double cs = ad_->cross_section.value(ele_ac.centre(), ele_ac.element_accessor());
         double conduct =  ad_->conductivity.value(ele_ac.centre(), ele_ac.element_accessor());
         double scale = 1 / cs /conduct;
@@ -617,8 +576,8 @@ protected:
         if ( typeid(*ad_->lin_sys) == typeid(LinSys_BDDC) ) {
             const arma::mat& local_matrix = loc_system_.get_matrix();
             for(unsigned int i=0; i < ndofs; i++) {
-                double val_side =  local_matrix(i,i);
-                double val_edge =  -1./local_matrix(i,i);
+                double val_side = local_matrix(i,i);
+                double val_edge = -1./local_matrix(i,i);
 
                 unsigned int side_row = loc_system_.row_dofs[loc_side_dofs[i]];
                 unsigned int edge_row = loc_system_.row_dofs[loc_edge_dofs[i]];
@@ -644,25 +603,62 @@ protected:
         }
     }
     
-    void assemble_source_term(LocalElementAccessorBase<3> ele_ac)
+    void assemble_source_term(LocalElementAccessorBase<3> ele_ac) override
     {
-        double cs = ad_->cross_section.value(ele_ac.centre(), ele_ac.element_accessor());
+        ElementAccessor<3> ele =ele_ac.element_accessor();
+        
+        ele_ac.dh_cell().cell_with_other_dh(ad_->dh_cr_.get()).get_loc_dof_indices(edge_indices_);
+        
+        // compute lumped source
+        double alpha = 1.0 / ele_ac.n_sides();
+        double cross_section = ad_->cross_section.value(ele.centre(), ele);
+        double coef = alpha * ele.measure() * cross_section;
+        
+        double source = ad_->water_source_density.value(ele_ac.centre(), ele_ac.element_accessor());
+        double source_term = coef * source;
+        
+        // in unsteady, compute time term
+        double storativity = 0.0;
+        double time_term_diag = 0.0, time_term = 0.0, time_term_rhs = 0.0;
+        
+        if(! ad_->use_steady_assembly_)
+        {
+            storativity = ad_->storativity.value(ele_ac.centre(), ele_ac.element_accessor());
+            time_term = coef * storativity;
+        }
+        
+        for (unsigned int i=0; i<ele_ac.n_sides(); i++)
+        {
+            if(! ad_->use_steady_assembly_)
+            {
+                time_term_diag = time_term / ad_->time_step_;
+                time_term_rhs = time_term_diag * ad_->previous_solution[ele_ac.edge_local_row(i)];
+            }
 
-        // set sources
-        double source = ele_ac.measure() * cs *
-                ad_->water_source_density.value(ele_ac.centre(), ele_ac.element_accessor());
-        loc_system_.add_value(loc_ele_dof, -1.0 * source);
-
-        if( ! reconstruct)
-            ad_->balance->add_source_values(ad_->water_balance_idx, ele_ac.region().bulk_idx(), {(LongIdx) ele_ac.ele_local_idx()}, {0}, {source});
+            this->loc_system_.add_value(loc_edge_dofs[i], loc_edge_dofs[i],
+                                        -time_term_diag,
+                                        -source_term - time_term_rhs);
+            
+            if( ! reconstruct)
+            if (ad_->balance != nullptr)
+            {
+                ad_->balance->add_source_values(ad_->water_balance_idx, ele.region().bulk_idx(), {(LongIdx)edge_indices_[i]}, {0},{source_term});
+                if( ! ad_->use_steady_assembly_)
+                {
+                    ad_->balance->add_mass_matrix_values(ad_->water_balance_idx, ele_ac.region().bulk_idx(), { LongIdx(ele_ac.edge_row(i)) },
+                                                         {time_term});
+                }
+            }
+        }
     }
 
     void assembly_dim_connections(LocalElementAccessorBase<3> ele_ac){
         //D, E',E block: compatible connections: element-edge
-        ElementAccessor<3> ele = ele_ac.element_accessor();
+        auto ele = ele_ac.element_accessor(); //ElementAccessor<3>
+        DHCellAccessor dh_cell = ele_ac.dh_cell();
         
         // no Neighbours => nothing to asssemble here
-        if(ele->n_neighs_vb() == 0) return;
+        if(dh_cell.elm()->n_neighs_vb() == 0) return;
         
         ASSERT_LT_DBG(ele->dim(), 3);
         int ele_row = ele_ac.ele_row();
@@ -670,25 +666,39 @@ protected:
         arma::vec3 nv;
 
         //DebugOut() << "adc " << print_var(this) << print_var(side_quad_.size());
-        for (unsigned int i = 0; i < ele->n_neighs_vb(); i++) {
+//         for (unsigned int i = 0; i < ele->n_neighs_vb(); i++) {
+        unsigned int i = 0;
+        for ( DHCellSide neighb_side : dh_cell.neighb_sides() ) {
             // every compatible connection adds a 2x2 matrix involving
             // current element pressure  and a connected edge pressure
             unsigned int p = size()+i; // loc dof of higher ele edge
-            ngh = ele_ac.element_accessor()->neigh_vb[i];
+//             ngh = ele_ac.element_accessor()->neigh_vb[i];
+//             
+//             //DebugOut() << "alv " << print_var(this);
+//             // compute normal vector to side
+//             DHCellAccessor cell_higher_dim = ele_ac.dh_cell().dh()->cell_accessor_from_element(neighb_side.elem_idx());
+//             LocalElementAccessorBase<3> acc_higher_dim( cell_higher_dim );
+//             for (unsigned int j = 0; j < neighb_side.element().dim()+1; j++)
+//             	if (neighb_side.element()->edge_idx(j) == ngh->edge_idx()) {
+//                     loc_system_vb_.row_dofs[1] = loc_system_vb_.col_dofs[1] = acc_higher_dim.edge_row(j);
+//             		break;
+//             	}
+// 
+//             assembly_local_vb(ele, neighb_side);
             
-            //DebugOut() << "alv " << print_var(this);
-            // compute normal vector to side
-            ElementAccessor<3> ele_higher = ad_->mesh->element_accessor( ngh->side()->element().idx() );
-            ngh_values_.fe_side_values_.reinit(ele_higher, ngh->side()->side_idx());
+            
+            
+            ElementAccessor<3> ele_higher = ad_->mesh->element_accessor( neighb_side.element().idx() );
+            ngh_values_.fe_side_values_.reinit(ele_higher, neighb_side.side_idx());
             nv = ngh_values_.fe_side_values_.normal_vector(0);
 
             double value = ad_->sigma.value( ele.centre(), ele) *
                             2*ad_->conductivity.value( ele.centre(), ele) *
                             arma::dot(ad_->anisotropy.value( ele.centre(), ele)*nv, nv) *
-                            ad_->cross_section.value( ngh->side()->centre(), ele_higher ) * // cross-section of higher dim. (2d)
-                            ad_->cross_section.value( ngh->side()->centre(), ele_higher ) /
+                            ad_->cross_section.value( neighb_side.centre(), ele_higher ) * // cross-section of higher dim. (2d)
+                            ad_->cross_section.value( neighb_side.centre(), ele_higher ) /
                             ad_->cross_section.value( ele.centre(), ele ) *      // crossection of lower dim.
-                            ngh->side()->measure();
+                            neighb_side.measure();
 
             loc_system_.add_value(loc_ele_dof, loc_ele_dof, -value);
             loc_system_.add_value(loc_ele_dof, p,            value);
@@ -701,6 +711,7 @@ protected:
                // there is -value on diagonal in block C!
                static_cast<LinSys_BDDC*>(ad_->lin_sys)->diagonal_weights_set_value( ind, -value );
             }
+            ++i;
         }
     }
 
@@ -717,7 +728,28 @@ protected:
         }
     }
 
-
+    virtual void postprocess_velocity_specific(const DHCellAccessor& dh_cell, double edge_scale, double edge_source_term)// override
+    {
+        dh_cell.get_loc_dof_indices(indices_);
+        ElementAccessor<3> ele = dh_cell.elm();
+        
+        double storativity = ad_->storativity.value(ele.centre(), ele);
+        double new_pressure, old_pressure, time_term = 0.0;
+        
+        for (unsigned int i=0; i<ele->n_sides(); i++) {
+            
+            if( ! ad_->use_steady_assembly_)
+            {
+                new_pressure = ad_->data_vec_[         indices_[loc_edge_dofs[i]] ];
+                old_pressure = ad_->previous_solution[ indices_[loc_edge_dofs[i]] ];
+                time_term = edge_scale * storativity / ad_->time_step_ * (new_pressure - old_pressure);
+            }
+            
+            ad_->data_vec_[indices_[loc_side_dofs[i]]] += edge_source_term - time_term;
+        }
+    }
+    
+    
     // temporary fix in schur reconstruction
     bool reconstruct;
 
@@ -734,7 +766,12 @@ protected:
     FEValues<dim,3> velocity_interpolation_fv_;
 
     // data shared by assemblers of different dimension
-    AssemblyDataPtr ad_;
+    AssemblyDataPtrLMH ad_;
+    
+    /** TODO: Investigate why the hell do we need this flag.
+    *  If removed, it does not break any of the integration tests,
+    * however it must influence the Dirichlet rows in matrix.
+    */
     std::vector<unsigned int> dirichlet_edge;
 
     LocalSystem loc_system_;
@@ -747,7 +784,11 @@ protected:
     unsigned int loc_ele_dof;
 
     std::shared_ptr<MortarAssemblyBase> mortar_assembly;
+        
+//     // TODO: Update dofs only once, use the dofs from LocalSystem, once set_dofs and set_bc is separated.
+    std::vector<int> indices_;
+    std::vector<int> edge_indices_; ///< Dofs of discontinuous fields on element edges.
 };
 
 
-#endif /* SRC_FLOW_DARCY_FLOW_ASSEMBLY_HH_ */
+#endif /* SRC_ASSEMBLY_LMH_HH_ */

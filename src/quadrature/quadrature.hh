@@ -143,6 +143,7 @@ inline const unsigned int Quadrature<dim>::size() const {
 template<unsigned int dim>
 inline const arma::vec::fixed<dim> & Quadrature<dim>::point(
         const unsigned int i) const {
+    ASSERT_LT_DBG(i, quadrature_points.size());
     return quadrature_points[i];
 }
 
@@ -154,11 +155,13 @@ inline const std::vector<arma::vec::fixed<dim> > & Quadrature<dim>::get_points()
 template<unsigned int dim>
 inline void Quadrature<dim>::set_point(const unsigned int i, const arma::vec::fixed<dim> &p)
 {
+    ASSERT_LT_DBG(i, quadrature_points.size());
     quadrature_points[i] = p;
 }
 
 template<unsigned int dim>
 inline double Quadrature<dim>::weight(const unsigned int i) const {
+    ASSERT_LT_DBG(i, weights.size());
     return weights[i];
 }
 
@@ -170,6 +173,7 @@ inline const std::vector<double> & Quadrature<dim>::get_weights() const {
 template<unsigned int dim>
 inline void Quadrature<dim>::set_weight(const unsigned int i, const double w)
 {
+    ASSERT_LT_DBG(i, weights.size());
     weights[i] = w;
 }
 
@@ -180,6 +184,9 @@ Quadrature<dim>::~Quadrature()
 template<unsigned int dim> inline
 Quadrature<dim>::Quadrature(const Quadrature<dim-1> &subq, unsigned int sid, unsigned int pid)
 {
+    // Below we permute point coordinates according to permutation
+    // of nodes on side. We just check that these numbers equal.
+    ASSERT_DBG( RefElement<dim>::n_nodes_per_side == dim );
     resize(subq.size());
 
 //     double lambda;
@@ -224,7 +231,7 @@ Quadrature<dim>::Quadrature(const Quadrature<dim-1> &subq, unsigned int sid, uns
         
         //permute
         for (unsigned int i=0; i<RefElement<dim>::n_nodes_per_side; i++) {
-            pp(i) = p(RefElement<dim>::side_permutations[pid][i]);
+            pp(RefElement<dim>::side_permutations[pid][i]) = p(i);
         }
         
         el_bar_coords = RefElement<dim>::template interpolate<dim-1>(pp,sid);

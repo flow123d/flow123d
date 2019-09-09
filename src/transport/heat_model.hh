@@ -38,7 +38,6 @@
 #include "input/type_record.hh"                 // for Record
 #include "input/type_selection.hh"              // for Selection
 
-class MH_DofHandler;
 class Mesh;
 class OutputTime;
 namespace Input { class Record; }
@@ -62,7 +61,7 @@ public:
      *
      * TODO: We should pass whole velocity field object (description of base functions and dof numbering) and vector.
      *
-    virtual void set_velocity_field(const MH_DofHandler &dh) = 0;
+    virtual void set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field) = 0;
 
     /// Common specification of the input record for secondary equations.
     static Input::Type::Abstract & get_input_type() {
@@ -87,7 +86,7 @@ public:
     inline virtual ~HeatNothing()
     {}
 
-    inline void set_velocity_field(const MH_DofHandler &dh) override {};
+    inline void set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field) override {};
 
     inline virtual void output_data() override {};
 
@@ -228,10 +227,9 @@ public:
          *
 	 * (So far it does not work since the flow module returns a vector of zeros.)
 	 */
-	inline void set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field, const MH_DofHandler &dh) override
+	inline void set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field) override
 	{
 		velocity_field_ptr_ = flux_field;
-		mh_dh = &dh;
 		flux_changed = true;
 	}
 
@@ -242,6 +240,13 @@ public:
     /// Returns reference to the vector of substance names.
     inline SubstanceList &substances()
     { return substances_; }
+
+    const vector<unsigned int> &get_subst_idx()
+	{ return subst_idx; }
+
+    std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> velocity_field_ptr() const {
+        return this->velocity_field_ptr_;
+    }
 
 
 protected:
@@ -269,13 +274,6 @@ protected:
 
     /// Transported substances.
     SubstanceList substances_;
-
-    /**
-     * Temporary solution how to pass velocity field form the flow model.
-     * TODO: introduce FieldDiscrete -containing true DOFHandler and data vector and pass such object together with other
-     * data. Possibly make more general set_data method, allowing setting data given by name. needs support from EqDataBase.
-     */
-    const MH_DofHandler *mh_dh;
 
 	/// List of indices used to call balance methods for a set of quantities.
 	vector<unsigned int> subst_idx;

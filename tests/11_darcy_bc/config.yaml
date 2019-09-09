@@ -13,3 +13,9 @@ test_cases:
       - 07_river_slope.yaml
       - 09_seepage_stagnation.yaml
       - 10_dirichlet_LMH.yaml
+      - 11_neumann_LMH.yaml
+      - 12_robin_LMH.yaml
+      - 16_river_square_LMH.yaml
+      - 17_river_slope_LMH.yaml
+      - 19_seepage_stagnation_LMH.yaml
+

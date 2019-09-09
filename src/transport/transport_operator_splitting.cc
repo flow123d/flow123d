@@ -199,12 +199,9 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 		reaction = (*reactions_it).factory< ReactionTerm, Mesh &, Input::Record >(init_mesh, *reactions_it);
 
         //initialization of DOF handler
-        static FE_P_disc<0> fe0(0);
-        static FE_P_disc<1> fe1(0);
-        static FE_P_disc<2> fe2(0);
-        static FE_P_disc<3> fe3(0);
+        static MixedPtr<FE_P_disc> fe(0);
         shared_ptr<DOFHandlerMultiDim> dof_handler = make_shared<DOFHandlerMultiDim>(*mesh_);
-        shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>( mesh_, &fe0, &fe1, &fe2, &fe3);
+        shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>( mesh_, fe);
         dof_handler->distribute_dofs(ds);
 
         reaction->substances(convection->substances())
@@ -364,10 +361,9 @@ void TransportOperatorSplitting::update_solution() {
 
 
 
-void TransportOperatorSplitting::set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field, const MH_DofHandler &dh)
+void TransportOperatorSplitting::set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field)
 {
-	flux_field->local_to_ghost_data_scatter();
-	convection->set_velocity_field( flux_field, dh );
+	convection->set_velocity_field( flux_field );
 };
 
 
