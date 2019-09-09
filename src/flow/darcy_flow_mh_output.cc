@@ -25,7 +25,7 @@
 #include <system/global_defs.h>
 
 #include "flow/darcy_flow_mh.hh"
-#include "flow/darcy_flow_assembly.hh"
+#include "flow/assembly_lmh.hh"
 #include "flow/darcy_flow_mh_output.hh"
 
 #include "io/output_time.hh"

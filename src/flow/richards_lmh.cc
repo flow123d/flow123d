@@ -32,7 +32,7 @@
 #include "badiff.h"
 #include "fadiff.h"
 
-#include "flow/assembly_lmh.hh"
+#include "flow/assembly_richards.hh"
 
 
 FLOW123D_FORCE_LINK_IN_CHILD(richards_lmh);

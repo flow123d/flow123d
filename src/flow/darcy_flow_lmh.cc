@@ -64,7 +64,7 @@
 
 #include "la/vector_mpi.hh"
 
-#include "darcy_flow_assembly.hh"
+#include "flow/assembly_lmh.hh"
 
 #include "intersection/mixed_mesh_intersections.hh"
 #include "intersection/intersection_local.hh"
