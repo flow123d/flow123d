@@ -179,32 +179,6 @@ public:
             mortar_assembly->assembly(ele_ac);
     }
 
-//     void assembly_local_vb(ElementAccessor<3> ele, DHCellSide neighb_side) override
-//     {
-//         ASSERT_LT_DBG(ele->dim(), 3);
-//         //DebugOut() << "alv " << print_var(this);
-//         //START_TIMER("Assembly<dim>::assembly_local_vb");
-//         // compute normal vector to side
-//         arma::vec3 nv;
-//         ElementAccessor<3> ele_higher = ad_->mesh->element_accessor( neighb_side.element().idx() );
-//         ngh_values_.fe_side_values_.reinit(ele_higher, neighb_side.side_idx());
-//         nv = ngh_values_.fe_side_values_.normal_vector(0);
-// 
-//         double value = ad_->sigma.value( ele.centre(), ele) *
-//                         2*ad_->conductivity.value( ele.centre(), ele) *
-//                         arma::dot(ad_->anisotropy.value( ele.centre(), ele)*nv, nv) *
-//                         ad_->cross_section.value( neighb_side.centre(), ele_higher ) * // cross-section of higher dim. (2d)
-//                         ad_->cross_section.value( neighb_side.centre(), ele_higher ) /
-//                         ad_->cross_section.value( ele.centre(), ele ) *      // crossection of lower dim.
-// 						neighb_side.measure();
-// 
-//         loc_system_vb_.add_value(0,0, -value);
-//         loc_system_vb_.add_value(0,1,  value);
-//         loc_system_vb_.add_value(1,0,  value);
-//         loc_system_vb_.add_value(1,1, -value);
-//     }
-
-
     arma::vec3 make_element_vector(LocalElementAccessorBase<3> ele_ac) override
     {
         //START_TIMER("Assembly<dim>::make_element_vector");
@@ -420,7 +394,6 @@ protected:
     void assemble_bc(LocalElementAccessorBase<3> ele_ac){
         //shortcuts
         const unsigned int nsides = ele_ac.n_sides();
-        LinSys *ls = ad_->lin_sys;
         
         Boundary *bcd;
         unsigned int side_row, edge_row;
@@ -694,7 +667,6 @@ protected:
         if(dh_cell.elm()->n_neighs_vb() == 0) return;
         
         ASSERT_LT_DBG(ele->dim(), 3);
-        Neighbour *ngh;
         arma::vec3 nv;
 
         //DebugOut() << "adc " << print_var(this) << print_var(side_quad_.size());
