@@ -11,7 +11,7 @@ test_cases:
       - 06_cube.yaml
       - 52_vtk_LMH.yaml
       - 53_piezo_LMH.yaml
-      - 54_bddc_LMH.yaml
+      #- 54_bddc_LMH.yaml
       - 55_square_LMH.yaml
       - 56_cube_LMH.yaml
       

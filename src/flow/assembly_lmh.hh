@@ -23,7 +23,7 @@
 
 #include "la/linsys.hh"
 #include "la/linsys_PETSC.hh"
-#include "la/linsys_BDDC.hh"
+// #include "la/linsys_BDDC.hh"
 #include "la/schur.hh"
 #include "la/local_system.hh"
 
@@ -602,18 +602,18 @@ protected:
         // to a continuous one
         // it is important to scale the effect - if conductivity is low for one subdomain and high for the other,
         // trust more the one with low conductivity - it will be closer to the truth than an arithmetic average
-        if ( typeid(*ad_->lin_sys) == typeid(LinSys_BDDC) ) {
-            const arma::mat& local_matrix = loc_system_.get_matrix();
-            for(unsigned int i=0; i < ndofs; i++) {
-                double val_side = local_matrix(i,i);
-                double val_edge = -1./local_matrix(i,i);
-
-                unsigned int side_row = loc_system_.row_dofs[loc_side_dofs[i]];
-                unsigned int edge_row = loc_system_.row_dofs[loc_edge_dofs[i]];
-                static_cast<LinSys_BDDC*>(ad_->lin_sys)->diagonal_weights_set_value( side_row, val_side );
-                static_cast<LinSys_BDDC*>(ad_->lin_sys)->diagonal_weights_set_value( edge_row, val_edge );
-            }
-        }
+//         if ( typeid(*ad_->lin_sys) == typeid(LinSys_BDDC) ) {
+//             const arma::mat& local_matrix = loc_system_.get_matrix();
+//             for(unsigned int i=0; i < ndofs; i++) {
+//                 double val_side = local_matrix(i,i);
+//                 double val_edge = -1./local_matrix(i,i);
+// 
+//                 unsigned int side_row = loc_system_.row_dofs[loc_side_dofs[i]];
+//                 unsigned int edge_row = loc_system_.row_dofs[loc_edge_dofs[i]];
+//                 static_cast<LinSys_BDDC*>(ad_->lin_sys)->diagonal_weights_set_value( side_row, val_side );
+//                 static_cast<LinSys_BDDC*>(ad_->lin_sys)->diagonal_weights_set_value( edge_row, val_edge );
+//             }
+//         }
     }
     
     
@@ -625,11 +625,11 @@ protected:
             loc_system_.add_value(loc_side_dofs[side], loc_ele_dof, -1.0);
         }
         
-        if ( typeid(*ad_->lin_sys) == typeid(LinSys_BDDC) ) {
-            double val_ele =  1.;
-            static_cast<LinSys_BDDC*>(ad_->lin_sys)->
-                            diagonal_weights_set_value( loc_system_.row_dofs[loc_ele_dof], val_ele );
-        }
+//         if ( typeid(*ad_->lin_sys) == typeid(LinSys_BDDC) ) {
+//             double val_ele =  1.;
+//             static_cast<LinSys_BDDC*>(ad_->lin_sys)->
+//                             diagonal_weights_set_value( loc_system_.row_dofs[loc_ele_dof], val_ele );
+//         }
     }
     
     void assemble_source_term(LocalElementAccessorBase<3> ele_ac) override
@@ -722,12 +722,12 @@ protected:
             loc_system_.add_value(p,loc_ele_dof,             value);
             loc_system_.add_value(p,p,                      -value);
 
-            // update matrix for weights in BDDCML
-            if ( typeid(*ad_->lin_sys) == typeid(LinSys_BDDC) ) {
-                int ind = loc_system_.row_dofs[p];
-               // there is -value on diagonal in block C!
-               static_cast<LinSys_BDDC*>(ad_->lin_sys)->diagonal_weights_set_value( ind, -value );
-            }
+//             // update matrix for weights in BDDCML
+//             if ( typeid(*ad_->lin_sys) == typeid(LinSys_BDDC) ) {
+//                 int ind = loc_system_.row_dofs[p];
+//                // there is -value on diagonal in block C!
+//                static_cast<LinSys_BDDC*>(ad_->lin_sys)->diagonal_weights_set_value( ind, -value );
+//             }
             ++i;
         }
     }

@@ -185,10 +185,14 @@ void RichardsLMH::assembly_linear_system()
     bool is_steady = zero_time_term();
     //DebugOut() << "Assembly linear system\n";
         START_TIMER("full assembly");
-        if (typeid(*schur0) != typeid(LinSys_BDDC)) {
-            schur0->start_add_assembly(); // finish allocation and create matrix
-            schur_compl->start_add_assembly();
-        }
+//         if (typeid(*schur0) != typeid(LinSys_BDDC)) {
+//             schur0->start_add_assembly(); // finish allocation and create matrix
+//             schur_compl->start_add_assembly();
+//         }
+        
+        schur0->start_add_assembly(); // finish allocation and create matrix
+        schur_compl->start_add_assembly();
+            
         data_->time_step_ = time_->dt();
         auto multidim_assembler = AssemblyBase::create< AssemblyRichards >(data_);
 

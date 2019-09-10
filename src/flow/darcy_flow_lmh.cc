@@ -42,7 +42,7 @@
 #include "la/distribution.hh"
 #include "la/linsys.hh"
 #include "la/linsys_PETSC.hh"
-#include "la/linsys_BDDC.hh"
+// #include "la/linsys_BDDC.hh"
 #include "la/schur.hh"
 //#include "la/sparse_graph.hh"
 #include "la/local_to_global_map.hh"
@@ -907,25 +907,26 @@ void DarcyLMH::create_linear_system(Input::AbstractRecord in_rec) {
 
     if (schur0 == NULL) { // create Linear System for MH matrix
        
-    	if (in_rec.type() == LinSys_BDDC::get_input_type()) {
-#ifdef FLOW123D_HAVE_BDDCML
-    		WarningOut() << "For BDDC no Schur complements are used.";
-            n_schur_compls = 0;
-            LinSys_BDDC *ls = new LinSys_BDDC(&(*data_->dh_->distr()),
-                    true); // swap signs of matrix and rhs to make the matrix SPD
-            ls->set_from_input(in_rec);
-            ls->set_solution( data_->data_vec_.petsc_vec() );
-            // possible initialization particular to BDDC
-            START_TIMER("BDDC set mesh data");
-            set_mesh_data_for_bddc(ls);
-            schur0=ls;
-            END_TIMER("BDDC set mesh data");
-#else
-            Exception
-            xprintf(Err, "Flow123d was not build with BDDCML support.\n");
-#endif // FLOW123D_HAVE_BDDCML
-        } 
-        else if (in_rec.type() == LinSys_PETSC::get_input_type()) {
+//     	if (in_rec.type() == LinSys_BDDC::get_input_type()) {
+// #ifdef FLOW123D_HAVE_BDDCML
+//     		WarningOut() << "For BDDC no Schur complements are used.";
+//             n_schur_compls = 0;
+//             LinSys_BDDC *ls = new LinSys_BDDC(&(*data_->dh_->distr()),
+//                     true); // swap signs of matrix and rhs to make the matrix SPD
+//             ls->set_from_input(in_rec);
+//             ls->set_solution( data_->data_vec_.petsc_vec() );
+//             // possible initialization particular to BDDC
+//             START_TIMER("BDDC set mesh data");
+//             set_mesh_data_for_bddc(ls);
+//             schur0=ls;
+//             END_TIMER("BDDC set mesh data");
+// #else
+//             Exception
+//             xprintf(Err, "Flow123d was not build with BDDCML support.\n");
+// #endif // FLOW123D_HAVE_BDDCML
+//         } 
+//         else
+        if (in_rec.type() == LinSys_PETSC::get_input_type()) {
         // use PETSC for serial case even when user wants BDDC
             if (n_schur_compls > 2) {
             	WarningOut() << "Invalid number of Schur Complements. Using 2.";
@@ -945,10 +946,11 @@ void DarcyLMH::create_linear_system(Input::AbstractRecord in_rec) {
 
                 // temporary solution; we have to set precision also for sequantial case of BDDC
                 // final solution should be probably call of direct solver for oneproc case
-                if (in_rec.type() != LinSys_BDDC::get_input_type()) ls->set_from_input(in_rec);
-                else {
-                    ls->LinSys::set_from_input(in_rec); // get only common options
-                }
+//                 if (in_rec.type() != LinSys_BDDC::get_input_type()) ls->set_from_input(in_rec);
+//                 else {
+//                     ls->LinSys::set_from_input(in_rec); // get only common options
+//                 }
+                ls->set_from_input(in_rec);
 
                 ls->set_solution( data_->data_vec_.petsc_vec() );
                 schur0=ls;
@@ -1058,10 +1060,13 @@ void DarcyLMH::assembly_linear_system() {
         //DebugOut()  << "Data changed\n";
         // currently we have no optimization for cases when just time term data or RHS data are changed
         START_TIMER("full assembly");
-        if (typeid(*schur0) != typeid(LinSys_BDDC)) {
-            schur0->start_add_assembly(); // finish allocation and create matrix
-            schur_compl->start_add_assembly();
-        }
+//         if (typeid(*schur0) != typeid(LinSys_BDDC)) {
+//             schur0->start_add_assembly(); // finish allocation and create matrix
+//             schur_compl->start_add_assembly();
+//         }
+        
+        schur0->start_add_assembly(); // finish allocation and create matrix
+        schur_compl->start_add_assembly();
 
         schur0->mat_zero_entries();
         schur0->rhs_zero_entries();
@@ -1088,14 +1093,15 @@ void DarcyLMH::print_matlab_matrix(std::string matlab_file)
 {
     std::string output_file;
     
-    if ( typeid(*schur0) == typeid(LinSys_BDDC) ){
+//     if ( typeid(*schur0) == typeid(LinSys_BDDC) ){
 //         WarningOut() << "Can output matrix only on a single processor.";
 //         output_file = FilePath(matlab_file + "_bddc.m", FilePath::output_file);
 //         ofstream os( output_file );
 //         auto bddc = static_cast<LinSys_BDDC*>(schur0);
 //         bddc->print_matrix(os);
-    }
-    else {//if ( typeid(*schur0) == typeid(LinSys_PETSC) ){
+//     }
+//     else
+    {//if ( typeid(*schur0) == typeid(LinSys_PETSC) ){
         output_file = FilePath(matlab_file + ".m", FilePath::output_file);
         PetscViewer    viewer;
         PetscViewerASCIIOpen(PETSC_COMM_WORLD, output_file.c_str(), &viewer);
@@ -1180,178 +1186,178 @@ void DarcyLMH::print_matlab_matrix(std::string matlab_file)
 //}
 //
 
-void DarcyLMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
-    START_TIMER("DarcyFlowMH_Steady::set_mesh_data_for_bddc");
-    // prepare mesh for BDDCML
-    // initialize arrays
-    // auxiliary map for creating coordinates of local dofs and global-to-local numbering
-    std::map<int, arma::vec3> localDofMap;
-    // connectivity for the subdomain, i.e. global dof numbers on element, stored element-by-element
-    // Indices of Nodes on Elements
-    std::vector<int> inet;
-    // number of degrees of freedom on elements - determines elementwise chunks of INET array
-    // Number of Nodes on Elements
-    std::vector<int> nnet;
-    // Indices of Subdomain Elements in Global Numbering - for local elements, their global indices
-    std::vector<int> isegn;
-
-    // This array is currently not used in BDDCML, it was used as an interface scaling alternative to scaling
-    // by diagonal. It corresponds to the rho-scaling.
-    std::vector<double> element_permeability;
-
-    // maximal and minimal dimension of elements
-    uint elDimMax = 1;
-    uint elDimMin = 3;
-    std::vector<LongIdx> cell_dofs_global(10);
-
-
-
-    for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
-        // LocalElementAccessorBase<3> ele_ac(dh_cell);
-        // for each element, create local numbering of dofs as fluxes (sides), pressure (element centre), Lagrange multipliers (edges), compatible connections
-
-        dh_cell.get_dof_indices(cell_dofs_global);
-
-        inet.insert(inet.end(), cell_dofs_global.begin(), cell_dofs_global.end());
-        uint n_inet = cell_dofs_global.size();
-
-
-        uint dim = dh_cell.elm().dim();
-        elDimMax = std::max( elDimMax, dim );
-        elDimMin = std::min( elDimMin, dim );
-
-        // TODO: this is consistent with previous implementation, but may be wrong as it use global element numbering
-        // used in sequential mesh, do global numbering of distributed elements.
-        isegn.push_back( dh_cell.elm_idx());
-
-        // TODO: use FiniteElement::dof_points
-        for (unsigned int si=0; si<dh_cell.elm()->n_sides(); si++) {
-            arma::vec3 coord = dh_cell.elm().side(si)->centre();
-            // flux dof points
-            localDofMap.insert( std::make_pair( cell_dofs_global[si], coord ) );
-            // pressure trace dof points
-            localDofMap.insert( std::make_pair( cell_dofs_global[si+dim+2], coord ) );
-        }
-        // pressure dof points
-        arma::vec3 elm_centre = dh_cell.elm().centre();
-        localDofMap.insert( std::make_pair( cell_dofs_global[dim+1], elm_centre ) );
-
-        // insert dofs related to compatible connections
-        //const Element *ele = dh_cell.elm().element();
-        for(DHCellSide side : dh_cell.neighb_sides()) {
-            uint neigh_dim = side.cell().elm().dim();
-            side.cell().get_dof_indices(cell_dofs_global);
-            int edge_row = cell_dofs_global[neigh_dim+2+side.side_idx()];
-            localDofMap.insert( std::make_pair( edge_row, side.centre() ) );
-            inet.push_back( edge_row );
-            n_inet++;
-        }
-        nnet.push_back(n_inet);
-
-
-        // version for rho scaling
-        // trace computation
-        double conduct = data_->conductivity.value( elm_centre , dh_cell.elm() );
-        auto aniso = data_->anisotropy.value( elm_centre , dh_cell.elm() );
-
-        // compute mean on the diagonal
-        double coef = 0.;
-        for ( int i = 0; i < 3; i++) {
-            coef = coef + aniso.at(i,i);
-        }
-        // Maybe divide by cs
-        coef = conduct*coef / 3;
-
-        OLD_ASSERT( coef > 0.,
-                "Zero coefficient of hydrodynamic resistance %f . \n ", coef );
-        element_permeability.push_back( 1. / coef );
-    }
-//    uint i_inet = 0;
-//    for(int n_dofs : nnet) {
-//        DebugOut() << "nnet: " << n_dofs;
-//        for(int j=0; j < n_dofs; j++, i_inet++) {
-//            DebugOut() << "inet: " << inet[i_inet];
-//        }
-//    }
-
-    auto distr = data_->dh_->distr();
-//    for(auto pair : localDofMap) {
-//        DebugOut().every_proc() << "r: " << distr->myp() << " gi: " << pair.first << "xyz: " << pair.second[0];
-//
-//    }
-
-
-    //convert set of dofs to vectors
-    // number of nodes (= dofs) on the subdomain
-    int numNodeSub = localDofMap.size();
-    //ASSERT_EQ( (unsigned int)numNodeSub, data_->dh_->lsize() );
-    // Indices of Subdomain Nodes in Global Numbering - for local nodes, their global indices
-    std::vector<int> isngn( numNodeSub );
-    // pseudo-coordinates of local nodes (i.e. dofs)
-    // they need not be exact, they are used just for some geometrical considerations in BDDCML, 
-    // such as selection of corners maximizing area of a triangle, bounding boxes fro subdomains to 
-    // find candidate neighbours etc.
-    std::vector<double> xyz( numNodeSub * 3 ) ;
-    int ind = 0;
-    std::map<int,arma::vec3>::iterator itB = localDofMap.begin();
-    for ( ; itB != localDofMap.end(); ++itB ) {
-        isngn[ind] = itB -> first;
-
-        arma::vec3 coord = itB -> second;
-        for ( int j = 0; j < 3; j++ ) {
-            xyz[ j*numNodeSub + ind ] = coord[j];
-        }
-
-        ind++;
-    }
-    localDofMap.clear();
-
-    // Number of Nodal Degrees of Freedom
-    // nndf is trivially one - dofs coincide with nodes
-    std::vector<int> nndf( numNodeSub, 1 );
-
-    // prepare auxiliary map for renumbering nodes
-    typedef std::map<int,int> Global2LocalMap_; //! type for storage of global to local map
-    Global2LocalMap_ global2LocalNodeMap;
-    for ( unsigned ind = 0; ind < isngn.size(); ++ind ) {
-        global2LocalNodeMap.insert( std::make_pair( static_cast<unsigned>( isngn[ind] ), ind ) );
-    }
-
-    // renumber nodes in the inet array to locals
-    int indInet = 0;
-    for ( unsigned int iEle = 0; iEle < isegn.size(); iEle++ ) {
-        int nne = nnet[ iEle ];
-        for ( int ien = 0; ien < nne; ien++ ) {
-
-            int indGlob = inet[indInet];
-            // map it to local node
-            Global2LocalMap_::iterator pos = global2LocalNodeMap.find( indGlob );
-            OLD_ASSERT( pos != global2LocalNodeMap.end(),
-                    "Cannot remap node index %d to local indices. \n ", indGlob );
-            int indLoc = static_cast<int> ( pos -> second );
-
-            // store the node
-            inet[ indInet++ ] = indLoc;
-        }
-    }
-
-    int numNodes    = size;
-    int numDofsInt  = size;
-    int spaceDim    = 3;    // TODO: what is the proper value here?
-    int meshDim     = elDimMax;
-
-    /**
-     * We need:
-     * - local to global element map (possibly mesh->el_4_loc
-     * - inet, nnet - local dof numbers per element, local numbering of only those dofs that are on owned elements
-     *   1. collect DH local dof indices  on elements, manage map from DH local indices to BDDC local dof indices
-     *   2. map collected DH indices to BDDC indices using the map
-     * - local BDDC dofs to global dofs, use DH to BDDC map with DH local to global map
-     * - XYZ - permuted, collect in main loop into array of size of all DH local dofs, compress and rearrange latter
-     * - element_permeability - in main loop
-     */
-    bddc_ls -> load_mesh( LinSys_BDDC::BDDCMatrixType::SPD_VIA_SYMMETRICGENERAL, spaceDim, numNodes, numDofsInt, inet, nnet, nndf, isegn, isngn, isngn, xyz, element_permeability, meshDim );
-}
+// void DarcyLMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
+//     START_TIMER("DarcyFlowMH_Steady::set_mesh_data_for_bddc");
+//     // prepare mesh for BDDCML
+//     // initialize arrays
+//     // auxiliary map for creating coordinates of local dofs and global-to-local numbering
+//     std::map<int, arma::vec3> localDofMap;
+//     // connectivity for the subdomain, i.e. global dof numbers on element, stored element-by-element
+//     // Indices of Nodes on Elements
+//     std::vector<int> inet;
+//     // number of degrees of freedom on elements - determines elementwise chunks of INET array
+//     // Number of Nodes on Elements
+//     std::vector<int> nnet;
+//     // Indices of Subdomain Elements in Global Numbering - for local elements, their global indices
+//     std::vector<int> isegn;
+// 
+//     // This array is currently not used in BDDCML, it was used as an interface scaling alternative to scaling
+//     // by diagonal. It corresponds to the rho-scaling.
+//     std::vector<double> element_permeability;
+// 
+//     // maximal and minimal dimension of elements
+//     uint elDimMax = 1;
+//     uint elDimMin = 3;
+//     std::vector<LongIdx> cell_dofs_global(10);
+// 
+// 
+// 
+//     for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
+//         // LocalElementAccessorBase<3> ele_ac(dh_cell);
+//         // for each element, create local numbering of dofs as fluxes (sides), pressure (element centre), Lagrange multipliers (edges), compatible connections
+// 
+//         dh_cell.get_dof_indices(cell_dofs_global);
+// 
+//         inet.insert(inet.end(), cell_dofs_global.begin(), cell_dofs_global.end());
+//         uint n_inet = cell_dofs_global.size();
+// 
+// 
+//         uint dim = dh_cell.elm().dim();
+//         elDimMax = std::max( elDimMax, dim );
+//         elDimMin = std::min( elDimMin, dim );
+// 
+//         // TODO: this is consistent with previous implementation, but may be wrong as it use global element numbering
+//         // used in sequential mesh, do global numbering of distributed elements.
+//         isegn.push_back( dh_cell.elm_idx());
+// 
+//         // TODO: use FiniteElement::dof_points
+//         for (unsigned int si=0; si<dh_cell.elm()->n_sides(); si++) {
+//             arma::vec3 coord = dh_cell.elm().side(si)->centre();
+//             // flux dof points
+//             localDofMap.insert( std::make_pair( cell_dofs_global[si], coord ) );
+//             // pressure trace dof points
+//             localDofMap.insert( std::make_pair( cell_dofs_global[si+dim+2], coord ) );
+//         }
+//         // pressure dof points
+//         arma::vec3 elm_centre = dh_cell.elm().centre();
+//         localDofMap.insert( std::make_pair( cell_dofs_global[dim+1], elm_centre ) );
+// 
+//         // insert dofs related to compatible connections
+//         //const Element *ele = dh_cell.elm().element();
+//         for(DHCellSide side : dh_cell.neighb_sides()) {
+//             uint neigh_dim = side.cell().elm().dim();
+//             side.cell().get_dof_indices(cell_dofs_global);
+//             int edge_row = cell_dofs_global[neigh_dim+2+side.side_idx()];
+//             localDofMap.insert( std::make_pair( edge_row, side.centre() ) );
+//             inet.push_back( edge_row );
+//             n_inet++;
+//         }
+//         nnet.push_back(n_inet);
+// 
+// 
+//         // version for rho scaling
+//         // trace computation
+//         double conduct = data_->conductivity.value( elm_centre , dh_cell.elm() );
+//         auto aniso = data_->anisotropy.value( elm_centre , dh_cell.elm() );
+// 
+//         // compute mean on the diagonal
+//         double coef = 0.;
+//         for ( int i = 0; i < 3; i++) {
+//             coef = coef + aniso.at(i,i);
+//         }
+//         // Maybe divide by cs
+//         coef = conduct*coef / 3;
+// 
+//         OLD_ASSERT( coef > 0.,
+//                 "Zero coefficient of hydrodynamic resistance %f . \n ", coef );
+//         element_permeability.push_back( 1. / coef );
+//     }
+// //    uint i_inet = 0;
+// //    for(int n_dofs : nnet) {
+// //        DebugOut() << "nnet: " << n_dofs;
+// //        for(int j=0; j < n_dofs; j++, i_inet++) {
+// //            DebugOut() << "inet: " << inet[i_inet];
+// //        }
+// //    }
+// 
+//     auto distr = data_->dh_->distr();
+// //    for(auto pair : localDofMap) {
+// //        DebugOut().every_proc() << "r: " << distr->myp() << " gi: " << pair.first << "xyz: " << pair.second[0];
+// //
+// //    }
+// 
+// 
+//     //convert set of dofs to vectors
+//     // number of nodes (= dofs) on the subdomain
+//     int numNodeSub = localDofMap.size();
+//     //ASSERT_EQ( (unsigned int)numNodeSub, data_->dh_->lsize() );
+//     // Indices of Subdomain Nodes in Global Numbering - for local nodes, their global indices
+//     std::vector<int> isngn( numNodeSub );
+//     // pseudo-coordinates of local nodes (i.e. dofs)
+//     // they need not be exact, they are used just for some geometrical considerations in BDDCML, 
+//     // such as selection of corners maximizing area of a triangle, bounding boxes fro subdomains to 
+//     // find candidate neighbours etc.
+//     std::vector<double> xyz( numNodeSub * 3 ) ;
+//     int ind = 0;
+//     std::map<int,arma::vec3>::iterator itB = localDofMap.begin();
+//     for ( ; itB != localDofMap.end(); ++itB ) {
+//         isngn[ind] = itB -> first;
+// 
+//         arma::vec3 coord = itB -> second;
+//         for ( int j = 0; j < 3; j++ ) {
+//             xyz[ j*numNodeSub + ind ] = coord[j];
+//         }
+// 
+//         ind++;
+//     }
+//     localDofMap.clear();
+// 
+//     // Number of Nodal Degrees of Freedom
+//     // nndf is trivially one - dofs coincide with nodes
+//     std::vector<int> nndf( numNodeSub, 1 );
+// 
+//     // prepare auxiliary map for renumbering nodes
+//     typedef std::map<int,int> Global2LocalMap_; //! type for storage of global to local map
+//     Global2LocalMap_ global2LocalNodeMap;
+//     for ( unsigned ind = 0; ind < isngn.size(); ++ind ) {
+//         global2LocalNodeMap.insert( std::make_pair( static_cast<unsigned>( isngn[ind] ), ind ) );
+//     }
+// 
+//     // renumber nodes in the inet array to locals
+//     int indInet = 0;
+//     for ( unsigned int iEle = 0; iEle < isegn.size(); iEle++ ) {
+//         int nne = nnet[ iEle ];
+//         for ( int ien = 0; ien < nne; ien++ ) {
+// 
+//             int indGlob = inet[indInet];
+//             // map it to local node
+//             Global2LocalMap_::iterator pos = global2LocalNodeMap.find( indGlob );
+//             OLD_ASSERT( pos != global2LocalNodeMap.end(),
+//                     "Cannot remap node index %d to local indices. \n ", indGlob );
+//             int indLoc = static_cast<int> ( pos -> second );
+// 
+//             // store the node
+//             inet[ indInet++ ] = indLoc;
+//         }
+//     }
+// 
+//     int numNodes    = size;
+//     int numDofsInt  = size;
+//     int spaceDim    = 3;    // TODO: what is the proper value here?
+//     int meshDim     = elDimMax;
+// 
+//     /**
+//      * We need:
+//      * - local to global element map (possibly mesh->el_4_loc
+//      * - inet, nnet - local dof numbers per element, local numbering of only those dofs that are on owned elements
+//      *   1. collect DH local dof indices  on elements, manage map from DH local indices to BDDC local dof indices
+//      *   2. map collected DH indices to BDDC indices using the map
+//      * - local BDDC dofs to global dofs, use DH to BDDC map with DH local to global map
+//      * - XYZ - permuted, collect in main loop into array of size of all DH local dofs, compress and rearrange latter
+//      * - element_permeability - in main loop
+//      */
+//     bddc_ls -> load_mesh( LinSys_BDDC::BDDCMatrixType::SPD_VIA_SYMMETRICGENERAL, spaceDim, numNodes, numDofsInt, inet, nnet, nndf, isegn, isngn, isngn, xyz, element_permeability, meshDim );
+// }
 
 
 

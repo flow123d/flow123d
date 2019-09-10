@@ -64,7 +64,7 @@ class DarcyFlowMHOutput;
 class Element;
 class Intersection;
 class LinSys;
-class LinSys_BDDC;
+// class LinSys_BDDC;
 namespace Input {
 	class AbstractRecord;
 	class Record;
@@ -264,7 +264,7 @@ protected:
      */
     virtual void assembly_linear_system();
 
-    void set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls);
+//     void set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls);
     /**
      * Return a norm of residual vector.
      * TODO: Introduce Equation::compute_residual() updating
