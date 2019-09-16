@@ -290,11 +290,6 @@ private:
     void alloc_transport_structs_mpi();
 
 	/**
-	 * Communicate parallel concentration vectors into sequential output vector.
-	 */
-	void output_vector_gather();
-
-	/**
 	 * @brief Wrapper of following method, call side_flux with correct template parameter.
 	 */
 	double side_flux(ElementAccessor<3> &cell, unsigned int i_side);

@@ -19,8 +19,9 @@
 #ifndef DH_CELL_ACCESSOR_HH_
 #define DH_CELL_ACCESSOR_HH_
 
+#include <armadillo>
 #include "mesh/accessors.hh"
-#include "mesh/sides.h"
+#include "mesh/side_impl.hh"
 #include "mesh/neighbours.h"
 #include "fem/finite_element.hh"
 #include "fem/dofhandler.hh"
@@ -28,6 +29,7 @@
 class DHCellSide;
 class DHNeighbSide;
 class DHEdgeSide;
+template <int spacedim> class ElementAccessor;
 
 /**
  * @brief Cell accessor allow iterate over DOF handler cells.
@@ -101,7 +103,7 @@ public:
     }
 
     /// Return DOF handler
-    inline const DOFHandlerMultiDim *dh() {
+    inline const DOFHandlerMultiDim *dh() const{
         return dof_handler_;
     }
 
@@ -109,9 +111,9 @@ public:
      * @brief Returns finite element object for given space dimension.
      */
     template<unsigned int dim>
-    FiniteElement<dim> *fe() const {
+    FEPtr<dim> fe() const {
         ElementAccessor<3> elm_acc = this->elm();
-        return dof_handler_->ds_->fe<dim>(elm_acc);
+        return dof_handler_->ds_->fe(elm_acc).get<dim>();
     }
 
     /// Check validity of accessor (see default constructor)
@@ -131,7 +133,7 @@ public:
     }
 
     /// Create new accessor with same local idx and given DOF handler. Actual and given DOF handler must be create on same Mesh.
-    DHCellAccessor cell_with_other_dh(const DOFHandlerMultiDim * dh) {
+    DHCellAccessor cell_with_other_dh(const DOFHandlerMultiDim * dh) const{
     	ASSERT( (dh->mesh()->n_nodes() == dof_handler_->mesh()->n_nodes()) && (dh->mesh()->n_elements() == dof_handler_->mesh()->n_elements()) )
     			.error("Incompatible DOF handlers!");
     	return DHCellAccessor(dh, loc_ele_idx_);
@@ -191,9 +193,9 @@ public:
     }
 
     /// Return Side of given cell and side_idx.
-    inline const Side * side() const {
+    inline Side side() const {
     	ASSERT( this->is_valid() );
-   		return new Side( const_cast<const Mesh*>(dh_cell_accessor_.dof_handler_->mesh()), dh_cell_accessor_.elm_idx(), side_idx_ );
+   		return Side(dh_cell_accessor_.dof_handler_->mesh(), dh_cell_accessor_.elm_idx(), side_idx_ );
     }
 
     /// Return DHCellAccessor appropriate to the side.
@@ -205,6 +207,36 @@ public:
     inline unsigned int dim() const {
     	return cell().dim();
     }
+
+    /// Side centre.
+    inline arma::vec3 centre() const {
+    	return side().centre();
+    }
+
+    inline ElementAccessor<3> element() const {
+    	return side().element();
+    }
+
+    inline unsigned int elem_idx() const {
+    	return side().elem_idx();
+    }
+
+    inline Boundary * cond() const {
+        return side().cond();
+    }
+
+	inline unsigned int side_idx() const {
+	   return side_idx_;
+	}
+
+	inline double measure() const {
+	   return side().measure();
+	}
+
+	inline double diameter() const {
+	   return side().diameter();
+	}
+
 
     /// Returns range of all sides looped over common Edge.
     RangeConvert<DHEdgeSide, DHCellSide> edge_sides() const;
@@ -222,9 +254,13 @@ public:
     }
 
     /// Comparison of accessors.
-    bool operator==(const DHCellSide& other) {
-    	return (dh_cell_accessor_ == other.dh_cell_accessor_) && (side_idx_ == other.side_idx_);
-    }
+	inline bool operator ==(const DHCellSide &other) {
+		return this->elem_idx() == other.elem_idx() && side_idx_ == other.side_idx_;
+	}
+
+	inline bool operator !=(const DHCellSide &other) {
+		return this->elem_idx() != other.elem_idx() || side_idx_ != other.side_idx_;
+	}
 
 private:
     /// Appropriate DHCellAccessor.

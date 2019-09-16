@@ -19,7 +19,7 @@
 #define BALANCE_HH_
 
 
-#include <iosfwd>               // for ofstream
+#include <fstream>              // for ofstream
 #include <string>               // for string
 #include <vector>               // for vector
 #include "tools/unit_si.hh"    // for UnitSI
@@ -436,10 +436,10 @@ private:
     FilePath balance_output_file_;
 
     /// Handle for file for output in given OutputFormat of balance and total fluxes over individual regions and region sets.
-    ofstream output_;
+    std::ofstream output_;
 
     // The same as the previous case, but for output in YAML format.
-    ofstream output_yaml_;
+    std::ofstream output_yaml_;
 
     /// Format of output file.
     OutputFormat output_format_;

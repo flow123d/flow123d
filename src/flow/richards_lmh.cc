@@ -9,10 +9,13 @@
 #include "system/global_defs.h"
 #include "system/sys_profiler.hh"
 
+#include "coupling/balance.hh"
 
 #include "input/input_type.hh"
 #include "input/factory.hh"
 #include "flow/richards_lmh.hh"
+#include "flow/soil_models.hh"
+#include "flow/assembly_richards.hh"
 #include "flow/darcy_flow_mh_output.hh"
 #include "tools/time_governor.hh"
 
@@ -22,9 +25,6 @@
 #include <armadillo>
 
 #include "la/schur.hh"
-
-#include "coupling/balance.hh"
-
 #include "la/vector_mpi.hh"
 
 // in the third_party/FADBAD++ dir, namespace "fadbad"
@@ -71,7 +71,7 @@ RichardsLMH::EqData::EqData()
 
 const it::Record & RichardsLMH::get_input_type() {
     it::Record field_descriptor = it::Record("RichardsLMH_Data",FieldCommon::field_descriptor_record_description("RichardsLMH_Data"))
-    .copy_keys( DarcyMH::type_field_descriptor() )
+    .copy_keys( DarcyLMH::type_field_descriptor() )
     .copy_keys( RichardsLMH::EqData().make_field_descriptor_type("RichardsLMH_Data_aux") )
     .close();
 
@@ -89,11 +89,16 @@ const it::Record & RichardsLMH::get_input_type() {
                 "Fraction of the water content where we cut  and rescale the curve.")
         .close();
 
+    RichardsLMH::EqData eq_data;
+    
     return it::Record("Flow_Richards_LMH", "Lumped Mixed-Hybrid solver for unsteady unsaturated Darcy flow.")
         .derive_from(DarcyFlowInterface::get_input_type())
-        .copy_keys(DarcyMH::get_input_type())
+        .copy_keys(DarcyLMH::get_input_type())
         .declare_key("input_fields", it::Array( field_descriptor ), it::Default::obligatory(),
                 "Input data for Darcy flow model.")
+        .declare_key("output", DarcyFlowMHOutput::get_input_type(eq_data, "Flow_Richards_LMH"),
+                IT::Default("{ \"fields\": [ \"pressure_p0\", \"velocity_p0\" ] }"),
+                "Specification of output fields and output times.")
         .declare_key("soil_model", soil_rec, it::Default("\"van_genuchten\""),
                 "Soil model settings.")
         .close();
@@ -107,10 +112,10 @@ const int RichardsLMH::registrar =
 
 
 RichardsLMH::RichardsLMH(Mesh &mesh_in, const  Input::Record in_rec)
-    : DarcyMH(mesh_in, in_rec)
+    : DarcyLMH(mesh_in, in_rec)
 {
     data_ = make_shared<EqData>();
-    DarcyMH::data_ = data_;
+    DarcyLMH::data_ = data_;
     EquationBase::eq_data_ = data_.get();
     //data_->edge_new_local_4_mesh_idx_ = &(this->edge_new_local_4_mesh_idx_);
 }
@@ -135,53 +140,21 @@ void RichardsLMH::initialize_specific() {
 }
 
 
-void RichardsLMH::assembly_source_term()
+void RichardsLMH::initial_condition_postprocess()
 {
-
-}
-
-
-void RichardsLMH::read_initial_condition()
-{
-    // apply initial condition
-    // cycle over local element rows
-    double init_value;
-
-    for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
-         LocalElementAccessorBase<3> ele_ac(dh_cell);
-
-         init_value = data_->init_pressure.value(ele_ac.centre(), ele_ac.element_accessor());
-
-         for (unsigned int i=0; i<ele_ac.element_accessor()->n_sides(); i++) {
-             int edge_row = ele_ac.edge_row(i);
-             uint n_sides_of_edge =  ele_ac.element_accessor().side(i)->edge()->n_sides;
-             VecSetValue(schur0->get_solution(),edge_row, init_value/n_sides_of_edge, ADD_VALUES);
-         }
-         VecSetValue(schur0->get_solution(),ele_ac.ele_row(), init_value,ADD_VALUES);
-    }
-    VecAssemblyBegin(schur0->get_solution());
-    VecAssemblyEnd(schur0->get_solution());
-
     // set water_content
     // pretty ugly since postprocess change fluxes, which cause bad balance, so we must set them back
-    VecCopy(schur0->get_solution(), previous_solution); // store solution vector
+    data_->previous_solution.copy(data_->data_vec_); // store solution vector
     postprocess();
-    VecSwap(schur0->get_solution(), previous_solution); // restore solution vector
-
-    //DebugOut() << "init sol:\n";
-    //VecView( schur0->get_solution(),   PETSC_VIEWER_STDOUT_WORLD);
-    //DebugOut() << "init water content:\n";
-    //VecView( data_->water_content_previous_it.petsc_vec(),   PETSC_VIEWER_STDOUT_WORLD);
-
-    solution_changed_for_scatter=true;
+//     data_->previous_solution.swap(data_->data_vec_); // currently does not mimic VecSwap
+    VecSwap(schur0->get_solution(), data_->previous_solution.petsc_vec()); // restore solution vector
 }
 
 
 void RichardsLMH::prepare_new_time_step()
 {
-    VecCopy(schur0->get_solution(), previous_solution);
+    data_->previous_solution.copy(data_->data_vec_);
     data_->water_content_previous_time.copy(data_->water_content_previous_it);
-    //VecCopy(schur0->get_solution(), previous_solution);
 }
 
 bool RichardsLMH::zero_time_term(bool time_global) {
@@ -202,12 +175,9 @@ void RichardsLMH::assembly_linear_system()
 {
 
     START_TIMER("RicharsLMH::assembly_linear_system");
-
-    data_->data_vec_.ghost_to_local_begin();
-    data_->data_vec_.ghost_to_local_end();
     
+    // update the subvector with edge pressure for solution vector
     data_->dh_cr_->update_subvector(data_->data_vec_, data_->phead_edge_);
-    
     data_->phead_edge_.local_to_ghost_begin();
     data_->phead_edge_.local_to_ghost_end();
 
@@ -220,19 +190,14 @@ void RichardsLMH::assembly_linear_system()
             schur0->start_add_assembly(); // finish allocation and create matrix
         }
         data_->time_step_ = time_->dt();
-        auto multidim_assembler = AssemblyBase::create< AssemblyLMH >(data_);
+        auto multidim_assembler = AssemblyBase::create< AssemblyRichards >(data_);
 
 
         schur0->mat_zero_entries();
         schur0->rhs_zero_entries();
 
-        balance_->start_source_assembly(data_->water_balance_idx);
-        balance_->start_mass_assembly(data_->water_balance_idx);
-
         assembly_mh_matrix( multidim_assembler ); // fill matrix
 
-        balance_->finish_source_assembly(data_->water_balance_idx);
-        balance_->finish_mass_assembly(data_->water_balance_idx);
             //MatView( *const_cast<Mat*>(schur0->get_matrix()), PETSC_VIEWER_STDOUT_WORLD  );
             //VecView( *const_cast<Vec*>(schur0->get_rhs()),   PETSC_VIEWER_STDOUT_WORLD);
 
@@ -250,64 +215,21 @@ void RichardsLMH::assembly_linear_system()
 
 
 
-void RichardsLMH::setup_time_term()
-{
-    FEAL_ASSERT(false).error("Shold not be called.");
-}
-
-
-
-
-
 void RichardsLMH::postprocess() {
 
     // update structures for balance of water volume
     assembly_linear_system();
-
-
-
-    int side_rows[4];
-    double values[4];
-    std::vector<LongIdx> side_indices(this->data_->dh_cr_disc_->max_elem_dofs());
-
-    data_->data_vec_.ghost_to_local_begin();
-    data_->data_vec_.ghost_to_local_end();
     
+    // update the subvector with edge pressure for solution vector
     data_->dh_cr_->update_subvector(data_->data_vec_, data_->phead_edge_);
-    
     data_->phead_edge_.local_to_ghost_begin();
     data_->phead_edge_.local_to_ghost_end();
 
-  // modify side fluxes in parallel
-  // for every local edge take time term on digonal and add it to the corresponding flux
-    //PetscScalar *loc_prev_sol;
-    auto multidim_assembler = AssemblyBase::create< AssemblyLMH >(data_);
-
-    //VecGetArray(previous_solution, &loc_prev_sol);
+    // modify side fluxes in parallel
+    // for every local edge take time term on diagonal and add it to the corresponding flux
+    auto multidim_assembler = AssemblyBase::create< AssemblyRichards >(data_);
+    
     for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
-      dh_cell.cell_with_other_dh(this->data_->dh_cr_disc_.get()).get_loc_dof_indices(side_indices);
-      LocalElementAccessorBase<3> ele_ac(dh_cell);
-      multidim_assembler[ele_ac.dim()-1]->update_water_content(ele_ac);
-
-      double ele_scale = ele_ac.measure() *
-              data_->cross_section.value(ele_ac.centre(), ele_ac.element_accessor()) / ele_ac.n_sides();
-      double ele_source = data_->water_source_density.value(ele_ac.centre(), ele_ac.element_accessor());
-      //double storativity = data_->storativity.value(ele_ac.centre(), ele_ac.element_accessor());
-
-      for (unsigned int i=0; i<ele_ac.element_accessor()->n_sides(); i++) {
-          //unsigned int loc_edge_row = ele_ac.edge_local_row(i);
-          side_rows[i] = ele_ac.side_row(i);
-          double water_content = data_->water_content_previous_it[ side_indices[i] ];
-          double water_content_previous_time = data_->water_content_previous_time[ side_indices[i] ];
-
-          values[i] = ele_scale * ele_source - ele_scale * (water_content - water_content_previous_time) / time_->dt();
-      }
-      VecSetValues(schur0->get_solution(), ele_ac.n_sides(), side_rows, values, ADD_VALUES);
+        multidim_assembler[dh_cell.elm().dim()-1]->postprocess_velocity(dh_cell);
     }
-
-
-    VecAssemblyBegin(schur0->get_solution());
-    //VecRestoreArray(previous_solution, &loc_prev_sol);
-    VecAssemblyEnd(schur0->get_solution());
-
 }

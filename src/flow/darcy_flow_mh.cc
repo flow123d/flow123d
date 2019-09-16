@@ -46,11 +46,11 @@
 #include "la/schur.hh"
 //#include "la/sparse_graph.hh"
 #include "la/local_to_global_map.hh"
+#include "la/vector_mpi.hh"
 
+#include "flow/assembly_mh.hh"
 #include "flow/darcy_flow_mh.hh"
-
 #include "flow/darcy_flow_mh_output.hh"
-
 
 #include "tools/time_governor.hh"
 #include "fields/field_algo_base.hh"
@@ -61,10 +61,6 @@
 #include "fields/field_divide.hh"
 
 #include "coupling/balance.hh"
-
-#include "la/vector_mpi.hh"
-
-#include "darcy_flow_assembly.hh"
 
 #include "intersection/mixed_mesh_intersections.hh"
 #include "intersection/intersection_local.hh"
@@ -151,6 +147,8 @@ const it::Record & DarcyMH::get_input_type() {
             "ends with convergence success on stagnation, but it reports warning about it.")
         .close();
 
+    DarcyMH::EqData eq_data;
+    
     return it::Record("Flow_Darcy_MH", "Mixed-Hybrid  solver for saturated Darcy flow.")
 		.derive_from(DarcyFlowInterface::get_input_type())
         .declare_key("gravity", it::Array(it::Double(), 3,3), it::Default("[ 0, 0, -1]"),
@@ -162,7 +160,8 @@ const it::Record & DarcyMH::get_input_type() {
         .declare_key("output_stream", OutputTime::get_input_type(), it::Default("{}"),
                 "Output stream settings.\n Specify file format, precision etc.")
 
-        .declare_key("output", DarcyFlowMHOutput::get_input_type(), IT::Default("{ \"fields\": [ \"pressure_p0\", \"velocity_p0\" ] }"),
+        .declare_key("output", DarcyFlowMHOutput::get_input_type(eq_data, "Flow_Darcy_MH"),
+                IT::Default("{ \"fields\": [ \"pressure_p0\", \"velocity_p0\" ] }"),
                 "Specification of output fields and output times.")
         .declare_key("output_specific", DarcyFlowMHOutput::get_input_type_specific(), it::Default::optional(),
                 "Output settings specific to Darcy flow model.\n"
@@ -284,9 +283,6 @@ DarcyMH::EqData::EqData()
 
 
 
-
-
-
 //=============================================================================
 // CREATE AND FILL GLOBAL MH MATRIX OF THE WATER MODEL
 // - do it in parallel:
@@ -305,11 +301,11 @@ DarcyMH::DarcyMH(Mesh &mesh_in, const Input::Record in_rec)
     solution(nullptr),
     data_changed_(false),
     schur0(nullptr),
+    par_to_all(nullptr),
 	steady_diagonal(nullptr),
 	steady_rhs(nullptr),
 	new_diagonal(nullptr),
-	previous_solution(nullptr),
-	par_to_all(nullptr)
+	previous_solution(nullptr)
 {
 
     START_TIMER("Darcy constructor");
@@ -400,17 +396,19 @@ void DarcyMH::initialize() {
 		std::shared_ptr< FiniteElement<2> > fe2_cr = std::make_shared<FE_CR<2>>();
 		std::shared_ptr< FiniteElement<3> > fe3_cr = std::make_shared<FE_CR<3>>();
 // 	    static FiniteElement<0> fe0_sys = FE_P_disc<0>(0); //TODO fix and use solution with FESystem<0>( {fe0_rt, fe0_disc, fe0_cr} )
-        static FESystem<0> fe0_sys( {fe0_disc, fe0_disc, fe0_cr} );
-		static FESystem<1> fe1_sys( {fe1_rt, fe1_disc, fe1_cr} );
-		static FESystem<2> fe2_sys( {fe2_rt, fe2_disc, fe2_cr} );
-		static FESystem<3> fe3_sys( {fe3_rt, fe3_disc, fe3_cr} );
-		std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh_, &fe0_sys, &fe1_sys, &fe2_sys, &fe3_sys);
+		FESystem<0> fe0_sys( {fe0_disc, fe0_disc, fe0_cr} );
+		FESystem<1> fe1_sys( {fe1_rt, fe1_disc, fe1_cr} );
+		FESystem<2> fe2_sys( {fe2_rt, fe2_disc, fe2_cr} );
+		FESystem<3> fe3_sys( {fe3_rt, fe3_disc, fe3_cr} );
+	    MixedPtr<FESystem> fe_sys( std::make_shared<FESystem<0>>(fe0_sys), std::make_shared<FESystem<1>>(fe1_sys),
+	                                    std::make_shared<FESystem<2>>(fe2_sys), std::make_shared<FESystem<3>>(fe3_sys) );
+		std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh_, fe_sys);
 		data_->dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
 		data_->dh_->distribute_dofs(ds);
     }
 
     init_eq_data();
-    data_->multidim_assembler =  AssemblyBase::create< AssemblyMH >(data_);
+    this->data_->multidim_assembler =  AssemblyBase::create< AssemblyMH >(data_);
     output_object = new DarcyFlowMHOutput(this, input_record_);
 
     mh_dh.reinit(mesh_);
@@ -439,11 +437,8 @@ void DarcyMH::initialize() {
     }
 
     { // init DOF handlers represents side DOFs
-	    static FE_CR_disc<0> fe0_cr_disc;
-		static FE_CR_disc<1> fe1_cr_disc;
-		static FE_CR_disc<2> fe2_cr_disc;
-		static FE_CR_disc<3> fe3_cr_disc;
-		std::shared_ptr<DiscreteSpace> ds_cr_disc = std::make_shared<EqualOrderDiscreteSpace>( mesh_, &fe0_cr_disc, &fe1_cr_disc, &fe2_cr_disc, &fe3_cr_disc);
+		MixedPtr<FE_CR_disc> fe_cr_disc;
+		std::shared_ptr<DiscreteSpace> ds_cr_disc = std::make_shared<EqualOrderDiscreteSpace>( mesh_, fe_cr_disc);
 		data_->dh_cr_disc_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
 		data_->dh_cr_disc_->distribute_dofs(ds_cr_disc);
     }
@@ -834,10 +829,10 @@ void DarcyMH::allocate_mh_matrix()
             // every compatible connection adds a 2x2 matrix involving
             // current element pressure  and a connected edge pressure
             Neighbour *ngh = ele_ac.element_accessor()->neigh_vb[i];
-            DHCellAccessor cell_higher_dim = data_->dh_->cell_accessor_from_element(neighb_side.side()->elem_idx());
+            DHCellAccessor cell_higher_dim = data_->dh_->cell_accessor_from_element(neighb_side.elem_idx());
             LocalElementAccessorBase<3> acc_higher_dim( cell_higher_dim );
-            for (unsigned int j = 0; j < neighb_side.side()->element().dim()+1; j++)
-            	if (neighb_side.side()->element()->edge_idx(j) == ngh->edge_idx()) {
+            for (unsigned int j = 0; j < neighb_side.element().dim()+1; j++)
+            	if (neighb_side.element()->edge_idx(j) == ngh->edge_idx()) {
             		int neigh_edge_row = acc_higher_dim.edge_row(j);
             		tmp_rows.push_back(neigh_edge_row);
             		break;
@@ -1230,8 +1225,8 @@ void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
         for(DHCellSide side : dh_cell.neighb_sides()) {
             uint neigh_dim = side.cell().elm().dim();
             side.cell().get_dof_indices(cell_dofs_global);
-            int edge_row = cell_dofs_global[neigh_dim+2+side.side()->side_idx()];
-            localDofMap.insert( std::make_pair( edge_row, side.side()->centre() ) );
+            int edge_row = cell_dofs_global[neigh_dim+2+side.side_idx()];
+            localDofMap.insert( std::make_pair( edge_row, side.centre() ) );
             inet.push_back( edge_row );
             n_inet++;
         }

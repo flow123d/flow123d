@@ -80,30 +80,25 @@ FEObjects::FEObjects(Mesh *mesh_, unsigned int fe_order)
 
 	switch (fe_order)
 	{
-	case 1:
+	case 1: {
 		q_order = 2;
-        fe0_ = new FESystem<0>(std::make_shared<FE_P<0> >(1), FEVector, 3);
-		fe1_ = new FESystem<1>(std::make_shared<FE_P<1> >(1), FEVector, 3);
-        fe2_ = new FESystem<2>(std::make_shared<FE_P<2> >(1), FEVector, 3);
-        fe3_ = new FESystem<3>(std::make_shared<FE_P<3> >(1), FEVector, 3);
+        MixedPtr<FE_P> fe_p(1);
+        fe_ = mixed_fe_system(fe_p, FEVector, 3);
 		break;
-
+	}
 	default:
 	    q_order=0;
 		xprintf(PrgErr, "Unsupported polynomial order %d for finite elements in Elasticity", fe_order);
 		break;
 	}
 
-	q0_ = new QGauss<0>(q_order);
-	q1_ = new QGauss<1>(q_order);
-	q2_ = new QGauss<2>(q_order);
-	q3_ = new QGauss<3>(q_order);
+	q_ = MixedPtr<QGauss>(q_order);
 
 	map1_ = new MappingP1<1,3>;
 	map2_ = new MappingP1<2,3>;
 	map3_ = new MappingP1<3,3>;
 
-    ds_ = std::make_shared<EqualOrderDiscreteSpace>(mesh_, fe0_, fe1_, fe2_, fe3_);
+    ds_ = std::make_shared<EqualOrderDiscreteSpace>(mesh_, fe_);
 	dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
 
 	dh_->distribute_dofs(ds_);
@@ -112,27 +107,20 @@ FEObjects::FEObjects(Mesh *mesh_, unsigned int fe_order)
 
 FEObjects::~FEObjects()
 {
-	delete fe1_;
-	delete fe2_;
-	delete fe3_;
-	delete q0_;
-	delete q1_;
-	delete q2_;
-	delete q3_;
 	delete map1_;
 	delete map2_;
 	delete map3_;
 }
 
-template<> FiniteElement<0> *FEObjects::fe<0>() { return 0; }
-template<> FiniteElement<1> *FEObjects::fe<1>() { return fe1_; }
-template<> FiniteElement<2> *FEObjects::fe<2>() { return fe2_; }
-template<> FiniteElement<3> *FEObjects::fe<3>() { return fe3_; }
+template<> std::shared_ptr<FiniteElement<0>> FEObjects::fe<0>() { return fe_.get<0>(); }
+template<> std::shared_ptr<FiniteElement<1>> FEObjects::fe<1>() { return fe_.get<1>(); }
+template<> std::shared_ptr<FiniteElement<2>> FEObjects::fe<2>() { return fe_.get<2>(); }
+template<> std::shared_ptr<FiniteElement<3>> FEObjects::fe<3>() { return fe_.get<3>(); }
 
-template<> Quadrature<0> *FEObjects::q<0>() { return q0_; }
-template<> Quadrature<1> *FEObjects::q<1>() { return q1_; }
-template<> Quadrature<2> *FEObjects::q<2>() { return q2_; }
-template<> Quadrature<3> *FEObjects::q<3>() { return q3_; }
+template<> std::shared_ptr<Quadrature<0>> FEObjects::q<0>() { return q_.get<0>(); }
+template<> std::shared_ptr<Quadrature<1>> FEObjects::q<1>() { return q_.get<1>(); }
+template<> std::shared_ptr<Quadrature<2>> FEObjects::q<2>() { return q_.get<2>(); }
+template<> std::shared_ptr<Quadrature<3>> FEObjects::q<3>() { return q_.get<3>(); }
 
 template<> MappingP1<1,3> *FEObjects::mapping<1>() { return map1_; }
 template<> MappingP1<2,3> *FEObjects::mapping<2>() { return map2_; }
@@ -639,7 +627,7 @@ void Elasticity::assemble_fluxes_boundary()
     		update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs();
     vector<int> side_dof_indices(ndofs);
-    PetscScalar local_matrix[ndofs*ndofs];
+//    PetscScalar local_matrix[ndofs*ndofs];
 
     // assemble boundary integral
     for (unsigned int iedg=0; iedg<feo->dh()->n_loc_edges(); iedg++)
@@ -818,7 +806,7 @@ void Elasticity::set_boundary_conditions()
     unsigned int loc_b=0;
     double local_rhs[ndofs];
     vector<PetscScalar> local_flux_balance_vector(ndofs);
-    PetscScalar local_flux_balance_rhs;
+//    PetscScalar local_flux_balance_rhs;
     vector<arma::vec3> bc_values(qsize), bc_traction(qsize);
     vector<double> csection(qsize);
     auto vec = fe_values_side.vector_view(0);
@@ -859,7 +847,7 @@ void Elasticity::set_boundary_conditions()
 
             fill_n(local_rhs, ndofs, 0);
             local_flux_balance_vector.assign(ndofs, 0);
-            local_flux_balance_rhs = 0;
+//            local_flux_balance_rhs = 0;
 
             if (bc_type == EqData::bc_type_displacement)
             {

@@ -36,6 +36,7 @@
 
 template <int spacedim> class LocalElementAccessorBase;
 class DarcyMH;
+class DarcyLMH;
 class RichardsLMH;
 
 using namespace std;
@@ -93,6 +94,7 @@ protected:
 
     friend LocalElementAccessorBase<3>;
     friend DarcyMH;
+    friend DarcyLMH;
     friend RichardsLMH;
 };
 
