@@ -18,16 +18,16 @@
 
 #include <armadillo>
 #include "fields/point_sets.hh"
-#include "fields/field_evaluator.hh"
+#include "fields/composed_quadrature.hh"
 #include "mesh/sides.h"
 
 
 /******************************************************************************
- * Implementation of BulkPointSet methods.
+ * Implementation of BulkSubQuad methods.
  */
 
 template <unsigned int dim>
-Range< PointAccessor<dim> > BulkPointSet<dim>::points() const {
+Range< PointAccessor<dim> > BulkSubQuad<dim>::points() const {
 	auto bgn_it = make_iter<PointAccessor<dim>>( PointAccessor<dim>(f_eval_, f_eval_->bulk_range_[0]) );
 	auto end_it = make_iter<PointAccessor<dim>>( PointAccessor<dim>(f_eval_, f_eval_->bulk_range_[1]) );
 	return Range<PointAccessor<dim>>(bgn_it, end_it);
@@ -35,11 +35,11 @@ Range< PointAccessor<dim> > BulkPointSet<dim>::points() const {
 
 
 /******************************************************************************
- * Implementation of SidePointSet methods.
+ * Implementation of SideSubQuad methods.
  */
 
 template <unsigned int dim>
-Range< PointAccessor<dim> > SidePointSet<dim>::points(const Side &side) const {
+Range< PointAccessor<dim> > SideSubQuad<dim>::points(const Side &side) const {
 	auto bgn_it = make_iter<PointAccessor<dim>>( PointAccessor<dim>(f_eval_, f_eval_->side_ranges_[side.side_idx()]) );
 	auto end_it = make_iter<PointAccessor<dim>>( PointAccessor<dim>(f_eval_, f_eval_->side_ranges_[side.side_idx()+1]) );
 	return Range<PointAccessor<dim>>(bgn_it, end_it);
@@ -65,13 +65,13 @@ arma::vec3 PointAccessor<dim>::coords()
  * Explicit instantiation of templates
  */
 
-template class BulkPointSet<1>;
-template class BulkPointSet<2>;
-template class BulkPointSet<3>;
+template class BulkSubQuad<1>;
+template class BulkSubQuad<2>;
+template class BulkSubQuad<3>;
 
-template class SidePointSet<1>;
-template class SidePointSet<2>;
-template class SidePointSet<3>;
+template class SideSubQuad<1>;
+template class SideSubQuad<2>;
+template class SideSubQuad<3>;
 
 template class PointAccessor<1>;
 template class PointAccessor<2>;

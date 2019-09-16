@@ -11,7 +11,7 @@
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
  *
- * @file    field_evaluator.hh
+ * @file    composed_quadrature.hh
  * @brief
  * @author  David Flanderka
  */
@@ -28,37 +28,37 @@
 
 class FieldCommon;
 class Side;
-template <unsigned int dim> class BulkPointSet;
-template <unsigned int dim> class SidePointSet;
+template <unsigned int dim> class BulkSubQuad;
+template <unsigned int dim> class SideSubQuad;
 template <unsigned int dim> class PointAccessor;
 template <unsigned int dim> class Quadrature;
 template <int spacedim> class ElementAccessor;
 
 
 template <unsigned int dim>
-class FieldEvaluator {
+class ComposedQuadrature {
 public:
     /// Constructor
-	FieldEvaluator();
+	ComposedQuadrature();
 
 	/// Getter for bulk_set_.
-	inline BulkPointSet<dim> bulk_point_set() const {
+	inline BulkSubQuad<dim> bulk_point_set() const {
 	    ASSERT(bulk_set_.f_eval_ != nullptr).error("Uninitialized bulk point set!\n");
 		return bulk_set_;
 	}
 
 	/// Getter for side_set_.
-	inline SidePointSet<dim> side_point_set() const {
+	inline SideSubQuad<dim> side_point_set() const {
 	    ASSERT(side_set_.f_eval_ != nullptr).error("Uninitialized side point set!\n");
 		return side_set_;
 	}
 
     /// Registers point set from quadrature and associates to it some fields.
-    /// Returns an object referencing to the FieldEvaluator and list of its points.
-    BulkPointSet<dim> add_bulk_fields(const Quadrature<dim> &, std::vector<FieldCommon *>);
+    /// Returns an object referencing to the ComposedQuadrature and list of its points.
+	BulkSubQuad<dim> add_bulk_fields(const Quadrature<dim> &, std::vector<FieldCommon *>);
 
     /// The same as add_bulk_fields but for points on side.
-    SidePointSet<dim> add_side_fields(const Quadrature<dim-1> &, std::vector<FieldCommon *>);
+	SideSubQuad<dim> add_side_fields(const Quadrature<dim-1> &, std::vector<FieldCommon *>);
 
     /// Calls reinit() for all registered fields with particular point sets.
     /// The point sets are created for each field by joining bulk and side points
@@ -78,8 +78,8 @@ public:
     Range<PointAccessor<dim>> side_range(const Side &) const;
 
 private:
-    BulkPointSet<dim> bulk_set_;
-    SidePointSet<dim> side_set_;
+    BulkSubQuad<dim> bulk_set_;
+    SideSubQuad<dim> side_set_;
 
     std::vector<arma::vec::fixed<dim>> local_points_;  ///< Local coords of points vector
     std::vector<unsigned int> bulk_range_;             ///< Range of bulk points in previous vector (vector size = 2, holds 'begin' and 'end' index)
@@ -88,8 +88,8 @@ private:
     std::vector<FieldCommon *> bulk_field_vec_;
     std::vector<FieldCommon *> side_field_vec_;
 
-    friend class BulkPointSet<dim>;
-    friend class SidePointSet<dim>;
+    friend class BulkSubQuad<dim>;
+    friend class SideSubQuad<dim>;
     friend class PointAccessor<dim>;
 
 };

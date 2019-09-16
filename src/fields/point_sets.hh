@@ -25,38 +25,38 @@
 
 
 class Side;
-template <unsigned int dim> class FieldEvaluator;
+template <unsigned int dim> class ComposedQuadrature;
 template <unsigned int dim> class PointAccessor;
 
 
 template <unsigned int dim>
-class BulkPointSet {
+class BulkSubQuad {
 public:
     /// Constructor
-	BulkPointSet() : f_eval_(nullptr) {}
+	BulkSubQuad() : f_eval_(nullptr) {}
 
     /// Getter of field evaluator
-    inline std::shared_ptr<FieldEvaluator<dim>> field_evaluator() const {
+    inline std::shared_ptr<ComposedQuadrature<dim>> field_evaluator() const {
         return f_eval_;
     }
 
     Range<PointAccessor<dim>> points() const;
 
 private:
-    std::shared_ptr<FieldEvaluator<dim>> f_eval_;
+    std::shared_ptr<ComposedQuadrature<dim>> f_eval_;
 
-    friend class FieldEvaluator<dim>;
+    friend class ComposedQuadrature<dim>;
 };
 
 
 template <unsigned int dim>
-class SidePointSet {
+class SideSubQuad {
 public:
     /// Constructor
-	SidePointSet() : f_eval_(nullptr) {}
+	SideSubQuad() : f_eval_(nullptr) {}
 
     /// Getter of field evaluator
-    inline std::shared_ptr<FieldEvaluator<dim>> field_evaluator() const {
+    inline std::shared_ptr<ComposedQuadrature<dim>> field_evaluator() const {
         return f_eval_;
     }
 
@@ -64,9 +64,9 @@ public:
     Range<PointAccessor<dim>> points(const Side &) const;
 
 private:
-    std::shared_ptr<FieldEvaluator<dim>> f_eval_;
+    std::shared_ptr<ComposedQuadrature<dim>> f_eval_;
 
-    friend class FieldEvaluator<dim>;
+    friend class ComposedQuadrature<dim>;
 };
 
 
@@ -78,15 +78,15 @@ public:
     : f_eval_(nullptr), idx_(0) {}
 
     /// Constructor
-    PointAccessor(std::shared_ptr<FieldEvaluator<dim>> f_eval, unsigned int idx)
+    PointAccessor(std::shared_ptr<ComposedQuadrature<dim>> f_eval, unsigned int idx)
     : f_eval_(f_eval), idx_(idx) {}
 
     /// Getter of field evaluator
-    inline std::shared_ptr<FieldEvaluator<dim>> field_evaluator() const {
+    inline std::shared_ptr<ComposedQuadrature<dim>> field_evaluator() const {
         return f_eval_;
     }
 
-    // Index of point within FieldEvaluator
+    // Index of point within ComposedQuadrature
     inline unsigned int idx() const {
         return idx_;
     }
@@ -108,7 +108,7 @@ public:
     }
 
 private:
-    std::shared_ptr<FieldEvaluator<dim>> f_eval_;
+    std::shared_ptr<ComposedQuadrature<dim>> f_eval_;
     unsigned int idx_;
 };
 
