@@ -236,6 +236,7 @@ void ConvectionTransport::initialize()
 		output_field_ptr[sbi]->set_fe_data(dh_ );
 		data_.conc_mobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr[sbi], 0);
 		vconc[sbi] = output_field_ptr[sbi]->get_data_vec().petsc_vec();
+		conc[sbi] = &(output_field_ptr[sbi]->get_data_vec().data()[0]);
 	}
 	//output_stream_->add_admissible_field_names(input_rec.val<Input::Array>("output_fields"));
     //output_stream_->mark_output_times(*time_);
@@ -302,7 +303,6 @@ ConvectionTransport::~ConvectionTransport()
         	chkerr(VecDestroy(&v_sources_corr[sbi]));
 
             // arrays of arrays
-            delete conc[sbi];
             delete cumulative_corr[sbi];
             delete tm_diag[sbi];
             delete sources_corr[sbi];
@@ -334,7 +334,7 @@ void ConvectionTransport::set_initial_condition()
 		ElementAccessor<3> ele_acc = mesh_->element_accessor( dh_cell.elm_idx() );
 
 		for (unsigned int sbi=0; sbi<n_substances(); sbi++) // Optimize: SWAP LOOPS
-			conc[sbi][index] = data_.init_conc[sbi].value(ele_acc.centre(), ele_acc);
+			output_field_ptr[sbi]->get_data_vec().data()[index] = data_.init_conc[sbi].value(ele_acc.centre(), ele_acc);
 	}
 }
 
@@ -362,11 +362,7 @@ void ConvectionTransport::alloc_transport_vectors() {
     output_field_ptr.clear();
     output_field_ptr.resize(n_subst);
     for (sbi = 0; sbi < n_subst; sbi++) {
-        conc[sbi] = new double[el_ds->lsize()];
         out_conc[sbi].resize( el_ds->size() );
-        for (i = 0; i < el_ds->lsize(); i++) {
-            conc[sbi][i] = 0.0;
-        }
     }
     
     cfl_flow_ = new double[el_ds->lsize()];
