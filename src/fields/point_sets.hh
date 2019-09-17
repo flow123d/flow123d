@@ -33,17 +33,19 @@ template <unsigned int dim>
 class BulkSubQuad {
 public:
     /// Constructor
-	BulkSubQuad() : f_eval_(nullptr) {}
+	BulkSubQuad() : c_quad_(nullptr), point_indices_(2, 0) {}
 
-    /// Getter of field evaluator
-    inline std::shared_ptr<ComposedQuadrature<dim>> field_evaluator() const {
-        return f_eval_;
+    /// Getter of composed quadrature
+    inline const ComposedQuadrature<dim> &c_quad() const {
+        return *c_quad_;
     }
 
     Range<PointAccessor<dim>> points() const;
 
 private:
-    std::shared_ptr<ComposedQuadrature<dim>> f_eval_;
+    const ComposedQuadrature<dim> *c_quad_;
+
+    std::vector<int> point_indices_;
 
     friend class ComposedQuadrature<dim>;
 };
@@ -53,18 +55,20 @@ template <unsigned int dim>
 class SideSubQuad {
 public:
     /// Constructor
-	SideSubQuad() : f_eval_(nullptr) {}
+	SideSubQuad() : c_quad_(nullptr), point_indices_(dim+2, 0) {}
 
-    /// Getter of field evaluator
-    inline std::shared_ptr<ComposedQuadrature<dim>> field_evaluator() const {
-        return f_eval_;
+    /// Getter of composed quadrature
+    inline const ComposedQuadrature<dim> &c_quad() const {
+        return *c_quad_;
     }
 
     /// returns points for given side and its permutation
     Range<PointAccessor<dim>> points(const Side &) const;
 
 private:
-    std::shared_ptr<ComposedQuadrature<dim>> f_eval_;
+    const ComposedQuadrature<dim> *c_quad_;
+
+    std::vector<int> point_indices_;
 
     friend class ComposedQuadrature<dim>;
 };
@@ -75,15 +79,15 @@ class PointAccessor {
 public:
     /// Default constructor
     PointAccessor()
-    : f_eval_(nullptr), idx_(0) {}
+    : c_quad_(nullptr), idx_(0) {}
 
     /// Constructor
-    PointAccessor(std::shared_ptr<ComposedQuadrature<dim>> f_eval, unsigned int idx)
-    : f_eval_(f_eval), idx_(idx) {}
+    PointAccessor(const ComposedQuadrature<dim> *c_quad, unsigned int idx)
+    : c_quad_(c_quad), idx_(idx) {}
 
-    /// Getter of field evaluator
-    inline std::shared_ptr<ComposedQuadrature<dim>> field_evaluator() const {
-        return f_eval_;
+    /// Getter of composed quadrature
+    inline const ComposedQuadrature<dim> &c_quad() const {
+        return *c_quad_;
     }
 
     // Index of point within ComposedQuadrature
@@ -108,7 +112,7 @@ public:
     }
 
 private:
-    std::shared_ptr<ComposedQuadrature<dim>> f_eval_;
+    const ComposedQuadrature<dim> *c_quad_;
     unsigned int idx_;
 };
 

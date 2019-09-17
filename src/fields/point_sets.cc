@@ -19,6 +19,7 @@
 #include <armadillo>
 #include "fields/point_sets.hh"
 #include "fields/composed_quadrature.hh"
+#include "mesh/side_impl.hh"
 #include "mesh/sides.h"
 
 
@@ -28,8 +29,8 @@
 
 template <unsigned int dim>
 Range< PointAccessor<dim> > BulkSubQuad<dim>::points() const {
-	auto bgn_it = make_iter<PointAccessor<dim>>( PointAccessor<dim>(f_eval_, f_eval_->bulk_range_[0]) );
-	auto end_it = make_iter<PointAccessor<dim>>( PointAccessor<dim>(f_eval_, f_eval_->bulk_range_[1]) );
+	auto bgn_it = make_iter<PointAccessor<dim>>( PointAccessor<dim>(c_quad_, this->point_indices_[0]) );
+	auto end_it = make_iter<PointAccessor<dim>>( PointAccessor<dim>(c_quad_, this->point_indices_[1]) );
 	return Range<PointAccessor<dim>>(bgn_it, end_it);
 }
 
@@ -40,8 +41,8 @@ Range< PointAccessor<dim> > BulkSubQuad<dim>::points() const {
 
 template <unsigned int dim>
 Range< PointAccessor<dim> > SideSubQuad<dim>::points(const Side &side) const {
-	auto bgn_it = make_iter<PointAccessor<dim>>( PointAccessor<dim>(f_eval_, f_eval_->side_ranges_[side.side_idx()]) );
-	auto end_it = make_iter<PointAccessor<dim>>( PointAccessor<dim>(f_eval_, f_eval_->side_ranges_[side.side_idx()+1]) );
+	auto bgn_it = make_iter<PointAccessor<dim>>( PointAccessor<dim>(c_quad_, this->point_indices_[side.side_idx()]) );
+	auto end_it = make_iter<PointAccessor<dim>>( PointAccessor<dim>(c_quad_, this->point_indices_[side.side_idx()+1]) );
 	return Range<PointAccessor<dim>>(bgn_it, end_it);
 }
 
@@ -53,7 +54,7 @@ Range< PointAccessor<dim> > SideSubQuad<dim>::points(const Side &side) const {
 template <unsigned int dim>
 arma::vec::fixed<dim> PointAccessor<dim>::loc_coords()
 {
-    return f_eval_->local_points_[idx_];
+    return c_quad_->local_points_[idx_];
 }
 
 template <unsigned int dim>

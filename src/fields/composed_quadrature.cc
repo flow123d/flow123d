@@ -24,69 +24,54 @@
 
 template <unsigned int dim>
 ComposedQuadrature<dim>::ComposedQuadrature()
-: bulk_range_(2, 0), side_ranges_(dim+2, 0) {}
+{}
 
 template <unsigned int dim>
-BulkSubQuad<dim> ComposedQuadrature<dim>::add_bulk_fields(const Quadrature<dim> &quad, std::vector<FieldCommon *> field_vec)
+BulkSubQuad<dim> ComposedQuadrature<dim>::add_bulk_quad(const Quadrature<dim> &quad)
 {
-    ASSERT(bulk_set_.f_eval_==nullptr).error("Multiple initialization of bulk point set!\n");
+    ASSERT(bulk_set_.c_quad_==nullptr).error("Multiple initialization of bulk point set!\n");
 
-    bulk_set_.f_eval_ = std::shared_ptr< ComposedQuadrature<dim> >(this); //std::enable_shared_from_this< ComposedQuadrature<dim> >::shared_from_this();
-    bulk_field_vec_ = field_vec;
+    bulk_set_.c_quad_ = this;
 
-    bulk_range_[0] = local_points_.size();
+    bulk_set_.point_indices_[0] = local_points_.size();
     for (auto p : quad.get_points()) local_points_.push_back(p);
-    bulk_range_[1] = local_points_.size();
+    bulk_set_.point_indices_[1] = local_points_.size();
 
     return bulk_set_;
 }
 
 template <unsigned int dim>
-SideSubQuad<dim> ComposedQuadrature<dim>::add_side_fields(const Quadrature<dim-1> &quad, std::vector<FieldCommon *> field_vec)
+SideSubQuad<dim> ComposedQuadrature<dim>::add_side_quad(const Quadrature<dim-1> &quad)
 {
-    ASSERT(side_set_.f_eval_==nullptr).error("Multiple initialization of side point set!\n");
+    ASSERT(side_set_.c_quad_==nullptr).error("Multiple initialization of side point set!\n");
 
-    side_set_.f_eval_ = std::shared_ptr< ComposedQuadrature<dim> >(this); //std::enable_shared_from_this< ComposedQuadrature<dim> >::shared_from_this();
-    side_field_vec_ = field_vec;
+    side_set_.c_quad_ = this;
 
     for (unsigned int i=0; i<dim+1; ++i) {
         Quadrature<dim> high_dim_q(quad, i, 0); // set correct permutation id
-        side_ranges_[i] = local_points_.size();
+        side_set_.point_indices_[i] = local_points_.size();
         for (auto p : high_dim_q.get_points()) local_points_.push_back(p);
     }
-    side_ranges_[dim+1] = local_points_.size();
+    side_set_.point_indices_[dim+1] = local_points_.size();
 
     return side_set_;
 }
 
 template <unsigned int dim>
-void ComposedQuadrature<dim>::reinit(ElementAccessor<3> &elm)
-{
-    // Not implemented yet!
-}
-
-template <unsigned int dim>
-Range< PointAccessor<dim> > ComposedQuadrature<dim>::points_range() const {
-    auto bgn_it = make_iter<PointAccessor<dim>>( PointAccessor<dim>(this->bulk_point_set().field_evaluator(), 0) );
-    auto end_it = make_iter<PointAccessor<dim>>( PointAccessor<dim>(this->bulk_point_set().field_evaluator(), local_points_.size()) );
-    return Range<PointAccessor<dim>>(bgn_it, end_it);
-}
-
-template <unsigned int dim>
 Range< PointAccessor<dim> > ComposedQuadrature<dim>::bulk_range() const {
-    return this->bulk_point_set().points();
+    return this->bulk_quad().points();
 }
 
 template <unsigned int dim>
 Range< PointAccessor<dim> > ComposedQuadrature<dim>::sides_range() const {
-    auto bgn_it = make_iter<PointAccessor<dim>>( PointAccessor<dim>(this->side_point_set().field_evaluator(), side_ranges_[0]) );
-    auto end_it = make_iter<PointAccessor<dim>>( PointAccessor<dim>(this->side_point_set().field_evaluator(), side_ranges_[dim+2]) );
+    auto bgn_it = make_iter<PointAccessor<dim>>( PointAccessor<dim>(this->side_quad().c_quad_, side_set_.point_indices_[0]) );
+    auto end_it = make_iter<PointAccessor<dim>>( PointAccessor<dim>(this->side_quad().c_quad_, side_set_.point_indices_[dim+2]) );
     return Range<PointAccessor<dim>>(bgn_it, end_it);
 }
 
 template <unsigned int dim>
 Range< PointAccessor<dim> > ComposedQuadrature<dim>::side_range(const Side &side) const {
-    return this->side_point_set().points(side);
+    return this->side_quad().points(side);
 }
 
 

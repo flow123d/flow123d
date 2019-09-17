@@ -26,7 +26,6 @@
 #include "mesh/range_wrapper.hh"
 #include "system/asserts.hh"
 
-class FieldCommon;
 class Side;
 template <unsigned int dim> class BulkSubQuad;
 template <unsigned int dim> class SideSubQuad;
@@ -41,32 +40,26 @@ public:
     /// Constructor
 	ComposedQuadrature();
 
-	/// Getter for bulk_set_.
-	inline BulkSubQuad<dim> bulk_point_set() const {
-	    ASSERT(bulk_set_.f_eval_ != nullptr).error("Uninitialized bulk point set!\n");
+	/// Getter for bulk sub quadrature.
+	inline BulkSubQuad<dim> bulk_quad() const {
+	    ASSERT(bulk_set_.c_quad_ != nullptr).error("Uninitialized bulk point set!\n");
 		return bulk_set_;
 	}
 
-	/// Getter for side_set_.
-	inline SideSubQuad<dim> side_point_set() const {
-	    ASSERT(side_set_.f_eval_ != nullptr).error("Uninitialized side point set!\n");
+	/// Getter for side sub quadrature.
+	inline SideSubQuad<dim> side_quad() const {
+	    ASSERT(side_set_.c_quad_ != nullptr).error("Uninitialized side point set!\n");
 		return side_set_;
 	}
 
-    /// Registers point set from quadrature and associates to it some fields.
-    /// Returns an object referencing to the ComposedQuadrature and list of its points.
-	BulkSubQuad<dim> add_bulk_fields(const Quadrature<dim> &, std::vector<FieldCommon *>);
+    /**
+     * Registers point set from quadrature.
+     * Returns an object referencing to the ComposedQuadrature and list of its points.
+     */
+	BulkSubQuad<dim> add_bulk_quad(const Quadrature<dim> &);
 
-    /// The same as add_bulk_fields but for points on side.
-	SideSubQuad<dim> add_side_fields(const Quadrature<dim-1> &, std::vector<FieldCommon *>);
-
-    /// Calls reinit() for all registered fields with particular point sets.
-    /// The point sets are created for each field by joining bulk and side points
-    /// respecting the side permutation.
-    void reinit(ElementAccessor<3> &);
-
-    /// Returns range loop over all points
-    Range<PointAccessor<dim>> points_range() const;
+    /// The same as add_bulk_quad but for points on side.
+	SideSubQuad<dim> add_side_quad(const Quadrature<dim-1> &);
 
     /// Returns range loop over all bulk points
     Range<PointAccessor<dim>> bulk_range() const;
@@ -82,11 +75,6 @@ private:
     SideSubQuad<dim> side_set_;
 
     std::vector<arma::vec::fixed<dim>> local_points_;  ///< Local coords of points vector
-    std::vector<unsigned int> bulk_range_;             ///< Range of bulk points in previous vector (vector size = 2, holds 'begin' and 'end' index)
-    std::vector<unsigned int> side_ranges_;            ///< Ranges of side points (vector size = dim+2, indexes for i-th side: begin = i, end = i+1)
-
-    std::vector<FieldCommon *> bulk_field_vec_;
-    std::vector<FieldCommon *> side_field_vec_;
 
     friend class BulkSubQuad<dim>;
     friend class SideSubQuad<dim>;
