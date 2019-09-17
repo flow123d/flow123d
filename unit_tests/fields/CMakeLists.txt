@@ -47,6 +47,7 @@ define_test(field_time_function)
 
 define_mpi_test(generic_field 1)
        
+define_mpi_test(composed_quadrature 1)
 
 
 
