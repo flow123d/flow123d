@@ -71,8 +71,8 @@ public:
     Range<PointAccessor<dim>> side_range(const Side &) const;
 
 private:
-    BulkSubQuad<dim> bulk_set_;
-    SideSubQuad<dim> side_set_;
+    BulkSubQuad<dim> bulk_set_;  ///< Handler to bulk local points.
+    SideSubQuad<dim> side_set_;  ///< Handler to sides local points.
 
     std::vector<arma::vec::fixed<dim>> local_points_;  ///< Local coords of points vector
 

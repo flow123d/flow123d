@@ -40,11 +40,13 @@ public:
         return *c_quad_;
     }
 
+    /// Returnx range of bulk local points.
     Range<PointAccessor<dim>> points() const;
 
 private:
+    /// Pointer to composed quadrature
     const ComposedQuadrature<dim> *c_quad_;
-
+    ///< Range of bulk points in ComposedQuadrature::local_points_ vector (vector size = 2, holds 'begin' and 'end' index)
     std::vector<int> point_indices_;
 
     friend class ComposedQuadrature<dim>;
@@ -62,12 +64,13 @@ public:
         return *c_quad_;
     }
 
-    /// returns points for given side and its permutation
+    /// Returns range of side local points for given side and its permutation.
     Range<PointAccessor<dim>> points(const Side &) const;
 
 private:
+    /// Pointer to composed quadrature
     const ComposedQuadrature<dim> *c_quad_;
-
+    /// Ranges of side points (vector size = dim+2, indexes for i-th side: begin = i, end = i+1)
     std::vector<int> point_indices_;
 
     friend class ComposedQuadrature<dim>;
@@ -112,7 +115,9 @@ public:
     }
 
 private:
+    /// Pointer to composed quadrature
     const ComposedQuadrature<dim> *c_quad_;
+    /// Index of the local point in the composed quadrature.
     unsigned int idx_;
 };
 
