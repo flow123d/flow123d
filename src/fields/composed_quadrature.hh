@@ -24,12 +24,10 @@
 #include <memory>
 #include <armadillo>
 #include "mesh/range_wrapper.hh"
+#include "fields/point_sets.hh"
 #include "system/asserts.hh"
 
 class Side;
-template <unsigned int dim> class BulkSubQuad;
-template <unsigned int dim> class SideSubQuad;
-template <unsigned int dim> class PointAccessor;
 template <unsigned int dim> class Quadrature;
 template <int spacedim> class ElementAccessor;
 
@@ -51,6 +49,11 @@ public:
 	    ASSERT(side_set_.c_quad_ != nullptr).error("Uninitialized side point set!\n");
 		return side_set_;
 	}
+
+    /// Return size of composed quadrature (number of points).
+    inline unsigned int size() const {
+        return local_points_.size();
+    }
 
     /**
      * Registers point set from quadrature.

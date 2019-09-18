@@ -47,6 +47,7 @@
 
 class Mesh;
 class Observe;
+template <unsigned int dim> class ComposedQuadrature;
 
 
 using namespace std;
@@ -440,6 +441,19 @@ public:
     	return this->multifield_;
     }
 
+
+    /**
+     * Allocation of the Field's cache.
+     *
+     * Specialize for dim=1,2,3 using pure virtual functions below.
+     */
+    template<unsigned int dim>
+    void init_value_cache(const ComposedQuadrature<dim> &c_quad);
+
+    /// Calculates values at given element and points.
+    /// The values are stored in Field's internal cache.
+    //virtual void reinit_value_cache(ElementAccessor<3>, shared_ptr<Mapping<3>>) = 0;
+
     /**
      * Print stored messages to table.
      *
@@ -474,6 +488,10 @@ protected:
     {
         last_time_ = -numeric_limits<double>::infinity();
     }
+
+    virtual void init_value_cache_1(const ComposedQuadrature<1> &) = 0;
+    virtual void init_value_cache_2(const ComposedQuadrature<2> &) = 0;
+    virtual void init_value_cache_3(const ComposedQuadrature<3> &) = 0;
 
     /**
      * Setters for essential field properties.

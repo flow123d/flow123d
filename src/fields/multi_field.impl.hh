@@ -21,6 +21,7 @@
 
 #include "multi_field.hh"
 #include "fields/field_algo_base.hh"
+#include "fields/composed_quadrature.hh"
 #include "input/input_exception.hh"
 #include "io/observe.hh"
 
@@ -315,6 +316,27 @@ void MultiField<spacedim,Value>::set_input_list(const Input::Array &list, const 
     
     // Save the full array for future use in FieldCommon::mark_input_times().
     list.copy_to(shared_->input_list_);
+}
+
+
+template<int spacedim, class Value>
+void MultiField<spacedim,Value>::init_value_cache_1(const ComposedQuadrature<1> &c_quad) {
+    for(unsigned int i_comp=0; i_comp < this->shared_->comp_names_.size(); i_comp++)
+        sub_fields_[i_comp].init_value_cache_1(c_quad);
+}
+
+
+template<int spacedim, class Value>
+void MultiField<spacedim,Value>::init_value_cache_2(const ComposedQuadrature<2> &c_quad) {
+    for(unsigned int i_comp=0; i_comp < this->shared_->comp_names_.size(); i_comp++)
+        sub_fields_[i_comp].init_value_cache_2(c_quad);
+}
+
+
+template<int spacedim, class Value>
+void MultiField<spacedim,Value>::init_value_cache_3(const ComposedQuadrature<3> &c_quad) {
+    for(unsigned int i_comp=0; i_comp < this->shared_->comp_names_.size(); i_comp++)
+        sub_fields_[i_comp].init_value_cache_3(c_quad);
 }
 
 

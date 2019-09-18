@@ -23,6 +23,7 @@
 #include "field.hh"
 #include "field_algo_base.impl.hh"
 #include "field_fe.hh"
+#include "fields/composed_quadrature.hh"
 #include "mesh/region.hh"
 #include "input/reader_to_storage.hh"
 #include "input/accessors.hh"
@@ -680,6 +681,28 @@ std::shared_ptr< FieldFE<spacedim, Value> > Field<spacedim,Value>::get_field_fe(
 
 	return field_fe_ptr;
 }
+
+
+template<int spacedim, class Value>
+void Field<spacedim,Value>::init_value_cache_1(const ComposedQuadrature<1> &c_quad) {
+    unsigned int qsize = c_quad.size();
+    if (r_values_.size() < qsize) r_values_.resize(qsize);
+}
+
+
+template<int spacedim, class Value>
+void Field<spacedim,Value>::init_value_cache_2(const ComposedQuadrature<2> &c_quad) {
+	unsigned int qsize = c_quad.size();
+	if (r_values_.size() < qsize) r_values_.resize(qsize);
+}
+
+
+template<int spacedim, class Value>
+void Field<spacedim,Value>::init_value_cache_3(const ComposedQuadrature<3> &c_quad) {
+	unsigned int qsize = c_quad.size();
+	if (r_values_.size() < qsize) r_values_.resize(qsize);
+}
+
 
 
 
