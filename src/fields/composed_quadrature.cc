@@ -65,7 +65,7 @@ Range< PointAccessor<dim> > ComposedQuadrature<dim>::bulk_range() const {
 template <unsigned int dim>
 Range< PointAccessor<dim> > ComposedQuadrature<dim>::sides_range() const {
     auto bgn_it = make_iter<PointAccessor<dim>>( PointAccessor<dim>(this->side_quad().c_quad_, side_set_.point_indices_[0]) );
-    auto end_it = make_iter<PointAccessor<dim>>( PointAccessor<dim>(this->side_quad().c_quad_, side_set_.point_indices_[dim+2]) );
+    auto end_it = make_iter<PointAccessor<dim>>( PointAccessor<dim>(this->side_quad().c_quad_, side_set_.point_indices_[dim+1]) );
     return Range<PointAccessor<dim>>(bgn_it, end_it);
 }
 
