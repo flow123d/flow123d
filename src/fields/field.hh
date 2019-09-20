@@ -374,7 +374,12 @@ protected:
 
     std::vector<std::shared_ptr<FactoryBase> >  factories_;
 
-    std::vector< typename Value::return_type > r_values_;
+    /**
+     * Data cache of precomputed Field values.
+     *
+     * Holds vectors for every dimension (1,2,3).
+     */
+    std::vector< std::vector< typename Value::return_type > > r_values_;
 
 
 

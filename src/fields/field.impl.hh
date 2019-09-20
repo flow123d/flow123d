@@ -38,7 +38,7 @@
 
 template<int spacedim, class Value>
 Field<spacedim,Value>::Field()
-: data_(std::make_shared<SharedData>())
+: data_(std::make_shared<SharedData>()), r_values_(3)
 {
 	// n_comp is nonzero only for variable size vectors Vector, VectorEnum, ..
 	// this invariant is kept also by n_comp setter
@@ -51,7 +51,7 @@ Field<spacedim,Value>::Field()
 
 template<int spacedim, class Value>
 Field<spacedim,Value>::Field(const string &name, bool bc)
-: data_(std::make_shared<SharedData>())
+: data_(std::make_shared<SharedData>()), r_values_(3)
 
 {
 		// n_comp is nonzero only for variable size vectors Vector, VectorEnum, ..
@@ -67,7 +67,7 @@ Field<spacedim,Value>::Field(const string &name, bool bc)
 
 template<int spacedim, class Value>
 Field<spacedim,Value>::Field(unsigned int component_index, string input_name, string name, bool bc)
-: data_(std::make_shared<SharedData>())
+: data_(std::make_shared<SharedData>()), r_values_(3)
 {
 	// n_comp is nonzero only for variable size vectors Vector, VectorEnum, ..
 	// this invariant is kept also by n_comp setter
@@ -86,7 +86,8 @@ Field<spacedim,Value>::Field(const Field &other)
 : FieldCommon(other),
   data_(other.data_),
   region_fields_(other.region_fields_),
-  factories_(other.factories_)
+  factories_(other.factories_),
+  r_values_(other.r_values_)
 {
 	if (other.no_check_control_field_)
 		no_check_control_field_ =  make_shared<ControlField>(*other.no_check_control_field_);
@@ -119,6 +120,7 @@ Field<spacedim,Value> &Field<spacedim,Value>::operator=(const Field<spacedim,Val
 	data_ = other.data_;
 	factories_ = other.factories_;
 	region_fields_ = other.region_fields_;
+	r_values_.resize(3);
 
 	if (other.no_check_control_field_) {
 		no_check_control_field_ =  make_shared<ControlField>(*other.no_check_control_field_);
@@ -686,21 +688,21 @@ std::shared_ptr< FieldFE<spacedim, Value> > Field<spacedim,Value>::get_field_fe(
 template<int spacedim, class Value>
 void Field<spacedim,Value>::init_value_cache_1(const ComposedQuadrature<1> &c_quad) {
     unsigned int qsize = c_quad.size();
-    if (r_values_.size() < qsize) r_values_.resize(qsize);
+    r_values_[0].resize(qsize);
 }
 
 
 template<int spacedim, class Value>
 void Field<spacedim,Value>::init_value_cache_2(const ComposedQuadrature<2> &c_quad) {
 	unsigned int qsize = c_quad.size();
-	if (r_values_.size() < qsize) r_values_.resize(qsize);
+	r_values_[1].resize(qsize);
 }
 
 
 template<int spacedim, class Value>
 void Field<spacedim,Value>::init_value_cache_3(const ComposedQuadrature<3> &c_quad) {
 	unsigned int qsize = c_quad.size();
-	if (r_values_.size() < qsize) r_values_.resize(qsize);
+	r_values_[2].resize(qsize);
 }
 
 
