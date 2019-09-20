@@ -68,10 +68,10 @@ public:
     Range<PointAccessor<dim>> bulk_range() const;
 
     /// Returns range loop over all side points
-    Range<PointAccessor<dim>> sides_range() const;
+    //Range<PointAccessor<dim>> sides_range() const;
 
     /// Returns range of points for given side and its permutation
-    Range<PointAccessor<dim>> side_range(const Side &) const;
+    Range<PointAccessor<dim>> side_range(const Side &side, const unsigned int side_permutations[dim]) const;
 
 private:
     BulkSubQuad<dim> bulk_set_;  ///< Handler to bulk local points.

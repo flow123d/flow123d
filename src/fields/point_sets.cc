@@ -29,8 +29,9 @@
 
 template <unsigned int dim>
 Range< PointAccessor<dim> > BulkSubQuad<dim>::points() const {
-	auto bgn_it = make_iter<PointAccessor<dim>>( PointAccessor<dim>(c_quad_, this->point_indices_[0]) );
-	auto end_it = make_iter<PointAccessor<dim>>( PointAccessor<dim>(c_quad_, this->point_indices_[1]) );
+	std::array<int, dim> permutation; permutation.fill(0);
+	auto bgn_it = make_iter<PointAccessor<dim>>( PointAccessor<dim>(c_quad_, this->point_indices_[0], permutation) );
+	auto end_it = make_iter<PointAccessor<dim>>( PointAccessor<dim>(c_quad_, this->point_indices_[1], permutation) );
 	return Range<PointAccessor<dim>>(bgn_it, end_it);
 }
 
@@ -40,9 +41,11 @@ Range< PointAccessor<dim> > BulkSubQuad<dim>::points() const {
  */
 
 template <unsigned int dim>
-Range< PointAccessor<dim> > SideSubQuad<dim>::points(const Side &side) const {
-	auto bgn_it = make_iter<PointAccessor<dim>>( PointAccessor<dim>(c_quad_, this->point_indices_[side.side_idx()]) );
-	auto end_it = make_iter<PointAccessor<dim>>( PointAccessor<dim>(c_quad_, this->point_indices_[side.side_idx()+1]) );
+Range< PointAccessor<dim> > SideSubQuad<dim>::points(const Side &side, const unsigned int side_permutations[dim]) const {
+	std::array<int, dim> permutation;
+	for (unsigned int i=0; i<dim; ++i) permutation[i] = int(side_permutations[i]) - i;
+	auto bgn_it = make_iter<PointAccessor<dim>>( PointAccessor<dim>(c_quad_, this->point_indices_[side.side_idx()], permutation) );
+	auto end_it = make_iter<PointAccessor<dim>>( PointAccessor<dim>(c_quad_, this->point_indices_[side.side_idx()+1], permutation) );
 	return Range<PointAccessor<dim>>(bgn_it, end_it);
 }
 
@@ -54,7 +57,7 @@ Range< PointAccessor<dim> > SideSubQuad<dim>::points(const Side &side) const {
 template <unsigned int dim>
 arma::vec::fixed<dim> PointAccessor<dim>::loc_coords()
 {
-    return c_quad_->local_points_[idx_];
+    return c_quad_->local_points_[ this->idx() ];
 }
 
 template <unsigned int dim>

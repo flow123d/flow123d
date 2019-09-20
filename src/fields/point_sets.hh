@@ -65,7 +65,7 @@ public:
     }
 
     /// Returns range of side local points for given side and its permutation.
-    Range<PointAccessor<dim>> points(const Side &) const;
+    Range<PointAccessor<dim>> points(const Side &side, const unsigned int side_permutations[dim]) const;
 
 private:
     /// Pointer to composed quadrature
@@ -82,11 +82,11 @@ class PointAccessor {
 public:
     /// Default constructor
     PointAccessor()
-    : c_quad_(nullptr), idx_(0) {}
+    : c_quad_(nullptr), idx_(0), perm_shift_(0) {}
 
     /// Constructor
-    PointAccessor(const ComposedQuadrature<dim> *c_quad, unsigned int idx)
-    : c_quad_(c_quad), idx_(idx) {}
+    PointAccessor(const ComposedQuadrature<dim> *c_quad, unsigned int idx, std::array<int, dim> permutation)
+    : c_quad_(c_quad), idx_(idx), permutation_(permutation), perm_shift_(idx) {}
 
     /// Getter of composed quadrature
     inline const ComposedQuadrature<dim> &c_quad() const {
@@ -95,7 +95,7 @@ public:
 
     // Index of point within ComposedQuadrature
     inline unsigned int idx() const {
-        return idx_;
+        return idx_ + permutation_[idx_-perm_shift_];
     }
 
     // Local coordinates within element
@@ -111,7 +111,7 @@ public:
 
     /// Comparison of accessors.
     bool operator==(const PointAccessor<dim>& other) {
-    	return (idx_ == other.idx_);
+    	return (idx_ == other.idx_) && (permutation_ == other.permutation_);
     }
 
 private:
@@ -119,6 +119,10 @@ private:
     const ComposedQuadrature<dim> *c_quad_;
     /// Index of the local point in the composed quadrature.
     unsigned int idx_;
+    /// Holds shift of value computing from permutation (used only for side point accessors)
+    std::array<int, dim> permutation_;
+    /// Helper data member of range method, holds shift between indexes of range and permutation array.
+    unsigned int perm_shift_;
 };
 
 

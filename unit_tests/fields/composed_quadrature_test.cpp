@@ -7,6 +7,7 @@
 #include "quadrature/quadrature.hh"
 #include "quadrature/quadrature_lib.hh"
 #include "mesh/sides.h"
+#include "mesh/side_impl.hh"
 
 
 TEST(ComposedQuadratureTest, eval_3d) {
@@ -16,6 +17,7 @@ TEST(ComposedQuadratureTest, eval_3d) {
     Quadrature<2> *q_side = new QGauss<2>(2);
     BulkSubQuad<3> bulk_points = feval.add_bulk_quad(*q_bulk );
     SideSubQuad<3> side_points = feval.add_side_quad(*q_side );
+    const unsigned int side_permutations[3] = {0, 2, 1};
     /// this is part of assembly process
     //for (auto cell : dh->own_range()) {
     //    feval.reinit(cell.elm());
@@ -24,7 +26,7 @@ TEST(ComposedQuadratureTest, eval_3d) {
             //double bulk_expr = cross_section.get_value(p) * conductivity.get_value(p);
         }
         for (Side side; side.side_idx()<4; side.inc()) {
-            for ( auto p : side_points.points(side) ) {
+            for ( auto p : side_points.points(side, side_permutations ) ) {
             	std::cout << "--- side point " << side.side_idx() << std::endl << p.loc_coords();
                 //double side_expr = cross_section.get_value(p) * sigma.get_value(p);
             }

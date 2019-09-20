@@ -62,16 +62,16 @@ Range< PointAccessor<dim> > ComposedQuadrature<dim>::bulk_range() const {
     return this->bulk_quad().points();
 }
 
-template <unsigned int dim>
+/*template <unsigned int dim>
 Range< PointAccessor<dim> > ComposedQuadrature<dim>::sides_range() const {
     auto bgn_it = make_iter<PointAccessor<dim>>( PointAccessor<dim>(this->side_quad().c_quad_, side_set_.point_indices_[0]) );
     auto end_it = make_iter<PointAccessor<dim>>( PointAccessor<dim>(this->side_quad().c_quad_, side_set_.point_indices_[dim+1]) );
     return Range<PointAccessor<dim>>(bgn_it, end_it);
-}
+}*/
 
 template <unsigned int dim>
-Range< PointAccessor<dim> > ComposedQuadrature<dim>::side_range(const Side &side) const {
-    return this->side_quad().points(side);
+Range< PointAccessor<dim> > ComposedQuadrature<dim>::side_range(const Side &side, const unsigned int side_permutations[dim]) const {
+    return this->side_quad().points(side, side_permutations);
 }
 
 
