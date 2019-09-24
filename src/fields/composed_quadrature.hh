@@ -32,6 +32,11 @@ template <unsigned int dim> class Quadrature;
 template <int spacedim> class ElementAccessor;
 
 
+/**
+ * Class holds local coordinations of evaluating points (bulk and sides).
+ *
+ * TODO: rename to LocalPointSet
+ */
 template <unsigned int dim>
 class ComposedQuadrature {
 public:
@@ -59,21 +64,24 @@ public:
      * Registers point set from quadrature.
      * Returns an object referencing to the ComposedQuadrature and list of its points.
      */
-	BulkSubQuad<dim> add_bulk_quad(const Quadrature<dim> &);
+	BulkSubQuad<dim> add_bulk(const Quadrature<dim> &);
 
-    /// The same as add_bulk_quad but for points on side.
-	SideSubQuad<dim> add_side_quad(const Quadrature<dim-1> &);
+    /// The same as add_bulk but for points on side.
+	SideSubQuad<dim> add_side(const Quadrature<dim-1> &);
 
     /// Returns range loop over all bulk points
-    Range<PointAccessor<dim>> bulk_range() const;
+    Range<BulkPointAccessor<dim>> bulk_range() const;
 
     /// Returns range loop over all side points
     //Range<PointAccessor<dim>> sides_range() const;
 
     /// Returns range of points for given side and its permutation
-    Range<PointAccessor<dim>> side_range(const Side &side, const unsigned int side_permutations[dim]) const;
+    Range<PointAccessor<dim>> side_range(const Side &side) const;
 
 private:
+    /// Adds coords of local point if point doesn't exist in local_points_ vector, returns its index in vector.
+    unsigned int add_local_point(arma::vec::fixed<dim> coords);
+
     BulkSubQuad<dim> bulk_set_;  ///< Handler to bulk local points.
     SideSubQuad<dim> side_set_;  ///< Handler to sides local points.
 
@@ -81,6 +89,7 @@ private:
 
     friend class BulkSubQuad<dim>;
     friend class SideSubQuad<dim>;
+    friend class BulkPointAccessor<dim>;
     friend class PointAccessor<dim>;
 
 };

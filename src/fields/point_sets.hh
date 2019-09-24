@@ -22,10 +22,12 @@
 #include <memory>
 #include <armadillo>
 #include "mesh/range_wrapper.hh"
+#include "mesh/ref_element.hh"
 
 
 class Side;
 template <unsigned int dim> class ComposedQuadrature;
+template <unsigned int dim> class BulkPointAccessor;
 template <unsigned int dim> class PointAccessor;
 
 
@@ -33,7 +35,7 @@ template <unsigned int dim>
 class BulkSubQuad {
 public:
     /// Constructor
-	BulkSubQuad() : c_quad_(nullptr), point_indices_(2, 0) {}
+	BulkSubQuad() : c_quad_(nullptr) {}
 
     /// Getter of composed quadrature
     inline const ComposedQuadrature<dim> &c_quad() const {
@@ -41,15 +43,16 @@ public:
     }
 
     /// Returnx range of bulk local points.
-    Range<PointAccessor<dim>> points() const;
+    Range<BulkPointAccessor<dim>> points() const;
 
 private:
     /// Pointer to composed quadrature
     const ComposedQuadrature<dim> *c_quad_;
-    ///< Range of bulk points in ComposedQuadrature::local_points_ vector (vector size = 2, holds 'begin' and 'end' index)
+    /// Indices into full set of local indices in the composed quadrature.
     std::vector<int> point_indices_;
 
     friend class ComposedQuadrature<dim>;
+    friend class BulkPointAccessor<dim>;
 };
 
 
@@ -57,7 +60,7 @@ template <unsigned int dim>
 class SideSubQuad {
 public:
     /// Constructor
-	SideSubQuad() : c_quad_(nullptr), point_indices_(dim+2, 0) {}
+	SideSubQuad() : c_quad_(nullptr), point_indices_(RefElement<dim>::n_side_permutations) {}
 
     /// Getter of composed quadrature
     inline const ComposedQuadrature<dim> &c_quad() const {
@@ -65,15 +68,60 @@ public:
     }
 
     /// Returns range of side local points for given side and its permutation.
-    Range<PointAccessor<dim>> points(const Side &side, const unsigned int side_permutations[dim]) const;
+    Range<PointAccessor<dim>> points(const Side &side) const;
 
 private:
     /// Pointer to composed quadrature
     const ComposedQuadrature<dim> *c_quad_;
-    /// Ranges of side points (vector size = dim+2, indexes for i-th side: begin = i, end = i+1)
-    std::vector<int> point_indices_;
+    /// Indices into full set of local indices in the composed quadrature, for every possible permuation.
+    std::vector< std::vector<int> > point_indices_;
 
     friend class ComposedQuadrature<dim>;
+};
+
+
+template <unsigned int dim>
+class BulkPointAccessor {
+public:
+    /// Default constructor
+	BulkPointAccessor()
+    : local_point_idx_(0) {}
+
+    /// Constructor
+	BulkPointAccessor(BulkSubQuad<dim> bulk_points, unsigned int loc_point_idx)
+    : bulk_points_(bulk_points), local_point_idx_(loc_point_idx) {}
+
+    /// Getter of composed quadrature
+    inline const ComposedQuadrature<dim> &c_quad() const {
+        return *bulk_points_.c_quad_;
+    }
+
+    // Index of point within ComposedQuadrature
+    inline unsigned int point_set_idx() const {
+        return bulk_points_.point_indices_[local_point_idx_];
+    }
+
+    // Local coordinates within element
+    arma::vec::fixed<dim> loc_coords();
+
+    // Global coordinates within element
+    arma::vec3 coords();
+
+    /// Iterates to next point.
+    inline void inc() {
+    	local_point_idx_++;
+    }
+
+    /// Comparison of accessors.
+    bool operator==(const BulkPointAccessor<dim>& other) {
+    	return (local_point_idx_ == other.local_point_idx_);
+    }
+
+private:
+    /// Pointer to bulk point set.
+    BulkSubQuad<dim> bulk_points_;
+    /// Index of the local point in bulk point set.
+    unsigned int local_point_idx_;
 };
 
 
@@ -82,11 +130,11 @@ class PointAccessor {
 public:
     /// Default constructor
     PointAccessor()
-    : c_quad_(nullptr), idx_(0), perm_shift_(0) {}
+    : c_quad_(nullptr), idx_(0) {}
 
     /// Constructor
-    PointAccessor(const ComposedQuadrature<dim> *c_quad, unsigned int idx, std::array<int, dim> permutation)
-    : c_quad_(c_quad), idx_(idx), permutation_(permutation), perm_shift_(idx) {}
+    PointAccessor(const ComposedQuadrature<dim> *c_quad, unsigned int idx)
+    : c_quad_(c_quad), idx_(idx) {}
 
     /// Getter of composed quadrature
     inline const ComposedQuadrature<dim> &c_quad() const {
@@ -95,7 +143,7 @@ public:
 
     // Index of point within ComposedQuadrature
     inline unsigned int idx() const {
-        return idx_ + permutation_[idx_-perm_shift_];
+        return idx_;
     }
 
     // Local coordinates within element
@@ -111,7 +159,7 @@ public:
 
     /// Comparison of accessors.
     bool operator==(const PointAccessor<dim>& other) {
-    	return (idx_ == other.idx_) && (permutation_ == other.permutation_);
+    	return (idx_ == other.idx_);
     }
 
 private:
@@ -119,10 +167,6 @@ private:
     const ComposedQuadrature<dim> *c_quad_;
     /// Index of the local point in the composed quadrature.
     unsigned int idx_;
-    /// Holds shift of value computing from permutation (used only for side point accessors)
-    std::array<int, dim> permutation_;
-    /// Helper data member of range method, holds shift between indexes of range and permutation array.
-    unsigned int perm_shift_;
 };
 
 

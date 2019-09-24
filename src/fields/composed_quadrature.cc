@@ -27,38 +27,36 @@ ComposedQuadrature<dim>::ComposedQuadrature()
 {}
 
 template <unsigned int dim>
-BulkSubQuad<dim> ComposedQuadrature<dim>::add_bulk_quad(const Quadrature<dim> &quad)
+BulkSubQuad<dim> ComposedQuadrature<dim>::add_bulk(const Quadrature<dim> &quad)
 {
     ASSERT(bulk_set_.c_quad_==nullptr).error("Multiple initialization of bulk point set!\n");
 
     bulk_set_.c_quad_ = this;
-
-    bulk_set_.point_indices_[0] = local_points_.size();
-    for (auto p : quad.get_points()) local_points_.push_back(p);
-    bulk_set_.point_indices_[1] = local_points_.size();
-
+    for (auto p : quad.get_points()) bulk_set_.point_indices_.push_back( this->add_local_point(p) );
     return bulk_set_;
 }
 
 template <unsigned int dim>
-SideSubQuad<dim> ComposedQuadrature<dim>::add_side_quad(const Quadrature<dim-1> &quad)
+SideSubQuad<dim> ComposedQuadrature<dim>::add_side(const Quadrature<dim-1> &quad)
 {
     ASSERT(side_set_.c_quad_==nullptr).error("Multiple initialization of side point set!\n");
 
     side_set_.c_quad_ = this;
 
-    for (unsigned int i=0; i<dim+1; ++i) {
-        Quadrature<dim> high_dim_q(quad, i, 0); // set correct permutation id
-        side_set_.point_indices_[i] = local_points_.size();
-        for (auto p : high_dim_q.get_points()) local_points_.push_back(p);
+    for (unsigned int j=0; j<RefElement<dim>::n_side_permutations; ++j) {
+        for (unsigned int i=0; i<dim+1; ++i) {
+            Quadrature<dim> high_dim_q(quad, i, j);
+            for (auto p : high_dim_q.get_points()) {
+                side_set_.point_indices_[j].push_back( this->add_local_point(p) );
+            }
+        }
     }
-    side_set_.point_indices_[dim+1] = local_points_.size();
 
     return side_set_;
 }
 
 template <unsigned int dim>
-Range< PointAccessor<dim> > ComposedQuadrature<dim>::bulk_range() const {
+Range< BulkPointAccessor<dim> > ComposedQuadrature<dim>::bulk_range() const {
     return this->bulk_quad().points();
 }
 
@@ -70,8 +68,19 @@ Range< PointAccessor<dim> > ComposedQuadrature<dim>::sides_range() const {
 }*/
 
 template <unsigned int dim>
-Range< PointAccessor<dim> > ComposedQuadrature<dim>::side_range(const Side &side, const unsigned int side_permutations[dim]) const {
-    return this->side_quad().points(side, side_permutations);
+Range< PointAccessor<dim> > ComposedQuadrature<dim>::side_range(const Side &side) const {
+    return this->side_quad().points(side);
+}
+
+template <unsigned int dim>
+unsigned int ComposedQuadrature<dim>::add_local_point(arma::vec::fixed<dim> coords) {
+    // Check if point exists in local points vector.
+	for (unsigned int i=0; i<local_points_.size(); ++i) {
+        if ( arma::norm(coords-local_points_[i], 2) < 4*std::numeric_limits<double>::epsilon() ) return i;
+    }
+	// Add new point if doesn't exist
+	local_points_.push_back(coords);
+    return local_points_.size()-1;
 }
 
 
