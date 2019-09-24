@@ -40,11 +40,12 @@ Range< BulkPointAccessor<dim> > BulkSubQuad<dim>::points() const {
  */
 
 template <unsigned int dim>
-Range< PointAccessor<dim> > SideSubQuad<dim>::points(const Side &side) const {
+Range< SidePointAccessor<dim> > SideSubQuad<dim>::points(const Side &side) const {
 	auto permutation = side.element()->permutation_idx(side.side_idx());
-	auto bgn_it = make_iter<PointAccessor<dim>>( PointAccessor<dim>(c_quad_, this->point_indices_[permutation][side.side_idx()]) );
-	auto end_it = make_iter<PointAccessor<dim>>( PointAccessor<dim>(c_quad_, this->point_indices_[permutation][side.side_idx()+1]) );
-	return Range<PointAccessor<dim>>(bgn_it, end_it);
+	unsigned int n_per_side = point_indices_.size() / (dim+1);
+	auto bgn_it = make_iter<SidePointAccessor<dim>>( SidePointAccessor<dim>(*this, side.side_idx()*n_per_side, permutation) );
+	auto end_it = make_iter<SidePointAccessor<dim>>( SidePointAccessor<dim>(*this, (side.side_idx()+1)*n_per_side, permutation) );
+	return Range<SidePointAccessor<dim>>(bgn_it, end_it);
 }
 
 
@@ -64,17 +65,17 @@ arma::vec3 BulkPointAccessor<dim>::coords()
 
 
 /******************************************************************************
- * Implementation of PointAccessor methods.
+ * Implementation of SidePointAccessor methods.
  */
 
 template <unsigned int dim>
-arma::vec::fixed<dim> PointAccessor<dim>::loc_coords()
+arma::vec::fixed<dim> SidePointAccessor<dim>::loc_coords()
 {
-    return c_quad_->local_points_[ this->idx() ];
+    return c_quad().local_points_[ this->point_set_idx() ];
 }
 
 template <unsigned int dim>
-arma::vec3 PointAccessor<dim>::coords()
+arma::vec3 SidePointAccessor<dim>::coords()
 {}
 
 
@@ -94,6 +95,6 @@ template class BulkPointAccessor<1>;
 template class BulkPointAccessor<2>;
 template class BulkPointAccessor<3>;
 
-template class PointAccessor<1>;
-template class PointAccessor<2>;
-template class PointAccessor<3>;
+template class SidePointAccessor<1>;
+template class SidePointAccessor<2>;
+template class SidePointAccessor<3>;

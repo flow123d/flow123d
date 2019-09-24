@@ -76,7 +76,7 @@ public:
     //Range<PointAccessor<dim>> sides_range() const;
 
     /// Returns range of points for given side and its permutation
-    Range<PointAccessor<dim>> side_range(const Side &side) const;
+    Range<SidePointAccessor<dim>> side_range(const Side &side) const;
 
 private:
     /// Adds coords of local point if point doesn't exist in local_points_ vector, returns its index in vector.
@@ -90,7 +90,7 @@ private:
     friend class BulkSubQuad<dim>;
     friend class SideSubQuad<dim>;
     friend class BulkPointAccessor<dim>;
-    friend class PointAccessor<dim>;
+    friend class SidePointAccessor<dim>;
 
 };
 

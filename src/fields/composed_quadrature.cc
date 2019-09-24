@@ -68,7 +68,7 @@ Range< PointAccessor<dim> > ComposedQuadrature<dim>::sides_range() const {
 }*/
 
 template <unsigned int dim>
-Range< PointAccessor<dim> > ComposedQuadrature<dim>::side_range(const Side &side) const {
+Range< SidePointAccessor<dim> > ComposedQuadrature<dim>::side_range(const Side &side) const {
     return this->side_quad().points(side);
 }
 

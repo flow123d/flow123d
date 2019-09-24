@@ -28,7 +28,7 @@
 class Side;
 template <unsigned int dim> class ComposedQuadrature;
 template <unsigned int dim> class BulkPointAccessor;
-template <unsigned int dim> class PointAccessor;
+template <unsigned int dim> class SidePointAccessor;
 
 
 template <unsigned int dim>
@@ -68,7 +68,7 @@ public:
     }
 
     /// Returns range of side local points for given side and its permutation.
-    Range<PointAccessor<dim>> points(const Side &side) const;
+    Range<SidePointAccessor<dim>> points(const Side &side) const;
 
 private:
     /// Pointer to composed quadrature
@@ -77,6 +77,7 @@ private:
     std::vector< std::vector<int> > point_indices_;
 
     friend class ComposedQuadrature<dim>;
+    friend class SidePointAccessor<dim>;
 };
 
 
@@ -126,24 +127,24 @@ private:
 
 
 template <unsigned int dim>
-class PointAccessor {
+class SidePointAccessor {
 public:
     /// Default constructor
-    PointAccessor()
-    : c_quad_(nullptr), idx_(0) {}
+	SidePointAccessor()
+    : local_point_idx_(0), permutation_(0) {}
 
     /// Constructor
-    PointAccessor(const ComposedQuadrature<dim> *c_quad, unsigned int idx)
-    : c_quad_(c_quad), idx_(idx) {}
+	SidePointAccessor(SideSubQuad<dim> side_points, unsigned int local_point_idx, unsigned int perm)
+    : side_points_(side_points), local_point_idx_(local_point_idx), permutation_(perm) {}
 
     /// Getter of composed quadrature
     inline const ComposedQuadrature<dim> &c_quad() const {
-        return *c_quad_;
+        return *side_points_.c_quad_;
     }
 
     // Index of point within ComposedQuadrature
-    inline unsigned int idx() const {
-        return idx_;
+    inline unsigned int point_set_idx() const {
+        return side_points_.point_indices_[permutation_][local_point_idx_];
     }
 
     // Local coordinates within element
@@ -154,19 +155,21 @@ public:
 
     /// Iterates to next point.
     inline void inc() {
-    	idx_++;
+    	local_point_idx_++;
     }
 
     /// Comparison of accessors.
-    bool operator==(const PointAccessor<dim>& other) {
-    	return (idx_ == other.idx_);
+    bool operator==(const SidePointAccessor<dim>& other) {
+    	return (local_point_idx_ == other.local_point_idx_);
     }
 
 private:
-    /// Pointer to composed quadrature
-    const ComposedQuadrature<dim> *c_quad_;
+    /// Pointer to side point set
+    SideSubQuad<dim> side_points_;
     /// Index of the local point in the composed quadrature.
-    unsigned int idx_;
+    unsigned int local_point_idx_;
+    /// Permutation of nodes on sides (equivalent with \p RefElement::side_permutations)
+    unsigned int permutation_;
 };
 
 
