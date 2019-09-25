@@ -12,7 +12,7 @@
 
 TEST(ComposedQuadratureTest, eval_3d) {
     /// this can be done at initialization of the equation
-	ComposedQuadrature<3> feval;
+	EvalPoints<3> feval;
     Quadrature<3> *q_bulk = new QGauss<3>(2);
     Quadrature<2> *q_side = new QGauss<2>(2);
     BulkSubQuad<3> bulk_points = feval.add_bulk(*q_bulk );

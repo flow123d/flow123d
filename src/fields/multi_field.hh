@@ -55,7 +55,7 @@ using namespace std;
 class Mesh;
 class Observe;
 class OutputTime;
-template <unsigned int dim> class ComposedQuadrature;
+template <unsigned int dim> class EvalPoints;
 
 
 namespace IT=Input::Type;
@@ -250,9 +250,9 @@ public:
 
 private:
     /// Implementation of virtual methods
-    void init_value_cache_1(const ComposedQuadrature<1> &) override;
-    void init_value_cache_2(const ComposedQuadrature<2> &) override;
-    void init_value_cache_3(const ComposedQuadrature<3> &) override;
+    void init_value_cache_1(const EvalPoints<1> &) override;
+    void init_value_cache_2(const EvalPoints<2> &) override;
+    void init_value_cache_3(const EvalPoints<3> &) override;
 
     /// Subfields (items) of MultiField
     std::vector< SubFieldType > sub_fields_;

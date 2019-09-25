@@ -34,14 +34,12 @@ template <int spacedim> class ElementAccessor;
 
 /**
  * Class holds local coordinations of evaluating points (bulk and sides).
- *
- * TODO: rename to LocalPointSet
  */
 template <unsigned int dim>
-class ComposedQuadrature {
+class EvalPoints {
 public:
     /// Constructor
-	ComposedQuadrature();
+	EvalPoints();
 
 	/// Getter for bulk sub quadrature.
 	inline BulkSubQuad<dim> bulk_quad() const {
@@ -62,7 +60,7 @@ public:
 
     /**
      * Registers point set from quadrature.
-     * Returns an object referencing to the ComposedQuadrature and list of its points.
+     * Returns an object referencing to the EvalPoints and list of its points.
      */
 	BulkSubQuad<dim> add_bulk(const Quadrature<dim> &);
 

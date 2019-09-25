@@ -94,7 +94,7 @@ void FieldCommon::mark_input_times(const TimeGovernor &tg) {
 
 
 template<unsigned int dim>
-void FieldCommon::init_value_cache(const ComposedQuadrature<dim> &c_quad) {
+void FieldCommon::init_value_cache(const EvalPoints<dim> &c_quad) {
     switch (dim) {
     case 1:
         this->init_value_cache_1(c_quad);

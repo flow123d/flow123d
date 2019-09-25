@@ -23,11 +23,11 @@
 
 
 template <unsigned int dim>
-ComposedQuadrature<dim>::ComposedQuadrature()
+EvalPoints<dim>::EvalPoints()
 {}
 
 template <unsigned int dim>
-BulkSubQuad<dim> ComposedQuadrature<dim>::add_bulk(const Quadrature<dim> &quad)
+BulkSubQuad<dim> EvalPoints<dim>::add_bulk(const Quadrature<dim> &quad)
 {
     ASSERT(bulk_set_.c_quad_==nullptr).error("Multiple initialization of bulk point set!\n");
 
@@ -37,7 +37,7 @@ BulkSubQuad<dim> ComposedQuadrature<dim>::add_bulk(const Quadrature<dim> &quad)
 }
 
 template <unsigned int dim>
-SideSubQuad<dim> ComposedQuadrature<dim>::add_side(const Quadrature<dim-1> &quad)
+SideSubQuad<dim> EvalPoints<dim>::add_side(const Quadrature<dim-1> &quad)
 {
     ASSERT(side_set_.c_quad_==nullptr).error("Multiple initialization of side point set!\n");
 
@@ -56,24 +56,24 @@ SideSubQuad<dim> ComposedQuadrature<dim>::add_side(const Quadrature<dim-1> &quad
 }
 
 template <unsigned int dim>
-Range< BulkPointAccessor<dim> > ComposedQuadrature<dim>::bulk_range() const {
+Range< BulkPointAccessor<dim> > EvalPoints<dim>::bulk_range() const {
     return this->bulk_quad().points();
 }
 
 /*template <unsigned int dim>
-Range< PointAccessor<dim> > ComposedQuadrature<dim>::sides_range() const {
+Range< PointAccessor<dim> > EvalPoints<dim>::sides_range() const {
     auto bgn_it = make_iter<PointAccessor<dim>>( PointAccessor<dim>(this->side_quad().c_quad_, side_set_.point_indices_[0]) );
     auto end_it = make_iter<PointAccessor<dim>>( PointAccessor<dim>(this->side_quad().c_quad_, side_set_.point_indices_[dim+1]) );
     return Range<PointAccessor<dim>>(bgn_it, end_it);
 }*/
 
 template <unsigned int dim>
-Range< SidePointAccessor<dim> > ComposedQuadrature<dim>::side_range(const Side &side) const {
+Range< SidePointAccessor<dim> > EvalPoints<dim>::side_range(const Side &side) const {
     return this->side_quad().points(side);
 }
 
 template <unsigned int dim>
-unsigned int ComposedQuadrature<dim>::add_local_point(arma::vec::fixed<dim> coords) {
+unsigned int EvalPoints<dim>::add_local_point(arma::vec::fixed<dim> coords) {
     // Check if point exists in local points vector.
 	for (unsigned int i=0; i<local_points_.size(); ++i) {
         if ( arma::norm(coords-local_points_[i], 2) < 4*std::numeric_limits<double>::epsilon() ) return i;
@@ -84,6 +84,6 @@ unsigned int ComposedQuadrature<dim>::add_local_point(arma::vec::fixed<dim> coor
 }
 
 
-template class ComposedQuadrature<1>;
-template class ComposedQuadrature<2>;
-template class ComposedQuadrature<3>;
+template class EvalPoints<1>;
+template class EvalPoints<2>;
+template class EvalPoints<3>;

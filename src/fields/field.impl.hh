@@ -686,21 +686,21 @@ std::shared_ptr< FieldFE<spacedim, Value> > Field<spacedim,Value>::get_field_fe(
 
 
 template<int spacedim, class Value>
-void Field<spacedim,Value>::init_value_cache_1(const ComposedQuadrature<1> &c_quad) {
+void Field<spacedim,Value>::init_value_cache_1(const EvalPoints<1> &c_quad) {
     unsigned int qsize = c_quad.size();
     r_values_[0].resize(qsize);
 }
 
 
 template<int spacedim, class Value>
-void Field<spacedim,Value>::init_value_cache_2(const ComposedQuadrature<2> &c_quad) {
+void Field<spacedim,Value>::init_value_cache_2(const EvalPoints<2> &c_quad) {
 	unsigned int qsize = c_quad.size();
 	r_values_[1].resize(qsize);
 }
 
 
 template<int spacedim, class Value>
-void Field<spacedim,Value>::init_value_cache_3(const ComposedQuadrature<3> &c_quad) {
+void Field<spacedim,Value>::init_value_cache_3(const EvalPoints<3> &c_quad) {
 	unsigned int qsize = c_quad.size();
 	r_values_[2].resize(qsize);
 }

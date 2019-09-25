@@ -47,7 +47,7 @@
 
 class Mesh;
 class Observe;
-template <unsigned int dim> class ComposedQuadrature;
+template <unsigned int dim> class EvalPoints;
 
 
 using namespace std;
@@ -448,7 +448,7 @@ public:
      * Specialize for dim=1,2,3 using pure virtual functions below.
      */
     template<unsigned int dim>
-    void init_value_cache(const ComposedQuadrature<dim> &c_quad);
+    void init_value_cache(const EvalPoints<dim> &c_quad);
 
     /// Calculates values at given element and points.
     /// The values are stored in Field's internal cache.
@@ -489,9 +489,9 @@ protected:
         last_time_ = -numeric_limits<double>::infinity();
     }
 
-    virtual void init_value_cache_1(const ComposedQuadrature<1> &) = 0;
-    virtual void init_value_cache_2(const ComposedQuadrature<2> &) = 0;
-    virtual void init_value_cache_3(const ComposedQuadrature<3> &) = 0;
+    virtual void init_value_cache_1(const EvalPoints<1> &) = 0;
+    virtual void init_value_cache_2(const EvalPoints<2> &) = 0;
+    virtual void init_value_cache_3(const EvalPoints<3> &) = 0;
 
     /**
      * Setters for essential field properties.

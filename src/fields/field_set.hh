@@ -239,7 +239,7 @@ public:
      * @param c_quad   Composed quadrature object of given dimension.
      */
     template<unsigned int dim>
-    void init_value_cache(const ComposedQuadrature<dim> &c_quad) {
+    void init_value_cache(const EvalPoints<dim> &c_quad) {
         for (FieldCommon *field : field_list) field->init_value_cache(c_quad);
     }
 

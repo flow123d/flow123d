@@ -320,21 +320,21 @@ void MultiField<spacedim,Value>::set_input_list(const Input::Array &list, const 
 
 
 template<int spacedim, class Value>
-void MultiField<spacedim,Value>::init_value_cache_1(const ComposedQuadrature<1> &c_quad) {
+void MultiField<spacedim,Value>::init_value_cache_1(const EvalPoints<1> &c_quad) {
     for(unsigned int i_comp=0; i_comp < this->shared_->comp_names_.size(); i_comp++)
         sub_fields_[i_comp].init_value_cache_1(c_quad);
 }
 
 
 template<int spacedim, class Value>
-void MultiField<spacedim,Value>::init_value_cache_2(const ComposedQuadrature<2> &c_quad) {
+void MultiField<spacedim,Value>::init_value_cache_2(const EvalPoints<2> &c_quad) {
     for(unsigned int i_comp=0; i_comp < this->shared_->comp_names_.size(); i_comp++)
         sub_fields_[i_comp].init_value_cache_2(c_quad);
 }
 
 
 template<int spacedim, class Value>
-void MultiField<spacedim,Value>::init_value_cache_3(const ComposedQuadrature<3> &c_quad) {
+void MultiField<spacedim,Value>::init_value_cache_3(const EvalPoints<3> &c_quad) {
     for(unsigned int i_comp=0; i_comp < this->shared_->comp_names_.size(); i_comp++)
         sub_fields_[i_comp].init_value_cache_3(c_quad);
 }
