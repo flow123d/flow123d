@@ -26,7 +26,7 @@
 
 
 class Side;
-template <unsigned int dim> class ComposedQuadrature;
+template <unsigned int dim> class EvalPoints;
 template <unsigned int dim> class BulkPointAccessor;
 template <unsigned int dim> class SidePointAccessor;
 
@@ -38,7 +38,7 @@ public:
 	BulkSubQuad() : c_quad_(nullptr) {}
 
     /// Getter of composed quadrature
-    inline const ComposedQuadrature<dim> &c_quad() const {
+    inline const EvalPoints<dim> &c_quad() const {
         return *c_quad_;
     }
 
@@ -47,11 +47,11 @@ public:
 
 private:
     /// Pointer to composed quadrature
-    const ComposedQuadrature<dim> *c_quad_;
+    const EvalPoints<dim> *c_quad_;
     /// Indices into full set of local indices in the composed quadrature.
     std::vector<int> point_indices_;
 
-    friend class ComposedQuadrature<dim>;
+    friend class EvalPoints<dim>;
     friend class BulkPointAccessor<dim>;
 };
 
@@ -63,7 +63,7 @@ public:
 	SideSubQuad() : c_quad_(nullptr), point_indices_(RefElement<dim>::n_side_permutations) {}
 
     /// Getter of composed quadrature
-    inline const ComposedQuadrature<dim> &c_quad() const {
+    inline const EvalPoints<dim> &c_quad() const {
         return *c_quad_;
     }
 
@@ -72,11 +72,11 @@ public:
 
 private:
     /// Pointer to composed quadrature
-    const ComposedQuadrature<dim> *c_quad_;
+    const EvalPoints<dim> *c_quad_;
     /// Indices into full set of local indices in the composed quadrature, for every possible permuation.
     std::vector< std::vector<int> > point_indices_;
 
-    friend class ComposedQuadrature<dim>;
+    friend class EvalPoints<dim>;
     friend class SidePointAccessor<dim>;
 };
 
@@ -93,11 +93,11 @@ public:
     : bulk_points_(bulk_points), local_point_idx_(loc_point_idx) {}
 
     /// Getter of composed quadrature
-    inline const ComposedQuadrature<dim> &c_quad() const {
+    inline const EvalPoints<dim> &c_quad() const {
         return *bulk_points_.c_quad_;
     }
 
-    // Index of point within ComposedQuadrature
+    // Index of point within EvalPoints
     inline unsigned int point_set_idx() const {
         return bulk_points_.point_indices_[local_point_idx_];
     }
@@ -138,11 +138,11 @@ public:
     : side_points_(side_points), local_point_idx_(local_point_idx), permutation_(perm) {}
 
     /// Getter of composed quadrature
-    inline const ComposedQuadrature<dim> &c_quad() const {
+    inline const EvalPoints<dim> &c_quad() const {
         return *side_points_.c_quad_;
     }
 
-    // Index of point within ComposedQuadrature
+    // Index of point within EvalPoints
     inline unsigned int point_set_idx() const {
         return side_points_.point_indices_[permutation_][local_point_idx_];
     }
