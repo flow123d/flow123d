@@ -56,23 +56,6 @@ SideSubQuad<dim> EvalPoints<dim>::add_side(const Quadrature<dim-1> &quad)
 }
 
 template <unsigned int dim>
-Range< BulkPointAccessor<dim> > EvalPoints<dim>::bulk_range() const {
-    return this->bulk_quad().points();
-}
-
-/*template <unsigned int dim>
-Range< PointAccessor<dim> > EvalPoints<dim>::sides_range() const {
-    auto bgn_it = make_iter<PointAccessor<dim>>( PointAccessor<dim>(this->side_quad().c_quad_, side_set_.point_indices_[0]) );
-    auto end_it = make_iter<PointAccessor<dim>>( PointAccessor<dim>(this->side_quad().c_quad_, side_set_.point_indices_[dim+1]) );
-    return Range<PointAccessor<dim>>(bgn_it, end_it);
-}*/
-
-template <unsigned int dim>
-Range< SidePointAccessor<dim> > EvalPoints<dim>::side_range(const Side &side) const {
-    return this->side_quad().points(side);
-}
-
-template <unsigned int dim>
 unsigned int EvalPoints<dim>::add_local_point(arma::vec::fixed<dim> coords) {
     // Check if point exists in local points vector.
 	for (unsigned int i=0; i<local_points_.size(); ++i) {

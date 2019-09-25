@@ -42,16 +42,16 @@ public:
 	EvalPoints();
 
 	/// Getter for bulk sub quadrature.
-	inline BulkSubQuad<dim> bulk_quad() const {
-	    ASSERT(bulk_set_.c_quad_ != nullptr).error("Uninitialized bulk point set!\n");
-		return bulk_set_;
-	}
+//    inline BulkSubQuad<dim> bulk_quad() const {
+//        ASSERT(bulk_set_.c_quad_ != nullptr).error("Uninitialized bulk point set!\n");
+//        return bulk_set_;
+//    }
 
 	/// Getter for side sub quadrature.
-	inline SideSubQuad<dim> side_quad() const {
-	    ASSERT(side_set_.c_quad_ != nullptr).error("Uninitialized side point set!\n");
-		return side_set_;
-	}
+//    inline SideSubQuad<dim> side_quad() const {
+//        ASSERT(side_set_.c_quad_ != nullptr).error("Uninitialized side point set!\n");
+//        return side_set_;
+//    }
 
     /// Return size of composed quadrature (number of points).
     inline unsigned int size() const {
@@ -66,15 +66,6 @@ public:
 
     /// The same as add_bulk but for points on side.
 	SideSubQuad<dim> add_side(const Quadrature<dim-1> &);
-
-    /// Returns range loop over all bulk points
-    Range<BulkPointAccessor<dim>> bulk_range() const;
-
-    /// Returns range loop over all side points
-    //Range<PointAccessor<dim>> sides_range() const;
-
-    /// Returns range of points for given side and its permutation
-    Range<SidePointAccessor<dim>> side_range(const Side &side) const;
 
 private:
     /// Adds coords of local point if point doesn't exist in local_points_ vector, returns its index in vector.
