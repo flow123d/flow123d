@@ -32,7 +32,7 @@ Usage of the field caches consists of:
     For every merged quadrature we obtain the EvalSubset. 
 2. Create a `FieldSet` one for every qudrature of the fields involved in that integral. 
 3. Initialize the fields in the integral's field set: Allocate the cache space in fields and mark 
-the local points used in integral's quadrature. This is done through the call of `FieldSet::cache_allocate<dim>(EvalSubset, Mapping<dim>)
+the local points used in integral's quadrature. This is done through the call of `FieldSet::cache_allocate<dim>(EvalSubset, Mapping<dim>)`
 4. In the main assembly loop the element cache prefetching can be done. This is organized by 
 `ElementCacheMap` this knows which elements are cached.
 5. Assembly on a single element:
@@ -46,7 +46,7 @@ the local points used in integral's quadrature. This is done through the call of
 **EvalPoints**
 The class to store set of common local points. 
 Two operations:
-1. Add a point set, return their indices in the table. Eliminate duplicate elements 
+1. Add a point set, return their indices in the table. Eliminate duplicate points 
     with prescribed tolerance.
     In fact, we probably need to use two distinguised methods:
 	`EvalSubset add_subset<dim>(Quadrature<dim> bulk_quadrature)`
@@ -56,7 +56,7 @@ Two operations:
 **EvalSubset**
 The object containing array of indices into local point set, there is only single array for the 
 bulk quadrature, but (n_sides x n_permutations) for a side quadrature. We shall try to keep this 
-common for the bulk and side quadratures and non-templated. It however keep dimension as the `int` data member. In the debug mode we should keep a pointer to the EvalPoints, pass this as part of the EvalPoint and check it when accessing the field value cache.
+common for the bulk and side quadratures and non-templated. It however keeps dimension as the `int` data member. In the debug mode we should keep a pointer to the EvalPoints, pass this as part of the EvalPoint and check it when accessing the field value cache.
 
 **Example**
 ```
@@ -80,7 +80,7 @@ This use existing field sets to simplify group operations on those.
 ```
 
 ### 3. Initialization - cache allocation
-`FieldSet::cache_allocate`` just calls the same method for every `FieldCommon` in the set.
+`FieldSet::cache_allocate` just calls the same method for every `FieldCommon` in the set.
 
 ```
 FieldCommon::cache_allocate(vector<EvalSubset> sub_quads, Mixed<Mapping> mapping)
@@ -107,7 +107,7 @@ TODO:
 
 ### 5.2 Map element to the cache element index
 ```
-void Assembly::mass_assebmly(DHCellAccessor cell) {
+void Assembly::mass_assembly(DHCellAccessor cell) {
     // this can possibly be called also in the generic assembly loop as 
     // the cache prefetching
     // assume that ngh_el, is a neigbour element
@@ -147,7 +147,7 @@ void Assembly::mass_assebmly(DHCellAccessor cell) {
 ```
 - `Field<spacedim, Value>::value(EvalElement eval_el, EvalPoint q_point)`
   returns Value, i.e. some FieldValue<..>. The implementation should do something like:
-  ```return this->value_cache[evel_el.dim()].value(eval_el.cache_idx(), q_point.cache_idx())```
+  ```return this->value_cache[eval_el.dim()].value(eval_el.cache_idx(), q_point.cache_idx())```
   Where `value_cache` is the instance of `FieldValueCache`.
 - `this->mass_eval` and `this->side_eval` are instances of `EvalSubset`.
 
@@ -155,7 +155,7 @@ void Assembly::mass_assebmly(DHCellAccessor cell) {
 
 
 **Further thoughts**
-- Extension to interdependent fields: If a field depends on the other field, if recursively informs the other field about quadrature.
+- Extension to interdependent fields: If a field depends on the other field, it recursively informs the other field about quadrature.
 
 
 
