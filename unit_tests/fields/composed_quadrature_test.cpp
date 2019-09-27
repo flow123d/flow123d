@@ -15,21 +15,9 @@ TEST(ComposedQuadratureTest, eval_3d) {
 	EvalPoints<3> feval;
     Quadrature<3> *q_bulk = new QGauss<3>(2);
     Quadrature<2> *q_side = new QGauss<2>(2);
-    BulkSubQuad<3> bulk_points = feval.add_bulk(*q_bulk );
-    SideSubQuad<3> side_points = feval.add_side(*q_side );
-    /// this is part of assembly process
-    //for (auto cell : dh->own_range()) {
-    //    feval.reinit(cell.elm());
-        for (auto p : bulk_points.points()) {
-        	std::cout << "--- bulk point:" << std::endl << p.loc_coords();
-            //double bulk_expr = cross_section.get_value(p) * conductivity.get_value(p);
-        }
-        /*for (Side side; side.side_idx()<4; side.inc()) {
-            for ( auto p : side_points.points(side) ) {
-            	std::cout << "--- side point " << side.side_idx() << std::endl << p.loc_coords();
-                //double side_expr = cross_section.get_value(p) * sigma.get_value(p);
-            }
-        }*/
-    //}
+    EvalSubset<3> bulk_points = feval.add_bulk(*q_bulk );
+    EvalSubset<3> side_points = feval.add_side(*q_side );
+    bulk_points.print_bulk_points();
+    side_points.print_side_points(0);
   	std::cout << "----------- end \n";
 }
