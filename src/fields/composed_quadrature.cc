@@ -19,6 +19,7 @@
 #include "fields/composed_quadrature.hh"
 #include "fields/point_sets.hh"
 #include "quadrature/quadrature.hh"
+#include "mesh/ref_element.hh"
 #include <memory>
 
 
@@ -27,21 +28,24 @@ EvalPoints<dim>::EvalPoints()
 {}
 
 template <unsigned int dim>
-BulkSubQuad<dim> EvalPoints<dim>::add_bulk(const Quadrature<dim> &quad)
+EvalSubset<dim> EvalPoints<dim>::add_bulk(const Quadrature<dim> &quad)
 {
-    ASSERT(bulk_set_.c_quad_==nullptr).error("Multiple initialization of bulk point set!\n");
+    ASSERT(bulk_set_.eval_points_==nullptr).error("Multiple initialization of bulk point set!\n");
 
-    bulk_set_.c_quad_ = this;
-    for (auto p : quad.get_points()) bulk_set_.point_indices_.push_back( this->add_local_point(p) );
+    bulk_set_.eval_points_ = this;
+    bulk_set_.point_indices_.resize(1);
+
+    for (auto p : quad.get_points()) bulk_set_.point_indices_[0].push_back( this->add_local_point(p) );
     return bulk_set_;
 }
 
 template <unsigned int dim>
-SideSubQuad<dim> EvalPoints<dim>::add_side(const Quadrature<dim-1> &quad)
+EvalSubset<dim> EvalPoints<dim>::add_side(const Quadrature<dim-1> &quad)
 {
-    ASSERT(side_set_.c_quad_==nullptr).error("Multiple initialization of side point set!\n");
+    ASSERT(side_set_.eval_points_==nullptr).error("Multiple initialization of side point set!\n");
 
-    side_set_.c_quad_ = this;
+    side_set_.eval_points_ = this;
+    side_set_.point_indices_.resize(RefElement<dim>::n_side_permutations);
 
     for (unsigned int j=0; j<RefElement<dim>::n_side_permutations; ++j) {
         for (unsigned int i=0; i<dim+1; ++i) {

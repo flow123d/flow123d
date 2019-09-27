@@ -41,18 +41,6 @@ public:
     /// Constructor
 	EvalPoints();
 
-	/// Getter for bulk sub quadrature.
-//    inline BulkSubQuad<dim> bulk_quad() const {
-//        ASSERT(bulk_set_.c_quad_ != nullptr).error("Uninitialized bulk point set!\n");
-//        return bulk_set_;
-//    }
-
-	/// Getter for side sub quadrature.
-//    inline SideSubQuad<dim> side_quad() const {
-//        ASSERT(side_set_.c_quad_ != nullptr).error("Uninitialized side point set!\n");
-//        return side_set_;
-//    }
-
     /// Return size of composed quadrature (number of points).
     inline unsigned int size() const {
         return local_points_.size();
@@ -62,24 +50,21 @@ public:
      * Registers point set from quadrature.
      * Returns an object referencing to the EvalPoints and list of its points.
      */
-	BulkSubQuad<dim> add_bulk(const Quadrature<dim> &);
+    EvalSubset<dim> add_bulk(const Quadrature<dim> &);
 
-    /// The same as add_bulk but for points on side.
-	SideSubQuad<dim> add_side(const Quadrature<dim-1> &);
+    /// The same as add_bulk but for points on sides.
+	EvalSubset<dim> add_side(const Quadrature<dim-1> &);
 
 private:
     /// Adds coords of local point if point doesn't exist in local_points_ vector, returns its index in vector.
     unsigned int add_local_point(arma::vec::fixed<dim> coords);
 
-    BulkSubQuad<dim> bulk_set_;  ///< Handler to bulk local points.
-    SideSubQuad<dim> side_set_;  ///< Handler to sides local points.
+    EvalSubset<dim> bulk_set_;  ///< Handler to bulk local points.
+    EvalSubset<dim> side_set_;  ///< Handler to sides local points.
 
     std::vector<arma::vec::fixed<dim>> local_points_;  ///< Local coords of points vector
 
-    friend class BulkSubQuad<dim>;
-    friend class SideSubQuad<dim>;
-    friend class BulkPointAccessor<dim>;
-    friend class SidePointAccessor<dim>;
+    friend class EvalSubset<dim>;
 
 };
 
