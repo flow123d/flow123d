@@ -84,9 +84,9 @@ This use existing field sets to simplify group operations on those.
 `FieldSet::cache_allocate` just calls the same method for every `FieldCommon` in the set.
 
 ```
-FieldCommon::cache_allocate(vector<EvalSubset> sub_quads, Mixed<Mapping> mapping)
+FieldCommon::cache_allocate(vector<EvalSubset> sub_quads)
 ```
-This is a virtual method with implementation in Field<...> which stores the mapping in the field and calls  `FieldValueCache<Value>(sub_quads)`. The Field<> have array of these classes, one instance for every dimension so the class should not be templated (by dimension)
+This is a virtual method with implementation in Field<...> which stores the mapping in the field and calls  `FieldValueCache<Value>(sub_quads)`. The Field<> have array of these classes, one instance for every dimension so the class should not be templated (by dimension). The only field algorithm that needs absolute coordinates is FieldFormula. We will pass the whole EqData fieldset to it in order to allow more complex dependencies. One of the fields will be 'Coordinate' or 'Position' field which just compute absolute coordinates of the local points (using the mapping).
 
 **FieldValueCache**
 In principle this is just a table of items of type Value with dimensions: n_cached_elements x n_evaluation_points. Other properties to keep:
