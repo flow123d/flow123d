@@ -93,24 +93,6 @@ void FieldCommon::mark_input_times(const TimeGovernor &tg) {
 
 
 
-template<unsigned int dim>
-void FieldCommon::init_value_cache(const EvalPoints<dim> &c_quad) {
-    switch (dim) {
-    case 1:
-        this->init_value_cache_1(c_quad);
-        break;
-    case 2:
-        this->init_value_cache_2(c_quad);
-        break;
-    case 3:
-        this->init_value_cache_3(c_quad);
-        break;
-    default:
-        ASSERT_DBG(false).error("Invalid dimension of Composed quadrature!\n");
-    }
-}
-
-
 bool FieldCommon::print_message_table(ostream& stream, std::string equation_name) {
 	if (FieldCommon::messages_data_.size() == 0) return false;
 

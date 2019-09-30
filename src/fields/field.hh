@@ -54,7 +54,6 @@ class Mesh;
 class Observe;
 template <int spacedim> class ElementAccessor;
 template <int spacedim, class Value> class FieldFE;
-template <unsigned int dim> class EvalPoints;
 
 using namespace std;
 namespace IT=Input::Type;
@@ -333,11 +332,6 @@ protected:
      */
     std::shared_ptr< FieldFE<spacedim, Value> > get_field_fe();
 
-    /// Implementation of virtual methods
-    void init_value_cache_1(const EvalPoints<1> &) override;
-    void init_value_cache_2(const EvalPoints<2> &) override;
-    void init_value_cache_3(const EvalPoints<3> &) override;
-
     /**************** Shared data **************/
 
     /// Pair: time, pointer to FieldBase instance
@@ -373,13 +367,6 @@ protected:
     std::vector< FieldBasePtr > region_fields_;
 
     std::vector<std::shared_ptr<FactoryBase> >  factories_;
-
-    /**
-     * Data cache of precomputed Field values.
-     *
-     * Holds vectors for every dimension (1,2,3).
-     */
-    std::vector< std::vector< typename Value::return_type > > r_values_;
 
 
 

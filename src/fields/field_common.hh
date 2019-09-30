@@ -47,7 +47,6 @@
 
 class Mesh;
 class Observe;
-template <unsigned int dim> class EvalPoints;
 
 
 using namespace std;
@@ -443,18 +442,6 @@ public:
 
 
     /**
-     * Allocation of the Field's cache.
-     *
-     * Specialize for dim=1,2,3 using pure virtual functions below.
-     */
-    template<unsigned int dim>
-    void init_value_cache(const EvalPoints<dim> &c_quad);
-
-    /// Calculates values at given element and points.
-    /// The values are stored in Field's internal cache.
-    //virtual void reinit_value_cache(ElementAccessor<3>, shared_ptr<Mapping<3>>) = 0;
-
-    /**
      * Print stored messages to table.
      *
      * Return true if messages_data_ vector is nonempty and clear its.
@@ -488,10 +475,6 @@ protected:
     {
         last_time_ = -numeric_limits<double>::infinity();
     }
-
-    virtual void init_value_cache_1(const EvalPoints<1> &) = 0;
-    virtual void init_value_cache_2(const EvalPoints<2> &) = 0;
-    virtual void init_value_cache_3(const EvalPoints<3> &) = 0;
 
     /**
      * Setters for essential field properties.
