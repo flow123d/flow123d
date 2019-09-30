@@ -66,8 +66,8 @@ class Assembly<dim> {
 	EvalSubset face_eval;
 	EvalSubset stiffness_eval;
 	....
-	this->mass_eval = this->ep.add_bulk(Gauss<dim>(order));
-	this->face_eval = this->ep.add_side(Gauss<dim-1>(order));
+	this->mass_eval = this->ep.add_subset(Gauss<dim>(order));
+	this->face_eval = this->ep.add_subset(SideQuadrature(Gauss<dim-1>(order)));
         ...
 ```
 
@@ -103,7 +103,7 @@ In principle this is just a table of items of type Value with dimensions: n_cach
 } // end of Assembly<dim>
 ```
 TODO:
-- we must use lazy cache allocation since the information is added to the fields in different allocation calls and with different dimensions. 
+- FieldValueCache allocates its table at the first call, but the mask for active local points is added from more calls
 
 ### 5.2 Map element to the cache element index
 ```
@@ -156,6 +156,8 @@ void Assembly::mass_assembly(DHCellAccessor cell) {
 
 **Further thoughts**
 - Extension to interdependent fields: If a field depends on the other field, it recursively informs the other field about quadrature.
+
+- We introduce fields for absolute cooridinates X, Y, Z  as well as for the depth, this is related to the generalization of the FieldFormula, that can use also other fields in the formulas.
 
 
 
