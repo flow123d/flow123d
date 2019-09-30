@@ -35,7 +35,6 @@ template <int spacedim> class ElementAccessor;
 /**
  * Class holds local coordinations of evaluating points (bulk and sides).
  */
-template <unsigned int dim>
 class EvalPoints {
 public:
     /// Constructor
@@ -46,25 +45,28 @@ public:
         return local_points_.size();
     }
 
+    /// Return local coordinates of given local point.
+    inline arma::vec local_point(unsigned int local_point_idx) const {
+    	ASSERT_LT_DBG(local_point_idx, local_points_.size());
+        return local_points_[local_point_idx];
+    }
+
     /**
      * Registers point set from quadrature.
      * Returns an object referencing to the EvalPoints and list of its points.
      */
-    EvalSubset<dim> add_bulk(const Quadrature<dim> &);
+    template <unsigned int dim>
+    EvalSubset add_bulk(const Quadrature<dim> &);
 
     /// The same as add_bulk but for points on sides.
-	EvalSubset<dim> add_side(const Quadrature<dim-1> &);
+    template <unsigned int dim>
+	EvalSubset add_side(const Quadrature<dim-1> &);
 
 private:
     /// Adds coords of local point if point doesn't exist in local_points_ vector, returns its index in vector.
-    unsigned int add_local_point(arma::vec::fixed<dim> coords);
+    unsigned int add_local_point(arma::vec coords);
 
-    EvalSubset<dim> bulk_set_;  ///< Handler to bulk local points.
-    EvalSubset<dim> side_set_;  ///< Handler to sides local points.
-
-    std::vector<arma::vec::fixed<dim>> local_points_;  ///< Local coords of points vector
-
-    friend class EvalSubset<dim>;
+    std::vector<arma::vec> local_points_;  ///< Local coords of points vector
 
 };
 

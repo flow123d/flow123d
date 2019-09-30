@@ -16,23 +16,30 @@
  * @author  David Flanderka
  */
 
-#include <armadillo>
 #include "fields/point_sets.hh"
 #include "fields/composed_quadrature.hh"
-#include "mesh/side_impl.hh"
-#include "mesh/sides.h"
 
 
 /******************************************************************************
  * Implementation of EvalSubset methods.
  */
+void EvalSubset::print_bulk_points() {
+    std::cout << "Print bulk points:" << std::endl;
+    for (unsigned int i=0; i<this->point_indices_[0].size(); ++i)
+        std::cout << "--- bulk point:" << std::endl << this->eval_points().local_point( this->point_indices_[0][i] );
+}
+
+void EvalSubset::print_side_points(unsigned int permutation) {
+    std::cout << "Print side points with permutation: " << permutation << std::endl;
+    unsigned int point_size = this->point_indices_[permutation].size();
+    unsigned int points_per_side = point_size / (dim+1);
+    for (unsigned int i=0; i<point_size; ++i)
+        std::cout << "--- side point (side " << (i / points_per_side) << ")" << std::endl
+	        << this->eval_points().local_point( this->point_indices_[permutation][i] );
+}
 
 
 
 /******************************************************************************
  * Explicit instantiation of templates
  */
-
-template class EvalSubset<1>;
-template class EvalSubset<2>;
-template class EvalSubset<3>;

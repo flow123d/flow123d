@@ -25,43 +25,34 @@
 
 
 class Side;
-template <unsigned int dim> class EvalPoints;
+class EvalPoints;
 
 
-template <unsigned int dim>
 class EvalSubset {
 public:
     /// Constructor
 	EvalSubset() : eval_points_(nullptr) {}
 
     /// Getter of composed quadrature
-    inline const EvalPoints<dim> &eval_points() const {
+    inline const EvalPoints &eval_points() const {
         return *eval_points_;
     }
 
     /// Temporary method for testing
-    void print_bulk_points() {
-        std::cout << "Print bulk points:" << std::endl;
-        for (unsigned int i=0; i<this->point_indices_[0].size(); ++i)
-        	std::cout << "--- bulk point:" << std::endl << this->eval_points().local_points_[ this->point_indices_[0][i] ];
-    }
+    void print_bulk_points();
 
     /// Temporary method for testing
-    void print_side_points(unsigned int permutation) {
-        std::cout << "Print side points with permutation: " << permutation << std::endl;
-        unsigned int point_size = this->point_indices_[permutation].size();
-        unsigned int points_per_side = point_size / (dim+1);
-        for (unsigned int i=0; i<point_size; ++i)
-        	std::cout << "--- side point (side " << (i / points_per_side) << ")" << std::endl
-			    << this->eval_points().local_points_[ this->point_indices_[permutation][i] ];
-    }
+    void print_side_points(unsigned int permutation);
+
 private:
     /// Pointer to composed quadrature
-    const EvalPoints<dim> *eval_points_;
+    const EvalPoints *eval_points_;
     /// Indices into full set of local indices in the composed quadrature, for every possible permuation.
     std::vector< std::vector<int> > point_indices_;
+    /// Dimension of EvalSubset and appropriate EvalPoints objects
+    unsigned int dim;
 
-    friend class EvalPoints<dim>;
+    friend class EvalPoints;
 };
 
 
