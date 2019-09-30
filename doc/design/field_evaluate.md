@@ -49,8 +49,8 @@ Two operations:
 1. Add a point set, return their indices in the table. Eliminate duplicate points 
     with prescribed tolerance.
     In fact, we probably need to use two distinguised methods:
-	`EvalSubset add_subset<dim>(Quadrature<dim> bulk_quadrature)`
-	`EvalSubset add_subset<dim>(SideQuadrature<dim> side_quadrature)`
+	`EvalSubset add_bulk<dim>(Quadrature<dim> bulk_quadrature)`
+	`EvalSubset add_side<dim>(Quadrature<dim-1> side_quadrature)`
 2. Get point for given index.
 
 **EvalSubset**
@@ -67,8 +67,8 @@ class Assembly<dim> {
 	EvalSubset face_eval;
 	EvalSubset stiffness_eval;
 	....
-	this->mass_eval = this->ep.add_subset(Gauss<dim>(order));
-	this->face_eval = this->ep.add_subset(SideQuadrature(Gauss<dim-1>(order)));
+	this->mass_eval = this->ep.add_bulk(Gauss<dim>(order));
+	this->face_eval = this->ep.add_side(Gauss<dim-1>(order));
         ...
 ```
 
@@ -84,67 +84,87 @@ This use existing field sets to simplify group operations on those.
 `FieldSet::cache_allocate` just calls the same method for every `FieldCommon` in the set.
 
 ```
-FieldCommon::cache_allocate(EvalSubset sub_quads)
+FieldCommon::cache_allocate(EvalSubset sub_quad)
 ```
-This is a virtual method with implementation in Field<...> which allocates `FieldValueCache<Value>(sub_quads.n_eval_points())` during the first call and mark the used local points `FieldValueCache<Value>(sub_quads.n_eval_points())` during the first call and mark the used local points `. The Field<> have array of these classes, one instance for every dimension so the class should not be templated (by dimension). The only field algorithm that needs absolute coordinates is FieldFormula. We will pass the whole EqData fieldset to it in order to allow more complex dependencies. One of the fields will be 'Coordinate' or 'Position' field which just compute absolute coordinates of the local points (using the mapping).. The Field<> have array of these classes, one instance for every dimension so the class should not be templated (by dimension). The only field algorithm that needs absolute coordinates is FieldFormula. We will pass the whole EqData fieldset to it in order to allow more complex dependencies. One of the fields will be 'Coordinate' or 'Position' field which just compute absolute coordinates of the local points (using the mapping).
+This is a virtual method with implementation in Field<...> which allocates `FieldValueCache<Value>(sub_quad.eval_points())` during the first call and mark the used local points `FieldValueCache<Value>::mark_used(sub_quad)`. 
+
+The Field<> have array of these classes, one instance for every dimension so the class should not be templated (by dimension). The only field algorithm that needs absolute coordinates is FieldFormula. We will pass the whole EqData fieldset to it in order to allow more complex dependencies. One of the fields will be 'Coordinate' or 'Position' field which just compute absolute coordinates of the local points (using the mapping). We will pass the whole EqData fieldset to it in order to allow more complex dependencies. One of the fields will be 'Coordinate' or 'Position' field which just compute absolute coordinates of the local points (using the mapping).
 
 **FieldValueCache**
 In principle this is just a table of items of type Value with dimensions: n_cached_elements x n_evaluation_points. Other properties to keep:
 - reference to the EvalPoints instance (therefore it should not be dim templated either)
 - dimension (probably just for checks)
 - mask which points (of the EvalPoints) are used in passed `EvalSubset` objects, only values in these points has to be evaluated.
-- allocation informations are just collected, actual allocation is performed during first update call
-  alternatively we can introduce explicit function call to do that.
+
 
 **Example**
 ```
     // still in class Assembly<dim> definition
-   this->mass_fields.cache_allocate(this->mass_eval, this->mapping);
-   this->side_fields.cache_allocate(this->side_eval, this->mapping);
+   this->mass_fields.cache_allocate(this->mass_eval, );
+   this->side_fields.cache_allocate(this->side_eval);
 } // end of Assembly<dim>
 ```
 TODO:
 - FieldValueCache allocates its table at the first call, but the mask for active local points is added from more calls
 
-### 5.2 Map element to the cache element index
+### 5.2 ElementCacheMap
+This class synchronize the cached elements between (all) fields of single equation. It provides mapping from elements to the cache index and list of elements to cache. This have overloaded evaluation operator, which returns the index in the cache for the given element (or element index). The last cache line is overwritten if the index is not in the cache.
+The implementation use: table cache_idx -> el_idx, hash mapping el_idx -> cache_idx, list of cache lines that schould be updated.
 ```
 void Assembly::mass_assembly(DHCellAccessor cell) {
-    // this can possibly be called also in the generic assembly loop as 
-    // the cache prefetching
-    // assume that ngh_el, is a neigbour element
-    
-    // map used element into element cache
-    el_cache = this->element_cache_map(cell.element());
-    ngh_el_cache = this->element_cache_map(ngh_el.element());
+    // map the element to its cache line
+    el_cache = this->element_cache_map(cell.element());    
 
+    // More elements can be cached in the generic assembly loop as 
+    // the cache prefetching.
+    
 ```
+Proposed interface:
+
+`int ElementCacheMap::operator ()(cell.element())`
+Maps element to its cache line, throuws if it is not in the cache.
+
+`int ElementCacheMap::add(cell.element())`
+Add an element to the cache (if not presented), replace the oldes cache line.
+
+`vector<int> added_elements;`
+Public vector of cache lines to update. Indices appended by the `add` method. FieldSet::cache_update clean the list
+after all fields are updated.
+
+
 ### 5.1 (and 4.) Cache Update
 ```
-    // just call cache_update for the fields in the field sets
-    this->mass_fields.cache_update(this->element_cache_map);
-    this->face_fields.cache_update(this->element_cache_map);
+    // Call cache_update for the fields in the field sets
+    // This can also be done in the generic loop.
+    this->eq_data.cache_update(this->element_cache_map);    
+    
+    // Possible update of the base function values.
+    presssure_field_fe.fe_values.update(cell);
 ```
 ### 5.3 Cache read
 ```
     // Bulk integral, no sides, no permutations.
-    for(auto q_point: this->mass_eval.points(el_cache)) {
+    for(BulkPoint q_point: this->mass_eval.points(el_cache)) {
         // Extracting the cached values.
-        double cs = cross_section(q_point);
-        double ngh_cs = cross_section.value(ngh_el_cache, q_point);
-        // This would be nice to have. Not clear how to 
+        double cs = cross_section(q_point);        
+        
+	// Following would be nice to have. Not clear how to 
         // deal with more then single element as fe_values have its own cache that has to be updated.
-        double base_fn = presssure_field_fe.fe_values.value(q_point);
+        auto base_fn_grad = presssure_field_fe.base_value(q_point);
+	loc_matrix += outer_product((cs * base_fn_grad),  base_fn_grad)
     }   
 
     // Side integrals.
-    for (auto side : cell.side_range()) {
-        double side_avg = 0;
-		for(auto el_ngh_side : side.edge_sides()) {            
-   	    	// vector of local side quadrature points in the correct side permutation
-	        auto side_points = this->side_eval.points(side->side())
-		    for (auto p : side_points) {
-		        side_avg += cross_section(side, p) * sigma(side, p) * 
-				    ( velocity(side, p) + velocity(el_ngh_side, p)) * p.normal();
+    // FieldFE<..> conc;
+    for (auto side : cell.side_range()) {        
+	for(auto el_ngh_side : side.edge_sides()) {            
+   	    // vector of local side quadrature points in the correct side permutation
+	    auto side_points = this->side_eval.points(side->side())
+	    for (SidePoint p : side_points) {
+	    	ngh_p = p.permute(el_ngh_side);
+	        loc_mat += cross_section(p) * sigma(p) * 
+		    (conc.base_value(p) * velocity(p) 
+		    + conc.base_value(ngh_p) * velocity(ngh_p)) * p.normal() / 2;
             }
        }
     }
@@ -160,11 +180,34 @@ void Assembly::mass_assembly(DHCellAccessor cell) {
     }
 }
 ```
-- `Field<spacedim, Value>::value(EvalElement eval_el, EvalPoint q_point)`
-  returns Value, i.e. some FieldValue<..>. The implementation should do something like:
-  ```return this->value_cache[eval_el.dim()].value(eval_el.cache_idx(), q_point.cache_idx())```
-  Where `value_cache` is the instance of `FieldValueCache`.
-- `this->mass_eval` and `this->side_eval` are instances of `EvalSubset`.
+**Interface for the bulk integrals**
+
+Bulk integrals are evaluated only on the single element, so we can assume, that all values are cached. No need for 
+evaluationg just some points etc.
+`Field<..>::operator() (BulkPoint)`
+use dimension and cache element index that are part of the BulkPoint structure to access the cached value.
+Similarly we can exted caching in FeValues to more elements and provide acces to them:
+`FieldFE<..>::base_value(BulkPoint, component)`
+
+`FieldFE<..>::base_grad(BulkPoint, component)`
+
+**Interface for the face integrals*
+
+We need to access values on two elements of two matching sides. All sides of all elements are necessary
+so we want to cache all side points in the same way as the values in bulk points. We can access matching side
+but we also need its proper permutation, to this end we provide SidePoint and its mapping to the connected side of the other element.
+
+`Field<..>::operator() (SidePoint)`
+`FieldFE<..>::base_value(SidePoint, component)`
+`FieldFE<..>::base_grad(SidePoint, component)`
+
+**Interface for dimension coupling integrals**
+In general the quadrature can be different then the quadrature used on faces, or the could be no integration over the faces as in the case of P1 method. No problem for the lower dim element as we have to evaluate fields at all bulk points on al these elements. Only matching evaluation points on the connected side of a bulk element are necessary. Moreover we are not able to change mask of evaluation point accoring to the elements. 
+
+Two possible solutions:
+- local point sets varies with elements
+- evaluation of noncached values, but still want to have the FieldValues in FieldFE for their points
+
 
 
 TODO: 
