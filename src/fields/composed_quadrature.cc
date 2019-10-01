@@ -31,6 +31,7 @@ EvalSubset EvalPoints::add_bulk(const Quadrature<dim> &quad)
 {
 	EvalSubset bulk_set;
 
+	this->dim_ = dim;
     bulk_set.eval_points_ = this;
     bulk_set.dim = dim;
     bulk_set.point_indices_.resize(1);
@@ -44,6 +45,7 @@ EvalSubset EvalPoints::add_side(const Quadrature<dim-1> &quad)
 {
 	EvalSubset side_set;
 
+	this->dim_ = dim;
     side_set.eval_points_ = this;
     side_set.dim = dim;
     side_set.point_indices_.resize(RefElement<dim>::n_side_permutations);
@@ -62,12 +64,14 @@ EvalSubset EvalPoints::add_side(const Quadrature<dim-1> &quad)
 
 unsigned int EvalPoints::add_local_point(arma::vec coords) {
     // Check if point exists in local points vector.
-	for (unsigned int i=0; i<local_points_.size(); ++i) {
-        if ( arma::norm(coords-local_points_[i], 2) < 4*std::numeric_limits<double>::epsilon() ) return i;
+	std::vector<double> loc_point_vec(dim_);
+	for (unsigned int loc_idx=0; loc_idx<this->size(); ++loc_idx) {
+		for (unsigned int i=0; i<dim_; ++i) loc_point_vec[i] = local_points_[loc_idx*dim_ + i];
+        if ( arma::norm(coords-arma::vec(loc_point_vec), 2) < 4*std::numeric_limits<double>::epsilon() ) return loc_idx;
     }
 	// Add new point if doesn't exist
-	local_points_.push_back(coords);
-    return local_points_.size()-1;
+	for (unsigned int i=0; i<dim_; ++i) local_points_.push_back(coords[i]);
+    return this->size()-1;
 }
 
 

@@ -42,13 +42,15 @@ public:
 
     /// Return size of composed quadrature (number of points).
     inline unsigned int size() const {
-        return local_points_.size();
+        return local_points_.size() / dim_;
     }
 
     /// Return local coordinates of given local point.
     inline arma::vec local_point(unsigned int local_point_idx) const {
-    	ASSERT_LT_DBG(local_point_idx, local_points_.size());
-        return local_points_[local_point_idx];
+    	ASSERT_LT_DBG(local_point_idx, this->size());
+    	std::vector<double> loc_point_vec(dim_);
+    	for (unsigned int i=0; i<dim_; ++i) loc_point_vec[i] = local_points_[local_point_idx*dim_ + i];
+    	return arma::vec(loc_point_vec);
     }
 
     /**
@@ -66,7 +68,8 @@ private:
     /// Adds coords of local point if point doesn't exist in local_points_ vector, returns its index in vector.
     unsigned int add_local_point(arma::vec coords);
 
-    std::vector<arma::vec> local_points_;  ///< Local coords of points vector
+    std::vector<double> local_points_;  ///< Local coords of points vector
+    unsigned int dim_;                  ///< Dimension of local points
 
 };
 
