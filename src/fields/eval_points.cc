@@ -33,7 +33,6 @@ EvalSubset EvalPoints::add_bulk(const Quadrature<dim> &quad)
 
 	this->dim_ = dim;
     bulk_set.eval_points_ = this;
-    bulk_set.dim = dim;
     bulk_set.point_indices_.resize(1);
 
     for (auto p : quad.get_points()) bulk_set.point_indices_[0].push_back( this->add_local_point(p) );
@@ -47,7 +46,6 @@ EvalSubset EvalPoints::add_side(const Quadrature<dim-1> &quad)
 
 	this->dim_ = dim;
     side_set.eval_points_ = this;
-    side_set.dim = dim;
     side_set.point_indices_.resize(RefElement<dim>::n_side_permutations);
 
     for (unsigned int j=0; j<RefElement<dim>::n_side_permutations; ++j) { // permutations

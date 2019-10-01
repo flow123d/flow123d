@@ -32,7 +32,7 @@ void EvalSubset::print_bulk_points() {
 void EvalSubset::print_side_points(unsigned int permutation) {
     std::cout << "Print side points with permutation: " << permutation << std::endl;
     unsigned int point_size = this->point_indices_[permutation].size();
-    unsigned int points_per_side = point_size / (dim+1);
+    unsigned int points_per_side = point_size / (eval_points().point_dim()+1);
     for (unsigned int i=0; i<point_size; ++i)
         std::cout << "--- side point (side " << (i / points_per_side) << ")" << std::endl
 	        << this->eval_points().local_point( this->point_indices_[permutation][i] );

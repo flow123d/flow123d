@@ -49,8 +49,6 @@ private:
     const EvalPoints *eval_points_;
     /// Indices into full set of local indices in the composed quadrature, for every possible permuation.
     std::vector< std::vector<int> > point_indices_;
-    /// Dimension of EvalSubset and appropriate EvalPoints objects
-    unsigned int dim;
 
     friend class EvalPoints;
 };

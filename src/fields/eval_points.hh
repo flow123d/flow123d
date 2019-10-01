@@ -53,6 +53,11 @@ public:
     	return arma::vec(loc_point_vec);
     }
 
+    /// Return dimension of stored evaluate points
+    inline unsigned int point_dim() const {
+        return dim_;
+    }
+
     /**
      * Registers point set from quadrature.
      * Returns an object referencing to the EvalPoints and list of its points.
