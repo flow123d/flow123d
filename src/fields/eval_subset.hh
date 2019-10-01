@@ -11,7 +11,7 @@
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
  *
- * @file    point_sets.hh
+ * @file    eval_subset.hh
  * @brief
  * @author  David Flanderka
  */

@@ -11,13 +11,13 @@
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
  *
- * @file    composed_quadrature.cc
+ * @file    eval_points.cc
  * @brief
  * @author  David Flanderka
  */
 
-#include "fields/composed_quadrature.hh"
-#include "fields/point_sets.hh"
+#include "fields/eval_points.hh"
+#include "fields/eval_subset.hh"
 #include "quadrature/quadrature.hh"
 #include "mesh/ref_element.hh"
 #include <memory>

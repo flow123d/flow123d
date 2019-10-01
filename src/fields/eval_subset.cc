@@ -11,13 +11,13 @@
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
  *
- * @file    point_sets.cc
+ * @file    eval_subset.cc
  * @brief
  * @author  David Flanderka
  */
 
-#include "fields/point_sets.hh"
-#include "fields/composed_quadrature.hh"
+#include "fields/eval_subset.hh"
+#include "fields/eval_points.hh"
 
 
 /******************************************************************************

@@ -11,7 +11,7 @@
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
  *
- * @file    composed_quadrature.hh
+ * @file    eval_points.hh
  * @brief
  * @author  David Flanderka
  */
@@ -24,7 +24,7 @@
 #include <memory>
 #include <armadillo>
 #include "mesh/range_wrapper.hh"
-#include "fields/point_sets.hh"
+#include "fields/eval_subset.hh"
 #include "system/asserts.hh"
 
 class Side;
@@ -40,7 +40,7 @@ public:
     /// Constructor
 	EvalPoints();
 
-    /// Return size of composed quadrature (number of points).
+    /// Return size of evaluation points object (number of points).
     inline unsigned int size() const {
         return local_points_.size() / dim_;
     }

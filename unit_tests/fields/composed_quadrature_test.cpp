@@ -2,8 +2,8 @@
 #define FEAL_OVERRIDE_ASSERTS
 #include <flow_gtest_mpi.hh>
 
-#include "fields/composed_quadrature.hh"
-#include "fields/point_sets.hh"
+#include "fields/eval_points.hh"
+#include "fields/eval_subset.hh"
 #include "quadrature/quadrature.hh"
 #include "quadrature/quadrature_lib.hh"
 #include "mesh/sides.h"
