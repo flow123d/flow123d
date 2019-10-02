@@ -19,7 +19,7 @@
 #include "fields/field_constant.hh"
 #include "fields/field_formula.hh"
 #include "fields/field_python.hh"
-#include "fields/field_elementwise.hh"
+#include "fields/field_fe.hh"
 #include "fields/field.hh"
 #include "fields/field_set.hh"
 #include "fields/field_values.hh"
@@ -30,6 +30,8 @@
 #include "system/sys_profiler.hh"
 
 #include "mesh/mesh.h"
+#include "mesh/accessors.hh"
+#include "mesh/range_wrapper.hh"
 #include "io/msh_gmshreader.h"
 
 #include <iostream>
@@ -38,7 +40,7 @@
 FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
 FLOW123D_FORCE_LINK_IN_PARENT(field_formula)
 FLOW123D_FORCE_LINK_IN_PARENT(field_python)
-FLOW123D_FORCE_LINK_IN_PARENT(field_elementwise)
+FLOW123D_FORCE_LINK_IN_PARENT(field_fe)
 
 using namespace std;
 
@@ -64,11 +66,14 @@ string field_input = R"JSON(
         formula_full_scalar={ TYPE="FieldFormula", value="x+y+z+x^2+y^2+z^2" },
         formula_full_vector_fixed={ TYPE="FieldFormula", value=["x+y+x^2+y^2+z^2", "y+z+x^2+y^2+z^2", "x+z+x^2+y^2+z^2"] },
 
+        formula_depth_scalar={ TYPE="FieldFormula", value="d", surface_region=".top side" },
+        formula_depth_vector_fixed={ TYPE="FieldFormula", value=["d", "d^2", "d^3"], surface_region=".top side" },
+
         python_scalar={ TYPE="FieldPython", function="func_const", script_string="def func_const(x,y,z): return ( 1.75, )" },
         python_vector_fixed={ TYPE="FieldPython", function="func_const", script_string="def func_const(x,y,z): return ( 1.75, 3.75, 5.75 )" },
 
-        elementwise_scalar={ TYPE="FieldElementwise", gmsh_file="fields/simplest_cube_data.msh", field_name="scalar" },
-        elementwise_vector_fixed={ TYPE="FieldElementwise", gmsh_file="fields/simplest_cube_data.msh", field_name="vector_fixed" }
+        fe_scalar={ TYPE="FieldFE", mesh_data_file="fields/simplest_cube_data.msh", field_name="scalar" },
+        fe_vector_fixed={ TYPE="FieldFE", mesh_data_file="fields/simplest_cube_data.msh", field_name="vector_fixed" }
     },
     {
         region="set_2",
@@ -85,11 +90,14 @@ string field_input = R"JSON(
         formula_full_scalar={ TYPE="FieldFormula", value="x+y+z+x^3+y^3+z^3" },
         formula_full_vector_fixed={ TYPE="FieldFormula", value=["x+y+x^3+y^3+z^3", "y+z+x^3+y^3+z^3", "x+z+x^3+y^3+z^3"] },
 
+        formula_depth_scalar={ TYPE="FieldFormula", value="d^2", surface_region=".top side" },
+        formula_depth_vector_fixed={ TYPE="FieldFormula", value=["d+1", "d^2+1", "d^3+1"], surface_region=".top side" },
+
         python_scalar={ TYPE="FieldPython", function="func_const", script_string="def func_const(x,y,z): return ( 1.25, )" },
         python_vector_fixed={ TYPE="FieldPython", function="func_const", script_string="def func_const(x,y,z): return ( 1.25, 3.25, 5.25 )" },
 
-        elementwise_scalar={ TYPE="FieldElementwise", gmsh_file="fields/simplest_cube_data.msh", field_name="scalar" },
-        elementwise_vector_fixed={ TYPE="FieldElementwise", gmsh_file="fields/simplest_cube_data.msh", field_name="vector_fixed" }
+        fe_scalar={ TYPE="FieldFE", mesh_data_file="fields/simplest_cube_data.msh", field_name="scalar" },
+        fe_vector_fixed={ TYPE="FieldFE", mesh_data_file="fields/simplest_cube_data.msh", field_name="vector_fixed" }
     }
 ]
 )JSON";
@@ -117,24 +125,20 @@ public:
 
 	    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-        mesh_ = mesh_reader->read_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
-
-        set_values();
+	    mesh_ = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
 	}
 
 	void TearDown() {
 		Profiler::uninitialize();
 
-		delete mesh_;
+		//delete mesh_;
 	}
 
 	ReturnType call_test() {
 
-
 		START_TIMER("single_value");
 		for (int i=0; i<list_size*loop_call_count; i++)
-			FOR_ELEMENTS(this->mesh_, ele) {
-				ElementAccessor<3> elm = (*ele).element_accessor();
+			for (auto elm : this->mesh_->elements_range()) {
 				test_result_sum_ += field_.value( this->point_, elm);
 			}
 		END_TIMER("single_value");
@@ -142,16 +146,14 @@ public:
 		START_TIMER("all_values");
 		for (int i=0; i<loop_call_count; i++)
 			for (int j=0; j<list_size; j++)
-				FOR_ELEMENTS(this->mesh_, ele) {
-					ElementAccessor<3> elm = (*ele).element_accessor();
+				for (auto elm : this->mesh_->elements_range()) {
 					test_result_sum_ += field_.value( this->point_list_[j], elm);
 				}
 		END_TIMER("all_values");
 
 		START_TIMER("value_list");
 		for (int i=0; i<loop_call_count; i++)
-			FOR_ELEMENTS(this->mesh_, ele) {
-				ElementAccessor<3> elm = (*ele).element_accessor();
+			for (auto elm : this->mesh_->elements_range()) {
 				field_.value_list( this->point_list_, elm, value_list);
 				test_result_sum_ += value_list[0];
 			}
@@ -159,13 +161,13 @@ public:
 		return test_result_sum_;
 	}
 
-	void set_values() {
+	void set_values(std::string point_coords = "1 2 3") {
         n_comp_ = 3;
         component_names_ = { "component_0", "component_1", "component_2" };
 
-        point_ = Point("1 2 3");
+        point_ = Point(point_coords);
         point_list_.reserve(list_size);
-        for (int i=0; i<list_size; i++) point_list_.push_back( Point("1 2 3") );
+        for (int i=0; i<list_size; i++) point_list_.push_back( point_coords );
 
     	fce_ = new FceType[mesh_->region_db().size()];
     	data_ = new ReturnType[mesh_->region_db().size()];
@@ -200,7 +202,8 @@ public:
     	expect_const_val_ = 13.75;
     	expect_formula_simple_val_ = 9;
     	expect_formula_full_val_ = 268;
-    	expect_elementwise_val_ = 4.5;
+    	expect_formula_depth_val_ = 9;
+    	expect_fe_val_ = 4.5;
     	test_result_sum_ = 0.0;
     	input_type_name_ = "scalar";
     	value_list= std::vector<ReturnType>(list_size);
@@ -212,7 +215,8 @@ public:
 		expect_const_val_ = arma::vec3("13.75 31.75 49.75");
 		expect_formula_simple_val_ = arma::vec3("9 52 153");
 		expect_formula_full_val_ = arma::vec3("241 259 250");
-		expect_elementwise_val_ = arma::vec3("9 18 27");
+		expect_formula_depth_val_ = arma::vec3("13 13 13");
+		expect_fe_val_ = arma::vec3("9 18 27");
 		test_result_sum_ = arma::vec3("0.0 0.0 0.0");
 		input_type_name_ = "vector_fixed";
 		value_list= std::vector<ReturnType>(list_size);
@@ -243,11 +247,11 @@ public:
 	    Input::Type::Array list_type = Input::Type::Array(set_of_field_.make_field_descriptor_type("FieldSpeedTest"));
 	    Input::ReaderToStorage reader( field_input, list_type, Input::FileFormat::format_JSON);
 	    Input::Array in_list=reader.get_root_interface<Input::Array>();
-	    field_.set_input_list(in_list);
+	    TimeGovernor tg(0.0, 0.5);
+	    field_.set_input_list(in_list, tg);
 
 	    field_.set_mesh(*(this->mesh_));
 	    field_.set_components(component_names_);
-	    TimeGovernor tg(0.0, 0.5);
 	    set_of_field_.set_time(tg.step(), LimitSide::right);
 	}
 
@@ -260,7 +264,8 @@ public:
     ReturnType expect_const_val_;
     ReturnType expect_formula_simple_val_;
     ReturnType expect_formula_full_val_;
-    ReturnType expect_elementwise_val_;
+    ReturnType expect_formula_depth_val_;
+    ReturnType expect_fe_val_;
     std::vector<ReturnType> value_list;
     FieldSet set_of_field_;
     Field<3, T> field_;
@@ -282,11 +287,11 @@ typedef ::testing::Types< FieldValue<3>::Scalar, FieldValue<3>::VectorFixed > Te
 TYPED_TEST_CASE(FieldSpeed, TestedTypes);
 
 TYPED_TEST(FieldSpeed, array) {
+	this->set_values();
     START_TIMER("array");
 	START_TIMER("single_value");
 	for (int i=0; i<list_size*loop_call_count; i++)
-		FOR_ELEMENTS(this->mesh_, ele) {
-			ElementAccessor<3> elm = (*ele).element_accessor();
+		for (auto elm : this->mesh_->elements_range()) {
 			this->test_result_sum_ += this->data_[elm.region_idx().idx()];
 		}
 	END_TIMER("single_value");
@@ -298,11 +303,11 @@ TYPED_TEST(FieldSpeed, array) {
 
 
 TYPED_TEST(FieldSpeed, virtual_function) {
+	this->set_values();
 	START_TIMER("virtual_function");
 	START_TIMER("single_value");
 	for (int i=0; i<list_size*loop_call_count; i++)
-		FOR_ELEMENTS(this->mesh_, ele) {
-			ElementAccessor<3> elm = (*ele).element_accessor();
+		for (auto elm : this->mesh_->elements_range()) {
 			this->test_result_sum_ += this->value( this->point_, elm);
 		}
 	END_TIMER("single_value");
@@ -310,8 +315,7 @@ TYPED_TEST(FieldSpeed, virtual_function) {
 	START_TIMER("all_values");
 	for (int i=0; i<loop_call_count; i++)
 		for (int j=0; j<list_size; j++)
-			FOR_ELEMENTS(this->mesh_, ele) {
-				ElementAccessor<3> elm = (*ele).element_accessor();
+			for (auto elm : this->mesh_->elements_range()) {
 				this->test_result_sum_ += this->value( this->point_list_[j], elm);
 			}
 	END_TIMER("all_values");
@@ -324,6 +328,7 @@ TYPED_TEST(FieldSpeed, virtual_function) {
 
 
 TYPED_TEST(FieldSpeed, field_constant) {
+	this->set_values();
 	string key_name = "constant_" + this->input_type_name_;
 	this->read_input(key_name);
 
@@ -337,6 +342,7 @@ TYPED_TEST(FieldSpeed, field_constant) {
 
 
 TYPED_TEST(FieldSpeed, field_formula_const) {
+	this->set_values();
 	string key_name = "formula_const_" + this->input_type_name_;
 	this->read_input(key_name);
 
@@ -350,6 +356,7 @@ TYPED_TEST(FieldSpeed, field_formula_const) {
 
 
 TYPED_TEST(FieldSpeed, field_formula_simple) {
+	this->set_values();
 	string key_name = "formula_simple_" + this->input_type_name_;
 	this->read_input(key_name);
 
@@ -363,6 +370,7 @@ TYPED_TEST(FieldSpeed, field_formula_simple) {
 
 
 TYPED_TEST(FieldSpeed, field_formula_full) {
+	this->set_values();
 	string key_name = "formula_full_" + this->input_type_name_;
 	this->read_input(key_name);
 
@@ -375,8 +383,23 @@ TYPED_TEST(FieldSpeed, field_formula_full) {
 }
 
 
+TYPED_TEST(FieldSpeed, field_formula_depth) {
+	this->set_values("0 0 0");
+	string key_name = "formula_depth_" + this->input_type_name_;
+	this->read_input(key_name);
+
+	START_TIMER("field_formula_depth_expr");
+	this->call_test();
+	END_TIMER("field_formula_depth_expr");
+
+	this->test_result( this->expect_formula_depth_val_, 21 );
+	this->profiler_output();
+}
+
+
 #ifdef FLOW123D_HAVE_PYTHON
 TYPED_TEST(FieldSpeed, field_python) {
+	this->set_values();
 	string key_name = "python_" + this->input_type_name_;
 	this->read_input(key_name);
 
@@ -390,15 +413,16 @@ TYPED_TEST(FieldSpeed, field_python) {
 #endif // FLOW123D_HAVE_PYTHON
 
 
-TYPED_TEST(FieldSpeed, field_elementwise) {
-	string key_name = "elementwise_" + this->input_type_name_;
+TYPED_TEST(FieldSpeed, field_fe) {
+	this->set_values();
+	string key_name = "fe_" + this->input_type_name_;
 	this->read_input(key_name);
 
-    START_TIMER("field_elementwise");
+    START_TIMER("field_fe");
 	this->call_test();
-	END_TIMER("field_elementwise");
+	END_TIMER("field_fe");
 
-	this->test_result( this->expect_elementwise_val_, 21 );
+	this->test_result( this->expect_fe_val_, 21 );
 	this->profiler_output();
 }
 

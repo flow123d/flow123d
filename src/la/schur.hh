@@ -19,12 +19,16 @@
 #ifndef LA_SCHUR_HH_
 #define LA_SCHUR_HH_
 
-#include <la/distribution.hh>
-#include "la/linsys_PETSC.hh"
-#include <petscmat.h>
+#include <petscmat.h>          // for Mat, _p_Mat
+#include "la/linsys_PETSC.hh"  // for LinSys_PETSC
+#include "petscistypes.h"      // for IS, _p_IS
+#include "petscvec.h"          // for Vec, _p_Vec
 
-struct Solver;
+class Distribution;
 class LinSys;
+
+namespace Input { class Record; }
+
 
 /**
  * @brief Schur complement class for a PETSC based linear system
@@ -64,9 +68,10 @@ public:
      *
      * Gets linear system with original matrix A and creates its inversion (IA matrix)
      *
-     * In current implementation the index set IsA has to be continuous sequence at the beginning of the local block of indices.
+     * ia - PETSC indexset for the eliminated block.
+     * ib - PETSc indexset for the Schur complement, complementary by default.
      */
-    SchurComplement(IS ia, Distribution *ds);
+    SchurComplement(Distribution *ds, IS ia, IS ib = nullptr);
 
     /**
      * Copy constructor.
@@ -116,7 +121,7 @@ public:
      * - The inner linear solver is called for the Schur complement
      * - Resolve is called to reconstruct eliminated part of the solution vector.
      */
-    int solve() override;
+    LinSys::SolveInfo solve() override;
 
     /**
      * Only resolve the system with current solution vector. This is necessary for nonlinear solvers.
@@ -141,6 +146,7 @@ protected:
     Mat IA;                     // Inverse of block A
 
     Mat B, Bt;                  // B and B' block (could be different from real B transpose)
+    Mat C;                      // Sub matrix.
     Mat xA;                     // Bt*IA*B
     Mat IAB;                    // reconstruction matrix IA * B
     int loc_size_A, loc_size_B; // loc size of the A and B block

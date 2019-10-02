@@ -130,9 +130,9 @@
 ##
 ##![The temperature of exchanger after 30 years.](tutor_figures/07_transport.pdf){#fig:tempr_grad width=80%}
 ##
-flow123d_version: 2.0.0
+flow123d_version: 3.1.0
 problem: !Coupling_Sequential
-  description: "Example 7 - Heat transport"
+  description: Example 7 - Heat transport
   mesh:
     mesh_file: 07_mesh.msh
     regions:
@@ -173,7 +173,7 @@ problem: !Coupling_Sequential
         cross_section: 100
         conductivity: 1.0e-10
       - region: exchanger
-        conductivity: 1e-4 
+        conductivity: 1e-4
       - region: wells
         conductivity: 10.0
         cross_section: 0.04
@@ -190,7 +190,6 @@ problem: !Coupling_Sequential
     output_stream:
       file: flow
       format: !gmsh
-        variant: ascii
     output:
       fields:
         - piezo_head_p0
@@ -238,11 +237,11 @@ problem: !Coupling_Sequential
     output_stream:
       file: heat
       format: !gmsh
-        variant: ascii
       times:
         - step: 31557600       # 1 yr
-    output_fields:
-      - temperature
+    output:
+      fields:
+        - temperature
     solver: !Petsc
       a_tol: 1.0e-14
       r_tol: 1.0e-14

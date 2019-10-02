@@ -23,17 +23,29 @@
 #ifndef DUAL_POROSITY_H_
 #define DUAL_POROSITY_H_
 
+#include <boost/exception/info.hpp>   // for operator<<, error_info::error_i...
+#include <memory>                     // for shared_ptr
 #include <vector>
-#include "input/accessors.hh"
-
-#include "fields/field_algo_base.hh"
+#include "fields/field.hh"            // for Field
+#include "fields/field_values.hh"     // for FieldValue<>::Scalar, FieldValue
 #include "fields/field_set.hh"
 #include "fields/multi_field.hh"
-#include "fields/vec_seq_double.hh"
-#include "./reaction/reaction_term.hh"
+#include "la/vector_mpi.hh"
 #include "fields/equation_output.hh"
+#include "input/type_base.hh"         // for Array
+#include "input/type_generic.hh"      // for Instance
+#include "petscvec.h"                 // for Vec, VecScatter, _p_VecScatter
+#include "reaction/reaction_term.hh"  // for ReactionTerm
 
 class Mesh;
+namespace Input {
+	class Record;
+	namespace Type {
+		class Record;
+	}
+}
+template <int spacedim, class Value> class FieldFE;
+
 
 /// Class representing dual porosity model in transport.
 class DualPorosity:  public ReactionTerm
@@ -109,13 +121,8 @@ protected:
   void set_initial_condition();
   /// Initializes field sets.
   void initialize_fields();
-  /// Allocates petsc vectors, prepares them for output and creates output vector scatter.
-  void allocate_output_mpi(void);
   
   double **compute_reaction(double **concentrations, int loc_el) override;
-  
-  /// Gathers all the parallel vectors to enable them to be output.
-  void output_vector_gather(void) override;
   
   /**
    * Pointer to twodimensional array[substance][elements] containing concentrations either in immobile.
@@ -126,8 +133,6 @@ protected:
    * Equation data - all data fields are in this set.
    */
   EqData data_;
-
-  //Input::Array output_array;
 
   /**
    * Input data set - fields in this set are read from the input file.
@@ -145,9 +150,7 @@ protected:
   
   ///@name members used in output routines
   //@{
-  VecScatter vconc_out_scatter; ///< Output vector scatter.
-  Vec *vconc_immobile; ///< PETSC concentration vector for immobile phase (parallel).
-  std::vector<VectorSeqDouble> conc_immobile_out; ///< concentration array output for immobile phase (gathered - sequential)
+  std::vector<VectorMPI> conc_immobile_out; ///< concentration array output for immobile phase (parallel, shared with FieldFE)
   //@}
   
 private:

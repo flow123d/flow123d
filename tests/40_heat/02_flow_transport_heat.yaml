@@ -1,4 +1,4 @@
-flow123d_version: 2.0.0
+flow123d_version: 3.1.0
 problem: !Coupling_Sequential
   description: heat_transfer
   mesh:
@@ -15,10 +15,10 @@ problem: !Coupling_Sequential
           - .fracture_top
           - .rock_top
   flow_equation: !Flow_Darcy_MH
-    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
-        a_tol: 1.0e-07
+        a_tol: 1.0e-09    # 1.0e-07
+        r_tol: 1.0e-10    # default
     input_fields:
       - region: rock
         conductivity: 0.001
@@ -37,12 +37,10 @@ problem: !Coupling_Sequential
         - pressure_p0
         - pressure_p1
         - velocity_p0
-    balance: {}
-    output_stream: 
+    output_stream:
       file: flow.pvd
       format: !vtk
         variant: ascii
-      name: flow_output_stream
   solute_equation: !Coupling_OperatorSplitting
     balance:
       cumulative: true
@@ -56,15 +54,13 @@ problem: !Coupling_Sequential
         - region: fracture
           porosity: 1
 
-    output_stream: 
+    output_stream:
       file: ./transport.pvd
       format: !vtk
         variant: ascii
-      name: transport_output_stream
       times:
         - step: 0.1
-    solver: !Petsc
-      a_tol: 1.0e-07
+      precision: 15
     time:
       end_time: 1
   heat_equation: !Heat_AdvectionDiffusion_DG
@@ -85,11 +81,10 @@ problem: !Coupling_Sequential
         porosity: 0.01
       - region: fracture
         porosity: 1
-    output_stream: 
+    output_stream:
       file: ./heat.pvd
       format: !vtk
         variant: ascii
-      name: transport_output_stream
       times:
         - step: 5
     solver: !Petsc

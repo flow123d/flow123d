@@ -7,7 +7,7 @@ In particular we briefly describe the GMSH file format used for both the computa
 \label{sec:CONformat}
 
 In this section, we shall describe structure of the main input file that is given either as the first positional argument or through 
-the parameter \verb'-s' on the command line. First, we provide a quick introduction to the YAML file format. Then, we demonstrate the most important 
+the parameter \verb'-s' on the command line. First, we provide a~quick introduction to the YAML file format. Then, we demonstrate the most important 
 input structures on the examples. 
 
 
@@ -17,30 +17,30 @@ input structures on the examples.
 
 
 \subsection{YAML basics}
-YAML is a human readable data format. It is designed to be both human readable and human editable. As it is not a markup languages, there are
+YAML is a~human readable data format. It is designed to be both human readable and human editable. As it is not a~markup languages, there are
 no tags to determine type of the data. The indentation and justification is used instead for data organization. Moreover the used YAML format (version 1.2) is 
 superset of the JSON format, another minimalist data serialization format where braces and brackets are used instead of indentation.
 For the more detailed description see \href{https://en.wikipedia.org/wiki/YAML}{Wikipedia} 
 for further technical details and for reference parsers for various programming languages see YAML \href{http://yaml.org/}{home page} .
 
 \subsubsection{Hierarchy of Mappings and Lists}
-Elementary data are organized to lists and mappings. Let us start with an example of a list:
+Elementary data are organized to lists and mappings. Let us start with an example of a~list:
 \begin{verbatim}
 # Example of list 
 - 3.14                  # a number
 - 2014-01-14            # a date
 - Simple string.        # a string
 - "3 is three"          # quoting necessary
-- '3 is three'          # other qouting
+- '3 is three'          # other quoting
 - true                  # boolean
 \end{verbatim}
-Comments are started by a hash (\verb'#') which can appear anywhere on a line and marks the comment up to the end of line.
-The the list follows with singel item per line preceded by a dash (\verb'-'). Any value starting by a digit is interpreted as a number
-or date. Values starting with letter is interpreted as a string. Otherwise one may use double (\verb'""') or single (\verb"''") 
-quotas to mark a string value explicitly. Finally some strings are interpreted as boolean values, it is recommended to use 
+Comments are started by a~hash (\verb'#') which can appear anywhere on a~line and marks the comment up to the end of line.
+The the list follows with single item per line preceded by a~dash (\verb'-'). Any value starting by a~digit is interpreted as a~number
+or date. Values starting with letter is interpreted as a~string. Otherwise one may use double (\verb'""') or single (\verb"''") 
+quotas to mark a~string value explicitly. Finally some strings are interpreted as Boolean values, it is recommended to use 
 \verb'true' and \verb'false' (other possible pairs are e.g. \verb'yes/no', \verb'y/n', \verb'on/off'). 
 
-Alternatively a list may be written in compact "JSON" way enclosing the list into brackets:
+Alternatively a~list may be written in compact "JSON" way enclosing the list into brackets:
 \begin{verbatim}
 # Compact list
 [ 3.14, 2014-01-14, Simple string.,
@@ -91,7 +91,7 @@ In both cases the leading indentation is removed.
 
 
 \subsubsection{Tags}
-YAML format defines a syntax for explicit specification of types of values including the types specific to an application.
+YAML format defines a~syntax for explicit specification of types of values including the types specific to an application.
 The application specific tags are used by Flow123d to specify particular implementation of various algorithms or data types.
 The general syntax of tags is quite complicated, so we present only the syntax used in the Flow123d input.
 \begin{verbatim}
@@ -140,36 +140,35 @@ people:
  \item Unquoted string values can not contain characters: colon \verb':', hash \verb'#', 
  brackets \verb'[]', braces \verb'{}', less then \verb'<', vertical bar \verb'|'.
  \item For indentation one can use only spaces; tabs are not allowed. However, your editor may automatically convert tabs to spaces.
- \item Boolean special strings must be quoted if you want to express a string. This is not problem for the Flow123d input.
+ \item Boolean special strings must be quoted if you want to express a~string. This is not problem for the Flow123d input.
  \item Numbers starting with digit zero are interpreted as octal numbers. 
 \end{itemize}
 
 \subsection{Flow123d input types}
 \label{sec:input_types}
-Flow123d have a subsystem for definition of the structure of the input file including preliminary checks for the 
+Flow123d have a~subsystem for definition of the structure of the input file including preliminary checks for the 
 correctness of the values. This subsystem works with elementary data types:
 \begin{itemize}
- \item {\it Bool} corresponds to the YAML boolean values
+ \item {\it Bool} corresponds to the YAML Boolean values
  \item {\it Double}, {\it Integer} initialized from YAML numeric values. 
  \item {\it String}, {\it FileName}, {\it Selections} initialized from YAML strings.
 \end{itemize}
-Numerical values have defined valid ranges. FileName valus are used for reference to external files either for input or for output.
-Selection type defines a finite number of valid string values which may appear on the input. 
+Numerical values have defined valid ranges. FileName values are used for reference to external files either for input or for output.
+Selection type defines a~finite number of valid string values which may appear on the input. 
 These elementary types are further organized into Records and Arrays in order to specify strongly typed definition of the 
 input data file. Array and Records forms so called input structure tree (IST).
 
-In order to allow simple input of simple things while keeping complex things possible, the input system provides
-so called automatic conversions from simple types to complex ones. 
-So if the type of a value on input does not match the expected data type the automatic conversion tries to convert 
-the given type to the expected type. Automatic conversion rules for individual composed types follows.
+In order to make {\it "simple things simple and complex things possible" (Alan Kay)} the input system provides
+so called {\it automatic conversions}. If the YAML type on input does not match the expected data type automatic conversion tries to convert 
+the input to the expected type. Automatic conversion rules for individual composed types follows.
 
-\subsubsection{Record $=$ Mapping}
+\subsubsection{Record (YAML Mapping, JSON object)}
 A Record is initialized from the YAML mapping. However, in contrast to YAML mappings 
 the Records have fixed keys with fixed types. 
-This is natural as a Records is used for initialization of C++ objects which 
+This is natural as Records are used for initialization of C++ objects which 
 are also strongly typed. Every Record type have unique name and have defined list of its keys.
-Keys are lowercase strings without spaces, possibly using digits and underscore. Every key have 
-specified its type and default value specification. Default value specification can be:
+Keys are lowercase strings without spaces, possibly using digits and underscore. Every key has
+a type and default value specification. Default value specification can be:
 \begin{description} 
  \item[obligatory] --- means no default value, which has to be specified at input. 
  \item[optional] --- means no default value, but value is needs not to be specified. Unspecified value usually means that you turn off some functionality.
@@ -195,9 +194,9 @@ is converted to:
 with the key \verb'regions' being optional and the last three keys having its default values. 
 
 
-\subsubsection{Array $=$ List}
-An Array is initialized from a YAML list. But, in opposition to the YAML mapping, the values in a single Array 
-have all the same type. So the particular Array type is given by the type of its elements and a specification of its size range.
+\subsubsection{Array (YAML List, JSON array)}
+An Array is initialized from a~YAML list. But, in opposition to the YAML mapping, the values in a~single Array 
+have all the same type. So the particular Array type is given by the type of its elements and a~specification of its size range.
 
 Automatic conversion performs kind of transposition of the data. It simplifies input of the list of records (or arrays) 
 with redundant structure, e.g. consider input
@@ -217,11 +216,11 @@ Assuming that key \verb'list' have the type Array of Records and keys \verb'a', 
       b: 4
       c: 6
 \end{verbatim}
-The rule works as follows, if a key $K$ should have type Array, but some other type is on the input, 
-we search through the input undeer the key $K$ for all Arrays $S$ standng instead of scalars.
+The rule works as follows, if a~key $K$ should have type Array, but some other type is on the input, 
+we search through the input under the key $K$ for all Arrays $S$ standing instead of scalars.
 All these arrays must have the same length $n$. Then the $i$-th element of the key $A$ array is
 copy of the input keeping only $i$-th elements of the Arrays $S$.
-As a special case if there are no Arrays $S$ a list with single element equal to the input is created.
+As a~special case if there are no Arrays $S$ a~list with single element equal to the input is created.
 Only this simplest conversion to an Array is applied if inappropriate type is found 
 while the transposition is processed.
 
@@ -229,9 +228,9 @@ while the transposition is processed.
 
 
 
-\subsubsection{Abstract (record)}
+\subsubsection{Abstract}
 \label{sec:abstract}
-An Abstract type allows a certain kind of polymorphism corresponding to a pure abstract class in C++ or to an interface in Java. 
+An Abstract type allows a~certain kind of polymorphism corresponding to a~pure abstract class in C++ or to an interface in Java. 
 Every Abstract type have unique name and set of Records that implements the Abstract. The particular type must be provided on input through the YAML tag.
 See description of \hyperlink{sec:Fields}{Fields} below for examples.
 
@@ -247,47 +246,134 @@ where conductivity is of Abstract type \verb'Field' with scalar values, is in fa
 \end{verbatim}
 as the \verb'FieldConstant' is default implementation of the field and it is auto=convertible from the key \verb'value'. 
 
+\subsubsection{Flow123d specific tags}
+\label{sec:spec_tags}
+Currently just two specific tags are implemented, both allowing inclusion of data in other files.
 
+{\bf Include other YAML file} The tag \verb'!include' can be used to read a~key value from other YAML file.
+Path to the file is specified as the value of the key. A relative path is rooted in the folder of the main input file.
+A particular type of an Abstract key is specified as a~composed tag \verb'!include,<TYPE>'.
 
+Example, the main input file:
+\begin{verbatim}
+    flow123d_version: 2.0.0
+    problem: !Coupling_Sequential
+        description: Test8 - Steady flow with sources
+        mesh:
+            mesh_file: ../00_mesh/square_1x1_shift.msh
+        flow_equation: !include,Flow_Darcy_MH
+            input_darcy.yaml
+\end{verbatim}
+Content of \verb'input_darcy.yaml', included Record:
+\begin{verbatim}
+    nonlinear_solver:
+        linear_solver: !Petsc
+    input_fields:
+        darcy_input_fields.yaml
+    balance: {}
+    output_stream: 
+        file: ./flow.pvd
+\end{verbatim}
+Content of \verb'darcy_input_fields.yaml', included Array:
+\begin{verbatim}
+    - region: plane
+        anisotropy: 1
+        water_source_density: !FieldFormula
+        value: 2*(1-x^2)+2*(1-y^2)
+    - region: .plane_boundary
+        bc_type: dirichlet
+        bc_pressure: 0    
+\end{verbatim}
 
+{\bf Include general CSV data}
+The custom tag \verb'include_csv' can be used to include a~table (e.g. coma separated values, CSV file) as an Array of Records. 
+Every line of the input table is converted to a~single element of the Array.
+The tag is followed by a~Record with several keys to specify format of the data:
+\begin{description}
+  \item {\bf\verb'file'} \\A valid path to a~text data file. Relative to the main input file.
+  \item {\bf\verb'separator'}\\ A string of characters used as separators of the values on the single line (default is coma ",").
+  Tab and space are always added. Double quotas can be used to express string values containing separators, 
+  backslash can be used to escaping any character with special meaning. Consecutive row of separators is interpreted as a~single separator. 
+  \item {\bf\verb'n_head_lines'}\\ Skip given number of lines at the beginning.
+  \item {\bf\verb'format'}\\ An input structure of a~single element in the resulting array. Type of Abstracts must be same through 
+  the whole resulting Array. String scalar values with a~placeholder \verb"'$<column>'" will be replaced by the value 
+  at corresponding column in the input file.
+\end{description}
 
-%\item[INCLUDE\_RECORD]:\\
-%This is a simple inclusion of another file as a content of a record:
-%\begin{verbatim}
-%{
-%        INCLUDE_RECORD = "<file name>"
-%}
-%\end{verbatim}
-%
-%\item[INCLUDE\_ARRAY]:\\
-%\begin{verbatim}
-%array=
-%{
-%        INCLUDE_ARRAY = "<file name>"
-%        FORMAT = "<format string>"
-%}       
-%\end{verbatim}
-%The reader will substitute the include record by a sequentially accessible array. The file has fixed number of 
-%space separated data fields on every line. Every line becomes one element in the array of type record. Every line forms a 
-%record with key names given by the \verb'<format string>' 
-%and corresponding data taken form the line.
+Current implementation have substantial limitation as it can not be combined with auto conversions. This makes these includes
+little bit verbose. For example consider this section from a~main input file:
+\begin{verbatim}
+    ...
+    substances: [A, B]
+    ...    
+    input_fields:
+    - region: A
+      porosity: !FieldTimeFunction
+        time_function: !include_csv
+          values:
+            file: data.txt  
+            separator: " "
+            n_head_lines: 1
+            format: 
+              time: #0
+              value: #1
+              
+    - region: .boundary_A        
+      bc_conc: 
+        - !FieldTimeFunction    # Substance A
+          time_function: !include_csv
+            values:
+              file: data.txt  
+              separator: " "
+              n_head_lines: 1
+              format: 
+                time: #0
+                value: #2
+        - !FieldTimeFunction    # Substance B
+          time_function: !include_csv
+            values:
+              file: data.txt  
+              separator: " "
+              n_head_lines: 1
+              format: 
+                time: #0
+                value: #3
+\end{verbatim}
+Content of \verb'data.txt':
+\begin{verbatim}
+time    porosity        bc_conc_X     bc_conc_Y
+0.0     0.01            1.0           0.6
+0.1     0.015           0.9           0.5
+0.2     0.03            0.8           0.4
+\end{verbatim}
 
-%The key difference compared to regular JSON arrays is that included arrays can be accessed only sequentially 
-%within the program and thus we minimize reader memory overhead for large input data. The idea is to translate raw data into structured
-%format and use uniform access to the data.
+This together will be equivalent to:
+\begin{verbatim}
+    input_fields:
+    - region: A
+      porosity: !FieldTimeFunction
+        time_function: 
+          - time: 0.0
+            value: 0.01
+          - time: 0.1
+            value: 0.015
+          - time: 0.2
+            value: 0.03
+           
+    - region: .boundary_A        
+      bc_conc: !FieldTimeFunction
+        time_function: 
+          - time: 0.0
+            value: [ 1.0, 0.6]
+          - time: 0.1
+            value: [ 0.9, 0.5]
+          - time:  0.2
+            value: [ 0.8, 0.4]
+\end{verbatim}
 
-%Basic syntax for format string could be an array of strings --- formats of individual columns.
-%Every format string is an address of key that is given the column. Onother possibility is to give an arbitrary 
-%JSON file, where all values are numbers of columns where to take the value.
+So in this particular case it would be simpler to write data directly into the main file. The include from 
+the text table is efficient for the long time series.
 
-%[\dots better specify format string]
-
-
-%Possible extensions:
-% have sections in the file for setting time dependent data
-% have number of lines at the beginning
-% have variable format
-% allow vectors in the 'line records']
 
 
 
@@ -295,11 +381,11 @@ as the \verb'FieldConstant' is default implementation of the field and it is aut
 This section provides some implementation details about the Flow123d input subsystem. This may be helpful to better understand behavior of the program for 
 some special input constructions.
 
-\begin{figure}
+\begin{figure}[!hb]
  \begin{center}
  \includegraphics[scale=0.4]{\fig/input_subsystem.pdf}
  % input_subsystem.pdf: 0x0 pixel, -2147483648dpi, 0.00x0.00 cm, bb=
- \caption{Sturucture of the input subsystem. HDF5 format not yet supported.}
+ \caption{Structure of the input subsystem. HDF5 format not yet supported.}
  \label{fig:input_subsystem}
  \end{center}
 \end{figure}
@@ -309,7 +395,7 @@ C++ classes and data structures. The scheme of the input is depicted on Figure \
 The structure of the input file is described by the Input Structure Tree (IST) consisting of the input objects describing 
 the types discussed in the previous Section \ref{sec:input_types}. The structure of the tree mostly follows follows the structure of the computational classes.
 
-When reading the input file, the file is first parsed by the specific format parser. Using a common interface to the parsed data, the 
+When reading the input file, the file is first parsed by the specific format parser. Using a~common interface to the parsed data, the 
 structure of the data is checked against the IST and the data are pushed into the storage tree. If the input data and IST do not match
 the automatic conversions described above are applied, where appropriate.
 An accessor object to the root data record is the result of the file reading. The data can be retrieved through the 
@@ -319,8 +405,8 @@ formats and for the Model editor --- specialized editor for the input file that 
 
 While the recommended format of the input file is YAML the JSON format can be used as well. This may be useful in particular if the input file
 should be machine generated. Although the JSON format is technically subset of the YAML format. We use separate parser and use special keys in order to
-mimic tags and references supported by the YAML. The type of an abstract is specified by the key \verb'TYPE'. A reference is given by a record with the only key 
-\verb'REF' which contains a string specifying the address of the value that should be substituted.
+mimic tags and references supported by the YAML. The type of an abstract is specified by the key \verb'TYPE'. A reference is given by a~record with the only key 
+\verb'REF' which contains a~string specifying the address of the value that should be substituted.
 
 
 
@@ -334,15 +420,15 @@ it may be difficult to understand the concept of the input structures. This sect
 The \hyperA{IT::Mesh}{mesh record} provides initialization of the computational mesh consisting of points, lines, triangles and tetrahedrons in the 3D ambient space.
 Currently, we support only GMSH mesh file format \href{http://geuz.org/gmsh/doc/texinfo/gmsh.html#MSH-ASCII-file-format}{MSH ASCII}. 
 The input file is provided by the key \hyperA{Mesh::mesh-file}{{\tt mesh\_file}}. The file format allows to group elements into {\it regions} 
-identified by a unique label (or by ID number). The regions with labels starting with the dot character are treated as {\it boundary regions}. 
+identified by a~unique label (or by ID number). The regions with labels starting with the dot character are treated as {\it boundary regions}. 
 Their elements are removed from the computational domain, however they can be used to specify boundary
 conditions. Other regions are called {\it bulk regions}. Every element lies directly in just one {\it simple region} while the simple regions may be 
 grouped into composed regions called also region sets. A simple region may be part of any number of composed regions.
 Initial assignment of the simple regions to the elements is given by the physical groups of the input GMSH file. Further
 modification of this assignment as well as creation of new simple or composed regions can be done 
 through the list of operations under the key \hyperA{Mesh::regions}{{\tt regions}}. The operations are performed in the order given by the input.
-Operation \hyperA{IT::From-Id}{{\tt From\_Id}} sets the name of a simple region having only ID in the input GMSH file. Operation 
-\hyperA{IT::From-Label}{{\tt From\_Label}} can rename a simple region. Operation \hyperA{IT::From-Elements}{{\tt From\_Elements}}
+Operation \hyperA{IT::From-Id}{{\tt From\_Id}} sets the name of a~simple region having only ID in the input GMSH file. Operation 
+\hyperA{IT::From-Label}{{\tt From\_Label}} can rename a~simple region. Operation \hyperA{IT::From-Elements}{{\tt From\_Elements}}
 assign new simple region to the given list of elements overwriting their region given by the input mesh file. Finally operations 
 \hyperA{IT::Union}{{\tt Union}}, \hyperA{IT::Difference}{{\tt Difference}} and \hyperA{IT::Intersection}{{\tt Intersection}}
 implements standard set operations with both simple and complex regions resulting in new composed regions.
@@ -352,9 +438,9 @@ implements standard set operations with both simple and complex regions resultin
 
 \subsection{Input Fields}
 Input of every equation contains the key \verb'input_fields' used consistently for the input of the equation parameters 
-in form of general time--space dependent fields.  The input fields are organized into a list of {\it field descriptors}, see 
-e.g. \hyperA{IT::Flow-Darcy-MH-Data}{\tt Data} record, the field descriptor of the DarcyFlow equation.
-The field descriptor is a Record with keys 
+in form of general time--space dependent fields.  The input fields are organized into a~list of {\it field descriptors}, see 
+e.g. \hyperA{IT::Flow-Darcy-MH-Data}{\tt Data} record, the field descriptor of the Darcy flow equation.
+The field descriptor is a~Record with keys 
 \hyperA{Flow-Darcy-MH-Data::time}{{\tt time}}, 
 \hyperA{Flow-Darcy-MH-Data::region}{{\tt region}}, 
 \hyperA{Flow-Darcy-MH-Data::rid}{{\tt rid}}
@@ -362,7 +448,7 @@ and further keys corresponding to the
 names of input fields supported by the equation. The field descriptor is used to prescribe
 a change of one or more fields in particular time (key \verb'time') and on particular region given  by the name (key \verb'region', preferred way) 
 or by the region id (key \verb'rid'). 
-The array is processed sequentially and latter values overwrite the previous ones. Change times of a single field must form a non-decreasing sequence.
+The array is processed sequentially and latter values overwrite the previous ones. Change times of a~single field must form a~non-decreasing sequence.
 Changes in fields given by the fields descriptor are interpreted as discontinuous changes of the changed fields
 and equations try to adopt its time stepping to match these time points. This is in contrast with changes of the field values given by
 the evaluation algorithms, these are always assumed to be continuous and the time steps are not adapted. 
@@ -397,7 +483,7 @@ input_fields:
 \label{sec:Fields}\hypertarget{sec:Fields}{}
 
 A general time and space dependent, scalar, vector, or  tensor valued function can be specified through the family of abstract records 
-\verb'Field:R3 -> X', where $X$ is a type of value returned by the field, which can be:
+\verb'Field:R3 -> X', where $X$ is a~type of value returned by the field, which can be:
 \begin{itemize}
  \item $T$ --- scalar valued field, with scalars of type $T$
  \item $T[d]$ --- vector valued field, with vector of fixed size $d$ and elements of type $T$
@@ -455,17 +541,17 @@ input fields:
 \subsubsection{Field Units}
 Every field (e.g. conductivity or storativity) have specified unit in terms of powers of the base SI units. 
 The user, however, may set input in different units specified by the key \verb'unit' 
-supported by every field algorithm. The key have type \verb'Unit' record with a single auto convertible key 
-\verb'unit_formula'. The unit formula is evaluated  into a coefficient and an SI unit. The resulting SI unit 
+supported by every field algorithm. The key have type \verb'Unit' record with a~single auto convertible key 
+\verb'unit_formula'. The unit formula is evaluated  into a~coefficient and an SI unit. The resulting SI unit 
 must match expected SI unit of the field, while the input value 
 of the field (including values from external files or returned by Python functions)  
 is multiplied by the coefficient before further processing.
 
 The unit formula have form: {\tt <UnitExpr>;<Variable>=<Number>*<UnitExpr>;...,}
-where {\tt <Variable>} is a variable name and {\tt <UnitExpr>} is a units expression
-which consists of products and divisions of terms, where a term has form \verb'<Base>^<N>', 
-where {\tt <N>} is an integer exponent and {\tt <Base>} is either a base SI unit, 
-a derived unit, or a variable defined in the same unit formula.
+where {\tt <Variable>} is a~variable name and {\tt <UnitExpr>} is a~units expression
+which consists of products and divisions of terms, where a~term has form \verb'<Base>^<N>', 
+where {\tt <N>} is an integer exponent and {\tt <Base>} is either a~base SI unit, 
+a derived unit, or a~variable defined in the same unit formula.
 Example, unit for the pressure head: 
 \begin{verbatim}
    MPa/rho/g_; rho = 990*kg*m^-3; g_ = 9.8*m*s^-2
@@ -477,7 +563,7 @@ Output from the models is controlled by an interplay of following records: \hype
 \hyperA{IT::Balance}{{\tt Balance}}, and \hyperA{IT::EquationOutput}{{\tt EquationOutput}}. The first two are part of the 
 records of so called {\it balance equations} which provides complete description of some balanced quantity. 
 Every such equation have its own balance output controlled by the \verb'Balance' record and its own output stream for the 
-spatial data controled by the \verb'OutputStream' record. Further every equation with its own output fields 
+spatial data controlled by the \verb'OutputStream' record. Further every equation with its own output fields 
 (every input field is also output field) have the \verb'EquationOutput' record to setup output of its fields.
 
 \subsubsection{Balance}
@@ -488,7 +574,7 @@ to \verb'true' the set of balance output times is enriched by the output times o
 \subsubsection{OutputStream}
 Set the file format of the output stream, possibly setting the output name, however the default value for the file name is preferred and the corresponding key 
 \hyperA{OutputStream::file}{{\tt file}} is obsolete.
-The time set provided by the optional key \hyperA{OutputStream::times}{{\tt times}} is used as a default time set for a similar key in associated 
+The time set provided by the optional key \hyperA{OutputStream::times}{{\tt times}} is used as a~default time set for a~similar key in associated 
 \verb'EquationOutput' records. Finally, the key \hyperA{OutputStream::observe-points}{{\tt observe\_points}} is used to specify observation points
 in which the associated equation output evaluates the observed fields.
 
@@ -505,5 +591,5 @@ using the key \hyperA{EquationOutput::add-input-times}{{\tt add\_input\_times}}.
 \subsubsection{TimeGrid Array}
 \hypertarget{sec:TimeGrid}{}
 
-An array of the \hyperA{IT::TimeGrid}{{\tt TimeGrid}} records may be used to setup a sequence of times. Such sequence is used in particular 
-to triger various types of output. A single TimeGrid represents a regular grid of times with given start time, end time and step.
+An array of the \hyperA{IT::TimeGrid}{{\tt TimeGrid}} records may be used to setup a~sequence of times. Such sequence is used in particular 
+to trigger various types of output. A single TimeGrid represents a~regular grid of times with given start time, end time and step.

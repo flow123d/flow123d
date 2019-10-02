@@ -135,6 +135,11 @@ void SparseGraph::finalize()
        }
    }
 
+   /**
+    * Using MPICH valgrind reports condition on uninitialized value
+    * here. Nevertheless we cna not get rid of it even after explicitly set all allocated space
+    * to zero.
+    */
    // communicate send sizes
    int * rcounts = new int [vtx_distr.np()];
    int * rdispls = new int [vtx_distr.np()];
@@ -345,9 +350,9 @@ void SparseGraphPETSC::partition(int *loc_part)
 
 SparseGraphPETSC::~SparseGraphPETSC()
 {
-    ISDestroy(&part_IS);
-    MatPartitioningDestroy(&petsc_part);
-    MatDestroy(&petsc_adj_mat);
+	chkerr(ISDestroy(&part_IS));
+    chkerr(MatPartitioningDestroy(&petsc_part));
+    chkerr(MatDestroy(&petsc_adj_mat));
 
     if (adj) PetscFree(adj);
     if (rows) PetscFree(rows);

@@ -58,8 +58,8 @@
   *
  */
 
-SchurComplement::SchurComplement(IS ia, Distribution *ds)
-: LinSys_PETSC(ds), IsA(ia), state(created)
+SchurComplement::SchurComplement(Distribution *ds, IS ia, IS ib)
+: LinSys_PETSC(ds), IsA(ia), IsB(ib), state(created)
 {
         // check index set
         OLD_ASSERT(IsA != NULL, "Index set IsA is not defined.\n" );
@@ -69,6 +69,7 @@ SchurComplement::SchurComplement(IS ia, Distribution *ds)
         IA      = NULL;
         B       = NULL;
         Bt      = NULL;
+        C       = NULL;
         xA      = NULL;
         IAB     = NULL;
         IsB     = NULL;
@@ -76,13 +77,34 @@ SchurComplement::SchurComplement(IS ia, Distribution *ds)
         RHS2    = NULL;
         Sol1    = NULL;
         Sol2    = NULL;
+        ds_     = NULL;
 
         // create A block index set
         ISGetLocalSize(IsA, &loc_size_A);
 
         // create B block index set
-        loc_size_B = rows_ds_->lsize() - loc_size_A;
-        ISCreateStride(PETSC_COMM_WORLD,loc_size_B,rows_ds_->begin()+loc_size_A,1,&IsB);
+        if ( IsB == nullptr ) {
+
+            // compute dual indexset
+
+            vector<bool> a_used(ds->lsize(), false);
+
+            const PetscInt *loc_indices;
+            ISGetIndices(IsA, &loc_indices);
+            for(uint i=0; i < loc_size_A; i++)
+                a_used[ loc_indices[i] - ds->begin()] = true;
+            ISRestoreIndices(IsA, &loc_indices);
+
+            loc_size_B = ds->lsize() - loc_size_A;
+            PetscInt *b_indices;
+            PetscMalloc(sizeof(PetscInt)*loc_size_B, &b_indices);
+            for(uint i=0, j=0; i < ds->lsize(); i++)
+                if (! a_used[i]) b_indices[j++] = i + ds->begin();
+            ISCreateGeneral(PETSC_COMM_WORLD, loc_size_B, b_indices, PETSC_COPY_VALUES, &IsB);
+            PetscFree(b_indices);
+        } else {
+            ISGetLocalSize(IsB, &loc_size_B);
+        }
 }
 
 
@@ -103,6 +125,7 @@ SchurComplement::SchurComplement(SchurComplement &other)
 	B   = NULL;
 	Bt  = NULL;
 	xA  = NULL;
+	C   = NULL;
 }
 
 
@@ -139,13 +162,17 @@ void SchurComplement::form_schur()
 {
     START_TIMER("form schur complement");
 
+
     PetscErrorCode ierr = 0;
     MatReuse mat_reuse;        // reuse structures after first computation of schur
+    MatStructure mat_subset_pattern;
     PetscScalar *rhs_array, *sol_array;
 
     mat_reuse=MAT_REUSE_MATRIX;
+    mat_subset_pattern=SUBSET_NONZERO_PATTERN;
     if (state==created) {
     	mat_reuse=MAT_INITIAL_MATRIX; // indicate first construction
+    	mat_subset_pattern=DIFFERENT_NONZERO_PATTERN;
 
         // create complement system
         // TODO: introduce LS as true object, clarify its internal states
@@ -168,7 +195,9 @@ void SchurComplement::form_schur()
 
         VecRestoreArray( Sol2, &sol_array );
 
+
     }
+    DebugOut() << print_var(mat_reuse) << print_var(matrix_changed_) << print_var(state);
 
     // compose Schur complement
     // Petsc need some fill estimate for results of multiplication in form nnz(A*B)/(nnz(A)+nnz(B))
@@ -178,6 +207,14 @@ void SchurComplement::form_schur()
     //                            B'*IA*B  ...         ( N/2 *(2*N-1) )/( 2 + 2*N ) <= 1.4
     // nevertheless Petsc does not allows fill ratio below 1. so we use 1.1 for the first
     // and 1.5 for the second multiplication
+
+    // TODO:
+    // In order to let PETSC allocate structure of the complement we can not perform MatGetSubMatrix
+    // and MatAXPY on the same complement matrix, since one operation change the matrix structure for the other.
+    //
+    // Probably no way to make this optimal using high level methods. We should have our own
+    // format for schur complement matrix, store local systems and perform elimination localy.
+    // Or even better assembly the complement directly. (not compatible with raw P0 method)
 
     if (matrix_changed_) {
        	create_inversion_matrix();
@@ -190,13 +227,18 @@ void SchurComplement::form_schur()
 		ierr+=MatMatMult(Bt, IAB, mat_reuse, 1.9 ,&(xA)); // 1.1 - fill estimate (PETSC report values over 1.8)
 
 		// get C block, loc_size_B removed
-		ierr+=MatGetSubMatrix( matrix_, IsB, IsB, mat_reuse, const_cast<Mat *>( Compl->get_matrix() ) );
+		ierr+=MatGetSubMatrix( matrix_, IsB, IsB, mat_reuse, &C);
+
+		if (state==created) MatDuplicate(C, MAT_DO_NOT_COPY_VALUES, const_cast<Mat *>( Compl->get_matrix() ) );
+		MatZeroEntries( *( Compl->get_matrix()) );
+
 		// compute complement = (-1)cA+xA = Bt*IA*B - C
 		if ( is_negative_definite() ) {
-			ierr+=MatAXPY(*( Compl->get_matrix() ), -1, xA, SUBSET_NONZERO_PATTERN);
+		    ierr+=MatAXPY(*( Compl->get_matrix() ), 1, C, SUBSET_NONZERO_PATTERN);
+			ierr+=MatAXPY(*( Compl->get_matrix() ), -1, xA, mat_subset_pattern);
 		} else {
-			ierr+=MatScale(*( Compl->get_matrix() ),-1.0);
-			ierr+=MatAXPY(*( Compl->get_matrix() ), 1, xA, SUBSET_NONZERO_PATTERN);
+			ierr+=MatAXPY(*( Compl->get_matrix() ), -1, C, SUBSET_NONZERO_PATTERN);
+			ierr+=MatAXPY(*( Compl->get_matrix() ), 1, xA, mat_subset_pattern);
 		}
 		Compl->set_matrix_changed();
 
@@ -244,6 +286,7 @@ void SchurComplement::set_complement(LinSys_PETSC *ls)
 
 Distribution *SchurComplement::make_complement_distribution()
 {
+	if (ds_ != NULL) delete ds_;
     ds_ = new Distribution(loc_size_B, PETSC_COMM_WORLD);
 	return ds_;
 }
@@ -257,6 +300,7 @@ void SchurComplement::create_inversion_matrix()
     if (state==created) mat_reuse=MAT_INITIAL_MATRIX; // indicate first construction
 
     MatGetSubMatrix(matrix_, IsA, IsA, mat_reuse, &IA);
+
     MatGetOwnershipRange(matrix_,&pos_start,PETSC_NULL);
     MatGetOwnershipRange(IA,&pos_start_IA,PETSC_NULL);
 
@@ -314,6 +358,11 @@ void SchurComplement::create_inversion_matrix()
 
     MatAssemblyBegin(IA, MAT_FINAL_ASSEMBLY);
     MatAssemblyEnd(IA, MAT_FINAL_ASSEMBLY);
+
+
+    /*
+    MatCreateMPIAIJSumSeqAIJ(PETSC_COMM_WORLD, locIA, PETSC_DECIDE, PETSC_DECIDE, reuse, &IA);
+    */
 }
 
 
@@ -326,14 +375,24 @@ double SchurComplement::get_solution_precision()
 }
 
 
-int SchurComplement::solve() {
+LinSys::SolveInfo SchurComplement::solve() {
     START_TIMER("SchurComplement::solve");
     this->form_schur();
-    int converged_reason = Compl->solve();
+    
+    //output schur complement in matlab file
+//     string output_file = FilePath("schur.m", FilePath::output_file);
+//     PetscViewer    viewer;
+//     PetscViewerASCIIOpen(PETSC_COMM_WORLD, output_file.c_str(), &viewer);
+//     PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_MATLAB);
+//     MatView( *const_cast<Mat*>(Compl->get_matrix()), viewer);
+//     VecView( *const_cast<Vec*>(Compl->get_rhs()), viewer);
+    
+    LinSys::SolveInfo si = Compl->solve();
+//     VecView(Compl->get_solution(), viewer);
 
     // TODO: Resolve step is not necessary inside of nonlinear solver. Can optimize.
     this->resolve();
-	return converged_reason;
+    return si;
 }
 
 
@@ -368,19 +427,21 @@ double SchurComplement::compute_residual()
  */
 SchurComplement :: ~SchurComplement() {
 
-    if ( B  != NULL )             MatDestroy(&B);
-    if ( Bt != NULL )             MatDestroy(&Bt);
-    if ( xA != NULL )             MatDestroy(&xA);
-    if ( IA != NULL )             MatDestroy(&IA);
-    if ( IAB != NULL )            MatDestroy(&IAB);
-    if ( IsA != NULL )            ISDestroy(&IsA);
-    if ( IsB != NULL )            ISDestroy(&IsB);
-    if ( RHS1 != NULL )           VecDestroy(&RHS1);
-    if ( RHS2 != NULL )           VecDestroy(&RHS2);
-    if ( Sol1 != NULL )           VecDestroy(&Sol1);
-    if ( Sol2 != NULL )           VecDestroy(&Sol2);
-    if ( IA != NULL )             MatDestroy(&IA);
+    if ( B  != NULL )             chkerr(MatDestroy(&B));
+    if ( Bt != NULL )             chkerr(MatDestroy(&Bt));
+    if ( C != NULL )              chkerr(MatDestroy(&C));
+    if ( xA != NULL )             chkerr(MatDestroy(&xA));
+    if ( IA != NULL )             chkerr(MatDestroy(&IA));
+    if ( IAB != NULL )            chkerr(MatDestroy(&IAB));
+    if ( IsA != NULL )            chkerr(ISDestroy(&IsA));
+    if ( IsB != NULL )            chkerr(ISDestroy(&IsB));
+    if ( RHS1 != NULL )           chkerr(VecDestroy(&RHS1));
+    if ( RHS2 != NULL )           chkerr(VecDestroy(&RHS2));
+    if ( Sol1 != NULL )           chkerr(VecDestroy(&Sol1));
+    if ( Sol2 != NULL )           chkerr(VecDestroy(&Sol2));
+    if ( IA != NULL )             chkerr(MatDestroy(&IA));
 
     if (Compl != NULL)            delete Compl;
+    if (ds_ != NULL)              delete ds_;
 
 }

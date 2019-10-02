@@ -20,18 +20,24 @@
 
 #include <limits>
 #include <ios>
-#include <set>
+//#include <set>
 #include <map>
 #include <vector>
 #include <string>
-#include <iomanip>
+//#include <iomanip>
 
-#include <boost/type_traits.hpp>
-#include <boost/tokenizer.hpp>
-#include <boost/algorithm/string.hpp>
+#include <stdint.h>                  // for int64_t
+#include <boost/exception/info.hpp>  // for error_info::~error_info<Tag, T>
+#include <memory>                    // for shared_ptr, __shared_ptr
+#include <utility>                   // for pair
 
-#include "system/global_defs.h"
-#include "system/system.hh"
+
+//#include <boost/type_traits.hpp>
+//#include <boost/tokenizer.hpp>
+//#include <boost/algorithm/string.hpp>
+
+//#include "system/global_defs.h"
+//#include "system/system.hh"
 #include "system/exceptions.hh"
 #include "system/file_path.hh"
 
@@ -94,6 +100,7 @@ class TypeBase {
 public:
 	/// Type returned by content_hash methods.
 	typedef std::size_t TypeHash;
+	const static TypeHash none_hash = std::numeric_limits<TypeHash>::max();
 
 	/// String stored in JSON format.
 	typedef std::string json_string;
@@ -229,7 +236,7 @@ public:
     virtual MakeInstanceReturnType make_instance(ParameterVector vec = ParameterVector()) =0;
 
     /// Indicates if type is marked with flag @p root_of_generic_subtree_
-    inline bool is_root_of_generic_subtree() {
+    inline bool is_root_of_generic_subtree() const {
     	return root_of_generic_subtree_;
     }
 
@@ -317,8 +324,8 @@ protected:
 std::ostream& operator<<(std::ostream& stream, const TypeBase& type);
 
 
-class Record;
-class Selection;
+//class Record;
+//class Selection;
 
 
 /**

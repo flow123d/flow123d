@@ -135,18 +135,19 @@ else(FLOW_CC_FLAGS)
     flow_define(DEBUG)
   elseif(FLOW_BUILD_TYPE STREQUAL "coverage")
     # Coverage mode creates instrumented binary
-    SET(CMAKE_CXX_FLAGS "-g -O0 -fprofile-arcs -ftest-coverage")
-    SET(CMAKE_C_FLAGS "-g -O0 -fprofile-arcs -ftest-coverage")
-    SET(CMAKE_EXE_LINKER_FLAGS "-g -O0 -fprofile-arcs -ftest-coverage")
+    SET(CMAKE_CXX_FLAGS "-g -O0 --coverage")
+    SET(CMAKE_C_FLAGS "-g -O0 --coverage")
+    SET(CMAKE_EXE_LINKER_FLAGS "-g -O0 --coverage")
     set(CMAKE_BUILD_TYPE Debug)
     
     # set external libs flags
     SET(EXTERNAL_LIBS_CXX_FLAGS "-g -O0")
     SET(EXTERNAL_LIBS_C_FLAGS "-g -O0")
+    
     flow_define(DEBUG)
-    INCLUDE(CodeCoverage)
+    # INCLUDE(CodeCoverage)
     # add custom target to collect coverage into xml file
-    COVERAGE_SETUP_COBERTURA_COLLECTION (cobertura-collect-coverage coverage.xml)
+    # COVERAGE_SETUP_COBERTURA_COLLECTION (cobertura-collect-coverage coverage.xml)
   else()
   endif()
 endif(FLOW_CC_FLAGS)
@@ -341,7 +342,8 @@ set(Boost_USE_STATIC_LIBS       ON)
 set(Boost_USE_MULTITHREADED     OFF)
 set(Boost_USE_STATIC_RUNTIME    OFF)
 set(EXTERNAL_BOOST_DIR  "${EXTERNAL_PROJECT_DIR}/boost_build")  
-set(REQUIRED_Boost_COMPONENTS program_options serialization regex filesystem system)
+#set(REQUIRED_Boost_COMPONENTS program_options serialization regex filesystem system)
+set(REQUIRED_Boost_COMPONENTS program_options filesystem) 
  
 # set(Boost_DEBUG TRUE)
 # For some mysterious reason, the second find_package fails to find
@@ -457,14 +459,16 @@ message(STATUS "====== BDDCML =========================================")
 message(STATUS "=======================================================")
 message(STATUS "BDDCML_ROOT = ${BDDCML_ROOT}")
 
-find_package(BDDCML REQUIRED)
-flow_define(HAVE_BDDCML)
+find_package(BDDCML)
+if (BDDCML_FOUND)
+    flow_define(HAVE_BDDCML)
+    message(STATUS "-------------------------------------------------------")
+    message(STATUS "BDDCML_FOUND = ${BDDCML_FOUND}")
+    message(STATUS "BDDCML_INCLUDES = ${BDDCML_INCLUDES}")
+    message(STATUS "BDDCML_LIBRARY = ${BDDCML_LIBRARY}")
+    message(STATUS "=======================================================\n\n") 
+endif()
 
-message(STATUS "-------------------------------------------------------")
-message(STATUS "BDDCML_FOUND = ${BDDCML_FOUND}")
-message(STATUS "BDDCML_INCLUDES = ${BDDCML_INCLUDES}")
-message(STATUS "BDDCML_LIBRARY = ${BDDCML_LIBRARY}")
-message(STATUS "=======================================================\n\n") 
 
 
 #################################################################################
@@ -562,6 +566,10 @@ if (COPY_INSTEAD_OF_SYMLINK)
 	    ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/src/python ${CMAKE_SOURCE_DIR}/lib/python/flow123d
 	    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 	)
+	
+	set(EXECUTABLE_PATH ${MPIEXEC_PATH})
+configure_file(${CMAKE_SOURCE_DIR}/CMake/executable_link_template ${CMAKE_BINARY_DIR}/bin/mpiexec)
+	
 else()
 	execute_process(COMMAND
 	    ${CMAKE_COMMAND} -E create_symlink ${CMAKE_SOURCE_DIR}/src/python ${CMAKE_SOURCE_DIR}/lib/python/flow123d
@@ -585,9 +593,9 @@ include_directories(${PYTHON_INCLUDE_DIRS})
 
 # use relative path
 set(PYTHON_RUNTEST ../bin/python/runtest.py)
-configure_file(${CMAKE_SOURCE_DIR}/CMake/unix_runtest_template ${CMAKE_SOURCE_DIR}/bin/runtest @ONLY)
-configure_file(${CMAKE_SOURCE_DIR}/CMake/unix_runtest_template ${CMAKE_SOURCE_DIR}/tests/runtest @ONLY)
-configure_file(${CMAKE_SOURCE_DIR}/CMake/unix_runtest_template ${CMAKE_SOURCE_DIR}/tests_old/runtest @ONLY)
+#configure_file(${CMAKE_SOURCE_DIR}/CMake/unix_runtest_template ${CMAKE_SOURCE_DIR}/bin/runtest @ONLY)
+#configure_file(${CMAKE_SOURCE_DIR}/CMake/unix_runtest_template ${CMAKE_SOURCE_DIR}/tests/runtest @ONLY)
+#configure_file(${CMAKE_SOURCE_DIR}/CMake/unix_runtest_template ${CMAKE_SOURCE_DIR}/tests_old/runtest @ONLY)
 
 # make shortcut also for exec_parallel.py
 set(PYTHON_RUNTEST ../bin/python/exec_parallel.py)
@@ -645,7 +653,8 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/third_party/fparser-4.5.1
     ${CMAKE_SOURCE_DIR}/third_party/FADBAD++
     ${PETSC_INCLUDES}
-    ${BDDCML_INCLUDES}
+    ${PYTHON_INCLUDE_DIRS}
+    
     ${Boost_INCLUDE_DIR}
     ${Armadillo_INCLUDE_DIRS}
     ${MPI_CXX_INCLUDE_PATH}
@@ -657,6 +666,10 @@ include_directories(
 #    ${CMAKE_SOURCE_DIR}/third_party/tbb43_20150316oss/include
 )
 
+if (BDDCML_FOUND)
+    include_directories(${BDDCML_INCLUDES})
+endif()    
+    
 ######################################################################################################################
 # custom targets
 
@@ -747,7 +760,8 @@ if( CYGWIN AND NOT EXISTS ${MPIEXEC_PATH})
 endif()
 
 # create shell script which call correct mpiexec binary
-configure_file(${CMAKE_SOURCE_DIR}/CMake/mpiexec_link_template ${CMAKE_BINARY_DIR}/bin/mpiexec)
+set(EXECUTABLE_PATH ${MPIEXEC_PATH})
+configure_file(${CMAKE_SOURCE_DIR}/CMake/executable_link_template ${CMAKE_BINARY_DIR}/bin/mpiexec)
 
 ##################################################################################################################### 
 # Macro to make usefull links in SOURCE_DIR
@@ -780,8 +794,15 @@ macro(make_link_in_source FILE)
   set(SOURCE_TREE_LINKS  ${SOURCE_TREE_LINKS} ${CMAKE_SOURCE_DIR}/${FILE} CACHE INTERNAL "")
 endmacro()
 
-make_link_in_source(bin/flow123d)
-make_link_in_source(bin/mpiexec)
+# use wreappers instead of links (or copy) for executables
+#set(EXECUTABLE_PATH ${CMAKE_BINARY_DIR}/bin/flow123d)
+#configure_file(${CMAKE_SOURCE_DIR}/CMake/executable_link_template ${CMAKE_SOURCE_DIR}/bin/flow123d)
+#set(EXECUTABLE_PATH ${CMAKE_BINARY_DIR}/bin/mpiexec)
+#configure_file(${CMAKE_SOURCE_DIR}/CMake/executable_link_template ${CMAKE_SOURCE_DIR}/bin/mpiexec)
+
+#make_link_in_source(bin/flow123d)
+#make_link_in_source(bin/mpiexec)
+
 make_link_in_source(bin/tests/Makefile)
 make_link_in_source(unit_tests/Makefile)
 
@@ -874,8 +895,12 @@ message(STATUS "YamlCpp:    ${YamlCpp_LIBRARY}")
 message(STATUS "PugiXml:    ${PugiXml_LIBRARY}")
 message(STATUS "ZLib:       ${Zlib_LIBRARY}")
 message(STATUS "===========================================")
-
-
+message(STATUS "INCLUDE_DIRECTORIES:")
+get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
+foreach(dir ${dirs})
+  message(STATUS " - ${dir}")
+endforeach()
+message(STATUS "===========================================")
 
 ####################################################################################
 # Install and Packaging
@@ -883,7 +908,7 @@ message(STATUS "===========================================")
 # Cache PLATFORM_NAME
 # set(CMAKE_INSTALL_MESSAGE ALWAYS)
 set(PLATFORM_NAME ${PLATFORM_NAME} CACHE INTERNAL "Platform name used by prepare_to_publish script.")
-set(CMAKE_INSTALL_PREFIX "$ENV{HOME}/local/flow123d")
+set(CMAKE_INSTALL_PREFIX "$ENV{FLOW123D_HOME}") # install prefix is taken from sys env variable FLOW123D_HOME
 set(_CPACK_INSTALL_ROOT ${CMAKE_BINARY_DIR}/_CPack_Packages/Linux/TGZ/Flow123d-2.0.0_rc-Linux)  
 
 
@@ -898,6 +923,9 @@ install(PROGRAMS  build_tree/bin/flow123d   DESTINATION bin/)
 install(PROGRAMS  bin/runtest               DESTINATION bin/)
 install(PROGRAMS  bin/exec_parallel         DESTINATION bin/)
 install(PROGRAMS  bin/input_convert.sh      DESTINATION bin/) 
+install(PROGRAMS  bin/yaml_converter/yaml_converter.py    DESTINATION bin/yaml_converter)
+install(PROGRAMS  bin/yaml_converter/YAMLConverter.py     DESTINATION bin/yaml_converter)
+install(PROGRAMS  bin/yaml_converter/change_rules.py      DESTINATION bin/yaml_converter)
 install(PROGRAMS  bin/ndiff/ndiff.pl        DESTINATION bin/ndiff)
 install(PROGRAMS  build_tree/bin/mpiexec    DESTINATION bin/)
 
@@ -911,8 +939,12 @@ install(FILES     doc/petsc_options_help    DESTINATION doc/)
 install(FILES     doc/LICENSE               DESTINATION doc/)
 install(FILES     doc/GPL3                  DESTINATION doc/)
 install(FILES     doc/README                DESTINATION doc/)
-install(FILES     ${CMAKE_BINARY_DIR}/doc/reference_manual/flow123d_doc.pdf DESTINATION doc/)
-install(DIRECTORY ${CMAKE_BINARY_DIR}/htmldoc/html/src/                     DESTINATION doc/htmldoc)
+# PDF and htmldoc are marked as OPTIONAL so this version can be installed on a system where 
+# latex and pandoc are not available and where container solution could be dangerou (such as HPC resource)
+# TODO perhaps by default, PDF and HTML should be required and only if specified in the config.cmake
+#      should they be OPTIONAL
+install(FILES     ${CMAKE_BINARY_DIR}/doc/reference_manual/flow123d_doc.pdf DESTINATION doc/ OPTIONAL)
+install(DIRECTORY ${CMAKE_BINARY_DIR}/htmldoc/html/src/                     DESTINATION doc/htmldoc OPTIONAL)
 
 
 # install tests dir

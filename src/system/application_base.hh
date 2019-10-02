@@ -20,15 +20,22 @@
 
 
 #include <string>
-#include <sstream>
+//#include <sstream>
 #include <mpi.h>
+//#include "global_defs.h"
+//#include "system/file_path.hh"
 
-#include "global_defs.h"
-#include "system/file_path.hh"
+#include <stdarg.h>                  // for va_list
+#include <stdio.h>                   // for FILE
+#include <boost/exception/info.hpp>  // for error_info::~error_info<Tag, T>
+#include "config.h"                  // for FLOW123D_HAVE_PETSC
+#include "petscsys.h"                // for PetscErrorCode
+#include "system/exceptions.hh"      // for ExcStream, operator<<, EI, TYPED...
 
-#ifdef FLOW123D_HAVE_PETSC
-#include "petsc.h"
-#endif
+
+//#ifdef FLOW123D_HAVE_PETSC
+//#include "petsc.h"
+//#endif
 
 using namespace std;
 
@@ -64,6 +71,13 @@ public:
 	 */
 	void init(int argc, char ** argv);
 
+	/**
+	 * Run application.
+	 *
+	 * Method must be implemented in derived class.
+	 */
+	virtual void run() = 0;
+
     /// Return codes of application
 	static const int exit_success = 0;
     static const int exit_failure = 1;
@@ -78,17 +92,10 @@ protected:
 	 *
 	 * Construction is done in init method. We need to call virtual methods during construction.
 	 */
-	ApplicationBase(int argc,  char ** argv);
+	ApplicationBase();
 
 	/// Destructor
 	virtual ~ApplicationBase();
-
-	/**
-	 * Run application.
-	 *
-	 * Method must be implemented in derived class.
-	 */
-	virtual void run() = 0;
 
 	/**
 	 * Read system parameters, open log.
@@ -118,13 +125,6 @@ protected:
 	 * Finalize PETSC. If finalization failed return nonzero value.
 	 */
 	int petcs_finalize();
-
-	/**
-	 * Execute part of program after run of simulation.
-	 *
-	 * Method can be override in derived class.
-	 */
-	virtual void after_run() {}
 
     /**
      * Log file name argument - passed to system_init; "" means default, "\n" means no logging

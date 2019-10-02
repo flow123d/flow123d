@@ -1,4 +1,4 @@
-flow123d_version: 2.0.0
+flow123d_version: 3.1.0
 problem: !Coupling_Sequential
   description: Steady flow with Seepage face boundary condition
   #      * The test problem use square computational domain and emulate slope of the top surface
@@ -14,7 +14,6 @@ problem: !Coupling_Sequential
   mesh:
     mesh_file: ../00_mesh/square_xz_1x1.msh
   flow_equation: !Flow_Darcy_MH
-    output_specific:
     n_schurs: 2
     input_fields:
       - region: plane
@@ -31,17 +30,16 @@ problem: !Coupling_Sequential
         - pressure_p1
         - velocity_p0
 #        - subdomain
-    balance: {}          
-    nonlinear_solver:  
+    nonlinear_solver:
       tolerance: 1e-5
       max_it: 10 # should stop after 5 iterations due to stagnation
       converge_on_stagnation: true
-      linear_solver: !Petsc 
+      linear_solver: !Petsc
         # set r tolerance to high to force stagnation of the nonlin solver
-        r_tol: 0.9999 
+        r_tol: 0.9999
         a_tol: 1000.0
-        
-    output_stream: 
+
+    output_stream:
       file: ./test05.pvd
       format: !vtk
         variant: ascii

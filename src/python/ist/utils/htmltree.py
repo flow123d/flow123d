@@ -280,10 +280,23 @@ class htmltree(object):
         # self.tag('span', 'DESCRIPTION', attrib={ 'class': 'desc-title' })
         if not value:
             return self.tag('div', 'no description provided', cls='description no-description')
-
-        value = self.m2h.parse(value, reduce_to_tree=True)
-        value.attrib['class'] = 'description'
-        self.add(value)
+        
+        # remove wrong new lines with new lines
+        value = value.replace('\\n', '\n').strip()
+        # replace double slash with single slash
+        value = value.replace('\\\\', '\\')
+        
+        # debug
+        # if value.find('Record with data for a general sequential') != -1:
+        #     print('\n--------')
+        #     print(value)
+        #     print('\n--------')
+        #     print(self.m2h.parse(value, reduce_to_tree=False))
+        #     print('\n--------')
+        
+        result = self.m2h.parse(value, reduce_to_tree=True)
+        result.attrib['class'] = 'description'
+        self.add(result)
         # return self.tag('div', value, { 'class': 'description' }, no_escape=True)
 
     def __enter__(self):

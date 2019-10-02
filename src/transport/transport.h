@@ -23,25 +23,38 @@
 #ifndef TRANSPORT_H_
 #define TRANSPORT_H_
 
+#include <boost/exception/info.hpp>                   // for operator<<, err...
+#include <memory>                                     // for shared_ptr
+#include <vector>                                     // for vector
 #include <petscmat.h>
-#include "coupling/equation.hh"
-#include "input/accessors.hh"
-#include "flow/mh_dofhandler.hh"
-#include "transport/transport_operator_splitting.hh"
-
-#include "fields/field_algo_base.hh"
-#include "fields/bc_field.hh"
+#include "fields/field.hh"                            // for Field
 #include "fields/bc_multi_field.hh"
 #include "fields/field_values.hh"
 #include "fields/multi_field.hh"
-#include "fields/vec_seq_double.hh"
+#include "la/vector_mpi.hh"
 #include "fields/equation_output.hh"
+#include "input/type_base.hh"                         // for Array
+#include "input/type_generic.hh"                      // for Instance
+#include "input/accessors.hh"
+#include "mesh/long_idx.hh"
+#include "mesh/region.hh"                             // for RegionSet
+#include "petscvec.h"                                 // for Vec, _p_Vec
+#include "tools/time_marks.hh"                        // for TimeMark, TimeM...
+#include "transport/substance.hh"                     // for SubstanceList
+#include "transport/transport_operator_splitting.hh"
 
-class SorptionImmob;
 class OutputTime;
 class Mesh;
 class Distribution;
-class ConvectionTransport;
+class Balance;
+class MH_DofHandler;
+namespace Input {
+	namespace Type {
+		class Record;
+		class Selection;
+	}
+}
+template <int spacedim, class Value> class FieldFE;
 
 
 //=============================================================================
@@ -85,8 +98,8 @@ public:
 		/// Initial concentrations.
 		MultiField<3, FieldValue<3>::Scalar> init_conc;
 
-		Field<3, FieldValue<3>::Integer> region_id;
-        Field<3, FieldValue<3>::Integer> subdomain;
+		Field<3, FieldValue<3>::Scalar> region_id;
+        Field<3, FieldValue<3>::Scalar> subdomain;
         MultiField<3, FieldValue<3>::Scalar>    conc_mobile;    ///< Calculated concentrations in the mobile zone.
 
 
@@ -181,9 +194,9 @@ public:
 	const Vec &get_solution(unsigned int sbi) override
 	{ return vconc[sbi]; }
 
-	void get_par_info(int * &el_4_loc, Distribution * &el_ds) override;
+	void get_par_info(LongIdx * &el_4_loc, Distribution * &el_ds) override;
 
-	int *get_row_4_el() override;
+	LongIdx *get_row_4_el() override;
 
     /// Returns number of transported substances.
     inline unsigned int n_substances() override
@@ -291,7 +304,12 @@ private:
     Vec *vcumulative_corr;
     double **cumulative_corr;
 
-    std::vector<VectorSeqDouble> out_conc;
+    std::vector<VectorMPI> out_conc;
+
+    // Temporary objects holding pointers to appropriate FieldFE
+    // TODO remove after final fix of equations
+    /// Fields correspond with \p out_conc.
+    std::vector< std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> > output_field_ptr;
 
 	/// Record with input specification.
 	const Input::Record input_rec;
@@ -299,8 +317,8 @@ private:
 	std::shared_ptr<OutputTime> output_stream_;
 
 
-	int *row_4_el;
-	int *el_4_loc;
+	LongIdx *row_4_el;
+	LongIdx *el_4_loc;
 	Distribution *el_ds;
 
     /// Transported substances.
@@ -312,6 +330,7 @@ private:
      * data. Possibly make more general set_data method, allowing setting data given by name. needs support from EqDataBase.
      */
     const MH_DofHandler *mh_dh;
+    std::shared_ptr<DOFHandlerMultiDim> dh_;
 
 	/// List of indices used to call balance methods for a set of quantities.
 	vector<unsigned int> subst_idx;

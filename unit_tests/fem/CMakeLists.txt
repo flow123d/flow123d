@@ -22,14 +22,15 @@
 #
 
 
-set(libs fem_lib)
+set(libs fem_lib io_lib)
 add_test_directory("${libs}")
 
 
 define_test(quadrature)
 define_test(fe_values)
-
-
-
+define_mpi_test(dofhandler 1)
+define_mpi_test(dofhandler 2)
+define_mpi_test(dofhandler 3)
+define_test(fe_system)
 
 

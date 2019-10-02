@@ -19,14 +19,26 @@
 #ifndef LA_LINSYS_PETSC_HH_
 #define LA_LINSYS_PETSC_HH_
 
-// derived from base linsys
-#include "la/linsys.hh"
+#include <functional>    // for unary_function
+#include <string>        // for string
+#include <vector>        // for vector
+#include "la/linsys.hh"  // for LinSys
+#include "petscksp.h"    // for KSP, KSPConvergedReason, _p_KSP
+#include "petscmat.h"    // for Mat, MatCopy, MatZeroEntries, MatAssemblyType
+#include "petscmath.h"   // for PetscScalar
+#include "petscsys.h"    // for PetscErrorCode, PETSC_NULL
+#include "petscvec.h"    // for Vec, _p_Vec, VecCopy, VecSet
 
-#include "la/distribution.hh"
-#include "input/input_type_forward.hh"
-#include "input/accessors_forward.hh"
-
-#include "petscksp.h"
+class Distribution;
+namespace Input {
+	class Record;
+	namespace Type {
+		class Record;
+	}
+}
+namespace la {
+    class BddcmlWrapper;
+};
 
 class LinSys_PETSC : public LinSys
 {
@@ -79,6 +91,7 @@ public:
     PetscErrorCode mat_zero_entries() override
     {
         matrix_changed_ = true;
+        constraints_.clear();
     	return MatZeroEntries(matrix_);
     }
 
@@ -110,7 +123,7 @@ public:
 
     void set_initial_guess_nonzero(bool set_nonzero = true);
 
-    int solve() override;
+    LinSys::SolveInfo solve() override;
 
     /**
      * Returns information on absolute solver accuracy

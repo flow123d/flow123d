@@ -20,7 +20,15 @@
 
 
 #include <armadillo>
-#include "mesh/mesh_types.hh"
+#include <stddef.h>                          // for NULL
+//#include "mesh/mesh.h"
+//#include "mesh/accessors.hh"
+
+class Boundary;
+class Edge;
+class Element;
+template <int spacedim> class NodeAccessor;
+template <int spacedim> class ElementAccessor;
 
 //=============================================================================
 // STRUCTURE OF THE SIDE OF THE MESH
@@ -31,13 +39,14 @@ class Mesh;
 class Side {
 public:
     Side()
-    : element_(NULL), el_idx_(0)
+    : mesh_(NULL), elem_idx_(0), side_idx_(0)
     {}
 
-    inline Side(const Element * ele, unsigned int set_lnum);
-    double measure() const;
-    arma::vec3 centre() const; // Centre of side
-    arma::vec3 normal() const; // Vector of (generalized) normal
+    inline Side(const Mesh * mesh, unsigned int elem_idx, unsigned int set_lnum); ///< Constructor
+    double measure() const;    ///< Calculate metrics of the side
+    arma::vec3 centre() const; ///< Centre of side
+    arma::vec3 normal() const; ///< Vector of (generalized) normal
+    double diameter() const;   ///< Calculate the side diameter.
 
     /**
      * Returns number of nodes of the side.
@@ -55,17 +64,17 @@ public:
     /**
      * Returns node for given local index @p i on the side.
      */
-    inline const Node * node(unsigned int i) const;
+    inline NodeAccessor<3> node(unsigned int i) const;
 
     /**
-     * Returns full iterator to the element of the side.
+     * Returns iterator to the element of the side.
      */
-    inline ElementFullIter element() const;
+    inline ElementAccessor<3> element() const;
 
     /**
      * Returns pointer to the mesh.
      */
-    inline Mesh * mesh() const;
+    inline const Mesh * mesh() const;
 
     /**
      * Returns global index of the edge connected to the side.
@@ -75,7 +84,7 @@ public:
     /**
      * Returns pointer to the edge connected to the side.
      */
-    inline Edge * edge() const;
+    inline const Edge * edge() const;
 
     inline Boundary * cond() const;
     inline unsigned int cond_idx() const;
@@ -83,7 +92,12 @@ public:
     /**
      * Returns local index of the side on the element.
      */
-    inline unsigned int el_idx() const;
+    inline unsigned int side_idx() const;
+
+    /**
+     * Returns index of element in Mesh::element_vec_.
+     */
+    inline unsigned int elem_idx() const;
 
     /**
      * Returns true if the side has assigned element.
@@ -96,7 +110,7 @@ public:
     inline void inc();
 
     /// This is necessary by current DofHandler, should change this
-    inline void *make_ptr() const;
+    //inline void *make_ptr() const;
 private:
 
     arma::vec3 normal_point() const;
@@ -105,8 +119,9 @@ private:
 
     // Topology of the mesh
 
-    const Element * element_; // Pointer to element to which belonged
-    unsigned int el_idx_; // Local # of side in element  (to remove it, we heve to remove calc_side_rhs)
+    const Mesh * mesh_;     ///< Pointer to Mesh to which belonged
+    unsigned int elem_idx_; ///< Index of element in Mesh::element_vec_
+    unsigned int side_idx_; ///< Local # of side in element  (to remove it, we heve to remove calc_side_rhs)
 
 };
 
@@ -124,7 +139,8 @@ public:
     {}
 
     inline bool operator==(const SideIter &other) {
-        return (side_.element() == other.side_.element() ) && ( side_.el_idx() == other.side_.el_idx() );
+        return (side_.mesh() == other.side_.mesh() ) && ( side_.elem_idx() == other.side_.elem_idx() )
+        		&& ( side_.side_idx() == other.side_.side_idx() );
     }
 
 

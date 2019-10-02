@@ -41,19 +41,20 @@ class ISTFormatter(object):
             fp.write(latex_result)
 
     @staticmethod
-    def tree2html(element, try_pretty=0):
+    def tree2html(element, try_pretty=True):
         import xml.etree.ElementTree as ET
         html_string = ET.tostring(element.root, method='html').decode()
         if not try_pretty:
             return html_string
 
         try:
-            from BeautifulSoup import BeautifulSoup
-            soup = BeautifulSoup(html_string)
+            from bs4 import BeautifulSoup
+            soup = BeautifulSoup(html_string, features="html.parser")
             Logger.instance().info('Prettifying html string')
             html_pretty = soup.prettify()
             return html_pretty
-        except:
+        except Exception as e:
+            print(e)
             pass
 
         return html_string
@@ -81,9 +82,10 @@ class ISTFormatter(object):
         html_navigation = HTMLFormatter.abc_navigation_bar(items)
         html_navigation_string = ISTFormatter.tree2html(html_navigation)
 
-        template_string = template_string.replace("@GENERATED@", time.strftime("%d-%m-%Y %H:%M:%S"))
+        template_string = template_string.replace("@GENERATED@", time.strftime("%d-%m-%Y %H:%M:%S UTC", time.gmtime()))
         template_string = template_string.replace("@IST@", html_items_string)
         template_string = template_string.replace("@NAVIGATION@", html_navigation_string)
+        template_string = template_string.replace("@VERSION@", str(info['version']))
 
         with open(output_file, 'w') as fp:
             fp.write(template_string)

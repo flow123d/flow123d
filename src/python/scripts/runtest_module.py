@@ -5,14 +5,15 @@
 import time
 import sys
 # ----------------------------------------------
+from loggers import printf
 from scripts.pbs import pbs_control
-from scripts.yamlc.yaml_config import ConfigPool
-from scripts.core.base import Paths, PathFilters, Printer, Command, IO, GlobalResult, DynamicSleep, StatusPrinter
+from scripts.yamlc.yaml_config import ConfigPool, ConfigBase
+from scripts.core.base import Paths, PathFilters, Command, IO, GlobalResult, StatusPrinter
 from scripts.core.threads import ParallelThreads, RuntestMultiThread
 from scripts.pbs.common import get_pbs_module
-from scripts.pbs.job import JobState, MultiJob, finish_pbs_runtest
+from scripts.pbs.job import finish_pbs_runtest
 from scripts.prescriptions.local_run import LocalRun
-from scripts.prescriptions.remote_run import runtest_command, PBSModule
+from scripts.prescriptions.remote_run import runtest_command
 from scripts.script_module import ScriptModule
 from utils import strings
 # ----------------------------------------------
@@ -44,22 +45,34 @@ class ModuleRuntest(ScriptModule):
         keys = sorted(result.keys())
 
         for dirname in keys:
-            Printer.all.out(Paths.relpath(dirname, test_dir))
-            with Printer.all.with_level(1):
+            printf.warning(Paths.relpath(dirname, test_dir))
+            with printf:
+                paths = list()
+                wrap = 2
                 for basename in result[dirname]:
-                    Printer.all.out('{: >4s} {: <40s} {}', '', basename, Paths.relpath(Paths.join(dirname, basename), test_dir))
-            Printer.all.newline()
+                    paths.append(basename)
+                for i in range(0, len(paths), wrap):
+                    printf.out('  '.join(['{:<40s}'.format(x) for x in paths[i:i+wrap]]))
+            printf.sep()
 
-    @staticmethod
-    def read_configs(all_yamls):
+    def read_configs(self, all_yamls):
         """
         Add yamls to ConfigPool and parse configs
         :rtype: ConfigPool
         """
+        
+        # by default we will create dummy cases for files
+        # which are not specified in the config.yaml file
+        missing_policy = ConfigBase.MISSING_POLICY_CREATE_DEFAULT
+        if self.dir_mode:
+            # however if we are in the diectory mode (meaning only directory were passed)
+            # we will skip cases which are not present in the config.yaml
+            missing_policy = ConfigBase.MISSING_POLICY_IGNORE
+        
         configs = ConfigPool()
         for y in all_yamls:
             configs += y
-        configs.parse()
+        configs.parse(missing_policy)
         return configs
 
     @property
@@ -83,7 +96,6 @@ class ModuleRuntest(ScriptModule):
         """
         local_run = LocalRun(case)
         local_run.mpi = case.proc > 1
-        local_run.progress = self.progress
         local_run.massif = self.arg_options.massif
 
         # on demand we do not clean dirs or run comparisons
@@ -122,7 +134,7 @@ class ModuleRuntest(ScriptModule):
             script=pkgutil.get_loader('runtest').path,
             yaml=case.file,
             random_output_dir='' if not self.arg_options.random_output_dir else '--random-output-dir ' + str(self.arg_options.random_output_dir),
-            limits="-n {case.proc} -m {case.memory_limit} -t {case.time_limit} --input {case.input}".format(case=case),
+            limits="-n {case.proc} -m {case.memory_limit} -t {case.time_limit}".format(case=case),
             args="" if not self.arg_options.rest else Command.to_string(self.arg_options.rest),
             dump_output=case.fs.dump_output,
             save_to_db='' if not self.arg_options.save_to_db else '--save-to-db',
@@ -175,37 +187,51 @@ class ModuleRuntest(ScriptModule):
         At this point all configuration files has been loaded what is left
         to do is to prepare execution arguments start whole process
         """
-        runner = ParallelThreads(self.arg_options.parallel)
-        runner.stop_on_error = not self.arg_options.keep_going
+        with printf:
+            runner = ParallelThreads(self.arg_options.parallel)
+            runner.stop_on_error = not self.arg_options.keep_going
+            pypy_index = 1
 
-        for yaml_file, yaml_config in list(self.configs.files.items()):
-            for case in yaml_config.get_one(yaml_file):
-                # create main process which first clean output dir
-                # and then execute test following with comparisons
-                multi_process = self.create_process_from_case(case)
-                runner.add(multi_process)
+            for yaml_file, yaml_config in list(self.configs.files.items()):
+                for case in yaml_config.get_one(yaml_file):
+                    if printf.verbosity() is printf.OutputVerbosity.FULL:
+                        printf.out(' - found case {} in {}', case, yaml_file)
+                    # create main process which first clean output dir
+                    # and then execute test following with comparisons
+                    multi_process = self.create_process_from_case(case)
+                    multi_process.pypy.extra['runner'] = runner
+                    multi_process.pypy.extra['index'] = pypy_index
+                    pypy_index += 1
+                    runner.add(multi_process)
 
-        if self.include or self.exclude:
-            Printer.all.out('Running {} cases ({}{})'.format(
-                runner.total,
-                'including only tags in set {} '.format(list(self.include)) if self.include else '',
-                'excluding all tags in set {}'.format(list(self.exclude)) if self.exclude else ''))
-        else:
-            Printer.all.out('Running {} cases', runner.total)
+            printf.important('{:16s} {}', 'total cases', runner.total)
+            if printf.verbosity() is printf.OutputVerbosity.FULL:
+                printf.out(' - {:16s} {}', 'includes', self.include)
+                printf.out(' - {:16s} {}', 'excludes', self.exclude)
 
-        # run!
-        runner.start()
-        while runner.is_running():
-            time.sleep(1)
+                printf.important('cases')
+                with printf:
+                    for thread in runner.threads:
+                        try:
+                            printf.out(' - {}', thread.pypy.case)
+                        except:
+                            printf.out(' - {}', thread)
 
-        Printer.all.sep()
-        Printer.all.out('Summary: ')
+        printf.sep().important('execution:')
+        with printf:
 
-        with Printer.all.with_level(1):
+            # run!
+            runner.start()
+            while runner.is_running():
+                time.sleep(1)
+
+        printf.sep().important('SUMMARY ').sep()
+
+        with printf:
             for thread in runner.threads:
                 multithread = thread  # type: RuntestMultiThread
                 StatusPrinter.print_test_result(multithread)
-            Printer.all.sep()
+            printf.sep()
             StatusPrinter.print_runner_stat(runner)
 
         # exit with runner's exit code
@@ -216,6 +242,7 @@ class ModuleRuntest(ScriptModule):
         super(ModuleRuntest, self).__init__(arg_options)
         self.all_yamls = None
         self.configs = None
+        self.dir_mode = None
 
     def _check_arguments(self):
         """
@@ -228,53 +255,78 @@ class ModuleRuntest(ScriptModule):
 
         # we need flow123d, mpiexec and ndiff to exists in LOCAL mode
         if not self.arg_options.queue and not Paths.test_paths('flow123d', 'mpiexec', 'ndiff'):
-            Printer.all.wrn('Missing obligatory files!')
+            printf.warning('Missing obligatory files!')
+
+    def _walk_files(self):
+        # switching processing logic
+        self.dir_mode = False
+
+        # in this loop we are processing all given files/folders
+        all_yamls = list()
+        for path in self.arg_options.args:
+            if not Paths.exists(path):
+                printf.error('given path does not exists, path "{}"', path)
+                sys.exit(3)
+
+            # append files to all_yamls
+            if Paths.is_dir(path):
+                self.dir_mode = True
+                all_yamls.extend(Paths.walk(path, ConfigPool.yaml_filters))
+            else:
+                all_yamls.append(path)
+
+        return all_yamls
 
     def _run(self):
         """
         Run method for this module
         """
 
-        if self.arg_options.random_output_dir:
-            import scripts.yamlc as yamlc
-            yamlc.TEST_RESULTS = 'test_results-{}'.format(self.arg_options.random_output_dir)
+        printf.important('configuration:').sep()
+        with printf:
+            overrides = ('memory_limit', 'time_limit', 'cpu')
+            global_changes = {k: self.arg_options.get(k) for k in overrides if self.arg_options.get(k)}
+            for k, v in global_changes.items():
+                printf.important('{:16s} {:10s} (global override)', str(k), str(v))
 
-        self.all_yamls = list()
-        for path in self.arg_options.args:
-            if not Paths.exists(path):
-                Printer.all.err('given path does not exists, path "{}"', path)
-                sys.exit(3)
+            # ---------------------------------------------
 
-            # append files to all_yamls
-            if Paths.is_dir(path):
-                self.all_yamls.extend(Paths.walk(path, ConfigPool.yaml_filters))
-            else:
-                self.all_yamls.append(path)
+            if self.arg_options.random_output_dir:
+                import scripts.yamlc as yamlc
+                yamlc.TEST_RESULTS = 'test_results-{}'.format(self.arg_options.random_output_dir)
 
-        Printer.all.out("Found {} yaml file/s", len(self.all_yamls))
-        if not self.all_yamls:
-            Printer.all.wrn('No yaml files found in locations: \n  {}', '\n  '.join(self.arg_options.args))
-            sys.exit(0)
+            # ---------------------------------------------
 
-        self.configs = self.read_configs(self.all_yamls)
-        self.configs.update(
-            proc=self.arg_options.cpu,
-            time_limit=self.arg_options.time_limit,
-            memory_limit=self.arg_options.memory_limit,
-            input=self.arg_options.input,
-        )
+            self.all_yamls = self._walk_files()
+            printf.important("{:16s} {}", 'yaml files', len(self.all_yamls))
+            if not self.all_yamls:
+                printf.warning('No yaml files found in following locations:')
+                with printf:
+                    printf.opt(default='IMPORTANT').stream(self.arg_options.args)
+                sys.exit(0)
 
-        # filter tags for includes and excludes
-        self.configs.filter_tags(
-            include=self.include,
-            exclude=self.exclude
-        )
+            # ---------------------------------------------
+
+            self.configs = self.read_configs(self.all_yamls)
+            self.configs.update(
+                proc=self.arg_options.cpu,
+                time_limit=self.arg_options.time_limit,
+                memory_limit=self.arg_options.memory_limit,
+            )
+
+            # filter tags for includes and excludes
+            self.configs.filter_tags(
+                include=self.include,
+                exclude=self.exclude
+            )
 
         if self.arg_options.queue:
-            Printer.all.out('Running in PBS mode')
+            if printf.verbosity() is printf.OutputVerbosity.FULL:
+                printf.out('Running in PBS mode')
             return self.run_pbs_mode()
         else:
-            Printer.all.out('Running in LOCAL mode')
+            if printf.verbosity() is printf.OutputVerbosity.FULL:
+                printf.out('Running in LOCAL mode')
             return self.run_local_mode()
 
 
@@ -289,25 +341,25 @@ def do_work(arg_options=None, debug=False):
     result = module.run(debug)  # type: ParallelThreads
 
     if not arg_options.queue:
-        Printer.all.sep()
+        printf.sep()
         if arg_options.save_to_db:
             from scripts.artifacts.collect.loader import load_data, save_to_database
             from scripts.artifacts.collect.modules.flow123d_profiler import Flow123dProfiler
 
             for t in result.threads:
                 thread = t  # type: RuntestMultiThread
-                with Printer.all.with_level(1):
-                    Printer.all.out('Processing %s' % thread.pypy.case.fs.output)
+                with printf:
+                    printf.out('Processing %s' % thread.pypy.case.fs.output)
                     data = load_data(thread.pypy.case.fs.output, Flow123dProfiler())
 
                     if data:
-                        with Printer.all.with_level(1):
-                            Printer.all.out(' - found %d file(s)' % len(data))
-                            with Printer.all.with_level(1):
+                        with printf:
+                            printf.out(' - found %d file(s)' % len(data))
+                            with printf:
                                 for item in data:
-                                    Printer.all.out(' %d element(s)' % len(item.items))
+                                    printf.out(' %d element(s)' % len(item.items))
                     else:
-                        Printer.all.err('No profiler data found')
+                        printf.error('No profiler data found')
                     save_to_database(data)
 
     # pickle out result on demand

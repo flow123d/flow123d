@@ -162,9 +162,9 @@
 ##![Outgoing mass flux through the right part of the boundary. Comparison of results with and without blind fractures.](tutor_figures/04_mass_flux.pdf){#fig:diff_res} 
 ##
 ##
-flow123d_version: 2.0.0
+flow123d_version: 3.1.0
 problem: !Coupling_Sequential
-  description: "Tutorial 4 - Fractures - diffusion"
+  description: Tutorial 4 - Fractures - diffusion
   mesh:
     mesh_file: 04_mesh.msh
     regions:
@@ -189,33 +189,32 @@ problem: !Coupling_Sequential
           - .left
           - .left_points
   flow_equation: !Flow_Darcy_MH
-    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-15
         r_tol: 1.0e-15
     input_fields:
-    - region: rock
-      conductivity: 0.000315
-    - region: flow_fractures
-      conductivity: 31.5
-      cross_section: 0.01
-    - region: blind_fractures
-      conductivity: 3.15       # variant without blind-fractures conductivity: 0.000315
-      cross_section: 0.01
-    - region: BC_left
-      bc_type: dirichlet
-      bc_piezo_head: 0.1
-    - region: BC_right
-      bc_type: dirichlet
-      bc_piezo_head: 0
+      - region: rock
+        conductivity: 0.000315
+      - region: flow_fractures
+        conductivity: 31.5
+        cross_section: 0.01
+      - region: blind_fractures
+        conductivity: 3.15     # variant without blind-fractures conductivity: 0.000315
+        cross_section: 0.01
+      - region: BC_left
+        bc_type: dirichlet
+        bc_piezo_head: 0.1
+      - region: BC_right
+        bc_type: dirichlet
+        bc_piezo_head: 0
     balance: {}
     output:
       fields:
-      - piezo_head_p0
-      - pressure_p0
-      - pressure_p1
-      - velocity_p0
+        - piezo_head_p0
+        - pressure_p0
+        - pressure_p1
+        - velocity_p0
     solver: !Petsc
       r_tol: 1.0e-10
       a_tol: 1.0e-10
@@ -226,28 +225,28 @@ problem: !Coupling_Sequential
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_AdvectionDiffusion_DG
       input_fields:
-      - region: rock
-        init_conc: 0
-        porosity: 0.005
-        diff_m: 0.0369
-        disp_l: 5
-        disp_t: 0.5
-      - region: flow_fractures
-        init_conc: 0
-        porosity: 0.1
-        diff_m: 0.0369
-        disp_l: 5
-        disp_t: 0.5
-      - region: blind_fractures
-        init_conc: 0
-        porosity: 0.1
-        diff_m: 0.0369
-        disp_l: 5
-        disp_t: 0.5
-      - region: .left_points
-        bc_type: dirichlet
-        bc_conc: !FieldFormula
-          value: 2.84959e-5*exp(-0.5*((t-2000)/700)^2)
+        - region: rock
+          init_conc: 0
+          porosity: 0.005
+          diff_m: 0.0369
+          disp_l: 5
+          disp_t: 0.5
+        - region: flow_fractures
+          init_conc: 0
+          porosity: 0.1
+          diff_m: 0.0369
+          disp_l: 5
+          disp_t: 0.5
+        - region: blind_fractures
+          init_conc: 0
+          porosity: 0.1
+          diff_m: 0.0369
+          disp_l: 5
+          disp_t: 0.5
+        - region: .left_points
+          bc_type: dirichlet
+          bc_conc: !FieldFormula
+            value: 2.84959e-5*exp(-0.5*((t-2000)/700)^2)
       solver: !Petsc
         a_tol: 1.0e-12
         r_tol: 1.0e-12
@@ -256,7 +255,7 @@ problem: !Coupling_Sequential
     time:
       end_time: 50000
     balance:
-        cumulative: true
+      cumulative: true
     output_stream:
       times:
         - step: 500

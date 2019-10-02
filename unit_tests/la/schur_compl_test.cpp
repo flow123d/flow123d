@@ -21,7 +21,7 @@ const int block_count = 1;
 class SchurComplementTest : public SchurComplement {
 public:
 	SchurComplementTest(IS ia, Distribution *ds)
-	: SchurComplement(ia, ds)
+	: SchurComplement(ds, ia)
 	{}
 
 	Mat get_a_inv() const {return (IA);}
@@ -115,7 +115,7 @@ TEST(schur, complement) {
 
     // volat s lokalni velkosti = pocet radku na lokalnim proc.
 	SchurComplementTest * schurComplement = new SchurComplementTest(set, &all_ds);
-	schurComplement->set_solution(NULL);
+	schurComplement->set_solution();
 	schurComplement->set_positive_definite();
 	schurComplement->start_allocation();
 	schurComplement->fill_matrix( rank, ds, block_ds); // preallocate matrix
@@ -126,16 +126,20 @@ TEST(schur, complement) {
 
 	LinSys * lin_sys = new LinSysPetscTest( schurComplement->make_complement_distribution() );
 	schurComplement->set_complement( (LinSys_PETSC *)lin_sys );
-	schurComplement->solve();
+	LinSys::SolveInfo si = schurComplement->solve();
 
 	// test of computed values
 	{
 		PetscInt ncols;
 		const PetscInt *cols;
 		const PetscScalar *vals;
+                
+                // schurComplement->get_a_inv() is a sparse diagonal 2x2 matrix
+                MatView(schurComplement->get_a_inv(),PETSC_VIEWER_STDOUT_WORLD);
 		for (unsigned int i=0; i<block_size; i++) {
 			MatGetRow(schurComplement->get_a_inv(), i + rank*block_size, &ncols, &cols, &vals);
-			EXPECT_FLOAT_EQ( (1.0 / (double)(rank + 2)), vals[i] );
+                        // check diagonal value, ncols is equal 1 (only diagonal entry)
+			EXPECT_FLOAT_EQ( (1.0 / (double)(rank + 2)), vals[0] );
 			MatRestoreRow(schurComplement->get_a_inv(), i + rank*block_size, &ncols, &cols, &vals);
 		}
 		MatGetRow(*(schurComplement->get_system()->get_matrix()), rank, &ncols, &cols, &vals);

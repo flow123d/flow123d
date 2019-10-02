@@ -18,11 +18,14 @@
 #ifndef MAKE_NEIGHBOURS_H
 #define MAKE_NEIGHBOURS_H
 
-#include "mesh/mesh_types.hh"
+#include "mesh/sides.h"
+#include "mesh/edges.h"
+#include "mesh/elements.h"
+#include "mesh/mesh.h"
+#include "mesh/accessors.hh"
 
 
 
-class Element;
 class Edge;
 class SideIter;
 /**
@@ -118,7 +121,7 @@ class Neighbour
 public:
     Neighbour();
 
-    void reinit(ElementIter ele, unsigned int edg_idx);
+    void reinit(Mesh *mesh, unsigned int elem_idx, unsigned int edge_idx);
 
     // side of the edge in higher dim. mesh
     inline SideIter side();
@@ -129,14 +132,37 @@ public:
     inline Edge *edge();
 
     // element of lower dimension mesh in VB neigh.
-    inline ElementIter element();
+    inline ElementAccessor<3> element();
 
-//private:
-    unsigned int edge_idx_;  // edge
-    ElementIter element_;  // neighbouring elements
-                               // for VB  - element[0] is element of lower dimension
+private:
+    Mesh * mesh_;            ///< Pointer to Mesh to which belonged
+    unsigned int elem_idx_;  ///< Index of element in Mesh::element_vec_
+    unsigned int edge_idx_;  ///< Index of Edge in Mesh
+
+    friend class Mesh;
 };
 
+
+// side of the edge in higher dim. mesh
+inline SideIter Neighbour::side() {
+	OLD_ASSERT( edge()->n_sides == 1 , "VB neighbouring with %d sides.\n", edge()->n_sides);
+    //DebugOut().fmt("VB neighbouring with {} sides.\n", edge_->n_sides);
+    return edge()->side(0);
+}
+
+inline unsigned int Neighbour::edge_idx() {
+    return edge_idx_;
+}
+
+// edge of lower dimensional mesh in VB neigh.
+inline Edge *Neighbour::edge() {
+    return &( mesh_->edges[ edge_idx_] );
+}
+
+// element of higher dimension mesh in VB neigh.
+inline ElementAccessor<3> Neighbour::element() {
+    return mesh_->element_accessor(elem_idx_);
+}
 
 
 #endif

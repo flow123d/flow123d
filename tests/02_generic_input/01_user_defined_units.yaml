@@ -1,40 +1,41 @@
-# Set value of input_fields by user defined units.
-# 
-# 
-flow123d_version: 2.0.0
+#################
+# Test goal: Test of units of field values defined by user
+# Author: David Flanderka
+# Source for reference: qualitative
+
+flow123d_version: 3.1.0
 problem: !Coupling_Sequential
-  description: Test10 - Unsteady flow in 2D, Lumped Mixed Hybrid
+  description: Tests correct functionality of setting input fields by user defined units.
   mesh:
     mesh_file: ../00_mesh/line_z_0.25_250el.msh
   flow_equation: !Flow_Richards_LMH
-    output_specific:
     soil_model: irmay
     time: # time in hours (consistent with conductivity)
-        end_time: 3000     # original experiment from UGN up to time 6000 h
-        init_dt: 1
-        # current time step enlargement logic do not allow to extent time step up to the output timestep
-        # maximum timestep wil be just 50.
-        max_dt: 300        
-        min_dt: 0.1
+      end_time: 3000       # original experiment from UGN up to time 6000 h
+      init_dt: 1
+      # current time step enlargement logic do not allow to extent time step up to the output timestep
+      # maximum timestep wil be just 50.
+      max_dt: 300
+      min_dt: 0.1
 
     input_fields:
       - region: plane
         init_pressure: !FieldConstant
           value: -64.21859704
-          unit: MPa/rho/g_; rho = 988*kg*m^-3; g_ = 9.82*m*s^-2    
-        
+          unit: MPa/rho/g_; rho = 988*kg*m^-3; g_ = 9.82*m*s^-2
+
 
         # Bentonit
         #storativity: 5.846e-5
         water_content_saturated: 0.42
         water_content_residual: 0.04
-        
+
         conductivity: !FieldConstant
-          value: 5.0905045e-21
-          unit: m^2*g_*rho/eta*hour; rho = 988*kg*m^-3; g_ = 9.82*m*s^-2; eta = 0.001*Pa*s; hour = 3600*s^0 
+          value: 5.0905040e-21
+          unit: m^2*g_*rho/eta*hour; rho = 988*kg*m^-3; g_ = 9.82*m*s^-2; eta = 0.001*Pa*s; hour = 3600*s^0
         genuchten_n_exponent: 1.24
         genuchten_p_head_scale: 5e-3
-        
+
         # effective Dirichlet BC
       - region: .bc_bottom
         bc_type: total_flux
@@ -45,28 +46,27 @@ problem: !Coupling_Sequential
       tolerance: 1e-7
       max_it: 20 # should stop after 5 iterations due to stagnation
       converge_on_stagnation: false
-      linear_solver: !Petsc 
+      linear_solver: !Petsc
         a_tol: 1e-11
     n_schurs: 2
     output:
       fields:
-        - pressure_p0        
+        - pressure_p0
         - velocity_p0
-      observe_fields: [ pressure_p0, velocity_p0 ]  
+      observe_fields: [pressure_p0, velocity_p0]
     balance:
       cumulative: true
-    
-    output_stream: 
+
+    output_stream:
       file: ./flow.pvd
       format: !vtk
         variant: ascii
       times:
         - step: 100
       observe_points:
-        - [ 0, 0, -0.25 ]
-        - [ 0, 0, -0.2 ]
-        - [ 0, 0, -0.15 ]
-        - [ 0, 0, -0.1 ]
-        - [ 0, 0, -0.05 ]
-        - [ 0, 0, 0.0 ]
-        
+        - [0, 0, -0.25]
+        - [0, 0, -0.2]
+        - [0, 0, -0.15]
+        - [0, 0, -0.1]
+        - [0, 0, -0.05]
+        - [0, 0, 0.0]

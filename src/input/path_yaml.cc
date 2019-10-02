@@ -20,6 +20,7 @@
 
 #include "system/global_defs.h"
 #include "system/system.hh"
+#include "yaml-cpp/yaml.h"
 
 
 namespace Input {

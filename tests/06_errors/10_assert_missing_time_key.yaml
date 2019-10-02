@@ -1,8 +1,8 @@
-flow123d_version: 2.0.0
+flow123d_version: 3.1.0
 problem: !Coupling_Sequential
   description: Test produces ASSERT Missing the key 'time'.
   mesh:
-    mesh_file: ../00_mesh/square_1x1_942el.msh
+    mesh_file: ../00_mesh/prism_3el.msh
   flow_equation: !Flow_Darcy_MH
 ### ERROR Missing the key 'time'
     input_fields:
@@ -15,8 +15,7 @@ problem: !Coupling_Sequential
     output:
       fields:
         - pressure_p0
-    balance: {}
-    output_stream: 
+    output_stream:
       file: ./test10.pvd
       format: !vtk
         variant: ascii

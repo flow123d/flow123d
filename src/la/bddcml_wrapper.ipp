@@ -186,7 +186,8 @@ void la::BddcmlWrapper::insertToMatrix( const SubMat_  & subMat,
         for ( unsigned j = 0; j < colIndices.size(); j++) {
 
             // insert value
-            coo_.insert( rowIndices[i], colIndices[j], subMat(i,j) );
+            if (subMat(i,j) != 0.0)
+              coo_.insert( rowIndices[i], colIndices[j], subMat(i,j) );
         }
     }
 
@@ -369,7 +370,7 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
     int numBase      = 0;                     // indexing starts with 0 for C++
     int justDirectSolve = 0;
 
-    bddcml_init( &numLevels, &(numSubLev[0]), &lnumSubLev, &numSubLoc_, &commInt, &verboseLevel, &numBase, &justDirectSolve );
+    bddcml_init_c( &numLevels, &(numSubLev[0]), &lnumSubLev, &numSubLoc_, &commInt, &verboseLevel, &numBase, &justDirectSolve );
 
 
     //============= uploading data for subdomain
@@ -503,9 +504,14 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
 
     int lelement_data1 = 1;
     int lelement_data2 = element_data_.size();
+    
+    // if > 0, BDDCML will check if the mesh is not composed of several components and if
+    // yes, BDDCML will handle them as independent subdomains for selection of coarse 
+    // degrees of freedom
+    int find_components_int = 1;
 
     // upload local data to the solver
-    bddcml_upload_subdomain_data( &numElem_, &numNodes_, &numDofsInt, &nDim_, &meshDim_, 
+    bddcml_upload_subdomain_data_c( &numElem_, &numNodes_, &numDofsInt, &nDim_, &meshDim_, 
                                   &iSub, &numElemSub_, &numNodesSub_, &numDofsSubInt, 
                                   &(inet_[0]),&linet, &(nnet_[0]),&lnnet, &(nndf_[0]),&lnndf, 
                                   &(isngn_[0]),&lisngn, &(isvgvn_[0]),&lisvgvn, &(isegn_[0]),&lisegn, 
@@ -516,7 +522,8 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
                                   &matrixTypeInt, &(i_sparse[0]), &(j_sparse[0]), &(a_sparse[0]), &la, &isMatAssembledInt,
                                   &(userConstraints[0]),&lUserConstraints1,&lUserConstraints2,
                                   &(element_data_[0]),&lelement_data1,&lelement_data2,
-                                  &(sub_diagonal[0]), &lsub_diagonal );
+                                  &(sub_diagonal[0]), &lsub_diagonal,
+                                  &find_components_int);
     i_sparse.clear();
     j_sparse.clear();
     a_sparse.clear();
@@ -536,18 +543,23 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
     }
     int use_user_constraints_int  = 0;
     int weights_type              = 3;
+    
+    // if > 0, BDDCML will use constraints on connectivity at corners
+    int use_corner_constraints_int = 1;
 
     // setup multilevel BDDC preconditioner
     START_TIMER("BDDC preconditioner setup");
-    bddcml_setup_preconditioner( & matrixTypeInt, & use_defaults_int, 
-                                 & parallel_division_int, & use_arithmetic_int, & use_adaptive_int, & use_user_constraints_int,
+    bddcml_setup_preconditioner_c( & matrixTypeInt, & use_defaults_int, 
+                                 & parallel_division_int, & use_arithmetic_int, 
+                                 & use_corner_constraints_int,
+                                 & use_adaptive_int, & use_user_constraints_int,
                                  & weights_type );
     END_TIMER("BDDC preconditioner setup");
 
     //============= compute the norm on arrays with overlapping entries - apply weights
     double normSquaredLoc = 0.;
     if (nProc_ > 1 ) {
-        bddcml_dotprod_subdomain( &iSub, &(rhsVec_[0]), &lrhsVec, &(rhsVec_[0]), &lrhsVec, &normSquaredLoc );
+        bddcml_dotprod_subdomain_c( &iSub, &(rhsVec_[0]), &lrhsVec, &(rhsVec_[0]), &lrhsVec, &normSquaredLoc );
     } else {
         for ( double elem: rhsVec_ )  normSquaredLoc += elem*elem;
     }
@@ -571,7 +583,7 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
 
     // call iterative solver
     START_TIMER("BDDC solve");
-    bddcml_solve( & commInt, & method, & tol, & maxIt, & ndecrMax, 
+    bddcml_solve_c( & commInt, & method, & tol, & maxIt, & ndecrMax, 
                   & recycling_int, & max_number_of_stored_vectors,
                   & numIter_, & convergedReason_, & condNumber_);
     END_TIMER("BDDC solve");
@@ -582,12 +594,12 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
     // download local solution
     lsol = sol_.size();
 
-    bddcml_download_local_solution( &iSub, &(sol_[0]), &lsol );
+    bddcml_download_local_solution_c( &iSub, &(sol_[0]), &lsol );
 
     //============= compute the norm on arrays with overlapping entries - apply weights
     normSquaredLoc = 0.;
     if (nProc_ > 1 ) {
-       bddcml_dotprod_subdomain( &iSub, &(sol_[0]), &lsol, &(sol_[0]), &lsol, &normSquaredLoc );
+       bddcml_dotprod_subdomain_c( &iSub, &(sol_[0]), &lsol, &(sol_[0]), &lsol, &normSquaredLoc );
     } else {
         for ( double elem: sol_ )  normSquaredLoc += elem*elem;
     }
@@ -598,7 +610,7 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
     normSol_ = std::sqrt( normSquared );
 
     //============= erase memory used by BDDCML solver
-    bddcml_finalize();
+    bddcml_finalize_c();
 
     return;
 }

@@ -19,21 +19,48 @@
 #ifndef TRANSPORT_DG_HH_
 #define TRANSPORT_DG_HH_
 
-#include "transport_operator_splitting.hh"
-#include "fields/bc_field.hh"
+#include <math.h>                              // for fabs
+#include <string.h>                            // for memcpy
+#include <algorithm>                           // for max
+#include <boost/exception/info.hpp>            // for operator<<, error_info...
+#include <string>                              // for operator<<
+#include <vector>                              // for vector
+#include <armadillo>
+#include "fem/update_flags.hh"                 // for operator|
+#include "fem/mapping_p1.hh"
+#include "fields/field_values.hh"              // for FieldValue<>::Scalar
 #include "fields/field.hh"
 #include "fields/multi_field.hh"
-#include "la/linsys.hh"
-#include "flow/mh_dofhandler.hh"
+#include "la/vector_mpi.hh"
 #include "fields/equation_output.hh"
+#include "la/linsys.hh"
+#include "input/accessors.hh"                  // for ExcAccessorForNullStorage
+#include "input/accessors_impl.hh"             // for Record::val
+#include "input/storage.hh"                    // for ExcStorageTypeMismatch
+#include "input/type_base.hh"                  // for Array
+#include "input/type_generic.hh"               // for Instance
+#include "input/type_record.hh"                // for Record::ExcRecordKeyNo...
+#include "mesh/long_idx.hh"                    // for LongIdx
+#include "mesh/accessors.hh"                   // for ElementAccessor
+#include "mesh/elements.h"                     // for Element::dim, Element:...
+#include "mesh/neighbours.h"                   // for Neighbour::element
+#include "mesh/side_impl.hh"                   // for Side::cond, Side::cond...
+#include "mesh/sides.h"                        // for SideIter
+#include "mpi.h"                               // for MPI_Comm_rank
+#include "petscmat.h"                          // for Mat, MatDestroy
+#include "petscvec.h"                          // for Vec, VecDestroy, VecSc...
+#include "transport/concentration_model.hh"    // for ConcentrationTransport...
+#include "transport/heat_model.hh"             // for HeatTransferModel, Hea...
 
+class DiscreteSpace;
 class Distribution;
 class OutputTime;
 class DOFHandlerMultiDim;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
-template<unsigned int dim, unsigned int spacedim> class FiniteElement;
+template<unsigned int dim> class FiniteElement;
 template<unsigned int dim, unsigned int spacedim> class Mapping;
 template<unsigned int dim> class Quadrature;
+namespace Input { namespace Type { class Selection; } }
 
 
 
@@ -49,30 +76,31 @@ public:
 	~FEObjects();
 
 	template<unsigned int dim>
-	inline FiniteElement<dim,3> *fe();
+	inline FiniteElement<dim> *fe();
 
 	template<unsigned int dim>
-	inline FiniteElement<dim,3> *fe_rt();
+	inline FiniteElement<dim> *fe_rt();
 
 	template<unsigned int dim>
 	inline Quadrature<dim> *q();
 
 	template<unsigned int dim>
-	inline Mapping<dim,3> *mapping();
+	inline MappingP1<dim,3> *mapping();
 
-	inline DOFHandlerMultiDim *dh();
+	inline std::shared_ptr<DOFHandlerMultiDim> dh();
 
 private:
 
 	/// Finite elements for the solution of the advection-diffusion equation.
-	FiniteElement<1,3> *fe1_;
-	FiniteElement<2,3> *fe2_;
-	FiniteElement<3,3> *fe3_;
+	FiniteElement<0> *fe0_;
+	FiniteElement<1> *fe1_;
+	FiniteElement<2> *fe2_;
+	FiniteElement<3> *fe3_;
 
 	/// Finite elements for the water velocity field.
-	FiniteElement<1,3> *fe_rt1_;
-	FiniteElement<2,3> *fe_rt2_;
-	FiniteElement<3,3> *fe_rt3_;
+	FiniteElement<1> *fe_rt1_;
+	FiniteElement<2> *fe_rt2_;
+	FiniteElement<3> *fe_rt3_;
 
 	/// Quadratures used in assembling methods.
 	Quadrature<0> *q0_;
@@ -81,13 +109,14 @@ private:
 	Quadrature<3> *q3_;
 
 	/// Auxiliary mappings of reference elements.
-	Mapping<0,3> *map0_;
-	Mapping<1,3> *map1_;
-	Mapping<2,3> *map2_;
-	Mapping<3,3> *map3_;
+	MappingP1<1,3> *map1_;
+	MappingP1<2,3> *map2_;
+	MappingP1<3,3> *map3_;
+    
+        std::shared_ptr<DiscreteSpace> ds_;
 
 	/// Object for distribution of dofs.
-	DOFHandlerMultiDim *dh_;
+	std::shared_ptr<DOFHandlerMultiDim> dh_;
 };
 
 
@@ -138,8 +167,8 @@ public:
 
 		MultiField<3, FieldValue<3>::Scalar> fracture_sigma;    ///< Transition parameter for diffusive transfer on fractures (for each substance).
 		MultiField<3, FieldValue<3>::Scalar> dg_penalty;        ///< Penalty enforcing inter-element continuity of solution (for each substance).
-        Field<3, FieldValue<3>::Integer> region_id;
-        Field<3, FieldValue<3>::Integer> subdomain;
+        Field<3, FieldValue<3>::Scalar> region_id;
+        Field<3, FieldValue<3>::Scalar> subdomain;
 
         EquationOutput output_fields;
 
@@ -212,9 +241,9 @@ public:
 
 	void update_after_reactions(bool solution_changed);
 
-    void get_par_info(int * &el_4_loc, Distribution * &el_ds);
+    void get_par_info(LongIdx * &el_4_loc, Distribution * &el_ds);
 
-    int *get_row_4_el();
+    LongIdx *get_row_4_el();
 
 
 
@@ -224,8 +253,6 @@ private:
     static const int registrar;
 
 	inline typename Model::ModelEqData &data() { return data_; }
-
-	void output_vector_gather();
 
 	void preallocate();
 
@@ -313,7 +340,7 @@ private:
 	 *                 and the shape functions for velocity.
 	 */
 	template<unsigned int dim>
-	void calculate_velocity(const ElementFullIter &cell, std::vector<arma::vec3> &velocity, FEValuesBase<dim,3> &fv);
+	void calculate_velocity(const ElementAccessor<3> &cell, std::vector<arma::vec3> &velocity, FEValuesBase<dim,3> &fv);
 
 	/**
 	 * @brief Calculates the dispersivity (diffusivity) tensor from the velocity field.
@@ -331,37 +358,6 @@ private:
 // 			double cross_cut);
 
 	/**
-	 * @brief Sets up some parameters of the DG method for two sides of an edge.
-	 *
-	 * @param edg				The edge.
-	 * @param s1				Side 1.
-	 * @param s2				Side 2.
-	 * @param K_size            Size of vector of tensors K.
-	 * @param K1				Dispersivity tensors on side s1 (in quadrature points).
-	 * @param K2				Dispersivity tensors on side s2 (in quadrature points).
-	 * @param normal_vector		Normal vector to side 0 of the neighbour
-	 * 							(assumed constant along the side).
-	 * @param alpha1, alpha2	Penalty parameter that influences the continuity
-	 * 							of the solution (large value=more continuity).
-	 * @param gamma				Computed penalty parameters.
-	 * @param omega				Computed weights.
-	 * @param transport_flux	Computed flux from side s1 to side s2.
-	 */
-	void set_DG_parameters_edge(const Edge &edg,
-	        const int s1,
-	        const int s2,
-	        const int K_size,
-	        const std::vector<arma::mat33> &K1,
-	        const std::vector<arma::mat33> &K2,
-	        const std::vector<double> &fluxes,
-	        const arma::vec3 &normal_vector,
-	        const double alpha1,
-	        const double alpha2,
-	        double &gamma,
-	        double *omega,
-	        double &transport_flux);
-
-	/**
 	 * @brief Sets up parameters of the DG method on a given boundary edge.
 	 *
 	 * Assumption is that the edge consists of only 1 side.
@@ -374,7 +370,7 @@ private:
 	 * 							of the solution (large value=more continuity).
 	 * @param gamma				Computed penalty parameters.
 	 */
-	void set_DG_parameters_boundary(const SideIter side,
+	void set_DG_parameters_boundary(Side side,
 			    const int K_size,
 	            const std::vector<arma::mat33> &K,
 	            const double flux,
@@ -429,19 +425,19 @@ private:
 	// @{
 
 	/// Vector of right hand side.
-	Vec *rhs;
+	std::vector<Vec> rhs;
 
 	/// The stiffness matrix.
-	Mat *stiffness_matrix;
+	std::vector<Mat> stiffness_matrix;
 
 	/// The mass matrix.
-	Mat *mass_matrix;
+	std::vector<Mat> mass_matrix;
 	
 	/// Mass from previous time instant (necessary when coefficients of mass matrix change in time).
-	Vec *mass_vec;
+	std::vector<Vec> mass_vec;
     
     /// Auxiliary vectors for calculation of sources in balance due to retardation (e.g. sorption).
-    Vec *ret_vec;
+	std::vector<Vec> ret_vec;
 
 	/// Linear algebra system for the transport equation.
 	LinSys **ls;
@@ -462,7 +458,7 @@ private:
 	//vector<double*> output_solution;
 
 	/// Vector of solution data.
-	vector<Vec> output_vec;
+	vector<VectorMPI> output_vec;
 
 	/// Record with input specification.
 	Input::Record input_rec;

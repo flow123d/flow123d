@@ -18,20 +18,26 @@
 #ifndef OUTPUT_TIME_HH_
 #define OUTPUT_TIME_HH_
 
-#include <vector>
-#include <string>
-#include <fstream>
-#include "input/accessors.hh"
-#include "io/element_data_cache.hh"
+#include <fstream>              // for ofstream
+#include <memory>               // for shared_ptr
+#include <string>               // for string, allocator
+#include <vector>               // for vector
+#include "input/accessors.hh"   // for Iterator, Array (ptr only), Record
+#include "system/file_path.hh"  // for FilePath
 
-class FilePath;
-class Observe;
 class ElementDataCacheBase;
 class Mesh;
-class TimeGovernor;
-class OutputMeshBase;
+class Observe;
 class OutputMesh;
+class OutputMeshBase;
 class OutputMeshDiscontinuous;
+namespace Input {
+	namespace Type {
+		class Abstract;
+		class Record;
+	}
+}
+template <typename T> class ElementDataCache;
 
 
 /**
@@ -54,7 +60,12 @@ public:
      * \param[in] equation_name The name of equation, used for forming output file name.
      * \param[in] in_rec The reference on the input record
      */
-    virtual void init_from_input(const std::string &equation_name, Mesh &mesh, const Input::Record &in_rec);
+    virtual void init_from_input(const std::string &equation_name, const Input::Record &in_rec, std::string unit_str);
+
+    /**
+     * Common method to set scientific format and precision for output of floating point values to ASCII streams.
+     */
+    void set_stream_precision(std::ofstream &stream);
 
     /**
      * \brief Destructor of OutputTime. It doesn't do anything, because all
@@ -86,12 +97,17 @@ public:
 
     /**
      * Types of reference data
+     *
+     * NATIVE_DATA represents output of FieldFE in our own format, Paraview ignores this format.
      */
-    static const unsigned int N_DISCRETE_SPACES = 3;
+    static const unsigned int N_DISCRETE_SPACES = 4;
     enum DiscreteSpace {
-        NODE_DATA   = 0,
-        CORNER_DATA = 1,
-        ELEM_DATA   = 2
+        NODE_DATA       = 0,
+        CORNER_DATA     = 1,
+        ELEM_DATA       = 2,
+        NATIVE_DATA     = 3,
+		MESH_DEFINITION = 9,
+		UNDEFINED       = 10
     };
 
     /**
@@ -106,6 +122,10 @@ public:
     typedef std::shared_ptr<ElementDataCacheBase> OutputDataPtr;
     typedef std::vector< OutputDataPtr > OutputDataFieldVec;
 
+    /// pair of field name and shape (= Scalar 1, Vector 3, Tensor 9)
+    typedef std::pair< std::string, unsigned int > FieldInterpolationData;
+    typedef std::map< DiscreteSpace, std::vector<FieldInterpolationData> > InterpolationMap;
+
     /**
      * \brief This method delete all object instances of class OutputTime stored
      * in output_streams vector
@@ -116,7 +136,7 @@ public:
      * \brief This method tries to create new instance of OutputTime according
      * record in configuration file.
      */
-    static std::shared_ptr<OutputTime> create_output_stream(const std::string &equation_name, Mesh &mesh, const Input::Record &in_rec);
+    static std::shared_ptr<OutputTime> create_output_stream(const std::string &equation_name, const Input::Record &in_rec, std::string unit_str);
     
     /**
      * Write all data registered as a new time frame.
@@ -126,7 +146,7 @@ public:
     /**
      * Getter of the observe object.
      */
-    std::shared_ptr<Observe> observe();
+    std::shared_ptr<Observe> observe(Mesh *mesh);
 
     /**
      * \brief Clear data for output computed by method @p compute_field_data.
@@ -134,10 +154,10 @@ public:
     void clear_data(void);
 
     /**
-     * Return if shared pointer to output_mesh_ is created.
+     * Return if shared pointer to output data caches are created.
      */
-    inline bool is_output_mesh_init() {
-    	return (bool)(output_mesh_);
+    inline bool is_output_data_caches_init() {
+    	return (bool)(nodes_);
     }
 
     /// Return auxiliary flag enable_refinement_.
@@ -146,24 +166,16 @@ public:
     }
 
     /**
-     * Create shared pointer of \p output_mesh_ or \p output_mesh_discont_ (if discont is true) and return its.
+     * Set shared pointers of output data caches.
      *
-     * @param init_input Call constructor with initialization from Input Record
-     * @param discont    Determines type of output mesh (output_mesh_ or output_mesh_discont_)
+     * Set shared pointer of \p output_mesh_ (temporary solution).
      */
-    std::shared_ptr<OutputMeshBase> create_output_mesh_ptr(bool init_input, bool discont = false);
+    virtual void set_output_data_caches(std::shared_ptr<OutputMeshBase> mesh_ptr);
 
     /**
-     * Get shared pointer of \p output_mesh_ or \p output_mesh_discont_ (if discont is true).
+     * Get shared pointer of \p output_mesh_.
      */
-    std::shared_ptr<OutputMeshBase> get_output_mesh_ptr(bool discont = false);
-
-    /**
-     * Return MPI rank of process
-     */
-    inline int get_rank() {
-    	return rank;
-    }
+    std::shared_ptr<OutputMeshBase> get_output_mesh_ptr();
 
     /**
      * Update the last time is actual \p time is less than \p field_time
@@ -181,19 +193,52 @@ public:
      * @param space_type Output discrete space
      * @param n_rows     Count of rows of data cache (used only if new cache is created)
      * @param n_cols     Count of columns of data cache (used only if new cache is created)
+     * @param size       Size of data cache (used only if new cache is created and only for native data)
      */
     template <typename T>
     ElementDataCache<T> & prepare_compute_data(std::string field_name, DiscreteSpace space_type, unsigned int n_rows, unsigned int n_cols);
 
+    /**
+     * Return if output is serial or parallel
+     */
+    inline bool is_parallel() const {
+        return this->parallel_;
+    }
+
+    /**
+     * Return rank of actual process
+     */
+    inline int rank() const {
+        return this->rank_;
+    }
+
+    /**
+     * Return number of processes
+     */
+    inline int n_proc() const {
+        return this->n_proc_;
+    }
+
+    /// Complete information about dummy fields, method has effect only for GMSH output.
+    virtual void add_dummy_fields();
+
 
 protected:
     
-    void compute_discontinuous_output_mesh();
-
     /**
      * Change main filename to have prescribed extension.
      */
     void fix_main_file_extension(std::string extension);
+
+
+    /**
+     * \brief Return unique value current step for parallel or serial output.
+     *
+     *  Respect value of \p parallel_ flag:
+     *   - for serial output return actual value of \p current_step
+     *   - for parallel output take unique value with account rank and number of processes
+     */
+    int get_parallel_current_step();
 
 
     /**
@@ -202,9 +247,19 @@ protected:
     virtual int write_data(void) = 0;
 
     /**
+     * \brief Collect data of individual processes to serial data on master (0th) process
+     */
+    void gather_output_data(void);
+
+    /**
      * Cached MPI rank of process (is tested in methods)
      */
-    int rank;
+    int rank_;
+
+    /**
+     * Cached MPI number of processes (is tested in methods)
+     */
+    int n_proc_;
 
     /**
      * Registered output data. Single map for every value of DiscreteSpace
@@ -249,19 +304,31 @@ protected:
     std::string equation_name_;
 
     /**
-     * Cached pointer at mesh used by this output stream
+     * Number of decimal digits used for output of double values.
      */
-    Mesh *_mesh;
-    
+    int precision_;
+
     /// Output mesh.
-    std::shared_ptr<OutputMesh> output_mesh_;
-    /// Discontinuous (non-conforming) mesh. Used for CORNER_DATA.
-    std::shared_ptr<OutputMeshDiscontinuous> output_mesh_discont_;
-    
+    std::shared_ptr<OutputMeshBase> output_mesh_;
+
     std::shared_ptr<Observe> observe_;
 
     /// Auxiliary flag for refinement enabling, due to gmsh format.
     bool enable_refinement_;
+
+    /// Parallel or serial version of file format (parallel has effect only for VTK)
+    bool parallel_;
+
+    /// String representation of time unit.
+	string unit_string_;
+
+	/// Vector of node coordinates. [spacedim x n_nodes]
+    std::shared_ptr<ElementDataCache<double>> nodes_;
+    /// Vector maps the nodes to their coordinates in vector @p nodes_.
+    std::shared_ptr<ElementDataCache<unsigned int>> connectivity_;
+    /// Vector of offsets of node indices of elements. Maps elements to their nodes in connectivity_.
+    std::shared_ptr<ElementDataCache<unsigned int>> offsets_;
+
 };
 
 

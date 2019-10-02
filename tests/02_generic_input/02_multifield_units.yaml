@@ -1,12 +1,14 @@
-flow123d_version: 2.0.0
+#################
+# Test goal: Test of units of multifield values defined by user
+# Author: David Flanderka
+# Source for reference: qualitative
+
+flow123d_version: 3.1.0
 problem: !Coupling_Sequential
-  description: Zero flow + transport with source. Substance A - increase of concentration,
-    B - decrease of concentration, C - rapid increase of concentration with high sigma,
-    such that it determines CFL condition (t equals 1/(10/0.9)).
+  description: Tests correct functionality of setting input multifields by user defined units.
   mesh:
     mesh_file: ../00_mesh/square_1x1_40el.msh
   flow_equation: !Flow_Darcy_MH
-    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-12
@@ -25,11 +27,10 @@ problem: !Coupling_Sequential
         - velocity_p0
     balance:
       cumulative: true
-    output_stream: 
+    output_stream:
       file: ./flow_test16.pvd
       format: !vtk
         variant: ascii
-      name: flow_output_stream
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_Advection_FV
       input_fields:
@@ -42,7 +43,7 @@ problem: !Coupling_Sequential
               - 900
               - 0
             unit: g*m^-3
-          sources_sigma: 
+          sources_sigma:
             - 3
             - 3
             - 10
@@ -53,12 +54,13 @@ problem: !Coupling_Sequential
               - 600
             unit: g*m^-3
           porosity: 0.9
-    output_stream: 
+    output_stream:
       file: ./transport_test16.pvd
       format: !vtk
         variant: ascii
       times:
         - step: 0.2
+      precision: 14  
     substances:
       - A
       - B

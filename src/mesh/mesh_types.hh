@@ -20,35 +20,14 @@
 #define MESH_TYPES_HH_
 
 #include "system/sys_vector.hh"
+#include <vector>
 
 // Forward declarations
-template <int spacedim>
-    class ElementAccessor;
-class BIHTree;
 class Node;
-class Element;
-class Boundary;
-class Edge;
-
 
 // Preparation for next development
-typedef flow::VectorId<Node> NodeVector;
-typedef NodeVector::Iter NodeIter;
-typedef NodeVector::FullIter NodeFullIter;
-
-// iterator over elements
-// should be mesh member, but then we have problem how to have ElementIter as memeber of
-// Node or other classes without cyclic inclusion
-typedef flow::VectorId<Element> ElementVector;
-typedef ElementVector::Iter ElementIter;
-typedef ElementVector::FullIter ElementFullIter;
-
-typedef flow::Vector<Boundary> BoundaryVector;
-typedef BoundaryVector::Iter BoundaryIter;
-typedef BoundaryVector::FullIter BoundaryFullIter;
-
-typedef flow::Vector<Edge> EdgeVector;
-typedef EdgeVector::Iter EdgeIter;
-typedef EdgeVector::FullIter EdgeFullIter;
+//typedef flow::VectorId<Node> NodeVector;
+//typedef NodeVector::Iter NodeIter;
+//typedef NodeVector::FullIter NodeFullIter;
 
 #endif /* MESH_TYPES_HH_ */

@@ -18,13 +18,28 @@
 #ifndef FIELD_VALUES_HH_
 #define FIELD_VALUES_HH_
 
+#include <string.h>                                    // for memcpy
+#include <boost/core/explicit_operator_bool.hpp>       // for optional::oper...
+#include <boost/exception/detail/error_info_impl.hpp>  // for error_info
+#include <boost/exception/info.hpp>                    // for operator<<
+#include <boost/format.hpp>                            // for str
+#include <boost/optional/optional.hpp>                 // for get_pointer
+#include <cmath>                                       // for abs
+#include <cstdlib>                                     // for abs
+#include <limits>                                      // for numeric_limits
+#include <new>                                         // for operator new[]
+#include <ostream>                                     // for operator&, ope...
+#include <string>                                      // for basic_string
+#include <system/exceptions.hh>                        // for THROW, ExcStream
+#include <type_traits>                                 // for is_floating_point
+#include <vector>                                      // for vector
 #include <armadillo>
-#include <boost/format.hpp>
-#include <system/exceptions.hh>
-#include "input/input_type.hh"
-#include "input/accessors.hh"
-#include <ostream>
-#include <cmath>
+#include "input/accessors.hh"                          // for Array, Iterator
+#include "input/accessors_impl.hh"                     // for Array::size
+#include "input/input_exception.hh"                    // for ExcFV_Input::~...
+#include "input/type_base.hh"                          // for Array, String
+#include "input/type_generic.hh"                       // for Parameter
+#include "input/type_selection.hh"                     // for Selection
 
 namespace IT=Input::Type;
 
@@ -237,6 +252,7 @@ public:
     typedef Input::Array AccessType;
     const static int NRows_ = NRows;
     const static int NCols_ = NCols;
+    const static int rank_ = 2;
 
     static std::string type_name() { return boost::str(boost::format("R[%d,%d]") % NRows % NCols); }
     static IT::Array get_input_type() {
@@ -319,6 +335,7 @@ public:
     typedef typename internal::AccessTypeDispatch<ET>::type AccessType;
     const static int NRows_ = 1;
     const static int NCols_ = 1;
+    const static int rank_ = 0;
 
     static std::string type_name() { return "R"; }
     static IT::Parameter get_input_type()
@@ -365,7 +382,7 @@ public:
         value_=1;
     }
     bool equal_to(const  return_type &other) {
-        return std::abs(value_ - other) < 4*std::numeric_limits<ET>::epsilon();
+        return std::abs((double)value_ - other) < 4*std::numeric_limits<ET>::epsilon();
     }
     // Multiplied value_ by double coefficient
     void scale(double scale_coef) {
@@ -391,6 +408,7 @@ public:
     typedef Input::Array AccessType;
     const static int NRows_ = 0;
     const static int NCols_ = 1;
+    const static int rank_ = 10;
 
 
     static std::string type_name() { return "R[n]"; }
@@ -463,6 +481,7 @@ public:
     typedef Input::Array AccessType;
     const static int NRows_ = NRows;
     const static int NCols_ = 1;
+    const static int rank_ = 1;
 
 
     static std::string type_name() { return boost::str(boost::format("R[%d]") % NRows ); }

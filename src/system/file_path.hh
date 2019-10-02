@@ -19,8 +19,14 @@
 #define FILE_NAME_HH_
 
 #include <string>
-
 #include "system/exceptions.hh"
+
+#include <boost/exception/info.hpp>  // for error_info::~error_info<Tag, T>
+#include <iosfwd>                    // for ostream
+#include <map>                       // for map
+#include <memory>                    // for shared_ptr
+#include <vector>                    // for vector
+
 
 using namespace std;
 
@@ -40,7 +46,7 @@ namespace boost {
  * Before you create any instance of the class you have to call static method @p set_io_dirs to set:
  * - working directory of the program (when it was started)
  * - root input directory, i.e. directory of the main input file (given by -s parameter)
- * - input directory, used to replace ${INPUT} placeholder (given by -i parameter)
+ * - input directory, used to replace $INPUT_DIR$ placeholder (given by -i parameter)
  * - output directory, where all output files should be placed (given by -o parameter)
  *
  */
@@ -73,7 +79,7 @@ public:
      *
      * For input files:
      * - For relative path prepend absolute path of the directory of the main input file (root directory).
-     * - Replace ${INPUT} place holder with the input directory given at command line.
+     * - Replace $INPUT_DIR$ place holder with the input directory given at command line.
      *
      * For output files:
      * - Forbids absolute output paths.
@@ -95,7 +101,7 @@ public:
      * Set:
      * - working directory (used only if the output directory is relative)
      * - root directory (of the main input file)
-     * - input directory to replace ${INPUT} place holder
+     * - input directory to replace $INPUT_DIR$ place holder
      * - output directory used as prefix to the output files (relative output dirs are relative to the working directory)
      */
     static void set_io_dirs(const string working_dir, const string root, const string input, const string output);
@@ -105,7 +111,7 @@ public:
      *
      * Set:
      * - root directory (of the main input file)
-     * - input directory to replace ${INPUT} place holder
+     * - input directory to replace $INPUT_DIR$ place holder
      * - output directory used as prefix to the output files (relative output dirs are relative to the working directory)
      */
     static void set_dirs(const string root, const string input, const string output);
@@ -117,7 +123,7 @@ public:
      *
      * Set:
      * - root directory (of the main yaml input file)
-     * - input directory to replace ${INPUT} place holder
+     * - input directory to replace $INPUT_DIR$ place holder
      * - output directory used as prefix to the output files (relative output dirs are relative to the working directory)
      */
     static string set_dirs_from_input(const string main_yaml, const string input, const string output);
@@ -131,7 +137,7 @@ public:
      * @brief Add new item to place holder.
      *
      * Placeholder is extended by adding a single new item. The item can be used in the name of the input or output file name.
-     * Currently, the only supported placeholder is ${INPUT}.
+     * Currently, the only supported placeholder is $INPUT_DIR$.
      *
      * @par Example usage:
      * @code

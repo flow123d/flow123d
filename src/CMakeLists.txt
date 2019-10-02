@@ -29,45 +29,47 @@
 
 
 # add deal.II library
-message(STATUS "===========================================")
-# Note: deal.II implicitly uses variables PETSC_DIR, PETSC_ARCH from upstream
-set(DEAL_II_WITH_MUPARSER OFF)
-set(DEAL_II_WITH_MPI ON)
-set(DEAL_II_WITH_THREADS OFF)
-set(BOOST_DIR "${BOOST_ROOT}")
-set(BOOST_LIBRARIES "${BOOST_LIBRARY_DIRS}")
-#set(TBB_FOUND "true")
-set(DEAL_II_WITH_UMFPACK OFF)
-## Check if UMFPACK is installed with PETSc
-#if (PETSC_VAR_UMFPACK_LIB)
-#  set(UMFPACK_FOUND "true")
-#  set(UMFPACK_LINKER_FLAGS ${PETSC_VAR_UMFPACK_LIB})
-#else()
-#  MESSAGE(FATAL_ERROR "Deal.II depends on UMFPACK, but PETSc is not built with it.")
-##  set(DEAL_II_ALLOW_BUNDLED OFF)
-##  set(DEAL_II_FORCE_BUNDLED_UMFPACK ON)
-#endif()
-set(DEAL_II_WITH_LAPACK ON)
-set(LAPACK_FOUND "true")
-set(LAPACK_LIBRARIES "${PETSC_EXTERNAL_LIB}")
-set(LAPACK_LINKER_FLAGS ${PETSC_VAR_BLASLAPACK_LIB})
-unset(DEAL_II_COMPONENT_PACKAGE  CACHE)
+#set(USE_DEAL_II true)
+if (USE_DEAL_II)
+    message(STATUS "===========================================")
+    # Note: deal.II implicitly uses variables PETSC_DIR, PETSC_ARCH from upstream
+    set(DEAL_II_WITH_MUPARSER OFF)
+    set(DEAL_II_WITH_MPI ON)
+    set(DEAL_II_WITH_THREADS OFF)
+    set(BOOST_DIR "${BOOST_ROOT}")
+    set(BOOST_LIBRARIES "${BOOST_LIBRARY_DIRS}")
+    #set(TBB_FOUND "true")
+    set(DEAL_II_WITH_UMFPACK OFF)
+    ## Check if UMFPACK is installed with PETSc
+    #if (PETSC_VAR_UMFPACK_LIB)
+    #  set(UMFPACK_FOUND "true")
+    #  set(UMFPACK_LINKER_FLAGS ${PETSC_VAR_UMFPACK_LIB})
+    #else()
+    #  MESSAGE(FATAL_ERROR "Deal.II depends on UMFPACK, but PETSc is not built with it.")
+    ##  set(DEAL_II_ALLOW_BUNDLED OFF)
+    ##  set(DEAL_II_FORCE_BUNDLED_UMFPACK ON)
+    #endif()
+    set(DEAL_II_WITH_LAPACK ON)
+    set(LAPACK_FOUND "true")
+    set(LAPACK_LIBRARIES "${PETSC_EXTERNAL_LIB}")
+    set(LAPACK_LINKER_FLAGS ${PETSC_VAR_BLASLAPACK_LIB})
+    unset(DEAL_II_COMPONENT_PACKAGE  CACHE)
 
-set(DEAL_II_COMPONENT_EXAMPLES OFF)
-set(DEAL_II_COMPONENT_COMPAT_FILES OFF)
-set(DEAL_II_COMPONENT_DOCUMENTATION OFF)
-set(DEAL_II_COMPONENT_MESH_CONVERTER OFF)
-set(DEAL_II_COMPONENT_PARAMETER_GUI OFF)
+    set(DEAL_II_COMPONENT_EXAMPLES OFF)
+    set(DEAL_II_COMPONENT_COMPAT_FILES OFF)
+    set(DEAL_II_COMPONENT_DOCUMENTATION OFF)
+    set(DEAL_II_COMPONENT_MESH_CONVERTER OFF)
+    set(DEAL_II_COMPONENT_PARAMETER_GUI OFF)
 
-
-
-
-
-add_subdirectory("dealii")
-set(DEAL_II_LIBRARY_NAME ${DEAL_II_LIBRARY_NAME} PARENT_SCOPE)
-message(STATUS "===========================================")
+#add_subdirectory("dealii")
+    set(DEAL_II_LIBRARY_NAME ${DEAL_II_LIBRARY_NAME} PARENT_SCOPE)
+    message(STATUS "===========================================")
 
 
+endif()
+
+
+# patched json_spirit lib
 add_subdirectory("input/json_spirit")
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -93,11 +95,9 @@ add_library(system_lib
     system/sys_profiler.cc
     system/time_point.cc
     system/system.cc
-#    system/xio.cc
     system/exceptions.cc
     system/stack_trace.cc
     system/asserts.cc
-#    io/read_ini.cc
     system/file_path.cc
     system/tokenizer.cc
     system/application_base.cc
@@ -153,6 +153,7 @@ add_library(la_lib
     la/linsys_BDDC.cc
     la/linsys_PETSC.cc
     la/sparse_graph.cc
+    la/local_system.cc
 )
 target_link_libraries(la_lib 
     input_lib system_lib
@@ -172,6 +173,8 @@ add_library(tools_lib
     tools/adaptivesimpson.cc
     tools/time_marks.cc
     tools/time_governor.cc
+    tools/unit_si.cc
+    tools/unit_converter.cc
 )
 target_link_libraries(tools_lib
     system_lib input_lib )
@@ -184,10 +187,12 @@ add_library(mesh_lib
     mesh/boundaries.cc
     mesh/edges.cc
     mesh/elements.cc
+    mesh/duplicate_nodes.cc
     mesh/mesh.cc
+    mesh/bc_mesh.cc
     mesh/neighbours.cc
     mesh/sides.cc
-    mesh/intersection.cc
+#    mesh/intersection.cc
     mesh/ref_element.cc
     mesh/partitioning.cc
     mesh/region_set.cc
@@ -195,36 +200,48 @@ add_library(mesh_lib
     mesh/bounding_box.cc
     mesh/bih_tree.cc
     
-    mesh/ngh/src/abscissa.cpp
-    mesh/ngh/src/bisector.cpp
-    mesh/ngh/src/intersection.cpp
-    mesh/ngh/src/intersectionLocal.cpp
-    mesh/ngh/src/mathfce.cpp
-    mesh/ngh/src/matrix.cpp
-    mesh/ngh/src/plain.cpp
-    mesh/ngh/src/point.cpp
-    mesh/ngh/src/polygon.cpp
-    mesh/ngh/src/tetrahedron.cpp
-    mesh/ngh/src/triangle.cpp
-    mesh/ngh/src/vector.cpp
-    mesh/ngh/src/vertex.cpp
+#     mesh/ngh/src/abscissa.cpp
+#     mesh/ngh/src/bisector.cpp
+#     mesh/ngh/src/intersection.cpp
+#     mesh/ngh/src/intersectionLocal.cpp
+#     mesh/ngh/src/mathfce.cpp
+#     mesh/ngh/src/matrix.cpp
+#     mesh/ngh/src/plain.cpp
+#     mesh/ngh/src/point.cpp
+#     mesh/ngh/src/polygon.cpp
+#     mesh/ngh/src/tetrahedron.cpp
+#     mesh/ngh/src/triangle.cpp
+#     mesh/ngh/src/vector.cpp
+#     mesh/ngh/src/vertex.cpp
+
+    intersection/plucker.cc
+    intersection/intersection_point_aux.cc
+    intersection/intersection_aux.cc
+    intersection/intersection_local.cc
+    intersection/compute_intersection.cc
+    intersection/inspect_elements_algorithm.cc
+    intersection/mixed_mesh_intersections.cc
 )
+
 target_link_libraries(mesh_lib
-    input_lib system_lib la_lib 
+    input_lib system_lib la_lib
     armadillo 
     ${Boost_LIBRARIES}
     ${PugiXml_LIBRARY}
     ${Zlib_LIBRARY})
 
-
-
 # fem_lib    
 add_library(fem_lib 
     quadrature/quadrature_lib.cc
-    fem/fe_p.cc
+    quadrature/intersection_quadrature.cc
+    fem/discrete_space.cc
     fem/dofhandler.cc
-    fem/fe_values.cc
     fem/finite_element.cc
+    fem/fe_p.cc
+    fem/fe_rt.cc
+    fem/fe_system.cc
+    fem/fe_values.cc
+    fem/fe_values_views.cc
     fem/mapping_p1.cc
 )
 target_link_libraries(fem_lib
@@ -239,8 +256,9 @@ add_library(io_lib
     io/msh_basereader.cc
     io/msh_gmshreader.cc
     io/msh_vtkreader.cc
+    io/msh_pvdreader.cc
     io/element_data_cache.cc
-    io/reader_instances.cc
+    io/reader_cache.cc
 
     io/output_time.cc
     io/output_vtk.cc
@@ -251,7 +269,7 @@ add_library(io_lib
 )
 
 target_link_libraries(io_lib
-    system_lib input_lib mesh_lib la_lib
+    system_lib input_lib mesh_lib fem_lib la_lib
     armadillo 
     ${Boost_LIBRARIES}
     ${PugiXml_LIBRARY}
@@ -276,15 +294,16 @@ add_library(coupling_lib
     fields/field_algo_base.cc    
     fields/field_flag.cc
     fields/field_set.cc
-    fields/unit_si.cc
-    fields/unit_converter.cc
     fields/generic_field.cc
     fields/field_constant.cc
     fields/field_formula.cc
-    fields/field_elementwise.cc
-    fields/field_interpolated_p0.cc
+    # fields/field_elementwise.cc
+    # fields/field_interpolated_p0.cc
     fields/table_function.cc
     fields/field_time_function.cc
+    fields/field_fe.cc
+    fields/fe_value_handler.cc
+    fields/surface_depth.cc
     coupling/equation.cc
     coupling/balance.cc
     # coupling/hc_explicit_sequential.cc
@@ -317,18 +336,17 @@ add_library(flow123d_lib
     flow/darcy_flow_mh.cc
     flow/soil_models.cc
     flow/richards_lmh.cc
+    flow/mortar_assembly.cc
 
     reaction/reaction_term.cc
     reaction/first_order_reaction.cc
     reaction/first_order_reaction_base.cc
     reaction/radioactive_decay.cc
-    reaction/pade_approximant.cc
     reaction/sorption_base.cc
     reaction/sorption.cc
     reaction/dual_porosity.cc
     reaction/isotherm.cc
     reaction/linear_ode_solver.cc
-    reaction/linear_ode_analytic.cc
     #semchem/semchem_interface.cc
 
     transport/concentration_model.cc
@@ -339,15 +357,19 @@ add_library(flow123d_lib
     
     transport/substance.cc
 
+    mechanics/elasticity.cc
+
     coupling/hc_explicit_sequential.cc
+    coupling/hm_iterative.cc
 )    
+    
 target_link_libraries(flow123d_lib 
     fem_lib mesh_lib la_lib input_lib io_lib
-    system_lib tools_lib coupling_lib  tools_lib
+    system_lib tools_lib coupling_lib
     fparser  
     armadillo 
 #    ${TBB_LIBRARIES}
-    ${DEAL_II_LIBRARY_NAME}
+#    ${DEAL_II_LIBRARY_NAME}
     ${PETSC_LIBRARIES} 
     ${BDDCML_LIBRARIES} 
     ${PETSC_EXTERNAL_LIB} 

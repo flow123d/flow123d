@@ -15,6 +15,7 @@
 #include "input/reader_to_storage.hh"
 #include "system/sys_profiler.hh"
 #include "mesh/mesh.h"
+#include "mesh/long_idx.hh"
 #include "io/msh_gmshreader.h"
 
 
@@ -40,11 +41,11 @@ TEST(Partitioning, all) {
     const Distribution * init_ds = mesh->get_part()->get_init_distr();
 
     cout << *init_ds;
-    const int * part = mesh->get_part()->get_loc_part();
+    const LongIdx * part = mesh->get_part()->get_loc_part();
     // print partitioning
     for(unsigned int i=0; i < init_ds->lsize(); i++) cout << "proc: " << init_ds->myp() << " i: " << i << " part: " << part[i] << endl;
 
-    vector<int> old_ids(mesh->n_elements());
+    vector<LongIdx> old_ids(mesh->n_elements());
     for(unsigned int i=0; i < mesh->n_elements(); i++) old_ids[i] = 2*i;
 
     Distribution * new_ds;

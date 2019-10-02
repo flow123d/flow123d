@@ -1,7 +1,12 @@
+#################
+# Test goal: Test output of DG 1D-2D transport.
+# Author: Jan Stebel
+# Source for reference: qualitative
+
 # problem
-flow123d_version: 2.0.0
+flow123d_version: 3.1.0
 problem: !Coupling_Sequential
-  description: Transport 1D-2D, (convection, dual porosity, sorption)
+  description: Transport 1D-2D (convection, dual porosity, sorption), output to multifields
   mesh:
     mesh_file: ../00_mesh/square_1x1_frac_fork.msh
     regions:
@@ -12,7 +17,6 @@ problem: !Coupling_Sequential
           - 1d_lower
           - 1d_left_branch
   flow_equation: !Flow_Darcy_MH
-    output_specific:
     input_fields:
       - region: 1d_domain
         conductivity: 10
@@ -26,11 +30,10 @@ problem: !Coupling_Sequential
     output:
       add_input_times: true
       fields: []
-    balance: {}
     nonlinear_solver:
-        linear_solver: !Petsc
-            a_tol: 1.0e-12
-            r_tol: 1.0e-12
+      linear_solver: !Petsc
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
   # primary equation
     output_stream:
       file: flow.pvd
@@ -41,11 +44,11 @@ problem: !Coupling_Sequential
       input_fields:
         - region: ALL
           init_conc:
-          - 0
-          - 0.5
+            - 0
+            - 0.5
           diff_m:
-          - 0
-          - 1e-2
+            - 0
+            - 1e-2
           porosity: 0.25
         - region: .BOUNDARY
           bc_conc: 1.0
@@ -124,9 +127,10 @@ problem: !Coupling_Sequential
         variant: ascii
       times:
         - step: 0.1
+      precision: 15         
     time:
       end_time: 1.0
-    
+
     balance:
       cumulative: true
   # solute_equation

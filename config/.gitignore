@@ -1,0 +1,3 @@
+docker.cfg
+docker/.tmp/
+jenkins-job/tmp

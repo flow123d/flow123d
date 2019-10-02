@@ -18,14 +18,26 @@
 #ifndef FIELD_INTERPOLATED_P0_HH_
 #define FIELD_INTERPOLATED_P0_HH_
 
-#include "field_algo_base.hh"
-#include "mesh/mesh.h"
-#include "mesh/mesh_types.hh"
-#include "system/system.hh"
-#include "io/msh_gmshreader.h"
-#include "mesh/bih_tree.hh"
-#include "mesh/ngh/include/ngh_interface.hh"
-#include "input/factory.hh"
+#include <string.h>                           // for memcpy
+#include <boost/exception/info.hpp>           // for operator<<, error_info:...
+#include <limits>                             // for numeric_limits
+#include <memory>                             // for shared_ptr
+#include <string>                             // for string
+#include <vector>                             // for vector
+#include <armadillo>
+#include "field_algo_base.hh"                 // for FieldAlgorithmBase
+#include "fields/field_values.hh"             // for FieldValue<>::Enum, Fie...
+#include "input/accessors.hh"                 // for ExcAccessorForNullStorage
+#include "input/accessors_impl.hh"            // for Record::val
+#include "input/storage.hh"                   // for ExcStorageTypeMismatch
+#include "input/type_record.hh"               // for Record::ExcRecordKeyNot...
+#include "mesh/elements.h"                    // for Element::dim
+#include "system/exceptions.hh"               // for ExcAssertMsg::~ExcAsser...
+#include "system/file_path.hh"                // for FilePath
+#include "tools/time_governor.hh"             // for TimeStep
+class BIHTree;
+class Mesh;
+template <int spacedim> class ElementAccessor;
 
 
 template <int spacedim, class Value>
@@ -67,11 +79,8 @@ public:
                        std::vector<typename Value::return_type>  &value_list);
 
 protected:
-    /// Multiply @p data_ with @p unit_conversion_coefficient_
-    void scale_data();
-
     /// mesh, which is interpolated
-	Mesh* source_mesh_;
+	std::shared_ptr<Mesh> source_mesh_;
 
 	/// mesh reader file
 	FilePath reader_file_;
@@ -94,18 +103,12 @@ protected:
 	/// stored flag if last computed element is boundary
 	unsigned int computed_elm_boundary_;
 
-	/// 3D (tetrahedron) element, used for computing intersection
-	TTetrahedron tetrahedron_;
 
-	/// 2D (triangle) element, used for computing intersection
-	TTriangle triangle_;
+    /// Default value of element if not set in mesh data file
+    double default_value_;
 
-	/// 1D (abscissa) element, used for computing intersection
-	TAbscissa abscissa_;
-
-	/// 0D (point) element, used for computing intersection
-	TPoint point_;
-
+    /// Accessor to Input::Record
+    Input::Record in_rec_;
 private:
     /// Registrar of class to factory
     static const int registrar;

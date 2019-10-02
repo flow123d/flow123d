@@ -1,4 +1,4 @@
-"time"	"region"	"quantity [m(2).kg.s(-2)]"	"flux"	"flux_in"	"flux_out"	"mass"	"source"	"source_in"	"source_out"	"flux_increment"	"source_increment"	"flux_cumulative"	"source_cumulative"	"error"
+"time [s]"	"region"	"quantity [m(2).kg.s(-2)]"	"flux"	"flux_in"	"flux_out"	"mass"	"source"	"source_in"	"source_out"	"flux_increment"	"source_increment"	"flux_cumulative"	"source_cumulative"	"error"
 0	"well1_surface"	"energy"	0	0	0	2.47132e+09	0	0	0	0	0	0	0	0
 0	"well1_middle"	"energy"	0	0	0	1.19842e+11	0	0	0	0	0	0	0	0
 0	"well1_deep"	"energy"	0	0	0	3.52076e+09	0	0	0	0	0	0	0	0

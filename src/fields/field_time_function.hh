@@ -18,7 +18,22 @@
 #ifndef FIELD_TIME_FUNCTION_HH_
 #define FIELD_TIME_FUNCTION_HH_
 
-#include "fields/field_constant.hh"
+#include <string.h>                        // for memcpy
+#include <boost/exception/info.hpp>        // for error_info::error_info<Tag...
+#include <new>                             // for operator new[]
+#include <ostream>                         // for operator<<
+#include <string>                          // for operator<<, string
+#include <utility>                         // for pair
+#include <armadillo>
+#include "fields/field_algo_base.hh"       // for FieldAlgorithmBase
+#include "fields/field_constant.hh"        // for FieldConstant
+#include "fields/field_values.hh"          // for FieldValue<>::TensorFixed
+#include "input/accessors.hh"              // for ExcAccessorForNullStorage
+#include "input/accessors_impl.hh"         // for Record::val
+#include "input/storage.hh"                // for ExcStorageTypeMismatch
+#include "input/type_record.hh"            // for Record::ExcRecordKeyNotFound
+#include "tools/time_governor.hh"          // for TimeStep
+class UnitSI;
 
 /**
  * Class representing spatially fields defined by time-dependent function.

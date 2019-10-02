@@ -55,19 +55,36 @@
  *  - why we need lsize in constructors if we have Distribution
  */
 
-#include "system/global_defs.h"
-#include "la/distribution.hh"
-#include "input/input_type_forward.hh"
-#include "input/accessors.hh"
+#include <mpi.h>                                       // for MPI_Comm, MPI_...
+#include <stdlib.h>                                    // for NULL, abs
+#include <string.h>                                    // for memcpy
+#include <boost/exception/detail/error_info_impl.hpp>  // for error_info
+#include <boost/exception/info.hpp>                    // for operator<<
+#include <cmath>                                       // for abs, fabs
+#include <new>                                         // for operator new[]
+#include <string>                                      // for basic_string
+#include <typeinfo>                                    // for type_info
+#include <utility>                                     // for swap, pair
+#include <vector>                                      // for vector, allocator
 
-
-#include <mpi.h>
-
-#include <vector>
 #include <armadillo>
 
 // PETSc includes
-#include "petscmat.h"
+#include "petsclog.h"                                  // for MPI_Allreduce
+#include "petscmat.h"                                  // for Mat, MatStructure
+#include "petscmath.h"                                 // for PetscScalar
+#include "petscsys.h"                                  // for PetscErrorCode
+#include "petscvec.h"                                  // for Vec, VecCreate...
+
+#include "input/accessors.hh"                          // for Record
+#include "la/local_system.hh"
+#include "la/distribution.hh"                          // for Distribution
+#include "system/exc_common.hh"                        // for ExcAssertMsg
+#include "system/exceptions.hh"                        // for ExcAssertMsg::...
+#include "system/system.hh"                            // for chkerr
+#include "system/global_defs.h"                        // for OLD_ASSERT, msg
+
+namespace Input { namespace Type { class Abstract; } }
 
 
 class LinSys
@@ -84,6 +101,14 @@ public:
         DONE,
         NONE
     } SetValuesMode;
+    
+    struct SolveInfo {
+        SolveInfo(int cr, int nits)
+        : converged_reason(cr), n_iterations(nits)
+        {}
+        int converged_reason;
+        int n_iterations;
+    };
 
 protected:
     typedef std::pair<unsigned,double>       Constraint_;
@@ -104,7 +129,7 @@ public:
       : comm_( rows_ds->get_comm() ), status_( NONE ), lsize_( rows_ds->lsize() ), rows_ds_(rows_ds),
         symmetric_( false ), positive_definite_( false ), negative_definite_( false ),
         spd_via_symmetric_general_( false ), solution_(NULL), v_solution_(NULL),
-        own_solution_(false)
+        own_vec_(false), own_solution_(false)
     { 
         int lsizeInt = static_cast<int>( rows_ds->lsize() );
         int sizeInt;
@@ -260,17 +285,36 @@ public:
     }
 
     /**
+     * Set PETSc solution
+     */
+    void set_solution(Vec sol_vec) {
+    	solution_ = sol_vec;
+    	own_vec_ = false;
+        own_solution_ = false;
+        double *out_array;
+        VecGetArray( solution_, &out_array );
+        v_solution_ = out_array;
+        VecRestoreArray( solution_, &out_array );
+    }
+
+    /**
      * Create PETSc solution
      */
     void set_solution(double *sol_array) {
-        if (sol_array == NULL) {
-            v_solution_   = new double[ rows_ds_->lsize() + 1 ];
-            own_solution_ = true;
-        }
-        else {
-            v_solution_ = sol_array;
-            own_solution_ = false;
-        }
+        v_solution_ = sol_array;
+        own_vec_ = true;
+        own_solution_ = false;
+        PetscErrorCode ierr;
+        ierr = VecCreateMPIWithArray( comm_,1, rows_ds_->lsize(), PETSC_DECIDE, v_solution_, &solution_ ); CHKERRV( ierr );
+    }
+
+    /**
+     * Create PETSc solution
+     */
+    void set_solution() {
+        v_solution_   = new double[ rows_ds_->lsize() + 1 ];
+        own_vec_ = true;
+        own_solution_ = true;
         PetscErrorCode ierr;
         ierr = VecCreateMPIWithArray( comm_,1, rows_ds_->lsize(), PETSC_DECIDE, v_solution_, &solution_ ); CHKERRV( ierr );
     }
@@ -344,6 +388,29 @@ public:
         mat_set_values(nrow, rows, ncol, cols, mat_vals);
         rhs_set_values(nrow, rows, rhs_vals);
     }
+
+    void set_local_system(LocalSystem & local){
+        local.eliminate_solution();
+        arma::mat tmp = local.matrix.t();
+//         DBGCOUT(<< "\n" << tmp);
+//         DBGCOUT(<< "row dofs: \n");
+//             for(unsigned int i=0; i< local.row_dofs.size(); i++)
+//                 cout << local.row_dofs[i] << " ";
+//             cout <<endl;
+
+        // This is always done only once, see implementation.
+        mat_set_values(local.matrix.n_rows, (int *)(local.row_dofs.memptr()),
+                       local.matrix.n_cols, (int *)(local.col_dofs.memptr()),
+                       tmp.memptr());
+        
+        rhs_set_values(local.matrix.n_rows, (int *)(local.row_dofs.memptr()),
+                       local.rhs.memptr());
+    }
+    
+    /**
+     * Add given dense matrix to preallocation.
+     */
+    //virtual void allocate(std::vector<int> rows, std::vector<int> cols);
 
     /**
      * Shortcut to assembly into matrix and RHS in one call, possibly apply Dirichlet boundary conditions.
@@ -440,7 +507,7 @@ public:
     /**
      * Solve the system and return convergence reason.
      */
-    virtual int solve()=0;
+    virtual SolveInfo solve()=0;
 
     /**
      * Returns norm of the initial right hand side
@@ -564,8 +631,7 @@ public:
 
     virtual ~LinSys()
     { 
-       PetscErrorCode ierr;
-       if ( solution_ ) { ierr = VecDestroy(&solution_); CHKERRV( ierr ); }
+       if ( own_vec_ && solution_ ) { chkerr(VecDestroy(&solution_)); }
        if ( own_solution_ ) delete[] v_solution_;
     }
 
@@ -597,6 +663,7 @@ protected:
 
     Vec      solution_;          //!< PETSc vector constructed with vb array.
     double  *v_solution_;        //!< local solution array pointing into Vec solution_
+    bool     own_vec_;           //!< Indicates if the solution vector has been allocated by this class
     bool     own_solution_;      //!< Indicates if the solution array has been allocated by this class
 
     double  residual_norm_;      //!< local solution array pointing into Vec solution_

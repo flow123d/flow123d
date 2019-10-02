@@ -18,18 +18,6 @@
 #ifndef TIMEPOINT_HH_
 #define TIMEPOINT_HH_
 
-#include "config.h"
-#include <string>
-#include <time.h>
-
-/**
- * Include either Windows or chrono lib
- */
-#ifdef FLOW123D_HAVE_TIMER_QUERY_PERFORMANCE_COUNTER
-#include <windows.h>
-#else
-#include <chrono>
-#endif //FLOW123D_HAVE_TIMER_CHRONO_HIGH_RESOLUTION
 
 using namespace std;
 

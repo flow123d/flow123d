@@ -27,11 +27,24 @@
 #ifndef SORPTION_H
 #define SORPTION_H
 
-#include "fields/field_algo_base.hh"
+#include <boost/exception/info.hpp>   // for operator<<, error_info::error_i...
+#include <string>                     // for string
+#include <vector>                     // for vector
+#include "fields/field.hh"            // for Field
+#include "fields/field_values.hh"     // for FieldValue<>::Scalar, FieldValue
+#include "input/type_base.hh"         // for Array
+#include "input/type_generic.hh"      // for Instance
+#include "reaction/reaction_term.hh"  // for ReactionTerm
 #include "reaction/sorption_base.hh"
 
 class Mesh;
 class Isotherm;
+namespace Input {
+	class Record;
+	namespace Type { class Record; }
+}
+template <int spacedim> class ElementAccessor;
+
 
 /** @brief Simple sorption model without dual porosity.
  * 
@@ -50,8 +63,8 @@ public:
     ~SorptionSimple(void);
   
 protected:
-    /// Reinitializes the isotherm.
-    void isotherm_reinit(std::vector<Isotherm> &isotherms, const ElementAccessor<3> &elm) override;
+    /// Computes @p CommonElementData.
+    void compute_common_ele_data(const ElementAccessor<3> &elem) override;
 
 private:
     /// Registrar of class to factory
@@ -68,7 +81,7 @@ public:
     /// Constructor.
     SorptionDual(Mesh &init_mesh, Input::Record in_rec,
                 const string &output_conc_name,
-                const string &output_selection_name);
+                const string &output_conc_desc);
 
     /// Destructor.
     ~SorptionDual(void);
@@ -80,12 +93,10 @@ public:
       }
 
 protected:
-    /// Reinitializes the isotherm.
-    virtual void isotherm_reinit(std::vector<Isotherm> &isotherms, const ElementAccessor<3> &elm) = 0;
+    /// Computes @p CommonElementData. Pure virtual.
+    virtual void compute_common_ele_data(const ElementAccessor<3> &elem) = 0;
     
     Field<3, FieldValue<3>::Scalar > immob_porosity_; //< Immobile porosity field copied from transport
-
-    //virtual double compute_sorbing_scale(double por_m, double por_imm) = 0;
 };
 
 
@@ -106,10 +117,8 @@ public:
     ~SorptionMob(void);
   
 protected:
-    /// Reinitializes the isotherm.
-    void isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const ElementAccessor<3> &elem) override;
-
-    //double compute_sorbing_scale(double por_m, double por_imm) override;
+    /// Computes @p CommonElementData.
+    void compute_common_ele_data(const ElementAccessor<3> &elem) override;
 
 private:
     /// Registrar of class to factory
@@ -134,10 +143,8 @@ public:
     ~SorptionImmob(void);
 
 protected:
-    /// Reinitializes the isotherm.
-    void isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const ElementAccessor<3> &elem) override;
-
-    //double compute_sorbing_scale(double por_m, double por_imm) override;
+    /// Computes @p CommonElementData.
+    void compute_common_ele_data(const ElementAccessor<3> &elem) override;
 
 private:
     /// Registrar of class to factory

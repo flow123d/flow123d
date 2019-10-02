@@ -23,20 +23,17 @@
 
 #include "fields/field_python.impl.hh"
 #include "fields/field_add_potential.impl.hh"
-#include "fields/field_fe.impl.hh"
 
 
 FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
-FLOW123D_FORCE_LINK_IN_PARENT(field_elementwise)
 FLOW123D_FORCE_LINK_IN_PARENT(field_formula)
-FLOW123D_FORCE_LINK_IN_PARENT(field_interpolated)
 FLOW123D_FORCE_LINK_IN_PARENT(field_python)
 FLOW123D_FORCE_LINK_IN_PARENT(field_time_function)
+FLOW123D_FORCE_LINK_IN_PARENT(field_fe)
 
 
 INSTANCE_ALL(FieldAlgorithmBase)
 INSTANCE_ALL(FieldPython)
-INSTANCE_ALL(FieldFE)
 
 template class FieldAddPotential<3, FieldValue<0>::Scalar >;
 //template class FieldAddPotential<2, FieldValue<0>::Scalar >;

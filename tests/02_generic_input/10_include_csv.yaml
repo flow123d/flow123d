@@ -1,0 +1,100 @@
+#################
+# Test goal: Test include of input CSV files, extrapolation of input data.
+# Author: David Flanderka
+# Source for reference: Just run
+
+flow123d_version: 3.1.0
+problem: !Coupling_Sequential
+  description: heck correct includes of CSV files to main input YAML file.
+  mesh:
+    mesh_file: ../00_mesh/cube_1x1x1_frac21.msh
+    regions: !include_csv:From_Label
+      file: ./includes/regions.csv
+      n_head_lines: 2
+      separator: ' '
+      format:
+        mesh_label: $0
+        name: $2
+  flow_equation: !Flow_Darcy_MH
+    nonlinear_solver:
+      linear_solver: !Petsc
+        r_tol: 1.0e-10
+        a_tol: 1.0e-10
+    n_schurs: 2
+    input_fields:
+      - region: channel_1d
+        anisotropy: 0.1
+        sigma: 0.05
+      - region: fracture_2d_2
+        anisotropy: 0.05
+        sigma: 0.5
+      - region: cube_3d
+        anisotropy: 0.01
+      - region: .BOUNDARY
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: x-z
+    output:
+      fields:
+        - piezo_head_p0
+        - velocity_p0
+    output_stream: 
+      file: ./flow.msh
+      format: !gmsh
+  solute_equation: !Coupling_OperatorSplitting
+    transport: !Solute_Advection_FV
+      input_fields:
+        - region: ALL
+          init_conc: 0
+          porosity: !FieldTimeFunction
+            time_function: 
+              values: !include_csv
+                file: ./includes/field_data.csv
+                separator: " "
+                n_head_lines: 1
+                format:
+                  t:
+                    time: $0
+                  value: $1
+### We need support of CSV include in transposed part of IST if we can use !include_csv tag for MultiFields 
+        - region: .BOUNDARY
+          bc_conc: 
+              -  !FieldTimeFunction
+                time_function: 
+                  values: !include_csv
+                    file: ./includes/field_data.csv
+                    separator: " "
+                    n_head_lines: 1
+                    format:
+                      t: 
+                        time: $0
+                      value: $2
+
+              -  !FieldTimeFunction
+                time_function: 
+                  values: !include_csv
+                    file: ./includes/field_data.csv
+                    separator: " "
+                    n_head_lines: 1
+                    format:
+                      t: 
+                        time: $0
+                      value: $3
+      output:
+        fields:
+          - porosity
+          - conc
+    substances:
+      - A
+      - B
+    time:
+      end_time: 0.9
+    output_stream: 
+      file: ./transport.pvd
+      format: !vtk
+        variant: ascii
+      times:
+        - step: 0.3
+      precision: 10 
+    balance:
+      cumulative: true

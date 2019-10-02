@@ -1,11 +1,9 @@
-flow123d_version: 2.0.0
+flow123d_version: 3.1.0
 problem: !Coupling_Sequential
-  description: Test6 - Coupling between dimension 2D-3D - influence of sigma and cross
-    section parameters.
+  description: Test6 - Coupling between dimension 2D-3D - influence of sigma and cross section parameters.
   mesh:
     mesh_file: ../00_mesh/cube_1x1x1_frac.msh
   flow_equation: !Flow_Darcy_MH
-    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-07
@@ -28,7 +26,7 @@ problem: !Coupling_Sequential
       - region: .2d_fraction
         bc_type: total_flux
         bc_flux: !FieldFormula
-          value: '-(0)'
+          value: -(0)
       - region: .3d_cube
         bc_type: dirichlet
         bc_piezo_head: !FieldFormula
@@ -40,9 +38,7 @@ problem: !Coupling_Sequential
         - pressure_p0
         - pressure_p1
         - velocity_p0
-    balance: {}
     output_stream:
       file: test6_32d.pvd
       format: !vtk
         variant: ascii
-      name: flow_output_stream

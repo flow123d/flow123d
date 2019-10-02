@@ -18,6 +18,7 @@
 #include "fields/field_set.hh"
 #include "system/sys_profiler.hh"
 #include "input/flow_attribute_lib.hh"
+#include <boost/algorithm/string/replace.hpp>
 
 
 
@@ -82,10 +83,17 @@ Input::Type::Record FieldSet::make_field_descriptor_type(const std::string &equa
             } else {
                 field_type_ptr = std::make_shared<Input::Type::Instance>(field->get_input_type());
             }
-            OLD_ASSERT( field->units().is_def() , "units not def.");
-            rec.declare_key(field->input_name(), field_type_ptr, Input::Type::Default::optional(), description,
+            ASSERT( field->units().is_def() )(field->input_name()).error("units not def.");
+            Input::Type::TypeBase::attribute_map key_attributes = Input::Type::TypeBase::attribute_map(
                     { {FlowAttribute::field_unit(), field->units().json() },
-                      {FlowAttribute::field_value_shape(), field->get_value_attribute()} });
+                      {FlowAttribute::field_value_shape(), field->get_value_attribute()} }
+           		);
+            string default_val = field->input_default();
+            if (default_val != "") {
+            	boost::replace_all(default_val, "\"", "\\\"");
+            	key_attributes[FlowAttribute::field_default_value()] = "\"" + default_val + "\"";
+            }
+            rec.declare_key(field->input_name(), field_type_ptr, Input::Type::Default::optional(), description, key_attributes);
         }
 
     }
@@ -174,16 +182,6 @@ bool FieldSet::is_jump_time() const {
     for(auto field : field_list) is_jump = is_jump || field->is_jump_time();
     return is_jump;
 }
-
-
-
-// OBSOLETE method
-FieldCommon &FieldSet::add_field( FieldCommon *field, const string &name,
-                                      const string &desc, const string & d_val) {
-    *this += field->name(name).description(desc).input_default(d_val);
-    return *field;
-}
-
 
 
 std::ostream &operator<<(std::ostream &stream, const FieldSet &set) {

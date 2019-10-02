@@ -28,9 +28,9 @@
 ##
 ##![Results of calibration.](tutor_figures/06_mass_flux.pdf){#fig:calib}
 ##
-flow123d_version: 2.0.0
+flow123d_version: 3.1.0
 problem: !Coupling_Sequential
-  description: "Example 6 - Fractures - dual-porosity"
+  description: Example 6 - Fractures - dual-porosity
   mesh:
     mesh_file: 04_mesh.msh
     regions:
@@ -55,27 +55,26 @@ problem: !Coupling_Sequential
           - .left
           - .left_points
   flow_equation: !Flow_Darcy_MH
-    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-15
         r_tol: 1.0e-15
     input_fields:
-    - region: rock
-      conductivity: 0.000315
-      cross_section: 1
-    - region: flow_fractures
-      conductivity: 31.5
-      cross_section: 0.01
-    - region: blind_fractures
-      conductivity: 0.000315
-      cross_section: 0.01
-    - region: BC_left
-      bc_type: dirichlet
-      bc_piezo_head: 0.1
-    - region: BC_right
-      bc_type: dirichlet
-      bc_piezo_head: 0
+      - region: rock
+        conductivity: 0.000315
+        cross_section: 1
+      - region: flow_fractures
+        conductivity: 31.5
+        cross_section: 0.01
+      - region: blind_fractures
+        conductivity: 0.000315
+        cross_section: 0.01
+      - region: BC_left
+        bc_type: dirichlet
+        bc_piezo_head: 0.1
+      - region: BC_right
+        bc_type: dirichlet
+        bc_piezo_head: 0
     balance: {}
     output:
       fields:
@@ -93,18 +92,18 @@ problem: !Coupling_Sequential
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_Advection_FV
       input_fields:
-      - region: rock
-        init_conc: 0
-        porosity: 0.005
-      - region: flow_fractures
-        init_conc: 0
-        porosity: 0.1
-      - region: blind_fractures
-        init_conc: 0
-        porosity: 0.005
-      - region: BC_left
-        bc_type: dirichlet
-        bc_conc: 1.0e-05
+        - region: rock
+          init_conc: 0
+          porosity: 0.005
+        - region: flow_fractures
+          init_conc: 0
+          porosity: 0.1
+        - region: blind_fractures
+          init_conc: 0
+          porosity: 0.005
+        - region: BC_left
+          bc_type: dirichlet
+          bc_conc: 1.0e-05
       solver: !Petsc
         a_tol: 1.0e-12
         r_tol: 1.0e-12

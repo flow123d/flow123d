@@ -22,7 +22,7 @@ class ConfigCaseResult(object):
 class PyPyResult(object):
     def __init__(self, pypy):
         """
-        :type pypy: scripts.core.threads.PyPy
+        :type pypy: scripts.core.pypy.PyPy
         """
         self.returncode = pypy.returncode
         self.command = pypy.executor.command

@@ -1,8 +1,7 @@
-flow123d_version: 2.0.0
+flow123d_version: 3.1.0
 problem: !Coupling_Sequential
-  description: "Sorption with sources - no flow, no transport, only source term and\
-    \ sorptions. \nQualitative and mass balance check.\n- A - check sorption none\
-    \ (with source, init_conc_solid)"
+  description: "Sorption with sources - no flow, no transport, only source term and sorptions. \nQualitative and mass balance\
+    \ check.\n- A - check sorption none (with source, init_conc_solid)"
   mesh:
     mesh_file: ../00_mesh/prism_11el.msh
     regions:
@@ -15,7 +14,6 @@ problem: !Coupling_Sequential
           - .up
           - .down
   flow_equation: !Flow_Darcy_MH
-    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-07
@@ -30,7 +28,6 @@ problem: !Coupling_Sequential
         - pressure_p0
         - pressure_p1
         - velocity_p0
-    balance: {}
     output_stream:
       file: test_20.pvd
       format: !vtk
@@ -81,6 +78,12 @@ problem: !Coupling_Sequential
         - 0.1
         - 1.0
         - 1.0
+      table_limits:
+        - -1     # automatic interpolation
+        - 0.0    # interpolation - table limit is increased to meet solubility limit
+        - 0.5    # ignore, sorption is set to none
+        - 0.01   # interpolation - table limit is increased to meet solubility limit
+        - 0.0    # interpolation switched off
       input_fields:
         - region: volume
           init_conc_solid:
@@ -108,6 +111,7 @@ problem: !Coupling_Sequential
       file: transport_test_20.pvd
       format: !vtk
         variant: ascii
+      precision: 15
   # secondary_equation
 # problem
 # root

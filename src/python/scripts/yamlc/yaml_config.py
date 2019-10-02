@@ -21,8 +21,6 @@ class ConfigCase(object):
     :type config   : ConfigBase
     """
 
-    sanitise_regex = re.compile(r'[^a-zA-Z0-9_-]+]')
-
     def __init__(self, o, config):
         o = ConfigBase.merge(yamlc.DEFAULTS, deepcopy(o))
 
@@ -31,8 +29,8 @@ class ConfigCase(object):
         self.time_limit = float(o.get(yamlc.TAG_TIME_LIMIT, None))
         self.memory_limit = float(o.get(yamlc.TAG_MEMORY_LIMIT, None))
         self.tags = set(o.get(yamlc.TAG_TAGS, None))
+        self.args = list(o.get(yamlc.TAG_ARGS, []))
         self.check_rules = o.get(yamlc.TAG_CHECK_RULES, None)
-        self.input = o.get(yamlc.TAG_INPUTS)
         self.death_test = yamlc.YamlDeathTest(o.get(yamlc.TAG_DEATH_TEST))
         self.config = config
 
@@ -40,17 +38,9 @@ class ConfigCase(object):
             self.file = Paths.join(self.config.root, Paths.basename(self.file))
             self.without_ext = Paths.basename(Paths.without_ext(self.file))
 
-            # if input file is non standard we will have slightly different
-            # output folder to ensure, we will not have all results in the same folder
-            if self.input == 'input':
-                self.shortname = '{name}.{proc}'.format(
-                    name=self.without_ext,
-                    proc=self.proc)
-            else:
-                self.shortname = '{name}.{proc}.{input}'.format(
-                    name=self.without_ext,
-                    proc=self.proc,
-                    input=self.sanitise_regex.sub('', self.input))
+            self.shortname = '{name}.{proc}'.format(
+                name=self.without_ext,
+                proc=self.proc)
 
             self.fs = yamlc.ConfigCaseFiles(
                 root=self.config.root,
@@ -60,8 +50,7 @@ class ConfigCase(object):
                     self.config.root,
                     yamlc.TEST_RESULTS,
                     self.shortname
-                ),
-                input=self.input
+                )
             )
         else:
             # create temp folder where files will be
@@ -72,23 +61,15 @@ class ConfigCase(object):
                 root=tmp_folder,
                 ref_output=tmp_folder,
                 output=tmp_folder,
-                input='input'
             )
 
     @property
     def as_string(self):
         if self.file:
-            if self.input == 'input':
-                return '{} x {}'.format(
-                    self.proc,
-                    Paths.path_end(Paths.without_ext(self.file), level=2)
-                )
-            else:
-                return '{} x {} ({})'.format(
-                    self.proc,
-                    Paths.path_end(Paths.without_ext(self.file), level=2),
-                    self.sanitise_regex.sub('_', self.input)
-                )
+            return '{} x {}'.format(
+                self.proc,
+                Paths.path_end(Paths.without_ext(self.file), level=2)
+            )
         return 'process'
 
     @property
@@ -122,13 +103,18 @@ class ConfigBase(object):
     """
     Class ConfigBase represents single configuration yaml file
     """
-
-    def __init__(self, yaml_config_file):
+    # dummy cases will be generated
+    MISSING_POLICY_CREATE_DEFAULT   = 1
+    # files not specified in config.yaml will not be executed
+    MISSING_POLICY_IGNORE           = 2
+    
+    def __init__(self, yaml_config_file, missing_policy=MISSING_POLICY_CREATE_DEFAULT):
         self.yaml_config_file = yaml_config_file
         self.root = Paths.dirname(self.yaml_config_file)
         self.yamls = self._get_all_yamls()
         self.cases = list()
         self.common_config = None
+        self.missing_policy = missing_policy
 
         # create dummy case for every yaml file in folder
         if not Paths.exists(self.yaml_config_file):
@@ -151,9 +137,6 @@ class ConfigBase(object):
                 # ensure that value are array
                 case_config[yamlc.TAG_FILES] = ensure_iterable(
                     case_config.get(yamlc.TAG_FILES, []))
-                case_config[yamlc.TAG_INPUTS] = ensure_iterable(
-                    case_config.get(yamlc.TAG_INPUTS, []))
-                case_config[yamlc.TAG_INPUTS] = [str(x) for x in case_config[yamlc.TAG_INPUTS]]
 
                 # keep correct order
                 self.cases.append(case_config)
@@ -162,10 +145,11 @@ class ConfigBase(object):
                         missing.remove(f)
 
             # process rest (dummy case)
-            for y in missing:
-                dummy_case = deepcopy(self.common_config)
-                dummy_case[yamlc.TAG_FILES] = [y]
-                self.cases.append(dummy_case)
+            if missing_policy == self.MISSING_POLICY_CREATE_DEFAULT:
+                for y in missing:
+                    dummy_case = deepcopy(self.common_config)
+                    dummy_case[yamlc.TAG_FILES] = [y]
+                    self.cases.append(dummy_case)
 
     def get_all(self):
         """
@@ -203,7 +187,7 @@ class ConfigBase(object):
             ))
         return yamls
 
-    def update(self, proc, time_limit, memory_limit, input, **kwargs):
+    def update(self, proc, time_limit, memory_limit, **kwargs):
         for case in self.cases:
             if proc:
                 case[yamlc.TAG_PROC] = set(proc)
@@ -211,8 +195,6 @@ class ConfigBase(object):
                 case[yamlc.TAG_TIME_LIMIT] = time_limit
             if memory_limit:
                 case[yamlc.TAG_MEMORY_LIMIT] = memory_limit
-            if input:
-                case[yamlc.TAG_INPUTS] = ensure_iterable(input)
 
     def filter_tags(self, include, exclude):
         """
@@ -241,19 +223,17 @@ class ConfigBase(object):
     @classmethod
     def _get_all_for_case(cls, case):
         result = list()
-        # product of all files, cpus and inputs
+        # product of all files and cpus
         changes = list(itertools.product(
             case[yamlc.TAG_FILES],
             case[yamlc.TAG_PROC],
-            case[yamlc.TAG_INPUTS],
         ))
 
         # copy original and edit changes
-        for f, p, i in changes:
+        for f, p in changes:
             dummy_case = deepcopy(case)
             dummy_case[yamlc.TAG_FILES] = f
             dummy_case[yamlc.TAG_PROC] = p
-            dummy_case[yamlc.TAG_INPUTS] = i
             result.append(dummy_case)
         return result
 
@@ -307,9 +287,9 @@ class ConfigPool(object):
             return self.add_config(yaml_file)
         return self.add_case(yaml_file)
 
-    def parse(self):
+    def parse(self, missing_policy=ConfigBase.MISSING_POLICY_CREATE_DEFAULT):
         for k, v in list(self.configs.items()):
-            self.configs[k] = ConfigBase(k)
+            self.configs[k] = ConfigBase(k, missing_policy)
 
         for k, v in list(self.files.items()):
             config = Paths.join(Paths.dirname(k), yamlc.CONFIG_YAML)
@@ -317,9 +297,9 @@ class ConfigPool(object):
 
     __iadd__ = add
 
-    def update(self, proc, time_limit, memory_limit, input, **kwargs):
+    def update(self, proc, time_limit, memory_limit, **kwargs):
         for config in list(self.configs.values()):
-            config.update(proc, time_limit, memory_limit, input, **kwargs)
+            config.update(proc, time_limit, memory_limit, **kwargs)
 
     def filter_tags(self, include, exclude):
         include = set(include) if include else None

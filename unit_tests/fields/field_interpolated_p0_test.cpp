@@ -42,6 +42,7 @@
 #include "io/msh_gmshreader.h"
 
 #include "fields/field_interpolated_p0.hh"
+#include "tools/unit_si.hh"
 
 
 
@@ -51,28 +52,28 @@ string input = R"CODE(
 {   
    scalar={
        TYPE="FieldInterpolatedP0",
-       gmsh_file="fields/simplest_cube_3d.msh",
+       mesh_data_file="fields/simplest_cube_3d.msh",
        field_name="scalar"
    },
    scalar_unit_conversion={
        TYPE="FieldInterpolatedP0",
-       gmsh_file="fields/simplest_cube_3d.msh",
+       mesh_data_file="fields/simplest_cube_3d.msh",
        field_name="scalar",
        unit="km"
    },
    scalar_large={
        TYPE="FieldInterpolatedP0",
-       gmsh_file="fields/bigger_3d_cube_0.5.msh",
+       mesh_data_file="fields/bigger_3d_cube_0.5.msh",
        field_name="scalar"
    },
    vector_fixed={
        TYPE="FieldInterpolatedP0",
-       gmsh_file="fields/simplest_cube_3d.msh",
+       mesh_data_file="fields/simplest_cube_3d.msh",
        field_name="vector_fixed"
    },
    tensor_fixed={
        TYPE="FieldInterpolatedP0",
-       gmsh_file="fields/simplest_cube_3d.msh",
+       mesh_data_file="fields/simplest_cube_3d.msh",
        field_name="tensor_fixed"
    }
 }
@@ -181,7 +182,7 @@ TEST_F(FieldInterpolatedP0Test, 1d_2d_elements_small) {
         EXPECT_DOUBLE_EQ( j*0.700, field.value(point, mesh->element_accessor(3)) );
         EXPECT_DOUBLE_EQ( j*0.675, field.value(point, mesh->element_accessor(4)) );
         EXPECT_DOUBLE_EQ( j*0.675, field.value(point, mesh->element_accessor(5)) );
-        EXPECT_DOUBLE_EQ( j*0.650, field.value(point, mesh->element_accessor(0, true)) );
+        EXPECT_DOUBLE_EQ( j*0.650, field.value(point, mesh->element_accessor(11)) );
     }
 
 }

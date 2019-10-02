@@ -1,4 +1,4 @@
-flow123d_version: 2.0.0
+flow123d_version: 3.1.0
 problem: !Coupling_Sequential
   description: Test15 - 2D unsteady flow LM
   mesh:
@@ -36,41 +36,38 @@ problem: !Coupling_Sequential
       end_time: 2.0
       max_dt: 0.01
       min_dt: 0.01
-    output_stream: 
+    output_stream:
       file: ./test15.pvd
       format: !vtk
         variant: ascii
-      name: flow_output_stream
       times:
         - step: 0.1
+      precision: 15
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_Advection_FV
       input_fields:
         - region: domain
           init_conc: 0
         - region: .left
-          bc_type: dirichlet
           bc_conc: 10
           time: 0.0
         - region: .left
-          bc_type: dirichlet
           bc_conc: 0
           time: 0.1
-    output_stream: 
+    output_stream:
       file: ./transport.pvd
       format: !vtk
         variant: ascii
-      name: transport_output_stream
       times:
         - step: 0.1
+      precision: 15
     substances:
-      - conc
+      - name: conc
+        molar_mass: 1.0
     reaction_term: !Sorption
       solvent_density: 1.0
       substances:
         - conc
-      molar_mass:
-        - 1.0
       solubility:
         - 1.0
       input_fields:

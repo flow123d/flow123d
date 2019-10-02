@@ -18,11 +18,19 @@
 #ifndef TABLE_FUNCTION_HH_
 #define TABLE_FUNCTION_HH_
 
-#include "input/input_type_forward.hh"
-#include "input/accessors.hh"
-#include "input/input_exception.hh"
-#include "fields/field_values.hh"
-#include <vector>
+#include <string.h>                        // for memcpy
+#include <vector>                          // for vector
+#include <armadillo>
+#include "fields/field_values.hh"          // for FieldValue<>::TensorFixed
+
+namespace Input {
+	class Record;
+	namespace Type {
+		class Record;
+		class Tuple;
+	}
+}
+class TimeStep;
 
 
 
@@ -57,7 +65,7 @@ public:
     TableFunction();
 
     /// Initialize actual values of the field given from the given Input::Record @p rec.
-    void init_from_input(const Input::Record &rec);
+    void init_from_input(const Input::Record &rec, const TimeStep &time);
 
     /// Return true if TableFunction is initialized (method init_from_input was called).
     bool initialized();

@@ -1,11 +1,15 @@
-flow123d_version: 2.0.0
+#################
+# Test goal: Test different types of field descriptors
+# Author: David Flanderka
+# Source for reference: qualitative
+
+flow123d_version: 3.1.0
 problem: !Coupling_Sequential
-  description: Test14 - 2D transport with time variable boundary
+  description: Test correct reading of input field descriptors
   mesh:
     mesh_file: ../00_mesh/square_0.2x0.2.msh
   # steady velocity field, with velocity v:0.1
   flow_equation: !Flow_Darcy_MH
-    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-12
@@ -13,6 +17,13 @@ problem: !Coupling_Sequential
     input_fields:
       - region: bulk
         conductivity: 1
+        cross_section: !FieldFE
+          mesh_data_file: ./03_field_descriptors-000000.vtu
+          field_name: cross_section
+        sigma: !FieldFE
+          mesh_data_file: ./03_field_descriptors-000000.vtu
+          field_name: sigma
+          input_discretization: native_data
       - region: .BOUNDARY
         bc_type: dirichlet
         bc_pressure: !FieldFormula
@@ -23,32 +34,38 @@ problem: !Coupling_Sequential
         - pressure_p0
         - pressure_p1
         - velocity_p0
-    balance: {}
-    output_stream: 
+        - field: cross_section
+          interpolation: Native
+        - field: sigma
+          interpolation: Native
+    output_stream:
       file: ./test14.pvd
       format: !vtk
         variant: ascii
-      name: flow_output_stream
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_Advection_FV
       input_fields:
         - region: ALL
-          porosity: !FieldElementwise
-            gmsh_file: ./03_field_descriptors-000000.vtu
+          porosity: !FieldFE
+            mesh_data_file: ./03_field_descriptors-000000.vtu
             field_name: porosity
+          sources_sigma: !FieldFE
+            mesh_data_file: ./test-descriptors.pvd
+            field_name: sources_sigma
         - region: bulk
           init_conc: 0
         - region: .right
           bc_conc: !FieldTimeFunction
             time_function:
-              - - 0.0
-                - 0
-              - - 0.5
-                - 20
+              -   - 0.0
+                  - 0
+              -   - 0.5
+                  - 20
       output:
         fields:
           - conc
           - porosity
+          - sources_sigma
     substances:
       - A
     time:
@@ -57,12 +74,12 @@ problem: !Coupling_Sequential
       min_dt: 0.1
       max_dt: 0.1
       end_time: 1.0
-    output_stream: 
+    output_stream:
       file: ./transport.pvd
       format: !vtk
         variant: ascii
-      name: transport_output_stream
       times:
         - step: 0.1
+      precision: 14  
     balance:
       cumulative: true

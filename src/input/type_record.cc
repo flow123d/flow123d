@@ -99,6 +99,7 @@ Input::StorageBase *Default::get_storage(std::shared_ptr<TypeBase> type) const
 Record::Record()
 : data_( std::make_shared<RecordData> ("EmptyRecord","") )
 {
+	declare_key("empty_key", Integer(), "Only for correct 'close()'.");
 	close();
     finish();
 }
@@ -301,6 +302,7 @@ FinishStatus Record::finish(FinishStatus finish_type)
 
 
 Record &Record::close() const {
+	ASSERT_GT(data_->keys.size(), 0)(this->type_name()).error("Empty Record!\n");
     data_->closed_=true;
     Record & rec = *( Input::TypeRepository<Record>::get_instance().add_type( *this ) );
     for (auto &parent : data_->parent_vec_) {
@@ -356,30 +358,41 @@ Record &Record::add_attribute(std::string key, TypeBase::json_string value) {
 
 
 TypeBase::MakeInstanceReturnType Record::make_instance(std::vector<ParameterPair> vec) {
-	Record rec = this->deep_copy();
-	ParameterMap parameter_map;
-	this->set_instance_data(rec, parameter_map, vec);
-
-	return std::make_pair( std::make_shared<Record>(rec.close()), parameter_map );
+    Record instance_rec = this->deep_copy();
+    auto parameter_map = this->set_instance_data(instance_rec, vec);
+	return std::make_pair( std::make_shared<Record>(instance_rec.close()), parameter_map );
 }
 
 
-void Record::set_instance_data(Record &rec, ParameterMap &parameter_map, std::vector<ParameterPair> vec) {
-	// Replace keys of type Parameter
-	for (std::vector<Key>::iterator key_it=rec.data_->keys.begin(); key_it!=rec.data_->keys.end(); key_it++) {
+TypeBase::ParameterMap Record::set_instance_data(Record &instance_rec,  std::vector<ParameterPair> vec) {
+    ParameterMap p_map;
+
+    // Replace keys of type Parameter
+	for (std::vector<Key>::iterator key_it=instance_rec.data_->keys.begin(); key_it!=instance_rec.data_->keys.end(); key_it++) {
 		if ( key_it->key_ != "TYPE" ) { // TYPE key isn't substituted
 			MakeInstanceReturnType inst = key_it->type_->make_instance(vec);
 			key_it->type_ = inst.first;
 			ParameterMap other_map = inst.second;
-			parameter_map.insert(other_map.begin(), other_map.end());
+			p_map.insert(other_map.begin(), other_map.end());
 		}
 	}
-	// Set attributes
-	rec.parameter_map_ = parameter_map;
-	rec.generic_type_hash_ = this->content_hash();
 
-	this->set_generic_attributes(parameter_map);
+    // Set attributes
+    instance_rec.parameter_map_ = p_map;
+    this->set_generic_attributes(p_map);
+
+    // Set reference to generic type of the instance.
+    bool param_substituted = (p_map.size() > 0);
+    auto generic_hash = this->content_hash();
+	auto instance_hash = instance_rec.content_hash();
+	ASSERT(param_substituted == (generic_hash != instance_hash));
+	if (param_substituted) {
+	    // Avoid self reference for non-parametrized types.
+	    instance_rec.generic_type_hash_ = generic_hash;
+	}
+	return p_map;
 }
+
 
 
 Record Record::deep_copy() const {

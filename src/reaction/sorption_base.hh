@@ -24,17 +24,36 @@
 #ifndef SORPTION_BASE_H
 #define SORPTION_BASE_H
 
+#include <boost/exception/info.hpp>     // for operator<<, error_info::~erro...
+#include <memory>                       // for shared_ptr
+#include <string>                       // for string
 #include <vector>
-
-#include "fields/field_algo_base.hh"
+#include "reaction/reaction_term.hh"    // for ReactionTerm
+#include "fields/field.hh"              // for Field
+#include "fields/field_values.hh"       // for FieldValue<>::Scalar, FieldVa...
 #include "fields/field_set.hh"
 #include "fields/multi_field.hh"
-#include "fields/vec_seq_double.hh"
-#include "reaction/reaction_term.hh"
+#include "la/vector_mpi.hh"
 #include "fields/equation_output.hh"
+#include "input/input_exception.hh"     // for DECLARE_INPUT_EXCEPTION, Exce...
+#include "input/type_base.hh"           // for Array
+#include "input/type_generic.hh"        // for Instance
+#include "petscvec.h"                   // for Vec, VecScatter, _p_VecScatter
+#include "system/exceptions.hh"         // for operator<<, ExcStream, EI
 
 class Isotherm;
 class Mesh;
+namespace Input {
+	class Record;
+	namespace Type {
+		class Record;
+		class Selection;
+	}
+}
+template <int spacedim> class ElementAccessor;
+
+
+
 
 class SorptionBase:  public ReactionTerm
 {
@@ -47,18 +66,10 @@ public:
    *   Static variable for new input data types input
    */
   static const Input::Type::Record & get_input_type();
-  
-  /*
-  static Input::Type::Selection make_output_selection(const string &output_field_name, const string &selection_name)
-  {
-      return EqData(output_field_name).output_fields
-        .make_output_field_selection(selection_name, "desc")
-        .close();
-  }*/
 
-  static Input::Type::Instance make_output_type(const string &equation_name, const string &output_field_name )
+  static Input::Type::Instance make_output_type(const string &equation_name, const string &output_field_name, const string &output_field_desc )
   {
-      return EqData(output_field_name).output_fields.make_output_type(equation_name, "");
+      return EqData(output_field_name, output_field_desc).output_fields.make_output_type(equation_name, "");
   }
 
   class EqData : public FieldSet
@@ -70,7 +81,7 @@ public:
     static const Input::Type::Selection & get_sorption_type_selection();
 
     /// Collect all fields
-    EqData(const string &output_field_name);
+    EqData(const string &output_field_name, const string &output_field_desc);
 
     MultiField<3, FieldValue<3>::Enum > sorption_type; ///< Discrete need Selection for initialization.
     Field<3, FieldValue<3>::Scalar > rock_density;      ///< Rock matrix density.
@@ -151,12 +162,6 @@ protected:
   ///Reads and sets initial condition for concentration in solid.
   void set_initial_condition();
     
-    /// Allocates petsc vectors, prepares them for output and creates vector scatter.
-  void allocate_output_mpi(void);
-  
-  /// Gathers all the parallel vectors to enable them to be output.
-  void output_vector_gather(void) override;
-  
   /**
    * For simulation of sorption in just one element either inside of MOBILE or IMMOBILE pores.
    */
@@ -165,15 +170,24 @@ protected:
   /// Reinitializes the isotherm.
   /**
    * On data change the isotherm is recomputed, possibly new interpolation table is made.
-   * Pure virtual method.
+   * NOTE: Be sure to update common element data (porosity, rock density etc.)
+   *       by @p compute_common_ele_data(), before calling reinitialization!
    */
-  virtual void isotherm_reinit(std::vector<Isotherm> &isotherms, const ElementAccessor<3> &elm) = 0;
+  void isotherm_reinit(unsigned int i_subst, const ElementAccessor<3> &elm);
+  
+  /// Calls @p isotherm_reinit for all isotherms.
+  void isotherm_reinit_all(const ElementAccessor<3> &elm);
   
     /**
    * Creates interpolation table for isotherms.
    */
   void make_tables(void);
   
+  /// Computes maximal aqueous concentration at the current step.
+  void update_max_conc();
+  
+  /// Sets max conc to zeros on all regins.
+  void clear_max_conc();
 
   /// Pointer to equation data. The object is constructed in descendants.
   EqData *data_;
@@ -196,6 +210,11 @@ protected:
    */
   std::vector<double> table_limit_;
   /**
+   * Maximum concentration per region.
+   * It is used for optimization of interpolation table.
+   */
+  std::vector<std::vector<double>> max_conc;
+  /**
    * Three dimensional array contains intersections between isotherms and mass balance lines. 
    * It describes behaviour of sorbents in mobile pores of various rock matrix enviroments.
    * Up to |nr_of_region x nr_of_substances x n_points| doubles. Because of equidistant step 
@@ -212,10 +231,6 @@ protected:
    * Array for storage infos about sorbed species concentrations.
    */
   double** conc_solid;
-  
-  //Input::Array output_array;
-
-  //Input::Type::Selection output_selection;
 
   /**
    * Reaction model that follows the sorption.
@@ -225,11 +240,28 @@ protected:
                   
   ///@name members used in output routines
   //@{
-  VecScatter vconc_out_scatter; ///< Output vector scatter.
-  // TODO: replace vconc_solid + conc_solid by VecSeqDouble, use the same principle as in 'conc_solid_out'
-  Vec *vconc_solid; ///< PETSC sorbed concentration vector (parallel).
-  std::vector<VectorSeqDouble> conc_solid_out; ///< sorbed concentration array output (gathered - sequential)
+  std::vector<VectorMPI> conc_solid_out; ///< sorbed concentration array output (gathered - sequential)
   //@}
+  
+  // Temporary objects holding pointers to appropriate FieldFE
+  // TODO remove after final fix of equations
+  /// Fields correspond with \p conc_solid_out.
+  std::vector< std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> > output_field_ptr;
+
+  /** Structure for data respectful to element, but indepedent of actual isotherm.
+   * Reads mobile/immobile porosity, rock density and then computes concentration scaling parameters.
+   * Is kind of optimization, so that these data are computed only when necessary.
+   */
+  struct CommonElementData{
+    double scale_aqua;
+    double scale_sorbed;
+    double no_sorbing_surface_cond;
+  } common_ele_data;
+  
+  /** Computes @p CommonElementData.
+   * Is pure virtual, implemented differently for simple/mobile/immobile sorption class.
+   */
+  virtual void compute_common_ele_data(const ElementAccessor<3> &elem) = 0;
 };
 
 #endif  //SORPTION_BASE_H

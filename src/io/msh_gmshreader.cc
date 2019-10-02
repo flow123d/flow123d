@@ -22,6 +22,7 @@
 #include <limits>
 
 #include "msh_gmshreader.h"
+#include "io/element_data_cache_base.hh"
 
 #include "system/system.hh"
 #include "system/tokenizer.hh"
@@ -60,7 +61,7 @@ void GmshMeshReader::read_nodes(Mesh * mesh) {
     try {
     	tok_.next_line(false);
         n_nodes = lexical_cast<unsigned int> (*tok_);
-        mesh->reserve_node_size( n_nodes );
+        mesh->init_node_vector( n_nodes );
         INPUT_CHECK( n_nodes > 0, "Zero number of nodes, %s.\n", tok_.position_msg().c_str() );
         ++tok_; // end of line
 
@@ -98,7 +99,7 @@ void GmshMeshReader::read_elements(Mesh * mesh) {
         std::vector<unsigned int> node_ids; //node_ids of elements
         node_ids.resize(4); // maximal count of nodes
 
-        mesh->reserve_element_size(n_elements);
+        mesh->init_element_vector(n_elements);
 
         for (unsigned int i = 0; i < n_elements; ++i) {
         	tok_.next_line();
@@ -148,7 +149,6 @@ void GmshMeshReader::read_elements(Mesh * mesh) {
             	node_ids[ni] = lexical_cast<unsigned int>(*tok_);
                 ++tok_;
             }
-
             mesh->add_element(id, dim, region_id, partition_id, node_ids);
         }
 
@@ -156,8 +156,8 @@ void GmshMeshReader::read_elements(Mesh * mesh) {
     	THROW(ExcWrongFormat() << EI_Type("number") << EI_TokenizerMsg(tok_.position_msg()) << EI_MeshFile(tok_.f_name()) );
     }
 
-    mesh->n_all_input_elements_=mesh->element.size() + mesh->bc_elements.size();
-    MessageOut().fmt("... {} bulk elements, {} boundary elements. \n", mesh->element.size(), mesh->bc_elements.size());
+    mesh->create_boundary_elements();
+    MessageOut().fmt("... {} bulk elements, {} boundary elements. \n", mesh->n_elements(), mesh->n_elements(true));
 }
 
 
@@ -242,6 +242,7 @@ void GmshMeshReader::read_data_header(MeshDataHeader &head) {
         }
         for(;n_int>0;n_int--) tok_.next_line(false);
         head.position = tok_.get_position();
+        head.discretization = OutputTime::DiscreteSpace::ELEM_DATA;
     } catch (bad_lexical_cast &) {
     	THROW(ExcWrongFormat() << EI_Type("$ElementData header") << EI_TokenizerMsg(tok_.position_msg()) << EI_MeshFile(tok_.f_name()) );
     }
@@ -320,13 +321,23 @@ void GmshMeshReader::make_header_table()
 
 
 
-MeshDataHeader &  GmshMeshReader::find_header(double time, std::string field_name)
+BaseMeshReader::MeshDataHeader & GmshMeshReader::find_header(BaseMeshReader::HeaderQuery &header_query)
 {
-	HeaderTable::iterator table_it = header_table_.find(field_name);
+	// check discretization, only type element_data or undefined is supported
+	if (header_query.discretization != OutputTime::DiscreteSpace::ELEM_DATA) {
+		if (header_query.discretization != OutputTime::DiscreteSpace::UNDEFINED && header_query.discretization != OutputTime::DiscreteSpace::NATIVE_DATA) {
+			WarningOut().fmt(
+					"Unsupported discretization for field '{}', time: {} and GMSH format.\nType 'ELEM_DATA' of discretization will be used.\n",
+					header_query.field_name, header_query.time);
+		}
+		header_query.discretization = OutputTime::DiscreteSpace::ELEM_DATA;
+	}
+
+	HeaderTable::iterator table_it = header_table_.find(header_query.field_name);
 
 	if (table_it == header_table_.end()) {
 		// no data found
-        THROW( ExcFieldNameNotFound() << EI_FieldName(field_name) << EI_MeshFile(tok_.f_name()));
+        THROW( ExcFieldNameNotFound() << EI_FieldName(header_query.field_name) << EI_MeshFile(tok_.f_name()));
 	}
 
 	auto comp = [](double t, const MeshDataHeader &a) {
@@ -335,20 +346,23 @@ MeshDataHeader &  GmshMeshReader::find_header(double time, std::string field_nam
 
 	std::vector<MeshDataHeader>::iterator headers_it = std::upper_bound(table_it->second.begin(),
 			table_it->second.end(),
-			time,
+			header_query.time,
 			comp);
 
 	if (headers_it == table_it->second.begin()) {
-		THROW( ExcFieldNameNotFound() << EI_FieldName(field_name)
-				                      << EI_MeshFile(tok_.f_name()) << EI_Time(time));
+		THROW( ExcFieldNameNotFound() << EI_FieldName(header_query.field_name)
+				                      << EI_MeshFile(tok_.f_name()) << EI_Time(header_query.time));
 	}
 
 	--headers_it;
-	return *headers_it;
+	actual_header_ = *headers_it;
+	return actual_header_;
 }
 
 void GmshMeshReader::check_compatible_mesh(Mesh &mesh)
 {
+	bulk_elements_id_.clear();
+	boundary_elements_id_.clear();
 	mesh.elements_id_maps(bulk_elements_id_, boundary_elements_id_);
 	has_compatible_mesh_ = true;
 }

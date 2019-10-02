@@ -18,22 +18,36 @@
 #ifndef ELEMENT_DATA_CACHE_HH_
 #define ELEMENT_DATA_CACHE_HH_
 
-#include <vector>
-#include <string>
-#include <memory>
-#include <ostream>
-#include <typeinfo>
-#include "system/system.hh"
-#include "system/tokenizer.hh"
-#include "system/global_defs.h"
-#include "io/element_data_cache_base.hh"
-
-
+#include <boost/exception/info.hpp>           // for error_info::~error_info...
+#include <memory>                             // for shared_ptr
+#include <sstream>                            // for basic_ostream::write
+#include <string>                             // for string, operator<<
+#include <vector>                             // for vector
+#include <armadillo>
+#include "io/element_data_cache_base.hh"      // for ElementDataCacheBase
+#include "system/exceptions.hh"               // for ExcStream, operator<<
+#include "mesh/long_idx.hh"
+class Tokenizer;
+class Distribution;
 struct MeshDataHeader;
+
+
+/// Return type of method that checked data stored in ElementDataCache (NaN values, limits)
+typedef enum  {
+	ok,              ///< All values are not NaN and are in limits.
+	out_of_limits,   ///< Some value(s) is out of limits
+	not_a_number     ///< Some value(s) is set to NaN
+} CheckResult;
 
 
 template <typename T>
 class ElementDataCache : public ElementDataCacheBase {
+/**
+ * Container of the field data on elements used as a common data storage for
+ * output of various fields using various output formats and to cache data of several fields when reading the input file.
+ * This container also perform serialization for the serial output.
+ * Read of values from tokenizer and output of values to stream is implemented as it depends on the value type T.
+ */
 public:
 	typedef std::shared_ptr< std::vector<T> > ComponentDataPtr;
 	typedef std::vector< ComponentDataPtr > CacheData;
@@ -46,11 +60,12 @@ public:
 	 *
 	 * Allows set variable size of cache.
 	 *
-	 * @param data_header   Set data members time_ and field_name_
+     * @param field_name    Field name thas is read
+     * @param time          Actual time of data
 	 * @param size_of_cache Count of columns of data cache
 	 * @param row_vec_size  Count of rows of data cache
 	 */
-	ElementDataCache(MeshDataHeader data_header, unsigned int size_of_cache, unsigned int row_vec_size);
+	ElementDataCache(std::string field_name, double time, unsigned int size_of_cache, unsigned int row_vec_size);
 
     /**
      * \brief Constructor of output ElementDataCache (allow write data)
@@ -58,11 +73,10 @@ public:
      * Has fix size of cache.
      *
      * @param field_name Field name is written as parameter to output stream
-     * @param n_rows     Given from shape of field
-     * @param n_cols     Given from shape of field
+     * @param n_comp     Given from shape of field
      * @param size       Count of rows of data cache
      */
-	ElementDataCache(std::string field_name, unsigned int n_rows, unsigned int n_cols, unsigned int size);
+	ElementDataCache(std::string field_name, unsigned int n_comp, unsigned int size);
 
     /**
      * \brief Destructor of ElementDataCache
@@ -105,7 +119,7 @@ public:
      */
     void print_binary_all(ostream &out_stream, bool print_data_size = true) override;
 
-    void print_all_yaml(ostream &out_stream, unsigned int precision) override;
+    void print_yaml_subarray(ostream &out_stream, unsigned int precision, unsigned int begin, unsigned int end) override;
 
     /**
      * Store data element of given data value under given index.
@@ -132,21 +146,57 @@ public:
      */
     void get_min_max_range(double &min, double &max) override;
 
+    /**
+     * Make full check of data stored in cache.
+     *
+     * Method iterates through data and
+     *  - checks NaN data values, default_val replaces NaN
+     *  - if default_val==NaN and some value(s) is not replaced with valid value return CheckResult::nan
+     *  - if some value(s) is out of limits )lower_bound, upper_bound) return CheckResult::out_of_limits
+     *  - in other cases return CheckResult::ok
+     *
+     * Method is executed only once.
+     */
+    CheckResult check_values(double default_val, double lower_bound, double upper_bound);
+
+    /**
+     * Scale data vector of given 'component_idx' with scale 'coef'.
+     *
+     * Method is executed only once and should be called after check_values method.
+     * Method can be used e. g. for convert between units.
+     */
+    void scale_data(double coef);
+
+    /// Implements ElementDataCacheBase::gather.
+    std::shared_ptr< ElementDataCacheBase > gather(Distribution *distr, LongIdx *local_to_global) override;
+
+    /// Implements ElementDataCacheBase::element_node_cache_fixed_size.
+    std::shared_ptr< ElementDataCacheBase > element_node_cache_fixed_size(std::vector<unsigned int> &offset_vec) override;
+
+    /// Implements ElementDataCacheBase::element_node_cache_optimize_size.
+    std::shared_ptr< ElementDataCacheBase > element_node_cache_optimize_size(std::vector<unsigned int> &offset_vec) override;
+
+    /// Implements ElementDataCacheBase::compute_node_data.
+    std::shared_ptr< ElementDataCacheBase > compute_node_data(std::vector<unsigned int> &conn_vec, unsigned int data_size) override;
+
     /// Access i-th element in the data vector of 0th component.
     T& operator[](unsigned int i);
 
-    /**
-     * Declaration of new exception info used in following exception
-     */
-    TYPEDEF_ERR_INFO(EI_FieldName, std::string);
-
-    /**
-     * Declaration of exception
-     */
-    DECLARE_EXCEPTION(ExcOutputVariableVector, << "Can not output field " << EI_FieldName::qval
-            << " returning variable size vectors. Try convert to MultiField.\n");
-
 protected:
+    /// Allow to hold sign, if data in cache is checked and scale (both can be executed only once)
+	enum CheckScaleData {
+	    none,      ///< Data is neither checked nor scaled.
+		check,     ///< Data is only checked.
+	    scale      ///< Data is scaled.
+	};
+
+
+	/// Return MPI data type corresponding with template parameter of cache. Needs template specialization.
+    MPI_Datatype mpi_data_type();
+
+	/// Sign, if data in cache is checked and scale.
+	CheckScaleData check_scale_data_;
+
 	/**
 	 * Table of element data.
 	 *
@@ -155,5 +205,6 @@ protected:
 	CacheData data_;
     
 };
+
 
 #endif /* ELEMENT_DATA_CACHE_HH_ */

@@ -1,0 +1,24 @@
+flow123d_version: 3.1.0
+problem: !Coupling_Sequential
+  description: Test of input placeholder in relative path
+  mesh:
+    mesh_file: ../$INPUT_DIR$/prism_11el.msh
+  flow_equation: !Flow_Darcy_MH
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-07
+    input_fields:
+      - region: .BOUNDARY
+        bc_type: dirichlet
+        bc_pressure: 0.5
+      - region: BULK
+        anisotropy: 1
+    output:
+      fields:
+        - piezo_head_p0
+        - pressure_p0
+        - pressure_p1
+        - velocity_p0
+    output_stream:
+      file: ./output_data.msh
+      format: !gmsh

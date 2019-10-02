@@ -13,82 +13,113 @@
  *
  * 
  * @file    general_iterator.hh
- * @brief   Template GeneralIterator serves as general template for internal iterators.
+ * @brief   Template Iter serves as general template for internal iterators.
  */
 
 #ifndef GENERAL_ITERATOR_HH_
 #define GENERAL_ITERATOR_HH_
 
 /** @brief General iterator template.
- * Provides iterator over objects in some container.
+ * Provides iterator over objects of type ObjectIn in some container.
+ *
+ * Operators '*' and '->' returns objects of type ObjectOut
  * 
  * Requires the template object to implement:
  * - comparison operator==()
  * - increment operator++()
  */
-template<class Object>
-class GeneralIterator
+template<class ObjectIn, class ObjectOut>
+class IterConvert
 {
 public:
-//     GeneralIterator();
+//     IterConvert();
 
-    GeneralIterator(const Object& object);
+	IterConvert(const ObjectIn& object);
 
     /// equal operator
-    bool operator==(const GeneralIterator& other);
+    bool operator==(const IterConvert& other);
     /// non-equal operator
-    bool operator!=(const GeneralIterator& other);
+    bool operator!=(const IterConvert& other);
 
     ///  * dereference operator
-    const Object& operator*() const;
+    const ObjectOut& operator*() const;
 
     /// -> dereference operator
-    const Object* operator->() const;
+    const ObjectOut* operator->() const;
 
     /// prefix increment
-    GeneralIterator& operator++();
+    IterConvert& operator++();
 
 private:
     /// Output element of the output mesh.
-    Object object_; 
+    ObjectIn object_;
+    mutable ObjectOut out_;
 };
 
 
-// --------------------------------------------------- GeneralIterator INLINE implementation -----------
-// inline GeneralIterator::GeneralIterator()
+/**
+ * @brief General iterator template.
+ *
+ * Same as previous but doesn't provide specialization of operators '*' and '->'.
+ */
+template<class Object>
+using Iter = IterConvert<Object, Object>;
+
+
+/**
+ * Create iterator from object
+ */
+template<class Object>
+Iter<Object> make_iter(Object obj) {
+	return Iter<Object>(obj);
+}
+
+/**
+ * Create convertible iterator from object
+ */
+template<class ObjectIn, class ObjectOut>
+IterConvert<ObjectIn, ObjectOut> make_iter(ObjectIn obj) {
+	return IterConvert<ObjectIn, ObjectOut>(obj);
+}
+
+
+// --------------------------------------------------- Iter INLINE implementation -----------
+// inline IterConvert::IterConvert()
 // {}
 
-template<class Object>
-inline GeneralIterator<Object>::GeneralIterator(const Object& object)
+template<class ObjectIn, class ObjectOut>
+inline IterConvert<ObjectIn, ObjectOut>::IterConvert(const ObjectIn& object)
 : object_(object)
 {}
 
-template<class Object>
-inline bool GeneralIterator<Object>::operator==(const GeneralIterator& other)
+template<class ObjectIn, class ObjectOut>
+inline bool IterConvert<ObjectIn, ObjectOut>::operator==(const IterConvert& other)
 {
     return (object_ == other.object_);
 }
 
-template<class Object>
-inline bool GeneralIterator<Object>::operator!=(const GeneralIterator& other)
+template<class ObjectIn, class ObjectOut>
+inline bool IterConvert<ObjectIn, ObjectOut>::operator!=(const IterConvert& other)
 {
     return !( *this == other);
 }
 
-template<class Object>
-inline const Object& GeneralIterator<Object>::operator*() const
+template<class ObjectIn, class ObjectOut>
+inline const ObjectOut& IterConvert<ObjectIn, ObjectOut>::operator*() const
 {
-    return object_;
+    out_ = (ObjectOut)object_;
+    return out_;
 }
 
-template<class Object>
-inline const Object* GeneralIterator<Object>::operator->() const
+template<class ObjectIn, class ObjectOut>
+inline const ObjectOut* IterConvert<ObjectIn, ObjectOut>::operator->() const
 {
-    return &object_;
+    out_ = (ObjectOut)object_;
+    return &out_;
 }
 
-template<class Object>
-inline GeneralIterator<Object>& GeneralIterator<Object>::operator++()
+template<class ObjectIn, class ObjectOut>
+inline IterConvert<ObjectIn, ObjectOut>& IterConvert<ObjectIn, ObjectOut>::operator++()
 {
     object_.inc();
     return (*this);

@@ -9,7 +9,7 @@
 #define FEAL_OVERRIDE_ASSERTS
 
 #include <memory>
-#include <boost/regex.hpp>
+#include <regex>
 
 #include <flow_gtest_mpi.hh>
 #include <mesh_constructor.hh>
@@ -101,7 +101,7 @@ public:
 	// const value of HistoryPoint given by region index and position in circular buffer.
 	typename Value::element_type rh_value(int r_idx, int j) {
 		typename FieldType::FieldBasePtr fb = rh(r_idx)[j].second;
-		auto elm = ElementAccessor<FieldType::space_dim>( this->mesh(), 0 , this->is_bc() );
+		auto elm = ElementAccessor<FieldType::space_dim>( this->mesh(), 0 );
 		auto val = fb->value(elm.centre(), elm);
 		return (Value(val))(0,0);
 	}
@@ -209,19 +209,20 @@ TYPED_TEST(FieldFix, set_input_list) {
 			"{time=2, a=0}]";
 
 	if (this->is_enum_valued) {
-		boost::regex e("=0");
-		list_ok = boost::regex_replace(list_ok, e, "=\"white\"");
-		list_ko = boost::regex_replace(list_ko, e, "=\"white\"");
+		std::regex e("=0");
+		list_ok = std::regex_replace(list_ok, e, "=\"white\"");
+		list_ko = std::regex_replace(list_ko, e, "=\"white\"");
 	}
 
+	TimeGovernor tg(0.0, 1.0);
 	this->field_.name("a");
-	this->field_.set_input_list( this->input_list(list_ok) );
+	this->field_.set_input_list( this->input_list(list_ok), tg );
 
 	this->field_.name("b");
-	this->field_.set_input_list( this->input_list(list_ok) );
+	this->field_.set_input_list( this->input_list(list_ok), tg );
 
 	this->field_.name("a");
-	EXPECT_THROW_WHAT( {	this->field_.set_input_list( this->input_list(list_ko) );}, FieldCommon::ExcNonascendingTime, "for field 'a'" );
+	EXPECT_THROW_WHAT( {	this->field_.set_input_list( this->input_list(list_ko), tg );}, FieldCommon::ExcNonascendingTime, "for field 'a'" );
 }
 
 
@@ -238,14 +239,15 @@ TYPED_TEST(FieldFix, mark_input_times) {
             "{time=5, a=0, b=0}]";
 
 	if (this->is_enum_valued) {
-		boost::regex e("=0");
-		list_ok = boost::regex_replace(list_ok, e, "=\"white\"");
+		std::regex e("=0");
+		list_ok = std::regex_replace(list_ok, e, "=\"white\"");
 	}
 
-	this->field_.name("b");
-	this->field_.set_input_list(this->input_list(list_ok));
-
 	TimeGovernor tg;
+
+	this->field_.name("b");
+	this->field_.set_input_list(this->input_list(list_ok), tg);
+
 	TimeMark::Type mark_type = TimeMark::Type(tg.marks().type_fixed_time().bitmap_, tg.equation_mark_type().equation_index_);
 	this->field_.mark_input_times(tg);
 	auto it = tg.marks().next(tg, mark_type);
@@ -322,17 +324,17 @@ TYPED_TEST(FieldFix, update_history) {
 			"{time=5, region=\"ALL\", a =1}"
 			"]";
 	if (this->is_enum_valued) {
-		list_ok = boost::regex_replace(list_ok, boost::regex(" =1"), "=\"white\"");
-		list_ok = boost::regex_replace(list_ok, boost::regex(" =0"), "=\"black\"");
+		list_ok = std::regex_replace(list_ok, std::regex(" =1"), "=\"white\"");
+		list_ok = std::regex_replace(list_ok, std::regex(" =0"), "=\"black\"");
 	}
 
+	TimeGovernor tg(0.0, 1.0);
 	this->name("a");
 	this->set_mesh(*(this->my_mesh));
-	this->set_input_list( this->input_list(list_ok) );
+	this->set_input_list( this->input_list(list_ok), tg );
 	this->units( UnitSI().m() );
 
 	// time = 0.0
-	TimeGovernor tg(0.0, 1.0);
 	this->update_history(tg.step());
 
     Region diagonal_1d = this->mesh()->region_db().find_label("1D diagonal");
@@ -454,17 +456,17 @@ TYPED_TEST(FieldFix, set_time) {
 			"]";
 
 	if (this->is_enum_valued) {
-		list_ok = boost::regex_replace(list_ok, boost::regex(" =1"), "=\"white\"");
-		list_ok = boost::regex_replace(list_ok, boost::regex(" =0"), "=\"black\"");
+		list_ok = std::regex_replace(list_ok, std::regex(" =1"), "=\"white\"");
+		list_ok = std::regex_replace(list_ok, std::regex(" =0"), "=\"black\"");
 	}
 
+	TimeGovernor tg(0.0, 0.5);
 	this->name("a");
 	this->set_mesh(*(this->my_mesh));
-	this->set_input_list( this->input_list(list_ok) );
+	this->set_input_list( this->input_list(list_ok), tg );
 	this->units( UnitSI().m() );
 
 	// time = 0.0
-	TimeGovernor tg(0.0, 0.5);
 	this->set_time(tg.step(), LimitSide::right);
 	EXPECT_EQ(0, this->_value_( *this ));
 	EXPECT_TRUE( this->is_jump_time() );
@@ -516,16 +518,15 @@ TYPED_TEST(FieldFix, constructors) {
 			"{time=5,  region=\"BULK\", a=0, b=0}]";
 
 	if (this->is_enum_valued) {
-		list_ok = boost::regex_replace(list_ok, boost::regex("=1"), "=\"white\"");
-		list_ok = boost::regex_replace(list_ok, boost::regex("=0"), "=\"black\"");
+		list_ok = std::regex_replace(list_ok, std::regex("=1"), "=\"white\"");
+		list_ok = std::regex_replace(list_ok, std::regex("=0"), "=\"black\"");
 	}
 
-	this->field_.set_input_list(this->input_list(list_ok));
-	field_default.set_input_list(this->input_list(list_ok));
-
-
-
 	TimeGovernor tg(2.0, 1.0);
+	this->field_.set_input_list(this->input_list(list_ok), tg);
+	field_default.set_input_list(this->input_list(list_ok), tg);
+
+
 
 	typename TestFixture::FieldType f2(this->field_);	// default constructor
 	field_default = this->field_; // assignment, should overwrite name "b" by name "a"
@@ -566,6 +567,10 @@ string field_input = R"INPUT(
    conductivity={ //3x3 tensor
        TYPE="FieldFormula",
        value=["x","y", "z"]
+   },
+   conductivity_3d={ //3x3 tensor - for test of Field::is_constant method
+       TYPE="FieldFormula",
+       value=["1", "t", "t*t"]
    }
 }
 )INPUT";
@@ -589,6 +594,7 @@ TEST(Field, init_from_input) {
     Field<3, FieldValue<3>::Enum > sorption_type;
     Field<3, FieldValue<3>::VectorFixed > init_conc;
     Field<3, FieldValue<3>::TensorFixed > conductivity;
+    Field<3, FieldValue<3>::TensorFixed > conductivity_3d;
 
 
     std::vector<string> component_names = { "comp_0", "comp_1", "comp_2" };
@@ -602,6 +608,7 @@ TEST(Field, init_from_input) {
             .declare_key("sorption_type", sorption_type.get_input_type(), it::Default::obligatory(), "desc")
             .declare_key("init_conc", init_conc.get_input_type(), it::Default::obligatory(), "desc")
             .declare_key("conductivity", conductivity.get_input_type(), it::Default::obligatory(), "desc")
+            .declare_key("conductivity_3d", conductivity_3d.get_input_type(), it::Default::obligatory(), "desc")
 			.close();
 
 
@@ -612,16 +619,19 @@ TEST(Field, init_from_input) {
     sorption_type.set_mesh(*mesh);
     init_conc.set_mesh(*mesh);
     conductivity.set_mesh(*mesh);
+    conductivity_3d.set_mesh(*mesh);
 
     sorption_type.units( UnitSI().m() );
     init_conc.units( UnitSI().m() );
     conductivity.units( UnitSI().m() );
+    conductivity_3d.units( UnitSI().m() );
 
     auto region_set = mesh->region_db().get_region_set("BULK");
 
     sorption_type.set_field(region_set, in_rec.val<Input::AbstractRecord>("sorption_type"));
     init_conc.set_field(region_set, in_rec.val<Input::AbstractRecord>("init_conc"));
     conductivity.set_field(region_set, in_rec.val<Input::AbstractRecord>("conductivity"));
+    conductivity_3d.set_field(region_set, in_rec.val<Input::AbstractRecord>("conductivity_3d"));
 
 
 
@@ -630,6 +640,7 @@ TEST(Field, init_from_input) {
     sorption_type.set_time(TimeGovernor().step(), LimitSide::right);
     init_conc.set_time(TimeGovernor().step(), LimitSide::right);
     conductivity.set_time(TimeGovernor().step(), LimitSide::right);
+    conductivity_3d.set_time(TimeGovernor().step(), LimitSide::right);
 
     {	
 
@@ -657,6 +668,8 @@ TEST(Field, init_from_input) {
 
 	    EXPECT_TRUE( sorption_type.is_constant(reg) );
 	    EXPECT_TRUE( init_conc.is_constant(reg) );
+	    EXPECT_FALSE( conductivity.is_constant(reg) );
+	    EXPECT_TRUE( conductivity_3d.is_constant(reg) );
 
 	    ele = ElementAccessor<3>(mesh, reg);
 	    EXPECT_EQ( 1, sorption_type.value(ele.centre(), ele) );
@@ -704,9 +717,9 @@ class TestFieldSet : public FieldSet
 {
 public:
     TestFieldSet() {
-        ADD_FIELD(scalar, "").units(UnitSI::dimensionless());
-        ADD_FIELD(vector, "").units(UnitSI::dimensionless());
-        ADD_FIELD(tensor, "").units(UnitSI::dimensionless());
+        *this += scalar.name("scalar").units(UnitSI::dimensionless());
+        *this += vector.name("vector").units(UnitSI::dimensionless());
+        *this += tensor.name("tensor").units(UnitSI::dimensionless());
     }
     Field<3, FieldValue<3>::Scalar > scalar;
     Field<3, FieldValue<3>::VectorFixed > vector;
@@ -733,7 +746,7 @@ TEST(Field, field_result) {
 
     TestFieldSet data;
     data.set_mesh(*mesh);
-    data.set_input_list(array);
+    data.set_input_list(array, tg);
 
 
     Region diagonal_1d = mesh->region_db().find_label("1D diagonal");
@@ -834,7 +847,7 @@ TEST(Field, init_from_default) {
 
         enum_field.set_time(TimeGovernor().step(), LimitSide::right);
 
-        EXPECT_EQ( 0 , enum_field.value(p, mesh->element_accessor(0, true)) );
+        EXPECT_EQ( 0 , enum_field.value(p, mesh->element_accessor(12)) );
 
     }
 

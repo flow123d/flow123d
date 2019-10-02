@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
 # ----------------------------------------------
+from loggers import printf
 from scripts.core.base import Printer, Paths, PathFormat
 # ----------------------------------------------
 
@@ -20,28 +21,18 @@ class ScriptModule(object):
         """
         self.arg_options = arg_options
         self.debug = False
-        self.progress, self.batch = None, None
 
     def _prepare(self):
-        # configure printer
-        Printer.batch_output = self.arg_options.batch
-        Printer.dynamic_output = not self.arg_options.batch
-
-        self.progress = Printer.dynamic_output
-        self.batch = Printer.batch_output
-
         # configure path
         Paths.format = PathFormat.ABSOLUTE
         if self.arg_options.root:
             Paths.init(self.arg_options.root)
-            Printer.all.out(
+            printf.out(
                 '[INFO]    | Forcing Flow123d root location to "{}"\n'
                 '            Flow123d binary is:               "{}"',
                 self.arg_options.root,
                 Paths.flow123d()
-            )
-            Printer.all.sep()
-
+            ).sep()
 
     def _check_arguments(self):
         pass

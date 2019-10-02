@@ -1,0 +1,65 @@
+#################
+# Test goal: Test of boundary integer elementwise field
+# Author: David Flanderka
+# Source for reference: qualitative
+
+flow123d_version: 3.1.0
+problem: !Coupling_Sequential
+  description: Test of elementwise field of integer value type (bc_type)
+  mesh:
+    mesh_file: ../00_mesh/cube_1x1x1_frac21.msh
+  flow_equation: !Flow_Darcy_MH
+    nonlinear_solver:
+      linear_solver: !Petsc
+        r_tol: 1.0e-10
+        a_tol: 1.0e-10
+    n_schurs: 2
+    input_fields:
+      - region: 1d_channel
+        anisotropy: 10
+        sigma: 0.05
+      - region: 2d_fracture_1
+        anisotropy: 1
+        sigma: 0.5
+      - region: 2d_fracture_2
+        anisotropy: 1
+        sigma: 0.5
+      - region: 3d_cube
+        anisotropy: 0.1
+      - region: .1d_channel
+        bc_type: !FieldFE
+          mesh_data_file: ./elementwise_cube_data.msh
+          field_name: bc_type
+          default_value: 0
+        bc_pressure: !FieldFormula
+          value: x-z
+      - region: .2d_fracture_1
+        bc_type: !FieldFE
+          mesh_data_file: ./elementwise_cube_data.msh
+          field_name: bc_type
+          default_value: 0
+        bc_pressure: !FieldFormula
+          value: x-z
+      - region: .2d_fracture_2
+        bc_type: !FieldFE
+          mesh_data_file: ./elementwise_cube_data.msh
+          field_name: bc_type
+          default_value: 0
+        bc_pressure: !FieldFormula
+          value: x-z
+      - region: .3d_cube
+        bc_type: !FieldFE
+          mesh_data_file: ./elementwise_cube_data.msh
+          field_name: bc_type
+          default_value: 0
+        bc_pressure: !FieldFormula
+          value: x-z
+    output:
+      fields:
+        - piezo_head_p0
+        - pressure_p0
+        - pressure_p1
+        - velocity_p0
+    output_stream:
+      file: ./test24.msh
+      format: !gmsh

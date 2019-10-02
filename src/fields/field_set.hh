@@ -19,9 +19,19 @@
 #define FIELD_SET_HH_
 
 
-#include <system/exceptions.hh>
-#include "fields/field.hh"
-#include "fields/field_flag.hh"
+#include <iosfwd>                  // for ostream
+#include <string>                  // for string
+#include <vector>                  // for vector
+#include "fields/field_common.hh"  // for FieldCommon, FieldCommon::EI_Field
+#include "fields/field_flag.hh"    // for FieldFlag, FieldFlag::Flags
+#include "input/accessors.hh"      // for Array
+#include "input/type_record.hh"    // for Record
+#include "io/output_time.hh"       // for OutputTime, OutputTime::DiscreteSpace
+#include "system/exceptions.hh"    // for ExcStream, operator<<, DECLARE_EXC...
+#include "system/flag_array.hh"    // for FlagArray<>::Mask
+#include "tools/time_governor.hh"  // for TimeGovernor (ptr only), TimeStep
+class Mesh;
+class Region;
 
 
 
@@ -177,8 +187,8 @@ public:
     /**
      * Collective interface to @p FieldCommon::set_mesh().
      */
-    void set_input_list(Input::Array input_list) {
-        for(FieldCommon *field : field_list) field->set_input_list(input_list);
+    void set_input_list(Input::Array input_list, const TimeGovernor &tg) {
+        for(FieldCommon *field : field_list) field->set_input_list(input_list, tg);
     }
 
     /**
@@ -224,18 +234,6 @@ public:
      */
     bool is_jump_time() const;
 
-
-
-    /**
-     * OBSOLETE
-     *
-     * Adds given field into list of fields for group operations on fields.
-     * Parameters are: @p field pointer, @p name of the key in the input, @p desc - description of the key, and optional parameter
-     * @p d_val with default value. This method is rather called through the macro ADD_FIELD
-     */
-    FieldCommon &add_field( FieldCommon *field, const string &name,
-                                const string &desc, const string & d_val="");
-
 protected:
 
 
@@ -247,27 +245,6 @@ protected:
      */
     friend std::ostream &operator<<(std::ostream &stream, const FieldSet &set);
 };
-
-
-/**
- * (OBSOLETE)
- * Macro to simplify call of FieldSet::add_field method. Two forms are supported:
- *
- *
- *
- * ADD_FIELD(some_field, description);
- * ADD_FIELD(some_field, description, Default);
- *
- * The first form adds name "some_field" to the field member some_field, also adds description of the field. No default
- * value is specified, so the user must initialize the field on all regions (This is checked in the Field<..>::set_time method)
- *
- * The second form adds also default value to the field, that is Default(".."), or Default::read_time(), other default value specifications are
- * meaningless. The automatic conversion to FieldConst is used, e.g.  Default::("0.0") is automatically converted to
- * { TYPE="FieldConst", value=[ 0.0 ] } for a vector valued field, so you get zero vector on output on regions with default value.
- */
-
-#define ADD_FIELD(name, ...)                   this->add_field(&name, string(#name), __VA_ARGS__)
-
 
 
 

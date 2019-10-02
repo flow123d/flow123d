@@ -22,6 +22,7 @@
 
 #include "field.hh"
 #include "field_algo_base.impl.hh"
+#include "field_fe.hh"
 #include "mesh/region.hh"
 #include "input/reader_to_storage.hh"
 #include "input/accessors.hh"
@@ -96,10 +97,9 @@ Field<spacedim,Value>::Field(const Field &other)
 template<int spacedim, class Value>
 Field<spacedim,Value> &Field<spacedim,Value>::operator=(const Field<spacedim,Value> &other)
 {
-	//OLD_ASSERT( flags().match( FieldFlag::input_copy )  , "Try to assign to non-copy field '%s' from the field '%s'.", this->name().c_str(), other.name().c_str());
-	OLD_ASSERT(other.shared_->mesh_, "Must call set_mesh before assign to other field.\n");
-	OLD_ASSERT( !shared_->mesh_ || (shared_->mesh_==other.shared_->mesh_),
-	        "Assignment between fields with different meshes.\n");
+	//ASSERT( flags().match(FieldFlag::input_copy) )(this->name())(other.name()).error("Try to assign to non-copy field from the field.");
+	ASSERT(other.shared_->mesh_).error("Must call set_mesh before assign to other field.\n");
+	ASSERT( !shared_->mesh_ || (shared_->mesh_==other.shared_->mesh_) ).error("Assignment between fields with different meshes.\n");
 
 	// check for self assignement
 	if (&other == this) return *this;
@@ -137,7 +137,7 @@ it::Instance Field<spacedim,Value>::get_input_type() {
 
 template<int spacedim, class Value>
 it::Array Field<spacedim,Value>::get_multifield_input_type() {
-	OLD_ASSERT(false, "This method can't be used for Field");
+	ASSERT(false).error("This method can't be used for Field");
 
 	it::Array arr = it::Array( it::Integer() );
 	return arr;
@@ -179,7 +179,7 @@ template<int spacedim, class Value>
 std::shared_ptr< typename Field<spacedim,Value>::FieldBaseType >
 Field<spacedim,Value>::operator[] (Region reg)
 {
-    OLD_ASSERT_LESS(reg.idx(), this->region_fields_.size());
+    ASSERT_LT(reg.idx(), this->region_fields_.size());
     return this->region_fields_[reg.idx()];
 }
 */
@@ -187,10 +187,10 @@ Field<spacedim,Value>::operator[] (Region reg)
 
 template <int spacedim, class Value>
 bool Field<spacedim, Value>::is_constant(Region reg) {
-	OLD_ASSERT(this->set_time_result_ != TimeStatus::unknown, "Unknown time status.\n");
-	OLD_ASSERT_LESS(reg.idx(), this->region_fields_.size());
+	ASSERT(this->set_time_result_ != TimeStatus::unknown).error("Unknown time status.\n");
+	ASSERT_LT(reg.idx(), this->region_fields_.size());
     FieldBasePtr region_field = this->region_fields_[reg.idx()];
-    return (region_field && typeid(*region_field) == typeid(FieldConstant<spacedim, Value>));
+    return ( region_field && region_field->is_constant_in_space() );
 }
 
 
@@ -200,20 +200,20 @@ void Field<spacedim, Value>::set_field(
 		FieldBasePtr field,
 		double time)
 {
-	OLD_ASSERT(field, "Null field pointer.\n");
+	ASSERT_PTR(field).error("Null field pointer.\n");
 
-	OLD_ASSERT( mesh(), "Null mesh pointer, set_mesh() has to be called before set_field().\n");
+	ASSERT_PTR( mesh() ).error("Null mesh pointer, set_mesh() has to be called before set_field().\n");
     if (domain.size() == 0) return;
 
-    OLD_ASSERT_EQUAL( field->n_comp() , n_comp());
+    ASSERT_EQ( field->n_comp() , n_comp());
     field->set_mesh( mesh() , is_bc() );
 
     HistoryPoint hp = HistoryPoint(time, field);
     for(const Region &reg: domain) {
     	RegionHistory &region_history = data_->region_history_[reg.idx()];
     	// insert hp into descending time sequence
-    	OLD_ASSERT( region_history.size() == 0 || region_history[0].first < hp.first, "Can not insert smaller time %g then last time %g in field's history.\n",
-    			hp.first, region_history[0].first );
+    	ASSERT( region_history.size() == 0 || region_history[0].first < hp.first)(hp.first)(region_history[0].first)
+    			.error("Can not insert smaller time then last time in field's history.\n");
     	region_history.push_front(hp);
     }
     set_history_changed();
@@ -227,7 +227,7 @@ void Field<spacedim, Value>::set_field(
 		const Input::AbstractRecord &a_rec,
 		double time)
 {
-	FieldAlgoBaseInitData init_data(input_name(), n_comp(), units(), limits());
+	FieldAlgoBaseInitData init_data(input_name(), n_comp(), units(), limits(), flags());
 	set_field(domain, FieldBaseType::function_factory(a_rec, init_data), time);
 }
 
@@ -237,7 +237,7 @@ void Field<spacedim, Value>::set_field(
 template<int spacedim, class Value>
 bool Field<spacedim, Value>::set_time(const TimeStep &time_step, LimitSide limit_side)
 {
-	OLD_ASSERT( mesh() , "NULL mesh pointer of field '%s'. set_mesh must be called before.\n",name().c_str());
+	ASSERT_PTR( mesh() )( name() ).error("NULL mesh pointer of field with given name. set_mesh must be called before.\n");
 
     // Skip setting time if the new time is equal to current time of the field
 	// and if either the field is continuous in that time or the current limit side is same as the new one.
@@ -279,7 +279,7 @@ bool Field<spacedim, Value>::set_time(const TimeStep &time_step, LimitSide limit
         double last_time_in_history = rh.front().first;
         unsigned int history_size=rh.size();
         unsigned int i_history;
-        OLD_ASSERT(time_step.ge(last_time_in_history), "Setting field time back in history not fully supported yet!");
+        ASSERT( time_step.ge(last_time_in_history) ).error("Setting field time back in history not fully supported yet!");
 
         // set history index
         if ( time_step.gt(last_time_in_history) ) {
@@ -295,7 +295,7 @@ bool Field<spacedim, Value>::set_time(const TimeStep &time_step, LimitSide limit
             }
         }
         i_history=min(i_history, history_size - 1);
-        OLD_ASSERT(i_history >= 0, "Empty field history.");
+        ASSERT(i_history >= 0).error("Empty field history.");
         // possibly update field pointer
 
         auto new_ptr = rh.at(i_history).second;
@@ -334,14 +334,10 @@ void Field<spacedim, Value>::field_output(std::shared_ptr<OutputTime> stream)
 {
 	// currently we cannot output boundary fields
 	if (!is_bc()) {
-		const OutputTime::DiscreteSpace type = this->output_type();
+		const OutputTime::DiscreteSpace type = this->get_output_type();
 
 		ASSERT_LT(type, OutputTime::N_DISCRETE_SPACES).error();
-
-		OutputTime::DiscreteSpaceFlags flags = 1 << type;
-	    for(unsigned int ids=0; ids < OutputTime::N_DISCRETE_SPACES; ids++)
-	        if (flags & (1 << ids))
-	        	this->compute_field_data( OutputTime::DiscreteSpace(ids), stream);
+		this->compute_field_data( type, stream);
 	}
 }
 
@@ -351,21 +347,21 @@ void Field<spacedim, Value>::observe_output(std::shared_ptr<Observe> observe)
 {
 	typedef typename Value::element_type ElemType;
 
-    if (observe->points().size() == 0) return;
+    if (observe->point_ds()->lsize() == 0) return;
 
     ElementDataCache<ElemType> &output_data = observe->prepare_compute_data<ElemType>(this->name(), this->time(),
     						(unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
 
-    unsigned int i_data=0;
-    for(const ObservePoint &o_point : observe->points()) {
-        unsigned int ele_index = o_point.element_idx();
+    unsigned int loc_point_time_index, ele_index;
+    for(ObservePointAccessor op_acc : observe->local_range()) {
+        loc_point_time_index = op_acc.loc_point_time_index();
+		ele_index = op_acc.observe_point().element_idx();
         const Value &obs_value =
                         Value( const_cast<typename Value::return_type &>(
-                                this->value(o_point.global_coords(),
-                                        ElementAccessor<spacedim>(this->mesh(), ele_index, false)) ));
-        ASSERT_EQ(output_data.n_elem(), obs_value.n_rows()*obs_value.n_cols()).error();
-        output_data.store_value(i_data,  obs_value.mem_ptr());
-        i_data++;
+                                this->value(op_acc.observe_point().global_coords(),
+                                        ElementAccessor<spacedim>(this->mesh(), ele_index)) ));
+        ASSERT_EQ(output_data.n_comp(), obs_value.n_rows()*obs_value.n_cols()).error();
+        output_data.store_value(loc_point_time_index, obs_value.mem_ptr());
     }
 }
 
@@ -410,13 +406,13 @@ std::string Field<spacedim,Value>::get_value_attribute() const
 
 template<int spacedim, class Value>
 void Field<spacedim,Value>::update_history(const TimeStep &time) {
-	OLD_ASSERT( mesh(), "Null mesh pointer, set_mesh() has to be called before.\n");
+	ASSERT_PTR( mesh() ).error("Null mesh pointer, set_mesh() has to be called before.\n");
 
     // read input up to given time
 	double input_time;
     if (shared_->input_list_.size() != 0) {
         while( shared_->list_idx_ < shared_->input_list_.size()
-        	   && time.ge( input_time = shared_->input_list_[shared_->list_idx_].val<double>("time") ) ) {
+        	   && time.ge( input_time = time.read_time( shared_->input_list_[shared_->list_idx_].find<Input::Tuple>("time") ) ) ) {
 
         	const Input::Record & actual_list_item = shared_->input_list_[shared_->list_idx_];
         	// get domain specification
@@ -450,13 +446,25 @@ void Field<spacedim,Value>::update_history(const TimeStep &time) {
 				if (field_instance)  // skip descriptors without related keys
 				{
 					// add to history
-					OLD_ASSERT_EQUAL( field_instance->n_comp() , n_comp());
+					ASSERT_EQ( field_instance->n_comp() , n_comp());
 					field_instance->set_mesh( mesh() , is_bc() );
 					for(const Region &reg: domain) {
-						data_->region_history_[reg.idx()].push_front(
-								HistoryPoint(input_time, field_instance)
-						);
-						//DebugOut() << "Update history" << print_var(this->name()) <<print_var(reg.label()) << print_var(input_time);
+                        // if region history is empty, add new field
+                        // or if region history is not empty and the input_time is higher, add new field
+                        // otherwise (region history is not empty and the input_time is the same),
+                        //      rewrite the region field
+                        if( data_->region_history_[reg.idx()].size() == 0
+                            || data_->region_history_[reg.idx()].back().first < input_time)
+                        {
+                            data_->region_history_[reg.idx()].push_front(
+                                    HistoryPoint(input_time, field_instance));
+                            //DebugOut() << "Update history" << print_var(this->name()) << print_var(reg.label()) << print_var(input_time);
+                        }
+                        else
+                        {
+                            data_->region_history_[reg.idx()].back() = 
+                                    HistoryPoint(input_time, field_instance);
+                        }
 					}
 					break;
 				}
@@ -469,7 +477,7 @@ void Field<spacedim,Value>::update_history(const TimeStep &time) {
 
 template<int spacedim, class Value>
 void Field<spacedim,Value>::check_initialized_region_fields_() {
-	OLD_ASSERT(mesh(), "Null mesh pointer.");
+	ASSERT_PTR(mesh()).error("Null mesh pointer.");
     //if (shared_->is_fully_initialized_) return;
 
     // check there are no empty field pointers, collect regions to be initialized from default value
@@ -508,7 +516,7 @@ void Field<spacedim,Value>::check_initialized_region_fields_() {
         Input::ReaderToStorage reader( default_input, *input_type, Input::FileFormat::format_JSON );
 
         auto a_rec = reader.get_root_interface<Input::AbstractRecord>();
-    	FieldAlgoBaseInitData init_data(input_name(), n_comp(), units(), limits());
+    	FieldAlgoBaseInitData init_data(input_name(), n_comp(), units(), limits(), flags());
         auto field_ptr = FieldBaseType::function_factory( a_rec , init_data );
         field_ptr->set_mesh( mesh(), is_bc() );
         for(const Region &reg: regions_to_init) {
@@ -533,7 +541,7 @@ template<int spacedim, class Value>
 typename Field<spacedim,Value>::FieldBasePtr Field<spacedim,Value>::FactoryBase::create_field(Input::Record rec, const FieldCommon &field) {
 	Input::AbstractRecord field_record;
 	if (rec.opt_val(field.input_name(), field_record)) {
-		FieldAlgoBaseInitData init_data(field.input_name(), field.n_comp(), field.units(), field.limits());
+		FieldAlgoBaseInitData init_data(field.input_name(), field.n_comp(), field.units(), field.limits(), field.get_flags());
 		return FieldBaseType::function_factory(field_record, init_data );
 	}
 	else
@@ -550,7 +558,7 @@ bool Field<spacedim,Value>::FactoryBase::is_active_field_descriptor(const Input:
 
 
 template<int spacedim, class Value>
-void Field<spacedim,Value>::set_input_list(const Input::Array &list) {
+void Field<spacedim,Value>::set_input_list(const Input::Array &list, const TimeGovernor &tg) {
     if (! flags().match(FieldFlag::declare_input)) return;
 
     // check that times forms ascending sequence
@@ -562,7 +570,7 @@ void Field<spacedim,Value>::set_input_list(const Input::Array &list) {
     	for(auto rit = factories_.rbegin() ; rit != factories_.rend(); ++rit) {
 			if ( (*rit)->is_active_field_descriptor( (*it), this->input_name() ) ) {
 				shared_->input_list_.push_back( Input::Record( *it ) );
-				time = it->val<double>("time");
+				time = tg.read_time( it->find<Input::Tuple>("time") );
 				if (time < last_time) {
 					THROW( ExcNonascendingTime()
 							<< EI_Time(time)
@@ -584,81 +592,65 @@ template<int spacedim, class Value>
 void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream) {
 	typedef typename Value::element_type ElemType;
 
-    /* It's possible now to do output to the file only in the first process */
-    if( stream->get_rank() != 0) {
-        /* TODO: do something, when support for Parallel VTK is added */
-        return;
-    }
+	std::shared_ptr<OutputMeshBase> output_mesh = stream->get_output_mesh_ptr();
+
+    ASSERT(output_mesh);
 
     ElementDataCache<ElemType> &output_data = stream->prepare_compute_data<ElemType>(this->name(), space_type,
     		(unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
 
-
     /* Copy data to array */
     switch(space_type) {
-    case OutputTime::NODE_DATA: {
-        // set output data to zero
-        vector<unsigned int> count(output_data.n_values(), 0);
-        for(unsigned int idx=0; idx < output_data.n_values(); idx++)
-            output_data.zero(idx);
-
-        std::shared_ptr<OutputMesh> output_mesh = std::dynamic_pointer_cast<OutputMesh>( stream->get_output_mesh_ptr() );
+    case OutputTime::NODE_DATA:
+    case OutputTime::CORNER_DATA: {
+    	unsigned int node_index = 0;
         for(const auto & ele : *output_mesh )
         {
             std::vector<Space<3>::Point> vertices = ele.vertex_list();
             for(unsigned int i=0; i < ele.n_nodes(); i++)
             {
-                unsigned int node_index = ele.node_index(i);
-                const Value &node_value =
-                        Value( const_cast<typename Value::return_type &>(
-                                this->value(vertices[i],
-                                            ElementAccessor<spacedim>(ele.orig_mesh(), ele.orig_element_idx(),false) ))
-                             );
-                output_data.add(node_index, node_value.mem_ptr() );
-                count[node_index]++;
-            }
-        }
-
-        // Compute mean values at nodes
-        for(unsigned int idx=0; idx < output_data.n_values(); idx++)
-            output_data.normalize(idx, count[idx]);
-    }
-    break;
-    case OutputTime::CORNER_DATA: {
-    	std::shared_ptr<OutputMeshDiscontinuous> output_mesh_disc
-			= std::dynamic_pointer_cast<OutputMeshDiscontinuous>( stream->get_output_mesh_ptr(true) );
-        for(const auto & ele : *output_mesh_disc )
-        {
-            std::vector<Space<3>::Point> vertices = ele.vertex_list();
-            for(unsigned int i=0; i < ele.n_nodes(); i++)
-            {
-                unsigned int node_index = ele.node_index(i);
                 const Value &node_value =
                         Value( const_cast<typename Value::return_type &>(
                         		this->value(vertices[i],
-                                            ElementAccessor<spacedim>(ele.orig_mesh(), ele.orig_element_idx(),false) ))
+                                            ElementAccessor<spacedim>(ele.orig_mesh(), ele.orig_element_idx()) ))
                              );
-                ASSERT_EQ(output_data.n_elem(), node_value.n_rows()*node_value.n_cols()).error();
+                ASSERT_EQ(output_data.n_comp(), node_value.n_rows()*node_value.n_cols()).error();
                 output_data.store_value(node_index, node_value.mem_ptr() );
+                ++node_index;
             }
         }
     }
     break;
     case OutputTime::ELEM_DATA: {
-    	std::shared_ptr<OutputMesh> output_mesh = std::dynamic_pointer_cast<OutputMesh>( stream->get_output_mesh_ptr() );
         for(const auto & ele : *output_mesh )
         {
             unsigned int ele_index = ele.idx();
             const Value &ele_value =
                         Value( const_cast<typename Value::return_type &>(
                         		this->value(ele.centre(),
-                                            ElementAccessor<spacedim>(ele.orig_mesh(), ele.orig_element_idx(),false))
+                                            ElementAccessor<spacedim>(ele.orig_mesh(), ele.orig_element_idx()))
                                                                         )
                              );
-            ASSERT_EQ(output_data.n_elem(), ele_value.n_rows()*ele_value.n_cols()).error();
+            ASSERT_EQ(output_data.n_comp(), ele_value.n_rows()*ele_value.n_cols()).error();
             output_data.store_value(ele_index, ele_value.mem_ptr() );
         }
     }
+    break;
+    case OutputTime::NATIVE_DATA: {
+        std::shared_ptr< FieldFE<spacedim, Value> > field_fe_ptr = this->get_field_fe();
+
+        if (field_fe_ptr) {
+            ElementDataCache<double> &native_output_data = stream->prepare_compute_data<double>(this->name(), space_type,
+                    (unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
+            field_fe_ptr->native_data_to_cache(native_output_data);
+        } else {
+            WarningOut().fmt("Field '{}' of native data space type is not of type FieldFE. Output will be skipped.\n", this->name());
+        }
+    }
+    break;
+    case OutputTime::MESH_DEFINITION:
+    case OutputTime::UNDEFINED:
+        //should not happen
     break;
     }
 
@@ -666,6 +658,29 @@ void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_t
     stream->update_time(this->time());
 
 }
+
+
+template<int spacedim, class Value>
+std::shared_ptr< FieldFE<spacedim, Value> > Field<spacedim,Value>::get_field_fe() {
+	ASSERT_EQ_DBG(this->mesh()->region_db().size(), region_fields_.size()).error();
+	ASSERT(!this->shared_->bc_).error("FieldFE output of native data is supported only for bulk fields!");
+
+	std::shared_ptr< FieldFE<spacedim, Value> > field_fe_ptr;
+
+	bool is_fe = (region_fields_.size()>0); // indicate if FieldFE is defined on all bulk regions
+	is_fe = is_fe && region_fields_[1] && (typeid(*region_fields_[1]) == typeid(FieldFE<spacedim, Value>));
+	for (unsigned int i=3; i<2*this->mesh()->region_db().bulk_size(); i+=2)
+		if (!region_fields_[i] || (region_fields_[i] != region_fields_[1])) {
+			is_fe = false;
+			break;
+		}
+	if (is_fe) {
+		field_fe_ptr = std::dynamic_pointer_cast<  FieldFE<spacedim, Value> >( region_fields_[1] );
+	}
+
+	return field_fe_ptr;
+}
+
 
 
 

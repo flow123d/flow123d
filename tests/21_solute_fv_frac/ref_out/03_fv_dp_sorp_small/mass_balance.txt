@@ -1,4 +1,4 @@
-"time"	"region"	"quantity [kg]"	"flux"	"flux_in"	"flux_out"	"mass"	"source"	"source_in"	"source_out"	"flux_increment"	"source_increment"	"flux_cumulative"	"source_cumulative"	"error"
+"time [s]"	"region"	"quantity [kg]"	"flux"	"flux_in"	"flux_out"	"mass"	"source"	"source_in"	"source_out"	"flux_increment"	"source_increment"	"flux_cumulative"	"source_cumulative"	"error"
 0	"1d_upper"	"age"	0	0	0	0	0.00559017	0.00559017	0	0	0	0	0	0
 0	"1d_upper"	"U235"	0	0	0	0	0	0	0	0	0	0	0	0
 0	"1d_lower"	"age"	0	0	0	0	0.00559017	0.00559017	0	0	0	0	0	0

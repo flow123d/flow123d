@@ -24,15 +24,13 @@
 using namespace std;
 
 #include "fields/field_algo_base.hh"
-#include "fields/field_interpolated_p0.hh"
 #include "fields/field_python.hh"
 #include "fields/field_constant.hh"
 #include "fields/field_formula.hh"
-#include "fields/field_elementwise.hh"
 
 #include "fields/field_values.hh"
 
-#include "fields/unit_converter.hh"
+#include "tools/unit_converter.hh"
 
 #include "tools/time_governor.hh"
 #include "input/factory.hh"

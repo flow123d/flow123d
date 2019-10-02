@@ -18,12 +18,13 @@ cmake_minimum_required(VERSION 2.8)
        ./packages/etoolbox.sty
        ./packages/multirow.sty
        ${TUTORIALS_LIST}
+       abstract_models.tex
        convection.tex
        darcy_flow.tex
        chemistry.tex
        dg.tex
-  #    flow_ini.tex
        flow_version.tex
+       getting_started.tex
        heat.tex
        input_files.tex
        input_reference.tex
@@ -31,7 +32,6 @@ cmake_minimum_required(VERSION 2.8)
        lumped_mh.tex
        numerical.tex
        output.tex
-       pos_12.tex
        reaction_term_numerical.tex
        semchem.tex
        reaction_term.tex

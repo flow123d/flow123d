@@ -13,7 +13,8 @@ from scripts.pbs.job import finish_pbs_exec
 from scripts.yamlc.yaml_config import ConfigCase
 from scripts.yamlc import DEFAULTS
 from scripts.core.base import Paths, Printer, Command, IO
-from scripts.core.threads import PyPy, ResultHolder
+from scripts.core.threads import ResultHolder
+from scripts.core.pypy import PyPy
 from scripts.core.execution import BinExecutor, OutputMode
 from scripts.pbs.common import get_pbs_module
 from scripts.prescriptions.remote_run import exec_parallel_command, PBSModule

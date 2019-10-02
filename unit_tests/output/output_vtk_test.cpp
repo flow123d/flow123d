@@ -19,9 +19,16 @@
 #include "mesh/mesh.h"
 #include "io/msh_gmshreader.h"
 #include "input/reader_to_storage.hh"
-#include "system/sys_profiler.hh"
 #include "system/logger_options.hh"
+#include "system/sys_profiler.hh"
 #include "fields/field.hh"
+
+#include "fem/mapping_p1.hh"
+#include "fem/dofhandler.hh"
+#include "fem/fe_p.hh"
+#include "fields/field_fe.hh"
+#include "la/vector_mpi.hh"
+#include "fields/fe_value_handler.hh"
 
 FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
 
@@ -63,11 +70,13 @@ public:
     {
     	auto in_rec = Input::ReaderToStorage(input_yaml, const_cast<Input::Type::Record &>(OutputTime::get_input_type()), Input::FileFormat::format_YAML)
         				.get_root_interface<Input::Record>();
-        this->init_from_input("dummy_equation", *(this->_mesh), in_rec);
+        this->init_from_input("dummy_equation", in_rec, "s");
 
         // create output mesh identical to computational mesh
-        this->output_mesh_ = std::make_shared<OutputMesh>(*(this->_mesh));
-        this->output_mesh_->create_identical_mesh();
+        auto output_mesh = std::make_shared<OutputMesh>(*(this->_mesh));
+        output_mesh->create_sub_mesh();
+        output_mesh->make_serial_master_mesh();
+        this->set_output_data_caches(output_mesh);
 
     }
 
@@ -85,13 +94,47 @@ public:
 		field.set_time(TimeGovernor(0.0, 1.0).step(), LimitSide::left);
 
         // create output mesh identical to computational mesh
-        this->output_mesh_ = std::make_shared<OutputMesh>( *(this->_mesh) );
-        this->output_mesh_->create_identical_mesh();
+		output_mesh_ = std::make_shared<OutputMesh>( *(this->_mesh) );
+		output_mesh_->create_sub_mesh();
+		output_mesh_->make_serial_master_mesh();
+        this->set_output_data_caches(output_mesh_);
 
-        this->output_mesh_discont_ = std::make_shared<OutputMeshDiscontinuous>( *(this->_mesh) );
-        this->output_mesh_discont_->create_mesh(this->output_mesh_);
+        //this->output_mesh_discont_ = std::make_shared<OutputMeshDiscontinuous>( *(this->_mesh) );
+        //this->output_mesh_discont_->create_sub_mesh();
+        //this->output_mesh_discont_->make_serial_master_mesh();
 
 		field.compute_field_data(ELEM_DATA, shared_from_this());
+	}
+
+	template <class FieldVal>
+	void set_native_field_data(string field_name, unsigned int size, double step)
+    {
+
+		// make field init it form the init string
+		Field<3, FieldVal> field(field_name, false);
+		field.set_components(component_names);
+		field.set_mesh( *(this->_mesh) );
+		field.units(UnitSI::one());
+
+		std::shared_ptr<DOFHandlerMultiDim> dh = make_shared<DOFHandlerMultiDim>( *(this->_mesh) );
+		FE_P_disc<0> fe0(0);
+		FE_P_disc<1> fe1(0);
+		FE_P_disc<2> fe2(0);
+		FE_P_disc<3> fe3(0);
+        std::shared_ptr<::DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(this->_mesh, &fe0, &fe1, &fe2, &fe3);
+		dh->distribute_dofs(ds);
+
+		VectorMPI v(size);
+        for (unsigned int i=0; i<size; ++i) v[i] = step*i;
+
+		auto native_data_ptr = make_shared< FieldFE<3, FieldVal> >();
+		native_data_ptr->set_fe_data(dh, 0, v);
+
+		field.set_field(_mesh->region_db().get_region_set("ALL"), native_data_ptr);
+		field.output_type(OutputTime::NATIVE_DATA);
+		field.set_time(TimeGovernor(0.0, 1.0).step(), LimitSide::left);
+
+		field.compute_field_data(NATIVE_DATA, shared_from_this());
 	}
 
 	// check result
@@ -127,6 +170,8 @@ public:
 	}
 
 	std::vector<string> component_names;
+	Mesh *_mesh;
+	std::shared_ptr<OutputMeshBase> output_mesh_;
 };
 
 
@@ -138,6 +183,7 @@ TEST(TestOutputVTK, write_data_ascii) {
 	output_vtk->set_field_data< Field<3,FieldValue<0>::Scalar> > ("scalar_field", "0.5");
 	output_vtk->set_field_data< Field<3,FieldValue<3>::VectorFixed> > ("vector_field", "[0.5, 1.0, 1.5]");
 	output_vtk->set_field_data< Field<3,FieldValue<3>::TensorFixed> > ("tensor_field", "[[1, 2, 3], [4, 5, 6], [7, 8, 9]]");
+	output_vtk->set_native_field_data< FieldValue<0>::Scalar >("flow_data", 6, 0.2);
 	output_vtk->write_data();
     EXPECT_EQ("./test1.pvd", output_vtk->base_filename());
     EXPECT_EQ("test1", output_vtk->main_output_basename());

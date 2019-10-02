@@ -1,10 +1,10 @@
-flow123d_version: 2.0.0
+flow123d_version: 3.1.0
 problem: !Coupling_Sequential
   time: &anchor2
     end_time: 0.5
     max_dt: 0.01
     min_dt: 0.01
-  description: "Missing input mesh file"
+  description: Missing input mesh file
   mesh:
 ### ERROR missing mesh file
     mesh_file: ../00_mesh/square_1x1_42el.msh
@@ -17,7 +17,7 @@ problem: !Coupling_Sequential
         a_tol: 1.0e-07
     n_schurs: 2
     time: *anchor2
-    output_stream: 
+    output_stream:
       file: ./test10.pvd
       format: !vtk
         variant: ascii

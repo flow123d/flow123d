@@ -33,40 +33,44 @@
 #ifndef DARCY_FLOW_MH_HH
 #define DARCY_FLOW_MH_HH
 
-#include <memory>
-#include "input/input_type_forward.hh"
+#include <petscmat.h>                           // for Mat
+#include <string.h>                             // for memcpy
+#include <algorithm>                            // for swap
+#include <boost/exception/info.hpp>             // for operator<<, error_inf...
+#include <memory>                               // for shared_ptr, allocator...
+#include <new>                                  // for operator new[]
+#include <string>                               // for string, operator<<
+#include <vector>                               // for vector, vector<>::con...
+#include <armadillo>
+#include "fields/bc_field.hh"                   // for BCField
+#include "fields/field.hh"                      // for Field
+#include "fields/field_set.hh"                  // for FieldSet
+#include "fields/field_values.hh"               // for FieldValue<>::Scalar
+#include "flow/darcy_flow_interface.hh"         // for DarcyFlowInterface
+#include "flow/mh_dofhandler.hh"                // for MH_DofHandler, uint
+#include "input/input_exception.hh"             // for DECLARE_INPUT_EXCEPTION
+#include "input/type_base.hh"                   // for Array
+#include "input/type_generic.hh"                // for Instance
+#include "mesh/mesh.h"                          // for Mesh
+#include "petscvec.h"                           // for Vec, _p_Vec, VecScatter
+#include "system/exceptions.hh"                 // for ExcStream, operator<<
+#include "tools/time_governor.hh"               // for TimeGovernor
 
-#include <petscmat.h>
-#include "system/sys_vector.hh"
-#include "coupling/equation.hh"
-#include "flow/mh_dofhandler.hh"
-#include "la/linsys_BDDC.hh"
-#include "la/linsys_PETSC.hh"
-
-#include "fields/bc_field.hh"
-#include "fields/field.hh"
-#include "fields/field_set.hh"
-#include "flow/darcy_flow_interface.hh"
-#include "input/input_exception.hh"
-
-/// external types:
-class LinSys;
-class Mesh;
-class SchurComplement;
-class Distribution;
-class SparseGraph;
-class LocalToGlobalMap;
-class DarcyFlowMHOutput;
-class Balance;
-class VectorSeqDouble;
 class AssemblyBase;
-
-template<unsigned int dim, unsigned int spacedim> class FE_RT0;
-template<unsigned int degree, unsigned int dim, unsigned int spacedim> class FE_P_disc;
-template<unsigned int dim, unsigned int spacedim> class MappingP1;
-template<unsigned int dim, unsigned int spacedim> class FEValues;
-template<unsigned int dim, unsigned int spacedim> class FESideValues;
-template<unsigned int dim> class QGauss;
+class Balance;
+class DarcyFlowMHOutput;
+class Element;
+class Intersection;
+class LinSys;
+class LinSys_BDDC;
+namespace Input {
+	class AbstractRecord;
+	class Record;
+	namespace Type {
+		class Record;
+		class Selection;
+	}
+}
 
 /**
  * @brief Mixed-hybrid model of linear Darcy flow, possibly unsteady.
@@ -80,24 +84,6 @@ template<unsigned int dim> class QGauss;
  * 2) actualize_solution - this is for iterative nonlinear solvers
  *
  */
-
-
-/**
- * This should contain target large algebra object to be assembled.
- * Since this should be passed only once per the whole assembly and may be equation specific
- * this structure is passed with the data
- */
-class RichardsSystem {
-public:
-    // temporary solution how to pass information about dirichlet BC on edges
-    // should be done better when we move whole assembly into assembly classes
-    // the vector is set in assembly_mh_matrix and used in LMH assembly of the time term
-    std::vector<unsigned int> dirichlet_edge;
-    std::shared_ptr<arma::mat> local_matrix;
-    double loc_side_rhs[4];
-    std::shared_ptr<Balance> balance;
-    LinSys *lin_sys;
-};
 
 
 /**
@@ -147,7 +133,15 @@ public:
     DECLARE_INPUT_EXCEPTION(ExcMissingTimeGovernor,
             << "Missing the key 'time', obligatory for the transient problems.");
 
-    typedef std::vector<std::shared_ptr<AssemblyBase> > MultidimAssembler;
+
+    typedef std::vector<std::shared_ptr<AssemblyBase> > MultidimAssembly;
+
+    /// Type of experimental Mortar-like method for non-compatible 1d-2d interaction.
+    enum MortarMethod {
+        NoMortar = 0,
+        MortarP0 = 1,
+        MortarP1 = 2
+    };
 
     /// Class with all fields used in the equation DarcyFlow.
     /// This is common to all implementations since this provides interface
@@ -195,24 +189,26 @@ public:
         arma::vec4 gravity_;
         arma::vec3 gravity_vec_;
 
+        // Mirroring the following members of DarcyMH:
         Mesh *mesh;
         MH_DofHandler *mh_dh;
 
-        RichardsSystem system_;
-        uint water_balance_idx_;
 
+        uint water_balance_idx;
 
-        //FieldSet  time_term_fields;
-        //FieldSet  main_matrix_fields;
-        //FieldSet  rhs_fields;
+        MortarMethod mortar_method_;
+
+        std::shared_ptr<Balance> balance;
+        LinSys *lin_sys;
+        
+        unsigned int n_schur_compls;
+        int is_linear;              ///< Hack fo BDDC solver.
+        bool force_bc_switch;       ///< auxiliary flag for switchting Dirichlet like BC
+        
+        /// Idicator of dirichlet or neumann type of switch boundary conditions.
+        std::vector<char> bc_switch_dirichlet;
     };
 
-    /// Type of experimental Mortar-like method for non-compatible 1d-2d interaction.
-    enum MortarMethod {
-        NoMortar = 0,
-        MortarP0 = 1,
-        MortarP1 = 2
-    };
     /// Selection for enum MortarMethod.
     static const Input::Type::Selection & get_mh_mortar_selection();
 
@@ -303,18 +299,24 @@ protected:
      * - no time term, managed by diagonal extraction etc.
      */
     //virtual void local_assembly_specific(AssemblyData &local_data);
-
+   
     /**
-     * Abstract assembly method used for both assembly and preallocation.
-     * Assembly only steady part of the equation.
+     * Allocates linear system matrix for MH.
      * TODO:
      * - use general preallocation methods in DofHandler
+     */
+    void allocate_mh_matrix();
+
+    /**
+     * Assembles linear system matrix for MH.
+     * Element by element assembly is done using dim-template assembly class.
+     * Assembles only steady part of the equation.
+     * TODO:
      * - include time term
      * - add support for Robin type sources
      * - support for nonlinear solvers - assembly either residual vector, matrix, or both (using FADBAD++)
      */
-    void assembly_mh_matrix( MultidimAssembler ma);
-    
+    void assembly_mh_matrix(MultidimAssembly& assembler);
 
     /// Source term is implemented differently in LMH version.
     virtual void assembly_source_term();
@@ -331,23 +333,22 @@ protected:
      * residual field, standard part of EqData.
      */
     virtual double solution_precision() const;
+    
+    /// Print darcy flow matrix in matlab format into a file.
+    void print_matlab_matrix(string matlab_file);
 
     bool solution_changed_for_scatter;
     //Vec velocity_vector;
     MH_DofHandler mh_dh;    // provides access to seq. solution fluxes and pressures on sides
 
-    MortarMethod mortar_method_;
 
     std::shared_ptr<Balance> balance_;
-    /// index of water balance within the Balance object.
-    unsigned int water_balance_idx_;
 
     DarcyFlowMHOutput *output_object;
 
 	int size;				    // global size of MH matrix
 	int  n_schur_compls;  	    // number of shur complements to make
 	double  *solution; 			// sequantial scattered solution vector
-	int is_linear_;             // Hack fo BDDC solver.
 
 	// Propagate test for the time term to the assembly.
 	// This flag is necessary for switching BC to avoid setting zero neumann on the whole boundary in the steady case.
@@ -364,13 +365,6 @@ protected:
 	LinSys *schur0;  		//< whole MH Linear System
 
 
-	
-
-
-	/// Idicator of dirichlet or neumann type of switch boundary conditions.
-	std::vector<char> bc_switch_dirichlet;
-
-
 	// gather of the solution
 	Vec sol_vec;			                 //< vector over solution array
 	VecScatter par_to_all;
@@ -383,8 +377,8 @@ protected:
 	std::shared_ptr<EqData> data_;
 
     friend class DarcyFlowMHOutput;
-    friend class P0_CouplingAssembler;
-    friend class P1_CouplingAssembler;
+    //friend class P0_CouplingAssembler;
+    //friend class P1_CouplingAssembler;
 
 private:
   /// Registrar of class to factory
@@ -392,108 +386,9 @@ private:
 };
 
 
-class P0_CouplingAssembler {
-public:
-	P0_CouplingAssembler(const DarcyMH &darcy)
-	: darcy_(darcy),
-	  master_list_(darcy.mesh_->master_elements),
-	  intersections_(darcy.mesh_->intersections),
-	  master_(nullptr),
-	  tensor_average(2)
-	{
-		arma::mat master_map(1,2), slave_map(1,3);
-		master_map.fill(1.0 / 2);
-		slave_map.fill(1.0 / 3);
-
-		tensor_average[0].push_back( master_map.t() * master_map );
-		tensor_average[0].push_back( master_map.t() * slave_map );
-		tensor_average[1].push_back( slave_map.t() * master_map );
-		tensor_average[1].push_back( slave_map.t() * slave_map );
-	}
-
-	void assembly(LinSys &ls);
-	void pressure_diff(int i_ele,
-			vector<int> &dofs,
-			unsigned int &ele_type,
-			double &delta,
-			arma::vec &dirichlet);
-private:
-	typedef vector<unsigned int> IsecList;
-
-	const DarcyMH &darcy_;
-
-	const vector<IsecList> &master_list_;
-	const vector<Intersection> &intersections_;
-
-	vector<IsecList>::const_iterator ml_it_;
-	const Element *master_;
-
-	/// Row matrices to compute element pressure as average of boundary pressures
-	vector< vector< arma::mat > > tensor_average;
-	/// measure of master element, should be sum of intersection measures
-	double delta_0;
-};
-
-
-
-class P1_CouplingAssembler {
-public:
-	P1_CouplingAssembler(const DarcyMH &darcy)
-	: darcy_(darcy),
-	  intersections_(darcy.mesh_->intersections),
-	  rhs(5),
-	  dofs(5),
-	  dirichlet(5)
-	{
-		rhs.zeros();
-	}
-
-	void assembly(LinSys &ls);
-	void add_sides(const Element * ele, unsigned int shift, vector<int> &dofs, vector<double> &dirichlet);
-private:
-
-	const DarcyMH &darcy_;
-	const vector<Intersection> &intersections_;
-
-	arma::vec rhs;
-	vector<int> dofs;
-	vector<double> dirichlet;
-};
-
-
 
 void mat_count_off_proc_values(Mat m, Vec v);
 
-
-
-/**
- * @brief Mixed-hybrid solution of unsteady Darcy flow.
- *
- * Standard discretization with time term and sources picewise constant
- * on the element. This leads to violation of the discrete maximum principle for
- * non-acute meshes or to too small timesteps. For simplicial meshes this can be solved by lumping to the edges. See DarcyFlowLMH_Unsteady.
- */
-/*
-class DarcyFlowMH_Unsteady : public DarcyFlowMH_Steady
-{
-public:
-
-    DarcyFlowMH_Unsteady(Mesh &mesh, const Input::Record in_rec);
-    //DarcyFlowMH_Unsteady();
-
-    static const Input::Type::Record & get_input_type();
-protected:
-    void read_initial_condition() override;
-    void modify_system() override;
-    void setup_time_term();
-    
-private:
-    /// Registrar of class to factory
-    static const int registrar;
-
-
-};
-*/
 
 #endif  //DARCY_FLOW_MH_HH
 //-----------------------------------------------------------------------------

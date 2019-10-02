@@ -19,9 +19,14 @@
 #define TYPE_RECORD_HH_
 
 #include "system/exceptions.hh"
+#include <boost/exception/detail/error_info_impl.hpp>  // for error_info
+#include <boost/exception/info.hpp>                    // for error_info::~e...
+#include <utility>                                     // for pair
+#include "system/asserts.hh"                           // for Assert, ASSERT
+namespace Input { class StorageBase; }
+
 
 #include "type_base.hh"
-#include "storage.hh"
 
 #include <string>
 #include <memory>
@@ -448,7 +453,7 @@ protected:
      *
      * Called from make_instance method and set data of Record or its descendants.
      */
-    void set_instance_data(Record &rec, ParameterMap &parameter_map, std::vector<ParameterPair> vec);
+    ParameterMap set_instance_data(Record &rec,  std::vector<ParameterPair> vec);
 
     /**
      * @brief Internal data class.

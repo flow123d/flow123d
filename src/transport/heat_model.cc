@@ -17,11 +17,12 @@
  */
 
 #include "input/input_type.hh"
+#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "mesh/accessors.hh"
 //#include "transport/transport_operator_splitting.hh"
 #include "heat_model.hh"
-#include "fields/unit_si.hh"
+#include "tools/unit_si.hh"
 #include "coupling/balance.hh"
 
 
@@ -155,14 +156,14 @@ HeatTransferModel::ModelEqData::ModelEqData()
 
     *this+=disp_l
             .name("disp_l")
-            .description("Longitudal heat dispersivity in fluid.")
+            .description("Longitudinal heat dispersivity in fluid.")
             .units( UnitSI().m() )
             .input_default("0.0")
             .flags_add(in_main_matrix);
 
     *this+=disp_t
             .name("disp_t")
-            .description("Transversal heat dispersivity in fluid.")
+            .description("Transverse heat dispersivity in fluid.")
             .units( UnitSI().m() )
             .input_default("0.0")
             .flags_add(in_main_matrix);
@@ -216,6 +217,7 @@ HeatTransferModel::ModelEqData::ModelEqData()
 
     *this+=output_field
             .name("temperature")
+            .description("Temperature solution.")
             .units( UnitSI().K() )
             .flags(equation_result);
 }
@@ -232,7 +234,7 @@ IT::Record HeatTransferModel::get_input_type(const string &implementation, const
 					"Time governor setting for the secondary equation.")
 			.declare_key("balance", Balance::get_input_type(), Default("{}"),
 					"Settings for computing balance.")
-			.declare_key("output_stream", OutputTime::get_input_type(), Default::obligatory(),
+			.declare_key("output_stream", OutputTime::get_input_type(), Default("{}"),
 					"Parameters of output stream.");
 }
 
@@ -255,7 +257,7 @@ HeatTransferModel::HeatTransferModel(Mesh &mesh, const Input::Record in_rec) :
 	time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
 	substances_.initialize({""});
 
-    output_stream_ = OutputTime::create_output_stream("heat", *mesh_, in_rec.val<Input::Record>("output_stream"));
+    output_stream_ = OutputTime::create_output_stream("heat", in_rec.val<Input::Record>("output_stream"), time().get_unit_string());
     //output_stream_->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"));
 
     balance_ = std::make_shared<Balance>("energy", mesh_);

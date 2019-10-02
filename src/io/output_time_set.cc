@@ -19,11 +19,13 @@ const IT::Array OutputTimeSet::get_input_type()
     static const IT::Record &time_grid =
         IT::Record("TimeGrid", "Equally spaced grid of time points.")
             .allow_auto_conversion("begin")
-            .declare_key("begin", IT::Double(0.0), IT::Default::read_time("The initial time of the associated equation."),
+            .declare_key("begin", TimeGovernor::get_input_time_type(0.0),
+            		IT::Default::read_time("The initial time of the associated equation."),
                     "The start time of the grid.")
-            .declare_key("step", IT::Double(0.0), IT::Default::optional(),
-                    "The step of the grid. If not specified, the grid consists only of the start time.")
-            .declare_key("end", IT::Double(0.0), IT::Default::read_time("The end time of the simulation."),
+            .declare_key("step", TimeGovernor::get_input_time_type(0.0), IT::Default::optional(),
+                    "The step of the grid. If not specified, the grid consists of the single time given by the `begin` key.")
+            .declare_key("end", TimeGovernor::get_input_time_type(0.0),
+            		IT::Default::read_time("The end time of the simulation."),
                     "The time greater or equal to the last time in the grid.")
             .close();
     return IT::Array(time_grid);
@@ -41,12 +43,15 @@ void OutputTimeSet::read_from_input(Input::Array in_array, const TimeGovernor &t
     double simulation_end_time = tg.end_time();
 
     for(auto it =in_array.begin<Input::Record>(); it != in_array.end(); ++it) {
-        double t_begin = it->val<double>("begin", initial_time);
-        double t_end = it->val<double>("end", simulation_end_time );
-        double t_step;
-        if (! it->opt_val("step", t_step) ) {
+    	double t_begin = tg.read_time(it->find<Input::Tuple>("begin"), initial_time);
+    	double t_end = tg.read_time(it->find<Input::Tuple>("end"), simulation_end_time);
+    	Input::Tuple step;
+    	double t_step;
+    	if (! it->opt_val("step", step) ) {
             t_end = t_begin;
-            t_step = 1.0;
+            t_step = tg.get_coef();
+        } else {
+        	t_step = tg.read_time(it->find<Input::Tuple>("step"));
         }
         if ( t_begin > t_end) {
             WarningOut().fmt("Ignoring output time grid. Time begin {}  > time end {}. {}",

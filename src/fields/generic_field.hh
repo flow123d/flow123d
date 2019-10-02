@@ -26,9 +26,11 @@
  * depends only on data in mesh.
  */
 
-#include "fields/field.hh"
-#include "fields/field_constant.hh"
-#include "fields/field_elementwise.hh"
+#include <boost/exception/info.hpp>  // for operator<<, error_info::error_in...
+#include "fields/field.hh"           // for Field
+#include "fields/field_values.hh"    // for FieldValue
+#include "input/type_base.hh"        // for Array
+#include "input/type_generic.hh"     // for Instance
 
 class Mesh;
 
@@ -37,9 +39,9 @@ class GenericField {
 public:
 
 	/// Index value type
-	typedef typename FieldValue<spacedim>::Integer IntegerScalar;
+	typedef typename FieldValue<spacedim>::Scalar DoubleScalar;
 	/// Index valued field
-	typedef Field<spacedim, IntegerScalar> IndexField;
+	typedef Field<spacedim, DoubleScalar> IndexField;
 
 	/**
 	 * Returns an instance of a scalar integer field that provides ID's of regions.
@@ -50,7 +52,7 @@ public:
 	 * Returns an instance of a scalar integer field that provides ID's of subdomains used for
 	 * domain decomposition.
 	 *
-	 * TODO: FieldElementwise just use provided data pointer (unsafe solution), so currently we store the data into a mesh.
+	 * TODO: FieldFE just use provided data pointer (unsafe solution), so currently we store the data into a mesh.
 	 * Which is safe as long as we have one mesh for whol calculation.
 	 * After we have FieldFE that use some sort of Vector class with own memory management, we should use these
 	 * to pass the data in safe way.

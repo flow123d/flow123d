@@ -2,3 +2,10 @@ common_config:
   proc: [1, 2]
   memory_limit: 1000
 
+test_cases:
+- files:
+  - 01_vtk.yaml
+  - 02_dg_dp.yaml
+  - 03_dg_dp_sorp_small.yaml
+  - 04_y_branch.yaml
+  - 05_diffusion_fracture.yaml

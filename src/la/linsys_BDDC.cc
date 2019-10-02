@@ -35,11 +35,13 @@ namespace it = Input::Type;
 
 
 const it::Record & LinSys_BDDC::get_input_type() {
-	return it::Record("Bddc", "Solver setting.")
+	return it::Record("Bddc", "BDDCML (Balancing Domain Decomposition by Constraints - Multi-Level) solver settings.")
 		.derive_from(LinSys::get_input_type())
-        .declare_key("r_tol", it::Double(0.0, 1.0), it::Default::read_time("Defalut value set by nonlinear solver or equation. If not we use value 1.0e-7."),
-                    "Relative residual tolerance,  (to initial error).")
-        .declare_key("max_it", it::Integer(0), it::Default::read_time("Defalut value set by nonlinear solver or equation. If not we use value 1000."),
+        .declare_key("r_tol", it::Double(0.0, 1.0), it::Default::read_time("Default value is set by the nonlinear solver or the equation. "
+                        "If not, we use the value 1.0e-7."),
+                    "Residual tolerance relative to the initial error.")
+        .declare_key("max_it", it::Integer(0), it::Default::read_time("Default value is set by the nonlinear solver or the equation. "
+                        "If not, we use the value 1000."),
                     "Maximum number of outer iterations of the linear solver.")
 
         .declare_key("max_nondecr_it", it::Integer(0), it::Default("30"),
@@ -49,7 +51,7 @@ const it::Record & LinSys_BDDC::get_input_type() {
 		.declare_key("use_adaptive_bddc", it::Bool(), it::Default("false"),
 					 "Use adaptive selection of constraints in BDDCML.")
 		.declare_key("bddcml_verbosity_level", it::Integer(0,2), it::Default("0"),
-					 "Level of verbosity of the BDDCML library:\n\n - 0 - no output\n - 1 - mild output\n - 2 - detailed output.")
+					 "Level of verbosity of the BDDCML library:\n\n - 0 - no output,\n - 1 - mild output,\n - 2 - detailed output.")
 		.close();
 }
 
@@ -159,8 +161,8 @@ void LinSys_BDDC::load_mesh( const int nDim, const int numNodes, const int numDo
 
     // create scatter from parallel PETSc vector to local indices of subdomain
     ierr = VecScatterCreate( solution_, from, locSolVec_, subdomainIndexSet, &VSpetscToSubScatter_ ); CHKERRV( ierr );
-    ierr = ISDestroy( &subdomainIndexSet ); CHKERRV( ierr );
-    ierr = ISDestroy( &from ); CHKERRV( ierr );
+    chkerr(ISDestroy( &subdomainIndexSet ));
+    chkerr(ISDestroy( &from ));
 
     //double * locSolVecArray;
     //ierr = VecGetArray( locSolVec_, &locSolVecArray ); CHKERRV( ierr );
@@ -256,7 +258,7 @@ void LinSys_BDDC::apply_constrains( double scalar )
 #endif // FLOW123D_HAVE_BDDCML
 }
 
-int LinSys_BDDC::solve()    // ! params are not currently used
+LinSys::SolveInfo LinSys_BDDC::solve()    // ! params are not currently used
 {
 #ifdef FLOW123D_HAVE_BDDCML
     std::vector<int> *  numSubAtLevels = NULL;  //!< number of subdomains at levels
@@ -290,9 +292,9 @@ int LinSys_BDDC::solve()    // ! params are not currently used
     // upper bound on the residual error
     residual_norm_ = r_tol_ * bddcml_->normRhs( ) ;
 
-    return bddcml_ -> giveConvergedReason();
+    return LinSys::SolveInfo(bddcml_ -> giveConvergedReason(), bddcml_ -> giveNumIterations());
 #else
-	return 0;
+    return LinSys::SolveInfo(0,0);
 #endif // FLOW123D_HAVE_BDDCML
 
 }
@@ -315,9 +317,9 @@ LinSys_BDDC::~LinSys_BDDC()
     locSolution_.clear(); 
 
     PetscErrorCode ierr;
-    ierr = VecDestroy( &locSolVec_ ); CHKERRV( ierr );
+    chkerr(VecDestroy( &locSolVec_ ));
 
-    ierr = VecScatterDestroy( &VSpetscToSubScatter_ ); CHKERRV( ierr );
+    chkerr(VecScatterDestroy( &VSpetscToSubScatter_ ));
 
     delete bddcml_;
 #endif // FLOW123D_HAVE_BDDCML
@@ -385,3 +387,17 @@ double LinSys_BDDC::get_solution_precision()
 }
 
 
+void LinSys_BDDC::print_matrix(std::ostream& out)
+{
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    
+    if(rank == 0){
+        out << "zzz = [\n";
+    
+        bddcml_->writeMatrix(out);
+        out << "];\n" 
+            << "zzz(:,1:2) = zzz(:,1:2) + ones(size(zzz),2);\n" // fix matlab indices (+1)
+            << "matrix_bddc = spconvert(zzz);\n";
+    }
+}

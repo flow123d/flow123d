@@ -21,6 +21,7 @@
 #include "input/accessors.hh"
 #include "system/sys_profiler.hh"
 #include "fields/field_set.hh"
+#include "fields/field.hh"
 #include "armadillo"
 #include "system/armadillo_tools.hh"
 #include "../arma_expect.hh"
@@ -87,19 +88,19 @@ public:
     TestObservePoint(string point_str, unsigned int snap, string region_name)
     : ObservePoint()
     {
-        distance_ = numeric_limits<double>::infinity();
+        observe_data_.distance_ = numeric_limits<double>::infinity();
         input_point_= arma::vec3(point_str);
         snap_dim_ = snap;
         snap_region_name_ = region_name;
-        max_levels_ =1;
+        max_search_radius_ = 0.1;
     }
 
     void check(Mesh &mesh, string local_str, string global_point_str, unsigned int i_elm) {
         find_observe_point(mesh);
-        EXPECT_EQ(i_elm, element_idx_);
+        EXPECT_EQ(i_elm, observe_data_.element_idx_);
         if (local_str != "")
-            EXPECT_ARMA_EQ( arma::vec(local_str), local_coords_);
-        EXPECT_ARMA_EQ( arma::vec3(global_point_str), global_coords_);
+            EXPECT_ARMA_EQ( arma::vec(local_str), observe_data_.local_coords_);
+        EXPECT_ARMA_EQ( arma::vec3(global_point_str), observe_data_.global_coords_);
     }
 
     friend TestObserve;
@@ -108,7 +109,7 @@ public:
 class TestObserve : public Observe {
 public:
     TestObserve(Mesh &mesh, Input::Array in_array)
-    : Observe("test_eq", mesh, in_array, 5)
+    : Observe("test_eq", mesh, in_array, 6, "s")
     {
         for(auto &point: this->points_) my_points.push_back(TestObservePoint(point));
     }
@@ -130,48 +131,48 @@ public:
 
     void check_observe_points() {
         // no snap, [0, -0.5, -0.5]
-        EXPECT_EQ(6,  my_points[0].element_idx_);
-        EXPECT_ARMA_EQ( arma::vec3("0 -0.5 -0.5"),  my_points[0].global_coords_);
-        EXPECT_ARMA_EQ( arma::vec("0.25 0.25 0.25"),  my_points[0].local_coords_);
-        EXPECT_DOUBLE_EQ(0.0, my_points[0].distance_);
+        EXPECT_EQ(6,  my_points[0].observe_data_.element_idx_);
+        EXPECT_ARMA_EQ( arma::vec3("0 -0.5 -0.5"),  my_points[0].observe_data_.global_coords_);
+        EXPECT_ARMA_EQ( arma::vec("0.25 0.25 0.25"),  my_points[0].observe_data_.local_coords_);
+        EXPECT_DOUBLE_EQ(2.7755575615628914e-17, my_points[0].observe_data_.distance_);
 
         // snap 3, [0, -0.6, -0.6]
-        EXPECT_EQ(6,  my_points[1].element_idx_);
-        EXPECT_ARMA_EQ( arma::vec3("0 -0.5 -0.5"),  my_points[1].global_coords_);
-        EXPECT_ARMA_EQ( arma::vec("0.25 0.25 0.25"),  my_points[1].local_coords_);
+        EXPECT_EQ(6,  my_points[1].observe_data_.element_idx_);
+        EXPECT_ARMA_EQ( arma::vec3("0 -0.5 -0.5"),  my_points[1].observe_data_.global_coords_);
+        EXPECT_ARMA_EQ( arma::vec("0.25 0.25 0.25"),  my_points[1].observe_data_.local_coords_);
 
 
         // snap 2, [0, -1, -0.5]
-        EXPECT_EQ(6,  my_points[2].element_idx_);
-        EXPECT_ARMA_EQ( arma::vec3({-1.0/3, -1, -1.0/3}),  my_points[2].global_coords_);
-        EXPECT_ARMA_EQ( arma::vec({0, 1.0/3, 1.0/3}),  my_points[2].local_coords_);
+        EXPECT_EQ(6,  my_points[2].observe_data_.element_idx_);
+        EXPECT_ARMA_EQ( arma::vec3({-1.0/3, -1, -1.0/3}),  my_points[2].observe_data_.global_coords_);
+        EXPECT_ARMA_EQ( arma::vec({0, 1.0/3, 1.0/3}),  my_points[2].observe_data_.local_coords_);
 
         // snap 1, [0.2, -0.9, -0.9]
-        EXPECT_EQ(6,  my_points[3].element_idx_);
-        EXPECT_ARMA_EQ( arma::vec3({0, -1, -1}),  my_points[3].global_coords_);
-        EXPECT_ARMA_EQ( arma::vec({0, 0.5, 0.5}),  my_points[3].local_coords_);
+        EXPECT_EQ(6,  my_points[3].observe_data_.element_idx_);
+        EXPECT_ARMA_EQ( arma::vec3({0, -1, -1}),  my_points[3].observe_data_.global_coords_);
+        EXPECT_ARMA_EQ( arma::vec({0, 0.5, 0.5}),  my_points[3].observe_data_.local_coords_);
 
         // snap 0, [-0.8, -0.9, -0.9]
-        EXPECT_EQ(6,  my_points[4].element_idx_);
-        EXPECT_ARMA_EQ( arma::vec3({-1, -1, -1}),  my_points[4].global_coords_);
-        EXPECT_ARMA_EQ( arma::vec({0, 1, 0}),  my_points[4].local_coords_);
+        EXPECT_EQ(6,  my_points[4].observe_data_.element_idx_);
+        EXPECT_ARMA_EQ( arma::vec3({-1, -1, -1}),  my_points[4].observe_data_.global_coords_);
+        EXPECT_ARMA_EQ( arma::vec({0, 1, 0}),  my_points[4].observe_data_.local_coords_);
 
         // find 2D observe element 2, various snapping
         //{ name: "s_2d_el2", point: [0, -0.5, -0.5], snap_region: "2D XY diagonal" },
-        EXPECT_EQ(1,  my_points[5].element_idx_);
-        EXPECT_ARMA_EQ( arma::vec3({-1.0/4, -1.0/4, -1.0/2}),  my_points[5].global_coords_);
-        EXPECT_ARMA_EQ( arma::vec({2.0/8, 3.0/8}),  my_points[5].local_coords_);
+        EXPECT_EQ(1,  my_points[5].observe_data_.element_idx_);
+        EXPECT_ARMA_EQ( arma::vec3({-1.0/4, -1.0/4, -1.0/2}),  my_points[5].observe_data_.global_coords_);
+        EXPECT_ARMA_EQ( arma::vec({2.0/8, 3.0/8}),  my_points[5].observe_data_.local_coords_);
 
         //{ name: "s_2d_el2", point: [0, -0.5, -0.5], snap_region: "2D XY diagonal", snap_dim: 2},
-        EXPECT_EQ(1,  my_points[6].element_idx_);
-        EXPECT_ARMA_EQ( arma::vec3({-1.0/3, -1.0/3, -1.0/3}),  my_points[6].global_coords_);
-        EXPECT_ARMA_EQ( arma::vec({1.0/3, 1.0/3}),  my_points[6].local_coords_);
+        EXPECT_EQ(1,  my_points[6].observe_data_.element_idx_);
+        EXPECT_ARMA_EQ( arma::vec3({-1.0/3, -1.0/3, -1.0/3}),  my_points[6].observe_data_.global_coords_);
+        EXPECT_ARMA_EQ( arma::vec({1.0/3, 1.0/3}),  my_points[6].observe_data_.local_coords_);
 
         // find 1D observe element , snap to node [-1, -1 ,1]
         //{ name: "s_1d_el1", point: [-0.5, -0.5, 0], snap_region: "1D diagonal", snap_dim: 0}
-        EXPECT_EQ(0,  my_points[7].element_idx_);
-        EXPECT_ARMA_EQ( arma::vec3({-1, -1, 1}),  my_points[7].global_coords_);
-        EXPECT_ARMA_EQ( arma::vec({1}),  my_points[7].local_coords_);
+        EXPECT_EQ(0,  my_points[7].observe_data_.element_idx_);
+        EXPECT_ARMA_EQ( arma::vec3({-1, -1, 1}),  my_points[7].observe_data_.global_coords_);
+        EXPECT_ARMA_EQ( arma::vec({1}),  my_points[7].observe_data_.local_coords_);
 
 
     }
@@ -195,13 +196,11 @@ public:
                      .add_value(1, "one")
                      .close();
 
-
-        ADD_FIELD(scalar_field, "").units(UnitSI::one());
-        ADD_FIELD(enum_field, "")
-            .units(UnitSI::one())
-            .input_selection(selection);
-        ADD_FIELD(vector_field, "").units(UnitSI::one());
-        ADD_FIELD(tensor_field, "").units(UnitSI::one());
+    
+        *this += scalar_field.name("scalar_field").units(UnitSI::one());
+        *this += vector_field.name("vector_field").units(UnitSI::one());
+        *this += tensor_field.name("tensor_field").units(UnitSI::one());
+        *this += enum_field.name("enum_field").units(UnitSI::one()).input_selection(selection);
     }
 
     ScalarField scalar_field;
@@ -221,6 +220,8 @@ TEST(ObservePoint, find_observe_point) {
     auto obs = TestObservePoint("0 -0.5 -0.5", 4, "ALL");
     obs.check(*mesh,"0.25 0.25 0.25", "0 -0.5 -0.5", 6);
 
+    auto obs2 = TestObservePoint("0 0 1.001", 4, "ALL");
+    obs2.check(*mesh,"0 0 0.5", "0 0 1", 8);
 }
 
 
@@ -240,7 +241,7 @@ TEST(Observe, all) {
         .get_root_interface<Input::Record>();
 
     FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
-    Mesh *mesh = mesh_full_constructor("{mesh_file=\"" + (string)mesh_file + "\"}");
+    Mesh *mesh = mesh_full_constructor("{mesh_file=\"" + (string)mesh_file + "\", global_snap_radius=1.0 }");
 
     {
     std::shared_ptr<TestObserve> obs = std::make_shared<TestObserve>(*mesh, in_rec.val<Input::Array>("observe_points"));
@@ -250,14 +251,14 @@ TEST(Observe, all) {
     // read fiels
     TimeGovernor tg(0.0, 1.0);
     field_set.set_mesh(*mesh);
-    field_set.set_input_list( in_rec.val<Input::Array>("input_fields") );
+    field_set.set_input_list( in_rec.val<Input::Array>("input_fields"), tg );
     field_set.set_time(tg.step(), LimitSide::right);
 
     field_set.scalar_field.observe_output(obs);
     field_set.enum_field.observe_output(obs);
     field_set.vector_field.observe_output(obs);
     field_set.tensor_field.observe_output(obs);
-    obs->output_time_frame( tg.t() );
+    obs->output_time_frame( tg.t(), true );
 
     tg.next_time();
     field_set.set_time( tg.step(), LimitSide::right);
@@ -265,7 +266,7 @@ TEST(Observe, all) {
     field_set.enum_field.observe_output(obs);
     field_set.vector_field.observe_output(obs);
     field_set.tensor_field.observe_output(obs);
-    obs->output_time_frame( tg.t() );
+    obs->output_time_frame( tg.t(), true );
     }
     // closed observe file 'test_eq_observe.yaml'
     // check results
@@ -279,6 +280,7 @@ TEST(Observe, all) {
     str_obs_file_ref << obs_file_ref.rdbuf();
     obs_file_ref.close();
 
-    EXPECT_EQ(str_obs_file_ref.str(), str_obs_file.str());
+    if (mesh->get_el_ds()->myp()==0)
+        EXPECT_EQ(str_obs_file_ref.str(), str_obs_file.str());
 }
 

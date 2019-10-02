@@ -25,19 +25,37 @@
 #ifndef field_algo_base_HH_
 #define field_algo_base_HH_
 
-#include <string>
-#include <memory>
-
-#include <boost/type_traits.hpp>
-
-#include "input/input_type_forward.hh"
-#include "input/accessors_forward.hh"
-
+#include <string.h>                        // for memcpy
+#include <boost/type_traits/is_same.hpp>   // for is_same
+#include <limits>                          // for numeric_limits
+#include <memory>                          // for shared_ptr
+#include <ostream>                         // for operator<<
+#include <string>                          // for string
+#include <utility>                         // for make_pair, pair
+#include <vector>                          // for vector
+#include <armadillo>                       // for operator%, operator<<
+#include "fields/field_values.hh"          // for FieldValue<>::Enum, FieldV...
+#include "fields/field_flag.hh"
+#include "input/type_selection.hh"         // for Selection
+#include "mesh/point.hh"                   // for Space
+#include "mesh/side_impl.hh"
 #include "mesh/accessors.hh"
-#include "mesh/point.hh"
-#include "fields/field_values.hh"
-#include "fields/unit_si.hh"
-#include "tools/time_governor.hh"
+#include "system/asserts.hh"               // for Assert, ASSERT
+#include "tools/time_governor.hh"          // for TimeStep
+
+class Mesh;
+class UnitSI;
+class DOFHandlerMultiDim;
+namespace Input {
+	class AbstractRecord;
+	class Record;
+	namespace Type {
+		class Abstract;
+		class Instance;
+		class Record;
+	}
+}
+template <int spacedim> class ElementAccessor;
 
 
 
@@ -60,20 +78,29 @@ typedef enum  {
 /// Helper struct stores data for initizalize descentants of \p FieldAlgorithmBase.
 struct FieldAlgoBaseInitData {
 	/// Full constructor
-	FieldAlgoBaseInitData(std::string field_name, unsigned int n_comp, const UnitSI &unit_si, std::pair<double, double> limits)
-	: field_name_(field_name), n_comp_(n_comp), unit_si_(unit_si), limits_(limits) {}
+	FieldAlgoBaseInitData(std::string field_name, unsigned int n_comp, const UnitSI &unit_si, std::pair<double, double> limits, FieldFlag::Flags flags)
+	: field_name_(field_name), n_comp_(n_comp), unit_si_(unit_si), limits_(limits), flags_(flags) {}
 	/// Simplified constructor, set limit values automatically (used in unit tests)
 	FieldAlgoBaseInitData(std::string field_name, unsigned int n_comp, const UnitSI &unit_si)
 	: field_name_(field_name), n_comp_(n_comp), unit_si_(unit_si),
-	  limits_( std::make_pair(-std::numeric_limits<double>::max(), std::numeric_limits<double>::max()) ) {}
+	  limits_( std::make_pair(-std::numeric_limits<double>::max(), std::numeric_limits<double>::max()) ),
+	  flags_(FieldFlag::declare_input & FieldFlag::equation_input & FieldFlag::allow_output) {}
 
 	std::string field_name_;
 	unsigned int n_comp_;
 	const UnitSI &unit_si_;
 	std::pair<double, double> limits_;
+	FieldFlag::Flags flags_;
 };
 
 
+
+
+/// Declaration of exception.
+TYPEDEF_ERR_INFO(EI_Field, std::string);
+DECLARE_INPUT_EXCEPTION(ExcUndefElementValue,
+        << "Values of some elements of FieldFE " << EI_Field::qval << " is undefined.\n"
+		   << "Please specify in default_value key.\n");
 
 
 /**
@@ -208,6 +235,19 @@ public:
                           std::vector<typename Value::return_type>  &value_list)=0;
 
        /**
+        * Postponed setter of Dof handler for FieldFE. For other types of fields has no effect.
+        */
+       virtual void set_native_dh(std::shared_ptr<DOFHandlerMultiDim> dh)
+       {}
+
+       /**
+        * Return true if field is only dependent on time.
+        */
+       inline bool is_constant_in_space() const {
+    	   return is_constant_in_space_;
+       }
+
+       /**
         * Virtual destructor.
         */
        virtual ~FieldAlgorithmBase() {}
@@ -227,6 +267,8 @@ protected:
        unsigned int component_idx_;
        /// Coeficient of conversion of user-defined unit
        double unit_conversion_coefficient_;
+       /// Flag detects that field is only dependent on time
+       bool is_constant_in_space_;
 };
 
 

@@ -19,16 +19,16 @@
 #ifndef HC_EXPLICIT_SEQUENTIAL_HH_
 #define HC_EXPLICIT_SEQUENTIAL_HH_
 
+#include <memory>
+#include <string>
+#include <vector>
 #include "input/input_type_forward.hh"
 #include "input/accessors_forward.hh"
-
 #include "coupling/equation.hh"
 
 class DarcyFlowInterface;
 class Mesh;
-class EquationBase;
 class AdvectionProcessBase;
-class HeatProcessBase;
 class FieldCommon;
 
 

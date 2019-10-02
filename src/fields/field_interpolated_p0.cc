@@ -21,11 +21,15 @@
 #include "system/system.hh"
 #include "io/msh_gmshreader.h"
 #include "mesh/bih_tree.hh"
-#include "io/reader_instances.hh"
-#include "mesh/ngh/include/intersection.h"
-#include "mesh/ngh/include/point.h"
+#include "mesh/accessors.hh"
+#include "io/reader_cache.hh"
 #include "system/sys_profiler.hh"
 
+#include "fem/mapping_p1.hh"
+
+#include "intersection/intersection_aux.hh"
+#include "intersection/intersection_local.hh"
+#include "intersection/compute_intersection.hh"
 
 namespace it = Input::Type;
 
@@ -39,12 +43,19 @@ const Input::Type::Record & FieldInterpolatedP0<spacedim, Value>::get_input_type
     return it::Record("FieldInterpolatedP0", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field interpolated from external mesh data and piecewise constant on mesh elements.")
         .derive_from(FieldAlgorithmBase<spacedim, Value>::get_input_type())
         .copy_keys(FieldAlgorithmBase<spacedim, Value>::get_field_algo_common_keys())
-        .declare_key("gmsh_file", IT::FileName::input(), IT::Default::obligatory(),
+        .declare_key("mesh_data_file", IT::FileName::input(), IT::Default::obligatory(),
                 "Input file with ASCII GMSH file format.")
         .declare_key("field_name", IT::String(), IT::Default::obligatory(),
                 "The values of the Field are read from the ```$ElementData``` section with field name given by this key.")
 		//.declare_key("unit", FieldAlgorithmBase<spacedim, Value>::get_input_type_unit_si(), it::Default::optional(),
 		//		"Definition of unit.")
+        .declare_key("default_value", IT::Double(), IT::Default::optional(),
+                "Allow set default value of elements that have not listed values in mesh data file.")
+        .declare_key("time_unit", IT::String(), IT::Default::read_time("Common unit of TimeGovernor."),
+                "Definition of unit of all times defined in mesh data file.")
+		.declare_key("read_time_shift", TimeGovernor::get_input_time_type(), IT::Default("0.0"),
+                "Allow set time shift of field data read from the mesh data file. For time 't', field descriptor with time 'T', "
+                "time shift 'S' and if 't > T', we read time frame 't + S'.")
         .close();
 }
 
@@ -59,32 +70,38 @@ const int FieldInterpolatedP0<spacedim, Value>::registrar =
 template <int spacedim, class Value>
 FieldInterpolatedP0<spacedim, Value>::FieldInterpolatedP0(const unsigned int n_comp)
 : FieldAlgorithmBase<spacedim, Value>(n_comp)
-{}
+{
+	this->is_constant_in_space_ = false;
+}
 
 
 
 template <int spacedim, class Value>
 void FieldInterpolatedP0<spacedim, Value>::init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data) {
 	this->init_unit_conversion_coefficient(rec, init_data);
+	this->in_rec_ = rec;
 
 
 	// read mesh, create tree
     {
-       source_mesh_ = new Mesh( Input::Record() );
-       reader_file_ = FilePath( rec.val<FilePath>("gmsh_file") );
-       auto reader = ReaderInstances::instance()->get_reader(reader_file_ );
-       reader->read_raw_mesh( source_mesh_ );
-       reader->check_compatible_mesh( *source_mesh_ );
-	   // no call to mesh->setup_topology, we need only elements, no connectivity
+       reader_file_ = FilePath( rec.val<FilePath>("mesh_data_file") );
+       source_mesh_ = ReaderCache::get_mesh(reader_file_ );
+       //source_mesh_->setup_topology();
+       ReaderCache::check_compatible_mesh(reader_file_, *source_mesh_);
     }
-	bih_tree_ = new BIHTree( source_mesh_ );
+	bih_tree_ = new BIHTree();
+	bih_tree_->add_boxes( source_mesh_->get_element_boxes() );
+	bih_tree_->construct();
 
     // allocate data_
-	unsigned int data_size = source_mesh_->element.size() * (this->value_.n_rows() * this->value_.n_cols());
+	unsigned int data_size = source_mesh_->n_elements() * (this->value_.n_rows() * this->value_.n_cols());
 	data_ = std::make_shared<std::vector<typename Value::element_type>>();
 	data_->resize(data_size);
 
 	field_name_ = rec.val<std::string>("field_name");
+    if (!rec.opt_val("default_value", default_value_) ) {
+    	default_value_ = numeric_limits<double>::signaling_NaN();
+    }
 }
 
 
@@ -103,10 +120,19 @@ bool FieldInterpolatedP0<spacedim, Value>::set_time(const TimeStep &time) {
     computed_elm_idx_ = numeric_limits<unsigned int>::max();
 
     bool boundary_domain_ = false;
-    data_ = ReaderInstances::instance()->get_reader(reader_file_ )->template get_element_data<typename Value::element_type>(
-    		field_name_, time.end(), source_mesh_->element.size(), this->value_.n_rows() * this->value_.n_cols(),
-    		boundary_domain_, this->component_idx_);
-    this->scale_data();
+    double time_unit_coef = time.read_coef(in_rec_.find<string>("time_unit"));
+	double time_shift = time.read_time( in_rec_.find<Input::Tuple>("read_time_shift") );
+	double read_time = (time.end()+time_shift) / time_unit_coef;
+	BaseMeshReader::HeaderQuery header_query(field_name_, read_time, OutputTime::DiscreteSpace::ELEM_DATA);
+    ReaderCache::get_reader(reader_file_ )->find_header(header_query);
+    data_ = ReaderCache::get_reader(reader_file_ )->template get_element_data<typename Value::element_type>(
+    		source_mesh_->n_elements(), this->value_.n_rows() * this->value_.n_cols(), boundary_domain_, this->component_idx_);
+    CheckResult checked_data = ReaderCache::get_reader(reader_file_)->scale_and_check_limits(field_name_,
+    		this->unit_conversion_coefficient_, default_value_);
+
+    if (checked_data == CheckResult::not_a_number) {
+        THROW( ExcUndefElementValue() << EI_Field(field_name_) );
+    }
 
     return true;
 }
@@ -125,15 +151,14 @@ typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(c
 			xprintf(Err, "Dimension of element in target mesh must be 0, 1 or 2! elm.idx() = %d\n", elm.idx());
 		}
 
-		double epsilon = 4* numeric_limits<double>::epsilon() * elm.element()->measure();
+		double epsilon = 4* numeric_limits<double>::epsilon() * elm.measure();
 
 		// gets suspect elements
 		if (elm.dim() == 0) {
 			searched_elements_.clear();
-			((BIHTree *)bih_tree_)->find_point(elm.element()->node[0]->point(), searched_elements_);
+			((BIHTree *)bih_tree_)->find_point(elm.node(0)->point(), searched_elements_);
 		} else {
-			BoundingBox bb;
-			elm.element()->get_bounding_box(bb);
+			BoundingBox bb = elm.bounding_box();
 			searched_elements_.clear();
 			((BIHTree *)bih_tree_)->find_bounding_box(bb, searched_elements_);
 		}
@@ -146,45 +171,50 @@ typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(c
 		}
 
 		double total_measure=0.0, measure;
-		TIntersectionType iType;
 
 		START_TIMER("compute_pressure");
 		ADD_CALLS(searched_elements_.size());
-		for (std::vector<unsigned int>::iterator it = searched_elements_.begin(); it!=searched_elements_.end(); it++)
-		{
-			ElementFullIter ele = source_mesh_->element( *it );
-			if (ele->dim() == 3) {
-			    ngh::set_tetrahedron_from_element(tetrahedron_, ele);
-				// get intersection (set measure = 0 if intersection doesn't exist)
-				switch (elm.dim()) {
-					case 0: {
-					    ngh::set_point_from_element(point_, elm.element());
-						if ( tetrahedron_.IsInner(point_) ) {
-							measure = 1.0;
-						} else {
-							measure = 0.0;
-						}
-						break;
-					}
-					case 1: {
-					    ngh::set_abscissa_from_element(abscissa_, elm.element());
-						GetIntersection(abscissa_, tetrahedron_, iType, measure);
-						if (iType != line) {
-							measure = 0.0;
-						}
-						break;
-					}
-			        case 2: {
-			        	ngh::set_triangle_from_element(triangle_, elm.element());
-						GetIntersection(triangle_, tetrahedron_, iType, measure);
-						if (iType != area) {
-							measure = 0.0;
-						}
-			            break;
-			        }
-			    }
+                
+                
+        MappingP1<3,3> mapping;
+                
+        for (std::vector<unsigned int>::iterator it = searched_elements_.begin(); it!=searched_elements_.end(); it++)
+        {
+            ElementAccessor<3> ele = source_mesh_->element_accessor(*it);
+            if (ele->dim() == 3) {
+                // get intersection (set measure = 0 if intersection doesn't exist)
+                switch (elm.dim()) {
+                    case 0: {
+                        arma::vec::fixed<3> real_point = elm.node(0)->point();
+                        arma::mat::fixed<3, 4> elm_map = mapping.element_map(ele);
+                        arma::vec::fixed<4> unit_point = mapping.project_real_to_unit(real_point, elm_map);
 
+                        measure = (std::fabs(arma::sum( unit_point )-1) <= 1e-14
+                                        && arma::min( unit_point ) >= 0)
+                                            ? 1.0 : 0.0;
+                        break;
+                    }
+                    case 1: {
+                        IntersectionAux<1,3> is;
+                        ComputeIntersection<1,3> CI(elm, ele, source_mesh_.get());
+                        CI.init();
+                        CI.compute(is);
 
+                        IntersectionLocal<1,3> ilc(is);
+                        measure = ilc.compute_measure() * elm.measure();
+                        break;
+                    }
+                    case 2: {
+                        IntersectionAux<2,3> is;
+                        ComputeIntersection<2,3> CI(elm, ele, source_mesh_.get());
+                        CI.init();
+                        CI.compute(is);
+
+                        IntersectionLocal<2,3> ilc(is);
+                        measure = 2 * ilc.compute_measure() * elm.measure();
+                        break;
+                    }
+                }
 
 				//adds values to value_ object if intersection exists
 				if (measure > epsilon) {
@@ -202,7 +232,7 @@ typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(c
 				}
 			}
 		}
-
+                
 		// computes weighted average
 		if (total_measure > epsilon) {
 			for (unsigned int i=0; i < this->value_.n_rows(); i++) {
@@ -227,18 +257,6 @@ void FieldInterpolatedP0<spacedim, Value>::value_list(const std::vector< Point >
 {
 	OLD_ASSERT( elm.is_elemental(), "FieldInterpolatedP0 works only for 'elemental' ElementAccessors.\n");
     FieldAlgorithmBase<spacedim, Value>::value_list(point_list, elm, value_list);
-}
-
-
-
-template <int spacedim, class Value>
-void FieldInterpolatedP0<spacedim, Value>::scale_data()
-{
-	if (Value::is_scalable()) {
-		std::vector<typename Value::element_type> &vec = *( data_.get() );
-		for(unsigned int i=0; i<vec.size(); ++i)
-			vec[i] *= this->unit_conversion_coefficient_;
-	}
 }
 
 

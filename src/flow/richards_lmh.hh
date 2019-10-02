@@ -8,10 +8,24 @@
 #ifndef SRC_FLOW_RICHARDS_LMH_HH_
 #define SRC_FLOW_RICHARDS_LMH_HH_
 
-#include "flow/darcy_flow_mh.hh"
-#include "fields/vec_seq_double.hh"
+#include <boost/exception/info.hpp>  // for operator<<, error_info::error_in...
+#include <memory>                    // for shared_ptr
+#include "fields/field.hh"           // for Field
+#include "fields/field_values.hh"    // for FieldValue<>::Scalar, FieldValue
+#include "la/vector_mpi.hh"          // for VectorMPI
+#include "flow/darcy_flow_mh.hh"     // for DarcyMH, DarcyMH::EqData
+#include "input/type_base.hh"        // for Array
+#include "input/type_generic.hh"     // for Instance
+#include "petscvec.h"                // for VecScatter, _p_VecScatter
 
+class Mesh;
 class SoilModelBase;
+namespace Input {
+	class Record;
+	namespace Type {
+		class Record;
+	}
+}
 
 /**
  * @brief Edge lumped mixed-hybrid solution of unsteady Darcy flow.

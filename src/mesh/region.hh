@@ -26,24 +26,27 @@
 #ifndef REGION_HH_
 #define REGION_HH_
 
-#include <string>
-#include <vector>
-#include <map>
-
-#include "system/system.hh"
-#include "system/global_defs.h"
-#include "system/exceptions.hh"
-
-#include "input/accessors_forward.hh"
-#include "input/input_exception.hh"
-
-#include <boost/multi_index_container.hpp>
-#include <boost/multi_index/ordered_index.hpp>
-#include <boost/multi_index/random_access_index.hpp>
-#include <boost/multi_index/hashed_index.hpp>
-#include <boost/multi_index/member.hpp>
-#include <boost/multi_index/mem_fun.hpp>
-#include <boost/functional/hash.hpp>
+#include <stddef.h>                                    // for NULL
+#include <iosfwd>                                      // for ostream
+#include <map>                                         // for map, map<>::va...
+#include <string>                                      // for string, basic_...
+#include <utility>                                     // for pair
+#include <vector>                                      // for vector
+#include <boost/exception/detail/error_info_impl.hpp>  // for error_info
+#include <boost/exception/info.hpp>                    // for error_info::~e...
+#include <boost/multi_index/hashed_index.hpp>          // for hashed_non_unique
+#include <boost/multi_index/identity_fwd.hpp>          // for multi_index
+#include <boost/multi_index/indexed_by.hpp>            // for indexed_by
+#include <boost/multi_index/mem_fun.hpp>               // for const_mem_fun
+#include <boost/multi_index/member.hpp>                // for member
+#include <boost/multi_index/ordered_index.hpp>         // for ordered_unique
+#include <boost/multi_index/tag.hpp>                   // for tag
+#include <boost/multi_index_container.hpp>             // for multi_index_co...
+#include <boost/serialization/split_member.hpp>        // for multi_index_co...
+#include "input/input_exception.hh"                    // for DECLARE_INPUT_...
+#include "system/exc_common.hh"                        // for ExcAssertMsg
+#include "system/exceptions.hh"                        // for operator<<
+#include "system/global_defs.h"                        // for OLD_ASSERT, msg
 
 namespace BMI=::boost::multi_index;
 
@@ -51,8 +54,6 @@ namespace BMI=::boost::multi_index;
 class Region;
 class RegionDB;
 namespace Input {
-    namespace Type { class Record; }
-    class Record;
     class Array;
 }
 
@@ -279,10 +280,10 @@ region_sets = [
  *    - find element ID:
  *       if found: add_region(ID, get_label, dim, get_boundary_flag) // possibly set dimension of the region if it is undefined
  *       not found: add_region(ID, default_label, dim, false)
- *    - if region is boundary put element into Mesh::bc_elements
+ *    - if region is boundary put element into Mesh::element_vec_
  *      else put it into Mesh::element
  *  ---
- *  5) Setup topology - we has to connect Boundary with existing bc_elements, and add the remaining elements,
+ *  5) Setup topology - we has to connect Boundary with existing boundary elements, and add the remaining elements,
  *     after we remove support for old bCD files we may skip creation of remaining boundary elements since there will be no way how to set
  *     BC on them.
  *
@@ -428,7 +429,7 @@ public:
      * @param set_name Set to which it is added region
      * @param region Added region
      */
-    void add_to_set( const string& set_name, Region region);
+    void add_to_set( const std::string& set_name, Region region);
 
     /**
      * Add a set into map, delete possible previous value.
@@ -436,7 +437,7 @@ public:
      * @param set_name Name of added set
      * @param set Added RegionSet
      */
-    void add_set( const string& set_name, const RegionSet & set);
+    void add_set( const std::string& set_name, const RegionSet & set);
 
     /**
      * Get region set of specified name. Three sets are defined by default:
@@ -447,25 +448,25 @@ public:
      * @param set_name Name of set
      * @return RegionSet of specified name. Returns Empty vector if the set of given name doesn't exist.
      */
-    RegionSet get_region_set(const string & set_name) const;
+    RegionSet get_region_set(const std::string & set_name) const;
 
     /**
      * Read two operands from input array of strings and check if given names
      * are existing sets. Return pair of checked set names.
      */
-    std::vector<string> get_and_check_operands(const Input::Array & operands) const;
+    std::vector<std::string> get_and_check_operands(const Input::Array & operands) const;
 
     /**
      * Print table with base information of all regions stored in RegionDB.
      */
-    void print_region_table(ostream& stream) const;
+    void print_region_table(std::ostream& stream) const;
 
     /**
      * Create label of region in format: "region_"+id
      *
      * Use if label is not set.
      */
-    string create_label_from_id(unsigned int id) const;
+    std::string create_label_from_id(unsigned int id) const;
 
     /**
      * Return address for given index @p idx.
@@ -482,7 +483,7 @@ public:
     /**
      * Create union of RegionSets of given names defined in @p set_names.
      */
-    RegionSet union_set(std::vector<string> set_names) const;
+    RegionSet union_set(std::vector<std::string> set_names) const;
 
 
 private:
@@ -590,7 +591,7 @@ private:
      * @param set_name Set from which it is erased region
      * @param region Erased region
      */
-    void erase_from_set( const string& set_name, Region region);
+    void erase_from_set( const std::string& set_name, Region region);
 
     /**
      * Iterate all stored regions and check if regions are assigned to element(s).

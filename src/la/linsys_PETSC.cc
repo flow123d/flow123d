@@ -22,6 +22,7 @@
 #include "petscksp.h"
 #include "petscmat.h"
 #include "system/sys_profiler.hh"
+#include "system/system.hh"
 
 
 //#include <boost/bind.hpp>
@@ -29,23 +30,27 @@
 namespace it = Input::Type;
 
 const it::Record & LinSys_PETSC::get_input_type() {
-	return it::Record("Petsc", "Interface to PETSc solvers. Convergence criteria is:\n"
+	return it::Record("Petsc", "PETSc solver settings.\n It provides interface to various PETSc solvers. The convergence criteria is:\n"
 	        "```\n"
-	        "norm( res_n )  < max( norm( res_0 ) * r_tol, a_tol )\n"
+	        "norm( res_i )  < max( norm( res_0 ) * r_tol, a_tol )\n"
 	        "```\n"
-	        "where res_i is the residuum vector after i-th iteration of the solver and res_0 is an estimate of the norm of initial residual. "
+	        "where ```res_i``` is the residuum vector after i-th iteration of the solver and ```res_0``` is the estimate of the norm of the initial residual. "
 	        "If the initial guess of the solution is provided (usually only for transient equations) the residual of this estimate is used, "
 	        "otherwise the norm of preconditioned RHS is used. "
-	        "The default norm is L2 norm of preconditioned residual: (($ P^{-1}(Ax-b)$)), usage of other norm may be prescribed using the 'option' key. "
+	        "The default norm is (($L_2$)) norm of preconditioned residual: (($ P^{-1}(Ax-b)$)), usage of other norm may be prescribed using the 'option' key. "
 	        "See also PETSc documentation for KSPSetNormType.")
 		.derive_from(LinSys::get_input_type())
-		.declare_key("r_tol", it::Double(0.0, 1.0), it::Default::read_time("Defalut value set by nonlinear solver or equation. If not we use value 1.0e-7."),
-					"Relative residual tolerance,  (to initial error).")
-		.declare_key("a_tol", it::Double(0.0), it::Default::read_time("Defalut value set by nonlinear solver or equation. If not we use value 1.0e-11."),
+		.declare_key("r_tol", it::Double(0.0, 1.0), it::Default::read_time("Default value is set by the nonlinear solver or the equation. "
+                        "If not, we use the value 1.0e-7."),
+					"Residual tolerance relative to the initial error.")
+		.declare_key("a_tol", it::Double(0.0), it::Default::read_time("Default value is set by the nonlinear solver or the equation. "
+                        "If not, we use the value 1.0e-11."),
 		            "Absolute residual tolerance.")
-        .declare_key("max_it", it::Integer(0), it::Default::read_time("Defalut value set by nonlinear solver or equation. If not we use value 1000."),
+        .declare_key("max_it", it::Integer(0), it::Default::read_time("Default value is set by the nonlinear solver or the equation. "
+                        "If not, we use the value 1000."),
                     "Maximum number of outer iterations of the linear solver.")
-		.declare_key("options", it::String(), it::Default("\"\""),  "Options passed to PETSC before creating KSP instead of default setting.")
+		.declare_key("options", it::String(), it::Default("\"\""),  "This options is passed to PETSC to create a particular KSP (Krylov space method).\n"
+                                                                    "If the string is left empty (by default), the internal default options is used.")
 		.close();
 }
 
@@ -145,13 +150,11 @@ void LinSys_PETSC::start_insert_assembly()
 
 void LinSys_PETSC::mat_set_values( int nrow, int *rows, int ncol, int *cols, double *vals )
 {
-    PetscErrorCode ierr;
-
     // here vals would need to be converted from double to PetscScalar if it was ever something else than double :-)
     switch (status_) {
         case INSERT:
         case ADD:
-            ierr = MatSetValues(matrix_,nrow,rows,ncol,cols,vals,(InsertMode)status_); CHKERRV( ierr ); 
+            chkerr(MatSetValues(matrix_,nrow,rows,ncol,cols,vals,(InsertMode)status_));
             break;
         case ALLOCATE:
             this->preallocate_values(nrow,rows,ncol,cols); 
@@ -219,8 +222,8 @@ void LinSys_PETSC::preallocate_matrix()
     VecGetArray( off_vec_, &off_array );
 
     for ( unsigned int i=0; i<rows_ds_->lsize(); i++ ) {
-        on_nz[i]  = static_cast<PetscInt>( on_array[i]+0.1  );  // small fraction to ensure correct rounding
-        off_nz[i] = static_cast<PetscInt>( off_array[i]+0.1 );
+        on_nz[i]  = std::min( rows_ds_->lsize(), static_cast<uint>( on_array[i]+0.1  ) );  // small fraction to ensure correct rounding
+        off_nz[i] = std::min( rows_ds_->size() - rows_ds_->lsize(), static_cast<uint>( off_array[i]+0.1 ) );
     }
 
     VecRestoreArray(on_vec_,&on_array);
@@ -231,13 +234,14 @@ void LinSys_PETSC::preallocate_matrix()
     // create PETSC matrix with preallocation
     if (matrix_ != NULL)
     {
-    	ierr = MatDestroy(&matrix_); CHKERRV( ierr );
+    	chkerr(MatDestroy(&matrix_));
     }
     ierr = MatCreateAIJ(PETSC_COMM_WORLD, rows_ds_->lsize(), rows_ds_->lsize(), PETSC_DETERMINE, PETSC_DETERMINE,
                            0, on_nz, 0, off_nz, &matrix_); CHKERRV( ierr );
 
     if (symmetric_) MatSetOption(matrix_, MAT_SYMMETRIC, PETSC_TRUE);
     MatSetOption(matrix_, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE);
+    MatSetOption(matrix_, MAT_IGNORE_ZERO_ENTRIES, PETSC_TRUE);
 
     delete[] on_nz;
     delete[] off_nz;
@@ -263,6 +267,11 @@ void LinSys_PETSC::finish_assembly( MatAssemblyType assembly_type )
     ierr = VecAssemblyEnd(rhs_); CHKERRV( ierr ); 
 
     if (assembly_type == MAT_FINAL_ASSEMBLY) status_ = DONE;
+
+    //PetscViewerPushFormat(PETSC_VIEWER_STDOUT_SELF, PETSC_VIEWER_ASCII_INDEX);
+    //MatView(matrix_, PETSC_VIEWER_STDOUT_SELF);
+    //VecView(rhs_, PETSC_VIEWER_STDOUT_SELF);
+    //this->view();
 
     matrix_changed_ = true;
     rhs_changed_ = true;
@@ -319,35 +328,45 @@ void LinSys_PETSC::set_initial_guess_nonzero(bool set_nonzero)
 }
 
 
-int LinSys_PETSC::solve()
+LinSys::SolveInfo LinSys_PETSC::solve()
 {
 
     const char *petsc_dflt_opt;
     int nits;
     
     // -mat_no_inode ... inodes are usefull only for
-    //  vector problems e.g. MH without Schur complement reduction	
+    //  vector problems e.g. MH without Schur complement reduction
+    
+    /* Comment to PETSc options:
+     * 
+     * -ksp_diagonal_scale scales the matrix before solution, while -ksp_diagonal_scale_fix just fixes the scaling after solution
+     * -pc_asm_type basic enforces classical Schwartz method, which seems more stable for positive definite systems.
+     *                    The default 'restricted' probably violates s.p.d. structure, many tests fail.
+     */
     if (rows_ds_->np() > 1) {
         // parallel setting
        if (this->is_positive_definite())
-           //petsc_dflt_opt="-ksp_type cg -ksp_diagonal_scale_fix -pc_type asm -pc_asm_overlap 4 -sub_pc_type icc -sub_pc_factor_levels 3  -sub_pc_factor_fill 6.0";
-           petsc_dflt_opt="-ksp_type bcgs -ksp_diagonal_scale_fix -pc_type asm -pc_asm_overlap 4 -sub_pc_type ilu -sub_pc_factor_levels 3  -sub_pc_factor_fill 6.0";
+           petsc_dflt_opt="-ksp_type cg -ksp_diagonal_scale -ksp_diagonal_scale_fix -pc_type asm -pc_asm_type basic -pc_asm_overlap 4 -sub_pc_type icc -sub_pc_factor_levels 3  -sub_pc_factor_fill 6.0";
+           //petsc_dflt_opt="-ksp_type bcgs -ksp_diagonal_scale_fix -pc_type asm -pc_asm_overlap 4 -sub_pc_type ilu -sub_pc_factor_levels 3  -sub_pc_factor_fill 6.0";
        else
-           petsc_dflt_opt="-ksp_type bcgs -ksp_diagonal_scale_fix -pc_type asm -pc_asm_overlap 4 -sub_pc_type ilu -sub_pc_factor_levels 3 -sub_pc_factor_fill 6.0";
+           petsc_dflt_opt="-ksp_type bcgs -ksp_diagonal_scale -ksp_diagonal_scale_fix -pc_type asm -pc_asm_overlap 4 -sub_pc_type ilu -sub_pc_factor_levels 3 -sub_pc_factor_fill 6.0";
     
     } 
     else {
         // serial setting
        if (this->is_positive_definite())
-           //petsc_dflt_opt="-ksp_type cg -pc_type icc  -pc_factor_levels 3 -ksp_diagonal_scale_fix -pc_factor_fill 6.0";
-    	   petsc_dflt_opt="-ksp_type bcgs -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix -pc_factor_fill 6.0";
+           petsc_dflt_opt="-ksp_type cg -pc_type icc  -pc_factor_levels 3 -ksp_diagonal_scale -ksp_diagonal_scale_fix -pc_factor_fill 6.0";
+    	   //petsc_dflt_opt="-ksp_type bcgs -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix -pc_factor_fill 6.0";
        else
-           petsc_dflt_opt="-ksp_type bcgs -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix -pc_factor_fill 6.0";
+           petsc_dflt_opt="-ksp_type bcgs -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale -ksp_diagonal_scale_fix -pc_factor_fill 6.0";
     }
 
     if (params_ == "") params_ = petsc_dflt_opt;
     LogOut().fmt("inserting petsc options: {}\n",params_.c_str());
-    PetscOptionsInsertString(params_.c_str()); // overwrites previous options values
+    
+    // now takes an optional PetscOptions object as the first argument
+    // value NULL will preserve previous behaviour previous behavior.
+    PetscOptionsInsertString(NULL, params_.c_str()); // overwrites previous options values
     
     MatSetOption( matrix_, MAT_USE_INODES, PETSC_FALSE );
     
@@ -389,9 +408,9 @@ int LinSys_PETSC::solve()
     // TODO: I do not understand this 
     //Profiler::instance()->set_timer_subframes("SOLVING MH SYSTEM", nits);
 
-    KSPDestroy(&system);
+    chkerr(KSPDestroy(&system));
 
-    return static_cast<int>(reason);
+    return LinSys::SolveInfo(static_cast<int>(reason), static_cast<int>(nits));
 
 }
 
@@ -423,11 +442,10 @@ void LinSys_PETSC::view( )
 
 LinSys_PETSC::~LinSys_PETSC( )
 {
-    PetscErrorCode ierr;
+    if (matrix_ != NULL) { chkerr(MatDestroy(&matrix_)); }
+    chkerr(VecDestroy(&rhs_));
 
-    if (matrix_ != NULL) { ierr = MatDestroy(&matrix_); CHKERRV( ierr ); }
-    ierr = VecDestroy(&rhs_); CHKERRV( ierr );
-
+    if (residual_ != NULL) chkerr(VecDestroy(&residual_));
     if (v_rhs_ != NULL) delete[] v_rhs_;
 }
 

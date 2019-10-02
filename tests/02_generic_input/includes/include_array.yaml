@@ -1,0 +1,6 @@
+- region: bulk
+  anisotropy: 1
+- region: .BOUNDARY
+  bc_type: dirichlet
+  bc_pressure: !FieldFormula
+    value: y

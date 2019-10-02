@@ -9,12 +9,10 @@ from scripts.core.base import Paths
 {
     proc=[1],                   # array of int, where each int represents
                                 # number of cores which will be used
-    inputs=['input'],           # array (or single string) of string specifying input location
-                                # argument (-i) for flow123d. Path can be absolute
-                                # or relative (towards yaml file dir)
     time_limit=30,              # number of seconds (give or take resolution) allowed for test to run
     memory_limit=400,           # number of MB allowed for test to use (include all children processes)
     tags=[],                    # array of string, representing tags for case
+    args=[],                    # additional arguments passed to binary
     check_rules=[               # array of objects, representing check rules
         {
             'ndiff': {          # key is tool which will be used
@@ -74,7 +72,7 @@ TAG_MEMORY_LIMIT = 'memory_limit'
 TAG_TEST_CASES = 'test_cases'
 TAG_CHECK_RULES = 'check_rules'
 TAG_TAGS = 'tags'
-TAG_INPUTS = 'inputs'
+TAG_ARGS = 'args'
 TAG_DEATH_TEST = 'death_test'
 REF_OUTPUT_DIR = 'ref_out'
 TEST_RESULTS = 'test_results'
@@ -85,11 +83,11 @@ CONFIG_YAML = 'config.yaml'
 
 DEFAULTS = {
     TAG_PROC:           [1],
-    TAG_INPUTS:         ['input'],
     TAG_TIME_LIMIT:     30,
     TAG_MEMORY_LIMIT:   400,
     TAG_DEATH_TEST:     YamlDeathTest.FALSE,
     TAG_TAGS:           [],
+    TAG_ARGS:           [],
     TAG_CHECK_RULES: [
         {
             'ndiff': {
@@ -105,7 +103,7 @@ class ConfigCaseFiles(object):
     Class ConfigCaseFiles is helper class for defining path for ConfigCase
     """
 
-    def __init__(self, root, ref_output, output, input):
+    def __init__(self, root, ref_output, output):
         """
         :type ref_output: str
         :type output: str
@@ -124,7 +122,6 @@ class ConfigCaseFiles(object):
         self.status_file = self.in_output('runtest.status.json')
         self.valgrind_out = self.in_output('valgrind.out')
 
-        self.input = self.in_root(input)
         self.ref_output = ref_output
 
     def in_root(self, *names):
@@ -140,3 +137,9 @@ class ConfigCaseFiles(object):
         :rtype: str
         """
         return Paths.join(self.output, *names)
+
+    def __repr__(self):
+        vars = ('root', 'output', 'ndiff_log', 'pbs_script', 'pbs_output',
+                'job_output', 'json_output', 'dump_output', 'status_file',
+                'valgrind_out', 'ref_output')
+        return ' - ' + '\n - '.join(['{:>15s}: {:s}'.format(x, getattr(self, x)) for x in vars])

@@ -1,10 +1,9 @@
-flow123d_version: 2.0.0
+flow123d_version: 3.1.0
 problem: !Coupling_Sequential
   description: Steady flow + transport with source
   mesh:
     mesh_file: ../00_mesh/rectangle_2x5.msh
   flow_equation: !Flow_Darcy_MH
-    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-12
@@ -23,16 +22,14 @@ problem: !Coupling_Sequential
         - pressure_p0
         - pressure_p1
         - velocity_p0
-    balance: {}
     time:
       end_time: 5.7
       max_dt: 1.0
       min_dt: 1.0
-    output_stream: 
+    output_stream:
       file: ./flow_test16.pvd
       format: !vtk
         variant: ascii
-      name: flow_output_stream
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_Advection_FV
       input_fields:
@@ -41,23 +38,22 @@ problem: !Coupling_Sequential
         - region: BULK
           init_conc: 0
           porosity: 1
-          sources_density: !FieldElementwise
-            gmsh_file: 02_input_sources.msh
+          sources_density: !FieldFE
+            mesh_data_file: 02_input_sources.msh
             field_name: density
-          sources_sigma: !FieldElementwise
-            gmsh_file: 02_input_sources.msh
+          sources_sigma: !FieldFE
+            mesh_data_file: 02_input_sources.msh
             field_name: sigma
-          sources_conc: !FieldElementwise
-            gmsh_file: 02_input_sources.msh
+          sources_conc: !FieldFE
+            mesh_data_file: 02_input_sources.msh
             field_name: concentration
-    output_stream: 
+    output_stream:
       file: ./transport_test16.pvd
       format: !vtk
         variant: ascii
-      name: transport_output_stream
       times:
         - step: 0.8
-    sources_file: ./input/test16.tso
+      precision: 15  
     substances:
       - conc
     time:

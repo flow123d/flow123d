@@ -27,7 +27,7 @@
 namespace it = Input::Type;
 
 it::Abstract & LinSys::get_input_type() {
-	return it::Abstract("LinSys", "Linear solver setting.")
+	return it::Abstract("LinSys", "Linear solver settings.")
 	        .allow_auto_conversion("Petsc")
 			.close();
 }
@@ -120,7 +120,7 @@ void view(std::ostream output_stream, int * output_mapping = NULL)
 LinSys:: ~LinSys()
 {
 
-    if (matrix) MatDestroy(&matrix);
+    if (matrix) chkerr(MatDestroy(&matrix));
     VecDestroy(&rhs);
     VecDestroy(&solution);
 

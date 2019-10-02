@@ -20,9 +20,14 @@
 set(libs coupling_lib mesh_lib system_lib)
 add_test_directory("${libs}")
 
-define_test( reader_instances )
+define_mpi_test( reader_cache 1 )
 
 define_mpi_test( output 1 )
 define_mpi_test( output_vtk 1)
 define_mpi_test( output_mesh 1)
 define_mpi_test( observe 1)
+define_mpi_test( observe 2)
+define_mpi_test( parallel_output 2 )
+define_mpi_test( element_data_cache 1 )
+define_mpi_test( element_data_cache 2 )
+define_mpi_test( element_data_cache 3 )

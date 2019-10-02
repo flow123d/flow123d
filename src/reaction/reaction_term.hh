@@ -21,12 +21,24 @@
 #ifndef REACTION_TERM_H
 #define REACTION_TERM_H
 
-#include "coupling/equation.hh"
-#include "transport/substance.hh"
+#include <memory>                    // for shared_ptr
+#include <string>                    // for string
+#include "coupling/equation.hh"      // for EquationBase
+#include "mesh/long_idx.hh"          // for LongInt
+#include "input/input_exception.hh"  // for DECLARE_INPUT_EXCEPTION, Exception
+#include "system/exceptions.hh"      // for ExcStream, operator<<, EI, TYPED...
+#include "transport/substance.hh"    // for SubstanceList
+#include "fem/dofhandler.hh"         // for DOFHandlerMultiDim
 
-class Mesh;
 class Distribution;
+class Mesh;
 class OutputTime;
+namespace Input {
+	class Record;
+	namespace Type {
+		class Abstract;
+	}
+}
 
 
 class ReactionTerm: public EquationBase
@@ -73,7 +85,7 @@ public:
    * all substances and on all elements (given by transport).
    */
   ReactionTerm &concentration_matrix(double **concentration, Distribution *conc_distr, 
-                                     int *el_4_loc, int *row_4_el)
+                                     LongIdx *el_4_loc, LongIdx *row_4_el)
   {
     concentration_matrix_ = concentration;
     distribution_ = conc_distr;
@@ -95,12 +107,14 @@ public:
   /// Disable changes in TimeGovernor by empty method.
   void choose_next_time(void) override;
 
-protected:
-  /**
-   * Communicate parallel concentration vectors into sequential output vector.
-   */
-  virtual void output_vector_gather(void){};
+  /// Sets the pointer to DOF handler (shared through the reaction tree)
+  ReactionTerm &set_dh(std::shared_ptr<DOFHandlerMultiDim> dof_handler)
+  {
+	  dof_handler_ = dof_handler;
+	  return *this;
+  }
 
+protected:
   /**
    * Computation of reaction term on a single element.
    * Inputs should be loc_el and local copies of concentrations of the element, which is then returned.
@@ -113,9 +127,9 @@ protected:
   double **concentration_matrix_;
   
   /// Indices of elements belonging to local dofs.
-  int *el_4_loc_;
+  LongIdx *el_4_loc_;
   /// Indices of rows belonging to elements.
-  int *row_4_el_;
+  LongIdx *row_4_el_;
   
   /// Pointer to reference to distribution of elements between processors.
   Distribution *distribution_;
@@ -128,6 +142,9 @@ protected:
 
   /// Pointer to a transport output stream.
   std::shared_ptr<OutputTime> output_stream_;
+
+  /// Pointer to DOF handler used through the reaction tree
+  std::shared_ptr<DOFHandlerMultiDim> dof_handler_;
 
 };
 

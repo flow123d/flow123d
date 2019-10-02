@@ -44,15 +44,19 @@
  * and then transform scaled coordinates in ortogonal way.
  */
 
-#ifndef SORPTION_IMPL_HH_
-#define SORPTION_IMPL_HH_
+#ifndef ISOTHERM_IMPL_HH_
+#define ISOTHERM_IMPL_HH_
 
+#include <stdint.h>                                           // for uintmax_t
+#include <algorithm>                                          // for max
 #include <vector>
-#include <input/input_type_forward.hh>
-#include <boost/math/tools/roots.hpp>
-#include "fields/field.hh"
-
-
+#include <cmath>                                              // for floor, pow
+#include <complex>                                            // for fabs
+#include <ostream>                                            // for operator<<
+#include <string>                                             // for string
+#include "input/input_exception.hh"                           // for EI_Address
+#include "system/exceptions.hh"                               // for operator<<
+#include <boost/math/special_functions/detail/round_fwd.hpp>  // for BOOST_M...
 
 /**
  * Convergence criteria for interval based nonlinear solver. It is functor, that
@@ -181,6 +185,9 @@ public:
 		double solid;
 	};
 
+    /// Default constructor.
+    Isotherm();
+
     /**
      * Setting adsorption parameters for general isotherm. These parameters are then used either
      * for creation of the interpolation table via @p make_table method or just one adsorption is computed
@@ -190,40 +197,52 @@ public:
      * @param aqua_density - density of the liquid phase
      * @param scale_aqua - generalized porosity, fraction of the space with liquid phase
      * @param scale_sorbed  - fraction of the space with the solid to which we adsorp
-     * @param c_aqua_limit - limit for interpolation table, possibly solubility limit
+     * @param c_aqua_limit - solubility limit (limit aqueous concentration)
      * @param mult_coef - multiplicative coefficient of the isotherm (all isotherms have one)
      * @param second_coef - possibly second parameter of the isotherm
      */
-	inline void reinit(enum SorptionType sorption_type, bool limited_solubility_on,
-			double aqua_density, double scale_aqua, double scale_sorbed,
-			double c_aqua_limit, double mult_coef, double second_coef);
+    void reinit(enum SorptionType sorption_type, bool limited_solubility_on,
+                double aqua_density, double scale_aqua, double scale_sorbed,
+                double c_aqua_limit, double mult_coef, double second_coef);
 
     /**
      * Create interpolation table for isotherm in rotated coordinate system with X axes given by total mass in
-     * both phases. Size of the table is the only parameter. Currently we support only linear interpolation.
+     * both phases. Currently we support only linear interpolation.
      * @p reinit has to be called just before this method.
+     * @param n_points is the size of the table
+     * @param table_limit is the limit value of aqueous concentration
      */
-    void make_table(int n_points);
+    void make_table(unsigned int n_points, double table_limit);
+
+    /**
+     * Clears the interpolation table and resets the table limit.
+     * (That means, no interpolation takes place in the computation.)
+     */
+    void clear_table();
 
     /**
     * Direct calculation of the equilibrium adsorption using a non-linear solver.
     * @p reinit has to be called just before this method.
     */
-    inline void compute(double &c_aqua, double &c_sorbed);
+    void compute(double &c_aqua, double &c_sorbed);
 
     /**
      * Use interpolation to determine equilibrium state.
      * Assumes previous call to @p make_table. If total mass is larger then table limit we either
      * call @p precipitate (limit_solubility_on) or use direct computation.
      */
-     inline void interpolate(double &c_aqua, double &c_sorbed);
+    void interpolate(double &c_aqua, double &c_sorbed);
 
     /**
      * Returns true if interpolation table is created.
      */
     inline bool is_precomputed(void) {
         return interpolation_table.size() != 0;
-    }  
+    }
+
+    /// Getter for table limit (limit aqueous concentration).
+    inline double table_limit(void) const
+    { return table_limit_;}
     
 protected:
 	/**
@@ -238,19 +257,21 @@ protected:
      * Specialized for sorption 'none' - returns unchanged @p c_pair.
      */
     template<class Func>
-    inline ConcPair solve_conc(ConcPair c_pair, const Func &isotherm);
+    ConcPair solve_conc(ConcPair c_pair, const Func &isotherm);
     /**
      * Dispatch isotherm type and use appropriate template.
      */
-    inline ConcPair solve_conc(ConcPair conc);
+    ConcPair solve_conc(ConcPair conc);
     /**
      * Update concentrations using interopolation.
      */
-    inline ConcPair compute_projection( ConcPair conc );
+    ConcPair compute_projection( ConcPair conc );
     /**
      * Modify concentrations after adsorption for limited solubility.
      */
-    inline ConcPair precipitate( ConcPair conc );
+    ConcPair precipitate( ConcPair conc );
+
+    double get_total_mass( ConcPair conc );
 
     /****************************************
      * Data
@@ -265,13 +286,13 @@ protected:
     /// Optional secod parameter of the isotherm
     double second_coef_;
 
-    /*  Concentration in liquid phase for limit of the interpolation table, or
-     *  solubility limit.
-     */
+    /// Concentration in liquid phase for limit of the interpolation table.
     double table_limit_;
 
     /// Solubility limit flag
     bool limited_solubility_on_;
+    /// Concentration limit in liquid phase (solubility limit).
+    double solubility_limit_;
 
     /// density of the solvent
     double rho_aqua_;
@@ -285,17 +306,13 @@ protected:
      * Interpolation table of isotherm in the rotated coordinates.
      * The X axes of rotated system is total mass, the Y axes is perpendicular.
      */
-    vector<double> interpolation_table;
+    std::vector<double> interpolation_table;
     /**
      * Step on the rotated X axes (total mass).
      */
     double total_mass_step_;
 
 };
-
-// Sorption none template specializations
-template<> Isotherm::ConcPair Isotherm::solve_conc(Isotherm::ConcPair c_pair, const None &isotherm);
-template<> void Isotherm::make_table(const None &isotherm, int n_steps);
 
 
 /**
@@ -325,180 +342,4 @@ private:
     double total_mass_, scale_sorbed_, scale_aqua_, rho_aqua_;
 };
 
-
-/*****************************************************************************************************************
- * IMPLEMENTATION
- */
-
-
-inline void Isotherm::reinit(enum SorptionType adsorption_type, bool limited_solubility_on,
-		              double rho_aqua, double scale_aqua, double scale_sorbed,
-		              double c_aqua_limit, double mult_coef, double second_coef)
-{
-	adsorption_type_ = adsorption_type;
-	rho_aqua_ = rho_aqua;
-	scale_aqua_ = scale_aqua;
-    scale_sorbed_ = scale_sorbed;
-    limited_solubility_on_ = limited_solubility_on;
-    mult_coef_ = mult_coef*rho_aqua;
-    second_coef_ = second_coef;
-    
-    table_limit_ = c_aqua_limit;
-    inv_scale_aqua_ = scale_aqua_/(scale_aqua_*scale_aqua_ + scale_sorbed_*scale_sorbed_);
-    inv_scale_sorbed_ = scale_sorbed_/(scale_aqua_*scale_aqua_ + scale_sorbed_*scale_sorbed_);
-}
-
-
-inline void Isotherm::compute( double &c_aqua, double &c_sorbed ) {
-	ConcPair c_pair(c_aqua, c_sorbed);
-	ConcPair result(0,0);
-
-    if (limited_solubility_on_ && (c_pair.fluid > table_limit_)) {
-        result = precipitate( c_pair );
-    } else {
-       	result = solve_conc( c_pair );
-    }
-    c_aqua=result.fluid;
-    c_sorbed=result.solid;
-}
-
-
-inline void Isotherm::interpolate( double &c_aqua, double &c_sorbed ) {
-	ConcPair c_pair(c_aqua, c_sorbed);
-	ConcPair result(0,0);
-
-	result = compute_projection( c_pair );
-
-	c_aqua=result.fluid;
-    c_sorbed=result.solid;
-}
-
-
-
-inline Isotherm::ConcPair Isotherm::compute_projection( Isotherm::ConcPair c_pair ) {
-  double total_mass = (scale_aqua_* c_pair.fluid + scale_sorbed_ * c_pair.solid);
-  if(total_mass < 0.0)
-      THROW( Isotherm::ExcNegativeTotalMass() 
-                << EI_TotalMass(total_mass)
-                );
-  // total_mass_step_ is set and checked in make_table
-  double total_mass_steps = total_mass / total_mass_step_;
-  unsigned int total_mass_idx = static_cast <unsigned int>(std::floor(total_mass_steps));
-
-  if (total_mass_idx < (interpolation_table.size() - 1) ) {
-      double rot_sorbed = interpolation_table[total_mass_idx] + (total_mass_steps - total_mass_idx)*(interpolation_table[total_mass_idx+1] - interpolation_table[total_mass_idx]);
-      return ConcPair( (total_mass * inv_scale_aqua_ - rot_sorbed * inv_scale_sorbed_),
-                       (total_mass * inv_scale_sorbed_ + rot_sorbed * inv_scale_aqua_) );
-  } else {
-      if (limited_solubility_on_) {
-              return precipitate( c_pair );
-      } else {
-              return solve_conc( c_pair );
-      }
-  }
-}
-
-
-
-inline Isotherm::ConcPair Isotherm::precipitate( Isotherm::ConcPair c_pair) {
-	double total_mass = (scale_aqua_*c_pair.fluid + scale_sorbed_ * c_pair.solid);
-	return ConcPair(	table_limit_,
-						(total_mass - scale_aqua_ * table_limit_)/scale_sorbed_  );
-}
-
-
-
-template<class Func>
-inline Isotherm::ConcPair Isotherm::solve_conc(Isotherm::ConcPair c_pair, const Func &isotherm)
-{
-	boost::uintmax_t max_iter = 20;
-	tolerance<double> toler(30);
-	double total_mass = (scale_aqua_*c_pair.fluid + scale_sorbed_ * c_pair.solid);
-	double mass_limit = table_limit_*scale_aqua_ + const_cast<Func &>(isotherm)(table_limit_ / this->rho_aqua_)*scale_sorbed_;
-	double upper_solution_bound;
-
-	if(total_mass >= mass_limit)
-	{
-		mass_limit = total_mass;
-	}
-	upper_solution_bound = mass_limit / scale_aqua_;
-	CrossFunction<Func> eq_func(isotherm, total_mass, scale_aqua_, scale_sorbed_, this->rho_aqua_);
-	pair<double,double> solution;
-	if (total_mass > 0) // here should be probably some kind of tolerance instead of "0"
-    {
-        try {
-            solution = boost::math::tools::toms748_solve(eq_func, 0.0, upper_solution_bound, toler, max_iter);
-        }
-        catch(boost::exception const & e)
-        {       
-            THROW( Isotherm::ExcBoostSolver() 
-                << EI_BoostMessage(boost::diagnostic_information(e))
-                );
-        }
-    }
-	double difference;
-	difference = (solution.second - solution.first)/2;
-	double c_aqua = solution.first + difference;
-	return ConcPair( c_aqua,
-					 (total_mass - scale_aqua_ * c_aqua)/scale_sorbed_);
-}
-
-
-Isotherm::ConcPair Isotherm::solve_conc(Isotherm::ConcPair conc)
-{
-        switch(adsorption_type_)
-        {
-                case 0: // none
-                {
-                        None obj_isotherm;
-                        return solve_conc( conc, obj_isotherm);
-                }
-                break;
-                case 1: //  linear:
-                {
-                        Linear obj_isotherm(mult_coef_);
-                        return solve_conc( conc, obj_isotherm);
-                }
-                break;
-                case 2: // freundlich
-                {
-                        Freundlich obj_isotherm(mult_coef_, second_coef_);
-                        return solve_conc( conc, obj_isotherm);
-                }
-                break;
-                case 3:  // langmuir:
-                {
-                        Langmuir obj_isotherm(mult_coef_, second_coef_);
-                        return solve_conc( conc, obj_isotherm);
-                }
-                break;
-        }
-        return conc;
-}
-
-
-template<class Func>
-void Isotherm::make_table(const Func &isotherm, int n_steps)
-{
-    double mass_limit = scale_aqua_ * table_limit_ + scale_sorbed_ * const_cast<Func &>(isotherm)(table_limit_ / this->rho_aqua_);
-    
-    if(mass_limit < 0.0)
-      THROW( Isotherm::ExcNegativeTotalMass() 
-                << EI_TotalMass(mass_limit)
-                );
-    total_mass_step_ = mass_limit / n_steps;
-    double mass = 0.0;
-    for(int i=0; i<= n_steps; i++) {
-         // aqueous concentration (original coordinates c_a) corresponding to i-th total_mass_step_
-        ConcPair c_pair( mass/scale_aqua_, 0.0 );
-
-        ConcPair result = solve_conc( c_pair, isotherm);
-        double c_sorbed_rot = ( result.solid * scale_aqua_ - result.fluid * scale_sorbed_);
-        interpolation_table.push_back(c_sorbed_rot);
-        mass = mass+total_mass_step_;
-    }
-
-    return;
-}
-
-#endif /* SORPTION_IMPL_HH_ */
+#endif /* ISOTHERM_IMPL_HH_ */

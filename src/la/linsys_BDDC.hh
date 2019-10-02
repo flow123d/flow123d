@@ -21,12 +21,19 @@
 
 // derived from base linsys
 
-#include "la/linsys.hh"
-#include "input/input_type_forward.hh"
-#include "input/accessors_forward.hh"
+#include <limits>                 // for numeric_limits
+#include <vector>                 // for vector
+#include "la/linsys.hh"           // for LinSys
+#include "petscsys.h"             // for PetscErrorCode
+#include "petscvec.h"             // for Vec, VecScatter, _p_Vec, _p_VecScatter
 
-#include <vector>
-
+class Distribution;
+namespace Input {
+	class Record;
+	namespace Type {
+		class Record;
+	}
+}
 namespace la {
     class BddcmlWrapper; 
 };
@@ -72,7 +79,7 @@ public:
 
     void apply_constrains( double scalar = 1. ) override;
 
-    int solve() override;
+    LinSys::SolveInfo solve() override;
 
     void set_from_input(const Input::Record in_rec) override;
 
@@ -85,6 +92,11 @@ public:
         return numeric_limits<double>::max();
     }
 
+    /** Prints matrix in coordinate format, can be load by matlab as a sparse matrix.
+     * Works only on 1 proc.
+     */
+    void print_matrix(std::ostream& out);
+    
     ~LinSys_BDDC( );
 
 //private:

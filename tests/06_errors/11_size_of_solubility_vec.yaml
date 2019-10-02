@@ -1,0 +1,66 @@
+flow123d_version: 3.1.0
+problem: !Coupling_Sequential
+  description: Error test - solubility vector has different dimension than the substances in reaction term.
+  mesh:
+    mesh_file: ../00_mesh/prism_3el.msh
+  flow_equation: !Flow_Darcy_MH
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-07
+    input_fields:
+      - region: volume
+        conductivity: 1.0e-10
+      - region: .BOUNDARY
+        bc_type: dirichlet
+        bc_piezo_head: 0
+    output:
+      fields:
+        - pressure_p0
+    output_stream:
+      file: flow.pvd
+      format: !vtk
+        variant: ascii
+  solute_equation: !Coupling_OperatorSplitting
+    transport: !Solute_Advection_FV
+      input_fields:
+        - region: ALL
+          init_conc: 1
+          porosity: 0.25
+        - region: .BOUNDARY
+          bc_conc: 1.0
+    substances:
+      - A
+      - As-lin
+      - As-lang
+      - As-freund
+    reaction_term: !Sorption
+      solvent_density: 1.0
+      substances:
+        - A
+        - As-lin
+        - As-lang
+      # Error - wrong dimension of solubility
+      solubility:
+        - 1.0
+        - 1.0
+        - 1.0
+        - 1.0
+      input_fields:
+        - region: ALL
+          init_conc_solid: 0.0
+          rock_density: 1.0
+          sorption_type:
+            - none
+            - linear
+            - langmuir
+            - freundlich
+          distribution_coefficient: 0.6
+          isotherm_other: 0.4
+    time:
+      end_time: 1.0
+    output_stream:
+      file: transport.pvd
+      format: !vtk
+        variant: ascii
+      times:
+        - step: 0.2

@@ -36,7 +36,7 @@
 
 #include "fields/field_set.hh"
 #include "fields/field_add_potential.hh"
-#include "fields/unit_si.hh"
+#include "tools/unit_si.hh"
 #include "fields/bc_field.hh"
 #include "fields/multi_field.hh"
 #include "coupling/equation.hh"
@@ -71,30 +71,45 @@ protected:
         {
         	arma::vec4 gravity = arma::vec4("3.0 2.0 1.0 -5.0");
 
-            ADD_FIELD(anisotropy, "Anisothropic conductivity tensor.", "1.0");
-            anisotropy.units( UnitSI::dimensionless() );
+            *this += anisotropy.name("anisotropy")
+                    .description("Anisotropy of the conductivity tensor.")
+                    .input_default("1.0")
+                    .units( UnitSI::dimensionless() );
+            
+            *this += bc_type.name("bc_type")
+                    .description("Boundary condition type.")
+                    .input_selection( get_bc_type_selection() )
+                    .input_default("\"none\"")
+                    .units( UnitSI::dimensionless() );
 
-            ADD_FIELD(bc_type,"Boundary condition type, possible values:", "\"none\"" );
-                      bc_type.input_selection(get_bc_type_selection());
-            bc_type.units( UnitSI::dimensionless() );
-
-            ADD_FIELD(bc_pressure,"Dirichlet BC condition value for pressure." );
-            bc_pressure.disable_where( bc_type, {none, neumann} );
-        	bc_pressure.add_factory(std::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar>::FieldFactory >
+            *this += bc_pressure
+                    .disable_where(bc_type, {none, neumann} )
+                    .name("bc_pressure")
+                    .description("Prescribed pressure value on the boundary. Used for all values of ``bc_type`` except ``none`` and ``seepage``. "
+                        "See documentation of ``bc_type`` for exact meaning of ``bc_pressure`` in individual boundary condition types.")
+                    .input_default("0.0")
+                    .units( UnitSI().m() );
+            bc_pressure.add_factory(std::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar>::FieldFactory >
         			                (gravity, "bc_piezo_head"));
 
-            bc_pressure.units( UnitSI::dimensionless() );
+            *this += bc_flux
+                    .disable_where(bc_type, {none, dirichlet, robin} )
+                    .name("bc_flux")
+                    .description("Incoming water boundary flux. Used for bc_types : ``total_flux``, ``seepage``, ``river``.")
+                    .input_default("0.0")
+                    .units( UnitSI().m().s(-1) );
 
-        	ADD_FIELD(bc_flux,"Flux in Neumman or Robin boundary condition." );
-            bc_flux.disable_where( bc_type, {none, dirichlet, robin} );
-            bc_flux.units( UnitSI::dimensionless() );
+            *this += bc_robin_sigma
+                    .disable_where(bc_type, {none, dirichlet, neumann} )
+                    .name("bc_robin_sigma")
+                    .description("Conductivity coefficient in the ``total_flux`` or the ``river`` boundary condition type.")
+                    .input_default("0.0")
+                    .units( UnitSI().s(-1) );
 
-            ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in Robin boundary condition.");
-            bc_robin_sigma.disable_where( bc_type, {none, dirichlet, neumann} );
-            bc_robin_sigma.units( UnitSI::dimensionless() );
-
-            ADD_FIELD(bc_conc, "BC concentration", "0.0" );
-            bc_conc.units( UnitSI::dimensionless() );
+            *this += bc_conc.name("bc_conc")
+                    .description("Boundary condition for concentration of substances.")
+                    .input_default("0.0")
+                    .units( UnitSI().kg().m(-3) );
         }
 
         Field<3, FieldValue<3>::TensorFixed > anisotropy;
@@ -128,10 +143,10 @@ public:
     public:
 
         EqData() : SomeEquationBase::EqData() {
-            ADD_FIELD(init_pressure, "Initial condition as pressure", "0.0" );
-            ADD_FIELD(init_conc, "Initial condition for the concentration (vector of size equal to n. components", "0.0" );
-            ADD_FIELD(bulk_set_field, "");
-            ADD_FIELD(conc_mobile, "");
+            *this += init_pressure.name("init_pressure").description("Initial condition as pressure.").input_default("0.0");
+            *this += init_conc.name("init_conc").description("Initial condition for the concentration.").input_default("0.0");
+            *this += bulk_set_field.name("bulk_set_field");
+            *this += conc_mobile.name("conc_mobile");
 
             init_pressure.units( UnitSI::dimensionless() );
             init_conc.units( UnitSI::dimensionless() );
@@ -190,7 +205,7 @@ protected:
         inputs.push_back( in_rec.val<Input::Array>("data") );
 
         data.set_mesh(*mesh);
-        data.set_input_list( inputs[input_last] );
+        data.set_input_list( inputs[input_last], tg );
         data.set_time(tg.step(), LimitSide::right);
     }
 
@@ -277,7 +292,7 @@ TEST_F(SomeEquation, values) {
     Space<3>::Point p;
     p(0)=1.0; p(1)= 2.0; p(2)=3.0;
 
-    DebugOut().fmt("elements size: {} {}\n", mesh->element.size(), mesh->bc_elements.size());
+    DebugOut().fmt("elements size: {} {}\n", mesh->n_elements(), mesh->n_elements(true));
 
     // check element accessors
     ElementAccessor<3> el_1d=mesh->element_accessor(0); // region 37 "1D diagonal"
@@ -286,9 +301,9 @@ TEST_F(SomeEquation, values) {
     EXPECT_EQ(38, el_2d.region().id());
     ElementAccessor<3> el_3d=mesh->element_accessor(3); // region 39 "3D back"
     EXPECT_EQ(39, el_3d.region().id());
-    ElementAccessor<3> el_bc_top=mesh->element_accessor(0,true); // region 101 ".top side"
+    ElementAccessor<3> el_bc_top=mesh->element_accessor(10); // region 101 ".top side"
     EXPECT_EQ(101, el_bc_top.region().id());
-    ElementAccessor<3> el_bc_bottom=mesh->element_accessor(2,true); // region 102 ".top side"
+    ElementAccessor<3> el_bc_bottom=mesh->element_accessor(12); // region 102 ".top side"
     EXPECT_EQ(102, el_bc_bottom.region().id());
 
     // bulk fields

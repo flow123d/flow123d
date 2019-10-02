@@ -9,7 +9,7 @@
 ###Input
 ##
 ##Flow123d provides several types of sorption (linear, Langmuir and Freundlich isotherm). Each substance can be assigned its own sorption type.
-##In this test, the transport of three substances is computed: Iodium without sorption, Radium with liner sorption and Selenium with Langmuir isotherm. The solvent density and solubility was set to 1. Initial condition of solid was set to zero; rock density to 1 and parameter of liner and Langmuir isotherm was set to 0.6.
+##In this test, the transport of three substances is computed: Iodium without sorption, Radium with liner sorption and Selenium with Langmuir isotherm. The solvent density and solubility was set to 1. Initial condition of solid was set to zero; rock density to 1 and parameter of linear and Langmuir isotherm was set to 1.0.
 ##
 ##    reaction_term: !Sorption
 ##      substances:
@@ -26,7 +26,7 @@
 ##            - none           
 ##            - linear           
 ##            - langmuir
-##          isotherm_mult: 0.6          
+##          distribution_coefficient: 1.0
 ##          isotherm_other: 0.4
 ##
 ##In fact, the fields ```init_conc_solid```, ```isotherm_mult```, ```isotherm_other``` can have different values for each substance. In that case we define them as YAML arrays.
@@ -38,9 +38,9 @@
 ##![Results of sorption.](tutor_figures/05_mass_flux.pdf){#fig:sorp_res}
 ##
 ##
-flow123d_version: 2.0.0
+flow123d_version: 3.1.0
 problem: !Coupling_Sequential
-  description: "Example 5 - Fractures - sorption"
+  description: Example 5 - Fractures - sorption
   mesh:
     mesh_file: 04_mesh.msh
     regions:
@@ -65,27 +65,27 @@ problem: !Coupling_Sequential
           - .left
           - .left_points
   flow_equation: !Flow_Darcy_MH
-    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
+        options: -ksp_type preonly  -pc_type cholesky
         a_tol: 1.0e-15
         r_tol: 1.0e-15
     input_fields:
-    - region: rock
-      conductivity: 0.000315
-      cross_section: 1
-    - region: flow_fractures
-      conductivity: 31.5
-      cross_section: 0.01
-    - region: blind_fractures
-      conductivity: 3.15
-      cross_section: 0.01
-    - region: BC_left
-      bc_type: dirichlet
-      bc_piezo_head: 0.1
-    - region: BC_right
-      bc_type: dirichlet
-      bc_piezo_head: 0
+      - region: rock
+        conductivity: 0.000315
+        cross_section: 1
+      - region: flow_fractures
+        conductivity: 31.5
+        cross_section: 0.01
+      - region: blind_fractures
+        conductivity: 3.15
+        cross_section: 0.01
+      - region: BC_left
+        bc_type: dirichlet
+        bc_piezo_head: 0.1
+      - region: BC_right
+        bc_type: dirichlet
+        bc_piezo_head: 0
     balance: {}
     output:
       fields:
@@ -93,30 +93,22 @@ problem: !Coupling_Sequential
         - pressure_p0
         - pressure_p1
         - velocity_p0
-    solver: !Petsc
-      r_tol: 1.0e-10
-      a_tol: 1.0e-10
     output_stream:
       file: flow.msh
       format: !gmsh
-        variant: ascii
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_Advection_FV
       input_fields:
-      - region: ALL
-        init_conc: 0
-        porosity: 0.005
-      - region: flow_fractures
-        porosity: 0.1
-      - region: blind_fractures
-        porosity: 0.1
-      - region: .left_points
-        bc_type: dirichlet
-        bc_conc: !FieldFormula
-          value: 2.84959e-5*exp(-0.5*((t-2000)/700)^2)
-      solver: !Petsc
-        a_tol: 1.0e-12
-        r_tol: 1.0e-12
+        - region: ALL
+          init_conc: 0
+          porosity: 0.005
+        - region: flow_fractures
+          porosity: 0.1
+        - region: blind_fractures
+          porosity: 0.1
+        - region: .left_points
+          bc_conc: !FieldFormula
+            value: 2.84959e-5*exp(-0.5*((t-2000)/700)^2)
     substances:
       - I
       - Ra-lin
@@ -127,7 +119,7 @@ problem: !Coupling_Sequential
         - Ra-lin
         - Se-lang
       solvent_density: 1.0
-      solubility: [ 1.0, 1.0, 1.0 ]
+      solubility: [1.0, 1.0, 1.0]
       input_fields:
         - region: ALL
           init_conc_solid: 0
@@ -136,19 +128,16 @@ problem: !Coupling_Sequential
             - none
             - linear
             - langmuir
-          isotherm_mult: 0.6            
+          #NOTE: originaly was set isotherm_mult: 0.6, but after renaming the key, it was ignored and 1.0 was used as default..
+          distribution_coefficient: 1.0
           isotherm_other: 0.4
     time:
       end_time: 10000
-    solver: !Petsc
-      a_tol: 1.0e-12
-      r_tol: 1.0e-12
     balance:
       cumulative: true
     output_stream:
       file: transport.pvd
       format: !gmsh
-        variant: ascii
       times:
         - step: 250
           end: 5000

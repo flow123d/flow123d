@@ -16,6 +16,10 @@
  */
 
 
+#include "system/asserts.hh"                           // for Assert, ASSERT
+#include "system/file_path.hh"                         // for FilePath, File...
+#include "system/logger.hh"                            // for operator<<
+
 #include "input/reader_internal_base.hh"
 #include "input/reader_to_storage.hh"
 #include "input/input_type.hh"
@@ -96,7 +100,7 @@ StorageBase * ReaderInternalBase::make_sub_storage(PathBase &p, const Type::Reco
 		return make_include_storage(p, record);
 	} else if (record_name_from_tag == "include_csv") {
 		THROW( ExcForbiddenTag() << EI_Tag("include_csv")
-			<< EI_Specification("can be used only with arrays.") );
+			<< EI_Specification("can be used only with arrays.") << EI_Address(p.as_string()) );
 	} else {
 		if ( record_name_from_tag != "" ) {
 			ASSERT(record_name_from_tag == record->type_name())(record_name_from_tag)(record->type_name()).error("Inconsistent tag of record.");
@@ -226,21 +230,28 @@ StorageBase * ReaderInternalBase::make_sub_storage(PathBase &p, const Type::Tupl
 
 StorageBase * ReaderInternalBase::make_sub_storage(PathBase &p, const Type::Abstract *abstr_rec)
 {
-	string record_name = p.get_record_tag();
-	if (record_name == "") {
+	string record_tag = p.get_record_tag();
+	if (record_tag == "") {
 		if ( ! abstr_rec->get_selection_default().has_value_at_declaration() ) {
 			this->generate_input_error(p, abstr_rec, "Can not determine type of the Abstract.", true);
 		} else { // auto conversion
 			return abstract_automatic_conversion(p, abstr_rec);
 		}
-	} else if ((record_name == "include") || (record_name == "include_csv")) {
-		THROW( ExcForbiddenTag() << EI_Tag(record_name)
-			<< EI_Specification("can't be used with abstract type.") );
+	} else if (record_tag.substr(0,8) == "include:") { // include of abstract is predetermined with tag '!include:record_name'
+		string record_name = record_tag.substr(8);
+		try {
+			return make_include_storage(p, &( abstr_rec->get_descendant(record_name) ) );
+		} catch (Type::Selection::ExcSelectionKeyNotFound &exc) {
+			this->generate_input_error(p, abstr_rec, "Wrong value '" + record_tag + "' of the Selection.", false);
+		}
+	} else if ((record_tag == "include") || (record_tag == "include_csv")) { // simple '!include' tag is forbidden
+		THROW( ExcForbiddenTag() << EI_Tag(record_tag)
+			<< EI_Specification("can't be used with abstract type.") << EI_Address(p.as_string()) );
 	} else {
 		try {
-			return make_sub_storage(p, &( abstr_rec->get_descendant(record_name) ) );
+			return make_sub_storage(p, &( abstr_rec->get_descendant(record_tag) ) );
 		} catch (Type::Selection::ExcSelectionKeyNotFound &exc) {
-			this->generate_input_error(p, abstr_rec, "Wrong value '" + record_name + "' of the Selection.", false);
+			this->generate_input_error(p, abstr_rec, "Wrong value '" + record_tag + "' of the Selection.", false);
 		}
 	}
 	return NULL;
@@ -330,7 +341,7 @@ StorageBase * ReaderInternalBase::make_storage_from_default(const string &dflt_s
     return NULL;
 }
 
-StorageBase * ReaderInternalBase::make_include_storage(PathBase &p, const Type::Record *record)
+StorageBase * ReaderInternalBase::make_include_storage(PathBase &p, const Type::TypeBase *type)
 {
     std::string included_path;
     if ( p.is_record_type() ) {
@@ -339,7 +350,7 @@ StorageBase * ReaderInternalBase::make_include_storage(PathBase &p, const Type::
         	included_path = get_included_file(p);
             p.up();
         } else {
-        	this->generate_input_error(p, record, "Missing key 'file' defines including input file.", false);
+        	this->generate_input_error(p, type, "Missing key 'file' defines including input file.", false);
         }
     } else {
     	// include is set only with name of file (similarly as auto conversion)
@@ -349,7 +360,7 @@ StorageBase * ReaderInternalBase::make_include_storage(PathBase &p, const Type::
 
     FilePath fpath(included_path, FilePath::FileType::input_file);
     try {
-    	ReaderToStorage include_reader(fpath, *(const_cast<Type::Record *>(record)) );
+    	ReaderToStorage include_reader(fpath, *(const_cast<Type::TypeBase *>(type)) );
         return include_reader.get_storage();
     } catch (ExcInputError &e ) {
       e << EI_File(fpath); throw;

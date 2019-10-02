@@ -1,5 +1,5 @@
 config.cmake
-profiler_info*.log
+profiler_info*[.log, .json, .txt]
 flow*.log
 *.orig.*
 *.orig
@@ -10,11 +10,11 @@ unit_tests/output/*.pvd
 unit_tests/output/*.msh
 unit_tests/output/*.yaml
 unit_tests/output/test?/
-unit_tests/system/profiler_info*
 unit_tests/system/tokenizer_speed.txt
+unit_tests/tools/tg_steps.yaml
+unit_tests/intersection/output_intersection*.msh
+
 bin/tests/makefile
-bin/flow123d
-bin/mpiexec
 tests/*/test_results
 tests/*/output
 
@@ -52,18 +52,18 @@ doc/reference_manual/input_reference.json.tex
 .project
 .settings
 
-*.pyc
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*python.log
+*.runtest.log*
 /.idea/
 bin/pythonenv.sh
-tests/runtest.sh
-bin/runtest.sh
 
 /config/jenkins.ini
-/config/jenkins-job/jobs/*.yaml
 /config/jenkins-job/jenkins.ini
 
-/tests/runtest
-/tests_old/runtest
 
 # add test results to ignore
 /tests/*/test_results*
@@ -76,7 +76,6 @@ bin/runtest.sh
 # folder containing symlink to python sources
 /lib
 /publish
-/bin/runtest
 /bin/exec_parallel
 /unit_tests/test_scripts/consumer_cc
 /bin/python/jenkins_jobs_script.py
