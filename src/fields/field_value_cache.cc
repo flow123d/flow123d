@@ -25,6 +25,10 @@ template<class Value>
 const unsigned int FieldValueCache<Value>::n_cached_elements = 20;
 
 template<class Value>
+FieldValueCache<Value>::FieldValueCache()
+: data_(nullptr) {}
+
+template<class Value>
 FieldValueCache<Value>::FieldValueCache(EvalPoints eval_points) {
 	unsigned int size = n_cached_elements * eval_points.size() * Value::NRows_ * Value::NCols_;
 	data_ = new double[size];
@@ -32,7 +36,7 @@ FieldValueCache<Value>::FieldValueCache(EvalPoints eval_points) {
 
 template<class Value>
 FieldValueCache<Value>::~FieldValueCache() {
-	delete [] data_;
+	if (data_!=nullptr) delete [] data_;
 }
 
 template<class Value>

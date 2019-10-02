@@ -23,6 +23,8 @@
 #include "field.hh"
 #include "field_algo_base.impl.hh"
 #include "field_fe.hh"
+#include "fields/eval_subset.hh"
+#include "fields/eval_points.hh"
 #include "mesh/region.hh"
 #include "input/reader_to_storage.hh"
 #include "input/accessors.hh"
@@ -679,6 +681,15 @@ std::shared_ptr< FieldFE<spacedim, Value> > Field<spacedim,Value>::get_field_fe(
 	}
 
 	return field_fe_ptr;
+}
+
+
+template<int spacedim, class Value>
+void Field<spacedim, Value>::cache_allocate(EvalSubset sub_set) {
+    unsigned int point_dim = sub_set.eval_points().point_dim();
+
+    value_cache_[point_dim-1] = FieldValueCache<Value>(sub_set.eval_points());
+    value_cache_[point_dim-1].mark_used(sub_set);
 }
 
 

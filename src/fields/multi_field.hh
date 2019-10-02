@@ -55,6 +55,7 @@ using namespace std;
 class Mesh;
 class Observe;
 class OutputTime;
+class EvalSubset;
 
 
 namespace IT=Input::Type;
@@ -246,6 +247,9 @@ public:
 //                              std::vector<typename MultiFieldValue::return_type>  &value_list) const;
 
     void set_input_list(const Input::Array &list, const TimeGovernor &tg) override;
+
+    /// Implements FieldCommon::cache_allocate
+    void cache_allocate(EvalSubset sub_set) override;
 
 private:
     /// Subfields (items) of MultiField

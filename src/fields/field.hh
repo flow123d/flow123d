@@ -33,6 +33,7 @@
 #include "fields/field_algo_base.impl.hh"              // for FieldAlgorithm...
 #include "fields/field_common.hh"                      // for FieldCommon::T...
 #include "fields/field_values.hh"                      // for FieldValue<>::...
+#include "fields/field_value_cache.hh"                 // for FieldValueCache
 #include "input/accessors.hh"                          // for ExcTypeMismatch
 #include "input/accessors_impl.hh"                     // for Record::opt_val
 #include "input/factory_impl.hh"                       // for Factory::create
@@ -52,6 +53,7 @@
 
 class Mesh;
 class Observe;
+class EvalSubset;
 template <int spacedim> class ElementAccessor;
 template <int spacedim, class Value> class FieldFE;
 
@@ -311,6 +313,9 @@ public:
      */
     void compute_field_data(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream);
 
+    /// Implements FieldCommon::cache_allocate
+    void cache_allocate(EvalSubset sub_set) override;
+
 protected:
 
     /**
@@ -367,6 +372,11 @@ protected:
     std::vector< FieldBasePtr > region_fields_;
 
     std::vector<std::shared_ptr<FactoryBase> >  factories_;
+
+    /**
+     * Field value data cache of elements of dimension 1,2,3
+     */
+    std::array< FieldValueCache<Value>, 3 > value_cache_;
 
 
 

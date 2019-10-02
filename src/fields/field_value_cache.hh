@@ -31,6 +31,9 @@ public:
     /// Number of cached elements which values are stored in cache.
     static const unsigned int n_cached_elements;
 
+    /// Default constructor
+    FieldValueCache();
+
     /// Constructor
     FieldValueCache(EvalPoints eval_points);
 

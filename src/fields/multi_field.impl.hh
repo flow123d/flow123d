@@ -21,6 +21,7 @@
 
 #include "multi_field.hh"
 #include "fields/field_algo_base.hh"
+#include "fields/eval_subset.hh"
 #include "input/input_exception.hh"
 #include "io/observe.hh"
 
@@ -369,6 +370,13 @@ typename Field<spacedim,Value>::FieldBasePtr MultiField<spacedim, Value>::MultiF
 template<int spacedim, class Value>
 bool MultiField<spacedim, Value>::MultiFieldFactory::is_active_field_descriptor(const Input::Record &in_rec, const std::string &input_name) {
 	return in_rec.find<Input::Array>(input_name);
+}
+
+
+
+template<int spacedim, class Value>
+void MultiField<spacedim, Value>::cache_allocate(EvalSubset sub_set) {
+    for(auto &field : sub_fields_) field.cache_allocate(sub_set);
 }
 
 

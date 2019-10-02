@@ -47,6 +47,7 @@
 
 class Mesh;
 class Observe;
+class EvalSubset;
 
 
 using namespace std;
@@ -439,6 +440,11 @@ public:
     {
     	return this->multifield_;
     }
+
+    /**
+     * Allocate data cache of dimension appropriate to subset object.
+     */
+    virtual void cache_allocate(EvalSubset sub_set) = 0;
 
 
     /**

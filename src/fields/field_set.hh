@@ -24,6 +24,7 @@
 #include <vector>                  // for vector
 #include "fields/field_common.hh"  // for FieldCommon, FieldCommon::EI_Field
 #include "fields/field_flag.hh"    // for FieldFlag, FieldFlag::Flags
+#include "fields/eval_subset.hh"  // for EvalSubset
 #include "input/accessors.hh"      // for Array
 #include "input/type_record.hh"    // for Record
 #include "io/output_time.hh"       // for OutputTime, OutputTime::DiscreteSpace
@@ -233,6 +234,13 @@ public:
      * Collective interface to @p FieldCommonBase::is_jump_time().
      */
     bool is_jump_time() const;
+
+    /**
+     * Collective interface to @p FieldCommonBase::cache_allocate().
+     */
+    void cache_allocate(EvalSubset sub_set) {
+        for(auto field : field_list) field->cache_allocate(sub_set);
+    }
 
 protected:
 
