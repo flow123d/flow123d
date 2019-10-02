@@ -4,6 +4,8 @@
 
 #include "fields/eval_points.hh"
 #include "fields/eval_subset.hh"
+#include "fields/field_value_cache.hh"
+#include "fields/field_values.hh"
 #include "quadrature/quadrature.hh"
 #include "quadrature/quadrature_lib.hh"
 #include "mesh/sides.h"
@@ -20,4 +22,7 @@ TEST(ComposedQuadratureTest, eval_3d) {
     bulk_points.print_bulk_points();
     side_points.print_side_points(0);
   	std::cout << "----------- end \n";
+  	FieldValueCache<FieldValue<0>::Scalar> scalar_cache(feval);
+  	FieldValueCache<FieldValue<3>::VectorFixed> vector_cache(feval);
+  	FieldValueCache<FieldValue<3>::TensorFixed> tensor_cache(feval);
 }

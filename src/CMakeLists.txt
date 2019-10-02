@@ -307,6 +307,7 @@ add_library(coupling_lib
     fields/fe_value_handler.cc
     fields/eval_subset.cc
     fields/eval_points.cc
+    fields/field_value_cache.cc
     fields/surface_depth.cc
     coupling/equation.cc
     coupling/balance.cc
