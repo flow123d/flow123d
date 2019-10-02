@@ -50,8 +50,8 @@ void FieldValueCache<Value>::mark_used(EvalSubset sub_quad) {
  * Explicit instantiation of templates
  */
 
-//template class FieldValueCache<FieldValue<0>::Enum >;
-//template class FieldValueCache<FieldValue<0>::Integer >;
+template class FieldValueCache<FieldValue<0>::Enum >;    // NOT tested, necessary for linking!
+template class FieldValueCache<FieldValue<0>::Integer >; // NOT tested, necessary for linking!
 template class FieldValueCache<FieldValue<0>::Scalar >;
 template class FieldValueCache<FieldValue<3>::VectorFixed >;
 template class FieldValueCache<FieldValue<3>::TensorFixed >;
