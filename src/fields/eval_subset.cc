@@ -23,6 +23,12 @@
 /******************************************************************************
  * Implementation of EvalSubset methods.
  */
+
+const std::vector<int> &EvalSubset::get_point_indices(unsigned int permutation) const {
+    ASSERT_LT( permutation, point_indices_.size() );
+    return point_indices_[permutation];
+}
+
 void EvalSubset::print_bulk_points() {
     std::cout << "Print bulk points:" << std::endl;
     for (unsigned int i=0; i<this->point_indices_[0].size(); ++i)

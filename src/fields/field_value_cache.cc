@@ -35,6 +35,11 @@ FieldValueCache<Value>::~FieldValueCache() {
 	delete [] data_;
 }
 
+template<class Value>
+void FieldValueCache<Value>::mark_used(EvalSubset sub_quad) {
+    auto local_point_vec = sub_quad.get_point_indices(0);
+    for (auto p_idx : local_point_vec) used_points_.insert(p_idx);
+}
 
 
 /******************************************************************************

@@ -21,7 +21,7 @@
 
 #include <memory>
 #include <armadillo>
-#include "mesh/range_wrapper.hh"
+//#include "mesh/range_wrapper.hh"
 
 
 class Side;
@@ -38,6 +38,9 @@ public:
         return *eval_points_;
     }
 
+    /// Return vector of point indices of given permutation
+    const std::vector<int> &get_point_indices(unsigned int permutation) const;
+
     /// Temporary method for testing
     void print_bulk_points();
 
@@ -47,7 +50,7 @@ public:
 private:
     /// Pointer to composed quadrature
     const EvalPoints *eval_points_;
-    /// Indices into full set of local indices in the composed quadrature, for every possible permuation.
+    /// Indices into full set of local indices in the composed quadrature, for every possible permutation.
     std::vector< std::vector<int> > point_indices_;
 
     friend class EvalPoints;

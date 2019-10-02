@@ -19,7 +19,10 @@
 #ifndef FIELD_VALUE_CACHE_HH_
 #define FIELD_VALUE_CACHE_HH_
 
+#include <set>
+
 class EvalPoints;
+class EvalSubset;
 
 
 template<class Value>
@@ -33,9 +36,15 @@ public:
 
     /// Destructor
    ~FieldValueCache();
+
+   /// Marks the used local points
+   void mark_used(EvalSubset sub_quad);
 private:
     /// Data cache
     double *data_;
+
+    /// Holds indices of used local points
+    std::set<int> used_points_;
 };
 
 

@@ -22,7 +22,11 @@ TEST(ComposedQuadratureTest, eval_3d) {
     bulk_points.print_bulk_points();
     side_points.print_side_points(0);
   	std::cout << "----------- end \n";
-  	FieldValueCache<FieldValue<0>::Scalar> scalar_cache(feval);
-  	FieldValueCache<FieldValue<3>::VectorFixed> vector_cache(feval);
-  	FieldValueCache<FieldValue<3>::TensorFixed> tensor_cache(feval);
+
+  	FieldValueCache<FieldValue<0>::Scalar> scalar_cache(side_points.eval_points());
+  	FieldValueCache<FieldValue<3>::VectorFixed> vector_cache(side_points.eval_points());
+  	FieldValueCache<FieldValue<3>::TensorFixed> tensor_cache(side_points.eval_points());
+  	scalar_cache.mark_used(side_points);
+  	vector_cache.mark_used(side_points);
+  	tensor_cache.mark_used(side_points);
 }
