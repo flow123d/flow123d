@@ -23,10 +23,16 @@ problem: !Coupling_Sequential
         - pressure_p0
         - pressure_p1
         - velocity_p0
+      observe_fields: [velocity_p0, pressure_p0]
     output_stream:
       file: ./flow_test16.pvd
       format: !vtk
         variant: ascii
+      # observe points are intentionally just at the top,
+      # so there are no obs.pts. on some processors (used to be a bug here)
+      observe_points: &observe_pts
+        - [0.5, 4.5, 0]      # bod L
+        - [1.5, 4.5, 0]      # bod P
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_AdvectionDiffusion_DG
       # dual_porosity:false,
@@ -53,10 +59,14 @@ problem: !Coupling_Sequential
         a_tol: 1.0e-12
         r_tol: 1.0e-12
       dg_variant: symmetric
+      output:
+        fields: conc
+        observe_fields: conc
     output_stream:
       file: ./transport_test16.pvd
       format: !vtk
         variant: ascii
+      observe_points: *observe_pts
       times:
         - step: 0.8
       precision: 15
