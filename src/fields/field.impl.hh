@@ -347,7 +347,7 @@ void Field<spacedim, Value>::observe_output(std::shared_ptr<Observe> observe)
 {
 	typedef typename Value::element_type ElemType;
 
-    if (observe->point_ds()->lsize() == 0) return;
+    if (observe->point_ds()->size() == 0) return;
 
     ElementDataCache<ElemType> &output_data = observe->prepare_compute_data<ElemType>(this->name(), this->time(),
     						(unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
