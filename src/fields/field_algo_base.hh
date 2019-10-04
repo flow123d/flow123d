@@ -234,6 +234,11 @@ public:
        virtual void value_list(const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
                           std::vector<typename Value::return_type>  &value_list)=0;
 
+       virtual const typename Value::element_type *loc_point_value(const arma::vec &loc_point, const ElementAccessor<spacedim> &elm) {
+    	   ASSERT(false).error("Must be implemented in descendants!\n");
+    	   return nullptr;
+       }
+
        /**
         * Postponed setter of Dof handler for FieldFE. For other types of fields has no effect.
         */

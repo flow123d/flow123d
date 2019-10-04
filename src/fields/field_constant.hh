@@ -82,6 +82,8 @@ public:
     virtual void value_list (const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
                        std::vector<typename Value::return_type>  &value_list);
 
+    const typename Value::element_type *loc_point_value(const arma::vec &loc_point, const ElementAccessor<spacedim> &elm) override;
+
 
     virtual ~FieldConstant();
 

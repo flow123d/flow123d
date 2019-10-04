@@ -142,6 +142,13 @@ void FieldConstant<spacedim, Value>::value_list (const std::vector< Point >  &po
 
 
 template <int spacedim, class Value>
+const typename Value::element_type *FieldConstant<spacedim, Value>::loc_point_value(const arma::vec &loc_point, const ElementAccessor<spacedim> &elm)
+{
+    return this->value_.mem_ptr();
+}
+
+
+template <int spacedim, class Value>
 void FieldConstant<spacedim, Value>::check_field_limits(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data)
 {
     if (Value::is_scalable())
