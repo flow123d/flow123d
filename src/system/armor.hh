@@ -1,3 +1,6 @@
+#ifndef ARMOR_HH
+#define ARMOR_HH
+
 //#define ARMA_DONT_USE_WRAPPER
 //#define ARMA_NO_DEBUG
 #include <armadillo>
@@ -9,45 +12,24 @@ template <class Type, uint nRows, uint nCols>
 class Mat
 {
 private:
-    std::array<std::array<Type, nRows>, nCols> data;
+    Type * const data;
     typedef typename arma::Mat<Type>::template fixed<nRows,nCols> ArmaType;
 public:
-    Mat() {
+    Mat(Type * const mem)
+    : data(mem)
+    {}
+    inline Mat(const Armor::Mat<Type, nRows, nCols> & other) 
+    : data(other.data)
+    {
         for (uint i = 0; i < nRows * nCols; ++i) {
-            data[0][i] = 0;
-        }
-    }
-    Mat(std::initializer_list<std::initializer_list<Type>> list) {
-        const auto * listIt = list.begin();
-        const Type * it;
-        for (uint i = 0; i < nRows; ++i) {
-            it = (listIt + i)->begin();
-            for (uint j = 0; j < nCols; ++j) {
-                data[j][i] = *(it + j);
-            }
-        }
-    }
-    Mat(std::initializer_list<Type> list) {
-        const Type * it = list.begin();
-        for (uint i = 0; i < nRows * nCols; ++i) {
-            data[0][i] = *(it + i);
-        }
-    }
-    inline Mat(const Armor::Mat<Type, nRows, nCols> & other) {
-        for (uint i = 0; i < nRows * nCols; ++i) {
-            data[0][i] = other[i];
-        }
-    }
-    inline Mat(const ArmaType & other) {
-        for (uint i = 0; i < nRows * nCols; ++i) {
-            data[0][i] = other[i];
+            data[i] = other[i];
         }
     }
     inline const Type * begin() const {
-        return data.data()->data();
+        return data;
     }
     inline Type * begin() {
-        return data.data()->data();
+        return data;
     }
     inline const Type * end() const {
         return begin() + nCols * nRows;
@@ -62,29 +44,29 @@ public:
         return begin();
     }
     inline const Type & operator[](uint index) const {
-        return data[0][index];
+        return data[index];
     }
     inline Type & operator[](uint index) {
-        return data[0][index];
+        return data[index];
     }
     inline const Type & operator()(uint row, uint col) const {
-        return data[col][row];
+        return data[row*nCols+col];
     }
     inline Type & operator()(uint row, uint col) {
-        return data[col][row];
+        return data[row*nCols+col];
     }
     inline ArmaType arma() const {
         return ArmaType(begin());
     }
     inline const Mat<Type, nRows, nCols> & operator=(const Mat<Type, nRows, nCols> & other) {
         for (uint i = 0; i < nRows * nCols; ++i) {
-            data[0][i] = other[i];
+            data[i] = other[i];
         }
         return *this;
     }
     inline const Mat<Type, nRows, nCols> & operator=(const ArmaType & other) {        
         for (uint i = 0; i < nRows * nCols; ++i) {
-            data[0][i] = other[i];
+            data[i] = other[i];
         }
         return *this;
     }
@@ -94,7 +76,7 @@ public:
         for (uint i = 0; i < nRows; ++i) {
             it = (listIt + i)->begin();
             for (uint j = 0; j < nCols; ++j) {
-                data[j][i] = *(it + j);
+                data[i*nCols+j] = *(it + j);
             }
         }
         return *this;
@@ -102,7 +84,7 @@ public:
     inline const Mat<Type, nRows, nCols> & operator=(std::initializer_list<Type> list) {
         const Type * it = list.begin();
         for (uint i = 0; i < nRows * nCols; ++i) {
-            data[0][i] = *(it + i);
+            data[i] = *(it + i);
         }
         return *this;
     }
@@ -172,3 +154,5 @@ template <uint N, uint M>
 using mat = Mat<double, N, M>;
 
 }
+
+#endif
