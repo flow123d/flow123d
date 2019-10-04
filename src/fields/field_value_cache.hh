@@ -20,17 +20,17 @@
 #define FIELD_VALUE_CACHE_HH_
 
 #include <set>
+#include <unordered_map>
+#include <vector>
 
 class EvalPoints;
 class EvalSubset;
+class DHCellAccessor;
 
 
 template<class Value>
 class FieldValueCache {
 public:
-    /// Number of cached elements which values are stored in cache.
-    static const unsigned int n_cached_elements;
-
     /// Default constructor
     FieldValueCache();
 
@@ -48,6 +48,69 @@ private:
 
     /// Holds indices of used local points
     std::set<int> used_points_;
+
+    /// Dimension (control data member)
+    unsigned int dim_;
+};
+
+
+class ElementCacheMap {
+public:
+    /// Number of cached elements which values are stored in cache.
+    static const unsigned int n_cached_elements;
+
+    /// Index of invalid element in cache.
+    static const unsigned int undef_elem_idx;
+
+    /// Constructor
+    ElementCacheMap(unsigned int dim);
+
+    /// Adds element to added_elements_ vector if doesn't exist in the cache, returns its index.
+    unsigned int add(DHCellAccessor dh_cell);
+
+    /// Clean helper data member after reading data to cache.
+    void after_read();
+
+    /// Getter for begin_idx_
+    inline unsigned int begin_idx() const {
+        return begin_idx_;
+    }
+
+    /// Getter for end_idx_
+    inline unsigned int end_idx() const {
+        return end_idx_;
+    }
+
+    /// Getter for added_elements_
+    inline const std::vector<unsigned int> &added_elements() const {
+        return added_elements_;
+    }
+
+    /// Return dimension
+    inline unsigned int dim() const {
+        return dim_;
+    }
+
+    /// Returns index of cell stored in cache.
+    unsigned int operator() (DHCellAccessor dh_cell) const;
+private:
+    /// Vector of element indexes stored in cache.
+    std::vector<unsigned int> elm_idx_;
+
+    /// Map of element indices stored in cache, allows reverse search to previous vector.
+    std::unordered_map<unsigned int, unsigned int> cache_idx_;
+
+    /// Vector of element indexes that wait for storing to cache.
+    std::vector<unsigned int> added_elements_;
+
+    /// Holds index to elm_idx_ vector corresponding to begin index stored in added_elements_ vector.
+    unsigned int begin_idx_;
+
+    /// Holds index to elm_idx_ vector corresponding to end index stored in added_elements_ vector.
+    unsigned int end_idx_;
+
+    /// Dimension (control data member)
+    unsigned int dim_;
 };
 
 

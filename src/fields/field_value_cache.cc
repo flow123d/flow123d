@@ -16,13 +16,16 @@
  * @author  David Flanderka
  */
 
+#include <limits>
 #include "fields/field_value_cache.hh"
 #include "fields/field_values.hh"
 #include "fields/eval_points.hh"
+#include "fem/dh_cell_accessor.hh"
 
 
-template<class Value>
-const unsigned int FieldValueCache<Value>::n_cached_elements = 20;
+/******************************************************************************
+ * Implementation of FieldValueCache methods
+ */
 
 template<class Value>
 FieldValueCache<Value>::FieldValueCache()
@@ -30,8 +33,9 @@ FieldValueCache<Value>::FieldValueCache()
 
 template<class Value>
 FieldValueCache<Value>::FieldValueCache(EvalPoints eval_points) {
-	unsigned int size = n_cached_elements * eval_points.size() * Value::NRows_ * Value::NCols_;
+	unsigned int size = ElementCacheMap::n_cached_elements * eval_points.size() * Value::NRows_ * Value::NCols_;
 	data_ = new double[size];
+	dim_ = eval_points.point_dim();
 }
 
 template<class Value>
@@ -43,6 +47,51 @@ template<class Value>
 void FieldValueCache<Value>::mark_used(EvalSubset sub_quad) {
     auto local_point_vec = sub_quad.get_point_indices(0);
     for (auto p_idx : local_point_vec) used_points_.insert(p_idx);
+}
+
+
+/******************************************************************************
+ * Implementation of ElementCacheMap methods
+ */
+
+const unsigned int ElementCacheMap::n_cached_elements = 20;
+
+const unsigned int ElementCacheMap::undef_elem_idx = std::numeric_limits<unsigned int>::max();
+
+
+ElementCacheMap::ElementCacheMap(unsigned int dim)
+: elm_idx_(ElementCacheMap::n_cached_elements, ElementCacheMap::undef_elem_idx),
+  begin_idx_(0), end_idx_(0), dim_(dim) {}
+
+
+unsigned int ElementCacheMap::add(DHCellAccessor dh_cell) {
+	ASSERT_LT(added_elements_.size(), ElementCacheMap::n_cached_elements).error("ElementCacheMap overflowed. List of added elements is to long!\n");
+	unsigned int elm_idx = dh_cell.elm_idx();
+	std::unordered_map<unsigned int, unsigned int>::iterator it = cache_idx_.find(elm_idx);
+    if ( it != cache_idx_.end() ) {
+        return it->second;
+    } else {
+    	ASSERT( std::find(added_elements_.begin(), added_elements_.end(), elm_idx) == added_elements_.end() )(elm_idx).error("Repeated addition of element!\n");
+
+    	added_elements_.push_back(elm_idx);
+    	unsigned int idx_pos = end_idx_;
+    	end_idx_ = (end_idx_+1) % ElementCacheMap::n_cached_elements;
+        return idx_pos;
+    }
+}
+
+
+void ElementCacheMap::after_read() {
+	begin_idx_ = end_idx_;
+	added_elements_.clear();
+}
+
+
+unsigned int ElementCacheMap::operator() (DHCellAccessor dh_cell) const {
+	unsigned int elm_idx = dh_cell.elm_idx();
+	std::unordered_map<unsigned int, unsigned int>::const_iterator it = cache_idx_.find(elm_idx);
+	ASSERT( it != cache_idx_.end() ).error("THROW"); // TODO throw exception
+    return it->second;
 }
 
 
