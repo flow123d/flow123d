@@ -115,8 +115,8 @@ public:
 
 
 /**
- * Array of Armor::Mat with given shape. Provides contiguous storage for the data and read access to the array elements.
- * The shape of the matrices is specified at initialization, so the class Array is independent of additional template parameters.
+ * Array of Armor::Mat with given shape. Provides contiguous storage for the data and access to the array elements.
+ * The shape of the matrices is specified at run time, so the class Array is independent of additional template parameters.
  * However, to access the array elements, one must use the templated method get().
  */
 template<class Type>
