@@ -35,7 +35,7 @@ public:
         this->weights.resize(n_quadrature_points,qweight);
         this->quadrature_points.resize(n_quadrature_points);
         for(unsigned int q=0; q < n_quadrature_points; q++)
-            this->quadrature_points[q] = arma::vec({0.5*qweight + q*qweight});
+            this->set_point(q, arma::vec({0.5*qweight + q*qweight}));
     }
 };
 
