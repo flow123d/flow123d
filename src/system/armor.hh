@@ -5,6 +5,7 @@
 //#define ARMA_NO_DEBUG
 #include <armadillo>
 #include <array>
+#include "system/asserts.hh"
 
 namespace Armor {
 
@@ -112,6 +113,65 @@ public:
     }
 };
 
+
+/**
+ * Array of Armor::Mat with given shape. Provides contiguous storage for the data and read access to the array elements.
+ * The shape of the matrices is specified at initialization, so the class Array is independent of additional template parameters.
+ * However, to access the array elements, one must use the templated method get().
+ */
+template<class Type>
+class Array {
+public:
+    /**
+     * Construct array of Armor matrices.
+     * @param size  Number of matrices in the array.
+     * @param nr    Number of rows in each matrix.
+     * @param nc    Number of columnts in each matrix.
+     */
+    Array(uint size, uint nr, uint nc = 1)
+    : nRows(nr),
+      nCols(nc),
+      data(size*nRows*nCols, 0)
+    {}
+    
+    /**
+     * Change number of elements in the array, while keeping the shape of arrays.
+     * @param size  New size of array.
+     */
+    inline void resize(uint size)
+    {
+        data.resize(size*nRows*nCols);
+    }
+    
+    /**
+     * Insert new matrix to the end of the array.
+     * @param p  Vector of values for the new matrix.
+     */
+    inline void push_back(const std::vector<Type> &p)
+    {
+        ASSERT_DBG( p.size() == nRows*nCols );
+        for (auto i : p) data.push_back( i );
+    }
+    
+    /**
+     * Return matrix at given position in array. The returned object is a Armor::Mat
+     * pointing to the respective data block in the Array's storage.
+     * @param i  Index of matrix.
+     */
+    template<uint nr, uint nc = 1>
+    inline Mat<Type,nr,nc> get(uint i) const
+    {
+        ASSERT_DBG( (nr == nRows) && (nc == nCols) );
+        return Mat<Type,nr,nc>( const_cast<Type*>(data.data()) + i*nRows*nCols );
+    }
+    
+private:
+    uint nRows;
+    uint nCols;
+    std::vector<Type> data;
+};
+
+
 template <class Type, uint nRows, uint nCols>
 inline Type dot(const Mat<Type, nRows, nCols> & a, const Mat<Type, nRows, nCols> & b) {
     return arma::dot(a.arma(), b.arma());
@@ -152,6 +212,8 @@ using vec = Mat<double, N, 1>;
 
 template <uint N, uint M>
 using mat = Mat<double, N, M>;
+
+using array = Array<double>;
 
 }
 
