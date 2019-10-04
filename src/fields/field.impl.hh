@@ -25,6 +25,7 @@
 #include "field_fe.hh"
 #include "fields/eval_subset.hh"
 #include "fields/eval_points.hh"
+#include "fields/field_value_cache.hh"
 #include "mesh/region.hh"
 #include "input/reader_to_storage.hh"
 #include "input/accessors.hh"
@@ -690,6 +691,24 @@ void Field<spacedim, Value>::cache_allocate(EvalSubset sub_set) {
 
     value_cache_[point_dim-1] = FieldValueCache<Value>(sub_set.eval_points());
     value_cache_[point_dim-1].mark_used(sub_set);
+}
+
+
+template<int spacedim, class Value>
+void Field<spacedim, Value>::cache_update(ElementCacheMap &cache_map, EvalPoints &eval_points) {
+    unsigned int dim = cache_map.dim();
+    FieldValueCache<Value> &dim_cache = value_cache_[dim-1];
+    const std::vector<unsigned int> &added_elements = cache_map.added_elements();
+    const std::set<int> &used_points = dim_cache.used_points();
+
+    for (unsigned int elm_idx : added_elements) {
+        ElementAccessor<spacedim> elm(shared_->mesh_, elm_idx);
+        for (int p_idx : used_points) {
+            arma::vec loc_point = eval_points.local_point(p_idx);
+            const typename Value::element_type *point_val = region_fields_[elm.region_idx().idx()]->loc_point_value(loc_point, elm);
+            // store point_val to cache
+        }
+    }
 }
 
 

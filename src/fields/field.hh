@@ -54,6 +54,7 @@
 class Mesh;
 class Observe;
 class EvalSubset;
+class EvalPoints;
 template <int spacedim> class ElementAccessor;
 template <int spacedim, class Value> class FieldFE;
 
@@ -315,6 +316,9 @@ public:
 
     /// Implements FieldCommon::cache_allocate
     void cache_allocate(EvalSubset sub_set) override;
+
+    /// Implements FieldCommon::cache_update
+    void cache_update(ElementCacheMap &cache_map, EvalPoints &eval_points) override;
 
 protected:
 

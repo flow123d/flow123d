@@ -38,10 +38,15 @@ public:
     FieldValueCache(EvalPoints eval_points);
 
     /// Destructor
-   ~FieldValueCache();
+    ~FieldValueCache();
 
-   /// Marks the used local points
-   void mark_used(EvalSubset sub_quad);
+    /// Marks the used local points
+    void mark_used(EvalSubset sub_quad);
+
+    /// Getter for used_points
+    inline const std::set<int> &used_points() const {
+        return used_points_;
+    }
 private:
     /// Data cache
     double *data_;

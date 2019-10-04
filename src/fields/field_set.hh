@@ -24,7 +24,9 @@
 #include <vector>                  // for vector
 #include "fields/field_common.hh"  // for FieldCommon, FieldCommon::EI_Field
 #include "fields/field_flag.hh"    // for FieldFlag, FieldFlag::Flags
-#include "fields/eval_subset.hh"  // for EvalSubset
+#include "fields/eval_subset.hh"   // for EvalSubset
+#include "fields/eval_points.hh"   // for EvalPoints
+#include "fields/field_value_cache.hh"
 #include "input/accessors.hh"      // for Array
 #include "input/type_record.hh"    // for Record
 #include "io/output_time.hh"       // for OutputTime, OutputTime::DiscreteSpace
@@ -236,10 +238,19 @@ public:
     bool is_jump_time() const;
 
     /**
-     * Collective interface to @p FieldCommonBase::cache_allocate().
+     * Collective interface to @p FieldCommon::cache_allocate().
      */
     void cache_allocate(EvalSubset sub_set) {
         for(auto field : field_list) field->cache_allocate(sub_set);
+    }
+
+    /**
+     * Collective interface to @p FieldCommon::cache_update().
+     */
+    void cache_update(ElementCacheMap &cache_map, EvalPoints &eval_points) {
+        ASSERT_EQ(cache_map.dim(), eval_points.point_dim()).error("Different dimension of ElementCacheMap and EvalPoints.\n");
+		for(auto field : field_list) field->cache_update(cache_map, eval_points);
+        cache_map.after_read();
     }
 
 protected:

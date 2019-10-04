@@ -22,6 +22,8 @@
 #include "multi_field.hh"
 #include "fields/field_algo_base.hh"
 #include "fields/eval_subset.hh"
+#include "fields/eval_points.hh"
+#include "fields/field_value_cache.hh"
 #include "input/input_exception.hh"
 #include "io/observe.hh"
 
@@ -377,6 +379,12 @@ bool MultiField<spacedim, Value>::MultiFieldFactory::is_active_field_descriptor(
 template<int spacedim, class Value>
 void MultiField<spacedim, Value>::cache_allocate(EvalSubset sub_set) {
     for(auto &field : sub_fields_) field.cache_allocate(sub_set);
+}
+
+
+template<int spacedim, class Value>
+void MultiField<spacedim, Value>::cache_update(ElementCacheMap &cache_map, EvalPoints &eval_points) {
+    for(auto &field : sub_fields_) field.cache_update(cache_map, eval_points);
 }
 
 

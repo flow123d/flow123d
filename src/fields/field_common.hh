@@ -48,6 +48,8 @@
 class Mesh;
 class Observe;
 class EvalSubset;
+class EvalPoints;
+class ElementCacheMap;
 
 
 using namespace std;
@@ -445,6 +447,11 @@ public:
      * Allocate data cache of dimension appropriate to subset object.
      */
     virtual void cache_allocate(EvalSubset sub_set) = 0;
+
+    /**
+     * Read data to cache for appropriate elements given by ElementCacheMap object.
+     */
+    virtual void cache_update(ElementCacheMap &cache_map, EvalPoints &eval_points) = 0;
 
 
     /**
