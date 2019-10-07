@@ -711,11 +711,9 @@ void TransportDG<Model>::set_sources()
 
 
 
-
 template<class Model>
 void TransportDG<Model>::set_boundary_conditions()
 {
-	data_->loc_b_ = 0; // reset boundary condition counter
 
   START_TIMER("assemble_bc");
     Model::balance_->start_flux_assembly(Model::subst_idx);

@@ -21,7 +21,7 @@
 # $LastChangedDate: 2012-02-28 14:24:58 +0100 (Tue, 28 Feb 2012) $
 #
 
-set(libs system_lib)
+set(libs system_lib armadillo)
 add_test_directory("${libs}")
 
     define_test(empty)
@@ -43,8 +43,9 @@ add_test_directory("${libs}")
     
     # reqires raw strings  
     define_test(tokenizer)
+    define_test(armor)
     define_test(tokenizer_speed)
-
+    define_test(armor_speed)
 
 
 

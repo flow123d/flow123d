@@ -22,7 +22,10 @@
 #include <armadillo>
 #include <vector>
 
+#include "system/armor.hh"
 #include "mesh/ref_element.hh"
+
+
 
 /**
  * @brief Base class for quadrature rules on simplices in arbitrary dimensions.
@@ -74,10 +77,10 @@ public:
     const unsigned int size() const;
 
     /// Returns the <tt>i</tt>th quadrature point.
-    const arma::vec::fixed<dim> & point(const unsigned int i) const;
+    arma::vec::fixed<dim> point(const unsigned int i) const;
 
     /// Return a reference to the whole array of quadrature points.
-    const std::vector<arma::vec::fixed<dim> > & get_points() const;
+    const Armor::array & get_points() const;
 
     /**
      * @brief Sets individual quadrature point coordinates.
@@ -101,7 +104,7 @@ protected:
      *
      * To be filled by the constructors of the derived classes.
      */
-    std::vector<arma::vec::fixed<dim> > quadrature_points;
+    Armor::array quadrature_points;
 
     /**
      * @brief List of weights to the quadrature points.
@@ -116,9 +119,9 @@ protected:
 
 template<unsigned int dim>
 Quadrature<dim>::Quadrature(const unsigned int n_q)
-{
-    resize(n_q);
-}
+: quadrature_points(n_q, dim),
+  weights(n_q, 0)
+{}
 
 template<unsigned int dim>
 Quadrature<dim>::Quadrature(const Quadrature<dim> &q) :
@@ -129,9 +132,7 @@ Quadrature<dim>::Quadrature(const Quadrature<dim> &q) :
 template<unsigned int dim>
 void Quadrature<dim>::resize(const unsigned int n_q)
 {
-    arma::vec::fixed<dim> v;
-    v.fill(0);
-    quadrature_points.resize(n_q, v);
+    quadrature_points.resize(n_q);
     weights.resize(n_q, 0);
 }
 
@@ -141,22 +142,20 @@ inline const unsigned int Quadrature<dim>::size() const {
 }
 
 template<unsigned int dim>
-inline const arma::vec::fixed<dim> & Quadrature<dim>::point(
+inline arma::vec::fixed<dim> Quadrature<dim>::point(
         const unsigned int i) const {
-    ASSERT_LT_DBG(i, quadrature_points.size());
-    return quadrature_points[i];
+    return quadrature_points.get<dim>(i).arma();
 }
 
 template<unsigned int dim>
-inline const std::vector<arma::vec::fixed<dim> > & Quadrature<dim>::get_points() const {
+inline const Armor::array & Quadrature<dim>::get_points() const {
     return quadrature_points;
 }
 
 template<unsigned int dim>
 inline void Quadrature<dim>::set_point(const unsigned int i, const arma::vec::fixed<dim> &p)
 {
-    ASSERT_LT_DBG(i, quadrature_points.size());
-    quadrature_points[i] = p;
+    quadrature_points.get<dim>(i) = p;
 }
 
 template<unsigned int dim>
@@ -183,6 +182,7 @@ Quadrature<dim>::~Quadrature()
 
 template<unsigned int dim> inline
 Quadrature<dim>::Quadrature(const Quadrature<dim-1> &subq, unsigned int sid, unsigned int pid)
+: quadrature_points(subq.size(), dim)
 {
     // Below we permute point coordinates according to permutation
     // of nodes on side. We just check that these numbers equal.
@@ -237,7 +237,7 @@ Quadrature<dim>::Quadrature(const Quadrature<dim-1> &subq, unsigned int sid, uns
         el_bar_coords = RefElement<dim>::template interpolate<dim-1>(pp,sid);
         
         //get local coordinates and set
-        quadrature_points[k] = RefElement<dim>::bary_to_local(el_bar_coords);
+        quadrature_points.get<dim>(k) = RefElement<dim>::bary_to_local(el_bar_coords);
         weights[k] = subq.weight(k);
     }
 }
@@ -245,9 +245,9 @@ Quadrature<dim>::Quadrature(const Quadrature<dim-1> &subq, unsigned int sid, uns
 // Specialized subquadrature consructor for dim=1.
 template<> inline
 Quadrature<1>::Quadrature(const Quadrature<0> &subq, unsigned int sid, unsigned int pid)
+: quadrature_points(1, 1)
 {
-    arma::vec::fixed<1> p({(double)sid});
-    quadrature_points.push_back(p);
+    quadrature_points.get<1>(0) = { (double)sid };
     weights.push_back(1);
 }
 

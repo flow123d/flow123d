@@ -214,8 +214,6 @@ public:
         /// Object for distribution of dofs.
         std::shared_ptr<DOFHandlerMultiDim> dh_;
 
-        /// Counter used in method set_boundary_condition
-        unsigned int loc_b_;
 	};
 
 

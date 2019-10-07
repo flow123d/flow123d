@@ -325,7 +325,7 @@ public:
      * Introduce an artificial limit to keep all material indexed arrays
      * of reasonable size.
      */
-    static const unsigned int max_n_regions = 64000;
+    static const unsigned int max_n_regions;
 
     /// Undefined dimension for regions introduced from mesh input record.
     /// Dimensions 0,1,2,3 are valid.

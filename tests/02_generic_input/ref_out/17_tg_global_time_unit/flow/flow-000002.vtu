@@ -1,0 +1,54 @@
+<?xml version="1.0"?>
+<VTKFile type="UnstructuredGrid" version="0.1" byte_order="LittleEndian">
+<UnstructuredGrid>
+<Piece NumberOfPoints="9" NumberOfCells="11">
+<Points>
+<DataArray type="Float64" NumberOfComponents="3" format="ascii">
+0 0 0 1 0 0 0 1 0 0 0 2 1 0 2 0 1 2 0.5 0 1 0.5 0.49999999999999989 1 0 0.5 1 
+</DataArray>
+</Points>
+<Cells>
+<DataArray type="UInt32" Name="connectivity" format="ascii">
+1 6 4 7 8 6 7 3 5 8 7 3 1 2 0 7 8 5 7 2 2 8 0 7 3 6 7 4 8 6 0 7 5 3 7 4 6 1 0 7 6 8 0 3 
+</DataArray>
+<DataArray type="UInt32" Name="offsets" format="ascii">
+4 8 12 16 20 24 28 32 36 40 44 
+</DataArray>
+<DataArray type="UInt32" Name="types" format="ascii">
+10 10 10 10 10 10 10 10 10 10 10 
+</DataArray>
+</Cells>
+<PointData Scalars="pressure_p1," Vectors="" Tensors="">
+<DataArray type="Float64" Name="pressure_p1" format="ascii">
+0.042406687748899108 0.068757947315153473 0.030104063788289458 0.042406687748899045 0.068757947315153473 0.030104063788289431 0.066073900047549247 0.058538810907773589 0.040894450409114186 
+</DataArray>
+</PointData>
+<CellData Scalars="pressure_p0,cross_section,conductivity,sigma,water_source_density,storativity," Vectors="velocity_p0," Tensors="anisotropy,">
+<DataArray type="Float64" Name="pressure_p0" format="ascii">
+0.097329859233704449 0.06862036416732735 0.036826134331835618 0.05284555150324767 0.034829859233704491 0.036826134331835722 0.0743261343318357 0.068620364167327461 0.052845551503247629 0.074326134331835714 0.032571753591200681 
+</DataArray>
+<DataArray type="Float64" Name="velocity_p0" NumberOfComponents="3" format="ascii">
+1.1387523479649488 1.2538989454590004e-15 -29.999999999999972 -5.4258346381203255 -2.4258346381203202 -28.000003029186693 -5.1244003527950976 0.85645811567033381 -28.564594944579905 -1.9377998236024458 1.0622001763975542 -31.06220017639755 -3.0000000000000036 4.1387523479649602 -30 -5.1244003527950976 0.8564581156703388 -31.435405055420091 -2.1435418843296628 -2.124400352795111 -28.564594944579895 -5.4258346381203237 -2.4258346381203184 -31.999996970813307 -1.9377998236024518 1.062200176397549 -28.937799823602443 -2.1435418843296503 -2.1244003527951048 -31.435405055420087 -6.42583394118531 -3.4258339411853114 -29.999999999999993 
+</DataArray>
+<DataArray type="Float64" Name="anisotropy" NumberOfComponents="9" format="ascii">
+10 0 0 0 10 0 0 0 10 10 0 0 0 10 0 0 0 10 10 0 0 0 10 0 0 0 10 10 0 0 0 10 0 0 0 10 10 0 0 0 10 0 0 0 10 10 0 0 0 10 0 0 0 10 10 0 0 0 10 0 0 0 10 10 0 0 0 10 0 0 0 10 10 0 0 0 10 0 0 0 10 10 0 0 0 10 0 0 0 10 10 0 0 0 10 0 0 0 10 
+</DataArray>
+<DataArray type="Float64" Name="cross_section" format="ascii">
+4.25 4.25 4.25 4.25 4.25 4.25 4.25 4.25 4.25 4.25 4.25 
+</DataArray>
+<DataArray type="Float64" Name="conductivity" format="ascii">
+3 3 3 3 3 3 3 3 3 3 3 
+</DataArray>
+<DataArray type="Float64" Name="sigma" format="ascii">
+0.40000000000000002 0.40000000000000002 0.40000000000000002 0.40000000000000002 0.40000000000000002 0.40000000000000002 0.40000000000000002 0.40000000000000002 0.40000000000000002 0.40000000000000002 0.40000000000000002 
+</DataArray>
+<DataArray type="Float64" Name="water_source_density" format="ascii">
+24 24 24 24 24 24 24 24 24 24 24 
+</DataArray>
+<DataArray type="Float64" Name="storativity" format="ascii">
+1 1 1 1 1 1 1 1 1 1 1 
+</DataArray>
+</CellData>
+</Piece>
+</UnstructuredGrid>
+</VTKFile>
