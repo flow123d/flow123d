@@ -81,7 +81,7 @@ unsigned int ElementCacheMap::add(DHCellAccessor dh_cell) {
 }
 
 
-void ElementCacheMap::after_read() {
+void ElementCacheMap::clear_elements_to_update() {
 	begin_idx_ = end_idx_;
 	added_elements_.clear();
 }

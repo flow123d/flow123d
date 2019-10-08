@@ -250,7 +250,7 @@ public:
     void cache_update(ElementCacheMap &cache_map, EvalPoints &eval_points) {
         ASSERT_EQ(cache_map.dim(), eval_points.point_dim()).error("Different dimension of ElementCacheMap and EvalPoints.\n");
 		for(auto field : field_list) field->cache_update(cache_map, eval_points);
-        cache_map.after_read();
+        cache_map.clear_elements_to_update();
     }
 
 protected:

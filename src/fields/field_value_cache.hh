@@ -52,7 +52,7 @@ private:
     double *data_;
 
     /// Holds indices of used local points
-    std::set<int> used_points_;
+    std::set<int> used_points_;  // TODO: test unorderd_set during tuning of the performance
 
     /// Dimension (control data member)
     unsigned int dim_;
@@ -74,7 +74,7 @@ public:
     unsigned int add(DHCellAccessor dh_cell);
 
     /// Clean helper data member after reading data to cache.
-    void after_read();
+    void clear_elements_to_update();
 
     /// Getter for begin_idx_
     inline unsigned int begin_idx() const {
