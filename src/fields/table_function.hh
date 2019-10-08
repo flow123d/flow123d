@@ -30,6 +30,7 @@ namespace Input {
 		class Tuple;
 	}
 }
+class TimeStep;
 
 
 
@@ -64,7 +65,7 @@ public:
     TableFunction();
 
     /// Initialize actual values of the field given from the given Input::Record @p rec.
-    void init_from_input(const Input::Record &rec);
+    void init_from_input(const Input::Record &rec, const TimeStep &time);
 
     /// Return true if TableFunction is initialized (method init_from_input was called).
     bool initialized();

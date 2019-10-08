@@ -1,0 +1,33 @@
+# Observation file: solute
+time_unit: s
+time_unit_in_seconds: 1
+points:
+  - name: obs_0
+    init_point: [ 0.5 , 4.5 , 0 ]
+    snap_dim: 4
+    snap_region: ALL
+    observe_point: [ 0.5 , 4.5 , 0 ]
+  - name: obs_1
+    init_point: [ 1.5 , 4.5 , 0 ]
+    snap_dim: 4
+    snap_region: ALL
+    observe_point: [ 1.5 , 4.5 , 0 ]
+data:
+  - time: 0
+    conc_conc: [ 0 , 0 ]
+  - time: 0.8
+    conc_conc: [ 0.0134578007473682 , 0.0112897176322513 ]
+  - time: 1.6
+    conc_conc: [ 0.0182562648247802 , 0.0144725378352578 ]
+  - time: 2.4
+    conc_conc: [ 0.019183211116383 , 0.0149625003036656 ]
+  - time: 3.2
+    conc_conc: [ 0.019312301210176 , 0.0150171500067143 ]
+  - time: 4
+    conc_conc: [ 0.0193267515726597 , 0.0150220313388442 ]
+  - time: 4.8
+    conc_conc: [ 0.0193281206389866 , 0.0150223938823127 ]
+  - time: 5.6
+    conc_conc: [ 0.0193282331311715 , 0.0150224162567183 ]
+  - time: 5.7
+    conc_conc: [ 0.0193282386727134 , 0.0150224171215911 ]

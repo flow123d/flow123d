@@ -20,6 +20,7 @@
 #include "fem/discrete_space.hh"
 #include "fem/finite_element.hh"
 #include "mesh/mesh.h"
+#include "mesh/side_impl.hh"
 #include "mesh/duplicate_nodes.h"
 
 MixedPtr<FiniteElement> EqualOrderDiscreteSpace::fe(const ElementAccessor<3> &cell) const { return fe_; }
