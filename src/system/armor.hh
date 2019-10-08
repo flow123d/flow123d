@@ -131,7 +131,8 @@ public:
     Array(uint size, uint nr, uint nc = 1)
     : nRows(nr),
       nCols(nc),
-      data(size*nRows*nCols, 0)
+      aSize(size),
+      data(aSize*nRows*nCols, 0)
     {}
     
     /**
@@ -140,9 +141,18 @@ public:
      */
     inline void resize(uint size)
     {
-        data.resize(size*nRows*nCols);
+        aSize = size;
+        data.resize(aSize*nRows*nCols);
     }
     
+    /**
+     * Return size of the array.
+     */
+    inline uint size() const
+    {
+        return aSize;
+    }
+
     /**
      * Insert new matrix to the end of the array.
      * @param p  Vector of values for the new matrix.
@@ -150,6 +160,7 @@ public:
     inline void push_back(const std::vector<Type> &p)
     {
         ASSERT_DBG( p.size() == nRows*nCols );
+        aSize++;
         for (auto i : p) data.push_back( i );
     }
     
@@ -168,6 +179,7 @@ public:
 private:
     uint nRows;
     uint nCols;
+    uint aSize;
     std::vector<Type> data;
 };
 
