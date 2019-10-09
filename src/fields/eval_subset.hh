@@ -28,6 +28,7 @@
 class Side;
 class EvalPoints;
 class BulkPoint;
+class SidePoint;
 
 
 class EvalSubset {
@@ -56,8 +57,8 @@ public:
     /// Returns range of bulk local points for appropriate cell accessor
     Range< BulkPoint > points(const DHCellAccessor &cell) const;
 
-    /// Temporary method for testing
-    void print_side_points(unsigned int permutation);
+    /// Returns range of side local points for appropriate cell side accessor
+    Range< SidePoint > points(const DHCellSide &cell_side) const;
 
 private:
     /// Empty subset is need in default constructors of BulkPoint and SidePoint
@@ -71,6 +72,7 @@ private:
 
     friend class EvalPoints;
     friend class BulkPoint;
+    friend class SidePoint;
 };
 
 
@@ -82,7 +84,7 @@ public:
 
     /// Constructor
 	BulkPoint(DHCellAccessor dh_cell, EvalSubset bulk_subset, unsigned int loc_point_idx)
-    : subset_(bulk_subset), local_point_idx_(loc_point_idx) {}
+    : dh_cell_(dh_cell), subset_(bulk_subset), local_point_idx_(loc_point_idx) {}
 
     /// Getter of composed quadrature
     inline const EvalPoints &eval_points() const {
@@ -100,6 +102,11 @@ public:
     // Global coordinates within element
     //arma::vec3 coords() const;
 
+    /// Return index of element in data cache.
+    inline unsigned int element_cache_index() const {
+        return dh_cell_.element_cache_index();
+    }
+
     /// Iterates to next point.
     inline void inc() {
     	local_point_idx_++;
@@ -107,7 +114,7 @@ public:
 
     /// Comparison of accessors.
     bool operator==(const BulkPoint& other) {
-    	return (local_point_idx_ == other.local_point_idx_);
+    	return (dh_cell_ == other.dh_cell_) && (local_point_idx_ == other.local_point_idx_);
     }
 
 private:
@@ -120,32 +127,41 @@ private:
 };
 
 
-/*template <unsigned int dim>
-class SidePointAccessor {
+class SidePoint {
 public:
     /// Default constructor
-	SidePointAccessor()
-    : local_point_idx_(0), permutation_(0) {}
+	SidePoint()
+    : local_point_idx_(0) {}
 
     /// Constructor
-	SidePointAccessor(EvalSubset<dim> side_points, unsigned int local_point_idx, unsigned int perm)
-    : side_points_(side_points), local_point_idx_(local_point_idx), permutation_(perm) {}
+	SidePoint(DHCellSide cell_side, EvalSubset subset, unsigned int local_point_idx)
+    : cell_side_(cell_side), subset_(subset), local_point_idx_(local_point_idx) {}
 
-    /// Getter of composed quadrature
-    inline const EvalPoints<dim> &eval_points() const {
-        return *side_points_.eval_points_;
+    /// Getter of evaluation points
+    inline const EvalPoints &eval_points() const {
+        return *subset_.eval_points_;
     }
 
     // Index of point within EvalPoints
     inline unsigned int point_set_idx() const {
-        return side_points_.point_indices_[permutation_][local_point_idx_];
+        return subset_.point_indices_[permutation_idx()][local_point_idx_];
     }
 
     // Local coordinates within element
-    arma::vec::fixed<dim> loc_coords();
+    arma::vec loc_coords() const;
 
     // Global coordinates within element
-    arma::vec3 coords();
+    //arma::vec3 coords() const;
+
+    /// Return index of element in data cache.
+    inline unsigned int element_cache_index() const {
+        return cell_side_.cell().element_cache_index();
+    }
+
+    // Index of permutation
+    inline unsigned int permutation_idx() const {
+        return cell_side_.element()->permutation_idx( cell_side_.side_idx() );
+    }
 
     /// Iterates to next point.
     inline void inc() {
@@ -153,18 +169,18 @@ public:
     }
 
     /// Comparison of accessors.
-    bool operator==(const SidePointAccessor<dim>& other) {
-    	return (local_point_idx_ == other.local_point_idx_);
+    bool operator==(const SidePoint& other) {
+    	return (cell_side_ == other.cell_side_) && (local_point_idx_ == other.local_point_idx_);
     }
 
 private:
-    /// Pointer to side point set
-    EvalSubset<dim> side_points_;
+    /// DOF handler accessor of element side.
+    DHCellSide cell_side_;
+    /// Reference to side point set
+    EvalSubset subset_;
     /// Index of the local point in the composed quadrature.
     unsigned int local_point_idx_;
-    /// Permutation of nodes on sides (equivalent with \p RefElement::side_permutations)
-    unsigned int permutation_;
-};*/
+};
 
 
 #endif /* POINT_SETS_HH_ */

@@ -38,13 +38,13 @@ Range< BulkPoint > EvalSubset::points(const DHCellAccessor &cell) const {
     return Range<BulkPoint>(bgn_it, end_it);
 }
 
-void EvalSubset::print_side_points(unsigned int permutation) {
-    std::cout << "Print side points with permutation: " << permutation << std::endl;
-    unsigned int point_size = this->point_indices_[permutation].size();
-    unsigned int points_per_side = point_size / (eval_points().point_dim()+1);
-    for (unsigned int i=0; i<point_size; ++i)
-        std::cout << "--- side point (side " << (i / points_per_side) << ")" << std::endl
-	        << this->eval_points().local_point( this->point_indices_[permutation][i] );
+Range< SidePoint > EvalSubset::points(const DHCellSide &cell_side) const {
+	ASSERT_GT(n_sides_, 0).error("Method points with DHCellSide argument must be call for side subset!\n");
+	unsigned int perm_idx = cell_side.element()->permutation_idx( cell_side.side_idx() );
+    unsigned int points_per_side = this->point_indices_[perm_idx].size() / this->n_sides();
+    auto bgn_it = make_iter<SidePoint>( SidePoint(cell_side, *this, cell_side.side_idx()*points_per_side ) );
+    auto end_it = make_iter<SidePoint>( SidePoint(cell_side, *this, (cell_side.side_idx()+1)*points_per_side ) );
+    return Range<SidePoint>(bgn_it, end_it);
 }
 
 
@@ -53,5 +53,14 @@ void EvalSubset::print_side_points(unsigned int permutation) {
  * Implementation of BulkPoint methods
  */
 arma::vec BulkPoint::loc_coords() const {
+    return this->eval_points().local_point( this->point_set_idx() );
+}
+
+
+
+/******************************************************************************
+ * Implementation of SidePoint methods
+ */
+arma::vec SidePoint::loc_coords() const {
     return this->eval_points().local_point( this->point_set_idx() );
 }
