@@ -8,6 +8,7 @@
 #include "fields/field_values.hh"
 #include "quadrature/quadrature.hh"
 #include "quadrature/quadrature_lib.hh"
+#include "fem/dh_cell_accessor.hh"
 #include "mesh/sides.h"
 #include "mesh/side_impl.hh"
 
@@ -19,7 +20,22 @@ TEST(ComposedQuadratureTest, eval_3d) {
     Quadrature<2> *q_side = new QGauss<2>(2);
     EvalSubset bulk_points = feval.add_bulk<3>(*q_bulk );
     EvalSubset side_points = feval.add_side<3>(*q_side );
-    bulk_points.print_bulk_points();
+    DHCellAccessor dh_cell; // invalid accessor - only test
+    /// this is part of assembly process
+    //for (auto cell : dh->own_range()) {
+    //    feval.reinit(cell.elm());
+        std::cout << "Print bulk points:" << std::endl;
+        for (auto p : bulk_points.points(dh_cell)) {
+        	std::cout << "--- bulk point:" << std::endl << p.loc_coords();
+            //double bulk_expr = cross_section.get_value(p) * conductivity.get_value(p);
+        }
+        /*for (Side side; side.side_idx()<4; side.inc()) {
+            for ( auto p : side_points.points(side) ) {
+            	std::cout << "--- side point " << side.side_idx() << std::endl << p.loc_coords();
+                //double side_expr = cross_section.get_value(p) * sigma.get_value(p);
+            }
+        }*/
+    //}
     side_points.print_side_points(0);
   	std::cout << "----------- end \n";
 

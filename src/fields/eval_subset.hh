@@ -21,11 +21,13 @@
 
 #include <memory>
 #include <armadillo>
-//#include "mesh/range_wrapper.hh"
+#include "mesh/range_wrapper.hh"
+#include "fem/dh_cell_accessor.hh"
 
 
 class Side;
 class EvalPoints;
+class BulkPoint;
 
 
 class EvalSubset {
@@ -38,51 +40,65 @@ public:
         return *eval_points_;
     }
 
+    /// Getter of n_sides
+    inline const unsigned int n_sides() const {
+        return n_sides_;
+    }
+
+    /// Return number of permutations
+    inline const unsigned int n_permutations() const {
+        return point_indices_.size();
+    }
+
     /// Return vector of point indices of given permutation
     const std::vector<int> &get_point_indices(unsigned int permutation) const;
 
-    /// Temporary method for testing
-    void print_bulk_points();
+    /// Returns range of bulk local points for appropriate cell accessor
+    Range< BulkPoint > points(const DHCellAccessor &cell) const;
 
     /// Temporary method for testing
     void print_side_points(unsigned int permutation);
 
 private:
+    /// Empty subset is need in default constructors of BulkPoint and SidePoint
+    static const EvalSubset dummy_subset;
     /// Pointer to composed quadrature
     const EvalPoints *eval_points_;
     /// Indices into full set of local indices in the composed quadrature, for every possible permutation.
     std::vector< std::vector<int> > point_indices_;
+    /// Number of sides (value 0 indicates bulk set)
+    unsigned int n_sides_;
 
     friend class EvalPoints;
+    friend class BulkPoint;
 };
 
 
-/*template <unsigned int dim>
-class BulkPointAccessor {
+class BulkPoint {
 public:
     /// Default constructor
-	BulkPointAccessor()
+	BulkPoint()
     : local_point_idx_(0) {}
 
     /// Constructor
-	BulkPointAccessor(BulkSubQuad<dim> bulk_points, unsigned int loc_point_idx)
-    : bulk_points_(bulk_points), local_point_idx_(loc_point_idx) {}
+	BulkPoint(DHCellAccessor dh_cell, EvalSubset bulk_subset, unsigned int loc_point_idx)
+    : subset_(bulk_subset), local_point_idx_(loc_point_idx) {}
 
     /// Getter of composed quadrature
-    inline const EvalPoints<dim> &eval_points() const {
-        return *bulk_points_.eval_points_;
+    inline const EvalPoints &eval_points() const {
+        return subset_.eval_points();
     }
 
-    // Index of point within EvalPoints
+    /// Index of point within EvalPoints
     inline unsigned int point_set_idx() const {
-        return bulk_points_.point_indices_[local_point_idx_];
+        return subset_.point_indices_[0][local_point_idx_];
     }
 
-    // Local coordinates within element
-    arma::vec::fixed<dim> loc_coords();
+    /// Local coordinates within element
+    arma::vec loc_coords() const;
 
     // Global coordinates within element
-    arma::vec3 coords();
+    //arma::vec3 coords() const;
 
     /// Iterates to next point.
     inline void inc() {
@@ -90,16 +106,18 @@ public:
     }
 
     /// Comparison of accessors.
-    bool operator==(const BulkPointAccessor<dim>& other) {
+    bool operator==(const BulkPoint& other) {
     	return (local_point_idx_ == other.local_point_idx_);
     }
 
 private:
-    /// Pointer to bulk point set.
-    BulkSubQuad<dim> bulk_points_;
+    /// DOF handler accessor of element.
+    DHCellAccessor dh_cell_;
+    /// Reference to bulk point set.
+    EvalSubset subset_;
     /// Index of the local point in bulk point set.
     unsigned int local_point_idx_;
-};*/
+};
 
 
 /*template <unsigned int dim>

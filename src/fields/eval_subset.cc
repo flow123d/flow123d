@@ -24,15 +24,18 @@
  * Implementation of EvalSubset methods.
  */
 
+const EvalSubset EvalSubset::dummy_subset = EvalSubset();
+
 const std::vector<int> &EvalSubset::get_point_indices(unsigned int permutation) const {
     ASSERT_LT( permutation, point_indices_.size() );
     return point_indices_[permutation];
 }
 
-void EvalSubset::print_bulk_points() {
-    std::cout << "Print bulk points:" << std::endl;
-    for (unsigned int i=0; i<this->point_indices_[0].size(); ++i)
-        std::cout << "--- bulk point:" << std::endl << this->eval_points().local_point( this->point_indices_[0][i] );
+Range< BulkPoint > EvalSubset::points(const DHCellAccessor &cell) const {
+	ASSERT_EQ(n_sides_, 0).error("Method points with DHCellAccessor argument must be call for bulk subset!\n");
+    auto bgn_it = make_iter<BulkPoint>( BulkPoint(cell, *this, 0) );
+    auto end_it = make_iter<BulkPoint>( BulkPoint(cell, *this, point_indices_[0].size()) );
+    return Range<BulkPoint>(bgn_it, end_it);
 }
 
 void EvalSubset::print_side_points(unsigned int permutation) {
@@ -47,5 +50,8 @@ void EvalSubset::print_side_points(unsigned int permutation) {
 
 
 /******************************************************************************
- * Explicit instantiation of templates
+ * Implementation of BulkPoint methods
  */
+arma::vec BulkPoint::loc_coords() const {
+    return this->eval_points().local_point( this->point_set_idx() );
+}

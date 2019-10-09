@@ -34,6 +34,7 @@ EvalSubset EvalPoints::add_bulk(const Quadrature<dim> &quad)
 	this->dim_ = dim;
     bulk_set.eval_points_ = this;
     bulk_set.point_indices_.resize(1);
+    bulk_set.n_sides_ = 0;
 
     const Armor::array & quad_points = quad.get_points();
     for (uint i=0; i<quad_points.size(); ++i)
@@ -49,6 +50,7 @@ EvalSubset EvalPoints::add_side(const Quadrature<dim-1> &quad)
 	this->dim_ = dim;
     side_set.eval_points_ = this;
     side_set.point_indices_.resize(RefElement<dim>::n_side_permutations);
+    side_set.n_sides_ = dim+1;
 
     for (unsigned int j=0; j<RefElement<dim>::n_side_permutations; ++j) { // permutations
         for (unsigned int i=0; i<dim+1; ++i) {  // sides
