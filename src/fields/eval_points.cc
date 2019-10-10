@@ -37,7 +37,7 @@ EvalSubset EvalPoints::add_bulk(const Quadrature<dim> &quad)
     bulk_set.n_sides_ = 0;
 
     const Armor::array & quad_points = quad.get_points();
-    for (uint i=0; i<quad_points.size(); ++i)
+    for (uint i=0; i<quad_points.n_vals(); ++i)
         bulk_set.point_indices_[0].push_back( this->add_local_point(quad_points.get<dim>(i).arma()) );
     return bulk_set;
 }
@@ -56,7 +56,7 @@ EvalSubset EvalPoints::add_side(const Quadrature<dim-1> &quad)
         for (unsigned int i=0; i<dim+1; ++i) {  // sides
             Quadrature<dim> high_dim_q(quad, i, j);
             const Armor::array & quad_points = high_dim_q.get_points();
-            for (uint k=0; k<quad_points.size(); ++k) {
+            for (uint k=0; k<quad_points.n_vals(); ++k) {
             	side_set.point_indices_[j].push_back( this->add_local_point(quad_points.get<dim>(k).arma()) );
             }
         }
