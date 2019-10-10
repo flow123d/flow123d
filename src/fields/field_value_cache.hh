@@ -96,8 +96,8 @@ public:
         return dim_;
     }
 
-    /// Returns index of cell stored in cache.
-    unsigned int operator() (DHCellAccessor dh_cell) const;
+    /// Set index of cell in ElementCacheMap (or undef value if cell is not stored in cache).
+    DHCellAccessor & operator() (DHCellAccessor &dh_cell) const;
 private:
     /// Vector of element indexes stored in cache.
     std::vector<unsigned int> elm_idx_;

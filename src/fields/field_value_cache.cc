@@ -87,11 +87,12 @@ void ElementCacheMap::clear_elements_to_update() {
 }
 
 
-unsigned int ElementCacheMap::operator() (DHCellAccessor dh_cell) const {
+DHCellAccessor & ElementCacheMap::operator() (DHCellAccessor &dh_cell) const {
 	unsigned int elm_idx = dh_cell.elm_idx();
 	std::unordered_map<unsigned int, unsigned int>::const_iterator it = cache_idx_.find(elm_idx);
-	ASSERT( it != cache_idx_.end() ).error("THROW"); // TODO throw exception
-    return it->second;
+	if ( it != cache_idx_.end() ) dh_cell.set_element_cache_index( it->second );
+	else dh_cell.set_element_cache_index( ElementCacheMap::undef_elem_idx );
+    return dh_cell;
 }
 
 
