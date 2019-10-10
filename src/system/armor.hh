@@ -124,33 +124,33 @@ class Array {
 public:
     /**
      * Construct array of Armor matrices.
-     * @param size  Number of matrices in the array.
+     * @param nv    Number of matrices in the array.
      * @param nr    Number of rows in each matrix.
-     * @param nc    Number of columnts in each matrix.
+     * @param nc    Number of columns in each matrix.
      */
-    Array(uint size, uint nr, uint nc = 1)
+    Array(uint nv, uint nr, uint nc = 1)
     : nRows(nr),
       nCols(nc),
-      aSize(size),
-      data(aSize*nRows*nCols, 0)
+      nVals(nv),
+      data(nVals*nRows*nCols, 0)
     {}
     
     /**
      * Change number of elements in the array, while keeping the shape of arrays.
      * @param size  New size of array.
      */
-    inline void resize(uint size)
+    inline void resize(uint nv)
     {
-        aSize = size;
-        data.resize(aSize*nRows*nCols);
+    	nVals = nv;
+        data.resize(nVals*nRows*nCols);
     }
     
     /**
-     * Return size of the array.
+     * Return number of matrices.
      */
-    inline uint size() const
+    inline uint n_vals() const
     {
-        return aSize;
+        return nVals;
     }
 
     /**
@@ -160,7 +160,7 @@ public:
     inline void push_back(const std::vector<Type> &p)
     {
         ASSERT_DBG( p.size() == nRows*nCols );
-        aSize++;
+        nVals++;
         for (auto i : p) data.push_back( i );
     }
     
@@ -176,10 +176,26 @@ public:
         return Mat<Type,nr,nc>( const_cast<Type*>(data.data()) + i*nRows*nCols );
     }
     
+    /**
+     * Set matrix at given position in array.
+     * @param idx  Index of matrix.
+     * @param val  Value to set.
+     */
+    template<uint nr, uint nc = 1>
+    inline void set(uint idx, Mat<Type,nr,nc> val) const
+    {
+    	ASSERT_LT_DBG(idx, n_vals()).error("Index out of bound.");
+        ASSERT_DBG( (nr == nRows) && (nc == nCols) );
+        unsigned int vec_idx = idx*nRows*nCols;
+        for(unsigned int i = 0; i < nRows*nCols; i++, vec_idx++) {
+        	data[vec_idx] = val[i];
+        }
+    }
+
 private:
     uint nRows;
     uint nCols;
-    uint aSize;
+    uint nVals;
     std::vector<Type> data;
 };
 
