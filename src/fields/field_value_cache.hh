@@ -22,6 +22,7 @@
 #include <set>
 #include <unordered_map>
 #include <vector>
+#include "system/armor.hh"
 
 class EvalPoints;
 class EvalSubset;
@@ -49,7 +50,7 @@ public:
     }
 private:
     /// Data cache
-    double *data_;
+    Armor::array data_;
 
     /// Holds indices of used local points
     std::set<int> used_points_;  // TODO: test unorderd_set during tuning of the performance

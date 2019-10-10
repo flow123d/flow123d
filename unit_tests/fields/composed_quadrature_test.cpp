@@ -7,6 +7,9 @@
 #include "fields/eval_subset.hh"
 #include "fields/field_value_cache.hh"
 #include "fields/field_values.hh"
+#include "fields/field_set.hh"
+#include "tools/unit_si.hh"
+#include "fields/bc_field.hh"
 #include "quadrature/quadrature.hh"
 #include "quadrature/quadrature_lib.hh"
 #include "fem/dofhandler.hh"
@@ -17,7 +20,48 @@
 #include "system/sys_profiler.hh"
 
 
-TEST(ComposedQuadratureTest, eval_3d) {
+class FieldEval : public testing::Test {
+
+public:
+	class EqData : public FieldSet {
+	public:
+		EqData() {
+			*this += vector_field
+						.name("vector_field")
+						.description("Velocity vector.")
+						.input_default("0.0")
+						.flags_add(in_main_matrix)
+						.units( UnitSI().kg(3).m() );
+			*this += scalar_field
+						.name("scalar_field")
+						.description("Pressure head")
+						.units( UnitSI().m() );
+
+			*this += tensor_field
+						.name("tensor_field")
+						.description("")
+						.units( UnitSI::dimensionless() )
+						.flags_add(in_main_matrix);
+		}
+
+		// fields
+	    Field<3, FieldValue<3>::Scalar > scalar_field;
+	    Field<3, FieldValue<3>::VectorFixed > vector_field;
+	    Field<3, FieldValue<3>::TensorFixed > tensor_field;
+	};
+
+	FieldEval() {
+	    Profiler::initialize();
+	}
+
+	~FieldEval() {
+		std::cout << "-- destructor \n";
+	}
+
+};
+
+
+TEST_F(FieldEval, eval_3d) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
     Profiler::initialize();
@@ -52,10 +96,7 @@ TEST(ComposedQuadratureTest, eval_3d) {
     //}
   	std::cout << "----------- end \n";
 
-  	FieldValueCache<FieldValue<0>::Scalar> scalar_cache(side_points.eval_points());
-  	FieldValueCache<FieldValue<3>::VectorFixed> vector_cache(side_points.eval_points());
-  	FieldValueCache<FieldValue<3>::TensorFixed> tensor_cache(side_points.eval_points());
-  	scalar_cache.mark_used(side_points);
-  	vector_cache.mark_used(side_points);
-  	tensor_cache.mark_used(side_points);
+  	auto data = EqData();
+  	data.cache_allocate(bulk_points);
+  	std::cout << "----------- end 2 \n";
 }
