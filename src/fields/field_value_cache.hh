@@ -32,6 +32,8 @@ class DHCellAccessor;
 template<class Value>
 class FieldValueCache {
 public:
+	typedef typename Value::element_type elm_type;
+
     /// Default constructor
     FieldValueCache();
 
@@ -48,9 +50,20 @@ public:
     inline const std::set<int> &used_points() const {
         return used_points_;
     }
+
+    /// Return size of data cache (number of stored field values)
+    inline unsigned int size() const {
+        return data_.n_vals();
+
+    }
+
+    /// Return data vector.
+    inline Armor::Array<elm_type> &data() {
+        return data_;
+    }
 private:
     /// Data cache
-    Armor::array data_;
+    Armor::Array<elm_type> data_;
 
     /// Holds indices of used local points
     std::set<int> used_points_;  // TODO: test unorderd_set during tuning of the performance

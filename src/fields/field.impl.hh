@@ -696,18 +696,38 @@ void Field<spacedim, Value>::cache_allocate(EvalSubset sub_set) {
 
 template<int spacedim, class Value>
 void Field<spacedim, Value>::cache_update(ElementCacheMap &cache_map, EvalPoints &eval_points) {
-    unsigned int dim = cache_map.dim();
+	// Helper struct allows to sort data for different regions
+	struct RegionEvalData
+	{
+	    std::vector<arma::vec>                 loc_points;
+	    std::vector<ElementAccessor<spacedim>> element_set;
+	    std::vector<unsigned int>              indices_to_cache;
+	};
+	// Map of data for different regions
+	std::map<unsigned int, RegionEvalData> region_data_map;
+
+	unsigned int dim = cache_map.dim();
     FieldValueCache<Value> &dim_cache = value_cache_[dim-1];
+    unsigned int points_per_elem = dim_cache.size() / ElementCacheMap::n_cached_elements;
     const std::vector<unsigned int> &added_elements = cache_map.added_elements();
     const std::set<int> &used_points = dim_cache.used_points();
 
     for (unsigned int elm_idx : added_elements) {
         ElementAccessor<spacedim> elm(shared_->mesh_, elm_idx);
-        for (int p_idx : used_points) {
-            arma::vec loc_point = eval_points.local_point(p_idx);
-            const typename Value::element_type *point_val = region_fields_[elm.region_idx().idx()]->loc_point_value(loc_point, elm);
-            // store point_val to cache
+        unsigned int reg_idx = elm.region_idx().idx();
+        typename std::map<unsigned int, RegionEvalData>::iterator region_it = region_data_map.find(reg_idx);
+        if (region_it == region_data_map.end()) {
+            region_data_map.insert( {reg_idx, RegionEvalData()} );
+            region_it = region_data_map.find(reg_idx);
         }
+        region_it->second.element_set.push_back( elm );
+        for (int p_idx : used_points) {
+        	region_it->second.loc_points.push_back( eval_points.local_point(p_idx) );
+        	region_it->second.indices_to_cache.push_back( elm.element_cache_index() * points_per_elem + p_idx );
+        }
+    }
+    for (typename std::map<unsigned int, RegionEvalData>::iterator it=region_data_map.begin(); it!=region_data_map.end(); ++it) {
+        region_fields_[it->first]->loc_point_value( it->second.loc_points, it->second.element_set, it->second.indices_to_cache, dim_cache );
     }
 }
 

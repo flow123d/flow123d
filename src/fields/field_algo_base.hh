@@ -36,6 +36,7 @@
 #include <armadillo>                       // for operator%, operator<<
 #include "fields/field_values.hh"          // for FieldValue<>::Enum, FieldV...
 #include "fields/field_flag.hh"
+#include "fields/field_value_cache.hh"
 #include "input/type_selection.hh"         // for Selection
 #include "mesh/point.hh"                   // for Space
 #include "mesh/side_impl.hh"
@@ -234,9 +235,11 @@ public:
        virtual void value_list(const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
                           std::vector<typename Value::return_type>  &value_list)=0;
 
-       virtual const typename Value::element_type *loc_point_value(const arma::vec &loc_point, const ElementAccessor<spacedim> &elm) {
+       virtual void loc_point_value(const std::vector< arma::vec > &eval_points,
+                   const std::vector< ElementAccessor<spacedim> > &element_set,
+   	               const std::vector< unsigned int > &indices_to_cache,
+   	               FieldValueCache<Value> &data_cache) {
     	   ASSERT(false).error("Must be implemented in descendants!\n");
-    	   return nullptr;
        }
 
        /**
