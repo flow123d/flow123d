@@ -177,19 +177,15 @@ public:
     }
     
     /**
-     * Set matrix at given position in array.
-     * @param idx  Index of matrix.
-     * @param val  Value to set.
+     * Return matrix at given position in array. The returned object is a Armor::Mat
+     * pointing to the respective data block in the Array's storage.
+     * @param i  Index of matrix.
      */
     template<uint nr, uint nc = 1>
-    inline void set(uint idx, Mat<Type,nr,nc> val) const
+    inline Mat<Type,nr,nc> get(uint i)
     {
-    	ASSERT_LT_DBG(idx, n_vals()).error("Index out of bound.");
         ASSERT_DBG( (nr == nRows) && (nc == nCols) );
-        unsigned int vec_idx = idx*nRows*nCols;
-        for(unsigned int i = 0; i < nRows*nCols; i++, vec_idx++) {
-        	data[vec_idx] = val[i];
-        }
+        return Mat<Type,nr,nc>( (Type*)(data.data()) + i*nRows*nCols );
     }
 
 private:
