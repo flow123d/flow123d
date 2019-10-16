@@ -164,7 +164,7 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         ("no_log", "Turn off logging.")
         ("no_signal_handler", "Turn off signal handling. Useful for debugging with valgrind.")
         ("no_profiler,no-profiler", "Turn off profiler output.")
-        ("profiler_path,profiler-path", "Path to the profiler file")
+        ("profiler_path,profiler-path", po::value< string >(), "Path to the profiler file")
         ("input_format", po::value< string >(), "Writes full structure of the main input file into given file.")
 		("petsc_redirect", po::value<string>(), "Redirect all PETSc stdout and stderr to given file.")
 		("yaml_balance", "Redirect balance output to YAML format too (simultaneously with the selected balance output format).");

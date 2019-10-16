@@ -718,6 +718,7 @@ void Profiler::output(MPI_Comm comm, string profiler_path) {
     if(profiler_path == "") {
         output(comm);
     }else {
+        json_filepath = profiler_path;
         int mpi_rank;
         chkerr( MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank) );
         if (mpi_rank == 0) {
@@ -809,6 +810,7 @@ void Profiler::output(string profiler_path) {
     if(profiler_path == "") {
         output(*get_default_output_stream());
     } else {
+        json_filepath = profiler_path;
         std::shared_ptr<std::ostream> os = make_shared<ofstream>(profiler_path.c_str());
         output(*os);
     }
