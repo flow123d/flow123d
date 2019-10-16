@@ -1,6 +1,6 @@
 /*!
  *
-﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
  * 
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License version 3 as published by the
@@ -714,6 +714,22 @@ void Profiler::output(MPI_Comm comm) {
     }
 }
 
+void Profiler::output(MPI_Comm comm, string profiler_path) {
+    if(profiler_path == "") {
+        output(comm);
+    }else {
+        int mpi_rank;
+        chkerr( MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank) );
+        if (mpi_rank == 0) {
+            std::shared_ptr<std::ostream> os = make_shared<ofstream>(profiler_path.c_str());
+            output(comm, *os);
+        } else {
+            ostringstream os;
+            output(comm, os );
+        }
+    }
+}
+
 #endif /* FLOW123D_HAVE_MPI */
 
 void Profiler::output(ostream &os) {
@@ -787,6 +803,15 @@ void Profiler::output(ostream &os) {
 
 void Profiler::output() {
     output(*get_default_output_stream());
+}
+
+void Profiler::output(string profiler_path) {
+    if(profiler_path == "") {
+        output(*get_default_output_stream());
+    } else {
+        std::shared_ptr<std::ostream> os = make_shared<ofstream>(profiler_path.c_str());
+        output(*os);
+    }
 }
 
 void Profiler::output_header (property_tree::ptree &root, int mpi_size) {

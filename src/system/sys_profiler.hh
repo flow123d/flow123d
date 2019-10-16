@@ -610,6 +610,12 @@ public:
      * Empty body if macro FLOW123D_DEBUG_PROFILER is not defined.
      */
     void output(MPI_Comm comm);
+
+    /**
+     * Output profiler to the desired location
+     */
+    void output(MPI_Comm comm, string profiler_path);
+
 #endif /* FLOW123D_HAVE_MPI */
     /**
      * @brief Output current timing information into the given stream.
@@ -627,6 +633,12 @@ public:
      * Empty body if macro FLOW123D_DEBUG_PROFILER is not defined.
      */
     void output();
+
+    /**
+     * Output profiler to the desired location
+     */
+    void output(string profiler_path);
+
     /**
      * Method will transform last profiler json file to desired format
      */
