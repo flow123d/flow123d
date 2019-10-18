@@ -143,16 +143,17 @@ void RichardsLMH::initial_condition_postprocess()
 {
     // set water_content
     // pretty ugly since postprocess change fluxes, which cause bad balance, so we must set them back
-    data_->previous_solution.copy_from(data_->data_vec_); // store solution vector
+    data_->previous_solution.copy_from(data_->full_solution); // store solution vector
     postprocess();
-//     data_->previous_solution.swap(data_->data_vec_); // currently does not mimic VecSwap
-    VecSwap(schur0->get_solution(), data_->previous_solution.petsc_vec()); // restore solution vector
+//     data_->previous_solution.swap(data_->full_solution); // currently does not mimic VecSwap
+//     VecSwap(schur0->get_solution(), data_->previous_solution.petsc_vec()); // restore solution vector
+    VecSwap(data_->full_solution.petsc_vec(), data_->previous_solution.petsc_vec()); // restore solution vector
 }
 
 
 void RichardsLMH::prepare_new_time_step()
 {
-    data_->previous_solution.copy_from(data_->data_vec_);
+    data_->previous_solution.copy_from(data_->full_solution);
     data_->water_content_previous_time.copy_from(data_->water_content_previous_it);
 }
 
@@ -176,7 +177,7 @@ void RichardsLMH::assembly_linear_system()
     START_TIMER("RicharsLMH::assembly_linear_system");
     
     // update the subvector with edge pressure for solution vector
-    data_->dh_cr_->update_subvector(data_->data_vec_, data_->phead_edge_);
+    data_->dh_cr_->update_subvector(data_->full_solution, data_->phead_edge_);
     data_->phead_edge_.local_to_ghost_begin();
     data_->phead_edge_.local_to_ghost_end();
 
@@ -230,7 +231,7 @@ void RichardsLMH::postprocess() {
     assembly_linear_system();
     
     // update the subvector with edge pressure for solution vector
-    data_->dh_cr_->update_subvector(data_->data_vec_, data_->phead_edge_);
+    data_->dh_cr_->update_subvector(data_->full_solution, data_->phead_edge_);
     data_->phead_edge_.local_to_ghost_begin();
     data_->phead_edge_.local_to_ghost_end();
 

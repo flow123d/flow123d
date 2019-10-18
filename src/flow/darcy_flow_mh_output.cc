@@ -330,7 +330,7 @@ void DarcyFlowMHOutput::output_internal_flow_data()
         dh_cell.get_loc_dof_indices(indices);
 
         // pressure
-        raw_output_file << fmt::format("{} {} ", dh_cell.elm().index(), data->data_vec_[indices[ele->n_sides()]]);
+        raw_output_file << fmt::format("{} {} ", dh_cell.elm().index(), data->full_solution[indices[ele->n_sides()]]);
         
         // velocity at element center
         flux_in_center = multidim_assembler[ele.dim() -1]->make_element_vector(ele_ac);
@@ -343,11 +343,11 @@ void DarcyFlowMHOutput::output_internal_flow_data()
         // pressure on edges
         unsigned int lid = ele->n_sides() + 1;
         for (unsigned int i = 0; i < ele->n_sides(); i++, lid++) {
-            raw_output_file << data->data_vec_[indices[lid]] << " ";
+            raw_output_file << data->full_solution[indices[lid]] << " ";
         }
         // fluxes on sides
         for (unsigned int i = 0; i < ele->n_sides(); i++) {
-            raw_output_file << data->data_vec_[indices[i]] << " ";
+            raw_output_file << data->full_solution[indices[i]] << " ";
         }
         
         raw_output_file << endl;
@@ -393,10 +393,10 @@ void DarcyFlowMHOutput::l2_diff_local(DHCellAccessor dh_cell,
 //     vector<double> pressure_traces(dim+1);
 
     for (unsigned int li = 0; li < ele->n_sides(); li++) {
-        fluxes[li] = diff_data.data_->data_vec_[ ele_ac.side_local_row(li) ];
+        fluxes[li] = diff_data.data_->full_solution[ ele_ac.side_local_row(li) ];
 //         pressure_traces[li] = result.dh->side_scalar( *(ele->side( li ) ) );
     }
-    double pressure_mean = diff_data.data_->data_vec_[ ele_ac.ele_local_row() ];
+    double pressure_mean = diff_data.data_->full_solution[ ele_ac.ele_local_row() ];
 
     arma::vec analytical(5);
     arma::vec3 flux_in_q_point;

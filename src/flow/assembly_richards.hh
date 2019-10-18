@@ -172,6 +172,7 @@ protected:
                                             -source_diagonal - mass_rhs);
             }
 
+            if(! this->reconstruct)
             if (ad_->balance != nullptr) {
                 ad_->balance->add_mass_vec_value(ad_->water_balance_idx, ele.region().bulk_idx(),
                         diagonal_coef*ad_->water_content_previous_it[local_side]);
@@ -202,7 +203,7 @@ protected:
             double water_content = ad_->water_content_previous_it[ cr_disc_dofs[i] ];
             double water_content_previous_time = ad_->water_content_previous_time[ cr_disc_dofs[i] ];
             
-            ad_->data_vec_[this->indices_[this->loc_side_dofs[i]]]
+            ad_->full_solution[this->indices_[this->loc_side_dofs[i]]]
                 += edge_source_term - edge_scale * (water_content - water_content_previous_time) / this->ad_->time_step_;
         }
     }

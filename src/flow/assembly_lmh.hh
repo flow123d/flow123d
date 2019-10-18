@@ -123,7 +123,7 @@ public:
         
         assembly_dim_connections(ele_ac);
         
-//         loc_system_.eliminate_solution();
+        loc_system_.eliminate_solution();
         
         const unsigned int n = loc_schur_.row_dofs.n_rows;  // local Schur complement size
         const unsigned int off = loc_edge_dofs[0];          // local Schur complement offset in LocalSystem
@@ -166,9 +166,9 @@ public:
         
         assembly_dim_connections(ele_ac);
         
-        ad_->lin_sys->set_local_system(loc_system_);
+//         ad_->lin_sys->set_local_system(loc_system_);
         
-//         local.eliminate_solution();
+        loc_system_.eliminate_solution();
         loc_system_.compute_schur_complement(loc_edge_dofs[0], loc_schur_, true);
         ad_->lin_sys_schur->set_local_system(loc_schur_);
 
@@ -188,7 +188,7 @@ public:
 
         velocity_interpolation_fv_.reinit(ele);
         for (unsigned int li = 0; li < ele->n_sides(); li++) {
-            flux_in_center += ad_->data_vec_[ ele_ac.side_local_row(li) ]
+            flux_in_center += ad_->full_solution[ ele_ac.side_local_row(li) ]
                         * velocity_interpolation_fv_.vector_view(0).value(li,0);
         }
 
@@ -282,30 +282,6 @@ protected:
             }
             i++;
         }
-        
-//         for (unsigned int i = 0; i < ele->n_neighs_vb(); i++) {
-//             // every compatible connection adds a 2x2 matrix involving
-//             // current element pressure  and a connected edge pressure
-//             ngh = ele->neigh_vb[i];
-//             LocalElementAccessorBase<3> acc_higher_dim( dh_cell.dh()->cell_accessor_from_element(ngh->edge()->side(0)->element().idx()) );
-//             
-//             std::vector<LongIdx> higher_indices(acc_higher_dim.dh_cell().n_dofs());
-//             acc_higher_dim.dh_cell().get_loc_dof_indices(higher_indices);
-//             
-//             DHCellAccessor higher_dh_cr_cell = acc_higher_dim.dh_cell().cell_with_other_dh(ad_->dh_cr_.get());
-//             std::vector<LongIdx> cr_dofs(higher_dh_cr_cell.n_dofs());
-//             higher_dh_cr_cell.get_loc_dof_indices(cr_dofs);            
-//                     
-//             for (unsigned int j = 0; j < ngh->edge()->side(0)->element().dim()+1; j++)
-//             	if (ngh->edge()->side(0)->element()->edge_idx(j) == ngh->edge_idx()) {
-//                     unsigned int p = size()+i;
-//                     dofs[p] = higher_indices[higher_indices.size() - cr_dofs.size() + j];
-//                     
-//                     unsigned int t = schur_indices.size()+i;
-//                     dofs_schur[t] = cr_dofs[j];
-//             		break;
-//             	}
-//         }
     }
     
     void set_dofs(LocalElementAccessorBase<3> ele_ac){
@@ -447,7 +423,7 @@ protected:
                         // Magnitude of the error is abs(solution_flux - side_flux).
                         ASSERT_DBG(ad_->dh_->distr()->is_local(ele_ac.side_row(i)))(ele_ac.side_row(i));
                         unsigned int loc_side_row = ele_ac.side_local_row(i);
-                        double solution_flux = ad_->data_vec_[loc_side_row];
+                        double solution_flux = ad_->full_solution[loc_side_row];
 
                         if ( solution_flux < side_flux) {
                             //DebugOut().fmt("x: {}, to neum, p: {} f: {} -> f: {}\n", b_ele.centre()[0], bc_pressure, solution_flux, side_flux);
@@ -465,7 +441,7 @@ protected:
                         // in pressure inequality is always satisfied.
                         ASSERT_DBG(ad_->dh_->distr()->is_local(ele_ac.edge_row(i)))(ele_ac.edge_row(i));
                         unsigned int loc_edge_row = ele_ac.edge_local_row(i);
-                        double solution_head = ad_->data_vec_[loc_edge_row];
+                        double solution_head = ad_->full_solution[loc_edge_row];
 
                         if ( solution_head > bc_pressure) {
                             //DebugOut().fmt("x: {}, to dirich, p: {} -> p: {} f: {}\n",b_ele.centre()[0], solution_head, bc_pressure, bc_flux);
@@ -496,7 +472,7 @@ protected:
                     double bc_sigma = ad_->bc_robin_sigma.value(b_ele.centre(), b_ele);
                     ASSERT_DBG(ad_->dh_->distr()->is_local(ele_ac.edge_row(i)))(ele_ac.edge_row(i));
                     unsigned int loc_edge_row = ele_ac.edge_local_row(i);
-                    double solution_head = ad_->data_vec_[loc_edge_row];
+                    double solution_head = ad_->full_solution[loc_edge_row];
 
                     // Force Robin type during the first iteration of the unsteady case.
                     if (solution_head > bc_switch_pressure  || ad_->force_bc_switch) {
@@ -731,12 +707,12 @@ protected:
             
             if( ! ad_->use_steady_assembly_)
             {
-                new_pressure = ad_->data_vec_[         indices_[loc_edge_dofs[i]] ];
+                new_pressure = ad_->full_solution[         indices_[loc_edge_dofs[i]] ];
                 old_pressure = ad_->previous_solution[ indices_[loc_edge_dofs[i]] ];
                 time_term = edge_scale * storativity / ad_->time_step_ * (new_pressure - old_pressure);
             }
             
-            ad_->data_vec_[indices_[loc_side_dofs[i]]] += edge_source_term - time_term;
+            ad_->full_solution[indices_[loc_side_dofs[i]]] += edge_source_term - time_term;
         }
     }
     

@@ -162,7 +162,6 @@ public:
         
         LinSys *lin_sys_schur;
         VectorMPI schur_solution;     //< 2. Schur complement solution
-        VectorMPI full_solution;     //< full solution [vel,press,lambda] from 2. Schur complement
         
         VectorMPI previous_solution;
     };

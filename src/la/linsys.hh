@@ -390,7 +390,7 @@ public:
     }
 
     void set_local_system(LocalSystem & local){
-        local.eliminate_solution();
+        // local.eliminate_solution();
         arma::mat tmp = local.matrix.t();
 //         DBGCOUT(<< "\n" << tmp);
 //         DBGCOUT(<< "row dofs: \n");
