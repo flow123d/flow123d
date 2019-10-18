@@ -5,6 +5,15 @@ import matplotlib.pyplot as plt
 import colorsys
 import yaml
 
+"""
+Comparison between Flow123d observe data and S1D code output.
+Usage:
+
+  python3 plot.py <out_dir>
+  
+<out_dir> should contain> flow_observe.yaml, MAIN.IN, W_OBSERV.OUT
+"""
+
 # Kelvins law:
 # ln(p/p0) = 2 * gamma * M / (rho * r * R * T)
 # V_m = M / rho
@@ -44,8 +53,8 @@ def s1d_read_obs_positions():
     with open(main_file, "rt") as f:
         for line in f:
             if "xObs" in line:
-                next_line = f.next()
-                x_obs_all = map(float, next_line.split() )
+                next_line = next(f)
+                x_obs_all = list(map(float, next_line.split() ))
                 break
     return np.array(x_obs_all)[obs_cols_flow123d[:]]
 
@@ -118,9 +127,9 @@ flow_data = read_flow_yaml_to_rh("flow_observe.yaml")
 phead_flow123d= flow_data[0]
 velocity_flow123d = flow_data[1]
 
-print x_obs
-print phead_s1d[1]
-print phead_flow123d[1]
+print(x_obs)
+print(phead_s1d[1])
+print(phead_flow123d[1])
 
 
 def plot_data(data, title, style, col_hue, point_legend=False):        

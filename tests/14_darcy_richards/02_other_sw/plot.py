@@ -5,6 +5,16 @@ import matplotlib.pyplot as plt
 import colorsys
 import yaml
 
+"""
+Comparison between Flow123d observe data and UGN comsol calculation and reference data.
+Usage:
+
+  python3 plot.py <out_dir>
+  
+<out_dir> should contain> flow_observe.yaml, MAIN.IN, W_OBSERV.OUT
+"""
+
+
 # Kelvins law:
 # ln(p/p0) = 2 * gamma * M / (rho * r * R * T)
 # V_m = M / rho
@@ -41,8 +51,8 @@ main_file = os.path.join(output_dir, "MAIN.IN")
 with open(main_file, "rt") as f:
     for line in f:
         if "xObs" in line:
-            next_line = f.next()
-            x_obs_all = map(float, next_line.split() )
+            next_line = next(f)
+            x_obs_all = list(map(float, next_line.split() ))
             break
 x_obs = x_obs_all[1:5]
 
