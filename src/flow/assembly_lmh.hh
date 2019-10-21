@@ -166,8 +166,6 @@ public:
         
         assembly_dim_connections(ele_ac);
         
-//         ad_->lin_sys->set_local_system(loc_system_);
-        
         loc_system_.eliminate_solution();
         loc_system_.compute_schur_complement(loc_edge_dofs[0], loc_schur_, true);
         ad_->lin_sys_schur->set_local_system(loc_schur_);
@@ -439,9 +437,18 @@ protected:
                         // cause that a solution  with the flux violating the
                         // flux inequality leading may be accepted, while the error
                         // in pressure inequality is always satisfied.
-                        ASSERT_DBG(ad_->dh_->distr()->is_local(ele_ac.edge_row(i)))(ele_ac.edge_row(i));
-                        unsigned int loc_edge_row = ele_ac.edge_local_row(i);
-                        double solution_head = ad_->full_solution[loc_edge_row];
+
+                        // ASSERT_DBG(ad_->dh_->distr()->is_local(ele_ac.edge_row(i)))(ele_ac.edge_row(i));
+                        // unsigned int loc_edge_row = ele_ac.edge_local_row(i);
+                        // double solution_head = ad_->full_solution[loc_edge_row];
+
+                        // TODO: 
+                        // use local indices from local schur system
+                        // unsigned int loc_edge_dof = loc_schur_.row_dofs[i];
+                        DHCellAccessor dh_cr_cell = ele_ac.dh_cell().cell_with_other_dh(ad_->dh_cr_.get());
+                        std::vector<LongIdx> schur_indices(dh_cr_cell.n_dofs());
+                        dh_cr_cell.get_loc_dof_indices(schur_indices);
+                        double solution_head = ad_->schur_solution[schur_indices[i]];
 
                         if ( solution_head > bc_pressure) {
                             //DebugOut().fmt("x: {}, to dirich, p: {} -> p: {} f: {}\n",b_ele.centre()[0], solution_head, bc_pressure, bc_flux);
@@ -470,9 +477,18 @@ protected:
                     double bc_switch_pressure = ad_->bc_switch_pressure.value(b_ele.centre(), b_ele);
                     double bc_flux = -ad_->bc_flux.value(b_ele.centre(), b_ele);
                     double bc_sigma = ad_->bc_robin_sigma.value(b_ele.centre(), b_ele);
-                    ASSERT_DBG(ad_->dh_->distr()->is_local(ele_ac.edge_row(i)))(ele_ac.edge_row(i));
-                    unsigned int loc_edge_row = ele_ac.edge_local_row(i);
-                    double solution_head = ad_->full_solution[loc_edge_row];
+                    
+                    // ASSERT_DBG(ad_->dh_->distr()->is_local(ele_ac.edge_row(i)))(ele_ac.edge_row(i));
+                    // unsigned int loc_edge_row = ele_ac.edge_local_row(i);
+                    // double solution_head = ad_->full_solution[loc_edge_row];
+
+                    // TODO: 
+                        // use local indices from local schur system
+                        // unsigned int loc_edge_dof = loc_schur_.row_dofs[i];
+                    DHCellAccessor dh_cr_cell = ele_ac.dh_cell().cell_with_other_dh(ad_->dh_cr_.get());
+                    std::vector<LongIdx> schur_indices(dh_cr_cell.n_dofs());
+                    dh_cr_cell.get_loc_dof_indices(schur_indices);
+                    double solution_head = ad_->schur_solution[schur_indices[i]];
 
                     // Force Robin type during the first iteration of the unsteady case.
                     if (solution_head > bc_switch_pressure  || ad_->force_bc_switch) {
