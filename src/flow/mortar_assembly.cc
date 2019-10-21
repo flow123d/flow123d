@@ -227,6 +227,7 @@ void P0_CouplingAssembler::add_to_linsys(double scale)
              if (fix_velocity_flag) {
                  this->fix_velocity_local(row_ele, col_ele);
              } else {
+                 loc_system_.eliminate_solution();
                  data_->lin_sys->set_local_system(loc_system_);
              }
          }

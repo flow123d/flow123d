@@ -332,7 +332,7 @@ void DarcyLMH::initialize() {
     // this creates mpi vector from DoFHandler, including ghost values
     data_->schur_solution = data_->dh_cr_->create_vector();
     data_->previous_solution = data_->dh_->create_vector();
-    previous_solution_nonlinear = data_->dh_->create_vector();
+    previous_solution_nonlinear = data_->dh_cr_->create_vector();
     
     // Initialize bc_switch_dirichlet to size of global boundary.
     data_->bc_switch_dirichlet.resize(mesh_->n_elements()+mesh_->n_elements(true), 1);
@@ -502,7 +502,6 @@ void DarcyLMH::solve_nonlinear()
 {
 
     assembly_linear_system();
-//     print_matlab_matrix("matrix_" + std::to_string(time_->step().index()));
     double residual_norm = schur_compl->compute_residual();
     nonlinear_iteration_ = 0;
     MessageOut().fmt("[nonlinear solver] norm of initial residual: {}\n", residual_norm);
@@ -529,6 +528,7 @@ void DarcyLMH::solve_nonlinear()
     	OLD_ASSERT_EQUAL( convergence_history.size(), nonlinear_iteration_ );
         convergence_history.push_back(residual_norm);
 
+        // print_matlab_matrix("matrix_" + std::to_string(time_->step().index()) + "_it_" + std::to_string(nonlinear_iteration_));
         // stagnation test
         if (convergence_history.size() >= 5 &&
             convergence_history[ convergence_history.size() - 1]/convergence_history[ convergence_history.size() - 2] > 0.9 &&
@@ -543,7 +543,7 @@ void DarcyLMH::solve_nonlinear()
         }
 
         if (! is_linear_common)
-            previous_solution_nonlinear.copy_from(data_->full_solution);
+            previous_solution_nonlinear.copy_from(data_->schur_solution);
 //         LinSys::SolveInfo si = schur0->solve();
 
         LinSys::SolveInfo si = schur_compl->solve();        
@@ -563,7 +563,7 @@ void DarcyLMH::solve_nonlinear()
         data_changed_=true; // force reassembly for non-linear case
 
         double alpha = 1; // how much of new solution
-        VecAXPBY(data_->full_solution.petsc_vec(), (1-alpha), alpha, previous_solution_nonlinear.petsc_vec());
+        VecAXPBY(data_->schur_solution.petsc_vec(), (1-alpha), alpha, previous_solution_nonlinear.petsc_vec());
 
         //LogOut().fmt("Linear solver ended with reason: {} \n", si.converged_reason );
         //OLD_ASSERT( si.converged_reason >= 0, "Linear solver failed to converge. Convergence reason %d \n", si.converged_reason );

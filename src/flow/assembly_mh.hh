@@ -181,6 +181,7 @@ public:
         assemble_element(ele_ac);
         assemble_source_term(ele_ac);
         
+        loc_system_.eliminate_solution();
         ad_->lin_sys->set_local_system(loc_system_);
 
         assembly_dim_connections(ele_ac);
@@ -496,6 +497,7 @@ protected:
 
             assembly_local_vb(ele, neighb_side);
 
+            loc_system_vb_.eliminate_solution();
             ad_->lin_sys->set_local_system(loc_system_vb_);
 
             // update matrix for weights in BDDCML
