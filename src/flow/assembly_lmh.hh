@@ -704,9 +704,8 @@ protected:
             Boundary* bcd = ele.side(i)->cond();
 
             if (bcd) {
-                ad_->balance->add_flux_matrix_values(ad_->water_balance_idx, ad_->local_boundary_index,
+                ad_->balance->add_flux_matrix_values(ad_->water_balance_idx, ele_ac.side(i),
                                                      {(LongIdx)(ele_ac.side_row(i))}, {1});
-                ++(ad_->local_boundary_index);
             }
         }
     }

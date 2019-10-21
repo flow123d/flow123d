@@ -735,10 +735,9 @@ public:
                 }
                 data_->ls[sbi]->rhs_set_values(ndofs_, &(dof_indices_[0]), &(local_rhs_[0]));
 
-                model_.balance()->add_flux_matrix_values(model_.get_subst_idx()[sbi], data_->loc_b_, dof_indices_, local_flux_balance_vector_);
-                model_.balance()->add_flux_vec_value(model_.get_subst_idx()[sbi], data_->loc_b_, local_flux_balance_rhs_);
+                model_.balance()->add_flux_matrix_values(model_.get_subst_idx()[sbi], side, dof_indices_, local_flux_balance_vector_);
+                model_.balance()->add_flux_vec_value(model_.get_subst_idx()[sbi], side, local_flux_balance_rhs_);
             }
-            ++data_->loc_b_;
         }
     }
 

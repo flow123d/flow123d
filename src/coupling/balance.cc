@@ -18,6 +18,7 @@
 
 #include <iostream>
 #include <iomanip>
+#include <unordered_map>
 
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
@@ -208,21 +209,27 @@ void Balance::lazy_initialize()
 	const unsigned int n_blk_reg = mesh_->region_db().bulk_size();
 
 
-	// construct vector of regions of boundary edges
+    // enumerate boundary edges by unique id and
+    // create map: (local  bulk ele idx, side idx) -> boundary edge id
+    // create vector that maps: boundary edge id -> region boundary index
+    unsigned int be_id = 0;
     for (unsigned int loc_el = 0; loc_el < mesh_->get_el_ds()->lsize(); loc_el++)
     {
-        ElementAccessor<3> elm = mesh_->element_accessor( mesh_->get_el_4_loc()[loc_el] );
+       ElementAccessor<3> elm = mesh_->element_accessor( mesh_->get_el_4_loc()[loc_el] );
         if (elm->boundary_idx_ != nullptr)
         {
         	for(unsigned int si=0; si<elm->n_sides(); si++)
             {
                 Boundary *b = elm.side(si)->cond();
-                if (b != nullptr)
-                	be_regions_.push_back(b->region().boundary_idx());
+                if (b != nullptr){
+                    LongIdx ele_side_uid = get_boundary_edge_uid(elm.side(si));
+                    be_id_map_[ele_side_uid] = be_id;
+                    be_regions_.push_back(b->region().boundary_idx());
+                    be_id++;
+                }
             }
         }
     }
-
 
 
 	fluxes_    .resize(n_quant, vector<double>(n_bdr_reg, 0));
@@ -440,14 +447,14 @@ void Balance::add_mass_matrix_values(unsigned int quantity_idx,
 
 
 void Balance::add_flux_matrix_values(unsigned int quantity_idx,
-		unsigned int boundary_idx,
+		SideIter side,
 		const vector<LongIdx> &dof_indices,
 		const vector<double> &values)
 {
     ASSERT_DBG(allocation_done_);
     if (! balance_on_) return;
 
-	PetscInt elem_array[1] = { int(be_offset_+boundary_idx) };
+	PetscInt elem_array[1] = { int(be_offset_ + be_id_map_[get_boundary_edge_uid(side)]) };
 	chkerr_assert(MatSetValues(be_flux_matrix_[quantity_idx],
 			1,
 			elem_array,
@@ -497,14 +504,14 @@ void Balance::add_mass_vec_value(unsigned int quantity_idx,
 
 
 void Balance::add_flux_vec_value(unsigned int quantity_idx,
-		unsigned int boundary_idx,
+		SideIter side,
 		double value)
 {
     ASSERT_DBG(allocation_done_);
     if (! balance_on_) return;
 
     chkerr_assert(VecSetValue(be_flux_vec_[quantity_idx],
-			be_offset_+boundary_idx,
+			be_offset_ + be_id_map_[get_boundary_edge_uid(side)],
 			value,
 			ADD_VALUES));
 }

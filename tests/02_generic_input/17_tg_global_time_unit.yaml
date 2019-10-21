@@ -5,7 +5,7 @@
 
 flow123d_version: 3.1.0
 problem: !Coupling_Sequential
-  description: Check correct time unit conversion of different time declaration in input YAML file.
+  description: Check correct time unit conversion of global time declaration in time governor in input YAML file.
   mesh:
     mesh_file: ../00_mesh/prism_11el.msh
     global_snap_radius: 0.1
@@ -20,26 +20,25 @@ problem: !Coupling_Sequential
         conductivity: 1
         cross_section: !FieldTimeFunction
           time_function:
-            - - [ 0, "s" ]
+            - - 0
               - 1.0
-            - - [ 1000, "s" ]
+            - - 0.2
               - 2.0
-            - - [ 2000, "s" ] 
+            - - 0.6
               - 5.0
-        sigma: !FieldFE
-          mesh_data_file: ./11_mesh_with_data_11el.msh
-          field_name: sigma
-          time_unit: "min"
+        sigma: 0.1
         anisotropy: 10
         water_source_density: 24
         init_pressure: 0.1
         storativity: 1.0
       - region: volume
-        time: [ 500.0, "s" ]
+        time: 0.2
         conductivity: 5
+        sigma: 0.3
       - region: volume
-        time: [ 25.0, "min" ]
+        time: 0.4
         conductivity: 3
+        sigma: 0.4
       - region: .BOUNDARY
         bc_type: dirichlet
         bc_pressure: !FieldFormula
@@ -48,11 +47,12 @@ problem: !Coupling_Sequential
     output:
       times:
         - 0.0
-        - { step: [15.0, "min"] }
+        - 0.25
         - 0.5
         - 0.75
       fields:
         - pressure_p0
+        - pressure_p1
         - velocity_p0
         - conductivity
         - cross_section
@@ -65,24 +65,17 @@ problem: !Coupling_Sequential
         - field: storativity
           times:
             - 0.0
-            - { step: [30.0, "min"] } 
+            - { step: 0.5 } 
       observe_fields: [pressure_p0, velocity_p0]
     time:
-      end_time: [ 50.0, "min" ]
-      init_dt: [ 1, "s" ]
-      max_dt: [ 5.0, "min" ]
-      min_dt: [ 100, "ms" ]
+      end_time: 0.9
+      init_dt: 0.0005
+      max_dt: 0.1
+      min_dt: 0.00005
       common_time_unit: "h"
     output_stream:
       file: ./flow.pvd
       format: !vtk
         variant: ascii
       times:
-        - { step: [100, "s"] }
-      observe_points:
-        - [0, 0, 0.25]
-        - [0, 0, 0.2]
-        - [0, 0, 0.15]
-        - [0, 0, 0.1]
-        - [0, 0, 0.05]
-        - [0, 0, 1.0]
+        - { step: 0.05 }

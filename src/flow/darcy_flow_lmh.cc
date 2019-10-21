@@ -706,7 +706,6 @@ void DarcyLMH::assembly_mh_matrix(MultidimAssembly& assembler)
 
     // TODO: try to move this into balance, or have it in the generic assembler class, that should perform the cell loop
     // including various pre- and post-actions
-    data_->local_boundary_index=0;
     for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
     	LocalElementAccessorBase<3> ele_ac(dh_cell);
         unsigned int dim = ele_ac.dim();
