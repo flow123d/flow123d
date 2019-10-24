@@ -255,6 +255,8 @@ public:
     /// Return pointer to discrete space for which the handler distributes dofs.
     std::shared_ptr<DiscreteSpace> ds() const { return ds_; }
 
+    /// Get the map between local dof indices and the global ones.
+    const std::vector<LongIdx> & get_local_to_global_map() const { return local_to_global_dof_idx_; }
 
     /// Destructor.
     ~DOFHandlerMultiDim() override;

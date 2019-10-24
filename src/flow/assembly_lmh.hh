@@ -123,8 +123,6 @@ public:
         
         assembly_dim_connections(ele_ac);
         
-        loc_system_.eliminate_solution();
-        
         const unsigned int n = loc_schur_.row_dofs.n_rows;  // local Schur complement size
         const unsigned int off = loc_edge_dofs[0];          // local Schur complement offset in LocalSystem
         arma::vec schur_solution(n);
@@ -166,9 +164,10 @@ public:
         
         assembly_dim_connections(ele_ac);
         
-        loc_system_.eliminate_solution();
         loc_system_.compute_schur_complement(loc_edge_dofs[0], loc_schur_, true);
-        ad_->lin_sys_schur->set_local_system(loc_schur_);
+        
+        loc_schur_.eliminate_solution();
+        ad_->lin_sys_schur->set_local_system(loc_schur_, ad_->dh_cr_->get_local_to_global_map());
 
         if (ad_->balance != nullptr)
             add_fluxes_in_balance_matrix(ele_ac);
@@ -288,15 +287,15 @@ protected:
         unsigned int loc_size = size() + ele->n_neighs_vb();
         unsigned int loc_size_schur = ele->n_sides() + ele->n_neighs_vb();
         // vector of DoFs
-        arma::Col<LongIdx> dofs(loc_size);
+        // arma::Col<LongIdx> dofs(loc_size);
         arma::Col<LongIdx> dofs_schur(loc_size_schur);
         
         DHCellAccessor dh_cr_cell = ele_ac.dh_cell().cell_with_other_dh(ad_->dh_cr_.get());
         std::vector<LongIdx> indices(dh_cr_cell.n_dofs());
-        dh_cr_cell.get_dof_indices(indices);
+        dh_cr_cell.get_loc_dof_indices(indices);
         
         //set global dof for element (pressure)
-        dofs[loc_ele_dof] = ele_ac.ele_row();
+        // dofs[loc_ele_dof] = ele_ac.ele_row();
         
         unsigned int side_row, edge_row;
         for (unsigned int i = 0; i < ele_ac.n_sides(); i++) {
@@ -304,13 +303,14 @@ protected:
             side_row = loc_side_dofs[i];    //local
             edge_row = loc_edge_dofs[i];    //local
             
-            dofs[side_row] = ele_ac.side_row(i);    //global
-            dofs[edge_row] = ele_ac.edge_row(i);    //global
+            // dofs[side_row] = ele_ac.side_row(i);    //global
+            // dofs[edge_row] = ele_ac.edge_row(i);    //global
         }
         
         if(ele->n_neighs_vb() == 0)
         {
-            loc_system_.reset(dofs, dofs);
+            // loc_system_.reset(dofs, dofs);
+            loc_system_.reset(loc_size, loc_size);
             loc_system_.set_sparsity(base_local_sp_);
             
             dofs_schur = indices;
@@ -342,12 +342,13 @@ protected:
             
             DHCellAccessor higher_dh_cr_cell = acc_higher_dim.dh_cell().cell_with_other_dh(ad_->dh_cr_.get());
             std::vector<int> cr_dofs(higher_dh_cr_cell.n_dofs());
-            higher_dh_cr_cell.get_dof_indices(cr_dofs);
+            higher_dh_cr_cell.get_loc_dof_indices(cr_dofs);
                     
             for (unsigned int j = 0; j < ngh->edge()->side(0)->element().dim()+1; j++)
             	if (ngh->edge()->side(0)->element()->edge_idx(j) == ngh->edge_idx()) {
                     unsigned int p = size()+i;
-                    dofs[p] = acc_higher_dim.edge_row(j);
+                    // dofs[p] = acc_higher_dim.edge_row(j);
+                    loc_size++;
                     local_sp_(loc_ele_dof, p) = 1;
                     local_sp_(p, loc_ele_dof) = 1;
                     local_sp_(p, p) = 1;
@@ -358,7 +359,8 @@ protected:
             	}
         }
         
-        loc_system_.reset(dofs, dofs);
+        // loc_system_.reset(dofs, dofs);
+        loc_system_.reset(loc_size, loc_size);
         loc_system_.set_sparsity(local_sp_);
         
         loc_schur_.reset(dofs_schur, dofs_schur);
@@ -390,7 +392,8 @@ protected:
                     // homogeneous neumann
                 } else if ( type == DarcyMH::EqData::dirichlet ) {
                     double bc_pressure = ad_->bc_pressure.value(b_ele.centre(), b_ele);
-                    loc_system_.set_solution(loc_edge_dofs[i],bc_pressure,-1);
+                    // loc_system_.set_solution(loc_edge_dofs[i],bc_pressure,-1);
+                    loc_schur_.set_solution(i, bc_pressure);
                     dirichlet_edge[i] = 1;
                     
                 } else if ( type == DarcyMH::EqData::total_flux) {
@@ -419,6 +422,7 @@ protected:
                         // check and possibly switch to flux BC
                         // The switch raise error on the corresponding edge row.
                         // Magnitude of the error is abs(solution_flux - side_flux).
+
                         ASSERT_DBG(ad_->dh_->distr()->is_local(ele_ac.side_row(i)))(ele_ac.side_row(i));
                         unsigned int loc_side_row = ele_ac.side_local_row(i);
                         double solution_flux = ad_->full_solution[loc_side_row];
@@ -438,17 +442,7 @@ protected:
                         // flux inequality leading may be accepted, while the error
                         // in pressure inequality is always satisfied.
 
-                        // ASSERT_DBG(ad_->dh_->distr()->is_local(ele_ac.edge_row(i)))(ele_ac.edge_row(i));
-                        // unsigned int loc_edge_row = ele_ac.edge_local_row(i);
-                        // double solution_head = ad_->full_solution[loc_edge_row];
-
-                        // TODO: 
-                        // use local indices from local schur system
-                        // unsigned int loc_edge_dof = loc_schur_.row_dofs[i];
-                        DHCellAccessor dh_cr_cell = ele_ac.dh_cell().cell_with_other_dh(ad_->dh_cr_.get());
-                        std::vector<LongIdx> schur_indices(dh_cr_cell.n_dofs());
-                        dh_cr_cell.get_loc_dof_indices(schur_indices);
-                        double solution_head = ad_->schur_solution[schur_indices[i]];
+                        double solution_head = ad_->schur_solution[loc_schur_.row_dofs[i]];
 
                         if ( solution_head > bc_pressure) {
                             //DebugOut().fmt("x: {}, to dirich, p: {} -> p: {} f: {}\n",b_ele.centre()[0], solution_head, bc_pressure, bc_flux);
@@ -463,7 +457,8 @@ protected:
                             //DebugOut().fmt("x: {}, dirich, bcp: {}\n", b_ele.centre()[0], bc_pressure);
 //                             DebugOut().fmt("ele: {}, loc_edge_idx: {}, ad_->force_bc_switch: {}\n",
 //                                            ele_ac.ele_global_idx(), loc_edge_idx, ad_->force_bc_switch);
-                            loc_system_.set_solution(loc_edge_dofs[i],bc_pressure, -1);
+                            // loc_system_.set_solution(loc_edge_dofs[i],bc_pressure, -1);
+                            loc_schur_.set_solution(i, bc_pressure);
                             dirichlet_edge[i] = 1;
                         } else {
                             //DebugOut()("x: {}, neuman, q: {}  bcq: {}\n", b_ele.centre()[0], side_flux, bc_flux);
@@ -482,13 +477,7 @@ protected:
                     // unsigned int loc_edge_row = ele_ac.edge_local_row(i);
                     // double solution_head = ad_->full_solution[loc_edge_row];
 
-                    // TODO: 
-                        // use local indices from local schur system
-                        // unsigned int loc_edge_dof = loc_schur_.row_dofs[i];
-                    DHCellAccessor dh_cr_cell = ele_ac.dh_cell().cell_with_other_dh(ad_->dh_cr_.get());
-                    std::vector<LongIdx> schur_indices(dh_cr_cell.n_dofs());
-                    dh_cr_cell.get_loc_dof_indices(schur_indices);
-                    double solution_head = ad_->schur_solution[schur_indices[i]];
+                    double solution_head = ad_->schur_solution[loc_schur_.row_dofs[i]];
 
                     // Force Robin type during the first iteration of the unsteady case.
                     if (solution_head > bc_switch_pressure  || ad_->force_bc_switch) {
@@ -628,6 +617,7 @@ protected:
             {
                 time_term_diag = time_term / ad_->time_step_;
                 time_term_rhs = time_term_diag * ad_->previous_solution[ele_ac.edge_local_row(i)];
+                // time_term_rhs = time_term_diag * ad_->previous_solution[loc_schur_.row_dofs[i]];
             }
 
             this->loc_system_.add_value(loc_edge_dofs[i], loc_edge_dofs[i],
