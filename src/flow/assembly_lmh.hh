@@ -348,7 +348,6 @@ protected:
             	if (ngh->edge()->side(0)->element()->edge_idx(j) == ngh->edge_idx()) {
                     unsigned int p = size()+i;
                     // dofs[p] = acc_higher_dim.edge_row(j);
-                    loc_size++;
                     local_sp_(loc_ele_dof, p) = 1;
                     local_sp_(p, loc_ele_dof) = 1;
                     local_sp_(p, p) = 1;
