@@ -57,7 +57,7 @@ public:
 	inline FiniteElement<dim> *fe();
 
 	template<unsigned int dim>
-	inline Quadrature *q();
+	inline Quadrature *q() { return q_[dim]; }
 
 	template<unsigned int dim>
 	inline MappingP1<dim,3> *mapping();
@@ -75,10 +75,7 @@ private:
 	FiniteElement<3> *fe3_;
 
 	/// Quadratures used in assembling methods.
-	Quadrature *q0_;
-	Quadrature *q1_;
-	Quadrature *q2_;
-	Quadrature *q3_;
+	Quadrature *q_[4];
 
 	/// Auxiliary mappings of reference elements.
 	MappingP1<1,3> *map1_;
