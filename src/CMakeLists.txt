@@ -232,6 +232,7 @@ target_link_libraries(mesh_lib
 
 # fem_lib    
 add_library(fem_lib 
+    quadrature/quadrature.cc
     quadrature/quadrature_lib.cc
     quadrature/intersection_quadrature.cc
     fem/discrete_space.cc

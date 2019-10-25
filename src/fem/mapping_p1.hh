@@ -32,7 +32,7 @@
 #include "mesh/elements.h"                     // for Element::side
 #include "mesh/side_impl.hh"                   // for Side::node
 template <unsigned int dim, unsigned int spacedim> class FEValuesData;
-template <unsigned int dim> class Quadrature;
+class Quadrature;
 
 
 /**
@@ -82,7 +82,7 @@ public:
      * @param flags Update flags.
      * @return The computed mapping data.
      */
-    MappingInternalData *initialize(const Quadrature<dim> &q, UpdateFlags flags);
+    MappingInternalData *initialize(const Quadrature &q, UpdateFlags flags);
 
     /**
      * @brief Determines which additional quantities have to be computed.
@@ -101,7 +101,7 @@ public:
      * @param fv_data Data to be computed.
      */
     void fill_fe_values(const ElementAccessor<3> &cell,
-                            const Quadrature<dim> &q,
+                            const Quadrature &q,
                             MappingInternalData &data,
                             FEValuesData<dim,spacedim> &fv_data);
 
@@ -116,7 +116,7 @@ public:
      */
     void fill_fe_side_values(const ElementAccessor<3> &cell,
                             unsigned int sid,
-                            const Quadrature<dim> &q,
+                            const Quadrature &q,
                             MappingInternalData &data,
                             FEValuesData<dim,spacedim> &fv_data);
 

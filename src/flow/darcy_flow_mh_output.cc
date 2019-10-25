@@ -667,7 +667,7 @@ void DarcyFlowMHOutput::l2_diff_local(ElementAccessor<3> &ele,
 }
 
 template<int dim> DarcyFlowMHOutput::FEData<dim>::FEData()
-: fe_p0(0), fe_p1(1), order(4), quad(order),
+: fe_p0(0), fe_p1(1), order(4), quad(dim, order),
   fe_values(mapp,quad,fe_p0,update_JxW_values | update_quadrature_points),
   fv_rt(mapp,quad,fe_rt,update_values | update_quadrature_points)
 {}

@@ -94,10 +94,10 @@ FEObjects::FEObjects(Mesh *mesh_, unsigned int fe_order)
 		break;
 	}
 
-	q0_ = new QGauss<0>(q_order);
-	q1_ = new QGauss<1>(q_order);
-	q2_ = new QGauss<2>(q_order);
-	q3_ = new QGauss<3>(q_order);
+	q0_ = new QGauss(0, q_order);
+	q1_ = new QGauss(1, q_order);
+	q2_ = new QGauss(2, q_order);
+	q3_ = new QGauss(3, q_order);
 
 	map1_ = new MappingP1<1,3>;
 	map2_ = new MappingP1<2,3>;
@@ -129,10 +129,10 @@ template<> FiniteElement<1> *FEObjects::fe<1>() { return fe1_; }
 template<> FiniteElement<2> *FEObjects::fe<2>() { return fe2_; }
 template<> FiniteElement<3> *FEObjects::fe<3>() { return fe3_; }
 
-template<> Quadrature<0> *FEObjects::q<0>() { return q0_; }
-template<> Quadrature<1> *FEObjects::q<1>() { return q1_; }
-template<> Quadrature<2> *FEObjects::q<2>() { return q2_; }
-template<> Quadrature<3> *FEObjects::q<3>() { return q3_; }
+template<> Quadrature *FEObjects::q<0>() { return q0_; }
+template<> Quadrature *FEObjects::q<1>() { return q1_; }
+template<> Quadrature *FEObjects::q<2>() { return q2_; }
+template<> Quadrature *FEObjects::q<3>() { return q3_; }
 
 template<> MappingP1<1,3> *FEObjects::mapping<1>() { return map1_; }
 template<> MappingP1<2,3> *FEObjects::mapping<2>() { return map2_; }
