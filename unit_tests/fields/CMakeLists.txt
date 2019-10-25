@@ -49,6 +49,7 @@ define_mpi_test(generic_field 1)
        
 define_mpi_test(composed_quadrature 1)
 
+define_mpi_test(new_parsers 1)
 
 
 

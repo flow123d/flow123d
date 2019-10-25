@@ -312,10 +312,21 @@ add_library(coupling_lib
     coupling/equation.cc
     coupling/balance.cc
     # coupling/hc_explicit_sequential.cc
+    
+    # muparser
+    _parsers/muParser.cpp
+    _parsers/muParserBase.cpp
+    _parsers/muParserBytecode.cpp
+    _parsers/muParserCallback.cpp
+    _parsers/muParserDLL.cpp
+    _parsers/muParserError.cpp
+    _parsers/muParserInt.cpp
+    _parsers/muParserTest.cpp
+    _parsers/muParserTokenReader.cpp
 )
 target_link_libraries(coupling_lib
     system_lib input_lib mesh_lib tools_lib fem_lib io_lib
-    fparser     
+    fparser    
     armadillo
     ${Boost_LIBRARIES})
 
