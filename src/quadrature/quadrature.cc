@@ -96,7 +96,7 @@ Quadrature quadrature_from_side(const Quadrature &subq, unsigned int sid, unsign
     for (unsigned int k=0; k<subq.size(); k++)
     {
         //compute barycentric coordinates on element
-        arma::vec::fixed<quad_dim> p = RefElement<quad_dim-1>::local_to_bary(subq.point<quad_dim-1>(k));
+        arma::vec::fixed<quad_dim> p = RefElement<quad_dim-1>::local_to_bary(subq.point<quad_dim-1>(k).arma());
         arma::vec::fixed<quad_dim> pp;
         
         //permute
@@ -107,8 +107,8 @@ Quadrature quadrature_from_side(const Quadrature &subq, unsigned int sid, unsign
         el_bar_coords = RefElement<quad_dim>::template interpolate<quad_dim-1>(pp,sid);
         
         //get local coordinates and set
-        q.set_point<quad_dim>(k, RefElement<quad_dim>::bary_to_local(el_bar_coords));
-        q.set_weight(k, subq.weight(k));
+        q.point<quad_dim>(k) = RefElement<quad_dim>::bary_to_local(el_bar_coords);
+        q.weight(k) = subq.weight(k);
     }
     
     return q;
@@ -118,8 +118,8 @@ Quadrature quadrature_from_side(const Quadrature &subq, unsigned int sid, unsign
 template<> Quadrature quadrature_from_side<1>(const Quadrature &subq, unsigned int sid, unsigned int pid)
 {
     Quadrature q(1, 1);
-    q.set_point<1>(0, { (double)sid });
-    q.set_weight(0, 1);
+    q.point<1>(0) = { (double)sid };
+    q.weight(0) = 1;
     
     return q;
 }

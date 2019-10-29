@@ -87,40 +87,28 @@ public:
 
     /// Returns the <tt>i</tt>th quadrature point.
     template<unsigned int point_dim>
-    inline arma::vec::fixed<point_dim> point(const unsigned int i) const
+    inline Armor::vec<point_dim> point(const unsigned int i) const
     {
         ASSERT_DBG( point_dim == dim_ );
-        return quadrature_points.get<point_dim>(i).arma();
+        return quadrature_points.get<point_dim>(i);
     }
 
     /// Return a reference to the whole array of quadrature points.
     inline const Armor::array & get_points() const
     { return quadrature_points; }
 
-    /**
-     * @brief Sets individual quadrature point coordinates.
-     * @param i Number of the quadrature point.
-     * @param p New coordinates.
-     */
-    template<unsigned int point_dim>
-    inline void set_point(const unsigned int i, const arma::vec::fixed<point_dim> &p)
-    {
-        ASSERT_DBG( point_dim == dim_ );
-        quadrature_points.get<point_dim>(i) = p;
-    }
-
     /// Returns the <tt>i</tt>th weight.
     inline double weight(const unsigned int i) const
+    { return weights[i]; }
+    
+    /// Returns the <tt>i</tt>th weight (non-const version).
+    inline double &weight(const unsigned int i)
     { return weights[i]; }
 
     /// Return a reference to the whole array of weights.
     inline const std::vector<double> & get_weights() const
     { return weights; }
 
-    /// Sets individual quadrature weight.
-    inline void set_weight(const unsigned int i, const double w)
-    { weights[i] = w; }
-    
     Quadrature &operator=(const Quadrature &q);
     
 

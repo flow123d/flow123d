@@ -61,7 +61,7 @@ MappingInternalData *MappingP1<dim,spacedim>::initialize(const Quadrature &q, Up
     {
         data->bar_coords.resize(q.size());
         for (unsigned int i=0; i<q.size(); i++)
-            data->bar_coords[i] = RefElement<dim>::local_to_bary(q.point<dim>(i));
+            data->bar_coords[i] = RefElement<dim>::local_to_bary(q.point<dim>(i).arma());
     }
 
 
