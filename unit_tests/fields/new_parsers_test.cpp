@@ -37,29 +37,7 @@ public:
 	    Profiler::initialize();
 	    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-	    x = new value_type[nBulkSize];
-    	y = new value_type[nBulkSize];
-    	z = new value_type[nBulkSize];
-    	result = new value_type[nBulkSize];
-
-    	x_v.resize(nBulkSize);
-    	y_v.resize(nBulkSize);
-    	z_v.resize(nBulkSize);
-    	vv.resize(nBulkSize);
-    	result_v.resize(nBulkSize);
-
-        for (unsigned int i=0; i<nBulkSize; ++i) {
-            x[i] = i;
-            y[i] = (value_type)i/100;
-            z[i] = (10 - (value_type)(i%10)) * 1.1;
-            x_v[i] = x[i];
-            y_v[i] = y[i];
-            z_v[i] = z[i];
-            vv[i].resize(3);
-            vv[i][0] = x[i]; vv[i][1] = y[i]; vv[i][2] = z[i];
-        }
-
-        constantLine = "0.5";
+	    constantLine = "0.5";
         simpleLine = "x + y + z";
         complexLine = "2*x + y^3 + x*(z-y) + 2*_pi*z";
         complexLine_pi = "2*x + y^3 + x*(z-y) + 2*pi*z";
@@ -74,25 +52,56 @@ public:
     ~ParserHandler() {
 	    Profiler::uninitialize();
 
+	    dealloc_data_vectors();
+    }
+
+    void dealloc_data_vectors() {
         delete [] x;
         delete [] y;
         delete [] z;
         delete [] result;
     }
 
+    void create_data_vectors(int vec_size) {
+	    nBulkSize = vec_size;
+	    x = new value_type[nBulkSize];
+    	y = new value_type[nBulkSize];
+    	z = new value_type[nBulkSize];
+    	result = new value_type[nBulkSize];
+
+    	x_v.resize(nBulkSize);
+    	y_v.resize(nBulkSize);
+    	z_v.resize(nBulkSize);
+    	vv.resize(nBulkSize);
+    	result_v.resize(nBulkSize);
+
+        for (int i=0; i<nBulkSize; ++i) {
+            x[i] = i;
+            y[i] = (value_type)i/100;
+            z[i] = (10 - (value_type)(i%10)) * 1.1;
+            x_v[i] = x[i];
+            y_v[i] = y[i];
+            z_v[i] = z[i];
+            vv[i].resize(3);
+            vv[i][0] = x[i]; vv[i][1] = y[i]; vv[i][2] = z[i];
+        }
+    }
+
 	void profiler_output() {
 		static ofstream os( FilePath("parsers_test.log", FilePath::output_file) );
 		Profiler::instance()->output(MPI_COMM_WORLD, os);
-		os << "" << std::setfill('=') << setw(80) << "" << std::setfill(' ') << endl << endl;
+		os << endl;
 	}
 
     value_type fast_compute_constant() {
         value_type sum = 0.0;
+        START_TIMER("1_fast_compute");
         for (int j=0; j<nLoops; ++j) {
             for (int i=0; i<nBulkSize; ++i) {
                 result[i] = 0.5;
             }
         }
+        END_TIMER("1_fast_compute");
         for (int i=0; i<nBulkSize; ++i) {
         	sum += result[i];
         }
@@ -102,11 +111,13 @@ public:
 
     value_type fast_compute_simple() {
         value_type sum = 0.0;
+        START_TIMER("1_fast_compute");
         for (int j=0; j<nLoops; ++j) {
             for (int i=0; i<nBulkSize; ++i) {
                 result[i] = x[i] + y[i] + z[i];
             }
         }
+        END_TIMER("1_fast_compute");
         for (int i=0; i<nBulkSize; ++i) {
             sum += result[i];
         }
@@ -117,11 +128,13 @@ public:
     value_type fast_compute_complex() {
         value_type sum = 0.0;
         value_type pi = 3.141592653589793238462643;
+        START_TIMER("1_fast_compute");
         for (int j=0; j<nLoops; ++j) {
             for (int i=0; i<nBulkSize; ++i) {
                 result[i] = 2*x[i] + y[i]*y[i]*y[i] + x[i]*(z[i]-y[i]) + 2*pi*z[i];
             }
         }
+        END_TIMER("1_fast_compute");
         for (int i=0; i<nBulkSize; ++i) {
             sum += result[i];
         }
@@ -136,12 +149,11 @@ public:
         parser.DefineVar(_T("y"), y);
         parser.DefineVar(_T("z"), z);
         parser.SetExpr(sLine);
-    	START_TIMER("mu_parser");
+        START_TIMER("2_mu_parser");
         for (int j=0; j<nLoops; ++j) {
             parser.Eval(result, nBulkSize);
         }
-    	END_TIMER("mu_parser");
-    	profiler_output();
+        END_TIMER("2_mu_parser");
         for (int i=0; i<nBulkSize; ++i) sum += result[i];
 
     	return sum;
@@ -167,12 +179,14 @@ public:
         parser_t parser;
         parser.compile(expression_string,expression);
 
+        START_TIMER("3_exprtk_parse_substitution");
         for (int j=0; j<nLoops; ++j)
         	for (int i=0; i<nBulkSize; ++i)
             {
         		x = x_v[i]; y = y_v[i]; z = z_v[i];
         		result[i] = expression.value();
             }
+        END_TIMER("3_exprtk_parse_substitution");
     	for (int i=0; i<nBulkSize; ++i)
         {
             res += result[i];
@@ -203,9 +217,11 @@ public:
         parser.compile(expression_string,expression);
 
         double res = 0.0;
+        START_TIMER("4_exprtk_parse_vector");
         for (int j=0; j<nLoops; ++j) {
             expression.value();
         }
+        END_TIMER("4_exprtk_parse_vector");
         for (int i=0; i<nBulkSize; ++i) res += result_v[i];
 
     	return res;
@@ -239,9 +255,11 @@ public:
         parser.compile(expression_string,expression);
 
         double res = 0.0;
+        START_TIMER("5_exprtk_parse_vector_with_view");
         for (int j=0; j<nLoops; ++j) {
             expression.value();
         }
+        END_TIMER("5_exprtk_parse_vector_with_view");
         for (int i=0; i<nBulkSize; ++i) res += result_v[i];
 
     	return res;
@@ -267,6 +285,7 @@ public:
         parser.compile(expression_string,expression);
 
         int i;
+        START_TIMER("6_exprtk_parse_vector_view_rebase");
         for (int j=0; j<nLoops; ++j) {
             i=0;
         	for (auto& new_vec : vv)
@@ -276,14 +295,86 @@ public:
             }
         	i++;
         }
+        END_TIMER("6_exprtk_parse_vector_view_rebase");
         for (int i=0; i<nBulkSize; ++i) sum += result_v[i];
 
         return sum;
     }
 
+    double exprtk_parse_vector_fast(std::string expr) {
+        typedef exprtk::symbol_table<double> symbol_table_t;
+        typedef exprtk::expression<double>     expression_t;
+        typedef exprtk::parser<double>             parser_t;
+
+        std::string expression_string = " r := " + expr + " ";
+
+        double sum = 0.0;
+
+        symbol_table_t symbol_table;
+        symbol_table.add_vector("x",x_v);
+        symbol_table.add_vector("y",y_v);
+        symbol_table.add_vector("z",z_v);
+        symbol_table.add_vector("r",result_v);
+        symbol_table.add_constants();
+
+        expression_t expression;
+        expression.register_symbol_table(symbol_table);
+
+        parser_t parser;
+        parser.compile(expression_string,expression);
+
+        expression.value();
+
+        START_TIMER("7_exprtk_parse_vector_fast");
+        for (int j=0; j<nLoops; ++j) {
+            expression.value();
+        }
+        END_TIMER("7_exprtk_parse_vector_fast");
+        for (int i=0; i<nBulkSize; ++i) sum += result_v[i];
+
+        return sum;
+    }
+
+    void run_tests(int vec_size) {
+        create_data_vectors(vec_size);
+        std::cout << "Tests is running with " << vec_size << " points ..." << std::endl;
+
+        START_TIMER("A_constant_expresions");
+        this->fast_compute_constant();
+        this->mu_parse_expresion(constantLine);
+        this->exprtk_parse_substitution(constantLine_i);
+        //this->exprtk_parse_vector(constantLine_i);
+        //this->exprtk_parse_vector_with_view(constantLine_i);
+        //this->exprtk_parse_vector_view_rebase(constantLine_v);
+        this->exprtk_parse_vector_fast(constantLine);
+        END_TIMER("A_constant_expresions");
+
+        START_TIMER("B_simple_expresions");
+        this->fast_compute_simple();
+        this->mu_parse_expresion(simpleLine);
+        this->exprtk_parse_substitution( (std::string)simpleLine );
+        //this->exprtk_parse_vector( simpleLine_i );
+        //this->exprtk_parse_vector_with_view( simpleLine_i );
+        //this->exprtk_parse_vector_view_rebase(simpleLine_v);
+        this->exprtk_parse_vector_fast(simpleLine);
+        END_TIMER("B_simple_expresions");
+
+        START_TIMER("C_complex_expresions");
+        this->fast_compute_complex();
+        this->mu_parse_expresion(complexLine);
+        this->exprtk_parse_substitution(complexLine_pi);
+        //this->exprtk_parse_vector(complexLine_i);
+        //this->exprtk_parse_vector_with_view(complexLine_i);
+        //this->exprtk_parse_vector_view_rebase(complexLine_v);
+        this->exprtk_parse_vector_fast(complexLine_pi);
+        END_TIMER("C_complex_expresions");
+        std::cout << " ... OK" << std::endl;
+    }
+
     // data members
-    static const int nLoops  =  50000;
-    static const int nBulkSize =  200;
+    static const int nLoops = 10000;
+
+    int nBulkSize;
 
     value_type *x;
     value_type *y;
@@ -309,139 +400,30 @@ public:
 };
 
 
-
-TEST(Parser, empty) {
+TEST(Parser, all) {
     ParserHandler pHandler;
-}
 
-/* ***************************************************************************************************************************** */
-TEST(Parser, constant_fast) {
-    ParserHandler pHandler;
-    mu::console() << _T("Constant fast ... \n");
-    pHandler.fast_compute_constant();
-    mu::console() << _T(" ... OK\n");
-}
+    START_TIMER("test_0250_points");
+    pHandler.run_tests(250);
+    END_TIMER("test_0250_points");
+    pHandler.dealloc_data_vectors();
 
-TEST(Parser, constant_mu_parser) {
-    ParserHandler pHandler;
-    mu::console() << _T("Constant muParser ... \n");
-    pHandler.mu_parse_expresion(pHandler.constantLine);
-    mu::console() << _T(" ... OK\n");
-}
+    START_TIMER("test_0500_points");
+    pHandler.run_tests(500);
+    END_TIMER("test_0500_points");
+    pHandler.dealloc_data_vectors();
 
-TEST(Parser, constant_exprtk_substitution) {
-    ParserHandler pHandler;
-    printf("Constant exprtk substitution parser ... \n");
-    pHandler.exprtk_parse_substitution(pHandler.constantLine_i);
-    printf(" ... OK\n");
-}
+    START_TIMER("test_1000_points");
+    pHandler.run_tests(1000);
+    END_TIMER("test_1000_points");
+    pHandler.dealloc_data_vectors();
 
-TEST(Parser, constant_exprtk_vector) {
-    ParserHandler pHandler;
-    printf("Constant exprtk vector parser ... \n");
-    pHandler.exprtk_parse_vector(pHandler.constantLine_i);
-    printf(" ... OK\n");
-}
+    START_TIMER("test_2000_points");
+    pHandler.run_tests(2000);
+    END_TIMER("test_2000_points");
 
-TEST(Parser, constant_exprtk_vector_with_view) {
-    ParserHandler pHandler;
-    printf("Constant exprtk vector with view parser ... \n");
-    pHandler.exprtk_parse_vector_with_view(pHandler.constantLine_i);
-    printf(" ... OK\n");
-}
-
-TEST(Parser, constant_exprtk_vector_view_rebase) {
-    ParserHandler pHandler;
-    printf("Constant exprtk vector view rebase parser ... \n");
-    pHandler.exprtk_parse_vector_view_rebase(pHandler.constantLine_v);
-    printf(" ... OK\n");
-}
-
-/* ***************************************************************************************************************************** */
-TEST(Parser, simple_fast) {
-    ParserHandler pHandler;
-    mu::console() << _T("Simple fast ... \n");
-    pHandler.fast_compute_simple();
-    mu::console() << _T(" ... OK\n");
-}
-
-TEST(Parser, simple_mu_parser) {
-    ParserHandler pHandler;
-    mu::console() << _T("Simple muParser ... \n");
-    pHandler.mu_parse_expresion(pHandler.simpleLine);
-    mu::console() << _T(" ... OK\n");
-}
-
-TEST(Parser, simple_exprtk_substitution) {
-    ParserHandler pHandler;
-    printf("Simple exprtk substitution parser ... \n");
-    pHandler.exprtk_parse_substitution( (std::string)pHandler.simpleLine );
-    printf(" ... OK\n");
-}
-
-TEST(Parser, simple_exprtk_vector) {
-    ParserHandler pHandler;
-    printf("Simple exprtk vector parser ... \n");
-    pHandler.exprtk_parse_vector( pHandler.simpleLine_i );
-    printf(" ... OK\n");
-}
-
-TEST(Parser, simple_exprtk_vector_with_view) {
-    ParserHandler pHandler;
-    printf("Simple exprtk vector with view parser ... \n");
-    pHandler.exprtk_parse_vector_with_view( pHandler.simpleLine_i );
-    printf(" ... OK\n");
-}
-
-TEST(Parser, simple_exprtk_vector_view_rebase) {
-    ParserHandler pHandler;
-    printf("Simple exprtk vector view rebase parser ... \n");
-    pHandler.exprtk_parse_vector_view_rebase(pHandler.simpleLine_v);
-    printf(" ... OK\n");
-}
-
-/* ***************************************************************************************************************************** */
-TEST(Parser, complex_fast) {
-    ParserHandler pHandler;
-    mu::console() << _T("Complex fast ... \n");
-    pHandler.fast_compute_complex();
-    mu::console() << _T(" ... OK\n");
-}
-
-TEST(Parser, complex_mu_parser) {
-    ParserHandler pHandler;
-    mu::console() << _T("Complex muParser ... \n");
-    pHandler.mu_parse_expresion(pHandler.complexLine);
-    mu::console() << _T(" ... OK\n");
-}
-
-TEST(Parser, complex_exprtk_substitution) {
-    ParserHandler pHandler;
-    printf("Complex exprtk substitution parser ... \n");
-    pHandler.exprtk_parse_substitution(pHandler.complexLine_pi);
-    printf(" ... OK\n");
-}
-
-TEST(Parser, complex_exprtk_vector) {
-    ParserHandler pHandler;
-    printf("Complex exprtk vector parser ... \n");
-    pHandler.exprtk_parse_vector(pHandler.complexLine_i);
-    printf(" ... OK\n");
-}
-
-TEST(Parser, complex_exprtk_vector_with_view) {
-    ParserHandler pHandler;
-    printf("Complex exprtk vector with view parser ... \n");
-    pHandler.exprtk_parse_vector_with_view(pHandler.complexLine_i);
-    printf(" ... OK\n");
-}
-
-TEST(Parser, complex_exprtk_vector_view_rebase) {
-    ParserHandler pHandler;
-    printf("Complex exprtk vector view rebase parser ... \n");
-    pHandler.exprtk_parse_vector_view_rebase(pHandler.complexLine_v);
-    printf(" ... OK\n");
-}
+    pHandler.profiler_output();
+} // */
 
 /* ***************************************************************************************************************************** */
 /*TEST(Parser, exprtk_vector) {
@@ -503,6 +485,7 @@ TEST(Parser, complex_exprtk_vector_view_rebase) {
     symbol_table.add_vector("y",y);
     symbol_table.add_vector("z",z);
     symbol_table.add_vector("r",res);
+    symbol_table.add_constants();
 
     expression_t expression;
     expression.register_symbol_table(symbol_table);
@@ -514,4 +497,4 @@ TEST(Parser, complex_exprtk_vector_view_rebase) {
     //printf("result: %19.15f\n", ret);
 
     for (unsigned int i=0; i<5; ++i) printf("result: %19.15f\n", res[i]);
-}*/
+} // */
