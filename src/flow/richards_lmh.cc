@@ -141,12 +141,18 @@ void RichardsLMH::initialize_specific() {
 
 void RichardsLMH::initial_condition_postprocess()
 {
-    // set water_content
-    // pretty ugly since postprocess change fluxes, which cause bad balance, so we must set them back
-    data_->previous_solution.copy_from(data_->data_vec_); // store solution vector
-    postprocess();
-//     data_->previous_solution.swap(data_->data_vec_); // currently does not mimic VecSwap
-    VecSwap(schur0->get_solution(), data_->previous_solution.petsc_vec()); // restore solution vector
+    // update the subvector with edge pressure for solution vector
+    data_->dh_cr_->update_subvector(data_->data_vec_, data_->phead_edge_);
+    data_->phead_edge_.local_to_ghost_begin();
+    data_->phead_edge_.local_to_ghost_end();
+
+    // modify side fluxes in parallel
+    // for every local edge take time term on diagonal and add it to the corresponding flux
+    auto multidim_assembler = AssemblyBase::create< AssemblyRichards >(data_);
+    
+    for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
+        multidim_assembler[dh_cell.elm().dim()-1]->update_water_content(dh_cell);
+    }
 }
 
 

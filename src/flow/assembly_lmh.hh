@@ -210,6 +210,9 @@ public:
         postprocess_velocity_specific(dh_cell, edge_scale, edge_source_term);
     }
 
+    void update_water_content(const DHCellAccessor& dh_cell) override
+    {};
+
 protected:
     static const unsigned int size()
     {
