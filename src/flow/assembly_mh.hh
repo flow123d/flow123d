@@ -54,6 +54,9 @@ public:
     /// It is used in LMH and Richards only.
     virtual void postprocess_velocity(const DHCellAccessor& dh_cell) = 0;
 
+    /// Updates water content in Richards.
+    virtual void update_water_content(const DHCellAccessor& dh_cell) = 0;
+
     /**
         * Generic creator of multidimensional assembly, i.e. vector of
         * particular assembly objects.
@@ -156,6 +159,8 @@ public:
     void assemble_reconstruct(LocalElementAccessorBase<3> ele_ac) override
     {};
     void postprocess_velocity(const DHCellAccessor& dh_cell) override
+    {};
+    void update_water_content(const DHCellAccessor& dh_cell) override
     {};
 
     ~AssemblyMH<dim>() override
