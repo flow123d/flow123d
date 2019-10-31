@@ -137,7 +137,7 @@ void RichardsLMH::initialize_specific() {
     data_->water_content_previous_time = data_->dh_cr_disc_->create_vector();
     data_->capacity = data_->dh_cr_disc_->create_vector();
 
-    this->data_->multidim_assembler =  AssemblyBase::create< AssemblyRichards >(data_);
+    data_->multidim_assembler = AssemblyBase::create< AssemblyRichards >(data_);
 }
 
 
@@ -145,10 +145,9 @@ void RichardsLMH::initial_condition_postprocess()
 {
     // modify side fluxes in parallel
     // for every local edge take time term on diagonal and add it to the corresponding flux
-    auto multidim_assembler = AssemblyBase::create< AssemblyRichards >(data_);
     
     for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
-        multidim_assembler[dh_cell.elm().dim()-1]->update_water_content(dh_cell);
+        data_->multidim_assembler[dh_cell.elm().dim()-1]->update_water_content(dh_cell);
     }
 }
 
@@ -191,8 +190,6 @@ void RichardsLMH::assembly_linear_system()
         schur_compl->start_add_assembly();
             
         data_->time_step_ = time_->dt();
-        auto multidim_assembler = AssemblyBase::create< AssemblyRichards >(data_);
-
 
         schur0->mat_zero_entries();
         schur0->rhs_zero_entries();
@@ -200,7 +197,7 @@ void RichardsLMH::assembly_linear_system()
         schur_compl->mat_zero_entries();
         schur_compl->rhs_zero_entries();
 
-        assembly_mh_matrix( multidim_assembler ); // fill matrix
+        assembly_mh_matrix( data_->multidim_assembler ); // fill matrix
 
             //MatView( *const_cast<Mat*>(schur0->get_matrix()), PETSC_VIEWER_STDOUT_WORLD  );
             //VecView( *const_cast<Vec*>(schur0->get_rhs()),   PETSC_VIEWER_STDOUT_WORLD);
