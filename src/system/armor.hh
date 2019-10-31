@@ -168,6 +168,8 @@ public:
      * Return matrix at given position in array. The returned object is a Armor::Mat
      * pointing to the respective data block in the Array's storage.
      * @param i  Index of matrix.
+     *
+     * TODO: Should be renamed to item(), but we have compilation problem in Field::loc_point_value
      */
     template<uint nr, uint nc = 1>
     inline Mat<Type,nr,nc> get(uint i) const
@@ -180,6 +182,8 @@ public:
      * Return matrix at given position in array. The returned object is a Armor::Mat
      * pointing to the respective data block in the Array's storage.
      * @param i  Index of matrix.
+     *
+     * TODO: Should be renamed to item(), but we have compilation problem in Field::loc_point_value
      */
     template<uint nr, uint nc = 1>
     inline Mat<Type,nr,nc> get(uint i)
