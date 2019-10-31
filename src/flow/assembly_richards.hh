@@ -55,7 +55,6 @@ public:
       ad_(data),
       genuchten_on(false),
       cross_section(1.0),
-      soil_model(data->soil_model_),
       cr_disc_dofs(dim+1)
     {}
 
@@ -72,7 +71,7 @@ protected:
             soil_data.Ks = this->ad_->conductivity.value(ele.centre(), ele);
             //soil_data.cut_fraction = 0.99; // set by model
 
-            soil_model->reset(soil_data);
+            this->ad_->soil_model_->reset(soil_data);
         }
     }
 
@@ -84,11 +83,11 @@ protected:
         for (unsigned int i=0; i<ele->n_sides(); i++) {
             double capacity = 0;
             double water_content = 0;
-            double phead = ad_->phead_edge_[ this->edge_indices_[i] ];
+            double phead = ad_->schur_solution[ this->edge_indices_[i] ];
             if (genuchten_on) {
 
                   fadbad::B<double> x_phead(phead);
-                  fadbad::B<double> evaluated( soil_model->water_content_diff(x_phead) );
+                  fadbad::B<double> evaluated( this->ad_->soil_model_->water_content_diff(x_phead) );
                   evaluated.diff(0,1);
                   water_content = evaluated.val();
                   capacity = x_phead.d(0);
@@ -111,9 +110,9 @@ protected:
             ele.dh_cell().cell_with_other_dh(ad_->dh_cr_.get()).get_loc_dof_indices(this->edge_indices_);
             for (unsigned int i=0; i<ele.element_accessor()->n_sides(); i++)
             {
-                double phead = ad_->phead_edge_[ this->edge_indices_[i] ];
-                conductivity += soil_model->conductivity(phead);
-                head += ad_->phead_edge_[ this->edge_indices_[i] ];
+                double phead = ad_->schur_solution[ this->edge_indices_[i] ];
+                conductivity += this->ad_->soil_model_->conductivity(phead);
+                head += ad_->schur_solution[ this->edge_indices_[i] ];
             }
             conductivity /= ele.n_sides();
             head /= ele.n_sides();
@@ -151,16 +150,16 @@ protected:
                 /*
                 DebugOut().fmt("w diff: {:g}  mass: {:g} w prev: {:g} w time: {:g} c: {:g} p: {:g} z: {:g}",
                       water_content_diff,
-                      mass_diagonal * ad_->phead_edge_[local_edge],
+                      mass_diagonal * ad_->schur_solution[local_edge],
                      -ad_->water_content_previous_it[local_side],
                       ad_->water_content_previous_time[local_side],
                       capacity,
-                      ad_->phead_edge_[local_edge],
+                      ad_->schur_solution[local_edge],
                       ele.centre()[0] );
                 */
 
 
-                double mass_rhs = mass_diagonal * ad_->phead_edge_[ this->edge_indices_[i] ] / this->ad_->time_step_
+                double mass_rhs = mass_diagonal * ad_->schur_solution[ this->edge_indices_[i] ] / this->ad_->time_step_
                                   + diagonal_coef * water_content_diff / this->ad_->time_step_;
 
 //                 DBGCOUT(<< "source [" << loc_system_.row_dofs[this->loc_edge_dofs[i]] << ", " << loc_system_.row_dofs[this->loc_edge_dofs[i]]
@@ -190,7 +189,8 @@ protected:
         dh_cell.cell_with_other_dh(ad_->dh_cr_disc_.get()).get_loc_dof_indices(cr_disc_dofs);
     }
     
-    void postprocess_velocity_specific(const DHCellAccessor& dh_cell, double edge_scale, double edge_source_term) override
+    void postprocess_velocity_specific(const DHCellAccessor& dh_cell, arma::vec& solution,
+                                       double edge_scale, double edge_source_term) override
     {   
         update_dofs(dh_cell);
         update_water_content(dh_cell);
@@ -203,7 +203,7 @@ protected:
             double water_content = ad_->water_content_previous_it[ cr_disc_dofs[i] ];
             double water_content_previous_time = ad_->water_content_previous_time[ cr_disc_dofs[i] ];
             
-            ad_->full_solution[this->indices_[this->loc_side_dofs[i]]]
+            solution[this->loc_side_dofs[i]]
                 += edge_source_term - edge_scale * (water_content - water_content_previous_time) / this->ad_->time_step_;
         }
     }
@@ -212,7 +212,6 @@ protected:
 
     bool genuchten_on;
     double cross_section;
-    std::shared_ptr<SoilModelBase> soil_model;
     std::vector<LongIdx> cr_disc_dofs;  ///< Dofs of discontinuous fields on element edges.
 };
 

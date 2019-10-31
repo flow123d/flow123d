@@ -119,6 +119,7 @@ RichardsLMH::RichardsLMH(Mesh &mesh_in, const  Input::Record in_rec)
     //data_->edge_new_local_4_mesh_idx_ = &(this->edge_new_local_4_mesh_idx_);
 }
 
+
 void RichardsLMH::initialize_specific() {
 
     auto model_rec = input_record_.val<Input::Record>("soil_model");
@@ -132,20 +133,16 @@ void RichardsLMH::initialize_specific() {
         ASSERT(false);
 
     // create edge vectors
-    data_->phead_edge_ = data_->dh_cr_->create_vector();
     data_->water_content_previous_it = data_->dh_cr_disc_->create_vector();
     data_->water_content_previous_time = data_->dh_cr_disc_->create_vector();
     data_->capacity = data_->dh_cr_disc_->create_vector();
+
+    this->data_->multidim_assembler =  AssemblyBase::create< AssemblyRichards >(data_);
 }
 
 
 void RichardsLMH::initial_condition_postprocess()
 {
-    // update the subvector with edge pressure for solution vector
-    data_->dh_cr_->update_subvector(data_->data_vec_, data_->phead_edge_);
-    data_->phead_edge_.local_to_ghost_begin();
-    data_->phead_edge_.local_to_ghost_end();
-
     // modify side fluxes in parallel
     // for every local edge take time term on diagonal and add it to the corresponding flux
     auto multidim_assembler = AssemblyBase::create< AssemblyRichards >(data_);
@@ -158,7 +155,7 @@ void RichardsLMH::initial_condition_postprocess()
 
 void RichardsLMH::prepare_new_time_step()
 {
-    data_->previous_solution.copy_from(data_->full_solution);
+    data_->previous_time_schur_solution.copy_from(data_->schur_solution);
     data_->water_content_previous_time.copy_from(data_->water_content_previous_it);
 }
 
@@ -178,13 +175,7 @@ bool RichardsLMH::zero_time_term(bool time_global) {
 
 void RichardsLMH::assembly_linear_system()
 {
-
     START_TIMER("RicharsLMH::assembly_linear_system");
-    
-    // update the subvector with edge pressure for solution vector
-    data_->dh_cr_->update_subvector(data_->full_solution, data_->phead_edge_);
-    data_->phead_edge_.local_to_ghost_begin();
-    data_->phead_edge_.local_to_ghost_end();
 
     data_->is_linear = data_->genuchten_p_head_scale.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
 
@@ -226,25 +217,4 @@ void RichardsLMH::assembly_linear_system()
             // assembly time term and rhs
             solution_changed_for_scatter=true;
         }
-}
-
-
-
-void RichardsLMH::postprocess() {
-
-    // update structures for balance of water volume
-    assembly_linear_system();
-    
-    // update the subvector with edge pressure for solution vector
-    data_->dh_cr_->update_subvector(data_->full_solution, data_->phead_edge_);
-    data_->phead_edge_.local_to_ghost_begin();
-    data_->phead_edge_.local_to_ghost_end();
-
-    // modify side fluxes in parallel
-    // for every local edge take time term on diagonal and add it to the corresponding flux
-    auto multidim_assembler = AssemblyBase::create< AssemblyRichards >(data_);
-    
-    for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
-        multidim_assembler[dh_cell.elm().dim()-1]->postprocess_velocity(dh_cell);
-    }
 }

@@ -49,10 +49,6 @@ public:
     // compute velocity value in the barycenter
     // TODO: implement and use general interpolations between discrete spaces
     virtual arma::vec3 make_element_vector(LocalElementAccessorBase<3> ele_ac) = 0;
-    
-    /// Postprocess the velocity due to lumping.
-    /// It is used in LMH and Richards only.
-    virtual void postprocess_velocity(const DHCellAccessor& dh_cell) = 0;
 
     /// Updates water content in Richards.
     virtual void update_water_content(const DHCellAccessor& dh_cell) = 0;
@@ -157,8 +153,6 @@ public:
     }
 
     void assemble_reconstruct(LocalElementAccessorBase<3> ele_ac) override
-    {};
-    void postprocess_velocity(const DHCellAccessor& dh_cell) override
     {};
     void update_water_content(const DHCellAccessor& dh_cell) override
     {};

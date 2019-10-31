@@ -130,7 +130,7 @@ public:
         {
             // read the computed edge pressures
             schur_solution(i) = ad_->schur_solution[dofs_schur[i]];
-            // write the computed edge pressures
+            // write the computed edge pressures to the full vector
             unsigned int loc_row = dofs[off+i];
             ad_->full_solution[loc_row] = schur_solution(i);
         }
@@ -139,9 +139,16 @@ public:
         arma::vec reconstructed_solution(off);
         loc_system_.reconstruct_solution_schur(off, schur_solution, reconstructed_solution);
         
+        // TODO:
+        // if (mortar_assembly)
+        //     mortar_assembly->fix_velocity(ele_ac);
+
+        // postprocess the velocity
+        postprocess_velocity(ele_ac.dh_cell(), reconstructed_solution);
+
+        // write the velocity and pressure to the full vector
         for(unsigned int i=0; i<off; i++)
         {
-            // write the velocity and pressure
             unsigned int loc_row = dofs[i];
             ad_->full_solution[loc_row] += reconstructed_solution(i);
         }
@@ -192,19 +199,6 @@ public:
 
         flux_in_center /= ad_->cross_section.value(ele.centre(), ele );
         return flux_in_center;
-    }
-
-    void postprocess_velocity(const DHCellAccessor& dh_cell)
-    {
-        ElementAccessor<3> ele = dh_cell.elm();
-        
-        double edge_scale = ele.measure()
-                              * ad_->cross_section.value(ele.centre(), ele)
-                              / ele->n_sides();
-        
-        double edge_source_term = edge_scale * ad_->water_source_density.value(ele.centre(), ele);
-      
-        postprocess_velocity_specific(dh_cell, edge_scale, edge_source_term);
     }
 
     void update_water_content(const DHCellAccessor& dh_cell) override
@@ -618,8 +612,7 @@ protected:
             if(! ad_->use_steady_assembly_)
             {
                 time_term_diag = time_term / ad_->time_step_;
-                time_term_rhs = time_term_diag * ad_->previous_solution[ele_ac.edge_local_row(i)];
-                // time_term_rhs = time_term_diag * ad_->previous_solution[loc_schur_.row_dofs[i]];
+                time_term_rhs = time_term_diag * ad_->previous_time_schur_solution[loc_schur_.row_dofs[i]];
             }
 
             this->loc_system_.add_value(loc_edge_dofs[i], loc_edge_dofs[i],
@@ -702,9 +695,22 @@ protected:
         }
     }
 
-    virtual void postprocess_velocity_specific(const DHCellAccessor& dh_cell, double edge_scale, double edge_source_term)// override
+    void postprocess_velocity(const DHCellAccessor& dh_cell, arma::vec& solution)
     {
-        dh_cell.get_loc_dof_indices(indices_);
+        ElementAccessor<3> ele = dh_cell.elm();
+        
+        double edge_scale = ele.measure()
+                              * ad_->cross_section.value(ele.centre(), ele)
+                              / ele->n_sides();
+        
+        double edge_source_term = edge_scale * ad_->water_source_density.value(ele.centre(), ele);
+      
+        postprocess_velocity_specific(dh_cell, solution, edge_scale, edge_source_term);
+    }
+
+    virtual void postprocess_velocity_specific(const DHCellAccessor& dh_cell, arma::vec& solution,
+                                               double edge_scale, double edge_source_term)// override
+    {
         ElementAccessor<3> ele = dh_cell.elm();
         
         double storativity = ad_->storativity.value(ele.centre(), ele);
@@ -714,12 +720,11 @@ protected:
             
             if( ! ad_->use_steady_assembly_)
             {
-                new_pressure = ad_->full_solution[         indices_[loc_edge_dofs[i]] ];
-                old_pressure = ad_->previous_solution[ indices_[loc_edge_dofs[i]] ];
+                new_pressure = ad_->schur_solution[loc_schur_.row_dofs[i]];
+                old_pressure = ad_->previous_time_schur_solution[loc_schur_.row_dofs[i]];
                 time_term = edge_scale * storativity / ad_->time_step_ * (new_pressure - old_pressure);
             }
-            
-            ad_->full_solution[indices_[loc_side_dofs[i]]] += edge_source_term - time_term;
+            solution[loc_side_dofs[i]] += edge_source_term - time_term;
         }
     }
     

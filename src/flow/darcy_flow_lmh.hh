@@ -161,9 +161,9 @@ public:
         double time_step_;
         
         LinSys *lin_sys_schur;
-        VectorMPI schur_solution;     //< 2. Schur complement solution
-        
-        VectorMPI previous_solution;
+        VectorMPI schur_solution;               //< 2. Schur complement solution
+        VectorMPI previous_schur_solution;      //< 2. Schur complement previous solution (iterative)
+        VectorMPI previous_time_schur_solution; //< 2. Schur complement previous solution (time)
     };
 
     /// Selection for enum MortarMethod.
@@ -306,8 +306,6 @@ protected:
 	// gather of the solution
 	Vec sol_vec;			                 //< vector over solution array
 	VecScatter par_to_all;
-
-    VectorMPI previous_solution_nonlinear;
 
     // Temporary objects holding pointers to appropriate FieldFE
     // TODO remove after final fix of equations

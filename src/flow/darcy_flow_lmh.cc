@@ -256,8 +256,6 @@ void DarcyLMH::init_eq_data()
     data_->mark_input_times(*time_);
 }
 
-
-
 void DarcyLMH::initialize() {
 
     { // init DOF handler for pressure fields
@@ -286,7 +284,6 @@ void DarcyLMH::initialize() {
     }
 
     init_eq_data();
-    this->data_->multidim_assembler =  AssemblyBase::create< AssemblyLMH >(data_);
     output_object = new DarcyFlowMHOutput(this, input_record_);
 
     mh_dh.reinit(mesh_);
@@ -331,8 +328,8 @@ void DarcyLMH::initialize() {
 //     full_solution = new VectorMPI(data_->dh_->distr()->lsize());
     // this creates mpi vector from DoFHandler, including ghost values
     data_->schur_solution = data_->dh_cr_->create_vector();
-    data_->previous_solution = data_->dh_->create_vector();
-    previous_solution_nonlinear = data_->dh_cr_->create_vector();
+    data_->previous_schur_solution = data_->dh_cr_->create_vector();
+    data_->previous_time_schur_solution = data_->dh_cr_->create_vector();
     
     // Initialize bc_switch_dirichlet to size of global boundary.
     data_->bc_switch_dirichlet.resize(mesh_->n_elements()+mesh_->n_elements(true), 1);
@@ -364,7 +361,45 @@ void DarcyLMH::initialize() {
 }
 
 void DarcyLMH::initialize_specific()
-{}
+{
+    this->data_->multidim_assembler =  AssemblyBase::create< AssemblyLMH >(data_);
+}
+
+// void DarcyLMH::read_initial_condition()
+// {
+// 	DebugOut().fmt("Read initial condition\n");
+    
+//     std::vector<LongIdx> l_indices(data_->dh_cr_->max_elem_dofs());
+    
+// 	for ( DHCellAccessor dh_cell : data_->dh_cr_->own_range() ) {
+        
+//         dh_cell.get_loc_dof_indices(l_indices);
+//         ElementAccessor<3> ele = dh_cell.elm();
+        
+// 		// set initial condition
+//         double init_value = data_->init_pressure.value(ele.centre(),ele);
+        
+//         for (unsigned int i=0; i<ele->n_sides(); i++) {
+//              uint n_sides_of_edge =  ele.side(i)->edge()->n_sides;
+//              data_->schur_solution[l_indices[i]] += init_value/n_sides_of_edge;
+//          }
+// 	}
+    
+//     data_->schur_solution.ghost_to_local_begin();
+//     data_->schur_solution.ghost_to_local_end();
+//     // data_->schur_solution.local_to_ghost_begin();
+//     // data_->schur_solution.local_to_ghost_end();
+
+//     data_->previous_time_schur_solution.copy_from(data_->schur_solution);
+//     // data_->previous_time_schur_solution.local_to_ghost_begin();
+//     // data_->previous_time_schur_solution.local_to_ghost_end();
+
+//     // reconstruct_solution_from_schur(data_->multidim_assembler);
+
+//     initial_condition_postprocess();
+    
+//     solution_changed_for_scatter=true;
+// }
 
 void DarcyLMH::read_initial_condition()
 {
@@ -388,12 +423,18 @@ void DarcyLMH::read_initial_condition()
              uint n_sides_of_edge =  ele.side(i)->edge()->n_sides;
              unsigned int l_idx = data_->dh_cr_->parent_indices()[l_indices[i]];
              data_->full_solution[l_idx] += init_value/n_sides_of_edge;
+
+             data_->schur_solution[l_indices[i]] += init_value/n_sides_of_edge;
          }
 	}
     
     data_->full_solution.ghost_to_local_begin();
     data_->full_solution.ghost_to_local_end();
     
+    data_->schur_solution.ghost_to_local_begin();
+    data_->schur_solution.ghost_to_local_end();
+    data_->previous_time_schur_solution.copy_from(data_->schur_solution);
+
     initial_condition_postprocess();
     
     solution_changed_for_scatter=true;
@@ -424,12 +465,13 @@ void DarcyLMH::zero_time_step()
         //read_initial_condition(); // Possible solution guess for steady case.
         solve_nonlinear(); // with right limit data
     } else {
-        data_->previous_solution.zero_entries();
+        data_->previous_time_schur_solution.zero_entries();
         
         read_initial_condition();
         assembly_linear_system(); // in particular due to balance
         // print_matlab_matrix("matrix_zero");
         // TODO: reconstruction of solution in zero time.
+        // reconstruct_solution_from_schur(data_->multidim_assembler);
     }
     //solution_output(T,right_limit); // data for time T in any case
     output_data();
@@ -542,8 +584,11 @@ void DarcyLMH::solve_nonlinear()
             }
         }
 
-        if (! is_linear_common)
-            previous_solution_nonlinear.copy_from(data_->schur_solution);
+        if (! is_linear_common){
+            data_->previous_schur_solution.copy_from(data_->schur_solution);
+            // data_->previous_schur_solution.local_to_ghost_begin();
+            // data_->previous_schur_solution.local_to_ghost_end();
+        }
 //         LinSys::SolveInfo si = schur0->solve();
 
         LinSys::SolveInfo si = schur_compl->solve();        
@@ -563,7 +608,7 @@ void DarcyLMH::solve_nonlinear()
         data_changed_=true; // force reassembly for non-linear case
 
         double alpha = 1; // how much of new solution
-        VecAXPBY(data_->schur_solution.petsc_vec(), (1-alpha), alpha, previous_solution_nonlinear.petsc_vec());
+        VecAXPBY(data_->schur_solution.petsc_vec(), (1-alpha), alpha, data_->previous_schur_solution.petsc_vec());
 
         //LogOut().fmt("Linear solver ended with reason: {} \n", si.converged_reason );
         //OLD_ASSERT( si.converged_reason >= 0, "Linear solver failed to converge. Convergence reason %d \n", si.converged_reason );
@@ -575,7 +620,6 @@ void DarcyLMH::solve_nonlinear()
     }
     
     reconstruct_solution_from_schur(data_->multidim_assembler);
-    this -> postprocess();
 
     // adapt timestep
     if (! this->zero_time_term()) {
@@ -593,52 +637,7 @@ void DarcyLMH::solve_nonlinear()
 
 void DarcyLMH::prepare_new_time_step()
 {
-//     DebugOut() << "DarcyLMH::prepare_new_time_step\n";
-    data_->previous_solution.copy_from(data_->full_solution);
-}
-
-void DarcyLMH::postprocess() 
-{
-    START_TIMER("postprocess");
-    
-//     DebugOut() << "DarcyLMH::postprocess\n";
-
-    //fix velocity when mortar method is used
-    if(data_->mortar_method_ != MortarMethod::NoMortar){
-        auto multidim_assembler =  AssemblyBase::create< AssemblyLMH >(data_);
-        for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
-            LocalElementAccessorBase<3> ele_ac(dh_cell);
-            unsigned int dim = ele_ac.dim();
-            multidim_assembler[dim-1]->fix_velocity(ele_ac);
-        }
-    }
-
-//     std::string output_file = FilePath("before_postprocess_" + std::to_string(time_->step().index()) + ".m", FilePath::output_file);
-//     PetscViewer    viewer;
-//     PetscViewerASCIIOpen(PETSC_COMM_WORLD, output_file.c_str(), &viewer);
-//     PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_MATLAB);
-//     VecView( schur0->get_solution(), viewer);
-//     VecView( data_->previous_solution.petsc_vec(), viewer);
-
-    // after solving, update ghost values
-    data_->full_solution.local_to_ghost_begin();
-    data_->full_solution.local_to_ghost_end();
-    
-    data_->previous_solution.local_to_ghost_begin();
-    data_->previous_solution.local_to_ghost_end();
-    
-    auto multidim_assembler = AssemblyBase::create< AssemblyLMH >(data_);
-    
-    for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
-        multidim_assembler[dh_cell.elm().dim()-1]->postprocess_velocity(dh_cell);
-    }
-    
-//     output_file = FilePath("postprocess_" + std::to_string(time_->step().index()) + ".m", FilePath::output_file);
-// //     PetscViewer    viewer;
-//     PetscViewerASCIIOpen(PETSC_COMM_WORLD, output_file.c_str(), &viewer);
-//     PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_MATLAB);
-//     VecView( schur0->get_solution(), viewer);
-//     VecView( data_->previous_solution.petsc_vec(), viewer);
+    data_->previous_time_schur_solution.copy_from(data_->schur_solution);
 }
 
 
@@ -1022,6 +1021,8 @@ void DarcyLMH::create_linear_system(Input::AbstractRecord in_rec) {
 
 }
 
+void DarcyLMH::postprocess()
+{}
 
 void DarcyLMH::reconstruct_solution_from_schur(MultidimAssembly& assembler)
 {
@@ -1036,21 +1037,18 @@ void DarcyLMH::reconstruct_solution_from_schur(MultidimAssembly& assembler)
         unsigned int dim = ele_ac.dim();
         assembler[dim-1]->assemble_reconstruct(ele_ac);
     }
-    
-    // possibly communicate ghost values
+
     data_->full_solution.local_to_ghost_begin();
     data_->full_solution.local_to_ghost_end();
-//     full_solution.ghost_to_local_begin();
-//     full_solution.ghost_to_local_end();
 }
 
 void DarcyLMH::assembly_linear_system() {
     START_TIMER("DarcyFlowMH::assembly_linear_system");
 //     DebugOut() << "DarcyLMH::assembly_linear_system\n";
-    
-    data_->previous_solution.local_to_ghost_begin();
-    data_->previous_solution.local_to_ghost_end();
-    
+
+    data_->previous_time_schur_solution.local_to_ghost_begin();
+    data_->previous_time_schur_solution.local_to_ghost_end();
+
     data_->is_linear=true;
     //DebugOut() << "Assembly linear system\n";
 //  if (data_changed_) {
