@@ -48,74 +48,41 @@ Quadrature::Quadrature(const Quadrature &q) :
 
 
 
-template<unsigned int quad_dim>
-Quadrature quadrature_from_side(const Quadrature &subq, unsigned int sid, unsigned int pid)
+template<unsigned int bulk_dim>
+Quadrature Quadrature::make_from_side(unsigned int sid, unsigned int pid)
 {
-    ASSERT_DBG( subq.dim() + 1 == quad_dim );
+    ASSERT_DBG( bulk_dim == dim_ + 1 );
     
     // Below we permute point coordinates according to permutation
     // of nodes on side. We just check that these numbers equal.
-    ASSERT_DBG( RefElement<quad_dim>::n_nodes_per_side == quad_dim );
+    ASSERT_DBG( RefElement<bulk_dim>::n_nodes_per_side == bulk_dim );
     
-    Quadrature q(subq.dim()+1, subq.size());
-
-//     double lambda;
-// 
-//     // vectors of barycentric coordinates of quadrature points
-//     arma::vec::fixed<dim+1> el_bar_coords;
-//     arma::vec::fixed<dim> side_bar_coords;
-// 
-//     for (unsigned int k=0; k<subq.size(); k++)
-//     {
-//         const arma::vec::fixed<dim-1> &sub_point = subq.point(k);
-//         // Calculate barycentric coordinates on the side of the k-th
-//         // quadrature point.
-//         el_bar_coords.zeros();
-//         lambda = 0;
-//         // Apply somewhere permutation of indices!
-//         for (unsigned int j=0; j<dim-1; j++)
-//         {
-//             side_bar_coords(j) = sub_point(j);
-//             lambda += sub_point(j);
-//         }
-//         side_bar_coords(dim-1) = 1.0 - lambda;
-// 
-//         // transform to element coordinates
-//         auto side_nodes = RefElement<dim>::interact(Interaction<0, (dim - 1)>(sid));
-//         for (unsigned int i=0; i<dim; i++) {
-//             // TODO: use RefElement<>::interpolate to map coordinates from the subelement
-//             unsigned int i_node = (side_nodes[RefElement<dim>::side_permutations[pid][i]]+dim)%(dim+1);
-//             el_bar_coords(i_node) = side_bar_coords((i+dim-1)%dim);
-//         }
-//         quadrature_points[k] = el_bar_coords.subvec(0,dim-1);
-//         weights[k] = subq.weight(k);
-//     }
+    Quadrature q(dim_+1, size());
+    arma::vec::fixed<bulk_dim+1> el_bar_coords, final_bar;
     
-    arma::vec::fixed<quad_dim+1> el_bar_coords, final_bar;
-    
-    for (unsigned int k=0; k<subq.size(); k++)
+    for (unsigned int k=0; k<size(); k++)
     {
         //compute barycentric coordinates on element
-        arma::vec::fixed<quad_dim> p = RefElement<quad_dim-1>::local_to_bary(subq.point<quad_dim-1>(k).arma());
-        arma::vec::fixed<quad_dim> pp;
+        arma::vec::fixed<bulk_dim> p = RefElement<bulk_dim-1>::local_to_bary(point<bulk_dim-1>(k).arma());
+        arma::vec::fixed<bulk_dim> pp;
         
         //permute
-        for (unsigned int i=0; i<RefElement<quad_dim>::n_nodes_per_side; i++) {
-            pp(RefElement<quad_dim>::side_permutations[pid][i]) = p(i);
+        for (unsigned int i=0; i<RefElement<bulk_dim>::n_nodes_per_side; i++) {
+            pp(RefElement<bulk_dim>::side_permutations[pid][i]) = p(i);
         }
         
-        el_bar_coords = RefElement<quad_dim>::template interpolate<quad_dim-1>(pp,sid);
+        el_bar_coords = RefElement<bulk_dim>::template interpolate<bulk_dim-1>(pp,sid);
         
         //get local coordinates and set
-        q.point<quad_dim>(k) = RefElement<quad_dim>::bary_to_local(el_bar_coords);
-        q.weight(k) = subq.weight(k);
+        q.point<bulk_dim>(k) = RefElement<bulk_dim>::bary_to_local(el_bar_coords);
+        q.weight(k) = weight(k);
     }
     
     return q;
 }
 
 // Specialized subquadrature consructor for dim=1.
-template<> Quadrature quadrature_from_side<1>(const Quadrature &subq, unsigned int sid, unsigned int pid)
+template<> Quadrature Quadrature::make_from_side<1>(unsigned int sid, unsigned int pid)
 {
     Quadrature q(1, 1);
     q.point<1>(0) = { (double)sid };
@@ -124,5 +91,5 @@ template<> Quadrature quadrature_from_side<1>(const Quadrature &subq, unsigned i
     return q;
 }
 
-template Quadrature quadrature_from_side<2>(const Quadrature &subq, unsigned int sid, unsigned int pid);
-template Quadrature quadrature_from_side<3>(const Quadrature &subq, unsigned int sid, unsigned int pid);
+template Quadrature Quadrature::make_from_side<2>(unsigned int sid, unsigned int pid);
+template Quadrature Quadrature::make_from_side<3>(unsigned int sid, unsigned int pid);

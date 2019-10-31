@@ -111,6 +111,15 @@ public:
 
     Quadrature &operator=(const Quadrature &q);
     
+    /**
+     * Create bulk quadrature from side quadrature.
+     * 
+     * Consider *this as quadrature on a side of an element and create
+     * higher dimensional quadrature considering side and permutation index.
+     */
+    template<unsigned int bulk_dim>
+    Quadrature make_from_side(unsigned int sid, unsigned int pid);
+    
 
 protected:
     
@@ -134,9 +143,6 @@ protected:
 };
 
 
-
-template<unsigned int quad_dim>
-Quadrature quadrature_from_side(const Quadrature &subq, unsigned int sid, unsigned int pid);
 
 
 #endif /* QUADRATURE_HH_ */
