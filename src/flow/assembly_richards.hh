@@ -61,24 +61,24 @@ public:
 protected:
     void reset_soil_model(const DHCellAccessor& dh_cell) {
         ElementAccessor<3> ele = dh_cell.elm();
-        genuchten_on = (this->ad_->genuchten_p_head_scale.field_result({ele.region()}) != result_zeros);
+        genuchten_on = (ad_->genuchten_p_head_scale.field_result({ele.region()}) != result_zeros);
         if (genuchten_on) {
             SoilData soil_data;
-            soil_data.n =  this->ad_->genuchten_n_exponent.value(ele.centre(), ele);
-            soil_data.alpha = this->ad_->genuchten_p_head_scale.value(ele.centre(), ele);
-            soil_data.Qr = this->ad_->water_content_residual.value(ele.centre(), ele);
-            soil_data.Qs = this->ad_->water_content_saturated.value(ele.centre(), ele);
-            soil_data.Ks = this->ad_->conductivity.value(ele.centre(), ele);
+            soil_data.n =  ad_->genuchten_n_exponent.value(ele.centre(), ele);
+            soil_data.alpha = ad_->genuchten_p_head_scale.value(ele.centre(), ele);
+            soil_data.Qr = ad_->water_content_residual.value(ele.centre(), ele);
+            soil_data.Qs = ad_->water_content_saturated.value(ele.centre(), ele);
+            soil_data.Ks = ad_->conductivity.value(ele.centre(), ele);
             //soil_data.cut_fraction = 0.99; // set by model
 
-            this->ad_->soil_model_->reset(soil_data);
+            ad_->soil_model_->reset(soil_data);
         }
     }
 
     void update_water_content(const DHCellAccessor& dh_cell) {
         reset_soil_model(dh_cell);
         ElementAccessor<3> ele = dh_cell.elm();
-        double storativity = this->ad_->storativity.value(ele.centre(), ele);
+        double storativity = ad_->storativity.value(ele.centre(), ele);
 
         for (unsigned int i=0; i<ele->n_sides(); i++) {
             double capacity = 0;
@@ -87,7 +87,7 @@ protected:
             if (genuchten_on) {
 
                   fadbad::B<double> x_phead(phead);
-                  fadbad::B<double> evaluated( this->ad_->soil_model_->water_content_diff(x_phead) );
+                  fadbad::B<double> evaluated( ad_->soil_model_->water_content_diff(x_phead) );
                   evaluated.diff(0,1);
                   water_content = evaluated.val();
                   capacity = x_phead.d(0);
@@ -100,7 +100,7 @@ protected:
     void assemble_sides(LocalElementAccessorBase<3> ele) override
     {
         reset_soil_model(ele.dh_cell());
-        cross_section = this->ad_->cross_section.value(ele.centre(), ele.element_accessor());
+        cross_section = ad_->cross_section.value(ele.centre(), ele.element_accessor());
 
 
         double conductivity, head;
@@ -111,13 +111,13 @@ protected:
             for (unsigned int i=0; i<ele.element_accessor()->n_sides(); i++)
             {
                 double phead = ad_->schur_solution[ this->edge_indices_[i] ];
-                conductivity += this->ad_->soil_model_->conductivity(phead);
+                conductivity += ad_->soil_model_->conductivity(phead);
                 head += ad_->schur_solution[ this->edge_indices_[i] ];
             }
             conductivity /= ele.n_sides();
             head /= ele.n_sides();
         } else {
-            conductivity = this->ad_->conductivity.value(ele.centre(), ele.element_accessor());
+            conductivity = ad_->conductivity.value(ele.centre(), ele.element_accessor());
         }
 
         double scale = 1 / cross_section / conductivity;
@@ -135,7 +135,7 @@ protected:
         
         // set lumped source
         double diagonal_coef = ele.measure() * cross_section / ele.n_sides();
-        double source_diagonal = diagonal_coef * this->ad_->water_source_density.value(ele.centre(), ele.element_accessor());
+        double source_diagonal = diagonal_coef * ad_->water_source_density.value(ele.centre(), ele.element_accessor());
 
         for (unsigned int i=0; i<ele.element_accessor()->n_sides(); i++)
         {
@@ -143,7 +143,7 @@ protected:
             uint local_side = cr_disc_dofs[i];
             if (this->dirichlet_edge[i] == 0) {
 
-                double capacity = this->ad_->capacity[local_side];
+                double capacity = ad_->capacity[local_side];
                 double water_content_diff = -ad_->water_content_previous_it[local_side] + ad_->water_content_previous_time[local_side];
                 double mass_diagonal = diagonal_coef * capacity;
 
@@ -159,15 +159,15 @@ protected:
                 */
 
 
-                double mass_rhs = mass_diagonal * ad_->schur_solution[ this->edge_indices_[i] ] / this->ad_->time_step_
-                                  + diagonal_coef * water_content_diff / this->ad_->time_step_;
+                double mass_rhs = mass_diagonal * ad_->schur_solution[ this->edge_indices_[i] ] / ad_->time_step_
+                                  + diagonal_coef * water_content_diff / ad_->time_step_;
 
 //                 DBGCOUT(<< "source [" << loc_system_.row_dofs[this->loc_edge_dofs[i]] << ", " << loc_system_.row_dofs[this->loc_edge_dofs[i]]
 //                             << "] mat: " << -mass_diagonal/this->ad_->time_step_
 //                             << " rhs: " << -source_diagonal - mass_rhs
 //                             << "\n");
                 this->loc_system_.add_value(this->loc_edge_dofs[i], this->loc_edge_dofs[i],
-                                            -mass_diagonal/this->ad_->time_step_,
+                                            -mass_diagonal/ad_->time_step_,
                                             -source_diagonal - mass_rhs);
             }
 
@@ -204,7 +204,7 @@ protected:
             double water_content_previous_time = ad_->water_content_previous_time[ cr_disc_dofs[i] ];
             
             solution[this->loc_side_dofs[i]]
-                += edge_source_term - edge_scale * (water_content - water_content_previous_time) / this->ad_->time_step_;
+                += edge_source_term - edge_scale * (water_content - water_content_previous_time) / ad_->time_step_;
         }
     }
 
