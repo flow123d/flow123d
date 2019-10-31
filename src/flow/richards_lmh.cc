@@ -186,25 +186,16 @@ void RichardsLMH::assembly_linear_system()
 //             schur_compl->start_add_assembly();
 //         }
         
-        schur0->start_add_assembly(); // finish allocation and create matrix
         schur_compl->start_add_assembly();
             
         data_->time_step_ = time_->dt();
-
-        schur0->mat_zero_entries();
-        schur0->rhs_zero_entries();
         
         schur_compl->mat_zero_entries();
         schur_compl->rhs_zero_entries();
 
         assembly_mh_matrix( data_->multidim_assembler ); // fill matrix
 
-            //MatView( *const_cast<Mat*>(schur0->get_matrix()), PETSC_VIEWER_STDOUT_WORLD  );
-            //VecView( *const_cast<Vec*>(schur0->get_rhs()),   PETSC_VIEWER_STDOUT_WORLD);
-
-        schur0->finish_assembly();
         schur_compl->finish_assembly();
-        schur0->set_matrix_changed();
         schur_compl->set_matrix_changed();
 
 

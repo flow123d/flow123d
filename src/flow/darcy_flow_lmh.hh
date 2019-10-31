@@ -298,9 +298,6 @@ protected:
 	unsigned int max_n_it_;
 	unsigned int nonlinear_iteration_; //< Actual number of completed nonlinear iterations, need to pass this information into assembly.
 
-
-	LinSys *schur0;  		//< whole MH Linear System
-
     LinSys *schur_compl;    //< 2. Schur complement of MH Linear System (direct assembly)
     
 	// gather of the solution

@@ -181,7 +181,6 @@ DarcyLMH::DarcyLMH(Mesh &mesh_in, const Input::Record in_rec)
     output_object(nullptr),
     solution(nullptr),
     data_changed_(false),
-    schur0(nullptr),
     schur_compl(nullptr),
     par_to_all(nullptr)
 {
@@ -354,7 +353,6 @@ void DarcyLMH::initialize() {
 
 
     data_->balance = balance_;
-    data_->lin_sys = schur0;
     data_->lin_sys_schur = schur_compl;
 
     initialize_specific();
@@ -560,7 +558,6 @@ void DarcyLMH::solve_nonlinear()
 
     if (! is_linear_common) {
         // set tolerances of the linear solver unless they are set by user.
-        // schur0->set_tolerances(0.1*this->tolerance_, 0.01*this->tolerance_, 100);
         schur_compl->set_tolerances(0.1*this->tolerance_, 0.01*this->tolerance_, 100);
     }
     vector<double> convergence_history;
@@ -589,7 +586,6 @@ void DarcyLMH::solve_nonlinear()
             // data_->previous_schur_solution.local_to_ghost_begin();
             // data_->previous_schur_solution.local_to_ghost_end();
         }
-//         LinSys::SolveInfo si = schur0->solve();
 
         LinSys::SolveInfo si = schur_compl->solve();        
         MessageOut().fmt("[schur solver] lin. it: {}, reason: {}, residual: {}\n",
@@ -659,7 +655,6 @@ void DarcyLMH::output_data() {
 
 double DarcyLMH::solution_precision() const
 {
-// 	return schur0->get_solution_precision();
     return schur_compl->get_solution_precision();
 }
 
@@ -725,9 +720,6 @@ void DarcyLMH::allocate_mh_matrix()
 
     // set auxiliary flag for switchting Dirichlet like BC
     data_->n_schur_compls = n_schur_compls;
-    LinSys *ls = schur0;
-   
-
 
     int local_dofs[10];
 
@@ -801,75 +793,75 @@ void DarcyLMH::allocate_mh_matrix()
     }
     DebugOut() << "end Allocate new schur\n";
     
-    for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
-        LocalElementAccessorBase<3> ele_ac(dh_cell);
-        nsides = ele_ac.n_sides();
+    // for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
+    //     LocalElementAccessorBase<3> ele_ac(dh_cell);
+    //     nsides = ele_ac.n_sides();
         
-        //allocate at once matrix [sides,ele,edges]x[sides,ele,edges]
-        loc_size = 1 + 2*nsides;
-        unsigned int i_side = 0;
+    //     //allocate at once matrix [sides,ele,edges]x[sides,ele,edges]
+    //     loc_size = 1 + 2*nsides;
+    //     unsigned int i_side = 0;
         
-        for (; i_side < nsides; i_side++) {
-            local_dofs[i_side] = ele_ac.side_row(i_side);
-            local_dofs[i_side+nsides] = ele_ac.edge_row(i_side);
-        }
-        local_dofs[i_side+nsides] = ele_ac.ele_row();
-        int * edge_rows = local_dofs + nsides;
-        //int ele_row = local_dofs[0];
+    //     for (; i_side < nsides; i_side++) {
+    //         local_dofs[i_side] = ele_ac.side_row(i_side);
+    //         local_dofs[i_side+nsides] = ele_ac.edge_row(i_side);
+    //     }
+    //     local_dofs[i_side+nsides] = ele_ac.ele_row();
+    //     int * edge_rows = local_dofs + nsides;
+    //     //int ele_row = local_dofs[0];
         
-        // whole local MH matrix
-        ls->mat_set_values(loc_size, local_dofs, loc_size, local_dofs, zeros);
+    //     // whole local MH matrix
+    //     ls->mat_set_values(loc_size, local_dofs, loc_size, local_dofs, zeros);
         
 
-        // compatible neighborings rows
-        unsigned int n_neighs = ele_ac.element_accessor()->n_neighs_vb();
-        unsigned int i=0;
-        for ( DHCellSide neighb_side : dh_cell.neighb_sides() ) {
-        //for (unsigned int i = 0; i < n_neighs; i++) {
-            // every compatible connection adds a 2x2 matrix involving
-            // current element pressure  and a connected edge pressure
-            Neighbour *ngh = ele_ac.element_accessor()->neigh_vb[i];
-            DHCellAccessor cell_higher_dim = data_->dh_->cell_accessor_from_element(neighb_side.elem_idx());
-            LocalElementAccessorBase<3> acc_higher_dim( cell_higher_dim );
-            for (unsigned int j = 0; j < neighb_side.element().dim()+1; j++)
-            	if (neighb_side.element()->edge_idx(j) == ngh->edge_idx()) {
-            		int neigh_edge_row = acc_higher_dim.edge_row(j);
-            		tmp_rows.push_back(neigh_edge_row);
-            		break;
-            	}
-            //DebugOut() << "CC" << print_var(tmp_rows[i]);
-            ++i;
-        }
+    //     // compatible neighborings rows
+    //     unsigned int n_neighs = ele_ac.element_accessor()->n_neighs_vb();
+    //     unsigned int i=0;
+    //     for ( DHCellSide neighb_side : dh_cell.neighb_sides() ) {
+    //     //for (unsigned int i = 0; i < n_neighs; i++) {
+    //         // every compatible connection adds a 2x2 matrix involving
+    //         // current element pressure  and a connected edge pressure
+    //         Neighbour *ngh = ele_ac.element_accessor()->neigh_vb[i];
+    //         DHCellAccessor cell_higher_dim = data_->dh_->cell_accessor_from_element(neighb_side.elem_idx());
+    //         LocalElementAccessorBase<3> acc_higher_dim( cell_higher_dim );
+    //         for (unsigned int j = 0; j < neighb_side.element().dim()+1; j++)
+    //         	if (neighb_side.element()->edge_idx(j) == ngh->edge_idx()) {
+    //         		int neigh_edge_row = acc_higher_dim.edge_row(j);
+    //         		tmp_rows.push_back(neigh_edge_row);
+    //         		break;
+    //         	}
+    //         //DebugOut() << "CC" << print_var(tmp_rows[i]);
+    //         ++i;
+    //     }
 
-        // allocate always also for schur 2
-        ls->mat_set_values(nsides+1, edge_rows, n_neighs, tmp_rows.data(), zeros); // (edges, ele)  x (neigh edges)
-        ls->mat_set_values(n_neighs, tmp_rows.data(), nsides+1, edge_rows, zeros); // (neigh edges) x (edges, ele)
-        ls->mat_set_values(n_neighs, tmp_rows.data(), n_neighs, tmp_rows.data(), zeros);  // (neigh edges) x (neigh edges)
+    //     // allocate always also for schur 2
+    //     ls->mat_set_values(nsides+1, edge_rows, n_neighs, tmp_rows.data(), zeros); // (edges, ele)  x (neigh edges)
+    //     ls->mat_set_values(n_neighs, tmp_rows.data(), nsides+1, edge_rows, zeros); // (neigh edges) x (edges, ele)
+    //     ls->mat_set_values(n_neighs, tmp_rows.data(), n_neighs, tmp_rows.data(), zeros);  // (neigh edges) x (neigh edges)
 
-        tmp_rows.clear();
+    //     tmp_rows.clear();
 
-        if (data_->mortar_method_ != NoMortar) {
-            auto &isec_list = mesh_->mixed_intersections().element_intersections_[ele_ac.ele_global_idx()];
-            for(auto &isec : isec_list ) {
-                IntersectionLocalBase *local = isec.second;
-                LocalElementAccessorBase<3> slave_acc( data_->dh_->cell_accessor_from_element(local->bulk_ele_idx()) );
-                //DebugOut().fmt("Alloc: {} {}", ele_ac.ele_global_idx(), local->bulk_ele_idx());
-                for(unsigned int i_side=0; i_side < slave_acc.dim()+1; i_side++) {
-                    tmp_rows.push_back( slave_acc.edge_row(i_side) );
-                    //DebugOut() << "aedge" << print_var(tmp_rows[tmp_rows.size()-1]);
-                }
-            }
-        }
-        /*
-        for(unsigned int i_side=0; i_side < ele_ac.element_accessor()->n_sides(); i_side++) {
-            DebugOut() << "aedge:" << print_var(edge_rows[i_side]);
-        }*/
+    //     if (data_->mortar_method_ != NoMortar) {
+    //         auto &isec_list = mesh_->mixed_intersections().element_intersections_[ele_ac.ele_global_idx()];
+    //         for(auto &isec : isec_list ) {
+    //             IntersectionLocalBase *local = isec.second;
+    //             LocalElementAccessorBase<3> slave_acc( data_->dh_->cell_accessor_from_element(local->bulk_ele_idx()) );
+    //             //DebugOut().fmt("Alloc: {} {}", ele_ac.ele_global_idx(), local->bulk_ele_idx());
+    //             for(unsigned int i_side=0; i_side < slave_acc.dim()+1; i_side++) {
+    //                 tmp_rows.push_back( slave_acc.edge_row(i_side) );
+    //                 //DebugOut() << "aedge" << print_var(tmp_rows[tmp_rows.size()-1]);
+    //             }
+    //         }
+    //     }
+    //     /*
+    //     for(unsigned int i_side=0; i_side < ele_ac.element_accessor()->n_sides(); i_side++) {
+    //         DebugOut() << "aedge:" << print_var(edge_rows[i_side]);
+    //     }*/
 
-        ls->mat_set_values(nsides, edge_rows, tmp_rows.size(), tmp_rows.data(), zeros);   // master edges x neigh edges
-        ls->mat_set_values(tmp_rows.size(), tmp_rows.data(), nsides, edge_rows, zeros);   // neigh edges  x master edges
-        ls->mat_set_values(tmp_rows.size(), tmp_rows.data(), tmp_rows.size(), tmp_rows.data(), zeros);  // neigh edges  x neigh edges
+    //     ls->mat_set_values(nsides, edge_rows, tmp_rows.size(), tmp_rows.data(), zeros);   // master edges x neigh edges
+    //     ls->mat_set_values(tmp_rows.size(), tmp_rows.data(), nsides, edge_rows, zeros);   // neigh edges  x master edges
+    //     ls->mat_set_values(tmp_rows.size(), tmp_rows.data(), tmp_rows.size(), tmp_rows.data(), zeros);  // neigh edges  x neigh edges
 
-    }
+    // }
 /*
     // alloc edge diagonal entries
     if(rank == 0)
@@ -903,7 +895,7 @@ void DarcyLMH::create_linear_system(Input::AbstractRecord in_rec) {
   
     START_TIMER("preallocation");
 
-    if (schur0 == NULL) { // create Linear System for MH matrix
+    // if (schur0 == NULL) { // create Linear System for MH matrix
        
 //     	if (in_rec.type() == LinSys_BDDC::get_input_type()) {
 // #ifdef FLOW123D_HAVE_BDDCML
@@ -937,71 +929,69 @@ void DarcyLMH::create_linear_system(Input::AbstractRecord in_rec) {
             schur_compl->set_solution( data_->schur_solution.petsc_vec() );
             schur_compl->set_symmetric();
             
-            LinSys_PETSC *schur1, *schur2;
+//             LinSys_PETSC *schur1, *schur2;
 
-            if (n_schur_compls == 0) {
-                LinSys_PETSC *ls = new LinSys_PETSC( &(*data_->dh_->distr()) );
+//             if (n_schur_compls == 0) {
+//                 LinSys_PETSC *ls = new LinSys_PETSC( &(*data_->dh_->distr()) );
 
-                // temporary solution; we have to set precision also for sequantial case of BDDC
-                // final solution should be probably call of direct solver for oneproc case
-//                 if (in_rec.type() != LinSys_BDDC::get_input_type()) ls->set_from_input(in_rec);
-//                 else {
-//                     ls->LinSys::set_from_input(in_rec); // get only common options
+//                 // temporary solution; we have to set precision also for sequantial case of BDDC
+//                 // final solution should be probably call of direct solver for oneproc case
+// //                 if (in_rec.type() != LinSys_BDDC::get_input_type()) ls->set_from_input(in_rec);
+// //                 else {
+// //                     ls->LinSys::set_from_input(in_rec); // get only common options
+// //                 }
+//                 ls->set_from_input(in_rec);
+
+// //                 ls->set_solution( data_->full_solution.petsc_vec() );
+//                 schur0=ls;
+//             } else {
+//                 IS is;
+//                 auto side_dofs_vec = get_component_indices_vec(0);
+
+//                 ISCreateGeneral(PETSC_COMM_SELF, side_dofs_vec.size(), &(side_dofs_vec[0]), PETSC_COPY_VALUES, &is);
+//                 //ISView(is, PETSC_VIEWER_STDOUT_SELF);
+//                 //OLD_ASSERT(err == 0,"Error in ISCreateStride.");
+
+//                 SchurComplement *ls = new SchurComplement(&(*data_->dh_->distr()), is);
+
+//                 // make schur1
+//                 Distribution *ds = ls->make_complement_distribution();
+//                 if (n_schur_compls==1) {
+//                     schur1 = new LinSys_PETSC(ds);
+//                     schur1->set_positive_definite();
+//                 } else {
+//                     IS is;
+//                     auto elem_dofs_vec = get_component_indices_vec(1);
+
+//                     const PetscInt *b_indices;
+//                     ISGetIndices(ls->IsB, &b_indices);
+//                     uint b_size = ls->loc_size_B;
+//                     for(uint i_b=0, i_bb=0; i_b < b_size && i_bb < elem_dofs_vec.size(); i_b++) {
+//                         if (b_indices[i_b] == elem_dofs_vec[i_bb])
+//                             elem_dofs_vec[i_bb++] = i_b + ds->begin();
+//                     }
+//                     ISRestoreIndices(ls->IsB, &b_indices);
+
+
+//                     ISCreateGeneral(PETSC_COMM_SELF, elem_dofs_vec.size(), &(elem_dofs_vec[0]), PETSC_COPY_VALUES, &is);
+//                     //ISView(is, PETSC_VIEWER_STDOUT_SELF);
+//                     //OLD_ASSERT(err == 0,"Error in ISCreateStride.");
+//                     SchurComplement *ls1 = new SchurComplement(ds, is); // is is deallocated by SchurComplement
+//                     ls1->set_negative_definite();
+
+//                     // make schur2
+//                     schur2 = new LinSys_PETSC( ls1->make_complement_distribution() );
+//                     schur2->set_positive_definite();
+//                     ls1->set_complement( schur2 );
+//                     schur1 = ls1;
 //                 }
-                ls->set_from_input(in_rec);
-
-//                 ls->set_solution( data_->full_solution.petsc_vec() );
-                schur0=ls;
-            } else {
-                IS is;
-                auto side_dofs_vec = get_component_indices_vec(0);
-
-                ISCreateGeneral(PETSC_COMM_SELF, side_dofs_vec.size(), &(side_dofs_vec[0]), PETSC_COPY_VALUES, &is);
-                //ISView(is, PETSC_VIEWER_STDOUT_SELF);
-                //OLD_ASSERT(err == 0,"Error in ISCreateStride.");
-
-                SchurComplement *ls = new SchurComplement(&(*data_->dh_->distr()), is);
-
-                // make schur1
-                Distribution *ds = ls->make_complement_distribution();
-                if (n_schur_compls==1) {
-                    schur1 = new LinSys_PETSC(ds);
-                    schur1->set_positive_definite();
-                } else {
-                    IS is;
-                    auto elem_dofs_vec = get_component_indices_vec(1);
-
-                    const PetscInt *b_indices;
-                    ISGetIndices(ls->IsB, &b_indices);
-                    uint b_size = ls->loc_size_B;
-                    for(uint i_b=0, i_bb=0; i_b < b_size && i_bb < elem_dofs_vec.size(); i_b++) {
-                        if (b_indices[i_b] == elem_dofs_vec[i_bb])
-                            elem_dofs_vec[i_bb++] = i_b + ds->begin();
-                    }
-                    ISRestoreIndices(ls->IsB, &b_indices);
-
-
-                    ISCreateGeneral(PETSC_COMM_SELF, elem_dofs_vec.size(), &(elem_dofs_vec[0]), PETSC_COPY_VALUES, &is);
-                    //ISView(is, PETSC_VIEWER_STDOUT_SELF);
-                    //OLD_ASSERT(err == 0,"Error in ISCreateStride.");
-                    SchurComplement *ls1 = new SchurComplement(ds, is); // is is deallocated by SchurComplement
-                    ls1->set_negative_definite();
-
-                    // make schur2
-                    schur2 = new LinSys_PETSC( ls1->make_complement_distribution() );
-                    schur2->set_positive_definite();
-                    ls1->set_complement( schur2 );
-                    schur1 = ls1;
-                }
-                ls->set_complement( schur1 );
-                ls->set_from_input(in_rec);
-//                 ls->set_solution( data_->full_solution.petsc_vec() );
-                schur0=ls;
-            }
+//                 ls->set_complement( schur1 );
+//                 ls->set_from_input(in_rec);
+// //                 ls->set_solution( data_->full_solution.petsc_vec() );
+//                 schur0=ls;
+            // }
 
             START_TIMER("PETSC PREALLOCATION");
-            schur0->set_symmetric();
-            schur0->start_allocation();
             schur_compl->start_allocation();
             
             allocate_mh_matrix();
@@ -1015,10 +1005,7 @@ void DarcyLMH::create_linear_system(Input::AbstractRecord in_rec) {
         }
 
         END_TIMER("preallocation");
-        make_serial_scatter();
-
-    }
-
+        // make_serial_scatter();
 }
 
 void DarcyLMH::postprocess()
@@ -1062,11 +1049,7 @@ void DarcyLMH::assembly_linear_system() {
 //             schur_compl->start_add_assembly();
 //         }
         
-        schur0->start_add_assembly(); // finish allocation and create matrix
         schur_compl->start_add_assembly();
-
-        schur0->mat_zero_entries();
-        schur0->rhs_zero_entries();
         
         schur_compl->mat_zero_entries();
         schur_compl->rhs_zero_entries();
@@ -1075,13 +1058,10 @@ void DarcyLMH::assembly_linear_system() {
 
         assembly_mh_matrix( data_->multidim_assembler ); // fill matrix
 
-        schur0->finish_assembly();
         schur_compl->finish_assembly();
-//         print_matlab_matrix("matrix");
-        schur0->set_matrix_changed();
         schur_compl->set_matrix_changed();
-            //MatView( *const_cast<Mat*>(schur0->get_matrix()), PETSC_VIEWER_STDOUT_WORLD  );
-            //VecView( *const_cast<Vec*>(schur0->get_rhs()),   PETSC_VIEWER_STDOUT_WORLD);
+
+        // print_matlab_matrix("matrix");
     }
 }
 
@@ -1089,28 +1069,6 @@ void DarcyLMH::assembly_linear_system() {
 void DarcyLMH::print_matlab_matrix(std::string matlab_file)
 {
     std::string output_file;
-    
-//     if ( typeid(*schur0) == typeid(LinSys_BDDC) ){
-//         WarningOut() << "Can output matrix only on a single processor.";
-//         output_file = FilePath(matlab_file + "_bddc.m", FilePath::output_file);
-//         ofstream os( output_file );
-//         auto bddc = static_cast<LinSys_BDDC*>(schur0);
-//         bddc->print_matrix(os);
-//     }
-//     else
-    {//if ( typeid(*schur0) == typeid(LinSys_PETSC) ){
-        output_file = FilePath(matlab_file + ".m", FilePath::output_file);
-        PetscViewer    viewer;
-        PetscViewerASCIIOpen(PETSC_COMM_WORLD, output_file.c_str(), &viewer);
-        PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_MATLAB);
-//         MatView( *const_cast<Mat*>(schur0->get_matrix()), viewer);
-//         VecView( *const_cast<Vec*>(schur0->get_rhs()), viewer);
-        VecView( *const_cast<Vec*>(&(data_->full_solution.petsc_vec())), viewer);
-    }
-//     else{
-//         WarningOut() << "No matrix output available for the current solver.";
-//         return;
-//     }
     
     // compute h_min for different dimensions
     double d_max = std::numeric_limits<double>::max();
@@ -1144,21 +1102,8 @@ void DarcyLMH::print_matlab_matrix(std::string matlab_file)
     fprintf(file, "h1 = %e;\nh2 = %e;\nh3 = %e;\n", h1, h2, h3);
     fprintf(file, "he2 = %e;\nhe3 = %e;\n", he2, he3);
     fclose(file);
-    
-//     {//if ( typeid(*schur0) == typeid(LinSys_PETSC) ){
-// //         schur0->solve();
-//         SchurComplement* sch1 = static_cast<SchurComplement*>(schur0);
-//         SchurComplement* sch = static_cast<SchurComplement*>(sch1->get_system());
-//         output_file = FilePath(matlab_file + "_sch.m", FilePath::output_file);
-//         PetscViewer    viewer;
-//         PetscViewerASCIIOpen(PETSC_COMM_WORLD, output_file.c_str(), &viewer);
-//         PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_MATLAB);
-//         MatView( *const_cast<Mat*>(sch->get_system()->get_matrix()), viewer);
-//         VecView( *const_cast<Vec*>(sch->get_system()->get_rhs()), viewer);
-//         VecView( *const_cast<Vec*>(&(sch->get_system()->get_solution())), viewer);
-//         VecView( *const_cast<Vec*>(&(schur0->get_solution())), viewer);
-//     }
-    {//if ( typeid(*schur0) == typeid(LinSys_PETSC) ){
+
+    {
         output_file = FilePath(matlab_file + "_sch_new.m", FilePath::output_file);
         PetscViewer    viewer;
         PetscViewerASCIIOpen(PETSC_COMM_WORLD, output_file.c_str(), &viewer);
@@ -1363,11 +1308,7 @@ void DarcyLMH::print_matlab_matrix(std::string matlab_file)
 // DESTROY WATER MH SYSTEM STRUCTURE
 //=============================================================================
 DarcyLMH::~DarcyLMH() {
-    
-    if (schur0 != NULL) {
-        delete schur0;
-    	if (par_to_all != nullptr) chkerr(VecScatterDestroy(&par_to_all));
-    }
+    if (par_to_all != nullptr) chkerr(VecScatterDestroy(&par_to_all));
 
 	if (solution != NULL) {
 	    chkerr(VecDestroy(&sol_vec));
