@@ -100,11 +100,18 @@ private:
     typedef StringTensorInput<Value::NRows_,Value::NCols_> STI;
 
     /**
+     * Evaluate fields values if they are contained in formula.
+     *
+     * Return arma vec of point coordinates extended by fields values (or zero if fields are not contained.
+     */
+    inline arma::vec eval_field_vars(const Point &p, const ElementAccessor<spacedim> &elm);
+
+    /**
      * Evaluate depth variable if it is contained in formula.
      *
      * Return arma vec of point coordinates extended by depth value (or zero if depth is not contained.
      */
-    inline arma::vec eval_depth_var(const Point &p);
+    inline arma::vec eval_depth_var(arma::vec p);
 
     // StringValue::return_type == StringTensor, which behaves like arma::mat<string>
     StringTensor formula_matrix_;
@@ -127,8 +134,11 @@ private:
     /// Holds FieldSet, allows evaluate values of Fields in formula expressions.
     FieldSet *field_set_;
 
-    /// Holds names of fields.
+    /// Holds names of all fields in set.
     std::set<std::string> field_set_names_;
+
+    /// Holds names of fields used in formula expressions.
+    std::set<std::string> field_used_names_;
 
     /// Registrar of class to factory
     static const int registrar;

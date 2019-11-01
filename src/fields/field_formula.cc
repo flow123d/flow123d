@@ -99,6 +99,7 @@ bool FieldFormula<spacedim, Value>::set_time(const TimeStep &time) {
     std::string value_input_address = in_rec_.address_string();
     has_depth_var_ = false;
     this->is_constant_in_space_ = true; // set flag to true, then if found 'x', 'y', 'z' or 'd' reset to false
+    field_used_names_.clear();
 
 
     std::string vars = string("x,y,z").substr(0, 2*spacedim-1);
@@ -136,9 +137,17 @@ bool FieldFormula<spacedim, Value>::set_time(const TimeStep &time) {
                 	this->is_constant_in_space_ = false;
                 	continue;
                 }
-                else
-                	WarningOut().fmt("Unknown variable '{}' in the  FieldFormula[{}][{}] == '{}'\n at the input address:\n {} \n",
-                            var_name, row, col, formula_matrix_.at(row,col), value_input_address );
+                else {
+                    std::set<std::string>::iterator it = field_set_names_.find(var_name);
+                    if (it != field_set_names_.end()) {
+                        field_used_names_.insert(var_name);
+                        MessageOut().fmt("Used Field '{}' in the  FieldFormula[{}][{}] == '{}'\n at the input address:\n {} \n",
+                                var_name, row, col, formula_matrix_.at(row,col), value_input_address );
+                    } else {
+                        WarningOut().fmt("Unknown variable '{}' in the  FieldFormula[{}][{}] == '{}'\n at the input address:\n {} \n",
+                                var_name, row, col, formula_matrix_.at(row,col), value_input_address );
+                    }
+                }
             }
 
             // Seems that we can not just add 't' constant to tmp_parser, since it was already Parsed.
@@ -148,6 +157,10 @@ bool FieldFormula<spacedim, Value>::set_time(const TimeStep &time) {
                 parser_matrix_[row][col].AddConstant("t", time.end());
             }
         }
+
+    for(auto f_name : field_used_names_) {
+        vars += string(","+f_name);
+    }
 
     if (has_depth_var_)
         vars += string(",d");
@@ -199,7 +212,8 @@ template <int spacedim, class Value>
 typename Value::return_type const & FieldFormula<spacedim, Value>::value(const Point &p, const ElementAccessor<spacedim> &elm)
 {
 
-    auto p_depth = this->eval_depth_var(p);
+    auto p_fields = this->eval_field_vars(p, elm);
+    auto p_depth = this->eval_depth_var(p_fields);
     for(unsigned int row=0; row < this->value_.n_rows(); row++)
         for(unsigned int col=0; col < this->value_.n_cols(); col++) {
             this->value_(row,col) = this->unit_conversion_coefficient_ * parser_matrix_[row][col].Eval(p_depth.memptr());
@@ -220,7 +234,8 @@ void FieldFormula<spacedim, Value>::value_list (const std::vector< Point >  &poi
         Value envelope(value_list[i]);
         ASSERT_EQ( envelope.n_rows(), this->value_.n_rows() )(i)(envelope.n_rows())(this->value_.n_rows())
         		.error("value_list['i'] has wrong number of rows\n");
-        auto p_depth = this->eval_depth_var(point_list[i]);
+        auto p_fields = this->eval_field_vars(point_list[i], elm);
+        auto p_depth = this->eval_depth_var(p_fields);
 
         for(unsigned int row=0; row < this->value_.n_rows(); row++)
             for(unsigned int col=0; col < this->value_.n_cols(); col++) {
@@ -231,14 +246,36 @@ void FieldFormula<spacedim, Value>::value_list (const std::vector< Point >  &poi
 
 
 template <int spacedim, class Value>
-inline arma::vec FieldFormula<spacedim, Value>::eval_depth_var(const Point &p)
+inline arma::vec FieldFormula<spacedim, Value>::eval_field_vars(const Point &p, const ElementAccessor<spacedim> &elm)
+{
+    if (field_used_names_.size() > 0) {
+        // add values of fields
+        arma::vec p_fields(spacedim+field_used_names_.size());
+        p_fields.subvec(0,spacedim-1) = p;
+        unsigned int i = spacedim; // index to p_fields
+        for(auto f_name : field_used_names_) {
+            FieldCommon *fc = field_set_->field(f_name);
+            if (!fc->is_multifield()) {
+                p_fields[i] = 0; //set field value
+            } else p_fields[i] = 0;
+            ++i;
+        }
+        return p_fields;
+    } else {
+        return p;
+    }
+}
+
+
+template <int spacedim, class Value>
+inline arma::vec FieldFormula<spacedim, Value>::eval_depth_var(arma::vec p)
 {
 	if (surface_depth_ && has_depth_var_) {
 		// add value of depth
-		arma::vec p_depth(spacedim+1);
-		p_depth.subvec(0,spacedim-1) = p;
+		arma::vec p_depth(spacedim+field_used_names_.size()+1);
+		p_depth.subvec(0,spacedim+field_used_names_.size()-1) = p;
 		try {
-			p_depth(spacedim) = surface_depth_->compute_distance(p);
+			p_depth(spacedim+field_used_names_.size()) = surface_depth_->compute_distance(p);
 		} catch (SurfaceDepth::ExcTooLargeSnapDistance &e) {
 			e << SurfaceDepth::EI_FieldTime(this->time_.end());
 			e << in_rec_.ei_address();
