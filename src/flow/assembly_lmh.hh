@@ -765,7 +765,6 @@ protected:
     std::shared_ptr<MortarAssemblyBase> mortar_assembly;
         
 //     // TODO: Update dofs only once, use the dofs from LocalSystem, once set_dofs and set_bc is separated.
-    std::vector<int> indices_;
     std::vector<int> edge_indices_; ///< Dofs of discontinuous fields on element edges.
 };
 

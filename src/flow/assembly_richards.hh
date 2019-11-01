@@ -76,6 +76,7 @@ protected:
     }
 
     void update_water_content(const DHCellAccessor& dh_cell) {
+        update_dofs(dh_cell);
         reset_soil_model(dh_cell);
         ElementAccessor<3> ele = dh_cell.elm();
         double storativity = ad_->storativity.value(ele.centre(), ele);
@@ -130,7 +131,6 @@ protected:
      */
     void assemble_source_term(LocalElementAccessorBase<3> ele) override
     {
-        update_dofs(ele.dh_cell());
         update_water_content(ele.dh_cell());
         
         // set lumped source
@@ -192,10 +192,8 @@ protected:
     void postprocess_velocity_specific(const DHCellAccessor& dh_cell, arma::vec& solution,
                                        double edge_scale, double edge_source_term) override
     {   
-        update_dofs(dh_cell);
         update_water_content(dh_cell);
         
-        dh_cell.get_loc_dof_indices(this->indices_);
         ElementAccessor<3> ele = dh_cell.elm();
         
         for (unsigned int i=0; i<ele->n_sides(); i++) {
