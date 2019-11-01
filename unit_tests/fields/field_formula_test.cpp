@@ -14,6 +14,8 @@
 
 #include "fields/field_constant.hh"
 #include "fields/surface_depth.hh"
+#include "fields/field_set.hh"
+#include "fields/field.hh"
 #include "input/input_type.hh"
 #include "input/accessors.hh"
 #include "input/reader_to_storage.hh"
@@ -24,30 +26,77 @@
 
 
 FLOW123D_FORCE_LINK_IN_PARENT(field_formula)
+FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
 
 
-string input = R"INPUT(
-{   
-   init_conc={ // formula on 2d 
-       TYPE="FieldFormula",
-       value=["x", "x*y", "y+t"]
-   },
-   init_conc_unit_conversion={ // formula on 2d 
-       TYPE="FieldFormula",
-       value=["x", "x*y", "y+t"],
-       unit="g*cm^-3"
-   },
-   conductivity_3d={ // 3x3 tensor
-       TYPE="FieldFormula",
-       value=["sin(x)+cos(y)","exp(x)+y^2", "base:=(x+y); base+base^2"]
-   },
-   formula_with_depth={
-       TYPE="FieldFormula",
-       value=["d", "x", "y"],
-       surface_region=".top side"
-   }
-}
-)INPUT";
+string input = R"YAML(
+# formula on 2d
+init_conc: !FieldFormula
+  value: ["x", "x*y", "y+t"]
+# formula on 2d
+init_conc_unit_conversion: !FieldFormula
+  value: ["x", "x*y", "y+t"]
+  unit: "g*cm^-3"
+# 3x3 tensor
+conductivity_3d: !FieldFormula
+  value: ["sin(x)+cos(y)","exp(x)+y^2", "base:=(x+y); base+base^2"]
+# surface depth parameter
+formula_with_depth: !FieldFormula
+  value: ["d", "x", "y"]
+  surface_region: ".top side"
+# other field as parameter
+field_as_param: !FieldFormula
+  value: ["sigma_1", "sigma_2", "sigma_1+sigma_2"]
+)YAML";
+
+// Test input of FieldSet
+const string eq_data_input = R"YAML(
+- time: 0.0
+  region: "BULK"
+  sigma_1: !FieldConstant
+    value: 1.1,
+  sigma_2: !FieldConstant
+    value: 2.2,
+)YAML";
+
+
+class SomeEquation {
+
+public:
+	class EqData : public FieldSet {
+	public:
+		EqData() {
+		    *this += sigma_1.name("sigma_1")
+		            .description("Transition coefficient between dimensions.")
+		            .input_default("1.0")
+		            .units( UnitSI::dimensionless() );
+		    *this += sigma_2.name("sigma_2")
+		            .description("Transition coefficient between dimensions.")
+		            .input_default("1.0")
+		            .units( UnitSI::dimensionless() );
+		}
+
+		// fields
+	    Field<3, FieldValue<3>::Scalar > sigma_1;
+	    Field<3, FieldValue<3>::Scalar > sigma_2;
+	};
+
+	SomeEquation() {
+        //mesh_ = mesh_full_constructor("{mesh_file=\"fields/surface_reg.msh\"}");
+	}
+
+	~SomeEquation() {
+		//delete mesh_;
+	}
+
+	FieldSet &eq_data() {
+	    return data_;
+	}
+
+	//Mesh * mesh_;
+	EqData data_;
+	std::vector<string> component_names_;
+};
 
 
 TEST(FieldFormula, read_from_input) {
@@ -64,10 +113,11 @@ TEST(FieldFormula, read_from_input) {
         .declare_key("init_conc", VectorField::get_input_type_instance(), Input::Type::Default::obligatory(), "" )
         .declare_key("init_conc_unit_conversion", VectorField::get_input_type_instance(), Input::Type::Default::obligatory(), "" )
 		.declare_key("formula_with_depth", VectorField::get_input_type_instance(), Input::Type::Default::obligatory(), "" )
+		.declare_key("field_as_param", VectorField::get_input_type_instance(), Input::Type::Default::obligatory(), "" )
         .close();
 
     // read input string
-    Input::ReaderToStorage reader( input, rec_type, Input::FileFormat::format_JSON );
+    Input::ReaderToStorage reader( input, rec_type, Input::FileFormat::format_YAML );
     Input::Record in_rec=reader.get_root_interface<Input::Record>();
 
     Space<3>::Point point_1, point_2;
@@ -180,6 +230,20 @@ TEST(FieldFormula, read_from_input) {
         	EXPECT_DOUBLE_EQ(result(1), point(0));
         	EXPECT_DOUBLE_EQ(result(2), point(1));
         }
+    }
+    FieldAlgoBaseInitData init_data_param("field_as_param", 3, UnitSI::dimensionless());
+    auto field_param=VectorField::function_factory(in_rec.val<Input::AbstractRecord>("field_as_param"), init_data_param);
+    {
+        SomeEquation eq;
+        field_param->set_dependency(eq.eq_data());
+        field_param->set_time(0.0);
+
+        arma::vec3 result;
+        result = field_param->value( point_1, elm);
+        std::cout << result;
+    	//EXPECT_DOUBLE_EQ(result(0), 1.1);
+    	//EXPECT_DOUBLE_EQ(result(1), 2.2);
+    	//EXPECT_DOUBLE_EQ(result(2), 3.3);
     }
 }
 
