@@ -52,6 +52,7 @@
 
 class Mesh;
 class Observe;
+class FieldSet;
 template <int spacedim> class ElementAccessor;
 template <int spacedim, class Value> class FieldFE;
 
@@ -310,6 +311,11 @@ public:
      * into storage of output time @p stream for postponed output.
      */
     void compute_field_data(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream);
+
+    /**
+     * Implementation of FieldCommon::set_dependency().
+     */
+    void set_dependency(FieldSet &field_set) override;
 
 protected:
 

@@ -55,6 +55,7 @@ using namespace std;
 class Mesh;
 class Observe;
 class OutputTime;
+class FieldSet;
 
 
 namespace IT=Input::Type;
@@ -205,6 +206,11 @@ public:
     /// Number of subfields that compose the multi-field.
     inline unsigned int size() const
     { return sub_fields_.size(); }
+
+    /**
+     * Implementation of FieldCommon::set_dependency().
+     */
+    void set_dependency(FieldSet &field_set) override;
 
     /**
      * Returns reference to the sub-field (component) of given index @p idx.

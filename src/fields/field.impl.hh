@@ -23,6 +23,7 @@
 #include "field.hh"
 #include "field_algo_base.impl.hh"
 #include "field_fe.hh"
+#include "fields/field_set.hh"
 #include "mesh/region.hh"
 #include "input/reader_to_storage.hh"
 #include "input/accessors.hh"
@@ -679,6 +680,14 @@ std::shared_ptr< FieldFE<spacedim, Value> > Field<spacedim,Value>::get_field_fe(
 	}
 
 	return field_fe_ptr;
+}
+
+
+template<int spacedim, class Value>
+void Field<spacedim, Value>::set_dependency(FieldSet &field_set) {
+    for( auto field_ptr : region_fields_) {
+    	field_ptr->set_dependency(field_set);
+    }
 }
 
 

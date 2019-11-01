@@ -21,6 +21,7 @@
 
 #include "multi_field.hh"
 #include "fields/field_algo_base.hh"
+#include "fields/field_set.hh"
 #include "input/input_exception.hh"
 #include "io/observe.hh"
 
@@ -369,6 +370,14 @@ typename Field<spacedim,Value>::FieldBasePtr MultiField<spacedim, Value>::MultiF
 template<int spacedim, class Value>
 bool MultiField<spacedim, Value>::MultiFieldFactory::is_active_field_descriptor(const Input::Record &in_rec, const std::string &input_name) {
 	return in_rec.find<Input::Array>(input_name);
+}
+
+
+template<int spacedim, class Value>
+void MultiField<spacedim, Value>::set_dependency(FieldSet &field_set) {
+    for(unsigned int i_comp=0; i_comp < this->shared_->comp_names_.size(); i_comp++) {
+        sub_fields_[i_comp].set_dependency(field_set);
+    }
 }
 
 
