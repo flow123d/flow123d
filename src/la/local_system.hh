@@ -141,7 +141,7 @@ public:
      * @p schur (output) LocalSystem with Schur complement
      * @p negative if true, the schur complement (including its rhs) is multiplied by -1.0
      */
-    void compute_schur_complement(uint offset, LocalSystem& schur, bool negative=false);
+    void compute_schur_complement(uint offset, LocalSystem& schur, bool negative=false) const;
     
     /** @brief Reconstructs the solution from the Schur complement solution: x = invA*b - invA * Bt * schur_solution
      * Applicable for square matrices.
@@ -150,7 +150,7 @@ public:
      * @p schur_solution solution of the Schur complement
      * @p reconstructed_solution (output) reconstructed solution of the complementary variable
      */
-    void reconstruct_solution_schur(uint offset, const arma::vec &schur_solution, arma::vec& reconstructed_solution);
+    void reconstruct_solution_schur(uint offset, const arma::vec &schur_solution, arma::vec& reconstructed_solution) const;
 
 protected:
     void set_size(unsigned int nrows, unsigned int ncols);

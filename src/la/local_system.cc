@@ -215,7 +215,7 @@ void LocalSystem::set_sparsity(const arma::umat & sp)
 //      sparsity.print("sparsity");
 }
 
-void LocalSystem::compute_schur_complement(uint offset, LocalSystem& schur, bool negative)
+void LocalSystem::compute_schur_complement(uint offset, LocalSystem& schur, bool negative) const
 {
     // only for square matrix
     ASSERT_EQ_DBG(matrix.n_rows, matrix.n_cols)("Cannot compute Schur complement for non-square matrix.");
@@ -236,7 +236,7 @@ void LocalSystem::compute_schur_complement(uint offset, LocalSystem& schur, bool
     }
 }
 
-void LocalSystem::reconstruct_solution_schur(uint offset, const arma::vec &schur_solution, arma::vec& reconstructed_solution)
+void LocalSystem::reconstruct_solution_schur(uint offset, const arma::vec &schur_solution, arma::vec& reconstructed_solution) const
 {
     // only for square matrix
     ASSERT_EQ_DBG(matrix.n_rows, matrix.n_cols)("Cannot compute Schur complement for non-square matrix.");
