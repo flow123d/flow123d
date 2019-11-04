@@ -9,7 +9,6 @@ problem: !Coupling_Sequential
   mesh:
     mesh_file: ../00_mesh/cube_20x20x20_frac21.msh
   flow_equation: !Flow_Darcy_MH
-    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-07
@@ -31,11 +30,8 @@ problem: !Coupling_Sequential
       fields:
         - piezo_head_p0
         - pressure_p0
-        - pressure_p1
         - velocity_p0
         - conductivity
-    balance: {}
     output_stream:
       file: ./large_cube.msh
       format: !gmsh
-        variant: ascii

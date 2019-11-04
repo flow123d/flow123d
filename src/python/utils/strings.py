@@ -6,7 +6,6 @@
 Simple module which provides string/list utilities
 """
 
-from scripts.core.base import Printer
 
 format_n_lines_successful = dict(
     line_prefix='== ',
@@ -23,15 +22,15 @@ format_n_lines_error = dict(
 )
 
 
-def format_n_lines(text, success=True):
+def format_n_lines(text, success=True, n_lines=0):
     if success:
-        return format_n_lines_(text, **format_n_lines_successful)
-    return format_n_lines_(text, **format_n_lines_error)
+        return format_n_lines_(text, **format_n_lines_successful, n_lines=n_lines)
+    return format_n_lines_(text, **format_n_lines_error, n_lines=n_lines)
 
 
 def format_n_lines_(text, line_prefix='## ', line_suffix='',
                    first_line='#' * 60, last_line='#' * 60,
-                   empty="<file is empty>"):
+                   empty="<file is empty>", n_lines=0):
     """
     Format given lines and adds prefix to them
     :param text:
@@ -42,9 +41,6 @@ def format_n_lines_(text, line_prefix='## ', line_suffix='',
     :param empty:
     :return:
     """
-
-    n_lines = 0 if not Printer.batched.is_muted() else -20
-    indent = Printer.indent()
 
     # empty output
     if text is None or not text:
@@ -64,17 +60,14 @@ def format_n_lines_(text, line_prefix='## ', line_suffix='',
 
     # otherwise all lines (0)
 
-    result = list()
     if first_line:
-        result.append(indent + first_line)
+        yield first_line
 
     for line in text:
-        result.append(indent + line_prefix + line + line_suffix)
+        yield line_prefix + line + line_suffix
 
     if last_line:
-        result.append(indent + last_line)
-
-    return '\n'.join(result)
+        yield last_line
 
 
 def join_iterable(iterable, prefix="", suffix="", separator=",", padding=None, extra_space=2):

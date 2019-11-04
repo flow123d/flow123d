@@ -37,7 +37,6 @@
 #include "transport/transport_operator_splitting.hh"  // for ConcentrationTr...
 
 class Balance;
-class MH_DofHandler;
 class Mesh;
 class OutputTime;
 namespace Input { class Record; }
@@ -160,9 +159,9 @@ public:
 	 * (So far it does not work since the flow module returns a vector of zeros.)
 	 * @param velocity_vector Input array of velocity values.
 	 */
-	inline void set_velocity_field(const MH_DofHandler &dh) override
+	inline void set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field) override
 	{
-		mh_dh = &dh;
+		velocity_field_ptr_ = flux_field;
 		flux_changed = true;
 	}
 
@@ -181,7 +180,7 @@ public:
 
 	void set_balance_object(std::shared_ptr<Balance> balance) override;
 
-    const vector<unsigned int> &get_subst_idx() override
+    const vector<unsigned int> &get_subst_idx()
 	{ return subst_idx; }
 
     void set_output_stream(std::shared_ptr<OutputTime> stream)
@@ -189,6 +188,10 @@ public:
 
 	std::shared_ptr<OutputTime> output_stream() override
 	{ return output_stream_; }
+
+    std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> velocity_field_ptr() const {
+        return this->velocity_field_ptr_;
+    }
 
 
 
@@ -236,15 +239,10 @@ protected:
 	/// Density of liquid (a global constant).
 	double solvent_density_;
 
-    /**
-     * Temporary solution how to pass velocity field form the flow model.
-     * TODO: introduce FieldDiscrete -containing true DOFHandler and data vector and pass such object together with other
-     * data. Possibly make more general set_data method, allowing setting data given by name. needs support from EqDataBase.
-     */
-    const MH_DofHandler *mh_dh;
-
 	std::shared_ptr<OutputTime> output_stream_;
 
+	/// Pointer to velocity field given from Flow equation.
+	std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> velocity_field_ptr_;
 
 
 };

@@ -15,7 +15,6 @@ problem: !Coupling_Sequential
           - .2d
           - .1d
   flow_equation: !Flow_Darcy_MH
-    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-12
@@ -32,11 +31,9 @@ problem: !Coupling_Sequential
         bc_type: dirichlet
         bc_pressure: !FieldFormula
           value: x
-    balance: {}
     output:
       fields:
         - pressure_p0
-        - pressure_p1
         - velocity_p0
         - region_id
     output_stream:

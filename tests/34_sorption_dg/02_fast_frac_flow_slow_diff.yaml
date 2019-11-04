@@ -27,12 +27,10 @@ problem: !Coupling_Sequential
       - region: .right
         bc_type: total_flux
         bc_flux: 1e-6
-    balance: {}
     output:
       fields:
         - piezo_head_p0
         - pressure_p0
-        - pressure_p1
         - velocity_p0
     output_stream:
       format: !vtk

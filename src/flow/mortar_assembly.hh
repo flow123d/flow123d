@@ -83,7 +83,6 @@ private:
     std::vector< arma::vec > col_average_;
     IntersectionQuadratureP0 quadrature_;
     arma::mat product_;
-    LocalElementAccessorBase<3> slave_ac_;
 
 };
 

@@ -430,10 +430,12 @@ template<> const IdxVector<2> RefElement<3>::line_sides_[];
 
 template<> const IdxVector<3> RefElement<3>::side_lines_[];
 
+template<> const unsigned int RefElement<0>::side_permutations[][n_nodes_per_side];
 template<> const unsigned int RefElement<1>::side_permutations[][n_nodes_per_side];
 template<> const unsigned int RefElement<2>::side_permutations[][n_nodes_per_side];
 template<> const unsigned int RefElement<3>::side_permutations[][n_nodes_per_side];
 
+template<> const IdxVector<1> RefElement<0>::topology_zeros_[];
 template<> const IdxVector<2> RefElement<1>::topology_zeros_[];
 template<> const IdxVector<3> RefElement<2>::topology_zeros_[];
 template<> const IdxVector<6> RefElement<3>::topology_zeros_[];
@@ -525,6 +527,14 @@ template<> template<> inline unsigned int RefElement<1>::count<2>()
 { return 0; }
 template<> template<> inline unsigned int RefElement<1>::count<3>()
 { return 0; }
+template<> template<> inline unsigned int RefElement<0>::count<0>()
+{ return 1; }
+template<> template<> inline unsigned int RefElement<0>::count<1>()
+{ return 0; }
+template<> template<> inline unsigned int RefElement<0>::count<2>()
+{ return 0; }
+template<> template<> inline unsigned int RefElement<0>::count<3>()
+{ return 0; }
 
 template<unsigned int dim>
 template<unsigned int subdim>
@@ -599,6 +609,7 @@ inline const IdxVector< (InDim>OutDim ? InDim+1 : dim-InDim) > RefElement<dim>::
     ASSERT(false)(dim)(OutDim)(InDim)(i).error("Not implemented.");
     //ASSERT_LT_DBG(OutDim, dim);
     //ASSERT_LT_DBG(InDim, dim);
+    return IdxVector< (InDim>OutDim ? InDim+1 : dim-InDim) >();  // just to avoid warning for missing return
 }
 
 

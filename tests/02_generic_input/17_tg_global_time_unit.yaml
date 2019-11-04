@@ -1,0 +1,81 @@
+#################
+# Test goal: Test conversion of time units defined by user in input YAML file.
+# Author: David Flanderka
+# Source for reference: qualitative
+
+flow123d_version: 3.1.0
+problem: !Coupling_Sequential
+  description: Check correct time unit conversion of global time declaration in time governor in input YAML file.
+  mesh:
+    mesh_file: ../00_mesh/prism_11el.msh
+    global_snap_radius: 0.1
+  flow_equation: !Flow_Darcy_MH
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
+    input_fields:
+      - region: volume
+        time: 0.0
+        conductivity: 1
+        cross_section: !FieldTimeFunction
+          time_function:
+            - - 0
+              - 1.0
+            - - 0.2
+              - 2.0
+            - - 0.6
+              - 5.0
+        sigma: 0.1
+        anisotropy: 10
+        water_source_density: 24
+        init_pressure: 0.1
+        storativity: 1.0
+      - region: volume
+        time: 0.2
+        conductivity: 5
+        sigma: 0.3
+      - region: volume
+        time: 0.4
+        conductivity: 3
+        sigma: 0.4
+      - region: .BOUNDARY
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: 0.1*x
+    n_schurs: 2
+    output:
+      times:
+        - 0.0
+        - 0.25
+        - 0.5
+        - 0.75
+      fields:
+        - pressure_p0
+        - pressure_p1
+        - velocity_p0
+        - conductivity
+        - cross_section
+        - sigma
+        - anisotropy
+        - water_source_density
+        - field: init_pressure
+          times: 
+            - 0.0
+        - field: storativity
+          times:
+            - 0.0
+            - { step: 0.5 } 
+      observe_fields: [pressure_p0, velocity_p0]
+    time:
+      end_time: 0.9
+      init_dt: 0.0005
+      max_dt: 0.1
+      min_dt: 0.00005
+      common_time_unit: "h"
+    output_stream:
+      file: ./flow.pvd
+      format: !vtk
+        variant: ascii
+      times:
+        - { step: 0.05 }

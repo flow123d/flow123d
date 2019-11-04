@@ -301,6 +301,13 @@ public:
     inline const Dof &dof(unsigned int i) const
     { return dofs_[i]; }
     
+    /// Number of components of FE in a mapped space with dimension @p spacedim.
+    unsigned int n_space_components(unsigned int spacedim);
+    
+    /// Get barycentric coordinates of the points on the reference element associated with the dofs.
+    /// Used in BDDC for unknown reason.
+    virtual std::vector< arma::vec::fixed<dim+1> > dof_points() const;
+
     /**
      * @brief Destructor.
      */
@@ -391,6 +398,7 @@ protected:
     friend class FEValues<dim,3>;
     friend class FESideValues<dim,3>;
     friend class FE_P_disc<dim>;
+    friend class SubDOFHandlerMultiDim;
 };
 
 

@@ -9,7 +9,6 @@ problem: !Coupling_Sequential
   mesh:
     mesh_file: ../00_mesh/cube_1x1x1_frac.msh
   flow_equation: !Flow_Darcy_MH
-    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-07
@@ -43,12 +42,10 @@ problem: !Coupling_Sequential
     output:
       fields:
         - { field: pressure_p0, interpolation: P1_average }
-        - { field: pressure_p1, interpolation: P1_average }
+        #- { field: pressure_p2_disc, interpolation: P1_average }
         - { field: velocity_p0, interpolation: P1_average }
         - { field: anisotropy, interpolation: P1_average }
-    balance: {}
     output_stream:
       file: test31_32d.pvd
       format: !vtk
         variant: ascii
-      name: flow_output_stream

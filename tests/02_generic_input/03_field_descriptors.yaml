@@ -10,7 +10,6 @@ problem: !Coupling_Sequential
     mesh_file: ../00_mesh/square_0.2x0.2.msh
   # steady velocity field, with velocity v:0.1
   flow_equation: !Flow_Darcy_MH
-    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-12
@@ -33,18 +32,16 @@ problem: !Coupling_Sequential
     output:
       fields:
         - pressure_p0
-        - pressure_p1
+        #- pressure_p2_disc
         - velocity_p0
         - field: cross_section
           interpolation: Native
         - field: sigma
           interpolation: Native
-    balance: {}
     output_stream:
       file: ./test14.pvd
       format: !vtk
         variant: ascii
-      name: flow_output_stream
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_Advection_FV
       input_fields:
@@ -81,7 +78,6 @@ problem: !Coupling_Sequential
       file: ./transport.pvd
       format: !vtk
         variant: ascii
-      name: transport_output_stream
       times:
         - step: 0.1
       precision: 14  

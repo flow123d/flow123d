@@ -100,12 +100,10 @@ problem: !Coupling_Sequential
     output_stream:
       file: flow.msh
       format: !gmsh
-        variant: ascii
     output:
       fields:
         - piezo_head_p0
         - pressure_p0
-        - pressure_p1
         - velocity_p0
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_Advection_FV
@@ -120,6 +118,5 @@ problem: !Coupling_Sequential
         - step: 1e8
       file: transport.msh
       format: !gmsh
-        variant: ascii
     balance:
       cumulative: true

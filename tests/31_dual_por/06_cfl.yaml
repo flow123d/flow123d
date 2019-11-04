@@ -4,7 +4,6 @@ problem: !Coupling_Sequential
   mesh:
     mesh_file: ../00_mesh/square_1x1_40el.msh
   flow_equation: !Flow_Darcy_MH
-    output_specific:
     input_fields:
       - region: ALL
         conductivity: 1.0e-15
@@ -14,9 +13,7 @@ problem: !Coupling_Sequential
     output:
       fields:
         - pressure_p0
-        - pressure_p1
         - velocity_p0
-    balance: {}
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-07
@@ -24,7 +21,6 @@ problem: !Coupling_Sequential
       file: dual_por.pvd
       format: !vtk
         variant: ascii
-      name: flow_output_stream
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_Advection_FV
       input_fields:
@@ -38,7 +34,6 @@ problem: !Coupling_Sequential
       file: dual_por_transport.pvd
       format: !vtk
         variant: ascii
-      name: transport_output_stream
       times:
         - step: 0.25
     time:

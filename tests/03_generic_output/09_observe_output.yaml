@@ -19,7 +19,6 @@ problem: !Coupling_Sequential
     global_snap_radius: 0.1
 
   flow_equation: !Flow_Darcy_MH
-    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-12
@@ -38,10 +37,8 @@ problem: !Coupling_Sequential
     output:
       fields:
         - {field: pressure_p0, times: [20000, 100000]}
-        - pressure_p1
         - {field: velocity_p0, times: [20000, 200000]}
       observe_fields: [pressure_p0, velocity_p0, anisotropy]
-    balance: {}
     output_stream:
       file: flow.pvd
       format: !vtk
@@ -64,7 +61,7 @@ problem: !Coupling_Sequential
       cumulative: true
     output_stream:
       file: transport.msh
-      format: !gmsh {}
+      format: !gmsh
       times:
         - step: 100000.0
 #      observe_points: *observe_points  

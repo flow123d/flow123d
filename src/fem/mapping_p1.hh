@@ -61,8 +61,8 @@ public:
  * @param dim Dimension of the cells.
  * @param spacedim Dimension of the Euclidean space.
  */
-template<unsigned int dim, unsigned int spacedim>
-class MappingP1 : public Mapping<dim,spacedim>
+template<unsigned int dim, unsigned int spacedim = 3>
+class MappingP1 : public Mapping<dim, spacedim>
 {
 public:
 
@@ -159,6 +159,55 @@ private:
      */
     arma::mat::fixed<dim+1,dim> grad;
 
+};
+
+
+
+/**
+ * @brief Template specialization for dim=0
+ */
+template<unsigned int spacedim>
+class MappingP1<0, spacedim> : public Mapping<0,spacedim>
+{
+public:
+
+    typedef arma::vec::fixed<1> BaryPoint;
+    typedef arma::vec::fixed<spacedim> RealPoint;
+    typedef arma::mat::fixed<spacedim, 1> ElementMap;
+
+    MappingP1() {}
+
+    MappingInternalData *initialize(const Quadrature<0> &q, UpdateFlags flags)
+    { return nullptr; }
+
+    UpdateFlags update_each(UpdateFlags flags)
+    { return update_default; }
+
+    void fill_fe_values(const ElementAccessor<3> &cell,
+                            const Quadrature<0> &q,
+                            MappingInternalData &data,
+                            FEValuesData<0,spacedim> &fv_data) {}
+
+    void fill_fe_side_values(const ElementAccessor<3> &cell,
+                            unsigned int sid,
+                            const Quadrature<0> &q,
+                            MappingInternalData &data,
+                            FEValuesData<0,spacedim> &fv_data) {}
+
+    ElementMap element_map(ElementAccessor<3> elm) const
+    { return ElementMap(); }
+
+    BaryPoint project_real_to_unit(const RealPoint &point, const ElementMap &map) const
+    { return BaryPoint(); }
+
+    RealPoint project_unit_to_real(const BaryPoint &point, const ElementMap &map) const
+    { return RealPoint(); }
+
+    BaryPoint clip_to_element(BaryPoint &barycentric)
+    { return BaryPoint(); }
+
+    bool contains_point(arma::vec point, ElementAccessor<3> elm)
+    { return false; }
 };
 
 

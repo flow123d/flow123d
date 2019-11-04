@@ -55,7 +55,7 @@ class FEShapeHandler<0, elemdim, spacedim, Value> {
 public:
 	inline static typename Value::return_type fe_value(FEValues<elemdim,3> &fe_val, unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
 	{
-		return fe_val.shape_value(i_dof, i_qp);
+		return fe_val.scalar_view(comp_index).value(i_dof, i_qp);
 	}
 };
 
@@ -136,12 +136,12 @@ void FEValueHandler<elemdim, spacedim, Value>::value_list(const std::vector< Poi
 		Quadrature<elemdim> quad(1);
         quad.set_point(0, RefElement<elemdim>::bary_to_local(map_->project_real_to_unit(point_list[k], map_mat)));
 
-		FEValues<elemdim,3> fe_values(*this->get_mapping(), quad, *dh_->ds()->fe<elemdim>(elm), update_values);
+		FEValues<elemdim,3> fe_values(*this->get_mapping(), quad, *dh_->ds()->fe(elm).get<elemdim>(), update_values);
 		fe_values.reinit( const_cast<ElementAccessor<spacedim> &>(elm) );
 
 		Value envelope(value_list[k]);
 		envelope.zeros();
-		for (unsigned int i=0; i<dh_->ds()->fe<elemdim>(elm)->n_dofs(); i++) {
+		for (unsigned int i=0; i<dh_->ds()->fe(elm).get<elemdim>()->n_dofs(); i++) {
 			value_list[k] += data_vec_[dof_indices[i]]
 										  * FEShapeHandler<Value::rank_, elemdim, spacedim, Value>::fe_value(fe_values, i, 0, comp_index_);
 		}
@@ -204,7 +204,7 @@ void FEValueHandler<0, spacedim, Value>::value_list(const std::vector< Point >  
 	for (unsigned int k=0; k<point_list.size(); k++) {
 		Value envelope(value_list[k]);
 		envelope.zeros();
-		for (unsigned int i=0; i<dh_->ds()->fe<0>(elm)->n_dofs(); i++) {
+		for (unsigned int i=0; i<dh_->ds()->fe(elm).get<0>()->n_dofs(); i++) {
 			envelope(i / envelope.n_cols(), i % envelope.n_rows()) += data_vec_[dof_indices[i]];
 		}
 	}
@@ -224,7 +224,9 @@ unsigned int FEValueHandler<0, spacedim, Value>::get_dof_indices(const ElementAc
 
 template <int elemdim, int spacedim, class Value>
 FEValueHandler<elemdim, spacedim, Value>::~FEValueHandler()
-{}
+{
+	if (map_ != nullptr) delete map_;
+}
 
 
 // Instantiations of FEValueHandler and FEShapeHandler
@@ -243,6 +245,7 @@ template class FEShapeHandler<2, dim, spacedim, FieldValue<spacedim>::TensorFixe
 #define INSTANCE_VALUE_HANDLER(dim) \
 INSTANCE_VALUE_HANDLER_ALL(dim,3)
 //INSTANCE_VALUE_HANDLER_ALL(dim,2)   \
+//
 
 INSTANCE_VALUE_HANDLER(0);
 INSTANCE_VALUE_HANDLER(1);

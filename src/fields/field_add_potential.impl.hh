@@ -32,6 +32,18 @@ FieldAddPotential<spacedim, Value>::FieldAddPotential(const arma::vec::fixed<spa
 
 
 
+template <int spacedim, class Value>
+FieldAddPotential<spacedim, Value>::FieldAddPotential(const arma::vec::fixed<spacedim+1> &potential,
+		std::shared_ptr< FieldAlgorithmBase<spacedim, Value> > inner_field, unsigned int n_comp)
+: FieldAlgorithmBase<spacedim, Value>(n_comp),
+  inner_field_( inner_field )
+{
+    grad_=potential.subvec(0,spacedim-1);
+    zero_level_=potential[spacedim];
+}
+
+
+
 /**
  * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
  */

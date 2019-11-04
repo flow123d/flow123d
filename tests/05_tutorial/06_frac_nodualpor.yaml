@@ -1,3 +1,4 @@
+# Variant of the 06_frac_dualpor.  Used for creating a figure in Tutorial 6 for the comparison.
 flow123d_version: 3.1.0
 problem: !Coupling_Sequential
   description: Example 6 - Fractures - flow through blind fractures (auxiliary)
@@ -25,7 +26,6 @@ problem: !Coupling_Sequential
           - .left
           - .left_points
   flow_equation: !Flow_Darcy_MH
-    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-15
@@ -51,7 +51,6 @@ problem: !Coupling_Sequential
       fields:
         - piezo_head_p0
         - pressure_p0
-        - pressure_p1
         - velocity_p0
     solver: !Petsc
       r_tol: 1.0e-10
@@ -87,6 +86,5 @@ problem: !Coupling_Sequential
     output_stream:
       file: transport.pvd
       format: !gmsh
-        variant: ascii
       times:
         - step: 20

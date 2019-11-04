@@ -2,9 +2,8 @@ flow123d_version: 3.1.0
 problem: !Coupling_Sequential
   description: 'Do not fit the size of the Array at address: /problem/flow_equation/output_stream/observe_points/0/point'
   mesh:
-    mesh_file: ../00_mesh/square_1x1_frac_fork.msh
+    mesh_file: ../00_mesh/prism_3el.msh
   flow_equation: !Flow_Darcy_MH
-    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-12
@@ -14,8 +13,7 @@ problem: !Coupling_Sequential
         conductivity: 1.0e-06
     output:
       fields:
-        - pressure_p1
-    balance: {}
+        - pressure_p0
     output_stream:
       file: flow.pvd
       format: !vtk

@@ -13,7 +13,6 @@ problem: !Coupling_Sequential
           - 1d_left_branch
   # mesh
   flow_equation: !Flow_Darcy_MH
-    output_specific:
     input_fields:
       - region: 1d_domain
         conductivity: 1.0e-06
@@ -28,9 +27,7 @@ problem: !Coupling_Sequential
     output:
       fields:
         - pressure_p0
-        - pressure_p1
         - velocity_p0
-    balance: {}
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-12

@@ -18,7 +18,7 @@
 
 #include "hc_explicit_sequential.hh"
 #include "flow/darcy_flow_interface.hh"
-//#include "flow/darcy_flow_mh_output.hh"
+#include "flow/darcy_flow_mh.hh"
 // TODO:
 // After having general default values:
 // make TransportNoting default for AdvectionProcessBase abstract
@@ -42,8 +42,9 @@ FLOW123D_FORCE_LINK_IN_PARENT(concentrationTransportModel);
 FLOW123D_FORCE_LINK_IN_PARENT(convectionTransport);
 FLOW123D_FORCE_LINK_IN_PARENT(heatModel);
 
-FLOW123D_FORCE_LINK_IN_PARENT(darcy_flow_mh);
-FLOW123D_FORCE_LINK_IN_PARENT(richards_lmh);
+// FLOW123D_FORCE_LINK_IN_PARENT(darcy_flow_mh);
+// FLOW123D_FORCE_LINK_IN_PARENT(darcy_flow_lmh);
+// FLOW123D_FORCE_LINK_IN_PARENT(richards_lmh);
 FLOW123D_FORCE_LINK_IN_PARENT(coupling_iterative);
 
 
@@ -175,7 +176,12 @@ void HC_ExplicitSequential::advection_process_step(AdvectionData &pdata)
         // for simplicity we use only last velocity field
         if (pdata.velocity_changed) {
             //DBGMSG("velocity update\n");
-            pdata.process->set_velocity_field( water->get_mh_dofhandler() );
+//             std::dynamic_pointer_cast<DarcyMH>(water)->get_velocity_field()->local_to_ghost_data_scatter_begin();
+//             std::dynamic_pointer_cast<DarcyMH>(water)->get_velocity_field()->local_to_ghost_data_scatter_end();
+//             pdata.process->set_velocity_field( std::dynamic_pointer_cast<DarcyMH>(water)->get_velocity_field() );
+            water->get_velocity_field()->local_to_ghost_data_scatter_begin();
+            water->get_velocity_field()->local_to_ghost_data_scatter_end();
+            pdata.process->set_velocity_field( water->get_velocity_field() );
             pdata.velocity_changed = false;
         }
         if (pdata.process->time().tlevel() == 0) pdata.process->zero_time_step();

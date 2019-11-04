@@ -16,6 +16,7 @@
  */
 
 #include "fields/table_function.hh"
+#include "tools/time_governor.hh"
 #include "input/input_type.hh"
 #include "system/logger.hh"
 
@@ -24,9 +25,16 @@ namespace it = Input::Type;
 template <class Value>
 const it::Tuple & TableFunction<Value>::get_input_type_val()
 {
-    return it::Tuple("IndependentValue", "Value of Field for independent variable.")
-        .declare_key("t", it::Double( 0.0 ), it::Default::obligatory(),
-                                    "Independent variable of stamp." )
+	/*
+	 * Table function is now fixed for representation of time value. It can be changed
+	 * to independent value. It needs only replace type of 't' with generic type
+	 * (Input::Type::Parameter).
+	 */
+    return it::Tuple("IndependentValue", "Value of Field for time variable.")
+                                       //"Value of Field for independent variable."
+        .declare_key("t", TimeGovernor::get_input_time_type( 0.0 ), it::Default::obligatory(),
+                                    "Time stamp." )
+                                  //"Independent variable of stamp."
 		.declare_key("value", Value::get_input_type(), it::Default::obligatory(),
 									"Value of the field in given stamp." )
 		.close();
@@ -52,14 +60,14 @@ TableFunction<Value>::TableFunction()
 
 
 template <class Value>
-void TableFunction<Value>::init_from_input(const Input::Record &rec)
+void TableFunction<Value>::init_from_input(const Input::Record &rec, const TimeStep &time)
 {
 	ASSERT( !this->initialized() ).error("TableFunction can't be initialized more than once.");
 
 	Input::Array data_array = rec.val<Input::Array>("values");
 	double last_t = -1.0;
     for (Input::Iterator<Input::Tuple> it = data_array.begin<Input::Tuple>(); it != data_array.end(); ++it) {
-    	double t = it->val<double>("t");
+    	double t = time.read_time(it->find<Input::Tuple>("t"));
     	if (last_t >= t) {
     		WarningOut().fmt("Nonascending order of declared stamps in TableFunction at address {}.\nStamp {} will be skipped.",
     				rec.address_string(), t);

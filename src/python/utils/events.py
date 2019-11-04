@@ -43,4 +43,5 @@ class Event(object):
     __iadd__ = on
     __isub__ = off
     __call__ = fire
+    trigger = fire
     __len__ = count

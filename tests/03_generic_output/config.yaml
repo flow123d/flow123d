@@ -22,7 +22,10 @@ test_cases:
 
 - files: 11_time_marks_mixed_times.yaml
   memory_limit: 1300
-
+  
+- files: 02_richards_nobalance.yaml
+  time_limit: 45
+    
 # parallel VTK tests
 - files:
     - 34_parallel_vtk_node_interp.yaml
@@ -34,6 +37,14 @@ test_cases:
 - files:
     - 37_serial_vtk_binary.yaml
   proc: [1]
+  
+- files: 20_gmsh_precision.yaml
+  proc: [1, 2]
+  check_rules:
+    - ndiff:
+        files: "flow.msh"
+        r_tol: 1e-10
+        a_tol: 1e-10
 
 # serial refined tests
 - files:
@@ -49,4 +60,9 @@ test_cases:
     - 52_darcy_fv_output_mesh_1d_parallel.yaml
     - 54_darcy_fv_output_mesh_2d_parallel.yaml
     - 56_darcy_fv_output_mesh_3d_parallel.yaml
+  proc: [2]
+
+# test of generic fields subdomain and region_id
+- files:
+    - 13_generic_fields
   proc: [2]

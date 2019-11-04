@@ -42,6 +42,12 @@ typedef enum  {
 
 template <typename T>
 class ElementDataCache : public ElementDataCacheBase {
+/**
+ * Container of the field data on elements used as a common data storage for
+ * output of various fields using various output formats and to cache data of several fields when reading the input file.
+ * This container also perform serialization for the serial output.
+ * Read of values from tokenizer and output of values to stream is implemented as it depends on the value type T.
+ */
 public:
 	typedef std::shared_ptr< std::vector<T> > ComponentDataPtr;
 	typedef std::vector< ComponentDataPtr > CacheData;
@@ -113,7 +119,7 @@ public:
      */
     void print_binary_all(ostream &out_stream, bool print_data_size = true) override;
 
-    void print_all_yaml(ostream &out_stream, unsigned int precision) override;
+    void print_yaml_subarray(ostream &out_stream, unsigned int precision, unsigned int begin, unsigned int end) override;
 
     /**
      * Store data element of given data value under given index.

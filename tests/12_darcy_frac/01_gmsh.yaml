@@ -47,15 +47,11 @@ problem: !Coupling_Sequential
         bc_type: dirichlet
         bc_pressure: !FieldFormula
           value: x-z
-    balance: {}
     output:
       fields:
         - piezo_head_p0
         - pressure_p0
-        - pressure_p1
         - velocity_p0
     output_stream:
       file: ./test1.msh
       format: !gmsh
-        variant: ascii
-      name: flow_output_stream

@@ -258,7 +258,7 @@ TEST(Observe, all) {
     field_set.enum_field.observe_output(obs);
     field_set.vector_field.observe_output(obs);
     field_set.tensor_field.observe_output(obs);
-    obs->output_time_frame( tg.t() );
+    obs->output_time_frame( tg.t(), true );
 
     tg.next_time();
     field_set.set_time( tg.step(), LimitSide::right);
@@ -266,7 +266,7 @@ TEST(Observe, all) {
     field_set.enum_field.observe_output(obs);
     field_set.vector_field.observe_output(obs);
     field_set.tensor_field.observe_output(obs);
-    obs->output_time_frame( tg.t() );
+    obs->output_time_frame( tg.t(), true );
     }
     // closed observe file 'test_eq_observe.yaml'
     // check results
@@ -280,6 +280,7 @@ TEST(Observe, all) {
     str_obs_file_ref << obs_file_ref.rdbuf();
     obs_file_ref.close();
 
-    EXPECT_EQ(str_obs_file_ref.str(), str_obs_file.str());
+    if (mesh->get_el_ds()->myp()==0)
+        EXPECT_EQ(str_obs_file_ref.str(), str_obs_file.str());
 }
 

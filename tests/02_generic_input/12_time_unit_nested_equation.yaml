@@ -17,7 +17,6 @@ problem: !Coupling_Sequential
           - 1d_lower
           - 1d_left_branch
   flow_equation: !Flow_Darcy_MH
-    output_specific:
     input_fields:
       - region: 1d_domain
         conductivity: 10
@@ -31,9 +30,7 @@ problem: !Coupling_Sequential
     output:
       fields:
         - pressure_p0
-        - pressure_p1
         - velocity_p0
-    balance: {}
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-12
@@ -152,7 +149,7 @@ problem: !Coupling_Sequential
       format: !vtk
         variant: ascii
       times:
-        - { step: 0.1, time_unit: "s" }
+        - { step: [ 0.1, "s"] }
     time:
       end_time: 1000
       common_time_unit: "ms"
