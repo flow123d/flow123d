@@ -31,9 +31,10 @@
 #include "mesh/accessors.hh"
 #include "fem/update_flags.hh"                // for UpdateFlags
 #include "tools/mixed.hh"
+#include "quadrature/quadrature_lib.hh"
 
 class DOFHandlerBase;
-template<unsigned int dim> class Quadrature;
+class Quadrature;
 template<unsigned int dim> class FiniteElement;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim, unsigned int spacedim> class Mapping;
@@ -421,7 +422,7 @@ public:
     /**
      * @brief Returns the quadrature in use.
      */
-    virtual const Quadrature<dim> * get_quadrature() const = 0;
+    virtual const Quadrature * get_quadrature() const = 0;
     
     /**
      * @brief Returns the finite element in use.
@@ -442,7 +443,7 @@ public:
 protected:
     
     /// Precompute finite element data on reference element.
-    FEInternalData *init_fe_data(const Quadrature<dim> *q);
+    FEInternalData *init_fe_data(const Quadrature *q);
     
     /**
      * @brief Computes the shape function values and gradients on the actual cell
@@ -543,7 +544,7 @@ public:
 	 * @param _flags The update flags.
 	 */
     FEValues(Mapping<dim,spacedim> &_mapping,
-             Quadrature<dim> &_quadrature,
+             Quadrature &_quadrature,
              FiniteElement<dim> &_fe,
              UpdateFlags _flags);
 
@@ -554,7 +555,7 @@ public:
      */
     void reinit(ElementAccessor<3> &cell);
     
-    const Quadrature<dim> *get_quadrature() const override
+    const Quadrature *get_quadrature() const override
     { return quadrature; }
     
     
@@ -564,7 +565,7 @@ private:
     /**
      * @brief The quadrature rule used to calculate integrals.
      */
-    Quadrature<dim> *quadrature;
+    Quadrature *quadrature;
 
 
 };
@@ -572,7 +573,7 @@ private:
 
 MixedPtr<FEValues> mixed_fe_values(
         Mixed<MappingP1> &mapping,
-        MixedPtr<Quadrature> quadrature,
+        QGauss::array &quadrature,
         MixedPtr<FiniteElement> fe,
         UpdateFlags flags);
 
@@ -606,7 +607,7 @@ public:
      * @param flags The update flags.
      */
     FESideValues(Mapping<dim,spacedim> &_mapping,
-             Quadrature<dim-1> &_sub_quadrature,
+             Quadrature &_sub_quadrature,
              FiniteElement<dim> &_fe,
              UpdateFlags flags);
 
@@ -622,7 +623,7 @@ public:
     void reinit(ElementAccessor<3> &cell,
         		unsigned int sid);
 
-    const Quadrature<dim> *get_quadrature() const override
+    const Quadrature *get_quadrature() const override
     { return &side_quadrature[side_idx_][side_perm_]; }
 
 
@@ -631,9 +632,9 @@ private:
     /**
      * @brief Quadrature for the integration on the element sides.
      */
-    const Quadrature<dim-1> *sub_quadrature;
+    const Quadrature *sub_quadrature;
 
-    Quadrature<dim> side_quadrature[RefElement<dim>::n_sides][RefElement<dim>::n_side_permutations];
+    std::vector<std::vector<Quadrature> > side_quadrature;
 
     MappingInternalData *side_mapping_data[RefElement<dim>::n_sides][RefElement<dim>::n_side_permutations];
 

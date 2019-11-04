@@ -30,6 +30,7 @@
 #include "coupling/equation.hh"
 #include "fem/fe_values_views.hh"
 #include "tools/mixed.hh"
+#include "quadrature/quadrature_lib.hh"
 
 class Distribution;
 class OutputTime;
@@ -37,7 +38,6 @@ class DOFHandlerMultiDim;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim> class FiniteElement;
 template<unsigned int dim, unsigned int spacedim> class Mapping;
-template<unsigned int dim> class Quadrature;
 class Elasticity;
 
 
@@ -58,7 +58,7 @@ public:
 	inline std::shared_ptr<FiniteElement<dim>> fe();
 
 	template<unsigned int dim>
-	inline std::shared_ptr<Quadrature<dim>> q();
+	inline Quadrature *q() { return &(q_[dim]); }
 
 	template<unsigned int dim>
 	inline MappingP1<dim,3> *mapping();
@@ -70,7 +70,7 @@ public:
 private:
 
     MixedPtr<FiniteElement> fe_;  ///< Finite elements for the solution of the advection-diffusion equation.
-    MixedPtr<Quadrature> q_;      ///< Quadratures used in assembling methods.
+	QGauss::array q_;
 
 	/// Auxiliary mappings of reference elements.
 	MappingP1<1,3> *map1_;

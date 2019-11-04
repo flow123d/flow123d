@@ -483,7 +483,7 @@ void DarcyFlowMHOutput::l2_diff_local(DHCellAccessor dh_cell,
 
 DarcyFlowMHOutput::FEData::FEData()
 : order(4),
-  quad(order),
+  quad(QGauss::make_array(order)),
   mapp(),
   fe_p1(0), fe_p0(0),
   fe_rt( )

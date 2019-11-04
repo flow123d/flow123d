@@ -33,8 +33,8 @@
 using namespace arma;
 
 
-template<unsigned int dim>
-QGauss<dim>::QGauss(const unsigned int order)
+QGauss::QGauss(unsigned int dim, const unsigned int order)
+: Quadrature(dim)
 {
     typedef QUAD* pQUAD;
 
@@ -104,7 +104,3 @@ QGauss<dim>::QGauss(const unsigned int order)
 }
 
 
-template class QGauss<0>;
-template class QGauss<1>;
-template class QGauss<2>;
-template class QGauss<3>;

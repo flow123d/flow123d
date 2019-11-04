@@ -61,7 +61,7 @@ template<unsigned int dim, class Model> class AssemblyDG;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim> class FiniteElement;
 template<unsigned int dim, unsigned int spacedim> class Mapping;
-template<unsigned int dim> class Quadrature;
+class Quadrature;
 namespace Input { namespace Type { class Selection; } }
 
 /*class FEObjects {

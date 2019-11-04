@@ -40,6 +40,7 @@
 #include "system/exceptions.hh"              // for operator<<, ExcStream, EI
 #include "system/file_path.hh"               // for FilePath
 #include "system/sys_vector.hh"              // for FullIterator, VectorId<>...
+#include "system/armor.hh"
 
 class BIHTree;
 class Distribution;
@@ -522,6 +523,7 @@ protected:
     /**
      * Vector of nodes of the mesh.
      */
+    //Array<double> nodes_;
     vector<Node> node_vec_;
 
     /// Maps node ids to indexes into vector node_vec_
