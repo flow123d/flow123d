@@ -623,13 +623,11 @@ protected:
             if (ad_->balance != nullptr)
             {
                 ad_->balance->add_source_values(ad_->water_balance_idx, ele.region().bulk_idx(),
-                                                {(LongIdx)edge_indices_[i]}, {0},{source_term});
-//                 ad_->balance->add_source_values(ad_->water_balance_idx, ele.region().bulk_idx(),
-//                                                 {(LongIdx)loc_schur_.row_dofs[i]}, {0},{source_term});
+                                                {(LongIdx)ele_ac.edge_local_row(i)}, {0},{source_term});
                 if( ! ad_->use_steady_assembly_)
                 {
-                    ad_->balance->add_mass_matrix_values(ad_->water_balance_idx, ele.region().bulk_idx(), { LongIdx(ele_ac.edge_row(i)) },
-                                                         {time_term});
+                    ad_->balance->add_mass_matrix_values(ad_->water_balance_idx, ele.region().bulk_idx(),
+                                                {(LongIdx)ele_ac.edge_row(i)}, {time_term});
                 }
             }
         }

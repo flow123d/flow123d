@@ -348,9 +348,8 @@ void DarcyLMH::initialize() {
     balance_ = std::make_shared<Balance>("water", mesh_);
     balance_->init_from_input(input_record_.val<Input::Record>("balance"), time());
     data_->water_balance_idx = balance_->add_quantity("water_volume");
-    balance_->allocate(data_->dh_->distr()->lsize(), 1);
+    balance_->allocate(data_->dh_, 1);
     balance_->units(UnitSI().m(3));
-
 
     data_->balance = balance_;
     data_->lin_sys_schur = schur_compl;

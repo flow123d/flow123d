@@ -76,7 +76,11 @@ protected:
     }
 
     void update_water_content(const DHCellAccessor& dh_cell) {
+
+        // dof indices for edge pressure must be updated
+        // since update_water_content is called also outside assemble cycle (init condition)
         update_dofs(dh_cell);
+
         reset_soil_model(dh_cell);
         ElementAccessor<3> ele = dh_cell.elm();
         double storativity = ad_->storativity.value(ele.centre(), ele);
@@ -159,7 +163,7 @@ protected:
                 */
 
 
-                double mass_rhs = mass_diagonal * ad_->schur_solution[ this->edge_indices_[i] ] / ad_->time_step_
+                double mass_rhs = mass_diagonal * ad_->schur_solution[ this->loc_schur_.row_dofs[i] ] / ad_->time_step_
                                   + diagonal_coef * water_content_diff / ad_->time_step_;
 
 //                 DBGCOUT(<< "source [" << loc_system_.row_dofs[this->loc_edge_dofs[i]] << ", " << loc_system_.row_dofs[this->loc_edge_dofs[i]]
@@ -175,7 +179,8 @@ protected:
             if (ad_->balance != nullptr) {
                 ad_->balance->add_mass_vec_value(ad_->water_balance_idx, ele.region().bulk_idx(),
                         diagonal_coef*ad_->water_content_previous_it[local_side]);
-                ad_->balance->add_source_values(ad_->water_balance_idx, ele.region().bulk_idx(), {(LongIdx)this->edge_indices_[i]},{0},{source_diagonal});
+                ad_->balance->add_source_values(ad_->water_balance_idx, ele.region().bulk_idx(), {(LongIdx)ele.edge_local_row(i)},
+                                                {0},{source_diagonal});
             }
         }
 
