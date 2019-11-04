@@ -65,6 +65,7 @@ class Element;
 class Intersection;
 class LinSys;
 // class LinSys_BDDC;
+class LocalSystem;
 namespace Input {
 	class AbstractRecord;
 	class Record;
@@ -164,6 +165,8 @@ public:
         VectorMPI schur_solution;               //< 2. Schur complement solution
         VectorMPI previous_schur_solution;      //< 2. Schur complement previous solution (iterative)
         VectorMPI previous_time_schur_solution; //< 2. Schur complement previous solution (time)
+
+        std::map<LongIdx, LocalSystem> seepage_bc_systems;
     };
 
     /// Selection for enum MortarMethod.
