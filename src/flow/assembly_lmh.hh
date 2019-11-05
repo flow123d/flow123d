@@ -84,11 +84,13 @@ public:
         schur_sp_.ones(nsides, nsides);
         loc_schur_.set_sparsity(schur_sp_);
 
-        if (ad_->mortar_method_ == DarcyFlowInterface::MortarP0) {
-            mortar_assembly = std::make_shared<P0_CouplingAssembler>(ad_);
-        } else if (ad_->mortar_method_ == DarcyFlowInterface::MortarP1) {
-            mortar_assembly = std::make_shared<P1_CouplingAssembler>(ad_);
-        }
+        FEAL_ASSERT(ad_->mortar_method_ == DarcyFlowInterface::NoMortar)
+            .error("Mortar methods are not supported in Lumped Mixed-Hybrid Method.");
+        // if (ad_->mortar_method_ == DarcyFlowInterface::MortarP0) {
+        //     mortar_assembly = std::make_shared<P0_CouplingAssembler>(ad_);
+        // } else if (ad_->mortar_method_ == DarcyFlowInterface::MortarP1) {
+        //     mortar_assembly = std::make_shared<P1_CouplingAssembler>(ad_);
+        // }
 
         // reconstructed vector for the velocity and pressure
         // length = local Schur complement offset in LocalSystem
@@ -105,8 +107,8 @@ public:
     
     void fix_velocity(LocalElementAccessorBase<3> ele_ac) override
     {
-        if (mortar_assembly)
-            mortar_assembly->fix_velocity(ele_ac);
+        // if (mortar_assembly)
+        //     mortar_assembly->fix_velocity(ele_ac);
     }
 
     void assemble_reconstruct(LocalElementAccessorBase<3> ele_ac) override
@@ -196,8 +198,8 @@ public:
         if (ad_->balance != nullptr)
             add_fluxes_in_balance_matrix(ele_ac);
 
-        if (mortar_assembly)
-            mortar_assembly->assembly(ele_ac);
+        // if (mortar_assembly)
+        //     mortar_assembly->assembly(ele_ac);
     }
 
     // void reconstruct_solution(const LocalSystem & ls)
@@ -813,7 +815,7 @@ protected:
     std::vector<unsigned int> loc_edge_dofs;
     unsigned int loc_ele_dof;
 
-    std::shared_ptr<MortarAssemblyBase> mortar_assembly;
+    // std::shared_ptr<MortarAssemblyBase> mortar_assembly;
         
 //     // TODO: Update dofs only once, use the dofs from LocalSystem, once set_dofs and set_bc is separated.
     std::vector<int> edge_indices_; ///< Dofs of discontinuous fields on element edges.
