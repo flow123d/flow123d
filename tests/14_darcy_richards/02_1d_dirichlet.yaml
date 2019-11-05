@@ -46,7 +46,7 @@ problem: !Coupling_Sequential
       fields:
         - pressure_p0
         - velocity_p0
-      #observe_fields: [pressure_p0, velocity_p0]
+      observe_fields: [pressure_p0, velocity_p0]
     balance:
       cumulative: true
 
@@ -56,10 +56,10 @@ problem: !Coupling_Sequential
         variant: ascii
       times:
         - step: 100
-      #observe_points:
-        #- [0, 0, -0.25]
-        #- [0, 0, -0.2]
-        #- [0, 0, -0.15]
-        #- [0, 0, -0.1]
-        #- [0, 0, -0.05]
-        #- [0, 0, 0.0]
+      observe_points:
+        - [0, 0, -0.25]
+        - [0, 0, -0.2]
+        - [0, 0, -0.15]
+        - [0, 0, -0.1]
+        - [0, 0, -0.05]
+        - [0, 0, 0.0]
