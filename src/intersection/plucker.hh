@@ -20,7 +20,7 @@
 #include <armadillo>
 #include <iostream>
 #include "system/system.hh"
-#include "mesh/nodes.hh"
+#include "system/armor.hh"
 
 #ifndef _PLUCKER_H
 #define _PLUCKER_H
@@ -47,9 +47,10 @@ private:
 	arma::vec6 coordinates_; ///< Plucker coordinates.
 	double scale_;
 	bool computed_;          ///< True, if Plucker coordinates are computed; false otherwise.
-	const Node* points_[2];
+	Armor::Array<double> points_;
 
 public:
+	typedef typename Armor::Mat<double, 3, 1> Point;
     /** Default constructor.
      * Creates empty object, cannot call compute later!
      */
@@ -60,11 +61,11 @@ public:
 	 * @param a - A point from AB line
 	 * @param b - B point from AB line
 	 */
-    Plucker(const Node* a, const Node* b);
+    Plucker(Point a, Point b);
     /** @brief The same as above constructor,
      * but can compute Pl. coordinates immediately if @p compute_pc.
      */
-    Plucker(const Node* a, const Node* b, bool compute_pc);
+    Plucker(Point a, const Point b, bool compute_pc);
     
     /// Destructor.
 	~Plucker(){};
@@ -119,7 +120,7 @@ inline bool Plucker::is_computed() const
 {   return computed_; }
 
 inline arma::vec3 Plucker::point(unsigned int idx) const
-{   return points_[idx]->point(); }
+{   return points_.get<3,1>(idx).arma(); }
 
 inline arma::vec3 Plucker::get_u_vector() const
 {   //ASSERT_DBG(computed_);

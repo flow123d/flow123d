@@ -18,7 +18,7 @@
 
 #include <unistd.h>
 #include <set>
-
+#include <unordered_map>
 
 #include "system/system.hh"
 #include "system/exceptions.hh"
@@ -49,6 +49,7 @@
 #include "mesh/duplicate_nodes.h"
 
 #include "intersection/mixed_mesh_intersections.hh"
+
 
 
 //TODO: sources, concentrations, initial condition  and similarly boundary conditions should be
@@ -106,7 +107,8 @@ Mesh::Mesh()
   bc_mesh_(nullptr),
   node_4_loc_(nullptr),
   node_ds_(nullptr),
-  tree(nullptr)
+  tree(nullptr),
+  nodes_(3, 1, 0)
 {}
 
 
@@ -120,7 +122,8 @@ Mesh::Mesh(Input::Record in_record, MPI_Comm com)
   bc_mesh_(nullptr),
   node_4_loc_(nullptr),
   node_ds_(nullptr),
-  tree(nullptr)
+  tree(nullptr),
+  nodes_(3, 1, 0)
 {
 	// set in_record_, if input accessor is empty
 	if (in_record_.is_empty()) {
@@ -342,7 +345,7 @@ void Mesh::create_node_element_lists() {
 
     for (auto ele : this->elements_range())
         for (unsigned int n=0; n<ele->n_nodes(); n++)
-            node_elements_[ele.node_accessor(n).idx()].push_back(ele.idx());
+            node_elements_[ele.node(n).idx()].push_back(ele.idx());
 
     for (vector<vector<unsigned int> >::iterator n=node_elements_.begin(); n!=node_elements_.end(); n++)
         stable_sort(n->begin(), n->end());
@@ -603,25 +606,30 @@ void Mesh::make_neighbours_and_edges()
 
 void Mesh::make_edge_permutations()
 {
-	for (std::vector<Edge>::iterator edg=edges.begin(); edg!=edges.end(); edg++)
+    // node numbers is the local index of the node on the last side
+    // this maps the side nodes to the nodes of the reference side(0)
+    std::unordered_map<unsigned int,unsigned int> node_numbers;
+
+    for (std::vector<Edge>::iterator edg=edges.begin(); edg!=edges.end(); edg++)
 	{
+        unsigned int n_side_nodes = edg->side(0)->n_nodes();
 		// side 0 is reference, so its permutation is 0
 		edg->side(0)->element()->permutation_idx_[edg->side(0)->side_idx()] = 0;
 
 		if (edg->n_sides > 1)
 		{
-			map<unsigned int,unsigned int> node_numbers;
-			unsigned int permutation[edg->side(0)->n_nodes()];
+		    // For every node on the reference side(0) give its local idx on the current side.
+		    unsigned int permutation[n_side_nodes];
 
-			for (unsigned int i=0; i<edg->side(0)->n_nodes(); i++)
+
+		    node_numbers.clear();
+			for (unsigned int i=0; i<n_side_nodes; i++)
 				node_numbers[edg->side(0)->node(i).idx()] = i;
-				//node_numbers[edg->side(0)->node(i).node()] = i;
 
 			for (int sid=1; sid<edg->n_sides; sid++)
 			{
-				for (unsigned int i=0; i<edg->side(0)->n_nodes(); i++)
+				for (unsigned int i=0; i<n_side_nodes; i++)
 					permutation[node_numbers[edg->side(sid)->node(i).idx()]] = i;
-					//permutation[node_numbers[edg->side(sid)->node(i).node()]] = i;
 
 				switch (edg->side(0)->dim())
 				{
@@ -641,16 +649,19 @@ void Mesh::make_edge_permutations()
 
 	for (vector<Neighbour>::iterator nb=vb_neighbours_.begin(); nb!=vb_neighbours_.end(); nb++)
 	{
-		map<const Node*,unsigned int> node_numbers;
-		unsigned int permutation[nb->element()->n_nodes()];
+        // node numbers is the local index of the node on the last side
+        // this maps the side nodes to the nodes of the side(0)
+	    unsigned int n_side_nodes = nb->element()->n_nodes();
+	    unsigned int permutation[n_side_nodes];
+        node_numbers.clear();
 
 		// element of lower dimension is reference, so
 		// we calculate permutation for the adjacent side
-		for (unsigned int i=0; i<nb->element()->n_nodes(); i++)
-			node_numbers[nb->element().node(i)] = i;
+		for (unsigned int i=0; i<n_side_nodes; i++)
+			node_numbers[nb->element().node(i).idx()] = i;
 
-		for (unsigned int i=0; i<nb->side()->n_nodes(); i++)
-			permutation[node_numbers[nb->side()->node(i).node()]] = i;
+		for (unsigned int i=0; i<n_side_nodes; i++)
+			permutation[node_numbers[nb->side()->node(i).idx()]] = i;
 
 		switch (nb->side()->dim())
 		{
@@ -730,7 +741,7 @@ ElementAccessor<3> Mesh::element_accessor(unsigned int idx) const {
 
 
 
-NodeAccessor<3> Mesh::node_accessor(unsigned int idx) const {
+NodeAccessor<3> Mesh::node(unsigned int idx) const {
     return NodeAccessor<3>(this, idx);
 }
 
@@ -770,7 +781,7 @@ void Mesh::elements_id_maps( vector<LongIdx> & bulk_elements_id, vector<LongIdx>
 
 
 bool compare_points(const arma::vec3 &p1, const arma::vec3 &p2) {
-	static const double point_tolerance = 1E-10;
+
 	return fabs(p1[0]-p2[0]) < point_tolerance
 		&& fabs(p1[1]-p2[1]) < point_tolerance
 		&& fabs(p1[2]-p2[2]) < point_tolerance;
@@ -797,15 +808,15 @@ bool Mesh::check_compatible_mesh( Mesh & mesh, vector<LongIdx> & bulk_elements_i
         node_ids.resize( this->n_nodes() );
         i=0;
         for (auto nod : this->node_range()) {
-            arma::vec3 point = nod->point();
             int found_i_node = -1;
-            bih_tree.find_point(point, searched_elements);
+            bih_tree.find_point(*nod, searched_elements);
 
             for (std::vector<unsigned int>::iterator it = searched_elements.begin(); it!=searched_elements.end(); it++) {
                 ElementAccessor<3> ele = mesh.element_accessor( *it );
                 for (i_node=0; i_node<ele->n_nodes(); i_node++)
                 {
-                    if ( compare_points(ele.node(i_node)->point(), point) ) {
+                    static const double point_tolerance = 1E-10;
+                    if ( arma::norm(*ele.node(i_node) - *nod, 1) < point_tolerance) {
                     	i_elm_node = ele.node_accessor(i_node).idx();
                         if (found_i_node == -1) found_i_node = i_elm_node;
                         else if (found_i_node != i_elm_node) {
@@ -948,9 +959,8 @@ void Mesh::add_physical_name(unsigned int dim, unsigned int id, std::string name
 
 
 void Mesh::add_node(unsigned int node_id, arma::vec3 coords) {
-    node_vec_.push_back( Node() );
-    Node &node = node_vec_[node_vec_.size()-1];
-    node.point() = coords;
+
+    nodes_.append(Armor::Mat<double, 3, 1>(coords));
     node_ids_.add_item(node_id);
 }
 
@@ -1016,9 +1026,8 @@ void Mesh::init_element_vector(unsigned int size) {
 
 
 void Mesh::init_node_vector(unsigned int size) {
-	node_vec_.clear();
-	node_vec_.reserve(size);
-	node_ids_.reinit(0);
+	nodes_.reinit(size);
+	node_ids_.reinit(size);
 }
 
 
@@ -1046,7 +1055,7 @@ Range<ElementAccessor<3>> Mesh::elements_range() const {
 
 Range<NodeAccessor<3>> Mesh::node_range() const {
 	auto bgn_it = make_iter<NodeAccessor<3>>( NodeAccessor<3>(this, 0) );
-	auto end_it = make_iter<NodeAccessor<3>>( NodeAccessor<3>(this, node_vec_.size()) );
+	auto end_it = make_iter<NodeAccessor<3>>( NodeAccessor<3>(this, n_nodes()) );
     return Range<NodeAccessor<3>>(bgn_it, end_it);
 }
 

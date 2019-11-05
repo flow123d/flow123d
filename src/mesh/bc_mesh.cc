@@ -83,7 +83,7 @@ bool BCMesh::check_compatible_mesh( Mesh & mesh, vector<LongIdx> & bulk_elements
 
 
 unsigned int BCMesh::n_nodes() const {
-    return parent_mesh_->node_vec_.size();
+    return parent_mesh_->nodes_.size();
 }
 
 
