@@ -120,26 +120,23 @@ ConvectionTransport::EqData::EqData() : TransportEqData()
  * Helper class FETransportObjects
  */
 FETransportObjects::FETransportObjects()
+: q_(QGauss::make_array(0))
 {
     fe0_ = new FE_P_disc<0>(0);
     fe1_ = new FE_P_disc<1>(0);
     fe2_ = new FE_P_disc<2>(0);
     fe3_ = new FE_P_disc<3>(0);
 
-    q0_ = new QGauss<0>(1);
-    q1_ = new QGauss<1>(1);
-    q2_ = new QGauss<2>(1);
-    q3_ = new QGauss<3>(1);
 
     map1_ = new MappingP1<1,3>;
     map2_ = new MappingP1<2,3>;
     map3_ = new MappingP1<3,3>;
 
-    fe_values1_ = new FESideValues<1,3>(*map1_, *q0_, *fe1_,
+    fe_values1_ = new FESideValues<1,3>(*map1_, q(0), *fe1_,
             update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
-    fe_values2_ = new FESideValues<2,3>(*map2_, *q1_, *fe2_,
+    fe_values2_ = new FESideValues<2,3>(*map2_, q(1), *fe2_,
             update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
-    fe_values3_ = new FESideValues<3,3>(*map3_, *q2_, *fe3_,
+    fe_values3_ = new FESideValues<3,3>(*map3_, q(2), *fe3_,
             update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
 }
 
@@ -150,10 +147,6 @@ FETransportObjects::~FETransportObjects()
     delete fe1_;
     delete fe2_;
     delete fe3_;
-    delete q0_;
-    delete q1_;
-    delete q2_;
-    delete q3_;
     delete map1_;
     delete map2_;
     delete map3_;
@@ -167,10 +160,7 @@ template<> FiniteElement<1> *FETransportObjects::fe<1>() { return fe1_; }
 template<> FiniteElement<2> *FETransportObjects::fe<2>() { return fe2_; }
 template<> FiniteElement<3> *FETransportObjects::fe<3>() { return fe3_; }
 
-template<> Quadrature<0> *FETransportObjects::q<0>() { return q0_; }
-template<> Quadrature<1> *FETransportObjects::q<1>() { return q1_; }
-template<> Quadrature<2> *FETransportObjects::q<2>() { return q2_; }
-template<> Quadrature<3> *FETransportObjects::q<3>() { return q3_; }
+Quadrature &FETransportObjects::q(unsigned int dim) { return q_[dim]; }
 
 template<> MappingP1<1,3> *FETransportObjects::mapping<1>() { return map1_; }
 template<> MappingP1<2,3> *FETransportObjects::mapping<2>() { return map2_; }

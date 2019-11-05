@@ -42,10 +42,10 @@ public:
     template < template<Dim...> class TT>
     Mixed(const Mixed<TT> &other)
     : _MixedBase<T>(
-    		T<0>(other.get<0>()),
-			T<1>(other.get<1>()),
-			T<2>(other.get<2>()),
-			T<3>(other.get<3>()) )
+    		T<0>(other.get<0>() ),
+			T<1>(other.get<1>() ),
+			T<2>(other.get<2>() ),
+			T<3>(other.get<3>() ) )
     { static_assert(std::is_convertible<TT<0>, T<0>>::value, "Non-convertible types!"); }
 
     Mixed(const T<0> &p0,const T<1> &p1,const T<2> &p2,const T<3> &p3)

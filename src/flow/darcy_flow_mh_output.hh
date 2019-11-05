@@ -43,6 +43,7 @@
 #include "petscvec.h"                    // for Vec, _p_Vec
 #include "system/exceptions.hh"          // for ExcAssertMsg::~ExcAssertMsg
 
+
 class DOFHandlerMultiDim;
 class DarcyFlowInterface;
 class Mesh;
@@ -187,9 +188,8 @@ protected:
         FEData();
         
         const unsigned int order; // order of Gauss quadrature
-        MixedPtr<QGauss> quad;
+        QGauss::array quad;
         Mixed<MappingP1> mapp;
-
         MixedPtr<FE_P_disc> fe_p1;
 
         // following is used for calculation of postprocessed pressure difference

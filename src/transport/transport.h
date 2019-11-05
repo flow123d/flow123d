@@ -42,6 +42,7 @@
 #include "tools/time_marks.hh"                        // for TimeMark, TimeM...
 #include "transport/substance.hh"                     // for SubstanceList
 #include "transport/transport_operator_splitting.hh"
+#include "quadrature/quadrature_lib.hh"
 
 class OutputTime;
 class Mesh;
@@ -86,8 +87,7 @@ public:
 	template<unsigned int dim>
 	inline FiniteElement<dim> *fe();
 
-	template<unsigned int dim>
-	inline Quadrature<dim> *q();
+	inline Quadrature &q(unsigned int dim);
 
 	template<unsigned int dim>
 	inline MappingP1<dim,3> *mapping();
@@ -104,10 +104,7 @@ private:
 	FiniteElement<3> *fe3_;
 
 	/// Quadratures used in assembling methods.
-	Quadrature<0> *q0_;
-	Quadrature<1> *q1_;
-	Quadrature<2> *q2_;
-	Quadrature<3> *q3_;
+	QGauss::array q_;
 
 	/// Auxiliary mappings of reference elements.
 	MappingP1<1,3> *map1_;

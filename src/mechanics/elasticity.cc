@@ -75,24 +75,21 @@ const int Elasticity::registrar =
 namespace Mechanics {
 
 FEObjects::FEObjects(Mesh *mesh_, unsigned int fe_order)
+: q_(QGauss::make_array(2))
 {
-    unsigned int q_order;
-
 	switch (fe_order)
 	{
 	case 1: {
-		q_order = 2;
         MixedPtr<FE_P> fe_p(1);
         fe_ = mixed_fe_system(fe_p, FEVector, 3);
 		break;
 	}
 	default:
-	    q_order=0;
 		xprintf(PrgErr, "Unsupported polynomial order %d for finite elements in Elasticity", fe_order);
 		break;
 	}
 
-	q_ = MixedPtr<QGauss>(q_order);
+
 
 	map1_ = new MappingP1<1,3>;
 	map2_ = new MappingP1<2,3>;
@@ -116,11 +113,6 @@ template<> std::shared_ptr<FiniteElement<0>> FEObjects::fe<0>() { return fe_.get
 template<> std::shared_ptr<FiniteElement<1>> FEObjects::fe<1>() { return fe_.get<1>(); }
 template<> std::shared_ptr<FiniteElement<2>> FEObjects::fe<2>() { return fe_.get<2>(); }
 template<> std::shared_ptr<FiniteElement<3>> FEObjects::fe<3>() { return fe_.get<3>(); }
-
-template<> std::shared_ptr<Quadrature<0>> FEObjects::q<0>() { return q_.get<0>(); }
-template<> std::shared_ptr<Quadrature<1>> FEObjects::q<1>() { return q_.get<1>(); }
-template<> std::shared_ptr<Quadrature<2>> FEObjects::q<2>() { return q_.get<2>(); }
-template<> std::shared_ptr<Quadrature<3>> FEObjects::q<3>() { return q_.get<3>(); }
 
 template<> MappingP1<1,3> *FEObjects::mapping<1>() { return map1_; }
 template<> MappingP1<2,3> *FEObjects::mapping<2>() { return map2_; }
