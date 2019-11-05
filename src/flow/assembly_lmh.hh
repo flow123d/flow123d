@@ -92,7 +92,8 @@ public:
 
         // reconstructed vector for the velocity and pressure
         // length = local Schur complement offset in LocalSystem
-        reconstructed_solution_.zeros(loc_edge_dofs[0]);
+        schur_offset_ = loc_edge_dofs[0];
+        reconstructed_solution_.zeros(schur_offset_);
     }
 
 
@@ -128,19 +129,18 @@ public:
         assembly_dim_connections(ele_ac);
         
         const unsigned int n = loc_schur_.row_dofs.n_rows;  // local Schur complement size
-        const unsigned int off = loc_edge_dofs[0];          // local Schur complement offset in LocalSystem
         arma::vec schur_solution(n);
         for(unsigned int i=0; i<n; i++)
         {
             // read the computed edge pressures
             schur_solution(i) = ad_->schur_solution[dofs_schur[i]];
             // write the computed edge pressures to the full vector
-            unsigned int loc_row = dofs[off+i];
+            unsigned int loc_row = dofs[schur_offset_+i];
             ad_->full_solution[loc_row] = schur_solution(i);
         }
         
         // reconstruct the velocity and pressure
-        loc_system_.reconstruct_solution_schur(off, schur_solution, reconstructed_solution_);
+        loc_system_.reconstruct_solution_schur(schur_offset_, schur_solution, reconstructed_solution_);
         
         // TODO:
         // if (mortar_assembly)
@@ -162,7 +162,7 @@ public:
         // for(unsigned int i=0; i<loc_schur_.row_dofs.n_rows; i++)
         // {
         //     // write the computed edge pressures to the full vector
-        //     unsigned int loc_row = dofs[loc_edge_dofs[0]+i];
+        //     unsigned int loc_row = dofs[schur_offset_+i];
         //     ad_->full_solution[loc_row] = ad_->schur_solution[dofs_schur[i]];
         // }
         
@@ -186,7 +186,7 @@ public:
         
         assembly_dim_connections(ele_ac);
         
-        loc_system_.compute_schur_complement(loc_edge_dofs[0], loc_schur_, true);
+        loc_system_.compute_schur_complement(schur_offset_, loc_schur_, true);
 
         save_local_system(ele_ac.dh_cell());
         
@@ -203,7 +203,6 @@ public:
     // void reconstruct_solution(const LocalSystem & ls)
     // {
     //     const unsigned int n = loc_schur_.row_dofs.n_rows;  // local Schur complement size
-    //     const unsigned int off = loc_edge_dofs[0];          // local Schur complement offset in LocalSystem
     //     arma::vec schur_solution(n);
     //     for(unsigned int i=0; i<n; i++)
     //     {
@@ -212,7 +211,7 @@ public:
     //     }
         
     //     // reconstruct the velocity and pressure
-    //     ls.reconstruct_solution_schur(off, schur_solution, reconstructed_solution_);
+    //     ls.reconstruct_solution_schur(schur_offset_, schur_solution, reconstructed_solution_);
 
     //     postprocess_velocity(ele_ac.dh_cell(), reconstructed_solution_);
     // }
@@ -228,7 +227,6 @@ public:
         if (ls != ad_->seepage_bc_systems.end())
         {
             const unsigned int n = loc_schur_.row_dofs.n_rows;  // local Schur complement size
-            const unsigned int off = loc_edge_dofs[0];          // local Schur complement offset in LocalSystem
             arma::vec schur_solution(n);
             for(unsigned int i=0; i<n; i++)
             {
@@ -237,7 +235,7 @@ public:
             }
             
             // reconstruct the velocity and pressure
-            ls->second.reconstruct_solution_schur(off, schur_solution, reconstructed_solution_);
+            ls->second.reconstruct_solution_schur(schur_offset_, schur_solution, reconstructed_solution_);
 
             postprocess_velocity(dh_cell, reconstructed_solution_);
 
@@ -363,15 +361,15 @@ protected:
         //set global dof for element (pressure)
         // dofs[loc_ele_dof] = ele_ac.ele_row();
         
-        unsigned int side_row, edge_row;
-        for (unsigned int i = 0; i < ele_ac.n_sides(); i++) {
+        // unsigned int side_row, edge_row;
+        // for (unsigned int i = 0; i < ele_ac.n_sides(); i++) {
 
-            side_row = loc_side_dofs[i];    //local
-            edge_row = loc_edge_dofs[i];    //local
+        //     side_row = loc_side_dofs[i];    //local
+        //     edge_row = loc_edge_dofs[i];    //local
             
             // dofs[side_row] = ele_ac.side_row(i);    //global
             // dofs[edge_row] = ele_ac.edge_row(i);    //global
-        }
+        // }
         
         if(ele->n_neighs_vb() == 0)
         {
@@ -457,7 +455,6 @@ protected:
                     // homogeneous neumann
                 } else if ( type == DarcyMH::EqData::dirichlet ) {
                     double bc_pressure = ad_->bc_pressure.value(b_ele.centre(), b_ele);
-                    // loc_system_.set_solution(loc_edge_dofs[i],bc_pressure,-1);
                     loc_schur_.set_solution(i, bc_pressure);
                     dirichlet_edge[i] = 1;
                     
@@ -487,10 +484,6 @@ protected:
                         // check and possibly switch to flux BC
                         // The switch raise error on the corresponding edge row.
                         // Magnitude of the error is abs(solution_flux - side_flux).
-
-                        ASSERT_DBG(ad_->dh_->distr()->is_local(ele_ac.side_row(i)))(ele_ac.side_row(i));
-                        // unsigned int loc_side_row = ele_ac.side_local_row(i);
-                        // double solution_flux = ad_->full_solution[loc_side_row];
                         
                         // try reconstructing local system for seepage BC
                         load_local_system(ele_ac.dh_cell());
@@ -522,19 +515,16 @@ protected:
 
                     save_local_system_ = (bool) switch_dirichlet;
                     
-                        // ** Apply BCUpdate BC type. **
-                        // Force Dirichlet type during the first iteration of the unsteady case.
-                        if (switch_dirichlet || ad_->force_bc_switch ) {
-                            //DebugOut().fmt("x: {}, dirich, bcp: {}\n", b_ele.centre()[0], bc_pressure);
-//                             DebugOut().fmt("ele: {}, loc_edge_idx: {}, ad_->force_bc_switch: {}\n",
-//                                            ele_ac.ele_global_idx(), loc_edge_idx, ad_->force_bc_switch);
-                            // loc_system_.set_solution(loc_edge_dofs[i],bc_pressure, -1);
-                            loc_schur_.set_solution(i, bc_pressure);
-                            dirichlet_edge[i] = 1;
-                        } else {
-                            //DebugOut()("x: {}, neuman, q: {}  bcq: {}\n", b_ele.centre()[0], side_flux, bc_flux);
-                            loc_system_.add_value(edge_row, side_flux);
-                        }
+                    // ** Apply BCUpdate BC type. **
+                    // Force Dirichlet type during the first iteration of the unsteady case.
+                    if (switch_dirichlet || ad_->force_bc_switch ) {
+                        //DebugOut().fmt("x: {}, dirich, bcp: {}\n", b_ele.centre()[0], bc_pressure);
+                        loc_schur_.set_solution(i, bc_pressure);
+                        dirichlet_edge[i] = 1;
+                    } else {
+                        //DebugOut()("x: {}, neuman, q: {}  bcq: {}\n", b_ele.centre()[0], side_flux, bc_flux);
+                        loc_system_.add_value(edge_row, side_flux);
+                    }
 
                 } else if (type==DarcyMH::EqData::river) {
                     ad_->is_linear=false;
@@ -543,10 +533,6 @@ protected:
                     double bc_switch_pressure = ad_->bc_switch_pressure.value(b_ele.centre(), b_ele);
                     double bc_flux = -ad_->bc_flux.value(b_ele.centre(), b_ele);
                     double bc_sigma = ad_->bc_robin_sigma.value(b_ele.centre(), b_ele);
-                    
-                    // ASSERT_DBG(ad_->dh_->distr()->is_local(ele_ac.edge_row(i)))(ele_ac.edge_row(i));
-                    // unsigned int loc_edge_row = ele_ac.edge_local_row(i);
-                    // double solution_head = ad_->full_solution[loc_edge_row];
 
                     double solution_head = ad_->schur_solution[loc_schur_.row_dofs[i]];
 
@@ -572,12 +558,6 @@ protected:
             loc_system_.add_value(side_row, edge_row, 1.0);
             loc_system_.add_value(edge_row, side_row, 1.0);
         }
-        
-//         DBGCOUT(<< "ele " << ele_ac.ele_global_idx() << ":  ");
-//         for (unsigned int i = 0; i < nsides; i++) cout << loc_system_.row_dofs[loc_side_dofs[i]] << "  ";
-//         cout << loc_system_.row_dofs[loc_ele_dof] << "  ";
-//         for (unsigned int i = 0; i < nsides; i++) cout << loc_system_.row_dofs[loc_edge_dofs[i]] << "  ";
-//         cout << "\n";
     }
         
     void assemble_sides(LocalElementAccessorBase<3> ele_ac) override
@@ -719,8 +699,6 @@ protected:
         ASSERT_LT_DBG(ele->dim(), 3);
         arma::vec3 nv;
 
-        //DebugOut() << "adc " << print_var(this) << print_var(side_quad_.size());
-//         for (unsigned int i = 0; i < ele->n_neighs_vb(); i++) {
         unsigned int i = 0;
         for ( DHCellSide neighb_side : dh_cell.neighb_sides() ) {
             // every compatible connection adds a 2x2 matrix involving
@@ -839,6 +817,9 @@ protected:
         
 //     // TODO: Update dofs only once, use the dofs from LocalSystem, once set_dofs and set_bc is separated.
     std::vector<int> edge_indices_; ///< Dofs of discontinuous fields on element edges.
+
+    /// Index offset in the local system for the Schur complement.
+    unsigned int schur_offset_;
 
     /// Vector for reconstruted solution (velocity and pressure on element) from Schur complement.
     arma::vec reconstructed_solution_;

@@ -687,7 +687,7 @@ void DarcyLMH::assembly_mh_matrix(MultidimAssembly& assembler)
 {
     START_TIMER("DarcyLMH::assembly_steady_mh_matrix");
 
-    DebugOut() << "assembly_mh_matrix \n";
+    // DebugOut() << "assembly_mh_matrix \n";
     // set auxiliary flag for switchting Dirichlet like BC
     data_->force_bc_switch = data_->use_steady_assembly_ && (nonlinear_iteration_ == 0);
     data_->n_schur_compls = n_schur_compls;
@@ -720,8 +720,6 @@ void DarcyLMH::allocate_mh_matrix()
     // set auxiliary flag for switchting Dirichlet like BC
     data_->n_schur_compls = n_schur_compls;
 
-    int local_dofs[10];
-
     // to make space for second schur complement, max. 10 neighbour edges of one el.
     double zeros[100000];
     for(int i=0; i<100000; i++) zeros[i] = 0.0;
@@ -729,7 +727,7 @@ void DarcyLMH::allocate_mh_matrix()
     std::vector<int> tmp_rows;
     tmp_rows.reserve(200);
     
-    unsigned int nsides, loc_size;
+    unsigned int loc_size;
 
     DebugOut() << "Allocate new schur\n";
     for ( DHCellAccessor dh_cell : data_->dh_cr_->own_range() ) {
@@ -792,6 +790,8 @@ void DarcyLMH::allocate_mh_matrix()
     }
     DebugOut() << "end Allocate new schur\n";
     
+    // int local_dofs[10];
+    // unsigned int nsides;
     // for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
     //     LocalElementAccessorBase<3> ele_ac(dh_cell);
     //     nsides = ele_ac.n_sides();
