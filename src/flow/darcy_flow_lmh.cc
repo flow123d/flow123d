@@ -1004,7 +1004,7 @@ void DarcyLMH::create_linear_system(Input::AbstractRecord in_rec) {
         }
 
         END_TIMER("preallocation");
-        // make_serial_scatter();
+        make_serial_scatter();
 }
 
 void DarcyLMH::postprocess()
