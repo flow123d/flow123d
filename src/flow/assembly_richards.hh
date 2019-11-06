@@ -107,17 +107,15 @@ protected:
         reset_soil_model(ele.dh_cell());
         cross_section = ad_->cross_section.value(ele.centre(), ele.element_accessor());
 
-
         double conductivity, head;
         if (genuchten_on) {
             conductivity=0;
             head=0;
-            ele.dh_cell().cell_with_other_dh(ad_->dh_cr_.get()).get_loc_dof_indices(this->edge_indices_);
             for (unsigned int i=0; i<ele.element_accessor()->n_sides(); i++)
             {
-                double phead = ad_->schur_solution[ this->edge_indices_[i] ];
+                double phead = ad_->schur_solution[ this->loc_schur_.row_dofs[i] ];
                 conductivity += ad_->soil_model_->conductivity(phead);
-                head += ad_->schur_solution[ this->edge_indices_[i] ];
+                head += ad_->schur_solution[ this->loc_schur_.row_dofs[i] ];
             }
             conductivity /= ele.n_sides();
             head /= ele.n_sides();
