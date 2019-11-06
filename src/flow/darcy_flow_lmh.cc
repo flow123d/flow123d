@@ -582,8 +582,8 @@ void DarcyLMH::solve_nonlinear()
 
         if (! is_linear_common){
             data_->previous_schur_solution.copy_from(data_->schur_solution);
-            // data_->previous_schur_solution.local_to_ghost_begin();
-            // data_->previous_schur_solution.local_to_ghost_end();
+            data_->previous_schur_solution.local_to_ghost_begin();
+            data_->previous_schur_solution.local_to_ghost_end();
         }
 
         LinSys::SolveInfo si = schur_compl->solve();        
@@ -633,6 +633,8 @@ void DarcyLMH::solve_nonlinear()
 void DarcyLMH::prepare_new_time_step()
 {
     data_->previous_time_schur_solution.copy_from(data_->schur_solution);
+    data_->previous_time_schur_solution.local_to_ghost_begin();
+    data_->previous_time_schur_solution.local_to_ghost_end();
 }
 
 
@@ -1032,8 +1034,8 @@ void DarcyLMH::assembly_linear_system() {
     START_TIMER("DarcyFlowMH::assembly_linear_system");
 //     DebugOut() << "DarcyLMH::assembly_linear_system\n";
 
-    data_->previous_time_schur_solution.local_to_ghost_begin();
-    data_->previous_time_schur_solution.local_to_ghost_end();
+    data_->schur_solution.local_to_ghost_begin();
+    data_->schur_solution.local_to_ghost_end();
 
     data_->is_linear=true;
     //DebugOut() << "Assembly linear system\n";
