@@ -711,14 +711,14 @@ void DOFHandlerMultiDim::print() const {
     for (auto cell : own_range())
     {
         auto ndofs = cell.get_dof_indices(dofs);
-        s << "-- cell " << cell.elm().index() << ": ";
+        s << "-- cell " << cell.elm().idx() << ": ";
         for (unsigned int idof=0; idof<ndofs; idof++) s << dofs[idof] << " "; s << endl;
     }
     s << "- dofs on ghost cells:" << endl;
     for (auto cell : ghost_range())
     {
         auto ndofs = cell.get_dof_indices(dofs);
-        s << "-- cell " << cell.elm().index() << ": ";
+        s << "-- cell " << cell.elm().idx() << ": ";
         for (unsigned int idof=0; idof<ndofs; idof++) s << dofs[idof] << " "; s << endl;
     }
     s << "- locally owned dofs (" << lsize_ << "): ";
