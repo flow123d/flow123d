@@ -605,16 +605,12 @@ public:
      *
      */
     void output(MPI_Comm comm, std::ostream &os);
+
     /**
      * Same as previous, but output to the file with default name: "profiler_info_YYMMDD_HH::MM:SS.log".
      * Empty body if macro FLOW123D_DEBUG_PROFILER is not defined.
      */
-    void output(MPI_Comm comm);
-
-    /**
-     * Output profiler to the desired location
-     */
-    void output(MPI_Comm comm, string profiler_path);
+    void output(MPI_Comm comm, string profiler_path = "");
 
 #endif /* FLOW123D_HAVE_MPI */
     /**
@@ -628,16 +624,12 @@ public:
      *
      */
     void output(std::ostream &os);
+
     /**
      * Same as previous, but output to the file with default name: "profiler_info_YYMMDD_HH::MM:SS.log".
      * Empty body if macro FLOW123D_DEBUG_PROFILER is not defined.
      */
-    void output();
-
-    /**
-     * Output profiler to the desired location
-     */
-    void output(string profiler_path);
+    void output(string profiler_path = "");
 
     /**
      * Method will transform last profiler json file to desired format

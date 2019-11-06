@@ -703,18 +703,7 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
 }
 
 
-void Profiler::output(MPI_Comm comm) {
-    int mpi_rank;
-    chkerr( MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank) );
-    if (mpi_rank == 0) {
-        output(comm, *get_default_output_stream());
-    } else {
-        ostringstream os;
-        output(comm, os );
-    }
-}
-
-void Profiler::output(MPI_Comm comm, string profiler_path) {
+void Profiler::output(MPI_Comm comm, string profiler_path /* = "" */) {
     if(profiler_path == "") {
         output(comm);
     }else {
@@ -802,11 +791,7 @@ void Profiler::output(ostream &os) {
 }
 
 
-void Profiler::output() {
-    output(*get_default_output_stream());
-}
-
-void Profiler::output(string profiler_path) {
+void Profiler::output(string profiler_path /* = "" */) {
     if(profiler_path == "") {
         output(*get_default_output_stream());
     } else {
@@ -851,7 +836,7 @@ void Profiler::output_header (property_tree::ptree &root, int mpi_size) {
 #ifdef FLOW123D_HAVE_PYTHON
 void Profiler::transform_profiler_data (const string &output_file_suffix, const string &formatter) {
     
-    if (json_filepath=="") return;
+    if (json_filepath == "") return;
 
     // error under CYGWIN environment : more details in this repo 
     // https://github.com/x3mSpeedy/cygwin-python-issue
