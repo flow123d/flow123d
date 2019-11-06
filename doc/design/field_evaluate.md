@@ -6,7 +6,8 @@
 
 **Design ideas and constraints**
 - Have a sort of field value cache for the local points on the reference element.
-- The assembly process may use several different integrals using several quadrature schemes. One bulk and one boundary integral is the minimal choice. If these schemes share the same local points the values may be evaluated just once.
+- The assembly process may use several different integrals using several quadrature schemes. One bulk and one boundary integral is the minimal choice. ~If these schemes share the same local points the values may be evaluated just once.~
+Gauss quadratures imply no shared quadrature points, moreover continuous blocks of points are necessary for efficient FieldFormula implementation.
 - Allocation of the cache space and setup of quadratures should be done once per assembly.
 - The cache should cover several elements in order to exploit shared evaluation points on the element sides. The cache should be updated on several elements at once to amortize overhead in FieldFormula parser. 
 - Boundary quadratures should deal with various side permutations.
@@ -21,7 +22,7 @@
 
 ## Cache structure
 1. Every Field<spacedim, Value> has its cache for its values. 
-    The logical cache elements have type given by the Value template parameter however as this is inefficient for the Armadillo objects we allocate plain memory and construct the value object over its patches.
+    The logical cache elements have type given by the Value template parameter however as this is inefficient for the Armadillo objects we allocate plain memory and construct the value objects referencing to the allocated memory.
 2. Every Field<> has an array of three instances of the FieldValueCache one for each dimension. We should try to make FieldValueCache not templated by the dimension to avoid virtual calls during the read access to the cache.
 3. FieldValueCache is logically a table of N element slots composed of M values for the M local points on the reference element. The implementation uses a plain memory or a fixed size array.
 
@@ -30,11 +31,10 @@
 Usage of the field caches consists of:
 1. Merging more quadratures into a single set of the local evaluation points (class `EvalPoints`).
     For every merged quadrature we obtain the EvalSubset. 
-2. Create a `FieldSet` one for every qudrature of the fields involved in that integral. 
-3. Initialize the fields in the integral's field set: Allocate the cache space in fields and mark 
-the local points used in integral's quadrature. This is done through the call of `FieldSet::cache_allocate<dim>(EvalSubset, Mapping<dim>)`
+2. Create a `FieldSet` one for every quadrature of the fields involved in that integral. 
+3. Initialize the fields in the integral's field set: Allocate the cache space in fields and mark which quadrature the field use. This is done through the call of `FieldSet::cache_allocate<dim>(EvalSubset, Mapping<dim>)`
 4. In the main assembly loop the element cache prefetching can be done. This is organized by 
-`ElementCacheMap` this knows which elements are cached.
+`ElementCacheMap` which knows which elements are cached.
 5. Assembly on a single element:
     1. Update caches of the used fields (can be possibly moved into generic assembly loop).
     2. Map the element (elements) to their cache indices.
@@ -46,12 +46,14 @@ the local points used in integral's quadrature. This is done through the call of
 **EvalPoints**
 The class to store set of common local points. 
 Two operations:
-1. Add a point set, return their indices in the table. Eliminate duplicate points 
-    with prescribed tolerance.
+1. Add a point set, return their indices in the table. ~Eliminate duplicate points 
+    with prescribed tolerance.~ Contrary, we want to keep the points from the single quadrature in a single continuous block.
     In fact, we probably need to use two distinguised methods:
-	`EvalSubset add_bulk<dim>(Quadrature<dim> bulk_quadrature)`
-	`EvalSubset add_side<dim>(Quadrature<dim-1> side_quadrature)`
+	`EvalSubset add_bulk(Quadrature bulk_quadrature)`
+	`EvalSubset add_side(Quadrature side_quadrature)`
 2. Get point for given index.
+
+Common storage of quadrature points is not necessary anymore, but we keep it in order to keep indexing of the points the same accross the fields (which can use ony certain subblocks of the points). We can decrease the memory footprint (and thus the cache footprint) at the expense of slower access to the cached values (one more indirect memory access).
 
 **EvalSubset**
 The object containing array of indices into local point set, there is only single array for the 
@@ -67,8 +69,8 @@ class Assembly<dim> {
 	EvalSubset face_eval;
 	EvalSubset stiffness_eval;
 	....
-	this->mass_eval = this->ep.add_bulk(Gauss<dim>(order));
-	this->face_eval = this->ep.add_side(Gauss<dim-1>(order));
+	this->mass_eval = this->ep.add_bulk(Gauss(dim, order));
+	this->face_eval = this->ep.add_side(Gauss(dim-1, order));
         ...
 ```
 
@@ -88,9 +90,11 @@ FieldCommon::cache_allocate(EvalSubset sub_quad)
 ```
 This is a virtual method with implementation in Field<...> which allocates `FieldValueCache<Value>(sub_quad.eval_points())` during the first call and mark the used local points `FieldValueCache<Value>::mark_used(sub_quad)`. 
 
-The Field<> have array of these classes, one instance for every dimension so the class should not be templated (by dimension). The only field algorithm that needs absolute coordinates is FieldFormula. We will pass the whole EqData fieldset to it in order to allow more complex dependencies. One of the fields will be 'Coordinate' or 'Position' field which just compute absolute coordinates of the local points (using the mapping). We will pass the whole EqData fieldset to it in order to allow more complex dependencies. One of the fields will be 'Coordinate' or 'Position' field which just compute absolute coordinates of the local points (using the mapping).
+The Field<> have array of these classes, one instance for every dimension so the `FieldValueCache` 
+must not be templated (by dimension). The only field algorithm that needs absolute coordinates is FieldFormula. We will pass the whole EqData fieldset to it in order to allow more complex dependencies. One of the fields will be 'Coordinate' or 'Position' field which just compute absolute coordinates of the local points (using the mapping). 
+`FieldValueCache` has a vector with start and size of active blocks of the quadrature points.
 
-**FieldValueCache**
+### FieldValueCache
 In principle this is just a table of items of type Value with dimensions: n_cached_elements x n_evaluation_points. Other properties to keep:
 - reference to the EvalPoints instance (therefore it should not be dim templated either)
 - dimension (probably just for checks)
@@ -106,6 +110,7 @@ In principle this is just a table of items of type Value with dimensions: n_cach
 ```
 TODO:
 - FieldValueCache allocates its table at the first call, but the mask for active local points is added from more calls
+
 
 ### 5.2 ElementCacheMap
 This class synchronize the cached elements between (all) fields of single equation. It provides mapping from elements to the cache index and list of elements to cache. This have overloaded evaluation operator, which returns the index in the cache for the given element (or element index). The last cache line is overwritten if the index is not in the cache.
@@ -141,6 +146,10 @@ after all fields are updated.
     // Possible update of the base function values.
     presssure_field_fe.fe_values.update(cell);
 ```
+Two major algorithms are in use:
+- FieldFE - evaluates base func values in all quadrature points (done once per assembly),  dot product with DOFs, optionaly multiplied by the Mapping matrix (important optimization for vector fields and derivatives, must have support in FEValues)
+- FieldFormula - evaluates all elements in the patch (same region), in all point from single continuous block od quad points
+
 ### 5.3 Cache read
 ```
     // Bulk integral, no sides, no permutations.
