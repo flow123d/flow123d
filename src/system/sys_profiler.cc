@@ -607,9 +607,7 @@ void save_nonmpi_metric (property_tree::ptree &node,  T * ptr, string name) {
 }
 
 std::shared_ptr<std::ostream> Profiler::get_default_output_stream() {
-    char filename[PATH_MAX];
-    strftime(filename, sizeof (filename) - 1, "profiler_info_%y.%m.%d_%H-%M-%S.log.json", localtime(&start_time));
-     json_filepath = FilePath(string(filename), FilePath::output_file);
+     json_filepath = FilePath("profiler_info.log.json", FilePath::output_file);
 
     //LogOut() << "output into: " << json_filepath << std::endl;
     return make_shared<ofstream>(json_filepath.c_str());
