@@ -35,6 +35,16 @@ public:
         simpleLine = "x + y + z";
         complexLine = "2*x + y*3 + x*(z-y) + 2*pi*z";
         powerLine = "2*x + y^3 + x*(z-y) + 2*pi*z";
+
+        funcPlus = "y+0.5";
+        funcPower = "y^3";
+        funcAbs = "abs(z)";
+        funcExp = "exp(y)";
+        funcLog = "log(y)";
+        funcSin = "sin(pi*y)";
+        funcAsin = "asin(z)";
+        funcTernary = "z>0 ? x : y";
+    	funcMax = "max(x,y,z)";
     }
 
     ~ParserHandler() {
@@ -52,26 +62,26 @@ public:
 
         for (int i=0; i<nBulkSize; ++i) {
             x_v[i] = i;
-            y_v[i] = (double)i/100;
-            z_v[i] = (10 - (double)(i%10)) * 1.1;
+            y_v[i] = (double)i/100 + 0.01;
+            z_v[i] = (4.95 - (double)(i%10) * 1.1) * 0.2; // values oscillate in <-1; 1>
         }
     }
 
-	void profiler_output() {
-		static ofstream os( FilePath("parsers_test.log", FilePath::output_file) );
+	void profiler_output(std::string file_name) {
+		static ofstream os( FilePath(file_name, FilePath::output_file) );
 		Profiler::instance()->output(MPI_COMM_WORLD, os);
 		os << endl;
 	}
 
-    double fast_compute_constant() {
+    double cpp_compute_constant() {
     	double sum = 0.0;
-        START_TIMER("1_fast_compute");
+        START_TIMER("cpp_compute");
         for (int j=0; j<nLoops; ++j) {
             for (int i=0; i<nBulkSize; ++i) {
                 result_v[i] = 0.5;
             }
         }
-        END_TIMER("1_fast_compute");
+        END_TIMER("cpp_compute");
         for (int i=0; i<nBulkSize; ++i) {
         	sum += result_v[i];
         }
@@ -79,15 +89,15 @@ public:
     	return sum;
     }
 
-    double fast_compute_simple() {
+    double cpp_compute_simple() {
     	double sum = 0.0;
-        START_TIMER("1_fast_compute");
+        START_TIMER("cpp_compute");
         for (int j=0; j<nLoops; ++j) {
             for (int i=0; i<nBulkSize; ++i) {
                 result_v[i] = x_v[i] + y_v[i] + z_v[i];
             }
         }
-        END_TIMER("1_fast_compute");
+        END_TIMER("cpp_compute");
         for (int i=0; i<nBulkSize; ++i) {
             sum += result_v[i];
         }
@@ -95,16 +105,16 @@ public:
     	return sum;
     }
 
-    double fast_compute_complex() {
+    double cpp_compute_complex() {
     	double sum = 0.0;
     	double pi = 3.141592653589793238462643;
-        START_TIMER("1_fast_compute");
+        START_TIMER("cpp_compute");
         for (int j=0; j<nLoops; ++j) {
             for (int i=0; i<nBulkSize; ++i) {
                 result_v[i] = 2*x_v[i] + y_v[i]*3 + x_v[i]*(z_v[i]-y_v[i]) + 2*pi*z_v[i];
             }
         }
-        END_TIMER("1_fast_compute");
+        END_TIMER("cpp_compute");
         for (int i=0; i<nBulkSize; ++i) {
             sum += result_v[i];
         }
@@ -112,170 +122,29 @@ public:
     	return sum;
     }
 
-    double fast_compute_power() {
+    double cpp_compute_complex_power() {
     	double sum = 0.0;
     	double pi = 3.141592653589793238462643;
-        START_TIMER("1_fast_compute");
+        START_TIMER("cpp_compute");
         for (int j=0; j<nLoops; ++j) {
             for (int i=0; i<nBulkSize; ++i) {
                 result_v[i] = 2*x_v[i] + pow( y_v[i], 3.0 ) + x_v[i]*(z_v[i]-y_v[i]) + 2*pi*z_v[i];
             }
         }
-        END_TIMER("1_fast_compute");
+        END_TIMER("cpp_compute");
         for (int i=0; i<nBulkSize; ++i) {
             sum += result_v[i];
         }
 
     	return sum;
     }
-
-    double exprtk_parse_substitution(std::string expression_string) {
-        typedef exprtk::symbol_table<double> symbol_table_t;
-        typedef exprtk::expression<double>   expression_t;
-        typedef exprtk::parser<double>       parser_t;
-
-        double res = 0.0;
-        double x, y, z;
-
-        symbol_table_t symbol_table;
-        symbol_table.add_variable("x",x);
-        symbol_table.add_variable("y",y);
-        symbol_table.add_variable("z",z);
-        symbol_table.add_constants();
-
-        expression_t expression;
-        expression.register_symbol_table(symbol_table);
-
-        parser_t parser;
-        parser.compile(expression_string,expression);
-
-        START_TIMER("2_exprtk_parse_substitution");
-        for (int j=0; j<nLoops; ++j)
-        	for (int i=0; i<nBulkSize; ++i)
-            {
-        		x = x_v[i]; y = y_v[i]; z = z_v[i];
-        		result_v[i] = expression.value();
-            }
-        END_TIMER("2_exprtk_parse_substitution");
-    	for (int i=0; i<nBulkSize; ++i)
-        {
-            res += result_v[i];
-        }
-
-    	return res;
-    }
-
-    /*double exprtk_parse_vector(std::string expr) {
-        typedef exprtk::symbol_table<double> symbol_table_t;
-        typedef exprtk::expression<double>     expression_t;
-        typedef exprtk::parser<double>             parser_t;
-
-        std::string expression_string =
-                      " for (var i := 0; i < min(x[],y[],z[],r[]); i += 1) { r[i] := " + expr + "  }";
-
-        symbol_table_t symbol_table;
-        symbol_table.add_vector("x",x_v);
-        symbol_table.add_vector("y",y_v);
-        symbol_table.add_vector("z",z_v);
-        symbol_table.add_vector("r",result_v);
-        symbol_table.add_constants();
-
-        expression_t expression;
-        expression.register_symbol_table(symbol_table);
-
-        parser_t parser;
-        parser.compile(expression_string,expression);
-
-        double res = 0.0;
-        START_TIMER("exprtk_parse_vector");
-        for (int j=0; j<nLoops; ++j) {
-            expression.value();
-        }
-        END_TIMER("exprtk_parse_vector");
-        for (int i=0; i<nBulkSize; ++i) res += result_v[i];
-
-    	return res;
-    }*/
-
-    /*double exprtk_parse_vector_with_view(std::string expr) {
-        typedef exprtk::symbol_table<double> symbol_table_t;
-        typedef exprtk::expression<double>     expression_t;
-        typedef exprtk::parser<double>             parser_t;
-
-        std::string expression_string =
-                      " for (var i := 0; i < min(x[],y[],z[],r[]); i += 1) { r[i] := " + expr + "  }";
-
-        exprtk::vector_view<double> x_view = exprtk::make_vector_view(x_v,x_v.size());
-        exprtk::vector_view<double> y_view = exprtk::make_vector_view(y_v,y_v.size());
-        exprtk::vector_view<double> z_view = exprtk::make_vector_view(z_v,z_v.size());
-        exprtk::vector_view<double> r_view = exprtk::make_vector_view(result_v,result_v.size());
-
-        symbol_table_t symbol_table;
-        symbol_table.add_vector("x",x_view);
-        symbol_table.add_vector("y",y_view);
-        symbol_table.add_vector("z",z_view);
-        symbol_table.add_vector("r",r_view);
-        symbol_table.add_constants();
-
-        expression_t expression;
-        expression.register_symbol_table(symbol_table);
-
-        parser_t parser;
-        parser.compile(expression_string,expression);
-
-        double res = 0.0;
-        START_TIMER("5_exprtk_parse_vector_with_view");
-        for (int j=0; j<nLoops; ++j) {
-            expression.value();
-        }
-        END_TIMER("5_exprtk_parse_vector_with_view");
-        for (int i=0; i<nBulkSize; ++i) res += result_v[i];
-
-    	return res;
-    }*/
-
-    /*double exprtk_parse_vector_view_rebase(std::string expression_string) {
-        typedef exprtk::symbol_table<double> symbol_table_t;
-        typedef exprtk::expression<double>     expression_t;
-        typedef exprtk::parser<double>             parser_t;
-
-        double sum = 0.0;
-        std::vector<double> v(3, 0.0);
-        exprtk::vector_view<double> view = exprtk::make_vector_view(v,v.size());
-
-        symbol_table_t symbol_table;
-        symbol_table.add_vector("v",view);
-        symbol_table.add_constants();
-
-        expression_t expression;
-        expression.register_symbol_table(symbol_table);
-
-        parser_t parser;
-        parser.compile(expression_string,expression);
-
-        int i;
-        START_TIMER("6_exprtk_parse_vector_view_rebase");
-        for (int j=0; j<nLoops; ++j) {
-            i=0;
-        	for (auto& new_vec : vv)
-            {
-                view.rebase(new_vec.data()); // update vector
-                result_v[i] += expression.value();
-            }
-        	i++;
-        }
-        END_TIMER("6_exprtk_parse_vector_view_rebase");
-        for (int i=0; i<nBulkSize; ++i) sum += result_v[i];
-
-        return sum;
-    }*/
 
     double exprtk_parse_vector_fast(std::string expr) {
         typedef exprtk::symbol_table<double> symbol_table_t;
         typedef exprtk::expression<double>     expression_t;
         typedef exprtk::parser<double>             parser_t;
 
-        std::string expression_string = " r := " + expr + " ";
+        std::string expression_string = " result_vec := " + expr + " ";
 
         exprtk::vector_view<double> x_view = exprtk::make_vector_view(x_v,x_v.size());
         exprtk::vector_view<double> y_view = exprtk::make_vector_view(y_v,y_v.size());
@@ -288,7 +157,7 @@ public:
         symbol_table.add_vector("x",x_view);
         symbol_table.add_vector("y",y_view);
         symbol_table.add_vector("z",z_view);
-        symbol_table.add_vector("r",r_view);
+        symbol_table.add_vector("result_vec",r_view);
         symbol_table.add_constants();
 
         expression_t expression;
@@ -299,43 +168,81 @@ public:
 
         expression.value();
 
-        START_TIMER("3_exprtk_parse_vector_fast");
+        START_TIMER("exprtk_parse_vector_fast");
         for (int j=0; j<nLoops; ++j) {
             expression.value();
         }
-        END_TIMER("3_exprtk_parse_vector_fast");
+        END_TIMER("exprtk_parse_vector_fast");
         for (int i=0; i<nBulkSize; ++i) sum += result_v[i];
 
         return sum;
     }
 
-    void run_tests(int vec_size) {
+    void run_expression_tests(int vec_size) {
         create_data_vectors(vec_size);
         std::cout << "Tests is running with " << vec_size << " points ..." << std::endl;
 
         START_TIMER("A_constant_expresions");
-        this->fast_compute_constant();
-        this->exprtk_parse_substitution(constantLine);
+        this->cpp_compute_constant();
         this->exprtk_parse_vector_fast(constantLine);
         END_TIMER("A_constant_expresions");
 
         START_TIMER("B_simple_expresions");
-        this->fast_compute_simple();
-        this->exprtk_parse_substitution(simpleLine);
+        this->cpp_compute_simple();
         this->exprtk_parse_vector_fast(simpleLine);
         END_TIMER("B_simple_expresions");
 
         START_TIMER("C_complex_expresions");
-        this->fast_compute_complex();
-        this->exprtk_parse_substitution(complexLine);
+        this->cpp_compute_complex();
         this->exprtk_parse_vector_fast(complexLine);
         END_TIMER("C_complex_expresions");
 
         START_TIMER("D_power_expresions");
-        this->fast_compute_power();
-        this->exprtk_parse_substitution(powerLine);
+        this->cpp_compute_complex_power();
         this->exprtk_parse_vector_fast(powerLine);
         END_TIMER("D_power_expresions");
+        std::cout << " ... OK" << std::endl;
+    }
+
+    void run_function_tests(int vec_size) {
+        create_data_vectors(vec_size);
+        std::cout << "Tests is running with " << vec_size << " points ..." << std::endl;
+
+        START_TIMER("A_plus_function");
+        this->exprtk_parse_vector_fast(funcPlus);
+        END_TIMER("A_plus_function");
+
+        START_TIMER("B_power_function");
+        this->exprtk_parse_vector_fast(funcPower);
+        END_TIMER("B_power_function");
+
+        START_TIMER("C_abs_function");
+        this->exprtk_parse_vector_fast(funcAbs);
+        END_TIMER("C_abs_function");
+
+        START_TIMER("D_exp_function");
+        this->exprtk_parse_vector_fast(funcExp);
+        END_TIMER("D_exp_function");
+
+        START_TIMER("E_log_function");
+        this->exprtk_parse_vector_fast(funcLog);
+        END_TIMER("E_log_function");
+
+        START_TIMER("F_sin_function");
+        this->exprtk_parse_vector_fast(funcSin);
+        END_TIMER("F_sin_function");
+
+        START_TIMER("G_asin_function");
+        this->exprtk_parse_vector_fast(funcAsin);
+        END_TIMER("G_asin_function");
+
+        START_TIMER("H_ternary_function");
+        this->exprtk_parse_vector_fast(funcTernary);
+        END_TIMER("H_ternary_function");
+
+        START_TIMER("I_max_function");
+        this->exprtk_parse_vector_fast(funcMax);
+        END_TIMER("I_max_function");
         std::cout << " ... OK" << std::endl;
     }
 
@@ -352,76 +259,98 @@ public:
     std::string simpleLine;
     std::string complexLine;
     std::string powerLine;
+
+    std::string funcPlus;
+    std::string funcPower;
+    std::string funcAbs;
+    std::string funcExp;
+    std::string funcLog;
+    std::string funcSin;
+    std::string funcAsin;
+    std::string funcTernary;
+	std::string funcMax;
 };
 
 
-TEST(Parser, all) {
+/**
+ * Speed test of base expressions parsing in exprtk:
+ *  - constant
+ *  - simple
+ *  - complex
+ *  - complex with power function
+ *
+ * All tests are compared with evaluation of same expression specified by raw C++ code.
+ */
+TEST(Parser, expressions) {
+	// test of base expressions: constant, simple, complex and complex with power function
     ParserHandler pHandler;
 
     START_TIMER("test_16_points");
-    pHandler.run_tests(16);
+    pHandler.run_expression_tests(16);
     END_TIMER("test_16_points");
 
     START_TIMER("test_32_points");
-    pHandler.run_tests(32);
+    pHandler.run_expression_tests(32);
     END_TIMER("test_32_points");
 
     START_TIMER("test_64_points");
-    pHandler.run_tests(64);
+    pHandler.run_expression_tests(64);
     END_TIMER("test_64_points");
 
     START_TIMER("test_128_points");
-    pHandler.run_tests(128);
+    pHandler.run_expression_tests(128);
     END_TIMER("test_128_points");
 
     START_TIMER("test_256_points");
-    pHandler.run_tests(256);
+    pHandler.run_expression_tests(256);
     END_TIMER("test_256_points");
 
     START_TIMER("test_512_points");
-    pHandler.run_tests(512);
+    pHandler.run_expression_tests(512);
     END_TIMER("test_512_points");
 
     START_TIMER("test_1024_points");
-    pHandler.run_tests(1024);
+    pHandler.run_expression_tests(1024);
     END_TIMER("test_1024_points");
 
     START_TIMER("test_2048_points");
-    pHandler.run_tests(2048);
+    pHandler.run_expression_tests(2048);
     END_TIMER("test_2048_points");
 
-    pHandler.profiler_output();
+    pHandler.profiler_output("exprtk_expressions.yaml");
 }
 
-/* ***************************************************************************************************************************** */
-/*TEST(Parser, exprtk_vector) {
-    typedef exprtk::symbol_table<double> symbol_table_t;
-    typedef exprtk::expression<double>     expression_t;
-    typedef exprtk::parser<double>             parser_t;
 
-    std::string expression_string = "2*v[0] + v[1]^3 + v[0]*(v[2]-v[1]) + 2*pi*v[2]";
+/**
+ * Speed test of selected functions parsing in exprtk:
+ *  - plus (comparative operation for all other)
+ *  - power
+ *  - abs
+ *  - exp
+ *  - log
+ *  - sin
+ *  - asin
+ *  - ternary operator
+ *  - max
+ */
+TEST(Parser, functions) {
+    ParserHandler pHandler;
 
-    double sum = 0.0;
-    std::vector<double> v(3, 0.0);
-    std::vector<std::vector<double>> vv = { {1.1, 1.0, 2.2}, {2.2, 2.0, 3.3}, {3.3, 3.0, 4.4}, {4.4, 4.0, 5.5}, {5.5, 5.0, 6.6} };
-    exprtk::vector_view<double> view = exprtk::make_vector_view(v,v.size());
+    START_TIMER("test_128_points");
+    pHandler.run_function_tests(128);
+    END_TIMER("test_128_points");
 
-    symbol_table_t symbol_table;
-    symbol_table.add_vector("v",view);
-    symbol_table.add_constants();
+    START_TIMER("test_256_points");
+    pHandler.run_function_tests(256);
+    END_TIMER("test_256_points");
 
-    expression_t expression;
-    expression.register_symbol_table(symbol_table);
+    START_TIMER("test_512_points");
+    pHandler.run_function_tests(512);
+    END_TIMER("test_512_points");
 
-    parser_t parser;
-    parser.compile(expression_string,expression);
+    START_TIMER("test_1024_points");
+    pHandler.run_function_tests(1024);
+    END_TIMER("test_1024_points");
 
-    for (auto& new_vec : vv)
-    {
-       view.rebase(new_vec.data()); // update vector
-       sum = expression.value();
-       printf("result: %19.15f\n", sum);
-    }
-
-    //for (unsigned int i=0; i<5; ++i) printf("result: %19.15f\n", res[i]);
-}*/
+    pHandler.profiler_output("exprtk_functions.yaml");
+}
