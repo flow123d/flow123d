@@ -48,7 +48,7 @@ if (FLOW_BUILD_TYPE STREQUAL "AUTO")
   endif()
   
   # try to detect debug/release
-  if ("${DOCKER_VERSION}" MATCHES "dev")
+  if ("${DOCKER_VERSION}" MATCHES "dbg")
     set(FLOW_BUILD_TYPE debug)
     MESSAGE(STATUS "Auto set FLOW_BUILD_TYPE to ${FLOW_BUILD_TYPE}")
   elseif ("${DOCKER_VERSION}" MATCHES "rel")
