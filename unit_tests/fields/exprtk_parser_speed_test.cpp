@@ -5,6 +5,7 @@
 
 #include "system/global_defs.h"
 
+#ifdef FLOW123D_RUN_UNIT_BENCHMARKS
 
 
 #include <cstdlib>
@@ -354,3 +355,5 @@ TEST(Parser, functions) {
 
     pHandler.profiler_output("exprtk_functions.yaml");
 }
+
+#endif // FLOW123D_RUN_UNIT_BENCHMARKS
