@@ -75,6 +75,23 @@ protected:
         }
     }
 
+    double compute_conductivity(ElementAccessor<3> ele)
+    {
+        double conductivity = 0;
+        if (genuchten_on) {
+            for (unsigned int i=0; i<ele->n_sides(); i++)
+            {
+                double phead = ad_->schur_solution[ this->edge_indices_[i] ];
+                conductivity += ad_->soil_model_->conductivity(phead);
+            }
+            conductivity /= ele->n_sides();
+        }
+        else {
+            conductivity = this->ad_->conductivity.value(ele.centre(), ele);
+        }
+        return conductivity;
+    }
+
     void update_water_content(const DHCellAccessor& dh_cell) {
 
         // dof indices for edge pressure must be updated
@@ -107,22 +124,7 @@ protected:
         reset_soil_model(ele.dh_cell());
         cross_section = ad_->cross_section.value(ele.centre(), ele.element_accessor());
 
-        double conductivity, head;
-        if (genuchten_on) {
-            conductivity=0;
-            head=0;
-            for (unsigned int i=0; i<ele.element_accessor()->n_sides(); i++)
-            {
-                double phead = ad_->schur_solution[ this->loc_schur_.row_dofs[i] ];
-                conductivity += ad_->soil_model_->conductivity(phead);
-                head += ad_->schur_solution[ this->loc_schur_.row_dofs[i] ];
-            }
-            conductivity /= ele.n_sides();
-            head /= ele.n_sides();
-        } else {
-            conductivity = ad_->conductivity.value(ele.centre(), ele.element_accessor());
-        }
-
+        double conductivity = compute_conductivity(ele.element_accessor());
         double scale = 1 / cross_section / conductivity;
         this->assemble_sides_scale(ele,scale);
     }
@@ -212,24 +214,12 @@ protected:
 
             sat_val += water_content / wcs;
         }
-
-        double cond_val = 0;
-        if (genuchten_on) {
-            for (unsigned int i=0; i<ele->n_sides(); i++)
-            {
-                double phead = ad_->schur_solution[ this->edge_indices_[i] ];
-                cond_val += ad_->soil_model_->conductivity(phead);
-            }
-        }
-        else {
-            cond_val = this->ad_->conductivity.value(ele.centre(), ele);
-        }
          
         std::vector<LongIdx> p0_dofs;
         dh_cell.cell_with_other_dh(ad_->dh_p_.get()).get_loc_dof_indices(p0_dofs);
 
         ad_->saturation_ptr->get_data_vec()[p0_dofs[0]] = sat_val / ele->n_sides();
-        ad_->conductivity_ptr->get_data_vec()[p0_dofs[0]] = cond_val / ele->n_sides();
+        ad_->conductivity_ptr->get_data_vec()[p0_dofs[0]] = compute_conductivity(ele);
     }
 
     AssemblyDataPtrRichards ad_;
