@@ -11,6 +11,7 @@
 #include <boost/exception/info.hpp>  // for operator<<, error_info::error_in...
 #include <memory>                    // for shared_ptr
 #include "fields/field.hh"           // for Field
+#include "fields/field_fe.hh"           // for FieldFE
 #include "fields/field_values.hh"    // for FieldValue<>::Scalar, FieldValue
 #include "la/vector_mpi.hh"          // for VectorMPI
 #include "flow/darcy_flow_lmh.hh"    // for DarcyLMH, DarcyLMH::EqData
@@ -67,12 +68,18 @@ public:
     public:
         EqData();
         // input fields
-        Field<3, FieldValue<3>::Scalar > water_content_saturated;
+        Field<3, FieldValue<3>::Scalar > water_content_saturated;   // corresponds to the porosity (theta_s = Vw/V = porosity)
         Field<3, FieldValue<3>::Scalar > water_content_residual;
         Field<3, FieldValue<3>::Scalar > genuchten_p_head_scale;
         Field<3, FieldValue<3>::Scalar > genuchten_n_exponent;
 
         //output fields
+        Field<3, FieldValue<3>::Scalar > saturation;
+        Field<3, FieldValue<3>::Scalar > conductivity_out;
+//         FieldFE<3, FieldValue<3>::Scalar > saturation;
+//         FieldFE<3, FieldValue<3>::Scalar > conductivity_out;
+        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> saturation_ptr;
+        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> conductivity_ptr;
 
         // Auxiliary assembly fields.
         //std::unordered_map<unsigned int, unsigned int> *edge_new_local_4_mesh_idx_;

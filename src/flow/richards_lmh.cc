@@ -42,6 +42,15 @@ namespace it=Input::Type;
 
 RichardsLMH::EqData::EqData()
 {
+    *this += saturation.name("saturation")
+            .units(UnitSI::dimensionless())
+            .flags(FieldFlag::equation_result)
+            .description("Saturation.");
+    *this += conductivity_out.name("conductivity_out")
+            .units( UnitSI().m().s(-1) )
+            .flags(FieldFlag::equation_result)
+            .description("Computed isotropic scalar conductivity by the soil model.");
+
     *this += water_content_saturated.name("water_content_saturated")
             .description(R"(Saturated water content (($ \theta_s $)).
                 Relative volume of water in a reference volume of a saturated porous media.)")
@@ -136,6 +145,20 @@ void RichardsLMH::initialize_specific() {
     data_->water_content_previous_it = data_->dh_cr_disc_->create_vector();
     data_->water_content_previous_time = data_->dh_cr_disc_->create_vector();
     data_->capacity = data_->dh_cr_disc_->create_vector();
+
+    ASSERT_PTR(mesh_);
+    data_->mesh = mesh_;
+    data_->set_mesh(*mesh_);
+    data_->saturation_ptr = std::make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
+    data_->saturation_ptr->set_fe_data(data_->dh_p_, 0);
+    data_->saturation.set_mesh(*mesh_);
+    data_->saturation.set_field(mesh_->region_db().get_region_set("ALL"), data_->saturation_ptr);
+    
+    data_->conductivity_ptr = std::make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
+    data_->conductivity_ptr->set_fe_data(data_->dh_p_, 0);
+    data_->conductivity_out.set_mesh(*mesh_);
+    data_->conductivity_out.set_field(mesh_->region_db().get_region_set("ALL"), data_->conductivity_ptr);
+
 
     data_->multidim_assembler = AssemblyBase::create< AssemblyRichards >(data_);
 }

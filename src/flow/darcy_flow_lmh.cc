@@ -339,6 +339,8 @@ void DarcyLMH::initialize() {
             .val<Input::Record>("nonlinear_solver")
             .val<Input::AbstractRecord>("linear_solver");
 
+    initialize_specific();
+    
     // auxiliary set_time call  since allocation assembly evaluates fields as well
     data_changed_ = data_->set_time(time_->step(), LimitSide::right) || data_changed_;
     create_linear_system(rec);
@@ -353,8 +355,6 @@ void DarcyLMH::initialize() {
 
     data_->balance = balance_;
     data_->lin_sys_schur = schur_compl;
-
-    initialize_specific();
 }
 
 void DarcyLMH::initialize_specific()

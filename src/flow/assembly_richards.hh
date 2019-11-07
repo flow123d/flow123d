@@ -198,6 +198,9 @@ protected:
         update_water_content(dh_cell);
         
         ElementAccessor<3> ele = dh_cell.elm();
+
+        double sat_val = 0.0;
+        const double wcs = this->ad_->water_content_saturated.value(ele.centre(), ele);
         
         for (unsigned int i=0; i<ele->n_sides(); i++) {
             
@@ -206,7 +209,27 @@ protected:
             
             solution[this->loc_side_dofs[i]]
                 += edge_source_term - edge_scale * (water_content - water_content_previous_time) / ad_->time_step_;
+
+            sat_val += water_content / wcs;
         }
+
+        double cond_val = 0;
+        if (genuchten_on) {
+            for (unsigned int i=0; i<ele->n_sides(); i++)
+            {
+                double phead = ad_->schur_solution[ this->edge_indices_[i] ];
+                cond_val += ad_->soil_model_->conductivity(phead);
+            }
+        }
+        else {
+            cond_val = this->ad_->conductivity.value(ele.centre(), ele);
+        }
+         
+        std::vector<LongIdx> p0_dofs;
+        dh_cell.cell_with_other_dh(ad_->dh_p_.get()).get_loc_dof_indices(p0_dofs);
+
+        ad_->saturation_ptr->get_data_vec()[p0_dofs[0]] = sat_val / ele->n_sides();
+        ad_->conductivity_ptr->get_data_vec()[p0_dofs[0]] = cond_val / ele->n_sides();
     }
 
     AssemblyDataPtrRichards ad_;
