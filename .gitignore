@@ -84,3 +84,7 @@ bin/pythonenv.sh
 
 # build dirs
 /build-*
+
+# IDEs
+/.vscode
+/.clang-format
