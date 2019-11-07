@@ -1,6 +1,6 @@
 /*!
  *
-﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
  * 
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License version 3 as published by the
@@ -35,6 +35,7 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/unordered_map.hpp>
+#include <nlohmann/json.hpp>
 
 #include "system/file_path.hh"
 #include "system/python_loader.hh"
@@ -640,7 +641,11 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
 
     // output header
     property_tree::ptree root, children;
-    output_header (root, mpi_size);
+    nlohmann::json jsonRoot = nlohmann::json::object();
+
+    output_header(root, mpi_size);
+    output_header(jsonRoot, mpi_size);
+    std::cout << jsonRoot.dump(4) << std::endl;
 
     // recursively add all timers info
     // define lambda function which reduces timer from multiple processors
@@ -820,6 +825,34 @@ void Profiler::output_header (property_tree::ptree &root, int mpi_size) {
     root.put ("run-started-at",     start_time_string);
     root.put ("run-finished-at",    end_time_string);
 }
+
+// void Profiler::output_header (json &root, int mpi_size) {
+    // time_t end_time = time(NULL);
+
+    // const char format[] = "%x %X";
+    // char start_time_string[BUFSIZ] = {0};
+    // strftime(start_time_string, sizeof (start_time_string) - 1, format, localtime(&start_time));
+
+    // char end_time_string[BUFSIZ] = {0};
+    // strftime(end_time_string, sizeof (end_time_string) - 1, format, localtime(&end_time));
+
+    // generate current run details
+    // root["program-name"] =        flow_name_;
+    // root["program-version"] =     flow_version_;
+    // root["program-branch"] =      flow_branch_;
+    // root["program-revision"] =    flow_revision_;
+    // root["program-build"] =       flow_build_;
+    // root["timer-resolution"] =    Profiler::get_resolution();
+
+    // // print some information about the task at the beginning
+    // root["task-description"] =    task_description_;
+    // root["task-size"] =           task_size_;
+
+    // //print some information about the task at the beginning
+    // root["run-process-count"] =   mpi_size;
+    // root["run-started-at"] =      start_time_string;
+    // root["run-finished-at"] =     end_time_string;
+// }
 
 #ifdef FLOW123D_HAVE_PYTHON
 void Profiler::transform_profiler_data (const string &output_file_suffix, const string &formatter) {

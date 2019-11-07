@@ -58,11 +58,11 @@ namespace boost { template <class T> struct hash; }
 #include <boost/ref.hpp>
 #include <boost/tuple/detail/tuple_basic.hpp>  // for get
 #include <boost/unordered/unordered_map.hpp>   // for unordered_map
+#include <nlohmann/json.hpp>
 
 #include "time_point.hh"
 #include "petscsys.h" 
 #include "simple_allocator.hh"
-
 
 // namespace alias
 namespace property_tree = boost::property_tree;
@@ -718,6 +718,7 @@ protected:
      * into ptree object
      */
     void output_header (property_tree::ptree &root, int mpi_size);
+    void output_header (nlohmann::json &root, int mpi_size);
 
     /**
      * Open a new file for profiler output with default name based on the
