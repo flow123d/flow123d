@@ -45,7 +45,9 @@ RichardsLMH::EqData::EqData()
     *this += saturation.name("saturation")
             .units(UnitSI::dimensionless())
             .flags(FieldFlag::equation_result)
-            .description("Saturation.");
+            .description(R"(Saturation.
+                It is a fraction of water volume to void volume
+                (equals fraction of water content to porosity).)");
     *this += conductivity_out.name("conductivity_out")
             .units( UnitSI().m().s(-1) )
             .flags(FieldFlag::equation_result)
