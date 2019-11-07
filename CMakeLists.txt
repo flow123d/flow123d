@@ -286,6 +286,9 @@ flow_define(COMPILER_FLAGS_ ${CMAKE_CXX_FLAGS})
 # store current source dir (for profiler purposes)
 flow_define(SOURCE_DIR ${CMAKE_SOURCE_DIR})
 
+set(JSON_BuildTests OFF CACHE INTERNAL "")
+add_subdirectory("${CMAKE_SOURCE_DIR}/third_party/json-3.7.1")
+
 ######################################################################### find libraries
 #
 # find boost or use our own
@@ -871,7 +874,12 @@ if( PETSC_FOUND )
   
   ### add target for flow123d binary
   add_executable(bin/flow123d src/main.cc)
-  target_link_libraries(bin/flow123d  flow123d_lib  ${PETSC_ADDITIONAL_LIBS} ${PYTHON_LIBRARIES} ${Boost_LIBRARIES})     # set libraries linked to main binary (order matter)
+  target_link_libraries(bin/flow123d 
+        flow123d_lib 
+        ${PETSC_ADDITIONAL_LIBS}
+        ${PYTHON_LIBRARIES}
+        ${Boost_LIBRARIES}
+  )     # set libraries linked to main binary (order matter)
   add_dependencies(bin/flow123d update_source_tree rev_num_always)      # make mpiexec_link when flow123d executable is built
   # explicitly say that source file depends on rev_num_always in order to have actual revision number
   set_source_files_properties(src/main.cc OBJECT_DEPENDS ${CONFIG_FILE_REV_NUM}) 
