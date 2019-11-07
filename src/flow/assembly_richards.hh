@@ -81,7 +81,7 @@ protected:
         if (genuchten_on) {
             for (unsigned int i=0; i<ele->n_sides(); i++)
             {
-                double phead = ad_->schur_solution[ this->edge_indices_[i] ];
+                double phead = ad_->schur_solution[ this->loc_schur_.row_dofs[i] ];
                 conductivity += ad_->soil_model_->conductivity(phead);
             }
             conductivity /= ele->n_sides();
