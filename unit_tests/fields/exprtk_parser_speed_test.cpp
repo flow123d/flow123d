@@ -167,8 +167,6 @@ public:
         parser_t parser;
         parser.compile(expression_string,expression);
 
-        expression.value();
-
         START_TIMER("exprtk_parse_vector_fast");
         for (int j=0; j<nLoops; ++j) {
             expression.value();
