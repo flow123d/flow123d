@@ -177,9 +177,7 @@ DarcyLMH::EqData::EqData()
 DarcyLMH::DarcyLMH(Mesh &mesh_in, const Input::Record in_rec)
 : DarcyFlowInterface(mesh_in, in_rec),
     output_object(nullptr),
-    solution(nullptr),
-    data_changed_(false),
-    par_to_all(nullptr)
+    data_changed_(false)
 {
 
     START_TIMER("Darcy constructor");
@@ -280,8 +278,6 @@ void DarcyLMH::initialize() {
 
     init_eq_data();
     output_object = new DarcyFlowMHOutput(this, input_record_);
-
-    mh_dh.reinit(mesh_);
 
     { // construct pressure, velocity and piezo head fields
 		ele_flux_ptr = std::make_shared< FieldFE<3, FieldValue<3>::VectorFixed> >();
@@ -428,8 +424,6 @@ void DarcyLMH::read_initial_condition()
     data_->previous_time_schur_solution.copy_from(data_->schur_solution);
 
     initial_condition_postprocess();
-    
-    solution_changed_for_scatter=true;
 }
 
 void DarcyLMH::initial_condition_postprocess()
@@ -619,9 +613,6 @@ void DarcyLMH::solve_nonlinear()
         int result = time_->set_upper_constraint(time_->dt() * mult, "Darcy adaptivity.");
         //DebugOut().fmt("time adaptivity, res: {} it: {} m: {} dt: {} edt: {}\n", result, nonlinear_iteration_, mult, time_->dt(), time_->estimate_dt());
     }
-
-    solution_changed_for_scatter=true;
-
 }
 
 
@@ -652,25 +643,6 @@ void DarcyLMH::output_data() {
 double DarcyLMH::solution_precision() const
 {
     return data_->lin_sys_schur->get_solution_precision();
-}
-
-
-
-void  DarcyLMH::get_solution_vector(double * &vec, unsigned int &vec_size)
-{
-    // TODO: make class for vectors (wrapper for PETSC or other) derived from LazyDependency
-    // and use its mechanism to manage dependency between vectors
-    if (solution_changed_for_scatter) {
-
-        // scatter solution to all procs
-        VecScatterBegin(par_to_all, data_->full_solution.petsc_vec(), sol_vec, INSERT_VALUES, SCATTER_FORWARD);
-        VecScatterEnd(  par_to_all, data_->full_solution.petsc_vec(), sol_vec, INSERT_VALUES, SCATTER_FORWARD);
-        solution_changed_for_scatter=false;
-    }
-
-    vec = solution;
-    vec_size = this->size;
-    OLD_ASSERT(vec != NULL, "Requested solution is not allocated!\n");
 }
 
 
@@ -992,7 +964,6 @@ void DarcyLMH::create_linear_system(Input::AbstractRecord in_rec) {
         }
 
         END_TIMER("preallocation");
-        make_serial_scatter();
 }
 
 void DarcyLMH::postprocess()
@@ -1295,65 +1266,11 @@ void DarcyLMH::print_matlab_matrix(std::string matlab_file)
 // DESTROY WATER MH SYSTEM STRUCTURE
 //=============================================================================
 DarcyLMH::~DarcyLMH() {
-    if (par_to_all != nullptr) chkerr(VecScatterDestroy(&par_to_all));
-
-	if (solution != NULL) {
-	    chkerr(VecDestroy(&sol_vec));
-		delete [] solution;
-	}
-
 	if (output_object)	delete output_object;
 
     if(time_ != nullptr)
         delete time_;
     
-}
-
-
-// ================================================
-// PARALLLEL PART
-//
-
-
-void DarcyLMH::make_serial_scatter() {
-    START_TIMER("prepare scatter");
-    // prepare Scatter form parallel to sequantial in original numbering
-    {
-            IS is_loc;
-            int i, *loc_idx; //, si;
-
-            // create local solution vector
-            solution = new double[size];
-            VecCreateSeqWithArray(PETSC_COMM_SELF,1, size, solution,
-                    &(sol_vec));
-
-            // create seq. IS to scatter par solutin to seq. vec. in original order
-            // use essentialy row_4_id arrays
-            loc_idx = new int [size];
-            i = 0;
-            for (auto ele : mesh_->elements_range()) {
-            	for (unsigned int si=0; si<ele->n_sides(); si++) {
-                    loc_idx[i++] = mh_dh.side_row_4_id[ mh_dh.side_dof( ele.side(si) ) ];
-                }
-            }
-            for (auto ele : mesh_->elements_range()) {
-                loc_idx[i++] = mh_dh.row_4_el[ ele.idx() ];
-            }
-            for(unsigned int i_edg=0; i_edg < mesh_->n_edges(); i_edg++) {
-                loc_idx[i++] = mh_dh.row_4_edge[i_edg];
-            }
-            OLD_ASSERT( i==size,"Size of array does not match number of fills.\n");
-            //DBGPRINT_INT("loc_idx",size,loc_idx);
-            ISCreateGeneral(PETSC_COMM_SELF, size, loc_idx, PETSC_COPY_VALUES, &(is_loc));
-            delete [] loc_idx;
-            VecScatterCreate(data_->full_solution.petsc_vec(), is_loc, sol_vec,
-                    PETSC_NULL, &par_to_all);
-            chkerr(ISDestroy(&(is_loc)));
-    }
-    solution_changed_for_scatter=true;
-
-    END_TIMER("prepare scatter");
-
 }
 
 

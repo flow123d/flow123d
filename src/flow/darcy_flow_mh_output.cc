@@ -516,10 +516,6 @@ void DarcyFlowMHOutput::compute_l2_difference() {
     }
 
     //diff_data.ele_flux = &( ele_flux );
-    
-    unsigned int solution_size;
-    darcy_flow->get_solution_vector(diff_data.solution, solution_size);
-
 
     for (DHCellAccessor dh_cell : diff_data.data_->dh_->own_range()) {
 

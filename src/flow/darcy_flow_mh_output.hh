@@ -173,7 +173,6 @@ protected:
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> vel_diff_ptr;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> div_diff_ptr;
 
-        double * solution;
         std::shared_ptr<SubDOFHandlerMultiDim> dh_;
 
         std::vector<int> velocity_mask;

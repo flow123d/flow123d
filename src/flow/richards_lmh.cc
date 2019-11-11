@@ -209,7 +209,6 @@ void RichardsLMH::assembly_linear_system()
 
     data_->is_linear = data_->genuchten_p_head_scale.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
 
-    bool is_steady = zero_time_term();
     //DebugOut() << "Assembly linear system\n";
         START_TIMER("full assembly");
 //         if (typeid(*schur0) != typeid(LinSys_BDDC)) {
@@ -228,12 +227,4 @@ void RichardsLMH::assembly_linear_system()
 
         lin_sys_schur().finish_assembly();
         lin_sys_schur().set_matrix_changed();
-
-
-        if (! is_steady) {
-            START_TIMER("fix time term");
-            //DebugOut() << "setup time term\n";
-            // assembly time term and rhs
-            solution_changed_for_scatter=true;
-        }
 }
