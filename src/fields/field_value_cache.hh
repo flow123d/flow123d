@@ -38,7 +38,7 @@ public:
     FieldValueCache();
 
     /// Constructor
-    FieldValueCache(EvalPoints eval_points);
+    FieldValueCache(EvalPoints eval_points, unsigned int n_cache_points);
 
     /// Destructor
     ~FieldValueCache();

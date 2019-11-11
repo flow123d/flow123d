@@ -32,8 +32,8 @@ FieldValueCache<Value>::FieldValueCache()
 : data_(0, Value::NRows_, Value::NCols_) {}
 
 template<class Value>
-FieldValueCache<Value>::FieldValueCache(EvalPoints eval_points)
-: data_(ElementCacheMap::n_cached_elements * eval_points.size(), Value::NRows_, Value::NCols_) {
+FieldValueCache<Value>::FieldValueCache(EvalPoints eval_points, unsigned int n_cache_points)
+: data_(n_cache_points * eval_points.size(), Value::NRows_, Value::NCols_) {
 	dim_ = eval_points.point_dim();
 }
 
