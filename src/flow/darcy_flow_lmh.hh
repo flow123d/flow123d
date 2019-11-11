@@ -161,7 +161,7 @@ public:
         // for time term assembly
         double time_step_;
         
-        LinSys *lin_sys_schur;
+        std::shared_ptr<LinSys> lin_sys_schur;  //< Linear system of the 2. Schur complement.
         VectorMPI schur_solution;               //< 2. Schur complement solution
         VectorMPI previous_schur_solution;      //< 2. Schur complement previous solution (iterative)
         VectorMPI previous_time_schur_solution; //< 2. Schur complement previous solution (time)
@@ -280,6 +280,10 @@ protected:
     /// Get vector of all DOF indices of given component (0..side, 1..element, 2..edge)
     std::vector<int> get_component_indices_vec(unsigned int component) const;
 
+    /// Getter for the linear system of the 2. Schur complement.
+    LinSys& lin_sys_schur()
+    { return *(data_->lin_sys_schur); }
+
     bool solution_changed_for_scatter;
     //Vec velocity_vector;
     MH_DofHandler mh_dh;    // provides access to seq. solution fluxes and pressures on sides
@@ -300,8 +304,6 @@ protected:
 	unsigned int min_n_it_;
 	unsigned int max_n_it_;
 	unsigned int nonlinear_iteration_; //< Actual number of completed nonlinear iterations, need to pass this information into assembly.
-
-    LinSys *schur_compl;    //< 2. Schur complement of MH Linear System (direct assembly)
     
 	// gather of the solution
 	Vec sol_vec;			                 //< vector over solution array

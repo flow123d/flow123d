@@ -217,17 +217,17 @@ void RichardsLMH::assembly_linear_system()
 //             schur_compl->start_add_assembly();
 //         }
         
-        schur_compl->start_add_assembly();
+        lin_sys_schur().start_add_assembly();
             
         data_->time_step_ = time_->dt();
         
-        schur_compl->mat_zero_entries();
-        schur_compl->rhs_zero_entries();
+        lin_sys_schur().mat_zero_entries();
+        lin_sys_schur().rhs_zero_entries();
 
         assembly_mh_matrix( data_->multidim_assembler ); // fill matrix
 
-        schur_compl->finish_assembly();
-        schur_compl->set_matrix_changed();
+        lin_sys_schur().finish_assembly();
+        lin_sys_schur().set_matrix_changed();
 
 
         if (! is_steady) {
