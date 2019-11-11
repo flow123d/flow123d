@@ -72,8 +72,8 @@ TEST_F(FieldEval, eval_3d) {
 
     /// this can be done at initialization of the equation
 	EvalPoints feval;
-    Quadrature<3> *q_bulk = new QGauss<3>(2);
-    Quadrature<2> *q_side = new QGauss<2>(2);
+    Quadrature *q_bulk = new QGauss(3, 2);
+    Quadrature *q_side = new QGauss(2, 2);
     EvalSubset bulk_points = feval.add_bulk<3>(*q_bulk );
     EvalSubset side_points = feval.add_side<3>(*q_side );
     DHCellAccessor dh_cell(dh.get(), 3);

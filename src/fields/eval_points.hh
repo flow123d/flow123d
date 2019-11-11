@@ -28,7 +28,7 @@
 #include "system/asserts.hh"
 
 class Side;
-template <unsigned int dim> class Quadrature;
+class Quadrature;
 template <int spacedim> class ElementAccessor;
 
 
@@ -63,15 +63,21 @@ public:
      * Returns an object referencing to the EvalPoints and list of its points.
      */
     template <unsigned int dim>
-    EvalSubset add_bulk(const Quadrature<dim> &);
+    EvalSubset add_bulk(const Quadrature &);
 
     /// The same as add_bulk but for points on sides.
     template <unsigned int dim>
-	EvalSubset add_side(const Quadrature<dim-1> &);
+	EvalSubset add_side(const Quadrature &);
 
 private:
+	/// Undefined dimension of new (empty) EvalPoints object
+	static const unsigned int undefined_dim = 10;
+
     /// Adds coords of local point if point doesn't exist in local_points_ vector, returns its index in vector.
     unsigned int add_local_point(arma::vec coords);
+
+    /// Check dimension of EvalSubset object based on Quadrature, all subsets must be of same dimension.
+    unsigned int check_dim(unsigned int quad_dim, unsigned int obj_dim);
 
     std::vector<double> local_points_;  ///< Local coords of points vector
     unsigned int dim_;                  ///< Dimension of local points
