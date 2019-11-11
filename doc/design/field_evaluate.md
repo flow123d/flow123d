@@ -104,7 +104,7 @@ In principle this is just a table of items of type Value with dimensions: n_cach
 **Example**
 ```
     // still in class Assembly<dim> definition
-   this->mass_fields.cache_allocate(this->mass_eval, );
+   this->mass_fields.cache_allocate(this->mass_eval);
    this->side_fields.cache_allocate(this->side_eval);
 } // end of Assembly<dim>
 ```
@@ -117,8 +117,8 @@ This class synchronize the cached elements between (all) fields of single equati
 The implementation use: table cache_idx -> el_idx, hash mapping el_idx -> cache_idx, list of cache lines that schould be updated.
 ```
 void Assembly::mass_assembly(DHCellAccessor cell) {
-    // map the element to its cache line
-    el_cache = this->element_cache_map(cell.element());    
+    // fill element cache index in the DHCellAccessor
+    DHCellAccessor el_cache = this->element_cache_map(cell);    
 
     // More elements can be cached in the generic assembly loop as 
     // the cache prefetching.
@@ -152,8 +152,17 @@ Two major algorithms are in use:
 
 ### 5.3 Cache read
 ```
+    /*
+    // Asumme following types:
+    EvalSubset this->mass_eval;
+    EvalSubset this->side_eval;
+    EvalSubset this->ngh_side_eval;
+    */
+    
+    ...
+    DHCellAccessor cache_cell = this->element_cache_map(cell);    
     // Bulk integral, no sides, no permutations.
-    for(BulkPoint q_point: this->mass_eval.points(el_cache)) {
+    for(BulkPoint q_point: this->mass_eval.points(cache_cell)) {
         // Extracting the cached values.
         double cs = cross_section(q_point);        
         
@@ -165,10 +174,10 @@ Two major algorithms are in use:
 
     // Side integrals.
     // FieldFE<..> conc;
-    for (auto side : cell.side_range()) {        
-	for(auto el_ngh_side : side.edge_sides()) {            
+    for (DHCellSide side : cache_cell.side_range()) {        
+	for(DHCellSide el_ngh_side : side.edge_sides()) {            
    	    // vector of local side quadrature points in the correct side permutation
-	    auto side_points = this->side_eval.points(side->side())
+	    Range<SidePoint> side_points = this->side_eval.points(side)
 	    for (SidePoint p : side_points) {
 	    	ngh_p = p.permute(el_ngh_side);
 	        loc_mat += cross_section(p) * sigma(p) * 
@@ -179,12 +188,13 @@ Two major algorithms are in use:
     }
     
     // Dimension coupling
-    for (auto ngh_side cell.neighb_sides()) {        
+    // TODO: update
+    for (DHNeighbSide ngh_side cache_cell.neighb_sides()) {        
         // vector of local side quadrature points in the correct side permutation
-        auto ngh_side_points = this->ngh_side_eval.points(ngh_side)
+        Range<BulkPoint> side_points = this->ngh_side_eval.points(ngh_side);
         for (auto p : side_points) {
-            side_avg += cross_section(side, p) * sigma(side, p) * 
-                ( velocity(side, p) + velocity(el_ngh_side, p)) * p.normal();
+            side_avg += cross_section(el_ngh_p) * sigma(el_ngh_p) * 
+                ( velocity(side_p) + velocity(el_ngh_p)) * side_p.normal();
         }
     }
 }
