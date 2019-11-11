@@ -68,7 +68,7 @@ public:
     AssemblyDG(std::shared_ptr<EqDataDG> data, TransportDG<Model> &model)
     : fe_(make_shared< FE_P_disc<dim> >(data->dg_order)), fe_low_(make_shared< FE_P_disc<dim-1> >(data->dg_order)),
       fe_rt_(new FE_RT0<dim>), fe_rt_low_(new FE_RT0<dim-1>),
-      quad_(new QGauss<dim>(2*data->dg_order)), quad_low_(new QGauss<dim-1>(2*data->dg_order)),
+      quad_(new QGauss(dim, 2*data->dg_order)), quad_low_(new QGauss(dim-1, 2*data->dg_order)),
       mapping_(new MappingP1<dim,3>), mapping_low_(new MappingP1<dim-1,3>),
       model_(model), data_(data), fv_rt_(*mapping_, *quad_, *fe_rt_, update_values | update_gradients),
       fe_values_(*mapping_, *quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points),
@@ -799,8 +799,12 @@ private:
         arma::mat map_mat = mapping_->element_map(cell);
         vector<arma::vec3> point_list;
         point_list.resize(fv.n_points());
-        for (unsigned int k=0; k<fv.n_points(); k++)
-        	point_list[k] = mapping_->project_unit_to_real(RefElement<dim>::local_to_bary(fv.get_quadrature()->point(k)), map_mat);
+        const Quadrature &quad = *fv.get_quadrature();
+        for (unsigned int k=0; k<fv.n_points(); k++) {
+            Armor::vec<dim> q_pt = quad.point<dim>(k);
+            point_list[k] = mapping_->project_unit_to_real(RefElement<dim>::local_to_bary(q_pt.arma()), map_mat);
+        }
+
         model_.velocity_field_ptr()->value_list(point_list, cell, velocity);
     }
 
@@ -821,8 +825,12 @@ private:
         arma::mat map_mat = mapping_low_->element_map(cell);
         vector<arma::vec3> point_list;
         point_list.resize(fv.n_points());
-        for (unsigned int k=0; k<fv.n_points(); k++)
-        	point_list[k] = mapping_low_->project_unit_to_real(RefElement<dim-1>::local_to_bary(fv.get_quadrature()->point(k)), map_mat);
+        const Quadrature &quad = *fv.get_quadrature();
+        for (unsigned int k=0; k<fv.n_points(); k++) {
+            Armor::vec<dim-1> q_pt = quad.point<dim-1>(k);
+            point_list[k] = mapping_low_->project_unit_to_real(RefElement<dim-1>::local_to_bary(q_pt.arma()), map_mat);
+
+        }
         model_.velocity_field_ptr()->value_list(point_list, cell, velocity);
     }
 
@@ -831,8 +839,8 @@ private:
     shared_ptr<FiniteElement<dim-1>> fe_low_;   ///< Finite element for the solution of the advection-diffusion equation (dim-1).
     FiniteElement<dim> *fe_rt_;                 ///< Finite element for the water velocity field.
     FiniteElement<dim-1> *fe_rt_low_;           ///< Finite element for the water velocity field (dim-1).
-    Quadrature<dim> *quad_;                     ///< Quadrature used in assembling methods.
-    Quadrature<dim-1> *quad_low_;               ///< Quadrature used in assembling methods (dim-1).
+    Quadrature *quad_;                     ///< Quadrature used in assembling methods.
+    Quadrature *quad_low_;               ///< Quadrature used in assembling methods (dim-1).
     MappingP1<dim,3> *mapping_;                 ///< Auxiliary mapping of reference elements.
     MappingP1<dim-1,3> *mapping_low_;           ///< Auxiliary mapping of reference elements (dim-1).
 
