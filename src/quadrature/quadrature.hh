@@ -118,7 +118,7 @@ public:
      * higher dimensional quadrature considering side and permutation index.
      */
     template<unsigned int bulk_dim>
-    Quadrature make_from_side(unsigned int sid, unsigned int pid);
+    Quadrature make_from_side(unsigned int sid, unsigned int pid) const;
     
 
 protected:
