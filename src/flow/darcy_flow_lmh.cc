@@ -140,8 +140,6 @@ const it::Record & DarcyLMH::get_input_type() {
                 "Settings for computing mass balance.")
         .declare_key("time", TimeGovernor::get_input_type(), it::Default("{}"),
                 "Time governor settings for the unsteady Darcy flow model.")
-		.declare_key("n_schurs", it::Integer(0,2), it::Default("2"),
-				"Number of Schur complements to perform when solving MH system.")
 		.declare_key("mortar_method", get_mh_mortar_selection(), it::Default("\"None\""),
 				"Method for coupling Darcy flow between dimensions on incompatible meshes. [Experimental]" )
 		.close();
@@ -199,7 +197,6 @@ DarcyLMH::DarcyLMH(Mesh &mesh_in, const Input::Record in_rec)
     data_->is_linear=true;
 
     size = mesh_->n_elements() + mesh_->n_sides() + mesh_->n_edges();
-    n_schur_compls = in_rec.val<int>("n_schurs");
     data_->mortar_method_= in_rec.val<MortarMethod>("mortar_method");
     if (data_->mortar_method_ != NoMortar) {
         mesh_->mixed_intersections();
@@ -690,8 +687,6 @@ void DarcyLMH::assembly_mh_matrix(MultidimAssembly& assembler)
     // DebugOut() << "assembly_mh_matrix \n";
     // set auxiliary flag for switchting Dirichlet like BC
     data_->force_bc_switch = data_->use_steady_assembly_ && (nonlinear_iteration_ == 0);
-    data_->n_schur_compls = n_schur_compls;
-    
 
     balance_->start_flux_assembly(data_->water_balance_idx);
     balance_->start_source_assembly(data_->water_balance_idx);
@@ -716,9 +711,6 @@ void DarcyLMH::assembly_mh_matrix(MultidimAssembly& assembler)
 void DarcyLMH::allocate_mh_matrix()
 {
     START_TIMER("DarcyLMH::allocate_mh_matrix");
-
-    // set auxiliary flag for switchting Dirichlet like BC
-    data_->n_schur_compls = n_schur_compls;
 
     // to make space for second schur complement, max. 10 neighbour edges of one el.
     double zeros[100000];
@@ -917,10 +909,6 @@ void DarcyLMH::create_linear_system(Input::AbstractRecord in_rec) {
 //         else
         if (in_rec.type() == LinSys_PETSC::get_input_type()) {
         // use PETSC for serial case even when user wants BDDC
-            if (n_schur_compls > 2) {
-            	WarningOut() << "Invalid number of Schur Complements. Using 2.";
-                n_schur_compls = 2;
-            }
 
             data_->lin_sys_schur = std::make_shared<LinSys_PETSC>( &(*data_->dh_cr_->distr()) );
             lin_sys_schur().set_from_input(in_rec);

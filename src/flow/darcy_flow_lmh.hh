@@ -294,7 +294,6 @@ protected:
     DarcyFlowMHOutput *output_object;
 
 	int size;				    // global size of MH matrix
-	int  n_schur_compls;  	    // number of shur complements to make
 	double  *solution; 			// sequantial scattered solution vector
 
 	bool data_changed_;
