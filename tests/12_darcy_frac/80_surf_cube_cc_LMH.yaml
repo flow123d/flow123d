@@ -14,7 +14,6 @@ problem: !Coupling_Sequential
         r_tol: 1.0e-10
         a_tol: 1.0e-10
         max_it: 1000
-    n_schurs: 2
 #    mortar_method: P0
     input_fields:
       - region: .3d_top
