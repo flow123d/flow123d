@@ -110,6 +110,9 @@ private:
     /// If true, we do output of profiling information.
     bool use_profiler;
 
+    /// location of the profiler report file
+    string profiler_path;
+
     /// If true, preserves output of balance in YAML format.
     bool yaml_balance_output_;
 
