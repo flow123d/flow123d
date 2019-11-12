@@ -575,9 +575,7 @@ void save_nonmpi_metric (nlohmann::json &node, T * ptr, string name) {
 }
 
 std::shared_ptr<std::ostream> Profiler::get_default_output_stream() {
-    char filename[PATH_MAX];
-    strftime(filename, sizeof (filename) - 1, "profiler_info_%y.%m.%d_%H-%M-%S.log.json", localtime(&start_time));
-     json_filepath = FilePath(string(filename), FilePath::output_file);
+     json_filepath = FilePath("profiler_info.log.json", FilePath::output_file);
 
     //LogOut() << "output into: " << json_filepath << std::endl;
     return make_shared<ofstream>(json_filepath.c_str());
@@ -672,14 +670,21 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
 }
 
 
-void Profiler::output(MPI_Comm comm) {
-    int mpi_rank;
-    chkerr( MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank) );
+void Profiler::output(MPI_Comm comm, string profiler_path /* = "" */) {
+  int mpi_rank;
+  chkerr(MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank));
+
     if (mpi_rank == 0) {
-        output(comm, *get_default_output_stream());
+        if (profiler_path == "") {
+          output(comm, *get_default_output_stream());
+        } else {
+          json_filepath = profiler_path;
+          std::shared_ptr<std::ostream> os = make_shared<ofstream>(profiler_path.c_str());
+          output(comm, *os);
+        }
     } else {
-        ostringstream os;
-        output(comm, os );
+      ostringstream os;
+      output(comm, os);
     }
 }
 
@@ -754,8 +759,14 @@ void Profiler::output(ostream &os) {
 }
 
 
-void Profiler::output() {
-    output(*get_default_output_stream());
+void Profiler::output(string profiler_path /* = "" */) {
+    if(profiler_path == "") {
+        output(*get_default_output_stream());
+    } else {
+        json_filepath = profiler_path;
+        std::shared_ptr<std::ostream> os = make_shared<ofstream>(profiler_path.c_str());
+        output(*os);
+    }
 }
 
 void Profiler::output_header (nlohmann::json &root, int mpi_size) {
@@ -789,7 +800,7 @@ void Profiler::output_header (nlohmann::json &root, int mpi_size) {
 #ifdef FLOW123D_HAVE_PYTHON
 void Profiler::transform_profiler_data (const string &output_file_suffix, const string &formatter) {
     
-    if (json_filepath=="") return;
+    if (json_filepath == "") return;
 
     // error under CYGWIN environment : more details in this repo 
     // https://github.com/x3mSpeedy/cygwin-python-issue
