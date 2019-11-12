@@ -58,6 +58,17 @@ public:
         return dim_;
     }
 
+    /// Return appropriate index from block_indices_.
+    inline int block_idx(unsigned int idx) const {
+        ASSERT_LT_DBG(idx, block_indices_.size());
+    	return block_indices_[idx];
+    }
+
+    /// Return size of block_indices_.
+    inline unsigned int n_block_indices() const {
+        return block_indices_.size();
+    }
+
     /**
      * Registers point set from quadrature.
      * Returns an object referencing to the EvalPoints and list of its points.
@@ -73,15 +84,17 @@ private:
 	/// Undefined dimension of new (empty) EvalPoints object
 	static const unsigned int undefined_dim = 10;
 
-    /// Adds coords of local point if point doesn't exist in local_points_ vector, returns its index in vector.
+    /// Adds coords of local point to local_points_ vector, returns its index in vector.
     unsigned int add_local_point(arma::vec coords);
 
     /// Check dimension of EvalSubset object based on Quadrature, all subsets must be of same dimension.
     unsigned int check_dim(unsigned int quad_dim, unsigned int obj_dim);
 
     std::vector<double> local_points_;  ///< Local coords of points vector
+    std::vector<int> block_indices_;    ///< Indices of data blocks in local_points_ vector, size = n_blocks + 1
     unsigned int dim_;                  ///< Dimension of local points
 
+    friend class EvalSubSet;
 };
 
 

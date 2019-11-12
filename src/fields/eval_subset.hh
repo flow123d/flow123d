@@ -36,6 +36,12 @@ public:
     /// Constructor
 	EvalSubset() : eval_points_(nullptr) {}
 
+    /// Constructor of bulk subset
+	EvalSubset(const EvalPoints *eval_points);
+
+    /// Constructor of side subset
+	EvalSubset(const EvalPoints *eval_points, unsigned int n_permutations);
+
     /// Getter of composed quadrature
     inline const EvalPoints &eval_points() const {
         return *eval_points_;
@@ -48,11 +54,14 @@ public:
 
     /// Return number of permutations
     inline const unsigned int n_permutations() const {
-        return point_indices_.size();
+        return block_indices_.size();
     }
 
     /// Return vector of point indices of given permutation
-    const std::vector<int> &get_point_indices(unsigned int permutation) const;
+    inline int get_block_idx(unsigned int block_idx) const {
+        ASSERT_LT( block_idx, block_indices_.size() );
+        return block_indices_[block_idx];
+    }
 
     /// Returns range of bulk local points for appropriate cell accessor
     Range< BulkPoint > points(const DHCellAccessor &cell) const;
@@ -65,8 +74,8 @@ private:
     static const EvalSubset dummy_subset;
     /// Pointer to composed quadrature
     const EvalPoints *eval_points_;
-    /// Indices into full set of local indices in the composed quadrature, for every possible permutation.
-    std::vector< std::vector<int> > point_indices_;
+    /// Indices of data blocks in EvalPoints object for all permutations.
+    std::vector<int> block_indices_;
     /// Number of sides (value 0 indicates bulk set)
     unsigned int n_sides_;
 
@@ -89,11 +98,6 @@ public:
     /// Getter of composed quadrature
     inline const EvalPoints &eval_points() const {
         return subset_.eval_points();
-    }
-
-    /// Index of point within EvalPoints
-    inline unsigned int point_set_idx() const {
-        return subset_.point_indices_[0][local_point_idx_];
     }
 
     /// Local coordinates within element
@@ -140,11 +144,6 @@ public:
     /// Getter of evaluation points
     inline const EvalPoints &eval_points() const {
         return *subset_.eval_points_;
-    }
-
-    // Index of point within EvalPoints
-    inline unsigned int point_set_idx() const {
-        return subset_.point_indices_[permutation_idx()][local_point_idx_];
     }
 
     // Local coordinates within element

@@ -41,9 +41,9 @@ template<class Value>
 FieldValueCache<Value>::~FieldValueCache() {}
 
 template<class Value>
-void FieldValueCache<Value>::mark_used(EvalSubset sub_quad) {
-    auto local_point_vec = sub_quad.get_point_indices(0);
-    for (auto p_idx : local_point_vec) used_points_.insert(p_idx);
+void FieldValueCache<Value>::mark_used(EvalSubset sub_set) {
+    for (unsigned int i=0; i<sub_set.n_permutations(); ++i)
+	    used_points_.insert(sub_set.get_block_idx(i));
 }
 
 

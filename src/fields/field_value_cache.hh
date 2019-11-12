@@ -44,7 +44,7 @@ public:
     ~FieldValueCache();
 
     /// Marks the used local points
-    void mark_used(EvalSubset sub_quad);
+    void mark_used(EvalSubset sub_set);
 
     /// Getter for used_points
     inline const std::set<int> &used_points() const {

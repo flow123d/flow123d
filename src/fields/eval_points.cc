@@ -25,55 +25,47 @@
 
 EvalPoints::EvalPoints()
 : dim_(EvalPoints::undefined_dim)
-{}
+{
+    block_indices_.push_back(0);
+}
 
 template <unsigned int dim>
 EvalSubset EvalPoints::add_bulk(const Quadrature &quad)
 {
-	EvalSubset bulk_set;
-
 	check_dim(quad.dim(), dim);
-    bulk_set.eval_points_ = this;
-    bulk_set.point_indices_.resize(1);
-    bulk_set.n_sides_ = 0;
+
+	EvalSubset bulk_set(this);
 
     const Armor::array & quad_points = quad.get_points();
     for (uint i=0; i<quad_points.n_vals(); ++i)
-        bulk_set.point_indices_[0].push_back( this->add_local_point(quad_points.get<dim>(i).arma()) );
+        this->add_local_point(quad_points.get<dim>(i).arma());
+    block_indices_.push_back( this->size() );
     return bulk_set;
 }
 
 template <unsigned int dim>
 EvalSubset EvalPoints::add_side(const Quadrature &quad)
 {
-	EvalSubset side_set;
-
 	check_dim(quad.dim()+1, dim);
-    side_set.eval_points_ = this;
-    side_set.point_indices_.resize(RefElement<dim>::n_side_permutations);
-    side_set.n_sides_ = dim+1;
+
+	EvalSubset side_set(this, RefElement<dim>::n_side_permutations);
 
     for (unsigned int j=0; j<RefElement<dim>::n_side_permutations; ++j) { // permutations
         for (unsigned int i=0; i<dim+1; ++i) {  // sides
             Quadrature high_dim_q = quad.make_from_side<dim>(i, j);
             const Armor::array & quad_points = high_dim_q.get_points();
             for (uint k=0; k<quad_points.n_vals(); ++k) {
-            	side_set.point_indices_[j].push_back( this->add_local_point(quad_points.get<dim>(k).arma()) );
+            	this->add_local_point(quad_points.get<dim>(k).arma());
             }
         }
+        block_indices_.push_back( this->size() );
     }
 
     return side_set;
 }
 
 unsigned int EvalPoints::add_local_point(arma::vec coords) {
-    // Check if point exists in local points vector.
-	std::vector<double> loc_point_vec(dim_);
-	for (unsigned int loc_idx=0; loc_idx<this->size(); ++loc_idx) {
-		for (unsigned int i=0; i<dim_; ++i) loc_point_vec[i] = local_points_[loc_idx*dim_ + i];
-        if ( arma::norm(coords-arma::vec(loc_point_vec), 2) < 4*std::numeric_limits<double>::epsilon() ) return loc_idx;
-    }
-	// Add new point if doesn't exist
+	// Add new point
 	for (unsigned int i=0; i<dim_; ++i) local_points_.push_back(coords[i]);
     return this->size()-1;
 }
