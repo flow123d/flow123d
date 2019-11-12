@@ -28,13 +28,10 @@ include("${CMAKE_SOURCE_DIR}/${CONFIG_CMAKE_DEFAULT}")
 if (EXISTS "${CMAKE_SOURCE_DIR}/${CONFIG_CMAKE}")
     MESSAGE(STATUS "Including config file: ${CMAKE_SOURCE_DIR}/${CONFIG_CMAKE}")
     include("${CMAKE_SOURCE_DIR}/${CONFIG_CMAKE}")
-else()
-    if (EXISTS "${CMAKE_BINARY_DIR}/${CONFIG_CMAKE}")
-    MESSAGE(STATUS "Including config file: ${CMAKE_BINARY_DIR}/${CONFIG_CMAKE}")
-        include("${CMAKE_BINARY_DIR}/${CONFIG_CMAKE}")
-    endif()
 endif()
 
+# if FLOW_BUILD_TYPE is AUTO, it means we did not loaded config.cmake file
+# if this is running it our docker container, it'll be fine, otherwise we fail
 if (FLOW_BUILD_TYPE STREQUAL "AUTO")
   SET(DOCKER_VERSION_FILE "/.dockerversion")
 
