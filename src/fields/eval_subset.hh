@@ -135,7 +135,8 @@ public:
 
     /// Constructor
 	SidePoint(DHCellSide cell_side, EvalSubset subset, unsigned int local_point_idx)
-    : cell_side_(cell_side), subset_(subset), local_point_idx_(local_point_idx) {}
+    : cell_side_(cell_side), subset_(subset), local_point_idx_(local_point_idx),
+	  permutation_idx_( cell_side.element()->permutation_idx( cell_side_.side_idx() ) ) {}
 
     /// Getter of evaluation points
     inline const EvalPoints &eval_points() const {
@@ -155,13 +156,16 @@ public:
 
     // Index of permutation
     inline unsigned int permutation_idx() const {
-        return cell_side_.element()->permutation_idx( cell_side_.side_idx() );
+        return permutation_idx_;
     }
 
     /// Iterates to next point.
     inline void inc() {
     	local_point_idx_++;
     }
+
+    /// Return corresponds SidePoints of neighbour side of same dimension (computing of side integrals).
+    SidePoint permute(DHCellSide edg_side) const;
 
     /// Comparison of accessors.
     bool operator==(const SidePoint& other) {
@@ -175,6 +179,8 @@ private:
     EvalSubset subset_;
     /// Index of the local point in the composed quadrature.
     unsigned int local_point_idx_;
+    /// Permutation index corresponding with DHCellSide
+    unsigned int permutation_idx_;
 };
 
 
