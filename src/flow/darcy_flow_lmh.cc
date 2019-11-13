@@ -323,12 +323,12 @@ void DarcyLMH::initialize() {
     }
 
     // create solution vector for 2. Schur complement linear system
-//     schur_solution = new VectorMPI(data_->dh_cr_->distr()->lsize());
+//     p_edge_solution = new VectorMPI(data_->dh_cr_->distr()->lsize());
 //     full_solution = new VectorMPI(data_->dh_->distr()->lsize());
     // this creates mpi vector from DoFHandler, including ghost values
-    data_->schur_solution = data_->dh_cr_->create_vector();
-    data_->previous_schur_solution = data_->dh_cr_->create_vector();
-    data_->previous_time_schur_solution = data_->dh_cr_->create_vector();
+    data_->p_edge_solution = data_->dh_cr_->create_vector();
+    data_->p_edge_solution_previous = data_->dh_cr_->create_vector();
+    data_->p_edge_solution_previous_time = data_->dh_cr_->create_vector();
     
     // Initialize bc_switch_dirichlet to size of global boundary.
     data_->bc_switch_dirichlet.resize(mesh_->n_elements()+mesh_->n_elements(true), 1);
@@ -378,18 +378,18 @@ void DarcyLMH::initialize_specific()
         
 //         for (unsigned int i=0; i<ele->n_sides(); i++) {
 //              uint n_sides_of_edge =  ele.side(i)->edge()->n_sides;
-//              data_->schur_solution[l_indices[i]] += init_value/n_sides_of_edge;
+//              data_->p_edge_solution[l_indices[i]] += init_value/n_sides_of_edge;
 //          }
 // 	}
     
-//     data_->schur_solution.ghost_to_local_begin();
-//     data_->schur_solution.ghost_to_local_end();
-//     // data_->schur_solution.local_to_ghost_begin();
-//     // data_->schur_solution.local_to_ghost_end();
+//     data_->p_edge_solution.ghost_to_local_begin();
+//     data_->p_edge_solution.ghost_to_local_end();
+//     // data_->p_edge_solution.local_to_ghost_begin();
+//     // data_->p_edge_solution.local_to_ghost_end();
 
-//     data_->previous_time_schur_solution.copy_from(data_->schur_solution);
-//     // data_->previous_time_schur_solution.local_to_ghost_begin();
-//     // data_->previous_time_schur_solution.local_to_ghost_end();
+//     data_->p_edge_solution_previous_time.copy_from(data_->p_edge_solution);
+//     // data_->p_edge_solution_previous_time.local_to_ghost_begin();
+//     // data_->p_edge_solution_previous_time.local_to_ghost_end();
 
 //     // reconstruct_solution_from_schur(data_->multidim_assembler);
 
@@ -421,16 +421,16 @@ void DarcyLMH::read_initial_condition()
              unsigned int l_idx = data_->dh_cr_->parent_indices()[l_indices[i]];
              data_->full_solution[l_idx] += init_value/n_sides_of_edge;
 
-             data_->schur_solution[l_indices[i]] += init_value/n_sides_of_edge;
+             data_->p_edge_solution[l_indices[i]] += init_value/n_sides_of_edge;
          }
 	}
     
     data_->full_solution.ghost_to_local_begin();
     data_->full_solution.ghost_to_local_end();
     
-    data_->schur_solution.ghost_to_local_begin();
-    data_->schur_solution.ghost_to_local_end();
-    data_->previous_time_schur_solution.copy_from(data_->schur_solution);
+    data_->p_edge_solution.ghost_to_local_begin();
+    data_->p_edge_solution.ghost_to_local_end();
+    data_->p_edge_solution_previous_time.copy_from(data_->p_edge_solution);
 
     initial_condition_postprocess();
     
@@ -456,13 +456,13 @@ void DarcyLMH::zero_time_step()
 
 
     data_->full_solution.zero_entries();
-    data_->schur_solution.zero_entries();
+    data_->p_edge_solution.zero_entries();
     
     if (data_->use_steady_assembly_) { // steady case
         //read_initial_condition(); // Possible solution guess for steady case.
         solve_nonlinear(); // with right limit data
     } else {
-        data_->previous_time_schur_solution.zero_entries();
+        data_->p_edge_solution_previous_time.zero_entries();
         
         read_initial_condition();
         assembly_linear_system(); // in particular due to balance
@@ -581,9 +581,9 @@ void DarcyLMH::solve_nonlinear()
         }
 
         if (! is_linear_common){
-            data_->previous_schur_solution.copy_from(data_->schur_solution);
-            data_->previous_schur_solution.local_to_ghost_begin();
-            data_->previous_schur_solution.local_to_ghost_end();
+            data_->p_edge_solution_previous.copy_from(data_->p_edge_solution);
+            data_->p_edge_solution_previous.local_to_ghost_begin();
+            data_->p_edge_solution_previous.local_to_ghost_end();
         }
 
         LinSys::SolveInfo si = schur_compl->solve();        
@@ -603,7 +603,7 @@ void DarcyLMH::solve_nonlinear()
         data_changed_=true; // force reassembly for non-linear case
 
         double alpha = 1; // how much of new solution
-        VecAXPBY(data_->schur_solution.petsc_vec(), (1-alpha), alpha, data_->previous_schur_solution.petsc_vec());
+        VecAXPBY(data_->p_edge_solution.petsc_vec(), (1-alpha), alpha, data_->p_edge_solution_previous.petsc_vec());
 
         //LogOut().fmt("Linear solver ended with reason: {} \n", si.converged_reason );
         //OLD_ASSERT( si.converged_reason >= 0, "Linear solver failed to converge. Convergence reason %d \n", si.converged_reason );
@@ -632,9 +632,9 @@ void DarcyLMH::solve_nonlinear()
 
 void DarcyLMH::prepare_new_time_step()
 {
-    data_->previous_time_schur_solution.copy_from(data_->schur_solution);
-    data_->previous_time_schur_solution.local_to_ghost_begin();
-    data_->previous_time_schur_solution.local_to_ghost_end();
+    data_->p_edge_solution_previous_time.copy_from(data_->p_edge_solution);
+    data_->p_edge_solution_previous_time.local_to_ghost_begin();
+    data_->p_edge_solution_previous_time.local_to_ghost_end();
 }
 
 
@@ -927,7 +927,7 @@ void DarcyLMH::create_linear_system(Input::AbstractRecord in_rec) {
             schur_compl = new LinSys_PETSC( &(*data_->dh_cr_->distr()) );
             schur_compl->set_from_input(in_rec);
             schur_compl->set_positive_definite();
-            schur_compl->set_solution( data_->schur_solution.petsc_vec() );
+            schur_compl->set_solution( data_->p_edge_solution.petsc_vec() );
             schur_compl->set_symmetric();
             
 //             LinSys_PETSC *schur1, *schur2;
@@ -998,7 +998,7 @@ void DarcyLMH::create_linear_system(Input::AbstractRecord in_rec) {
             allocate_mh_matrix();
             
     	    data_->full_solution.zero_entries();
-            data_->schur_solution.zero_entries();
+            data_->p_edge_solution.zero_entries();
             END_TIMER("PETSC PREALLOCATION");
         }
         else {
@@ -1017,8 +1017,8 @@ void DarcyLMH::reconstruct_solution_from_schur(MultidimAssembly& assembler)
     START_TIMER("DarcyFlowMH::reconstruct_solution_from_schur");
 
     data_->full_solution.zero_entries();
-    data_->schur_solution.local_to_ghost_begin();
-    data_->schur_solution.local_to_ghost_end();
+    data_->p_edge_solution.local_to_ghost_begin();
+    data_->p_edge_solution.local_to_ghost_end();
     
     for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
     	LocalElementAccessorBase<3> ele_ac(dh_cell);
@@ -1034,8 +1034,8 @@ void DarcyLMH::assembly_linear_system() {
     START_TIMER("DarcyFlowMH::assembly_linear_system");
 //     DebugOut() << "DarcyLMH::assembly_linear_system\n";
 
-    data_->schur_solution.local_to_ghost_begin();
-    data_->schur_solution.local_to_ghost_end();
+    data_->p_edge_solution.local_to_ghost_begin();
+    data_->p_edge_solution.local_to_ghost_end();
 
     data_->is_linear=true;
     //DebugOut() << "Assembly linear system\n";

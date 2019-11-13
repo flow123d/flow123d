@@ -154,11 +154,11 @@ void RichardsLMH::initial_condition_postprocess()
 
 void RichardsLMH::prepare_new_time_step()
 {
-    data_->previous_time_schur_solution.copy_from(data_->schur_solution);
+    data_->p_edge_solution_previous_time.copy_from(data_->p_edge_solution);
     data_->water_content_previous_time.copy_from(data_->water_content_previous_it);
 
-    data_->previous_time_schur_solution.local_to_ghost_begin();
-    data_->previous_time_schur_solution.local_to_ghost_end();
+    data_->p_edge_solution_previous_time.local_to_ghost_begin();
+    data_->p_edge_solution_previous_time.local_to_ghost_end();
 }
 
 bool RichardsLMH::zero_time_term(bool time_global) {
@@ -179,8 +179,8 @@ void RichardsLMH::assembly_linear_system()
 {
     START_TIMER("RicharsLMH::assembly_linear_system");
 
-    data_->schur_solution.local_to_ghost_begin();
-    data_->schur_solution.local_to_ghost_end();
+    data_->p_edge_solution.local_to_ghost_begin();
+    data_->p_edge_solution.local_to_ghost_end();
 
     data_->is_linear = data_->genuchten_p_head_scale.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
 

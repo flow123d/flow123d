@@ -135,7 +135,7 @@ public:
         for(unsigned int i=0; i<n; i++)
         {
             // read the computed edge pressures
-            schur_solution(i) = ad_->schur_solution[dofs_schur[i]];
+            schur_solution(i) = ad_->p_edge_solution[dofs_schur[i]];
             // write the computed edge pressures to the full vector
             unsigned int loc_row = dofs[schur_offset_+i];
             ad_->full_solution[loc_row] = schur_solution(i);
@@ -165,7 +165,7 @@ public:
         // {
         //     // write the computed edge pressures to the full vector
         //     unsigned int loc_row = dofs[schur_offset_+i];
-        //     ad_->full_solution[loc_row] = ad_->schur_solution[dofs_schur[i]];
+        //     ad_->full_solution[loc_row] = ad_->p_edge_solution[dofs_schur[i]];
         // }
         
 //         if (mortar_assembly)
@@ -209,7 +209,7 @@ public:
     //     for(unsigned int i=0; i<n; i++)
     //     {
     //         // read the computed edge pressures
-    //         schur_solution(i) = ad_->schur_solution[dofs_schur[i]];
+    //         schur_solution(i) = ad_->p_edge_solution[dofs_schur[i]];
     //     }
         
     //     // reconstruct the velocity and pressure
@@ -238,7 +238,7 @@ public:
             for(unsigned int i=0; i<n; i++)
             {
                 // read the computed edge pressures
-                schur_solution(i) = ad_->schur_solution[loc_schur_.row_dofs[i]];
+                schur_solution(i) = ad_->p_edge_solution[loc_schur_.row_dofs[i]];
             }
             
             // reconstruct the velocity and pressure
@@ -513,7 +513,7 @@ protected:
                         // flux inequality leading may be accepted, while the error
                         // in pressure inequality is always satisfied.
 
-                        double solution_head = ad_->schur_solution[loc_schur_.row_dofs[i]];
+                        double solution_head = ad_->p_edge_solution[loc_schur_.row_dofs[i]];
 
                         if ( solution_head > bc_pressure) {
                             //DebugOut().fmt("x: {}, to dirich, p: {} -> p: {} f: {}\n",b_ele.centre()[0], solution_head, bc_pressure, bc_flux);
@@ -543,7 +543,7 @@ protected:
                     double bc_flux = -ad_->bc_flux.value(b_ele.centre(), b_ele);
                     double bc_sigma = ad_->bc_robin_sigma.value(b_ele.centre(), b_ele);
 
-                    double solution_head = ad_->schur_solution[loc_schur_.row_dofs[i]];
+                    double solution_head = ad_->p_edge_solution[loc_schur_.row_dofs[i]];
 
                     // Force Robin type during the first iteration of the unsteady case.
                     if (solution_head > bc_switch_pressure  || ad_->force_bc_switch) {
@@ -676,7 +676,7 @@ protected:
             if(! ad_->use_steady_assembly_)
             {
                 time_term_diag = time_term / ad_->time_step_;
-                time_term_rhs = time_term_diag * ad_->previous_time_schur_solution[loc_schur_.row_dofs[i]];
+                time_term_rhs = time_term_diag * ad_->p_edge_solution_previous_time[loc_schur_.row_dofs[i]];
             }
 
             this->loc_system_.add_value(loc_edge_dofs[i], loc_edge_dofs[i],
@@ -780,8 +780,8 @@ protected:
             
             if( ! ad_->use_steady_assembly_)
             {
-                new_pressure = ad_->schur_solution[loc_schur_.row_dofs[i]];
-                old_pressure = ad_->previous_time_schur_solution[loc_schur_.row_dofs[i]];
+                new_pressure = ad_->p_edge_solution[loc_schur_.row_dofs[i]];
+                old_pressure = ad_->p_edge_solution_previous_time[loc_schur_.row_dofs[i]];
                 time_term = edge_scale * storativity / ad_->time_step_ * (new_pressure - old_pressure);
             }
             solution[loc_side_dofs[i]] += edge_source_term - time_term;

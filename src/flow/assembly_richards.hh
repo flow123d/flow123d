@@ -88,7 +88,7 @@ protected:
         for (unsigned int i=0; i<ele->n_sides(); i++) {
             double capacity = 0;
             double water_content = 0;
-            double phead = ad_->schur_solution[ this->edge_indices_[i] ];
+            double phead = ad_->p_edge_solution[ this->edge_indices_[i] ];
             if (genuchten_on) {
 
                   fadbad::B<double> x_phead(phead);
@@ -113,9 +113,9 @@ protected:
             head=0;
             for (unsigned int i=0; i<ele.element_accessor()->n_sides(); i++)
             {
-                double phead = ad_->schur_solution[ this->loc_schur_.row_dofs[i] ];
+                double phead = ad_->p_edge_solution[ this->loc_schur_.row_dofs[i] ];
                 conductivity += ad_->soil_model_->conductivity(phead);
-                head += ad_->schur_solution[ this->loc_schur_.row_dofs[i] ];
+                head += ad_->p_edge_solution[ this->loc_schur_.row_dofs[i] ];
             }
             conductivity /= ele.n_sides();
             head /= ele.n_sides();
@@ -152,16 +152,16 @@ protected:
                 /*
                 DebugOut().fmt("w diff: {:g}  mass: {:g} w prev: {:g} w time: {:g} c: {:g} p: {:g} z: {:g}",
                       water_content_diff,
-                      mass_diagonal * ad_->schur_solution[local_edge],
+                      mass_diagonal * ad_->p_edge_solution[local_edge],
                      -ad_->water_content_previous_it[local_side],
                       ad_->water_content_previous_time[local_side],
                       capacity,
-                      ad_->schur_solution[local_edge],
+                      ad_->p_edge_solution[local_edge],
                       ele.centre()[0] );
                 */
 
 
-                double mass_rhs = mass_diagonal * ad_->schur_solution[ this->loc_schur_.row_dofs[i] ] / ad_->time_step_
+                double mass_rhs = mass_diagonal * ad_->p_edge_solution[ this->loc_schur_.row_dofs[i] ] / ad_->time_step_
                                   + diagonal_coef * water_content_diff / ad_->time_step_;
 
 //                 DBGCOUT(<< "source [" << loc_system_.row_dofs[this->loc_edge_dofs[i]] << ", " << loc_system_.row_dofs[this->loc_edge_dofs[i]]

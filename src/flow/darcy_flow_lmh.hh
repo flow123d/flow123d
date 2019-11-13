@@ -162,9 +162,9 @@ public:
         double time_step_;
         
         LinSys *lin_sys_schur;
-        VectorMPI schur_solution;               //< 2. Schur complement solution
-        VectorMPI previous_schur_solution;      //< 2. Schur complement previous solution (iterative)
-        VectorMPI previous_time_schur_solution; //< 2. Schur complement previous solution (time)
+        VectorMPI p_edge_solution;               //< 2. Schur complement solution
+        VectorMPI p_edge_solution_previous;      //< 2. Schur complement previous solution (iterative)
+        VectorMPI p_edge_solution_previous_time; //< 2. Schur complement previous solution (time)
 
         std::map<LongIdx, LocalSystem> seepage_bc_systems;
     };
