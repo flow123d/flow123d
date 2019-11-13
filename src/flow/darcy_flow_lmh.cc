@@ -469,6 +469,7 @@ void DarcyLMH::zero_time_step()
         // print_matlab_matrix("matrix_zero");
         // TODO: reconstruction of solution in zero time.
         // reconstruct_solution_from_schur(data_->multidim_assembler);
+        accept_time_step(); // accept zero time step, i.e. initial condition
     }
     //solution_output(T,right_limit); // data for time T in any case
     output_data();
@@ -494,9 +495,9 @@ void DarcyLMH::update_solution()
 
         // this flag is necesssary for switching BC to avoid setting zero neumann on the whole boundary in the steady case
         data_->use_steady_assembly_ = false;
-        prepare_new_time_step(); //SWAP
 
         solve_nonlinear(); // with left limit data
+        accept_time_step();
         if (jump_time) {
         	WarningOut() << "Output of solution discontinuous in time not supported yet.\n";
             //solution_output(T, left_limit); // output use time T- delta*dt
@@ -517,6 +518,7 @@ void DarcyLMH::update_solution()
         // this flag is necesssary for switching BC to avoid setting zero neumann on the whole boundary in the steady case
         data_->use_steady_assembly_ = true;
         solve_nonlinear(); // with right limit data
+        accept_time_step();
 
     } else if (! zero_time_term_from_left && jump_time) {
     	WarningOut() << "Discontinuous time term not supported yet.\n";
@@ -630,7 +632,7 @@ void DarcyLMH::solve_nonlinear()
 }
 
 
-void DarcyLMH::prepare_new_time_step()
+void DarcyLMH::accept_time_step()
 {
     data_->p_edge_solution_previous_time.copy_from(data_->p_edge_solution);
     data_->p_edge_solution_previous_time.local_to_ghost_begin();

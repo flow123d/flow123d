@@ -200,7 +200,7 @@ public:
     void get_solution_vector(double * &vec, unsigned int &vec_size) override;
     
     /// postprocess velocity field (add sources)
-    virtual void prepare_new_time_step();
+    virtual void accept_time_step();
     virtual void postprocess();
     virtual void output_data() override;
 

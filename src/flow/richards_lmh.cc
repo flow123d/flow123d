@@ -152,7 +152,7 @@ void RichardsLMH::initial_condition_postprocess()
 }
 
 
-void RichardsLMH::prepare_new_time_step()
+void RichardsLMH::accept_time_step()
 {
     data_->p_edge_solution_previous_time.copy_from(data_->p_edge_solution);
     data_->water_content_previous_time.copy_from(data_->water_content_previous_it);
