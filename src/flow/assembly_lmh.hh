@@ -218,6 +218,11 @@ public:
     //     postprocess_velocity(ele_ac.dh_cell(), reconstructed_solution_);
     // }
 
+    /** Loads the local system from a map: element index -> LocalSystem,
+     * if it exits, or if the full solution is not yet reconstructed,
+     * and reconstructs the full solution on the element.
+     * Currently used only for seepage BC.
+     */
     void load_local_system(const DHCellAccessor& dh_cell)
     {
         // do this only once per element
@@ -245,6 +250,8 @@ public:
         }
     }
 
+    /// Saves the local system to a map: element index -> LocalSystem.
+    /// Currently used only for seepage BC.
     void save_local_system(const DHCellAccessor& dh_cell)
     {
         // for seepage BC, save local system
