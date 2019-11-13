@@ -454,16 +454,12 @@ void DarcyLMH::zero_time_step()
     // zero_time_term means steady case
     data_->use_steady_assembly_ = zero_time_term();
 
-
-    data_->full_solution.zero_entries();
     data_->p_edge_solution.zero_entries();
     
     if (data_->use_steady_assembly_) { // steady case
         //read_initial_condition(); // Possible solution guess for steady case.
         solve_nonlinear(); // with right limit data
     } else {
-        data_->p_edge_solution_previous_time.zero_entries();
-        
         read_initial_condition();
         assembly_linear_system(); // in particular due to balance
         // print_matlab_matrix("matrix_zero");
