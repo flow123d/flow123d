@@ -33,6 +33,11 @@ class SidePoint;
 
 class EvalSubset {
 public:
+	TYPEDEF_ERR_INFO(EI_ElementIdx, unsigned int);
+	DECLARE_EXCEPTION(ExcElementNotInCache,
+	        << "Element of Idx: " << EI_ElementIdx::val << " is not stored in 'Field value data cache'.\n"
+			   << "Value can't be computed.\n");
+
     /// Constructor
 	EvalSubset() : eval_points_(nullptr) {}
 

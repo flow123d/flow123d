@@ -18,6 +18,7 @@
 
 #include "fields/eval_subset.hh"
 #include "fields/eval_points.hh"
+#include "fields/field_value_cache.hh"
 
 
 /******************************************************************************
@@ -39,6 +40,8 @@ EvalSubset::EvalSubset(const EvalPoints *eval_points, unsigned int n_permutation
 
 Range< BulkPoint > EvalSubset::points(const DHCellAccessor &cell) const {
     ASSERT_EQ(n_sides_, 0).error("Method points with DHCellAccessor argument must be call for bulk subset!\n");
+    if (cell.element_cache_index() == ElementCacheMap::undef_elem_idx)
+        THROW( ExcElementNotInCache() << EI_ElementIdx(cell.elm_idx()) );
 
     auto bgn_it = make_iter<BulkPoint>( BulkPoint(cell, *this, eval_points_->block_idx(block_indices_[0])) );
     auto end_it = make_iter<BulkPoint>( BulkPoint(cell, *this, eval_points_->block_idx(block_indices_[0]+1)) );
@@ -47,6 +50,8 @@ Range< BulkPoint > EvalSubset::points(const DHCellAccessor &cell) const {
 
 Range< SidePoint > EvalSubset::points(const DHCellSide &cell_side) const {
     ASSERT_GT(n_sides_, 0).error("Method points with DHCellSide argument must be call for side subset!\n");
+    if (cell_side.cell().element_cache_index() == ElementCacheMap::undef_elem_idx)
+        THROW( ExcElementNotInCache() << EI_ElementIdx(cell_side.cell().elm_idx()) );
 
     unsigned int perm_idx = cell_side.element()->permutation_idx( cell_side.side_idx() );
     unsigned int begin_idx = eval_points_->block_idx(block_indices_[perm_idx]);
