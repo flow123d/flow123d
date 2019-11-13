@@ -78,10 +78,6 @@ private:
     std::vector<int> block_indices_;
     /// Number of sides (value 0 indicates bulk set)
     unsigned int n_sides_;
-
-    friend class EvalPoints;
-    friend class BulkPoint;
-    friend class SidePoint;
 };
 
 
@@ -143,7 +139,7 @@ public:
 
     /// Getter of evaluation points
     inline const EvalPoints &eval_points() const {
-        return *subset_.eval_points_;
+        return subset_.eval_points();
     }
 
     // Local coordinates within element
