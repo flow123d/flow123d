@@ -10,12 +10,30 @@ class LinSys;
 /** Local system class is meant to be used for local assembly and then pass to global linear system.
  * The key idea is to take care of known solution values (Dirichlet boundary conditions) in a common way.
  * 
- * Usage of the class consists of 3 steps:
- * 1) create local system, set global DoFs.
- * 2) set all known values (Dirichlet BC)
+ * A] Usage of the class consists of 5 steps:
+ * 1) create local system, set local/global DoFs.
+ * 2) possibly setup sparsity pattern for the local system
  * 3) set matrix and RHS entries 
- *    (if the entry is on dirichlet row or column, it is now taken care of)
- * 4) eliminate known solution and possibly fix the diagonal entries of the local system, where Dirichlet BC is set
+ * 4) set all known values (Dirichlet BC)
+ *    (the order of items 3 and 4 does not matter)
+ * 5) possibly eliminate the known solution
+ *    (possibly fix the diagonal entries of the local system, where Dirichlet BC is set)
+ * 6) pass the local system to the global system, possibly with the map local_to_global
+ * 
+ * B] Scenario with computation of Schur complement:
+ * 1) do A1, do not have to set dof indices (if not doing B3)
+ * 2) do A2, A3
+ * 3) possibly do A4, A5, if there is known solution for the dofs not included in the Schur complement
+ * 3) create another LocalSystem for Schur complement (local_schur), possibly set dof indices
+ * 4) possibly do A2 on local_schur
+ * 4) compute Schur complement, passing the prepared local_schur
+ * 5) if not done before, set dof indices
+ * 6) possibly do A4, A5 on local_schur
+ * 7) do A6 with local_schur
+ * 
+ * C] Reconstruction from the Schur complement
+ * 1) do A1, A3
+ * 2) reconstruct the full solution
  * 
  * TODO:
  *  - set dofs as references
@@ -89,7 +107,9 @@ public:
      * and respective RHS entry, such that the given solution holds.
      * If preferred diagonal value has been set by @p set_solution then it is used.
      * 
-     * Calling this function after the assembly of local system is finished is users's responsibility.
+     * Calling this function after the assembly of local system
+     * and before passing the local system to the global one
+     * is finished is users's responsibility.
      */
     void eliminate_solution();
 
@@ -136,6 +156,9 @@ public:
     
     /** @brief Computes Schur complement of the local system: S = C - B * invA * Bt
      * Applicable for square matrices.
+     * It can be called either after eliminating Dirichlet dofs,
+     * or the Dirichlet dofs can be set on the Schur complement
+     * and the elimination done on the Schur complement.
      * 
      * @p offset index of the first row/column of submatrix C (size of A)
      * @p schur (output) LocalSystem with Schur complement
