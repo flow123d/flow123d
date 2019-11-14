@@ -30,16 +30,21 @@ def extract_tag(context: Dict):
     return "{indent}{tag}".format(**context)
 
 def extract_dur(context: Dict):
-    return "{time:6d}".format(**context)
+    try:
+        time = float(context["cumul-time-sum"] / context["call-count-sum"])
+    except:
+        time = 0.0
+
+    return "{time:7,d}".format(time=int(time*1000)).replace(',', ' ')
 
 def extract_calls(context: Dict):
-    return "{call-count-sum:6d}".format(**context)
+    return "{call-count-sum:5d}".format(**context)
 
 def extract_rel_per(context: Dict):
-    return "{percent:6.2f}".format(**context)
+    return "{percent:3.0f}".format(**context)
 
 def extract_abs_per(context: Dict):
-    return "{abs_per:6.2f}".format(**context)
+    return "{abs_per:3.0f}".format(**context)
 
 def extract_ch_tot(context: Dict):
     return "{children_total:6d}".format(**context)
@@ -56,6 +61,13 @@ def extract_src(context: Dict):
 def extract_function(context: Dict):
     return "{function}".format(**context)
 
+def extract_min_max(context: Dict):
+    try:
+        ratio = float(context.get("cumul-time-min") / context.get("cumul-time-max"))
+    except:
+        ratio = 0.0
+    return "{ratio:6.3f}".format(ratio=ratio)
+
 def extract_rem(context: Dict):
     if not len(context["children"]):
         return"{remainder:6s}".format(remainder="")
@@ -65,10 +77,10 @@ def extract_rem(context: Dict):
 
 def extract_rem_prc(context: Dict):
     if not len(context["children"]):
-        return"{remainder:6s}".format(remainder="")
+        return"{remainder:3s}".format(remainder="")
 
     remainder = (context["children_total"] / context["safe_time"]) * 100
-    return "{remainder:6.2f}".format(remainder=remainder)
+    return "{remainder:3.0f}".format(remainder=remainder)
 
 def enrich_nodes(node: Dict, parent: Dict, root: Dict, indent=0):
     node["children"] = node.get("children", [])
@@ -159,14 +171,14 @@ class SimpleTableFormatter2 (object):
     def __init__(self):
         columns = [
             Col('Tag', 55, extract_tag) if is_on("TAG") else None,
-            Col('∑ Time', 6, extract_dur) if is_on("TIME") else None,
-            Col('Rest', 6, extract_rem) if is_on("REST") else None,
-            Col('Cov %', 6, extract_rem_prc) if is_on("COV") else None,
-            Col('# Cls', 6, extract_calls) if is_on("CLS") else None,
-            Col('Rel %', 6, extract_rel_per) if is_on("REL") else None,
-            Col('Abs %', 6, extract_abs_per) if is_on("ABS") else None,
+            Col('∑ Time', 7, extract_dur) if is_on("TIME") else None,
+            Col('%Cov', 4, extract_rem_prc) if is_on("COV") else None,
+            Col('# Cls', 5, extract_calls) if is_on("CLS") else None,
+            Col('min/max', 7, extract_min_max) if is_on("REL") else None,
+            Col('%Rel', 4, extract_rel_per) if is_on("REL") else None,
+            Col('%Abs', 4, extract_abs_per) if is_on("ABS") else None,
             Col('Func', 28, extract_function) if is_on("FUNC", False) else None, # env var FLOW123D_PROFILER_FUNC must be 1
-            Col('Src', 32, extract_src) if is_on("SRC") else None,
+            Col('Src', 40, extract_src) if is_on("SRC") else None,
         ]
         self.columns = [c for c in columns if c]
 
