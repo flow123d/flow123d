@@ -34,6 +34,7 @@
 #include "io/observe.hh"
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
+#include "system/index_types.hh"
 
 #include "fields/field_set.hh"
 #include "fem/dofhandler.hh"
@@ -45,7 +46,6 @@
 #include "fields/fe_value_handler.hh"
 #include "fields/generic_field.hh"
 
-#include "mesh/long_idx.hh"
 #include "mesh/mesh.h"
 #include "mesh/partitioning.hh"
 #include "mesh/accessors.hh"

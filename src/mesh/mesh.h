@@ -28,7 +28,6 @@
 #include "input/accessors_impl.hh"           // for Record::val
 #include "input/storage.hh"                  // for ExcStorageTypeMismatch
 #include "input/type_record.hh"              // for Record (ptr only), Recor...
-#include "mesh/long_idx.hh"                  // for LongIdx
 #include "mesh/boundaries.h"                 // for Boundary
 #include "mesh/edges.h"                      // for Edge
 #include "mesh/region.hh"                    // for RegionDB, RegionDB::MapE...
@@ -37,6 +36,7 @@
 #include "mesh/range_wrapper.hh"
 #include "tools/bidirectional_map.hh"
 #include "tools/general_iterator.hh"
+#include "system/index_types.hh"             // for LongIdx
 #include "system/exceptions.hh"              // for operator<<, ExcStream, EI
 #include "system/file_path.hh"               // for FilePath
 #include "system/sys_vector.hh"              // for FullIterator, VectorId<>...

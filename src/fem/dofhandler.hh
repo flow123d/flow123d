@@ -19,12 +19,12 @@
 #ifndef DOFHANDLER_HH_
 #define DOFHANDLER_HH_
 
-#include <vector>              // for vector
-#include <unordered_map>       // for unordered_map
+#include <vector>                   // for vector
+#include <unordered_map>            // for unordered_map
+#include "system/index_types.hh"    // for LongIdx
 #include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "mesh/accessors.hh"
-#include "mesh/long_idx.hh"    // for LongIdx
 #include "mesh/range_wrapper.hh"
 #include "tools/general_iterator.hh"
 #include "fem/discrete_space.hh" // for DiscreteSpace

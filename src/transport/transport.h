@@ -36,7 +36,7 @@
 #include "input/type_base.hh"                         // for Array
 #include "input/type_generic.hh"                      // for Instance
 #include "input/accessors.hh"
-#include "mesh/long_idx.hh"
+#include "system/index_types.hh"
 #include "mesh/region.hh"                             // for RegionSet
 #include "petscvec.h"                                 // for Vec, _p_Vec
 #include "tools/time_marks.hh"                        // for TimeMark, TimeM...
