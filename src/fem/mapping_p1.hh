@@ -91,36 +91,7 @@ public:
      * @return All necessary flags.
      */
     UpdateFlags update_each(UpdateFlags flags);
-
-    /**
-     * @brief Calculates the mapping data on the actual cell.
-     *
-     * @param cell The actual cell.
-     * @param q Quadrature rule.
-     * @param data Precomputed mapping data.
-     * @param fv_data Data to be computed.
-     */
-    void fill_fe_values(const ElementAccessor<3> &cell,
-                            const Quadrature &q,
-                            MappingInternalData &data,
-                            FEValuesData<dim,spacedim> &fv_data);
-
-    /**
-     * @brief Calculates the mapping data on a side of a cell.
-     *
-     * @param cell The actual cell.
-     * @param sid  Number of the side.
-     * @param q The quadrature rule with points on the side.
-     * @param data Precomputed mapping data.
-     * @param fv_data Data to be computed.
-     */
-    void fill_fe_side_values(const ElementAccessor<3> &cell,
-                            unsigned int sid,
-                            const Quadrature &q,
-                            MappingInternalData &data,
-                            FEValuesData<dim,spacedim> &fv_data);
-
-   
+    
     /**
      * Map from reference element (barycentric coords) to global coord system.
      * Matrix(3, dim+1) M: x_real = M * x_bary;
@@ -151,13 +122,6 @@ public:
     /// Test if element contains given point.
     bool contains_point(arma::vec point, ElementAccessor<3> elm);
 
-private:
-
-    /**
-     * @brief Auxiliary matrix of gradients of shape functions (used for
-     * computation of the Jacobian).
-     */
-    arma::mat::fixed<dim+1,dim> grad;
 
 };
 
