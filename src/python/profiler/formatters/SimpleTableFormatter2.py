@@ -47,7 +47,11 @@ def extract_ch_tot(context: Dict):
 def extract_src(context: Dict):
     file_path = str(context.get("file-path", ""))
     file_path = file_path[5:] if file_path.startswith("/src/") else file_path
-    return "{file_path}:{file_line}".format(file_path=file_path, file_line=context.get("file-line"))
+    file_line = context.get("file-line")
+    file_path = './' if not file_path else file_path
+    if file_line:
+        return "{file_path}:{file_line}".format(file_path=file_path, file_line=context.get("file-line"))
+    return "{file_path}".format(file_path=file_path)
 
 def extract_function(context: Dict):
     return "{function}".format(**context)
@@ -80,20 +84,36 @@ def enrich_nodes(node: Dict, parent: Dict, root: Dict, indent=0):
         if indent < 15:
             enrich_nodes(subnode, node, root, indent+1)
 
+def longest_common_prefix(strs):
+    longest_pre = ""
+    if not strs: return longest_pre
+    shortest_str = min(strs, key=len)
+    for i in range(len(shortest_str)):
+        if all([x.startswith(shortest_str[:i+1]) for x in strs]):
+            longest_pre = shortest_str[:i+1]
+        else:
+            break
+    return longest_pre
+
 def squashed_node(rest: List[Dict]):
     if len(rest) == 1:
         return rest[0]
 
-    def sum_prop(p: str):
-        return sum([x[p] for x in rest])
+    def sum_prop(p: str, f=sum):
+        return f([x[p] for x in rest])
 
     base = rest[0].copy()
+    fps = list(sum_prop("file-path", set))
+    fnc = list(sum_prop("function", set))
     base.update(**{
         "tag": "others (%d more)" % len(rest),
         "time": sum_prop("time"),
         "call-count-sum": sum_prop("call-count-sum"),
         "percent": sum_prop("percent"),
         "abs_per": sum_prop("abs_per"),
+        "function": longest_common_prefix(fnc), # try to get single result if possible
+        "file-path": longest_common_prefix(fps), # try to get single result if possible
+        "file-line": "",
     })
     return base
 
@@ -219,6 +239,6 @@ class SimpleTableFormatter2 (object):
                 columns=self.columns,
             )
         )
-        
+
         # join by newline and viola
         return '\n'.join(lines)
