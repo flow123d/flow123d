@@ -31,7 +31,6 @@
 #include "io/element_data_cache.hh"
 #include "io/msh_basereader.hh"
 #include "fem/fe_p.hh"
-#include "fem/mapping_p1.hh"
 #include "fem/fe_system.hh"
 #include "fem/dofhandler.hh"
 #include "fem/finite_element.hh"

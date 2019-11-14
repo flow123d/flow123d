@@ -35,7 +35,6 @@ class DOFHandlerBase;
 class Quadrature;
 template<unsigned int dim> class FiniteElement;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
-template<unsigned int dim, unsigned int spacedim> class Mapping;
 
 struct MappingInternalData;
 
@@ -251,13 +250,11 @@ public:
     /**
      * @brief Allocates space for computed data.
      *
-     * @param _mapping The mapping between reference and actual cell.
      * @param _quadrature The quadrature rule.
      * @param _fe The finite element.
      * @param flags The update flags.
      */
-    void allocate(Mapping<dim,spacedim> &_mapping,
-            unsigned int n_points,
+    void allocate(unsigned int n_points,
             FiniteElement<dim> &_fe,
             UpdateFlags flags);
     
@@ -429,13 +426,6 @@ public:
         return fe;
     }
     
-    /**
-     * @brief Returns the mapping in use.
-     */
-    inline Mapping<dim,spacedim> * get_mapping() const
-    {
-        return mapping;
-    }
 
 protected:
     
@@ -468,11 +458,6 @@ protected:
     /// Compute shape functions and gradients on the actual cell for mixed system of FE.
     void fill_system_data(const FEInternalData &fe_data);
     
-
-    /**
-     * @brief The mapping from the reference cell to the actual cell.
-     */
-    Mapping<dim,spacedim> *mapping;
 
     /** @brief Number of integration points. */
     unsigned int n_points_;
@@ -532,13 +517,11 @@ public:
 	 * Initializes structures and calculates
      * cell-independent data.
 	 *
-	 * @param _mapping The mapping between the reference and actual cell.
 	 * @param _quadrature The quadrature rule.
 	 * @param _fe The finite element.
 	 * @param _flags The update flags.
 	 */
-    FEValues(Mapping<dim,spacedim> &_mapping,
-             Quadrature &_quadrature,
+    FEValues(Quadrature &_quadrature,
              FiniteElement<dim> &_fe,
              UpdateFlags _flags);
 
@@ -595,13 +578,11 @@ public:
      * Initializes structures and calculates
      * cell-independent data.
      *
-     * @param _mapping The mapping between the reference and actual cell.
      * @param _sub_quadrature The quadrature rule on the side.
      * @param _fe The finite element.
      * @param flags The update flags.
      */
-    FESideValues(Mapping<dim,spacedim> &_mapping,
-             Quadrature &_sub_quadrature,
+    FESideValues(Quadrature &_sub_quadrature,
              FiniteElement<dim> &_fe,
              UpdateFlags flags);
 

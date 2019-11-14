@@ -556,7 +556,6 @@ void DarcyFlowMHOutput::output_internal_flow_data()
 #include "quadrature/quadrature_lib.hh"
 #include "fem/fe_p.hh"
 #include "fem/fe_values.hh"
-#include "fem/mapping_p1.hh"
 #include "fields/field_python.hh"
 #include "fields/field_values.hh"
 
@@ -668,8 +667,8 @@ void DarcyFlowMHOutput::l2_diff_local(ElementAccessor<3> &ele,
 
 template<int dim> DarcyFlowMHOutput::FEData<dim>::FEData()
 : fe_p0(0), fe_p1(1), order(4), quad(dim, order),
-  fe_values(mapp,quad,fe_p0,update_JxW_values | update_quadrature_points),
-  fv_rt(mapp,quad,fe_rt,update_values | update_quadrature_points)
+  fe_values(quad,fe_p0,update_JxW_values | update_quadrature_points),
+  fv_rt(quad,fe_rt,update_values | update_quadrature_points)
 {}
 
 

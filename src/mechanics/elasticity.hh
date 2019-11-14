@@ -26,16 +26,15 @@
 #include "la/vector_mpi.hh"
 #include "flow/mh_dofhandler.hh"
 #include "fields/equation_output.hh"
-#include "fem/mapping_p1.hh"
 #include "coupling/equation.hh"
 #include "fem/fe_values_views.hh"
 
 class Distribution;
 class OutputTime;
 class DOFHandlerMultiDim;
+class DiscreteSpace;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim> class FiniteElement;
-template<unsigned int dim, unsigned int spacedim> class Mapping;
 class Quadrature;
 class Elasticity;
 
@@ -59,9 +58,6 @@ public:
 	template<unsigned int dim>
 	inline Quadrature *q() { return q_[dim]; }
 
-	template<unsigned int dim>
-	inline MappingP1<dim,3> *mapping();
-
 	inline std::shared_ptr<DOFHandlerMultiDim> dh();
     
 //     const FEValuesViews::Vector<dim,3> vec;
@@ -76,11 +72,6 @@ private:
 
 	/// Quadratures used in assembling methods.
 	Quadrature *q_[4];
-
-	/// Auxiliary mappings of reference elements.
-	MappingP1<1,3> *map1_;
-	MappingP1<2,3> *map2_;
-	MappingP1<3,3> *map3_;
 
     std::shared_ptr<DiscreteSpace> ds_;
     

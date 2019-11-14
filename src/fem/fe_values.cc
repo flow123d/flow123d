@@ -18,7 +18,7 @@
  * @author  Jan Stebel
  */
 
-#include "fem/mapping.hh"
+#include "fem/mapping_p1.hh"
 #include "quadrature/quadrature.hh"
 #include "fem/finite_element.hh"
 #include "fem/fe_values.hh"
@@ -139,7 +139,7 @@ void FEValuesBase<dim,spacedim>::ViewsCache::initialize(FEValuesBase<dim,spacedi
 
 template<unsigned int dim,unsigned int spacedim>
 FEValuesBase<dim,spacedim>::FEValuesBase()
-: mapping(NULL), n_points_(0), fe(NULL), mapping_data(NULL), fe_data(NULL)
+: n_points_(0), fe(NULL), mapping_data(NULL), fe_data(NULL)
 {
 }
 
@@ -154,7 +154,7 @@ FEValuesBase<dim,spacedim>::~FEValuesBase() {
 
 
 template<unsigned int dim, unsigned int spacedim>
-void FEValuesBase<dim,spacedim>::allocate(Mapping<dim,spacedim> & _mapping,
+void FEValuesBase<dim,spacedim>::allocate(
         unsigned int n_points,
         FiniteElement<dim> & _fe,
         UpdateFlags _flags)
@@ -167,7 +167,6 @@ void FEValuesBase<dim,spacedim>::allocate(Mapping<dim,spacedim> & _mapping,
         ASSERT_DBG(_fe.n_components() == spacedim*spacedim).error("FETensor must have spacedim*spacedim components.");
     }
     
-    mapping = &_mapping;
     n_points_ = n_points;
     fe = &_fe;
     n_components_ = fe->n_space_components(spacedim);
@@ -220,7 +219,7 @@ template<unsigned int dim, unsigned int spacedim>
 UpdateFlags FEValuesBase<dim,spacedim>::update_each(UpdateFlags flags)
 {
     UpdateFlags f = flags | fe->update_each(flags);
-    f |= mapping->update_each(f);
+    f |= MappingP1<dim,spacedim>::update_each(f);
     return f;
 }
 
@@ -510,7 +509,7 @@ void FEValuesBase<dim,spacedim>::fill_data(const FEInternalData &fe_data)
 
 
 template<unsigned int dim, unsigned int spacedim>
-FEValues<dim,spacedim>::FEValues(Mapping<dim,spacedim> &_mapping,
+FEValues<dim,spacedim>::FEValues(
          Quadrature &_quadrature,
          FiniteElement<dim> &_fe,
          UpdateFlags _flags)
@@ -518,10 +517,10 @@ FEValues<dim,spacedim>::FEValues(Mapping<dim,spacedim> &_mapping,
   quadrature(&_quadrature)
 {
     ASSERT_DBG( _quadrature.dim() == dim );
-    this->allocate(_mapping, _quadrature.size(), _fe, _flags);
+    this->allocate(_quadrature.size(), _fe, _flags);
 
     // precompute the maping data and finite element data
-    this->mapping_data = this->mapping->initialize(*quadrature, this->data.update_flags);
+    this->mapping_data = MappingP1<dim,spacedim>::initialize(*quadrature, this->data.update_flags);
     this->fe_data = this->init_fe_data(quadrature);
     
     // In case of mixed system allocate data for sub-elements.
@@ -531,7 +530,7 @@ FEValues<dim,spacedim>::FEValues(Mapping<dim,spacedim> &_mapping,
         ASSERT_DBG(fe != nullptr).error("Mixed system must be represented by FESystem.");
         
         for (auto fe_sub : fe->fe())
-            this->fe_values_vec.push_back(make_shared<FEValues<dim,spacedim> >(_mapping, _quadrature, *fe_sub, _flags));
+            this->fe_values_vec.push_back(make_shared<FEValues<dim,spacedim> >(_quadrature, *fe_sub, _flags));
     }
 }
 
@@ -638,7 +637,7 @@ void FEValues<dim,spacedim>::fill_fe_values(const ElementAccessor<3> &cell,
 
 
 template<unsigned int dim,unsigned int spacedim>
-FESideValues<dim,spacedim>::FESideValues(Mapping<dim,spacedim> & _mapping,
+FESideValues<dim,spacedim>::FESideValues(
                                  Quadrature & _sub_quadrature,
                                  FiniteElement<dim> & _fe,
                                  const UpdateFlags _flags)
@@ -648,7 +647,7 @@ FESideValues<dim,spacedim>::FESideValues(Mapping<dim,spacedim> & _mapping,
     ASSERT_DBG( _sub_quadrature.dim() + 1 == dim );
     sub_quadrature = &_sub_quadrature;
     
-    this->allocate(_mapping, _sub_quadrature.size(), _fe, _flags);
+    this->allocate(_sub_quadrature.size(), _fe, _flags);
 
     for (unsigned int sid = 0; sid < RefElement<dim>::n_sides; sid++)
     {
@@ -656,7 +655,7 @@ FESideValues<dim,spacedim>::FESideValues(Mapping<dim,spacedim> & _mapping,
     	{
     		// transform the side quadrature points to the cell quadrature points
             side_quadrature[sid][pid] = _sub_quadrature.make_from_side<dim>(sid, pid);
-    		side_mapping_data[sid][pid] = this->mapping->initialize(side_quadrature[sid][pid], this->data.update_flags);
+    		side_mapping_data[sid][pid] = MappingP1<dim,spacedim>::initialize(side_quadrature[sid][pid], this->data.update_flags);
     		side_fe_data[sid][pid] = this->init_fe_data(&side_quadrature[sid][pid]);
     	}
     }
@@ -668,7 +667,7 @@ FESideValues<dim,spacedim>::FESideValues(Mapping<dim,spacedim> & _mapping,
         ASSERT_DBG(fe != nullptr).error("Mixed system must be represented by FESystem.");
         
         for (auto fe_sub : fe->fe())
-            this->fe_values_vec.push_back(make_shared<FESideValues<dim,spacedim> >(_mapping, _sub_quadrature, *fe_sub, _flags));
+            this->fe_values_vec.push_back(make_shared<FESideValues<dim,spacedim> >(_sub_quadrature, *fe_sub, _flags));
     }
 }
 

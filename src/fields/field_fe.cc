@@ -26,6 +26,7 @@
 #include "fem/fe_p.hh"
 #include "fem/fe_system.hh"
 #include "fem/dh_cell_accessor.hh"
+#include "fem/mapping_p1.hh"
 #include "io/reader_cache.hh"
 #include "io/msh_gmshreader.h"
 #include "mesh/accessors.hh"
@@ -482,13 +483,13 @@ void FieldFE<spacedim, Value>::interpolate_gauss(ElementDataCache<double>::Compo
 					contains = arma::norm(elm.node(0)->point()-q_points[i], 2) < 4*std::numeric_limits<double>::epsilon();
 					break;
 				case 1:
-					contains = value_handler1_.get_mapping()->contains_point(q_points[i], elm);
+					contains = MappingP1<1,3>::contains_point(q_points[i], elm);
 					break;
 				case 2:
-					contains = value_handler2_.get_mapping()->contains_point(q_points[i], elm);
+					contains = MappingP1<2,3>::contains_point(q_points[i], elm);
 					break;
 				case 3:
-					contains = value_handler3_.get_mapping()->contains_point(q_points[i], elm);
+					contains = MappingP1<3,3>::contains_point(q_points[i], elm);
 					break;
 				default:
 					ASSERT(false).error("Invalid element dimension!");
@@ -559,8 +560,6 @@ void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>
 		ADD_CALLS(searched_elements.size());
 
 
-        MappingP1<3,3> mapping;
-
         for (std::vector<unsigned int>::iterator it = searched_elements.begin(); it!=searched_elements.end(); it++)
         {
             ElementAccessor<3> ele = source_mesh->element_accessor(*it);
@@ -569,8 +568,8 @@ void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>
                 switch (elm.dim()) {
                     case 0: {
                         arma::vec::fixed<3> real_point = elm.node(0)->point();
-                        arma::mat::fixed<3, 4> elm_map = mapping.element_map(ele);
-                        arma::vec::fixed<4> unit_point = mapping.project_real_to_unit(real_point, elm_map);
+                        arma::mat::fixed<3, 4> elm_map = MappingP1<3,3>::element_map(ele);
+                        arma::vec::fixed<4> unit_point = MappingP1<3,3>::project_real_to_unit(real_point, elm_map);
 
                         measure = (std::fabs(arma::sum( unit_point )-1) <= 1e-14
                                         && arma::min( unit_point ) >= 0)

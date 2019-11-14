@@ -29,7 +29,6 @@
 #include <armadillo>
 #include "fem/fe_p.hh"                   // for FE_P_disc
 #include "fem/fe_rt.hh"                  // for FE_RT0
-#include "fem/mapping_p1.hh"             // for MappingP1
 #include "fem/fe_values.hh"              // for FEValues
 #include "quadrature/quadrature_lib.hh"  // for QGauss
 #include "fields/equation_output.hh"     // for EquationOutput
@@ -44,6 +43,7 @@
 #include "system/exceptions.hh"          // for ExcAssertMsg::~ExcAssertMsg
 
 class DOFHandlerMultiDim;
+class DiscreteSpace;
 class DarcyMH;
 class Mesh;
 class OutputTime;
@@ -235,8 +235,6 @@ protected:
 
         const unsigned int order; // order of Gauss quadrature
         QGauss quad;
-
-        MappingP1<dim,3> mapp;
 
         FEValues<dim,3> fe_values;
         

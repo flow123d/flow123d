@@ -27,7 +27,6 @@
 #include <vector>                              // for vector
 #include <armadillo>
 #include "fem/update_flags.hh"                 // for operator|
-#include "fem/mapping_p1.hh"
 #include "fields/field_values.hh"              // for FieldValue<>::Scalar
 #include "fields/field.hh"
 #include "fields/multi_field.hh"
@@ -58,7 +57,6 @@ class OutputTime;
 class DOFHandlerMultiDim;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim> class FiniteElement;
-template<unsigned int dim, unsigned int spacedim> class Mapping;
 class Quadrature;
 namespace Input { namespace Type { class Selection; } }
 
@@ -84,9 +82,6 @@ public:
 	template<unsigned int dim>
 	inline Quadrature *q() { return q_[dim]; }
 
-	template<unsigned int dim>
-	inline MappingP1<dim,3> *mapping();
-
 	inline std::shared_ptr<DOFHandlerMultiDim> dh();
 
 private:
@@ -105,12 +100,7 @@ private:
 	/// Quadratures used in assembling methods.
 	Quadrature *q_[4];
 
-	/// Auxiliary mappings of reference elements.
-	MappingP1<1,3> *map1_;
-	MappingP1<2,3> *map2_;
-	MappingP1<3,3> *map3_;
-    
-        std::shared_ptr<DiscreteSpace> ds_;
+    std::shared_ptr<DiscreteSpace> ds_;
 
 	/// Object for distribution of dofs.
 	std::shared_ptr<DOFHandlerMultiDim> dh_;

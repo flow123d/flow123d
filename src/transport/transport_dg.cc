@@ -21,7 +21,6 @@
 
 #include "io/output_time.hh"
 #include "quadrature/quadrature_lib.hh"
-#include "fem/mapping_p1.hh"
 #include "fem/fe_values.hh"
 #include "fem/fe_p.hh"
 #include "fem/fe_rt.hh"
@@ -122,10 +121,6 @@ FEObjects::FEObjects(Mesh *mesh_, unsigned int fe_order)
     for (unsigned int dim = 0; dim < 4; dim++)
         q_[dim] = new QGauss(dim, q_order);
 
-    map1_ = new MappingP1<1,3>;
-    map2_ = new MappingP1<2,3>;
-    map3_ = new MappingP1<3,3>;
-
     ds_ = std::make_shared<EqualOrderDiscreteSpace>(mesh_, fe0_, fe1_, fe2_, fe3_);
 	dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
 
@@ -143,9 +138,6 @@ FEObjects::~FEObjects()
     delete fe_rt2_;
     delete fe_rt3_;
     for (unsigned int dim = 0; dim < 4; dim++) delete q_[dim];
-    delete map1_;
-    delete map2_;
-    delete map3_;
 }
 
 template<> FiniteElement<0> *FEObjects::fe<0>() { return fe0_; }
@@ -157,10 +149,6 @@ template<> FiniteElement<0> *FEObjects::fe_rt<0>() { return 0; }
 template<> FiniteElement<1> *FEObjects::fe_rt<1>() { return fe_rt1_; }
 template<> FiniteElement<2> *FEObjects::fe_rt<2>() { return fe_rt2_; }
 template<> FiniteElement<3> *FEObjects::fe_rt<3>() { return fe_rt3_; }
-
-template<> MappingP1<1,3> *FEObjects::mapping<1>() { return map1_; }
-template<> MappingP1<2,3> *FEObjects::mapping<2>() { return map2_; }
-template<> MappingP1<3,3> *FEObjects::mapping<3>() { return map3_; }
 
 std::shared_ptr<DOFHandlerMultiDim> FEObjects::dh() { return dh_; }
 
@@ -665,7 +653,7 @@ void TransportDG<Model>::assemble_mass_matrix()
 template<class Model> template<unsigned int dim>
 void TransportDG<Model>::assemble_mass_matrix()
 {
-    FEValues<dim,3> fe_values(*feo->mapping<dim>(), *feo->q<dim>(), *feo->fe<dim>(), update_values | update_JxW_values | update_quadrature_points);
+    FEValues<dim,3> fe_values(*feo->q<dim>(), *feo->fe<dim>(), update_values | update_JxW_values | update_quadrature_points);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim>()->size();
     vector<LongIdx> dof_indices(ndofs);
     PetscScalar local_mass_matrix[ndofs*ndofs], local_retardation_balance_vector[ndofs];
@@ -753,9 +741,9 @@ template<class Model>
 template<unsigned int dim>
 void TransportDG<Model>::assemble_volume_integrals()
 {
-    FEValues<dim,3> fv_rt(*feo->mapping<dim>(), *feo->q<dim>(), *feo->fe_rt<dim>(),
+    FEValues<dim,3> fv_rt(*feo->q<dim>(), *feo->fe_rt<dim>(),
             update_values | update_gradients);
-    FEValues<dim,3> fe_values(*feo->mapping<dim>(), *feo->q<dim>(), *feo->fe<dim>(),
+    FEValues<dim,3> fe_values(*feo->q<dim>(), *feo->fe<dim>(),
             update_values | update_gradients | update_JxW_values | update_quadrature_points);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim>()->size();
     std::vector<LongIdx> dof_indices(ndofs);
@@ -820,7 +808,7 @@ template<class Model>
 template<unsigned int dim>
 void TransportDG<Model>::set_sources()
 {
-    FEValues<dim,3> fe_values(*feo->mapping<dim>(), *feo->q<dim>(), *feo->fe<dim>(),
+    FEValues<dim,3> fe_values(*feo->q<dim>(), *feo->fe<dim>(),
             update_values | update_JxW_values | update_quadrature_points);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim>()->size();
     vector<std::vector<double> > sources_conc(Model::n_substances(), std::vector<double>(qsize)),
@@ -896,7 +884,7 @@ template<unsigned int dim>
 void TransportDG<Model>::assemble_fluxes_element_element()
 {
     vector<FESideValues<dim,3>*> fe_values;
-    FESideValues<dim,3> fsv_rt(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe_rt<dim>(),
+    FESideValues<dim,3> fsv_rt(*feo->q<dim-1>(), *feo->fe_rt<dim>(),
             update_values);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim-1>()->size(),
             n_max_sides = ad_coef_edg.size();
@@ -910,7 +898,7 @@ void TransportDG<Model>::assemble_fluxes_element_element()
     for (unsigned int sid=0; sid<n_max_sides; sid++) // Optimize: SWAP LOOPS
     {
     	side_dof_indices.push_back( vector<LongIdx>(ndofs) );
-        fe_values.push_back(new FESideValues<dim,3>(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe<dim>(),
+        fe_values.push_back(new FESideValues<dim,3>(*feo->q<dim-1>(), *feo->fe<dim>(),
                 update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points));
     }
 
@@ -1080,9 +1068,9 @@ template<class Model>
 template<unsigned int dim>
 void TransportDG<Model>::assemble_fluxes_boundary()
 {
-    FESideValues<dim,3> fe_values_side(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe<dim>(),
+    FESideValues<dim,3> fe_values_side(*feo->q<dim-1>(), *feo->fe<dim>(),
             update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
-    FESideValues<dim,3> fsv_rt(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe_rt<dim>(),
+    FESideValues<dim,3> fsv_rt(*feo->q<dim-1>(), *feo->fe_rt<dim>(),
             update_values);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim-1>()->size();
     std::vector<LongIdx> side_dof_indices(ndofs);
@@ -1185,13 +1173,13 @@ void TransportDG<Model>::assemble_fluxes_element_side()
 {
 
     if (dim == 1) return;
-    FEValues<dim-1,3> fe_values_vb(*feo->mapping<dim-1>(), *feo->q<dim-1>(), *feo->fe<dim-1>(),
+    FEValues<dim-1,3> fe_values_vb(*feo->q<dim-1>(), *feo->fe<dim-1>(),
             update_values | update_gradients | update_JxW_values | update_quadrature_points);
-    FESideValues<dim,3> fe_values_side(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe<dim>(),
+    FESideValues<dim,3> fe_values_side(*feo->q<dim-1>(), *feo->fe<dim>(),
             update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
-    FESideValues<dim,3> fsv_rt(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe_rt<dim>(),
+    FESideValues<dim,3> fsv_rt(*feo->q<dim-1>(), *feo->fe_rt<dim>(),
             update_values);
-    FEValues<dim-1,3> fv_rt(*feo->mapping<dim-1>(), *feo->q<dim-1>(), *feo->fe_rt<dim-1>(),
+    FEValues<dim-1,3> fv_rt(*feo->q<dim-1>(), *feo->fe_rt<dim-1>(),
             update_values);
 
     vector<FEValuesSpaceBase<3>*> fv_sb(2);
@@ -1317,9 +1305,9 @@ template<class Model>
 template<unsigned int dim>
 void TransportDG<Model>::set_boundary_conditions()
 {
-    FESideValues<dim,3> fe_values_side(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe<dim>(),
+    FESideValues<dim,3> fe_values_side(*feo->q<dim-1>(), *feo->fe<dim>(),
             update_values | update_gradients | update_normal_vectors | update_side_JxW_values | update_quadrature_points);
-    FESideValues<dim,3> fsv_rt(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe_rt<dim>(),
+    FESideValues<dim,3> fsv_rt(*feo->q<dim-1>(), *feo->fe_rt<dim>(),
                 update_values);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim-1>()->size();
     vector<LongIdx> side_dof_indices(ndofs);
@@ -1551,7 +1539,7 @@ template<class Model>
 template<unsigned int dim>
 void TransportDG<Model>::prepare_initial_condition()
 {
-    FEValues<dim,3> fe_values(*feo->mapping<dim>(), *feo->q<dim>(), *feo->fe<dim>(),
+    FEValues<dim,3> fe_values(*feo->q<dim>(), *feo->fe<dim>(),
             update_values | update_JxW_values | update_quadrature_points);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim>()->size();
     std::vector<LongIdx> dof_indices(ndofs);

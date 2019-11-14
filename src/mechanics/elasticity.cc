@@ -21,7 +21,6 @@
 
 #include "io/output_time.hh"
 #include "quadrature/quadrature_lib.hh"
-#include "fem/mapping_p1.hh"
 #include "fem/fe_values.hh"
 #include "fem/fe_p.hh"
 #include "fem/fe_rt.hh"
@@ -96,10 +95,6 @@ FEObjects::FEObjects(Mesh *mesh_, unsigned int fe_order)
 
 	for (unsigned int dim = 0; dim < 4; dim++) q_[dim] = new QGauss(dim, q_order);
 
-	map1_ = new MappingP1<1,3>;
-	map2_ = new MappingP1<2,3>;
-	map3_ = new MappingP1<3,3>;
-
     ds_ = std::make_shared<EqualOrderDiscreteSpace>(mesh_, fe0_, fe1_, fe2_, fe3_);
 	dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
 
@@ -113,19 +108,12 @@ FEObjects::~FEObjects()
 	delete fe2_;
 	delete fe3_;
 	for (unsigned int dim=0; dim < 4; dim++) delete q_[dim];
-	delete map1_;
-	delete map2_;
-	delete map3_;
 }
 
 template<> FiniteElement<0> *FEObjects::fe<0>() { return 0; }
 template<> FiniteElement<1> *FEObjects::fe<1>() { return fe1_; }
 template<> FiniteElement<2> *FEObjects::fe<2>() { return fe2_; }
 template<> FiniteElement<3> *FEObjects::fe<3>() { return fe3_; }
-
-template<> MappingP1<1,3> *FEObjects::mapping<1>() { return map1_; }
-template<> MappingP1<2,3> *FEObjects::mapping<2>() { return map2_; }
-template<> MappingP1<3,3> *FEObjects::mapping<3>() { return map3_; }
 
 std::shared_ptr<DOFHandlerMultiDim> FEObjects::dh() { return dh_; }
 
@@ -507,7 +495,7 @@ double lame_lambda(double young, double poisson)
 template<unsigned int dim>
 void Elasticity::assemble_volume_integrals()
 {
-    FEValues<dim,3> fe_values(*feo->mapping<dim>(), *feo->q<dim>(), *feo->fe<dim>(),
+    FEValues<dim,3> fe_values(*feo->q<dim>(), *feo->fe<dim>(),
     		update_values | update_gradients | update_JxW_values | update_quadrature_points);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim>()->size();
     vector<int> dof_indices(ndofs);
@@ -568,7 +556,7 @@ void Elasticity::set_sources()
 template<unsigned int dim>
 void Elasticity::set_sources()
 {
-    FEValues<dim,3> fe_values(*feo->mapping<dim>(), *feo->q<dim>(), *feo->fe<dim>(),
+    FEValues<dim,3> fe_values(*feo->q<dim>(), *feo->fe<dim>(),
     		update_values | update_gradients | update_JxW_values | update_quadrature_points);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim>()->size();
     vector<arma::vec3> load(qsize);
@@ -624,7 +612,7 @@ void Elasticity::set_sources()
 template<unsigned int dim>
 void Elasticity::assemble_fluxes_boundary()
 {
-    FESideValues<dim,3> fe_values_side(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe<dim>(),
+    FESideValues<dim,3> fe_values_side(*feo->q<dim-1>(), *feo->fe<dim>(),
     		update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs();
     vector<int> side_dof_indices(ndofs);
@@ -666,9 +654,9 @@ template<unsigned int dim>
 void Elasticity::assemble_fluxes_element_side()
 {
 	if (dim == 1) return;
-    FEValues<dim-1,3> fe_values_sub(*feo->mapping<dim-1>(), *feo->q<dim-1>(), *feo->fe<dim-1>(),
+    FEValues<dim-1,3> fe_values_sub(*feo->q<dim-1>(), *feo->fe<dim-1>(),
     		update_values | update_gradients | update_JxW_values | update_quadrature_points);
-    FESideValues<dim,3> fe_values_side(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe<dim>(),
+    FESideValues<dim,3> fe_values_side(*feo->q<dim-1>(), *feo->fe<dim>(),
     		update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
  
     vector<FEValuesSpaceBase<3>*> fv_sb(2);
@@ -800,7 +788,7 @@ void Elasticity::set_boundary_conditions()
 template<unsigned int dim>
 void Elasticity::set_boundary_conditions()
 {
-    FESideValues<dim,3> fe_values_side(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe<dim>(),
+    FESideValues<dim,3> fe_values_side(*feo->q<dim-1>(), *feo->fe<dim>(),
     		update_values | update_gradients | update_normal_vectors | update_side_JxW_values | update_quadrature_points);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim-1>()->size();
     vector<int> side_dof_indices(ndofs);
