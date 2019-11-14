@@ -28,11 +28,6 @@ using namespace std;
 
 
 template<unsigned int dim, unsigned int spacedim>
-MappingP1<dim,spacedim>::MappingP1()
-{
-}
-
-template<unsigned int dim, unsigned int spacedim>
 MappingInternalData *MappingP1<dim,spacedim>::initialize(const Quadrature &q, UpdateFlags flags)
 {
     ASSERT_DBG( q.dim() == dim );
@@ -70,7 +65,7 @@ UpdateFlags MappingP1<dim,spacedim>::update_each(UpdateFlags flags)
 
 
 template<unsigned int dim, unsigned int spacedim>
-auto MappingP1<dim,spacedim>::element_map(ElementAccessor<3> elm) const -> ElementMap
+auto MappingP1<dim,spacedim>::element_map(ElementAccessor<3> elm) -> ElementMap
 {
     ElementMap coords;
     for (unsigned int i=0; i<dim+1; i++)
@@ -80,7 +75,7 @@ auto MappingP1<dim,spacedim>::element_map(ElementAccessor<3> elm) const -> Eleme
 
 
 template<unsigned int dim, unsigned int spacedim>
-auto MappingP1<dim,spacedim>::project_real_to_unit(const RealPoint &point, const ElementMap &map) const -> BaryPoint
+auto MappingP1<dim,spacedim>::project_real_to_unit(const RealPoint &point, const ElementMap &map) -> BaryPoint
 {
     arma::mat::fixed<3, dim> A = map.cols(1,dim);
     for(unsigned int i=0; i < dim; i++ ) {
@@ -96,7 +91,7 @@ auto MappingP1<dim,spacedim>::project_real_to_unit(const RealPoint &point, const
 }
 
 template<unsigned int dim, unsigned int spacedim>
-auto MappingP1<dim,spacedim>::project_unit_to_real(const BaryPoint &point, const ElementMap &map) const -> RealPoint
+auto MappingP1<dim,spacedim>::project_unit_to_real(const BaryPoint &point, const ElementMap &map) -> RealPoint
 {
     return map * point;
 }
@@ -109,12 +104,13 @@ auto MappingP1<dim,spacedim>::clip_to_element(BaryPoint &barycentric) -> BaryPoi
 template <unsigned int dim, unsigned int spacedim>
 bool MappingP1<dim,spacedim>::contains_point(arma::vec point, ElementAccessor<3> elm)
 {
-	arma::vec projection = this->project_real_to_unit(point, this->element_map(elm));
+	arma::vec projection = project_real_to_unit(point, element_map(elm));
 	return (projection.min() >= -BoundingBox::epsilon);
 }
 
 
 
+template class MappingP1<0,3>;
 template class MappingP1<1,3>;
 template class MappingP1<2,3>;
 template class MappingP1<3,3>;

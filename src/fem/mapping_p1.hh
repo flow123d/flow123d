@@ -71,18 +71,13 @@ public:
     typedef arma::mat::fixed<spacedim, dim+1> ElementMap;
     
     /**
-     * @brief Constructor.
-     */
-    MappingP1();
-
-    /**
      * @brief Initializes the structures and computes static data.
      *
      * @param q Quadrature rule.
      * @param flags Update flags.
      * @return The computed mapping data.
      */
-    MappingInternalData *initialize(const Quadrature &q, UpdateFlags flags);
+    static MappingInternalData *initialize(const Quadrature &q, UpdateFlags flags);
 
     /**
      * @brief Determines which additional quantities have to be computed.
@@ -90,37 +85,37 @@ public:
      * @param flags Update flags for required quantities.
      * @return All necessary flags.
      */
-    UpdateFlags update_each(UpdateFlags flags);
+    static UpdateFlags update_each(UpdateFlags flags);
     
     /**
      * Map from reference element (barycentric coords) to global coord system.
      * Matrix(3, dim+1) M: x_real = M * x_bary;
      * M columns are real coordinates of nodes.
      */
-    ElementMap element_map(ElementAccessor<3> elm) const;
+    static ElementMap element_map(ElementAccessor<3> elm);
 
     /**
      * Project given point in real coordinates to reference element (barycentic coordinates).
      * Result vector have dimension dim()+1.
      * Use RefElement<dim>::bary_to_local() to get local coordinates.
      */
-    BaryPoint project_real_to_unit(const RealPoint &point, const ElementMap &map) const;
+    static BaryPoint project_real_to_unit(const RealPoint &point, const ElementMap &map);
     
     /**
      * Project given point from reference element (barycentic coordinates) to real coordinates.
      * Use RefElement<dim>::local_to_bary() to get barycentric coordinates in input.
      */
-    RealPoint project_unit_to_real(const BaryPoint &point, const ElementMap &map) const;
+    static RealPoint project_unit_to_real(const BaryPoint &point, const ElementMap &map);
 
     /**
      * Clip a point given by barycentric cocordinates to the element.
      * If the point is out of the element the closest point
      * projection to the element surface is used.
      */
-    BaryPoint clip_to_element(BaryPoint &barycentric);
+    static BaryPoint clip_to_element(BaryPoint &barycentric);
 
     /// Test if element contains given point.
-    bool contains_point(arma::vec point, ElementAccessor<3> elm);
+    static bool contains_point(arma::vec point, ElementAccessor<3> elm);
 
 
 };
