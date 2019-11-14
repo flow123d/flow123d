@@ -3,7 +3,7 @@
 #define LOCAL_SYSTEM_HH_
 
 #include <armadillo>
-#include "mesh/long_idx.hh"
+#include "system/index_types.hh"
 
 class LinSys;
 

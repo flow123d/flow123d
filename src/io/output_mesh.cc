@@ -16,11 +16,11 @@
  */
 
 #include "mesh/side_impl.hh"
+#include "system/index_types.hh"
 #include "output_mesh.hh"
 #include "output_element.hh"
 #include "mesh/mesh.h"
 #include "mesh/ref_element.hh"
-#include "mesh/long_idx.hh"
 #include "mesh/accessors.hh"
 #include "mesh/node_accessor.hh"
 #include "mesh/range_wrapper.hh"

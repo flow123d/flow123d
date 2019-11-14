@@ -16,6 +16,7 @@
 * @author  Jan Stebel
 */
 
+#include "system/index_types.hh"
 #include "system/sys_profiler.hh"
 #include "transport/transport_dg.hh"
 
@@ -41,7 +42,6 @@
 #include "fields/generic_field.hh"
 #include "input/factory.hh"
 #include "fields/equation_output.hh"
-#include "mesh/long_idx.hh"
 #include "mesh/accessors.hh"
 
 FLOW123D_FORCE_LINK_IN_CHILD(concentrationTransportModel);

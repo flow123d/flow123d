@@ -25,7 +25,7 @@
 #include <vector>                            // for vector
 #include <armadillo>
 #include "la/distribution.hh"                // for Distribution
-#include "mesh/long_idx.hh"                  // for LongIdx
+#include "system/index_types.hh"             // for LongIdx
 #include "mesh/accessors.hh"                 // for ElementAccessor
 #include "mesh/elements.h"                   // for Element::side, Element::dim
 #include "mesh/mesh.h"                       // for Mesh

@@ -22,11 +22,11 @@
 
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
+#include "system/index_types.hh"
 
 #include <petscmat.h>
 #include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
-#include "mesh/long_idx.hh"
 #include "mesh/accessors.hh"
 #include "io/output_time_set.hh"
 #include "coupling/balance.hh"

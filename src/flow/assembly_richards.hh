@@ -8,7 +8,7 @@
 #ifndef SRC_FLOW_ASSEMBLY_LMH_HH_
 #define SRC_FLOW_ASSEMBLY_LMH_HH_
 
-#include "mesh/long_idx.hh"
+#include "system/index_types.hh"
 #include "flow/assembly_lmh.hh"
 #include "soil_models.hh"
 #include "coupling/balance.hh"

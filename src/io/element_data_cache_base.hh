@@ -24,7 +24,7 @@
 #include <string>
 #include <istream>
 #include "system/system.hh"
-#include "mesh/long_idx.hh"
+#include "system/index_types.hh"
 
 class Tokenizer;
 class Distribution;

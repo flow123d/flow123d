@@ -24,7 +24,7 @@
 #include <memory>                    // for shared_ptr
 #include <string>                    // for string
 #include "coupling/equation.hh"      // for EquationBase
-#include "mesh/long_idx.hh"          // for LongInt
+#include "system/index_types.hh"     // for LongInt
 #include "input/input_exception.hh"  // for DECLARE_INPUT_EXCEPTION, Exception
 #include "system/exceptions.hh"      // for ExcStream, operator<<, EI, TYPED...
 #include "transport/substance.hh"    // for SubstanceList
