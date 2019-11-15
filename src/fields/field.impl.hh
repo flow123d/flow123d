@@ -687,7 +687,7 @@ std::shared_ptr< FieldFE<spacedim, Value> > Field<spacedim,Value>::get_field_fe(
 
 template<int spacedim, class Value>
 void Field<spacedim, Value>::cache_allocate(EvalSubset sub_set) {
-    unsigned int point_dim = sub_set.eval_points().point_dim();
+    unsigned int point_dim = sub_set.eval_points()->point_dim();
 
     value_cache_[point_dim-1] = FieldValueCache<Value>(sub_set.eval_points(), ElementCacheMap::n_cached_elements);
     value_cache_[point_dim-1].mark_used(sub_set);
@@ -695,7 +695,7 @@ void Field<spacedim, Value>::cache_allocate(EvalSubset sub_set) {
 
 
 template<int spacedim, class Value>
-void Field<spacedim, Value>::cache_update(ElementCacheMap &cache_map, EvalPoints &eval_points) {
+void Field<spacedim, Value>::cache_update(ElementCacheMap &cache_map) {
 	// Helper struct allows to sort data for different regions
 	struct RegionEvalData
 	{
@@ -722,7 +722,7 @@ void Field<spacedim, Value>::cache_update(ElementCacheMap &cache_map, EvalPoints
         }
         region_it->second.element_set.push_back( elm );
         for (int p_idx : used_points) {
-        	region_it->second.loc_points.push_back( eval_points.local_point(p_idx) );
+        	region_it->second.loc_points.push_back( dim_cache.eval_points->local_point(p_idx) );
         	region_it->second.indices_to_cache.push_back( elm.element_cache_index() * points_per_elem + p_idx );
         }
     }

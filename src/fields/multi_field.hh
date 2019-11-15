@@ -254,7 +254,7 @@ public:
     void cache_allocate(EvalSubset sub_set) override;
 
     /// Implements FieldCommon::cache_update
-    void cache_update(ElementCacheMap &cache_map, EvalPoints &eval_points) override;
+    void cache_update(ElementCacheMap &cache_map) override;
 
 private:
     /// Subfields (items) of MultiField

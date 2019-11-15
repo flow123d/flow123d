@@ -29,13 +29,12 @@
 
 template<class Value>
 FieldValueCache<Value>::FieldValueCache()
-: data_(0, Value::NRows_, Value::NCols_) {}
+: data_(0, Value::NRows_, Value::NCols_), eval_points_(nullptr) {}
 
 template<class Value>
-FieldValueCache<Value>::FieldValueCache(EvalPoints eval_points, unsigned int n_cache_points)
-: data_(n_cache_points * eval_points.size(), Value::NRows_, Value::NCols_) {
-	dim_ = eval_points.point_dim();
-}
+FieldValueCache<Value>::FieldValueCache(const EvalPoints *eval_points, unsigned int n_cache_points)
+: data_(n_cache_points * eval_points->size(), Value::NRows_, Value::NCols_),
+  eval_points_(eval_points), dim_(eval_points->point_dim()) {}
 
 template<class Value>
 FieldValueCache<Value>::~FieldValueCache() {}

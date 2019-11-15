@@ -451,7 +451,7 @@ public:
     /**
      * Read data to cache for appropriate elements given by ElementCacheMap object.
      */
-    virtual void cache_update(ElementCacheMap &cache_map, EvalPoints &eval_points) = 0;
+    virtual void cache_update(ElementCacheMap &cache_map) = 0;
 
 
     /**

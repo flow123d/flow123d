@@ -39,7 +39,7 @@ public:
     FieldValueCache();
 
     /// Constructor
-    FieldValueCache(EvalPoints eval_points, unsigned int n_cache_points);
+    FieldValueCache(const EvalPoints *eval_points, unsigned int n_cache_points);
 
     /// Destructor
     ~FieldValueCache();
@@ -62,12 +62,21 @@ public:
     inline Armor::Array<elm_type> &data() {
         return data_;
     }
+
+    /// Return data vector.
+    inline const EvalPoints *eval_points() const {
+        return eval_points_;
+    }
+
 private:
     /// Data cache
     Armor::Array<elm_type> data_;
 
     /// Holds indices of used local points
     std::set<int> used_points_;  // TODO: test unorderd_set during tuning of the performance
+
+    /// Pointer to EvalPoints
+    const EvalPoints *eval_points_;
 
     /// Dimension (control data member)
     unsigned int dim_;

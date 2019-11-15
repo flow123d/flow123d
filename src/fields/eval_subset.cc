@@ -68,7 +68,7 @@ Range< SidePoint > EvalSubset::points(const DHCellSide &cell_side) const {
  * Implementation of BulkPoint methods
  */
 arma::vec BulkPoint::loc_coords() const {
-    return this->eval_points().local_point( local_point_idx_ );
+    return this->eval_points()->local_point( local_point_idx_ );
 }
 
 
@@ -77,16 +77,16 @@ arma::vec BulkPoint::loc_coords() const {
  * Implementation of SidePoint methods
  */
 arma::vec SidePoint::loc_coords() const {
-    return this->eval_points().local_point( local_point_idx_ );
+    return this->eval_points()->local_point( local_point_idx_ );
 }
 
 SidePoint SidePoint::permute(DHCellSide edg_side) const {
-	unsigned int begin_idx = subset_.eval_points().block_idx(subset_.get_block_idx(permutation_idx_));
-	unsigned int points_per_side = (subset_.eval_points().block_idx(subset_.get_block_idx(permutation_idx_+1)) - begin_idx) / subset_.n_sides();
+	unsigned int begin_idx = subset_.eval_points()->block_idx(subset_.get_block_idx(permutation_idx_));
+	unsigned int points_per_side = (subset_.eval_points()->block_idx(subset_.get_block_idx(permutation_idx_+1)) - begin_idx) / subset_.n_sides();
 	unsigned int point_on_side = local_point_idx_ - (begin_idx + cell_side_.side_idx() * points_per_side);
 
     unsigned int edg_perm_idx = edg_side.element()->permutation_idx( edg_side.side_idx() );
-    unsigned int edg_begin_idx = subset_.eval_points().block_idx( subset_.get_block_idx(edg_perm_idx) );
+    unsigned int edg_begin_idx = subset_.eval_points()->block_idx( subset_.get_block_idx(edg_perm_idx) );
 	unsigned int edg_loc_point_idx = edg_begin_idx + edg_side.side_idx() * points_per_side + point_on_side;
     return SidePoint(edg_side, subset_, edg_loc_point_idx);
 }

@@ -247,10 +247,9 @@ public:
     /**
      * Collective interface to @p FieldCommon::cache_update().
      */
-    void cache_update(ElementCacheMap &cache_map, EvalPoints &eval_points) {
-        ASSERT_EQ(cache_map.dim(), eval_points.point_dim()).error("Different dimension of ElementCacheMap and EvalPoints.\n");
+    void cache_update(ElementCacheMap &cache_map) {
         cache_map.prepare_elements_to_update();
-		for(auto field : field_list) field->cache_update(cache_map, eval_points);
+	    for(auto field : field_list) field->cache_update(cache_map);
         cache_map.clear_elements_to_update();
     }
 
