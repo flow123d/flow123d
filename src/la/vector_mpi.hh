@@ -25,6 +25,7 @@
 #include "system/index_types.hh"
 
 #include <petscvec.h>
+#include <armadillo>
 
 /**
  * Auxiliary class for output elementwise concentration vectors
@@ -157,6 +158,20 @@ public:
         return (*data_ptr_)[idx];
     }
 
+    /**
+     * Access to the vector elements on local indices @p idx.
+     */
+    arma::vec get_subvec(const LocDofVec& loc_indices);
+
+    /**
+     * Access to the vector elements on local indices @p idx (const version).
+     */
+    arma::vec get_subvec(const LocDofVec& loc_indices) const;
+
+    /**
+     * Set some vector elements on local indices @p idx.
+     */
+    void set_subvec(const LocDofVec& loc_indices, const arma::vec& values);
 private:
 
     /// shared pointer to vector of data

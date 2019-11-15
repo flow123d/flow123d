@@ -23,6 +23,7 @@
 #include "system/index_types.hh"
 
 #include <petscvec.h>
+#include <armadillo>
 
 
 VectorMPI::VectorMPI(MPI_Comm comm)
@@ -106,10 +107,49 @@ void VectorMPI::copy_from(VectorMPI &other) {
 }
 
 
+arma::vec VectorMPI::get_subvec(const LocDofVec& loc_indices)
+{
+    ASSERT_DBG(data_ptr_);
+    arma::vec vec(loc_indices.n_elem);
+    
+    for(unsigned int i=0; i<loc_indices.n_elem; i++){
+        unsigned int idx = loc_indices(i);
+        ASSERT_DBG(idx < data_ptr_->size()) (idx) (data_ptr_->size());
+        vec(i) = (*data_ptr_)[idx];
+    }
+    return vec;
+}
+
+
+arma::vec VectorMPI::get_subvec(const LocDofVec& loc_indices) const
+{
+    ASSERT_DBG(data_ptr_);
+    arma::vec vec(loc_indices.n_elem);
+    
+    for(unsigned int i=0; i<loc_indices.n_elem; i++){
+        unsigned int idx = loc_indices(i);
+        ASSERT_DBG(idx < data_ptr_->size()) (idx) (data_ptr_->size());
+        vec(i) = (*data_ptr_)[idx];
+    }
+    return vec;
+}
+
+
+void VectorMPI::set_subvec(const LocDofVec& loc_indices, const arma::vec& values)
+{
+    ASSERT_DBG(data_ptr_);
+    ASSERT_EQ_DBG(loc_indices.n_elem, values.n_elem);
+    
+    for(unsigned int i=0; i<loc_indices.n_elem; i++){
+        unsigned int idx = loc_indices(i);
+        ASSERT_DBG(idx < data_ptr_->size()) (idx) (data_ptr_->size());
+        (*data_ptr_)[idx] = values(i);
+    }
+}
+
 /// Destructor.
 VectorMPI::~VectorMPI()
 {
     if (data_ptr_.use_count() == 1)
         if (data_petsc_) chkerr(VecDestroy(&data_petsc_));
 }
-
