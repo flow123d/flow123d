@@ -119,7 +119,8 @@ public:
         LocDofVec dofs, dofs_schur;
         set_loc_dofs_vec(ele_ac, dofs, dofs_schur);
         loc_system_.reset(dofs.n_elem, dofs.n_elem);
-        loc_schur_.reset(dofs_schur.n_elem,dofs_schur.n_elem);
+        // set dofs for local schur, since these are used in assembly functions
+        loc_schur_.reset(dofs_schur,dofs_schur);
         
         assemble_bc(ele_ac);
         
