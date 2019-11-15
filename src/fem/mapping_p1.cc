@@ -74,6 +74,17 @@ auto MappingP1<dim,spacedim>::element_map(ElementAccessor<3> elm) -> ElementMap
 
 
 template<unsigned int dim, unsigned int spacedim>
+auto MappingP1<dim,spacedim>::jacobian(const ElementMap &coords) -> arma::mat::fixed<spacedim,dim>
+{
+    arma::mat::fixed<spacedim,dim> jac;
+    for (unsigned int i=0; i<spacedim; i++)
+        for (unsigned int j=0; j<dim; j++)
+            jac(i,j) = coords(i,j+1) - coords(i,0);
+    return jac;
+}
+
+
+template<unsigned int dim, unsigned int spacedim>
 auto MappingP1<dim,spacedim>::project_real_to_unit(const RealPoint &point, const ElementMap &map) -> BaryPoint
 {
     arma::mat::fixed<3, dim> A = map.cols(1,dim);
