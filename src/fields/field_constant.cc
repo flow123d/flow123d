@@ -143,15 +143,12 @@ void FieldConstant<spacedim, Value>::value_list (const std::vector< Point >  &po
 
 
 template <int spacedim, class Value>
-void FieldConstant<spacedim, Value>::loc_point_value(const std::vector< arma::vec > &eval_points,
-        const std::vector< ElementAccessor<spacedim> > &element_set,
-		const std::vector< unsigned int > &indices_to_cache,
-		FieldValueCache<Value> &data_cache)
+void FieldConstant<spacedim, Value>::loc_point_value(const std::vector< ElementAccessor<spacedim> > &element_set,
+        ElementCacheMap &cache_map,
+        FieldValueCache<Value> &data_cache)
 {
-    ASSERT_EQ(eval_points.size(), indices_to_cache.size()); // only for control in FieldConstant
-
-    Armor::Mat<typename Value::element_type, Value::NRows_, Value::NCols_> mat_value( const_cast<typename Value::element_type*>(this->value_.mem_ptr()) );
-    for (unsigned int i=0; i<indices_to_cache.size(); ++i) data_cache.data().get<Value::NRows_, Value::NCols_>(indices_to_cache[i]) = mat_value;
+    //Armor::Mat<typename Value::element_type, Value::NRows_, Value::NCols_> mat_value( const_cast<typename Value::element_type*>(this->value_.mem_ptr()) );
+    //for (unsigned int i=0; i<indices_to_cache.size(); ++i) data_cache.data().get<Value::NRows_, Value::NCols_>(indices_to_cache[i]) = mat_value;
 }
 
 
