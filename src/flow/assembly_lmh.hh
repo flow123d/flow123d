@@ -51,8 +51,7 @@ public:
         velocity_interpolation_fv_(map_,velocity_interpolation_quad_, fe_rt_, update_values | update_quadrature_points),
 
         ad_(data),
-        loc_system_(size(), size()),
-        edge_indices_(dim+1)
+        loc_system_(size(), size())
     {
         // local numbering of dofs for MH system
         // note: this shortcut supposes that the fe_system is the same on all elements
@@ -117,7 +116,7 @@ public:
         loc_system_.reset();
         reconstruct = true;
     
-        arma::Col<LongIdx> dofs, dofs_schur;
+        LocDofVec dofs, dofs_schur;
         set_loc_dofs_vec(ele_ac, dofs, dofs_schur);
         loc_system_.reset(dofs, dofs);
         loc_schur_.reset(dofs_schur,dofs_schur);
@@ -287,9 +286,10 @@ protected:
         return RefElement<dim>::n_sides + 1 + RefElement<dim>::n_sides;
     }
 
-    void set_loc_dofs_vec(LocalElementAccessorBase<3> ele_ac, arma::Col<LongIdx>& dofs, arma::Col<LongIdx>& dofs_schur){
+    void set_loc_dofs_vec(LocalElementAccessorBase<3> ele_ac, LocDofVec& dofs, LocDofVec& dofs_schur){
         ElementAccessor<3> ele = ele_ac.element_accessor();
         DHCellAccessor dh_cell = ele_ac.dh_cell();
+        DHCellAccessor dh_cr_cell = dh_cell.cell_with_other_dh(ad_->dh_cr_.get());
         
         unsigned int loc_size = size() + ele->n_neighs_vb();
         unsigned int loc_size_schur = ele->n_sides() + ele->n_neighs_vb();
@@ -297,28 +297,14 @@ protected:
         dofs.set_size(loc_size);
         dofs_schur.set_size(loc_size_schur);
         
-        std::vector<LongIdx> indices(dh_cell.n_dofs());
-        dh_cell.get_loc_dof_indices(indices);
-        
-        DHCellAccessor dh_cr_cell = dh_cell.cell_with_other_dh(ad_->dh_cr_.get());
-        std::vector<LongIdx> schur_indices(dh_cr_cell.n_dofs());
-        dh_cr_cell.get_loc_dof_indices(schur_indices);
+        // add full vec indices
+        dofs.head(dh_cell.n_dofs()) = dh_cell.get_loc_dof_indices();
+        // add schur vec indices
+        dofs_schur.head(dh_cr_cell.n_dofs()) = dh_cr_cell.get_loc_dof_indices();
         
         if(ele->n_neighs_vb() == 0)
-        {   
-            dofs = indices;
-            dofs_schur = schur_indices;
             return;
-        }
-        
-        // add full vec indices
-        arma::Col<LongIdx> d = indices;
-        dofs.head(indices.size()) = d;
-        
-        // add schur vec indices
-        arma::Col<LongIdx> dd = schur_indices;
-        dofs_schur.head(schur_indices.size()) = dd;
-        
+
         //D, E',E block: compatible connections: element-edge
         Neighbour *ngh;
         unsigned int i = 0;
@@ -330,23 +316,20 @@ protected:
             // read neighbor dofs (dh dofhandler)
             // neighbor cell owning neighb_side
             DHCellAccessor dh_neighb_cell = neighb_side.cell();
-            std::vector<LongIdx> higher_indices(dh_neighb_cell.n_dofs());
-            dh_neighb_cell.get_loc_dof_indices(higher_indices);
             
             // read neighbor dofs (dh_cr dofhandler)
             // neighbor cell owning neighb_side
             DHCellAccessor dh_neighb_cr_cell = dh_neighb_cell.cell_with_other_dh(ad_->dh_cr_.get());
-            std::vector<LongIdx> cr_dofs(dh_neighb_cr_cell.n_dofs());
-            dh_neighb_cr_cell.get_loc_dof_indices(cr_dofs);
             
             // find edge dofs of neighbor corresponding to neighb_side
             for (unsigned int j = 0; j < neighb_side.element().dim()+1; j++){
             	if (neighb_side.element()->edge_idx(j) == ngh->edge_idx()) {
                     unsigned int p = size()+i;
-                    dofs[p] = higher_indices[higher_indices.size() - cr_dofs.size() + j];
+                    dofs[p] = dh_neighb_cell.get_loc_dof_indices()
+                                [dh_neighb_cell.n_dofs() - dh_neighb_cr_cell.n_dofs() + j];
                     
-                    unsigned int t = schur_indices.size()+i;
-                    dofs_schur[t] = cr_dofs[j];
+                    unsigned int t = dh_cr_cell.n_dofs()+i;
+                    dofs_schur[t] = dh_neighb_cr_cell.get_loc_dof_indices()[j];
                     break;
                 }
             }
@@ -359,79 +342,46 @@ protected:
         
         unsigned int loc_size = size() + ele->n_neighs_vb();
         unsigned int loc_size_schur = ele->n_sides() + ele->n_neighs_vb();
-        // vector of DoFs
-        // arma::Col<LongIdx> dofs(loc_size);
-        arma::Col<LongIdx> dofs_schur(loc_size_schur);
+        LocDofVec dofs_schur(loc_size_schur);
         
         DHCellAccessor dh_cr_cell = ele_ac.dh_cell().cell_with_other_dh(ad_->dh_cr_.get());
-        std::vector<LongIdx> indices(dh_cr_cell.n_dofs());
-        dh_cr_cell.get_loc_dof_indices(indices);
+        // add schur vec indices
+        dofs_schur.head(dh_cr_cell.n_dofs()) = dh_cr_cell.get_loc_dof_indices();
         
-        //set global dof for element (pressure)
-        // dofs[loc_ele_dof] = ele_ac.ele_row();
-        
-        // unsigned int side_row, edge_row;
-        // for (unsigned int i = 0; i < ele_ac.n_sides(); i++) {
+        schur_sp_.ones(loc_size_schur, loc_size_schur);
 
-        //     side_row = loc_side_dofs[i];    //local
-        //     edge_row = loc_edge_dofs[i];    //local
-            
-            // dofs[side_row] = ele_ac.side_row(i);    //global
-            // dofs[edge_row] = ele_ac.edge_row(i);    //global
-        // }
-        
-        if(ele->n_neighs_vb() == 0)
-        {
-            // loc_system_.reset(dofs, dofs);
-            loc_system_.reset(loc_size, loc_size);
-            loc_system_.set_sparsity(base_local_sp_);
-            
-            dofs_schur = indices;
-            loc_schur_.reset(dofs_schur,dofs_schur);
-            schur_sp_.ones(loc_size_schur, loc_size_schur);
-            loc_schur_.set_sparsity(schur_sp_);
-            return;
-        }
-        
         // if neighbor communication, then resize the local system and set dofs and sp
         local_sp_.zeros(loc_size, loc_size);
         local_sp_( 0,0, arma::size(base_local_sp_)) = base_local_sp_;
         
-        // TODO: sparse for commmunication blocks?
-        schur_sp_.ones(loc_size_schur, loc_size_schur);
         
-       
-        arma::Col<LongIdx> d = indices;
-        dofs_schur.head(indices.size()) = d;
-        
-        //D, E',E block: compatible connections: element-edge
-        Neighbour *ngh;
+        if(ele->n_neighs_vb() != 0)
+        {
+            //D, E',E block: compatible connections: element-edge
+            Neighbour *ngh;
 
-        for (unsigned int i = 0; i < ele->n_neighs_vb(); i++) {
-            // every compatible connection adds a 2x2 matrix involving
-            // current element pressure  and a connected edge pressure
-            ngh = ele_ac.element_accessor()->neigh_vb[i];
-            LocalElementAccessorBase<3> acc_higher_dim( ele_ac.dh_cell().dh()->cell_accessor_from_element(ngh->edge()->side(0)->element().idx()) );
-            
-            DHCellAccessor higher_dh_cr_cell = acc_higher_dim.dh_cell().cell_with_other_dh(ad_->dh_cr_.get());
-            std::vector<int> cr_dofs(higher_dh_cr_cell.n_dofs());
-            higher_dh_cr_cell.get_loc_dof_indices(cr_dofs);
-                    
-            for (unsigned int j = 0; j < ngh->edge()->side(0)->element().dim()+1; j++)
-            	if (ngh->edge()->side(0)->element()->edge_idx(j) == ngh->edge_idx()) {
-                    unsigned int p = size()+i;
-                    // dofs[p] = acc_higher_dim.edge_row(j);
-                    local_sp_(loc_ele_dof, p) = 1;
-                    local_sp_(p, loc_ele_dof) = 1;
-                    local_sp_(p, p) = 1;
-                    
-                    unsigned int t = indices.size()+i;
-                    dofs_schur[t] = cr_dofs[j];
-            		break;
-            	}
+            for (unsigned int i = 0; i < ele->n_neighs_vb(); i++) {
+                // every compatible connection adds a 2x2 matrix involving
+                // current element pressure  and a connected edge pressure
+                ngh = ele_ac.element_accessor()->neigh_vb[i];
+                LocalElementAccessorBase<3> acc_higher_dim( ele_ac.dh_cell().dh()->cell_accessor_from_element(ngh->edge()->side(0)->element().idx()) );
+                
+                DHCellAccessor higher_dh_cr_cell = acc_higher_dim.dh_cell().cell_with_other_dh(ad_->dh_cr_.get());
+                
+                for (unsigned int j = 0; j < ngh->edge()->side(0)->element().dim()+1; j++)
+                    if (ngh->edge()->side(0)->element()->edge_idx(j) == ngh->edge_idx()) {
+                        unsigned int p = size()+i;
+                        // dofs[p] = acc_higher_dim.edge_row(j);
+                        local_sp_(loc_ele_dof, p) = 1;
+                        local_sp_(p, loc_ele_dof) = 1;
+                        local_sp_(p, p) = 1;
+                        
+                        unsigned int t = dh_cr_cell.n_dofs()+i;
+                        dofs_schur[t] = higher_dh_cr_cell.get_loc_dof_indices()[j];
+                        break;
+                    }
+            }
         }
-        
-        // loc_system_.reset(dofs, dofs);
         loc_system_.reset(loc_size, loc_size);
         loc_system_.set_sparsity(local_sp_);
         
@@ -650,9 +600,6 @@ protected:
     {
         ElementAccessor<3> ele = ele_ac.element_accessor();
         
-        ele_ac.dh_cell().cell_with_other_dh(ad_->dh_cr_.get()).get_loc_dof_indices(edge_indices_);
-
-        
         // compute lumped source
         double alpha = 1.0 / ele->n_sides();
         double cross_section = ad_->cross_section.value(ele.centre(), ele);
@@ -823,9 +770,6 @@ protected:
     unsigned int loc_ele_dof;
 
     // std::shared_ptr<MortarAssemblyBase> mortar_assembly;
-        
-//     // TODO: Update dofs only once, use the dofs from LocalSystem, once set_dofs and set_bc is separated.
-    std::vector<int> edge_indices_; ///< Dofs of discontinuous fields on element edges.
 
     /// Index offset in the local system for the Schur complement.
     unsigned int schur_offset_;

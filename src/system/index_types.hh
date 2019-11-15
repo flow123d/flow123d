@@ -22,6 +22,7 @@
 
 /// Define type that represents indices of large arrays (elements, nodes, dofs etc.)
 typedef int LongIdx;
+typedef unsigned int Idx;
 
 typedef arma::Col<LongIdx> GlobalDofVec;
 typedef arma::Col<unsigned int> LocDofVec;

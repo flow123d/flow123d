@@ -25,6 +25,7 @@
 #include "mesh/neighbours.h"
 #include "fem/finite_element.hh"
 #include "fem/dofhandler.hh"
+#include "system/index_types.hh"
 
 class DHCellSide;
 class DHNeighbSide;
@@ -51,7 +52,7 @@ public:
      * DOF cell accessor.
      */
 	DHCellAccessor(const DOFHandlerMultiDim *dof_handler, unsigned int loc_idx)
-    : dof_handler_(dof_handler), loc_ele_idx_(loc_idx), dof_indices_(dof_handler->max_elem_dofs())
+    : dof_handler_(dof_handler), loc_ele_idx_(loc_idx)
     {}
 
     /// Return local index to element (index of DOF handler).
@@ -85,8 +86,8 @@ public:
      *
      * @param indices Array of dof indices on the cell.
      */
-    unsigned int get_loc_dof_indices(std::vector<LongIdx> &indices) const
-    { return dof_handler_->get_loc_dof_indices( *this, indices ); }
+    LocDofVec get_loc_dof_indices() const
+    { return dof_handler_->get_loc_dof_indices(loc_ele_idx_); }
 
     /// Return number of dofs on given cell.
     unsigned int n_dofs() const;
@@ -155,8 +156,6 @@ private:
     const DOFHandlerMultiDim * dof_handler_;
     /// Index into DOFHandler::el_4_loc array.
     unsigned int loc_ele_idx_;
-    /// Vector of DOF indices, it is allocate in constructor
-    mutable std::vector<int> dof_indices_;
 
     friend class DHCellSide;
     friend class DHEdgeSide;

@@ -31,6 +31,7 @@
 #include "la/vector_mpi.hh"       // for VectorMPI
 #include "petscvec.h"          // for Vec
 
+
 template<unsigned int dim> class FiniteElement;
 class DHCellAccessor;
 class Mesh;
@@ -96,12 +97,11 @@ protected:
     virtual unsigned int get_dof_indices(const DHCellAccessor &cell, std::vector<LongIdx> &indices) const = 0;
 
     /**
-     * @brief Fill vector of the indices of dofs associated to the @p cell on the local process.
+     * @brief Returns a vector of the indices of dofs associated to the @p cell on the local process.
      *
-     * @param cell The cell.
-     * @param indices Vector of dof indices on the cell.
+     * @param loc_ele_idx local element index.
      */
-    virtual unsigned int get_loc_dof_indices(const DHCellAccessor &cell, std::vector<LongIdx> &indices) const =0;
+    virtual LocDofVec get_loc_dof_indices(unsigned int loc_ele_idx) const =0;
 
     /**
      * @brief Number of global dofs assigned by the handler.
@@ -360,11 +360,16 @@ protected:
     /**
      * @brief Returns the indices of dofs associated to the @p cell on the local process.
      *
-     * @param cell The cell.
-     * @param indices Array of dof indices on the cell.
+     * @param loc_ele_idx local element index.
      */
-    unsigned int get_loc_dof_indices(const DHCellAccessor &cell,
-                                     std::vector<LongIdx> &indices) const override;
+    inline LocDofVec get_loc_dof_indices(unsigned int loc_ele_idx) const override
+    {
+        unsigned int ndofs = cell_starts[loc_ele_idx+1]-cell_starts[loc_ele_idx];
+        // create armadillo vector on top of existing array
+        // vec(ptr_aux_mem, number_of_elements, copy_aux_mem = true, strict = false)
+        Idx* mem_ptr = const_cast<unsigned int*>(&(dof_indices[cell_starts[loc_ele_idx]]));
+        return LocDofVec(mem_ptr, ndofs, false, false);
+    }
 
 
     
@@ -420,7 +425,7 @@ protected:
      * Dofs are ordered accordingly with cell_starts and local dof order
      * given by the finite element. See cell_starts for more description.
      */
-    std::vector<LongIdx> dof_indices;
+    std::vector<Idx> dof_indices;
     
     /**
      * @brief Maps local and ghost dof indices to global ones.

@@ -402,13 +402,11 @@ void DarcyLMH::read_initial_condition()
 {
 	DebugOut().fmt("Read initial condition\n");
     
-    std::vector<LongIdx> p_indices(data_->dh_p_->max_elem_dofs()); ASSERT_DBG(p_indices.size() == 1);
-    std::vector<LongIdx> l_indices(data_->dh_cr_->max_elem_dofs());
-    
 	for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
         
-        dh_cell.cell_with_other_dh(data_->dh_p_.get()).get_loc_dof_indices(p_indices);
-        dh_cell.cell_with_other_dh(data_->dh_cr_.get()).get_loc_dof_indices(l_indices);
+        LocDofVec p_indices = dh_cell.cell_with_other_dh(data_->dh_p_.get()).get_loc_dof_indices();
+        ASSERT_DBG(p_indices.n_elem == 1);
+        LocDofVec l_indices = dh_cell.cell_with_other_dh(data_->dh_cr_.get()).get_loc_dof_indices();
         ElementAccessor<3> ele = dh_cell.elm();
         
 		// set initial condition

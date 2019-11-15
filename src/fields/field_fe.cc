@@ -145,7 +145,6 @@ VectorMPI FieldFE<spacedim, Value>::set_fe_data(std::shared_ptr<DOFHandlerMultiD
     }
 
     unsigned int ndofs = dh_->max_elem_dofs();
-    dof_indices_.resize(ndofs);
 
     // initialization data of value handlers
 	FEValueInitData init_data;
@@ -291,12 +290,12 @@ void FieldFE<spacedim, Value>::fill_boundary_dofs() {
 
 	auto bc_mesh = dh_->mesh()->get_bc_mesh();
 	unsigned int n_comp = this->value_.n_rows() * this->value_.n_cols();
-	boundary_dofs_ = std::make_shared< std::vector<LongIdx> >( n_comp * bc_mesh->n_elements() );
-	std::vector<LongIdx> &in_vec = *( boundary_dofs_.get() );
+	boundary_dofs_ = std::make_shared< std::vector<Idx> >( n_comp * bc_mesh->n_elements() );
+	std::vector<Idx> &in_vec = *( boundary_dofs_.get() );
 	unsigned int j = 0; // actual index to boundary_dofs_ vector
 
 	for (auto ele : bc_mesh->elements_range()) {
-		LongIdx elm_shift = n_comp * ele.idx();
+		Idx elm_shift = n_comp * ele.idx();
 		for (unsigned int i=0; i<n_comp; ++i, ++j) {
 			in_vec[j] = elm_shift + i;
 		}
@@ -339,7 +338,6 @@ void FieldFE<spacedim, Value>::make_dof_handler(const Mesh *mesh) {
 	dh_par->distribute_dofs(ds);
 	dh_ = dh_par;
     unsigned int ndofs = dh_->max_elem_dofs();
-    dof_indices_.resize(ndofs);
 
 	if (this->boundary_domain_) fill_boundary_dofs(); // temporary solution for boundary mesh
 	else data_vec_ = VectorMPI::sequential( dh_->lsize() ); // allocate data_vec_
@@ -498,11 +496,14 @@ void FieldFE<spacedim, Value>::interpolate_gauss(ElementDataCache<double>::Compo
 			}
 		}
 
-		if (this->boundary_domain_) value_handler1_.get_dof_indices( ele, dof_indices_);
-		else cell.get_loc_dof_indices(dof_indices_);
+		LocDofVec loc_dofs;
+		if (this->boundary_domain_) loc_dofs = value_handler1_.get_loc_dof_indices(cell.elm_idx());
+		else loc_dofs = cell.get_loc_dof_indices();
+
+		ASSERT_LE_DBG(loc_dofs.n_elem, elem_value.size());
 		for (unsigned int i=0; i < elem_value.size(); i++) {
-			ASSERT_LT_DBG( dof_indices_[i], (int)data_vec_.size());
-			data_vec_[dof_indices_[i]] = elem_value[i] * this->unit_conversion_coefficient_;
+			ASSERT_LT_DBG( loc_dofs[i], (int)data_vec_.size());
+			data_vec_[loc_dofs[i]] = elem_value[i] * this->unit_conversion_coefficient_;
 		}
 	}
 }
@@ -599,13 +600,15 @@ void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>
 		// computes weighted average, store it to data vector
 		if (total_measure > epsilon) {
 			VectorMPI::VectorDataPtr data_vector = data_vec_.data_ptr();
-			if (this->boundary_domain_) value_handler1_.get_dof_indices( elm, dof_indices_ );
-			else {
-			    DHCellAccessor cell = dh_->cell_accessor_from_element(elm.idx());
-			    cell.get_loc_dof_indices( dof_indices_ );
-			}
+
+			DHCellAccessor cell = dh_->cell_accessor_from_element(elm.idx());
+			LocDofVec loc_dofs;
+			if (this->boundary_domain_) loc_dofs = value_handler1_.get_loc_dof_indices(cell.elm_idx());
+			else loc_dofs = cell.get_loc_dof_indices();
+
+			ASSERT_LE_DBG(loc_dofs.n_elem, value.size());
 			for (unsigned int i=0; i < value.size(); i++) {
-				(*data_vector)[ dof_indices_[i] ] = value[i] / total_measure;
+				(*data_vector)[ loc_dofs[i] ] = value[i] / total_measure;
 			}
 		} else {
 			WarningOut().fmt("Processed element with idx {} is out of source mesh!\n", elm.idx());
@@ -624,16 +627,16 @@ void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>:
 	std::vector<unsigned int> count_vector(data_vec_.size(), 0);
 	data_vec_.zero_entries();
 	VectorMPI::VectorDataPtr data_vector = data_vec_.data_ptr();
-	std::vector<LongIdx> global_dof_indices(dof_indices_);
+	std::vector<LongIdx> global_dof_indices(dh_->max_elem_dofs());
 
 	// iterate through cells, assembly MPIVector
 	for (auto cell : dh_->own_range()) {
-		cell.get_dof_indices(global_dof_indices);
-		dof_size = cell.get_loc_dof_indices(dof_indices_);
-		data_vec_i = cell.elm_idx() * dof_indices_.size();
+		dof_size = cell.get_dof_indices(global_dof_indices);
+		LocDofVec loc_dofs = cell.get_loc_dof_indices();
+		data_vec_i = cell.elm_idx() * dof_size;
 		for (unsigned int i=0; i<dof_size; ++i, ++data_vec_i) {
-			(*data_vector)[ dof_indices_[i] ] += (*data_cache)[ global_dof_indices[i] ];
-			++count_vector[ dof_indices_[i] ];
+			(*data_vector)[ loc_dofs[i] ] += (*data_cache)[ global_dof_indices[i] ];
+			++count_vector[ loc_dofs[i] ];
 		}
 	}
 
@@ -657,22 +660,22 @@ void FieldFE<spacedim, Value>::calculate_elementwise_values(ElementDataCache<dou
 	if (this->boundary_domain_) {
 		Mesh *mesh = dh_->mesh()->get_bc_mesh();
 		for (auto ele : mesh->elements_range()) { // remove special case for rank == 0 - necessary for correct output
-			dof_size = value_handler1_.get_dof_indices( ele, dof_indices_ );
-			data_vec_i = ele.idx() * dof_indices_.size();
-			for (unsigned int i=0; i<dof_size; ++i, ++data_vec_i) {
-				(*data_vector)[ dof_indices_[i] ] += (*data_cache)[data_vec_i];
-				++count_vector[ dof_indices_[i] ];
+			LocDofVec loc_dofs = value_handler1_.get_loc_dof_indices(ele.idx());
+			data_vec_i = ele.idx() * loc_dofs.n_elem;
+			for (unsigned int i=0; i<loc_dofs.n_elem; ++i, ++data_vec_i) {
+				(*data_vector)[ loc_dofs[i] ] += (*data_cache)[data_vec_i];
+				++count_vector[ loc_dofs[i] ];
 			}
 		}
 	}
 	else {
 		// iterate through cells, assembly global vector and count number of writes - prepared solution for further development
 		for (auto cell : dh_->own_range()) {
-			dof_size = cell.get_loc_dof_indices(dof_indices_);
-			data_vec_i = cell.elm_idx() * dof_indices_.size();
+			LocDofVec loc_dofs = cell.get_loc_dof_indices();
+			data_vec_i = cell.elm_idx() * loc_dofs.n_elem;
 			for (unsigned int i=0; i<dof_size; ++i, ++data_vec_i) {
-				(*data_vector)[ dof_indices_[i] ] += (*data_cache)[data_vec_i];
-				++count_vector[ dof_indices_[i] ];
+				(*data_vector)[ loc_dofs[i] ] += (*data_cache)[data_vec_i];
+				++count_vector[ loc_dofs[i] ];
 			}
 		}
 	}
@@ -687,14 +690,13 @@ void FieldFE<spacedim, Value>::calculate_elementwise_values(ElementDataCache<dou
 template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::native_data_to_cache(ElementDataCache<double> &output_data_cache) {
 	ASSERT_EQ(output_data_cache.n_values() * output_data_cache.n_comp(), dh_->distr()->lsize()).error();
-	ASSERT_EQ(output_data_cache.n_comp(), dof_indices_.size()).error();
 	double loc_values[output_data_cache.n_comp()];
 	unsigned int i, dof_filled_size;
 
 	VectorMPI::VectorDataPtr data_vec = data_vec_.data_ptr();
 	for (auto dh_cell : dh_->own_range()) {
-		dof_filled_size = dh_cell.get_loc_dof_indices(dof_indices_);
-		for (i=0; i<dof_filled_size; ++i) loc_values[i] = (*data_vec)[ dof_indices_[i] ];
+		LocDofVec loc_dofs = dh_cell.get_loc_dof_indices();
+		for (i=0; i<loc_dofs.n_elem; ++i) loc_values[i] = (*data_vec)[ loc_dofs[i] ];
 		for ( ; i<output_data_cache.n_comp(); ++i) loc_values[i] = numeric_limits<double>::signaling_NaN();
 		output_data_cache.store_value( dh_cell.local_idx(), loc_values );
 	}

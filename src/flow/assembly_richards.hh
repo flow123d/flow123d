@@ -88,7 +88,7 @@ protected:
         for (unsigned int i=0; i<ele->n_sides(); i++) {
             double capacity = 0;
             double water_content = 0;
-            double phead = ad_->p_edge_solution[ this->edge_indices_[i] ];
+            double phead = ad_->p_edge_solution[ edge_indices_[i] ];
             if (genuchten_on) {
 
                   fadbad::B<double> x_phead(phead);
@@ -188,8 +188,8 @@ protected:
     /// Be sure to call it before @p update_water_content().
     void update_dofs(const DHCellAccessor& dh_cell)
     {
-        dh_cell.cell_with_other_dh(ad_->dh_cr_.get()).get_loc_dof_indices(this->edge_indices_);
-        dh_cell.cell_with_other_dh(ad_->dh_cr_disc_.get()).get_loc_dof_indices(cr_disc_dofs);
+        edge_indices_ = dh_cell.cell_with_other_dh(ad_->dh_cr_.get()).get_loc_dof_indices();
+        cr_disc_dofs = dh_cell.cell_with_other_dh(ad_->dh_cr_disc_.get()).get_loc_dof_indices();
     }
     
     void postprocess_velocity_specific(const DHCellAccessor& dh_cell, arma::vec& solution,
@@ -213,7 +213,8 @@ protected:
 
     bool genuchten_on;
     double cross_section;
-    std::vector<LongIdx> cr_disc_dofs;  ///< Dofs of discontinuous fields on element edges.
+    LocDofVec cr_disc_dofs;  ///< Dofs of discontinuous fields on element edges.
+    LocDofVec edge_indices_; ///< Dofs of discontinuous fields on element edges.
 };
 
 

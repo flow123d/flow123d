@@ -553,19 +553,6 @@ unsigned int DOFHandlerMultiDim::get_dof_indices(const DHCellAccessor &cell, std
 }
 
 
-
-unsigned int DOFHandlerMultiDim::get_loc_dof_indices(const DHCellAccessor &cell, std::vector<LongIdx> &indices) const
-{
-  unsigned int ndofs = 0;
-  ndofs = cell_starts[cell.local_idx()+1]-cell_starts[cell.local_idx()];
-  indices.resize(ndofs);
-  for (unsigned int k=0; k<ndofs; k++)
-    indices[k] = dof_indices[cell_starts[cell.local_idx()]+k];
-
-  return ndofs;
-}
-
-
 DOFHandlerMultiDim::~DOFHandlerMultiDim()
 {}
 
@@ -787,12 +774,11 @@ SubDOFHandlerMultiDim::SubDOFHandlerMultiDim(std::shared_ptr<DOFHandlerMultiDim>
     dof_indices.resize(cell_starts[cell_starts.size()-1]);
     // sub_local_indices maps local dofs of parent handler to local dofs of sub-handler
     vector<LongIdx> sub_local_indices(dh->local_to_global_dof_idx_.size(), INVALID_DOF);
-    vector<LongIdx> cell_dof_indices(dh->max_elem_dofs_);
     map<LongIdx,LongIdx> global_to_local_dof_idx;
     // first add owned dofs to local_to_global_dof_idx_ and sub_local_indices
     for (auto cell : dh->local_range())
     {
-        cell.get_loc_dof_indices(cell_dof_indices);
+        LocDofVec cell_dof_indices = cell.get_loc_dof_indices();
         for (auto sub_dof : sub_fe_dofs[cell.dim()])
         {
             if (cell_dof_indices[sub_dof] < dh->lsize_ &&
@@ -809,7 +795,7 @@ SubDOFHandlerMultiDim::SubDOFHandlerMultiDim(std::shared_ptr<DOFHandlerMultiDim>
     // then do the same for ghost dofs and set dof_indices
     for (auto cell : dh->local_range())
     {
-        cell.get_loc_dof_indices(cell_dof_indices);
+        LocDofVec cell_dof_indices = cell.get_loc_dof_indices();
         unsigned int idof = 0;
         for (auto sub_dof : sub_fe_dofs[cell.dim()])
         {

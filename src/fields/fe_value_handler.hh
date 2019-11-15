@@ -76,19 +76,24 @@ public:
 	~FEValueHandler();
 
 	/// TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
-	inline void set_boundary_dofs_vector(std::shared_ptr< std::vector<LongIdx> > boundary_dofs) {
+	inline void set_boundary_dofs_vector(std::shared_ptr< std::vector<Idx> > boundary_dofs) {
 		this->boundary_dofs_ = boundary_dofs;
 	}
 
 	/// TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
-	unsigned int get_dof_indices(const ElementAccessor<3> &cell, std::vector<LongIdx> &indices) const;
+    inline LocDofVec get_loc_dof_indices(unsigned int cell_idx) const
+    {
+        unsigned int ndofs = this->value_.n_rows() * this->value_.n_cols();
+        // create armadillo vector on top of existing array
+        // vec(ptr_aux_mem, number_of_elements, copy_aux_mem = true, strict = false)
+        Idx* mem_ptr = const_cast<unsigned int*>(&((*boundary_dofs_)[ndofs*cell_idx]));
+        return LocDofVec(mem_ptr, ndofs, false, false);
+    }
 private:
 	/// DOF handler object
     std::shared_ptr<DOFHandlerMultiDim> dh_;
     /// Store data of Field
     VectorMPI data_vec_;
-    /// Array of indexes to data_vec_, used for get/set values
-    std::vector<LongIdx> dof_indices;
     /// Last value, prevents passing large values (vectors) by value.
     Value value_;
     typename Value::return_type r_value_;
@@ -102,7 +107,7 @@ private:
      *
      * TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
      */
-    std::shared_ptr< std::vector<LongIdx> > boundary_dofs_;
+    std::shared_ptr< std::vector<Idx> > boundary_dofs_;
 };
 
 
@@ -140,20 +145,25 @@ public:
 	~FEValueHandler() {}
 
 	/// TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
-	inline void set_boundary_dofs_vector(std::shared_ptr< std::vector<LongIdx> > boundary_dofs) {
+	inline void set_boundary_dofs_vector(std::shared_ptr< std::vector<Idx> > boundary_dofs) {
 		this->boundary_dofs_ = boundary_dofs;
 	}
 
 	/// TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
-	unsigned int get_dof_indices(const ElementAccessor<3> &cell, std::vector<LongIdx> &indices) const;
+    inline LocDofVec get_loc_dof_indices(unsigned int cell_idx) const
+    {
+        unsigned int ndofs = this->value_.n_rows() * this->value_.n_cols();
+        // create armadillo vector on top of existing array
+        // vec(ptr_aux_mem, number_of_elements, copy_aux_mem = true, strict = false)
+        Idx* mem_ptr = const_cast<unsigned int*>(&((*boundary_dofs_)[ndofs*cell_idx]));
+        return LocDofVec(mem_ptr, ndofs, false, false);
+    }
 
 private:
 	/// DOF handler object
     std::shared_ptr<DOFHandlerMultiDim> dh_;
     /// Store data of Field
     VectorMPI data_vec_;
-    /// Array of indexes to data_vec_, used for get/set values
-    std::vector<LongIdx> dof_indices;
     /// Last value, prevents passing large values (vectors) by value.
     Value value_;
     typename Value::return_type r_value_;
@@ -163,7 +173,7 @@ private:
      *
      * TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
      */
-    std::shared_ptr< std::vector<LongIdx> > boundary_dofs_;
+    std::shared_ptr< std::vector<Idx> > boundary_dofs_;
 };
 
 
