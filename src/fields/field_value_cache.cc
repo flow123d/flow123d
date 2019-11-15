@@ -61,25 +61,46 @@ ElementCacheMap::ElementCacheMap(unsigned int dim)
   begin_idx_(0), end_idx_(0), dim_(dim) {}
 
 
-unsigned int ElementCacheMap::add(DHCellAccessor dh_cell) {
-	ASSERT_LT(added_elements_.size(), ElementCacheMap::n_cached_elements).error("ElementCacheMap overflowed. List of added elements is to long!\n");
-	unsigned int elm_idx = dh_cell.elm_idx();
-	std::unordered_map<unsigned int, unsigned int>::iterator it = cache_idx_.find(elm_idx);
-    if ( it != cache_idx_.end() ) {
-        return it->second;
-    } else {
-    	ASSERT( std::find(added_elements_.begin(), added_elements_.end(), elm_idx) == added_elements_.end() )(elm_idx).error("Repeated addition of element!\n");
+void ElementCacheMap::add(DHCellAccessor dh_cell) {
+    ASSERT_LT(added_elements_.size(), ElementCacheMap::n_cached_elements).error("ElementCacheMap overflowed. List of added elements is to long!\n");
+    unsigned int elm_idx = dh_cell.elm_idx();
+   	added_elements_.insert(elm_idx);
+}
 
-    	added_elements_.push_back(elm_idx);
-    	unsigned int idx_pos = end_idx_;
-    	end_idx_ = (end_idx_+1) % ElementCacheMap::n_cached_elements;
-        return idx_pos;
+
+void ElementCacheMap::prepare_elements_to_update() {
+    // Compute number of element stored in data cache (stored in previous cache update).
+    unsigned int n_stored_element = 0;
+    for (auto elm_idx : added_elements_)
+        if (cache_idx_.find(elm_idx) != cache_idx_.end()) ++n_stored_element;
+
+    // Test if new elements can be add the end of cache
+    if (cache_idx_.size() + added_elements_.size() - n_stored_element <= ElementCacheMap::n_cached_elements) {
+    	// Erase elements from added_elements set that exist in cache
+        for (auto it = added_elements_.begin(); it != added_elements_.end();) {
+            if ( cache_idx_.find(*it) != cache_idx_.end() ) it = added_elements_.erase(it);
+            else it++;
+        }
+        begin_idx_ = cache_idx_.size();
+    } else {
+    	// Clear cache, there is not sufficient space for new elements
+        std::fill(elm_idx_.begin(), elm_idx_.end(), ElementCacheMap::undef_elem_idx);
+        cache_idx_.clear();
+        begin_idx_ = 0;
+    }
+    end_idx_ = begin_idx_ + added_elements_.size();
+
+    // Add new elements indices to cache_idx_ and elm_idx_
+    unsigned int cache_pos = begin_idx_;
+    for (auto el_idx : added_elements_) {
+    	cache_idx_[el_idx] = cache_pos;
+		elm_idx_[cache_pos] = el_idx;
+        cache_pos++;
     }
 }
 
 
 void ElementCacheMap::clear_elements_to_update() {
-	begin_idx_ = end_idx_;
 	added_elements_.clear();
 }
 

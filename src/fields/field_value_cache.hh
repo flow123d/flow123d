@@ -21,6 +21,7 @@
 
 #include <set>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 #include "system/armor.hh"
 
@@ -84,8 +85,11 @@ public:
     /// Constructor
     ElementCacheMap(unsigned int dim);
 
-    /// Adds element to added_elements_ vector if doesn't exist in the cache, returns its index.
-    unsigned int add(DHCellAccessor dh_cell);
+    /// Adds element to added_elements_ set.
+    void add(DHCellAccessor dh_cell);
+
+    /// Clean helper data member after reading data to cache.
+    void prepare_elements_to_update();
 
     /// Clean helper data member after reading data to cache.
     void clear_elements_to_update();
@@ -101,7 +105,7 @@ public:
     }
 
     /// Getter for added_elements_
-    inline const std::vector<unsigned int> &added_elements() const {
+    inline const std::unordered_set<unsigned int> &added_elements() const {
         return added_elements_;
     }
 
@@ -119,8 +123,8 @@ private:
     /// Map of element indices stored in cache, allows reverse search to previous vector.
     std::unordered_map<unsigned int, unsigned int> cache_idx_;
 
-    /// Vector of element indexes that wait for storing to cache.
-    std::vector<unsigned int> added_elements_;
+    /// Set of element indexes that wait for storing to cache.
+    std::unordered_set<unsigned int> added_elements_;
 
     /// Holds index to elm_idx_ vector corresponding to begin index stored in added_elements_ vector.
     unsigned int begin_idx_;

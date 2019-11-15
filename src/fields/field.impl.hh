@@ -704,7 +704,7 @@ void Field<spacedim, Value>::cache_update(ElementCacheMap &cache_map, EvalPoints
 	    std::vector<unsigned int>              indices_to_cache;
 	};
 	// Map of data for different regions
-	std::map<unsigned int, RegionEvalData> region_data_map;
+	/*std::map<unsigned int, RegionEvalData> region_data_map;
 
 	unsigned int dim = cache_map.dim();
     FieldValueCache<Value> &dim_cache = value_cache_[dim-1];
@@ -728,7 +728,7 @@ void Field<spacedim, Value>::cache_update(ElementCacheMap &cache_map, EvalPoints
     }
     for (typename std::map<unsigned int, RegionEvalData>::iterator it=region_data_map.begin(); it!=region_data_map.end(); ++it) {
         region_fields_[it->first]->loc_point_value( it->second.loc_points, it->second.element_set, it->second.indices_to_cache, dim_cache );
-    }
+    } // */
 }
 
 
