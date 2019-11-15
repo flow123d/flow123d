@@ -86,6 +86,11 @@ public:
      * M columns are real coordinates of nodes.
      */
     static ElementMap element_map(ElementAccessor<3> elm);
+    
+    /**
+     * Compute jacobian matrix for an element given by the @p coords element map.
+     */
+    static arma::mat::fixed<spacedim,dim> jacobian(const ElementMap &coords);
 
     /**
      * Project given point in real coordinates to reference element (barycentic coordinates).

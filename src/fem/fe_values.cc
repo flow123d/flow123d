@@ -577,9 +577,7 @@ void FEValues<dim,spacedim>::fill_fe_values(const ElementAccessor<3> &cell,
         (fv_data.update_flags & update_JxW_values) |
         (fv_data.update_flags & update_inverse_jacobians))
     {
-        for (unsigned int i=0; i<spacedim; i++)
-            for (unsigned int j=0; j<dim; j++)
-                jac(i,j) = coords(i,j+1) - coords(i,0);
+        jac = MappingP1<dim,spacedim>::jacobian(coords);
 
         // update Jacobians
         if (fv_data.update_flags & update_jacobians)
@@ -735,10 +733,7 @@ void FESideValues<dim,spacedim>::fill_fe_side_values(const ElementAccessor<3> &c
         (fv_data.update_flags & update_inverse_jacobians) |
         (fv_data.update_flags & update_normal_vectors))
     {
-        arma::mat::fixed<spacedim,dim> jac;
-        for (unsigned int i=0; i<spacedim; i++)
-            for (unsigned int j=0; j<dim; j++)
-                jac(i,j) = coords(i,j+1) - coords(i,0);
+        arma::mat::fixed<spacedim,dim> jac = MappingP1<dim,spacedim>::jacobian(coords);
 
         // update cell Jacobians
         if (fv_data.update_flags & update_jacobians)
@@ -802,13 +797,10 @@ void FESideValues<dim,spacedim>::fill_fe_side_values(const ElementAccessor<3> &c
             arma::mat::fixed<spacedim, MatrixSizes<dim>::dim_minus_one > side_jac;   // some compilers complain for case dim==0
 
             // calculation of side Jacobian
-            side_coords.zeros();
             for (unsigned int n=0; n<dim; n++)
                 for (unsigned int c=0; c<spacedim; c++)
                     side_coords(c,n) = cell.side(sid)->node(n)->point()[c];
-            for (unsigned int i=0; i<spacedim; i++)
-                for (unsigned int j=0; j<dim-1; j++)
-                    side_jac(i,j) = side_coords(i,j+1) - side_coords(i,0);
+            side_jac = MappingP1<MatrixSizes<dim>::dim_minus_one,spacedim>::jacobian(side_coords);
 
             // calculation of JxW
             side_det = fabs(determinant(side_jac));
