@@ -23,15 +23,8 @@
 
 #include <armadillo>
 #include <vector>
-#include "fem/dofhandler.hh"
-#include "mesh/side_impl.hh"
-#include "fem/update_flags.hh"
-#include "mesh/ref_element.hh"
 
 
-
-class Quadrature;
-template<unsigned int dim, unsigned int spacedim> class FEValuesData;
 
 
 
@@ -107,37 +100,5 @@ public:
 
 
 
-/**
- * @brief Abstract class for the mapping between reference and actual cell.
- *
- * Class Mapping calculates data related to the mapping of the
- * reference cell to the actual cell, such as Jacobian and normal
- * vectors.
- */
-template<unsigned int dim, unsigned int spacedim>
-class Mapping
-{
-public:
-
-    /**
-     * @brief Calculates the mapping data on the reference cell.
-     *
-     * @param q Quadrature rule.
-     * @param flags Update flags.
-     */
-    virtual MappingInternalData *initialize(const Quadrature &q, UpdateFlags flags) = 0;
-
-    /**
-     * @brief Decides which additional quantities have to be computed
-     * for each cell.
-     *
-     * @param flags Flags of required quantities.
-     * @return Flags of all necessary quantities.
-     */
-    virtual UpdateFlags update_each(UpdateFlags flags) = 0;
-
-    /// Destructor.
-    virtual ~Mapping() {};
-};
 
 #endif /* MAPPING_HH_ */

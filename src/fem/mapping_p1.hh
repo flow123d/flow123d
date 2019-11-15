@@ -20,18 +20,11 @@
 #ifndef MAPPING_P1_HH_
 #define MAPPING_P1_HH_
 
-#include <string.h>                            // for memcpy
-#include <algorithm>                           // for min, swap
-#include <cmath>                               // for abs, pow, fabs, log10
-#include <ostream>                             // for operator<<
-#include <string>                              // for operator<<
 #include <armadillo>
-#include "fem/dofhandler.hh"                   // for DOFHandlerBase, DOFHan...
 #include "fem/mapping.hh"                      // for MappingInternalData (p...
 #include "fem/update_flags.hh"                 // for operator&, operator|
-#include "mesh/elements.h"                     // for Element::side
-#include "mesh/side_impl.hh"                   // for Side::node
-template <unsigned int dim, unsigned int spacedim> class FEValuesData;
+#include "mesh/accessors.hh"                     // for ElementAccessor
+
 class Quadrature;
 
 
@@ -62,7 +55,7 @@ public:
  * @param spacedim Dimension of the Euclidean space.
  */
 template<unsigned int dim, unsigned int spacedim>
-class MappingP1 : public Mapping<dim,spacedim>
+class MappingP1
 {
 public:
 
