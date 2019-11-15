@@ -118,8 +118,8 @@ public:
     
         LocDofVec dofs, dofs_schur;
         set_loc_dofs_vec(ele_ac, dofs, dofs_schur);
-        loc_system_.reset(dofs, dofs);
-        loc_schur_.reset(dofs_schur,dofs_schur);
+        loc_system_.reset(dofs.n_elem, dofs.n_elem);
+        loc_schur_.reset(dofs_schur.n_elem,dofs_schur.n_elem);
         
         assemble_bc(ele_ac);
         
@@ -129,46 +129,21 @@ public:
         
         assembly_dim_connections(ele_ac);
         
-        const unsigned int n = loc_schur_.row_dofs.n_rows;  // local Schur complement size
-        arma::vec schur_solution(n);
-        for(unsigned int i=0; i<n; i++)
-        {
-            // read the computed edge pressures
-            schur_solution(i) = ad_->p_edge_solution[dofs_schur[i]];
-            // write the computed edge pressures to the full vector
-            unsigned int loc_row = dofs[schur_offset_+i];
-            ad_->full_solution[loc_row] = schur_solution(i);
-        }
-        
-        // reconstruct the velocity and pressure
-        loc_system_.reconstruct_solution_schur(schur_offset_, schur_solution, reconstructed_solution_);
-        
         // TODO:
         // if (mortar_assembly)
+        //     mortar_assembly->assembly(ele_ac);
+        // if (mortar_assembly)
         //     mortar_assembly->fix_velocity(ele_ac);
+
+        arma::vec schur_solution = ad_->p_edge_solution.get_subvec(dofs_schur);
+        // reconstruct the velocity and pressure
+        loc_system_.reconstruct_solution_schur(schur_offset_, schur_solution, reconstructed_solution_);
 
         // postprocess the velocity
         postprocess_velocity(ele_ac.dh_cell(), reconstructed_solution_);
 
-        // reconstruct the velocity and pressure
-        // reconstruct_solution(loc_system_);
-
-        // write the velocity and pressure to the full vector
-        for(unsigned int i=0; i<reconstructed_solution_.n_rows; i++)
-        {
-            unsigned int loc_row = dofs[i];
-            ad_->full_solution[loc_row] += reconstructed_solution_(i);
-        }
-
-        // for(unsigned int i=0; i<loc_schur_.row_dofs.n_rows; i++)
-        // {
-        //     // write the computed edge pressures to the full vector
-        //     unsigned int loc_row = dofs[schur_offset_+i];
-        //     ad_->full_solution[loc_row] = ad_->p_edge_solution[dofs_schur[i]];
-        // }
-        
-//         if (mortar_assembly)
-//             mortar_assembly->assembly(ele_ac);
+        ad_->full_solution.set_subvec(dofs.head(schur_offset_), reconstructed_solution_);
+        ad_->full_solution.set_subvec(dofs.tail(dofs_schur.n_elem), schur_solution);
     }
     
     void assemble(LocalElementAccessorBase<3> ele_ac) override
@@ -197,25 +172,10 @@ public:
         if (ad_->balance != nullptr)
             add_fluxes_in_balance_matrix(ele_ac);
 
+        // TODO:
         // if (mortar_assembly)
         //     mortar_assembly->assembly(ele_ac);
     }
-
-    // void reconstruct_solution(const LocalSystem & ls)
-    // {
-    //     const unsigned int n = loc_schur_.row_dofs.n_rows;  // local Schur complement size
-    //     arma::vec schur_solution(n);
-    //     for(unsigned int i=0; i<n; i++)
-    //     {
-    //         // read the computed edge pressures
-    //         schur_solution(i) = ad_->p_edge_solution[dofs_schur[i]];
-    //     }
-        
-    //     // reconstruct the velocity and pressure
-    //     ls.reconstruct_solution_schur(schur_offset_, schur_solution, reconstructed_solution_);
-
-    //     postprocess_velocity(ele_ac.dh_cell(), reconstructed_solution_);
-    // }
 
     /** Loads the local system from a map: element index -> LocalSystem,
      * if it exits, or if the full solution is not yet reconstructed,
@@ -232,14 +192,7 @@ public:
         auto ls = ad_->seepage_bc_systems.find(dh_cell.elm_idx());
         if (ls != ad_->seepage_bc_systems.end())
         {
-            const unsigned int n = loc_schur_.row_dofs.n_rows;  // local Schur complement size
-            arma::vec schur_solution(n);
-            for(unsigned int i=0; i<n; i++)
-            {
-                // read the computed edge pressures
-                schur_solution(i) = ad_->p_edge_solution[loc_schur_.row_dofs[i]];
-            }
-            
+            arma::vec schur_solution = ad_->p_edge_solution.get_subvec(loc_schur_.row_dofs);            
             // reconstruct the velocity and pressure
             ls->second.reconstruct_solution_schur(schur_offset_, schur_solution, reconstructed_solution_);
 
