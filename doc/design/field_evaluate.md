@@ -68,6 +68,11 @@ class Assembly<dim> {
 	EvalSubset mass_eval;
 	EvalSubset face_eval;
 	EvalSubset stiffness_eval;
+	
+	
+	Mapping map;
+	map.setup_mapping_fields(this->all_fields);
+	ep.set_mapping(map);
 	....
 	this->mass_eval = this->ep.add_bulk(Gauss(dim, order));
 	this->face_eval = this->ep.add_side(Gauss(dim-1, order));
@@ -150,6 +155,12 @@ Two major algorithms are in use:
 - FieldFE - evaluates base func values in all quadrature points (done once per assembly),  dot product with DOFs, optionaly multiplied by the Mapping matrix (important optimization for vector fields and derivatives, must have support in FEValues)
 - FieldFormula - evaluates all elements in the patch (same region), in all point from single continuous block od quad points
 
+**Cache structure**
+- FieldFormula can update in singel step all values for common subset and common region
+- so we want to have such values in continuous blocks in the cache
+- Cache is organized into blocks of the size (n_points x n_max_elements)  for every subset, where n_points is number of points in the subset and n_max_elements is max number of elements in the single patch.
+- Every cache block is indexed as `[i_element][i_point]`, since within the block we always update all points, but only elements on the same region, and moreover we reuse already cached elements.
+
 ### 5.3 Cache read
 ```
     /*
@@ -199,6 +210,10 @@ Two major algorithms are in use:
     }
 }
 ```
+
+In order to use FieldValueCache in consistent way, we can precompute: quadrature points coordinates, normals and JxW into suitable FieldValueCache and possibly wrap it into Fields in order to use them in FieldFormula. However direct access should be provided through BulkPoint and SidePoint. **precise**
+We want cache_allocate and cache_update to update the mapping caches however we have to pass the mapping somehow into XYPoint and to do this on single place we want to pass it to EvalPoints.
+
 **Interface for the bulk integrals**
 
 Bulk integrals are evaluated only on the single element, so we can assume, that all values are cached. No need for 
