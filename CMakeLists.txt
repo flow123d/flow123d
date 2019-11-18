@@ -18,15 +18,42 @@ execute_process(COMMAND bin/git_post_checkout_hook WORKING_DIRECTORY ${CMAKE_SOU
 
 # Include settings given by user first
 set(CONFIG_CMAKE "config.cmake")
+set(CONFIG_CMAKE_DEFAULT "config.default.cmake")
+
+# require default config which is a part of a repo
+MESSAGE(STATUS "Including config file: ${CMAKE_SOURCE_DIR}/${CONFIG_CMAKE_DEFAULT}")
+include("${CMAKE_SOURCE_DIR}/${CONFIG_CMAKE_DEFAULT}")
+
+# try to read config.cmake if exists
 if (EXISTS "${CMAKE_SOURCE_DIR}/${CONFIG_CMAKE}")
+    MESSAGE(STATUS "Including config file: ${CMAKE_SOURCE_DIR}/${CONFIG_CMAKE}")
     include("${CMAKE_SOURCE_DIR}/${CONFIG_CMAKE}")
-else()
-    if (EXISTS "${CMAKE_BINARY_DIR}/${CONFIG_CMAKE}")
-        include("${CMAKE_BINARY_DIR}/${CONFIG_CMAKE}")
-    else()
-        # create from template
-        MESSAGE(FATAL_ERROR "Need configuration file: ${CONFIG_CMAKE}. See config.cmake.template.")
-    endif()
+endif()
+
+# if FLOW_BUILD_TYPE is AUTO, it means we did not loaded config.cmake file
+# if this is running it our docker container, it'll be fine, otherwise we fail
+if (FLOW_BUILD_TYPE STREQUAL "AUTO")
+  SET(DOCKER_VERSION_FILE "/.dockerversion")
+
+  # read dockerversion file
+  if (EXISTS "${DOCKER_VERSION_FILE}")
+    FILE(READ "${DOCKER_VERSION_FILE}" DOCKER_VERSION)
+    string(STRIP "${DOCKER_VERSION}" DOCKER_VERSION)
+    MESSAGE(STATUS "DOCKER_VERSION=${DOCKER_VERSION}")
+  else()
+    MESSAGE(FATAL_ERROR "Not running in docker, need configuration file: ${CONFIG_CMAKE}. See config.cmake.template.")
+  endif()
+  
+  # try to detect debug/release
+  if ("${DOCKER_VERSION}" MATCHES "dbg")
+    set(FLOW_BUILD_TYPE debug)
+    MESSAGE(STATUS "Auto set FLOW_BUILD_TYPE to ${FLOW_BUILD_TYPE}")
+  elseif ("${DOCKER_VERSION}" MATCHES "rel")
+    set(FLOW_BUILD_TYPE release)
+    MESSAGE(STATUS "Auto set FLOW_BUILD_TYPE to ${FLOW_BUILD_TYPE}")
+  else()
+    MESSAGE(FATAL_ERROR "Could not decide on FLOW_BUILD_TYPE from dockerversion '${DOCKER_VERSION}', need configuration file: ${CONFIG_CMAKE}")
+  endif()
 endif()
 
 # by default reuse number of cpus for make from environment
@@ -285,6 +312,9 @@ SET_VALID_VALUE ("EXTERNAL_LIBS_Fortran_FLAGS"   ${EXTERNAL_LIBS_Fortran_FLAGS} 
 flow_define(COMPILER_FLAGS_ ${CMAKE_CXX_FLAGS})
 # store current source dir (for profiler purposes)
 flow_define(SOURCE_DIR ${CMAKE_SOURCE_DIR})
+
+set(JSON_BuildTests OFF CACHE INTERNAL "")
+add_subdirectory("${CMAKE_SOURCE_DIR}/third_party/json-3.7.1")
 
 ######################################################################### find libraries
 #
@@ -871,7 +901,12 @@ if( PETSC_FOUND )
   
   ### add target for flow123d binary
   add_executable(bin/flow123d src/main.cc)
-  target_link_libraries(bin/flow123d  flow123d_lib  ${PETSC_ADDITIONAL_LIBS} ${PYTHON_LIBRARIES} ${Boost_LIBRARIES})     # set libraries linked to main binary (order matter)
+  target_link_libraries(bin/flow123d 
+        flow123d_lib 
+        ${PETSC_ADDITIONAL_LIBS}
+        ${PYTHON_LIBRARIES}
+        ${Boost_LIBRARIES}
+  )     # set libraries linked to main binary (order matter)
   add_dependencies(bin/flow123d update_source_tree rev_num_always)      # make mpiexec_link when flow123d executable is built
   # explicitly say that source file depends on rev_num_always in order to have actual revision number
   set_source_files_properties(src/main.cc OBJECT_DEPENDS ${CONFIG_FILE_REV_NUM}) 

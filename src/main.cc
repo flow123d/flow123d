@@ -84,6 +84,7 @@ Application::Application(const std::string &python_path)
   //passed_argc_(0),
   //passed_argv_(0),
   use_profiler(true),
+  profiler_path(""),
   yaml_balance_output_(false)
 {
     // initialize python stuff if we have
@@ -162,7 +163,8 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         ("version", "Display version and build information and exit.")
         ("no_log", "Turn off logging.")
         ("no_signal_handler", "Turn off signal handling. Useful for debugging with valgrind.")
-        ("no_profiler", "Turn off profiler output.")
+        ("no_profiler,no-profiler", "Turn off profiler output.")
+        ("profiler_path,profiler-path", po::value< string >(), "Path to the profiler file")
         ("input_format", po::value< string >(), "Writes full structure of the main input file into given file.")
 		("petsc_redirect", po::value<string>(), "Redirect all PETSc stdout and stderr to given file.")
 		("yaml_balance", "Redirect balance output to YAML format too (simultaneously with the selected balance output format).");
@@ -200,7 +202,13 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     */
 
     // possibly turn off profilling
-    if (vm.count("no_profiler")) use_profiler=false;
+    if (vm.count("no_profiler")) {
+        use_profiler=false;
+    }
+
+    if (vm.count("profiler_path")) {
+        profiler_path = vm["profiler_path"].as<string>();
+    }
 
     // if there is "help" option
     if (vm.count("help")) {
@@ -393,14 +401,14 @@ Application::~Application() {
     if (use_profiler) {
         if (petsc_initialized) {
             // log profiler data to this stream
-            Profiler::instance()->output (PETSC_COMM_WORLD);
+            Profiler::instance()->output (PETSC_COMM_WORLD, profiler_path);
         } else {
-            Profiler::instance()->output();
+            Profiler::instance()->output(profiler_path);
         }
 
         // call python script which transforms json file at given location
         // Profiler::instance()->transform_profiler_data (".csv", "CSVFormatter");
-        Profiler::instance()->transform_profiler_data (".txt", "SimpleTableFormatter");
+        Profiler::instance()->transform_profiler_data (".txt", "SimpleTableFormatter2");
 
         // finally uninitialize
         Profiler::uninitialize();
