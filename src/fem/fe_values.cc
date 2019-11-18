@@ -46,6 +46,23 @@ FEInternalData::FEInternalData(unsigned int np, unsigned int nd)
 }
 
 
+FEInternalData::FEInternalData(const FEInternalData &fe_system_data,
+                               const std::vector<unsigned int> &dof_indices,
+                               unsigned int first_component_idx,
+                               unsigned int ncomps)
+    : FEInternalData(fe_system_data.n_points, dof_indices.size())
+{
+    bar_coords = fe_system_data.bar_coords;
+    
+    for (unsigned int ip=0; ip<n_points; ip++)
+        for (unsigned int id=0; id<dof_indices.size(); id++)
+        {
+            ref_shape_values[ip][id] = fe_system_data.ref_shape_values[ip][dof_indices[id]].subvec(first_component_idx, first_component_idx+ncomps-1);
+            ref_shape_grads[ip][id] = fe_system_data.ref_shape_grads[ip][dof_indices[id]].cols(first_component_idx, first_component_idx+ncomps-1);
+        }
+}
+
+
 
 template<unsigned int dim, unsigned int spacedim>
 void FEValuesData<dim,spacedim>::allocate(unsigned int size, UpdateFlags flags, unsigned int n_comp)
@@ -421,13 +438,20 @@ void FEValuesBase<dim,spacedim>::fill_system_data(const FEInternalData &fe_data)
     // for mixed system we first fill data in sub-elements
     FESystem<dim> *fe_sys = dynamic_cast<FESystem<dim>*>(fe);
     ASSERT_DBG(fe_sys != nullptr).error("Mixed system must be represented by FESystem.");
+    FESystemFunctionSpace *fs = dynamic_cast<FESystemFunctionSpace*>(fe_sys->function_space_.get());
+    unsigned int comp_offset = 0;
     for (unsigned int f=0; f<fe_sys->fe().size(); f++)
     {
         // fill fe_values for base FE
         fe_values_vec[f]->data.jacobians = data.jacobians;
         fe_values_vec[f]->data.inverse_jacobians = data.inverse_jacobians;
         fe_values_vec[f]->data.determinants = data.determinants;
-        fe_values_vec[f]->fill_data(*fe_values_vec[f]->fe_data);
+        
+        unsigned int n_comp = fe_sys->fe()[f]->n_space_components(spacedim);
+        FEInternalData vec_fe_data(fe_data, fe_sys->fe_dofs(f), comp_offset, n_comp);
+        fe_values_vec[f]->fill_data(vec_fe_data);
+        
+        comp_offset += n_comp;
     }
     
     unsigned int n_space_components = fe->n_space_components(spacedim);

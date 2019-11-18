@@ -49,6 +49,15 @@ public:
     FEInternalData(unsigned int np, unsigned int nd);
     
     /**
+     * Create a new instance of FEInternalData for a FESystem component or subvector.
+     */
+    FEInternalData(const FEInternalData &fe_system_data,
+                   const std::vector<unsigned int> &dof_indices,
+                   unsigned int first_component_idx,
+                   unsigned int ncomponents = 1
+                  );
+    
+    /**
      * @brief Precomputed values of basis functions at the quadrature points.
      *
      * Dimensions:   (no. of quadrature points)
