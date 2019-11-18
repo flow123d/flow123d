@@ -16,9 +16,38 @@ private:
     Type * const data;
     typedef typename arma::Mat<Type>::template fixed<nRows,nCols> ArmaType;
 public:
+    Mat()
+    : data(new Type[nRows * nCols])
+    {}
+
     Mat(Type * const mem)
     : data(mem)
     {}
+
+    inline Mat(const ArmaType & arma) : data(new Type[nRows * nCols]) {
+        for (uint i = 0; i < nRows * nCols; ++i) {
+            data[i] = arma[i];
+        }
+    }
+
+    inline Mat(std::initializer_list<std::initializer_list<Type>> list) : data(new Type[nRows * nCols]) {
+        const auto * listIt = list.begin();
+        const Type * it;
+        for (uint i = 0; i < nRows; ++i) {
+            it = (listIt + i)->begin();
+            for (uint j = 0; j < nCols; ++j) {
+                data[i*nCols+j] = *(it + j);
+            }
+        }
+    }
+
+    inline Mat(std::initializer_list<Type> list) : data(new Type[nRows * nCols]) {
+        const Type * it = list.begin();
+        for (uint i = 0; i < nRows * nCols; ++i) {
+            data[i] = *(it + i);
+        }
+    }
+
     inline Mat(const Armor::Mat<Type, nRows, nCols> & other) 
     : data(other.data)
     {
@@ -26,6 +55,7 @@ public:
             data[i] = other[i];
         }
     }
+
     inline const Type * begin() const {
         return data;
     }
