@@ -18,11 +18,11 @@
 #ifndef FE_VALUE_HANDLER_HH_
 #define FE_VALUE_HANDLER_HH_
 
+#include "system/index_types.hh"
 #include "fields/field_values.hh"
 #include "fem/mapping_p1.hh"
 #include "fem/finite_element.hh"
 #include "mesh/point.hh"
-#include "mesh/long_idx.hh"
 #include <armadillo>
 
 class VectorMPI;

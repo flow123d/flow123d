@@ -33,7 +33,7 @@
 #include "petscvec.h"                           // for Vec
 #include "tools/time_governor.hh"               // for TimeGovernor, TimeGov...
 #include "tools/time_marks.hh"                  // for TimeMarks
-#include "mesh/long_idx.hh"
+#include "system/index_types.hh"
 
 /// external types:
 class Mesh;

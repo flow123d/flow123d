@@ -31,10 +31,10 @@
 
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
+#include "system/index_types.hh"
 #include "input/factory.hh"
 
 #include "mesh/side_impl.hh"
-#include "mesh/long_idx.hh"
 #include "mesh/mesh.h"
 #include "mesh/partitioning.hh"
 #include "mesh/accessors.hh"

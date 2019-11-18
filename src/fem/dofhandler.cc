@@ -16,6 +16,7 @@
  * @author  Jan Stebel
  */
 
+#include "system/index_types.hh"
 #include "fem/dofhandler.hh"
 #include "fem/finite_element.hh"
 #include "fem/fe_system.hh"
@@ -23,7 +24,6 @@
 #include "mesh/mesh.h"
 #include "mesh/duplicate_nodes.h"
 #include "mesh/partitioning.hh"
-#include "mesh/long_idx.hh"
 #include "mesh/accessors.hh"
 #include "mesh/range_wrapper.hh"
 #include "mesh/neighbours.h"
