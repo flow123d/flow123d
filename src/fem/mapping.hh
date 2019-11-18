@@ -84,19 +84,6 @@ template<arma::uword n> inline double determinant(const arma::mat::fixed<n,n> &M
 }
 
 
-/**
- * @brief Mapping data that can be precomputed on the actual cell.
- *
- * So far this involves only the (local) barycentric coordinates of quadrature points.
- */
-class MappingInternalData
-{
-public:
-    /**
-     * @brief Auxiliary array of barycentric coordinates of quadrature points.
-     */
-    std::vector<arma::vec> bar_coords;
-};
 
 
 
