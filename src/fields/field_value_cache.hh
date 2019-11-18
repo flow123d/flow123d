@@ -39,7 +39,7 @@ public:
     FieldValueCache();
 
     /// Constructor
-    FieldValueCache(const EvalPoints *eval_points, unsigned int n_cache_points);
+    FieldValueCache(std::shared_ptr<EvalPoints> eval_points, unsigned int n_cache_points);
 
     /// Destructor
     ~FieldValueCache();
@@ -48,8 +48,8 @@ public:
     void mark_used(EvalSubset sub_set);
 
     /// Getter for used_points
-    inline const std::set<int> &used_points() const {
-        return used_points_;
+    inline const std::set<int> &used_blocks() const {
+        return used_blocks_;
     }
 
     /// Return size of data cache (number of stored field values)
@@ -64,7 +64,7 @@ public:
     }
 
     /// Return data vector.
-    inline const EvalPoints *eval_points() const {
+    inline std::shared_ptr<EvalPoints> eval_points() const {
         return eval_points_;
     }
 
@@ -73,10 +73,10 @@ private:
     Armor::Array<elm_type> data_;
 
     /// Holds indices of used local points
-    std::set<int> used_points_;  // TODO: test unorderd_set during tuning of the performance
+    std::set<int> used_blocks_;  // TODO: test unorderd_set during tuning of the performance
 
     /// Pointer to EvalPoints
-    const EvalPoints *eval_points_;
+    std::shared_ptr<EvalPoints> eval_points_;
 
     /// Dimension (control data member)
     unsigned int dim_;

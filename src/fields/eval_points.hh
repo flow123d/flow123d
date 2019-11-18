@@ -24,18 +24,18 @@
 #include <memory>
 #include <armadillo>
 #include "mesh/range_wrapper.hh"
-#include "fields/eval_subset.hh"
 #include "system/asserts.hh"
 
 class Side;
 class Quadrature;
+class EvalSubset;
 template <int spacedim> class ElementAccessor;
 
 
 /**
  * Class holds local coordinations of evaluating points (bulk and sides).
  */
-class EvalPoints {
+class EvalPoints : public std::enable_shared_from_this<EvalPoints> {
 public:
     /// Constructor
 	EvalPoints();
@@ -65,7 +65,7 @@ public:
     }
 
     /// Return size of block_indices_.
-    inline unsigned int n_block_indices() const {
+    inline unsigned int n_blocks() const {
         return block_indices_.size();
     }
 

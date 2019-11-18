@@ -27,14 +27,14 @@
 
 const EvalSubset EvalSubset::dummy_subset = EvalSubset();
 
-EvalSubset::EvalSubset(const EvalPoints *eval_points)
+EvalSubset::EvalSubset(std::shared_ptr<EvalPoints> eval_points)
 : eval_points_(eval_points), block_indices_(1), n_sides_(0) {
-	block_indices_[0] = eval_points_->n_block_indices() - 1;
+	block_indices_[0] = eval_points_->n_blocks() - 1;
 }
 
-EvalSubset::EvalSubset(const EvalPoints *eval_points, unsigned int n_permutations)
+EvalSubset::EvalSubset(std::shared_ptr<EvalPoints> eval_points, unsigned int n_permutations)
 : eval_points_(eval_points), block_indices_(n_permutations), n_sides_(eval_points->point_dim()+1) {
-    for (unsigned int i=0, block_idx=eval_points_->n_block_indices() - 1; i<n_permutations; ++i, ++block_idx)
+    for (unsigned int i=0, block_idx=eval_points_->n_blocks() - 1; i<n_permutations; ++i, ++block_idx)
     	block_indices_[i] = block_idx;
 }
 
@@ -67,19 +67,11 @@ Range< SidePoint > EvalSubset::points(const DHCellSide &cell_side) const {
 /******************************************************************************
  * Implementation of BulkPoint methods
  */
-arma::vec BulkPoint::loc_coords() const {
-    return this->eval_points()->local_point( local_point_idx_ );
-}
-
 
 
 /******************************************************************************
  * Implementation of SidePoint methods
  */
-arma::vec SidePoint::loc_coords() const {
-    return this->eval_points()->local_point( local_point_idx_ );
-}
-
 SidePoint SidePoint::permute(DHCellSide edg_side) const {
 	unsigned int begin_idx = subset_.eval_points()->block_idx(subset_.get_block_idx(permutation_idx_));
 	unsigned int points_per_side = (subset_.eval_points()->block_idx(subset_.get_block_idx(permutation_idx_+1)) - begin_idx) / subset_.n_sides();

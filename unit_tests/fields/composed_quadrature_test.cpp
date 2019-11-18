@@ -71,11 +71,11 @@ TEST_F(FieldEval, eval_3d) {
     std::shared_ptr<DOFHandlerMultiDim> dh = std::make_shared<DOFHandlerMultiDim>(*mesh);
 
     /// this can be done at initialization of the equation
-	EvalPoints feval;
+	std::shared_ptr<EvalPoints> feval = std::make_shared<EvalPoints>();
     Quadrature *q_bulk = new QGauss(3, 2);
     Quadrature *q_side = new QGauss(2, 2);
-    EvalSubset bulk_points = feval.add_bulk<3>(*q_bulk );
-    EvalSubset side_points = feval.add_side<3>(*q_side );
+    EvalSubset bulk_points = feval->add_bulk<3>(*q_bulk );
+    EvalSubset side_points = feval->add_side<3>(*q_side );
     DHCellAccessor dh_cell(dh.get(), 3);
     /// this is part of assembly process
     //for (auto cell : dh->own_range()) {

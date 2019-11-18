@@ -20,6 +20,7 @@
 #include "fields/field_value_cache.hh"
 #include "fields/field_values.hh"
 #include "fields/eval_points.hh"
+#include "fields/eval_subset.hh"
 #include "fem/dh_cell_accessor.hh"
 
 
@@ -32,7 +33,7 @@ FieldValueCache<Value>::FieldValueCache()
 : data_(0, Value::NRows_, Value::NCols_), eval_points_(nullptr) {}
 
 template<class Value>
-FieldValueCache<Value>::FieldValueCache(const EvalPoints *eval_points, unsigned int n_cache_points)
+FieldValueCache<Value>::FieldValueCache(std::shared_ptr<EvalPoints> eval_points, unsigned int n_cache_points)
 : data_(n_cache_points * eval_points->size(), Value::NRows_, Value::NCols_),
   eval_points_(eval_points), dim_(eval_points->point_dim()) {}
 
@@ -42,7 +43,7 @@ FieldValueCache<Value>::~FieldValueCache() {}
 template<class Value>
 void FieldValueCache<Value>::mark_used(EvalSubset sub_set) {
     for (unsigned int i=0; i<sub_set.n_permutations(); ++i)
-	    used_points_.insert(sub_set.get_block_idx(i));
+	    used_blocks_.insert(sub_set.get_block_idx(i));
 }
 
 

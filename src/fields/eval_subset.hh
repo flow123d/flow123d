@@ -21,12 +21,12 @@
 
 #include <memory>
 #include <armadillo>
+#include "fields/eval_points.hh"
 #include "mesh/range_wrapper.hh"
 #include "fem/dh_cell_accessor.hh"
 
 
 class Side;
-class EvalPoints;
 class BulkPoint;
 class SidePoint;
 
@@ -42,13 +42,13 @@ public:
 	EvalSubset() : eval_points_(nullptr) {}
 
     /// Constructor of bulk subset
-	EvalSubset(const EvalPoints *eval_points);
+	EvalSubset(std::shared_ptr<EvalPoints> eval_points);
 
     /// Constructor of side subset
-	EvalSubset(const EvalPoints *eval_points, unsigned int n_permutations);
+	EvalSubset(std::shared_ptr<EvalPoints> eval_points, unsigned int n_permutations);
 
-    /// Getter of composed quadrature
-    inline const EvalPoints *eval_points() const {
+    /// Getter of eval_points
+    inline std::shared_ptr<EvalPoints> eval_points() const {
         return eval_points_;
     }
 
@@ -78,7 +78,7 @@ private:
     /// Empty subset is need in default constructors of BulkPoint and SidePoint
     static const EvalSubset dummy_subset;
     /// Pointer to EvalPoints
-    const EvalPoints *eval_points_;
+    std::shared_ptr<EvalPoints> eval_points_;
     /// Indices of data blocks in EvalPoints object for all permutations.
     std::vector<int> block_indices_;
     /// Number of sides (value 0 indicates bulk set)
@@ -97,12 +97,14 @@ public:
     : dh_cell_(dh_cell), subset_(bulk_subset), local_point_idx_(loc_point_idx) {}
 
     /// Getter of composed quadrature
-    inline const EvalPoints *eval_points() const {
+    inline std::shared_ptr<EvalPoints> eval_points() const {
         return subset_.eval_points();
     }
 
     /// Local coordinates within element
-    arma::vec loc_coords() const;
+    inline arma::vec loc_coords() const {
+        return this->eval_points()->local_point( local_point_idx_ );
+    }
 
     // Global coordinates within element
     //arma::vec3 coords() const;
@@ -144,12 +146,14 @@ public:
 	  permutation_idx_( cell_side.element()->permutation_idx( cell_side_.side_idx() ) ) {}
 
     /// Getter of evaluation points
-    inline const EvalPoints *eval_points() const {
+    inline std::shared_ptr<EvalPoints> eval_points() const {
         return subset_.eval_points();
     }
 
     // Local coordinates within element
-    arma::vec loc_coords() const;
+    inline arma::vec loc_coords() const {
+        return this->eval_points()->local_point( local_point_idx_ );
+    }
 
     // Global coordinates within element
     //arma::vec3 coords() const;
