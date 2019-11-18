@@ -479,10 +479,6 @@ protected:
     FiniteElement<dim> *fe;
     
     /**
-     * @brief Precomputed finite element data.
-     */
-    FEInternalData *fe_data;
-    /**
      * @brief Data computed by the mapping and finite element.
      */
     FEValuesData<dim,spacedim> data;
@@ -529,6 +525,8 @@ public:
     FEValues(Quadrature &_quadrature,
              FiniteElement<dim> &_fe,
              UpdateFlags _flags);
+    
+    ~FEValues();
 
     /**
      * @brief Update cell-dependent data (gradients, Jacobians etc.)
@@ -544,14 +542,17 @@ public:
     
 private:
     
-    void fill_fe_values(const ElementAccessor<3> &cell,
-                        const Quadrature &q,
-                        FEValuesData<dim,spacedim> &fv_data);
+    void fill_fe_values(const ElementAccessor<3> &cell);
     
     /**
      * @brief The quadrature rule used to calculate integrals.
      */
     Quadrature *quadrature;
+    
+    /**
+     * @brief Precomputed finite element data.
+     */
+    FEInternalData *fe_data;
 
 
 };
@@ -618,9 +619,7 @@ private:
      * @param fv_data Data to be computed.
      */
     void fill_fe_side_values(const ElementAccessor<3> &cell,
-                            unsigned int sid,
-                            const Quadrature &q,
-                            FEValuesData<dim,spacedim> &fv_data);
+                            unsigned int sid);
 
     /**
      * @brief Quadrature for the integration on the element sides.

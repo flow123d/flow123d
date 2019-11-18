@@ -157,7 +157,7 @@ void FEValuesBase<dim,spacedim>::ViewsCache::initialize(FEValuesBase<dim,spacedi
 
 template<unsigned int dim,unsigned int spacedim>
 FEValuesBase<dim,spacedim>::FEValuesBase()
-: n_points_(0), fe(NULL), fe_data(NULL)
+: n_points_(0), fe(NULL)
 {
 }
 
@@ -165,7 +165,6 @@ FEValuesBase<dim,spacedim>::FEValuesBase()
 
 template<unsigned int dim,unsigned int spacedim>
 FEValuesBase<dim,spacedim>::~FEValuesBase() {
-    if (fe_data) delete fe_data;
 }
 
 
@@ -541,14 +540,14 @@ FEValues<dim,spacedim>::FEValues(
          FiniteElement<dim> &_fe,
          UpdateFlags _flags)
 : FEValuesBase<dim, spacedim>(),
-  quadrature(&_quadrature)
+  quadrature(&_quadrature),
+  fe_data(nullptr)
 {
     ASSERT_DBG( _quadrature.dim() == dim );
     this->allocate(_quadrature.size(), _fe, _flags);
 
-    // precompute the maping data and finite element data
-    this->mapping_data = MappingP1<dim,spacedim>::initialize(*quadrature, this->data.update_flags);
-    this->fe_data = this->init_fe_data(quadrature);
+    // precompute finite element data
+    fe_data = this->init_fe_data(quadrature);
     
     // In case of mixed system allocate data for sub-elements.
     if (this->fe->type_ == FEMixedSystem)
@@ -562,6 +561,13 @@ FEValues<dim,spacedim>::FEValues(
 }
 
 
+template<unsigned int dim, unsigned int spacedim>
+FEValues<dim,spacedim>::~FEValues()
+{
+    if (fe_data) delete fe_data;
+}
+
+
 
 template<unsigned int dim,unsigned int spacedim>
 void FEValues<dim,spacedim>::reinit(ElementAccessor<3> & cell)
@@ -569,64 +575,61 @@ void FEValues<dim,spacedim>::reinit(ElementAccessor<3> & cell)
 	OLD_ASSERT_EQUAL( dim, cell->dim() );
     this->data.present_cell = &cell;
 
-    // calculate Jacobian of mapping, JxW, inverse Jacobian, normal vector(s)
-    fill_fe_values(cell,
-                   *this->quadrature,
-                   this->data);
+    // calculate Jacobian of mapping, JxW, inverse Jacobian
+    fill_fe_values(cell);
 
-    this->fill_data(*this->fe_data);
+    this->fill_data(*fe_data);
 }
 
 
 template<unsigned int dim, unsigned int spacedim>
-void FEValues<dim,spacedim>::fill_fe_values(const ElementAccessor<3> &cell,
-                            const Quadrature &q,
-                            FEValuesData<dim,spacedim> &fv_data)
+void FEValues<dim,spacedim>::fill_fe_values(const ElementAccessor<3> &cell)
 {
-    ASSERT_DBG( q.dim() == dim );
+    ASSERT_DBG( quadrature->dim() == dim );
+    
     typename MappingP1<dim,spacedim>::ElementMap coords;
     arma::mat::fixed<spacedim,dim> jac;
 
-    if ((fv_data.update_flags & update_jacobians) |
-        (fv_data.update_flags & update_volume_elements) |
-        (fv_data.update_flags & update_JxW_values) |
-        (fv_data.update_flags & update_inverse_jacobians) |
-        (fv_data.update_flags & update_quadrature_points))
+    if ((this->data.update_flags & update_jacobians) |
+        (this->data.update_flags & update_volume_elements) |
+        (this->data.update_flags & update_JxW_values) |
+        (this->data.update_flags & update_inverse_jacobians) |
+        (this->data.update_flags & update_quadrature_points))
     {
         coords = MappingP1<dim,spacedim>::element_map(cell);
     }
 
     // calculation of Jacobian dependent data
-    if ((fv_data.update_flags & update_jacobians) |
-        (fv_data.update_flags & update_volume_elements) |
-        (fv_data.update_flags & update_JxW_values) |
-        (fv_data.update_flags & update_inverse_jacobians))
+    if ((this->data.update_flags & update_jacobians) |
+        (this->data.update_flags & update_volume_elements) |
+        (this->data.update_flags & update_JxW_values) |
+        (this->data.update_flags & update_inverse_jacobians))
     {
         jac = MappingP1<dim,spacedim>::jacobian(coords);
 
         // update Jacobians
-        if (fv_data.update_flags & update_jacobians)
-            for (unsigned int i=0; i<q.size(); i++)
-                fv_data.jacobians[i] = jac;
+        if (this->data.update_flags & update_jacobians)
+            for (unsigned int i=0; i<quadrature->size(); i++)
+                this->data.jacobians[i] = jac;
 
         // calculation of determinant dependent data
-        if ((fv_data.update_flags & update_volume_elements) | (fv_data.update_flags & update_JxW_values))
+        if ((this->data.update_flags & update_volume_elements) | (this->data.update_flags & update_JxW_values))
         {
             double det = fabs(determinant(jac));
 
             // update determinants
-            if (fv_data.update_flags & update_volume_elements)
-                for (unsigned int i=0; i<q.size(); i++)
-                    fv_data.determinants[i] = det;
+            if (this->data.update_flags & update_volume_elements)
+                for (unsigned int i=0; i<quadrature->size(); i++)
+                    this->data.determinants[i] = det;
 
             // update JxW values
-            if (fv_data.update_flags & update_JxW_values)
-                for (unsigned int i=0; i<q.size(); i++)
-                    fv_data.JxW_values[i] = det*q.weight(i);
+            if (this->data.update_flags & update_JxW_values)
+                for (unsigned int i=0; i<quadrature->size(); i++)
+                    this->data.JxW_values[i] = det*quadrature->weight(i);
         }
 
         // update inverse Jacobians
-        if (fv_data.update_flags & update_inverse_jacobians)
+        if (this->data.update_flags & update_inverse_jacobians)
         {
             arma::mat::fixed<dim,spacedim> ijac;
             if (dim==spacedim)
@@ -637,17 +640,17 @@ void FEValues<dim,spacedim>::fill_fe_values(const ElementAccessor<3> &cell,
             {
                 ijac = pinv(jac);
             }
-            for (unsigned int i=0; i<q.size(); i++)
-                fv_data.inverse_jacobians[i] = ijac;
+            for (unsigned int i=0; i<quadrature->size(); i++)
+                this->data.inverse_jacobians[i] = ijac;
         }
     }
 
     // quadrature points in the actual cell coordinate system
-    if (fv_data.update_flags & update_quadrature_points)
+    if (this->data.update_flags & update_quadrature_points)
     {
         typename MappingP1<dim,spacedim>::BaryPoint basis;
-        for (unsigned int i=0; i<q.size(); i++)
-            fv_data.points[i] = coords*fe_data->bar_coords[i];
+        for (unsigned int i=0; i<quadrature->size(); i++)
+            this->data.points[i] = coords*fe_data->bar_coords[i];
     }
 }
 
@@ -720,10 +723,7 @@ void FESideValues<dim,spacedim>::reinit(ElementAccessor<3> & cell,
     side_perm_ = cell->permutation_idx(sid);
     ASSERT_LT_DBG(side_perm_, RefElement<dim>::n_side_permutations);
     // calculate Jacobian of mapping, JxW, inverse Jacobian, normal vector(s)
-    fill_fe_side_values(cell,
-                        sid,
-                        side_quadrature[sid][side_perm_],
-                        this->data);
+    fill_fe_side_values(cell, sid);
 
     // calculation of finite element data
     this->fill_data(*side_fe_data[sid][side_perm_]);
@@ -732,45 +732,44 @@ void FESideValues<dim,spacedim>::reinit(ElementAccessor<3> & cell,
 
 template<unsigned int dim, unsigned int spacedim>
 void FESideValues<dim,spacedim>::fill_fe_side_values(const ElementAccessor<3> &cell,
-                            unsigned int sid,
-                            const Quadrature &q,
-                            FEValuesData<dim,spacedim> &fv_data)
+                            unsigned int sid)
 {
+    const Quadrature &q = side_quadrature[side_idx_][side_perm_];
     ASSERT_DBG( q.dim() == dim );
     typename MappingP1<dim,spacedim>::ElementMap coords;
 
-    if ((fv_data.update_flags & update_jacobians) |
-        (fv_data.update_flags & update_volume_elements) |
-        (fv_data.update_flags & update_inverse_jacobians) |
-        (fv_data.update_flags & update_normal_vectors) |
-        (fv_data.update_flags & update_quadrature_points))
+    if ((this->data.update_flags & update_jacobians) |
+        (this->data.update_flags & update_volume_elements) |
+        (this->data.update_flags & update_inverse_jacobians) |
+        (this->data.update_flags & update_normal_vectors) |
+        (this->data.update_flags & update_quadrature_points))
     {
         coords = MappingP1<dim,spacedim>::element_map(cell);
     }
 
     // calculation of cell Jacobians and dependent data
-    if ((fv_data.update_flags & update_jacobians) |
-        (fv_data.update_flags & update_volume_elements) |
-        (fv_data.update_flags & update_inverse_jacobians) |
-        (fv_data.update_flags & update_normal_vectors))
+    if ((this->data.update_flags & update_jacobians) |
+        (this->data.update_flags & update_volume_elements) |
+        (this->data.update_flags & update_inverse_jacobians) |
+        (this->data.update_flags & update_normal_vectors))
     {
         arma::mat::fixed<spacedim,dim> jac = MappingP1<dim,spacedim>::jacobian(coords);
 
         // update cell Jacobians
-        if (fv_data.update_flags & update_jacobians)
+        if (this->data.update_flags & update_jacobians)
             for (unsigned int i=0; i<q.size(); i++)
-                fv_data.jacobians[i] = jac;
+                this->data.jacobians[i] = jac;
 
         // update determinants of Jacobians
-        if (fv_data.update_flags & update_volume_elements)
+        if (this->data.update_flags & update_volume_elements)
         {
             double det = fabs(determinant(jac));
             for (unsigned int i=0; i<q.size(); i++)
-                fv_data.determinants[i] = det;
+                this->data.determinants[i] = det;
         }
 
         // inverse Jacobians
-        if (fv_data.update_flags & update_inverse_jacobians)
+        if (this->data.update_flags & update_inverse_jacobians)
         {
             arma::mat::fixed<dim,spacedim> ijac;
             if (dim==spacedim)
@@ -781,31 +780,31 @@ void FESideValues<dim,spacedim>::fill_fe_side_values(const ElementAccessor<3> &c
             {
                 ijac = pinv(jac);
             }
-            ASSERT_LE_DBG(q.size(), fv_data.inverse_jacobians.size());
+            ASSERT_LE_DBG(q.size(), this->data.inverse_jacobians.size());
             for (unsigned int i=0; i<q.size(); i++)
-                fv_data.inverse_jacobians[i] = ijac;
+                this->data.inverse_jacobians[i] = ijac;
 
             // calculation of normal vectors to the side
-            if ((fv_data.update_flags & update_normal_vectors))
+            if ((this->data.update_flags & update_normal_vectors))
             {
                 arma::vec::fixed<spacedim> n_cell;
                 n_cell = trans(ijac)*RefElement<dim>::normal_vector(sid);
                 n_cell = n_cell/norm(n_cell,2);
                 for (unsigned int i=0; i<q.size(); i++)
-                    fv_data.normal_vectors[i] = n_cell;
+                    this->data.normal_vectors[i] = n_cell;
             }
         }
     }
 
     // Quadrature points in the actual cell coordinate system.
     // The points location can vary from side to side.
-    if (fv_data.update_flags & update_quadrature_points)
+    if (this->data.update_flags & update_quadrature_points)
     {
         for (unsigned int i=0; i<q.size(); i++)
-            fv_data.points[i] = coords*data.bar_coords[i];
+            this->data.points[i] = coords*side_fe_data[side_idx_][side_perm_]->bar_coords[i];
     }
 
-    if (fv_data.update_flags & update_side_JxW_values)
+    if (this->data.update_flags & update_side_JxW_values)
     {
         double side_det;
         if (dim <= 1)
@@ -827,7 +826,7 @@ void FESideValues<dim,spacedim>::fill_fe_side_values(const ElementAccessor<3> &c
             side_det = fabs(determinant(side_jac));
         }
         for (unsigned int i=0; i<q.size(); i++)
-            fv_data.JxW_values[i] = side_det*q.weight(i);
+            this->data.JxW_values[i] = side_det*q.weight(i);
     }
 }
 
