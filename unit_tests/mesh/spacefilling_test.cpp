@@ -8,7 +8,7 @@
 #define TEST_USE_PETSC
 #define FEAL_OVERRIDE_ASSERTS
 
-#include <flow_gtest.hh>
+#include <flow_gtest_mpi.hh>
 
 #include "system/global_defs.h"
 
@@ -26,12 +26,18 @@
 
 #include <iostream>
 
+#include "fields/generic_field.hh"
+#include "io/output_mesh.hh"
+#include "io/output_time.hh"
+
+
 #define GROUP_SIZE 64
-#define EPS 0.0001
+#define EPS 0.0000000001
 
 struct PointHilbert {
     arma::vec2 coords;
     double hilbertIndex;
+    uint originalIndex;
 };
 
 class PointsManager {
@@ -89,6 +95,7 @@ public:
         for (uint i = 0; i < data.size(); ++i) {
             p.coords[0] = data[i][0];
             p.coords[1] = data[i][1];
+            p.originalIndex = i;
             points[i] = p;
         }
     }
@@ -100,9 +107,19 @@ public:
     void sortByHilbert() {
         std::sort(points.begin(), points.end(), comparePoints);
     }
+    void fillIndices(std::vector<double>& indices) const {
+        indices.resize(points.size());
+        std::array<uint, 10> groupIndices = {3, 8, 9, 4, 2, 6, 7, 0, 1, 5};
+        uint groupIndex = 0;
+        for (uint i = 0; i < indices.size(); ++i) {
+            if (!(i % 64)) {
+                ++groupIndex;
+            }
+            indices[points[i].originalIndex] = groupIndices[groupIndex % 10];
+//             indices[points[i].originalIndex] = (groupIndex % 10);
+        }
+    }
 };
-
-static const int loop_call_count = 100000;
 
 TEST(Spacefilling, get_centers) {
     Profiler::initialize();
@@ -112,25 +129,23 @@ TEST(Spacefilling, get_centers) {
     // has to introduce some flag for passing absolute path to 'test_units' in source tree
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-    std::string mesh_in_string = "{mesh_file=\"mesh/square_uniform.msh\"}";
+//     std::string mesh_in_string = "{mesh_file=\"mesh/square_uniform.msh\"}";
 //     std::string mesh_in_string = "{mesh_file=\"mesh/square_refined.msh\"}";
-//     std::string mesh_in_string = "{mesh_file=\"mesh/lshape_refined.msh\"}";
+    std::string mesh_in_string = "{mesh_file=\"mesh/lshape_refined.msh\"}";
     
-    Mesh * mesh = mesh_constructor(mesh_in_string);
+    Mesh * mesh = mesh_full_constructor(mesh_in_string);
     
     auto reader = reader_constructor(mesh_in_string);
     reader->read_physical_names(mesh);
     reader->read_raw_mesh(mesh);
     
     START_TIMER("get_centers");
-//     for (int i = 0; i < loop_call_count; ++i) {
         for (ElementAccessor<3> elm : mesh->elements_range()) {
             points.push_back(elm.centre());
         }
-//     }
     END_TIMER("get_centers");
     
-    points.front().print();
+//     points.front().print();
     
     PointsManager pm;
     pm.setPoints(points);
@@ -143,7 +158,39 @@ TEST(Spacefilling, get_centers) {
     pm.sortByHilbert();
     END_TIMER("sort_by_hibert");
     
-    pm.getPoints().front().coords.print();
+//     pm.getPoints().front().coords.print();
+    
+    std::vector<double> hilbert_id;
+    
+    pm.fillIndices(hilbert_id);
+    
+//     for (uint i = 0; i < 20; ++i) {
+//         std::cout << hilbert_id[i] << '\n';
+//     }
+    
+    const string test_output_time_input = R"JSON(
+    {
+        format = {
+            TYPE = "gmsh",
+            variant = "ascii"
+        }
+    }
+    )JSON";
+
+    auto in_rec = Input::ReaderToStorage(test_output_time_input,
+    const_cast<Input::Type::Record &>(OutputTime::get_input_type()),
+    Input::FileFormat::format_JSON).get_root_interface<Input::Record>();
+    auto output = OutputTime::create_output_stream("dummy_equation", in_rec, "s");
+    std::shared_ptr<OutputMeshBase> output_mesh = std::make_shared<OutputMeshDiscontinuous>(*mesh);
+    output_mesh->create_sub_mesh();
+    output->set_output_data_caches(output_mesh);
+    output->update_time(0.0);
+    auto data_cache = output->prepare_compute_data<double>("patch_id", OutputTime::ELEM_DATA, 1, 1);
+
+    for(auto el : mesh->elements_range()) {
+        data_cache.store_value(el.idx(), &hilbert_id[el.idx()]);
+    }
+    output->write_time_frame();
 
     delete mesh;
     
