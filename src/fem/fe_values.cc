@@ -42,6 +42,7 @@ FEInternalData::FEInternalData(unsigned int np, unsigned int nd)
 {
     ref_shape_values.resize(np, vector<arma::vec>(nd));
     ref_shape_grads.resize(np, vector<arma::mat>(nd));
+    bar_coords.resize(np);
 }
 
 
@@ -139,7 +140,7 @@ void FEValuesBase<dim,spacedim>::ViewsCache::initialize(FEValuesBase<dim,spacedi
 
 template<unsigned int dim,unsigned int spacedim>
 FEValuesBase<dim,spacedim>::FEValuesBase()
-: n_points_(0), fe(NULL), mapping_data(NULL), fe_data(NULL)
+: n_points_(0), fe(NULL), fe_data(NULL)
 {
 }
 
@@ -147,7 +148,6 @@ FEValuesBase<dim,spacedim>::FEValuesBase()
 
 template<unsigned int dim,unsigned int spacedim>
 FEValuesBase<dim,spacedim>::~FEValuesBase() {
-    if (mapping_data) delete mapping_data;
     if (fe_data) delete fe_data;
 }
 
@@ -209,6 +209,9 @@ FEInternalData *FEValuesBase<dim,spacedim>::init_fe_data(const Quadrature *q)
             data->ref_shape_grads[i][j] = grad;
         }
     }
+    
+    for (unsigned int i=0; i<q->size(); i++)
+        data->bar_coords[i] = RefElement<dim>::local_to_bary(q->point<dim>(i).arma());
     
     return data;
 }
@@ -545,7 +548,6 @@ void FEValues<dim,spacedim>::reinit(ElementAccessor<3> & cell)
     // calculate Jacobian of mapping, JxW, inverse Jacobian, normal vector(s)
     fill_fe_values(cell,
                    *this->quadrature,
-                   *this->mapping_data,
                    this->data);
 
     this->fill_data(*this->fe_data);
@@ -555,7 +557,6 @@ void FEValues<dim,spacedim>::reinit(ElementAccessor<3> & cell)
 template<unsigned int dim, unsigned int spacedim>
 void FEValues<dim,spacedim>::fill_fe_values(const ElementAccessor<3> &cell,
                             const Quadrature &q,
-                            MappingInternalData &data,
                             FEValuesData<dim,spacedim> &fv_data)
 {
     ASSERT_DBG( q.dim() == dim );
@@ -622,7 +623,7 @@ void FEValues<dim,spacedim>::fill_fe_values(const ElementAccessor<3> &cell,
     {
         typename MappingP1<dim,spacedim>::BaryPoint basis;
         for (unsigned int i=0; i<q.size(); i++)
-            fv_data.points[i] = coords*data.bar_coords[i];
+            fv_data.points[i] = coords*fe_data->bar_coords[i];
     }
 }
 
@@ -653,7 +654,6 @@ FESideValues<dim,spacedim>::FESideValues(
     	{
     		// transform the side quadrature points to the cell quadrature points
             side_quadrature[sid][pid] = _sub_quadrature.make_from_side<dim>(sid, pid);
-    		side_mapping_data[sid][pid] = MappingP1<dim,spacedim>::initialize(side_quadrature[sid][pid], this->data.update_flags);
     		side_fe_data[sid][pid] = this->init_fe_data(&side_quadrature[sid][pid]);
     	}
     }
@@ -678,7 +678,6 @@ FESideValues<dim,spacedim>::~FESideValues()
 	{
 		for (unsigned int pid=0; pid<RefElement<dim>::n_side_permutations; pid++)
 		{
-			delete side_mapping_data[sid][pid];
 			delete side_fe_data[sid][pid];
 		}
 	}
@@ -700,7 +699,6 @@ void FESideValues<dim,spacedim>::reinit(ElementAccessor<3> & cell,
     fill_fe_side_values(cell,
                         sid,
                         side_quadrature[sid][side_perm_],
-                        *side_mapping_data[sid][side_perm_],
                         this->data);
 
     // calculation of finite element data
@@ -712,7 +710,6 @@ template<unsigned int dim, unsigned int spacedim>
 void FESideValues<dim,spacedim>::fill_fe_side_values(const ElementAccessor<3> &cell,
                             unsigned int sid,
                             const Quadrature &q,
-                            MappingInternalData &data,
                             FEValuesData<dim,spacedim> &fv_data)
 {
     ASSERT_DBG( q.dim() == dim );

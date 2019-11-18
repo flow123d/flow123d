@@ -64,15 +64,6 @@ public:
     typedef arma::mat::fixed<spacedim, dim+1> ElementMap;
     
     /**
-     * @brief Initializes the structures and computes static data.
-     *
-     * @param q Quadrature rule.
-     * @param flags Update flags.
-     * @return The computed mapping data.
-     */
-    static MappingInternalData *initialize(const Quadrature &q, UpdateFlags flags);
-
-    /**
      * @brief Determines which additional quantities have to be computed.
      *
      * @param flags Update flags for required quantities.

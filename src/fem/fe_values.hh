@@ -36,7 +36,6 @@ class Quadrature;
 template<unsigned int dim> class FiniteElement;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 
-struct MappingInternalData;
 
 
 
@@ -66,6 +65,9 @@ public:
      *             x ((dim of. ref. cell)x(no. of components in ref. cell))
      */
     std::vector<std::vector<arma::mat> > ref_shape_grads;
+    
+    /// Barycentric coordinates of quadrature points.
+    std::vector<arma::vec> bar_coords;
     
     /// Number of quadrature points.
     unsigned int n_points;
@@ -468,15 +470,9 @@ protected:
     FiniteElement<dim> *fe;
     
     /**
-     * @brief Precomputed mapping data.
-     */
-    MappingInternalData *mapping_data;
-
-    /**
      * @brief Precomputed finite element data.
      */
     FEInternalData *fe_data;
-    
     /**
      * @brief Data computed by the mapping and finite element.
      */
@@ -541,7 +537,6 @@ private:
     
     void fill_fe_values(const ElementAccessor<3> &cell,
                         const Quadrature &q,
-                        MappingInternalData &data,
                         FEValuesData<dim,spacedim> &fv_data);
     
     /**
@@ -616,7 +611,6 @@ private:
     void fill_fe_side_values(const ElementAccessor<3> &cell,
                             unsigned int sid,
                             const Quadrature &q,
-                            MappingInternalData &data,
                             FEValuesData<dim,spacedim> &fv_data);
 
     /**
@@ -625,8 +619,6 @@ private:
     const Quadrature *sub_quadrature;
 
     std::vector<std::vector<Quadrature> > side_quadrature;
-
-    MappingInternalData *side_mapping_data[RefElement<dim>::n_sides][RefElement<dim>::n_side_permutations];
 
     FEInternalData *side_fe_data[RefElement<dim>::n_sides][RefElement<dim>::n_side_permutations];
     

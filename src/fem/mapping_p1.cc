@@ -27,25 +27,6 @@ using namespace std;
 
 
 template<unsigned int dim, unsigned int spacedim>
-MappingInternalData *MappingP1<dim,spacedim>::initialize(const Quadrature &q, UpdateFlags flags)
-{
-    ASSERT_DBG( q.dim() == dim );
-    MappingInternalData *data = new MappingInternalData;
-
-    // barycentric coordinates of quadrature points
-    if (flags & update_quadrature_points)
-    {
-        data->bar_coords.resize(q.size());
-        for (unsigned int i=0; i<q.size(); i++)
-            data->bar_coords[i] = RefElement<dim>::local_to_bary(q.point<dim>(i).arma());
-    }
-
-
-
-    return data;
-}
-
-template<unsigned int dim, unsigned int spacedim>
 UpdateFlags MappingP1<dim,spacedim>::update_each(UpdateFlags flags)
 {
     UpdateFlags f = flags;
