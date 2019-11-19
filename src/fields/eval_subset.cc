@@ -29,12 +29,12 @@ const EvalSubset EvalSubset::dummy_subset = EvalSubset();
 
 EvalSubset::EvalSubset(std::shared_ptr<EvalPoints> eval_points)
 : eval_points_(eval_points), block_indices_(1), n_sides_(0) {
-	block_indices_[0] = eval_points_->n_blocks() - 1;
+	block_indices_[0] = eval_points_->n_blocks();
 }
 
 EvalSubset::EvalSubset(std::shared_ptr<EvalPoints> eval_points, unsigned int n_permutations)
 : eval_points_(eval_points), block_indices_(n_permutations), n_sides_(eval_points->point_dim()+1) {
-    for (unsigned int i=0, block_idx=eval_points_->n_blocks() - 1; i<n_permutations; ++i, ++block_idx)
+    for (unsigned int i=0, block_idx=eval_points_->n_blocks(); i<n_permutations; ++i, ++block_idx)
     	block_indices_[i] = block_idx;
 }
 
@@ -43,8 +43,8 @@ Range< BulkPoint > EvalSubset::points(const DHCellAccessor &cell) const {
     if (cell.element_cache_index() == ElementCacheMap::undef_elem_idx)
         THROW( ExcElementNotInCache() << EI_ElementIdx(cell.elm_idx()) );
 
-    auto bgn_it = make_iter<BulkPoint>( BulkPoint(cell, *this, eval_points_->block_idx(block_indices_[0])) );
-    auto end_it = make_iter<BulkPoint>( BulkPoint(cell, *this, eval_points_->block_idx(block_indices_[0]+1)) );
+    auto bgn_it = make_iter<BulkPoint>( BulkPoint(cell, *this, eval_points_->block_begin(block_indices_[0])) );
+    auto end_it = make_iter<BulkPoint>( BulkPoint(cell, *this, eval_points_->block_end(block_indices_[0])) );
     return Range<BulkPoint>(bgn_it, end_it);
 }
 
@@ -54,8 +54,8 @@ Range< SidePoint > EvalSubset::points(const DHCellSide &cell_side) const {
         THROW( ExcElementNotInCache() << EI_ElementIdx(cell_side.cell().elm_idx()) );
 
     unsigned int perm_idx = cell_side.element()->permutation_idx( cell_side.side_idx() );
-    unsigned int begin_idx = eval_points_->block_idx(block_indices_[perm_idx]);
-    unsigned int end_idx = eval_points_->block_idx(block_indices_[perm_idx+1]);
+    unsigned int begin_idx = eval_points_->block_begin(block_indices_[perm_idx]);
+    unsigned int end_idx = eval_points_->block_end(block_indices_[perm_idx]);
     unsigned int points_per_side = (end_idx - begin_idx) / this->n_sides();
     auto bgn_it = make_iter<SidePoint>( SidePoint(cell_side, *this, begin_idx + cell_side.side_idx() * points_per_side ) );
     auto end_it = make_iter<SidePoint>( SidePoint(cell_side, *this, begin_idx + (cell_side.side_idx()+1) * points_per_side ) );
@@ -73,12 +73,12 @@ Range< SidePoint > EvalSubset::points(const DHCellSide &cell_side) const {
  * Implementation of SidePoint methods
  */
 SidePoint SidePoint::permute(DHCellSide edg_side) const {
-	unsigned int begin_idx = subset_.eval_points()->block_idx(subset_.get_block_idx(permutation_idx_));
-	unsigned int points_per_side = (subset_.eval_points()->block_idx(subset_.get_block_idx(permutation_idx_+1)) - begin_idx) / subset_.n_sides();
+	unsigned int begin_idx = subset_.eval_points()->block_begin(subset_.get_block_idx(permutation_idx_));
+	unsigned int points_per_side = (subset_.eval_points()->block_end(subset_.get_block_idx(permutation_idx_)+1) - begin_idx) / subset_.n_sides();
 	unsigned int point_on_side = local_point_idx_ - (begin_idx + cell_side_.side_idx() * points_per_side);
 
     unsigned int edg_perm_idx = edg_side.element()->permutation_idx( edg_side.side_idx() );
-    unsigned int edg_begin_idx = subset_.eval_points()->block_idx( subset_.get_block_idx(edg_perm_idx) );
+    unsigned int edg_begin_idx = subset_.eval_points()->block_begin( subset_.get_block_idx(edg_perm_idx) );
 	unsigned int edg_loc_point_idx = edg_begin_idx + edg_side.side_idx() * points_per_side + point_on_side;
     return SidePoint(edg_side, subset_, edg_loc_point_idx);
 }

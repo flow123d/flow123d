@@ -25,6 +25,7 @@
 #include <armadillo>
 #include "mesh/range_wrapper.hh"
 #include "system/asserts.hh"
+#include "system/armor.hh"
 
 class Side;
 class Quadrature;
@@ -42,15 +43,13 @@ public:
 
     /// Return size of evaluation points object (number of points).
     inline unsigned int size() const {
-        return local_points_.size() / dim_;
+        return local_points_.n_vals();
     }
 
     /// Return local coordinates of given local point.
     inline arma::vec local_point(unsigned int local_point_idx) const {
     	ASSERT_LT_DBG(local_point_idx, this->size());
-    	std::vector<double> loc_point_vec(dim_);
-    	for (unsigned int i=0; i<dim_; ++i) loc_point_vec[i] = local_points_[local_point_idx*dim_ + i];
-    	return arma::vec(loc_point_vec);
+    	return local_points_.arma_vec(local_point_idx);
     }
 
     /// Return dimension of stored evaluate points
@@ -58,15 +57,21 @@ public:
         return dim_;
     }
 
-    /// Return appropriate index from block_indices_.
-    inline int block_idx(unsigned int idx) const {
-        ASSERT_LT_DBG(idx, block_indices_.size());
-    	return block_indices_[idx];
+    /// Return begin index of appropriate data block.
+    inline int block_begin(unsigned int idx) const {
+        ASSERT_LT_DBG(idx, n_blocks());
+    	return block_starts_[idx];
     }
 
-    /// Return size of block_indices_.
+    /// Return end index of appropriate data block.
+    inline int block_end(unsigned int idx) const {
+        ASSERT_LT_DBG(idx, n_blocks());
+    	return block_starts_[idx+1];
+    }
+
+    /// Return number of blocks.
     inline unsigned int n_blocks() const {
-        return block_indices_.size();
+        return block_starts_.size() - 1;
     }
 
     /**
@@ -84,14 +89,15 @@ private:
 	/// Undefined dimension of new (empty) EvalPoints object
 	static const unsigned int undefined_dim = 10;
 
-    /// Adds coords of local point to local_points_ vector, returns its index in vector.
-    unsigned int add_local_point(arma::vec coords);
+    /// Adds set of local point to local_points_ (bulk or side of given permutation).
+	template <unsigned int dim>
+    void add_local_points(const Armor::array & quad_points);
 
     /// Check dimension of EvalSubset object based on Quadrature, all subsets must be of same dimension.
     unsigned int check_dim(unsigned int quad_dim, unsigned int obj_dim);
 
-    std::vector<double> local_points_;  ///< Local coords of points vector
-    std::vector<int> block_indices_;    ///< Indices of data blocks in local_points_ vector, size = n_blocks + 1
+    Armor::array local_points_;         ///< Local coords of points vector
+    std::vector<int> block_starts_;     ///< Indices of data blocks in local_points_ vector, size = n_blocks + 1
     unsigned int dim_;                  ///< Dimension of local points
 
     friend class EvalSubSet;

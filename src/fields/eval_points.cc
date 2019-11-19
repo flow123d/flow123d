@@ -24,9 +24,9 @@
 
 
 EvalPoints::EvalPoints()
-: dim_(EvalPoints::undefined_dim)
+: local_points_(0, 1), dim_(EvalPoints::undefined_dim)
 {
-    block_indices_.push_back(0);
+	block_starts_.push_back(0);
 }
 
 template <unsigned int dim>
@@ -35,11 +35,8 @@ EvalSubset EvalPoints::add_bulk(const Quadrature &quad)
 	check_dim(quad.dim(), dim);
 
 	EvalSubset bulk_set(shared_from_this() );
-
-    const Armor::array & quad_points = quad.get_points();
-    for (uint i=0; i<quad_points.n_vals(); ++i)
-        this->add_local_point(quad_points.get<dim>(i).arma());
-    block_indices_.push_back( this->size() );
+	this->add_local_points<dim>( quad.get_points() );
+	block_starts_.push_back( this->size() );
     return bulk_set;
 }
 
@@ -53,29 +50,30 @@ EvalSubset EvalPoints::add_side(const Quadrature &quad)
     for (unsigned int j=0; j<RefElement<dim>::n_side_permutations; ++j) { // permutations
         for (unsigned int i=0; i<dim+1; ++i) {  // sides
             Quadrature high_dim_q = quad.make_from_side<dim>(i, j);
-            const Armor::array & quad_points = high_dim_q.get_points();
-            for (uint k=0; k<quad_points.n_vals(); ++k) {
-            	this->add_local_point(quad_points.get<dim>(k).arma());
-            }
+            this->add_local_points<dim>( high_dim_q.get_points() );
         }
-        block_indices_.push_back( this->size() );
+        block_starts_.push_back( this->size() );
     }
 
     return side_set;
 }
 
-unsigned int EvalPoints::add_local_point(arma::vec coords) {
-	// Add new point
-	for (unsigned int i=0; i<dim_; ++i) local_points_.push_back(coords[i]);
-    return this->size()-1;
+template <unsigned int dim>
+void EvalPoints::add_local_points(const Armor::array & quad_points) {
+    unsigned int local_points_old_size = local_points_.n_vals();
+    local_points_.resize(quad_points.n_vals() + local_points_old_size);
+    for (unsigned int i=0; i<quad_points.n_vals(); ++i) {
+        local_points_.get<dim>(i+local_points_old_size) = quad_points.get<dim>(i);
+	}
 }
 
 
 unsigned int EvalPoints::check_dim(unsigned int quad_dim, unsigned int obj_dim) {
 	ASSERT_EQ(quad_dim, obj_dim);
-    if (this->dim_ == EvalPoints::undefined_dim)
+    if (this->dim_ == EvalPoints::undefined_dim) {
         this->dim_ = quad_dim;
-    else
+        local_points_ = Armor::array(0, this->dim_);
+    } else
         ASSERT_EQ(this->dim_, quad_dim);
     return this->dim_;
 }
@@ -87,3 +85,6 @@ template EvalSubset EvalPoints::add_bulk<3>(const Quadrature &);
 template EvalSubset EvalPoints::add_side<1>(const Quadrature &);
 template EvalSubset EvalPoints::add_side<2>(const Quadrature &);
 template EvalSubset EvalPoints::add_side<3>(const Quadrature &);
+template void EvalPoints::add_local_points<1>(const Armor::array &);
+template void EvalPoints::add_local_points<2>(const Armor::array &);
+template void EvalPoints::add_local_points<3>(const Armor::array &);
