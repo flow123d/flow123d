@@ -25,8 +25,6 @@
  * Implementation of EvalSubset methods.
  */
 
-const EvalSubset EvalSubset::dummy_subset = EvalSubset();
-
 EvalSubset::EvalSubset(std::shared_ptr<EvalPoints> eval_points)
 : eval_points_(eval_points), block_indices_(1), n_sides_(0) {
 	block_indices_[0] = eval_points_->n_blocks();

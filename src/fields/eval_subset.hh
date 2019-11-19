@@ -75,8 +75,6 @@ public:
     Range< SidePoint > points(const DHCellSide &cell_side) const;
 
 private:
-    /// Empty subset is need in default constructors of BulkPoint and SidePoint
-    static const EvalSubset dummy_subset;
     /// Pointer to EvalPoints
     std::shared_ptr<EvalPoints> eval_points_;
     /// Indices of data blocks in EvalPoints object for all permutations.
