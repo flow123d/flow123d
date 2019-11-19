@@ -146,3 +146,19 @@ TEST(Armor_test, multiplication_per_elements) {
 	m1 = m1 % m1;
 	EXPECT_TRUE(m1 == a1);
 }
+
+TEST(Armor_test, array) {
+	Armor::Mat<double, 3, 1> m1{1, 2, 3};
+	Armor::Mat<double, 3, 1> m2{4, 5, 6};
+	Armor::Mat<double, 3, 1> m3{7, 8, 9};
+	Armor::array arr(3,3,1);
+	arr.get<3>(0) = m1;
+	arr.get<3>(1) = m2;
+	arr.get<3>(2) = m3;
+	EXPECT_TRUE(m1 == arr.arma_mat(0));
+	EXPECT_TRUE(m1 == arr.arma_vec(0));
+	EXPECT_TRUE(m2 == arr.arma_mat(1));
+	EXPECT_TRUE(m2 == arr.arma_vec(1));
+	EXPECT_TRUE(m3 == arr.arma_mat(2));
+	EXPECT_TRUE(m3 == arr.arma_vec(2));
+}

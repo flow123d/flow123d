@@ -222,6 +222,26 @@ public:
         return Mat<Type,nr,nc>( (Type*)(data.data()) + i*nRows*nCols );
     }
 
+    /**
+     * Return armadillo matrix at given position in array.
+     * @param i  Index of matrix.
+     */
+    inline arma::mat arma_mat(uint i) const
+    {
+    	return arma::vec( (Type*)(data.data()) + i*nRows*nCols, nRows*nCols );
+    }
+
+    /**
+     * Return armadillo vector at given position in array.
+     * Warning! Method can be used only if nCols == 1.
+     * @param i  Index of matrix.
+     */
+    inline arma::vec arma_vec(uint i) const
+    {
+        ASSERT_EQ_DBG(nCols, 1);
+    	return arma::vec( (Type*)(data.data()) + i*nRows, nRows );
+    }
+
 private:
     uint nRows;
     uint nCols;
