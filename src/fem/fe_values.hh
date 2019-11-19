@@ -542,7 +542,7 @@ public:
     
 private:
     
-    void fill_fe_values(const ElementAccessor<3> &cell);
+    void fill_fe_values();
     
     /**
      * @brief The quadrature rule used to calculate integrals.
@@ -618,8 +618,7 @@ private:
      * @param data Precomputed mapping data.
      * @param fv_data Data to be computed.
      */
-    void fill_fe_side_values(const ElementAccessor<3> &cell,
-                            unsigned int sid);
+    void fill_fe_side_values();
 
     /**
      * @brief Quadrature for the integration on the element sides.

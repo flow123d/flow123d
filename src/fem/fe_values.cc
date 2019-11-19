@@ -576,14 +576,14 @@ void FEValues<dim,spacedim>::reinit(ElementAccessor<3> & cell)
     this->data.present_cell = &cell;
 
     // calculate Jacobian of mapping, JxW, inverse Jacobian
-    fill_fe_values(cell);
+    fill_fe_values();
 
     this->fill_data(*fe_data);
 }
 
 
 template<unsigned int dim, unsigned int spacedim>
-void FEValues<dim,spacedim>::fill_fe_values(const ElementAccessor<3> &cell)
+void FEValues<dim,spacedim>::fill_fe_values()
 {
     ASSERT_DBG( quadrature->dim() == dim );
     
@@ -596,7 +596,7 @@ void FEValues<dim,spacedim>::fill_fe_values(const ElementAccessor<3> &cell)
         (this->data.update_flags & update_inverse_jacobians) |
         (this->data.update_flags & update_quadrature_points))
     {
-        coords = MappingP1<dim,spacedim>::element_map(cell);
+        coords = MappingP1<dim,spacedim>::element_map(*this->data.present_cell);
     }
 
     // calculation of Jacobian dependent data
@@ -648,7 +648,6 @@ void FEValues<dim,spacedim>::fill_fe_values(const ElementAccessor<3> &cell)
     // quadrature points in the actual cell coordinate system
     if (this->data.update_flags & update_quadrature_points)
     {
-        typename MappingP1<dim,spacedim>::BaryPoint basis;
         for (unsigned int i=0; i<quadrature->size(); i++)
             this->data.points[i] = coords*fe_data->bar_coords[i];
     }
@@ -723,7 +722,7 @@ void FESideValues<dim,spacedim>::reinit(ElementAccessor<3> & cell,
     side_perm_ = cell->permutation_idx(sid);
     ASSERT_LT_DBG(side_perm_, RefElement<dim>::n_side_permutations);
     // calculate Jacobian of mapping, JxW, inverse Jacobian, normal vector(s)
-    fill_fe_side_values(cell, sid);
+    fill_fe_side_values();
 
     // calculation of finite element data
     this->fill_data(*side_fe_data[sid][side_perm_]);
@@ -731,8 +730,7 @@ void FESideValues<dim,spacedim>::reinit(ElementAccessor<3> & cell,
 
 
 template<unsigned int dim, unsigned int spacedim>
-void FESideValues<dim,spacedim>::fill_fe_side_values(const ElementAccessor<3> &cell,
-                            unsigned int sid)
+void FESideValues<dim,spacedim>::fill_fe_side_values()
 {
     const Quadrature &q = side_quadrature[side_idx_][side_perm_];
     ASSERT_DBG( q.dim() == dim );
@@ -744,7 +742,7 @@ void FESideValues<dim,spacedim>::fill_fe_side_values(const ElementAccessor<3> &c
         (this->data.update_flags & update_normal_vectors) |
         (this->data.update_flags & update_quadrature_points))
     {
-        coords = MappingP1<dim,spacedim>::element_map(cell);
+        coords = MappingP1<dim,spacedim>::element_map(*this->data.present_cell);
     }
 
     // calculation of cell Jacobians and dependent data
@@ -788,7 +786,7 @@ void FESideValues<dim,spacedim>::fill_fe_side_values(const ElementAccessor<3> &c
             if ((this->data.update_flags & update_normal_vectors))
             {
                 arma::vec::fixed<spacedim> n_cell;
-                n_cell = trans(ijac)*RefElement<dim>::normal_vector(sid);
+                n_cell = trans(ijac)*RefElement<dim>::normal_vector(side_idx_);
                 n_cell = n_cell/norm(n_cell,2);
                 for (unsigned int i=0; i<q.size(); i++)
                     this->data.normal_vectors[i] = n_cell;
@@ -819,7 +817,7 @@ void FESideValues<dim,spacedim>::fill_fe_side_values(const ElementAccessor<3> &c
             // calculation of side Jacobian
             for (unsigned int n=0; n<dim; n++)
                 for (unsigned int c=0; c<spacedim; c++)
-                    side_coords(c,n) = cell.side(sid)->node(n)->point()[c];
+                    side_coords(c,n) = this->data.present_cell->side(side_idx_)->node(n)->point()[c];
             side_jac = MappingP1<MatrixSizes<dim>::dim_minus_one,spacedim>::jacobian(side_coords);
 
             // calculation of JxW
