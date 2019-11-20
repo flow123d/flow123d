@@ -96,21 +96,14 @@ public:
     void assemble_reconstruct(LocalElementAccessorBase<3> ele_ac) override
     {
         ASSERT_EQ_DBG(ele_ac.dim(), dim);
-        loc_system_.reset();
         reconstruct = true;
     
-        LocDofVec dofs, dofs_schur;
-        set_loc_dofs_vec(ele_ac, dofs, dofs_schur);
-        loc_system_.reset(dofs.n_elem, dofs.n_elem);
-        // set dofs for local schur, since these are used in assembly functions
-        loc_schur_.reset(dofs_schur,dofs_schur);
+        set_dofs(ele_ac);
         
-        assemble_bc(ele_ac);
-        
+        assemble_bc(ele_ac); 
         assemble_sides(ele_ac);
         assemble_element(ele_ac);
         assemble_source_term(ele_ac);
-        
         assembly_dim_connections(ele_ac);
         
         // TODO:
@@ -119,15 +112,15 @@ public:
         // if (mortar_assembly)
         //     mortar_assembly->fix_velocity(ele_ac);
 
-        arma::vec schur_solution = ad_->p_edge_solution.get_subvec(dofs_schur);
+        arma::vec schur_solution = ad_->p_edge_solution.get_subvec(loc_schur_.row_dofs);
         // reconstruct the velocity and pressure
         loc_system_.reconstruct_solution_schur(schur_offset_, schur_solution, reconstructed_solution_);
 
         // postprocess the velocity
         postprocess_velocity(ele_ac.dh_cell(), reconstructed_solution_);
-
-        ad_->full_solution.set_subvec(dofs.head(schur_offset_), reconstructed_solution_);
-        ad_->full_solution.set_subvec(dofs.tail(dofs_schur.n_elem), schur_solution);
+        
+        ad_->full_solution.set_subvec(loc_system_.row_dofs.head(schur_offset_), reconstructed_solution_);
+        ad_->full_solution.set_subvec(loc_system_.row_dofs.tail(loc_schur_.row_dofs.n_elem), schur_solution);
     }
     
     void assemble(LocalElementAccessorBase<3> ele_ac) override
@@ -138,12 +131,11 @@ public:
         bc_fluxes_reconstruted = false;
 
         set_dofs(ele_ac);
+
         assemble_bc(ele_ac);
-        
         assemble_sides(ele_ac);
         assemble_element(ele_ac);
         assemble_source_term(ele_ac);
-        
         assembly_dim_connections(ele_ac);
         
         loc_system_.compute_schur_complement(schur_offset_, loc_schur_, true);
@@ -222,66 +214,19 @@ protected:
         // dofs: velocity, pressure, edge pressure
         return RefElement<dim>::n_sides + 1 + RefElement<dim>::n_sides;
     }
-
-    void set_loc_dofs_vec(LocalElementAccessorBase<3> ele_ac, LocDofVec& dofs, LocDofVec& dofs_schur){
-        ElementAccessor<3> ele = ele_ac.element_accessor();
-        DHCellAccessor dh_cell = ele_ac.dh_cell();
-        DHCellAccessor dh_cr_cell = dh_cell.cell_with_other_dh(ad_->dh_cr_.get());
-        
-        unsigned int loc_size = size() + ele->n_neighs_vb();
-        unsigned int loc_size_schur = ele->n_sides() + ele->n_neighs_vb();
-        // vector of DoFs
-        dofs.set_size(loc_size);
-        dofs_schur.set_size(loc_size_schur);
-        
-        // add full vec indices
-        dofs.head(dh_cell.n_dofs()) = dh_cell.get_loc_dof_indices();
-        // add schur vec indices
-        dofs_schur.head(dh_cr_cell.n_dofs()) = dh_cr_cell.get_loc_dof_indices();
-        
-        if(ele->n_neighs_vb() == 0)
-            return;
-
-        //D, E',E block: compatible connections: element-edge
-        Neighbour *ngh;
-        unsigned int i = 0;
-        
-        for ( DHCellSide neighb_side : dh_cell.neighb_sides() ) {
-            
-            ngh = ele->neigh_vb[i];
-            
-            // read neighbor dofs (dh dofhandler)
-            // neighbor cell owning neighb_side
-            DHCellAccessor dh_neighb_cell = neighb_side.cell();
-            
-            // read neighbor dofs (dh_cr dofhandler)
-            // neighbor cell owning neighb_side
-            DHCellAccessor dh_neighb_cr_cell = dh_neighb_cell.cell_with_other_dh(ad_->dh_cr_.get());
-            
-            // find edge dofs of neighbor corresponding to neighb_side
-            for (unsigned int j = 0; j < neighb_side.element().dim()+1; j++){
-            	if (neighb_side.element()->edge_idx(j) == ngh->edge_idx()) {
-                    unsigned int p = size()+i;
-                    dofs[p] = dh_neighb_cell.get_loc_dof_indices()
-                                [dh_neighb_cell.n_dofs() - dh_neighb_cr_cell.n_dofs() + j];
-                    
-                    unsigned int t = dh_cr_cell.n_dofs()+i;
-                    dofs_schur[t] = dh_neighb_cr_cell.get_loc_dof_indices()[j];
-                    break;
-                }
-            }
-            i++;
-        }
-    }
     
     void set_dofs(LocalElementAccessorBase<3> ele_ac){
         ElementAccessor<3> ele = ele_ac.element_accessor();
-        
+        DHCellAccessor dh_cell = ele_ac.dh_cell();
+        DHCellAccessor dh_cr_cell = ele_ac.dh_cell().cell_with_other_dh(ad_->dh_cr_.get());
+
         unsigned int loc_size = size() + ele->n_neighs_vb();
         unsigned int loc_size_schur = ele->n_sides() + ele->n_neighs_vb();
+        LocDofVec dofs(loc_size);
         LocDofVec dofs_schur(loc_size_schur);
         
-        DHCellAccessor dh_cr_cell = ele_ac.dh_cell().cell_with_other_dh(ad_->dh_cr_.get());
+        // add full vec indices
+        dofs.head(dh_cell.n_dofs()) = dh_cell.get_loc_dof_indices();
         // add schur vec indices
         dofs_schur.head(dh_cr_cell.n_dofs()) = dh_cr_cell.get_loc_dof_indices();
         
@@ -289,25 +234,36 @@ protected:
         {
             //D, E',E block: compatible connections: element-edge
             Neighbour *ngh;
-
-            for (unsigned int i = 0; i < ele->n_neighs_vb(); i++) {
-                // every compatible connection adds a 2x2 matrix involving
-                // current element pressure  and a connected edge pressure
-                ngh = ele_ac.element_accessor()->neigh_vb[i];
-                LocalElementAccessorBase<3> acc_higher_dim( ele_ac.dh_cell().dh()->cell_accessor_from_element(ngh->edge()->side(0)->element().idx()) );
+            unsigned int i = 0;
+            
+            for ( DHCellSide neighb_side : dh_cell.neighb_sides() ) {
                 
-                DHCellAccessor higher_dh_cr_cell = acc_higher_dim.dh_cell().cell_with_other_dh(ad_->dh_cr_.get());
+                ngh = ele->neigh_vb[i];
                 
-                for (unsigned int j = 0; j < ngh->edge()->side(0)->element().dim()+1; j++)
-                    if (ngh->edge()->side(0)->element()->edge_idx(j) == ngh->edge_idx()) {
+                // read neighbor dofs (dh dofhandler)
+                // neighbor cell owning neighb_side
+                DHCellAccessor dh_neighb_cell = neighb_side.cell();
+                
+                // read neighbor dofs (dh_cr dofhandler)
+                // neighbor cell owning neighb_side
+                DHCellAccessor dh_neighb_cr_cell = dh_neighb_cell.cell_with_other_dh(ad_->dh_cr_.get());
+                
+                // find edge dofs of neighbor corresponding to neighb_side
+                for (unsigned int j = 0; j < neighb_side.element().dim()+1; j++){
+                    if (neighb_side.element()->edge_idx(j) == ngh->edge_idx()) {
+                        unsigned int p = size()+i;
+                        dofs[p] = dh_neighb_cell.get_loc_dof_indices()
+                                    [dh_neighb_cell.n_dofs() - dh_neighb_cr_cell.n_dofs() + j];
                         
                         unsigned int t = dh_cr_cell.n_dofs()+i;
-                        dofs_schur[t] = higher_dh_cr_cell.get_loc_dof_indices()[j];
+                        dofs_schur[t] = dh_neighb_cr_cell.get_loc_dof_indices()[j];
                         break;
                     }
+                }
+                i++;
             }
         }
-        loc_system_.reset(loc_size, loc_size);
+        loc_system_.reset(dofs, dofs);
         loc_schur_.reset(dofs_schur, dofs_schur);
     }
     
