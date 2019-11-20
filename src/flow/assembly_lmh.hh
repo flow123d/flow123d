@@ -233,13 +233,10 @@ protected:
         if(ele->n_neighs_vb() != 0)
         {
             //D, E',E block: compatible connections: element-edge
-            Neighbour *ngh;
             unsigned int i = 0;
             
             for ( DHCellSide neighb_side : dh_cell.neighb_sides() ) {
-                
-                ngh = ele->neigh_vb[i];
-                
+
                 // read neighbor dofs (dh dofhandler)
                 // neighbor cell owning neighb_side
                 DHCellAccessor dh_neighb_cell = neighb_side.cell();
@@ -248,18 +245,16 @@ protected:
                 // neighbor cell owning neighb_side
                 DHCellAccessor dh_neighb_cr_cell = dh_neighb_cell.cell_with_other_dh(ad_->dh_cr_.get());
                 
-                // find edge dofs of neighbor corresponding to neighb_side
-                for (unsigned int j = 0; j < neighb_side.element().dim()+1; j++){
-                    if (neighb_side.element()->edge_idx(j) == ngh->edge_idx()) {
-                        unsigned int p = size()+i;
-                        dofs[p] = dh_neighb_cell.get_loc_dof_indices()
-                                    [dh_neighb_cell.n_dofs() - dh_neighb_cr_cell.n_dofs() + j];
-                        
-                        unsigned int t = dh_cr_cell.n_dofs()+i;
-                        dofs_schur[t] = dh_neighb_cr_cell.get_loc_dof_indices()[j];
-                        break;
-                    }
-                }
+                // local index of pedge dof in local system
+                const unsigned int p = size()+i;
+                // local index of pedge dof on neighboring cell
+                const unsigned int t = dh_neighb_cell.n_dofs() - dh_neighb_cr_cell.n_dofs() + neighb_side.side().side_idx();
+                dofs[p] = dh_neighb_cell.get_loc_dof_indices()[t];
+
+                // local index of pedge dof in local schur system
+                const unsigned int tt = dh_cr_cell.n_dofs()+i;
+                dofs_schur[tt] = dh_neighb_cr_cell.get_loc_dof_indices()
+                            [neighb_side.side().side_idx()];
                 i++;
             }
         }
@@ -539,7 +534,7 @@ protected:
             // current element pressure  and a connected edge pressure
             unsigned int p = size()+i; // loc dof of higher ele edge
             
-            ElementAccessor<3> ele_higher = ad_->mesh->element_accessor( neighb_side.element().idx() );
+            ElementAccessor<3> ele_higher = neighb_side.cell().elm();
             ngh_values_.fe_side_values_.reinit(ele_higher, neighb_side.side_idx());
             nv = ngh_values_.fe_side_values_.normal_vector(0);
 
