@@ -38,14 +38,13 @@ public:
 	        << "Element of Idx: " << EI_ElementIdx::val << " is not stored in 'Field value data cache'.\n"
 			   << "Value can't be computed.\n");
 
-    /// Constructor
+	typedef std::array< std::array<int, 24>, 6> PermutationIndices;
+
+    /// Default constructor
 	EvalSubset() : eval_points_(nullptr) {}
 
-    /// Constructor of bulk subset
-	EvalSubset(std::shared_ptr<EvalPoints> eval_points);
-
-    /// Constructor of side subset
-	EvalSubset(std::shared_ptr<EvalPoints> eval_points, unsigned int n_permutations);
+    /// Constructor of bulk or side subset
+	EvalSubset(std::shared_ptr<EvalPoints> eval_points, bool side_subset = false);
 
     /// Getter of eval_points
     inline std::shared_ptr<EvalPoints> eval_points() const {
@@ -57,15 +56,9 @@ public:
         return n_sides_;
     }
 
-    /// Return number of permutations
-    inline const unsigned int n_permutations() const {
-        return block_indices_.size();
-    }
-
-    /// Return vector of point indices of given permutation
-    inline int get_block_idx(unsigned int block_idx) const {
-        ASSERT_LT( block_idx, block_indices_.size() );
-        return block_indices_[block_idx];
+    /// Return index of data blocks in EvalPoints object
+    inline int get_block_idx() const {
+        return block_index_;
     }
 
     /// Returns range of bulk local points for appropriate cell accessor
@@ -74,11 +67,23 @@ public:
     /// Returns range of side local points for appropriate cell side accessor
     Range< SidePoint > points(const DHCellSide &cell_side) const;
 
+    /// Returns structure of permutation indices.
+    inline PermutationIndices &perm_indices() {
+    	return perm_indices_;
+    }
+
+    /// Returns structure of permutation indices.
+    inline const PermutationIndices &perm_indices() const {
+    	return perm_indices_;
+    }
+
 private:
     /// Pointer to EvalPoints
     std::shared_ptr<EvalPoints> eval_points_;
-    /// Indices of data blocks in EvalPoints object for all permutations.
-    std::vector<int> block_indices_;
+    /// Index of data blocks in EvalPoints object.
+    unsigned int block_index_;
+    /// Indices to EvalPoints for different permutations reflecting order of points.
+    PermutationIndices perm_indices_;
     /// Number of sides (value 0 indicates bulk set)
     unsigned int n_sides_;
 };
@@ -150,7 +155,7 @@ public:
 
     // Local coordinates within element
     inline arma::vec loc_coords() const {
-        return this->eval_points()->local_point( local_point_idx_ );
+        return this->eval_points()->local_point( subset_.perm_indices()[permutation_idx_][local_point_idx_] );
     }
 
     // Global coordinates within element
@@ -170,9 +175,6 @@ public:
     inline void inc() {
     	local_point_idx_++;
     }
-
-    /// Return corresponds SidePoints of neighbour side of same dimension (computing of side integrals).
-    SidePoint permute(DHCellSide edg_side) const;
 
     /// Comparison of accessors.
     bool operator==(const SidePoint& other) {

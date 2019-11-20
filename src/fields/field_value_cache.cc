@@ -42,8 +42,7 @@ FieldValueCache<Value>::~FieldValueCache() {}
 
 template<class Value>
 void FieldValueCache<Value>::mark_used(EvalSubset sub_set) {
-    for (unsigned int i=0; i<sub_set.n_permutations(); ++i)
-	    used_blocks_.insert(sub_set.get_block_idx(i));
+    used_blocks_.insert(sub_set.get_block_idx());
 }
 
 

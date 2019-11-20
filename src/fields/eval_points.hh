@@ -93,6 +93,10 @@ private:
 	template <unsigned int dim>
     void add_local_points(const Armor::array & quad_points);
 
+    /// Find position of local point (coords) in subvector of local points given by limits <data_begin,  ... data_end)
+	template <unsigned int dim>
+    unsigned int find_permute_point(arma::vec coords, unsigned int data_begin, unsigned int data_end);
+
     /// Check dimension of EvalSubset object based on Quadrature, all subsets must be of same dimension.
     unsigned int check_dim(unsigned int quad_dim, unsigned int obj_dim);
 

@@ -44,15 +44,33 @@ template <unsigned int dim>
 EvalSubset EvalPoints::add_side(const Quadrature &quad)
 {
 	check_dim(quad.dim()+1, dim);
+	unsigned int old_data_size=this->size(), new_data_size; // interval of side subset data
 
-	EvalSubset side_set(shared_from_this(), RefElement<dim>::n_side_permutations);
+	EvalSubset side_set(shared_from_this(), true);
+	EvalSubset::PermutationIndices &perm_indices = side_set.perm_indices();
 
-    for (unsigned int j=0; j<RefElement<dim>::n_side_permutations; ++j) { // permutations
+    // permutation 0
+    for (unsigned int i=0; i<dim+1; ++i) {  // sides
+        Quadrature high_dim_q = quad.make_from_side<dim>(i, 0);
+        this->add_local_points<dim>( high_dim_q.get_points() );
+    }
+    new_data_size = this->size();
+    block_starts_.push_back( new_data_size );
+    for (unsigned int i_perm=0, i_data=old_data_size; i_data<new_data_size; ++i_perm, ++i_data) {
+    	perm_indices[0][i_perm] = i_data;
+    }
+
+    // permutation 1...N
+    for (unsigned int j=1; j<RefElement<dim>::n_side_permutations; ++j) {
+        unsigned int i_perm=0;
         for (unsigned int i=0; i<dim+1; ++i) {  // sides
             Quadrature high_dim_q = quad.make_from_side<dim>(i, j);
-            this->add_local_points<dim>( high_dim_q.get_points() );
+            const Armor::array & quad_points = high_dim_q.get_points();
+            for (uint k=0; k<quad_points.n_vals(); ++k) {
+            	perm_indices[j][i_perm] = this->find_permute_point<dim>( quad_points.get<dim>(k).arma(), old_data_size, new_data_size );
+            	++i_perm;
+            }
         }
-        block_starts_.push_back( this->size() );
     }
 
     return side_set;
@@ -67,6 +85,16 @@ void EvalPoints::add_local_points(const Armor::array & quad_points) {
 	}
 }
 
+template <unsigned int dim>
+unsigned int EvalPoints::find_permute_point(arma::vec coords, unsigned int data_begin, unsigned int data_end) {
+	for (unsigned int loc_idx=data_begin; loc_idx<data_end; ++loc_idx) {
+	    // Check if point exists in local points vector.
+        if ( arma::norm(coords-local_points_.get<dim>(loc_idx).arma(), 2) < 4*std::numeric_limits<double>::epsilon() ) return loc_idx;
+    }
+
+	ASSERT(false);
+    return 0;
+}
 
 unsigned int EvalPoints::check_dim(unsigned int quad_dim, unsigned int obj_dim) {
 	ASSERT_EQ(quad_dim, obj_dim);
@@ -88,3 +116,6 @@ template EvalSubset EvalPoints::add_side<3>(const Quadrature &);
 template void EvalPoints::add_local_points<1>(const Armor::array &);
 template void EvalPoints::add_local_points<2>(const Armor::array &);
 template void EvalPoints::add_local_points<3>(const Armor::array &);
+template unsigned int EvalPoints::find_permute_point<1>(arma::vec, unsigned int, unsigned int);
+template unsigned int EvalPoints::find_permute_point<2>(arma::vec, unsigned int, unsigned int);
+template unsigned int EvalPoints::find_permute_point<3>(arma::vec, unsigned int, unsigned int);
