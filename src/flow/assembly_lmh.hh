@@ -64,24 +64,7 @@ public:
         
         unsigned int nsides = dim+1;
         
-        // create local sparsity pattern
-        base_local_sp_.set_size(size(),size());
-        base_local_sp_.zeros();
-        base_local_sp_.submat(0, 0, nsides, nsides).ones();
-        base_local_sp_.diag().ones();
-        // armadillo 8.4.3 bug with negative sub diagonal index
-        // sp.diag(nsides+1).ones();
-        // sp.diag(-nsides-1).ones();
-        // sp.print();
-        
-        base_local_sp_.submat(0, nsides+1, nsides-1, size()-1).diag().ones();
-        base_local_sp_.submat(nsides+1, 0, size()-1, nsides-1).diag().ones();
-        
-        loc_system_.set_sparsity(base_local_sp_);
-        
         loc_schur_.reset(nsides, nsides);
-        schur_sp_.ones(nsides, nsides);
-        loc_schur_.set_sparsity(schur_sp_);
 
         FEAL_ASSERT(ad_->mortar_method_ == DarcyFlowInterface::NoMortar)
             .error("Mortar methods are not supported in Lumped Mixed-Hybrid Method.");
@@ -302,13 +285,6 @@ protected:
         // add schur vec indices
         dofs_schur.head(dh_cr_cell.n_dofs()) = dh_cr_cell.get_loc_dof_indices();
         
-        schur_sp_.ones(loc_size_schur, loc_size_schur);
-
-        // if neighbor communication, then resize the local system and set dofs and sp
-        local_sp_.zeros(loc_size, loc_size);
-        local_sp_( 0,0, arma::size(base_local_sp_)) = base_local_sp_;
-        
-        
         if(ele->n_neighs_vb() != 0)
         {
             //D, E',E block: compatible connections: element-edge
@@ -324,11 +300,6 @@ protected:
                 
                 for (unsigned int j = 0; j < ngh->edge()->side(0)->element().dim()+1; j++)
                     if (ngh->edge()->side(0)->element()->edge_idx(j) == ngh->edge_idx()) {
-                        unsigned int p = size()+i;
-                        // dofs[p] = acc_higher_dim.edge_row(j);
-                        local_sp_(loc_ele_dof, p) = 1;
-                        local_sp_(p, loc_ele_dof) = 1;
-                        local_sp_(p, p) = 1;
                         
                         unsigned int t = dh_cr_cell.n_dofs()+i;
                         dofs_schur[t] = higher_dh_cr_cell.get_loc_dof_indices()[j];
@@ -337,10 +308,7 @@ protected:
             }
         }
         loc_system_.reset(loc_size, loc_size);
-        loc_system_.set_sparsity(local_sp_);
-        
         loc_schur_.reset(dofs_schur, dofs_schur);
-        loc_schur_.set_sparsity(schur_sp_);
     }
     
     void assemble_bc(LocalElementAccessorBase<3> ele_ac){
@@ -715,9 +683,6 @@ protected:
     std::vector<unsigned int> dirichlet_edge;
 
     LocalSystem loc_system_;
-    arma::umat base_local_sp_;      ///< Sparsity pattern of the LocalSystem (without dim communication).
-    arma::umat local_sp_;           ///< Whole sparsity pattern of the LocalSystem.
-    arma::umat schur_sp_;           ///< Whole sparsity pattern of the Schur complement of LocalSystem.
     LocalSystem loc_schur_;
     std::vector<unsigned int> loc_side_dofs;
     std::vector<unsigned int> loc_edge_dofs;
