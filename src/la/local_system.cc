@@ -37,7 +37,8 @@ void LocalSystem::set_size(uint nrows, uint ncols)
     solution_cols.set_size(ncols);
     diag_rows.set_size(nrows);
     // destroy previous sparsity pattern
-    sparsity.zeros(nrows,ncols);
+    sparsity.set_size(nrows,ncols);
+    sparsity.fill(almost_zero);
 }
 
 
