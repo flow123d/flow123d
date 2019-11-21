@@ -58,6 +58,12 @@ public:
 
     }
 
+    /// Return dimension
+    inline unsigned int dim() const {
+        return dim_;
+
+    }
+
     /// Return data vector.
     inline Armor::Array<elm_type> &data() {
         return data_;

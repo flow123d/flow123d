@@ -38,6 +38,9 @@ template <int spacedim> class ElementAccessor;
  */
 class EvalPoints : public std::enable_shared_from_this<EvalPoints> {
 public:
+	/// Undefined dimension of new (empty) object
+	static const unsigned int undefined_dim;
+
     /// Constructor
 	EvalPoints();
 
@@ -86,9 +89,6 @@ public:
 	EvalSubset add_side(const Quadrature &);
 
 private:
-	/// Undefined dimension of new (empty) EvalPoints object
-	static const unsigned int undefined_dim = 10;
-
     /// Adds set of local point to local_points_ (bulk or side of given permutation).
 	template <unsigned int dim>
     void add_local_points(const Armor::array & quad_points);

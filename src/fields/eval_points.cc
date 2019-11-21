@@ -23,6 +23,8 @@
 #include <memory>
 
 
+const unsigned int EvalPoints::undefined_dim = 10;
+
 EvalPoints::EvalPoints()
 : local_points_(0, 1), dim_(EvalPoints::undefined_dim)
 {

@@ -689,7 +689,9 @@ template<int spacedim, class Value>
 void Field<spacedim, Value>::cache_allocate(EvalSubset sub_set) {
     unsigned int point_dim = sub_set.eval_points()->point_dim();
 
-    value_cache_[point_dim-1] = FieldValueCache<Value>(sub_set.eval_points(), ElementCacheMap::n_cached_elements);
+    if ( value_cache_[point_dim-1].dim()==EvalPoints::undefined_dim )
+        value_cache_[point_dim-1] = FieldValueCache<Value>(sub_set.eval_points(), ElementCacheMap::n_cached_elements);
+    // else TODO check same sub_set.eval_points()
     value_cache_[point_dim-1].mark_used(sub_set);
 }
 
