@@ -50,8 +50,7 @@ public:
         velocity_interpolation_quad_(dim, 0), // veloctiy values in barycenter
         velocity_interpolation_fv_(map_,velocity_interpolation_quad_, fe_rt_, update_values | update_quadrature_points),
 
-        ad_(data),
-        loc_system_(size(), size())
+        ad_(data)
     {
         // local numbering of dofs for MH system
         // note: this shortcut supposes that the fe_system is the same on all elements
@@ -61,10 +60,6 @@ public:
         loc_side_dofs = fe_system->fe_dofs(0);
         loc_ele_dof = fe_system->fe_dofs(1)[0];
         loc_edge_dofs = fe_system->fe_dofs(2);
-        
-        unsigned int nsides = dim+1;
-        
-        loc_schur_.reset(nsides, nsides);
 
         FEAL_ASSERT(ad_->mortar_method_ == DarcyFlowInterface::NoMortar)
             .error("Mortar methods are not supported in Lumped Mixed-Hybrid Method.");
@@ -83,9 +78,6 @@ public:
 
     ~AssemblyLMH<dim>() override
     {}
-
-//     LocalSystem& get_local_system() override
-//         { return loc_system_;}
     
     void fix_velocity(LocalElementAccessorBase<3> ele_ac) override
     {
@@ -98,13 +90,7 @@ public:
         ASSERT_EQ_DBG(ele_ac.dim(), dim);
         reconstruct = true;
     
-        set_dofs(ele_ac);
-        
-        assemble_bc(ele_ac); 
-        assemble_sides(ele_ac);
-        assemble_element(ele_ac);
-        assemble_source_term(ele_ac);
-        assembly_dim_connections(ele_ac);
+        assemble_local_system(ele_ac);
         
         // TODO:
         // if (mortar_assembly)
@@ -130,13 +116,7 @@ public:
         save_local_system_ = false;
         bc_fluxes_reconstruted = false;
 
-        set_dofs(ele_ac);
-
-        assemble_bc(ele_ac);
-        assemble_sides(ele_ac);
-        assemble_element(ele_ac);
-        assemble_source_term(ele_ac);
-        assembly_dim_connections(ele_ac);
+        assemble_local_system(ele_ac);
         
         loc_system_.compute_schur_complement(schur_offset_, loc_schur_, true);
 
@@ -153,39 +133,6 @@ public:
         //     mortar_assembly->assembly(ele_ac);
     }
 
-    /** Loads the local system from a map: element index -> LocalSystem,
-     * if it exits, or if the full solution is not yet reconstructed,
-     * and reconstructs the full solution on the element.
-     * Currently used only for seepage BC.
-     */
-    void load_local_system(const DHCellAccessor& dh_cell)
-    {
-        // do this only once per element
-        if(bc_fluxes_reconstruted)
-            return;
-
-        // possibly find the corresponding local system
-        auto ls = ad_->seepage_bc_systems.find(dh_cell.elm_idx());
-        if (ls != ad_->seepage_bc_systems.end())
-        {
-            arma::vec schur_solution = ad_->p_edge_solution.get_subvec(loc_schur_.row_dofs);            
-            // reconstruct the velocity and pressure
-            ls->second.reconstruct_solution_schur(schur_offset_, schur_solution, reconstructed_solution_);
-
-            postprocess_velocity(dh_cell, reconstructed_solution_);
-
-            bc_fluxes_reconstruted = true;
-        }
-    }
-
-    /// Saves the local system to a map: element index -> LocalSystem.
-    /// Currently used only for seepage BC.
-    void save_local_system(const DHCellAccessor& dh_cell)
-    {
-        // for seepage BC, save local system
-        if(save_local_system_)
-            ad_->seepage_bc_systems[dh_cell.elm_idx()] = loc_system_;
-    }
 
     arma::vec3 make_element_vector(LocalElementAccessorBase<3> ele_ac) override
     {
@@ -215,6 +162,53 @@ protected:
         return RefElement<dim>::n_sides + 1 + RefElement<dim>::n_sides;
     }
     
+    void assemble_local_system(LocalElementAccessorBase<3> ele_ac)
+    {
+        set_dofs(ele_ac);
+
+        assemble_bc(ele_ac);
+        assemble_sides(ele_ac);
+        assemble_element(ele_ac);
+        assemble_source_term(ele_ac);
+        assembly_dim_connections(ele_ac);
+    }
+
+    /** Loads the local system from a map: element index -> LocalSystem,
+     * if it exits, or if the full solution is not yet reconstructed,
+     * and reconstructs the full solution on the element.
+     * Currently used only for seepage BC.
+     */
+    void load_local_system(const DHCellAccessor& dh_cell)
+    {
+        // do this only once per element
+        if(bc_fluxes_reconstruted)
+            return;
+
+        // possibly find the corresponding local system
+        auto ls = ad_->seepage_bc_systems.find(dh_cell.elm_idx());
+        if (ls != ad_->seepage_bc_systems.end())
+        {
+            arma::vec schur_solution = ad_->p_edge_solution.get_subvec(loc_schur_.row_dofs);            
+            // reconstruct the velocity and pressure
+            ls->second.reconstruct_solution_schur(schur_offset_, schur_solution, reconstructed_solution_);
+
+            postprocess_velocity(dh_cell, reconstructed_solution_);
+
+            bc_fluxes_reconstruted = true;
+        }
+    }
+
+
+    /// Saves the local system to a map: element index -> LocalSystem.
+    /// Currently used only for seepage BC.
+    void save_local_system(const DHCellAccessor& dh_cell)
+    {
+        // for seepage BC, save local system
+        if(save_local_system_)
+            ad_->seepage_bc_systems[dh_cell.elm_idx()] = loc_system_;
+    }
+
+
     void set_dofs(LocalElementAccessorBase<3> ele_ac){
         ElementAccessor<3> ele = ele_ac.element_accessor();
         DHCellAccessor dh_cell = ele_ac.dh_cell();
@@ -261,6 +255,7 @@ protected:
         loc_system_.reset(dofs, dofs);
         loc_schur_.reset(dofs_schur, dofs_schur);
     }
+
     
     void assemble_bc(LocalElementAccessorBase<3> ele_ac){
         //shortcuts
