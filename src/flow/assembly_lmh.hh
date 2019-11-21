@@ -88,9 +88,8 @@ public:
     void assemble_reconstruct(LocalElementAccessorBase<3> ele_ac) override
     {
         ASSERT_EQ_DBG(ele_ac.dim(), dim);
-        reconstruct = true;
     
-        assemble_local_system(ele_ac);
+        assemble_local_system(ele_ac, false);   //do not switch dirichlet in seepage when reconstructing
         
         // TODO:
         // if (mortar_assembly)
@@ -112,11 +111,10 @@ public:
     void assemble(LocalElementAccessorBase<3> ele_ac) override
     {
         ASSERT_EQ_DBG(ele_ac.dim(), dim);
-        reconstruct = false;
         save_local_system_ = false;
         bc_fluxes_reconstruted = false;
 
-        assemble_local_system(ele_ac);
+        assemble_local_system(ele_ac, true);   //do use_dirichlet_switch
         
         loc_system_.compute_schur_complement(schur_offset_, loc_schur_, true);
 
@@ -159,11 +157,11 @@ protected:
         return RefElement<dim>::n_sides + 1 + RefElement<dim>::n_sides;
     }
     
-    void assemble_local_system(LocalElementAccessorBase<3> ele_ac)
+    void assemble_local_system(LocalElementAccessorBase<3> ele_ac, bool use_dirichlet_switch)
     {
         set_dofs(ele_ac);
 
-        assemble_bc(ele_ac);
+        assemble_bc(ele_ac, use_dirichlet_switch);
         assemble_sides(ele_ac);
         assemble_element(ele_ac);
         assemble_source_term(ele_ac);
@@ -254,7 +252,7 @@ protected:
     }
 
     
-    void assemble_bc(LocalElementAccessorBase<3> ele_ac){
+    void assemble_bc(LocalElementAccessorBase<3> ele_ac, bool use_dirichlet_switch){
         //shortcuts
         const unsigned int nsides = ele_ac.n_sides();
         
@@ -306,7 +304,7 @@ protected:
                     double side_flux = bc_flux * b_ele.measure() * cross_section;
 
                     // ** Update BC type. **
-                    if(! reconstruct){  // skip BC change if only reconstructing the solution
+                    if(use_dirichlet_switch){  // skip BC change if only reconstructing the solution
                     if (switch_dirichlet) {
                         // check and possibly switch to flux BC
                         // The switch raise error on the corresponding edge row.
@@ -583,10 +581,6 @@ protected:
             solution[loc_side_dofs[i]] += edge_source_term - time_term;
         }
     }
-    
-    
-    // temporary fix in schur reconstruction
-    bool reconstruct;
 
     // assembly volume integrals
     FE_RT0<dim> fe_rt_;
