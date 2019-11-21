@@ -125,8 +125,8 @@ public:
         loc_schur_.eliminate_solution();
         ad_->lin_sys_schur->set_local_system(loc_schur_, ad_->dh_cr_->get_local_to_global_map());
 
-        if (ad_->balance != nullptr)
-            add_fluxes_in_balance_matrix(ele_ac);
+        
+        add_fluxes_in_balance_matrix(ele_ac);
 
         // TODO:
         // if (mortar_assembly)
@@ -499,7 +499,6 @@ protected:
                                         -source_term - time_term_rhs);
             
             if( ! reconstruct)
-            if (ad_->balance != nullptr)
             {
                 ad_->balance->add_source_values(ad_->water_balance_idx, ele.region().bulk_idx(),
                                                 {(LongIdx)ele_ac.edge_local_row(i)}, {0},{source_term});

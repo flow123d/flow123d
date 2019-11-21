@@ -173,8 +173,7 @@ protected:
                                             -source_diagonal - mass_rhs);
             }
 
-            if(! this->reconstruct)
-            if (ad_->balance != nullptr) {
+            if(! this->reconstruct){
                 ad_->balance->add_mass_vec_value(ad_->water_balance_idx, ele.region().bulk_idx(),
                         diagonal_coef*ad_->water_content_previous_it[local_side]);
                 ad_->balance->add_source_values(ad_->water_balance_idx, ele.region().bulk_idx(), {(LongIdx)ele.edge_local_row(i)},
