@@ -112,7 +112,8 @@ target_link_libraries(system_lib
     ${PETSC_LIBRARIES}  
     ${PETSC_EXTERNAL_LIB} 
     ${Boost_LIBRARIES} 
-    ${PYTHON_LIBRARIES})
+    ${PYTHON_LIBRARIES}
+    nlohmann_json::nlohmann_json)
 add_dependencies(system_lib update_source_tree)
 
 
