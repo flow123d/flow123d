@@ -56,9 +56,9 @@ public:
         return n_sides_;
     }
 
-    /// Return index of data blocks in EvalPoints object
-    inline int get_block_idx() const {
-        return block_index_;
+    /// Return index of data block according to subset in EvalPoints object
+    inline int get_subset_idx() const {
+        return subset_index_;
     }
 
     /// Returns range of bulk local points for appropriate cell accessor
@@ -80,8 +80,8 @@ public:
 private:
     /// Pointer to EvalPoints
     std::shared_ptr<EvalPoints> eval_points_;
-    /// Index of data blocks in EvalPoints object.
-    unsigned int block_index_;
+    /// Index of data block according to subset in EvalPoints object.
+    unsigned int subset_index_;
     /// Indices to EvalPoints for different permutations reflecting order of points.
     PermutationIndices perm_indices_;
     /// Number of sides (value 0 indicates bulk set)

@@ -57,21 +57,21 @@ public:
         return dim_;
     }
 
-    /// Return begin index of appropriate data block.
-    inline int block_begin(unsigned int idx) const {
-        ASSERT_LT_DBG(idx, n_blocks());
-    	return block_starts_[idx];
+    /// Return begin index of appropriate subset data.
+    inline int subset_begin(unsigned int idx) const {
+        ASSERT_LT_DBG(idx, n_subsets());
+    	return subset_starts_[idx];
     }
 
-    /// Return end index of appropriate data block.
-    inline int block_end(unsigned int idx) const {
-        ASSERT_LT_DBG(idx, n_blocks());
-    	return block_starts_[idx+1];
+    /// Return end index of appropriate subset data.
+    inline int subset_end(unsigned int idx) const {
+        ASSERT_LT_DBG(idx, n_subsets());
+    	return subset_starts_[idx+1];
     }
 
-    /// Return number of blocks.
-    inline unsigned int n_blocks() const {
-        return block_starts_.size() - 1;
+    /// Return number of subsets.
+    inline unsigned int n_subsets() const {
+        return subset_starts_.size() - 1;
     }
 
     /**
@@ -101,7 +101,7 @@ private:
     unsigned int check_dim(unsigned int quad_dim, unsigned int obj_dim);
 
     Armor::array local_points_;         ///< Local coords of points vector
-    std::vector<int> block_starts_;     ///< Indices of data blocks in local_points_ vector, size = n_blocks + 1
+    std::vector<int> subset_starts_;    ///< Indices of subsets data in local_points_ vector, size = n_subsets + 1
     unsigned int dim_;                  ///< Dimension of local points
 
     friend class EvalSubSet;

@@ -26,7 +26,7 @@
 EvalPoints::EvalPoints()
 : local_points_(0, 1), dim_(EvalPoints::undefined_dim)
 {
-	block_starts_.push_back(0);
+	subset_starts_.push_back(0);
 }
 
 template <unsigned int dim>
@@ -36,7 +36,7 @@ EvalSubset EvalPoints::add_bulk(const Quadrature &quad)
 
 	EvalSubset bulk_set(shared_from_this() );
 	this->add_local_points<dim>( quad.get_points() );
-	block_starts_.push_back( this->size() );
+	subset_starts_.push_back( this->size() );
     return bulk_set;
 }
 
@@ -55,7 +55,7 @@ EvalSubset EvalPoints::add_side(const Quadrature &quad)
         this->add_local_points<dim>( high_dim_q.get_points() );
     }
     new_data_size = this->size();
-    block_starts_.push_back( new_data_size );
+    subset_starts_.push_back( new_data_size );
     for (unsigned int i_perm=0, i_data=old_data_size; i_data<new_data_size; ++i_perm, ++i_data) {
     	perm_indices[0][i_perm] = i_data;
     }

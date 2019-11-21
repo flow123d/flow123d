@@ -42,7 +42,7 @@ FieldValueCache<Value>::~FieldValueCache() {}
 
 template<class Value>
 void FieldValueCache<Value>::mark_used(EvalSubset sub_set) {
-    used_blocks_.insert(sub_set.get_block_idx());
+    used_subsets_.insert(sub_set.get_subset_idx());
 }
 
 

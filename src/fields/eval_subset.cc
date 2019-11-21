@@ -26,15 +26,15 @@
  */
 
 EvalSubset::EvalSubset(std::shared_ptr<EvalPoints> eval_points, bool side_subset)
-: eval_points_(eval_points), block_index_(eval_points_->n_blocks()), n_sides_(side_subset ? (eval_points->point_dim()+1) : 0) {}
+: eval_points_(eval_points), subset_index_(eval_points_->n_subsets()), n_sides_(side_subset ? (eval_points->point_dim()+1) : 0) {}
 
 Range< BulkPoint > EvalSubset::points(const DHCellAccessor &cell) const {
     ASSERT_EQ(n_sides_, 0).error("Method points with DHCellAccessor argument must be call for bulk subset!\n");
     if (cell.element_cache_index() == ElementCacheMap::undef_elem_idx)
         THROW( ExcElementNotInCache() << EI_ElementIdx(cell.elm_idx()) );
 
-    auto bgn_it = make_iter<BulkPoint>( BulkPoint(cell, *this, eval_points_->block_begin(block_index_)) );
-    auto end_it = make_iter<BulkPoint>( BulkPoint(cell, *this, eval_points_->block_end(block_index_)) );
+    auto bgn_it = make_iter<BulkPoint>( BulkPoint(cell, *this, eval_points_->subset_begin(subset_index_)) );
+    auto end_it = make_iter<BulkPoint>( BulkPoint(cell, *this, eval_points_->subset_end(subset_index_)) );
     return Range<BulkPoint>(bgn_it, end_it);
 }
 
@@ -43,8 +43,8 @@ Range< SidePoint > EvalSubset::points(const DHCellSide &cell_side) const {
     if (cell_side.cell().element_cache_index() == ElementCacheMap::undef_elem_idx)
         THROW( ExcElementNotInCache() << EI_ElementIdx(cell_side.cell().elm_idx()) );
 
-    unsigned int begin_idx = eval_points_->block_begin(block_index_);
-    unsigned int end_idx = eval_points_->block_end(block_index_);
+    unsigned int begin_idx = eval_points_->subset_begin(subset_index_);
+    unsigned int end_idx = eval_points_->subset_end(subset_index_);
     unsigned int points_per_side = (end_idx - begin_idx) / this->n_sides();
     auto bgn_it = make_iter<SidePoint>( SidePoint(cell_side, *this, cell_side.side_idx() * points_per_side ) );
     auto end_it = make_iter<SidePoint>( SidePoint(cell_side, *this, (cell_side.side_idx()+1) * points_per_side ) );
