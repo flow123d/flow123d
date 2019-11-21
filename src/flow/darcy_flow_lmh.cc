@@ -1015,7 +1015,11 @@ void DarcyLMH::reconstruct_solution_from_schur(MultidimAssembly& assembler)
     data_->full_solution.zero_entries();
     data_->p_edge_solution.local_to_ghost_begin();
     data_->p_edge_solution.local_to_ghost_end();
-    
+
+    balance_->start_flux_assembly(data_->water_balance_idx);
+    balance_->start_source_assembly(data_->water_balance_idx);
+    balance_->start_mass_assembly(data_->water_balance_idx);
+
     for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
     	LocalElementAccessorBase<3> ele_ac(dh_cell);
         unsigned int dim = ele_ac.dim();
@@ -1024,6 +1028,10 @@ void DarcyLMH::reconstruct_solution_from_schur(MultidimAssembly& assembler)
 
     data_->full_solution.local_to_ghost_begin();
     data_->full_solution.local_to_ghost_end();
+
+    balance_->finish_mass_assembly(data_->water_balance_idx);
+    balance_->finish_source_assembly(data_->water_balance_idx);
+    balance_->finish_flux_assembly(data_->water_balance_idx);
 }
 
 void DarcyLMH::assembly_linear_system() {

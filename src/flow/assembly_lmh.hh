@@ -125,9 +125,6 @@ public:
         loc_schur_.eliminate_solution();
         ad_->lin_sys_schur->set_local_system(loc_schur_, ad_->dh_cr_->get_local_to_global_map());
 
-        
-        add_fluxes_in_balance_matrix(ele_ac);
-
         // TODO:
         // if (mortar_assembly)
         //     mortar_assembly->assembly(ele_ac);
@@ -277,6 +274,9 @@ protected:
                 DarcyMH::EqData::BC_Type type = (DarcyMH::EqData::BC_Type)ad_->bc_type.value(b_ele.centre(), b_ele);
 
                 double cross_section = ad_->cross_section.value(ele_ac.centre(), ele_ac.element_accessor());
+
+                ad_->balance->add_flux_matrix_values(ad_->water_balance_idx, ele_ac.side(i),
+                                                     {(LongIdx)(ele_ac.side_row(i))}, {1});
 
                 if ( type == DarcyMH::EqData::none) {
                     // homogeneous neumann
@@ -492,22 +492,17 @@ protected:
             {
                 time_term_diag = time_term / ad_->time_step_;
                 time_term_rhs = time_term_diag * ad_->p_edge_solution_previous_time[loc_schur_.row_dofs[i]];
+
+                ad_->balance->add_mass_matrix_values(ad_->water_balance_idx, ele.region().bulk_idx(),
+                                                {(LongIdx)ele_ac.edge_row(i)}, {time_term});
             }
 
             this->loc_system_.add_value(loc_edge_dofs[i], loc_edge_dofs[i],
                                         -time_term_diag,
                                         -source_term - time_term_rhs);
-            
-            if( ! reconstruct)
-            {
-                ad_->balance->add_source_values(ad_->water_balance_idx, ele.region().bulk_idx(),
+
+            ad_->balance->add_source_values(ad_->water_balance_idx, ele.region().bulk_idx(),
                                                 {(LongIdx)ele_ac.edge_local_row(i)}, {0},{source_term});
-                if( ! ad_->use_steady_assembly_)
-                {
-                    ad_->balance->add_mass_matrix_values(ad_->water_balance_idx, ele.region().bulk_idx(),
-                                                {(LongIdx)ele_ac.edge_row(i)}, {time_term});
-                }
-            }
         }
     }
 
@@ -555,19 +550,6 @@ protected:
         }
     }
 
-    void add_fluxes_in_balance_matrix(LocalElementAccessorBase<3> ele_ac){
-
-        ElementAccessor<3> ele = ele_ac.element_accessor();
-        
-        for (unsigned int i = 0; i < ele->n_sides(); i++) {
-            Boundary* bcd = ele.side(i)->cond();
-
-            if (bcd) {
-                ad_->balance->add_flux_matrix_values(ad_->water_balance_idx, ele_ac.side(i),
-                                                     {(LongIdx)(ele_ac.side_row(i))}, {1});
-            }
-        }
-    }
 
     void postprocess_velocity(const DHCellAccessor& dh_cell, arma::vec& solution)
     {
