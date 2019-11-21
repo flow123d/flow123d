@@ -29,15 +29,14 @@
  * The coefficients are taken from Parallel Hierarchical Grid project.
  *
  */
-template<unsigned int dim>
-class QGauss : public Quadrature<dim> {
+class QGauss : public Quadrature {
 public:
     /**
      * @brief Create a formula of given order.
      *
      * The formula is exact for polynomials of degree @p order.
      */
-    QGauss(const unsigned int order);
+    QGauss(unsigned int dim, const unsigned int order);
 };
 
 

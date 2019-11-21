@@ -33,8 +33,9 @@ MappingP1<dim,spacedim>::MappingP1()
 }
 
 template<unsigned int dim, unsigned int spacedim>
-MappingInternalData *MappingP1<dim,spacedim>::initialize(const Quadrature<dim> &q, UpdateFlags flags)
+MappingInternalData *MappingP1<dim,spacedim>::initialize(const Quadrature &q, UpdateFlags flags)
 {
+    ASSERT_DBG( q.dim() == dim );
     MappingInternalData *data = new MappingInternalData;
 
     // Initialize the gradients of the canonical basis in the
@@ -60,7 +61,7 @@ MappingInternalData *MappingP1<dim,spacedim>::initialize(const Quadrature<dim> &
     {
         data->bar_coords.resize(q.size());
         for (unsigned int i=0; i<q.size(); i++)
-            data->bar_coords[i] = RefElement<dim>::local_to_bary(q.point(i));
+            data->bar_coords[i] = RefElement<dim>::local_to_bary(q.point<dim>(i).arma());
     }
 
 
@@ -87,10 +88,11 @@ UpdateFlags MappingP1<dim,spacedim>::update_each(UpdateFlags flags)
 
 template<unsigned int dim, unsigned int spacedim>
 void MappingP1<dim,spacedim>::fill_fe_values(const ElementAccessor<3> &cell,
-                            const Quadrature<dim> &q,
+                            const Quadrature &q,
                             MappingInternalData &data,
                             FEValuesData<dim,spacedim> &fv_data)
 {
+    ASSERT_DBG( q.dim() == dim );
     ElementMap coords;
     arma::mat::fixed<spacedim,dim> jac;
 
@@ -161,10 +163,11 @@ void MappingP1<dim,spacedim>::fill_fe_values(const ElementAccessor<3> &cell,
 template<unsigned int dim, unsigned int spacedim>
 void MappingP1<dim,spacedim>::fill_fe_side_values(const ElementAccessor<3> &cell,
                             unsigned int sid,
-                            const Quadrature<dim> &q,
+                            const Quadrature &q,
                             MappingInternalData &data,
                             FEValuesData<dim,spacedim> &fv_data)
 {
+    ASSERT_DBG( q.dim() == dim );
     ElementMap coords;
 
     if ((fv_data.update_flags & update_jacobians) |

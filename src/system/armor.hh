@@ -175,7 +175,7 @@ public:
     inline Mat<Type,nr,nc> get(uint i) const
     {
         ASSERT_DBG( (nr == nRows) && (nc == nCols) );
-        return Mat<Type,nr,nc>( const_cast<Type*>(data.data()) + i*nRows*nCols );
+        return Mat<Type,nr,nc>( (Type *)data.data() + i*nRows*nCols );
     }
     
     /**

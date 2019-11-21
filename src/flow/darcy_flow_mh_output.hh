@@ -234,7 +234,7 @@ protected:
         FE_P_disc<dim> fe_p1;
 
         const unsigned int order; // order of Gauss quadrature
-        QGauss<dim> quad;
+        QGauss quad;
 
         MappingP1<dim,3> mapp;
 

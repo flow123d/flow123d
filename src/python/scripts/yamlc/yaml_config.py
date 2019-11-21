@@ -175,7 +175,10 @@ class ConfigBase(object):
 
     def _read_yaml(self):
         with open(self.yaml_config_file, 'r') as fp:
-            result = yaml.load(fp)
+            try:
+                result = yaml.safe_load(fp)
+            except:
+                result = yaml.load(fp)
         return result or dict()
 
     def _get_all_yamls(self):

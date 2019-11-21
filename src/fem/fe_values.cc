@@ -181,8 +181,9 @@ void FEValuesBase<dim,spacedim>::allocate(Mapping<dim,spacedim> & _mapping,
 
 
 template<unsigned int dim, unsigned int spacedim>
-FEInternalData *FEValuesBase<dim,spacedim>::init_fe_data(const Quadrature<dim> *q)
+FEInternalData *FEValuesBase<dim,spacedim>::init_fe_data(const Quadrature *q)
 {
+    ASSERT_DBG( q->dim() == dim );
     FEInternalData *data = new FEInternalData(q->size(), fe->n_dofs());
 
     arma::mat shape_values(fe->n_dofs(), fe->n_components());
@@ -191,7 +192,7 @@ FEInternalData *FEValuesBase<dim,spacedim>::init_fe_data(const Quadrature<dim> *
         for (unsigned int j=0; j<fe->n_dofs(); j++)
         {
             for (unsigned int c=0; c<fe->n_components(); c++)
-                shape_values(j,c) = fe->shape_value(j, q->point(i), c);
+                shape_values(j,c) = fe->shape_value(j, q->point<dim>(i).arma(), c);
             
             data->ref_shape_values[i][j] = trans(shape_values.row(j));
         }
@@ -204,7 +205,7 @@ FEInternalData *FEValuesBase<dim,spacedim>::init_fe_data(const Quadrature<dim> *
         {
             grad.zeros();
             for (unsigned int c=0; c<fe->n_components(); c++)
-                grad.col(c) += fe->shape_grad(j, q->point(i), c);
+                grad.col(c) += fe->shape_grad(j, q->point<dim>(i).arma(), c);
             
             data->ref_shape_grads[i][j] = grad;
         }
@@ -510,12 +511,13 @@ void FEValuesBase<dim,spacedim>::fill_data(const FEInternalData &fe_data)
 
 template<unsigned int dim, unsigned int spacedim>
 FEValues<dim,spacedim>::FEValues(Mapping<dim,spacedim> &_mapping,
-         Quadrature<dim> &_quadrature,
+         Quadrature &_quadrature,
          FiniteElement<dim> &_fe,
          UpdateFlags _flags)
 : FEValuesBase<dim, spacedim>(),
   quadrature(&_quadrature)
 {
+    ASSERT_DBG( _quadrature.dim() == dim );
     this->allocate(_mapping, _quadrature.size(), _fe, _flags);
 
     // precompute the maping data and finite element data
@@ -560,12 +562,15 @@ void FEValues<dim,spacedim>::reinit(ElementAccessor<3> & cell)
 
 template<unsigned int dim,unsigned int spacedim>
 FESideValues<dim,spacedim>::FESideValues(Mapping<dim,spacedim> & _mapping,
-                                 Quadrature<dim-1> & _sub_quadrature,
+                                 Quadrature & _sub_quadrature,
                                  FiniteElement<dim> & _fe,
                                  const UpdateFlags _flags)
-:FEValuesBase<dim,spacedim>()
+: FEValuesBase<dim,spacedim>(),
+  side_quadrature(RefElement<dim>::n_sides, std::vector<Quadrature>(RefElement<dim>::n_side_permutations, Quadrature(dim)))
 {
+    ASSERT_DBG( _sub_quadrature.dim() + 1 == dim );
     sub_quadrature = &_sub_quadrature;
+    
     this->allocate(_mapping, _sub_quadrature.size(), _fe, _flags);
 
     for (unsigned int sid = 0; sid < RefElement<dim>::n_sides; sid++)
@@ -573,7 +578,7 @@ FESideValues<dim,spacedim>::FESideValues(Mapping<dim,spacedim> & _mapping,
     	for (unsigned int pid = 0; pid < RefElement<dim>::n_side_permutations; pid++)
     	{
     		// transform the side quadrature points to the cell quadrature points
-            side_quadrature[sid][pid] = Quadrature<dim>(_sub_quadrature, sid, pid);
+            side_quadrature[sid][pid] = _sub_quadrature.make_from_side<dim>(sid, pid);
     		side_mapping_data[sid][pid] = this->mapping->initialize(side_quadrature[sid][pid], this->data.update_flags);
     		side_fe_data[sid][pid] = this->init_fe_data(&side_quadrature[sid][pid]);
     	}

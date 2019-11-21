@@ -30,7 +30,7 @@
 
 
 
-template<unsigned int dim> class Quadrature;
+class Quadrature;
 template<unsigned int dim, unsigned int spacedim> class FEValuesData;
 
 
@@ -125,7 +125,7 @@ public:
      * @param q Quadrature rule.
      * @param flags Update flags.
      */
-    virtual MappingInternalData *initialize(const Quadrature<dim> &q, UpdateFlags flags) = 0;
+    virtual MappingInternalData *initialize(const Quadrature &q, UpdateFlags flags) = 0;
 
     /**
      * @brief Decides which additional quantities have to be computed
@@ -146,7 +146,7 @@ public:
      * @param fv_data Data to be computed.
      */
     virtual void fill_fe_values(const ElementAccessor<3> &cell,
-                        const Quadrature<dim> &q,
+                        const Quadrature &q,
                         MappingInternalData &data,
                         FEValuesData<dim,spacedim> &fv_data) = 0;
 
@@ -162,7 +162,7 @@ public:
      */
     virtual void fill_fe_side_values(const ElementAccessor<3> &cell,
                             unsigned int sid,
-                            const Quadrature<dim> &q,
+                            const Quadrature &q,
                             MappingInternalData &data,
                             FEValuesData<dim,spacedim> &fv_data) = 0;
 
