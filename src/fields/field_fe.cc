@@ -601,10 +601,12 @@ void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>
 		if (total_measure > epsilon) {
 			VectorMPI::VectorDataPtr data_vector = data_vec_.data_ptr();
 
-			DHCellAccessor cell = dh_->cell_accessor_from_element(elm.idx());
 			LocDofVec loc_dofs;
-			if (this->boundary_domain_) loc_dofs = value_handler1_.get_loc_dof_indices(cell.elm_idx());
-			else loc_dofs = cell.get_loc_dof_indices();
+			if (this->boundary_domain_) loc_dofs = value_handler1_.get_loc_dof_indices(elm.idx());
+			else{
+				DHCellAccessor cell = dh_->cell_accessor_from_element(elm.idx());
+				loc_dofs = cell.get_loc_dof_indices();
+			}
 
 			ASSERT_LE_DBG(loc_dofs.n_elem, value.size());
 			for (unsigned int i=0; i < value.size(); i++) {
