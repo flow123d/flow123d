@@ -33,7 +33,7 @@ FieldValueCache<Value>::FieldValueCache()
 : data_(0, Value::NRows_, Value::NCols_), eval_points_(nullptr), element_cache_map_(nullptr), dim_(EvalPoints::undefined_dim) {}
 
 template<class Value>
-FieldValueCache<Value>::FieldValueCache(std::shared_ptr<EvalPoints> eval_points, ElementCacheMap cache_map, unsigned int n_cache_points)
+FieldValueCache<Value>::FieldValueCache(std::shared_ptr<EvalPoints> eval_points, const ElementCacheMap *cache_map, unsigned int n_cache_points)
 : data_(n_cache_points * eval_points->size(), Value::NRows_, Value::NCols_),
   eval_points_(eval_points), element_cache_map_(cache_map), dim_(eval_points->point_dim()) {}
 

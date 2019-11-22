@@ -117,6 +117,16 @@ public:
         return dh_cell_.element_cache_index();
     }
 
+    /// Return DH cell accessor.
+    inline DHCellAccessor dh_cell() const {
+        return dh_cell_;
+    }
+
+    /// Return index in EvalPoints object
+    inline unsigned int eval_point_idx() const {
+        return local_point_idx_;
+    }
+
     /// Iterates to next point.
     inline void inc() {
     	local_point_idx_++;
@@ -166,9 +176,19 @@ public:
         return cell_side_.cell().element_cache_index();
     }
 
+    /// Return DH cell accessor.
+    inline DHCellSide dh_cell_side() const {
+        return cell_side_;
+    }
+
     // Index of permutation
     inline unsigned int permutation_idx() const {
         return permutation_idx_;
+    }
+
+    /// Return index in EvalPoints object
+    inline unsigned int eval_point_idx() const {
+        return subset_.perm_indices()[permutation_idx_][local_point_idx_];
     }
 
     /// Iterates to next point.
