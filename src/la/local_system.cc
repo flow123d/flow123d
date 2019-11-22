@@ -2,14 +2,15 @@
 #include "local_system.hh"
 
 #include <armadillo>
-#include "system/sys_vector.hh"
+#include "system/asserts.hh"
+#include "system/index_types.hh"
 
 
 LocalSystem::LocalSystem()
 {}
 
 
-LocalSystem::LocalSystem(unsigned int nrows, unsigned int ncols)
+LocalSystem::LocalSystem(uint nrows, uint ncols)
 : row_dofs(nrows),
   col_dofs(ncols),
   matrix(nrows, ncols),
@@ -24,7 +25,7 @@ LocalSystem::LocalSystem(unsigned int nrows, unsigned int ncols)
     reset();
 }
 
-void LocalSystem::set_size(unsigned int nrows, unsigned int ncols)
+void LocalSystem::set_size(uint nrows, uint ncols)
 {
     row_dofs.set_size(nrows);
     col_dofs.set_size(ncols);
@@ -36,7 +37,8 @@ void LocalSystem::set_size(unsigned int nrows, unsigned int ncols)
     solution_cols.set_size(ncols);
     diag_rows.set_size(nrows);
     // destroy previous sparsity pattern
-    sparsity.zeros(nrows,ncols);
+    sparsity.set_size(nrows,ncols);
+    sparsity.fill(almost_zero);
 }
 
 
@@ -50,7 +52,7 @@ void LocalSystem::reset()
 }
 
 
-void LocalSystem::reset(arma::uword nrows, arma::uword ncols)
+void LocalSystem::reset(uint nrows, uint ncols)
 {
     if(matrix.n_rows != nrows || matrix.n_cols != ncols)
     {
@@ -62,7 +64,7 @@ void LocalSystem::reset(arma::uword nrows, arma::uword ncols)
 
 
 
-void LocalSystem::reset(const DofVec &rdofs, const DofVec &cdofs)
+void LocalSystem::reset(const LocDofVec &rdofs, const LocDofVec &cdofs)
 {
     if(matrix.n_rows != rdofs.n_rows || matrix.n_cols != cdofs.n_rows)
     {
@@ -76,7 +78,7 @@ void LocalSystem::reset(const DofVec &rdofs, const DofVec &cdofs)
 
 
 
-void LocalSystem::set_solution(unsigned int loc_dof, double solution, double diag)
+void LocalSystem::set_solution(uint loc_dof, double solution, double diag)
 {
     // check that dofs are same
     //ASSERT_DBG( arma::all(row_dofs == col_dofs) );
@@ -107,7 +109,7 @@ void LocalSystem::eliminate_solution()
         arma::mat tmp_mat = matrix;
         arma::vec tmp_rhs = rhs;
         
-        unsigned int ic, ir, row, col;
+        uint ic, ir, row, col;
 
         // eliminate columns
         for(ic=0; ic < n_elim_cols; ic++) {
@@ -164,7 +166,7 @@ void LocalSystem::eliminate_solution()
 }
 
 
-void LocalSystem::add_value(unsigned int row, unsigned int col, double mat_val, double rhs_val)
+void LocalSystem::add_value(uint row, uint col, double mat_val, double rhs_val)
 {
     ASSERT_DBG(row < matrix.n_rows);
     ASSERT_DBG(col < matrix.n_cols);
@@ -174,7 +176,7 @@ void LocalSystem::add_value(unsigned int row, unsigned int col, double mat_val, 
     rhs(row) += rhs_val;
 }
 
-void LocalSystem::add_value(unsigned int row, unsigned int col, double mat_val)
+void LocalSystem::add_value(uint row, uint col, double mat_val)
 {
     ASSERT_DBG(row < matrix.n_rows);
     ASSERT_DBG(col < matrix.n_cols);
@@ -183,7 +185,7 @@ void LocalSystem::add_value(unsigned int row, unsigned int col, double mat_val)
     matrix(row, col) += mat_val;
 }
 
-void LocalSystem::add_value(unsigned int row, double rhs_val)
+void LocalSystem::add_value(uint row, double rhs_val)
 {
     ASSERT_DBG(row < matrix.n_rows);
     
@@ -208,8 +210,8 @@ void LocalSystem::set_sparsity(const arma::umat & sp)
     ASSERT_EQ_DBG(sparsity.n_cols, sp.n_cols);
     
     sparsity.zeros();
-    for(unsigned int i=0; i < sp.n_rows; i++)
-        for(unsigned int j=0; j < sp.n_cols; j++)
+    for(uint i=0; i < sp.n_rows; i++)
+        for(uint j=0; j < sp.n_cols; j++)
             if( sp(i,j) != 0 )
                 sparsity(i,j) = almost_zero;
 //      sparsity.print("sparsity");

@@ -8,7 +8,7 @@
 #ifndef SRC_FLOW_ASSEMBLY_LMH_HH_
 #define SRC_FLOW_ASSEMBLY_LMH_HH_
 
-#include "mesh/long_idx.hh"
+#include "system/index_types.hh"
 #include "flow/assembly_lmh.hh"
 #include "soil_models.hh"
 #include "coupling/balance.hh"
@@ -81,7 +81,7 @@ protected:
         if (genuchten_on) {
             for (unsigned int i=0; i<ele->n_sides(); i++)
             {
-                double phead = ad_->schur_solution[ this->loc_schur_.row_dofs[i] ];
+                double phead = ad_->p_edge_solution[ this->loc_schur_.row_dofs[i] ];
                 conductivity += ad_->soil_model_->conductivity(phead);
             }
             conductivity /= ele->n_sides();
@@ -105,7 +105,7 @@ protected:
         for (unsigned int i=0; i<ele->n_sides(); i++) {
             double capacity = 0;
             double water_content = 0;
-            double phead = ad_->schur_solution[ this->edge_indices_[i] ];
+            double phead = ad_->p_edge_solution[ edge_indices_[i] ];
             if (genuchten_on) {
 
                   fadbad::B<double> x_phead(phead);
@@ -154,16 +154,16 @@ protected:
                 /*
                 DebugOut().fmt("w diff: {:g}  mass: {:g} w prev: {:g} w time: {:g} c: {:g} p: {:g} z: {:g}",
                       water_content_diff,
-                      mass_diagonal * ad_->schur_solution[local_edge],
+                      mass_diagonal * ad_->p_edge_solution[local_edge],
                      -ad_->water_content_previous_it[local_side],
                       ad_->water_content_previous_time[local_side],
                       capacity,
-                      ad_->schur_solution[local_edge],
+                      ad_->p_edge_solution[local_edge],
                       ele.centre()[0] );
                 */
 
 
-                double mass_rhs = mass_diagonal * ad_->schur_solution[ this->loc_schur_.row_dofs[i] ] / ad_->time_step_
+                double mass_rhs = mass_diagonal * ad_->p_edge_solution[ this->loc_schur_.row_dofs[i] ] / ad_->time_step_
                                   + diagonal_coef * water_content_diff / ad_->time_step_;
 
 //                 DBGCOUT(<< "source [" << loc_system_.row_dofs[this->loc_edge_dofs[i]] << ", " << loc_system_.row_dofs[this->loc_edge_dofs[i]]
@@ -175,13 +175,10 @@ protected:
                                             -source_diagonal - mass_rhs);
             }
 
-            if(! this->reconstruct)
-            if (ad_->balance != nullptr) {
-                ad_->balance->add_mass_vec_value(ad_->water_balance_idx, ele.region().bulk_idx(),
-                        diagonal_coef*ad_->water_content_previous_it[local_side]);
-                ad_->balance->add_source_values(ad_->water_balance_idx, ele.region().bulk_idx(), {(LongIdx)ele.edge_local_row(i)},
-                                                {0},{source_diagonal});
-            }
+            ad_->balance->add_mass_vec_value(ad_->water_balance_idx, ele.region().bulk_idx(),
+                    diagonal_coef*ad_->water_content_previous_it[local_side]);
+            ad_->balance->add_source_values(ad_->water_balance_idx, ele.region().bulk_idx(), {(LongIdx)ele.edge_local_row(i)},
+                                            {0},{source_diagonal});
         }
 
     }
@@ -190,8 +187,8 @@ protected:
     /// Be sure to call it before @p update_water_content().
     void update_dofs(const DHCellAccessor& dh_cell)
     {
-        dh_cell.cell_with_other_dh(ad_->dh_cr_.get()).get_loc_dof_indices(this->edge_indices_);
-        dh_cell.cell_with_other_dh(ad_->dh_cr_disc_.get()).get_loc_dof_indices(cr_disc_dofs);
+        edge_indices_ = dh_cell.cell_with_other_dh(ad_->dh_cr_.get()).get_loc_dof_indices();
+        cr_disc_dofs = dh_cell.cell_with_other_dh(ad_->dh_cr_disc_.get()).get_loc_dof_indices();
     }
     
     void postprocess_velocity_specific(const DHCellAccessor& dh_cell, arma::vec& solution,
@@ -215,18 +212,18 @@ protected:
             sat_val += water_content / wcs;
         }
          
-        std::vector<LongIdx> p0_dofs;
-        dh_cell.cell_with_other_dh(ad_->dh_p_.get()).get_loc_dof_indices(p0_dofs);
+        Idx p_dof = dh_cell.cell_with_other_dh(ad_->dh_p_.get()).get_loc_dof_indices()(0);
 
-        ad_->saturation_ptr->get_data_vec()[p0_dofs[0]] = sat_val / ele->n_sides();
-        ad_->conductivity_ptr->get_data_vec()[p0_dofs[0]] = compute_conductivity(ele);
+        ad_->saturation_ptr->get_data_vec()[p_dof] = sat_val / ele->n_sides();
+        ad_->conductivity_ptr->get_data_vec()[p_dof] = compute_conductivity(ele);
     }
 
     AssemblyDataPtrRichards ad_;
 
     bool genuchten_on;
     double cross_section;
-    std::vector<LongIdx> cr_disc_dofs;  ///< Dofs of discontinuous fields on element edges.
+    LocDofVec cr_disc_dofs;  ///< Dofs of discontinuous fields on element edges.
+    LocDofVec edge_indices_; ///< Dofs of discontinuous fields on element edges.
 };
 
 

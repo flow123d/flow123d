@@ -30,7 +30,7 @@
 #include "petscvec.h"           // for Vec, _p_Vec
 #include "system/file_path.hh"  // for FilePath
 #include "tools/time_marks.hh"  // for TimeMark, TimeMark::Type
-#include "mesh/long_idx.hh"     // for LongIdx
+#include "system/index_types.hh" // for LongIdx
 
 class Mesh;
 class TimeGovernor;

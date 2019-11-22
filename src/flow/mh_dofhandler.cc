@@ -18,13 +18,13 @@
 #include "mesh/side_impl.hh"
 #include "flow/mh_dofhandler.hh"
 #include "la/local_to_global_map.hh"
-#include "mesh/long_idx.hh"
 #include "mesh/mesh.h"
 #include "mesh/partitioning.hh"
 #include "mesh/side_impl.hh"
 #include "mesh/accessors.hh"
 #include "mesh/range_wrapper.hh"
 #include "mesh/neighbours.h"
+#include "system/index_types.hh"
 #include "system/sys_profiler.hh"
 
 MH_DofHandler::MH_DofHandler()

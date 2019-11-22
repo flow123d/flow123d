@@ -109,7 +109,7 @@ protected:
 
     void initial_condition_postprocess() override;
     void assembly_linear_system() override;
-    void prepare_new_time_step() override;
+    void accept_time_step() override;
 private:
 
     std::shared_ptr<EqData> data_;

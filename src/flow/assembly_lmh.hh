@@ -8,7 +8,7 @@
 #ifndef SRC_ASSEMBLY_LMH_HH_
 #define SRC_ASSEMBLY_LMH_HH_
 
-#include "mesh/long_idx.hh"
+#include "system/index_types.hh"
 #include "mesh/mesh.h"
 #include "mesh/accessors.hh"
 #include "mesh/neighbours.h"
@@ -50,9 +50,7 @@ public:
         velocity_interpolation_quad_(dim, 0), // veloctiy values in barycenter
         velocity_interpolation_fv_(map_,velocity_interpolation_quad_, fe_rt_, update_values | update_quadrature_points),
 
-        ad_(data),
-        loc_system_(size(), size()),
-        edge_indices_(dim+1)
+        ad_(data)
     {
         // local numbering of dofs for MH system
         // note: this shortcut supposes that the fe_system is the same on all elements
@@ -62,27 +60,6 @@ public:
         loc_side_dofs = fe_system->fe_dofs(0);
         loc_ele_dof = fe_system->fe_dofs(1)[0];
         loc_edge_dofs = fe_system->fe_dofs(2);
-        
-        unsigned int nsides = dim+1;
-        
-        // create local sparsity pattern
-        base_local_sp_.set_size(size(),size());
-        base_local_sp_.zeros();
-        base_local_sp_.submat(0, 0, nsides, nsides).ones();
-        base_local_sp_.diag().ones();
-        // armadillo 8.4.3 bug with negative sub diagonal index
-        // sp.diag(nsides+1).ones();
-        // sp.diag(-nsides-1).ones();
-        // sp.print();
-        
-        base_local_sp_.submat(0, nsides+1, nsides-1, size()-1).diag().ones();
-        base_local_sp_.submat(nsides+1, 0, size()-1, nsides-1).diag().ones();
-        
-        loc_system_.set_sparsity(base_local_sp_);
-        
-        loc_schur_.reset(nsides, nsides);
-        schur_sp_.ones(nsides, nsides);
-        loc_schur_.set_sparsity(schur_sp_);
 
         FEAL_ASSERT(ad_->mortar_method_ == DarcyFlowInterface::NoMortar)
             .error("Mortar methods are not supported in Lumped Mixed-Hybrid Method.");
@@ -101,9 +78,6 @@ public:
 
     ~AssemblyLMH<dim>() override
     {}
-
-//     LocalSystem& get_local_system() override
-//         { return loc_system_;}
     
     void fix_velocity(LocalElementAccessorBase<3> ele_ac) override
     {
@@ -114,79 +88,33 @@ public:
     void assemble_reconstruct(LocalElementAccessorBase<3> ele_ac) override
     {
         ASSERT_EQ_DBG(ele_ac.dim(), dim);
-        loc_system_.reset();
-        reconstruct = true;
     
-        arma::Col<LongIdx> dofs, dofs_schur;
-        set_loc_dofs_vec(ele_ac, dofs, dofs_schur);
-        loc_system_.reset(dofs, dofs);
-        loc_schur_.reset(dofs_schur,dofs_schur);
-        
-        assemble_bc(ele_ac);
-        
-        assemble_sides(ele_ac);
-        assemble_element(ele_ac);
-        assemble_source_term(ele_ac);
-        
-        assembly_dim_connections(ele_ac);
-        
-        const unsigned int n = loc_schur_.row_dofs.n_rows;  // local Schur complement size
-        arma::vec schur_solution(n);
-        for(unsigned int i=0; i<n; i++)
-        {
-            // read the computed edge pressures
-            schur_solution(i) = ad_->schur_solution[dofs_schur[i]];
-            // write the computed edge pressures to the full vector
-            unsigned int loc_row = dofs[schur_offset_+i];
-            ad_->full_solution[loc_row] = schur_solution(i);
-        }
-        
-        // reconstruct the velocity and pressure
-        loc_system_.reconstruct_solution_schur(schur_offset_, schur_solution, reconstructed_solution_);
+        assemble_local_system(ele_ac, false);   //do not switch dirichlet in seepage when reconstructing
         
         // TODO:
         // if (mortar_assembly)
+        //     mortar_assembly->assembly(ele_ac);
+        // if (mortar_assembly)
         //     mortar_assembly->fix_velocity(ele_ac);
+
+        arma::vec schur_solution = ad_->p_edge_solution.get_subvec(loc_schur_.row_dofs);
+        // reconstruct the velocity and pressure
+        loc_system_.reconstruct_solution_schur(schur_offset_, schur_solution, reconstructed_solution_);
 
         // postprocess the velocity
         postprocess_velocity(ele_ac.dh_cell(), reconstructed_solution_);
-
-        // reconstruct the velocity and pressure
-        // reconstruct_solution(loc_system_);
-
-        // write the velocity and pressure to the full vector
-        for(unsigned int i=0; i<reconstructed_solution_.n_rows; i++)
-        {
-            unsigned int loc_row = dofs[i];
-            ad_->full_solution[loc_row] += reconstructed_solution_(i);
-        }
-
-        // for(unsigned int i=0; i<loc_schur_.row_dofs.n_rows; i++)
-        // {
-        //     // write the computed edge pressures to the full vector
-        //     unsigned int loc_row = dofs[schur_offset_+i];
-        //     ad_->full_solution[loc_row] = ad_->schur_solution[dofs_schur[i]];
-        // }
         
-//         if (mortar_assembly)
-//             mortar_assembly->assembly(ele_ac);
+        ad_->full_solution.set_subvec(loc_system_.row_dofs.head(schur_offset_), reconstructed_solution_);
+        ad_->full_solution.set_subvec(loc_system_.row_dofs.tail(loc_schur_.row_dofs.n_elem), schur_solution);
     }
     
     void assemble(LocalElementAccessorBase<3> ele_ac) override
     {
         ASSERT_EQ_DBG(ele_ac.dim(), dim);
-        reconstruct = false;
         save_local_system_ = false;
         bc_fluxes_reconstruted = false;
 
-        set_dofs(ele_ac);
-        assemble_bc(ele_ac);
-        
-        assemble_sides(ele_ac);
-        assemble_element(ele_ac);
-        assemble_source_term(ele_ac);
-        
-        assembly_dim_connections(ele_ac);
+        assemble_local_system(ele_ac, true);   //do use_dirichlet_switch
         
         loc_system_.compute_schur_complement(schur_offset_, loc_schur_, true);
 
@@ -195,62 +123,11 @@ public:
         loc_schur_.eliminate_solution();
         ad_->lin_sys_schur->set_local_system(loc_schur_, ad_->dh_cr_->get_local_to_global_map());
 
-        if (ad_->balance != nullptr)
-            add_fluxes_in_balance_matrix(ele_ac);
-
+        // TODO:
         // if (mortar_assembly)
         //     mortar_assembly->assembly(ele_ac);
     }
 
-    // void reconstruct_solution(const LocalSystem & ls)
-    // {
-    //     const unsigned int n = loc_schur_.row_dofs.n_rows;  // local Schur complement size
-    //     arma::vec schur_solution(n);
-    //     for(unsigned int i=0; i<n; i++)
-    //     {
-    //         // read the computed edge pressures
-    //         schur_solution(i) = ad_->schur_solution[dofs_schur[i]];
-    //     }
-        
-    //     // reconstruct the velocity and pressure
-    //     ls.reconstruct_solution_schur(schur_offset_, schur_solution, reconstructed_solution_);
-
-    //     postprocess_velocity(ele_ac.dh_cell(), reconstructed_solution_);
-    // }
-
-    void load_local_system(const DHCellAccessor& dh_cell)
-    {
-        // do this only once per element
-        if(bc_fluxes_reconstruted)
-            return;
-
-        // possibly find the corresponding local system
-        auto ls = ad_->seepage_bc_systems.find(dh_cell.elm_idx());
-        if (ls != ad_->seepage_bc_systems.end())
-        {
-            const unsigned int n = loc_schur_.row_dofs.n_rows;  // local Schur complement size
-            arma::vec schur_solution(n);
-            for(unsigned int i=0; i<n; i++)
-            {
-                // read the computed edge pressures
-                schur_solution(i) = ad_->schur_solution[loc_schur_.row_dofs[i]];
-            }
-            
-            // reconstruct the velocity and pressure
-            ls->second.reconstruct_solution_schur(schur_offset_, schur_solution, reconstructed_solution_);
-
-            postprocess_velocity(dh_cell, reconstructed_solution_);
-
-            bc_fluxes_reconstruted = true;
-        }
-    }
-
-    void save_local_system(const DHCellAccessor& dh_cell)
-    {
-        // for seepage BC, save local system
-        if(save_local_system_)
-            ad_->seepage_bc_systems[dh_cell.elm_idx()] = loc_system_;
-    }
 
     arma::vec3 make_element_vector(LocalElementAccessorBase<3> ele_ac) override
     {
@@ -279,160 +156,103 @@ protected:
         // dofs: velocity, pressure, edge pressure
         return RefElement<dim>::n_sides + 1 + RefElement<dim>::n_sides;
     }
+    
+    void assemble_local_system(LocalElementAccessorBase<3> ele_ac, bool use_dirichlet_switch)
+    {
+        set_dofs(ele_ac);
 
-    void set_loc_dofs_vec(LocalElementAccessorBase<3> ele_ac, arma::Col<LongIdx>& dofs, arma::Col<LongIdx>& dofs_schur){
-        ElementAccessor<3> ele = ele_ac.element_accessor();
-        DHCellAccessor dh_cell = ele_ac.dh_cell();
-        
-        unsigned int loc_size = size() + ele->n_neighs_vb();
-        unsigned int loc_size_schur = ele->n_sides() + ele->n_neighs_vb();
-        // vector of DoFs
-        dofs.set_size(loc_size);
-        dofs_schur.set_size(loc_size_schur);
-        
-        std::vector<LongIdx> indices(dh_cell.n_dofs());
-        dh_cell.get_loc_dof_indices(indices);
-        
-        DHCellAccessor dh_cr_cell = dh_cell.cell_with_other_dh(ad_->dh_cr_.get());
-        std::vector<LongIdx> schur_indices(dh_cr_cell.n_dofs());
-        dh_cr_cell.get_loc_dof_indices(schur_indices);
-        
-        if(ele->n_neighs_vb() == 0)
-        {   
-            dofs = indices;
-            dofs_schur = schur_indices;
+        assemble_bc(ele_ac, use_dirichlet_switch);
+        assemble_sides(ele_ac);
+        assemble_element(ele_ac);
+        assemble_source_term(ele_ac);
+        assembly_dim_connections(ele_ac);
+    }
+
+    /** Loads the local system from a map: element index -> LocalSystem,
+     * if it exits, or if the full solution is not yet reconstructed,
+     * and reconstructs the full solution on the element.
+     * Currently used only for seepage BC.
+     */
+    void load_local_system(const DHCellAccessor& dh_cell)
+    {
+        // do this only once per element
+        if(bc_fluxes_reconstruted)
             return;
-        }
-        
-        // add full vec indices
-        arma::Col<LongIdx> d = indices;
-        dofs.head(indices.size()) = d;
-        
-        // add schur vec indices
-        arma::Col<LongIdx> dd = schur_indices;
-        dofs_schur.head(schur_indices.size()) = dd;
-        
-        //D, E',E block: compatible connections: element-edge
-        Neighbour *ngh;
-        unsigned int i = 0;
-        
-        for ( DHCellSide neighb_side : dh_cell.neighb_sides() ) {
-            
-            ngh = ele->neigh_vb[i];
-            
-            // read neighbor dofs (dh dofhandler)
-            // neighbor cell owning neighb_side
-            DHCellAccessor dh_neighb_cell = neighb_side.cell();
-            std::vector<LongIdx> higher_indices(dh_neighb_cell.n_dofs());
-            dh_neighb_cell.get_loc_dof_indices(higher_indices);
-            
-            // read neighbor dofs (dh_cr dofhandler)
-            // neighbor cell owning neighb_side
-            DHCellAccessor dh_neighb_cr_cell = dh_neighb_cell.cell_with_other_dh(ad_->dh_cr_.get());
-            std::vector<LongIdx> cr_dofs(dh_neighb_cr_cell.n_dofs());
-            dh_neighb_cr_cell.get_loc_dof_indices(cr_dofs);
-            
-            // find edge dofs of neighbor corresponding to neighb_side
-            for (unsigned int j = 0; j < neighb_side.element().dim()+1; j++){
-            	if (neighb_side.element()->edge_idx(j) == ngh->edge_idx()) {
-                    unsigned int p = size()+i;
-                    dofs[p] = higher_indices[higher_indices.size() - cr_dofs.size() + j];
-                    
-                    unsigned int t = schur_indices.size()+i;
-                    dofs_schur[t] = cr_dofs[j];
-                    break;
-                }
-            }
-            i++;
+
+        // possibly find the corresponding local system
+        auto ls = ad_->seepage_bc_systems.find(dh_cell.elm_idx());
+        if (ls != ad_->seepage_bc_systems.end())
+        {
+            arma::vec schur_solution = ad_->p_edge_solution.get_subvec(loc_schur_.row_dofs);            
+            // reconstruct the velocity and pressure
+            ls->second.reconstruct_solution_schur(schur_offset_, schur_solution, reconstructed_solution_);
+
+            postprocess_velocity(dh_cell, reconstructed_solution_);
+
+            bc_fluxes_reconstruted = true;
         }
     }
-    
+
+
+    /// Saves the local system to a map: element index -> LocalSystem.
+    /// Currently used only for seepage BC.
+    void save_local_system(const DHCellAccessor& dh_cell)
+    {
+        // for seepage BC, save local system
+        if(save_local_system_)
+            ad_->seepage_bc_systems[dh_cell.elm_idx()] = loc_system_;
+    }
+
+
     void set_dofs(LocalElementAccessorBase<3> ele_ac){
         ElementAccessor<3> ele = ele_ac.element_accessor();
-        
+        DHCellAccessor dh_cell = ele_ac.dh_cell();
+        DHCellAccessor dh_cr_cell = ele_ac.dh_cell().cell_with_other_dh(ad_->dh_cr_.get());
+
         unsigned int loc_size = size() + ele->n_neighs_vb();
         unsigned int loc_size_schur = ele->n_sides() + ele->n_neighs_vb();
-        // vector of DoFs
-        // arma::Col<LongIdx> dofs(loc_size);
-        arma::Col<LongIdx> dofs_schur(loc_size_schur);
+        LocDofVec dofs(loc_size);
+        LocDofVec dofs_schur(loc_size_schur);
         
-        DHCellAccessor dh_cr_cell = ele_ac.dh_cell().cell_with_other_dh(ad_->dh_cr_.get());
-        std::vector<LongIdx> indices(dh_cr_cell.n_dofs());
-        dh_cr_cell.get_loc_dof_indices(indices);
+        // add full vec indices
+        dofs.head(dh_cell.n_dofs()) = dh_cell.get_loc_dof_indices();
+        // add schur vec indices
+        dofs_schur.head(dh_cr_cell.n_dofs()) = dh_cr_cell.get_loc_dof_indices();
         
-        //set global dof for element (pressure)
-        // dofs[loc_ele_dof] = ele_ac.ele_row();
-        
-        // unsigned int side_row, edge_row;
-        // for (unsigned int i = 0; i < ele_ac.n_sides(); i++) {
-
-        //     side_row = loc_side_dofs[i];    //local
-        //     edge_row = loc_edge_dofs[i];    //local
-            
-            // dofs[side_row] = ele_ac.side_row(i);    //global
-            // dofs[edge_row] = ele_ac.edge_row(i);    //global
-        // }
-        
-        if(ele->n_neighs_vb() == 0)
+        if(ele->n_neighs_vb() != 0)
         {
-            // loc_system_.reset(dofs, dofs);
-            loc_system_.reset(loc_size, loc_size);
-            loc_system_.set_sparsity(base_local_sp_);
+            //D, E',E block: compatible connections: element-edge
+            unsigned int i = 0;
             
-            dofs_schur = indices;
-            loc_schur_.reset(dofs_schur,dofs_schur);
-            schur_sp_.ones(loc_size_schur, loc_size_schur);
-            loc_schur_.set_sparsity(schur_sp_);
-            return;
-        }
-        
-        // if neighbor communication, then resize the local system and set dofs and sp
-        local_sp_.zeros(loc_size, loc_size);
-        local_sp_( 0,0, arma::size(base_local_sp_)) = base_local_sp_;
-        
-        // TODO: sparse for commmunication blocks?
-        schur_sp_.ones(loc_size_schur, loc_size_schur);
-        
-       
-        arma::Col<LongIdx> d = indices;
-        dofs_schur.head(indices.size()) = d;
-        
-        //D, E',E block: compatible connections: element-edge
-        Neighbour *ngh;
+            for ( DHCellSide neighb_side : dh_cell.neighb_sides() ) {
 
-        for (unsigned int i = 0; i < ele->n_neighs_vb(); i++) {
-            // every compatible connection adds a 2x2 matrix involving
-            // current element pressure  and a connected edge pressure
-            ngh = ele_ac.element_accessor()->neigh_vb[i];
-            LocalElementAccessorBase<3> acc_higher_dim( ele_ac.dh_cell().dh()->cell_accessor_from_element(ngh->edge()->side(0)->element().idx()) );
-            
-            DHCellAccessor higher_dh_cr_cell = acc_higher_dim.dh_cell().cell_with_other_dh(ad_->dh_cr_.get());
-            std::vector<int> cr_dofs(higher_dh_cr_cell.n_dofs());
-            higher_dh_cr_cell.get_loc_dof_indices(cr_dofs);
-                    
-            for (unsigned int j = 0; j < ngh->edge()->side(0)->element().dim()+1; j++)
-            	if (ngh->edge()->side(0)->element()->edge_idx(j) == ngh->edge_idx()) {
-                    unsigned int p = size()+i;
-                    // dofs[p] = acc_higher_dim.edge_row(j);
-                    local_sp_(loc_ele_dof, p) = 1;
-                    local_sp_(p, loc_ele_dof) = 1;
-                    local_sp_(p, p) = 1;
-                    
-                    unsigned int t = indices.size()+i;
-                    dofs_schur[t] = cr_dofs[j];
-            		break;
-            	}
+                // read neighbor dofs (dh dofhandler)
+                // neighbor cell owning neighb_side
+                DHCellAccessor dh_neighb_cell = neighb_side.cell();
+                
+                // read neighbor dofs (dh_cr dofhandler)
+                // neighbor cell owning neighb_side
+                DHCellAccessor dh_neighb_cr_cell = dh_neighb_cell.cell_with_other_dh(ad_->dh_cr_.get());
+                
+                // local index of pedge dof in local system
+                const unsigned int p = size()+i;
+                // local index of pedge dof on neighboring cell
+                const unsigned int t = dh_neighb_cell.n_dofs() - dh_neighb_cr_cell.n_dofs() + neighb_side.side().side_idx();
+                dofs[p] = dh_neighb_cell.get_loc_dof_indices()[t];
+
+                // local index of pedge dof in local schur system
+                const unsigned int tt = dh_cr_cell.n_dofs()+i;
+                dofs_schur[tt] = dh_neighb_cr_cell.get_loc_dof_indices()
+                            [neighb_side.side().side_idx()];
+                i++;
+            }
         }
-        
-        // loc_system_.reset(dofs, dofs);
-        loc_system_.reset(loc_size, loc_size);
-        loc_system_.set_sparsity(local_sp_);
-        
+        loc_system_.reset(dofs, dofs);
         loc_schur_.reset(dofs_schur, dofs_schur);
-        loc_schur_.set_sparsity(schur_sp_);
     }
+
     
-    void assemble_bc(LocalElementAccessorBase<3> ele_ac){
+    void assemble_bc(LocalElementAccessorBase<3> ele_ac, bool use_dirichlet_switch){
         //shortcuts
         const unsigned int nsides = ele_ac.n_sides();
         
@@ -452,6 +272,9 @@ protected:
                 DarcyMH::EqData::BC_Type type = (DarcyMH::EqData::BC_Type)ad_->bc_type.value(b_ele.centre(), b_ele);
 
                 double cross_section = ad_->cross_section.value(ele_ac.centre(), ele_ac.element_accessor());
+
+                ad_->balance->add_flux_matrix_values(ad_->water_balance_idx, ele_ac.side(i),
+                                                     {(LongIdx)(ele_ac.side_row(i))}, {1});
 
                 if ( type == DarcyMH::EqData::none) {
                     // homogeneous neumann
@@ -481,7 +304,7 @@ protected:
                     double side_flux = bc_flux * b_ele.measure() * cross_section;
 
                     // ** Update BC type. **
-                    if(! reconstruct){  // skip BC change if only reconstructing the solution
+                    if(use_dirichlet_switch){  // skip BC change if only reconstructing the solution
                     if (switch_dirichlet) {
                         // check and possibly switch to flux BC
                         // The switch raise error on the corresponding edge row.
@@ -506,7 +329,7 @@ protected:
                         // flux inequality leading may be accepted, while the error
                         // in pressure inequality is always satisfied.
 
-                        double solution_head = ad_->schur_solution[loc_schur_.row_dofs[i]];
+                        double solution_head = ad_->p_edge_solution[loc_schur_.row_dofs[i]];
 
                         if ( solution_head > bc_pressure) {
                             //DebugOut().fmt("x: {}, to dirich, p: {} -> p: {} f: {}\n",b_ele.centre()[0], solution_head, bc_pressure, bc_flux);
@@ -536,7 +359,7 @@ protected:
                     double bc_flux = -ad_->bc_flux.value(b_ele.centre(), b_ele);
                     double bc_sigma = ad_->bc_robin_sigma.value(b_ele.centre(), b_ele);
 
-                    double solution_head = ad_->schur_solution[loc_schur_.row_dofs[i]];
+                    double solution_head = ad_->p_edge_solution[loc_schur_.row_dofs[i]];
 
                     // Force Robin type during the first iteration of the unsteady case.
                     if (solution_head > bc_switch_pressure  || ad_->force_bc_switch) {
@@ -643,9 +466,6 @@ protected:
     {
         ElementAccessor<3> ele = ele_ac.element_accessor();
         
-        ele_ac.dh_cell().cell_with_other_dh(ad_->dh_cr_.get()).get_loc_dof_indices(edge_indices_);
-
-        
         // compute lumped source
         double alpha = 1.0 / ele->n_sides();
         double cross_section = ad_->cross_section.value(ele.centre(), ele);
@@ -669,24 +489,18 @@ protected:
             if(! ad_->use_steady_assembly_)
             {
                 time_term_diag = time_term / ad_->time_step_;
-                time_term_rhs = time_term_diag * ad_->previous_time_schur_solution[loc_schur_.row_dofs[i]];
+                time_term_rhs = time_term_diag * ad_->p_edge_solution_previous_time[loc_schur_.row_dofs[i]];
+
+                ad_->balance->add_mass_matrix_values(ad_->water_balance_idx, ele.region().bulk_idx(),
+                                                {(LongIdx)ele_ac.edge_row(i)}, {time_term});
             }
 
             this->loc_system_.add_value(loc_edge_dofs[i], loc_edge_dofs[i],
                                         -time_term_diag,
                                         -source_term - time_term_rhs);
-            
-            if( ! reconstruct)
-            if (ad_->balance != nullptr)
-            {
-                ad_->balance->add_source_values(ad_->water_balance_idx, ele.region().bulk_idx(),
+
+            ad_->balance->add_source_values(ad_->water_balance_idx, ele.region().bulk_idx(),
                                                 {(LongIdx)ele_ac.edge_local_row(i)}, {0},{source_term});
-                if( ! ad_->use_steady_assembly_)
-                {
-                    ad_->balance->add_mass_matrix_values(ad_->water_balance_idx, ele.region().bulk_idx(),
-                                                {(LongIdx)ele_ac.edge_row(i)}, {time_term});
-                }
-            }
         }
     }
 
@@ -707,7 +521,7 @@ protected:
             // current element pressure  and a connected edge pressure
             unsigned int p = size()+i; // loc dof of higher ele edge
             
-            ElementAccessor<3> ele_higher = ad_->mesh->element_accessor( neighb_side.element().idx() );
+            ElementAccessor<3> ele_higher = neighb_side.cell().elm();
             ngh_values_.fe_side_values_.reinit(ele_higher, neighb_side.side_idx());
             nv = ngh_values_.fe_side_values_.normal_vector(0);
 
@@ -734,19 +548,6 @@ protected:
         }
     }
 
-    void add_fluxes_in_balance_matrix(LocalElementAccessorBase<3> ele_ac){
-
-        ElementAccessor<3> ele = ele_ac.element_accessor();
-        
-        for (unsigned int i = 0; i < ele->n_sides(); i++) {
-            Boundary* bcd = ele.side(i)->cond();
-
-            if (bcd) {
-                ad_->balance->add_flux_matrix_values(ad_->water_balance_idx, ele_ac.side(i),
-                                                     {(LongIdx)(ele_ac.side_row(i))}, {1});
-            }
-        }
-    }
 
     void postprocess_velocity(const DHCellAccessor& dh_cell, arma::vec& solution)
     {
@@ -773,17 +574,13 @@ protected:
             
             if( ! ad_->use_steady_assembly_)
             {
-                new_pressure = ad_->schur_solution[loc_schur_.row_dofs[i]];
-                old_pressure = ad_->previous_time_schur_solution[loc_schur_.row_dofs[i]];
+                new_pressure = ad_->p_edge_solution[loc_schur_.row_dofs[i]];
+                old_pressure = ad_->p_edge_solution_previous_time[loc_schur_.row_dofs[i]];
                 time_term = edge_scale * storativity / ad_->time_step_ * (new_pressure - old_pressure);
             }
             solution[loc_side_dofs[i]] += edge_source_term - time_term;
         }
     }
-    
-    
-    // temporary fix in schur reconstruction
-    bool reconstruct;
 
     // assembly volume integrals
     FE_RT0<dim> fe_rt_;
@@ -807,18 +604,12 @@ protected:
     std::vector<unsigned int> dirichlet_edge;
 
     LocalSystem loc_system_;
-    arma::umat base_local_sp_;      ///< Sparsity pattern of the LocalSystem (without dim communication).
-    arma::umat local_sp_;           ///< Whole sparsity pattern of the LocalSystem.
-    arma::umat schur_sp_;           ///< Whole sparsity pattern of the Schur complement of LocalSystem.
     LocalSystem loc_schur_;
     std::vector<unsigned int> loc_side_dofs;
     std::vector<unsigned int> loc_edge_dofs;
     unsigned int loc_ele_dof;
 
     // std::shared_ptr<MortarAssemblyBase> mortar_assembly;
-        
-//     // TODO: Update dofs only once, use the dofs from LocalSystem, once set_dofs and set_bc is separated.
-    std::vector<int> edge_indices_; ///< Dofs of discontinuous fields on element edges.
 
     /// Index offset in the local system for the Schur complement.
     unsigned int schur_offset_;

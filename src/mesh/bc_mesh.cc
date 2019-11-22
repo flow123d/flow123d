@@ -17,10 +17,9 @@
  */
 
 
-
+#include "system/index_types.hh"
 #include "mesh/side_impl.hh"
 #include "mesh/bc_mesh.hh"
-#include "mesh/long_idx.hh"
 #include "mesh/accessors.hh"
 #include "mesh/partitioning.hh"
 #include "mesh/neighbours.h"

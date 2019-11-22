@@ -30,7 +30,7 @@
 #include "io/element_data_cache.hh"  // for ElementDataCache
 #include "io/output_time.hh"
 #include "mesh/partitioning.hh"
-#include "mesh/long_idx.hh"
+#include "system/index_types.hh"
 #include "system/exceptions.hh"      // for ExcStream, operator<<, EI, TYPED...
 #include "system/file_path.hh"       // for FilePath
 #include "system/tokenizer.hh"       // for Tokenizer, Tokenizer::Position

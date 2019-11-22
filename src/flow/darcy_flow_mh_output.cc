@@ -34,6 +34,7 @@
 #include "io/observe.hh"
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
+#include "system/index_types.hh"
 
 #include "fields/field_set.hh"
 #include "fem/dofhandler.hh"
@@ -45,7 +46,6 @@
 #include "fields/fe_value_handler.hh"
 #include "fields/generic_field.hh"
 
-#include "mesh/long_idx.hh"
 #include "mesh/mesh.h"
 #include "mesh/partitioning.hh"
 #include "mesh/accessors.hh"
@@ -326,8 +326,7 @@ void DarcyFlowMHOutput::output_internal_flow_data()
     	LocalElementAccessorBase<3> ele_ac(dh_cell);
         
         ElementAccessor<3> ele = dh_cell.elm();
-        std::vector<LongIdx> indices(dh_cell.n_dofs());
-        dh_cell.get_loc_dof_indices(indices);
+        LocDofVec indices = dh_cell.get_loc_dof_indices();
 
         // pressure
         raw_output_file << fmt::format("{} {} ", dh_cell.elm().index(), data->full_solution[indices[ele->n_sides()]]);
@@ -460,23 +459,21 @@ void DarcyFlowMHOutput::l2_diff_local(DHCellAccessor dh_cell,
 
     // DHCell constructed with diff fields DH, get DOF indices of actual element
     DHCellAccessor sub_dh_cell = dh_cell.cell_with_other_dh(result.dh_.get());
-    unsigned int ndofs = result.dh_->max_elem_dofs();
-    std::vector<LongIdx> indices(ndofs);
-    sub_dh_cell.get_loc_dof_indices(indices);
+    Idx idx = sub_dh_cell.get_loc_dof_indices()[0];
 
     auto velocity_data = result.vel_diff_ptr->get_data_vec();
-    velocity_data[ indices[0] ] = sqrt(velocity_diff);
+    velocity_data[ idx ] = sqrt(velocity_diff);
     result.velocity_error[dim-1] += velocity_diff;
     if (dim == 2 && result.velocity_mask.size() != 0 ) {
     	result.mask_vel_error += (result.velocity_mask[ ele.idx() ])? 0 : velocity_diff;
     }
 
     auto pressure_data = result.pressure_diff_ptr->get_data_vec();
-    pressure_data[ indices[0] ] = sqrt(pressure_diff);
+    pressure_data[ idx ] = sqrt(pressure_diff);
     result.pressure_error[dim-1] += pressure_diff;
 
     auto div_data = result.div_diff_ptr->get_data_vec();
-    div_data[ indices[0] ] = sqrt(divergence_diff);
+    div_data[ idx ] = sqrt(divergence_diff);
     result.div_error[dim-1] += divergence_diff;
 
 }

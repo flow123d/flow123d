@@ -20,13 +20,13 @@
 
 #include "petscmat.h"
 #include "system/system.hh"
+#include "system/index_types.hh"
 #include "fields/field_algo_base.hh"
 #include "fields/fe_value_handler.hh"
 #include "la/vector_mpi.hh"
 #include "mesh/mesh.h"
 #include "mesh/point.hh"
 #include "mesh/bih_tree.hh"
-#include "mesh/long_idx.hh"
 #include "mesh/range_wrapper.hh"
 #include "io/element_data_cache.hh"
 #include "io/msh_basereader.hh"
@@ -179,8 +179,6 @@ private:
     std::shared_ptr<DOFHandlerMultiDim> dh_;
     /// Store data of Field
     VectorMPI data_vec_;
-    /// Array of indexes to data_vec_, used for get/set values
-    std::vector<LongIdx> dof_indices_;
 
     /// Value handler that allows get value of 0D elements.
     FEValueHandler<0, spacedim, Value> value_handler0_;
@@ -227,7 +225,7 @@ private:
      *
      * TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
      */
-    std::shared_ptr< std::vector<LongIdx> > boundary_dofs_;
+    std::shared_ptr< std::vector<Idx> > boundary_dofs_;
 
     /// Registrar of class to factory
     static const int registrar;
