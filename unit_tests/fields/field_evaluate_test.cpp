@@ -43,8 +43,8 @@ public:
                         .flags_add(in_main_matrix);
         }
 
-        ElementCacheMap &get_element_cache_map(unsigned int dim) {
-            return this->elm_cache_map_[dim-1];
+        ElementCacheMap *get_element_cache_map(unsigned int dim) {
+            return &this->elm_cache_map_[dim-1];
         }
 
         // fields
@@ -126,6 +126,7 @@ TEST_F(FieldEval, evaluate) {
     	    data_->add_cell_to_cache( el_ngh_side.cell() );
     	}
     }
+    //data_->cache_update(data_->get_element_cache_map(3));
 
     //...
     /*DHCellAccessor cache_cell = this->element_cache_map(cell);
