@@ -98,12 +98,17 @@ public:
     static const unsigned int undef_elem_idx;
 
     /// Constructor
-    ElementCacheMap(unsigned int dim);
+    ElementCacheMap();
+
+    /// Init dimension data member
+    inline void init(unsigned int dim) {
+        this->dim_ = dim;
+    }
 
     /// Adds element to added_elements_ set.
-    void add(DHCellAccessor dh_cell);
+    void add(const DHCellAccessor &dh_cell);
 
-    /// Clean helper data member after reading data to cache.
+    /// Clean helper data member before reading data to cache.
     void prepare_elements_to_update();
 
     /// Clean helper data member after reading data to cache.

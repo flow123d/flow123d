@@ -55,12 +55,12 @@ const unsigned int ElementCacheMap::n_cached_elements = 20;
 const unsigned int ElementCacheMap::undef_elem_idx = std::numeric_limits<unsigned int>::max();
 
 
-ElementCacheMap::ElementCacheMap(unsigned int dim)
+ElementCacheMap::ElementCacheMap()
 : elm_idx_(ElementCacheMap::n_cached_elements, ElementCacheMap::undef_elem_idx),
-  begin_idx_(0), end_idx_(0), dim_(dim) {}
+  begin_idx_(0), end_idx_(0), dim_(ElementCacheMap::undef_elem_idx) {}
 
 
-void ElementCacheMap::add(DHCellAccessor dh_cell) {
+void ElementCacheMap::add(const DHCellAccessor &dh_cell) {
     ASSERT_LT(added_elements_.size(), ElementCacheMap::n_cached_elements).error("ElementCacheMap overflowed. List of added elements is to long!\n");
     unsigned int elm_idx = dh_cell.elm_idx();
    	added_elements_.insert(elm_idx);
@@ -96,10 +96,14 @@ void ElementCacheMap::prepare_elements_to_update() {
 		elm_idx_[cache_pos] = el_idx;
         cache_pos++;
     }
+    std::cout << "ElementCacheMap::prepare_elements_to_update: " << begin_idx_ << ", " << end_idx_ << std::endl;
+    for (auto i : added_elements_) std::cout << " - " << i;
+    std::cout << std::endl;
 }
 
 
 void ElementCacheMap::clear_elements_to_update() {
+	std::cout << "ElementCacheMap::clear_elements_to_update" << std::endl;
 	added_elements_.clear();
 }
 

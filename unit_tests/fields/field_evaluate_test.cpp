@@ -100,6 +100,7 @@ TEST_F(FieldEval, evaluate) {
     PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
 
     Mesh * mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
+    data_->set_mesh(*mesh);
     std::shared_ptr<DOFHandlerMultiDim> dh = std::make_shared<DOFHandlerMultiDim>(*mesh);
 
     // Asumme following types:
@@ -112,6 +113,15 @@ TEST_F(FieldEval, evaluate) {
 
     data_->cache_allocate(mass_eval);
     data_->cache_allocate(side_eval);
+
+    //DHCellAccessor cache_cell = this->element_cache_map(cell);
+    DHCellAccessor cache_cell(dh.get(), 4);  // element ids store to cache: (3 -> 3,4), (4 -> 3,4,5), (5 -> 4,5)
+    data_->add_cell_to_cache(cache_cell);
+    for (DHCellSide side : cache_cell.side_range()) {
+    	for(DHCellSide el_ngh_side : side.edge_sides()) {
+    	    data_->add_cell_to_cache( el_ngh_side.cell() );
+    	}
+    }
 
     //...
     /*DHCellAccessor cache_cell = this->element_cache_map(cell);

@@ -35,6 +35,8 @@
 #include "tools/time_governor.hh"  // for TimeGovernor (ptr only), TimeStep
 class Mesh;
 class Region;
+class ElementCacheMap;
+class DHCellAccessor;
 
 
 
@@ -74,6 +76,11 @@ class Region;
 class FieldSet : public FieldFlag {
 public:
 	DECLARE_EXCEPTION(ExcUnknownField, << "Field set has no field with name: " << FieldCommon::EI_Field::qval);
+
+	/**
+	 * Constructor
+	 */
+	FieldSet();
 
 	/**
 	 * Add an existing Field to the list. It stores just pointer to the field.
@@ -245,6 +252,11 @@ public:
     }
 
     /**
+     * Add DHCellAccessor to appropriate ElementDataCache.
+     */
+    void add_cell_to_cache(const DHCellAccessor &cell);
+
+    /**
      * Collective interface to @p FieldCommon::cache_update().
      */
     void cache_update(ElementCacheMap &cache_map) {
@@ -258,6 +270,11 @@ protected:
 
     /// List of all fields.
     std::vector<FieldCommon *> field_list;
+
+    /**
+     * Element cache map of dimensions 1,2,3
+     */
+    std::array< ElementCacheMap, 3 > elm_cache_map_;
 
     /**
      * Stream output operator

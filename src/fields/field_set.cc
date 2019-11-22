@@ -16,9 +16,19 @@
  */
 
 #include "fields/field_set.hh"
+#include "fields/field_value_cache.hh"
 #include "system/sys_profiler.hh"
 #include "input/flow_attribute_lib.hh"
+#include "fem/dh_cell_accessor.hh"
 #include <boost/algorithm/string/replace.hpp>
+
+
+
+FieldSet::FieldSet()
+: FieldFlag() {
+    for (unsigned int i=0; i<3; ++i)
+        elm_cache_map_[i].init(i+1);
+}
 
 
 
@@ -181,6 +191,11 @@ bool FieldSet::is_jump_time() const {
     bool is_jump = false;
     for(auto field : field_list) is_jump = is_jump || field->is_jump_time();
     return is_jump;
+}
+
+
+void FieldSet::add_cell_to_cache(const DHCellAccessor &cell) {
+	elm_cache_map_[cell.dim()-1].add(cell);
 }
 
 
