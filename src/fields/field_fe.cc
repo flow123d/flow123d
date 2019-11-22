@@ -634,6 +634,7 @@ void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>:
 		dof_size = cell.get_dof_indices(global_dof_indices);
 		LocDofVec loc_dofs = cell.get_loc_dof_indices();
 		data_vec_i = cell.elm_idx() * dof_size;
+		ASSERT_EQ_DBG(dof_size, loc_dofs.n_elem);
 		for (unsigned int i=0; i<dof_size; ++i, ++data_vec_i) {
 			(*data_vector)[ loc_dofs[i] ] += (*data_cache)[ global_dof_indices[i] ];
 			++count_vector[ loc_dofs[i] ];
@@ -651,19 +652,19 @@ template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::calculate_elementwise_values(ElementDataCache<double>::ComponentDataPtr data_cache)
 {
 	// Same algorithm as in output of Node_data. Possibly code reuse.
-	unsigned int dof_size, data_vec_i;
+	unsigned int data_vec_i;
 	std::vector<unsigned int> count_vector(data_vec_.size(), 0);
 	data_vec_.zero_entries();
-	VectorMPI::VectorDataPtr data_vector = data_vec_.data_ptr();
 
 	// iterate through elements, assembly global vector and count number of writes
 	if (this->boundary_domain_) {
 		Mesh *mesh = dh_->mesh()->get_bc_mesh();
 		for (auto ele : mesh->elements_range()) { // remove special case for rank == 0 - necessary for correct output
 			LocDofVec loc_dofs = value_handler1_.get_loc_dof_indices(ele.idx());
-			data_vec_i = ele.idx() * loc_dofs.n_elem;
+			data_vec_i = ele.idx() * dh_->max_elem_dofs();
 			for (unsigned int i=0; i<loc_dofs.n_elem; ++i, ++data_vec_i) {
-				(*data_vector)[ loc_dofs[i] ] += (*data_cache)[data_vec_i];
+				ASSERT_LT_DBG(loc_dofs[i], data_vec_.size());
+				data_vec_[ loc_dofs[i] ] += (*data_cache)[data_vec_i];
 				++count_vector[ loc_dofs[i] ];
 			}
 		}
@@ -672,9 +673,10 @@ void FieldFE<spacedim, Value>::calculate_elementwise_values(ElementDataCache<dou
 		// iterate through cells, assembly global vector and count number of writes - prepared solution for further development
 		for (auto cell : dh_->own_range()) {
 			LocDofVec loc_dofs = cell.get_loc_dof_indices();
-			data_vec_i = cell.elm_idx() * loc_dofs.n_elem;
-			for (unsigned int i=0; i<dof_size; ++i, ++data_vec_i) {
-				(*data_vector)[ loc_dofs[i] ] += (*data_cache)[data_vec_i];
+			data_vec_i = cell.elm_idx() * dh_->max_elem_dofs();
+			for (unsigned int i=0; i<loc_dofs.n_elem; ++i, ++data_vec_i) {
+				ASSERT_LT_DBG(loc_dofs[i], data_vec_.size());
+				data_vec_[ loc_dofs[i] ] += (*data_cache)[data_vec_i];
 				++count_vector[ loc_dofs[i] ];
 			}
 		}
@@ -682,7 +684,7 @@ void FieldFE<spacedim, Value>::calculate_elementwise_values(ElementDataCache<dou
 
 	// compute averages of values
 	for (unsigned int i=0; i<data_vec_.size(); ++i) {
-		if (count_vector[i]>0) (*data_vector)[i] /= count_vector[i];
+		if (count_vector[i]>0) data_vec_[i] /= count_vector[i];
 	}
 }
 
