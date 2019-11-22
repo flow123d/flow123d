@@ -43,6 +43,10 @@ public:
                         .flags_add(in_main_matrix);
         }
 
+        ElementCacheMap &get_element_cache_map(unsigned int dim) {
+            return this->elm_cache_map_[dim-1];
+        }
+
         // fields
         Field<3, FieldValue<3>::Scalar > scalar_field;
         Field<3, FieldValue<3>::VectorFixed > vector_field;
@@ -111,8 +115,8 @@ TEST_F(FieldEval, evaluate) {
     EvalSubset side_eval = feval->add_side<3>(*q_side );
     //EvalSubset this->ngh_side_eval;
 
-    data_->cache_allocate(mass_eval);
-    data_->cache_allocate(side_eval);
+    data_->cache_allocate(mass_eval, data_->get_element_cache_map(3));
+    data_->cache_allocate(side_eval, data_->get_element_cache_map(3));
 
     //DHCellAccessor cache_cell = this->element_cache_map(cell);
     DHCellAccessor cache_cell(dh.get(), 4);  // element ids store to cache: (3 -> 3,4), (4 -> 3,4,5), (5 -> 4,5)

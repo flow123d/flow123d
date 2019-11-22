@@ -247,8 +247,8 @@ public:
     /**
      * Collective interface to @p FieldCommon::cache_allocate().
      */
-    void cache_allocate(EvalSubset sub_set) {
-        for(auto field : field_list) field->cache_allocate(sub_set);
+    void cache_allocate(EvalSubset sub_set, const ElementCacheMap *cache_map) {
+        for(auto field : field_list) field->cache_allocate(sub_set, cache_map);
     }
 
     /**

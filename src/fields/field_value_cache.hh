@@ -27,6 +27,7 @@
 
 class EvalPoints;
 class EvalSubset;
+class ElementCacheMap;
 class DHCellAccessor;
 
 
@@ -39,7 +40,7 @@ public:
     FieldValueCache();
 
     /// Constructor
-    FieldValueCache(std::shared_ptr<EvalPoints> eval_points, unsigned int n_cache_points);
+    FieldValueCache(std::shared_ptr<EvalPoints> eval_points, const ElementCacheMap *cache_map, unsigned int n_cache_points);
 
     /// Destructor
     ~FieldValueCache();
@@ -83,6 +84,9 @@ private:
 
     /// Pointer to EvalPoints
     std::shared_ptr<EvalPoints> eval_points_;
+
+    ///Pointer to ElementCacheMap
+    const ElementCacheMap *element_cache_map_;
 
     /// Dimension (control data member)
     unsigned int dim_;
