@@ -12,7 +12,7 @@
  *
  * 
  * @file    darcy_flow_lmh.hh
- * @brief   mixed-hybrid model of linear Darcy flow, possibly unsteady.
+ * @brief   Lumped mixed-hybrid model of linear Darcy flow, possibly unsteady.
  * @author  Jan Brezina
  *
  * Main object for mixed-hybrid discretization of the linear elliptic PDE (Laplace)
@@ -64,7 +64,8 @@ class DarcyFlowMHOutput;
 class Element;
 class Intersection;
 class LinSys;
-class LinSys_BDDC;
+// class LinSys_BDDC;
+class LocalSystem;
 namespace Input {
 	class AbstractRecord;
 	class Record;
@@ -153,14 +154,19 @@ public:
         
         std::shared_ptr<SubDOFHandlerMultiDim> dh_p_;    ///< DOF handler represents DOFs of element pressure
         
-        VectorMPI previous_solution;
-        
         // Propagate test for the time term to the assembly.
         // This flag is necessary for switching BC to avoid setting zero neumann on the whole boundary in the steady case.
         bool use_steady_assembly_;
         
         // for time term assembly
         double time_step_;
+        
+        LinSys *lin_sys_schur;
+        VectorMPI p_edge_solution;               //< 2. Schur complement solution
+        VectorMPI p_edge_solution_previous;      //< 2. Schur complement previous solution (iterative)
+        VectorMPI p_edge_solution_previous_time; //< 2. Schur complement previous solution (time)
+
+        std::map<LongIdx, LocalSystem> seepage_bc_systems;
     };
 
     /// Selection for enum MortarMethod.
@@ -194,7 +200,7 @@ public:
     void get_solution_vector(double * &vec, unsigned int &vec_size) override;
     
     /// postprocess velocity field (add sources)
-    virtual void prepare_new_time_step();
+    virtual void accept_time_step();
     virtual void postprocess();
     virtual void output_data() override;
 
@@ -234,7 +240,7 @@ protected:
      * This is used in Richards equation due the update of water content.
      */
     virtual void initial_condition_postprocess();
-   
+    
     /**
      * Allocates linear system matrix for MH.
      * TODO:
@@ -252,13 +258,15 @@ protected:
      * - support for nonlinear solvers - assembly either residual vector, matrix, or both (using FADBAD++)
      */
     void assembly_mh_matrix(MultidimAssembly& assembler);
+    
+    void reconstruct_solution_from_schur(MultidimAssembly& assembler);
 
     /**
      * Assembly or update whole linear system.
      */
     virtual void assembly_linear_system();
 
-    void set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls);
+//     void set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls);
     /**
      * Return a norm of residual vector.
      * TODO: Introduce Equation::compute_residual() updating
@@ -293,15 +301,11 @@ protected:
 	unsigned int max_n_it_;
 	unsigned int nonlinear_iteration_; //< Actual number of completed nonlinear iterations, need to pass this information into assembly.
 
-
-	LinSys *schur0;  		//< whole MH Linear System
-
-
+    LinSys *schur_compl;    //< 2. Schur complement of MH Linear System (direct assembly)
+    
 	// gather of the solution
 	Vec sol_vec;			                 //< vector over solution array
 	VecScatter par_to_all;
-
-    VectorMPI previous_solution_nonlinear;
 
     // Temporary objects holding pointers to appropriate FieldFE
     // TODO remove after final fix of equations
@@ -320,11 +324,6 @@ private:
   /// Registrar of class to factory
   static const int registrar;
 };
-
-
-
-void mat_count_off_proc_values(Mat m, Vec v);
-
 
 #endif  //DARCY_FLOW_LMH_HH
 //-----------------------------------------------------------------------------

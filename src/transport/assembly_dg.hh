@@ -579,7 +579,6 @@ public:
 
         fe_values_.reinit(elm);
         cell.get_dof_indices(dof_indices_);
-        cell.get_loc_dof_indices(loc_dof_indices_);
 
         model_.compute_source_coefficients(fe_values_.point_list(), elm, sources_conc_, sources_density_, sources_sigma_);
 
@@ -606,6 +605,8 @@ public:
                     local_source_balance_vector_[i] -= sources_sigma_[sbi][k]*fe_values_.shape_value(i,k)*fe_values_.JxW(k);
 
                 local_source_balance_rhs_[i] += local_rhs_[i];
+                // temporary, TODO: replace with LocDofVec in balance
+                loc_dof_indices_[i] = cell.get_loc_dof_indices()[i];
             }
             model_.balance()->add_source_values(model_.get_subst_idx()[sbi], elm.region().bulk_idx(), loc_dof_indices_,
                                                local_source_balance_vector_, local_source_balance_rhs_);

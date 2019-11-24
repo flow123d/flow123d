@@ -216,7 +216,7 @@ public:
         /// Idicator of dirichlet or neumann type of switch boundary conditions.
         std::vector<char> bc_switch_dirichlet;
 
-    	VectorMPI data_vec_;
+    	VectorMPI full_solution;     //< full solution [vel,press,lambda] from 2. Schur complement
         
         MultidimAssembly multidim_assembler;
     };

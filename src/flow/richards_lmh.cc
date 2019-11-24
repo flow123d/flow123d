@@ -32,7 +32,6 @@
 #include "badiff.h"
 #include "fadiff.h"
 
-#include "flow/assembly_lmh.hh"
 
 
 FLOW123D_FORCE_LINK_IN_CHILD(richards_lmh);
@@ -120,6 +119,7 @@ RichardsLMH::RichardsLMH(Mesh &mesh_in, const  Input::Record in_rec)
     //data_->edge_new_local_4_mesh_idx_ = &(this->edge_new_local_4_mesh_idx_);
 }
 
+
 void RichardsLMH::initialize_specific() {
 
     auto model_rec = input_record_.val<Input::Record>("soil_model");
@@ -133,28 +133,32 @@ void RichardsLMH::initialize_specific() {
         ASSERT(false);
 
     // create edge vectors
-    data_->phead_edge_ = data_->dh_cr_->create_vector();
     data_->water_content_previous_it = data_->dh_cr_disc_->create_vector();
     data_->water_content_previous_time = data_->dh_cr_disc_->create_vector();
     data_->capacity = data_->dh_cr_disc_->create_vector();
+
+    data_->multidim_assembler = AssemblyBase::create< AssemblyRichards >(data_);
 }
 
 
 void RichardsLMH::initial_condition_postprocess()
 {
-    // set water_content
-    // pretty ugly since postprocess change fluxes, which cause bad balance, so we must set them back
-    data_->previous_solution.copy(data_->data_vec_); // store solution vector
-    postprocess();
-//     data_->previous_solution.swap(data_->data_vec_); // currently does not mimic VecSwap
-    VecSwap(schur0->get_solution(), data_->previous_solution.petsc_vec()); // restore solution vector
+    // modify side fluxes in parallel
+    // for every local edge take time term on diagonal and add it to the corresponding flux
+    
+    for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
+        data_->multidim_assembler[dh_cell.elm().dim()-1]->update_water_content(dh_cell);
+    }
 }
 
 
-void RichardsLMH::prepare_new_time_step()
+void RichardsLMH::accept_time_step()
 {
-    data_->previous_solution.copy(data_->data_vec_);
-    data_->water_content_previous_time.copy(data_->water_content_previous_it);
+    data_->p_edge_solution_previous_time.copy_from(data_->p_edge_solution);
+    data_->water_content_previous_time.copy_from(data_->water_content_previous_it);
+
+    data_->p_edge_solution_previous_time.local_to_ghost_begin();
+    data_->p_edge_solution_previous_time.local_to_ghost_end();
 }
 
 bool RichardsLMH::zero_time_term(bool time_global) {
@@ -173,36 +177,32 @@ bool RichardsLMH::zero_time_term(bool time_global) {
 
 void RichardsLMH::assembly_linear_system()
 {
-
     START_TIMER("RicharsLMH::assembly_linear_system");
-    
-    // update the subvector with edge pressure for solution vector
-    data_->dh_cr_->update_subvector(data_->data_vec_, data_->phead_edge_);
-    data_->phead_edge_.local_to_ghost_begin();
-    data_->phead_edge_.local_to_ghost_end();
+
+    data_->p_edge_solution.local_to_ghost_begin();
+    data_->p_edge_solution.local_to_ghost_end();
 
     data_->is_linear = data_->genuchten_p_head_scale.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
 
     bool is_steady = zero_time_term();
     //DebugOut() << "Assembly linear system\n";
         START_TIMER("full assembly");
-        if (typeid(*schur0) != typeid(LinSys_BDDC)) {
-            schur0->start_add_assembly(); // finish allocation and create matrix
-        }
+//         if (typeid(*schur0) != typeid(LinSys_BDDC)) {
+//             schur0->start_add_assembly(); // finish allocation and create matrix
+//             schur_compl->start_add_assembly();
+//         }
+        
+        schur_compl->start_add_assembly();
+            
         data_->time_step_ = time_->dt();
-        auto multidim_assembler = AssemblyBase::create< AssemblyRichards >(data_);
+        
+        schur_compl->mat_zero_entries();
+        schur_compl->rhs_zero_entries();
 
+        assembly_mh_matrix( data_->multidim_assembler ); // fill matrix
 
-        schur0->mat_zero_entries();
-        schur0->rhs_zero_entries();
-
-        assembly_mh_matrix( multidim_assembler ); // fill matrix
-
-            //MatView( *const_cast<Mat*>(schur0->get_matrix()), PETSC_VIEWER_STDOUT_WORLD  );
-            //VecView( *const_cast<Vec*>(schur0->get_rhs()),   PETSC_VIEWER_STDOUT_WORLD);
-
-        schur0->finish_assembly();
-        schur0->set_matrix_changed();
+        schur_compl->finish_assembly();
+        schur_compl->set_matrix_changed();
 
 
         if (! is_steady) {
@@ -211,25 +211,4 @@ void RichardsLMH::assembly_linear_system()
             // assembly time term and rhs
             solution_changed_for_scatter=true;
         }
-}
-
-
-
-void RichardsLMH::postprocess() {
-
-    // update structures for balance of water volume
-    assembly_linear_system();
-    
-    // update the subvector with edge pressure for solution vector
-    data_->dh_cr_->update_subvector(data_->data_vec_, data_->phead_edge_);
-    data_->phead_edge_.local_to_ghost_begin();
-    data_->phead_edge_.local_to_ghost_end();
-
-    // modify side fluxes in parallel
-    // for every local edge take time term on diagonal and add it to the corresponding flux
-    auto multidim_assembler = AssemblyBase::create< AssemblyRichards >(data_);
-    
-    for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
-        multidim_assembler[dh_cell.elm().dim()-1]->postprocess_velocity(dh_cell);
-    }
 }

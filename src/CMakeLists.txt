@@ -156,6 +156,7 @@ add_library(la_lib
     la/linsys_PETSC.cc
     la/sparse_graph.cc
     la/local_system.cc
+    la/vector_mpi.cc
 )
 target_link_libraries(la_lib 
     input_lib system_lib

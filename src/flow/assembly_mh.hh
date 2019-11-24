@@ -41,17 +41,17 @@ class AssemblyBase
 public:
     virtual void fix_velocity(LocalElementAccessorBase<3> ele_ac) = 0;
     virtual void assemble(LocalElementAccessorBase<3> ele_ac) = 0;
+    virtual void assemble_reconstruct(LocalElementAccessorBase<3> ele_ac) = 0;
         
     // assembly compatible neighbourings
-    virtual void assembly_local_vb(ElementAccessor<3> ele, DHCellSide neighb_side) = 0;
+//     virtual void assembly_local_vb(ElementAccessor<3> ele, DHCellSide neighb_side) = 0;
 
     // compute velocity value in the barycenter
     // TODO: implement and use general interpolations between discrete spaces
     virtual arma::vec3 make_element_vector(LocalElementAccessorBase<3> ele_ac) = 0;
-    
-    /// Postprocess the velocity due to lumping.
-    /// It is used in LMH and Richards only.
-    virtual void postprocess_velocity(const DHCellAccessor& dh_cell) = 0;
+
+    /// Updates water content in Richards.
+    virtual void update_water_content(const DHCellAccessor& dh_cell) = 0;
 
     /**
         * Generic creator of multidimensional assembly, i.e. vector of
@@ -152,7 +152,9 @@ public:
 
     }
 
-    void postprocess_velocity(const DHCellAccessor& dh_cell) override
+    void assemble_reconstruct(LocalElementAccessorBase<3> ele_ac) override
+    {};
+    void update_water_content(const DHCellAccessor& dh_cell) override
     {};
 
     ~AssemblyMH<dim>() override
@@ -178,6 +180,7 @@ public:
         assemble_element(ele_ac);
         assemble_source_term(ele_ac);
         
+        loc_system_.eliminate_solution();
         ad_->lin_sys->set_local_system(loc_system_);
 
         assembly_dim_connections(ele_ac);
@@ -189,7 +192,7 @@ public:
             mortar_assembly->assembly(ele_ac);
     }
 
-    void assembly_local_vb(ElementAccessor<3> ele, DHCellSide neighb_side) override
+    void assembly_local_vb(ElementAccessor<3> ele, DHCellSide neighb_side) //override
     {
         ASSERT_LT_DBG(ele->dim(), 3);
         //DebugOut() << "alv " << print_var(this);
@@ -224,7 +227,7 @@ public:
 
         velocity_interpolation_fv_.reinit(ele);
         for (unsigned int li = 0; li < ele->n_sides(); li++) {
-            flux_in_center += ad_->data_vec_[ ele_ac.side_local_row(li) ]
+            flux_in_center += ad_->full_solution[ ele_ac.side_local_row(li) ]
                         * velocity_interpolation_fv_.vector_view(0).value(li,0);
         }
 
@@ -493,6 +496,7 @@ protected:
 
             assembly_local_vb(ele, neighb_side);
 
+            loc_system_vb_.eliminate_solution();
             ad_->lin_sys->set_local_system(loc_system_vb_);
 
             // update matrix for weights in BDDCML

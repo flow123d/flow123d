@@ -76,7 +76,6 @@ public:
 
         // Auxiliary assembly fields.
         //std::unordered_map<unsigned int, unsigned int> *edge_new_local_4_mesh_idx_;
-        VectorMPI phead_edge_;
         VectorMPI water_content_previous_it;
         VectorMPI water_content_previous_time;
         VectorMPI capacity;
@@ -103,8 +102,7 @@ protected:
 
     void initial_condition_postprocess() override;
     void assembly_linear_system() override;
-    void prepare_new_time_step() override;
-    void postprocess() override;
+    void accept_time_step() override;
 private:
 
     std::shared_ptr<EqData> data_;

@@ -419,7 +419,7 @@ void DarcyMH::initialize() {
 		ele_flux_ptr->set_fe_data(data_->dh_, rt_component);
 		ele_velocity_ptr = std::make_shared< FieldDivide<3, FieldValue<3>::VectorFixed> >(ele_flux_ptr, data_->cross_section);
 		data_->field_ele_velocity.set_field(mesh_->region_db().get_region_set("ALL"), ele_velocity_ptr);
-		data_->data_vec_ = ele_flux_ptr->get_data_vec();
+		data_->full_solution = ele_flux_ptr->get_data_vec();
 
 		ele_pressure_ptr = std::make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
 		uint p_ele_component = 0;

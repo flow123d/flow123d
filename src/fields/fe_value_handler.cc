@@ -93,12 +93,11 @@ FEValueHandler<elemdim, spacedim, Value>::FEValueHandler()
 template <int elemdim, int spacedim, class Value>
 void FEValueHandler<elemdim, spacedim, Value>::initialize(FEValueInitData init_data)
 {
-	if (dof_indices.size() > 0)
+	if (dh_)
 		WarningOut() << "Multiple initialization of FEValueHandler!";
 
 	dh_ = init_data.dh;
 	data_vec_ = init_data.data_vec;
-    dof_indices.resize(init_data.ndofs);
     value_.set_n_comp(init_data.n_comp);
     comp_index_ = init_data.comp_index;
 
@@ -127,9 +126,10 @@ void FEValueHandler<elemdim, spacedim, Value>::value_list(const std::vector< Poi
     ASSERT_PTR(map_).error();
     ASSERT_EQ( point_list.size(), value_list.size() ).error();
 
-    const DHCellAccessor cell = dh_->cell_accessor_from_element( elm.idx() );
-    if (boundary_dofs_) this->get_dof_indices( elm, dof_indices);
-    else cell.get_loc_dof_indices( dof_indices );
+	const DHCellAccessor cell = dh_->cell_accessor_from_element( elm.idx() );
+	LocDofVec loc_dofs;
+	if (boundary_dofs_) loc_dofs = this->get_loc_dof_indices(elm.idx());
+	else loc_dofs = cell.get_loc_dof_indices();
 
     arma::mat map_mat = map_->element_map(elm);
     for (unsigned int k=0; k<point_list.size(); k++) {
@@ -141,9 +141,9 @@ void FEValueHandler<elemdim, spacedim, Value>::value_list(const std::vector< Poi
 
 		Value envelope(value_list[k]);
 		envelope.zeros();
-		for (unsigned int i=0; i<dh_->ds()->fe(elm).get<elemdim>()->n_dofs(); i++) {
-			value_list[k] += data_vec_[dof_indices[i]]
-										  * FEShapeHandler<Value::rank_, elemdim, spacedim, Value>::fe_value(fe_values, i, 0, comp_index_);
+		for (unsigned int i=0; i<loc_dofs.n_elem; i++) {
+			value_list[k] += data_vec_[loc_dofs[i]]
+							* FEShapeHandler<Value::rank_, elemdim, spacedim, Value>::fe_value(fe_values, i, 0, comp_index_);
 		}
 	}
 }
@@ -167,26 +167,14 @@ unsigned int FEValueHandler<elemdim, spacedim, Value>::compute_quadrature(std::v
 }
 
 
-template <int elemdim, int spacedim, class Value>
-unsigned int FEValueHandler<elemdim, spacedim, Value>::get_dof_indices(const ElementAccessor<3> &cell, std::vector<LongIdx> &indices) const
-{
-    unsigned int ndofs = this->value_.n_rows() * this->value_.n_cols();
-    for (unsigned int k=0; k<ndofs; k++) {
-        indices[k] = (*boundary_dofs_)[ndofs*cell.idx()+k];
-    }
-    return ndofs;
-}
-
-
 template <int spacedim, class Value>
 void FEValueHandler<0, spacedim, Value>::initialize(FEValueInitData init_data)
 {
-	if (dof_indices.size() > 0)
+	if (dh_)
 		WarningOut() << "Multiple initialization of FEValueHandler!";
 
 	dh_ = init_data.dh;
 	data_vec_ = init_data.data_vec;
-    dof_indices.resize(init_data.ndofs);
     value_.set_n_comp(init_data.n_comp);
 }
 
@@ -198,27 +186,17 @@ void FEValueHandler<0, spacedim, Value>::value_list(const std::vector< Point >  
 	ASSERT_EQ( point_list.size(), value_list.size() ).error();
 
 	const DHCellAccessor cell = dh_->cell_accessor_from_element( elm.idx() );
-	if (boundary_dofs_) this->get_dof_indices( elm, dof_indices);
-	else cell.get_loc_dof_indices( dof_indices );
+	LocDofVec loc_dofs;
+	if (boundary_dofs_) loc_dofs = this->get_loc_dof_indices(elm.idx());
+	else loc_dofs = cell.get_loc_dof_indices();
 
 	for (unsigned int k=0; k<point_list.size(); k++) {
 		Value envelope(value_list[k]);
 		envelope.zeros();
-		for (unsigned int i=0; i<dh_->ds()->fe(elm).get<0>()->n_dofs(); i++) {
-			envelope(i / envelope.n_cols(), i % envelope.n_rows()) += data_vec_[dof_indices[i]];
+		for (unsigned int i=0; i<loc_dofs.n_elem; i++) {
+			envelope(i / envelope.n_cols(), i % envelope.n_rows()) += data_vec_[loc_dofs[i]];
 		}
 	}
-}
-
-
-template <int spacedim, class Value>
-unsigned int FEValueHandler<0, spacedim, Value>::get_dof_indices(const ElementAccessor<3> &cell, std::vector<LongIdx> &indices) const
-{
-    unsigned int ndofs = this->value_.n_rows() * this->value_.n_cols();
-    for (unsigned int k=0; k<ndofs; k++) {
-        indices[k] = (*boundary_dofs_)[ndofs*cell.idx()+k];
-    }
-    return ndofs;
 }
 
 

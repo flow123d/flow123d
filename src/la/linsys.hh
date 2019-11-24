@@ -390,7 +390,7 @@ public:
     }
 
     void set_local_system(LocalSystem & local){
-        local.eliminate_solution();
+        // local.eliminate_solution();
         arma::mat tmp = local.matrix.t();
 //         DBGCOUT(<< "\n" << tmp);
 //         DBGCOUT(<< "row dofs: \n");
@@ -405,6 +405,26 @@ public:
         
         rhs_set_values(local.matrix.n_rows, (int *)(local.row_dofs.memptr()),
                        local.rhs.memptr());
+    }
+
+    /// Sets local system, considering that the dof indices are locallized on current processor.
+    /// @param local_to_global_map - maps the local dof indices to global ones
+    void set_local_system(LocalSystem & local, const std::vector<LongIdx> & local_to_global_map){
+        // transpose the matrix to provide proper column format
+        arma::mat tmp = local.matrix.t();
+
+        // map local dof indices to global
+        uint m = local.row_dofs.n_elem,
+             n = local.col_dofs.n_elem;
+        int row_dofs[m];
+        int col_dofs[n];
+        for (uint i=0; i<m; i++)
+            row_dofs[i]= local_to_global_map[local.row_dofs[i]];
+        for (uint i=0; i<n; i++)
+            col_dofs[i]= local_to_global_map[local.col_dofs[i]];
+
+        mat_set_values(m, row_dofs, n, col_dofs, tmp.memptr());
+        rhs_set_values(m, row_dofs, local.rhs.memptr());
     }
     
     /**
