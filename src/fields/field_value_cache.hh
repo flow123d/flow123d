@@ -71,6 +71,12 @@ public:
     }
 
     /// Return data vector.
+    template<uint nr, uint nc = 1>
+    inline Armor::Mat<elm_type, nr, nc> &get(uint i) {
+        return data_.get<nr, nc>(i);
+    }
+
+    /// Return data vector.
     inline std::shared_ptr<EvalPoints> eval_points() const {
         return eval_points_;
     }
