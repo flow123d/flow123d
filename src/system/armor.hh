@@ -36,7 +36,7 @@ public:
         for (uint i = 0; i < nRows; ++i) {
             it = (listIt + i)->begin();
             for (uint j = 0; j < nCols; ++j) {
-                data[i*nCols+j] = *(it + j);
+                data[i+j*nRows] = *(it + j);
             }
         }
     }
@@ -81,10 +81,10 @@ public:
         return data[index];
     }
     inline const Type & operator()(uint row, uint col) const {
-        return data[row*nCols+col];
+        return data[row+col*nRows];
     }
     inline Type & operator()(uint row, uint col) {
-        return data[row*nCols+col];
+        return data[row+col*nRows];
     }
     inline ArmaType arma() const {
         return ArmaType(begin());
@@ -107,7 +107,7 @@ public:
         for (uint i = 0; i < nRows; ++i) {
             it = (listIt + i)->begin();
             for (uint j = 0; j < nCols; ++j) {
-                data[i*nCols+j] = *(it + j);
+                data[i+j*nRows] = *(it + j);
             }
         }
         return *this;
