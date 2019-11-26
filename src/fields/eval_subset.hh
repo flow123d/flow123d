@@ -38,13 +38,14 @@ public:
 	        << "Element of Idx: " << EI_ElementIdx::val << " is not stored in 'Field value data cache'.\n"
 			   << "Value can't be computed.\n");
 
-	typedef std::array< std::array<int, 24>, 6> PermutationIndices;
-
     /// Default constructor
-	EvalSubset() : eval_points_(nullptr) {}
+	EvalSubset() : eval_points_(nullptr), perm_indices_(nullptr), n_permutations_(0) {}
 
-    /// Constructor of bulk or side subset
-	EvalSubset(std::shared_ptr<EvalPoints> eval_points, bool side_subset = false);
+    /// Constructor of bulk (n_permutations==0) or side subset
+	EvalSubset(std::shared_ptr<EvalPoints> eval_points, unsigned int n_permutations = 0, unsigned int points_per_side = 0);
+
+    /// Destructor
+	~EvalSubset();
 
     /// Getter of eval_points
     inline std::shared_ptr<EvalPoints> eval_points() const {
@@ -68,13 +69,8 @@ public:
     Range< SidePoint > points(const DHCellSide &cell_side) const;
 
     /// Returns structure of permutation indices.
-    inline PermutationIndices &perm_indices() {
-    	return perm_indices_;
-    }
-
-    /// Returns structure of permutation indices.
-    inline const PermutationIndices &perm_indices() const {
-    	return perm_indices_;
+    inline int perm_idx_ptr(uint i_side, uint i_perm, uint i_point) const {
+    	return perm_indices_[i_side][i_perm][i_point];
     }
 
 private:
@@ -82,10 +78,14 @@ private:
     std::shared_ptr<EvalPoints> eval_points_;
     /// Index of data block according to subset in EvalPoints object.
     unsigned int subset_index_;
-    /// Indices to EvalPoints for different permutations reflecting order of points.
-    PermutationIndices perm_indices_;
+    /// Indices to EvalPoints for different sides and permutations reflecting order of points.
+    unsigned int*** perm_indices_;
     /// Number of sides (value 0 indicates bulk set)
     unsigned int n_sides_;
+    /// Number of permutations (value 0 indicates bulk set)
+    unsigned int n_permutations_;
+
+    friend class EvalPoints;
 };
 
 
@@ -165,7 +165,7 @@ public:
 
     // Local coordinates within element
     inline arma::vec loc_coords() const {
-        return this->eval_points()->local_point( subset_.perm_indices()[permutation_idx_][local_point_idx_] );
+        return this->eval_points()->local_point( this->eval_point_idx() );
     }
 
     // Global coordinates within element
@@ -188,7 +188,7 @@ public:
 
     /// Return index in EvalPoints object
     inline unsigned int eval_point_idx() const {
-        return subset_.perm_indices()[permutation_idx_][local_point_idx_];
+        return subset_.perm_idx_ptr(cell_side_.side_idx(), permutation_idx_, local_point_idx_);
     }
 
     /// Iterates to next point.

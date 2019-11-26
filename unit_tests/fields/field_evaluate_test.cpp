@@ -66,7 +66,7 @@ public:
 };
 
 
-/*TEST_F(FieldEval, eval_3d) {
+TEST_F(FieldEval, eval_3d) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
     Profiler::initialize();
@@ -95,7 +95,7 @@ public:
         }
     }
   	std::cout << "----------- end \n";
-}*/
+} // */
 
 TEST_F(FieldEval, evaluate) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");

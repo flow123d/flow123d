@@ -47,9 +47,10 @@ EvalSubset EvalPoints::add_side(const Quadrature &quad)
 {
 	check_dim(quad.dim()+1, dim);
 	unsigned int old_data_size=this->size(), new_data_size; // interval of side subset data
+	unsigned int points_per_side = quad.make_from_side<dim>(0, 0).get_points().n_vals();
 
-	EvalSubset side_set(shared_from_this(), true);
-	EvalSubset::PermutationIndices &perm_indices = side_set.perm_indices();
+	EvalSubset side_set(shared_from_this(), RefElement<dim>::n_side_permutations, points_per_side);
+	unsigned int*** perm_indices = side_set.perm_indices_;
 
     // permutation 0
     for (unsigned int i=0; i<dim+1; ++i) {  // sides
@@ -58,19 +59,21 @@ EvalSubset EvalPoints::add_side(const Quadrature &quad)
     }
     new_data_size = this->size();
     subset_starts_.push_back( new_data_size );
-    for (unsigned int i_perm=0, i_data=old_data_size; i_data<new_data_size; ++i_perm, ++i_data) {
-    	perm_indices[0][i_perm] = i_data;
+    unsigned int i_data=old_data_size;
+    for (unsigned int i_side=0; i_side<dim+1; ++i_side) {
+        for (unsigned int i_point=0; i_point<points_per_side; ++i_point) {
+        	perm_indices[i_side][0][i_point] = i_data;
+        	++i_data;
+        }
     }
 
     // permutation 1...N
-    for (unsigned int j=1; j<RefElement<dim>::n_side_permutations; ++j) {
-        unsigned int i_perm=0;
-        for (unsigned int i=0; i<dim+1; ++i) {  // sides
-            Quadrature high_dim_q = quad.make_from_side<dim>(i, j);
+    for (unsigned int i_perm=1; i_perm<RefElement<dim>::n_side_permutations; ++i_perm) {
+        for (unsigned int i_side=0; i_side<dim+1; ++i_side) {
+            Quadrature high_dim_q = quad.make_from_side<dim>(i_side, i_perm);
             const Armor::array & quad_points = high_dim_q.get_points();
-            for (uint k=0; k<quad_points.n_vals(); ++k) {
-            	perm_indices[j][i_perm] = this->find_permute_point<dim>( quad_points.get<dim>(k).arma(), old_data_size, new_data_size );
-            	++i_perm;
+            for (unsigned int i_point=0; i_point<quad_points.n_vals(); ++i_point) {
+            	perm_indices[i_side][i_perm][i_point] = this->find_permute_point<dim>( quad_points.get<dim>(i_point).arma(), old_data_size, new_data_size );
             }
         }
     }

@@ -25,8 +25,34 @@
  * Implementation of EvalSubset methods.
  */
 
-EvalSubset::EvalSubset(std::shared_ptr<EvalPoints> eval_points, bool side_subset)
-: eval_points_(eval_points), subset_index_(eval_points_->n_subsets()), n_sides_(side_subset ? (eval_points->point_dim()+1) : 0) {}
+EvalSubset::EvalSubset(std::shared_ptr<EvalPoints> eval_points, unsigned int n_permutations, unsigned int points_per_side)
+: eval_points_(eval_points), subset_index_(eval_points_->n_subsets()), n_permutations_(n_permutations) {
+    if (n_permutations_==0) { //bulk subset
+        n_sides_ = 0;
+        perm_indices_ = nullptr;
+    } else {
+        n_sides_ = eval_points->point_dim()+1;
+        perm_indices_ = new unsigned int** [n_sides_];
+        for (unsigned int i_side=0; i_side<n_sides_; ++i_side) {
+            perm_indices_[i_side] = new unsigned int* [n_permutations_];
+            for (unsigned int i_perm=0; i_perm<n_permutations_; ++i_perm) {
+                perm_indices_[i_side][i_perm] = new unsigned int [points_per_side];
+            }
+        }
+    }
+}
+
+EvalSubset::~EvalSubset() {
+    /*if (perm_indices_!=nullptr) {
+        for (unsigned int i_side=0; i_side<n_sides_; ++i_side) {
+            for (unsigned int i_perm=0; i_perm<n_permutations_; ++i_perm) {
+                delete perm_indices_[i_side][i_perm];
+            }
+            delete perm_indices_[i_side];
+        }
+        delete perm_indices_;
+    }*/
+}
 
 Range< BulkPoint > EvalSubset::points(const DHCellAccessor &cell) const {
     ASSERT_EQ(n_sides_, 0).error("Method points with DHCellAccessor argument must be call for bulk subset!\n");
@@ -46,8 +72,8 @@ Range< SidePoint > EvalSubset::points(const DHCellSide &cell_side) const {
     unsigned int begin_idx = eval_points_->subset_begin(subset_index_);
     unsigned int end_idx = eval_points_->subset_end(subset_index_);
     unsigned int points_per_side = (end_idx - begin_idx) / this->n_sides();
-    auto bgn_it = make_iter<SidePoint>( SidePoint(cell_side, *this, cell_side.side_idx() * points_per_side ) );
-    auto end_it = make_iter<SidePoint>( SidePoint(cell_side, *this, (cell_side.side_idx()+1) * points_per_side ) );
+    auto bgn_it = make_iter<SidePoint>( SidePoint(cell_side, *this, 0 ) );
+    auto end_it = make_iter<SidePoint>( SidePoint(cell_side, *this, points_per_side ) );
     return Range<SidePoint>(bgn_it, end_it);
 }
 
