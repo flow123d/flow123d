@@ -716,7 +716,7 @@ void Field<spacedim, Value>::cache_update(ElementCacheMap &cache_map) {
         region_it->second.push_back( elm );
     }
     for (typename std::map<unsigned int, ElementSet>::iterator it=region_data_map.begin(); it!=region_data_map.end(); ++it) {
-        region_fields_[it->first]->loc_point_value( it->second, cache_map, field_value_cache );
+        //region_fields_[it->first]->loc_point_value( it->second, cache_map, field_value_cache );
     }
 }
 

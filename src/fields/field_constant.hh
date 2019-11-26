@@ -82,9 +82,9 @@ public:
     virtual void value_list (const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
                        std::vector<typename Value::return_type>  &value_list);
 
-    void loc_point_value(const std::vector< ElementAccessor<spacedim> > &element_set,
+    /*void loc_point_value(const std::vector< ElementAccessor<spacedim> > &element_set,
             ElementCacheMap &cache_map,
-	        FieldValueCache<Value> &data_cache) override;
+	        FieldValueCache<Value> &data_cache) override;*/
 
 
     virtual ~FieldConstant();
