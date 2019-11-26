@@ -28,20 +28,25 @@
  * Implementation of FieldValueCache methods
  */
 
-template<class Value>
-FieldValueCache<Value>::FieldValueCache()
-: data_(0, Value::NRows_, Value::NCols_), eval_points_(nullptr), element_cache_map_(nullptr), dim_(EvalPoints::undefined_dim) {}
+template<class elm_type, class Value>
+FieldValueCache<elm_type, Value>::FieldValueCache(unsigned int n_rows, unsigned int n_cols)
+: data_(0, n_rows, n_cols), eval_points_(nullptr), element_cache_map_(nullptr), dim_(EvalPoints::undefined_dim) {}
 
-template<class Value>
-FieldValueCache<Value>::FieldValueCache(std::shared_ptr<EvalPoints> eval_points, const ElementCacheMap *cache_map, unsigned int n_cache_points)
-: data_(n_cache_points * eval_points->size(), Value::NRows_, Value::NCols_),
-  eval_points_(eval_points), element_cache_map_(cache_map), dim_(eval_points->point_dim()) {}
+template<class elm_type, class Value>
+FieldValueCache<elm_type, Value>::~FieldValueCache() {}
 
-template<class Value>
-FieldValueCache<Value>::~FieldValueCache() {}
+template<class elm_type, class Value>
+void FieldValueCache<elm_type, Value>::init(std::shared_ptr<EvalPoints> eval_points, const ElementCacheMap *cache_map, unsigned int n_cache_points) {
+	ASSERT_EQ(dim_, EvalPoints::undefined_dim).error("Repeated initialization!\n");
 
-template<class Value>
-void FieldValueCache<Value>::mark_used(EvalSubset sub_set) {
+    data_.resize(n_cache_points * eval_points->size()),
+    eval_points_ = eval_points;
+    element_cache_map_ = cache_map;
+    dim_ = eval_points->point_dim();
+}
+
+template<class elm_type, class Value>
+void FieldValueCache<elm_type, Value>::mark_used(EvalSubset sub_set) {
     used_subsets_.insert(sub_set.get_subset_idx());
 }
 
@@ -96,14 +101,10 @@ void ElementCacheMap::prepare_elements_to_update() {
 		elm_idx_[cache_pos] = el_idx;
         cache_pos++;
     }
-    std::cout << "ElementCacheMap::prepare_elements_to_update: " << begin_idx_ << ", " << end_idx_ << std::endl;
-    for (auto i : added_elements_) std::cout << " - " << i;
-    std::cout << std::endl;
 }
 
 
 void ElementCacheMap::clear_elements_to_update() {
-	std::cout << "ElementCacheMap::clear_elements_to_update" << std::endl;
 	added_elements_.clear();
 }
 
@@ -121,8 +122,8 @@ DHCellAccessor & ElementCacheMap::operator() (DHCellAccessor &dh_cell) const {
  * Explicit instantiation of templates
  */
 
-template class FieldValueCache<FieldValue<0>::Enum >;    // NOT tested, necessary for linking!
-template class FieldValueCache<FieldValue<0>::Integer >; // NOT tested, necessary for linking!
-template class FieldValueCache<FieldValue<0>::Scalar >;
-template class FieldValueCache<FieldValue<3>::VectorFixed >;
-template class FieldValueCache<FieldValue<3>::TensorFixed >;
+template class FieldValueCache<unsigned int, unsigned int>;    // NOT tested, necessary for linking!
+template class FieldValueCache<int, int>;             // NOT tested, necessary for linking!
+template class FieldValueCache<double, double>;
+template class FieldValueCache<double, arma::vec3>;
+template class FieldValueCache<double, arma::mat33>;

@@ -380,7 +380,7 @@ protected:
     /**
      * Field value data cache of elements of dimension 1,2,3
      */
-    std::array< FieldValueCache<Value>, 3 > value_cache_;
+    std::array< FieldValueCache<typename Value::element_type, typename Value::return_type>, 3 > value_cache_;
 
 
 

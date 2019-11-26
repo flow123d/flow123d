@@ -40,7 +40,10 @@
 
 template<int spacedim, class Value>
 Field<spacedim,Value>::Field()
-: data_(std::make_shared<SharedData>())
+: data_(std::make_shared<SharedData>()),
+  value_cache_({ FieldValueCache<typename Value::element_type, typename Value::return_type>(Value::NRows_, Value::NCols_),
+                 FieldValueCache<typename Value::element_type, typename Value::return_type>(Value::NRows_, Value::NCols_),
+                 FieldValueCache<typename Value::element_type, typename Value::return_type>(Value::NRows_, Value::NCols_) })
 {
 	// n_comp is nonzero only for variable size vectors Vector, VectorEnum, ..
 	// this invariant is kept also by n_comp setter
@@ -53,8 +56,10 @@ Field<spacedim,Value>::Field()
 
 template<int spacedim, class Value>
 Field<spacedim,Value>::Field(const string &name, bool bc)
-: data_(std::make_shared<SharedData>())
-
+: data_(std::make_shared<SharedData>()),
+  value_cache_({ FieldValueCache<typename Value::element_type, typename Value::return_type>(Value::NRows_, Value::NCols_),
+                 FieldValueCache<typename Value::element_type, typename Value::return_type>(Value::NRows_, Value::NCols_),
+                 FieldValueCache<typename Value::element_type, typename Value::return_type>(Value::NRows_, Value::NCols_) })
 {
 		// n_comp is nonzero only for variable size vectors Vector, VectorEnum, ..
 		// this invariant is kept also by n_comp setter
@@ -69,7 +74,10 @@ Field<spacedim,Value>::Field(const string &name, bool bc)
 
 template<int spacedim, class Value>
 Field<spacedim,Value>::Field(unsigned int component_index, string input_name, string name, bool bc)
-: data_(std::make_shared<SharedData>())
+: data_(std::make_shared<SharedData>()),
+  value_cache_({ FieldValueCache<typename Value::element_type, typename Value::return_type>(Value::NRows_, Value::NCols_),
+                 FieldValueCache<typename Value::element_type, typename Value::return_type>(Value::NRows_, Value::NCols_),
+                 FieldValueCache<typename Value::element_type, typename Value::return_type>(Value::NRows_, Value::NCols_) })
 {
 	// n_comp is nonzero only for variable size vectors Vector, VectorEnum, ..
 	// this invariant is kept also by n_comp setter
@@ -88,7 +96,8 @@ Field<spacedim,Value>::Field(const Field &other)
 : FieldCommon(other),
   data_(other.data_),
   region_fields_(other.region_fields_),
-  factories_(other.factories_)
+  factories_(other.factories_),
+  value_cache_(other.value_cache_)
 {
 	if (other.no_check_control_field_)
 		no_check_control_field_ =  make_shared<ControlField>(*other.no_check_control_field_);
@@ -121,6 +130,7 @@ Field<spacedim,Value> &Field<spacedim,Value>::operator=(const Field<spacedim,Val
 	data_ = other.data_;
 	factories_ = other.factories_;
 	region_fields_ = other.region_fields_;
+	value_cache_ = other.value_cache_;
 
 	if (other.no_check_control_field_) {
 		no_check_control_field_ =  make_shared<ControlField>(*other.no_check_control_field_);
@@ -690,7 +700,7 @@ void Field<spacedim, Value>::cache_allocate(EvalSubset sub_set, const ElementCac
     unsigned int point_dim = sub_set.eval_points()->point_dim();
 
     if ( value_cache_[point_dim-1].dim()==EvalPoints::undefined_dim )
-        value_cache_[point_dim-1] = FieldValueCache<Value>(sub_set.eval_points(), cache_map, ElementCacheMap::n_cached_elements);
+        value_cache_[point_dim-1].init(sub_set.eval_points(), cache_map, ElementCacheMap::n_cached_elements);
     // else TODO check same sub_set.eval_points()
     value_cache_[point_dim-1].mark_used(sub_set);
 }
@@ -702,7 +712,7 @@ void Field<spacedim, Value>::cache_update(ElementCacheMap &cache_map) {
 
     std::map<unsigned int, ElementSet> region_data_map; // map of data for different regions
     unsigned int dim = cache_map.dim();
-    FieldValueCache<Value> &field_value_cache = value_cache_[dim-1];
+    FieldValueCache<typename Value::element_type, typename Value::return_type> &field_value_cache = value_cache_[dim-1];
     const std::unordered_set<unsigned int> &added_elements = cache_map.added_elements();
 
     for (const auto &elm_idx : added_elements) { // distribute elements to regions

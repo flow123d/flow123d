@@ -31,19 +31,19 @@ class ElementCacheMap;
 class DHCellAccessor;
 
 
-template<class Value>
+template<class elm_type, class Value>
 class FieldValueCache {
 public:
-	typedef typename Value::element_type elm_type;
-
-    /// Default constructor
-    FieldValueCache();
+	//typedef typename Value::element_type elm_type;
 
     /// Constructor
-    FieldValueCache(std::shared_ptr<EvalPoints> eval_points, const ElementCacheMap *cache_map, unsigned int n_cache_points);
+    FieldValueCache(unsigned int n_rows, unsigned int n_cols);
 
     /// Destructor
     ~FieldValueCache();
+
+    /// Constructor
+    void init(std::shared_ptr<EvalPoints> eval_points, const ElementCacheMap *cache_map, unsigned int n_cache_points);
 
     /// Marks the used local points
     void mark_used(EvalSubset sub_set);
