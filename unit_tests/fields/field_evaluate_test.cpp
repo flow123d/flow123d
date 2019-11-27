@@ -41,16 +41,28 @@ public:
                         .description("")
                         .units( UnitSI::dimensionless() )
                         .flags_add(in_main_matrix);
+
+            for (unsigned int i=0; i<3; ++i)
+                elm_cache_map_[i].init(i+1);
         }
 
         ElementCacheMap *get_element_cache_map(unsigned int dim) {
-            return &this->elm_cache_map_[dim-1];
+            return &elm_cache_map_[dim-1];
         }
+
+        /// Add DHCellAccessor to appropriate ElementDataCache.
+        void add_cell_to_cache(const DHCellAccessor &cell) {
+        	elm_cache_map_[cell.dim()-1].add(cell);
+        }
+
 
         // fields
         Field<3, FieldValue<3>::Scalar > scalar_field;
         Field<3, FieldValue<3>::VectorFixed > vector_field;
         Field<3, FieldValue<3>::TensorFixed > tensor_field;
+        /// Element cache map of dimensions 1,2,3
+        std::array< ElementCacheMap, 3 > elm_cache_map_;
+
     };
 
     FieldEval() {
