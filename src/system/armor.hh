@@ -156,47 +156,6 @@ inline bool is_close(Mat<Type, nRows, nCols> a, Mat<Type, nRows, nCols> b, doubl
 }
 
 
-template <class Type, uint nRows, uint nCols>
-inline Type dot(const Mat<Type, nRows, nCols> & a, const Mat<Type, nRows, nCols> & b) {
-    return arma::dot(a.arma(), b.arma());
-}
-
-template <class Type, uint nRows, uint nCols>
-inline typename Mat<Type, nRows, nCols>::ArmaType operator+(const Mat<Type, nRows, nCols> & a, const Mat<Type, nRows, nCols> & b) {
-    return a.arma() + b.arma();
-}
-
-template <class Type, uint nRows, uint nCols>
-inline typename Mat<Type, nRows, nCols>::ArmaType operator-(const Mat<Type, nRows, nCols> & a, const Mat<Type, nRows, nCols> & b) {
-    return a.arma() - b.arma();
-}
-
-template <class Type, uint nRows, uint nCols>
-inline typename Mat<Type, nRows, nCols>::ArmaType operator*(const Mat<Type, nRows, nCols> & a, const Mat<Type, nRows, nCols> & b) {
-    return a.arma() * b.arma();
-}
-
-template <class Type, uint nRows, uint nCols>
-inline typename Mat<Type, nRows, nCols>::ArmaType operator%(const Mat<Type, nRows, nCols> & a, const Mat<Type, nRows, nCols> & b) {
-    return a.arma() % b.arma();
-}
-
-template <class Type, uint nRows, uint nCols>
-inline typename Mat<Type, nRows, nCols>::ArmaType operator*(Type number, const Mat<Type, nRows, nCols> & a) {
-    return number * a.arma();
-}
-
-template <class Type, uint nRows, uint nCols>
-inline typename Mat<Type, nRows, nCols>::ArmaType operator/(const Mat<Type, nRows, nCols> & a, Type number) {
-    return a.arma() / number;
-}
-
-
-template <uint N>
-using vec = Mat<double, N, 1>;
-
-template <uint N, uint M>
-using mat = Mat<double, N, M>;
 
 
 
@@ -283,6 +242,48 @@ private:
     Type * data_;
 };
 
+
+template <class Type, uint nRows, uint nCols>
+inline Type dot(const Mat<Type, nRows, nCols> & a, const Mat<Type, nRows, nCols> & b) {
+    return arma::dot(a.arma(), b.arma());
+}
+
+template <class Type, uint nRows, uint nCols>
+inline typename Mat<Type, nRows, nCols>::ArmaType operator+(const Mat<Type, nRows, nCols> & a, const Mat<Type, nRows, nCols> & b) {
+    return a.arma() + b.arma();
+}
+
+template <class Type, uint nRows, uint nCols>
+inline typename Mat<Type, nRows, nCols>::ArmaType operator-(const Mat<Type, nRows, nCols> & a, const Mat<Type, nRows, nCols> & b) {
+    return a.arma() - b.arma();
+}
+
+template <class Type, uint nRows, uint nCols>
+inline typename Mat<Type, nRows, nCols>::ArmaType operator*(const Mat<Type, nRows, nCols> & a, const Mat<Type, nRows, nCols> & b) {
+    return a.arma() * b.arma();
+}
+
+template <class Type, uint nRows, uint nCols>
+inline typename Mat<Type, nRows, nCols>::ArmaType operator%(const Mat<Type, nRows, nCols> & a, const Mat<Type, nRows, nCols> & b) {
+    return a.arma() % b.arma();
+}
+
+template <class Type, uint nRows, uint nCols>
+inline typename Mat<Type, nRows, nCols>::ArmaType operator*(Type number, const Mat<Type, nRows, nCols> & a) {
+    return number * a.arma();
+}
+
+template <class Type, uint nRows, uint nCols>
+inline typename Mat<Type, nRows, nCols>::ArmaType operator/(const Mat<Type, nRows, nCols> & a, Type number) {
+    return a.arma() / number;
+}
+
+
+template <uint N>
+using vec = Mat<double, N, 1>;
+
+template <uint N, uint M>
+using mat = Mat<double, N, M>;
 
 
 
