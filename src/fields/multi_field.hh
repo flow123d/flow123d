@@ -251,7 +251,7 @@ public:
     void set_input_list(const Input::Array &list, const TimeGovernor &tg) override;
 
     /// Implements FieldCommon::cache_allocate
-    void cache_allocate(EvalSubset sub_set, const ElementCacheMap *cache_map) override;
+    void cache_allocate(std::shared_ptr<EvalSubset> sub_set, const ElementCacheMap *cache_map) override;
 
     /// Implements FieldCommon::cache_update
     void cache_update(ElementCacheMap &cache_map) override;

@@ -82,11 +82,11 @@ public:
      * Returns an object referencing to the EvalPoints and list of its points.
      */
     template <unsigned int dim>
-    EvalSubset add_bulk(const Quadrature &);
+    std::shared_ptr<EvalSubset> add_bulk(const Quadrature &);
 
     /// The same as add_bulk but for points on sides.
     template <unsigned int dim>
-	EvalSubset add_side(const Quadrature &);
+    std::shared_ptr<EvalSubset> add_side(const Quadrature &);
 
 private:
     /// Adds set of local point to local_points_ (bulk or side of given permutation).

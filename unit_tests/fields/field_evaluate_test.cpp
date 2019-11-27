@@ -79,18 +79,18 @@ TEST_F(FieldEval, eval_3d) {
 	std::shared_ptr<EvalPoints> feval = std::make_shared<EvalPoints>();
     Quadrature *q_bulk = new QGauss(3, 2);
     Quadrature *q_side = new QGauss(2, 2);
-    EvalSubset bulk_points = feval->add_bulk<3>(*q_bulk );
-    EvalSubset side_points = feval->add_side<3>(*q_side );
+    std::shared_ptr<EvalSubset> bulk_points = feval->add_bulk<3>(*q_bulk );
+    std::shared_ptr<EvalSubset> side_points = feval->add_side<3>(*q_side );
     DHCellAccessor dh_cell(dh.get(), 3);
 
     std::cout << "Print bulk points:" << std::endl;
-    for (auto p : bulk_points.points(dh_cell)) {
+    for (auto p : bulk_points->points(dh_cell)) {
         std::cout << "--- bulk point:" << std::endl << p.loc_coords();
     }
     std::cout << "Print side points:" << std::endl;
     for (auto side_acc : dh_cell.side_range()) {
         std::cout << "- side idx: " << side_acc.side_idx() << ", permutation: " << side_acc.element()->permutation_idx( side_acc.side_idx() ) << std::endl;
-        for ( auto p : side_points.points(side_acc) ) {
+        for ( auto p : side_points->points(side_acc) ) {
             std::cout << "--- side point" << std::endl << p.loc_coords();
         }
     }
@@ -111,9 +111,9 @@ TEST_F(FieldEval, evaluate) {
 	std::shared_ptr<EvalPoints> feval = std::make_shared<EvalPoints>();
     Quadrature *q_bulk = new QGauss(3, 2);
     Quadrature *q_side = new QGauss(2, 2);
-    EvalSubset mass_eval = feval->add_bulk<3>(*q_bulk );
-    EvalSubset side_eval = feval->add_side<3>(*q_side );
-    //EvalSubset this->ngh_side_eval;
+    std::shared_ptr<EvalSubset> mass_eval = feval->add_bulk<3>(*q_bulk );
+    std::shared_ptr<EvalSubset> side_eval = feval->add_side<3>(*q_side );
+    //std::shared_ptr<EvalSubset> this->ngh_side_eval;
 
     data_->cache_allocate(mass_eval, data_->get_element_cache_map(3));
     data_->cache_allocate(side_eval, data_->get_element_cache_map(3));

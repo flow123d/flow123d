@@ -46,7 +46,7 @@ public:
     void init(std::shared_ptr<EvalPoints> eval_points, const ElementCacheMap *cache_map, unsigned int n_cache_points);
 
     /// Marks the used local points
-    void mark_used(EvalSubset sub_set);
+    void mark_used(std::shared_ptr<EvalSubset> sub_set);
 
     /// Getter for subsets of used points
     inline const std::set<int> &used_subsets() const {

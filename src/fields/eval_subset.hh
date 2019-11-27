@@ -31,7 +31,7 @@ class BulkPoint;
 class SidePoint;
 
 
-class EvalSubset {
+class EvalSubset : public std::enable_shared_from_this<EvalSubset> {
 public:
 	TYPEDEF_ERR_INFO(EI_ElementIdx, unsigned int);
 	DECLARE_EXCEPTION(ExcElementNotInCache,
@@ -96,12 +96,12 @@ public:
     : local_point_idx_(0) {}
 
     /// Constructor
-	BulkPoint(DHCellAccessor dh_cell, EvalSubset bulk_subset, unsigned int loc_point_idx)
+	BulkPoint(DHCellAccessor dh_cell, std::shared_ptr<const EvalSubset> bulk_subset, unsigned int loc_point_idx)
     : dh_cell_(dh_cell), subset_(bulk_subset), local_point_idx_(loc_point_idx) {}
 
     /// Getter of composed quadrature
     inline std::shared_ptr<EvalPoints> eval_points() const {
-        return subset_.eval_points();
+        return subset_->eval_points();
     }
 
     /// Local coordinates within element
@@ -140,8 +140,8 @@ public:
 private:
     /// DOF handler accessor of element.
     DHCellAccessor dh_cell_;
-    /// Reference to bulk point set.
-    EvalSubset subset_;
+    /// Pointer to bulk point set.
+    std::shared_ptr<const EvalSubset> subset_;
     /// Index of the local point in bulk point set.
     unsigned int local_point_idx_;
 };
@@ -154,13 +154,13 @@ public:
     : local_point_idx_(0) {}
 
     /// Constructor
-	SidePoint(DHCellSide cell_side, EvalSubset subset, unsigned int local_point_idx)
+	SidePoint(DHCellSide cell_side, std::shared_ptr<const EvalSubset> subset, unsigned int local_point_idx)
     : cell_side_(cell_side), subset_(subset), local_point_idx_(local_point_idx),
 	  permutation_idx_( cell_side.element()->permutation_idx( cell_side_.side_idx() ) ) {}
 
     /// Getter of evaluation points
     inline std::shared_ptr<EvalPoints> eval_points() const {
-        return subset_.eval_points();
+        return subset_->eval_points();
     }
 
     // Local coordinates within element
@@ -188,7 +188,7 @@ public:
 
     /// Return index in EvalPoints object
     inline unsigned int eval_point_idx() const {
-        return subset_.perm_idx_ptr(cell_side_.side_idx(), permutation_idx_, local_point_idx_);
+        return subset_->perm_idx_ptr(cell_side_.side_idx(), permutation_idx_, local_point_idx_);
     }
 
     /// Iterates to next point.
@@ -204,8 +204,8 @@ public:
 private:
     /// DOF handler accessor of element side.
     DHCellSide cell_side_;
-    /// Reference to side point set
-    EvalSubset subset_;
+    /// Pointer to side point set
+    std::shared_ptr<const EvalSubset> subset_;
     /// Index of the local point in the composed quadrature.
     unsigned int local_point_idx_;
     /// Permutation index corresponding with DHCellSide

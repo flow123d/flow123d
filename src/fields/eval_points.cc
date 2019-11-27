@@ -32,25 +32,25 @@ EvalPoints::EvalPoints()
 }
 
 template <unsigned int dim>
-EvalSubset EvalPoints::add_bulk(const Quadrature &quad)
+std::shared_ptr<EvalSubset> EvalPoints::add_bulk(const Quadrature &quad)
 {
 	check_dim(quad.dim(), dim);
 
-	EvalSubset bulk_set(shared_from_this() );
+	std::shared_ptr<EvalSubset> bulk_set = std::make_shared<EvalSubset>(shared_from_this() );
 	this->add_local_points<dim>( quad.get_points() );
 	subset_starts_.push_back( this->size() );
     return bulk_set;
 }
 
 template <unsigned int dim>
-EvalSubset EvalPoints::add_side(const Quadrature &quad)
+std::shared_ptr<EvalSubset> EvalPoints::add_side(const Quadrature &quad)
 {
 	check_dim(quad.dim()+1, dim);
 	unsigned int old_data_size=this->size(), new_data_size; // interval of side subset data
 	unsigned int points_per_side = quad.make_from_side<dim>(0, 0).get_points().n_vals();
 
-	EvalSubset side_set(shared_from_this(), RefElement<dim>::n_side_permutations, points_per_side);
-	unsigned int*** perm_indices = side_set.perm_indices_;
+	std::shared_ptr<EvalSubset> side_set = std::make_shared<EvalSubset>(shared_from_this(), RefElement<dim>::n_side_permutations, points_per_side);
+	unsigned int*** perm_indices = side_set->perm_indices_;
 
     // permutation 0
     for (unsigned int i=0; i<dim+1; ++i) {  // sides
@@ -112,12 +112,12 @@ unsigned int EvalPoints::check_dim(unsigned int quad_dim, unsigned int obj_dim) 
 }
 
 
-template EvalSubset EvalPoints::add_bulk<1>(const Quadrature &);
-template EvalSubset EvalPoints::add_bulk<2>(const Quadrature &);
-template EvalSubset EvalPoints::add_bulk<3>(const Quadrature &);
-template EvalSubset EvalPoints::add_side<1>(const Quadrature &);
-template EvalSubset EvalPoints::add_side<2>(const Quadrature &);
-template EvalSubset EvalPoints::add_side<3>(const Quadrature &);
+template std::shared_ptr<EvalSubset> EvalPoints::add_bulk<1>(const Quadrature &);
+template std::shared_ptr<EvalSubset> EvalPoints::add_bulk<2>(const Quadrature &);
+template std::shared_ptr<EvalSubset> EvalPoints::add_bulk<3>(const Quadrature &);
+template std::shared_ptr<EvalSubset> EvalPoints::add_side<1>(const Quadrature &);
+template std::shared_ptr<EvalSubset> EvalPoints::add_side<2>(const Quadrature &);
+template std::shared_ptr<EvalSubset> EvalPoints::add_side<3>(const Quadrature &);
 template void EvalPoints::add_local_points<1>(const Armor::array &);
 template void EvalPoints::add_local_points<2>(const Armor::array &);
 template void EvalPoints::add_local_points<3>(const Armor::array &);

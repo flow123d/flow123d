@@ -46,8 +46,8 @@ void FieldValueCache<elm_type, Value>::init(std::shared_ptr<EvalPoints> eval_poi
 }
 
 template<class elm_type, class Value>
-void FieldValueCache<elm_type, Value>::mark_used(EvalSubset sub_set) {
-    used_subsets_.insert(sub_set.get_subset_idx());
+void FieldValueCache<elm_type, Value>::mark_used(std::shared_ptr<EvalSubset> sub_set) {
+    used_subsets_.insert(sub_set->get_subset_idx());
 }
 
 
