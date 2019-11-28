@@ -26,15 +26,14 @@
 #include <new>                                // for operator new[]
 #include <string>                             // for operator<<
 #include <vector>                             // for vector
+#include "fem/element_values.hh"              // for ElementValuesBase, ElementValues, ElemSideValues
 #include "fem/fe_values_views.hh"             // for FEValuesViews
 #include "mesh/ref_element.hh"                // for RefElement
 #include "mesh/accessors.hh"
 #include "fem/update_flags.hh"                // for UpdateFlags
 
-class DOFHandlerBase;
 class Quadrature;
 template<unsigned int dim> class FiniteElement;
-template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 
 
 
@@ -75,9 +74,6 @@ public:
      */
     std::vector<std::vector<arma::mat> > ref_shape_grads;
     
-    /// Barycentric coordinates of quadrature points.
-    std::vector<arma::vec> bar_coords;
-    
     /// Number of quadrature points.
     unsigned int n_points;
     
@@ -105,37 +101,6 @@ public:
      */
     void allocate(unsigned int size, UpdateFlags flags, unsigned n_comp);
 
-
-
-    /**
-     * @brief Transformed quadrature weights.
-     *
-     * Values at quadrature points of the product of the Jacobian
-     * determinant of the mapping and the weight at the particular
-     * quadrature point.
-     */
-    std::vector<double> JxW_values;
-
-    /**
-     * @brief Jacobians of the mapping at the quadrature points.
-     */
-    std::vector<arma::mat::fixed<spacedim,dim> > jacobians;
-
-    /**
-     * @brief Determinants of Jacobians at quadrature points.
-     */
-    std::vector<double> determinants;
-
-    /**
-     * @brief Inverse Jacobians at the quadrature points.
-     */
-    std::vector<arma::mat::fixed<dim,spacedim> > inverse_jacobians;
-
-    /**
-     * @brief Coordinates of quadrature points in the actual cell coordinate system.
-     */
-    std::vector<arma::vec::fixed<spacedim> > points;
-
     /**
      * @brief Shape functions evaluated at the quadrature points.
      */
@@ -148,23 +113,6 @@ public:
      */
     std::vector<std::vector<arma::vec::fixed<spacedim> > > shape_gradients;
 
-//     /**
-//      * @brief Shape functions (for vectorial finite elements) evaluated at
-//      * quadrature points.
-//      */
-//     std::vector<std::vector<arma::vec::fixed<spacedim> > > shape_vectors;
-// 
-//     /**
-//      * @brief Gradients of shape functions (for vectorial finite elements).
-//      */
-//     std::vector<std::vector<arma::mat::fixed<spacedim,spacedim> > > shape_grad_vectors;
-
-    /**
-     * @brief Normal vectors to the element at the quadrature points lying
-     * on a side.
-     */
-    std::vector<arma::vec::fixed<spacedim> > normal_vectors;
-
     /**
      * @brief Flags that indicate which finite element quantities are to be computed.
      */
@@ -173,7 +121,7 @@ public:
     /**
      * @brief Iterator to the last reinit-ed cell.
      */
-    ElementAccessor<3> *present_cell;
+    ElementAccessor<3> present_cell;
 
 };
 
@@ -332,7 +280,7 @@ public:
     inline double determinant(const unsigned int point_no)
     {
         ASSERT_LT_DBG(point_no, n_points_);
-        return data.determinants[point_no];
+        return elm_values->determinant(point_no);
     }
 
     /**
@@ -344,7 +292,7 @@ public:
     inline double JxW(const unsigned int point_no) override
     {
         ASSERT_LT_DBG(point_no, n_points_);
-        return data.JxW_values[point_no];
+        return elm_values->JxW(point_no);
     }
 
     /**
@@ -355,16 +303,16 @@ public:
     inline arma::vec::fixed<spacedim> point(const unsigned int point_no)
     {
         ASSERT_LT_DBG(point_no, n_points_);
-        return data.points[point_no];
+        return elm_values->point(point_no);
     }
 
     /**
 	 * @brief Return coordinates of all quadrature points in the actual cell system.
 	 *
 	 */
-	inline vector<arma::vec::fixed<spacedim> > &point_list()
+	inline const vector<arma::vec::fixed<spacedim> > &point_list() const
 	{
-	    return data.points;
+	    return elm_values->point_list();
 	}
 
 
@@ -376,7 +324,7 @@ public:
 	inline arma::vec::fixed<spacedim> normal_vector(unsigned int point_no) override
 	{
         ASSERT_LT_DBG(point_no, n_points_);
-	    return data.normal_vectors[point_no];
+	    return elm_values->normal_vector(point_no);
 	}
 	
 	/**
@@ -425,11 +373,6 @@ public:
 
 
     /**
-     * @brief Returns the quadrature in use.
-     */
-    virtual const Quadrature * get_quadrature() const = 0;
-    
-    /**
      * @brief Returns the finite element in use.
      */
     inline FiniteElement<dim> * get_fe() const
@@ -449,25 +392,25 @@ protected:
      *
      * @param fe_data Precomputed finite element data.
      */
-    void fill_data(const FEInternalData &fe_data);
+    void fill_data(const ElementValuesBase<dim,spacedim> &elm_values, const FEInternalData &fe_data);
     
     /// Compute shape functions and gradients on the actual cell for scalar FE.
-    void fill_scalar_data(const FEInternalData &fe_data);
+    void fill_scalar_data(const ElementValuesBase<dim,spacedim> &elm_values, const FEInternalData &fe_data);
     
     /// Compute shape functions and gradients on the actual cell for vectorial FE.
-    void fill_vec_data(const FEInternalData &fe_data);
+    void fill_vec_data(const ElementValuesBase<dim,spacedim> &elm_values, const FEInternalData &fe_data);
     
     /// Compute shape functions and gradients on the actual cell for vectorial FE.
-    void fill_vec_contravariant_data(const FEInternalData &fe_data);
+    void fill_vec_contravariant_data(const ElementValuesBase<dim,spacedim> &elm_values, const FEInternalData &fe_data);
     
     /// Compute shape functions and gradients on the actual cell for Raviart-Thomas FE.
-    void fill_vec_piola_data(const FEInternalData &fe_data);
+    void fill_vec_piola_data(const ElementValuesBase<dim,spacedim> &elm_values, const FEInternalData &fe_data);
     
     /// Compute shape functions and gradients on the actual cell for tensorial FE.
-    void fill_tensor_data(const FEInternalData &fe_data);
+    void fill_tensor_data(const ElementValuesBase<dim,spacedim> &elm_values, const FEInternalData &fe_data);
     
     /// Compute shape functions and gradients on the actual cell for mixed system of FE.
-    void fill_system_data(const FEInternalData &fe_data);
+    void fill_system_data(const ElementValuesBase<dim,spacedim> &elm_values, const FEInternalData &fe_data);
     
 
     /** @brief Number of integration points. */
@@ -482,6 +425,8 @@ protected:
      * @brief Data computed by the mapping and finite element.
      */
     FEValuesData<dim,spacedim> data;
+    
+    ElementValuesBase<dim,spacedim> *elm_values;
     
     /// Vector of FEValues for sub-elements of FESystem.
     std::vector<std::shared_ptr<FEValuesBase<dim,spacedim> > > fe_values_vec;
@@ -533,10 +478,7 @@ public:
      *
      * @param cell The actual cell.
      */
-    void reinit(ElementAccessor<3> &cell);
-    
-    const Quadrature *get_quadrature() const override
-    { return quadrature; }
+    void reinit(const ElementAccessor<spacedim> &cell);
     
     
     
@@ -545,15 +487,10 @@ private:
     void fill_fe_values();
     
     /**
-     * @brief The quadrature rule used to calculate integrals.
-     */
-    Quadrature *quadrature;
-    
-    /**
      * @brief Precomputed finite element data.
      */
     FEInternalData *fe_data;
-
+    
 
 };
 
@@ -595,46 +532,25 @@ public:
     virtual ~FESideValues();
 
     /**
-	 * @brief Update cell-dependent data (gradients, Jacobians etc.)
+	 * @brief Update cell-dependent FE data (values, gradients).
 	 *
-	 * @param cell The actual cell.
+	 * @param elm_data Data on actual cell (jacobian, etc.]
 	 * @param sid  Number of the side of the cell.
 	 */
-    void reinit(ElementAccessor<3> &cell,
+    void reinit(const ElementAccessor<spacedim> &cell,
         		unsigned int sid);
-
-    const Quadrature *get_quadrature() const override
-    { return &side_quadrature[side_idx_][side_perm_]; }
 
 
 private:
     
-    /**
-     * @brief Calculates the mapping data on a side of a cell.
-     *
-     * @param cell The actual cell.
-     * @param sid  Number of the side.
-     * @param q The quadrature rule with points on the side.
-     * @param data Precomputed mapping data.
-     * @param fv_data Data to be computed.
-     */
+    /// Calculates the mapping data on a side of a cell.
     void fill_fe_side_values();
-
-    /**
-     * @brief Quadrature for the integration on the element sides.
-     */
-    const Quadrature *sub_quadrature;
-
-    std::vector<std::vector<Quadrature> > side_quadrature;
-
+    
+    /// Internal data (shape functions on reference element) for all sides and permuted quadrature points.
     FEInternalData *side_fe_data[RefElement<dim>::n_sides][RefElement<dim>::n_side_permutations];
     
-    /// Current side on which FESideValues was recomputed.
-    unsigned int side_idx_;
+    LongIdx side_idx_;
     
-    /// Permutation index of current side.
-    unsigned int side_perm_;
-
 };
 
 

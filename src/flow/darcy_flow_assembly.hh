@@ -391,7 +391,7 @@ protected:
         ElementAccessor<3> ele =ele_ac.element_accessor();
         fe_values_.reinit(ele);
         unsigned int ndofs = fe_values_.get_fe()->n_dofs();
-        unsigned int qsize = fe_values_.get_quadrature()->size();
+        unsigned int qsize = fe_values_.n_points();
         auto velocity = fe_values_.vector_view(0);
 
         for (unsigned int k=0; k<qsize; k++)
