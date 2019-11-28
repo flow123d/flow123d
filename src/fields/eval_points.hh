@@ -34,7 +34,8 @@ template <int spacedim> class ElementAccessor;
 
 
 /**
- * Class holds local coordinations of evaluating points (bulk and sides).
+ * @brief Class holds local coordinations of evaluating points (bulk and sides)
+ * specified by element dimension.
  */
 class EvalPoints : public std::enable_shared_from_this<EvalPoints> {
 public:

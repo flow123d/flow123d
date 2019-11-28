@@ -31,6 +31,12 @@ class BulkPoint;
 class SidePoint;
 
 
+/**
+ * @brief Class holds set of bulk or side local points specified by dimension.
+ *
+ * It provides methods allows iterate through local points. Iterating on side-points
+ * set is possible over individual sides and different permutations.
+ */
 class EvalSubset : public std::enable_shared_from_this<EvalSubset> {
 public:
 	TYPEDEF_ERR_INFO(EI_ElementIdx, unsigned int);
@@ -89,6 +95,9 @@ private:
 };
 
 
+/**
+ * @brief Point accessor allow iterate over bulk quadrature points defined in local element coordinates.
+ */
 class BulkPoint {
 public:
     /// Default constructor
@@ -147,6 +156,9 @@ private:
 };
 
 
+/**
+ * @brief Point accessor allow iterate over quadrature points of given side defined in local element coordinates.
+ */
 class SidePoint {
 public:
     /// Default constructor

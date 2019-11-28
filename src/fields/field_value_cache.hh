@@ -31,6 +31,12 @@ class ElementCacheMap;
 class DHCellAccessor;
 
 
+/**
+ * @brief Class holds precomputed field values of selected element set.
+ *
+ * Every field in equation use own instance for every dimension of elements
+ * (typically 3 instances for dim = 1,2,3).
+ */
 template<class elm_type, class Value>
 class FieldValueCache {
 private:
@@ -106,6 +112,12 @@ private:
 };
 
 
+/**
+ * @brief Directing class of FieldValueCache.
+ *
+ * Manage storing and updating element data (elements of same dimension) to cache. We need only
+ * one shared instance of this class for all fields in equation (but typically for dim = 1,2,3).
+ */
 class ElementCacheMap {
 public:
     /// Number of cached elements which values are stored in cache.
