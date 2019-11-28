@@ -262,7 +262,7 @@ public:
 	 * 2     2
 	 * 3     6
 	 */
-	static const unsigned int n_side_permutations = (dim+1)*(2*dim*dim-5*dim+6)/6;
+	static const unsigned int n_side_permutations;
 
 	/**
 	 * Permutations of nodes on sides.
