@@ -293,9 +293,6 @@ template<> const std::vector< std::vector< std::vector<unsigned int> > > RefElem
 
 
 template<unsigned int dim>
-const unsigned int RefElement<dim>::n_side_permutations = (dim+1)*(2*dim*dim-5*dim+6)/6;
-
-template<unsigned int dim>
 auto RefElement<dim>::local_to_bary(const LocalPoint& lp) -> BaryPoint
 {
     ASSERT_EQ_DBG(lp.n_rows, dim);

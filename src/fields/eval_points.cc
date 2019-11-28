@@ -16,7 +16,6 @@
  * @author  David Flanderka
  */
 
-#include "mesh/ref_element.hh"
 #include "fields/eval_points.hh"
 #include "fields/eval_subset.hh"
 #include "quadrature/quadrature.hh"
@@ -48,8 +47,9 @@ std::shared_ptr<EvalSubset> EvalPoints::add_side(const Quadrature &quad)
 	check_dim(quad.dim()+1, dim);
 	unsigned int old_data_size=this->size(), new_data_size; // interval of side subset data
 	unsigned int points_per_side = quad.make_from_side<dim>(0, 0).get_points().n_vals();
+	unsigned int n_side_permutations = (dim+1)*(2*dim*dim-5*dim+6)/6;
 
-	std::shared_ptr<EvalSubset> side_set = std::make_shared<EvalSubset>(shared_from_this(), RefElement<dim>::n_side_permutations, points_per_side);
+	std::shared_ptr<EvalSubset> side_set = std::make_shared<EvalSubset>(shared_from_this(), n_side_permutations, points_per_side);
 	unsigned int*** perm_indices = side_set->perm_indices_;
 
     // permutation 0
@@ -68,7 +68,7 @@ std::shared_ptr<EvalSubset> EvalPoints::add_side(const Quadrature &quad)
     }
 
     // permutation 1...N
-    for (unsigned int i_perm=1; i_perm<RefElement<dim>::n_side_permutations; ++i_perm) {
+    for (unsigned int i_perm=1; i_perm<n_side_permutations; ++i_perm) {
         for (unsigned int i_side=0; i_side<dim+1; ++i_side) {
             Quadrature high_dim_q = quad.make_from_side<dim>(i_side, i_perm);
             const Armor::array & quad_points = high_dim_q.get_points();
