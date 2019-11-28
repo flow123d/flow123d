@@ -72,6 +72,12 @@ public:
     	return subset_starts_[idx+1];
     }
 
+    /// Return number of local points corresponding to subset.
+    inline int subset_size(unsigned int idx) const {
+        ASSERT_LT_DBG(idx, n_subsets());
+    	return subset_starts_[idx+1] - subset_starts_[idx];
+    }
+
     /// Return number of subsets.
     inline unsigned int n_subsets() const {
         return subset_starts_.size() - 1;

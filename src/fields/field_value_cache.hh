@@ -33,9 +33,10 @@ class DHCellAccessor;
 
 template<class elm_type, class Value>
 class FieldValueCache {
+private:
+    /// Maximal nuber of subsets.
+    static const unsigned int max_subsets = 10;
 public:
-	//typedef typename Value::element_type elm_type;
-
     /// Constructor
     FieldValueCache(unsigned int n_rows, unsigned int n_cols);
 
@@ -49,7 +50,7 @@ public:
     void mark_used(std::shared_ptr<EvalSubset> sub_set);
 
     /// Getter for subsets of used points
-    inline const std::array<int, 10> &used_subsets() const {
+    inline const std::array<int, FieldValueCache::max_subsets> &used_subsets() const {
         return used_subsets_;
     }
 
@@ -82,19 +83,25 @@ public:
     }
 
 private:
-    /// Data cache
+    /// Data cache.
     Armor::Array<elm_type> data_;
 
-    /// Holds indices of used blocks of local points
-    std::array<int, 10> used_subsets_;
+    /// Holds indices of used blocks of local points.
+    std::array<int, FieldValueCache::max_subsets> used_subsets_;
 
-    /// Pointer to EvalPoints
+    /// Indices of subsets begin and end position in data array.
+    std::array<int, FieldValueCache::max_subsets+1> subset_starts_;
+
+    /// Pointer to EvalPoints.
     std::shared_ptr<EvalPoints> eval_points_;
 
-    ///Pointer to ElementCacheMap
+    /// Pointer to ElementCacheMap.
     const ElementCacheMap *element_cache_map_;
 
-    /// Dimension (control data member)
+    /// Maximal number of elements stored in cache.
+    unsigned int n_cache_points_;
+
+    /// Dimension (control data member).
     unsigned int dim_;
 };
 

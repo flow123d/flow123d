@@ -32,6 +32,8 @@ template<class elm_type, class Value>
 FieldValueCache<elm_type, Value>::FieldValueCache(unsigned int n_rows, unsigned int n_cols)
 : data_(0, n_rows, n_cols), eval_points_(nullptr), element_cache_map_(nullptr), dim_(EvalPoints::undefined_dim) {
 	used_subsets_.fill(-1);
+	subset_starts_.fill(-1);
+	subset_starts_[0] = 0;
 }
 
 template<class elm_type, class Value>
@@ -41,7 +43,7 @@ template<class elm_type, class Value>
 void FieldValueCache<elm_type, Value>::init(std::shared_ptr<EvalPoints> eval_points, const ElementCacheMap *cache_map, unsigned int n_cache_points) {
 	ASSERT_EQ(dim_, EvalPoints::undefined_dim).error("Repeated initialization!\n");
 
-    data_.resize(n_cache_points * eval_points->size()),
+	this->n_cache_points_ = n_cache_points;
     eval_points_ = eval_points;
     element_cache_map_ = cache_map;
     dim_ = eval_points->point_dim();
@@ -51,14 +53,16 @@ template<class elm_type, class Value>
 void FieldValueCache<elm_type, Value>::mark_used(std::shared_ptr<EvalSubset> sub_set) {
     int subset_idx = sub_set->get_subset_idx();
     unsigned int i=0;
-    for (; i<10; ++i) {
+    for (; i<FieldValueCache::max_subsets; ++i) {
         if (used_subsets_[i] == subset_idx) return; // subset idx already exists
         if (used_subsets_[i] == -1) {
-        	used_subsets_[i] = subset_idx;
-        	return;
+            used_subsets_[i] = subset_idx;
+            data_.resize(data_.n_vals() + n_cache_points_ * eval_points_->subset_size(subset_idx));
+            subset_starts_[i+1] = data_.n_vals();
+            return;
         }
     }
-    ASSERT(false).error("Maximal number of subsets is 10.\n");
+    ASSERT(false)(FieldValueCache::max_subsets).error("Maximal number of subsets exceeded.\n");
 }
 
 
