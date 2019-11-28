@@ -2,6 +2,7 @@
 #define FEAL_OVERRIDE_ASSERTS
 #include <flow_gtest_mpi.hh>
 #include <mesh_constructor.hh>
+#include "arma_expect.hh"
 
 #include "fields/eval_points.hh"
 #include "fields/eval_subset.hh"
@@ -70,9 +71,7 @@ public:
         data_ = std::make_shared<EqData>();
     }
 
-    ~FieldEval() {
-        std::cout << "-- destructor \n";
-    }
+    ~FieldEval() {}
 
     std::shared_ptr<EqData> data_;
 };
@@ -95,20 +94,48 @@ TEST_F(FieldEval, eval_3d) {
     std::shared_ptr<EvalSubset> side_points = feval->add_side<3>(*q_side );
     DHCellAccessor dh_cell(dh.get(), 3);
 
-    std::cout << "Print bulk points:" << std::endl;
-    for (auto p : bulk_points->points(dh_cell)) {
-        std::cout << "--- bulk point:" << std::endl << p.loc_coords();
-    }
-    std::cout << "Print side points:" << std::endl;
-    for (auto side_acc : dh_cell.side_range()) {
-        std::cout << "- side idx: " << side_acc.side_idx() << ", permutation: " << side_acc.element()->permutation_idx( side_acc.side_idx() ) << std::endl;
-        for ( auto p : side_points->points(side_acc) ) {
-            std::cout << "--- side point" << std::endl << p.loc_coords();
+    {
+        // Test of bulk local points
+    	std::vector<arma::vec3> expected_vals = {{0.138196601125010504, 0.138196601125010504, 0.138196601125010504},
+    			                                 {0.138196601125010504, 0.138196601125010504, 0.585410196624968515},
+												 {0.138196601125010504, 0.585410196624968515, 0.138196601125010504},
+												 {0.585410196624968515, 0.138196601125010504, 0.138196601125010504}};
+    	unsigned int i=0; // iter trought expected_vals
+    	for (auto p : bulk_points->points(dh_cell)) {
+            EXPECT_ARMA_EQ(p.loc_coords(), expected_vals[i]);
+			++i;
         }
     }
-  	std::cout << "----------- end \n";
-} // */
+    {
+        // Test of side local points
+        std::vector< std::vector<arma::vec3> > expected_vals(4);
+        expected_vals[0] = { {0.166666666666666657, 0.166666666666666657, 0.0},
+                             {0.666666666666666741, 0.166666666666666657, 0.0},
+                             {0.166666666666666657, 0.666666666666666741, 0.0} };
+        expected_vals[1] = { {0.166666666666666657, 0.0, 0.166666666666666657},
+                             {0.166666666666666657, 0.0, 0.666666666666666741},
+                             {0.666666666666666741, 0.0, 0.166666666666666657} };
+        expected_vals[2] = { {0.0, 0.166666666666666657, 0.166666666666666657},
+	                         {0.0, 0.166666666666666657, 0.666666666666666741},
+                             {0.0, 0.666666666666666741, 0.166666666666666657} };
+        expected_vals[3] = { {0.666666666666666741, 0.166666666666666657, 0.166666666666666657},
+                             {0.166666666666666657, 0.166666666666666657, 0.666666666666666741},
+                             {0.166666666666666657, 0.666666666666666741, 0.166666666666666657} };
+        unsigned int i_side=0, i_point; // iter trought expected_vals
+        for (auto side_acc : dh_cell.side_range()) {
+        	i_point=0;
+            for ( auto p : side_points->points(side_acc) ) {
+            	EXPECT_ARMA_EQ(p.loc_coords(), expected_vals[i_side][i_point]);
+                ++i_point;
+            }
+            ++i_side;
+        }
+    }
+}
 
+/*
+ * Prepared test for further development
+ */
 TEST_F(FieldEval, evaluate) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
