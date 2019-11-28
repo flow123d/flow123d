@@ -1,0 +1,77 @@
+# Test goal: Richards equation with water source..
+# Author: Pavel Exner
+# Source for reference:
+#   it is the same case as test 04_02_horizontal, but with added source term 
+#   checked only qualitatively in Paraview - 'program does not fail and yes, the source term appears'
+
+flow123d_version: 3.1.0
+problem: !Coupling_Sequential
+  description: Test10 - Unsteady flow in 2D, Lumped Mixed Hybrid
+  mesh:
+    mesh_file: ../00_mesh/strip_xy.msh
+  flow_equation: !Flow_Richards_LMH
+    soil_model: irmay
+    time: # time in hours (consistent with conductivity)
+      end_time: 3000       # original experiment from UGN up to time 6000 h
+      init_dt: 1
+      # current time step enlargement logic do not allow to extent time step up to the output timestep
+      # maximum timestep wil be just 50.
+      max_dt: 300
+      min_dt: 0.1
+
+    input_fields:
+      - region: plane
+        # pressure -65 MPa; for g and density see conductivity below
+        init_pressure: -6619
+
+
+        # Bentonit
+        #storativity: 5.846e-5
+        water_content_saturated: 0.42
+        water_content_residual: 0.04
+
+        # permeability 5e-21 m^2; g 9.82 kg m s^{-2}; water density 988; viscosity 0.001 Pa.s
+        conductivity: 1.778e-10          # m/h 
+        genuchten_n_exponent: 1.24
+        genuchten_p_head_scale: 5e-3
+        
+        water_source_density: !FieldFormula
+          value: (x>0.3)*(x<0.35) * 1e-4
+
+        # effective Dirichlet BC
+      - region: .right
+        bc_type: dirichlet
+        bc_pressure: 0
+
+
+    nonlinear_solver:
+      tolerance: 1e-7
+      max_it: 20
+      converge_on_stagnation: false
+      linear_solver: !Petsc
+        a_tol: 1e-11
+    output:
+      fields:
+        - pressure_p0
+        - velocity_p0
+        - conductivity_out
+        - saturation
+      observe_fields: [pressure_p0, velocity_p0, conductivity_out, saturation]
+    balance:
+      cumulative: true
+
+    output_stream:
+      file: ./flow.pvd
+      format: !vtk
+        variant: ascii
+      times:
+        - step: 300
+      observe_points:
+        - [0.0, 0.001, 0]
+        - [0.1, 0.001, 0]
+        - [0.2, 0.001, 0]
+        - [0.5, 0.001, 0]
+        - [0.7, 0.001, 0]
+        - [0.8, 0.001, 0]
+        - [0.9, 0.001, 0]
+        - [1, 0.001, 0.0]
