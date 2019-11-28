@@ -30,7 +30,9 @@
 
 template<class elm_type, class Value>
 FieldValueCache<elm_type, Value>::FieldValueCache(unsigned int n_rows, unsigned int n_cols)
-: data_(0, n_rows, n_cols), eval_points_(nullptr), element_cache_map_(nullptr), dim_(EvalPoints::undefined_dim) {}
+: data_(0, n_rows, n_cols), eval_points_(nullptr), element_cache_map_(nullptr), dim_(EvalPoints::undefined_dim) {
+	used_subsets_.fill(-1);
+}
 
 template<class elm_type, class Value>
 FieldValueCache<elm_type, Value>::~FieldValueCache() {}
@@ -47,7 +49,16 @@ void FieldValueCache<elm_type, Value>::init(std::shared_ptr<EvalPoints> eval_poi
 
 template<class elm_type, class Value>
 void FieldValueCache<elm_type, Value>::mark_used(std::shared_ptr<EvalSubset> sub_set) {
-    used_subsets_.insert(sub_set->get_subset_idx());
+    int subset_idx = sub_set->get_subset_idx();
+    unsigned int i=0;
+    for (; i<10; ++i) {
+        if (used_subsets_[i] == subset_idx) return; // subset idx already exists
+        if (used_subsets_[i] == -1) {
+        	used_subsets_[i] = subset_idx;
+        	return;
+        }
+    }
+    ASSERT(false).error("Maximal number of subsets is 10.\n");
 }
 
 

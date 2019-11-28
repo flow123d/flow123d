@@ -49,7 +49,7 @@ public:
     void mark_used(std::shared_ptr<EvalSubset> sub_set);
 
     /// Getter for subsets of used points
-    inline const std::set<int> &used_subsets() const {
+    inline const std::array<int, 10> &used_subsets() const {
         return used_subsets_;
     }
 
@@ -85,8 +85,8 @@ private:
     /// Data cache
     Armor::Array<elm_type> data_;
 
-    /// Holds indices of used local points
-    std::set<int> used_subsets_;  // TODO: test unorderd_set during tuning of the performance
+    /// Holds indices of used blocks of local points
+    std::array<int, 10> used_subsets_;
 
     /// Pointer to EvalPoints
     std::shared_ptr<EvalPoints> eval_points_;
