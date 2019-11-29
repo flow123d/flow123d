@@ -40,92 +40,12 @@ template<unsigned int dim> class FiniteElement;
 
 
 
-/**
- * @brief Structure for storing the precomputed finite element data.
- */
-class FEInternalData
-{
-public:
-    
-    FEInternalData(unsigned int np, unsigned int nd);
-    
-    /**
-     * Create a new instance of FEInternalData for a FESystem component or subvector.
-     */
-    FEInternalData(const FEInternalData &fe_system_data,
-                   const std::vector<unsigned int> &dof_indices,
-                   unsigned int first_component_idx,
-                   unsigned int ncomponents = 1
-                  );
-    
-    /**
-     * @brief Precomputed values of basis functions at the quadrature points.
-     *
-     * Dimensions:   (no. of quadrature points)
-     *             x (no. of dofs)
-     *             x (no. of components in ref. cell)
-     */
-    std::vector<std::vector<arma::vec> > ref_shape_values;
-
-    /**
-     * @brief Precomputed gradients of basis functions at the quadrature points.
-     *
-     * Dimensions:   (no. of quadrature points)
-     *             x (no. of dofs)
-     *             x ((dim of. ref. cell)x(no. of components in ref. cell))
-     */
-    std::vector<std::vector<arma::mat> > ref_shape_grads;
-    
-    /// Number of quadrature points.
-    unsigned int n_points;
-    
-    /// Number of dofs (shape functions).
-    unsigned int n_dofs;
-};
 
 
 
 
-/**
- * @brief Class FEValuesData holds the arrays of data computed by
- * Mapping and FiniteElement.
- */
-template<unsigned int dim, unsigned int spacedim>
-class FEValuesData
-{
-public:
 
-    /**
-     * @brief Resize the data arrays.
-     * @param size   Number of quadrature points.
-     * @param flags  Update flags to be stores.
-     * @param n_comp Number of components of shape values.
-     */
-    void allocate(unsigned int size, UpdateFlags flags, unsigned n_comp);
 
-    /**
-     * @brief Shape functions evaluated at the quadrature points.
-     */
-    std::vector<std::vector<double> > shape_values;
-
-    /**
-     * @brief Gradients of shape functions evaluated at the quadrature points.
-     *
-     * Each row of the matrix contains the gradient of one shape function.
-     */
-    std::vector<std::vector<arma::vec::fixed<spacedim> > > shape_gradients;
-
-    /**
-     * @brief Flags that indicate which finite element quantities are to be computed.
-     */
-    UpdateFlags update_flags;
-
-    /**
-     * @brief Iterator to the last reinit-ed cell.
-     */
-    ElementAccessor<3> present_cell;
-
-};
 
 
 /**
@@ -384,6 +304,51 @@ public:
     
 
 protected:
+
+    /// Structure for storing the precomputed finite element data.
+    class FEInternalData
+    {
+    public:
+        
+        FEInternalData(unsigned int np, unsigned int nd);
+        
+        /**
+         * Create a new instance of FEInternalData for a FESystem component or subvector.
+         */
+        FEInternalData(const FEInternalData &fe_system_data,
+                    const std::vector<unsigned int> &dof_indices,
+                    unsigned int first_component_idx,
+                    unsigned int ncomponents = 1
+                    );
+        
+        /**
+         * @brief Precomputed values of basis functions at the quadrature points.
+         *
+         * Dimensions:   (no. of quadrature points)
+         *             x (no. of dofs)
+         *             x (no. of components in ref. cell)
+         */
+        std::vector<std::vector<arma::vec> > ref_shape_values;
+
+        /**
+         * @brief Precomputed gradients of basis functions at the quadrature points.
+         *
+         * Dimensions:   (no. of quadrature points)
+         *             x (no. of dofs)
+         *             x ((dim of. ref. cell)x(no. of components in ref. cell))
+         */
+        std::vector<std::vector<arma::mat> > ref_shape_grads;
+        
+        /// Number of quadrature points.
+        unsigned int n_points;
+        
+        /// Number of dofs (shape functions).
+        unsigned int n_dofs;
+    };
+
+
+
+
     
     /// Precompute finite element data on reference element.
     FEInternalData *init_fe_data(const Quadrature *q);
@@ -415,19 +380,23 @@ protected:
     void fill_system_data(const ElementValuesBase<dim,spacedim> &elm_values, const FEInternalData &fe_data);
     
 
-    /** @brief Number of integration points. */
+    /// Number of integration points.
     unsigned int n_points_;
 
-    /**
-     * @brief The used finite element.
-     */
+    /// The used finite element.
     FiniteElement<dim> *fe;
     
-    /**
-     * @brief Data computed by the mapping and finite element.
-     */
-    FEValuesData<dim,spacedim> data;
-    
+    /// Shape functions evaluated at the quadrature points.
+    std::vector<std::vector<double> > shape_values;
+
+    /// Gradients of shape functions evaluated at the quadrature points.
+    /// Each row of the matrix contains the gradient of one shape function.
+    std::vector<std::vector<arma::vec::fixed<spacedim> > > shape_gradients;
+
+    /// Flags that indicate which finite element quantities are to be computed.
+    UpdateFlags update_flags;
+
+    /// Auxiliary object for calculation of element-dependent data.
     ElementValuesBase<dim,spacedim> *elm_values;
     
     /// Vector of FEValues for sub-elements of FESystem.
@@ -491,10 +460,8 @@ private:
     
     void fill_fe_values();
     
-    /**
-     * @brief Precomputed finite element data.
-     */
-    FEInternalData *fe_data;
+    /// Precomputed finite element data.
+    typename FEValuesBase<dim,spacedim>::FEInternalData *fe_data;
     
 
 };
@@ -556,7 +523,7 @@ private:
     void fill_fe_side_values();
     
     /// Internal data (shape functions on reference element) for all sides and permuted quadrature points.
-    FEInternalData *side_fe_data[RefElement<dim>::n_sides][RefElement<dim>::n_side_permutations];
+    typename FEValuesBase<dim,spacedim>::FEInternalData *side_fe_data[RefElement<dim>::n_sides][RefElement<dim>::n_side_permutations];
     
     LongIdx side_idx_;
     
