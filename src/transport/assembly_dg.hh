@@ -201,7 +201,7 @@ public:
         fv_rt_.reinit(elm);
         cell.get_dof_indices(dof_indices_);
 
-        calculate_velocity(elm, velocity_, fv_rt_);
+        calculate_velocity(elm, velocity_, fv_rt_.point_list());
         model_.compute_advection_diffusion_coefficients(fe_values_.point_list(), velocity_, elm, data_->ad_coef, data_->dif_coef);
         model_.compute_sources_sigma(fe_values_.point_list(), elm, sources_sigma_);
 
@@ -249,7 +249,7 @@ public:
             fe_values_side_.reinit(elm_acc, side.side_idx());
             fsv_rt_.reinit(elm_acc, side.side_idx());
 
-            calculate_velocity(elm_acc, velocity_, fsv_rt_);
+            calculate_velocity(elm_acc, velocity_, fsv_rt_.point_list());
             model_.compute_advection_diffusion_coefficients(fe_values_side_.point_list(), velocity_, elm_acc, data_->ad_coef, data_->dif_coef);
             arma::uvec bc_type;
             model_.get_bc_type(side.cond()->element_accessor(), bc_type);
@@ -336,7 +336,7 @@ public:
                 dh_edge_cell.get_dof_indices(side_dof_indices_[sid]);
                 fe_values_vec_[sid]->reinit(edg_elm, edge_side.side_idx());
                 fsv_rt_.reinit(edg_elm, edge_side.side_idx());
-                calculate_velocity(edg_elm, side_velocity_vec_[sid], fsv_rt_);
+                calculate_velocity(edg_elm, side_velocity_vec_[sid], fsv_rt_.point_list());
                 model_.compute_advection_diffusion_coefficients(fe_values_vec_[sid]->point_list(), side_velocity_vec_[sid], edg_elm, data_->ad_coef_edg[sid], data_->dif_coef_edg[sid]);
                 dg_penalty_[sid].resize(model_.n_substances());
                 for (unsigned int sbi=0; sbi<model_.n_substances(); sbi++)
@@ -513,8 +513,8 @@ public:
 
             fsv_rt_.reinit(elm_higher_dim, neighb_side.side_idx());
             fv_rt_vb_->reinit(elm_lower_dim);
-            calculate_velocity(elm_higher_dim, velocity_higher_, fsv_rt_);
-            calculate_velocity_low_dim(elm_lower_dim, velocity_, *fv_rt_vb_);
+            calculate_velocity(elm_higher_dim, velocity_higher_, fsv_rt_.point_list());
+            calculate_velocity(elm_lower_dim, velocity_, fv_rt_vb_->point_list());
             model_.compute_advection_diffusion_coefficients(fe_values_vb_->point_list(), velocity_, elm_lower_dim, data_->ad_coef_edg[0], data_->dif_coef_edg[0]);
             model_.compute_advection_diffusion_coefficients(fe_values_vb_->point_list(), velocity_higher_, elm_higher_dim, data_->ad_coef_edg[1], data_->dif_coef_edg[1]);
             data_->cross_section.value_list(fe_values_vb_->point_list(), elm_lower_dim, csection_);
@@ -632,7 +632,7 @@ public:
 
             fe_values_side_.reinit(elm, side.side_idx());
             fsv_rt_.reinit(elm, side.side_idx());
-            calculate_velocity(elm, velocity_, fsv_rt_);
+            calculate_velocity(elm, velocity_, fsv_rt_.point_list());
 
             model_.compute_advection_diffusion_coefficients(fe_values_side_.point_list(), velocity_, side.element(), data_->ad_coef, data_->dif_coef);
             data_->cross_section.value_list(fe_values_side_.point_list(), side.element(), csection_);
@@ -781,55 +781,17 @@ public:
 
 private:
 	/**
-	 * @brief Calculates the velocity field on a given cell of dim dimension.
+	 * @brief Calculates the velocity field on a given cell.
 	 *
-	 * @param cell     The cell.
-	 * @param velocity The computed velocity field (at quadrature points).
-	 * @param fv       The FEValues class providing the quadrature points
-	 *                 and the shape functions for velocity.
+	 * @param cell       The cell.
+	 * @param velocity   The computed velocity field (at quadrature points).
+	 * @param point_list The quadrature points.
 	 */
     void calculate_velocity(const ElementAccessor<3> &cell, vector<arma::vec3> &velocity,
-                            FEValuesBase<dim,3> &fv)
+                            const std::vector<arma::vec::fixed<3>> &point_list)
     {
-        ASSERT_EQ_DBG(cell->dim(), dim).error("Element dimension mismatch!");
-
-        velocity.resize(fv.n_points());
-        // arma::mat map_mat = MappingP1<dim,3>::element_map(cell);
-        // vector<arma::vec3> point_list;
-        // point_list.resize(fv.n_points());
-        // const Quadrature &quad = *fv.get_quadrature();
-        // for (unsigned int k=0; k<fv.n_points(); k++) {
-        //     Armor::vec<dim> q_pt = quad.point<dim>(k);
-        //     point_list[k] = MappingP1<dim,3>::project_unit_to_real(RefElement<dim>::local_to_bary(q_pt.arma()), map_mat);
-        // }
-
-        model_.velocity_field_ptr()->value_list(fv.point_list(), cell, velocity);
-    }
-
-	/**
-	 * @brief Calculates the velocity field on a given cell of dim-1 dimension.
-	 *
-	 * @param cell     The cell.
-	 * @param velocity The computed velocity field (at quadrature points).
-	 * @param fv       The FEValues class providing the quadrature points
-	 *                 and the shape functions for velocity.
-	 */
-    void calculate_velocity_low_dim(const ElementAccessor<3> &cell, vector<arma::vec3> &velocity,
-                            FEValuesBase<dim-1,3> &fv)
-    {
-        ASSERT_EQ_DBG(cell->dim(), dim-1).error("Element dimension mismatch!");
-
-        velocity.resize(fv.n_points());
-        // arma::mat map_mat = MappingP1<dim-1,3>::element_map(cell);
-        // vector<arma::vec3> point_list;
-        // point_list.resize(fv.n_points());
-        // const Quadrature &quad = *fv.get_quadrature();
-        // for (unsigned int k=0; k<fv.n_points(); k++) {
-        //     Armor::vec<dim-1> q_pt = quad.point<dim-1>(k);
-        //     point_list[k] = MappingP1<dim-1,3>::project_unit_to_real(RefElement<dim-1>::local_to_bary(q_pt.arma()), map_mat);
-
-        // }
-        model_.velocity_field_ptr()->value_list(fv.point_list(), cell, velocity);
+        velocity.resize(point_list.size());
+        model_.velocity_field_ptr()->value_list(point_list, cell, velocity);
     }
 
 
