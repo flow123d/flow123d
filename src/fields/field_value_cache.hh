@@ -60,6 +60,11 @@ public:
         return used_subsets_;
     }
 
+    /// Getter for subsets of used points
+    inline const std::array<int, FieldValueCache::max_subsets+1> &subset_starts() const {
+        return subset_starts_;
+    }
+
     /// Return size of data cache (number of stored field values)
     inline unsigned int size() const {
         return data_.n_vals();
@@ -86,6 +91,11 @@ public:
     /// Return data vector.
     inline std::shared_ptr<EvalPoints> eval_points() const {
         return eval_points_;
+    }
+
+    /// Return number of elements that data is stored in cache.
+    inline unsigned int n_cache_points() const {
+        return n_cache_points_;
     }
 
 private:

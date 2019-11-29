@@ -235,11 +235,11 @@ public:
        virtual void value_list(const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
                           std::vector<typename Value::return_type>  &value_list)=0;
 
-       /*virtual void loc_point_value(const std::vector< ElementAccessor<spacedim> > &element_set,
+       virtual void cache_update(const std::vector< ElementAccessor<spacedim> > &element_set,
                    ElementCacheMap &cache_map,
-   	               FieldValueCache<Value> &data_cache) {
+   	               FieldValueCache<typename Value::element_type, typename Value::return_type> &data_cache) {
     	   ASSERT(false).error("Must be implemented in descendants!\n");
-       }*/
+       }
 
        /**
         * Postponed setter of Dof handler for FieldFE. For other types of fields has no effect.
