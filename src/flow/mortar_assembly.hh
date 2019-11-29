@@ -8,6 +8,7 @@
 #ifndef SRC_FLOW_MORTAR_ASSEMBLY_HH_
 #define SRC_FLOW_MORTAR_ASSEMBLY_HH_
 
+#include "system/index_types.hh"
 #include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "quadrature/intersection_quadrature.hh"
@@ -52,12 +53,12 @@ protected:
 
 
 struct IsecData {
-    LocalSystem::DofVec vel_dofs;
-    LocalSystem::DofVec dofs;
+    LocDofVec vel_dofs;
+    LocDofVec dofs;
     unsigned int dim;
     double delta;
     double ele_z_coord_;
-    LocalSystem::DofVec dirichlet_dofs;
+    LocDofVec dirichlet_dofs;
     arma::vec dirichlet_sol;
     unsigned int n_dirichlet;
 };
@@ -83,7 +84,6 @@ private:
     std::vector< arma::vec > col_average_;
     IntersectionQuadratureP0 quadrature_;
     arma::mat product_;
-    LocalElementAccessorBase<3> slave_ac_;
 
 };
 

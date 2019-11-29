@@ -28,14 +28,14 @@
 #include "fields/equation_output.hh"
 #include "coupling/equation.hh"
 #include "fem/fe_values_views.hh"
+#include "tools/mixed.hh"
+#include "quadrature/quadrature_lib.hh"
 
 class Distribution;
 class OutputTime;
 class DOFHandlerMultiDim;
-class DiscreteSpace;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim> class FiniteElement;
-class Quadrature;
 class Elasticity;
 
 
@@ -53,10 +53,10 @@ public:
 	~FEObjects();
 
 	template<unsigned int dim>
-	inline FiniteElement<dim> *fe();
+	inline std::shared_ptr<FiniteElement<dim>> fe();
 
 	template<unsigned int dim>
-	inline Quadrature *q() { return q_[dim]; }
+	inline Quadrature *q() { return &(q_[dim]); }
 
 	inline std::shared_ptr<DOFHandlerMultiDim> dh();
     
@@ -64,14 +64,9 @@ public:
 
 private:
 
-	/// Finite elements for the solution of the advection-diffusion equation.
-    FiniteElement<0> *fe0_;
-	FiniteElement<1> *fe1_;
-	FiniteElement<2> *fe2_;
-	FiniteElement<3> *fe3_;
+        MixedPtr<FiniteElement> fe_;  ///< Finite elements for the solution of the advection-diffusion equation.
+	QGauss::array q_;
 
-	/// Quadratures used in assembling methods.
-	Quadrature *q_[4];
 
     std::shared_ptr<DiscreteSpace> ds_;
     

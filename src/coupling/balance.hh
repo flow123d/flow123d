@@ -19,7 +19,7 @@
 #define BALANCE_HH_
 
 
-#include <iosfwd>               // for ofstream
+#include <fstream>              // for ofstream
 #include <string>               // for string
 #include <vector>               // for vector
 #include <unordered_map>        // for unordered_map
@@ -30,10 +30,11 @@
 #include "petscvec.h"           // for Vec, _p_Vec
 #include "system/file_path.hh"  // for FilePath
 #include "tools/time_marks.hh"  // for TimeMark, TimeMark::Type
-#include "mesh/long_idx.hh"     // for LongIdx
+#include "system/index_types.hh" // for LongIdx
 
 class Mesh;
 class TimeGovernor;
+class DOFHandlerMultiDim;
 namespace Input {
 	namespace Type {
 		class Record;
@@ -202,13 +203,20 @@ public:
 	std::vector<unsigned int> add_quantities(const std::vector<string> &names);
 
 	/**
+	 * Allocates matrices and vectors for balance based on DofHandler.
+	 * @param dh DofHandler of the corresponding linear system (and solution).
+	 * @param max_dofs_per_boundary Number of dofs contributing to one boundary edge.
+	 */
+	void allocate(const std::shared_ptr<DOFHandlerMultiDim>& dh,
+			unsigned int max_dofs_per_boundary);
+
+	/**
 	 * Allocates matrices and vectors for balance.
 	 * @param n_loc_dofs            Number of solution dofs on the local process.
 	 * @param max_dofs_per_boundary Number of dofs contributing to one boundary edge.
 	 */
 	void allocate(unsigned int n_loc_dofs,
 			unsigned int max_dofs_per_boundary);
-
 
     /// Returns true if the current time step is marked for the balance output.
     bool is_current();
@@ -428,7 +436,8 @@ private:
 	static bool do_yaml_output_;
 
 	/// Allocation parameters. Set by the allocate method used in the lazy_initialize.
-    unsigned int n_loc_dofs_;
+	unsigned int n_loc_dofs_par_;
+	unsigned int n_loc_dofs_seq_;
     unsigned int max_dofs_per_boundary_;
 
 
@@ -439,10 +448,10 @@ private:
     FilePath balance_output_file_;
 
     /// Handle for file for output in given OutputFormat of balance and total fluxes over individual regions and region sets.
-    ofstream output_;
+    std::ofstream output_;
 
     // The same as the previous case, but for output in YAML format.
-    ofstream output_yaml_;
+    std::ofstream output_yaml_;
 
     /// Format of output file.
     OutputFormat output_format_;

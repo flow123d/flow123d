@@ -142,7 +142,4 @@ protected:
 
 };
 
-
-
-
 #endif /* QUADRATURE_HH_ */

@@ -53,7 +53,6 @@ problem: !Coupling_Sequential
         - 0.75
       fields:
         - pressure_p0
-        - pressure_p1
         - velocity_p0
         - conductivity
         - cross_section

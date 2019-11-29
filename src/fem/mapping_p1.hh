@@ -54,7 +54,7 @@ public:
  * @param dim Dimension of the cells.
  * @param spacedim Dimension of the Euclidean space.
  */
-template<unsigned int dim, unsigned int spacedim>
+template<unsigned int dim, unsigned int spacedim = 3>
 class MappingP1
 {
 public:
@@ -77,7 +77,7 @@ public:
      * M columns are real coordinates of nodes.
      */
     static ElementMap element_map(ElementAccessor<3> elm);
-    
+
     /**
      * Compute jacobian matrix for an element given by the @p coords element map.
      */

@@ -26,7 +26,7 @@
 #include <armadillo>
 #include "io/element_data_cache_base.hh"      // for ElementDataCacheBase
 #include "system/exceptions.hh"               // for ExcStream, operator<<
-#include "mesh/long_idx.hh"
+#include "system/index_types.hh"              // for LongIdx
 class Tokenizer;
 class Distribution;
 struct MeshDataHeader;

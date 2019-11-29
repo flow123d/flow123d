@@ -101,7 +101,7 @@ bool MappingP1<dim,spacedim>::contains_point(arma::vec point, ElementAccessor<3>
 
 
 
-template class MappingP1<0,3>;
+template class MappingP1<0,3>;  // Only for compilation of DG transport assemble methods, do not use this instance!
 template class MappingP1<1,3>;
 template class MappingP1<2,3>;
 template class MappingP1<3,3>;

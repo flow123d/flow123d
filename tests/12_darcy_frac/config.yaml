@@ -4,22 +4,36 @@ common_config:
 
 test_cases:
   - files:
-      - 01_gmsh.yaml
       - 02_vtk.yaml
       - 03_piezo.yaml
       - 04_bddc.yaml
       - 05_square.yaml
       - 06_cube.yaml
-
+      - 52_vtk_LMH.yaml
+      - 53_piezo_LMH.yaml
+      #- 54_bddc_LMH.yaml
+      - 55_square_LMH.yaml
+      - 56_cube_LMH.yaml
+      
+      
   - files:
+      - 01_gmsh.yaml
       - 10_exact_2d_cc.yaml
       - 11_exact_2d_nc_p0.yaml
       - 30_surf_cube_cc.yaml
+      - 51_gmsh_LMH.yaml
+      - 60_exact_2d_cc_LMH.yaml
+      - 80_surf_cube_cc_LMH.yaml
+      
+      # Mortar methods are not available for LMH at the moment
+      #- 61_exact_2d_nc_p0_LMH.yaml
     proc: [1]
   
 # long running tests
   - files:
       - 31_surf_cube_23d_p0.yaml
+      # Mortar methods are not available for LMH at the moment
+      #- 81_surf_cube_23d_p0_LMH.yaml
     time_limit: 150  
     memory_limit: 1200
     proc: [1]

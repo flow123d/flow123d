@@ -89,13 +89,13 @@
 ##        fields:
 ##          - piezo_head_p0
 ##          - pressure_p0
-##          - pressure_p1
+##          - pressure_p2_disc
 ##          - velocity_p0
 ##
 ##The above code can be alternatively written in a more compact form, namely
 ##
 ##      output:
-##        fields: [piezo_head_p0, pressure_p0, pressure_p1, velocity_p0]
+##        fields: [piezo_head_p0, pressure_p0, pressure_p2_disc, velocity_p0]
 ##
 ##In addition to the output of solution, Flow123d provides computation of balance of fluid volume, flux through boundaries and volume sources.
 ##This is turned on by
@@ -145,6 +145,6 @@ problem: !Coupling_Sequential
       fields:
         - piezo_head_p0
         - pressure_p0
-        - pressure_p1
+        #- pressure_p2_disc
         - velocity_p0
     balance: {}

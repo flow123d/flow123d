@@ -43,11 +43,6 @@ Quadrature::Quadrature(const Quadrature &q) :
 {}
 
 
-
-
-
-
-
 template<unsigned int bulk_dim>
 Quadrature Quadrature::make_from_side(unsigned int sid, unsigned int pid)
 {
@@ -93,3 +88,5 @@ template<> Quadrature Quadrature::make_from_side<1>(unsigned int sid, unsigned i
 
 template Quadrature Quadrature::make_from_side<2>(unsigned int sid, unsigned int pid);
 template Quadrature Quadrature::make_from_side<3>(unsigned int sid, unsigned int pid);
+
+

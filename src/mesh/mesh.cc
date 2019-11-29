@@ -22,6 +22,7 @@
 
 #include "system/system.hh"
 #include "system/exceptions.hh"
+#include "system/index_types.hh"
 #include "input/reader_to_storage.hh"
 #include "input/input_type.hh"
 #include "input/accessors.hh"
@@ -29,7 +30,6 @@
 #include "la/distribution.hh"
 
 #include "mesh/side_impl.hh"
-#include "mesh/long_idx.hh"
 #include "mesh/mesh.h"
 #include "mesh/bc_mesh.hh"
 #include "mesh/ref_element.hh"
@@ -1205,7 +1205,7 @@ void Mesh::distribute_nodes() {
     unsigned int n_proc = el_ds->np();
 
     // distribute nodes between processes, every node is assigned to minimal process of elements that own node
-    // fill min_node_proc vector with same values on all processes
+    // fill node_proc vector with same values on all processes
     std::vector<unsigned int> node_proc( this->n_nodes(), n_proc );
     std::vector<bool> local_node_flag( this->n_nodes(), false );
 

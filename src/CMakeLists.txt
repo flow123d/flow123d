@@ -151,10 +151,12 @@ add_library(la_lib
     la/local_to_global_map.cc
     la/schur.cc
     la/linsys.cc
+    la/bddcml_wrapper.cc
     la/linsys_BDDC.cc
     la/linsys_PETSC.cc
     la/sparse_graph.cc
     la/local_system.cc
+    la/vector_mpi.cc
 )
 target_link_libraries(la_lib 
     input_lib system_lib
@@ -304,6 +306,7 @@ add_library(coupling_lib
     # fields/field_interpolated_p0.cc
     fields/table_function.cc
     fields/field_time_function.cc
+    fields/field_divide.cc
     fields/field_fe.cc
     fields/fe_value_handler.cc
     fields/surface_depth.cc
@@ -337,6 +340,7 @@ add_library(flow123d_lib
     flow/mh_dofhandler.cc
     flow/darcy_flow_mh_output.cc
     flow/darcy_flow_mh.cc
+    flow/darcy_flow_lmh.cc
     flow/soil_models.cc
     flow/richards_lmh.cc
     flow/mortar_assembly.cc

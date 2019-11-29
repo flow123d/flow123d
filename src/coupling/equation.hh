@@ -179,6 +179,14 @@ public:
     }
 
     /**
+     * This getter method provides the balance object.
+     */
+    inline std::shared_ptr<Balance> balance() const
+    {
+        return balance_;
+    }
+
+    /**
      * Getter for equation time mark type.
      */
     inline TimeMark::Type mark_type()
@@ -195,20 +203,6 @@ public:
     	OLD_ASSERT(eq_data_, "The equation %s did not set eq_data_ pointer.\n", input_record_.address_string().c_str());
     	return *eq_data_;
     }
-
-    /**
-     * Child class have to implement getter for sequential solution vector.
-     * DEPRECATED
-     */
-    virtual void get_solution_vector(double * &vector, unsigned int &size)
-    { OLD_ASSERT(0, "If using, needs to be implemented in ancestors!"); };
-
-    /**
-     * Child class have to implement getter for parallel solution vector.
-     * DEPRECATED
-     */
-    virtual void get_parallel_solution_vector(Vec &vector)
-    { OLD_ASSERT(0, "If using, needs to be implemented in ancestors!"); };
 
     /**
      * @brief Write computed fields.

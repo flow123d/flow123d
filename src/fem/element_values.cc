@@ -149,6 +149,7 @@ ElementValues<dim,spacedim>::ElementValues(
   quadrature_(&_quadrature),
   ref_data(nullptr)
 {
+    if (dim == 0) return; // avoid unnecessary allocation of dummy 0 dimensional objects
     ASSERT_DBG( _quadrature.dim() == dim );
     this->allocate(_quadrature.size(), _flags);
 

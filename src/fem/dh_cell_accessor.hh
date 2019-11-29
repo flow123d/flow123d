@@ -21,9 +21,11 @@
 
 #include <armadillo>
 #include "mesh/accessors.hh"
-#include "mesh/sides.h"
+#include "mesh/side_impl.hh"
 #include "mesh/neighbours.h"
+#include "fem/finite_element.hh"
 #include "fem/dofhandler.hh"
+#include "system/index_types.hh"
 
 class DHCellSide;
 class DHNeighbSide;
@@ -76,16 +78,16 @@ public:
      *
      * @param indices Vector of dof indices on the cell.
      */
-    unsigned int get_dof_indices(std::vector<int> &indices) const
+    unsigned int get_dof_indices(std::vector<LongIdx> &indices) const
     { return dof_handler_->get_dof_indices( *this, indices ); }
 
     /**
-     * @brief Returns the indices of dofs associated to the cell on the local process.
+     * @brief Returns the local indices of dofs associated to the cell on the local process.
      *
      * @param indices Array of dof indices on the cell.
      */
-    unsigned int get_loc_dof_indices(std::vector<LongIdx> &indices) const
-    { return dof_handler_->get_loc_dof_indices( *this, indices ); }
+    LocDofVec get_loc_dof_indices() const
+    { return dof_handler_->get_loc_dof_indices(loc_ele_idx_); }
 
     /// Return number of dofs on given cell.
     unsigned int n_dofs() const;
@@ -101,13 +103,18 @@ public:
     	return elm().dim();
     }
 
+    /// Return DOF handler
+    inline const DOFHandlerMultiDim *dh() const{
+        return dof_handler_;
+    }
+
     /**
      * @brief Returns finite element object for given space dimension.
      */
     template<unsigned int dim>
-    FiniteElement<dim> *fe() const {
+    FEPtr<dim> fe() const {
         ElementAccessor<3> elm_acc = this->elm();
-        return dof_handler_->ds_->fe<dim>(elm_acc);
+        return dof_handler_->ds_->fe(elm_acc).get<dim>();
     }
 
     /// Check validity of accessor (see default constructor)
@@ -126,6 +133,13 @@ public:
     	return (loc_ele_idx_ < dof_handler_->el_ds_->lsize());
     }
 
+    /// Create new accessor with same local idx and given DOF handler. Actual and given DOF handler must be create on same Mesh.
+    DHCellAccessor cell_with_other_dh(const DOFHandlerMultiDim * dh) const{
+    	ASSERT( (dh->mesh()->n_nodes() == dof_handler_->mesh()->n_nodes()) && (dh->mesh()->n_elements() == dof_handler_->mesh()->n_elements()) )
+    			.error("Incompatible DOF handlers!");
+    	return DHCellAccessor(dh, loc_ele_idx_);
+    }
+
     /// Iterates to next local element.
     inline void inc() {
         loc_ele_idx_++;
@@ -135,6 +149,7 @@ public:
     bool operator==(const DHCellAccessor& other) {
     	return (loc_ele_idx_ == other.loc_ele_idx_);
     }
+
 
 private:
     /// Pointer to the DOF handler owning the element.

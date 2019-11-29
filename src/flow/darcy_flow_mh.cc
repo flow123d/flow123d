@@ -31,10 +31,10 @@
 
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
+#include "system/index_types.hh"
 #include "input/factory.hh"
 
 #include "mesh/side_impl.hh"
-#include "mesh/long_idx.hh"
 #include "mesh/mesh.h"
 #include "mesh/partitioning.hh"
 #include "mesh/accessors.hh"
@@ -46,26 +46,26 @@
 #include "la/schur.hh"
 //#include "la/sparse_graph.hh"
 #include "la/local_to_global_map.hh"
+#include "la/vector_mpi.hh"
 
+#include "flow/assembly_mh.hh"
 #include "flow/darcy_flow_mh.hh"
-
 #include "flow/darcy_flow_mh_output.hh"
-
 
 #include "tools/time_governor.hh"
 #include "fields/field_algo_base.hh"
 #include "fields/field.hh"
 #include "fields/field_values.hh"
 #include "fields/field_add_potential.hh"
+#include "fields/field_fe.hh"
+#include "fields/field_divide.hh"
 
 #include "coupling/balance.hh"
 
-#include "la/vector_mpi.hh"
-
-#include "darcy_flow_assembly.hh"
-
 #include "intersection/mixed_mesh_intersections.hh"
 #include "intersection/intersection_local.hh"
+
+#include "fem/fe_p.hh"
 
 
 FLOW123D_FORCE_LINK_IN_CHILD(darcy_flow_mh);
@@ -147,6 +147,8 @@ const it::Record & DarcyMH::get_input_type() {
             "ends with convergence success on stagnation, but it reports warning about it.")
         .close();
 
+    DarcyMH::EqData eq_data;
+    
     return it::Record("Flow_Darcy_MH", "Mixed-Hybrid  solver for saturated Darcy flow.")
 		.derive_from(DarcyFlowInterface::get_input_type())
         .declare_key("gravity", it::Array(it::Double(), 3,3), it::Default("[ 0, 0, -1]"),
@@ -158,7 +160,8 @@ const it::Record & DarcyMH::get_input_type() {
         .declare_key("output_stream", OutputTime::get_input_type(), it::Default("{}"),
                 "Output stream settings.\n Specify file format, precision etc.")
 
-        .declare_key("output", DarcyFlowMHOutput::get_input_type(), IT::Default("{ \"fields\": [ \"pressure_p0\", \"velocity_p0\" ] }"),
+        .declare_key("output", DarcyFlowMHOutput::get_input_type(eq_data, "Flow_Darcy_MH"),
+                IT::Default("{ \"fields\": [ \"pressure_p0\", \"velocity_p0\" ] }"),
                 "Specification of output fields and output times.")
         .declare_key("output_specific", DarcyFlowMHOutput::get_input_type_specific(), it::Default::optional(),
                 "Output settings specific to Darcy flow model.\n"
@@ -184,6 +187,21 @@ const int DarcyMH::registrar =
 DarcyMH::EqData::EqData()
 {
     mortar_method_=NoMortar;
+
+    *this += field_ele_pressure.name("pressure_p0")
+             .units(UnitSI().m())
+             .flags(FieldFlag::equation_result)
+             .description("Pressure solution - P0 interpolation.");
+
+    *this += field_ele_piezo_head.name("piezo_head_p0")
+	         .units(UnitSI().m())
+             .flags(FieldFlag::equation_result)
+             .description("Piezo head solution - P0 interpolation.");
+
+	*this += field_ele_velocity.name("velocity_p0")
+	         .units(UnitSI().m().s(-1))
+             .flags(FieldFlag::equation_result)
+             .description("Velocity solution - P0 interpolation.");
 
     *this += anisotropy.name("anisotropy")
             .description("Anisotropy of the conductivity tensor.")
@@ -265,9 +283,6 @@ DarcyMH::EqData::EqData()
 
 
 
-
-
-
 //=============================================================================
 // CREATE AND FILL GLOBAL MH MATRIX OF THE WATER MODEL
 // - do it in parallel:
@@ -286,6 +301,7 @@ DarcyMH::DarcyMH(Mesh &mesh_in, const Input::Record in_rec)
     solution(nullptr),
     data_changed_(false),
     schur0(nullptr),
+    par_to_all(nullptr),
 	steady_diagonal(nullptr),
 	steady_rhs(nullptr),
 	new_diagonal(nullptr),
@@ -330,7 +346,6 @@ void DarcyMH::init_eq_data()
 
     START_TIMER("data init");
     data_->mesh = mesh_;
-    data_->mh_dh = &mh_dh;
     data_->set_mesh(*mesh_);
 
     auto gravity_array = input_record_.val<Input::Array>("gravity");
@@ -367,10 +382,67 @@ void DarcyMH::init_eq_data()
 
 void DarcyMH::initialize() {
 
+    { // init DOF handler for pressure fields
+// 		std::shared_ptr< FiniteElement<0> > fe0_rt = std::make_shared<FE_RT0_disc<0>>();
+		std::shared_ptr< FiniteElement<1> > fe1_rt = std::make_shared<FE_RT0_disc<1>>();
+		std::shared_ptr< FiniteElement<2> > fe2_rt = std::make_shared<FE_RT0_disc<2>>();
+		std::shared_ptr< FiniteElement<3> > fe3_rt = std::make_shared<FE_RT0_disc<3>>();
+		std::shared_ptr< FiniteElement<0> > fe0_disc = std::make_shared<FE_P_disc<0>>(0);
+		std::shared_ptr< FiniteElement<1> > fe1_disc = std::make_shared<FE_P_disc<1>>(0);
+		std::shared_ptr< FiniteElement<2> > fe2_disc = std::make_shared<FE_P_disc<2>>(0);
+		std::shared_ptr< FiniteElement<3> > fe3_disc = std::make_shared<FE_P_disc<3>>(0);
+		std::shared_ptr< FiniteElement<0> > fe0_cr = std::make_shared<FE_CR<0>>();
+		std::shared_ptr< FiniteElement<1> > fe1_cr = std::make_shared<FE_CR<1>>();
+		std::shared_ptr< FiniteElement<2> > fe2_cr = std::make_shared<FE_CR<2>>();
+		std::shared_ptr< FiniteElement<3> > fe3_cr = std::make_shared<FE_CR<3>>();
+// 	    static FiniteElement<0> fe0_sys = FE_P_disc<0>(0); //TODO fix and use solution with FESystem<0>( {fe0_rt, fe0_disc, fe0_cr} )
+		FESystem<0> fe0_sys( {fe0_disc, fe0_disc, fe0_cr} );
+		FESystem<1> fe1_sys( {fe1_rt, fe1_disc, fe1_cr} );
+		FESystem<2> fe2_sys( {fe2_rt, fe2_disc, fe2_cr} );
+		FESystem<3> fe3_sys( {fe3_rt, fe3_disc, fe3_cr} );
+	    MixedPtr<FESystem> fe_sys( std::make_shared<FESystem<0>>(fe0_sys), std::make_shared<FESystem<1>>(fe1_sys),
+	                                    std::make_shared<FESystem<2>>(fe2_sys), std::make_shared<FESystem<3>>(fe3_sys) );
+		std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh_, fe_sys);
+		data_->dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
+		data_->dh_->distribute_dofs(ds);
+    }
+
     init_eq_data();
+    this->data_->multidim_assembler =  AssemblyBase::create< AssemblyMH >(data_);
     output_object = new DarcyFlowMHOutput(this, input_record_);
 
     mh_dh.reinit(mesh_);
+
+    { // construct pressure, velocity and piezo head fields
+		ele_flux_ptr = std::make_shared< FieldFE<3, FieldValue<3>::VectorFixed> >();
+		uint rt_component = 0;
+		ele_flux_ptr->set_fe_data(data_->dh_, rt_component);
+		ele_velocity_ptr = std::make_shared< FieldDivide<3, FieldValue<3>::VectorFixed> >(ele_flux_ptr, data_->cross_section);
+		data_->field_ele_velocity.set_field(mesh_->region_db().get_region_set("ALL"), ele_velocity_ptr);
+		data_->full_solution = ele_flux_ptr->get_data_vec();
+
+		ele_pressure_ptr = std::make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
+		uint p_ele_component = 0;
+		ele_pressure_ptr->set_fe_data(data_->dh_, p_ele_component, ele_flux_ptr->get_data_vec());
+		data_->field_ele_pressure.set_field(mesh_->region_db().get_region_set("ALL"), ele_pressure_ptr);
+
+		arma::vec4 gravity = (-1) * data_->gravity_;
+		ele_piezo_head_ptr = std::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar> >(gravity, ele_pressure_ptr);
+		data_->field_ele_piezo_head.set_field(mesh_->region_db().get_region_set("ALL"), ele_piezo_head_ptr);
+    }
+
+    { // init DOF handlers represents edge DOFs
+        uint p_edge_component = 2;
+        data_->dh_cr_ = std::make_shared<SubDOFHandlerMultiDim>(data_->dh_,p_edge_component);
+    }
+
+    { // init DOF handlers represents side DOFs
+		MixedPtr<FE_CR_disc> fe_cr_disc;
+		std::shared_ptr<DiscreteSpace> ds_cr_disc = std::make_shared<EqualOrderDiscreteSpace>( mesh_, fe_cr_disc);
+		data_->dh_cr_disc_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
+		data_->dh_cr_disc_->distribute_dofs(ds_cr_disc);
+    }
+
     // Initialize bc_switch_dirichlet to size of global boundary.
     data_->bc_switch_dirichlet.resize(mesh_->n_elements()+mesh_->n_elements(true), 1);
 
@@ -388,7 +460,7 @@ void DarcyMH::initialize() {
 
     // allocate time term vectors
     VecDuplicate(schur0->get_solution(), &previous_solution);
-    VecCreateMPI(PETSC_COMM_WORLD, mh_dh.rows_ds->lsize(),PETSC_DETERMINE,&(steady_diagonal));
+    VecCreateMPI(PETSC_COMM_WORLD, data_->dh_->distr()->lsize(),PETSC_DETERMINE,&(steady_diagonal));
     VecDuplicate(steady_diagonal,& new_diagonal);
     VecZeroEntries(new_diagonal);
     VecDuplicate(steady_diagonal, &steady_rhs);
@@ -398,7 +470,7 @@ void DarcyMH::initialize() {
     balance_ = std::make_shared<Balance>("water", mesh_);
     balance_->init_from_input(input_record_.val<Input::Record>("balance"), time());
     data_->water_balance_idx = balance_->add_quantity("water_volume");
-    balance_->allocate(mh_dh.rows_ds->lsize(), 1);
+    balance_->allocate(data_->dh_->distr()->lsize(), 1);
     balance_->units(UnitSI().m(3));
 
 
@@ -570,14 +642,6 @@ void DarcyMH::solve_nonlinear()
         double alpha = 1; // how much of new solution
         VecAXPBY(schur0->get_solution(), (1-alpha), alpha, save_solution);
 
-        /*
-        double * sol;
-        unsigned int sol_size;
-        get_solution_vector(sol, sol_size);
-        if (mh_dh.el_ds->myp() == 0)
-            VecView(sol_vec, PETSC_VIEWER_STDOUT_SELF);
-        */
-
         //LogOut().fmt("Linear solver ended with reason: {} \n", si.converged_reason );
         //OLD_ASSERT( si.converged_reason >= 0, "Linear solver failed to converge. Convergence reason %d \n", si.converged_reason );
         assembly_linear_system();
@@ -615,8 +679,8 @@ void DarcyMH::postprocess()
     //fix velocity when mortar method is used
     if(data_->mortar_method_ != MortarMethod::NoMortar){
         auto multidim_assembler =  AssemblyBase::create< AssemblyMH >(data_);
-        for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
-            auto ele_ac = mh_dh.accessor(i_loc);
+        for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
+            LocalElementAccessorBase<3> ele_ac(dh_cell);
             unsigned int dim = ele_ac.dim();
             multidim_assembler[dim-1]->fix_velocity(ele_ac);
         }
@@ -645,6 +709,9 @@ void DarcyMH::postprocess()
 
 void DarcyMH::output_data() {
     START_TIMER("Darcy output data");
+    
+    //print_matlab_matrix("matrix_" + std::to_string(time_->step().index()));
+    
     //time_->view("DARCY"); //time governor information output
 	this->output_object->output();
 
@@ -680,12 +747,6 @@ void  DarcyMH::get_solution_vector(double * &vec, unsigned int &vec_size)
     OLD_ASSERT(vec != NULL, "Requested solution is not allocated!\n");
 }
 
-void  DarcyMH::get_parallel_solution_vector(Vec &vec)
-{
-    vec=schur0->get_solution();
-    OLD_ASSERT(vec != NULL, "Requested solution is not allocated!\n");
-}
-
 
 // ===========================================================================================
 //
@@ -706,8 +767,8 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembly& assembler)
 
     // TODO: try to move this into balance, or have it in the generic assembler class, that should perform the cell loop
     // including various pre- and post-actions
-    for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
-        auto ele_ac = mh_dh.accessor(i_loc);
+    for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
+    	LocalElementAccessorBase<3> ele_ac(dh_cell);
         unsigned int dim = ele_ac.dim();
         assembler[dim-1]->assemble(ele_ac);
     }    
@@ -739,8 +800,8 @@ void DarcyMH::allocate_mh_matrix()
     
     unsigned int nsides, loc_size;
 
-    for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
-        auto ele_ac = mh_dh.accessor(i_loc);
+    for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
+        LocalElementAccessorBase<3> ele_ac(dh_cell);
         nsides = ele_ac.n_sides();
         
         //allocate at once matrix [sides,ele,edges]x[sides,ele,edges]
@@ -761,13 +822,22 @@ void DarcyMH::allocate_mh_matrix()
 
         // compatible neighborings rows
         unsigned int n_neighs = ele_ac.element_accessor()->n_neighs_vb();
-        for (unsigned int i = 0; i < n_neighs; i++) {
+        unsigned int i=0;
+        for ( DHCellSide neighb_side : dh_cell.neighb_sides() ) {
+        //for (unsigned int i = 0; i < n_neighs; i++) {
             // every compatible connection adds a 2x2 matrix involving
             // current element pressure  and a connected edge pressure
             Neighbour *ngh = ele_ac.element_accessor()->neigh_vb[i];
-            int neigh_edge_row = mh_dh.row_4_edge[ ngh->edge_idx() ];
-            tmp_rows.push_back(neigh_edge_row);
+            DHCellAccessor cell_higher_dim = data_->dh_->cell_accessor_from_element(neighb_side.elem_idx());
+            LocalElementAccessorBase<3> acc_higher_dim( cell_higher_dim );
+            for (unsigned int j = 0; j < neighb_side.element().dim()+1; j++)
+            	if (neighb_side.element()->edge_idx(j) == ngh->edge_idx()) {
+            		int neigh_edge_row = acc_higher_dim.edge_row(j);
+            		tmp_rows.push_back(neigh_edge_row);
+            		break;
+            	}
             //DebugOut() << "CC" << print_var(tmp_rows[i]);
+            ++i;
         }
 
         // allocate always also for schur 2
@@ -781,11 +851,11 @@ void DarcyMH::allocate_mh_matrix()
             auto &isec_list = mesh_->mixed_intersections().element_intersections_[ele_ac.ele_global_idx()];
             for(auto &isec : isec_list ) {
                 IntersectionLocalBase *local = isec.second;
-                ElementAccessor<3> slave_ele = mesh_->element_accessor( local->bulk_ele_idx() );
+                LocalElementAccessorBase<3> slave_acc( data_->dh_->cell_accessor_from_element(local->bulk_ele_idx()) );
                 //DebugOut().fmt("Alloc: {} {}", ele_ac.ele_global_idx(), local->bulk_ele_idx());
-                for(unsigned int i_side=0; i_side < slave_ele->n_sides(); i_side++) {
-                    tmp_rows.push_back( mh_dh.row_4_edge[ slave_ele.side(i_side)->edge_idx() ] );
-                    //DebugOut() << "aedge" << print_var(tmp_rows[i_rows-1]);
+                for(unsigned int i_side=0; i_side < slave_acc.dim()+1; i_side++) {
+                    tmp_rows.push_back( slave_acc.edge_row(i_side) );
+                    //DebugOut() << "aedge" << print_var(tmp_rows[tmp_rows.size()-1]);
                 }
             }
         }
@@ -827,8 +897,8 @@ void DarcyMH::assembly_source_term()
     START_TIMER("assembly source term");
    	balance_->start_source_assembly(data_->water_balance_idx);
 
-    for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
-        auto ele_ac = mh_dh.accessor(i_loc);
+   	for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
+        LocalElementAccessorBase<3> ele_ac(dh_cell);
 
         double cs = data_->cross_section.value(ele_ac.centre(), ele_ac.element_accessor());
 
@@ -859,20 +929,18 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
     	if (in_rec.type() == LinSys_BDDC::get_input_type()) {
 #ifdef FLOW123D_HAVE_BDDCML
     		WarningOut() << "For BDDC no Schur complements are used.";
-            mh_dh.prepare_parallel_bddc();
             n_schur_compls = 0;
-            LinSys_BDDC *ls = new LinSys_BDDC(mh_dh.global_row_4_sub_row->size(), &(*mh_dh.rows_ds),
-                    3,  // 3 == la::BddcmlWrapper::SPD_VIA_SYMMETRICGENERAL
-                    1,  // 1 == number of subdomains per process
+            LinSys_BDDC *ls = new LinSys_BDDC(&(*data_->dh_->distr()),
                     true); // swap signs of matrix and rhs to make the matrix SPD
             ls->set_from_input(in_rec);
-            ls->set_solution();
+            ls->set_solution( ele_flux_ptr->get_data_vec().petsc_vec() );
             // possible initialization particular to BDDC
             START_TIMER("BDDC set mesh data");
             set_mesh_data_for_bddc(ls);
             schur0=ls;
             END_TIMER("BDDC set mesh data");
 #else
+            Exception
             xprintf(Err, "Flow123d was not build with BDDCML support.\n");
 #endif // FLOW123D_HAVE_BDDCML
         } 
@@ -886,7 +954,7 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
             LinSys_PETSC *schur1, *schur2;
 
             if (n_schur_compls == 0) {
-                LinSys_PETSC *ls = new LinSys_PETSC( &(*mh_dh.rows_ds) );
+                LinSys_PETSC *ls = new LinSys_PETSC( &(*data_->dh_->distr()) );
 
                 // temporary solution; we have to set precision also for sequantial case of BDDC
                 // final solution should be probably call of direct solver for oneproc case
@@ -895,14 +963,17 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
                     ls->LinSys::set_from_input(in_rec); // get only common options
                 }
 
-                ls->set_solution();
+                ls->set_solution( ele_flux_ptr->get_data_vec().petsc_vec() );
                 schur0=ls;
             } else {
                 IS is;
-                ISCreateStride(PETSC_COMM_WORLD, mh_dh.side_ds->lsize(), mh_dh.rows_ds->begin(), 1, &is);
+                auto side_dofs_vec = get_component_indices_vec(0);
+
+                ISCreateGeneral(PETSC_COMM_SELF, side_dofs_vec.size(), &(side_dofs_vec[0]), PETSC_COPY_VALUES, &is);
+                //ISView(is, PETSC_VIEWER_STDOUT_SELF);
                 //OLD_ASSERT(err == 0,"Error in ISCreateStride.");
 
-                SchurComplement *ls = new SchurComplement(&(*mh_dh.rows_ds), is);
+                SchurComplement *ls = new SchurComplement(&(*data_->dh_->distr()), is);
 
                 // make schur1
                 Distribution *ds = ls->make_complement_distribution();
@@ -911,7 +982,20 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
                     schur1->set_positive_definite();
                 } else {
                     IS is;
-                    ISCreateStride(PETSC_COMM_WORLD, mh_dh.el_ds->lsize(), ls->get_distribution()->begin(), 1, &is);
+                    auto elem_dofs_vec = get_component_indices_vec(1);
+
+                    const PetscInt *b_indices;
+                    ISGetIndices(ls->IsB, &b_indices);
+                    uint b_size = ls->loc_size_B;
+                    for(uint i_b=0, i_bb=0; i_b < b_size && i_bb < elem_dofs_vec.size(); i_b++) {
+                        if (b_indices[i_b] == elem_dofs_vec[i_bb])
+                            elem_dofs_vec[i_bb++] = i_b + ds->begin();
+                    }
+                    ISRestoreIndices(ls->IsB, &b_indices);
+
+
+                    ISCreateGeneral(PETSC_COMM_SELF, elem_dofs_vec.size(), &(elem_dofs_vec[0]), PETSC_COPY_VALUES, &is);
+                    //ISView(is, PETSC_VIEWER_STDOUT_SELF);
                     //OLD_ASSERT(err == 0,"Error in ISCreateStride.");
                     SchurComplement *ls1 = new SchurComplement(ds, is); // is is deallocated by SchurComplement
                     ls1->set_negative_definite();
@@ -924,7 +1008,7 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
                 }
                 ls->set_complement( schur1 );
                 ls->set_from_input(in_rec);
-                ls->set_solution();
+                ls->set_solution( ele_flux_ptr->get_data_vec().petsc_vec() );
                 schur0=ls;
             }
 
@@ -971,8 +1055,8 @@ void DarcyMH::assembly_linear_system() {
 
         assembly_source_term();
         
-        auto multidim_assembler =  AssemblyBase::create< AssemblyMH >(data_);
-	    assembly_mh_matrix( multidim_assembler ); // fill matrix
+
+	    assembly_mh_matrix( data_->multidim_assembler ); // fill matrix
 
 	    schur0->finish_assembly();
 //         print_matlab_matrix("matrix");
@@ -1024,6 +1108,8 @@ void DarcyMH::print_matlab_matrix(std::string matlab_file)
         PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_MATLAB);
         MatView( *const_cast<Mat*>(schur0->get_matrix()), viewer);
         VecView( *const_cast<Vec*>(schur0->get_rhs()), viewer);
+        VecView( *const_cast<Vec*>(schur0->get_rhs()), viewer);
+        VecView( *const_cast<Vec*>(&(schur0->get_solution())), viewer);
     }
 //     else{
 //         WarningOut() << "No matrix output available for the current solver.";
@@ -1056,21 +1142,33 @@ void DarcyMH::print_matlab_matrix(std::string matlab_file)
     
     FILE * file;
     file = fopen(output_file.c_str(),"a");
-    fprintf(file, "nA = %d;\n", mh_dh.side_ds->size());
-    fprintf(file, "nB = %d;\n", mh_dh.el_ds->size());
-    fprintf(file, "nBF = %d;\n", mh_dh.edge_ds->size());
+    fprintf(file, "nA = %d;\n", data_->dh_cr_disc_->distr()->size());
+    fprintf(file, "nB = %d;\n", data_->dh_->mesh()->get_el_ds()->size());
+    fprintf(file, "nBF = %d;\n", data_->dh_cr_->distr()->size());
     fprintf(file, "h1 = %e;\nh2 = %e;\nh3 = %e;\n", h1, h2, h3);
     fprintf(file, "he2 = %e;\nhe3 = %e;\n", he2, he3);
     fclose(file);
 }
 
 
+//template <int dim>
+//std::vector<arma::vec3> dof_points(DHCellAccessor cell, const Mapping<dim, 3> &mapping) {
+//
+//
+//    vector<arma::vec::fixed<dim+1>> bary_dof_points = cell->fe()->dof_points();
+//
+//    std::vector<arma::vec3> points(20);
+//    points.resize(0);
+//
+//}
+//
+
 void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
     START_TIMER("DarcyFlowMH_Steady::set_mesh_data_for_bddc");
     // prepare mesh for BDDCML
     // initialize arrays
     // auxiliary map for creating coordinates of local dofs and global-to-local numbering
-    std::map<int,arma::vec3> localDofMap;
+    std::map<int, arma::vec3> localDofMap;
     // connectivity for the subdomain, i.e. global dof numbers on element, stored element-by-element
     // Indices of Nodes on Elements
     std::vector<int> inet;
@@ -1087,60 +1185,57 @@ void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
     // maximal and minimal dimension of elements
     uint elDimMax = 1;
     uint elDimMin = 3;
-    for ( unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++ ) {
-        auto ele_ac = mh_dh.accessor(i_loc);
+    std::vector<LongIdx> cell_dofs_global(10);
+
+
+
+    for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
+        // LocalElementAccessorBase<3> ele_ac(dh_cell);
         // for each element, create local numbering of dofs as fluxes (sides), pressure (element centre), Lagrange multipliers (edges), compatible connections
 
-        elDimMax = std::max( elDimMax, ele_ac.dim() );
-        elDimMin = std::min( elDimMin, ele_ac.dim() );
+        dh_cell.get_dof_indices(cell_dofs_global);
 
-        isegn.push_back( ele_ac.ele_global_idx() );
-        int nne = 0;
+        inet.insert(inet.end(), cell_dofs_global.begin(), cell_dofs_global.end());
+        uint n_inet = cell_dofs_global.size();
 
-        for (unsigned int si=0; si<ele_ac.element_accessor()->n_sides(); si++) {
-            // insert local side dof
-            int side_row = ele_ac.side_row(si);
-            arma::vec3 coord = ele_ac.side(si)->centre();
 
-            localDofMap.insert( std::make_pair( side_row, coord ) );
-            inet.push_back( side_row );
-            nne++;
+        uint dim = dh_cell.elm().dim();
+        elDimMax = std::max( elDimMax, dim );
+        elDimMin = std::min( elDimMin, dim );
+
+        // TODO: this is consistent with previous implementation, but may be wrong as it use global element numbering
+        // used in sequential mesh, do global numbering of distributed elements.
+        isegn.push_back( dh_cell.elm_idx());
+
+        // TODO: use FiniteElement::dof_points
+        for (unsigned int si=0; si<dh_cell.elm()->n_sides(); si++) {
+            arma::vec3 coord = dh_cell.elm().side(si)->centre();
+            // flux dof points
+            localDofMap.insert( std::make_pair( cell_dofs_global[si], coord ) );
+            // pressure trace dof points
+            localDofMap.insert( std::make_pair( cell_dofs_global[si+dim+2], coord ) );
         }
-
-        // insert local pressure dof
-        int el_row  = ele_ac.ele_row();
-        arma::vec3 coord = ele_ac.centre();
-        localDofMap.insert( std::make_pair( el_row, coord ) );
-        inet.push_back( el_row );
-        nne++;
-
-        for (unsigned int si=0; si<ele_ac.element_accessor()->n_sides(); si++) {
-            // insert local edge dof
-            int edge_row = ele_ac.edge_row(si);
-            arma::vec3 coord = ele_ac.side(si)->centre();
-
-            localDofMap.insert( std::make_pair( edge_row, coord ) );
-            inet.push_back( edge_row );
-            nne++;
-        }
+        // pressure dof points
+        arma::vec3 elm_centre = dh_cell.elm().centre();
+        localDofMap.insert( std::make_pair( cell_dofs_global[dim+1], elm_centre ) );
 
         // insert dofs related to compatible connections
-        for ( unsigned int i_neigh = 0; i_neigh < ele_ac.element_accessor()->n_neighs_vb(); i_neigh++) {
-            int edge_row = mh_dh.row_4_edge[ ele_ac.element_accessor()->neigh_vb[i_neigh]->edge_idx()  ];
-            arma::vec3 coord = ele_ac.element_accessor()->neigh_vb[i_neigh]->edge()->side(0)->centre();
-
-            localDofMap.insert( std::make_pair( edge_row, coord ) );
+        //const Element *ele = dh_cell.elm().element();
+        for(DHCellSide side : dh_cell.neighb_sides()) {
+            uint neigh_dim = side.cell().elm().dim();
+            side.cell().get_dof_indices(cell_dofs_global);
+            int edge_row = cell_dofs_global[neigh_dim+2+side.side_idx()];
+            localDofMap.insert( std::make_pair( edge_row, side.centre() ) );
             inet.push_back( edge_row );
-            nne++;
+            n_inet++;
         }
+        nnet.push_back(n_inet);
 
-        nnet.push_back( nne );
 
         // version for rho scaling
         // trace computation
-        arma::vec3 centre = ele_ac.centre();
-        double conduct = data_->conductivity.value( centre , ele_ac.element_accessor() );
-        auto aniso = data_->anisotropy.value( centre, ele_ac.element_accessor() );
+        double conduct = data_->conductivity.value( elm_centre , dh_cell.elm() );
+        auto aniso = data_->anisotropy.value( elm_centre , dh_cell.elm() );
 
         // compute mean on the diagonal
         double coef = 0.;
@@ -1154,10 +1249,25 @@ void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
                 "Zero coefficient of hydrodynamic resistance %f . \n ", coef );
         element_permeability.push_back( 1. / coef );
     }
+//    uint i_inet = 0;
+//    for(int n_dofs : nnet) {
+//        DebugOut() << "nnet: " << n_dofs;
+//        for(int j=0; j < n_dofs; j++, i_inet++) {
+//            DebugOut() << "inet: " << inet[i_inet];
+//        }
+//    }
+
+    auto distr = data_->dh_->distr();
+//    for(auto pair : localDofMap) {
+//        DebugOut().every_proc() << "r: " << distr->myp() << " gi: " << pair.first << "xyz: " << pair.second[0];
+//
+//    }
+
+
     //convert set of dofs to vectors
     // number of nodes (= dofs) on the subdomain
     int numNodeSub = localDofMap.size();
-    OLD_ASSERT_EQUAL( (unsigned int)numNodeSub, mh_dh.global_row_4_sub_row->size() );
+    //ASSERT_EQ( (unsigned int)numNodeSub, data_->dh_->lsize() );
     // Indices of Subdomain Nodes in Global Numbering - for local nodes, their global indices
     std::vector<int> isngn( numNodeSub );
     // pseudo-coordinates of local nodes (i.e. dofs)
@@ -1213,7 +1323,17 @@ void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
     int spaceDim    = 3;    // TODO: what is the proper value here?
     int meshDim     = elDimMax;
 
-    bddc_ls -> load_mesh( spaceDim, numNodes, numDofsInt, inet, nnet, nndf, isegn, isngn, isngn, xyz, element_permeability, meshDim );
+    /**
+     * We need:
+     * - local to global element map (possibly mesh->el_4_loc
+     * - inet, nnet - local dof numbers per element, local numbering of only those dofs that are on owned elements
+     *   1. collect DH local dof indices  on elements, manage map from DH local indices to BDDC local dof indices
+     *   2. map collected DH indices to BDDC indices using the map
+     * - local BDDC dofs to global dofs, use DH to BDDC map with DH local to global map
+     * - XYZ - permuted, collect in main loop into array of size of all DH local dofs, compress and rearrange latter
+     * - element_permeability - in main loop
+     */
+    bddc_ls -> load_mesh( LinSys_BDDC::BDDCMatrixType::SPD_VIA_SYMMETRICGENERAL, spaceDim, numNodes, numDofsInt, inet, nnet, nndf, isegn, isngn, isngn, xyz, element_permeability, meshDim );
 }
 
 
@@ -1231,7 +1351,7 @@ DarcyMH::~DarcyMH() {
     
     if (schur0 != NULL) {
         delete schur0;
-        chkerr(VecScatterDestroy(&par_to_all));
+    	if (par_to_all != nullptr) chkerr(VecScatterDestroy(&par_to_all));
     }
 
 	if (solution != NULL) {
@@ -1337,8 +1457,8 @@ void DarcyMH::read_initial_condition()
 	// cycle over local element rows
 
 	DebugOut().fmt("Setup with dt: {}\n", time_->dt());
-	for (unsigned int i_loc_el = 0; i_loc_el < mh_dh.el_ds->lsize(); i_loc_el++) {
-		auto ele_ac = mh_dh.accessor(i_loc_el);
+	for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
+		LocalElementAccessorBase<3> ele_ac(dh_cell);
 		// set initial condition
 		local_sol[ele_ac.ele_local_row()] = data_->init_pressure.value(ele_ac.centre(),ele_ac.element_accessor());
 	}
@@ -1361,9 +1481,8 @@ void DarcyMH::setup_time_term() {
 
    	balance_->start_mass_assembly(data_->water_balance_idx);
 
-    //DebugOut().fmt("time_term lsize: {} {}\n", mh_dh.el_ds->myp(), mh_dh.el_ds->lsize());
-    for (unsigned int i_loc_el = 0; i_loc_el < mh_dh.el_ds->lsize(); i_loc_el++) {
-        auto ele_ac = mh_dh.accessor(i_loc_el);
+   	for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
+        LocalElementAccessorBase<3> ele_ac(dh_cell);
 
         // set new diagonal
         double diagonal_coeff = data_->cross_section.value(ele_ac.centre(), ele_ac.element_accessor())
@@ -1371,7 +1490,6 @@ void DarcyMH::setup_time_term() {
 				* ele_ac.measure();
         local_diagonal[ele_ac.ele_local_row()]= - diagonal_coeff / time_->dt();
 
-        //DebugOut().fmt("time_term: {} {} {} {} {}\n", mh_dh.el_ds->myp(), ele_ac.ele_global_idx(), i_loc_row, i_loc_el + mh_dh.side_ds->lsize(), diagonal_coeff);
        	balance_->add_mass_matrix_values(data_->water_balance_idx,
        	        ele_ac.region().bulk_idx(), { LongIdx(ele_ac.ele_row()) }, {diagonal_coeff});
     }
@@ -1405,6 +1523,40 @@ void DarcyMH::modify_system() {
     schur0->set_rhs_changed();
 
     //VecSwap(previous_solution, schur0->get_solution());
+}
+
+
+std::shared_ptr< FieldFE<3, FieldValue<3>::VectorFixed> > DarcyMH::get_velocity_field() {
+    return ele_flux_ptr;
+}
+
+
+/// Helper method fills range (min and max) of given component
+void dofs_range(unsigned int n_dofs, unsigned int &min, unsigned int &max, unsigned int component) {
+    if (component==0) {
+        min = 0;
+        max = n_dofs/2;
+    } else if (component==1) {
+        min = n_dofs/2;
+        max = (n_dofs+1)/2;
+    } else {
+        min = (n_dofs+1)/2;
+        max = n_dofs;
+    }
+}
+
+
+std::vector<int> DarcyMH::get_component_indices_vec(unsigned int component) const {
+	ASSERT_LT_DBG(component, 3).error("Invalid component!");
+	unsigned int i, n_dofs, min, max;
+    std::vector<int> dof_vec;
+    std::vector<LongIdx> dof_indices(data_->dh_->max_elem_dofs());
+	for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
+        n_dofs = dh_cell.get_dof_indices(dof_indices);
+        dofs_range(n_dofs, min, max, component);
+        for (i=min; i<max; ++i) dof_vec.push_back(dof_indices[i]);
+    }
+	return dof_vec;
 }
 
 

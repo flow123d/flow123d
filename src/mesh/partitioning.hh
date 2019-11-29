@@ -25,7 +25,7 @@
 #include "input/accessors.hh"        // for Record
 #include "input/input_exception.hh"  // for DECLARE_INPUT_EXCEPTION, Exception
 #include "system/exceptions.hh"      // for operator<<, ExcStream, EI, TYPED...
-#include "mesh/long_idx.hh"          // for LongIdx
+#include "system/index_types.hh"     // for LongIdx
 
 class Distribution;
 class Mesh;

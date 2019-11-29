@@ -24,7 +24,7 @@
 
 #include "fem/finite_element.hh"
 #include "fem/fe_values.hh"
-
+#include "tools/mixed.hh"
 
 
 /**
@@ -139,6 +139,11 @@ public:
 
     UpdateFlags update_each(UpdateFlags flags) override;
     
+    /// Get barycentric coordinates of the points on the reference element associated with the dofs.
+    /// Used in BDDC for unknown reason.
+    virtual std::vector< arma::vec::fixed<dim+1> > dof_points() const;
+
+
     const std::vector<std::shared_ptr<FiniteElement<dim> > > &fe()
     { return fe_; }
     
@@ -162,7 +167,16 @@ private:
   
 };
 
-
+template<class... Args>
+MixedPtr<FESystem> mixed_fe_system(MixedPtr<FiniteElement> fe, Args&&... args)
+{
+    return MixedPtr<FESystem>(
+      std::make_shared<FESystem<0>>(fe.get<0>(), std::forward<Args>(args)...),
+      std::make_shared<FESystem<1>>(fe.get<1>(), std::forward<Args>(args)...),
+      std::make_shared<FESystem<2>>(fe.get<2>(), std::forward<Args>(args)...),
+      std::make_shared<FESystem<3>>(fe.get<3>(), std::forward<Args>(args)...)
+      );
+}
 
 
 

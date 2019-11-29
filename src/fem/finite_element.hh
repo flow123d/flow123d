@@ -303,6 +303,10 @@ public:
     /// Number of components of FE in a mapped space with dimension @p spacedim.
     unsigned int n_space_components(unsigned int spacedim);
     
+    /// Get barycentric coordinates of the points on the reference element associated with the dofs.
+    /// Used in BDDC for unknown reason.
+    virtual std::vector< arma::vec::fixed<dim+1> > dof_points() const;
+
     /**
      * @brief Destructor.
      */

@@ -418,7 +418,7 @@ void FEValuesBase<dim,spacedim>::fill_system_data(const ElementValuesBase<dim,sp
     for (unsigned int f=0; f<fe_sys->fe().size(); f++)
     {
         // fill fe_values for base FE
-        unsigned int n_comp = fe_sys->fe()[f]->n_space_components(spacedim);
+        unsigned int n_comp = fe_sys->fe()[f]->n_components();
         FEInternalData vec_fe_data(fe_data, fe_sys->fe_dofs(f), comp_offset, n_comp);
         fe_values_vec[f]->fill_data(elm_values, vec_fe_data);
         
@@ -514,6 +514,7 @@ FEValues<dim,spacedim>::FEValues(
 : FEValuesBase<dim, spacedim>(),
   fe_data(nullptr)
 {
+    if (dim == 0) return; // avoid unnecessary allocation of dummy 0 dimensional objects
     ASSERT_DBG( q.dim() == dim );
     this->allocate( q.size(), _fe, _flags);
     this->elm_values = new ElementValues<dim,spacedim>(q, this->data.update_flags);
@@ -558,6 +559,18 @@ void FEValues<dim,spacedim>::reinit(const ElementAccessor<spacedim> &cell)
 
 
 
+MixedPtr<FEValues> mixed_fe_values(
+        QGauss::array &quadrature,
+        MixedPtr<FiniteElement> fe,
+        UpdateFlags flags)
+{
+    return MixedPtr<FEValues>(
+      std::make_shared<FEValues<0>>(quadrature[0], *fe.get<0>(), flags),
+      std::make_shared<FEValues<1>>(quadrature[1], *fe.get<1>(), flags),
+      std::make_shared<FEValues<2>>(quadrature[2], *fe.get<2>(), flags),
+      std::make_shared<FEValues<3>>(quadrature[3], *fe.get<3>(), flags)
+      );
+}
 
 
 
@@ -626,8 +639,6 @@ void FESideValues<dim,spacedim>::reinit(const ElementAccessor<spacedim> &cell, u
     // calculation of finite element data
     this->fill_data(*this->elm_values, *side_fe_data[sid][cell->permutation_idx(sid)]);
 }
-
-
 
 
 

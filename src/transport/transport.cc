@@ -20,9 +20,9 @@
 
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
+#include "system/index_types.hh"
 
 #include "mesh/side_impl.hh"
-#include "mesh/long_idx.hh"
 #include "mesh/mesh.h"
 #include "mesh/partitioning.hh"
 #include "mesh/accessors.hh"
@@ -39,6 +39,7 @@
 
 #include "io/output_time.hh"
 #include "tools/time_governor.hh"
+#include "tools/mixed.hh"
 #include "coupling/balance.hh"
 #include "input/accessors.hh"
 #include "input/input_type.hh"
@@ -52,12 +53,19 @@
 #include "reaction/isotherm.hh" // SorptionType enum
 #include "flow/mh_dofhandler.hh"
 
+#include "fem/fe_p.hh"
+#include "fem/fe_values.hh"
+#include "quadrature/quadrature_lib.hh"
+
 
 FLOW123D_FORCE_LINK_IN_CHILD(convectionTransport);
 
 
 namespace IT = Input::Type;
 
+/********************************************************************************
+ * Static methods and data members
+ */
 const string _equation_name = "Solute_Advection_FV";
 
 const int ConvectionTransport::registrar =
@@ -108,12 +116,59 @@ ConvectionTransport::EqData::EqData() : TransportEqData()
 }
 
 
+/********************************************************************************
+ * Helper class FETransportObjects
+ */
+FETransportObjects::FETransportObjects()
+: q_(QGauss::make_array(0))
+{
+    fe0_ = new FE_P_disc<0>(0);
+    fe1_ = new FE_P_disc<1>(0);
+    fe2_ = new FE_P_disc<2>(0);
+    fe3_ = new FE_P_disc<3>(0);
+
+
+    fe_values1_ = new FESideValues<1,3>(q(0), *fe1_,
+            update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
+    fe_values2_ = new FESideValues<2,3>(q(1), *fe2_,
+            update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
+    fe_values3_ = new FESideValues<3,3>(q(2), *fe3_,
+            update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
+}
+
+
+FETransportObjects::~FETransportObjects()
+{
+    delete fe0_;
+    delete fe1_;
+    delete fe2_;
+    delete fe3_;
+    delete fe_values1_;
+    delete fe_values2_;
+    delete fe_values3_;
+}
+
+template<> FiniteElement<0> *FETransportObjects::fe<0>() { return fe0_; }
+template<> FiniteElement<1> *FETransportObjects::fe<1>() { return fe1_; }
+template<> FiniteElement<2> *FETransportObjects::fe<2>() { return fe2_; }
+template<> FiniteElement<3> *FETransportObjects::fe<3>() { return fe3_; }
+
+Quadrature &FETransportObjects::q(unsigned int dim) { return q_[dim]; }
+
+template<> FESideValues<1,3> *FETransportObjects::fe_values<1>() { return fe_values1_; }
+template<> FESideValues<2,3> *FETransportObjects::fe_values<2>() { return fe_values2_; }
+template<> FESideValues<3,3> *FETransportObjects::fe_values<3>() { return fe_values3_; }
+
+
+/********************************************************************************
+ * ConvectionTransport
+ */
 ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record in_rec)
 : ConcentrationTransportBase(init_mesh, in_rec),
   is_mass_diag_changed(false),
   input_rec(in_rec),
-  mh_dh(nullptr),
-  sources_corr(nullptr)
+  sources_corr(nullptr),
+  changed_(true)
 {
 	START_TIMER("ConvectionTransport");
 	this->eq_data_ = &data_;
@@ -125,12 +180,9 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record in
     is_bc_term_scaled = false;
 
     //initialization of DOF handler
-    static FE_P_disc<0> fe0(0);
-    static FE_P_disc<1> fe1(0);
-    static FE_P_disc<2> fe2(0);
-    static FE_P_disc<3> fe3(0);
+    MixedPtr<FE_P_disc> fe(0);
     dh_ = make_shared<DOFHandlerMultiDim>(init_mesh);
-    shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>( &init_mesh, &fe0, &fe1, &fe2, &fe3);
+    shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>( &init_mesh, fe);
     dh_->distribute_dofs(ds);
 
 }
@@ -159,8 +211,11 @@ void ConvectionTransport::initialize()
 	for (unsigned int sbi=0; sbi<n_substances(); sbi++)
 	{
 		// create shared pointer to a FieldFE and push this Field to output_field on all regions
-		output_field_ptr[sbi] = create_field<3, FieldValue<3>::Scalar>(out_conc[sbi], *mesh_, 1);
+		output_field_ptr[sbi] = std::make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
+		output_field_ptr[sbi]->set_fe_data(dh_ );
 		data_.conc_mobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr[sbi], 0);
+		vconc[sbi] = output_field_ptr[sbi]->get_data_vec().petsc_vec();
+		conc[sbi] = &(output_field_ptr[sbi]->get_data_vec().data()[0]);
 	}
 	//output_stream_->add_admissible_field_names(input_rec.val<Input::Array>("output_fields"));
     //output_stream_->mark_output_times(*time_);
@@ -220,7 +275,6 @@ ConvectionTransport::~ConvectionTransport()
 
         for (sbi = 0; sbi < n_substances(); sbi++) {
             // mpi vectors
-        	chkerr(VecDestroy(&vconc[sbi]));
         	chkerr(VecDestroy(&vpconc[sbi]));
         	chkerr(VecDestroy(&bcvcorr[sbi]));
         	chkerr(VecDestroy(&vcumulative_corr[sbi]));
@@ -228,14 +282,12 @@ ConvectionTransport::~ConvectionTransport()
         	chkerr(VecDestroy(&v_sources_corr[sbi]));
 
             // arrays of arrays
-            delete conc[sbi];
             delete cumulative_corr[sbi];
             delete tm_diag[sbi];
             delete sources_corr[sbi];
         }
 
         // arrays of mpi vectors
-        delete vconc;
         delete vpconc;
         delete bcvcorr;
         delete vcumulative_corr;
@@ -256,16 +308,13 @@ ConvectionTransport::~ConvectionTransport()
 
 void ConvectionTransport::set_initial_condition()
 {
-	for (auto elem : mesh_->elements_range()) {
-    	if (!el_ds->is_local(row_4_el[ elem.idx() ])) continue;
-
-    	LongIdx index = row_4_el[ elem.idx() ] - el_ds->begin();
-    	ElementAccessor<3> ele_acc = mesh_->element_accessor( elem.idx() );
+	for ( DHCellAccessor dh_cell : dh_->own_range() ) {
+		LongIdx index = dh_cell.local_idx();
+		ElementAccessor<3> ele_acc = mesh_->element_accessor( dh_cell.elm_idx() );
 
 		for (unsigned int sbi=0; sbi<n_substances(); sbi++) // Optimize: SWAP LOOPS
-			conc[sbi][index] = data_.init_conc[sbi].value(elem.centre(), ele_acc);
-    }
-
+			output_field_ptr[sbi]->get_data_vec().data()[index] = data_.init_conc[sbi].value(ele_acc.centre(), ele_acc);
+	}
 }
 
 //=============================================================================
@@ -286,16 +335,13 @@ void ConvectionTransport::alloc_transport_vectors() {
     }
 
     conc = new double*[n_subst];
+    vconc = new Vec[n_subst];
     out_conc.clear();
     out_conc.resize(n_subst);
     output_field_ptr.clear();
     output_field_ptr.resize(n_subst);
     for (sbi = 0; sbi < n_subst; sbi++) {
-        conc[sbi] = new double[el_ds->lsize()];
         out_conc[sbi].resize( el_ds->size() );
-        for (i = 0; i < el_ds->lsize(); i++) {
-            conc[sbi][i] = 0.0;
-        }
     }
     
     cfl_flow_ = new double[el_ds->lsize()];
@@ -312,7 +358,6 @@ void ConvectionTransport::alloc_transport_structs_mpi() {
 
     MPI_Barrier(PETSC_COMM_WORLD);
 
-    vconc = new Vec[n_subst];
     vpconc = new Vec[n_subst];
     bcvcorr = new Vec[n_subst];
     vcumulative_corr = new Vec[n_subst];
@@ -323,11 +368,8 @@ void ConvectionTransport::alloc_transport_structs_mpi() {
     for (sbi = 0; sbi < n_subst; sbi++) {
         VecCreateMPI(PETSC_COMM_WORLD, el_ds->lsize(), mesh_->n_elements(), &bcvcorr[sbi]);
         VecZeroEntries(bcvcorr[sbi]);
-        VecCreateMPIWithArray(PETSC_COMM_WORLD,1, el_ds->lsize(), mesh_->n_elements(), conc[sbi],
-                &vconc[sbi]);
 
         VecCreateMPI(PETSC_COMM_WORLD, el_ds->lsize(), mesh_->n_elements(), &vpconc[sbi]);
-        VecZeroEntries(vconc[sbi]);
         VecZeroEntries(vpconc[sbi]);
 
         // SOURCES
@@ -379,7 +421,7 @@ void ConvectionTransport::set_boundary_conditions()
         	for (unsigned int si=0; si<elm->n_sides(); si++) {
                 Boundary *b = elm.side(si)->cond();
                 if (b != NULL) {
-                    double flux = mh_dh->side_flux( *(elm.side(si)) );
+                    double flux = this->side_flux(elm, si);
                     if (flux < 0.0) {
                         double aij = -(flux / elm.measure() );
 
@@ -509,7 +551,7 @@ void ConvectionTransport::zero_time_step()
 
 bool ConvectionTransport::evaluate_time_constraint(double& time_constraint)
 {
-	OLD_ASSERT(mh_dh, "Null MH object.\n" );
+	ASSERT_PTR(dh_).error( "Null DOF handler object.\n" );
     data_.set_time(time_->step(), LimitSide::right); // set to the last computed time
     
     START_TIMER("data reinit");
@@ -517,7 +559,7 @@ bool ConvectionTransport::evaluate_time_constraint(double& time_constraint)
     bool cfl_changed = false;
     
     // if FLOW or DATA changed ---------------------> recompute transport matrix
-    if (mh_dh->time_changed() > transport_matrix_time)
+    if (changed_)
     {
         create_transport_matrix_mpi();
         is_convection_matrix_scaled=false;
@@ -556,7 +598,7 @@ bool ConvectionTransport::evaluate_time_constraint(double& time_constraint)
     }
     
     // although it does not influence CFL, compute BC so the full system is assembled
-    if ( (mh_dh->time_changed() > transport_bc_time)
+    if ( changed_
         || data_.porosity.changed()
         || data_.water_content.changed()
         || data_.bc_conc.changed() )
@@ -569,6 +611,7 @@ bool ConvectionTransport::evaluate_time_constraint(double& time_constraint)
     
     // return time constraint
     time_constraint = cfl_max_step;
+    changed_ = false;
     return cfl_changed;
 }
 
@@ -750,20 +793,23 @@ void ConvectionTransport::create_transport_matrix_mpi() {
     unsigned int loc_el = 0;
     for ( DHCellAccessor dh_cell : dh_->own_range() ) {
         new_i = row_4_el[ dh_cell.elm_idx() ];
+        elm = dh_cell.elm();
         for( DHCellSide cell_side : dh_cell.side_range() ) {
-            flux = mh_dh->side_flux( cell_side.side());
+            flux = this->side_flux(elm, cell_side.side_idx());
             if (cell_side.cond() == NULL) {
                 edg_flux = 0;
                 for( DHCellSide edge_side : cell_side.edge_sides() ) {
-                	flux2 = mh_dh->side_flux( edge_side.side() );
-                	if ( flux2 > 0)  edg_flux+= flux2;
+                    el2 = edge_side.element();
+                    flux2 = this->side_flux(el2, edge_side.side_idx());
+                    if ( flux2 > 0)  edg_flux+= flux2;
                 }
                 for( DHCellSide edge_side : cell_side.edge_sides() )
                     if (edge_side != cell_side) {
                         j = edge_side.element().idx();
                         new_j = row_4_el[j];
 
-                        flux2 = mh_dh->side_flux(edge_side.side());
+                        el2 = edge_side.element();
+                        flux2 = this->side_flux(el2, edge_side.side_idx());
                         if ( flux2 > 0.0 && flux <0.0)
                             aij = -(flux * flux2 / ( edg_flux * dh_cell.elm().measure() ) );
                         else aij =0;
@@ -778,7 +824,8 @@ void ConvectionTransport::create_transport_matrix_mpi() {
         {
             ASSERT( neighb_side.elem_idx() != dh_cell.elm_idx() ).error("Elm. same\n");
             new_j = row_4_el[ neighb_side.elem_idx() ];
-            flux = mh_dh->side_flux(neighb_side.side());
+            el2 = neighb_side.element();
+            flux = this->side_flux(el2, neighb_side.side_idx());
 
             // volume source - out-flow from higher dimension
             if (flux > 0.0)  aij = flux / dh_cell.elm().measure();
@@ -810,28 +857,6 @@ void ConvectionTransport::create_transport_matrix_mpi() {
 }
 
 
-
-
-
-//=============================================================================
-//      OUTPUT VECTOR GATHER
-//=============================================================================
-void ConvectionTransport::output_vector_gather() {
-
-    unsigned int sbi;
-    IS is;
-
-    ISCreateGeneral(PETSC_COMM_SELF, mesh_->n_elements(), row_4_el, PETSC_COPY_VALUES, &is); //WithArray
-    VecScatterCreate(vconc[0], is, out_conc[0].petsc_vec(), PETSC_NULL, &vconc_out_scatter);
-    for (sbi = 0; sbi < n_substances(); sbi++) {
-        VecScatterBegin(vconc_out_scatter, vconc[sbi], out_conc[sbi].petsc_vec(), INSERT_VALUES, SCATTER_FORWARD);
-        VecScatterEnd(vconc_out_scatter, vconc[sbi], out_conc[sbi].petsc_vec(), INSERT_VALUES, SCATTER_FORWARD);
-    }
-    chkerr(VecScatterDestroy(&(vconc_out_scatter)));
-    chkerr(ISDestroy(&(is)));
-}
-
-
 double **ConvectionTransport::get_concentration_matrix() {
 	return conc;
 }
@@ -855,14 +880,6 @@ LongIdx *ConvectionTransport::get_row_4_el(){
 void ConvectionTransport::output_data() {
 
     data_.output_fields.set_time(time().step(), LimitSide::right);
-    //if ( data_.output_fields.is_field_output_time(data_.conc_mobile, time().step()) ) {
-    output_vector_gather();
-    //}
-
-    for (unsigned int sbi = 0; sbi < n_substances(); sbi++) {
-    	fill_output_data(out_conc[sbi], output_field_ptr[sbi]);
-    }
-
 	data_.output_fields.output(time().step());
     
     START_TIMER("TOS-balance");
@@ -876,4 +893,22 @@ void ConvectionTransport::set_balance_object(std::shared_ptr<Balance> balance)
 {
 	balance_ = balance;
     subst_idx = balance_->add_quantities(substances_.names());
+}
+
+double ConvectionTransport::side_flux(ElementAccessor<3> &cell, unsigned int i_side)
+{
+    if (cell.dim()==3) return calculate_side_flux<3>(cell, i_side);
+    else if (cell.dim()==2) return calculate_side_flux<2>(cell, i_side);
+    else return calculate_side_flux<1>(cell, i_side);
+}
+
+template<unsigned int dim>
+double ConvectionTransport::calculate_side_flux(ElementAccessor<3> &cell, unsigned int i_side)
+{
+    ASSERT_EQ(cell->dim(), dim).error("Element dimension mismatch!");
+
+    feo_.fe_values<dim>()->reinit(cell, i_side);
+    auto vel = velocity_field_ptr_->value(cell.side(i_side)->centre(), cell);
+    double side_flux = arma::dot(vel, feo_.fe_values<dim>()->normal_vector(0)) * feo_.fe_values<dim>()->JxW(0);
+    return side_flux;
 }

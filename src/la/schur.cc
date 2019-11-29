@@ -41,7 +41,6 @@
 #include "la/local_to_global_map.hh"
 #include "system/system.hh"
 #include "la/linsys.hh"
-#include "la/linsys_BDDC.hh"
 #include "la/schur.hh"
 
 /**
@@ -66,6 +65,7 @@ SchurComplement::SchurComplement(Distribution *ds, IS ia, IS ib)
 
         // initialize variables
         Compl   = NULL;
+        A       = NULL;
         IA      = NULL;
         B       = NULL;
         Bt      = NULL;
@@ -77,6 +77,10 @@ SchurComplement::SchurComplement(Distribution *ds, IS ia, IS ib)
         RHS2    = NULL;
         Sol1    = NULL;
         Sol2    = NULL;
+        rhs1sc  = NULL;
+        rhs2sc  = NULL;
+        sol1sc  = NULL;
+        sol2sc  = NULL;
         ds_     = NULL;
 
         // create A block index set
@@ -113,6 +117,7 @@ SchurComplement::SchurComplement(SchurComplement &other)
   loc_size_A(other.loc_size_A), loc_size_B(other.loc_size_B), state(other.state),
   Compl(other.Compl), ds_(other.ds_)
 {
+	MatCopy(other.A, A, DIFFERENT_NONZERO_PATTERN);
 	MatCopy(other.IA, IA, DIFFERENT_NONZERO_PATTERN);
 	MatCopy(other.IAB, IAB, DIFFERENT_NONZERO_PATTERN);
 	ISCopy(other.IsA, IsA);
@@ -166,7 +171,7 @@ void SchurComplement::form_schur()
     PetscErrorCode ierr = 0;
     MatReuse mat_reuse;        // reuse structures after first computation of schur
     MatStructure mat_subset_pattern;
-    PetscScalar *rhs_array, *sol_array;
+    PetscScalar *sol_array;
 
     mat_reuse=MAT_REUSE_MATRIX;
     mat_subset_pattern=SUBSET_NONZERO_PATTERN;
@@ -177,22 +182,19 @@ void SchurComplement::form_schur()
         // create complement system
         // TODO: introduce LS as true object, clarify its internal states
         // create RHS sub vecs RHS1, RHS2
-        VecGetArray(rhs_, &rhs_array);
-        VecCreateMPIWithArray(PETSC_COMM_WORLD,1,loc_size_A,PETSC_DETERMINE,rhs_array,&(RHS1));
+    	VecCreateMPI(PETSC_COMM_WORLD, loc_size_A, PETSC_DETERMINE, &(RHS1));
+    	VecCreateMPI(PETSC_COMM_WORLD, loc_size_B, PETSC_DETERMINE, &(RHS2));
+        VecScatterCreate(rhs_, IsA, RHS1, PETSC_NULL, &rhs1sc);
+        VecScatterCreate(rhs_, IsB, RHS2, PETSC_NULL, &rhs2sc);
 
-        // create Solution sub vecs Sol1, Compl->solution
-        VecGetArray(solution_, &sol_array);
-        VecCreateMPIWithArray(PETSC_COMM_WORLD,1,loc_size_A,PETSC_DETERMINE,sol_array,&(Sol1));
-
-        VecCreateMPIWithArray(PETSC_COMM_WORLD,1,loc_size_B,PETSC_DETERMINE,rhs_array+loc_size_A,&(RHS2));
-        VecCreateMPIWithArray(PETSC_COMM_WORLD,1,loc_size_B,PETSC_DETERMINE,sol_array+loc_size_A,&(Sol2));
-
-        VecRestoreArray(rhs_, &rhs_array);
-        VecRestoreArray(solution_, &sol_array);
+        // create Solution sub vecs Sol1, Sol2, Compl->solution
+    	VecCreateMPI(PETSC_COMM_WORLD, loc_size_A, PETSC_DETERMINE, &(Sol1));
+    	VecCreateMPI(PETSC_COMM_WORLD, loc_size_B, PETSC_DETERMINE, &(Sol2));
+        VecScatterCreate(solution_, IsA, Sol1, PETSC_NULL, &sol1sc);
+        VecScatterCreate(solution_, IsB, Sol2, PETSC_NULL, &sol2sc);
 
         VecGetArray( Sol2, &sol_array );
         Compl->set_solution( sol_array );
-
         VecRestoreArray( Sol2, &sol_array );
 
 
@@ -257,6 +259,11 @@ void SchurComplement::form_rhs()
 {
     START_TIMER("form rhs");
 	if (rhs_changed_ || matrix_changed_) {
+	    VecScatterBegin(rhs1sc, rhs_, RHS1, INSERT_VALUES, SCATTER_FORWARD);
+	    VecScatterEnd(  rhs1sc, rhs_, RHS1, INSERT_VALUES, SCATTER_FORWARD);
+	    VecScatterBegin(rhs2sc, rhs_, RHS2, INSERT_VALUES, SCATTER_FORWARD);
+	    VecScatterEnd(  rhs2sc, rhs_, RHS2, INSERT_VALUES, SCATTER_FORWARD);
+
 	    MatMultTranspose(IAB, RHS1, *( Compl->get_rhs() ));
 	    VecAXPY(*( Compl->get_rhs() ), -1, RHS2);
 	    if ( is_negative_definite() ) {
@@ -299,9 +306,11 @@ void SchurComplement::create_inversion_matrix()
     MatReuse mat_reuse=MAT_REUSE_MATRIX;
     if (state==created) mat_reuse=MAT_INITIAL_MATRIX; // indicate first construction
 
-    MatGetSubMatrix(matrix_, IsA, IsA, mat_reuse, &IA);
+    MatGetSubMatrix(matrix_, IsA, IsA, mat_reuse, &A);
+    MatDuplicate(A, MAT_DO_NOT_COPY_VALUES, &IA);
+    //MatGetSubMatrix(matrix_, IsA, IsA, mat_reuse, &IA);
 
-    MatGetOwnershipRange(matrix_,&pos_start,PETSC_NULL);
+    MatGetOwnershipRange(A,&pos_start,PETSC_NULL);
     MatGetOwnershipRange(IA,&pos_start_IA,PETSC_NULL);
 
     std::vector<PetscInt> submat_rows;
@@ -317,7 +326,7 @@ void SchurComplement::create_inversion_matrix()
         PetscInt min=std::numeric_limits<int>::max(), max=-1, size_submat;
         PetscInt b_vals = 0; // count of values stored in B-block of Orig system
         submat_rows.clear();
-        MatGetRow(matrix_, loc_row + pos_start, &ncols, &cols, PETSC_NULL);
+        MatGetRow(A, loc_row + pos_start, &ncols, &cols, PETSC_NULL);
         for (PetscInt i=0; i<ncols; i++) {
             if (cols[i] < pos_start || cols[i] >= pos_start+loc_size_A) {
                 b_vals++;
@@ -333,19 +342,19 @@ void SchurComplement::create_inversion_matrix()
         size_submat = max - min + 1;
         OLD_ASSERT(ncols-b_vals == size_submat, "Submatrix cannot contains empty values.\n");
 
-        MatRestoreRow(matrix_, loc_row + pos_start, &ncols, &cols, PETSC_NULL);
+        MatRestoreRow(A, loc_row + pos_start, &ncols, &cols, PETSC_NULL);
         arma::mat submat2(size_submat, size_submat);
         submat2.zeros();
         for (PetscInt i=0; i<size_submat; i++) {
             processed_rows[ loc_row + i ] = mat_block;
             submat_rows.push_back( i + loc_row + pos_start_IA );
-            MatGetRow(matrix_, i + loc_row + pos_start, &ncols, &cols, &vals);
+            MatGetRow(A, i + loc_row + pos_start, &ncols, &cols, &vals);
             for (PetscInt j=0; j<ncols; j++) {
                 if (cols[j] >= pos_start && cols[j] < pos_start+loc_size_A) {
                     submat2( i, cols[j] - loc_row - pos_start ) = vals[j];
                 }
             }
-            MatRestoreRow(matrix_, i + loc_row + pos_start, &ncols, &cols, &vals);
+            MatRestoreRow(A, i + loc_row + pos_start, &ncols, &cols, &vals);
 		}
         // get inversion matrix
         arma::mat invmat = submat2.i();
@@ -378,6 +387,11 @@ double SchurComplement::get_solution_precision()
 LinSys::SolveInfo SchurComplement::solve() {
     START_TIMER("SchurComplement::solve");
     this->form_schur();
+
+    VecScatterBegin(sol1sc, solution_, Sol1, INSERT_VALUES, SCATTER_FORWARD);
+    VecScatterEnd(  sol1sc, solution_, Sol1, INSERT_VALUES, SCATTER_FORWARD);
+    VecScatterBegin(sol2sc, solution_, Sol2, INSERT_VALUES, SCATTER_FORWARD);
+    VecScatterEnd(  sol2sc, solution_, Sol2, INSERT_VALUES, SCATTER_FORWARD);
     
     //output schur complement in matlab file
 //     string output_file = FilePath("schur.m", FilePath::output_file);
@@ -410,6 +424,10 @@ void SchurComplement::resolve()
     chkerr(MatMult(IAB,Compl->get_solution(),Sol1));
     chkerr(VecScale(Sol1,-1));
     chkerr(MatMultAdd(IA,RHS1,Sol1,Sol1));
+    VecScatterBegin(sol1sc, Sol1, solution_, INSERT_VALUES, SCATTER_REVERSE);
+    VecScatterEnd(  sol1sc, Sol1, solution_, INSERT_VALUES, SCATTER_REVERSE);
+    VecScatterBegin(sol2sc, Sol2, solution_, INSERT_VALUES, SCATTER_REVERSE);
+    VecScatterEnd(  sol2sc, Sol2, solution_, INSERT_VALUES, SCATTER_REVERSE);
 }
 
 
@@ -427,6 +445,7 @@ double SchurComplement::compute_residual()
  */
 SchurComplement :: ~SchurComplement() {
 
+    if ( A  != NULL )             chkerr(MatDestroy(&A));
     if ( B  != NULL )             chkerr(MatDestroy(&B));
     if ( Bt != NULL )             chkerr(MatDestroy(&Bt));
     if ( C != NULL )              chkerr(MatDestroy(&C));
@@ -439,6 +458,10 @@ SchurComplement :: ~SchurComplement() {
     if ( RHS2 != NULL )           chkerr(VecDestroy(&RHS2));
     if ( Sol1 != NULL )           chkerr(VecDestroy(&Sol1));
     if ( Sol2 != NULL )           chkerr(VecDestroy(&Sol2));
+    if ( rhs1sc != NULL )         chkerr(VecScatterDestroy(&rhs1sc));
+    if ( rhs2sc != NULL )         chkerr(VecScatterDestroy(&rhs2sc));
+    if ( sol1sc != NULL )         chkerr(VecScatterDestroy(&sol1sc));
+    if ( sol2sc != NULL )         chkerr(VecScatterDestroy(&sol2sc));
     if ( IA != NULL )             chkerr(MatDestroy(&IA));
 
     if (Compl != NULL)            delete Compl;
