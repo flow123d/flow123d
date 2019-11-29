@@ -99,11 +99,19 @@ The Field<> have array of these classes, one instance for every dimension so the
 must not be templated (by dimension). The only field algorithm that needs absolute coordinates is FieldFormula. We will pass the whole EqData fieldset to it in order to allow more complex dependencies. One of the fields will be 'Coordinate' or 'Position' field which just compute absolute coordinates of the local points (using the mapping). 
 `FieldValueCache` has a vector with start and size of active blocks of the quadrature points.
 
+TODO: Different assembly loops may need different evaluation subsets, so either we need mean to reallocate caches before every assembly loop or just update only selected part of the field value cache. Current structure of FieldValueCache allows to have allocated individual EvalSubset tables separately and update only selected subsets. Moreover the other subsets do not block the CPU cache (example of associativity, seems that AMD processors have 4way L1, 16way L2 and 64way L3 cache; try to get similar info for Intel) anyway we shuld mak an analysis how many memory blocks we need in any computation loop. Innermost loops should idealy access at most 4 memory blocks (4 pointers). 
+
 ### FieldValueCache
 In principle this is just a table of items of type Value with dimensions: n_cached_elements x n_evaluation_points. Other properties to keep:
 - reference to the EvalPoints instance (therefore it should not be dim templated either)
 - dimension (probably just for checks)
 - mask which points (of the EvalPoints) are used in passed `EvalSubset` objects, only values in these points has to be evaluated.
+
+**Cache structure**
+- FieldFormula can update in single step all values for common subset and common region
+- so we want to have such values in continuous blocks in the cache
+- Cache is organized into blocks of the size (n_points x n_max_elements)  for every subset, where n_points is number of points in the subset and n_max_elements is max number of elements in the single patch.
+- Every cache block is indexed as `[i_element][i_point]`, since within the block we always update all points, but only elements on the same region, and moreover we reuse already cached elements.
 
 
 **Example**
@@ -155,11 +163,6 @@ Two major algorithms are in use:
 - FieldFE - evaluates base func values in all quadrature points (done once per assembly),  dot product with DOFs, optionaly multiplied by the Mapping matrix (important optimization for vector fields and derivatives, must have support in FEValues)
 - FieldFormula - evaluates all elements in the patch (same region), in all point from single continuous block od quad points
 
-**Cache structure**
-- FieldFormula can update in singel step all values for common subset and common region
-- so we want to have such values in continuous blocks in the cache
-- Cache is organized into blocks of the size (n_points x n_max_elements)  for every subset, where n_points is number of points in the subset and n_max_elements is max number of elements in the single patch.
-- Every cache block is indexed as `[i_element][i_point]`, since within the block we always update all points, but only elements on the same region, and moreover we reuse already cached elements.
 
 ### 5.3 Cache read
 ```
