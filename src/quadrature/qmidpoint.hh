@@ -26,16 +26,18 @@
 
 /** @brief Class representing midpoint rule, with uniformly distributed points of the same weight.
  */
-class QMidpoint : public Quadrature<1> {
+class QMidpoint : public Quadrature {
 public:
     /// Empty constructor
-    QMidpoint(const unsigned int n_quadrature_points){
-        
+    QMidpoint(const unsigned int n_quadrature_points)
+    : Quadrature(1, n_quadrature_points)
+    {
         double qweight = 1.0/n_quadrature_points;
-        this->weights.resize(n_quadrature_points,qweight);
-        this->quadrature_points.resize(n_quadrature_points);
         for(unsigned int q=0; q < n_quadrature_points; q++)
-            this->set_point(q, arma::vec({0.5*qweight + q*qweight}));
+        {
+            this->weight(q) = qweight;
+            this->point<1>(q) = {0.5*qweight + q*qweight};
+        }
     }
 };
 
