@@ -19,6 +19,7 @@
 #include "fields/eval_points.hh"
 #include "fields/eval_subset.hh"
 #include "quadrature/quadrature.hh"
+#include "mesh/ref_element.hh"
 #include <memory>
 
 
@@ -47,7 +48,7 @@ std::shared_ptr<EvalSubset> EvalPoints::add_side(const Quadrature &quad)
 	check_dim(quad.dim()+1, dim);
 	unsigned int old_data_size=this->size(), new_data_size; // interval of side subset data
 	unsigned int points_per_side = quad.make_from_side<dim>(0, 0).get_points().n_vals();
-	unsigned int n_side_permutations = (dim+1)*(2*dim*dim-5*dim+6)/6;
+	unsigned int n_side_permutations = RefElement<dim>::n_side_permutations;
 
 	std::shared_ptr<EvalSubset> side_set = std::make_shared<EvalSubset>(shared_from_this(), n_side_permutations, points_per_side);
 	unsigned int*** perm_indices = side_set->perm_indices_;
