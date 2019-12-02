@@ -50,7 +50,7 @@ public:
     ~FieldValueCache();
 
     /// Constructor
-    void init(std::shared_ptr<EvalPoints> eval_points, const ElementCacheMap *cache_map, unsigned int n_cache_points);
+    void init(std::shared_ptr<EvalPoints> eval_points, unsigned int n_cache_points);
 
     /// Marks the used local points
     void mark_used(std::shared_ptr<EvalSubset> sub_set);
@@ -110,9 +110,6 @@ private:
 
     /// Pointer to EvalPoints.
     std::shared_ptr<EvalPoints> eval_points_;
-
-    /// Pointer to ElementCacheMap.
-    const ElementCacheMap *element_cache_map_;
 
     /// Maximal number of elements stored in cache.
     unsigned int n_cache_points_;

@@ -30,7 +30,7 @@
 
 template<class elm_type, class Value>
 FieldValueCache<elm_type, Value>::FieldValueCache(unsigned int n_rows, unsigned int n_cols)
-: data_(0, n_rows, n_cols), eval_points_(nullptr), element_cache_map_(nullptr), dim_(EvalPoints::undefined_dim) {
+: data_(0, n_rows, n_cols), eval_points_(nullptr), dim_(EvalPoints::undefined_dim) {
 	used_subsets_.fill(-1);
 	subset_starts_.fill(-1);
 	subset_starts_[0] = 0;
@@ -40,12 +40,11 @@ template<class elm_type, class Value>
 FieldValueCache<elm_type, Value>::~FieldValueCache() {}
 
 template<class elm_type, class Value>
-void FieldValueCache<elm_type, Value>::init(std::shared_ptr<EvalPoints> eval_points, const ElementCacheMap *cache_map, unsigned int n_cache_points) {
+void FieldValueCache<elm_type, Value>::init(std::shared_ptr<EvalPoints> eval_points, unsigned int n_cache_points) {
 	ASSERT_EQ(dim_, EvalPoints::undefined_dim).error("Repeated initialization!\n");
 
 	this->n_cache_points_ = n_cache_points;
     eval_points_ = eval_points;
-    element_cache_map_ = cache_map;
     dim_ = eval_points->point_dim();
 }
 
