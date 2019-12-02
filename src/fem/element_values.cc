@@ -21,6 +21,7 @@
 #include "fem/mapping_p1.hh"
 #include "quadrature/quadrature.hh"
 #include "fem/element_values.hh"
+#include "mesh/side_impl.hh"
 
 
 
