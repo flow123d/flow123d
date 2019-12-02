@@ -15,9 +15,25 @@ class Mat
 {
 private:
     Type * const data;
+    template <class type, uint nr, uint nc>
+    class MatSimpleType {
+    public:
+        typedef typename arma::Mat<type>::template fixed<nr, nc> AType;
+    };
+    template <class type, uint nr>
+    class MatSimpleType<type, nr, 1> {
+    public:
+        typedef typename arma::Col<type>::template fixed<nr> AType;
+    };
+//     template <class type>
+//     class MatSimpleType<type, 1, 1> {
+//     public:
+//         typedef type AType;
+//     };
 public:
-    typedef typename arma::Mat<Type>::template fixed<nRows, nCols> ArmaType;
-
+//     typedef typename arma::Mat<Type>::template fixed<nRows, nCols> ArmaType;
+    typedef typename MatSimpleType<Type, nRows, nCols>::AType ArmaType;
+    
     Mat(Type * const mem)
     : data(mem)
     {}
@@ -33,8 +49,6 @@ public:
     inline Mat(ArmaType arma_mat)
     : data(arma_mat.memptr())
     {}
-
-
 
     inline const Type * begin() const {
         return data;
@@ -162,8 +176,28 @@ inline Type dot(const Mat<Type, nRows, nCols> & a, const Mat<Type, nRows, nCols>
 }
 
 template <class Type, uint nRows, uint nCols>
+inline Type dot(const Mat<Type, nRows, nCols> & a, const typename Mat<Type, nRows, nCols>::ArmaType & b) {
+    return arma::dot(a.arma(), b);
+}
+
+template <class Type, uint nRows, uint nCols>
+inline Type dot(const typename Mat<Type, nRows, nCols>::ArmaType & a, const Mat<Type, nRows, nCols> & b) {
+    return arma::dot(a, b.arma());
+}
+
+template <class Type, uint nRows, uint nCols>
 inline typename Mat<Type, nRows, nCols>::ArmaType operator+(const Mat<Type, nRows, nCols> & a, const Mat<Type, nRows, nCols> & b) {
     return a.arma() + b.arma();
+}
+
+template <class Type, uint nRows, uint nCols>
+inline typename Mat<Type, nRows, nCols>::ArmaType operator+(const Mat<Type, nRows, nCols> & a, const typename Mat<Type, nRows, nCols>::ArmaType & b) {
+    return a.arma() + b;
+}
+
+template <class Type, uint nRows, uint nCols>
+inline typename Mat<Type, nRows, nCols>::ArmaType operator+(const typename Mat<Type, nRows, nCols>::ArmaType & a, const Mat<Type, nRows, nCols> & b) {
+    return a + b.arma();
 }
 
 template <class Type, uint nRows, uint nCols>
@@ -172,13 +206,43 @@ inline typename Mat<Type, nRows, nCols>::ArmaType operator-(const Mat<Type, nRow
 }
 
 template <class Type, uint nRows, uint nCols>
+inline typename Mat<Type, nRows, nCols>::ArmaType operator-(const Mat<Type, nRows, nCols> & a, const typename Mat<Type, nRows, nCols>::ArmaType & b) {
+    return a.arma() - b;
+}
+
+template <class Type, uint nRows, uint nCols>
+inline typename Mat<Type, nRows, nCols>::ArmaType operator-(const typename Mat<Type, nRows, nCols>::ArmaType & a, const Mat<Type, nRows, nCols> & b) {
+    return a - b.arma();
+}
+
+template <class Type, uint nRows, uint nCols>
 inline typename Mat<Type, nRows, nCols>::ArmaType operator*(const Mat<Type, nRows, nCols> & a, const Mat<Type, nRows, nCols> & b) {
     return a.arma() * b.arma();
 }
 
 template <class Type, uint nRows, uint nCols>
+inline typename Mat<Type, nRows, nCols>::ArmaType operator*(const Mat<Type, nRows, nCols> & a, const typename Mat<Type, nRows, nCols>::ArmaType & b) {
+    return a.arma() * b;
+}
+
+template <class Type, uint nRows, uint nCols>
+inline typename Mat<Type, nRows, nCols>::ArmaType operator*(const typename Mat<Type, nRows, nCols>::ArmaType & a, const Mat<Type, nRows, nCols> & b) {
+    return a * b.arma();
+}
+
+template <class Type, uint nRows, uint nCols>
 inline typename Mat<Type, nRows, nCols>::ArmaType operator%(const Mat<Type, nRows, nCols> & a, const Mat<Type, nRows, nCols> & b) {
     return a.arma() % b.arma();
+}
+
+template <class Type, uint nRows, uint nCols>
+inline typename Mat<Type, nRows, nCols>::ArmaType operator%(const Mat<Type, nRows, nCols> & a, const typename Mat<Type, nRows, nCols>::ArmaType & b) {
+    return a.arma() % b;
+}
+
+template <class Type, uint nRows, uint nCols>
+inline typename Mat<Type, nRows, nCols>::ArmaType operator%(const typename Mat<Type, nRows, nCols>::ArmaType & a, const Mat<Type, nRows, nCols> & b) {
+    return a % b.arma();
 }
 
 template <class Type, uint nRows, uint nCols>
@@ -191,6 +255,15 @@ inline typename Mat<Type, nRows, nCols>::ArmaType operator/(const Mat<Type, nRow
     return a.arma() / number;
 }
 
+template <class Type, uint nRows, uint nCols>
+inline typename Mat<Type, nRows, nCols>::ArmaType operator-=(typename Mat<Type, nRows, nCols>::ArmaType & a, const Mat<Type, nRows, nCols> & b) {
+    return (a = (a + b.arma()));
+}
+
+template <class Type, uint nRows, uint nCols>
+inline typename Mat<Type, nRows, nCols>::ArmaType operator+=(typename Mat<Type, nRows, nCols>::ArmaType & a, const Mat<Type, nRows, nCols> & b) {
+    return (a = (a + b.arma()));
+}
 
 template <uint N>
 using vec = Mat<double, N, 1>;
