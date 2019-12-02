@@ -47,6 +47,9 @@
 
 class Mesh;
 class Observe;
+class EvalSubset;
+class EvalPoints;
+class ElementCacheMap;
 
 
 using namespace std;
@@ -439,6 +442,17 @@ public:
     {
     	return this->multifield_;
     }
+
+    /**
+     * Allocate data cache of dimension appropriate to subset object.
+     */
+    virtual void cache_allocate(std::shared_ptr<EvalSubset> sub_set, const ElementCacheMap *cache_map) = 0;
+
+    /**
+     * Read data to cache for appropriate elements given by ElementCacheMap object.
+     */
+    virtual void cache_update(ElementCacheMap &cache_map) = 0;
+
 
     /**
      * Print stored messages to table.

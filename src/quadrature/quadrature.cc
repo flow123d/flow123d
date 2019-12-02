@@ -44,7 +44,7 @@ Quadrature::Quadrature(const Quadrature &q) :
 
 
 template<unsigned int bulk_dim>
-Quadrature Quadrature::make_from_side(unsigned int sid, unsigned int pid)
+Quadrature Quadrature::make_from_side(unsigned int sid, unsigned int pid) const
 {
     ASSERT_DBG( bulk_dim == dim_ + 1 );
     
@@ -77,7 +77,7 @@ Quadrature Quadrature::make_from_side(unsigned int sid, unsigned int pid)
 }
 
 // Specialized subquadrature consructor for dim=1.
-template<> Quadrature Quadrature::make_from_side<1>(unsigned int sid, unsigned int pid)
+template<> Quadrature Quadrature::make_from_side<1>(unsigned int sid, unsigned int pid) const
 {
     Quadrature q(1, 1);
     q.point<1>(0) = { (double)sid };
@@ -86,7 +86,7 @@ template<> Quadrature Quadrature::make_from_side<1>(unsigned int sid, unsigned i
     return q;
 }
 
-template Quadrature Quadrature::make_from_side<2>(unsigned int sid, unsigned int pid);
-template Quadrature Quadrature::make_from_side<3>(unsigned int sid, unsigned int pid);
+template Quadrature Quadrature::make_from_side<2>(unsigned int sid, unsigned int pid) const;
+template Quadrature Quadrature::make_from_side<3>(unsigned int sid, unsigned int pid) const;
 
 

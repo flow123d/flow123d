@@ -23,6 +23,9 @@
 #include "field.hh"
 #include "field_algo_base.impl.hh"
 #include "field_fe.hh"
+#include "fields/eval_subset.hh"
+#include "fields/eval_points.hh"
+#include "fields/field_value_cache.hh"
 #include "mesh/region.hh"
 #include "input/reader_to_storage.hh"
 #include "input/accessors.hh"
@@ -37,7 +40,10 @@
 
 template<int spacedim, class Value>
 Field<spacedim,Value>::Field()
-: data_(std::make_shared<SharedData>())
+: data_(std::make_shared<SharedData>()),
+  value_cache_({ FieldValueCache<typename Value::element_type, typename Value::return_type>(Value::NRows_, Value::NCols_),
+                 FieldValueCache<typename Value::element_type, typename Value::return_type>(Value::NRows_, Value::NCols_),
+                 FieldValueCache<typename Value::element_type, typename Value::return_type>(Value::NRows_, Value::NCols_) })
 {
 	// n_comp is nonzero only for variable size vectors Vector, VectorEnum, ..
 	// this invariant is kept also by n_comp setter
@@ -50,8 +56,10 @@ Field<spacedim,Value>::Field()
 
 template<int spacedim, class Value>
 Field<spacedim,Value>::Field(const string &name, bool bc)
-: data_(std::make_shared<SharedData>())
-
+: data_(std::make_shared<SharedData>()),
+  value_cache_({ FieldValueCache<typename Value::element_type, typename Value::return_type>(Value::NRows_, Value::NCols_),
+                 FieldValueCache<typename Value::element_type, typename Value::return_type>(Value::NRows_, Value::NCols_),
+                 FieldValueCache<typename Value::element_type, typename Value::return_type>(Value::NRows_, Value::NCols_) })
 {
 		// n_comp is nonzero only for variable size vectors Vector, VectorEnum, ..
 		// this invariant is kept also by n_comp setter
@@ -66,7 +74,10 @@ Field<spacedim,Value>::Field(const string &name, bool bc)
 
 template<int spacedim, class Value>
 Field<spacedim,Value>::Field(unsigned int component_index, string input_name, string name, bool bc)
-: data_(std::make_shared<SharedData>())
+: data_(std::make_shared<SharedData>()),
+  value_cache_({ FieldValueCache<typename Value::element_type, typename Value::return_type>(Value::NRows_, Value::NCols_),
+                 FieldValueCache<typename Value::element_type, typename Value::return_type>(Value::NRows_, Value::NCols_),
+                 FieldValueCache<typename Value::element_type, typename Value::return_type>(Value::NRows_, Value::NCols_) })
 {
 	// n_comp is nonzero only for variable size vectors Vector, VectorEnum, ..
 	// this invariant is kept also by n_comp setter
@@ -85,7 +96,8 @@ Field<spacedim,Value>::Field(const Field &other)
 : FieldCommon(other),
   data_(other.data_),
   region_fields_(other.region_fields_),
-  factories_(other.factories_)
+  factories_(other.factories_),
+  value_cache_(other.value_cache_)
 {
 	if (other.no_check_control_field_)
 		no_check_control_field_ =  make_shared<ControlField>(*other.no_check_control_field_);
@@ -118,6 +130,7 @@ Field<spacedim,Value> &Field<spacedim,Value>::operator=(const Field<spacedim,Val
 	data_ = other.data_;
 	factories_ = other.factories_;
 	region_fields_ = other.region_fields_;
+	value_cache_ = other.value_cache_;
 
 	if (other.no_check_control_field_) {
 		no_check_control_field_ =  make_shared<ControlField>(*other.no_check_control_field_);
@@ -680,6 +693,43 @@ std::shared_ptr< FieldFE<spacedim, Value> > Field<spacedim,Value>::get_field_fe(
 
 	return field_fe_ptr;
 }
+
+
+template<int spacedim, class Value>
+void Field<spacedim, Value>::cache_allocate(std::shared_ptr<EvalSubset> sub_set, const ElementCacheMap *cache_map) {
+    unsigned int point_dim = sub_set->eval_points()->point_dim();
+
+    if ( value_cache_[point_dim-1].dim()==EvalPoints::undefined_dim )
+        value_cache_[point_dim-1].init(sub_set->eval_points(), cache_map, ElementCacheMap::n_cached_elements);
+    // else TODO check same sub_set->eval_points()
+    value_cache_[point_dim-1].mark_used(sub_set);
+}
+
+
+template<int spacedim, class Value>
+void Field<spacedim, Value>::cache_update(ElementCacheMap &cache_map) {
+    typedef std::vector<ElementAccessor<spacedim>> ElementSet;
+
+    std::map<unsigned int, ElementSet> region_data_map; // map of data for different regions
+    unsigned int dim = cache_map.dim();
+    FieldValueCache<typename Value::element_type, typename Value::return_type> &field_value_cache = value_cache_[dim-1];
+    const std::unordered_set<unsigned int> &added_elements = cache_map.added_elements();
+
+    for (const auto &elm_idx : added_elements) { // distribute elements to regions
+        ElementAccessor<spacedim> elm(shared_->mesh_, elm_idx);
+        unsigned int reg_idx = elm.region_idx().idx();
+        typename std::map<unsigned int, ElementSet>::iterator region_it = region_data_map.find(reg_idx);
+        if (region_it == region_data_map.end()) {
+            region_data_map.insert( {reg_idx, ElementSet()} );
+            region_it = region_data_map.find(reg_idx);
+        }
+        region_it->second.push_back( elm );
+    }
+    for (typename std::map<unsigned int, ElementSet>::iterator it=region_data_map.begin(); it!=region_data_map.end(); ++it) {
+        //region_fields_[it->first]->loc_point_value( it->second, cache_map, field_value_cache );
+    }
+}
+
 
 
 
