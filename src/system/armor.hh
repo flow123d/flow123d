@@ -18,9 +18,37 @@ private:
 public:
     typedef typename arma::Mat<Type>::template fixed<nRows, nCols> ArmaType;
 
+    Mat()
+    : data(new Type[nRows * nCols])
+    {}
+
     Mat(Type * const mem)
     : data(mem)
     {}
+
+    inline Mat(const ArmaType & arma) : data(new Type[nRows * nCols]) {
+        for (uint i = 0; i < nRows * nCols; ++i) {
+            data[i] = arma[i];
+        }
+    }
+
+    inline Mat(std::initializer_list<std::initializer_list<Type>> list) : data(new Type[nRows * nCols]) {
+        const auto * listIt = list.begin();
+        const Type * it;
+        for (uint i = 0; i < nRows; ++i) {
+            it = (listIt + i)->begin();
+            for (uint j = 0; j < nCols; ++j) {
+                data[i+j*nRows] = *(it + j);
+            }
+        }
+    }
+
+    inline Mat(std::initializer_list<Type> list) : data(new Type[nRows * nCols]) {
+        const Type * it = list.begin();
+        for (uint i = 0; i < nRows * nCols; ++i) {
+            data[i] = *(it + i);
+        }
+    }
 
     inline Mat(const Armor::Mat<Type, nRows, nCols> & other) 
     : data(other.data)
@@ -70,11 +98,11 @@ public:
     }
 
     inline const Type & operator()(uint row, uint col) const {
-        return data[row*nCols+col];
+        return data[row+col*nRows];
     }
 
     inline Type & operator()(uint row, uint col) {
-        return data[row*nCols+col];
+        return data[row+col*nRows];
     }
 
     inline ArmaType arma() const {
@@ -101,7 +129,7 @@ public:
         for (uint i = 0; i < nRows; ++i) {
             it = (listIt + i)->begin();
             for (uint j = 0; j < nCols; ++j) {
-                data[i*nCols+j] = *(it + j);
+                data[i+j*nRows] = *(it + j);
             }
         }
         return *this;
@@ -171,9 +199,9 @@ class Array {
 public:
     /**
      * Construct array of Armor matrices.
-     * @param size  Number of matrices in the array.
+     * @param nv    Number of matrices in the array.
      * @param nr    Number of rows in each matrix.
-     * @param nc    Number of columnts in each matrix.
+     * @param nc    Number of columns in each matrix.
      */
     Array(uint nr, uint nc = 1, uint size = 0)
     : n_rows_(nr),
@@ -185,14 +213,17 @@ public:
     
     /**
      * Drop all data and allocate new space of given size.
+     * Change number of elements in the array, while keeping the shape of arrays.
+     * @param size  New size of array.
      */
     void reinit(uint size) {
         delete data_;
         reserved_ = size;
         size_ = 0;
         data_ = new Type[n_rows_ * n_cols_ * reserved_];
-    }
     
+
+
     /**
      * Resize active part of the allocated space.
      */
@@ -225,6 +256,7 @@ public:
      * One can assign to the Armor::Mat which performs postponed evaluation and storing the result to the array.
      *
      * @param i  Index of the matrix.
+     * TODO: Should be renamed to item(), but we have compilation problem in Field::loc_point_value
      */
     template<uint nr, uint nc = 1>
     inline Mat<Type,nr,nc> get(uint mat_index) const
@@ -233,6 +265,40 @@ public:
         return Mat<Type,nr,nc>( data_ + mat_index * n_rows_ * n_cols_ );
     }
     
+    /**
+     * Return matrix at given position in array. The returned object is a Armor::Mat
+     * pointing to the respective data block in the Array's storage.
+     * @param i  Index of matrix.
+     *
+     * TODO: Should be renamed to item(), but we have compilation problem in Field::loc_point_value
+     */
+    template<uint nr, uint nc = 1>
+    inline Mat<Type,nr,nc> get(uint i)
+    {
+        ASSERT_DBG( (nr == nRows) && (nc == nCols) );
+        return Mat<Type,nr,nc>( (Type*)(data.data()) + i*nRows*nCols );
+    }
+
+    /**
+     * Return armadillo matrix at given position in array.
+     * @param i  Index of matrix.
+     */
+    inline arma::mat arma_mat(uint i) const
+    {
+    	return arma::vec( (Type*)(data.data()) + i*nRows*nCols, nRows*nCols );
+    }
+
+    /**
+     * Return armadillo vector at given position in array.
+     * Warning! Method can be used only if nCols == 1.
+     * @param i  Index of matrix.
+     */
+    inline arma::vec arma_vec(uint i) const
+    {
+        ASSERT_EQ_DBG(nCols, 1);
+    	return arma::vec( (Type*)(data.data()) + i*nRows, nRows );
+    }
+
 private:
     inline uint space_() { return n_rows_ * n_cols_ * reserved_; }
     uint n_rows_;
