@@ -150,16 +150,16 @@ void FieldConstant<spacedim, Value>::cache_update(const std::vector< ElementAcce
     const auto &used_subsets = data_cache.used_subsets();
     const auto &subset_starts = data_cache.subset_starts();
     Armor::Mat<typename Value::element_type, Value::NRows_, Value::NCols_> mat_value( const_cast<typename Value::element_type*>(this->value_.mem_ptr()) );
-	for (unsigned int i_subset=0; used_subsets[i_subset]!=-1; ++i_subset) {
-	    unsigned int items_per_point = (subset_starts[i_subset+1] - subset_starts[i_subset]) / data_cache.n_cache_points();
-	    unsigned int loop_begin = subset_starts[i_subset] + cache_map.begin_idx() * items_per_point;
-	    unsigned int loop_end = subset_starts[i_subset] + cache_map.end_idx() * items_per_point;
-        for (unsigned int i_cache = subset_starts[i_subset] + cache_map.begin_idx() * items_per_point;
-                i_cache < subset_starts[i_subset] + cache_map.end_idx() * items_per_point;
-                ++i_cache)
-            data_cache.data().get<Value::NRows_, Value::NCols_>(i_cache) = mat_value;
-		if (i_subset==used_subsets.size()) break;
-	}
+    for (unsigned int i_subset=0; i_subset<used_subsets.size(); ++i_subset)
+        if (used_subsets[i_subset]) {
+            unsigned int items_per_point = (subset_starts[i_subset+1] - subset_starts[i_subset]) / data_cache.n_cache_points();
+            unsigned int loop_begin = subset_starts[i_subset] + cache_map.begin_idx() * items_per_point;
+            unsigned int loop_end = subset_starts[i_subset] + cache_map.end_idx() * items_per_point;
+            for (unsigned int i_cache = subset_starts[i_subset] + cache_map.begin_idx() * items_per_point;
+                    i_cache < subset_starts[i_subset] + cache_map.end_idx() * items_per_point;
+                    ++i_cache)
+                data_cache.data().get<Value::NRows_, Value::NCols_>(i_cache) = mat_value;
+        }
 }
 
 

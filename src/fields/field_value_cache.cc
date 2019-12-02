@@ -31,37 +31,29 @@
 template<class elm_type, class Value>
 FieldValueCache<elm_type, Value>::FieldValueCache(unsigned int n_rows, unsigned int n_cols)
 : data_(0, n_rows, n_cols), eval_points_(nullptr), dim_(EvalPoints::undefined_dim) {
-	used_subsets_.fill(-1);
-	subset_starts_.fill(-1);
-	subset_starts_[0] = 0;
+    used_subsets_.fill(false);
+    subset_starts_.fill(-1);
 }
 
 template<class elm_type, class Value>
 FieldValueCache<elm_type, Value>::~FieldValueCache() {}
 
 template<class elm_type, class Value>
-void FieldValueCache<elm_type, Value>::init(std::shared_ptr<EvalPoints> eval_points, unsigned int n_cache_points) {
-	ASSERT_EQ(dim_, EvalPoints::undefined_dim).error("Repeated initialization!\n");
+void FieldValueCache<elm_type, Value>::init(std::shared_ptr<EvalSubset> eval_subset, unsigned int n_cache_points) {
+    ASSERT_EQ(dim_, EvalPoints::undefined_dim).error("Repeated initialization!\n");
 
-	this->n_cache_points_ = n_cache_points;
-    eval_points_ = eval_points;
-    dim_ = eval_points->point_dim();
+    this->n_cache_points_ = n_cache_points;
+    eval_points_ = eval_subset->eval_points();
+    data_.resize(n_cache_points * eval_points_->size());
+    subset_starts_[0] = 0;
+    for (uint i=0; i<eval_points_->n_subsets(); ++i)
+    	subset_starts_[i+1] = eval_points_->subset_end(i) * n_cache_points;
+    dim_ = eval_points_->point_dim();
 }
 
 template<class elm_type, class Value>
 void FieldValueCache<elm_type, Value>::mark_used(std::shared_ptr<EvalSubset> sub_set) {
-    int subset_idx = sub_set->get_subset_idx();
-    unsigned int i=0;
-    for (; i<FieldValueCache::max_subsets; ++i) {
-        if (used_subsets_[i] == subset_idx) return; // subset idx already exists
-        if (used_subsets_[i] == -1) {
-            used_subsets_[i] = subset_idx;
-            data_.resize(data_.n_vals() + n_cache_points_ * eval_points_->subset_size(subset_idx));
-            subset_starts_[i+1] = data_.n_vals();
-            return;
-        }
-    }
-    ASSERT(false)(FieldValueCache::max_subsets).error("Maximal number of subsets exceeded.\n");
+    used_subsets_[sub_set->get_subset_idx()] = true;
 }
 
 

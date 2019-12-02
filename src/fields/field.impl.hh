@@ -700,7 +700,7 @@ void Field<spacedim, Value>::cache_allocate(std::shared_ptr<EvalSubset> sub_set)
     unsigned int point_dim = sub_set->eval_points()->point_dim();
 
     if ( value_cache_[point_dim-1].dim()==EvalPoints::undefined_dim )
-        value_cache_[point_dim-1].init(sub_set->eval_points(), ElementCacheMap::n_cached_elements);
+        value_cache_[point_dim-1].init(sub_set, ElementCacheMap::n_cached_elements);
     // else TODO check same sub_set->eval_points()
     value_cache_[point_dim-1].mark_used(sub_set);
 }

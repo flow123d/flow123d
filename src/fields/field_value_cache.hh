@@ -24,10 +24,9 @@
 #include <unordered_set>
 #include <vector>
 #include "system/armor.hh"
+#include "fields/eval_points.hh"
 
-class EvalPoints;
 class EvalSubset;
-class ElementCacheMap;
 class DHCellAccessor;
 
 
@@ -39,9 +38,6 @@ class DHCellAccessor;
  */
 template<class elm_type, class Value>
 class FieldValueCache {
-private:
-    /// Maximal nuber of subsets.
-    static const unsigned int max_subsets = 10;
 public:
     /// Constructor
     FieldValueCache(unsigned int n_rows, unsigned int n_cols);
@@ -49,19 +45,19 @@ public:
     /// Destructor
     ~FieldValueCache();
 
-    /// Constructor
-    void init(std::shared_ptr<EvalPoints> eval_points, unsigned int n_cache_points);
+    /// Initialize cache
+    void init(std::shared_ptr<EvalSubset> eval_subset, unsigned int n_cache_points);
 
     /// Marks the used local points
     void mark_used(std::shared_ptr<EvalSubset> sub_set);
 
     /// Getter for subsets of used points
-    inline const std::array<int, FieldValueCache::max_subsets> &used_subsets() const {
+    inline const std::array<bool, EvalPoints::max_subsets> &used_subsets() const {
         return used_subsets_;
     }
 
     /// Getter for subsets of used points
-    inline const std::array<int, FieldValueCache::max_subsets+1> &subset_starts() const {
+    inline const std::array<int, EvalPoints::max_subsets+1> &subset_starts() const {
         return subset_starts_;
     }
 
@@ -102,11 +98,11 @@ private:
     /// Data cache.
     Armor::Array<elm_type> data_;
 
-    /// Holds indices of used blocks of local points.
-    std::array<int, FieldValueCache::max_subsets> used_subsets_;
+    /// Holds if blocks of local points are used or not.
+    std::array<bool, EvalPoints::max_subsets> used_subsets_;
 
     /// Indices of subsets begin and end position in data array.
-    std::array<int, FieldValueCache::max_subsets+1> subset_starts_;
+    std::array<int, EvalPoints::max_subsets+1> subset_starts_;
 
     /// Pointer to EvalPoints.
     std::shared_ptr<EvalPoints> eval_points_;
