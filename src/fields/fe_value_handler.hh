@@ -20,12 +20,12 @@
 
 #include "system/index_types.hh"
 #include "fields/field_values.hh"
-#include "fem/mapping_p1.hh"
 #include "fem/finite_element.hh"
 #include "mesh/point.hh"
+#include "la/vector_mpi.hh"
 #include <armadillo>
 
-class VectorMPI;
+class DOFHandlerMultiDim;
 template <int spacedim> class ElementAccessor;
 
 
@@ -58,11 +58,6 @@ public:
 
 	/// Initialize data members
 	void initialize(FEValueInitData init_data);
-	/// Return mapping object
-	inline MappingP1<elemdim,3> *get_mapping() {
-		ASSERT_PTR(map_).error("Uninitialized FEValueHandler!\n");
-		return map_;
-	}
     /// Returns one value in one given point.
     typename Value::return_type const &value(const Point &p, const ElementAccessor<spacedim> &elm);
     /// Returns std::vector of scalar values in several points at once.
@@ -97,8 +92,6 @@ private:
     /// Last value, prevents passing large values (vectors) by value.
     Value value_;
     typename Value::return_type r_value_;
-    /// Mapping object.
-    MappingP1<elemdim,3> *map_;
     /// Index of component (of vector_value/tensor_value)
     unsigned int comp_index_;
 
