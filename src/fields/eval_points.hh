@@ -16,8 +16,8 @@
  * @author  David Flanderka
  */
 
-#ifndef FIELD_EVALUATOR_HH_
-#define FIELD_EVALUATOR_HH_
+#ifndef EVAL_POINTS_HH_
+#define EVAL_POINTS_HH_
 
 
 #include <vector>
@@ -119,4 +119,4 @@ private:
 };
 
 
-#endif /* FIELD_EVALUATOR_HH_ */
+#endif /* EVAL_POINTS_HH_ */

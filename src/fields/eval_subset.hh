@@ -16,8 +16,8 @@
  * @author  David Flanderka
  */
 
-#ifndef POINT_SETS_HH_
-#define POINT_SETS_HH_
+#ifndef EVAL_SUBSET_HH_
+#define EVAL_SUBSET_HH_
 
 #include <memory>
 #include <armadillo>
@@ -225,4 +225,4 @@ private:
 };
 
 
-#endif /* POINT_SETS_HH_ */
+#endif /* EVAL_SUBSET_HH_ */
