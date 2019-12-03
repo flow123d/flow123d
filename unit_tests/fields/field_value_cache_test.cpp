@@ -1,3 +1,12 @@
+/*
+ * field_value_cache_test.cpp
+ *
+ *  Created on: Dec 03, 2019
+ *      Author: David Flanderka
+ *
+ *  Tests FieldValueCache and ElementCacheMap classes
+ */
+
 #define TEST_USE_MPI
 #define FEAL_OVERRIDE_ASSERTS
 #include <flow_gtest_mpi.hh>
@@ -24,7 +33,7 @@
 #include "system/sys_profiler.hh"
 
 
-class FieldEval : public testing::Test {
+class FieldValueCacheTest : public testing::Test {
 
 public:
     class EqData : public FieldSet {
@@ -69,23 +78,23 @@ public:
 
     };
 
-    FieldEval() {
+    FieldValueCacheTest() {
         FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
         Profiler::initialize();
         PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
 
         data_ = std::make_shared<EqData>();
-        mesh_ = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
+        mesh_ = mesh_full_constructor("{mesh_file=\"mesh/cube_2x1.msh\"}");
         dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
     }
 
-    ~FieldEval() {}
+    ~FieldValueCacheTest() {}
 
     static Input::Type::Record & get_input_type() {
         return IT::Record("SomeEquation","")
                 .declare_key("data", IT::Array(
                         IT::Record("SomeEquation_Data", FieldCommon::field_descriptor_record_description("SomeEquation_Data") )
-                        .copy_keys( FieldEval::EqData().make_field_descriptor_type("SomeEquation") )
+                        .copy_keys( FieldValueCacheTest::EqData().make_field_descriptor_type("SomeEquation") )
                         .declare_key("scalar_field", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "" )
                         .declare_key("vector_field", FieldAlgorithmBase< 3, FieldValue<3>::VectorFixed >::get_input_type_instance(), "" )
                         .declare_key("tensor_field", FieldAlgorithmBase< 3, FieldValue<3>::TensorFixed >::get_input_type_instance(), "" )
@@ -118,55 +127,7 @@ public:
 };
 
 
-TEST_F(FieldEval, eval_3d) {
-    /// this can be done at initialization of the equation
-	std::shared_ptr<EvalPoints> feval = std::make_shared<EvalPoints>();
-    Quadrature *q_bulk = new QGauss(3, 2);
-    Quadrature *q_side = new QGauss(2, 2);
-    std::shared_ptr<EvalSubset> bulk_points = feval->add_bulk<3>(*q_bulk );
-    std::shared_ptr<EvalSubset> side_points = feval->add_side<3>(*q_side );
-    DHCellAccessor dh_cell(dh_.get(), 3);
-
-    {
-        // Test of bulk local points
-    	std::vector<arma::vec3> expected_vals = {{0.138196601125010504, 0.138196601125010504, 0.138196601125010504},
-    			                                 {0.138196601125010504, 0.138196601125010504, 0.585410196624968515},
-												 {0.138196601125010504, 0.585410196624968515, 0.138196601125010504},
-												 {0.585410196624968515, 0.138196601125010504, 0.138196601125010504}};
-    	unsigned int i=0; // iter trought expected_vals
-    	for (auto p : bulk_points->points(dh_cell)) {
-            EXPECT_ARMA_EQ(p.loc_coords(), expected_vals[i]);
-			++i;
-        }
-    }
-    {
-        // Test of side local points
-        std::vector< std::vector<arma::vec3> > expected_vals(4);
-        expected_vals[0] = { {0.166666666666666657, 0.166666666666666657, 0.0},
-                             {0.666666666666666741, 0.166666666666666657, 0.0},
-                             {0.166666666666666657, 0.666666666666666741, 0.0} };
-        expected_vals[1] = { {0.166666666666666657, 0.0, 0.166666666666666657},
-                             {0.166666666666666657, 0.0, 0.666666666666666741},
-                             {0.666666666666666741, 0.0, 0.166666666666666657} };
-        expected_vals[2] = { {0.0, 0.166666666666666657, 0.166666666666666657},
-	                         {0.0, 0.166666666666666657, 0.666666666666666741},
-                             {0.0, 0.666666666666666741, 0.166666666666666657} };
-        expected_vals[3] = { {0.666666666666666741, 0.166666666666666657, 0.166666666666666657},
-                             {0.166666666666666657, 0.166666666666666657, 0.666666666666666741},
-                             {0.166666666666666657, 0.666666666666666741, 0.166666666666666657} };
-        unsigned int i_side=0, i_point; // iter trought expected_vals
-        for (auto side_acc : dh_cell.side_range()) {
-        	i_point=0;
-            for ( auto p : side_points->points(side_acc) ) {
-            	EXPECT_ARMA_EQ(p.loc_coords(), expected_vals[i_side][i_point]);
-                ++i_point;
-            }
-            ++i_side;
-        }
-    }
-}
-
-TEST_F(FieldEval, evaluate) {
+TEST_F(FieldValueCacheTest, evaluate) {
     string eq_data_input = R"YAML(
     data:
       - region: BULK
@@ -190,7 +151,7 @@ TEST_F(FieldEval, evaluate) {
     data_->cache_allocate(side_eval);
 
     //DHCellAccessor cache_cell = this->element_cache_map(cell);
-    DHCellAccessor cache_cell(dh_.get(), 4);  // element ids store to cache: (3 -> 3,4), (4 -> 3,4,5), (5 -> 4,5)
+    DHCellAccessor cache_cell(dh_.get(), 4);  // element ids store to cache: (3 -> 2,3,4), (4 -> 3,4,5,10), (5 -> 0,4,5,11), (10 -> 4,9,10,11)
     data_->add_cell_to_cache(cache_cell);
     for (DHCellSide side : cache_cell.side_range()) {
     	for(DHCellSide el_ngh_side : side.edge_sides()) {
