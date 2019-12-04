@@ -166,6 +166,9 @@ public:
     /// Holds helper data necessary for cache update.
     class UpdateCacheHelper {
     public:
+        /// Set of element indexes that wait for storing to cache.
+        std::unordered_set<unsigned int> added_elements_;
+
         /// Holds old and new indexes of elements preserved in cache.
         std::unordered_map<unsigned int, unsigned int> preserved_elements_;
 
@@ -181,7 +184,9 @@ public:
 
     /// Init dimension data member
     inline void init(unsigned int dim) {
-        this->dim_ = dim;
+    	ASSERT_EQ(dim_, EvalPoints::undefined_dim).error("Repeated initialization!");
+    	this->ready_to_reading_ = true;
+    	this->dim_ = dim;
     }
 
     /// Adds element to added_elements_ set.
@@ -192,21 +197,6 @@ public:
 
     /// Clean helper data after reading data to cache.
     void clear_elements_to_update();
-
-    /// Getter for begin_idx_
-    inline unsigned int begin_idx() const {
-        return begin_idx_;
-    }
-
-    /// Getter for end_idx_
-    inline unsigned int end_idx() const {
-        return end_idx_;
-    }
-
-    /// Getter for added_elements_
-    inline const std::unordered_set<unsigned int> &added_elements() const {
-        return added_elements_;
-    }
 
     /// Return dimension
     inline unsigned int dim() const {
@@ -227,20 +217,14 @@ private:
     /// Map of element indices stored in cache, allows reverse search to previous vector.
     std::unordered_map<unsigned int, unsigned int> cache_idx_;
 
-    /// Set of element indexes that wait for storing to cache.
-    std::unordered_set<unsigned int> added_elements_;
-
-    /// Holds index to elm_idx_ vector corresponding to begin index stored in added_elements_ vector.
-    unsigned int begin_idx_;
-
-    /// Holds index to elm_idx_ vector corresponding to end index stored in added_elements_ vector.
-    unsigned int end_idx_;
-
     /// Dimension (control data member)
     unsigned int dim_;
 
     /// Holds data used for cache update.
     UpdateCacheHelper update_data_;
+
+    /// Flag is set down during update of cache when this can't be read
+    bool ready_to_reading_;
 };
 
 

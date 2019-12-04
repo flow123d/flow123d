@@ -70,26 +70,30 @@ const unsigned int ElementCacheMap::undef_elem_idx = std::numeric_limits<unsigne
 
 ElementCacheMap::ElementCacheMap()
 : elm_idx_(ElementCacheMap::n_cached_elements, ElementCacheMap::undef_elem_idx),
-  begin_idx_(0), end_idx_(0), dim_(ElementCacheMap::undef_elem_idx) {}
+  dim_(EvalPoints::undefined_dim), ready_to_reading_(false) {}
 
 
 void ElementCacheMap::add(const DHCellAccessor &dh_cell) {
-    ASSERT_LT(added_elements_.size(), ElementCacheMap::n_cached_elements).error("ElementCacheMap overflowed. List of added elements is to long!\n");
+	ASSERT_DBG(ready_to_reading_);
+    ASSERT_LT(update_data_.added_elements_.size(), ElementCacheMap::n_cached_elements).error("ElementCacheMap overflowed. List of added elements is too long!\n");
     unsigned int elm_idx = dh_cell.elm_idx();
-   	added_elements_.insert(elm_idx);
+    update_data_.added_elements_.insert(elm_idx);
 }
 
 
 void ElementCacheMap::prepare_elements_to_update(Mesh *mesh) {
-    // Find elements that were stored in previous cache update.
+	// Start of cache update
+	ready_to_reading_ = false;
+
+	// Find elements that were stored in previous cache update.
     std::array<bool, ElementCacheMap::n_cached_elements> stored_previous;
 	unsigned int n_stored_element = 0;
     stored_previous.fill(false);
-    for (auto it = added_elements_.begin(); it != added_elements_.end();)
+    for (auto it = update_data_.added_elements_.begin(); it != update_data_.added_elements_.end();)
         if (cache_idx_.find(*it) != cache_idx_.end()) {
            stored_previous[cache_idx_.at(*it)] = true;
            ++n_stored_element;
-           it = added_elements_.erase(it); // erase element from added_elements set that exists in cache
+           it = update_data_.added_elements_.erase(it); // erase element from added_elements set that exists in cache
         } else it++;
 
     // Prepare preserved data for move to beginning part of data block, update in elm_idx_, cache_idx_
@@ -110,7 +114,7 @@ void ElementCacheMap::prepare_elements_to_update(Mesh *mesh) {
     }
 
     // Distribute elements by region
-    for (const auto &elm_idx : added_elements_) {
+    for (const auto &elm_idx : update_data_.added_elements_) {
         ElementAccessor<3> elm(mesh, elm_idx);
         unsigned int reg_idx = elm.region_idx().idx();
         typename std::unordered_map<unsigned int, ElementSet>::iterator region_it = update_data_.region_element_map_.find(reg_idx);
@@ -136,14 +140,16 @@ void ElementCacheMap::prepare_elements_to_update(Mesh *mesh) {
 
 
 void ElementCacheMap::clear_elements_to_update() {
-	added_elements_.clear();
+	update_data_.added_elements_.clear();
 	update_data_.preserved_elements_.clear();
 	update_data_.region_element_map_.clear();
 	update_data_.region_cache_begin_.clear();
+	ready_to_reading_ = true; // end of cache update
 }
 
 
 DHCellAccessor & ElementCacheMap::operator() (DHCellAccessor &dh_cell) const {
+	ASSERT_DBG(ready_to_reading_);
 	unsigned int elm_idx = dh_cell.elm_idx();
 	std::unordered_map<unsigned int, unsigned int>::const_iterator it = cache_idx_.find(elm_idx);
 	if ( it != cache_idx_.end() ) dh_cell.set_element_cache_index( it->second );
