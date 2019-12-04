@@ -28,6 +28,8 @@
 
 class EvalSubset;
 class DHCellAccessor;
+class Mesh;
+template <int spacedim> class ElementAccessor;
 
 
 /**
@@ -46,7 +48,7 @@ public:
     ~FieldValueCache();
 
     /// Initialize cache
-    void init(std::shared_ptr<EvalSubset> eval_subset, unsigned int n_cache_points);
+    void init(std::shared_ptr<EvalSubset> eval_subset, unsigned int n_cache_elements);
 
     /// Marks the used local points
     void mark_used(std::shared_ptr<EvalSubset> sub_set);
@@ -56,9 +58,32 @@ public:
         return used_subsets_;
     }
 
-    /// Getter for subsets of used points
+    /// Getter for subsets of used points - TODO obsolete method
     inline const std::array<int, EvalPoints::max_subsets+1> &subset_starts() const {
         return subset_starts_;
+    }
+
+    /// Return begin index of appropriate subset data.
+    inline int subset_begin(unsigned int idx) const {
+        ASSERT_LT_DBG(idx, n_subsets());
+    	return subset_starts_[idx];
+    }
+
+    /// Return end index of appropriate subset data.
+    inline int subset_end(unsigned int idx) const {
+        ASSERT_LT_DBG(idx, n_subsets());
+    	return subset_starts_[idx+1];
+    }
+
+    /// Return number of local points corresponding to subset.
+    inline int subset_size(unsigned int idx) const {
+        ASSERT_LT_DBG(idx, n_subsets());
+    	return subset_starts_[idx+1] - subset_starts_[idx];
+    }
+
+    /// Return number of subsets.
+    inline unsigned int n_subsets() const {
+        return eval_points_->n_subsets();
     }
 
     /// Return size of data cache (number of stored field values)
@@ -70,7 +95,6 @@ public:
     /// Return dimension
     inline unsigned int dim() const {
         return dim_;
-
     }
 
     /// Return data vector.
@@ -90,8 +114,8 @@ public:
     }
 
     /// Return number of elements that data is stored in cache.
-    inline unsigned int n_cache_points() const {
-        return n_cache_points_;
+    inline unsigned int n_cache_elements() const {
+        return n_cache_elements_;
     }
 
 private:
@@ -116,7 +140,7 @@ private:
     std::shared_ptr<EvalPoints> eval_points_;
 
     /// Maximal number of elements stored in cache.
-    unsigned int n_cache_points_;
+    unsigned int n_cache_elements_;
 
     /// Dimension (control data member).
     unsigned int dim_;
@@ -131,11 +155,26 @@ private:
  */
 class ElementCacheMap {
 public:
+	typedef std::vector<ElementAccessor<3>> ElementSet;
+
     /// Number of cached elements which values are stored in cache.
     static const unsigned int n_cached_elements;
 
     /// Index of invalid element in cache.
     static const unsigned int undef_elem_idx;
+
+    /// Holds helper data necessary for cache update.
+    class UpdateCacheHelper {
+    public:
+        /// Holds old and new indexes of elements preserved in cache.
+        std::unordered_map<unsigned int, unsigned int> preserved_elements_;
+
+        /// Maps elements of different regions
+        std::unordered_map<unsigned int, ElementSet> region_element_map_;
+
+        /// Maps of begin positions in cache of different regions
+        std::unordered_map<unsigned int, unsigned int> region_cache_begin_;
+    };
 
     /// Constructor
     ElementCacheMap();
@@ -148,10 +187,10 @@ public:
     /// Adds element to added_elements_ set.
     void add(const DHCellAccessor &dh_cell);
 
-    /// Clean helper data member before reading data to cache.
-    void prepare_elements_to_update();
+    /// Prepare data member before reading data to cache.
+    void prepare_elements_to_update(Mesh *mesh);
 
-    /// Clean helper data member after reading data to cache.
+    /// Clean helper data after reading data to cache.
     void clear_elements_to_update();
 
     /// Getter for begin_idx_
@@ -174,6 +213,11 @@ public:
         return dim_;
     }
 
+    /// Return update cache data helper
+    inline const UpdateCacheHelper &update_cache_data() const {
+        return update_data_;
+    }
+
     /// Set index of cell in ElementCacheMap (or undef value if cell is not stored in cache).
     DHCellAccessor & operator() (DHCellAccessor &dh_cell) const;
 private:
@@ -194,6 +238,9 @@ private:
 
     /// Dimension (control data member)
     unsigned int dim_;
+
+    /// Holds data used for cache update.
+    UpdateCacheHelper update_data_;
 };
 
 
