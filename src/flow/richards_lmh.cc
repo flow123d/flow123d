@@ -42,13 +42,12 @@ namespace it=Input::Type;
 
 RichardsLMH::EqData::EqData()
 {
-    *this += saturation.name("saturation")
+    *this += saturation.name("water_content")
             .units(UnitSI::dimensionless())
             .flags(FieldFlag::equation_result)
-            .description(R"(Saturation.
-                It is a fraction of water volume to void volume
-                (equals fraction of water content to porosity).)");
-    *this += conductivity_out.name("conductivity_out")
+            .description(R"(Water content.
+                It is a fraction of water volume to the whole volume.)");
+    *this += conductivity_richards.name("conductivity_richards")
             .units( UnitSI().m().s(-1) )
             .flags(FieldFlag::equation_result)
             .description("Computed isotropic scalar conductivity by the soil model.");
@@ -158,8 +157,8 @@ void RichardsLMH::initialize_specific() {
     
     data_->conductivity_ptr = std::make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
     data_->conductivity_ptr->set_fe_data(data_->dh_p_, 0);
-    data_->conductivity_out.set_mesh(*mesh_);
-    data_->conductivity_out.set_field(mesh_->region_db().get_region_set("ALL"), data_->conductivity_ptr);
+    data_->conductivity_richards.set_mesh(*mesh_);
+    data_->conductivity_richards.set_field(mesh_->region_db().get_region_set("ALL"), data_->conductivity_ptr);
 
 
     data_->multidim_assembler = AssemblyBase::create< AssemblyRichards >(data_);

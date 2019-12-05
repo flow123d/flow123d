@@ -75,9 +75,9 @@ public:
 
         //output fields
         Field<3, FieldValue<3>::Scalar > saturation;
-        Field<3, FieldValue<3>::Scalar > conductivity_out;
+        Field<3, FieldValue<3>::Scalar > conductivity_richards;
 //         FieldFE<3, FieldValue<3>::Scalar > saturation;
-//         FieldFE<3, FieldValue<3>::Scalar > conductivity_out;
+//         FieldFE<3, FieldValue<3>::Scalar > conductivity_richards;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> saturation_ptr;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> conductivity_ptr;
 

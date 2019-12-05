@@ -50,9 +50,9 @@ problem: !Coupling_Sequential
       fields:
         - pressure_p0
         - velocity_p0
-        - conductivity_out
-        - saturation
-      observe_fields: [pressure_p0, velocity_p0, conductivity_out, saturation]
+        - conductivity_richards
+        - water_content
+      observe_fields: [pressure_p0, velocity_p0, conductivity_richards, water_content]
     balance:
       cumulative: true
 
