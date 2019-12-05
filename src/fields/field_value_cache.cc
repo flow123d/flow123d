@@ -30,18 +30,18 @@
  * Implementation of FieldValueCache methods
  */
 
-template<class elm_type, class Value>
-FieldValueCache<elm_type, Value>::FieldValueCache(unsigned int n_rows, unsigned int n_cols)
+template<class elm_type, class return_type>
+FieldValueCache<elm_type, return_type>::FieldValueCache(unsigned int n_rows, unsigned int n_cols)
 : data_(0, n_rows, n_cols), eval_points_(nullptr), dim_(EvalPoints::undefined_dim) {
     used_subsets_.fill(false);
     subset_starts_.fill(-1);
 }
 
-template<class elm_type, class Value>
-FieldValueCache<elm_type, Value>::~FieldValueCache() {}
+template<class elm_type, class return_type>
+FieldValueCache<elm_type, return_type>::~FieldValueCache() {}
 
-template<class elm_type, class Value>
-void FieldValueCache<elm_type, Value>::init(std::shared_ptr<EvalSubset> eval_subset, unsigned int n_cache_elements) {
+template<class elm_type, class return_type>
+void FieldValueCache<elm_type, return_type>::init(std::shared_ptr<EvalSubset> eval_subset, unsigned int n_cache_elements) {
     ASSERT_EQ(dim_, EvalPoints::undefined_dim).error("Repeated initialization!\n");
 
     this->n_cache_elements_ = n_cache_elements;
@@ -53,8 +53,8 @@ void FieldValueCache<elm_type, Value>::init(std::shared_ptr<EvalSubset> eval_sub
     dim_ = eval_points_->point_dim();
 }
 
-template<class elm_type, class Value>
-void FieldValueCache<elm_type, Value>::mark_used(std::shared_ptr<EvalSubset> sub_set) {
+template<class elm_type, class return_type>
+void FieldValueCache<elm_type, return_type>::mark_used(std::shared_ptr<EvalSubset> sub_set) {
     used_subsets_[sub_set->get_subset_idx()] = true;
 }
 

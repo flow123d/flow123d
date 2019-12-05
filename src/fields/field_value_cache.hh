@@ -38,7 +38,7 @@ template <int spacedim> class ElementAccessor;
  * Every field in equation use own instance for every dimension of elements
  * (typically 3 instances for dim = 1,2,3).
  */
-template<class elm_type, class Value>
+template<class elm_type, class return_type>
 class FieldValueCache {
 public:
     /// Constructor
