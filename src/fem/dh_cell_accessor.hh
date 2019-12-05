@@ -123,12 +123,12 @@ public:
 
     /// Getter of elm_cache_index_.
     inline unsigned int element_cache_index() const {
-        return elm().element_cache_index();
+        return elm_cache_index_;
     }
 
     /// Setter of elm_cache_index_.
     inline void set_element_cache_index(unsigned int idx) const {
-    	elm().set_element_cache_index(idx);
+        elm_cache_index_ = idx;
     }
 
     /// Returns range of cell sides
@@ -167,6 +167,9 @@ private:
     unsigned int loc_ele_idx_;
     /// Vector of DOF indices, it is allocate in constructor
     mutable std::vector<int> dof_indices_;
+
+    /// Optional member used in field evaluation, holds index of cell in field data cache.
+    mutable unsigned int elm_cache_index_;
 
     friend class DHCellSide;
     friend class DHEdgeSide;
