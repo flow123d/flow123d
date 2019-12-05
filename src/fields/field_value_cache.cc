@@ -107,7 +107,7 @@ void ElementCacheMap::prepare_elements_to_update(Mesh *mesh) {
         while (stored_previous[i_target] && (i_target<n_stored_element)) i_target++;
         update_data_.preserved_elements_[i_source] = i_target;
         cache_idx_[ elm_idx_[i_source] ] = i_target;
-        cache_idx_.erase( cache_idx_.find(elm_idx_[i_source]) );
+        cache_idx_.erase( cache_idx_.find(elm_idx_[i_target]) );
         elm_idx_[i_target] = elm_idx_[i_source];
         elm_idx_[i_source] = ElementCacheMap::undef_elem_idx;
         i_target++;
