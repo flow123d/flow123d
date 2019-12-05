@@ -89,7 +89,7 @@ public:
     template<unsigned int point_dim>
     inline Armor::vec<point_dim> point(const unsigned int i) const
     {
-        ASSERT_DBG( point_dim == dim_ );
+        ASSERT_EQ_DBG(point_dim, dim_);
         return quadrature_points.get<point_dim>(i);
     }
 
@@ -118,7 +118,7 @@ public:
      * higher dimensional quadrature considering side and permutation index.
      */
     template<unsigned int bulk_dim>
-    Quadrature make_from_side(unsigned int sid, unsigned int pid);
+    Quadrature make_from_side(unsigned int sid, unsigned int pid) const;
     
 
 protected:
