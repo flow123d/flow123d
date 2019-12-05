@@ -375,18 +375,9 @@ void DarcyLMH::initialize_specific()
     
 //     data_->p_edge_solution.ghost_to_local_begin();
 //     data_->p_edge_solution.ghost_to_local_end();
-//     // data_->p_edge_solution.local_to_ghost_begin();
-//     // data_->p_edge_solution.local_to_ghost_end();
-
 //     data_->p_edge_solution_previous_time.copy_from(data_->p_edge_solution);
-//     // data_->p_edge_solution_previous_time.local_to_ghost_begin();
-//     // data_->p_edge_solution_previous_time.local_to_ghost_end();
-
-//     // reconstruct_solution_from_schur(data_->multidim_assembler);
 
 //     initial_condition_postprocess();
-    
-//     solution_changed_for_scatter=true;
 // }
 
 void DarcyLMH::read_initial_condition()
@@ -448,10 +439,23 @@ void DarcyLMH::zero_time_step()
         solve_nonlinear(); // with right limit data
     } else {
         read_initial_condition();
-        assembly_linear_system(); // in particular due to balance
+        
+        // we reconstruct the initial solution here
+
+        // during the reconstruction assembly:
+        // - the balance objects are actually allocated
+        // - the full solution vector is computed
+        // - to not changing the ref data in the tests at the moment, we need zero velocities,
+        //   so we keep only the pressure in the full solution (reason for the temp vector)
+        // Once we want to change the ref data including nonzero velocities,
+        // we can remove the temp vector and also remove the settings of full_solution vector
+        // in the read_initial_condition(). (use the commented out version read_initial_condition() above)
+        VectorMPI temp = data_->dh_->create_vector();
+        temp.copy_from(data_->full_solution);
+        reconstruct_solution_from_schur(data_->multidim_assembler);
+        data_->full_solution.copy_from(temp);
+
         // print_matlab_matrix("matrix_zero");
-        // TODO: reconstruction of solution in zero time.
-        // reconstruct_solution_from_schur(data_->multidim_assembler);
         accept_time_step(); // accept zero time step, i.e. initial condition
     }
     //solution_output(T,right_limit); // data for time T in any case
