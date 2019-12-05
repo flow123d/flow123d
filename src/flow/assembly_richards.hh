@@ -101,6 +101,7 @@ protected:
         reset_soil_model(dh_cell);
         ElementAccessor<3> ele = dh_cell.elm();
         double storativity = ad_->storativity.value(ele.centre(), ele);
+        VectorMPI water_content_vec = ad_->water_content_ptr->get_data_vec();
 
         for (unsigned int i=0; i<ele->n_sides(); i++) {
             double capacity = 0;
@@ -115,7 +116,7 @@ protected:
                   capacity = x_phead.d(0);
             }
             ad_->capacity[ cr_disc_dofs[i] ] = capacity + storativity;
-            ad_->water_content_previous_it[ cr_disc_dofs[i] ] = water_content + storativity * phead;
+            water_content_vec[ cr_disc_dofs[i] ] = water_content + storativity * phead;
         }
     }
 
@@ -141,6 +142,8 @@ protected:
         double diagonal_coef = ele.measure() * cross_section / ele.n_sides();
         double source_diagonal = diagonal_coef * ad_->water_source_density.value(ele.centre(), ele.element_accessor());
 
+        VectorMPI water_content_vec = ad_->water_content_ptr->get_data_vec();
+
         for (unsigned int i=0; i<ele.element_accessor()->n_sides(); i++)
         {
 
@@ -148,7 +151,7 @@ protected:
             if (this->dirichlet_edge[i] == 0) {
 
                 double capacity = ad_->capacity[local_side];
-                double water_content_diff = -ad_->water_content_previous_it[local_side] + ad_->water_content_previous_time[local_side];
+                double water_content_diff = -water_content_vec[local_side] + ad_->water_content_previous_time[local_side];
                 double mass_diagonal = diagonal_coef * capacity;
 
                 /*
@@ -176,7 +179,7 @@ protected:
             }
 
             ad_->balance->add_mass_vec_value(ad_->water_balance_idx, ele.region().bulk_idx(),
-                    diagonal_coef*ad_->water_content_previous_it[local_side]);
+                    diagonal_coef*water_content_vec[local_side]);
             ad_->balance->add_source_values(ad_->water_balance_idx, ele.region().bulk_idx(), {(LongIdx)ele.edge_local_row(i)},
                                             {0},{source_diagonal});
         }
@@ -198,22 +201,18 @@ protected:
         
         ElementAccessor<3> ele = dh_cell.elm();
 
-        double water_content_p0 = 0.0;
+        VectorMPI water_content_vec = ad_->water_content_ptr->get_data_vec();
         
         for (unsigned int i=0; i<ele->n_sides(); i++) {
             
-            double water_content = ad_->water_content_previous_it[ cr_disc_dofs[i] ];
+            double water_content = water_content_vec[ cr_disc_dofs[i] ];
             double water_content_previous_time = ad_->water_content_previous_time[ cr_disc_dofs[i] ];
             
             solution[this->loc_side_dofs[i]]
                 += edge_source_term - edge_scale * (water_content - water_content_previous_time) / ad_->time_step_;
-
-            water_content_p0 += water_content;
         }
          
         Idx p_dof = dh_cell.cell_with_other_dh(ad_->dh_p_.get()).get_loc_dof_indices()(0);
-
-        ad_->saturation_ptr->get_data_vec()[p_dof] = water_content_p0 / ele->n_sides();
         ad_->conductivity_ptr->get_data_vec()[p_dof] = compute_conductivity(ele);
     }
 

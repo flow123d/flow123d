@@ -42,7 +42,7 @@ namespace it=Input::Type;
 
 RichardsLMH::EqData::EqData()
 {
-    *this += saturation.name("water_content")
+    *this += water_content.name("water_content")
             .units(UnitSI::dimensionless())
             .flags(FieldFlag::equation_result)
             .description(R"(Water content.
@@ -143,17 +143,17 @@ void RichardsLMH::initialize_specific() {
         ASSERT(false);
 
     // create edge vectors
-    data_->water_content_previous_it = data_->dh_cr_disc_->create_vector();
     data_->water_content_previous_time = data_->dh_cr_disc_->create_vector();
     data_->capacity = data_->dh_cr_disc_->create_vector();
 
     ASSERT_PTR(mesh_);
     data_->mesh = mesh_;
     data_->set_mesh(*mesh_);
-    data_->saturation_ptr = std::make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
-    data_->saturation_ptr->set_fe_data(data_->dh_p_, 0);
-    data_->saturation.set_mesh(*mesh_);
-    data_->saturation.set_field(mesh_->region_db().get_region_set("ALL"), data_->saturation_ptr);
+
+    data_->water_content_ptr = std::make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
+    data_->water_content_ptr->set_fe_data(data_->dh_cr_disc_, 0);
+    data_->water_content.set_mesh(*mesh_);
+    data_->water_content.set_field(mesh_->region_db().get_region_set("ALL"), data_->water_content_ptr);
     
     data_->conductivity_ptr = std::make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
     data_->conductivity_ptr->set_fe_data(data_->dh_p_, 0);
@@ -179,7 +179,8 @@ void RichardsLMH::initial_condition_postprocess()
 void RichardsLMH::accept_time_step()
 {
     data_->p_edge_solution_previous_time.copy_from(data_->p_edge_solution);
-    data_->water_content_previous_time.copy_from(data_->water_content_previous_it);
+    VectorMPI water_content_vec = data_->water_content_ptr->get_data_vec();
+    data_->water_content_previous_time.copy_from(water_content_vec);
 
     data_->p_edge_solution_previous_time.local_to_ghost_begin();
     data_->p_edge_solution_previous_time.local_to_ghost_end();
