@@ -158,7 +158,7 @@ TEST_F(FieldValueCacheTest, evaluate) {
     	    data_->add_cell_to_cache( el_ngh_side.cell() );
     	}
     }
-    data_->cache_update(*data_->get_element_cache_map(3));
+    data_->cache_update(*data_->get_element_cache_map(3), mesh_);
 
     //...
     /*DHCellAccessor cache_cell = this->element_cache_map(cell);
