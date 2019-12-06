@@ -108,7 +108,12 @@ public:
 	BulkPoint(DHCellAccessor dh_cell, std::shared_ptr<const EvalSubset> bulk_subset, unsigned int loc_point_idx)
     : dh_cell_(dh_cell), subset_(bulk_subset), local_point_idx_(loc_point_idx) {}
 
-    /// Getter of composed quadrature
+    /// Getter of EvalSubset
+    inline std::shared_ptr<const EvalSubset> eval_subset() const {
+        return subset_;
+    }
+
+    /// Getter of EvalPoints
     inline std::shared_ptr<EvalPoints> eval_points() const {
         return subset_->eval_points();
     }
@@ -169,6 +174,11 @@ public:
 	SidePoint(DHCellSide cell_side, std::shared_ptr<const EvalSubset> subset, unsigned int local_point_idx)
     : cell_side_(cell_side), subset_(subset), local_point_idx_(local_point_idx),
 	  permutation_idx_( cell_side.element()->permutation_idx( cell_side_.side_idx() ) ) {}
+
+    /// Getter of EvalSubset
+    inline std::shared_ptr<const EvalSubset> eval_subset() const {
+        return subset_;
+    }
 
     /// Getter of evaluation points
     inline std::shared_ptr<EvalPoints> eval_points() const {

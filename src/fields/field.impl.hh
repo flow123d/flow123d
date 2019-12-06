@@ -26,6 +26,7 @@
 #include "fields/eval_subset.hh"
 #include "fields/eval_points.hh"
 #include "fields/field_value_cache.hh"
+#include "fields/field_value_cache.impl.hh"
 #include "mesh/region.hh"
 #include "input/reader_to_storage.hh"
 #include "input/accessors.hh"
@@ -137,6 +138,22 @@ Field<spacedim,Value> &Field<spacedim,Value>::operator=(const Field<spacedim,Val
 	}
 
 	return *this;
+}
+
+
+
+template<int spacedim, class Value>
+Armor::Mat<typename Value::element_type, Value::NRows_, Value::NCols_> Field<spacedim,Value>::operator() (BulkPoint &p) {
+    return value_cache_[p.dh_cell().dim()-1].template
+    		get_value<Value::NRows_, Value::NCols_>(p.dh_cell(), p.eval_subset()->get_subset_idx(), p.eval_point_idx());
+}
+
+
+
+template<int spacedim, class Value>
+Armor::Mat<typename Value::element_type, Value::NRows_, Value::NCols_> Field<spacedim,Value>::operator() (SidePoint &p) {
+    return value_cache_[p.dh_cell_side().cell().dim()-1].template
+    		get_value<Value::NRows_, Value::NCols_>(p.dh_cell_side().cell(), p.eval_subset()->get_subset_idx(), p.eval_point_idx());
 }
 
 

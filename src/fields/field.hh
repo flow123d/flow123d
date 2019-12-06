@@ -55,8 +55,13 @@ class Mesh;
 class Observe;
 class EvalSubset;
 class EvalPoints;
+class BulkPoint;
+class SidePoint;
 template <int spacedim> class ElementAccessor;
 template <int spacedim, class Value> class FieldFE;
+namespace Armor {
+    template <class Type, uint nRows, uint nCols> class Mat;
+}
 
 using namespace std;
 namespace IT=Input::Type;
@@ -162,6 +167,12 @@ public:
      * of name in method copy_from
      */
     Field &operator=(const Field &other);
+
+
+    Armor::Mat<typename Value::element_type, Value::NRows_, Value::NCols_> operator() (BulkPoint &);
+
+
+    Armor::Mat<typename Value::element_type, Value::NRows_, Value::NCols_> operator() (SidePoint &);
 
 
     /**
