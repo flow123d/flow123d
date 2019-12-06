@@ -130,12 +130,18 @@ public:
 TEST_F(FieldValueCacheTest, evaluate) {
     string eq_data_input = R"YAML(
     data:
-      - region: BULK
+      - region: 3D left
         time: 0.0
         scalar_field: !FieldConstant
           value: 0.5
-        vector_field: [0.1, 0.2, 0.3]
-        tensor_field: [1, 2, 3, 4, 5, 6]
+        vector_field: [1, 2, 3]
+        tensor_field: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
+      - region: 3D right
+        time: 0.0
+        scalar_field: !FieldConstant
+          value: 1.5
+        vector_field: [4, 5, 6]
+        tensor_field: [2.1, 2.2, 2.3, 2.4, 2.5, 2.6]
     )YAML";
 	this->read_input(eq_data_input);
 
@@ -150,43 +156,54 @@ TEST_F(FieldValueCacheTest, evaluate) {
     data_->cache_allocate(mass_eval);
     data_->cache_allocate(side_eval);
 
-    //DHCellAccessor cache_cell = this->element_cache_map(cell);
-    DHCellAccessor cache_cell(dh_.get(), 4);  // element ids store to cache: (3 -> 2,3,4), (4 -> 3,4,5,10), (5 -> 0,4,5,11), (10 -> 4,9,10,11)
-    data_->add_cell_to_cache(cache_cell);
-    for (DHCellSide side : cache_cell.side_range()) {
-    	for(DHCellSide el_ngh_side : side.edge_sides()) {
-    	    data_->add_cell_to_cache( el_ngh_side.cell() );
-    	}
-    }
-    data_->cache_update(*data_->get_element_cache_map(3), mesh_);
+    std::vector<unsigned int> cell_idx = {3, 4, 5, 10};
+    std::vector<double>       expected_scalar = {0.5, 0.5, 0.5, 1.5};
+    std::vector<arma::vec3>   expected_vector = {{1, 2, 3}, {1, 2, 3}, {1, 2, 3}, {4, 5, 6}};
+    std::vector<arma::mat33>  expected_tensor = {{0.1, 0.2, 0.3, 0.2, 0.4, 0.5, 0.3, 0.5, 0.6}, {0.1, 0.2, 0.3, 0.2, 0.4, 0.5, 0.3, 0.5, 0.6},
+                                                 {0.1, 0.2, 0.3, 0.2, 0.4, 0.5, 0.3, 0.5, 0.6}, {2.1, 2.2, 2.3, 2.2, 2.4, 2.5, 2.3, 2.5, 2.6}};
+    for (unsigned int i=0; i<cell_idx.size(); ++i) {
+        DHCellAccessor dh_cell(dh_.get(), cell_idx[i]);  // element ids stored to cache: (3 -> 2,3,4), (4 -> 3,4,5,10), (5 -> 0,4,5,11), (10 -> 4,9,10,11)
+        data_->add_cell_to_cache(dh_cell);
+        for (DHCellSide side : dh_cell.side_range()) {
+            for(DHCellSide el_ngh_side : side.edge_sides()) {
+                data_->add_cell_to_cache( el_ngh_side.cell() );
+    	    }
+        }
+        data_->cache_update(*data_->get_element_cache_map(3), mesh_);
 
-    //...
-    /*DHCellAccessor cache_cell = this->element_cache_map(cell);
-    // Bulk integral, no sides, no permutations.
-    for(BulkPoint q_point: this->mass_eval.points(cache_cell)) {
-        // Extracting the cached values.
-        double cs = cross_section(q_point);
+        DHCellAccessor cache_cell = this->data_->elm_cache_map_[dh_cell.dim()-1](dh_cell);
 
-        // Following would be nice to have. Not clear how to
-        // deal with more then single element as fe_values have its own cache that has to be updated.
-        auto base_fn_grad = presssure_field_fe.base_value(q_point);
-    loc_matrix += outer_product((cs * base_fn_grad),  base_fn_grad)
-    } */
+        // Bulk integral, no sides, no permutations.
+        for(BulkPoint q_point: mass_eval->points(cache_cell)) {
+            EXPECT_EQ(expected_scalar[i], data_->scalar_field(q_point)[0]);
+            EXPECT_ARMA_EQ(expected_vector[i], data_->vector_field(q_point).arma());
+            EXPECT_ARMA_EQ(expected_tensor[i], data_->tensor_field(q_point).arma());
+            /* // Extracting the cached values.
+            double cs = cross_section(q_point);
 
-    // Side integrals.
-    // FieldFE<..> conc;
-    /*for (DHCellSide side : cache_cell.side_range()) {
-    	for(DHCellSide el_ngh_side : side.edge_sides()) {
-       	    // vector of local side quadrature points in the correct side permutation
-    	    Range<SidePoint> side_points = this->side_eval.points(side)
-    	    for (SidePoint p : side_points) {
-    	    	ngh_p = p.permute(el_ngh_side);
-    	        loc_mat += cross_section(p) * sigma(p) *
-    		    (conc.base_value(p) * velocity(p)
-    		    + conc.base_value(ngh_p) * velocity(ngh_p)) * p.normal() / 2;
+            // Following would be nice to have. Not clear how to
+            // deal with more then single element as fe_values have its own cache that has to be updated.
+            auto base_fn_grad = presssure_field_fe.base_value(q_point);
+            loc_matrix += outer_product((cs * base_fn_grad),  base_fn_grad) */
+        }
+
+        // Side integrals.
+        // FieldFE<..> conc;
+        for (DHCellSide side : cache_cell.side_range()) {
+        	for(DHCellSide el_ngh_side : side.edge_sides()) {
+           	    // vector of local side quadrature points in the correct side permutation
+        	    Range<SidePoint> side_points = side_eval->points(side);
+        	    for (SidePoint side_p : side_points) {
+                    EXPECT_EQ(expected_scalar[i], data_->scalar_field(side_p)[0]);
+                    EXPECT_ARMA_EQ(expected_vector[i], data_->vector_field(side_p).arma());
+                    EXPECT_ARMA_EQ(expected_tensor[i], data_->tensor_field(side_p).arma());
+        	    	//ngh_p = p.permute(el_ngh_side);
+        	        //loc_mat += cross_section(p) * sigma(p) *
+        		    //    (conc.base_value(p) * velocity(p)
+        		    //    + conc.base_value(ngh_p) * velocity(ngh_p)) * p.normal() / 2;
+                }
             }
         }
-    }*/
-    //std::cout << "----------- end \n";
+    }
 
 }
