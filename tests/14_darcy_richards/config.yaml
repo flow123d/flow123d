@@ -13,5 +13,6 @@ test_cases:
       - 02_1d_dirichlet.yaml
       #- 03_1d_horizontal.yaml
       - 04_2d_horizontal.yaml
+      - 05_2d_dirichlet_source.yaml
   - files: 03_1d_horizontal.yaml
     time_limit: 60

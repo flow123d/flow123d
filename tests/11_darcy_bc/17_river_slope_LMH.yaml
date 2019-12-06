@@ -19,7 +19,6 @@ problem: !Coupling_Sequential
   mesh:
     mesh_file: ../00_mesh/slope_xz_1x1.5.msh
   flow_equation: !Flow_Darcy_LMH
-    n_schurs: 2
     input_fields:
       - region: plane
         conductivity: 0.001

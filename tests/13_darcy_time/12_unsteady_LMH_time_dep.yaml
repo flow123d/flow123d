@@ -44,7 +44,6 @@ problem: !Coupling_Sequential
         time: 4
         conductivity: 1
 
-    n_schurs: 2
     output:
       times:
         - step: 0.2

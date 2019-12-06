@@ -244,12 +244,6 @@ public:
     virtual void initialize_specific();
     void zero_time_step() override;
     void update_solution() override;
-
-    /**
-     * Getter for sequential solution vector.
-     * DEPRECATED
-     */
-    void get_solution_vector(double * &vec, unsigned int &vec_size) override;
     
     /// postprocess velocity field (add sources)
     virtual void prepare_new_time_step();
@@ -270,7 +264,6 @@ protected:
 
     /// Solve method common to zero_time_step and update solution.
     void solve_nonlinear();
-    void make_serial_scatter();
     void modify_system();
     virtual void setup_time_term();
 
@@ -342,18 +335,12 @@ protected:
     /// Get vector of all DOF indices of given component (0..side, 1..element, 2..edge)
     std::vector<int> get_component_indices_vec(unsigned int component) const;
 
-    bool solution_changed_for_scatter;
-    //Vec velocity_vector;
-    MH_DofHandler mh_dh;    // provides access to seq. solution fluxes and pressures on sides
-
-
     std::shared_ptr<Balance> balance_;
 
     DarcyFlowMHOutput *output_object;
 
 	int size;				    // global size of MH matrix
 	int  n_schur_compls;  	    // number of shur complements to make
-	double  *solution; 			// sequantial scattered solution vector
 
 	// Propagate test for the time term to the assembly.
 	// This flag is necessary for switching BC to avoid setting zero neumann on the whole boundary in the steady case.
@@ -368,11 +355,6 @@ protected:
 
 
 	LinSys *schur0;  		//< whole MH Linear System
-
-
-	// gather of the solution
-	Vec sol_vec;			                 //< vector over solution array
-	VecScatter par_to_all;
 
 	Vec steady_diagonal;
     Vec steady_rhs;
