@@ -118,6 +118,10 @@ public:
         return n_cache_elements_;
     }
 
+    /// Return value of evaluation point given by DHCell and local point idx in EvalPoints.
+    template<uint nRows, uint nCols>
+    Armor::Mat<elm_type, nRows, nCols> get_value(DHCellAccessor dh_cell, unsigned int subset_idx, unsigned int eval_points_idx);
+
 private:
     /**
      * Data cache.

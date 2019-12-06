@@ -17,7 +17,7 @@
  */
 
 #include <limits>
-#include "fields/field_value_cache.hh"
+#include "fields/field_value_cache.impl.hh"
 #include "fields/field_values.hh"
 #include "fields/eval_points.hh"
 #include "fields/eval_subset.hh"
@@ -162,8 +162,8 @@ DHCellAccessor & ElementCacheMap::operator() (DHCellAccessor &dh_cell) const {
  * Explicit instantiation of templates
  */
 
-template class FieldValueCache<unsigned int, unsigned int>;    // NOT tested, necessary for linking!
-template class FieldValueCache<int, int>;             // NOT tested, necessary for linking!
+template class FieldValueCache<unsigned int, unsigned int>;
+template class FieldValueCache<int, int>;
 template class FieldValueCache<double, double>;
 template class FieldValueCache<double, arma::vec3>;
 template class FieldValueCache<double, arma::mat33>;
