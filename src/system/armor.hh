@@ -1,67 +1,102 @@
 #ifndef ARMOR_HH
 #define ARMOR_HH
 
+/**
+ * The Mat class template is used for small vectors and matricies.
+ * It is just a wrapper class for an actual storage, for calculations the armadillo library
+ * is used, in combination with inlining and expression templates all auxiliary constructors
+ * and data copy are usually optimized out leaving just optimal code for the desired calculation.
+ *
+ * When deducing template parameters for the function templates the compiler consider only
+ * exact type match with possible const conversion and conversion to the parent. In particular
+ * implicit conversions are not considered. This makes transition between Armor and armadillo
+ * a bit complicated. In order to make everythink as smooth as possible we use several
+ * tricks:
+ * 1) defining a friend function inside of the class template creates an explicit function
+ * instance. As the instance is already created the implicit conversion is considered.
+ *
+ * 2) In order to consturct Mat<Type, nr, 1> and Mat<Type, 1, 1> also from arma::Col and from
+ * the Type variable, we use specialization that is derived from the generic case with nr>1, nc>1.
+ *
+ * 3) In order to prevent ambiguous method resolution, we can have just single
+ * TODO: try to transpose storage format used in Armor (prefered row first) and Armadillo (column first).
+ */
+
 //#define ARMA_DONT_USE_WRAPPER
 //#define ARMA_NO_DEBUG
 #include <armadillo>
 #include <array>
 #include "system/asserts.hh"
+#include "system/logger.hh"
 
 namespace Armor {
 
 
+//template <class type, uint nr, uint nc>
+//struct _MatSimpleType {
+//    typedef typename arma::Mat<type>::template fixed<nr, nc> AType;
+//    inline static AType convert(const type *begin) {return AType(begin);}
+//};
+//
+//template <class type, uint nr>
+//struct _MatSimpleType<type, nr, 1> {
+//    typedef typename arma::Col<type>::template fixed<nr> AType;
+//    inline static AType convert(const type *begin) {return AType(begin);}
+//};
+//
+//template <class type>
+//struct _MatSimpleType<type, 1, 1> {
+//    typedef type AType;
+//    inline static AType convert(const type *begin) {return *begin;}
+//};
+
+
+
 template <class Type, uint nRows, uint nCols>
-class Mat
+class _Mat
 {
-private:
+protected:
     Type * const data;
+
 public:
-    typedef typename arma::Mat<Type>::template fixed<nRows, nCols> ArmaType;
+    static const uint n_rows = nRows;
+    static const uint n_cols = nCols;
 
-    Mat()
-    : data(new Type[nRows * nCols])
-    {}
+    typedef typename arma::Mat<Type>::template fixed<nRows, nCols> Arma;
+//    typedef typename arma::_Mat<Type>::template fixed<nRows, nCols> BaseAr_Matype;
+//    typedef typename __MatSimpleType<Type, nRows, nCols>::AType Ar_Matype;
+//    typedef typename arma::Col<Type>::template fixed<nRows> VecType;
 
-    Mat(Type * const mem)
+    _Mat(Type * const mem)
     : data(mem)
     {}
 
-    inline Mat(const ArmaType & arma) : data(new Type[nRows * nCols]) {
-        for (uint i = 0; i < nRows * nCols; ++i) {
-            data[i] = arma[i];
-        }
-    }
-
-    inline Mat(std::initializer_list<std::initializer_list<Type>> list) : data(new Type[nRows * nCols]) {
-        const auto * listIt = list.begin();
-        const Type * it;
-        for (uint i = 0; i < nRows; ++i) {
-            it = (listIt + i)->begin();
-            for (uint j = 0; j < nCols; ++j) {
-                data[i+j*nRows] = *(it + j);
-            }
-        }
-    }
-
-    inline Mat(std::initializer_list<Type> list) : data(new Type[nRows * nCols]) {
-        const Type * it = list.begin();
-        for (uint i = 0; i < nRows * nCols; ++i) {
-            data[i] = *(it + i);
-        }
-    }
-
-    inline Mat(const Armor::Mat<Type, nRows, nCols> & other) 
+    inline _Mat(const Armor::_Mat<Type, nRows, nCols> & other)
     : data(other.data)
-    {
-        for (uint i = 0; i < nRows * nCols; ++i) {
-            data[i] = other[i];
-        }
-    }
-
-    inline Mat(ArmaType arma_mat)
-    : data(arma_mat.memptr())
     {}
 
+    inline _Mat(const Arma &arma_mat)
+    : data(const_cast<Type *>(arma_mat.memptr()))
+    // TODO: Here possible problem with creating non-constant Mat interface to
+    // a temporary Arma object.
+    {}
+
+
+    inline operator Arma() const {return arma();}
+
+//    inline operator Arma() {return arma();}
+
+//    inline const Arma &arma() const {
+//        return Arma(begin());
+//    }
+
+    inline const Arma &arma() const {
+        // See proper way how to deal with l-value wrapper and r-value wrapper distinction:
+        // https://stackoverflow.com/questions/20928044/best-way-to-write-a-value-wrapper-class
+        // Currently we provide only r-value convertion to Arma types.
+        // Use Index access and assignement to modify values.
+        return Arma(begin());
+    }
 
 
     inline const Type * begin() const {
@@ -71,6 +106,7 @@ public:
     inline Type * begin() {
         return data;
     }
+
     inline const Type * end() const {
         return begin() + nCols * nRows;
     }
@@ -86,8 +122,6 @@ public:
     inline Type * memptr() {
         return begin();
     }
-
-    inline operator ArmaType() const {return arma();}
 
     inline const Type & operator[](uint index) const {
         return data[index];
@@ -105,45 +139,85 @@ public:
         return data[row+col*nRows];
     }
 
-    inline ArmaType arma() const {
-        return ArmaType(begin());
+    inline const Type & at(uint row, uint col) const {
+        return data[row+col*nRows];
     }
 
-    inline const Mat<Type, nRows, nCols> & operator=(const Mat<Type, nRows, nCols> & other) {
+    inline Type & at(uint row, uint col) {
+        return data[row+col*nRows];
+    }
+
+
+
+
+//    inline VecType vec() const {
+//        return VecType(begin());
+//    }
+
+
+
+    inline const _Mat<Type, nRows, nCols> & operator=(const _Mat<Type, nRows, nCols> & other) {
+        _data_copy(other.data);
+        return *this;
+    }
+
+//    inline const _Mat<Type, nRows, nCols> & operator=(const Arma & other) {
+//        _data_copy(other.memptr());
+//        return *this;
+//    }
+
+private:
+
+    inline void _data_copy(Type *other_data) {
+//        DebugOut() << "data: " << data << "\n";
+//        DebugOut() << "other: " << other_data << "\n";
+        //DebugOut() << "dc size : " << n_rows * n_cols << "\n";
         for (uint i = 0; i < nRows * nCols; ++i) {
-            data[i] = other[i];
+            data[i] = other_data[i];
         }
-        return *this;
     }
 
-    inline const Mat<Type, nRows, nCols> & operator=(const ArmaType & other) {        
-        for (uint i = 0; i < nRows * nCols; ++i) {
-            data[i] = other[i];
-        }
-        return *this;
-    }
+public:
+//    inline const _Mat<Type, nRows, nCols> & operator=(const VecType & other) {
+//        for (uint i = 0; i < nRows * nCols; ++i) {
+//            data[i] = other[i];
+//        }
+//        return *this;
+//    }
 
-    inline const Mat<Type, nRows, nCols> & operator=(std::initializer_list<std::initializer_list<Type>> list) {
-        const auto * listIt = list.begin();
-        const Type * it;
-        for (uint i = 0; i < nRows; ++i) {
-            it = (listIt + i)->begin();
-            for (uint j = 0; j < nCols; ++j) {
-                data[i+j*nRows] = *(it + j);
-            }
-        }
-        return *this;
-    }
 
-    inline const Mat<Type, nRows, nCols> & operator=(std::initializer_list<Type> list) {
-        const Type * it = list.begin();
-        for (uint i = 0; i < nRows * nCols; ++i) {
-            data[i] = *(it + i);
-        }
-        return *this;
-    }
+//    inline const _Mat<Type, nRows, nCols> & operator=(std::initializer_list<std::initializer_list<Type>> list) {
+//        *this = (Arma(list));
+//
+////        const auto * listIt = list.begin();
+////        const Type * it;
+////        for (uint i = 0; i < nRows; ++i) {
+////            it = (listIt + i)->begin();
+////            for (uint j = 0; j < nCols; ++j) {
+////                data[i+j*nRows] = *(it + j);
+////            }
+////        }
+////        return *this;
+//    }
+//
+//    inline const _Mat<Type, nRows, nCols> & operator=(std::initializer_list<Type> list) {
+//        *this = (Arma(list));
+//
+////        const Type * it = list.begin();
+////        for (uint i = 0; i < nRows * nCols; ++i) {
+////            data[i] = *(it + i);
+////        }
+////        return *this;
+//    }
 
-    inline bool operator==(const ArmaType & other) {
+
+
+//        inline const _Mat<Type, nRows, nCols> & init(std::initializer_list<Type> list) {
+//            *this = (Arma(list));
+//        }
+
+
+    inline bool operator==(const Arma & other) {
         const Type * first1 = begin();
         const Type * last1 = end();
         const Type * first2 = other.begin();
@@ -155,7 +229,7 @@ public:
         return true;
     }
 
-    inline bool operator==(const Mat<Type, nRows, nCols> & other) {
+    inline bool operator==(const _Mat<Type, nRows, nCols> & other) {
         const Type * first1 = begin();
         const Type * last1 = end();
         const Type * first2 = other.begin();
@@ -166,8 +240,99 @@ public:
         }
         return true;
     }
+
+
+
+    inline friend Type dot(const _Mat& a, const _Mat& b) {
+        return arma::dot(a.arma(), b.arma());
+    }
+
+    inline friend Arma operator+(const _Mat& a, const _Mat& b) {
+        return a.arma() + b.arma();
+    }
+
+    inline friend Arma operator+=(_Mat& a, const _Mat& b) {
+        return (a = (a.arma() + b.arma()));
+    }
+
+    inline friend Arma operator-(const _Mat& a, const _Mat& b) {
+        return a.arma() - b.arma();
+    }
+
+    inline friend Arma operator-=(_Mat& a, const _Mat& b) {
+        return (a = (a.arma() - b.arma()));
+    }
+
 
 };
+
+template <class Type, uint nRows, uint nCols>
+class Mat : public _Mat<Type, nRows, nCols>
+{
+public:
+    typedef typename _Mat<Type, nRows, nCols>::Arma Arma;
+    // inherit constructors
+    using _Mat<Type, nRows, nCols>::_Mat;
+};
+
+
+template <class Type, uint nRows>
+class Mat<Type, nRows, 1> : public _Mat<Type, nRows, 1>
+{
+public:
+    typedef typename _Mat<Type, nRows, 1>::Arma Arma;
+    typedef typename arma::Col<Type>::template fixed<nRows> ArmaVec;
+    // inherit constructors
+    using _Mat<Type, nRows, 1>::_Mat;
+
+    // Add Col constructor
+    Mat<Type, nRows, 1>(const ArmaVec &other)
+    : _Mat<Type, nRows, 1>(other.memptr())
+    {}
+
+//    const Mat<Type, nRows, 1> &operator=(const ArmaVec &other)
+//    {
+//        this->_data_copy(other.memptr());
+//        return *this;
+//    }
+};
+
+
+template <class Type>
+class Mat<Type, 1, 1> : public _Mat<Type, 1, 1>
+{
+public:
+    typedef typename _Mat<Type, 1, 1>::Arma Arma;
+    typedef typename arma::Col<Type>::template fixed<1> ArmaVec;
+    typedef Type Scalar;
+
+    // inherit constructors
+    using _Mat<Type, 1, 1>::_Mat;
+
+    // Add Col and Scalar constructor
+    Mat<Type, 1, 1>(const ArmaVec &other)
+    : _Mat<Type, 1, 1>(other.memptr())
+    {}
+
+    Mat<Type, 1, 1>(const Scalar &other)
+    : _Mat<Type, 1, 1>(&other)
+    {}
+
+//    const Mat<Type, 1, 1> &operator=(const ArmaVec &other)
+//    {
+//        this->_data_copy(other.memptr());
+//        return *this;
+//    }
+//
+//    const Mat<Type, 1, 1> &operator=(const Scalar &other)
+//    {
+//        this->_data_copy(&other);
+//        return *this;
+//    }
+
+};
+
+
 
 /**
  * Check for close vectors or matrices.
@@ -179,14 +344,111 @@ template <class Type, uint nRows, uint nCols>
 inline bool is_close(Mat<Type, nRows, nCols> a, Mat<Type, nRows, nCols> b, double a_tol = 1e-10, double r_tol = 1e-6) {
     double a_diff = arma::norm(a - b, 1);
     if (a_diff < a_tol) return true;
-    if (a_diff < r_tol * arma::norm(a, 1)) return true;
+    if (a_diff < r_tol * arma::norm(a.arma(), 1)) return true;
     return false;
 }
 
 
+/** dot ********************************/
+
+
+/** operator + ********************************/
+
+
+/** operator - ********************************/
+//
+//template <class Type, uint nRows, uint nCols>
+//inline typename Mat<Type, nRows, nCols>::ArmaType operator-(const Mat<Type, nRows, nCols> & a, const Mat<Type, nRows, nCols> & b) {
+//    return a.arma() - b.arma();
+//}
+//
+//template <class Type, uint nRows, uint nCols>
+//inline typename Mat<Type, nRows, nCols>::ArmaType operator-(const Mat<Type, nRows, nCols> & a, const typename Mat<Type, nRows, nCols>::ArmaType & b) {
+//    return a.arma() - b;
+//}
+//
+//template <class Type, uint nRows, uint nCols>
+//inline typename Mat<Type, nRows, nCols>::ArmaType operator-(const typename Mat<Type, nRows, nCols>::ArmaType & a, const Mat<Type, nRows, nCols> & b) {
+//    return a - b.arma();
+//}
+//
+//template <class Type, uint nRows, uint nCols>
+//inline typename Mat<Type, nRows, nCols>::ArmaType operator-=(typename Mat<Type, nRows, nCols>::ArmaType & a, const Mat<Type, nRows, nCols> & b) {
+//    return (a = (a - b.arma()));
+//}
+
+/** operator *  ********************************/
+//template <class Type, uint nRows, uint nCols>
+//inline typename Mat<Type, nRows, nCols>::ArmaType operator*(const Mat<Type, nRows, nCols> & a, const Mat<Type, nRows, nCols> & b) {
+//    return a.arma() * b.arma();
+//}
+//
+//template <class Type, uint nRows, uint nCols>
+//inline typename Mat<Type, nRows, nCols>::ArmaType operator*(const Mat<Type, nRows, nCols> & a, const typename Mat<Type, nRows, nCols>::ArmaType & b) {
+//    return a.arma() * b;
+//}
+//
+//template <class Type, uint nRows, uint nCols>
+//inline typename Mat<Type, nRows, nCols>::ArmaType operator*(const typename Mat<Type, nRows, nCols>::ArmaType & a, const Mat<Type, nRows, nCols> & b) {
+//    return a * b.arma();
+//}
+
+
+/*
+
+template <class Type, uint nRows, uint nCols>
+inline typename Mat<Type, nRows, nCols>::ArmaType operator%(const Mat<Type, nRows, nCols> & a, const Mat<Type, nRows, nCols> & b) {
+    return a.arma() % b.arma();
+}
+
+template <class Type, uint nRows, uint nCols>
+inline typename Mat<Type, nRows, nCols>::ArmaType operator%(const Mat<Type, nRows, nCols> & a, const typename Mat<Type, nRows, nCols>::ArmaType & b) {
+    return a.arma() % b;
+}
+
+template <class Type, uint nRows, uint nCols>
+inline typename Mat<Type, nRows, nCols>::ArmaType operator%(const typename Mat<Type, nRows, nCols>::ArmaType & a, const Mat<Type, nRows, nCols> & b) {
+    return a % b.arma();
+}
+*/
 
 
 
+/** scalar * and / **/
+//template <class Type, uint nRows, uint nCols>
+//inline typename Mat<Type, nRows, nCols>::ArmaType operator*(Type number, const Mat<Type, nRows, nCols> & a) {
+//    return number * a.arma();
+//}
+//
+//template <class Type, uint nRows, uint nCols>
+//inline typename Mat<Type, nRows, nCols>::ArmaType operator/(const Mat<Type, nRows, nCols> & a, Type number) {
+//    return a.arma() / number;
+//}
+
+
+
+template <uint N>
+using vec = Mat<double, N, 1>;
+
+template <uint N, uint M>
+using mat = Mat<double, N, M>;
+
+
+template<class Type, int nr, int nc>
+Mat<Type, nr, nc> mat_type(typename arma::Mat<Type>::template fixed<nr, nc> &x) {return Mat<Type, nr, nc>(x.memptr());}
+
+template<class Type>
+Mat<Type, 1, 1> mat_type(double &x) {return Mat<Type, 1, 1>(&x);}
+
+template<class eT, int nr>
+Mat<eT, nr, 1> mat_type(typename arma::Col<eT>::template fixed<nr> &x) {return Mat<eT, nr, 1>(x.memptr());}
+
+
+
+//template<Type, int nr>
+//class Mat<Type, nr, 1> : public Mat<Type, nr, 1>{
+//
+//}
 
 
 /**
@@ -221,7 +483,7 @@ public:
         reserved_ = size;
         size_ = 0;
         data_ = new Type[n_rows_ * n_cols_ * reserved_];
-    
+    }
 
 
     /**
@@ -243,7 +505,7 @@ public:
      * Increase active space by 1 and store given Mat value to the end of the active space.
      */
     template<uint nr, uint nc = 1>
-    inline void append(Mat<Type,nr,nc> item)
+    inline void append(const Mat<Type,nr,nc> &item)
     {
         ASSERT_LE_DBG(size_, reserved_);
         get<nr,nc>(size_) = item;
@@ -264,40 +526,34 @@ public:
         ASSERT_DBG( (nr == n_rows_) && (nc == n_cols_) );
         return Mat<Type,nr,nc>( data_ + mat_index * n_rows_ * n_cols_ );
     }
-    
-    /**
-     * Return matrix at given position in array. The returned object is a Armor::Mat
-     * pointing to the respective data block in the Array's storage.
-     * @param i  Index of matrix.
-     *
-     * TODO: Should be renamed to item(), but we have compilation problem in Field::loc_point_value
-     */
+
     template<uint nr, uint nc = 1>
-    inline Mat<Type,nr,nc> get(uint i)
+    inline Mat<Type,nr,nc> get(uint mat_index)
     {
-        ASSERT_DBG( (nr == nRows) && (nc == nCols) );
-        return Mat<Type,nr,nc>( (Type*)(data.data()) + i*nRows*nCols );
+        ASSERT_DBG( (nr == n_rows_) && (nc == n_cols_) );
+        return Mat<Type,nr,nc>( data_ + mat_index * n_rows_ * n_cols_ );
     }
+
 
     /**
      * Return armadillo matrix at given position in array.
      * @param i  Index of matrix.
      */
-    inline arma::mat arma_mat(uint i) const
-    {
-    	return arma::vec( (Type*)(data.data()) + i*nRows*nCols, nRows*nCols );
-    }
+//    inline arma::mat arma_mat(uint i) const
+//    {
+//    	return arma::vec( (Type*)(data.data()) + i*nRows*nCols, nRows*nCols );
+//    }
 
     /**
      * Return armadillo vector at given position in array.
      * Warning! Method can be used only if nCols == 1.
      * @param i  Index of matrix.
      */
-    inline arma::vec arma_vec(uint i) const
-    {
-        ASSERT_EQ_DBG(nCols, 1);
-    	return arma::vec( (Type*)(data.data()) + i*nRows, nRows );
-    }
+//    inline arma::vec arma_vec(uint i) const
+//    {
+//        ASSERT_EQ_DBG(nCols, 1);
+//    	return arma::vec( (Type*)(data.data()) + i*nRows, nRows );
+//    }
 
 private:
     inline uint space_() { return n_rows_ * n_cols_ * reserved_; }
@@ -308,52 +564,6 @@ private:
     Type * data_;
 };
 
-
-template <class Type, uint nRows, uint nCols>
-inline Type dot(const Mat<Type, nRows, nCols> & a, const Mat<Type, nRows, nCols> & b) {
-    return arma::dot(a.arma(), b.arma());
-}
-
-template <class Type, uint nRows, uint nCols>
-inline typename Mat<Type, nRows, nCols>::ArmaType operator+(const Mat<Type, nRows, nCols> & a, const Mat<Type, nRows, nCols> & b) {
-    return a.arma() + b.arma();
-}
-
-template <class Type, uint nRows, uint nCols>
-inline typename Mat<Type, nRows, nCols>::ArmaType operator-(const Mat<Type, nRows, nCols> & a, const Mat<Type, nRows, nCols> & b) {
-    return a.arma() - b.arma();
-}
-
-template <class Type, uint nRows, uint nCols>
-inline typename Mat<Type, nRows, nCols>::ArmaType operator*(const Mat<Type, nRows, nCols> & a, const Mat<Type, nRows, nCols> & b) {
-    return a.arma() * b.arma();
-}
-
-template <class Type, uint nRows, uint nCols>
-inline typename Mat<Type, nRows, nCols>::ArmaType operator%(const Mat<Type, nRows, nCols> & a, const Mat<Type, nRows, nCols> & b) {
-    return a.arma() % b.arma();
-}
-
-template <class Type, uint nRows, uint nCols>
-inline typename Mat<Type, nRows, nCols>::ArmaType operator*(Type number, const Mat<Type, nRows, nCols> & a) {
-    return number * a.arma();
-}
-
-template <class Type, uint nRows, uint nCols>
-inline typename Mat<Type, nRows, nCols>::ArmaType operator/(const Mat<Type, nRows, nCols> & a, Type number) {
-    return a.arma() / number;
-}
-
-
-template <uint N>
-using vec = Mat<double, N, 1>;
-
-template <uint N, uint M>
-using mat = Mat<double, N, M>;
-
-
-
-using array = Array<double>;
 
 }
 
