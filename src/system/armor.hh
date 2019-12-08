@@ -14,6 +14,11 @@
  * tricks:
  * 1) defining a friend function inside of the class template creates an explicit function
  * instance. As the instance is already created the implicit conversion is considered.
+ * See: https://stackoverflow.com/questions/9787593/implicit-type-conversion-with-template
+ * At least with GCC it seems, that this approach works for operators. Argument dependent lookup (ADL)
+ * finds the operator or function if at least one of its parameters is Mat template. However
+ * for operators the implicit conversion of the other argument is applied, while for the function it is not.
+ *
  *
  * 2) In order to consturct Mat<Type, nr, 1> and Mat<Type, 1, 1> also from arma::Col and from
  * the Type variable, we use specialization that is derived from the generic case with nr>1, nc>1.
@@ -28,6 +33,33 @@
 #include <array>
 #include "system/asserts.hh"
 #include "system/logger.hh"
+
+
+
+template<typename T1, typename T2>
+inline bool is_close(
+        const arma::BaseCube<typename T1::elem_type,T1>& a,
+        const arma::BaseCube<typename T1::elem_type,T2>& b,
+        const typename T1::pod_type abs_tol=1e-10, const typename T1::pod_type rel_tol=1e-6)
+{
+    double a_diff = arma::norm(a.get_ref() - b.get_ref(), 1);
+    if (a_diff < abs_tol) return true;
+    if (a_diff < rel_tol * arma::norm(a.get_ref(), 1)) return true;
+    return false;
+}
+
+template<typename T1, typename T2>
+inline bool is_close(
+        const arma::Base<typename T1::elem_type,T1>& a,
+        const arma::Base<typename T1::elem_type,T2>& b,
+        const typename T1::pod_type abs_tol=1e-10, const typename T1::pod_type rel_tol=1e-6)
+{
+    double a_diff = arma::norm(a.get_ref() - b.get_ref(), 1);
+    if (a_diff < abs_tol) return true;
+    if (a_diff < rel_tol * arma::norm(a.get_ref(), 1)) return true;
+    return false;
+}
+
 
 namespace Armor {
 
@@ -49,6 +81,7 @@ namespace Armor {
 //    typedef type AType;
 //    inline static AType convert(const type *begin) {return *begin;}
 //};
+
 
 
 
@@ -90,7 +123,7 @@ public:
 //        return Arma(begin());
 //    }
 
-    inline const Arma &arma() const {
+    inline Arma arma() const {
         // See proper way how to deal with l-value wrapper and r-value wrapper distinction:
         // https://stackoverflow.com/questions/20928044/best-way-to-write-a-value-wrapper-class
         // Currently we provide only r-value convertion to Arma types.
@@ -217,31 +250,34 @@ public:
 //        }
 
 
-    inline bool operator==(const Arma & other) {
-        const Type * first1 = begin();
-        const Type * last1 = end();
-        const Type * first2 = other.begin();
-        for (; first1 != last1; ++first1, ++first2) {
-            if (*first1 != *first2) {
-                return false;
-            }
-        }
-        return true;
-    }
+//    inline bool operator==(const Arma & other) {
+//        const Type * first1 = begin();
+//        const Type * last1 = end();
+//        const Type * first2 = other.begin();
+//        for (; first1 != last1; ++first1, ++first2) {
+//            if (*first1 != *first2) {
+//                return false;
+//            }
+//        }
+//        return true;
+//    }
+//
+//    inline bool operator==(const _Mat<Type, nRows, nCols> & other) {
+//        const Type * first1 = begin();
+//        const Type * last1 = end();
+//        const Type * first2 = other.begin();
+//        for (; first1 != last1; ++first1, ++first2) {
+//            if (*first1 != *first2) {
+//                return false;
+//            }
+//        }
+//        return true;
+//    }
 
-    inline bool operator==(const _Mat<Type, nRows, nCols> & other) {
-        const Type * first1 = begin();
-        const Type * last1 = end();
-        const Type * first2 = other.begin();
-        for (; first1 != last1; ++first1, ++first2) {
-            if (*first1 != *first2) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-
+//
+//    inline friend bool operator==(const _Mat& a, const _Mat& b) {
+//        return a.arma() == b.arma();
+//    }
 
     inline friend Type dot(const _Mat& a, const _Mat& b) {
         return arma::dot(a.arma(), b.arma());
@@ -264,7 +300,51 @@ public:
     }
 
 
+//    // Matrix multiplication, matrix-vector multiplication.
+//    inline friend Arma operator*=(_Mat& a, const _Mat& b) {
+//        return (a = (a.arma() * b.arma()));
+//    }
+
+    // Elementwise multiplication.
+    inline friend Arma operator%(const _Mat& a, const _Mat& b) {
+        return a.arma() % b.arma();
+    }
+
+    // Elementwise multiplication.
+    inline friend Arma operator%=(_Mat& a, const _Mat& b) {
+        return (a = (a.arma() % b.arma()));
+    }
+
+    // Elementwise division.
+    inline friend Arma operator/(const _Mat& a, const _Mat& b) {
+        return a.arma() / b.arma();
+    }
+
+    // Elementwise division.
+    inline friend Arma operator/=(_Mat& a, const _Mat& b) {
+        return (a = (a.arma() / b.arma()));
+    }
+
+    inline friend bool approx_equal(const _Mat &a, const _Mat &b,
+            const char* method,
+            double a_tol = 1e-10, double r_tol = 1e-6)
+    {
+        return arma::approx_equal(a.arma(), b.arma(), method, a_tol, r_tol);
+    }
+
+
+    //template <class Type, uint nRows, uint nCols>
+    inline friend bool is_close(const _Mat &a, const _Mat &b, double a_tol = 1e-10, double r_tol = 1e-6) {
+        is_close(a.arma(), b.arma(), a_tol, r_tol);
+    }
+
+
+
+
 };
+
+
+
 
 template <class Type, uint nRows, uint nCols>
 class Mat : public _Mat<Type, nRows, nCols>
@@ -332,7 +412,33 @@ public:
 
 };
 
-
+// Matrix multiplication, matrix-vector multiplication.
+//template<class Type, uint nrA, uint ncA, uint nrB, uint ncB>
+//inline auto operator*(
+//        const _Mat<Type, nrA, ncA>& a,
+//        const _Mat<Type, nrB, ncB>& b)
+//        -> decltype(a.arma() * b.arma())
+//{
+//    return a.arma() * b.arma();
+//}
+//
+//template<class Type, uint nrA, uint ncA, uint nrB, uint ncB>
+//inline auto operator*(
+//        const typename _Mat<Type, nrA, ncA>::Arma& a,
+//        const typename _Mat<Type, nrB, ncB>& b)
+//        -> decltype(a * b.arma())
+//{
+//    return a * b.arma();
+//}
+//
+//template<class Type, uint nrA, uint ncA, uint nrB, uint ncB>
+//inline auto operator*(
+//        const typename _Mat<Type, nrA, ncA>& a,
+//        const typename _Mat<Type, nrB, ncB>::Arma& b)
+//        -> decltype(a.arma() * b)
+//{
+//    return a.arma() * b;
+//}
 
 /**
  * Check for close vectors or matrices.
@@ -340,13 +446,6 @@ public:
  *
  * Note: Similar function arma::approx_equal.
  */
-template <class Type, uint nRows, uint nCols>
-inline bool is_close(Mat<Type, nRows, nCols> a, Mat<Type, nRows, nCols> b, double a_tol = 1e-10, double r_tol = 1e-6) {
-    double a_diff = arma::norm(a - b, 1);
-    if (a_diff < a_tol) return true;
-    if (a_diff < r_tol * arma::norm(a.arma(), 1)) return true;
-    return false;
-}
 
 
 /** dot ********************************/

@@ -49,6 +49,20 @@
 //};
 
 template<class Type, int nr, int nc>
+struct MatInst {
+    MatInst()
+    : arma(), mat(arma)
+    {}
+
+    MatInst(std::initializer_list<std::initializer_list<Type>> list)
+    : arma(list), mat(arma)
+    {}
+
+    typename Armor::Mat<Type, nr, nc>::Arma arma;
+    Armor::Mat<Type, nr, nc> mat;
+};
+
+template<class Type, int nr, int nc>
 Armor::Mat<Type, nr, nc> make_mat(std::initializer_list<std::initializer_list<Type>> list) {
     //DebugOut() << "size: " << nr * nc << "\n";
     //auto ptr = std::make_shared<Type>(2 * nr * nc);
@@ -75,10 +89,12 @@ TEST(Armor_test, direct_construction) {
 }
 
 TEST(Armor_test, constructor_list1) {
-    auto m1 = make_mat<double, 3, 1>({{1}, {2}, {3}});
-    EXPECT_EQ(1, m1[0]);
-    EXPECT_EQ(2, m1[1]);
-    EXPECT_EQ(3, m1[2]);
+    MatInst<double, 3, 1> m1({{1}, {2}, {3}});
+
+    //auto m1 = make_mat;
+    EXPECT_EQ(1, m1.mat[0]);
+    EXPECT_EQ(2, m1.mat[1]);
+    EXPECT_EQ(3, m1.mat[2]);
 }
 
 
@@ -108,56 +124,59 @@ TEST(Armor_test, constructor_list2) {
 
 /** construction and assignment from Arma types ********/
 TEST(Armor_test, from_arma_33) {
+
     Armor::Mat<double, 3, 3>::Arma a33 = {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
     auto m33 = make_mat<double, 3, 3>({{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
-    EXPECT_TRUE(Armor::is_close(
+   // DebugOut() << Armor::Mat<double, 3, 3>(a33) - m33 << "\n";
+
+    EXPECT_TRUE(is_close(
             Armor::Mat<double, 3, 3>(a33), m33));
     auto m33_none = make_mat<double, 3, 3>({{1, 2, 3}, {4, 5, 6}, {7, 8, 9}});
     m33_none = a33;
-    EXPECT_TRUE(Armor::is_close(
+    EXPECT_TRUE(is_close(
             m33_none, m33));
 }
 
 TEST(Armor_test, from_arma_31) {
     Armor::Mat<double, 3, 1>::Arma a31 = {1, 2, 3};
     auto m31 = make_mat<double, 3, 1>({{1}, {2}, {3}});
-    EXPECT_TRUE(Armor::is_close(
+    EXPECT_TRUE(is_close(
             Armor::Mat<double, 3, 1>(a31), m31));
     auto m_none = make_mat<double, 3, 1>({{1}, {2}, {3}});
     m_none = a31;
-    EXPECT_TRUE(Armor::is_close(m_none, m31));
+    EXPECT_TRUE(is_close(m_none, m31));
 
     Armor::Mat<double, 3, 1>::ArmaVec ac3 = {1, 2, 3};
-    EXPECT_TRUE(Armor::is_close(
+    EXPECT_TRUE(is_close(
             Armor::Mat<double, 3, 1>(ac3), m31));
     m_none = make_mat<double, 3, 1>({{1}, {2}, {3}});
     m_none = ac3;
-    EXPECT_TRUE(Armor::is_close(m_none, m31));
+    EXPECT_TRUE(is_close(m_none, m31));
 }
 
 
 TEST(Armor_test, from_arma_11) {
     Armor::Mat<double, 1, 1>::Arma a11 = {3};
     auto m11 = make_mat<double, 1, 1>({{3}});
-    EXPECT_TRUE(Armor::is_close(
+    EXPECT_TRUE(is_close(
             Armor::Mat<double, 1, 1>(a11), m11));
     auto m_none = make_mat<double, 1, 1>({{0}});
     m_none = a11;
-    EXPECT_TRUE(Armor::is_close(m_none, m11));
+    EXPECT_TRUE(is_close(m_none, m11));
 
     Armor::Mat<double, 1, 1>::ArmaVec ac1 = {3};
-    EXPECT_TRUE(Armor::is_close(
+    EXPECT_TRUE(is_close(
             Armor::Mat<double, 1, 1>(ac1), m11));
     m_none = make_mat<double, 1, 1>({{0}});
     m_none = ac1;
-    EXPECT_TRUE(Armor::is_close(m_none, m11));
+    EXPECT_TRUE(is_close(m_none, m11));
 
     Armor::Mat<double, 1, 1>::Scalar as = 3;
-    EXPECT_TRUE(Armor::is_close(
+    EXPECT_TRUE(is_close(
             Armor::Mat<double, 1, 1>(as), m11));
     m_none = make_mat<double, 1, 1>({{0}});
     m_none = as;
-    EXPECT_TRUE(Armor::is_close(m_none, m11));
+    EXPECT_TRUE(is_close(m_none, m11));
 
 }
 
@@ -209,24 +228,121 @@ TEST(Armor_test, memptr) {
 }
 
 
+TEST(Armor_test, is_close) {
+  MatInst<double, 3, 3> m1{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
+  MatInst<double, 3, 3> m2{{1e-12, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+  MatInst<double, 3, 3> m3{{0, 0, 0}, {1e-12, 0, 0}, {0, 0, 0}};
+
+
+  EXPECT_TRUE(is_close(m1.arma, m1.arma));
+  EXPECT_TRUE(is_close(m1.mat, m1.mat));
+  EXPECT_TRUE(is_close(m1.arma, m1.mat));
+  EXPECT_TRUE(is_close(m1.mat, m1.arma));
+
+  EXPECT_TRUE(is_close(m2.mat, m3.mat));
+}
 
 
 
 
-
+//
 //TEST(Armor_test, equality_operator) {
-//	MatInstance<double, 3, 1> m1;
-//	arma::Mat<double>::fixed<3, 1> a1;
-//	a1[0] = m1[0] = 1;
-//	a1[1] = m1[1] = 2;
-//	a1[2] = m1[2] = 3;
-//	EXPECT_TRUE(m1 == a1);
-//	a1[1] = 7;
-//	EXPECT_FALSE(m1 == a1);
+//	MatInst<double, 3, 1> m1({{1}, {2}, {3}});
+//	MatInst<double, 3, 1> m2({{1}, {2}, {3}});
+//	arma::Mat<double>::fixed<3, 1> a1({1, 2, 3});
+//	EXPECT_TRUE(a1 == m1.arma);
+//	EXPECT_TRUE(m1.mat == m2.mat);
+//	EXPECT_TRUE(m1.mat == a1);
+//	EXPECT_TRUE(a1 == m1.mat);
+//
+//	m1.mat[0] = 10;
+//    EXPECT_FALSE(m1.mat == m2.mat);
+//    EXPECT_TRUE(m1.mat == a1);
+//    EXPECT_FALSE(a1 == m1.mat);
 //}
+
+
+
+TEST(Armor_test, dot) {
+  MatInst<double, 3, 3> m1{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
+  MatInst<double, 3, 3> m2{{1, 1, 1}, {1, 1, 1}, {1, 1, 1}};
+  arma::Mat<double>::fixed<3, 3> a1 = m1.arma;
+
+  EXPECT_EQ(45, dot(m1.mat, m2.mat));
+  EXPECT_EQ(45, dot(a1, m2.mat));
+  EXPECT_EQ(45, dot(m2.mat, a1));
+}
+
+TEST(Armor_test, plus) {
+  MatInst<double, 3, 3> m1{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
+  MatInst<double, 3, 3> m2{{1, 1, 1}, {1, 1, 1}, {1, 1, 1}};
+  arma::Mat<double>::fixed<3, 3> a1 = m1.arma;
+  MatInst<double, 3, 3> res{{2, 3, 4}, {5, 6, 7}, {8, 9, 10}};
+  EXPECT_TRUE(is_close(res.mat, m1.mat + m2.mat));
+  EXPECT_TRUE(is_close(res.mat, a1 + m2.mat));
+  EXPECT_TRUE(is_close(res.mat, m2.mat + a1));
+
+  Armor::Mat<double, 3, 3>::Arma res_all = (m1.mat + a1) + (a1 + m1.mat) + (m1.mat + m1.mat);
+  Armor::Mat<double, 3, 3>::Arma a6 = 6 * a1;
+  EXPECT_TRUE(is_close(res_all, a6));
+}
+
+
+
+TEST(Armor_test, minus) {
+  MatInst<double, 3, 3> m1{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
+  MatInst<double, 3, 3> res{{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+
+  EXPECT_TRUE(is_close(res.mat, m1.mat - m1.mat));
+  EXPECT_TRUE(is_close(res.mat, m1.arma - m1.mat));
+  EXPECT_TRUE(is_close(res.mat, m1.mat - m1.arma));
+}
+
+//TEST(Armor_test, multiplication) {
+//  MatInst<double, 3, 3> m1{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
+//  MatInst<double, 3, 1> m_vec{{1}, {4}, {7}};
+//  MatInst<double, 3, 3> m2{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
+//
+//  EXPECT_TRUE(is_close(m1.mat, m1.mat * m2.mat));
+//  EXPECT_TRUE(is_close(m1.mat, m1.arma * m2.mat));
+//  EXPECT_TRUE(is_close(m1.mat, m1.mat * m2.arma));
 //
 //
-//
+//  EXPECT_TRUE(is_close(m_vec.mat, m2.mat * m_vec.mat));
+//  //EXPECT_TRUE(is_close(m_vec.mat, m2.mat * m_vec.arma));
+//  //EXPECT_TRUE(is_close(m_vec.mat, m2.arma * m_vec.mat));
+//}
+
+    TEST(Armor_test, multiplication_elementwise) {
+        MatInst<double, 3, 3> m1{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
+        MatInst<double, 3, 1> m_vec{{1}, {4}, {7}};
+        MatInst<double, 3, 3> m2{{1, 1, 1}, {1, 1, 1}, {1, 1, 1}};
+        MatInst<double, 3, 1> m2_vec{{1}, {1}, {1}};
+
+        EXPECT_TRUE(is_close(m1.mat, m1.mat % m2.mat));
+        EXPECT_TRUE(is_close(m1.mat, m1.arma % m2.mat));
+        EXPECT_TRUE(is_close(m1.mat, m1.mat % m2.arma));
+
+        EXPECT_TRUE(is_close(m_vec.mat, m_vec.mat % m2_vec.mat));
+        EXPECT_TRUE(is_close(m_vec.mat, m_vec.arma % m2_vec.mat));
+        EXPECT_TRUE(is_close(m_vec.mat, m_vec.mat % m2_vec.arma));
+    }
+
+    TEST(Armor_test, division_elementwise) {
+        MatInst<double, 3, 3> m1{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
+        MatInst<double, 3, 1> m_vec{{1}, {4}, {7}};
+        MatInst<double, 3, 3> m2{{1, 1, 1}, {1, 1, 1}, {1, 1, 1}};
+        MatInst<double, 3, 1> m2_vec{{1}, {1}, {1}};
+
+        EXPECT_TRUE(is_close(m1.mat, m1.mat / m2.mat));
+        EXPECT_TRUE(is_close(m1.mat, m1.arma / m2.mat));
+        EXPECT_TRUE(is_close(m1.mat, m1.mat / m2.arma));
+
+        EXPECT_TRUE(is_close(m_vec.mat, m_vec.mat / m2_vec.mat));
+        EXPECT_TRUE(is_close(m_vec.mat, m_vec.arma / m2_vec.mat));
+        EXPECT_TRUE(is_close(m_vec.mat, m_vec.mat / m2_vec.arma));
+    }
+
 
 //TEST(Armor_test, assignment_list1) {
 //	MatInstance<double, 3, 1> m1;
@@ -271,45 +387,6 @@ TEST(Armor_test, memptr) {
 //	EXPECT_TRUE(res);
 //}
 //
-//TEST(Armor_test, dot) {
-//	MatInstance<double, 3, 3> m1{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
-//	arma::Mat<double>::fixed<3, 3> a1{m1.memptr()};
-//	double a = dot(a1, a1);
-//	double m = dot(m1, m1);
-//	EXPECT_EQ(a, m);
-//}
-//
-//TEST(Armor_test, plus) {
-//	MatInstance<double, 3, 3> m1{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
-//	Armor::Mat<double, 3, 3>::Arma a1{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
-//	Armor::Mat<double, 3, 3>::Arma res = (m1 + a1) + (a1 + m1) + (m1 + m1);
-//	Armor::Mat<double, 3, 3>::Arma a6 = 6 * a1;
-//	EXPECT_TRUE(arma::approx_equal(res, a6, "absdiff", 1e-6));
-//}
-
-//TEST(Armor_test, minus) {
-//	MatInstance<double, 3, 3> m1{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
-//	arma::Mat<double>::fixed<3, 3> a1{m1.memptr()};
-//	a1 = a1 - a1;
-//	m1 = m1 - m1;
-//	EXPECT_TRUE(m1 == a1);
-//}
-//
-//TEST(Armor_test, multiplication) {
-//	MatInstance<double, 3, 3> m1{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
-//	arma::Mat<double>::fixed<3, 3> a1{m1.memptr()};
-//	a1 = a1 * a1;
-//	m1 = m1 * m1;
-//	EXPECT_TRUE(m1 == a1);
-//}
-
-//TEST(Armor_test, multiplication_per_elements) {
-//	MatInstance<double, 3, 3> m1{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
-//	arma::Mat<double>::fixed<3, 3> a1{m1.memptr()};
-//	a1 = a1 % a1;
-//	m1 = m1 % m1;
-//	EXPECT_TRUE(m1 == a1);
-//}
 
 /*
 TEST(Armor_test, array) {
