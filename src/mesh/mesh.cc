@@ -781,7 +781,7 @@ void Mesh::elements_id_maps( vector<LongIdx> & bulk_elements_id, vector<LongIdx>
 
 
 bool compare_points(const arma::vec3 &p1, const arma::vec3 &p2) {
-
+    static const double point_tolerance = 1E-10;
 	return fabs(p1[0]-p2[0]) < point_tolerance
 		&& fabs(p1[1]-p2[1]) < point_tolerance
 		&& fabs(p1[2]-p2[2]) < point_tolerance;

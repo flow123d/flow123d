@@ -194,7 +194,7 @@ FEInternalData *FEValuesBase<dim,spacedim>::init_fe_data(const Quadrature *q)
         for (unsigned int j=0; j<fe->n_dofs(); j++)
         {
             for (unsigned int c=0; c<fe->n_components(); c++)
-                shape_values(j,c) = fe->shape_value(j, q->point<dim>(i).arma(), c);
+                shape_values(j,c) = fe->shape_value(j, q->point<dim>(i).vec(), c);
             
             data->ref_shape_values[i][j] = trans(shape_values.row(j));
         }
@@ -207,7 +207,7 @@ FEInternalData *FEValuesBase<dim,spacedim>::init_fe_data(const Quadrature *q)
         {
             grad.zeros();
             for (unsigned int c=0; c<fe->n_components(); c++)
-                grad.col(c) += fe->shape_grad(j, q->point<dim>(i).arma(), c);
+                grad.col(c) += fe->shape_grad(j, q->point<dim>(i).vec(), c);
             
             data->ref_shape_grads[i][j] = grad;
         }

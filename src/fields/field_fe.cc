@@ -443,7 +443,7 @@ void FieldFE<spacedim, Value>::interpolate_gauss(ElementDataCache<double>::Compo
 		switch (cell.dim()) {
 		case 0:
 			quadrature_size = 1;
-			q_points[0] = ele.node(0)->point();
+			q_points[0] = *ele.node(0);
 			q_weights[0] = 1.0;
 			break;
 		case 1:

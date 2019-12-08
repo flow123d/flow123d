@@ -68,7 +68,7 @@ public:
     }
 
     inline Point operator*() const
-    { return mesh_->nodes_.get<spacedim, 1>(node_idx_).arma(); }
+    { return mesh_->nodes_.get<spacedim, 1>(node_idx_); }
 
 
 private:

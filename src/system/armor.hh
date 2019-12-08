@@ -181,14 +181,6 @@ public:
     }
 
 
-
-
-//    inline VecType vec() const {
-//        return VecType(begin());
-//    }
-
-
-
     inline const _Mat<Type, nRows, nCols> & operator=(const _Mat<Type, nRows, nCols> & other) {
         _data_copy(other.data);
         return *this;
@@ -279,13 +271,7 @@ public:
 //        return a.arma() == b.arma();
 //    }
 
-    inline friend Type dot(const _Mat& a, const _Mat& b) {
-        return arma::dot(a.arma(), b.arma());
-    }
 
-    inline friend Arma operator+(const _Mat& a, const _Mat& b) {
-        return a.arma() + b.arma();
-    }
 
     inline friend Arma operator+=(_Mat& a, const _Mat& b) {
         return (a = (a.arma() + b.arma()));
@@ -323,6 +309,12 @@ public:
     // Elementwise division.
     inline friend Arma operator/=(_Mat& a, const _Mat& b) {
         return (a = (a.arma() / b.arma()));
+    }
+
+
+
+    inline friend Type dot(const _Mat& a, const _Mat& b) {
+        return arma::dot(a.arma(), b.arma());
     }
 
     inline friend bool approx_equal(const _Mat &a, const _Mat &b,
@@ -413,32 +405,32 @@ public:
 };
 
 // Matrix multiplication, matrix-vector multiplication.
-//template<class Type, uint nrA, uint ncA, uint nrB, uint ncB>
-//inline auto operator*(
-//        const _Mat<Type, nrA, ncA>& a,
-//        const _Mat<Type, nrB, ncB>& b)
-//        -> decltype(a.arma() * b.arma())
-//{
-//    return a.arma() * b.arma();
-//}
-//
-//template<class Type, uint nrA, uint ncA, uint nrB, uint ncB>
-//inline auto operator*(
-//        const typename _Mat<Type, nrA, ncA>::Arma& a,
-//        const typename _Mat<Type, nrB, ncB>& b)
-//        -> decltype(a * b.arma())
-//{
-//    return a * b.arma();
-//}
-//
-//template<class Type, uint nrA, uint ncA, uint nrB, uint ncB>
-//inline auto operator*(
-//        const typename _Mat<Type, nrA, ncA>& a,
-//        const typename _Mat<Type, nrB, ncB>::Arma& b)
-//        -> decltype(a.arma() * b)
-//{
-//    return a.arma() * b;
-//}
+template<class Type, uint nrA, uint ncA, uint nrB, uint ncB>
+inline auto operator*(
+        const _Mat<Type, nrA, ncA>& a,
+        const _Mat<Type, nrB, ncB>& b)
+        -> decltype(a.arma() * b.arma())
+{
+    return a.arma() * b.arma();
+}
+
+template<class Type, uint nrA, uint ncA, uint nrB, uint ncB>
+inline auto operator*(
+        const typename _Mat<Type, nrA, ncA>::Arma& a,
+        const _Mat<Type, nrB, ncB>& b)
+        -> decltype(a * b.arma())
+{
+    return a * b.arma();
+}
+
+template<class Type, uint nrA, uint ncA, uint nrB, uint ncB>
+inline auto operator*(
+        const _Mat<Type, nrA, ncA>& a,
+        const typename _Mat<Type, nrB, ncB>::Arma& b)
+        -> decltype(a.arma() * b)
+{
+    return a.arma() * b;
+}
 
 /**
  * Check for close vectors or matrices.
@@ -452,6 +444,28 @@ public:
 
 
 /** operator + ********************************/
+template <class Type, uint nRows, uint nCols>
+inline auto operator+(const _Mat<Type, nRows, nCols> & a, const _Mat<Type, nRows, nCols> & b)
+            ->decltype(a.arma() + b.arma())
+{
+    return a.arma() + b.arma();
+}
+
+template <class Type, uint nRows, uint nCols, class TB>
+inline auto operator+(const _Mat<Type, nRows, nCols> & a, const TB & b)
+            ->decltype(a.arma() + b)
+{
+    return a.arma() + b;
+}
+
+template <class Type, uint nRows, uint nCols, class TB>
+inline auto operator+(const TB& a, const _Mat<Type, nRows, nCols> & b)
+            ->decltype(a + b.arma())
+{
+    return a + b.arma();
+}
+
+
 
 
 /** operator - ********************************/

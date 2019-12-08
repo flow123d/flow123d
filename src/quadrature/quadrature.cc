@@ -31,7 +31,7 @@ Quadrature& Quadrature::operator=(const Quadrature &q)
 
 Quadrature::Quadrature(unsigned int dimension, const unsigned int n_q)
 : dim_(dimension),
-  quadrature_points(n_q, dimension),
+  quadrature_points(dimension, n_q),
   weights(n_q, 0)
 {}
 
@@ -58,7 +58,7 @@ Quadrature Quadrature::make_from_side(unsigned int sid, unsigned int pid)
     for (unsigned int k=0; k<size(); k++)
     {
         //compute barycentric coordinates on element
-        arma::vec::fixed<bulk_dim> p = RefElement<bulk_dim-1>::local_to_bary(point<bulk_dim-1>(k).arma());
+        arma::vec::fixed<bulk_dim> p = RefElement<bulk_dim-1>::local_to_bary(point<bulk_dim-1>(k).vec());
         arma::vec::fixed<bulk_dim> pp;
         
         //permute

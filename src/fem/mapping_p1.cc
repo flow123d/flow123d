@@ -61,7 +61,7 @@ MappingInternalData *MappingP1<dim,spacedim>::initialize(const Quadrature &q, Up
     {
         data->bar_coords.resize(q.size());
         for (unsigned int i=0; i<q.size(); i++)
-            data->bar_coords[i] = RefElement<dim>::local_to_bary(q.point<dim>(i).arma());
+            data->bar_coords[i] = RefElement<dim>::local_to_bary(q.point<dim>(i).vec());
     }
 
 
@@ -251,7 +251,7 @@ void MappingP1<dim,spacedim>::fill_fe_side_values(const ElementAccessor<3> &cell
             // calculation of side Jacobian
             side_coords.zeros();
             for (unsigned int n=0; n<dim; n++)
-                side_coords.col(n) = cell.side(sid)->node(n).arma();
+                side_coords.col(n) = typename Space<spacedim>::Point(*cell.side(sid)->node(n));
             side_jac = side_coords * grad.submat(0, 0, dim-1, dim-2);
 
             // calculation of JxW
@@ -268,7 +268,7 @@ auto MappingP1<dim,spacedim>::element_map(ElementAccessor<3> elm) const -> Eleme
 {
     ElementMap coords;
     for (unsigned int i=0; i<dim+1; i++)
-        coords.col(i) = elm.node(i).arma();
+        coords.col(i) = typename Space<spacedim>::Point(*elm.node(i));
     return coords;
 }
 

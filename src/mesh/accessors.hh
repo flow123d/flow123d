@@ -166,7 +166,7 @@ public:
     inline vector<Point> vertex_list() const {
         vector<Point> vertices(element()->n_nodes());
         for(unsigned int i=0; i<element()->n_nodes(); i++)
-            vertices[i] = node(i);
+            vertices[i] = *node(i);
         return vertices;
     }
 

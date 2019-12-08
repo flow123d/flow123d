@@ -79,23 +79,23 @@ void SurfaceDepth::construct_bih_tree(Mesh *mesh, std::string surface_region)
         if (ele.region().is_in_region_set(region_set)) {
         	ASSERT_EQ(ele->n_nodes(), 3);
 
-        	arma::vec projection = m_ * ele.node(0)->point();
+        	arma::vec projection = m_ * (*ele.node(0));
         	project_node(0) = projection(0); project_node(1) = projection(1);
             BoundingBox bb(project_node);
             for(i_node=1; i_node<ele->n_nodes(); i_node++) {
-                arma::vec project_coords = m_ * ele.node(i_node)->point();
+                arma::vec project_coords = m_ * (*ele.node(i_node));
                 project_node(0) = project_coords(0); project_node(1) = project_coords(1);
                 bb.expand(project_node);
             }
             boxes.push_back(bb);
 
             arma::mat a_mat(3,3);
-        	a_mat.col(0) = ele.node(1)->point() - ele.node(0)->point();
-        	a_mat.col(1) = ele.node(2)->point() - ele.node(0)->point();
+        	a_mat.col(0) = *ele.node(1) - *ele.node(0);
+        	a_mat.col(1) = *ele.node(2) - *ele.node(0);
         	a_mat.col(2) = surface_norm_vec_;
 
             inv_projection_.push_back( a_mat.i() );
-            b_vecs_.push_back( ele.node(0)->point() );
+            b_vecs_.push_back( *ele.node(0) );
         }
         i++;
     }

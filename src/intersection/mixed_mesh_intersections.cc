@@ -422,7 +422,7 @@ void MixedMeshIntersections::print_mesh_to_file_13(string name)
 
         unsigned int idx = 1;
         for (auto nod : mesh->node_range()) {
-            arma::vec3 _nod = nod->point();
+            arma::vec3 _nod = *nod;
             fprintf(file,"%d %.16f %.16f %.16f\n", idx, _nod[0], _nod[1], _nod[2]);
             idx++;
         }
@@ -518,7 +518,7 @@ void MixedMeshIntersections::print_mesh_to_file_23(string name)
 
         unsigned int idx = 1;
         for (auto nod : mesh->node_range()) {
-            arma::vec3 _nod = nod->point();
+            arma::vec3 _nod = *nod;
             fprintf(file,"%d %.16f %.16f %.16f\n", idx, _nod[0], _nod[1], _nod[2]);
             idx++;
         }

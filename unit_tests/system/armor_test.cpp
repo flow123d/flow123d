@@ -5,11 +5,11 @@
 
 /**
  * TODO:
- * - Compiler can  not find operators since 'MatInstance...' is not derived from 'const Mat...' ??
- * - armadillo defines fixed inside of Mat, is this a reason? Try it:
- *   class Mat<T, nr, nc>::Data;
- * - is MatInstance what we need? Since we always use arma::Mat as temporary value (results of operations)
- * - make separate file for experiments
+ * - we can not return Arma as the result of operations since this colapses the lazy evaluation into a temporary object
+ * - simple definition of operator leads to the ambiguus overload
+ * - we can return arma::fixed directly from Array and have class similar to current FieldValues
+ *   for conversion from <1,1> to double,
+ *   and <3,1> to Col
  *
  */
 //template<class Type, int nRows, int nCols>
@@ -298,50 +298,52 @@ TEST(Armor_test, minus) {
   EXPECT_TRUE(is_close(res.mat, m1.mat - m1.arma));
 }
 
-//TEST(Armor_test, multiplication) {
-//  MatInst<double, 3, 3> m1{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
-//  MatInst<double, 3, 1> m_vec{{1}, {4}, {7}};
-//  MatInst<double, 3, 3> m2{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
-//
-//  EXPECT_TRUE(is_close(m1.mat, m1.mat * m2.mat));
+
+TEST(Armor_test, multiplication_elementwise) {
+    MatInst<double, 3, 3> m1{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
+    MatInst<double, 3, 1> m_vec{{1}, {4}, {7}};
+    MatInst<double, 3, 3> m2{{1, 1, 1}, {1, 1, 1}, {1, 1, 1}};
+    MatInst<double, 3, 1> m2_vec{{1}, {1}, {1}};
+
+    EXPECT_TRUE(is_close(m1.mat, m1.mat % m2.mat));
+    EXPECT_TRUE(is_close(m1.mat, m1.arma % m2.mat));
+    EXPECT_TRUE(is_close(m1.mat, m1.mat % m2.arma));
+
+    EXPECT_TRUE(is_close(m_vec.mat, m_vec.mat % m2_vec.mat));
+    EXPECT_TRUE(is_close(m_vec.mat, m_vec.arma % m2_vec.mat));
+    EXPECT_TRUE(is_close(m_vec.mat, m_vec.mat % m2_vec.arma));
+}
+
+TEST(Armor_test, division_elementwise) {
+    MatInst<double, 3, 3> m1{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
+    MatInst<double, 3, 1> m_vec{{1}, {4}, {7}};
+    MatInst<double, 3, 3> m2{{1, 1, 1}, {1, 1, 1}, {1, 1, 1}};
+    MatInst<double, 3, 1> m2_vec{{1}, {1}, {1}};
+
+    EXPECT_TRUE(is_close(m1.mat, m1.mat / m2.mat));
+    EXPECT_TRUE(is_close(m1.mat, m1.arma / m2.mat));
+    EXPECT_TRUE(is_close(m1.mat, m1.mat / m2.arma));
+
+    EXPECT_TRUE(is_close(m_vec.mat, m_vec.mat / m2_vec.mat));
+    EXPECT_TRUE(is_close(m_vec.mat, m_vec.arma / m2_vec.mat));
+    EXPECT_TRUE(is_close(m_vec.mat, m_vec.mat / m2_vec.arma));
+}
+
+
+TEST(Armor_test, multiplication) {
+  MatInst<double, 3, 3> m1{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
+  MatInst<double, 3, 1> m_vec{{1}, {4}, {7}};
+  MatInst<double, 3, 3> m2{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
+
+  EXPECT_TRUE(is_close(m1.mat, m1.mat * m2.mat));
 //  EXPECT_TRUE(is_close(m1.mat, m1.arma * m2.mat));
 //  EXPECT_TRUE(is_close(m1.mat, m1.mat * m2.arma));
 //
 //
 //  EXPECT_TRUE(is_close(m_vec.mat, m2.mat * m_vec.mat));
-//  //EXPECT_TRUE(is_close(m_vec.mat, m2.mat * m_vec.arma));
-//  //EXPECT_TRUE(is_close(m_vec.mat, m2.arma * m_vec.mat));
-//}
-
-    TEST(Armor_test, multiplication_elementwise) {
-        MatInst<double, 3, 3> m1{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
-        MatInst<double, 3, 1> m_vec{{1}, {4}, {7}};
-        MatInst<double, 3, 3> m2{{1, 1, 1}, {1, 1, 1}, {1, 1, 1}};
-        MatInst<double, 3, 1> m2_vec{{1}, {1}, {1}};
-
-        EXPECT_TRUE(is_close(m1.mat, m1.mat % m2.mat));
-        EXPECT_TRUE(is_close(m1.mat, m1.arma % m2.mat));
-        EXPECT_TRUE(is_close(m1.mat, m1.mat % m2.arma));
-
-        EXPECT_TRUE(is_close(m_vec.mat, m_vec.mat % m2_vec.mat));
-        EXPECT_TRUE(is_close(m_vec.mat, m_vec.arma % m2_vec.mat));
-        EXPECT_TRUE(is_close(m_vec.mat, m_vec.mat % m2_vec.arma));
-    }
-
-    TEST(Armor_test, division_elementwise) {
-        MatInst<double, 3, 3> m1{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
-        MatInst<double, 3, 1> m_vec{{1}, {4}, {7}};
-        MatInst<double, 3, 3> m2{{1, 1, 1}, {1, 1, 1}, {1, 1, 1}};
-        MatInst<double, 3, 1> m2_vec{{1}, {1}, {1}};
-
-        EXPECT_TRUE(is_close(m1.mat, m1.mat / m2.mat));
-        EXPECT_TRUE(is_close(m1.mat, m1.arma / m2.mat));
-        EXPECT_TRUE(is_close(m1.mat, m1.mat / m2.arma));
-
-        EXPECT_TRUE(is_close(m_vec.mat, m_vec.mat / m2_vec.mat));
-        EXPECT_TRUE(is_close(m_vec.mat, m_vec.arma / m2_vec.mat));
-        EXPECT_TRUE(is_close(m_vec.mat, m_vec.mat / m2_vec.arma));
-    }
+  //EXPECT_TRUE(is_close(m_vec.mat, m2.mat * m_vec.arma));
+  //EXPECT_TRUE(is_close(m_vec.mat, m2.arma * m_vec.mat));
+}
 
 
 //TEST(Armor_test, assignment_list1) {
