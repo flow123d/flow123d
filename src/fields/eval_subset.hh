@@ -213,6 +213,9 @@ public:
         return subset_->perm_idx_ptr(cell_side_.side_idx(), permutation_idx_, local_point_idx_);
     }
 
+    /// Return corresponds SidePoints of neighbour side of same dimension (computing of side integrals).
+    SidePoint permute(DHCellSide edg_side) const;
+
     /// Iterates to next point.
     inline void inc() {
     	local_point_idx_++;
