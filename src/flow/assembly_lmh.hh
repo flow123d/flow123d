@@ -89,7 +89,7 @@ public:
     {
         ASSERT_EQ_DBG(ele_ac.dim(), dim);
     
-        assemble_local_system(ele_ac, false);   //do not switch dirichlet in seepage when reconstructing
+        assemble_local_system(ele_ac.dh_cell(), false);   //do not switch dirichlet in seepage when reconstructing
         
         // TODO:
         // if (mortar_assembly)
@@ -114,7 +114,7 @@ public:
         save_local_system_ = false;
         bc_fluxes_reconstruted = false;
 
-        assemble_local_system(ele_ac, true);   //do use_dirichlet_switch
+        assemble_local_system(ele_ac.dh_cell(), true);   //do use_dirichlet_switch
         
         loc_system_.compute_schur_complement(schur_offset_, loc_schur_, true);
 
@@ -131,14 +131,15 @@ public:
 
     arma::vec3 make_element_vector(LocalElementAccessorBase<3> ele_ac) override
     {
-        //START_TIMER("Assembly<dim>::make_element_vector");
+        const DHCellAccessor dh_cell = ele_ac.dh_cell();
+        ElementAccessor<3> ele = dh_cell.elm();
+
         arma::vec3 flux_in_center;
         flux_in_center.zeros();
-        auto ele = ele_ac.element_accessor();
 
         velocity_interpolation_fv_.reinit(ele);
         for (unsigned int li = 0; li < ele->n_sides(); li++) {
-            flux_in_center += ad_->full_solution[ ele_ac.side_local_row(li) ]
+            flux_in_center += ad_->full_solution[ dh_cell.get_loc_dof_indices()[loc_side_dofs[li]]]
                         * velocity_interpolation_fv_.vector_view(0).value(li,0);
         }
 
@@ -157,15 +158,15 @@ protected:
         return RefElement<dim>::n_sides + 1 + RefElement<dim>::n_sides;
     }
     
-    void assemble_local_system(LocalElementAccessorBase<3> ele_ac, bool use_dirichlet_switch)
+    void assemble_local_system(const DHCellAccessor& dh_cell, bool use_dirichlet_switch)
     {
-        set_dofs(ele_ac.dh_cell());
+        set_dofs(dh_cell);
 
-        assemble_bc(ele_ac, use_dirichlet_switch);
-        assemble_sides(ele_ac.dh_cell());
-        assemble_element(ele_ac.dh_cell());
-        assemble_source_term(ele_ac);
-        assembly_dim_connections(ele_ac.dh_cell());
+        assemble_bc(dh_cell, use_dirichlet_switch);
+        assemble_sides(dh_cell);
+        assemble_element(dh_cell);
+        assemble_source_term(dh_cell);
+        assembly_dim_connections(dh_cell);
     }
 
     /** Loads the local system from a map: element index -> LocalSystem,
@@ -204,7 +205,7 @@ protected:
     }
 
 
-    void set_dofs(DHCellAccessor dh_cell){
+    void set_dofs(const DHCellAccessor& dh_cell){
         const ElementAccessor<3> ele = dh_cell.elm();
         const DHCellAccessor dh_cr_cell = dh_cell.cell_with_other_dh(ad_->dh_cr_.get());
 
@@ -217,6 +218,9 @@ protected:
         dofs.head(dh_cell.n_dofs()) = dh_cell.get_loc_dof_indices();
         // add schur vec indices
         dofs_schur.head(dh_cr_cell.n_dofs()) = dh_cr_cell.get_loc_dof_indices();
+
+        global_dofs_.resize(dh_cell.n_dofs());
+        dh_cell.get_dof_indices(global_dofs_);
         
         if(ele->n_neighs_vb() != 0)
         {
@@ -251,9 +255,8 @@ protected:
     }
 
     
-    void assemble_bc(LocalElementAccessorBase<3> ele_ac, bool use_dirichlet_switch){
+    void assemble_bc(const DHCellAccessor& dh_cell, bool use_dirichlet_switch){
         //shortcuts
-        const DHCellAccessor dh_cell = ele_ac.dh_cell();
         const ElementAccessor<3> ele = dh_cell.elm();
         const unsigned int nsides = ele->n_sides();
         
@@ -275,7 +278,7 @@ protected:
                 double cross_section = ad_->cross_section.value(ele.centre(), ele);
 
                 ad_->balance->add_flux_matrix_values(ad_->water_balance_idx, ele.side(i),
-                                                     {(LongIdx)(ele_ac.side_row(i))}, {1});
+                                                    {global_dofs_[loc_side_dofs[i]]}, {1});
 
                 if ( type == DarcyMH::EqData::none) {
                     // homogeneous neumann
@@ -386,7 +389,7 @@ protected:
         }
     }
         
-    virtual void assemble_sides(DHCellAccessor dh_cell)
+    virtual void assemble_sides(const DHCellAccessor& dh_cell)
     {
         const ElementAccessor<3> ele = dh_cell.elm();
         double cs = ad_->cross_section.value(ele.centre(), ele);
@@ -447,7 +450,7 @@ protected:
     }
     
     
-    void assemble_element(DHCellAccessor dh_cell){
+    void assemble_element(const DHCellAccessor& dh_cell){
         // set block B, B': element-side, side-element
         
         for(unsigned int side = 0; side < loc_side_dofs.size(); side++){
@@ -462,9 +465,9 @@ protected:
 //         }
     }
     
-    virtual void assemble_source_term(LocalElementAccessorBase<3> ele_ac)
+    virtual void assemble_source_term(const DHCellAccessor& dh_cell)
     {
-        const ElementAccessor<3> ele = ele_ac.element_accessor();
+        const ElementAccessor<3> ele = dh_cell.elm();
         
         // compute lumped source
         double alpha = 1.0 / ele->n_sides();
@@ -492,7 +495,7 @@ protected:
                 time_term_rhs = time_term_diag * ad_->p_edge_solution_previous_time[loc_schur_.row_dofs[i]];
 
                 ad_->balance->add_mass_matrix_values(ad_->water_balance_idx, ele.region().bulk_idx(),
-                                                {(LongIdx)ele_ac.edge_row(i)}, {time_term});
+                                                {global_dofs_[loc_edge_dofs[i]]}, {time_term});
             }
 
             this->loc_system_.add_value(loc_edge_dofs[i], loc_edge_dofs[i],
@@ -500,11 +503,11 @@ protected:
                                         -source_term - time_term_rhs);
 
             ad_->balance->add_source_values(ad_->water_balance_idx, ele.region().bulk_idx(),
-                                                {(LongIdx)ele_ac.edge_local_row(i)}, {0},{source_term});
+                                                {loc_system_.row_dofs[loc_edge_dofs[i]]}, {0},{source_term});
         }
     }
 
-    void assembly_dim_connections(DHCellAccessor dh_cell){
+    void assembly_dim_connections(const DHCellAccessor& dh_cell){
         //D, E',E block: compatible connections: element-edge
         const ElementAccessor<3> ele = dh_cell.elm();
         
@@ -520,7 +523,7 @@ protected:
             // current element pressure  and a connected edge pressure
             unsigned int p = size()+i; // loc dof of higher ele edge
             
-            const ElementAccessor<3> ele_higher = neighb_side.cell().elm();
+            ElementAccessor<3> ele_higher = neighb_side.cell().elm();
             ngh_values_.fe_side_values_.reinit(ele_higher, neighb_side.side_idx());
             nv = ngh_values_.fe_side_values_.normal_vector(0);
 
@@ -622,6 +625,10 @@ protected:
 
     /// Flag indicating whether the fluxes for seepage BC has been reconstructed already.
     bool bc_fluxes_reconstruted;
+
+    /// Temporarily keeping the global dofs to the full vector solution due to Balance.
+    /// TODO: remove when Balance is assembled by local dofs
+    std::vector<LongIdx> global_dofs_;
 };
 
 
