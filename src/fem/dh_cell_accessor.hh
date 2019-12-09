@@ -212,7 +212,12 @@ public:
     }
 
     /// Return DHCellAccessor appropriate to the side.
-    inline const DHCellAccessor cell() const {
+    inline const DHCellAccessor &cell() const {
+    	return dh_cell_accessor_;
+    }
+
+    /// Return DHCellAccessor appropriate to the side.
+    inline DHCellAccessor &cell() {
     	return dh_cell_accessor_;
     }
 
