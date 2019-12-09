@@ -65,11 +65,6 @@ public:
     }
 
     virtual ~AssemblyBase() {}
-protected:
-
-    virtual void assemble_sides(LocalElementAccessorBase<3> ele) =0;
-    
-    virtual void assemble_source_term(LocalElementAccessorBase<3> ele) = 0;
 };
 
 
@@ -178,7 +173,6 @@ public:
         
         assemble_sides(ele_ac);
         assemble_element(ele_ac);
-        assemble_source_term(ele_ac);
         
         loc_system_.eliminate_solution();
         ad_->lin_sys->set_local_system(loc_system_);
@@ -237,9 +231,6 @@ public:
     }
 
 protected:
-    void assemble_source_term(LocalElementAccessorBase<3> ele) override
-    {}
-    
     static const unsigned int size()
     {
         // dofs: velocity, pressure, edge pressure
@@ -390,7 +381,7 @@ protected:
 //         cout << "\n";
     }
         
-     void assemble_sides(LocalElementAccessorBase<3> ele_ac) override
+     void assemble_sides(LocalElementAccessorBase<3> ele_ac)
      {
         double cs = ad_->cross_section.value(ele_ac.centre(), ele_ac.element_accessor());
         double conduct =  ad_->conductivity.value(ele_ac.centre(), ele_ac.element_accessor());

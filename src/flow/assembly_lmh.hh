@@ -159,13 +159,13 @@ protected:
     
     void assemble_local_system(LocalElementAccessorBase<3> ele_ac, bool use_dirichlet_switch)
     {
-        set_dofs(ele_ac);
+        set_dofs(ele_ac.dh_cell());
 
         assemble_bc(ele_ac, use_dirichlet_switch);
-        assemble_sides(ele_ac);
-        assemble_element(ele_ac);
+        assemble_sides(ele_ac.dh_cell());
+        assemble_element(ele_ac.dh_cell());
         assemble_source_term(ele_ac);
-        assembly_dim_connections(ele_ac);
+        assembly_dim_connections(ele_ac.dh_cell());
     }
 
     /** Loads the local system from a map: element index -> LocalSystem,
@@ -204,10 +204,9 @@ protected:
     }
 
 
-    void set_dofs(LocalElementAccessorBase<3> ele_ac){
-        ElementAccessor<3> ele = ele_ac.element_accessor();
-        DHCellAccessor dh_cell = ele_ac.dh_cell();
-        DHCellAccessor dh_cr_cell = ele_ac.dh_cell().cell_with_other_dh(ad_->dh_cr_.get());
+    void set_dofs(DHCellAccessor dh_cell){
+        const ElementAccessor<3> ele = dh_cell.elm();
+        const DHCellAccessor dh_cr_cell = dh_cell.cell_with_other_dh(ad_->dh_cr_.get());
 
         unsigned int loc_size = size() + ele->n_neighs_vb();
         unsigned int loc_size_schur = ele->n_sides() + ele->n_neighs_vb();
@@ -254,7 +253,9 @@ protected:
     
     void assemble_bc(LocalElementAccessorBase<3> ele_ac, bool use_dirichlet_switch){
         //shortcuts
-        const unsigned int nsides = ele_ac.n_sides();
+        const DHCellAccessor dh_cell = ele_ac.dh_cell();
+        const ElementAccessor<3> ele = dh_cell.elm();
+        const unsigned int nsides = ele->n_sides();
         
         Boundary *bcd;
         unsigned int side_row, edge_row;
@@ -265,15 +266,15 @@ protected:
             side_row = loc_side_dofs[i];    //local
             edge_row = loc_edge_dofs[i];    //local
             
-            bcd = ele_ac.side(i)->cond();
+            bcd = ele.side(i)->cond();
             dirichlet_edge[i] = 0;
             if (bcd) {
                 ElementAccessor<3> b_ele = bcd->element_accessor();
                 DarcyMH::EqData::BC_Type type = (DarcyMH::EqData::BC_Type)ad_->bc_type.value(b_ele.centre(), b_ele);
 
-                double cross_section = ad_->cross_section.value(ele_ac.centre(), ele_ac.element_accessor());
+                double cross_section = ad_->cross_section.value(ele.centre(), ele);
 
-                ad_->balance->add_flux_matrix_values(ad_->water_balance_idx, ele_ac.side(i),
+                ad_->balance->add_flux_matrix_values(ad_->water_balance_idx, ele.side(i),
                                                      {(LongIdx)(ele_ac.side_row(i))}, {1});
 
                 if ( type == DarcyMH::EqData::none) {
@@ -311,7 +312,7 @@ protected:
                         // Magnitude of the error is abs(solution_flux - side_flux).
                         
                         // try reconstructing local system for seepage BC
-                        load_local_system(ele_ac.dh_cell());
+                        load_local_system(dh_cell);
                         double solution_flux = reconstructed_solution_[side_row];
 
                         if ( solution_flux < side_flux) {
@@ -385,21 +386,20 @@ protected:
         }
     }
         
-    void assemble_sides(LocalElementAccessorBase<3> ele_ac) override
+    virtual void assemble_sides(DHCellAccessor dh_cell)
     {
-        ElementAccessor<3> ele = ele_ac.element_accessor();
+        const ElementAccessor<3> ele = dh_cell.elm();
         double cs = ad_->cross_section.value(ele.centre(), ele);
         double conduct =  ad_->conductivity.value(ele.centre(), ele);
         double scale = 1 / cs /conduct;
         
-        assemble_sides_scale(ele_ac, scale);
+        assemble_sides_scale(ele, scale);
     }
     
-    void assemble_sides_scale(LocalElementAccessorBase<3> ele_ac, double scale)
+    void assemble_sides_scale(ElementAccessor<3> ele, double scale)
     {
         arma::vec3 &gravity_vec = ad_->gravity_vec_;
         
-        ElementAccessor<3> ele = ele_ac.element_accessor();
         fe_values_.reinit(ele);
         unsigned int ndofs = fe_values_.get_fe()->n_dofs();
         unsigned int qsize = fe_values_.get_quadrature()->size();
@@ -447,7 +447,7 @@ protected:
     }
     
     
-    void assemble_element(LocalElementAccessorBase<3> ele_ac){
+    void assemble_element(DHCellAccessor dh_cell){
         // set block B, B': element-side, side-element
         
         for(unsigned int side = 0; side < loc_side_dofs.size(); side++){
@@ -462,9 +462,9 @@ protected:
 //         }
     }
     
-    void assemble_source_term(LocalElementAccessorBase<3> ele_ac) override
+    virtual void assemble_source_term(LocalElementAccessorBase<3> ele_ac)
     {
-        ElementAccessor<3> ele = ele_ac.element_accessor();
+        const ElementAccessor<3> ele = ele_ac.element_accessor();
         
         // compute lumped source
         double alpha = 1.0 / ele->n_sides();
@@ -504,10 +504,9 @@ protected:
         }
     }
 
-    void assembly_dim_connections(LocalElementAccessorBase<3> ele_ac){
+    void assembly_dim_connections(DHCellAccessor dh_cell){
         //D, E',E block: compatible connections: element-edge
-        auto ele = ele_ac.element_accessor(); //ElementAccessor<3>
-        DHCellAccessor dh_cell = ele_ac.dh_cell();
+        const ElementAccessor<3> ele = dh_cell.elm();
         
         // no Neighbours => nothing to asssemble here
         if(dh_cell.elm()->n_neighs_vb() == 0) return;
@@ -521,7 +520,7 @@ protected:
             // current element pressure  and a connected edge pressure
             unsigned int p = size()+i; // loc dof of higher ele edge
             
-            ElementAccessor<3> ele_higher = neighb_side.cell().elm();
+            const ElementAccessor<3> ele_higher = neighb_side.cell().elm();
             ngh_values_.fe_side_values_.reinit(ele_higher, neighb_side.side_idx());
             nv = ngh_values_.fe_side_values_.normal_vector(0);
 
@@ -551,7 +550,7 @@ protected:
 
     void postprocess_velocity(const DHCellAccessor& dh_cell, arma::vec& solution)
     {
-        ElementAccessor<3> ele = dh_cell.elm();
+        const ElementAccessor<3> ele = dh_cell.elm();
         
         double edge_scale = ele.measure()
                               * ad_->cross_section.value(ele.centre(), ele)
@@ -565,7 +564,7 @@ protected:
     virtual void postprocess_velocity_specific(const DHCellAccessor& dh_cell, arma::vec& solution,
                                                double edge_scale, double edge_source_term)// override
     {
-        ElementAccessor<3> ele = dh_cell.elm();
+        const ElementAccessor<3> ele = dh_cell.elm();
         
         double storativity = ad_->storativity.value(ele.centre(), ele);
         double new_pressure, old_pressure, time_term = 0.0;
