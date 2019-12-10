@@ -161,7 +161,7 @@ public:
         // for time term assembly
         double time_step_;
         
-        LinSys *lin_sys_schur;
+        std::shared_ptr<LinSys> lin_sys_schur;  //< Linear system of the 2. Schur complement.
         VectorMPI p_edge_solution;               //< 2. Schur complement solution
         VectorMPI p_edge_solution_previous;      //< 2. Schur complement previous solution (iterative)
         VectorMPI p_edge_solution_previous_time; //< 2. Schur complement previous solution (time)
@@ -192,12 +192,6 @@ public:
     virtual void initialize_specific();
     void zero_time_step() override;
     void update_solution() override;
-
-    /**
-     * Getter for sequential solution vector.
-     * DEPRECATED
-     */
-    void get_solution_vector(double * &vec, unsigned int &vec_size) override;
     
     /// postprocess velocity field (add sources)
     virtual void accept_time_step();
@@ -218,7 +212,6 @@ protected:
 
     /// Solve method common to zero_time_step and update solution.
     void solve_nonlinear();
-    void make_serial_scatter();
 
     /**
      * Create and preallocate MH linear system (including matrix, rhs and solution vectors)
@@ -280,18 +273,15 @@ protected:
     /// Get vector of all DOF indices of given component (0..side, 1..element, 2..edge)
     std::vector<int> get_component_indices_vec(unsigned int component) const;
 
-    bool solution_changed_for_scatter;
-    //Vec velocity_vector;
-    MH_DofHandler mh_dh;    // provides access to seq. solution fluxes and pressures on sides
-
+    /// Getter for the linear system of the 2. Schur complement.
+    LinSys& lin_sys_schur()
+    { return *(data_->lin_sys_schur); }
 
     std::shared_ptr<Balance> balance_;
 
     DarcyFlowMHOutput *output_object;
 
 	int size;				    // global size of MH matrix
-	int  n_schur_compls;  	    // number of shur complements to make
-	double  *solution; 			// sequantial scattered solution vector
 
 	bool data_changed_;
 
@@ -300,12 +290,6 @@ protected:
 	unsigned int min_n_it_;
 	unsigned int max_n_it_;
 	unsigned int nonlinear_iteration_; //< Actual number of completed nonlinear iterations, need to pass this information into assembly.
-
-    LinSys *schur_compl;    //< 2. Schur complement of MH Linear System (direct assembly)
-    
-	// gather of the solution
-	Vec sol_vec;			                 //< vector over solution array
-	VecScatter par_to_all;
 
     // Temporary objects holding pointers to appropriate FieldFE
     // TODO remove after final fix of equations

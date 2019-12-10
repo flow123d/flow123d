@@ -42,6 +42,16 @@ namespace it=Input::Type;
 
 RichardsLMH::EqData::EqData()
 {
+    *this += water_content.name("water_content")
+            .units(UnitSI::dimensionless())
+            .flags(FieldFlag::equation_result)
+            .description(R"(Water content.
+                It is a fraction of water volume to the whole volume.)");
+    *this += conductivity_richards.name("conductivity_richards")
+            .units( UnitSI().m().s(-1) )
+            .flags(FieldFlag::equation_result)
+            .description("Computed isotropic scalar conductivity by the soil model.");
+
     *this += water_content_saturated.name("water_content_saturated")
             .description(R"(Saturated water content (($ \theta_s $)).
                 Relative volume of water in a reference volume of a saturated porous media.)")
@@ -133,9 +143,23 @@ void RichardsLMH::initialize_specific() {
         ASSERT(false);
 
     // create edge vectors
-    data_->water_content_previous_it = data_->dh_cr_disc_->create_vector();
     data_->water_content_previous_time = data_->dh_cr_disc_->create_vector();
     data_->capacity = data_->dh_cr_disc_->create_vector();
+
+    ASSERT_PTR(mesh_);
+    data_->mesh = mesh_;
+    data_->set_mesh(*mesh_);
+
+    data_->water_content_ptr = std::make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
+    data_->water_content_ptr->set_fe_data(data_->dh_cr_disc_, 0);
+    data_->water_content.set_mesh(*mesh_);
+    data_->water_content.set_field(mesh_->region_db().get_region_set("ALL"), data_->water_content_ptr);
+    
+    data_->conductivity_ptr = std::make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
+    data_->conductivity_ptr->set_fe_data(data_->dh_p_, 0);
+    data_->conductivity_richards.set_mesh(*mesh_);
+    data_->conductivity_richards.set_field(mesh_->region_db().get_region_set("ALL"), data_->conductivity_ptr);
+
 
     data_->multidim_assembler = AssemblyBase::create< AssemblyRichards >(data_);
 }
@@ -155,7 +179,8 @@ void RichardsLMH::initial_condition_postprocess()
 void RichardsLMH::accept_time_step()
 {
     data_->p_edge_solution_previous_time.copy_from(data_->p_edge_solution);
-    data_->water_content_previous_time.copy_from(data_->water_content_previous_it);
+    VectorMPI water_content_vec = data_->water_content_ptr->get_data_vec();
+    data_->water_content_previous_time.copy_from(water_content_vec);
 
     data_->p_edge_solution_previous_time.local_to_ghost_begin();
     data_->p_edge_solution_previous_time.local_to_ghost_end();
@@ -184,7 +209,6 @@ void RichardsLMH::assembly_linear_system()
 
     data_->is_linear = data_->genuchten_p_head_scale.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
 
-    bool is_steady = zero_time_term();
     //DebugOut() << "Assembly linear system\n";
         START_TIMER("full assembly");
 //         if (typeid(*schur0) != typeid(LinSys_BDDC)) {
@@ -192,23 +216,15 @@ void RichardsLMH::assembly_linear_system()
 //             schur_compl->start_add_assembly();
 //         }
         
-        schur_compl->start_add_assembly();
+        lin_sys_schur().start_add_assembly();
             
         data_->time_step_ = time_->dt();
         
-        schur_compl->mat_zero_entries();
-        schur_compl->rhs_zero_entries();
+        lin_sys_schur().mat_zero_entries();
+        lin_sys_schur().rhs_zero_entries();
 
         assembly_mh_matrix( data_->multidim_assembler ); // fill matrix
 
-        schur_compl->finish_assembly();
-        schur_compl->set_matrix_changed();
-
-
-        if (! is_steady) {
-            START_TIMER("fix time term");
-            //DebugOut() << "setup time term\n";
-            // assembly time term and rhs
-            solution_changed_for_scatter=true;
-        }
+        lin_sys_schur().finish_assembly();
+        lin_sys_schur().set_matrix_changed();
 }

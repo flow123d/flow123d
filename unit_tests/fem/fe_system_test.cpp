@@ -86,7 +86,6 @@ public:
 protected:
   Mesh mesh;
   ElementAccessor<3> ele;
-  MappingP1<3,3> map;
   Quadrature q;
 
 };
@@ -257,16 +256,16 @@ TEST_F(FESystemTest, test_mixed_system) {
       switch (i-dof_offset)
       {
         case 0:
-          exp_value = q.point<3>(k).arma()*2 - arma::vec("0 0 2");
+          exp_value = 2.0*q.point<3>(k) - arma::vec("0 0 2");
           break;
         case 1:
-          exp_value = q.point<3>(k).arma()*2 - arma::vec("0 2 0");
+          exp_value = 2.0*q.point<3>(k) - arma::vec("0 2 0");
           break;
         case 2:
-          exp_value = q.point<3>(k).arma()*2 - arma::vec("2 0 0");
+          exp_value = 2.0*q.point<3>(k) - arma::vec("2 0 0");
           break;
         case 3:
-          exp_value = q.point<3>(k).arma()*2;
+          exp_value = 2.0*q.point<3>(k);
           break;
         default:
           exp_value = arma::vec("0 0 0");

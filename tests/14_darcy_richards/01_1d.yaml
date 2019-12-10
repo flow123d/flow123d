@@ -46,12 +46,13 @@ problem: !Coupling_Sequential
       converge_on_stagnation: false
       linear_solver: !Petsc
         a_tol: 1e-11
-    n_schurs: 2
     output:
       fields:
         - pressure_p0
         - velocity_p0
-      observe_fields: [pressure_p0, velocity_p0]
+        - conductivity_richards
+        - water_content
+      observe_fields: [pressure_p0, velocity_p0, conductivity_richards, water_content]
     balance:
       cumulative: true
 

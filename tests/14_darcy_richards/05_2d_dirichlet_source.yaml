@@ -1,0 +1,87 @@
+# Test goal: Richards equation with water source..
+# Author: Pavel Exner
+# Source for reference:
+#   It is the same case as test 02_1d_dirichlet, but with a source term instead of Dirichlet BC.
+#   It is not possible to set the source term so the solution would correspond to 02_1d_dirichlet
+#   beacuse we do not have Robin like source term dependent on pressure "sigma_f(h-h_f)".
+#   The source term is set to max. value, for which the nonlinear solver converges.
+#   At the end time, the domain is fully saturated up to approx. z=-0.175.
+#   Checked only qualitatively in Paraview
+
+flow123d_version: 3.1.0
+problem: !Coupling_Sequential
+  description: Test10 - Unsteady flow in 2D, Lumped Mixed Hybrid
+  mesh:
+    mesh_file: ../00_mesh/strip_xz_base.msh
+    regions:
+      - !Union
+        name: bulk
+        regions:
+          - plane
+          - base
+  flow_equation: !Flow_Richards_LMH
+    soil_model: irmay
+    time: # time in hours (consistent with conductivity)
+      end_time: 3000       # original experiment from UGN up to time 6000 h
+      init_dt: 1
+      # current time step enlargement logic do not allow to extent time step up to the output timestep
+      # maximum timestep wil be just 50.
+      max_dt: 300
+      min_dt: 0.1
+
+    input_fields:
+      - region: bulk
+        # pressure -65 MPa; for g and density see conductivity below
+        init_pressure: -6619
+
+
+        # Bentonit
+        #storativity: 5.846e-5
+        water_content_saturated: 0.42
+        water_content_residual: 0.04
+
+        # permeability 5e-21 m^2; g 9.82 kg m s^{-2}; water density 988; viscosity 0.001 Pa.s
+        conductivity: 1.778e-10          # m/h 
+        genuchten_n_exponent: 1.24
+        genuchten_p_head_scale: 5e-3
+
+        # effective Dirichlet BC
+      #- region: .bottom
+        #bc_type: dirichlet
+        #bc_pressure: 0
+      - region: base
+        water_source_density: !FieldFormula
+          value: 3.5e-4 # max to converge
+
+
+    nonlinear_solver:
+      tolerance: 1e-7
+      max_it: 20
+      converge_on_stagnation: false
+      linear_solver: !Petsc
+        a_tol: 1e-11
+    output:
+      fields:
+        - pressure_p0
+        - velocity_p0
+        - conductivity_richards
+        - water_content
+      observe_fields: [pressure_p0, velocity_p0, conductivity_richards, water_content]
+    balance:
+      cumulative: true
+
+    output_stream:
+      file: ./flow.pvd
+      format: !vtk
+        variant: ascii
+      times:
+        - step: 300
+      observe_points:
+        - [0.025, 0, -0.25]
+        - [0.025, 0, -0.225]
+        - [0.025, 0, -0.2]
+        - [0.025, 0, -0.175]
+        - [0.025, 0, -0.15]
+        - [0.025, 0, -0.125]
+        - [0.025, 0, -0.1]
+        - [0.025, 0, 0.0]

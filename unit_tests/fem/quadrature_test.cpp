@@ -13,7 +13,7 @@
 #include "quadrature/qmidpoint.hh"
 #include "arma_expect.hh"
 
-#define INTEGRATE( _func_, dim ) for( unsigned int i=0; i < quad.size(); i++) sum +=  _func_( quad.point<dim>(i).arma() ) * quad.weight(i);
+#define INTEGRATE( _func_, _dim_ ) for( unsigned int i=0; i < quad.size(); i++) sum +=  _func_( quad.point<_dim_>(i).arma() ) * quad.weight(i);
 
 double test_1_1d( const arma::vec::fixed<1> & p) {
     return 3 * p[0] + 1.0;
@@ -91,7 +91,7 @@ TEST(Quadrature, midpoint){
 template<unsigned int dim>
 void test_side_projection(Quadrature &subq)
 {
-    ASSERT( subq.dim() == dim - 1 );
+	ASSERT_EQ(subq.dim(), dim-1);
     for (unsigned int sid=0; sid<RefElement<dim>::n_sides; sid++)
     {
         for (unsigned int pid=0; pid<RefElement<dim>::n_side_permutations; pid++)

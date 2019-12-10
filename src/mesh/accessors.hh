@@ -197,6 +197,16 @@ public:
      */
     double quality_measure_smooth(SideIter side) const;
 
+    /// Getter of elm_cache_index_.
+    inline unsigned int element_cache_index() const {
+        return elm_cache_index_;
+    }
+
+    /// Setter of elm_cache_index_.
+    inline void set_element_cache_index(unsigned int idx) const {
+        elm_cache_index_ = idx;
+    }
+
     bool operator==(const ElementAccessor<spacedim>& other) {
     	return (element_idx_ == other.element_idx_);
     }
@@ -237,6 +247,9 @@ private:
 
     /// Region index.
     RegionIdx r_idx_;
+
+    /// Optional member used in field evaluation, holds index of cell in field data cache.
+    mutable unsigned int elm_cache_index_;
 };
 
 

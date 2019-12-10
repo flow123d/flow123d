@@ -122,6 +122,16 @@ public:
         return dof_handler_ != NULL;
     }
 
+    /// Getter of elm_cache_index_.
+    inline unsigned int element_cache_index() const {
+        return elm().element_cache_index();
+    }
+
+    /// Setter of elm_cache_index_.
+    inline void set_element_cache_index(unsigned int idx) const {
+    	elm().set_element_cache_index(idx);
+    }
+
     /// Returns range of cell sides
     Range<DHCellSide> side_range() const;
 

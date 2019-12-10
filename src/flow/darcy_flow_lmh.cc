@@ -140,8 +140,6 @@ const it::Record & DarcyLMH::get_input_type() {
                 "Settings for computing mass balance.")
         .declare_key("time", TimeGovernor::get_input_type(), it::Default("{}"),
                 "Time governor settings for the unsteady Darcy flow model.")
-		.declare_key("n_schurs", it::Integer(0,2), it::Default("2"),
-				"Number of Schur complements to perform when solving MH system.")
 		.declare_key("mortar_method", get_mh_mortar_selection(), it::Default("\"None\""),
 				"Method for coupling Darcy flow between dimensions on incompatible meshes. [Experimental]" )
 		.close();
@@ -179,10 +177,7 @@ DarcyLMH::EqData::EqData()
 DarcyLMH::DarcyLMH(Mesh &mesh_in, const Input::Record in_rec)
 : DarcyFlowInterface(mesh_in, in_rec),
     output_object(nullptr),
-    solution(nullptr),
-    data_changed_(false),
-    schur_compl(nullptr),
-    par_to_all(nullptr)
+    data_changed_(false)
 {
 
     START_TIMER("Darcy constructor");
@@ -200,7 +195,6 @@ DarcyLMH::DarcyLMH(Mesh &mesh_in, const Input::Record in_rec)
     data_->is_linear=true;
 
     size = mesh_->n_elements() + mesh_->n_sides() + mesh_->n_edges();
-    n_schur_compls = in_rec.val<int>("n_schurs");
     data_->mortar_method_= in_rec.val<MortarMethod>("mortar_method");
     if (data_->mortar_method_ != NoMortar) {
         mesh_->mixed_intersections();
@@ -285,8 +279,6 @@ void DarcyLMH::initialize() {
     init_eq_data();
     output_object = new DarcyFlowMHOutput(this, input_record_);
 
-    mh_dh.reinit(mesh_);
-
     { // construct pressure, velocity and piezo head fields
 		ele_flux_ptr = std::make_shared< FieldFE<3, FieldValue<3>::VectorFixed> >();
 		uint rt_component = 0;
@@ -339,6 +331,8 @@ void DarcyLMH::initialize() {
             .val<Input::Record>("nonlinear_solver")
             .val<Input::AbstractRecord>("linear_solver");
 
+    initialize_specific();
+    
     // auxiliary set_time call  since allocation assembly evaluates fields as well
     data_changed_ = data_->set_time(time_->step(), LimitSide::right) || data_changed_;
     create_linear_system(rec);
@@ -352,9 +346,6 @@ void DarcyLMH::initialize() {
     balance_->units(UnitSI().m(3));
 
     data_->balance = balance_;
-    data_->lin_sys_schur = schur_compl;
-
-    initialize_specific();
 }
 
 void DarcyLMH::initialize_specific()
@@ -384,18 +375,9 @@ void DarcyLMH::initialize_specific()
     
 //     data_->p_edge_solution.ghost_to_local_begin();
 //     data_->p_edge_solution.ghost_to_local_end();
-//     // data_->p_edge_solution.local_to_ghost_begin();
-//     // data_->p_edge_solution.local_to_ghost_end();
-
 //     data_->p_edge_solution_previous_time.copy_from(data_->p_edge_solution);
-//     // data_->p_edge_solution_previous_time.local_to_ghost_begin();
-//     // data_->p_edge_solution_previous_time.local_to_ghost_end();
-
-//     // reconstruct_solution_from_schur(data_->multidim_assembler);
 
 //     initial_condition_postprocess();
-    
-//     solution_changed_for_scatter=true;
 // }
 
 void DarcyLMH::read_initial_condition()
@@ -431,8 +413,6 @@ void DarcyLMH::read_initial_condition()
     data_->p_edge_solution_previous_time.copy_from(data_->p_edge_solution);
 
     initial_condition_postprocess();
-    
-    solution_changed_for_scatter=true;
 }
 
 void DarcyLMH::initial_condition_postprocess()
@@ -459,10 +439,23 @@ void DarcyLMH::zero_time_step()
         solve_nonlinear(); // with right limit data
     } else {
         read_initial_condition();
-        assembly_linear_system(); // in particular due to balance
+        
+        // we reconstruct the initial solution here
+
+        // during the reconstruction assembly:
+        // - the balance objects are actually allocated
+        // - the full solution vector is computed
+        // - to not changing the ref data in the tests at the moment, we need zero velocities,
+        //   so we keep only the pressure in the full solution (reason for the temp vector)
+        // Once we want to change the ref data including nonzero velocities,
+        // we can remove the temp vector and also remove the settings of full_solution vector
+        // in the read_initial_condition(). (use the commented out version read_initial_condition() above)
+        VectorMPI temp = data_->dh_->create_vector();
+        temp.copy_from(data_->full_solution);
+        reconstruct_solution_from_schur(data_->multidim_assembler);
+        data_->full_solution.copy_from(temp);
+
         // print_matlab_matrix("matrix_zero");
-        // TODO: reconstruction of solution in zero time.
-        // reconstruct_solution_from_schur(data_->multidim_assembler);
         accept_time_step(); // accept zero time step, i.e. initial condition
     }
     //solution_output(T,right_limit); // data for time T in any case
@@ -537,7 +530,7 @@ void DarcyLMH::solve_nonlinear()
 {
 
     assembly_linear_system();
-    double residual_norm = schur_compl->compute_residual();
+    double residual_norm = lin_sys_schur().compute_residual();
     nonlinear_iteration_ = 0;
     MessageOut().fmt("[nonlinear solver] norm of initial residual: {}\n", residual_norm);
 
@@ -553,7 +546,7 @@ void DarcyLMH::solve_nonlinear()
 
     if (! is_linear_common) {
         // set tolerances of the linear solver unless they are set by user.
-        schur_compl->set_tolerances(0.1*this->tolerance_, 0.01*this->tolerance_, 100);
+        lin_sys_schur().set_tolerances(0.1*this->tolerance_, 0.01*this->tolerance_, 100);
     }
     vector<double> convergence_history;
 
@@ -582,16 +575,16 @@ void DarcyLMH::solve_nonlinear()
             data_->p_edge_solution_previous.local_to_ghost_end();
         }
 
-        LinSys::SolveInfo si = schur_compl->solve();        
+        LinSys::SolveInfo si = lin_sys_schur().solve();
         MessageOut().fmt("[schur solver] lin. it: {}, reason: {}, residual: {}\n",
-        		si.n_iterations, si.converged_reason, schur_compl->compute_residual());
+        		si.n_iterations, si.converged_reason, lin_sys_schur().compute_residual());
         
         nonlinear_iteration_++;
 
         // hack to make BDDC work with empty compute_residual
         if (is_linear_common){
             // we want to print this info in linear (and steady) case
-            residual_norm = schur_compl->compute_residual();
+            residual_norm = lin_sys_schur().compute_residual();
             MessageOut().fmt("[nonlinear solver] lin. it: {}, reason: {}, residual: {}\n",
         		si.n_iterations, si.converged_reason, residual_norm);
             break;
@@ -605,7 +598,7 @@ void DarcyLMH::solve_nonlinear()
         //OLD_ASSERT( si.converged_reason >= 0, "Linear solver failed to converge. Convergence reason %d \n", si.converged_reason );
         assembly_linear_system();
 
-        residual_norm = schur_compl->compute_residual();
+        residual_norm = lin_sys_schur().compute_residual();
         MessageOut().fmt("[nonlinear solver] it: {} lin. it: {}, reason: {}, residual: {}\n",
         		nonlinear_iteration_, si.n_iterations, si.converged_reason, residual_norm);
     }
@@ -620,9 +613,6 @@ void DarcyLMH::solve_nonlinear()
         int result = time_->set_upper_constraint(time_->dt() * mult, "Darcy adaptivity.");
         //DebugOut().fmt("time adaptivity, res: {} it: {} m: {} dt: {} edt: {}\n", result, nonlinear_iteration_, mult, time_->dt(), time_->estimate_dt());
     }
-
-    solution_changed_for_scatter=true;
-
 }
 
 
@@ -652,26 +642,7 @@ void DarcyLMH::output_data() {
 
 double DarcyLMH::solution_precision() const
 {
-    return schur_compl->get_solution_precision();
-}
-
-
-
-void  DarcyLMH::get_solution_vector(double * &vec, unsigned int &vec_size)
-{
-    // TODO: make class for vectors (wrapper for PETSC or other) derived from LazyDependency
-    // and use its mechanism to manage dependency between vectors
-    if (solution_changed_for_scatter) {
-
-        // scatter solution to all procs
-        VecScatterBegin(par_to_all, data_->full_solution.petsc_vec(), sol_vec, INSERT_VALUES, SCATTER_FORWARD);
-        VecScatterEnd(  par_to_all, data_->full_solution.petsc_vec(), sol_vec, INSERT_VALUES, SCATTER_FORWARD);
-        solution_changed_for_scatter=false;
-    }
-
-    vec = solution;
-    vec_size = this->size;
-    OLD_ASSERT(vec != NULL, "Requested solution is not allocated!\n");
+    return data_->lin_sys_schur->get_solution_precision();
 }
 
 
@@ -688,8 +659,6 @@ void DarcyLMH::assembly_mh_matrix(MultidimAssembly& assembler)
     // DebugOut() << "assembly_mh_matrix \n";
     // set auxiliary flag for switchting Dirichlet like BC
     data_->force_bc_switch = data_->use_steady_assembly_ && (nonlinear_iteration_ == 0);
-    data_->n_schur_compls = n_schur_compls;
-    
 
     balance_->start_flux_assembly(data_->water_balance_idx);
     balance_->start_source_assembly(data_->water_balance_idx);
@@ -715,9 +684,6 @@ void DarcyLMH::allocate_mh_matrix()
 {
     START_TIMER("DarcyLMH::allocate_mh_matrix");
 
-    // set auxiliary flag for switchting Dirichlet like BC
-    data_->n_schur_compls = n_schur_compls;
-
     // to make space for second schur complement, max. 10 neighbour edges of one el.
     double zeros[100000];
     for(int i=0; i<100000; i++) zeros[i] = 0.0;
@@ -734,7 +700,7 @@ void DarcyLMH::allocate_mh_matrix()
 
         loc_size = indices.size();
         int* indices_ptr = indices.data();
-        schur_compl->mat_set_values(loc_size, indices_ptr, loc_size, indices_ptr, zeros);
+        lin_sys_schur().mat_set_values(loc_size, indices_ptr, loc_size, indices_ptr, zeros);
         
         
         tmp_rows.clear();
@@ -759,9 +725,9 @@ void DarcyLMH::allocate_mh_matrix()
             //DebugOut() << "CC" << print_var(tmp_rows[i]);
         }
         
-        schur_compl->mat_set_values(loc_size, indices_ptr, n_neighs, tmp_rows.data(), zeros); // (edges)  x (neigh edges)
-        schur_compl->mat_set_values(n_neighs, tmp_rows.data(), loc_size, indices_ptr, zeros); // (neigh edges) x (edges)
-        schur_compl->mat_set_values(n_neighs, tmp_rows.data(), n_neighs, tmp_rows.data(), zeros);  // (neigh edges) x (neigh edges)
+        lin_sys_schur().mat_set_values(loc_size, indices_ptr, n_neighs, tmp_rows.data(), zeros); // (edges)  x (neigh edges)
+        lin_sys_schur().mat_set_values(n_neighs, tmp_rows.data(), loc_size, indices_ptr, zeros); // (neigh edges) x (edges)
+        lin_sys_schur().mat_set_values(n_neighs, tmp_rows.data(), n_neighs, tmp_rows.data(), zeros);  // (neigh edges) x (neigh edges)
 
         tmp_rows.clear();
         if (data_->mortar_method_ != NoMortar) {
@@ -782,9 +748,9 @@ void DarcyLMH::allocate_mh_matrix()
             }
         }
 
-        schur_compl->mat_set_values(loc_size, indices_ptr, tmp_rows.size(), tmp_rows.data(), zeros);   // master edges x slave edges
-        schur_compl->mat_set_values(tmp_rows.size(), tmp_rows.data(), loc_size, indices_ptr, zeros);   // slave edges  x master edges
-        schur_compl->mat_set_values(tmp_rows.size(), tmp_rows.data(), tmp_rows.size(), tmp_rows.data(), zeros);  // slave edges  x slave edges
+        lin_sys_schur().mat_set_values(loc_size, indices_ptr, tmp_rows.size(), tmp_rows.data(), zeros);   // master edges x slave edges
+        lin_sys_schur().mat_set_values(tmp_rows.size(), tmp_rows.data(), loc_size, indices_ptr, zeros);   // slave edges  x master edges
+        lin_sys_schur().mat_set_values(tmp_rows.size(), tmp_rows.data(), tmp_rows.size(), tmp_rows.data(), zeros);  // slave edges  x slave edges
     }
     DebugOut() << "end Allocate new schur\n";
     
@@ -915,16 +881,12 @@ void DarcyLMH::create_linear_system(Input::AbstractRecord in_rec) {
 //         else
         if (in_rec.type() == LinSys_PETSC::get_input_type()) {
         // use PETSC for serial case even when user wants BDDC
-            if (n_schur_compls > 2) {
-            	WarningOut() << "Invalid number of Schur Complements. Using 2.";
-                n_schur_compls = 2;
-            }
 
-            schur_compl = new LinSys_PETSC( &(*data_->dh_cr_->distr()) );
-            schur_compl->set_from_input(in_rec);
-            schur_compl->set_positive_definite();
-            schur_compl->set_solution( data_->p_edge_solution.petsc_vec() );
-            schur_compl->set_symmetric();
+            data_->lin_sys_schur = std::make_shared<LinSys_PETSC>( &(*data_->dh_cr_->distr()) );
+            lin_sys_schur().set_from_input(in_rec);
+            lin_sys_schur().set_positive_definite();
+            lin_sys_schur().set_solution( data_->p_edge_solution.petsc_vec() );
+            lin_sys_schur().set_symmetric();
             
 //             LinSys_PETSC *schur1, *schur2;
 
@@ -989,7 +951,7 @@ void DarcyLMH::create_linear_system(Input::AbstractRecord in_rec) {
             // }
 
             START_TIMER("PETSC PREALLOCATION");
-            schur_compl->start_allocation();
+            lin_sys_schur().start_allocation();
             
             allocate_mh_matrix();
             
@@ -1002,7 +964,6 @@ void DarcyLMH::create_linear_system(Input::AbstractRecord in_rec) {
         }
 
         END_TIMER("preallocation");
-        make_serial_scatter();
 }
 
 void DarcyLMH::postprocess()
@@ -1054,17 +1015,17 @@ void DarcyLMH::assembly_linear_system() {
 //             schur_compl->start_add_assembly();
 //         }
         
-        schur_compl->start_add_assembly();
+        lin_sys_schur().start_add_assembly();
         
-        schur_compl->mat_zero_entries();
-        schur_compl->rhs_zero_entries();
+        lin_sys_schur().mat_zero_entries();
+        lin_sys_schur().rhs_zero_entries();
         
         data_->time_step_ = time_->dt();
 
         assembly_mh_matrix( data_->multidim_assembler ); // fill matrix
 
-        schur_compl->finish_assembly();
-        schur_compl->set_matrix_changed();
+        lin_sys_schur().finish_assembly();
+        lin_sys_schur().set_matrix_changed();
 
         // print_matlab_matrix("matrix");
     }
@@ -1113,9 +1074,9 @@ void DarcyLMH::print_matlab_matrix(std::string matlab_file)
         PetscViewer    viewer;
         PetscViewerASCIIOpen(PETSC_COMM_WORLD, output_file.c_str(), &viewer);
         PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_MATLAB);
-        MatView( *const_cast<Mat*>(schur_compl->get_matrix()), viewer);
-        VecView( *const_cast<Vec*>(schur_compl->get_rhs()), viewer);
-        VecView( *const_cast<Vec*>(&(schur_compl->get_solution())), viewer);
+        MatView( *const_cast<Mat*>(lin_sys_schur().get_matrix()), viewer);
+        VecView( *const_cast<Vec*>(lin_sys_schur().get_rhs()), viewer);
+        VecView( *const_cast<Vec*>(&(lin_sys_schur().get_solution())), viewer);
         VecView( *const_cast<Vec*>(&(data_->full_solution.petsc_vec())), viewer);
     }
 }
@@ -1313,69 +1274,11 @@ void DarcyLMH::print_matlab_matrix(std::string matlab_file)
 // DESTROY WATER MH SYSTEM STRUCTURE
 //=============================================================================
 DarcyLMH::~DarcyLMH() {
-    if (par_to_all != nullptr) chkerr(VecScatterDestroy(&par_to_all));
-
-	if (solution != NULL) {
-	    chkerr(VecDestroy(&sol_vec));
-		delete [] solution;
-	}
-	
-	if (schur_compl != nullptr) {
-        delete schur_compl;
-    }
-
 	if (output_object)	delete output_object;
 
     if(time_ != nullptr)
         delete time_;
     
-}
-
-
-// ================================================
-// PARALLLEL PART
-//
-
-
-void DarcyLMH::make_serial_scatter() {
-    START_TIMER("prepare scatter");
-    // prepare Scatter form parallel to sequantial in original numbering
-    {
-            IS is_loc;
-            int i, *loc_idx; //, si;
-
-            // create local solution vector
-            solution = new double[size];
-            VecCreateSeqWithArray(PETSC_COMM_SELF,1, size, solution,
-                    &(sol_vec));
-
-            // create seq. IS to scatter par solutin to seq. vec. in original order
-            // use essentialy row_4_id arrays
-            loc_idx = new int [size];
-            i = 0;
-            for (auto ele : mesh_->elements_range()) {
-            	for (unsigned int si=0; si<ele->n_sides(); si++) {
-                    loc_idx[i++] = mh_dh.side_row_4_id[ mh_dh.side_dof( ele.side(si) ) ];
-                }
-            }
-            for (auto ele : mesh_->elements_range()) {
-                loc_idx[i++] = mh_dh.row_4_el[ ele.idx() ];
-            }
-            for(unsigned int i_edg=0; i_edg < mesh_->n_edges(); i_edg++) {
-                loc_idx[i++] = mh_dh.row_4_edge[i_edg];
-            }
-            OLD_ASSERT( i==size,"Size of array does not match number of fills.\n");
-            //DBGPRINT_INT("loc_idx",size,loc_idx);
-            ISCreateGeneral(PETSC_COMM_SELF, size, loc_idx, PETSC_COPY_VALUES, &(is_loc));
-            delete [] loc_idx;
-            VecScatterCreate(data_->full_solution.petsc_vec(), is_loc, sol_vec,
-                    PETSC_NULL, &par_to_all);
-            chkerr(ISDestroy(&(is_loc)));
-    }
-    solution_changed_for_scatter=true;
-
-    END_TIMER("prepare scatter");
-
 }
 
 

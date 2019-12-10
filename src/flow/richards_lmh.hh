@@ -11,6 +11,7 @@
 #include <boost/exception/info.hpp>  // for operator<<, error_info::error_in...
 #include <memory>                    // for shared_ptr
 #include "fields/field.hh"           // for Field
+#include "fields/field_fe.hh"           // for FieldFE
 #include "fields/field_values.hh"    // for FieldValue<>::Scalar, FieldValue
 #include "la/vector_mpi.hh"          // for VectorMPI
 #include "flow/darcy_flow_lmh.hh"    // for DarcyLMH, DarcyLMH::EqData
@@ -67,21 +68,22 @@ public:
     public:
         EqData();
         // input fields
-        Field<3, FieldValue<3>::Scalar > water_content_saturated;
+        Field<3, FieldValue<3>::Scalar > water_content_saturated;   // corresponds to the porosity (theta_s = Vw/V = porosity)
         Field<3, FieldValue<3>::Scalar > water_content_residual;
         Field<3, FieldValue<3>::Scalar > genuchten_p_head_scale;
         Field<3, FieldValue<3>::Scalar > genuchten_n_exponent;
 
         //output fields
+        Field<3, FieldValue<3>::Scalar > water_content;
+        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> water_content_ptr;
+
+        Field<3, FieldValue<3>::Scalar > conductivity_richards;
+//         FieldFE<3, FieldValue<3>::Scalar > conductivity_richards;
+        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> conductivity_ptr;
 
         // Auxiliary assembly fields.
-        //std::unordered_map<unsigned int, unsigned int> *edge_new_local_4_mesh_idx_;
-        VectorMPI water_content_previous_it;
         VectorMPI water_content_previous_time;
         VectorMPI capacity;
-        // source terms to be added to the side fluxes, in order to get proper (continuous) velocity field
-        VectorMPI postprocess_side_sources;
-
 
         // This is necessary in the assembly
         // TODO: store time information in the field set and in fields, is it ok also for more complex discretization methods?
