@@ -48,7 +48,7 @@ public:
     ~FieldValueCache();
 
     /// Initialize cache
-    void init(std::shared_ptr<EvalSubset> eval_subset, unsigned int n_cache_elements);
+    void init(std::shared_ptr<EvalPoints> eval_points, unsigned int n_cache_elements);
 
     /// Marks the used local points
     void mark_used(std::shared_ptr<EvalSubset> sub_set);
@@ -56,11 +56,6 @@ public:
     /// Getter for subsets of used points
     inline const std::array<bool, EvalPoints::max_subsets> &used_subsets() const {
         return used_subsets_;
-    }
-
-    /// Getter for subsets of used points - TODO obsolete method
-    inline const std::array<int, EvalPoints::max_subsets+1> &subset_starts() const {
-        return subset_starts_;
     }
 
     /// Return begin index of appropriate subset data.
