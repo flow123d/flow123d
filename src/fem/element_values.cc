@@ -43,35 +43,23 @@ RefElementData::RefElementData(unsigned int np)
 }
 
 
-template<unsigned int dim, unsigned int spacedim>
-void ElementData<dim,spacedim>::allocate(unsigned int size, UpdateFlags flags)
-{
-    update_flags = flags;
-
-    // resize the arrays of computed quantities
-    if (update_flags & update_jacobians)
-        jacobians.resize(size);
-
-    if (update_flags & update_volume_elements)
-        determinants.resize(size);
-
-    if ((update_flags & update_JxW_values) |
-        (update_flags & update_side_JxW_values))
-        JxW_values.resize(size);
-
-    if (update_flags & update_inverse_jacobians)
-        inverse_jacobians.resize(size);
-
-    if (update_flags & update_quadrature_points)
-        points.resize(size);
-
-    if (update_flags & update_normal_vectors)
-        normal_vectors.resize(size);
-}
+template<unsigned int spacedim>
+ElementData<spacedim>::ElementData(unsigned int size,
+                         UpdateFlags flags,
+                         unsigned int dim)
+: dim_(dim),
+  JxW_values(flags & update_JxW_values | update_side_JxW_values ? size : 0),
+  jacobians(flags & update_jacobians ? size : 0, spacedim, dim),
+  determinants(flags & update_volume_elements ? size : 0),
+  inverse_jacobians(flags & update_inverse_jacobians ? size : 0, dim, spacedim),
+  points(flags & update_quadrature_points ? size : 0, spacedim),
+  normal_vectors(flags & update_normal_vectors ? size : 0, spacedim),
+  update_flags(flags)
+{}
 
 
-template<unsigned int dim, unsigned int spacedim>
-void ElementData<dim,spacedim>::print()
+template<unsigned int spacedim>
+void ElementData<spacedim>::print()
 {
     if (present_cell.is_valid())
     {
@@ -84,8 +72,9 @@ void ElementData<dim,spacedim>::print()
         for (auto j : JxW_values) printf("%g ", j); printf("]");
         
         printf(" nv[");
-        for (auto n : normal_vectors)
+        for (unsigned int i=0; i<normal_vectors.n_vals(); i++)
         {
+            auto n = normal_vectors.arma_vec(i);
             printf(" [");
             for (unsigned int c=0; c<spacedim; c++) printf("%g ", n[c]);
             printf("]");
@@ -93,12 +82,6 @@ void ElementData<dim,spacedim>::print()
         printf("]\n");
     }
 }
-
-
-template<unsigned int dim,unsigned int spacedim>
-ElementValuesBase<dim,spacedim>::ElementValuesBase()
-: n_points_(0)
-{}
 
 
 
@@ -109,11 +92,10 @@ ElementValuesBase<dim,spacedim>::~ElementValuesBase()
 
 
 template<unsigned int dim, unsigned int spacedim>
-void ElementValuesBase<dim,spacedim>::allocate(unsigned int n_points, UpdateFlags _flags)
-{
-    n_points_ = n_points;
-    data.allocate(n_points_, update_each(_flags));
-}
+ElementValuesBase<dim,spacedim>::ElementValuesBase(unsigned int n_points, UpdateFlags _flags)
+: n_points_(n_points),
+  data(n_points, update_each(_flags), dim)
+{}
 
 
 
@@ -146,13 +128,12 @@ template<unsigned int dim, unsigned int spacedim>
 ElementValues<dim,spacedim>::ElementValues(
          Quadrature &_quadrature,
          UpdateFlags _flags)
-: ElementValuesBase<dim, spacedim>(),
+: ElementValuesBase<dim, spacedim>(_quadrature.size(), this->update_each(_flags)),
   quadrature_(&_quadrature),
   ref_data(nullptr)
 {
     if (dim == 0) return; // avoid unnecessary allocation of dummy 0 dimensional objects
     ASSERT_DBG( _quadrature.dim() == dim );
-    this->allocate(_quadrature.size(), _flags);
 
     // precompute finite element data
     ref_data = this->init_ref_data(_quadrature);
@@ -204,7 +185,7 @@ void ElementValues<dim,spacedim>::fill_data()
         // update Jacobians
         if (this->data.update_flags & update_jacobians)
             for (unsigned int i=0; i<this->n_points_; i++)
-                this->data.jacobians[i] = jac;
+                this->data.jacobians.get<spacedim,dim>(i) = jac;
 
         // calculation of determinant dependent data
         if ((this->data.update_flags & update_volume_elements) | (this->data.update_flags & update_JxW_values))
@@ -235,7 +216,7 @@ void ElementValues<dim,spacedim>::fill_data()
                 ijac = pinv(jac);
             }
             for (unsigned int i=0; i<this->n_points_; i++)
-                this->data.inverse_jacobians[i] = ijac;
+                this->data.inverse_jacobians.get<dim,spacedim>(i) = ijac;
         }
     }
 
@@ -243,7 +224,7 @@ void ElementValues<dim,spacedim>::fill_data()
     if (this->data.update_flags & update_quadrature_points)
     {
         for (unsigned int i=0; i<this->n_points_; i++)
-            this->data.points[i] = coords*ref_data->bar_coords[i];
+            this->data.points.get<spacedim>(i) = coords*ref_data->bar_coords[i];
     }
 }
 
@@ -259,12 +240,10 @@ template<unsigned int dim,unsigned int spacedim>
 ElemSideValues<dim,spacedim>::ElemSideValues(
                                  Quadrature & _sub_quadrature,
                                  const UpdateFlags _flags)
-: ElementValuesBase<dim,spacedim>(),
+: ElementValuesBase<dim,spacedim>(_sub_quadrature.size(), _flags),
   side_quad(RefElement<dim>::n_sides, std::vector<Quadrature>(RefElement<dim>::n_side_permutations, Quadrature(dim)))
 {
     ASSERT_DBG( _sub_quadrature.dim() + 1 == dim );
-    
-    this->allocate(_sub_quadrature.size(), _flags);
 
     for (unsigned int sid = 0; sid < RefElement<dim>::n_sides; sid++)
     {
@@ -327,7 +306,7 @@ void ElemSideValues<dim,spacedim>::fill_data()
         // update cell Jacobians
         if (this->data.update_flags & update_jacobians)
             for (unsigned int i=0; i<this->n_points_; i++)
-                this->data.jacobians[i] = jac;
+                this->data.jacobians.get<spacedim,dim>(i) = jac;
 
         // update determinants of Jacobians
         if (this->data.update_flags & update_volume_elements)
@@ -349,9 +328,9 @@ void ElemSideValues<dim,spacedim>::fill_data()
             {
                 ijac = pinv(jac);
             }
-            ASSERT_LE_DBG(this->n_points_, this->data.inverse_jacobians.size());
+            ASSERT_LE_DBG(this->n_points_, this->data.inverse_jacobians.n_vals());
             for (unsigned int i=0; i<this->n_points_; i++)
-                this->data.inverse_jacobians[i] = ijac;
+                this->data.inverse_jacobians.get<dim,spacedim>(i) = ijac;
 
             // calculation of normal vectors to the side
             if ((this->data.update_flags & update_normal_vectors))
@@ -360,7 +339,7 @@ void ElemSideValues<dim,spacedim>::fill_data()
                 n_cell = trans(ijac)*RefElement<dim>::normal_vector(side_idx_);
                 n_cell = n_cell/norm(n_cell,2);
                 for (unsigned int i=0; i<this->n_points_; i++)
-                    this->data.normal_vectors[i] = n_cell;
+                    this->data.normal_vectors.get<spacedim>(i) = n_cell;
             }
         }
     }
@@ -370,7 +349,7 @@ void ElemSideValues<dim,spacedim>::fill_data()
     if (this->data.update_flags & update_quadrature_points)
     {
         for (unsigned int i=0; i<this->n_points_; i++)
-            this->data.points[i] = coords*side_ref_data[side_idx_][this->data.present_cell->permutation_idx(side_idx_)]->bar_coords[i];
+            this->data.points.get<spacedim>(i) = coords*side_ref_data[side_idx_][this->data.present_cell->permutation_idx(side_idx_)]->bar_coords[i];
     }
 
     if (this->data.update_flags & update_side_JxW_values)
@@ -402,11 +381,6 @@ void ElemSideValues<dim,spacedim>::fill_data()
 
 
 
-
-template class ElementData<0,3>;
-template class ElementData<1,3>;
-template class ElementData<2,3>;
-template class ElementData<3,3>;
 
 template class ElementValuesBase<0,3>;
 template class ElementValuesBase<1,3>;

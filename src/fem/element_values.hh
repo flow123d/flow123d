@@ -62,7 +62,7 @@ public:
  * @brief Class ElementData holds the arrays of data computed by
  * Mapping.
  */
-template<unsigned int dim, unsigned int spacedim>
+template<unsigned int spacedim = 3>
 class ElementData
 {
 public:
@@ -72,10 +72,13 @@ public:
      * @param size   Number of quadrature points.
      * @param flags  Update flags to be stores.
      */
-    void allocate(unsigned int size, UpdateFlags flags);
+    ElementData(unsigned int size, UpdateFlags flags, unsigned int dim);
     
     /// Print calculated data.
     void print();
+
+
+    const unsigned int dim_;
 
     /**
      * @brief Transformed quadrature weights.
@@ -86,41 +89,26 @@ public:
      */
     std::vector<double> JxW_values;
 
-    /**
-     * @brief Jacobians of the mapping at the quadrature points.
-     */
-    std::vector<arma::mat::fixed<spacedim,dim> > jacobians;
+    /// Jacobians (spacedim x dim) of the mapping at the quadrature points.
+    Armor::array jacobians;
 
-    /**
-     * @brief Determinants of Jacobians at quadrature points.
-     */
+    /// Determinants of Jacobians at quadrature points.
     std::vector<double> determinants;
 
-    /**
-     * @brief Inverse Jacobians at the quadrature points.
-     */
-    std::vector<arma::mat::fixed<dim,spacedim> > inverse_jacobians;
+    /// Inverse Jacobians (dim x spacedim) at the quadrature points.
+    Armor::array inverse_jacobians;
 
-    /**
-     * @brief Coordinates of quadrature points in the actual cell coordinate system.
-     */
-    std::vector<arma::vec::fixed<spacedim> > points;
+    /// Coordinates (spacedim) of quadrature points in the actual cell coordinate system.
+    Armor::array points;
 
-    /**
-     * @brief Normal vectors to the element at the quadrature points lying
-     * on a side.
-     */
-    std::vector<arma::vec::fixed<spacedim> > normal_vectors;
+    /// Normal vectors (spacedim) to the element at the quadrature points lying on a side.
+    Armor::array normal_vectors;
 
-    /**
-     * @brief Flags that indicate which finite element quantities are to be computed.
-     */
+    /// Flags that indicate which finite element quantities are to be computed.
     UpdateFlags update_flags;
 
-    /**
-     * @brief Iterator to the last reinit-ed cell.
-     */
-    ElementAccessor<3> present_cell;
+    /// Iterator to the last reinit-ed cell.
+    ElementAccessor<spacedim> present_cell;
 
 };
 
@@ -135,12 +123,6 @@ class ElementValuesBase
 public:
 
     /**
-     * @brief Default constructor
-     */
-    ElementValuesBase();
-
-
-    /**
      * Correct deallocation of objects created by 'initialize' methods.
      */
     virtual ~ElementValuesBase();
@@ -152,7 +134,7 @@ public:
      * @param n_points Number of quadrature points.
      * @param flags    The update flags.
      */
-    void allocate(unsigned int n_points, UpdateFlags flags);
+     ElementValuesBase(unsigned int n_points, UpdateFlags flags);
     
     /**
      * @brief Determine quantities to be recomputed on each cell.
@@ -176,17 +158,17 @@ public:
     }
     
     /// Return Jacobian matrix at point @p point_no.
-    inline const arma::mat::fixed<spacedim,dim> &jacobian(const unsigned int point_no) const
+    inline arma::mat jacobian(const unsigned int point_no) const
     {
         ASSERT_LT_DBG(point_no, n_points_);
-        return data.jacobians[point_no];
+        return data.jacobians.arma_mat(point_no);
     }
     
     /// Return inverse Jacobian matrix at point @p point_no.
-    inline const arma::mat::fixed<dim,spacedim> &inverse_jacobian(const unsigned int point_no) const
+    inline arma::mat inverse_jacobian(const unsigned int point_no) const
     {
         ASSERT_LT_DBG(point_no, n_points_);
-        return data.inverse_jacobians[point_no];
+        return data.inverse_jacobians.arma_mat(point_no);
     }
 
     /**
@@ -206,17 +188,17 @@ public:
      *
      * @param point_no Number of the quadrature point.
      */
-    inline const arma::vec::fixed<spacedim> &point(const unsigned int point_no) const
+    inline Armor::vec<spacedim> point(const unsigned int point_no) const
     {
         ASSERT_LT_DBG(point_no, n_points_);
-        return data.points[point_no];
+        return data.points.get<spacedim>(point_no);
     }
 
     /**
 	 * @brief Return coordinates of all quadrature points in the actual cell system.
 	 *
 	 */
-	inline const vector<arma::vec::fixed<spacedim> > &point_list() const
+	inline const Armor::array &point_list() const
 	{
 	    return data.points;
 	}
@@ -227,10 +209,10 @@ public:
      *
      * @param point_no Number of the quadrature point.
      */
-	inline arma::vec::fixed<spacedim> normal_vector(unsigned int point_no)
+	inline Armor::vec<spacedim> normal_vector(unsigned int point_no)
 	{
         ASSERT_LT_DBG(point_no, n_points_);
-	    return data.normal_vectors[point_no];
+	    return data.normal_vectors.get<spacedim>(point_no);
 	}
 	
     /**
@@ -256,7 +238,7 @@ protected:
     /**
      * @brief Data computed by the mapping.
      */
-    ElementData<dim,spacedim> data;
+    ElementData<spacedim> data;
     
 };
 

@@ -273,16 +273,16 @@ void HeatTransferModel::output_data()
 }
 
 
-void HeatTransferModel::compute_mass_matrix_coefficient(const std::vector<arma::vec3 > &point_list,
+void HeatTransferModel::compute_mass_matrix_coefficient(const Armor::array &point_list,
 		const ElementAccessor<3> &ele_acc,
 		std::vector<double> &mm_coef)
 {
-	vector<double> elem_csec(point_list.size()),
-			por(point_list.size()),
-			f_rho(point_list.size()),
-			s_rho(point_list.size()),
-			f_c(point_list.size()),
-			s_c(point_list.size());
+	vector<double> elem_csec(point_list.n_vals()),
+			por(point_list.n_vals()),
+			f_rho(point_list.n_vals()),
+			s_rho(point_list.n_vals()),
+			f_c(point_list.n_vals()),
+			s_c(point_list.n_vals());
 
 	data().cross_section.value_list(point_list, ele_acc, elem_csec);
 	data().porosity.value_list(point_list, ele_acc, por);
@@ -291,18 +291,18 @@ void HeatTransferModel::compute_mass_matrix_coefficient(const std::vector<arma::
 	data().solid_density.value_list(point_list, ele_acc, s_rho);
 	data().solid_heat_capacity.value_list(point_list, ele_acc, s_c);
 
-	for (unsigned int i=0; i<point_list.size(); i++)
+	for (unsigned int i=0; i<point_list.n_vals(); i++)
 		mm_coef[i] = elem_csec[i]*(por[i]*f_rho[i]*f_c[i] + (1.-por[i])*s_rho[i]*s_c[i]);
 }
 
 
-void HeatTransferModel::compute_advection_diffusion_coefficients(const std::vector<arma::vec3 > &point_list,
+void HeatTransferModel::compute_advection_diffusion_coefficients(const Armor::array &point_list,
 		const std::vector<arma::vec3> &velocity,
 		const ElementAccessor<3> &ele_acc,
 		std::vector<std::vector<arma::vec3> > &ad_coef,
 		std::vector<std::vector<arma::mat33> > &dif_coef)
 {
-	const unsigned int qsize = point_list.size();
+	const unsigned int qsize = point_list.n_vals();
 	std::vector<double> f_rho(qsize), f_cap(qsize), f_cond(qsize),
 			s_cond(qsize), por(qsize), csection(qsize), disp_l(qsize), disp_t(qsize);
 
@@ -336,7 +336,7 @@ void HeatTransferModel::compute_advection_diffusion_coefficients(const std::vect
 }
 
 
-void HeatTransferModel::compute_init_cond(const std::vector<arma::vec3> &point_list,
+void HeatTransferModel::compute_init_cond(const Armor::array &point_list,
 		const ElementAccessor<3> &ele_acc,
 		std::vector<std::vector<double> > &init_values)
 {
@@ -354,7 +354,7 @@ void HeatTransferModel::get_bc_type(const ElementAccessor<3> &ele_acc,
 
 
 void HeatTransferModel::get_flux_bc_data(unsigned int index,
-        const std::vector<arma::vec3> &point_list,
+        const Armor::array &point_list,
 		const ElementAccessor<3> &ele_acc,
 		std::vector< double > &bc_flux,
 		std::vector< double > &bc_sigma,
@@ -369,7 +369,7 @@ void HeatTransferModel::get_flux_bc_data(unsigned int index,
 }
 
 void HeatTransferModel::get_flux_bc_sigma(unsigned int index,
-        const std::vector<arma::vec3> &point_list,
+        const Armor::array &point_list,
 		const ElementAccessor<3> &ele_acc,
 		std::vector< double > &bc_sigma)
 {
@@ -377,13 +377,13 @@ void HeatTransferModel::get_flux_bc_sigma(unsigned int index,
 }
 
 
-void HeatTransferModel::compute_source_coefficients(const std::vector<arma::vec3> &point_list,
+void HeatTransferModel::compute_source_coefficients(const Armor::array &point_list,
 			const ElementAccessor<3> &ele_acc,
 			std::vector<std::vector<double> > &sources_value,
 			std::vector<std::vector<double> > &sources_density,
 			std::vector<std::vector<double> > &sources_sigma)
 {
-	const unsigned int qsize = point_list.size();
+	const unsigned int qsize = point_list.n_vals();
 	std::vector<double> por(qsize), csection(qsize), f_rho(qsize), s_rho(qsize), f_cap(qsize), s_cap(qsize),
 			f_source(qsize), s_source(qsize), f_sigma(qsize), s_sigma(qsize), f_temp(qsize), s_temp(qsize);
 	data().porosity.value_list(point_list, ele_acc, por);
@@ -399,10 +399,10 @@ void HeatTransferModel::compute_source_coefficients(const std::vector<arma::vec3
 	data().fluid_ref_temperature.value_list(point_list, ele_acc, f_temp);
 	data().solid_ref_temperature.value_list(point_list, ele_acc, s_temp);
 
-    sources_density[0].resize(point_list.size());
-    sources_sigma[0].resize(point_list.size());
-    sources_value[0].resize(point_list.size());
-	for (unsigned int k=0; k<point_list.size(); k++)
+    sources_density[0].resize(point_list.n_vals());
+    sources_sigma[0].resize(point_list.n_vals());
+    sources_value[0].resize(point_list.n_vals());
+	for (unsigned int k=0; k<point_list.n_vals(); k++)
 	{
 		sources_density[0][k] = csection[k]*(por[k]*f_source[k] + (1.-por[k])*s_source[k]);
 		sources_sigma[0][k] = csection[k]*(por[k]*f_rho[k]*f_cap[k]*f_sigma[k] + (1.-por[k])*s_rho[k]*s_cap[k]*s_sigma[k]);
@@ -415,11 +415,11 @@ void HeatTransferModel::compute_source_coefficients(const std::vector<arma::vec3
 }
 
 
-void HeatTransferModel::compute_sources_sigma(const std::vector<arma::vec3> &point_list,
+void HeatTransferModel::compute_sources_sigma(const Armor::array &point_list,
 			const ElementAccessor<3> &ele_acc,
 			std::vector<std::vector<double> > &sources_sigma)
 {
-	const unsigned int qsize = point_list.size();
+	const unsigned int qsize = point_list.n_vals();
 	std::vector<double> por(qsize), csection(qsize), f_rho(qsize), s_rho(qsize), f_cap(qsize), s_cap(qsize),
 			f_source(qsize), s_source(qsize), f_sigma(qsize), s_sigma(qsize), f_temp(qsize), s_temp(qsize);
 	data().porosity.value_list(point_list, ele_acc, por);
@@ -430,8 +430,8 @@ void HeatTransferModel::compute_sources_sigma(const std::vector<arma::vec3> &poi
 	data().solid_heat_capacity.value_list(point_list, ele_acc, s_cap);
 	data().fluid_heat_exchange_rate.value_list(point_list, ele_acc, f_sigma);
 	data().solid_heat_exchange_rate.value_list(point_list, ele_acc, s_sigma);
-    sources_sigma[0].resize(point_list.size());
-	for (unsigned int k=0; k<point_list.size(); k++)
+    sources_sigma[0].resize(point_list.n_vals());
+	for (unsigned int k=0; k<point_list.n_vals(); k++)
 	{
 		sources_sigma[0][k] = csection[k]*(por[k]*f_rho[k]*f_cap[k]*f_sigma[k] + (1.-por[k])*s_rho[k]*s_cap[k]*s_sigma[k]);
 	}

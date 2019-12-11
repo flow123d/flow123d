@@ -225,14 +225,14 @@ public:
     inline arma::vec::fixed<spacedim> point(const unsigned int point_no)
     {
         ASSERT_LT_DBG(point_no, n_points_);
-        return elm_values->point(point_no);
+        return elm_values->point(point_no).arma();
     }
 
     /**
 	 * @brief Return coordinates of all quadrature points in the actual cell system.
 	 *
 	 */
-	inline const vector<arma::vec::fixed<spacedim> > &point_list() const
+	inline const Armor::array &point_list() const
 	{
 	    return elm_values->point_list();
 	}
@@ -246,7 +246,7 @@ public:
 	inline arma::vec::fixed<spacedim> normal_vector(unsigned int point_no) override
 	{
         ASSERT_LT_DBG(point_no, n_points_);
-	    return elm_values->normal_vector(point_no);
+	    return elm_values->normal_vector(point_no).arma();
 	}
 	
 	/**
@@ -359,25 +359,25 @@ protected:
      *
      * @param fe_data Precomputed finite element data.
      */
-    void fill_data(const ElementValuesBase<dim,spacedim> &elm_values, const FEInternalData &fe_data);
+    void fill_data(const ElementValuesBase<spacedim> &elm_values, const FEInternalData &fe_data);
     
     /// Compute shape functions and gradients on the actual cell for scalar FE.
-    void fill_scalar_data(const ElementValuesBase<dim,spacedim> &elm_values, const FEInternalData &fe_data);
+    void fill_scalar_data(const ElementValuesBase<spacedim> &elm_values, const FEInternalData &fe_data);
     
     /// Compute shape functions and gradients on the actual cell for vectorial FE.
-    void fill_vec_data(const ElementValuesBase<dim,spacedim> &elm_values, const FEInternalData &fe_data);
+    void fill_vec_data(const ElementValuesBase<spacedim> &elm_values, const FEInternalData &fe_data);
     
     /// Compute shape functions and gradients on the actual cell for vectorial FE.
-    void fill_vec_contravariant_data(const ElementValuesBase<dim,spacedim> &elm_values, const FEInternalData &fe_data);
+    void fill_vec_contravariant_data(const ElementValuesBase<spacedim> &elm_values, const FEInternalData &fe_data);
     
     /// Compute shape functions and gradients on the actual cell for Raviart-Thomas FE.
-    void fill_vec_piola_data(const ElementValuesBase<dim,spacedim> &elm_values, const FEInternalData &fe_data);
+    void fill_vec_piola_data(const ElementValuesBase<spacedim> &elm_values, const FEInternalData &fe_data);
     
     /// Compute shape functions and gradients on the actual cell for tensorial FE.
-    void fill_tensor_data(const ElementValuesBase<dim,spacedim> &elm_values, const FEInternalData &fe_data);
+    void fill_tensor_data(const ElementValuesBase<spacedim> &elm_values, const FEInternalData &fe_data);
     
     /// Compute shape functions and gradients on the actual cell for mixed system of FE.
-    void fill_system_data(const ElementValuesBase<dim,spacedim> &elm_values, const FEInternalData &fe_data);
+    void fill_system_data(const ElementValuesBase<spacedim> &elm_values, const FEInternalData &fe_data);
     
 
     /// Number of integration points.
@@ -397,7 +397,7 @@ protected:
     UpdateFlags update_flags;
 
     /// Auxiliary object for calculation of element-dependent data.
-    ElementValuesBase<dim,spacedim> *elm_values;
+    ElementValuesBase<spacedim> *elm_values;
     
     /// Vector of FEValues for sub-elements of FESystem.
     std::vector<std::shared_ptr<FEValuesBase<dim,spacedim> > > fe_values_vec;

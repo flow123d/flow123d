@@ -788,9 +788,9 @@ private:
 	 * @param point_list The quadrature points.
 	 */
     void calculate_velocity(const ElementAccessor<3> &cell, vector<arma::vec3> &velocity,
-                            const std::vector<arma::vec::fixed<3>> &point_list)
+                            const Armor::array &point_list)
     {
-        velocity.resize(point_list.size());
+        velocity.resize(point_list.n_vals());
         model_.velocity_field_ptr()->value_list(point_list, cell, velocity);
     }
 

@@ -183,6 +183,16 @@ public:
         return nVals;
     }
 
+    inline uint n_rows() const
+    {
+        return nRows;
+    }
+
+    inline uint n_cols() const
+    {
+        return nCols;
+    }
+
     /**
      * Insert new matrix to the end of the array.
      * @param p  Vector of values for the new matrix.
@@ -270,6 +280,12 @@ inline typename arma::Mat<Type>::template fixed<resRows,resCols> operator*(const
     return a.arma() * b.arma();
 }
 
+template <class Type, uint resRows, uint commonDimension, uint resCols>
+inline typename arma::Mat<Type>::template fixed<resRows,resCols> operator*(const Mat<Type, resRows, commonDimension> & a,
+                                                                           const typename arma::Mat<Type>::template fixed<commonDimension, resCols> & b) {
+    return a.arma() * b;
+}
+
 template <class Type, uint nRows, uint nCols>
 inline typename arma::Mat<Type>::template fixed<nRows,nCols> operator%(const Mat<Type, nRows, nCols> & a, const Mat<Type, nRows, nCols> & b) {
     return a.arma() % b.arma();
@@ -283,6 +299,11 @@ inline typename arma::Mat<Type>::template fixed<nRows,nCols> operator*(Type numb
 template <class Type, uint nRows, uint nCols>
 inline typename arma::Mat<Type>::template fixed<nRows,nCols> operator/(const Mat<Type, nRows, nCols> & a, Type number) {
     return a.arma() / number;
+}
+
+template <class Type, uint nRows, uint nCols>
+inline typename arma::Mat<Type>::template fixed<nCols,nRows> trans(const Mat<Type, nRows, nCols> & mat) {
+    return trans(mat.arma());
 }
 
 template <uint N>
