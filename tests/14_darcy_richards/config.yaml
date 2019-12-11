@@ -1,11 +1,18 @@
 common_config:
   proc: [1, 2]
   memory_limit: 1000
+  #time_limit: 1000
+  #check_rules:
+    #- ndiff:
+        # do not check observe output
+        #files: ["flow/*.vtu", "flow.pvd", "water_balance.txt"]
 
 test_cases:
   - files:
       - 01_1d.yaml
       - 02_1d_dirichlet.yaml
+      #- 03_1d_horizontal.yaml
       - 04_2d_horizontal.yaml
+      - 05_2d_dirichlet_source.yaml
   - files: 03_1d_horizontal.yaml
     time_limit: 60

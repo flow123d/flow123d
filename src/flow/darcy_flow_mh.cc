@@ -31,10 +31,10 @@
 
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
+#include "system/index_types.hh"
 #include "input/factory.hh"
 
 #include "mesh/side_impl.hh"
-#include "mesh/long_idx.hh"
 #include "mesh/mesh.h"
 #include "mesh/partitioning.hh"
 #include "mesh/accessors.hh"
@@ -298,10 +298,8 @@ DarcyMH::EqData::EqData()
 DarcyMH::DarcyMH(Mesh &mesh_in, const Input::Record in_rec)
 : DarcyFlowInterface(mesh_in, in_rec),
     output_object(nullptr),
-    solution(nullptr),
     data_changed_(false),
     schur0(nullptr),
-    par_to_all(nullptr),
 	steady_diagonal(nullptr),
 	steady_rhs(nullptr),
 	new_diagonal(nullptr),
@@ -411,15 +409,13 @@ void DarcyMH::initialize() {
     this->data_->multidim_assembler =  AssemblyBase::create< AssemblyMH >(data_);
     output_object = new DarcyFlowMHOutput(this, input_record_);
 
-    mh_dh.reinit(mesh_);
-
     { // construct pressure, velocity and piezo head fields
 		ele_flux_ptr = std::make_shared< FieldFE<3, FieldValue<3>::VectorFixed> >();
 		uint rt_component = 0;
 		ele_flux_ptr->set_fe_data(data_->dh_, rt_component);
 		ele_velocity_ptr = std::make_shared< FieldDivide<3, FieldValue<3>::VectorFixed> >(ele_flux_ptr, data_->cross_section);
 		data_->field_ele_velocity.set_field(mesh_->region_db().get_region_set("ALL"), ele_velocity_ptr);
-		data_->data_vec_ = ele_flux_ptr->get_data_vec();
+		data_->full_solution = ele_flux_ptr->get_data_vec();
 
 		ele_pressure_ptr = std::make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
 		uint p_ele_component = 0;
@@ -661,9 +657,6 @@ void DarcyMH::solve_nonlinear()
         int result = time_->set_upper_constraint(time_->dt() * mult, "Darcy adaptivity.");
         //DebugOut().fmt("time adaptivity, res: {} it: {} m: {} dt: {} edt: {}\n", result, nonlinear_iteration_, mult, time_->dt(), time_->estimate_dt());
     }
-
-    solution_changed_for_scatter=true;
-
 }
 
 
@@ -726,25 +719,6 @@ void DarcyMH::output_data() {
 double DarcyMH::solution_precision() const
 {
 	return schur0->get_solution_precision();
-}
-
-
-
-void  DarcyMH::get_solution_vector(double * &vec, unsigned int &vec_size)
-{
-    // TODO: make class for vectors (wrapper for PETSC or other) derived from LazyDependency
-    // and use its mechanism to manage dependency between vectors
-    if (solution_changed_for_scatter) {
-
-        // scatter solution to all procs
-        VecScatterBegin(par_to_all, schur0->get_solution(), sol_vec, INSERT_VALUES, SCATTER_FORWARD);
-        VecScatterEnd(  par_to_all, schur0->get_solution(), sol_vec, INSERT_VALUES, SCATTER_FORWARD);
-        solution_changed_for_scatter=false;
-    }
-
-    vec = solution;
-    vec_size = this->size;
-    OLD_ASSERT(vec != NULL, "Requested solution is not allocated!\n");
 }
 
 
@@ -1026,8 +1000,6 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
         }
 
         END_TIMER("preallocation");
-        make_serial_scatter();
-
     }
 
 }
@@ -1351,66 +1323,13 @@ DarcyMH::~DarcyMH() {
     
     if (schur0 != NULL) {
         delete schur0;
-    	if (par_to_all != nullptr) chkerr(VecScatterDestroy(&par_to_all));
     }
-
-	if (solution != NULL) {
-	    chkerr(VecDestroy(&sol_vec));
-		delete [] solution;
-	}
 
 	if (output_object)	delete output_object;
 
     if(time_ != nullptr)
         delete time_;
     
-}
-
-
-// ================================================
-// PARALLLEL PART
-//
-
-
-void DarcyMH::make_serial_scatter() {
-    START_TIMER("prepare scatter");
-    // prepare Scatter form parallel to sequantial in original numbering
-    {
-            IS is_loc;
-            int i, *loc_idx; //, si;
-
-            // create local solution vector
-            solution = new double[size];
-            VecCreateSeqWithArray(PETSC_COMM_SELF,1, size, solution,
-                    &(sol_vec));
-
-            // create seq. IS to scatter par solutin to seq. vec. in original order
-            // use essentialy row_4_id arrays
-            loc_idx = new int [size];
-            i = 0;
-            for (auto ele : mesh_->elements_range()) {
-            	for (unsigned int si=0; si<ele->n_sides(); si++) {
-                    loc_idx[i++] = mh_dh.side_row_4_id[ mh_dh.side_dof( ele.side(si) ) ];
-                }
-            }
-            for (auto ele : mesh_->elements_range()) {
-                loc_idx[i++] = mh_dh.row_4_el[ ele.idx() ];
-            }
-            for(unsigned int i_edg=0; i_edg < mesh_->n_edges(); i_edg++) {
-                loc_idx[i++] = mh_dh.row_4_edge[i_edg];
-            }
-            OLD_ASSERT( i==size,"Size of array does not match number of fills.\n");
-            //DBGPRINT_INT("loc_idx",size,loc_idx);
-            ISCreateGeneral(PETSC_COMM_SELF, size, loc_idx, PETSC_COPY_VALUES, &(is_loc));
-            delete [] loc_idx;
-            VecScatterCreate(schur0->get_solution(), is_loc, sol_vec,
-                    PETSC_NULL, &par_to_all);
-            chkerr(ISDestroy(&(is_loc)));
-    }
-    solution_changed_for_scatter=true;
-
-    END_TIMER("prepare scatter");
-
 }
 
 
@@ -1462,9 +1381,6 @@ void DarcyMH::read_initial_condition()
 		// set initial condition
 		local_sol[ele_ac.ele_local_row()] = data_->init_pressure.value(ele_ac.centre(),ele_ac.element_accessor());
 	}
-
-	solution_changed_for_scatter=true;
-
 }
 
 void DarcyMH::setup_time_term() {
@@ -1496,7 +1412,6 @@ void DarcyMH::setup_time_term() {
     VecRestoreArray(new_diagonal,& local_diagonal);
     MatDiagonalSet(*( schur0->get_matrix() ), new_diagonal, ADD_VALUES);
 
-    solution_changed_for_scatter=true;
     schur0->set_matrix_changed();
 
     balance_->finish_mass_assembly(data_->water_balance_idx);

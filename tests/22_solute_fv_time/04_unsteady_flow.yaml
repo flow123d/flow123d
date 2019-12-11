@@ -24,7 +24,6 @@ problem: !Coupling_Sequential
       linear_solver: !Petsc
         a_tol: 1.0e-12
         r_tol: 1.0e-12
-    n_schurs: 2
     output:
       fields:
         - pressure_p0

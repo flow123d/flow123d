@@ -40,7 +40,7 @@
 #include "input/type_base.hh"                  // for Array
 #include "input/type_generic.hh"               // for Instance
 #include "input/type_record.hh"                // for Record::ExcRecordKeyNo...
-#include "mesh/long_idx.hh"                    // for LongIdx
+#include "system/index_types.hh"               // for LongIdx
 #include "mesh/accessors.hh"                   // for ElementAccessor
 #include "mesh/elements.h"                     // for Element::dim, Element:...
 #include "mesh/neighbours.h"                   // for Neighbour::element

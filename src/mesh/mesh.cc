@@ -22,6 +22,7 @@
 
 #include "system/system.hh"
 #include "system/exceptions.hh"
+#include "system/index_types.hh"
 #include "input/reader_to_storage.hh"
 #include "input/input_type.hh"
 #include "input/accessors.hh"
@@ -29,7 +30,6 @@
 #include "la/distribution.hh"
 
 #include "mesh/side_impl.hh"
-#include "mesh/long_idx.hh"
 #include "mesh/mesh.h"
 #include "mesh/bc_mesh.hh"
 #include "mesh/ref_element.hh"

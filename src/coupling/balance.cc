@@ -22,17 +22,18 @@
 
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
+#include "system/index_types.hh"
 
 #include <petscmat.h>
 #include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
-#include "mesh/long_idx.hh"
 #include "mesh/accessors.hh"
 #include "io/output_time_set.hh"
 #include "coupling/balance.hh"
 #include "tools/unit_si.hh"
 #include "tools/time_governor.hh"
 #include "la/distribution.hh"
+#include "fem/dofhandler.hh"
 
 using namespace Input::Type;
 
@@ -182,7 +183,19 @@ void Balance::allocate(unsigned int n_loc_dofs,
 		unsigned int max_dofs_per_boundary)
 {
     ASSERT(! allocation_done_);
-    n_loc_dofs_ = n_loc_dofs;
+    n_loc_dofs_seq_ = n_loc_dofs;
+	n_loc_dofs_par_ = n_loc_dofs;
+    max_dofs_per_boundary_ = max_dofs_per_boundary;
+}
+
+void Balance::allocate(const std::shared_ptr<DOFHandlerMultiDim>& dh,
+		unsigned int max_dofs_per_boundary)
+{
+    ASSERT(! allocation_done_);
+	// for sequential matrices, we need to include ghost values
+    n_loc_dofs_seq_ = dh->get_local_to_global_map().size();
+	// for parallel matrices, we use the local size from dof distribution
+	n_loc_dofs_par_ = dh->distr()->lsize();
     max_dofs_per_boundary_ = max_dofs_per_boundary;
 }
 
@@ -266,10 +279,11 @@ void Balance::lazy_initialize()
     region_mass_vec_ = new Vec[n_quant];
 	be_flux_vec_ = new Vec[n_quant];
 
+
 	for (unsigned int c=0; c<n_quant; ++c)
 	{
 		chkerr(MatCreateAIJ(PETSC_COMM_WORLD,
-				n_loc_dofs_,
+				n_loc_dofs_par_,
 				(rank_==0)?mesh_->region_db().bulk_size():0,
 				PETSC_DECIDE,
 				PETSC_DECIDE,
@@ -280,14 +294,14 @@ void Balance::lazy_initialize()
 				&(region_mass_matrix_[c])));
 
         chkerr(MatCreateSeqAIJ(PETSC_COMM_SELF,
-               n_loc_dofs_,
+               n_loc_dofs_seq_,
                mesh_->region_db().bulk_size(),
                n_bulk_regs_per_dof,
                NULL,
                &(region_source_matrix_[c])));
 
         chkerr(MatCreateSeqAIJ(PETSC_COMM_SELF,
-               n_loc_dofs_,
+               n_loc_dofs_seq_,
                mesh_->region_db().bulk_size(),
                n_bulk_regs_per_dof,
                NULL,
@@ -295,7 +309,7 @@ void Balance::lazy_initialize()
     
        chkerr(MatCreateAIJ(PETSC_COMM_WORLD,
                be_regions_.size(),  // n local rows, number of local boundary edges
-               n_loc_dofs_,         // n local cols (local rows of multiplying vector)
+               n_loc_dofs_par_,     // n local cols (local rows of multiplying vector)
                PETSC_DECIDE,        // n global rows
                PETSC_DECIDE,        // n global cols
                max_dofs_per_boundary_,  // allocation, local poriton
@@ -539,7 +553,9 @@ void Balance::calculate_cumulative(unsigned int quantity_idx,
     int lsize, n_cols_mat, n_cols_rhs;
     //const int *cols;
 	const double *vals_mat, *vals_rhs, *sol_array;
-    chkerr(VecGetLocalSize(solution, &lsize));
+    // chkerr(VecGetLocalSize(solution, &lsize));
+	// chkerr(ISLocalToGlobalMappingGetSize(solution->mapping, &lsize);  // cannot do for const
+	lsize = n_loc_dofs_seq_;
     chkerr(VecGetArrayRead(solution, &sol_array));
     
     // computes transpose multiplication and sums region_source_rhs_ over dofs
@@ -625,7 +641,9 @@ void Balance::calculate_instant(unsigned int quantity_idx, const Vec& solution)
     int lsize, n_cols_mat, n_cols_rhs;
     const int *cols;    // the columns must be same - matrices created and filled in the same way
 	const double *vals_mat, *vals_rhs, *sol_array;
-    chkerr(VecGetLocalSize(solution, &lsize));
+    // chkerr(VecGetLocalSize(solution, &lsize));
+	// chkerr(ISLocalToGlobalMappingGetSize(solution->mapping, &lsize);	// cannot do for const
+	lsize = n_loc_dofs_seq_;
     chkerr(VecGetArrayRead(solution, &sol_array));
     
     // computes transpose multiplication and sums region_source_rhs_ over dofs

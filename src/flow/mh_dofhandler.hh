@@ -25,7 +25,7 @@
 #include <vector>                            // for vector
 #include <armadillo>
 #include "la/distribution.hh"                // for Distribution
-#include "mesh/long_idx.hh"                  // for LongIdx
+#include "system/index_types.hh"             // for LongIdx
 #include "mesh/accessors.hh"                 // for ElementAccessor
 #include "mesh/elements.h"                   // for Element::side, Element::dim
 #include "mesh/mesh.h"                       // for Mesh
@@ -107,11 +107,9 @@ class LocalElementAccessorBase {
 public:
 
     LocalElementAccessorBase(DHCellAccessor dh_cell)
-    : dh_cell_(dh_cell), global_indices_(dh_cell_.dh()->max_elem_dofs()),
-	  local_indices_(dh_cell_.dh()->max_elem_dofs())
+    : dh_cell_(dh_cell), global_indices_(dh_cell_.dh()->max_elem_dofs())
     {
         n_indices_ = dh_cell_.get_dof_indices(global_indices_);
-        dh_cell_.get_loc_dof_indices(local_indices_);
     }
 
     inline DHCellAccessor dh_cell() const {
@@ -155,7 +153,7 @@ public:
     }
 
     uint ele_local_row() {
-        return local_indices_[n_indices_/2];
+        return dh_cell_.get_loc_dof_indices()[n_indices_/2];
     }
 
     uint edge_row(uint i) {
@@ -163,7 +161,7 @@ public:
     }
 
     uint edge_local_row( uint i) {
-        return local_indices_[(n_indices_+1)/2+i];
+        return dh_cell_.get_loc_dof_indices()[(n_indices_+1)/2+i];
     }
 
     SideIter side(uint i) {
@@ -175,13 +173,12 @@ public:
     }
 
     uint side_local_row( uint i) {
-        return local_indices_[i];
+        return dh_cell_.get_loc_dof_indices()[i];
     }
 
 private:
     DHCellAccessor dh_cell_;
     std::vector<LongIdx> global_indices_;
-    std::vector<LongIdx> local_indices_;
     uint n_indices_;
 };
 

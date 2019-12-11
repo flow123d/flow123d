@@ -1,6 +1,6 @@
 /*!
  *
-﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
  * 
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License version 3 as published by the
@@ -32,17 +32,12 @@
 #include "system/python_loader.hh"
 #include <iostream>
 #include <boost/format.hpp>
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/json_parser.hpp>
 #include <boost/unordered_map.hpp>
 
 #include "system/file_path.hh"
 #include "system/python_loader.hh"
 #include "mpi.h"
 #include "time_point.hh"
-
-// namespace alias
-namespace property_tree = boost::property_tree;
 
 /*
  * These should be replaced by using boost MPI interface
@@ -516,7 +511,7 @@ std::string common_prefix( std::string a, std::string b ) {
 
 
 template<typename ReduceFunctor>
-void Profiler::add_timer_info(ReduceFunctor reduce, property_tree::ptree* holder, int timer_idx, double parent_time) {
+void Profiler::add_timer_info(ReduceFunctor reduce, nlohmann::json* holder, int timer_idx, double parent_time) {
 
     // get timer and check preconditions
     Timer &timer = timers_[timer_idx];
@@ -535,50 +530,22 @@ void Profiler::add_timer_info(ReduceFunctor reduce, property_tree::ptree* holder
 
     // generate node representing this timer
     // add basic information
-    property_tree::ptree node;
+    nlohmann::json node;
     double cumul_time_sum;
-    node.put ("tag",        (timer.tag()) );
-    node.put ("file-path",  (filepath) );
-    node.put ("file-line",  (timer.code_point_->line_) );
-    node.put ("function",   (timer.code_point_->func_) );
-    cumul_time_sum = reduce (timer, node);
+    node["tag"] = timer.tag();
+    node["file-path"] = filepath;
+    node["file-line"] =  timer.code_point_->line_;
+    node["function"] = timer.code_point_->func_;
+    cumul_time_sum = reduce(timer, node);
 
 
     // statistical info
     if (timer_idx == 0) parent_time = cumul_time_sum;
     double percent = parent_time > 1.0e-10 ? cumul_time_sum / parent_time * 100.0 : 0.0;
-    node.put<double> ("percent", 	percent);
+    node["percent"] = percent;
 
-    // when collecting timer info, we need to make sure each processor contains 
-    // the same time-frames, for now we simply reduce info to current timer
-    // using operation MPI_MIN, so if some processor does not contain some 
-    // time-frame other processors will forget this time-frame (information lost)
-    /*
-    int child_timers[ Timer::max_n_childs];
-    MPI_Allreduce(&timer.child_timers, &child_timers, Timer::max_n_childs, MPI_INT, MPI_MIN, MPI_COMM_WORLD);
-    #ifdef FLOW123D_DEBUG
-    int mpi_rank = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
-    for (int j = 0; j < Timer::max_n_childs; j++) {
-        if (child_timers[j] != timer.child_timers[j]) {
-            // this is severe error, timers indicies are different
-            ASSERT(child_timers[j] == timer_no_child).error("Severe error: timers indicies are different.");
-            
-            // explore the difference in more depth
-            if (timer.child_timers[j] == timer_no_child) {
-                // this processor does not have child timer
-                WarningOut() << "Inconsistent tree in '" << timer.tag() << "': this processor[" << mpi_rank
-                	<< "] does not have child-timer[" << child_timers[j] << "]" << std::endl;
-            } else {
-                // other processors do not have child timer
-                WarningOut() << "Inconsistent tree in '" << timer.tag() << "': this processor[" << mpi_rank
-                	<< "] contains child-timer[" << timer.child_timers[j] << "] which others do not" << std::endl;
-            }
-        }
-    }
-    #endif // FLOW123D_DEBUG
-*/
     // write times children timers using secured child_timers array
-    property_tree::ptree children;
+    nlohmann::json children;
     bool has_children = false;
     for (unsigned int i = 0; i < Timer::max_n_childs; i++) {
         if (timer.child_timers[i] != timer_no_child) {
@@ -591,25 +558,24 @@ void Profiler::add_timer_info(ReduceFunctor reduce, property_tree::ptree* holder
     }
 
     // add children tag and other info if present
-    if (has_children)
-    	node.add_child ("children", children);
+    if (has_children) {
+    	node["children"] = children;
+    }
 
-    // push itself to root ptree 'array'
-	holder->push_back (std::make_pair ("", node));
+    // add to the array
+	holder->push_back(node);
 }
 
 
 template <class T>
-void save_nonmpi_metric (property_tree::ptree &node,  T * ptr, string name) {
-    node.put (name+"-min", *ptr);
-    node.put (name+"-max", *ptr);
-    node.put (name+"-sum", *ptr);
+void save_nonmpi_metric (nlohmann::json &node, T * ptr, string name) {
+    node[name + "-min"] = *ptr;
+    node[name + "-max"] = *ptr;
+    node[name + "-sum"] = *ptr;
 }
 
 std::shared_ptr<std::ostream> Profiler::get_default_output_stream() {
-    char filename[PATH_MAX];
-    strftime(filename, sizeof (filename) - 1, "profiler_info_%y.%m.%d_%H-%M-%S.log.json", localtime(&start_time));
-     json_filepath = FilePath(string(filename), FilePath::output_file);
+     json_filepath = FilePath("profiler_info.log.json", FilePath::output_file);
 
     //LogOut() << "output into: " << json_filepath << std::endl;
     return make_shared<ofstream>(json_filepath.c_str());
@@ -618,10 +584,10 @@ std::shared_ptr<std::ostream> Profiler::get_default_output_stream() {
 
 #ifdef FLOW123D_HAVE_MPI
 template <class T>
-void save_mpi_metric (property_tree::ptree &node, MPI_Comm comm, T * ptr, string name) {
-    node.put (name+"-min", MPI_Functions::min(ptr, comm));
-    node.put (name+"-max", MPI_Functions::max(ptr, comm));
-    node.put (name+"-sum", MPI_Functions::sum(ptr, comm));
+void save_mpi_metric (nlohmann::json &node, MPI_Comm comm, T * ptr, string name) {
+    node[name + "-min"] = MPI_Functions::min(ptr, comm);
+    node[name + "-max"] = MPI_Functions::max(ptr, comm);
+    node[name + "-sum"] = MPI_Functions::sum(ptr, comm);
 }
 
 void Profiler::output(MPI_Comm comm, ostream &os) {
@@ -639,13 +605,12 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
     MPI_Comm_size(comm, &mpi_size);
 
     // output header
-    property_tree::ptree root, children;
-    output_header (root, mpi_size);
+    nlohmann::json jsonRoot, jsonChildren;
 
     // recursively add all timers info
     // define lambda function which reduces timer from multiple processors
     // MPI implementation uses MPI call to reduce values
-    auto reduce = [=] (Timer &timer, property_tree::ptree &node) -> double {
+    auto reduce = [=] (Timer &timer, nlohmann::json &node) -> double {
         int call_count = timer.call_count;
         double cumul_time = timer.cumulative_time ();
         
@@ -677,8 +642,9 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
         return MPI_Functions::sum(&cumul_time, comm);
     };
 
-    add_timer_info (reduce, &children, 0, 0.0);
-    root.add_child ("children", children);
+    add_timer_info (reduce, &jsonChildren, 0, 0.0);
+    jsonRoot["children"] = jsonChildren;
+    output_header(jsonRoot, mpi_size);
 
 
     // create profiler output only once (on the first processor)
@@ -686,15 +652,16 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
     if (mpi_rank == 0) {
     	try {
             /**
-             * Flag to property_tree::write_json method
-             * resulting in json human readable format (indents, newlines)
+             * indent size
+             * results in json human readable format (indents, newlines)
              */
-            const int FLOW123D_JSON_HUMAN_READABLE = 1;
+            const int FLOW123D_JSON_HUMAN_READABLE = 2;
             // write result to stream
-            property_tree::write_json (os, root, FLOW123D_JSON_HUMAN_READABLE);
-    	} catch (property_tree::json_parser::json_parser_error & e) {
+            os << jsonRoot.dump(FLOW123D_JSON_HUMAN_READABLE) << endl;
+
+    	} catch (exception & e) {
     		stringstream ss;
-    		ss << "Throw json_parser_error: " << e.message() << "\nIn file: " << e.filename() << ", at line " << e.line() << "\n";
+    		ss << "nlohmann::json::dump error: " << e.what() << "\n";
     		THROW( ExcMessage() << EI_Message(ss.str()) );
     	}
     }
@@ -703,14 +670,21 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
 }
 
 
-void Profiler::output(MPI_Comm comm) {
-    int mpi_rank;
-    chkerr( MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank) );
+void Profiler::output(MPI_Comm comm, string profiler_path /* = "" */) {
+  int mpi_rank;
+  chkerr(MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank));
+
     if (mpi_rank == 0) {
-        output(comm, *get_default_output_stream());
+        if (profiler_path == "") {
+          output(comm, *get_default_output_stream());
+        } else {
+          json_filepath = profiler_path;
+          std::shared_ptr<std::ostream> os = make_shared<ofstream>(profiler_path.c_str());
+          output(comm, *os);
+        }
     } else {
-        ostringstream os;
-        output(comm, os );
+      ostringstream os;
+      output(comm, os);
     }
 }
 
@@ -722,19 +696,19 @@ void Profiler::output(ostream &os) {
     propagate_timers();
 
     // output header
-    property_tree::ptree root, children;
+    nlohmann::json jsonRoot, jsonChildren;
     /**
      * Constant representing number of MPI processes
      * where there is no MPI to work with (so 1 process)
      */
     const int FLOW123D_MPI_SINGLE_PROCESS = 1;
-    output_header (root, FLOW123D_MPI_SINGLE_PROCESS);
+    output_header(jsonRoot, FLOW123D_MPI_SINGLE_PROCESS);
 
 
     // recursively add all timers info
     // define lambda function which reduces timer from multiple processors
     // non-MPI implementation is just dummy repetition of initial value
-    auto reduce = [=] (Timer &timer, property_tree::ptree &node) -> double {
+    auto reduce = [=] (Timer &timer, nlohmann::json &node) -> double {
         int call_count = timer.call_count;
         double cumul_time = timer.cumulative_time ();
         
@@ -765,31 +739,37 @@ void Profiler::output(ostream &os) {
         return cumul_time;
     };
 
-    add_timer_info (reduce, &children, 0, 0.0);
-    root.add_child ("children", children);
-
+    add_timer_info(reduce, &jsonChildren, 0, 0.0);
+    jsonRoot["children"] = jsonChildren;
 
     try {
         /**
-         * Flag to property_tree::write_json method
-         * resulting in json human readable format (indents, newlines)
+         * indent size
+         * results in json human readable format (indents, newlines)
          */
-        const int FLOW123D_JSON_HUMAN_READABLE = 1;
+        const int FLOW123D_JSON_HUMAN_READABLE = 2;
         // write result to stream
-        property_tree::write_json (os, root, FLOW123D_JSON_HUMAN_READABLE);
-    } catch (property_tree::json_parser::json_parser_error & e) {
-		stringstream ss;
-		ss << "Throw json_parser_error: " << e.message() << "\nIn file: " << e.filename() << ", at line " << e.line() << "\n";
-		THROW( ExcMessage() << EI_Message(ss.str()) );
+        os << jsonRoot.dump(FLOW123D_JSON_HUMAN_READABLE) << endl;
+
+    } catch (exception & e) {
+        stringstream ss;
+        ss << "nlohmann::json::dump error: " << e.what() << "\n";
+        THROW( ExcMessage() << EI_Message(ss.str()) );
     }
 }
 
 
-void Profiler::output() {
-    output(*get_default_output_stream());
+void Profiler::output(string profiler_path /* = "" */) {
+    if(profiler_path == "") {
+        output(*get_default_output_stream());
+    } else {
+        json_filepath = profiler_path;
+        std::shared_ptr<std::ostream> os = make_shared<ofstream>(profiler_path.c_str());
+        output(*os);
+    }
 }
 
-void Profiler::output_header (property_tree::ptree &root, int mpi_size) {
+void Profiler::output_header (nlohmann::json &root, int mpi_size) {
     time_t end_time = time(NULL);
 
     const char format[] = "%x %X";
@@ -800,31 +780,27 @@ void Profiler::output_header (property_tree::ptree &root, int mpi_size) {
     strftime(end_time_string, sizeof (end_time_string) - 1, format, localtime(&end_time));
 
     // generate current run details
-
-    root.put ("program-name",       flow_name_);
-    root.put ("program-version",    flow_version_);
-    root.put ("program-branch",     flow_branch_);
-    root.put ("program-revision",   flow_revision_);
-    root.put ("program-build",      flow_build_);
-    root.put ("timer-resolution",   boost::format("%1.9f") % Profiler::get_resolution());
-    // if constant FLOW123D_SOURCE_DIR is defined, we add this information to profiler (later purposes)
-    #ifdef FLOW123D_SOURCE_DIR
-    #endif
+    root["program-name"] =        flow_name_;
+    root["program-version"] =     flow_version_;
+    root["program-branch"] =      flow_branch_;
+    root["program-revision"] =    flow_revision_;
+    root["program-build"] =       flow_build_;
+    root["timer-resolution"] =    Profiler::get_resolution();
 
     // print some information about the task at the beginning
-    root.put ("task-description",   task_description_);
-    root.put ("task-size",          task_size_);
+    root["task-description"] =    task_description_;
+    root["task-size"] =           task_size_;
 
     //print some information about the task at the beginning
-    root.put ("run-process-count",  mpi_size);
-    root.put ("run-started-at",     start_time_string);
-    root.put ("run-finished-at",    end_time_string);
+    root["run-process-count"] =   mpi_size;
+    root["run-started-at"] =      start_time_string;
+    root["run-finished-at"] =     end_time_string;
 }
 
 #ifdef FLOW123D_HAVE_PYTHON
 void Profiler::transform_profiler_data (const string &output_file_suffix, const string &formatter) {
     
-    if (json_filepath=="") return;
+    if (json_filepath == "") return;
 
     // error under CYGWIN environment : more details in this repo 
     // https://github.com/x3mSpeedy/cygwin-python-issue

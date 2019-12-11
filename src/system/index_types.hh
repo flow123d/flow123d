@@ -11,16 +11,22 @@
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
  * 
- * @file    long_idx.hh
+ * @file    index_types.hh
  * @brief   
  */
 
-#ifndef LONG_IDX_HH
-#define LONG_IDX_HH
+#ifndef INDEX_TYPES_HH
+#define INDEX_TYPES_HH
+
+#include <armadillo>
 
 /// Define type that represents indices of large arrays (elements, nodes, dofs etc.)
 typedef int LongIdx;
+typedef unsigned int Idx;
+
+typedef arma::Col<LongIdx> GlobalDofVec;
+typedef arma::Col<unsigned int> LocDofVec;
 
 #define MPI_LONG_IDX MPI_INT
 
-#endif // LONG_IDX_HH
+#endif // INDEX_TYPES_HH
