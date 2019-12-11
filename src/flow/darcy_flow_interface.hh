@@ -43,14 +43,6 @@ public:
     virtual std::shared_ptr< FieldFE<3, FieldValue<3>::VectorFixed> > get_velocity_field()
     { return nullptr; }
     
-    /**
-     * Getter for sequential solution vector.
-     * DEPRECATED
-     * TODO: remove! Due to MH and LMH Darcy flow versions.
-     */
-    virtual void get_solution_vector(double * &vec, unsigned int &vec_size)
-    {}
-    
     virtual ~DarcyFlowInterface()
     {}
 };

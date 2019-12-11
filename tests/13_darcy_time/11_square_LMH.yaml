@@ -30,7 +30,6 @@ problem: !Coupling_Sequential
         bc_type: dirichlet
         bc_pressure: !FieldFormula
           value: 2*x
-    n_schurs: 2
     output:
       fields:
         - pressure_p0

@@ -86,7 +86,6 @@ public:
 protected:
   Mesh mesh;
   ElementAccessor<3> ele;
-  MappingP1<3,3> map;
   Quadrature q;
 
 };
