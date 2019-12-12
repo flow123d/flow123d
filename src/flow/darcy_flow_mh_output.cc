@@ -183,6 +183,8 @@ void DarcyFlowMHOutput::prepare_output(Input::Record in_rec)
 	output_fields.subdomain = GenericField<3>::subdomain(*mesh_);
 	output_fields.region_id = GenericField<3>::region_id(*mesh_);
 
+	//output_stream->add_admissible_field_names(in_rec_output.val<Input::Array>("fields"));
+	//output_stream->mark_output_times(darcy_flow->time());
     output_fields.initialize(output_stream, mesh_, in_rec, darcy_flow->time() );
 }
 
@@ -360,7 +362,6 @@ void DarcyFlowMHOutput::output_internal_flow_data()
 #include "quadrature/quadrature_lib.hh"
 #include "fem/fe_p.hh"
 #include "fem/fe_values.hh"
-#include "fem/mapping_p1.hh"
 #include "fields/field_python.hh"
 #include "fields/field_values.hh"
 
@@ -481,13 +482,12 @@ void DarcyFlowMHOutput::l2_diff_local(DHCellAccessor dh_cell,
 DarcyFlowMHOutput::FEData::FEData()
 : order(4),
   quad(QGauss::make_array(order)),
-  mapp(),
   fe_p1(0), fe_p0(0),
   fe_rt( )
 {
     UpdateFlags flags = update_values | update_JxW_values | update_quadrature_points;
-    fe_values = mixed_fe_values(mapp, quad, fe_p0, flags);
-    fv_rt = mixed_fe_values(mapp, quad, fe_rt, flags);
+    fe_values = mixed_fe_values(quad, fe_p0, flags);
+    fv_rt = mixed_fe_values(quad, fe_rt, flags);
 }
 
 

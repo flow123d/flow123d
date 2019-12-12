@@ -90,9 +90,6 @@ public:
 	inline Quadrature &q(unsigned int dim);
 
 	template<unsigned int dim>
-	inline MappingP1<dim,3> *mapping();
-
-	template<unsigned int dim>
 	inline FESideValues<dim,3> *fe_values();
 
 private:
@@ -105,11 +102,6 @@ private:
 
 	/// Quadratures used in assembling methods.
 	QGauss::array q_;
-
-	/// Auxiliary mappings of reference elements.
-	MappingP1<1,3> *map1_;
-	MappingP1<2,3> *map2_;
-	MappingP1<3,3> *map3_;
 
     /// FESideValues objects for side flux calculating.
 	FESideValues<1,3> *fe_values1_;
