@@ -25,6 +25,7 @@
 #include <vector>                       // for vector
 #include <memory>
 #include <armadillo>
+#include "fields/exprtk.hpp"
 #include "fields/field_algo_base.hh"    // for FieldAlgorithmBase
 #include "fields/field_values.hh"       // for FieldValue<>::Enum, FieldValu...
 #include "input/accessors.hh"           // for ExcAccessorForNullStorage
@@ -56,6 +57,9 @@ class FieldFormula : public FieldAlgorithmBase<spacedim, Value>
 public:
     typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
     typedef FieldAlgorithmBase<spacedim, Value> FactoryBaseType;
+    typedef exprtk::symbol_table<double> symbol_table_t;
+    typedef exprtk::expression<double> expression_t;
+    typedef exprtk::parser<double> parser_t;
 
     FieldFormula(unsigned int n_comp=0);
 
@@ -93,6 +97,9 @@ public:
 private:
     typedef StringTensorInput<Value::NRows_,Value::NCols_> STI;
 
+    /// Size of evaluation block.
+    static const unsigned int eval_block_size = 128;
+
     /**
      * Evaluate depth variable if it is contained in formula.
      *
@@ -117,6 +124,14 @@ private:
 
     /// Flag indicates first call of set_time method, when FunctionParsers in parser_matrix_ must be initialized
     bool first_time_set_;
+
+    /// Actual time passed as argument 't' to parser
+    double t_;
+
+    // Exprtk parsing variables
+    expression_t expression_;             /// Exprtk expression
+    std::vector<double> result_v_;        /// Result vector
+    exprtk::vector_view<double> r_view_;  /// Result view
 
     /// Registrar of class to factory
     static const int registrar;
