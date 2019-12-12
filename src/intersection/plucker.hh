@@ -21,6 +21,7 @@
 #include <iostream>
 #include "system/system.hh"
 #include "system/armor.hh"
+#include "mesh/point.hh"
 
 #ifndef _PLUCKER_H
 #define _PLUCKER_H
@@ -50,7 +51,7 @@ private:
 	Armor::Array<double> points_;
 
 public:
-	typedef typename Armor::Mat<double, 3, 1> Point;
+	typedef typename Space<3>::Point Point;
     /** Default constructor.
      * Creates empty object, cannot call compute later!
      */
@@ -120,7 +121,7 @@ inline bool Plucker::is_computed() const
 {   return computed_; }
 
 inline arma::vec3 Plucker::point(unsigned int idx) const
-{   return points_.get<3,1>(idx).arma(); }
+{   return points_.vec<3>(idx); }
 
 inline arma::vec3 Plucker::get_u_vector() const
 {   //ASSERT_DBG(computed_);

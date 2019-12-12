@@ -801,8 +801,8 @@ private:
         point_list.resize(fv.n_points());
         const Quadrature &quad = *fv.get_quadrature();
         for (unsigned int k=0; k<fv.n_points(); k++) {
-            Armor::vec<dim> q_pt = quad.point<dim>(k);
-            point_list[k] = mapping_->project_unit_to_real(RefElement<dim>::local_to_bary(q_pt.arma()), map_mat);
+            auto q_pt = quad.point<dim>(k);
+            point_list[k] = mapping_->project_unit_to_real(RefElement<dim>::local_to_bary(q_pt), map_mat);
         }
 
         model_.velocity_field_ptr()->value_list(point_list, cell, velocity);
@@ -827,8 +827,8 @@ private:
         point_list.resize(fv.n_points());
         const Quadrature &quad = *fv.get_quadrature();
         for (unsigned int k=0; k<fv.n_points(); k++) {
-            Armor::vec<dim-1> q_pt = quad.point<dim-1>(k);
-            point_list[k] = mapping_low_->project_unit_to_real(RefElement<dim-1>::local_to_bary(q_pt.arma()), map_mat);
+            auto q_pt = quad.point<dim-1>(k);
+            point_list[k] = mapping_low_->project_unit_to_real(RefElement<dim-1>::local_to_bary(q_pt), map_mat);
 
         }
         model_.velocity_field_ptr()->value_list(point_list, cell, velocity);

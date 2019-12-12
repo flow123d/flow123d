@@ -94,7 +94,7 @@ arma::vec3 Side::normal_line() const {
     arma::vec3 side_normal = arma::cross( *node(1) - *node(0) , elem_normal );
     side_normal /= norm( side_normal, 2);
 
-    if ( dot( side_normal, ele.centre() - *node(0) ) > 0.0)
+    if ( arma::dot( side_normal, ele.centre() - *node(0) ) > 0.0)
         return -side_normal;
     else
         return side_normal;
@@ -108,7 +108,7 @@ arma::vec3 Side::normal_triangle() const {
                                         *node(2) - *node(0) );
     side_normal /= arma::norm( side_normal, 2);
 
-    if ( dot(side_normal, element().centre() - *node(0) ) > 0.0)
+    if ( arma::dot(side_normal, element().centre() - *node(0) ) > 0.0)
         return -side_normal;
     else
         return side_normal;

@@ -19,8 +19,9 @@
 #define NODE_ACCESSOR_HH_
 
 #include "system/armor.hh"
+#include "mesh/point.hh"
 #include "mesh/mesh.h"
-//#include "mesh/point.hh"
+
 
 /**
  * Node accessor templated just by dimension of the embedding space, used for access to nodes out of Mesh.
@@ -29,7 +30,7 @@
 template <int spacedim>
 class NodeAccessor {
 public:
-    typedef Armor::vec<3> Point;
+    typedef typename Space<spacedim>::Point Point;
 
     /**
      * Default invalid accessor.
@@ -68,7 +69,7 @@ public:
     }
 
     inline Point operator*() const
-    { return mesh_->nodes_.get<spacedim, 1>(node_idx_).arma(); }
+    { return mesh_->nodes_.vec<spacedim>(node_idx_); }
 
 
 private:

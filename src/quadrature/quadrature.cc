@@ -31,7 +31,7 @@ Quadrature& Quadrature::operator=(const Quadrature &q)
 
 Quadrature::Quadrature(unsigned int dimension, const unsigned int n_q)
 : dim_(dimension),
-  quadrature_points(n_q, dimension),
+  quadrature_points(dimension, 1,  n_q),
   weights(n_q, 0)
 {}
 
@@ -53,13 +53,13 @@ Quadrature Quadrature::make_from_side(unsigned int sid, unsigned int pid)
     ASSERT_DBG( RefElement<bulk_dim>::n_nodes_per_side == bulk_dim );
     
     Quadrature q(dim_+1, size());
-    arma::vec::fixed<bulk_dim+1> el_bar_coords, final_bar;
+    Armor::ArmaVec<double, bulk_dim+1> el_bar_coords, final_bar;
     
     for (unsigned int k=0; k<size(); k++)
     {
         //compute barycentric coordinates on element
-        arma::vec::fixed<bulk_dim> p = RefElement<bulk_dim-1>::local_to_bary(point<bulk_dim-1>(k).arma());
-        arma::vec::fixed<bulk_dim> pp;
+        Armor::ArmaVec<double, bulk_dim> p = RefElement<bulk_dim-1>::local_to_bary(point<bulk_dim-1>(k));
+        Armor::ArmaVec<double, bulk_dim> pp;
         
         //permute
         for (unsigned int i=0; i<RefElement<bulk_dim>::n_nodes_per_side; i++) {
@@ -69,8 +69,8 @@ Quadrature Quadrature::make_from_side(unsigned int sid, unsigned int pid)
         el_bar_coords = RefElement<bulk_dim>::template interpolate<bulk_dim-1>(pp,sid);
         
         //get local coordinates and set
-        q.point<bulk_dim>(k) = RefElement<bulk_dim>::bary_to_local(el_bar_coords);
-        q.weight(k) = weight(k);
+        q.quadrature_points.set(k) = RefElement<bulk_dim>::bary_to_local(el_bar_coords);
+        q.weights[k] = weight(k);
     }
     
     return q;

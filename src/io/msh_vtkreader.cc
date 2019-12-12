@@ -491,7 +491,7 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
                 ElementAccessor<3> ele = mesh.element_accessor( *it );
                 for (i_node=0; i_node<ele->n_nodes(); i_node++)
                 {
-                    if ( compare_points(ele.node(i_node)->point(), point) ) {
+                    if ( compare_points(*ele.node(i_node), point) ) {
                     	i_elm_node = ele.node_accessor(i_node).idx();
                         if (found_i_node == -1) found_i_node = i_elm_node;
                         else if (found_i_node != i_elm_node) {

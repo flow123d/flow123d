@@ -13,8 +13,8 @@ Plucker::Plucker()
 Plucker::Plucker(Point a, Point b)
 : Plucker()
 {
-    points_.get<3,1>(0) = a;
-    points_.get<3,1>(1) = b;
+    points_.set(0) = a;
+    points_.set(1) = b;
     coordinates_(arma::span(0,2)) = point(1) - point(0);
     
     // Check empty
