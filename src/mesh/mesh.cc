@@ -18,7 +18,7 @@
 
 #include <unistd.h>
 #include <set>
-
+#include <unordered_map>
 
 #include "system/system.hh"
 #include "system/exceptions.hh"
@@ -49,6 +49,7 @@
 #include "mesh/duplicate_nodes.h"
 
 #include "intersection/mixed_mesh_intersections.hh"
+
 
 
 //TODO: sources, concentrations, initial condition  and similarly boundary conditions should be
@@ -603,25 +604,30 @@ void Mesh::make_neighbours_and_edges()
 
 void Mesh::make_edge_permutations()
 {
-	for (std::vector<Edge>::iterator edg=edges.begin(); edg!=edges.end(); edg++)
+    // node numbers is the local index of the node on the last side
+    // this maps the side nodes to the nodes of the reference side(0)
+    std::unordered_map<unsigned int,unsigned int> node_numbers;
+
+    for (std::vector<Edge>::iterator edg=edges.begin(); edg!=edges.end(); edg++)
 	{
+        unsigned int n_side_nodes = edg->side(0)->n_nodes();
 		// side 0 is reference, so its permutation is 0
 		edg->side(0)->element()->permutation_idx_[edg->side(0)->side_idx()] = 0;
 
 		if (edg->n_sides > 1)
 		{
-			map<unsigned int,unsigned int> node_numbers;
-			unsigned int permutation[edg->side(0)->n_nodes()];
+		    // For every node on the reference side(0) give its local idx on the current side.
+		    unsigned int permutation[n_side_nodes];
 
-			for (unsigned int i=0; i<edg->side(0)->n_nodes(); i++)
+
+		    node_numbers.clear();
+			for (unsigned int i=0; i<n_side_nodes; i++)
 				node_numbers[edg->side(0)->node(i).idx()] = i;
-				//node_numbers[edg->side(0)->node(i).node()] = i;
 
 			for (int sid=1; sid<edg->n_sides; sid++)
 			{
-				for (unsigned int i=0; i<edg->side(0)->n_nodes(); i++)
+				for (unsigned int i=0; i<n_side_nodes; i++)
 					permutation[node_numbers[edg->side(sid)->node(i).idx()]] = i;
-					//permutation[node_numbers[edg->side(sid)->node(i).node()]] = i;
 
 				switch (edg->side(0)->dim())
 				{
@@ -641,16 +647,19 @@ void Mesh::make_edge_permutations()
 
 	for (vector<Neighbour>::iterator nb=vb_neighbours_.begin(); nb!=vb_neighbours_.end(); nb++)
 	{
-		map<const Node*,unsigned int> node_numbers;
-		unsigned int permutation[nb->element()->n_nodes()];
+        // node numbers is the local index of the node on the last side
+        // this maps the side nodes to the nodes of the side(0)
+	    unsigned int n_side_nodes = nb->element()->n_nodes();
+	    unsigned int permutation[n_side_nodes];
+        node_numbers.clear();
 
 		// element of lower dimension is reference, so
 		// we calculate permutation for the adjacent side
-		for (unsigned int i=0; i<nb->element()->n_nodes(); i++)
-			node_numbers[nb->element().node(i)] = i;
+		for (unsigned int i=0; i<n_side_nodes; i++)
+			node_numbers[nb->element().node(i).idx()] = i;
 
-		for (unsigned int i=0; i<nb->side()->n_nodes(); i++)
-			permutation[node_numbers[nb->side()->node(i).node()]] = i;
+		for (unsigned int i=0; i<n_side_nodes; i++)
+			permutation[node_numbers[nb->side()->node(i).idx()]] = i;
 
 		switch (nb->side()->dim())
 		{
