@@ -30,6 +30,7 @@ class EvalSubset;
 class DHCellAccessor;
 class Mesh;
 template <int spacedim> class ElementAccessor;
+template <unsigned int dim, unsigned int spacedim> class MappingP1;
 
 
 /**
@@ -207,6 +208,16 @@ public:
         return update_data_;
     }
 
+    /// Compute global coordinates of all elements hold in chache.
+    template<unsigned int elemdim>
+    void compute_global_coords(std::shared_ptr<EvalPoints> eval_points, MappingP1<elemdim, 3> &mapping, Mesh *mesh);
+
+    /// Return global coordinates of given element and local point (set by index)
+    inline arma::vec3 global_coords(unsigned int elm_idx, unsigned int local_point_idx) const {
+        unsigned int loc_points_per_elm = global_coords_.n_vals() / ElementCacheMap::n_cached_elements;
+        return global_coords_.get<3, 1>(cache_idx_.find(elm_idx)->second * loc_points_per_elm + local_point_idx).arma();
+    }
+
     /// Set index of cell in ElementCacheMap (or undef value if cell is not stored in cache).
     DHCellAccessor & operator() (DHCellAccessor &dh_cell) const;
 private:
@@ -224,6 +235,12 @@ private:
 
     /// Flag is set down during update of cache when this can't be read
     bool ready_to_reading_;
+
+    /// Global coordinates of local evaluate points of stored elements
+    Armor::Array<double> global_coords_;
+
+    /// Flag holds if global coordinates are computed and correspond to actual stored elements
+    bool holds_global_;
 };
 
 

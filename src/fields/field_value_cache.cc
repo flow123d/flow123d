@@ -70,7 +70,8 @@ const unsigned int ElementCacheMap::undef_elem_idx = std::numeric_limits<unsigne
 
 ElementCacheMap::ElementCacheMap()
 : elm_idx_(ElementCacheMap::n_cached_elements, ElementCacheMap::undef_elem_idx),
-  dim_(EvalPoints::undefined_dim), ready_to_reading_(false) {}
+  dim_(EvalPoints::undefined_dim), ready_to_reading_(false), global_coords_(0, 3, 1),
+  holds_global_(false) {}
 
 
 void ElementCacheMap::add(const DHCellAccessor &dh_cell) {
