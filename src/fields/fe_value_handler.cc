@@ -160,7 +160,7 @@ unsigned int FEValueHandler<elemdim, spacedim, Value>::compute_quadrature(std::v
 
 	for(unsigned i=0; i<qgauss.size(); ++i) {
 		q_weights[i] = qgauss.weight(i)*weight_coefs[elemdim];
-		q_points[i] = map_->project_unit_to_real(RefElement<elemdim>::local_to_bary(qgauss.point<elemdim>(i).arma()), map_mat);
+		q_points[i] = map_->project_unit_to_real(RefElement<elemdim>::local_to_bary(qgauss.point<elemdim>(i)), map_mat);
 	}
 
 	return qgauss.size();

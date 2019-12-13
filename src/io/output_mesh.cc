@@ -191,22 +191,21 @@ void OutputMeshBase::create_sub_mesh()
     for (unsigned int loc_el = 0; loc_el < n_local_elements; loc_el++) {
         elm = orig_mesh_->element_accessor( el_4_loc_[loc_el] );
         for (unsigned int li=0; li<elm->n_nodes(); li++) {
-        	ASSERT_DBG(local_nodes_map[ elm.node_accessor(li).idx() ] != Mesh::undef_idx)(elm.node_accessor(li).idx()).error("Undefined global to local node index!");
-        	connectivity_vec[conn_id++] = local_nodes_map[ elm.node_accessor(li).idx() ];
+        	ASSERT_DBG(local_nodes_map[ elm.node(li).idx() ] != Mesh::undef_idx)(elm.node(li).idx()).error("Undefined global to local node index!");
+        	connectivity_vec[conn_id++] = local_nodes_map[ elm.node(li).idx() ];
         }
     }
 
     // set coords of nodes
     nodes_ = std::make_shared<ElementDataCache<double>>("", (unsigned int)ElementDataCacheBase::N_VECTOR, n_local_nodes_);
-    auto &node_vec = *( nodes_->get_component_data(0).get() );
-    NodeAccessor<3> node;
+    auto &node_vec = *( nodes_->get_component_data(0) );
     for(unsigned int i_node=0; i_node<local_nodes_map.size(); ++i_node) {
         if (local_nodes_map[i_node]==Mesh::undef_idx) continue; // skip element if it is not local
-        node = orig_mesh_->node_accessor(i_node);
+        auto node = *orig_mesh_->node(i_node);
         coord_id = 3*local_nodes_map[i_node]; // id of first coordinates in node_vec
-        node_vec[coord_id++] = node->getX();
-        node_vec[coord_id++] = node->getY();
-        node_vec[coord_id] = node->getZ();
+        node_vec[coord_id++] = node[0];
+        node_vec[coord_id++] = node[1];
+        node_vec[coord_id] = node[2];
     }
 }
 
@@ -655,7 +654,7 @@ void OutputMeshDiscontinuous::create_refined_sub_mesh()
 
         unsigned int li;
         for (li=0; li<ele->n_nodes(); li++) {
-            aux_ele.nodes[li] = ele.node_accessor(li)->point();
+            aux_ele.nodes[li] = *ele.node(li);
         }
 
         std::vector<AuxElement> refinement;

@@ -38,6 +38,7 @@ add_test_directory("${libs}")
     define_mpi_test(partitioning 2)
 
     define_test(region)
+    define_mpi_test(mesh 1)
     define_mpi_test(mesh 2)
     define_test(range)
 
