@@ -15,7 +15,7 @@
 #include "input/reader_to_storage.hh"
 #include "system/sys_profiler.hh"
 #include "mesh/mesh.h"
-#include "mesh/long_idx.hh"
+#include "system/index_types.hh"
 #include "io/msh_gmshreader.h"
 
 

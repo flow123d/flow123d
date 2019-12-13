@@ -145,16 +145,6 @@ public:
         return region_db_;
     }
 
-//    /// Reserve size of node vector
-//    inline void reserve_node_size(unsigned int n_nodes) {
-//    	node_vector.reserve(n_nodes);
-//    }
-//
-//    /// Reserve size of element vector
-//    inline void reserve_element_size(unsigned int n_elements) {
-//    	element.reserve(n_elements);
-//    }
-
     /**
      * Returns pointer to partitioning object. Partitioning is created during setup_topology.
      */
@@ -461,7 +451,7 @@ protected:
     void modify_element_ids(const RegionDB::MapElementIDToRegionID &map);
 
     /// Adds element to mesh data structures (element_vec_, element_ids_), returns pointer to this element.
-    Element * add_element_to_vector(int id, bool boundary=false);
+    Element * add_element_to_vector(int id);
 
     /// Initialize element
     void init_element(Element *ele, unsigned int elm_id, unsigned int dim, RegionIdx region_idx, unsigned int partition_id,

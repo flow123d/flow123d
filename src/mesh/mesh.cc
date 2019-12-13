@@ -550,7 +550,7 @@ void Mesh::make_neighbours_and_edges()
                     elm.boundary_idx_[s] = bdr_idx;
 
                     // fill boundary element
-                    Element * bc_ele = add_element_to_vector(-bdr_idx, true);
+                    Element * bc_ele = add_element_to_vector(-bdr_idx);
                     bc_ele->init(e->dim()-1, region_db_.implicit_boundary_region() );
                     region_db_.mark_used_region( bc_ele->region_idx_.idx() );
                     for(unsigned int ni = 0; ni< side_nodes.size(); ni++) bc_ele->nodes_[ni] = side_nodes[ni];
@@ -980,6 +980,7 @@ void Mesh::add_element(unsigned int elm_id, unsigned int dim, unsigned int regio
 		}
 		else {
 			Element *ele = add_element_to_vector(elm_id);
+			bulk_size_++;
 			this->init_element(ele, elm_id, dim, region_idx, partition_id, node_ids);
 		}
 	}
@@ -1015,8 +1016,9 @@ vector<vector<unsigned int> > const & Mesh::node_elements() {
 
 void Mesh::init_element_vector(unsigned int size) {
 	element_vec_.clear();
-	element_vec_.resize(size);
-	element_ids_.reinit(size);
+    element_ids_.clear();
+	element_vec_.reserve(size);
+    element_ids_.reserve(size);
 	bc_element_tmp_.clear();
 	bc_element_tmp_.reserve(size);
 	bulk_size_ = 0;
@@ -1026,24 +1028,16 @@ void Mesh::init_element_vector(unsigned int size) {
 
 void Mesh::init_node_vector(unsigned int size) {
 	node_vec_.clear();
+	node_ids_.clear();
 	node_vec_.reserve(size);
-	node_ids_.reinit(0);
+	node_ids_.reserve(size);
 }
 
 
-Element * Mesh::add_element_to_vector(int id, bool boundary) {
-	Element * elem=nullptr;
-	if (boundary) {
-        ASSERT_DBG(id<0)(id).error("Add boundary element from mesh file trough temporary structure!");
-		element_vec_.push_back( Element() );
-        elem = &element_vec_[element_vec_.size()-1];
-        element_ids_.add_item(id);
-	} else {
-		elem = &element_vec_[bulk_size_];
-		element_ids_.set_item(id, bulk_size_);
-		bulk_size_++;
-	}
-
+Element * Mesh::add_element_to_vector(int id) {
+    element_vec_.push_back( Element() );
+    Element * elem = &element_vec_.back(); //[element_vec_.size()-1];
+    element_ids_.add_item((unsigned int)(id));
 	return elem;
 }
 
@@ -1055,7 +1049,7 @@ Range<ElementAccessor<3>> Mesh::elements_range() const {
 
 Range<NodeAccessor<3>> Mesh::node_range() const {
 	auto bgn_it = make_iter<NodeAccessor<3>>( NodeAccessor<3>(this, 0) );
-	auto end_it = make_iter<NodeAccessor<3>>( NodeAccessor<3>(this, node_vec_.size()) );
+	auto end_it = make_iter<NodeAccessor<3>>( NodeAccessor<3>(this, n_nodes()) );
     return Range<NodeAccessor<3>>(bgn_it, end_it);
 }
 
@@ -1150,19 +1144,14 @@ void Mesh::output_internal_ngh_data()
 
 
 void Mesh::create_boundary_elements() {
-	unsigned int i, pos;
-	boundary_loaded_size_ = bc_element_tmp_.size();
-	for (i=0, pos=bulk_size_; i<bc_element_tmp_.size(); ++i, ++pos) {
-		Element *ele = &element_vec_[pos];
-		element_ids_.set_item(bc_element_tmp_[i].elm_id, pos);
-		this->init_element(ele, bc_element_tmp_[i].elm_id, bc_element_tmp_[i].dim, bc_element_tmp_[i].region_idx,
-				bc_element_tmp_[i].partition_id, bc_element_tmp_[i].node_ids);
-
+    // Copy boundary elements in temporary storage to the second part of the element vector
+	for(ElementTmpData &e_data : bc_element_tmp_) {
+	    Element *ele = add_element_to_vector(e_data.elm_id);
+		this->init_element(ele, e_data.elm_id, e_data.dim, e_data.region_idx,
+				e_data.partition_id, e_data.node_ids);
 	}
-
-	element_vec_.resize(pos); // remove empty element (count is equal with zero-dimensional bulk elements)
-	bc_element_tmp_.clear();
-	bc_element_tmp_.reserve(0);
+	// release memory
+	vector<ElementTmpData>().swap(bc_element_tmp_);
 }
 
 
