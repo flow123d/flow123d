@@ -87,7 +87,14 @@ public:
 
     /// Returns the <tt>i</tt>th quadrature point.
     template<unsigned int point_dim>
-    inline Armor::vec<point_dim> point(const unsigned int i) const
+    inline typename Armor::vec<point_dim>::ArmaType point(const unsigned int i) const
+    {
+        ASSERT_DBG( point_dim == dim_ );
+        return quadrature_points.get<point_dim>(i).arma();
+    }
+
+    template<unsigned int point_dim>
+    inline Armor::vec<point_dim> point_set(const unsigned int i) const
     {
         ASSERT_DBG( point_dim == dim_ );
         return quadrature_points.get<point_dim>(i);

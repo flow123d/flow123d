@@ -14,8 +14,10 @@ class Mat
 {
 private:
     Type * const data;
-    typedef typename arma::Mat<Type>::template fixed<nRows,nCols> ArmaType;
+
 public:
+    typedef typename arma::Mat<Type>::template fixed<nRows,nCols> ArmaType;
+
     Mat(Type * const mem)
     : data(mem)
     {}

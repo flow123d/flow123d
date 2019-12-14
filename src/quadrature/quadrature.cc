@@ -58,7 +58,7 @@ Quadrature Quadrature::make_from_side(unsigned int sid, unsigned int pid)
     for (unsigned int k=0; k<size(); k++)
     {
         //compute barycentric coordinates on element
-        arma::vec::fixed<bulk_dim> p = RefElement<bulk_dim-1>::local_to_bary(point<bulk_dim-1>(k).arma());
+        arma::vec::fixed<bulk_dim> p = RefElement<bulk_dim-1>::local_to_bary(point<bulk_dim-1>(k));
         arma::vec::fixed<bulk_dim> pp;
         
         //permute
@@ -69,7 +69,7 @@ Quadrature Quadrature::make_from_side(unsigned int sid, unsigned int pid)
         el_bar_coords = RefElement<bulk_dim>::template interpolate<bulk_dim-1>(pp,sid);
         
         //get local coordinates and set
-        q.point<bulk_dim>(k) = RefElement<bulk_dim>::bary_to_local(el_bar_coords);
+        q.point_set<bulk_dim>(k) = RefElement<bulk_dim>::bary_to_local(el_bar_coords);
         q.weight(k) = weight(k);
     }
     
@@ -80,7 +80,7 @@ Quadrature Quadrature::make_from_side(unsigned int sid, unsigned int pid)
 template<> Quadrature Quadrature::make_from_side<1>(unsigned int sid, unsigned int pid)
 {
     Quadrature q(1, 1);
-    q.point<1>(0) = { (double)sid };
+    q.point_set<1>(0) = { (double)sid };
     q.weight(0) = 1;
     
     return q;
