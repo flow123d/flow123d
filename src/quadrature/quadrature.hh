@@ -55,7 +55,7 @@ public:
      * @brief Constructor.
      * @param n_quadrature_points Number of quadrature points to be allocated.
      */
-    Quadrature(unsigned int dimension, const unsigned int n_quadrature_points = 0);
+    Quadrature(unsigned int dimension, unsigned int n_quadrature_points = 0);
 
     /** @brief Constructor from quadrature of lower dimension (e.g. for side integration).
      * @param sub_quadrature lower dimensional (dim-1) quadrature
@@ -66,7 +66,9 @@ public:
 //     explicit Quadrature(const Quadrature &sub_quadrature, unsigned int sid, unsigned int pid);
     
     /// Virtual destructor.
-    virtual ~Quadrature() {};
+    virtual ~Quadrature()
+    {
+    };
     
     inline unsigned int dim() const
     { return dim_; }
@@ -75,14 +77,14 @@ public:
      * @brief Modify the number of quadrature points.
      * @param n_q_points New number of quadrature points.
      */
-    inline void resize(const unsigned int n_q_points)
+    inline void resize(unsigned int n_q_points)
     {
         quadrature_points.resize(n_q_points);
         weights.resize(n_q_points, 0);
     }
 
     /// Returns number of quadrature points.
-    inline const unsigned int size() const
+    inline unsigned int size() const
     { return weights.size(); }
 
     /// Returns the <tt>i</tt>th quadrature point.
@@ -103,11 +105,11 @@ public:
     { return quadrature_points; }
 
     /// Returns the <tt>i</tt>th weight.
-    inline double weight(const unsigned int i) const
+    inline double weight(unsigned int i) const
     { return weights[i]; }
     
     /// Returns the <tt>i</tt>th weight (non-const version).
-    inline double &weight(const unsigned int i)
+    inline double &weight(unsigned int i)
     { return weights[i]; }
 
     /// Return a reference to the whole array of weights.

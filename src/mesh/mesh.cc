@@ -108,7 +108,8 @@ Mesh::Mesh()
   node_4_loc_(nullptr),
   node_ds_(nullptr),
   tree(nullptr),
-  nodes_(3, 1, 0)
+  nodes_(3, 1, 0),
+  bulk_size_(0)
 {}
 
 
@@ -123,7 +124,8 @@ Mesh::Mesh(Input::Record in_record, MPI_Comm com)
   node_4_loc_(nullptr),
   node_ds_(nullptr),
   tree(nullptr),
-  nodes_(3, 1, 0)
+  nodes_(3, 1, 0),
+  bulk_size_(0)
 {
 	// set in_record_, if input accessor is empty
 	if (in_record_.is_empty()) {
@@ -1000,9 +1002,11 @@ void Mesh::init_element(Element *ele, unsigned int elm_id, unsigned int dim, Reg
     // check that tetrahedron element is numbered correctly and is not degenerated
     if(ele->dim() == 3)
     {
-        double jac = this->element_accessor( this->elem_index(elm_id) ).tetrahedron_jacobian();
-        if( ! (jac > 0) )
-            WarningOut().fmt("Tetrahedron element with id {} has wrong numbering or is degenerated (Jacobian = {}).",elm_id,jac);
+        ElementAccessor<3> ea = this->element_accessor( this->elem_index(elm_id) );
+        double jac = ea.tetrahedron_jacobian();
+        if( ! (jac > 0) ) {
+            WarningOut().fmt("Tetrahedron element with id {} has wrong numbering or is degenerated (Jacobian = {}).",elm_id, jac);
+        }
     }
 }
 

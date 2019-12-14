@@ -29,7 +29,7 @@ Quadrature& Quadrature::operator=(const Quadrature &q)
 }
     
 
-Quadrature::Quadrature(unsigned int dimension, const unsigned int n_q)
+Quadrature::Quadrature(unsigned int dimension, unsigned int n_q)
 : dim_(dimension),
   quadrature_points(dimension, 1,  n_q),
   weights(n_q, 0)

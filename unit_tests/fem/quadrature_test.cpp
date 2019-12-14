@@ -13,7 +13,7 @@
 #include "quadrature/qmidpoint.hh"
 #include "arma_expect.hh"
 
-#define INTEGRATE( _func_, _dim_ ) for( unsigned int i=0; i < quad.size(); i++) sum +=  _func_( quad.point<_dim_>(i).arma() ) * quad.weight(i);
+#define INTEGRATE( _func_, _dim_ ) for( unsigned int i=0; i < quad.size(); i++) sum +=  _func_( quad.point<_dim_>(i) ) * quad.weight(i);
 
 double test_1_1d( const arma::vec::fixed<1> & p) {
     return 3 * p[0] + 1.0;
@@ -118,8 +118,8 @@ void test_side_projection(Quadrature &subq)
             // Setup barycentric coordinates of quadrature points.
             for (unsigned int i=0; i<subq.size(); i++)
             {
-                bary_subq.push_back(RefElement<dim-1>::local_to_bary(subq.point<dim-1>(i).arma()));
-                bary_q.push_back(RefElement<dim>::local_to_bary(q.point<dim>(i).arma()));
+                bary_subq.push_back(RefElement<dim-1>::local_to_bary(subq.point<dim-1>(i)));
+                bary_q.push_back(RefElement<dim>::local_to_bary(q.point<dim>(i)));
             }
             
             // Map barycentric coordinates of subquadrature and quadrature points to 3d space

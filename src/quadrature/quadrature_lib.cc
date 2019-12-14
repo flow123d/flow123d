@@ -29,8 +29,9 @@
 #undef SHORT
 #undef _F
 
-
-std::vector< std::vector<QUAD *>> __gauss_quadratures = {
+typedef std::vector<QUAD *> DimQuadList;
+std::vector<DimQuadList> __gauss_quadratures = {
+        {},
         { QUAD_1D_P1,
                 QUAD_1D_P1, QUAD_1D_P2, QUAD_1D_P3,
                 QUAD_1D_P4, QUAD_1D_P5, QUAD_1D_P6,
@@ -60,10 +61,11 @@ double __unit_cell_volume[] = { 1, 1, 0.5, 1./6 };
 
 template<int dim>
 void QGauss::init(uint order) {
-    auto & quads = __gauss_quadratures[dim];
+    DimQuadList & quads = __gauss_quadratures[dim];
     OLD_ASSERT(order < quads.size(), "Quadrature of given order is not implemented.");
     auto &point_list = quads[order];
 
+    this->quadrature_points.reinit(point_list->npoints);
     for (uint i=0; i<point_list->npoints; i++)
     {
         Armor::ArmaVec<double, dim> p(& point_list->points[i*(dim+1)]);

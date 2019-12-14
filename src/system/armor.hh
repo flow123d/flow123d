@@ -648,21 +648,45 @@ public:
     Array(uint nr, uint nc = 1, uint size = 0)
     : n_rows_(nr),
       n_cols_(nc),
-      size_(0),
+      size_(size),
       reserved_(size),
       data_(new Type[nr * nc * size])
-    {}
-    
-    ~Array() {
-        delete data_;
+    {
     }
+    
+    Array(const Array &other)
+    : Array(other.n_rows_, other.n_cols_, other.size_)
+    {
+        for(uint i = 0; i < n_rows_ * n_cols_ * size(); i++) {
+            data_[i] = other.data_[i];
+        }
+    }
+
+    ~Array() {
+        delete [] data_;
+        data_ = nullptr;
+    }
+
+    Array &operator=(const Array &other)
+    {
+        ASSERT_DBG( (n_rows_ == other.n_rows_) && (n_cols_ == other.n_cols_) );
+        reinit(other.size());
+        resize(other.size());
+
+        for(uint i = 0; i < n_rows_ * n_cols_ * size(); i++) {
+            data_[i] = other.data_[i];
+        }
+        return *this;
+    }
+
     /**
      * Drop all data and allocate new space of given size.
      * Change number of elements in the array, while keeping the shape of arrays.
      * @param size  New size of array.
      */
     void reinit(uint size) {
-        delete data_;
+        delete [] data_;
+        data_ = nullptr;
         reserved_ = size;
         size_ = 0;
         data_ = new Type[n_rows_ * n_cols_ * reserved_];
@@ -810,9 +834,6 @@ private:
     uint n_cols_;
     uint size_;
     uint reserved_;
-
-
-
 };
 
 
