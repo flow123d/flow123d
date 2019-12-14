@@ -22,10 +22,10 @@
 #include "mesh/region.hh"
 #include "mesh/elements.h"
 #include "mesh/mesh.h"
-#include "mesh/nodes.hh"
 #include "mesh/node_accessor.hh"
 #include "mesh/sides.h"
 #include "la/distribution.hh"
+#include "mesh/point.hh"
 #include <vector>
 #include <armadillo>
 
@@ -49,6 +49,7 @@
 template <int spacedim>
 class ElementAccessor {
 public:
+    typedef typename Space<spacedim>::Point Point;
     /**
      * Default invalid accessor.
      */
@@ -142,12 +143,12 @@ public:
         return SideIter( Side(mesh_, element_idx_, loc_index) );
     }
 
-    inline const Node * node(unsigned int ni) const {
-    	return &(mesh_->node_vec_[element()->node_idx(ni)]);
-    }
+//    inline const NodeAccessor<spacedim> node_accessor(unsigned int ni) {
+//
+//    }
 
-    inline NodeAccessor<3> node_accessor(unsigned int ni) const {
-    	return mesh_->node_accessor( element()->node_idx(ni) );
+    inline NodeAccessor<spacedim> node(unsigned int ni) const {
+        return mesh_->node( element()->node_idx(ni) );
     }
 
     /**
@@ -160,10 +161,12 @@ public:
 
     /**
      * Return list of element vertices.
+     * TODO: remove, SLOW!!
      */
-    inline vector<arma::vec3> vertex_list() const {
-        vector<arma::vec3> vertices(element()->n_nodes());
-        for(unsigned int i=0; i<element()->n_nodes(); i++) vertices[i]=node(i)->point();
+    inline vector<Point> vertex_list() const {
+        vector<Point> vertices(element()->n_nodes());
+        for(unsigned int i=0; i<element()->n_nodes(); i++)
+            vertices[i] = *node(i);
         return vertices;
     }
 
@@ -179,14 +182,15 @@ public:
     inline double tetrahedron_jacobian() const
     {
         ASSERT(dim() == 3)(dim()).error("Cannot provide Jacobian for dimension other than 3.");
-        return arma::dot( arma::cross(*( node(1) ) - *( node(0) ),
-                                      *( node(2) ) - *( node(0) )),
-                        *( node(3) ) - *( node(0) )
-                        );
+        return arma::dot( arma::cross(
+                *node(1) - *node(0),
+                *node(2) - *node(0)),
+                *node(3) - *node(0)
+                );
     }
 
     /// Computes the barycenter.
-    arma::vec::fixed<spacedim> centre() const;
+    Point centre() const;
 
     /**
      * Quality of the element based on the smooth and scale-invariant quality measures proposed in:
@@ -257,20 +261,20 @@ double ElementAccessor<spacedim>::measure() const {
             return 1.0;
             break;
         case 1:
-            return arma::norm(*( node(1) ) - *( node(0) ) , 2);
+            return arma::norm(*node(1) - *node(0), 2);
             break;
         case 2:
             return
                 arma::norm(
-                    arma::cross(*( node(1) ) - *( node(0) ), *( node(2) ) - *( node(0) )),
+                    arma::cross(*node(1) - *node(0), *node(2) - *node(0)),
                     2
                 ) / 2.0 ;
             break;
         case 3:
             return fabs(
                 arma::dot(
-                    arma::cross(*( node(1) ) - *( node(0) ), *( node(2) ) - *( node(0) )),
-                    *( node(3) ) - *( node(0) ) )
+                    arma::cross(*node(1) - *node(0), *node(2) - *node(0)),
+                    *node(3) - *node(0))
                 ) / 6.0;
             break;
     }
@@ -282,15 +286,15 @@ double ElementAccessor<spacedim>::measure() const {
  */
 
 template <int spacedim>
-arma::vec::fixed<spacedim> ElementAccessor<spacedim>::centre() const {
+typename Space<spacedim>::Point ElementAccessor<spacedim>::centre() const {
 	ASSERT(is_valid()).error("Invalid element accessor.");
-    if (is_regional() ) return arma::vec::fixed<spacedim>();
+    if (is_regional() ) return Point();
 
-    arma::vec::fixed<spacedim> centre;
+    Point centre;
     centre.zeros();
 
     for (unsigned int li=0; li<element()->n_nodes(); li++) {
-        centre += node( li )->point();
+        centre += *node(li);
     }
     centre /= (double) element()->n_nodes();
     return centre;
@@ -308,7 +312,9 @@ double ElementAccessor<spacedim>::quality_measure_smooth(SideIter side) const {
         for(unsigned int i=0;i<3;i++)
             for(unsigned int j=i+1;j<4;j++) {
                 unsigned int i_line = RefElement<3>::line_between_faces(i,j);
-                arma::vec line = *node(RefElement<3>::interact(Interaction<0,1>(i_line))[1]) - *node(RefElement<3>::interact(Interaction<0,1>(i_line))[0]);
+                auto line_node_1 = RefElement<3>::interact(Interaction<0,1>(i_line))[1];
+                auto line_node_0 = RefElement<3>::interact(Interaction<0,1>(i_line))[0];
+                arma::vec3 line = *node(line_node_1) - *node(line_node_0);
                 sum_pairs += face[i]*face[j]*arma::dot(line, line);
             }
         double regular = (2.0*sqrt(2.0/3.0)/9.0); // regular tetrahedron

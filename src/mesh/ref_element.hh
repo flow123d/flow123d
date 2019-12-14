@@ -74,6 +74,7 @@
 #include <vector>                      // for vector
 #include <array>
 #include <armadillo>
+#include "system/armor.hh"
 #include "system/asserts.hh"
 
 
@@ -169,8 +170,8 @@ public:
      * e.g. coordinates (a,b,c) on triangle with vertices X, Y, Z
      * represents a point: a*X+b*Y+c*Z
      */
-    typedef arma::vec::fixed<dim+1> BaryPoint;
-    typedef arma::vec::fixed<dim> FaceBaryPoint;
+    typedef Armor::ArmaVec<double, dim+1> BaryPoint;
+    typedef Armor::ArmaVec<double, dim> FaceBaryPoint;
         
 	/**
 	 * Return coordinates of given node.
