@@ -48,6 +48,9 @@ public:
      * The formula is exact for polynomials of degree @p order.
      */
     QGauss(unsigned int dim, const unsigned int order);
+
+    template<int dim>
+    void init(uint order);
 };
 
 
