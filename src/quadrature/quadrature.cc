@@ -66,7 +66,7 @@ Quadrature Quadrature::make_from_side(unsigned int sid, unsigned int pid)
             pp(RefElement<bulk_dim>::side_permutations[pid][i]) = p(i);
         }
         
-        el_bar_coords = RefElement<bulk_dim>::template interpolate<bulk_dim-1>(pp,sid);
+        el_bar_coords = RefElement<bulk_dim>::template interpolate<bulk_dim-1>(pp, sid);
         
         //get local coordinates and set
         q.point_set<bulk_dim>(k) = RefElement<bulk_dim>::bary_to_local(el_bar_coords);

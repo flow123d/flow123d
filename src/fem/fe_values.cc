@@ -581,7 +581,7 @@ FESideValues<dim,spacedim>::FESideValues(Mapping<dim,spacedim> & _mapping,
                                  FiniteElement<dim> & _fe,
                                  const UpdateFlags _flags)
 : FEValuesBase<dim,spacedim>(),
-  side_quadrature(RefElement<dim>::n_sides, std::vector<Quadrature>(RefElement<dim>::n_side_permutations, Quadrature(dim)))
+  side_quadrature(RefElement<dim>::n_sides, std::vector<Quadrature>(RefElement<dim>::n_side_permutations, Quadrature(dim, 0)))
 {
     ASSERT_DBG( _sub_quadrature.dim() + 1 == dim );
     sub_quadrature = &_sub_quadrature;
