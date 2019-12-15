@@ -188,9 +188,12 @@ void MappingP1<dim,spacedim>::fill_fe_side_values(const ElementAccessor<3> &cell
         arma::mat::fixed<spacedim,dim> jac = coords*grad;
 
         // update cell Jacobians
-        if (fv_data.update_flags & update_jacobians)
+        if (fv_data.update_flags & update_jacobians) {
+            ASSERT_EQ_DBG( fv_data.jacobians.size(), q.size());
+            //DebugOut() << "js: " << fv_data.jacobians.size() << " qs: " << q.size() << "\n";
             for (unsigned int i=0; i<q.size(); i++)
                 fv_data.jacobians[i] = jac;
+        }
 
         // update determinants of Jacobians
         if (fv_data.update_flags & update_volume_elements)

@@ -66,6 +66,7 @@ void QGauss::init(uint order) {
     auto &point_list = quads[order];
 
     this->quadrature_points.reinit(point_list->npoints);
+    this->weights.resize(0);
     for (uint i=0; i<point_list->npoints; i++)
     {
         Armor::ArmaVec<double, dim> p(& point_list->points[i*(dim+1)]);
@@ -75,17 +76,20 @@ void QGauss::init(uint order) {
 }
 
 
-QGauss::QGauss(unsigned int dim, const unsigned int order)
+QGauss::QGauss(unsigned int dim, unsigned int order)
 : Quadrature(dim)
 {
-
 
     switch (dim)
     {
     case 0:
-        ASSERT_EQ_DBG(size(), 0);
-        //this->quadrature_points.push_back({});
-        //this->weights.push_back(1);
+        // Quadrature on 0-dim element have single quadrature point
+        // with 0 local coordinates.
+        // No way to append 0-dim arma vec, we just resize the Array.
+        this->quadrature_points.reinit(1);
+        this->quadrature_points.resize(1);
+        this->weights.push_back(1);
+        ASSERT_EQ_DBG(size(), 1);
         return;
     case 1:
         init<1>(order);

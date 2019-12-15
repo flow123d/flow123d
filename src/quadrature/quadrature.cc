@@ -66,7 +66,7 @@ Quadrature Quadrature::make_from_side(unsigned int sid, unsigned int pid)
             pp(RefElement<bulk_dim>::side_permutations[pid][i]) = p(i);
         }
         
-        el_bar_coords = RefElement<bulk_dim>::template interpolate<bulk_dim-1>(pp,sid);
+        el_bar_coords = RefElement<bulk_dim>::template interpolate<bulk_dim-1>(pp, sid);
         
         //get local coordinates and set
         q.quadrature_points.set(k) = RefElement<bulk_dim>::bary_to_local(el_bar_coords);
@@ -79,13 +79,15 @@ Quadrature Quadrature::make_from_side(unsigned int sid, unsigned int pid)
 // Specialized subquadrature consructor for dim=1.
 template<> Quadrature Quadrature::make_from_side<1>(unsigned int sid, unsigned int pid)
 {
+    ASSERT_EQ_DBG(size(), 1);
     Quadrature q(1, 1);
-    q.point<1>(0) = { (double)sid };
+    q.quadrature_points.set(0) = Armor::ArmaVec<double, 1>({ (double)sid });
     q.weight(0) = 1;
-    
+
     return q;
 }
 
+template Quadrature Quadrature::make_from_side<1>(unsigned int sid, unsigned int pid);
 template Quadrature Quadrature::make_from_side<2>(unsigned int sid, unsigned int pid);
 template Quadrature Quadrature::make_from_side<3>(unsigned int sid, unsigned int pid);
 

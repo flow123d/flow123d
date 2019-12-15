@@ -188,7 +188,7 @@ FEInternalData *FEValuesBase<dim,spacedim>::init_fe_data(const Quadrature *q)
     ASSERT_DBG( q->dim() == dim );
     FEInternalData *data = new FEInternalData(q->size(), fe->n_dofs());
 
-    DebugOut() << "q size: " << q->size() << "\n";
+    //DebugOut() << "q size: " << q->size() << "\n";
     arma::mat shape_values(fe->n_dofs(), fe->n_components());
     for (unsigned int i=0; i<q->size(); i++)
     {
@@ -582,7 +582,9 @@ FESideValues<dim,spacedim>::FESideValues(Mapping<dim,spacedim> & _mapping,
                                  FiniteElement<dim> & _fe,
                                  const UpdateFlags _flags)
 : FEValuesBase<dim,spacedim>(),
-  side_quadrature(RefElement<dim>::n_sides, std::vector<Quadrature>(RefElement<dim>::n_side_permutations, Quadrature(dim, 0)))
+  side_quadrature(RefElement<dim>::n_sides, std::vector<Quadrature>(RefElement<dim>::n_side_permutations, Quadrature(dim, 0))),
+  side_idx_(0),
+  side_perm_(0)
 {
     ASSERT_DBG( _sub_quadrature.dim() + 1 == dim );
     sub_quadrature = &_sub_quadrature;
@@ -597,9 +599,12 @@ FESideValues<dim,spacedim>::FESideValues(Mapping<dim,spacedim> & _mapping,
             side_quadrature[sid][pid] = _sub_quadrature.make_from_side<dim>(sid, pid);
     		side_mapping_data[sid][pid] = this->mapping->initialize(side_quadrature[sid][pid], this->data.update_flags);
     		side_fe_data[sid][pid] = this->init_fe_data(&side_quadrature[sid][pid]);
+
+    		ASSERT_EQ_DBG(_sub_quadrature.size(), side_quadrature[sid][pid].size());
     	}
     }
     
+
     // In case of mixed system allocate data for sub-elements.
     if (this->fe->type_ == FEMixedSystem)
     {
