@@ -32,7 +32,7 @@ public:
     /// Empty constructor
     QMidpoint(unsigned int n_quadrature_points)
     : Quadrature(1, n_quadrature_points) {
-        
+    {
         double qweight = 1.0/n_quadrature_points;
         for(unsigned int q=0; q < n_quadrature_points; q++) {
             this->weights[q] = qweight;
