@@ -68,6 +68,7 @@ void QGauss::init(uint order) {
     vector<double> p(dim, 0);
 
     this->quadrature_points.resize(0);
+    this->weights.resize(0);
     for (uint i=0; i<point_list->npoints; i++)
     {
         for (unsigned int j=0; j<dim; j++)
@@ -87,9 +88,11 @@ QGauss::QGauss(unsigned int dim, const unsigned int order)
     switch (dim)
     {
     case 0:
+        // Quadrature on 0-dim element have single quadrature point
+        // with 0 local coordinates.
         ASSERT_EQ_DBG(size(), 0);
-        //this->quadrature_points.push_back({});
-        //this->weights.push_back(1);
+        this->quadrature_points.push_back({});
+        this->weights.push_back(1);
         return;
     case 1:
         init<1>(order);

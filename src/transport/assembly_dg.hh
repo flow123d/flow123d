@@ -68,7 +68,8 @@ public:
     AssemblyDG(std::shared_ptr<EqDataDG> data, TransportDG<Model> &model)
     : fe_(make_shared< FE_P_disc<dim> >(data->dg_order)), fe_low_(make_shared< FE_P_disc<dim-1> >(data->dg_order)),
       fe_rt_(new FE_RT0<dim>), fe_rt_low_(new FE_RT0<dim-1>),
-      quad_(new QGauss(dim, 2*data->dg_order)), quad_low_(new QGauss(dim-1, 2*data->dg_order)),
+      quad_(new QGauss(dim, 2*data->dg_order)),
+      quad_low_(new QGauss(dim-1, 2*data->dg_order)),
       mapping_(new MappingP1<dim,3>), mapping_low_(new MappingP1<dim-1,3>),
       model_(model), data_(data), fv_rt_(*mapping_, *quad_, *fe_rt_, update_values | update_gradients),
       fe_values_(*mapping_, *quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points),

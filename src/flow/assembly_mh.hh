@@ -9,6 +9,7 @@
 #define SRC_FLOW_DARCY_FLOW_ASSEMBLY_HH_
 
 #include "system/index_types.hh"
+#include "system/logger.hh"
 #include "mesh/mesh.h"
 #include "mesh/accessors.hh"
 #include "mesh/neighbours.h"
@@ -112,7 +113,10 @@ public:
         ad_(data),
         loc_system_(size(), size()),
         loc_system_vb_(2,2)
+
     {
+
+
         // local numbering of dofs for MH system
         unsigned int nsides = dim+1;
         loc_side_dofs.resize(nsides);
@@ -526,7 +530,7 @@ protected:
     QGauss quad_;
     FEValues<dim,3> fe_values_;
 
-    NeighSideValues<dim<3?dim:2> ngh_values_;
+    NeighSideValues< (dim<3) ? dim : 2> ngh_values_;
 
     // Interpolation of velocity into barycenters
     QGauss velocity_interpolation_quad_;
