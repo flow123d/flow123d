@@ -65,15 +65,11 @@ void QGauss::init(uint order) {
     OLD_ASSERT(order < quads.size(), "Quadrature of given order is not implemented.");
     auto &point_list = quads[order];
 
-    vector<double> p(dim, 0);
-
-    this->quadrature_points.resize(0);
+    this->quadrature_points.reinit(point_list->npoints);
     for (uint i=0; i<point_list->npoints; i++)
     {
-        for (unsigned int j=0; j<dim; j++)
-            p[j] = point_list->points[i*(dim+1)+j];
-
-        this->quadrature_points.push_back(p);
+        Armor::ArmaVec<double, dim> p(& point_list->points[i*(dim+1)]);
+        this->quadrature_points.append(p);
         this->weights.push_back(point_list->weights[i] * __unit_cell_volume[dim]);
     }
 }
@@ -82,7 +78,6 @@ void QGauss::init(uint order) {
 QGauss::QGauss(unsigned int dim, unsigned int order)
 : Quadrature(dim)
 {
-
 
     switch (dim)
     {

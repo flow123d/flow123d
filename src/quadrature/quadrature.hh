@@ -87,21 +87,19 @@ public:
 
     /// Returns the <tt>i</tt>th quadrature point.
     template<unsigned int point_dim>
-    inline typename Armor::vec<point_dim>::ArmaType point(const unsigned int i) const
+    inline Armor::ArmaVec<double, point_dim> point(unsigned int i) const
     {
-        ASSERT_DBG( point_dim == dim_ );
-        return quadrature_points.get<point_dim>(i).arma();
+        ASSERT_EQ_DBG(point_dim, dim_);
+        return quadrature_points.vec<point_dim>(i);
     }
 
-    template<unsigned int point_dim>
-    inline Armor::vec<point_dim> point_set(const unsigned int i) const
+    inline Armor::Array<double>::ArrayMatSet set(uint i)
     {
-        ASSERT_DBG( point_dim == dim_ );
-        return quadrature_points.get<point_dim>(i).arma();
+        return quadrature_points.set(i);
     }
 
     /// Return a reference to the whole array of quadrature points.
-    inline const Armor::array & get_points() const
+    inline const Armor::Array<double> & get_points() const
     { return quadrature_points; }
 
     /// Returns the <tt>i</tt>th weight.
@@ -138,7 +136,7 @@ protected:
      *
      * To be filled by the constructors of the derived classes.
      */
-    Armor::array quadrature_points;
+    Armor::Array<double> quadrature_points;
 
     /**
      * @brief List of weights to the quadrature points.
