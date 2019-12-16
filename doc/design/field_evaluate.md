@@ -105,15 +105,11 @@ ElementCacheMap is shared by dimensions !! It should be part of the EqData.
 **Overview**
 Usage of the field caches consists of:
 1. Merging more quadratures into a single set of the local evaluation points (class `EvalPoints`).
-    For every merged quadrature we obtain the EvalSubset. 
 2. Create a `FieldSet` one for every quadrature of the fields involved in that integral. 
 3. Initialize the fields in the integral's field set: Allocate the cache space in fields and mark which quadrature the field use. This is done through the call of `FieldSet::cache_allocate<dim>(EvalSubset, Mapping<dim>)`
-4. In the main assembly loop the element cache prefetching can be done. This is organized by 
-`ElementCacheMap` which knows which elements are cached.
-5. Assembly on a single element:
-    1. Update caches of the used fields (can be possibly moved into generic assembly loop).
-    2. Map the element (elements) to their cache indices.
-    3. Iterate over EvalSubsets and get cached values from the fields.
+4. Composing the assambly patch, element cache prefetching. This is organized by 
+`ElementCacheMap`.
+5. Assembly: Iterate over Integrals and get cached values from the fields.
 
 
 ### 1. Initialization - evaluation points
@@ -143,16 +139,26 @@ common for the bulk and side quadratures and non-templated. It keeps pointer to 
 ```
 class Assembly<dim> {
 	EvalPoints ep;
-	EvalSubset mass_eval;
 	EvalSubset face_eval;
-	EvalSubset stiffness_eval;
+	
+	Assembly(EqData &eq) {
+	    // Distribute quadrature points to the reference elements through EvalPoints
+	    EvalPoints &ep = eq.ep;
+	    ep.add_bulk(Gauss(dim, order));
+		ep.add_edge(Gauss(dim-1, order));
+		ep.add_boundary(Gauss(dim-1, order));
+		ep.add_ngh(Gauss(dim, order));
+			
+			Gauss(dim, order)
+		eEvalSubset stiffness_eval;
+	...
 	
 	
 	Mapping map;
 	map.setup_mapping_fields(this->all_fields);
 	ep.set_mapping(map);
 	....
-	this->mass_eval = this->ep.add_bulk(Gauss(dim, order));
+	this->mass_eval = this->ep.add_bulk();
 	this->face_eval = this->ep.add_side(Gauss(dim-1, order));
         ...
 ```
@@ -161,8 +167,12 @@ class Assembly<dim> {
 This use existing field sets to simplify group operations on those. 
 ```
     // still in class Assembly<dim> definition
-    this->mass_fields = eqdata.subset({'cross_section', 'porosity'})
-    this->face_fields = eqdata.subset({'cross_section', 'flux'})
+    bulk_fields = eqdata.subset({'cross_section', 'porosity'})
+    edge_fields = eqdata.subset({'cross_section', 'flux'})
+	...
+	
+	// cache allocation
+	bulk_fields.cache_allocate(eval_points.bulk_points<dim>().)
 ```
 
 ### 3. Initialization - cache allocation
@@ -203,7 +213,28 @@ TODO:
 - FieldValueCache allocates its table at the first call, but the mask for active local points is added from more calls
 
 
-### 5.2 ElementCacheMap
+### 4. ElementCacheMap
+New algo:
+1. Set whole table [i_cache_element][i_eval_point] to -1.
+2. Iterate through the elementary integrals, add them to the actual patch until we reach given number of points.
+   The elements to which we distribute the points are added to the element_map, mapping global element ID to its cache index.
+   Add active points of single elementary integral, i.e. set [i_cache_element][i_eval_point] to the n_active_points. 
+3. Pass through the every field. For single field:
+   1. Pass through the patch elements:
+      ```
+	  for (el : el_cache_map.patch_elements())
+	  		// Some algorithms may update the field value cache right here
+			if (field.region_fields[el.region_id].mark_cache_points(el_cache_map.points(el))) {
+				postponed_fields_set.add(field.region_fields[el.region_id]);
+	  ```
+   2. Update marked points, release marks.
+   ```
+   for (f in postponed_fields_set)
+   		f.fill_cache(el_cache);
+   ```		   	
+      		
+			
+
 This class synchronize the cached elements between (all) fields of single equation. It provides mapping from elements to the cache index and list of elements to cache. This have overloaded evaluation operator, which returns the index in the cache for the given element (or element index). The last cache line is overwritten if the index is not in the cache.
 The implementation use: table cache_idx -> el_idx, hash mapping el_idx -> cache_idx, list of cache lines that schould be updated.
 ```
@@ -228,7 +259,7 @@ Public vector of cache lines to update. Indices appended by the `add` method. Fi
 after all fields are updated.
 
 
-### 5.1 (and 4.) Cache Update
+#### Cache Update
 ```
     // Call cache_update for the fields in the field sets
     // This can also be done in the generic loop.
@@ -242,7 +273,7 @@ Two major algorithms are in use:
 - FieldFormula - evaluates all elements in the patch (same region), in all point from single continuous block od quad points
 
 
-### 5.3 Cache read
+### 5 Assembly, cache read
 ```
     /*
     // Asumme following types:
