@@ -46,10 +46,6 @@ public:
     // assembly compatible neighbourings
 //     virtual void assembly_local_vb(ElementAccessor<3> ele, DHCellSide neighb_side) = 0;
 
-    // compute velocity value in the barycenter
-    // TODO: implement and use general interpolations between discrete spaces
-    virtual arma::vec3 make_element_vector(LocalElementAccessorBase<3> ele_ac) = 0;
-
     /// Updates water content in Richards.
     virtual void update_water_content(const DHCellAccessor& dh_cell) = 0;
 
@@ -210,27 +206,6 @@ public:
         loc_system_vb_.add_value(0,1,  value);
         loc_system_vb_.add_value(1,0,  value);
         loc_system_vb_.add_value(1,1, -value);
-    }
-
-
-    arma::vec3 make_element_vector(LocalElementAccessorBase<3> ele_ac) override
-    {
-        //START_TIMER("Assembly<dim>::make_element_vector");
-        const DHCellAccessor dh_cell = ele_ac.dh_cell();
-
-        arma::vec3 flux_in_center;
-        flux_in_center.zeros();
-        auto ele = dh_cell.elm();
-
-        velocity_interpolation_fv_.reinit(ele);
-        for (unsigned int li = 0; li < ele->n_sides(); li++) {
-            flux_in_center += ad_->full_solution[ dh_cell.get_loc_dof_indices()[loc_side_dofs[li]] ]
-                        * velocity_interpolation_fv_.vector_view(0).value(li,0);
-        }
-
-
-        flux_in_center /= ad_->cross_section.value(ele.centre(), ele );
-        return flux_in_center;
     }
 
 protected:

@@ -128,26 +128,6 @@ public:
         //     mortar_assembly->assembly(ele_ac);
     }
 
-
-    arma::vec3 make_element_vector(LocalElementAccessorBase<3> ele_ac) override
-    {
-        const DHCellAccessor dh_cell = ele_ac.dh_cell();
-        ElementAccessor<3> ele = dh_cell.elm();
-
-        arma::vec3 flux_in_center;
-        flux_in_center.zeros();
-
-        velocity_interpolation_fv_.reinit(ele);
-        for (unsigned int li = 0; li < ele->n_sides(); li++) {
-            flux_in_center += ad_->full_solution[ dh_cell.get_loc_dof_indices()[loc_side_dofs[li]]]
-                        * velocity_interpolation_fv_.vector_view(0).value(li,0);
-        }
-
-
-        flux_in_center /= ad_->cross_section.value(ele.centre(), ele );
-        return flux_in_center;
-    }
-
     void update_water_content(const DHCellAccessor& dh_cell) override
     {};
 

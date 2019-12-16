@@ -298,27 +298,16 @@ void DarcyFlowMHOutput::output_internal_flow_data()
 
     
     DarcyMH::EqData* data = nullptr;
-    std::vector<shared_ptr<AssemblyBase>> multidim_assembler;
     if(DarcyMH* d = dynamic_cast<DarcyMH*>(darcy_flow))
     {
         data = d->data_.get();
-        auto ma = AssemblyBase::create< AssemblyMH >(d->data_);
-        for (auto a: ma)
-            multidim_assembler.push_back(a);
     }
     else if(DarcyLMH* d = dynamic_cast<DarcyLMH*>(darcy_flow))
     {
         data = d->data_.get();
-        auto ma = AssemblyBase::create< AssemblyLMH >(d->data_);
-        for (auto a: ma)
-            multidim_assembler.push_back(a);
     }
     ASSERT_PTR(data);
-    ASSERT_EQ(multidim_assembler.size(),3);
     
-    
-//     std::shared_ptr<DarcyMH::EqData> data = darcy_flow->data_;
-//     auto multidim_assembler = AssemblyBase::create< AssemblyMH >(data);
     arma::vec3 flux_in_center;
     
     int cit = 0;
@@ -332,7 +321,7 @@ void DarcyFlowMHOutput::output_internal_flow_data()
         raw_output_file << fmt::format("{} {} ", dh_cell.elm().index(), data->full_solution[indices[ele->n_sides()]]);
         
         // velocity at element center
-        flux_in_center = multidim_assembler[ele.dim() -1]->make_element_vector(ele_ac);
+        flux_in_center = data->field_ele_velocity.value(ele.centre(), ele);
         for (unsigned int i = 0; i < 3; i++)
         	raw_output_file << flux_in_center[i] << " ";
 
