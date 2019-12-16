@@ -3,24 +3,99 @@
 **Problems**
 - FieldFE use FEValues in implementation of the `value` method, this involves creation of the FEValues object in every call and mapping points from local to global coordinates before and then back in the method. Moreover the `value` method is called several times per single element.
 - FieldFormula can be evaluated efficiently for the vectors of points (see [muparserx](https://beltoforion.de/article.php?a=muparserx&s=idFeatures#idFeatures) and [exprtk](https://github.com/ArashPartow/exprtk) and the parser [comparison](https://github.com/ArashPartow/math-parser-benchmark-project). So we need to evaluate lot of points together. That is possible once the points are from elements of the same region.
+- Current assembly process have probably poor memory locality due to:
+  1. inefficient ordering of the mesh nodes and elements
+  2. various field evaluation during the assembly process
+  3. to many memory places involved during assembly on the single element
+  
+  
+
+  
 
 **Design ideas and constraints**
-- Have a sort of field value cache for the local points on the reference element.
-- The assembly process may use several different integrals using several quadrature schemes. One bulk and one boundary integral is the minimal choice. ~If these schemes share the same local points the values may be evaluated just once.~
-Gauss quadratures imply no shared quadrature points, moreover continuous blocks of points are necessary for efficient FieldFormula implementation.
-- Allocation of the cache space and setup of quadratures should be done once per assembly.
-- The cache should cover several elements in order to exploit shared evaluation points on the element sides. The cache should be updated on several elements at once to amortize overhead in FieldFormula parser. 
-- Boundary quadratures should deal with various side permutations.
+- The weak formulation is based on the evaluation of the integrals of four types: 
+    - *bulk integral* - decomposed to simplix elements
+    - *face integral* - decomposed to faces/sides of elements
+    - *edge integral* - decomposed to edges, edge is set of colocated faces/sides
+    - *coupling integral* - decomposed to: bulk element of dimension D + faces of elements of dimension D+1
+  The integration over elementary domain is done in terms of numerical quadrature, i.e. weighted average of the values in quadrature points. Single logical quadrature point may be distributed to more then one bulk element.
+  
+- All necessary quadrature points must be distributed to the reference elements durign setup of the assmebly.
+  FieldFE is then able to create and precompute one FEValue object for all these local points. 
+  The values on the reference element are computed once. Mapping (of vectors and tensors) to the actual element
+  can be done only for a subset of points (e.g. when evaluating a dimension coupling one needs values on 
+  single side of the element of higher dimension and values in corresponding bulk points of the lower dim element).
+- For the efficient evaluation of the FieldFormula fields we need to evaluate about 128 points at once. 
+  To this end we  need to evaluate on the patch of the elements at once. Efficient parsing and formula 
+  evaluation library is necessary. ExprTK is fast but lacks several important features:
+  - SIMD evaluation
+  - support of sparse evaluation on the vector data (includes size change)
+  - matrix multiplication (matrix-matrix, matrix-vector, vector-vector = dot product)
+  Seems that no parser have this kind of functionality. Ultimately, we have to modify ExprTK.
+- In order to allow FieldFormula to depend on other fields we need that other fields are also evaluated into caches. 
+  This is a bit unfortunate for the FieldConstant and possibly cache inefficient in the case of FieldFE. 
+  The FieldFE caching is inefficient only in the case of using same FE space for some field as well as 
+  for the equation itself, that is in the case of nonlinear equations. Even in such case, we at most 
+  compute local base functions twice, once when prefetching the field value cache and second when 
+  assembling on individual elements. If the recalculation takes longer then L3 access we can cache 
+  all FEValue data for all patch quad points.
+
+  Example of CPU specification: Intel Core i7: L1d 32kB, L2 256kB, L3 8MB. 
+  [I7 cache specification](https://www.edn.com/design/systems-design/4399725/Memory-Hierarchy-Design---Part-6--The-Intel-Core-i7): 
+  block size 64 bytes, L1d 8way, L2 8way, L3 16way shared for cores  (What if every core works on separate memory chunk,
+  16 way can be limitting factor?)
+  Considering about 30 scalar fields, 128 points per field and 8 bytes per double the field cache is about 30kB, 
+  that fits (with other data as Dofs, FEValues) well within L2 cache, even if we consider using just half of 
+  it to allow prefetching. Conclusion: size of the field cache that enables amortization of formula evaluation 
+  is about the size suitable for the CPU cache optimization of the assembly process. 
+- We need to join evaluation 
+  of FieldFormula for individual integrals so there will be more complex logic in the selection of field algorithm
+  since only subset of the fields is involved in every integral. 
+-  ~If these quadrature schemes share the local points the values may be evaluated just once.~
+  Gauss quadratures imply no shared quadrature points between bulk and face quadratures. There can be 
+  some reuse for boundary and coupling integrals, but these are relatively rare. Moreover we need 
+  continuous blocks because of the ExprTK, further optimization possible after possible switch to other formula parser.
+- Face integrals should deal with various side permutations.
 - We should use existing field variables to referencing their cached values.
-- Although we will have a common set of local evaluation points on the reference element
-  different fields may update only a subset of these values according to the integrals in which they appear.
-- The mapping of cache slots to actual mesh elements must be same for all fields invloved in the assembly. We need a mean for this synchronisation.
+- Although we will have a common set of local evaluation points on the reference element we may allow 
+  to use only subset of them on the actual patch of elements.   
+- The mapping of the pair (element, evaluation point) to the active point on the current patch must 
+  be same for all fields invloved in the assembly. We need a class for this synchronisation.
 
 
  
-# Design 
+# Design (TODO: Update rest according to the Cache structure)
 
-## Cache structure
+## Caching structures
+**EvalPoints** 
+Summarize all quadrature points on the reference elements.
+- Internaly single table per dimension, but we need to distribute quadrature points accross dimension so there has 
+  to be one shared object. However quadratures are added per dimension in the Assembly<dim> classes.
+- Every reference element (dimension) have own list of local points. Only resulting 'Integral' objects know ranges of 
+  their points.
+
+**Integral**
+Every kind of integral is associated with an "assembly object"
+- BulkIntegral - on Cell
+- EdgeIntegral - on edge.side_range
+- CouplingIntegral - on bulk.ngh_range
+- BoundaryIntegral - on boundary_side_range (TBD)
+
+- Seems that in terms of these integrals can be combined during one assembly so we have each of them at most once. 
+- For every dimension we create them by a method of the EvalPoints, passing suitable set of quadratures.
+- Then we need integrals to mark active eval points on the actual patch of "assembly objects" and the mesh elements they live on. This can be done by passing through the "assembly objects" in the order of their Hilbert index and distributing the points on them until we reach the number of active points per patch.
+- Same method Integral::points(assembly_object) is used later on to iterate over quadrature points.
+- In principle there should be one kind of the quadrature point accessor for every kind of the integral.
+
+**ElementCacheMap**
+This holds mesh elements associated with the actual patch and for every pair (mesh element, eval_point) gives the active point index, these have to form continuous sequence. The points of the "assemble objects" forming the patch are added to the map. There is independent map for every integral but these can be in a single class. 
+There should be no active points reuse ase the active points of the two "assemble objects" of the same kind are disjoint (can change if we decide to change elemetaty "assembly objects", e.g. singel NGHSide instead of the range).
+ElementCacheMap is shared by dimensions !! It should be part of the EqData.
+
+**FieldValueCache**
+- One per field, holds only values for selected integrals.
+- One value is a scalar, vector, or tensor. But stored through Array in singel chunk on memory.
+
 1. Every Field<spacedim, Value> has its cache for its values. 
     The logical cache elements have type given by the Value template parameter however as this is inefficient for the Armadillo objects we allocate plain memory and construct the value objects referencing to the allocated memory.
 2. Every Field<> has an array of three instances of the FieldValueCache one for each dimension. We should try to make FieldValueCache not templated by the dimension to avoid virtual calls during the read access to the cache.
@@ -49,9 +124,12 @@ Two operations:
 1. Add a point set, return their indices in the table. ~Eliminate duplicate points 
     with prescribed tolerance.~ Contrary, we want to keep the points from the single quadrature in a single continuous block.
     In fact, we probably need to use two distinguised methods:
-	`EvalSubset add_bulk(Quadrature bulk_quadrature)`
-	`EvalSubset add_side(Quadrature side_quadrature)`
-2. Get point for given index.
+	`BulkIntegral &&EvalPoints::add_bulk(Quadrature bulk_quadrature)`
+	`BoundaryIntegral &&add_boundary(Quadrature side_quadrature)`
+	`EdgeIntegral &&add_edge(Quadrature side_quadrature)`
+	`CouplingIntegral &&add_coupling(Quadrature bulk_quadrature)`
+	
+2. Get local point coordinates for given index.
 
 Common storage of quadrature points is not necessary anymore, but we keep it in order to keep indexing of the points the same accross the fields (which can use ony certain subblocks of the points). We can decrease the memory footprint (and thus the cache footprint) at the expense of slower access to the cached values (one more indirect memory access).
 

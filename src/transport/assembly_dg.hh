@@ -791,18 +791,6 @@ private:
     void calculate_velocity(const ElementAccessor<3> &cell, vector<arma::vec3> &velocity,
                             const std::vector<arma::vec::fixed<3>> &point_list)
     {
-/*        ASSERT_EQ_DBG(cell->dim(), dim).error("Element dimension mismatch!");
-
-        velocity.resize(fv.n_points());
-        arma::mat map_mat = MappingP1<dim,3>::element_map(cell);
-        vector<arma::vec3> point_list;
-        point_list.resize(fv.n_points());
-        const Quadrature &quad = *fv.get_quadrature();
-        for (unsigned int k=0; k<fv.n_points(); k++) {
-            auto q_pt = quad.point<dim>(k);
-            point_list[k] = MappingP1<dim,3>::project_unit_to_real(RefElement<dim>::local_to_bary(q_pt), map_mat);
-        }
-*/
         velocity.resize(point_list.size());
         model_.velocity_field_ptr()->value_list(point_list, cell, velocity);
     }

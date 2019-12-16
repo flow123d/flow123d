@@ -124,12 +124,12 @@ public:
 
     /// Getter of elm_cache_index_.
     inline unsigned int element_cache_index() const {
-        return elm().element_cache_index();
+        return elm_cache_index_;
     }
 
     /// Setter of elm_cache_index_.
     inline void set_element_cache_index(unsigned int idx) const {
-    	elm().set_element_cache_index(idx);
+        elm_cache_index_ = idx;
     }
 
     /// Returns range of cell sides
@@ -166,6 +166,9 @@ private:
     const DOFHandlerMultiDim * dof_handler_;
     /// Index into DOFHandler::el_4_loc array.
     unsigned int loc_ele_idx_;
+
+    /// Optional member used in field evaluation, holds index of cell in field data cache.
+    mutable unsigned int elm_cache_index_;
 
     friend class DHCellSide;
     friend class DHEdgeSide;
@@ -208,7 +211,12 @@ public:
     }
 
     /// Return DHCellAccessor appropriate to the side.
-    inline const DHCellAccessor cell() const {
+    inline const DHCellAccessor &cell() const {
+    	return dh_cell_accessor_;
+    }
+
+    /// Return DHCellAccessor appropriate to the side.
+    inline DHCellAccessor &cell() {
     	return dh_cell_accessor_;
     }
 

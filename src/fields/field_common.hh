@@ -446,7 +446,7 @@ public:
     /**
      * Allocate data cache of dimension appropriate to subset object.
      */
-    virtual void cache_allocate(std::shared_ptr<EvalSubset> sub_set, const ElementCacheMap *cache_map) = 0;
+    virtual void cache_allocate(std::shared_ptr<EvalSubset> sub_set) = 0;
 
     /**
      * Read data to cache for appropriate elements given by ElementCacheMap object.
