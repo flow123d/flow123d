@@ -63,7 +63,6 @@
 
 namespace Armor {
 
-
 //template <class type, uint nr, uint nc>
 //struct _MatSimpleType {
 //    typedef typename arma::Mat<type>::template fixed<nr, nc> AType;

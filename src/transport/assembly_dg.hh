@@ -69,17 +69,16 @@ public:
     : fe_(make_shared< FE_P_disc<dim> >(data->dg_order)), fe_low_(make_shared< FE_P_disc<dim-1> >(data->dg_order)),
       fe_rt_(new FE_RT0<dim>), fe_rt_low_(new FE_RT0<dim-1>),
       quad_(new QGauss(dim, 2*data->dg_order)),
-      quad_low_(new QGauss(dim-1, 2*data->dg_order)),
-      mapping_(new MappingP1<dim,3>), mapping_low_(new MappingP1<dim-1,3>),
-      model_(model), data_(data), fv_rt_(*mapping_, *quad_, *fe_rt_, update_values | update_gradients),
-      fe_values_(*mapping_, *quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points),
+	  quad_low_(new QGauss(dim-1, 2*data->dg_order)),
+      model_(model), data_(data), fv_rt_(*quad_, *fe_rt_, update_values | update_gradients | update_quadrature_points),
+      fe_values_(*quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points),
       fv_rt_vb_(nullptr), fe_values_vb_(nullptr),
-      fe_values_side_(*mapping_, *quad_low_, *fe_, update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points),
-      fsv_rt_(*mapping_, *quad_low_, *fe_rt_, update_values) {
+      fe_values_side_(*quad_low_, *fe_, update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points),
+      fsv_rt_(*quad_low_, *fe_rt_, update_values | update_quadrature_points) {
 
         if (dim>1) {
-            fv_rt_vb_ = new FEValues<dim-1,3>(*mapping_low_, *quad_low_, *fe_rt_low_, update_values);
-            fe_values_vb_ = new FEValues<dim-1,3>(*mapping_low_, *quad_low_, *fe_low_,
+            fv_rt_vb_ = new FEValues<dim-1,3>(*quad_low_, *fe_rt_low_, update_values | update_quadrature_points);
+            fe_values_vb_ = new FEValues<dim-1,3>(*quad_low_, *fe_low_,
                     update_values | update_gradients | update_JxW_values | update_quadrature_points);
         }
         ndofs_ = fe_->n_dofs();
@@ -96,8 +95,6 @@ public:
         delete fe_rt_low_;
         delete quad_;
         delete quad_low_;
-        delete mapping_;
-        delete mapping_low_;
         if (fv_rt_vb_!=nullptr) delete fv_rt_vb_;
         if (fe_values_vb_!=nullptr) delete fe_values_vb_;
 
@@ -140,7 +137,7 @@ public:
         for (unsigned int sid=0; sid<data_->ad_coef_edg.size(); sid++)
         {
             side_dof_indices_.push_back( vector<LongIdx>(ndofs_) );
-            fe_values_vec_.push_back(new FESideValues<dim,3>(*mapping_, *quad_low_, *fe_,
+            fe_values_vec_.push_back(new FESideValues<dim,3>(*quad_low_, *fe_,
                     update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points));
         }
 
@@ -205,7 +202,7 @@ public:
         fv_rt_.reinit(elm);
         cell.get_dof_indices(dof_indices_);
 
-        calculate_velocity(elm, velocity_, fv_rt_);
+        calculate_velocity(elm, velocity_, fv_rt_.point_list());
         model_.compute_advection_diffusion_coefficients(fe_values_.point_list(), velocity_, elm, data_->ad_coef, data_->dif_coef);
         model_.compute_sources_sigma(fe_values_.point_list(), elm, sources_sigma_);
 
@@ -253,7 +250,7 @@ public:
             fe_values_side_.reinit(elm_acc, side.side_idx());
             fsv_rt_.reinit(elm_acc, side.side_idx());
 
-            calculate_velocity(elm_acc, velocity_, fsv_rt_);
+            calculate_velocity(elm_acc, velocity_, fsv_rt_.point_list());
             model_.compute_advection_diffusion_coefficients(fe_values_side_.point_list(), velocity_, elm_acc, data_->ad_coef, data_->dif_coef);
             arma::uvec bc_type;
             model_.get_bc_type(side.cond()->element_accessor(), bc_type);
@@ -340,7 +337,7 @@ public:
                 dh_edge_cell.get_dof_indices(side_dof_indices_[sid]);
                 fe_values_vec_[sid]->reinit(edg_elm, edge_side.side_idx());
                 fsv_rt_.reinit(edg_elm, edge_side.side_idx());
-                calculate_velocity(edg_elm, side_velocity_vec_[sid], fsv_rt_);
+                calculate_velocity(edg_elm, side_velocity_vec_[sid], fsv_rt_.point_list());
                 model_.compute_advection_diffusion_coefficients(fe_values_vec_[sid]->point_list(), side_velocity_vec_[sid], edg_elm, data_->ad_coef_edg[sid], data_->dif_coef_edg[sid]);
                 dg_penalty_[sid].resize(model_.n_substances());
                 for (unsigned int sbi=0; sbi<model_.n_substances(); sbi++)
@@ -517,8 +514,8 @@ public:
 
             fsv_rt_.reinit(elm_higher_dim, neighb_side.side_idx());
             fv_rt_vb_->reinit(elm_lower_dim);
-            calculate_velocity(elm_higher_dim, velocity_higher_, fsv_rt_);
-            calculate_velocity_low_dim(elm_lower_dim, velocity_, *fv_rt_vb_);
+            calculate_velocity(elm_higher_dim, velocity_higher_, fsv_rt_.point_list());
+            calculate_velocity(elm_lower_dim, velocity_, fv_rt_vb_->point_list());
             model_.compute_advection_diffusion_coefficients(fe_values_vb_->point_list(), velocity_, elm_lower_dim, data_->ad_coef_edg[0], data_->dif_coef_edg[0]);
             model_.compute_advection_diffusion_coefficients(fe_values_vb_->point_list(), velocity_higher_, elm_higher_dim, data_->ad_coef_edg[1], data_->dif_coef_edg[1]);
             data_->cross_section.value_list(fe_values_vb_->point_list(), elm_lower_dim, csection_);
@@ -580,7 +577,6 @@ public:
 
         fe_values_.reinit(elm);
         cell.get_dof_indices(dof_indices_);
-        cell.get_loc_dof_indices(loc_dof_indices_);
 
         model_.compute_source_coefficients(fe_values_.point_list(), elm, sources_conc_, sources_density_, sources_sigma_);
 
@@ -607,6 +603,8 @@ public:
                     local_source_balance_vector_[i] -= sources_sigma_[sbi][k]*fe_values_.shape_value(i,k)*fe_values_.JxW(k);
 
                 local_source_balance_rhs_[i] += local_rhs_[i];
+                // temporary, TODO: replace with LocDofVec in balance
+                loc_dof_indices_[i] = cell.get_loc_dof_indices()[i];
             }
             model_.balance()->add_source_values(model_.get_subst_idx()[sbi], elm.region().bulk_idx(), loc_dof_indices_,
                                                local_source_balance_vector_, local_source_balance_rhs_);
@@ -635,7 +633,7 @@ public:
 
             fe_values_side_.reinit(elm, side.side_idx());
             fsv_rt_.reinit(elm, side.side_idx());
-            calculate_velocity(elm, velocity_, fsv_rt_);
+            calculate_velocity(elm, velocity_, fsv_rt_.point_list());
 
             model_.compute_advection_diffusion_coefficients(fe_values_side_.point_list(), velocity_, side.element(), data_->ad_coef, data_->dif_coef);
             data_->cross_section.value_list(fe_values_side_.point_list(), side.element(), csection_);
@@ -784,54 +782,28 @@ public:
 
 private:
 	/**
-	 * @brief Calculates the velocity field on a given cell of dim dimension.
+	 * @brief Calculates the velocity field on a given cell.
 	 *
-	 * @param cell     The cell.
-	 * @param velocity The computed velocity field (at quadrature points).
-	 * @param fv       The FEValues class providing the quadrature points
-	 *                 and the shape functions for velocity.
+	 * @param cell       The cell.
+	 * @param velocity   The computed velocity field (at quadrature points).
+	 * @param point_list The quadrature points.
 	 */
     void calculate_velocity(const ElementAccessor<3> &cell, vector<arma::vec3> &velocity,
-                            FEValuesBase<dim,3> &fv)
+                            const std::vector<arma::vec::fixed<3>> &point_list)
     {
-        ASSERT_EQ_DBG(cell->dim(), dim).error("Element dimension mismatch!");
+/*        ASSERT_EQ_DBG(cell->dim(), dim).error("Element dimension mismatch!");
 
         velocity.resize(fv.n_points());
-        arma::mat map_mat = mapping_->element_map(cell);
+        arma::mat map_mat = MappingP1<dim,3>::element_map(cell);
         vector<arma::vec3> point_list;
         point_list.resize(fv.n_points());
         const Quadrature &quad = *fv.get_quadrature();
         for (unsigned int k=0; k<fv.n_points(); k++) {
             auto q_pt = quad.point<dim>(k);
-            point_list[k] = mapping_->project_unit_to_real(RefElement<dim>::local_to_bary(q_pt), map_mat);
+            point_list[k] = MappingP1<dim,3>::project_unit_to_real(RefElement<dim>::local_to_bary(q_pt), map_mat);
         }
-
-        model_.velocity_field_ptr()->value_list(point_list, cell, velocity);
-    }
-
-	/**
-	 * @brief Calculates the velocity field on a given cell of dim-1 dimension.
-	 *
-	 * @param cell     The cell.
-	 * @param velocity The computed velocity field (at quadrature points).
-	 * @param fv       The FEValues class providing the quadrature points
-	 *                 and the shape functions for velocity.
-	 */
-    void calculate_velocity_low_dim(const ElementAccessor<3> &cell, vector<arma::vec3> &velocity,
-                            FEValuesBase<dim-1,3> &fv)
-    {
-        ASSERT_EQ_DBG(cell->dim(), dim-1).error("Element dimension mismatch!");
-
-        velocity.resize(fv.n_points());
-        arma::mat map_mat = mapping_low_->element_map(cell);
-        vector<arma::vec3> point_list;
-        point_list.resize(fv.n_points());
-        const Quadrature &quad = *fv.get_quadrature();
-        for (unsigned int k=0; k<fv.n_points(); k++) {
-            auto q_pt = quad.point<dim-1>(k);
-            point_list[k] = mapping_low_->project_unit_to_real(RefElement<dim-1>::local_to_bary(q_pt), map_mat);
-
-        }
+*/
+        velocity.resize(point_list.size());
         model_.velocity_field_ptr()->value_list(point_list, cell, velocity);
     }
 
@@ -842,8 +814,6 @@ private:
     FiniteElement<dim-1> *fe_rt_low_;           ///< Finite element for the water velocity field (dim-1).
     Quadrature *quad_;                     ///< Quadrature used in assembling methods.
     Quadrature *quad_low_;               ///< Quadrature used in assembling methods (dim-1).
-    MappingP1<dim,3> *mapping_;                 ///< Auxiliary mapping of reference elements.
-    MappingP1<dim-1,3> *mapping_low_;           ///< Auxiliary mapping of reference elements (dim-1).
 
     /// Reference to model (we must use common ancestor of concentration and heat model)
     TransportDG<Model> &model_;

@@ -27,7 +27,7 @@ double test_2_1d( const arma::vec::fixed<1> & p) {
 TEST(Quadrature, test_1d) {
 
     {
-    QGauss quad(1, 1 ); // should integrate P1 exactly
+    QGauss quad( 1, 1 ); // should integrate P1 exactly
     EXPECT_EQ(1, quad.size());
     double sum =0.0;
     INTEGRATE(1, test_1_1d);
@@ -35,7 +35,7 @@ TEST(Quadrature, test_1d) {
     }
 
     {
-    QGauss quad(1, 2 ); // should integrate P2 exactly
+    QGauss quad( 1, 2 ); // should integrate P2 exactly
     EXPECT_EQ(2, quad.size());
     double sum =0.0;
     INTEGRATE(1, test_2_1d);
@@ -58,7 +58,7 @@ double test_2_2d( const arma::vec::fixed<2> & p) {
 TEST(Quadrature, test_2d) {
 
     {
-    QGauss quad(2, 1 ); // should integrate P1 exactly
+    QGauss quad( 2, 1 ); // should integrate P1 exactly
     EXPECT_EQ(1, quad.size());
     double sum =0.0;
     INTEGRATE(2,test_1_2d);
@@ -66,7 +66,7 @@ TEST(Quadrature, test_2d) {
     }
 
     {
-    QGauss quad(2, 2 ); // should integrate P2 exactly
+    QGauss quad( 2, 2 ); // should integrate P2 exactly
     EXPECT_EQ(3, quad.size());
     double sum =0.0;
     INTEGRATE(2, test_2_2d);
@@ -91,6 +91,7 @@ TEST(Quadrature, midpoint){
 template<unsigned int dim>
 void test_side_projection(Quadrature &subq)
 {
+	ASSERT_EQ(subq.dim(), dim-1);
     for (unsigned int sid=0; sid<RefElement<dim>::n_sides; sid++)
     {
         for (unsigned int pid=0; pid<RefElement<dim>::n_side_permutations; pid++)

@@ -45,9 +45,9 @@ public:
 	ProjectionHandler() {};
 
 	ObservePointData projection(arma::vec3 input_point, unsigned int i_elm, ElementAccessor<3> elm) {
-		arma::mat::fixed<3, dim+1> elm_map = mapping_.element_map(elm);
-		arma::vec::fixed<dim+1> projection = mapping_.project_real_to_unit(input_point, elm_map);
-		projection = mapping_.clip_to_element(projection);
+		arma::mat::fixed<3, dim+1> elm_map = MappingP1<dim,3>::element_map(elm);
+		arma::vec::fixed<dim+1> projection = MappingP1<dim,3>::project_real_to_unit(input_point, elm_map);
+		projection = MappingP1<dim,3>::clip_to_element(projection);
 
 		ObservePointData data;
 		data.element_idx_ = i_elm;
@@ -78,13 +78,10 @@ public:
 			observe_data.local_coords_ = min_center;
 		}
 
-		arma::mat::fixed<3, dim+1> elm_map = mapping_.element_map(elm);
+		arma::mat::fixed<3, dim+1> elm_map = MappingP1<dim,3>::element_map(elm);
         observe_data.global_coords_ =  elm_map * RefElement<dim>::local_to_bary(observe_data.local_coords_);
 	}
 
-private:
-    /// Mapping object.
-    MappingP1<dim,3> mapping_;
 };
 
 template class ProjectionHandler<1>;

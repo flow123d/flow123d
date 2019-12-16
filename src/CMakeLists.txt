@@ -156,6 +156,7 @@ add_library(la_lib
     la/linsys_PETSC.cc
     la/sparse_graph.cc
     la/local_system.cc
+    la/vector_mpi.cc
 )
 target_link_libraries(la_lib 
     input_lib system_lib
@@ -243,6 +244,7 @@ add_library(fem_lib
     fem/fe_p.cc
     fem/fe_rt.cc
     fem/fe_system.cc
+    fem/element_values.cc
     fem/fe_values.cc
     fem/fe_values_views.cc
     fem/mapping_p1.cc
@@ -307,6 +309,9 @@ add_library(coupling_lib
     fields/field_divide.cc
     fields/field_fe.cc
     fields/fe_value_handler.cc
+    fields/eval_subset.cc
+    fields/eval_points.cc
+    fields/field_value_cache.cc
     fields/surface_depth.cc
     coupling/equation.cc
     coupling/balance.cc

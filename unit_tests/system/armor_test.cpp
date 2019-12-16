@@ -465,4 +465,3 @@ TEST(Armor_test, array) {
 //
 //
 //}
-

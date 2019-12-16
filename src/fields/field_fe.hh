@@ -31,7 +31,6 @@
 #include "io/element_data_cache.hh"
 #include "io/msh_basereader.hh"
 #include "fem/fe_p.hh"
-#include "fem/mapping_p1.hh"
 #include "fem/fe_system.hh"
 #include "fem/dofhandler.hh"
 #include "fem/finite_element.hh"
@@ -179,8 +178,6 @@ private:
     std::shared_ptr<DOFHandlerMultiDim> dh_;
     /// Store data of Field
     VectorMPI data_vec_;
-    /// Array of indexes to data_vec_, used for get/set values
-    std::vector<LongIdx> dof_indices_;
 
     /// Value handler that allows get value of 0D elements.
     FEValueHandler<0, spacedim, Value> value_handler0_;
@@ -227,7 +224,7 @@ private:
      *
      * TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
      */
-    std::shared_ptr< std::vector<LongIdx> > boundary_dofs_;
+    std::shared_ptr< std::vector<Idx> > boundary_dofs_;
 
     /// Registrar of class to factory
     static const int registrar;

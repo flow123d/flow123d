@@ -128,15 +128,11 @@ FETransportObjects::FETransportObjects()
     fe3_ = new FE_P_disc<3>(0);
 
 
-    map1_ = new MappingP1<1,3>;
-    map2_ = new MappingP1<2,3>;
-    map3_ = new MappingP1<3,3>;
-
-    fe_values1_ = new FESideValues<1,3>(*map1_, q(0), *fe1_,
+    fe_values1_ = new FESideValues<1,3>(q(0), *fe1_,
             update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
-    fe_values2_ = new FESideValues<2,3>(*map2_, q(1), *fe2_,
+    fe_values2_ = new FESideValues<2,3>(q(1), *fe2_,
             update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
-    fe_values3_ = new FESideValues<3,3>(*map3_, q(2), *fe3_,
+    fe_values3_ = new FESideValues<3,3>(q(2), *fe3_,
             update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
 }
 
@@ -147,9 +143,6 @@ FETransportObjects::~FETransportObjects()
     delete fe1_;
     delete fe2_;
     delete fe3_;
-    delete map1_;
-    delete map2_;
-    delete map3_;
     delete fe_values1_;
     delete fe_values2_;
     delete fe_values3_;
@@ -161,10 +154,6 @@ template<> FiniteElement<2> *FETransportObjects::fe<2>() { return fe2_; }
 template<> FiniteElement<3> *FETransportObjects::fe<3>() { return fe3_; }
 
 Quadrature &FETransportObjects::q(unsigned int dim) { return q_[dim]; }
-
-template<> MappingP1<1,3> *FETransportObjects::mapping<1>() { return map1_; }
-template<> MappingP1<2,3> *FETransportObjects::mapping<2>() { return map2_; }
-template<> MappingP1<3,3> *FETransportObjects::mapping<3>() { return map3_; }
 
 template<> FESideValues<1,3> *FETransportObjects::fe_values<1>() { return fe_values1_; }
 template<> FESideValues<2,3> *FETransportObjects::fe_values<2>() { return fe_values2_; }

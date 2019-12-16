@@ -34,6 +34,7 @@
 
 class Mesh;
 class TimeGovernor;
+class DOFHandlerMultiDim;
 namespace Input {
 	namespace Type {
 		class Record;
@@ -202,13 +203,20 @@ public:
 	std::vector<unsigned int> add_quantities(const std::vector<string> &names);
 
 	/**
+	 * Allocates matrices and vectors for balance based on DofHandler.
+	 * @param dh DofHandler of the corresponding linear system (and solution).
+	 * @param max_dofs_per_boundary Number of dofs contributing to one boundary edge.
+	 */
+	void allocate(const std::shared_ptr<DOFHandlerMultiDim>& dh,
+			unsigned int max_dofs_per_boundary);
+
+	/**
 	 * Allocates matrices and vectors for balance.
 	 * @param n_loc_dofs            Number of solution dofs on the local process.
 	 * @param max_dofs_per_boundary Number of dofs contributing to one boundary edge.
 	 */
 	void allocate(unsigned int n_loc_dofs,
 			unsigned int max_dofs_per_boundary);
-
 
     /// Returns true if the current time step is marked for the balance output.
     bool is_current();
@@ -428,7 +436,8 @@ private:
 	static bool do_yaml_output_;
 
 	/// Allocation parameters. Set by the allocate method used in the lazy_initialize.
-    unsigned int n_loc_dofs_;
+	unsigned int n_loc_dofs_par_;
+	unsigned int n_loc_dofs_seq_;
     unsigned int max_dofs_per_boundary_;
 
 

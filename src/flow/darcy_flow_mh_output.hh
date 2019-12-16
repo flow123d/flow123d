@@ -29,7 +29,6 @@
 #include <armadillo>
 #include "fem/fe_p.hh"                   // for FE_P_disc
 #include "fem/fe_rt.hh"                  // for FE_RT0
-#include "fem/mapping_p1.hh"             // for MappingP1
 #include "fem/fe_values.hh"              // for FEValues
 #include "quadrature/quadrature_lib.hh"  // for QGauss
 #include "fields/equation_output.hh"     // for EquationOutput
@@ -42,7 +41,6 @@
 #include "input/type_generic.hh"         // for Instance
 #include "petscvec.h"                    // for Vec, _p_Vec
 #include "system/exceptions.hh"          // for ExcAssertMsg::~ExcAssertMsg
-
 
 class DOFHandlerMultiDim;
 class DarcyFlowInterface;
@@ -173,7 +171,6 @@ protected:
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> vel_diff_ptr;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> div_diff_ptr;
 
-        double * solution;
         std::shared_ptr<SubDOFHandlerMultiDim> dh_;
 
         std::vector<int> velocity_mask;
@@ -189,7 +186,6 @@ protected:
         
         const unsigned int order; // order of Gauss quadrature
         QGauss::array quad;
-        Mixed<MappingP1> mapp;
         MixedPtr<FE_P_disc> fe_p1;
 
         // following is used for calculation of postprocessed pressure difference

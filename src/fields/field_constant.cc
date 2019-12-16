@@ -19,6 +19,7 @@
 #include "fields/field_algo_base.impl.hh"
 #include "fields/field_instances.hh"	// for instantiation macros
 #include "input/input_type.hh"
+#include "system/armor.hh"
 
 
 /// Implementation.
@@ -139,6 +140,16 @@ void FieldConstant<spacedim, Value>::value_list (const std::vector< Point >  &po
         value_list[i]=this->r_value_;
     }
 }
+
+
+/*template <int spacedim, class Value>
+void FieldConstant<spacedim, Value>::loc_point_value(const std::vector< ElementAccessor<spacedim> > &element_set,
+        ElementCacheMap &cache_map,
+        FieldValueCache<Value> &data_cache)
+{
+    //Armor::Mat<typename Value::element_type, Value::NRows_, Value::NCols_> mat_value( const_cast<typename Value::element_type*>(this->value_.mem_ptr()) );
+    //for (unsigned int i=0; i<indices_to_cache.size(); ++i) data_cache.data().get<Value::NRows_, Value::NCols_>(indices_to_cache[i]) = mat_value;
+}*/
 
 
 template <int spacedim, class Value>

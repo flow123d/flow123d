@@ -13,7 +13,6 @@
 #include "mesh/mesh.h"
 #include "mesh/accessors.hh"
 #include "mesh/neighbours.h"
-#include "fem/mapping_p1.hh"
 #include "fem/fe_p.hh"
 #include "fem/fe_values.hh"
 #include "fem/fe_rt.hh"
@@ -42,17 +41,17 @@ class AssemblyBase
 public:
     virtual void fix_velocity(LocalElementAccessorBase<3> ele_ac) = 0;
     virtual void assemble(LocalElementAccessorBase<3> ele_ac) = 0;
+    virtual void assemble_reconstruct(LocalElementAccessorBase<3> ele_ac) = 0;
         
     // assembly compatible neighbourings
-    virtual void assembly_local_vb(ElementAccessor<3> ele, DHCellSide neighb_side) = 0;
+//     virtual void assembly_local_vb(ElementAccessor<3> ele, DHCellSide neighb_side) = 0;
 
     // compute velocity value in the barycenter
     // TODO: implement and use general interpolations between discrete spaces
     virtual arma::vec3 make_element_vector(LocalElementAccessorBase<3> ele_ac) = 0;
-    
-    /// Postprocess the velocity due to lumping.
-    /// It is used in LMH and Richards only.
-    virtual void postprocess_velocity(const DHCellAccessor& dh_cell) = 0;
+
+    /// Updates water content in Richards.
+    virtual void update_water_content(const DHCellAccessor& dh_cell) = 0;
 
     /**
         * Generic creator of multidimensional assembly, i.e. vector of
@@ -78,14 +77,13 @@ template <int dim>
 class NeighSideValues {
 private:
     // assembly face integrals (BC)
-    MappingP1<dim+1,3> side_map_;
     QGauss side_quad_;
     FE_P_disc<dim+1> fe_p_disc_;
 public:
     NeighSideValues<dim>()
     :  side_quad_(dim, 1),
        fe_p_disc_(0),
-       fe_side_values_(side_map_, side_quad_, fe_p_disc_, update_normal_vectors)
+       fe_side_values_(side_quad_, fe_p_disc_, update_normal_vectors)
     {}
     FESideValues<dim+1,3> fe_side_values_;
 
@@ -104,11 +102,11 @@ public:
     
     AssemblyMH<dim>(AssemblyDataPtrMH data)
     : quad_(dim, 3),
-        fe_values_(map_, quad_, fe_rt_,
+        fe_values_(quad_, fe_rt_,
                 update_values | update_gradients | update_JxW_values | update_quadrature_points),
 
         velocity_interpolation_quad_(dim, 0), // veloctiy values in barycenter
-        velocity_interpolation_fv_(map_,velocity_interpolation_quad_, fe_rt_, update_values | update_quadrature_points),
+        velocity_interpolation_fv_(velocity_interpolation_quad_, fe_rt_, update_values | update_quadrature_points),
 
         ad_(data),
         loc_system_(size(), size()),
@@ -156,7 +154,9 @@ public:
 
     }
 
-    void postprocess_velocity(const DHCellAccessor& dh_cell) override
+    void assemble_reconstruct(LocalElementAccessorBase<3> ele_ac) override
+    {};
+    void update_water_content(const DHCellAccessor& dh_cell) override
     {};
 
     ~AssemblyMH<dim>() override
@@ -182,6 +182,7 @@ public:
         assemble_element(ele_ac);
         assemble_source_term(ele_ac);
         
+        loc_system_.eliminate_solution();
         ad_->lin_sys->set_local_system(loc_system_);
 
         assembly_dim_connections(ele_ac);
@@ -193,7 +194,7 @@ public:
             mortar_assembly->assembly(ele_ac);
     }
 
-    void assembly_local_vb(ElementAccessor<3> ele, DHCellSide neighb_side) override
+    void assembly_local_vb(ElementAccessor<3> ele, DHCellSide neighb_side) //override
     {
         ASSERT_LT_DBG(ele->dim(), 3);
         //DebugOut() << "alv " << print_var(this);
@@ -228,7 +229,7 @@ public:
 
         velocity_interpolation_fv_.reinit(ele);
         for (unsigned int li = 0; li < ele->n_sides(); li++) {
-            flux_in_center += ad_->data_vec_[ ele_ac.side_local_row(li) ]
+            flux_in_center += ad_->full_solution[ ele_ac.side_local_row(li) ]
                         * velocity_interpolation_fv_.vector_view(0).value(li,0);
         }
 
@@ -407,7 +408,7 @@ protected:
         ElementAccessor<3> ele =ele_ac.element_accessor();
         fe_values_.reinit(ele);
         unsigned int ndofs = fe_values_.get_fe()->n_dofs();
-        unsigned int qsize = fe_values_.get_quadrature()->size();
+        unsigned int qsize = fe_values_.n_points();
         auto velocity = fe_values_.vector_view(0);
 
         for (unsigned int k=0; k<qsize; k++)
@@ -497,6 +498,7 @@ protected:
 
             assembly_local_vb(ele, neighb_side);
 
+            loc_system_vb_.eliminate_solution();
             ad_->lin_sys->set_local_system(loc_system_vb_);
 
             // update matrix for weights in BDDCML
@@ -526,7 +528,6 @@ protected:
 
     // assembly volume integrals
     FE_RT0<dim> fe_rt_;
-    MappingP1<dim,3> map_;
     QGauss quad_;
     FEValues<dim,3> fe_values_;
 
