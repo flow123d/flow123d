@@ -26,6 +26,7 @@
 #include "fields/eval_subset.hh"
 #include "fields/eval_points.hh"
 #include "fields/field_value_cache.hh"
+#include "fields/field_value_cache.impl.hh"
 #include "mesh/region.hh"
 #include "input/reader_to_storage.hh"
 #include "input/accessors.hh"
@@ -137,6 +138,22 @@ Field<spacedim,Value> &Field<spacedim,Value>::operator=(const Field<spacedim,Val
 	}
 
 	return *this;
+}
+
+
+
+template<int spacedim, class Value>
+Armor::Mat<typename Value::element_type, Value::NRows_, Value::NCols_> Field<spacedim,Value>::operator() (BulkPoint &p) {
+    return value_cache_[p.dh_cell().dim()-1].template
+    		get_value<Value::NRows_, Value::NCols_>(p.dh_cell(), p.eval_subset()->get_subset_idx(), p.eval_point_idx());
+}
+
+
+
+template<int spacedim, class Value>
+Armor::Mat<typename Value::element_type, Value::NRows_, Value::NCols_> Field<spacedim,Value>::operator() (SidePoint &p) {
+    return value_cache_[p.dh_cell_side().cell().dim()-1].template
+    		get_value<Value::NRows_, Value::NCols_>(p.dh_cell_side().cell(), p.eval_subset()->get_subset_idx(), p.eval_point_idx());
 }
 
 
@@ -696,11 +713,11 @@ std::shared_ptr< FieldFE<spacedim, Value> > Field<spacedim,Value>::get_field_fe(
 
 
 template<int spacedim, class Value>
-void Field<spacedim, Value>::cache_allocate(std::shared_ptr<EvalSubset> sub_set, const ElementCacheMap *cache_map) {
+void Field<spacedim, Value>::cache_allocate(std::shared_ptr<EvalSubset> sub_set) {
     unsigned int point_dim = sub_set->eval_points()->point_dim();
 
     if ( value_cache_[point_dim-1].dim()==EvalPoints::undefined_dim )
-        value_cache_[point_dim-1].init(sub_set->eval_points(), cache_map, ElementCacheMap::n_cached_elements);
+        value_cache_[point_dim-1].init(sub_set->eval_points(), ElementCacheMap::n_cached_elements);
     // else TODO check same sub_set->eval_points()
     value_cache_[point_dim-1].mark_used(sub_set);
 }
@@ -708,25 +725,35 @@ void Field<spacedim, Value>::cache_allocate(std::shared_ptr<EvalSubset> sub_set,
 
 template<int spacedim, class Value>
 void Field<spacedim, Value>::cache_update(ElementCacheMap &cache_map) {
-    typedef std::vector<ElementAccessor<spacedim>> ElementSet;
-
-    std::map<unsigned int, ElementSet> region_data_map; // map of data for different regions
     unsigned int dim = cache_map.dim();
+    auto update_cache_data = cache_map.update_cache_data();
     FieldValueCache<typename Value::element_type, typename Value::return_type> &field_value_cache = value_cache_[dim-1];
-    const std::unordered_set<unsigned int> &added_elements = cache_map.added_elements();
 
-    for (const auto &elm_idx : added_elements) { // distribute elements to regions
-        ElementAccessor<spacedim> elm(shared_->mesh_, elm_idx);
-        unsigned int reg_idx = elm.region_idx().idx();
-        typename std::map<unsigned int, ElementSet>::iterator region_it = region_data_map.find(reg_idx);
-        if (region_it == region_data_map.end()) {
-            region_data_map.insert( {reg_idx, ElementSet()} );
-            region_it = region_data_map.find(reg_idx);
+    // Iterate over subsets
+    for (unsigned int i=0; i<EvalPoints::max_subsets; ++i) {
+        // Skip unused subsets
+        if (!field_value_cache.used_subsets()[i]) continue;
+
+        int subset_begin_pos = field_value_cache.subset_begin(i);
+        int points_per_element = field_value_cache.subset_size(i) / field_value_cache.n_cache_elements();
+
+        // Move preserved element data to begin of block
+        std::unordered_map<unsigned int, unsigned int>::const_iterator it;
+        for (it = update_cache_data.preserved_elements_.begin(); it != update_cache_data.preserved_elements_.end(); it++) {
+            unsigned int old_start = subset_begin_pos+it->first*points_per_element;
+            unsigned int new_start = subset_begin_pos+it->second*points_per_element;
+        	for (unsigned int i_old = old_start, i_new = new_start; i_old < old_start + points_per_element; ++i_old, ++i_new)
+        	    field_value_cache.data().get<Value::NRows_, Value::NCols_>(i_new) = field_value_cache.data().get<Value::NRows_, Value::NCols_>(i_old);
         }
-        region_it->second.push_back( elm );
-    }
-    for (typename std::map<unsigned int, ElementSet>::iterator it=region_data_map.begin(); it!=region_data_map.end(); ++it) {
-        //region_fields_[it->first]->loc_point_value( it->second, cache_map, field_value_cache );
+
+        // Call cache_update of FieldAlgoBase descendants
+        std::unordered_map<unsigned int, typename ElementCacheMap::ElementSet>::iterator reg_elm_it;
+        for (reg_elm_it=update_cache_data.region_element_map_.begin(); reg_elm_it!=update_cache_data.region_element_map_.end(); ++reg_elm_it) {
+            std::unordered_map<unsigned int, unsigned int>::iterator bgn_it = update_cache_data.region_cache_begin_.find(reg_elm_it->first);
+		    unsigned int i_cache_el_begin = subset_begin_pos + bgn_it->second * points_per_element;
+		    unsigned int i_cache_el_end = subset_begin_pos + (bgn_it->second + reg_elm_it->second.size()) * points_per_element;
+			region_fields_[reg_elm_it->first]->cache_update(field_value_cache, i_cache_el_begin, i_cache_el_end, reg_elm_it->second);
+        }
     }
 }
 

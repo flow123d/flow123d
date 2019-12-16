@@ -55,8 +55,13 @@ class Mesh;
 class Observe;
 class EvalSubset;
 class EvalPoints;
+class BulkPoint;
+class SidePoint;
 template <int spacedim> class ElementAccessor;
 template <int spacedim, class Value> class FieldFE;
+namespace Armor {
+    template <class Type, uint nRows, uint nCols> class Mat;
+}
 
 using namespace std;
 namespace IT=Input::Type;
@@ -162,6 +167,12 @@ public:
      * of name in method copy_from
      */
     Field &operator=(const Field &other);
+
+
+    Armor::Mat<typename Value::element_type, Value::NRows_, Value::NCols_> operator() (BulkPoint &);
+
+
+    Armor::Mat<typename Value::element_type, Value::NRows_, Value::NCols_> operator() (SidePoint &);
 
 
     /**
@@ -315,7 +326,7 @@ public:
     void compute_field_data(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream);
 
     /// Implements FieldCommon::cache_allocate
-    void cache_allocate(std::shared_ptr<EvalSubset> sub_set, const ElementCacheMap *cache_map) override;
+    void cache_allocate(std::shared_ptr<EvalSubset> sub_set) override;
 
     /// Implements FieldCommon::cache_update
     void cache_update(ElementCacheMap &cache_map) override;

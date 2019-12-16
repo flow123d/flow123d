@@ -16,8 +16,8 @@
  * @author  David Flanderka
  */
 
-#ifndef FIELD_EVALUATOR_HH_
-#define FIELD_EVALUATOR_HH_
+#ifndef EVAL_POINTS_HH_
+#define EVAL_POINTS_HH_
 
 
 #include <vector>
@@ -41,6 +41,9 @@ class EvalPoints : public std::enable_shared_from_this<EvalPoints> {
 public:
 	/// Undefined dimension of new (empty) object
 	static const unsigned int undefined_dim;
+
+	/// Maximal number of hold subsets.
+	static constexpr unsigned int max_subsets = 10;
 
     /// Constructor
 	EvalPoints();
@@ -81,7 +84,7 @@ public:
 
     /// Return number of subsets.
     inline unsigned int n_subsets() const {
-        return subset_starts_.size() - 1;
+        return n_subsets_;
     }
 
     /**
@@ -107,12 +110,13 @@ private:
     /// Check dimension of EvalSubset object based on Quadrature, all subsets must be of same dimension.
     unsigned int check_dim(unsigned int quad_dim, unsigned int obj_dim);
 
-    Armor::array local_points_;         ///< Local coords of points vector
-    std::vector<int> subset_starts_;    ///< Indices of subsets data in local_points_ vector, size = n_subsets + 1
-    unsigned int dim_;                  ///< Dimension of local points
+    Armor::array local_points_;                                   ///< Local coords of points vector
+    std::array<int, EvalPoints::max_subsets+1> subset_starts_;    ///< Indices of subsets data in local_points_ vector, used size is n_subsets_ + 1
+    unsigned int n_subsets_;                                      ///< Number of subset
+    unsigned int dim_;                                            ///< Dimension of local points
 
     friend class EvalSubSet;
 };
 
 
-#endif /* FIELD_EVALUATOR_HH_ */
+#endif /* EVAL_POINTS_HH_ */
