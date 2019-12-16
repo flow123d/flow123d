@@ -238,7 +238,7 @@ public:
      */
     inline arma::mat arma_mat(uint i) const
     {
-    	return arma::vec( (Type*)(data.data()) + i*nRows*nCols, nRows*nCols );
+    	return arma::mat( (Type*)(data.data()) + i*nRows*nCols, nRows, nCols );
     }
 
     /**
