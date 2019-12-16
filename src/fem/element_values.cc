@@ -85,50 +85,72 @@ void ElementData<spacedim>::print()
 
 
 
-template<unsigned int dim,unsigned int spacedim>
-ElementValuesBase<dim,spacedim>::~ElementValuesBase()
-{}
 
 
-
-template<unsigned int dim, unsigned int spacedim>
-ElementValuesBase<dim,spacedim>::ElementValuesBase(unsigned int n_points, UpdateFlags _flags)
-: n_points_(n_points),
-  data(n_points, update_each(_flags), dim)
-{}
-
-
-
-template<unsigned int dim, unsigned int spacedim>
-RefElementData *ElementValuesBase<dim,spacedim>::init_ref_data(const Quadrature &q)
+template<unsigned int spacedim>
+RefElementData *ElementValuesBase<spacedim>::init_ref_data(const Quadrature &q)
 {
-    ASSERT_DBG( q.dim() == dim );
-    RefElementData *data = new RefElementData(q.size());
+    ASSERT_DBG( q.dim() == this->data.dim_ );
+    ASSERT_DBG( q.size() == n_points_ );
+    RefElementData *ref_data = new RefElementData(q.size());
 
     for (unsigned int i=0; i<q.size(); i++)
     {
-        data->bar_coords[i] = RefElement<dim>::local_to_bary(q.point<dim>(i).arma());
-        data->weights[i] = q.weight(i);
+        switch (q.dim())
+        {
+            case 1:
+                ref_data->bar_coords[i] = RefElement<1>::local_to_bary(q.point<1>(i).arma());
+                break;
+            case 2:
+                ref_data->bar_coords[i] = RefElement<2>::local_to_bary(q.point<2>(i).arma());
+                break;
+            case 3:
+                ref_data->bar_coords[i] = RefElement<3>::local_to_bary(q.point<3>(i).arma());
+                break;
+        default:
+            ASSERT(false)(q.dim()).error("Unsupported dimension.\n");
+            break;
+        }
+        ref_data->weights[i] = q.weight(i);
     }
     
-    return data;
+    return ref_data;
 }
 
 
 
-template<unsigned int dim, unsigned int spacedim>
-UpdateFlags ElementValuesBase<dim,spacedim>::update_each(UpdateFlags flags)
+template<unsigned int spacedim>
+UpdateFlags ElementValuesBase<spacedim>::update_each(UpdateFlags flags)
 {
-    return MappingP1<dim,spacedim>::update_each(flags);
+    switch (dim_)
+    {
+        case 0:
+            flags = MappingP1<0,spacedim>::update_each(flags);
+            break;
+        case 1:
+            flags = MappingP1<1,spacedim>::update_each(flags);
+            break;
+        case 2:
+            flags = MappingP1<2,spacedim>::update_each(flags);
+            break;
+        case 3:
+            flags = MappingP1<3,spacedim>::update_each(flags);
+            break;
+        default:
+            ASSERT(false)(dim_).error("Unsupported dimension.\n");
+            break;
+    }
+    return flags;
 }
 
 
 
-template<unsigned int dim, unsigned int spacedim>
-ElementValues<dim,spacedim>::ElementValues(
+template<unsigned int spacedim>
+ElementValues<spacedim>::ElementValues(
          Quadrature &_quadrature,
-         UpdateFlags _flags)
-: ElementValuesBase<dim, spacedim>(_quadrature.size(), this->update_each(_flags)),
+         UpdateFlags _flags,
+         unsigned int dim)
+: ElementValuesBase<spacedim>(_quadrature.size(), _flags, dim ),
   quadrature_(&_quadrature),
   ref_data(nullptr)
 {
@@ -140,27 +162,42 @@ ElementValues<dim,spacedim>::ElementValues(
 }
 
 
-template<unsigned int dim, unsigned int spacedim>
-ElementValues<dim,spacedim>::~ElementValues()
+template<unsigned int spacedim>
+ElementValues<spacedim>::~ElementValues()
 {
     if (ref_data) delete ref_data;
 }
 
 
 
-template<unsigned int dim,unsigned int spacedim>
-void ElementValues<dim,spacedim>::reinit(const ElementAccessor<3> & cell)
+template<unsigned int spacedim>
+void ElementValues<spacedim>::reinit(const ElementAccessor<spacedim> & cell)
 {
-	OLD_ASSERT_EQUAL( dim, cell->dim() );
+	OLD_ASSERT_EQUAL( this->dim_, cell->dim() );
     this->data.present_cell = cell;
 
     // calculate Jacobian of mapping, JxW, inverse Jacobian
-    fill_data();
+    switch (this->dim_)
+    {
+        case 1:
+            fill_data<1>();
+            break;
+        case 2:
+            fill_data<2>();
+            break;
+        case 3:
+            fill_data<3>();
+            break;
+        default:
+            ASSERT(false)(this->dim_).error("Unsupported dimension.\n");
+            break;
+    }
 }
 
 
-template<unsigned int dim, unsigned int spacedim>
-void ElementValues<dim,spacedim>::fill_data()
+template<unsigned int spacedim>
+template<unsigned int dim>
+void ElementValues<spacedim>::fill_data()
 {
     typename MappingP1<dim,spacedim>::ElementMap coords;
     arma::mat::fixed<spacedim,dim> jac;
@@ -236,21 +273,39 @@ void ElementValues<dim,spacedim>::fill_data()
 
 
 
-template<unsigned int dim,unsigned int spacedim>
-ElemSideValues<dim,spacedim>::ElemSideValues(
+template<unsigned int spacedim>
+ElemSideValues<spacedim>::ElemSideValues(
                                  Quadrature & _sub_quadrature,
-                                 const UpdateFlags _flags)
-: ElementValuesBase<dim,spacedim>(_sub_quadrature.size(), _flags),
-  side_quad(RefElement<dim>::n_sides, std::vector<Quadrature>(RefElement<dim>::n_side_permutations, Quadrature(dim)))
+                                 const UpdateFlags _flags,
+                                 unsigned int dim)
+: ElementValuesBase<spacedim>(_sub_quadrature.size(), _flags, dim),
+  n_sides_(dim+1),
+  n_side_permutations_((dim+1)*(2*dim*dim-5*dim+6)/6),
+  side_quad(n_sides_, std::vector<Quadrature>(n_side_permutations_, Quadrature(dim))),
+  side_ref_data(n_sides_, std::vector<RefElementData*>(n_side_permutations_))
 {
     ASSERT_DBG( _sub_quadrature.dim() + 1 == dim );
 
-    for (unsigned int sid = 0; sid < RefElement<dim>::n_sides; sid++)
+    for (unsigned int sid = 0; sid < n_sides_; sid++)
     {
-    	for (unsigned int pid = 0; pid < RefElement<dim>::n_side_permutations; pid++)
+    	for (unsigned int pid = 0; pid < n_side_permutations_; pid++)
     	{
     		// transform the side quadrature points to the cell quadrature points
-            side_quad[sid][pid] = _sub_quadrature.make_from_side<dim>(sid, pid);
+            switch (dim)
+            {
+                case 1:
+                    side_quad[sid][pid] = _sub_quadrature.make_from_side<1>(sid, pid);
+                    break;
+                case 2:
+                    side_quad[sid][pid] = _sub_quadrature.make_from_side<2>(sid, pid);
+                    break;
+                case 3:
+                    side_quad[sid][pid] = _sub_quadrature.make_from_side<3>(sid, pid);
+                    break;
+                default:
+                    ASSERT(false)(dim).error("Unsupported dimension.\n");
+                    break;
+            }
     		side_ref_data[sid][pid] = this->init_ref_data(side_quad[sid][pid]);
     	}
     }
@@ -258,31 +313,46 @@ ElemSideValues<dim,spacedim>::ElemSideValues(
 
 
 
-template<unsigned int dim,unsigned int spacedim>
-ElemSideValues<dim,spacedim>::~ElemSideValues()
+template<unsigned int spacedim>
+ElemSideValues<spacedim>::~ElemSideValues()
 {
-    for (unsigned int sid=0; sid<RefElement<dim>::n_sides; sid++)
-        for (unsigned int pid=0; pid<RefElement<dim>::n_side_permutations; pid++)
+    for (unsigned int sid=0; sid<n_sides_; sid++)
+        for (unsigned int pid=0; pid<n_side_permutations_; pid++)
             delete side_ref_data[sid][pid];
 }
 
 
-template<unsigned int dim,unsigned int spacedim>
-void ElemSideValues<dim,spacedim>::reinit(const ElementAccessor<3> & cell,
+template<unsigned int spacedim>
+void ElemSideValues<spacedim>::reinit(const ElementAccessor<spacedim> & cell,
 		unsigned int sid)
 {
     ASSERT_LT_DBG( sid, cell->n_sides() );
-    ASSERT_EQ_DBG( dim, cell->dim() );
+    ASSERT_EQ_DBG( this->dim_, cell->dim() );
     this->data.present_cell = cell;
     side_idx_ = sid;
     
     // calculate Jacobian of mapping, JxW, inverse Jacobian, normal vector(s)
-    fill_data();
+    switch (this->dim_)
+    {
+        case 1:
+            fill_data<1>();
+            break;
+        case 2:
+            fill_data<2>();
+            break;
+        case 3:
+            fill_data<3>();
+            break;
+        default:
+            ASSERT(false)(this->dim_).error("Unsupported dimension.\n");
+            break;
+    }
 }
 
 
-template<unsigned int dim, unsigned int spacedim>
-void ElemSideValues<dim,spacedim>::fill_data()
+template<unsigned int spacedim>
+template<unsigned int dim>
+void ElemSideValues<spacedim>::fill_data()
 {
     typename MappingP1<dim,spacedim>::ElementMap coords;
 
@@ -382,17 +452,7 @@ void ElemSideValues<dim,spacedim>::fill_data()
 
 
 
-template class ElementValuesBase<0,3>;
-template class ElementValuesBase<1,3>;
-template class ElementValuesBase<2,3>;
-template class ElementValuesBase<3,3>;
-
-template class ElementValues<0,3>;
-template class ElementValues<1,3>;
-template class ElementValues<2,3>;
-template class ElementValues<3,3>;
-
-template class ElemSideValues<1,3>;
-template class ElemSideValues<2,3>;
-template class ElemSideValues<3,3>;
+template class ElementValuesBase<3>;
+template class ElementValues<3>;
+template class ElemSideValues<3>;
 

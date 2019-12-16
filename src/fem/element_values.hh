@@ -77,7 +77,7 @@ public:
     /// Print calculated data.
     void print();
 
-
+    /// Dimension of space of reference cell.
     const unsigned int dim_;
 
     /**
@@ -117,7 +117,7 @@ public:
 /**
  * @brief Base class for ElementValues and ElemSideValues
  */
-template<unsigned int dim, unsigned int spacedim>
+template<unsigned int spacedim>
 class ElementValuesBase
 {
 public:
@@ -125,7 +125,7 @@ public:
     /**
      * Correct deallocation of objects created by 'initialize' methods.
      */
-    virtual ~ElementValuesBase();
+    virtual ~ElementValuesBase() {}
 
 
     /**
@@ -134,7 +134,10 @@ public:
      * @param n_points Number of quadrature points.
      * @param flags    The update flags.
      */
-     ElementValuesBase(unsigned int n_points, UpdateFlags flags);
+    ElementValuesBase(unsigned int n_points,
+                      UpdateFlags flags,
+                      unsigned int dim)
+    : dim_(dim), n_points_(n_points), data(n_points, update_each(flags), dim) {}
     
     /**
      * @brief Determine quantities to be recomputed on each cell.
@@ -194,10 +197,7 @@ public:
         return data.points.get<spacedim>(point_no);
     }
 
-    /**
-	 * @brief Return coordinates of all quadrature points in the actual cell system.
-	 *
-	 */
+    /// Return coordinates of all quadrature points in the actual cell system.
 	inline const Armor::array &point_list() const
 	{
 	    return data.points;
@@ -215,9 +215,7 @@ public:
 	    return data.normal_vectors.get<spacedim>(point_no);
 	}
 	
-    /**
-     * @brief Returns the number of quadrature points.
-     */
+    /// Returns the number of quadrature points.
     inline unsigned int n_points()
     { return n_points_; }
     
@@ -232,12 +230,13 @@ protected:
     /// Precompute data on reference element.
     RefElementData *init_ref_data(const Quadrature &q);
     
-    /** @brief Number of integration points. */
+    /// Dimension of space of reference cell.
+    unsigned int dim_;
+
+    /// Number of integration points.
     unsigned int n_points_;
 
-    /**
-     * @brief Data computed by the mapping.
-     */
+    /// Data computed by the mapping.
     ElementData<spacedim> data;
     
 };
@@ -248,12 +247,11 @@ protected:
 /**
  * @brief Calculates element data on the actual cell.
  *
- * @param dim      Dimension of the reference cell.
  * @param spacedim Dimension of the Euclidean space where the actual
  *                 cell lives.
  */
-template<unsigned int dim, unsigned int spacedim>
-class ElementValues : public ElementValuesBase<dim,spacedim>
+template<unsigned int spacedim = 3>
+class ElementValues : public ElementValuesBase<spacedim>
 {
 public:
 
@@ -264,10 +262,12 @@ public:
      * cell-independent data.
 	 *
 	 * @param _quadrature The quadrature rule.
-	 * @param _flags The update flags.
+	 * @param _flags      The update flags.
+     * @param dim         Dimension of space of reference cell.
 	 */
     ElementValues(Quadrature &_quadrature,
-             UpdateFlags _flags);
+             UpdateFlags _flags,
+             unsigned int dim);
     
     ~ElementValues();
 
@@ -276,7 +276,7 @@ public:
      *
      * @param cell The actual cell.
      */
-    void reinit(const ElementAccessor<3> &cell);
+    void reinit(const ElementAccessor<spacedim> &cell);
     
     /// Return quadrature.
     const Quadrature &quadrature() const
@@ -287,16 +287,13 @@ public:
 private:
     
     /// Compute data from reference cell and using MappingP1.
+    template<unsigned int dim>
     void fill_data();
     
-    /**
-     * @brief The quadrature rule used to calculate integrals.
-     */
+    /// The quadrature rule used to calculate integrals.
     Quadrature *quadrature_;
     
-    /**
-     * @brief Precomputed element data.
-     */
+    /// Precomputed element data.
     RefElementData *ref_data;
 
 
@@ -308,12 +305,11 @@ private:
 /**
  * @brief Calculates element data on a side.
  *
- * @param dim      Dimension of the reference cell.
  * @param spacedim Dimension of the Euclidean space where the actual
  *                 cell lives.
  */
-template<unsigned int dim, unsigned int spacedim>
-class ElemSideValues : public ElementValuesBase<dim,spacedim>
+template<unsigned int spacedim = 3>
+class ElemSideValues : public ElementValuesBase<spacedim>
 {
 
 public:
@@ -325,10 +321,12 @@ public:
      * cell-independent data.
      *
      * @param _sub_quadrature The quadrature rule on the side (with dimension dim-1).
-     * @param flags The update flags.
+     * @param flags           The update flags.
+     * @param dim             Dimension of space of reference cell.
      */
     ElemSideValues(Quadrature &_sub_quadrature,
-             UpdateFlags flags);
+             UpdateFlags flags,
+             unsigned int dim);
 
     /// Destructor.
     virtual ~ElemSideValues();
@@ -339,7 +337,7 @@ public:
 	 * @param cell The actual cell.
 	 * @param sid  Number of the side of the cell.
 	 */
-    void reinit(const ElementAccessor<3> &cell,
+    void reinit(const ElementAccessor<spacedim> &cell,
         		unsigned int sid);
 
     /// Return quadrature for given side and its permutation.
@@ -352,18 +350,23 @@ private:
     /**
      * @brief Calculates the mapping data on a side of a cell.
      */
+    template<unsigned int dim>
     void fill_data();
 
-    /**
-     * @brief Quadrature for the integration on the element sides.
-     */
+    /// Number of sides in reference cell.
+    const unsigned int n_sides_;
+
+    /// Number of permutations of points on side of reference cell.
+    const unsigned int n_side_permutations_;
+
+    /// Quadrature for the integration on the element sides.
     const Quadrature *sub_quadrature;
 
     /// Side quadratures.
     std::vector<std::vector<Quadrature> > side_quad;
 
     /// Data on reference element (for each side and its permutation).
-    RefElementData *side_ref_data[RefElement<dim>::n_sides][RefElement<dim>::n_side_permutations];
+    std::vector<std::vector<RefElementData*>> side_ref_data;
     
     /// Current side on which ElemSideValues was recomputed.
     unsigned int side_idx_;
