@@ -81,7 +81,9 @@ inline unsigned int BidirectionalMap<T>::size() const {
 template<typename T>
 inline void BidirectionalMap<T>::set_item(T val, unsigned int pos) {
 	ASSERT_LT_DBG( pos, vals_vec_.size() )(pos)(vals_vec_.size()).error("Value id is out of vector size.");
-	ASSERT( vals_vec_[pos] == -1 )(pos).error("Repeated setting of item.");
+	//ASSERT( vals_vec_[pos] == -1 )(pos).error("Repeated setting of item.");
+	auto it = vals_map_.find(vals_vec_[pos]);
+	if (it != vals_map_.end()) vals_map_.erase(it);
 	vals_map_[val] = pos;
 	vals_vec_[pos] = val;
 }

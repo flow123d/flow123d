@@ -627,6 +627,7 @@ public:
             ASSERT_EQ(n_rows_, nr);
             ASSERT_EQ(n_cols_, 1);
             copy<nr, 1>(arma_x.memptr());
+            return *this;
         }
 
 

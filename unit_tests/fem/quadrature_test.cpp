@@ -117,8 +117,8 @@ void test_side_projection(Quadrature &subq)
             // Setup barycentric coordinates of quadrature points.
             for (unsigned int i=0; i<subq.size(); i++)
             {
-                bary_subq.push_back(RefElement<dim-1>::local_to_bary(subq.point<dim-1>(i).arma()));
-                bary_q.push_back(RefElement<dim>::local_to_bary(q.point<dim>(i).arma()));
+                bary_subq.push_back(RefElement<dim-1>::local_to_bary(subq.point<dim-1>(i)));
+                bary_q.push_back(RefElement<dim>::local_to_bary(q.point<dim>(i)));
             }
             
             // Map barycentric coordinates of subquadrature and quadrature points to 3d space
