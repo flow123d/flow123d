@@ -19,35 +19,39 @@
 #include "fields/eval_points.hh"
 #include "fields/eval_subset.hh"
 #include "quadrature/quadrature.hh"
+#include "mesh/ref_element.hh"
 #include <memory>
 
 
 const unsigned int EvalPoints::undefined_dim = 10;
 
 EvalPoints::EvalPoints()
-: local_points_(0, 1), dim_(EvalPoints::undefined_dim)
+: local_points_(0, 1), n_subsets_(0), dim_(EvalPoints::undefined_dim)
 {
-	subset_starts_.push_back(0);
+	subset_starts_[0] = 0;
 }
 
 template <unsigned int dim>
 std::shared_ptr<EvalSubset> EvalPoints::add_bulk(const Quadrature &quad)
 {
-	check_dim(quad.dim(), dim);
+    ASSERT_LT_DBG(n_subsets_, EvalPoints::max_subsets).error("Maximal number of subsets exceeded!\n");
+    check_dim(quad.dim(), dim);
 
-	std::shared_ptr<EvalSubset> bulk_set = std::make_shared<EvalSubset>(shared_from_this() );
-	this->add_local_points<dim>( quad.get_points() );
-	subset_starts_.push_back( this->size() );
+    std::shared_ptr<EvalSubset> bulk_set = std::make_shared<EvalSubset>(shared_from_this() );
+    this->add_local_points<dim>( quad.get_points() );
+    n_subsets_++;
+    subset_starts_[n_subsets_] = this->size();
     return bulk_set;
 }
 
 template <unsigned int dim>
 std::shared_ptr<EvalSubset> EvalPoints::add_side(const Quadrature &quad)
 {
+	ASSERT_LT_DBG(n_subsets_, EvalPoints::max_subsets).error("Maximal number of subsets exceeded!\n");
 	check_dim(quad.dim()+1, dim);
 	unsigned int old_data_size=this->size(), new_data_size; // interval of side subset data
 	unsigned int points_per_side = quad.make_from_side<dim>(0, 0).get_points().n_vals();
-	unsigned int n_side_permutations = (dim+1)*(2*dim*dim-5*dim+6)/6;
+	unsigned int n_side_permutations = RefElement<dim>::n_side_permutations;
 
 	std::shared_ptr<EvalSubset> side_set = std::make_shared<EvalSubset>(shared_from_this(), n_side_permutations, points_per_side);
 	unsigned int*** perm_indices = side_set->perm_indices_;
@@ -58,7 +62,8 @@ std::shared_ptr<EvalSubset> EvalPoints::add_side(const Quadrature &quad)
         this->add_local_points<dim>( high_dim_q.get_points() );
     }
     new_data_size = this->size();
-    subset_starts_.push_back( new_data_size );
+    n_subsets_++;
+    subset_starts_[n_subsets_] = new_data_size;
     unsigned int i_data=old_data_size;
     for (unsigned int i_side=0; i_side<dim+1; ++i_side) {
         for (unsigned int i_point=0; i_point<points_per_side; ++i_point) {

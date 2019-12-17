@@ -27,7 +27,6 @@
 #include <vector>                              // for vector
 #include <armadillo>
 #include "fem/update_flags.hh"                 // for operator|
-#include "fem/mapping_p1.hh"
 #include "fields/field_values.hh"              // for FieldValue<>::Scalar
 #include "fields/field.hh"
 #include "fields/multi_field.hh"
@@ -72,7 +71,6 @@ public:
         fe = MixedPtr<FE_P_disc>(fe_order);
         fe_rt = MixedPtr<FE_RT0>();
         q = MixedPtr<QGauss>(2*fe_order);
-        mapping = MixedSpaceDimPtr<MappingP1>();
 
         auto ds = std::make_shared<EqualOrderDiscreteSpace>(mesh_, fe);
         dh = std::make_shared<DOFHandlerMultiDim>(*mesh_);
@@ -84,7 +82,6 @@ public:
 	MixedPtr<FiniteElement> fe;
 	MixedPtr<FiniteElement> fe_rt;
 	MixedPtr<Quadrature> q;
-	MixedSpaceDimPtr<Mapping> mapping;
 
 	/// Object for distribution of dofs.
 	std::shared_ptr<DOFHandlerMultiDim> dh;

@@ -87,3 +87,7 @@ Range< SidePoint > EvalSubset::points(const DHCellSide &cell_side) const {
 /******************************************************************************
  * Implementation of SidePoint methods
  */
+
+SidePoint SidePoint::permute(DHCellSide edg_side) const {
+    return SidePoint(edg_side, this->subset_, this->local_point_idx_);
+}

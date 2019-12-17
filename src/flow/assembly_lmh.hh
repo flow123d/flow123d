@@ -44,11 +44,11 @@ public:
     
     AssemblyLMH<dim>(AssemblyDataPtrLMH data)
     : quad_(dim, 3),
-        fe_values_(map_, quad_, fe_rt_,
+        fe_values_(quad_, fe_rt_,
                 update_values | update_gradients | update_JxW_values | update_quadrature_points),
 
         velocity_interpolation_quad_(dim, 0), // veloctiy values in barycenter
-        velocity_interpolation_fv_(map_,velocity_interpolation_quad_, fe_rt_, update_values | update_quadrature_points),
+        velocity_interpolation_fv_(velocity_interpolation_quad_, fe_rt_, update_values | update_quadrature_points),
 
         ad_(data)
     {
@@ -385,7 +385,7 @@ protected:
         
         fe_values_.reinit(ele);
         unsigned int ndofs = fe_values_.get_fe()->n_dofs();
-        unsigned int qsize = fe_values_.get_quadrature()->size();
+        unsigned int qsize = fe_values_.n_points();
         auto velocity = fe_values_.vector_view(0);
 
         for (unsigned int k=0; k<qsize; k++)
@@ -566,7 +566,6 @@ protected:
 
     // assembly volume integrals
     FE_RT0<dim> fe_rt_;
-    MappingP1<dim,3> map_;
     QGauss quad_;
     FEValues<dim,3> fe_values_;
 
