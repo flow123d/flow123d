@@ -20,14 +20,12 @@
     - *coupling integral* - decomposed to: bulk element of dimension D + faces of elements of dimension D+1
   The integration over elementary domain is done in terms of numerical quadrature, i.e. weighted average of the values in quadrature points. Single logical quadrature point may be distributed to more then one bulk element.
   
-- All necessary quadrature points must be distributed to the reference elements durign setup of the assmebly.
-  FieldFE is then able to create and precompute one FEValue object for all these local points. 
+- All necessary quadrature points must be distributed to the reference elements during setup of the assmebly.
+  FieldFE is then able to create and precompute the FEValue object for all these local points. 
   The values on the reference element are computed once. Mapping (of vectors and tensors) to the actual element
-  can be done only for a subset of points (e.g. when evaluating a dimension coupling one needs values on 
-  single side of the element of higher dimension and values in corresponding bulk points of the lower dim element).
+  can be done only for the active points on current patch of elements.
 - For the efficient evaluation of the FieldFormula fields we need to evaluate about 128 points at once. 
-  To this end we  need to evaluate on the patch of the elements at once. Efficient parsing and formula 
-  evaluation library is necessary. ExprTK is fast but lacks several important features:
+  Efficient parsing and formula evaluation library is necessary. ExprTK is fast but lacks several important features:
   - SIMD evaluation
   - support of sparse evaluation on the vector data (includes size change)
   - matrix multiplication (matrix-matrix, matrix-vector, vector-vector = dot product)
@@ -53,8 +51,7 @@
   since only subset of the fields is involved in every integral. 
 -  ~If these quadrature schemes share the local points the values may be evaluated just once.~
   Gauss quadratures imply no shared quadrature points between bulk and face quadratures. There can be 
-  some reuse for boundary and coupling integrals, but these are relatively rare. Moreover we need 
-  continuous blocks because of the ExprTK, further optimization possible after possible switch to other formula parser.
+  some reuse for boundary and coupling integrals, but these are relatively rare. 
 - Face integrals should deal with various side permutations.
 - We should use existing field variables to referencing their cached values.
 - Although we will have a common set of local evaluation points on the reference element we may allow 
@@ -68,7 +65,7 @@
 
 ## Caching structures
 **EvalPoints** 
-Summarize all quadrature points on the reference elements.
+Summary all quadrature points on the reference elements. Necessary for the FieldFE precalculation.
 - Internaly single table per dimension, but we need to distribute quadrature points accross dimension so there has 
   to be one shared object. However quadratures are added per dimension in the Assembly<dim> classes.
 - Every reference element (dimension) have own list of local points. Only resulting 'Integral' objects know ranges of 
@@ -81,11 +78,26 @@ Every kind of integral is associated with an "assembly object"
 - CouplingIntegral - on bulk.ngh_range
 - BoundaryIntegral - on boundary_side_range (TBD)
 
-- Seems that in terms of these integrals can be combined during one assembly so we have each of them at most once. 
+- In theory we can combine integrals to have at most single instance of each type per single assembly operation. 
 - For every dimension we create them by a method of the EvalPoints, passing suitable set of quadratures.
-- Then we need integrals to mark active eval points on the actual patch of "assembly objects" and the mesh elements they live on. This can be done by passing through the "assembly objects" in the order of their Hilbert index and distributing the points on them until we reach the number of active points per patch.
+- Functions provided by Integrals:
+  - Mark active eval points on the actual patch. Assembly algorithm iterates over "elementary integration domains" 
+    in the order of their Hilbert index. The integral has to iterate over its quadrature points. The point  and distributing the points on them until we reach the number of active points per patch.
 - Same method Integral::points(assembly_object) is used later on to iterate over quadrature points.
 - In principle there should be one kind of the quadrature point accessor for every kind of the integral.
+
+Operations provided by the quadrature points:
+	- all points - retrieve value of a field in the point, e.g. `pressure(bulk_point)`		
+	- SidePoint - permute(CellSide) -> SidePoint; allows iteration over all pairs of sides of an edge, in fact allows
+	  to form integrals mixing points of any two faces of same dimension, even non-colocated.
+	- CouplingSidePoint - bulk() -> BulkPoint
+Possible interface to shape functions:
+	`FieldFE pressure_fe ...`
+	`element_fields.normal(side_point)` - outer normal at a side point
+	`element_fields.coord(point)` - absolute coordinates of the point
+	`element_fields.JxW(point)` - Jacobina times quadrature weight of the point
+    `pressure_fe.base(i, point)` - value of the i-th shape function in the point
+	`pressure_fe.grad(i, point)` - value of the i-th base function in the point
 
 **ElementCacheMap**
 This holds mesh elements associated with the actual patch and for every pair (mesh element, eval_point) gives the active point index, these have to form continuous sequence. The points of the "assemble objects" forming the patch are added to the map. There is independent map for every integral but these can be in a single class. 
