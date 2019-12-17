@@ -312,8 +312,6 @@ void DarcyFlowMHOutput::output_internal_flow_data()
     
     int cit = 0;
     for ( DHCellAccessor dh_cell : data->dh_->own_range() ) {
-    	LocalElementAccessorBase<3> ele_ac(dh_cell);
-        
         ElementAccessor<3> ele = dh_cell.elm();
         LocDofVec indices = dh_cell.get_loc_dof_indices();
 
@@ -368,7 +366,6 @@ void DarcyFlowMHOutput::l2_diff_local(DHCellAccessor dh_cell,
                    ExactSolution &anal_sol,  DarcyFlowMHOutput::DiffData &result) {
 
     ElementAccessor<3> ele = dh_cell.elm();
-    LocalElementAccessorBase<3> ele_ac(dh_cell);
     fv_rt.reinit(ele);
     fe_values.reinit(ele);
     
@@ -381,10 +378,11 @@ void DarcyFlowMHOutput::l2_diff_local(DHCellAccessor dh_cell,
 //     vector<double> pressure_traces(dim+1);
 
     for (unsigned int li = 0; li < ele->n_sides(); li++) {
-        fluxes[li] = diff_data.data_->full_solution[ ele_ac.side_local_row(li) ];
+        fluxes[li] = diff_data.data_->full_solution[ dh_cell.get_loc_dof_indices()[li] ];
 //         pressure_traces[li] = result.dh->side_scalar( *(ele->side( li ) ) );
     }
-    double pressure_mean = diff_data.data_->full_solution[ ele_ac.ele_local_row() ];
+    const uint ndofs = dh_cell.n_dofs();
+    double pressure_mean = diff_data.data_->full_solution[ dh_cell.get_loc_dof_indices()[ndofs/2] ];
 
     arma::vec analytical(5);
     arma::vec3 flux_in_q_point;
