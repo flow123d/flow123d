@@ -26,7 +26,7 @@
 const unsigned int EvalPoints::undefined_dim = 10;
 
 EvalPoints::EvalPoints()
-: local_points_(0, 1), n_subsets_(0), dim_(EvalPoints::undefined_dim)
+: local_points_(3), n_subsets_(0), dim_(EvalPoints::undefined_dim)
 {
 	subset_starts_[0] = 0;
 }
@@ -110,7 +110,7 @@ unsigned int EvalPoints::check_dim(unsigned int quad_dim, unsigned int obj_dim) 
 	ASSERT_EQ(quad_dim, obj_dim);
     if (this->dim_ == EvalPoints::undefined_dim) {
         this->dim_ = quad_dim;
-        local_points_ = Armor::Array<double>(0, this->dim_);
+        local_points_ = Armor::Array<double>(this->dim_);
     } else
         ASSERT_EQ(this->dim_, quad_dim);
     return this->dim_;
