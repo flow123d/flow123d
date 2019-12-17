@@ -18,8 +18,8 @@
 #include "fem/fe_rt.hh"
 #include "fem/fe_values_views.hh"
 #include "fem/fe_system.hh"
+#include "fem/dh_cell_accessor.hh"
 #include "quadrature/quadrature_lib.hh"
-#include "flow/mh_dofhandler.hh"
 
 #include "la/linsys.hh"
 #include "la/linsys_PETSC.hh"
@@ -79,53 +79,53 @@ public:
     ~AssemblyLMH<dim>() override
     {}
     
-    void fix_velocity(LocalElementAccessorBase<3> ele_ac) override
+    void fix_velocity(const DHCellAccessor& dh_cell) override
     {
         // if (mortar_assembly)
         //     mortar_assembly->fix_velocity(ele_ac);
     }
 
-    void assemble_reconstruct(LocalElementAccessorBase<3> ele_ac) override
+    void assemble_reconstruct(const DHCellAccessor& dh_cell) override
     {
-        ASSERT_EQ_DBG(ele_ac.dim(), dim);
-    
-        assemble_local_system(ele_ac.dh_cell(), false);   //do not switch dirichlet in seepage when reconstructing
+        ASSERT_EQ_DBG(dh_cell.dim(), dim);
+
+        assemble_local_system(dh_cell, false);   //do not switch dirichlet in seepage when reconstructing
         
         // TODO:
         // if (mortar_assembly)
-        //     mortar_assembly->assembly(ele_ac);
+        //     mortar_assembly->assembly(dh_cell);
         // if (mortar_assembly)
-        //     mortar_assembly->fix_velocity(ele_ac);
+        //     mortar_assembly->fix_velocity(dh_cell);
 
         arma::vec schur_solution = ad_->p_edge_solution.get_subvec(loc_schur_.row_dofs);
         // reconstruct the velocity and pressure
         loc_system_.reconstruct_solution_schur(schur_offset_, schur_solution, reconstructed_solution_);
 
         // postprocess the velocity
-        postprocess_velocity(ele_ac.dh_cell(), reconstructed_solution_);
+        postprocess_velocity(dh_cell, reconstructed_solution_);
         
         ad_->full_solution.set_subvec(loc_system_.row_dofs.head(schur_offset_), reconstructed_solution_);
         ad_->full_solution.set_subvec(loc_system_.row_dofs.tail(loc_schur_.row_dofs.n_elem), schur_solution);
     }
     
-    void assemble(LocalElementAccessorBase<3> ele_ac) override
+    void assemble(const DHCellAccessor& dh_cell) override
     {
-        ASSERT_EQ_DBG(ele_ac.dim(), dim);
+        ASSERT_EQ_DBG(dh_cell.dim(), dim);
         save_local_system_ = false;
         bc_fluxes_reconstruted = false;
 
-        assemble_local_system(ele_ac.dh_cell(), true);   //do use_dirichlet_switch
+        assemble_local_system(dh_cell, true);   //do use_dirichlet_switch
         
         loc_system_.compute_schur_complement(schur_offset_, loc_schur_, true);
 
-        save_local_system(ele_ac.dh_cell());
+        save_local_system(dh_cell);
         
         loc_schur_.eliminate_solution();
         ad_->lin_sys_schur->set_local_system(loc_schur_, ad_->dh_cr_->get_local_to_global_map());
 
         // TODO:
         // if (mortar_assembly)
-        //     mortar_assembly->assembly(ele_ac);
+        //     mortar_assembly->assembly(dh_cell);
     }
 
     void update_water_content(const DHCellAccessor& dh_cell) override

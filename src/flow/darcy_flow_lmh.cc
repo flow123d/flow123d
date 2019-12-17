@@ -667,9 +667,8 @@ void DarcyLMH::assembly_mh_matrix(MultidimAssembly& assembler)
     // TODO: try to move this into balance, or have it in the generic assembler class, that should perform the cell loop
     // including various pre- and post-actions
     for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
-    	LocalElementAccessorBase<3> ele_ac(dh_cell);
-        unsigned int dim = ele_ac.dim();
-        assembler[dim-1]->assemble(ele_ac);
+        unsigned int dim = dh_cell.dim();
+        assembler[dim-1]->assemble(dh_cell);
     }    
     
 
@@ -982,9 +981,8 @@ void DarcyLMH::reconstruct_solution_from_schur(MultidimAssembly& assembler)
     balance_->start_mass_assembly(data_->water_balance_idx);
 
     for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
-    	LocalElementAccessorBase<3> ele_ac(dh_cell);
-        unsigned int dim = ele_ac.dim();
-        assembler[dim-1]->assemble_reconstruct(ele_ac);
+        unsigned int dim = dh_cell.dim();
+        assembler[dim-1]->assemble_reconstruct(dh_cell);
     }
 
     data_->full_solution.local_to_ghost_begin();

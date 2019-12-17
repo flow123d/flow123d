@@ -9,6 +9,7 @@
 #include "quadrature/intersection_quadrature.hh"
 #include "la/linsys.hh"
 #include "mesh/accessors.hh"
+#include "fem/dh_cell_accessor.hh"
 #include "intersection/mixed_mesh_intersections.hh"
 #include <armadillo>
 
@@ -80,7 +81,7 @@ void P0_CouplingAssembler::pressure_diff(const DHCellAccessor& dh_cell, double d
 /**
  * Works well but there is large error next to the boundary.
  */
-void P0_CouplingAssembler::assembly(LocalElementAccessorBase<3> master_ac)
+void P0_CouplingAssembler::assembly(const DHCellAccessor& dh_cell_master)
 {
 
 
@@ -106,7 +107,6 @@ void P0_CouplingAssembler::assembly(LocalElementAccessorBase<3> master_ac)
      *  - use one big or more smaller local systems to set.
      */
 
-    DHCellAccessor dh_cell_master = master_ac.dh_cell();
     ElementAccessor<3> ele = dh_cell_master.elm();
     
     if (ele.dim() > 2) return; // supported only for 1D and 2D master elements
@@ -282,7 +282,7 @@ void P1_CouplingAssembler::add_sides(const DHCellAccessor& dh_cell, unsigned int
  * - 20.11. 2014 - very poor convergence, big error in pressure even at internal part of the fracture
  */
 
-void P1_CouplingAssembler::assembly(LocalElementAccessorBase<3> ele_ac) {
+void P1_CouplingAssembler::assembly(const DHCellAccessor& dh_cell) {
 /*
     const IsecList &master_list = master_list_[ele_ac.ele_global_idx()];
     if (master_list.size() == 0) return; // skip empty masters

@@ -17,8 +17,8 @@
 #include "fem/fe_values.hh"
 #include "fem/fe_rt.hh"
 #include "fem/fe_values_views.hh"
+#include "fem/dh_cell_accessor.hh"
 #include "quadrature/quadrature_lib.hh"
-#include "flow/mh_dofhandler.hh"
 
 #include "la/linsys.hh"
 #include "la/linsys_PETSC.hh"
@@ -39,12 +39,9 @@
 class AssemblyBase
 {
 public:
-    virtual void fix_velocity(LocalElementAccessorBase<3> ele_ac) = 0;
-    virtual void assemble(LocalElementAccessorBase<3> ele_ac) = 0;
-    virtual void assemble_reconstruct(LocalElementAccessorBase<3> ele_ac) = 0;
-        
-    // assembly compatible neighbourings
-//     virtual void assembly_local_vb(ElementAccessor<3> ele, DHCellSide neighb_side) = 0;
+    virtual void fix_velocity(const DHCellAccessor& dh_cell) = 0;
+    virtual void assemble(const DHCellAccessor& dh_cell) = 0;
+    virtual void assemble_reconstruct(const DHCellAccessor& dh_cell) = 0;
 
     /// Updates water content in Richards.
     virtual void update_water_content(const DHCellAccessor& dh_cell) = 0;
@@ -143,7 +140,7 @@ public:
 
     }
 
-    void assemble_reconstruct(LocalElementAccessorBase<3> ele_ac) override
+    void assemble_reconstruct(const DHCellAccessor& dh_cell) override
     {};
     void update_water_content(const DHCellAccessor& dh_cell) override
     {};
@@ -154,18 +151,17 @@ public:
 //     LocalSystem& get_local_system() override
 //         { return loc_system_;}
     
-    void fix_velocity(LocalElementAccessorBase<3> ele_ac) override
+    void fix_velocity(const DHCellAccessor& dh_cell) override
     {
         if (mortar_assembly)
-            mortar_assembly->fix_velocity(ele_ac);
+            mortar_assembly->fix_velocity(dh_cell);
     }
 
-    void assemble(LocalElementAccessorBase<3> ele_ac) override
+    void assemble(const DHCellAccessor& dh_cell) override
     {
-        ASSERT_EQ_DBG(ele_ac.dim(), dim);
+        ASSERT_EQ_DBG(dh_cell.dim(), dim);
         loc_system_.reset();
     
-        DHCellAccessor dh_cell = ele_ac.dh_cell(); 
         set_dofs_and_bc(dh_cell);
         
         assemble_sides(dh_cell);
@@ -180,7 +176,7 @@ public:
             add_fluxes_in_balance_matrix(dh_cell);
 
         if (mortar_assembly)
-            mortar_assembly->assembly(ele_ac);
+            mortar_assembly->assembly(dh_cell);
     }
 
     void assembly_local_vb(ElementAccessor<3> ele, DHCellSide neighb_side) //override

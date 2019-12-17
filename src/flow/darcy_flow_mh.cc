@@ -673,9 +673,8 @@ void DarcyMH::postprocess()
     if(data_->mortar_method_ != MortarMethod::NoMortar){
         auto multidim_assembler =  AssemblyBase::create< AssemblyMH >(data_);
         for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
-            LocalElementAccessorBase<3> ele_ac(dh_cell);
-            unsigned int dim = ele_ac.dim();
-            multidim_assembler[dim-1]->fix_velocity(ele_ac);
+            unsigned int dim = dh_cell.dim();
+            multidim_assembler[dim-1]->fix_velocity(dh_cell);
         }
     }
     //ElementAccessor<3> ele;
@@ -742,9 +741,8 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembly& assembler)
     // TODO: try to move this into balance, or have it in the generic assembler class, that should perform the cell loop
     // including various pre- and post-actions
     for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
-    	LocalElementAccessorBase<3> ele_ac(dh_cell);
-        unsigned int dim = ele_ac.dim();
-        assembler[dim-1]->assemble(ele_ac);
+        unsigned int dim = dh_cell.dim();
+        assembler[dim-1]->assemble(dh_cell);
     }    
     
 
@@ -873,15 +871,16 @@ void DarcyMH::assembly_source_term()
 
    	for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
         LocalElementAccessorBase<3> ele_ac(dh_cell);
+        ElementAccessor<3> ele = dh_cell.elm();
 
-        double cs = data_->cross_section.value(ele_ac.centre(), ele_ac.element_accessor());
+        double cs = data_->cross_section.value(ele.centre(), ele);
 
         // set sources
-        double source = ele_ac.measure() * cs *
-                data_->water_source_density.value(ele_ac.centre(), ele_ac.element_accessor());
+        double source = ele.measure() * cs *
+                data_->water_source_density.value(ele.centre(), ele);
         schur0->rhs_set_value(ele_ac.ele_row(), -1.0 * source );
 
-        balance_->add_source_values(data_->water_balance_idx, ele_ac.region().bulk_idx(), {(LongIdx) ele_ac.ele_local_row()}, {0}, {source});
+        balance_->add_source_values(data_->water_balance_idx, ele.region().bulk_idx(), {(LongIdx) ele_ac.ele_local_row()}, {0}, {source});
     }
 
     balance_->finish_source_assembly(data_->water_balance_idx);
