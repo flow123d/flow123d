@@ -25,17 +25,18 @@
 
 const unsigned int EvalPoints::undefined_dim = 10;
 
-EvalPoints::EvalPoints()
-: local_points_(3), n_subsets_(0), dim_(EvalPoints::undefined_dim)
+EvalPoints::EvalPoints(unsigned int dim)
+: local_points_(dim), n_subsets_(0), dim_(dim)
 {
 	subset_starts_[0] = 0;
+	local_points_.reinit(EvalPoints::max_subsets*EvalPoints::max_subset_points);
 }
 
 template <unsigned int dim>
 std::shared_ptr<EvalSubset> EvalPoints::add_bulk(const Quadrature &quad)
 {
     ASSERT_LT_DBG(n_subsets_, EvalPoints::max_subsets).error("Maximal number of subsets exceeded!\n");
-    check_dim(quad.dim(), dim);
+    ASSERT_EQ(this->dim_, quad.dim());
 
     std::shared_ptr<EvalSubset> bulk_set = std::make_shared<EvalSubset>(shared_from_this() );
     this->add_local_points<dim>( quad.get_points() );
@@ -48,7 +49,7 @@ template <unsigned int dim>
 std::shared_ptr<EvalSubset> EvalPoints::add_side(const Quadrature &quad)
 {
 	ASSERT_LT_DBG(n_subsets_, EvalPoints::max_subsets).error("Maximal number of subsets exceeded!\n");
-	check_dim(quad.dim()+1, dim);
+    ASSERT_EQ(this->dim_, quad.dim()+1);
 	unsigned int old_data_size=this->size(), new_data_size; // interval of side subset data
 	unsigned int points_per_side = quad.make_from_side<dim>(0, 0).get_points().size();
 	unsigned int n_side_permutations = RefElement<dim>::n_side_permutations;
@@ -104,16 +105,6 @@ unsigned int EvalPoints::find_permute_point(arma::vec coords, unsigned int data_
 
 	ASSERT(false);
     return 0;
-}
-
-unsigned int EvalPoints::check_dim(unsigned int quad_dim, unsigned int obj_dim) {
-	ASSERT_EQ(quad_dim, obj_dim);
-    if (this->dim_ == EvalPoints::undefined_dim) {
-        this->dim_ = quad_dim;
-        local_points_ = Armor::Array<double>(this->dim_);
-    } else
-        ASSERT_EQ(this->dim_, quad_dim);
-    return this->dim_;
 }
 
 

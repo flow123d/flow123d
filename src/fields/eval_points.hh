@@ -45,8 +45,11 @@ public:
 	/// Maximal number of hold subsets.
 	static constexpr unsigned int max_subsets = 10;
 
+	/// Maximal average number of points hold in subset.
+	static const unsigned int max_subset_points = 30;
+
     /// Constructor
-	EvalPoints();
+	EvalPoints(unsigned int dim);
 
     /// Return size of evaluation points object (number of points).
     inline unsigned int size() const {
@@ -108,9 +111,6 @@ private:
     /// Find position of local point (coords) in subvector of local points given by limits <data_begin,  ... data_end)
 	template <unsigned int dim>
     unsigned int find_permute_point(arma::vec coords, unsigned int data_begin, unsigned int data_end);
-
-    /// Check dimension of EvalSubset object based on Quadrature, all subsets must be of same dimension.
-    unsigned int check_dim(unsigned int quad_dim, unsigned int obj_dim);
 
     Armor::Array<double> local_points_;                           ///< Local coords of points vector
     std::array<int, EvalPoints::max_subsets+1> subset_starts_;    ///< Indices of subsets data in local_points_ vector, used size is n_subsets_ + 1
