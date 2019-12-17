@@ -869,18 +869,24 @@ void DarcyMH::assembly_source_term()
     START_TIMER("assembly source term");
    	balance_->start_source_assembly(data_->water_balance_idx);
 
+    std::vector<LongIdx> global_dofs(data_->dh_->max_elem_dofs());
+
    	for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
-        LocalElementAccessorBase<3> ele_ac(dh_cell);
         ElementAccessor<3> ele = dh_cell.elm();
 
+        const uint ndofs = dh_cell.n_dofs();
+        global_dofs.resize(ndofs);
+        dh_cell.get_dof_indices(global_dofs);
+        
         double cs = data_->cross_section.value(ele.centre(), ele);
 
         // set sources
         double source = ele.measure() * cs *
                 data_->water_source_density.value(ele.centre(), ele);
-        schur0->rhs_set_value(ele_ac.ele_row(), -1.0 * source );
+        schur0->rhs_set_value(global_dofs[ndofs/2], -1.0 * source );
 
-        balance_->add_source_values(data_->water_balance_idx, ele.region().bulk_idx(), {(LongIdx) ele_ac.ele_local_row()}, {0}, {source});
+        balance_->add_source_values(data_->water_balance_idx, ele.region().bulk_idx(),
+                                    {dh_cell.get_loc_dof_indices()[ndofs/2]}, {0}, {source});
     }
 
     balance_->finish_source_assembly(data_->water_balance_idx);
@@ -1376,9 +1382,10 @@ void DarcyMH::read_initial_condition()
 
 	DebugOut().fmt("Setup with dt: {}\n", time_->dt());
 	for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
-		LocalElementAccessorBase<3> ele_ac(dh_cell);
-		// set initial condition
-		local_sol[ele_ac.ele_local_row()] = data_->init_pressure.value(ele_ac.centre(),ele_ac.element_accessor());
+	    ElementAccessor<3> ele = dh_cell.elm();
+	    // set initial condition
+        const Idx p_ele_dof = dh_cell.get_loc_dof_indices()[dh_cell.n_dofs()/2];
+	    local_sol[p_ele_dof] = data_->init_pressure.value(ele.centre(),ele);
 	}
 }
 
@@ -1396,17 +1403,23 @@ void DarcyMH::setup_time_term() {
 
    	balance_->start_mass_assembly(data_->water_balance_idx);
 
-   	for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
-        LocalElementAccessorBase<3> ele_ac(dh_cell);
+   	std::vector<LongIdx> dofs;
+    dofs.reserve(data_->dh_->max_elem_dofs());
 
+   	for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
+        ElementAccessor<3> ele = dh_cell.elm();
+        dofs.resize(dh_cell.n_dofs());
+        dh_cell.get_dof_indices(dofs);
+
+        const uint p_ele_dof = dh_cell.n_dofs() / 2;
         // set new diagonal
-        double diagonal_coeff = data_->cross_section.value(ele_ac.centre(), ele_ac.element_accessor())
-        		* data_->storativity.value(ele_ac.centre(), ele_ac.element_accessor())
-				* ele_ac.measure();
-        local_diagonal[ele_ac.ele_local_row()]= - diagonal_coeff / time_->dt();
+        double diagonal_coeff = data_->cross_section.value(ele.centre(), ele)
+        		* data_->storativity.value(ele.centre(), ele)
+				* ele.measure();
+        local_diagonal[dh_cell.get_loc_dof_indices()[p_ele_dof]]= - diagonal_coeff / time_->dt();
 
        	balance_->add_mass_matrix_values(data_->water_balance_idx,
-       	        ele_ac.region().bulk_idx(), { LongIdx(ele_ac.ele_row()) }, {diagonal_coeff});
+       	        ele.region().bulk_idx(), { dofs[p_ele_dof] }, {diagonal_coeff});
     }
     VecRestoreArray(new_diagonal,& local_diagonal);
     MatDiagonalSet(*( schur0->get_matrix() ), new_diagonal, ADD_VALUES);
