@@ -758,60 +758,52 @@ void DarcyMH::allocate_mh_matrix()
     // set auxiliary flag for switchting Dirichlet like BC
     data_->n_schur_compls = n_schur_compls;
     LinSys *ls = schur0;
-   
-
-
-    int local_dofs[10];
 
     // to make space for second schur complement, max. 10 neighbour edges of one el.
     double zeros[100000];
     for(int i=0; i<100000; i++) zeros[i] = 0.0;
 
-    std::vector<int> tmp_rows;
+    std::vector<LongIdx> tmp_rows;
     tmp_rows.reserve(200);
-    
-    unsigned int nsides, loc_size;
+
+    std::vector<LongIdx> dofs, dofs_ngh;
+    dofs.reserve(data_->dh_->max_elem_dofs());
+    dofs_ngh.reserve(data_->dh_->max_elem_dofs());
 
     for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
-        LocalElementAccessorBase<3> ele_ac(dh_cell);
-        nsides = ele_ac.n_sides();
+        ElementAccessor<3> ele = dh_cell.elm();
         
-        //allocate at once matrix [sides,ele,edges]x[sides,ele,edges]
-        loc_size = 1 + 2*nsides;
-        unsigned int i_side = 0;
-        
-        for (; i_side < nsides; i_side++) {
-            local_dofs[i_side] = ele_ac.side_row(i_side);
-            local_dofs[i_side+nsides] = ele_ac.edge_row(i_side);
-        }
-        local_dofs[i_side+nsides] = ele_ac.ele_row();
-        int * edge_rows = local_dofs + nsides;
-        //int ele_row = local_dofs[0];
+        const uint ndofs = dh_cell.n_dofs();
+        dofs.resize(ndofs);
+        dh_cell.get_dof_indices(dofs);
         
         // whole local MH matrix
-        ls->mat_set_values(loc_size, local_dofs, loc_size, local_dofs, zeros);
-        
+        ls->mat_set_values(ndofs, dofs.data(), ndofs, dofs.data(), zeros);
+
+        tmp_rows.clear();
 
         // compatible neighborings rows
-        unsigned int n_neighs = ele_ac.element_accessor()->n_neighs_vb();
-        unsigned int i=0;
+        unsigned int n_neighs = ele->n_neighs_vb();
         for ( DHCellSide neighb_side : dh_cell.neighb_sides() ) {
-        //for (unsigned int i = 0; i < n_neighs; i++) {
             // every compatible connection adds a 2x2 matrix involving
             // current element pressure  and a connected edge pressure
-            Neighbour *ngh = ele_ac.element_accessor()->neigh_vb[i];
-            DHCellAccessor cell_higher_dim = data_->dh_->cell_accessor_from_element(neighb_side.elem_idx());
-            LocalElementAccessorBase<3> acc_higher_dim( cell_higher_dim );
-            for (unsigned int j = 0; j < neighb_side.element().dim()+1; j++)
-            	if (neighb_side.element()->edge_idx(j) == ngh->edge_idx()) {
-            		int neigh_edge_row = acc_higher_dim.edge_row(j);
-            		tmp_rows.push_back(neigh_edge_row);
-            		break;
-            	}
-            //DebugOut() << "CC" << print_var(tmp_rows[i]);
-            ++i;
+
+            // read neighbor dofs (dh dofhandler)
+            // neighbor cell owning neighb_side
+            DHCellAccessor dh_neighb_cell = neighb_side.cell();
+
+            const uint ndofs_ngh = dh_neighb_cell.n_dofs();
+            dofs_ngh.resize(ndofs_ngh);
+            dh_neighb_cell.get_dof_indices(dofs_ngh);
+
+            // local index of pedge dof on neighboring cell
+            // (dim+1) is number of edges of higher dim element
+            const unsigned int t = dh_neighb_cell.n_dofs() - (dh_neighb_cell.dim()+1) + neighb_side.side().side_idx();
+            tmp_rows.push_back(dofs_ngh[t]);
         }
 
+        const uint nsides = ele->n_sides();
+        LongIdx * edge_rows = dofs.data() + nsides; // pointer to start of ele
         // allocate always also for schur 2
         ls->mat_set_values(nsides+1, edge_rows, n_neighs, tmp_rows.data(), zeros); // (edges, ele)  x (neigh edges)
         ls->mat_set_values(n_neighs, tmp_rows.data(), nsides+1, edge_rows, zeros); // (neigh edges) x (edges, ele)
@@ -820,22 +812,28 @@ void DarcyMH::allocate_mh_matrix()
         tmp_rows.clear();
 
         if (data_->mortar_method_ != NoMortar) {
-            auto &isec_list = mesh_->mixed_intersections().element_intersections_[ele_ac.ele_global_idx()];
+            auto &isec_list = mesh_->mixed_intersections().element_intersections_[ele.idx()];
             for(auto &isec : isec_list ) {
                 IntersectionLocalBase *local = isec.second;
-                LocalElementAccessorBase<3> slave_acc( data_->dh_->cell_accessor_from_element(local->bulk_ele_idx()) );
-                //DebugOut().fmt("Alloc: {} {}", ele_ac.ele_global_idx(), local->bulk_ele_idx());
-                for(unsigned int i_side=0; i_side < slave_acc.dim()+1; i_side++) {
-                    tmp_rows.push_back( slave_acc.edge_row(i_side) );
+                DHCellAccessor dh_cell_slave = data_->dh_->cell_accessor_from_element(local->bulk_ele_idx());
+
+                const uint ndofs_slave = dh_cell_slave.n_dofs();
+                dofs_ngh.resize(ndofs_slave);
+                dh_cell_slave.get_dof_indices(dofs_ngh);
+
+                //DebugOut().fmt("Alloc: {} {}", ele.idx(), local->bulk_ele_idx());
+                for(unsigned int i_side=0; i_side < dh_cell_slave.elm()->n_sides(); i_side++) {
+                    tmp_rows.push_back( dofs_ngh[(ndofs_slave+1)/2+i_side] );
                     //DebugOut() << "aedge" << print_var(tmp_rows[tmp_rows.size()-1]);
                 }
             }
         }
         /*
-        for(unsigned int i_side=0; i_side < ele_ac.element_accessor()->n_sides(); i_side++) {
+        for(unsigned int i_side=0; i_side < ele->n_sides(); i_side++) {
             DebugOut() << "aedge:" << print_var(edge_rows[i_side]);
         }*/
 
+        edge_rows = dofs.data() + nsides +1; // pointer to start of edges
         ls->mat_set_values(nsides, edge_rows, tmp_rows.size(), tmp_rows.data(), zeros);   // master edges x neigh edges
         ls->mat_set_values(tmp_rows.size(), tmp_rows.data(), nsides, edge_rows, zeros);   // neigh edges  x master edges
         ls->mat_set_values(tmp_rows.size(), tmp_rows.data(), tmp_rows.size(), tmp_rows.data(), zeros);  // neigh edges  x neigh edges
@@ -1167,7 +1165,6 @@ void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
 
 
     for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
-        // LocalElementAccessorBase<3> ele_ac(dh_cell);
         // for each element, create local numbering of dofs as fluxes (sides), pressure (element centre), Lagrange multipliers (edges), compatible connections
 
         dh_cell.get_dof_indices(cell_dofs_global);

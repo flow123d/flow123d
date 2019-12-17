@@ -436,8 +436,6 @@ protected:
         
         // no Neighbours => nothing to asssemble here
         if(dh_cell.elm()->n_neighs_vb() == 0) return;
-        
-        Neighbour *ngh;
 
         std::vector<LongIdx> higher_dim_dofs;
         //DebugOut() << "adc " << print_var(this) << print_var(side_quad_.size());
