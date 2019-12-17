@@ -68,7 +68,7 @@ class P0_CouplingAssembler :public MortarAssemblyBase {
 public:
     P0_CouplingAssembler(AssemblyDataPtr data);
     void assembly(LocalElementAccessorBase<3> ele_ac);
-    void pressure_diff(LocalElementAccessorBase<3> ele_ac, double delta);
+    void pressure_diff(const DHCellAccessor& dh_cell, double delta);
     void fix_velocity_local(const IsecData & row_ele, const IsecData &col_ele);
 private:
     inline arma::mat & tensor_average(unsigned int row_dim, unsigned int col_dim) {
@@ -101,7 +101,7 @@ public:
     }
 
     void assembly(LocalElementAccessorBase<3> ele_ac);
-    void add_sides(LocalElementAccessorBase<3> ele_ac, unsigned int shift, vector<int> &dofs, vector<double> &dirichlet);
+    void add_sides(const DHCellAccessor& dh_cell, unsigned int shift, vector<int> &dofs, vector<double> &dirichlet);
 private:
 
     arma::vec rhs;
