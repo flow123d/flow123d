@@ -61,9 +61,12 @@ ElementData<spacedim>::ElementData(unsigned int size,
 template<unsigned int spacedim>
 void ElementData<spacedim>::print()
 {
-    if (present_cell.is_valid())
+    if (cell.is_valid() || side.is_valid())
     {
-        printf("cell %d dim %d ", present_cell.idx(), present_cell.dim());
+        if (cell.is_valid())
+            printf("cell %d dim %d ", cell.elm_idx(), cell.dim());
+        else if (side.is_valid())
+            printf("cell %d dim %d side %d ", side.elem_idx(), side.dim(), side.side_idx());
         
         printf(" det[");
         for (auto d : determinants) printf("%g ", d); printf("]");
@@ -171,10 +174,10 @@ ElementValues<spacedim>::~ElementValues()
 
 
 template<unsigned int spacedim>
-void ElementValues<spacedim>::reinit(const ElementAccessor<spacedim> & cell)
+void ElementValues<spacedim>::reinit(const DHCellAccessor & cell)
 {
-	OLD_ASSERT_EQUAL( this->dim_, cell->dim() );
-    this->data.present_cell = cell;
+	OLD_ASSERT_EQUAL( this->dim_, cell.dim() );
+    this->data.cell = cell;
 
     // calculate Jacobian of mapping, JxW, inverse Jacobian
     switch (this->dim_)
@@ -208,7 +211,7 @@ void ElementValues<spacedim>::fill_data()
         (this->data.update_flags & update_inverse_jacobians) |
         (this->data.update_flags & update_quadrature_points))
     {
-        coords = MappingP1<dim,spacedim>::element_map(this->data.present_cell);
+        coords = MappingP1<dim,spacedim>::element_map(this->data.cell.elm());
     }
 
     // calculation of Jacobian dependent data
@@ -323,25 +326,22 @@ ElemSideValues<spacedim>::~ElemSideValues()
 
 
 template<unsigned int spacedim>
-void ElemSideValues<spacedim>::reinit(const ElementAccessor<spacedim> & cell,
-		unsigned int sid)
+void ElemSideValues<spacedim>::reinit(const DHCellSide & cell_side)
 {
-    ASSERT_LT_DBG( sid, cell->n_sides() );
-    ASSERT_EQ_DBG( this->dim_, cell->dim() );
-    this->data.present_cell = cell;
-    side_idx_ = sid;
+    ASSERT_EQ_DBG( this->dim_, cell_side.dim() );
+    this->data.side = cell_side;
     
     // calculate Jacobian of mapping, JxW, inverse Jacobian, normal vector(s)
     switch (this->dim_)
     {
         case 1:
-            fill_data<1>();
+            fill_side_data<1>();
             break;
         case 2:
-            fill_data<2>();
+            fill_side_data<2>();
             break;
         case 3:
-            fill_data<3>();
+            fill_side_data<3>();
             break;
         default:
             ASSERT(false)(this->dim_).error("Unsupported dimension.\n");
@@ -352,7 +352,7 @@ void ElemSideValues<spacedim>::reinit(const ElementAccessor<spacedim> & cell,
 
 template<unsigned int spacedim>
 template<unsigned int dim>
-void ElemSideValues<spacedim>::fill_data()
+void ElemSideValues<spacedim>::fill_side_data()
 {
     typename MappingP1<dim,spacedim>::ElementMap coords;
 
@@ -362,8 +362,11 @@ void ElemSideValues<spacedim>::fill_data()
         (this->data.update_flags & update_normal_vectors) |
         (this->data.update_flags & update_quadrature_points))
     {
-        coords = MappingP1<dim,spacedim>::element_map(this->data.present_cell);
+        coords = MappingP1<dim,spacedim>::element_map(this->side().element());
     }
+
+    const unsigned int side_idx = this->side().side_idx();
+    const unsigned int perm_idx = this->side().element()->permutation_idx(side_idx);
 
     // calculation of cell Jacobians and dependent data
     if ((this->data.update_flags & update_jacobians) |
@@ -406,7 +409,7 @@ void ElemSideValues<spacedim>::fill_data()
             if ((this->data.update_flags & update_normal_vectors))
             {
                 arma::vec::fixed<spacedim> n_cell;
-                n_cell = trans(ijac)*RefElement<dim>::normal_vector(side_idx_);
+                n_cell = trans(ijac)*RefElement<dim>::normal_vector(side_idx);
                 n_cell = n_cell/norm(n_cell,2);
                 for (unsigned int i=0; i<this->n_points_; i++)
                     this->data.normal_vectors.get<spacedim>(i) = n_cell;
@@ -419,7 +422,7 @@ void ElemSideValues<spacedim>::fill_data()
     if (this->data.update_flags & update_quadrature_points)
     {
         for (unsigned int i=0; i<this->n_points_; i++)
-            this->data.points.get<spacedim>(i) = coords*side_ref_data[side_idx_][this->data.present_cell->permutation_idx(side_idx_)]->bar_coords[i];
+            this->data.points.get<spacedim>(i) = coords*side_ref_data[side_idx][perm_idx]->bar_coords[i];
     }
 
     if (this->data.update_flags & update_side_JxW_values)
@@ -437,14 +440,14 @@ void ElemSideValues<spacedim>::fill_data()
             // calculation of side Jacobian
             for (unsigned int n=0; n<dim; n++)
                 for (unsigned int c=0; c<spacedim; c++)
-                    side_coords(c,n) = this->data.present_cell.side(side_idx_)->node(n)->point()[c];
+                    side_coords(c,n) = this->data.side.side().node(n)->point()[c];
             side_jac = MappingP1<MatrixSizes<dim>::dim_minus_one,spacedim>::jacobian(side_coords);
 
             // calculation of JxW
             side_det = fabs(determinant(side_jac));
         }
         for (unsigned int i=0; i<this->n_points_; i++)
-            this->data.JxW_values[i] = side_det*side_ref_data[side_idx_][this->data.present_cell->permutation_idx(side_idx_)]->weights[i];
+            this->data.JxW_values[i] = side_det*side_ref_data[side_idx][perm_idx]->weights[i];
     }
 }
 

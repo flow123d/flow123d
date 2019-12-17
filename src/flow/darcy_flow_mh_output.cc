@@ -381,8 +381,8 @@ void DarcyFlowMHOutput::l2_diff_local(DHCellAccessor dh_cell,
 
     ElementAccessor<3> ele = dh_cell.elm();
     LocalElementAccessorBase<3> ele_ac(dh_cell);
-    fv_rt.reinit(ele);
-    fe_values.reinit(ele);
+    fv_rt.reinit(dh_cell);
+    fe_values.reinit(dh_cell);
     
     double conductivity = result.data_->conductivity.value(ele.centre(), ele );
     double cross = result.data_->cross_section.value(ele.centre(), ele );

@@ -536,12 +536,12 @@ FEValues<dim,spacedim>::~FEValues()
 
 
 template<unsigned int dim,unsigned int spacedim>
-void FEValues<dim,spacedim>::reinit(const ElementAccessor<spacedim> &cell)
+void FEValues<dim,spacedim>::reinit(const DHCellAccessor &cell)
 {
-	OLD_ASSERT_EQUAL( dim, cell->dim() );
+	OLD_ASSERT_EQUAL( dim, cell.dim() );
     
     if (!this->elm_values->cell().is_valid() ||
-        this->elm_values->cell().idx() != cell.idx())
+        this->elm_values->cell() != cell)
     {
         ((ElementValues<spacedim> *)this->elm_values)->reinit(cell);
     }
@@ -574,8 +574,7 @@ FESideValues<dim,spacedim>::FESideValues(
                                  Quadrature & _sub_quadrature,
                                  FiniteElement<dim> & _fe,
                                  const UpdateFlags _flags)
-: FEValuesBase<dim,spacedim>(),
-  side_idx_(-1)
+: FEValuesBase<dim,spacedim>()
 {
     ASSERT_DBG( _sub_quadrature.dim() + 1 == dim );
     this->allocate( _sub_quadrature.size(), _fe, _flags);
@@ -613,22 +612,21 @@ FESideValues<dim,spacedim>::~FESideValues()
 
 
 template<unsigned int dim,unsigned int spacedim>
-void FESideValues<dim,spacedim>::reinit(const ElementAccessor<spacedim> &cell, unsigned int sid)
+void FESideValues<dim,spacedim>::reinit(const DHCellSide &cell_side)
 {
-    ASSERT_LT_DBG( sid, cell->n_sides() );
-    ASSERT_EQ_DBG( dim, cell->dim() );
+    ASSERT_EQ_DBG( dim, cell_side.dim() );
     
-    if (!this->elm_values->cell().is_valid() || 
-        this->elm_values->cell().idx() != cell.idx() ||
-        side_idx_ != sid)
+    if (!this->elm_values->side().is_valid() || 
+        this->elm_values->side() != cell_side)
     {
-        ((ElemSideValues<spacedim> *)this->elm_values)->reinit(cell, sid);
+        ((ElemSideValues<spacedim> *)this->elm_values)->reinit(cell_side);
     }
     
-    side_idx_ = sid;
-    
+    const LongIdx sid = cell_side.side_idx();
+    const unsigned int pid = this->elm_values->side().element()->permutation_idx(sid);
+
     // calculation of finite element data
-    this->fill_data(*this->elm_values, *side_fe_data[sid][cell->permutation_idx(sid)]);
+    this->fill_data(*this->elm_values, *side_fe_data[sid][pid]);
 }
 
 

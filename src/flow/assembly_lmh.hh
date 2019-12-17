@@ -136,7 +136,7 @@ public:
         flux_in_center.zeros();
         auto ele = ele_ac.element_accessor();
 
-        velocity_interpolation_fv_.reinit(ele);
+        velocity_interpolation_fv_.reinit(ele_ac.dh_cell());
         for (unsigned int li = 0; li < ele->n_sides(); li++) {
             flux_in_center += ad_->full_solution[ ele_ac.side_local_row(li) ]
                         * velocity_interpolation_fv_.vector_view(0).value(li,0);
@@ -400,7 +400,7 @@ protected:
         arma::vec3 &gravity_vec = ad_->gravity_vec_;
         
         ElementAccessor<3> ele = ele_ac.element_accessor();
-        fe_values_.reinit(ele);
+        fe_values_.reinit(ele_ac.dh_cell());
         unsigned int ndofs = fe_values_.get_fe()->n_dofs();
         unsigned int qsize = fe_values_.n_points();
         auto velocity = fe_values_.vector_view(0);
@@ -522,7 +522,7 @@ protected:
             unsigned int p = size()+i; // loc dof of higher ele edge
             
             ElementAccessor<3> ele_higher = neighb_side.cell().elm();
-            ngh_values_.fe_side_values_.reinit(ele_higher, neighb_side.side_idx());
+            ngh_values_.fe_side_values_.reinit(neighb_side);
             nv = ngh_values_.fe_side_values_.normal_vector(0);
 
             double value = ad_->sigma.value( ele.centre(), ele) *

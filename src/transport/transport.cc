@@ -414,6 +414,7 @@ void ConvectionTransport::set_boundary_conditions()
    	balance_->start_flux_assembly(subst_idx);
 
     for (loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
+        DHCellAccessor dh_cell(dh_.get(), loc_el);
         elm = mesh_->element_accessor( el_4_loc[loc_el] );
         if (elm->boundary_idx_ != NULL) {
         	LongIdx new_i = row_4_el[ elm.idx() ];
@@ -421,7 +422,8 @@ void ConvectionTransport::set_boundary_conditions()
         	for (unsigned int si=0; si<elm->n_sides(); si++) {
                 Boundary *b = elm.side(si)->cond();
                 if (b != NULL) {
-                    double flux = this->side_flux(elm, si);
+                    DHCellSide dh_side(dh_cell, si);
+                    double flux = this->side_flux(dh_side);
                     if (flux < 0.0) {
                         double aij = -(flux / elm.measure() );
 
@@ -795,12 +797,12 @@ void ConvectionTransport::create_transport_matrix_mpi() {
         new_i = row_4_el[ dh_cell.elm_idx() ];
         elm = dh_cell.elm();
         for( DHCellSide cell_side : dh_cell.side_range() ) {
-            flux = this->side_flux(elm, cell_side.side_idx());
+            flux = this->side_flux(cell_side);
             if (cell_side.cond() == NULL) {
                 edg_flux = 0;
                 for( DHCellSide edge_side : cell_side.edge_sides() ) {
                     el2 = edge_side.element();
-                    flux2 = this->side_flux(el2, edge_side.side_idx());
+                    flux2 = this->side_flux(edge_side);
                     if ( flux2 > 0)  edg_flux+= flux2;
                 }
                 for( DHCellSide edge_side : cell_side.edge_sides() )
@@ -809,7 +811,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
                         new_j = row_4_el[j];
 
                         el2 = edge_side.element();
-                        flux2 = this->side_flux(el2, edge_side.side_idx());
+                        flux2 = this->side_flux(edge_side);
                         if ( flux2 > 0.0 && flux <0.0)
                             aij = -(flux * flux2 / ( edg_flux * dh_cell.elm().measure() ) );
                         else aij =0;
@@ -825,7 +827,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
             ASSERT( neighb_side.elem_idx() != dh_cell.elm_idx() ).error("Elm. same\n");
             new_j = row_4_el[ neighb_side.elem_idx() ];
             el2 = neighb_side.element();
-            flux = this->side_flux(el2, neighb_side.side_idx());
+            flux = this->side_flux(neighb_side);
 
             // volume source - out-flow from higher dimension
             if (flux > 0.0)  aij = flux / dh_cell.elm().measure();
@@ -895,20 +897,20 @@ void ConvectionTransport::set_balance_object(std::shared_ptr<Balance> balance)
     subst_idx = balance_->add_quantities(substances_.names());
 }
 
-double ConvectionTransport::side_flux(ElementAccessor<3> &cell, unsigned int i_side)
+double ConvectionTransport::side_flux(const DHCellSide &cell_side)
 {
-    if (cell.dim()==3) return calculate_side_flux<3>(cell, i_side);
-    else if (cell.dim()==2) return calculate_side_flux<2>(cell, i_side);
-    else return calculate_side_flux<1>(cell, i_side);
+    if (cell_side.dim()==3) return calculate_side_flux<3>(cell_side);
+    else if (cell_side.dim()==2) return calculate_side_flux<2>(cell_side);
+    else return calculate_side_flux<1>(cell_side);
 }
 
 template<unsigned int dim>
-double ConvectionTransport::calculate_side_flux(ElementAccessor<3> &cell, unsigned int i_side)
+double ConvectionTransport::calculate_side_flux(const DHCellSide &cell_side)
 {
-    ASSERT_EQ(cell->dim(), dim).error("Element dimension mismatch!");
+    ASSERT_EQ(cell_side.dim(), dim).error("Element dimension mismatch!");
 
-    feo_.fe_values<dim>()->reinit(cell, i_side);
-    auto vel = velocity_field_ptr_->value(cell.side(i_side)->centre(), cell);
+    feo_.fe_values<dim>()->reinit(cell_side);
+    auto vel = velocity_field_ptr_->value(cell_side.centre(), cell_side.element());
     double side_flux = arma::dot(vel, feo_.fe_values<dim>()->normal_vector(0)) * feo_.fe_values<dim>()->JxW(0);
     return side_flux;
 }

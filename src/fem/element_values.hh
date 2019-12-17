@@ -29,6 +29,7 @@
 #include "mesh/ref_element.hh"                // for RefElement
 #include "mesh/accessors.hh"                  // for ElementAccessor
 #include "fem/update_flags.hh"                // for UpdateFlags
+#include "fem/dh_cell_accessor.hh"            // for DHCellAccessor, DHCellSide
 
 class Quadrature;
 
@@ -107,8 +108,11 @@ public:
     /// Flags that indicate which finite element quantities are to be computed.
     UpdateFlags update_flags;
 
-    /// Iterator to the last reinit-ed cell.
-    ElementAccessor<spacedim> present_cell;
+    /// Iterator to last updated cell.
+    DHCellAccessor cell;
+
+    /// Iterator to last updated cell side.
+    DHCellSide side;
 
 };
 
@@ -220,8 +224,12 @@ public:
     { return n_points_; }
     
     /// Return cell at which the values were reinited.
-    const ElementAccessor<spacedim> &cell() const
-    { return data.present_cell; }
+    const DHCellAccessor &cell() const
+    { return data.cell; }
+
+    /// Return cell side where the values were reinited.
+    const DHCellSide &side() const
+    { return data.side; }
 
 
 
@@ -276,7 +284,7 @@ public:
      *
      * @param cell The actual cell.
      */
-    void reinit(const ElementAccessor<spacedim> &cell);
+    void reinit(const DHCellAccessor &cell);
     
     /// Return quadrature.
     const Quadrature &quadrature() const
@@ -334,11 +342,9 @@ public:
     /**
 	 * @brief Update cell-dependent data (Jacobians etc.)
 	 *
-	 * @param cell The actual cell.
-	 * @param sid  Number of the side of the cell.
+	 * @param cell_side The actual cell and side.
 	 */
-    void reinit(const ElementAccessor<spacedim> &cell,
-        		unsigned int sid);
+    void reinit(const DHCellSide &cell_side);
 
     /// Return quadrature for given side and its permutation.
     const Quadrature &quadrature(unsigned int sid, unsigned int pid) const
@@ -351,7 +357,7 @@ private:
      * @brief Calculates the mapping data on a side of a cell.
      */
     template<unsigned int dim>
-    void fill_data();
+    void fill_side_data();
 
     /// Number of sides in reference cell.
     const unsigned int n_sides_;
@@ -367,9 +373,6 @@ private:
 
     /// Data on reference element (for each side and its permutation).
     std::vector<std::vector<RefElementData*>> side_ref_data;
-    
-    /// Current side on which ElemSideValues was recomputed.
-    unsigned int side_idx_;
     
 };
 

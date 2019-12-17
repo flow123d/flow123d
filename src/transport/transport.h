@@ -281,13 +281,13 @@ private:
 	/**
 	 * @brief Wrapper of following method, call side_flux with correct template parameter.
 	 */
-	double side_flux(ElementAccessor<3> &cell, unsigned int i_side);
+	double side_flux(const DHCellSide &cell_side);
 
 	/**
 	 * @brief Calculate flux on side of given element specified by dimension.
 	 */
 	template<unsigned int dim>
-	double calculate_side_flux(ElementAccessor<3> &cell, unsigned int i_side);
+	double calculate_side_flux(const DHCellSide &cell);
 
 
 

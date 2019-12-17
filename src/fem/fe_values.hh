@@ -452,7 +452,7 @@ public:
      *
      * @param cell The actual cell.
      */
-    void reinit(const ElementAccessor<spacedim> &cell);
+    void reinit(const DHCellAccessor &cell);
     
     
     
@@ -510,11 +510,9 @@ public:
     /**
 	 * @brief Update cell-dependent FE data (values, gradients).
 	 *
-	 * @param elm_data Data on actual cell (jacobian, etc.]
-	 * @param sid  Number of the side of the cell.
+	 * @param cell_side Accessor to cell side.
 	 */
-    void reinit(const ElementAccessor<spacedim> &cell,
-        		unsigned int sid);
+    void reinit(const DHCellSide &cell_side);
 
 
 private:
@@ -524,8 +522,6 @@ private:
     
     /// Internal data (shape functions on reference element) for all sides and permuted quadrature points.
     typename FEValuesBase<dim,spacedim>::FEInternalData *side_fe_data[RefElement<dim>::n_sides][RefElement<dim>::n_side_permutations];
-    
-    LongIdx side_idx_;
     
 };
 

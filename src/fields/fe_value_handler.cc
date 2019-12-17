@@ -135,7 +135,7 @@ void FEValueHandler<elemdim, spacedim, Value>::value_list(const Armor::array &po
 	FEValues<elemdim,spacedim> fe_values(quad, *dh_->ds()->fe(elm).get<elemdim>(), update_values);
 
     for (unsigned int k=0; k<point_list.n_vals(); k++) {
-		fe_values.reinit( elm );
+		fe_values.reinit( cell );
 
 		Value envelope(value_list[k]);
 		envelope.zeros();
