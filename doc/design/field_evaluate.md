@@ -72,7 +72,7 @@ Summary all quadrature points on the reference elements. Necessary for the Field
   their points.
 
 **Integral**
-Every kind of integral is associated with an "assembly object"
+We have four types of "elementatry integration domains":
 - BulkIntegral - on Cell
 - EdgeIntegral - on edge.side_range
 - CouplingIntegral - on bulk.ngh_range
@@ -83,20 +83,23 @@ Every kind of integral is associated with an "assembly object"
 - Functions provided by Integrals:
   - Mark active eval points on the actual patch. Assembly algorithm iterates over "elementary integration domains" 
     in the order of their Hilbert index. The integral has to iterate over its quadrature points. The point  and distributing the points on them until we reach the number of active points per patch.
+  - Iteration over qudrature points for given actual "elementaty integration domain" (e.g. edge integral for the CellSide)  
 - Same method Integral::points(assembly_object) is used later on to iterate over quadrature points.
 - In principle there should be one kind of the quadrature point accessor for every kind of the integral.
 
 Operations provided by the quadrature points:
-	- all points - retrieve value of a field in the point, e.g. `pressure(bulk_point)`		
-	- SidePoint - permute(CellSide) -> SidePoint; allows iteration over all pairs of sides of an edge, in fact allows
-	  to form integrals mixing points of any two faces of same dimension, even non-colocated.
-	- CouplingSidePoint - bulk() -> BulkPoint
+	`field(point)` - retrieve value of a field in the point, e.g. `pressure(bulk_point)`		
+	`side_point.permute(cell_side)` - returns `SidePoint` on the other side;
+	    allows iteration over all pairs of sides of an edge, in fact allows
+	    to form integrals mixing points of any two faces of same dimension, even non-colocated.
+	`coupling_side_point.bulk()` - returns `BulkPoint` collocated with the side point in the dimension coupling
 Possible interface to shape functions:
+	`ElementFields element_fields ...` - values independent of the FEM, depends on mesh and mapping
 	`FieldFE pressure_fe ...`
 	`element_fields.normal(side_point)` - outer normal at a side point
 	`element_fields.coord(point)` - absolute coordinates of the point
 	`element_fields.JxW(point)` - Jacobina times quadrature weight of the point
-    `pressure_fe.base(i, point)` - value of the i-th shape function in the point
+        `pressure_fe.base(i, point)` - value of the i-th shape function in the point
 	`pressure_fe.grad(i, point)` - value of the i-th base function in the point
 
 **ElementCacheMap**
