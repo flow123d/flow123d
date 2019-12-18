@@ -90,6 +90,9 @@ public:
      */
     std::vector<double> JxW_values;
 
+    /// JxW values for sides.
+    std::vector<double> side_JxW_values;
+
     /// Jacobians (spacedim x dim) of the mapping at the quadrature points.
     Armor::array jacobians;
 
@@ -206,6 +209,18 @@ public:
     {
         ASSERT_LT_DBG(point_no, n_points_);
         return data.JxW_values[point_no];
+    }
+
+    /**
+     * @brief Return the product of side Jacobian determinant and the quadrature
+     * weight at given quadrature point.
+     *
+     * @param point_no Number of the quadrature point.
+     */
+    inline double side_JxW(const unsigned int point_no) const
+    {
+        ASSERT_LT_DBG(point_no, n_points_);
+        return data.side_JxW_values[point_no];
     }
 
     /**

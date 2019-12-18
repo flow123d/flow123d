@@ -214,7 +214,9 @@ public:
     inline double JxW(const unsigned int point_no) override
     {
         ASSERT_LT_DBG(point_no, n_points_);
-        return elm_values->JxW(point_no);
+        // TODO: This is temporary solution to distinguish JxW on element and side_JxW on side.
+        // In future we should call the appropriate method in elm_values.
+        return (elm_values->cell().is_valid()) ? elm_values->JxW(point_no) : elm_values->side_JxW(point_no);
     }
 
     /**
