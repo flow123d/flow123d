@@ -91,7 +91,7 @@ void ElementData<spacedim>::print()
 
 
 template<unsigned int spacedim>
-RefElementData *ElementValuesBase<spacedim>::init_ref_data(const Quadrature &q)
+RefElementData *ElementValues<spacedim>::init_ref_data(const Quadrature &q)
 {
     ASSERT_DBG( q.dim() == this->data.dim_ );
     ASSERT_DBG( q.size() == n_points_ );
@@ -123,7 +123,7 @@ RefElementData *ElementValuesBase<spacedim>::init_ref_data(const Quadrature &q)
 
 
 template<unsigned int spacedim>
-UpdateFlags ElementValuesBase<spacedim>::update_each(UpdateFlags flags)
+UpdateFlags ElementValues<spacedim>::update_each(UpdateFlags flags)
 {
     switch (dim_)
     {
@@ -153,14 +153,48 @@ ElementValues<spacedim>::ElementValues(
          Quadrature &_quadrature,
          UpdateFlags _flags,
          unsigned int dim)
-: ElementValuesBase<spacedim>(_quadrature.size(), _flags, dim ),
-  ref_data(nullptr)
+: dim_(dim),
+  n_points_(_quadrature.size()),
+  n_sides_(_quadrature.dim() == dim ? 0 : dim+1),
+  n_side_permutations_(_quadrature.dim() +1 == dim ? (dim+1)*(2*dim*dim-5*dim+6)/6 : 0),
+  ref_data(nullptr),
+  side_ref_data(n_sides_, std::vector<RefElementData*>(n_side_permutations_)),
+  data(n_points_, update_each(_flags), dim)
 {
     if (dim == 0) return; // avoid unnecessary allocation of dummy 0 dimensional objects
-    ASSERT_DBG( _quadrature.dim() == dim );
-
-    // precompute finite element data
-    ref_data = this->init_ref_data(_quadrature);
+    if ( _quadrature.dim() == dim )
+    {
+        // precompute element data
+        ref_data = this->init_ref_data(_quadrature);
+    }
+    else if ( _quadrature.dim() + 1 == dim )
+    {
+        // precompute side data
+        for (unsigned int sid = 0; sid < n_sides_; sid++)
+        {
+            for (unsigned int pid = 0; pid < n_side_permutations_; pid++)
+            {
+                Quadrature side_quad(dim);
+                // transform the side quadrature points to the cell quadrature points
+                switch (dim)
+                {
+                    case 1:
+                        side_quad = _quadrature.make_from_side<1>(sid, pid);
+                        break;
+                    case 2:
+                        side_quad = _quadrature.make_from_side<2>(sid, pid);
+                        break;
+                    case 3:
+                        side_quad = _quadrature.make_from_side<3>(sid, pid);
+                        break;
+                    default:
+                        ASSERT(false)(dim).error("Unsupported dimension.\n");
+                        break;
+                }
+                side_ref_data[sid][pid] = this->init_ref_data(side_quad);
+            }
+        }
+    }
 }
 
 
@@ -168,8 +202,11 @@ template<unsigned int spacedim>
 ElementValues<spacedim>::~ElementValues()
 {
     if (ref_data) delete ref_data;
-}
 
+    for (unsigned int sid=0; sid<n_sides_; sid++)
+        for (unsigned int pid=0; pid<n_side_permutations_; pid++)
+            delete side_ref_data[sid][pid];
+}
 
 
 template<unsigned int spacedim>
@@ -189,6 +226,31 @@ void ElementValues<spacedim>::reinit(const DHCellAccessor & cell)
             break;
         case 3:
             fill_data<3>();
+            break;
+        default:
+            ASSERT(false)(this->dim_).error("Unsupported dimension.\n");
+            break;
+    }
+}
+
+
+template<unsigned int spacedim>
+void ElementValues<spacedim>::reinit(const DHCellSide & cell_side)
+{
+    ASSERT_EQ_DBG( this->dim_, cell_side.dim() );
+    this->data.side = cell_side;
+    
+    // calculate Jacobian of mapping, JxW, inverse Jacobian, normal vector(s)
+    switch (this->dim_)
+    {
+        case 1:
+            fill_side_data<1>();
+            break;
+        case 2:
+            fill_side_data<2>();
+            break;
+        case 3:
+            fill_side_data<3>();
             break;
         default:
             ASSERT(false)(this->dim_).error("Unsupported dimension.\n");
@@ -229,7 +291,7 @@ void ElementValues<spacedim>::fill_data()
         // calculation of determinant dependent data
         if ((this->data.update_flags & update_volume_elements) | (this->data.update_flags & update_JxW_values))
         {
-            double det = fabs(determinant(jac));
+            double det = fabs(::determinant(jac));
 
             // update determinants
             if (this->data.update_flags & update_volume_elements)
@@ -268,90 +330,9 @@ void ElementValues<spacedim>::fill_data()
 }
 
 
-
-
-
-
-
-
-
-template<unsigned int spacedim>
-ElemSideValues<spacedim>::ElemSideValues(
-                                 Quadrature & _sub_quadrature,
-                                 const UpdateFlags _flags,
-                                 unsigned int dim)
-: ElementValuesBase<spacedim>(_sub_quadrature.size(), _flags, dim),
-  n_sides_(dim+1),
-  n_side_permutations_((dim+1)*(2*dim*dim-5*dim+6)/6),
-  side_ref_data(n_sides_, std::vector<RefElementData*>(n_side_permutations_))
-{
-    ASSERT_DBG( _sub_quadrature.dim() + 1 == dim );
-
-    for (unsigned int sid = 0; sid < n_sides_; sid++)
-    {
-    	for (unsigned int pid = 0; pid < n_side_permutations_; pid++)
-    	{
-            Quadrature side_quad(dim);
-    		// transform the side quadrature points to the cell quadrature points
-            switch (dim)
-            {
-                case 1:
-                    side_quad = _sub_quadrature.make_from_side<1>(sid, pid);
-                    break;
-                case 2:
-                    side_quad = _sub_quadrature.make_from_side<2>(sid, pid);
-                    break;
-                case 3:
-                    side_quad = _sub_quadrature.make_from_side<3>(sid, pid);
-                    break;
-                default:
-                    ASSERT(false)(dim).error("Unsupported dimension.\n");
-                    break;
-            }
-    		side_ref_data[sid][pid] = this->init_ref_data(side_quad);
-    	}
-    }
-}
-
-
-
-template<unsigned int spacedim>
-ElemSideValues<spacedim>::~ElemSideValues()
-{
-    for (unsigned int sid=0; sid<n_sides_; sid++)
-        for (unsigned int pid=0; pid<n_side_permutations_; pid++)
-            delete side_ref_data[sid][pid];
-}
-
-
-template<unsigned int spacedim>
-void ElemSideValues<spacedim>::reinit(const DHCellSide & cell_side)
-{
-    ASSERT_EQ_DBG( this->dim_, cell_side.dim() );
-    this->data.side = cell_side;
-    
-    // calculate Jacobian of mapping, JxW, inverse Jacobian, normal vector(s)
-    switch (this->dim_)
-    {
-        case 1:
-            fill_side_data<1>();
-            break;
-        case 2:
-            fill_side_data<2>();
-            break;
-        case 3:
-            fill_side_data<3>();
-            break;
-        default:
-            ASSERT(false)(this->dim_).error("Unsupported dimension.\n");
-            break;
-    }
-}
-
-
 template<unsigned int spacedim>
 template<unsigned int dim>
-void ElemSideValues<spacedim>::fill_side_data()
+void ElementValues<spacedim>::fill_side_data()
 {
     typename MappingP1<dim,spacedim>::ElementMap coords;
 
@@ -383,7 +364,7 @@ void ElemSideValues<spacedim>::fill_side_data()
         // update determinants of Jacobians
         if (this->data.update_flags & update_volume_elements)
         {
-            double det = fabs(determinant(jac));
+            double det = fabs(::determinant(jac));
             for (unsigned int i=0; i<this->n_points_; i++)
                 this->data.determinants[i] = det;
         }
@@ -443,7 +424,7 @@ void ElemSideValues<spacedim>::fill_side_data()
             side_jac = MappingP1<MatrixSizes<dim>::dim_minus_one,spacedim>::jacobian(side_coords);
 
             // calculation of JxW
-            side_det = fabs(determinant(side_jac));
+            side_det = fabs(::determinant(side_jac));
         }
         for (unsigned int i=0; i<this->n_points_; i++)
             this->data.JxW_values[i] = side_det*side_ref_data[side_idx][perm_idx]->weights[i];
@@ -454,7 +435,5 @@ void ElemSideValues<spacedim>::fill_side_data()
 
 
 
-template class ElementValuesBase<3>;
 template class ElementValues<3>;
-template class ElemSideValues<3>;
 

@@ -26,7 +26,7 @@
 #include <new>                                // for operator new[]
 #include <string>                             // for operator<<
 #include <vector>                             // for vector
-#include "fem/element_values.hh"              // for ElementValuesBase, ElementValues, ElemSideValues
+#include "fem/element_values.hh"              // for ElementValues
 #include "fem/fe_values_views.hh"             // for FEValuesViews
 #include "mesh/ref_element.hh"                // for RefElement
 #include "mesh/accessors.hh"
@@ -359,25 +359,25 @@ protected:
      *
      * @param fe_data Precomputed finite element data.
      */
-    void fill_data(const ElementValuesBase<spacedim> &elm_values, const FEInternalData &fe_data);
+    void fill_data(const ElementValues<spacedim> &elm_values, const FEInternalData &fe_data);
     
     /// Compute shape functions and gradients on the actual cell for scalar FE.
-    void fill_scalar_data(const ElementValuesBase<spacedim> &elm_values, const FEInternalData &fe_data);
+    void fill_scalar_data(const ElementValues<spacedim> &elm_values, const FEInternalData &fe_data);
     
     /// Compute shape functions and gradients on the actual cell for vectorial FE.
-    void fill_vec_data(const ElementValuesBase<spacedim> &elm_values, const FEInternalData &fe_data);
+    void fill_vec_data(const ElementValues<spacedim> &elm_values, const FEInternalData &fe_data);
     
     /// Compute shape functions and gradients on the actual cell for vectorial FE.
-    void fill_vec_contravariant_data(const ElementValuesBase<spacedim> &elm_values, const FEInternalData &fe_data);
+    void fill_vec_contravariant_data(const ElementValues<spacedim> &elm_values, const FEInternalData &fe_data);
     
     /// Compute shape functions and gradients on the actual cell for Raviart-Thomas FE.
-    void fill_vec_piola_data(const ElementValuesBase<spacedim> &elm_values, const FEInternalData &fe_data);
+    void fill_vec_piola_data(const ElementValues<spacedim> &elm_values, const FEInternalData &fe_data);
     
     /// Compute shape functions and gradients on the actual cell for tensorial FE.
-    void fill_tensor_data(const ElementValuesBase<spacedim> &elm_values, const FEInternalData &fe_data);
+    void fill_tensor_data(const ElementValues<spacedim> &elm_values, const FEInternalData &fe_data);
     
     /// Compute shape functions and gradients on the actual cell for mixed system of FE.
-    void fill_system_data(const ElementValuesBase<spacedim> &elm_values, const FEInternalData &fe_data);
+    void fill_system_data(const ElementValues<spacedim> &elm_values, const FEInternalData &fe_data);
     
 
     /// Number of integration points.
@@ -397,7 +397,7 @@ protected:
     UpdateFlags update_flags;
 
     /// Auxiliary object for calculation of element-dependent data.
-    ElementValuesBase<spacedim> *elm_values;
+    ElementValues<spacedim> *elm_values;
     
     /// Vector of FEValues for sub-elements of FESystem.
     std::vector<std::shared_ptr<FEValuesBase<dim,spacedim> > > fe_values_vec;

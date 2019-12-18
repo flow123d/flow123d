@@ -119,29 +119,47 @@ public:
 
 
 /**
- * @brief Base class for ElementValues and ElemSideValues
+ * @brief Class for computation of data on cell and side.
  */
 template<unsigned int spacedim>
-class ElementValuesBase
+class ElementValues
 {
 public:
 
     /**
-     * Correct deallocation of objects created by 'initialize' methods.
-     */
-    virtual ~ElementValuesBase() {}
+	 * @brief Constructor.
+	 *
+	 * Initializes structures and calculates
+     * cell-independent data. The quadrature can have dimension
+     * either dim or dim-1 (for values on side). In the later
+     * case also normal vectors and side jacobians are computed.
+	 *
+	 * @param _quadrature The quadrature rule.
+	 * @param _flags      The update flags.
+     * @param dim         Dimension of space of reference cell.
+	 */
+    ElementValues(Quadrature &_quadrature,
+             UpdateFlags _flags,
+             unsigned int dim);
+    
+    /// Correct deallocation of objects created by 'initialize' methods.
+    ~ElementValues();
+
 
 
     /**
-     * @brief Allocates space for computed data.
+     * @brief Update cell-dependent data (gradients, Jacobians etc.)
      *
-     * @param n_points Number of quadrature points.
-     * @param flags    The update flags.
+     * @param cell The actual cell.
      */
-    ElementValuesBase(unsigned int n_points,
-                      UpdateFlags flags,
-                      unsigned int dim)
-    : dim_(dim), n_points_(n_points), data(n_points, update_each(flags), dim) {}
+    void reinit(const DHCellAccessor &cell);
+
+    /**
+	 * @brief Update side-dependent data (Jacobians etc.)
+	 *
+	 * @param cell_side The actual cell and side.
+	 */
+    void reinit(const DHCellSide &cell_side);
     
     /**
      * @brief Determine quantities to be recomputed on each cell.
@@ -237,116 +255,22 @@ protected:
     
     /// Precompute data on reference element.
     RefElementData *init_ref_data(const Quadrature &q);
-    
-    /// Dimension of space of reference cell.
-    unsigned int dim_;
 
-    /// Number of integration points.
-    unsigned int n_points_;
-
-    /// Data computed by the mapping.
-    ElementData<spacedim> data;
-    
-};
-
-
-
-
-/**
- * @brief Calculates element data on the actual cell.
- *
- * @param spacedim Dimension of the Euclidean space where the actual
- *                 cell lives.
- */
-template<unsigned int spacedim = 3>
-class ElementValues : public ElementValuesBase<spacedim>
-{
-public:
-
-	/**
-	 * @brief Constructor.
-	 *
-	 * Initializes structures and calculates
-     * cell-independent data.
-	 *
-	 * @param _quadrature The quadrature rule.
-	 * @param _flags      The update flags.
-     * @param dim         Dimension of space of reference cell.
-	 */
-    ElementValues(Quadrature &_quadrature,
-             UpdateFlags _flags,
-             unsigned int dim);
-    
-    ~ElementValues();
-
-    /**
-     * @brief Update cell-dependent data (gradients, Jacobians etc.)
-     *
-     * @param cell The actual cell.
-     */
-    void reinit(const DHCellAccessor &cell);
-    
-    
-private:
-    
     /// Compute data from reference cell and using MappingP1.
     template<unsigned int dim>
     void fill_data();
-    
-    /// Precomputed element data.
-    RefElementData *ref_data;
 
-
-};
-
-
-
-
-/**
- * @brief Calculates element data on a side.
- *
- * @param spacedim Dimension of the Euclidean space where the actual
- *                 cell lives.
- */
-template<unsigned int spacedim = 3>
-class ElemSideValues : public ElementValuesBase<spacedim>
-{
-
-public:
-
-    /**
-     * @brief Constructor.
-     *
-     * Initializes structures and calculates
-     * cell-independent data.
-     *
-     * @param _sub_quadrature The quadrature rule on the side (with dimension dim-1).
-     * @param flags           The update flags.
-     * @param dim             Dimension of space of reference cell.
-     */
-    ElemSideValues(Quadrature &_sub_quadrature,
-             UpdateFlags flags,
-             unsigned int dim);
-
-    /// Destructor.
-    virtual ~ElemSideValues();
-
-    /**
-	 * @brief Update cell-dependent data (Jacobians etc.)
-	 *
-	 * @param cell_side The actual cell and side.
-	 */
-    void reinit(const DHCellSide &cell_side);
-
-
-
-private:
-    
-    /**
-     * @brief Calculates the mapping data on a side of a cell.
-     */
+    /// Calculates the mapping data on a side of a cell.
     template<unsigned int dim>
     void fill_side_data();
+
+    
+
+    /// Dimension of space of reference cell.
+    const unsigned int dim_;
+
+    /// Number of integration points.
+    const unsigned int n_points_;
 
     /// Number of sides in reference cell.
     const unsigned int n_sides_;
@@ -354,13 +278,15 @@ private:
     /// Number of permutations of points on side of reference cell.
     const unsigned int n_side_permutations_;
 
+    /// Data on reference element.
+    RefElementData *ref_data;
+
     /// Data on reference element (for each side and its permutation).
     std::vector<std::vector<RefElementData*>> side_ref_data;
+
+    /// Data computed by the mapping.
+    ElementData<spacedim> data;
     
 };
-
-
-
-
 
 #endif /* ELEMENT_VALUES_HH_ */

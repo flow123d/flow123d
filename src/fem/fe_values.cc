@@ -251,7 +251,7 @@ arma::vec::fixed<spacedim> FEValuesBase<dim,spacedim>::shape_grad_component(cons
 
 
 template<unsigned int dim, unsigned int spacedim>
-void FEValuesBase<dim,spacedim>::fill_scalar_data(const ElementValuesBase<spacedim> &elm_values, const FEInternalData &fe_data)
+void FEValuesBase<dim,spacedim>::fill_scalar_data(const ElementValues<spacedim> &elm_values, const FEInternalData &fe_data)
 {
     ASSERT_DBG(fe->type_ == FEScalar);
     
@@ -270,7 +270,7 @@ void FEValuesBase<dim,spacedim>::fill_scalar_data(const ElementValuesBase<spaced
 
 
 template<unsigned int dim, unsigned int spacedim>
-void FEValuesBase<dim,spacedim>::fill_vec_data(const ElementValuesBase<spacedim> &elm_values,
+void FEValuesBase<dim,spacedim>::fill_vec_data(const ElementValues<spacedim> &elm_values,
                                                const FEInternalData &fe_data)
 {
     ASSERT_DBG(fe->type_ == FEVector);
@@ -302,7 +302,7 @@ void FEValuesBase<dim,spacedim>::fill_vec_data(const ElementValuesBase<spacedim>
 
 
 template<unsigned int dim, unsigned int spacedim>
-void FEValuesBase<dim,spacedim>::fill_vec_contravariant_data(const ElementValuesBase<spacedim> &elm_values,
+void FEValuesBase<dim,spacedim>::fill_vec_contravariant_data(const ElementValues<spacedim> &elm_values,
                                                              const FEInternalData &fe_data)
 {
     ASSERT_DBG(fe->type_ == FEVectorContravariant);
@@ -334,7 +334,7 @@ void FEValuesBase<dim,spacedim>::fill_vec_contravariant_data(const ElementValues
 
 
 template<unsigned int dim, unsigned int spacedim>
-void FEValuesBase<dim,spacedim>::fill_vec_piola_data(const ElementValuesBase<spacedim> &elm_values,
+void FEValuesBase<dim,spacedim>::fill_vec_piola_data(const ElementValues<spacedim> &elm_values,
                                                      const FEInternalData &fe_data)
 {
     ASSERT_DBG(fe->type_ == FEVectorPiola);
@@ -367,7 +367,7 @@ void FEValuesBase<dim,spacedim>::fill_vec_piola_data(const ElementValuesBase<spa
 
 
 template<unsigned int dim, unsigned int spacedim>
-void FEValuesBase<dim,spacedim>::fill_tensor_data(const ElementValuesBase<spacedim> &elm_values,
+void FEValuesBase<dim,spacedim>::fill_tensor_data(const ElementValues<spacedim> &elm_values,
                                                   const FEInternalData &fe_data)
 {
     ASSERT_DBG(fe->type_ == FETensor);
@@ -399,7 +399,7 @@ void FEValuesBase<dim,spacedim>::fill_tensor_data(const ElementValuesBase<spaced
 
 
 template<unsigned int dim, unsigned int spacedim>
-void FEValuesBase<dim,spacedim>::fill_system_data(const ElementValuesBase<spacedim> &elm_values, const FEInternalData &fe_data)
+void FEValuesBase<dim,spacedim>::fill_system_data(const ElementValues<spacedim> &elm_values, const FEInternalData &fe_data)
 {
     ASSERT_DBG(fe->type_ == FEMixedSystem);
     
@@ -466,7 +466,7 @@ void FEValuesBase<dim,spacedim>::fill_system_data(const ElementValuesBase<spaced
 
 
 template<unsigned int dim, unsigned int spacedim>
-void FEValuesBase<dim,spacedim>::fill_data(const ElementValuesBase<spacedim> &elm_values, const FEInternalData &fe_data)
+void FEValuesBase<dim,spacedim>::fill_data(const ElementValues<spacedim> &elm_values, const FEInternalData &fe_data)
 {
     switch (fe->type_) {
         case FEScalar:
@@ -578,7 +578,7 @@ FESideValues<dim,spacedim>::FESideValues(
 {
     ASSERT_DBG( _sub_quadrature.dim() + 1 == dim );
     this->allocate( _sub_quadrature.size(), _fe, _flags);
-    this->elm_values = new ElemSideValues<spacedim>( _sub_quadrature, this->update_flags, dim );
+    this->elm_values = new ElementValues<spacedim>( _sub_quadrature, this->update_flags, dim );
     
     for (unsigned int sid = 0; sid < RefElement<dim>::n_sides; sid++)
     {
@@ -619,7 +619,7 @@ void FESideValues<dim,spacedim>::reinit(const DHCellSide &cell_side)
     if (!this->elm_values->side().is_valid() || 
         this->elm_values->side() != cell_side)
     {
-        ((ElemSideValues<spacedim> *)this->elm_values)->reinit(cell_side);
+        this->elm_values->reinit(cell_side);
     }
     
     const LongIdx sid = cell_side.side_idx();
