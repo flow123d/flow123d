@@ -25,7 +25,7 @@
 #include <vector>                       // for vector
 #include <memory>
 #include <armadillo>
-#include "fields/exprtk.hpp"
+#include "exprtk.hpp"
 #include "fields/field_algo_base.hh"    // for FieldAlgorithmBase
 #include "fields/field_values.hh"       // for FieldValue<>::Enum, FieldValu...
 #include "input/accessors.hh"           // for ExcAccessorForNullStorage

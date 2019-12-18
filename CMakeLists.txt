@@ -680,6 +680,7 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/src
     ${CONFIG_FILE_INCLUDES_DIRECTORY}
     #${CMAKE_SOURCE_DIR}/third_party/metis-include
+    ${CMAKE_SOURCE_DIR}/third_party/exprtk
     ${CMAKE_SOURCE_DIR}/third_party/fparser-4.5.1
     ${CMAKE_SOURCE_DIR}/third_party/FADBAD++
     ${PETSC_INCLUDES}
