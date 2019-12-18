@@ -8,3 +8,6 @@
 [submodule "bin/yaml_converter"]
 	path = bin/yaml_converter
 	url = git@github.com:flow123d/yaml_converter.git
+[submodule "third_party/exprtk"]
+	path = third_party/exprtk
+	url = https://github.com/flow123d/exprtk.git
