@@ -351,7 +351,7 @@ protected:
 
     
     /// Precompute finite element data on reference element.
-    FEInternalData *init_fe_data(const Quadrature *q);
+    FEInternalData *init_fe_data(const Quadrature &q);
     
     /**
      * @brief Computes the shape function values and gradients on the actual cell

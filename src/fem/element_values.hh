@@ -286,20 +286,12 @@ public:
      */
     void reinit(const DHCellAccessor &cell);
     
-    /// Return quadrature.
-    const Quadrature &quadrature() const
-    { return *quadrature_; }
-    
-    
     
 private:
     
     /// Compute data from reference cell and using MappingP1.
     template<unsigned int dim>
     void fill_data();
-    
-    /// The quadrature rule used to calculate integrals.
-    Quadrature *quadrature_;
     
     /// Precomputed element data.
     RefElementData *ref_data;
@@ -346,9 +338,6 @@ public:
 	 */
     void reinit(const DHCellSide &cell_side);
 
-    /// Return quadrature for given side and its permutation.
-    const Quadrature &quadrature(unsigned int sid, unsigned int pid) const
-    { return side_quad[sid][pid]; }
 
 
 private:
@@ -364,12 +353,6 @@ private:
 
     /// Number of permutations of points on side of reference cell.
     const unsigned int n_side_permutations_;
-
-    /// Quadrature for the integration on the element sides.
-    const Quadrature *sub_quadrature;
-
-    /// Side quadratures.
-    std::vector<std::vector<Quadrature> > side_quad;
 
     /// Data on reference element (for each side and its permutation).
     std::vector<std::vector<RefElementData*>> side_ref_data;

@@ -154,7 +154,6 @@ ElementValues<spacedim>::ElementValues(
          UpdateFlags _flags,
          unsigned int dim)
 : ElementValuesBase<spacedim>(_quadrature.size(), _flags, dim ),
-  quadrature_(&_quadrature),
   ref_data(nullptr)
 {
     if (dim == 0) return; // avoid unnecessary allocation of dummy 0 dimensional objects
@@ -284,7 +283,6 @@ ElemSideValues<spacedim>::ElemSideValues(
 : ElementValuesBase<spacedim>(_sub_quadrature.size(), _flags, dim),
   n_sides_(dim+1),
   n_side_permutations_((dim+1)*(2*dim*dim-5*dim+6)/6),
-  side_quad(n_sides_, std::vector<Quadrature>(n_side_permutations_, Quadrature(dim))),
   side_ref_data(n_sides_, std::vector<RefElementData*>(n_side_permutations_))
 {
     ASSERT_DBG( _sub_quadrature.dim() + 1 == dim );
@@ -293,23 +291,24 @@ ElemSideValues<spacedim>::ElemSideValues(
     {
     	for (unsigned int pid = 0; pid < n_side_permutations_; pid++)
     	{
+            Quadrature side_quad(dim);
     		// transform the side quadrature points to the cell quadrature points
             switch (dim)
             {
                 case 1:
-                    side_quad[sid][pid] = _sub_quadrature.make_from_side<1>(sid, pid);
+                    side_quad = _sub_quadrature.make_from_side<1>(sid, pid);
                     break;
                 case 2:
-                    side_quad[sid][pid] = _sub_quadrature.make_from_side<2>(sid, pid);
+                    side_quad = _sub_quadrature.make_from_side<2>(sid, pid);
                     break;
                 case 3:
-                    side_quad[sid][pid] = _sub_quadrature.make_from_side<3>(sid, pid);
+                    side_quad = _sub_quadrature.make_from_side<3>(sid, pid);
                     break;
                 default:
                     ASSERT(false)(dim).error("Unsupported dimension.\n");
                     break;
             }
-    		side_ref_data[sid][pid] = this->init_ref_data(side_quad[sid][pid]);
+    		side_ref_data[sid][pid] = this->init_ref_data(side_quad);
     	}
     }
 }
