@@ -205,6 +205,18 @@ bool FieldFormula<spacedim, Value>::set_time(const TimeStep &time) {
     first_time_set_ = false;
     this->time_=time;
     this->t_ = time.end();
+
+    if (use_exprtk_) { // temporary condition
+        parser_t parser;
+        for(unsigned int row=0; row < this->value_.n_rows(); row++)
+            for(unsigned int col=0; col < this->value_.n_cols(); col++) {
+                std::string expression_string = "result_vec := " + formula_matrix_.at(row,col);
+                for (unsigned int block=0; block<n_eval_blocks; ++block) {
+                    parser.compile(expression_string, expressions_[block*n_eval_blocks + row*this->value_.n_rows() + col]);
+                }
+            }
+    }
+
     return any_parser_changed;
 }
 
