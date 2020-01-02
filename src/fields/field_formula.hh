@@ -91,14 +91,25 @@ public:
     virtual void value_list (const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
                        std::vector<typename Value::return_type>  &value_list);
 
+    /// Temporary method set exprtk development flag
+    inline void use_exprtk() {
+        use_exprtk_ = true;
+    }
+
 
     virtual ~FieldFormula();
 
 private:
     typedef StringTensorInput<Value::NRows_,Value::NCols_> STI;
 
-    /// Size of evaluation block.
-    static const unsigned int eval_block_size = 128;
+    /// Possible sizes of evaluation block.
+    static const std::vector<unsigned int> eval_block_sizes;
+
+    /// Maximal size of evaluation block.
+    static const unsigned int eval_block_max_size = 256;
+
+    /// Maximal size of evaluation block.
+    static constexpr unsigned int n_eval_blocks = 6;
 
     /**
      * Evaluate depth variable if it is contained in formula.
@@ -129,9 +140,12 @@ private:
     double t_;
 
     // Exprtk parsing variables
-    expression_t expression_;             /// Exprtk expression
-    std::vector<double> result_v_;        /// Result vector
-    exprtk::vector_view<double> r_view_;  /// Result view
+    std::vector<expression_t> expressions_;    ///< Exprtk expressions
+    std::vector<double> x_vec_;                ///< X-coordinate vector
+    std::vector<double> y_vec_;                ///< Y-coordinate vector
+    std::vector<double> z_vec_;                ///< Z-coordinate vector
+    std::vector<double> result_v_;             ///< Result vector
+    bool use_exprtk_;                          ///< Temporary variable during implementation new parser.
 
     /// Registrar of class to factory
     static const int registrar;

@@ -31,6 +31,10 @@ FLOW123D_FORCE_LINK_IN_CHILD(field_formula)
 
 
 template <int spacedim, class Value>
+const std::vector<unsigned int> FieldFormula<spacedim, Value>::eval_block_sizes( {8, 16, 32, 64, 128, 256} );
+
+
+template <int spacedim, class Value>
 const Input::Type::Record & FieldFormula<spacedim, Value>::get_input_type()
 {
 
@@ -70,8 +74,10 @@ template <int spacedim, class Value>
 FieldFormula<spacedim, Value>::FieldFormula( unsigned int n_comp)
 : FieldAlgorithmBase<spacedim, Value>(n_comp),
   formula_matrix_(this->value_.n_rows(), this->value_.n_cols()),
-  first_time_set_(true), t_(0.0), result_v_(eval_block_size),
-  r_view_(exprtk::make_vector_view(result_v_, result_v_.size()))
+  first_time_set_(true), t_(0.0), expressions_(Value::NRows_*Value::NCols_*n_eval_blocks),
+  x_vec_(eval_block_max_size), y_vec_(eval_block_max_size),
+  z_vec_(eval_block_max_size), result_v_(eval_block_max_size),
+  use_exprtk_(false)
 {
 	this->is_constant_in_space_ = false;
     parser_matrix_.resize(this->value_.n_rows());
@@ -90,15 +96,24 @@ void FieldFormula<spacedim, Value>::init_from_input(const Input::Record &rec, co
     STI::init_from_input( formula_matrix_, rec.val<typename STI::AccessType>("value") );
     in_rec_ = rec;
 
-    symbol_table_t symbol_table;
-    symbol_table.add_vector("x",r_view_);
-    symbol_table.add_vector("y",r_view_);
-    symbol_table.add_vector("z",r_view_);
-    symbol_table.add_vector("result_vec",r_view_);
-    symbol_table.add_constants();
-    symbol_table.add_variable("t",this->t_);
+    if (use_exprtk_) // temporary condition
+    for (unsigned int i=0; i<n_eval_blocks; ++i) {
+    	exprtk::vector_view<double> x_view = exprtk::make_vector_view(x_vec_, eval_block_sizes[i]);
+    	exprtk::vector_view<double> y_view = exprtk::make_vector_view(y_vec_, eval_block_sizes[i]);
+    	exprtk::vector_view<double> z_view = exprtk::make_vector_view(z_vec_, eval_block_sizes[i]);
+    	exprtk::vector_view<double> r_view = exprtk::make_vector_view(result_v_, eval_block_sizes[i]);
 
-    expression_.register_symbol_table(symbol_table);
+    	symbol_table_t symbol_table;
+        symbol_table.add_vector("x",x_view);
+        symbol_table.add_vector("y",y_view);
+        symbol_table.add_vector("z",z_view);
+        symbol_table.add_vector("result_vec",r_view);
+        symbol_table.add_constants();
+        symbol_table.add_variable("t",this->t_);
+
+        for (unsigned int j=0; j<Value::NRows_*Value::NCols_; ++j) /// set symbol table to expressions for all field components
+            expressions_[i*n_eval_blocks+j].register_symbol_table(symbol_table);
+    }
 }
 
 
