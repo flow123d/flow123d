@@ -270,6 +270,22 @@ void FieldFormula<spacedim, Value>::value_list (const std::vector< Point >  &poi
 
 
 template <int spacedim, class Value>
+void FieldFormula<spacedim, Value>::cache_update(FieldValueCache<typename Value::element_type, typename Value::return_type> &data_cache,
+        unsigned int i_cache_el_begin, unsigned int i_cache_el_end,
+        const std::vector< ElementAccessor<spacedim> > &element_set)
+{
+    unsigned int eval_block_size = i_cache_el_end - i_cache_el_begin;
+    unsigned int eval_block_expr_index = 0; // compare eval_block_size with values stored in FieldFormula<...>::eval_block_sizes
+    for (; eval_block_expr_index < n_eval_blocks; eval_block_expr_index++)
+        if (eval_block_size <= eval_block_sizes[eval_block_expr_index]) break;
+    ASSERT_LT(eval_block_expr_index, n_eval_blocks).error("Evaluating block is too long!\n");
+    std::cout << "FieldFormula::cache_update: " << eval_block_size << " - " << eval_block_expr_index << " - " << element_set.size() << std::endl;
+
+    //TODO: set x, y, z; evaluate expression and return to cache
+}
+
+
+template <int spacedim, class Value>
 inline arma::vec FieldFormula<spacedim, Value>::eval_depth_var(const Point &p)
 {
 	if (surface_depth_ && has_depth_var_) {

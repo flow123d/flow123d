@@ -95,6 +95,9 @@ public:
     inline void use_exprtk() {
         use_exprtk_ = true;
     }
+    void cache_update(FieldValueCache<typename Value::element_type, typename Value::return_type> &data_cache,
+            unsigned int i_cache_el_begin, unsigned int i_cache_el_end,
+            const std::vector< ElementAccessor<spacedim> > &element_set) override;
 
 
     virtual ~FieldFormula();
