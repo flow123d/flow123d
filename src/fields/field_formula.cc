@@ -112,7 +112,7 @@ void FieldFormula<spacedim, Value>::init_from_input(const Input::Record &rec, co
         symbol_table.add_variable("t",this->t_);
 
         for (unsigned int j=0; j<Value::NRows_*Value::NCols_; ++j) /// set symbol table to expressions for all field components
-            expressions_[i*n_eval_blocks+j].register_symbol_table(symbol_table);
+            expressions_[i*Value::NRows_*Value::NCols_+j].register_symbol_table(symbol_table);
     }
 }
 
@@ -212,7 +212,7 @@ bool FieldFormula<spacedim, Value>::set_time(const TimeStep &time) {
             for(unsigned int col=0; col < this->value_.n_cols(); col++) {
                 std::string expression_string = "result_vec := " + formula_matrix_.at(row,col);
                 for (unsigned int block=0; block<n_eval_blocks; ++block) {
-                    parser.compile(expression_string, expressions_[block*n_eval_blocks + row*this->value_.n_rows() + col]);
+                    parser.compile(expression_string, expressions_[block*Value::NRows_*Value::NCols_ + col*Value::NRows_ + row]);
                 }
             }
     }
