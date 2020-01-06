@@ -44,7 +44,7 @@ public:
 
 
 TEST_F(FieldValueCacheTest, field_value_cache) {
-    std::shared_ptr<EvalPoints> eval_points = std::make_shared<EvalPoints>();
+    std::shared_ptr<EvalPoints> eval_points = std::make_shared<EvalPoints>(3);
     Quadrature *q_bulk = new QGauss(3, 2);
     Quadrature *q_side = new QGauss(2, 2);
     std::shared_ptr<EvalSubset> bulk_eval = eval_points->add_bulk<3>(*q_bulk );

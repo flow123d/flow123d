@@ -119,8 +119,9 @@ public:
     }
 
     /// Local coordinates within element
+    template<unsigned int dim>
     inline arma::vec loc_coords() const {
-        return this->eval_points()->local_point( local_point_idx_ );
+        return this->eval_points()->local_point<dim>( local_point_idx_ );
     }
 
     // Global coordinates within element
@@ -186,8 +187,9 @@ public:
     }
 
     // Local coordinates within element
+    template<unsigned int dim>
     inline arma::vec loc_coords() const {
-        return this->eval_points()->local_point( this->eval_point_idx() );
+        return this->eval_points()->local_point<dim>( this->eval_point_idx() );
     }
 
     // Global coordinates within element

@@ -18,8 +18,10 @@
 #ifndef NODE_ACCESSOR_HH_
 #define NODE_ACCESSOR_HH_
 
-#include "mesh/nodes.hh"
+#include "system/armor.hh"
+#include "mesh/point.hh"
 #include "mesh/mesh.h"
+
 
 /**
  * Node accessor templated just by dimension of the embedding space, used for access to nodes out of Mesh.
@@ -28,6 +30,8 @@
 template <int spacedim>
 class NodeAccessor {
 public:
+    typedef typename Space<spacedim>::Point Point;
+
     /**
      * Default invalid accessor.
      */
@@ -46,14 +50,11 @@ public:
         return mesh_ != NULL;
     }
 
-    inline const Node * node() const {
-        return &(mesh_->node_vec_[node_idx_]);
-    }
-
     inline unsigned int idx() const {
         return node_idx_;
     }
 
+    // TODO: rename to gmsh_id
     inline unsigned int index() const {
     	return (unsigned int)mesh_->find_node_id(node_idx_);
     }
@@ -67,20 +68,9 @@ public:
     	return (node_idx_ == other.node_idx_);
     }
 
-    /**
-     * -> dereference operator
-     *
-     * Allow simplify calling of node() method. Example:
- @code
-     NodeAccessor<3> node_ac(mesh, index);
-     arma::vec centre;
-     centre = node_ac.node()->point();  // full format of access to node
-     centre = node_ac->point();         // short format with dereference operator
- @endcode
-     */
-    inline const Node * operator ->() const {
-    	return &(mesh_->node_vec_[node_idx_]);
-    }
+    inline Point operator*() const
+    { return mesh_->nodes_.vec<spacedim>(node_idx_); }
+
 
 private:
     /// Pointer to the mesh owning the node.

@@ -155,8 +155,9 @@ double TransportDG<Model>::EqData::elem_anisotropy(ElementAccessor<3> e) const
     for (unsigned int i=0; i<e->n_nodes(); i++)
         for (unsigned int j=i+1; j<e->n_nodes(); j++)
         {
-            h_max = max(h_max, e.node(i)->distance(*e.node(j)));
-            h_min = min(h_min, e.node(i)->distance(*e.node(j)));
+            double dist = arma::norm(*e.node(i) - *e.node(j));
+            h_max = max(h_max, dist);
+            h_min = min(h_min, dist);
         }
     return h_max/h_min;
 }
@@ -182,8 +183,11 @@ void TransportDG<Model>::EqData::set_DG_parameters_boundary(Side side,
     else
     {
         for (unsigned int i=0; i<side.n_nodes(); i++)
-            for (unsigned int j=i+1; j<side.n_nodes(); j++)
-                h = max(h, side.node(i)->distance( *side.node(j).node() ));
+            for (unsigned int j=i+1; j<side.n_nodes(); j++) {
+                double dist = arma::norm(*side.node(i) - *side.node(j));
+                h = max(h, dist);
+            }
+
     }
 
     // delta is set to the average value of Kn.n on the side

@@ -59,9 +59,6 @@ class BulkPoint;
 class SidePoint;
 template <int spacedim> class ElementAccessor;
 template <int spacedim, class Value> class FieldFE;
-namespace Armor {
-    template <class Type, uint nRows, uint nCols> class Mat;
-}
 
 using namespace std;
 namespace IT=Input::Type;
@@ -169,10 +166,10 @@ public:
     Field &operator=(const Field &other);
 
 
-    Armor::Mat<typename Value::element_type, Value::NRows_, Value::NCols_> operator() (BulkPoint &);
+    typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_> operator() (BulkPoint &);
 
 
-    Armor::Mat<typename Value::element_type, Value::NRows_, Value::NCols_> operator() (SidePoint &);
+    typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_> operator() (SidePoint &);
 
 
     /**

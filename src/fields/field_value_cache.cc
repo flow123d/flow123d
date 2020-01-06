@@ -32,7 +32,7 @@
 
 template<class elm_type, class return_type>
 FieldValueCache<elm_type, return_type>::FieldValueCache(unsigned int n_rows, unsigned int n_cols)
-: data_(0, n_rows, n_cols), eval_points_(nullptr), dim_(EvalPoints::undefined_dim) {
+: data_(n_rows, n_cols), eval_points_(nullptr), dim_(EvalPoints::undefined_dim) {
     used_subsets_.fill(false);
     subset_starts_.fill(-1);
 }
@@ -46,6 +46,7 @@ void FieldValueCache<elm_type, return_type>::init(std::shared_ptr<EvalPoints> ev
 
     this->n_cache_elements_ = n_cache_elements;
     eval_points_ = eval_points;
+    data_.reinit(n_cache_elements * eval_points_->size());
     data_.resize(n_cache_elements * eval_points_->size());
     subset_starts_[0] = 0;
     for (uint i=0; i<eval_points_->n_subsets(); ++i)

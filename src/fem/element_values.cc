@@ -125,7 +125,7 @@ RefElementData *ElementValuesBase<dim,spacedim>::init_ref_data(const Quadrature 
 
     for (unsigned int i=0; i<q.size(); i++)
     {
-        data->bar_coords[i] = RefElement<dim>::local_to_bary(q.point<dim>(i).arma());
+        data->bar_coords[i] = RefElement<dim>::local_to_bary(q.point<dim>(i));
         data->weights[i] = q.weight(i);
     }
     
@@ -388,7 +388,7 @@ void ElemSideValues<dim,spacedim>::fill_data()
             // calculation of side Jacobian
             for (unsigned int n=0; n<dim; n++)
                 for (unsigned int c=0; c<spacedim; c++)
-                    side_coords(c,n) = this->data.present_cell.side(side_idx_)->node(n)->point()[c];
+                    side_coords(c,n) = (*this->data.present_cell.side(side_idx_)->node(n))[c];
             side_jac = MappingP1<MatrixSizes<dim>::dim_minus_one,spacedim>::jacobian(side_coords);
 
             // calculation of JxW
