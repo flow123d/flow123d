@@ -26,14 +26,13 @@
 
 
 TEST(EvalPointsTest, all) {
-	std::shared_ptr<EvalPoints> eval_points = std::make_shared<EvalPoints>();
-	EXPECT_EQ(eval_points->point_dim(), EvalPoints::undefined_dim);
+	std::shared_ptr<EvalPoints> eval_points = std::make_shared<EvalPoints>(3);
+	EXPECT_EQ(eval_points->point_dim(), 3);
 	EXPECT_EQ(eval_points->size(), 0);
 	EXPECT_EQ(eval_points->n_subsets(), 0);
 
     Quadrature *q_bulk = new QGauss(3, 2);
     eval_points->add_bulk<3>(*q_bulk );
-	EXPECT_EQ(eval_points->point_dim(), 3);
 	EXPECT_EQ(eval_points->size(), 4);
 	EXPECT_EQ(eval_points->n_subsets(), 1);
 	EXPECT_EQ(eval_points->subset_begin(0), 0);
@@ -47,7 +46,7 @@ TEST(EvalSubsetTest, subsets_3d) {
     Profiler::initialize();
     PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
 
-	std::shared_ptr<EvalPoints> eval_points = std::make_shared<EvalPoints>();
+	std::shared_ptr<EvalPoints> eval_points = std::make_shared<EvalPoints>(3);
     Quadrature *q_bulk = new QGauss(3, 2);
     Quadrature *q_side = new QGauss(2, 2);
     std::shared_ptr<EvalSubset> bulk_points = eval_points->add_bulk<3>(*q_bulk );
@@ -66,7 +65,7 @@ TEST(EvalSubsetTest, subsets_3d) {
 												 {0.585410196624968515, 0.138196601125010504, 0.138196601125010504}};
     	unsigned int i=0; // iter trought expected_vals
     	for (auto p : bulk_points->points(dh_cell)) {
-            EXPECT_ARMA_EQ(p.loc_coords(), expected_vals[i]);
+            EXPECT_ARMA_EQ(p.loc_coords<3>(), expected_vals[i]);
 			++i;
         }
     }
@@ -89,7 +88,7 @@ TEST(EvalSubsetTest, subsets_3d) {
         for (auto side_acc : dh_cell.side_range()) {
         	i_point=0;
             for ( auto p : side_points->points(side_acc) ) {
-            	EXPECT_ARMA_EQ(p.loc_coords(), expected_vals[i_side][i_point]);
+            	EXPECT_ARMA_EQ(p.loc_coords<3>(), expected_vals[i_side][i_point]);
                 ++i_point;
             }
             ++i_side;

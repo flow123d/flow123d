@@ -83,7 +83,7 @@ public:
 
     /// Return size of data cache (number of stored field values)
     inline unsigned int size() const {
-        return data_.n_vals();
+        return data_.size();
 
     }
 
@@ -99,8 +99,8 @@ public:
 
     /// Return data vector.
     template<uint nr, uint nc = 1>
-    inline Armor::Mat<elm_type, nr, nc> &get(uint i) {
-        return data_.get<nr, nc>(i);
+    inline typename arma::Mat<elm_type>::template fixed<nr, nc> &get(uint i) {
+        return data_.mat<nr, nc>(i);
     }
 
     /// Return data vector.
@@ -115,7 +115,7 @@ public:
 
     /// Return value of evaluation point given by DHCell and local point idx in EvalPoints.
     template<uint nRows, uint nCols>
-    Armor::Mat<elm_type, nRows, nCols> get_value(DHCellAccessor dh_cell, unsigned int subset_idx, unsigned int eval_points_idx);
+    typename arma::Mat<elm_type>::template fixed<nRows, nCols> get_value(DHCellAccessor dh_cell, unsigned int subset_idx, unsigned int eval_points_idx);
 
 private:
     /**

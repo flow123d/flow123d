@@ -442,7 +442,7 @@ void FieldFE<spacedim, Value>::interpolate_gauss(ElementDataCache<double>::Compo
 		switch (cell.dim()) {
 		case 0:
 			quadrature_size = 1;
-			q_points[0] = ele.node(0)->point();
+			q_points[0] = *ele.node(0);
 			q_weights[0] = 1.0;
 			break;
 		case 1:
@@ -466,7 +466,7 @@ void FieldFE<spacedim, Value>::interpolate_gauss(ElementDataCache<double>::Compo
 				contains=false;
 				switch (elm->dim()) {
 				case 0:
-					contains = arma::norm(elm.node(0)->point()-q_points[i], 2) < 4*std::numeric_limits<double>::epsilon();
+					contains = arma::norm(*elm.node(0) - q_points[i], 2) < 4*std::numeric_limits<double>::epsilon();
 					break;
 				case 1:
 					contains = MappingP1<1,3>::contains_point(q_points[i], elm);
@@ -531,7 +531,7 @@ void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>
 		// gets suspect elements
 		if (elm.dim() == 0) {
 			searched_elements.clear();
-			source_mesh->get_bih_tree().find_point(elm.node(0)->point(), searched_elements);
+			source_mesh->get_bih_tree().find_point(*elm.node(0), searched_elements);
 		} else {
 			BoundingBox bb = elm.bounding_box();
 			searched_elements.clear();
@@ -553,7 +553,7 @@ void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>
                 // get intersection (set measure = 0 if intersection doesn't exist)
                 switch (elm.dim()) {
                     case 0: {
-                        arma::vec::fixed<3> real_point = elm.node(0)->point();
+                        arma::vec::fixed<3> real_point = *elm.node(0);
                         arma::mat::fixed<3, 4> elm_map = MappingP1<3,3>::element_map(ele);
                         arma::vec::fixed<4> unit_point = MappingP1<3,3>::project_real_to_unit(real_point, elm_map);
 

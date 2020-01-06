@@ -146,7 +146,7 @@ TEST_F(FieldEvalConstantTest, evaluate) {
 	this->read_input(eq_data_input);
 
     // Asumme following types:
-	std::shared_ptr<EvalPoints> feval = std::make_shared<EvalPoints>();
+	std::shared_ptr<EvalPoints> feval = std::make_shared<EvalPoints>(3);
     Quadrature *q_bulk = new QGauss(3, 2);
     Quadrature *q_side = new QGauss(2, 2);
     std::shared_ptr<EvalSubset> mass_eval = feval->add_bulk<3>(*q_bulk );
@@ -156,13 +156,13 @@ TEST_F(FieldEvalConstantTest, evaluate) {
     data_->cache_allocate(mass_eval);
     data_->cache_allocate(side_eval);
 
-    std::vector<unsigned int> cell_idx = {3, 4, 5, 10};
+    std::vector<unsigned int> cell_idx = {3, 4, 5, 9};
     std::vector<double>       expected_scalar = {0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5};
     std::vector<arma::vec3>   expected_vector = {{1, 2, 3}, {1, 2, 3}, {1, 2, 3}, {4, 5, 6}};
     std::vector<arma::mat33>  expected_tensor = {{0.1, 0.2, 0.3, 0.2, 0.4, 0.5, 0.3, 0.5, 0.6}, {0.1, 0.2, 0.3, 0.2, 0.4, 0.5, 0.3, 0.5, 0.6},
                                                  {0.1, 0.2, 0.3, 0.2, 0.4, 0.5, 0.3, 0.5, 0.6}, {2.1, 2.2, 2.3, 2.2, 2.4, 2.5, 2.3, 2.5, 2.6}};
     for (unsigned int i=0; i<cell_idx.size(); ++i) {
-        DHCellAccessor dh_cell(dh_.get(), cell_idx[i]);  // element ids stored to cache: (3 -> 2,3,4), (4 -> 3,4,5,10), (5 -> 0,4,5,11), (10 -> 4,9,10,11)
+        DHCellAccessor dh_cell(dh_.get(), cell_idx[i]);  // element ids stored to cache: (3 -> 2,3,4), (4 -> 3,4,5,10), (5 -> 0,4,5,11), (10 -> 8,9,10)
         data_->add_cell_to_cache(dh_cell);
         for (DHCellSide side : dh_cell.side_range()) {
             for(DHCellSide el_ngh_side : side.edge_sides()) {
@@ -176,8 +176,8 @@ TEST_F(FieldEvalConstantTest, evaluate) {
         // Bulk integral, no sides, no permutations.
         for(BulkPoint q_point: mass_eval->points(cache_cell)) {
             EXPECT_EQ(expected_scalar[cache_cell.elm_idx()], data_->scalar_field(q_point)[0]);
-            EXPECT_ARMA_EQ(expected_vector[i], data_->vector_field(q_point).arma());
-            EXPECT_ARMA_EQ(expected_tensor[i], data_->tensor_field(q_point).arma());
+            EXPECT_ARMA_EQ(expected_vector[i], data_->vector_field(q_point));
+            EXPECT_ARMA_EQ(expected_tensor[i], data_->tensor_field(q_point));
             /* // Extracting the cached values.
             double cs = cross_section(q_point);
 
@@ -196,8 +196,8 @@ TEST_F(FieldEvalConstantTest, evaluate) {
         	    Range<SidePoint> side_points = side_eval->points(side);
         	    for (SidePoint side_p : side_points) {
                     EXPECT_EQ(expected_scalar[cache_cell.elm_idx()], data_->scalar_field(side_p)[0]);
-                    EXPECT_ARMA_EQ(expected_vector[i], data_->vector_field(side_p).arma());
-                    EXPECT_ARMA_EQ(expected_tensor[i], data_->tensor_field(side_p).arma());
+                    EXPECT_ARMA_EQ(expected_vector[i], data_->vector_field(side_p));
+                    EXPECT_ARMA_EQ(expected_tensor[i], data_->tensor_field(side_p));
                     SidePoint ngh_p = side_p.permute(el_ngh_side);
                     EXPECT_EQ(expected_scalar[el_ngh_side.cell().elm_idx()], data_->scalar_field(ngh_p)[0]);
         	        //loc_mat += cross_section(side_p) * sigma(side_p) *
