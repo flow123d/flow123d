@@ -458,6 +458,7 @@ protected:
 
             // local index of pedge dof on neighboring cell
             // (dim+2) is number of edges of higher dim element
+            // TODO: replace with DHCell getter when available for FESystem component
             const unsigned int t = dh_neighb_cell.n_dofs() - (dim+2) + neighb_side.side().side_idx();
             loc_system_vb_.row_dofs[1] = loc_system_vb_.col_dofs[1] = higher_dim_dofs[t];
 

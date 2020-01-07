@@ -53,6 +53,7 @@ void P0_CouplingAssembler::pressure_diff(const DHCellAccessor& dh_cell, double d
     i_data.ele_z_coord_=ele.centre()[2];
 
     for(unsigned int i_side=0; i_side < nsides; i_side++ ) {
+        // TODO: replace with DHCell getter when available for FESystem component
         i_data.dofs[i_side] = dh_cell.get_loc_dof_indices()[(ndofs+1)/2+i_side];   //edge dof
         i_data.vel_dofs[i_side] = dh_cell.get_loc_dof_indices()[i_side];   // side dof
         //i_data.z_sides[i_side]=ele.side(i_side)->centre()[2];
@@ -258,6 +259,7 @@ void P1_CouplingAssembler::add_sides(const DHCellAccessor& dh_cell, unsigned int
     const uint ndofs = dh_cell.n_dofs();
 
     for(unsigned int i_side=0; i_side < ele->n_sides(); i_side++ ) {
+        // TODO: replace with DHCell getter when available for FESystem component
         dofs[shift+i_side] =  dh_cell.get_loc_dof_indices()[(ndofs+1)/2+i_side];   //edge dof
         Boundary * bcd = ele.side(i_side)->cond();
 

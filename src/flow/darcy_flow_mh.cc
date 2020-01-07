@@ -798,6 +798,7 @@ void DarcyMH::allocate_mh_matrix()
 
             // local index of pedge dof on neighboring cell
             // (dim+1) is number of edges of higher dim element
+            // TODO: replace with DHCell getter when available for FESystem component
             const unsigned int t = dh_neighb_cell.n_dofs() - (dh_neighb_cell.dim()+1) + neighb_side.side().side_idx();
             tmp_rows.push_back(dofs_ngh[t]);
         }
@@ -823,6 +824,7 @@ void DarcyMH::allocate_mh_matrix()
 
                 //DebugOut().fmt("Alloc: {} {}", ele.idx(), local->bulk_ele_idx());
                 for(unsigned int i_side=0; i_side < dh_cell_slave.elm()->n_sides(); i_side++) {
+                    // TODO: replace with DHCell getter when available for FESystem component
                     tmp_rows.push_back( dofs_ngh[(ndofs_slave+1)/2+i_side] );
                     //DebugOut() << "aedge" << print_var(tmp_rows[tmp_rows.size()-1]);
                 }
@@ -881,6 +883,7 @@ void DarcyMH::assembly_source_term()
         // set sources
         double source = ele.measure() * cs *
                 data_->water_source_density.value(ele.centre(), ele);
+        // TODO: replace with DHCell getter when available for FESystem component
         schur0->rhs_set_value(global_dofs[ndofs/2], -1.0 * source );
 
         balance_->add_source_values(data_->water_balance_idx, ele.region().bulk_idx(),
@@ -1184,6 +1187,7 @@ void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
         // TODO: use FiniteElement::dof_points
         for (unsigned int si=0; si<dh_cell.elm()->n_sides(); si++) {
             arma::vec3 coord = dh_cell.elm().side(si)->centre();
+            // TODO: replace with DHCell getter when available for FESystem component
             // flux dof points
             localDofMap.insert( std::make_pair( cell_dofs_global[si], coord ) );
             // pressure trace dof points
@@ -1381,6 +1385,7 @@ void DarcyMH::read_initial_condition()
 	for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
 	    ElementAccessor<3> ele = dh_cell.elm();
 	    // set initial condition
+        // TODO: replace with DHCell getter when available for FESystem component
         const Idx p_ele_dof = dh_cell.get_loc_dof_indices()[dh_cell.n_dofs()/2];
 	    local_sol[p_ele_dof] = data_->init_pressure.value(ele.centre(),ele);
 	}
@@ -1408,6 +1413,7 @@ void DarcyMH::setup_time_term() {
         dofs.resize(dh_cell.n_dofs());
         dh_cell.get_dof_indices(dofs);
 
+        // TODO: replace with DHCell getter when available for FESystem component
         const uint p_ele_dof = dh_cell.n_dofs() / 2;
         // set new diagonal
         double diagonal_coeff = data_->cross_section.value(ele.centre(), ele)

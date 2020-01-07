@@ -383,6 +383,7 @@ void DarcyFlowMHOutput::l2_diff_local(DHCellAccessor dh_cell,
 //         pressure_traces[li] = result.dh->side_scalar( *(ele->side( li ) ) );
     }
     const uint ndofs = dh_cell.n_dofs();
+    // TODO: replace with DHCell getter when available for FESystem component
     double pressure_mean = diff_data.data_->full_solution[ dh_cell.get_loc_dof_indices()[ndofs/2] ];
 
     arma::vec analytical(5);
