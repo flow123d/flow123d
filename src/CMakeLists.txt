@@ -340,7 +340,6 @@ set(sources_lib_non_system
 )
 # all remaining sources 
 add_library(flow123d_lib 
-    flow/mh_dofhandler.cc
     flow/darcy_flow_mh_output.cc
     flow/darcy_flow_mh.cc
     flow/darcy_flow_lmh.cc

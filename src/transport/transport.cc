@@ -51,7 +51,6 @@
 #include "fields/generic_field.hh"
 
 #include "reaction/isotherm.hh" // SorptionType enum
-#include "flow/mh_dofhandler.hh"
 
 #include "fem/fe_p.hh"
 #include "fem/fe_values.hh"
