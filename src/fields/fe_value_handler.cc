@@ -134,13 +134,17 @@ void FEValueHandler<elemdim, spacedim, Value>::value_list(const std::vector< Poi
 	FEValues<elemdim,spacedim> fe_values(quad, *dh_->ds()->fe(elm).get<elemdim>(), update_values);
 
     for (unsigned int k=0; k<point_list.size(); k++) {
+		Quadrature quad(elemdim, 1);
+        quad.set(0) = RefElement<elemdim>::bary_to_local(MappingP1<elemdim, spacedim>::project_real_to_unit(point_list[k], map_mat));
+
+		FEValues<elemdim,3> fe_values(quad, *dh_->ds()->fe(elm).get<elemdim>(), update_values);
 		fe_values.reinit( elm );
 
 		Value envelope(value_list[k]);
 		envelope.zeros();
 		for (unsigned int i=0; i<loc_dofs.n_elem; i++) {
 			value_list[k] += data_vec_[loc_dofs[i]]
-							* FEShapeHandler<Value::rank_, elemdim, spacedim, Value>::fe_value(fe_values, i, k, comp_index_);
+							* FEShapeHandler<Value::rank_, elemdim, spacedim, Value>::fe_value(fe_values, i, 0, comp_index_);
 		}
 	}
 }
@@ -157,7 +161,7 @@ unsigned int FEValueHandler<elemdim, spacedim, Value>::compute_quadrature(std::v
 
 	for(unsigned i=0; i<qgauss.size(); ++i) {
 		q_weights[i] = qgauss.weight(i)*weight_coefs[elemdim];
-		q_points[i] = MappingP1<elemdim,spacedim>::project_unit_to_real(RefElement<elemdim>::local_to_bary(qgauss.point<elemdim>(i).arma()), map_mat);
+		q_points[i] = MappingP1<elemdim,spacedim>::project_unit_to_real(RefElement<elemdim>::local_to_bary(qgauss.point<elemdim>(i)), map_mat);
 	}
 
 	return qgauss.size();

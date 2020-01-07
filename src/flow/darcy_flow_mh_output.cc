@@ -398,7 +398,7 @@ void DarcyFlowMHOutput::l2_diff_local(DHCellAccessor dh_cell,
         for(unsigned int j_node=0; j_node < ele->n_nodes(); j_node++ )
         {
             mean_x_squared += (i_node == j_node ? 2.0 : 1.0) / ( 6 * dim )   // multiply by 2 on diagonal
-                    * arma::dot( ele.node(i_node)->point(), ele.node(j_node)->point());
+                    * arma::dot( *ele.node(i_node), *ele.node(j_node));
         }
 
     for(unsigned int i_point=0; i_point < fe_values.n_points(); i_point++) {
@@ -416,8 +416,8 @@ void DarcyFlowMHOutput::l2_diff_local(DHCellAccessor dh_cell,
             diff += fluxes[ i_shape ] *
                                (  arma::dot( q_point, q_point )/ 2
                                 - mean_x_squared / 2
-                                - arma::dot( q_point, ele.node(oposite_node)->point() )
-                                + arma::dot( ele.centre(), ele.node(oposite_node)->point() )
+                                - arma::dot( q_point, *ele.node(oposite_node) )
+                                + arma::dot( ele.centre(), *ele.node(oposite_node) )
                                );
         }
 

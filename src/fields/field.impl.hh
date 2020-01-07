@@ -143,7 +143,7 @@ Field<spacedim,Value> &Field<spacedim,Value>::operator=(const Field<spacedim,Val
 
 
 template<int spacedim, class Value>
-Armor::Mat<typename Value::element_type, Value::NRows_, Value::NCols_> Field<spacedim,Value>::operator() (BulkPoint &p) {
+typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_> Field<spacedim,Value>::operator() (BulkPoint &p) {
     return value_cache_[p.dh_cell().dim()-1].template
     		get_value<Value::NRows_, Value::NCols_>(p.dh_cell(), p.eval_subset()->get_subset_idx(), p.eval_point_idx());
 }
@@ -151,7 +151,7 @@ Armor::Mat<typename Value::element_type, Value::NRows_, Value::NCols_> Field<spa
 
 
 template<int spacedim, class Value>
-Armor::Mat<typename Value::element_type, Value::NRows_, Value::NCols_> Field<spacedim,Value>::operator() (SidePoint &p) {
+typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_> Field<spacedim,Value>::operator() (SidePoint &p) {
     return value_cache_[p.dh_cell_side().cell().dim()-1].template
     		get_value<Value::NRows_, Value::NCols_>(p.dh_cell_side().cell(), p.eval_subset()->get_subset_idx(), p.eval_point_idx());
 }
@@ -743,7 +743,7 @@ void Field<spacedim, Value>::cache_update(ElementCacheMap &cache_map) {
             unsigned int old_start = subset_begin_pos+it->first*points_per_element;
             unsigned int new_start = subset_begin_pos+it->second*points_per_element;
         	for (unsigned int i_old = old_start, i_new = new_start; i_old < old_start + points_per_element; ++i_old, ++i_new)
-        	    field_value_cache.data().get<Value::NRows_, Value::NCols_>(i_new) = field_value_cache.data().get<Value::NRows_, Value::NCols_>(i_old);
+        	    field_value_cache.data().set(i_new) = field_value_cache.data().set(i_old);
         }
 
         // Call cache_update of FieldAlgoBase descendants

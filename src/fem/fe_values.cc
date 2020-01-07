@@ -169,13 +169,14 @@ typename FEValuesBase<dim,spacedim>::FEInternalData *FEValuesBase<dim,spacedim>:
     ASSERT_DBG( q->dim() == dim );
     FEInternalData *data = new FEInternalData(q->size(), fe->n_dofs());
 
+    //DebugOut() << "q size: " << q->size() << "\n";
     arma::mat shape_values(fe->n_dofs(), fe->n_components());
     for (unsigned int i=0; i<q->size(); i++)
     {
         for (unsigned int j=0; j<fe->n_dofs(); j++)
         {
             for (unsigned int c=0; c<fe->n_components(); c++)
-                shape_values(j,c) = fe->shape_value(j, q->point<dim>(i).arma(), c);
+                shape_values(j,c) = fe->shape_value(j, q->point<dim>(i), c);
             
             data->ref_shape_values[i][j] = trans(shape_values.row(j));
         }
@@ -188,7 +189,7 @@ typename FEValuesBase<dim,spacedim>::FEInternalData *FEValuesBase<dim,spacedim>:
         {
             grad.zeros();
             for (unsigned int c=0; c<fe->n_components(); c++)
-                grad.col(c) += fe->shape_grad(j, q->point<dim>(i).arma(), c);
+                grad.col(c) += fe->shape_grad(j, q->point<dim>(i), c);
             
             data->ref_shape_grads[i][j] = grad;
         }
@@ -590,6 +591,7 @@ FESideValues<dim,spacedim>::FESideValues(
     	}
     }
     
+
     // In case of mixed system allocate data for sub-elements.
     if (this->fe->type_ == FEMixedSystem)
     {

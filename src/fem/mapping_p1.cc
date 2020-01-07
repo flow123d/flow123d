@@ -49,7 +49,7 @@ auto MappingP1<dim,spacedim>::element_map(ElementAccessor<3> elm) -> ElementMap
 {
     ElementMap coords;
     for (unsigned int i=0; i<dim+1; i++)
-        coords.col(i) = elm.node(i)->point();
+        coords.col(i) = *elm.node(i);
     return coords;
 }
 

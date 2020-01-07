@@ -7,7 +7,7 @@
   1. inefficient ordering of the mesh nodes and elements
   2. various field evaluation during the assembly process
   3. to many memory places involved during assembly on the single element
-  
+- Current assembly process can not take advantage of the vector operations.   
   
 
   
@@ -29,7 +29,7 @@
   - SIMD evaluation
   - support of sparse evaluation on the vector data (includes size change)
   - matrix multiplication (matrix-matrix, matrix-vector, vector-vector = dot product)
-  Seems that no parser have this kind of functionality. Ultimately, we have to modify ExprTK.
+  Seems that no parser have this kind of functionality. Ultimately, we have to modify ExprTK or make our own library.
 - In order to allow FieldFormula to depend on other fields we need that other fields are also evaluated into caches. 
   This is a bit unfortunate for the FieldConstant and possibly cache inefficient in the case of FieldFE. 
   The FieldFE caching is inefficient only in the case of using same FE space for some field as well as 
@@ -58,7 +58,18 @@
   to use only subset of them on the actual patch of elements.   
 - The mapping of the pair (element, evaluation point) to the active point on the current patch must 
   be same for all fields invloved in the assembly. We need a class for this synchronisation.
-
+- Ideas to exploit SIMD:
+  - Once the fields are precomputed the assmbly of local matrix/vector can use SIMD operations as the 
+    forms are evaluated uing a same formula for every (i-shape, j-shape, q-point). 
+  - We can possibly even assembly more elements at once. Considering the local matrices/vectors be placed in a continuous block of memory.
+  - Possible problem is that as we iterate over the shape functions the field values remains constant so we may need to load the field values into
+    constant small vectors. 
+  - FieldFormula - in order to use SIMD we need to organize the patch q-points into the SIMD blocks (4-AVX2, 8-AVX512, seems relevant also on GPUs).
+    First atempt will just put elements of the same region into a continuous block, further we may modify patches to optimize number of the regions per patch.
+  - FieldValues - the vectors and tensors has to be transformed be a mapping matrix. One matrix-vector multiplication takes 9 products and 6 additions 
+    these operations should be vectorized over several vectors. Transformation matrices are usually constant on the element so we need to repeat them. 
+  - FieldFE - see FieldValues, further value in a point is linear combination of the same number of the shape functions (for the same dimension and order)
+    Vectorisation over points of the elements of the same dimension and order is possible.
 
  
 # Design (TODO: Update rest according to the Cache structure)
@@ -72,7 +83,7 @@ Summary all quadrature points on the reference elements. Necessary for the Field
   their points.
 
 **Integral**
-Every kind of integral is associated with an "assembly object"
+We have four types of "elementatry integration domains":
 - BulkIntegral - on Cell
 - EdgeIntegral - on edge.side_range
 - CouplingIntegral - on bulk.ngh_range
@@ -82,43 +93,47 @@ Every kind of integral is associated with an "assembly object"
 - For every dimension we create them by a method of the EvalPoints, passing suitable set of quadratures.
 - Functions provided by Integrals:
   - Mark active eval points on the actual patch. Assembly algorithm iterates over "elementary integration domains" 
-    in the order of their Hilbert index. The integral has to iterate over its quadrature points. The point  and distributing the points on them until we reach the number of active points per patch.
+    in the order of their Hilbert index. The integral has to iterate over its quadrature points. The point  and 
+    distributing the points on them until we reach the number of active points per patch.
+  - Iteration over qudrature points for given actual "elementaty integration domain" (e.g. edge integral for the CellSide)  
 - Same method Integral::points(assembly_object) is used later on to iterate over quadrature points.
 - In principle there should be one kind of the quadrature point accessor for every kind of the integral.
 
 Operations provided by the quadrature points:
-	- all points - retrieve value of a field in the point, e.g. `pressure(bulk_point)`		
-	- SidePoint - permute(CellSide) -> SidePoint; allows iteration over all pairs of sides of an edge, in fact allows
-	  to form integrals mixing points of any two faces of same dimension, even non-colocated.
-	- CouplingSidePoint - bulk() -> BulkPoint
+	`field(point)` - retrieve value of a field in the point, e.g. `pressure(bulk_point)`		
+	`side_point.permute(cell_side)` - returns `SidePoint` on the other side;
+	    allows iteration over all pairs of sides of an edge, in fact allows
+	    to form integrals mixing points of any two faces of same dimension, even non-colocated.
+	`coupling_side_point.bulk()` - returns `BulkPoint` collocated with the side point in the dimension coupling
 Possible interface to shape functions:
+	`ElementFields element_fields ...` - values independent of the FEM, depends on mesh and mapping
 	`FieldFE pressure_fe ...`
 	`element_fields.normal(side_point)` - outer normal at a side point
 	`element_fields.coord(point)` - absolute coordinates of the point
 	`element_fields.JxW(point)` - Jacobina times quadrature weight of the point
-    `pressure_fe.base(i, point)` - value of the i-th shape function in the point
+        `pressure_fe.base(i, point)` - value of the i-th shape function in the point
 	`pressure_fe.grad(i, point)` - value of the i-th base function in the point
 
 **ElementCacheMap**
-This holds mesh elements associated with the actual patch and for every pair (mesh element, eval_point) gives the active point index, these have to form continuous sequence. The points of the "assemble objects" forming the patch are added to the map. There is independent map for every integral but these can be in a single class. 
-There should be no active points reuse ase the active points of the two "assemble objects" of the same kind are disjoint (can change if we decide to change elemetaty "assembly objects", e.g. singel NGHSide instead of the range).
+This holds mesh elements associated with the actual patch and for every pair (mesh element, eval_point) gives the active point index, 
+these have to form continuous sequence. The points of the "assemble objects" forming the patch are added to the map. 
+There should be no active points reuse as the active points of the two "assemble objects" of the same kind are disjoint (can change if 
+we decide to change elemetary "assembly objects", e.g. singel NGHSide instead of the range).
 ElementCacheMap is shared by dimensions !! It should be part of the EqData.
 
 **FieldValueCache**
 - One per field, holds only values for selected integrals.
-- One value is a scalar, vector, or tensor. But stored through Array in singel chunk on memory.
+- One value is a scalar, vector, or tensor. But stored through Array in a single chunk of memory. We probably use a single chunk of memory for all fields.
+- Keeps reference to the EvalPoints.
 
-1. Every Field<spacedim, Value> has its cache for its values. 
-    The logical cache elements have type given by the Value template parameter however as this is inefficient for the Armadillo objects we allocate plain memory and construct the value objects referencing to the allocated memory.
-2. Every Field<> has an array of three instances of the FieldValueCache one for each dimension. We should try to make FieldValueCache not templated by the dimension to avoid virtual calls during the read access to the cache.
-3. FieldValueCache is logically a table of N element slots composed of M values for the M local points on the reference element. The implementation uses a plain memory or a fixed size array.
 
 ## Cache operations
 **Overview**
 Usage of the field caches consists of:
 1. Merging more quadratures into a single set of the local evaluation points (class `EvalPoints`).
 2. Create a `FieldSet` one for every quadrature of the fields involved in that integral. 
-3. Initialize the fields in the integral's field set: Allocate the cache space in fields and mark which quadrature the field use. This is done through the call of `FieldSet::cache_allocate<dim>(EvalSubset, Mapping<dim>)`
+3. Initialize the fields in the integral's field set: Allocate the cache space in fields and 
+   mark which quadrature the field use. This is done through the call of `FieldSet::cache_allocate<dim>(EvalSubset, Mapping<dim>)`
 4. Composing the assambly patch, element cache prefetching. This is organized by 
 `ElementCacheMap`.
 5. Assembly: Iterate over Integrals and get cached values from the fields.
@@ -244,7 +259,10 @@ New algo:
    for (f in postponed_fields_set)
    		f.fill_cache(el_cache);
    ```		   	
-      		
+
+TODO: Need two pass iteration through the Mesh, the is the hard part of the algorithm. Try to write it in Python as a pseudo code. 
+			
+			
 			
 
 This class synchronize the cached elements between (all) fields of single equation. It provides mapping from elements to the cache index and list of elements to cache. This have overloaded evaluation operator, which returns the index in the cache for the given element (or element index). The last cache line is overwritten if the index is not in the cache.
