@@ -479,6 +479,37 @@ void Balance::add_flux_matrix_values(unsigned int quantity_idx,
 			ADD_VALUES));
 }
 
+void Balance::add_mass_values(unsigned int quantity_idx,
+		const DHCellAccessor &dh_cell,
+		const vector<Idx> &loc_dof_indices,
+		const std::vector<double> &mat_values,
+		const double &vec_value)
+{
+	ASSERT_DBG(allocation_done_);
+    if (! balance_on_) return;
+
+	// map local dof indices to global
+	uint m = mat_values.size();
+	int row_dofs[m];
+	for (uint i=0; i<m; i++)
+		row_dofs[i]= dh_cell.dh()->get_local_to_global_map()[loc_dof_indices[i]];
+
+	PetscInt reg_array[1] = { (int)dh_cell.elm().region_idx().bulk_idx() };
+
+	chkerr_assert(MatSetValues(region_mass_matrix_[quantity_idx],
+			m,
+			row_dofs,
+			1,
+			reg_array,
+			&(mat_values[0]),
+			ADD_VALUES));
+
+	chkerr_assert(VecSetValue(region_mass_vec_[quantity_idx],
+            dh_cell.elm().region_idx().bulk_idx(),
+            vec_value,
+            ADD_VALUES));
+}
+
 void Balance::add_flux_values(unsigned int quantity_idx,
 		const DHCellSide &side,
 		const vector<Idx> &loc_dof_indices,
@@ -503,7 +534,7 @@ void Balance::add_flux_values(unsigned int quantity_idx,
 			1,
 			glob_be_idx,
 			m,
-			&(col_dofs[0]),
+			col_dofs,
 			&(mat_values[0]),
 			ADD_VALUES));
 

@@ -36,6 +36,7 @@ class Mesh;
 class TimeGovernor;
 class DOFHandlerMultiDim;
 class DHCellSide;
+class DHCellAccessor;
 namespace Input {
 	namespace Type {
 		class Record;
@@ -262,6 +263,7 @@ public:
 	}
 
 	/**
+	 * DEPRECATED, use add_mass_values instead.
 	 * Adds elements into matrix for computing mass.
 	 * @param quantity_idx  Index of quantity.
 	 * @param region_idx    Index of bulk region.
@@ -298,6 +300,20 @@ public:
             unsigned int region_idx,
             double value);
 	
+	/**
+	 * Adds elements into matrix for computing (outgoing) flux.
+	 * @param quantity_idx  Index of quantity.
+	 * @param side          DHCellSide iterator.
+	 * @param loc_dof_indices   Local dof indices (to the solution vector) to be added.
+	 * @param mat_values    Values to be added into matrix.
+     * @param vec_value     Value to be added into vector.
+	 */
+	void add_mass_values(unsigned int quantity_idx,
+			const DHCellAccessor &dh_cell,
+			const vector<Idx> &loc_dof_indices,
+			const std::vector<double> &mat_values,
+			const double &vec_value);
+
 	/**
 	 * Adds elements into matrix for computing (outgoing) flux.
 	 * @param quantity_idx  Index of quantity.
