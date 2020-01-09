@@ -35,6 +35,7 @@
 class Mesh;
 class TimeGovernor;
 class DOFHandlerMultiDim;
+class DHCellSide;
 namespace Input {
 	namespace Type {
 		class Record;
@@ -273,14 +274,14 @@ public:
 			const std::vector<double> &values);
 
 	/**
+	 * DEPRECATED, use add_flux_values instead.
 	 * Adds elements into matrix for computing (outgoing) flux.
 	 * @param quantity_idx  Index of quantity.
 	 * @param side          Element side iterator.
 	 * @param dof_indices   Dof indices (to the solution vector) to be added.
 	 * @param values        Values to be added.
      * 
-     * TODO: Instead of SideIter and dof_indices, use DHCellSide,
-     * when it is available in all equations.
+     * TODO: Remove when replaced in transport.cc.
 	 */
 	void add_flux_matrix_values(unsigned int quantity_idx,
 			SideIter side,
@@ -296,6 +297,20 @@ public:
     void add_mass_vec_value(unsigned int quantity_idx,
             unsigned int region_idx,
             double value);
+	
+	/**
+	 * Adds elements into matrix for computing (outgoing) flux.
+	 * @param quantity_idx  Index of quantity.
+	 * @param side          DHCellSide iterator.
+	 * @param loc_dof_indices   Local dof indices (to the solution vector) to be added.
+	 * @param mat_values    Values to be added into matrix.
+     * @param vec_value     Value to be added into vector.
+	 */
+	void add_flux_values(unsigned int quantity_idx,
+			const DHCellSide &side,
+			const vector<Idx> &loc_dof_indices,
+			const std::vector<double> &mat_values,
+			const double &vec_value);
 
     /**
 	 * Adds elements into matrix and vector for computing source.

@@ -34,6 +34,7 @@
 #include "tools/time_governor.hh"
 #include "la/distribution.hh"
 #include "fem/dofhandler.hh"
+#include "fem/dh_cell_accessor.hh"
 
 using namespace Input::Type;
 
@@ -475,6 +476,40 @@ void Balance::add_flux_matrix_values(unsigned int quantity_idx,
 			dof_indices.size(),
 			&(dof_indices[0]),
 			&(values[0]),
+			ADD_VALUES));
+}
+
+void Balance::add_flux_values(unsigned int quantity_idx,
+		const DHCellSide &side,
+		const vector<Idx> &loc_dof_indices,
+		const std::vector<double> &mat_values,
+		const double &vec_value)
+{
+	ASSERT_DBG(allocation_done_);
+    if (! balance_on_) return;
+
+	// filling row elements corresponding to a boundary edge
+
+	// map local dof indices to global
+	uint m = mat_values.size();
+	int col_dofs[m];
+	for (uint i=0; i<m; i++)
+		col_dofs[i]= side.cell().dh()->get_local_to_global_map()[loc_dof_indices[i]];
+
+	SideIter s = SideIter(side.side());
+	PetscInt glob_be_idx[1] = { int(be_offset_ + be_id_map_[get_boundary_edge_uid(s)]) };
+
+	chkerr_assert(MatSetValues(be_flux_matrix_[quantity_idx],
+			1,
+			glob_be_idx,
+			m,
+			&(col_dofs[0]),
+			&(mat_values[0]),
+			ADD_VALUES));
+
+	chkerr_assert(VecSetValue(be_flux_vec_[quantity_idx],
+			glob_be_idx[0],
+			vec_value,
 			ADD_VALUES));
 }
 
