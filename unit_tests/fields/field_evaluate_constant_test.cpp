@@ -146,7 +146,7 @@ TEST_F(FieldEvalConstantTest, evaluate) {
 	this->read_input(eq_data_input);
 
     // Asumme following types:
-	std::shared_ptr<EvalPoints> feval = std::make_shared<EvalPoints>(3);
+	std::shared_ptr<EvalPoints> feval = std::make_shared<EvalPoints>();
     Quadrature *q_bulk = new QGauss(3, 2);
     Quadrature *q_side = new QGauss(2, 2);
     std::shared_ptr<EvalSubset> mass_eval = feval->add_bulk<3>(*q_bulk );

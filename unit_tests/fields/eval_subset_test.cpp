@@ -26,18 +26,17 @@
 
 
 TEST(EvalPointsTest, all) {
-	std::shared_ptr<EvalPoints> eval_points = std::make_shared<EvalPoints>(3);
-	EXPECT_EQ(eval_points->point_dim(), 3);
-	EXPECT_EQ(eval_points->size(), 0);
-	EXPECT_EQ(eval_points->n_subsets(), 0);
+	std::shared_ptr<EvalPoints> eval_points = std::make_shared<EvalPoints>();
+	EXPECT_EQ(eval_points->size(3), 0);
+	EXPECT_EQ(eval_points->n_subsets(3), 0);
 
     Quadrature *q_bulk = new QGauss(3, 2);
     eval_points->add_bulk<3>(*q_bulk );
-	EXPECT_EQ(eval_points->size(), 4);
-	EXPECT_EQ(eval_points->n_subsets(), 1);
-	EXPECT_EQ(eval_points->subset_begin(0), 0);
-	EXPECT_EQ(eval_points->subset_end(0), 4);
-	EXPECT_EQ(eval_points->subset_size(0), 4);
+	EXPECT_EQ(eval_points->size(3), 4);
+	EXPECT_EQ(eval_points->n_subsets(3), 1);
+	EXPECT_EQ(eval_points->subset_begin(3, 0), 0);
+	EXPECT_EQ(eval_points->subset_end(3, 0), 4);
+	EXPECT_EQ(eval_points->subset_size(3, 0), 4);
 }
 
 
@@ -46,7 +45,7 @@ TEST(EvalSubsetTest, subsets_3d) {
     Profiler::initialize();
     PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
 
-	std::shared_ptr<EvalPoints> eval_points = std::make_shared<EvalPoints>(3);
+	std::shared_ptr<EvalPoints> eval_points = std::make_shared<EvalPoints>();
     Quadrature *q_bulk = new QGauss(3, 2);
     Quadrature *q_side = new QGauss(2, 2);
     std::shared_ptr<EvalSubset> bulk_points = eval_points->add_bulk<3>(*q_bulk );

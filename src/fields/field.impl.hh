@@ -714,10 +714,10 @@ std::shared_ptr< FieldFE<spacedim, Value> > Field<spacedim,Value>::get_field_fe(
 
 template<int spacedim, class Value>
 void Field<spacedim, Value>::cache_allocate(std::shared_ptr<EvalSubset> sub_set) {
-    unsigned int point_dim = sub_set->eval_points()->point_dim();
+    unsigned int point_dim = sub_set->dim();
 
     if ( value_cache_[point_dim-1].dim()==EvalPoints::undefined_dim )
-        value_cache_[point_dim-1].init(sub_set->eval_points(), ElementCacheMap::n_cached_elements);
+        value_cache_[point_dim-1].init(sub_set->eval_points(), sub_set->dim(), ElementCacheMap::n_cached_elements);
     // else TODO check same sub_set->eval_points()
     value_cache_[point_dim-1].mark_used(sub_set);
 }

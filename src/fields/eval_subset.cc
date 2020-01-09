@@ -25,13 +25,13 @@
  * Implementation of EvalSubset methods.
  */
 
-EvalSubset::EvalSubset(std::shared_ptr<EvalPoints> eval_points, unsigned int n_permutations, unsigned int points_per_side)
-: eval_points_(eval_points), subset_index_(eval_points_->n_subsets()), n_permutations_(n_permutations) {
+EvalSubset::EvalSubset(std::shared_ptr<EvalPoints> eval_points, unsigned int dim, unsigned int n_permutations, unsigned int points_per_side)
+: eval_points_(eval_points), subset_index_(eval_points_->n_subsets(dim)), n_permutations_(n_permutations), dim_(dim) {
     if (n_permutations_==0) { //bulk subset
         n_sides_ = 0;
         perm_indices_ = nullptr;
     } else {
-        n_sides_ = eval_points->point_dim()+1;
+        n_sides_ = dim_+1;
         perm_indices_ = new unsigned int** [n_sides_];
         for (unsigned int i_side=0; i_side<n_sides_; ++i_side) {
             perm_indices_[i_side] = new unsigned int* [n_permutations_];
@@ -59,8 +59,8 @@ Range< BulkPoint > EvalSubset::points(const DHCellAccessor &cell) const {
     if (cell.element_cache_index() == ElementCacheMap::undef_elem_idx)
         THROW( ExcElementNotInCache() << EI_ElementIdx(cell.elm_idx()) );
 
-    auto bgn_it = make_iter<BulkPoint>( BulkPoint(cell, shared_from_this(), eval_points_->subset_begin(subset_index_)) );
-    auto end_it = make_iter<BulkPoint>( BulkPoint(cell, shared_from_this(), eval_points_->subset_end(subset_index_)) );
+    auto bgn_it = make_iter<BulkPoint>( BulkPoint(cell, shared_from_this(), eval_points_->subset_begin(dim_, subset_index_)) );
+    auto end_it = make_iter<BulkPoint>( BulkPoint(cell, shared_from_this(), eval_points_->subset_end(dim_, subset_index_)) );
     return Range<BulkPoint>(bgn_it, end_it);
 }
 
@@ -69,8 +69,8 @@ Range< SidePoint > EvalSubset::points(const DHCellSide &cell_side) const {
     if (cell_side.cell().element_cache_index() == ElementCacheMap::undef_elem_idx)
         THROW( ExcElementNotInCache() << EI_ElementIdx(cell_side.cell().elm_idx()) );
 
-    unsigned int begin_idx = eval_points_->subset_begin(subset_index_);
-    unsigned int end_idx = eval_points_->subset_end(subset_index_);
+    unsigned int begin_idx = eval_points_->subset_begin(dim_, subset_index_);
+    unsigned int end_idx = eval_points_->subset_end(dim_, subset_index_);
     unsigned int points_per_side = (end_idx - begin_idx) / this->n_sides();
     auto bgn_it = make_iter<SidePoint>( SidePoint(cell_side, shared_from_this(), 0 ) );
     auto end_it = make_iter<SidePoint>( SidePoint(cell_side, shared_from_this(), points_per_side ) );

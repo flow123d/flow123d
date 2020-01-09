@@ -45,10 +45,10 @@ public:
 			   << "Value can't be computed.\n");
 
     /// Default constructor
-	EvalSubset() : eval_points_(nullptr), perm_indices_(nullptr), n_permutations_(0) {}
+	EvalSubset() : eval_points_(nullptr), perm_indices_(nullptr), n_permutations_(0), dim_(0) {}
 
     /// Constructor of bulk (n_permutations==0) or side subset
-	EvalSubset(std::shared_ptr<EvalPoints> eval_points, unsigned int n_permutations = 0, unsigned int points_per_side = 0);
+	EvalSubset(std::shared_ptr<EvalPoints> eval_points, unsigned int dim, unsigned int n_permutations = 0, unsigned int points_per_side = 0);
 
     /// Destructor
 	~EvalSubset();
@@ -79,6 +79,11 @@ public:
     	return perm_indices_[i_side][i_perm][i_point];
     }
 
+    /// Returns dimension.
+    inline unsigned int dim() const {
+    	return dim_;
+    }
+
 private:
     /// Pointer to EvalPoints
     std::shared_ptr<EvalPoints> eval_points_;
@@ -90,6 +95,8 @@ private:
     unsigned int n_sides_;
     /// Number of permutations (value 0 indicates bulk set)
     unsigned int n_permutations_;
+    /// Dimension of points
+    unsigned int dim_;
 
     friend class EvalPoints;
 };

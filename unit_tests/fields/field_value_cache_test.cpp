@@ -44,14 +44,14 @@ public:
 
 
 TEST_F(FieldValueCacheTest, field_value_cache) {
-    std::shared_ptr<EvalPoints> eval_points = std::make_shared<EvalPoints>(3);
+    std::shared_ptr<EvalPoints> eval_points = std::make_shared<EvalPoints>();
     Quadrature *q_bulk = new QGauss(3, 2);
     Quadrature *q_side = new QGauss(2, 2);
     std::shared_ptr<EvalSubset> bulk_eval = eval_points->add_bulk<3>(*q_bulk );
     std::shared_ptr<EvalSubset> side_eval = eval_points->add_side<3>(*q_side );
 
     FieldValueCache<double, double> value_cache(1, 1);
-    value_cache.init(eval_points, ElementCacheMap::n_cached_elements);
+    value_cache.init(eval_points, bulk_eval->dim(), ElementCacheMap::n_cached_elements);
     EXPECT_EQ(value_cache.n_subsets(), 2);
     EXPECT_EQ(value_cache.subset_begin(0), 0);
     EXPECT_EQ(value_cache.subset_end(0), 4*ElementCacheMap::n_cached_elements);

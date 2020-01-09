@@ -48,7 +48,7 @@ public:
     ~FieldValueCache();
 
     /// Initialize cache
-    void init(std::shared_ptr<EvalPoints> eval_points, unsigned int n_cache_elements);
+    void init(std::shared_ptr<EvalPoints> eval_points, unsigned int dim, unsigned int n_cache_elements);
 
     /// Marks the used local points
     void mark_used(std::shared_ptr<EvalSubset> sub_set);
@@ -78,7 +78,7 @@ public:
 
     /// Return number of subsets.
     inline unsigned int n_subsets() const {
-        return eval_points_->n_subsets();
+        return eval_points_->n_subsets(dim_);
     }
 
     /// Return size of data cache (number of stored field values)

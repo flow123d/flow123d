@@ -30,7 +30,7 @@ typename arma::Mat<elm_type>::template fixed<nRows, nCols> FieldValueCache<elm_t
 
     ASSERT(dh_cell.element_cache_index() != ElementCacheMap::undef_elem_idx)(dh_cell.elm_idx());
     unsigned int points_per_element = this->subset_size(subset_idx) / n_cache_elements_;
-    unsigned int subset_point_idx = eval_points_idx - eval_points_->subset_begin(subset_idx);
+    unsigned int subset_point_idx = eval_points_idx - eval_points_->subset_begin(dim_, subset_idx);
     return data_.template mat<nRows, nCols>(this->subset_begin(subset_idx) + dh_cell.element_cache_index() * points_per_element + subset_point_idx);
 }
 

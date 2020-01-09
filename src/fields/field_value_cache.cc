@@ -41,17 +41,17 @@ template<class elm_type, class return_type>
 FieldValueCache<elm_type, return_type>::~FieldValueCache() {}
 
 template<class elm_type, class return_type>
-void FieldValueCache<elm_type, return_type>::init(std::shared_ptr<EvalPoints> eval_points, unsigned int n_cache_elements) {
+void FieldValueCache<elm_type, return_type>::init(std::shared_ptr<EvalPoints> eval_points, unsigned int dim, unsigned int n_cache_elements) {
     ASSERT_EQ(dim_, EvalPoints::undefined_dim).error("Repeated initialization!\n");
 
+    dim_ = dim;
     this->n_cache_elements_ = n_cache_elements;
     eval_points_ = eval_points;
-    data_.reinit(n_cache_elements * eval_points_->size());
-    data_.resize(n_cache_elements * eval_points_->size());
+    data_.reinit(n_cache_elements * eval_points_->size(dim_));
+    data_.resize(n_cache_elements * eval_points_->size(dim_));
     subset_starts_[0] = 0;
-    for (uint i=0; i<eval_points_->n_subsets(); ++i)
-    	subset_starts_[i+1] = eval_points_->subset_end(i) * n_cache_elements;
-    dim_ = eval_points_->point_dim();
+    for (uint i=0; i<eval_points_->n_subsets(dim_); ++i)
+    	subset_starts_[i+1] = eval_points_->subset_end(dim_, i) * n_cache_elements;
 }
 
 template<class elm_type, class return_type>
