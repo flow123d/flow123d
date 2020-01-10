@@ -198,9 +198,6 @@ protected:
         dofs.head(dh_cell.n_dofs()) = dh_cell.get_loc_dof_indices();
         // add schur vec indices
         dofs_schur.head(dh_cr_cell.n_dofs()) = dh_cr_cell.get_loc_dof_indices();
-
-        global_dofs_.resize(dh_cell.n_dofs());
-        dh_cell.get_dof_indices(global_dofs_);
         
         if(ele->n_neighs_vb() != 0)
         {
@@ -240,25 +237,23 @@ protected:
         const ElementAccessor<3> ele = dh_cell.elm();
         const unsigned int nsides = ele->n_sides();
         
-        Boundary *bcd;
-        unsigned int side_row, edge_row;
-        
         dirichlet_edge.resize(nsides);
         for (unsigned int i = 0; i < nsides; i++) {
-
-            side_row = loc_side_dofs[i];    //local
-            edge_row = loc_edge_dofs[i];    //local
-            
-            bcd = ele.side(i)->cond();
+            Boundary *bcd = ele.side(i)->cond();
             dirichlet_edge[i] = 0;
+            const unsigned int side_row = loc_side_dofs[i];    //local
+            const unsigned int edge_row = loc_edge_dofs[i];    //local
+
             if (bcd) {
+                DHCellSide side(dh_cell, i);
                 ElementAccessor<3> b_ele = bcd->element_accessor();
                 DarcyMH::EqData::BC_Type type = (DarcyMH::EqData::BC_Type)ad_->bc_type.value(b_ele.centre(), b_ele);
 
                 double cross_section = ad_->cross_section.value(ele.centre(), ele);
 
-                ad_->balance->add_flux_matrix_values(ad_->water_balance_idx, ele.side(i),
-                                                    {global_dofs_[loc_side_dofs[i]]}, {1});
+                ad_->balance->add_flux_values(ad_->water_balance_idx, side,
+                                                         {loc_system_.row_dofs[side_row]},
+                                                         {1}, 0);
 
                 if ( type == DarcyMH::EqData::none) {
                     // homogeneous neumann
@@ -474,8 +469,8 @@ protected:
                 time_term_diag = time_term / ad_->time_step_;
                 time_term_rhs = time_term_diag * ad_->p_edge_solution_previous_time[loc_schur_.row_dofs[i]];
 
-                ad_->balance->add_mass_matrix_values(ad_->water_balance_idx, ele.region().bulk_idx(),
-                                                {global_dofs_[loc_edge_dofs[i]]}, {time_term});
+                ad_->balance->add_mass_values(ad_->water_balance_idx, dh_cell,
+                                              {loc_system_.row_dofs[loc_edge_dofs[i]]}, {time_term}, 0);
             }
 
             this->loc_system_.add_value(loc_edge_dofs[i], loc_edge_dofs[i],
@@ -604,10 +599,6 @@ protected:
 
     /// Flag indicating whether the fluxes for seepage BC has been reconstructed already.
     bool bc_fluxes_reconstruted;
-
-    /// Temporarily keeping the global dofs to the full vector solution due to Balance.
-    /// TODO: remove when Balance is assembled by local dofs
-    std::vector<LongIdx> global_dofs_;
 };
 
 
