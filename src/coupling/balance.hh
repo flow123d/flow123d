@@ -310,7 +310,7 @@ public:
 	 */
 	void add_mass_values(unsigned int quantity_idx,
 			const DHCellAccessor &dh_cell,
-			const vector<Idx> &loc_dof_indices,
+			const LocDofVec &loc_dof_indices,
 			const std::vector<double> &mat_values,
 			const double &vec_value);
 
@@ -324,7 +324,7 @@ public:
 	 */
 	void add_flux_values(unsigned int quantity_idx,
 			const DHCellSide &side,
-			const vector<Idx> &loc_dof_indices,
+			const LocDofVec &loc_dof_indices,
 			const std::vector<double> &mat_values,
 			const double &vec_value);
 
@@ -338,7 +338,7 @@ public:
 	 */
 	void add_source_values(unsigned int quantity_idx,
 			unsigned int region_idx,
-			const std::vector<LongIdx> &loc_dof_indices,
+			const LocDofVec &loc_dof_indices,
 			const std::vector<double> &mat_values,
             const std::vector<double> &vec_values);
     
