@@ -554,20 +554,18 @@ void Balance::add_source_values(unsigned int quantity_idx,
     if (! balance_on_) return;
 
 	PetscInt reg_array[1] = { (int)region_idx };
-	// transform from armadillo vector
-	auto dofs  = arma::conv_to<std::vector<Idx>>::from(loc_dof_indices);
 
 	chkerr_assert(MatSetValues(region_source_matrix_[quantity_idx],
-			dofs.size(),
-			&(dofs[0]),
+			loc_dof_indices.size(),
+			loc_dof_indices.memptr(),
 			1,
 			reg_array,
 			&(mat_values[0]),
 			ADD_VALUES));
     
     chkerr_assert(MatSetValues(region_source_rhs_[quantity_idx],
-			dofs.size(),
-			&(dofs[0]),
+			loc_dof_indices.size(),
+			loc_dof_indices.memptr(),
 			1,
 			reg_array,
 			&(vec_values[0]),
