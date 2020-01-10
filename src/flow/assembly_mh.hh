@@ -480,13 +480,13 @@ protected:
 
     void add_fluxes_in_balance_matrix(const DHCellAccessor& dh_cell){
         
-        auto ele = dh_cell.elm(); //ElementAccessor<3>
-        for (unsigned int i = 0; i < ele->n_sides(); i++) {
-            Boundary* bcd = ele.side(i)->cond();
+        for(DHCellSide side : dh_cell.side_range()){
+            unsigned int sidx = side.side_idx();
 
-            if (bcd) {
-                ad_->balance->add_flux_matrix_values(ad_->water_balance_idx, ele.side(i),
-                                                     {global_dofs_[loc_side_dofs[i]]}, {1});
+            if (side.cond()) {
+                ad_->balance->add_flux_values(ad_->water_balance_idx, side,
+                                              {local_dofs_[loc_side_dofs[sidx]]},
+                                              {1}, 0);
             }
         }
     }
