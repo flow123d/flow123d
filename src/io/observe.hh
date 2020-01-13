@@ -19,6 +19,10 @@
 #include "input/accessors.hh"                // for Array (ptr only), Record
 #include "input/input_exception.hh"          // for DECLARE_INPUT_EXCEPTION
 #include "system/exceptions.hh"              // for operator<<, ExcStream, EI
+#include "mesh/long_idx.hh"                  // for LongIdx
+#include "mesh/range_wrapper.hh"
+#include "tools/general_iterator.hh"
+#include "la/distribution.hh"
 
 class ElementDataCacheBase;
 class Mesh;
@@ -50,6 +54,14 @@ public:
 	/// If we find more candidates we pass in the closest one.
 	double distance_;
 
+	/// Actual process of the observe point.
+	unsigned int proc_;
+
+	/// Global index of the observe point.
+	LongIdx global_idx_;
+
+	/// Local index on actual process of the observe point.
+	LongIdx local_idx_;
 };
 
 
@@ -155,17 +167,18 @@ protected:
     /// Helper object stored projection data
     ObservePointData observe_data_;
 
-    /// Only Observe should use this class directly.
+	/// Only Observe should use this class directly.
     friend class Observe;
 
 };
 
 
+class ObservePointAccessor;
+
 /**
  * This class takes care about the observe points in the output stream, storing observe values of the fields and
  * their output in the YAML format.
  */
-
 class Observe {
 public:
 
@@ -199,15 +212,25 @@ public:
     void output_header();
 
     /**
-     * Write field values to the output file. Using the YAML format.
+     * Sets next output time frame of observe. If the table is full, writes field values to the output
+     * file. Using the YAML format. Argument flush starts writing to output file explicitly.
      */
-    void output_time_frame(double time);
+    void output_time_frame(double time, bool flush);
 
     /**
      * Return \p points_ vector
      */
     inline const std::vector<ObservePoint> & points() const
     { return points_; }
+
+    /**
+     * Return point distribution
+     */
+    inline const Distribution * point_ds() const
+    { return point_ds_; }
+
+    /// Returns local range of observe points
+    Range<ObservePointAccessor> local_range() const;
 
     /**
      * Prepare data for computing observe values.
@@ -227,6 +250,9 @@ public:
 
 
 protected:
+    /// Maximal size of observe values times vector
+    static const unsigned int max_observe_value_time;
+
     // MPI rank.
     int rank_;
 
@@ -240,7 +266,7 @@ protected:
 
 
     /// Common evaluation time of the fields for single time frame.
-    double observe_values_time_;
+    std::vector<double> observe_values_time_;
 
     // Name of the observation stream. Base for the output filename.
     std::string observe_name_;
@@ -258,7 +284,83 @@ protected:
     // Warn for no observe fields only once.
     bool no_fields_warning=false;
 
+	/// Index set assigning to local point index its global index.
+    std::vector<LongIdx> point_4_loc_;
+
+	/// Parallel distribution of observe points.
+	Distribution *point_ds_;
+
+	/// Index of actual (last) time in \p observe_values_time_ vector
+	unsigned int observe_time_idx_;
+
+	friend class ObservePointAccessor;
 };
+
+
+/**
+ * @brief Point accessor allow iterate over local Observe points.
+ *
+ * Iterator is defined by:
+ *  - Observe object
+ *  - local index of observe point (iterated value)
+ */
+class ObservePointAccessor {
+public:
+    /// Default invalid accessor.
+	ObservePointAccessor()
+    : observe_(NULL)
+    {}
+
+    /**
+     * Observe point accessor.
+     */
+	ObservePointAccessor(const Observe *observe, unsigned int loc_idx)
+    : observe_(observe), loc_point_idx_(loc_idx)
+    {}
+
+    /// Return local index to point.
+    inline unsigned int local_idx() const {
+        return loc_point_idx_;
+    }
+
+    /// Return global index to point.
+    inline unsigned int global_idx() const {
+        return observe_->point_4_loc_[loc_point_idx_];
+    }
+
+    /// Return ElementAccessor to element of loc_ele_idx_.
+    inline const ObservePoint observe_point() const {
+    	return observe_->points_[ this->global_idx() ];
+    }
+
+    /// Return local index in data cache (combination of local point index and index of stored time)
+    inline unsigned int loc_point_time_index() const {
+        return (observe_->point_4_loc_.size() * observe_->observe_time_idx_) + loc_point_idx_;
+    }
+
+    /// Check validity of accessor (see default constructor)
+    inline bool is_valid() const {
+        return observe_ != NULL;
+    }
+
+    /// Iterates to next local point.
+    inline void inc() {
+    	loc_point_idx_++;
+    }
+
+    /// Comparison of accessors.
+    bool operator==(const ObservePointAccessor& other) {
+    	return (loc_point_idx_ == other.loc_point_idx_);
+    }
+
+protected:
+    /// Pointer to the Observe owning the point.
+    const Observe * observe_;
+    /// Index into Observe::point_4_loc_ array.
+    unsigned int loc_point_idx_;
+
+};
+
 
 
 

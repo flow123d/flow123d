@@ -218,6 +218,7 @@ Mesh::~Mesh() {
     if (el_4_loc != nullptr) delete[] el_4_loc;
     if (el_ds != nullptr) delete el_ds;
     if (node_4_loc_ != nullptr) delete[] node_4_loc_;
+    if (node_ds_ != nullptr) delete node_ds_;
     if (bc_mesh_ != nullptr) delete bc_mesh_;
     if (tree != nullptr) delete tree;
 }
