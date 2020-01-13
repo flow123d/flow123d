@@ -200,6 +200,7 @@ void Partitioning::id_maps(int n_ids, LongIdx *id_4_old,
 
     new_ds = new Distribution((unsigned int *) new_counts, PETSC_COMM_WORLD); // new distribution
     ISPartitioningToNumbering(part, &new_numbering); // new numbering
+    ISDestroy(&part);
 
     old_4_new = new int [size];
     id_4_loc = new LongIdx [ new_ds->lsize() ];
@@ -207,6 +208,7 @@ void Partitioning::id_maps(int n_ids, LongIdx *id_4_old,
 
     // create whole new->old mapping on each proc
     AOCreateBasicIS(new_numbering, PETSC_NULL, &new_old_ao); // app ordering= new; petsc ordering = old
+    ISDestroy(&new_numbering);
     for (unsigned int i = 0; i < size; i++)
         old_4_new[i] = i;
     AOApplicationToPetsc(new_old_ao, size, old_4_new);
