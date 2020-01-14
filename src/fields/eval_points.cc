@@ -30,7 +30,7 @@ EvalPoints::EvalPoints()
 {}
 
 template <unsigned int dim>
-std::shared_ptr<EvalSubset> EvalPoints::add_bulk(const Quadrature &quad)
+std::shared_ptr<EvalSubset> EvalPoints::add_bulk_old(const Quadrature &quad)
 {
     ASSERT_EQ(dim, quad.dim());
     std::shared_ptr<EvalSubset> bulk_set = std::make_shared<EvalSubset>(shared_from_this(), dim);
@@ -40,7 +40,7 @@ std::shared_ptr<EvalSubset> EvalPoints::add_bulk(const Quadrature &quad)
 }
 
 template <unsigned int dim>
-std::shared_ptr<EvalSubset> EvalPoints::add_side(const Quadrature &quad)
+std::shared_ptr<EvalSubset> EvalPoints::add_side_old(const Quadrature &quad)
 {
     ASSERT_EQ(dim, quad.dim()+1);
 	unsigned int old_data_size=this->size(dim), new_data_size; // interval of side subset data
@@ -115,12 +115,12 @@ void EvalPoints::DimEvalPoints::add_subset() {
 }
 
 
-template std::shared_ptr<EvalSubset> EvalPoints::add_bulk<1>(const Quadrature &);
-template std::shared_ptr<EvalSubset> EvalPoints::add_bulk<2>(const Quadrature &);
-template std::shared_ptr<EvalSubset> EvalPoints::add_bulk<3>(const Quadrature &);
-template std::shared_ptr<EvalSubset> EvalPoints::add_side<1>(const Quadrature &);
-template std::shared_ptr<EvalSubset> EvalPoints::add_side<2>(const Quadrature &);
-template std::shared_ptr<EvalSubset> EvalPoints::add_side<3>(const Quadrature &);
+template std::shared_ptr<EvalSubset> EvalPoints::add_bulk_old<1>(const Quadrature &);
+template std::shared_ptr<EvalSubset> EvalPoints::add_bulk_old<2>(const Quadrature &);
+template std::shared_ptr<EvalSubset> EvalPoints::add_bulk_old<3>(const Quadrature &);
+template std::shared_ptr<EvalSubset> EvalPoints::add_side_old<1>(const Quadrature &);
+template std::shared_ptr<EvalSubset> EvalPoints::add_side_old<2>(const Quadrature &);
+template std::shared_ptr<EvalSubset> EvalPoints::add_side_old<3>(const Quadrature &);
 template void EvalPoints::DimEvalPoints::add_local_points<1>(const Armor::Array<double> &);
 template void EvalPoints::DimEvalPoints::add_local_points<2>(const Armor::Array<double> &);
 template void EvalPoints::DimEvalPoints::add_local_points<3>(const Armor::Array<double> &);

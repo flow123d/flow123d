@@ -149,8 +149,8 @@ TEST_F(FieldEvalConstantTest, evaluate) {
 	std::shared_ptr<EvalPoints> feval = std::make_shared<EvalPoints>();
     Quadrature *q_bulk = new QGauss(3, 2);
     Quadrature *q_side = new QGauss(2, 2);
-    std::shared_ptr<EvalSubset> mass_eval = feval->add_bulk<3>(*q_bulk );
-    std::shared_ptr<EvalSubset> side_eval = feval->add_side<3>(*q_side );
+    std::shared_ptr<EvalSubset> mass_eval = feval->add_bulk_old<3>(*q_bulk );
+    std::shared_ptr<EvalSubset> side_eval = feval->add_side_old<3>(*q_side );
     //std::shared_ptr<EvalSubset> this->ngh_side_eval;
 
     data_->cache_allocate(mass_eval);

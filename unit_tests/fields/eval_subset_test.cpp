@@ -31,7 +31,7 @@ TEST(EvalPointsTest, all) {
 	EXPECT_EQ(eval_points->n_subsets(3), 0);
 
     Quadrature *q_bulk = new QGauss(3, 2);
-    eval_points->add_bulk<3>(*q_bulk );
+    eval_points->add_bulk_old<3>(*q_bulk );
 	EXPECT_EQ(eval_points->size(3), 4);
 	EXPECT_EQ(eval_points->n_subsets(3), 1);
 	EXPECT_EQ(eval_points->subset_begin(3, 0), 0);
@@ -48,8 +48,8 @@ TEST(EvalSubsetTest, subsets_3d) {
 	std::shared_ptr<EvalPoints> eval_points = std::make_shared<EvalPoints>();
     Quadrature *q_bulk = new QGauss(3, 2);
     Quadrature *q_side = new QGauss(2, 2);
-    std::shared_ptr<EvalSubset> bulk_points = eval_points->add_bulk<3>(*q_bulk );
-    std::shared_ptr<EvalSubset> side_points = eval_points->add_side<3>(*q_side );
+    std::shared_ptr<EvalSubset> bulk_points = eval_points->add_bulk_old<3>(*q_bulk );
+    std::shared_ptr<EvalSubset> side_points = eval_points->add_side_old<3>(*q_side );
 
 
     Mesh * mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
