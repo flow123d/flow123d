@@ -55,8 +55,8 @@ class Mesh;
 class Observe;
 class EvalSubset;
 class EvalPoints;
-class BulkPoint;
-class SidePoint;
+class BulkPointOld;
+class SidePointOld;
 template <int spacedim> class ElementAccessor;
 template <int spacedim, class Value> class FieldFE;
 
@@ -166,10 +166,10 @@ public:
     Field &operator=(const Field &other);
 
 
-    typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_> operator() (BulkPoint &);
+    typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_> operator() (BulkPointOld &);
 
 
-    typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_> operator() (SidePoint &);
+    typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_> operator() (SidePointOld &);
 
 
     /**

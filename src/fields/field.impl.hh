@@ -143,7 +143,7 @@ Field<spacedim,Value> &Field<spacedim,Value>::operator=(const Field<spacedim,Val
 
 
 template<int spacedim, class Value>
-typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_> Field<spacedim,Value>::operator() (BulkPoint &p) {
+typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_> Field<spacedim,Value>::operator() (BulkPointOld &p) {
     return value_cache_[p.dh_cell().dim()-1].template
     		get_value<Value::NRows_, Value::NCols_>(p.dh_cell(), p.eval_subset()->get_subset_idx(), p.eval_point_idx());
 }
@@ -151,7 +151,7 @@ typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, 
 
 
 template<int spacedim, class Value>
-typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_> Field<spacedim,Value>::operator() (SidePoint &p) {
+typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_> Field<spacedim,Value>::operator() (SidePointOld &p) {
     return value_cache_[p.dh_cell_side().cell().dim()-1].template
     		get_value<Value::NRows_, Value::NCols_>(p.dh_cell_side().cell(), p.eval_subset()->get_subset_idx(), p.eval_point_idx());
 }

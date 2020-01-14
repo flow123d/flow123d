@@ -174,7 +174,7 @@ TEST_F(FieldEvalConstantTest, evaluate) {
         DHCellAccessor cache_cell = this->data_->elm_cache_map_[dh_cell.dim()-1](dh_cell);
 
         // Bulk integral, no sides, no permutations.
-        for(BulkPoint q_point: mass_eval->points(cache_cell)) {
+        for(BulkPointOld q_point: mass_eval->points(cache_cell)) {
             EXPECT_EQ(expected_scalar[cache_cell.elm_idx()], data_->scalar_field(q_point)[0]);
             EXPECT_ARMA_EQ(expected_vector[i], data_->vector_field(q_point));
             EXPECT_ARMA_EQ(expected_tensor[i], data_->tensor_field(q_point));
@@ -193,12 +193,12 @@ TEST_F(FieldEvalConstantTest, evaluate) {
         	for(DHCellSide el_ngh_side : side.edge_sides()) {
         		el_ngh_side.cell() = this->data_->elm_cache_map_[el_ngh_side.cell().dim()-1](el_ngh_side.cell());
            	    // vector of local side quadrature points in the correct side permutation
-        	    Range<SidePoint> side_points = side_eval->points(side);
-        	    for (SidePoint side_p : side_points) {
+        	    Range<SidePointOld> side_points = side_eval->points(side);
+        	    for (SidePointOld side_p : side_points) {
                     EXPECT_EQ(expected_scalar[cache_cell.elm_idx()], data_->scalar_field(side_p)[0]);
                     EXPECT_ARMA_EQ(expected_vector[i], data_->vector_field(side_p));
                     EXPECT_ARMA_EQ(expected_tensor[i], data_->tensor_field(side_p));
-                    SidePoint ngh_p = side_p.permute(el_ngh_side);
+                    SidePointOld ngh_p = side_p.permute(el_ngh_side);
                     EXPECT_EQ(expected_scalar[el_ngh_side.cell().elm_idx()], data_->scalar_field(ngh_p)[0]);
         	        //loc_mat += cross_section(side_p) * sigma(side_p) *
         		    //    (conc.base_value(side_p) * velocity(side_p)
