@@ -30,6 +30,8 @@
 class Side;
 class Quadrature;
 class EvalSubset;
+class BulkIntegral;
+class EdgeIntegral;
 template <int spacedim> class ElementAccessor;
 
 
@@ -81,6 +83,17 @@ public:
     inline unsigned int n_subsets(unsigned int dim) const {
         return dim_eval_points_[dim-1].n_subsets();
     }
+
+    /**
+     * Registers point set from quadrature.
+     * Returns an object referencing to the EvalPoints and list of its points.
+     */
+    template <unsigned int dim>
+    std::shared_ptr<BulkIntegral> add_bulk(const Quadrature &);
+
+    /// The same as add_bulk but for edge points on sides.
+    template <unsigned int dim>
+    std::shared_ptr<EdgeIntegral> add_edge(const Quadrature &);
 
     /**
      * Registers point set from quadrature.

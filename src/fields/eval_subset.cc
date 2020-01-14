@@ -91,8 +91,6 @@ BaseIntegral::~BaseIntegral()
  * Implementation of BulkIntegral methods
  */
 
-const BulkIntegral BulkIntegral::dummy_integral = BulkIntegral();
-
 BulkIntegral::~BulkIntegral()
 {}
 
@@ -100,8 +98,8 @@ Range< BulkPoint > BulkIntegral::points(const DHCellAccessor &cell) const {
     if (cell.element_cache_index() == ElementCacheMap::undef_elem_idx)
         THROW( ExcElementNotInCache() << EI_ElementIdx(cell.elm_idx()) );
 
-    auto bgn_it = make_iter<BulkPoint>( BulkPoint(cell, *this, eval_points_->subset_begin(dim_, subset_index_)) );
-    auto end_it = make_iter<BulkPoint>( BulkPoint(cell, *this, eval_points_->subset_end(dim_, subset_index_)) );
+    auto bgn_it = make_iter<BulkPoint>( BulkPoint(cell, shared_from_this(), eval_points_->subset_begin(dim_, subset_index_)) );
+    auto end_it = make_iter<BulkPoint>( BulkPoint(cell, shared_from_this(), eval_points_->subset_end(dim_, subset_index_)) );
     return Range<BulkPoint>(bgn_it, end_it);
 }
 
@@ -109,8 +107,6 @@ Range< BulkPoint > BulkIntegral::points(const DHCellAccessor &cell) const {
 /******************************************************************************
  * Implementation of EdgeIntegral methods
  */
-
-const EdgeIntegral EdgeIntegral::dummy_integral = EdgeIntegral();
 
 EdgeIntegral::EdgeIntegral(std::shared_ptr<EvalPoints> eval_points, unsigned int dim, unsigned int n_permutations, unsigned int points_per_side)
 :  BaseIntegral(eval_points, dim), subset_index_(eval_points_->n_subsets(dim)), n_permutations_(n_permutations) {
@@ -149,8 +145,8 @@ Range< EdgePoint > EdgeIntegral::points(const DHCellSide &cell_side) const {
     unsigned int begin_idx = eval_points_->subset_begin(dim_, subset_index_);
     unsigned int end_idx = eval_points_->subset_end(dim_, subset_index_);
     unsigned int points_per_side = (end_idx - begin_idx) / this->n_sides();
-    auto bgn_it = make_iter<EdgePoint>( EdgePoint(cell_side, *this, 0 ) );
-    auto end_it = make_iter<EdgePoint>( EdgePoint(cell_side, *this, points_per_side ) );
+    auto bgn_it = make_iter<EdgePoint>( EdgePoint(cell_side, shared_from_this(), 0 ) );
+    auto end_it = make_iter<EdgePoint>( EdgePoint(cell_side, shared_from_this(), points_per_side ) );
     return Range<EdgePoint>(bgn_it, end_it);
 }
 

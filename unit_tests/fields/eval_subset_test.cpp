@@ -31,7 +31,7 @@ TEST(EvalPointsTest, all) {
 	EXPECT_EQ(eval_points->n_subsets(3), 0);
 
     Quadrature *q_bulk = new QGauss(3, 2);
-    eval_points->add_bulk_old<3>(*q_bulk );
+    eval_points->add_bulk<3>(*q_bulk );
 	EXPECT_EQ(eval_points->size(3), 4);
 	EXPECT_EQ(eval_points->n_subsets(3), 1);
 	EXPECT_EQ(eval_points->subset_begin(3, 0), 0);
@@ -48,8 +48,8 @@ TEST(EvalSubsetTest, subsets_3d) {
 	std::shared_ptr<EvalPoints> eval_points = std::make_shared<EvalPoints>();
     Quadrature *q_bulk = new QGauss(3, 2);
     Quadrature *q_side = new QGauss(2, 2);
-    std::shared_ptr<EvalSubset> bulk_points = eval_points->add_bulk_old<3>(*q_bulk );
-    std::shared_ptr<EvalSubset> side_points = eval_points->add_side_old<3>(*q_side );
+    std::shared_ptr<BulkIntegral> bulk_integral = eval_points->add_bulk<3>(*q_bulk );
+    std::shared_ptr<EdgeIntegral> edge_integral = eval_points->add_edge<3>(*q_side );
 
 
     Mesh * mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
@@ -63,7 +63,7 @@ TEST(EvalSubsetTest, subsets_3d) {
 												 {0.138196601125010504, 0.585410196624968515, 0.138196601125010504},
 												 {0.585410196624968515, 0.138196601125010504, 0.138196601125010504}};
     	unsigned int i=0; // iter trought expected_vals
-    	for (auto p : bulk_points->points(dh_cell)) {
+    	for (auto p : bulk_integral->points(dh_cell)) {
             EXPECT_ARMA_EQ(p.loc_coords<3>(), expected_vals[i]);
 			++i;
         }
@@ -86,7 +86,7 @@ TEST(EvalSubsetTest, subsets_3d) {
         unsigned int i_side=0, i_point; // iter trought expected_vals
         for (auto side_acc : dh_cell.side_range()) {
         	i_point=0;
-            for ( auto p : side_points->points(side_acc) ) {
+            for ( auto p : edge_integral->points(side_acc) ) {
             	EXPECT_ARMA_EQ(p.loc_coords<3>(), expected_vals[i_side][i_point]);
                 ++i_point;
             }
