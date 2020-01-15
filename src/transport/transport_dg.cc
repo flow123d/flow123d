@@ -36,6 +36,7 @@
 #include "transport/concentration_model.hh"
 #include "transport/heat_model.hh"
 #include "transport/assembly_dg.hh"
+#include "transport/assembly_dg_new.hh"
 
 #include "fields/multi_field.hh"
 #include "fields/generic_field.hh"
@@ -205,8 +206,10 @@ void TransportDG<Model>::EqData::set_DG_parameters_boundary(Side side,
 template<class Model>
 TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
         : Model(init_mesh, in_rec),
+		  data_( make_shared<EqData>() ),
           input_rec(in_rec),
-          allocation_done(false)
+          allocation_done(false),
+		  multidim_assembly_new_{AssemblyDGNew<1, Model>(data_, *this), AssemblyDGNew<2, Model>(data_, *this), AssemblyDGNew<3, Model>(data_, *this)}
 {
     // Can not use name() + "constructor" here, since START_TIMER only accepts const char *
     // due to constexpr optimization.
@@ -214,7 +217,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
     // Check that Model is derived from AdvectionDiffusionModel.
     static_assert(std::is_base_of<AdvectionDiffusionModel, Model>::value, "");
 
-    data_ = make_shared<EqData>();
+    //data_ = make_shared<EqData>();
     this->eq_data_ = data_.get();
 
 
@@ -695,6 +698,42 @@ void TransportDG<Model>::assemble_stiffness_matrix()
         END_TIMER("assemble_fluxes_elem_side");
     }
   END_TIMER("assemble_stiffness");
+}
+
+
+
+template<class Model>
+void TransportDG<Model>::assemble_stiffness_matrix_new()
+{
+    GenericAssembly< MultidimAssemblyDGNew<Model> > generic_assembly(multidim_assembly_new_, 2);
+
+    /*START_TIMER("assemble_stiffness");
+    for (auto cell : data_->dh_->local_range() )
+    {
+        if (cell.is_own()) // Not ghost
+            generic_assembly.add_compute_volume_integrals(bulk_integral, cell);
+
+        for( DHCellSide cell_side : cell.side_range() ) {
+            Side side = cell_side.side();
+            if (cell.is_own()) // Not ghost
+                if ( (side.edge()->n_sides == 1) && (side.dim() == dim-1) && (side.cond() != NULL) ) {
+                    generic_assembly.add_compute_fluxes_boundary(boundary_integral, cell_side);
+                    continue;
+                }
+            if ( (cell_side.n_edge_sides() >= 2) && (cell_side.edge_sides().begin()->element().idx() == cell.elm_idx())) {
+                generic_assembly.add_compute_fluxes_element_element(edge_integral, cell_side);
+                for( DHCellSide edge_side : cell_side.edge_sides() )
+                    generic_assembly.add_compute_fluxes_element_element(edge_integral, edge_side);
+            }
+        }
+
+        for( DHCellSide neighb_side : cell.neighb_sides() ) { // cell -> elm lower dim, neighb_side -> elm higher dim
+            if (cell.dim() != neighb_side.dim()-1) continue;
+            generic_assembly.add_compute_fluxes_element_side(coupling_integral, cell);
+            generic_assembly.add_compute_fluxes_element_side(coupling_integral, neighb_side);
+        }
+    }
+    END_TIMER("assemble_stiffness");*/
 }
 
 

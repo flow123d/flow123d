@@ -57,6 +57,7 @@ class OutputTime;
 class DOFHandlerMultiDim;
 class AssemblyDGBase;
 template<unsigned int dim, class Model> class AssemblyDG;
+template<unsigned int dim, class Model> class AssemblyDGNew;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim> class FiniteElement;
 template<unsigned int dim, unsigned int spacedim> class Mapping;
@@ -88,6 +89,9 @@ public:
 };*/
 
 typedef std::vector<std::shared_ptr<AssemblyDGBase> > MultidimAssemblyDG;
+
+template<class Model>
+using MultidimAssemblyDGNew = typename std::tuple<AssemblyDGNew<1, Model>, AssemblyDGNew<2, Model>, AssemblyDGNew<3, Model>>;
 
 
 
@@ -311,6 +315,7 @@ private:
 	 * space dimension.
 	 */
 	void assemble_stiffness_matrix();
+	void assemble_stiffness_matrix_new();
 
 	/**
 	 * @brief Assembles the right hand side due to volume sources.
@@ -424,6 +429,7 @@ private:
     std::shared_ptr<AssemblyDG<1, Model>> assembly1_;
     std::shared_ptr<AssemblyDG<2, Model>> assembly2_;
     std::shared_ptr<AssemblyDG<3, Model>> assembly3_;
+    MultidimAssemblyDGNew<Model> multidim_assembly_new_;
 
 };
 
