@@ -91,7 +91,8 @@ public:
 typedef std::vector<std::shared_ptr<AssemblyDGBase> > MultidimAssemblyDG;
 
 template<class Model>
-using MultidimAssemblyDGNew = typename std::tuple<AssemblyDGNew<1, Model>, AssemblyDGNew<2, Model>, AssemblyDGNew<3, Model>>;
+using MultidimAssemblyDGNew = typename std::tuple< std::shared_ptr<AssemblyDGNew<1, Model>>,
+        std::shared_ptr<AssemblyDGNew<2, Model>>, std::shared_ptr<AssemblyDGNew<3, Model>> >;
 
 
 
@@ -430,6 +431,9 @@ private:
     std::shared_ptr<AssemblyDG<2, Model>> assembly2_;
     std::shared_ptr<AssemblyDG<3, Model>> assembly3_;
     MultidimAssemblyDGNew<Model> multidim_assembly_new_;
+    std::shared_ptr<AssemblyDGNew<1, Model>> assembly_new1_;
+    std::shared_ptr<AssemblyDGNew<2, Model>> assembly_new2_;
+    std::shared_ptr<AssemblyDGNew<3, Model>> assembly_new3_;
 
 };
 

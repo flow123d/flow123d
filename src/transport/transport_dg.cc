@@ -206,10 +206,8 @@ void TransportDG<Model>::EqData::set_DG_parameters_boundary(Side side,
 template<class Model>
 TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
         : Model(init_mesh, in_rec),
-		  data_( make_shared<EqData>() ),
           input_rec(in_rec),
-          allocation_done(false),
-		  multidim_assembly_new_{AssemblyDGNew<1, Model>(data_, *this), AssemblyDGNew<2, Model>(data_, *this), AssemblyDGNew<3, Model>(data_, *this)}
+          allocation_done(false)
 {
     // Can not use name() + "constructor" here, since START_TIMER only accepts const char *
     // due to constexpr optimization.
@@ -217,7 +215,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
     // Check that Model is derived from AdvectionDiffusionModel.
     static_assert(std::is_base_of<AdvectionDiffusionModel, Model>::value, "");
 
-    //data_ = make_shared<EqData>();
+    data_ = make_shared<EqData>();
     this->eq_data_ = data_.get();
 
 
@@ -240,6 +238,10 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
 	multidim_assembly_.push_back( std::dynamic_pointer_cast<AssemblyDGBase>(assembly1_) );
 	multidim_assembly_.push_back( std::dynamic_pointer_cast<AssemblyDGBase>(assembly2_) );
 	multidim_assembly_.push_back( std::dynamic_pointer_cast<AssemblyDGBase>(assembly3_) );
+	assembly_new1_ = std::make_shared<AssemblyDGNew<1, Model>>(data_, *this);
+	assembly_new2_ = std::make_shared<AssemblyDGNew<2, Model>>(data_, *this);
+	assembly_new3_ = std::make_shared<AssemblyDGNew<3, Model>>(data_, *this);
+	multidim_assembly_new_ = MultidimAssemblyDGNew<Model>(assembly_new1_, assembly_new2_, assembly_new3_);
 	MixedPtr<FiniteElement> fe(assembly1_->fe_low_, assembly1_->fe_, assembly2_->fe_, assembly3_->fe_);
 	shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>(Model::mesh_, fe);
 	data_->dh_ = make_shared<DOFHandlerMultiDim>(*Model::mesh_);

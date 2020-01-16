@@ -38,9 +38,16 @@ public:
 	GenericAssembly(MultidimAssembly &multidim_assembly, unsigned int quad_order)
     : multidim_assembly_(multidim_assembly) {
 	    std::shared_ptr<EvalPoints> eval_points = std::make_shared<EvalPoints>();
-	    for (unsigned int i=0; i<3; ++i) {
-	        //bulk_integral_[i] = eval_points->add_bulk<3>(*q_bulk );
-	    }
+	    std::vector<const Quadrature *> quads = { std::get<0>(multidim_assembly_)->quad_, std::get<1>(multidim_assembly_)->quad_,
+	                                              std::get<2>(multidim_assembly_)->quad_, std::get<0>(multidim_assembly_)->quad_low_,
+                                                  std::get<1>(multidim_assembly_)->quad_low_, std::get<2>(multidim_assembly_)->quad_low_ };
+        bulk_integral_[0] = eval_points->add_bulk<1>(*quads[0]);
+        bulk_integral_[1] = eval_points->add_bulk<2>(*quads[1]);
+        bulk_integral_[2] = eval_points->add_bulk<3>(*quads[2]);
+        edge_integral_[0] = eval_points->add_edge<1>(*quads[3]);
+        edge_integral_[1] = eval_points->add_edge<2>(*quads[4]);
+        edge_integral_[2] = eval_points->add_edge<3>(*quads[5]);
+        //coupling_integral_, boundary_integral_
 	}
 private:
     /// Assembly object
