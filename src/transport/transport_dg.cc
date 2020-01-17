@@ -860,7 +860,10 @@ template<class Model>
 void TransportDG<Model>::initialize_assembly_objects()
 {
     for (unsigned int i=0; i<multidim_assembly_.size(); ++i)
-    	multidim_assembly_[i]->initialize();
+        multidim_assembly_[i]->initialize();
+    assembly_new1_->initialize();
+    assembly_new2_->initialize();
+    assembly_new3_->initialize();
 }
 
 
