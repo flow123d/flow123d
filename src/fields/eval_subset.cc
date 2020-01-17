@@ -110,35 +110,27 @@ Range< BulkPoint > BulkIntegral::points(const DHCellAccessor &cell) const {
 
 EdgeIntegral::EdgeIntegral(std::shared_ptr<EvalPoints> eval_points, unsigned int dim, unsigned int n_permutations, unsigned int points_per_side)
 :  BaseIntegral(eval_points, dim), subset_index_(eval_points_->n_subsets(dim)), n_permutations_(n_permutations) {
-    if (n_permutations_==0) { //bulk subset
-        n_sides_ = 0;
-        perm_indices_ = nullptr;
-    } else {
-        n_sides_ = dim_+1;
-        perm_indices_ = new unsigned int** [n_sides_];
-        for (unsigned int i_side=0; i_side<n_sides_; ++i_side) {
-            perm_indices_[i_side] = new unsigned int* [n_permutations_];
-            for (unsigned int i_perm=0; i_perm<n_permutations_; ++i_perm) {
-                perm_indices_[i_side][i_perm] = new unsigned int [points_per_side];
-            }
+    n_sides_ = dim_+1;
+    perm_indices_ = new unsigned int** [n_sides_];
+    for (unsigned int i_side=0; i_side<n_sides_; ++i_side) {
+        perm_indices_[i_side] = new unsigned int* [n_permutations_];
+        for (unsigned int i_perm=0; i_perm<n_permutations_; ++i_perm) {
+            perm_indices_[i_side][i_perm] = new unsigned int [points_per_side];
         }
     }
 }
 
 EdgeIntegral::~EdgeIntegral() {
-    if (perm_indices_!=nullptr) {
-        for (unsigned int i_side=0; i_side<n_sides_; ++i_side) {
-            for (unsigned int i_perm=0; i_perm<n_permutations_; ++i_perm) {
-                delete perm_indices_[i_side][i_perm];
-            }
-            delete perm_indices_[i_side];
+    for (unsigned int i_side=0; i_side<n_sides_; ++i_side) {
+        for (unsigned int i_perm=0; i_perm<n_permutations_; ++i_perm) {
+            delete perm_indices_[i_side][i_perm];
         }
-        delete perm_indices_;
+        delete perm_indices_[i_side];
     }
+    delete perm_indices_;
 }
 
 Range< EdgePoint > EdgeIntegral::points(const DHCellSide &cell_side) const {
-    ASSERT_GT(n_sides_, 0).error("Method points with DHCellSide argument must be call for side subset!\n");
     if (cell_side.cell().element_cache_index() == ElementCacheMap::undef_elem_idx)
         THROW( ExcElementNotInCache() << EI_ElementIdx(cell_side.cell().elm_idx()) );
 

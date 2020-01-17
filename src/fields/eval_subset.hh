@@ -145,9 +145,9 @@ public:
     /// Default constructor
 	BulkIntegral() : BaseIntegral() {}
 
-    /// Constructor of bulk subset
+    /// Constructor of bulk integral
 	BulkIntegral(std::shared_ptr<EvalPoints> eval_points, unsigned int dim)
-	 : BaseIntegral(eval_points, dim) {}
+	 : BaseIntegral(eval_points, dim), subset_index_(eval_points->n_subsets(dim)) {}
 
     /// Destructor
     ~BulkIntegral();
@@ -173,7 +173,7 @@ public:
     /// Default constructor
 	EdgeIntegral() : BaseIntegral(), perm_indices_(nullptr), n_permutations_(0) {}
 
-    /// Constructor of bulk (n_permutations==0) or side subset
+    /// Constructor of edge integral
 	EdgeIntegral(std::shared_ptr<EvalPoints> eval_points, unsigned int dim, unsigned int n_permutations, unsigned int points_per_side);
 
     /// Destructor
