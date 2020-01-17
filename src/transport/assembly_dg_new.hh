@@ -33,22 +33,76 @@
 template <class MultidimAssembly>
 class GenericAssembly
 {
+private:
+	enum IntegralType {
+        none, bulk, edge, ngh_lower_dim, ngh_higher_dim, boundary
+    };
+
+    struct IntegralData {
+	    IntegralData() : elm_idx(0), side_idx(0), integral(IntegralType::none), data_size(0) {}
+
+	    void set(unsigned int elm, unsigned int side, IntegralType itg, unsigned int size)
+	    { ASSERT_DBG(itg!=IntegralType::none); elm_idx=elm; side_idx=side; integral=itg; data_size=size; }
+
+	    void reset()
+	    { integral = IntegralType::none; }
+
+	    unsigned int elm_idx;
+	    unsigned int side_idx;
+	    IntegralType integral;
+	    unsigned int data_size;
+	};
 public:
     /// Constructor
-	GenericAssembly(MultidimAssembly &multidim_assembly, unsigned int quad_order)
-    : multidim_assembly_(multidim_assembly) {
-	    std::shared_ptr<EvalPoints> eval_points = std::make_shared<EvalPoints>();
+	GenericAssembly(MultidimAssembly &multidim_assembly)
+    : multidim_assembly_(multidim_assembly), integral_size_(0) {
+	    eval_points_ = std::make_shared<EvalPoints>();
 	    std::vector<const Quadrature *> quads = { std::get<0>(multidim_assembly_)->quad_, std::get<1>(multidim_assembly_)->quad_,
 	                                              std::get<2>(multidim_assembly_)->quad_, std::get<0>(multidim_assembly_)->quad_low_,
                                                   std::get<1>(multidim_assembly_)->quad_low_, std::get<2>(multidim_assembly_)->quad_low_ };
-        bulk_integral_[0] = eval_points->add_bulk<1>(*quads[0]);
-        bulk_integral_[1] = eval_points->add_bulk<2>(*quads[1]);
-        bulk_integral_[2] = eval_points->add_bulk<3>(*quads[2]);
-        edge_integral_[0] = eval_points->add_edge<1>(*quads[3]);
-        edge_integral_[1] = eval_points->add_edge<2>(*quads[4]);
-        edge_integral_[2] = eval_points->add_edge<3>(*quads[5]);
-        //coupling_integral_, boundary_integral_
+        bulk_integral_[0] = eval_points_->add_bulk<1>(*quads[0]);
+        bulk_integral_[1] = eval_points_->add_bulk<2>(*quads[1]);
+        bulk_integral_[2] = eval_points_->add_bulk<3>(*quads[2]);
+        edge_integral_[0] = eval_points_->add_edge<1>(*quads[3]);
+        edge_integral_[1] = eval_points_->add_edge<2>(*quads[4]);
+        edge_integral_[2] = eval_points_->add_edge<3>(*quads[5]);
+        coupling_integral_[0] = eval_points_->add_coupling<2>(*quads[3]);
+        coupling_integral_[1] = eval_points_->add_coupling<3>(*quads[4]);
+        //boundary_integral_
 	}
+
+	void add_compute_volume_integrals(DHCellAccessor cell) {
+		unsigned int data_size = eval_points_->subset_size( cell.dim(), bulk_integral_[cell.dim()-1]->get_subset_idx() );
+		integral_data_[integral_size_].set(cell.elm_idx(), 0, IntegralType::bulk, data_size);
+		integral_size_++;
+	}
+
+	void add_compute_fluxes_element_element(DHCellSide edge_side) {
+		unsigned int data_size = eval_points_->subset_size( edge_side.dim(), edge_integral_[edge_side.dim()-1]->get_subset_idx() ) / (edge_side.dim()+1);
+		integral_data_[integral_size_].set(edge_side.elem_idx(), edge_side.side_idx(), IntegralType::edge, data_size);
+		integral_size_++;
+	}
+
+	void add_compute_fluxes_element_side(DHCellAccessor cell) {
+		unsigned int data_size = eval_points_->subset_size( cell.dim()-1, coupling_integral_[cell.dim()-2]->get_subset_low_idx() );
+		integral_data_[integral_size_].set(cell.elm_idx(), 0, IntegralType::ngh_lower_dim, data_size);
+		integral_size_++;
+	}
+
+	void add_compute_fluxes_element_side(DHCellSide ngh_side) {
+		unsigned int data_size = eval_points_->subset_size( ngh_side.dim(), coupling_integral_[ngh_side.dim()-2]->get_subset_high_idx() ) / (ngh_side.dim()+1);
+		integral_data_[integral_size_].set(ngh_side.elem_idx(), ngh_side.side_idx(), IntegralType::ngh_higher_dim, data_size);
+		integral_size_++;
+	}
+
+	void insert_eval_points_from_integral_data() {
+	    for (unsigned int i=0; i<integral_size_; ++i) {
+	        // add data to cache if there is free space, else return
+	        integral_data_[integral_size_].reset();
+	    }
+	    integral_size_ = 0;
+	}
+
 private:
     /// Assembly object
     MultidimAssembly &multidim_assembly_;
@@ -57,6 +111,10 @@ private:
     std::array<std::shared_ptr<EdgeIntegral>, 3> edge_integral_;          ///< Edge integrals between elements of dimensions 1, 2, 3
     std::array<std::shared_ptr<CouplingIntegral>, 2> coupling_integral_;  ///< Coupling integrals between elements of dimensions 1-2, 2-3
     std::array<std::shared_ptr<BoundaryIntegral>, 3> boundary_integral_;  ///< Boundary integrals betwwen elements of dimensions 1, 2, 3 and boundaries
+    std::shared_ptr<EvalPoints> eval_points_;                             ///< EvalPoints object shared by all integrals
+
+    std::array<IntegralData, 22> integral_data_;
+    unsigned int integral_size_;
 };
 
 
@@ -80,8 +138,6 @@ public:
       fv_rt_vb_(nullptr), fe_values_vb_(nullptr),
       fe_values_side_(*quad_low_, *fe_, update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points),
       fsv_rt_(*quad_low_, *fe_rt_, update_values | update_quadrature_points) {
-
-    	std::cout << "AssemblyDGNew constructor: dim = " << quad_->dim() << std::endl;
 
         if (dim>1) {
             fv_rt_vb_ = new FEValues<dim-1,3>(*quad_low_, *fe_rt_low_, update_values | update_quadrature_points);
