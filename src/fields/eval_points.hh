@@ -32,6 +32,7 @@ class Quadrature;
 class EvalSubset;
 class BulkIntegral;
 class EdgeIntegral;
+class CouplingIntegral;
 template <int spacedim> class ElementAccessor;
 
 
@@ -94,6 +95,10 @@ public:
     /// The same as add_bulk but for edge points on sides.
     template <unsigned int dim>
     std::shared_ptr<EdgeIntegral> add_edge(const Quadrature &);
+
+    /// The same as add_bulk but for points between side points of element of dim and bulk points of element of dim-1.
+    template <unsigned int dim>
+    std::shared_ptr<CouplingIntegral> add_coupling(const Quadrature &);
 
     /**
      * Registers point set from quadrature.
