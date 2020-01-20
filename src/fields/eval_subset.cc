@@ -147,27 +147,22 @@ Range< EdgePoint > EdgeIntegral::points(const DHCellSide &cell_side) const {
  * Implementation of CouplingIntegral methods
  */
 
-CouplingIntegral::CouplingIntegral(std::shared_ptr<EvalPoints> eval_points, unsigned int dim, unsigned int n_permutations, unsigned int points_per_side)
- : BaseIntegral(eval_points, dim), subset_high_index_(eval_points->n_subsets(dim)),
-   subset_low_index_(eval_points->n_subsets(dim-1)), n_permutations_(n_permutations) {
-    n_sides_ = dim_+1;
-    perm_indices_ = new unsigned int** [n_sides_];
-    for (unsigned int i_side=0; i_side<n_sides_; ++i_side) {
-        perm_indices_[i_side] = new unsigned int* [n_permutations_];
-        for (unsigned int i_perm=0; i_perm<n_permutations_; ++i_perm) {
-            perm_indices_[i_side][i_perm] = new unsigned int [points_per_side];
-        }
-    }
+CouplingIntegral::CouplingIntegral(std::shared_ptr<EdgeIntegral> edge_integral, std::shared_ptr<BulkIntegral> bulk_integral)
+ : BaseIntegral(edge_integral->eval_points(), edge_integral->dim()), edge_integral_(edge_integral), bulk_integral_(bulk_integral) {
+    ASSERT_EQ_DBG(edge_integral->dim(), bulk_integral->dim());
 }
 
 CouplingIntegral::~CouplingIntegral() {
-    for (unsigned int i_side=0; i_side<n_sides_; ++i_side) {
-        for (unsigned int i_perm=0; i_perm<n_permutations_; ++i_perm) {
-            delete perm_indices_[i_side][i_perm];
-        }
-        delete perm_indices_[i_side];
-    }
-    delete perm_indices_;
+    edge_integral_.reset();
+    bulk_integral_.reset();
+}
+
+Range< BulkPoint > CouplingIntegral::points(const DHCellAccessor &cell) const {
+    return bulk_integral_->points(cell);
+}
+
+Range< EdgePoint > CouplingIntegral::points(const DHCellSide &cell_side) const {
+    return edge_integral_->points(cell_side);
 }
 
 

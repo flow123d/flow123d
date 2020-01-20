@@ -222,43 +222,32 @@ public:
 	CouplingIntegral() : BaseIntegral() {}
 
     /// Constructor of ngh integral
-	CouplingIntegral(std::shared_ptr<EvalPoints> eval_points, unsigned int dim, unsigned int n_permutations, unsigned int points_per_side);
+	CouplingIntegral(std::shared_ptr<EdgeIntegral> edge_integral, std::shared_ptr<BulkIntegral> bulk_integral);
 
     /// Destructor
     ~CouplingIntegral();
 
     /// Return index of data block according to subset of higher dim in EvalPoints object
     inline int get_subset_high_idx() const {
-        return subset_high_index_;
+        return edge_integral_->get_subset_idx();
     }
 
     /// Return index of data block according to subset of lower dim in EvalPoints object
     inline int get_subset_low_idx() const {
-        return subset_low_index_;
+        return bulk_integral_->get_subset_idx();
     }
 
     /// Returns range of bulk local points for appropriate cell accessor
-//    Range< BulkPoint > points(const DHCellAccessor &cell) const;
+    Range< BulkPoint > points(const DHCellAccessor &cell) const;
 
     /// Returns range of side local points for appropriate cell side accessor
-//    Range< EdgePoint > points(const DHCellSide &cell_side) const;
+    Range< EdgePoint > points(const DHCellSide &cell_side) const;
 
 private:
-    /// Index of data block according to side subset (element of higher dim) in EvalPoints object.
-    unsigned int subset_high_index_;
-    /// Index of data block according to bulk subset (element of lower dim) in EvalPoints object.
-    unsigned int subset_low_index_;
-
-    /* Data necessary for correct storing of side (element of higher dim) EvalPoints */
-    /// Indices to EvalPoints for different sides and permutations reflecting order of points.
-    unsigned int*** perm_indices_;
-    /// Number of sides (value 0 indicates bulk set)
-    unsigned int n_sides_;
-    /// Number of permutations (value 0 indicates bulk set)
-    unsigned int n_permutations_;
-
-    friend class EvalPoints;
-    friend class EdgePoint;
+    /// Integral according to side subset part (element of higher dim) in EvalPoints object.
+    std::shared_ptr<EdgeIntegral> edge_integral_;
+    /// Integral according to bulk subset part (element of lower dim) in EvalPoints object.
+    std::shared_ptr<BulkIntegral> bulk_integral_;
 };
 
 /**
