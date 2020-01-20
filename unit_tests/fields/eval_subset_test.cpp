@@ -50,6 +50,7 @@ TEST(EvalSubsetTest, subsets_3d) {
     Quadrature *q_side = new QGauss(2, 2);
     std::shared_ptr<BulkIntegral> bulk_integral = eval_points->add_bulk<3>(*q_bulk );
     std::shared_ptr<EdgeIntegral> edge_integral = eval_points->add_edge<3>(*q_side );
+    std::shared_ptr<CouplingIntegral> coupling_integral = eval_points->add_coupling<3>(*q_side );
 
 
     Mesh * mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
@@ -85,9 +86,41 @@ TEST(EvalSubsetTest, subsets_3d) {
                              {0.166666666666666657, 0.666666666666666741, 0.166666666666666657} };
         unsigned int i_side=0, i_point; // iter trought expected_vals
         for (auto side_acc : dh_cell.side_range()) {
-        	i_point=0;
+            i_point=0;
             for ( auto p : edge_integral->points(side_acc) ) {
             	EXPECT_ARMA_EQ(p.loc_coords<3>(), expected_vals[i_side][i_point]);
+                ++i_point;
+            }
+            ++i_side;
+        }
+    }
+
+    {
+        // Test neighbours
+        DHCellAccessor dh_ngh_cell(dh.get(), 1);
+        std::vector< std::vector<arma::vec> > expected_vals(4);
+        expected_vals[0] = { {0.166666666666666657, 0.166666666666666657},
+                             {0.166666666666666657, 0.666666666666666741},
+                             {0.666666666666666741, 0.166666666666666657} };
+        expected_vals[1] = { {0.166666666666666657, 0.0, 0.666666666666666741},
+                             {0.666666666666666741, 0.0, 0.166666666666666657},
+                             {0.166666666666666657, 0.0, 0.166666666666666657} };
+        expected_vals[2] = { {0.166666666666666657, 0.166666666666666657},
+                             {0.166666666666666657, 0.666666666666666741},
+                             {0.666666666666666741, 0.166666666666666657} };
+        expected_vals[3] = { {0.166666666666666657, 0.666666666666666741, 0.0},
+                             {0.666666666666666741, 0.166666666666666657, 0.0},
+                             {0.166666666666666657, 0.166666666666666657, 0.0} };
+        unsigned int i_side=0, i_point; // iter trought expected_vals
+        for (auto ngh_side_acc : dh_ngh_cell.neighb_sides()) {
+            i_point=0;
+            for ( auto p : coupling_integral->points(dh_ngh_cell) ) {
+                EXPECT_ARMA_EQ(p.loc_coords<2>(), expected_vals[i_side][i_point]);
+                ++i_point;
+            }
+            i_point=0; ++i_side;
+            for ( auto p : coupling_integral->points(ngh_side_acc) ) {
+                EXPECT_ARMA_EQ(p.loc_coords<3>(), expected_vals[i_side][i_point]);
                 ++i_point;
             }
             ++i_side;
