@@ -40,7 +40,7 @@ TEST(EvalPointsTest, all) {
 }
 
 
-TEST(EvalSubsetTest, subsets_3d) {
+TEST(IntegralTest, integrals_3d) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     Profiler::initialize();
     PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
@@ -51,7 +51,7 @@ TEST(EvalSubsetTest, subsets_3d) {
     std::shared_ptr<BulkIntegral> bulk_integral = eval_points->add_bulk<3>(*q_bulk );
     std::shared_ptr<EdgeIntegral> edge_integral = eval_points->add_edge<3>(*q_side );
     std::shared_ptr<CouplingIntegral> coupling_integral = eval_points->add_coupling<3>(*q_side );
-
+    std::shared_ptr<BoundaryIntegral> boundary_integral = eval_points->add_boundary<3>(*q_side );
 
     Mesh * mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
     std::shared_ptr<DOFHandlerMultiDim> dh = std::make_shared<DOFHandlerMultiDim>(*mesh);
@@ -96,7 +96,28 @@ TEST(EvalSubsetTest, subsets_3d) {
     }
 
     {
-        // Test neighbours
+        // Test of boundary
+        std::vector< std::vector<arma::vec3> > expected_vals(2);
+        expected_vals[0] = { {0.0, 0.166666666666666657, 0.166666666666666657},
+	                         {0.0, 0.166666666666666657, 0.666666666666666741},
+                             {0.0, 0.666666666666666741, 0.166666666666666657} };
+        expected_vals[1] = { {0.666666666666666741, 0.166666666666666657, 0.166666666666666657},
+                             {0.166666666666666657, 0.166666666666666657, 0.666666666666666741},
+                             {0.166666666666666657, 0.666666666666666741, 0.166666666666666657} };
+        unsigned int i_side=0, i_point; // iter trought expected_vals
+        for (auto side_acc : dh_cell.side_range()) {
+            if (side_acc.cond() == NULL) continue;
+            i_point=0;
+            for ( auto p : boundary_integral->points(side_acc) ) {
+                EXPECT_ARMA_EQ(p.loc_coords<3>(), expected_vals[i_side][i_point]);
+                ++i_point;
+            }
+            ++i_side;
+        }
+    }
+
+    {
+        // Test of neighbours
         DHCellAccessor dh_ngh_cell(dh.get(), 1);
         std::vector< std::vector<arma::vec> > expected_vals(4);
         expected_vals[0] = { {0.166666666666666657, 0.166666666666666657},
