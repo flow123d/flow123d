@@ -167,16 +167,17 @@ typename Value::return_type const & FieldPython<spacedim, Value>::value(const Po
  * Returns std::vector of scalar values in several points at once.
  */
 template <int spacedim, class Value>
-void FieldPython<spacedim, Value>::value_list (const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
+void FieldPython<spacedim, Value>::value_list (const Armor::array &point_list, const ElementAccessor<spacedim> &elm,
                    std::vector<typename Value::return_type>  &value_list)
 {
 	OLD_ASSERT_EQUAL( point_list.size(), value_list.size() );
+    ASSERT_DBG( point_list.n_rows() == spacedim && point_list.n_cols() == 1 ).error("Invalid point size.\n");
     for(unsigned int i=0; i< point_list.size(); i++) {
         Value envelope(value_list[i]);
         OLD_ASSERT( envelope.n_rows()==this->value_.n_rows(),
                 "value_list[%d] has wrong number of rows: %d; should match number of components: %d\n",
                 i, envelope.n_rows(),this->value_.n_rows());
-        set_value(point_list[i], elm, envelope );
+        set_value(point_list.vec<spacedim>(i), elm, envelope );
         envelope.scale(this->unit_conversion_coefficient_);
     }
 }

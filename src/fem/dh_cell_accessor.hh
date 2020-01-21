@@ -156,8 +156,13 @@ public:
     }
 
     /// Comparison of accessors.
-    bool operator==(const DHCellAccessor& other) {
+    bool operator==(const DHCellAccessor& other) const {
     	return (loc_ele_idx_ == other.loc_ele_idx_);
+    }
+
+    /// Comparison of accessors.
+    bool operator!=(const DHCellAccessor& other) const {
+    	return (loc_ele_idx_ != other.loc_ele_idx_);
     }
 
 
@@ -275,7 +280,7 @@ public:
 		return this->elem_idx() == other.elem_idx() && side_idx_ == other.side_idx_;
 	}
 
-	inline bool operator !=(const DHCellSide &other) {
+	inline bool operator !=(const DHCellSide &other) const {
 		return this->elem_idx() != other.elem_idx() || side_idx_ != other.side_idx_;
 	}
 

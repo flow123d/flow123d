@@ -51,15 +51,16 @@ typename Value::return_type const & FieldDivide<spacedim, Value>::value(const Po
  * Returns std::vector of scalar values in several points at once.
  */
 template <int spacedim, class Value>
-void FieldDivide<spacedim, Value>::value_list (const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
+void FieldDivide<spacedim, Value>::value_list (const Armor::array &point_list, const ElementAccessor<spacedim> &elm,
                    std::vector<typename Value::return_type>  &value_list)
 {
 	ASSERT_EQ( point_list.size(), value_list.size() ).error();
+    ASSERT_DBG( point_list.n_rows() == spacedim && point_list.n_cols() == 1 ).error("Invalid point size.\n");
 
 	inner_dividend_->value_list(point_list, elm, value_list);
 
     for(unsigned int i=0; i< point_list.size(); i++) {
-        double div_val = inner_divisor_.value(point_list[i],elm);
+        double div_val = inner_divisor_.value(point_list.vec<spacedim>(i),elm);
         Value envelope(value_list[i]);
 
         for(unsigned int row=0; row < this->value_.n_rows(); row++)

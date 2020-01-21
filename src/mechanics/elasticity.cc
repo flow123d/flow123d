@@ -500,7 +500,7 @@ void Elasticity::assemble_volume_integrals()
         if (cell.dim() != dim) continue;
         ElementAccessor<3> elm_acc = cell.elm();
 
-        fe_values.reinit(elm_acc);
+        fe_values.reinit(cell);
         cell.get_dof_indices(dof_indices);
 
         data_.cross_section.value_list(fe_values.point_list(), elm_acc, csection);
@@ -562,7 +562,7 @@ void Elasticity::set_sources()
         if (cell.dim() != dim) continue;
         ElementAccessor<3> elm_acc = cell.elm();
 
-        fe_values.reinit(elm_acc);
+        fe_values.reinit(cell);
         cell.get_dof_indices(dof_indices);
 
         // assemble the local stiffness matrix
@@ -620,8 +620,10 @@ void Elasticity::assemble_fluxes_boundary()
 
     	SideIter side = edg->side(0);
         ElementAccessor<3> cell = side->element();
-        feo->dh()->cell_accessor_from_element(cell.idx()).get_dof_indices(side_dof_indices);
-        fe_values_side.reinit(cell, side->side_idx());
+        DHCellAccessor dh_cell = feo->dh()->cell_accessor_from_element(cell.idx());
+        DHCellSide dh_side(dh_cell, side->side_idx());
+        dh_cell.get_dof_indices(side_dof_indices);
+        fe_values_side.reinit(dh_side);
 //         unsigned int bc_type = data_.bc_type.value(side->centre(), side->cond()->element_accessor());
  
 //         for (unsigned int i=0; i<ndofs; i++)
@@ -677,12 +679,15 @@ void Elasticity::assemble_fluxes_element_side()
         if (nb->element()->dim() != dim-1) continue;
 
 		ElementAccessor<3> cell_sub = nb->element();
-		feo->dh()->cell_accessor_from_element(cell_sub.idx()).get_dof_indices(side_dof_indices[0]);
-		fe_values_sub.reinit(cell_sub);
+        DHCellAccessor dh_cell_sub = feo->dh()->cell_accessor_from_element(cell_sub.idx());
+        dh_cell_sub.get_dof_indices(side_dof_indices[0]);
+		fe_values_sub.reinit(dh_cell_sub);
 
 		ElementAccessor<3> cell = nb->side()->element();
-		feo->dh()->cell_accessor_from_element(cell.idx()).get_dof_indices(side_dof_indices[1]);
-		fe_values_side.reinit(cell, nb->side()->side_idx());
+		DHCellAccessor dh_cell = feo->dh()->cell_accessor_from_element(cell.idx());
+        DHCellSide dh_side(dh_cell, nb->side()->side_idx());
+        dh_cell.get_dof_indices(side_dof_indices[1]);
+		fe_values_side.reinit(dh_side);
 
 		// Element id's for testing if they belong to local partition.
 		bool own_element_id[2];
@@ -809,20 +814,22 @@ void Elasticity::set_boundary_conditions()
 			}
 
 			SideIter side = edg->side(0);
-			ElementAccessor<3> cell = side->element();
+			// ElementAccessor<3> cell = side->element();
+            ASSERT_DBG(side->element() == elm);
 			ElementAccessor<3> bc_cell = side->cond()->element_accessor();
+            DHCellSide dh_side(cell, side->side_idx());
 
  			unsigned int bc_type = data_.bc_type.value(side->centre(), bc_cell);
 
-			fe_values_side.reinit(cell, side->side_idx());
+			fe_values_side.reinit(dh_side);
 
-			data_.cross_section.value_list(fe_values_side.point_list(), cell, csection);
+			data_.cross_section.value_list(fe_values_side.point_list(), elm, csection);
 			// The b.c. data are fetched for all possible b.c. types since we allow
 			// different bc_type for each substance.
 			data_.bc_displacement.value_list(fe_values_side.point_list(), bc_cell, bc_values);
             data_.bc_traction.value_list(fe_values_side.point_list(), bc_cell, bc_traction);
 
-			feo->dh()->cell_accessor_from_element(cell.idx()).get_dof_indices(side_dof_indices);
+			cell.get_dof_indices(side_dof_indices);
 
             fill_n(local_rhs, ndofs, 0);
             local_flux_balance_vector.assign(ndofs, 0);

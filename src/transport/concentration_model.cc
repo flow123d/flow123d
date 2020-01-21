@@ -173,7 +173,7 @@ void ConcentrationTransportModel::init_from_input(const Input::Record &in_rec)
 
 
 
-void ConcentrationTransportModel::compute_mass_matrix_coefficient(const std::vector<arma::vec3 > &point_list,
+void ConcentrationTransportModel::compute_mass_matrix_coefficient(const Armor::array &point_list,
 		const ElementAccessor<3> &ele_acc,
 		std::vector<double> &mm_coef)
 {
@@ -188,7 +188,7 @@ void ConcentrationTransportModel::compute_mass_matrix_coefficient(const std::vec
 }
 
 
-void ConcentrationTransportModel::compute_retardation_coefficient(const std::vector<arma::vec3 > &point_list,
+void ConcentrationTransportModel::compute_retardation_coefficient(const Armor::array &point_list,
 		const ElementAccessor<3> &ele_acc,
 		std::vector<std::vector<double> > &ret_coef)
 {
@@ -251,7 +251,7 @@ void ConcentrationTransportModel::calculate_dispersivity_tensor(const arma::vec3
 
 
 
-void ConcentrationTransportModel::compute_advection_diffusion_coefficients(const std::vector<arma::vec3 > &point_list,
+void ConcentrationTransportModel::compute_advection_diffusion_coefficients(const Armor::array &point_list,
 		const std::vector<arma::vec3> &velocity,
 		const ElementAccessor<3> &ele_acc,
 		std::vector<std::vector<arma::vec3> > &ad_coef,
@@ -282,7 +282,7 @@ void ConcentrationTransportModel::compute_advection_diffusion_coefficients(const
 }
 
 
-void ConcentrationTransportModel::compute_init_cond(const std::vector<arma::vec3> &point_list,
+void ConcentrationTransportModel::compute_init_cond(const Armor::array &point_list,
 		const ElementAccessor<3> &ele_acc,
 		std::vector<std::vector<double> > &init_values)
 {
@@ -302,7 +302,7 @@ void ConcentrationTransportModel::get_bc_type(const ElementAccessor<3> &ele_acc,
 
 
 void ConcentrationTransportModel::get_flux_bc_data(unsigned int index,
-        const std::vector<arma::vec3> &point_list,
+        const Armor::array &point_list,
 		const ElementAccessor<3> &ele_acc,
 		std::vector< double > &bc_flux,
 		std::vector< double > &bc_sigma,
@@ -317,7 +317,7 @@ void ConcentrationTransportModel::get_flux_bc_data(unsigned int index,
 }
 
 void ConcentrationTransportModel::get_flux_bc_sigma(unsigned int index,
-        const std::vector<arma::vec3> &point_list,
+        const Armor::array &point_list,
 		const ElementAccessor<3> &ele_acc,
 		std::vector< double > &bc_sigma)
 {
@@ -325,7 +325,7 @@ void ConcentrationTransportModel::get_flux_bc_sigma(unsigned int index,
 }
 
 
-void ConcentrationTransportModel::compute_source_coefficients(const std::vector<arma::vec3> &point_list,
+void ConcentrationTransportModel::compute_source_coefficients(const Armor::array &point_list,
 			const ElementAccessor<3> &ele_acc,
 			std::vector<std::vector<double> > &sources_value,
 			std::vector<std::vector<double> > &sources_density,
@@ -349,7 +349,7 @@ void ConcentrationTransportModel::compute_source_coefficients(const std::vector<
 }
 
 
-void ConcentrationTransportModel::compute_sources_sigma(const std::vector<arma::vec3> &point_list,
+void ConcentrationTransportModel::compute_sources_sigma(const Armor::array &point_list,
 			const ElementAccessor<3> &ele_acc,
 			std::vector<std::vector<double> > &sources_sigma)
 {

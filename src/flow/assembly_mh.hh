@@ -9,7 +9,6 @@
 #define SRC_FLOW_DARCY_FLOW_ASSEMBLY_HH_
 
 #include "system/index_types.hh"
-#include "system/logger.hh"
 #include "mesh/mesh.h"
 #include "mesh/accessors.hh"
 #include "mesh/neighbours.h"
@@ -17,7 +16,6 @@
 #include "fem/fe_values.hh"
 #include "fem/fe_rt.hh"
 #include "fem/fe_values_views.hh"
-#include "fem/dh_cell_accessor.hh"
 #include "quadrature/quadrature_lib.hh"
 
 #include "la/linsys.hh"
@@ -189,7 +187,7 @@ public:
         // compute normal vector to side
         arma::vec3 nv;
         ElementAccessor<3> ele_higher = ad_->mesh->element_accessor( neighb_side.element().idx() );
-        ngh_values_.fe_side_values_.reinit(ele_higher, neighb_side.side_idx());
+        ngh_values_.fe_side_values_.reinit(neighb_side);
         nv = ngh_values_.fe_side_values_.normal_vector(0);
 
         double value = ad_->sigma.value( ele.centre(), ele) *
@@ -362,14 +360,15 @@ protected:
         double conduct =  ad_->conductivity.value(ele.centre(), ele);
         double scale = 1 / cs /conduct;
         
-        assemble_sides_scale(ele, scale);
+        assemble_sides_scale(dh_cell, scale);
     }
     
-    void assemble_sides_scale(ElementAccessor<3> ele, double scale)
+    void assemble_sides_scale(const DHCellAccessor& dh_cell, double scale)
     {
         arma::vec3 &gravity_vec = ad_->gravity_vec_;
+        const ElementAccessor<3> ele = dh_cell.elm();
         
-        fe_values_.reinit(ele);
+        fe_values_.reinit(dh_cell);
         unsigned int ndofs = fe_values_.get_fe()->n_dofs();
         unsigned int qsize = fe_values_.n_points();
         auto velocity = fe_values_.vector_view(0);

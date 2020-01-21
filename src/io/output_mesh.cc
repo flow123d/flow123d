@@ -544,9 +544,10 @@ bool OutputMeshDiscontinuous::refinement_criterion_error(const OutputMeshDiscont
 
     // evaluate at nodes and center in a single call
     std::vector<double> val_list(ele.nodes.size()+1);
-    std::vector< Space<spacedim>::Point > point_list;
-    point_list.push_back(centre);
-    point_list.insert(point_list.end(), ele.nodes.begin(), ele.nodes.end());
+    Armor::array point_list(spacedim,1,1+ele.nodes.size());
+    point_list.set(0) = centre;
+    unsigned int i=0;
+    for (auto node : ele.nodes) point_list.set(++i) = node;
     error_control_field_func_(point_list, ele_acc, val_list);
 
     //TODO: compute L1 or L2 error using standard quadrature

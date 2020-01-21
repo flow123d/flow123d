@@ -232,7 +232,7 @@ public:
         * FieldAlgorithmBase provides a slow implementation using the value() method. Derived Field can implement its value_list method
         * as call of FieldAlgoritmBase<...>::value_list().
         */
-       virtual void value_list(const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
+       virtual void value_list(const Armor::array &point_list, const ElementAccessor<spacedim> &elm,
                           std::vector<typename Value::return_type>  &value_list)=0;
 
        virtual void cache_update(FieldValueCache<typename Value::element_type, typename Value::return_type> &data_cache,

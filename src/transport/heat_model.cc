@@ -273,7 +273,7 @@ void HeatTransferModel::output_data()
 }
 
 
-void HeatTransferModel::compute_mass_matrix_coefficient(const std::vector<arma::vec3 > &point_list,
+void HeatTransferModel::compute_mass_matrix_coefficient(const Armor::array &point_list,
 		const ElementAccessor<3> &ele_acc,
 		std::vector<double> &mm_coef)
 {
@@ -296,7 +296,7 @@ void HeatTransferModel::compute_mass_matrix_coefficient(const std::vector<arma::
 }
 
 
-void HeatTransferModel::compute_advection_diffusion_coefficients(const std::vector<arma::vec3 > &point_list,
+void HeatTransferModel::compute_advection_diffusion_coefficients(const Armor::array &point_list,
 		const std::vector<arma::vec3> &velocity,
 		const ElementAccessor<3> &ele_acc,
 		std::vector<std::vector<arma::vec3> > &ad_coef,
@@ -336,7 +336,7 @@ void HeatTransferModel::compute_advection_diffusion_coefficients(const std::vect
 }
 
 
-void HeatTransferModel::compute_init_cond(const std::vector<arma::vec3> &point_list,
+void HeatTransferModel::compute_init_cond(const Armor::array &point_list,
 		const ElementAccessor<3> &ele_acc,
 		std::vector<std::vector<double> > &init_values)
 {
@@ -354,7 +354,7 @@ void HeatTransferModel::get_bc_type(const ElementAccessor<3> &ele_acc,
 
 
 void HeatTransferModel::get_flux_bc_data(unsigned int index,
-        const std::vector<arma::vec3> &point_list,
+        const Armor::array &point_list,
 		const ElementAccessor<3> &ele_acc,
 		std::vector< double > &bc_flux,
 		std::vector< double > &bc_sigma,
@@ -369,7 +369,7 @@ void HeatTransferModel::get_flux_bc_data(unsigned int index,
 }
 
 void HeatTransferModel::get_flux_bc_sigma(unsigned int index,
-        const std::vector<arma::vec3> &point_list,
+        const Armor::array &point_list,
 		const ElementAccessor<3> &ele_acc,
 		std::vector< double > &bc_sigma)
 {
@@ -377,7 +377,7 @@ void HeatTransferModel::get_flux_bc_sigma(unsigned int index,
 }
 
 
-void HeatTransferModel::compute_source_coefficients(const std::vector<arma::vec3> &point_list,
+void HeatTransferModel::compute_source_coefficients(const Armor::array &point_list,
 			const ElementAccessor<3> &ele_acc,
 			std::vector<std::vector<double> > &sources_value,
 			std::vector<std::vector<double> > &sources_density,
@@ -415,7 +415,7 @@ void HeatTransferModel::compute_source_coefficients(const std::vector<arma::vec3
 }
 
 
-void HeatTransferModel::compute_sources_sigma(const std::vector<arma::vec3> &point_list,
+void HeatTransferModel::compute_sources_sigma(const Armor::array &point_list,
 			const ElementAccessor<3> &ele_acc,
 			std::vector<std::vector<double> > &sources_sigma)
 {
