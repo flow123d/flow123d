@@ -256,26 +256,25 @@ private:
 class BoundaryIntegral : public BaseIntegral {
 public:
     /// Default constructor
-	BoundaryIntegral () : BaseIntegral() {}
+    BoundaryIntegral() : BaseIntegral() {}
 
     /// Constructor of bulk subset
-	BoundaryIntegral (std::shared_ptr<EvalPoints> eval_points, unsigned int dim)
-	 : BaseIntegral(eval_points, dim) {}
+    BoundaryIntegral(std::shared_ptr<EdgeIntegral> edge_integral);
 
     /// Destructor
-    ~BoundaryIntegral ();
+    ~BoundaryIntegral();
 
     /// Return index of data block according to subset in EvalPoints object
-//    inline int get_subset_idx() const {
-//        return subset_index_;
-//    }
+    inline int get_subset_idx() const {
+        return edge_integral_->get_subset_idx();
+    }
 
     /// Returns range of bulk local points for appropriate cell accessor
-//    Range< BulkPoint > points(const DHCellAccessor &cell) const;
+    Range< EdgePoint > points(const DHCellSide &cell_side) const;
 
 private:
-    /// Index of data block according to subset in EvalPoints object.
-    unsigned int subset_index_;
+    /// Boundary integral according to edge integral (? but need own special data members and methods ?).
+    std::shared_ptr<EdgeIntegral> edge_integral_;
 };
 
 

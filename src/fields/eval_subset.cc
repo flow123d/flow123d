@@ -171,8 +171,16 @@ Range< EdgePoint > CouplingIntegral::points(const DHCellSide &cell_side) const {
  * Implementation of BoundaryIntegral methods
  */
 
-BoundaryIntegral::~BoundaryIntegral()
-{}
+BoundaryIntegral::BoundaryIntegral(std::shared_ptr<EdgeIntegral> edge_integral)
+ : BaseIntegral(edge_integral->eval_points(), edge_integral->dim()), edge_integral_(edge_integral) {}
+
+BoundaryIntegral::~BoundaryIntegral() {
+    edge_integral_.reset();
+}
+
+Range< EdgePoint > BoundaryIntegral::points(const DHCellSide &cell_side) const {
+    return edge_integral_->points(cell_side);
+}
 
 
 /******************************************************************************
