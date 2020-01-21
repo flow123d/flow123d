@@ -68,7 +68,9 @@ public:
         edge_integral_[2] = eval_points_->add_edge<3>(*quads[5]);
         coupling_integral_[0] = eval_points_->add_coupling<2>(*quads[4]);
         coupling_integral_[1] = eval_points_->add_coupling<3>(*quads[5]);
-        //boundary_integral_
+        boundary_integral_[0] = eval_points_->add_boundary<1>(*quads[3]);
+        boundary_integral_[1] = eval_points_->add_boundary<2>(*quads[4]);
+        boundary_integral_[2] = eval_points_->add_boundary<3>(*quads[5]);
 	}
 
 	void add_compute_volume_integrals(DHCellAccessor cell) {
@@ -92,6 +94,12 @@ public:
 	void add_compute_fluxes_element_side(DHCellSide ngh_side) {
 		unsigned int data_size = eval_points_->subset_size( ngh_side.dim(), coupling_integral_[ngh_side.dim()-1]->get_subset_high_idx() ) / (ngh_side.dim()+1);
 		integral_data_[integral_size_].set(ngh_side.elem_idx(), ngh_side.side_idx(), IntegralType::ngh_higher_dim, data_size);
+		integral_size_++;
+	}
+
+	void add_compute_fluxes_boundary(DHCellSide bdr_side) {
+		unsigned int data_size = eval_points_->subset_size( bdr_side.dim(), boundary_integral_[bdr_side.dim()-1]->get_subset_idx() ) / (bdr_side.dim()+1);
+		integral_data_[integral_size_].set(bdr_side.elem_idx(), bdr_side.side_idx(), IntegralType::boundary, data_size);
 		integral_size_++;
 	}
 

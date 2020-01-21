@@ -432,6 +432,7 @@ void TransportDG<Model>::preallocate()
         VecZeroEntries(data_->ret_vec[i]);
     }
     assemble_stiffness_matrix();
+    assemble_stiffness_matrix_new();
     assemble_mass_matrix();
     set_sources();
     set_boundary_conditions();
@@ -585,7 +586,7 @@ void TransportDG<Model>::calculate_concentration_matrix()
 	for (auto cell : data_->dh_->own_range() )
     {
 
-        unsigned int n_dofs;
+        unsigned int n_dofs=0;
         switch (cell.dim())
         {
         case 1:
@@ -717,12 +718,12 @@ void TransportDG<Model>::assemble_stiffness_matrix_new()
             generic_assembly.add_compute_volume_integrals(cell);
 
         for( DHCellSide cell_side : cell.side_range() ) {
-            /*Side side = cell_side.side();
+            Side side = cell_side.side();
             if (cell.is_own()) // Not ghost
-                if ( (side.edge()->n_sides == 1) && (side.dim() == dim-1) && (side.cond() != NULL) ) {
-                    generic_assembly.add_compute_fluxes_boundary(boundary_integral, cell_side);
+                if ( (side.edge()->n_sides == 1) && (side.cond() != NULL) ) {
+                    generic_assembly.add_compute_fluxes_boundary(cell_side);
                     continue;
-                }*/
+                }
             if ( (cell_side.n_edge_sides() >= 2) && (cell_side.edge_sides().begin()->element().idx() == cell.elm_idx())) {
                 //generic_assembly.add_compute_fluxes_element_element(cell_side);
                 for( DHCellSide edge_side : cell_side.edge_sides() )
@@ -817,7 +818,7 @@ void TransportDG<Model>::update_after_reactions(bool solution_changed)
     	for (auto cell : data_->dh_->own_range() )
         {
 
-            unsigned int n_dofs;
+            unsigned int n_dofs=0;
             switch (cell.dim())
             {
             case 1:
