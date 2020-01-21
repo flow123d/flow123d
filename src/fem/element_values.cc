@@ -50,11 +50,11 @@ ElementData<spacedim>::ElementData(unsigned int size,
 : dim_(dim),
   JxW_values(flags & update_JxW_values ? size : 0),
   side_JxW_values(flags & update_side_JxW_values ? size : 0),
-  jacobians(flags & update_jacobians ? size : 0, spacedim, dim),
+  jacobians(spacedim, dim, flags & update_jacobians ? size : 0),
   determinants(flags & update_volume_elements ? size : 0),
-  inverse_jacobians(flags & update_inverse_jacobians ? size : 0, dim, spacedim),
-  points(flags & update_quadrature_points ? size : 0, spacedim),
-  normal_vectors(flags & update_normal_vectors ? size : 0, spacedim),
+  inverse_jacobians(dim, spacedim, flags & update_inverse_jacobians ? size : 0),
+  points(spacedim, 1, flags & update_quadrature_points ? size : 0),
+  normal_vectors(spacedim, 1, flags & update_normal_vectors ? size : 0),
   update_flags(flags)
 {}
 
@@ -79,9 +79,9 @@ void ElementData<spacedim>::print()
         for (auto j : side_JxW_values) printf("%g ", j); printf("]");
         
         printf(" nv[");
-        for (unsigned int i=0; i<normal_vectors.n_vals(); i++)
+        for (unsigned int i=0; i<normal_vectors.size(); i++)
         {
-            auto n = normal_vectors.arma_vec(i);
+            auto n = normal_vectors.vec<spacedim>(i);
             printf(" [");
             for (unsigned int c=0; c<spacedim; c++) printf("%g ", n[c]);
             printf("]");
@@ -106,13 +106,13 @@ RefElementData *ElementValues<spacedim>::init_ref_data(const Quadrature &q)
         switch (q.dim())
         {
             case 1:
-                ref_data->bar_coords[i] = RefElement<1>::local_to_bary(q.point<1>(i).arma());
+                ref_data->bar_coords[i] = RefElement<1>::local_to_bary(q.point<1>(i));
                 break;
             case 2:
-                ref_data->bar_coords[i] = RefElement<2>::local_to_bary(q.point<2>(i).arma());
+                ref_data->bar_coords[i] = RefElement<2>::local_to_bary(q.point<2>(i));
                 break;
             case 3:
-                ref_data->bar_coords[i] = RefElement<3>::local_to_bary(q.point<3>(i).arma());
+                ref_data->bar_coords[i] = RefElement<3>::local_to_bary(q.point<3>(i));
                 break;
         default:
             ASSERT(false)(q.dim()).error("Unsupported dimension.\n");
@@ -297,7 +297,7 @@ void ElementValues<spacedim>::fill_data()
         // update Jacobians
         if (data.update_flags & update_jacobians)
             for (unsigned int i=0; i<n_points_; i++)
-                data.jacobians.get<spacedim,dim>(i) = jac;
+                data.jacobians.set(i) = Armor::mat<spacedim,dim>( jac );
 
         // calculation of determinant dependent data
         if (data.update_flags & update_volume_elements | update_JxW_values)
@@ -328,7 +328,7 @@ void ElementValues<spacedim>::fill_data()
                 ijac = pinv(jac);
             }
             for (unsigned int i=0; i<n_points_; i++)
-                data.inverse_jacobians.get<dim,spacedim>(i) = ijac;
+                data.inverse_jacobians.set(i) = Armor::mat<dim,spacedim>( ijac );
         }
     }
 
@@ -336,7 +336,7 @@ void ElementValues<spacedim>::fill_data()
     if (cell().is_valid() && data.update_flags & update_quadrature_points)
     {
         for (unsigned int i=0; i<n_points_; i++)
-            data.points.get<spacedim>(i) = coords*ref_data->bar_coords[i];
+            data.points.set(i) = Armor::vec<spacedim>( coords*ref_data->bar_coords[i] );
     }
 }
 
@@ -352,10 +352,10 @@ void ElementValues<spacedim>::fill_side_data()
     if (data.update_flags & update_normal_vectors)
     {
         arma::vec::fixed<spacedim> n_cell;
-        n_cell = trans(data.inverse_jacobians.get<dim,spacedim>(0))*RefElement<dim>::normal_vector(side_idx);
+        n_cell = trans(data.inverse_jacobians.template mat<dim,spacedim>(0))*RefElement<dim>::normal_vector(side_idx);
         n_cell = n_cell/norm(n_cell,2);
         for (unsigned int i=0; i<n_points_; i++)
-            data.normal_vectors.get<spacedim>(i) = n_cell;
+            data.normal_vectors.set(i) = Armor::vec<spacedim>( n_cell );
     }
 
     // Quadrature points in the actual cell coordinate system.
@@ -364,7 +364,7 @@ void ElementValues<spacedim>::fill_side_data()
     {
         typename MappingP1<dim,spacedim>::ElementMap coords = MappingP1<dim,spacedim>::element_map(side().element());
         for (unsigned int i=0; i<n_points_; i++)
-            data.points.get<spacedim>(i) = coords*side_ref_data[side_idx][perm_idx]->bar_coords[i];
+            data.points.set(i) = Armor::vec<spacedim>( coords*side_ref_data[side_idx][perm_idx]->bar_coords[i] );
     }
 
     if (data.update_flags & update_side_JxW_values)
@@ -382,7 +382,7 @@ void ElementValues<spacedim>::fill_side_data()
             // calculation of side Jacobian
             for (unsigned int n=0; n<dim; n++)
                 for (unsigned int c=0; c<spacedim; c++)
-                    side_coords(c,n) = data.side.side().node(n)->point()[c];
+                    side_coords(c,n) = (*data.side.side().node(n))[c];
             side_jac = MappingP1<MatrixSizes<dim>::dim_minus_one,spacedim>::jacobian(side_coords);
 
             // calculation of JxW

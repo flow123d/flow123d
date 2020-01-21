@@ -215,13 +215,13 @@ template <int spacedim, class Value>
 void FieldFormula<spacedim, Value>::value_list (const Armor::array &point_list, const ElementAccessor<spacedim> &elm,
                    std::vector<typename Value::return_type>  &value_list)
 {
-	ASSERT_EQ( point_list.n_vals(), value_list.size() );
+	ASSERT_EQ( point_list.size(), value_list.size() );
     ASSERT_DBG( point_list.n_rows() == spacedim && point_list.n_cols() == 1).error("Invalid point size.\n");
-    for(unsigned int i=0; i< point_list.n_vals(); i++) {
+    for(unsigned int i=0; i< point_list.size(); i++) {
         Value envelope(value_list[i]);
         ASSERT_EQ( envelope.n_rows(), this->value_.n_rows() )(i)(envelope.n_rows())(this->value_.n_rows())
         		.error("value_list['i'] has wrong number of rows\n");
-        auto p_depth = this->eval_depth_var(point_list.get<spacedim>(i).arma());
+        auto p_depth = this->eval_depth_var(point_list.vec<spacedim>(i));
 
         for(unsigned int row=0; row < this->value_.n_rows(); row++)
             for(unsigned int col=0; col < this->value_.n_cols(); col++) {

@@ -68,7 +68,8 @@ public:
     AssemblyDG(std::shared_ptr<EqDataDG> data, TransportDG<Model> &model)
     : fe_(make_shared< FE_P_disc<dim> >(data->dg_order)), fe_low_(make_shared< FE_P_disc<dim-1> >(data->dg_order)),
       fe_rt_(new FE_RT0<dim>), fe_rt_low_(new FE_RT0<dim-1>),
-      quad_(new QGauss(dim, 2*data->dg_order)), quad_low_(new QGauss(dim-1, 2*data->dg_order)),
+      quad_(new QGauss(dim, 2*data->dg_order)),
+	  quad_low_(new QGauss(dim-1, 2*data->dg_order)),
       model_(model), data_(data), fv_rt_(*quad_, *fe_rt_, update_values | update_gradients | update_quadrature_points),
       fe_values_(*quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points),
       fv_rt_vb_(nullptr), fe_values_vb_(nullptr),
@@ -791,7 +792,7 @@ private:
     void calculate_velocity(const ElementAccessor<3> &cell, vector<arma::vec3> &velocity,
                             const Armor::array &point_list)
     {
-        velocity.resize(point_list.n_vals());
+        velocity.resize(point_list.size());
         model_.velocity_field_ptr()->value_list(point_list, cell, velocity);
     }
 

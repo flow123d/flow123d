@@ -16,8 +16,8 @@
  * @author  David Flanderka
  */
 
-#ifndef POINT_SETS_HH_
-#define POINT_SETS_HH_
+#ifndef EVAL_SUBSET_HH_
+#define EVAL_SUBSET_HH_
 
 #include <memory>
 #include <armadillo>
@@ -108,14 +108,20 @@ public:
 	BulkPoint(DHCellAccessor dh_cell, std::shared_ptr<const EvalSubset> bulk_subset, unsigned int loc_point_idx)
     : dh_cell_(dh_cell), subset_(bulk_subset), local_point_idx_(loc_point_idx) {}
 
-    /// Getter of composed quadrature
+    /// Getter of EvalSubset
+    inline std::shared_ptr<const EvalSubset> eval_subset() const {
+        return subset_;
+    }
+
+    /// Getter of EvalPoints
     inline std::shared_ptr<EvalPoints> eval_points() const {
         return subset_->eval_points();
     }
 
     /// Local coordinates within element
+    template<unsigned int dim>
     inline arma::vec loc_coords() const {
-        return this->eval_points()->local_point( local_point_idx_ );
+        return this->eval_points()->local_point<dim>( local_point_idx_ );
     }
 
     // Global coordinates within element
@@ -170,14 +176,20 @@ public:
     : cell_side_(cell_side), subset_(subset), local_point_idx_(local_point_idx),
 	  permutation_idx_( cell_side.element()->permutation_idx( cell_side_.side_idx() ) ) {}
 
+    /// Getter of EvalSubset
+    inline std::shared_ptr<const EvalSubset> eval_subset() const {
+        return subset_;
+    }
+
     /// Getter of evaluation points
     inline std::shared_ptr<EvalPoints> eval_points() const {
         return subset_->eval_points();
     }
 
     // Local coordinates within element
+    template<unsigned int dim>
     inline arma::vec loc_coords() const {
-        return this->eval_points()->local_point( this->eval_point_idx() );
+        return this->eval_points()->local_point<dim>( this->eval_point_idx() );
     }
 
     // Global coordinates within element
@@ -203,6 +215,9 @@ public:
         return subset_->perm_idx_ptr(cell_side_.side_idx(), permutation_idx_, local_point_idx_);
     }
 
+    /// Return corresponds SidePoints of neighbour side of same dimension (computing of side integrals).
+    SidePoint permute(DHCellSide edg_side) const;
+
     /// Iterates to next point.
     inline void inc() {
     	local_point_idx_++;
@@ -225,4 +240,4 @@ private:
 };
 
 
-#endif /* POINT_SETS_HH_ */
+#endif /* EVAL_SUBSET_HH_ */

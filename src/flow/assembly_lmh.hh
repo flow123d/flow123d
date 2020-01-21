@@ -19,7 +19,6 @@
 #include "fem/fe_values_views.hh"
 #include "fem/fe_system.hh"
 #include "quadrature/quadrature_lib.hh"
-#include "flow/mh_dofhandler.hh"
 
 #include "la/linsys.hh"
 #include "la/linsys_PETSC.hh"
@@ -79,17 +78,17 @@ public:
     ~AssemblyLMH<dim>() override
     {}
     
-    void fix_velocity(LocalElementAccessorBase<3> ele_ac) override
+    void fix_velocity(const DHCellAccessor& dh_cell) override
     {
         // if (mortar_assembly)
         //     mortar_assembly->fix_velocity(ele_ac);
     }
 
-    void assemble_reconstruct(LocalElementAccessorBase<3> ele_ac) override
+    void assemble_reconstruct(const DHCellAccessor& dh_cell) override
     {
-        ASSERT_EQ_DBG(ele_ac.dim(), dim);
+        ASSERT_EQ_DBG(dh_cell.dim(), dim);
     
-        assemble_local_system(ele_ac, false);   //do not switch dirichlet in seepage when reconstructing
+        assemble_local_system(dh_cell, false);   //do not switch dirichlet in seepage when reconstructing
         
         // TODO:
         // if (mortar_assembly)
@@ -102,49 +101,30 @@ public:
         loc_system_.reconstruct_solution_schur(schur_offset_, schur_solution, reconstructed_solution_);
 
         // postprocess the velocity
-        postprocess_velocity(ele_ac.dh_cell(), reconstructed_solution_);
+        postprocess_velocity(dh_cell, reconstructed_solution_);
         
         ad_->full_solution.set_subvec(loc_system_.row_dofs.head(schur_offset_), reconstructed_solution_);
         ad_->full_solution.set_subvec(loc_system_.row_dofs.tail(loc_schur_.row_dofs.n_elem), schur_solution);
     }
     
-    void assemble(LocalElementAccessorBase<3> ele_ac) override
+    void assemble(const DHCellAccessor& dh_cell) override
     {
-        ASSERT_EQ_DBG(ele_ac.dim(), dim);
+        ASSERT_EQ_DBG(dh_cell.dim(), dim);
         save_local_system_ = false;
         bc_fluxes_reconstruted = false;
 
-        assemble_local_system(ele_ac, true);   //do use_dirichlet_switch
+        assemble_local_system(dh_cell, true);   //do use_dirichlet_switch
         
         loc_system_.compute_schur_complement(schur_offset_, loc_schur_, true);
 
-        save_local_system(ele_ac.dh_cell());
+        save_local_system(dh_cell);
         
         loc_schur_.eliminate_solution();
         ad_->lin_sys_schur->set_local_system(loc_schur_, ad_->dh_cr_->get_local_to_global_map());
 
         // TODO:
         // if (mortar_assembly)
-        //     mortar_assembly->assembly(ele_ac);
-    }
-
-
-    arma::vec3 make_element_vector(LocalElementAccessorBase<3> ele_ac) override
-    {
-        //START_TIMER("Assembly<dim>::make_element_vector");
-        arma::vec3 flux_in_center;
-        flux_in_center.zeros();
-        auto ele = ele_ac.element_accessor();
-
-        velocity_interpolation_fv_.reinit(ele_ac.dh_cell());
-        for (unsigned int li = 0; li < ele->n_sides(); li++) {
-            flux_in_center += ad_->full_solution[ ele_ac.side_local_row(li) ]
-                        * velocity_interpolation_fv_.vector_view(0).value(li,0);
-        }
-
-
-        flux_in_center /= ad_->cross_section.value(ele.centre(), ele );
-        return flux_in_center;
+        //     mortar_assembly->assembly(dh_cell);
     }
 
     void update_water_content(const DHCellAccessor& dh_cell) override
@@ -157,15 +137,15 @@ protected:
         return RefElement<dim>::n_sides + 1 + RefElement<dim>::n_sides;
     }
     
-    void assemble_local_system(LocalElementAccessorBase<3> ele_ac, bool use_dirichlet_switch)
+    void assemble_local_system(const DHCellAccessor& dh_cell, bool use_dirichlet_switch)
     {
-        set_dofs(ele_ac);
+        set_dofs(dh_cell);
 
-        assemble_bc(ele_ac, use_dirichlet_switch);
-        assemble_sides(ele_ac);
-        assemble_element(ele_ac);
-        assemble_source_term(ele_ac);
-        assembly_dim_connections(ele_ac);
+        assemble_bc(dh_cell, use_dirichlet_switch);
+        assemble_sides(dh_cell);
+        assemble_element(dh_cell);
+        assemble_source_term(dh_cell);
+        assembly_dim_connections(dh_cell);
     }
 
     /** Loads the local system from a map: element index -> LocalSystem,
@@ -204,10 +184,9 @@ protected:
     }
 
 
-    void set_dofs(LocalElementAccessorBase<3> ele_ac){
-        ElementAccessor<3> ele = ele_ac.element_accessor();
-        DHCellAccessor dh_cell = ele_ac.dh_cell();
-        DHCellAccessor dh_cr_cell = ele_ac.dh_cell().cell_with_other_dh(ad_->dh_cr_.get());
+    void set_dofs(const DHCellAccessor& dh_cell){
+        const ElementAccessor<3> ele = dh_cell.elm();
+        const DHCellAccessor dh_cr_cell = dh_cell.cell_with_other_dh(ad_->dh_cr_.get());
 
         unsigned int loc_size = size() + ele->n_neighs_vb();
         unsigned int loc_size_schur = ele->n_sides() + ele->n_neighs_vb();
@@ -218,6 +197,9 @@ protected:
         dofs.head(dh_cell.n_dofs()) = dh_cell.get_loc_dof_indices();
         // add schur vec indices
         dofs_schur.head(dh_cr_cell.n_dofs()) = dh_cr_cell.get_loc_dof_indices();
+
+        global_dofs_.resize(dh_cell.n_dofs());
+        dh_cell.get_dof_indices(global_dofs_);
         
         if(ele->n_neighs_vb() != 0)
         {
@@ -252,9 +234,10 @@ protected:
     }
 
     
-    void assemble_bc(LocalElementAccessorBase<3> ele_ac, bool use_dirichlet_switch){
+    void assemble_bc(const DHCellAccessor& dh_cell, bool use_dirichlet_switch){
         //shortcuts
-        const unsigned int nsides = ele_ac.n_sides();
+        const ElementAccessor<3> ele = dh_cell.elm();
+        const unsigned int nsides = ele->n_sides();
         
         Boundary *bcd;
         unsigned int side_row, edge_row;
@@ -265,16 +248,16 @@ protected:
             side_row = loc_side_dofs[i];    //local
             edge_row = loc_edge_dofs[i];    //local
             
-            bcd = ele_ac.side(i)->cond();
+            bcd = ele.side(i)->cond();
             dirichlet_edge[i] = 0;
             if (bcd) {
                 ElementAccessor<3> b_ele = bcd->element_accessor();
                 DarcyMH::EqData::BC_Type type = (DarcyMH::EqData::BC_Type)ad_->bc_type.value(b_ele.centre(), b_ele);
 
-                double cross_section = ad_->cross_section.value(ele_ac.centre(), ele_ac.element_accessor());
+                double cross_section = ad_->cross_section.value(ele.centre(), ele);
 
-                ad_->balance->add_flux_matrix_values(ad_->water_balance_idx, ele_ac.side(i),
-                                                     {(LongIdx)(ele_ac.side_row(i))}, {1});
+                ad_->balance->add_flux_matrix_values(ad_->water_balance_idx, ele.side(i),
+                                                    {global_dofs_[loc_side_dofs[i]]}, {1});
 
                 if ( type == DarcyMH::EqData::none) {
                     // homogeneous neumann
@@ -311,7 +294,7 @@ protected:
                         // Magnitude of the error is abs(solution_flux - side_flux).
                         
                         // try reconstructing local system for seepage BC
-                        load_local_system(ele_ac.dh_cell());
+                        load_local_system(dh_cell);
                         double solution_flux = reconstructed_solution_[side_row];
 
                         if ( solution_flux < side_flux) {
@@ -385,22 +368,22 @@ protected:
         }
     }
         
-    void assemble_sides(LocalElementAccessorBase<3> ele_ac) override
+    virtual void assemble_sides(const DHCellAccessor& dh_cell)
     {
-        ElementAccessor<3> ele = ele_ac.element_accessor();
+        const ElementAccessor<3> ele = dh_cell.elm();
         double cs = ad_->cross_section.value(ele.centre(), ele);
         double conduct =  ad_->conductivity.value(ele.centre(), ele);
         double scale = 1 / cs /conduct;
         
-        assemble_sides_scale(ele_ac, scale);
+        assemble_sides_scale(dh_cell, scale);
     }
     
-    void assemble_sides_scale(LocalElementAccessorBase<3> ele_ac, double scale)
+    void assemble_sides_scale(const DHCellAccessor& dh_cell, double scale)
     {
         arma::vec3 &gravity_vec = ad_->gravity_vec_;
+        auto ele = dh_cell.elm();
         
-        ElementAccessor<3> ele = ele_ac.element_accessor();
-        fe_values_.reinit(ele_ac.dh_cell());
+        fe_values_.reinit(dh_cell);
         unsigned int ndofs = fe_values_.get_fe()->n_dofs();
         unsigned int qsize = fe_values_.n_points();
         auto velocity = fe_values_.vector_view(0);
@@ -447,7 +430,7 @@ protected:
     }
     
     
-    void assemble_element(LocalElementAccessorBase<3> ele_ac){
+    void assemble_element(const DHCellAccessor& dh_cell){
         // set block B, B': element-side, side-element
         
         for(unsigned int side = 0; side < loc_side_dofs.size(); side++){
@@ -462,9 +445,9 @@ protected:
 //         }
     }
     
-    void assemble_source_term(LocalElementAccessorBase<3> ele_ac) override
+    virtual void assemble_source_term(const DHCellAccessor& dh_cell)
     {
-        ElementAccessor<3> ele = ele_ac.element_accessor();
+        const ElementAccessor<3> ele = dh_cell.elm();
         
         // compute lumped source
         double alpha = 1.0 / ele->n_sides();
@@ -492,7 +475,7 @@ protected:
                 time_term_rhs = time_term_diag * ad_->p_edge_solution_previous_time[loc_schur_.row_dofs[i]];
 
                 ad_->balance->add_mass_matrix_values(ad_->water_balance_idx, ele.region().bulk_idx(),
-                                                {(LongIdx)ele_ac.edge_row(i)}, {time_term});
+                                                {global_dofs_[loc_edge_dofs[i]]}, {time_term});
             }
 
             this->loc_system_.add_value(loc_edge_dofs[i], loc_edge_dofs[i],
@@ -500,17 +483,16 @@ protected:
                                         -source_term - time_term_rhs);
 
             ad_->balance->add_source_values(ad_->water_balance_idx, ele.region().bulk_idx(),
-                                                {(LongIdx)ele_ac.edge_local_row(i)}, {0},{source_term});
+                                                {loc_system_.row_dofs[loc_edge_dofs[i]]}, {0},{source_term});
         }
     }
 
-    void assembly_dim_connections(LocalElementAccessorBase<3> ele_ac){
+    void assembly_dim_connections(const DHCellAccessor& dh_cell){
         //D, E',E block: compatible connections: element-edge
-        auto ele = ele_ac.element_accessor(); //ElementAccessor<3>
-        DHCellAccessor dh_cell = ele_ac.dh_cell();
+        const ElementAccessor<3> ele = dh_cell.elm();
         
         // no Neighbours => nothing to asssemble here
-        if(dh_cell.elm()->n_neighs_vb() == 0) return;
+        if(ele->n_neighs_vb() == 0) return;
         
         ASSERT_LT_DBG(ele->dim(), 3);
         arma::vec3 nv;
@@ -551,7 +533,7 @@ protected:
 
     void postprocess_velocity(const DHCellAccessor& dh_cell, arma::vec& solution)
     {
-        ElementAccessor<3> ele = dh_cell.elm();
+        const ElementAccessor<3> ele = dh_cell.elm();
         
         double edge_scale = ele.measure()
                               * ad_->cross_section.value(ele.centre(), ele)
@@ -565,7 +547,7 @@ protected:
     virtual void postprocess_velocity_specific(const DHCellAccessor& dh_cell, arma::vec& solution,
                                                double edge_scale, double edge_source_term)// override
     {
-        ElementAccessor<3> ele = dh_cell.elm();
+        const ElementAccessor<3> ele = dh_cell.elm();
         
         double storativity = ad_->storativity.value(ele.centre(), ele);
         double new_pressure, old_pressure, time_term = 0.0;
@@ -622,6 +604,10 @@ protected:
 
     /// Flag indicating whether the fluxes for seepage BC has been reconstructed already.
     bool bc_fluxes_reconstruted;
+
+    /// Temporarily keeping the global dofs to the full vector solution due to Balance.
+    /// TODO: remove when Balance is assembled by local dofs
+    std::vector<LongIdx> global_dofs_;
 };
 
 

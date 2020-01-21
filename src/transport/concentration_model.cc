@@ -177,13 +177,13 @@ void ConcentrationTransportModel::compute_mass_matrix_coefficient(const Armor::a
 		const ElementAccessor<3> &ele_acc,
 		std::vector<double> &mm_coef)
 {
-	vector<double> elem_csec(point_list.n_vals()), wc(point_list.n_vals()); //por_m(point_list.n_vals()),
+	vector<double> elem_csec(point_list.size()), wc(point_list.size()); //por_m(point_list.size()),
 
 	data().cross_section.value_list(point_list, ele_acc, elem_csec);
 	//data().porosity.value_list(point_list, ele_acc, por_m);
 	data().water_content.value_list(point_list, ele_acc, wc);
 
-	for (unsigned int i=0; i<point_list.n_vals(); i++)
+	for (unsigned int i=0; i<point_list.size(); i++)
 		mm_coef[i] = elem_csec[i]*wc[i];
 }
 
@@ -192,11 +192,11 @@ void ConcentrationTransportModel::compute_retardation_coefficient(const Armor::a
 		const ElementAccessor<3> &ele_acc,
 		std::vector<std::vector<double> > &ret_coef)
 {
-	vector<double> elem_csec(point_list.n_vals()),
-			por_m(point_list.n_vals()),
-			rho_l(point_list.n_vals()),
-			rho_s(point_list.n_vals()),
-			sorp_mult(point_list.n_vals());
+	vector<double> elem_csec(point_list.size()),
+			por_m(point_list.size()),
+			rho_l(point_list.size()),
+			rho_s(point_list.size()),
+			sorp_mult(point_list.size());
 
 	data().cross_section.value_list(point_list, ele_acc, elem_csec);
 	data().porosity.value_list(point_list, ele_acc, por_m);
@@ -206,7 +206,7 @@ void ConcentrationTransportModel::compute_retardation_coefficient(const Armor::a
 	for (unsigned int sbi=0; sbi<substances_.size(); sbi++)
 	{
         data().sorption_coefficient[sbi].value_list(point_list, ele_acc, sorp_mult);
-		for (unsigned int i=0; i<point_list.n_vals(); i++)
+		for (unsigned int i=0; i<point_list.size(); i++)
 		{
 			ret_coef[sbi][i] = (1.-por_m[i])*rho_s[i]*sorp_mult[i]*elem_csec[i];
 		}
@@ -257,7 +257,7 @@ void ConcentrationTransportModel::compute_advection_diffusion_coefficients(const
 		std::vector<std::vector<arma::vec3> > &ad_coef,
 		std::vector<std::vector<arma::mat33> > &dif_coef)
 {
-	const unsigned int qsize = point_list.n_vals();
+	const unsigned int qsize = point_list.size();
 	const unsigned int n_subst = dif_coef.size();
     std::vector<arma::mat33> Dm(qsize);
 	std::vector<double> alphaL(qsize), alphaT(qsize), por_m(qsize), csection(qsize), wc(qsize);
@@ -331,7 +331,7 @@ void ConcentrationTransportModel::compute_source_coefficients(const Armor::array
 			std::vector<std::vector<double> > &sources_density,
 			std::vector<std::vector<double> > &sources_sigma)
 {
-	const unsigned int qsize = point_list.n_vals();
+	const unsigned int qsize = point_list.size();
 	vector<double> csection(qsize);
 	data().cross_section.value_list(point_list, ele_acc, csection);
     for (unsigned int sbi=0; sbi<n_substances(); sbi++)
@@ -353,7 +353,7 @@ void ConcentrationTransportModel::compute_sources_sigma(const Armor::array &poin
 			const ElementAccessor<3> &ele_acc,
 			std::vector<std::vector<double> > &sources_sigma)
 {
-	const unsigned int qsize = point_list.n_vals();
+	const unsigned int qsize = point_list.size();
 	vector<double> csection(qsize);
 	data().cross_section.value_list(point_list, ele_acc, csection);
     for (unsigned int sbi=0; sbi<n_substances(); sbi++)

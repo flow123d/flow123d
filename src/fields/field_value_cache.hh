@@ -24,11 +24,12 @@
 #include <unordered_set>
 #include <vector>
 #include "system/armor.hh"
+#include "fields/eval_points.hh"
 
-class EvalPoints;
 class EvalSubset;
-class ElementCacheMap;
 class DHCellAccessor;
+class Mesh;
+template <int spacedim> class ElementAccessor;
 
 
 /**
@@ -37,11 +38,8 @@ class DHCellAccessor;
  * Every field in equation use own instance for every dimension of elements
  * (typically 3 instances for dim = 1,2,3).
  */
-template<class elm_type, class Value>
+template<class elm_type, class return_type>
 class FieldValueCache {
-private:
-    /// Maximal nuber of subsets.
-    static const unsigned int max_subsets = 10;
 public:
     /// Constructor
     FieldValueCache(unsigned int n_rows, unsigned int n_cols);
@@ -49,27 +47,49 @@ public:
     /// Destructor
     ~FieldValueCache();
 
-    /// Constructor
-    void init(std::shared_ptr<EvalPoints> eval_points, const ElementCacheMap *cache_map, unsigned int n_cache_points);
+    /// Initialize cache
+    void init(std::shared_ptr<EvalPoints> eval_points, unsigned int n_cache_elements);
 
     /// Marks the used local points
     void mark_used(std::shared_ptr<EvalSubset> sub_set);
 
     /// Getter for subsets of used points
-    inline const std::array<int, FieldValueCache::max_subsets> &used_subsets() const {
+    inline const std::array<bool, EvalPoints::max_subsets> &used_subsets() const {
         return used_subsets_;
+    }
+
+    /// Return begin index of appropriate subset data.
+    inline int subset_begin(unsigned int idx) const {
+        ASSERT_LT_DBG(idx, n_subsets());
+    	return subset_starts_[idx];
+    }
+
+    /// Return end index of appropriate subset data.
+    inline int subset_end(unsigned int idx) const {
+        ASSERT_LT_DBG(idx, n_subsets());
+    	return subset_starts_[idx+1];
+    }
+
+    /// Return number of local points corresponding to subset.
+    inline int subset_size(unsigned int idx) const {
+        ASSERT_LT_DBG(idx, n_subsets());
+    	return subset_starts_[idx+1] - subset_starts_[idx];
+    }
+
+    /// Return number of subsets.
+    inline unsigned int n_subsets() const {
+        return eval_points_->n_subsets();
     }
 
     /// Return size of data cache (number of stored field values)
     inline unsigned int size() const {
-        return data_.n_vals();
+        return data_.size();
 
     }
 
     /// Return dimension
     inline unsigned int dim() const {
         return dim_;
-
     }
 
     /// Return data vector.
@@ -79,8 +99,8 @@ public:
 
     /// Return data vector.
     template<uint nr, uint nc = 1>
-    inline Armor::Mat<elm_type, nr, nc> &get(uint i) {
-        return data_.get<nr, nc>(i);
+    inline typename arma::Mat<elm_type>::template fixed<nr, nc> &get(uint i) {
+        return data_.mat<nr, nc>(i);
     }
 
     /// Return data vector.
@@ -88,24 +108,38 @@ public:
         return eval_points_;
     }
 
+    /// Return number of elements that data is stored in cache.
+    inline unsigned int n_cache_elements() const {
+        return n_cache_elements_;
+    }
+
+    /// Return value of evaluation point given by DHCell and local point idx in EvalPoints.
+    template<uint nRows, uint nCols>
+    typename arma::Mat<elm_type>::template fixed<nRows, nCols> get_value(DHCellAccessor dh_cell, unsigned int subset_idx, unsigned int eval_points_idx);
+
 private:
-    /// Data cache.
+    /**
+     * Data cache.
+     *
+     * Data is ordered like three dimensional table. The highest level is determinated by subsets,
+     * those data ranges are holds in subset_starts. Data block size of each subset is determined
+     * by number of eval_points (of subset) and maximal number of stored elements.
+     * The table is allocated to hold all subsets, but only those marked in used_subsets are updated.
+     * Order of subsets is same as in eval_points.
+     */
     Armor::Array<elm_type> data_;
 
-    /// Holds indices of used blocks of local points.
-    std::array<int, FieldValueCache::max_subsets> used_subsets_;
+    /// Holds if blocks of local points are used or not.
+    std::array<bool, EvalPoints::max_subsets> used_subsets_;
 
     /// Indices of subsets begin and end position in data array.
-    std::array<int, FieldValueCache::max_subsets+1> subset_starts_;
+    std::array<int, EvalPoints::max_subsets+1> subset_starts_;
 
     /// Pointer to EvalPoints.
     std::shared_ptr<EvalPoints> eval_points_;
 
-    /// Pointer to ElementCacheMap.
-    const ElementCacheMap *element_cache_map_;
-
     /// Maximal number of elements stored in cache.
-    unsigned int n_cache_points_;
+    unsigned int n_cache_elements_;
 
     /// Dimension (control data member).
     unsigned int dim_;
@@ -120,47 +154,57 @@ private:
  */
 class ElementCacheMap {
 public:
+	typedef std::vector<ElementAccessor<3>> ElementSet;
+
     /// Number of cached elements which values are stored in cache.
     static const unsigned int n_cached_elements;
 
     /// Index of invalid element in cache.
     static const unsigned int undef_elem_idx;
 
+    /// Holds helper data necessary for cache update.
+    class UpdateCacheHelper {
+    public:
+        /// Set of element indexes that wait for storing to cache.
+        std::unordered_set<unsigned int> added_elements_;
+
+        /// Holds old and new indexes of elements preserved in cache.
+        std::unordered_map<unsigned int, unsigned int> preserved_elements_;
+
+        /// Maps elements of different regions
+        std::unordered_map<unsigned int, ElementSet> region_element_map_;
+
+        /// Maps of begin positions in cache of different regions
+        std::unordered_map<unsigned int, unsigned int> region_cache_begin_;
+    };
+
     /// Constructor
     ElementCacheMap();
 
     /// Init dimension data member
     inline void init(unsigned int dim) {
-        this->dim_ = dim;
+    	ASSERT_EQ(dim_, EvalPoints::undefined_dim).error("Repeated initialization!");
+    	this->ready_to_reading_ = true;
+    	this->dim_ = dim;
     }
 
     /// Adds element to added_elements_ set.
     void add(const DHCellAccessor &dh_cell);
 
-    /// Clean helper data member before reading data to cache.
-    void prepare_elements_to_update();
+    /// Prepare data member before reading data to cache.
+    void prepare_elements_to_update(Mesh *mesh);
 
-    /// Clean helper data member after reading data to cache.
+    /// Clean helper data after reading data to cache.
     void clear_elements_to_update();
-
-    /// Getter for begin_idx_
-    inline unsigned int begin_idx() const {
-        return begin_idx_;
-    }
-
-    /// Getter for end_idx_
-    inline unsigned int end_idx() const {
-        return end_idx_;
-    }
-
-    /// Getter for added_elements_
-    inline const std::unordered_set<unsigned int> &added_elements() const {
-        return added_elements_;
-    }
 
     /// Return dimension
     inline unsigned int dim() const {
         return dim_;
+    }
+
+    /// Return update cache data helper
+    inline const UpdateCacheHelper &update_cache_data() const {
+        return update_data_;
     }
 
     /// Set index of cell in ElementCacheMap (or undef value if cell is not stored in cache).
@@ -172,17 +216,14 @@ private:
     /// Map of element indices stored in cache, allows reverse search to previous vector.
     std::unordered_map<unsigned int, unsigned int> cache_idx_;
 
-    /// Set of element indexes that wait for storing to cache.
-    std::unordered_set<unsigned int> added_elements_;
-
-    /// Holds index to elm_idx_ vector corresponding to begin index stored in added_elements_ vector.
-    unsigned int begin_idx_;
-
-    /// Holds index to elm_idx_ vector corresponding to end index stored in added_elements_ vector.
-    unsigned int end_idx_;
-
     /// Dimension (control data member)
     unsigned int dim_;
+
+    /// Holds data used for cache update.
+    UpdateCacheHelper update_data_;
+
+    /// Flag is set down during update of cache when this can't be read
+    bool ready_to_reading_;
 };
 
 

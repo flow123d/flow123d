@@ -122,8 +122,8 @@ public:
 	void initialize(FEValueInitData init_data);
     /// Returns one value in one given point.
     typename Value::return_type const &value(const Point &p, const ElementAccessor<spacedim> &elm) {
-    	Armor::array point_list(1, spacedim);
-    	point_list.get<spacedim>(0) = p;
+    	Armor::array point_list(spacedim, 1, 1);
+    	point_list.set(0) = Armor::ArmaVec<double,spacedim>( p );
     	std::vector<typename Value::return_type> v_list;
     	v_list.push_back(r_value_);
     	this->value_list(point_list, elm, v_list);

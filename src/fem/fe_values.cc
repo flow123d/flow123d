@@ -175,7 +175,7 @@ typename FEValuesBase<dim,spacedim>::FEInternalData *FEValuesBase<dim,spacedim>:
         for (unsigned int j=0; j<fe->n_dofs(); j++)
         {
             for (unsigned int c=0; c<fe->n_components(); c++)
-                shape_values(j,c) = fe->shape_value(j, q.point<dim>(i).arma(), c);
+                shape_values(j,c) = fe->shape_value(j, q.point<dim>(i), c);
             
             data->ref_shape_values[i][j] = trans(shape_values.row(j));
         }
@@ -188,7 +188,7 @@ typename FEValuesBase<dim,spacedim>::FEInternalData *FEValuesBase<dim,spacedim>:
         {
             grad.zeros();
             for (unsigned int c=0; c<fe->n_components(); c++)
-                grad.col(c) += fe->shape_grad(j, q.point<dim>(i).arma(), c);
+                grad.col(c) += fe->shape_grad(j, q.point<dim>(i), c);
             
             data->ref_shape_grads[i][j] = grad;
         }
@@ -543,7 +543,7 @@ void FEValues<dim,spacedim>::reinit(const DHCellAccessor &cell)
     if (!this->elm_values->cell().is_valid() ||
         this->elm_values->cell() != cell)
     {
-        ((ElementValues<spacedim> *)this->elm_values)->reinit(cell);
+        this->elm_values->reinit(cell);
     }
     
     this->fill_data(*this->elm_values, *fe_data);
@@ -621,10 +621,10 @@ void FESideValues<dim,spacedim>::reinit(const DHCellSide &cell_side)
     {
         this->elm_values->reinit(cell_side);
     }
-    
+
     const LongIdx sid = cell_side.side_idx();
     const unsigned int pid = this->elm_values->side().element()->permutation_idx(sid);
-
+    
     // calculation of finite element data
     this->fill_data(*this->elm_values, *side_fe_data[sid][pid]);
 }

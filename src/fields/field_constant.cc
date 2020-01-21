@@ -129,10 +129,10 @@ template <int spacedim, class Value>
 void FieldConstant<spacedim, Value>::value_list (const Armor::array &point_list, const ElementAccessor<spacedim> &elm,
                    std::vector<typename Value::return_type>  &value_list)
 {
-	OLD_ASSERT_EQUAL( point_list.n_vals(), value_list.size() );
+	OLD_ASSERT_EQUAL( point_list.size(), value_list.size() );
     ASSERT_DBG(point_list.n_rows() == spacedim && point_list.n_cols() == 1).error("Invalid point size.\n");
 
-    for(unsigned int i=0; i< point_list.n_vals(); i++) {
+    for(unsigned int i=0; i< point_list.size(); i++) {
     	OLD_ASSERT( Value(value_list[i]).n_rows()==this->value_.n_rows(),
                 "value_list[%d] has wrong number of rows: %d; should match number of components: %d\n",
                 i, Value(value_list[i]).n_rows(),this->value_.n_rows());
@@ -143,14 +143,15 @@ void FieldConstant<spacedim, Value>::value_list (const Armor::array &point_list,
 }
 
 
-/*template <int spacedim, class Value>
-void FieldConstant<spacedim, Value>::loc_point_value(const std::vector< ElementAccessor<spacedim> > &element_set,
-        ElementCacheMap &cache_map,
-        FieldValueCache<Value> &data_cache)
+template <int spacedim, class Value>
+void FieldConstant<spacedim, Value>::cache_update(FieldValueCache<typename Value::element_type, typename Value::return_type> &data_cache,
+        unsigned int i_cache_el_begin, unsigned int i_cache_el_end,
+        const std::vector< ElementAccessor<spacedim> > &element_set)
 {
-    //Armor::Mat<typename Value::element_type, Value::NRows_, Value::NCols_> mat_value( const_cast<typename Value::element_type*>(this->value_.mem_ptr()) );
-    //for (unsigned int i=0; i<indices_to_cache.size(); ++i) data_cache.data().get<Value::NRows_, Value::NCols_>(indices_to_cache[i]) = mat_value;
-}*/
+    Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> mat_value( const_cast<typename Value::element_type*>(this->value_.mem_ptr()) );
+    for (unsigned int i_cache = i_cache_el_begin; i_cache < i_cache_el_end; ++i_cache)
+        data_cache.data().set(i_cache) = mat_value;
+}
 
 
 template <int spacedim, class Value>

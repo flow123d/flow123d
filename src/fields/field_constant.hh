@@ -82,9 +82,9 @@ public:
     virtual void value_list (const Armor::array &point_list, const ElementAccessor<spacedim> &elm,
                        std::vector<typename Value::return_type>  &value_list);
 
-    /*void loc_point_value(const std::vector< ElementAccessor<spacedim> > &element_set,
-            ElementCacheMap &cache_map,
-	        FieldValueCache<Value> &data_cache) override;*/
+    void cache_update(FieldValueCache<typename Value::element_type, typename Value::return_type> &data_cache,
+            unsigned int i_cache_el_begin, unsigned int i_cache_el_end,
+            const std::vector< ElementAccessor<spacedim> > &element_set) override;
 
 
     virtual ~FieldConstant();

@@ -227,7 +227,7 @@ public:
     inline arma::vec::fixed<spacedim> point(const unsigned int point_no)
     {
         ASSERT_LT_DBG(point_no, n_points_);
-        return elm_values->point(point_no).arma();
+        return elm_values->point(point_no);
     }
 
     /**
@@ -248,7 +248,7 @@ public:
 	inline arma::vec::fixed<spacedim> normal_vector(unsigned int point_no) override
 	{
         ASSERT_LT_DBG(point_no, n_points_);
-	    return elm_values->normal_vector(point_no).arma();
+	    return elm_values->normal_vector(point_no);
 	}
 	
 	/**

@@ -228,10 +228,10 @@ public:
      *
      * @param point_no Number of the quadrature point.
      */
-    inline Armor::vec<spacedim> point(const unsigned int point_no) const
+    inline arma::vec::fixed<spacedim> point(const unsigned int point_no) const
     {
         ASSERT_LT_DBG(point_no, n_points_);
-        return data.points.get<spacedim>(point_no);
+        return data.points.template vec<spacedim>(point_no);
     }
 
     /// Return coordinates of all quadrature points in the actual cell system.
@@ -246,10 +246,10 @@ public:
      *
      * @param point_no Number of the quadrature point.
      */
-	inline Armor::vec<spacedim> normal_vector(unsigned int point_no)
+	inline arma::vec::fixed<spacedim> normal_vector(unsigned int point_no)
 	{
         ASSERT_LT_DBG(point_no, n_points_);
-	    return data.normal_vectors.get<spacedim>(point_no);
+	    return data.normal_vectors.template vec<spacedim>(point_no);
 	}
 	
     /// Returns the number of quadrature points.
