@@ -636,6 +636,8 @@ public:
             fsv_rt_.reinit(elm, dh_side.side_idx());
             calculate_velocity(elm, velocity_, fsv_rt_.point_list());
 
+            dh_cell.get_dof_indices(dof_indices_);
+
             model_.compute_advection_diffusion_coefficients(fe_values_side_.point_list(), velocity_, elm, data_->ad_coef, data_->dif_coef);
             data_->cross_section.value_list(fe_values_side_.point_list(), elm, csection_);
 
