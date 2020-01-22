@@ -30,22 +30,33 @@
 
 
 
+/// Allow set mask of active integrals.
+enum ActiveIntegrals {
+    none     =      0,
+    bulk     = 0x0001,
+    edge     = 0x0002,
+    coupling = 0x0004,
+    boundary = 0x0008
+};
+
+
 template <class MultidimAssembly>
 class GenericAssembly
 {
 private:
-	enum IntegralType {
-        none, bulk, edge, ngh_lower_dim, ngh_higher_dim, boundary
+    /// Obsolete type
+    enum IntegralType {
+        none_type, bulk_type, edge_type, ngh_lower_dim_type, ngh_higher_dim_type, boundary_type
     };
 
     struct IntegralData {
-	    IntegralData() : elm_idx(0), side_idx(0), integral(IntegralType::none), data_size(0) {}
+	    IntegralData() : elm_idx(0), side_idx(0), integral(IntegralType::none_type), data_size(0) {}
 
 	    void set(unsigned int elm, unsigned int side, IntegralType itg, unsigned int size)
-	    { ASSERT_DBG(itg!=IntegralType::none); elm_idx=elm; side_idx=side; integral=itg; data_size=size; }
+	    { ASSERT_DBG(itg!=IntegralType::none_type); elm_idx=elm; side_idx=side; integral=itg; data_size=size; }
 
 	    void reset()
-	    { integral = IntegralType::none; }
+	    { integral = IntegralType::none_type; }
 
 	    unsigned int elm_idx;
 	    unsigned int side_idx;
@@ -55,7 +66,7 @@ private:
 public:
     /// Constructor
 	GenericAssembly(MultidimAssembly &multidim_assembly)
-    : multidim_assembly_(multidim_assembly), integral_size_(0) {
+    : multidim_assembly_(multidim_assembly), active_integrals_(ActiveIntegrals::none), integral_size_(0) {
 	    eval_points_ = std::make_shared<EvalPoints>();
 	    std::vector<const Quadrature *> quads = { std::get<0>(multidim_assembly_)->quad_, std::get<1>(multidim_assembly_)->quad_,
 	                                              std::get<2>(multidim_assembly_)->quad_, std::get<0>(multidim_assembly_)->quad_low_,
@@ -73,33 +84,71 @@ public:
         boundary_integral_[2] = eval_points_->add_boundary<3>(*quads[5]);
 	}
 
+	inline void set_active(int active) {
+	    active_integrals_ = active;
+	}
+
+    void assemble_stiffness_matrix(std::shared_ptr<DOFHandlerMultiDim> dh) {
+        START_TIMER("assemble_stiffness");
+        for (auto cell : dh->local_range() )
+        {
+            // generic_assembly.check_integral_data();
+            if (active_integrals_ & ActiveIntegrals::bulk)
+        	    if (cell.is_own()) // Not ghost
+                    this->add_compute_volume_integrals(cell);
+
+            for( DHCellSide cell_side : cell.side_range() ) {
+                if (active_integrals_ & ActiveIntegrals::boundary)
+                    if (cell.is_own()) // Not ghost
+                        if ( (cell_side.side().edge()->n_sides == 1) && (cell_side.side().cond() != NULL) ) {
+                            this->add_compute_fluxes_boundary(cell_side);
+                            continue;
+                        }
+                if (active_integrals_ & ActiveIntegrals::edge)
+                    if ( (cell_side.n_edge_sides() >= 2) && (cell_side.edge_sides().begin()->element().idx() == cell.elm_idx())) {
+                        for( DHCellSide edge_side : cell_side.edge_sides() )
+                            this->add_compute_fluxes_element_element(edge_side);
+                    }
+            }
+
+	        if (active_integrals_ & ActiveIntegrals::coupling)
+                for( DHCellSide neighb_side : cell.neighb_sides() ) { // cell -> elm lower dim, neighb_side -> elm higher dim
+                    if (cell.dim() != neighb_side.dim()-1) continue;
+                    this->add_compute_fluxes_element_side(cell);
+                    this->add_compute_fluxes_element_side(neighb_side);
+                }
+            this->insert_eval_points_from_integral_data();
+        }
+        END_TIMER("assemble_stiffness");
+    }
+
 	void add_compute_volume_integrals(DHCellAccessor cell) {
 		unsigned int data_size = eval_points_->subset_size( cell.dim(), bulk_integral_[cell.dim()-1]->get_subset_idx() );
-		integral_data_[integral_size_].set(cell.elm_idx(), 0, IntegralType::bulk, data_size);
+		integral_data_[integral_size_].set(cell.elm_idx(), 0, IntegralType::bulk_type, data_size);
 		integral_size_++;
 	}
 
 	void add_compute_fluxes_element_element(DHCellSide edge_side) {
 		unsigned int data_size = eval_points_->subset_size( edge_side.dim(), edge_integral_[edge_side.dim()-1]->get_subset_idx() ) / (edge_side.dim()+1);
-		integral_data_[integral_size_].set(edge_side.elem_idx(), edge_side.side_idx(), IntegralType::edge, data_size);
+		integral_data_[integral_size_].set(edge_side.elem_idx(), edge_side.side_idx(), IntegralType::edge_type, data_size);
 		integral_size_++;
 	}
 
 	void add_compute_fluxes_element_side(DHCellAccessor cell) {
 		unsigned int data_size = eval_points_->subset_size( cell.dim(), coupling_integral_[cell.dim()-1]->get_subset_low_idx() );
-		integral_data_[integral_size_].set(cell.elm_idx(), 0, IntegralType::ngh_lower_dim, data_size);
+		integral_data_[integral_size_].set(cell.elm_idx(), 0, IntegralType::ngh_lower_dim_type, data_size);
 		integral_size_++;
 	}
 
 	void add_compute_fluxes_element_side(DHCellSide ngh_side) {
 		unsigned int data_size = eval_points_->subset_size( ngh_side.dim(), coupling_integral_[ngh_side.dim()-1]->get_subset_high_idx() ) / (ngh_side.dim()+1);
-		integral_data_[integral_size_].set(ngh_side.elem_idx(), ngh_side.side_idx(), IntegralType::ngh_higher_dim, data_size);
+		integral_data_[integral_size_].set(ngh_side.elem_idx(), ngh_side.side_idx(), IntegralType::ngh_higher_dim_type, data_size);
 		integral_size_++;
 	}
 
 	void add_compute_fluxes_boundary(DHCellSide bdr_side) {
 		unsigned int data_size = eval_points_->subset_size( bdr_side.dim(), boundary_integral_[bdr_side.dim()-1]->get_subset_idx() ) / (bdr_side.dim()+1);
-		integral_data_[integral_size_].set(bdr_side.elem_idx(), bdr_side.side_idx(), IntegralType::boundary, data_size);
+		integral_data_[integral_size_].set(bdr_side.elem_idx(), bdr_side.side_idx(), IntegralType::boundary_type, data_size);
 		integral_size_++;
 	}
 
@@ -114,6 +163,9 @@ public:
 private:
     /// Assembly object
     MultidimAssembly &multidim_assembly_;
+
+    /// Holds mask of active integrals.
+    int active_integrals_;
 
     std::array<std::shared_ptr<BulkIntegral>, 3> bulk_integral_;          ///< Bulk integrals of elements of dimensions 1, 2, 3
     std::array<std::shared_ptr<EdgeIntegral>, 3> edge_integral_;          ///< Edge integrals between elements of dimensions 1, 2, 3

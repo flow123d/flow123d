@@ -238,10 +238,11 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
 	multidim_assembly_.push_back( std::dynamic_pointer_cast<AssemblyDGBase>(assembly1_) );
 	multidim_assembly_.push_back( std::dynamic_pointer_cast<AssemblyDGBase>(assembly2_) );
 	multidim_assembly_.push_back( std::dynamic_pointer_cast<AssemblyDGBase>(assembly3_) );
-	assembly_new1_ = std::make_shared<AssemblyDGNew<1, Model>>(data_, *this);
-	assembly_new2_ = std::make_shared<AssemblyDGNew<2, Model>>(data_, *this);
-	assembly_new3_ = std::make_shared<AssemblyDGNew<3, Model>>(data_, *this);
-	multidim_assembly_new_ = MultidimAssemblyDGNew<Model>(assembly_new1_, assembly_new2_, assembly_new3_);
+	std::shared_ptr<AssemblyDGNew<1, Model>> assembly_new1 = std::make_shared<AssemblyDGNew<1, Model>>(data_, *this);
+	std::shared_ptr<AssemblyDGNew<2, Model>> assembly_new2 = std::make_shared<AssemblyDGNew<2, Model>>(data_, *this);
+	std::shared_ptr<AssemblyDGNew<3, Model>> assembly_new3 = std::make_shared<AssemblyDGNew<3, Model>>(data_, *this);
+	multidim_assembly_new_ = MultidimAssemblyDGNew<Model>(assembly_new1, assembly_new2, assembly_new3);
+	generic_assembly_ = new GenericAssembly< MultidimAssemblyDGNew<Model> >(multidim_assembly_new_);
 	MixedPtr<FiniteElement> fe(assembly1_->fe_low_, assembly1_->fe_, assembly2_->fe_, assembly3_->fe_);
 	shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>(Model::mesh_, fe);
 	data_->dh_ = make_shared<DOFHandlerMultiDim>(*Model::mesh_);
@@ -376,6 +377,8 @@ TransportDG<Model>::~TransportDG()
         //delete[] rhs;
         //delete[] mass_vec;
         //delete[] ret_vec;
+
+        delete generic_assembly_;
 
     }
 
@@ -708,37 +711,8 @@ void TransportDG<Model>::assemble_stiffness_matrix()
 template<class Model>
 void TransportDG<Model>::assemble_stiffness_matrix_new()
 {
-    GenericAssembly< MultidimAssemblyDGNew<Model> > generic_assembly(multidim_assembly_new_);
-
-    START_TIMER("assemble_stiffness");
-    for (auto cell : data_->dh_->local_range() )
-    {
-        // generic_assembly.check_integral_data();
-        if (cell.is_own()) // Not ghost
-            generic_assembly.add_compute_volume_integrals(cell);
-
-        for( DHCellSide cell_side : cell.side_range() ) {
-            Side side = cell_side.side();
-            if (cell.is_own()) // Not ghost
-                if ( (side.edge()->n_sides == 1) && (side.cond() != NULL) ) {
-                    generic_assembly.add_compute_fluxes_boundary(cell_side);
-                    continue;
-                }
-            if ( (cell_side.n_edge_sides() >= 2) && (cell_side.edge_sides().begin()->element().idx() == cell.elm_idx())) {
-                //generic_assembly.add_compute_fluxes_element_element(cell_side);
-                for( DHCellSide edge_side : cell_side.edge_sides() )
-                    generic_assembly.add_compute_fluxes_element_element(edge_side);
-            }
-        }
-
-        for( DHCellSide neighb_side : cell.neighb_sides() ) { // cell -> elm lower dim, neighb_side -> elm higher dim
-            if (cell.dim() != neighb_side.dim()-1) continue;
-            generic_assembly.add_compute_fluxes_element_side(cell);
-            generic_assembly.add_compute_fluxes_element_side(neighb_side);
-        }
-        generic_assembly.insert_eval_points_from_integral_data();
-    }
-    END_TIMER("assemble_stiffness");
+    generic_assembly_->set_active(bulk | edge | coupling | boundary);
+    generic_assembly_->assemble_stiffness_matrix(data_->dh_);
 }
 
 
@@ -864,9 +838,9 @@ void TransportDG<Model>::initialize_assembly_objects()
 {
     for (unsigned int i=0; i<multidim_assembly_.size(); ++i)
         multidim_assembly_[i]->initialize();
-    assembly_new1_->initialize();
-    assembly_new2_->initialize();
-    assembly_new3_->initialize();
+    std::get<0>(multidim_assembly_new_)->initialize();
+    std::get<1>(multidim_assembly_new_)->initialize();
+    std::get<2>(multidim_assembly_new_)->initialize();
 }
 
 

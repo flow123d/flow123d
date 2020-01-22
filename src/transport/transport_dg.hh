@@ -58,6 +58,7 @@ class DOFHandlerMultiDim;
 class AssemblyDGBase;
 template<unsigned int dim, class Model> class AssemblyDG;
 template<unsigned int dim, class Model> class AssemblyDGNew;
+template<class Model> class GenericAssembly;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim> class FiniteElement;
 template<unsigned int dim, unsigned int spacedim> class Mapping;
@@ -431,9 +432,7 @@ private:
     std::shared_ptr<AssemblyDG<2, Model>> assembly2_;
     std::shared_ptr<AssemblyDG<3, Model>> assembly3_;
     MultidimAssemblyDGNew<Model> multidim_assembly_new_;
-    std::shared_ptr<AssemblyDGNew<1, Model>> assembly_new1_;
-    std::shared_ptr<AssemblyDGNew<2, Model>> assembly_new2_;
-    std::shared_ptr<AssemblyDGNew<3, Model>> assembly_new3_;
+    GenericAssembly< MultidimAssemblyDGNew<Model> > * generic_assembly_;
 
 };
 
