@@ -747,17 +747,20 @@ void ConvectionTransport::create_mass_matrix()
     
     balance_->start_mass_assembly(subst_idx);
 
-    for (unsigned int loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
-        elm = mesh_->element_accessor( el_4_loc[loc_el] );
+    for ( DHCellAccessor dh_cell : dh_->own_range() ) {
+        ElementAccessor<3> elm = dh_cell.elm();
+        // we have currently zero order P_Disc FE
+        ASSERT_DBG(dh_cell.get_loc_dof_indices().size() == 1);
+        Idx local_p0_dof = dh_cell.get_loc_dof_indices()[0];
 
         double csection = data_.cross_section.value(elm.centre(), elm);
         //double por_m = data_.porosity.value(elm.centre(), elm->element_accessor());
         double por_m = data_.water_content.value(elm.centre(), elm);
 
         for (unsigned int sbi=0; sbi<n_substances(); ++sbi)
-            balance_->add_mass_matrix_values(subst_idx[sbi], elm.region().bulk_idx(), {row_4_el[el_4_loc[loc_el]]}, {csection*por_m*elm.measure()} );
+            balance_->add_mass_values(subst_idx[sbi], dh_cell, {local_p0_dof}, {csection*por_m*elm.measure()}, 0);
         
-        VecSetValue(mass_diag, row_4_el[ elm.idx() ], csection*por_m, INSERT_VALUES);
+        VecSetValue(mass_diag, dh_->get_local_to_global_map()[local_p0_dof], csection*por_m, INSERT_VALUES);
     }
     
     balance_->finish_mass_assembly(subst_idx);
