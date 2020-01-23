@@ -403,51 +403,49 @@ void ConvectionTransport::set_boundary_conditions()
 {
     START_TIMER ("set_boundary_conditions");
 
-    ElementAccessor<3> elm;
-
-    unsigned int sbi, loc_el;
+    unsigned int sbi;
     
     // Assembly bcvcorr vector
     for(sbi=0; sbi < n_substances(); sbi++) VecZeroEntries(bcvcorr[sbi]);
 
    	balance_->start_flux_assembly(subst_idx);
 
-    for (loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
-        elm = mesh_->element_accessor( el_4_loc[loc_el] );
-        if (elm->boundary_idx_ != NULL) {
-        	LongIdx new_i = row_4_el[ elm.idx() ];
+    for ( DHCellAccessor dh_cell : dh_->own_range() )
+    {
+        ElementAccessor<3> elm = dh_cell.elm();
+        // we have currently zero order P_Disc FE
+        ASSERT_DBG(dh_cell.get_loc_dof_indices().size() == 1);
+        Idx local_p0_dof = dh_cell.get_loc_dof_indices()[0];
+        LongIdx glob_p0_dof = dh_->get_local_to_global_map()[local_p0_dof];
 
-        	for (unsigned int si=0; si<elm->n_sides(); si++) {
-                Boundary *b = elm.side(si)->cond();
-                if (b != NULL) {
-                    double flux = this->side_flux(elm, si);
-                    if (flux < 0.0) {
-                        double aij = -(flux / elm.measure() );
+        for(DHCellSide dh_side: dh_cell.side_range()) {
+            if (dh_side.cond() != NULL) {
+                ElementAccessor<3> bc_elm = dh_side.cond()->element_accessor();
 
-                        for (sbi=0; sbi<n_substances(); sbi++)
-                        {
-                            double value = data_.bc_conc[sbi].value( b->element_accessor().centre(), b->element_accessor() );
-                            
-                            VecSetValue(bcvcorr[sbi], new_i, value * aij, ADD_VALUES);
+                double flux = this->side_flux(elm, dh_side.side_idx());
+                if (flux < 0.0) {
+                    double aij = -(flux / elm.measure() );
 
-                            // CAUTION: It seems that PETSc possibly optimize allocated space during assembly.
-                            // So we have to add also values that may be non-zero in future due to changing velocity field.
-                            balance_->add_flux_matrix_values(subst_idx[sbi], elm.side(si), {row_4_el[el_4_loc[loc_el]]}, {0.});
-                            balance_->add_flux_vec_value(subst_idx[sbi], elm.side(si), flux*value);
-                        }
-                    } else {
-                        for (sbi=0; sbi<n_substances(); sbi++)
-                            VecSetValue(bcvcorr[sbi], new_i, 0, ADD_VALUES);
+                    for (sbi=0; sbi<n_substances(); sbi++)
+                    {
+                        double value = data_.bc_conc[sbi].value( bc_elm.centre(), bc_elm );
                         
-                        for (unsigned int sbi=0; sbi<n_substances(); sbi++)
-                        {
-                            balance_->add_flux_matrix_values(subst_idx[sbi], elm.side(si), {row_4_el[el_4_loc[loc_el]]}, {flux});
-                            balance_->add_flux_vec_value(subst_idx[sbi], elm.side(si), 0);
-                        }
+                        VecSetValue(bcvcorr[sbi], glob_p0_dof, value * aij, ADD_VALUES);
+
+                        // CAUTION: It seems that PETSc possibly optimize allocated space during assembly.
+                        // So we have to add also values that may be non-zero in future due to changing velocity field.
+                        balance_->add_flux_values(subst_idx[sbi], dh_side,
+                                                  {local_p0_dof}, {0.0}, flux*value);
                     }
+                } else {
+                    for (sbi=0; sbi<n_substances(); sbi++)
+                        VecSetValue(bcvcorr[sbi], glob_p0_dof, 0, ADD_VALUES);
+                    
+                    for (unsigned int sbi=0; sbi<n_substances(); sbi++)
+                        balance_->add_flux_values(subst_idx[sbi], dh_side,
+                                                  {local_p0_dof}, {flux}, 0.0);
                 }
             }
-
         }
     }
 
