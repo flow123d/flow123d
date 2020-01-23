@@ -439,46 +439,6 @@ void Balance::finish_source_assembly(unsigned int quantity_idx)
 }
 
 
-
-
-void Balance::add_mass_matrix_values(unsigned int quantity_idx,
-		unsigned int region_idx,
-		const vector<LongIdx> &dof_indices,
-		const vector<double> &values)
-{
-    ASSERT_DBG(allocation_done_);
-    if (! balance_on_) return;
-
-	PetscInt reg_array[1] = { (int)region_idx };
-
-	chkerr_assert(MatSetValues(region_mass_matrix_[quantity_idx],
-			dof_indices.size(),
-			&(dof_indices[0]),
-			1,
-			reg_array,
-			&(values[0]),
-			ADD_VALUES));
-}
-
-
-void Balance::add_flux_matrix_values(unsigned int quantity_idx,
-		SideIter side,
-		const vector<LongIdx> &dof_indices,
-		const vector<double> &values)
-{
-    ASSERT_DBG(allocation_done_);
-    if (! balance_on_) return;
-
-	PetscInt elem_array[1] = { int(be_offset_ + be_id_map_[get_boundary_edge_uid(side)]) };
-	chkerr_assert(MatSetValues(be_flux_matrix_[quantity_idx],
-			1,
-			elem_array,
-			dof_indices.size(),
-			&(dof_indices[0]),
-			&(values[0]),
-			ADD_VALUES));
-}
-
 void Balance::add_mass_values(unsigned int quantity_idx,
 		const DHCellAccessor &dh_cell,
 		const LocDofVec &loc_dof_indices,
@@ -569,30 +529,6 @@ void Balance::add_source_values(unsigned int quantity_idx,
 			1,
 			reg_array,
 			&(vec_values[0]),
-			ADD_VALUES));
-}
-
-void Balance::add_mass_vec_value(unsigned int quantity_idx,
-        unsigned int region_idx,
-        double value)
-{
-  chkerr_assert(VecSetValue(region_mass_vec_[quantity_idx],
-            region_idx,
-            value,
-            ADD_VALUES));
-}
-
-
-void Balance::add_flux_vec_value(unsigned int quantity_idx,
-		SideIter side,
-		double value)
-{
-    ASSERT_DBG(allocation_done_);
-    if (! balance_on_) return;
-
-    chkerr_assert(VecSetValue(be_flux_vec_[quantity_idx],
-			be_offset_ + be_id_map_[get_boundary_edge_uid(side)],
-			value,
 			ADD_VALUES));
 }
 

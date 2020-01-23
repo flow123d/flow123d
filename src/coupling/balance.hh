@@ -262,43 +262,6 @@ public:
 			start_source_assembly(idx);
 	}
 
-	/**
-	 * DEPRECATED, use add_mass_values instead.
-	 * Adds elements into matrix for computing mass.
-	 * @param quantity_idx  Index of quantity.
-	 * @param region_idx    Index of bulk region.
-	 * @param dof_indices   Dof indices to be added.
-	 * @param values        Values to be added.
-	 */
-	void add_mass_matrix_values(unsigned int quantity_idx,
-			unsigned int region_idx,
-			const std::vector<LongIdx> &dof_indices,
-			const std::vector<double> &values);
-
-	/**
-	 * DEPRECATED, use add_flux_values instead.
-	 * Adds elements into matrix for computing (outgoing) flux.
-	 * @param quantity_idx  Index of quantity.
-	 * @param side          Element side iterator.
-	 * @param dof_indices   Dof indices (to the solution vector) to be added.
-	 * @param values        Values to be added.
-     * 
-     * TODO: Remove when replaced in transport.cc.
-	 */
-	void add_flux_matrix_values(unsigned int quantity_idx,
-			SideIter side,
-			const std::vector<LongIdx> &dof_indices,
-			const std::vector<double> &values);
-
-    /**
-     * Adds element into vector for computing mass.
-     * @param quantity_idx  Index of quantity.
-     * @param region_idx    Index of bulk region.
-     * @param value         Value to be added.
-     */
-    void add_mass_vec_value(unsigned int quantity_idx,
-            unsigned int region_idx,
-            double value);
 	
 	/**
 	 * Adds elements into matrix for computing (outgoing) flux.
@@ -341,17 +304,7 @@ public:
 			const LocDofVec &loc_dof_indices,
 			const std::vector<double> &mat_values,
             const std::vector<double> &vec_values);
-    
-	/**
-	 * Adds element into vector for computing (outgoing) flux.
-	 * @param quantity_idx  Index of quantity.
-	 * @param side          Element side iterator.
-	 * @param value         Value to be added.
-     * 
-	 */
-	void add_flux_vec_value(unsigned int quantity_idx,
-			SideIter side,
-			double value);
+
 
 	/// This method must be called after assembling the matrix for computing mass.
 	void finish_mass_assembly(unsigned int quantity_idx);
