@@ -1421,8 +1421,9 @@ void DarcyMH::setup_time_term() {
 				* ele.measure();
         local_diagonal[dh_cell.get_loc_dof_indices()[p_ele_dof]]= - diagonal_coeff / time_->dt();
 
-       	balance_->add_mass_matrix_values(data_->water_balance_idx,
-       	        ele.region().bulk_idx(), { dofs[p_ele_dof] }, {diagonal_coeff});
+        balance_->add_mass_values(data_->water_balance_idx, dh_cell,
+                                  {dh_cell.get_loc_dof_indices()[p_ele_dof]},
+                                  {diagonal_coeff}, 0.0);
     }
     VecRestoreArray(new_diagonal,& local_diagonal);
     MatDiagonalSet(*( schur0->get_matrix() ), new_diagonal, ADD_VALUES);
