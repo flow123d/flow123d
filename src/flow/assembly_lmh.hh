@@ -18,7 +18,6 @@
 #include "fem/fe_rt.hh"
 #include "fem/fe_values_views.hh"
 #include "fem/fe_system.hh"
-#include "fem/dh_cell_accessor.hh"
 #include "quadrature/quadrature_lib.hh"
 
 #include "la/linsys.hh"
@@ -88,14 +87,14 @@ public:
     void assemble_reconstruct(const DHCellAccessor& dh_cell) override
     {
         ASSERT_EQ_DBG(dh_cell.dim(), dim);
-
+    
         assemble_local_system(dh_cell, false);   //do not switch dirichlet in seepage when reconstructing
         
         // TODO:
         // if (mortar_assembly)
-        //     mortar_assembly->assembly(dh_cell);
+        //     mortar_assembly->assembly(ele_ac);
         // if (mortar_assembly)
-        //     mortar_assembly->fix_velocity(dh_cell);
+        //     mortar_assembly->fix_velocity(ele_ac);
 
         arma::vec schur_solution = ad_->p_edge_solution.get_subvec(loc_schur_.row_dofs);
         // reconstruct the velocity and pressure
@@ -378,14 +377,15 @@ protected:
         double conduct =  ad_->conductivity.value(ele.centre(), ele);
         double scale = 1 / cs /conduct;
         
-        assemble_sides_scale(ele, scale);
+        assemble_sides_scale(dh_cell, scale);
     }
     
-    void assemble_sides_scale(ElementAccessor<3> ele, double scale)
+    void assemble_sides_scale(const DHCellAccessor& dh_cell, double scale)
     {
         arma::vec3 &gravity_vec = ad_->gravity_vec_;
+        auto ele = dh_cell.elm();
         
-        fe_values_.reinit(ele);
+        fe_values_.reinit(dh_cell);
         unsigned int ndofs = fe_values_.get_fe()->n_dofs();
         unsigned int qsize = fe_values_.n_points();
         auto velocity = fe_values_.vector_view(0);
@@ -494,7 +494,7 @@ protected:
         const ElementAccessor<3> ele = dh_cell.elm();
         
         // no Neighbours => nothing to asssemble here
-        if(dh_cell.elm()->n_neighs_vb() == 0) return;
+        if(ele->n_neighs_vb() == 0) return;
         
         ASSERT_LT_DBG(ele->dim(), 3);
         arma::vec3 nv;
@@ -506,7 +506,7 @@ protected:
             unsigned int p = size()+i; // loc dof of higher ele edge
             
             ElementAccessor<3> ele_higher = neighb_side.cell().elm();
-            ngh_values_.fe_side_values_.reinit(ele_higher, neighb_side.side_idx());
+            ngh_values_.fe_side_values_.reinit(neighb_side);
             nv = ngh_values_.fe_side_values_.normal_vector(0);
 
             double value = ad_->sigma.value( ele.centre(), ele) *

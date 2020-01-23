@@ -128,7 +128,7 @@ protected:
 
         double conductivity = compute_conductivity(ele);
         double scale = 1 / cross_section / conductivity;
-        this->assemble_sides_scale(ele,scale);
+        this->assemble_sides_scale(dh_cell,scale);
     }
 
     /***

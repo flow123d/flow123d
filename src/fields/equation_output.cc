@@ -288,7 +288,7 @@ typename OutputMeshBase::ErrorControlFieldFunc EquationOutput::select_error_cont
         	Field<3,FieldValue<3>::Scalar>* error_control_field = static_cast<Field<3,FieldValue<3>::Scalar>*>(field);
             DebugOut() << "Error control field for output mesh set: " << error_control_field_name << ".";
             auto lambda_function =
-                [error_control_field](const std::vector< Space<OutputMeshBase::spacedim>::Point > &point_list, const ElementAccessor<OutputMeshBase::spacedim> &elm, std::vector<double> &value_list)->void
+                [error_control_field](const Armor::array &point_list, const ElementAccessor<OutputMeshBase::spacedim> &elm, std::vector<double> &value_list)->void
                 { error_control_field->value_list(point_list, elm, value_list); };
 
             OutputMeshBase::ErrorControlFieldFunc func = lambda_function;

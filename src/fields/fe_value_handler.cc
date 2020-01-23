@@ -105,8 +105,8 @@ void FEValueHandler<elemdim, spacedim, Value>::initialize(FEValueInitData init_d
 template <int elemdim, int spacedim, class Value> inline
 typename Value::return_type const &FEValueHandler<elemdim, spacedim, Value>::value(const Point &p, const ElementAccessor<spacedim> &elm)
 {
-	std::vector<Point> point_list;
-	point_list.push_back(p);
+	Armor::array point_list(spacedim, 1, 1);
+	point_list.set(0) = Armor::ArmaVec<double,spacedim>( p );
 	std::vector<typename Value::return_type> v_list;
 	v_list.push_back(r_value_);
 	this->value_list(point_list, elm, v_list);
@@ -116,7 +116,7 @@ typename Value::return_type const &FEValueHandler<elemdim, spacedim, Value>::val
 
 
 template <int elemdim, int spacedim, class Value>
-void FEValueHandler<elemdim, spacedim, Value>::value_list(const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
+void FEValueHandler<elemdim, spacedim, Value>::value_list(const Armor::array  &point_list, const ElementAccessor<spacedim> &elm,
                    std::vector<typename Value::return_type> &value_list)
 {
     ASSERT_EQ( point_list.size(), value_list.size() ).error();
@@ -130,21 +130,17 @@ void FEValueHandler<elemdim, spacedim, Value>::value_list(const std::vector< Poi
     arma::mat map_mat = MappingP1<elemdim,spacedim>::element_map(elm);
 	Quadrature quad(elemdim, point_list.size());
 	for (unsigned int k=0; k<point_list.size(); k++)
-        quad.point<elemdim>(k) = RefElement<elemdim>::bary_to_local(MappingP1<elemdim,spacedim>::project_real_to_unit(point_list[k], map_mat));
+        quad.set(k) = RefElement<elemdim>::bary_to_local(MappingP1<elemdim,spacedim>::project_real_to_unit(point_list.vec<spacedim>(k), map_mat));
 	FEValues<elemdim,spacedim> fe_values(quad, *dh_->ds()->fe(elm).get<elemdim>(), update_values);
 
     for (unsigned int k=0; k<point_list.size(); k++) {
-		Quadrature quad(elemdim, 1);
-        quad.set(0) = RefElement<elemdim>::bary_to_local(MappingP1<elemdim, spacedim>::project_real_to_unit(point_list[k], map_mat));
-
-		FEValues<elemdim,3> fe_values(quad, *dh_->ds()->fe(elm).get<elemdim>(), update_values);
-		fe_values.reinit( elm );
+		fe_values.reinit( cell );
 
 		Value envelope(value_list[k]);
 		envelope.zeros();
 		for (unsigned int i=0; i<loc_dofs.n_elem; i++) {
 			value_list[k] += data_vec_[loc_dofs[i]]
-							* FEShapeHandler<Value::rank_, elemdim, spacedim, Value>::fe_value(fe_values, i, 0, comp_index_);
+							* FEShapeHandler<Value::rank_, elemdim, spacedim, Value>::fe_value(fe_values, i, k, comp_index_);
 		}
 	}
 }
@@ -181,7 +177,7 @@ void FEValueHandler<0, spacedim, Value>::initialize(FEValueInitData init_data)
 
 
 template <int spacedim, class Value>
-void FEValueHandler<0, spacedim, Value>::value_list(const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
+void FEValueHandler<0, spacedim, Value>::value_list(const Armor::array &point_list, const ElementAccessor<spacedim> &elm,
                    std::vector<typename Value::return_type> &value_list)
 {
 	ASSERT_EQ( point_list.size(), value_list.size() ).error();

@@ -701,6 +701,16 @@ public:
         size_ = size;
     }
 
+    inline uint n_rows() const
+    {
+        return n_rows_;
+    }
+
+    inline uint n_cols() const
+    {
+        return n_cols_;
+    }
+
     /**
      * Get size of active space.
      */
@@ -810,21 +820,23 @@ public:
      * Return armadillo matrix at given position in array.
      * @param i  Index of matrix.
      */
-//    inline arma::mat arma_mat(uint i) const
-//    {
-//    	return arma::vec( (Type*)(data.data()) + i*nRows*nCols, nRows*nCols );
-//    }
+    inline arma::mat arma_mat(uint i) const
+    {
+        ASSERT_LT_DBG(i, size());
+   	    return arma::mat( data_ + i*n_rows_*n_cols_, n_rows_, n_cols_ );
+    }
 
     /**
      * Return armadillo vector at given position in array.
      * Warning! Method can be used only if nCols == 1.
      * @param i  Index of matrix.
      */
-//    inline arma::vec arma_vec(uint i) const
-//    {
-//        ASSERT_EQ_DBG(nCols, 1);
-//    	return arma::vec( (Type*)(data.data()) + i*nRows, nRows );
-//    }
+    inline arma::vec arma_vec(uint i) const
+    {
+        ASSERT_LT_DBG(i, size());
+        ASSERT_EQ_DBG(n_cols_, 1);
+   	    return arma::vec( data_ + i*n_rows_, n_rows_ );
+    }
 
     Type * data_;
 
@@ -837,6 +849,13 @@ private:
 };
 
 
+template <uint N>
+using vec = ArmaVec<double, N>;
+
+template <uint N, uint M>
+using mat = ArmaMat<double, N, M>;
+
+using array = Array<double>;
 }
 
 #endif

@@ -24,6 +24,7 @@
 #include "mesh/point.hh"
 #include "la/vector_mpi.hh"
 #include <armadillo>
+#include "system/armor.hh"
 
 class DOFHandlerMultiDim;
 template <int spacedim> class ElementAccessor;
@@ -61,7 +62,7 @@ public:
     /// Returns one value in one given point.
     typename Value::return_type const &value(const Point &p, const ElementAccessor<spacedim> &elm);
     /// Returns std::vector of scalar values in several points at once.
-    void value_list (const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
+    void value_list (const Armor::array &point_list, const ElementAccessor<spacedim> &elm,
                        std::vector<typename Value::return_type> &value_list);
     /// Compute real coordinates and weights (use QGauss) for given element
     unsigned int compute_quadrature(std::vector<arma::vec::fixed<3>> & q_points, std::vector<double> & q_weights,
@@ -121,8 +122,8 @@ public:
 	void initialize(FEValueInitData init_data);
     /// Returns one value in one given point.
     typename Value::return_type const &value(const Point &p, const ElementAccessor<spacedim> &elm) {
-    	std::vector<Point> point_list;
-    	point_list.push_back(p);
+    	Armor::array point_list(spacedim, 1, 1);
+    	point_list.set(0) = Armor::ArmaVec<double,spacedim>( p );
     	std::vector<typename Value::return_type> v_list;
     	v_list.push_back(r_value_);
     	this->value_list(point_list, elm, v_list);
@@ -131,7 +132,7 @@ public:
     }
 
     /// Returns std::vector of scalar values in several points at once.
-    void value_list (const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
+    void value_list (const Armor::array &point_list, const ElementAccessor<spacedim> &elm,
                        std::vector<typename Value::return_type> &value_list);
 
     /// Destructor.

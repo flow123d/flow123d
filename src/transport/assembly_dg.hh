@@ -154,7 +154,7 @@ public:
         ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
         ElementAccessor<3> elm = cell.elm();
 
-        fe_values_.reinit(elm);
+        fe_values_.reinit(cell);
         cell.get_dof_indices(dof_indices_);
 
         model_.compute_mass_matrix_coefficient(fe_values_.point_list(), elm, mm_coef_);
@@ -200,8 +200,8 @@ public:
 
         ElementAccessor<3> elm = cell.elm();
 
-        fe_values_.reinit(elm);
-        fv_rt_.reinit(elm);
+        fe_values_.reinit(cell);
+        fv_rt_.reinit(cell);
         cell.get_dof_indices(dof_indices_);
 
         calculate_velocity(elm, velocity_, fv_rt_.point_list());
@@ -249,8 +249,8 @@ public:
 
             ElementAccessor<3> elm_acc = cell.elm();
             cell.get_dof_indices(dof_indices_);
-            fe_values_side_.reinit(elm_acc, side.side_idx());
-            fsv_rt_.reinit(elm_acc, side.side_idx());
+            fe_values_side_.reinit(cell_side);
+            fsv_rt_.reinit(cell_side);
 
             calculate_velocity(elm_acc, velocity_, fsv_rt_.point_list());
             model_.compute_advection_diffusion_coefficients(fe_values_side_.point_list(), velocity_, elm_acc, data_->ad_coef, data_->dif_coef);
@@ -337,8 +337,8 @@ public:
                 auto dh_edge_cell = data_->dh_->cell_accessor_from_element( edge_side.elem_idx() );
                 ElementAccessor<3> edg_elm = dh_edge_cell.elm();
                 dh_edge_cell.get_dof_indices(side_dof_indices_[sid]);
-                fe_values_vec_[sid]->reinit(edg_elm, edge_side.side_idx());
-                fsv_rt_.reinit(edg_elm, edge_side.side_idx());
+                fe_values_vec_[sid]->reinit(edge_side);
+                fsv_rt_.reinit(edge_side);
                 calculate_velocity(edg_elm, side_velocity_vec_[sid], fsv_rt_.point_list());
                 model_.compute_advection_diffusion_coefficients(fe_values_vec_[sid]->point_list(), side_velocity_vec_[sid], edg_elm, data_->ad_coef_edg[sid], data_->dif_coef_edg[sid]);
                 dg_penalty_[sid].resize(model_.n_substances());
@@ -497,7 +497,7 @@ public:
             for(unsigned int i=0; i<n_indices; ++i) {
                 side_dof_indices_vb_[i] = dof_indices_[i];
             }
-            fe_values_vb_->reinit(elm_lower_dim);
+            fe_values_vb_->reinit(cell_lower_dim);
             n_dofs[0] = fv_sb_[0]->n_dofs();
 
             DHCellAccessor cell_higher_dim = data_->dh_->cell_accessor_from_element( neighb_side.element().idx() );
@@ -506,7 +506,7 @@ public:
             for(unsigned int i=0; i<n_indices; ++i) {
                 side_dof_indices_vb_[i+n_dofs[0]] = dof_indices_[i];
             }
-            fe_values_side_.reinit(elm_higher_dim, neighb_side.side_idx());
+            fe_values_side_.reinit(neighb_side);
             n_dofs[1] = fv_sb_[1]->n_dofs();
 
             // Testing element if they belong to local partition.
@@ -514,8 +514,8 @@ public:
             own_element_id[0] = cell_lower_dim.is_own();
             own_element_id[1] = cell_higher_dim.is_own();
 
-            fsv_rt_.reinit(elm_higher_dim, neighb_side.side_idx());
-            fv_rt_vb_->reinit(elm_lower_dim);
+            fsv_rt_.reinit(neighb_side);
+            fv_rt_vb_->reinit(cell_lower_dim);
             calculate_velocity(elm_higher_dim, velocity_higher_, fsv_rt_.point_list());
             calculate_velocity(elm_lower_dim, velocity_, fv_rt_vb_->point_list());
             model_.compute_advection_diffusion_coefficients(fe_values_vb_->point_list(), velocity_, elm_lower_dim, data_->ad_coef_edg[0], data_->dif_coef_edg[0]);
@@ -577,7 +577,7 @@ public:
 
         ElementAccessor<3> elm = cell.elm();
 
-        fe_values_.reinit(elm);
+        fe_values_.reinit(cell);
         cell.get_dof_indices(dof_indices_);
 
         model_.compute_source_coefficients(fe_values_.point_list(), elm, sources_conc_, sources_density_, sources_sigma_);
@@ -632,8 +632,8 @@ public:
             arma::uvec bc_type;
             model_.get_bc_type(bc_elm, bc_type);
 
-            fe_values_side_.reinit(elm, dh_side.side_idx());
-            fsv_rt_.reinit(elm, dh_side.side_idx());
+            fe_values_side_.reinit(dh_side);
+            fsv_rt_.reinit(dh_side);
             calculate_velocity(elm, velocity_, fsv_rt_.point_list());
 
             dh_cell.get_dof_indices(dof_indices_);
@@ -752,7 +752,7 @@ public:
 
         ElementAccessor<3> elem = cell.elm();
         cell.get_dof_indices(dof_indices_);
-        fe_values_.reinit(elem);
+        fe_values_.reinit(cell);
         model_.compute_init_cond(fe_values_.point_list(), elem, init_values_);
 
         for (unsigned int sbi=0; sbi<model_.n_substances(); sbi++)
@@ -790,7 +790,7 @@ private:
 	 * @param point_list The quadrature points.
 	 */
     void calculate_velocity(const ElementAccessor<3> &cell, vector<arma::vec3> &velocity,
-                            const std::vector<arma::vec::fixed<3>> &point_list)
+                            const Armor::array &point_list)
     {
         velocity.resize(point_list.size());
         model_.velocity_field_ptr()->value_list(point_list, cell, velocity);
