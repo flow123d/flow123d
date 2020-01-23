@@ -201,8 +201,12 @@ public:
      */
     double quality_measure_smooth(SideIter side) const;
 
-    bool operator==(const ElementAccessor<spacedim>& other) {
+    inline bool operator==(const ElementAccessor<spacedim>& other) const {
     	return (element_idx_ == other.element_idx_);
+    }
+
+    inline bool operator!=(const ElementAccessor<spacedim>& other) const {
+    	return (element_idx_ != other.element_idx_);
     }
 
     /**
