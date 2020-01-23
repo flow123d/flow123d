@@ -64,12 +64,12 @@ FEValuesBase<dim,spacedim>::FEInternalData::FEInternalData(const FEInternalData 
 
 
 template<unsigned int dim, unsigned int spacedim>
-void FEValuesBase<dim,spacedim>::ViewsCache::initialize(FEValuesBase<dim,spacedim> &fv)
+void FEValuesBase<dim,spacedim>::ViewsCache::initialize(const FEValuesBase<dim,spacedim> &fv, const FiniteElement<dim> &fe)
 {
   scalars.clear();
   vectors.clear();
   tensors.clear();
-  switch (fv.get_fe()->type_) {
+  switch (fe.type_) {
     case FEType::FEScalar:
       scalars.push_back(FEValuesViews::Scalar<dim,spacedim>(fv, 0));
       break;
@@ -82,7 +82,7 @@ void FEValuesBase<dim,spacedim>::ViewsCache::initialize(FEValuesBase<dim,spacedi
       tensors.push_back(FEValuesViews::Tensor<dim,spacedim>(fv, 0));
       break;
     case FEType::FEMixedSystem:
-      FESystem<dim> *fe_sys = dynamic_cast<FESystem<dim>*>(fv.get_fe());
+      const FESystem<dim> *fe_sys = dynamic_cast<const FESystem<dim>*>(&fe);
       ASSERT_DBG(fe_sys != nullptr).error("Mixed system must be represented by FESystem.");
       
       // Loop through sub-elements and add views according to their types.
@@ -158,7 +158,7 @@ void FEValuesBase<dim,spacedim>::allocate(
     if (update_flags & update_gradients)
         shape_gradients.resize(n_points_, vector<arma::vec::fixed<spacedim> >(fe->n_dofs()*n_components_));
     
-    views_cache_.initialize(*this);
+    views_cache_.initialize(*this, _fe);
 }
 
 

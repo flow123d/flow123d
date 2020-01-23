@@ -369,7 +369,7 @@ protected:
         const ElementAccessor<3> ele = dh_cell.elm();
         
         fe_values_.reinit(ele);
-        unsigned int ndofs = fe_values_.get_fe()->n_dofs();
+        unsigned int ndofs = fe_values_.n_dofs();
         unsigned int qsize = fe_values_.n_points();
         auto velocity = fe_values_.vector_view(0);
 

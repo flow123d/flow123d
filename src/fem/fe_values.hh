@@ -111,7 +111,7 @@ private:
     vector<FEValuesViews::Vector<dim,spacedim> > vectors;
     vector<FEValuesViews::Tensor<dim,spacedim> > tensors;
     
-    void initialize(FEValuesBase &fv);
+    void initialize(const FEValuesBase &fv, const FiniteElement<dim> &fe);
   };
   
 public:
@@ -296,13 +296,6 @@ public:
     }
 
 
-    /**
-     * @brief Returns the finite element in use.
-     */
-    inline FiniteElement<dim> * get_fe() const
-    {
-        return fe;
-    }
     
 
 protected:
