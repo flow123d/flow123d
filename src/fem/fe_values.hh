@@ -99,7 +99,7 @@ public:
 /**
  * @brief Base class for FEValues and FESideValues
  */
-template<unsigned int dim, unsigned int spacedim = 3>
+template<unsigned int spacedim = 3>
 class FEValuesBase : public FEValuesSpaceBase<spacedim>
 {
 private:
@@ -107,10 +107,11 @@ private:
   // internal structure that stores all possible views
   // for scalar and vector-valued components of the FE
   struct ViewsCache {
-    vector<FEValuesViews::Scalar<dim,spacedim> > scalars;
-    vector<FEValuesViews::Vector<dim,spacedim> > vectors;
-    vector<FEValuesViews::Tensor<dim,spacedim> > tensors;
+    vector<FEValuesViews::Scalar<spacedim> > scalars;
+    vector<FEValuesViews::Vector<spacedim> > vectors;
+    vector<FEValuesViews::Tensor<spacedim> > tensors;
     
+    template<unsigned int dim>
     void initialize(const FEValuesBase &fv, const FiniteElement<dim> &fe);
   };
   
@@ -135,6 +136,7 @@ public:
      * @param _fe The finite element.
      * @param flags The update flags.
      */
+    template<unsigned int dim>
     void allocate(unsigned int n_points,
             FiniteElement<dim> &_fe,
             UpdateFlags flags);
@@ -248,7 +250,7 @@ public:
      * @brief Accessor to scalar values of multicomponent FE.
      * @param i Index of scalar component.
      */
-	const FEValuesViews::Scalar<dim,spacedim> &scalar_view(unsigned int i) const
+	const FEValuesViews::Scalar<spacedim> &scalar_view(unsigned int i) const
 	{
       ASSERT_LT_DBG(i, views_cache_.scalars.size());
       return views_cache_.scalars[i];
@@ -258,7 +260,7 @@ public:
      * @brief Accessor to vector values of multicomponent FE.
      * @param i Index of first vector component.
      */
-    const FEValuesViews::Vector<dim,spacedim> &vector_view(unsigned int i) const
+    const FEValuesViews::Vector<spacedim> &vector_view(unsigned int i) const
     {
       ASSERT_LT_DBG(i, views_cache_.vectors.size());
       return views_cache_.vectors[i];
@@ -268,7 +270,7 @@ public:
      * @brief Accessor to tensor values of multicomponent FE.
      * @param i Index of first tensor component.
      */
-    const FEValuesViews::Tensor<dim,spacedim> &tensor_view(unsigned int i) const
+    const FEValuesViews::Tensor<spacedim> &tensor_view(unsigned int i) const
     {
       ASSERT_LT_DBG(i, views_cache_.tensors.size());
       return views_cache_.tensors[i];
@@ -339,6 +341,7 @@ protected:
 
     
     /// Precompute finite element data on reference element.
+    template<unsigned int dim>
     FEInternalData *init_fe_data(const FiniteElement<dim> &fe, const Quadrature &q);
     
     /**
@@ -400,7 +403,7 @@ protected:
     ElementValues<spacedim> *elm_values;
     
     /// Vector of FEValues for sub-elements of FESystem.
-    std::vector<std::shared_ptr<FEValuesBase<dim,spacedim> > > fe_values_vec;
+    std::vector<std::shared_ptr<FEValuesBase<spacedim> > > fe_values_vec;
     
     /// Number of components of the FE.
     unsigned int n_components_;
@@ -424,7 +427,7 @@ protected:
  *                 cell lives.
  */
 template<unsigned int dim, unsigned int spacedim = 3>
-class FEValues : public FEValuesBase<dim,spacedim>
+class FEValues : public FEValuesBase<spacedim>
 {
 public:
 
@@ -461,7 +464,7 @@ private:
     void fill_fe_values();
     
     /// Precomputed finite element data.
-    typename FEValuesBase<dim,spacedim>::FEInternalData *fe_data;
+    typename FEValuesBase<spacedim>::FEInternalData *fe_data;
     
 
 };
@@ -485,7 +488,7 @@ MixedPtr<FEValues> mixed_fe_values(
  *                 cell lives.
  */
 template<unsigned int dim, unsigned int spacedim>
-class FESideValues : public FEValuesBase<dim,spacedim>
+class FESideValues : public FEValuesBase<spacedim>
 {
 
 public:
@@ -521,7 +524,7 @@ private:
     void fill_fe_side_values();
     
     /// Internal data (shape functions on reference element) for all sides and permuted quadrature points.
-    typename FEValuesBase<dim,spacedim>::FEInternalData *side_fe_data[RefElement<dim>::n_sides][RefElement<dim>::n_side_permutations];
+    typename FEValuesBase<spacedim>::FEInternalData *side_fe_data[RefElement<dim>::n_sides][RefElement<dim>::n_side_permutations];
     
 };
 
