@@ -321,7 +321,7 @@ void ConvectionTransport::set_initial_condition()
 //=============================================================================
 void ConvectionTransport::alloc_transport_vectors() {
 
-    unsigned int i, sbi, n_subst;
+    unsigned int sbi, n_subst;
     n_subst = n_substances();
     
     sources_corr = new double*[n_subst];
@@ -780,7 +780,6 @@ void ConvectionTransport::create_transport_matrix_mpi() {
 
     ElementAccessor<3> el2;
     ElementAccessor<3> elm;
-    const Edge *edg;
     int j;
     LongIdx new_j, new_i;
     double aij, aii;
@@ -908,7 +907,7 @@ double ConvectionTransport::calculate_side_flux(const DHCellSide &cell_side)
 {
     ASSERT_EQ(cell_side.dim(), dim).error("Element dimension mismatch!");
 
-    feo_.fe_values<dim>()->reinit(cell_side);
+    feo_.fe_values<dim>()->reinit(cell_side.side());
     auto vel = velocity_field_ptr_->value(cell_side.centre(), cell_side.element());
     double side_flux = arma::dot(vel, feo_.fe_values<dim>()->normal_vector(0)) * feo_.fe_values<dim>()->JxW(0);
     return side_flux;

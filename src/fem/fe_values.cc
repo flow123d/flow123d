@@ -536,9 +536,9 @@ FEValues<dim,spacedim>::~FEValues()
 
 
 template<unsigned int dim,unsigned int spacedim>
-void FEValues<dim,spacedim>::reinit(const DHCellAccessor &cell)
+void FEValues<dim,spacedim>::reinit(const ElementAccessor<spacedim> &cell)
 {
-	OLD_ASSERT_EQUAL( dim, cell.dim() );
+	ASSERT_EQ_DBG( dim, cell.dim() );
     
     if (!this->elm_values->cell().is_valid() ||
         this->elm_values->cell() != cell)
@@ -612,11 +612,11 @@ FESideValues<dim,spacedim>::~FESideValues()
 
 
 template<unsigned int dim,unsigned int spacedim>
-void FESideValues<dim,spacedim>::reinit(const DHCellSide &cell_side)
+void FESideValues<dim,spacedim>::reinit(const Side &cell_side)
 {
     ASSERT_EQ_DBG( dim, cell_side.dim() );
     
-    if (!this->elm_values->side().is_valid() || 
+    if (!this->elm_values->side().valid() || 
         this->elm_values->side() != cell_side)
     {
         this->elm_values->reinit(cell_side);

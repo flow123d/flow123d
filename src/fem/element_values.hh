@@ -112,10 +112,10 @@ public:
     UpdateFlags update_flags;
 
     /// Iterator to last updated cell.
-    DHCellAccessor cell;
+    ElementAccessor<spacedim> cell;
 
     /// Iterator to last updated cell side.
-    DHCellSide side;
+    Side side;
 
 };
 
@@ -155,14 +155,14 @@ public:
      *
      * @param cell The actual cell.
      */
-    void reinit(const DHCellAccessor &cell);
+    void reinit(const ElementAccessor<spacedim> &cell);
 
     /**
 	 * @brief Update side-dependent data (Jacobians etc.)
 	 *
 	 * @param cell_side The actual cell and side.
 	 */
-    void reinit(const DHCellSide &cell_side);
+    void reinit(const Side &cell_side);
     
     /**
      * @brief Determine quantities to be recomputed on each cell.
@@ -257,11 +257,11 @@ public:
     { return n_points_; }
     
     /// Return cell at which the values were reinited.
-    const DHCellAccessor &cell() const
+    const ElementAccessor<spacedim> &cell() const
     { return data.cell; }
 
     /// Return cell side where the values were reinited.
-    const DHCellSide &side() const
+    const Side &side() const
     { return data.side; }
 
 

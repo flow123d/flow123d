@@ -187,7 +187,7 @@ public:
         // compute normal vector to side
         arma::vec3 nv;
         ElementAccessor<3> ele_higher = ad_->mesh->element_accessor( neighb_side.element().idx() );
-        ngh_values_.fe_side_values_.reinit(neighb_side);
+        ngh_values_.fe_side_values_.reinit(neighb_side.side());
         nv = ngh_values_.fe_side_values_.normal_vector(0);
 
         double value = ad_->sigma.value( ele.centre(), ele) *
@@ -368,7 +368,7 @@ protected:
         arma::vec3 &gravity_vec = ad_->gravity_vec_;
         const ElementAccessor<3> ele = dh_cell.elm();
         
-        fe_values_.reinit(dh_cell);
+        fe_values_.reinit(ele);
         unsigned int ndofs = fe_values_.get_fe()->n_dofs();
         unsigned int qsize = fe_values_.n_points();
         auto velocity = fe_values_.vector_view(0);

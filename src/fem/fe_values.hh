@@ -454,7 +454,7 @@ public:
      *
      * @param cell The actual cell.
      */
-    void reinit(const DHCellAccessor &cell);
+    void reinit(const ElementAccessor<spacedim> &cell);
     
     
     
@@ -514,7 +514,7 @@ public:
 	 *
 	 * @param cell_side Accessor to cell side.
 	 */
-    void reinit(const DHCellSide &cell_side);
+    void reinit(const Side &cell_side);
 
 
 private:

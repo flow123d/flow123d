@@ -500,7 +500,7 @@ void Elasticity::assemble_volume_integrals()
         if (cell.dim() != dim) continue;
         ElementAccessor<3> elm_acc = cell.elm();
 
-        fe_values.reinit(cell);
+        fe_values.reinit(elm_acc);
         cell.get_dof_indices(dof_indices);
 
         data_.cross_section.value_list(fe_values.point_list(), elm_acc, csection);
@@ -562,7 +562,7 @@ void Elasticity::set_sources()
         if (cell.dim() != dim) continue;
         ElementAccessor<3> elm_acc = cell.elm();
 
-        fe_values.reinit(cell);
+        fe_values.reinit(elm_acc);
         cell.get_dof_indices(dof_indices);
 
         // assemble the local stiffness matrix
@@ -623,7 +623,7 @@ void Elasticity::assemble_fluxes_boundary()
         DHCellAccessor dh_cell = feo->dh()->cell_accessor_from_element(cell.idx());
         DHCellSide dh_side(dh_cell, side->side_idx());
         dh_cell.get_dof_indices(side_dof_indices);
-        fe_values_side.reinit(dh_side);
+        fe_values_side.reinit(*side);
 //         unsigned int bc_type = data_.bc_type.value(side->centre(), side->cond()->element_accessor());
  
 //         for (unsigned int i=0; i<ndofs; i++)
@@ -681,13 +681,13 @@ void Elasticity::assemble_fluxes_element_side()
 		ElementAccessor<3> cell_sub = nb->element();
         DHCellAccessor dh_cell_sub = feo->dh()->cell_accessor_from_element(cell_sub.idx());
         dh_cell_sub.get_dof_indices(side_dof_indices[0]);
-		fe_values_sub.reinit(dh_cell_sub);
+		fe_values_sub.reinit(cell_sub);
 
 		ElementAccessor<3> cell = nb->side()->element();
 		DHCellAccessor dh_cell = feo->dh()->cell_accessor_from_element(cell.idx());
         DHCellSide dh_side(dh_cell, nb->side()->side_idx());
         dh_cell.get_dof_indices(side_dof_indices[1]);
-		fe_values_side.reinit(dh_side);
+		fe_values_side.reinit(dh_side.side());
 
 		// Element id's for testing if they belong to local partition.
 		bool own_element_id[2];
@@ -821,7 +821,7 @@ void Elasticity::set_boundary_conditions()
 
  			unsigned int bc_type = data_.bc_type.value(side->centre(), bc_cell);
 
-			fe_values_side.reinit(dh_side);
+			fe_values_side.reinit(*side);
 
 			data_.cross_section.value_list(fe_values_side.point_list(), elm, csection);
 			// The b.c. data are fetched for all possible b.c. types since we allow
