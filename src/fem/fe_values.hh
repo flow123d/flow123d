@@ -140,13 +140,6 @@ public:
             UpdateFlags flags);
     
     /**
-     * @brief Determine quantities to be recomputed on each cell.
-     *
-     * @param flags Flags that indicate what has to be recomputed.
-     */
-    UpdateFlags update_each(UpdateFlags flags);
-
-    /**
      * @brief Return the value of the @p function_no-th shape function at
      * the @p point_no-th quadrature point.
      *
@@ -292,7 +285,7 @@ public:
      */
     inline unsigned int n_dofs() const override
     {
-        return fe->n_dofs();
+        return n_dofs_;
     }
 
 
@@ -346,7 +339,7 @@ protected:
 
     
     /// Precompute finite element data on reference element.
-    FEInternalData *init_fe_data(const Quadrature &q);
+    FEInternalData *init_fe_data(const FiniteElement<dim> &fe, const Quadrature &q);
     
     /**
      * @brief Computes the shape function values and gradients on the actual cell
@@ -378,8 +371,20 @@ protected:
     /// Number of integration points.
     unsigned int n_points_;
 
-    /// The used finite element.
-    FiniteElement<dim> *fe;
+    /// Number of finite element dofs.
+    unsigned int n_dofs_;
+
+    /// Type of finite element (scalar, vector, tensor).
+    FEType fe_type_;
+
+    /// Dof indices of FESystem sub-elements.
+    std::vector<std::vector<unsigned int>> fe_sys_dofs_;
+
+    /// Numbers of components of FESystem sub-elements in reference space.
+    std::vector<unsigned int> fe_sys_n_components_;
+
+    /// Numbers of components of FESystem sub-elements in real space.
+    std::vector<unsigned int> fe_sys_n_space_components_;
     
     /// Shape functions evaluated at the quadrature points.
     std::vector<std::vector<double> > shape_values;
