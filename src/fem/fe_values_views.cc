@@ -41,7 +41,7 @@ arma::vec::fixed<spacedim> FEValuesViews::Scalar<dim,spacedim>::grad(unsigned in
 }
 
 template<unsigned int dim, unsigned int spacedim>
-FEValuesBase<dim,spacedim> &FEValuesViews::Scalar<dim,spacedim>::base() const
+const FEValuesBase<dim,spacedim> &FEValuesViews::Scalar<dim,spacedim>::base() const
 { return fe_values_; }
   
 
@@ -90,7 +90,7 @@ double FEValuesViews::Vector<dim,spacedim>::divergence(unsigned int function_no,
 }
 
 template<unsigned int dim, unsigned int spacedim>
-FEValuesBase<dim,spacedim> &FEValuesViews::Vector<dim,spacedim>::base() const
+const FEValuesBase<dim,spacedim> &FEValuesViews::Vector<dim,spacedim>::base() const
 { return fe_values_; }
 
 
@@ -134,7 +134,7 @@ arma::vec::fixed<spacedim> FEValuesViews::Tensor<dim,spacedim>::divergence(unsig
 }
 
 template<unsigned int dim, unsigned int spacedim>
-FEValuesBase<dim,spacedim> &FEValuesViews::Tensor<dim,spacedim>::base() const
+const FEValuesBase<dim,spacedim> &FEValuesViews::Tensor<dim,spacedim>::base() const
 { return fe_values_; }
   
 

@@ -92,7 +92,7 @@ public:
     /**
      * @brief Returns the number of shape functions.
      */
-    virtual unsigned int n_dofs() = 0;
+    virtual unsigned int n_dofs() const = 0;
 
 };
 
@@ -284,13 +284,13 @@ public:
     /**
      * @brief Returns the number of quadrature points.
      */
-    inline unsigned int n_points()
+    inline unsigned int n_points() const
     { return n_points_; }
 
     /**
      * @brief Returns the number of shape functions.
      */
-    inline unsigned int n_dofs() override
+    inline unsigned int n_dofs() const override
     {
         return fe->n_dofs();
     }
