@@ -8,4 +8,7 @@
 [submodule "bin/yaml_converter"]
     path = bin/yaml_converter
     url = https://github.com/flow123d/yaml_converter.git    
+[submodule "third_party/bparser"]
+	path = third_party/bparser
+	url = https://github.com/flow123d/bparser.git
 	
