@@ -46,58 +46,10 @@ template<unsigned int dim> class FiniteElement;
 
 
 /**
- * @brief Abstract base class with certain methods independent of the template parameter @p dim.
- */
-template<unsigned int spacedim = 3>
-class FEValuesSpaceBase
-{
-public:
-    virtual ~FEValuesSpaceBase() {}
-    /**
-     * @brief Return the value of the @p function_no-th shape function at
-     * the @p point_no-th quadrature point.
-     *
-     * @param function_no Number of the shape function.
-     * @param point_no Number of the quadrature point.
-     */
-    virtual double shape_value(const unsigned int function_no, const unsigned int point_no) = 0;
-
-    /**
-     * @brief Return the gradient of the @p function_no-th shape function at
-     * the @p point_no-th quadrature point.
-     *
-     * @param function_no Number of the shape function.
-     * @param point_no Number of the quadrature point.
-     */
-    virtual arma::vec::fixed<spacedim> shape_grad(const unsigned int function_no, const unsigned int point_no) = 0;
-
-    /**
-     * @brief Return the product of Jacobian determinant and the quadrature
-     * weight at given quadrature point.
-     *
-     * @param point_no Number of the quadrature point.
-     */
-    virtual double JxW(const unsigned int point_no) = 0;
-
-    /**
-     * @brief Returns the normal vector to a side at given quadrature point.
-     *
-     * @param point_no Number of the quadrature point.
-     */
-    virtual arma::vec::fixed<spacedim> normal_vector(unsigned int point_no) = 0;
-
-    /**
-     * @brief Returns the number of shape functions.
-     */
-    virtual unsigned int n_dofs() const = 0;
-
-};
-
-/**
  * @brief Base class for FEValues and FESideValues
  */
 template<unsigned int spacedim = 3>
-class FEValuesBase : public FEValuesSpaceBase<spacedim>
+class FEValuesBase
 {
 private:
   
@@ -145,7 +97,7 @@ public:
      * @param function_no Number of the shape function.
      * @param point_no Number of the quadrature point.
      */
-    double shape_value(const unsigned int function_no, const unsigned int point_no) override;
+    double shape_value(const unsigned int function_no, const unsigned int point_no);
 
 
     /**
@@ -155,7 +107,7 @@ public:
      * @param function_no Number of the shape function.
      * @param point_no Number of the quadrature point.
      */
-    arma::vec::fixed<spacedim> shape_grad(const unsigned int function_no, const unsigned int point_no) override;
+    arma::vec::fixed<spacedim> shape_grad(const unsigned int function_no, const unsigned int point_no);
 
     /**
      * @brief Return the value of the @p function_no-th shape function at
@@ -203,7 +155,7 @@ public:
      *
      * @param point_no Number of the quadrature point.
      */
-    inline double JxW(const unsigned int point_no) override
+    inline double JxW(const unsigned int point_no)
     {
         ASSERT_LT_DBG(point_no, n_points_);
         // TODO: This is temporary solution to distinguish JxW on element and side_JxW on side.
@@ -237,7 +189,7 @@ public:
      *
      * @param point_no Number of the quadrature point.
      */
-	inline arma::vec::fixed<spacedim> normal_vector(unsigned int point_no) override
+	inline arma::vec::fixed<spacedim> normal_vector(unsigned int point_no)
 	{
         ASSERT_LT_DBG(point_no, n_points_);
 	    return elm_values->normal_vector(point_no);
@@ -282,7 +234,7 @@ public:
     /**
      * @brief Returns the number of shape functions.
      */
-    inline unsigned int n_dofs() const override
+    inline unsigned int n_dofs() const
     {
         return n_dofs_;
     }

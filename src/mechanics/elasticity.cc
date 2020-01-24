@@ -656,7 +656,7 @@ void Elasticity::assemble_fluxes_element_side()
     fe_values_side.initialize(*feo->q<dim-1>(), *feo->fe<dim>(),
     		update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
  
-    vector<FEValuesSpaceBase<3>*> fv_sb(2);
+    vector<FEValuesBase<3>*> fv_sb(2);
     const unsigned int ndofs_side = feo->fe<dim>()->n_dofs();    // number of local dofs
     const unsigned int ndofs_sub  = feo->fe<dim-1>()->n_dofs();
     const unsigned int qsize = feo->q<dim-1>()->size();     // number of quadrature points

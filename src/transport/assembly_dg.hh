@@ -814,7 +814,7 @@ private:
     FESideValues<3> fe_values_side_;                      ///< FESideValues of object (of P disc finite element type)
     FESideValues<3> fsv_rt_;                              ///< FESideValues of object (of RT0 finite element type)
     vector<FESideValues<3>> fe_values_vec_;              ///< Vector of FESideValues of object (of P disc finite element types)
-    vector<FEValuesSpaceBase<3>*> fv_sb_;                     ///< Auxiliary vector, holds FEValues objects for assemble element-side
+    vector<FEValuesBase<3>*> fv_sb_;                     ///< Auxiliary vector, holds FEValues objects for assemble element-side
 
     vector<LongIdx> dof_indices_;                             ///< Vector of global DOF indices
     vector<LongIdx> loc_dof_indices_;                         ///< Vector of local DOF indices
