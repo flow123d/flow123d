@@ -485,7 +485,8 @@ double lame_lambda(double young, double poisson)
 template<unsigned int dim>
 void Elasticity::assemble_volume_integrals()
 {
-    FEValues<dim,3> fe_values(*feo->q<dim>(), *feo->fe<dim>(),
+    FEValues<3> fe_values;
+    fe_values.initialize(*feo->q<dim>(), *feo->fe<dim>(),
     		update_values | update_gradients | update_JxW_values | update_quadrature_points);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim>()->size();
     vector<int> dof_indices(ndofs);
@@ -546,7 +547,8 @@ void Elasticity::set_sources()
 template<unsigned int dim>
 void Elasticity::set_sources()
 {
-    FEValues<dim,3> fe_values(*feo->q<dim>(), *feo->fe<dim>(),
+    FEValues<3> fe_values;
+    fe_values.initialize(*feo->q<dim>(), *feo->fe<dim>(),
     		update_values | update_gradients | update_JxW_values | update_quadrature_points);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim>()->size();
     vector<arma::vec3> load(qsize);
@@ -646,7 +648,8 @@ template<unsigned int dim>
 void Elasticity::assemble_fluxes_element_side()
 {
 	if (dim == 1) return;
-    FEValues<dim-1,3> fe_values_sub(*feo->q<dim-1>(), *feo->fe<dim-1>(),
+    FEValues<3> fe_values_sub;
+    fe_values_sub.initialize(*feo->q<dim-1>(), *feo->fe<dim-1>(),
     		update_values | update_gradients | update_JxW_values | update_quadrature_points);
     FESideValues<dim,3> fe_values_side(*feo->q<dim-1>(), *feo->fe<dim>(),
     		update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);

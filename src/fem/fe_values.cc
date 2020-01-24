@@ -120,7 +120,7 @@ void FEValuesBase<spacedim>::ViewsCache::initialize(const FEValuesBase<spacedim>
 
 template<unsigned int spacedim>
 FEValuesBase<spacedim>::FEValuesBase()
-: n_points_(0), n_dofs_(0), elm_values(nullptr)
+: dim_(-1), n_points_(0), n_dofs_(0), elm_values(nullptr)
 {
 }
 
@@ -148,6 +148,7 @@ void FEValuesBase<spacedim>::allocate(
         ASSERT_DBG(_fe.n_components() == spacedim*spacedim).error("FETensor must have spacedim*spacedim components.");
     }
     
+    dim_ = dim;
     n_points_ = n_points;
     n_dofs_ = _fe.n_dofs();
     n_components_ = _fe.n_space_components(spacedim);
@@ -181,6 +182,7 @@ template<unsigned int spacedim>
 template<unsigned int dim>
 typename FEValuesBase<spacedim>::FEInternalData *FEValuesBase<spacedim>::init_fe_data(const FiniteElement<dim> &fe, const Quadrature &q)
 {
+    ASSERT_DBG( dim == dim_ );
     ASSERT_DBG( q.dim() == dim );
     FEInternalData *data = new FEInternalData(q.size(), n_dofs_);
 
@@ -494,13 +496,12 @@ void FEValuesBase<spacedim>::fill_data(const ElementValues<spacedim> &elm_values
 
 
 
-template<unsigned int dim, unsigned int spacedim>
-FEValues<dim,spacedim>::FEValues(
+template<unsigned int spacedim>
+template<unsigned int dim>
+void FEValues<spacedim>::initialize(
          Quadrature &q,
          FiniteElement<dim> &_fe,
          UpdateFlags _flags)
-: FEValuesBase<spacedim>(),
-  fe_data(nullptr)
 {
     if (dim == 0) return; // avoid unnecessary allocation of dummy 0 dimensional objects
     ASSERT_DBG( q.dim() == dim );
@@ -517,23 +518,26 @@ FEValues<dim,spacedim>::FEValues(
         ASSERT_DBG(fe != nullptr).error("Mixed system must be represented by FESystem.");
         
         for (auto fe_sub : fe->fe())
-            this->fe_values_vec.push_back(make_shared<FEValues<dim,spacedim> >(q, *fe_sub, this->update_flags));
+        {
+            this->fe_values_vec.push_back(make_shared<FEValues<spacedim>>());
+            ((FEValues *)this->fe_values_vec.back().get())->initialize(q, *fe_sub, this->update_flags);
+        }
     }
 }
 
 
-template<unsigned int dim, unsigned int spacedim>
-FEValues<dim,spacedim>::~FEValues()
+template<unsigned int spacedim>
+FEValues<spacedim>::~FEValues()
 {
     if (fe_data) delete fe_data;
 }
 
 
 
-template<unsigned int dim,unsigned int spacedim>
-void FEValues<dim,spacedim>::reinit(const ElementAccessor<spacedim> &cell)
+template<unsigned int spacedim>
+void FEValues<spacedim>::reinit(const ElementAccessor<spacedim> &cell)
 {
-	ASSERT_EQ_DBG( dim, cell.dim() );
+	ASSERT_EQ_DBG( this->dim_, cell.dim() );
     
     if (!this->elm_values->cell().is_valid() ||
         this->elm_values->cell() != cell)
@@ -546,17 +550,17 @@ void FEValues<dim,spacedim>::reinit(const ElementAccessor<spacedim> &cell)
 
 
 
-MixedPtr<FEValues> mixed_fe_values(
+std::vector<FEValues<3>> mixed_fe_values(
         QGauss::array &quadrature,
         MixedPtr<FiniteElement> fe,
         UpdateFlags flags)
 {
-    return MixedPtr<FEValues>(
-      std::make_shared<FEValues<0>>(quadrature[0], *fe.get<0>(), flags),
-      std::make_shared<FEValues<1>>(quadrature[1], *fe.get<1>(), flags),
-      std::make_shared<FEValues<2>>(quadrature[2], *fe.get<2>(), flags),
-      std::make_shared<FEValues<3>>(quadrature[3], *fe.get<3>(), flags)
-      );
+    std::vector<FEValues<3>> fv(4);
+    fv[0].initialize(quadrature[0], *fe.get<0>(), flags);
+    fv[1].initialize(quadrature[1], *fe.get<1>(), flags);
+    fv[2].initialize(quadrature[2], *fe.get<2>(), flags);
+    fv[3].initialize(quadrature[3], *fe.get<3>(), flags);
+    return fv;
 }
 
 
@@ -631,11 +635,7 @@ void FESideValues<dim,spacedim>::reinit(const Side &cell_side)
 
 
 template class FEValuesBase<3>;
-
-template class FEValues<0,3>;
-template class FEValues<1,3>;
-template class FEValues<2,3>;
-template class FEValues<3,3>;
+template class FEValues<3>;
 
 template class FESideValues<1,3>;
 template class FESideValues<2,3>;

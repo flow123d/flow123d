@@ -70,15 +70,16 @@ public:
       fe_rt_(new FE_RT0<dim>), fe_rt_low_(new FE_RT0<dim-1>),
       quad_(new QGauss(dim, 2*data->dg_order)),
 	  quad_low_(new QGauss(dim-1, 2*data->dg_order)),
-      model_(model), data_(data), fv_rt_(*quad_, *fe_rt_, update_values | update_gradients | update_quadrature_points),
-      fe_values_(*quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points),
-      fv_rt_vb_(nullptr), fe_values_vb_(nullptr),
+      model_(model), data_(data),
       fe_values_side_(*quad_low_, *fe_, update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points),
       fsv_rt_(*quad_low_, *fe_rt_, update_values | update_quadrature_points) {
 
+        fv_rt_.initialize(*quad_, *fe_rt_, update_values | update_gradients | update_quadrature_points);
+        fe_values_.initialize(*quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
+
         if (dim>1) {
-            fv_rt_vb_ = new FEValues<dim-1,3>(*quad_low_, *fe_rt_low_, update_values | update_quadrature_points);
-            fe_values_vb_ = new FEValues<dim-1,3>(*quad_low_, *fe_low_,
+            fv_rt_vb_.initialize(*quad_low_, *fe_rt_low_, update_values | update_quadrature_points);
+            fe_values_vb_.initialize(*quad_low_, *fe_low_,
                     update_values | update_gradients | update_JxW_values | update_quadrature_points);
         }
         ndofs_ = fe_->n_dofs();
@@ -95,8 +96,6 @@ public:
         delete fe_rt_low_;
         delete quad_;
         delete quad_low_;
-        if (fv_rt_vb_!=nullptr) delete fv_rt_vb_;
-        if (fe_values_vb_!=nullptr) delete fe_values_vb_;
 
         for (unsigned int i=0; i<data_->ad_coef_edg.size(); i++)
         {
@@ -144,7 +143,7 @@ public:
         // index 0 = element with lower dimension,
         // index 1 = side of element with higher dimension
         fv_sb_.resize(2);
-        fv_sb_[0] = fe_values_vb_;
+        fv_sb_[0] = &fe_values_vb_;
         fv_sb_[1] = &fe_values_side_;
     }
 
@@ -495,7 +494,7 @@ public:
             for(unsigned int i=0; i<n_indices; ++i) {
                 side_dof_indices_vb_[i] = dof_indices_[i];
             }
-            fe_values_vb_->reinit(elm_lower_dim);
+            fe_values_vb_.reinit(elm_lower_dim);
             n_dofs[0] = fv_sb_[0]->n_dofs();
 
             DHCellAccessor cell_higher_dim = data_->dh_->cell_accessor_from_element( neighb_side.element().idx() );
@@ -513,13 +512,13 @@ public:
             own_element_id[1] = cell_higher_dim.is_own();
 
             fsv_rt_.reinit(neighb_side.side());
-            fv_rt_vb_->reinit(elm_lower_dim);
+            fv_rt_vb_.reinit(elm_lower_dim);
             calculate_velocity(elm_higher_dim, velocity_higher_, fsv_rt_.point_list());
-            calculate_velocity(elm_lower_dim, velocity_, fv_rt_vb_->point_list());
-            model_.compute_advection_diffusion_coefficients(fe_values_vb_->point_list(), velocity_, elm_lower_dim, data_->ad_coef_edg[0], data_->dif_coef_edg[0]);
-            model_.compute_advection_diffusion_coefficients(fe_values_vb_->point_list(), velocity_higher_, elm_higher_dim, data_->ad_coef_edg[1], data_->dif_coef_edg[1]);
-            data_->cross_section.value_list(fe_values_vb_->point_list(), elm_lower_dim, csection_);
-            data_->cross_section.value_list(fe_values_vb_->point_list(), elm_higher_dim, csection_higher_);
+            calculate_velocity(elm_lower_dim, velocity_, fv_rt_vb_.point_list());
+            model_.compute_advection_diffusion_coefficients(fe_values_vb_.point_list(), velocity_, elm_lower_dim, data_->ad_coef_edg[0], data_->dif_coef_edg[0]);
+            model_.compute_advection_diffusion_coefficients(fe_values_vb_.point_list(), velocity_higher_, elm_higher_dim, data_->ad_coef_edg[1], data_->dif_coef_edg[1]);
+            data_->cross_section.value_list(fe_values_vb_.point_list(), elm_lower_dim, csection_);
+            data_->cross_section.value_list(fe_values_vb_.point_list(), elm_higher_dim, csection_higher_);
 
             for (unsigned int sbi=0; sbi<model_.n_substances(); sbi++) // Optimize: SWAP LOOPS
             {
@@ -528,7 +527,7 @@ public:
                         local_matrix_[i*(n_dofs[0]+n_dofs[1])+j] = 0;
 
                 // sigma_ corresponds to frac_sigma
-                data_->fracture_sigma[sbi].value_list(fe_values_vb_->point_list(), elm_lower_dim, sigma_);
+                data_->fracture_sigma[sbi].value_list(fe_values_vb_.point_list(), elm_lower_dim, sigma_);
 
                 // set transmission conditions
                 for (unsigned int k=0; k<qsize_lower_dim_; k++)
@@ -812,10 +811,10 @@ private:
     unsigned int ndofs_;                                      ///< Number of dofs
     unsigned int qsize_;                                      ///< Size of quadrature of actual dim
     unsigned int qsize_lower_dim_;                            ///< Size of quadrature of dim-1
-    FEValues<dim,3> fv_rt_;                                   ///< FEValues of object (of RT0 finite element type)
-    FEValues<dim,3> fe_values_;                               ///< FEValues of object (of P disc finite element type)
-    FEValues<dim-1,3> *fv_rt_vb_;                             ///< FEValues of dim-1 object (of RT0 finite element type)
-    FEValues<dim-1,3> *fe_values_vb_;                         ///< FEValues of dim-1 object (of P disc finite element type)
+    FEValues<3> fv_rt_;                                       ///< FEValues of object (of RT0 finite element type)
+    FEValues<3> fe_values_;                                   ///< FEValues of object (of P disc finite element type)
+    FEValues<3> fv_rt_vb_;                                    ///< FEValues of dim-1 object (of RT0 finite element type)
+    FEValues<3> fe_values_vb_;                                ///< FEValues of dim-1 object (of P disc finite element type)
     FESideValues<dim,3> fe_values_side_;                      ///< FESideValues of object (of P disc finite element type)
     FESideValues<dim,3> fsv_rt_;                              ///< FESideValues of object (of RT0 finite element type)
     vector<FESideValues<dim,3>*> fe_values_vec_;              ///< Vector of FESideValues of object (of P disc finite element types)

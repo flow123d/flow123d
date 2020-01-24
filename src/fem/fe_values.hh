@@ -45,9 +45,6 @@ template<unsigned int dim> class FiniteElement;
 
 
 
-
-
-
 /**
  * @brief Abstract base class with certain methods independent of the template parameter @p dim.
  */
@@ -104,16 +101,16 @@ class FEValuesBase : public FEValuesSpaceBase<spacedim>
 {
 private:
   
-  // internal structure that stores all possible views
-  // for scalar and vector-valued components of the FE
-  struct ViewsCache {
-    vector<FEValuesViews::Scalar<spacedim> > scalars;
-    vector<FEValuesViews::Vector<spacedim> > vectors;
-    vector<FEValuesViews::Tensor<spacedim> > tensors;
+    // internal structure that stores all possible views
+    // for scalar and vector-valued components of the FE
+    struct ViewsCache {
+        vector<FEValuesViews::Scalar<spacedim> > scalars;
+        vector<FEValuesViews::Vector<spacedim> > vectors;
+        vector<FEValuesViews::Tensor<spacedim> > tensors;
     
-    template<unsigned int dim>
-    void initialize(const FEValuesBase &fv, const FiniteElement<dim> &fe);
-  };
+        template<unsigned int dim>
+        void initialize(const FEValuesBase &fv, const FiniteElement<dim> &fe);
+    };
   
 public:
 
@@ -290,7 +287,9 @@ public:
         return n_dofs_;
     }
 
-
+    /// Return dimension of reference space.
+    inline unsigned int dm() const
+    { return dim_; }
     
 
 protected:
@@ -371,6 +370,9 @@ protected:
     void fill_system_data(const ElementValues<spacedim> &elm_values, const FEInternalData &fe_data);
     
 
+    /// Dimension of reference space.
+    int dim_;
+
     /// Number of integration points.
     unsigned int n_points_;
 
@@ -426,13 +428,14 @@ protected:
  * @param spacedim Dimension of the Euclidean space where the actual
  *                 cell lives.
  */
-template<unsigned int dim, unsigned int spacedim = 3>
+template<unsigned int spacedim = 3>
 class FEValues : public FEValuesBase<spacedim>
 {
 public:
 
     /// Default invalid constructor.
-	FEValues() : fe_data(nullptr) {}
+	FEValues()
+    : FEValuesBase<spacedim>(), fe_data(nullptr) {}
 
 	/**
 	 * @brief Constructor.
@@ -444,9 +447,10 @@ public:
 	 * @param _fe The finite element.
 	 * @param _flags The update flags.
 	 */
-    FEValues(Quadrature &_quadrature,
-             FiniteElement<dim> &_fe,
-             UpdateFlags _flags);
+    template<unsigned int dim>
+    void initialize(Quadrature &_quadrature,
+                    FiniteElement<dim> &_fe,
+                    UpdateFlags _flags);
     
     ~FEValues();
 
@@ -466,11 +470,10 @@ private:
     /// Precomputed finite element data.
     typename FEValuesBase<spacedim>::FEInternalData *fe_data;
     
-
 };
 
 
-MixedPtr<FEValues> mixed_fe_values(
+std::vector<FEValues<3>> mixed_fe_values(
         QGauss::array &quadrature,
         MixedPtr<FiniteElement> fe,
         UpdateFlags flags);

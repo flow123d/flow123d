@@ -38,7 +38,7 @@ template<int rank, int elemdim, int spacedim, class Value>
 class FEShapeHandler {
 public:
 
-	inline static typename Value::return_type fe_value(FEValues<elemdim,3> &fe_val, unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
+	inline static typename Value::return_type fe_value(FEValues<spacedim> &fe_val, unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
 	{
 		ASSERT(false).error("Unsupported format of FieldFE!\n");
 		typename Value::return_type ret;
@@ -53,7 +53,7 @@ public:
 template<int elemdim, int spacedim, class Value>
 class FEShapeHandler<0, elemdim, spacedim, Value> {
 public:
-	inline static typename Value::return_type fe_value(FEValues<elemdim,3> &fe_val, unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
+	inline static typename Value::return_type fe_value(FEValues<3> &fe_val, unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
 	{
 		return fe_val.scalar_view(comp_index).value(i_dof, i_qp);
 	}
@@ -64,7 +64,7 @@ public:
 template<int elemdim, int spacedim, class Value>
 class FEShapeHandler<1, elemdim, spacedim, Value> {
 public:
-	inline static typename Value::return_type fe_value(FEValues<elemdim,3> &fe_val, unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
+	inline static typename Value::return_type fe_value(FEValues<3> &fe_val, unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
 	{
 		return fe_val.vector_view(comp_index).value(i_dof, i_qp);
 	}
@@ -75,7 +75,7 @@ public:
 template<int elemdim, int spacedim, class Value>
 class FEShapeHandler<2, elemdim, spacedim, Value> {
 public:
-	inline static typename Value::return_type fe_value(FEValues<elemdim,3> &fe_val, unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
+	inline static typename Value::return_type fe_value(FEValues<3> &fe_val, unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
 	{
 		return fe_val.tensor_view(comp_index).value(i_dof, i_qp);
 	}
@@ -131,7 +131,8 @@ void FEValueHandler<elemdim, spacedim, Value>::value_list(const Armor::array  &p
 	Quadrature quad(elemdim, point_list.size());
 	for (unsigned int k=0; k<point_list.size(); k++)
         quad.set(k) = RefElement<elemdim>::bary_to_local(MappingP1<elemdim,spacedim>::project_real_to_unit(point_list.vec<spacedim>(k), map_mat));
-	FEValues<elemdim,spacedim> fe_values(quad, *dh_->ds()->fe(elm).get<elemdim>(), update_values);
+	FEValues<spacedim> fe_values;
+	fe_values.initialize(quad, *dh_->ds()->fe(elm).get<elemdim>(), update_values);
 
     for (unsigned int k=0; k<point_list.size(); k++) {
 		fe_values.reinit( elm );
