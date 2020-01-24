@@ -604,7 +604,8 @@ void Elasticity::set_sources()
 template<unsigned int dim>
 void Elasticity::assemble_fluxes_boundary()
 {
-    FESideValues<dim,3> fe_values_side(*feo->q<dim-1>(), *feo->fe<dim>(),
+    FESideValues<3> fe_values_side;
+    fe_values_side.initialize(*feo->q<dim-1>(), *feo->fe<dim>(),
     		update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs();
     vector<int> side_dof_indices(ndofs);
@@ -651,7 +652,8 @@ void Elasticity::assemble_fluxes_element_side()
     FEValues<3> fe_values_sub;
     fe_values_sub.initialize(*feo->q<dim-1>(), *feo->fe<dim-1>(),
     		update_values | update_gradients | update_JxW_values | update_quadrature_points);
-    FESideValues<dim,3> fe_values_side(*feo->q<dim-1>(), *feo->fe<dim>(),
+    FESideValues<3> fe_values_side;
+    fe_values_side.initialize(*feo->q<dim-1>(), *feo->fe<dim>(),
     		update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
  
     vector<FEValuesSpaceBase<3>*> fv_sb(2);
@@ -786,7 +788,8 @@ void Elasticity::set_boundary_conditions()
 template<unsigned int dim>
 void Elasticity::set_boundary_conditions()
 {
-    FESideValues<dim,3> fe_values_side(*feo->q<dim-1>(), *feo->fe<dim>(),
+    FESideValues<3> fe_values_side;
+    fe_values_side.initialize(*feo->q<dim-1>(), *feo->fe<dim>(),
     		update_values | update_gradients | update_normal_vectors | update_side_JxW_values | update_quadrature_points);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim-1>()->size();
     vector<int> side_dof_indices(ndofs);

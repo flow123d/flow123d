@@ -90,7 +90,7 @@ public:
 	inline Quadrature &q(unsigned int dim);
 
 	template<unsigned int dim>
-	inline FESideValues<dim,3> *fe_values();
+	inline FESideValues<3> &fe_values();
 
 private:
 
@@ -104,9 +104,9 @@ private:
 	QGauss::array q_;
 
     /// FESideValues objects for side flux calculating.
-	FESideValues<1,3> *fe_values1_;
-    FESideValues<2,3> *fe_values2_;
-    FESideValues<3,3> *fe_values3_;
+	FESideValues<3> fe_values1_;
+    FESideValues<3> fe_values2_;
+    FESideValues<3> fe_values3_;
 };
 
 

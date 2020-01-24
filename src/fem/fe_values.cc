@@ -568,19 +568,21 @@ std::vector<FEValues<3>> mixed_fe_values(
 
 
 
-template<unsigned int dim,unsigned int spacedim>
-FESideValues<dim,spacedim>::FESideValues(
+template<unsigned int spacedim>
+template<unsigned int dim>
+void FESideValues<spacedim>::initialize(
                                  Quadrature & _sub_quadrature,
                                  FiniteElement<dim> & _fe,
                                  const UpdateFlags _flags)
-: FEValuesBase<spacedim>()
 {
     ASSERT_DBG( _sub_quadrature.dim() + 1 == dim );
     this->allocate( _sub_quadrature.size(), _fe, _flags);
     this->elm_values = new ElementValues<spacedim>( _sub_quadrature, this->update_flags, dim );
     
+    side_fe_data.resize(RefElement<dim>::n_sides);
     for (unsigned int sid = 0; sid < RefElement<dim>::n_sides; sid++)
     {
+        side_fe_data[sid].resize(RefElement<dim>::n_side_permutations);
     	for (unsigned int pid = 0; pid < RefElement<dim>::n_side_permutations; pid++)
     	{
     		// transform the side quadrature points to the cell quadrature points
@@ -595,25 +597,28 @@ FESideValues<dim,spacedim>::FESideValues(
         ASSERT_DBG(fe != nullptr).error("Mixed system must be represented by FESystem.");
         
         for (auto fe_sub : fe->fe())
-            this->fe_values_vec.push_back(make_shared<FESideValues<dim,spacedim> >(_sub_quadrature, *fe_sub, this->update_flags));
+        {
+            this->fe_values_vec.push_back(make_shared<FESideValues<spacedim> >());
+            ((FESideValues<spacedim>*)this->fe_values_vec.back().get())->initialize(_sub_quadrature, *fe_sub, this->update_flags);
+        }
     }
 }
 
 
 
-template<unsigned int dim,unsigned int spacedim>
-FESideValues<dim,spacedim>::~FESideValues()
+template<unsigned int spacedim>
+FESideValues<spacedim>::~FESideValues()
 {
-    for (unsigned int sid=0; sid<RefElement<dim>::n_sides; sid++)
-        for (unsigned int pid=0; pid<RefElement<dim>::n_side_permutations; pid++)
+    for (unsigned int sid=0; sid<side_fe_data.size(); sid++)
+        for (unsigned int pid=0; pid<side_fe_data[sid].size(); pid++)
             delete side_fe_data[sid][pid];
 }
 
 
-template<unsigned int dim,unsigned int spacedim>
-void FESideValues<dim,spacedim>::reinit(const Side &cell_side)
+template<unsigned int spacedim>
+void FESideValues<spacedim>::reinit(const Side &cell_side)
 {
-    ASSERT_EQ_DBG( dim, cell_side.dim() );
+    ASSERT_EQ_DBG( this->dim_, cell_side.dim() );
     
     if (!this->elm_values->side().valid() || 
         this->elm_values->side() != cell_side)
@@ -636,8 +641,7 @@ void FESideValues<dim,spacedim>::reinit(const Side &cell_side)
 
 template class FEValuesBase<3>;
 template class FEValues<3>;
-
-template class FESideValues<1,3>;
-template class FESideValues<2,3>;
-template class FESideValues<3,3>;
-
+template class FESideValues<3>;
+template void FESideValues<3>::initialize(Quadrature&, FiniteElement<1>&, const UpdateFlags);
+template void FESideValues<3>::initialize(Quadrature&, FiniteElement<2>&, const UpdateFlags);
+template void FESideValues<3>::initialize(Quadrature&, FiniteElement<3>&, const UpdateFlags);

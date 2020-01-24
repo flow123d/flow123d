@@ -490,7 +490,7 @@ std::vector<FEValues<3>> mixed_fe_values(
  * @param spacedim Dimension of the Euclidean space where the actual
  *                 cell lives.
  */
-template<unsigned int dim, unsigned int spacedim>
+template<unsigned int spacedim>
 class FESideValues : public FEValuesBase<spacedim>
 {
 
@@ -506,7 +506,10 @@ public:
      * @param _fe The finite element.
      * @param flags The update flags.
      */
-    FESideValues(Quadrature &_sub_quadrature,
+    FESideValues() : FEValuesBase<spacedim>() {}
+    
+    template<unsigned int dim>
+    void initialize(Quadrature &_sub_quadrature,
              FiniteElement<dim> &_fe,
              UpdateFlags flags);
 
@@ -527,7 +530,7 @@ private:
     void fill_fe_side_values();
     
     /// Internal data (shape functions on reference element) for all sides and permuted quadrature points.
-    typename FEValuesBase<spacedim>::FEInternalData *side_fe_data[RefElement<dim>::n_sides][RefElement<dim>::n_side_permutations];
+    std::vector<std::vector<typename FEValuesBase<spacedim>::FEInternalData*>> side_fe_data;
     
 };
 

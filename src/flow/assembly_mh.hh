@@ -68,10 +68,11 @@ private:
 public:
     NeighSideValues<dim>()
     :  side_quad_(dim, 1),
-       fe_p_disc_(0),
-       fe_side_values_(side_quad_, fe_p_disc_, update_normal_vectors)
-    {}
-    FESideValues<dim+1,3> fe_side_values_;
+       fe_p_disc_(0)
+    {
+        fe_side_values_.initialize(side_quad_, fe_p_disc_, update_normal_vectors);
+    }
+    FESideValues<3> fe_side_values_;
 
 };
 
