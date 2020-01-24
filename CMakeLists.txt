@@ -205,7 +205,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
       # not cygwin 
       # is version 4.7 or higher?
       elseif (GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7)
-          set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+          set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fext-numeric-literals")
       # version is too low
       else()
           message(SEND_ERROR "Error: Minimal GCC version is 4.7!.") 
