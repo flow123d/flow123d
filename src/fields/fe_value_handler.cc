@@ -34,7 +34,7 @@
  * Is done by class partial specialization as, we were not able to do this using function overloading (since
  * they differ only by return value) and partial specialization of the function templates is not supported  in C++.
  */
-template<int rank, int elemdim, int spacedim, class Value>
+template<int rank, int spacedim, class Value>
 class FEShapeHandler {
 public:
 
@@ -50,8 +50,8 @@ public:
 
 
 /// Partial template specialization of FEShapeHandler for scalar fields
-template<int elemdim, int spacedim, class Value>
-class FEShapeHandler<0, elemdim, spacedim, Value> {
+template<int spacedim, class Value>
+class FEShapeHandler<0, spacedim, Value> {
 public:
 	inline static typename Value::return_type fe_value(FEValues<3> &fe_val, unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
 	{
@@ -61,8 +61,8 @@ public:
 
 
 /// Partial template specialization of FEShapeHandler for vector fields
-template<int elemdim, int spacedim, class Value>
-class FEShapeHandler<1, elemdim, spacedim, Value> {
+template<int spacedim, class Value>
+class FEShapeHandler<1, spacedim, Value> {
 public:
 	inline static typename Value::return_type fe_value(FEValues<3> &fe_val, unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
 	{
@@ -72,8 +72,8 @@ public:
 
 
 /// Partial template specialization of FEShapeHandler for tensor fields
-template<int elemdim, int spacedim, class Value>
-class FEShapeHandler<2, elemdim, spacedim, Value> {
+template<int spacedim, class Value>
+class FEShapeHandler<2, spacedim, Value> {
 public:
 	inline static typename Value::return_type fe_value(FEValues<3> &fe_val, unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
 	{
@@ -141,7 +141,7 @@ void FEValueHandler<elemdim, spacedim, Value>::value_list(const Armor::array  &p
 		envelope.zeros();
 		for (unsigned int i=0; i<loc_dofs.n_elem; i++) {
 			value_list[k] += data_vec_[loc_dofs[i]]
-							* FEShapeHandler<Value::rank_, elemdim, spacedim, Value>::fe_value(fe_values, i, k, comp_index_);
+							* FEShapeHandler<Value::rank_, spacedim, Value>::fe_value(fe_values, i, k, comp_index_);
 		}
 	}
 }
@@ -210,12 +210,7 @@ template class FEValueHandler<dim, spacedim, FieldValue<0>::Enum >;             
 template class FEValueHandler<dim, spacedim, FieldValue<0>::Integer >;                \
 template class FEValueHandler<dim, spacedim, FieldValue<0>::Scalar >;                 \
 template class FEValueHandler<dim, spacedim, FieldValue<spacedim>::VectorFixed >;     \
-template class FEValueHandler<dim, spacedim, FieldValue<spacedim>::TensorFixed >;     \
-template class FEShapeHandler<0, dim, spacedim, FieldValue<0>::Enum >;                \
-template class FEShapeHandler<0, dim, spacedim, FieldValue<0>::Integer >;             \
-template class FEShapeHandler<0, dim, spacedim, FieldValue<0>::Scalar >;              \
-template class FEShapeHandler<1, dim, spacedim, FieldValue<spacedim>::VectorFixed >;  \
-template class FEShapeHandler<2, dim, spacedim, FieldValue<spacedim>::TensorFixed >;
+template class FEValueHandler<dim, spacedim, FieldValue<spacedim>::TensorFixed >;
 
 #define INSTANCE_VALUE_HANDLER(dim) \
 INSTANCE_VALUE_HANDLER_ALL(dim,3)
@@ -225,3 +220,9 @@ INSTANCE_VALUE_HANDLER(0);
 INSTANCE_VALUE_HANDLER(1);
 INSTANCE_VALUE_HANDLER(2);
 INSTANCE_VALUE_HANDLER(3);
+
+template class FEShapeHandler<0, 3, FieldValue<0>::Enum >;
+template class FEShapeHandler<0, 3, FieldValue<0>::Integer >;
+template class FEShapeHandler<0, 3, FieldValue<0>::Scalar >;
+template class FEShapeHandler<1, 3, FieldValue<3>::VectorFixed >;
+template class FEShapeHandler<2, 3, FieldValue<3>::TensorFixed >;
