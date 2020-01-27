@@ -656,7 +656,6 @@ void Elasticity::assemble_fluxes_element_side()
     fe_values_side.initialize(*feo->q<dim-1>(), *feo->fe<dim>(),
     		update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
  
-    vector<FEValues<3>*> fv_sb(2);
     const unsigned int ndofs_side = feo->fe<dim>()->n_dofs();    // number of local dofs
     const unsigned int ndofs_sub  = feo->fe<dim-1>()->n_dofs();
     const unsigned int qsize = feo->q<dim-1>()->size();     // number of quadrature points
@@ -673,8 +672,6 @@ void Elasticity::assemble_fluxes_element_side()
     // index 1 = side of element with higher dimension
     side_dof_indices[0].resize(ndofs_sub);
     side_dof_indices[1].resize(ndofs_side);
-    fv_sb[0] = &fe_values_sub;
-    fv_sb[1] = &fe_values_side;
 
     // assemble integral over sides
     for (unsigned int inb=0; inb<feo->dh()->n_loc_nb(); inb++)
@@ -750,7 +747,7 @@ void Elasticity::assemble_fluxes_element_side()
                                       + lambda*divuit*nv
                                      )
                                      - arma::dot(gvft, mu*arma::kron(nv,ui.t()) + lambda*arma::dot(ui,nv)*arma::eye(3,3))
-                                    )*fv_sb[0]->JxW(k);
+                                    )*fe_values_sub.JxW(k);
                         }
                 }
             }

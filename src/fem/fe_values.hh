@@ -384,7 +384,7 @@ protected:
     ElementValues<spacedim> *elm_values;
     
     /// Vector of FEValues for sub-elements of FESystem.
-    std::vector<std::shared_ptr<FEValues<spacedim> > > fe_values_vec;
+    std::vector<FEValues<spacedim>> fe_values_vec;
     
     /// Number of components of the FE.
     unsigned int n_components_;
