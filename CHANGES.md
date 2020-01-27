@@ -2,6 +2,41 @@ List of all changes in user interface and major internal changes.
 
 ***********************************************
 
+#Flow123d version 3.0.3
+(2019-09-02)
+
+### New features
+* observe data output when running parallel
+* removed maximal number of regions limit
+
+### Bug fixes
+* fixed several memory leaks (mesh and la)
+
+
+#Flow123d version 3.0.2
+(2019-09-02)
+
+### Bug fixes
+* fixed boundary edges indexing in balance to fix fluxes in balance
+
+<!--
+#Flow123d version 3.0.1
+TODO: do not know what was actually released...
+
+### User interface
+* Rename placeholder '${INPUT}' to '$INPUT_DIR$'.
+* Improved YAML converter
+* FieldElementwise replaced by FieldFE
+
+### Install
+* `[windows]` switch from `Docker Toolbox` (using VirtualBox) to `Docker for Windows` (native virtualization)
+* `[windows]` update installer, now using native windows installer via NSIS
+* `[ linux ]` update installer, can now be installed from console via curl
+* update install manual (remove old docs)
+* update runtest, better logging support, (verbosity level support)
+* docker image hosting is now preferable way to deliver Flow123d
+-->
+
 #Flow123d version 3.1.0
 * Rename placeholder '${INPUT}' to '$INPUT_DIR$'.
 * Improved YAML converter
@@ -28,7 +63,7 @@ List of all changes in user interface and major internal changes.
 #Flow123d version 2.2.0
 (2017-11-17)
 
-## User interface
+### User interface
 * Input YAML file supports including of other YAML files and
   including of tables in CSV files.
 * Support for binary and compressed VTK output.
@@ -40,14 +75,14 @@ List of all changes in user interface and major internal changes.
 * Anisotropic automatic choice of DG penalty. Helps for pure diffusion into matrix around
   fractures with high advection.
 
-## Bug fixes
+### Bug fixes
 * Fix wrong communication between dimensions when porosities differ
   in heat and solute transport.
 * Fix in batch wrappers for Windows. Return to caller after simulation is done.
 * Fix of minor error in balance file for DG transport model with sorption.
 * Improved options for the linear solver for DG heat and transport.
 
-### Internals:
+### Internals
 * Simplification of output classes.
 * Simplification in Balance
 
@@ -57,7 +92,7 @@ List of all changes in user interface and major internal changes.
 #Flow123d version 2.1.2
 (2017-02-21)
 
-## User interface
+### User interface
 * Improved installer script and extended install documentation.
 
 ### New features
@@ -80,7 +115,7 @@ List of all changes in user interface and major internal changes.
 #Flow123d version 2.1.0
 (2016-12-16)
 
-## User interface
+### User interface
 
 * introduction of tutorials (tests/05_tutorials)
 * Docker is used for running Flow123d in platform independent environment.
