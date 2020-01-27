@@ -37,7 +37,7 @@ using namespace std;
 
 
 template<unsigned int spacedim>
-FEValuesBase<spacedim>::FEInternalData::FEInternalData(unsigned int np, unsigned int nd)
+FEValues<spacedim>::FEInternalData::FEInternalData(unsigned int np, unsigned int nd)
     : n_points(np),
       n_dofs(nd)
 {
@@ -47,7 +47,7 @@ FEValuesBase<spacedim>::FEInternalData::FEInternalData(unsigned int np, unsigned
 
 
 template<unsigned int spacedim>
-FEValuesBase<spacedim>::FEInternalData::FEInternalData(const FEInternalData &fe_system_data,
+FEValues<spacedim>::FEInternalData::FEInternalData(const FEInternalData &fe_system_data,
                                const std::vector<unsigned int> &dof_indices,
                                unsigned int first_component_idx,
                                unsigned int ncomps)
@@ -65,7 +65,7 @@ FEValuesBase<spacedim>::FEInternalData::FEInternalData(const FEInternalData &fe_
 
 template<unsigned int spacedim>
 template<unsigned int dim>
-void FEValuesBase<spacedim>::ViewsCache::initialize(const FEValuesBase<spacedim> &fv, const FiniteElement<dim> &fe)
+void FEValues<spacedim>::ViewsCache::initialize(const FEValues<spacedim> &fv, const FiniteElement<dim> &fe)
 {
   scalars.clear();
   vectors.clear();
@@ -119,23 +119,27 @@ void FEValuesBase<spacedim>::ViewsCache::initialize(const FEValuesBase<spacedim>
 
 
 template<unsigned int spacedim>
-FEValuesBase<spacedim>::FEValuesBase()
-: dim_(-1), n_points_(0), n_dofs_(0), elm_values(nullptr)
+FEValues<spacedim>::FEValues()
+: dim_(-1), n_points_(0), n_dofs_(0), elm_values(nullptr), fe_data(nullptr)
 {
 }
 
 
 
 template<unsigned int spacedim>
-FEValuesBase<spacedim>::~FEValuesBase() {
+FEValues<spacedim>::~FEValues() {
     if (elm_values != nullptr) delete elm_values;
+    if (fe_data) delete fe_data;
+    for (unsigned int sid=0; sid<side_fe_data.size(); sid++)
+        for (unsigned int pid=0; pid<side_fe_data[sid].size(); pid++)
+            delete side_fe_data[sid][pid];
 }
 
 
 
 template<unsigned int spacedim>
 template<unsigned int dim>
-void FEValuesBase<spacedim>::allocate(
+void FEValues<spacedim>::allocate(
         unsigned int n_points,
         FiniteElement<dim> & _fe,
         UpdateFlags _flags)
@@ -180,7 +184,7 @@ void FEValuesBase<spacedim>::allocate(
 
 template<unsigned int spacedim>
 template<unsigned int dim>
-typename FEValuesBase<spacedim>::FEInternalData *FEValuesBase<spacedim>::init_fe_data(const FiniteElement<dim> &fe, const Quadrature &q)
+typename FEValues<spacedim>::FEInternalData *FEValues<spacedim>::init_fe_data(const FiniteElement<dim> &fe, const Quadrature &q)
 {
     ASSERT_DBG( dim == dim_ );
     ASSERT_DBG( q.dim() == dim );
@@ -216,7 +220,7 @@ typename FEValuesBase<spacedim>::FEInternalData *FEValuesBase<spacedim>::init_fe
 
 
 template<unsigned int spacedim>
-double FEValuesBase<spacedim>::shape_value(const unsigned int function_no, const unsigned int point_no)
+double FEValues<spacedim>::shape_value(const unsigned int function_no, const unsigned int point_no)
 {
   ASSERT_LT_DBG(function_no, n_dofs_);
   ASSERT_LT_DBG(point_no, n_points_);
@@ -225,7 +229,7 @@ double FEValuesBase<spacedim>::shape_value(const unsigned int function_no, const
 
 
 template<unsigned int spacedim>
-arma::vec::fixed<spacedim> FEValuesBase<spacedim>::shape_grad(const unsigned int function_no, const unsigned int point_no)
+arma::vec::fixed<spacedim> FEValues<spacedim>::shape_grad(const unsigned int function_no, const unsigned int point_no)
 {
   ASSERT_LT_DBG(function_no, n_dofs_);
   ASSERT_LT_DBG(point_no, n_points_);
@@ -234,7 +238,7 @@ arma::vec::fixed<spacedim> FEValuesBase<spacedim>::shape_grad(const unsigned int
 
 
 template<unsigned int spacedim>
-double FEValuesBase<spacedim>::shape_value_component(const unsigned int function_no, 
+double FEValues<spacedim>::shape_value_component(const unsigned int function_no, 
                                     const unsigned int point_no, 
                                     const unsigned int comp) const
 {
@@ -246,7 +250,7 @@ double FEValuesBase<spacedim>::shape_value_component(const unsigned int function
 
 
 template<unsigned int spacedim>
-arma::vec::fixed<spacedim> FEValuesBase<spacedim>::shape_grad_component(const unsigned int function_no,
+arma::vec::fixed<spacedim> FEValues<spacedim>::shape_grad_component(const unsigned int function_no,
                                                         const unsigned int point_no,
                                                         const unsigned int comp) const
 {
@@ -258,7 +262,7 @@ arma::vec::fixed<spacedim> FEValuesBase<spacedim>::shape_grad_component(const un
 
 
 template<unsigned int spacedim>
-void FEValuesBase<spacedim>::fill_scalar_data(const ElementValues<spacedim> &elm_values, const FEInternalData &fe_data)
+void FEValues<spacedim>::fill_scalar_data(const ElementValues<spacedim> &elm_values, const FEInternalData &fe_data)
 {
     ASSERT_DBG(fe_type_ == FEScalar);
     
@@ -277,7 +281,7 @@ void FEValuesBase<spacedim>::fill_scalar_data(const ElementValues<spacedim> &elm
 
 
 template<unsigned int spacedim>
-void FEValuesBase<spacedim>::fill_vec_data(const ElementValues<spacedim> &elm_values,
+void FEValues<spacedim>::fill_vec_data(const ElementValues<spacedim> &elm_values,
                                            const FEInternalData &fe_data)
 {
     ASSERT_DBG(fe_type_ == FEVector);
@@ -309,7 +313,7 @@ void FEValuesBase<spacedim>::fill_vec_data(const ElementValues<spacedim> &elm_va
 
 
 template<unsigned int spacedim>
-void FEValuesBase<spacedim>::fill_vec_contravariant_data(const ElementValues<spacedim> &elm_values,
+void FEValues<spacedim>::fill_vec_contravariant_data(const ElementValues<spacedim> &elm_values,
                                                          const FEInternalData &fe_data)
 {
     ASSERT_DBG(fe_type_ == FEVectorContravariant);
@@ -341,7 +345,7 @@ void FEValuesBase<spacedim>::fill_vec_contravariant_data(const ElementValues<spa
 
 
 template<unsigned int spacedim>
-void FEValuesBase<spacedim>::fill_vec_piola_data(const ElementValues<spacedim> &elm_values,
+void FEValues<spacedim>::fill_vec_piola_data(const ElementValues<spacedim> &elm_values,
                                                  const FEInternalData &fe_data)
 {
     ASSERT_DBG(fe_type_ == FEVectorPiola);
@@ -374,7 +378,7 @@ void FEValuesBase<spacedim>::fill_vec_piola_data(const ElementValues<spacedim> &
 
 
 template<unsigned int spacedim>
-void FEValuesBase<spacedim>::fill_tensor_data(const ElementValues<spacedim> &elm_values,
+void FEValues<spacedim>::fill_tensor_data(const ElementValues<spacedim> &elm_values,
                                               const FEInternalData &fe_data)
 {
     ASSERT_DBG(fe_type_ == FETensor);
@@ -406,7 +410,7 @@ void FEValuesBase<spacedim>::fill_tensor_data(const ElementValues<spacedim> &elm
 
 
 template<unsigned int spacedim>
-void FEValuesBase<spacedim>::fill_system_data(const ElementValues<spacedim> &elm_values, const FEInternalData &fe_data)
+void FEValues<spacedim>::fill_system_data(const ElementValues<spacedim> &elm_values, const FEInternalData &fe_data)
 {
     ASSERT_DBG(fe_type_ == FEMixedSystem);
     
@@ -463,7 +467,7 @@ void FEValuesBase<spacedim>::fill_system_data(const ElementValues<spacedim> &elm
 
 
 template<unsigned int spacedim>
-void FEValuesBase<spacedim>::fill_data(const ElementValues<spacedim> &elm_values, const FEInternalData &fe_data)
+void FEValues<spacedim>::fill_data(const ElementValues<spacedim> &elm_values, const FEInternalData &fe_data)
 {
     switch (fe_type_) {
         case FEScalar:
@@ -504,48 +508,93 @@ void FEValues<spacedim>::initialize(
          UpdateFlags _flags)
 {
     if (dim == 0) return; // avoid unnecessary allocation of dummy 0 dimensional objects
-    ASSERT_DBG( q.dim() == dim );
-    this->allocate( q.size(), _fe, _flags);
-    this->elm_values = new ElementValues<spacedim>(q, this->update_flags, dim);
-    
-    // precompute finite element data
-    fe_data = this->init_fe_data(_fe, q);
-    
-    // In case of mixed system allocate data for sub-elements.
-    if (this->fe_type_ == FEMixedSystem)
-    {
-        FESystem<dim> *fe = dynamic_cast<FESystem<dim>*>(&_fe);
-        ASSERT_DBG(fe != nullptr).error("Mixed system must be represented by FESystem.");
+
+    if ( q.dim() == dim ) {
+        allocate( q.size(), _fe, _flags);
+        elm_values = new ElementValues<spacedim>(q, update_flags, dim);
         
-        for (auto fe_sub : fe->fe())
+        // precompute finite element data
+        fe_data = init_fe_data(_fe, q);
+        
+        // In case of mixed system allocate data for sub-elements.
+        if (fe_type_ == FEMixedSystem)
         {
-            this->fe_values_vec.push_back(make_shared<FEValues<spacedim>>());
-            ((FEValues *)this->fe_values_vec.back().get())->initialize(q, *fe_sub, this->update_flags);
+            FESystem<dim> *fe = dynamic_cast<FESystem<dim>*>(&_fe);
+            ASSERT_DBG(fe != nullptr).error("Mixed system must be represented by FESystem.");
+            
+            for (auto fe_sub : fe->fe())
+            {
+                fe_values_vec.push_back(make_shared<FEValues<spacedim>>());
+                ((FEValues<spacedim>*)fe_values_vec.back().get())->initialize(q, *fe_sub, update_flags);
+            }
+        }
+    } else if ( q.dim() + 1 == dim ) {
+        allocate( q.size(), _fe, _flags);
+        elm_values = new ElementValues<spacedim>( q, update_flags, dim );
+        
+        side_fe_data.resize(RefElement<dim>::n_sides);
+        for (unsigned int sid = 0; sid < RefElement<dim>::n_sides; sid++)
+        {
+            side_fe_data[sid].resize(RefElement<dim>::n_side_permutations);
+            for (unsigned int pid = 0; pid < RefElement<dim>::n_side_permutations; pid++)
+            {
+                // transform the side quadrature points to the cell quadrature points
+                side_fe_data[sid][pid] = init_fe_data(_fe, q.make_from_side<dim>(sid,pid));
+            }
+        }
+        
+        // In case of mixed system allocate data for sub-elements.
+        if (fe_type_ == FEMixedSystem)
+        {
+            FESystem<dim> *fe = dynamic_cast<FESystem<dim>*>(&_fe);
+            ASSERT_DBG(fe != nullptr).error("Mixed system must be represented by FESystem.");
+            
+            for (auto fe_sub : fe->fe())
+            {
+                fe_values_vec.push_back(make_shared<FEValues<spacedim> >());
+                ((FEValues<spacedim>*)fe_values_vec.back().get())->initialize(q, *fe_sub, update_flags);
+            }
         }
     }
+    else
+        ASSERT_DBG(false)(q.dim())(dim).error("Dimension mismatch in FEValues::initialize().");
 }
 
 
-template<unsigned int spacedim>
-FEValues<spacedim>::~FEValues()
-{
-    if (fe_data) delete fe_data;
-}
 
 
 
 template<unsigned int spacedim>
 void FEValues<spacedim>::reinit(const ElementAccessor<spacedim> &cell)
 {
-	ASSERT_EQ_DBG( this->dim_, cell.dim() );
+	ASSERT_EQ_DBG( dim_, cell.dim() );
     
-    if (!this->elm_values->cell().is_valid() ||
-        this->elm_values->cell() != cell)
+    if (!elm_values->cell().is_valid() ||
+        elm_values->cell() != cell)
     {
-        this->elm_values->reinit(cell);
+        elm_values->reinit(cell);
     }
     
-    this->fill_data(*this->elm_values, *fe_data);
+    fill_data(*elm_values, *fe_data);
+}
+
+
+template<unsigned int spacedim>
+void FEValues<spacedim>::reinit(const Side &cell_side)
+{
+    ASSERT_EQ_DBG( dim_, cell_side.dim() );
+    
+    if (!elm_values->side().valid() || 
+        elm_values->side() != cell_side)
+    {
+        elm_values->reinit(cell_side);
+    }
+
+    const LongIdx sid = cell_side.side_idx();
+    const unsigned int pid = elm_values->side().element()->permutation_idx(sid);
+    
+    // calculation of finite element data
+    fill_data(*elm_values, *side_fe_data[sid][pid]);
 }
 
 
@@ -568,70 +617,6 @@ std::vector<FEValues<3>> mixed_fe_values(
 
 
 
-template<unsigned int spacedim>
-template<unsigned int dim>
-void FESideValues<spacedim>::initialize(
-                                 Quadrature & _sub_quadrature,
-                                 FiniteElement<dim> & _fe,
-                                 const UpdateFlags _flags)
-{
-    ASSERT_DBG( _sub_quadrature.dim() + 1 == dim );
-    this->allocate( _sub_quadrature.size(), _fe, _flags);
-    this->elm_values = new ElementValues<spacedim>( _sub_quadrature, this->update_flags, dim );
-    
-    side_fe_data.resize(RefElement<dim>::n_sides);
-    for (unsigned int sid = 0; sid < RefElement<dim>::n_sides; sid++)
-    {
-        side_fe_data[sid].resize(RefElement<dim>::n_side_permutations);
-    	for (unsigned int pid = 0; pid < RefElement<dim>::n_side_permutations; pid++)
-    	{
-    		// transform the side quadrature points to the cell quadrature points
-    		side_fe_data[sid][pid] = this->init_fe_data(_fe, _sub_quadrature.make_from_side<dim>(sid,pid));
-    	}
-    }
-    
-    // In case of mixed system allocate data for sub-elements.
-    if (this->fe_type_ == FEMixedSystem)
-    {
-        FESystem<dim> *fe = dynamic_cast<FESystem<dim>*>(&_fe);
-        ASSERT_DBG(fe != nullptr).error("Mixed system must be represented by FESystem.");
-        
-        for (auto fe_sub : fe->fe())
-        {
-            this->fe_values_vec.push_back(make_shared<FESideValues<spacedim> >());
-            ((FESideValues<spacedim>*)this->fe_values_vec.back().get())->initialize(_sub_quadrature, *fe_sub, this->update_flags);
-        }
-    }
-}
-
-
-
-template<unsigned int spacedim>
-FESideValues<spacedim>::~FESideValues()
-{
-    for (unsigned int sid=0; sid<side_fe_data.size(); sid++)
-        for (unsigned int pid=0; pid<side_fe_data[sid].size(); pid++)
-            delete side_fe_data[sid][pid];
-}
-
-
-template<unsigned int spacedim>
-void FESideValues<spacedim>::reinit(const Side &cell_side)
-{
-    ASSERT_EQ_DBG( this->dim_, cell_side.dim() );
-    
-    if (!this->elm_values->side().valid() || 
-        this->elm_values->side() != cell_side)
-    {
-        this->elm_values->reinit(cell_side);
-    }
-
-    const LongIdx sid = cell_side.side_idx();
-    const unsigned int pid = this->elm_values->side().element()->permutation_idx(sid);
-    
-    // calculation of finite element data
-    this->fill_data(*this->elm_values, *side_fe_data[sid][pid]);
-}
 
 
 
@@ -639,9 +624,11 @@ void FESideValues<spacedim>::reinit(const Side &cell_side)
 
 
 
-template class FEValuesBase<3>;
+
+
+
+
+
+
+
 template class FEValues<3>;
-template class FESideValues<3>;
-template void FESideValues<3>::initialize(Quadrature&, FiniteElement<1>&, const UpdateFlags);
-template void FESideValues<3>::initialize(Quadrature&, FiniteElement<2>&, const UpdateFlags);
-template void FESideValues<3>::initialize(Quadrature&, FiniteElement<3>&, const UpdateFlags);

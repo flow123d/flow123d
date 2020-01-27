@@ -22,7 +22,7 @@
 #include <vector>
 #include <armadillo>
 
-template<unsigned int spacedim> class FEValuesBase;
+template<unsigned int spacedim> class FEValues;
 
 
 
@@ -39,7 +39,7 @@ namespace FEValuesViews {
     
   public:
     
-    Scalar(const FEValuesBase<spacedim> &fe_values, unsigned int component)
+    Scalar(const FEValues<spacedim> &fe_values, unsigned int component)
       : fe_values_(fe_values),
         component_(component)
     {};
@@ -58,13 +58,13 @@ namespace FEValuesViews {
      */
     arma::vec::fixed<spacedim> grad(unsigned int function_no, unsigned int point_no) const;
     
-    /// Returns the FEValuesBase class.
-    const FEValuesBase<spacedim> &base() const;
+    /// Returns the FEValues class.
+    const FEValues<spacedim> &base() const;
     
   private:
     
     /// Base FEValues class for access to the FE.
-    const FEValuesBase<spacedim> &fe_values_;
+    const FEValues<spacedim> &fe_values_;
     
     /// Index of the scalar component.
     unsigned int component_;
@@ -76,7 +76,7 @@ namespace FEValuesViews {
     
   public:
     
-    Vector(const FEValuesBase<spacedim> &fe_values, unsigned int component)
+    Vector(const FEValues<spacedim> &fe_values, unsigned int component)
       : fe_values_(fe_values),
         first_vector_component_(component)
     {};
@@ -109,13 +109,13 @@ namespace FEValuesViews {
      */
     double divergence(unsigned int function_no, unsigned int point_no) const;
     
-    /// Returns the FEValuesBase class.
-    const FEValuesBase<spacedim> &base() const;
+    /// Returns the FEValues class.
+    const FEValues<spacedim> &base() const;
     
   private:
     
     /// Base FEValues class for access to the FE.
-    const FEValuesBase<spacedim> &fe_values_;
+    const FEValues<spacedim> &fe_values_;
     
     /// Index of the first component of the vector.
     unsigned int first_vector_component_;
@@ -127,7 +127,7 @@ namespace FEValuesViews {
       
   public:
     
-    Tensor(const FEValuesBase<spacedim> &fe_values, unsigned int component)
+    Tensor(const FEValues<spacedim> &fe_values, unsigned int component)
       : fe_values_(fe_values),
         first_tensor_component_(component)
     {};
@@ -161,13 +161,13 @@ namespace FEValuesViews {
      */
     arma::vec::fixed<spacedim> divergence(unsigned int function_no, unsigned int point_no) const;
     
-    /// Returns the FEValuesBase class.
-    const FEValuesBase<spacedim> &base() const;
+    /// Returns the FEValues class.
+    const FEValues<spacedim> &base() const;
     
   private:
     
     /// Base FEValues class for access to the FE.
-    const FEValuesBase<spacedim> &fe_values_;
+    const FEValues<spacedim> &fe_values_;
     
     /// Index of the first component of the vector.
     unsigned int first_tensor_component_;

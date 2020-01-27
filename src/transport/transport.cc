@@ -151,9 +151,9 @@ template<> FiniteElement<3> *FETransportObjects::fe<3>() { return fe3_; }
 
 Quadrature &FETransportObjects::q(unsigned int dim) { return q_[dim]; }
 
-template<> FESideValues<3> &FETransportObjects::fe_values<1>() { return fe_values1_; }
-template<> FESideValues<3> &FETransportObjects::fe_values<2>() { return fe_values2_; }
-template<> FESideValues<3> &FETransportObjects::fe_values<3>() { return fe_values3_; }
+template<> FEValues<3> &FETransportObjects::fe_values<1>() { return fe_values1_; }
+template<> FEValues<3> &FETransportObjects::fe_values<2>() { return fe_values2_; }
+template<> FEValues<3> &FETransportObjects::fe_values<3>() { return fe_values3_; }
 
 
 /********************************************************************************

@@ -604,7 +604,7 @@ void Elasticity::set_sources()
 template<unsigned int dim>
 void Elasticity::assemble_fluxes_boundary()
 {
-    FESideValues<3> fe_values_side;
+    FEValues<3> fe_values_side;
     fe_values_side.initialize(*feo->q<dim-1>(), *feo->fe<dim>(),
     		update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs();
@@ -652,11 +652,11 @@ void Elasticity::assemble_fluxes_element_side()
     FEValues<3> fe_values_sub;
     fe_values_sub.initialize(*feo->q<dim-1>(), *feo->fe<dim-1>(),
     		update_values | update_gradients | update_JxW_values | update_quadrature_points);
-    FESideValues<3> fe_values_side;
+    FEValues<3> fe_values_side;
     fe_values_side.initialize(*feo->q<dim-1>(), *feo->fe<dim>(),
     		update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
  
-    vector<FEValuesBase<3>*> fv_sb(2);
+    vector<FEValues<3>*> fv_sb(2);
     const unsigned int ndofs_side = feo->fe<dim>()->n_dofs();    // number of local dofs
     const unsigned int ndofs_sub  = feo->fe<dim-1>()->n_dofs();
     const unsigned int qsize = feo->q<dim-1>()->size();     // number of quadrature points
@@ -788,7 +788,7 @@ void Elasticity::set_boundary_conditions()
 template<unsigned int dim>
 void Elasticity::set_boundary_conditions()
 {
-    FESideValues<3> fe_values_side;
+    FEValues<3> fe_values_side;
     fe_values_side.initialize(*feo->q<dim-1>(), *feo->fe<dim>(),
     		update_values | update_gradients | update_normal_vectors | update_side_JxW_values | update_quadrature_points);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim-1>()->size();

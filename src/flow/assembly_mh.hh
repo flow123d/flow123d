@@ -72,7 +72,7 @@ public:
     {
         fe_side_values_.initialize(side_quad_, fe_p_disc_, update_normal_vectors);
     }
-    FESideValues<3> fe_side_values_;
+    FEValues<3> fe_side_values_;
 
 };
 

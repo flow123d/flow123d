@@ -46,10 +46,17 @@ template<unsigned int dim> class FiniteElement;
 
 
 /**
- * @brief Base class for FEValues and FESideValues
+ * @brief Calculates finite element data on the actual cell.
+ *
+ * FEValues takes care of the calculation of finite element data on
+ * the actual cell or on its side, (values of shape functions at quadrature
+ * points, gradients of shape functions, Jacobians of the mapping
+ * from the reference cell etc.).
+ * @param spacedim Dimension of the Euclidean space where the actual
+ *                 cell lives.
  */
 template<unsigned int spacedim = 3>
-class FEValuesBase
+class FEValues
 {
 private:
   
@@ -61,34 +68,57 @@ private:
         vector<FEValuesViews::Tensor<spacedim> > tensors;
     
         template<unsigned int dim>
-        void initialize(const FEValuesBase &fv, const FiniteElement<dim> &fe);
+        void initialize(const FEValues &fv, const FiniteElement<dim> &fe);
     };
   
 public:
 
-    /**
-     * @brief Default constructor
-     */
-    FEValuesBase();
+    /// Default constructor.
+    FEValues();
 
 
-    /**
-     * Correct deallocation of objects created by 'initialize' methods.
-     */
-    virtual ~FEValuesBase();
+    /// Correct deallocation of objects created by 'initialize' methods.
+    ~FEValues();
 
 
     /**
      * @brief Allocates space for computed data.
      *
-     * @param _quadrature The quadrature rule.
-     * @param _fe The finite element.
-     * @param flags The update flags.
+     * @param n_points    Number of quadrature points.
+     * @param _fe         The finite element.
+     * @param flags       The update flags.
      */
     template<unsigned int dim>
     void allocate(unsigned int n_points,
-            FiniteElement<dim> &_fe,
-            UpdateFlags flags);
+                  FiniteElement<dim> &_fe,
+                  UpdateFlags flags);
+    
+    /**
+	 * @brief Initialize structures and calculates cell-independent data.
+	 *
+	 * @param _quadrature The quadrature rule for the cell associated
+     *                    to given finite element or for the cell side.
+	 * @param _fe The finite element.
+	 * @param _flags The update flags.
+	 */
+    template<unsigned int dim>
+    void initialize(Quadrature &_quadrature,
+                    FiniteElement<dim> &_fe,
+                    UpdateFlags _flags);
+    
+    /**
+     * @brief Update cell-dependent data (gradients, Jacobians etc.)
+     *
+     * @param cell The actual cell.
+     */
+    void reinit(const ElementAccessor<spacedim> &cell);
+
+    /**
+	 * @brief Update cell side-dependent FE data (values, gradients).
+	 *
+	 * @param cell_side Accessor to cell side.
+	 */
+    void reinit(const Side &cell_side);
     
     /**
      * @brief Return the value of the @p function_no-th shape function at
@@ -253,14 +283,11 @@ protected:
         
         FEInternalData(unsigned int np, unsigned int nd);
         
-        /**
-         * Create a new instance of FEInternalData for a FESystem component or subvector.
-         */
+        /// Create a new instance of FEInternalData for a FESystem component or subvector.
         FEInternalData(const FEInternalData &fe_system_data,
-                    const std::vector<unsigned int> &dof_indices,
-                    unsigned int first_component_idx,
-                    unsigned int ncomponents = 1
-                    );
+                       const std::vector<unsigned int> &dof_indices,
+                       unsigned int first_component_idx,
+                       unsigned int ncomponents = 1);
         
         /**
          * @brief Precomputed values of basis functions at the quadrature points.
@@ -357,72 +384,24 @@ protected:
     ElementValues<spacedim> *elm_values;
     
     /// Vector of FEValues for sub-elements of FESystem.
-    std::vector<std::shared_ptr<FEValuesBase<spacedim> > > fe_values_vec;
+    std::vector<std::shared_ptr<FEValues<spacedim> > > fe_values_vec;
     
     /// Number of components of the FE.
     unsigned int n_components_;
     
     /// Auxiliary storage of FEValuesViews accessors.
     ViewsCache views_cache_;
-};
 
-
-
-
-/**
- * @brief Calculates finite element data on the actual cell.
- *
- * FEValues takes care of the calculation of finite element data on
- * the actual cell such as values of shape functions at quadrature
- * points, gradients of shape functions, Jacobians of the mapping
- * from the reference cell etc.
- * @param dim      Dimension of the reference cell.
- * @param spacedim Dimension of the Euclidean space where the actual
- *                 cell lives.
- */
-template<unsigned int spacedim = 3>
-class FEValues : public FEValuesBase<spacedim>
-{
-public:
-
-    /// Default invalid constructor.
-	FEValues()
-    : FEValuesBase<spacedim>(), fe_data(nullptr) {}
-
-	/**
-	 * @brief Constructor.
-	 *
-	 * Initializes structures and calculates
-         * cell-independent data.
-	 *
-	 * @param _quadrature The quadrature rule.
-	 * @param _fe The finite element.
-	 * @param _flags The update flags.
-	 */
-    template<unsigned int dim>
-    void initialize(Quadrature &_quadrature,
-                    FiniteElement<dim> &_fe,
-                    UpdateFlags _flags);
-    
-    ~FEValues();
-
-    /**
-     * @brief Update cell-dependent data (gradients, Jacobians etc.)
-     *
-     * @param cell The actual cell.
-     */
-    void reinit(const ElementAccessor<spacedim> &cell);
-    
-    
-    
-private:
-    
-    void fill_fe_values();
-    
     /// Precomputed finite element data.
-    typename FEValuesBase<spacedim>::FEInternalData *fe_data;
-    
+    typename FEValues<spacedim>::FEInternalData *fe_data;
+
+    /// Precomputed FE data (shape functions on reference element) for all sides and permuted quadrature points.
+    std::vector<std::vector<typename FEValues<spacedim>::FEInternalData*>> side_fe_data;
 };
+
+
+
+
 
 
 std::vector<FEValues<3>> mixed_fe_values(
@@ -431,60 +410,6 @@ std::vector<FEValues<3>> mixed_fe_values(
         UpdateFlags flags);
 
 
-/**
- * @brief Calculates finite element data on a side.
- *
- * FESideValues takes care of the calculation of finite element data on
- * a side of the actual cell such as values of shape functions at quadrature
- * points, gradients of shape functions, Jacobians of the mapping
- * from the reference cell etc.
- * @param dim      Dimension of the reference cell.
- * @param spacedim Dimension of the Euclidean space where the actual
- *                 cell lives.
- */
-template<unsigned int spacedim>
-class FESideValues : public FEValuesBase<spacedim>
-{
-
-public:
-
-    /**
-     * @brief Constructor.
-     *
-     * Initializes structures and calculates
-     * cell-independent data.
-     *
-     * @param _sub_quadrature The quadrature rule on the side.
-     * @param _fe The finite element.
-     * @param flags The update flags.
-     */
-    FESideValues() : FEValuesBase<spacedim>() {}
-    
-    template<unsigned int dim>
-    void initialize(Quadrature &_sub_quadrature,
-             FiniteElement<dim> &_fe,
-             UpdateFlags flags);
-
-    /// Destructor.
-    virtual ~FESideValues();
-
-    /**
-	 * @brief Update cell-dependent FE data (values, gradients).
-	 *
-	 * @param cell_side Accessor to cell side.
-	 */
-    void reinit(const Side &cell_side);
-
-
-private:
-    
-    /// Calculates the mapping data on a side of a cell.
-    void fill_fe_side_values();
-    
-    /// Internal data (shape functions on reference element) for all sides and permuted quadrature points.
-    std::vector<std::vector<typename FEValuesBase<spacedim>::FEInternalData*>> side_fe_data;
-    
-};
 
 
 
