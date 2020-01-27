@@ -34,8 +34,8 @@ void fill_const(double *ptr, uint n, double v) {
 	for(uint i=0; i< n; ++i) ptr[i] = v;
 }
 
-void fill_seq(double *ptr, double a, double b, double st = 1) {
-	for(uint i=0; a<b; a+=st, ++i) ptr[i] = a;
+void fill_seq(double *ptr, uint n, double a, double st = 1) {
+	for(uint i=0; i<n; a+=st, ++i) ptr[i] = a;
 }
 
 std::string print_vec(double *ptr, uint size) {
