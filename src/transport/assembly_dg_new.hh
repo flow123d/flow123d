@@ -77,22 +77,11 @@ public:
     : multidim_assembly_(assembly0, assembly1, assembly2, assembly3),
       active_integrals_(ActiveIntegrals::none), integrals_size_({0, 0, 0, 0, 0})
     {
-	    eval_points_ = std::make_shared<EvalPoints>();
-	    std::vector<const Quadrature *> quads = { std::get<1>(multidim_assembly_)->quad_, std::get<2>(multidim_assembly_)->quad_,
-	                                              std::get<3>(multidim_assembly_)->quad_, std::get<1>(multidim_assembly_)->quad_low_,
-                                                  std::get<2>(multidim_assembly_)->quad_low_, std::get<3>(multidim_assembly_)->quad_low_ };
-        bulk_integral_[0] = eval_points_->add_bulk<1>(*quads[0]);
-        bulk_integral_[1] = eval_points_->add_bulk<2>(*quads[1]);
-        bulk_integral_[2] = eval_points_->add_bulk<3>(*quads[2]);
-        edge_integral_[0] = eval_points_->add_edge<1>(*quads[3]);
-        edge_integral_[1] = eval_points_->add_edge<2>(*quads[4]);
-        edge_integral_[2] = eval_points_->add_edge<3>(*quads[5]);
-        coupling_integral_[0] = eval_points_->add_coupling<2>(*quads[4]);
-        coupling_integral_[1] = eval_points_->add_coupling<3>(*quads[5]);
-        boundary_integral_[0] = eval_points_->add_boundary<1>(*quads[3]);
-        boundary_integral_[1] = eval_points_->add_boundary<2>(*quads[4]);
-        boundary_integral_[2] = eval_points_->add_boundary<3>(*quads[5]);
-	}
+        eval_points_ = std::make_shared<EvalPoints>();
+        multidim_assembly_.get<1>()->create_integrals(eval_points_);
+        multidim_assembly_.get<2>()->create_integrals(eval_points_);
+        multidim_assembly_.get<3>()->create_integrals(eval_points_);
+    }
 
 	inline void set_active(int active) {
 	    active_integrals_ = active;
@@ -140,31 +129,80 @@ public:
     }
 
     void add_compute_volume_integrals(const DHCellAccessor &cell) {
-        unsigned int data_size = eval_points_->subset_size( cell.dim(), bulk_integral_[cell.dim()-1]->get_subset_idx() );
+        unsigned int data_size = 0;
+        switch (cell.dim()) {
+        case 1:
+            data_size = eval_points_->subset_size( 1, std::get<1>(multidim_assembly_)->bulk_integral_->get_subset_idx() );
+            break;
+        case 2:
+            data_size = eval_points_->subset_size( 2, std::get<2>(multidim_assembly_)->bulk_integral_->get_subset_idx() );
+            break;
+        case 3:
+            data_size = eval_points_->subset_size( 3, std::get<3>(multidim_assembly_)->bulk_integral_->get_subset_idx() );
+            break;
+    	}
         bulk_integral_data_[ integrals_size_[0] ].set(cell, data_size);
         integrals_size_[0]++;
     }
 
     void add_compute_fluxes_element_element(const DHCellSide &edge_side) {
-        unsigned int data_size = eval_points_->subset_size( edge_side.dim(), edge_integral_[edge_side.dim()-1]->get_subset_idx() ) / (edge_side.dim()+1);
+        unsigned int data_size = 0;
+        switch (edge_side.dim()) {
+        case 1:
+            data_size = eval_points_->subset_size( 1, std::get<1>(multidim_assembly_)->edge_integral_->get_subset_idx() ) / 2;
+            break;
+        case 2:
+            data_size = eval_points_->subset_size( 2, std::get<2>(multidim_assembly_)->edge_integral_->get_subset_idx() ) / 3;
+            break;
+        case 3:
+            data_size = eval_points_->subset_size( 3, std::get<3>(multidim_assembly_)->edge_integral_->get_subset_idx() ) / 4;
+            break;
+    	}
         edge_integral_data_[ integrals_size_[1] ].set(edge_side, data_size);
         integrals_size_[1]++;
     }
 
     void add_compute_fluxes_element_side(const DHCellAccessor &cell) {
-        unsigned int data_size = eval_points_->subset_size( cell.dim(), coupling_integral_[cell.dim()-1]->get_subset_low_idx() );
+        unsigned int data_size = 0;
+        switch (cell.dim()) {
+        case 1:
+            data_size = eval_points_->subset_size( 1, std::get<2>(multidim_assembly_)->coupling_integral_->get_subset_low_idx() );
+            break;
+        case 2:
+            data_size = eval_points_->subset_size( 2, std::get<3>(multidim_assembly_)->coupling_integral_->get_subset_low_idx() );
+            break;
+    	}
         coupling_low_integral_data_[ integrals_size_[2] ].set(cell, data_size);
         integrals_size_[2]++;
     }
 
     void add_compute_fluxes_element_side(const DHCellSide &ngh_side) {
-        unsigned int data_size = eval_points_->subset_size( ngh_side.dim(), coupling_integral_[ngh_side.dim()-1]->get_subset_high_idx() ) / (ngh_side.dim()+1);
+        unsigned int data_size = 0;
+        switch (ngh_side.dim()) {
+        case 2:
+            data_size = eval_points_->subset_size( 2, std::get<2>(multidim_assembly_)->coupling_integral_->get_subset_high_idx() ) / 3;
+            break;
+        case 3:
+            data_size = eval_points_->subset_size( 3, std::get<3>(multidim_assembly_)->coupling_integral_->get_subset_high_idx() ) / 4;
+            break;
+    	}
         coupling_high_integral_data_[ integrals_size_[3] ].set(ngh_side, data_size);
         integrals_size_[3]++;
     }
 
     void add_compute_fluxes_boundary(const DHCellSide &bdr_side) {
-        unsigned int data_size = eval_points_->subset_size( bdr_side.dim(), boundary_integral_[bdr_side.dim()-1]->get_subset_idx() ) / (bdr_side.dim()+1);
+        unsigned int data_size = 0;
+        switch (bdr_side.dim()) {
+        case 1:
+            data_size = eval_points_->subset_size( 1, std::get<1>(multidim_assembly_)->edge_integral_->get_subset_idx() ) / 2;
+            break;
+        case 2:
+            data_size = eval_points_->subset_size( 2, std::get<2>(multidim_assembly_)->edge_integral_->get_subset_idx() ) / 3;
+            break;
+        case 3:
+            data_size = eval_points_->subset_size( 3, std::get<3>(multidim_assembly_)->edge_integral_->get_subset_idx() ) / 4;
+            break;
+    	}
         boundary_integral_data_[ integrals_size_[4] ].set(bdr_side, data_size);
         integrals_size_[4]++;
     }
@@ -204,10 +242,6 @@ private:
     /// Holds mask of active integrals.
     int active_integrals_;
 
-    std::array<std::shared_ptr<BulkIntegral>, 3> bulk_integral_;          ///< Bulk integrals of elements of dimensions 1, 2, 3
-    std::array<std::shared_ptr<EdgeIntegral>, 3> edge_integral_;          ///< Edge integrals between elements of dimensions 1, 2, 3
-    std::array<std::shared_ptr<CouplingIntegral>, 2> coupling_integral_;  ///< Coupling integrals between elements of dimensions 1-2, 2-3
-    std::array<std::shared_ptr<BoundaryIntegral>, 3> boundary_integral_;  ///< Boundary integrals betwwen elements of dimensions 1, 2, 3 and boundaries
     std::shared_ptr<EvalPoints> eval_points_;                             ///< EvalPoints object shared by all integrals
 
     // Following variables hold data of all integrals depending of actual computed element.
@@ -267,6 +301,14 @@ public:
         {
             delete fe_values_vec_[i];
         }
+    }
+
+    void create_integrals(std::shared_ptr<EvalPoints> eval_points) {
+        bulk_integral_ = eval_points->add_bulk<dim>(*quad_);
+        std::cout << "Create bulk integral: " << dim << ", " << eval_points->subset_size( dim, bulk_integral_->get_subset_idx() ) << std::endl;
+        edge_integral_ = eval_points->add_edge<dim>(*quad_low_);
+        if (dim>1) coupling_integral_ = eval_points->add_coupling<dim>(*quad_low_);
+        boundary_integral_ = eval_points->add_boundary<dim>(*quad_low_);
     }
 
     /// Initialize auxiliary vectors and other data members
@@ -330,6 +372,10 @@ public:
         model_.velocity_field_ptr()->value_list(point_list, cell, velocity);
     }*/
 
+    std::shared_ptr<BulkIntegral> bulk_integral_;          ///< Bulk integrals of elements of given dimension
+    std::shared_ptr<EdgeIntegral> edge_integral_;          ///< Edge integrals between sides of elements of given dimension
+    std::shared_ptr<CouplingIntegral> coupling_integral_;  ///< Coupling integrals between elements of given dimension and sides of elements of dim+1 dimension
+    std::shared_ptr<BoundaryIntegral> boundary_integral_;  ///< Boundary integrals betwwen sides of elements of given dimension and mesh boundary
 
     shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
     shared_ptr<FiniteElement<dim-1>> fe_low_;   ///< Finite element for the solution of the advection-diffusion equation (dim-1).
