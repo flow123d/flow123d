@@ -58,7 +58,7 @@ class DOFHandlerMultiDim;
 class AssemblyDGBase;
 template<unsigned int dim, class Model> class AssemblyDG;
 template<unsigned int dim, class Model> class AssemblyDGNew;
-template<class Model> class GenericAssembly;
+template< template<Dim...> class DimAssembly> class GenericAssembly;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim> class FiniteElement;
 template<unsigned int dim, unsigned int spacedim> class Mapping;
@@ -135,6 +135,9 @@ template<class Model>
 class TransportDG : public Model
 {
 public:
+
+    template<unsigned int dim>
+    using AssemblyDGDim = AssemblyDGNew<dim, Model>;
 
 	class EqData : public Model::ModelEqData {
 	public:
@@ -431,8 +434,7 @@ private:
     std::shared_ptr<AssemblyDG<1, Model>> assembly1_;
     std::shared_ptr<AssemblyDG<2, Model>> assembly2_;
     std::shared_ptr<AssemblyDG<3, Model>> assembly3_;
-    MultidimAssemblyDGNew<Model> multidim_assembly_new_;
-    GenericAssembly< MultidimAssemblyDGNew<Model> > * generic_assembly_;
+    GenericAssembly< AssemblyDGDim > * generic_assembly_;
 
 };
 

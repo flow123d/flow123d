@@ -238,11 +238,11 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
 	multidim_assembly_.push_back( std::dynamic_pointer_cast<AssemblyDGBase>(assembly1_) );
 	multidim_assembly_.push_back( std::dynamic_pointer_cast<AssemblyDGBase>(assembly2_) );
 	multidim_assembly_.push_back( std::dynamic_pointer_cast<AssemblyDGBase>(assembly3_) );
+	std::shared_ptr<AssemblyDGNew<0, Model>> assembly_new0 = std::make_shared<AssemblyDGNew<0, Model>>(data_, *this);
 	std::shared_ptr<AssemblyDGNew<1, Model>> assembly_new1 = std::make_shared<AssemblyDGNew<1, Model>>(data_, *this);
 	std::shared_ptr<AssemblyDGNew<2, Model>> assembly_new2 = std::make_shared<AssemblyDGNew<2, Model>>(data_, *this);
 	std::shared_ptr<AssemblyDGNew<3, Model>> assembly_new3 = std::make_shared<AssemblyDGNew<3, Model>>(data_, *this);
-	multidim_assembly_new_ = MultidimAssemblyDGNew<Model>(assembly_new1, assembly_new2, assembly_new3);
-	generic_assembly_ = new GenericAssembly< MultidimAssemblyDGNew<Model> >(multidim_assembly_new_);
+	generic_assembly_ = new GenericAssembly< AssemblyDGDim >(assembly_new0, assembly_new1, assembly_new2, assembly_new3);
 	MixedPtr<FiniteElement> fe(assembly1_->fe_low_, assembly1_->fe_, assembly2_->fe_, assembly3_->fe_);
 	shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>(Model::mesh_, fe);
 	data_->dh_ = make_shared<DOFHandlerMultiDim>(*Model::mesh_);
@@ -838,9 +838,7 @@ void TransportDG<Model>::initialize_assembly_objects()
 {
     for (unsigned int i=0; i<multidim_assembly_.size(); ++i)
         multidim_assembly_[i]->initialize();
-    std::get<0>(multidim_assembly_new_)->initialize();
-    std::get<1>(multidim_assembly_new_)->initialize();
-    std::get<2>(multidim_assembly_new_)->initialize();
+    generic_assembly_->initialize();
 }
 
 

@@ -40,7 +40,7 @@ enum ActiveIntegrals {
 };
 
 
-template <class MultidimAssembly>
+template < template<Dim...> class DimAssembly>
 class GenericAssembly
 {
 private:
@@ -70,13 +70,17 @@ private:
 	    unsigned int data_size;
 	};
 public:
+
     /// Constructor
-	GenericAssembly(MultidimAssembly &multidim_assembly)
-    : multidim_assembly_(multidim_assembly), active_integrals_(ActiveIntegrals::none), integrals_size_({0, 0, 0, 0, 0}) {
+    GenericAssembly(std::shared_ptr<DimAssembly<0>> assembly0, std::shared_ptr<DimAssembly<1>> assembly1,
+                    std::shared_ptr<DimAssembly<2>> assembly2, std::shared_ptr<DimAssembly<3>> assembly3 )
+    : multidim_assembly_(assembly0, assembly1, assembly2, assembly3),
+      active_integrals_(ActiveIntegrals::none), integrals_size_({0, 0, 0, 0, 0})
+    {
 	    eval_points_ = std::make_shared<EvalPoints>();
-	    std::vector<const Quadrature *> quads = { std::get<0>(multidim_assembly_)->quad_, std::get<1>(multidim_assembly_)->quad_,
-	                                              std::get<2>(multidim_assembly_)->quad_, std::get<0>(multidim_assembly_)->quad_low_,
-                                                  std::get<1>(multidim_assembly_)->quad_low_, std::get<2>(multidim_assembly_)->quad_low_ };
+	    std::vector<const Quadrature *> quads = { std::get<1>(multidim_assembly_)->quad_, std::get<2>(multidim_assembly_)->quad_,
+	                                              std::get<3>(multidim_assembly_)->quad_, std::get<1>(multidim_assembly_)->quad_low_,
+                                                  std::get<2>(multidim_assembly_)->quad_low_, std::get<3>(multidim_assembly_)->quad_low_ };
         bulk_integral_[0] = eval_points_->add_bulk<1>(*quads[0]);
         bulk_integral_[1] = eval_points_->add_bulk<2>(*quads[1]);
         bulk_integral_[2] = eval_points_->add_bulk<3>(*quads[2]);
@@ -93,6 +97,13 @@ public:
 	inline void set_active(int active) {
 	    active_integrals_ = active;
 	}
+
+    /// Call initialize method of inner AssemblyDGNew objects.
+    void initialize() {
+        multidim_assembly_.get<1>()->initialize();
+        multidim_assembly_.get<2>()->initialize();
+        multidim_assembly_.get<3>()->initialize();
+    }
 
     void assemble_stiffness_matrix(std::shared_ptr<DOFHandlerMultiDim> dh) {
         START_TIMER("assemble_stiffness");
@@ -188,7 +199,7 @@ public:
 
 private:
     /// Assembly object
-    MultidimAssembly &multidim_assembly_;
+    MixedPtr<DimAssembly> multidim_assembly_;
 
     /// Holds mask of active integrals.
     int active_integrals_;
@@ -302,6 +313,8 @@ public:
         fv_sb_[1] = &fe_values_side_;
     }
 
+
+
 //private:
 	/**
 	 * @brief Calculates the velocity field on a given cell.
@@ -310,12 +323,12 @@ public:
 	 * @param velocity   The computed velocity field (at quadrature points).
 	 * @param point_list The quadrature points.
 	 */
-    void calculate_velocity(const ElementAccessor<3> &cell, vector<arma::vec3> &velocity,
+    /*void calculate_velocity(const ElementAccessor<3> &cell, vector<arma::vec3> &velocity,
                             const std::vector<arma::vec::fixed<3>> &point_list)
     {
         velocity.resize(point_list.size());
         model_.velocity_field_ptr()->value_list(point_list, cell, velocity);
-    }
+    }*/
 
 
     shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
