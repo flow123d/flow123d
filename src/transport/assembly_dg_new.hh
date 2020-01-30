@@ -75,7 +75,7 @@ public:
     GenericAssembly(std::shared_ptr<DimAssembly<0>> assembly0, std::shared_ptr<DimAssembly<1>> assembly1,
                     std::shared_ptr<DimAssembly<2>> assembly2, std::shared_ptr<DimAssembly<3>> assembly3 )
     : multidim_assembly_(assembly0, assembly1, assembly2, assembly3),
-      active_integrals_(ActiveIntegrals::none), integrals_size_({0, 0, 0, 0, 0})
+      active_integrals_(ActiveIntegrals::none), integrals_size_({0, 0, 0, 0})
     {
         eval_points_ = std::make_shared<EvalPoints>();
         multidim_assembly_.get<1>()->create_integrals(eval_points_);
@@ -120,9 +120,9 @@ public:
 	        if (active_integrals_ & ActiveIntegrals::coupling)
                 for( DHCellSide neighb_side : cell.neighb_sides() ) { // cell -> elm lower dim, neighb_side -> elm higher dim
                     if (cell.dim() != neighb_side.dim()-1) continue;
-                    this->add_compute_fluxes_element_side(cell);
-                    this->add_compute_fluxes_element_side(neighb_side);
+                    this->add_compute_fluxes_element_side(cell, neighb_side);
                 }
+
             this->insert_eval_points_from_integral_data();
         }
         END_TIMER("assemble_stiffness");
@@ -162,32 +162,20 @@ public:
         integrals_size_[1]++;
     }
 
-    void add_compute_fluxes_element_side(const DHCellAccessor &cell) {
-        unsigned int data_size = 0;
+    void add_compute_fluxes_element_side(const DHCellAccessor &cell, const DHCellSide &ngh_side) {
+        unsigned int cell_data_size=0, side_data_size=0;
         switch (cell.dim()) {
         case 1:
-            data_size = eval_points_->subset_size( 1, std::get<2>(multidim_assembly_)->coupling_integral_->get_subset_low_idx() );
+        	cell_data_size = eval_points_->subset_size( 1, std::get<2>(multidim_assembly_)->coupling_integral_->get_subset_low_idx() );
+        	side_data_size = eval_points_->subset_size( 2, std::get<2>(multidim_assembly_)->coupling_integral_->get_subset_high_idx() ) / 3;
             break;
         case 2:
-            data_size = eval_points_->subset_size( 2, std::get<3>(multidim_assembly_)->coupling_integral_->get_subset_low_idx() );
+        	cell_data_size = eval_points_->subset_size( 2, std::get<3>(multidim_assembly_)->coupling_integral_->get_subset_low_idx() );
+        	side_data_size = eval_points_->subset_size( 3, std::get<3>(multidim_assembly_)->coupling_integral_->get_subset_high_idx() ) / 4;
             break;
     	}
-        coupling_low_integral_data_[ integrals_size_[2] ].set(cell, data_size);
+        coupling_integral_data_[ integrals_size_[2] ].set(cell, ngh_side, cell_data_size, side_data_size);
         integrals_size_[2]++;
-    }
-
-    void add_compute_fluxes_element_side(const DHCellSide &ngh_side) {
-        unsigned int data_size = 0;
-        switch (ngh_side.dim()) {
-        case 2:
-            data_size = eval_points_->subset_size( 2, std::get<2>(multidim_assembly_)->coupling_integral_->get_subset_high_idx() ) / 3;
-            break;
-        case 3:
-            data_size = eval_points_->subset_size( 3, std::get<3>(multidim_assembly_)->coupling_integral_->get_subset_high_idx() ) / 4;
-            break;
-    	}
-        coupling_high_integral_data_[ integrals_size_[3] ].set(ngh_side, data_size);
-        integrals_size_[3]++;
     }
 
     void add_compute_fluxes_boundary(const DHCellSide &bdr_side) {
@@ -203,8 +191,8 @@ public:
             data_size = eval_points_->subset_size( 3, std::get<3>(multidim_assembly_)->edge_integral_->get_subset_idx() ) / 4;
             break;
     	}
-        boundary_integral_data_[ integrals_size_[4] ].set(bdr_side, data_size);
-        integrals_size_[4]++;
+        boundary_integral_data_[ integrals_size_[3] ].set(bdr_side, data_size);
+        integrals_size_[3]++;
     }
 
     void insert_eval_points_from_integral_data() {
@@ -220,19 +208,14 @@ public:
         integrals_size_[1] = 0;
         for (unsigned int i=0; i<integrals_size_[2]; ++i) {
             // add data to cache if there is free space, else return
-            coupling_low_integral_data_[i].reset();
+            coupling_integral_data_[i].reset();
         }
         integrals_size_[2] = 0;
         for (unsigned int i=0; i<integrals_size_[3]; ++i) {
             // add data to cache if there is free space, else return
-            coupling_high_integral_data_[i].reset();
-        }
-        integrals_size_[3] = 0;
-        for (unsigned int i=0; i<integrals_size_[4]; ++i) {
-            // add data to cache if there is free space, else return
             boundary_integral_data_[i].reset();
         }
-        integrals_size_[4] = 0;
+        integrals_size_[3] = 0;
     }
 
 private:
@@ -242,15 +225,14 @@ private:
     /// Holds mask of active integrals.
     int active_integrals_;
 
-    std::shared_ptr<EvalPoints> eval_points_;                             ///< EvalPoints object shared by all integrals
+    std::shared_ptr<EvalPoints> eval_points_;                     ///< EvalPoints object shared by all integrals
 
     // Following variables hold data of all integrals depending of actual computed element.
-    std::array<BulkIntegralData, 1>  bulk_integral_data_;          ///< Holds data for computing bulk integrals.
-    std::array<EdgeIntegralData, 18> edge_integral_data_;          ///< Holds data for computing edge integrals.
-    std::array<BulkIntegralData, 1>  coupling_low_integral_data_;  ///< Holds data for computing bulk integrals.
-    std::array<EdgeIntegralData, 6>  coupling_high_integral_data_; ///< Holds data for computing couplings integrals.
-    std::array<EdgeIntegralData, 4>  boundary_integral_data_;      ///< Holds data for computing boundary integrals.
-    std::array<unsigned int, 5>      integrals_size_;              ///< Holds used sizes of previous integral data types
+    std::array<BulkIntegralData, 1>     bulk_integral_data_;      ///< Holds data for computing bulk integrals.
+    std::array<EdgeIntegralData, 18>    edge_integral_data_;      ///< Holds data for computing edge integrals.
+    std::array<CouplingIntegralData, 6> coupling_integral_data_;  ///< Holds data for computing couplings integrals.
+    std::array<EdgeIntegralData, 4>     boundary_integral_data_;  ///< Holds data for computing boundary integrals.
+    std::array<unsigned int, 4>         integrals_size_;          ///< Holds used sizes of previous integral data types
 };
 
 
