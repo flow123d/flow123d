@@ -47,28 +47,42 @@ private:
     struct BulkIntegralData {
     	BulkIntegralData() : data_size(0) {}
 
-	    void set(const DHCellAccessor &dh_cell, unsigned int size)
-	    { ASSERT_DBG(size>0); cell=dh_cell; data_size=size; }
-
 	    void reset()
 	    { data_size = 0; }
 
 	    DHCellAccessor cell;
 	    unsigned int data_size;
+	    unsigned int subset_index;
 	};
 
     struct EdgeIntegralData {
     	EdgeIntegralData() : data_size(0) {}
-
-	    void set(const DHCellSide &dh_cell_side, unsigned int size)
-	    { ASSERT_DBG(size>0); side=dh_cell_side; data_size=size; }
 
 	    void reset()
 	    { data_size = 0; }
 
 	    DHCellSide side;
 	    unsigned int data_size;
+	    unsigned int start_point;
+	    unsigned int subset_index;
 	};
+
+    struct CouplingIntegralData {
+       	CouplingIntegralData() : bulk_data_size(0), side_data_size(0) {}
+
+        void reset()
+        { bulk_data_size = 0; side_data_size=0; }
+
+        DHCellAccessor cell;
+        unsigned int bulk_data_size;
+	    unsigned int bulk_subset_index;
+
+        DHCellSide side;
+        unsigned int side_data_size;
+	    unsigned int side_start_point;
+	    unsigned int side_subset_index;
+    };
+
 public:
 
     /// Constructor
@@ -101,19 +115,19 @@ public:
             // generic_assembly.check_integral_data();
             if (active_integrals_ & ActiveIntegrals::bulk)
         	    if (cell.is_own()) // Not ghost
-                    this->add_compute_volume_integrals(cell);
+                    this->add_volume_integral(cell);
 
             for( DHCellSide cell_side : cell.side_range() ) {
                 if (active_integrals_ & ActiveIntegrals::boundary)
                     if (cell.is_own()) // Not ghost
                         if ( (cell_side.side().edge()->n_sides == 1) && (cell_side.side().cond() != NULL) ) {
-                            this->add_compute_fluxes_boundary(cell_side);
+                            this->add_boundary_integral(cell_side);
                             continue;
                         }
                 if (active_integrals_ & ActiveIntegrals::edge)
                     if ( (cell_side.n_edge_sides() >= 2) && (cell_side.edge_sides().begin()->element().idx() == cell.elm_idx())) {
                         for( DHCellSide edge_side : cell_side.edge_sides() )
-                            this->add_compute_fluxes_element_element(edge_side);
+                            this->add_edge_integral(edge_side);
                     }
             }
 
@@ -128,70 +142,79 @@ public:
         END_TIMER("assemble_stiffness");
     }
 
-    void add_compute_volume_integrals(const DHCellAccessor &cell) {
-        unsigned int data_size = 0;
+    void add_volume_integral(const DHCellAccessor &cell) {
+        bulk_integral_data_[ integrals_size_[0] ].cell = cell;
         switch (cell.dim()) {
         case 1:
-            data_size = eval_points_->subset_size( 1, std::get<1>(multidim_assembly_)->bulk_integral_->get_subset_idx() );
+        	bulk_integral_data_[ integrals_size_[0] ].subset_index = std::get<1>(multidim_assembly_)->bulk_integral_->get_subset_idx();
             break;
         case 2:
-            data_size = eval_points_->subset_size( 2, std::get<2>(multidim_assembly_)->bulk_integral_->get_subset_idx() );
+            bulk_integral_data_[ integrals_size_[0] ].subset_index = std::get<2>(multidim_assembly_)->bulk_integral_->get_subset_idx();
             break;
         case 3:
-            data_size = eval_points_->subset_size( 3, std::get<3>(multidim_assembly_)->bulk_integral_->get_subset_idx() );
+            bulk_integral_data_[ integrals_size_[0] ].subset_index = std::get<3>(multidim_assembly_)->bulk_integral_->get_subset_idx();
             break;
     	}
-        bulk_integral_data_[ integrals_size_[0] ].set(cell, data_size);
+        bulk_integral_data_[ integrals_size_[0] ].data_size = eval_points_->subset_size( cell.dim(), bulk_integral_data_[ integrals_size_[0] ].subset_index );
         integrals_size_[0]++;
     }
 
-    void add_compute_fluxes_element_element(const DHCellSide &edge_side) {
-        unsigned int data_size = 0;
+    void add_edge_integral(const DHCellSide &edge_side) {
+    	edge_integral_data_[ integrals_size_[1] ].side = edge_side;
         switch (edge_side.dim()) {
         case 1:
-            data_size = eval_points_->subset_size( 1, std::get<1>(multidim_assembly_)->edge_integral_->get_subset_idx() ) / 2;
+            edge_integral_data_[ integrals_size_[1] ].subset_index = std::get<1>(multidim_assembly_)->edge_integral_->get_subset_idx();
             break;
         case 2:
-            data_size = eval_points_->subset_size( 2, std::get<2>(multidim_assembly_)->edge_integral_->get_subset_idx() ) / 3;
+            edge_integral_data_[ integrals_size_[1] ].subset_index = std::get<2>(multidim_assembly_)->edge_integral_->get_subset_idx();
             break;
         case 3:
-            data_size = eval_points_->subset_size( 3, std::get<3>(multidim_assembly_)->edge_integral_->get_subset_idx() ) / 4;
+            edge_integral_data_[ integrals_size_[1] ].subset_index = std::get<3>(multidim_assembly_)->edge_integral_->get_subset_idx();
             break;
     	}
-        edge_integral_data_[ integrals_size_[1] ].set(edge_side, data_size);
+        edge_integral_data_[ integrals_size_[1] ].data_size =
+                eval_points_->subset_size( edge_side.dim(), edge_integral_data_[ integrals_size_[1] ].subset_index ) / (edge_side.dim() +1);
+        edge_integral_data_[ integrals_size_[1] ].start_point = edge_integral_data_[ integrals_size_[1] ].data_size * edge_side.side_idx();
         integrals_size_[1]++;
     }
 
     void add_compute_fluxes_element_side(const DHCellAccessor &cell, const DHCellSide &ngh_side) {
-        unsigned int cell_data_size=0, side_data_size=0;
+    	coupling_integral_data_[ integrals_size_[2] ].cell = cell;
+    	coupling_integral_data_[ integrals_size_[2] ].side = ngh_side;
         switch (cell.dim()) {
         case 1:
-        	cell_data_size = eval_points_->subset_size( 1, std::get<2>(multidim_assembly_)->coupling_integral_->get_subset_low_idx() );
-        	side_data_size = eval_points_->subset_size( 2, std::get<2>(multidim_assembly_)->coupling_integral_->get_subset_high_idx() ) / 3;
+        	coupling_integral_data_[ integrals_size_[2] ].bulk_subset_index = std::get<2>(multidim_assembly_)->coupling_integral_->get_subset_low_idx();
+        	coupling_integral_data_[ integrals_size_[2] ].side_subset_index = std::get<2>(multidim_assembly_)->coupling_integral_->get_subset_high_idx();
             break;
         case 2:
-        	cell_data_size = eval_points_->subset_size( 2, std::get<3>(multidim_assembly_)->coupling_integral_->get_subset_low_idx() );
-        	side_data_size = eval_points_->subset_size( 3, std::get<3>(multidim_assembly_)->coupling_integral_->get_subset_high_idx() ) / 4;
+            coupling_integral_data_[ integrals_size_[2] ].bulk_subset_index = std::get<3>(multidim_assembly_)->coupling_integral_->get_subset_low_idx();
+        	coupling_integral_data_[ integrals_size_[2] ].side_subset_index = std::get<3>(multidim_assembly_)->coupling_integral_->get_subset_high_idx();
             break;
     	}
-        coupling_integral_data_[ integrals_size_[2] ].set(cell, ngh_side, cell_data_size, side_data_size);
+        coupling_integral_data_[ integrals_size_[2] ].bulk_data_size =
+        		eval_points_->subset_size( cell.dim(), coupling_integral_data_[ integrals_size_[2] ].bulk_subset_index );
+        coupling_integral_data_[ integrals_size_[2] ].side_data_size =
+        		eval_points_->subset_size( ngh_side.dim(), coupling_integral_data_[ integrals_size_[2] ].side_subset_index );
+        coupling_integral_data_[ integrals_size_[2] ].side_start_point = coupling_integral_data_[ integrals_size_[2] ].side_data_size * ngh_side.side_idx();
         integrals_size_[2]++;
     }
 
-    void add_compute_fluxes_boundary(const DHCellSide &bdr_side) {
-        unsigned int data_size = 0;
+    void add_boundary_integral(const DHCellSide &bdr_side) {
+    	boundary_integral_data_[ integrals_size_[3] ].side = bdr_side;
         switch (bdr_side.dim()) {
         case 1:
-            data_size = eval_points_->subset_size( 1, std::get<1>(multidim_assembly_)->edge_integral_->get_subset_idx() ) / 2;
+        	boundary_integral_data_[ integrals_size_[3] ].subset_index = std::get<1>(multidim_assembly_)->edge_integral_->get_subset_idx();
             break;
         case 2:
-            data_size = eval_points_->subset_size( 2, std::get<2>(multidim_assembly_)->edge_integral_->get_subset_idx() ) / 3;
+        	boundary_integral_data_[ integrals_size_[3] ].subset_index = std::get<2>(multidim_assembly_)->edge_integral_->get_subset_idx();
             break;
         case 3:
-            data_size = eval_points_->subset_size( 3, std::get<3>(multidim_assembly_)->edge_integral_->get_subset_idx() ) / 4;
+        	boundary_integral_data_[ integrals_size_[3] ].subset_index = std::get<3>(multidim_assembly_)->edge_integral_->get_subset_idx();
             break;
     	}
-        boundary_integral_data_[ integrals_size_[3] ].set(bdr_side, data_size);
+        boundary_integral_data_[ integrals_size_[3] ].data_size =
+                eval_points_->subset_size( bdr_side.dim(), boundary_integral_data_[ integrals_size_[3] ].subset_index ) / (bdr_side.dim() +1);
+        boundary_integral_data_[ integrals_size_[3] ].start_point = boundary_integral_data_[ integrals_size_[3] ].data_size * bdr_side.side_idx();
         integrals_size_[3]++;
     }
 
@@ -287,7 +310,6 @@ public:
 
     void create_integrals(std::shared_ptr<EvalPoints> eval_points) {
         bulk_integral_ = eval_points->add_bulk<dim>(*quad_);
-        std::cout << "Create bulk integral: " << dim << ", " << eval_points->subset_size( dim, bulk_integral_->get_subset_idx() ) << std::endl;
         edge_integral_ = eval_points->add_edge<dim>(*quad_low_);
         if (dim>1) coupling_integral_ = eval_points->add_coupling<dim>(*quad_low_);
         boundary_integral_ = eval_points->add_boundary<dim>(*quad_low_);
