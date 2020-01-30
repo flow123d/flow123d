@@ -462,6 +462,25 @@ public:
 
 };
 
+/// Template specialization of dim=0
+template <class Model>
+class AssemblyDGNew<0, Model>
+{
+public:
+    typedef typename TransportDG<Model>::EqData EqDataDG;
+
+    /// Constructor.
+    AssemblyDGNew(std::shared_ptr<EqDataDG> data, TransportDG<Model> &model) {}
+
+    /// Destructor.
+    ~AssemblyDGNew() {}
+
+    void initialize() {}
+
+    friend class TransportDG<Model>;
+
+};
+
 
 
 #endif /* ASSEMBLY_DG_NEW_HH_ */
