@@ -64,6 +64,7 @@ template<unsigned int dim> class FiniteElement;
 template<unsigned int dim, unsigned int spacedim> class Mapping;
 class Quadrature;
 namespace Input { namespace Type { class Selection; } }
+class ElementCacheMap;
 
 /*class FEObjects {
 public:
@@ -220,6 +221,7 @@ public:
         /// Object for distribution of dofs.
         std::shared_ptr<DOFHandlerMultiDim> dh_;
 
+        ElementCacheMap element_cache_map_;
 	};
 
 

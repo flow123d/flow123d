@@ -105,6 +105,11 @@ public:
     template <unsigned int dim>
     std::shared_ptr<BoundaryIntegral> add_boundary(const Quadrature &);
 
+    /// Return maximal size of evaluation points objects .
+    inline unsigned int max_size() const {
+        return std::max( size(1), std::max( size(2), size(3) ) );
+    }
+
     /**
      * Registers point set from quadrature.
      * Returns an object referencing to the EvalPoints and list of its points.

@@ -725,7 +725,7 @@ void Field<spacedim, Value>::cache_allocate(std::shared_ptr<EvalSubset> sub_set)
 
 template<int spacedim, class Value>
 void Field<spacedim, Value>::cache_update(ElementCacheMap &cache_map) {
-    unsigned int dim = cache_map.dim();
+    /*unsigned int dim = cache_map.dim();
     auto update_cache_data = cache_map.update_cache_data();
     FieldValueCache<typename Value::element_type, typename Value::return_type> &field_value_cache = value_cache_[dim-1];
 
@@ -754,7 +754,7 @@ void Field<spacedim, Value>::cache_update(ElementCacheMap &cache_map) {
 		    unsigned int i_cache_el_end = subset_begin_pos + (bgn_it->second + reg_elm_it->second.size()) * points_per_element;
 			region_fields_[reg_elm_it->first]->cache_update(field_value_cache, i_cache_el_begin, i_cache_el_end, reg_elm_it->second);
         }
-    }
+    }*/
 }
 
 

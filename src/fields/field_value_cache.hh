@@ -26,8 +26,10 @@
 #include "system/armor.hh"
 #include "fields/eval_points.hh"
 
+class EvalPoints;
 class EvalSubset;
 class DHCellAccessor;
+class DHCellSide;
 class Mesh;
 template <int spacedim> class ElementAccessor;
 
@@ -168,9 +170,6 @@ public:
         /// Set of element indexes that wait for storing to cache.
         std::unordered_set<unsigned int> added_elements_;
 
-        /// Holds old and new indexes of elements preserved in cache.
-        std::unordered_map<unsigned int, unsigned int> preserved_elements_;
-
         /// Maps elements of different regions
         std::unordered_map<unsigned int, ElementSet> region_element_map_;
 
@@ -181,15 +180,17 @@ public:
     /// Constructor
     ElementCacheMap();
 
-    /// Init dimension data member
-    inline void init(unsigned int dim) {
-    	ASSERT_EQ(dim_, EvalPoints::undefined_dim).error("Repeated initialization!");
-    	this->ready_to_reading_ = true;
-    	this->dim_ = dim;
-    }
+    /// Destructor
+    ~ElementCacheMap();
+
+    /// Init cache
+    void init(std::shared_ptr<EvalPoints> eval_points);
 
     /// Adds element to added_elements_ set.
     void add(const DHCellAccessor &dh_cell);
+
+    /// Same as previous but passes DHCellSide as parameter.
+    void add(const DHCellSide &cell_side);
 
     /// Prepare data member before reading data to cache.
     void prepare_elements_to_update(Mesh *mesh);
@@ -197,33 +198,64 @@ public:
     /// Clean helper data after reading data to cache.
     void clear_elements_to_update();
 
-    /// Return dimension
-    inline unsigned int dim() const {
-        return dim_;
-    }
-
     /// Return update cache data helper
     inline const UpdateCacheHelper &update_cache_data() const {
         return update_data_;
     }
 
+    /**
+     * Set used element eval points to value ElementCacheMap::point_in_proggress
+     *
+     * @param dh_cell     Specified element
+     * @param subset_idx  Index of subset
+     * @param data_size   Number of points
+     * @param start_point Index of first used point in subset (e.g. subset holds eval points of all sides but EdgeIntegral represents only one of them)
+     */
+    void mark_used_eval_points(const DHCellAccessor &dh_cell, unsigned int subset_idx, unsigned int data_size, unsigned int start_point=0);
+
     /// Set index of cell in ElementCacheMap (or undef value if cell is not stored in cache).
     DHCellAccessor & operator() (DHCellAccessor &dh_cell) const;
 private:
+
+    /// Special constant (@see element_eval_points_map_).
+    static const int unused_point = -2;
+
+    /// Special constant (@see element_eval_points_map_).
+    static const int point_in_proggress = -1;
+
+    /// Reset all items of elements_eval_points_map
+    void clear_element_eval_points_map();
+
     /// Vector of element indexes stored in cache.
     std::vector<unsigned int> elm_idx_;
 
     /// Map of element indices stored in cache, allows reverse search to previous vector.
     std::unordered_map<unsigned int, unsigned int> cache_idx_;
 
-    /// Dimension (control data member)
-    unsigned int dim_;
+    /// Pointer to EvalPoints
+    std::shared_ptr<EvalPoints> eval_points_;
 
     /// Holds data used for cache update.
     UpdateCacheHelper update_data_;
 
     /// Flag is set down during update of cache when this can't be read
     bool ready_to_reading_;
+
+    /**
+     * Two dimensional array provides indexes to FieldValueCache.
+     *
+     * 1: Over elements holds in ElementCacheMap
+     * 2: Over EvalPoints for each element
+     *
+     * Array is filled in those three steps:
+     * a. Reset - all items are set to ElementCacheMap::unused_point
+     * b. Used eval points are set to ElementCacheMap::point_in_proggress
+     * c. Eval points marked in previous step are sequentially numbered
+     */
+    int **element_eval_points_map_;
+
+    /// Number of points stored in cache
+    unsigned int points_in_cache_;
 };
 
 

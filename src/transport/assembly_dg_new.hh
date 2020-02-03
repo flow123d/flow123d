@@ -27,6 +27,7 @@
 #include "coupling/balance.hh"
 #include "fields/eval_subset.hh"
 #include "fields/eval_points.hh"
+#include "fields/field_value_cache.hh"
 
 
 
@@ -92,9 +93,11 @@ public:
       active_integrals_(ActiveIntegrals::none), integrals_size_({0, 0, 0, 0})
     {
         eval_points_ = std::make_shared<EvalPoints>();
+        // first step - create integrals, then - initialize cache
         multidim_assembly_.get<1>()->create_integrals(eval_points_);
         multidim_assembly_.get<2>()->create_integrals(eval_points_);
         multidim_assembly_.get<3>()->create_integrals(eval_points_);
+        multidim_assembly_.get<1>()->data_->element_cache_map_.init(eval_points_);
     }
 
 	inline void set_active(int active) {
@@ -110,34 +113,41 @@ public:
 
     void assemble_stiffness_matrix(std::shared_ptr<DOFHandlerMultiDim> dh) {
         START_TIMER("assemble_stiffness");
+        ElementCacheMap &el_cache_map = multidim_assembly_.get<1>()->data_->element_cache_map_;
         for (auto cell : dh->local_range() )
         {
             // generic_assembly.check_integral_data();
             if (active_integrals_ & ActiveIntegrals::bulk)
-        	    if (cell.is_own()) // Not ghost
+        	    if (cell.is_own()) { // Not ghost
                     this->add_volume_integral(cell);
+                    el_cache_map.add(cell);
+        	    }
 
             for( DHCellSide cell_side : cell.side_range() ) {
                 if (active_integrals_ & ActiveIntegrals::boundary)
                     if (cell.is_own()) // Not ghost
                         if ( (cell_side.side().edge()->n_sides == 1) && (cell_side.side().cond() != NULL) ) {
                             this->add_boundary_integral(cell_side);
+                            el_cache_map.add(cell_side);
                             continue;
                         }
                 if (active_integrals_ & ActiveIntegrals::edge)
-                    if ( (cell_side.n_edge_sides() >= 2) && (cell_side.edge_sides().begin()->element().idx() == cell.elm_idx())) {
-                        for( DHCellSide edge_side : cell_side.edge_sides() )
+                    if ( (cell_side.n_edge_sides() >= 2) && (cell_side.edge_sides().begin()->element().idx() == cell.elm_idx()))
+                        for( DHCellSide edge_side : cell_side.edge_sides() ) {
                             this->add_edge_integral(edge_side);
-                    }
+                            el_cache_map.add(edge_side);
+                        }
             }
 
 	        if (active_integrals_ & ActiveIntegrals::coupling)
                 for( DHCellSide neighb_side : cell.neighb_sides() ) { // cell -> elm lower dim, neighb_side -> elm higher dim
                     if (cell.dim() != neighb_side.dim()-1) continue;
                     this->add_compute_fluxes_element_side(cell, neighb_side);
+                    el_cache_map.add(cell);
+                    el_cache_map.add(neighb_side);
                 }
 
-            this->insert_eval_points_from_integral_data();
+            this->insert_eval_points_from_integral_data(el_cache_map);
         }
         END_TIMER("assemble_stiffness");
     }
@@ -218,24 +228,29 @@ public:
         integrals_size_[3]++;
     }
 
-    void insert_eval_points_from_integral_data() {
+    void insert_eval_points_from_integral_data(ElementCacheMap &el_cache_map) {
         for (unsigned int i=0; i<integrals_size_[0]; ++i) {
             // add data to cache if there is free space, else return
+            el_cache_map.mark_used_eval_points(bulk_integral_data_[i].cell, bulk_integral_data_[i].subset_index, bulk_integral_data_[i].data_size);
             bulk_integral_data_[i].reset();
         }
         integrals_size_[0] = 0;
         for (unsigned int i=0; i<integrals_size_[1]; ++i) {
             // add data to cache if there is free space, else return
+            el_cache_map.mark_used_eval_points(edge_integral_data_[i].side.cell(), edge_integral_data_[i].subset_index, edge_integral_data_[i].data_size, edge_integral_data_[i].start_point);
             edge_integral_data_[i].reset();
         }
         integrals_size_[1] = 0;
         for (unsigned int i=0; i<integrals_size_[2]; ++i) {
             // add data to cache if there is free space, else return
+            el_cache_map.mark_used_eval_points(coupling_integral_data_[i].cell, coupling_integral_data_[i].bulk_subset_index, coupling_integral_data_[i].bulk_data_size);
+            el_cache_map.mark_used_eval_points(coupling_integral_data_[i].side.cell(), coupling_integral_data_[i].side_subset_index, coupling_integral_data_[i].side_data_size, coupling_integral_data_[i].side_start_point);
             coupling_integral_data_[i].reset();
         }
         integrals_size_[2] = 0;
         for (unsigned int i=0; i<integrals_size_[3]; ++i) {
             // add data to cache if there is free space, else return
+            el_cache_map.mark_used_eval_points(boundary_integral_data_[i].side.cell(), boundary_integral_data_[i].subset_index, boundary_integral_data_[i].data_size, boundary_integral_data_[i].start_point);
             boundary_integral_data_[i].reset();
         }
         integrals_size_[3] = 0;
