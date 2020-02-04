@@ -1208,7 +1208,7 @@ void Mesh::distribute_nodes() {
     std::vector<unsigned int> min_node_proc( this->n_nodes(), Mesh::undef_idx );
     std::vector<bool> ghost_node_flag( this->n_nodes(), false );
     unsigned int n_own_nodes=0, n_ghost_nodes=0; // number of own and ghost nodes
-    for ( elm : this->elements_range() ) {
+    for ( auto elm : this->elements_range() ) {
         i_proc = elm.proc();
         for (elm_node=0; elm_node<elm->n_nodes(); elm_node++) {
             i_node = elm->node_idx(elm_node);
