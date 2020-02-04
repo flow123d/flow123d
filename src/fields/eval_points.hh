@@ -29,7 +29,6 @@
 
 class Side;
 class Quadrature;
-class EvalSubset;
 class BulkIntegral;
 class EdgeIntegral;
 class CouplingIntegral;
@@ -109,20 +108,6 @@ public:
     inline unsigned int max_size() const {
         return std::max( size(1), std::max( size(2), size(3) ) );
     }
-
-    /**
-     * Registers point set from quadrature.
-     * Returns an object referencing to the EvalPoints and list of its points.
-     *
-     * TODO Old method will be replaced with method returning BulkIntegral
-     */
-    template <unsigned int dim>
-    std::shared_ptr<EvalSubset> add_bulk_old(const Quadrature &);
-
-    /// The same as add_bulk but for points on sides.
-    /// TODO Old method will be replaced with method returning EdgeIntegral
-    template <unsigned int dim>
-    std::shared_ptr<EvalSubset> add_side_old(const Quadrature &);
 
 private:
     class DimEvalPoints {

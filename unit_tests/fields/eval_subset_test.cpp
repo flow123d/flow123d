@@ -4,7 +4,7 @@
  *  Created on: Dec 03, 2019
  *      Author: David Flanderka
  *
- *  Tests EvalPoints, EvalSubset, BulkPoint and SidePoint classes
+ *  Tests EvalPoints, Integral classes ...
  */
 
 #define TEST_USE_MPI

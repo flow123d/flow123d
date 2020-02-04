@@ -94,57 +94,6 @@ std::shared_ptr<BoundaryIntegral> EvalPoints::add_boundary(const Quadrature &qua
     return std::make_shared<BoundaryIntegral>(this->add_edge<dim>(quad));
 }
 
-template <unsigned int dim>
-std::shared_ptr<EvalSubset> EvalPoints::add_bulk_old(const Quadrature &quad)
-{
-    ASSERT_EQ(dim, quad.dim());
-    std::shared_ptr<EvalSubset> bulk_set = std::make_shared<EvalSubset>(shared_from_this(), dim);
-    dim_eval_points_[dim-1].add_local_points<dim>( quad.get_points() );
-    dim_eval_points_[dim-1].add_subset();
-    return bulk_set;
-}
-
-template <unsigned int dim>
-std::shared_ptr<EvalSubset> EvalPoints::add_side_old(const Quadrature &quad)
-{
-    ASSERT_EQ(dim, quad.dim()+1);
-	unsigned int old_data_size=this->size(dim), new_data_size; // interval of side subset data
-	unsigned int points_per_side = quad.make_from_side<dim>(0, 0).get_points().size();
-	unsigned int n_side_permutations = RefElement<dim>::n_side_permutations;
-
-	std::shared_ptr<EvalSubset> side_set = std::make_shared<EvalSubset>(shared_from_this(), dim, n_side_permutations, points_per_side);
-	unsigned int*** perm_indices = side_set->perm_indices_;
-
-    // permutation 0
-    for (unsigned int i=0; i<dim+1; ++i) {  // sides
-        Quadrature high_dim_q = quad.make_from_side<dim>(i, 0);
-        dim_eval_points_[dim-1].add_local_points<dim>( high_dim_q.get_points() );
-    }
-    dim_eval_points_[dim-1].add_subset();
-    new_data_size = this->size(dim);
-    unsigned int i_data=old_data_size;
-    for (unsigned int i_side=0; i_side<dim+1; ++i_side) {
-        for (unsigned int i_point=0; i_point<points_per_side; ++i_point) {
-        	perm_indices[i_side][0][i_point] = i_data;
-        	++i_data;
-        }
-    }
-
-    // permutation 1...N
-    for (unsigned int i_perm=1; i_perm<n_side_permutations; ++i_perm) {
-        for (unsigned int i_side=0; i_side<dim+1; ++i_side) {
-            Quadrature high_dim_q = quad.make_from_side<dim>(i_side, i_perm);
-            const Armor::Array<double> & quad_points = high_dim_q.get_points();
-            for (unsigned int i_point=0; i_point<quad_points.size(); ++i_point) {
-                perm_indices[i_side][i_perm][i_point] = dim_eval_points_[dim-1].find_permute_point<dim>( quad_points.vec<dim>(i_point), old_data_size, new_data_size );
-            }
-        }
-    }
-
-    return side_set;
-}
-
-
 EvalPoints::DimEvalPoints::DimEvalPoints(unsigned int dim)
 : local_points_(dim), n_subsets_(0), dim_(dim)
 {
@@ -191,12 +140,6 @@ template std::shared_ptr<CouplingIntegral> EvalPoints::add_coupling<3>(const Qua
 template std::shared_ptr<BoundaryIntegral> EvalPoints::add_boundary<1>(const Quadrature &);
 template std::shared_ptr<BoundaryIntegral> EvalPoints::add_boundary<2>(const Quadrature &);
 template std::shared_ptr<BoundaryIntegral> EvalPoints::add_boundary<3>(const Quadrature &);
-template std::shared_ptr<EvalSubset> EvalPoints::add_bulk_old<1>(const Quadrature &);
-template std::shared_ptr<EvalSubset> EvalPoints::add_bulk_old<2>(const Quadrature &);
-template std::shared_ptr<EvalSubset> EvalPoints::add_bulk_old<3>(const Quadrature &);
-template std::shared_ptr<EvalSubset> EvalPoints::add_side_old<1>(const Quadrature &);
-template std::shared_ptr<EvalSubset> EvalPoints::add_side_old<2>(const Quadrature &);
-template std::shared_ptr<EvalSubset> EvalPoints::add_side_old<3>(const Quadrature &);
 template void EvalPoints::DimEvalPoints::add_local_points<1>(const Armor::Array<double> &);
 template void EvalPoints::DimEvalPoints::add_local_points<2>(const Armor::Array<double> &);
 template void EvalPoints::DimEvalPoints::add_local_points<3>(const Armor::Array<double> &);
