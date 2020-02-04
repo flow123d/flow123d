@@ -153,8 +153,8 @@ TEST_F(FieldEvalConstantTest, evaluate) {
     std::shared_ptr<EvalSubset> side_eval = feval->add_side_old<3>(*q_side );
     //std::shared_ptr<EvalSubset> this->ngh_side_eval;
 
-    data_->cache_allocate(mass_eval);
-    data_->cache_allocate(side_eval);
+    data_->cache_allocate(feval);
+    data_->cache_allocate(feval);
 
     std::vector<unsigned int> cell_idx = {3, 4, 5, 9};
     std::vector<double>       expected_scalar = {0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5};

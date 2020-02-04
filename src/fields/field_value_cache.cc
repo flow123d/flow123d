@@ -32,31 +32,18 @@
 
 template<class elm_type, class return_type>
 FieldValueCache<elm_type, return_type>::FieldValueCache(unsigned int n_rows, unsigned int n_cols)
-: data_(n_rows, n_cols), eval_points_(nullptr), dim_(EvalPoints::undefined_dim) {
-    used_subsets_.fill(false);
-    subset_starts_.fill(-1);
-}
+: data_(n_rows, n_cols) {}
 
 template<class elm_type, class return_type>
 FieldValueCache<elm_type, return_type>::~FieldValueCache() {}
 
 template<class elm_type, class return_type>
-void FieldValueCache<elm_type, return_type>::init(std::shared_ptr<EvalPoints> eval_points, unsigned int dim, unsigned int n_cache_elements) {
-    ASSERT_EQ(dim_, EvalPoints::undefined_dim).error("Repeated initialization!\n");
+void FieldValueCache<elm_type, return_type>::init(std::shared_ptr<EvalPoints> eval_points, unsigned int n_cache_elements) {
+    ASSERT_EQ(data_.size(), 0).error("Repeated initialization!\n");
 
-    dim_ = dim;
-    this->n_cache_elements_ = n_cache_elements;
-    eval_points_ = eval_points;
-    data_.reinit(n_cache_elements * eval_points_->size(dim_));
-    data_.resize(n_cache_elements * eval_points_->size(dim_));
-    subset_starts_[0] = 0;
-    for (uint i=0; i<eval_points_->n_subsets(dim_); ++i)
-    	subset_starts_[i+1] = eval_points_->subset_end(dim_, i) * n_cache_elements;
-}
-
-template<class elm_type, class return_type>
-void FieldValueCache<elm_type, return_type>::mark_used(std::shared_ptr<EvalSubset> sub_set) {
-    used_subsets_[sub_set->get_subset_idx()] = true;
+    this->n_cache_points_ = n_cache_elements * eval_points->max_size();
+    data_.reinit(n_cache_points_);
+    data_.resize(n_cache_points_);
 }
 
 

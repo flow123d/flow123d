@@ -60,7 +60,7 @@ public:
     EXPECT_EQ(value_cache.subset_end(1), 16*ElementCacheMap::n_cached_elements);
     EXPECT_EQ(value_cache.subset_size(1), 12*ElementCacheMap::n_cached_elements);
 
-    value_cache.mark_used(side_eval);
+    //value_cache.mark_used(side_eval);
     EXPECT_FALSE(value_cache.used_subsets()[0]);
     EXPECT_TRUE(value_cache.used_subsets()[1]);
 }*/

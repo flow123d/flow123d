@@ -27,7 +27,7 @@
 #include "fields/eval_points.hh"
 
 class EvalPoints;
-class EvalSubset;
+class ElementCacheMap;
 class DHCellAccessor;
 class DHCellSide;
 class Mesh;
@@ -50,48 +50,12 @@ public:
     ~FieldValueCache();
 
     /// Initialize cache
-    void init(std::shared_ptr<EvalPoints> eval_points, unsigned int dim, unsigned int n_cache_elements);
-
-    /// Marks the used local points
-    void mark_used(std::shared_ptr<EvalSubset> sub_set);
-
-    /// Getter for subsets of used points
-    inline const std::array<bool, EvalPoints::max_subsets> &used_subsets() const {
-        return used_subsets_;
-    }
-
-    /// Return begin index of appropriate subset data.
-    inline int subset_begin(unsigned int idx) const {
-        ASSERT_LT_DBG(idx, n_subsets());
-    	return subset_starts_[idx];
-    }
-
-    /// Return end index of appropriate subset data.
-    inline int subset_end(unsigned int idx) const {
-        ASSERT_LT_DBG(idx, n_subsets());
-    	return subset_starts_[idx+1];
-    }
-
-    /// Return number of local points corresponding to subset.
-    inline int subset_size(unsigned int idx) const {
-        ASSERT_LT_DBG(idx, n_subsets());
-    	return subset_starts_[idx+1] - subset_starts_[idx];
-    }
-
-    /// Return number of subsets.
-    inline unsigned int n_subsets() const {
-        return eval_points_->n_subsets(dim_);
-    }
+    void init(std::shared_ptr<EvalPoints> eval_points, unsigned int n_cache_elements);
 
     /// Return size of data cache (number of stored field values)
     inline unsigned int size() const {
         return data_.size();
 
-    }
-
-    /// Return dimension
-    inline unsigned int dim() const {
-        return dim_;
     }
 
     /// Return data vector.
@@ -105,19 +69,15 @@ public:
         return data_.mat<nr, nc>(i);
     }
 
-    /// Return data vector.
-    inline std::shared_ptr<EvalPoints> eval_points() const {
-        return eval_points_;
-    }
-
     /// Return number of elements that data is stored in cache.
-    inline unsigned int n_cache_elements() const {
-        return n_cache_elements_;
+    inline unsigned int n_cache_points() const {
+        return n_cache_points_;
     }
 
     /// Return value of evaluation point given by DHCell and local point idx in EvalPoints.
     template<uint nRows, uint nCols>
-    typename arma::Mat<elm_type>::template fixed<nRows, nCols> get_value(DHCellAccessor dh_cell, unsigned int subset_idx, unsigned int eval_points_idx);
+    typename arma::Mat<elm_type>::template fixed<nRows, nCols> get_value(const ElementCacheMap &map,
+            const DHCellAccessor &dh_cell, unsigned int eval_points_idx);
 
 private:
     /**
@@ -131,20 +91,8 @@ private:
      */
     Armor::Array<elm_type> data_;
 
-    /// Holds if blocks of local points are used or not.
-    std::array<bool, EvalPoints::max_subsets> used_subsets_;
-
-    /// Indices of subsets begin and end position in data array.
-    std::array<int, EvalPoints::max_subsets+1> subset_starts_;
-
-    /// Pointer to EvalPoints.
-    std::shared_ptr<EvalPoints> eval_points_;
-
-    /// Maximal number of elements stored in cache.
-    unsigned int n_cache_elements_;
-
-    /// Dimension (control data member).
-    unsigned int dim_;
+    /// Maximal number of points stored in cache.
+    unsigned int n_cache_points_;
 };
 
 
@@ -212,6 +160,12 @@ public:
      * @param start_point Index of first used point in subset (e.g. subset holds eval points of all sides but EdgeIntegral represents only one of them)
      */
     void mark_used_eval_points(const DHCellAccessor &dh_cell, unsigned int subset_idx, unsigned int data_size, unsigned int start_point=0);
+
+    /// Return index of point in FieldValueCache
+    inline int get_field_value_cache_index(unsigned int elm_idx, unsigned int loc_point_idx) const {
+        ASSERT_PTR_DBG(element_eval_points_map_);
+        return element_eval_points_map_[elm_idx][loc_point_idx];
+    }
 
     /// Set index of cell in ElementCacheMap (or undef value if cell is not stored in cache).
     DHCellAccessor & operator() (DHCellAccessor &dh_cell) const;

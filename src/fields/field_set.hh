@@ -240,8 +240,8 @@ public:
     /**
      * Collective interface to @p FieldCommon::cache_allocate().
      */
-    void cache_allocate(std::shared_ptr<EvalSubset> sub_set) {
-        for(auto field : field_list) field->cache_allocate(sub_set);
+    void cache_allocate(std::shared_ptr<EvalPoints> eval_points) {
+        for(auto field : field_list) field->cache_allocate(eval_points);
     }
 
     /**

@@ -377,8 +377,8 @@ bool MultiField<spacedim, Value>::MultiFieldFactory::is_active_field_descriptor(
 
 
 template<int spacedim, class Value>
-void MultiField<spacedim, Value>::cache_allocate(std::shared_ptr<EvalSubset> sub_set) {
-    for(auto &field : sub_fields_) field.cache_allocate(sub_set);
+void MultiField<spacedim, Value>::cache_allocate(std::shared_ptr<EvalPoints> eval_points) {
+    for(auto &field : sub_fields_) field.cache_allocate(eval_points);
 }
 
 
