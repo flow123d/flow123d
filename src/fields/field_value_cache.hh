@@ -65,8 +65,8 @@ public:
 
     /// Return data vector.
     template<uint nr, uint nc = 1>
-    inline typename arma::Mat<elm_type>::template fixed<nr, nc> &get(uint i) {
-        return data_.mat<nr, nc>(i);
+    typename arma::Mat<elm_type>::template fixed<nr, nc> &get(uint i) {
+        return data_.template mat<nr, nc>(i);
     }
 
     /// Return number of elements that data is stored in cache.
@@ -169,7 +169,7 @@ public:
 
     /// Set index of cell in ElementCacheMap (or undef value if cell is not stored in cache).
     DHCellAccessor & operator() (DHCellAccessor &dh_cell) const;
-private:
+protected:
 
     /// Special constant (@see element_eval_points_map_).
     static const int unused_point = -2;
