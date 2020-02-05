@@ -443,7 +443,7 @@ void Balance::add_mass_values(unsigned int quantity_idx,
 		const DHCellAccessor &dh_cell,
 		const LocDofVec &loc_dof_indices,
 		const std::vector<double> &mat_values,
-		const double &vec_value)
+		double vec_value)
 {
 	ASSERT_DBG(allocation_done_);
     if (! balance_on_) return;
@@ -474,7 +474,7 @@ void Balance::add_flux_values(unsigned int quantity_idx,
 		const DHCellSide &side,
 		const LocDofVec &loc_dof_indices,
 		const std::vector<double> &mat_values,
-		const double &vec_value)
+		double vec_value)
 {
 	ASSERT_DBG(allocation_done_);
     if (! balance_on_) return;
@@ -507,8 +507,8 @@ void Balance::add_flux_values(unsigned int quantity_idx,
 void Balance::add_source_values(unsigned int quantity_idx,
 		unsigned int region_idx,
 		const LocDofVec &loc_dof_indices,
-		const vector<double> &mat_values,
-        const vector<double> &vec_values)
+		const vector<double> &mult_mat_values,
+        const vector<double> &add_mat_values)
 {
     ASSERT_DBG(allocation_done_);
     if (! balance_on_) return;
@@ -520,7 +520,7 @@ void Balance::add_source_values(unsigned int quantity_idx,
 			loc_dof_indices.memptr(),
 			1,
 			reg_array,
-			&(mat_values[0]),
+			&(mult_mat_values[0]),
 			ADD_VALUES));
     
     chkerr_assert(MatSetValues(region_source_rhs_[quantity_idx],
@@ -528,7 +528,7 @@ void Balance::add_source_values(unsigned int quantity_idx,
 			loc_dof_indices.memptr(),
 			1,
 			reg_array,
-			&(vec_values[0]),
+			&(add_mat_values[0]),
 			ADD_VALUES));
 }
 

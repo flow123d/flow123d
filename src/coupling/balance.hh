@@ -264,46 +264,57 @@ public:
 
 	
 	/**
-	 * Adds elements into matrix for computing (outgoing) flux.
+	 * Adds elements into matrix for computing mass.
+	 * The mass matrix M is in format [n_dofs x n_bulk_regions] for each quantity.
+	 * The mass vector mv is in format [n_bulk_regions] for each quantity.
+	 * The region mass is later computed using transpose multiplication (M'*u + mv)[r].
+	 * See class @p Balance description above for details.
 	 * @param quantity_idx  Index of quantity.
-	 * @param side          DHCellSide iterator.
+	 * @param dh_cell       Dofhandler cell accessor.
 	 * @param loc_dof_indices   Local dof indices (to the solution vector) to be added.
-	 * @param mat_values    Values to be added into matrix.
-     * @param vec_value     Value to be added into vector.
+	 * @param mat_values    Values to be added into matrix M.
+     * @param vec_value     Value to be added into vector mv.
 	 */
 	void add_mass_values(unsigned int quantity_idx,
 			const DHCellAccessor &dh_cell,
 			const LocDofVec &loc_dof_indices,
 			const std::vector<double> &mat_values,
-			const double &vec_value);
+			double vec_value);
 
 	/**
 	 * Adds elements into matrix for computing (outgoing) flux.
+	 * The flux matrix F is in format [n_boundary_edges x n_dofs] for each quantity.
+	 * The flux vector fv is in format [n_boundary_edges] for each quantity.
+	 * See class @p Balance description above for details.
 	 * @param quantity_idx  Index of quantity.
 	 * @param side          DHCellSide iterator.
 	 * @param loc_dof_indices   Local dof indices (to the solution vector) to be added.
-	 * @param mat_values    Values to be added into matrix.
-     * @param vec_value     Value to be added into vector.
+	 * @param mat_values    Values to be added into matrix F.
+     * @param vec_value     Value to be added into vector fv.
 	 */
 	void add_flux_values(unsigned int quantity_idx,
 			const DHCellSide &side,
 			const LocDofVec &loc_dof_indices,
 			const std::vector<double> &mat_values,
-			const double &vec_value);
+			double vec_value);
 
     /**
 	 * Adds elements into matrix and vector for computing source.
+	 * The source region matrix S is in format [n_dofs x n_bulk_regions] for each quantity (multiplies solution).
+	 * The source region rhs matrix SV is in format [n_dofs x n_bulk_regions] for each quantity (addition).
+	 * The region source is then computed as (S'(q) * solution + sv(q))[r], while sv(q) being column sum of SV(q).
+	 * The source term for a specific region and quantity is then
 	 * @param quantity_idx  Index of quantity.
 	 * @param region_idx    Index of bulk region.
-	 * @param dof_indices   Local dof indices to be added.
-	 * @param mat_values    Values to be added into matrix.
-     * @param vec_values    Values to be added into vector.
+	 * @param loc_dof_indices   Local dof indices (to the solution vector) to be added.
+	 * @param mult_mat_values   Values to be added into matrix S.
+     * @param add_mat_values    Values to be added into matrix SV.
 	 */
 	void add_source_values(unsigned int quantity_idx,
 			unsigned int region_idx,
 			const LocDofVec &loc_dof_indices,
-			const std::vector<double> &mat_values,
-            const std::vector<double> &vec_values);
+			const std::vector<double> &mult_mat_values,
+            const std::vector<double> &add_mat_values);
 
 
 	/// This method must be called after assembling the matrix for computing mass.
