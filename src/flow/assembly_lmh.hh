@@ -330,7 +330,7 @@ protected:
             
             // ** Apply BCUpdate BC type. **
             // Force Dirichlet type during the first iteration of the unsteady case.
-            if (switch_dirichlet || ad_->force_bc_switch ) {
+            if (switch_dirichlet || ad_->force_no_neumann_bc ) {
                 //DebugOut().fmt("x: {}, dirich, bcp: {}\n", b_ele.centre()[0], bc_pressure);
                 loc_schur_.set_solution(sidx, bc_pressure);
                 dirichlet_edge[sidx] = 1;
@@ -350,7 +350,7 @@ protected:
             double solution_head = ad_->p_edge_solution[loc_schur_.row_dofs[sidx]];
 
             // Force Robin type during the first iteration of the unsteady case.
-            if (solution_head > bc_switch_pressure  || ad_->force_bc_switch) {
+            if (solution_head > bc_switch_pressure  || ad_->force_no_neumann_bc) {
                 // Robin BC
                 //DebugOut().fmt("x: {}, robin, bcp: {}\n", b_ele.centre()[0], bc_pressure);
                 loc_system_.add_value(edge_row, edge_row,

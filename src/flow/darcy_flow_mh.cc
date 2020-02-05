@@ -732,7 +732,7 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembly& assembler)
     START_TIMER("DarcyFlowMH_Steady::assembly_steady_mh_matrix");
 
     // set auxiliary flag for switchting Dirichlet like BC
-    data_->force_bc_switch = use_steady_assembly_ && (nonlinear_iteration_ == 0);
+    data_->force_no_neumann_bc = use_steady_assembly_ && (nonlinear_iteration_ == 0);
     data_->n_schur_compls = n_schur_compls;
     
 
