@@ -249,7 +249,9 @@ public:
      */
     void cache_update(ElementCacheMap &cache_map, Mesh *mesh) {
         cache_map.prepare_elements_to_update(mesh);
-	    //for(auto field : field_list) field->cache_update(cache_map);
+        // register integrals
+        cache_map.create_elements_points_map();
+	    // for(auto field : field_list) field->cache_update(cache_map);
         cache_map.clear_elements_to_update();
     }
 

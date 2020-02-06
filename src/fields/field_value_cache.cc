@@ -51,8 +51,6 @@ void FieldValueCache<elm_type, return_type>::init(std::shared_ptr<EvalPoints> ev
  * Implementation of ElementCacheMap methods
  */
 
-const unsigned int ElementCacheMap::n_cached_elements = 20;
-
 const unsigned int ElementCacheMap::undef_elem_idx = std::numeric_limits<unsigned int>::max();
 
 
@@ -119,21 +117,26 @@ void ElementCacheMap::prepare_elements_to_update(Mesh *mesh) {
     }
 
     // Set new elements to elm_idx_, cache_idx_ sorted by region
-	unsigned int n_stored_element = 0;
+	unsigned int n_stored_element = 0, n_region = 0;
+	update_data_.region_cache_indices_range_[0] = 0;
     for (auto region_it = update_data_.region_element_map_.begin(); region_it != update_data_.region_element_map_.end(); region_it++) {
-        update_data_.region_cache_begin_[region_it->first] = cache_idx_.size();
+        update_data_.region_cache_indices_map_[region_it->first] = n_region;
         for (auto elm : region_it->second) {
             unsigned int elm_idx = elm.idx();
             cache_idx_[elm_idx] = n_stored_element;
             elm_idx_[n_stored_element] = elm_idx;
             n_stored_element++;
         }
+        update_data_.region_cache_indices_range_[n_region+1] = n_stored_element;
+        n_region++;
     }
 }
 
 
-void ElementCacheMap::clear_elements_to_update() {
+void ElementCacheMap::create_elements_points_map() {
     unsigned int size = this->eval_points_->max_size();
+    unsigned int idx_to_region = 1;
+    unsigned int region_last_elm = update_data_.region_cache_indices_range_[idx_to_region];
     points_in_cache_ = 0;
 	for (unsigned int i_elm=0; i_elm<ElementCacheMap::n_cached_elements; ++i_elm) {
 	    for (unsigned int i_point=0; i_point<size; ++i_point) {
@@ -142,11 +145,20 @@ void ElementCacheMap::clear_elements_to_update() {
 	            points_in_cache_++;
 	        }
 	    }
+        if (region_last_elm==i_elm+1) {
+            update_data_.region_cache_indices_range_[idx_to_region] = points_in_cache_;
+        	idx_to_region++;
+        	region_last_elm = update_data_.region_cache_indices_range_[idx_to_region];
+        }
 	}
+}
+
+
+void ElementCacheMap::clear_elements_to_update() {
 
 	update_data_.added_elements_.clear();
 	update_data_.region_element_map_.clear(); // maybe do not clear - necessary for further using
-	update_data_.region_cache_begin_.clear();
+	update_data_.region_cache_indices_map_.clear();
 	ready_to_reading_ = true; // end of cache update
 }
 

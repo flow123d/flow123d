@@ -107,7 +107,7 @@ public:
 	typedef std::vector<ElementAccessor<3>> ElementSet;
 
     /// Number of cached elements which values are stored in cache.
-    static const unsigned int n_cached_elements;
+    static constexpr unsigned int n_cached_elements = 20;
 
     /// Index of invalid element in cache.
     static const unsigned int undef_elem_idx;
@@ -121,8 +121,11 @@ public:
         /// Maps elements of different regions
         std::unordered_map<unsigned int, ElementSet> region_element_map_;
 
-        /// Maps of begin positions in cache of different regions
-        std::unordered_map<unsigned int, unsigned int> region_cache_begin_;
+        /// Maps of positions of different regions in cache
+        std::unordered_map<unsigned int, unsigned int> region_cache_indices_map_;
+
+        /// Maps of begin and end positions of different regions data in cache
+        std::array<unsigned int, ElementCacheMap::n_cached_elements+1> region_cache_indices_range_;
     };
 
     /// Constructor
@@ -142,6 +145,9 @@ public:
 
     /// Prepare data member before reading data to cache.
     void prepare_elements_to_update(Mesh *mesh);
+
+    /// Create map of used eval points on cached elements.
+    void create_elements_points_map();
 
     /// Clean helper data after reading data to cache.
     void clear_elements_to_update();

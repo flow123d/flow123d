@@ -69,18 +69,21 @@ TEST_F(FieldValueCacheTest, field_value_cache) {
         }
 
     this->prepare_elements_to_update(mesh_);
+
+    // mark used points
     this->mark_used_eval_points(dh_cell, bulk_eval->get_subset_idx(), 4);
     for( DHCellSide cell_side : dh_cell.side_range() )
       if ( cell_side.n_edge_sides() >= 2 )
     	for( DHCellSide edge_side : cell_side.edge_sides() ) {
             this->mark_used_eval_points(edge_side.cell(), edge_eval->get_subset_idx(), 3, 3*edge_side.side_idx());
         }
-    this->clear_elements_to_update();
+    this->create_elements_points_map();
 
     // set value
     EXPECT_EQ(this->points_in_cache_, 16);
     Armor::ArmaMat<double, 1, 1> const_val{0.5};
     for (unsigned int i=0; i<this->points_in_cache_; ++i) value_cache.data().set(i) = const_val;
+    this->clear_elements_to_update();
 
     // check value
     dh_cell = (*this)(dh_cell);
@@ -113,8 +116,9 @@ TEST_F(FieldValueCacheTest, element_cache_map) {
     EXPECT_EQ(update_cache_data.region_element_map_.size(), 1);
     EXPECT_TRUE(update_cache_data.region_element_map_.find(1)!=update_cache_data.region_element_map_.end());
     EXPECT_EQ(update_cache_data.region_element_map_.find(1)->second.size(), 2);
-    EXPECT_EQ(update_cache_data.region_cache_begin_.find(1)->second, 0);
 
+    this->create_elements_points_map();
+    EXPECT_EQ(update_cache_data.region_cache_indices_map_.size(), 1);
     this->clear_elements_to_update();
     EXPECT_EQ(update_cache_data.added_elements_.size(), 0);
     EXPECT_EQ(update_cache_data.region_element_map_.size(), 0);
@@ -139,6 +143,10 @@ TEST_F(FieldValueCacheTest, element_cache_map) {
             for( DHCellSide edge_side : cell_side.edge_sides() ) {
                 this->mark_used_eval_points(edge_side.cell(), edge_eval->get_subset_idx(), 3, 3*edge_side.side_idx());
             }
+    this->create_elements_points_map();
+    EXPECT_EQ(update_cache_data.region_cache_indices_map_.size(), 1);
+    EXPECT_EQ(update_cache_data.region_cache_indices_range_[0], 0);
+    EXPECT_EQ(update_cache_data.region_cache_indices_range_[1], 12);
     this->clear_elements_to_update();
     dh_cell2 = (*this)(dh_cell2);
     EXPECT_EQ(dh_cell2.element_cache_index(), 1);
@@ -157,6 +165,8 @@ TEST_F(FieldValueCacheTest, element_cache_map) {
     EXPECT_EQ(update_cache_data.region_element_map_.find(1)->second.size(), 2);
     EXPECT_EQ(update_cache_data.region_element_map_.find(3)->second.size(), 1);
 
+    this->create_elements_points_map();
+    EXPECT_EQ(update_cache_data.region_cache_indices_map_.size(), 2);
     this->clear_elements_to_update();
     dh_cell1 = (*this)(dh_cell1);
     EXPECT_EQ(dh_cell1.element_cache_index(), 2);
