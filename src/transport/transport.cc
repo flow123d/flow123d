@@ -403,53 +403,48 @@ void ConvectionTransport::set_boundary_conditions()
 {
     START_TIMER ("set_boundary_conditions");
 
-    ElementAccessor<3> elm;
-
-    unsigned int sbi, loc_el;
+    unsigned int sbi;
     
     // Assembly bcvcorr vector
     for(sbi=0; sbi < n_substances(); sbi++) VecZeroEntries(bcvcorr[sbi]);
 
    	balance_->start_flux_assembly(subst_idx);
 
-    for (loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
-        DHCellAccessor dh_cell(dh_.get(), loc_el);
-        elm = mesh_->element_accessor( el_4_loc[loc_el] );
-        if (elm->boundary_idx_ != NULL) {
-        	LongIdx new_i = row_4_el[ elm.idx() ];
+    for ( DHCellAccessor dh_cell : dh_->own_range() )
+    {
+        ElementAccessor<3> elm = dh_cell.elm();
+        // we have currently zero order P_Disc FE
+        ASSERT_DBG(dh_cell.get_loc_dof_indices().size() == 1);
+        Idx local_p0_dof = dh_cell.get_loc_dof_indices()[0];
+        LongIdx glob_p0_dof = dh_->get_local_to_global_map()[local_p0_dof];
 
-        	for (unsigned int si=0; si<elm->n_sides(); si++) {
-                Boundary *b = elm.side(si)->cond();
-                if (b != NULL) {
-                    DHCellSide dh_side(dh_cell, si);
-                    double flux = this->side_flux(dh_side);
-                    if (flux < 0.0) {
-                        double aij = -(flux / elm.measure() );
+        for(DHCellSide dh_side: dh_cell.side_range()) {
+            if (dh_side.cond() != NULL) {
+                ElementAccessor<3> bc_elm = dh_side.cond()->element_accessor();
+                double flux = this->side_flux(dh_side);
+                if (flux < 0.0) {
+                    double aij = -(flux / elm.measure() );
 
-                        for (sbi=0; sbi<n_substances(); sbi++)
-                        {
-                            double value = data_.bc_conc[sbi].value( b->element_accessor().centre(), b->element_accessor() );
-                            
-                            VecSetValue(bcvcorr[sbi], new_i, value * aij, ADD_VALUES);
-
-                            // CAUTION: It seems that PETSc possibly optimize allocated space during assembly.
-                            // So we have to add also values that may be non-zero in future due to changing velocity field.
-                            balance_->add_flux_matrix_values(subst_idx[sbi], elm.side(si), {row_4_el[el_4_loc[loc_el]]}, {0.});
-                            balance_->add_flux_vec_value(subst_idx[sbi], elm.side(si), flux*value);
-                        }
-                    } else {
-                        for (sbi=0; sbi<n_substances(); sbi++)
-                            VecSetValue(bcvcorr[sbi], new_i, 0, ADD_VALUES);
+                    for (sbi=0; sbi<n_substances(); sbi++)
+                    {
+                        double value = data_.bc_conc[sbi].value( bc_elm.centre(), bc_elm );
                         
-                        for (unsigned int sbi=0; sbi<n_substances(); sbi++)
-                        {
-                            balance_->add_flux_matrix_values(subst_idx[sbi], elm.side(si), {row_4_el[el_4_loc[loc_el]]}, {flux});
-                            balance_->add_flux_vec_value(subst_idx[sbi], elm.side(si), 0);
-                        }
+                        VecSetValue(bcvcorr[sbi], glob_p0_dof, value * aij, ADD_VALUES);
+
+                        // CAUTION: It seems that PETSc possibly optimize allocated space during assembly.
+                        // So we have to add also values that may be non-zero in future due to changing velocity field.
+                        balance_->add_flux_values(subst_idx[sbi], dh_side,
+                                                  {local_p0_dof}, {0.0}, flux*value);
                     }
+                } else {
+                    for (sbi=0; sbi<n_substances(); sbi++)
+                        VecSetValue(bcvcorr[sbi], glob_p0_dof, 0, ADD_VALUES);
+                    
+                    for (unsigned int sbi=0; sbi<n_substances(); sbi++)
+                        balance_->add_flux_values(subst_idx[sbi], dh_side,
+                                                  {local_p0_dof}, {flux}, 0.0);
                 }
             }
-
         }
     }
 
@@ -470,11 +465,7 @@ void ConvectionTransport::set_boundary_conditions()
 void ConvectionTransport::compute_concentration_sources() {
 
   //temporary variables
-  unsigned int loc_el, sbi;
   double csection, source, diag;
-
-  ElementAccessor<3> ele_acc;
-  arma::vec3 p;
     
   //TODO: would it be possible to check the change in data for chosen substance? (may be in multifields?)
   
@@ -487,34 +478,39 @@ void ConvectionTransport::compute_concentration_sources() {
         START_TIMER("sources_reinit"); 
         balance_->start_source_assembly(subst_idx);
         
-        for (loc_el = 0; loc_el < el_ds->lsize(); loc_el++) 
+        for ( DHCellAccessor dh_cell : dh_->own_range() )
         {
-            ele_acc = mesh_->element_accessor( el_4_loc[loc_el] );
-            p = ele_acc.centre();
-            csection = data_.cross_section.value(p, ele_acc);
+            ElementAccessor<3> elm = dh_cell.elm();
+            // we have currently zero order P_Disc FE
+            ASSERT_DBG(dh_cell.get_loc_dof_indices().size() == 1);
+            Idx local_p0_dof = dh_cell.get_loc_dof_indices()[0];
+
+            arma::vec3 center = elm.centre();
+            csection = data_.cross_section.value(center, elm);
             
             // read for all substances
             double max_cfl=0;
-            for (sbi = 0; sbi < n_substances(); sbi++)
+            for (unsigned int sbi = 0; sbi < n_substances(); sbi++)
             {      
-                double src_sigma = data_.sources_sigma[sbi].value(p, ele_acc);
+                double src_sigma = data_.sources_sigma[sbi].value(center, elm);
                 
-                source = csection * (data_.sources_density[sbi].value(p, ele_acc) + src_sigma * data_.sources_conc[sbi].value(p, ele_acc));
+                source = csection * (data_.sources_density[sbi].value(center, elm)
+                         + src_sigma * data_.sources_conc[sbi].value(center, elm));
                 // addition to RHS
-                sources_corr[sbi][loc_el] = source;
+                sources_corr[sbi][local_p0_dof] = source;
                 // addition to diagonal of the transport matrix
                 diag = src_sigma * csection;
-                tm_diag[sbi][loc_el] = - diag;
+                tm_diag[sbi][local_p0_dof] = - diag;
                 
                 // compute maximal cfl condition over all substances
                 max_cfl = std::max(max_cfl, fabs(diag));
                 
-                balance_->add_source_values(sbi, ele_acc.region().bulk_idx(), {int(loc_el)},
-                                                {- src_sigma * ele_acc.measure() * csection},
-                                                {source * ele_acc.measure()});
+                balance_->add_source_values(sbi, elm.region().bulk_idx(), {local_p0_dof},
+                                                {- src_sigma * elm.measure() * csection},
+                                                {source * elm.measure()});
             }
             
-            cfl_source_[loc_el] = max_cfl;
+            cfl_source_[local_p0_dof] = max_cfl;
         }
         
         balance_->finish_source_assembly(subst_idx);
@@ -749,17 +745,20 @@ void ConvectionTransport::create_mass_matrix()
     
     balance_->start_mass_assembly(subst_idx);
 
-    for (unsigned int loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
-        elm = mesh_->element_accessor( el_4_loc[loc_el] );
+    for ( DHCellAccessor dh_cell : dh_->own_range() ) {
+        ElementAccessor<3> elm = dh_cell.elm();
+        // we have currently zero order P_Disc FE
+        ASSERT_DBG(dh_cell.get_loc_dof_indices().size() == 1);
+        Idx local_p0_dof = dh_cell.get_loc_dof_indices()[0];
 
         double csection = data_.cross_section.value(elm.centre(), elm);
         //double por_m = data_.porosity.value(elm.centre(), elm->element_accessor());
         double por_m = data_.water_content.value(elm.centre(), elm);
 
         for (unsigned int sbi=0; sbi<n_substances(); ++sbi)
-            balance_->add_mass_matrix_values(subst_idx[sbi], elm.region().bulk_idx(), {row_4_el[el_4_loc[loc_el]]}, {csection*por_m*elm.measure()} );
+            balance_->add_mass_values(subst_idx[sbi], dh_cell, {local_p0_dof}, {csection*por_m*elm.measure()}, 0);
         
-        VecSetValue(mass_diag, row_4_el[ elm.idx() ], csection*por_m, INSERT_VALUES);
+        VecSetValue(mass_diag, dh_->get_local_to_global_map()[local_p0_dof], csection*por_m, INSERT_VALUES);
     }
     
     balance_->finish_mass_assembly(subst_idx);

@@ -82,7 +82,7 @@ public:
         unsigned int ndofs = this->value_.n_rows() * this->value_.n_cols();
         // create armadillo vector on top of existing array
         // vec(ptr_aux_mem, number_of_elements, copy_aux_mem = true, strict = false)
-        Idx* mem_ptr = const_cast<unsigned int*>(&((*boundary_dofs_)[ndofs*cell_idx]));
+        Idx* mem_ptr = const_cast<Idx*>(&((*boundary_dofs_)[ndofs*cell_idx]));
         return LocDofVec(mem_ptr, ndofs, false, false);
     }
 private:
@@ -149,7 +149,7 @@ public:
         unsigned int ndofs = this->value_.n_rows() * this->value_.n_cols();
         // create armadillo vector on top of existing array
         // vec(ptr_aux_mem, number_of_elements, copy_aux_mem = true, strict = false)
-        Idx* mem_ptr = const_cast<unsigned int*>(&((*boundary_dofs_)[ndofs*cell_idx]));
+        Idx* mem_ptr = const_cast<Idx*>(&((*boundary_dofs_)[ndofs*cell_idx]));
         return LocDofVec(mem_ptr, ndofs, false, false);
     }
 
