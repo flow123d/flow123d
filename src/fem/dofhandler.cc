@@ -793,7 +793,7 @@ SubDOFHandlerMultiDim::SubDOFHandlerMultiDim(std::shared_ptr<DOFHandlerMultiDim>
         cell.get_loc_dof_indices(cell_dof_indices);
         for (auto sub_dof : sub_fe_dofs[cell.dim()])
         {
-            if (cell_dof_indices[sub_dof] < dh->lsize_ &&
+            if (cell_dof_indices[sub_dof] < static_cast<int>(dh->lsize_) &&
                 sub_local_indices[cell_dof_indices[sub_dof]] == INVALID_DOF)
             {
                 sub_local_indices[cell_dof_indices[sub_dof]] = local_to_global_dof_idx_.size();

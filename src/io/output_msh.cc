@@ -150,7 +150,6 @@ void OutputMSH::write_msh_geometry(void)
     file << "$Nodes" << endl;
     file << this->nodes_->n_values() << endl;
     auto &id_node_vec = *( this->node_ids_->get_component_data(0).get() );
-    unsigned int i_node=0;
     for(unsigned int i_node=0; i_node < id_node_vec.size(); ++i_node) {
         file << id_node_vec[i_node] << " ";
         this->nodes_->print_ascii(file, i_node);

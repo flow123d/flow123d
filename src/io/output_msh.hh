@@ -93,7 +93,6 @@ private:
     std::vector< std::vector< OutputDataPtr >> dummy_data_list_;
 
     /**
-    /**
      * \brief This function write header of GMSH (.msh) file format
      */
     void write_msh_header(void);

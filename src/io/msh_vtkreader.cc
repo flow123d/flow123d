@@ -395,7 +395,8 @@ void VtkMeshReader::parse_binary_data(ElementDataCacheBase &data_cache, unsigned
     n_read_ = 0;
 
     data_stream_->seekg(pos.file_position_);
-	uint64_t data_size = read_header_type(header_type_, *data_stream_) / type_value_size(value_type);
+	read_header_type(header_type_, *data_stream_);
+	// uint64_t data_size = read_header_type(header_type_, *data_stream_) / type_value_size(value_type);
 
 	for (unsigned int i_row = 0; i_row < n_entities; ++i_row) {
 		data_cache.read_binary_data(*data_stream_, n_components, get_element_vector(boundary_domain)[i_row]);
@@ -450,7 +451,7 @@ void VtkMeshReader::parse_compressed_data(ElementDataCacheBase &data_cache, unsi
 
     n_read_ = 0;
 
-	uint64_t data_size = decompressed_data_size / type_value_size(value_type);
+	// uint64_t data_size = decompressed_data_size / type_value_size(value_type);
 
 	for (unsigned int i_row = 0; i_row < n_entities; ++i_row) {
 		data_cache.read_binary_data(decompressed_data, n_components, get_element_vector(boundary_domain)[i_row]);
@@ -484,7 +485,7 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
     	node_ids.resize(n_nodes);
         for (unsigned int i=0; i<n_nodes; ++i) {
             arma::vec3 point = { node_vec[3*i], node_vec[3*i+1], node_vec[3*i+2] };
-            int found_i_node = -1;
+            uint found_i_node = Mesh::undef_idx;
             bih_tree.find_point(point, searched_elements);
 
             for (std::vector<unsigned int>::iterator it = searched_elements.begin(); it!=searched_elements.end(); it++) {
@@ -493,7 +494,7 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
                 {
                     if ( compare_points(ele.node(i_node)->point(), point) ) {
                     	i_elm_node = ele.node_accessor(i_node).idx();
-                        if (found_i_node == -1) found_i_node = i_elm_node;
+                        if (found_i_node == Mesh::undef_idx) found_i_node = i_elm_node;
                         else if (found_i_node != i_elm_node) {
                         	THROW( ExcIncompatibleMesh() << EI_ErrMessage("duplicate nodes found in GMSH file")
                         			<< EI_VTKFile(tok_.f_name()));
@@ -501,10 +502,10 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
                     }
                 }
             }
-            if (found_i_node == -1) {
+            if (found_i_node == Mesh::undef_idx) {
             	THROW( ExcIncompatibleMesh() << EI_ErrMessage("no node found in GMSH file") << EI_VTKFile(tok_.f_name()));
             }
-            node_ids[i] = (unsigned int)found_i_node;
+            node_ids[i] = found_i_node;
             searched_elements.clear();
         }
 

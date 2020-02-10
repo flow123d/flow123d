@@ -1224,8 +1224,9 @@ void ComputeIntersection<2,3>::compute(IntersectionAux< 2 , 3  >& intersection)
     // S3 Edge - S2 intersections; collect all signs, make dummy intersections
 	for(unsigned int tetra_edge = 0; tetra_edge < 6; tetra_edge++) {
         IPAux12 IP12;
-	    IntersectionResult result = CI12[tetra_edge].compute(IP12);
-// 	    DebugOut() << print_var(tetra_edge) << print_var(int(result));
+        CI12[tetra_edge].compute(IP12);
+	    // IntersectionResult result = CI12[tetra_edge].compute(IP12);
+	    // DebugOut() << print_var(tetra_edge) << print_var(int(result));
         // in degenerate case: IP12 is empty with degenerate result
         IP12s_.push_back(IP12);
 	}

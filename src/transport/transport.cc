@@ -111,9 +111,9 @@ ConvectionTransport::EqData::EqData() : TransportEqData()
 ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record in_rec)
 : ConcentrationTransportBase(init_mesh, in_rec),
   is_mass_diag_changed(false),
+  sources_corr(nullptr),
   input_rec(in_rec),
-  mh_dh(nullptr),
-  sources_corr(nullptr)
+  mh_dh(nullptr)
 {
 	START_TIMER("ConvectionTransport");
 	this->eq_data_ = &data_;
@@ -736,7 +736,6 @@ void ConvectionTransport::create_transport_matrix_mpi() {
 
     ElementAccessor<3> el2;
     ElementAccessor<3> elm;
-    const Edge *edg;
     int j;
     LongIdx new_j, new_i;
     double aij, aii;

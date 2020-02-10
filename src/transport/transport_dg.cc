@@ -153,11 +153,12 @@ template<> FiniteElement<1> *FEObjects::fe<1>() { return fe1_; }
 template<> FiniteElement<2> *FEObjects::fe<2>() { return fe2_; }
 template<> FiniteElement<3> *FEObjects::fe<3>() { return fe3_; }
 
-template<> FiniteElement<0> *FEObjects::fe_rt<0>() { return 0; }
+template<> FiniteElement<0> *FEObjects::fe_rt<0>() { return nullptr; }
 template<> FiniteElement<1> *FEObjects::fe_rt<1>() { return fe_rt1_; }
 template<> FiniteElement<2> *FEObjects::fe_rt<2>() { return fe_rt2_; }
 template<> FiniteElement<3> *FEObjects::fe_rt<3>() { return fe_rt3_; }
 
+template<> MappingP1<0,3> *FEObjects::mapping<0>() { return nullptr; }
 template<> MappingP1<1,3> *FEObjects::mapping<1>() { return map1_; }
 template<> MappingP1<2,3> *FEObjects::mapping<2>() { return map2_; }
 template<> MappingP1<3,3> *FEObjects::mapping<3>() { return map3_; }

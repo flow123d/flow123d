@@ -118,11 +118,12 @@ FEObjects::~FEObjects()
 	delete map3_;
 }
 
-template<> FiniteElement<0> *FEObjects::fe<0>() { return 0; }
+template<> FiniteElement<0> *FEObjects::fe<0>() { return nullptr; }
 template<> FiniteElement<1> *FEObjects::fe<1>() { return fe1_; }
 template<> FiniteElement<2> *FEObjects::fe<2>() { return fe2_; }
 template<> FiniteElement<3> *FEObjects::fe<3>() { return fe3_; }
 
+template<> MappingP1<0,3> *FEObjects::mapping<0>() { return nullptr; }
 template<> MappingP1<1,3> *FEObjects::mapping<1>() { return map1_; }
 template<> MappingP1<2,3> *FEObjects::mapping<2>() { return map2_; }
 template<> MappingP1<3,3> *FEObjects::mapping<3>() { return map3_; }
@@ -628,7 +629,7 @@ void Elasticity::assemble_fluxes_boundary()
     		update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs();
     vector<int> side_dof_indices(ndofs);
-    PetscScalar local_matrix[ndofs*ndofs];
+    // PetscScalar local_matrix[ndofs*ndofs];
 
     // assemble boundary integral
     for (unsigned int iedg=0; iedg<feo->dh()->n_loc_edges(); iedg++)
@@ -807,7 +808,7 @@ void Elasticity::set_boundary_conditions()
     unsigned int loc_b=0;
     double local_rhs[ndofs];
     vector<PetscScalar> local_flux_balance_vector(ndofs);
-    PetscScalar local_flux_balance_rhs;
+    // PetscScalar local_flux_balance_rhs;
     vector<arma::vec3> bc_values(qsize), bc_traction(qsize);
     vector<double> csection(qsize);
     auto vec = fe_values_side.vector_view(0);
@@ -848,7 +849,7 @@ void Elasticity::set_boundary_conditions()
 
             fill_n(local_rhs, ndofs, 0);
             local_flux_balance_vector.assign(ndofs, 0);
-            local_flux_balance_rhs = 0;
+            // local_flux_balance_rhs = 0;
 
             if (bc_type == EqData::bc_type_displacement)
             {
