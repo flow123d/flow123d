@@ -798,7 +798,7 @@ bool Mesh::check_compatible_mesh( Mesh & mesh, vector<LongIdx> & bulk_elements_i
         i=0;
         for (auto nod : this->node_range()) {
             arma::vec3 point = nod->point();
-            int found_i_node = -1;
+            uint found_i_node = Mesh::undef_idx;
             bih_tree.find_point(point, searched_elements);
 
             for (std::vector<unsigned int>::iterator it = searched_elements.begin(); it!=searched_elements.end(); it++) {
@@ -807,7 +807,7 @@ bool Mesh::check_compatible_mesh( Mesh & mesh, vector<LongIdx> & bulk_elements_i
                 {
                     if ( compare_points(ele.node(i_node)->point(), point) ) {
                     	i_elm_node = ele.node_accessor(i_node).idx();
-                        if (found_i_node == -1) found_i_node = i_elm_node;
+                        if (found_i_node == Mesh::undef_idx) found_i_node = i_elm_node;
                         else if (found_i_node != i_elm_node) {
                             // duplicate nodes in target mesh
                         	this->elements_id_maps(bulk_elements_id, boundary_elements_id);
@@ -816,12 +816,12 @@ bool Mesh::check_compatible_mesh( Mesh & mesh, vector<LongIdx> & bulk_elements_i
                     }
                 }
             }
-            if (found_i_node == -1) {
+            if (found_i_node == Mesh::undef_idx) {
                 // no node found in target mesh
             	this->elements_id_maps(bulk_elements_id, boundary_elements_id);
             	return false;
             }
-            node_ids[i] = (unsigned int)found_i_node;
+            node_ids[i] = found_i_node;
             searched_elements.clear();
             i++;
         }
