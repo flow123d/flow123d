@@ -197,6 +197,10 @@ unsigned int FiniteElement<dim>::n_space_components(unsigned int spacedim)
                    +fe_sys->get_tensor_components().size()*spacedim*spacedim;
             break;
     }
+
+    // should be never reached
+    ASSERT(0).error("Unknown type of FiniteElement.");
+    return 0;
 }
 
 

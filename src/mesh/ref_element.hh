@@ -609,6 +609,7 @@ inline const IdxVector< (InDim>OutDim ? InDim+1 : dim-InDim) > RefElement<dim>::
     ASSERT(false)(dim)(OutDim)(InDim)(i).error("Not implemented.");
     //ASSERT_LT_DBG(OutDim, dim);
     //ASSERT_LT_DBG(InDim, dim);
+    return IdxVector<(InDim>OutDim ? InDim+1 : dim-InDim)>();
 }
 
 

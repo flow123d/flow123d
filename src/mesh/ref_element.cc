@@ -405,7 +405,7 @@ std::pair<unsigned int, unsigned int> RefElement<dim>::zeros_positions(const Bar
 {
     unsigned int zeros = 0;
     unsigned int n_zeros = 0;
-    for(char i=0; i < dim+1; i++){
+    for(unsigned int i=0; i < dim+1; i++){
         if(std::fabs(barycentric[i]) < tolerance)
         {
             zeros = zeros | (1 << i);

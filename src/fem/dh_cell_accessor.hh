@@ -425,6 +425,10 @@ inline const Dof &DHCellAccessor::cell_dof(unsigned int idof) const
             return fe<3>()->dof(idof);
             break;
     }
+
+    ASSERT(0)(this->dim()).error("Unsupported FE dimension.");
+    // cannot be reached:
+    return fe<1>()->dof(idof);;
 }
 
 
