@@ -24,7 +24,7 @@
 
 #include "msh_vtkreader.hh"
 #include "system/system.hh"
-#include "mesh/side_impl.hh"
+#include "mesh/sides.h"
 #include "mesh/bih_tree.hh"
 #include "mesh/long_idx.hh"
 #include "mesh/mesh.h"

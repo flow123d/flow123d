@@ -17,7 +17,7 @@
 #include "input/input_type.hh"
 #include "system/armadillo_tools.hh"
 
-#include "mesh/side_impl.hh"
+#include "mesh/sides.h"
 #include "mesh/mesh.h"
 #include "mesh/bih_tree.hh"
 #include "mesh/region.hh"

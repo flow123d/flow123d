@@ -15,13 +15,13 @@
  * @brief   
  */
 
-#include "mesh/side_impl.hh"
+#include "mesh/sides.h"
 #include "flow/mh_dofhandler.hh"
 #include "la/local_to_global_map.hh"
 #include "mesh/long_idx.hh"
 #include "mesh/mesh.h"
 #include "mesh/partitioning.hh"
-#include "mesh/side_impl.hh"
+#include "mesh/sides.h"
 #include "mesh/accessors.hh"
 #include "mesh/range_wrapper.hh"
 #include "mesh/neighbours.h"

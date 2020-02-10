@@ -17,6 +17,7 @@
  */
 
 #include "system/system.hh"
+#include "mesh/sides.h"
 #include "mesh/mesh.h"
 
 
@@ -24,14 +25,14 @@
 Edge::Edge()
 : n_sides(0), // TODO: set it to 0, but check that it is never compared to -1
   side_(NULL)
-
 {
-
 }
 
 
-
-
+SideIter Edge::side(const unsigned int i) const
+{
+    return side_[i];
+}
 
 //-----------------------------------------------------------------------------
 // vim: set cindent:

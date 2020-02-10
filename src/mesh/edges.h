@@ -18,7 +18,7 @@
 #ifndef MAKE_EDGES_H
 #define MAKE_EDGES_H
 
-#include "mesh/sides.h"
+class SideIter;
 
 //=============================================================================
 // STRUCTURE OF THE EDGE OF THE MESH
@@ -28,9 +28,7 @@ class Edge
 public:
     /// Minimalistic default constructor.
     Edge();
-    inline SideIter side(const unsigned int i) const {
-        return side_[i];
-    }
+    SideIter side(const unsigned int i) const;
 
     // Topology of the mesh
     int  n_sides;   // # of sides of edge

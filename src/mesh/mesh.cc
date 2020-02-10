@@ -28,7 +28,7 @@
 #include "system/sys_profiler.hh"
 #include "la/distribution.hh"
 
-#include "mesh/side_impl.hh"
+#include "mesh/sides.h"
 #include "mesh/long_idx.hh"
 #include "mesh/mesh.h"
 #include "mesh/bc_mesh.hh"

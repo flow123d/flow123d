@@ -17,11 +17,9 @@
  */
 
 #include "system/system.hh"
-#include "mesh/side_impl.hh"
+#include "mesh/sides.h"
 #include "mesh/mesh.h"
-#include "sides.h"
 #include "mesh/accessors.hh"
-
 
 //=============================================================================
 // CALCULATE METRICS OF THE SIDE
@@ -149,5 +147,43 @@ double Side::diameter() const {
     }
 }
 
+
+unsigned int Side::dim() const {
+    return element()->dim()-1;
+}
+
+bool Side::is_external() const {
+    return edge()->n_sides == 1;
+}
+
+NodeAccessor<3> Side::node(unsigned int i) const {
+    int i_n = mesh_->side_nodes[dim()][side_idx_][i];
+
+    return element().node_accessor( i_n );
+}
+
+ElementAccessor<3> Side::element() const {
+    ASSERT( valid() ).error("Wrong use of uninitialized accessor.\n");
+    return mesh_->element_accessor( elem_idx_ );
+}
+
+unsigned int Side::edge_idx() const {
+    return element()->edge_idx(side_idx_);
+}
+
+const Edge * Side::edge() const {
+    if (edge_idx() == Mesh::undef_idx) return NULL;
+    else return &( mesh_->edges[ edge_idx() ] );
+}
+
+Boundary * Side::cond() const {
+        if (cond_idx() == Mesh::undef_idx) return NULL;
+        else return &( mesh_->boundary_[ cond_idx() ] );
+}
+
+unsigned int Side::cond_idx() const {
+        if (element()->boundary_idx_ == NULL) return Mesh::undef_idx;
+        else return element()->boundary_idx_[side_idx_];
+}
 //-----------------------------------------------------------------------------
 // vim: set cindent:

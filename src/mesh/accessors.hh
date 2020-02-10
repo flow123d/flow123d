@@ -21,10 +21,10 @@
 #include "mesh/bounding_box.hh"
 #include "mesh/region.hh"
 #include "mesh/elements.h"
+#include "mesh/sides.h"
 #include "mesh/mesh.h"
 #include "mesh/nodes.hh"
 #include "mesh/node_accessor.hh"
-#include "mesh/sides.h"
 #include "la/distribution.hh"
 #include <vector>
 #include <armadillo>

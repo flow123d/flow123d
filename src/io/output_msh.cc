@@ -15,7 +15,7 @@
  * @brief   The functions for outputs to GMSH files.
  */
 
-#include "mesh/side_impl.hh"
+#include "mesh/sides.h"
 #include "output_msh.hh"
 #include "output_mesh.hh"
 #include "output_element.hh"

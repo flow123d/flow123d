@@ -15,7 +15,7 @@
  * @brief   Classes for auxiliary output mesh.
  */
 
-#include "mesh/side_impl.hh"
+#include "mesh/sides.h"
 #include "output_mesh.hh"
 #include "output_element.hh"
 #include "mesh/mesh.h"

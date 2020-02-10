@@ -4,7 +4,7 @@
 
 #include "compute_intersection.hh"
 #include "mesh/ref_element.hh"
-#include "mesh/side_impl.hh"
+#include "mesh/sides.h"
 #include "mesh/mesh.h"
 #include "mesh/accessors.hh"
 #include "system/system.hh"

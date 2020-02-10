@@ -20,7 +20,7 @@
 #include <limits>
 
 #include "fields/surface_depth.hh"
-#include "mesh/side_impl.hh"
+#include "mesh/sides.h"
 #include "mesh/mesh.h"
 #include "mesh/bc_mesh.hh"
 #include "mesh/ref_element.hh"
