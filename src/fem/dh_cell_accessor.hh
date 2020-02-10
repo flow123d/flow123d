@@ -452,7 +452,7 @@ inline RangeConvert<DHEdgeSide, DHCellSide> DHCellSide::edge_sides() const {
 inline unsigned int DHCellSide::n_edge_sides() const {
     unsigned int edge_idx = dh_cell_accessor_.elm()->edge_idx(side_idx_);
     Edge *edg = &dh_cell_accessor_.dof_handler_->mesh()->edges[edge_idx];
-    for (int sid=0; sid<edg->n_sides; sid++)
+    for (uint sid=0; sid<edg->n_sides; sid++)
         if ( dh_cell_accessor_.dof_handler_->el_is_local(edg->side(sid)->element().idx()) ) return edg->n_sides;
     return 0;
 }

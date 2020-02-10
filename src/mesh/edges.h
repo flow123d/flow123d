@@ -31,7 +31,7 @@ public:
     SideIter side(const unsigned int i) const;
 
     // Topology of the mesh
-    int  n_sides;   // # of sides of edge
+    uint  n_sides;   // # of sides of edge
     SideIter *side_; // sides of edge (could be more then two e.g. 1D mesh in 2d space with crossing )
 
 };

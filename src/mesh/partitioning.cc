@@ -95,7 +95,7 @@ void Partitioning::make_element_connection_graph() {
     Distribution edistr = graph_->get_distr();
 
     const Edge *edg;
-    int e_idx;
+    unsigned int e_idx;
     unsigned int i_neigh;
     int i_s, n_s;
 

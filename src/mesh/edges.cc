@@ -23,7 +23,7 @@
 
 
 Edge::Edge()
-: n_sides(0), // TODO: set it to 0, but check that it is never compared to -1
+: n_sides(0),
   side_(NULL)
 {
 }

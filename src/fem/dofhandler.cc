@@ -579,7 +579,7 @@ void DOFHandlerMultiDim::make_elem_partitioning()
     {
         bool is_edge_local = false;
         Edge *edg = &mesh_->edges[iedg];
-        for (int sid=0; sid<edg->n_sides; sid++)
+        for (uint sid=0; sid<edg->n_sides; sid++)
         	if ( el_is_local(edg->side(sid)->element().idx()) )
         	{
         		is_edge_local = true;

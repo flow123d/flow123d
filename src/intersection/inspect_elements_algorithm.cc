@@ -501,7 +501,7 @@ std::vector< unsigned int > InspectElementsAlgorithm<dim>::get_element_neighbors
     std::vector<unsigned int> elements_idx;
     elements_idx.reserve(2*edges.size());    // twice the number of edges
     for(Edge* edg : edges)
-    for(int j=0; j < edg->n_sides;j++) {
+    for(uint j=0; j < edg->n_sides;j++) {
         if ( edg->side(j)->element().idx() != ele.idx() )
             elements_idx.push_back(edg->side(j)->element().idx());
     }
@@ -848,7 +848,7 @@ void InspectElementsAlgorithm22::create_component_numbering()
                 for(unsigned int sid=0; sid < elm->n_sides(); sid++) {
                     const Edge* edg = elm.side(sid)->edge();
 
-                    for(int j=0; j < edg->n_sides;j++) {
+                    for(uint j=0; j < edg->n_sides;j++) {
                         uint neigh_idx = edg->side(j)->element().idx();
                         if (component_idx_[neigh_idx] == (unsigned int)-1) {
                             component_idx_[neigh_idx] = component_counter_;

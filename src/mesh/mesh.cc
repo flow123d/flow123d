@@ -617,7 +617,7 @@ void Mesh::make_edge_permutations()
 				node_numbers[edg->side(0)->node(i).idx()] = i;
 				//node_numbers[edg->side(0)->node(i).node()] = i;
 
-			for (int sid=1; sid<edg->n_sides; sid++)
+			for (uint sid=1; sid<edg->n_sides; sid++)
 			{
 				for (unsigned int i=0; i<edg->side(0)->n_nodes(); i++)
 					permutation[node_numbers[edg->side(sid)->node(i).idx()]] = i;
@@ -1116,7 +1116,7 @@ void Mesh::output_internal_ngh_data()
         for (unsigned int i = 0; i < ele->n_sides(); i++) {
             const Edge* edge = ele.side(i)->edge();
             if(ele.side(i)->edge()->n_sides > 1){
-                for (int j = 0; j < edge->n_sides; j++) {
+                for (uint j = 0; j < edge->n_sides; j++) {
                     if(edge->side(j) != ele.side(i))
                         raw_ngh_output_file << edge->side(j)->element().idx() << " ";
                 }
