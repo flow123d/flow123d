@@ -139,7 +139,7 @@ void LinSys_BDDC::load_mesh( const int nDim, const int numNodes, const int numDo
     // simply pass the data to BDDCML solver
     isngn_.resize(isngn.size());
     std::copy( isngn.begin(), isngn.end(), isngn_.begin() );
-    OLD_ASSERT( numDofs == size_, "Global problem size mismatch!" );
+    OLD_ASSERT( numDofs == static_cast<int>(size_), "Global problem size mismatch!" );
 
     bddcml_ -> loadRawMesh( nDim, numNodes, numDofs, inet, nnet, nndf, isegn, isngn, isvgvn, xyz, element_permeability, meshDim );
 
@@ -316,7 +316,6 @@ LinSys_BDDC::~LinSys_BDDC()
     isngn_.clear();
     locSolution_.clear(); 
 
-    PetscErrorCode ierr;
     chkerr(VecDestroy( &locSolVec_ ));
 
     chkerr(VecScatterDestroy( &VSpetscToSubScatter_ ));

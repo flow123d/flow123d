@@ -126,14 +126,14 @@ void la::BddcmlWrapper::loadRawMesh( const int nDim, const int numNodes, const i
                             "array inet size mismatch \n " );
     OLD_ASSERT( std::accumulate( nndf.begin(), nndf.end(), 0 ) == numDofsSub_,
                             "array nndf content mismatch: %d %d \n ",  std::accumulate( nndf.begin(), nndf.end(), 0 ), numDofsSub_ );
-    OLD_ASSERT( isvgvn.size() == numDofsSub_,
+    OLD_ASSERT( static_cast<int>(isvgvn.size()) == numDofsSub_,
                             "array isvgvn size mismatch \n " );
-    OLD_ASSERT( nnet.size() == numElemSub_,
+    OLD_ASSERT( static_cast<int>(nnet.size()) == numElemSub_,
                             "array nnet size mismatch \n " );
-    OLD_ASSERT( nndf.size() == numNodesSub_,
+    OLD_ASSERT( static_cast<int>(nndf.size()) == numNodesSub_,
                             "array nndf size mismatch \n " );
-    OLD_ASSERT( xyz.size() == numNodesSub_ * nDim_,
-                            "array xyz size mismatch: %d %d \n ", xyz.size(), numNodesSub_ * nDim_ );
+    OLD_ASSERT( static_cast<int>(xyz.size()) == numNodesSub_ * nDim_,
+                            "array xyz size mismatch: %d %d \n ", static_cast<int>(xyz.size()), numNodesSub_ * nDim_ );
 
     // Simply copy input data into the private object equivalents
     inet_.resize( inet.size() );
@@ -327,9 +327,9 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
     if ( numSubAtLevels != NULL ) {
         // numbers are given 
         
-        OLD_ASSERT( numLevels == (*numSubAtLevels).size(), 
+        OLD_ASSERT( numLevels == static_cast<int>((*numSubAtLevels).size()),
                                 "Inconsistent size of numbers of subdomains at levels: %d %d \n",
-                                numLevels, (*numSubAtLevels).size() );
+                                numLevels, static_cast<int>((*numSubAtLevels).size()) );
         OLD_ASSERT( (*numSubAtLevels)[0] == numSub, 
                                 "Inconsistent number of subdomains at first level: %d %d \n",
                                 (*numSubAtLevels)[0], numSub );
@@ -470,8 +470,8 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
     }
 
     int lsub_diagonal = numDofsSub_;
-    OLD_ASSERT( lsub_diagonal == diag_sparse.size(),
-            "Array length mismatch: %d %d . \n ", lsub_diagonal, diag_sparse.size() );
+    OLD_ASSERT( lsub_diagonal == static_cast<int>(diag_sparse.size()),
+            "Array length mismatch: %d %d . \n ", lsub_diagonal, static_cast<int>(diag_sparse.size()) );
 
     std::vector<double> sub_diagonal( lsub_diagonal, -1. );
     // permute the vector according to subdomain indexing
