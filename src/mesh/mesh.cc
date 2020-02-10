@@ -100,27 +100,27 @@ const IT::Record & Mesh::get_input_type() {
 const unsigned int Mesh::undef_idx;
 
 Mesh::Mesh()
-: row_4_el(nullptr),
+: tree(nullptr),
+  row_4_el(nullptr),
   el_4_loc(nullptr),
   el_ds(nullptr),
-  bc_mesh_(nullptr),
   node_4_loc_(nullptr),
   node_ds_(nullptr),
-  tree(nullptr)
+  bc_mesh_(nullptr)
 {}
 
 
 
 Mesh::Mesh(Input::Record in_record, MPI_Comm com)
-: in_record_(in_record),
+: tree(nullptr),
+  in_record_(in_record),
   comm_(com),
   row_4_el(nullptr),
   el_4_loc(nullptr),
   el_ds(nullptr),
-  bc_mesh_(nullptr),
   node_4_loc_(nullptr),
   node_ds_(nullptr),
-  tree(nullptr)
+  bc_mesh_(nullptr)
 {
 	// set in_record_, if input accessor is empty
 	if (in_record_.is_empty()) {
