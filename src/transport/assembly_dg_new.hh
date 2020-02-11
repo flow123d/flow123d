@@ -46,43 +46,35 @@ class GenericAssembly
 {
 private:
     struct BulkIntegralData {
-    	BulkIntegralData() : data_size(0) {}
+        BulkIntegralData() {}
 
-	    void reset()
-	    { data_size = 0; }
-
-	    DHCellAccessor cell;
-	    unsigned int data_size;
-	    unsigned int subset_index;
-	};
+        DHCellAccessor cell;
+        unsigned int subset_index;
+    };
 
     struct EdgeIntegralData {
-    	EdgeIntegralData() : data_size(0) {}
+    	EdgeIntegralData()
+    	: edge_side_range(make_iter<DHEdgeSide, DHCellSide>( DHEdgeSide() ), make_iter<DHEdgeSide, DHCellSide>( DHEdgeSide() )) {}
 
-	    void reset()
-	    { data_size = 0; }
-
-	    DHCellSide side;
-	    unsigned int data_size;
-	    unsigned int start_point;
-	    unsigned int subset_index;
+    	RangeConvert<DHEdgeSide, DHCellSide> edge_side_range;
+        unsigned int subset_index;
 	};
 
     struct CouplingIntegralData {
-       	CouplingIntegralData() : bulk_data_size(0), side_data_size(0) {}
-
-        void reset()
-        { bulk_data_size = 0; side_data_size=0; }
+       	CouplingIntegralData() {}
 
         DHCellAccessor cell;
-        unsigned int bulk_data_size;
 	    unsigned int bulk_subset_index;
-
         DHCellSide side;
-        unsigned int side_data_size;
-	    unsigned int side_start_point;
 	    unsigned int side_subset_index;
     };
+
+    struct BoundaryIntegralData {
+    	BoundaryIntegralData() {}
+
+	    DHCellSide side;
+	    unsigned int subset_index;
+	};
 
 public:
 
@@ -132,11 +124,12 @@ public:
                             continue;
                         }
                 if (active_integrals_ & ActiveIntegrals::edge)
-                    if ( (cell_side.n_edge_sides() >= 2) && (cell_side.edge_sides().begin()->element().idx() == cell.elm_idx()))
-                        for( DHCellSide edge_side : cell_side.edge_sides() ) {
-                            this->add_edge_integral(edge_side);
+                    if ( (cell_side.n_edge_sides() >= 2) && (cell_side.edge_sides().begin()->element().idx() == cell.elm_idx())) {
+                        this->add_edge_integral(cell_side.edge_sides());
+                    	for( DHCellSide edge_side : cell_side.edge_sides() ) {
                             el_cache_map.add(edge_side);
                         }
+                    }
             }
 
 	        if (active_integrals_ & ActiveIntegrals::coupling)
@@ -166,13 +159,12 @@ public:
             bulk_integral_data_[ integrals_size_[0] ].subset_index = std::get<3>(multidim_assembly_)->bulk_integral_->get_subset_idx();
             break;
     	}
-        bulk_integral_data_[ integrals_size_[0] ].data_size = eval_points_->subset_size( cell.dim(), bulk_integral_data_[ integrals_size_[0] ].subset_index );
         integrals_size_[0]++;
     }
 
-    void add_edge_integral(const DHCellSide &edge_side) {
-    	edge_integral_data_[ integrals_size_[1] ].side = edge_side;
-        switch (edge_side.dim()) {
+    void add_edge_integral(RangeConvert<DHEdgeSide, DHCellSide> edge_side_range) {
+    	edge_integral_data_[ integrals_size_[1] ].edge_side_range = edge_side_range;
+        switch (edge_side_range.begin()->dim()) {
         case 1:
             edge_integral_data_[ integrals_size_[1] ].subset_index = std::get<1>(multidim_assembly_)->edge_integral_->get_subset_idx();
             break;
@@ -183,9 +175,6 @@ public:
             edge_integral_data_[ integrals_size_[1] ].subset_index = std::get<3>(multidim_assembly_)->edge_integral_->get_subset_idx();
             break;
     	}
-        edge_integral_data_[ integrals_size_[1] ].data_size =
-                eval_points_->subset_size( edge_side.dim(), edge_integral_data_[ integrals_size_[1] ].subset_index ) / (edge_side.dim() +1);
-        edge_integral_data_[ integrals_size_[1] ].start_point = edge_integral_data_[ integrals_size_[1] ].data_size * edge_side.side_idx();
         integrals_size_[1]++;
     }
 
@@ -202,11 +191,6 @@ public:
         	coupling_integral_data_[ integrals_size_[2] ].side_subset_index = std::get<3>(multidim_assembly_)->coupling_integral_->get_subset_high_idx();
             break;
     	}
-        coupling_integral_data_[ integrals_size_[2] ].bulk_data_size =
-        		eval_points_->subset_size( cell.dim(), coupling_integral_data_[ integrals_size_[2] ].bulk_subset_index );
-        coupling_integral_data_[ integrals_size_[2] ].side_data_size =
-        		eval_points_->subset_size( ngh_side.dim(), coupling_integral_data_[ integrals_size_[2] ].side_subset_index );
-        coupling_integral_data_[ integrals_size_[2] ].side_start_point = coupling_integral_data_[ integrals_size_[2] ].side_data_size * ngh_side.side_idx();
         integrals_size_[2]++;
     }
 
@@ -223,36 +207,43 @@ public:
         	boundary_integral_data_[ integrals_size_[3] ].subset_index = std::get<3>(multidim_assembly_)->edge_integral_->get_subset_idx();
             break;
     	}
-        boundary_integral_data_[ integrals_size_[3] ].data_size =
-                eval_points_->subset_size( bdr_side.dim(), boundary_integral_data_[ integrals_size_[3] ].subset_index ) / (bdr_side.dim() +1);
-        boundary_integral_data_[ integrals_size_[3] ].start_point = boundary_integral_data_[ integrals_size_[3] ].data_size * bdr_side.side_idx();
         integrals_size_[3]++;
     }
 
     void insert_eval_points_from_integral_data(ElementCacheMap &el_cache_map) {
         for (unsigned int i=0; i<integrals_size_[0]; ++i) {
             // add data to cache if there is free space, else return
-            el_cache_map.mark_used_eval_points(bulk_integral_data_[i].cell, bulk_integral_data_[i].subset_index, bulk_integral_data_[i].data_size);
-            bulk_integral_data_[i].reset();
+        	unsigned int data_size = eval_points_->subset_size( bulk_integral_data_[i].cell.dim(), bulk_integral_data_[i].subset_index );
+            el_cache_map.mark_used_eval_points(bulk_integral_data_[i].cell, bulk_integral_data_[i].subset_index, data_size);
         }
         integrals_size_[0] = 0;
         for (unsigned int i=0; i<integrals_size_[1]; ++i) {
             // add data to cache if there is free space, else return
-            el_cache_map.mark_used_eval_points(edge_integral_data_[i].side.cell(), edge_integral_data_[i].subset_index, edge_integral_data_[i].data_size, edge_integral_data_[i].start_point);
-            edge_integral_data_[i].reset();
+        	for (DHCellSide edge_side : edge_integral_data_[i].edge_side_range) {
+        	    unsigned int side_dim = edge_side.dim();
+                unsigned int data_size = eval_points_->subset_size( side_dim, edge_integral_data_[i].subset_index ) / (side_dim+1);
+                unsigned int start_point = data_size * edge_side.side_idx();
+                el_cache_map.mark_used_eval_points(edge_side.cell(), edge_integral_data_[i].subset_index, data_size, start_point);
+        	}
         }
         integrals_size_[1] = 0;
         for (unsigned int i=0; i<integrals_size_[2]; ++i) {
             // add data to cache if there is free space, else return
-            el_cache_map.mark_used_eval_points(coupling_integral_data_[i].cell, coupling_integral_data_[i].bulk_subset_index, coupling_integral_data_[i].bulk_data_size);
-            el_cache_map.mark_used_eval_points(coupling_integral_data_[i].side.cell(), coupling_integral_data_[i].side_subset_index, coupling_integral_data_[i].side_data_size, coupling_integral_data_[i].side_start_point);
-            coupling_integral_data_[i].reset();
+            unsigned int bulk_data_size = eval_points_->subset_size( coupling_integral_data_[i].cell.dim(), coupling_integral_data_[i].bulk_subset_index );
+            el_cache_map.mark_used_eval_points(coupling_integral_data_[i].cell, coupling_integral_data_[i].bulk_subset_index, bulk_data_size);
+
+            unsigned int side_dim = coupling_integral_data_[i].side.dim();
+            unsigned int side_data_size = eval_points_->subset_size( side_dim, coupling_integral_data_[i].side_subset_index ) / (side_dim+1);
+            unsigned int start_point = side_data_size * coupling_integral_data_[i].side.side_idx();
+            el_cache_map.mark_used_eval_points(coupling_integral_data_[i].side.cell(), coupling_integral_data_[i].side_subset_index, side_data_size, start_point);
         }
         integrals_size_[2] = 0;
         for (unsigned int i=0; i<integrals_size_[3]; ++i) {
             // add data to cache if there is free space, else return
-            el_cache_map.mark_used_eval_points(boundary_integral_data_[i].side.cell(), boundary_integral_data_[i].subset_index, boundary_integral_data_[i].data_size, boundary_integral_data_[i].start_point);
-            boundary_integral_data_[i].reset();
+        	unsigned int side_dim = boundary_integral_data_[i].side.dim();
+            unsigned int data_size = eval_points_->subset_size( side_dim, boundary_integral_data_[i].subset_index ) / (side_dim+1);
+            unsigned int start_point = data_size * boundary_integral_data_[i].side.side_idx();
+            el_cache_map.mark_used_eval_points(boundary_integral_data_[i].side.cell(), boundary_integral_data_[i].subset_index, data_size, start_point);
         }
         integrals_size_[3] = 0;
     }
@@ -268,9 +259,9 @@ private:
 
     // Following variables hold data of all integrals depending of actual computed element.
     std::array<BulkIntegralData, 1>     bulk_integral_data_;      ///< Holds data for computing bulk integrals.
-    std::array<EdgeIntegralData, 18>    edge_integral_data_;      ///< Holds data for computing edge integrals.
+    std::array<EdgeIntegralData, 4>     edge_integral_data_;      ///< Holds data for computing edge integrals.
     std::array<CouplingIntegralData, 6> coupling_integral_data_;  ///< Holds data for computing couplings integrals.
-    std::array<EdgeIntegralData, 4>     boundary_integral_data_;  ///< Holds data for computing boundary integrals.
+    std::array<BoundaryIntegralData, 4> boundary_integral_data_;  ///< Holds data for computing boundary integrals.
     std::array<unsigned int, 4>         integrals_size_;          ///< Holds used sizes of previous integral data types
 };
 
