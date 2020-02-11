@@ -658,7 +658,7 @@ void DarcyLMH::assembly_mh_matrix(MultidimAssembly& assembler)
 
     // DebugOut() << "assembly_mh_matrix \n";
     // set auxiliary flag for switchting Dirichlet like BC
-    data_->force_bc_switch = data_->use_steady_assembly_ && (nonlinear_iteration_ == 0);
+    data_->force_no_neumann_bc = data_->use_steady_assembly_ && (nonlinear_iteration_ == 0);
 
     balance_->start_flux_assembly(data_->water_balance_idx);
     balance_->start_source_assembly(data_->water_balance_idx);

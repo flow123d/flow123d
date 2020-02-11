@@ -307,7 +307,7 @@ protected:
                     
                         // ** Apply BCUpdate BC type. **
                         // Force Dirichlet type during the first iteration of the unsteady case.
-                        if (switch_dirichlet || ad_->force_bc_switch ) {
+                        if (switch_dirichlet || ad_->force_no_neumann_bc ) {
                             //DebugOut().fmt("x: {}, dirich, bcp: {}\n", b_ele.centre()[0], bc_pressure);
                             loc_system_.set_solution(loc_edge_dofs[i],bc_pressure, -1);
                             dirichlet_edge[i] = 1;
@@ -328,7 +328,7 @@ protected:
                     double & solution_head = ls->get_solution_array()[loc_edge_row];
 
                     // Force Robin type during the first iteration of the unsteady case.
-                    if (solution_head > bc_switch_pressure  || ad_->force_bc_switch) {
+                    if (solution_head > bc_switch_pressure  || ad_->force_no_neumann_bc) {
                         // Robin BC
                         //DebugOut().fmt("x: {}, robin, bcp: {}\n", b_ele.centre()[0], bc_pressure);
                         loc_system_.add_value(edge_row, edge_row,
@@ -477,13 +477,13 @@ protected:
 
     void add_fluxes_in_balance_matrix(const DHCellAccessor& dh_cell){
         
-        auto ele = dh_cell.elm(); //ElementAccessor<3>
-        for (unsigned int i = 0; i < ele->n_sides(); i++) {
-            Boundary* bcd = ele.side(i)->cond();
+        for(DHCellSide side : dh_cell.side_range()){
+            unsigned int sidx = side.side_idx();
 
-            if (bcd) {
-                ad_->balance->add_flux_matrix_values(ad_->water_balance_idx, ele.side(i),
-                                                     {global_dofs_[loc_side_dofs[i]]}, {1});
+            if (side.cond()) {
+                ad_->balance->add_flux_values(ad_->water_balance_idx, side,
+                                              {local_dofs_[loc_side_dofs[sidx]]},
+                                              {1}, 0);
             }
         }
     }
