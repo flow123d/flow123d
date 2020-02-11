@@ -365,8 +365,8 @@ void DarcyFlowMHOutput::l2_diff_local(DHCellAccessor dh_cell,
                    FEValues<3> &fe_values, FEValues<3> &fv_rt,
                    ExactSolution &anal_sol,  DarcyFlowMHOutput::DiffData &result) {
 
-    ASSERT_DBG( fe_values.dm() == fv_rt.dm());
-    unsigned int dim = fe_values.dm();
+    ASSERT_DBG( fe_values.dim() == fv_rt.dim());
+    unsigned int dim = fe_values.dim();
 
     ElementAccessor<3> ele = dh_cell.elm();
     fv_rt.reinit(ele);

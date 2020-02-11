@@ -67,8 +67,8 @@ private:
         vector<FEValuesViews::Vector<spacedim> > vectors;
         vector<FEValuesViews::Tensor<spacedim> > tensors;
     
-        template<unsigned int dim>
-        void initialize(const FEValues &fv, const FiniteElement<dim> &fe);
+        template<unsigned int DIM>
+        void initialize(const FEValues &fv, const FiniteElement<DIM> &fe);
     };
   
 public:
@@ -88,9 +88,9 @@ public:
      * @param _fe         The finite element.
      * @param flags       The update flags.
      */
-    template<unsigned int dim>
+    template<unsigned int DIM>
     void allocate(unsigned int n_points,
-                  FiniteElement<dim> &_fe,
+                  FiniteElement<DIM> &_fe,
                   UpdateFlags flags);
     
     /**
@@ -101,9 +101,9 @@ public:
 	 * @param _fe The finite element.
 	 * @param _flags The update flags.
 	 */
-    template<unsigned int dim>
+    template<unsigned int DIM>
     void initialize(Quadrature &_quadrature,
-                    FiniteElement<dim> &_fe,
+                    FiniteElement<DIM> &_fe,
                     UpdateFlags _flags);
     
     /**
@@ -168,7 +168,7 @@ public:
     /**
      * @brief Return the relative volume change of the cell (Jacobian determinant).
      *
-     * If dim==spacedim then the sign may be negative, otherwise the
+     * If dim_==spacedim then the sign may be negative, otherwise the
      * result is a positive number.
      *
      * @param point_no Number of the quadrature point.
@@ -270,7 +270,7 @@ public:
     }
 
     /// Return dimension of reference space.
-    inline unsigned int dm() const
+    inline unsigned int dim() const
     { return dim_; }
     
 
@@ -303,7 +303,7 @@ protected:
          *
          * Dimensions:   (no. of quadrature points)
          *             x (no. of dofs)
-         *             x ((dim of. ref. cell)x(no. of components in ref. cell))
+         *             x ((dim_ of. ref. cell)x(no. of components in ref. cell))
          */
         std::vector<std::vector<arma::mat> > ref_shape_grads;
         
@@ -319,8 +319,8 @@ protected:
 
     
     /// Precompute finite element data on reference element.
-    template<unsigned int dim>
-    FEInternalData *init_fe_data(const FiniteElement<dim> &fe, const Quadrature &q);
+    template<unsigned int DIM>
+    FEInternalData *init_fe_data(const FiniteElement<DIM> &fe, const Quadrature &q);
     
     /**
      * @brief Computes the shape function values and gradients on the actual cell
