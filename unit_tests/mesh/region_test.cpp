@@ -10,7 +10,7 @@
 #include <mesh_constructor.hh>
 
 #include "mesh/region.hh"
-#include "mesh/side_impl.hh"
+#include "mesh/sides.h"
 #include "mesh/mesh.h"
 #include "mesh/region_set.hh"
 #include "mesh/accessors.hh"

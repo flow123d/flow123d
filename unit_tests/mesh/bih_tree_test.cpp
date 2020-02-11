@@ -22,7 +22,7 @@
 
 #include "system/sys_profiler.hh"
 
-#include "mesh/side_impl.hh"
+#include "mesh/sides.h"
 #include "mesh/mesh.h"
 #include "io/msh_gmshreader.h"
 #include "mesh/bih_tree.hh"
