@@ -31,7 +31,6 @@ class EvalPoints;
 class ElementCacheMap;
 class DHCellAccessor;
 class DHCellSide;
-class Mesh;
 
 
 /**
@@ -167,7 +166,7 @@ public:
     void add(const DHCellSide &cell_side);
 
     /// Prepare data member before reading data to cache.
-    void prepare_elements_to_update(Mesh *mesh);
+    void prepare_elements_to_update();
 
     /// Create map of used eval points on cached elements.
     void create_elements_points_map();

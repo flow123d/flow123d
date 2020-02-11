@@ -247,8 +247,8 @@ public:
     /**
      * Collective interface to @p FieldCommon::cache_update().
      */
-    void cache_update(ElementCacheMap &cache_map, Mesh *mesh) {
-        cache_map.prepare_elements_to_update(mesh);
+    void cache_update(ElementCacheMap &cache_map) {
+        cache_map.prepare_elements_to_update();
         register_eval_points(cache_map);
         cache_map.create_elements_points_map();
         // not used yet: TODO need fix in MultiField, HeatModel ...

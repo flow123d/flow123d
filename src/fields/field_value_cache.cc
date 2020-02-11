@@ -22,7 +22,6 @@
 #include "fields/eval_points.hh"
 #include "fields/eval_subset.hh"
 #include "fem/dh_cell_accessor.hh"
-#include "mesh/mesh.h"
 #include "mesh/accessors.hh"
 
 
@@ -96,7 +95,7 @@ void ElementCacheMap::add(const DHCellSide &cell_side) {
 }
 
 
-void ElementCacheMap::prepare_elements_to_update(Mesh *mesh) {
+void ElementCacheMap::prepare_elements_to_update() {
 	// Start of cache update
 	ready_to_reading_ = false;
 
