@@ -13,7 +13,7 @@
 #include "armadillo"
 #include "system/armadillo_tools.hh"
 #include "system/sys_profiler.hh"
-#include "mesh/side_impl.hh"
+#include "mesh/sides.h"
 #include "quadrature/quadrature_lib.hh"
 #include "fem/fe_p.hh"
 #include "fem/fe_values.hh"
