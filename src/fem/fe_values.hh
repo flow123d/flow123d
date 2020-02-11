@@ -73,8 +73,20 @@ private:
   
 public:
 
-    /// Default constructor.
+    /// Default constructor with postponed initialization.
     FEValues();
+
+
+    /// Constructor with initialization of data structures
+    /// (see initialize() for description of parameters).
+    template<unsigned int DIM>
+    FEValues(Quadrature &_quadrature,
+             FiniteElement<DIM> &_fe,
+             UpdateFlags _flags)
+    : FEValues()
+    {
+        initialize(_quadrature, _fe, _flags);
+    }
 
 
     /// Correct deallocation of objects created by 'initialize' methods.
