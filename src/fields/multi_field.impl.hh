@@ -384,7 +384,7 @@ void MultiField<spacedim, Value>::cache_allocate(std::shared_ptr<EvalPoints> eva
 
 template<int spacedim, class Value>
 void MultiField<spacedim, Value>::cache_update(ElementCacheMap &cache_map) {
-    //for(auto &field : sub_fields_) field.cache_update(cache_map);
+    for(auto &field : sub_fields_) field.cache_update(cache_map);
 }
 
 
