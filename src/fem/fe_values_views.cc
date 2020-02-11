@@ -24,31 +24,31 @@
 
 using namespace FEValuesViews;
 
-template<unsigned int dim, unsigned int spacedim>
-double FEValuesViews::Scalar<dim,spacedim>::value(unsigned int function_no, unsigned int point_no) const
+template<unsigned int spacedim>
+double FEValuesViews::Scalar<spacedim>::value(unsigned int function_no, unsigned int point_no) const
 {
   ASSERT_LT_DBG( function_no, fe_values_.n_dofs() );
   ASSERT_LT_DBG( point_no, fe_values_.n_points() );
   return fe_values_.shape_value_component(function_no, point_no, component_);
 }
 
-template<unsigned int dim, unsigned int spacedim>
-arma::vec::fixed<spacedim> FEValuesViews::Scalar<dim,spacedim>::grad(unsigned int function_no, unsigned int point_no) const
+template<unsigned int spacedim>
+arma::vec::fixed<spacedim> FEValuesViews::Scalar<spacedim>::grad(unsigned int function_no, unsigned int point_no) const
 {
   ASSERT_LT_DBG( function_no, fe_values_.n_dofs() );
   ASSERT_LT_DBG( point_no, fe_values_.n_points() );
   return fe_values_.shape_grad_component(function_no, point_no, component_);
 }
 
-template<unsigned int dim, unsigned int spacedim>
-FEValuesBase<dim,spacedim> &FEValuesViews::Scalar<dim,spacedim>::base() const
+template<unsigned int spacedim>
+const FEValues<spacedim> &FEValuesViews::Scalar<spacedim>::base() const
 { return fe_values_; }
   
 
 
 
-template<unsigned int dim, unsigned int spacedim>
-arma::vec::fixed<spacedim> FEValuesViews::Vector<dim,spacedim>::value(unsigned int function_no, unsigned int point_no) const
+template<unsigned int spacedim>
+arma::vec::fixed<spacedim> FEValuesViews::Vector<spacedim>::value(unsigned int function_no, unsigned int point_no) const
 {
   ASSERT_LT_DBG( function_no, fe_values_.n_dofs() );
   ASSERT_LT_DBG( point_no, fe_values_.n_points() );
@@ -58,8 +58,8 @@ arma::vec::fixed<spacedim> FEValuesViews::Vector<dim,spacedim>::value(unsigned i
   return v;
 }
 
-template<unsigned int dim, unsigned int spacedim>
-arma::mat::fixed<spacedim,spacedim> FEValuesViews::Vector<dim,spacedim>::grad(unsigned int function_no, unsigned int point_no) const
+template<unsigned int spacedim>
+arma::mat::fixed<spacedim,spacedim> FEValuesViews::Vector<spacedim>::grad(unsigned int function_no, unsigned int point_no) const
 {
   ASSERT_LT_DBG( function_no, fe_values_.n_dofs() );
   ASSERT_LT_DBG( point_no, fe_values_.n_points() );
@@ -69,8 +69,8 @@ arma::mat::fixed<spacedim,spacedim> FEValuesViews::Vector<dim,spacedim>::grad(un
   return g.t();
 }
 
-template<unsigned int dim, unsigned int spacedim>
-arma::mat::fixed<spacedim,spacedim> FEValuesViews::Vector<dim,spacedim>::sym_grad(unsigned int function_no, unsigned int point_no) const
+template<unsigned int spacedim>
+arma::mat::fixed<spacedim,spacedim> FEValuesViews::Vector<spacedim>::sym_grad(unsigned int function_no, unsigned int point_no) const
 {
   ASSERT_LT_DBG( function_no, fe_values_.n_dofs() );
   ASSERT_LT_DBG( point_no, fe_values_.n_points() );
@@ -78,8 +78,8 @@ arma::mat::fixed<spacedim,spacedim> FEValuesViews::Vector<dim,spacedim>::sym_gra
   return 0.5*(g+trans(g));
 }
 
-template<unsigned int dim, unsigned int spacedim>
-double FEValuesViews::Vector<dim,spacedim>::divergence(unsigned int function_no, unsigned int point_no) const
+template<unsigned int spacedim>
+double FEValuesViews::Vector<spacedim>::divergence(unsigned int function_no, unsigned int point_no) const
 {
   ASSERT_LT_DBG( function_no, fe_values_.n_dofs() );
   ASSERT_LT_DBG( point_no, fe_values_.n_points() );
@@ -89,14 +89,14 @@ double FEValuesViews::Vector<dim,spacedim>::divergence(unsigned int function_no,
   return div;
 }
 
-template<unsigned int dim, unsigned int spacedim>
-FEValuesBase<dim,spacedim> &FEValuesViews::Vector<dim,spacedim>::base() const
+template<unsigned int spacedim>
+const FEValues<spacedim> &FEValuesViews::Vector<spacedim>::base() const
 { return fe_values_; }
 
 
 
-template<unsigned int dim, unsigned int spacedim>
-arma::mat::fixed<spacedim,spacedim> FEValuesViews::Tensor<dim,spacedim>::value(unsigned int function_no, unsigned int point_no) const
+template<unsigned int spacedim>
+arma::mat::fixed<spacedim,spacedim> FEValuesViews::Tensor<spacedim>::value(unsigned int function_no, unsigned int point_no) const
 {
   ASSERT_LT_DBG( function_no, fe_values_.n_dofs() );
   ASSERT_LT_DBG( point_no, fe_values_.n_points() );
@@ -106,8 +106,8 @@ arma::mat::fixed<spacedim,spacedim> FEValuesViews::Tensor<dim,spacedim>::value(u
   return v;
 }
 
-template<unsigned int dim, unsigned int spacedim>
-arma::mat::fixed<spacedim,spacedim> FEValuesViews::Tensor<dim,spacedim>::derivative(
+template<unsigned int spacedim>
+arma::mat::fixed<spacedim,spacedim> FEValuesViews::Tensor<spacedim>::derivative(
     unsigned int variable_no,
     unsigned int function_no, 
     unsigned int point_no) const
@@ -121,8 +121,8 @@ arma::mat::fixed<spacedim,spacedim> FEValuesViews::Tensor<dim,spacedim>::derivat
   return g;
 }
 
-template<unsigned int dim, unsigned int spacedim>
-arma::vec::fixed<spacedim> FEValuesViews::Tensor<dim,spacedim>::divergence(unsigned int function_no, unsigned int point_no) const
+template<unsigned int spacedim>
+arma::vec::fixed<spacedim> FEValuesViews::Tensor<spacedim>::divergence(unsigned int function_no, unsigned int point_no) const
 {
   ASSERT_LT_DBG( function_no, fe_values_.n_dofs() );
   ASSERT_LT_DBG( point_no, fe_values_.n_points() );
@@ -133,27 +133,16 @@ arma::vec::fixed<spacedim> FEValuesViews::Tensor<dim,spacedim>::divergence(unsig
   return div;
 }
 
-template<unsigned int dim, unsigned int spacedim>
-FEValuesBase<dim,spacedim> &FEValuesViews::Tensor<dim,spacedim>::base() const
+template<unsigned int spacedim>
+const FEValues<spacedim> &FEValuesViews::Tensor<spacedim>::base() const
 { return fe_values_; }
   
 
 
 
 
-template class FEValuesViews::Scalar<0,3>;
-template class FEValuesViews::Scalar<1,3>;
-template class FEValuesViews::Scalar<2,3>;
-template class FEValuesViews::Scalar<3,3>;
-
-template class FEValuesViews::Vector<0,3>;
-template class FEValuesViews::Vector<1,3>;
-template class FEValuesViews::Vector<2,3>;
-template class FEValuesViews::Vector<3,3>;
-
-template class FEValuesViews::Tensor<0,3>;
-template class FEValuesViews::Tensor<1,3>;
-template class FEValuesViews::Tensor<2,3>;
-template class FEValuesViews::Tensor<3,3>;
+template class FEValuesViews::Scalar<3>;
+template class FEValuesViews::Vector<3>;
+template class FEValuesViews::Tensor<3>;
 
 

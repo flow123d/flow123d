@@ -68,10 +68,11 @@ private:
 public:
     NeighSideValues<dim>()
     :  side_quad_(dim, 1),
-       fe_p_disc_(0),
-       fe_side_values_(side_quad_, fe_p_disc_, update_normal_vectors)
-    {}
-    FESideValues<dim+1,3> fe_side_values_;
+       fe_p_disc_(0)
+    {
+        fe_side_values_.initialize(side_quad_, fe_p_disc_, update_normal_vectors);
+    }
+    FEValues<3> fe_side_values_;
 
 };
 
@@ -88,18 +89,15 @@ public:
     
     AssemblyMH<dim>(AssemblyDataPtrMH data)
     : quad_(dim, 3),
-        fe_values_(quad_, fe_rt_,
-                update_values | update_gradients | update_JxW_values | update_quadrature_points),
-
-        velocity_interpolation_quad_(dim, 0), // veloctiy values in barycenter
-        velocity_interpolation_fv_(velocity_interpolation_quad_, fe_rt_, update_values | update_quadrature_points),
-
-        ad_(data),
-        loc_system_(size(), size()),
-        loc_system_vb_(2,2)
+      velocity_interpolation_quad_(dim, 0), // veloctiy values in barycenter
+      ad_(data),
+      loc_system_(size(), size()),
+      loc_system_vb_(2,2)
 
     {
-
+        fe_values_.initialize(quad_, fe_rt_,
+                update_values | update_gradients | update_JxW_values | update_quadrature_points);
+        velocity_interpolation_fv_.initialize(velocity_interpolation_quad_, fe_rt_, update_values | update_quadrature_points);
 
         // local numbering of dofs for MH system
         unsigned int nsides = dim+1;
@@ -187,7 +185,7 @@ public:
         // compute normal vector to side
         arma::vec3 nv;
         ElementAccessor<3> ele_higher = ad_->mesh->element_accessor( neighb_side.element().idx() );
-        ngh_values_.fe_side_values_.reinit(neighb_side);
+        ngh_values_.fe_side_values_.reinit(neighb_side.side());
         nv = ngh_values_.fe_side_values_.normal_vector(0);
 
         double value = ad_->sigma.value( ele.centre(), ele) *
@@ -368,8 +366,8 @@ protected:
         arma::vec3 &gravity_vec = ad_->gravity_vec_;
         const ElementAccessor<3> ele = dh_cell.elm();
         
-        fe_values_.reinit(dh_cell);
-        unsigned int ndofs = fe_values_.get_fe()->n_dofs();
+        fe_values_.reinit(ele);
+        unsigned int ndofs = fe_values_.n_dofs();
         unsigned int qsize = fe_values_.n_points();
         auto velocity = fe_values_.vector_view(0);
 
@@ -495,13 +493,13 @@ protected:
     // assembly volume integrals
     FE_RT0<dim> fe_rt_;
     QGauss quad_;
-    FEValues<dim,3> fe_values_;
+    FEValues<3> fe_values_;
 
     NeighSideValues< (dim<3) ? dim : 2> ngh_values_;
 
     // Interpolation of velocity into barycenters
     QGauss velocity_interpolation_quad_;
-    FEValues<dim,3> velocity_interpolation_fv_;
+    FEValues<3> velocity_interpolation_fv_;
 
     // data shared by assemblers of different dimension
     AssemblyDataPtrMH ad_;

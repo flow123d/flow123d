@@ -144,7 +144,7 @@ public:
     virtual std::vector< arma::vec::fixed<dim+1> > dof_points() const;
 
 
-    const std::vector<std::shared_ptr<FiniteElement<dim> > > &fe()
+    const std::vector<std::shared_ptr<FiniteElement<dim> > > &fe() const
     { return fe_; }
     
     /// Return dof indices belonging to given sub-FE.

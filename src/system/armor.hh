@@ -618,6 +618,7 @@ public:
             ASSERT_EQ(n_rows_, nr);
             ASSERT_EQ(n_cols_, nc);
             copy<nr, nc>(arma_x.memptr());
+            return *this;
         }
 
         template<long long unsigned int nr>
@@ -646,11 +647,11 @@ public:
      * @param nc    Number of columns in each matrix.
      */
     Array(uint nr, uint nc = 1, uint size = 0)
-    : n_rows_(nr),
+    : data_(new Type[nr * nc * size]),
+      n_rows_(nr),
       n_cols_(nc),
       size_(size),
-      reserved_(size),
-      data_(new Type[nr * nc * size])
+      reserved_(size)
     {
     }
     

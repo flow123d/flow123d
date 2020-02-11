@@ -70,15 +70,16 @@ public:
       fe_rt_(new FE_RT0<dim>), fe_rt_low_(new FE_RT0<dim-1>),
       quad_(new QGauss(dim, 2*data->dg_order)),
 	  quad_low_(new QGauss(dim-1, 2*data->dg_order)),
-      model_(model), data_(data), fv_rt_(*quad_, *fe_rt_, update_values | update_gradients | update_quadrature_points),
-      fe_values_(*quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points),
-      fv_rt_vb_(nullptr), fe_values_vb_(nullptr),
-      fe_values_side_(*quad_low_, *fe_, update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points),
-      fsv_rt_(*quad_low_, *fe_rt_, update_values | update_quadrature_points) {
+      model_(model), data_(data){
+
+        fv_rt_.initialize(*quad_, *fe_rt_, update_values | update_gradients | update_quadrature_points);
+        fe_values_.initialize(*quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
+        fe_values_side_.initialize(*quad_low_, *fe_, update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
+        fsv_rt_.initialize(*quad_low_, *fe_rt_, update_values | update_quadrature_points);
 
         if (dim>1) {
-            fv_rt_vb_ = new FEValues<dim-1,3>(*quad_low_, *fe_rt_low_, update_values | update_quadrature_points);
-            fe_values_vb_ = new FEValues<dim-1,3>(*quad_low_, *fe_low_,
+            fv_rt_vb_.initialize(*quad_low_, *fe_rt_low_, update_values | update_quadrature_points);
+            fe_values_vb_.initialize(*quad_low_, *fe_low_,
                     update_values | update_gradients | update_JxW_values | update_quadrature_points);
         }
         ndofs_ = fe_->n_dofs();
@@ -95,13 +96,6 @@ public:
         delete fe_rt_low_;
         delete quad_;
         delete quad_low_;
-        if (fv_rt_vb_!=nullptr) delete fv_rt_vb_;
-        if (fe_values_vb_!=nullptr) delete fe_values_vb_;
-
-        for (unsigned int i=0; i<data_->ad_coef_edg.size(); i++)
-        {
-            delete fe_values_vec_[i];
-        }
     }
 
     /// Initialize auxiliary vectors and other data members
@@ -134,17 +128,18 @@ public:
             ret_coef_[sbi].resize(qsize_);
         }
 
+        fe_values_vec_.resize(data_->ad_coef_edg.size());
         for (unsigned int sid=0; sid<data_->ad_coef_edg.size(); sid++)
         {
             side_dof_indices_.push_back( vector<LongIdx>(ndofs_) );
-            fe_values_vec_.push_back(new FESideValues<dim,3>(*quad_low_, *fe_,
-                    update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points));
+            fe_values_vec_[sid].initialize(*quad_low_, *fe_,
+                    update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
         }
 
         // index 0 = element with lower dimension,
         // index 1 = side of element with higher dimension
         fv_sb_.resize(2);
-        fv_sb_[0] = fe_values_vb_;
+        fv_sb_[0] = &fe_values_vb_;
         fv_sb_[1] = &fe_values_side_;
     }
 
@@ -154,7 +149,7 @@ public:
         ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
         ElementAccessor<3> elm = cell.elm();
 
-        fe_values_.reinit(cell);
+        fe_values_.reinit(elm);
         cell.get_dof_indices(dof_indices_);
 
         model_.compute_mass_matrix_coefficient(fe_values_.point_list(), elm, mm_coef_);
@@ -200,8 +195,8 @@ public:
 
         ElementAccessor<3> elm = cell.elm();
 
-        fe_values_.reinit(cell);
-        fv_rt_.reinit(cell);
+        fe_values_.reinit(elm);
+        fv_rt_.reinit(elm);
         cell.get_dof_indices(dof_indices_);
 
         calculate_velocity(elm, velocity_, fv_rt_.point_list());
@@ -249,8 +244,8 @@ public:
 
             ElementAccessor<3> elm_acc = cell.elm();
             cell.get_dof_indices(dof_indices_);
-            fe_values_side_.reinit(cell_side);
-            fsv_rt_.reinit(cell_side);
+            fe_values_side_.reinit(side);
+            fsv_rt_.reinit(side);
 
             calculate_velocity(elm_acc, velocity_, fsv_rt_.point_list());
             model_.compute_advection_diffusion_coefficients(fe_values_side_.point_list(), velocity_, elm_acc, data_->ad_coef, data_->dif_coef);
@@ -337,16 +332,16 @@ public:
                 auto dh_edge_cell = data_->dh_->cell_accessor_from_element( edge_side.elem_idx() );
                 ElementAccessor<3> edg_elm = dh_edge_cell.elm();
                 dh_edge_cell.get_dof_indices(side_dof_indices_[sid]);
-                fe_values_vec_[sid]->reinit(edge_side);
-                fsv_rt_.reinit(edge_side);
+                fe_values_vec_[sid].reinit(edge_side.side());
+                fsv_rt_.reinit(edge_side.side());
                 calculate_velocity(edg_elm, side_velocity_vec_[sid], fsv_rt_.point_list());
-                model_.compute_advection_diffusion_coefficients(fe_values_vec_[sid]->point_list(), side_velocity_vec_[sid], edg_elm, data_->ad_coef_edg[sid], data_->dif_coef_edg[sid]);
+                model_.compute_advection_diffusion_coefficients(fe_values_vec_[sid].point_list(), side_velocity_vec_[sid], edg_elm, data_->ad_coef_edg[sid], data_->dif_coef_edg[sid]);
                 dg_penalty_[sid].resize(model_.n_substances());
                 for (unsigned int sbi=0; sbi<model_.n_substances(); sbi++)
                     dg_penalty_[sid][sbi] = data_->dg_penalty[sbi].value(edg_elm.centre(), edg_elm);
                 ++sid;
             }
-            arma::vec3 normal_vector = fe_values_vec_[0]->normal_vector(0);
+            arma::vec3 normal_vector = fe_values_vec_[0].normal_vector(0);
 
             // fluxes and penalty
             for (unsigned int sbi=0; sbi<model_.n_substances(); sbi++)
@@ -358,7 +353,7 @@ public:
                 {
                     fluxes[sid] = 0;
                     for (unsigned int k=0; k<qsize_lower_dim_; k++)
-                        fluxes[sid] += arma::dot(data_->ad_coef_edg[sid][sbi][k], fe_values_vec_[sid]->normal_vector(k))*fe_values_vec_[sid]->JxW(k);
+                        fluxes[sid] += arma::dot(data_->ad_coef_edg[sid][sbi][k], fe_values_vec_[sid].normal_vector(k))*fe_values_vec_[sid].JxW(k);
                     fluxes[sid] /= edge_side.measure();
                     if (fluxes[sid] > 0)
                         pflux += fluxes[sid];
@@ -377,7 +372,7 @@ public:
                         if (s2<=s1) continue;
                         ASSERT(edge_side1.is_valid()).error("Invalid side of edge.");
 
-                        arma::vec3 nv = fe_values_vec_[s1]->normal_vector(0);
+                        arma::vec3 nv = fe_values_vec_[s1].normal_vector(0);
 
                         // set up the parameters for DG method
                         // calculate the flux from edge_side1 to edge_side2
@@ -421,9 +416,9 @@ public:
                         sd[0] = s1; is_side_own[0] = edge_side1.cell().is_own();
                         sd[1] = s2; is_side_own[1] = edge_side2.cell().is_own();
 
-#define AVERAGE(i,k,side_id)  (fe_values_vec_[sd[side_id]]->shape_value(i,k)*0.5)
-#define WAVERAGE(i,k,side_id) (arma::dot(data_->dif_coef_edg[sd[side_id]][sbi][k]*fe_values_vec_[sd[side_id]]->shape_grad(i,k),nv)*omega[side_id])
-#define JUMP(i,k,side_id)     ((side_id==0?1:-1)*fe_values_vec_[sd[side_id]]->shape_value(i,k))
+#define AVERAGE(i,k,side_id)  (fe_values_vec_[sd[side_id]].shape_value(i,k)*0.5)
+#define WAVERAGE(i,k,side_id) (arma::dot(data_->dif_coef_edg[sd[side_id]][sbi][k]*fe_values_vec_[sd[side_id]].shape_grad(i,k),nv)*omega[side_id])
+#define JUMP(i,k,side_id)     ((side_id==0?1:-1)*fe_values_vec_[sd[side_id]].shape_value(i,k))
 
                         // For selected pair of elements:
                         for (int n=0; n<2; n++)
@@ -432,25 +427,25 @@ public:
 
                             for (int m=0; m<2; m++)
                             {
-                                for (unsigned int i=0; i<fe_values_vec_[sd[n]]->n_dofs(); i++)
-                                    for (unsigned int j=0; j<fe_values_vec_[sd[m]]->n_dofs(); j++)
-                                        local_matrix_[i*fe_values_vec_[sd[m]]->n_dofs()+j] = 0;
+                                for (unsigned int i=0; i<fe_values_vec_[sd[n]].n_dofs(); i++)
+                                    for (unsigned int j=0; j<fe_values_vec_[sd[m]].n_dofs(); j++)
+                                        local_matrix_[i*fe_values_vec_[sd[m]].n_dofs()+j] = 0;
 
                                 for (unsigned int k=0; k<qsize_lower_dim_; k++)
                                 {
-                                    double flux_times_JxW = transport_flux*fe_values_vec_[0]->JxW(k);
-                                    double gamma_times_JxW = gamma_l*fe_values_vec_[0]->JxW(k);
+                                    double flux_times_JxW = transport_flux*fe_values_vec_[0].JxW(k);
+                                    double gamma_times_JxW = gamma_l*fe_values_vec_[0].JxW(k);
 
-                                    for (unsigned int i=0; i<fe_values_vec_[sd[n]]->n_dofs(); i++)
+                                    for (unsigned int i=0; i<fe_values_vec_[sd[n]].n_dofs(); i++)
                                     {
                                         double flux_JxW_jump_i = flux_times_JxW*JUMP(i,k,n);
                                         double gamma_JxW_jump_i = gamma_times_JxW*JUMP(i,k,n);
-                                        double JxW_jump_i = fe_values_vec_[0]->JxW(k)*JUMP(i,k,n);
-                                        double JxW_var_wavg_i = fe_values_vec_[0]->JxW(k)*WAVERAGE(i,k,n)*data_->dg_variant;
+                                        double JxW_jump_i = fe_values_vec_[0].JxW(k)*JUMP(i,k,n);
+                                        double JxW_var_wavg_i = fe_values_vec_[0].JxW(k)*WAVERAGE(i,k,n)*data_->dg_variant;
 
-                                        for (unsigned int j=0; j<fe_values_vec_[sd[m]]->n_dofs(); j++)
+                                        for (unsigned int j=0; j<fe_values_vec_[sd[m]].n_dofs(); j++)
                                         {
-                                            int index = i*fe_values_vec_[sd[m]]->n_dofs()+j;
+                                            int index = i*fe_values_vec_[sd[m]].n_dofs()+j;
 
                                             // flux due to transport (applied on interior edges) (average times jump)
                                             local_matrix_[index] += flux_JxW_jump_i*AVERAGE(j,k,m);
@@ -464,7 +459,7 @@ public:
                                         }
                                     }
                                 }
-                                data_->ls[sbi]->mat_set_values(fe_values_vec_[sd[n]]->n_dofs(), &(side_dof_indices_[sd[n]][0]), fe_values_vec_[sd[m]]->n_dofs(), &(side_dof_indices_[sd[m]][0]), &(local_matrix_[0]));
+                                data_->ls[sbi]->mat_set_values(fe_values_vec_[sd[n]].n_dofs(), &(side_dof_indices_[sd[n]][0]), fe_values_vec_[sd[m]].n_dofs(), &(side_dof_indices_[sd[m]][0]), &(local_matrix_[0]));
                             }
                         }
 #undef AVERAGE
@@ -497,7 +492,7 @@ public:
             for(unsigned int i=0; i<n_indices; ++i) {
                 side_dof_indices_vb_[i] = dof_indices_[i];
             }
-            fe_values_vb_->reinit(cell_lower_dim);
+            fe_values_vb_.reinit(elm_lower_dim);
             n_dofs[0] = fv_sb_[0]->n_dofs();
 
             DHCellAccessor cell_higher_dim = data_->dh_->cell_accessor_from_element( neighb_side.element().idx() );
@@ -506,7 +501,7 @@ public:
             for(unsigned int i=0; i<n_indices; ++i) {
                 side_dof_indices_vb_[i+n_dofs[0]] = dof_indices_[i];
             }
-            fe_values_side_.reinit(neighb_side);
+            fe_values_side_.reinit(neighb_side.side());
             n_dofs[1] = fv_sb_[1]->n_dofs();
 
             // Testing element if they belong to local partition.
@@ -514,14 +509,14 @@ public:
             own_element_id[0] = cell_lower_dim.is_own();
             own_element_id[1] = cell_higher_dim.is_own();
 
-            fsv_rt_.reinit(neighb_side);
-            fv_rt_vb_->reinit(cell_lower_dim);
+            fsv_rt_.reinit(neighb_side.side());
+            fv_rt_vb_.reinit(elm_lower_dim);
             calculate_velocity(elm_higher_dim, velocity_higher_, fsv_rt_.point_list());
-            calculate_velocity(elm_lower_dim, velocity_, fv_rt_vb_->point_list());
-            model_.compute_advection_diffusion_coefficients(fe_values_vb_->point_list(), velocity_, elm_lower_dim, data_->ad_coef_edg[0], data_->dif_coef_edg[0]);
-            model_.compute_advection_diffusion_coefficients(fe_values_vb_->point_list(), velocity_higher_, elm_higher_dim, data_->ad_coef_edg[1], data_->dif_coef_edg[1]);
-            data_->cross_section.value_list(fe_values_vb_->point_list(), elm_lower_dim, csection_);
-            data_->cross_section.value_list(fe_values_vb_->point_list(), elm_higher_dim, csection_higher_);
+            calculate_velocity(elm_lower_dim, velocity_, fv_rt_vb_.point_list());
+            model_.compute_advection_diffusion_coefficients(fe_values_vb_.point_list(), velocity_, elm_lower_dim, data_->ad_coef_edg[0], data_->dif_coef_edg[0]);
+            model_.compute_advection_diffusion_coefficients(fe_values_vb_.point_list(), velocity_higher_, elm_higher_dim, data_->ad_coef_edg[1], data_->dif_coef_edg[1]);
+            data_->cross_section.value_list(fe_values_vb_.point_list(), elm_lower_dim, csection_);
+            data_->cross_section.value_list(fe_values_vb_.point_list(), elm_higher_dim, csection_higher_);
 
             for (unsigned int sbi=0; sbi<model_.n_substances(); sbi++) // Optimize: SWAP LOOPS
             {
@@ -530,7 +525,7 @@ public:
                         local_matrix_[i*(n_dofs[0]+n_dofs[1])+j] = 0;
 
                 // sigma_ corresponds to frac_sigma
-                data_->fracture_sigma[sbi].value_list(fe_values_vb_->point_list(), elm_lower_dim, sigma_);
+                data_->fracture_sigma[sbi].value_list(fe_values_vb_.point_list(), elm_lower_dim, sigma_);
 
                 // set transmission conditions
                 for (unsigned int k=0; k<qsize_lower_dim_; k++)
@@ -577,7 +572,7 @@ public:
 
         ElementAccessor<3> elm = cell.elm();
 
-        fe_values_.reinit(cell);
+        fe_values_.reinit(elm);
         cell.get_dof_indices(dof_indices_);
 
         model_.compute_source_coefficients(fe_values_.point_list(), elm, sources_conc_, sources_density_, sources_sigma_);
@@ -632,8 +627,8 @@ public:
             arma::uvec bc_type;
             model_.get_bc_type(bc_elm, bc_type);
 
-            fe_values_side_.reinit(dh_side);
-            fsv_rt_.reinit(dh_side);
+            fe_values_side_.reinit(dh_side.side());
+            fsv_rt_.reinit(dh_side.side());
             calculate_velocity(elm, velocity_, fsv_rt_.point_list());
 
             dh_cell.get_dof_indices(dof_indices_);
@@ -752,7 +747,7 @@ public:
 
         ElementAccessor<3> elem = cell.elm();
         cell.get_dof_indices(dof_indices_);
-        fe_values_.reinit(cell);
+        fe_values_.reinit(elem);
         model_.compute_init_cond(fe_values_.point_list(), elem, init_values_);
 
         for (unsigned int sbi=0; sbi<model_.n_substances(); sbi++)
@@ -813,14 +808,14 @@ private:
     unsigned int ndofs_;                                      ///< Number of dofs
     unsigned int qsize_;                                      ///< Size of quadrature of actual dim
     unsigned int qsize_lower_dim_;                            ///< Size of quadrature of dim-1
-    FEValues<dim,3> fv_rt_;                                   ///< FEValues of object (of RT0 finite element type)
-    FEValues<dim,3> fe_values_;                               ///< FEValues of object (of P disc finite element type)
-    FEValues<dim-1,3> *fv_rt_vb_;                             ///< FEValues of dim-1 object (of RT0 finite element type)
-    FEValues<dim-1,3> *fe_values_vb_;                         ///< FEValues of dim-1 object (of P disc finite element type)
-    FESideValues<dim,3> fe_values_side_;                      ///< FESideValues of object (of P disc finite element type)
-    FESideValues<dim,3> fsv_rt_;                              ///< FESideValues of object (of RT0 finite element type)
-    vector<FESideValues<dim,3>*> fe_values_vec_;              ///< Vector of FESideValues of object (of P disc finite element types)
-    vector<FEValuesSpaceBase<3>*> fv_sb_;                     ///< Auxiliary vector, holds FEValues objects for assemble element-side
+    FEValues<3> fv_rt_;                                       ///< FEValues of object (of RT0 finite element type)
+    FEValues<3> fe_values_;                                   ///< FEValues of object (of P disc finite element type)
+    FEValues<3> fv_rt_vb_;                                    ///< FEValues of dim-1 object (of RT0 finite element type)
+    FEValues<3> fe_values_vb_;                                ///< FEValues of dim-1 object (of P disc finite element type)
+    FEValues<3> fe_values_side_;                      ///< FEValues of object (of P disc finite element type)
+    FEValues<3> fsv_rt_;                              ///< FEValues of object (of RT0 finite element type)
+    vector<FEValues<3>> fe_values_vec_;              ///< Vector of FEValues of object (of P disc finite element types)
+    vector<FEValues<3>*> fv_sb_;                     ///< Auxiliary vector, holds FEValues objects for assemble element-side
 
     vector<LongIdx> dof_indices_;                             ///< Vector of global DOF indices
     vector<LongIdx> loc_dof_indices_;                         ///< Vector of local DOF indices

@@ -109,6 +109,15 @@ public:
      */
     inline void inc();
 
+    inline bool operator==(const Side &other) const {
+        return (mesh_ == other.mesh_ ) && ( elem_idx_ == other.elem_idx_ )
+        		&& ( side_idx_ == other.side_idx_ );
+    }
+
+    inline bool operator!=(const Side &other) const {
+        return !( *this == other);
+    }
+
     /// This is necessary by current DofHandler, should change this
     //inline void *make_ptr() const;
 private:
@@ -138,14 +147,13 @@ public:
     : side_(side)
     {}
 
-    inline bool operator==(const SideIter &other) {
-        return (side_.mesh() == other.side_.mesh() ) && ( side_.elem_idx() == other.side_.elem_idx() )
-        		&& ( side_.side_idx() == other.side_.side_idx() );
+    inline bool operator==(const SideIter &other) const {
+        return side_ == other.side_;
     }
 
 
-    inline bool operator!=(const SideIter &other) {
-        return !( *this == other);
+    inline bool operator!=(const SideIter &other) const {
+        return side_ != other.side_;
     }
 
     ///  * dereference operator

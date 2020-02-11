@@ -43,14 +43,11 @@ public:
     
     AssemblyLMH<dim>(AssemblyDataPtrLMH data)
     : quad_(dim, 3),
-        fe_values_(quad_, fe_rt_,
-                update_values | update_gradients | update_JxW_values | update_quadrature_points),
-
-        velocity_interpolation_quad_(dim, 0), // veloctiy values in barycenter
-        velocity_interpolation_fv_(velocity_interpolation_quad_, fe_rt_, update_values | update_quadrature_points),
-
-        ad_(data)
+      velocity_interpolation_quad_(dim, 0), // veloctiy values in barycenter
+      ad_(data)
     {
+        fe_values_.initialize(quad_, fe_rt_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
+        velocity_interpolation_fv_.initialize(velocity_interpolation_quad_, fe_rt_, update_values | update_quadrature_points);
         // local numbering of dofs for MH system
         // note: this shortcut supposes that the fe_system is the same on all elements
         // the function DiscreteSpace.fe(ElementAccessor) does not in fact depend on the element accessor
@@ -385,8 +382,8 @@ protected:
         arma::vec3 &gravity_vec = ad_->gravity_vec_;
         auto ele = dh_cell.elm();
         
-        fe_values_.reinit(dh_cell);
-        unsigned int ndofs = fe_values_.get_fe()->n_dofs();
+        fe_values_.reinit(ele);
+        unsigned int ndofs = fe_values_.n_dofs();
         unsigned int qsize = fe_values_.n_points();
         auto velocity = fe_values_.vector_view(0);
 
@@ -506,7 +503,7 @@ protected:
             unsigned int p = size()+i; // loc dof of higher ele edge
             
             ElementAccessor<3> ele_higher = neighb_side.cell().elm();
-            ngh_values_.fe_side_values_.reinit(neighb_side);
+            ngh_values_.fe_side_values_.reinit(neighb_side.side());
             nv = ngh_values_.fe_side_values_.normal_vector(0);
 
             double value = ad_->sigma.value( ele.centre(), ele) *
@@ -569,13 +566,13 @@ protected:
     // assembly volume integrals
     FE_RT0<dim> fe_rt_;
     QGauss quad_;
-    FEValues<dim,3> fe_values_;
+    FEValues<3> fe_values_;
 
     NeighSideValues<dim<3?dim:2> ngh_values_;
 
     // Interpolation of velocity into barycenters
     QGauss velocity_interpolation_quad_;
-    FEValues<dim,3> velocity_interpolation_fv_;
+    FEValues<3> velocity_interpolation_fv_;
 
     // data shared by assemblers of different dimension
     AssemblyDataPtrLMH ad_;
