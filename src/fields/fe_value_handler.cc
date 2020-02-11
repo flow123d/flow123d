@@ -131,7 +131,10 @@ void FEValueHandler<elemdim, spacedim, Value>::value_list(const Armor::array  &p
 	Quadrature quad(elemdim, point_list.size());
 	for (unsigned int k=0; k<point_list.size(); k++)
         quad.set(k) = RefElement<elemdim>::bary_to_local(MappingP1<elemdim,spacedim>::project_real_to_unit(point_list.vec<spacedim>(k), map_mat));
-	FEValues<elemdim,spacedim> fe_values(quad, *dh_->ds()->fe(elm).get<elemdim>(), update_values);
+
+	MixedPtr<FiniteElement> fe_mixed_ptr = dh_->ds()->fe(elm);
+	std::shared_ptr<FiniteElement<elemdim>> fe_ptr = fe_mixed_ptr.get<elemdim>();
+	FEValues<elemdim,spacedim> fe_values(quad, *fe_ptr, update_values);
 
     for (unsigned int k=0; k<point_list.size(); k++) {
 		fe_values.reinit( cell );
