@@ -25,13 +25,13 @@
 #include <vector>
 #include "system/armor.hh"
 #include "fields/eval_points.hh"
+#include "mesh/accessors.hh"
 
 class EvalPoints;
 class ElementCacheMap;
 class DHCellAccessor;
 class DHCellSide;
 class Mesh;
-template <int spacedim> class ElementAccessor;
 
 
 /**
@@ -112,20 +112,43 @@ public:
     /// Index of invalid element in cache.
     static const unsigned int undef_elem_idx;
 
+    struct RegionData {
+    public:
+        /// Constructor
+        RegionData() {
+        	element_set_.reserve(ElementCacheMap::n_cached_elements);
+        }
+
+        /// Add element if does not exist
+        bool add(ElementAccessor<3> elm) {
+            unsigned int size = element_set_.size();
+            if (std::find(elm_indices_.begin(), elm_indices_.begin()+size, elm.idx()) == elm_indices_.begin()+size) {
+                elm_indices_[size] = elm.idx();
+                element_set_.push_back(elm);
+                return true;
+            } else
+                return false;
+        }
+
+        /// Array of elements idx, ensures element uniqueness
+        std::array<unsigned int, ElementCacheMap::n_cached_elements> elm_indices_;
+        /// Element vector
+        ElementSet element_set_;
+        /// Position in region in cache
+        unsigned int pos_;
+    };
+
     /// Holds helper data necessary for cache update.
     class UpdateCacheHelper {
     public:
-        /// Set of element indexes that wait for storing to cache.
-        std::unordered_set<unsigned int> added_elements_;
-
-        /// Maps elements of different regions
-        std::unordered_map<unsigned int, ElementSet> region_element_map_;
-
-        /// Maps of positions of different regions in cache
-        std::unordered_map<unsigned int, unsigned int> region_cache_indices_map_;
+        /// Maps of data of different regions in cache
+        std::unordered_map<unsigned int, RegionData> region_cache_indices_map_;
 
         /// Maps of begin and end positions of different regions data in cache
         std::array<unsigned int, ElementCacheMap::n_cached_elements+1> region_cache_indices_range_;
+
+        /// Number of elements in all regions stored in region_cache_indices_map_
+        unsigned int n_elements_;
     };
 
     /// Constructor
@@ -137,7 +160,7 @@ public:
     /// Init cache
     void init(std::shared_ptr<EvalPoints> eval_points);
 
-    /// Adds element to added_elements_ set.
+    /// Adds element to region_cache_indices_map_ set.
     void add(const DHCellAccessor &dh_cell);
 
     /// Same as previous but passes DHCellSide as parameter.
@@ -185,6 +208,9 @@ protected:
 
     /// Reset all items of elements_eval_points_map
     void clear_element_eval_points_map();
+
+    /// Add element to appropriate region data of update_data_ object
+    void add_to_region(ElementAccessor<3> elm);
 
     /// Vector of element indexes stored in cache.
     std::vector<unsigned int> elm_idx_;
