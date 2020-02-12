@@ -38,7 +38,7 @@
 #include "fields/field_flag.hh"
 #include "input/type_selection.hh"         // for Selection
 #include "mesh/point.hh"                   // for Space
-#include "mesh/sides.h"
+#include "mesh/side_impl.hh"
 #include "mesh/accessors.hh"
 #include "system/asserts.hh"               // for Assert, ASSERT
 #include "tools/time_governor.hh"          // for TimeStep

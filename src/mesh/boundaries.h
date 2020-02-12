@@ -18,12 +18,13 @@
 #ifndef BOUNDARIES_H
 #define BOUNDARIES_H
 
+#include "mesh/edges.h"      // for Edge
+#include "mesh/region.hh"    // for Region
+#include "mesh/sides.h"      // for SideIter
+#include "system/system.hh"  // for MessageType::Err, xprintf
 
 class Element;
 class Mesh;
-class Edge;
-class Region;
-class SideIter;
 namespace flow { template <class T> class VectorId; }
 template <int spacedim> class ElementAccessor;
 
@@ -38,6 +39,8 @@ template <int spacedim> class ElementAccessor;
  * one Boundary for every external side. Side is external either when it does not
  * neighbor with another element or when it belongs to an segment.
  */
+
+class Element;
 
 //=============================================================================
 // STRUCTURE OF THE BOUNDARY CONDITION
@@ -65,12 +68,17 @@ public:
 
     ElementAccessor<3> element_accessor();
 
-    SideIter side();
+
+    inline SideIter side() {
+        if (edge()->n_sides != 1) xprintf(Err, "Using side method for boundary, but there is boundary with multiple sides.\n");
+        return edge()->side_[0];
+    }
 
     // Topology of the mesh
     unsigned int    edge_idx_;    // more then one side can be at one boundary element
     unsigned int    bc_ele_idx_;  // in near future this should replace Boundary itself, when we remove BC data members
     Mesh *mesh_;
+
 };
 #endif
 //-----------------------------------------------------------------------------

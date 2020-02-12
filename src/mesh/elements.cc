@@ -20,7 +20,7 @@
 #include <string>
 
 #include "system/system.hh"
-#include "mesh/sides.h"
+#include "mesh/side_impl.hh"
 #include "elements.h"
 #include "mesh/mesh.h"
 #include "mesh/ref_element.hh"

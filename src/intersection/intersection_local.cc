@@ -2,7 +2,7 @@
 #include "intersection_local.hh"
 #include "intersection_aux.hh"
 #include "intersection_point_aux.hh"
-#include "mesh/sides.h"
+#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "mesh/accessors.hh"
 

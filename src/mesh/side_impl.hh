@@ -11,33 +11,73 @@
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
  * 
- * @file    side_impl.h
+ * @file    side_impl.hh
  * @brief   
  */
 
 #ifndef SIDE_IMPL_HH_
 #define SIDE_IMPL_HH_
 
+#include "mesh/accessors.hh"
+#include "mesh/node_accessor.hh"
 #include "mesh/mesh.h"
+#include "mesh/edges.h"
 
-///////////////////////////
-// SIDE inline implementation
-///////////////////////////
 
-    inline Side::Side(const Mesh * mesh, unsigned int elem_idx, unsigned int set_lnum)
-    : mesh_(mesh), elem_idx_(elem_idx), side_idx_(set_lnum)
-    {
-        mesh_->check_element_size(elem_idx);
-    }
+inline Side::Side(const Mesh * mesh, unsigned int elem_idx, unsigned int set_lnum)
+: mesh_(mesh), elem_idx_(elem_idx), side_idx_(set_lnum)
+{
+	mesh_->check_element_size(elem_idx);
+}
 
 
     inline unsigned int Side::n_nodes() const {
         return dim()+1;
     }
 
+    inline unsigned int Side::dim() const {
+        return element()->dim()-1;
+    }
+
+    // returns true for all sides either on boundary or connected to vb neigboring
+    inline bool Side::is_external() const {
+        return edge()->n_sides == 1;
+    }
+
+    inline NodeAccessor<3> Side::node(unsigned int i) const {
+        int i_n = mesh_->side_nodes[dim()][side_idx_][i];
+
+        return element().node_accessor( i_n );
+    }
+
+    inline ElementAccessor<3> Side::element() const {
+    	ASSERT( valid() ).error("Wrong use of uninitialized accessor.\n");
+        return mesh_->element_accessor( elem_idx_ );
+    }
+
     inline const Mesh * Side::mesh() const {
         return this->mesh_;
     }
+
+    inline unsigned int Side::edge_idx() const {
+        return element()->edge_idx(side_idx_);
+    }
+
+    inline const Edge * Side::edge() const {
+        if (edge_idx() == Mesh::undef_idx) return NULL;
+        else return &( mesh_->edges[ edge_idx() ] );
+    }
+
+    inline Boundary * Side::cond() const {
+            if (cond_idx() == Mesh::undef_idx) return NULL;
+            else return &( mesh_->boundary_[ cond_idx() ] );
+    }
+
+    inline unsigned int Side::cond_idx() const {
+         if (element()->boundary_idx_ == NULL) return Mesh::undef_idx;
+         else return element()->boundary_idx_[side_idx_];
+    }
+
 
     inline unsigned int Side::side_idx() const {
         return side_idx_;
@@ -59,32 +99,7 @@
     }
 
 
-
-///////////////////////////
-// SIDE_ITER inline implementation
-///////////////////////////
-
-    inline SideIter::SideIter(const Side &side)
-    : side_(side)
-    {}
-
-    inline bool SideIter::operator==(const SideIter &other) {
-        return (side_.mesh() == other.side_.mesh() ) && ( side_.elem_idx() == other.side_.elem_idx() )
-        		&& ( side_.side_idx() == other.side_.side_idx() );
-    }
-
-    inline bool SideIter::operator!=(const SideIter &other) {
-        return !( *this == other);
-    }
-
-    inline const Side & SideIter::operator *() const
-            { return side_; }
-
-    inline const Side * SideIter::operator ->() const
-            { return &side_; }
-
-    inline SideIter & SideIter::operator ++ () {
-        side_.inc();
-        return (*this);
-    }
+    //inline void *Side::make_ptr() const {
+    //    return (void *)((long int) element() << (2 + side_idx_) );
+    //}
 #endif /* SIDE_IMPL_HH_ */

@@ -30,7 +30,7 @@
 #include "mesh/elements.h"                   // for Element::side, Element::dim
 #include "mesh/mesh.h"                       // for Mesh
 #include "mesh/region.hh"                    // for Region
-#include "mesh/sides.h"                 // for Side::edge_idx
+#include "mesh/side_impl.hh"                 // for Side::edge_idx
 #include "mesh/sides.h"                      // for SideIter, Side
 
 class LocalToGlobalMap;

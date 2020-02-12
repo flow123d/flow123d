@@ -17,7 +17,7 @@
  */
 
 #include "system/system.hh"
-#include "mesh/sides.h"
+#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "mesh/boundaries.h"
 #include "mesh/accessors.hh"
@@ -48,11 +48,6 @@ Edge * Boundary::edge() {
 ElementAccessor<3> Boundary::element_accessor()
 {
 	return mesh_->element_accessor(bc_ele_idx_);
-}
-
-SideIter Boundary::side() {
-    if (edge()->n_sides != 1) xprintf(Err, "Using side method for boundary, but there is boundary with multiple sides.\n");
-        return edge()->side_[0];
 }
 
 //-----------------------------------------------------------------------------

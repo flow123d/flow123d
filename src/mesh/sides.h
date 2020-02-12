@@ -21,17 +21,20 @@
 
 #include <armadillo>
 #include <stddef.h>                          // for NULL
+//#include "mesh/mesh.h"
+//#include "mesh/accessors.hh"
 
 class Boundary;
 class Edge;
 class Element;
-class Mesh;
 template <int spacedim> class NodeAccessor;
 template <int spacedim> class ElementAccessor;
 
 //=============================================================================
 // STRUCTURE OF THE SIDE OF THE MESH
 //=============================================================================
+
+class Mesh;
 
 class Side {
 public:
@@ -51,9 +54,40 @@ public:
     inline unsigned int n_nodes() const;
 
     /**
+     * Returns dimension of the side, that is dimension of the element minus one.
+     */
+    inline unsigned int dim() const;
+
+    // returns true for all sides either on boundary or connected to vb neigboring
+    inline bool is_external() const;
+
+    /**
+     * Returns node for given local index @p i on the side.
+     */
+    inline NodeAccessor<3> node(unsigned int i) const;
+
+    /**
+     * Returns iterator to the element of the side.
+     */
+    inline ElementAccessor<3> element() const;
+
+    /**
      * Returns pointer to the mesh.
      */
     inline const Mesh * mesh() const;
+
+    /**
+     * Returns global index of the edge connected to the side.
+     */
+    inline unsigned int edge_idx() const;
+
+    /**
+     * Returns pointer to the edge connected to the side.
+     */
+    inline const Edge * edge() const;
+
+    inline Boundary * cond() const;
+    inline unsigned int cond_idx() const;
 
     /**
      * Returns local index of the side on the element.
@@ -75,39 +109,8 @@ public:
      */
     inline void inc();
 
-
-
-    /**
-     * Returns dimension of the side, that is dimension of the element minus one.
-     */
-    unsigned int dim() const;
-
-    // returns true for all sides either on boundary or connected to vb neigboring
-    bool is_external() const;
-
-    /**
-     * Returns node for given local index @p i on the side.
-     */
-    NodeAccessor<3> node(unsigned int i) const;
-
-    /**
-     * Returns iterator to the element of the side.
-     */
-    ElementAccessor<3> element() const;
-
-    /**
-     * Returns global index of the edge connected to the side.
-     */
-    unsigned int edge_idx() const;
-
-    /**
-     * Returns pointer to the edge connected to the side.
-     */
-    const Edge * edge() const;
-
-    Boundary * cond() const;
-    unsigned int cond_idx() const;
-
+    /// This is necessary by current DofHandler, should change this
+    //inline void *make_ptr() const;
 private:
 
     arma::vec3 normal_point() const;
@@ -123,7 +126,7 @@ private:
 };
 
 
-/**
+/*
  * Iterator to a side.
  */
 class SideIter {
@@ -131,30 +134,37 @@ public:
     SideIter()
     {}
 
-    inline SideIter(const Side &side);
+    inline SideIter(const Side &side)
+    : side_(side)
+    {}
 
-    ///  == comparison operator
-    inline bool operator==(const SideIter &other);
+    inline bool operator==(const SideIter &other) {
+        return (side_.mesh() == other.side_.mesh() ) && ( side_.elem_idx() == other.side_.elem_idx() )
+        		&& ( side_.side_idx() == other.side_.side_idx() );
+    }
 
-    ///  != negative comparison operator
-    inline bool operator!=(const SideIter &other);
+
+    inline bool operator!=(const SideIter &other) {
+        return !( *this == other);
+    }
 
     ///  * dereference operator
-    inline const Side & operator *() const;
+    inline const Side & operator *() const
+            { return side_; }
 
     /// -> dereference operator
-    inline const Side * operator ->() const;
+    inline const Side * operator ->() const
+            { return &side_; }
 
     /// prefix increment iterate only on local element
-    inline SideIter &operator ++ ();
+    inline SideIter &operator ++ () {
+        side_.inc();
+        return (*this);
+    }
 
 private:
     Side side_;
 };
-
-// include inline implementation
-#include "mesh/side_impl.hh"
-
-#endif /* SIDES_H */
+#endif
 //-----------------------------------------------------------------------------
 // vim: set cindent:
