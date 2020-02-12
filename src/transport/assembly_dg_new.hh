@@ -140,7 +140,6 @@ public:
                     el_cache_map.add(neighb_side);
                 }
 
-            this->insert_eval_points_from_integral_data(el_cache_map);
             multidim_assembly_.get<1>()->data_->cache_update(el_cache_map);
         }
         END_TIMER("assemble_stiffness");

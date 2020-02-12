@@ -201,6 +201,13 @@ void TransportDG<Model>::EqData::set_DG_parameters_boundary(Side side,
 
 
 
+template<class Model>
+void TransportDG<Model>::EqData::register_eval_points(ElementCacheMap &cache_map) {
+    generic_assembly_->insert_eval_points_from_integral_data(cache_map);
+}
+
+
+
 
 
 template<class Model>
@@ -242,7 +249,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
 	std::shared_ptr<AssemblyDGNew<1, Model>> assembly_new1 = std::make_shared<AssemblyDGNew<1, Model>>(data_, *this);
 	std::shared_ptr<AssemblyDGNew<2, Model>> assembly_new2 = std::make_shared<AssemblyDGNew<2, Model>>(data_, *this);
 	std::shared_ptr<AssemblyDGNew<3, Model>> assembly_new3 = std::make_shared<AssemblyDGNew<3, Model>>(data_, *this);
-	generic_assembly_ = new GenericAssembly< AssemblyDGDim >(assembly_new0, assembly_new1, assembly_new2, assembly_new3);
+	data_->generic_assembly_ = new GenericAssembly< AssemblyDGDim >(assembly_new0, assembly_new1, assembly_new2, assembly_new3);
 	MixedPtr<FiniteElement> fe(assembly1_->fe_low_, assembly1_->fe_, assembly2_->fe_, assembly3_->fe_);
 	shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>(Model::mesh_, fe);
 	data_->dh_ = make_shared<DOFHandlerMultiDim>(*Model::mesh_);
@@ -378,7 +385,7 @@ TransportDG<Model>::~TransportDG()
         //delete[] mass_vec;
         //delete[] ret_vec;
 
-        delete generic_assembly_;
+        delete data_->generic_assembly_;
 
     }
 
@@ -434,8 +441,8 @@ void TransportDG<Model>::preallocate()
         mass_matrix[i] = NULL;
         VecZeroEntries(data_->ret_vec[i]);
     }
-    assemble_stiffness_matrix();
     assemble_stiffness_matrix_new();
+    assemble_stiffness_matrix();
     assemble_mass_matrix();
     set_sources();
     set_boundary_conditions();
@@ -501,6 +508,7 @@ void TransportDG<Model>::update_solution()
             data_->ls[i]->start_add_assembly();
             data_->ls[i]->mat_zero_entries();
         }
+        assemble_stiffness_matrix_new();
         assemble_stiffness_matrix();
         for (unsigned int i=0; i<Model::n_substances(); i++)
         {
@@ -711,8 +719,8 @@ void TransportDG<Model>::assemble_stiffness_matrix()
 template<class Model>
 void TransportDG<Model>::assemble_stiffness_matrix_new()
 {
-    generic_assembly_->set_active(bulk | edge | coupling | boundary);
-    generic_assembly_->assemble_stiffness_matrix(data_->dh_);
+	data_->generic_assembly_->set_active(bulk | edge | coupling | boundary);
+	data_->generic_assembly_->assemble_stiffness_matrix(data_->dh_);
 }
 
 
@@ -838,7 +846,7 @@ void TransportDG<Model>::initialize_assembly_objects()
 {
     for (unsigned int i=0; i<multidim_assembly_.size(); ++i)
         multidim_assembly_[i]->initialize();
-    generic_assembly_->initialize();
+    data_->generic_assembly_->initialize();
 }
 
 

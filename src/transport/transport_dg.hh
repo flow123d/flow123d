@@ -171,6 +171,12 @@ public:
 		double elem_anisotropy(ElementAccessor<3> e) const;
 
 
+	    /**
+	     * Implements FieldSet::register_eval_points
+	     */
+	    void register_eval_points(ElementCacheMap &cache_map) override;
+
+
 
 		MultiField<3, FieldValue<3>::Scalar> fracture_sigma;    ///< Transition parameter for diffusive transfer on fractures (for each substance).
 		MultiField<3, FieldValue<3>::Scalar> dg_penalty;        ///< Penalty enforcing inter-element continuity of solution (for each substance).
@@ -222,6 +228,9 @@ public:
         std::shared_ptr<DOFHandlerMultiDim> dh_;
 
         ElementCacheMap element_cache_map_;
+
+        /// general assembly objects, hold assembly objects of appropriate dimension
+        GenericAssembly< AssemblyDGDim > * generic_assembly_;
 	};
 
 
@@ -436,7 +445,6 @@ private:
     std::shared_ptr<AssemblyDG<1, Model>> assembly1_;
     std::shared_ptr<AssemblyDG<2, Model>> assembly2_;
     std::shared_ptr<AssemblyDG<3, Model>> assembly3_;
-    GenericAssembly< AssemblyDGDim > * generic_assembly_;
 
 };
 
