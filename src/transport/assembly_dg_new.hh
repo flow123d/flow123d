@@ -105,9 +105,12 @@ public:
 
     void assemble_stiffness_matrix(std::shared_ptr<DOFHandlerMultiDim> dh) {
         START_TIMER("assemble_stiffness");
+        unsigned int i;
         ElementCacheMap &el_cache_map = multidim_assembly_.get<1>()->data_->element_cache_map_;
         for (auto cell : dh->local_range() )
         {
+        	for (i=0; i<4; i++) integrals_size_[i] = 0;
+
             // generic_assembly.check_integral_data();
             if (active_integrals_ & ActiveIntegrals::bulk)
         	    if (cell.is_own()) { // Not ghost
@@ -141,6 +144,23 @@ public:
                 }
 
             multidim_assembly_.get<1>()->data_->cache_update(el_cache_map);
+
+            // calling of assemblation methods
+            START_TIMER("assemble_volume_integrals");
+            for (i=0; i<integrals_size_[0]; ++i) { // volume integral
+                switch (bulk_integral_data_[i].cell.dim()) {
+                case 1:
+                	std::get<1>(multidim_assembly_)->assemble_volume_integrals(bulk_integral_data_[i].cell);
+                    break;
+                case 2:
+                    std::get<2>(multidim_assembly_)->assemble_volume_integrals(bulk_integral_data_[i].cell);
+                    break;
+                case 3:
+                    std::get<3>(multidim_assembly_)->assemble_volume_integrals(bulk_integral_data_[i].cell);
+                    break;
+            	}
+            }
+            END_TIMER("assemble_volume_integrals");
         }
         END_TIMER("assemble_stiffness");
     }
@@ -215,7 +235,7 @@ public:
         	unsigned int data_size = eval_points_->subset_size( bulk_integral_data_[i].cell.dim(), bulk_integral_data_[i].subset_index );
             el_cache_map.mark_used_eval_points(bulk_integral_data_[i].cell, bulk_integral_data_[i].subset_index, data_size);
         }
-        integrals_size_[0] = 0;
+
         for (unsigned int i=0; i<integrals_size_[1]; ++i) {
             // add data to cache if there is free space, else return
         	for (DHCellSide edge_side : edge_integral_data_[i].edge_side_range) {
@@ -225,7 +245,7 @@ public:
                 el_cache_map.mark_used_eval_points(edge_side.cell(), edge_integral_data_[i].subset_index, data_size, start_point);
         	}
         }
-        integrals_size_[1] = 0;
+
         for (unsigned int i=0; i<integrals_size_[2]; ++i) {
             // add data to cache if there is free space, else return
             unsigned int bulk_data_size = eval_points_->subset_size( coupling_integral_data_[i].cell.dim(), coupling_integral_data_[i].bulk_subset_index );
@@ -236,7 +256,7 @@ public:
             unsigned int start_point = side_data_size * coupling_integral_data_[i].side.side_idx();
             el_cache_map.mark_used_eval_points(coupling_integral_data_[i].side.cell(), coupling_integral_data_[i].side_subset_index, side_data_size, start_point);
         }
-        integrals_size_[2] = 0;
+
         for (unsigned int i=0; i<integrals_size_[3]; ++i) {
             // add data to cache if there is free space, else return
         	unsigned int side_dim = boundary_integral_data_[i].side.dim();
@@ -244,7 +264,6 @@ public:
             unsigned int start_point = data_size * boundary_integral_data_[i].side.side_idx();
             el_cache_map.mark_used_eval_points(boundary_integral_data_[i].side.cell(), boundary_integral_data_[i].subset_index, data_size, start_point);
         }
-        integrals_size_[3] = 0;
     }
 
 private:
@@ -366,6 +385,57 @@ public:
     }
 
 
+    //void assemble_mass_matrix(DHCellAccessor cell) {}
+
+
+    /// Assembles the volume integrals into the stiffness matrix.
+    void assemble_volume_integrals(DHCellAccessor cell)
+    {
+        ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
+        if (!cell.is_own()) return;
+
+        ElementAccessor<3> elm = cell.elm();
+
+        fe_values_.reinit(elm);
+        fv_rt_.reinit(elm);
+        cell.get_dof_indices(dof_indices_);
+
+        calculate_velocity(elm, velocity_, fv_rt_.point_list());
+        model_.compute_advection_diffusion_coefficients(fe_values_.point_list(), velocity_, elm, data_->ad_coef, data_->dif_coef);
+        model_.compute_sources_sigma(fe_values_.point_list(), elm, sources_sigma_);
+
+        // assemble the local stiffness matrix
+        for (unsigned int sbi=0; sbi<model_.n_substances(); sbi++)
+        {
+            for (unsigned int i=0; i<ndofs_; i++)
+                for (unsigned int j=0; j<ndofs_; j++)
+                    local_matrix_[i*ndofs_+j] = 0;
+
+            for (unsigned int k=0; k<qsize_; k++)
+            {
+                for (unsigned int i=0; i<ndofs_; i++)
+                {
+                    arma::vec3 Kt_grad_i = data_->dif_coef[sbi][k].t()*fe_values_.shape_grad(i,k);
+                    double ad_dot_grad_i = arma::dot(data_->ad_coef[sbi][k], fe_values_.shape_grad(i,k));
+
+                    for (unsigned int j=0; j<ndofs_; j++)
+                        local_matrix_[i*ndofs_+j] += (arma::dot(Kt_grad_i, fe_values_.shape_grad(j,k))
+                                                  -fe_values_.shape_value(j,k)*ad_dot_grad_i
+                                                  +sources_sigma_[sbi][k]*fe_values_.shape_value(j,k)*fe_values_.shape_value(i,k))*fe_values_.JxW(k);
+                }
+            }
+            data_->ls[sbi]->mat_set_values(ndofs_, &(dof_indices_[0]), ndofs_, &(dof_indices_[0]), &(local_matrix_[0]));
+        }
+    }
+
+
+    // void assemble_fluxes_boundary(DHCellAccessor cell) {}
+    // void assemble_fluxes_element_element(DHCellAccessor cell) {}
+    // void assemble_fluxes_element_side(DHCellAccessor cell_lower_dim) {}
+    // void set_sources(DHCellAccessor cell) {}
+    // void set_boundary_conditions(DHCellAccessor cell) {}
+    // void prepare_initial_condition(DHCellAccessor cell) {}
+
 
 //private:
 	/**
@@ -375,12 +445,12 @@ public:
 	 * @param velocity   The computed velocity field (at quadrature points).
 	 * @param point_list The quadrature points.
 	 */
-    /*void calculate_velocity(const ElementAccessor<3> &cell, vector<arma::vec3> &velocity,
+    void calculate_velocity(const ElementAccessor<3> &cell, vector<arma::vec3> &velocity,
                             const std::vector<arma::vec::fixed<3>> &point_list)
     {
         velocity.resize(point_list.size());
         model_.velocity_field_ptr()->value_list(point_list, cell, velocity);
-    }*/
+    }
 
     std::shared_ptr<BulkIntegral> bulk_integral_;          ///< Bulk integrals of elements of given dimension
     std::shared_ptr<EdgeIntegral> edge_integral_;          ///< Edge integrals between sides of elements of given dimension
