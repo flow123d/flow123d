@@ -441,7 +441,6 @@ void TransportDG<Model>::preallocate()
         mass_matrix[i] = NULL;
         VecZeroEntries(data_->ret_vec[i]);
     }
-    assemble_stiffness_matrix_new();
     assemble_stiffness_matrix();
     assemble_mass_matrix();
     set_sources();
@@ -508,7 +507,6 @@ void TransportDG<Model>::update_solution()
             data_->ls[i]->start_add_assembly();
             data_->ls[i]->mat_zero_entries();
         }
-        assemble_stiffness_matrix_new();
         assemble_stiffness_matrix();
         for (unsigned int i=0; i<Model::n_substances(); i++)
         {
@@ -691,33 +689,6 @@ void TransportDG<Model>::assemble_mass_matrix()
 
 template<class Model>
 void TransportDG<Model>::assemble_stiffness_matrix()
-{
-  START_TIMER("assemble_stiffness");
-    for (auto cell : data_->dh_->local_range() )
-    {
-        //START_TIMER("assemble_volume_integrals");
-        //multidim_assembly_[ cell.dim()-1 ]->assemble_volume_integrals(cell);
-        //END_TIMER("assemble_volume_integrals");
-
-        START_TIMER("assemble_fluxes_boundary");
-        multidim_assembly_[ cell.dim()-1 ]->assemble_fluxes_boundary(cell);
-        END_TIMER("assemble_fluxes_boundary");
-
-        START_TIMER("assemble_fluxes_elem_elem");
-        multidim_assembly_[ cell.dim()-1 ]->assemble_fluxes_element_element(cell);
-        END_TIMER("assemble_fluxes_elem_elem");
-
-        START_TIMER("assemble_fluxes_elem_side");
-        if (cell.dim()<3) multidim_assembly_[ cell.dim() ]->assemble_fluxes_element_side(cell);
-        END_TIMER("assemble_fluxes_elem_side");
-    }
-  END_TIMER("assemble_stiffness");
-}
-
-
-
-template<class Model>
-void TransportDG<Model>::assemble_stiffness_matrix_new()
 {
 	data_->generic_assembly_->set_active(bulk | edge | coupling | boundary);
 	data_->generic_assembly_->assemble_stiffness_matrix(data_->dh_);

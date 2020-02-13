@@ -331,7 +331,6 @@ private:
 	 * space dimension.
 	 */
 	void assemble_stiffness_matrix();
-	void assemble_stiffness_matrix_new();
 
 	/**
 	 * @brief Assembles the right hand side due to volume sources.
