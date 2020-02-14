@@ -35,7 +35,6 @@
 #include "transport/advection_diffusion_model.hh"
 #include "transport/concentration_model.hh"
 #include "transport/heat_model.hh"
-#include "transport/assembly_dg.hh"
 #include "transport/assembly_dg_new.hh"
 
 #include "fields/multi_field.hh"
@@ -238,19 +237,13 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
     
     Model::init_from_input(in_rec);
 
-    // create finite element structures and distribute DOFs
-	assembly1_ = std::make_shared<AssemblyDG<1, Model>>(data_, *this);
-	assembly2_ = std::make_shared<AssemblyDG<2, Model>>(data_, *this);
-	assembly3_ = std::make_shared<AssemblyDG<3, Model>>(data_, *this);
-	multidim_assembly_.push_back( std::dynamic_pointer_cast<AssemblyDGBase>(assembly1_) );
-	multidim_assembly_.push_back( std::dynamic_pointer_cast<AssemblyDGBase>(assembly2_) );
-	multidim_assembly_.push_back( std::dynamic_pointer_cast<AssemblyDGBase>(assembly3_) );
+    // create assemblation object, finite element structures and distribute DOFs
 	std::shared_ptr<AssemblyDGNew<0, Model>> assembly_new0 = std::make_shared<AssemblyDGNew<0, Model>>(data_, *this);
 	std::shared_ptr<AssemblyDGNew<1, Model>> assembly_new1 = std::make_shared<AssemblyDGNew<1, Model>>(data_, *this);
 	std::shared_ptr<AssemblyDGNew<2, Model>> assembly_new2 = std::make_shared<AssemblyDGNew<2, Model>>(data_, *this);
 	std::shared_ptr<AssemblyDGNew<3, Model>> assembly_new3 = std::make_shared<AssemblyDGNew<3, Model>>(data_, *this);
 	data_->generic_assembly_ = new GenericAssembly< AssemblyDGDim >(assembly_new0, assembly_new1, assembly_new2, assembly_new3);
-	MixedPtr<FiniteElement> fe(assembly1_->fe_low_, assembly1_->fe_, assembly2_->fe_, assembly3_->fe_);
+	MixedPtr<FiniteElement> fe(assembly_new1->fe_low_, assembly_new1->fe_, assembly_new2->fe_, assembly_new3->fe_);
 	shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>(Model::mesh_, fe);
 	data_->dh_ = make_shared<DOFHandlerMultiDim>(*Model::mesh_);
 	data_->dh_->distribute_dofs(ds);
@@ -271,7 +264,10 @@ void TransportDG<Model>::initialize()
     	data_->gamma[sbi].resize(Model::mesh_->boundary_.size());
 
     // Resize coefficient arrays
-    int qsize = max(assembly1_->quad_low_->size(), max(assembly1_->quad_->size(), max(assembly2_->quad_->size(), assembly3_->quad_->size())));
+    int qsize = max(data_->generic_assembly_->multidim_assembly().get<1>()->quad_low_->size(),
+                    max(data_->generic_assembly_->multidim_assembly().get<1>()->quad_->size(),
+                        max(data_->generic_assembly_->multidim_assembly().get<2>()->quad_->size(),
+                            data_->generic_assembly_->multidim_assembly().get<3>()->quad_->size())));
     int max_edg_sides = max(Model::mesh_->max_edge_sides(1), max(Model::mesh_->max_edge_sides(2), Model::mesh_->max_edge_sides(3)));
     ret_sources.resize(Model::n_substances());
     ret_sources_prev.resize(Model::n_substances());
@@ -345,9 +341,12 @@ void TransportDG<Model>::initialize()
 
     // initialization of balance object
     Model::balance_->allocate(data_->dh_->distr()->lsize(),
-            max(assembly1_->fe_->n_dofs(), max(assembly2_->fe_->n_dofs(), assembly3_->fe_->n_dofs())));
+            max(data_->generic_assembly_->multidim_assembly().get<1>()->fe_->n_dofs(),
+                max(data_->generic_assembly_->multidim_assembly().get<2>()->fe_->n_dofs(),
+                    data_->generic_assembly_->multidim_assembly().get<3>()->fe_->n_dofs())));
 
-    initialize_assembly_objects();
+    // initialization of assembly object
+    data_->generic_assembly_->initialize();
 }
 
 
@@ -599,13 +598,13 @@ void TransportDG<Model>::calculate_concentration_matrix()
         switch (cell.dim())
         {
         case 1:
-            n_dofs = assembly1_->fe_->n_dofs();
+            n_dofs = data_->generic_assembly_->multidim_assembly().get<1>()->fe_->n_dofs();
             break;
         case 2:
-            n_dofs = assembly2_->fe_->n_dofs();
+            n_dofs = data_->generic_assembly_->multidim_assembly().get<2>()->fe_->n_dofs();
             break;
         case 3:
-            n_dofs = assembly3_->fe_->n_dofs();
+            n_dofs = data_->generic_assembly_->multidim_assembly().get<3>()->fe_->n_dofs();
             break;
         }
 
@@ -751,13 +750,13 @@ void TransportDG<Model>::update_after_reactions(bool solution_changed)
             switch (cell.dim())
             {
             case 1:
-                n_dofs = assembly1_->fe_->n_dofs();
+                n_dofs = data_->generic_assembly_->multidim_assembly().get<1>()->fe_->n_dofs();
                 break;
             case 2:
-                n_dofs = assembly2_->fe_->n_dofs();
+                n_dofs = data_->generic_assembly_->multidim_assembly().get<2>()->fe_->n_dofs();
                 break;
             case 3:
-                n_dofs = assembly3_->fe_->n_dofs();
+                n_dofs = data_->generic_assembly_->multidim_assembly().get<3>()->fe_->n_dofs();
                 break;
             }
 
@@ -786,14 +785,6 @@ template<class Model>
 LongIdx *TransportDG<Model>::get_row_4_el()
 {
     return Model::mesh_->get_row_4_el();
-}
-
-template<class Model>
-void TransportDG<Model>::initialize_assembly_objects()
-{
-    for (unsigned int i=0; i<multidim_assembly_.size(); ++i)
-        multidim_assembly_[i]->initialize();
-    data_->generic_assembly_->initialize();
 }
 
 

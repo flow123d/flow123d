@@ -55,8 +55,6 @@ class DiscreteSpace;
 class Distribution;
 class OutputTime;
 class DOFHandlerMultiDim;
-class AssemblyDGBase;
-template<unsigned int dim, class Model> class AssemblyDG;
 template<unsigned int dim, class Model> class AssemblyDGNew;
 template< template<Dim...> class DimAssembly> class GenericAssembly;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
@@ -89,8 +87,6 @@ public:
 	/// Object for distribution of dofs.
 	std::shared_ptr<DOFHandlerMultiDim> dh;
 };*/
-
-typedef std::vector<std::shared_ptr<AssemblyDGBase> > MultidimAssemblyDG;
 
 template<class Model>
 using MultidimAssemblyDGNew = typename std::tuple< std::shared_ptr<AssemblyDGNew<1, Model>>,
@@ -360,10 +356,6 @@ private:
 	void set_initial_condition();
 
 
-	/// Initialize AssemblyDG object off all dimension
-	void initialize_assembly_objects();
-
-
 	/// @name Physical parameters
 	// @{
 
@@ -429,12 +421,6 @@ private:
     bool allocation_done;
 
     // @}
-
-    /// Assembly objects, hold data members and methods of appropriate dimension
-    MultidimAssemblyDG multidim_assembly_;
-    std::shared_ptr<AssemblyDG<1, Model>> assembly1_;
-    std::shared_ptr<AssemblyDG<2, Model>> assembly2_;
-    std::shared_ptr<AssemblyDG<3, Model>> assembly3_;
 
 };
 

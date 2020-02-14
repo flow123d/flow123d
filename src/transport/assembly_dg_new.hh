@@ -92,6 +92,10 @@ public:
         multidim_assembly_.get<1>()->data_->element_cache_map_.init(eval_points_);
     }
 
+    inline MixedPtr<DimAssembly> multidim_assembly() const {
+        return multidim_assembly_;
+    }
+
     /// Call initialize method of inner AssemblyDGNew objects.
     void initialize() {
         multidim_assembly_.get<1>()->initialize();
