@@ -11,12 +11,12 @@
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
  *
- * @file    assembly_dg_new.hh
+ * @file    assembly_dg.hh
  * @brief
  */
 
-#ifndef ASSEMBLY_DG_NEW_HH_
-#define ASSEMBLY_DG_NEW_HH_
+#ifndef ASSEMBLY_DG_HH_
+#define ASSEMBLY_DG_HH_
 
 #include "transport/transport_dg.hh"
 #include "fem/mapping_p1.hh"
@@ -96,7 +96,7 @@ public:
         return multidim_assembly_;
     }
 
-    /// Call initialize method of inner AssemblyDGNew objects.
+    /// Call initialize method of inner AssemblyDG objects.
     void initialize() {
         multidim_assembly_.get<1>()->initialize();
         multidim_assembly_.get<2>()->initialize();
@@ -457,13 +457,13 @@ private:
  * Auxiliary container class for Finite element and related objects of given dimension.
  */
 template <unsigned int dim, class Model>
-class AssemblyDGNew
+class AssemblyDG
 {
 public:
     typedef typename TransportDG<Model>::EqData EqDataDG;
 
     /// Constructor.
-    AssemblyDGNew(std::shared_ptr<EqDataDG> data, TransportDG<Model> &model)
+    AssemblyDG(std::shared_ptr<EqDataDG> data, TransportDG<Model> &model)
     : fe_(make_shared< FE_P_disc<dim> >(data->dg_order)), fe_low_(make_shared< FE_P_disc<dim-1> >(data->dg_order)),
       fe_rt_(new FE_RT0<dim>), fe_rt_low_(new FE_RT0<dim-1>),
       quad_(new QGauss(dim, 2*data->dg_order)),
@@ -488,7 +488,7 @@ public:
     }
 
     /// Destructor.
-    ~AssemblyDGNew() {
+    ~AssemblyDG() {
         delete fe_rt_;
         delete fe_rt_low_;
         delete quad_;
@@ -1269,16 +1269,16 @@ public:
 
 /// Template specialization of dim=0
 template <class Model>
-class AssemblyDGNew<0, Model>
+class AssemblyDG<0, Model>
 {
 public:
     typedef typename TransportDG<Model>::EqData EqDataDG;
 
     /// Constructor.
-    AssemblyDGNew(std::shared_ptr<EqDataDG> data, TransportDG<Model> &model) {}
+    AssemblyDG(std::shared_ptr<EqDataDG> data, TransportDG<Model> &model) {}
 
     /// Destructor.
-    ~AssemblyDGNew() {}
+    ~AssemblyDG() {}
 
     void initialize() {}
 
@@ -1288,5 +1288,5 @@ public:
 
 
 
-#endif /* ASSEMBLY_DG_NEW_HH_ */
+#endif /* ASSEMBLY_DG_HH_ */
 

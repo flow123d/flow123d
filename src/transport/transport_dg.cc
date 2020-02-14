@@ -35,7 +35,7 @@
 #include "transport/advection_diffusion_model.hh"
 #include "transport/concentration_model.hh"
 #include "transport/heat_model.hh"
-#include "transport/assembly_dg_new.hh"
+#include "transport/assembly_dg.hh"
 
 #include "fields/multi_field.hh"
 #include "fields/generic_field.hh"
@@ -238,10 +238,10 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
     Model::init_from_input(in_rec);
 
     // create assemblation object, finite element structures and distribute DOFs
-	std::shared_ptr<AssemblyDGNew<0, Model>> assembly_new0 = std::make_shared<AssemblyDGNew<0, Model>>(data_, *this);
-	std::shared_ptr<AssemblyDGNew<1, Model>> assembly_new1 = std::make_shared<AssemblyDGNew<1, Model>>(data_, *this);
-	std::shared_ptr<AssemblyDGNew<2, Model>> assembly_new2 = std::make_shared<AssemblyDGNew<2, Model>>(data_, *this);
-	std::shared_ptr<AssemblyDGNew<3, Model>> assembly_new3 = std::make_shared<AssemblyDGNew<3, Model>>(data_, *this);
+	std::shared_ptr<AssemblyDG<0, Model>> assembly_new0 = std::make_shared<AssemblyDG<0, Model>>(data_, *this);
+	std::shared_ptr<AssemblyDG<1, Model>> assembly_new1 = std::make_shared<AssemblyDG<1, Model>>(data_, *this);
+	std::shared_ptr<AssemblyDG<2, Model>> assembly_new2 = std::make_shared<AssemblyDG<2, Model>>(data_, *this);
+	std::shared_ptr<AssemblyDG<3, Model>> assembly_new3 = std::make_shared<AssemblyDG<3, Model>>(data_, *this);
 	data_->generic_assembly_ = new GenericAssembly< AssemblyDGDim >(assembly_new0, assembly_new1, assembly_new2, assembly_new3);
 	MixedPtr<FiniteElement> fe(assembly_new1->fe_low_, assembly_new1->fe_, assembly_new2->fe_, assembly_new3->fe_);
 	shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>(Model::mesh_, fe);

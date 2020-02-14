@@ -55,7 +55,7 @@ class DiscreteSpace;
 class Distribution;
 class OutputTime;
 class DOFHandlerMultiDim;
-template<unsigned int dim, class Model> class AssemblyDGNew;
+template<unsigned int dim, class Model> class AssemblyDG;
 template< template<Dim...> class DimAssembly> class GenericAssembly;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim> class FiniteElement;
@@ -87,10 +87,6 @@ public:
 	/// Object for distribution of dofs.
 	std::shared_ptr<DOFHandlerMultiDim> dh;
 };*/
-
-template<class Model>
-using MultidimAssemblyDGNew = typename std::tuple< std::shared_ptr<AssemblyDGNew<1, Model>>,
-        std::shared_ptr<AssemblyDGNew<2, Model>>, std::shared_ptr<AssemblyDGNew<3, Model>> >;
 
 
 
@@ -134,7 +130,7 @@ class TransportDG : public Model
 public:
 
     template<unsigned int dim>
-    using AssemblyDGDim = AssemblyDGNew<dim, Model>;
+    using AssemblyDGDim = AssemblyDG<dim, Model>;
 
 	class EqData : public Model::ModelEqData {
 	public:
