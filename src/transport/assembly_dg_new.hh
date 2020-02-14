@@ -100,6 +100,34 @@ public:
     }
 
 	/**
+	 * @brief Assembles the mass matrix.
+	 *
+	 * Loops through local cells and calls assemble_mass_matrix() method of assembly
+	 * object of each cells over space dimension.
+	 */
+    void assemble_mass_matrix(std::shared_ptr<DOFHandlerMultiDim> dh) {
+        this->active_integrals_ = bulk;
+        for (auto cell : dh->own_range() )
+        {
+            this->add_integrals_of_computing_step(cell);
+
+            for (unsigned int i=0; i<integrals_size_[0]; ++i) {
+                switch (bulk_integral_data_[i].cell.dim()) {
+                case 1:
+                	std::get<1>(multidim_assembly_)->assemble_mass_matrix(bulk_integral_data_[i].cell);
+                    break;
+                case 2:
+                    std::get<2>(multidim_assembly_)->assemble_mass_matrix(bulk_integral_data_[i].cell);
+                    break;
+                case 3:
+                    std::get<3>(multidim_assembly_)->assemble_mass_matrix(bulk_integral_data_[i].cell);
+                    break;
+            	}
+            }
+        }
+    }
+
+    /**
 	 * @brief Assembles the stiffness matrix.
 	 *
 	 * This routine just calls assemble_volume_integrals(), assemble_fluxes_boundary(),
@@ -174,6 +202,83 @@ public:
             END_TIMER("assemble_fluxes_elem_side");
         }
         END_TIMER("assemble_stiffness");
+    }
+
+	/**
+	 * @brief Assembles the right hand side due to volume sources.
+	 *
+	 * This method just calls set_sources() of assemblation object specified by dimension for each elements.
+	 */
+    void set_sources(std::shared_ptr<DOFHandlerMultiDim> dh) {
+        this->active_integrals_ = bulk;
+        for (auto cell : dh->own_range() )
+        {
+            this->add_integrals_of_computing_step(cell);
+
+            for (unsigned int i=0; i<integrals_size_[0]; ++i) {
+                switch (bulk_integral_data_[i].cell.dim()) {
+                case 1:
+                	std::get<1>(multidim_assembly_)->set_sources(bulk_integral_data_[i].cell);
+                    break;
+                case 2:
+                    std::get<2>(multidim_assembly_)->set_sources(bulk_integral_data_[i].cell);
+                    break;
+                case 3:
+                    std::get<3>(multidim_assembly_)->set_sources(bulk_integral_data_[i].cell);
+                    break;
+            	}
+            }
+        }
+    }
+
+	/**
+	 * @brief Assembles the r.h.s. components corresponding to the Dirichlet boundary conditions.
+	 *
+	 * The routine just calls AssemblyDG::set_boundary_condition() for each element.
+	 */
+    void set_boundary_conditions(std::shared_ptr<DOFHandlerMultiDim> dh) {
+        this->active_integrals_ = bulk;
+        for (auto cell : dh->own_range() )
+        {
+            this->add_integrals_of_computing_step(cell);
+
+            for (unsigned int i=0; i<integrals_size_[0]; ++i) {
+                switch (bulk_integral_data_[i].cell.dim()) {
+                case 1:
+                	std::get<1>(multidim_assembly_)->set_boundary_conditions(bulk_integral_data_[i].cell);
+                    break;
+                case 2:
+                    std::get<2>(multidim_assembly_)->set_boundary_conditions(bulk_integral_data_[i].cell);
+                    break;
+                case 3:
+                    std::get<3>(multidim_assembly_)->set_boundary_conditions(bulk_integral_data_[i].cell);
+                    break;
+            	}
+            }
+        }
+    }
+
+    /// Sets the initial condition.
+    void prepare_initial_condition(std::shared_ptr<DOFHandlerMultiDim> dh) {
+        this->active_integrals_ = bulk;
+        for (auto cell : dh->own_range() )
+        {
+            this->add_integrals_of_computing_step(cell);
+
+            for (unsigned int i=0; i<integrals_size_[0]; ++i) {
+                switch (bulk_integral_data_[i].cell.dim()) {
+                case 1:
+                	std::get<1>(multidim_assembly_)->prepare_initial_condition(bulk_integral_data_[i].cell);
+                    break;
+                case 2:
+                    std::get<2>(multidim_assembly_)->prepare_initial_condition(bulk_integral_data_[i].cell);
+                    break;
+                case 3:
+                    std::get<3>(multidim_assembly_)->prepare_initial_condition(bulk_integral_data_[i].cell);
+                    break;
+            	}
+            }
+        }
     }
 
     void insert_eval_points_from_integral_data(ElementCacheMap &el_cache_map) {
@@ -445,7 +550,47 @@ public:
     }
 
 
-    //void assemble_mass_matrix(DHCellAccessor cell) {}
+    /// Assemble integral over element
+    void assemble_mass_matrix(DHCellAccessor cell)
+    {
+        ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
+        ElementAccessor<3> elm = cell.elm();
+
+        fe_values_.reinit(elm);
+        cell.get_dof_indices(dof_indices_);
+
+        model_.compute_mass_matrix_coefficient(fe_values_.point_list(), elm, mm_coef_);
+        model_.compute_retardation_coefficient(fe_values_.point_list(), elm, ret_coef_);
+
+        for (unsigned int sbi=0; sbi<model_.n_substances(); ++sbi)
+        {
+            // assemble the local mass matrix
+            for (unsigned int i=0; i<ndofs_; i++)
+            {
+                for (unsigned int j=0; j<ndofs_; j++)
+                {
+                    local_matrix_[i*ndofs_+j] = 0;
+                    for (unsigned int k=0; k<qsize_; k++)
+                        local_matrix_[i*ndofs_+j] += (mm_coef_[k]+ret_coef_[sbi][k])*fe_values_.shape_value(j,k)*fe_values_.shape_value(i,k)*fe_values_.JxW(k);
+                }
+            }
+
+            for (unsigned int i=0; i<ndofs_; i++)
+            {
+                local_mass_balance_vector_[i] = 0;
+                local_retardation_balance_vector_[i] = 0;
+                for (unsigned int k=0; k<qsize_; k++)
+                {
+                    local_mass_balance_vector_[i] += mm_coef_[k]*fe_values_.shape_value(i,k)*fe_values_.JxW(k);
+                    local_retardation_balance_vector_[i] -= ret_coef_[sbi][k]*fe_values_.shape_value(i,k)*fe_values_.JxW(k);
+                }
+            }
+
+            model_.balance()->add_mass_matrix_values(model_.get_subst_idx()[sbi], elm.region().bulk_idx(), dof_indices_, local_mass_balance_vector_);
+            data_->ls_dt[sbi]->mat_set_values(ndofs_, &(dof_indices_[0]), ndofs_, &(dof_indices_[0]), &(local_matrix_[0]));
+            VecSetValues(data_->ret_vec[sbi], ndofs_, &(dof_indices_[0]), &(local_retardation_balance_vector_[0]), ADD_VALUES);
+        }
+    }
 
 
     /// Assembles the volume integrals into the stiffness matrix.
@@ -801,9 +946,216 @@ public:
     }
 
 
-    // void set_sources(DHCellAccessor cell) {}
-    // void set_boundary_conditions(DHCellAccessor cell) {}
-    // void prepare_initial_condition(DHCellAccessor cell) {}
+    /// Assembles the right hand side vector due to volume sources.
+    void set_sources(DHCellAccessor cell)
+    {
+    	ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
+
+        ElementAccessor<3> elm = cell.elm();
+
+        fe_values_.reinit(elm);
+        cell.get_dof_indices(dof_indices_);
+
+        model_.compute_source_coefficients(fe_values_.point_list(), elm, sources_conc_, sources_density_, sources_sigma_);
+
+        // assemble the local stiffness matrix
+        for (unsigned int sbi=0; sbi<model_.n_substances(); sbi++)
+        {
+            fill_n( &(local_rhs_[0]), ndofs_, 0 );
+            local_source_balance_vector_.assign(ndofs_, 0);
+            local_source_balance_rhs_.assign(ndofs_, 0);
+
+            // compute sources
+            for (unsigned int k=0; k<qsize_; k++)
+            {
+                source = (sources_density_[sbi][k] + sources_conc_[sbi][k]*sources_sigma_[sbi][k])*fe_values_.JxW(k);
+
+                for (unsigned int i=0; i<ndofs_; i++)
+                    local_rhs_[i] += source*fe_values_.shape_value(i,k);
+            }
+            data_->ls[sbi]->rhs_set_values(ndofs_, &(dof_indices_[0]), &(local_rhs_[0]));
+
+            for (unsigned int i=0; i<ndofs_; i++)
+            {
+                for (unsigned int k=0; k<qsize_; k++)
+                    local_source_balance_vector_[i] -= sources_sigma_[sbi][k]*fe_values_.shape_value(i,k)*fe_values_.JxW(k);
+
+                local_source_balance_rhs_[i] += local_rhs_[i];
+                // temporary, TODO: replace with LocDofVec in balance
+                loc_dof_indices_[i] = cell.get_loc_dof_indices()[i];
+            }
+            model_.balance()->add_source_values(model_.get_subst_idx()[sbi], elm.region().bulk_idx(), loc_dof_indices_,
+                                               local_source_balance_vector_, local_source_balance_rhs_);
+        }
+    }
+
+
+    /// Assembles the r.h.s. components corresponding to the Dirichlet boundary conditions.
+    void set_boundary_conditions(DHCellAccessor cell)
+    {
+        if (cell.elm()->boundary_idx_ == nullptr) return;
+
+        for (unsigned int si=0; si<cell.elm()->n_sides(); si++)
+        {
+            const Edge *edg = cell.elm().side(si)->edge();
+            if (edg->n_sides > 1) continue;
+            // skip edges lying not on the boundary
+            if (edg->side(0)->cond() == NULL) continue;
+
+
+            Side side = *(edg->side(0));
+            ElementAccessor<3> elm = model_.mesh().element_accessor( side.element().idx() );
+            ElementAccessor<3> ele_acc = side.cond()->element_accessor();
+
+            arma::uvec bc_type;
+            model_.get_bc_type(ele_acc, bc_type);
+
+            fe_values_side_.reinit(elm, side.side_idx());
+            fsv_rt_.reinit(elm, side.side_idx());
+            calculate_velocity(elm, velocity_, fsv_rt_.point_list());
+
+            model_.compute_advection_diffusion_coefficients(fe_values_side_.point_list(), velocity_, side.element(), data_->ad_coef, data_->dif_coef);
+            data_->cross_section.value_list(fe_values_side_.point_list(), side.element(), csection_);
+
+            DHCellAccessor dh_side_cell = data_->dh_->cell_accessor_from_element( side.element().idx() );
+            dh_side_cell.get_dof_indices(dof_indices_);
+
+            for (unsigned int sbi=0; sbi<model_.n_substances(); sbi++)
+            {
+                fill_n(&(local_rhs_[0]), ndofs_, 0);
+                local_flux_balance_vector_.assign(ndofs_, 0);
+                local_flux_balance_rhs_ = 0;
+
+                // The b.c. data are fetched for all possible b.c. types since we allow
+                // different bc_type for each substance.
+                data_->bc_dirichlet_value[sbi].value_list(fe_values_side_.point_list(), ele_acc, bc_values_);
+
+                double side_flux = 0;
+                for (unsigned int k=0; k<qsize_lower_dim_; k++)
+                    side_flux += arma::dot(data_->ad_coef[sbi][k], fe_values_side_.normal_vector(k))*fe_values_side_.JxW(k);
+                double transport_flux = side_flux/side.measure();
+
+                if (bc_type[sbi] == AdvectionDiffusionModel::abc_inflow && side_flux < 0)
+                {
+                    for (unsigned int k=0; k<qsize_lower_dim_; k++)
+                    {
+                        double bc_term = -transport_flux*bc_values_[k]*fe_values_side_.JxW(k);
+                        for (unsigned int i=0; i<ndofs_; i++)
+                            local_rhs_[i] += bc_term*fe_values_side_.shape_value(i,k);
+                    }
+                    for (unsigned int i=0; i<ndofs_; i++)
+                        local_flux_balance_rhs_ -= local_rhs_[i];
+                }
+                else if (bc_type[sbi] == AdvectionDiffusionModel::abc_dirichlet)
+                {
+                    for (unsigned int k=0; k<qsize_lower_dim_; k++)
+                    {
+                        double bc_term = data_->gamma[sbi][side.cond_idx()]*bc_values_[k]*fe_values_side_.JxW(k);
+                        arma::vec3 bc_grad = -bc_values_[k]*fe_values_side_.JxW(k)*data_->dg_variant*(arma::trans(data_->dif_coef[sbi][k])*fe_values_side_.normal_vector(k));
+                        for (unsigned int i=0; i<ndofs_; i++)
+                            local_rhs_[i] += bc_term*fe_values_side_.shape_value(i,k)
+                                    + arma::dot(bc_grad,fe_values_side_.shape_grad(i,k));
+                    }
+                    for (unsigned int k=0; k<qsize_lower_dim_; k++)
+                    {
+                        for (unsigned int i=0; i<ndofs_; i++)
+                        {
+                            local_flux_balance_vector_[i] += (arma::dot(data_->ad_coef[sbi][k], fe_values_side_.normal_vector(k))*fe_values_side_.shape_value(i,k)
+                                    - arma::dot(data_->dif_coef[sbi][k]*fe_values_side_.shape_grad(i,k),fe_values_side_.normal_vector(k))
+                                    + data_->gamma[sbi][side.cond_idx()]*fe_values_side_.shape_value(i,k))*fe_values_side_.JxW(k);
+                        }
+                    }
+                    if (model_.time().tlevel() > 0)
+                        for (unsigned int i=0; i<ndofs_; i++)
+                            local_flux_balance_rhs_ -= local_rhs_[i];
+                }
+                else if (bc_type[sbi] == AdvectionDiffusionModel::abc_total_flux)
+                {
+                	model_.get_flux_bc_data(sbi, fe_values_side_.point_list(), ele_acc, bc_fluxes_, sigma_, bc_ref_values_);
+                    for (unsigned int k=0; k<qsize_lower_dim_; k++)
+                    {
+                        double bc_term = csection_[k]*(sigma_[k]*bc_ref_values_[k]+bc_fluxes_[k])*fe_values_side_.JxW(k);
+                        for (unsigned int i=0; i<ndofs_; i++)
+                            local_rhs_[i] += bc_term*fe_values_side_.shape_value(i,k);
+                    }
+
+                    for (unsigned int i=0; i<ndofs_; i++)
+                    {
+                        for (unsigned int k=0; k<qsize_lower_dim_; k++)
+                            local_flux_balance_vector_[i] += csection_[k]*sigma_[k]*fe_values_side_.JxW(k)*fe_values_side_.shape_value(i,k);
+                        local_flux_balance_rhs_ -= local_rhs_[i];
+                    }
+                }
+                else if (bc_type[sbi] == AdvectionDiffusionModel::abc_diffusive_flux)
+                {
+                	model_.get_flux_bc_data(sbi, fe_values_side_.point_list(), ele_acc, bc_fluxes_, sigma_, bc_ref_values_);
+                    for (unsigned int k=0; k<qsize_lower_dim_; k++)
+                    {
+                        double bc_term = csection_[k]*(sigma_[k]*bc_ref_values_[k]+bc_fluxes_[k])*fe_values_side_.JxW(k);
+                        for (unsigned int i=0; i<ndofs_; i++)
+                            local_rhs_[i] += bc_term*fe_values_side_.shape_value(i,k);
+                    }
+
+                    for (unsigned int i=0; i<ndofs_; i++)
+                    {
+                        for (unsigned int k=0; k<qsize_lower_dim_; k++)
+                            local_flux_balance_vector_[i] += csection_[k]*(arma::dot(data_->ad_coef[sbi][k], fe_values_side_.normal_vector(k)) + sigma_[k])*fe_values_side_.JxW(k)*fe_values_side_.shape_value(i,k);
+                        local_flux_balance_rhs_ -= local_rhs_[i];
+                    }
+                }
+                else if (bc_type[sbi] == AdvectionDiffusionModel::abc_inflow && side_flux >= 0)
+                {
+                    for (unsigned int k=0; k<qsize_lower_dim_; k++)
+                    {
+                        for (unsigned int i=0; i<ndofs_; i++)
+                            local_flux_balance_vector_[i] += arma::dot(data_->ad_coef[sbi][k], fe_values_side_.normal_vector(k))*fe_values_side_.JxW(k)*fe_values_side_.shape_value(i,k);
+                    }
+                }
+                data_->ls[sbi]->rhs_set_values(ndofs_, &(dof_indices_[0]), &(local_rhs_[0]));
+
+                model_.balance()->add_flux_matrix_values(model_.get_subst_idx()[sbi], side, dof_indices_, local_flux_balance_vector_);
+                model_.balance()->add_flux_vec_value(model_.get_subst_idx()[sbi], side, local_flux_balance_rhs_);
+            }
+        }
+    }
+
+    /**
+     * @brief Assembles the auxiliary linear system to calculate the initial solution
+     * as L^2-projection of the prescribed initial condition.
+     */
+    void prepare_initial_condition(DHCellAccessor cell)
+    {
+        ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
+
+        ElementAccessor<3> elem = cell.elm();
+        cell.get_dof_indices(dof_indices_);
+        fe_values_.reinit(elem);
+        model_.compute_init_cond(fe_values_.point_list(), elem, init_values_);
+
+        for (unsigned int sbi=0; sbi<model_.n_substances(); sbi++)
+        {
+            for (unsigned int i=0; i<ndofs_; i++)
+            {
+                local_rhs_[i] = 0;
+                for (unsigned int j=0; j<ndofs_; j++)
+                    local_matrix_[i*ndofs_+j] = 0;
+            }
+
+            for (unsigned int k=0; k<qsize_; k++)
+            {
+                double rhs_term = init_values_[sbi][k]*fe_values_.JxW(k);
+
+                for (unsigned int i=0; i<ndofs_; i++)
+                {
+                    for (unsigned int j=0; j<ndofs_; j++)
+                        local_matrix_[i*ndofs_+j] += fe_values_.shape_value(i,k)*fe_values_.shape_value(j,k)*fe_values_.JxW(k);
+
+                    local_rhs_[i] += fe_values_.shape_value(i,k)*rhs_term;
+                }
+            }
+            data_->ls[sbi]->set_values(ndofs_, &(dof_indices_[0]), ndofs_, &(dof_indices_[0]), &(local_matrix_[0]), &(local_rhs_[0]));
+        }
+    }
 
 
 //private:
@@ -933,3 +1285,4 @@ public:
 
 
 #endif /* ASSEMBLY_DG_NEW_HH_ */
+

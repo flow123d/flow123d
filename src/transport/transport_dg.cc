@@ -677,10 +677,7 @@ void TransportDG<Model>::assemble_mass_matrix()
 {
     START_TIMER("assemble_mass");
     Model::balance_->start_mass_assembly(Model::subst_idx);
-    for (auto cell : data_->dh_->own_range() )
-    {
-        multidim_assembly_[ cell.dim()-1 ]->assemble_mass_matrix(cell);
-    }
+    data_->generic_assembly_->assemble_mass_matrix(data_->dh_);
     Model::balance_->finish_mass_assembly(Model::subst_idx);
     END_TIMER("assemble_mass");
 }
@@ -692,10 +689,7 @@ void TransportDG<Model>::set_sources()
 {
   START_TIMER("assemble_sources");
     Model::balance_->start_source_assembly(Model::subst_idx);
-    for (auto cell : data_->dh_->own_range() )
-    {
-        multidim_assembly_[ cell.dim()-1 ]->set_sources(cell);
-    }
+    data_->generic_assembly_->set_sources(data_->dh_);
     Model::balance_->finish_source_assembly(Model::subst_idx);
   END_TIMER("assemble_sources");
 }
@@ -708,10 +702,7 @@ void TransportDG<Model>::set_boundary_conditions()
 
   START_TIMER("assemble_bc");
     Model::balance_->start_flux_assembly(Model::subst_idx);
-    for (auto cell : data_->dh_->own_range() )
-    {
-        multidim_assembly_[ cell.dim()-1 ]->set_boundary_conditions(cell);
-    }
+    data_->generic_assembly_->set_boundary_conditions(data_->dh_);
     Model::balance_->finish_flux_assembly(Model::subst_idx);
   END_TIMER("assemble_bc");
 }
@@ -724,17 +715,11 @@ void TransportDG<Model>::set_initial_condition()
     START_TIMER("set_init_cond");
     for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
         data_->ls[sbi]->start_allocation();
-    for (auto cell : data_->dh_->own_range() )
-    {
-        multidim_assembly_[ cell.dim()-1 ]->prepare_initial_condition(cell);
-    }
+    data_->generic_assembly_->prepare_initial_condition(data_->dh_);
 
     for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
         data_->ls[sbi]->start_add_assembly();
-    for (auto cell : data_->dh_->own_range() )
-    {
-        multidim_assembly_[ cell.dim()-1 ]->prepare_initial_condition(cell);
-    }
+    data_->generic_assembly_->prepare_initial_condition(data_->dh_);
 
     for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
     {
