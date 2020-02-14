@@ -324,15 +324,6 @@ private:
 	void assemble_mass_matrix();
 
 	/**
-	 * @brief Assembles the stiffness matrix.
-	 *
-	 * This routine just calls assemble_volume_integrals(), assemble_fluxes_boundary(),
-	 * assemble_fluxes_element_element() and assemble_fluxes_element_side() for each
-	 * space dimension.
-	 */
-	void assemble_stiffness_matrix();
-
-	/**
 	 * @brief Assembles the right hand side due to volume sources.
 	 *
 	 * This method just calls AssemblyDG::set_sources() for each elements.

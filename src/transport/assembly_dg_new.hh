@@ -92,10 +92,6 @@ public:
         multidim_assembly_.get<1>()->data_->element_cache_map_.init(eval_points_);
     }
 
-	inline void set_active(int active) {
-	    active_integrals_ = active;
-	}
-
     /// Call initialize method of inner AssemblyDGNew objects.
     void initialize() {
         multidim_assembly_.get<1>()->initialize();
@@ -103,49 +99,22 @@ public:
         multidim_assembly_.get<3>()->initialize();
     }
 
+	/**
+	 * @brief Assembles the stiffness matrix.
+	 *
+	 * This routine just calls assemble_volume_integrals(), assemble_fluxes_boundary(),
+	 * assemble_fluxes_element_element() and assemble_fluxes_element_side() for each
+	 * cells over space dimension.
+	 */
     void assemble_stiffness_matrix(std::shared_ptr<DOFHandlerMultiDim> dh) {
-        START_TIMER("assemble_stiffness");
         unsigned int i;
-        ElementCacheMap &el_cache_map = multidim_assembly_.get<1>()->data_->element_cache_map_;
+        this->active_integrals_ =  (bulk | edge | coupling | boundary);
         for (auto cell : dh->local_range() )
         {
-        	for (i=0; i<4; i++) integrals_size_[i] = 0;
-
-            // generic_assembly.check_integral_data();
-            if (active_integrals_ & ActiveIntegrals::bulk)
-        	    if (cell.is_own()) { // Not ghost
-                    this->add_volume_integral(cell);
-                    el_cache_map.add(cell);
-        	    }
-
-            for( DHCellSide cell_side : cell.side_range() ) {
-                if (active_integrals_ & ActiveIntegrals::boundary)
-                    if (cell.is_own()) // Not ghost
-                        if ( (cell_side.side().edge()->n_sides == 1) && (cell_side.side().cond() != NULL) ) {
-                            this->add_boundary_integral(cell_side);
-                            el_cache_map.add(cell_side);
-                            continue;
-                        }
-                if (active_integrals_ & ActiveIntegrals::edge)
-                    if ( (cell_side.n_edge_sides() >= 2) && (cell_side.edge_sides().begin()->element().idx() == cell.elm_idx())) {
-                        this->add_edge_integral(cell_side.edge_sides());
-                    	for( DHCellSide edge_side : cell_side.edge_sides() ) {
-                            el_cache_map.add(edge_side);
-                        }
-                    }
-            }
-
-	        if (active_integrals_ & ActiveIntegrals::coupling)
-                for( DHCellSide neighb_side : cell.neighb_sides() ) { // cell -> elm lower dim, neighb_side -> elm higher dim
-                    if (cell.dim() != neighb_side.dim()-1) continue;
-                    this->add_compute_fluxes_element_side(cell, neighb_side);
-                    el_cache_map.add(cell);
-                    el_cache_map.add(neighb_side);
-                }
-
-            multidim_assembly_.get<1>()->data_->cache_update(el_cache_map);
+            this->add_integrals_of_computing_step(cell);
 
             // calling of assemblation methods
+            START_TIMER("assemble_stiffness");
             START_TIMER("assemble_volume_integrals");
             for (i=0; i<integrals_size_[0]; ++i) { // volume integral
                 switch (bulk_integral_data_[i].cell.dim()) {
@@ -207,70 +176,6 @@ public:
         END_TIMER("assemble_stiffness");
     }
 
-    void add_volume_integral(const DHCellAccessor &cell) {
-        bulk_integral_data_[ integrals_size_[0] ].cell = cell;
-        switch (cell.dim()) {
-        case 1:
-        	bulk_integral_data_[ integrals_size_[0] ].subset_index = std::get<1>(multidim_assembly_)->bulk_integral_->get_subset_idx();
-            break;
-        case 2:
-            bulk_integral_data_[ integrals_size_[0] ].subset_index = std::get<2>(multidim_assembly_)->bulk_integral_->get_subset_idx();
-            break;
-        case 3:
-            bulk_integral_data_[ integrals_size_[0] ].subset_index = std::get<3>(multidim_assembly_)->bulk_integral_->get_subset_idx();
-            break;
-    	}
-        integrals_size_[0]++;
-    }
-
-    void add_edge_integral(RangeConvert<DHEdgeSide, DHCellSide> edge_side_range) {
-    	edge_integral_data_[ integrals_size_[1] ].edge_side_range = edge_side_range;
-        switch (edge_side_range.begin()->dim()) {
-        case 1:
-            edge_integral_data_[ integrals_size_[1] ].subset_index = std::get<1>(multidim_assembly_)->edge_integral_->get_subset_idx();
-            break;
-        case 2:
-            edge_integral_data_[ integrals_size_[1] ].subset_index = std::get<2>(multidim_assembly_)->edge_integral_->get_subset_idx();
-            break;
-        case 3:
-            edge_integral_data_[ integrals_size_[1] ].subset_index = std::get<3>(multidim_assembly_)->edge_integral_->get_subset_idx();
-            break;
-    	}
-        integrals_size_[1]++;
-    }
-
-    void add_compute_fluxes_element_side(const DHCellAccessor &cell, const DHCellSide &ngh_side) {
-    	coupling_integral_data_[ integrals_size_[2] ].cell = cell;
-    	coupling_integral_data_[ integrals_size_[2] ].side = ngh_side;
-        switch (cell.dim()) {
-        case 1:
-        	coupling_integral_data_[ integrals_size_[2] ].bulk_subset_index = std::get<2>(multidim_assembly_)->coupling_integral_->get_subset_low_idx();
-        	coupling_integral_data_[ integrals_size_[2] ].side_subset_index = std::get<2>(multidim_assembly_)->coupling_integral_->get_subset_high_idx();
-            break;
-        case 2:
-            coupling_integral_data_[ integrals_size_[2] ].bulk_subset_index = std::get<3>(multidim_assembly_)->coupling_integral_->get_subset_low_idx();
-        	coupling_integral_data_[ integrals_size_[2] ].side_subset_index = std::get<3>(multidim_assembly_)->coupling_integral_->get_subset_high_idx();
-            break;
-    	}
-        integrals_size_[2]++;
-    }
-
-    void add_boundary_integral(const DHCellSide &bdr_side) {
-    	boundary_integral_data_[ integrals_size_[3] ].side = bdr_side;
-        switch (bdr_side.dim()) {
-        case 1:
-        	boundary_integral_data_[ integrals_size_[3] ].subset_index = std::get<1>(multidim_assembly_)->edge_integral_->get_subset_idx();
-            break;
-        case 2:
-        	boundary_integral_data_[ integrals_size_[3] ].subset_index = std::get<2>(multidim_assembly_)->edge_integral_->get_subset_idx();
-            break;
-        case 3:
-        	boundary_integral_data_[ integrals_size_[3] ].subset_index = std::get<3>(multidim_assembly_)->edge_integral_->get_subset_idx();
-            break;
-    	}
-        integrals_size_[3]++;
-    }
-
     void insert_eval_points_from_integral_data(ElementCacheMap &el_cache_map) {
         for (unsigned int i=0; i<integrals_size_[0]; ++i) {
             // add data to cache if there is free space, else return
@@ -309,6 +214,119 @@ public:
     }
 
 private:
+    /**
+     * Add data of integrals to appropriate structure and register elements to ElementCacheMap.
+     *
+     * Types of used integrals must be set in data member \p active_integrals_.
+     */
+    void add_integrals_of_computing_step(DHCellAccessor cell) {
+        for (unsigned int i=0; i<4; i++) integrals_size_[i] = 0; // clean integral data from previous step
+        ElementCacheMap &el_cache_map = multidim_assembly_.get<1>()->data_->element_cache_map_;
+
+        // generic_assembly.check_integral_data();
+        if (active_integrals_ & ActiveIntegrals::bulk)
+    	    if (cell.is_own()) { // Not ghost
+                this->add_volume_integral(cell);
+                el_cache_map.add(cell);
+    	    }
+
+        for( DHCellSide cell_side : cell.side_range() ) {
+            if (active_integrals_ & ActiveIntegrals::boundary)
+                if (cell.is_own()) // Not ghost
+                    if ( (cell_side.side().edge()->n_sides == 1) && (cell_side.side().cond() != NULL) ) {
+                        this->add_boundary_integral(cell_side);
+                        el_cache_map.add(cell_side);
+                        continue;
+                    }
+            if (active_integrals_ & ActiveIntegrals::edge)
+                if ( (cell_side.n_edge_sides() >= 2) && (cell_side.edge_sides().begin()->element().idx() == cell.elm_idx())) {
+                    this->add_edge_integral(cell_side.edge_sides());
+                	for( DHCellSide edge_side : cell_side.edge_sides() ) {
+                        el_cache_map.add(edge_side);
+                    }
+                }
+        }
+
+        if (active_integrals_ & ActiveIntegrals::coupling)
+            for( DHCellSide neighb_side : cell.neighb_sides() ) { // cell -> elm lower dim, neighb_side -> elm higher dim
+                if (cell.dim() != neighb_side.dim()-1) continue;
+                this->add_coupling_integral(cell, neighb_side);
+                el_cache_map.add(cell);
+                el_cache_map.add(neighb_side);
+            }
+
+        multidim_assembly_.get<1>()->data_->cache_update(el_cache_map);
+    }
+
+    /// Add data of volume integral to appropriate data structure.
+    void add_volume_integral(const DHCellAccessor &cell) {
+        bulk_integral_data_[ integrals_size_[0] ].cell = cell;
+        switch (cell.dim()) {
+        case 1:
+        	bulk_integral_data_[ integrals_size_[0] ].subset_index = std::get<1>(multidim_assembly_)->bulk_integral_->get_subset_idx();
+            break;
+        case 2:
+            bulk_integral_data_[ integrals_size_[0] ].subset_index = std::get<2>(multidim_assembly_)->bulk_integral_->get_subset_idx();
+            break;
+        case 3:
+            bulk_integral_data_[ integrals_size_[0] ].subset_index = std::get<3>(multidim_assembly_)->bulk_integral_->get_subset_idx();
+            break;
+    	}
+        integrals_size_[0]++;
+    }
+
+    /// Add data of edge integral to appropriate data structure.
+    void add_edge_integral(RangeConvert<DHEdgeSide, DHCellSide> edge_side_range) {
+    	edge_integral_data_[ integrals_size_[1] ].edge_side_range = edge_side_range;
+        switch (edge_side_range.begin()->dim()) {
+        case 1:
+            edge_integral_data_[ integrals_size_[1] ].subset_index = std::get<1>(multidim_assembly_)->edge_integral_->get_subset_idx();
+            break;
+        case 2:
+            edge_integral_data_[ integrals_size_[1] ].subset_index = std::get<2>(multidim_assembly_)->edge_integral_->get_subset_idx();
+            break;
+        case 3:
+            edge_integral_data_[ integrals_size_[1] ].subset_index = std::get<3>(multidim_assembly_)->edge_integral_->get_subset_idx();
+            break;
+    	}
+        integrals_size_[1]++;
+    }
+
+    /// Add data of coupling integral to appropriate data structure.
+    void add_coupling_integral(const DHCellAccessor &cell, const DHCellSide &ngh_side) {
+    	coupling_integral_data_[ integrals_size_[2] ].cell = cell;
+    	coupling_integral_data_[ integrals_size_[2] ].side = ngh_side;
+        switch (cell.dim()) {
+        case 1:
+        	coupling_integral_data_[ integrals_size_[2] ].bulk_subset_index = std::get<2>(multidim_assembly_)->coupling_integral_->get_subset_low_idx();
+        	coupling_integral_data_[ integrals_size_[2] ].side_subset_index = std::get<2>(multidim_assembly_)->coupling_integral_->get_subset_high_idx();
+            break;
+        case 2:
+            coupling_integral_data_[ integrals_size_[2] ].bulk_subset_index = std::get<3>(multidim_assembly_)->coupling_integral_->get_subset_low_idx();
+        	coupling_integral_data_[ integrals_size_[2] ].side_subset_index = std::get<3>(multidim_assembly_)->coupling_integral_->get_subset_high_idx();
+            break;
+    	}
+        integrals_size_[2]++;
+    }
+
+    /// Add data of boundary integral to appropriate data structure.
+    void add_boundary_integral(const DHCellSide &bdr_side) {
+    	boundary_integral_data_[ integrals_size_[3] ].side = bdr_side;
+        switch (bdr_side.dim()) {
+        case 1:
+        	boundary_integral_data_[ integrals_size_[3] ].subset_index = std::get<1>(multidim_assembly_)->edge_integral_->get_subset_idx();
+            break;
+        case 2:
+        	boundary_integral_data_[ integrals_size_[3] ].subset_index = std::get<2>(multidim_assembly_)->edge_integral_->get_subset_idx();
+            break;
+        case 3:
+        	boundary_integral_data_[ integrals_size_[3] ].subset_index = std::get<3>(multidim_assembly_)->edge_integral_->get_subset_idx();
+            break;
+    	}
+        integrals_size_[3]++;
+    }
+
+
     /// Assembly object
     MixedPtr<DimAssembly> multidim_assembly_;
 

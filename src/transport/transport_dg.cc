@@ -441,7 +441,7 @@ void TransportDG<Model>::preallocate()
         mass_matrix[i] = NULL;
         VecZeroEntries(data_->ret_vec[i]);
     }
-    assemble_stiffness_matrix();
+    data_->generic_assembly_->assemble_stiffness_matrix(data_->dh_);
     assemble_mass_matrix();
     set_sources();
     set_boundary_conditions();
@@ -507,7 +507,7 @@ void TransportDG<Model>::update_solution()
             data_->ls[i]->start_add_assembly();
             data_->ls[i]->mat_zero_entries();
         }
-        assemble_stiffness_matrix();
+        data_->generic_assembly_->assemble_stiffness_matrix(data_->dh_);
         for (unsigned int i=0; i<Model::n_substances(); i++)
         {
         	data_->ls[i]->finish_assembly();
@@ -683,15 +683,6 @@ void TransportDG<Model>::assemble_mass_matrix()
     }
     Model::balance_->finish_mass_assembly(Model::subst_idx);
     END_TIMER("assemble_mass");
-}
-
-
-
-template<class Model>
-void TransportDG<Model>::assemble_stiffness_matrix()
-{
-	data_->generic_assembly_->set_active(bulk | edge | coupling | boundary);
-	data_->generic_assembly_->assemble_stiffness_matrix(data_->dh_);
 }
 
 
