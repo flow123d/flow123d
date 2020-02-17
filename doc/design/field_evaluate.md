@@ -320,6 +320,25 @@ Two major algorithms are in use:
 
 
 ### 5 Assembly, cache read
+
+####
+
+#### GenericAssembly<...> 
+- templated by a class derived from AssemblyBase<int dim>
+- contains the assembly machinary, wrap it to a single method 'assembly'
+- 
+
+#### XYZAsm<int dim>
+- descendants of AssemblyBase<int dim> implementing internals of a single assemblation process
+- methods:
+  - initialize(data, ...) reinit called typicaly once per simulation
+  - begin .. caled at beginning of the general assembly (e.g. start balance or matrix assembly)
+  - end .. caled after general asssembly
+  - assembly_bulk
+  - assembly_boundary
+  - assembly_coupling
+  - assembly_edge
+
 ```
     /*
     // Asumme following types:
