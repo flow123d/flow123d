@@ -89,7 +89,7 @@ public:
         multidim_assembly_.get<1>()->create_integrals(eval_points_);
         multidim_assembly_.get<2>()->create_integrals(eval_points_);
         multidim_assembly_.get<3>()->create_integrals(eval_points_);
-        multidim_assembly_.get<1>()->data_->element_cache_map_.init(eval_points_);
+        element_cache_map_.init(eval_points_);
     }
 
     inline MixedPtr<DimAssembly> multidim_assembly() const {
@@ -330,13 +330,12 @@ private:
      */
     void add_integrals_of_computing_step(DHCellAccessor cell) {
         for (unsigned int i=0; i<4; i++) integrals_size_[i] = 0; // clean integral data from previous step
-        ElementCacheMap &el_cache_map = multidim_assembly_.get<1>()->data_->element_cache_map_;
 
         // generic_assembly.check_integral_data();
         if (active_integrals_ & ActiveIntegrals::bulk)
     	    if (cell.is_own()) { // Not ghost
                 this->add_volume_integral(cell);
-                el_cache_map.add(cell);
+                element_cache_map_.add(cell);
     	    }
 
         for( DHCellSide cell_side : cell.side_range() ) {
@@ -344,14 +343,14 @@ private:
                 if (cell.is_own()) // Not ghost
                     if ( (cell_side.side().edge()->n_sides == 1) && (cell_side.side().cond() != NULL) ) {
                         this->add_boundary_integral(cell_side);
-                        el_cache_map.add(cell_side);
+                        element_cache_map_.add(cell_side);
                         continue;
                     }
             if (active_integrals_ & ActiveIntegrals::edge)
                 if ( (cell_side.n_edge_sides() >= 2) && (cell_side.edge_sides().begin()->element().idx() == cell.elm_idx())) {
                     this->add_edge_integral(cell_side.edge_sides());
                 	for( DHCellSide edge_side : cell_side.edge_sides() ) {
-                        el_cache_map.add(edge_side);
+                		element_cache_map_.add(edge_side);
                     }
                 }
         }
@@ -360,11 +359,11 @@ private:
             for( DHCellSide neighb_side : cell.neighb_sides() ) { // cell -> elm lower dim, neighb_side -> elm higher dim
                 if (cell.dim() != neighb_side.dim()-1) continue;
                 this->add_coupling_integral(cell, neighb_side);
-                el_cache_map.add(cell);
-                el_cache_map.add(neighb_side);
+                element_cache_map_.add(cell);
+                element_cache_map_.add(neighb_side);
             }
 
-        multidim_assembly_.get<1>()->data_->cache_update(el_cache_map);
+        multidim_assembly_.get<1>()->data_->cache_update(element_cache_map_);
     }
 
     /// Add data of volume integral to appropriate data structure.
@@ -443,6 +442,7 @@ private:
     int active_integrals_;
 
     std::shared_ptr<EvalPoints> eval_points_;                     ///< EvalPoints object shared by all integrals
+    ElementCacheMap element_cache_map_;                           ///< ElementCacheMap according to EvalPoints
 
     // Following variables hold data of all integrals depending of actual computed element.
     std::array<BulkIntegralData, 1>     bulk_integral_data_;      ///< Holds data for computing bulk integrals.

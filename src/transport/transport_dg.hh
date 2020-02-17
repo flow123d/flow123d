@@ -219,8 +219,6 @@ public:
         /// Object for distribution of dofs.
         std::shared_ptr<DOFHandlerMultiDim> dh_;
 
-        ElementCacheMap element_cache_map_;
-
         /// general assembly objects, hold assembly objects of appropriate dimension
         GenericAssembly< AssemblyDGDim > * generic_assembly_;
 	};
