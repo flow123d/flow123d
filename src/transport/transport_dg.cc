@@ -593,30 +593,15 @@ void TransportDG<Model>::calculate_concentration_matrix()
 	unsigned int i_cell=0;
 	for (auto cell : data_->dh_->own_range() )
     {
-
-        unsigned int n_dofs=0;
-        switch (cell.dim())
-        {
-        case 1:
-            n_dofs = data_->generic_assembly_->multidim_assembly().get<1>()->fe_->n_dofs();
-            break;
-        case 2:
-            n_dofs = data_->generic_assembly_->multidim_assembly().get<2>()->fe_->n_dofs();
-            break;
-        case 3:
-            n_dofs = data_->generic_assembly_->multidim_assembly().get<3>()->fe_->n_dofs();
-            break;
-        }
-
-        std::vector<LongIdx> dof_indices(n_dofs);
-        cell.get_dof_indices(dof_indices);
+		LocDofVec loc_dof_indices = cell.get_loc_dof_indices();
+		unsigned int n_dofs=loc_dof_indices.n_rows;
 
         for (unsigned int sbi=0; sbi<Model::n_substances(); ++sbi)
         {
             solution_elem_[sbi][i_cell] = 0;
 
             for (unsigned int j=0; j<n_dofs; ++j)
-                solution_elem_[sbi][i_cell] += data_->ls[sbi]->get_solution_array()[dof_indices[j]-data_->dh_->distr()->begin()];
+                solution_elem_[sbi][i_cell] += data_->ls[sbi]->get_solution_array()[loc_dof_indices[j]];
 
             solution_elem_[sbi][i_cell] = max(solution_elem_[sbi][i_cell]/n_dofs, 0.);
         }
@@ -745,33 +730,18 @@ void TransportDG<Model>::update_after_reactions(bool solution_changed)
     	unsigned int i_cell=0;
     	for (auto cell : data_->dh_->own_range() )
         {
-
-            unsigned int n_dofs=0;
-            switch (cell.dim())
-            {
-            case 1:
-                n_dofs = data_->generic_assembly_->multidim_assembly().get<1>()->fe_->n_dofs();
-                break;
-            case 2:
-                n_dofs = data_->generic_assembly_->multidim_assembly().get<2>()->fe_->n_dofs();
-                break;
-            case 3:
-                n_dofs = data_->generic_assembly_->multidim_assembly().get<3>()->fe_->n_dofs();
-                break;
-            }
-
-			std::vector<LongIdx> dof_indices(n_dofs);
-            cell.get_dof_indices(dof_indices);
+    	    LocDofVec loc_dof_indices = cell.get_loc_dof_indices();
+            unsigned int n_dofs=loc_dof_indices.n_rows;
 
             for (unsigned int sbi=0; sbi<Model::n_substances(); ++sbi)
             {
                 double old_average = 0;
                 for (unsigned int j=0; j<n_dofs; ++j)
-                    old_average += data_->ls[sbi]->get_solution_array()[dof_indices[j]-data_->dh_->distr()->begin()];
+                    old_average += data_->ls[sbi]->get_solution_array()[loc_dof_indices[j]];
                 old_average /= n_dofs;
 
                 for (unsigned int j=0; j<n_dofs; ++j)
-                    data_->ls[sbi]->get_solution_array()[dof_indices[j]-data_->dh_->distr()->begin()] += solution_elem_[sbi][i_cell] - old_average;
+                    data_->ls[sbi]->get_solution_array()[loc_dof_indices[j]] += solution_elem_[sbi][i_cell] - old_average;
             }
             ++i_cell;
         }
