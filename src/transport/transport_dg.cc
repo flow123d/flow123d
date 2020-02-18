@@ -229,12 +229,13 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
     Model::init_from_input(in_rec);
 
     // create assemblation object, finite element structures and distribute DOFs
-	std::shared_ptr<AssemblyDG<0, Model>> assembly_new0 = std::make_shared<AssemblyDG<0, Model>>(data_, *this);
-	std::shared_ptr<AssemblyDG<1, Model>> assembly_new1 = std::make_shared<AssemblyDG<1, Model>>(data_, *this);
-	std::shared_ptr<AssemblyDG<2, Model>> assembly_new2 = std::make_shared<AssemblyDG<2, Model>>(data_, *this);
-	std::shared_ptr<AssemblyDG<3, Model>> assembly_new3 = std::make_shared<AssemblyDG<3, Model>>(data_, *this);
-	data_->generic_assembly_ = new GenericAssembly< AssemblyDGDim >(assembly_new0, assembly_new1, assembly_new2, assembly_new3);
-	MixedPtr<FiniteElement> fe(assembly_new1->fe_low_, assembly_new1->fe_, assembly_new2->fe_, assembly_new3->fe_);
+	std::shared_ptr<AssemblyDG<0, Model>> assembly_new0 = std::make_shared<AssemblyDG<0, Model>>(data_);
+	std::shared_ptr<AssemblyDG<1, Model>> assembly_new1 = std::make_shared<AssemblyDG<1, Model>>(data_);
+	std::shared_ptr<AssemblyDG<2, Model>> assembly_new2 = std::make_shared<AssemblyDG<2, Model>>(data_);
+	std::shared_ptr<AssemblyDG<3, Model>> assembly_new3 = std::make_shared<AssemblyDG<3, Model>>(data_);
+	data_->generic_assembly_ = new GenericAssembly< AssemblyDGDim >(assembly_new0, assembly_new1, assembly_new2, assembly_new3); //*/
+	//data_->generic_assembly_ = new GenericAssembly< AssemblyDGDim >(data_);
+	MixedPtr<FE_P_disc> fe(data_->dg_order);
 	shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>(Model::mesh_, fe);
 	data_->dh_ = make_shared<DOFHandlerMultiDim>(*Model::mesh_);
 	data_->dh_->distribute_dofs(ds);
@@ -331,7 +332,9 @@ void TransportDG<Model>::initialize()
     Model::balance_->allocate(data_->dh_->distr()->lsize(), data_->generic_assembly_->eval_points()->max_size());
 
     // initialization of assembly object
-    data_->generic_assembly_->initialize();
+    data_->generic_assembly_->multidim_assembly().get<1>()->initialize(*this);
+    data_->generic_assembly_->multidim_assembly().get<2>()->initialize(*this);
+    data_->generic_assembly_->multidim_assembly().get<3>()->initialize(*this);
 }
 
 
