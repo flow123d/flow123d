@@ -96,6 +96,10 @@ public:
         return multidim_assembly_;
     }
 
+    inline std::shared_ptr<EvalPoints> eval_points() const {
+        return eval_points_;
+    }
+
     /// Call initialize method of inner AssemblyDG objects.
     void initialize() {
         multidim_assembly_.get<1>()->initialize();

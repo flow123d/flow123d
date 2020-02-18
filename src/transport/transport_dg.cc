@@ -264,10 +264,7 @@ void TransportDG<Model>::initialize()
     	data_->gamma[sbi].resize(Model::mesh_->boundary_.size());
 
     // Resize coefficient arrays
-    int qsize = max(data_->generic_assembly_->multidim_assembly().get<1>()->quad_low_->size(),
-                    max(data_->generic_assembly_->multidim_assembly().get<1>()->quad_->size(),
-                        max(data_->generic_assembly_->multidim_assembly().get<2>()->quad_->size(),
-                            data_->generic_assembly_->multidim_assembly().get<3>()->quad_->size())));
+    int qsize = data_->generic_assembly_->eval_points()->max_size();
     int max_edg_sides = max(Model::mesh_->max_edge_sides(1), max(Model::mesh_->max_edge_sides(2), Model::mesh_->max_edge_sides(3)));
     ret_sources.resize(Model::n_substances());
     ret_sources_prev.resize(Model::n_substances());
@@ -340,10 +337,7 @@ void TransportDG<Model>::initialize()
 
 
     // initialization of balance object
-    Model::balance_->allocate(data_->dh_->distr()->lsize(),
-            max(data_->generic_assembly_->multidim_assembly().get<1>()->fe_->n_dofs(),
-                max(data_->generic_assembly_->multidim_assembly().get<2>()->fe_->n_dofs(),
-                    data_->generic_assembly_->multidim_assembly().get<3>()->fe_->n_dofs())));
+    Model::balance_->allocate(data_->dh_->distr()->lsize(), data_->generic_assembly_->eval_points()->max_size());
 
     // initialization of assembly object
     data_->generic_assembly_->initialize();
