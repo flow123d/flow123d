@@ -289,11 +289,12 @@ public:
         }
     }
 
-    void insert_eval_points_from_integral_data(ElementCacheMap &el_cache_map) {
+private:
+    void insert_eval_points_from_integral_data() {
         for (unsigned int i=0; i<integrals_size_[0]; ++i) {
             // add data to cache if there is free space, else return
         	unsigned int data_size = eval_points_->subset_size( bulk_integral_data_[i].cell.dim(), bulk_integral_data_[i].subset_index );
-            el_cache_map.mark_used_eval_points(bulk_integral_data_[i].cell, bulk_integral_data_[i].subset_index, data_size);
+        	element_cache_map_.mark_used_eval_points(bulk_integral_data_[i].cell, bulk_integral_data_[i].subset_index, data_size);
         }
 
         for (unsigned int i=0; i<integrals_size_[1]; ++i) {
@@ -302,19 +303,19 @@ public:
         	    unsigned int side_dim = edge_side.dim();
                 unsigned int data_size = eval_points_->subset_size( side_dim, edge_integral_data_[i].subset_index ) / (side_dim+1);
                 unsigned int start_point = data_size * edge_side.side_idx();
-                el_cache_map.mark_used_eval_points(edge_side.cell(), edge_integral_data_[i].subset_index, data_size, start_point);
+                element_cache_map_.mark_used_eval_points(edge_side.cell(), edge_integral_data_[i].subset_index, data_size, start_point);
         	}
         }
 
         for (unsigned int i=0; i<integrals_size_[2]; ++i) {
             // add data to cache if there is free space, else return
             unsigned int bulk_data_size = eval_points_->subset_size( coupling_integral_data_[i].cell.dim(), coupling_integral_data_[i].bulk_subset_index );
-            el_cache_map.mark_used_eval_points(coupling_integral_data_[i].cell, coupling_integral_data_[i].bulk_subset_index, bulk_data_size);
+            element_cache_map_.mark_used_eval_points(coupling_integral_data_[i].cell, coupling_integral_data_[i].bulk_subset_index, bulk_data_size);
 
             unsigned int side_dim = coupling_integral_data_[i].side.dim();
             unsigned int side_data_size = eval_points_->subset_size( side_dim, coupling_integral_data_[i].side_subset_index ) / (side_dim+1);
             unsigned int start_point = side_data_size * coupling_integral_data_[i].side.side_idx();
-            el_cache_map.mark_used_eval_points(coupling_integral_data_[i].side.cell(), coupling_integral_data_[i].side_subset_index, side_data_size, start_point);
+            element_cache_map_.mark_used_eval_points(coupling_integral_data_[i].side.cell(), coupling_integral_data_[i].side_subset_index, side_data_size, start_point);
         }
 
         for (unsigned int i=0; i<integrals_size_[3]; ++i) {
@@ -322,11 +323,10 @@ public:
         	unsigned int side_dim = boundary_integral_data_[i].side.dim();
             unsigned int data_size = eval_points_->subset_size( side_dim, boundary_integral_data_[i].subset_index ) / (side_dim+1);
             unsigned int start_point = data_size * boundary_integral_data_[i].side.side_idx();
-            el_cache_map.mark_used_eval_points(boundary_integral_data_[i].side.cell(), boundary_integral_data_[i].subset_index, data_size, start_point);
+            element_cache_map_.mark_used_eval_points(boundary_integral_data_[i].side.cell(), boundary_integral_data_[i].subset_index, data_size, start_point);
         }
     }
 
-private:
     /**
      * Add data of integrals to appropriate structure and register elements to ElementCacheMap.
      *
@@ -367,7 +367,12 @@ private:
                 element_cache_map_.add(neighb_side);
             }
 
-        multidim_assembly_.get<1>()->data_->cache_update(element_cache_map_);
+        element_cache_map_.prepare_elements_to_update();
+        this->insert_eval_points_from_integral_data();
+        element_cache_map_.create_elements_points_map();
+        // not used yet: TODO need fix in MultiField, HeatModel ...; need better access to EqData
+        //multidim_assembly_.get<1>()->data_->cache_update(element_cache_map_);
+        element_cache_map_.clear_elements_to_update();
     }
 
     /// Add data of volume integral to appropriate data structure.

@@ -248,22 +248,10 @@ public:
      * Collective interface to @p FieldCommon::cache_update().
      */
     void cache_update(ElementCacheMap &cache_map) {
-        cache_map.prepare_elements_to_update();
-        register_eval_points(cache_map);
-        cache_map.create_elements_points_map();
-        // not used yet: TODO need fix in MultiField, HeatModel ...
-	    //for(auto field : field_list) field->cache_update(cache_map);
-        cache_map.clear_elements_to_update();
+	    for(auto field : field_list) field->cache_update(cache_map);
     }
 
 protected:
-    /**
-     * Register used EvalPoints on elements to cache map.
-     *
-     * Implemented in descendent classes (equations).
-     */
-    virtual void register_eval_points(ElementCacheMap &cache_map) {}
-
 
     /// List of all fields.
     std::vector<FieldCommon *> field_list;

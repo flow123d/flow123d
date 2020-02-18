@@ -201,15 +201,6 @@ void TransportDG<Model>::EqData::set_DG_parameters_boundary(Side side,
 
 
 template<class Model>
-void TransportDG<Model>::EqData::register_eval_points(ElementCacheMap &cache_map) {
-    generic_assembly_->insert_eval_points_from_integral_data(cache_map);
-}
-
-
-
-
-
-template<class Model>
 TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
         : Model(init_mesh, in_rec),
           input_rec(in_rec),

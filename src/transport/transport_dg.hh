@@ -163,12 +163,6 @@ public:
 		double elem_anisotropy(ElementAccessor<3> e) const;
 
 
-	    /**
-	     * Implements FieldSet::register_eval_points
-	     */
-	    void register_eval_points(ElementCacheMap &cache_map) override;
-
-
 
 		MultiField<3, FieldValue<3>::Scalar> fracture_sigma;    ///< Transition parameter for diffusive transfer on fractures (for each substance).
 		MultiField<3, FieldValue<3>::Scalar> dg_penalty;        ///< Penalty enforcing inter-element continuity of solution (for each substance).

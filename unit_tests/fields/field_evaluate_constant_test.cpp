@@ -66,7 +66,7 @@ public:
             this->cache_allocate(eval_points_);
         }
 
-        void register_eval_points(ElementCacheMap &cache_map) override {
+        void register_eval_points(ElementCacheMap &cache_map) {
             unsigned int subset_index, data_size;
 
             subset_index = mass_eval->get_subset_idx();
@@ -80,12 +80,11 @@ public:
             }
         }
 
-        /// Temporary method
-        void cache_update() {
+        void update_cache() {
             elm_cache_map_.prepare_elements_to_update();
             this->register_eval_points(elm_cache_map_);
             elm_cache_map_.create_elements_points_map();
-    	    for(auto field : this->field_list) field->cache_update(elm_cache_map_);
+    	    this->cache_update(elm_cache_map_);
             elm_cache_map_.clear_elements_to_update();
         }
 
@@ -183,8 +182,7 @@ TEST_F(FieldEvalConstantTest, evaluate) {
                 data_->elm_cache_map_.add(el_ngh_side);
     	    }
         }
-        //data_->cache_update(data_->elm_cache_map_, mesh_); // TODO replace next block with this method after fix in FieldSet
-        data_->cache_update();
+        data_->update_cache();
 
         DHCellAccessor cache_cell = this->data_->elm_cache_map_(data_->computed_dh_cell_);
 
