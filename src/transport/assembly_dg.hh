@@ -468,33 +468,18 @@ public:
 
     /// Constructor.
     AssemblyDG(std::shared_ptr<EqDataDG> data)
-    : fe_rt_(nullptr), model_(nullptr), data_(data), fv_rt_vb_(nullptr), fe_values_vb_(nullptr) {
+    : fv_rt_(nullptr), model_(nullptr), data_(data), fv_rt_vb_(nullptr), fe_values_vb_(nullptr) {
         fe_ = std::make_shared< FE_P_disc<dim> >(data_->dg_order);
         fe_low_ = std::make_shared< FE_P_disc<dim-1> >(data_->dg_order);
         fe_rt_ = new FE_RT0<dim>();
         fe_rt_low_ = new FE_RT0<dim-1>();
         quad_ = new QGauss(dim, 2*data_->dg_order);
         quad_low_ = new QGauss(dim-1, 2*data_->dg_order);
-        fv_rt_ = new FEValues<dim,3>(*quad_, *fe_rt_, update_values | update_gradients | update_quadrature_points);
-        fe_values_ = new FEValues<dim,3>(*quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
-        if (dim>1) {
-            fv_rt_vb_ = new FEValues<dim-1,3>(*quad_low_, *fe_rt_low_, update_values | update_quadrature_points);
-            fe_values_vb_ = new FEValues<dim-1,3>(*quad_low_, *fe_low_,
-                    update_values | update_gradients | update_JxW_values | update_quadrature_points);
-        }
-        fe_values_side_ = new FESideValues<dim,3>(*quad_low_, *fe_, update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
-        fsv_rt_ = new FESideValues<dim,3>(*quad_low_, *fe_rt_, update_values | update_quadrature_points);
-        ndofs_ = fe_->n_dofs();
-        qsize_ = quad_->size();
-        qsize_lower_dim_ = quad_low_->size();
-        dof_indices_.resize(ndofs_);
-        loc_dof_indices_.resize(ndofs_);
-        side_dof_indices_vb_.resize(2*ndofs_);
     }
 
     /// Destructor.
     ~AssemblyDG() {
-    	if (fe_rt_==nullptr) return; // uninitialized object
+    	if (fv_rt_==nullptr) return; // uninitialized object
 
     	delete fe_rt_;
         delete fe_rt_low_;
@@ -523,6 +508,22 @@ public:
     /// Initialize auxiliary vectors and other data members
     void initialize(TransportDG<Model> &model) {
         this->model_ = &model;
+
+        fv_rt_ = new FEValues<dim,3>(*quad_, *fe_rt_, update_values | update_gradients | update_quadrature_points);
+        fe_values_ = new FEValues<dim,3>(*quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
+        if (dim>1) {
+            fv_rt_vb_ = new FEValues<dim-1,3>(*quad_low_, *fe_rt_low_, update_values | update_quadrature_points);
+            fe_values_vb_ = new FEValues<dim-1,3>(*quad_low_, *fe_low_,
+                    update_values | update_gradients | update_JxW_values | update_quadrature_points);
+        }
+        fe_values_side_ = new FESideValues<dim,3>(*quad_low_, *fe_, update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
+        fsv_rt_ = new FESideValues<dim,3>(*quad_low_, *fe_rt_, update_values | update_quadrature_points);
+        ndofs_ = fe_->n_dofs();
+        qsize_ = quad_->size();
+        qsize_lower_dim_ = quad_low_->size();
+        dof_indices_.resize(ndofs_);
+        loc_dof_indices_.resize(ndofs_);
+        side_dof_indices_vb_.resize(2*ndofs_);
         local_matrix_.resize(4*ndofs_*ndofs_);
         local_retardation_balance_vector_.resize(ndofs_);
         local_mass_balance_vector_.resize(ndofs_);
