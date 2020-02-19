@@ -80,11 +80,12 @@ public:
 
     /// Constructor
     GenericAssembly(std::shared_ptr<DimAssembly<0>> assembly0, std::shared_ptr<DimAssembly<1>> assembly1,
-                    std::shared_ptr<DimAssembly<2>> assembly2, std::shared_ptr<DimAssembly<3>> assembly3 )
+                    std::shared_ptr<DimAssembly<2>> assembly2, std::shared_ptr<DimAssembly<3>> assembly3,
+	                int active_integrals = ActiveIntegrals::none)
     : multidim_assembly_(assembly0, assembly1, assembly2, assembly3),
     //GenericAssembly( std::shared_ptr<typename DimAssembly<1>::EqDataDG> eq_data )
     //: multidim_assembly_(eq_data),
-      active_integrals_(ActiveIntegrals::none), integrals_size_({0, 0, 0, 0})
+      active_integrals_(active_integrals), integrals_size_({0, 0, 0, 0})
     {
         eval_points_ = std::make_shared<EvalPoints>();
         // first step - create integrals, then - initialize cache
@@ -100,6 +101,89 @@ public:
 
     inline std::shared_ptr<EvalPoints> eval_points() const {
         return eval_points_;
+    }
+
+	/**
+	 * @brief General assemble methods.
+	 *
+	 * Loops through local cells and calls assemble_mass_matrix() method of assembly
+	 * object of each cells over space dimension.
+	 */
+    void assemble(std::shared_ptr<DOFHandlerMultiDim> dh) {
+        unsigned int i;
+        for (auto cell : dh->own_range() )
+        {
+            this->add_integrals_of_computing_step(cell);
+
+            if (active_integrals_ & ActiveIntegrals::bulk) {
+                START_TIMER("assemble_volume_integrals");
+                for (i=0; i<integrals_size_[0]; ++i) { // volume integral
+                    switch (bulk_integral_data_[i].cell.dim()) {
+                    case 1:
+                        std::get<1>(multidim_assembly_)->assemble_volume_integrals(bulk_integral_data_[i].cell);
+                        break;
+                    case 2:
+                        std::get<2>(multidim_assembly_)->assemble_volume_integrals(bulk_integral_data_[i].cell);
+                        break;
+                    case 3:
+                        std::get<3>(multidim_assembly_)->assemble_volume_integrals(bulk_integral_data_[i].cell);
+                        break;
+                    }
+                }
+                END_TIMER("assemble_volume_integrals");
+            }
+
+            if (active_integrals_ & ActiveIntegrals::boundary) {
+                START_TIMER("assemble_fluxes_boundary");
+                for (i=0; i<integrals_size_[3]; ++i) { // boundary integral
+                    switch (boundary_integral_data_[i].side.dim()) {
+                    case 1:
+                        std::get<1>(multidim_assembly_)->assemble_fluxes_boundary(boundary_integral_data_[i].side);
+                        break;
+                    case 2:
+                        std::get<2>(multidim_assembly_)->assemble_fluxes_boundary(boundary_integral_data_[i].side);
+                        break;
+                    case 3:
+                        std::get<3>(multidim_assembly_)->assemble_fluxes_boundary(boundary_integral_data_[i].side);
+                        break;
+                    }
+                }
+                END_TIMER("assemble_fluxes_boundary");
+            }
+
+            if (active_integrals_ & ActiveIntegrals::edge) {
+                START_TIMER("assemble_fluxes_elem_elem");
+                for (i=0; i<integrals_size_[1]; ++i) { // edge integral
+                    switch (edge_integral_data_[i].edge_side_range.begin()->dim()) {
+                    case 1:
+                        std::get<1>(multidim_assembly_)->assemble_fluxes_element_element(edge_integral_data_[i].edge_side_range);
+                        break;
+                    case 2:
+                        std::get<2>(multidim_assembly_)->assemble_fluxes_element_element(edge_integral_data_[i].edge_side_range);
+                        break;
+                    case 3:
+                        std::get<3>(multidim_assembly_)->assemble_fluxes_element_element(edge_integral_data_[i].edge_side_range);
+                        break;
+                    }
+                }
+                END_TIMER("assemble_fluxes_elem_elem");
+            }
+
+            if (active_integrals_ & ActiveIntegrals::coupling) {
+                START_TIMER("assemble_fluxes_elem_side");
+                for (i=0; i<integrals_size_[2]; ++i) { // coupling integral
+                    switch (coupling_integral_data_[i].side.dim()) {
+                    case 2:
+                        std::get<2>(multidim_assembly_)->assemble_fluxes_element_side(coupling_integral_data_[i].cell, coupling_integral_data_[i].side);
+                        break;
+                    case 3:
+                        std::get<3>(multidim_assembly_)->assemble_fluxes_element_side(coupling_integral_data_[i].cell, coupling_integral_data_[i].side);
+                        break;
+                    }
+                }
+                END_TIMER("assemble_fluxes_elem_side");
+            }
+        }
     }
 
 	/**
@@ -458,33 +542,204 @@ private:
 
 
 /**
+ * Base class define empty methods, these methods can be overwite in descendants.
+ */
+template <unsigned int dim>
+class AssemblyBase
+{
+public:
+    /// Assembles the volume integrals on cell.
+    virtual void assemble_volume_integrals(DHCellAccessor cell) {}
+
+    /// Assembles the fluxes on the boundary.
+    virtual void assemble_fluxes_boundary(DHCellSide cell_side) {}
+
+    /// Assembles the fluxes between sides on the edge.
+    virtual void assemble_fluxes_element_element(RangeConvert<DHEdgeSide, DHCellSide> edge_side_range) {}
+
+    /// Assembles the fluxes between elements of different dimensions.
+    virtual void assemble_fluxes_element_side(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {}
+
+    /// Method prepares object before assemblation (e.g. balance, ...).
+    virtual void begin(unsigned int subst_idx) {}
+
+    /// Method finishes object after assemblation (e.g. balance, ...).
+    virtual void end(unsigned int subst_idx) {}
+};
+
+
+/**
  * Auxiliary container class for Finite element and related objects of given dimension.
  */
 template <unsigned int dim, class Model>
-class AssemblyDG
+class MassAssemblyDG : public AssemblyBase<dim>
+{
+public:
+    typedef typename TransportDG<Model>::EqData EqDataDG;
+
+    /// Constructor.
+    MassAssemblyDG(std::shared_ptr<EqDataDG> data)
+    : model_(nullptr), data_(data), fe_values_(nullptr) {
+        quad_ = new QGauss(dim, 2*data_->dg_order);
+        quad_low_ = new QGauss(dim-1, 2*data_->dg_order);
+    }
+
+    /// Destructor.
+    ~MassAssemblyDG() {
+        delete quad_;
+        delete quad_low_;
+
+        if (fe_values_!=nullptr) delete fe_values_;
+
+    }
+
+    void create_integrals(std::shared_ptr<EvalPoints> eval_points) {
+        bulk_integral_ = eval_points->add_bulk<dim>(*quad_);
+        //edge_integral_ = eval_points->add_edge<dim>(*quad_low_);
+        //if (dim>1) coupling_integral_ = eval_points->add_coupling<dim>(*quad_low_);
+        //boundary_integral_ = eval_points->add_boundary<dim>(*quad_low_);
+    }
+
+    /// Initialize auxiliary vectors and other data members
+    void initialize(TransportDG<Model> &model) {
+        this->model_ = &model;
+
+        fe_ = std::make_shared< FE_P_disc<dim> >(data_->dg_order);
+        fe_values_ = new FEValues<dim,3>(*quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
+        ndofs_ = fe_->n_dofs();
+        qsize_ = quad_->size();
+        dof_indices_.resize(ndofs_);
+        local_matrix_.resize(4*ndofs_*ndofs_);
+        local_retardation_balance_vector_.resize(ndofs_);
+        local_mass_balance_vector_.resize(ndofs_);
+
+        mm_coef_.resize(qsize_);
+        ret_coef_.resize(model_->n_substances());
+        for (unsigned int sbi=0; sbi<model_->n_substances(); sbi++)
+        {
+            ret_coef_[sbi].resize(qsize_);
+        }
+    }
+
+
+    /// Assemble integral over element
+    void assemble_volume_integrals(DHCellAccessor cell) override
+    {
+        ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
+        ElementAccessor<3> elm = cell.elm();
+
+        fe_values_->reinit(elm);
+        cell.get_dof_indices(dof_indices_);
+
+        model_->compute_mass_matrix_coefficient(fe_values_->point_list(), elm, mm_coef_);
+        model_->compute_retardation_coefficient(fe_values_->point_list(), elm, ret_coef_);
+
+        for (unsigned int sbi=0; sbi<model_->n_substances(); ++sbi)
+        {
+            // assemble the local mass matrix
+            for (unsigned int i=0; i<ndofs_; i++)
+            {
+                for (unsigned int j=0; j<ndofs_; j++)
+                {
+                    local_matrix_[i*ndofs_+j] = 0;
+                    for (unsigned int k=0; k<qsize_; k++)
+                        local_matrix_[i*ndofs_+j] += (mm_coef_[k]+ret_coef_[sbi][k])*fe_values_->shape_value(j,k)*fe_values_->shape_value(i,k)*fe_values_->JxW(k);
+                }
+            }
+
+            for (unsigned int i=0; i<ndofs_; i++)
+            {
+                local_mass_balance_vector_[i] = 0;
+                local_retardation_balance_vector_[i] = 0;
+                for (unsigned int k=0; k<qsize_; k++)
+                {
+                    local_mass_balance_vector_[i] += mm_coef_[k]*fe_values_->shape_value(i,k)*fe_values_->JxW(k);
+                    local_retardation_balance_vector_[i] -= ret_coef_[sbi][k]*fe_values_->shape_value(i,k)*fe_values_->JxW(k);
+                }
+            }
+
+            model_->balance()->add_mass_matrix_values(model_->get_subst_idx()[sbi], elm.region().bulk_idx(), dof_indices_, local_mass_balance_vector_);
+            data_->ls_dt[sbi]->mat_set_values(ndofs_, &(dof_indices_[0]), ndofs_, &(dof_indices_[0]), &(local_matrix_[0]));
+            VecSetValues(data_->ret_vec[sbi], ndofs_, &(dof_indices_[0]), &(local_retardation_balance_vector_[0]), ADD_VALUES);
+        }
+    }
+
+
+    private:
+    	/**
+    	 * @brief Calculates the velocity field on a given cell.
+    	 *
+    	 * @param cell       The cell.
+    	 * @param velocity   The computed velocity field (at quadrature points).
+    	 * @param point_list The quadrature points.
+    	 */
+        void calculate_velocity(const ElementAccessor<3> &cell, vector<arma::vec3> &velocity,
+                                const std::vector<arma::vec::fixed<3>> &point_list)
+        {
+            velocity.resize(point_list.size());
+            model_->velocity_field_ptr()->value_list(point_list, cell, velocity);
+        }
+
+        std::shared_ptr<BulkIntegral> bulk_integral_;          ///< Bulk integrals of elements of given dimension
+        std::shared_ptr<EdgeIntegral> edge_integral_;          ///< Edge integrals between sides of elements of given dimension
+        std::shared_ptr<CouplingIntegral> coupling_integral_;  ///< Coupling integrals between elements of given dimension and sides of elements of dim+1 dimension
+        std::shared_ptr<BoundaryIntegral> boundary_integral_;  ///< Boundary integrals betwwen sides of elements of given dimension and mesh boundary
+
+        shared_ptr<FiniteElement<dim>> fe_;                    ///< Finite element for the solution of the advection-diffusion equation.
+        Quadrature *quad_;                                     ///< Quadrature used in assembling methods.
+        Quadrature *quad_low_;                                 ///< Quadrature used in assembling methods (dim-1).
+
+        /// Pointer to model (we must use common ancestor of concentration and heat model)
+        TransportDG<Model> *model_;
+
+        /// Data object shared with TransportDG
+        std::shared_ptr<EqDataDG> data_;
+
+        unsigned int ndofs_;                                      ///< Number of dofs
+        unsigned int qsize_;                                      ///< Size of quadrature of actual dim
+        FEValues<dim,3> *fe_values_;                              ///< FEValues of object (of P disc finite element type)
+
+        vector<LongIdx> dof_indices_;                             ///< Vector of global DOF indices
+        vector<PetscScalar> local_matrix_;                        ///< Auxiliary vector for assemble methods
+        vector<PetscScalar> local_retardation_balance_vector_;    ///< Auxiliary vector for assemble mass matrix.
+        vector<PetscScalar> local_mass_balance_vector_;           ///< Same as previous.
+
+    	/// Mass matrix coefficients.
+    	vector<double> mm_coef_;
+    	/// Retardation coefficient due to sorption.
+    	vector<vector<double> > ret_coef_;
+
+        friend class TransportDG<Model>;
+        template < template<Dim...> class DimAssembly>
+        friend class GenericAssembly;
+
+};
+
+/**
+ * Auxiliary container class for Finite element and related objects of given dimension.
+ */
+template <unsigned int dim, class Model>
+class AssemblyDG : public AssemblyBase<dim>
 {
 public:
     typedef typename TransportDG<Model>::EqData EqDataDG;
 
     /// Constructor.
     AssemblyDG(std::shared_ptr<EqDataDG> data)
-    : fv_rt_(nullptr), model_(nullptr), data_(data), fv_rt_vb_(nullptr), fe_values_vb_(nullptr) {
-        fe_ = std::make_shared< FE_P_disc<dim> >(data_->dg_order);
-        fe_low_ = std::make_shared< FE_P_disc<dim-1> >(data_->dg_order);
-        fe_rt_ = new FE_RT0<dim>();
-        fe_rt_low_ = new FE_RT0<dim-1>();
+    : fe_rt_(nullptr), model_(nullptr), data_(data), fv_rt_vb_(nullptr), fe_values_vb_(nullptr) {
         quad_ = new QGauss(dim, 2*data_->dg_order);
         quad_low_ = new QGauss(dim-1, 2*data_->dg_order);
     }
 
     /// Destructor.
     ~AssemblyDG() {
-    	if (fv_rt_==nullptr) return; // uninitialized object
+        delete quad_;
+        delete quad_low_;
+
+        if (fv_rt_==nullptr) return; // uninitialized object
 
     	delete fe_rt_;
         delete fe_rt_low_;
-        delete quad_;
-        delete quad_low_;
         delete fv_rt_;
         delete fe_values_;
         if (fv_rt_vb_!=nullptr) delete fv_rt_vb_;
@@ -509,6 +764,10 @@ public:
     void initialize(TransportDG<Model> &model) {
         this->model_ = &model;
 
+        fe_ = std::make_shared< FE_P_disc<dim> >(data_->dg_order);
+        fe_low_ = std::make_shared< FE_P_disc<dim-1> >(data_->dg_order);
+        fe_rt_ = new FE_RT0<dim>();
+        fe_rt_low_ = new FE_RT0<dim-1>();
         fv_rt_ = new FEValues<dim,3>(*quad_, *fe_rt_, update_values | update_gradients | update_quadrature_points);
         fe_values_ = new FEValues<dim,3>(*quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
         if (dim>1) {
@@ -567,51 +826,8 @@ public:
     }
 
 
-    /// Assemble integral over element
-    void assemble_mass_matrix(DHCellAccessor cell)
-    {
-        ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
-        ElementAccessor<3> elm = cell.elm();
-
-        fe_values_->reinit(elm);
-        cell.get_dof_indices(dof_indices_);
-
-        model_->compute_mass_matrix_coefficient(fe_values_->point_list(), elm, mm_coef_);
-        model_->compute_retardation_coefficient(fe_values_->point_list(), elm, ret_coef_);
-
-        for (unsigned int sbi=0; sbi<model_->n_substances(); ++sbi)
-        {
-            // assemble the local mass matrix
-            for (unsigned int i=0; i<ndofs_; i++)
-            {
-                for (unsigned int j=0; j<ndofs_; j++)
-                {
-                    local_matrix_[i*ndofs_+j] = 0;
-                    for (unsigned int k=0; k<qsize_; k++)
-                        local_matrix_[i*ndofs_+j] += (mm_coef_[k]+ret_coef_[sbi][k])*fe_values_->shape_value(j,k)*fe_values_->shape_value(i,k)*fe_values_->JxW(k);
-                }
-            }
-
-            for (unsigned int i=0; i<ndofs_; i++)
-            {
-                local_mass_balance_vector_[i] = 0;
-                local_retardation_balance_vector_[i] = 0;
-                for (unsigned int k=0; k<qsize_; k++)
-                {
-                    local_mass_balance_vector_[i] += mm_coef_[k]*fe_values_->shape_value(i,k)*fe_values_->JxW(k);
-                    local_retardation_balance_vector_[i] -= ret_coef_[sbi][k]*fe_values_->shape_value(i,k)*fe_values_->JxW(k);
-                }
-            }
-
-            model_->balance()->add_mass_matrix_values(model_->get_subst_idx()[sbi], elm.region().bulk_idx(), dof_indices_, local_mass_balance_vector_);
-            data_->ls_dt[sbi]->mat_set_values(ndofs_, &(dof_indices_[0]), ndofs_, &(dof_indices_[0]), &(local_matrix_[0]));
-            VecSetValues(data_->ret_vec[sbi], ndofs_, &(dof_indices_[0]), &(local_retardation_balance_vector_[0]), ADD_VALUES);
-        }
-    }
-
-
     /// Assembles the volume integrals into the stiffness matrix.
-    void assemble_volume_integrals(DHCellAccessor cell)
+    void assemble_volume_integrals(DHCellAccessor cell) override
     {
         ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
         if (!cell.is_own()) return;
@@ -652,7 +868,7 @@ public:
 
 
     /// Assembles the fluxes on the boundary.
-    void assemble_fluxes_boundary(DHCellSide cell_side)
+    void assemble_fluxes_boundary(DHCellSide cell_side) override
     {
         ASSERT_EQ_DBG(cell_side.dim(), dim).error("Dimension of element mismatch!");
         if (!cell_side.cell().is_own()) return;
@@ -732,7 +948,7 @@ public:
     }
 
 
-    void assemble_fluxes_element_element(RangeConvert<DHEdgeSide, DHCellSide> edge_side_range) {
+    void assemble_fluxes_element_element(RangeConvert<DHEdgeSide, DHCellSide> edge_side_range) override {
         ASSERT_EQ_DBG(edge_side_range.begin()->element().dim(), dim).error("Dimension of element mismatch!");
 
    	    sid=0;
@@ -881,7 +1097,7 @@ public:
     }
 
 
-    void assemble_fluxes_element_side(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
+    void assemble_fluxes_element_side(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) override {
         if (dim == 1) return;
         ASSERT_EQ_DBG(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
 

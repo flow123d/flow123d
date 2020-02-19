@@ -56,6 +56,7 @@ class Distribution;
 class OutputTime;
 class DOFHandlerMultiDim;
 template<unsigned int dim, class Model> class AssemblyDG;
+template<unsigned int dim, class Model> class MassAssemblyDG;
 template< template<Dim...> class DimAssembly> class GenericAssembly;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim> class FiniteElement;
@@ -129,8 +130,8 @@ class TransportDG : public Model
 {
 public:
 
-    template<unsigned int dim>
-    using AssemblyDGDim = AssemblyDG<dim, Model>;
+    template<unsigned int dim> using AssemblyDGDim = AssemblyDG<dim, Model>;
+    template<unsigned int dim> using MassAssemblyDim = MassAssemblyDG<dim, Model>;
 
 	class EqData : public Model::ModelEqData {
 	public:
@@ -215,6 +216,7 @@ public:
 
         /// general assembly objects, hold assembly objects of appropriate dimension
         GenericAssembly< AssemblyDGDim > * generic_assembly_;
+        GenericAssembly< MassAssemblyDim > * mass_assembly_;
 	};
 
 

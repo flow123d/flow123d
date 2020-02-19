@@ -235,6 +235,11 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
 	std::shared_ptr<AssemblyDG<3, Model>> assembly_new3 = std::make_shared<AssemblyDG<3, Model>>(data_);
 	data_->generic_assembly_ = new GenericAssembly< AssemblyDGDim >(assembly_new0, assembly_new1, assembly_new2, assembly_new3); //*/
 	//data_->generic_assembly_ = new GenericAssembly< AssemblyDGDim >(data_);
+	std::shared_ptr<MassAssemblyDG<0, Model>> mass_assembly0 = nullptr; //std::make_shared<MassAssemblyDG<0, Model>>(data_);
+	std::shared_ptr<MassAssemblyDG<1, Model>> mass_assembly1 = std::make_shared<MassAssemblyDG<1, Model>>(data_);
+	std::shared_ptr<MassAssemblyDG<2, Model>> mass_assembly2 = std::make_shared<MassAssemblyDG<2, Model>>(data_);
+	std::shared_ptr<MassAssemblyDG<3, Model>> mass_assembly3 = std::make_shared<MassAssemblyDG<3, Model>>(data_);
+	data_->mass_assembly_ = new GenericAssembly< MassAssemblyDim >(mass_assembly0, mass_assembly1, mass_assembly2, mass_assembly3, ActiveIntegrals::bulk);
 	MixedPtr<FE_P_disc> fe(data_->dg_order);
 	shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>(Model::mesh_, fe);
 	data_->dh_ = make_shared<DOFHandlerMultiDim>(*Model::mesh_);
@@ -335,6 +340,9 @@ void TransportDG<Model>::initialize()
     data_->generic_assembly_->multidim_assembly().get<1>()->initialize(*this);
     data_->generic_assembly_->multidim_assembly().get<2>()->initialize(*this);
     data_->generic_assembly_->multidim_assembly().get<3>()->initialize(*this);
+    data_->mass_assembly_->multidim_assembly().get<1>()->initialize(*this);
+    data_->mass_assembly_->multidim_assembly().get<2>()->initialize(*this);
+    data_->mass_assembly_->multidim_assembly().get<3>()->initialize(*this);
 }
 
 
@@ -373,6 +381,7 @@ TransportDG<Model>::~TransportDG()
         //delete[] ret_vec;
 
         delete data_->generic_assembly_;
+        delete data_->mass_assembly_;
 
     }
 
@@ -649,7 +658,7 @@ void TransportDG<Model>::assemble_mass_matrix()
 {
     START_TIMER("assemble_mass");
     Model::balance_->start_mass_assembly(Model::subst_idx);
-    data_->generic_assembly_->assemble_mass_matrix(data_->dh_);
+    data_->mass_assembly_->assemble(data_->dh_);
     Model::balance_->finish_mass_assembly(Model::subst_idx);
     END_TIMER("assemble_mass");
 }
