@@ -186,29 +186,6 @@ public:
         }
     }
 
-    /// Sets the initial condition.
-    void prepare_initial_condition(std::shared_ptr<DOFHandlerMultiDim> dh) {
-        this->active_integrals_ = bulk;
-        for (auto cell : dh->own_range() )
-        {
-            this->add_integrals_of_computing_step(cell);
-
-            for (unsigned int i=0; i<integrals_size_[0]; ++i) {
-                switch (bulk_integral_data_[i].cell.dim()) {
-                case 1:
-                	std::get<1>(multidim_assembly_)->prepare_initial_condition(bulk_integral_data_[i].cell);
-                    break;
-                case 2:
-                    std::get<2>(multidim_assembly_)->prepare_initial_condition(bulk_integral_data_[i].cell);
-                    break;
-                case 3:
-                    std::get<3>(multidim_assembly_)->prepare_initial_condition(bulk_integral_data_[i].cell);
-                    break;
-            	}
-            }
-        }
-    }
-
 private:
     void insert_eval_points_from_integral_data() {
         for (unsigned int i=0; i<integrals_size_[0]; ++i) {
@@ -1496,6 +1473,134 @@ public:
 /**
  * Auxiliary container class for Finite element and related objects of given dimension.
  */
+/**
+ * Auxiliary container class sets the initial condition..
+ */
+template <unsigned int dim, class Model>
+class InitConditionAssemblyDG : public AssemblyBase<dim>
+{
+public:
+    typedef typename TransportDG<Model>::EqData EqDataDG;
+
+    /// Constructor.
+    InitConditionAssemblyDG(std::shared_ptr<EqDataDG> data)
+    : model_(nullptr), data_(data), fe_values_(nullptr) {
+        quad_ = new QGauss(dim, 2*data_->dg_order);
+        quad_low_ = new QGauss(dim-1, 2*data_->dg_order);
+    }
+
+    /// Destructor.
+    ~InitConditionAssemblyDG() {
+        delete quad_;
+        delete quad_low_;
+
+        if (fe_values_!=nullptr) delete fe_values_;
+    }
+
+    void create_integrals(std::shared_ptr<EvalPoints> eval_points) {
+        bulk_integral_ = eval_points->add_bulk<dim>(*quad_);
+        //edge_integral_ = eval_points->add_edge<dim>(*quad_low_);
+        //if (dim>1) coupling_integral_ = eval_points->add_coupling<dim>(*quad_low_);
+        //boundary_integral_ = eval_points->add_boundary<dim>(*quad_low_);
+    }
+
+    /// Initialize auxiliary vectors and other data members
+    void initialize(TransportDG<Model> &model) {
+        this->model_ = &model;
+
+        fe_ = std::make_shared< FE_P_disc<dim> >(data_->dg_order);
+        fe_values_ = new FEValues<dim,3>(*quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
+        ndofs_ = fe_->n_dofs();
+        qsize_ = quad_->size();
+        dof_indices_.resize(ndofs_);
+        local_matrix_.resize(4*ndofs_*ndofs_);
+        local_rhs_.resize(ndofs_);
+        init_values_.resize(model_->n_substances(), std::vector<double>(qsize_));
+    }
+
+
+    /// Assemble integral over element
+    void assemble_volume_integrals(DHCellAccessor cell) override
+    {
+        ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
+
+        ElementAccessor<3> elem = cell.elm();
+        cell.get_dof_indices(dof_indices_);
+        fe_values_->reinit(elem);
+        model_->compute_init_cond(fe_values_->point_list(), elem, init_values_);
+
+        for (unsigned int sbi=0; sbi<model_->n_substances(); sbi++)
+        {
+            for (unsigned int i=0; i<ndofs_; i++)
+            {
+                local_rhs_[i] = 0;
+                for (unsigned int j=0; j<ndofs_; j++)
+                    local_matrix_[i*ndofs_+j] = 0;
+            }
+
+            for (unsigned int k=0; k<qsize_; k++)
+            {
+                double rhs_term = init_values_[sbi][k]*fe_values_->JxW(k);
+
+                for (unsigned int i=0; i<ndofs_; i++)
+                {
+                    for (unsigned int j=0; j<ndofs_; j++)
+                        local_matrix_[i*ndofs_+j] += fe_values_->shape_value(i,k)*fe_values_->shape_value(j,k)*fe_values_->JxW(k);
+
+                    local_rhs_[i] += fe_values_->shape_value(i,k)*rhs_term;
+                }
+            }
+            data_->ls[sbi]->set_values(ndofs_, &(dof_indices_[0]), ndofs_, &(dof_indices_[0]), &(local_matrix_[0]), &(local_rhs_[0]));
+        }
+    }
+
+
+    private:
+    	/**
+    	 * @brief Calculates the velocity field on a given cell.
+    	 *
+    	 * @param cell       The cell.
+    	 * @param velocity   The computed velocity field (at quadrature points).
+    	 * @param point_list The quadrature points.
+    	 */
+        void calculate_velocity(const ElementAccessor<3> &cell, vector<arma::vec3> &velocity,
+                                const std::vector<arma::vec::fixed<3>> &point_list)
+        {
+            velocity.resize(point_list.size());
+            model_->velocity_field_ptr()->value_list(point_list, cell, velocity);
+        }
+
+        std::shared_ptr<BulkIntegral> bulk_integral_;          ///< Bulk integrals of elements of given dimension
+        std::shared_ptr<EdgeIntegral> edge_integral_;          ///< Edge integrals between sides of elements of given dimension
+        std::shared_ptr<CouplingIntegral> coupling_integral_;  ///< Coupling integrals between elements of given dimension and sides of elements of dim+1 dimension
+        std::shared_ptr<BoundaryIntegral> boundary_integral_;  ///< Boundary integrals betwwen sides of elements of given dimension and mesh boundary
+
+        shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
+        Quadrature *quad_;                     ///< Quadrature used in assembling methods.
+        Quadrature *quad_low_;               ///< Quadrature used in assembling methods (dim-1).
+
+        /// Pointer to model (we must use common ancestor of concentration and heat model)
+        TransportDG<Model> *model_;
+
+        /// Data object shared with TransportDG
+        std::shared_ptr<EqDataDG> data_;
+
+        unsigned int ndofs_;                                      ///< Number of dofs
+        unsigned int qsize_;                                      ///< Size of quadrature of actual dim
+        FEValues<dim,3> *fe_values_;                              ///< FEValues of object (of P disc finite element type)
+
+        vector<LongIdx> dof_indices_;                             ///< Vector of global DOF indices
+        vector<PetscScalar> local_matrix_;                        ///< Auxiliary vector for assemble methods
+        vector<PetscScalar> local_rhs_;                           ///< Auxiliary vector for set_sources method.
+        std::vector<std::vector<double> > init_values_;           ///< Auxiliary vectors for prepare initial condition
+
+        friend class TransportDG<Model>;
+        template < template<Dim...> class DimAssembly>
+        friend class GenericAssembly;
+
+};
+
+
 template <unsigned int dim, class Model>
 class AssemblyDG : public AssemblyBase<dim>
 {
@@ -1608,45 +1713,6 @@ public:
     //void assemble_volume_integrals(DHCellAccessor cell) override
     //{
     //}
-
-
-    /**
-     * @brief Assembles the auxiliary linear system to calculate the initial solution
-     * as L^2-projection of the prescribed initial condition.
-     */
-    void prepare_initial_condition(DHCellAccessor cell)
-    {
-        ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
-
-        ElementAccessor<3> elem = cell.elm();
-        cell.get_dof_indices(dof_indices_);
-        fe_values_->reinit(elem);
-        model_->compute_init_cond(fe_values_->point_list(), elem, init_values_);
-
-        for (unsigned int sbi=0; sbi<model_->n_substances(); sbi++)
-        {
-            for (unsigned int i=0; i<ndofs_; i++)
-            {
-                local_rhs_[i] = 0;
-                for (unsigned int j=0; j<ndofs_; j++)
-                    local_matrix_[i*ndofs_+j] = 0;
-            }
-
-            for (unsigned int k=0; k<qsize_; k++)
-            {
-                double rhs_term = init_values_[sbi][k]*fe_values_->JxW(k);
-
-                for (unsigned int i=0; i<ndofs_; i++)
-                {
-                    for (unsigned int j=0; j<ndofs_; j++)
-                        local_matrix_[i*ndofs_+j] += fe_values_->shape_value(i,k)*fe_values_->shape_value(j,k)*fe_values_->JxW(k);
-
-                    local_rhs_[i] += fe_values_->shape_value(i,k)*rhs_term;
-                }
-            }
-            data_->ls[sbi]->set_values(ndofs_, &(dof_indices_[0]), ndofs_, &(dof_indices_[0]), &(local_matrix_[0]), &(local_rhs_[0]));
-        }
-    }
 
 
 //private:

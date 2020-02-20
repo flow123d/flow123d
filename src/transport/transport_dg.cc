@@ -257,6 +257,12 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
 	std::shared_ptr<BdrConditionAssemblyDG<2, Model>> bdr_assembly2 = std::make_shared<BdrConditionAssemblyDG<2, Model>>(data_);
 	std::shared_ptr<BdrConditionAssemblyDG<3, Model>> bdr_assembly3 = std::make_shared<BdrConditionAssemblyDG<3, Model>>(data_);
 	data_->bdr_cond_assembly_ = new GenericAssembly< BdrConditionAssemblyDim >(bdr_assembly0, bdr_assembly1, bdr_assembly2, bdr_assembly3, ActiveIntegrals::bulk);
+	std::shared_ptr<InitConditionAssemblyDG<0, Model>> init_assembly0 = nullptr; //std::make_shared<InitConditionAssemblyDG<0, Model>>(data_);
+	std::shared_ptr<InitConditionAssemblyDG<1, Model>> init_assembly1 = std::make_shared<InitConditionAssemblyDG<1, Model>>(data_);
+	std::shared_ptr<InitConditionAssemblyDG<2, Model>> init_assembly2 = std::make_shared<InitConditionAssemblyDG<2, Model>>(data_);
+	std::shared_ptr<InitConditionAssemblyDG<3, Model>> init_assembly3 = std::make_shared<InitConditionAssemblyDG<3, Model>>(data_);
+	data_->init_cond_assembly_ = new GenericAssembly< InitConditionAssemblyDim >(init_assembly0, init_assembly1, init_assembly2, init_assembly3,
+	        ActiveIntegrals::bulk);
 
 	MixedPtr<FE_P_disc> fe(data_->dg_order);
 	shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>(Model::mesh_, fe);
@@ -370,6 +376,9 @@ void TransportDG<Model>::initialize()
     data_->bdr_cond_assembly_->multidim_assembly().get<1>()->initialize(*this);
     data_->bdr_cond_assembly_->multidim_assembly().get<2>()->initialize(*this);
     data_->bdr_cond_assembly_->multidim_assembly().get<3>()->initialize(*this);
+    data_->init_cond_assembly_->multidim_assembly().get<1>()->initialize(*this);
+    data_->init_cond_assembly_->multidim_assembly().get<2>()->initialize(*this);
+    data_->init_cond_assembly_->multidim_assembly().get<3>()->initialize(*this);
 }
 
 
@@ -412,6 +421,7 @@ TransportDG<Model>::~TransportDG()
         delete data_->stiffness_assembly_;
         delete data_->sources_assembly_;
         delete data_->bdr_cond_assembly_;
+        delete data_->init_cond_assembly_;
     }
 
 }
@@ -725,11 +735,11 @@ void TransportDG<Model>::set_initial_condition()
     START_TIMER("set_init_cond");
     for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
         data_->ls[sbi]->start_allocation();
-    data_->generic_assembly_->prepare_initial_condition(data_->dh_);
+    data_->init_cond_assembly_->assemble(data_->dh_);
 
     for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
         data_->ls[sbi]->start_add_assembly();
-    data_->generic_assembly_->prepare_initial_condition(data_->dh_);
+    data_->init_cond_assembly_->assemble(data_->dh_);
 
     for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
     {
