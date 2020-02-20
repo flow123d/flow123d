@@ -59,6 +59,7 @@ template<unsigned int dim, class Model> class AssemblyDG;
 template<unsigned int dim, class Model> class MassAssemblyDG;
 template<unsigned int dim, class Model> class StiffnessAssemblyDG;
 template<unsigned int dim, class Model> class SourcesAssemblyDG;
+template<unsigned int dim, class Model> class BdrConditionAssemblyDG;
 template< template<Dim...> class DimAssembly> class GenericAssembly;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim> class FiniteElement;
@@ -136,6 +137,7 @@ public:
     template<unsigned int dim> using MassAssemblyDim = MassAssemblyDG<dim, Model>;
     template<unsigned int dim> using StiffnessAssemblyDim = StiffnessAssemblyDG<dim, Model>;
     template<unsigned int dim> using SourcesAssemblyDim = SourcesAssemblyDG<dim, Model>;
+    template<unsigned int dim> using BdrConditionAssemblyDim = BdrConditionAssemblyDG<dim, Model>;
 
 	class EqData : public Model::ModelEqData {
 	public:
@@ -223,6 +225,7 @@ public:
         GenericAssembly< MassAssemblyDim > * mass_assembly_;
         GenericAssembly< StiffnessAssemblyDim > * stiffness_assembly_;
         GenericAssembly< SourcesAssemblyDim > * sources_assembly_;
+        GenericAssembly< BdrConditionAssemblyDim > * bdr_cond_assembly_;
 	};
 
 

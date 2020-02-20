@@ -186,33 +186,6 @@ public:
         }
     }
 
-	/**
-	 * @brief Assembles the r.h.s. components corresponding to the Dirichlet boundary conditions.
-	 *
-	 * The routine just calls AssemblyDG::set_boundary_condition() for each element.
-	 */
-    void set_boundary_conditions(std::shared_ptr<DOFHandlerMultiDim> dh) {
-        this->active_integrals_ = bulk;
-        for (auto cell : dh->own_range() )
-        {
-            this->add_integrals_of_computing_step(cell);
-
-            for (unsigned int i=0; i<integrals_size_[0]; ++i) {
-                switch (bulk_integral_data_[i].cell.dim()) {
-                case 1:
-                	std::get<1>(multidim_assembly_)->set_boundary_conditions(bulk_integral_data_[i].cell);
-                    break;
-                case 2:
-                    std::get<2>(multidim_assembly_)->set_boundary_conditions(bulk_integral_data_[i].cell);
-                    break;
-                case 3:
-                    std::get<3>(multidim_assembly_)->set_boundary_conditions(bulk_integral_data_[i].cell);
-                    break;
-            	}
-            }
-        }
-    }
-
     /// Sets the initial condition.
     void prepare_initial_condition(std::shared_ptr<DOFHandlerMultiDim> dh) {
         this->active_integrals_ = bulk;
@@ -1278,48 +1251,38 @@ public:
 
 
 /**
- * Auxiliary container class for Finite element and related objects of given dimension.
+ * Assembles the r.h.s. components corresponding to the Dirichlet boundary conditions..
  */
 template <unsigned int dim, class Model>
-class AssemblyDG : public AssemblyBase<dim>
+class BdrConditionAssemblyDG : public AssemblyBase<dim>
 {
 public:
     typedef typename TransportDG<Model>::EqData EqDataDG;
 
     /// Constructor.
-    AssemblyDG(std::shared_ptr<EqDataDG> data)
-    : fe_rt_(nullptr), model_(nullptr), data_(data), fv_rt_vb_(nullptr), fe_values_vb_(nullptr) {
+    BdrConditionAssemblyDG(std::shared_ptr<EqDataDG> data)
+    : model_(nullptr), data_(data), fe_values_side_(nullptr) {
         quad_ = new QGauss(dim, 2*data_->dg_order);
         quad_low_ = new QGauss(dim-1, 2*data_->dg_order);
     }
 
     /// Destructor.
-    ~AssemblyDG() {
+    ~BdrConditionAssemblyDG() {
         delete quad_;
         delete quad_low_;
 
-        if (fv_rt_==nullptr) return; // uninitialized object
+        if (fe_values_side_==nullptr) return; // uninitialized object
 
-    	delete fe_rt_;
-        delete fe_rt_low_;
-        delete fv_rt_;
-        delete fe_values_;
-        if (fv_rt_vb_!=nullptr) delete fv_rt_vb_;
-        if (fe_values_vb_!=nullptr) delete fe_values_vb_;
+        delete fe_rt_;
         delete fe_values_side_;
         delete fsv_rt_;
-
-        for (unsigned int i=0; i<data_->ad_coef_edg.size(); i++)
-        {
-            delete fe_values_vec_[i];
-        }
     }
 
     void create_integrals(std::shared_ptr<EvalPoints> eval_points) {
         bulk_integral_ = eval_points->add_bulk<dim>(*quad_);
-        edge_integral_ = eval_points->add_edge<dim>(*quad_low_);
-        if (dim>1) coupling_integral_ = eval_points->add_coupling<dim>(*quad_low_);
-        boundary_integral_ = eval_points->add_boundary<dim>(*quad_low_);
+        //edge_integral_ = eval_points->add_edge<dim>(*quad_low_);
+        //if (dim>1) coupling_integral_ = eval_points->add_coupling<dim>(*quad_low_);
+        //boundary_integral_ = eval_points->add_boundary<dim>(*quad_low_);
     }
 
     /// Initialize auxiliary vectors and other data members
@@ -1327,75 +1290,26 @@ public:
         this->model_ = &model;
 
         fe_ = std::make_shared< FE_P_disc<dim> >(data_->dg_order);
-        fe_low_ = std::make_shared< FE_P_disc<dim-1> >(data_->dg_order);
         fe_rt_ = new FE_RT0<dim>();
-        fe_rt_low_ = new FE_RT0<dim-1>();
-        fv_rt_ = new FEValues<dim,3>(*quad_, *fe_rt_, update_values | update_gradients | update_quadrature_points);
-        fe_values_ = new FEValues<dim,3>(*quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
-        if (dim>1) {
-            fv_rt_vb_ = new FEValues<dim-1,3>(*quad_low_, *fe_rt_low_, update_values | update_quadrature_points);
-            fe_values_vb_ = new FEValues<dim-1,3>(*quad_low_, *fe_low_,
-                    update_values | update_gradients | update_JxW_values | update_quadrature_points);
-        }
         fe_values_side_ = new FESideValues<dim,3>(*quad_low_, *fe_, update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
         fsv_rt_ = new FESideValues<dim,3>(*quad_low_, *fe_rt_, update_values | update_quadrature_points);
         ndofs_ = fe_->n_dofs();
         qsize_ = quad_->size();
         qsize_lower_dim_ = quad_low_->size();
         dof_indices_.resize(ndofs_);
-        loc_dof_indices_.resize(ndofs_);
-        side_dof_indices_vb_.resize(2*ndofs_);
-        local_matrix_.resize(4*ndofs_*ndofs_);
-        local_retardation_balance_vector_.resize(ndofs_);
-        local_mass_balance_vector_.resize(ndofs_);
         local_rhs_.resize(ndofs_);
-        local_source_balance_vector_.resize(ndofs_);
-        local_source_balance_rhs_.resize(ndofs_);
         local_flux_balance_vector_.resize(ndofs_);
         velocity_.resize(qsize_);
-        side_velocity_vec_.resize(data_->ad_coef_edg.size());
-        sources_conc_.resize(model_->n_substances(), std::vector<double>(qsize_));
-        sources_density_.resize(model_->n_substances(), std::vector<double>(qsize_));
-        sources_sigma_.resize(model_->n_substances(), std::vector<double>(qsize_));
         sigma_.resize(qsize_lower_dim_);
         csection_.resize(qsize_lower_dim_);
-        csection_higher_.resize(qsize_lower_dim_);
-        dg_penalty_.resize(data_->ad_coef_edg.size());
         bc_values_.resize(qsize_lower_dim_);
         bc_fluxes_.resize(qsize_lower_dim_);
         bc_ref_values_.resize(qsize_lower_dim_);
-        init_values_.resize(model_->n_substances(), std::vector<double>(qsize_));
-
-        mm_coef_.resize(qsize_);
-        ret_coef_.resize(model_->n_substances());
-        for (unsigned int sbi=0; sbi<model_->n_substances(); sbi++)
-        {
-            ret_coef_[sbi].resize(qsize_);
-        }
-
-        for (unsigned int sid=0; sid<data_->ad_coef_edg.size(); sid++)
-        {
-            side_dof_indices_.push_back( vector<LongIdx>(ndofs_) );
-            fe_values_vec_.push_back(new FESideValues<dim,3>(*quad_low_, *fe_,
-                    update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points));
-        }
-
-        // index 0 = element with lower dimension,
-        // index 1 = side of element with higher dimension
-        fv_sb_.resize(2);
-        fv_sb_[0] = fe_values_vb_;
-        fv_sb_[1] = fe_values_side_;
     }
 
 
-    /// Assembles the volume integrals into the stiffness matrix.
-    //void assemble_volume_integrals(DHCellAccessor cell) override
-    //{
-    //}
-
-
-    /// Assembles the r.h.s. components corresponding to the Dirichlet boundary conditions.
-    void set_boundary_conditions(DHCellAccessor cell)
+    /// Assemble integral over element
+    void assemble_volume_integrals(DHCellAccessor cell) override
     {
         if (cell.elm()->boundary_idx_ == nullptr) return;
 
@@ -1522,6 +1436,179 @@ public:
             }
         }
     }
+
+
+    private:
+    	/**
+    	 * @brief Calculates the velocity field on a given cell.
+    	 *
+    	 * @param cell       The cell.
+    	 * @param velocity   The computed velocity field (at quadrature points).
+    	 * @param point_list The quadrature points.
+    	 */
+        void calculate_velocity(const ElementAccessor<3> &cell, vector<arma::vec3> &velocity,
+                                const std::vector<arma::vec::fixed<3>> &point_list)
+        {
+            velocity.resize(point_list.size());
+            model_->velocity_field_ptr()->value_list(point_list, cell, velocity);
+        }
+
+        std::shared_ptr<BulkIntegral> bulk_integral_;          ///< Bulk integrals of elements of given dimension
+        std::shared_ptr<EdgeIntegral> edge_integral_;          ///< Edge integrals between sides of elements of given dimension
+        std::shared_ptr<CouplingIntegral> coupling_integral_;  ///< Coupling integrals between elements of given dimension and sides of elements of dim+1 dimension
+        std::shared_ptr<BoundaryIntegral> boundary_integral_;  ///< Boundary integrals betwwen sides of elements of given dimension and mesh boundary
+
+        shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
+        FiniteElement<dim> *fe_rt_;                 ///< Finite element for the water velocity field.
+        Quadrature *quad_;                     ///< Quadrature used in assembling methods.
+        Quadrature *quad_low_;               ///< Quadrature used in assembling methods (dim-1).
+
+        /// Pointer to model (we must use common ancestor of concentration and heat model)
+        TransportDG<Model> *model_;
+
+        /// Data object shared with TransportDG
+        std::shared_ptr<EqDataDG> data_;
+
+        unsigned int ndofs_;                                      ///< Number of dofs
+        unsigned int qsize_;                                      ///< Size of quadrature of actual dim
+        unsigned int qsize_lower_dim_;                            ///< Size of quadrature of dim-1
+        FESideValues<dim,3> *fe_values_side_;                     ///< FESideValues of object (of P disc finite element type)
+        FESideValues<dim,3> *fsv_rt_;                             ///< FESideValues of object (of RT0 finite element type)
+
+        vector<LongIdx> dof_indices_;                             ///< Vector of global DOF indices
+        vector<PetscScalar> local_rhs_;                           ///< Auxiliary vector for set_sources method.
+        vector<PetscScalar> local_flux_balance_vector_;           ///< Auxiliary vector for set_boundary_conditions method.
+        PetscScalar local_flux_balance_rhs_;                      ///< Auxiliary variable for set_boundary_conditions method.
+        vector<arma::vec3> velocity_;                             ///< Auxiliary results.
+        vector<double> sigma_;                                    ///< Auxiliary vector for assemble boundary fluxes (robin sigma), element-side fluxes (frac sigma) and set boundary conditions method
+        vector<double> csection_;                                 ///< Auxiliary vector for assemble boundary fluxes, element-side fluxes and set boundary conditions
+        vector<double> bc_values_;                                ///< Auxiliary vector for set boundary conditions method
+        vector<double> bc_fluxes_;                                ///< Same as previous
+        vector<double> bc_ref_values_;                            ///< Same as previous
+
+        friend class TransportDG<Model>;
+        template < template<Dim...> class DimAssembly>
+        friend class GenericAssembly;
+
+};
+
+
+/**
+ * Auxiliary container class for Finite element and related objects of given dimension.
+ */
+template <unsigned int dim, class Model>
+class AssemblyDG : public AssemblyBase<dim>
+{
+public:
+    typedef typename TransportDG<Model>::EqData EqDataDG;
+
+    /// Constructor.
+    AssemblyDG(std::shared_ptr<EqDataDG> data)
+    : fe_rt_(nullptr), model_(nullptr), data_(data), fv_rt_vb_(nullptr), fe_values_vb_(nullptr) {
+        quad_ = new QGauss(dim, 2*data_->dg_order);
+        quad_low_ = new QGauss(dim-1, 2*data_->dg_order);
+    }
+
+    /// Destructor.
+    ~AssemblyDG() {
+        delete quad_;
+        delete quad_low_;
+
+        if (fv_rt_==nullptr) return; // uninitialized object
+
+    	delete fe_rt_;
+        delete fe_rt_low_;
+        delete fv_rt_;
+        delete fe_values_;
+        if (fv_rt_vb_!=nullptr) delete fv_rt_vb_;
+        if (fe_values_vb_!=nullptr) delete fe_values_vb_;
+        delete fe_values_side_;
+        delete fsv_rt_;
+
+        for (unsigned int i=0; i<data_->ad_coef_edg.size(); i++)
+        {
+            delete fe_values_vec_[i];
+        }
+    }
+
+    void create_integrals(std::shared_ptr<EvalPoints> eval_points) {
+        bulk_integral_ = eval_points->add_bulk<dim>(*quad_);
+        edge_integral_ = eval_points->add_edge<dim>(*quad_low_);
+        if (dim>1) coupling_integral_ = eval_points->add_coupling<dim>(*quad_low_);
+        boundary_integral_ = eval_points->add_boundary<dim>(*quad_low_);
+    }
+
+    /// Initialize auxiliary vectors and other data members
+    void initialize(TransportDG<Model> &model) {
+        this->model_ = &model;
+
+        fe_ = std::make_shared< FE_P_disc<dim> >(data_->dg_order);
+        fe_low_ = std::make_shared< FE_P_disc<dim-1> >(data_->dg_order);
+        fe_rt_ = new FE_RT0<dim>();
+        fe_rt_low_ = new FE_RT0<dim-1>();
+        fv_rt_ = new FEValues<dim,3>(*quad_, *fe_rt_, update_values | update_gradients | update_quadrature_points);
+        fe_values_ = new FEValues<dim,3>(*quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
+        if (dim>1) {
+            fv_rt_vb_ = new FEValues<dim-1,3>(*quad_low_, *fe_rt_low_, update_values | update_quadrature_points);
+            fe_values_vb_ = new FEValues<dim-1,3>(*quad_low_, *fe_low_,
+                    update_values | update_gradients | update_JxW_values | update_quadrature_points);
+        }
+        fe_values_side_ = new FESideValues<dim,3>(*quad_low_, *fe_, update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
+        fsv_rt_ = new FESideValues<dim,3>(*quad_low_, *fe_rt_, update_values | update_quadrature_points);
+        ndofs_ = fe_->n_dofs();
+        qsize_ = quad_->size();
+        qsize_lower_dim_ = quad_low_->size();
+        dof_indices_.resize(ndofs_);
+        loc_dof_indices_.resize(ndofs_);
+        side_dof_indices_vb_.resize(2*ndofs_);
+        local_matrix_.resize(4*ndofs_*ndofs_);
+        local_retardation_balance_vector_.resize(ndofs_);
+        local_mass_balance_vector_.resize(ndofs_);
+        local_rhs_.resize(ndofs_);
+        local_source_balance_vector_.resize(ndofs_);
+        local_source_balance_rhs_.resize(ndofs_);
+        local_flux_balance_vector_.resize(ndofs_);
+        velocity_.resize(qsize_);
+        side_velocity_vec_.resize(data_->ad_coef_edg.size());
+        sources_conc_.resize(model_->n_substances(), std::vector<double>(qsize_));
+        sources_density_.resize(model_->n_substances(), std::vector<double>(qsize_));
+        sources_sigma_.resize(model_->n_substances(), std::vector<double>(qsize_));
+        sigma_.resize(qsize_lower_dim_);
+        csection_.resize(qsize_lower_dim_);
+        csection_higher_.resize(qsize_lower_dim_);
+        dg_penalty_.resize(data_->ad_coef_edg.size());
+        bc_values_.resize(qsize_lower_dim_);
+        bc_fluxes_.resize(qsize_lower_dim_);
+        bc_ref_values_.resize(qsize_lower_dim_);
+        init_values_.resize(model_->n_substances(), std::vector<double>(qsize_));
+
+        mm_coef_.resize(qsize_);
+        ret_coef_.resize(model_->n_substances());
+        for (unsigned int sbi=0; sbi<model_->n_substances(); sbi++)
+        {
+            ret_coef_[sbi].resize(qsize_);
+        }
+
+        for (unsigned int sid=0; sid<data_->ad_coef_edg.size(); sid++)
+        {
+            side_dof_indices_.push_back( vector<LongIdx>(ndofs_) );
+            fe_values_vec_.push_back(new FESideValues<dim,3>(*quad_low_, *fe_,
+                    update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points));
+        }
+
+        // index 0 = element with lower dimension,
+        // index 1 = side of element with higher dimension
+        fv_sb_.resize(2);
+        fv_sb_[0] = fe_values_vb_;
+        fv_sb_[1] = fe_values_side_;
+    }
+
+
+    /// Assembles the volume integrals into the stiffness matrix.
+    //void assemble_volume_integrals(DHCellAccessor cell) override
+    //{
+    //}
+
 
     /**
      * @brief Assembles the auxiliary linear system to calculate the initial solution

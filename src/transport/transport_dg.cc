@@ -252,6 +252,11 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
 	std::shared_ptr<SourcesAssemblyDG<3, Model>> sources_assembly3 = std::make_shared<SourcesAssemblyDG<3, Model>>(data_);
 	data_->sources_assembly_ = new GenericAssembly< SourcesAssemblyDim >(sources_assembly0, sources_assembly1, sources_assembly2, sources_assembly3,
 	        ActiveIntegrals::bulk);
+	std::shared_ptr<BdrConditionAssemblyDG<0, Model>> bdr_assembly0 = nullptr; //std::make_shared<BdrConditionAssemblyDG<0, Model>>(data_);
+	std::shared_ptr<BdrConditionAssemblyDG<1, Model>> bdr_assembly1 = std::make_shared<BdrConditionAssemblyDG<1, Model>>(data_);
+	std::shared_ptr<BdrConditionAssemblyDG<2, Model>> bdr_assembly2 = std::make_shared<BdrConditionAssemblyDG<2, Model>>(data_);
+	std::shared_ptr<BdrConditionAssemblyDG<3, Model>> bdr_assembly3 = std::make_shared<BdrConditionAssemblyDG<3, Model>>(data_);
+	data_->bdr_cond_assembly_ = new GenericAssembly< BdrConditionAssemblyDim >(bdr_assembly0, bdr_assembly1, bdr_assembly2, bdr_assembly3, ActiveIntegrals::bulk);
 
 	MixedPtr<FE_P_disc> fe(data_->dg_order);
 	shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>(Model::mesh_, fe);
@@ -362,6 +367,9 @@ void TransportDG<Model>::initialize()
     data_->sources_assembly_->multidim_assembly().get<1>()->initialize(*this);
     data_->sources_assembly_->multidim_assembly().get<2>()->initialize(*this);
     data_->sources_assembly_->multidim_assembly().get<3>()->initialize(*this);
+    data_->bdr_cond_assembly_->multidim_assembly().get<1>()->initialize(*this);
+    data_->bdr_cond_assembly_->multidim_assembly().get<2>()->initialize(*this);
+    data_->bdr_cond_assembly_->multidim_assembly().get<3>()->initialize(*this);
 }
 
 
@@ -403,6 +411,7 @@ TransportDG<Model>::~TransportDG()
         delete data_->mass_assembly_;
         delete data_->stiffness_assembly_;
         delete data_->sources_assembly_;
+        delete data_->bdr_cond_assembly_;
     }
 
 }
@@ -703,7 +712,7 @@ void TransportDG<Model>::set_boundary_conditions()
 
   START_TIMER("assemble_bc");
     Model::balance_->start_flux_assembly(Model::subst_idx);
-    data_->generic_assembly_->set_boundary_conditions(data_->dh_);
+    data_->bdr_cond_assembly_->assemble(data_->dh_);
     Model::balance_->finish_flux_assembly(Model::subst_idx);
   END_TIMER("assemble_bc");
 }
