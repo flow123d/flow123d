@@ -57,6 +57,7 @@ class OutputTime;
 class DOFHandlerMultiDim;
 template<unsigned int dim, class Model> class AssemblyDG;
 template<unsigned int dim, class Model> class MassAssemblyDG;
+template<unsigned int dim, class Model> class StiffnessAssemblyDG;
 template< template<Dim...> class DimAssembly> class GenericAssembly;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim> class FiniteElement;
@@ -132,6 +133,7 @@ public:
 
     template<unsigned int dim> using AssemblyDGDim = AssemblyDG<dim, Model>;
     template<unsigned int dim> using MassAssemblyDim = MassAssemblyDG<dim, Model>;
+    template<unsigned int dim> using StiffnessAssemblyDim = StiffnessAssemblyDG<dim, Model>;
 
 	class EqData : public Model::ModelEqData {
 	public:
@@ -217,6 +219,7 @@ public:
         /// general assembly objects, hold assembly objects of appropriate dimension
         GenericAssembly< AssemblyDGDim > * generic_assembly_;
         GenericAssembly< MassAssemblyDim > * mass_assembly_;
+        GenericAssembly< StiffnessAssemblyDim > * stiffness_assembly_;
 	};
 
 
