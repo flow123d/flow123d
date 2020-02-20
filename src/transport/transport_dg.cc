@@ -246,6 +246,12 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
 	std::shared_ptr<StiffnessAssemblyDG<3, Model>> stiffness_assembly3 = std::make_shared<StiffnessAssemblyDG<3, Model>>(data_);
 	data_->stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyDim >(stiffness_assembly0, stiffness_assembly1, stiffness_assembly2,
 	        stiffness_assembly3, (ActiveIntegrals::bulk | ActiveIntegrals::edge | ActiveIntegrals::coupling | ActiveIntegrals::boundary) );
+	std::shared_ptr<SourcesAssemblyDG<0, Model>> sources_assembly0 = nullptr; //std::make_shared<SourcesAssemblyDG<0, Model>>(data_);
+	std::shared_ptr<SourcesAssemblyDG<1, Model>> sources_assembly1 = std::make_shared<SourcesAssemblyDG<1, Model>>(data_);
+	std::shared_ptr<SourcesAssemblyDG<2, Model>> sources_assembly2 = std::make_shared<SourcesAssemblyDG<2, Model>>(data_);
+	std::shared_ptr<SourcesAssemblyDG<3, Model>> sources_assembly3 = std::make_shared<SourcesAssemblyDG<3, Model>>(data_);
+	data_->sources_assembly_ = new GenericAssembly< SourcesAssemblyDim >(sources_assembly0, sources_assembly1, sources_assembly2, sources_assembly3,
+	        ActiveIntegrals::bulk);
 
 	MixedPtr<FE_P_disc> fe(data_->dg_order);
 	shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>(Model::mesh_, fe);
@@ -353,6 +359,9 @@ void TransportDG<Model>::initialize()
     data_->stiffness_assembly_->multidim_assembly().get<1>()->initialize(*this);
     data_->stiffness_assembly_->multidim_assembly().get<2>()->initialize(*this);
     data_->stiffness_assembly_->multidim_assembly().get<3>()->initialize(*this);
+    data_->sources_assembly_->multidim_assembly().get<1>()->initialize(*this);
+    data_->sources_assembly_->multidim_assembly().get<2>()->initialize(*this);
+    data_->sources_assembly_->multidim_assembly().get<3>()->initialize(*this);
 }
 
 
@@ -393,7 +402,7 @@ TransportDG<Model>::~TransportDG()
         delete data_->generic_assembly_;
         delete data_->mass_assembly_;
         delete data_->stiffness_assembly_;
-
+        delete data_->sources_assembly_;
     }
 
 }
@@ -681,7 +690,7 @@ void TransportDG<Model>::set_sources()
 {
   START_TIMER("assemble_sources");
     Model::balance_->start_source_assembly(Model::subst_idx);
-    data_->generic_assembly_->set_sources(data_->dh_);
+    data_->sources_assembly_->assemble(data_->dh_);
     Model::balance_->finish_source_assembly(Model::subst_idx);
   END_TIMER("assemble_sources");
 }

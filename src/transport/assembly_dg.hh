@@ -187,33 +187,6 @@ public:
     }
 
 	/**
-	 * @brief Assembles the right hand side due to volume sources.
-	 *
-	 * This method just calls set_sources() of assemblation object specified by dimension for each elements.
-	 */
-    void set_sources(std::shared_ptr<DOFHandlerMultiDim> dh) {
-        this->active_integrals_ = bulk;
-        for (auto cell : dh->own_range() )
-        {
-            this->add_integrals_of_computing_step(cell);
-
-            for (unsigned int i=0; i<integrals_size_[0]; ++i) {
-                switch (bulk_integral_data_[i].cell.dim()) {
-                case 1:
-                	std::get<1>(multidim_assembly_)->set_sources(bulk_integral_data_[i].cell);
-                    break;
-                case 2:
-                    std::get<2>(multidim_assembly_)->set_sources(bulk_integral_data_[i].cell);
-                    break;
-                case 3:
-                    std::get<3>(multidim_assembly_)->set_sources(bulk_integral_data_[i].cell);
-                    break;
-            	}
-            }
-        }
-    }
-
-	/**
 	 * @brief Assembles the r.h.s. components corresponding to the Dirichlet boundary conditions.
 	 *
 	 * The routine just calls AssemblyDG::set_boundary_condition() for each element.
@@ -1157,6 +1130,157 @@ private:
  * Auxiliary container class for Finite element and related objects of given dimension.
  */
 template <unsigned int dim, class Model>
+class SourcesAssemblyDG : public AssemblyBase<dim>
+{
+public:
+    typedef typename TransportDG<Model>::EqData EqDataDG;
+
+    /// Constructor.
+    SourcesAssemblyDG(std::shared_ptr<EqDataDG> data)
+    : model_(nullptr), data_(data), fe_values_(nullptr) {
+        quad_ = new QGauss(dim, 2*data_->dg_order);
+        quad_low_ = new QGauss(dim-1, 2*data_->dg_order);
+    }
+
+    /// Destructor.
+    ~SourcesAssemblyDG() {
+        delete quad_;
+        delete quad_low_;
+
+        if (fe_values_!=nullptr) delete fe_values_;
+    }
+
+    void create_integrals(std::shared_ptr<EvalPoints> eval_points) {
+        bulk_integral_ = eval_points->add_bulk<dim>(*quad_);
+        //edge_integral_ = eval_points->add_edge<dim>(*quad_low_);
+        //if (dim>1) coupling_integral_ = eval_points->add_coupling<dim>(*quad_low_);
+        //boundary_integral_ = eval_points->add_boundary<dim>(*quad_low_);
+    }
+
+    /// Initialize auxiliary vectors and other data members
+    void initialize(TransportDG<Model> &model) {
+        this->model_ = &model;
+
+        fe_ = std::make_shared< FE_P_disc<dim> >(data_->dg_order);
+        fe_values_ = new FEValues<dim,3>(*quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
+        ndofs_ = fe_->n_dofs();
+        qsize_ = quad_->size();
+        dof_indices_.resize(ndofs_);
+        loc_dof_indices_.resize(ndofs_);
+        local_rhs_.resize(ndofs_);
+        local_source_balance_vector_.resize(ndofs_);
+        local_source_balance_rhs_.resize(ndofs_);
+        sources_conc_.resize(model_->n_substances(), std::vector<double>(qsize_));
+        sources_density_.resize(model_->n_substances(), std::vector<double>(qsize_));
+        sources_sigma_.resize(model_->n_substances(), std::vector<double>(qsize_));
+    }
+
+
+    /// Assemble integral over element
+    void assemble_volume_integrals(DHCellAccessor cell) override
+    {
+    	ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
+
+        ElementAccessor<3> elm = cell.elm();
+
+        fe_values_->reinit(elm);
+        cell.get_dof_indices(dof_indices_);
+
+        model_->compute_source_coefficients(fe_values_->point_list(), elm, sources_conc_, sources_density_, sources_sigma_);
+
+        // assemble the local stiffness matrix
+        for (unsigned int sbi=0; sbi<model_->n_substances(); sbi++)
+        {
+            fill_n( &(local_rhs_[0]), ndofs_, 0 );
+            local_source_balance_vector_.assign(ndofs_, 0);
+            local_source_balance_rhs_.assign(ndofs_, 0);
+
+            // compute sources
+            for (unsigned int k=0; k<qsize_; k++)
+            {
+                source = (sources_density_[sbi][k] + sources_conc_[sbi][k]*sources_sigma_[sbi][k])*fe_values_->JxW(k);
+
+                for (unsigned int i=0; i<ndofs_; i++)
+                    local_rhs_[i] += source*fe_values_->shape_value(i,k);
+            }
+            data_->ls[sbi]->rhs_set_values(ndofs_, &(dof_indices_[0]), &(local_rhs_[0]));
+
+            for (unsigned int i=0; i<ndofs_; i++)
+            {
+                for (unsigned int k=0; k<qsize_; k++)
+                    local_source_balance_vector_[i] -= sources_sigma_[sbi][k]*fe_values_->shape_value(i,k)*fe_values_->JxW(k);
+
+                local_source_balance_rhs_[i] += local_rhs_[i];
+                // temporary, TODO: replace with LocDofVec in balance
+                loc_dof_indices_[i] = cell.get_loc_dof_indices()[i];
+            }
+            model_->balance()->add_source_values(model_->get_subst_idx()[sbi], elm.region().bulk_idx(), loc_dof_indices_,
+                                               local_source_balance_vector_, local_source_balance_rhs_);
+        }
+    }
+
+
+    private:
+    	/**
+    	 * @brief Calculates the velocity field on a given cell.
+    	 *
+    	 * @param cell       The cell.
+    	 * @param velocity   The computed velocity field (at quadrature points).
+    	 * @param point_list The quadrature points.
+    	 */
+        void calculate_velocity(const ElementAccessor<3> &cell, vector<arma::vec3> &velocity,
+                                const std::vector<arma::vec::fixed<3>> &point_list)
+        {
+            velocity.resize(point_list.size());
+            model_->velocity_field_ptr()->value_list(point_list, cell, velocity);
+        }
+
+        std::shared_ptr<BulkIntegral> bulk_integral_;          ///< Bulk integrals of elements of given dimension
+        std::shared_ptr<EdgeIntegral> edge_integral_;          ///< Edge integrals between sides of elements of given dimension
+        std::shared_ptr<CouplingIntegral> coupling_integral_;  ///< Coupling integrals between elements of given dimension and sides of elements of dim+1 dimension
+        std::shared_ptr<BoundaryIntegral> boundary_integral_;  ///< Boundary integrals betwwen sides of elements of given dimension and mesh boundary
+
+        shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
+        Quadrature *quad_;                     ///< Quadrature used in assembling methods.
+        Quadrature *quad_low_;               ///< Quadrature used in assembling methods (dim-1).
+
+        /// Pointer to model (we must use common ancestor of concentration and heat model)
+        TransportDG<Model> *model_;
+
+        /// Data object shared with TransportDG
+        std::shared_ptr<EqDataDG> data_;
+
+        unsigned int ndofs_;                                      ///< Number of dofs
+        unsigned int qsize_;                                      ///< Size of quadrature of actual dim
+        FEValues<dim,3> *fe_values_;                              ///< FEValues of object (of P disc finite element type)
+
+        vector<LongIdx> dof_indices_;                             ///< Vector of global DOF indices
+        vector<LongIdx> loc_dof_indices_;                         ///< Vector of local DOF indices
+        vector<PetscScalar> local_rhs_;                           ///< Auxiliary vector for set_sources method.
+        vector<PetscScalar> local_source_balance_vector_;         ///< Auxiliary vector for set_sources method.
+        vector<PetscScalar> local_source_balance_rhs_;            ///< Auxiliary vector for set_sources method.
+        vector<vector<double> > sources_conc_;                    ///< Auxiliary vectors for set_sources method.
+        vector<vector<double> > sources_density_;                 ///< Auxiliary vectors for set_sources method.
+        vector<vector<double> > sources_sigma_;                   ///< Auxiliary vectors for assemble volume integrals and set_sources method.
+
+        /// @name Auxiliary variables used during set sources
+    	// @{
+
+        double source;
+
+    	// @}
+
+        friend class TransportDG<Model>;
+        template < template<Dim...> class DimAssembly>
+        friend class GenericAssembly;
+
+};
+
+
+/**
+ * Auxiliary container class for Finite element and related objects of given dimension.
+ */
+template <unsigned int dim, class Model>
 class AssemblyDG : public AssemblyBase<dim>
 {
 public:
@@ -1268,50 +1392,6 @@ public:
     //void assemble_volume_integrals(DHCellAccessor cell) override
     //{
     //}
-
-
-    /// Assembles the right hand side vector due to volume sources.
-    void set_sources(DHCellAccessor cell)
-    {
-    	ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
-
-        ElementAccessor<3> elm = cell.elm();
-
-        fe_values_->reinit(elm);
-        cell.get_dof_indices(dof_indices_);
-
-        model_->compute_source_coefficients(fe_values_->point_list(), elm, sources_conc_, sources_density_, sources_sigma_);
-
-        // assemble the local stiffness matrix
-        for (unsigned int sbi=0; sbi<model_->n_substances(); sbi++)
-        {
-            fill_n( &(local_rhs_[0]), ndofs_, 0 );
-            local_source_balance_vector_.assign(ndofs_, 0);
-            local_source_balance_rhs_.assign(ndofs_, 0);
-
-            // compute sources
-            for (unsigned int k=0; k<qsize_; k++)
-            {
-                source = (sources_density_[sbi][k] + sources_conc_[sbi][k]*sources_sigma_[sbi][k])*fe_values_->JxW(k);
-
-                for (unsigned int i=0; i<ndofs_; i++)
-                    local_rhs_[i] += source*fe_values_->shape_value(i,k);
-            }
-            data_->ls[sbi]->rhs_set_values(ndofs_, &(dof_indices_[0]), &(local_rhs_[0]));
-
-            for (unsigned int i=0; i<ndofs_; i++)
-            {
-                for (unsigned int k=0; k<qsize_; k++)
-                    local_source_balance_vector_[i] -= sources_sigma_[sbi][k]*fe_values_->shape_value(i,k)*fe_values_->JxW(k);
-
-                local_source_balance_rhs_[i] += local_rhs_[i];
-                // temporary, TODO: replace with LocDofVec in balance
-                loc_dof_indices_[i] = cell.get_loc_dof_indices()[i];
-            }
-            model_->balance()->add_source_values(model_->get_subst_idx()[sbi], elm.region().bulk_idx(), loc_dof_indices_,
-                                               local_source_balance_vector_, local_source_balance_rhs_);
-        }
-    }
 
 
     /// Assembles the r.h.s. components corresponding to the Dirichlet boundary conditions.
