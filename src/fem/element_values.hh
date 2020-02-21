@@ -29,6 +29,7 @@
 #include "mesh/ref_element.hh"                // for RefElement
 #include "mesh/accessors.hh"                  // for ElementAccessor
 #include "fem/update_flags.hh"                // for UpdateFlags
+#include "fem/dh_cell_accessor.hh"            // for DHCellAccessor, DHCellSide
 
 class Quadrature;
 
@@ -62,7 +63,7 @@ public:
  * @brief Class ElementData holds the arrays of data computed by
  * Mapping.
  */
-template<unsigned int dim, unsigned int spacedim>
+template<unsigned int spacedim = 3>
 class ElementData
 {
 public:
@@ -72,10 +73,13 @@ public:
      * @param size   Number of quadrature points.
      * @param flags  Update flags to be stores.
      */
-    void allocate(unsigned int size, UpdateFlags flags);
+    ElementData(unsigned int size, UpdateFlags flags, unsigned int dim);
     
     /// Print calculated data.
     void print();
+
+    /// Dimension of space of reference cell.
+    const unsigned int dim_;
 
     /**
      * @brief Transformed quadrature weights.
@@ -86,73 +90,79 @@ public:
      */
     std::vector<double> JxW_values;
 
-    /**
-     * @brief Jacobians of the mapping at the quadrature points.
-     */
-    std::vector<arma::mat::fixed<spacedim,dim> > jacobians;
+    /// JxW values for sides.
+    std::vector<double> side_JxW_values;
 
-    /**
-     * @brief Determinants of Jacobians at quadrature points.
-     */
+    /// Jacobians (spacedim x dim) of the mapping at the quadrature points.
+    Armor::array jacobians;
+
+    /// Determinants of Jacobians at quadrature points.
     std::vector<double> determinants;
 
-    /**
-     * @brief Inverse Jacobians at the quadrature points.
-     */
-    std::vector<arma::mat::fixed<dim,spacedim> > inverse_jacobians;
+    /// Inverse Jacobians (dim x spacedim) at the quadrature points.
+    Armor::array inverse_jacobians;
 
-    /**
-     * @brief Coordinates of quadrature points in the actual cell coordinate system.
-     */
-    std::vector<arma::vec::fixed<spacedim> > points;
+    /// Coordinates (spacedim) of quadrature points in the actual cell coordinate system.
+    Armor::array points;
 
-    /**
-     * @brief Normal vectors to the element at the quadrature points lying
-     * on a side.
-     */
-    std::vector<arma::vec::fixed<spacedim> > normal_vectors;
+    /// Normal vectors (spacedim) to the element at the quadrature points lying on a side.
+    Armor::array normal_vectors;
 
-    /**
-     * @brief Flags that indicate which finite element quantities are to be computed.
-     */
+    /// Flags that indicate which finite element quantities are to be computed.
     UpdateFlags update_flags;
 
-    /**
-     * @brief Iterator to the last reinit-ed cell.
-     */
-    ElementAccessor<3> present_cell;
+    /// Iterator to last updated cell.
+    ElementAccessor<spacedim> cell;
+
+    /// Iterator to last updated cell side.
+    Side side;
 
 };
 
 
 
 /**
- * @brief Base class for ElementValues and ElemSideValues
+ * @brief Class for computation of data on cell and side.
  */
-template<unsigned int dim, unsigned int spacedim>
-class ElementValuesBase
+template<unsigned int spacedim>
+class ElementValues
 {
 public:
 
     /**
-     * @brief Default constructor
-     */
-    ElementValuesBase();
+	 * @brief Constructor.
+	 *
+	 * Initializes structures and calculates
+     * cell-independent data. The quadrature can have dimension
+     * either dim or dim-1 (for values on side). In the later
+     * case also normal vectors and side jacobians are computed.
+	 *
+	 * @param _quadrature The quadrature rule.
+	 * @param _flags      The update flags.
+     * @param dim         Dimension of space of reference cell.
+	 */
+    ElementValues(Quadrature &_quadrature,
+             UpdateFlags _flags,
+             unsigned int dim);
+    
+    /// Correct deallocation of objects created by 'initialize' methods.
+    ~ElementValues();
+
 
 
     /**
-     * Correct deallocation of objects created by 'initialize' methods.
-     */
-    virtual ~ElementValuesBase();
-
-
-    /**
-     * @brief Allocates space for computed data.
+     * @brief Update cell-dependent data (gradients, Jacobians etc.)
      *
-     * @param n_points Number of quadrature points.
-     * @param flags    The update flags.
+     * @param cell The actual cell.
      */
-    void allocate(unsigned int n_points, UpdateFlags flags);
+    void reinit(const ElementAccessor<spacedim> &cell);
+
+    /**
+	 * @brief Update side-dependent data (Jacobians etc.)
+	 *
+	 * @param cell_side The actual cell and side.
+	 */
+    void reinit(const Side &cell_side);
     
     /**
      * @brief Determine quantities to be recomputed on each cell.
@@ -176,17 +186,17 @@ public:
     }
     
     /// Return Jacobian matrix at point @p point_no.
-    inline const arma::mat::fixed<spacedim,dim> &jacobian(const unsigned int point_no) const
+    inline arma::mat jacobian(const unsigned int point_no) const
     {
         ASSERT_LT_DBG(point_no, n_points_);
-        return data.jacobians[point_no];
+        return data.jacobians.arma_mat(point_no);
     }
     
     /// Return inverse Jacobian matrix at point @p point_no.
-    inline const arma::mat::fixed<dim,spacedim> &inverse_jacobian(const unsigned int point_no) const
+    inline arma::mat inverse_jacobian(const unsigned int point_no) const
     {
         ASSERT_LT_DBG(point_no, n_points_);
-        return data.inverse_jacobians[point_no];
+        return data.inverse_jacobians.arma_mat(point_no);
     }
 
     /**
@@ -202,21 +212,30 @@ public:
     }
 
     /**
+     * @brief Return the product of side Jacobian determinant and the quadrature
+     * weight at given quadrature point.
+     *
+     * @param point_no Number of the quadrature point.
+     */
+    inline double side_JxW(const unsigned int point_no) const
+    {
+        ASSERT_LT_DBG(point_no, n_points_);
+        return data.side_JxW_values[point_no];
+    }
+
+    /**
      * @brief Return coordinates of the quadrature point in the actual cell system.
      *
      * @param point_no Number of the quadrature point.
      */
-    inline const arma::vec::fixed<spacedim> &point(const unsigned int point_no) const
+    inline arma::vec::fixed<spacedim> point(const unsigned int point_no) const
     {
         ASSERT_LT_DBG(point_no, n_points_);
-        return data.points[point_no];
+        return data.points.template vec<spacedim>(point_no);
     }
 
-    /**
-	 * @brief Return coordinates of all quadrature points in the actual cell system.
-	 *
-	 */
-	inline const vector<arma::vec::fixed<spacedim> > &point_list() const
+    /// Return coordinates of all quadrature points in the actual cell system.
+	inline const Armor::array &point_list() const
 	{
 	    return data.points;
 	}
@@ -230,18 +249,20 @@ public:
 	inline arma::vec::fixed<spacedim> normal_vector(unsigned int point_no)
 	{
         ASSERT_LT_DBG(point_no, n_points_);
-	    return data.normal_vectors[point_no];
+	    return data.normal_vectors.template vec<spacedim>(point_no);
 	}
 	
-    /**
-     * @brief Returns the number of quadrature points.
-     */
+    /// Returns the number of quadrature points.
     inline unsigned int n_points()
     { return n_points_; }
     
     /// Return cell at which the values were reinited.
     const ElementAccessor<spacedim> &cell() const
-    { return data.present_cell; }
+    { return data.cell; }
+
+    /// Return cell side where the values were reinited.
+    const Side &side() const
+    { return data.side; }
 
 
 
@@ -249,147 +270,38 @@ protected:
     
     /// Precompute data on reference element.
     RefElementData *init_ref_data(const Quadrature &q);
-    
-    /** @brief Number of integration points. */
-    unsigned int n_points_;
 
-    /**
-     * @brief Data computed by the mapping.
-     */
-    ElementData<dim,spacedim> data;
-    
-};
-
-
-
-
-/**
- * @brief Calculates element data on the actual cell.
- *
- * @param dim      Dimension of the reference cell.
- * @param spacedim Dimension of the Euclidean space where the actual
- *                 cell lives.
- */
-template<unsigned int dim, unsigned int spacedim>
-class ElementValues : public ElementValuesBase<dim,spacedim>
-{
-public:
-
-	/**
-	 * @brief Constructor.
-	 *
-	 * Initializes structures and calculates
-     * cell-independent data.
-	 *
-	 * @param _quadrature The quadrature rule.
-	 * @param _flags The update flags.
-	 */
-    ElementValues(Quadrature &_quadrature,
-             UpdateFlags _flags);
-    
-    ~ElementValues();
-
-    /**
-     * @brief Update cell-dependent data (gradients, Jacobians etc.)
-     *
-     * @param cell The actual cell.
-     */
-    void reinit(const ElementAccessor<3> &cell);
-    
-    /// Return quadrature.
-    const Quadrature &quadrature() const
-    { return *quadrature_; }
-    
-    
-    
-private:
-    
     /// Compute data from reference cell and using MappingP1.
+    template<unsigned int dim>
     void fill_data();
+
+    /// Calculates the mapping data on a side of a cell.
+    template<unsigned int dim>
+    void fill_side_data();
+
     
-    /**
-     * @brief The quadrature rule used to calculate integrals.
-     */
-    Quadrature *quadrature_;
-    
-    /**
-     * @brief Precomputed element data.
-     */
+
+    /// Dimension of space of reference cell.
+    const unsigned int dim_;
+
+    /// Number of integration points.
+    const unsigned int n_points_;
+
+    /// Number of sides in reference cell.
+    const unsigned int n_sides_;
+
+    /// Number of permutations of points on side of reference cell.
+    const unsigned int n_side_permutations_;
+
+    /// Data on reference element.
     RefElementData *ref_data;
 
-
-};
-
-
-
-
-/**
- * @brief Calculates element data on a side.
- *
- * @param dim      Dimension of the reference cell.
- * @param spacedim Dimension of the Euclidean space where the actual
- *                 cell lives.
- */
-template<unsigned int dim, unsigned int spacedim>
-class ElemSideValues : public ElementValuesBase<dim,spacedim>
-{
-
-public:
-
-    /**
-     * @brief Constructor.
-     *
-     * Initializes structures and calculates
-     * cell-independent data.
-     *
-     * @param _sub_quadrature The quadrature rule on the side (with dimension dim-1).
-     * @param flags The update flags.
-     */
-    ElemSideValues(Quadrature &_sub_quadrature,
-             UpdateFlags flags);
-
-    /// Destructor.
-    virtual ~ElemSideValues();
-
-    /**
-	 * @brief Update cell-dependent data (Jacobians etc.)
-	 *
-	 * @param cell The actual cell.
-	 * @param sid  Number of the side of the cell.
-	 */
-    void reinit(const ElementAccessor<3> &cell,
-        		unsigned int sid);
-
-    /// Return quadrature for given side and its permutation.
-    const Quadrature &quadrature(unsigned int sid, unsigned int pid) const
-    { return side_quad[sid][pid]; }
-
-
-private:
-    
-    /**
-     * @brief Calculates the mapping data on a side of a cell.
-     */
-    void fill_data();
-
-    /**
-     * @brief Quadrature for the integration on the element sides.
-     */
-    const Quadrature *sub_quadrature;
-
-    /// Side quadratures.
-    std::vector<std::vector<Quadrature> > side_quad;
-
     /// Data on reference element (for each side and its permutation).
-    RefElementData *side_ref_data[RefElement<dim>::n_sides][RefElement<dim>::n_side_permutations];
-    
-    /// Current side on which ElemSideValues was recomputed.
-    unsigned int side_idx_;
+    std::vector<std::vector<RefElementData*>> side_ref_data;
+
+    /// Data computed by the mapping.
+    ElementData<spacedim> data;
     
 };
-
-
-
-
 
 #endif /* ELEMENT_VALUES_HH_ */

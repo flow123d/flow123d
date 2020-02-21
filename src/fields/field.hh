@@ -298,7 +298,7 @@ public:
      * trivial implementation using the @p value(,,) method. This is not optimal as it involves lot of virtual calls,
      * but this overhead can be negligible for more complex fields as Python of Formula.
      */
-    virtual void value_list(const std::vector< Point >  &point_list, const  ElementAccessor<spacedim> &elm,
+    virtual void value_list(const Armor::array &point_list, const  ElementAccessor<spacedim> &elm,
                        std::vector<typename Value::return_type>  &value_list) const;
 
     /**
@@ -421,7 +421,7 @@ inline typename Value::return_type const & Field<spacedim,Value>::value(const Po
 
 
 template<int spacedim, class Value>
-inline void Field<spacedim,Value>::value_list(const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
+inline void Field<spacedim,Value>::value_list(const Armor::array &point_list, const ElementAccessor<spacedim> &elm,
                    std::vector<typename Value::return_type>  &value_list) const
 {
     ASSERT(this->set_time_result_ != TimeStatus::unknown)(this->name()).error("Unknown time status.\n");
@@ -429,6 +429,7 @@ inline void Field<spacedim,Value>::value_list(const std::vector< Point >  &point
            elm.region_idx().idx(), (unsigned long int) region_fields_.size(), name().c_str());
 	OLD_ASSERT( region_fields_[elm.region_idx().idx()] ,
     		"Null field ptr on region id: %d, field: %s\n", elm.region().id(), name().c_str());
+    ASSERT_DBG(point_list.n_rows() == spacedim && point_list.n_cols() == 1).error("Invalid point size.\n");
 
     region_fields_[elm.region_idx().idx()]->value_list(point_list,elm, value_list);
 }

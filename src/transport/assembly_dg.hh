@@ -423,7 +423,7 @@ public:
         this->model_ = &model;
 
         fe_ = std::make_shared< FE_P_disc<dim> >(data_->dg_order);
-        fe_values_ = new FEValues<dim,3>(*quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
+        fe_values_ = new FEValues<3>(*quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
         ndofs_ = fe_->n_dofs();
         qsize_ = quad_->size();
         dof_indices_.resize(ndofs_);
@@ -476,7 +476,9 @@ public:
                 }
             }
 
-            model_->balance()->add_mass_matrix_values(model_->get_subst_idx()[sbi], elm.region().bulk_idx(), dof_indices_, local_mass_balance_vector_);
+            model_->balance()->add_mass_values(model_->get_subst_idx()[sbi], cell, cell.get_loc_dof_indices(),
+                                               local_mass_balance_vector_, 0);
+
             data_->ls_dt[sbi]->mat_set_values(ndofs_, &(dof_indices_[0]), ndofs_, &(dof_indices_[0]), &(local_matrix_[0]));
             VecSetValues(data_->ret_vec[sbi], ndofs_, &(dof_indices_[0]), &(local_retardation_balance_vector_[0]), ADD_VALUES);
         }
@@ -492,7 +494,7 @@ public:
     	 * @param point_list The quadrature points.
     	 */
         void calculate_velocity(const ElementAccessor<3> &cell, vector<arma::vec3> &velocity,
-                                const std::vector<arma::vec::fixed<3>> &point_list)
+                                const Armor::array &point_list)
         {
             velocity.resize(point_list.size());
             model_->velocity_field_ptr()->value_list(point_list, cell, velocity);
@@ -515,7 +517,7 @@ public:
 
         unsigned int ndofs_;                                      ///< Number of dofs
         unsigned int qsize_;                                      ///< Size of quadrature of actual dim
-        FEValues<dim,3> *fe_values_;                              ///< FEValues of object (of P disc finite element type)
+        FEValues<3> *fe_values_;                                  ///< FEValues of object (of P disc finite element type)
 
         vector<LongIdx> dof_indices_;                             ///< Vector of global DOF indices
         vector<PetscScalar> local_matrix_;                        ///< Auxiliary vector for assemble methods
@@ -587,15 +589,15 @@ public:
         fe_low_ = std::make_shared< FE_P_disc<dim-1> >(data_->dg_order);
         fe_rt_ = new FE_RT0<dim>();
         fe_rt_low_ = new FE_RT0<dim-1>();
-        fv_rt_ = new FEValues<dim,3>(*quad_, *fe_rt_, update_values | update_gradients | update_quadrature_points);
-        fe_values_ = new FEValues<dim,3>(*quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
+        fv_rt_ = new FEValues<3>(*quad_, *fe_rt_, update_values | update_gradients | update_quadrature_points);
+        fe_values_ = new FEValues<3>(*quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
         if (dim>1) {
-            fv_rt_vb_ = new FEValues<dim-1,3>(*quad_low_, *fe_rt_low_, update_values | update_quadrature_points);
-            fe_values_vb_ = new FEValues<dim-1,3>(*quad_low_, *fe_low_,
+            fv_rt_vb_ = new FEValues<3>(*quad_low_, *fe_rt_low_, update_values | update_quadrature_points);
+            fe_values_vb_ = new FEValues<3>(*quad_low_, *fe_low_,
                     update_values | update_gradients | update_JxW_values | update_quadrature_points);
         }
-        fe_values_side_ = new FESideValues<dim,3>(*quad_low_, *fe_, update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
-        fsv_rt_ = new FESideValues<dim,3>(*quad_low_, *fe_rt_, update_values | update_quadrature_points);
+        fe_values_side_ = new FEValues<3>(*quad_low_, *fe_, update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
+        fsv_rt_ = new FEValues<3>(*quad_low_, *fe_rt_, update_values | update_quadrature_points);
         ndofs_ = fe_->n_dofs();
         qsize_ = quad_->size();
         qsize_lower_dim_ = quad_low_->size();
@@ -619,10 +621,12 @@ public:
             ret_coef_[sbi].resize(qsize_);
         }
 
+        //fe_values_vec_.resize(data_->ad_coef_edg.size());
         for (unsigned int sid=0; sid<data_->ad_coef_edg.size(); sid++)
         {
             side_dof_indices_.push_back( vector<LongIdx>(ndofs_) );
-            fe_values_vec_.push_back(new FESideValues<dim,3>(*quad_low_, *fe_,
+            //fe_values_vec_[sid].initialize(...)
+            fe_values_vec_.push_back(new FEValues<3>(*quad_low_, *fe_,
                     update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points));
         }
 
@@ -686,8 +690,8 @@ public:
 
         ElementAccessor<3> elm_acc = cell.elm();
         cell.get_dof_indices(dof_indices_);
-        fe_values_side_->reinit(elm_acc, side.side_idx());
-        fsv_rt_->reinit(elm_acc, side.side_idx());
+        fe_values_side_->reinit(side);
+        fsv_rt_->reinit(side);
 
         calculate_velocity(elm_acc, velocity_, fsv_rt_->point_list());
         model_->compute_advection_diffusion_coefficients(fe_values_side_->point_list(), velocity_, elm_acc, data_->ad_coef, data_->dif_coef);
@@ -765,8 +769,8 @@ public:
             auto dh_edge_cell = data_->dh_->cell_accessor_from_element( edge_side.elem_idx() );
             ElementAccessor<3> edg_elm = dh_edge_cell.elm();
             dh_edge_cell.get_dof_indices(side_dof_indices_[sid]);
-            fe_values_vec_[sid]->reinit(edg_elm, edge_side.side_idx());
-            fsv_rt_->reinit(edg_elm, edge_side.side_idx());
+            fe_values_vec_[sid]->reinit(edge_side.side());
+            fsv_rt_->reinit(edge_side.side());
             calculate_velocity(edg_elm, side_velocity_vec_[sid], fsv_rt_->point_list());
             model_->compute_advection_diffusion_coefficients(fe_values_vec_[sid]->point_list(), side_velocity_vec_[sid], edg_elm, data_->ad_coef_edg[sid], data_->dif_coef_edg[sid]);
             dg_penalty_[sid].resize(model_->n_substances());
@@ -925,7 +929,7 @@ public:
         for(unsigned int i=0; i<n_indices; ++i) {
             side_dof_indices_vb_[i+n_dofs[0]] = dof_indices_[i];
         }
-        fe_values_side_->reinit(elm_higher_dim, neighb_side.side_idx());
+        fe_values_side_->reinit(neighb_side.side());
         n_dofs[1] = fv_sb_[1]->n_dofs();
 
         // Testing element if they belong to local partition.
@@ -933,7 +937,7 @@ public:
         own_element_id[0] = cell_lower_dim.is_own();
         own_element_id[1] = cell_higher_dim.is_own();
 
-        fsv_rt_->reinit(elm_higher_dim, neighb_side.side_idx());
+        fsv_rt_->reinit(neighb_side.side());
         fv_rt_vb_->reinit(elm_lower_dim);
         calculate_velocity(elm_higher_dim, velocity_higher_, fsv_rt_->point_list());
         calculate_velocity(elm_lower_dim, velocity_, fv_rt_vb_->point_list());
@@ -996,7 +1000,7 @@ private:
 	 * @param point_list The quadrature points.
 	 */
     void calculate_velocity(const ElementAccessor<3> &cell, vector<arma::vec3> &velocity,
-                            const std::vector<arma::vec::fixed<3>> &point_list)
+                            const Armor::array &point_list)
     {
         velocity.resize(point_list.size());
         model_->velocity_field_ptr()->value_list(point_list, cell, velocity);
@@ -1023,14 +1027,14 @@ private:
     unsigned int ndofs_;                                      ///< Number of dofs
     unsigned int qsize_;                                      ///< Size of quadrature of actual dim
     unsigned int qsize_lower_dim_;                            ///< Size of quadrature of dim-1
-    FEValues<dim,3> *fv_rt_;                                  ///< FEValues of object (of RT0 finite element type)
-    FEValues<dim,3> *fe_values_;                              ///< FEValues of object (of P disc finite element type)
-    FEValues<dim-1,3> *fv_rt_vb_;                             ///< FEValues of dim-1 object (of RT0 finite element type)
-    FEValues<dim-1,3> *fe_values_vb_;                         ///< FEValues of dim-1 object (of P disc finite element type)
-    FESideValues<dim,3> *fe_values_side_;                     ///< FESideValues of object (of P disc finite element type)
-    FESideValues<dim,3> *fsv_rt_;                             ///< FESideValues of object (of RT0 finite element type)
-    vector<FESideValues<dim,3>*> fe_values_vec_;              ///< Vector of FESideValues of object (of P disc finite element types)
-    vector<FEValuesSpaceBase<3>*> fv_sb_;                     ///< Auxiliary vector, holds FEValues objects for assemble element-side
+    FEValues<3> *fv_rt_;                                      ///< FEValues of object (of RT0 finite element type)
+    FEValues<3> *fe_values_;                                  ///< FEValues of object (of P disc finite element type)
+    FEValues<3> *fv_rt_vb_;                                   ///< FEValues of dim-1 object (of RT0 finite element type)
+    FEValues<3> *fe_values_vb_;                               ///< FEValues of dim-1 object (of P disc finite element type)
+    FEValues<3> *fe_values_side_;                             ///< FEValues of object (of P disc finite element type)
+    FEValues<3> *fsv_rt_;                                     ///< FEValues of object (of RT0 finite element type)
+    vector<FEValues<3>*> fe_values_vec_;                      ///< Vector of FEValues of object (of P disc finite element types)
+    vector<FEValues<3>*> fv_sb_;                              ///< Auxiliary vector, holds FEValues objects for assemble element-side
 
     vector<LongIdx> dof_indices_;                             ///< Vector of global DOF indices
     vector< vector<LongIdx> > side_dof_indices_;              ///< Vector of vectors of side DOF indices
@@ -1112,7 +1116,7 @@ public:
         this->model_ = &model;
 
         fe_ = std::make_shared< FE_P_disc<dim> >(data_->dg_order);
-        fe_values_ = new FEValues<dim,3>(*quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
+        fe_values_ = new FEValues<3>(*quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
         ndofs_ = fe_->n_dofs();
         qsize_ = quad_->size();
         dof_indices_.resize(ndofs_);
@@ -1161,11 +1165,10 @@ public:
                     local_source_balance_vector_[i] -= sources_sigma_[sbi][k]*fe_values_->shape_value(i,k)*fe_values_->JxW(k);
 
                 local_source_balance_rhs_[i] += local_rhs_[i];
-                // temporary, TODO: replace with LocDofVec in balance
-                loc_dof_indices_[i] = cell.get_loc_dof_indices()[i];
             }
-            model_->balance()->add_source_values(model_->get_subst_idx()[sbi], elm.region().bulk_idx(), loc_dof_indices_,
-                                               local_source_balance_vector_, local_source_balance_rhs_);
+            model_->balance()->add_source_values(model_->get_subst_idx()[sbi], elm.region().bulk_idx(),
+                                                 cell.get_loc_dof_indices(),
+                                                 local_source_balance_vector_, local_source_balance_rhs_);
         }
     }
 
@@ -1179,7 +1182,7 @@ public:
     	 * @param point_list The quadrature points.
     	 */
         void calculate_velocity(const ElementAccessor<3> &cell, vector<arma::vec3> &velocity,
-                                const std::vector<arma::vec::fixed<3>> &point_list)
+                                const Armor::array &point_list)
         {
             velocity.resize(point_list.size());
             model_->velocity_field_ptr()->value_list(point_list, cell, velocity);
@@ -1202,7 +1205,7 @@ public:
 
         unsigned int ndofs_;                                      ///< Number of dofs
         unsigned int qsize_;                                      ///< Size of quadrature of actual dim
-        FEValues<dim,3> *fe_values_;                              ///< FEValues of object (of P disc finite element type)
+        FEValues<3> *fe_values_;                                  ///< FEValues of object (of P disc finite element type)
 
         vector<LongIdx> dof_indices_;                             ///< Vector of global DOF indices
         vector<LongIdx> loc_dof_indices_;                         ///< Vector of local DOF indices
@@ -1268,8 +1271,8 @@ public:
 
         fe_ = std::make_shared< FE_P_disc<dim> >(data_->dg_order);
         fe_rt_ = new FE_RT0<dim>();
-        fe_values_side_ = new FESideValues<dim,3>(*quad_low_, *fe_, update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
-        fsv_rt_ = new FESideValues<dim,3>(*quad_low_, *fe_rt_, update_values | update_quadrature_points);
+        fe_values_side_ = new FEValues<3>(*quad_low_, *fe_, update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
+        fsv_rt_ = new FEValues<3>(*quad_low_, *fe_rt_, update_values | update_quadrature_points);
         ndofs_ = fe_->n_dofs();
         qsize_ = quad_->size();
         qsize_lower_dim_ = quad_low_->size();
@@ -1305,8 +1308,8 @@ public:
             arma::uvec bc_type;
             model_->get_bc_type(ele_acc, bc_type);
 
-            fe_values_side_->reinit(elm, side.side_idx());
-            fsv_rt_->reinit(elm, side.side_idx());
+            fe_values_side_->reinit(side);
+            fsv_rt_->reinit(side);
             calculate_velocity(elm, velocity_, fsv_rt_->point_list());
 
             model_->compute_advection_diffusion_coefficients(fe_values_side_->point_list(), velocity_, side.element(), data_->ad_coef, data_->dif_coef);
@@ -1408,8 +1411,12 @@ public:
                 }
                 data_->ls[sbi]->rhs_set_values(ndofs_, &(dof_indices_[0]), &(local_rhs_[0]));
 
-                model_->balance()->add_flux_matrix_values(model_->get_subst_idx()[sbi], side, dof_indices_, local_flux_balance_vector_);
-                model_->balance()->add_flux_vec_value(model_->get_subst_idx()[sbi], side, local_flux_balance_rhs_);
+                //model_->balance()->add_flux_matrix_values(model_->get_subst_idx()[sbi], side, dof_indices_, local_flux_balance_vector_);
+                //model_->balance()->add_flux_vec_value(model_->get_subst_idx()[sbi], side, local_flux_balance_rhs_);
+                DHCellSide dh_side(dh_side_cell, si);
+                model_->balance()->add_flux_values(model_->get_subst_idx()[sbi], dh_side,
+                                              cell.get_loc_dof_indices(),
+                                              local_flux_balance_vector_, local_flux_balance_rhs_);
             }
         }
     }
@@ -1424,7 +1431,7 @@ public:
     	 * @param point_list The quadrature points.
     	 */
         void calculate_velocity(const ElementAccessor<3> &cell, vector<arma::vec3> &velocity,
-                                const std::vector<arma::vec::fixed<3>> &point_list)
+                                const Armor::array &point_list)
         {
             velocity.resize(point_list.size());
             model_->velocity_field_ptr()->value_list(point_list, cell, velocity);
@@ -1449,8 +1456,8 @@ public:
         unsigned int ndofs_;                                      ///< Number of dofs
         unsigned int qsize_;                                      ///< Size of quadrature of actual dim
         unsigned int qsize_lower_dim_;                            ///< Size of quadrature of dim-1
-        FESideValues<dim,3> *fe_values_side_;                     ///< FESideValues of object (of P disc finite element type)
-        FESideValues<dim,3> *fsv_rt_;                             ///< FESideValues of object (of RT0 finite element type)
+        FEValues<3> *fe_values_side_;                             ///< FEValues of object (of P disc finite element type)
+        FEValues<3> *fsv_rt_;                                     ///< FEValues of object (of RT0 finite element type)
 
         vector<LongIdx> dof_indices_;                             ///< Vector of global DOF indices
         vector<PetscScalar> local_rhs_;                           ///< Auxiliary vector for set_sources method.
@@ -1471,10 +1478,7 @@ public:
 
 
 /**
- * Auxiliary container class for Finite element and related objects of given dimension.
- */
-/**
- * Auxiliary container class sets the initial condition..
+ * Auxiliary container class sets the initial condition.
  */
 template <unsigned int dim, class Model>
 class InitConditionAssemblyDG : public AssemblyBase<dim>
@@ -1509,7 +1513,7 @@ public:
         this->model_ = &model;
 
         fe_ = std::make_shared< FE_P_disc<dim> >(data_->dg_order);
-        fe_values_ = new FEValues<dim,3>(*quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
+        fe_values_ = new FEValues<3>(*quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
         ndofs_ = fe_->n_dofs();
         qsize_ = quad_->size();
         dof_indices_.resize(ndofs_);
@@ -1564,7 +1568,7 @@ public:
     	 * @param point_list The quadrature points.
     	 */
         void calculate_velocity(const ElementAccessor<3> &cell, vector<arma::vec3> &velocity,
-                                const std::vector<arma::vec::fixed<3>> &point_list)
+                                const Armor::array &point_list)
         {
             velocity.resize(point_list.size());
             model_->velocity_field_ptr()->value_list(point_list, cell, velocity);
@@ -1587,7 +1591,7 @@ public:
 
         unsigned int ndofs_;                                      ///< Number of dofs
         unsigned int qsize_;                                      ///< Size of quadrature of actual dim
-        FEValues<dim,3> *fe_values_;                              ///< FEValues of object (of P disc finite element type)
+        FEValues<3> *fe_values_;                                  ///< FEValues of object (of P disc finite element type)
 
         vector<LongIdx> dof_indices_;                             ///< Vector of global DOF indices
         vector<PetscScalar> local_matrix_;                        ///< Auxiliary vector for assemble methods
@@ -1651,15 +1655,15 @@ public:
         fe_low_ = std::make_shared< FE_P_disc<dim-1> >(data_->dg_order);
         fe_rt_ = new FE_RT0<dim>();
         fe_rt_low_ = new FE_RT0<dim-1>();
-        fv_rt_ = new FEValues<dim,3>(*quad_, *fe_rt_, update_values | update_gradients | update_quadrature_points);
-        fe_values_ = new FEValues<dim,3>(*quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
+        fv_rt_ = new FEValues<3>(*quad_, *fe_rt_, update_values | update_gradients | update_quadrature_points);
+        fe_values_ = new FEValues<3>(*quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
         if (dim>1) {
-            fv_rt_vb_ = new FEValues<dim-1,3>(*quad_low_, *fe_rt_low_, update_values | update_quadrature_points);
-            fe_values_vb_ = new FEValues<dim-1,3>(*quad_low_, *fe_low_,
+            fv_rt_vb_ = new FEValues<3>(*quad_low_, *fe_rt_low_, update_values | update_quadrature_points);
+            fe_values_vb_ = new FEValues<3>(*quad_low_, *fe_low_,
                     update_values | update_gradients | update_JxW_values | update_quadrature_points);
         }
-        fe_values_side_ = new FESideValues<dim,3>(*quad_low_, *fe_, update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
-        fsv_rt_ = new FESideValues<dim,3>(*quad_low_, *fe_rt_, update_values | update_quadrature_points);
+        fe_values_side_ = new FEValues<3>(*quad_low_, *fe_, update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
+        fsv_rt_ = new FEValues<3>(*quad_low_, *fe_rt_, update_values | update_quadrature_points);
         ndofs_ = fe_->n_dofs();
         qsize_ = quad_->size();
         qsize_lower_dim_ = quad_low_->size();
@@ -1697,7 +1701,7 @@ public:
         for (unsigned int sid=0; sid<data_->ad_coef_edg.size(); sid++)
         {
             side_dof_indices_.push_back( vector<LongIdx>(ndofs_) );
-            fe_values_vec_.push_back(new FESideValues<dim,3>(*quad_low_, *fe_,
+            fe_values_vec_.push_back(new FEValues<3>(*quad_low_, *fe_,
                     update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points));
         }
 
@@ -1724,7 +1728,7 @@ public:
 	 * @param point_list The quadrature points.
 	 */
     void calculate_velocity(const ElementAccessor<3> &cell, vector<arma::vec3> &velocity,
-                            const std::vector<arma::vec::fixed<3>> &point_list)
+                            const Armor::array &point_list)
     {
         velocity.resize(point_list.size());
         model_->velocity_field_ptr()->value_list(point_list, cell, velocity);
@@ -1751,14 +1755,14 @@ public:
     unsigned int ndofs_;                                      ///< Number of dofs
     unsigned int qsize_;                                      ///< Size of quadrature of actual dim
     unsigned int qsize_lower_dim_;                            ///< Size of quadrature of dim-1
-    FEValues<dim,3> *fv_rt_;                                  ///< FEValues of object (of RT0 finite element type)
-    FEValues<dim,3> *fe_values_;                              ///< FEValues of object (of P disc finite element type)
-    FEValues<dim-1,3> *fv_rt_vb_;                             ///< FEValues of dim-1 object (of RT0 finite element type)
-    FEValues<dim-1,3> *fe_values_vb_;                         ///< FEValues of dim-1 object (of P disc finite element type)
-    FESideValues<dim,3> *fe_values_side_;                     ///< FESideValues of object (of P disc finite element type)
-    FESideValues<dim,3> *fsv_rt_;                             ///< FESideValues of object (of RT0 finite element type)
-    vector<FESideValues<dim,3>*> fe_values_vec_;              ///< Vector of FESideValues of object (of P disc finite element types)
-    vector<FEValuesSpaceBase<3>*> fv_sb_;                     ///< Auxiliary vector, holds FEValues objects for assemble element-side
+    FEValues<3> *fv_rt_;                                      ///< FEValues of object (of RT0 finite element type)
+    FEValues<3> *fe_values_;                                  ///< FEValues of object (of P disc finite element type)
+    FEValues<3> *fv_rt_vb_;                                   ///< FEValues of dim-1 object (of RT0 finite element type)
+    FEValues<3> *fe_values_vb_;                               ///< FEValues of dim-1 object (of P disc finite element type)
+    FEValues<3> *fe_values_side_;                             ///< FEValues of object (of P disc finite element type)
+    FEValues<3> *fsv_rt_;                                     ///< FEValues of object (of RT0 finite element type)
+    vector<FEValues<3>*> fe_values_vec_;                      ///< Vector of FEValues of object (of P disc finite element types)
+    vector<FEValues<3>*> fv_sb_;                              ///< Auxiliary vector, holds FEValues objects for assemble element-side
 
     vector<LongIdx> dof_indices_;                             ///< Vector of global DOF indices
     vector<LongIdx> loc_dof_indices_;                         ///< Vector of local DOF indices

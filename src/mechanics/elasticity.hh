@@ -24,7 +24,6 @@
 #include "fields/multi_field.hh"
 #include "la/linsys.hh"
 #include "la/vector_mpi.hh"
-#include "flow/mh_dofhandler.hh"
 #include "fields/equation_output.hh"
 #include "coupling/equation.hh"
 #include "fem/fe_values_views.hh"
@@ -34,7 +33,6 @@
 class Distribution;
 class OutputTime;
 class DOFHandlerMultiDim;
-template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim> class FiniteElement;
 class Elasticity;
 

@@ -47,7 +47,6 @@
 #include "fields/field_set.hh"                  // for FieldSet
 #include "fields/field_values.hh"               // for FieldValue<>::Scalar
 #include "flow/darcy_flow_interface.hh"         // for DarcyFlowInterface
-#include "flow/mh_dofhandler.hh"                // for LocalElementAccessorBase, uint
 #include "input/input_exception.hh"             // for DECLARE_INPUT_EXCEPTION
 #include "input/type_base.hh"                   // for Array
 #include "input/type_generic.hh"                // for Instance

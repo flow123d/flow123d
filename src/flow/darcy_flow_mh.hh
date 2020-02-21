@@ -47,7 +47,6 @@
 #include "fields/field_set.hh"                  // for FieldSet
 #include "fields/field_values.hh"               // for FieldValue<>::Scalar
 #include "flow/darcy_flow_interface.hh"         // for DarcyFlowInterface
-#include "flow/mh_dofhandler.hh"                // for LocalElementAccessorBase, uint
 #include "input/input_exception.hh"             // for DECLARE_INPUT_EXCEPTION
 #include "input/type_base.hh"                   // for Array
 #include "input/type_generic.hh"                // for Instance
@@ -211,7 +210,7 @@ public:
         
         unsigned int n_schur_compls;
         int is_linear;              ///< Hack fo BDDC solver.
-        bool force_bc_switch;       ///< auxiliary flag for switchting Dirichlet like BC
+        bool force_no_neumann_bc;       ///< auxiliary flag for switchting Dirichlet like BC
         
         /// Idicator of dirichlet or neumann type of switch boundary conditions.
         std::vector<char> bc_switch_dirichlet;

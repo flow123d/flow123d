@@ -231,6 +231,7 @@ Logger &operator<<(Logger & log, const std::vector<T> & vec)
 {
     for (T const& c : vec)
         log << c << " ";
+	return log;
 }
 
 

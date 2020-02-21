@@ -30,7 +30,6 @@
 #include "fields/field_fe.hh"
 #include "fields/fe_value_handler.hh"
 #include "la/linsys_PETSC.hh"
-#include "flow/mh_dofhandler.hh"
 #include "coupling/balance.hh"
 #include "transport/advection_diffusion_model.hh"
 #include "transport/concentration_model.hh"

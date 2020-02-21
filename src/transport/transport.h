@@ -89,8 +89,11 @@ public:
 
 	inline Quadrature &q(unsigned int dim);
 
-	template<unsigned int dim>
-	inline FESideValues<dim,3> *fe_values();
+	inline FEValues<3> &fe_values(unsigned int dim)
+    { 
+        ASSERT_DBG( dim >= 1 && dim <= 3 );
+        return fe_values_[dim-1];
+    }
 
 private:
 
@@ -104,9 +107,7 @@ private:
 	QGauss::array q_;
 
     /// FESideValues objects for side flux calculating.
-	FESideValues<1,3> *fe_values1_;
-    FESideValues<2,3> *fe_values2_;
-    FESideValues<3,3> *fe_values3_;
+	FEValues<3> fe_values_[3];
 };
 
 
@@ -281,13 +282,13 @@ private:
 	/**
 	 * @brief Wrapper of following method, call side_flux with correct template parameter.
 	 */
-	double side_flux(ElementAccessor<3> &cell, unsigned int i_side);
+	double side_flux(const DHCellSide &cell_side);
 
 	/**
 	 * @brief Calculate flux on side of given element specified by dimension.
 	 */
 	template<unsigned int dim>
-	double calculate_side_flux(ElementAccessor<3> &cell, unsigned int i_side);
+	double calculate_side_flux(const DHCellSide &cell);
 
 
 
