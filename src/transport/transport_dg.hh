@@ -302,6 +302,16 @@ public:
 
     LongIdx *get_row_4_el();
 
+    /// Access to balance object of Model
+    inline std::shared_ptr<Balance> balance() const {
+        return Model::balance_;
+    }
+
+    /// Return vector of substances indices
+    inline const vector<unsigned int> subst_idx() const {
+        return Model::subst_idx;
+    }
+
 
 
 
@@ -312,28 +322,6 @@ private:
 	inline typename Model::ModelEqData &data() { return *data_; }
 
 	void preallocate();
-
-	/**
-	 * @brief Assembles the mass matrix.
-	 *
-	 * Loops through local cells and calls assemble_mass_matrix() method of AssemblyDG
-	 * object of appropriate dimension.
-	 */
-	void assemble_mass_matrix();
-
-	/**
-	 * @brief Assembles the right hand side due to volume sources.
-	 *
-	 * This method just calls AssemblyDG::set_sources() for each elements.
-	 */
-	void set_sources();
-
-	/**
-	 * @brief Assembles the r.h.s. components corresponding to the Dirichlet boundary conditions.
-	 *
-	 * The routine just calls AssemblyDG::set_boundary_condition() for each element.
-	 */
-	void set_boundary_conditions();
 
 	/**
 	 * @brief Calculates the dispersivity (diffusivity) tensor from the velocity field.

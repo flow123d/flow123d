@@ -106,11 +106,12 @@ public:
 	/**
 	 * @brief General assemble methods.
 	 *
-	 * Loops through local cells and calls assemble_mass_matrix() method of assembly
+	 * Loops through local cells and calls assemble methods of assembly
 	 * object of each cells over space dimension.
 	 */
     void assemble(std::shared_ptr<DOFHandlerMultiDim> dh) {
         unsigned int i;
+        std::get<1>(multidim_assembly_)->begin();
         for (auto cell : dh->local_range() )
         {
             this->add_integrals_of_computing_step(cell);
@@ -184,6 +185,7 @@ public:
                 END_TIMER("assemble_fluxes_elem_side");
             }
         }
+        std::get<1>(multidim_assembly_)->end();
     }
 
 private:
@@ -379,10 +381,10 @@ public:
     virtual void assemble_fluxes_element_side(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {}
 
     /// Method prepares object before assemblation (e.g. balance, ...).
-    virtual void begin(unsigned int subst_idx) {}
+    virtual void begin() {}
 
     /// Method finishes object after assemblation (e.g. balance, ...).
-    virtual void end(unsigned int subst_idx) {}
+    virtual void end() {}
 };
 
 
@@ -482,6 +484,18 @@ public:
             data_->ls_dt[sbi]->mat_set_values(ndofs_, &(dof_indices_[0]), ndofs_, &(dof_indices_[0]), &(local_matrix_[0]));
             VecSetValues(data_->ret_vec[sbi], ndofs_, &(dof_indices_[0]), &(local_retardation_balance_vector_[0]), ADD_VALUES);
         }
+    }
+
+    /// Implements @p AssemblyBase::begin.
+    void begin() override
+    {
+        model_->balance()->start_mass_assembly( model_->subst_idx() );
+    }
+
+    /// Implements @p AssemblyBase::end.
+    void end() override
+    {
+        model_->balance()->finish_mass_assembly( model_->subst_idx() );
     }
 
 
@@ -1172,6 +1186,18 @@ public:
         }
     }
 
+    /// Implements @p AssemblyBase::begin.
+    void begin() override
+    {
+        model_->balance()->start_source_assembly( model_->subst_idx() );
+    }
+
+    /// Implements @p AssemblyBase::end.
+    void end() override
+    {
+        model_->balance()->finish_source_assembly( model_->subst_idx() );
+    }
+
 
     private:
     	/**
@@ -1419,6 +1445,18 @@ public:
                                               local_flux_balance_vector_, local_flux_balance_rhs_);
             }
         }
+    }
+
+    /// Implements @p AssemblyBase::begin.
+    void begin() override
+    {
+        model_->balance()->start_flux_assembly( model_->subst_idx() );
+    }
+
+    /// Implements @p AssemblyBase::end.
+    void end() override
+    {
+        model_->balance()->finish_flux_assembly( model_->subst_idx() );
     }
 
 

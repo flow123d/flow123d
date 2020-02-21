@@ -475,10 +475,18 @@ void TransportDG<Model>::preallocate()
         mass_matrix[i] = NULL;
         VecZeroEntries(data_->ret_vec[i]);
     }
+    START_TIMER("assemble_stiffness");
     data_->stiffness_assembly_->assemble(data_->dh_);
-    assemble_mass_matrix();
-    set_sources();
-    set_boundary_conditions();
+    END_TIMER("assemble_stiffness");
+    START_TIMER("assemble_mass");
+    data_->mass_assembly_->assemble(data_->dh_);
+    END_TIMER("assemble_mass");
+    START_TIMER("assemble_sources");
+    data_->sources_assembly_->assemble(data_->dh_);
+    END_TIMER("assemble_sources");
+    START_TIMER("assemble_bc");
+    data_->bdr_cond_assembly_->assemble(data_->dh_);
+    END_TIMER("assemble_bc");
     for (unsigned int i=0; i<Model::n_substances(); i++)
     {
       VecAssemblyBegin(data_->ret_vec[i]);
@@ -511,7 +519,9 @@ void TransportDG<Model>::update_solution()
         	data_->ls_dt[i]->mat_zero_entries();
             VecZeroEntries(data_->ret_vec[i]);
         }
-        assemble_mass_matrix();
+        START_TIMER("assemble_mass");
+        data_->mass_assembly_->assemble(data_->dh_);
+        END_TIMER("assemble_mass");
         for (unsigned int i=0; i<Model::n_substances(); i++)
         {
         	data_->ls_dt[i]->finish_assembly();
@@ -541,7 +551,9 @@ void TransportDG<Model>::update_solution()
             data_->ls[i]->start_add_assembly();
             data_->ls[i]->mat_zero_entries();
         }
+        START_TIMER("assemble_stiffness");
         data_->stiffness_assembly_->assemble(data_->dh_);
+        END_TIMER("assemble_stiffness");
         for (unsigned int i=0; i<Model::n_substances(); i++)
         {
         	data_->ls[i]->finish_assembly();
@@ -563,8 +575,12 @@ void TransportDG<Model>::update_solution()
             data_->ls[i]->start_add_assembly();
             data_->ls[i]->rhs_zero_entries();
         }
-        set_sources();
-        set_boundary_conditions();
+        START_TIMER("assemble_sources");
+        data_->sources_assembly_->assemble(data_->dh_);
+        END_TIMER("assemble_sources");
+        START_TIMER("assemble_bc");
+        data_->bdr_cond_assembly_->assemble(data_->dh_);
+        END_TIMER("assemble_bc");
         for (unsigned int i=0; i<Model::n_substances(); i++)
         {
             data_->ls[i]->finish_assembly();
@@ -690,41 +706,6 @@ void TransportDG<Model>::calculate_cumulative_balance()
     }
 }
 
-
-template<class Model>
-void TransportDG<Model>::assemble_mass_matrix()
-{
-    START_TIMER("assemble_mass");
-    Model::balance_->start_mass_assembly(Model::subst_idx);
-    data_->mass_assembly_->assemble(data_->dh_);
-    Model::balance_->finish_mass_assembly(Model::subst_idx);
-    END_TIMER("assemble_mass");
-}
-
-
-
-template<class Model>
-void TransportDG<Model>::set_sources()
-{
-  START_TIMER("assemble_sources");
-    Model::balance_->start_source_assembly(Model::subst_idx);
-    data_->sources_assembly_->assemble(data_->dh_);
-    Model::balance_->finish_source_assembly(Model::subst_idx);
-  END_TIMER("assemble_sources");
-}
-
-
-
-template<class Model>
-void TransportDG<Model>::set_boundary_conditions()
-{
-
-  START_TIMER("assemble_bc");
-    Model::balance_->start_flux_assembly(Model::subst_idx);
-    data_->bdr_cond_assembly_->assemble(data_->dh_);
-    Model::balance_->finish_flux_assembly(Model::subst_idx);
-  END_TIMER("assemble_bc");
-}
 
 
 
