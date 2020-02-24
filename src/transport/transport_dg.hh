@@ -57,7 +57,6 @@ class OutputTime;
 class DOFHandlerMultiDim;
 class AssemblyDGBase;
 template<unsigned int dim, class Model> class AssemblyDG;
-template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim> class FiniteElement;
 template<unsigned int dim, unsigned int spacedim> class Mapping;
 class Quadrature;

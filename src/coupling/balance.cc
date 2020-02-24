@@ -34,6 +34,7 @@
 #include "tools/time_governor.hh"
 #include "la/distribution.hh"
 #include "fem/dofhandler.hh"
+#include "fem/dh_cell_accessor.hh"
 
 using namespace Input::Type;
 
@@ -438,51 +439,76 @@ void Balance::finish_source_assembly(unsigned int quantity_idx)
 }
 
 
-
-
-void Balance::add_mass_matrix_values(unsigned int quantity_idx,
-		unsigned int region_idx,
-		const vector<LongIdx> &dof_indices,
-		const vector<double> &values)
+void Balance::add_mass_values(unsigned int quantity_idx,
+		const DHCellAccessor &dh_cell,
+		const LocDofVec &loc_dof_indices,
+		const std::vector<double> &mat_values,
+		double vec_value)
 {
-    ASSERT_DBG(allocation_done_);
+	ASSERT_DBG(allocation_done_);
     if (! balance_on_) return;
 
-	PetscInt reg_array[1] = { (int)region_idx };
+	// map local dof indices to global
+	uint m = mat_values.size();
+	int row_dofs[m];
+	for (uint i=0; i<m; i++)
+		row_dofs[i]= dh_cell.dh()->get_local_to_global_map()[loc_dof_indices[i]];
+
+	PetscInt reg_array[1] = { (int)dh_cell.elm().region_idx().bulk_idx() };
 
 	chkerr_assert(MatSetValues(region_mass_matrix_[quantity_idx],
-			dof_indices.size(),
-			&(dof_indices[0]),
+			m,
+			row_dofs,
 			1,
 			reg_array,
-			&(values[0]),
+			&(mat_values[0]),
 			ADD_VALUES));
+
+	chkerr_assert(VecSetValue(region_mass_vec_[quantity_idx],
+            dh_cell.elm().region_idx().bulk_idx(),
+            vec_value,
+            ADD_VALUES));
 }
 
-
-void Balance::add_flux_matrix_values(unsigned int quantity_idx,
-		SideIter side,
-		const vector<LongIdx> &dof_indices,
-		const vector<double> &values)
+void Balance::add_flux_values(unsigned int quantity_idx,
+		const DHCellSide &side,
+		const LocDofVec &loc_dof_indices,
+		const std::vector<double> &mat_values,
+		double vec_value)
 {
-    ASSERT_DBG(allocation_done_);
+	ASSERT_DBG(allocation_done_);
     if (! balance_on_) return;
 
-	PetscInt elem_array[1] = { int(be_offset_ + be_id_map_[get_boundary_edge_uid(side)]) };
+	// filling row elements corresponding to a boundary edge
+
+	// map local dof indices to global
+	uint m = mat_values.size();
+	int col_dofs[m];
+	for (uint i=0; i<m; i++)
+		col_dofs[i]= side.cell().dh()->get_local_to_global_map()[loc_dof_indices[i]];
+
+	SideIter s = SideIter(side.side());
+	PetscInt glob_be_idx[1] = { int(be_offset_ + be_id_map_[get_boundary_edge_uid(s)]) };
+
 	chkerr_assert(MatSetValues(be_flux_matrix_[quantity_idx],
 			1,
-			elem_array,
-			dof_indices.size(),
-			&(dof_indices[0]),
-			&(values[0]),
+			glob_be_idx,
+			m,
+			col_dofs,
+			&(mat_values[0]),
+			ADD_VALUES));
+
+	chkerr_assert(VecSetValue(be_flux_vec_[quantity_idx],
+			glob_be_idx[0],
+			vec_value,
 			ADD_VALUES));
 }
 
 void Balance::add_source_values(unsigned int quantity_idx,
 		unsigned int region_idx,
-		const vector<LongIdx> &loc_dof_indices,
-		const vector<double> &mat_values,
-        const vector<double> &vec_values)
+		const LocDofVec &loc_dof_indices,
+		const vector<double> &mult_mat_values,
+        const vector<double> &add_mat_values)
 {
     ASSERT_DBG(allocation_done_);
     if (! balance_on_) return;
@@ -491,42 +517,18 @@ void Balance::add_source_values(unsigned int quantity_idx,
 
 	chkerr_assert(MatSetValues(region_source_matrix_[quantity_idx],
 			loc_dof_indices.size(),
-			&(loc_dof_indices[0]),
+			loc_dof_indices.memptr(),
 			1,
 			reg_array,
-			&(mat_values[0]),
+			&(mult_mat_values[0]),
 			ADD_VALUES));
     
     chkerr_assert(MatSetValues(region_source_rhs_[quantity_idx],
 			loc_dof_indices.size(),
-			&(loc_dof_indices[0]),
+			loc_dof_indices.memptr(),
 			1,
 			reg_array,
-			&(vec_values[0]),
-			ADD_VALUES));
-}
-
-void Balance::add_mass_vec_value(unsigned int quantity_idx,
-        unsigned int region_idx,
-        double value)
-{
-  chkerr_assert(VecSetValue(region_mass_vec_[quantity_idx],
-            region_idx,
-            value,
-            ADD_VALUES));
-}
-
-
-void Balance::add_flux_vec_value(unsigned int quantity_idx,
-		SideIter side,
-		double value)
-{
-    ASSERT_DBG(allocation_done_);
-    if (! balance_on_) return;
-
-    chkerr_assert(VecSetValue(be_flux_vec_[quantity_idx],
-			be_offset_ + be_id_map_[get_boundary_edge_uid(side)],
-			value,
+			&(add_mat_values[0]),
 			ADD_VALUES));
 }
 

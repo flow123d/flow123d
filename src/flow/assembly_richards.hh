@@ -180,8 +180,8 @@ protected:
                                             -source_diagonal - mass_rhs);
             }
 
-            ad_->balance->add_mass_vec_value(ad_->water_balance_idx, ele.region().bulk_idx(),
-                    diagonal_coef*water_content_vec[local_side]);
+            ad_->balance->add_mass_values(ad_->water_balance_idx, dh_cell, {local_side},
+                                          {0.0}, diagonal_coef*water_content_vec[local_side]);
             ad_->balance->add_source_values(ad_->water_balance_idx, ele.region().bulk_idx(),
                                             {this->loc_system_.row_dofs[this->loc_edge_dofs[i]]},
                                             {0},{source_diagonal});

@@ -361,14 +361,16 @@ typedef FieldPython<3, FieldValue<3>::Vector > ExactSolution;
  * 3) difference of divergence
  * */
 
-template <int dim>
 void DarcyFlowMHOutput::l2_diff_local(DHCellAccessor dh_cell,
-                   FEValues<dim,3> &fe_values, FEValues<dim,3> &fv_rt,
+                   FEValues<3> &fe_values, FEValues<3> &fv_rt,
                    ExactSolution &anal_sol,  DarcyFlowMHOutput::DiffData &result) {
 
+    ASSERT_DBG( fe_values.dim() == fv_rt.dim());
+    unsigned int dim = fe_values.dim();
+
     ElementAccessor<3> ele = dh_cell.elm();
-    fv_rt.reinit(dh_cell);
-    fe_values.reinit(dh_cell);
+    fv_rt.reinit(ele);
+    fe_values.reinit(ele);
     
     double conductivity = result.data_->conductivity.value(ele.centre(), ele );
     double cross = result.data_->cross_section.value(ele.centre(), ele );
@@ -412,7 +414,13 @@ void DarcyFlowMHOutput::l2_diff_local(DHCellAccessor dh_cell,
         // compute postprocesed pressure
         diff = 0;
         for(unsigned int i_shape=0; i_shape < ele->n_sides(); i_shape++) {
-            unsigned int oposite_node = RefElement<dim>::oposite_node(i_shape);
+            unsigned int oposite_node;
+            switch (dim) {
+                case 1: oposite_node =  RefElement<1>::oposite_node(i_shape); break;
+                case 2: oposite_node =  RefElement<2>::oposite_node(i_shape); break;
+                case 3: oposite_node =  RefElement<3>::oposite_node(i_shape); break;
+                default: ASSERT(false)(dim).error("Unsupported FE dimension."); break;
+            }
 
             diff += fluxes[ i_shape ] *
                                (  arma::dot( q_point, q_point )/ 2
@@ -506,13 +514,13 @@ void DarcyFlowMHOutput::compute_l2_difference() {
 
     	switch (dh_cell.dim()) {
         case 1:
-            l2_diff_local<1>( dh_cell, *fe_data.fe_values.get<1>(), *fe_data.fv_rt.get<1>(), anal_sol_1d, diff_data);
+            l2_diff_local( dh_cell, fe_data.fe_values[1], fe_data.fv_rt[1], anal_sol_1d, diff_data);
             break;
         case 2:
-            l2_diff_local<2>( dh_cell, *fe_data.fe_values.get<2>(), *fe_data.fv_rt.get<2>(), anal_sol_2d, diff_data);
+            l2_diff_local( dh_cell, fe_data.fe_values[2], fe_data.fv_rt[2], anal_sol_2d, diff_data);
             break;
         case 3:
-            l2_diff_local<3>( dh_cell, *fe_data.fe_values.get<3>(), *fe_data.fv_rt.get<3>(), anal_sol_3d, diff_data);
+            l2_diff_local( dh_cell, fe_data.fe_values[3], fe_data.fv_rt[3], anal_sol_3d, diff_data);
             break;
         }
     }

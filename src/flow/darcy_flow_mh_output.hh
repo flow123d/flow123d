@@ -53,7 +53,7 @@ namespace Input {
 	}
 }
 
-template<unsigned int dim, unsigned int spacedim> class FEValues;
+template<unsigned int spacedim> class FEValues;
 template <int spacedim, class Value> class FieldFE;
 
 /**
@@ -191,19 +191,18 @@ protected:
         // following is used for calculation of postprocessed pressure difference
         // and comparison to analytical solution
         MixedPtr<FE_P_disc> fe_p0;
-        MixedPtr<FEValues> fe_values;
+        std::vector<FEValues<3>> fe_values;
         
         // FEValues for velocity.
         MixedPtr<FE_RT0> fe_rt;
-        MixedPtr<FEValues> fv_rt;
+        std::vector<FEValues<3>> fv_rt;
     };
     
     FEData fe_data;
     
     /// Computes L2 error on an element.
-    template <int dim>
     void l2_diff_local(DHCellAccessor dh_cell,
-                      FEValues<dim,3> &fe_values, FEValues<dim,3> &fv_rt,
+                      FEValues<3> &fe_values, FEValues<3> &fv_rt,
                       FieldPython<3, FieldValue<3>::Vector > &anal_sol,  DiffData &result);
 };
 

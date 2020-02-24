@@ -210,7 +210,7 @@ public:
         
         unsigned int n_schur_compls;
         int is_linear;              ///< Hack fo BDDC solver.
-        bool force_bc_switch;       ///< auxiliary flag for switchting Dirichlet like BC
+        bool force_no_neumann_bc;       ///< auxiliary flag for switchting Dirichlet like BC
         
         /// Idicator of dirichlet or neumann type of switch boundary conditions.
         std::vector<char> bc_switch_dirichlet;

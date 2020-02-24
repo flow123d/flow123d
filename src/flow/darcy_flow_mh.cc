@@ -732,7 +732,7 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembly& assembler)
     START_TIMER("DarcyFlowMH_Steady::assembly_steady_mh_matrix");
 
     // set auxiliary flag for switchting Dirichlet like BC
-    data_->force_bc_switch = use_steady_assembly_ && (nonlinear_iteration_ == 0);
+    data_->force_no_neumann_bc = use_steady_assembly_ && (nonlinear_iteration_ == 0);
     data_->n_schur_compls = n_schur_compls;
     
 
@@ -1421,8 +1421,9 @@ void DarcyMH::setup_time_term() {
 				* ele.measure();
         local_diagonal[dh_cell.get_loc_dof_indices()[p_ele_dof]]= - diagonal_coeff / time_->dt();
 
-       	balance_->add_mass_matrix_values(data_->water_balance_idx,
-       	        ele.region().bulk_idx(), { dofs[p_ele_dof] }, {diagonal_coeff});
+        balance_->add_mass_values(data_->water_balance_idx, dh_cell,
+                                  {dh_cell.get_loc_dof_indices()[p_ele_dof]},
+                                  {diagonal_coeff}, 0.0);
     }
     VecRestoreArray(new_diagonal,& local_diagonal);
     MatDiagonalSet(*( schur0->get_matrix() ), new_diagonal, ADD_VALUES);

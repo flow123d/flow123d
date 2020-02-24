@@ -33,7 +33,6 @@
 class Distribution;
 class OutputTime;
 class DOFHandlerMultiDim;
-template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim> class FiniteElement;
 class Elasticity;
 

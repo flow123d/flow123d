@@ -485,7 +485,7 @@ double lame_lambda(double young, double poisson)
 template<unsigned int dim>
 void Elasticity::assemble_volume_integrals()
 {
-    FEValues<dim,3> fe_values(*feo->q<dim>(), *feo->fe<dim>(),
+    FEValues<3> fe_values(*feo->q<dim>(), *feo->fe<dim>(),
     		update_values | update_gradients | update_JxW_values | update_quadrature_points);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim>()->size();
     vector<int> dof_indices(ndofs);
@@ -500,7 +500,7 @@ void Elasticity::assemble_volume_integrals()
         if (cell.dim() != dim) continue;
         ElementAccessor<3> elm_acc = cell.elm();
 
-        fe_values.reinit(cell);
+        fe_values.reinit(elm_acc);
         cell.get_dof_indices(dof_indices);
 
         data_.cross_section.value_list(fe_values.point_list(), elm_acc, csection);
@@ -546,7 +546,7 @@ void Elasticity::set_sources()
 template<unsigned int dim>
 void Elasticity::set_sources()
 {
-    FEValues<dim,3> fe_values(*feo->q<dim>(), *feo->fe<dim>(),
+    FEValues<3> fe_values(*feo->q<dim>(), *feo->fe<dim>(),
     		update_values | update_gradients | update_JxW_values | update_quadrature_points);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim>()->size();
     vector<arma::vec3> load(qsize);
@@ -562,7 +562,7 @@ void Elasticity::set_sources()
         if (cell.dim() != dim) continue;
         ElementAccessor<3> elm_acc = cell.elm();
 
-        fe_values.reinit(cell);
+        fe_values.reinit(elm_acc);
         cell.get_dof_indices(dof_indices);
 
         // assemble the local stiffness matrix
@@ -602,7 +602,7 @@ void Elasticity::set_sources()
 template<unsigned int dim>
 void Elasticity::assemble_fluxes_boundary()
 {
-    FESideValues<dim,3> fe_values_side(*feo->q<dim-1>(), *feo->fe<dim>(),
+    FEValues<3> fe_values_side(*feo->q<dim-1>(), *feo->fe<dim>(),
     		update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs();
     vector<int> side_dof_indices(ndofs);
@@ -623,7 +623,7 @@ void Elasticity::assemble_fluxes_boundary()
         DHCellAccessor dh_cell = feo->dh()->cell_accessor_from_element(cell.idx());
         DHCellSide dh_side(dh_cell, side->side_idx());
         dh_cell.get_dof_indices(side_dof_indices);
-        fe_values_side.reinit(dh_side);
+        fe_values_side.reinit(*side);
 //         unsigned int bc_type = data_.bc_type.value(side->centre(), side->cond()->element_accessor());
  
 //         for (unsigned int i=0; i<ndofs; i++)
@@ -646,12 +646,11 @@ template<unsigned int dim>
 void Elasticity::assemble_fluxes_element_side()
 {
 	if (dim == 1) return;
-    FEValues<dim-1,3> fe_values_sub(*feo->q<dim-1>(), *feo->fe<dim-1>(),
+    FEValues<3> fe_values_sub(*feo->q<dim-1>(), *feo->fe<dim-1>(),
     		update_values | update_gradients | update_JxW_values | update_quadrature_points);
-    FESideValues<dim,3> fe_values_side(*feo->q<dim-1>(), *feo->fe<dim>(),
+    FEValues<3> fe_values_side(*feo->q<dim-1>(), *feo->fe<dim>(),
     		update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
  
-    vector<FEValuesSpaceBase<3>*> fv_sb(2);
     const unsigned int ndofs_side = feo->fe<dim>()->n_dofs();    // number of local dofs
     const unsigned int ndofs_sub  = feo->fe<dim-1>()->n_dofs();
     const unsigned int qsize = feo->q<dim-1>()->size();     // number of quadrature points
@@ -668,8 +667,6 @@ void Elasticity::assemble_fluxes_element_side()
     // index 1 = side of element with higher dimension
     side_dof_indices[0].resize(ndofs_sub);
     side_dof_indices[1].resize(ndofs_side);
-    fv_sb[0] = &fe_values_sub;
-    fv_sb[1] = &fe_values_side;
 
     // assemble integral over sides
     for (unsigned int inb=0; inb<feo->dh()->n_loc_nb(); inb++)
@@ -681,13 +678,13 @@ void Elasticity::assemble_fluxes_element_side()
 		ElementAccessor<3> cell_sub = nb->element();
         DHCellAccessor dh_cell_sub = feo->dh()->cell_accessor_from_element(cell_sub.idx());
         dh_cell_sub.get_dof_indices(side_dof_indices[0]);
-		fe_values_sub.reinit(dh_cell_sub);
+		fe_values_sub.reinit(cell_sub);
 
 		ElementAccessor<3> cell = nb->side()->element();
 		DHCellAccessor dh_cell = feo->dh()->cell_accessor_from_element(cell.idx());
         DHCellSide dh_side(dh_cell, nb->side()->side_idx());
         dh_cell.get_dof_indices(side_dof_indices[1]);
-		fe_values_side.reinit(dh_side);
+		fe_values_side.reinit(dh_side.side());
 
 		// Element id's for testing if they belong to local partition.
 		bool own_element_id[2];
@@ -745,7 +742,7 @@ void Elasticity::assemble_fluxes_element_side()
                                       + lambda*divuit*nv
                                      )
                                      - arma::dot(gvft, mu*arma::kron(nv,ui.t()) + lambda*arma::dot(ui,nv)*arma::eye(3,3))
-                                    )*fv_sb[0]->JxW(k);
+                                    )*fe_values_sub.JxW(k);
                         }
                 }
             }
@@ -783,7 +780,7 @@ void Elasticity::set_boundary_conditions()
 template<unsigned int dim>
 void Elasticity::set_boundary_conditions()
 {
-    FESideValues<dim,3> fe_values_side(*feo->q<dim-1>(), *feo->fe<dim>(),
+    FEValues<3> fe_values_side(*feo->q<dim-1>(), *feo->fe<dim>(),
     		update_values | update_gradients | update_normal_vectors | update_side_JxW_values | update_quadrature_points);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim-1>()->size();
     vector<int> side_dof_indices(ndofs);
@@ -821,7 +818,7 @@ void Elasticity::set_boundary_conditions()
 
  			unsigned int bc_type = data_.bc_type.value(side->centre(), bc_cell);
 
-			fe_values_side.reinit(dh_side);
+			fe_values_side.reinit(*side);
 
 			data_.cross_section.value_list(fe_values_side.point_list(), elm, csection);
 			// The b.c. data are fetched for all possible b.c. types since we allow
