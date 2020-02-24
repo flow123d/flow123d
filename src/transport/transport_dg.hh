@@ -134,7 +134,6 @@ class TransportDG : public Model
 {
 public:
 
-    template<unsigned int dim> using AssemblyDGDim = AssemblyDG<dim, Model>;
     template<unsigned int dim> using MassAssemblyDim = MassAssemblyDG<dim, Model>;
     template<unsigned int dim> using StiffnessAssemblyDim = StiffnessAssemblyDG<dim, Model>;
     template<unsigned int dim> using SourcesAssemblyDim = SourcesAssemblyDG<dim, Model>;
@@ -223,7 +222,6 @@ public:
         std::shared_ptr<DOFHandlerMultiDim> dh_;
 
         /// general assembly objects, hold assembly objects of appropriate dimension
-        GenericAssembly< AssemblyDGDim > * generic_assembly_;
         GenericAssembly< MassAssemblyDim > * mass_assembly_;
         GenericAssembly< StiffnessAssemblyDim > * stiffness_assembly_;
         GenericAssembly< SourcesAssemblyDim > * sources_assembly_;

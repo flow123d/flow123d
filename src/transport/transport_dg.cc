@@ -228,17 +228,12 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
     Model::init_from_input(in_rec);
 
     // create assemblation object, finite element structures and distribute DOFs
-	std::shared_ptr<AssemblyDG<0, Model>> assembly_new0 = std::make_shared<AssemblyDG<0, Model>>(data_);
-	std::shared_ptr<AssemblyDG<1, Model>> assembly_new1 = std::make_shared<AssemblyDG<1, Model>>(data_);
-	std::shared_ptr<AssemblyDG<2, Model>> assembly_new2 = std::make_shared<AssemblyDG<2, Model>>(data_);
-	std::shared_ptr<AssemblyDG<3, Model>> assembly_new3 = std::make_shared<AssemblyDG<3, Model>>(data_);
-	data_->generic_assembly_ = new GenericAssembly< AssemblyDGDim >(assembly_new0, assembly_new1, assembly_new2, assembly_new3); //*/
-	//data_->generic_assembly_ = new GenericAssembly< AssemblyDGDim >(data_);
 	std::shared_ptr<MassAssemblyDG<0, Model>> mass_assembly0 = nullptr; //std::make_shared<MassAssemblyDG<0, Model>>(data_);
 	std::shared_ptr<MassAssemblyDG<1, Model>> mass_assembly1 = std::make_shared<MassAssemblyDG<1, Model>>(data_);
 	std::shared_ptr<MassAssemblyDG<2, Model>> mass_assembly2 = std::make_shared<MassAssemblyDG<2, Model>>(data_);
 	std::shared_ptr<MassAssemblyDG<3, Model>> mass_assembly3 = std::make_shared<MassAssemblyDG<3, Model>>(data_);
 	data_->mass_assembly_ = new GenericAssembly< MassAssemblyDim >(mass_assembly0, mass_assembly1, mass_assembly2, mass_assembly3, ActiveIntegrals::bulk);
+	//data_->mass_assembly_ = new GenericAssembly< MassAssemblyDim >(data_);
 	std::shared_ptr<StiffnessAssemblyDG<0, Model>> stiffness_assembly0 = nullptr; //std::make_shared<StiffnessAssemblyDG<0, Model>>(data_);
 	std::shared_ptr<StiffnessAssemblyDG<1, Model>> stiffness_assembly1 = std::make_shared<StiffnessAssemblyDG<1, Model>>(data_);
 	std::shared_ptr<StiffnessAssemblyDG<2, Model>> stiffness_assembly2 = std::make_shared<StiffnessAssemblyDG<2, Model>>(data_);
@@ -284,7 +279,7 @@ void TransportDG<Model>::initialize()
     	data_->gamma[sbi].resize(Model::mesh_->boundary_.size());
 
     // Resize coefficient arrays
-    int qsize = data_->generic_assembly_->eval_points()->max_size();
+    int qsize = data_->mass_assembly_->eval_points()->max_size();
     int max_edg_sides = max(Model::mesh_->max_edge_sides(1), max(Model::mesh_->max_edge_sides(2), Model::mesh_->max_edge_sides(3)));
     ret_sources.resize(Model::n_substances());
     ret_sources_prev.resize(Model::n_substances());
@@ -357,12 +352,9 @@ void TransportDG<Model>::initialize()
 
 
     // initialization of balance object
-    Model::balance_->allocate(data_->dh_->distr()->lsize(), data_->generic_assembly_->eval_points()->max_size());
+    Model::balance_->allocate(data_->dh_->distr()->lsize(), data_->mass_assembly_->eval_points()->max_size());
 
     // initialization of assembly object
-    data_->generic_assembly_->multidim_assembly().get<1>()->initialize(*this);
-    data_->generic_assembly_->multidim_assembly().get<2>()->initialize(*this);
-    data_->generic_assembly_->multidim_assembly().get<3>()->initialize(*this);
     data_->mass_assembly_->multidim_assembly().get<1>()->initialize(*this);
     data_->mass_assembly_->multidim_assembly().get<2>()->initialize(*this);
     data_->mass_assembly_->multidim_assembly().get<3>()->initialize(*this);
@@ -415,7 +407,6 @@ TransportDG<Model>::~TransportDG()
         //delete[] mass_vec;
         //delete[] ret_vec;
 
-        delete data_->generic_assembly_;
         delete data_->mass_assembly_;
         delete data_->stiffness_assembly_;
         delete data_->sources_assembly_;
