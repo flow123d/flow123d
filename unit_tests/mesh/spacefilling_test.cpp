@@ -153,57 +153,74 @@ TEST(Spacefilling, get_centers) {
     // has to introduce some flag for passing absolute path to 'test_units' in source tree
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-//     std::string mesh_in_string = "{mesh_file=\"mesh/square_uniform.msh\"}";
-//     std::string mesh_in_string = "{mesh_file=\"mesh/square_uniform_2.msh\"}";
-//     std::string mesh_in_string = "{mesh_file=\"mesh/square_refined.msh\"}";
-//     std::string mesh_in_string = "{mesh_file=\"mesh/lshape_refined.msh\"}";
-    std::string mesh_in_string = "{mesh_file=\"mesh/lshape_refined_2.msh\"}";
+//     const std::string testName = "square_uniform;
+//     const std::string testName = "square_uniform_2";
+//     const std::string testName = "square_refined";
+//     const std::string testName = "lshape_refined";
+    const std::string testName = "lshape_refined_2";
+    
+    const std::string mesh_in_string = "{mesh_file=\"mesh/" + testName + ".msh\"}";
+    
+    std::cout << mesh_in_string << '\n';
     
     Mesh * mesh = mesh_full_constructor(mesh_in_string);
+    
+    std::cout << mesh->n_nodes() << '\n';
     
     auto reader = reader_constructor(mesh_in_string);
     reader->read_physical_names(mesh);
     reader->read_raw_mesh(mesh);
     
     std::vector<arma::vec3> centers;
-    std::vector<double> sizes;
+    centers.reserve(mesh->n_elements());
+    std::vector<double> elementSizes;
+    elementSizes.reserve(mesh->n_elements());    
+    std::vector<double> nodeSizes(mesh->n_nodes(), INFINITY);
+    uint index = 0;
     
-    
-//     START_TIMER("get_centers");
-        for (ElementAccessor<3> elm : mesh->elements_range()) {
-            centers.push_back(elm.centre());
-            sizes.push_back(std::min({
-                arma::norm(*elm.node(0) - *elm.node(1)),
-                arma::norm(*elm.node(1) - *elm.node(2)),
-                arma::norm(*elm.node(2) - *elm.node(0))
-            }));
-        }
-//     END_TIMER("get_centers");
+    START_TIMER("get_centers_and_calculate_sizes");
+    for (ElementAccessor<3> elm : mesh->elements_range()) {
+        centers.push_back(elm.centre());
+        double elmSize = std::min({
+            arma::norm(*elm.node(0) - *elm.node(1)),
+            arma::norm(*elm.node(1) - *elm.node(2)),
+            arma::norm(*elm.node(2) - *elm.node(0))
+        });
+        elementSizes.push_back(elmSize);
+        const Element& el = *elm.element();
+        nodeSizes[el.nodes_[0]] = std::min({nodeSizes[el.nodes_[0]], elmSize});
+        nodeSizes[el.nodes_[1]] = std::min({nodeSizes[el.nodes_[1]], elmSize});
+        nodeSizes[el.nodes_[2]] = std::min({nodeSizes[el.nodes_[2]], elmSize});
+        ++index;
+    }
+    END_TIMER("get_centers_and_calculate_sizes");
 
     double checksum1 = 0;
 
     START_TIMER("calculation_before_sort");
-    for (ElementAccessor<3> elm : mesh->elements_range()) {
-        auto n0 = elm.node(0);
-        auto n1 = elm.node(1);
-        auto n2 = elm.node(2);
-        arma::mat::fixed<2, 2> M;
-        arma::vec3 tmp;
-        tmp = *n1 - *n0;
-        M.col(0) = arma::vec2{tmp[0], tmp[1]};
-        tmp = *n2 - *n0;
-        M.col(1) = arma::vec2{tmp[0], tmp[1]};
-        double detM = arma::det(M);
-        double jac = std::abs(detM) / 2;
-        arma::mat::fixed<3, 3> phi = {{1, -1, -1}, {0, 1, 0}, {0, 0, 1}};
-        arma::mat::fixed<3, 2> grad_phi = {{-1, -1}, {1, 0}, {0, 1}};
-        arma::mat::fixed<3, 3> A_local = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
-        for (uint i = 0; i < 3; ++i) {
-            for (uint j = 0; j < 3; ++j) {
-                A_local(i, j) += arma::dot(M * grad_phi[i], M * grad_phi[j]) * jac;
-                checksum1 += A_local(i, j);
+//     for (uint i = 0; i < 14; ++i) {
+        for (ElementAccessor<3> elm : mesh->elements_range()) {
+            auto n0 = elm.node(0);
+            auto n1 = elm.node(1);
+            auto n2 = elm.node(2);
+            arma::mat::fixed<2, 2> M;
+            arma::vec3 tmp;
+            tmp = *n1 - *n0;
+            M.col(0) = arma::vec2{tmp[0], tmp[1]};
+            tmp = *n2 - *n0;
+            M.col(1) = arma::vec2{tmp[0], tmp[1]};
+            double detM = arma::det(M);
+            double jac = std::abs(detM) / 2;
+            arma::mat::fixed<3, 3> phi = {{1, -1, -1}, {0, 1, 0}, {0, 0, 1}};
+            arma::mat::fixed<3, 2> grad_phi = {{-1, -1}, {1, 0}, {0, 1}};
+            arma::mat::fixed<3, 3> A_local = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+            for (uint i = 0; i < 3; ++i) {
+                for (uint j = 0; j < 3; ++j) {
+                    A_local(i, j) += arma::dot(M * grad_phi[i], M * grad_phi[j]) * jac;
+                    checksum1 += std::abs(A_local(i, j));
+                }
             }
-        }
+//         }
     }
     END_TIMER("calculation_before_sort");
     
@@ -211,118 +228,80 @@ TEST(Spacefilling, get_centers) {
     
     Armor::Array<double>& nodes = mesh->nodes_;
     std::vector<Element>& elements = mesh->element_vec_;
-    PointsManager pm2;
+    PointsManager pm;
     
-//     uint j = 0;
-//     for (ElementAccessor<3> elm : mesh->elements_range()) {
-//         if (j > 6262 && j < 6268) {
-//             std::cout << j << ": " << pm2.hilbertIndex(elm.centre()[0] / 2, elm.centre()[1] / 2, 0.0000000000001) << '\n';
-//         }
-//         ++j;
-//     }
-    
-    std::cout << "n_nodes: " << mesh->n_nodes() << '\n';
     std::vector<arma::vec3> nodes_backup(mesh->n_nodes());
     for (uint i = 0; i < nodes_backup.size(); ++i) {
         nodes_backup[i] = nodes.vec<3>(i);
     }
     BoundingBox bb(nodes_backup);
 
-    pm2.setPoints(nodes_backup);
-    pm2.setBoundingBox(bb.min()[0], bb.min()[1], bb.max()[0], bb.max()[1]);
-    std::cout << pm2.getPoints()[50].coords[0] << ' ' << pm2.getPoints()[50].coords[1] << '\n';
-    pm2.normalize();
-    std::cout << pm2.getPoints()[50].coords[0] << ' ' << pm2.getPoints()[50].coords[1] << '\n';
-    pm2.calculateHibert(0.0000000000001);
-    pm2.sortByHilbert();
-    std::vector<uint> newNodeIndices = pm2.getForwardPermutation();
-//     for (uint i = 0; i < elements.size(); ++i) {
-//         elements[newNodeIndices[i]] = elements_backup[i];
-//     }
+    pm.setPoints(nodes_backup);
+    pm.getSizes() = nodeSizes;
+    pm.setBoundingBox(bb.min()[0], bb.min()[1], bb.max()[0], bb.max()[1]);
+    pm.normalize();
+    START_TIMER("nodes_hilbert_calculation");
+//     pm.calculateHibert(0.0000000000001);
+//     pm.calculateHibert(0.0000001);
+    pm.calculateHibert();
+    END_TIMER("nodes_hilbert_calculation");
+    pm.sortByHilbert();
+    std::vector<uint> newNodeIndices = pm.getForwardPermutation();
     for (uint i = 0; i < nodes_backup.size(); ++i) {
         nodes.set(newNodeIndices[i]) = nodes_backup[i];
     }
     
-//     for (uint i = 0; i < mesh->n_nodes(); ++i) {
-//         if (!(i % 10)) {
-//             arma::vec3 tmp = nodes.vec<3>(i);
-//             std::cout << i << ": " << pm2.hilbertIndex(tmp[0] / 2, tmp[1] / 2, 0.0000000000001) << '\n';
-//         }
-//     }
-    
     vector<Element> elements_backup = elements;
-    PointsManager pm;
-    pm.setPoints(centers);
-    pm.getSizes() = sizes;
-    pm.setBoundingBox(bb.min()[0], bb.min()[1], bb.max()[0], bb.max()[1]);
-    pm.normalize();
-    pm.calculateHibert();
-//     std::cout << "before sort: " << pm.hilbertIndex(pm.getPoints()[6264].coords[0], pm.getPoints()[6264].coords[1], 0.0000000000001) << '\n';
-    pm.sortByHilbert();
-//     std::cout << "after sort: " << pm.hilbertIndex(pm.getPoints()[8855].coords[0], pm.getPoints()[8855].coords[1], 0.0000000000001) << '\n';
-    std::vector<uint> newElementIndices = pm.getForwardPermutation();
-//     std::cout << elements.size() << '\n';
+    PointsManager pm2;
+    pm2.setPoints(centers);
+    pm2.getSizes() = elementSizes;
+    pm2.setBoundingBox(bb.min()[0], bb.min()[1], bb.max()[0], bb.max()[1]);
+    pm2.normalize();
+    pm2.calculateHibert();
+    pm2.sortByHilbert();
+    std::vector<uint> newElementIndices = pm2.getForwardPermutation();
     for (uint i = 0; i < centers.size(); ++i) {
         elements[newElementIndices[i]] = elements_backup[i];
         elements[i].nodes_[0] = newNodeIndices[elements[i].nodes_[0]];
         elements[i].nodes_[1] = newNodeIndices[elements[i].nodes_[1]];
         elements[i].nodes_[2] = newNodeIndices[elements[i].nodes_[2]];
-//         if (newElementIndices[i] == 8855) {
-//             std::cout << "HERE: " << i << '\n';
-//         }
     }
-    
-//     uint i = 0;
-//     for (ElementAccessor<3> elm : mesh->elements_range()) {
-//         if (i > 8852 && i < 8858) {
-//             std::cout << i << ": " << pm2.hilbertIndex(elm.centre()[0] / 2, elm.centre()[1] / 2, 0.0000000000001) << '\n';
-//         }
-//         if (!(i % 100)) {
-//             std::cout << i << ": " << pm2.hilbertIndex(elm.centre()[0] / 2, elm.centre()[1] / 2, 0.0000000000001) << '\n';
-//         }
-//         ++i;
-//     }
     
     vector<Element> elements_backup_2 = elements;
     PointsManager pm3;
     pm3.setPoints(centers);
-    pm3.getSizes() = sizes;
+    pm3.getSizes() = elementSizes;
     pm3.setBoundingBox(bb.min()[0], bb.min()[1], bb.max()[0], bb.max()[1]);
     pm3.normalize();
     pm3.calculateHibert();
     pm3.sortByHilbert();
     
-//     const auto pb = pm3.getPoints();
-//     for (uint i = 0; i < pb.size(); ++i) {
-//         if (!(i % 100)) {
-//             std::cout << i << ": " << pb[i].hilbertIndex << '\n';
-//         }
-//     }
-    
     double checksum2 = 0;
     
     START_TIMER("calculation_after_sort");
-    for (ElementAccessor<3> elm : mesh->elements_range()) {
-        auto n0 = elm.node(0);
-        auto n1 = elm.node(1);
-        auto n2 = elm.node(2);
-        arma::mat::fixed<2, 2> M;
-        arma::vec3 tmp;
-        tmp = *n1 - *n0;
-        M.col(0) = arma::vec2{tmp[0], tmp[1]};
-        tmp = *n2 - *n0;
-        M.col(1) = arma::vec2{tmp[0], tmp[1]};
-        double detM = arma::det(M);
-        double jac = std::abs(detM) / 2;
-        arma::mat::fixed<3, 3> phi = {{1, -1, -1}, {0, 1, 0}, {0, 0, 1}};
-        arma::mat::fixed<3, 2> grad_phi = {{-1, -1}, {1, 0}, {0, 1}};
-        arma::mat::fixed<3, 3> A_local = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
-        for (uint i = 0; i < 3; ++i) {
-            for (uint j = 0; j < 3; ++j) {
-                A_local(i, j) += arma::dot(M * grad_phi[i], M * grad_phi[j]) * jac;
-                checksum2 += A_local(i, j);
+//     for (uint i = 0; i < 14; ++i) {
+        for (ElementAccessor<3> elm : mesh->elements_range()) {
+            auto n0 = elm.node(0);
+            auto n1 = elm.node(1);
+            auto n2 = elm.node(2);
+            arma::mat::fixed<2, 2> M;
+            arma::vec3 tmp;
+            tmp = *n1 - *n0;
+            M.col(0) = arma::vec2{tmp[0], tmp[1]};
+            tmp = *n2 - *n0;
+            M.col(1) = arma::vec2{tmp[0], tmp[1]};
+            double detM = arma::det(M);
+            double jac = std::abs(detM) / 2;
+            arma::mat::fixed<3, 3> phi = {{1, -1, -1}, {0, 1, 0}, {0, 0, 1}};
+            arma::mat::fixed<3, 2> grad_phi = {{-1, -1}, {1, 0}, {0, 1}};
+            arma::mat::fixed<3, 3> A_local = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+            for (uint i = 0; i < 3; ++i) {
+                for (uint j = 0; j < 3; ++j) {
+                    A_local(i, j) += arma::dot(M * grad_phi[i], M * grad_phi[j]) * jac;
+                    checksum2 += std::abs(A_local(i, j));
+                }
             }
-        }
+//         }
     }
     END_TIMER("calculation_after_sort");
     
@@ -358,7 +337,13 @@ TEST(Spacefilling, get_centers) {
 
     delete mesh;
     
-    Profiler::instance()->output(cout);
+    std::time_t unixTime = std::time(nullptr);
+    std::stringstream tmpStream;
+    tmpStream << unixTime;
+    std::string unixTimeString = tmpStream.str();
+    std::ofstream jsonResult("../../../results/" + testName + "/" + unixTimeString + ".json");
+    
+    Profiler::instance()->output(jsonResult);
     Profiler::uninitialize();
 }
 

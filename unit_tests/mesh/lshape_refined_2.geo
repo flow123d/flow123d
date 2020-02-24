@@ -1,4 +1,4 @@
-fine_step = 1e-6;
+fine_step = 1e-8;
 mesh = 0.018;
 Point(1) = {0, 0, 0, mesh};
 Point(2) = {2, 0, 0, mesh};
