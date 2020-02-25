@@ -229,23 +229,11 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
 
     // create assemblation object, finite element structures and distribute DOFs
 	data_->mass_assembly_ = new GenericAssembly< MassAssemblyDim >(data_.get(), ActiveIntegrals::bulk);
-	std::shared_ptr<StiffnessAssemblyDG<1, Model>> stiffness_assembly1 = std::make_shared<StiffnessAssemblyDG<1, Model>>(data_);
-	std::shared_ptr<StiffnessAssemblyDG<2, Model>> stiffness_assembly2 = std::make_shared<StiffnessAssemblyDG<2, Model>>(data_);
-	std::shared_ptr<StiffnessAssemblyDG<3, Model>> stiffness_assembly3 = std::make_shared<StiffnessAssemblyDG<3, Model>>(data_);
-	data_->stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyDim >(stiffness_assembly1, stiffness_assembly2,
-	        stiffness_assembly3, (ActiveIntegrals::bulk | ActiveIntegrals::edge | ActiveIntegrals::coupling | ActiveIntegrals::boundary) );
-	std::shared_ptr<SourcesAssemblyDG<1, Model>> sources_assembly1 = std::make_shared<SourcesAssemblyDG<1, Model>>(data_);
-	std::shared_ptr<SourcesAssemblyDG<2, Model>> sources_assembly2 = std::make_shared<SourcesAssemblyDG<2, Model>>(data_);
-	std::shared_ptr<SourcesAssemblyDG<3, Model>> sources_assembly3 = std::make_shared<SourcesAssemblyDG<3, Model>>(data_);
-	data_->sources_assembly_ = new GenericAssembly< SourcesAssemblyDim >(sources_assembly1, sources_assembly2, sources_assembly3, ActiveIntegrals::bulk);
-	std::shared_ptr<BdrConditionAssemblyDG<1, Model>> bdr_assembly1 = std::make_shared<BdrConditionAssemblyDG<1, Model>>(data_);
-	std::shared_ptr<BdrConditionAssemblyDG<2, Model>> bdr_assembly2 = std::make_shared<BdrConditionAssemblyDG<2, Model>>(data_);
-	std::shared_ptr<BdrConditionAssemblyDG<3, Model>> bdr_assembly3 = std::make_shared<BdrConditionAssemblyDG<3, Model>>(data_);
-	data_->bdr_cond_assembly_ = new GenericAssembly< BdrConditionAssemblyDim >(bdr_assembly1, bdr_assembly2, bdr_assembly3, ActiveIntegrals::bulk);
-	std::shared_ptr<InitConditionAssemblyDG<1, Model>> init_assembly1 = std::make_shared<InitConditionAssemblyDG<1, Model>>(data_);
-	std::shared_ptr<InitConditionAssemblyDG<2, Model>> init_assembly2 = std::make_shared<InitConditionAssemblyDG<2, Model>>(data_);
-	std::shared_ptr<InitConditionAssemblyDG<3, Model>> init_assembly3 = std::make_shared<InitConditionAssemblyDG<3, Model>>(data_);
-	data_->init_cond_assembly_ = new GenericAssembly< InitConditionAssemblyDim >(init_assembly1, init_assembly2, init_assembly3, ActiveIntegrals::bulk);
+	data_->stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyDim >(data_.get(),
+	        (ActiveIntegrals::bulk | ActiveIntegrals::edge | ActiveIntegrals::coupling | ActiveIntegrals::boundary) );
+	data_->sources_assembly_ = new GenericAssembly< SourcesAssemblyDim >(data_.get(), ActiveIntegrals::bulk);
+	data_->bdr_cond_assembly_ = new GenericAssembly< BdrConditionAssemblyDim >(data_.get(), ActiveIntegrals::bulk);
+	data_->init_cond_assembly_ = new GenericAssembly< InitConditionAssemblyDim >(data_.get(), ActiveIntegrals::bulk);
 
 	MixedPtr<FE_P_disc> fe(data_->dg_order);
 	shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>(Model::mesh_, fe);

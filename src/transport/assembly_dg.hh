@@ -79,20 +79,6 @@ private:
 public:
 
     /// Constructor
-    GenericAssembly(std::shared_ptr<DimAssembly<1>> assembly1, std::shared_ptr<DimAssembly<2>> assembly2,
-                    std::shared_ptr<DimAssembly<3>> assembly3, int active_integrals = ActiveIntegrals::none)
-    : multidim_assembly_(assembly1, assembly2, assembly3),
-      active_integrals_(active_integrals), integrals_size_({0, 0, 0, 0})
-    {
-        eval_points_ = std::make_shared<EvalPoints>();
-        // first step - create integrals, then - initialize cache
-        multidim_assembly_.get<1>()->create_integrals(eval_points_);
-        multidim_assembly_.get<2>()->create_integrals(eval_points_);
-        multidim_assembly_.get<3>()->create_integrals(eval_points_);
-        element_cache_map_.init(eval_points_);
-    }
-
-    /// Constructor
     GenericAssembly( typename DimAssembly<1>::EqDataDG *eq_data, int active_integrals = ActiveIntegrals::none )
     : multidim_assembly_(eq_data),
       active_integrals_(active_integrals), integrals_size_({0, 0, 0, 0})
@@ -570,7 +556,7 @@ public:
     typedef typename TransportDG<Model>::EqData EqDataDG;
 
     /// Constructor.
-    StiffnessAssemblyDG(std::shared_ptr<EqDataDG> data)
+    StiffnessAssemblyDG(EqDataDG *data)
     : fe_rt_(nullptr), model_(nullptr), data_(data), fv_rt_vb_(nullptr), fe_values_vb_(nullptr) {
         quad_ = new QGauss(dim, 2*data_->dg_order);
         quad_low_ = new QGauss(dim-1, 2*data_->dg_order);
@@ -1046,7 +1032,7 @@ private:
     TransportDG<Model> *model_;
 
     /// Data object shared with TransportDG
-    std::shared_ptr<EqDataDG> data_;
+    EqDataDG *data_;
 
     unsigned int ndofs_;                                      ///< Number of dofs
     unsigned int qsize_;                                      ///< Size of quadrature of actual dim
@@ -1114,7 +1100,7 @@ public:
     typedef typename TransportDG<Model>::EqData EqDataDG;
 
     /// Constructor.
-    SourcesAssemblyDG(std::shared_ptr<EqDataDG> data)
+    SourcesAssemblyDG(EqDataDG *data)
     : model_(nullptr), data_(data), fe_values_(nullptr) {
         quad_ = new QGauss(dim, 2*data_->dg_order);
         quad_low_ = new QGauss(dim-1, 2*data_->dg_order);
@@ -1237,7 +1223,7 @@ public:
         TransportDG<Model> *model_;
 
         /// Data object shared with TransportDG
-        std::shared_ptr<EqDataDG> data_;
+        EqDataDG *data_;
 
         unsigned int ndofs_;                                      ///< Number of dofs
         unsigned int qsize_;                                      ///< Size of quadrature of actual dim
@@ -1276,7 +1262,7 @@ public:
     typedef typename TransportDG<Model>::EqData EqDataDG;
 
     /// Constructor.
-    BdrConditionAssemblyDG(std::shared_ptr<EqDataDG> data)
+    BdrConditionAssemblyDG(EqDataDG *data)
     : model_(nullptr), data_(data), fe_values_side_(nullptr) {
         quad_ = new QGauss(dim, 2*data_->dg_order);
         quad_low_ = new QGauss(dim-1, 2*data_->dg_order);
@@ -1499,7 +1485,7 @@ public:
         TransportDG<Model> *model_;
 
         /// Data object shared with TransportDG
-        std::shared_ptr<EqDataDG> data_;
+        EqDataDG *data_;
 
         unsigned int ndofs_;                                      ///< Number of dofs
         unsigned int qsize_;                                      ///< Size of quadrature of actual dim
@@ -1535,7 +1521,7 @@ public:
     typedef typename TransportDG<Model>::EqData EqDataDG;
 
     /// Constructor.
-    InitConditionAssemblyDG(std::shared_ptr<EqDataDG> data)
+    InitConditionAssemblyDG(EqDataDG *data)
     : model_(nullptr), data_(data), fe_values_(nullptr) {
         quad_ = new QGauss(dim, 2*data_->dg_order);
         quad_low_ = new QGauss(dim-1, 2*data_->dg_order);
@@ -1635,7 +1621,7 @@ public:
         TransportDG<Model> *model_;
 
         /// Data object shared with TransportDG
-        std::shared_ptr<EqDataDG> data_;
+        EqDataDG *data_;
 
         unsigned int ndofs_;                                      ///< Number of dofs
         unsigned int qsize_;                                      ///< Size of quadrature of actual dim
