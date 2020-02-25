@@ -1313,32 +1313,30 @@ public:
     /// Assemble integral over element
     void assemble_volume_integrals(DHCellAccessor cell) override
     {
-        if (cell.elm()->boundary_idx_ == nullptr) return;
+        ElementAccessor<3> elm = cell.elm();
+        if (elm->boundary_idx_ == nullptr) return;
 
-        for (unsigned int si=0; si<cell.elm()->n_sides(); si++)
+        for (DHCellSide dh_side : cell.side_range())
         {
-            const Edge *edg = cell.elm().side(si)->edge();
-            if (edg->n_sides > 1) continue;
+            if (dh_side.n_edge_sides() > 1) continue;
             // skip edges lying not on the boundary
-            if (edg->side(0)->cond() == NULL) continue;
+            if (! dh_side.cond()) continue;
 
+            const unsigned int cond_idx = dh_side.side().cond_idx();
 
-            Side side = *(edg->side(0));
-            ElementAccessor<3> elm = model_->mesh().element_accessor( side.element().idx() );
-            ElementAccessor<3> ele_acc = side.cond()->element_accessor();
+            ElementAccessor<3> bc_elm = dh_side.cond()->element_accessor();
 
             arma::uvec bc_type;
-            model_->get_bc_type(ele_acc, bc_type);
+            model_->get_bc_type(bc_elm, bc_type);
 
-            fe_values_side_->reinit(side);
-            fsv_rt_->reinit(side);
+            fe_values_side_->reinit(dh_side.side());
+            fsv_rt_->reinit(dh_side.side());
             calculate_velocity(elm, velocity_, fsv_rt_->point_list());
 
-            model_->compute_advection_diffusion_coefficients(fe_values_side_->point_list(), velocity_, side.element(), data_->ad_coef, data_->dif_coef);
-            data_->cross_section.value_list(fe_values_side_->point_list(), side.element(), csection_);
+            cell.get_dof_indices(dof_indices_);
 
-            DHCellAccessor dh_side_cell = data_->dh_->cell_accessor_from_element( side.element().idx() );
-            dh_side_cell.get_dof_indices(dof_indices_);
+            model_->compute_advection_diffusion_coefficients(fe_values_side_->point_list(), velocity_, elm, data_->ad_coef, data_->dif_coef);
+            data_->cross_section.value_list(fe_values_side_->point_list(), elm, csection_);
 
             for (unsigned int sbi=0; sbi<model_->n_substances(); sbi++)
             {
@@ -1348,12 +1346,12 @@ public:
 
                 // The b.c. data are fetched for all possible b.c. types since we allow
                 // different bc_type for each substance.
-                data_->bc_dirichlet_value[sbi].value_list(fe_values_side_->point_list(), ele_acc, bc_values_);
+                data_->bc_dirichlet_value[sbi].value_list(fe_values_side_->point_list(), bc_elm, bc_values_);
 
                 double side_flux = 0;
                 for (unsigned int k=0; k<qsize_lower_dim_; k++)
                     side_flux += arma::dot(data_->ad_coef[sbi][k], fe_values_side_->normal_vector(k))*fe_values_side_->JxW(k);
-                double transport_flux = side_flux/side.measure();
+                double transport_flux = side_flux/dh_side.measure();
 
                 if (bc_type[sbi] == AdvectionDiffusionModel::abc_inflow && side_flux < 0)
                 {
@@ -1370,7 +1368,7 @@ public:
                 {
                     for (unsigned int k=0; k<qsize_lower_dim_; k++)
                     {
-                        double bc_term = data_->gamma[sbi][side.cond_idx()]*bc_values_[k]*fe_values_side_->JxW(k);
+                        double bc_term = data_->gamma[sbi][cond_idx]*bc_values_[k]*fe_values_side_->JxW(k);
                         arma::vec3 bc_grad = -bc_values_[k]*fe_values_side_->JxW(k)*data_->dg_variant*(arma::trans(data_->dif_coef[sbi][k])*fe_values_side_->normal_vector(k));
                         for (unsigned int i=0; i<ndofs_; i++)
                             local_rhs_[i] += bc_term*fe_values_side_->shape_value(i,k)
@@ -1382,7 +1380,7 @@ public:
                         {
                             local_flux_balance_vector_[i] += (arma::dot(data_->ad_coef[sbi][k], fe_values_side_->normal_vector(k))*fe_values_side_->shape_value(i,k)
                                     - arma::dot(data_->dif_coef[sbi][k]*fe_values_side_->shape_grad(i,k),fe_values_side_->normal_vector(k))
-                                    + data_->gamma[sbi][side.cond_idx()]*fe_values_side_->shape_value(i,k))*fe_values_side_->JxW(k);
+                                    + data_->gamma[sbi][cond_idx]*fe_values_side_->shape_value(i,k))*fe_values_side_->JxW(k);
                         }
                     }
                     if (model_->time().tlevel() > 0)
@@ -1391,7 +1389,7 @@ public:
                 }
                 else if (bc_type[sbi] == AdvectionDiffusionModel::abc_total_flux)
                 {
-                	model_->get_flux_bc_data(sbi, fe_values_side_->point_list(), ele_acc, bc_fluxes_, sigma_, bc_ref_values_);
+                	model_->get_flux_bc_data(sbi, fe_values_side_->point_list(), bc_elm, bc_fluxes_, sigma_, bc_ref_values_);
                     for (unsigned int k=0; k<qsize_lower_dim_; k++)
                     {
                         double bc_term = csection_[k]*(sigma_[k]*bc_ref_values_[k]+bc_fluxes_[k])*fe_values_side_->JxW(k);
@@ -1408,7 +1406,7 @@ public:
                 }
                 else if (bc_type[sbi] == AdvectionDiffusionModel::abc_diffusive_flux)
                 {
-                	model_->get_flux_bc_data(sbi, fe_values_side_->point_list(), ele_acc, bc_fluxes_, sigma_, bc_ref_values_);
+                	model_->get_flux_bc_data(sbi, fe_values_side_->point_list(), bc_elm, bc_fluxes_, sigma_, bc_ref_values_);
                     for (unsigned int k=0; k<qsize_lower_dim_; k++)
                     {
                         double bc_term = csection_[k]*(sigma_[k]*bc_ref_values_[k]+bc_fluxes_[k])*fe_values_side_->JxW(k);
@@ -1433,9 +1431,6 @@ public:
                 }
                 data_->ls[sbi]->rhs_set_values(ndofs_, &(dof_indices_[0]), &(local_rhs_[0]));
 
-                //model_->balance()->add_flux_matrix_values(model_->get_subst_idx()[sbi], side, dof_indices_, local_flux_balance_vector_);
-                //model_->balance()->add_flux_vec_value(model_->get_subst_idx()[sbi], side, local_flux_balance_rhs_);
-                DHCellSide dh_side(dh_side_cell, si);
                 model_->balance()->add_flux_values(model_->get_subst_idx()[sbi], dh_side,
                                               cell.get_loc_dof_indices(),
                                               local_flux_balance_vector_, local_flux_balance_rhs_);
