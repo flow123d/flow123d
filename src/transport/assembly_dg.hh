@@ -79,12 +79,9 @@ private:
 public:
 
     /// Constructor
-    GenericAssembly(std::shared_ptr<DimAssembly<0>> assembly0, std::shared_ptr<DimAssembly<1>> assembly1,
-                    std::shared_ptr<DimAssembly<2>> assembly2, std::shared_ptr<DimAssembly<3>> assembly3,
-	                int active_integrals = ActiveIntegrals::none)
-    : multidim_assembly_(assembly0, assembly1, assembly2, assembly3),
-    //GenericAssembly( std::shared_ptr<typename DimAssembly<1>::EqDataDG> eq_data )
-    //: multidim_assembly_(eq_data),
+    GenericAssembly(std::shared_ptr<DimAssembly<1>> assembly1, std::shared_ptr<DimAssembly<2>> assembly2,
+                    std::shared_ptr<DimAssembly<3>> assembly3, int active_integrals = ActiveIntegrals::none)
+    : multidim_assembly_(assembly1, assembly2, assembly3),
       active_integrals_(active_integrals), integrals_size_({0, 0, 0, 0})
     {
         eval_points_ = std::make_shared<EvalPoints>();
@@ -95,7 +92,20 @@ public:
         element_cache_map_.init(eval_points_);
     }
 
-    inline MixedPtr<DimAssembly> multidim_assembly() const {
+    /// Constructor
+    GenericAssembly( typename DimAssembly<1>::EqDataDG *eq_data, int active_integrals = ActiveIntegrals::none )
+    : multidim_assembly_(eq_data),
+      active_integrals_(active_integrals), integrals_size_({0, 0, 0, 0})
+    {
+        eval_points_ = std::make_shared<EvalPoints>();
+        // first step - create integrals, then - initialize cache
+        multidim_assembly_.get<1>()->create_integrals(eval_points_);
+        multidim_assembly_.get<2>()->create_integrals(eval_points_);
+        multidim_assembly_.get<3>()->create_integrals(eval_points_);
+        element_cache_map_.init(eval_points_);
+    }
+
+    inline MixedPtr<DimAssembly, 1> multidim_assembly() const {
         return multidim_assembly_;
     }
 
@@ -111,7 +121,7 @@ public:
 	 */
     void assemble(std::shared_ptr<DOFHandlerMultiDim> dh) {
         unsigned int i;
-        std::get<1>(multidim_assembly_)->begin();
+        multidim_assembly_.get<1>()->begin();
         for (auto cell : dh->local_range() )
         {
             this->add_integrals_of_computing_step(cell);
@@ -121,13 +131,13 @@ public:
                 for (i=0; i<integrals_size_[0]; ++i) { // volume integral
                     switch (bulk_integral_data_[i].cell.dim()) {
                     case 1:
-                        std::get<1>(multidim_assembly_)->assemble_volume_integrals(bulk_integral_data_[i].cell);
+                        multidim_assembly_.get<1>()->assemble_volume_integrals(bulk_integral_data_[i].cell);
                         break;
                     case 2:
-                        std::get<2>(multidim_assembly_)->assemble_volume_integrals(bulk_integral_data_[i].cell);
+                        multidim_assembly_.get<2>()->assemble_volume_integrals(bulk_integral_data_[i].cell);
                         break;
                     case 3:
-                        std::get<3>(multidim_assembly_)->assemble_volume_integrals(bulk_integral_data_[i].cell);
+                        multidim_assembly_.get<3>()->assemble_volume_integrals(bulk_integral_data_[i].cell);
                         break;
                     }
                 }
@@ -139,13 +149,13 @@ public:
                 for (i=0; i<integrals_size_[3]; ++i) { // boundary integral
                     switch (boundary_integral_data_[i].side.dim()) {
                     case 1:
-                        std::get<1>(multidim_assembly_)->assemble_fluxes_boundary(boundary_integral_data_[i].side);
+                        multidim_assembly_.get<1>()->assemble_fluxes_boundary(boundary_integral_data_[i].side);
                         break;
                     case 2:
-                        std::get<2>(multidim_assembly_)->assemble_fluxes_boundary(boundary_integral_data_[i].side);
+                        multidim_assembly_.get<2>()->assemble_fluxes_boundary(boundary_integral_data_[i].side);
                         break;
                     case 3:
-                        std::get<3>(multidim_assembly_)->assemble_fluxes_boundary(boundary_integral_data_[i].side);
+                        multidim_assembly_.get<3>()->assemble_fluxes_boundary(boundary_integral_data_[i].side);
                         break;
                     }
                 }
@@ -157,13 +167,13 @@ public:
                 for (i=0; i<integrals_size_[1]; ++i) { // edge integral
                     switch (edge_integral_data_[i].edge_side_range.begin()->dim()) {
                     case 1:
-                        std::get<1>(multidim_assembly_)->assemble_fluxes_element_element(edge_integral_data_[i].edge_side_range);
+                        multidim_assembly_.get<1>()->assemble_fluxes_element_element(edge_integral_data_[i].edge_side_range);
                         break;
                     case 2:
-                        std::get<2>(multidim_assembly_)->assemble_fluxes_element_element(edge_integral_data_[i].edge_side_range);
+                        multidim_assembly_.get<2>()->assemble_fluxes_element_element(edge_integral_data_[i].edge_side_range);
                         break;
                     case 3:
-                        std::get<3>(multidim_assembly_)->assemble_fluxes_element_element(edge_integral_data_[i].edge_side_range);
+                        multidim_assembly_.get<3>()->assemble_fluxes_element_element(edge_integral_data_[i].edge_side_range);
                         break;
                     }
                 }
@@ -175,17 +185,17 @@ public:
                 for (i=0; i<integrals_size_[2]; ++i) { // coupling integral
                     switch (coupling_integral_data_[i].side.dim()) {
                     case 2:
-                        std::get<2>(multidim_assembly_)->assemble_fluxes_element_side(coupling_integral_data_[i].cell, coupling_integral_data_[i].side);
+                        multidim_assembly_.get<2>()->assemble_fluxes_element_side(coupling_integral_data_[i].cell, coupling_integral_data_[i].side);
                         break;
                     case 3:
-                        std::get<3>(multidim_assembly_)->assemble_fluxes_element_side(coupling_integral_data_[i].cell, coupling_integral_data_[i].side);
+                        multidim_assembly_.get<3>()->assemble_fluxes_element_side(coupling_integral_data_[i].cell, coupling_integral_data_[i].side);
                         break;
                     }
                 }
                 END_TIMER("assemble_fluxes_elem_side");
             }
         }
-        std::get<1>(multidim_assembly_)->end();
+        multidim_assembly_.get<1>()->end();
     }
 
 private:
@@ -279,13 +289,13 @@ private:
         bulk_integral_data_[ integrals_size_[0] ].cell = cell;
         switch (cell.dim()) {
         case 1:
-        	bulk_integral_data_[ integrals_size_[0] ].subset_index = std::get<1>(multidim_assembly_)->bulk_integral_->get_subset_idx();
+        	bulk_integral_data_[ integrals_size_[0] ].subset_index = multidim_assembly_.get<1>()->bulk_integral_->get_subset_idx();
             break;
         case 2:
-            bulk_integral_data_[ integrals_size_[0] ].subset_index = std::get<2>(multidim_assembly_)->bulk_integral_->get_subset_idx();
+            bulk_integral_data_[ integrals_size_[0] ].subset_index = multidim_assembly_.get<2>()->bulk_integral_->get_subset_idx();
             break;
         case 3:
-            bulk_integral_data_[ integrals_size_[0] ].subset_index = std::get<3>(multidim_assembly_)->bulk_integral_->get_subset_idx();
+            bulk_integral_data_[ integrals_size_[0] ].subset_index = multidim_assembly_.get<3>()->bulk_integral_->get_subset_idx();
             break;
     	}
         integrals_size_[0]++;
@@ -296,13 +306,13 @@ private:
     	edge_integral_data_[ integrals_size_[1] ].edge_side_range = edge_side_range;
         switch (edge_side_range.begin()->dim()) {
         case 1:
-            edge_integral_data_[ integrals_size_[1] ].subset_index = std::get<1>(multidim_assembly_)->edge_integral_->get_subset_idx();
+            edge_integral_data_[ integrals_size_[1] ].subset_index = multidim_assembly_.get<1>()->edge_integral_->get_subset_idx();
             break;
         case 2:
-            edge_integral_data_[ integrals_size_[1] ].subset_index = std::get<2>(multidim_assembly_)->edge_integral_->get_subset_idx();
+            edge_integral_data_[ integrals_size_[1] ].subset_index = multidim_assembly_.get<2>()->edge_integral_->get_subset_idx();
             break;
         case 3:
-            edge_integral_data_[ integrals_size_[1] ].subset_index = std::get<3>(multidim_assembly_)->edge_integral_->get_subset_idx();
+            edge_integral_data_[ integrals_size_[1] ].subset_index = multidim_assembly_.get<3>()->edge_integral_->get_subset_idx();
             break;
     	}
         integrals_size_[1]++;
@@ -314,12 +324,12 @@ private:
     	coupling_integral_data_[ integrals_size_[2] ].side = ngh_side;
         switch (cell.dim()) {
         case 1:
-        	coupling_integral_data_[ integrals_size_[2] ].bulk_subset_index = std::get<2>(multidim_assembly_)->coupling_integral_->get_subset_low_idx();
-        	coupling_integral_data_[ integrals_size_[2] ].side_subset_index = std::get<2>(multidim_assembly_)->coupling_integral_->get_subset_high_idx();
+        	coupling_integral_data_[ integrals_size_[2] ].bulk_subset_index = multidim_assembly_.get<2>()->coupling_integral_->get_subset_low_idx();
+        	coupling_integral_data_[ integrals_size_[2] ].side_subset_index = multidim_assembly_.get<2>()->coupling_integral_->get_subset_high_idx();
             break;
         case 2:
-            coupling_integral_data_[ integrals_size_[2] ].bulk_subset_index = std::get<3>(multidim_assembly_)->coupling_integral_->get_subset_low_idx();
-        	coupling_integral_data_[ integrals_size_[2] ].side_subset_index = std::get<3>(multidim_assembly_)->coupling_integral_->get_subset_high_idx();
+            coupling_integral_data_[ integrals_size_[2] ].bulk_subset_index = multidim_assembly_.get<3>()->coupling_integral_->get_subset_low_idx();
+        	coupling_integral_data_[ integrals_size_[2] ].side_subset_index = multidim_assembly_.get<3>()->coupling_integral_->get_subset_high_idx();
             break;
     	}
         integrals_size_[2]++;
@@ -330,13 +340,13 @@ private:
     	boundary_integral_data_[ integrals_size_[3] ].side = bdr_side;
         switch (bdr_side.dim()) {
         case 1:
-        	boundary_integral_data_[ integrals_size_[3] ].subset_index = std::get<1>(multidim_assembly_)->edge_integral_->get_subset_idx();
+        	boundary_integral_data_[ integrals_size_[3] ].subset_index = multidim_assembly_.get<1>()->edge_integral_->get_subset_idx();
             break;
         case 2:
-        	boundary_integral_data_[ integrals_size_[3] ].subset_index = std::get<2>(multidim_assembly_)->edge_integral_->get_subset_idx();
+        	boundary_integral_data_[ integrals_size_[3] ].subset_index = multidim_assembly_.get<2>()->edge_integral_->get_subset_idx();
             break;
         case 3:
-        	boundary_integral_data_[ integrals_size_[3] ].subset_index = std::get<3>(multidim_assembly_)->edge_integral_->get_subset_idx();
+        	boundary_integral_data_[ integrals_size_[3] ].subset_index = multidim_assembly_.get<3>()->edge_integral_->get_subset_idx();
             break;
     	}
         integrals_size_[3]++;
@@ -344,7 +354,7 @@ private:
 
 
     /// Assembly object
-    MixedPtr<DimAssembly> multidim_assembly_;
+    MixedPtr<DimAssembly, 1> multidim_assembly_;
 
     /// Holds mask of active integrals.
     int active_integrals_;
@@ -398,7 +408,7 @@ public:
     typedef typename TransportDG<Model>::EqData EqDataDG;
 
     /// Constructor.
-    MassAssemblyDG(std::shared_ptr<EqDataDG> data)
+    MassAssemblyDG(EqDataDG *data)
     : model_(nullptr), data_(data), fe_values_(nullptr) {
         quad_ = new QGauss(dim, 2*data_->dg_order);
         quad_low_ = new QGauss(dim-1, 2*data_->dg_order);
@@ -527,7 +537,7 @@ public:
         TransportDG<Model> *model_;
 
         /// Data object shared with TransportDG
-        std::shared_ptr<EqDataDG> data_;
+        EqDataDG *data_;
 
         unsigned int ndofs_;                                      ///< Number of dofs
         unsigned int qsize_;                                      ///< Size of quadrature of actual dim
