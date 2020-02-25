@@ -377,15 +377,15 @@ void ConvectionTransport::set_boundary_conditions()
         	LongIdx new_i = row_4_el[ elm.idx() ];
 
         	for (unsigned int si=0; si<elm->n_sides(); si++) {
-                Boundary *b = elm.side(si)->cond();
-                if (b != NULL) {
+                if (elm.side(si)->is_boundary()) {
+                    Boundary bcd = elm.side(si)->cond();
                     double flux = mh_dh->side_flux( *(elm.side(si)) );
                     if (flux < 0.0) {
                         double aij = -(flux / elm.measure() );
 
                         for (sbi=0; sbi<n_substances(); sbi++)
                         {
-                            double value = data_.bc_conc[sbi].value( b->element_accessor().centre(), b->element_accessor() );
+                            double value = data_.bc_conc[sbi].value( bcd.element_accessor().centre(), bcd.element_accessor() );
                             
                             VecSetValue(bcvcorr[sbi], new_i, value * aij, ADD_VALUES);
 
@@ -751,7 +751,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
         new_i = row_4_el[ dh_cell.elm_idx() ];
         for( DHCellSide cell_side : dh_cell.side_range() ) {
             flux = mh_dh->side_flux( cell_side.side());
-            if (cell_side.cond() == NULL) {
+            if (! cell_side.side().is_boundary()) {
                 edg_flux = 0;
                 for( DHCellSide edge_side : cell_side.edge_sides() ) {
                 	flux2 = mh_dh->side_flux( edge_side.side() );

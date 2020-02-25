@@ -94,7 +94,6 @@ void Partitioning::make_element_connection_graph() {
 
     Distribution edistr = graph_->get_distr();
 
-    const Edge *edg;
     unsigned int e_idx;
     unsigned int i_neigh;
     int i_s, n_s;
@@ -109,11 +108,11 @@ void Partitioning::make_element_connection_graph() {
 
         // for all connected elements
         for (unsigned int si=0; si<ele->n_sides(); si++) {
-            edg = ele.side(si)->edge();
+            Edge edg = ele.side(si)->edge();
 
-            for (unsigned int li=0; li<edg->n_sides; li++) {
-            	ASSERT(edg->side(li)->valid()).error("NULL side of edge.");
-                e_idx = edg->side(li)->element().idx();
+            for (unsigned int li=0; li<edg.n_sides(); li++) {
+            	ASSERT(edg.side(li)->valid()).error("NULL side of edge.");
+                e_idx = edg.side(li)->element().idx();
 
                 // for elements of connected elements, excluding element itself
                 if ( e_idx != ele.idx() ) {
@@ -126,9 +125,9 @@ void Partitioning::make_element_connection_graph() {
         // to the higher dimension
         if (neigh_on) {
             for (i_neigh = 0; i_neigh < ele->n_neighs_vb(); i_neigh++) {
-               n_s = ele->neigh_vb[i_neigh]->edge()->n_sides;
+               n_s = ele->neigh_vb[i_neigh]->edge().n_sides();
                 for (i_s = 0; i_s < n_s; i_s++) {
-                   e_idx = ele->neigh_vb[i_neigh]->edge()->side(i_s)->element().idx();
+                   e_idx = ele->neigh_vb[i_neigh]->edge().side(i_s)->element().idx();
                     graph_->set_edge( ele.idx(), e_idx );
                     graph_->set_edge( e_idx, ele.idx() );
                 }

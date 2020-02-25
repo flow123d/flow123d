@@ -61,6 +61,9 @@ public:
     // returns true for all sides either on boundary or connected to vb neigboring
     inline bool is_external() const;
 
+    // Returns true for side on the boundary
+    inline bool is_boundary() const;
+
     /**
      * Returns node for given local index @p i on the side.
      */
@@ -84,9 +87,11 @@ public:
     /**
      * Returns pointer to the edge connected to the side.
      */
-    inline const Edge * edge() const;
+    // inline const Edge * edge() const;
+    inline Edge edge() const;
 
-    inline Boundary * cond() const;
+    // inline Boundary * cond() const;
+    inline Boundary cond() const;
     inline unsigned int cond_idx() const;
 
     /**

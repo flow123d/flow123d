@@ -53,9 +53,9 @@ void P0_CouplingAssembler::pressure_diff(LocalElementAccessorBase<3> ele_ac, dou
         i_data.vel_dofs[i_side] = ele_ac.side_row(i_side);
         //i_data.z_sides[i_side]=ele_ac.side(i_side)->centre()[2];
         //DebugOut().fmt("edge: {} {}", i_side, ele_ac.edge_row(i_side));
-        Boundary * bcd = ele_ac.element_accessor().side(i_side)->cond();
-        if (bcd) {
-            ElementAccessor<3> b_ele = bcd->element_accessor();
+        if (ele_ac.element_accessor().side(i_side)->is_boundary()) {
+            Boundary bcd = ele_ac.element_accessor().side(i_side)->cond();
+            ElementAccessor<3> b_ele = bcd.element_accessor();
             auto type = (DarcyMH::EqData::BC_Type)data_->bc_type.value(b_ele.centre(), b_ele);
             //DebugOut().fmt("bcd id: {} sidx: {} type: {}\n", ele->id(), i_side, type);
             if (type == DarcyMH::EqData::dirichlet) {
@@ -248,10 +248,10 @@ void P1_CouplingAssembler::add_sides(LocalElementAccessorBase<3> ele_ac, unsigne
 {
     for(unsigned int i_side=0; i_side < ele_ac.n_sides(); i_side++ ) {
         dofs[shift+i_side] =  ele_ac.edge_row(i_side);
-        Boundary * bcd = ele_ac.element_accessor().side(i_side)->cond();
 
-        if (bcd) {
-            ElementAccessor<3> b_ele = bcd->element_accessor();
+        if (ele_ac.element_accessor().side(i_side)->is_boundary()) {
+            Boundary bcd = ele_ac.element_accessor().side(i_side)->cond();
+            ElementAccessor<3> b_ele = bcd.element_accessor();
             auto type = (DarcyMH::EqData::BC_Type)data_->bc_type.value(b_ele.centre(), b_ele);
             //DebugOut().fmt("bcd id: {} sidx: {} type: {}\n", ele->id(), i_side, type);
             if (type == DarcyMH::EqData::dirichlet) {

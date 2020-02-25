@@ -16,39 +16,21 @@
  * @brief   Boundary conditions
  */
 
-#include "system/system.hh"
-#include "mesh/side_impl.hh"
-#include "mesh/mesh.h"
+// #include "system/system.hh"
 #include "mesh/boundaries.h"
-#include "mesh/accessors.hh"
+#include "mesh/mesh_data.hh"
 
 
 flow::VectorId<unsigned int> Boundary::id_to_bcd;
 
 
 Boundary::Boundary()
-: edge_idx_(Mesh::undef_idx), bc_ele_idx_(Mesh::undef_idx),
-  mesh_(NULL)
+: boundary_data_(nullptr)
 {}
 
-
-Region Boundary::region() {
-    return element_accessor().region();
-}
-
-
-Element * Boundary::element() {
-    return &( mesh_->element_vec_[bc_ele_idx_] );
-}
-
-Edge * Boundary::edge() {
-    return &( mesh_->edges[edge_idx_] );
-}
-
-ElementAccessor<3> Boundary::element_accessor()
-{
-	return mesh_->element_accessor(bc_ele_idx_);
-}
+Boundary::Boundary(BoundaryData* boundary_data)
+: boundary_data_(boundary_data)
+{}
 
 //-----------------------------------------------------------------------------
 // vim: set cindent:

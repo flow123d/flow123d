@@ -129,7 +129,7 @@ public:
     inline unsigned int edge_idx();
 
     // edge of higher dimensional mesh in VB neigh.
-    inline Edge *edge();
+    inline Edge edge();
 
     // element of lower dimension mesh in VB neigh.
     inline ElementAccessor<3> element();
@@ -145,9 +145,9 @@ private:
 
 // side of the edge in higher dim. mesh
 inline SideIter Neighbour::side() {
-	OLD_ASSERT( edge()->n_sides == 1 , "VB neighbouring with %d sides.\n", edge()->n_sides);
+	OLD_ASSERT( edge().n_sides() == 1 , "VB neighbouring with %d sides.\n", edge().n_sides());
     //DebugOut().fmt("VB neighbouring with {} sides.\n", edge_->n_sides);
-    return edge()->side(0);
+    return edge().side(0);
 }
 
 inline unsigned int Neighbour::edge_idx() {
@@ -155,8 +155,8 @@ inline unsigned int Neighbour::edge_idx() {
 }
 
 // edge of lower dimensional mesh in VB neigh.
-inline Edge *Neighbour::edge() {
-    return &( mesh_->edges[ edge_idx_] );
+inline Edge Neighbour::edge() {
+    return mesh_->edge(edge_idx_);
 }
 
 // element of higher dimension mesh in VB neigh.

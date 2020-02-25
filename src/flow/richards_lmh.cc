@@ -171,7 +171,7 @@ void RichardsLMH::read_initial_condition()
 
          for (unsigned int i=0; i<ele_ac.element_accessor()->n_sides(); i++) {
              int edge_row = ele_ac.edge_row(i);
-             uint n_sides_of_edge =  ele_ac.element_accessor().side(i)->edge()->n_sides;
+             uint n_sides_of_edge =  ele_ac.element_accessor().side(i)->edge().n_sides();
              VecSetValue(schur0->get_solution(),edge_row, init_value/n_sides_of_edge, ADD_VALUES);
          }
          VecSetValue(schur0->get_solution(),ele_ac.ele_row(), init_value,ADD_VALUES);

@@ -1128,7 +1128,7 @@ void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
         // insert dofs related to compatible connections
         for ( unsigned int i_neigh = 0; i_neigh < ele_ac.element_accessor()->n_neighs_vb(); i_neigh++) {
             int edge_row = mh_dh.row_4_edge[ ele_ac.element_accessor()->neigh_vb[i_neigh]->edge_idx()  ];
-            arma::vec3 coord = ele_ac.element_accessor()->neigh_vb[i_neigh]->edge()->side(0)->centre();
+            arma::vec3 coord = ele_ac.element_accessor()->neigh_vb[i_neigh]->edge().side(0)->centre();
 
             localDofMap.insert( std::make_pair( edge_row, coord ) );
             inet.push_back( edge_row );

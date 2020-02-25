@@ -22,6 +22,7 @@
 #include "mesh/node_accessor.hh"
 #include "mesh/mesh.h"
 #include "mesh/edges.h"
+#include "mesh/boundaries.h"
 
 
 inline Side::Side(const Mesh * mesh, unsigned int elem_idx, unsigned int set_lnum)
@@ -41,7 +42,12 @@ inline Side::Side(const Mesh * mesh, unsigned int elem_idx, unsigned int set_lnu
 
     // returns true for all sides either on boundary or connected to vb neigboring
     inline bool Side::is_external() const {
-        return edge()->n_sides == 1;
+        return edge().n_sides() == 1;
+    }
+
+    // returns true for all sides either on boundary or connected to vb neigboring
+    inline bool Side::is_boundary() const {
+        return is_external() && cond_idx() != Mesh::undef_idx;
     }
 
     inline NodeAccessor<3> Side::node(unsigned int i) const {
@@ -63,14 +69,22 @@ inline Side::Side(const Mesh * mesh, unsigned int elem_idx, unsigned int set_lnu
         return element()->edge_idx(side_idx_);
     }
 
-    inline const Edge * Side::edge() const {
-        if (edge_idx() == Mesh::undef_idx) return NULL;
-        else return &( mesh_->edges[ edge_idx() ] );
+    // inline const Edge * Side::edge() const {
+    //     if (edge_idx() == Mesh::undef_idx) return NULL;
+    //     else return &( mesh_->edges[ edge_idx() ] );
+    // }
+
+    // inline Boundary * Side::cond() const {
+    //         if (cond_idx() == Mesh::undef_idx) return NULL;
+    //         else return &( mesh_->boundary_[ cond_idx() ] );
+    // }
+
+    inline Edge Side::edge() const {
+        return mesh_->edge(edge_idx());
     }
 
-    inline Boundary * Side::cond() const {
-            if (cond_idx() == Mesh::undef_idx) return NULL;
-            else return &( mesh_->boundary_[ cond_idx() ] );
+    inline Boundary Side::cond() const {
+        return mesh_->boundary(cond_idx());
     }
 
     inline unsigned int Side::cond_idx() const {

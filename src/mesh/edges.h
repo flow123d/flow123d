@@ -18,7 +18,8 @@
 #ifndef MAKE_EDGES_H
 #define MAKE_EDGES_H
 
-#include "mesh/sides.h"
+#include "mesh/sides.h"     // for SideIter
+#include "mesh/mesh.h"      // for EdgeData
 
 //=============================================================================
 // STRUCTURE OF THE EDGE OF THE MESH
@@ -26,16 +27,53 @@
 class Edge
 {
 public:
-    /// Minimalistic default constructor.
-    Edge();
-    inline SideIter side(const unsigned int i) const {
-        return side_[i];
+    Edge()
+    : mesh_(nullptr),
+      edge_idx_(Mesh::undef_idx)
+    {}
+
+    Edge(const Mesh *mesh, unsigned int edge_idx)
+    : mesh_(mesh),
+      edge_idx_(edge_idx)
+    {}
+
+    inline bool is_valid() const {
+        return mesh_ != nullptr;
     }
 
-    // Topology of the mesh
-    uint  n_sides;   // # of sides of edge
-    SideIter *side_; // sides of edge (could be more then two e.g. 1D mesh in 2d space with crossing )
+    inline unsigned int idx() const {
+        ASSERT_DBG(is_valid());
+        return edge_idx_;
+    }
 
+    inline unsigned int n_sides() const
+    { return edge_data()->n_sides;}
+
+    inline SideIter side(const unsigned int i) const {
+        return edge_data()->side_[i];
+    }
+
+    inline void inc() {
+        ASSERT(is_valid()).error("Do not call inc() for invalid accessor!");
+        edge_idx_++;
+    }
+
+    bool operator==(const Edge& other) const{
+    	return (edge_idx_ == other.edge_idx_);
+    }
+
+private:
+    /// Pointer to the mesh owning the node.
+    const Mesh *mesh_;
+    /// Index into Mesh::edges vector.
+    unsigned int edge_idx_;
+
+    inline const EdgeData* edge_data() const
+    {
+        ASSERT_DBG(is_valid());
+        ASSERT_LT_DBG(edge_idx_, mesh_->edges.size());
+        return &mesh_->edges[edge_idx_];
+    }
 };
 
 

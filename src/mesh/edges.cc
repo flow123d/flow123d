@@ -16,18 +16,8 @@
  * @brief   
  */
 
-#include "system/system.hh"
-#include "mesh/mesh.h"
+#include "mesh/edges.h"
 
-
-
-Edge::Edge()
-: n_sides(0),
-  side_(NULL)
-
-{
-
-}
 
 
 

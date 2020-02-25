@@ -205,7 +205,7 @@ public:
     	return side().elem_idx();
     }
 
-    inline Boundary * cond() const {
+    inline Boundary cond() const {
         return side().cond();
     }
 
@@ -298,7 +298,7 @@ public:
 
     /// This class is implicitly convertible to DHCellSide.
     operator DHCellSide() const {
-    	SideIter side = dof_handler_->mesh()->edges[edge_idx_].side(side_idx_);
+    	SideIter side = dof_handler_->mesh()->edge(edge_idx_).side(side_idx_);
     	DHCellAccessor cell = dof_handler_->cell_accessor_from_element( side->elem_idx() );
         return DHCellSide(cell, side->side_idx());
     }
@@ -455,9 +455,9 @@ inline RangeConvert<DHEdgeSide, DHCellSide> DHCellSide::edge_sides() const {
 
 inline unsigned int DHCellSide::n_edge_sides() const {
     unsigned int edge_idx = dh_cell_accessor_.elm()->edge_idx(side_idx_);
-    Edge *edg = &dh_cell_accessor_.dof_handler_->mesh()->edges[edge_idx];
-    for (uint sid=0; sid<edg->n_sides; sid++)
-        if ( dh_cell_accessor_.dof_handler_->el_is_local(edg->side(sid)->element().idx()) ) return edg->n_sides;
+    Edge edg = dh_cell_accessor_.dof_handler_->mesh()->edge(edge_idx);
+    for (uint sid=0; sid<edg.n_sides(); sid++)
+        if ( dh_cell_accessor_.dof_handler_->el_is_local(edg.side(sid)->element().idx()) ) return edg.n_sides();
     return 0;
 }
 

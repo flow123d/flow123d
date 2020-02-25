@@ -21,10 +21,12 @@
 #include "mesh/edges.h"      // for Edge
 #include "mesh/region.hh"    // for Region
 #include "mesh/sides.h"      // for SideIter
+#include "mesh/mesh.h"       // for Mesh
+#include "mesh/accessors.hh"  // for ElementAccessor
+#include "mesh/mesh_data.hh"  // for BoundaryData
 #include "system/system.hh"  // for MessageType::Err, xprintf
 
 class Element;
-class Mesh;
 namespace flow { template <class T> class VectorId; }
 template <int spacedim> class ElementAccessor;
 
@@ -40,8 +42,6 @@ template <int spacedim> class ElementAccessor;
  * neighbor with another element or when it belongs to an segment.
  */
 
-class Element;
-
 //=============================================================================
 // STRUCTURE OF THE BOUNDARY CONDITION
 //=============================================================================
@@ -56,29 +56,62 @@ public:
     static flow::VectorId<unsigned int> id_to_bcd;
 
     Boundary();
+    Boundary(BoundaryData* boundary_data);
 
+    inline bool is_valid() const {
+        return boundary_data_ != nullptr;
+    }
     /**
      * Can not make this inline now.
      */
-    Edge * edge();
+    inline Edge edge()
+    {
+        ASSERT_DBG(is_valid());
+        return boundary_data_->mesh_->edge(boundary_data_->edge_idx_);
+    }
 
-    Element * element();
+    inline Element * element()
+    {
+        ASSERT_DBG(is_valid());
+        return &( boundary_data_->mesh_->element_vec_[boundary_data_->bc_ele_idx_] );
+    }
 
-    Region region();
+    inline Region region()
+    { return element_accessor().region(); }
 
-    ElementAccessor<3> element_accessor();
+    inline ElementAccessor<3> element_accessor()
+    {
+        ASSERT_DBG(is_valid());
+        return boundary_data_->mesh_->element_accessor(boundary_data_->bc_ele_idx_);
+    }
 
 
     inline SideIter side() {
-        if (edge()->n_sides != 1) xprintf(Err, "Using side method for boundary, but there is boundary with multiple sides.\n");
-        return edge()->side_[0];
+        if (edge().n_sides() != 1) xprintf(Err, "Using side method for boundary, but there is boundary with multiple sides.\n");
+        return edge().side(0);
     }
 
-    // Topology of the mesh
-    unsigned int    edge_idx_;    // more then one side can be at one boundary element
-    unsigned int    bc_ele_idx_;  // in near future this should replace Boundary itself, when we remove BC data members
-    Mesh *mesh_;
+    inline Mesh* mesh()
+    {
+        ASSERT_DBG(is_valid());
+        return boundary_data_->mesh_;
+    }
 
+
+    inline uint edge_idx()
+    {
+        ASSERT_DBG(is_valid());
+        return boundary_data_->edge_idx_;
+    }
+
+    inline uint bc_ele_idx()
+    {
+        ASSERT_DBG(is_valid());
+        return boundary_data_->bc_ele_idx_;
+    }
+
+private:
+    BoundaryData* boundary_data_;
 };
 #endif
 //-----------------------------------------------------------------------------
