@@ -186,7 +186,6 @@ target_link_libraries(tools_lib
 add_library(mesh_lib 
     mesh/region.cc
     mesh/boundaries.cc
-    mesh/edges.cc
     mesh/elements.cc
     mesh/duplicate_nodes.cc
     mesh/mesh.cc

@@ -21,7 +21,7 @@
 #include "mesh/accessors.hh"
 #include "mesh/node_accessor.hh"
 #include "mesh/mesh.h"
-#include "mesh/edges.h"
+#include "mesh/edge.hh"
 #include "mesh/boundaries.h"
 
 

@@ -18,7 +18,7 @@
 #ifndef BOUNDARIES_H
 #define BOUNDARIES_H
 
-#include "mesh/edges.h"      // for Edge
+#include "mesh/edge.hh"      // for Edge
 #include "mesh/region.hh"    // for Region
 #include "mesh/sides.h"      // for SideIter
 #include "mesh/mesh.h"       // for Mesh
