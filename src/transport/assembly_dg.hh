@@ -505,11 +505,6 @@ public:
             model_->velocity_field_ptr()->value_list(point_list, cell, velocity);
         }
 
-        std::shared_ptr<BulkIntegral> bulk_integral_;          ///< Bulk integrals of elements of given dimension
-        std::shared_ptr<EdgeIntegral> edge_integral_;          ///< Edge integrals between sides of elements of given dimension
-        std::shared_ptr<CouplingIntegral> coupling_integral_;  ///< Coupling integrals between elements of given dimension and sides of elements of dim+1 dimension
-        std::shared_ptr<BoundaryIntegral> boundary_integral_;  ///< Boundary integrals betwwen sides of elements of given dimension and mesh boundary
-
         shared_ptr<FiniteElement<dim>> fe_;                    ///< Finite element for the solution of the advection-diffusion equation.
 
         /// Pointer to model (we must use common ancestor of concentration and heat model)
@@ -985,11 +980,6 @@ private:
         model_->velocity_field_ptr()->value_list(point_list, cell, velocity);
     }
 
-    std::shared_ptr<BulkIntegral> bulk_integral_;          ///< Bulk integrals of elements of given dimension
-    std::shared_ptr<EdgeIntegral> edge_integral_;          ///< Edge integrals between sides of elements of given dimension
-    std::shared_ptr<CouplingIntegral> coupling_integral_;  ///< Coupling integrals between elements of given dimension and sides of elements of dim+1 dimension
-    std::shared_ptr<BoundaryIntegral> boundary_integral_;  ///< Boundary integrals betwwen sides of elements of given dimension and mesh boundary
-
     shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
     shared_ptr<FiniteElement<dim-1>> fe_low_;   ///< Finite element for the solution of the advection-diffusion equation (dim-1).
     FiniteElement<dim> *fe_rt_;                 ///< Finite element for the water velocity field.
@@ -1161,11 +1151,6 @@ public:
             velocity.resize(point_list.size());
             model_->velocity_field_ptr()->value_list(point_list, cell, velocity);
         }
-
-        std::shared_ptr<BulkIntegral> bulk_integral_;          ///< Bulk integrals of elements of given dimension
-        std::shared_ptr<EdgeIntegral> edge_integral_;          ///< Edge integrals between sides of elements of given dimension
-        std::shared_ptr<CouplingIntegral> coupling_integral_;  ///< Coupling integrals between elements of given dimension and sides of elements of dim+1 dimension
-        std::shared_ptr<BoundaryIntegral> boundary_integral_;  ///< Boundary integrals betwwen sides of elements of given dimension and mesh boundary
 
         shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
 
@@ -1401,11 +1386,6 @@ public:
             model_->velocity_field_ptr()->value_list(point_list, cell, velocity);
         }
 
-        std::shared_ptr<BulkIntegral> bulk_integral_;          ///< Bulk integrals of elements of given dimension
-        std::shared_ptr<EdgeIntegral> edge_integral_;          ///< Edge integrals between sides of elements of given dimension
-        std::shared_ptr<CouplingIntegral> coupling_integral_;  ///< Coupling integrals between elements of given dimension and sides of elements of dim+1 dimension
-        std::shared_ptr<BoundaryIntegral> boundary_integral_;  ///< Boundary integrals betwwen sides of elements of given dimension and mesh boundary
-
         shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
         FiniteElement<dim> *fe_rt_;                 ///< Finite element for the water velocity field.
 
@@ -1520,11 +1500,6 @@ public:
             velocity.resize(point_list.size());
             model_->velocity_field_ptr()->value_list(point_list, cell, velocity);
         }
-
-        std::shared_ptr<BulkIntegral> bulk_integral_;          ///< Bulk integrals of elements of given dimension
-        std::shared_ptr<EdgeIntegral> edge_integral_;          ///< Edge integrals between sides of elements of given dimension
-        std::shared_ptr<CouplingIntegral> coupling_integral_;  ///< Coupling integrals between elements of given dimension and sides of elements of dim+1 dimension
-        std::shared_ptr<BoundaryIntegral> boundary_integral_;  ///< Boundary integrals betwwen sides of elements of given dimension and mesh boundary
 
         shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
 
