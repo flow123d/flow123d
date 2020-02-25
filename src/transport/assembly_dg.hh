@@ -41,6 +41,25 @@ enum ActiveIntegrals {
 };
 
 
+/// Set of all used integral necessary in assemblation
+struct AssemblyIntegrals {
+    std::array<std::shared_ptr<BulkIntegral>, 3> bulk_;          ///< Bulk integrals of elements of dimensions 1, 2, 3
+    std::array<std::shared_ptr<EdgeIntegral>, 3> edge_;          ///< Edge integrals between elements of dimensions 1, 2, 3
+    std::array<std::shared_ptr<CouplingIntegral>, 2> coupling_;  ///< Coupling integrals between elements of dimensions 1-2, 2-3
+    std::array<std::shared_ptr<BoundaryIntegral>, 3> boundary_;  ///< Boundary integrals betwwen elements of dimensions 1, 2, 3 and boundaries
+};
+
+
+
+/**
+ * @brief Generic class of assemblation.
+ *
+ * Class
+ *  - holds assemblation structures (EvalPoints, Integral objects, Integral data table).
+ *  - associates assemblation objects specified by dimension
+ *  - provides general assemble method
+ *  - provides methods that allow construction of element patches
+ */
 template < template<Dim...> class DimAssembly>
 class GenericAssembly
 {
@@ -79,15 +98,15 @@ private:
 public:
 
     /// Constructor
-    GenericAssembly( typename DimAssembly<1>::EqDataDG *eq_data, int active_integrals = ActiveIntegrals::none )
+    GenericAssembly( typename DimAssembly<1>::EqDataDG *eq_data, int active_integrals )
     : multidim_assembly_(eq_data),
       active_integrals_(active_integrals), integrals_size_({0, 0, 0, 0})
     {
         eval_points_ = std::make_shared<EvalPoints>();
         // first step - create integrals, then - initialize cache
-        multidim_assembly_.get<1>()->create_integrals(eval_points_);
-        multidim_assembly_.get<2>()->create_integrals(eval_points_);
-        multidim_assembly_.get<3>()->create_integrals(eval_points_);
+        multidim_assembly_.get<1>()->create_integrals(eval_points_, integrals_, active_integrals_);
+        multidim_assembly_.get<2>()->create_integrals(eval_points_, integrals_, active_integrals_);
+        multidim_assembly_.get<3>()->create_integrals(eval_points_, integrals_, active_integrals_);
         element_cache_map_.init(eval_points_);
     }
 
@@ -185,6 +204,7 @@ public:
     }
 
 private:
+    /// Mark eval points in table of Element cache map.
     void insert_eval_points_from_integral_data() {
         for (unsigned int i=0; i<integrals_size_[0]; ++i) {
             // add data to cache if there is free space, else return
@@ -273,34 +293,14 @@ private:
     /// Add data of volume integral to appropriate data structure.
     void add_volume_integral(const DHCellAccessor &cell) {
         bulk_integral_data_[ integrals_size_[0] ].cell = cell;
-        switch (cell.dim()) {
-        case 1:
-        	bulk_integral_data_[ integrals_size_[0] ].subset_index = multidim_assembly_.get<1>()->bulk_integral_->get_subset_idx();
-            break;
-        case 2:
-            bulk_integral_data_[ integrals_size_[0] ].subset_index = multidim_assembly_.get<2>()->bulk_integral_->get_subset_idx();
-            break;
-        case 3:
-            bulk_integral_data_[ integrals_size_[0] ].subset_index = multidim_assembly_.get<3>()->bulk_integral_->get_subset_idx();
-            break;
-    	}
+        bulk_integral_data_[ integrals_size_[0] ].subset_index = integrals_.bulk_[cell.dim()-1]->get_subset_idx();
         integrals_size_[0]++;
     }
 
     /// Add data of edge integral to appropriate data structure.
     void add_edge_integral(RangeConvert<DHEdgeSide, DHCellSide> edge_side_range) {
     	edge_integral_data_[ integrals_size_[1] ].edge_side_range = edge_side_range;
-        switch (edge_side_range.begin()->dim()) {
-        case 1:
-            edge_integral_data_[ integrals_size_[1] ].subset_index = multidim_assembly_.get<1>()->edge_integral_->get_subset_idx();
-            break;
-        case 2:
-            edge_integral_data_[ integrals_size_[1] ].subset_index = multidim_assembly_.get<2>()->edge_integral_->get_subset_idx();
-            break;
-        case 3:
-            edge_integral_data_[ integrals_size_[1] ].subset_index = multidim_assembly_.get<3>()->edge_integral_->get_subset_idx();
-            break;
-    	}
+    	edge_integral_data_[ integrals_size_[1] ].subset_index = integrals_.edge_[edge_side_range.begin()->dim()-1]->get_subset_idx();
         integrals_size_[1]++;
     }
 
@@ -308,33 +308,15 @@ private:
     void add_coupling_integral(const DHCellAccessor &cell, const DHCellSide &ngh_side) {
     	coupling_integral_data_[ integrals_size_[2] ].cell = cell;
     	coupling_integral_data_[ integrals_size_[2] ].side = ngh_side;
-        switch (cell.dim()) {
-        case 1:
-        	coupling_integral_data_[ integrals_size_[2] ].bulk_subset_index = multidim_assembly_.get<2>()->coupling_integral_->get_subset_low_idx();
-        	coupling_integral_data_[ integrals_size_[2] ].side_subset_index = multidim_assembly_.get<2>()->coupling_integral_->get_subset_high_idx();
-            break;
-        case 2:
-            coupling_integral_data_[ integrals_size_[2] ].bulk_subset_index = multidim_assembly_.get<3>()->coupling_integral_->get_subset_low_idx();
-        	coupling_integral_data_[ integrals_size_[2] ].side_subset_index = multidim_assembly_.get<3>()->coupling_integral_->get_subset_high_idx();
-            break;
-    	}
+    	coupling_integral_data_[ integrals_size_[2] ].bulk_subset_index = integrals_.coupling_[cell.dim()-1]->get_subset_low_idx();
+    	coupling_integral_data_[ integrals_size_[2] ].side_subset_index = integrals_.coupling_[cell.dim()-1]->get_subset_high_idx();
         integrals_size_[2]++;
     }
 
     /// Add data of boundary integral to appropriate data structure.
     void add_boundary_integral(const DHCellSide &bdr_side) {
     	boundary_integral_data_[ integrals_size_[3] ].side = bdr_side;
-        switch (bdr_side.dim()) {
-        case 1:
-        	boundary_integral_data_[ integrals_size_[3] ].subset_index = multidim_assembly_.get<1>()->edge_integral_->get_subset_idx();
-            break;
-        case 2:
-        	boundary_integral_data_[ integrals_size_[3] ].subset_index = multidim_assembly_.get<2>()->edge_integral_->get_subset_idx();
-            break;
-        case 3:
-        	boundary_integral_data_[ integrals_size_[3] ].subset_index = multidim_assembly_.get<3>()->edge_integral_->get_subset_idx();
-            break;
-    	}
+    	boundary_integral_data_[ integrals_size_[3] ].subset_index = integrals_.boundary_[bdr_side.dim()-1]->get_subset_idx();
         integrals_size_[3]++;
     }
 
@@ -345,6 +327,7 @@ private:
     /// Holds mask of active integrals.
     int active_integrals_;
 
+    AssemblyIntegrals integrals_;                                 ///< Holds integral objects.
     std::shared_ptr<EvalPoints> eval_points_;                     ///< EvalPoints object shared by all integrals
     ElementCacheMap element_cache_map_;                           ///< ElementCacheMap according to EvalPoints
 
@@ -364,6 +347,18 @@ template <unsigned int dim>
 class AssemblyBase
 {
 public:
+	/// Constructor
+	AssemblyBase(unsigned int quad_order) {
+        quad_ = new QGauss(dim, 2*quad_order);
+        quad_low_ = new QGauss(dim-1, 2*quad_order);
+	}
+
+	// Destructor
+    virtual ~AssemblyBase() {
+        delete quad_;
+        delete quad_low_;
+    }
+
     /// Assembles the volume integrals on cell.
     virtual void assemble_volume_integrals(DHCellAccessor cell) {}
 
@@ -381,6 +376,22 @@ public:
 
     /// Method finishes object after assemblation (e.g. balance, ...).
     virtual void end() {}
+
+    /// Create integrals according to dim of assembly object
+    void create_integrals(std::shared_ptr<EvalPoints> eval_points, AssemblyIntegrals &integrals, int active_integrals) {
+    	if (active_integrals & ActiveIntegrals::bulk)
+    	    integrals.bulk_[dim-1] = eval_points->add_bulk<dim>(*quad_);
+    	if (active_integrals & ActiveIntegrals::edge)
+    	    integrals.edge_[dim-1] = eval_points->add_edge<dim>(*quad_low_);
+       	if ((dim>1) && (active_integrals & ActiveIntegrals::coupling))
+       	    integrals.coupling_[dim-2] = eval_points->add_coupling<dim>(*quad_low_);
+       	if (active_integrals & ActiveIntegrals::boundary)
+       	    integrals.boundary_[dim-1] = eval_points->add_boundary<dim>(*quad_low_);
+    }
+
+protected:
+    Quadrature *quad_;                                     ///< Quadrature used in assembling methods.
+    Quadrature *quad_low_;                                 ///< Quadrature used in assembling methods (dim-1).
 };
 
 
@@ -395,25 +406,12 @@ public:
 
     /// Constructor.
     MassAssemblyDG(EqDataDG *data)
-    : model_(nullptr), data_(data), fe_values_(nullptr) {
-        quad_ = new QGauss(dim, 2*data_->dg_order);
-        quad_low_ = new QGauss(dim-1, 2*data_->dg_order);
-    }
+    : AssemblyBase<dim>(data->dg_order), model_(nullptr), data_(data), fe_values_(nullptr) {}
 
     /// Destructor.
     ~MassAssemblyDG() {
-        delete quad_;
-        delete quad_low_;
-
         if (fe_values_!=nullptr) delete fe_values_;
 
-    }
-
-    void create_integrals(std::shared_ptr<EvalPoints> eval_points) {
-        bulk_integral_ = eval_points->add_bulk<dim>(*quad_);
-        //edge_integral_ = eval_points->add_edge<dim>(*quad_low_);
-        //if (dim>1) coupling_integral_ = eval_points->add_coupling<dim>(*quad_low_);
-        //boundary_integral_ = eval_points->add_boundary<dim>(*quad_low_);
     }
 
     /// Initialize auxiliary vectors and other data members
@@ -421,9 +419,9 @@ public:
         this->model_ = &model;
 
         fe_ = std::make_shared< FE_P_disc<dim> >(data_->dg_order);
-        fe_values_ = new FEValues<3>(*quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
+        fe_values_ = new FEValues<3>(*this->quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
         ndofs_ = fe_->n_dofs();
-        qsize_ = quad_->size();
+        qsize_ = this->quad_->size();
         dof_indices_.resize(ndofs_);
         local_matrix_.resize(4*ndofs_*ndofs_);
         local_retardation_balance_vector_.resize(ndofs_);
@@ -516,8 +514,6 @@ public:
         std::shared_ptr<BoundaryIntegral> boundary_integral_;  ///< Boundary integrals betwwen sides of elements of given dimension and mesh boundary
 
         shared_ptr<FiniteElement<dim>> fe_;                    ///< Finite element for the solution of the advection-diffusion equation.
-        Quadrature *quad_;                                     ///< Quadrature used in assembling methods.
-        Quadrature *quad_low_;                                 ///< Quadrature used in assembling methods (dim-1).
 
         /// Pointer to model (we must use common ancestor of concentration and heat model)
         TransportDG<Model> *model_;
@@ -557,16 +553,10 @@ public:
 
     /// Constructor.
     StiffnessAssemblyDG(EqDataDG *data)
-    : fe_rt_(nullptr), model_(nullptr), data_(data), fv_rt_vb_(nullptr), fe_values_vb_(nullptr) {
-        quad_ = new QGauss(dim, 2*data_->dg_order);
-        quad_low_ = new QGauss(dim-1, 2*data_->dg_order);
-    }
+    : AssemblyBase<dim>(data->dg_order), fe_rt_(nullptr), model_(nullptr), data_(data), fv_rt_vb_(nullptr), fe_values_vb_(nullptr) {}
 
     /// Destructor.
     ~StiffnessAssemblyDG() {
-        delete quad_;
-        delete quad_low_;
-
         if (fe_rt_==nullptr) return; // uninitialized object
 
     	delete fe_rt_;
@@ -584,13 +574,6 @@ public:
         }
     }
 
-    void create_integrals(std::shared_ptr<EvalPoints> eval_points) {
-        bulk_integral_ = eval_points->add_bulk<dim>(*quad_);
-        edge_integral_ = eval_points->add_edge<dim>(*quad_low_);
-        if (dim>1) coupling_integral_ = eval_points->add_coupling<dim>(*quad_low_);
-        boundary_integral_ = eval_points->add_boundary<dim>(*quad_low_);
-    }
-
     /// Initialize auxiliary vectors and other data members
     void initialize(TransportDG<Model> &model) {
         this->model_ = &model;
@@ -599,18 +582,18 @@ public:
         fe_low_ = std::make_shared< FE_P_disc<dim-1> >(data_->dg_order);
         fe_rt_ = new FE_RT0<dim>();
         fe_rt_low_ = new FE_RT0<dim-1>();
-        fv_rt_ = new FEValues<3>(*quad_, *fe_rt_, update_values | update_gradients | update_quadrature_points);
-        fe_values_ = new FEValues<3>(*quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
+        fv_rt_ = new FEValues<3>(*this->quad_, *fe_rt_, update_values | update_gradients | update_quadrature_points);
+        fe_values_ = new FEValues<3>(*this->quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
         if (dim>1) {
-            fv_rt_vb_ = new FEValues<3>(*quad_low_, *fe_rt_low_, update_values | update_quadrature_points);
-            fe_values_vb_ = new FEValues<3>(*quad_low_, *fe_low_,
+            fv_rt_vb_ = new FEValues<3>(*this->quad_low_, *fe_rt_low_, update_values | update_quadrature_points);
+            fe_values_vb_ = new FEValues<3>(*this->quad_low_, *fe_low_,
                     update_values | update_gradients | update_JxW_values | update_quadrature_points);
         }
-        fe_values_side_ = new FEValues<3>(*quad_low_, *fe_, update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
-        fsv_rt_ = new FEValues<3>(*quad_low_, *fe_rt_, update_values | update_quadrature_points);
+        fe_values_side_ = new FEValues<3>(*this->quad_low_, *fe_, update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
+        fsv_rt_ = new FEValues<3>(*this->quad_low_, *fe_rt_, update_values | update_quadrature_points);
         ndofs_ = fe_->n_dofs();
-        qsize_ = quad_->size();
-        qsize_lower_dim_ = quad_low_->size();
+        qsize_ = this->quad_->size();
+        qsize_lower_dim_ = this->quad_low_->size();
         dof_indices_.resize(ndofs_);
         side_dof_indices_vb_.resize(2*ndofs_);
         local_matrix_.resize(4*ndofs_*ndofs_);
@@ -631,12 +614,11 @@ public:
             ret_coef_[sbi].resize(qsize_);
         }
 
-        //fe_values_vec_.resize(data_->ad_coef_edg.size());
         for (unsigned int sid=0; sid<data_->ad_coef_edg.size(); sid++)
         {
             side_dof_indices_.push_back( vector<LongIdx>(ndofs_) );
             //fe_values_vec_[sid].initialize(...)
-            fe_values_vec_.push_back(new FEValues<3>(*quad_low_, *fe_,
+            fe_values_vec_.push_back(new FEValues<3>(*this->quad_low_, *fe_,
                     update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points));
         }
 
@@ -770,6 +752,7 @@ public:
     }
 
 
+    /// Assembles the fluxes between elements of the same dimension.
     void assemble_fluxes_element_element(RangeConvert<DHEdgeSide, DHCellSide> edge_side_range) override {
         ASSERT_EQ_DBG(edge_side_range.begin()->element().dim(), dim).error("Dimension of element mismatch!");
 
@@ -919,6 +902,7 @@ public:
     }
 
 
+    /// Assembles the fluxes between elements of different dimensions.
     void assemble_fluxes_element_side(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) override {
         if (dim == 1) return;
         ASSERT_EQ_DBG(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
@@ -1025,8 +1009,6 @@ private:
     shared_ptr<FiniteElement<dim-1>> fe_low_;   ///< Finite element for the solution of the advection-diffusion equation (dim-1).
     FiniteElement<dim> *fe_rt_;                 ///< Finite element for the water velocity field.
     FiniteElement<dim-1> *fe_rt_low_;           ///< Finite element for the water velocity field (dim-1).
-    Quadrature *quad_;                     ///< Quadrature used in assembling methods.
-    Quadrature *quad_low_;               ///< Quadrature used in assembling methods (dim-1).
 
     /// Pointer to model (we must use common ancestor of concentration and heat model)
     TransportDG<Model> *model_;
@@ -1101,24 +1083,11 @@ public:
 
     /// Constructor.
     SourcesAssemblyDG(EqDataDG *data)
-    : model_(nullptr), data_(data), fe_values_(nullptr) {
-        quad_ = new QGauss(dim, 2*data_->dg_order);
-        quad_low_ = new QGauss(dim-1, 2*data_->dg_order);
-    }
+    : AssemblyBase<dim>(data->dg_order), model_(nullptr), data_(data), fe_values_(nullptr) {}
 
     /// Destructor.
     ~SourcesAssemblyDG() {
-        delete quad_;
-        delete quad_low_;
-
         if (fe_values_!=nullptr) delete fe_values_;
-    }
-
-    void create_integrals(std::shared_ptr<EvalPoints> eval_points) {
-        bulk_integral_ = eval_points->add_bulk<dim>(*quad_);
-        //edge_integral_ = eval_points->add_edge<dim>(*quad_low_);
-        //if (dim>1) coupling_integral_ = eval_points->add_coupling<dim>(*quad_low_);
-        //boundary_integral_ = eval_points->add_boundary<dim>(*quad_low_);
     }
 
     /// Initialize auxiliary vectors and other data members
@@ -1126,9 +1095,9 @@ public:
         this->model_ = &model;
 
         fe_ = std::make_shared< FE_P_disc<dim> >(data_->dg_order);
-        fe_values_ = new FEValues<3>(*quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
+        fe_values_ = new FEValues<3>(*this->quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
         ndofs_ = fe_->n_dofs();
-        qsize_ = quad_->size();
+        qsize_ = this->quad_->size();
         dof_indices_.resize(ndofs_);
         loc_dof_indices_.resize(ndofs_);
         local_rhs_.resize(ndofs_);
@@ -1216,8 +1185,6 @@ public:
         std::shared_ptr<BoundaryIntegral> boundary_integral_;  ///< Boundary integrals betwwen sides of elements of given dimension and mesh boundary
 
         shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
-        Quadrature *quad_;                     ///< Quadrature used in assembling methods.
-        Quadrature *quad_low_;               ///< Quadrature used in assembling methods (dim-1).
 
         /// Pointer to model (we must use common ancestor of concentration and heat model)
         TransportDG<Model> *model_;
@@ -1263,28 +1230,15 @@ public:
 
     /// Constructor.
     BdrConditionAssemblyDG(EqDataDG *data)
-    : model_(nullptr), data_(data), fe_values_side_(nullptr) {
-        quad_ = new QGauss(dim, 2*data_->dg_order);
-        quad_low_ = new QGauss(dim-1, 2*data_->dg_order);
-    }
+    : AssemblyBase<dim>(data->dg_order), model_(nullptr), data_(data), fe_values_side_(nullptr) {}
 
     /// Destructor.
     ~BdrConditionAssemblyDG() {
-        delete quad_;
-        delete quad_low_;
-
         if (fe_values_side_==nullptr) return; // uninitialized object
 
         delete fe_rt_;
         delete fe_values_side_;
         delete fsv_rt_;
-    }
-
-    void create_integrals(std::shared_ptr<EvalPoints> eval_points) {
-        bulk_integral_ = eval_points->add_bulk<dim>(*quad_);
-        //edge_integral_ = eval_points->add_edge<dim>(*quad_low_);
-        //if (dim>1) coupling_integral_ = eval_points->add_coupling<dim>(*quad_low_);
-        //boundary_integral_ = eval_points->add_boundary<dim>(*quad_low_);
     }
 
     /// Initialize auxiliary vectors and other data members
@@ -1293,11 +1247,11 @@ public:
 
         fe_ = std::make_shared< FE_P_disc<dim> >(data_->dg_order);
         fe_rt_ = new FE_RT0<dim>();
-        fe_values_side_ = new FEValues<3>(*quad_low_, *fe_, update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
-        fsv_rt_ = new FEValues<3>(*quad_low_, *fe_rt_, update_values | update_quadrature_points);
+        fe_values_side_ = new FEValues<3>(*this->quad_low_, *fe_, update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
+        fsv_rt_ = new FEValues<3>(*this->quad_low_, *fe_rt_, update_values | update_quadrature_points);
         ndofs_ = fe_->n_dofs();
-        qsize_ = quad_->size();
-        qsize_lower_dim_ = quad_low_->size();
+        qsize_ = this->quad_->size();
+        qsize_lower_dim_ = this->quad_low_->size();
         dof_indices_.resize(ndofs_);
         local_rhs_.resize(ndofs_);
         local_flux_balance_vector_.resize(ndofs_);
@@ -1473,8 +1427,6 @@ public:
 
         shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
         FiniteElement<dim> *fe_rt_;                 ///< Finite element for the water velocity field.
-        Quadrature *quad_;                     ///< Quadrature used in assembling methods.
-        Quadrature *quad_low_;               ///< Quadrature used in assembling methods (dim-1).
 
         /// Pointer to model (we must use common ancestor of concentration and heat model)
         TransportDG<Model> *model_;
@@ -1517,24 +1469,11 @@ public:
 
     /// Constructor.
     InitConditionAssemblyDG(EqDataDG *data)
-    : model_(nullptr), data_(data), fe_values_(nullptr) {
-        quad_ = new QGauss(dim, 2*data_->dg_order);
-        quad_low_ = new QGauss(dim-1, 2*data_->dg_order);
-    }
+    : AssemblyBase<dim>(data->dg_order), model_(nullptr), data_(data), fe_values_(nullptr) {}
 
     /// Destructor.
     ~InitConditionAssemblyDG() {
-        delete quad_;
-        delete quad_low_;
-
         if (fe_values_!=nullptr) delete fe_values_;
-    }
-
-    void create_integrals(std::shared_ptr<EvalPoints> eval_points) {
-        bulk_integral_ = eval_points->add_bulk<dim>(*quad_);
-        //edge_integral_ = eval_points->add_edge<dim>(*quad_low_);
-        //if (dim>1) coupling_integral_ = eval_points->add_coupling<dim>(*quad_low_);
-        //boundary_integral_ = eval_points->add_boundary<dim>(*quad_low_);
     }
 
     /// Initialize auxiliary vectors and other data members
@@ -1542,9 +1481,9 @@ public:
         this->model_ = &model;
 
         fe_ = std::make_shared< FE_P_disc<dim> >(data_->dg_order);
-        fe_values_ = new FEValues<3>(*quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
+        fe_values_ = new FEValues<3>(*this->quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
         ndofs_ = fe_->n_dofs();
-        qsize_ = quad_->size();
+        qsize_ = this->quad_->size();
         dof_indices_.resize(ndofs_);
         local_matrix_.resize(4*ndofs_*ndofs_);
         local_rhs_.resize(ndofs_);
@@ -1609,8 +1548,6 @@ public:
         std::shared_ptr<BoundaryIntegral> boundary_integral_;  ///< Boundary integrals betwwen sides of elements of given dimension and mesh boundary
 
         shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
-        Quadrature *quad_;                     ///< Quadrature used in assembling methods.
-        Quadrature *quad_low_;               ///< Quadrature used in assembling methods (dim-1).
 
         /// Pointer to model (we must use common ancestor of concentration and heat model)
         TransportDG<Model> *model_;
