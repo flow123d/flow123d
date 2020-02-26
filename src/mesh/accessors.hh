@@ -1,6 +1,6 @@
 /*!
  *
-﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
  * 
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License version 3 as published by the
@@ -29,6 +29,35 @@
 #include <vector>
 #include <armadillo>
 
+
+// Compilable test of class loop dependence of return parameters.
+// class A;
+// class B;
+
+// class A{
+//     public:
+//       A()
+//       {};
+      
+//       inline B create_b();
+// };
+
+// class B{
+//     public:
+//       B()
+//       {};
+      
+//       inline A create_a();
+// };
+
+
+// B A::create_b()
+// { return B(); }
+
+// A B::create_a()
+// { return A(); }
+
+
 /**
  * Element accessor templated just by dimension of the embedding space, used by Fields.
  * This should allow algorithms over elements where dimension of particular element is runtime parameter.
@@ -49,28 +78,45 @@
 template <int spacedim>
 class ElementAccessor {
 public:
-    /**
-     * Default invalid accessor.
+    /// Default invalid accessor.
+    ElementAccessor();
+
+    /// Regional accessor.
+    ElementAccessor(const Mesh *mesh, RegionIdx r_idx);
+
+    /// Element accessor.
+    ElementAccessor(const Mesh *mesh, unsigned int idx);
+
+    /// Incremental function of the Element iterator
+    inline void inc();
+
+    /// Return list of element vertices.
+    inline vector<arma::vec3> vertex_list() const;
+
+    /// Computes the measure of the element.
+    double measure() const;
+
+    /** Computes the Jacobian of the element.
+     * J = det ( 1  1  1  1 )
+     *           x1 x2 x3 x4
+     *           y1 y2 y3 y4
+     *           z1 z2 z3 z4
      */
-    ElementAccessor()
-    : mesh_(NULL)
-    {}
+    inline double tetrahedron_jacobian() const;
+
+    /// Computes the barycenter.
+    arma::vec::fixed<spacedim> centre() const;
 
     /**
-     * Regional accessor.
+     * Quality of the element based on the smooth and scale-invariant quality measures proposed in:
+     * J. R. Schewchuk: What is a Good Linear Element?
+     *
+     * We scale the measure so that is gives value 1 for regular elements. Line 1d elements
+     * have always quality 1.
      */
-    ElementAccessor(const Mesh *mesh, RegionIdx r_idx)
-    : dim_(undefined_dim_), mesh_(mesh), r_idx_(r_idx)
-    {}
+    double quality_measure_smooth(SideIter side) const;
 
-    /**
-     * Element accessor.
-     */
-    ElementAccessor(const Mesh *mesh, unsigned int idx)
-    : mesh_(mesh), boundary_(idx>=mesh->n_elements()), element_idx_(idx), r_idx_(element()->region_idx())
-    {
-       dim_=element()->dim();
-    }
+
 
     inline bool is_regional() const {
         return dim_ == undefined_dim_;
@@ -126,14 +172,6 @@ public:
         return mesh_->get_el_ds()->get_proc(mesh_->get_row_4_el()[element_idx_]);
     }
 
-    inline void inc() {
-        ASSERT(!is_regional()).error("Do not call inc() for regional accessor!");
-        element_idx_++;
-        r_idx_ = element()->region_idx();
-        dim_=element()->dim();
-        boundary_ = (element_idx_>=mesh_->n_elements());
-    }
-
     inline SideIter side(const unsigned int loc_index) {
         return SideIter( Side(mesh_, element_idx_, loc_index) );
     }
@@ -157,45 +195,6 @@ public:
     inline BoundingBox bounding_box() const {
         return BoundingBox(this->vertex_list());
     }
-
-    /**
-     * Return list of element vertices.
-     */
-    inline vector<arma::vec3> vertex_list() const {
-        vector<arma::vec3> vertices(element()->n_nodes());
-        for(unsigned int i=0; i<element()->n_nodes(); i++) vertices[i]=node(i)->point();
-        return vertices;
-    }
-
-    /// Computes the measure of the element.
-    double measure() const;
-
-    /** Computes the Jacobian of the element.
-     * J = det ( 1  1  1  1 )
-     *           x1 x2 x3 x4
-     *           y1 y2 y3 y4
-     *           z1 z2 z3 z4
-     */
-    inline double tetrahedron_jacobian() const
-    {
-        ASSERT(dim() == 3)(dim()).error("Cannot provide Jacobian for dimension other than 3.");
-        return arma::dot( arma::cross(*( node(1) ) - *( node(0) ),
-                                      *( node(2) ) - *( node(0) )),
-                        *( node(3) ) - *( node(0) )
-                        );
-    }
-
-    /// Computes the barycenter.
-    arma::vec::fixed<spacedim> centre() const;
-
-    /**
-     * Quality of the element based on the smooth and scale-invariant quality measures proposed in:
-     * J. R. Schewchuk: What is a Good Linear Element?
-     *
-     * We scale the measure so that is gives value 1 for regular elements. Line 1d elements
-     * have always quality 1.
-     */
-    double quality_measure_smooth(SideIter side) const;
 
     bool operator==(const ElementAccessor<spacedim>& other) {
     	return (element_idx_ == other.element_idx_);
@@ -240,93 +239,6 @@ private:
 };
 
 
-
-
-/******************************************************************* implementations
- *
- *
- */
-
-/**
- * SET THE "METRICS" FIELD IN STRUCT ELEMENT
- */
-template <int spacedim>
-double ElementAccessor<spacedim>::measure() const {
-    switch (dim()) {
-        case 0:
-            return 1.0;
-            break;
-        case 1:
-            return arma::norm(*( node(1) ) - *( node(0) ) , 2);
-            break;
-        case 2:
-            return
-                arma::norm(
-                    arma::cross(*( node(1) ) - *( node(0) ), *( node(2) ) - *( node(0) )),
-                    2
-                ) / 2.0 ;
-            break;
-        case 3:
-            return fabs(
-                arma::dot(
-                    arma::cross(*( node(1) ) - *( node(0) ), *( node(2) ) - *( node(0) )),
-                    *( node(3) ) - *( node(0) ) )
-                ) / 6.0;
-            break;
-    }
-    return 1.0;
-}
-
-/**
- * SET THE "CENTRE[]" FIELD IN STRUCT ELEMENT
- */
-
-template <int spacedim>
-arma::vec::fixed<spacedim> ElementAccessor<spacedim>::centre() const {
-	ASSERT(is_valid()).error("Invalid element accessor.");
-    if (is_regional() ) return arma::vec::fixed<spacedim>();
-
-    arma::vec::fixed<spacedim> centre;
-    centre.zeros();
-
-    for (unsigned int li=0; li<element()->n_nodes(); li++) {
-        centre += node( li )->point();
-    }
-    centre /= (double) element()->n_nodes();
-    return centre;
-}
-
-
-template <int spacedim>
-double ElementAccessor<spacedim>::quality_measure_smooth(SideIter side) const {
-    if (dim_==3) {
-        double sum_faces=0;
-        double face[4];
-        for(unsigned int i=0; i<4; i++, ++side) sum_faces+=( face[i]=side->measure());
-
-        double sum_pairs=0;
-        for(unsigned int i=0;i<3;i++)
-            for(unsigned int j=i+1;j<4;j++) {
-                unsigned int i_line = RefElement<3>::line_between_faces(i,j);
-                arma::vec line = *node(RefElement<3>::interact(Interaction<0,1>(i_line))[1]) - *node(RefElement<3>::interact(Interaction<0,1>(i_line))[0]);
-                sum_pairs += face[i]*face[j]*arma::dot(line, line);
-            }
-        double regular = (2.0*sqrt(2.0/3.0)/9.0); // regular tetrahedron
-        return fabs( measure()
-                * pow( sum_faces/sum_pairs, 3.0/4.0))/ regular;
-
-    }
-    if (dim_==2) {
-        return fabs(
-                measure()/
-                pow(
-                         arma::norm(*node(1) - *node(0), 2)
-                        *arma::norm(*node(2) - *node(1), 2)
-                        *arma::norm(*node(0) - *node(2), 2)
-                        , 2.0/3.0)
-               ) / ( sqrt(3.0) / 4.0 ); // regular triangle
-    }
-    return 1.0;
-}
+#include "mesh/accessors_impl.hh"
 
 #endif /* ACCESSORS_HH_ */
