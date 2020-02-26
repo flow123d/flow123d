@@ -13,7 +13,7 @@
 #include "soil_models.hh"
 #include "coupling/balance.hh"
 
-#include "badiff.h"
+#include "tools/include_fadbad.hh"  // for "badiff.h"
 
 
 /**

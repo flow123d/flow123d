@@ -8,11 +8,13 @@
 
 #include "system/global_defs.h"
 #include "system/sys_profiler.hh"
+#include "system/asserts.hh"
 
 
 #include "input/input_type.hh"
 #include "input/factory.hh"
 #include "flow/richards_lmh.hh"
+#include "flow/assembly_lmh.hh"
 #include "flow/darcy_flow_mh_output.hh"
 #include "tools/time_governor.hh"
 
@@ -27,12 +29,8 @@
 
 #include "la/vector_mpi.hh"
 
-// in the third_party/FADBAD++ dir, namespace "fadbad"
-#include "fadbad.h"
-#include "badiff.h"
-#include "fadiff.h"
 
-#include "flow/assembly_lmh.hh"
+#include "tools/include_fadbad.hh" // for "fadbad.h", "badiff.h", "fadiff.h"
 
 
 FLOW123D_FORCE_LINK_IN_CHILD(richards_lmh);
