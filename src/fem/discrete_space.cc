@@ -19,7 +19,7 @@
 #include "fem/discrete_space.hh"
 #include "fem/finite_element.hh"
 #include "mesh/mesh.h"
-#include "mesh/side_impl.hh"
+#include "mesh/accessors.hh"
 #include "mesh/duplicate_nodes.h"
 
 

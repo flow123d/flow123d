@@ -18,7 +18,6 @@
 #ifndef MAKE_NEIGHBOURS_H
 #define MAKE_NEIGHBOURS_H
 
-#include "mesh/sides.h"
 #include "mesh/elements.h"
 #include "mesh/mesh.h"
 #include "mesh/accessors.hh"

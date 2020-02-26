@@ -29,7 +29,6 @@
 #include "mesh/ref_element.hh"                 // for RefElement
 #include "mesh/region.hh"                      // for RegionIdx, Region
 #include "system/asserts.hh"                   // for Assert, ASSERT
-#include "sides.h"
 
 class Mesh;
 class Neighbour;

@@ -18,7 +18,6 @@
 #include "mesh/partitioning.hh"
 #include "la/sparse_graph.hh"
 #include "la/distribution.hh"
-#include "mesh/side_impl.hh"
 #include "mesh/long_idx.hh"
 #include "mesh/mesh.h"
 #include "mesh/accessors.hh"
@@ -111,7 +110,7 @@ void Partitioning::make_element_connection_graph() {
             Edge edg = ele.side(si)->edge();
 
             for (unsigned int li=0; li<edg.n_sides(); li++) {
-            	ASSERT(edg.side(li)->valid()).error("NULL side of edge.");
+            	ASSERT(edg.side(li)->is_valid()).error("NULL side of edge.");
                 e_idx = edg.side(li)->element().idx();
 
                 // for elements of connected elements, excluding element itself

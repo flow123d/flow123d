@@ -190,7 +190,7 @@ add_library(mesh_lib
     mesh/mesh.cc
     mesh/bc_mesh.cc
     mesh/neighbours.cc
-    mesh/sides.cc
+    mesh/accessors.cc
 #    mesh/intersection.cc
     mesh/ref_element.cc
     mesh/partitioning.cc

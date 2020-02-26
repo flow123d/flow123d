@@ -24,7 +24,6 @@
 #include "system/sys_profiler.hh"
 
 #include <petscmat.h>
-#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "mesh/long_idx.hh"
 #include "mesh/accessors.hh"

@@ -12,7 +12,7 @@
  *
  * 
  * @file    accessors_impl.hh
- * @brief   Implementation of inline functions of mesh accessors.
+ * @brief   Implementation of the inline functions of the mesh accessors.
  */
 
 /*******************************************************************************
@@ -156,6 +156,16 @@ double ElementAccessor<spacedim>::quality_measure_smooth(SideIter side) const {
     return 1.0;
 }
 
+template <int spacedim> inline
+SideIter ElementAccessor<spacedim>::side(const unsigned int loc_index) {
+    return SideIter( Side(mesh_, element_idx_, loc_index) );
+}
+
+template <int spacedim> inline
+const SideIter ElementAccessor<spacedim>::side(const unsigned int loc_index) const {
+    return SideIter( Side(mesh_, element_idx_, loc_index) );
+}
+
 
 
 /*******************************************************************************
@@ -181,6 +191,65 @@ inline const EdgeData* Edge::edge_data() const
 
 inline SideIter Edge::side(const unsigned int i) const {
     return edge_data()->side_[i];
+}
+
+
+
+
+/*******************************************************************************
+ * Side IMPLEMENTATION
+ *******************************************************************************/
+
+inline Side::Side()
+: mesh_(NULL), elem_idx_(0), side_idx_(0)
+{}
+
+inline Side::Side(const Mesh * mesh, unsigned int elem_idx, unsigned int set_lnum)
+: mesh_(mesh), elem_idx_(elem_idx), side_idx_(set_lnum)
+{
+	mesh_->check_element_size(elem_idx);
+}
+
+inline unsigned int Side::dim() const {
+        return element()->dim()-1;
+    }
+
+// returns true for all sides either on boundary or connected to vb neigboring
+inline bool Side::is_external() const {
+    return edge().n_sides() == 1;
+}
+
+// returns true for all sides either on boundary or connected to vb neigboring
+inline bool Side::is_boundary() const {
+    return is_external() && cond_idx() != Mesh::undef_idx;
+}
+
+inline NodeAccessor<3> Side::node(unsigned int i) const {
+    int i_n = mesh_->side_nodes[dim()][side_idx_][i];
+
+    return element().node_accessor( i_n );
+}
+
+inline ElementAccessor<3> Side::element() const {
+    ASSERT( is_valid() ).error("Wrong use of uninitialized accessor.\n");
+    return mesh_->element_accessor( elem_idx_ );
+}
+
+inline unsigned int Side::edge_idx() const {
+    return element()->edge_idx(side_idx_);
+}
+
+inline Edge Side::edge() const {
+    return mesh_->edge(edge_idx());
+}
+
+inline Boundary Side::cond() const {
+    return mesh_->boundary(cond_idx());
+}
+
+inline unsigned int Side::cond_idx() const {
+        if (element()->boundary_idx_ == nullptr) return Mesh::undef_idx;
+        else return element()->boundary_idx_[side_idx_];
 }
 
 

@@ -24,11 +24,25 @@
 #include "mesh/mesh.h"
 #include "mesh/nodes.hh"
 #include "mesh/node_accessor.hh"
-#include "mesh/sides.h"
 #include "la/distribution.hh"
 #include <vector>
 #include <armadillo>
 
+
+/**
+ * Due to circular dependence of return parameters in mesh accessors,
+ * and the intention to have all methods inlined,
+ * we gathered the accessors into a single file.
+ * This way, it is possible to implement it, see the simple test below.
+ * 
+ * Do not include accessors_impl.hh file anywhere but at the end of this file!
+ * 
+ * previous include loops:
+ * side -> boundary -> elemen accessor
+ * element accessor <-> side
+ * edge <-> side
+ * boundary -> edge
+ */
 
 // Compilable test of class loop dependence of return parameters.
 // class A;
@@ -57,6 +71,11 @@
 // A B::create_a()
 // { return A(); }
 
+
+class Side;
+class SiderIter;
+class Edge;
+class Boundary;
 
 /**
  * Element accessor templated just by dimension of the embedding space, used by Fields.
@@ -116,6 +135,10 @@ public:
      */
     double quality_measure_smooth(SideIter side) const;
 
+    SideIter side(const unsigned int loc_index);
+
+    const SideIter side(const unsigned int loc_index) const;
+
 
 
     bool is_regional() const {
@@ -170,14 +193,6 @@ public:
     
     unsigned int proc() const {
         return mesh_->get_el_ds()->get_proc(mesh_->get_row_4_el()[element_idx_]);
-    }
-
-    SideIter side(const unsigned int loc_index) {
-        return SideIter( Side(mesh_, element_idx_, loc_index) );
-    }
-
-    const SideIter side(const unsigned int loc_index) const {
-        return SideIter( Side(mesh_, element_idx_, loc_index) );
     }
 
     const Node * node(unsigned int ni) const {
@@ -241,6 +256,7 @@ private:
 
 
 
+
 //=============================================================================
 // Edge class
 //=============================================================================
@@ -256,6 +272,8 @@ public:
     /// Gets side iterator of the @p i -th side.
     SideIter side(const unsigned int i) const;
 
+
+
     bool is_valid() const
     { return mesh_ != nullptr; }
 
@@ -267,7 +285,7 @@ public:
 
     /// Incremental function of the Edge iterator.
     void inc() {
-        ASSERT(is_valid()).error("Do not call inc() for invalid accessor!");
+        ASSERT_DBG(is_valid()).error("Do not call inc() for invalid accessor!");
         edge_idx_++;
     }
 
@@ -330,6 +348,143 @@ public:
 private:
     BoundaryData* boundary_data_;
 };
+
+
+
+
+
+//=============================================================================
+// Side class
+//=============================================================================
+class Side {
+public:
+    /// Default invalid side accessor constructor.
+    Side();
+
+    /// Valid edge accessor constructor.
+    Side(const Mesh * mesh, unsigned int elem_idx, unsigned int set_lnum);
+
+    double measure() const;    ///< Calculate metrics of the side
+    arma::vec3 centre() const; ///< Centre of side
+    arma::vec3 normal() const; ///< Vector of (generalized) normal
+    double diameter() const;   ///< Calculate the side diameter.
+
+    /// Returns dimension of the side, that is dimension of the element minus one.
+    unsigned int dim() const;
+
+    /// Returns true for all sides either on boundary or connected to vb neigboring.
+    bool is_external() const;
+
+    /// Returns true for side on the boundary.
+    bool is_boundary() const;
+
+    /// Returns node for given local index @p i on the side.
+    NodeAccessor<3> node(unsigned int i) const;
+
+    /// Returns iterator to the element of the side.
+    ElementAccessor<3> element() const;
+
+    /// Returns global index of the edge connected to the side.
+    unsigned int edge_idx() const;
+
+    /// Returns pointer to the edge connected to the side.
+    Edge edge() const;
+
+    /** 
+     * Returns boundary condition prescribed on the side.
+     * Fails on assert if side if not on boundary and no BC is prescribed.
+     */ 
+    Boundary cond() const;
+
+    /// Returns global index of the prescribed boundary condition.
+    unsigned int cond_idx() const;
+
+
+
+    /// Returns number of nodes of the side.
+    unsigned int n_nodes() const
+    { return dim()+1; }
+
+    /// Returns pointer to the mesh.
+    const Mesh * mesh() const
+    { return this->mesh_; }
+
+    /// Returns local index of the side on the element.
+    unsigned int side_idx() const
+    { return side_idx_; }
+
+    /// Returns index of element in Mesh::element_vec_.
+    unsigned int elem_idx() const
+    { return elem_idx_; }
+
+    /// Returns true if the side has assigned element.
+    bool is_valid() const
+    { return mesh_!= nullptr; }
+
+    /// Iterate over local sides of the element.
+    void inc() {
+        ASSERT_DBG(is_valid()).error("Do not call inc() for invalid accessor!");
+        side_idx_++;
+    }
+
+    /// This is necessary by current DofHandler, should change this
+    //void *make_ptr() const;
+private:
+
+    arma::vec3 normal_point() const;
+    arma::vec3 normal_line() const;
+    arma::vec3 normal_triangle() const;
+
+    // Topology of the mesh
+
+    const Mesh * mesh_;     ///< Pointer to Mesh to which belonged
+    unsigned int elem_idx_; ///< Index of element in Mesh::element_vec_
+    unsigned int side_idx_; ///< Local # of side in element  (to remove it, we heve to remove calc_side_rhs)
+
+};
+
+
+/*
+ * Iterator to a side.
+ */
+class SideIter {
+public:
+    SideIter()
+    {}
+
+    SideIter(const Side &side)
+    : side_(side)
+    {}
+
+    bool operator==(const SideIter &other) {
+        return (side_.mesh() == other.side_.mesh() ) && ( side_.elem_idx() == other.side_.elem_idx() )
+        		&& ( side_.side_idx() == other.side_.side_idx() );
+    }
+
+
+    bool operator!=(const SideIter &other) {
+        return !( *this == other);
+    }
+
+    ///  * dereference operator
+    const Side & operator *() const
+            { return side_; }
+
+    /// -> dereference operator
+    const Side * operator ->() const
+            { return &side_; }
+
+    /// prefix increment iterate only on local element
+    SideIter &operator ++ () {
+        side_.inc();
+        return (*this);
+    }
+
+private:
+    Side side_;
+};
+
+
 
 #include "mesh/accessors_impl.hh"
 

@@ -16,7 +16,7 @@
  * @author  Jan Stebel
  */
 
-#include "mesh/side_impl.hh"
+#include "mesh/accessors.hh"
 #include "fem/fe_system.hh"
 #include "system/global_defs.h"
 #include "quadrature/quadrature.hh"

@@ -21,7 +21,6 @@
 
 #include <armadillo>
 #include "mesh/accessors.hh"
-#include "mesh/sides.h"
 #include "mesh/neighbours.h"
 #include "fem/dofhandler.hh"
 

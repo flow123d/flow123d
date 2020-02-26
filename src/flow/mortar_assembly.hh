@@ -8,7 +8,7 @@
 #ifndef SRC_FLOW_MORTAR_ASSEMBLY_HH_
 #define SRC_FLOW_MORTAR_ASSEMBLY_HH_
 
-#include "mesh/side_impl.hh"
+#include "mesh/accessors.hh"
 #include "mesh/mesh.h"
 #include "quadrature/intersection_quadrature.hh"
 #include "flow/darcy_flow_mh.hh"

@@ -28,7 +28,6 @@
 #include "system/sys_profiler.hh"
 #include "la/distribution.hh"
 
-#include "mesh/side_impl.hh"
 #include "mesh/long_idx.hh"
 #include "mesh/mesh.h"
 #include "mesh/bc_mesh.hh"
@@ -41,7 +40,6 @@
 #include "mesh/node_accessor.hh"
 #include "mesh/partitioning.hh"
 #include "mesh/neighbours.h"
-#include "mesh/sides.h"
 
 
 #include "mesh/bih_tree.hh"

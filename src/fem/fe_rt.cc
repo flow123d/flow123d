@@ -16,7 +16,7 @@
  * @author  Jan Stebel
  */
 
-#include "mesh/side_impl.hh"
+#include "mesh/accessors.hh"
 #include "fem/fe_rt.hh"
 #include "fem/fe_values.hh"
 #include "mesh/ref_element.hh"

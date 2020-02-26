@@ -18,7 +18,6 @@
 #include <string>
 
 #include "system/sys_profiler.hh"
-#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "input/accessors.hh"
 #include "output_time.impl.hh"

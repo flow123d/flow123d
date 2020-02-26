@@ -5,7 +5,6 @@
  *      Author: viktor
  */
 
-#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "intersection_point_aux.hh"
 #include "mesh/ref_element.hh"

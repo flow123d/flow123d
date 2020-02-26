@@ -21,7 +21,6 @@
 
 #include <vector>              // for vector
 #include <unordered_map>       // for unordered_map
-#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "mesh/accessors.hh"
 #include "mesh/long_idx.hh"    // for LongIdx

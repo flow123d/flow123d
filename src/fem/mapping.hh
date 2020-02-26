@@ -24,7 +24,7 @@
 #include <armadillo>
 #include <vector>
 #include "fem/dofhandler.hh"
-#include "mesh/side_impl.hh"
+#include "mesh/accessors.hh"
 #include "fem/update_flags.hh"
 #include "mesh/ref_element.hh"
 
