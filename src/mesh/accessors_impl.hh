@@ -15,26 +15,13 @@
  * @brief   Implementation of inline functions of mesh accessors.
  */
 
-
-#include "mesh/bounding_box.hh"
-#include "mesh/region.hh"
-#include "mesh/elements.h"
-#include "mesh/mesh.h"
-#include "mesh/nodes.hh"
-#include "mesh/node_accessor.hh"
-#include "mesh/sides.h"
-#include "la/distribution.hh"
-#include <vector>
-#include <armadillo>
-
-
 /*******************************************************************************
  * ElementAccessor IMPLEMENTATION
  *******************************************************************************/
 /**
  * Default invalid accessor.
  */
-template <int spacedim>
+template <int spacedim> inline
 ElementAccessor<spacedim>::ElementAccessor()
 : mesh_(nullptr)
 {}
@@ -42,7 +29,7 @@ ElementAccessor<spacedim>::ElementAccessor()
 /**
  * Regional accessor.
  */
-template <int spacedim>
+template <int spacedim> inline
 ElementAccessor<spacedim>::ElementAccessor(const Mesh *mesh, RegionIdx r_idx)
 : dim_(undefined_dim_),
   mesh_(mesh),
@@ -52,7 +39,7 @@ ElementAccessor<spacedim>::ElementAccessor(const Mesh *mesh, RegionIdx r_idx)
 /**
  * Element accessor.
  */
-template <int spacedim>
+template <int spacedim> inline
 ElementAccessor<spacedim>::ElementAccessor(const Mesh *mesh, unsigned int idx)
 : mesh_(mesh),
   boundary_(idx>=mesh->n_elements()),
@@ -62,7 +49,7 @@ ElementAccessor<spacedim>::ElementAccessor(const Mesh *mesh, unsigned int idx)
     dim_=element()->dim();
 }
 
-template <int spacedim>
+template <int spacedim> inline
 void ElementAccessor<spacedim>::inc() {
     ASSERT(!is_regional()).error("Do not call inc() for regional accessor!");
     element_idx_++;
@@ -71,14 +58,14 @@ void ElementAccessor<spacedim>::inc() {
     boundary_ = (element_idx_>=mesh_->n_elements());
 }
 
-template <int spacedim>
+template <int spacedim> inline
 vector<arma::vec3> ElementAccessor<spacedim>::vertex_list() const {
     vector<arma::vec3> vertices(element()->n_nodes());
     for(unsigned int i=0; i<element()->n_nodes(); i++) vertices[i]=node(i)->point();
     return vertices;
 }
 
-template <int spacedim>
+template <int spacedim> inline
 double ElementAccessor<spacedim>::tetrahedron_jacobian() const
 {
     ASSERT(dim() == 3)(dim()).error("Cannot provide Jacobian for dimension other than 3.");
@@ -91,7 +78,7 @@ double ElementAccessor<spacedim>::tetrahedron_jacobian() const
 /**
  * SET THE "METRICS" FIELD IN STRUCT ELEMENT
  */
-template <int spacedim>
+template <int spacedim> inline
 double ElementAccessor<spacedim>::measure() const {
     switch (dim()) {
         case 0:
@@ -121,7 +108,7 @@ double ElementAccessor<spacedim>::measure() const {
 /**
  * SET THE "CENTRE[]" FIELD IN STRUCT ELEMENT
  */
-template <int spacedim>
+template <int spacedim> inline
 arma::vec::fixed<spacedim> ElementAccessor<spacedim>::centre() const {
 	ASSERT(is_valid()).error("Invalid element accessor.");
     if (is_regional() ) return arma::vec::fixed<spacedim>();
@@ -137,7 +124,7 @@ arma::vec::fixed<spacedim> ElementAccessor<spacedim>::centre() const {
 }
 
 
-template <int spacedim>
+template <int spacedim> inline
 double ElementAccessor<spacedim>::quality_measure_smooth(SideIter side) const {
     if (dim_==3) {
         double sum_faces=0;
@@ -167,4 +154,31 @@ double ElementAccessor<spacedim>::quality_measure_smooth(SideIter side) const {
                ) / ( sqrt(3.0) / 4.0 ); // regular triangle
     }
     return 1.0;
+}
+
+
+
+/*******************************************************************************
+ * Edge IMPLEMENTATION
+ *******************************************************************************/
+
+inline Edge::Edge()
+: mesh_(nullptr),
+  edge_idx_(Mesh::undef_idx)
+{}
+
+inline Edge::Edge(const Mesh *mesh, unsigned int edge_idx)
+: mesh_(mesh),
+  edge_idx_(edge_idx)
+{}
+
+inline const EdgeData* Edge::edge_data() const
+{
+    ASSERT_DBG(is_valid());
+    ASSERT_LT_DBG(edge_idx_, mesh_->edges.size());
+    return &mesh_->edges[edge_idx_];
+}
+
+inline SideIter Edge::side(const unsigned int i) const {
+    return edge_data()->side_[i];
 }

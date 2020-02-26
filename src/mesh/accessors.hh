@@ -39,7 +39,7 @@
 //       A()
 //       {};
       
-//       inline B create_b();
+//       B create_b();
 // };
 
 // class B{
@@ -47,14 +47,14 @@
 //       B()
 //       {};
       
-//       inline A create_a();
+//       A create_a();
 // };
 
 
-// B A::create_b()
+// inline B A::create_b()
 // { return B(); }
 
-// A B::create_a()
+// inline A B::create_a()
 // { return A(); }
 
 
@@ -87,11 +87,11 @@ public:
     /// Element accessor.
     ElementAccessor(const Mesh *mesh, unsigned int idx);
 
-    /// Incremental function of the Element iterator
-    inline void inc();
+    /// Incremental function of the Element iterator.
+    void inc();
 
     /// Return list of element vertices.
-    inline vector<arma::vec3> vertex_list() const;
+    vector<arma::vec3> vertex_list() const;
 
     /// Computes the measure of the element.
     double measure() const;
@@ -102,7 +102,7 @@ public:
      *           y1 y2 y3 y4
      *           z1 z2 z3 z4
      */
-    inline double tetrahedron_jacobian() const;
+    double tetrahedron_jacobian() const;
 
     /// Computes the barycenter.
     arma::vec::fixed<spacedim> centre() const;
@@ -118,30 +118,30 @@ public:
 
 
 
-    inline bool is_regional() const {
+    bool is_regional() const {
         return dim_ == undefined_dim_;
     }
 
-    inline bool is_elemental() const {
+    bool is_elemental() const {
         return ( is_valid() && ! is_regional() );
     }
 
-    inline bool is_valid() const {
+    bool is_valid() const {
         return mesh_ != NULL;
     }
 
-    inline unsigned int dim() const
+    unsigned int dim() const
         { return dim_; }
 
-    inline const Element * element() const {
+    const Element * element() const {
         return &(mesh_->element_vec_[element_idx_]);
     }
     
 
-    inline Region region() const
+    Region region() const
         { return Region( r_idx_, mesh_->region_db()); }
 
-    inline RegionIdx region_idx() const
+    RegionIdx region_idx() const
         { return r_idx_; }
 
     /// We need this method after replacing Region by RegionIdx, and movinf RegionDB instance into particular mesh
@@ -149,42 +149,42 @@ public:
     //    return region().id();
     //}
 
-    inline bool is_boundary() const {
+    bool is_boundary() const {
         return boundary_;
     }
 
     /// Return local idx of element in boundary / bulk part of element vector
-    inline unsigned int idx() const {
+    unsigned int idx() const {
         if (boundary_) return ( element_idx_ - mesh_->bulk_size_ );
         else return element_idx_;
     }
 
     /// Return global idx of element in full element vector
-    inline unsigned int mesh_idx() const {
+    unsigned int mesh_idx() const {
         return element_idx_;
     }
 
-    inline unsigned int index() const {
+    unsigned int index() const {
     	return (unsigned int)mesh_->find_elem_id(element_idx_);
     }
     
-    inline unsigned int proc() const {
+    unsigned int proc() const {
         return mesh_->get_el_ds()->get_proc(mesh_->get_row_4_el()[element_idx_]);
     }
 
-    inline SideIter side(const unsigned int loc_index) {
+    SideIter side(const unsigned int loc_index) {
         return SideIter( Side(mesh_, element_idx_, loc_index) );
     }
 
-    inline const SideIter side(const unsigned int loc_index) const {
+    const SideIter side(const unsigned int loc_index) const {
         return SideIter( Side(mesh_, element_idx_, loc_index) );
     }
 
-    inline const Node * node(unsigned int ni) const {
+    const Node * node(unsigned int ni) const {
     	return &(mesh_->node_vec_[element()->node_idx(ni)]);
     }
 
-    inline NodeAccessor<3> node_accessor(unsigned int ni) const {
+    NodeAccessor<3> node_accessor(unsigned int ni) const {
     	return mesh_->node_accessor( element()->node_idx(ni) );
     }
 
@@ -192,7 +192,7 @@ public:
     * Return bounding box of the element.
     * Simpler code, but need to check performance penelty.
     */
-    inline BoundingBox bounding_box() const {
+    BoundingBox bounding_box() const {
         return BoundingBox(this->vertex_list());
     }
 
@@ -211,7 +211,7 @@ public:
      centre = elm_ac->node_idx(0);            // short format with dereference operator
  @endcode
      */
-    inline const Element * operator ->() const {
+    const Element * operator ->() const {
     	return &(mesh_->element_vec_[element_idx_]);
     }
     
@@ -238,6 +238,57 @@ private:
     RegionIdx r_idx_;
 };
 
+
+
+
+//=============================================================================
+// Edge class
+//=============================================================================
+class Edge
+{
+public:
+    /// Default invalid edge accessor constructor.
+    Edge();
+
+    /// Valid edge accessor constructor.
+    Edge(const Mesh *mesh, unsigned int edge_idx);
+
+    /// Gets side iterator of the @p i -th side.
+    SideIter side(const unsigned int i) const;
+
+    bool is_valid() const
+    { return mesh_ != nullptr; }
+
+    /// Returns edge global index.
+    unsigned int idx() const {
+        ASSERT_DBG(is_valid());
+        return edge_idx_;
+    }
+
+    /// Incremental function of the Edge iterator.
+    void inc() {
+        ASSERT(is_valid()).error("Do not call inc() for invalid accessor!");
+        edge_idx_++;
+    }
+
+    /// Comparison operator of the iterator.
+    bool operator==(const Edge& other) const{
+    	return (edge_idx_ == other.edge_idx_);
+    }
+
+    /// Returns number of sides aligned with the edge.
+    unsigned int n_sides() const
+    { return edge_data()->n_sides;}
+
+private:
+    /// Pointer to the mesh owning the node.
+    const Mesh *mesh_;
+    /// Index into Mesh::edges vector.
+    unsigned int edge_idx_;
+
+    /// Getter for edge data from mesh.
+    const EdgeData* edge_data() const;
+};
 
 #include "mesh/accessors_impl.hh"
 
