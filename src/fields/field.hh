@@ -387,7 +387,7 @@ protected:
     /**
      * Field value data cache
      */
-    FieldValueCache<typename Value::element_type, typename Value::return_type> value_cache_;
+    FieldValueCache<typename Value::element_type> value_cache_;
 
 
 

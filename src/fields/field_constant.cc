@@ -144,7 +144,7 @@ void FieldConstant<spacedim, Value>::value_list (const Armor::array &point_list,
 
 
 template <int spacedim, class Value>
-void FieldConstant<spacedim, Value>::cache_update(FieldValueCache<typename Value::element_type, typename Value::return_type> &data_cache,
+void FieldConstant<spacedim, Value>::cache_update(FieldValueCache<typename Value::element_type> &data_cache,
         unsigned int i_cache_el_begin, unsigned int i_cache_el_end,
         const std::vector< ElementAccessor<spacedim> > &element_set)
 {

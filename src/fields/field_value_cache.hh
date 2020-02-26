@@ -39,7 +39,7 @@ class DHCellSide;
  * Every field in equation use own instance for every dimension of elements
  * (typically 3 instances for dim = 1,2,3).
  */
-template<class elm_type, class return_type>
+template<class elm_type>
 class FieldValueCache {
 public:
     /// Constructor
