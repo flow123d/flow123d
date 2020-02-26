@@ -37,13 +37,11 @@
 #include "mesh/range_wrapper.hh"
 
 // think about following dependencies
-#include "mesh/boundaries.h"
 #include "mesh/accessors.hh"
 #include "mesh/node_accessor.hh"
 #include "mesh/partitioning.hh"
 #include "mesh/neighbours.h"
 #include "mesh/sides.h"
-#include "mesh/boundaries.h"
 
 
 #include "mesh/bih_tree.hh"

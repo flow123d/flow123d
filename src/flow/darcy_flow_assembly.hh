@@ -10,7 +10,6 @@
 
 #include "mesh/long_idx.hh"
 #include "mesh/mesh.h"
-#include "mesh/boundaries.h"
 #include "mesh/accessors.hh"
 #include "mesh/neighbours.h"
 #include "fem/mapping_p1.hh"

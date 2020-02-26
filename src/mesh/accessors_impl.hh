@@ -182,3 +182,39 @@ inline const EdgeData* Edge::edge_data() const
 inline SideIter Edge::side(const unsigned int i) const {
     return edge_data()->side_[i];
 }
+
+
+
+/*******************************************************************************
+ * Boundary IMPLEMENTATION
+ *******************************************************************************/
+inline Boundary::Boundary()
+: boundary_data_(nullptr)
+{}
+
+inline Boundary::Boundary(BoundaryData* boundary_data)
+: boundary_data_(boundary_data)
+{}
+
+inline Edge Boundary::edge()
+{
+    ASSERT_DBG(is_valid());
+    return boundary_data_->mesh_->edge(boundary_data_->edge_idx_);
+}
+
+inline ElementAccessor<3> Boundary::element_accessor()
+{
+    ASSERT_DBG(is_valid());
+    return boundary_data_->mesh_->element_accessor(boundary_data_->bc_ele_idx_);
+}
+
+inline Region Boundary::region()
+{ 
+    return element_accessor().region();
+}
+
+inline Element * Boundary::element()
+{
+    ASSERT_DBG(is_valid());
+    return &( boundary_data_->mesh_->element_vec_[boundary_data_->bc_ele_idx_] );
+}

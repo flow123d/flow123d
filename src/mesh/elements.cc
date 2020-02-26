@@ -26,7 +26,6 @@
 #include "mesh/ref_element.hh"
 
 // following deps. should be removed
-#include "mesh/boundaries.h"
 //#include "materials.hh"
 #include "mesh/accessors.hh"
 #include "la/distribution.hh"

@@ -21,7 +21,6 @@
 #include "mesh/accessors.hh"
 #include "mesh/node_accessor.hh"
 #include "mesh/mesh.h"
-#include "mesh/boundaries.h"
 
 
 inline Side::Side(const Mesh * mesh, unsigned int elem_idx, unsigned int set_lnum)

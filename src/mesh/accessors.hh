@@ -51,10 +51,10 @@
 // };
 
 
-// inline B A::create_b()
+// B A::create_b()
 // { return B(); }
 
-// inline A B::create_a()
+// A B::create_a()
 // { return A(); }
 
 
@@ -145,7 +145,7 @@ public:
         { return r_idx_; }
 
     /// We need this method after replacing Region by RegionIdx, and movinf RegionDB instance into particular mesh
-    //inline unsigned int region_id() const {
+    //unsigned int region_id() const {
     //    return region().id();
     //}
 
@@ -288,6 +288,47 @@ private:
 
     /// Getter for edge data from mesh.
     const EdgeData* edge_data() const;
+};
+
+
+
+
+
+//=============================================================================
+// Boundary class
+//=============================================================================
+class Boundary
+{
+public:
+    Boundary();
+    Boundary(BoundaryData* boundary_data);
+
+    Edge edge();
+    ElementAccessor<3> element_accessor();
+    Region region();
+    Element * element();
+
+    bool is_valid() const {
+        return boundary_data_ != nullptr;
+    }
+    
+    Mesh* mesh() {
+        ASSERT_DBG(is_valid());
+        return boundary_data_->mesh_;
+    }
+
+    uint edge_idx() {
+        ASSERT_DBG(is_valid());
+        return boundary_data_->edge_idx_;
+    }
+
+    uint bc_ele_idx() {
+        ASSERT_DBG(is_valid());
+        return boundary_data_->bc_ele_idx_;
+    }
+
+private:
+    BoundaryData* boundary_data_;
 };
 
 #include "mesh/accessors_impl.hh"
