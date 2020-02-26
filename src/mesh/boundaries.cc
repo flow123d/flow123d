@@ -21,9 +21,6 @@
 #include "mesh/mesh_data.hh"
 
 
-flow::VectorId<unsigned int> Boundary::id_to_bcd;
-
-
 Boundary::Boundary()
 : boundary_data_(nullptr)
 {}

@@ -26,9 +26,6 @@
 #include "system/system.hh"  // for MessageType::Err, xprintf
 
 class Element;
-namespace flow { template <class T> class VectorId; }
-template <int spacedim> class ElementAccessor;
-
 
 
 /**
@@ -47,22 +44,13 @@ template <int spacedim> class ElementAccessor;
 class Boundary
 {
 public:
-    /**
-     * temporary solution for old type BCD.
-     * Transport BCD refers through IDs to flow BCD, so we have to
-     * store positions of Flow BCD items somewhere.
-     */
-    static flow::VectorId<unsigned int> id_to_bcd;
-
     Boundary();
     Boundary(BoundaryData* boundary_data);
 
     inline bool is_valid() const {
         return boundary_data_ != nullptr;
     }
-    /**
-     * Can not make this inline now.
-     */
+
     inline Edge edge()
     {
         ASSERT_DBG(is_valid());
@@ -84,18 +72,11 @@ public:
         return boundary_data_->mesh_->element_accessor(boundary_data_->bc_ele_idx_);
     }
 
-
-    inline SideIter side() {
-        if (edge().n_sides() != 1) xprintf(Err, "Using side method for boundary, but there is boundary with multiple sides.\n");
-        return edge().side(0);
-    }
-
     inline Mesh* mesh()
     {
         ASSERT_DBG(is_valid());
         return boundary_data_->mesh_;
     }
-
 
     inline uint edge_idx()
     {
