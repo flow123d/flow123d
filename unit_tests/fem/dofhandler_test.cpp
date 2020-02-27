@@ -317,10 +317,10 @@ TEST(DHAccessors, dh_cell_accessors) {
         	for( DHCellSide edge_side : cell_side.edge_sides() ) {
         		side_elm_idx.push_back( edge_side.elem_idx() );
         	}
-            const Edge *edg = cell_side.side().edge();
-            EXPECT_EQ( side_elm_idx.size(), edg->n_sides);
-            for (uint sid=0; sid<edg->n_sides; sid++) {
-            	EXPECT_EQ( side_elm_idx[sid], edg->side(sid)->element().idx());
+            Edge edg = cell_side.side().edge();
+            EXPECT_EQ( side_elm_idx.size(), edg.n_sides());
+            for (uint sid=0; sid<edg.n_sides(); sid++) {
+            	EXPECT_EQ( side_elm_idx[sid], edg.side(sid)->element().idx());
             }
         }
 

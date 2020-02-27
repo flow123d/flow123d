@@ -10,7 +10,6 @@
 #include <flow_gtest_mpi.hh>
 #include <mesh_constructor.hh>
 
-#include "mesh/sides.h"
 #include "mesh/mesh.h"
 #include "mesh/bc_mesh.hh"
 #include "io/msh_gmshreader.h"
