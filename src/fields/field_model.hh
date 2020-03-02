@@ -1,0 +1,98 @@
+/*!
+ *
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ *
+ * @file    field_model.hh
+ * @brief
+ */
+
+#ifndef FIELD_MODEL_HH_
+#define FIELD_MODEL_HH_
+
+#include <armadillo>
+#include <iostream>
+#include <tuple>
+#include <string>
+#include <utility>
+#include <type_traits>
+
+#include "fields/field.hh"
+#include "fields/field_common.hh"
+#include "fields/field_values.hh"
+#include "fields/field_value_cache.hh"
+
+
+/**
+ * Parent class of Field and FieldModel.
+ *
+ * Will be descendant of FieldCommon in future (needs implementation of pure virtual method).
+ */
+template<int spacedim, class Value>
+class FieldCached /*: public FieldCommon*/ {
+public:
+	/// Constructor
+	FieldCached()
+	: fvc(Value::NRows_, Value::NCols_) {}
+
+protected:
+    FieldValueCache<typename Value::element_type> fvc;
+};
+
+
+template<int spacedim, class Value, class Fn, class ... Args>
+class FieldModel : FieldCached<spacedim, Value> {
+private:
+	Fn fn;
+    std::tuple<Args...> inputs;
+
+public:
+    FieldModel(Fn functor, Args... args)
+    : fn(functor), inputs( std::make_tuple(std::forward<Args>(args)...) )
+    { static_assert( std::is_same<typename Value::return_type, typename Fn::Result>::value, "Non-convertible functor type!"); }
+
+    void cache_update() {
+    	unsigned int n_args = std::tuple_size< std::tuple<Args...> >::value;
+
+        auto f0 = std::get<0>(inputs);
+        auto f1 = std::get<1>(inputs);
+
+    	for(unsigned int i_cache=0; i_cache<this->fvc.size(); ++i_cache) {
+            this->fvc.data().template mat<Value::NRows_, Value::NCols_>(i_cache) =
+    		        fn( f0.data().template mat<Value::NRows_, Value::NCols_>(i_cache),
+    		            f1.data().template mat<Value::NRows_, Value::NCols_>(i_cache) );
+    	}
+    }
+
+};
+
+
+using Scalar = typename arma::Col<double>::template fixed<1>;
+using Vector = arma::vec3;
+using Tensor = arma::mat33;
+
+
+class Fn {
+public:
+    typedef Vector Result;
+    typedef Scalar Param0;
+    typedef Vector Param1;
+    typedef std::tuple< std::shared_ptr<FieldCached<3, Param0>>, std::shared_ptr<FieldCached<3, Param1>> > DepFields;
+
+    Result operator() (Param0 a, Param1 v) {
+        return a * v;
+    }
+};
+
+
+
+
+#endif /* FIELD_MODEL_HH_ */

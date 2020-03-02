@@ -327,6 +327,11 @@ public:
     /// Implements FieldCommon::cache_update
     void cache_update(ElementCacheMap &cache_map) override;
 
+    /// returns reference to FieldValueCache.
+    inline const FieldValueCache<typename Value::element_type> &value_cache() {
+        return value_cache_;
+    }
+
 protected:
 
     /**
