@@ -135,10 +135,9 @@ void FEValueHandler<elemdim, spacedim, Value>::value_list(const Armor::array  &p
 	MixedPtr<FiniteElement> fe_mixed_ptr = dh_->ds()->fe(elm);
 	std::shared_ptr<FiniteElement<elemdim>> fe_ptr = fe_mixed_ptr.get<elemdim>();
 	FEValues<spacedim> fe_values(quad, *fe_ptr, update_values);
+    fe_values.reinit( elm );
 
     for (unsigned int k=0; k<point_list.size(); k++) {
-		fe_values.reinit( elm );
-
 		Value envelope(value_list[k]);
 		envelope.zeros();
 		for (unsigned int i=0; i<loc_dofs.n_elem; i++) {

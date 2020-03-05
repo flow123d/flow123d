@@ -28,16 +28,13 @@
 
 class Side;
 class BulkPoint;
-class SidePoint;
+class EdgePoint;
 
 
 /**
- * @brief Class holds set of bulk or side local points specified by dimension.
- *
- * It provides methods allows iterate through local points. Iterating on side-points
- * set is possible over individual sides and different permutations.
+ * Base integral class holds common data members and methods.
  */
-class EvalSubset : public std::enable_shared_from_this<EvalSubset> {
+class BaseIntegral {
 public:
 	TYPEDEF_ERR_INFO(EI_ElementIdx, unsigned int);
 	DECLARE_EXCEPTION(ExcElementNotInCache,
@@ -45,18 +42,72 @@ public:
 			   << "Value can't be computed.\n");
 
     /// Default constructor
-	EvalSubset() : eval_points_(nullptr), perm_indices_(nullptr), n_permutations_(0) {}
+	BaseIntegral() : eval_points_(nullptr), dim_(0) {}
 
     /// Constructor of bulk (n_permutations==0) or side subset
-	EvalSubset(std::shared_ptr<EvalPoints> eval_points, unsigned int n_permutations = 0, unsigned int points_per_side = 0);
+	BaseIntegral(std::shared_ptr<EvalPoints> eval_points, unsigned int dim)
+	 : eval_points_(eval_points), dim_(dim) {}
 
     /// Destructor
-	~EvalSubset();
+    virtual ~BaseIntegral();
 
     /// Getter of eval_points
     inline std::shared_ptr<EvalPoints> eval_points() const {
         return eval_points_;
     }
+
+    /// Returns dimension.
+    inline unsigned int dim() const {
+    	return dim_;
+    }
+protected:
+    /// Pointer to EvalPoints
+    std::shared_ptr<EvalPoints> eval_points_;
+    /// Dimension of points
+    unsigned int dim_;
+};
+
+/**
+ * Integral class of bulk points, allows assemblation of volume integrals.
+ */
+class BulkIntegral : public BaseIntegral, public std::enable_shared_from_this<BulkIntegral> {
+public:
+    /// Default constructor
+	BulkIntegral() : BaseIntegral() {}
+
+    /// Constructor of bulk integral
+	BulkIntegral(std::shared_ptr<EvalPoints> eval_points, unsigned int dim)
+	 : BaseIntegral(eval_points, dim), subset_index_(eval_points->n_subsets(dim)) {}
+
+    /// Destructor
+    ~BulkIntegral();
+
+    /// Return index of data block according to subset in EvalPoints object
+    inline int get_subset_idx() const {
+        return subset_index_;
+    }
+
+    /// Returns range of bulk local points for appropriate cell accessor
+    Range< BulkPoint > points(const DHCellAccessor &cell) const;
+
+private:
+    /// Index of data block according to subset in EvalPoints object.
+    unsigned int subset_index_;
+};
+
+/**
+ * Integral class of side points, allows assemblation of element - element fluxes.
+ */
+class EdgeIntegral : public BaseIntegral, public std::enable_shared_from_this<EdgeIntegral> {
+public:
+    /// Default constructor
+	EdgeIntegral() : BaseIntegral(), perm_indices_(nullptr), n_permutations_(0) {}
+
+    /// Constructor of edge integral
+	EdgeIntegral(std::shared_ptr<EvalPoints> eval_points, unsigned int dim, unsigned int n_permutations, unsigned int points_per_side);
+
+    /// Destructor
+    ~EdgeIntegral();
 
     /// Getter of n_sides
     inline const unsigned int n_sides() const {
@@ -68,11 +119,8 @@ public:
         return subset_index_;
     }
 
-    /// Returns range of bulk local points for appropriate cell accessor
-    Range< BulkPoint > points(const DHCellAccessor &cell) const;
-
     /// Returns range of side local points for appropriate cell side accessor
-    Range< SidePoint > points(const DHCellSide &cell_side) const;
+    Range< EdgePoint > points(const DHCellSide &cell_side) const;
 
     /// Returns structure of permutation indices.
     inline int perm_idx_ptr(uint i_side, uint i_perm, uint i_point) const {
@@ -80,8 +128,6 @@ public:
     }
 
 private:
-    /// Pointer to EvalPoints
-    std::shared_ptr<EvalPoints> eval_points_;
     /// Index of data block according to subset in EvalPoints object.
     unsigned int subset_index_;
     /// Indices to EvalPoints for different sides and permutations reflecting order of points.
@@ -92,6 +138,73 @@ private:
     unsigned int n_permutations_;
 
     friend class EvalPoints;
+    friend class EdgePoint;
+};
+
+/**
+ * Integral class of neighbour points, allows assemblation of element - side fluxes.
+ *
+ * Dimension corresponds with element of higher dim.
+ */
+class CouplingIntegral : public BaseIntegral, public std::enable_shared_from_this<CouplingIntegral> {
+public:
+    /// Default constructor
+	CouplingIntegral() : BaseIntegral() {}
+
+    /// Constructor of ngh integral
+	CouplingIntegral(std::shared_ptr<EdgeIntegral> edge_integral, std::shared_ptr<BulkIntegral> bulk_integral);
+
+    /// Destructor
+    ~CouplingIntegral();
+
+    /// Return index of data block according to subset of higher dim in EvalPoints object
+    inline int get_subset_high_idx() const {
+        return edge_integral_->get_subset_idx();
+    }
+
+    /// Return index of data block according to subset of lower dim in EvalPoints object
+    inline int get_subset_low_idx() const {
+        return bulk_integral_->get_subset_idx();
+    }
+
+    /// Returns range of bulk local points for appropriate cell accessor
+    Range< BulkPoint > points(const DHCellAccessor &cell) const;
+
+    /// Returns range of side local points for appropriate cell side accessor
+    Range< EdgePoint > points(const DHCellSide &cell_side) const;
+
+private:
+    /// Integral according to side subset part (element of higher dim) in EvalPoints object.
+    std::shared_ptr<EdgeIntegral> edge_integral_;
+    /// Integral according to bulk subset part (element of lower dim) in EvalPoints object.
+    std::shared_ptr<BulkIntegral> bulk_integral_;
+};
+
+/**
+ * Integral class of boundary points, allows assemblation of fluxes between sides and neighbouring boundary elements.
+ */
+class BoundaryIntegral : public BaseIntegral {
+public:
+    /// Default constructor
+    BoundaryIntegral() : BaseIntegral() {}
+
+    /// Constructor of bulk subset
+    BoundaryIntegral(std::shared_ptr<EdgeIntegral> edge_integral);
+
+    /// Destructor
+    ~BoundaryIntegral();
+
+    /// Return index of data block according to subset in EvalPoints object
+    inline int get_subset_idx() const {
+        return edge_integral_->get_subset_idx();
+    }
+
+    /// Returns range of bulk local points for appropriate cell accessor
+    Range< EdgePoint > points(const DHCellSide &cell_side) const;
+
+private:
+    /// Boundary integral according to edge integral (? but need own special data members and methods ?).
+    std::shared_ptr<EdgeIntegral> edge_integral_;
 };
 
 
@@ -105,17 +218,17 @@ public:
     : local_point_idx_(0) {}
 
     /// Constructor
-	BulkPoint(DHCellAccessor dh_cell, std::shared_ptr<const EvalSubset> bulk_subset, unsigned int loc_point_idx)
-    : dh_cell_(dh_cell), subset_(bulk_subset), local_point_idx_(loc_point_idx) {}
+	BulkPoint(DHCellAccessor dh_cell, std::shared_ptr<const BulkIntegral> bulk_integral, unsigned int loc_point_idx)
+    : dh_cell_(dh_cell), integral_(bulk_integral), local_point_idx_(loc_point_idx) {}
 
-    /// Getter of EvalSubset
-    inline std::shared_ptr<const EvalSubset> eval_subset() const {
-        return subset_;
+    /// Getter of BulkIntegral
+    inline std::shared_ptr<const BulkIntegral> integral() const {
+        return integral_;
     }
 
     /// Getter of EvalPoints
     inline std::shared_ptr<EvalPoints> eval_points() const {
-        return subset_->eval_points();
+        return integral_->eval_points();
     }
 
     /// Local coordinates within element
@@ -155,8 +268,8 @@ public:
 private:
     /// DOF handler accessor of element.
     DHCellAccessor dh_cell_;
-    /// Pointer to bulk point set.
-    std::shared_ptr<const EvalSubset> subset_;
+    /// Pointer to bulk integral.
+    std::shared_ptr<const BulkIntegral> integral_;
     /// Index of the local point in bulk point set.
     unsigned int local_point_idx_;
 };
@@ -165,25 +278,25 @@ private:
 /**
  * @brief Point accessor allow iterate over quadrature points of given side defined in local element coordinates.
  */
-class SidePoint {
+class EdgePoint {
 public:
     /// Default constructor
-	SidePoint()
+	EdgePoint()
     : local_point_idx_(0) {}
 
     /// Constructor
-	SidePoint(DHCellSide cell_side, std::shared_ptr<const EvalSubset> subset, unsigned int local_point_idx)
-    : cell_side_(cell_side), subset_(subset), local_point_idx_(local_point_idx),
+	EdgePoint(DHCellSide cell_side, std::shared_ptr<const EdgeIntegral> edge_integral, unsigned int local_point_idx)
+    : cell_side_(cell_side), integral_(edge_integral), local_point_idx_(local_point_idx),
 	  permutation_idx_( cell_side.element()->permutation_idx( cell_side_.side_idx() ) ) {}
 
-    /// Getter of EvalSubset
-    inline std::shared_ptr<const EvalSubset> eval_subset() const {
-        return subset_;
+    /// Getter of EdgeIntegral
+    inline std::shared_ptr<const EdgeIntegral> integral() const {
+        return integral_;
     }
 
     /// Getter of evaluation points
     inline std::shared_ptr<EvalPoints> eval_points() const {
-        return subset_->eval_points();
+        return integral_->eval_points();
     }
 
     // Local coordinates within element
@@ -212,11 +325,11 @@ public:
 
     /// Return index in EvalPoints object
     inline unsigned int eval_point_idx() const {
-        return subset_->perm_idx_ptr(cell_side_.side_idx(), permutation_idx_, local_point_idx_);
+        return integral_->perm_idx_ptr(cell_side_.side_idx(), permutation_idx_, local_point_idx_);
     }
 
-    /// Return corresponds SidePoints of neighbour side of same dimension (computing of side integrals).
-    SidePoint permute(DHCellSide edg_side) const;
+    /// Return corresponds EdgePoint of neighbour side of same dimension (computing of side integrals).
+    EdgePoint permute(DHCellSide edg_side) const;
 
     /// Iterates to next point.
     inline void inc() {
@@ -224,20 +337,21 @@ public:
     }
 
     /// Comparison of accessors.
-    bool operator==(const SidePoint& other) {
+    bool operator==(const EdgePoint& other) {
     	return (cell_side_ == other.cell_side_) && (local_point_idx_ == other.local_point_idx_);
     }
 
 private:
     /// DOF handler accessor of element side.
     DHCellSide cell_side_;
-    /// Pointer to side point set
-    std::shared_ptr<const EvalSubset> subset_;
+    /// Pointer to edge point set
+    std::shared_ptr<const EdgeIntegral> integral_;;
     /// Index of the local point in the composed quadrature.
     unsigned int local_point_idx_;
     /// Permutation index corresponding with DHCellSide
     unsigned int permutation_idx_;
 };
+
 
 
 #endif /* EVAL_SUBSET_HH_ */

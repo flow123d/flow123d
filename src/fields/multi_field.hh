@@ -55,7 +55,6 @@ using namespace std;
 class Mesh;
 class Observe;
 class OutputTime;
-class EvalSubset;
 class EvalPoints;
 class ElementCacheMap;
 
@@ -251,7 +250,7 @@ public:
     void set_input_list(const Input::Array &list, const TimeGovernor &tg) override;
 
     /// Implements FieldCommon::cache_allocate
-    void cache_allocate(std::shared_ptr<EvalSubset> sub_set) override;
+    void cache_allocate(std::shared_ptr<EvalPoints> eval_points) override;
 
     /// Implements FieldCommon::cache_update
     void cache_update(ElementCacheMap &cache_map) override;

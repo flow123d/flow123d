@@ -53,10 +53,9 @@
 
 class Mesh;
 class Observe;
-class EvalSubset;
 class EvalPoints;
 class BulkPoint;
-class SidePoint;
+class EdgePoint;
 template <int spacedim> class ElementAccessor;
 template <int spacedim, class Value> class FieldFE;
 
@@ -166,10 +165,10 @@ public:
     Field &operator=(const Field &other);
 
 
-    typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_> operator() (BulkPoint &);
+    typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_> operator() (const ElementCacheMap &, BulkPoint &);
 
 
-    typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_> operator() (SidePoint &);
+    typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_> operator() (const ElementCacheMap &, EdgePoint &);
 
 
     /**
@@ -323,7 +322,7 @@ public:
     void compute_field_data(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream);
 
     /// Implements FieldCommon::cache_allocate
-    void cache_allocate(std::shared_ptr<EvalSubset> sub_set) override;
+    void cache_allocate(std::shared_ptr<EvalPoints> eval_points) override;
 
     /// Implements FieldCommon::cache_update
     void cache_update(ElementCacheMap &cache_map) override;
@@ -386,9 +385,9 @@ protected:
     std::vector<std::shared_ptr<FactoryBase> >  factories_;
 
     /**
-     * Field value data cache of elements of dimension 1,2,3
+     * Field value data cache
      */
-    std::array< FieldValueCache<typename Value::element_type, typename Value::return_type>, 3 > value_cache_;
+    FieldValueCache<typename Value::element_type, typename Value::return_type> value_cache_;
 
 
 

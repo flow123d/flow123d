@@ -199,8 +199,6 @@ void TransportDG<Model>::EqData::set_DG_parameters_boundary(Side side,
 
 
 
-
-
 template<class Model>
 TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
         : Model(init_mesh, in_rec),
@@ -229,14 +227,15 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
     
     Model::init_from_input(in_rec);
 
-    // create finite element structures and distribute DOFs
-	assembly1_ = std::make_shared<AssemblyDG<1, Model>>(data_, *this);
-	assembly2_ = std::make_shared<AssemblyDG<2, Model>>(data_, *this);
-	assembly3_ = std::make_shared<AssemblyDG<3, Model>>(data_, *this);
-	multidim_assembly_.push_back( std::dynamic_pointer_cast<AssemblyDGBase>(assembly1_) );
-	multidim_assembly_.push_back( std::dynamic_pointer_cast<AssemblyDGBase>(assembly2_) );
-	multidim_assembly_.push_back( std::dynamic_pointer_cast<AssemblyDGBase>(assembly3_) );
-	MixedPtr<FiniteElement> fe(assembly1_->fe_low_, assembly1_->fe_, assembly2_->fe_, assembly3_->fe_);
+    // create assemblation object, finite element structures and distribute DOFs
+	data_->mass_assembly_ = new GenericAssembly< MassAssemblyDim >(data_.get(), ActiveIntegrals::bulk);
+	data_->stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyDim >(data_.get(),
+	        (ActiveIntegrals::bulk | ActiveIntegrals::edge | ActiveIntegrals::coupling | ActiveIntegrals::boundary) );
+	data_->sources_assembly_ = new GenericAssembly< SourcesAssemblyDim >(data_.get(), ActiveIntegrals::bulk);
+	data_->bdr_cond_assembly_ = new GenericAssembly< BdrConditionAssemblyDim >(data_.get(), ActiveIntegrals::bulk);
+	data_->init_cond_assembly_ = new GenericAssembly< InitConditionAssemblyDim >(data_.get(), ActiveIntegrals::bulk);
+
+	MixedPtr<FE_P_disc> fe(data_->dg_order);
 	shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>(Model::mesh_, fe);
 	data_->dh_ = make_shared<DOFHandlerMultiDim>(*Model::mesh_);
 	data_->dh_->distribute_dofs(ds);
@@ -257,7 +256,7 @@ void TransportDG<Model>::initialize()
     	data_->gamma[sbi].resize(Model::mesh_->boundary_.size());
 
     // Resize coefficient arrays
-    int qsize = max(assembly1_->quad_low_->size(), max(assembly1_->quad_->size(), max(assembly2_->quad_->size(), assembly3_->quad_->size())));
+    int qsize = data_->mass_assembly_->eval_points()->max_size();
     int max_edg_sides = max(Model::mesh_->max_edge_sides(1), max(Model::mesh_->max_edge_sides(2), Model::mesh_->max_edge_sides(3)));
     ret_sources.resize(Model::n_substances());
     ret_sources_prev.resize(Model::n_substances());
@@ -330,10 +329,24 @@ void TransportDG<Model>::initialize()
 
 
     // initialization of balance object
-    Model::balance_->allocate(data_->dh_->distr()->lsize(),
-            max(assembly1_->fe_->n_dofs(), max(assembly2_->fe_->n_dofs(), assembly3_->fe_->n_dofs())));
+    Model::balance_->allocate(data_->dh_->distr()->lsize(), data_->mass_assembly_->eval_points()->max_size());
 
-    initialize_assembly_objects();
+    // initialization of assembly object
+    data_->mass_assembly_->multidim_assembly().get<1>()->initialize(*this);
+    data_->mass_assembly_->multidim_assembly().get<2>()->initialize(*this);
+    data_->mass_assembly_->multidim_assembly().get<3>()->initialize(*this);
+    data_->stiffness_assembly_->multidim_assembly().get<1>()->initialize(*this);
+    data_->stiffness_assembly_->multidim_assembly().get<2>()->initialize(*this);
+    data_->stiffness_assembly_->multidim_assembly().get<3>()->initialize(*this);
+    data_->sources_assembly_->multidim_assembly().get<1>()->initialize(*this);
+    data_->sources_assembly_->multidim_assembly().get<2>()->initialize(*this);
+    data_->sources_assembly_->multidim_assembly().get<3>()->initialize(*this);
+    data_->bdr_cond_assembly_->multidim_assembly().get<1>()->initialize(*this);
+    data_->bdr_cond_assembly_->multidim_assembly().get<2>()->initialize(*this);
+    data_->bdr_cond_assembly_->multidim_assembly().get<3>()->initialize(*this);
+    data_->init_cond_assembly_->multidim_assembly().get<1>()->initialize(*this);
+    data_->init_cond_assembly_->multidim_assembly().get<2>()->initialize(*this);
+    data_->init_cond_assembly_->multidim_assembly().get<3>()->initialize(*this);
 }
 
 
@@ -371,6 +384,11 @@ TransportDG<Model>::~TransportDG()
         //delete[] mass_vec;
         //delete[] ret_vec;
 
+        delete data_->mass_assembly_;
+        delete data_->stiffness_assembly_;
+        delete data_->sources_assembly_;
+        delete data_->bdr_cond_assembly_;
+        delete data_->init_cond_assembly_;
     }
 
 }
@@ -425,10 +443,18 @@ void TransportDG<Model>::preallocate()
         mass_matrix[i] = NULL;
         VecZeroEntries(data_->ret_vec[i]);
     }
-    assemble_stiffness_matrix();
-    assemble_mass_matrix();
-    set_sources();
-    set_boundary_conditions();
+    START_TIMER("assemble_stiffness");
+    data_->stiffness_assembly_->assemble(data_->dh_);
+    END_TIMER("assemble_stiffness");
+    START_TIMER("assemble_mass");
+    data_->mass_assembly_->assemble(data_->dh_);
+    END_TIMER("assemble_mass");
+    START_TIMER("assemble_sources");
+    data_->sources_assembly_->assemble(data_->dh_);
+    END_TIMER("assemble_sources");
+    START_TIMER("assemble_bc");
+    data_->bdr_cond_assembly_->assemble(data_->dh_);
+    END_TIMER("assemble_bc");
     for (unsigned int i=0; i<Model::n_substances(); i++)
     {
       VecAssemblyBegin(data_->ret_vec[i]);
@@ -461,7 +487,9 @@ void TransportDG<Model>::update_solution()
         	data_->ls_dt[i]->mat_zero_entries();
             VecZeroEntries(data_->ret_vec[i]);
         }
-        assemble_mass_matrix();
+        START_TIMER("assemble_mass");
+        data_->mass_assembly_->assemble(data_->dh_);
+        END_TIMER("assemble_mass");
         for (unsigned int i=0; i<Model::n_substances(); i++)
         {
         	data_->ls_dt[i]->finish_assembly();
@@ -491,7 +519,9 @@ void TransportDG<Model>::update_solution()
             data_->ls[i]->start_add_assembly();
             data_->ls[i]->mat_zero_entries();
         }
-        assemble_stiffness_matrix();
+        START_TIMER("assemble_stiffness");
+        data_->stiffness_assembly_->assemble(data_->dh_);
+        END_TIMER("assemble_stiffness");
         for (unsigned int i=0; i<Model::n_substances(); i++)
         {
         	data_->ls[i]->finish_assembly();
@@ -513,8 +543,12 @@ void TransportDG<Model>::update_solution()
             data_->ls[i]->start_add_assembly();
             data_->ls[i]->rhs_zero_entries();
         }
-        set_sources();
-        set_boundary_conditions();
+        START_TIMER("assemble_sources");
+        data_->sources_assembly_->assemble(data_->dh_);
+        END_TIMER("assemble_sources");
+        START_TIMER("assemble_bc");
+        data_->bdr_cond_assembly_->assemble(data_->dh_);
+        END_TIMER("assemble_bc");
         for (unsigned int i=0; i<Model::n_substances(); i++)
         {
             data_->ls[i]->finish_assembly();
@@ -578,30 +612,15 @@ void TransportDG<Model>::calculate_concentration_matrix()
 	unsigned int i_cell=0;
 	for (auto cell : data_->dh_->own_range() )
     {
-
-        unsigned int n_dofs;
-        switch (cell.dim())
-        {
-        case 1:
-            n_dofs = assembly1_->fe_->n_dofs();
-            break;
-        case 2:
-            n_dofs = assembly2_->fe_->n_dofs();
-            break;
-        case 3:
-            n_dofs = assembly3_->fe_->n_dofs();
-            break;
-        }
-
-        std::vector<LongIdx> dof_indices(n_dofs);
-        cell.get_dof_indices(dof_indices);
+		LocDofVec loc_dof_indices = cell.get_loc_dof_indices();
+		unsigned int n_dofs=loc_dof_indices.n_rows;
 
         for (unsigned int sbi=0; sbi<Model::n_substances(); ++sbi)
         {
             solution_elem_[sbi][i_cell] = 0;
 
             for (unsigned int j=0; j<n_dofs; ++j)
-                solution_elem_[sbi][i_cell] += data_->ls[sbi]->get_solution_array()[dof_indices[j]-data_->dh_->distr()->begin()];
+                solution_elem_[sbi][i_cell] += data_->ls[sbi]->get_solution_array()[loc_dof_indices[j]];
 
             solution_elem_[sbi][i_cell] = max(solution_elem_[sbi][i_cell]/n_dofs, 0.);
         }
@@ -656,77 +675,6 @@ void TransportDG<Model>::calculate_cumulative_balance()
 }
 
 
-template<class Model>
-void TransportDG<Model>::assemble_mass_matrix()
-{
-    START_TIMER("assemble_mass");
-    Model::balance_->start_mass_assembly(Model::subst_idx);
-    for (auto cell : data_->dh_->own_range() )
-    {
-        multidim_assembly_[ cell.dim()-1 ]->assemble_mass_matrix(cell);
-    }
-    Model::balance_->finish_mass_assembly(Model::subst_idx);
-    END_TIMER("assemble_mass");
-}
-
-
-
-template<class Model>
-void TransportDG<Model>::assemble_stiffness_matrix()
-{
-  START_TIMER("assemble_stiffness");
-    for (auto cell : data_->dh_->local_range() )
-    {
-        START_TIMER("assemble_volume_integrals");
-        multidim_assembly_[ cell.dim()-1 ]->assemble_volume_integrals(cell);
-        END_TIMER("assemble_volume_integrals");
-
-        START_TIMER("assemble_fluxes_boundary");
-        multidim_assembly_[ cell.dim()-1 ]->assemble_fluxes_boundary(cell);
-        END_TIMER("assemble_fluxes_boundary");
-
-        START_TIMER("assemble_fluxes_elem_elem");
-        multidim_assembly_[ cell.dim()-1 ]->assemble_fluxes_element_element(cell);
-        END_TIMER("assemble_fluxes_elem_elem");
-
-        START_TIMER("assemble_fluxes_elem_side");
-        if (cell.dim()<3) multidim_assembly_[ cell.dim() ]->assemble_fluxes_element_side(cell);
-        END_TIMER("assemble_fluxes_elem_side");
-    }
-  END_TIMER("assemble_stiffness");
-}
-
-
-
-template<class Model>
-void TransportDG<Model>::set_sources()
-{
-  START_TIMER("assemble_sources");
-    Model::balance_->start_source_assembly(Model::subst_idx);
-    for (auto cell : data_->dh_->own_range() )
-    {
-        multidim_assembly_[ cell.dim()-1 ]->set_sources(cell);
-    }
-    Model::balance_->finish_source_assembly(Model::subst_idx);
-  END_TIMER("assemble_sources");
-}
-
-
-
-template<class Model>
-void TransportDG<Model>::set_boundary_conditions()
-{
-
-  START_TIMER("assemble_bc");
-    Model::balance_->start_flux_assembly(Model::subst_idx);
-    for (auto cell : data_->dh_->own_range() )
-    {
-        multidim_assembly_[ cell.dim()-1 ]->set_boundary_conditions(cell);
-    }
-    Model::balance_->finish_flux_assembly(Model::subst_idx);
-  END_TIMER("assemble_bc");
-}
-
 
 
 template<class Model>
@@ -735,17 +683,11 @@ void TransportDG<Model>::set_initial_condition()
     START_TIMER("set_init_cond");
     for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
         data_->ls[sbi]->start_allocation();
-    for (auto cell : data_->dh_->own_range() )
-    {
-        multidim_assembly_[ cell.dim()-1 ]->prepare_initial_condition(cell);
-    }
+    data_->init_cond_assembly_->assemble(data_->dh_);
 
     for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
         data_->ls[sbi]->start_add_assembly();
-    for (auto cell : data_->dh_->own_range() )
-    {
-        multidim_assembly_[ cell.dim()-1 ]->prepare_initial_condition(cell);
-    }
+    data_->init_cond_assembly_->assemble(data_->dh_);
 
     for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
     {
@@ -772,33 +714,18 @@ void TransportDG<Model>::update_after_reactions(bool solution_changed)
     	unsigned int i_cell=0;
     	for (auto cell : data_->dh_->own_range() )
         {
-
-            unsigned int n_dofs;
-            switch (cell.dim())
-            {
-            case 1:
-                n_dofs = assembly1_->fe_->n_dofs();
-                break;
-            case 2:
-                n_dofs = assembly2_->fe_->n_dofs();
-                break;
-            case 3:
-                n_dofs = assembly3_->fe_->n_dofs();
-                break;
-            }
-
-			std::vector<LongIdx> dof_indices(n_dofs);
-            cell.get_dof_indices(dof_indices);
+    	    LocDofVec loc_dof_indices = cell.get_loc_dof_indices();
+            unsigned int n_dofs=loc_dof_indices.n_rows;
 
             for (unsigned int sbi=0; sbi<Model::n_substances(); ++sbi)
             {
                 double old_average = 0;
                 for (unsigned int j=0; j<n_dofs; ++j)
-                    old_average += data_->ls[sbi]->get_solution_array()[dof_indices[j]-data_->dh_->distr()->begin()];
+                    old_average += data_->ls[sbi]->get_solution_array()[loc_dof_indices[j]];
                 old_average /= n_dofs;
 
                 for (unsigned int j=0; j<n_dofs; ++j)
-                    data_->ls[sbi]->get_solution_array()[dof_indices[j]-data_->dh_->distr()->begin()] += solution_elem_[sbi][i_cell] - old_average;
+                    data_->ls[sbi]->get_solution_array()[loc_dof_indices[j]] += solution_elem_[sbi][i_cell] - old_average;
             }
             ++i_cell;
         }
@@ -812,13 +739,6 @@ template<class Model>
 LongIdx *TransportDG<Model>::get_row_4_el()
 {
     return Model::mesh_->get_row_4_el();
-}
-
-template<class Model>
-void TransportDG<Model>::initialize_assembly_objects()
-{
-    for (unsigned int i=0; i<multidim_assembly_.size(); ++i)
-    	multidim_assembly_[i]->initialize();
 }
 
 

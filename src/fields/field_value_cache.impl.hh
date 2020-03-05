@@ -25,13 +25,13 @@
 
 template<class elm_type, class return_type>
 template<uint nRows, uint nCols>
-typename arma::Mat<elm_type>::template fixed<nRows, nCols> FieldValueCache<elm_type, return_type>::get_value(DHCellAccessor dh_cell,
-        unsigned int subset_idx, unsigned int eval_points_idx) {
+typename arma::Mat<elm_type>::template fixed<nRows, nCols> FieldValueCache<elm_type, return_type>::get_value(const ElementCacheMap &map,
+        const DHCellAccessor &dh_cell, unsigned int eval_points_idx) {
 
     ASSERT(dh_cell.element_cache_index() != ElementCacheMap::undef_elem_idx)(dh_cell.elm_idx());
-    unsigned int points_per_element = this->subset_size(subset_idx) / n_cache_elements_;
-    unsigned int subset_point_idx = eval_points_idx - eval_points_->subset_begin(subset_idx);
-    return data_.template mat<nRows, nCols>(this->subset_begin(subset_idx) + dh_cell.element_cache_index() * points_per_element + subset_point_idx);
+    int value_cache_idx = map.get_field_value_cache_index(dh_cell.element_cache_index(), eval_points_idx);
+    ASSERT_GE(value_cache_idx, 0);
+    return data_.template mat<nRows, nCols>(value_cache_idx);
 }
 
 

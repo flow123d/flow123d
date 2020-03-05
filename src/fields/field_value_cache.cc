@@ -22,7 +22,6 @@
 #include "fields/eval_points.hh"
 #include "fields/eval_subset.hh"
 #include "fem/dh_cell_accessor.hh"
-#include "mesh/mesh.h"
 #include "mesh/accessors.hh"
 
 
@@ -32,31 +31,18 @@
 
 template<class elm_type, class return_type>
 FieldValueCache<elm_type, return_type>::FieldValueCache(unsigned int n_rows, unsigned int n_cols)
-: data_(n_rows, n_cols), eval_points_(nullptr), dim_(EvalPoints::undefined_dim) {
-    used_subsets_.fill(false);
-    subset_starts_.fill(-1);
-}
+: data_(n_rows, n_cols) {}
 
 template<class elm_type, class return_type>
 FieldValueCache<elm_type, return_type>::~FieldValueCache() {}
 
 template<class elm_type, class return_type>
 void FieldValueCache<elm_type, return_type>::init(std::shared_ptr<EvalPoints> eval_points, unsigned int n_cache_elements) {
-    ASSERT_EQ(dim_, EvalPoints::undefined_dim).error("Repeated initialization!\n");
+    ASSERT_EQ(data_.size(), 0).error("Repeated initialization!\n");
 
-    this->n_cache_elements_ = n_cache_elements;
-    eval_points_ = eval_points;
-    data_.reinit(n_cache_elements * eval_points_->size());
-    data_.resize(n_cache_elements * eval_points_->size());
-    subset_starts_[0] = 0;
-    for (uint i=0; i<eval_points_->n_subsets(); ++i)
-    	subset_starts_[i+1] = eval_points_->subset_end(i) * n_cache_elements;
-    dim_ = eval_points_->point_dim();
-}
-
-template<class elm_type, class return_type>
-void FieldValueCache<elm_type, return_type>::mark_used(std::shared_ptr<EvalSubset> sub_set) {
-    used_subsets_[sub_set->get_subset_idx()] = true;
+    this->n_cache_points_ = n_cache_elements * eval_points->max_size();
+    data_.reinit(n_cache_points_);
+    data_.resize(n_cache_points_);
 }
 
 
@@ -64,88 +50,129 @@ void FieldValueCache<elm_type, return_type>::mark_used(std::shared_ptr<EvalSubse
  * Implementation of ElementCacheMap methods
  */
 
-const unsigned int ElementCacheMap::n_cached_elements = 20;
-
 const unsigned int ElementCacheMap::undef_elem_idx = std::numeric_limits<unsigned int>::max();
 
 
 ElementCacheMap::ElementCacheMap()
 : elm_idx_(ElementCacheMap::n_cached_elements, ElementCacheMap::undef_elem_idx),
-  dim_(EvalPoints::undefined_dim), ready_to_reading_(false) {}
+  ready_to_reading_(false), element_eval_points_map_(nullptr), points_in_cache_(0) {
+    cache_idx_.reserve(ElementCacheMap::n_cached_elements);
+    update_data_.n_elements_ = 0;
+}
+
+
+ElementCacheMap::~ElementCacheMap() {
+    if (element_eval_points_map_!=nullptr) {
+        for (unsigned int i=0; i<ElementCacheMap::n_cached_elements; ++i)
+            delete element_eval_points_map_[i];
+        delete element_eval_points_map_;
+    }
+}
+
+
+void ElementCacheMap::init(std::shared_ptr<EvalPoints> eval_points) {
+	this->eval_points_ = eval_points;
+	this->ready_to_reading_ = true;
+
+	unsigned int size = this->eval_points_->max_size();
+	element_eval_points_map_ = new int* [ElementCacheMap::n_cached_elements];
+	for (unsigned int i=0; i<ElementCacheMap::n_cached_elements; ++i)
+	    element_eval_points_map_[i] = new int [size];
+}
 
 
 void ElementCacheMap::add(const DHCellAccessor &dh_cell) {
 	ASSERT_DBG(ready_to_reading_);
-    ASSERT_LT(update_data_.added_elements_.size(), ElementCacheMap::n_cached_elements).error("ElementCacheMap overflowed. List of added elements is too long!\n");
-    unsigned int elm_idx = dh_cell.elm_idx();
-    update_data_.added_elements_.insert(elm_idx);
+    ASSERT_LT(update_data_.n_elements_, ElementCacheMap::n_cached_elements).error("ElementCacheMap overflowed. List of added elements is too long!\n");
+    this->add_to_region(dh_cell.elm());
 }
 
 
-void ElementCacheMap::prepare_elements_to_update(Mesh *mesh) {
+void ElementCacheMap::add(const DHCellSide &cell_side) {
+	ASSERT_DBG(ready_to_reading_);
+    ASSERT_LT(update_data_.n_elements_, ElementCacheMap::n_cached_elements).error("ElementCacheMap overflowed. List of added elements is too long!\n");
+    this->add_to_region(cell_side.cell().elm());
+}
+
+
+void ElementCacheMap::prepare_elements_to_update() {
 	// Start of cache update
 	ready_to_reading_ = false;
 
-	// Find elements that were stored in previous cache update.
-    std::array<bool, ElementCacheMap::n_cached_elements> stored_previous;
-	unsigned int n_stored_element = 0;
-    stored_previous.fill(false);
-    for (auto it = update_data_.added_elements_.begin(); it != update_data_.added_elements_.end();)
-        if (cache_idx_.find(*it) != cache_idx_.end()) {
-           stored_previous[cache_idx_.at(*it)] = true;
-           ++n_stored_element;
-           it = update_data_.added_elements_.erase(it); // erase element from added_elements set that exists in cache
-        } else it++;
-
-    // Prepare preserved data for move to beginning part of data block, update in elm_idx_, cache_idx_
-    for (unsigned int i_source=n_stored_element, i_target=0; i_source<stored_previous.size(); ++i_source) {
-        if (elm_idx_[i_source] == ElementCacheMap::undef_elem_idx) break;
-        if (!stored_previous[i_source]) {
-            cache_idx_.erase( cache_idx_.find(elm_idx_[i_source]) );
-            elm_idx_[i_source] = ElementCacheMap::undef_elem_idx;
-        	continue;
-        }
-        while (stored_previous[i_target] && (i_target<n_stored_element)) i_target++;
-        update_data_.preserved_elements_[i_source] = i_target;
-        cache_idx_[ elm_idx_[i_source] ] = i_target;
-        cache_idx_.erase( cache_idx_.find(elm_idx_[i_target]) );
-        elm_idx_[i_target] = elm_idx_[i_source];
-        elm_idx_[i_source] = ElementCacheMap::undef_elem_idx;
-        i_target++;
-    }
-
-    // Distribute elements by region
-    for (const auto &elm_idx : update_data_.added_elements_) {
-        ElementAccessor<3> elm(mesh, elm_idx);
-        unsigned int reg_idx = elm.region_idx().idx();
-        typename std::unordered_map<unsigned int, ElementSet>::iterator region_it = update_data_.region_element_map_.find(reg_idx);
-        if (region_it == update_data_.region_element_map_.end()) {
-        	update_data_.region_element_map_.insert( {reg_idx, ElementSet()} );
-            region_it = update_data_.region_element_map_.find(reg_idx);
-        }
-        region_it->second.push_back( elm );
-    }
+    // Erase element data of previous step
+    cache_idx_.clear();
+    std::fill(elm_idx_.begin(), elm_idx_.end(), ElementCacheMap::undef_elem_idx);
+    this->clear_element_eval_points_map();
 
     // Set new elements to elm_idx_, cache_idx_ sorted by region
-    ASSERT_EQ_DBG(cache_idx_.size(), n_stored_element);
-    for (auto region_it = update_data_.region_element_map_.begin(); region_it != update_data_.region_element_map_.end(); region_it++) {
-        update_data_.region_cache_begin_[region_it->first] = cache_idx_.size();
-        for (auto elm : region_it->second) {
+	unsigned int n_stored_element = 0, n_region = 0;
+	update_data_.region_cache_indices_range_[0] = 0;
+    for (auto region_it = update_data_.region_cache_indices_map_.begin(); region_it != update_data_.region_cache_indices_map_.end(); region_it++) {
+    	region_it->second.pos_ = n_region;
+        for (auto elm : region_it->second.element_set_) {
             unsigned int elm_idx = elm.idx();
             cache_idx_[elm_idx] = n_stored_element;
             elm_idx_[n_stored_element] = elm_idx;
             n_stored_element++;
         }
+        update_data_.region_cache_indices_range_[n_region+1] = n_stored_element;
+        n_region++;
     }
 }
 
 
+void ElementCacheMap::create_elements_points_map() {
+    unsigned int size = this->eval_points_->max_size();
+    unsigned int idx_to_region = 1;
+    unsigned int region_last_elm = update_data_.region_cache_indices_range_[idx_to_region];
+    points_in_cache_ = 0;
+	for (unsigned int i_elm=0; i_elm<ElementCacheMap::n_cached_elements; ++i_elm) {
+	    for (unsigned int i_point=0; i_point<size; ++i_point) {
+	        if (element_eval_points_map_[i_elm][i_point] == ElementCacheMap::point_in_proggress) {
+	    	    element_eval_points_map_[i_elm][i_point] = points_in_cache_;
+	            points_in_cache_++;
+	        }
+	    }
+        if (region_last_elm==i_elm+1) {
+            update_data_.region_cache_indices_range_[idx_to_region] = points_in_cache_;
+        	idx_to_region++;
+        	region_last_elm = update_data_.region_cache_indices_range_[idx_to_region];
+        }
+	}
+}
+
+
 void ElementCacheMap::clear_elements_to_update() {
-	update_data_.added_elements_.clear();
-	update_data_.preserved_elements_.clear();
-	update_data_.region_element_map_.clear();
-	update_data_.region_cache_begin_.clear();
+	update_data_.region_cache_indices_map_.clear();
+	update_data_.n_elements_ = 0;
 	ready_to_reading_ = true; // end of cache update
+}
+
+void ElementCacheMap::mark_used_eval_points(const DHCellAccessor &dh_cell, unsigned int subset_idx, unsigned int data_size, unsigned int start_point) {
+    unsigned int elem_idx_in_cache = cache_idx_[dh_cell.elm_idx()];
+    unsigned int points_begin = eval_points_->subset_begin(dh_cell.dim(), subset_idx) + start_point;
+    for (unsigned int i=points_begin; i<points_begin+data_size; ++i)
+        element_eval_points_map_[elem_idx_in_cache][i] = ElementCacheMap::point_in_proggress;
+}
+
+
+void ElementCacheMap::clear_element_eval_points_map() {
+	ASSERT_PTR_DBG(element_eval_points_map_);
+    unsigned int size = this->eval_points_->max_size();
+	for (unsigned int i_elm=0; i_elm<ElementCacheMap::n_cached_elements; ++i_elm)
+	    for (unsigned int i_point=0; i_point<size; ++i_point)
+	        element_eval_points_map_[i_elm][i_point] = ElementCacheMap::unused_point;
+}
+
+
+void ElementCacheMap::add_to_region(ElementAccessor<3> elm) {
+    unsigned int reg_idx = elm.region_idx().idx();
+    typename std::unordered_map<unsigned int, RegionData>::iterator region_it = update_data_.region_cache_indices_map_.find(reg_idx);
+    if (region_it == update_data_.region_cache_indices_map_.end()) {
+    	update_data_.region_cache_indices_map_.insert( {reg_idx, RegionData()} );
+        region_it = update_data_.region_cache_indices_map_.find(reg_idx);
+    }
+    if ( region_it->second.add(elm) ) update_data_.n_elements_++;
 }
 
 
