@@ -221,7 +221,7 @@ TEST(FieldModelTest, tuple) {
     auto move_only = MoveOnly::Create();
     auto mt = make_tuple(move(move_only));
     cout << tuple_into_callable(move_only_receiver, move(mt)) << endl; // note: tuple must be move'd into the callable so MoveOnly can be treated as &&
- }
+} // */
 
 
 /*
@@ -229,44 +229,44 @@ TEST(FieldModelTest, tuple) {
  * https://stackoverflow.com/questions/687490/how-do-i-expand-a-tuple-into-variadic-template-functions-arguments
  */
 // ------------- UTILITY---------------
-template<int...> struct index_tuple{};
+template<int...> struct index_tuple_test{};
 
 template<int I, typename IndexTuple, typename... Types>
-struct make_indexes_impl;
+struct make_indexes_test_impl;
 
 template<int I, int... Indexes, typename T, typename ... Types>
-struct make_indexes_impl<I, index_tuple<Indexes...>, T, Types...>
+struct make_indexes_test_impl<I, index_tuple_test<Indexes...>, T, Types...>
 {
-    typedef typename make_indexes_impl<I + 1, index_tuple<Indexes..., I>, Types...>::type type;
+    typedef typename make_indexes_test_impl<I + 1, index_tuple_test<Indexes..., I>, Types...>::type type;
 };
 
 template<int I, int... Indexes>
-struct make_indexes_impl<I, index_tuple<Indexes...> >
+struct make_indexes_test_impl<I, index_tuple_test<Indexes...> >
 {
-    typedef index_tuple<Indexes...> type;
+    typedef index_tuple_test<Indexes...> type;
 };
 
 template<typename ... Types>
-struct make_indexes : make_indexes_impl<0, index_tuple<>, Types...>
+struct make_indexes_test : make_indexes_test_impl<0, index_tuple_test<>, Types...>
 {};
 
 // ----------UNPACK TUPLE AND APPLY TO FUNCTION ---------
 template<class Ret, class... Args, int... Indexes >
-Ret apply_helper( Ret (*pf)(Args...), index_tuple< Indexes... >, std::tuple<Args...>&& tup)
+Ret apply_helper_test( Ret (*pf)(Args...), index_tuple_test< Indexes... >, std::tuple<Args...>&& tup)
 {
     return pf( std::forward<Args>( std::get<Indexes>(tup))... );
 }
 
 template<class Ret, class ... Args>
-Ret apply(Ret (*pf)(Args...), const std::tuple<Args...>&  tup)
+Ret apply_test(Ret (*pf)(Args...), const std::tuple<Args...>&  tup)
 {
-    return apply_helper(pf, typename make_indexes<Args...>::type(), std::tuple<Args...>(tup));
+    return apply_helper_test(pf, typename make_indexes_test<Args...>::type(), std::tuple<Args...>(tup));
 }
 
 template<class Ret, class ... Args>
-Ret apply(Ret (*pf)(Args...), std::tuple<Args...>&&  tup)
+Ret apply_test(Ret (*pf)(Args...), std::tuple<Args...>&&  tup)
 {
-    return apply_helper(pf, typename make_indexes<Args...>::type(), std::forward<tuple<Args...>>(tup));
+    return apply_helper_test(pf, typename make_indexes_test<Args...>::type(), std::forward<tuple<Args...>>(tup));
 }
 
 // --------------------- TEST ------------------
@@ -288,12 +288,12 @@ void vect(std::array<int, size> i_vec, std::array<double, size> d_vec)
 
 TEST(FieldModelTest, tuple) {
     std::tuple<int, double> tup(23, 4.5);
-    apply(one, tup);
+    apply_test(one, tup);
 
-    int d = apply(two, std::make_tuple(2));
+    int d = apply_test(two, std::make_tuple(2));
 
     std::tuple<std::array<int, 3>, std::array<double, 3>> vec_tup(std::array<int, 3>({1, 2, 3}), std::array<double, 3>({4.5, 5.5, 6.5}) );
-    apply(vect<3>, vec_tup);
+    apply_test(vect<3>, vec_tup);
 } // */
 
 // ----------------------------------------------------------------------------------------------------------------
