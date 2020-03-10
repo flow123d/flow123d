@@ -4,7 +4,7 @@
  *  Created on: Feb 26, 2020
  *      Author: David Flanderka
  *
- *  Tests EvalPoints, Integral classes ...
+ *  Tests FieldModel class and expand tuple to arguments.
  */
 
 #define FEAL_OVERRIDE_ASSERTS
@@ -24,7 +24,7 @@
 typedef Field<3, FieldValue<3>::Scalar > ScalarField;
 typedef Field<3, FieldValue<3>::VectorFixed > VectorField;
 
-
+// Test of FieldModel - used objects and functionalities in field_model.hh.
 TEST(FieldModelTest, own_model) {
 	ScalarField f_scal;
 	VectorField f_vec;
@@ -34,6 +34,7 @@ TEST(FieldModelTest, own_model) {
 	f_product.cache_update();
 }
 
+// Following blocks are different auxiliary solutions only of development, partly will be modified and partly will be removed in final version of test.
 /*
  * Expand of std::tuple - functional solution:
  * https://stackoverflow.com/questions/10604794/convert-stdtuple-to-stdarray-c11

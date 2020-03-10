@@ -31,52 +31,6 @@
 #include "fields/field_value_cache.hh"
 
 
-/*
- * Expand of std::tuple - functional solution:
- * https://stackoverflow.com/questions/687490/how-do-i-expand-a-tuple-into-variadic-template-functions-arguments
- */
-// ------------- UTILITY---------------
-template<int...> struct index_tuple{};
-
-template<int I, typename IndexTuple, typename... Types>
-struct make_indexes_impl;
-
-template<int I, int... Indexes, typename T, typename ... Types>
-struct make_indexes_impl<I, index_tuple<Indexes...>, T, Types...>
-{
-    typedef typename make_indexes_impl<I + 1, index_tuple<Indexes..., I>, Types...>::type type;
-};
-
-template<int I, int... Indexes>
-struct make_indexes_impl<I, index_tuple<Indexes...> >
-{
-    typedef index_tuple<Indexes...> type;
-};
-
-template<typename ... Types>
-struct make_indexes : make_indexes_impl<0, index_tuple<>, Types...>
-{};
-
-// ----------UNPACK TUPLE AND APPLY TO FUNCTION ---------
-template<class Ret, class Result, class... Args, int... Indexes >
-Ret apply_helper( Ret (*pf)(Args...), Result &res, index_tuple< Indexes... >, std::tuple<Args...>&& tup)
-{
-    return pf( res, std::forward<Args>( std::get<Indexes>(tup))... );
-}
-
-template<class Ret, class Result, class ... Args>
-Ret apply(Ret (*pf)(Args...), Result &res, const std::tuple<Args...>&  tup)
-{
-    return apply_helper(pf, res, typename make_indexes<Args...>::type(), std::tuple<Args...>(tup));
-}
-
-template<class Ret, class Result, class ... Args>
-Ret apply(Ret (*pf)(Args...), Result &res, std::tuple<Args...>&&  tup)
-{
-    return apply_helper(pf, res, typename make_indexes<Args...>::type(), std::forward<tuple<Args...>>(tup));
-}
-
-
 /**
  * Parent class of Field and FieldModel.
  *
@@ -106,19 +60,11 @@ public:
     { static_assert( std::is_same<typename Value::return_type, typename Fn::Result>::value, "Non-convertible functor type!"); }
 
     void cache_update() {
-        auto f0 = std::get<0>(inputs);
-        auto f1 = std::get<1>(inputs);
-
         for(unsigned int i_cache=0; i_cache<this->fvc.size(); ++i_cache) {
             this->fvc.data().template mat<Value::NRows_, Value::NCols_>(i_cache) =
-                    fn( f0.data().template mat<Value::NRows_, Value::NCols_>(i_cache),
-    	                f1.data().template mat<Value::NRows_, Value::NCols_>(i_cache) );
-    	} // */
-        // apply(fn.compute, this->fvc, inputs);
-        // Solutions for call apply method:
-        // - https://www.tutorialspoint.com/function-pointer-to-member-function-in-cplusplus
-        // - https://stackoverflow.com/questions/1485983/calling-c-class-methods-via-a-function-pointer
-        // - https://stackoverflow.com/questions/54651448/c-passing-overloaded-operator-of-class-as-function-pointer
+                    fn( std::get<0>(inputs).data().template mat<Value::NRows_, Value::NCols_>(i_cache),
+                        std::get<1>(inputs).data().template mat<Value::NRows_, Value::NCols_>(i_cache) );
+    	}
     }
 
 };
