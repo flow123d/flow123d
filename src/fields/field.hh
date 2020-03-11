@@ -328,7 +328,12 @@ public:
     void cache_update(ElementCacheMap &cache_map) override;
 
     /// returns reference to FieldValueCache.
-    inline const FieldValueCache<typename Value::element_type> &value_cache() {
+    inline const FieldValueCache<typename Value::element_type> &value_cache() const {
+        return value_cache_;
+    }
+
+    /// Same as previous but return non-const reference.
+    inline FieldValueCache<typename Value::element_type> &value_cache() {
         return value_cache_;
     }
 

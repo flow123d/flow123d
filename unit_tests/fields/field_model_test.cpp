@@ -30,7 +30,7 @@ TEST(FieldModelTest, own_model) {
 	VectorField f_vec;
 	Fn functor;
 
-	FieldModel<3, FieldValue<3>::VectorFixed, Fn, FieldValueCache<double>, FieldValueCache<double>> f_product(functor, f_scal.value_cache(), f_vec.value_cache());
+	FieldModel<3, FieldValue<3>::VectorFixed, Fn, ScalarField, VectorField> f_product(functor, f_scal, f_vec);
 	f_product.cache_update();
 }
 

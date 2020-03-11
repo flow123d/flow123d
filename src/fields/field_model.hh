@@ -113,8 +113,8 @@ public:
     void cache_update() {
         for(unsigned int i_cache=0; i_cache<this->fvc.size(); ++i_cache) {
             this->fvc.data().template mat<Value::NRows_, Value::NCols_>(i_cache) =
-                    fn( std::get<0>(inputs).data().template mat<Value::NRows_, Value::NCols_>(i_cache),
-                        std::get<1>(inputs).data().template mat<Value::NRows_, Value::NCols_>(i_cache) );
+                    fn( std::get<0>(inputs).value_cache().data().template mat<Value::NRows_, Value::NCols_>(i_cache),
+                        std::get<1>(inputs).value_cache().data().template mat<Value::NRows_, Value::NCols_>(i_cache) );
     	}
     }
 
@@ -131,15 +131,15 @@ public:
     typedef Vector Result;
     typedef Scalar Param0;
     typedef Vector Param1;
-    typedef std::tuple< std::shared_ptr<FieldCached<3, Param0>>, std::shared_ptr<FieldCached<3, Param1>> > DepFields;
+    typedef std::tuple< Field<3,FieldValue<3>::Scalar>, Field<3, FieldValue<3>::VectorFixed> > DepFields;
 
-    static int compute(FieldValueCache<double> &res, FieldValueCache<double> &param0, FieldValueCache<double> &param1) {
+    /*static int compute(FieldValueCache<double> &res, FieldValueCache<double> &param0, FieldValueCache<double> &param1) {
         for(unsigned int i_cache=0; i_cache<res.size(); ++i_cache) {
             res.data().template mat<3, 1>(i_cache) =
                     param1.data().template mat<3, 1>(i_cache) * param0.data().template mat<1, 1>(i_cache);
         }
         return 0;
-    }
+    }*/
 
     Result operator() (Param0 a, Param1 v) {
         return a * v;
