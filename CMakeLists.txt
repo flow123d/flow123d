@@ -186,55 +186,60 @@ set(CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE} "")
 set(CMAKE_FORTRAN_FLAGS_${CMAKE_BUILD_TYPE} "")
 
 # Compiler-specific C++11 activation.
-if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")        
-      execute_process(
-          COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-unused-local-typedefs -Wno-deprecated-declarations")
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 
-      # is cygwin env?
-      if (CYGWIN)
-          # is version 4.8 or higher?
-          if (GCC_VERSION VERSION_GREATER 4.8 OR GCC_VERSION VERSION_EQUAL 4.8)
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -fext-numeric-literals")
-            flow_define(HAVE_CYGWIN)
-          # version is too low
-          else ()
-            message(SEND_ERROR "Error: Minimal GCC version under Cygwin is 4.8!." )
-          endif ()
-
-      # not cygwin 
-      # is version 4.7 or higher?
-      elseif (GCC_VERSION VERSION_GREATER 5.0 OR GCC_VERSION VERSION_EQUAL 5.0)
-          set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
-      elseif (GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7)
-          set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-      # version is too low
-      else()
-          message(SEND_ERROR "Error: Minimal GCC version is 4.7!.") 
-      endif()   
-
-    # Necessary for FParser - TODO: move to better place
-    # ?? what about Clang
-    flow_define(HAVE_SINCOS)
-    
-elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wno-uninitialized -Wno-inconsistent-missing-override") 
-    
-    # for some reason BOOST doesn't work with option -std=c++11
-    # BOOST must be compiled with clang in order to use C++11 standard. 
-    # set(Boost_FORCE_REBUILD "true")
-    # set(Boost_CONFIG_FLAGS " --with-toolset=clang ")
-    # set(Boost_BUILD_FLAGS " toolset=clang cxxflags=\"-stdlib=libc++\" linkflags=\"-stdlib=libc++\" " )        
-    
-    # 
-    # TODO: make test for presence of sincos() function and set FLOW123D_HAVE_SINCOS appropriatly, used in fparser extsrc/fpaux.cc
-    #
-else ()
-    message(STATUS "Your C++ compiler does not support C++11. Some features may be disabled.")
-endif()
+# if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")        
+#       execute_process(
+#           COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
+#       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-unused-local-typedefs -Wno-deprecated-declarations")
+# 
+#       # is cygwin env?
+#       if (CYGWIN)
+#           # is version 4.8 or higher?
+#           if (GCC_VERSION VERSION_GREATER 4.8 OR GCC_VERSION VERSION_EQUAL 4.8)
+#             set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -fext-numeric-literals")
+#             flow_define(HAVE_CYGWIN)
+#           # version is too low
+#           else ()
+#             message(SEND_ERROR "Error: Minimal GCC version under Cygwin is 4.8!." )
+#           endif ()
+# 
+#       # not cygwin 
+#       # is version 4.7 or higher?
+#       elseif (GCC_VERSION VERSION_GREATER 5.0 OR GCC_VERSION VERSION_EQUAL 5.0)
+#           set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+#       elseif (GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7)
+#           set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+#       # version is too low
+#       else()
+#           message(SEND_ERROR "Error: Minimal GCC version is 4.7!.") 
+#       endif()   
+# 
+#     # Necessary for FParser - TODO: move to better place
+#     # ?? what about Clang
+#     flow_define(HAVE_SINCOS)
+#     
+# elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+#     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wno-uninitialized -Wno-inconsistent-missing-override") 
+#     
+#     # for some reason BOOST doesn't work with option -std=c++11
+#     # BOOST must be compiled with clang in order to use C++11 standard. 
+#     # set(Boost_FORCE_REBUILD "true")
+#     # set(Boost_CONFIG_FLAGS " --with-toolset=clang ")
+#     # set(Boost_BUILD_FLAGS " toolset=clang cxxflags=\"-stdlib=libc++\" linkflags=\"-stdlib=libc++\" " )        
+#     
+#     # 
+#     # TODO: make test for presence of sincos() function and set FLOW123D_HAVE_SINCOS appropriatly, used in fparser extsrc/fpaux.cc
+#     #
+# else ()
+#     message(STATUS "Your C++ compiler does not support C++11. Some features may be disabled.")
+# endif()
 
 # set encoding of VTU output files to Little Endian, VTU files can be encoded in Little Endian or Big Endian format  
 flow_define(LITTLE_ENDIAN true)
+
 
 #########################################################################
 # Determining timer with highest resolution
