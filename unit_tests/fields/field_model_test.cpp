@@ -94,67 +94,6 @@ TEST(FieldModelTest, tuple) {
     std::cout << std::endl;
 } //*/
 
-/*
- * Expand of std::tuple - needs -std=c++14:
- * https://genix.wordpress.com/2015/02/14/tuples-expanding-into-function-parameters/
- */
-/*#if _MSC_VER == 1900 // hack for VS2015 CTP 5 broken decltype(auto) deduction in tuple_into_callable_n
-#define TUPLE_FWD_RETURN(x) std::conditional_t< std::is_rvalue_reference<decltype(x)>::value, std::remove_reference_t<decltype(x)>, decltype(x)>(x)
-#else
-#define TUPLE_FWD_RETURN(x) x
-#endif
-
-// support for expanding tuples into an overloaded function call's arguments
-#define wrap_overload(func) [](auto&&... ps){ return func( std::forward<decltype(ps)>(ps)... ); }
-
-namespace detail
-{
-    //
-    // base case for building up arguments for the function call
-    //
-    template< typename CALLABLE, typename TUPLE, int INDEX >
-    struct tuple_into_callable_n
-    {
-        template< typename... Vs >
-        static auto apply(CALLABLE f, TUPLE t, Vs&&... args) -> decltype(auto) // error: expected primary-expression before 'auto'
-                                                                               // error: expected ')' before 'auto'
-                                                                               // error: expected type-specifier before 'decltype'
-                                                                               // error: expected initializer before 'decltype'
-        {
-            return tuple_into_callable_n<CALLABLE, TUPLE, INDEX - 1>::apply(
-                f,
-                std::forward<decltype(t)>(t),
-                std::get<INDEX - 1>(std::forward<decltype(t)>(t)),
-                std::forward<Vs>(args)...
-            );
-        }
-    };
-
-    //
-    // terminal case - do the actual function call
-    //
-    template< typename CALLABLE, typename TUPLE >
-    struct tuple_into_callable_n< CALLABLE, TUPLE, 0 >
-    {
-        template< typename... Vs >
-        static auto apply(CALLABLE f, TUPLE t, Vs&&... args) -> decltype(auto) // same errors as previous
-        {
-            return TUPLE_FWD_RETURN(f(std::forward<Vs>(args)...));
-        };
-    };
-}
-
-template< typename FUNC, typename TUPLE >
-auto tuple_into_callable(FUNC f, TUPLE&& t) -> decltype(auto) // same errors as previous
-{
-    return
-        detail::tuple_into_callable_n<
-            FUNC,
-            decltype(t),
-            std::tuple_size< std::remove_reference_t<TUPLE> >::value
-        >::apply(f, std::forward<decltype(t)>(t) );
-}
-
 using namespace std;
 
 class MoveOnly
@@ -202,17 +141,14 @@ TEST(FieldModelTest, tuple) {
 
     // lvalue tuple
     auto t = make_tuple(1, 2);
-    cout << tuple_into_callable(wrap_overload(two_params), t) << endl; // error: use of 'auto' in lambda parameter declaration only available with -std=c++14 or -std=gnu++14
-                                                                       // error: expansion pattern 'int&&' contains no argument packs
-                                                                       // error: 'ps' was not declared in this scope
-                                                                       // error: 'tuple_into_callable' was not declared in this scope
+    cout << tuple_into_callable(wrap_overload(two_params), t) << endl;
 
     // rvalue tuple
-    cout << tuple_into_callable(wrap_overload(two_params), make_tuple(1.0f, 2.0f)) << endl; // same errors as previous
+    cout << tuple_into_callable(wrap_overload(two_params), make_tuple(1.0f, 2.0f)) << endl;
 
     // const tuple
     auto const ct = make_tuple(1.0f, 2.0f);
-    cout << tuple_into_callable(wrap_overload(two_params), ct) << endl; // same errors as previous
+    cout << tuple_into_callable(wrap_overload(two_params), ct) << endl;
 
     // empty tuple -> empty function
     auto et = make_tuple();
@@ -230,7 +166,7 @@ TEST(FieldModelTest, tuple) {
  * https://stackoverflow.com/questions/687490/how-do-i-expand-a-tuple-into-variadic-template-functions-arguments
  */
 // ------------- UTILITY---------------
-template<int...> struct index_tuple_test{};
+/*template<int...> struct index_tuple_test{};
 
 template<int I, typename IndexTuple, typename... Types>
 struct make_indexes_test_impl;

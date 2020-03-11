@@ -32,6 +32,57 @@
 
 
 /**
+ * support for expanding tuples into an overloaded function call's arguments
+ */
+#define wrap_overload(func) [](auto&&... ps){ return func( std::forward<decltype(ps)>(ps)... ); }
+
+namespace detail
+{
+    //
+    // base case for building up arguments for the function call
+    //
+    template< typename CALLABLE, typename TUPLE, int INDEX >
+    struct tuple_into_callable_n
+    {
+        template< typename... Vs >
+        static auto apply(CALLABLE f, TUPLE t, Vs&&... args) -> decltype(auto)
+        {
+            return tuple_into_callable_n<CALLABLE, TUPLE, INDEX - 1>::apply(
+                f,
+                std::forward<decltype(t)>(t),
+                std::get<INDEX - 1>(std::forward<decltype(t)>(t)),
+                std::forward<Vs>(args)...
+            );
+        }
+    };
+
+    //
+    // terminal case - do the actual function call
+    //
+    template< typename CALLABLE, typename TUPLE >
+    struct tuple_into_callable_n< CALLABLE, TUPLE, 0 >
+    {
+        template< typename... Vs >
+        static auto apply(CALLABLE f, TUPLE t, Vs&&... args) -> decltype(auto)
+        {
+            return f(std::forward<Vs>(args)...);
+        };
+    };
+}
+
+template< typename FUNC, typename TUPLE >
+auto tuple_into_callable(FUNC f, TUPLE&& t) -> decltype(auto)
+{
+    return
+        detail::tuple_into_callable_n<
+            FUNC,
+            decltype(t),
+            std::tuple_size< std::remove_reference_t<TUPLE> >::value
+        >::apply(f, std::forward<decltype(t)>(t) );
+}
+
+
+/**
  * Parent class of Field and FieldModel.
  *
  * Will be descendant of FieldCommon in future (needs implementation of pure virtual method).
