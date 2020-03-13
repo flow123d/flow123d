@@ -113,8 +113,7 @@ public:
     void cache_update() {
         for(unsigned int i_cache=0; i_cache<this->fvc.size(); ++i_cache) {
             this->fvc.data().template mat<Value::NRows_, Value::NCols_>(i_cache) =
-                    fn( std::get<0>(inputs).value_cache().data().template mat<Value::NRows_, Value::NCols_>(i_cache),
-                        std::get<1>(inputs).value_cache().data().template mat<Value::NRows_, Value::NCols_>(i_cache) );
+                    fn( std::get<0>(inputs)[i_cache], std::get<1>(inputs)[i_cache]);
     	}
     }
 

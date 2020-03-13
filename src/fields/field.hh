@@ -170,6 +170,8 @@ public:
 
     typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_> operator() (const ElementCacheMap &, EdgePoint &);
 
+    typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_> operator[] (unsigned int i_cache_point);
+
 
     /**
      * Returns reference to input type of particular field instance, this is static member @p input_type of the corresponding FieldBase class

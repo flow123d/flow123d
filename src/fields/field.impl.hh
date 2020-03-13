@@ -155,6 +155,14 @@ typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, 
 
 
 template<int spacedim, class Value>
+typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_> Field<spacedim,Value>::operator[]
+(unsigned int i_cache_point) {
+	return this->value_cache().data().template mat<Value::NRows_, Value::NCols_>(i_cache_point);
+}
+
+
+
+template<int spacedim, class Value>
 it::Instance Field<spacedim,Value>::get_input_type() {
 	return FieldBaseType::get_input_type_instance(shared_->input_element_selection_);
 }
