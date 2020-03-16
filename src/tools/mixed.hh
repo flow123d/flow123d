@@ -46,10 +46,10 @@ public:
     template < template<Dim...> class TT>
     Mixed(const Mixed<TT> &other)
     : _MixedBase0<T>(
-    		T<0>(other.get<0>() ),
-			T<1>(other.get<1>() ),
-			T<2>(other.get<2>() ),
-			T<3>(other.get<3>() ) )
+    		T<0>( (other.template get<0>()) ),
+			T<1>( (other.template get<1>()) ),
+			T<2>( (other.template get<2>()) ),
+			T<3>( (other.template get<3>()) ) )
     { static_assert(std::is_convertible<TT<0>, T<0>>::value, "Non-convertible types!"); }
 
     Mixed(const T<0> &p0,const T<1> &p1,const T<2> &p2,const T<3> &p3)
@@ -118,9 +118,9 @@ public:
     template < template<Dim...> class TT>
     Mixed(const Mixed<TT, 1> &other)
     : _MixedBase1<T>(
-            T<1>(other.get<1>() ),
-            T<2>(other.get<2>() ),
-            T<3>(other.get<3>() ) )
+            T<1>(other.template get<1>() ),
+            T<2>(other.template get<2>() ),
+            T<3>(other.template get<3>() ) )
     { static_assert(std::is_convertible<TT<1>, T<1>>::value, "Non-convertible types!"); }
 
     Mixed(const T<1> &p1,const T<2> &p2,const T<3> &p3)
@@ -220,10 +220,10 @@ public:
     template < template<Dim...> class TT>
     MixedPtr(const MixedPtr<TT> &other)
     : _MixedPtrBase0<T>(
-            other.get<0>(),
-            other.get<1>(),
-            other.get<2>(),
-            other.get<3>())
+            other.template get<0>(),
+            other.template get<1>(),
+            other.template get<2>(),
+            other.template get<3>())
     {}
 
     MixedPtr(TPtr<0> p0, TPtr<1> p1, TPtr<2> p2, TPtr<3> p3)
@@ -287,9 +287,9 @@ public:
     template < template<Dim...> class TT>
     MixedPtr(const MixedPtr<TT, 1> &other)
     : _MixedPtrBase1<T>(
-            other.get<1>(),
-            other.get<2>(),
-            other.get<3>())
+            other.template get<1>(),
+            other.template get<2>(),
+            other.template get<3>())
     {}
 
     MixedPtr(TPtr<1> p1, TPtr<2> p2, TPtr<3> p3)
