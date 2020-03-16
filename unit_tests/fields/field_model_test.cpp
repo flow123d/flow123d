@@ -24,14 +24,51 @@
 typedef Field<3, FieldValue<3>::Scalar > ScalarField;
 typedef Field<3, FieldValue<3>::VectorFixed > VectorField;
 
+
+using Scalar = typename arma::Col<double>::template fixed<1>;
+using Vector = arma::vec3;
+using Tensor = arma::mat33;
+
+
+class FnProduct {
+public:
+    typedef std::tuple<
+            Field<3,FieldValue<3>::Scalar>,
+            Field<3, FieldValue<3>::VectorFixed>
+    > DepFields;
+
+    Vector operator() (Scalar a, Vector v) {
+        return a * v;
+    }
+};
+
+
+
+class FnOther {
+public:
+    typedef std::tuple<
+            Field<3, FieldValue<3>::VectorFixed>,
+            Field<3,FieldValue<3>::Scalar>,
+            Field<3, FieldValue<3>::VectorFixed>
+    > DepFields;
+
+    Vector operator() (Vector a, Scalar c, Vector b) {
+        return a + c * b;
+    }
+};
+
+
 // Test of FieldModel - used objects and functionalities in field_model.hh.
 TEST(FieldModelTest, own_model) {
 	ScalarField f_scal;
 	VectorField f_vec;
-	Fn functor;
 
-	FieldModel<3, FieldValue<3>::VectorFixed, Fn, ScalarField, VectorField> f_product(functor, f_scal, f_vec);
+	auto f_product = Model<3, FieldValue<3>::VectorFixed>::create(FnProduct(), f_scal, f_vec);
 	f_product.cache_update();
+
+    auto f_other = Model<3, FieldValue<3>::VectorFixed>::create(FnOther(), f_vec, f_scal, f_vec);
+    f_other.cache_update();
+
 }
 
 // Following blocks are different auxiliary solutions only of development, partly will be modified and partly will be removed in final version of test.
@@ -137,28 +174,28 @@ string no_params()
     return "no_params called.";
 }
 
-TEST(FieldModelTest, tuple) {
-
-    // lvalue tuple
-    auto t = make_tuple(1, 2);
-    cout << tuple_into_callable(wrap_overload(two_params), t) << endl;
-
-    // rvalue tuple
-    cout << tuple_into_callable(wrap_overload(two_params), make_tuple(1.0f, 2.0f)) << endl;
-
-    // const tuple
-    auto const ct = make_tuple(1.0f, 2.0f);
-    cout << tuple_into_callable(wrap_overload(two_params), ct) << endl;
-
-    // empty tuple -> empty function
-    auto et = make_tuple();
-    cout << tuple_into_callable(no_params, et) << endl;
-
-    // tuple with move-only type
-    auto move_only = MoveOnly::Create();
-    auto mt = make_tuple(move(move_only));
-    cout << tuple_into_callable(move_only_receiver, move(mt)) << endl; // note: tuple must be move'd into the callable so MoveOnly can be treated as &&
-} // */
+//TEST(FieldModelTest, tuple) {
+//
+//    // lvalue tuple
+//    auto t = make_tuple(1, 2);
+//    cout << tuple_into_callable(wrap_overload(two_params), t) << endl;
+//
+//    // rvalue tuple
+//    cout << tuple_into_callable(wrap_overload(two_params), make_tuple(1.0f, 2.0f)) << endl;
+//
+//    // const tuple
+//    auto const ct = make_tuple(1.0f, 2.0f);
+//    cout << tuple_into_callable(wrap_overload(two_params), ct) << endl;
+//
+//    // empty tuple -> empty function
+//    auto et = make_tuple();
+//    cout << tuple_into_callable(no_params, et) << endl;
+//
+//    // tuple with move-only type
+//    auto move_only = MoveOnly::Create();
+//    auto mt = make_tuple(move(move_only));
+//    cout << tuple_into_callable(move_only_receiver, move(mt)) << endl; // note: tuple must be move'd into the callable so MoveOnly can be treated as &&
+//} // */
 
 
 /*

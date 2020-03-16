@@ -38,19 +38,52 @@
 
 namespace detail
 {
+//    //
+//    // base case for building up arguments for the function call
+//    //
+//    template< typename CALLABLE, typename TUPLE, int INDEX >
+//    struct tuple_into_callable_n
+//    {
+//        template< typename... Vs >
+//        static auto apply(CALLABLE f, TUPLE t, Vs&&... args) -> decltype(auto)
+//        {
+//            return tuple_into_callable_n<CALLABLE, TUPLE, INDEX - 1>::apply(
+//                f,
+//                std::forward<decltype(t)>(t),
+//                std::get<INDEX - 1>(std::forward<decltype(t)>(t)),
+//                std::forward<Vs>(args)...
+//            );
+//        }
+//    };
+//
+//    //
+//    // terminal case - do the actual function call
+//    //
+//    template< typename CALLABLE, typename TUPLE >
+//    struct tuple_into_callable_n< CALLABLE, TUPLE, 0 >
+//    {
+//        template< typename... Vs >
+//        static auto apply(CALLABLE f, TUPLE t, Vs&&... args) -> decltype(auto)
+//        {
+//            return f(std::forward<Vs>(args)...);
+//        };
+//    };
+
+
     //
     // base case for building up arguments for the function call
     //
     template< typename CALLABLE, typename TUPLE, int INDEX >
-    struct tuple_into_callable_n
+    struct model_cache_item
     {
         template< typename... Vs >
-        static auto apply(CALLABLE f, TUPLE t, Vs&&... args) -> decltype(auto)
+        static auto eval(int i_cache, CALLABLE f, TUPLE t, Vs&&... args) -> decltype(auto)
         {
-            return tuple_into_callable_n<CALLABLE, TUPLE, INDEX - 1>::apply(
+            return model_cache_item<CALLABLE, TUPLE, INDEX - 1>::eval(
+                i_cache,
                 f,
                 std::forward<decltype(t)>(t),
-                std::get<INDEX - 1>(std::forward<decltype(t)>(t)),
+                std::get<INDEX - 1>(std::forward<decltype(t)>(t))[i_cache],
                 std::forward<Vs>(args)...
             );
         }
@@ -60,26 +93,28 @@ namespace detail
     // terminal case - do the actual function call
     //
     template< typename CALLABLE, typename TUPLE >
-    struct tuple_into_callable_n< CALLABLE, TUPLE, 0 >
+    struct model_cache_item< CALLABLE, TUPLE, 0 >
     {
         template< typename... Vs >
-        static auto apply(CALLABLE f, TUPLE t, Vs&&... args) -> decltype(auto)
+        static auto eval(int i_cache, CALLABLE f, TUPLE t, Vs&&... args) -> decltype(auto)
         {
             return f(std::forward<Vs>(args)...);
         };
     };
+
+
 }
 
-template< typename FUNC, typename TUPLE >
-auto tuple_into_callable(FUNC f, TUPLE&& t) -> decltype(auto)
-{
-    return
-        detail::tuple_into_callable_n<
-            FUNC,
-            decltype(t),
-            std::tuple_size< std::remove_reference_t<TUPLE> >::value
-        >::apply(f, std::forward<decltype(t)>(t) );
-}
+//template< typename FUNC, typename TUPLE >
+//auto tuple_into_callable(FUNC f, TUPLE&& t) -> decltype(auto)
+//{
+//    return
+//        detail::tuple_into_callable_n<
+//            FUNC,
+//            decltype(t),
+//            std::tuple_size< std::remove_reference_t<TUPLE> >::value
+//        >::apply(f, std::forward<decltype(t)>(t) );
+//}
 
 
 /**
@@ -99,51 +134,58 @@ protected:
 };
 
 
-template<int spacedim, class Value, class Fn, class ... Args>
+template<int spacedim, class Value, class Fn, class ... InputFields>
 class FieldModel : FieldCached<spacedim, Value> {
 private:
 	Fn fn;
-    std::tuple<Args...> inputs;
+	//using FnResult = typename std::result_of<Fn()>::type;
+	typedef std::tuple<InputFields...> FieldsTuple;
+    FieldsTuple inputs;
 
 public:
-    FieldModel(Fn functor, Args... args)
-    : fn(functor), inputs( std::make_tuple(std::forward<Args>(args)...) )
-    { static_assert( std::is_same<typename Value::return_type, typename Fn::Result>::value, "Non-convertible functor type!"); }
+    FieldModel(Fn functor, InputFields... args)
+    : fn(functor), inputs( std::make_tuple(std::forward<InputFields>(args)...) )
+    {
+//        static_assert( std::is_same<typename Value::return_type, FnResult>::value,
+//                "Non-convertible functor type!");
+    }
 
-    void cache_update() {
+
+
+
+    void cache_update()  {
         for(unsigned int i_cache=0; i_cache<this->fvc.size(); ++i_cache) {
             this->fvc.data().template mat<Value::NRows_, Value::NCols_>(i_cache) =
-                    fn( std::get<0>(inputs)[i_cache], std::get<1>(inputs)[i_cache]);
+                    //fn( std::get<0>(inputs)[i_cache], std::get<1>(inputs)[i_cache]);
+                detail::model_cache_item<
+                    Fn,
+                    decltype(inputs),
+                    std::tuple_size<FieldsTuple>::value
+                >::eval(i_cache, fn, inputs);
     	}
     }
 
 };
 
 
-using Scalar = typename arma::Col<double>::template fixed<1>;
-using Vector = arma::vec3;
-using Tensor = arma::mat33;
-
-
-class Fn {
+/**
+ * Auxiliary class to avoid explicit specification of constructor template parameters.
+ */
+template<int spacedim, class Value>
+class Model {
 public:
-    typedef Vector Result;
-    typedef Scalar Param0;
-    typedef Vector Param1;
-    typedef std::tuple< Field<3,FieldValue<3>::Scalar>, Field<3, FieldValue<3>::VectorFixed> > DepFields;
 
-    /*static int compute(FieldValueCache<double> &res, FieldValueCache<double> &param0, FieldValueCache<double> &param1) {
-        for(unsigned int i_cache=0; i_cache<res.size(); ++i_cache) {
-            res.data().template mat<3, 1>(i_cache) =
-                    param1.data().template mat<3, 1>(i_cache) * param0.data().template mat<1, 1>(i_cache);
-        }
-        return 0;
-    }*/
-
-    Result operator() (Param0 a, Param1 v) {
-        return a * v;
+    template<class Fn, class ... InputFields>
+    static auto create(Fn fn,  InputFields... inputs) -> decltype(auto) {
+        return FieldModel<spacedim, Value, Fn, InputFields...>(fn, std::forward<InputFields>(inputs)...);
     }
 };
+
+
+
+
+
+
 
 
 
