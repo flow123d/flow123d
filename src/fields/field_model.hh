@@ -22,13 +22,17 @@
 #include <iostream>
 #include <tuple>
 #include <string>
+#include <vector>
 #include <utility>
 #include <type_traits>
 
 #include "fields/field.hh"
 #include "fields/field_common.hh"
+#include "fields/field_algo_base.hh"
 #include "fields/field_values.hh"
 #include "fields/field_value_cache.hh"
+
+template <int spacedim> class ElementAccessor;
 
 
 /**
@@ -117,25 +121,9 @@ namespace detail
 //}
 
 
-/**
- * Parent class of Field and FieldModel.
- *
- * Will be descendant of FieldCommon in future (needs implementation of pure virtual method).
- */
-template<int spacedim, class Value>
-class FieldCached /*: public FieldCommon*/ {
-public:
-	/// Constructor
-	FieldCached()
-	: fvc(Value::NRows_, Value::NCols_) {}
-
-protected:
-    FieldValueCache<typename Value::element_type> fvc;
-};
-
-
 template<int spacedim, class Value, class Fn, class ... InputFields>
-class FieldModel : FieldCached<spacedim, Value> {
+class FieldModel : public FieldAlgorithmBase<spacedim, Value>
+{
 private:
 	Fn fn;
 	//using FnResult = typename std::result_of<Fn()>::type;
@@ -143,6 +131,8 @@ private:
     FieldsTuple inputs;
 
 public:
+    typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
+
     FieldModel(Fn functor, InputFields... args)
     : fn(functor), inputs( std::make_tuple(std::forward<InputFields>(args)...) )
     {
@@ -153,16 +143,29 @@ public:
 
 
 
-    void cache_update()  {
-        for(unsigned int i_cache=0; i_cache<this->fvc.size(); ++i_cache) {
-            this->fvc.data().template mat<Value::NRows_, Value::NCols_>(i_cache) =
-                    //fn( std::get<0>(inputs)[i_cache], std::get<1>(inputs)[i_cache]);
+    void cache_update(FieldValueCache<typename Value::element_type> &data_cache,
+                unsigned int i_cache_el_begin, unsigned int i_cache_el_end,
+                const std::vector< ElementAccessor<spacedim> > &element_set)  {
+        for(unsigned int i_cache=i_cache_el_begin; i_cache<i_cache_el_end; ++i_cache) {
+            data_cache.data().template mat<Value::NRows_, Value::NCols_>(i_cache) =
                 detail::model_cache_item<
                     Fn,
                     decltype(inputs),
                     std::tuple_size<FieldsTuple>::value
                 >::eval(i_cache, fn, inputs);
     	}
+    }
+
+    /// Implementation of virtual method
+    typename Value::return_type const &value(const Point &p, const ElementAccessor<spacedim> &elm) override {
+        ASSERT(false).error("Forbidden method!\n");
+        return this->r_value_;
+    }
+
+    /// Implementation of virtual method
+    void value_list(const Armor::array &point_list, const ElementAccessor<spacedim> &elm,
+                std::vector<typename Value::return_type>  &value_list) override {
+        ASSERT(false).error("Forbidden method!\n");
     }
 
 };

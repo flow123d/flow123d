@@ -19,6 +19,7 @@
 #include <type_traits>
 
 #include "fields/field_model.hh"
+#include "mesh/accessors.hh"
 
 
 typedef Field<3, FieldValue<3>::Scalar > ScalarField;
@@ -62,12 +63,14 @@ public:
 TEST(FieldModelTest, own_model) {
 	ScalarField f_scal;
 	VectorField f_vec;
+	FieldValueCache<typename FieldValue<3>::VectorFixed::element_type> fvc(FieldValue<3>::VectorFixed::NRows_, FieldValue<3>::VectorFixed::NCols_);
+	std::vector< ElementAccessor<3> > element_set;
 
 	auto f_product = Model<3, FieldValue<3>::VectorFixed>::create(FnProduct(), f_scal, f_vec);
-	f_product.cache_update();
+	f_product.cache_update(fvc, 0, fvc.size(), element_set);
 
     auto f_other = Model<3, FieldValue<3>::VectorFixed>::create(FnOther(), f_vec, f_scal, f_vec);
-    f_other.cache_update();
+    f_other.cache_update(fvc, 0, fvc.size(), element_set);
 
 }
 
