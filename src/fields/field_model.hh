@@ -147,7 +147,7 @@ public:
                 unsigned int i_cache_el_begin, unsigned int i_cache_el_end,
                 const std::vector< ElementAccessor<spacedim> > &element_set)  {
         for(unsigned int i_cache=i_cache_el_begin; i_cache<i_cache_el_end; ++i_cache) {
-            data_cache.data().template mat<Value::NRows_, Value::NCols_>(i_cache) =
+            data_cache.data().set(i_cache) =
                 detail::model_cache_item<
                     Fn,
                     decltype(inputs),
