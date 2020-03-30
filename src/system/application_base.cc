@@ -184,7 +184,7 @@ int ApplicationBase::petcs_finalize() {
 void ApplicationBase::init(int argc, char ** argv) {
     // parse our own command line arguments, leave others for PETSc
 	this->parse_cmd_line(argc, argv);
-    Profiler::initialize();
+    Profiler::instance();
 
     armadillo_setup(); // set catching armadillo exceptions and reporting stacktrace
 
