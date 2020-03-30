@@ -34,21 +34,15 @@ using Tensor = arma::mat33;
 
 
 // Functor with resolution 'scalar * vector'
-class FnProduct {
-public:
-    Vector operator() (Scalar a, Vector v) {
-        return a(0) * v;
-    }
-};
+Vector fn_product(Scalar a, Vector v) {
+    return a(0) * v;
+}
 
 
 // Functor with resolution 'vector + scalar * vector'
-class FnOther {
-public:
-    Vector operator() (Vector a, Scalar c, Vector b) {
-        return a + c(0) * b;
-    }
-};
+Vector fn_other(Vector a, Scalar c, Vector b) {
+    return a + c(0) * b;
+}
 
 
 // Test of FieldModel - used objects and functionalities in field_model.hh.
@@ -95,7 +89,7 @@ TEST(FieldModelTest, own_model) {
                                                  { 87.50, 40.50, 2.50},
                                                  {107.25, 50.05, 8.25}};
 
-    	auto f_product = Model<3, FieldValue<3>::VectorFixed>::create(FnProduct(), f_scal, f_vec);
+    	auto f_product = Model<3, FieldValue<3>::VectorFixed>::create(fn_product, f_scal, f_vec);
         f_product.cache_update(fvc, 0, fvc.size(), element_set);
         for (unsigned int i=0; i<n_items; ++i) {
             auto val = fvc.data().template mat<3, 1>(i);
@@ -116,7 +110,7 @@ TEST(FieldModelTest, own_model) {
                                                  {105.00, 48.60, 3.00},
                                                  {126.75, 59.15, 9.75}};
 
-        auto f_other = Model<3, FieldValue<3>::VectorFixed>::create(FnOther(), f_vec, f_scal, f_vec);
+        auto f_other = Model<3, FieldValue<3>::VectorFixed>::create(fn_other, f_vec, f_scal, f_vec);
         f_other.cache_update(fvc, 0, fvc.size(), element_set);
         for (unsigned int i=0; i<n_items; ++i) {
             auto val = fvc.data().template mat<3, 1>(i);

@@ -119,19 +119,19 @@ namespace detail
    @endcode
  *
  */
-template<int spacedim, class Value, class Fn, class ... InputFields>
+template<int spacedim, class Value, typename Fn, class ... InputFields>
 class FieldModel : public FieldAlgorithmBase<spacedim, Value>
 {
 private:
-	Fn fn;
+	Fn* fn;
 	typedef std::tuple<InputFields...> FieldsTuple;
     FieldsTuple inputs;
 
 public:
     typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
 
-    FieldModel(Fn functor, InputFields... args)
-    : fn(functor), inputs( std::make_tuple(std::forward<InputFields>(args)...) )
+    FieldModel(Fn* func, InputFields... args)
+    : fn(func), inputs( std::make_tuple(std::forward<InputFields>(args)...) )
     {}
 
 
@@ -172,8 +172,8 @@ template<int spacedim, class Value>
 class Model {
 public:
 
-    template<class Fn, class ... InputFields>
-    static auto create(Fn fn,  InputFields... inputs) -> decltype(auto) {
+    template<typename Fn, class ... InputFields>
+    static auto create(Fn *fn,  InputFields... inputs) -> decltype(auto) {
         return FieldModel<spacedim, Value, Fn, InputFields...>(fn, std::forward<InputFields>(inputs)...);
     }
 };
