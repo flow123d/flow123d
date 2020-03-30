@@ -36,47 +36,24 @@ template <int spacedim> class ElementAccessor;
 
 
 /**
- * support for expanding tuples into an overloaded function call's arguments
+ * Wrapper for resolution of the overloaded functions passed as a parameter to the FieldModel.
+ *
+ * Example:
+ @code
+   double product(double x, double y) {...}
+   Vec product(double x, Vec y) {...}
+   Model<3, FieldValue<3>::VectorFixed>::create(wrapper_overload(product), f_scal, f_vec);
+ @endcode
+ *
+ * Should automaticaly resolve the second model_cache_item::eval function.
  */
 #define wrap_overload(func) [](auto&&... ps){ return func( std::forward<decltype(ps)>(ps)... ); }
 
 namespace detail
 {
-//    //
-//    // base case for building up arguments for the function call
-//    //
-//    template< typename CALLABLE, typename TUPLE, int INDEX >
-//    struct tuple_into_callable_n
-//    {
-//        template< typename... Vs >
-//        static auto apply(CALLABLE f, TUPLE t, Vs&&... args) -> decltype(auto)
-//        {
-//            return tuple_into_callable_n<CALLABLE, TUPLE, INDEX - 1>::apply(
-//                f,
-//                std::forward<decltype(t)>(t),
-//                std::get<INDEX - 1>(std::forward<decltype(t)>(t)),
-//                std::forward<Vs>(args)...
-//            );
-//        }
-//    };
-//
-//    //
-//    // terminal case - do the actual function call
-//    //
-//    template< typename CALLABLE, typename TUPLE >
-//    struct tuple_into_callable_n< CALLABLE, TUPLE, 0 >
-//    {
-//        template< typename... Vs >
-//        static auto apply(CALLABLE f, TUPLE t, Vs&&... args) -> decltype(auto)
-//        {
-//            return f(std::forward<Vs>(args)...);
-//        };
-//    };
-
-
-    //
-    // base case for building up arguments for the function call
-    //
+    /**
+     * base case for building up arguments for the function call
+     */
     template< typename CALLABLE, typename TUPLE, int INDEX >
     struct model_cache_item
     {
@@ -93,9 +70,9 @@ namespace detail
         }
     };
 
-    //
-    // terminal case - do the actual function call
-    //
+    /**
+     * terminal case - do the actual function call
+     */
     template< typename CALLABLE, typename TUPLE >
     struct model_cache_item< CALLABLE, TUPLE, 0 >
     {
@@ -109,24 +86,44 @@ namespace detail
 
 }
 
-//template< typename FUNC, typename TUPLE >
-//auto tuple_into_callable(FUNC f, TUPLE&& t) -> decltype(auto)
-//{
-//    return
-//        detail::tuple_into_callable_n<
-//            FUNC,
-//            decltype(t),
-//            std::tuple_size< std::remove_reference_t<TUPLE> >::value
-//        >::apply(f, std::forward<decltype(t)>(t) );
-//}
 
+/**
+ * Class representing field computing form results of other fields.
+ *
+ * Example of usage:
+   @code
+    // Functor class with defined operator ()
+    class FnProduct {
+    public:
+        Vector operator() (Scalar a, Vector v) {
+             return a(0) * v;
+        }
+    };
 
+    ...
+
+    // Definition of fields
+    Field<3, FieldValue<3>::Scalar > f_scal;
+    Field<3, FieldValue<3>::VectorFixed > f_vec;
+    Field<3, FieldValue<3>::VectorFixed > result;
+    ... // fill data to fields f_scal, f_vec
+
+    // create instance FieldModel class, use helper method Model::create to simply passsing of parameters
+  	auto f_product = Model<3, FieldValue<3>::VectorFixed>::create(FnProduct(), f_scal, f_vec);
+  	// set field on all regions
+  	result.set_field(mesh->region_db().get_region_set("ALL"), f_product);
+
+  	// cache_update
+  	FieldValueCache<double> &fvc = result.value_cache();
+    f_product.cache_update(fvc, 0, fvc.size(), element_set);
+   @endcode
+ *
+ */
 template<int spacedim, class Value, class Fn, class ... InputFields>
 class FieldModel : public FieldAlgorithmBase<spacedim, Value>
 {
 private:
 	Fn fn;
-	//using FnResult = typename std::result_of<Fn()>::type;
 	typedef std::tuple<InputFields...> FieldsTuple;
     FieldsTuple inputs;
 
@@ -135,10 +132,7 @@ public:
 
     FieldModel(Fn functor, InputFields... args)
     : fn(functor), inputs( std::make_tuple(std::forward<InputFields>(args)...) )
-    {
-//        static_assert( std::is_same<typename Value::return_type, FnResult>::value,
-//                "Non-convertible functor type!");
-    }
+    {}
 
 
 
