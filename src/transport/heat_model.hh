@@ -174,15 +174,15 @@ public:
 
 	HeatTransferModel(Mesh &mesh, const Input::Record in_rec);
 
-	void init_from_input(const Input::Record &in_rec) override {};
+	void init_from_input(const Input::Record &) override {};
 
 	void compute_mass_matrix_coefficient(const std::vector<arma::vec3 > &point_list,
 			const ElementAccessor<3> &ele_acc,
 			std::vector<double> &mm_coef) override;
 
-	void compute_retardation_coefficient(const std::vector<arma::vec3 > &point_list,
-			const ElementAccessor<3> &ele_acc,
-			std::vector<std::vector<double> > &ret_coef) override {};
+	void compute_retardation_coefficient(const std::vector<arma::vec3 > &,
+			const ElementAccessor<3> &,
+			std::vector<std::vector<double> > &) override {};
 
 	void compute_advection_diffusion_coefficients(const std::vector<arma::vec3 > &point_list,
 			const std::vector<arma::vec3> &velocity,

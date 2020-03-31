@@ -191,7 +191,7 @@ public:
         if(time_) delete time_;
     }
 
-    inline void set_velocity_field(const MH_DofHandler &dh) override {};
+    inline void set_velocity_field(const MH_DofHandler &) override {};
 
     inline virtual void output_data() override {};
 

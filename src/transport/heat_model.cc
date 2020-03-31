@@ -368,7 +368,7 @@ void HeatTransferModel::get_flux_bc_data(unsigned int index,
 	for (auto f : bc_flux) f = -f;
 }
 
-void HeatTransferModel::get_flux_bc_sigma(unsigned int index,
+void HeatTransferModel::get_flux_bc_sigma(FMT_UNUSED unsigned int index,
         const std::vector<arma::vec3> &point_list,
 		const ElementAccessor<3> &ele_acc,
 		std::vector< double > &bc_sigma)

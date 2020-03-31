@@ -90,7 +90,7 @@ public:
     /// Constructor to set parameters
     None(){}
     /// Isotherm definition.
-    inline double operator()(double x) {
+    inline double operator()(double) {
         return (0.0);
     }
 };

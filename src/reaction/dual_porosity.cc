@@ -294,7 +294,7 @@ void DualPorosity::update_solution(void)
 }
 
 
-double **DualPorosity::compute_reaction(double **concentrations, int loc_el) 
+double **DualPorosity::compute_reaction(FMT_UNUSED double **concentrations, int loc_el) 
 {
   unsigned int sbi;
   double conc_average, // weighted (by porosity) average of concentration
