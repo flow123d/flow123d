@@ -21,6 +21,7 @@
 #include "fem/fe_values.hh"
 #include "mesh/ref_element.hh"
 #include "quadrature/quadrature_lib.hh"
+#include "system/fmt/posix.h"           // for FMT_UNUSED
 
 
 RT0_space::RT0_space(unsigned int dim)
@@ -42,8 +43,8 @@ const double RT0_space::basis_value(unsigned int basis_index,
 }
 
 
-const arma::vec RT0_space::basis_grad(unsigned int basis_index,
-                                      const arma::vec &point,
+const arma::vec RT0_space::basis_grad(FMT_UNUSED unsigned int basis_index,
+                                      FMT_UNUSED const arma::vec &point,
                                       unsigned int comp_index) const
 {
     OLD_ASSERT(basis_index < this->dim(), "Index of basis function is out of range.");

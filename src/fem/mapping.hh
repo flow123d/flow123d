@@ -27,6 +27,7 @@
 #include "mesh/accessors.hh"
 #include "fem/update_flags.hh"
 #include "mesh/ref_element.hh"
+#include "system/fmt/posix.h"           // for FMT_UNUSED
 
 
 
@@ -53,12 +54,12 @@ template<> inline double determinant(const arma::mat::fixed<2,1> &M)
     return sqrt(M(0,0)*M(0,0)+M(1,0)*M(1,0));
 }
 
-template<> inline double determinant(const arma::mat::fixed<0,3> &M)
+template<> inline double determinant(FMT_UNUSED const arma::mat::fixed<0,3> &M)
 {
     return 0;
 }
 
-template<> inline double determinant(const arma::mat::fixed<3,0> &M)
+template<> inline double determinant(FMT_UNUSED const arma::mat::fixed<3,0> &M)
 {
     return 0;
 }
