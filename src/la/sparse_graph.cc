@@ -310,10 +310,11 @@ SparseGraph::~SparseGraph()
  * @brief     Output a sparse graph.
  * @return    Changed ostream.
  */
-ostream & operator <<(ostream & out, const SparseGraph &fcall)
+ostream & operator <<(ostream & out, const SparseGraph &)
 {
     // TODO
-    return out; //dodelat...
+    ASSERT(0).error("Not implemented!");
+    return out;
 }
 
 

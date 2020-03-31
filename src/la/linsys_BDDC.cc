@@ -112,7 +112,7 @@ LinSys_BDDC::LinSys_BDDC( const unsigned numDofsSub,
 }
 
 
-void LinSys_BDDC::set_tolerances(double  r_tol, double a_tol, unsigned int max_it)
+void LinSys_BDDC::set_tolerances(double  r_tol, FMT_UNUSED double a_tol, unsigned int max_it)
 {
     if (! in_rec_.is_empty()) {
         // input record is set
@@ -124,7 +124,7 @@ void LinSys_BDDC::set_tolerances(double  r_tol, double a_tol, unsigned int max_i
 }
 
 
-void LinSys_BDDC::load_mesh( const int nDim, const int numNodes, const int numDofs,
+void LinSys_BDDC::load_mesh( const int nDim, const int numNodes, FMT_UNUSED const int numDofs,
                              const std::vector<int> & inet, 
                              const std::vector<int> & nnet, 
                              const std::vector<int> & nndf, 
@@ -141,7 +141,7 @@ void LinSys_BDDC::load_mesh( const int nDim, const int numNodes, const int numDo
     std::copy( isngn.begin(), isngn.end(), isngn_.begin() );
     OLD_ASSERT( numDofs == static_cast<int>(size_), "Global problem size mismatch!" );
 
-    bddcml_ -> loadRawMesh( nDim, numNodes, numDofs, inet, nnet, nndf, isegn, isngn, isvgvn, xyz, element_permeability, meshDim );
+    bddcml_ -> loadRawMesh( nDim, numNodes, inet, nnet, nndf, isegn, isngn, isvgvn, xyz, element_permeability, meshDim );
 
     // create a map for BDDCML to PETSc vector
     PetscErrorCode ierr;

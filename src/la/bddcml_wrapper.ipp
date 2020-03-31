@@ -75,7 +75,7 @@ la::BddcmlWrapper::~BddcmlWrapper()
  * where these are not Mesh or Grid objects, user can create own raw description
  * to exploit the flexibility of mesh format underlaying BDDCML.
  */
-void la::BddcmlWrapper::loadRawMesh( const int nDim, const int numNodes, const int numDofs,
+void la::BddcmlWrapper::loadRawMesh( const int nDim, const int numNodes,
                                      const std::vector<int> & inet, 
                                      const std::vector<int> & nnet, 
                                      const std::vector<int> & nndf, 
@@ -239,7 +239,7 @@ void la::BddcmlWrapper::insertToRhs( const SubVec_  & subVec,
  *  Scalar is not used, it is kept for compatibility with constraint functors.
  */
 void la::BddcmlWrapper::applyConstraints( ConstraintVec_ & constraints,
-                                          const double factor, const double scalar ) 
+                                          const double factor, FMT_UNUSED const double scalar ) 
 {
     // Constraint iterators
     ConstraintVec_::const_iterator cIter = constraints.begin( );
@@ -265,7 +265,7 @@ void la::BddcmlWrapper::applyConstraints( ConstraintVec_ & constraints,
 //------------------------------------------------------------------------------
 /** Simply set the dof with index 'index' to zero
  */
-void la::BddcmlWrapper::fixDOF( const unsigned index, const double scalar )
+void la::BddcmlWrapper::fixDOF( const unsigned index, FMT_UNUSED const double scalar )
 {
     std::vector< std::pair<unsigned,double> > thisConstraint;
     thisConstraint.push_back( std::make_pair( index, 0. ) );

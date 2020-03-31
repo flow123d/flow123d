@@ -243,7 +243,7 @@ public:
     /**
      * Sets PETSC matrix (only for PETSC solvers)
      */
-    virtual PetscErrorCode set_matrix(Mat &matrix, MatStructure str)
+    virtual PetscErrorCode set_matrix(Mat&, MatStructure)
     {
     	OLD_ASSERT( false, "Function set_matrix is not implemented for linsys type %s \n.", typeid(*this).name() );
         return 0;
@@ -252,7 +252,7 @@ public:
     /**
      * Sets RHS vector  (only for PETSC solvers)
      */
-    virtual PetscErrorCode set_rhs(Vec &rhs)
+    virtual PetscErrorCode set_rhs(Vec&)
     {
     	OLD_ASSERT( false, "Function set_rhs is not implemented for linsys type %s \n.", typeid(*this).name() );
         return 0;
