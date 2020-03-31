@@ -117,10 +117,6 @@ public:
      * Do not process input record. That is done in init_from_input.
      */
     Mesh(Input::Record in_record, MPI_Comm com = MPI_COMM_WORLD);
-    /**
-     * Common part of both previous constructors and way how to reinitialize a mesh from the  given input record.
-     */
-    void reinit(Input::Record in_record);
 
     /// Destructor.
     virtual ~Mesh();
@@ -393,6 +389,12 @@ public:
     BCMesh *get_bc_mesh();
 
 protected:
+
+    /**
+     * Part of the constructor whichdoes not depedn on input record.
+     * Initializes node-side numbering according to RefElement.
+     */
+    void init();
 
     /**
      * Allow store boundary element data to temporary structure.

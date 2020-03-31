@@ -142,7 +142,7 @@ Mesh::Mesh(Input::Record in_record, MPI_Comm com)
             }
 
         }
-	reinit(in_record_);
+	init();
 }
 
 Mesh::IntersectionSearch Mesh::get_intersection_search()
@@ -151,7 +151,7 @@ Mesh::IntersectionSearch Mesh::get_intersection_search()
 }
 
 
-void Mesh::reinit(Input::Record in_record)
+void Mesh::init()
 {
 
     n_insides = NDEF;
