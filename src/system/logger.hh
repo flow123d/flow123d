@@ -187,10 +187,10 @@ private:
 	void print_to_file(std::ofstream& stream, std::stringstream& file_stream, StreamMask mask);
 
 	/// Print header to screen stream, helper method called from \p print_to_screen.
-	bool print_screen_header(std::ostream& stream, std::stringstream& scr_stream);
+	bool print_screen_header(std::ostream& stream);
 
 	/// Print header to file stream, helper method called from \p print_to_file.
-	void print_file_header(std::ofstream& stream, std::stringstream& file_stream);
+	void print_file_header(std::ofstream& stream);
 
 	/// Return compact (relative) path to the given source file.
 	std::string compact_file_name(std::string file_name);

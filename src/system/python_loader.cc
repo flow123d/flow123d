@@ -207,7 +207,9 @@ PythonRunning::PythonRunning(const std::string& program_name)
         static wstring our_py_home(full_flow_prefix + ":" +default_py_prefix);
         Py_SetPythonHome( &(our_py_home[0]) );
 
-#endif //FLOW123D_PYTHON_PREFIX
+#else
+    (void)program_name; // not used
+#endif //FLOW123D_PYTHON_PREFIX 
 
     // initialize the Python interpreter.
     Py_Initialize();
