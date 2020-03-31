@@ -69,8 +69,7 @@ Distribution::Distribution(const Vec &petsc_vector)
     chkerr(MPI_Comm_size(communicator, &(num_of_procs)));
 
     const PetscInt *petsc_starts;
-    VecGetOwnershipRanges(petsc_vector,&petsc_starts);
-    OLD_ASSERT( ! ierr , "Can not get vector ownership range.\n" );
+    chkerr(VecGetOwnershipRanges(petsc_vector,&petsc_starts));
 
     starts= new unsigned int [np()+1];
     for(unsigned  int i=0 ; i<=np(); i++) starts[i]=petsc_starts[i];
