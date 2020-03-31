@@ -27,7 +27,7 @@ ComputeIntersection<1,2>::ComputeIntersection()
 
 
 ComputeIntersection<1,2>::ComputeIntersection(ElementAccessor<3> abscissa,
-                                              ElementAccessor<3> triangle, Mesh *mesh)
+                                              ElementAccessor<3> triangle, FMT_UNUSED Mesh *mesh)
 : computed_(false)
 {
     ASSERT_DBG(abscissa->dim() == 1);
@@ -541,7 +541,7 @@ ComputeIntersection<2,2>::ComputeIntersection()
 
 ComputeIntersection<2,2>::ComputeIntersection(ElementAccessor<3> triaA,
                                               ElementAccessor<3> triaB,
-                                              Mesh *mesh)
+                                              FMT_UNUSED Mesh *mesh)
 {
     ASSERT_DBG(triaA->dim() == 2);
     ASSERT_DBG(triaB->dim() == 2);
@@ -762,7 +762,7 @@ ComputeIntersection<1,3>::ComputeIntersection()
 
 ComputeIntersection<1,3>::ComputeIntersection(ElementAccessor<3> abscissa,
                                               ElementAccessor<3> tetrahedron,
-                                              Mesh *mesh)
+                                              FMT_UNUSED Mesh *mesh)
 {
     ASSERT_DBG(abscissa->dim() == 1);
     ASSERT_DBG(tetrahedron->dim() == 3);
