@@ -63,8 +63,8 @@ QGauss::QGauss(unsigned int dim, const unsigned int order)
                 QUAD_3D_P13,    QUAD_3D_P14
               };
     static const double unit_cell_volume[] = { 1, 1, 0.5, 1./6 };
-    const pQUAD *q;
-    unsigned int nquads;
+    const pQUAD *q = nullptr;
+    unsigned int nquads = 0;
 
     switch (dim)
     {
@@ -86,7 +86,8 @@ QGauss::QGauss(unsigned int dim, const unsigned int order)
         break;
     }
 
-    OLD_ASSERT(order < nquads, "Quadrature of given order is not implemented.");
+    ASSERT_DBG(order < nquads).error("Quadrature of given order is not implemented.");
+    ASSERT_PTR_DBG(q);
 
     vector<double> p(dim, 0);
     for (int i=0; i<q[order]->npoints; i++)

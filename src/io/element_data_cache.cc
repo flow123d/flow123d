@@ -307,11 +307,11 @@ std::shared_ptr< ElementDataCacheBase > ElementDataCache<T>::gather(Distribution
     int rank = distr->myp();
     int n_proc = distr->np();
 
-    unsigned int n_global_data;   // global number of data
-    int rec_starts[n_proc];       // displacement of first value that is received from each process
-    int rec_counts[n_proc];       // number of values that are received from each process
-    int *rec_indices_ids;         // collective values of local to global indexes map of data
-    T *rec_data;                  // collective values of data
+    unsigned int n_global_data;     // global number of data
+    int rec_starts[n_proc];         // displacement of first value that is received from each process
+    int rec_counts[n_proc];         // number of values that are received from each process
+    int *rec_indices_ids = nullptr; // collective values of local to global indexes map of data
+    T *rec_data = nullptr;          // collective values of data
 
     // collects values of data vectors and local to global indexes map on each process
     if (rank==0) {

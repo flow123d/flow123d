@@ -171,7 +171,7 @@ void FE_P<dim>::init_dofs()
             
             // find index of n-face
             std::pair<unsigned int, unsigned int> zeros = RefElement<dim>::zeros_positions(coords);
-            unsigned int n_face_idx;
+            unsigned int n_face_idx = -1;
             switch (dim-zeros.first) {
                 case 0:
                     n_face_idx = RefElement<dim>::template topology_idx<0>(zeros.second);

@@ -433,8 +433,9 @@ void Mesh::make_neighbours_and_edges()
 			.error("Temporary structure of boundary element data is not empty. Did you call create_boundary_elements?");
 
     Neighbour neighbour;
-    EdgeData *edg;
-    unsigned int ngh_element_idx, last_edge_idx;
+    EdgeData *edg = nullptr;
+    unsigned int ngh_element_idx;
+    unsigned int last_edge_idx = Mesh::undef_idx;
 
     neighbour.mesh_ = this;
 
@@ -594,7 +595,9 @@ void Mesh::make_neighbours_and_edges()
                             vb_neighbours_.push_back(neighbour); // copy neighbour with this edge setting
                         } else {
                             // connect the side to the edge, and side to the edge
+                            ASSERT_PTR_DBG(edg);
                             edg->side_[ edg->n_sides++ ] = si;
+                            ASSERT_DBG(last_edge_idx != Mesh::undef_idx);
                             element_vec_[elem.idx()].edge_idx_[ecs] = last_edge_idx;
                         }
                         break; // next element from intersection list

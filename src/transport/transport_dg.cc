@@ -573,7 +573,7 @@ void TransportDG<Model>::calculate_concentration_matrix()
 	for (auto cell : feo->dh()->own_range() )
     {
 
-        unsigned int n_dofs;
+        unsigned int n_dofs = 0;
         switch (cell.dim())
         {
         case 1:
@@ -1616,7 +1616,7 @@ void TransportDG<Model>::update_after_reactions(bool solution_changed)
     	for (auto cell : feo->dh()->own_range() )
         {
 
-            unsigned int n_dofs;
+            unsigned int n_dofs = 0;
             switch (cell.dim())
             {
             case 1:
