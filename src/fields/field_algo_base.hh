@@ -236,7 +236,7 @@ public:
        /**
         * Postponed setter of Dof handler for FieldFE. For other types of fields has no effect.
         */
-       virtual void set_native_dh(std::shared_ptr<DOFHandlerMultiDim> dh)
+       virtual void set_native_dh(std::shared_ptr<DOFHandlerMultiDim>)
        {}
 
        /**

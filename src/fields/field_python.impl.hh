@@ -185,7 +185,7 @@ void FieldPython<spacedim, Value>::value_list (const std::vector< Point >  &poin
 * Returns one vector value in one given point.
 */
 template <int spacedim, class Value>
-void FieldPython<spacedim, Value>::set_value(const Point &p, const ElementAccessor<spacedim> &elm, Value &value)
+void FieldPython<spacedim, Value>::set_value(const Point &p, FMT_UNUSED const ElementAccessor<spacedim> &elm, Value &value)
 {
 #ifdef FLOW123D_HAVE_PYTHON
     for(unsigned int i = 0; i < spacedim; i++) {

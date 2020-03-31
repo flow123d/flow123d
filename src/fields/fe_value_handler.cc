@@ -53,7 +53,7 @@ public:
 template<int elemdim, int spacedim, class Value>
 class FEShapeHandler<0, elemdim, spacedim, Value> {
 public:
-	inline static typename Value::return_type fe_value(FEValues<elemdim,3> &fe_val, unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
+	inline static typename Value::return_type fe_value(FEValues<elemdim,3> &fe_val, unsigned int i_dof, unsigned int i_qp, FMT_UNUSED unsigned int comp_index)
 	{
 		return fe_val.shape_value(i_dof, i_qp);
 	}
