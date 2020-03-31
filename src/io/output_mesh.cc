@@ -305,7 +305,7 @@ std::shared_ptr<OutputMeshBase> OutputMesh::construct_mesh()
 }
 
 
-std::shared_ptr<ElementDataCache<double>> OutputMesh::make_serial_nodes_cache(std::shared_ptr<ElementDataCache<unsigned int>> global_offsets)
+std::shared_ptr<ElementDataCache<double>> OutputMesh::make_serial_nodes_cache(FMT_UNUSED std::shared_ptr<ElementDataCache<unsigned int>> global_offsets)
 {
 	std::shared_ptr<ElementDataCache<double>> serial_nodes_cache;
 

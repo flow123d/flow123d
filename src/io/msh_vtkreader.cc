@@ -348,14 +348,12 @@ void VtkMeshReader::read_element_data(ElementDataCacheBase &data_cache, MeshData
 		}
 		case DataFormat::binary_uncompressed: {
 			ASSERT_PTR(data_stream_).error();
-			parse_binary_data( data_cache, n_components, actual_header.n_entities, actual_header.position, boundary_domain,
-					actual_header.type );
+			parse_binary_data( data_cache, n_components, actual_header.n_entities, actual_header.position, boundary_domain);
 			break;
 		}
 		case DataFormat::binary_zlib: {
 			ASSERT_PTR(data_stream_).error();
-			parse_compressed_data( data_cache, n_components, actual_header.n_entities, actual_header.position, boundary_domain,
-					actual_header.type);
+			parse_compressed_data( data_cache, n_components, actual_header.n_entities, actual_header.position, boundary_domain);
 			break;
 		}
 		default: {
@@ -389,13 +387,12 @@ void VtkMeshReader::parse_ascii_data(ElementDataCacheBase &data_cache, unsigned 
 
 
 void VtkMeshReader::parse_binary_data(ElementDataCacheBase &data_cache, unsigned int n_components, unsigned int n_entities,
-		Tokenizer::Position pos, bool boundary_domain, DataType value_type)
+		Tokenizer::Position pos, bool boundary_domain)
 {
     n_read_ = 0;
 
     data_stream_->seekg(pos.file_position_);
 	read_header_type(header_type_, *data_stream_);
-	// uint64_t data_size = read_header_type(header_type_, *data_stream_) / type_value_size(value_type);
 
 	for (unsigned int i_row = 0; i_row < n_entities; ++i_row) {
 		data_cache.read_binary_data(*data_stream_, n_components, get_element_vector(boundary_domain)[i_row]);
@@ -405,7 +402,7 @@ void VtkMeshReader::parse_binary_data(ElementDataCacheBase &data_cache, unsigned
 
 
 void VtkMeshReader::parse_compressed_data(ElementDataCacheBase &data_cache, unsigned int n_components, unsigned int n_entities,
-		Tokenizer::Position pos, bool boundary_domain, DataType value_type)
+		Tokenizer::Position pos, bool boundary_domain)
 {
 	data_stream_->seekg(pos.file_position_);
 	uint64_t n_blocks = read_header_type(header_type_, *data_stream_);
@@ -449,8 +446,6 @@ void VtkMeshReader::parse_compressed_data(ElementDataCacheBase &data_cache, unsi
 	}
 
     n_read_ = 0;
-
-	// uint64_t data_size = decompressed_data_size / type_value_size(value_type);
 
 	for (unsigned int i_row = 0; i_row < n_entities; ++i_row) {
 		data_cache.read_binary_data(decompressed_data, n_components, get_element_vector(boundary_domain)[i_row]);
@@ -564,8 +559,9 @@ bool VtkMeshReader::compare_points(const arma::vec3 &p1, const arma::vec3 &p2) {
 }
 
 
-void VtkMeshReader::read_physical_names(Mesh * mesh) {
+void VtkMeshReader::read_physical_names(Mesh*) {
 	// will be implemented later
+	ASSERT(0).error("Not implemented!");
 }
 
 

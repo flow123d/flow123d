@@ -199,7 +199,7 @@ void OutputTime::write_time_frame()
 {
 	START_TIMER("OutputTime::write_time_frame");
     if (observe_)
-        observe_->output_time_frame( time, (write_time < time) );
+        observe_->output_time_frame( write_time < time );
 
     // Write data to output stream, when data registered to this output
     // streams were changed
