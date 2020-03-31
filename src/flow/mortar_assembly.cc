@@ -271,7 +271,7 @@ void P1_CouplingAssembler::add_sides(LocalElementAccessorBase<3> ele_ac, unsigne
  * - 20.11. 2014 - very poor convergence, big error in pressure even at internal part of the fracture
  */
 
-void P1_CouplingAssembler::assembly(LocalElementAccessorBase<3> ele_ac) {
+void P1_CouplingAssembler::assembly(FMT_UNUSED LocalElementAccessorBase<3> ele_ac) {
 /*
     const IsecList &master_list = master_list_[ele_ac.ele_global_idx()];
     if (master_list.size() == 0) return; // skip empty masters

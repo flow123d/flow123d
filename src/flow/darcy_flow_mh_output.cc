@@ -269,7 +269,7 @@ void DarcyFlowMHOutput::output()
                 make_element_vector(observed_elements);
 
         if ( output_fields.is_field_output_time(output_fields.field_node_pressure,darcy_flow->time().step()) )
-                make_node_scalar_param(all_element_idx_);
+                make_node_scalar_param();
         //else
         //        make_node_scalar_param(observed_elements);
 
@@ -396,7 +396,7 @@ void DarcyFlowMHOutput::make_corner_scalar(vector<double> &node_scalar)
 //
 //=============================================================================
 
-void DarcyFlowMHOutput::make_node_scalar_param(ElementSetRef element_indices) {
+void DarcyFlowMHOutput::make_node_scalar_param() {
     START_TIMER("DarcyFlowMHOutput::make_node_scalar_param");
 
 	vector<double> scalars(mesh_->n_nodes());

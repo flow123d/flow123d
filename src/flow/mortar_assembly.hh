@@ -34,7 +34,7 @@ public:
     virtual ~MortarAssemblyBase() {};
 
     // Default assembly is empty to allow dummy implementation for dimensions without coupling.
-    virtual void assembly(LocalElementAccessorBase<3> ele_ac) {};
+    virtual void assembly(FMT_UNUSED LocalElementAccessorBase<3> ele_ac) {};
 
     void fix_velocity(LocalElementAccessorBase<3> ele_ac) {
         fix_velocity_flag = true;

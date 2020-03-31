@@ -62,14 +62,14 @@ public:
     // TODO: implement and use general interpolations between discrete spaces
     virtual arma::vec3 make_element_vector(ElementAccessor<3> ele) = 0;
 
-    virtual void update_water_content(LocalElementAccessorBase<3> ele)
+    virtual void update_water_content(FMT_UNUSED LocalElementAccessorBase<3> ele)
     {}
 
 protected:
 
     virtual void assemble_sides(LocalElementAccessorBase<3> ele) =0;
     
-    virtual void assemble_source_term(LocalElementAccessorBase<3> ele)
+    virtual void assemble_source_term(FMT_UNUSED LocalElementAccessorBase<3> ele)
     {}
 };
 
@@ -437,7 +437,7 @@ protected:
     }
     
     
-    void assemble_element(LocalElementAccessorBase<3> ele_ac){
+    void assemble_element(LocalElementAccessorBase<3> ){
         // set block B, B': element-side, side-element
         
         for(unsigned int side = 0; side < loc_side_dofs.size(); side++){
