@@ -42,8 +42,8 @@
 #include "mesh/long_idx.hh"
 #include "mesh/accessors.hh"
 
-FLOW123D_FORCE_LINK_IN_CHILD(concentrationTransportModel);
-FLOW123D_FORCE_LINK_IN_CHILD(heatModel);
+FLOW123D_FORCE_LINK_IN_CHILD(concentrationTransportModel)
+FLOW123D_FORCE_LINK_IN_CHILD(heatModel)
 
 
 

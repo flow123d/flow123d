@@ -29,7 +29,7 @@ template<unsigned int N, unsigned int M>
 IntersectionPointAux<N,M>::IntersectionPointAux()
 {
     clear();
-};
+}
 
 template<unsigned int N, unsigned int M>    
 IntersectionPointAux<N,M>::IntersectionPointAux(const arma::vec::fixed<N+1> &lcA,
@@ -75,7 +75,7 @@ IntersectionPointAux<N,M>::IntersectionPointAux(const IntersectionPointAux<N,M-1
     }
 //     dim_B_ = M-1;
 //     idx_B_ = idx_B;
-};
+}
 
 
 template<unsigned int N, unsigned int M>
@@ -95,7 +95,7 @@ IntersectionPointAux<N,M>::IntersectionPointAux(const IntersectionPointAux<N,M-2
         idx_B_ = RefElement<3>::interact(Interaction<0,1>(idx_B))[IP.idx_B()];
     else
         idx_B_ = idx_B;
-};
+}
 
 template<unsigned int N, unsigned int M>
 IntersectionPointAux<M,N> IntersectionPointAux<N,M>::switch_objects() const
@@ -105,7 +105,7 @@ IntersectionPointAux<M,N> IntersectionPointAux<N,M>::switch_objects() const
     IP.set_topology(idx_B_,dim_B_,idx_A_, dim_A_);
     IP.set_result(result_);
     return IP;
-};
+}
 
 
 template<unsigned int N, unsigned int M>

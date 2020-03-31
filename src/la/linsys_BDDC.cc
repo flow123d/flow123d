@@ -322,7 +322,7 @@ LinSys_BDDC::~LinSys_BDDC()
 
     delete bddcml_;
 #endif // FLOW123D_HAVE_BDDCML
-};
+}
 
 // construct global solution
 //void LinSys_BDDC::gatherSolution_( )

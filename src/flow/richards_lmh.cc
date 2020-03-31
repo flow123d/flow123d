@@ -33,7 +33,7 @@
 #include "tools/include_fadbad.hh" // for "fadbad.h", "badiff.h", "fadiff.h"
 
 
-FLOW123D_FORCE_LINK_IN_CHILD(richards_lmh);
+FLOW123D_FORCE_LINK_IN_CHILD(richards_lmh)
 
 
 namespace it=Input::Type;

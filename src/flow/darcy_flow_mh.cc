@@ -67,7 +67,7 @@
 #include "intersection/intersection_local.hh"
 
 
-FLOW123D_FORCE_LINK_IN_CHILD(darcy_flow_mh);
+FLOW123D_FORCE_LINK_IN_CHILD(darcy_flow_mh)
 
 
 

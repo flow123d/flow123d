@@ -568,7 +568,7 @@ arma::vec::fixed<dim+1> RefElement<dim>::line_barycentric_interpolation(
     bary_interpolated_coords = ((theta - first_theta) * second_coords + (second_theta - theta) * first_coords)
                                /(second_theta - first_theta);
     return bary_interpolated_coords;
-};
+}
 
 template class RefElement<0>;
 template class RefElement<1>;

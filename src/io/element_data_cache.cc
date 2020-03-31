@@ -222,7 +222,7 @@ void ElementDataCache<T>::store_value(unsigned int idx, const T * value) {
     for(unsigned int i = 0; i < this->n_comp_; i++, vec_idx++) {
     	vec[vec_idx] = value[i];
     }
-};
+}
 
 /**
  * Add value to given index
@@ -235,7 +235,7 @@ void ElementDataCache<T>::add(unsigned int idx, const T * value) {
     for(unsigned int i = 0; i < this->n_comp_; i++, vec_idx++) {
     	vec[vec_idx] += value[i];
     }
-};
+}
 
 /**
  * Reset values at given index
@@ -248,7 +248,7 @@ void ElementDataCache<T>::zero(unsigned int idx) {
     for(unsigned int i = 0; i < this->n_comp_; i++, vec_idx++) {
     	vec[vec_idx] = 0;
     }
-};
+}
 
 /**
  * Normalize values at given index
@@ -261,7 +261,7 @@ void ElementDataCache<T>::normalize(unsigned int idx, unsigned int divisor) {
     for(unsigned int i = 0; i < this->n_comp_; i++, vec_idx++) {
     	vec[vec_idx] /= divisor;
     }
-};
+}
 
 template <typename T>
 CheckResult ElementDataCache<T>::check_values(double default_val, double lower_bound, double upper_bound) {
@@ -283,7 +283,7 @@ CheckResult ElementDataCache<T>::check_values(double default_val, double lower_b
     if (is_nan) return CheckResult::not_a_number;
     else if (out_of_limit) return CheckResult::out_of_limits;
     else return CheckResult::ok;
-};
+}
 
 template <typename T>
 void ElementDataCache<T>::scale_data(double coef) {
@@ -298,7 +298,7 @@ void ElementDataCache<T>::scale_data(double coef) {
     }
 
     check_scale_data_ = CheckScaleData::scale;
-};
+}
 
 
 template <typename T>
@@ -432,17 +432,17 @@ std::shared_ptr< ElementDataCacheBase > ElementDataCache<T>::compute_node_data(s
 template<>
 MPI_Datatype ElementDataCache<double>::mpi_data_type() {
     return MPI_DOUBLE;
-};
+}
 
 template<>
 MPI_Datatype ElementDataCache<int>::mpi_data_type() {
     return MPI_INT;
-};
+}
 
 template<>
 MPI_Datatype ElementDataCache<unsigned int>::mpi_data_type() {
     return MPI_UNSIGNED;
-};
+}
 
 
 /// Access i-th element in the data vector.

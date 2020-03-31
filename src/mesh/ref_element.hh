@@ -460,7 +460,7 @@ arma::mat::fixed<dim+1,subdim+1> RefElement<dim>::bary_coords(unsigned int sid){
         }       
     
         return bary_c;
-};
+}
 
 
 template<unsigned int dim> inline
@@ -483,7 +483,7 @@ template<unsigned int subdim>
 auto RefElement<dim>::interpolate(arma::vec::fixed<subdim+1> coord, int sub_simplex_idx) -> BaryPoint
 {
     return RefElement<dim>::bary_coords<subdim>(sub_simplex_idx)*coord;
-};
+}
 /*
 template <unsigned int Size>
 IdxVector<Size>::IdxVector(std::array<unsigned int,Size> data_in)
