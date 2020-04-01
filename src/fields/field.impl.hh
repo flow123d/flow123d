@@ -137,19 +137,17 @@ Field<spacedim,Value> &Field<spacedim,Value>::operator=(const Field<spacedim,Val
 
 
 template<int spacedim, class Value>
-typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_> Field<spacedim,Value>::operator()
+typename Value::return_type Field<spacedim,Value>::operator()
 (const ElementCacheMap &map, BulkPoint &p) {
-    return value_cache_.template
-    		get_value<Value::NRows_, Value::NCols_>(map, p.dh_cell(), p.eval_point_idx());
+    return value_cache_.template get_value<Value>(map, p.dh_cell(), p.eval_point_idx());
 }
 
 
 
 template<int spacedim, class Value>
-typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_> Field<spacedim,Value>::operator()
+typename Value::return_type Field<spacedim,Value>::operator()
 (const ElementCacheMap &map, EdgePoint &p) {
-    return value_cache_.template
-    		get_value<Value::NRows_, Value::NCols_>(map, p.dh_cell_side().cell(), p.eval_point_idx());
+    return value_cache_.template get_value<Value>(map, p.dh_cell_side().cell(), p.eval_point_idx());
 }
 
 

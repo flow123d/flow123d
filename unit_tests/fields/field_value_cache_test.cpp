@@ -25,6 +25,8 @@
 #include "system/sys_profiler.hh"
 
 
+typedef FieldValue_<1,1,double> ScalarValue;
+
 class FieldValueCacheTest : public testing::Test, public ElementCacheMap {
 
 public:
@@ -88,16 +90,16 @@ TEST_F(FieldValueCacheTest, field_value_cache) {
     // check value
     dh_cell = (*this)(dh_cell);
     for(BulkPoint q_point: bulk_eval->points(dh_cell)) {
-        auto point_val = value_cache.template get_value<1,1>(*this, dh_cell, q_point.eval_point_idx());
-    	EXPECT_ARMA_EQ( point_val, const_val );
+        auto point_val = value_cache.template get_value<ScalarValue>(*this, dh_cell, q_point.eval_point_idx());
+    	EXPECT_DOUBLE_EQ( point_val, const_val(0) );
     }
     for ( DHCellSide cell_side : dh_cell.side_range() )
       if ( cell_side.n_edge_sides() >= 2 )
         for( DHCellSide edge_side : cell_side.edge_sides() )
             for ( EdgePoint q_point : edge_eval->points(edge_side) ) {
                 auto edge_cell = (*this)(edge_side.cell());
-                auto point_val = value_cache.template get_value<1,1>(*this, edge_cell, q_point.eval_point_idx());
-                EXPECT_ARMA_EQ( point_val, const_val );
+                auto point_val = value_cache.template get_value<ScalarValue>(*this, edge_cell, q_point.eval_point_idx());
+                EXPECT_DOUBLE_EQ( point_val, const_val(0) );
             }
 }
 
