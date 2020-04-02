@@ -42,7 +42,7 @@
 template<int spacedim, class Value>
 Field<spacedim,Value>::Field()
 : data_(std::make_shared<SharedData>()),
-  value_cache_( FieldValueCache<typename Value::element_type, typename Value::return_type>(Value::NRows_, Value::NCols_) )
+  value_cache_( FieldValueCache<typename Value::element_type>(Value::NRows_, Value::NCols_) )
 {
 	// n_comp is nonzero only for variable size vectors Vector, VectorEnum, ..
 	// this invariant is kept also by n_comp setter
@@ -56,7 +56,7 @@ Field<spacedim,Value>::Field()
 template<int spacedim, class Value>
 Field<spacedim,Value>::Field(const string &name, bool bc)
 : data_(std::make_shared<SharedData>()),
-  value_cache_( FieldValueCache<typename Value::element_type, typename Value::return_type>(Value::NRows_, Value::NCols_) )
+  value_cache_( FieldValueCache<typename Value::element_type>(Value::NRows_, Value::NCols_) )
 {
 		// n_comp is nonzero only for variable size vectors Vector, VectorEnum, ..
 		// this invariant is kept also by n_comp setter
@@ -72,7 +72,7 @@ Field<spacedim,Value>::Field(const string &name, bool bc)
 template<int spacedim, class Value>
 Field<spacedim,Value>::Field(unsigned int component_index, string input_name, string name, bool bc)
 : data_(std::make_shared<SharedData>()),
-  value_cache_( FieldValueCache<typename Value::element_type, typename Value::return_type>(Value::NRows_, Value::NCols_) )
+  value_cache_( FieldValueCache<typename Value::element_type>(Value::NRows_, Value::NCols_) )
 {
 	// n_comp is nonzero only for variable size vectors Vector, VectorEnum, ..
 	// this invariant is kept also by n_comp setter
@@ -150,6 +150,14 @@ typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, 
 (const ElementCacheMap &map, EdgePoint &p) {
     return value_cache_.template
     		get_value<Value::NRows_, Value::NCols_>(map, p.dh_cell_side().cell(), p.eval_point_idx());
+}
+
+
+
+template<int spacedim, class Value>
+typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_> Field<spacedim,Value>::operator[]
+(unsigned int i_cache_point) {
+	return this->value_cache().data().template mat<Value::NRows_, Value::NCols_>(i_cache_point);
 }
 
 

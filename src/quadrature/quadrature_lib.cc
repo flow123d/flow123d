@@ -59,9 +59,9 @@ std::vector<DimQuadList> __gauss_quadratures = {
 
 double __unit_cell_volume[] = { 1, 1, 0.5, 1./6 };
 
-template<int dim>
+template<int Dim>
 void QGauss::init(uint order) {
-    DimQuadList & quads = __gauss_quadratures[dim];
+    DimQuadList & quads = __gauss_quadratures[Dim];
     OLD_ASSERT(order < quads.size(), "Quadrature of given order is not implemented.");
     auto &point_list = quads[order];
 
@@ -69,9 +69,9 @@ void QGauss::init(uint order) {
     this->weights.resize(0);
     for (uint i=0; i<point_list->npoints; i++)
     {
-        Armor::ArmaVec<double, dim> p(& point_list->points[i*(dim+1)]);
+        Armor::ArmaVec<double, Dim> p(& point_list->points[i*(Dim+1)]);
         this->quadrature_points.append(p);
-        this->weights.push_back(point_list->weights[i] * __unit_cell_volume[dim]);
+        this->weights.push_back(point_list->weights[i] * __unit_cell_volume[Dim]);
     }
 }
 

@@ -23,9 +23,9 @@
 #include "fem/dh_cell_accessor.hh"
 #include "mesh/accessors.hh"
 
-template<class elm_type, class return_type>
+template<class elm_type>
 template<uint nRows, uint nCols>
-typename arma::Mat<elm_type>::template fixed<nRows, nCols> FieldValueCache<elm_type, return_type>::get_value(const ElementCacheMap &map,
+typename arma::Mat<elm_type>::template fixed<nRows, nCols> FieldValueCache<elm_type>::get_value(const ElementCacheMap &map,
         const DHCellAccessor &dh_cell, unsigned int eval_points_idx) {
 
     ASSERT(dh_cell.element_cache_index() != ElementCacheMap::undef_elem_idx)(dh_cell.elm_idx());

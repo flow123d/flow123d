@@ -29,15 +29,15 @@
  * Implementation of FieldValueCache methods
  */
 
-template<class elm_type, class return_type>
-FieldValueCache<elm_type, return_type>::FieldValueCache(unsigned int n_rows, unsigned int n_cols)
+template<class elm_type>
+FieldValueCache<elm_type>::FieldValueCache(unsigned int n_rows, unsigned int n_cols)
 : data_(n_rows, n_cols) {}
 
-template<class elm_type, class return_type>
-FieldValueCache<elm_type, return_type>::~FieldValueCache() {}
+template<class elm_type>
+FieldValueCache<elm_type>::~FieldValueCache() {}
 
-template<class elm_type, class return_type>
-void FieldValueCache<elm_type, return_type>::init(std::shared_ptr<EvalPoints> eval_points, unsigned int n_cache_elements) {
+template<class elm_type>
+void FieldValueCache<elm_type>::init(std::shared_ptr<EvalPoints> eval_points, unsigned int n_cache_elements) {
     ASSERT_EQ(data_.size(), 0).error("Repeated initialization!\n");
 
     this->n_cache_points_ = n_cache_elements * eval_points->max_size();
@@ -190,8 +190,6 @@ DHCellAccessor & ElementCacheMap::operator() (DHCellAccessor &dh_cell) const {
  * Explicit instantiation of templates
  */
 
-template class FieldValueCache<unsigned int, unsigned int>;
-template class FieldValueCache<int, int>;
-template class FieldValueCache<double, double>;
-template class FieldValueCache<double, arma::vec3>;
-template class FieldValueCache<double, arma::mat33>;
+template class FieldValueCache<unsigned int>;
+template class FieldValueCache<int>;
+template class FieldValueCache<double>;
