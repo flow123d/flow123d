@@ -58,6 +58,11 @@ class BulkPoint;
 class EdgePoint;
 template <int spacedim> class ElementAccessor;
 template <int spacedim, class Value> class FieldFE;
+namespace detail
+{
+    template< typename CALLABLE, typename TUPLE, int INDEX >
+    struct model_cache_item;
+}
 
 using namespace std;
 namespace IT=Input::Type;
@@ -169,8 +174,6 @@ public:
 
 
     typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_> operator() (const ElementCacheMap &, EdgePoint &);
-
-    typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_> operator[] (unsigned int i_cache_point);
 
 
     /**
@@ -341,6 +344,9 @@ public:
 
 protected:
 
+    /// Return item of @p value_cache_ given by i_cache_point.
+    typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_> operator[] (unsigned int i_cache_point);
+
     /**
      * Read input into @p regions_history_ possibly pop some old values from the
      * history queue to keep its size less then @p history_length_limit_.
@@ -405,6 +411,9 @@ protected:
 
     template<int dim, class Val>
     friend class MultiField;
+
+    template< typename CALLABLE, typename TUPLE, int INDEX >
+    friend struct detail::model_cache_item;
 
 };
 
