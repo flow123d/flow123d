@@ -561,7 +561,7 @@ bool VtkMeshReader::compare_points(const arma::vec3 &p1, const arma::vec3 &p2) {
 
 void VtkMeshReader::read_physical_names(Mesh*) {
 	// will be implemented later
-	ASSERT(0).error("Not implemented!");
+	// ASSERT(0).error("Not implemented!");
 }
 
 
