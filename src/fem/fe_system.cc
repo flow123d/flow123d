@@ -64,7 +64,7 @@ FESystemFunctionSpace::FESystemFunctionSpace(const vector<shared_ptr<FunctionSpa
 }
 
 
-const double FESystemFunctionSpace::basis_value(unsigned int i,
+double FESystemFunctionSpace::basis_value(unsigned int i,
                              const arma::vec &p,
                              unsigned int comp) const
 {

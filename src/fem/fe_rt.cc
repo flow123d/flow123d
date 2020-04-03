@@ -29,9 +29,9 @@ RT0_space::RT0_space(unsigned int dim)
 {}
 
 
-const double RT0_space::basis_value(unsigned int basis_index,
-                                    const arma::vec &point,
-                                    unsigned int comp_index) const
+double RT0_space::basis_value(unsigned int basis_index,
+                              const arma::vec &point,
+                              unsigned int comp_index) const
 {
     OLD_ASSERT(basis_index < this->dim(), "Index of basis function is out of range.");
     OLD_ASSERT(comp_index < this->n_components_, "Index of component is out of range.");

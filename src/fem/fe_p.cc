@@ -59,10 +59,10 @@ PolynomialSpace::PolynomialSpace(unsigned int degree, unsigned int dim)
 }
 
 
-const double PolynomialSpace::basis_value(unsigned int i,
-                                          const arma::vec &point,
-                                          unsigned int comp_index
-                                         ) const
+double PolynomialSpace::basis_value(unsigned int i,
+                                    const arma::vec &point,
+                                    unsigned int comp_index
+                                    ) const
 {
     ASSERT(comp_index == 0);
 	OLD_ASSERT(i<=powers.size(), "Index of basis function is out of range.");

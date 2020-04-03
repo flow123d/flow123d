@@ -57,17 +57,17 @@ public:
      * @brief Getter for the number of all mesh dofs required by the given
      * finite element.
      */
-    const unsigned int n_global_dofs() const { return n_global_dofs_; }
+    unsigned int n_global_dofs() const { return n_global_dofs_; }
     
     /**
      * @brief Returns the number of dofs on the current process.
      */
-    const unsigned int lsize() const { return lsize_; }
+    unsigned int lsize() const { return lsize_; }
 
     /**
      * @brief Returns max. number of dofs on one element.
      */
-    const unsigned int max_elem_dofs() const { return max_elem_dofs_; }
+    unsigned int max_elem_dofs() const { return max_elem_dofs_; }
 
     std::shared_ptr<Distribution> distr() const { return dof_ds_; }
 
