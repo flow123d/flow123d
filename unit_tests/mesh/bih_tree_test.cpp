@@ -225,7 +225,7 @@ public:
 	BIH_test()
 	: r_gen(123), mesh(nullptr), bt(nullptr)
 	{
-        Profiler::initialize();
+        Profiler::instance();
 		FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 	}
 
@@ -285,7 +285,7 @@ TEST_F(BIH_test, find_bounding_box_5) {
 
 
 TEST(BIH_Tree_Test, 2d_mesh) {
-    Profiler::initialize();
+    Profiler::instance();
 	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
 	std::string mesh_in_string = "{mesh_file=\"mesh/noncompatible_small.msh\"}";
@@ -310,7 +310,7 @@ TEST(BIH_Tree_Test, 2d_mesh) {
 
 
 TEST(BIH_Tree_Test, bih_tree_above_region) {
-    Profiler::initialize();
+    Profiler::instance();
 	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
 	std::string mesh_in_string = "{mesh_file=\"mesh/mesh_read_regions.msh\"}";

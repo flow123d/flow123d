@@ -34,7 +34,7 @@ public:
 
 
 TEST(PVDReader, read_pvd) {
-    Profiler::initialize();
+    Profiler::instance();
 
     // has to introduce some flag for passing absolute path to 'test_units' in source tree
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
@@ -49,7 +49,7 @@ TEST(PVDReader, read_pvd) {
 
 
 TEST(PVDReader, get_element_data) {
-    Profiler::initialize();
+    Profiler::instance();
 
     // has to introduce some flag for passing absolute path to 'test_units' in source tree
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");

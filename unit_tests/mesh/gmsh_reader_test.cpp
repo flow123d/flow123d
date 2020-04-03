@@ -20,7 +20,7 @@
 
 
 /*TEST(GMSHReader, read_mesh_from_stream) {
-    Profiler::initialize();
+    Profiler::instance();
     
     string fname = string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh";
     ifstream ifs( fname.c_str() );
@@ -40,7 +40,7 @@
 
 
 TEST(GMSHReader, read_mesh_from_file) {
-    Profiler::initialize();
+    Profiler::instance();
 
     // has to introduce some flag for passing absolute path to 'test_units' in source tree
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");

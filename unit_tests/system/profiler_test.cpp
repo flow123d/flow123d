@@ -162,7 +162,7 @@ TEST_F(ProfilerTest, test_one_timer) {test_one_timer();}
     const double TIMER_RESOLUTION = Profiler::get_resolution();
     const double DELTA = TIMER_RESOLUTION*1000;
     double total=0;
-    Profiler::initialize();
+    Profiler::instance();
 
     { // uninitialize can not be in the same block as the START_TIMER
 
@@ -221,7 +221,7 @@ TEST_F(ProfilerTest, test_one_timer) {test_one_timer();}
 // testing precision when waiting 1 sec up to 2 decimal places
 TEST_F(ProfilerTest, test_absolute_time) {test_absolute_time();}
 void ProfilerTest::test_absolute_time() {
-    Profiler::initialize();
+    Profiler::instance();
 
     // test absolute time
     {
@@ -258,7 +258,7 @@ void ProfilerTest::test_absolute_time() {
 // testing correct report generation
 TEST_F(ProfilerTest, test_structure) {test_structure();}
 void ProfilerTest::test_structure() {
-    Profiler::initialize();
+    Profiler::instance();
 
     {
         START_TIMER("main");
@@ -313,7 +313,7 @@ TEST_F(ProfilerTest, test_memory_profiler) {test_memory_profiler();}
 void ProfilerTest::test_memory_profiler() {
     const int ARR_SIZE = 1000;
     const int LOOP_CNT = 1000;
-    Profiler::initialize();
+    Profiler::instance();
 
     {
         START_TIMER("memory-profiler-int");
@@ -360,7 +360,7 @@ void ProfilerTest::test_petsc_memory() {
     ierr = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
     EXPECT_EQ( ierr, 0 );
     
-    Profiler::initialize(); {
+    Profiler::instance(); {
         PetscLogDouble mem;
         START_TIMER("A");
             PetscInt size = 100*1000;
@@ -404,7 +404,7 @@ void ProfilerTest::test_memory_propagation(){
     int allocated_C = 0;
     int allocated_D = 0;
     
-    Profiler::initialize();
+    Profiler::instance();
     {
         allocated_whole = MALLOC;
         allocated_whole += alloc_and_dealloc<int>(SIZE);
@@ -454,7 +454,7 @@ void ProfilerTest::test_petsc_memory_monitor() {
     ierr = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
     EXPECT_EQ( ierr, 0 );
 
-    Profiler::initialize(); {
+    Profiler::instance(); {
         PetscInt size = 10000;
         START_TIMER("A");
             Vec tmp_vector;
@@ -483,7 +483,7 @@ void ProfilerTest::test_multiple_instances() {
     int allocated = 0;
     for (int i = 0; i < 5; i++) {
         allocated = 0;
-        Profiler::initialize();
+        Profiler::instance();
         {
             allocated += alloc_and_dealloc<int>(25);
         }
@@ -496,7 +496,7 @@ void ProfilerTest::test_multiple_instances() {
 TEST_F(ProfilerTest, test_propagate_values) {test_propagate_values();}
 void ProfilerTest::test_propagate_values() {
     int allocated = 0;
-    Profiler::initialize(); {
+    Profiler::instance(); {
             START_TIMER("A");
                 START_TIMER("B");
                     START_TIMER("C");
@@ -523,7 +523,7 @@ void ProfilerTest::test_propagate_values() {
 //     std::stringstream sout;
 //     MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
 //     
-//     Profiler::initialize();
+//     Profiler::instance();
 //     if(mpi_rank == 0) {
 //         START_TIMER("A");
 //             START_TIMER("AA");
@@ -567,7 +567,7 @@ void ProfilerTest::test_propagate_values() {
 
 // testing non-fatal functioning of Profiler when debug is off
 TEST(Profiler, test_calls_only) {
-    Profiler::initialize();
+    Profiler::instance();
     START_TIMER("sub1");
     END_TIMER("sub1");
     PI->output(MPI_COMM_WORLD, cout);

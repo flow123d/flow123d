@@ -236,7 +236,7 @@ const string read_regions_yaml = R"YAML(
 )YAML";
 
 TEST(Region, read_regions_from_yaml) {
-    Profiler::initialize();
+    Profiler::instance();
 
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
@@ -327,7 +327,7 @@ const string invalid_input_3 = R"YAML(
 )YAML";
 
 TEST(Region, read_regions_error_messages) {
-    Profiler::initialize();
+    Profiler::instance();
 
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 

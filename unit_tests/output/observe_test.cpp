@@ -211,7 +211,7 @@ public:
 
 
 TEST(ObservePoint, find_observe_point) {
-    Profiler::initialize();
+    Profiler::instance();
     armadillo_setup();
 
     FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
@@ -226,7 +226,7 @@ TEST(ObservePoint, find_observe_point) {
 
 
 TEST(Observe, all) {
-    Profiler::initialize();
+    Profiler::instance();
     armadillo_setup();
     EqData field_set;
 

@@ -121,7 +121,7 @@ public:
 
 
 TEST(ElementMapping, element_map) {
-    Profiler::initialize();
+    Profiler::instance();
     armadillo_setup();
     MappingP1<3,3> mapping;
 
