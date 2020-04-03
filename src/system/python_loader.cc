@@ -64,7 +64,7 @@ PyObject * PythonLoader::load_module_from_file(const std::string& fname) {
     buffer << file_stream.rdbuf();
 
     string module_name;
-    unsigned int pos = fname.rfind("/");
+    std::size_t pos = fname.rfind("/");
     if (pos != string::npos)
         module_name = fname.substr(pos+1);
     else
