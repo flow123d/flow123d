@@ -492,7 +492,7 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
     else if ( matrixType_ == SPD )                      matrixTypeInt = 1 ;
     else if ( matrixType_ == SYMMETRICGENERAL )         matrixTypeInt = 2 ;
     else if ( matrixType_ == SPD_VIA_SYMMETRICGENERAL ) matrixTypeInt = 2 ; 
-    else    OLD_ASSERT( false, "Illegal matrixType \n " );
+    else    {OLD_ASSERT( false, "Illegal matrixType \n " );}
 
     // download local solution
     int lsol = sol_.size();
