@@ -38,7 +38,7 @@ Parameter::Parameter(const string & parameter_name)
 
 
 Parameter::Parameter(const Parameter & other)
-: name_(other.name_) {}
+: TypeBase(other), name_(other.name_) {}
 
 
 string Parameter::type_name() const {
