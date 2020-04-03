@@ -52,7 +52,7 @@
 #include "flow/mh_dofhandler.hh"
 
 
-FLOW123D_FORCE_LINK_IN_CHILD(convectionTransport);
+FLOW123D_FORCE_LINK_IN_CHILD(convectionTransport)
 
 
 namespace IT = Input::Type;

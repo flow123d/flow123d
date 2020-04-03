@@ -227,7 +227,7 @@ public:
     }
 
 protected:
-    static const unsigned int size()
+    static unsigned int size()
     {
         // dofs: velocity, pressure, edge pressure
         return RefElement<dim>::n_sides + 1 + RefElement<dim>::n_sides;
