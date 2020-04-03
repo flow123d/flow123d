@@ -189,7 +189,8 @@ set(CMAKE_FORTRAN_FLAGS_${CMAKE_BUILD_TYPE} "")
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")        
       execute_process(
           COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-unused-local-typedefs -Wno-deprecated-declarations")
+      # -Wvla - variable length arrays
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Wall -Wextra -Wno-vla -Wno-unused-local-typedefs -Wno-deprecated-declarations")
 
       # is cygwin env?
       if (CYGWIN)
