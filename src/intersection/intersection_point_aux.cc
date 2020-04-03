@@ -37,7 +37,7 @@ IntersectionPointAux<N,M>::IntersectionPointAux(const arma::vec::fixed<N+1> &lcA
                                           unsigned int dim_A, 
                                           unsigned int dim_B)
     : local_bcoords_A_(lcA), local_bcoords_B_(lcB), dim_A_(dim_A), dim_B_(dim_B)
-    {};
+    {}
 
 
 template<unsigned int N, unsigned int M>
