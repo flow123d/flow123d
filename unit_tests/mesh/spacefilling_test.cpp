@@ -33,132 +33,6 @@
 
 #define GROUP_SIZE 64
 
-struct PointHilbert {
-    arma::vec2 coords;
-    double hilbertIndex;
-    uint originalIndex;
-};
-
-class PointsManager {
-private:
-    std::vector<PointHilbert> points;
-    std::vector<double> sizes;
-    arma::vec2 shift;
-    double scalar;
-    static bool comparePoints(PointHilbert& first, PointHilbert& second) {
-        return first.hilbertIndex < second.hilbertIndex;
-    }
-public:
-    double hilbertIndex(double x, double y, double eps) {
-        if (eps > 1) {
-            return 0;
-        } else {
-            if (x < 0.5) {
-                if (y < 0.5) {
-                    return hilbertIndex(2 * y, 2 * x, 4 * eps) / 4;
-                } else {
-                    return (1 + hilbertIndex(2 * x, 2 * y - 1, 4 * eps)) / 4;
-                }
-            } else {
-                if (y >= 0.5) {
-                    return (2 + hilbertIndex(2 * x - 1, 2 * y - 1, 4 * eps)) / 4;
-                } else {
-                    return (3 + hilbertIndex(1 - 2 * y, 2 - 2 * x, 4 * eps)) / 4;
-                }
-            }
-        }
-    }
-    std::vector<PointHilbert>& getPoints() {
-        return points;
-    }
-    std::vector<double>& getSizes() {
-        return sizes;
-    }
-    void setPoints(const std::vector<arma::vec3>& data) {
-        points.resize(data.size());
-        PointHilbert p;
-        for (uint i = 0; i < data.size(); ++i) {
-            p.coords[0] = data[i][0];
-            p.coords[1] = data[i][1];
-            p.originalIndex = i;
-            points[i] = p;
-        }
-    }
-    void setPoints(const Armor::Array<double>& data) {
-        points.resize(data.size());
-        arma::vec3 tmpVec;
-        PointHilbert p;
-        for (uint i = 0; i < data.size(); ++i) {
-            tmpVec = data.vec<3>(i);
-            p.coords[0] = tmpVec[0];
-            p.coords[1] = tmpVec[1];
-            p.originalIndex = i;
-            points[i] = p;
-        }
-    }
-    void setBoundingBox(double min1, double min2, double max1, double max2) {
-        shift = arma::vec2{min1, min2};
-        arma::vec2 tmp{max1, max2};
-        tmp -= shift;
-        scalar = tmp[0] > tmp[1] ? tmp[0] :tmp[1];
-    }
-    void calculateHibert(double eps) {
-        for (auto& point : points) {
-            point.hilbertIndex = hilbertIndex(point.coords[0], point.coords[1], eps);
-        }
-    }
-    void calculateHibert() {
-        for (uint i = 0; i < points.size(); ++i) {
-            points[i].hilbertIndex = hilbertIndex(points[i].coords[0], points[i].coords[1], sizes[points[i].originalIndex] * sizes[points[i].originalIndex]);
-        }
-    }
-    void setHilbert(std::vector<double>& indices) {
-        for (uint i = 0; i < points.size(); ++i) {
-            points[i].hilbertIndex = indices[i];
-        }
-    }
-    std::vector<double> getHilbert() {
-        std::vector<double> indices(points.size());
-        for (uint i = 0; i < points.size(); ++i) {
-            indices[i] = points[i].hilbertIndex;
-        }
-        return indices;
-    }
-    void sortByHilbert() {
-        std::sort(points.begin(), points.end(), comparePoints);
-    }
-    void normalize() {
-        for (auto& p : points) {
-            p.coords = (p.coords - shift) / scalar;
-        }
-    }
-    void fillGroupIndices(std::vector<double>& indices) const {
-        indices.resize(points.size());
-        std::array<uint, 10> groupIndices = {3, 8, 9, 4, 2, 6, 7, 0, 1, 5};
-        uint groupIndex = 0;
-        for (uint i = 0; i < indices.size(); ++i) {
-            if (!(i % GROUP_SIZE)) {
-                ++groupIndex;
-            }
-            indices[points[i].originalIndex] = groupIndices[groupIndex % 10];
-        }
-    }
-    std::vector<uint> getForwardPermutation() const {
-        std::vector<uint> forwardPermutation(points.size());
-        for (uint i = 0; i < points.size(); ++i) {
-            forwardPermutation[points[i].originalIndex] = i;
-        }
-        return forwardPermutation;
-    }
-    std::vector<uint> getBackwardPermutation() const {
-        std::vector<uint> backwardPermutation(points.size());
-        for (uint i = 0; i < points.size(); ++i) {
-            backwardPermutation[i] = points[i].originalIndex;
-        }
-        return backwardPermutation;
-    }
-};
-
 double calculationBeforeSort(Mesh * mesh) {
     double checksum = 0;
 //     for (uint i = 0; i < 14; ++i) {
@@ -185,7 +59,7 @@ double calculationBeforeSort(Mesh * mesh) {
             }
         }
 //     }
-    return checksum;
+    return checksum;  
 }
 
 double calculationAfterSort(Mesh * mesh) {
@@ -214,65 +88,33 @@ double calculationAfterSort(Mesh * mesh) {
             }
         }
 //     }
-    return checksum;
+    return checksum;  
 }
 
-// class myVec {
-// public:
-//     myVec() = default;
-//     myVec(const arma::vec3& other) {
-//         data[0] = other[0];
-//         data[1] = other[1];
-//         data[2] = other[2];
-//     }
-//     inline double& operator[](uint i) {
-//         return data[i];
-//     }
-//     inline double operator[](uint i) const {
-//         return data[i];
-//     }
-// private:
-//     std::array<double, 3> data;
-// };
-// 
-// bool operator<(const myVec& first, const myVec& second) {
-//     if (first[0] != second[0]) {
-//         return first[0] < second[0];
-//     } else if (first[1] != second[1]) {
-//         return first[1] < second[1];
-//     } else {
-//         return first[2] < second[2];
-//     }
-// }
-// 
-// bool operator==(const myVec& first, const myVec& second) {
-//     return (first[0] == second[0] && first[1] == second[1] && first[2] == second[2]);
-// }
-
-struct nodeRef2D {
-    nodeRef2D(const arma::vec3& _ref, uint _originalIndex, double _curveValue) : ref(_ref), originalIndex(_originalIndex), curveValue(_curveValue) {}
+struct NodeRef {
+    NodeRef(const arma::vec3& _ref, uint _originalIndex, double _curveValue) : ref(_ref), originalIndex(_originalIndex), curveValue(_curveValue) {}
     std::reference_wrapper<const arma::vec3> ref;
     uint originalIndex;
     double curveValue;
 };
 
-inline bool operator<(const nodeRef2D& first, const nodeRef2D& second) {
+inline bool operator<(const NodeRef& first, const NodeRef& second) {
     return first.curveValue < second.curveValue;
 }
 
-struct elementRef2D {
-    elementRef2D(const Element& _ref, double _curveValue) : ref(_ref), curveValue(_curveValue) {}
+struct ElementRef {
+    ElementRef(const Element& _ref, double _curveValue) : ref(_ref), curveValue(_curveValue) {}
     std::reference_wrapper<const Element> ref;
     double curveValue;
 };
 
-inline bool operator<(const elementRef2D& first, const elementRef2D& second) {
+inline bool operator<(const ElementRef& first, const ElementRef& second) {
     return first.curveValue < second.curveValue;
 }
 
-class MeshOptimalizer2D {
+class MeshOptimizer {
 public:
-    MeshOptimalizer2D(Mesh& _mesh) : mesh(_mesh) {}
+    MeshOptimizer(Mesh& _mesh) : mesh(_mesh) {}
     void readNodes() {
         nodesBackup.reserve(mesh.n_nodes());
         for (uint i = 0; i < mesh.n_nodes(); ++i) {
@@ -284,7 +126,7 @@ public:
         elementsBackup = mesh.element_vec_;
     }
     void calculateSizes() {
-        nodeSizes.reserve(mesh.n_nodes());
+        nodeSizes.resize(mesh.n_nodes(), INFINITY);
         elementSizes.reserve(mesh.n_elements());
         for (ElementAccessor<3> elm : mesh.elements_range()) {
             double elmSize = std::min({
@@ -299,16 +141,22 @@ public:
             nodeSizes[el.nodes_[2]] = std::min({nodeSizes[el.nodes_[2]], elmSize});
         }
     }
-    void calculateNodeHilbertValues() {
+    void calculateNodeHilbertValues2D() {
         nodeRefs.reserve(mesh.n_nodes());
         for (uint i = 0; i < mesh.n_nodes(); ++i) {
             nodeRefs.emplace_back(nodesBackup[i], i, hilbertValue2D(normalize(nodesBackup[i], boundingBox), nodeSizes[i]));
         }
     }
+    void calculateNodeHilbertValues3D() {
+        nodeRefs.reserve(mesh.n_nodes());
+        for (uint i = 0; i < mesh.n_nodes(); ++i) {
+            nodeRefs.emplace_back(nodesBackup[i], i, hilbertValue3D(normalize(nodesBackup[i], boundingBox), nodeSizes[i]));
+        }
+    }
     void calculateElementHibertAsMeanOfNodes() {
         elementRefs.reserve(mesh.n_elements());
         for (uint i = 0; i < mesh.n_elements(); ++i) {
-            const std::array<uint, 4>& nodeIndexes = elementRefs[i].ref.get().nodes_;
+            const std::array<uint, 4>& nodeIndexes = elementsBackup[i].nodes_;
             elementRefs.emplace_back(elementsBackup[i], 
                                      nodeRefs[nodeIndexes[0]].curveValue 
                                      + nodeRefs[nodeIndexes[1]].curveValue
@@ -328,7 +176,7 @@ public:
         for (uint i = 0; i < nodeRefs.size(); ++i) {
             newNodeIndexes[nodeRefs[i].originalIndex] = i;
         }
-        for (uint i = 0; i < elementsBackup.size(); ++i) {
+        for (uint i = 0; i < mesh.n_elements(); ++i) {
             elementsBackup[i].nodes_[0] = newNodeIndexes[elementsBackup[i].nodes_[0]];
             elementsBackup[i].nodes_[1] = newNodeIndexes[elementsBackup[i].nodes_[1]];
             elementsBackup[i].nodes_[2] = newNodeIndexes[elementsBackup[i].nodes_[2]];
@@ -351,8 +199,8 @@ private:
     Mesh& mesh;
     std::vector<arma::vec3> nodesBackup;
     std::vector<Element> elementsBackup;
-    std::vector<nodeRef2D> nodeRefs;
-    std::vector<elementRef2D> elementRefs;
+    std::vector<NodeRef> nodeRefs;
+    std::vector<ElementRef> elementRefs;
     std::vector<double> nodeSizes;
     std::vector<double> elementSizes;
     BoundingBox boundingBox;
@@ -375,12 +223,50 @@ private:
             }
         }
     }
+    double hilbertValue3D(double x, double y, double z, double eps) {
+        if (eps > 1) {
+            return 0;
+        } else {
+            if (z < 0.5) {
+                if (x < 0.5) {
+                    if (y < 0.5) {
+                        return hilbertValue3D(2 * z, 2 * x, 2 * y, 8 * eps) / 8;
+                    } else {
+                        return (1 + hilbertValue3D(2 * y - 1, 2 * z, 2 * x, 8 * eps)) / 8;
+                    }
+                } else {
+                    if (y >= 0.5) {
+                        return (2 + hilbertValue3D(2 * y - 1, 2 * z, 2 * x - 1, 8 * eps)) / 8;
+                    } else {
+                        return (3 + hilbertValue3D(2 - 2 * x, 1 - 2 * y, 2 * z, 8 * eps)) / 8;
+                    }
+                }
+            } else {
+                if (x >= 0.5) {
+                    if (y < 0.5) {
+                        return (4 + hilbertValue3D(2 - 2 * x, 1 - 2 * y, 2 * z - 1, 8 * eps)) / 8;
+                    } else {
+                        return (5 + hilbertValue3D(2 * y - 1, 2 - 2 * z, 2 - 2 * x, 8 * eps)) / 8;
+                    }
+                } else {
+                    if (y >= 0.5) {
+                        return (6 + hilbertValue3D(2 * y - 1, 2 - 2 * z, 1 - 2 * x, 8 * eps)) / 8;
+                    } else {
+                        return (7 + hilbertValue3D(2 - 2 * z, 2 * x, 1 - 2 * y, 8 * eps)) / 8;
+                    }
+                }
+            }
+        }
+    }
     double hilbertValue2D(const arma::vec3 vec, double size) {
         return hilbertValue2D(vec[0], vec[1], size * size);
     }
+    double hilbertValue3D(const arma::vec3 vec, double size) {
+        return hilbertValue3D(vec[0], vec[1], vec[2], size * size * size);
+    }
     arma::vec3 normalize(const arma::vec3& vec, const BoundingBox& boundingBox) {
         arma::vec3 tmp = boundingBox.max() - boundingBox.min();
-        double scalar = tmp[0] > tmp[1] ? tmp[0] : tmp[1];
+        double scalar = std::max({tmp[0], tmp[1], tmp[2]});
         return (vec - boundingBox.min()) / scalar;
     }
 };
@@ -398,37 +284,11 @@ TEST(Spacefilling, get_centers) {
     const std::string testName = "lshape_refined_2";
     const std::string mesh_in_string = "{mesh_file=\"mesh/" + testName + ".msh\"}";
     
-    std::cout << mesh_in_string << '\n';
-    
     Mesh * mesh = mesh_full_constructor(mesh_in_string);
-    
-    std::cout << mesh->n_nodes() << '\n';
     
     auto reader = reader_constructor(mesh_in_string);
     reader->read_physical_names(mesh);
     reader->read_raw_mesh(mesh);
-    
-    std::vector<arma::vec3> centers;
-    centers.reserve(mesh->n_elements());
-    std::vector<double> elementSizes;
-    elementSizes.reserve(mesh->n_elements());
-    std::vector<double> nodeSizes(mesh->n_nodes(), INFINITY);
-    
-    START_TIMER("get_centers_and_calculate_sizes");
-    for (ElementAccessor<3> elm : mesh->elements_range()) {
-        centers.push_back(elm.centre());
-        double elmSize = std::min({
-            arma::norm(*elm.node(0) - *elm.node(1)),
-            arma::norm(*elm.node(1) - *elm.node(2)),
-            arma::norm(*elm.node(2) - *elm.node(0))
-        });
-        elementSizes.push_back(elmSize);
-        const Element& el = *elm.element();
-        nodeSizes[el.nodes_[0]] = std::min({nodeSizes[el.nodes_[0]], elmSize});
-        nodeSizes[el.nodes_[1]] = std::min({nodeSizes[el.nodes_[1]], elmSize});
-        nodeSizes[el.nodes_[2]] = std::min({nodeSizes[el.nodes_[2]], elmSize});
-    }
-    END_TIMER("get_centers_and_calculate_sizes");
 
     START_TIMER("calculation_before_sort");
     double checksum1 = calculationBeforeSort(mesh);
@@ -436,106 +296,31 @@ TEST(Spacefilling, get_centers) {
     
     std::cout << "checksum 1: " << checksum1 << '\n';
     
-    Armor::Array<double>& nodes = mesh->nodes_;
-    std::vector<Element>& elements = mesh->element_vec_;
-    PointsManager pm;
-    
-    std::vector<arma::vec3> nodes_backup(mesh->n_nodes());
-    for (uint i = 0; i < nodes_backup.size(); ++i) {
-        nodes_backup[i] = nodes.vec<3>(i);
-    }
-    BoundingBox bb(nodes_backup);
-
-    pm.setPoints(nodes_backup);
-    pm.getSizes() = nodeSizes;
-    pm.setBoundingBox(bb.min()[0], bb.min()[1], bb.max()[0], bb.max()[1]);
-    pm.normalize();
-    START_TIMER("nodes_hilbert_calculation");
-//     pm.calculateHibert(0.0000000000001);
-//     pm.calculateHibert(0.0000001);
-    pm.calculateHibert();
-    END_TIMER("nodes_hilbert_calculation");
-    std::vector<double> nodeIndices = pm.getHilbert();
-    pm.sortByHilbert();
-    std::vector<uint> newNodeIndices = pm.getForwardPermutation();
-    
-    for (uint i = 0; i < nodes_backup.size(); ++i) {
-        nodes.set(newNodeIndices[i]) = nodes_backup[i];
-    }
-    
-    std::vector<double> elementIndices(mesh->n_elements());
-    
-    for (uint i = 0; i < elementIndices.size(); ++i) {
-        elementIndices[i] = (
-            nodeIndices[elements[i].nodes_[0]]
-            + nodeIndices[elements[i].nodes_[1]]
-            + nodeIndices[elements[i].nodes_[2]]
-        ) / 3;
-    }
-    
-    vector<Element> elements_backup = elements;
-    
-    PointsManager pm2;
-    pm2.setPoints(centers);
-    pm2.getSizes() = elementSizes;
-    pm2.setBoundingBox(bb.min()[0], bb.min()[1], bb.max()[0], bb.max()[1]);
-    pm2.normalize();
-    pm2.calculateHibert();
-//     pm2.setHilbert(elementIndices);
-    pm2.sortByHilbert();
-    std::vector<uint> newElementIndices = pm2.getForwardPermutation();
-    for (uint i = 0; i < centers.size(); ++i) {
-        elements[newElementIndices[i]] = elements_backup[i];
-        elements[i].nodes_[0] = newNodeIndices[elements[i].nodes_[0]];
-        elements[i].nodes_[1] = newNodeIndices[elements[i].nodes_[1]];
-        elements[i].nodes_[2] = newNodeIndices[elements[i].nodes_[2]];
-    }
+    MeshOptimizer mo(*mesh);
+    std::cout << "reading nodes" << '\n';
+    mo.readNodes();
+    std::cout << "reading elemenst" << '\n';
+    mo.readElements();
+    std::cout << "calculating sizes" << '\n';
+    mo.calculateSizes();
+    std::cout << "calculating node hilbert values" << '\n';
+    mo.calculateNodeHilbertValues3D();
+    std::cout << "calculating element hilbert values" << '\n';
+    mo.calculateElementHibertAsMeanOfNodes();
+    std::cout << "sorting nodes" << '\n';
+    mo.sortNodes();
+    std::cout << "sorting elements" << '\n';
+    mo.sortElements();
+    std::cout << "exporting nodes" << '\n';
+    mo.exportNodes();
+    std::cout << "exporting elements" << '\n';
+    mo.exportElements();
     
     START_TIMER("calculation_after_sort");
     double checksum2 = calculationAfterSort(mesh);
     END_TIMER("calculation_after_sort");
     
     std::cout << "checksum 2: " << checksum2 << '\n';
-    
-    // KONTROLA
-    
-//     std::vector<myVec> nodes_backup_2;
-//     nodes_backup_2.reserve(mesh->n_nodes());
-//     for (uint i = 0; i < mesh->n_nodes(); ++i) {
-//         nodes_backup_2.emplace_back(nodes.vec<3>(i));
-//     }
-//     
-//     std::vector<myVec> nodes_backup_3;
-//     nodes_backup_3.reserve(mesh->n_nodes());
-//     for (uint i = 0; i < mesh->n_nodes(); ++i) {
-//         nodes_backup_3.emplace_back(nodes_backup[i]);
-//     }
-//     
-//     std::sort(nodes_backup_2.begin(), nodes_backup_2.end());
-//     std::sort(nodes_backup_3.begin(), nodes_backup_3.end());
-//     
-//     for (uint i = 0; i < nodes_backup.size(); ++i) {
-//         if (!(nodes_backup_2[i] == nodes_backup_3[i])) {
-//             std::cout << "wrong i= " << i << '\n';
-//             std::cout << "nodes2: " << nodes_backup_2[i][0] << ' ' << nodes_backup_2[i][1] << ' ' << nodes_backup_2[i][2] << '\n';
-//             std::cout << "nodes3: " << nodes_backup_3[i][0] << ' ' << nodes_backup_3[i][1] << ' ' << nodes_backup_3[i][2] << '\n' << '\n';
-//         }
-//     }
-//     
-//     std::cout << "done" << '\n';
-    
-//     vector<Element> elements_backup_2 = elements;
-//     PointsManager pm3;
-//     pm3.setPoints(centers);
-//     pm3.getSizes() = elementSizes;
-//     pm3.setBoundingBox(bb.min()[0], bb.min()[1], bb.max()[0], bb.max()[1]);
-//     pm3.normalize();
-//     pm3.calculateHibert();
-//     pm3.sortByHilbert();
-    
-//     std::vector<double> groupIndices;
-    
-//     pm.fillGroupIndices(groupIndices);
     
     const string test_output_time_input = R"JSON(
     {
@@ -555,6 +340,10 @@ TEST(Spacefilling, get_centers) {
     output->set_output_data_caches(output_mesh);
     output->update_time(0.0);
     auto data_cache = output->prepare_compute_data<double>("patch_id", OutputTime::ELEM_DATA, 1, 1);
+
+//     std::vector<double> groupIndices;
+
+//     pm.fillGroupIndices(groupIndices);
 
 //     for(auto el : mesh->elements_range()) {
 //         data_cache.store_value(el.idx(), &groupIndices[el.idx()]);
