@@ -119,10 +119,8 @@ FEObjects::FEObjects(Mesh *mesh_, unsigned int fe_order)
     fe_rt2_ = new FE_RT0<2>;
     fe_rt3_ = new FE_RT0<3>;
     
-    q0_ = new QGauss<0>(q_order);
-    q1_ = new QGauss<1>(q_order);
-    q2_ = new QGauss<2>(q_order);
-    q3_ = new QGauss<3>(q_order);
+    for (unsigned int dim = 0; dim < 4; dim++)
+        q_[dim] = new QGauss(dim, q_order);
 
     map1_ = new MappingP1<1,3>;
     map2_ = new MappingP1<2,3>;
@@ -144,10 +142,7 @@ FEObjects::~FEObjects()
     delete fe_rt1_;
     delete fe_rt2_;
     delete fe_rt3_;
-    delete q0_;
-    delete q1_;
-    delete q2_;
-    delete q3_;
+    for (unsigned int dim = 0; dim < 4; dim++) delete q_[dim];
     delete map1_;
     delete map2_;
     delete map3_;
@@ -162,11 +157,6 @@ template<> FiniteElement<0> *FEObjects::fe_rt<0>() { return 0; }
 template<> FiniteElement<1> *FEObjects::fe_rt<1>() { return fe_rt1_; }
 template<> FiniteElement<2> *FEObjects::fe_rt<2>() { return fe_rt2_; }
 template<> FiniteElement<3> *FEObjects::fe_rt<3>() { return fe_rt3_; }
-
-template<> Quadrature<0> *FEObjects::q<0>() { return q0_; }
-template<> Quadrature<1> *FEObjects::q<1>() { return q1_; }
-template<> Quadrature<2> *FEObjects::q<2>() { return q2_; }
-template<> Quadrature<3> *FEObjects::q<3>() { return q3_; }
 
 template<> MappingP1<1,3> *FEObjects::mapping<1>() { return map1_; }
 template<> MappingP1<2,3> *FEObjects::mapping<2>() { return map2_; }
@@ -242,12 +232,6 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
     feo = new FEObjects(Model::mesh_, dg_order);
     //DebugOut().fmt("TDG: solution size {}\n", feo->dh()->n_global_dofs());
 
-    if (Model::mesh_->get_el_ds()->myp() == 0)
-    {
-        FilePath reg_stat_file(std::string(Model::ModelEqData::name()) + "_region_stat.yaml", FilePath::output_file);
-        reg_stat_file.open_stream(reg_stat_stream);
-        reg_stat_stream << "data:" << endl;
-    }
 }
 
 
@@ -641,94 +625,8 @@ void TransportDG<Model>::output_data()
       Model::balance_->calculate_instant(Model::subst_idx[sbi], ls[sbi]->get_solution());
     Model::balance_->output();
     END_TIMER("TOS-balance");
-    
-    output_region_statistics();
 
     END_TIMER("DG-OUTPUT");
-}
-
-
-template<class Model>
-void TransportDG<Model>::output_region_statistics()
-{
-    const unsigned int nreg = Model::mesh_->region_db().size();
-    const unsigned int nsubst = Model::n_substances();
-    //std::vector<unsigned int> active_region(nreg, 0); // indicates on which region we calculate statistics
-    std::vector<double> r_area(nreg, 0);  // area of regions
-    std::vector<std::vector<double>> r_avg(nreg, std::vector<double>(nsubst, 0)), // average value at regions
-                                     r_max(nreg, std::vector<double>(nsubst, -numeric_limits<double>::infinity())), // maximal value
-                                     r_min(nreg, std::vector<double>(nsubst, numeric_limits<double>::infinity()));  // minimal value
-    
-    // calculate area, average, min and max on bulk elements
-    for (auto cell : feo->dh()->own_range() )
-    {
-        auto elm = cell.elm();
-        unsigned int rid = elm.region().idx();
-        //active_region[rid] = 1;
-        
-        r_area[rid] += elm.measure();
-        for (unsigned int sbi = 0; sbi<nsubst; sbi++)
-        {
-            double value = data_.output_field[sbi].value(elm.centre(), elm);
-            r_avg[rid][sbi] += elm.measure()*value;
-            r_max[rid][sbi] = max(r_max[rid][sbi], value);
-            r_min[rid][sbi] = min(r_min[rid][sbi], value);
-        }
-    }
-    
-    // calculate area, average, min and max on boundary elements
-    for (auto cell : feo->dh()->own_range() )
-    {
-        for (auto side : cell.side_range())
-        {
-            if (side.cond() == nullptr) continue;
-            
-            auto elm = side.cond()->element_accessor();
-            unsigned int rid = side.cond()->region().idx();
-            //active_region[rid] = true;
-            
-            r_area[rid] += elm.measure();
-            for (unsigned int sbi = 0; sbi<nsubst; sbi++)
-            {
-                double value = data_.output_field[sbi].value(side.centre(), side.element());
-                r_avg[rid][sbi] += elm.measure()*value;
-                r_max[rid][sbi] = max(r_max[rid][sbi], value);
-                r_min[rid][sbi] = min(r_min[rid][sbi], value);
-            }
-        }
-    }
-    
-    // communicate all values to process 0
-    MPI_Reduce(r_area.data(), r_area.data(), nreg, MPI_DOUBLE, MPI_SUM, 0, PETSC_COMM_WORLD);
-    //MPI_Reduce(active_region.data(), active_region.data(), nreg, MPI_UNSIGNED, MPI_MAX, 0, PETSC_COMM_WORLD);
-    for (unsigned int r=0; r<nreg; r++)
-    {
-        MPI_Reduce(r_avg[r].data(), r_avg[r].data(), nsubst, MPI_DOUBLE, MPI_SUM, 0, PETSC_COMM_WORLD);
-        MPI_Reduce(r_max[r].data(), r_max[r].data(), nsubst, MPI_DOUBLE, MPI_MAX, 0, PETSC_COMM_WORLD);
-        MPI_Reduce(r_min[r].data(), r_min[r].data(), nsubst, MPI_DOUBLE, MPI_MIN, 0, PETSC_COMM_WORLD);
-    }
-    
-    // output values to yaml file
-    if (Model::mesh_->get_el_ds()->myp() == 0)
-    {
-    	for(Region reg : Model::mesh_->region_db().get_region_set("ALL"))
-        {
-    		unsigned int r = reg.idx();
-            reg_stat_stream << " - time: " << this->time().t() << endl;
-            reg_stat_stream << "   region: " << reg.label() << endl
-                            << "   area: " << r_area[r] << endl
-                            << "   average: [ ";
-            for (auto v : r_avg[r]) reg_stat_stream << v / r_area[r];
-            reg_stat_stream << " ]" << endl;
-            
-            reg_stat_stream << "   min: [ ";
-            for (auto v : r_min[r]) reg_stat_stream << v;
-            reg_stat_stream << " ]" << endl;
-            reg_stat_stream << "   max: [ ";
-            for (auto v : r_max[r]) reg_stat_stream << v;
-            reg_stat_stream << " ]" << endl;
-        }
-    }
 }
 
 
@@ -1425,7 +1323,6 @@ void TransportDG<Model>::set_boundary_conditions()
                 update_values);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim-1>()->size();
     vector<LongIdx> side_dof_indices(ndofs);
-    unsigned int loc_b=0;
     double local_rhs[ndofs];
     vector<PetscScalar> local_flux_balance_vector(ndofs);
     PetscScalar local_flux_balance_rhs;
@@ -1447,11 +1344,8 @@ void TransportDG<Model>::set_boundary_conditions()
             // skip edges lying not on the boundary
             if (edg->side(0)->cond() == NULL) continue;
 
-            if (edg->side(0)->dim() != dim-1)
-            {
-                if (edg->side(0)->cond() != nullptr) ++loc_b;
-                continue;
-            }
+            // skip edges of different dimension
+            if (edg->side(0)->dim() != dim-1) continue;
 
 
             Side side = *(edg->side(0));
@@ -1564,10 +1458,9 @@ void TransportDG<Model>::set_boundary_conditions()
                 }
                 ls[sbi]->rhs_set_values(ndofs, &(side_dof_indices[0]), local_rhs);
 
-                Model::balance_->add_flux_matrix_values(Model::subst_idx[sbi], loc_b, side_dof_indices, local_flux_balance_vector);
-                Model::balance_->add_flux_vec_value(Model::subst_idx[sbi], loc_b, local_flux_balance_rhs);
+                Model::balance_->add_flux_matrix_values(Model::subst_idx[sbi], side, side_dof_indices, local_flux_balance_vector);
+                Model::balance_->add_flux_vec_value(Model::subst_idx[sbi], side, local_flux_balance_rhs);
             }
-            ++loc_b;
         }
     }
 }

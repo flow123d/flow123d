@@ -20,13 +20,12 @@ problem: !Coupling_Sequential
         conductivity: 1
         cross_section: !FieldTimeFunction
           time_function:
-            - - 0
+            - - [ 0, "s" ]
               - 1.0
-            - - 1000
+            - - [ 1000, "s" ]
               - 2.0
-            - - 2000
+            - - [ 2000, "s" ] 
               - 5.0
-          time_unit: "s"
         sigma: !FieldFE
           mesh_data_file: ./11_mesh_with_data_11el.msh
           field_name: sigma
@@ -49,7 +48,7 @@ problem: !Coupling_Sequential
     output:
       times:
         - 0.0
-        - { step: 15.0, time_unit: "min" }
+        - { step: [15.0, "min"] }
         - 0.5
         - 0.75
       fields:
@@ -67,7 +66,7 @@ problem: !Coupling_Sequential
         - field: storativity
           times:
             - 0.0
-            - { step: 30.0, time_unit: "min" } 
+            - { step: [30.0, "min"] } 
       observe_fields: [pressure_p0, velocity_p0]
     time:
       end_time: [ 50.0, "min" ]
@@ -80,7 +79,7 @@ problem: !Coupling_Sequential
       format: !vtk
         variant: ascii
       times:
-        - { step: 100, time_unit: "s" }
+        - { step: [100, "s"] }
       observe_points:
         - [0, 0, 0.25]
         - [0, 0, 0.2]

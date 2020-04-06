@@ -123,6 +123,7 @@ template<> const IdxVector<3> RefElement<3>::side_lines_[] = {
 };
 
 
+template<> const unsigned int RefElement<0>::side_permutations[][n_nodes_per_side] = { };
 
 template<> const unsigned int RefElement<1>::side_permutations[][n_nodes_per_side] = { { 0 } };
 
@@ -135,6 +136,11 @@ template<> const unsigned int RefElement<3>::side_permutations[][n_nodes_per_sid
         { 1, 2, 0 },
         { 2, 0, 1 },
         { 2, 1, 0 }
+};
+
+
+template<> const IdxVector<1> RefElement<0>::topology_zeros_[] = {
+   {(1 << 1)}  //node 0
 };
 
 
@@ -263,6 +269,10 @@ template<> const IdxVector<6> RefElement<3>::topology_zeros_[] = {
 // 1: nodes of lines
 // 2: nodes of sides
 // 3: nodes of tetrahedron
+template<> const std::vector< std::vector< std::vector<unsigned int> > > RefElement<0>::nodes_of_subelements = {
+        { {0} }
+};
+
 template<> const std::vector< std::vector< std::vector<unsigned int> > > RefElement<1>::nodes_of_subelements = {
         { {0},{1} },
         _array_to_vec(line_nodes_, n_lines)
@@ -560,6 +570,7 @@ arma::vec::fixed<dim+1> RefElement<dim>::line_barycentric_interpolation(
     return bary_interpolated_coords;
 };
 
+template class RefElement<0>;
 template class RefElement<1>;
 template class RefElement<2>;
 template class RefElement<3>;

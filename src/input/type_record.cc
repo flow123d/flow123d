@@ -99,6 +99,7 @@ Input::StorageBase *Default::get_storage(std::shared_ptr<TypeBase> type) const
 Record::Record()
 : data_( std::make_shared<RecordData> ("EmptyRecord","") )
 {
+	declare_key("empty_key", Integer(), "Only for correct 'close()'.");
 	close();
     finish();
 }
@@ -301,6 +302,7 @@ FinishStatus Record::finish(FinishStatus finish_type)
 
 
 Record &Record::close() const {
+	ASSERT_GT(data_->keys.size(), 0)(this->type_name()).error("Empty Record!\n");
     data_->closed_=true;
     Record & rec = *( Input::TypeRepository<Record>::get_instance().add_type( *this ) );
     for (auto &parent : data_->parent_vec_) {

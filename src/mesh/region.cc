@@ -30,7 +30,6 @@
 using namespace std;
 
 
-
 std::string Region::label() const
     { return db_->get_label(idx_); }
 
@@ -57,6 +56,7 @@ bool Region::is_in_region_set(const RegionSet &set) const
 
 
 
+const unsigned int RegionDB::max_n_regions = 10000;
 const unsigned int RegionDB::undefined_dim = 10;
 
 
@@ -352,7 +352,7 @@ Region RegionDB::insert_region(unsigned int id, const std::string &label, unsign
 		index = (n_bulk_ << 1)+1;
 		n_bulk_++;
 	}
-	if (index >= max_n_regions) xprintf(UsrErr, "Too many regions, more then %d\n", max_n_regions);
+	
 	if ( ! region_table_.insert( RegionItem(index, id, label, dim, address) ).second )
 	   THROW( ExcCantAdd() << EI_Label(label) << EI_ID(id) );
 	if (max_id_ < id) {
@@ -461,6 +461,12 @@ void RegionDB::print_region_table(ostream& stream) const {
 
 void RegionDB::check_regions() {
 	ASSERT(closed_).error("RegionDB not closed yet.");
+
+	if (n_bulk_+n_boundary_ >= max_n_regions) {
+		WarningOut().fmt("Too many regions are defined (bulk {} + boundary {} >= {}). This may have negative impact on performace.\n"
+			"The user is adviced to simplify the input data and to decrease the number of regions (e.g. using FieldFE input).\n",
+			n_bulk_, n_boundary_, max_n_regions);
+	}
 
 	for (RegionTable::index<Index>::type::iterator it = region_table_.get<Index>().begin();
 			it!= region_table_.get<Index>().end();

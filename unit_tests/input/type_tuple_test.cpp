@@ -15,7 +15,7 @@
 // Test of correct includes in type_tuple.hh
 TEST(InputTypeTuple, includes) {
 	using namespace Input::Type;
-	Tuple tpl = Tuple("EmptyTuple", "description").close();
+	Tuple tpl = Tuple("EmptyTuple", "description").declare_key("empty_key", Integer(), "Only for correct 'close()'.").close();
 	EXPECT_EQ( tpl.class_name(), "Tuple");
 }
 

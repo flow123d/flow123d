@@ -81,3 +81,10 @@ bin/pythonenv.sh
 /bin/python/jenkins_jobs_script.py
 /docker.sh
 /bench_data
+
+# build dirs
+/build-*
+
+# IDEs
+/.vscode
+/.clang-format

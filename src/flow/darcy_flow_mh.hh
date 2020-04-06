@@ -200,7 +200,6 @@ public:
 
         MortarMethod mortar_method_;
 
-        unsigned int local_boundary_index;
         std::shared_ptr<Balance> balance;
         LinSys *lin_sys;
         

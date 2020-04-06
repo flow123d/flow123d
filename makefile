@@ -212,9 +212,7 @@ prepare-build:  install-hooks update-build-tree update-submodules
 # add post-checkout hook
 .PHONY: install-hooks
 install-hooks:
-	if [ ! -e .git/hooks/post-checkout ];\
-	then cp bin/git_post_checkout_hook .git/hooks/post-checkout;\
-	fi	
+	cp bin/git_post_checkout_hook .git/hooks/post-checkout
 
 # this is prerequisite for every target using BUILD_DIR variable
 .PHONY: update-build-tree

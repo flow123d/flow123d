@@ -19,16 +19,14 @@ const IT::Array OutputTimeSet::get_input_type()
     static const IT::Record &time_grid =
         IT::Record("TimeGrid", "Equally spaced grid of time points.")
             .allow_auto_conversion("begin")
-            .declare_key("begin", IT::Double(0.0),
+            .declare_key("begin", TimeGovernor::get_input_time_type(0.0),
             		IT::Default::read_time("The initial time of the associated equation."),
                     "The start time of the grid.")
-            .declare_key("step", IT::Double(0.0), IT::Default::optional(),
+            .declare_key("step", TimeGovernor::get_input_time_type(0.0), IT::Default::optional(),
                     "The step of the grid. If not specified, the grid consists of the single time given by the `begin` key.")
-            .declare_key("end", IT::Double(0.0),
+            .declare_key("end", TimeGovernor::get_input_time_type(0.0),
             		IT::Default::read_time("The end time of the simulation."),
                     "The time greater or equal to the last time in the grid.")
-			.declare_key("time_unit", IT::String(), IT::Default::read_time("Common unit of TimeGovernor."),
-					"Definition of unit of all defined times (begin, step and end time).")
             .close();
     return IT::Array(time_grid);
 }
@@ -45,15 +43,15 @@ void OutputTimeSet::read_from_input(Input::Array in_array, const TimeGovernor &t
     double simulation_end_time = tg.end_time();
 
     for(auto it =in_array.begin<Input::Record>(); it != in_array.end(); ++it) {
-    	double time_unit_coef = tg.read_coef(it->find<string>("time_unit"));
-    	double t_begin = it->val<double>("begin", initial_time / time_unit_coef) * time_unit_coef;
-    	double t_end = it->val<double>("end", simulation_end_time / time_unit_coef) * time_unit_coef;
+    	double t_begin = tg.read_time(it->find<Input::Tuple>("begin"), initial_time);
+    	double t_end = tg.read_time(it->find<Input::Tuple>("end"), simulation_end_time);
+    	Input::Tuple step;
     	double t_step;
-    	if (! it->opt_val("step", t_step) ) {
+    	if (! it->opt_val("step", step) ) {
             t_end = t_begin;
-            t_step = 1.0;
+            t_step = tg.get_coef();
         } else {
-        	t_step *= time_unit_coef;
+        	t_step = tg.read_time(it->find<Input::Tuple>("step"));
         }
         if ( t_begin > t_end) {
             WarningOut().fmt("Ignoring output time grid. Time begin {}  > time end {}. {}",
@@ -65,7 +63,6 @@ void OutputTimeSet::read_from_input(Input::Array in_array, const TimeGovernor &t
                     t_step, 2*numeric_limits<double>::epsilon(),it->address_string());
             continue;
         }
-        //DebugOut() << "Add time grid: " << t_begin << ", " << t_end << ", " << t_step << "\n";
 
         this->add(t_begin, t_step, t_end, mark_type);
     }
@@ -101,9 +98,7 @@ void OutputTimeSet::add(double begin, double step, double end, TimeMark::Type ma
         n_steps_dbl=1e6;
         step = (end - begin)/n_steps_dbl;
     }
-
     unsigned int n_steps = (unsigned int)n_steps_dbl;
-    //DebugOut() << "n-steps: " << n_steps << "\n";
     for(unsigned int i = 0; i <= n_steps; i++) {
         auto mark = TimeMark(begin + i * step, output_mark_type);
         double time = TimeGovernor::marks().add(mark).time();

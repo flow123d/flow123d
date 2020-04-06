@@ -19,7 +19,7 @@ fi
 
 
 NEW_BRANCH=`git rev-parse --abbrev-ref HEAD`
-BUILD_DIR=`pwd`/../build-${NEW_BRANCH}
+BUILD_DIR=${FLOW123D_BUILD_DIR:-`pwd`/build-${NEW_BRANCH}}
 
 LS=`ls -l build_tree`
 BUILD_TREE=${LS##* -> }

@@ -38,7 +38,6 @@ template<unsigned int dim, unsigned int spacedim> class FEValues;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim, unsigned int spacedim> class FEValuesData;
 template<unsigned int dim> class FE_P_disc;
-template<unsigned int dim> class Quadrature;
 
 
 

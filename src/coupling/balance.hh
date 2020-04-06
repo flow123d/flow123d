@@ -22,6 +22,8 @@
 #include <iosfwd>               // for ofstream
 #include <string>               // for string
 #include <vector>               // for vector
+#include <unordered_map>        // for unordered_map
+#include "mesh/side_impl.hh"    // for SideIter
 #include "tools/unit_si.hh"    // for UnitSI
 #include "input/accessors.hh"   // for Record
 #include "petscmat.h"           // for Mat, _p_Mat
@@ -265,19 +267,15 @@ public:
 	/**
 	 * Adds elements into matrix for computing (outgoing) flux.
 	 * @param quantity_idx  Index of quantity.
-	 * @param boundary_idx  Local index of boundary edge.
-	 * @param dof_indices   Dof indices to be added.
+	 * @param side          Element side iterator.
+	 * @param dof_indices   Dof indices (to the solution vector) to be added.
 	 * @param values        Values to be added.
      * 
-     * The order of local boundary edges is given by traversing
-     * the local elements and their sides.
-     * 
-     * TODO: Think of less error-prone way of finding the local
-     * boundary index for a given Boundary object. It can be 
-     * possibly done when we will have a boundary mesh.
+     * TODO: Instead of SideIter and dof_indices, use DHCellSide,
+     * when it is available in all equations.
 	 */
 	void add_flux_matrix_values(unsigned int quantity_idx,
-			unsigned int boundary_idx,
+			SideIter side,
 			const std::vector<LongIdx> &dof_indices,
 			const std::vector<double> &values);
 
@@ -308,13 +306,12 @@ public:
 	/**
 	 * Adds element into vector for computing (outgoing) flux.
 	 * @param quantity_idx  Index of quantity.
-	 * @param boundary_idx  Local index of boundary edge.
+	 * @param side          Element side iterator.
 	 * @param value         Value to be added.
      * 
-     * For determining the local boundary index see @ref add_flux_matrix_values.
 	 */
 	void add_flux_vec_value(unsigned int quantity_idx,
-			unsigned int boundary_idx,
+			SideIter side,
 			double value);
 
 	/// This method must be called after assembling the matrix for computing mass.
@@ -419,6 +416,12 @@ private:
 	/// Format double value of csv output. If delimiter is space, align text to column.
 	std::string format_csv_val(double val, char delimiter, bool initial = false);
 
+    /** Computes unique id of local boundary edge from local element index and element side index
+     * 
+     * @param side is a side of locally owned element
+    */
+    inline LongIdx get_boundary_edge_uid(SideIter side)
+    { return 4*side->elem_idx() + side->side_idx();}    // 4 is maximum of sides per element
 
 	//**********************************************
 
@@ -471,7 +474,14 @@ private:
     /// Vectors for calculation of mass (n_bulk_regions).
     Vec *region_mass_vec_;
 
-    /// Number of boundary region for each local boundary edge.
+    /** Maps unique identifier of (local bulk element idx, side idx) returned by @p get_boundary_edge_uid(side)
+     * to local boundary edge.
+     * Example usage:
+     *     be_id = be_id_map_[get_boundary_edge_uid(side)]
+     */
+    std::unordered_map<LongIdx, unsigned int> be_id_map_;
+    
+    /// Maps local boundary edge to its region boundary index.
     std::vector<unsigned int> be_regions_;
 
     /// Offset for local part of vector of boundary edges.

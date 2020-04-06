@@ -80,11 +80,11 @@ class NeighSideValues {
 private:
     // assembly face integrals (BC)
     MappingP1<dim+1,3> side_map_;
-    QGauss<dim> side_quad_;
+    QGauss side_quad_;
     FE_P_disc<dim+1> fe_p_disc_;
 public:
     NeighSideValues<dim>()
-    :  side_quad_(1),
+    :  side_quad_(dim, 1),
        fe_p_disc_(0),
        fe_side_values_(side_map_, side_quad_, fe_p_disc_, update_normal_vectors)
     {}
@@ -99,11 +99,11 @@ class AssemblyMH : public AssemblyBase
 {
 public:
     AssemblyMH<dim>(AssemblyDataPtr data)
-    : quad_(3),
+    : quad_(dim, 3),
         fe_values_(map_, quad_, fe_rt_,
                 update_values | update_gradients | update_JxW_values | update_quadrature_points),
 
-        velocity_interpolation_quad_(0), // veloctiy values in barycenter
+        velocity_interpolation_quad_(dim, 0), // veloctiy values in barycenter
         velocity_interpolation_fv_(map_,velocity_interpolation_quad_, fe_rt_, update_values | update_quadrature_points),
 
         ad_(data),
@@ -494,15 +494,13 @@ protected:
 
             if (bcd) {
                 /*
-                    DebugOut().fmt("add_flux: {} {} {} {}\n",
+                    DebugOut().fmt("add_flux: {} {} {}\n",
                             ad_->mh_dh->el_ds->myp(),
                             ele_ac.ele_global_idx(),
-                            ad_->local_boundary_index,
                             ele_ac.side_row(i));
                  */
-                ad_->balance->add_flux_matrix_values(ad_->water_balance_idx, ad_->local_boundary_index,
+                ad_->balance->add_flux_matrix_values(ad_->water_balance_idx, ele_ac.side(i),
                                                      {(LongIdx)(ele_ac.side_row(i))}, {1});
-                ++(ad_->local_boundary_index);
             }
         }
     }
@@ -512,13 +510,13 @@ protected:
     // assembly volume integrals
     FE_RT0<dim> fe_rt_;
     MappingP1<dim,3> map_;
-    QGauss<dim> quad_;
+    QGauss quad_;
     FEValues<dim,3> fe_values_;
 
     NeighSideValues<dim<3?dim:2> ngh_values_;
 
     // Interpolation of velocity into barycenters
-    QGauss<dim> velocity_interpolation_quad_;
+    QGauss velocity_interpolation_quad_;
     FEValues<dim,3> velocity_interpolation_fv_;
 
     // data shared by assemblers of different dimension

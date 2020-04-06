@@ -37,7 +37,7 @@ class DOFHandlerMultiDim;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim> class FiniteElement;
 template<unsigned int dim, unsigned int spacedim> class Mapping;
-template<unsigned int dim> class Quadrature;
+class Quadrature;
 class Elasticity;
 
 
@@ -58,7 +58,7 @@ public:
 	inline FiniteElement<dim> *fe();
 
 	template<unsigned int dim>
-	inline Quadrature<dim> *q();
+	inline Quadrature *q() { return q_[dim]; }
 
 	template<unsigned int dim>
 	inline MappingP1<dim,3> *mapping();
@@ -78,10 +78,7 @@ private:
 	FiniteElement<3> *fe3_;
 
 	/// Quadratures used in assembling methods.
-	Quadrature<0> *q0_;
-	Quadrature<1> *q1_;
-	Quadrature<2> *q2_;
-	Quadrature<3> *q3_;
+	Quadrature *q_[4];
 
 	/// Auxiliary mappings of reference elements.
 	MappingP1<1,3> *map1_;

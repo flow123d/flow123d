@@ -6,7 +6,7 @@ Plucker::Plucker()
 : coordinates_({0,0,0,0,0,0}),
   scale_(0),
   computed_(false),
-  points_({nullptr,nullptr})
+  points_{nullptr,nullptr}
 {}
 
 

@@ -33,8 +33,8 @@
 using namespace arma;
 
 
-template<unsigned int dim>
-QGauss<dim>::QGauss(const unsigned int order)
+QGauss::QGauss(unsigned int dim, const unsigned int order)
+: Quadrature(dim)
 {
     typedef QUAD* pQUAD;
 
@@ -65,12 +65,11 @@ QGauss<dim>::QGauss(const unsigned int order)
     static const double unit_cell_volume[] = { 1, 1, 0.5, 1./6 };
     const pQUAD *q;
     unsigned int nquads;
-    vec::fixed<dim> p;
 
     switch (dim)
     {
     case 0:
-        this->quadrature_points.push_back(p);
+        this->quadrature_points.push_back({});
         this->weights.push_back(1);
         return;
     case 1:
@@ -89,10 +88,11 @@ QGauss<dim>::QGauss(const unsigned int order)
 
     OLD_ASSERT(order < nquads, "Quadrature of given order is not implemented.");
 
+    vector<double> p(dim, 0);
     for (int i=0; i<q[order]->npoints; i++)
     {
         for (unsigned int j=0; j<dim; j++)
-            p(j) = q[order]->points[i*(dim+1)+j];
+            p[j] = q[order]->points[i*(dim+1)+j];
 
         this->quadrature_points.push_back(p);
         // The weights must be adjusted according to the volume of the unit cell:
@@ -104,7 +104,3 @@ QGauss<dim>::QGauss(const unsigned int order)
 }
 
 
-template class QGauss<0>;
-template class QGauss<1>;
-template class QGauss<2>;
-template class QGauss<3>;

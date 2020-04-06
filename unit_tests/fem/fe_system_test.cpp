@@ -68,7 +68,7 @@ vector<Element> make_elements(NodeVector &node_vector, const std::vector<std::ve
 class FESystemTest : public testing::Test {
 public:
   FESystemTest()
-    : q(4)
+    : q(3, 4)
   {
   	mesh.add_node(0, arma::vec3("1 0 0"));
   	mesh.add_node(1, arma::vec3("0 1 0"));
@@ -80,14 +80,14 @@ public:
   	ele = mesh.element_accessor(0);
 
   	for (unsigned int i=0; i<mesh.n_nodes(); i++)
-      q.set_point(i, mesh.node_accessor(i)->point());
+      q.point<3>(i) = mesh.node_accessor(i)->point();
   }
   
 protected:
   Mesh mesh;
   ElementAccessor<3> ele;
   MappingP1<3,3> map;
-  Quadrature<3> q;
+  Quadrature q;
 
 };
 
@@ -257,16 +257,16 @@ TEST_F(FESystemTest, test_mixed_system) {
       switch (i-dof_offset)
       {
         case 0:
-          exp_value = q.point(k)*2 - arma::vec("0 0 2");
+          exp_value = 2.0*q.point<3>(k) - arma::vec("0 0 2");
           break;
         case 1:
-          exp_value = q.point(k)*2 - arma::vec("0 2 0");
+          exp_value = 2.0*q.point<3>(k) - arma::vec("0 2 0");
           break;
         case 2:
-          exp_value = q.point(k)*2 - arma::vec("2 0 0");
+          exp_value = 2.0*q.point<3>(k) - arma::vec("2 0 0");
           break;
         case 3:
-          exp_value = q.point(k)*2;
+          exp_value = 2.0*q.point<3>(k);
           break;
         default:
           exp_value = arma::vec("0 0 0");

@@ -442,7 +442,7 @@ void FieldFE<spacedim, Value>::interpolate_gauss(ElementDataCache<double>::Compo
 
 	{
 		// set size of vectors to maximal count of quadrature points
-		QGauss<3> quad(quadrature_order);
+		QGauss quad(3, quadrature_order);
 		q_points.resize(quad.size());
 		q_weights.resize(quad.size());
 	}

@@ -364,7 +364,7 @@ void ConvectionTransport::set_boundary_conditions()
 
     ElementAccessor<3> elm;
 
-    unsigned int sbi, loc_el, loc_b = 0;
+    unsigned int sbi, loc_el;
     
     // Assembly bcvcorr vector
     for(sbi=0; sbi < n_substances(); sbi++) VecZeroEntries(bcvcorr[sbi]);
@@ -391,8 +391,8 @@ void ConvectionTransport::set_boundary_conditions()
 
                             // CAUTION: It seems that PETSc possibly optimize allocated space during assembly.
                             // So we have to add also values that may be non-zero in future due to changing velocity field.
-                            balance_->add_flux_matrix_values(subst_idx[sbi], loc_b, {row_4_el[el_4_loc[loc_el]]}, {0.});
-                            balance_->add_flux_vec_value(subst_idx[sbi], loc_b, flux*value);
+                            balance_->add_flux_matrix_values(subst_idx[sbi], elm.side(si), {row_4_el[el_4_loc[loc_el]]}, {0.});
+                            balance_->add_flux_vec_value(subst_idx[sbi], elm.side(si), flux*value);
                         }
                     } else {
                         for (sbi=0; sbi<n_substances(); sbi++)
@@ -400,11 +400,10 @@ void ConvectionTransport::set_boundary_conditions()
                         
                         for (unsigned int sbi=0; sbi<n_substances(); sbi++)
                         {
-                            balance_->add_flux_matrix_values(subst_idx[sbi], loc_b, {row_4_el[el_4_loc[loc_el]]}, {flux});
-                            balance_->add_flux_vec_value(subst_idx[sbi], loc_b, 0);
+                            balance_->add_flux_matrix_values(subst_idx[sbi], elm.side(si), {row_4_el[el_4_loc[loc_el]]}, {flux});
+                            balance_->add_flux_vec_value(subst_idx[sbi], elm.side(si), 0);
                         }
                     }
-                    ++loc_b;
                 }
             }
 
@@ -467,7 +466,7 @@ void ConvectionTransport::compute_concentration_sources() {
                 // compute maximal cfl condition over all substances
                 max_cfl = std::max(max_cfl, fabs(diag));
                 
-                balance_->add_source_values(sbi, ele_acc.region().bulk_idx(), {loc_el},
+                balance_->add_source_values(sbi, ele_acc.region().bulk_idx(), {int(loc_el)},
                                                 {- src_sigma * ele_acc.measure() * csection},
                                                 {source * ele_acc.measure()});
             }

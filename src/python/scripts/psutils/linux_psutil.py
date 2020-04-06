@@ -84,16 +84,22 @@ class Process(psutil.Process):
         return children
 
     @try_catch(default=0)
-    def memory_usage(self, prop='vms', units=MiB):
-        # use faster super call
-        children = super(Process, self).children(True)
-        children.append(self)
-
-        # put usages to list
-        usages = self.apply(children, 'memory_info')
-        if not usages:
-            return 0.0
-        return sum([getattr(x, prop) for x in usages]) / units
+    def memory_usage(self, prop='rss', units=MiB):
+        """
+        rss: aka “Resident Set Size”, this is the non-swapped physical memory a process has used. On UNIX it matches “top“‘s RES column). On Windows this is an alias for wset field and it matches “Mem Usage” column of taskmgr.exe.
+        vms: aka “Virtual Memory Size”, this is the total amount of virtual memory used by the process. On UNIX it matches “top“‘s VIRT column. On Windows this is an alias for pagefile field and it matches “Mem Usage” “VM Size” column of taskmgr.exe.
+        shared: (Linux) memory that could be potentially shared with other processes. This matches “top“‘s SHR column).
+        text (Linux, BSD): aka TRS (text resident set) the amount of memory devoted to executable code. This matches “top“‘s CODE column).
+        data (Linux, BSD): aka DRS (data resident set) the amount of physical memory devoted to other than executable code. It matches “top“‘s DATA column).
+        lib (Linux): the memory used by shared libraries.
+        dirty (Linux): the number of dirty pages.
+        pfaults (macOS): number of page faults.
+        pageins (macOS): number of actual pageins.
+        """
+        total = getattr(self.memory_info(), prop)
+        for child in super(Process, self).children(recursive=True):
+            total += getattr(child.memory_info(), prop)
+        return total / MiB
 
     @try_catch(default=0)
     def runtime(self):

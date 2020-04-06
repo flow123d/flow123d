@@ -94,10 +94,7 @@ FEObjects::FEObjects(Mesh *mesh_, unsigned int fe_order)
 		break;
 	}
 
-	q0_ = new QGauss<0>(q_order);
-	q1_ = new QGauss<1>(q_order);
-	q2_ = new QGauss<2>(q_order);
-	q3_ = new QGauss<3>(q_order);
+	for (unsigned int dim = 0; dim < 4; dim++) q_[dim] = new QGauss(dim, q_order);
 
 	map1_ = new MappingP1<1,3>;
 	map2_ = new MappingP1<2,3>;
@@ -132,10 +129,7 @@ FEObjects::~FEObjects()
 	delete fe1_;
 	delete fe2_;
 	delete fe3_;
-	delete q0_;
-	delete q1_;
-	delete q2_;
-	delete q3_;
+	for (unsigned int dim=0; dim < 4; dim++) delete q_[dim];
 	delete map1_;
 	delete map2_;
 	delete map3_;
@@ -145,11 +139,6 @@ template<> FiniteElement<0> *FEObjects::fe<0>() { return 0; }
 template<> FiniteElement<1> *FEObjects::fe<1>() { return fe1_; }
 template<> FiniteElement<2> *FEObjects::fe<2>() { return fe2_; }
 template<> FiniteElement<3> *FEObjects::fe<3>() { return fe3_; }
-
-template<> Quadrature<0> *FEObjects::q<0>() { return q0_; }
-template<> Quadrature<1> *FEObjects::q<1>() { return q1_; }
-template<> Quadrature<2> *FEObjects::q<2>() { return q2_; }
-template<> Quadrature<3> *FEObjects::q<3>() { return q3_; }
 
 template<> MappingP1<1,3> *FEObjects::mapping<1>() { return map1_; }
 template<> MappingP1<2,3> *FEObjects::mapping<2>() { return map2_; }
@@ -580,8 +569,7 @@ void Elasticity::output_data()
 template<unsigned int dim>
 void Elasticity::compute_output_fields()
 {
-    QGauss<dim> q(0);
-    QGauss<dim-1> q_sub(0);
+    QGauss q(dim, 0), q_sub(dim-1, 0);
     FEValues<dim,3> fv(*feo->mapping<dim>(), q, *feo->fe<dim>(),
     		update_values | update_gradients | update_quadrature_points);
     FESideValues<dim,3> fsv(*feo->mapping<dim>(), q_sub, *feo->fe<dim>(),
