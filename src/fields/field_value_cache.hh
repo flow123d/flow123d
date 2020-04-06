@@ -171,8 +171,11 @@ public:
     /// Create map of used eval points on cached elements.
     void create_elements_points_map();
 
-    /// Clean helper data after reading data to cache.
-    void clear_elements_to_update();
+    /// Start update of cache.
+    void start_elements_update();
+
+    /// Finish update after reading data to cache.
+    void finish_elements_update();
 
     /// Return update cache data helper
     inline const UpdateCacheHelper &update_cache_data() const {

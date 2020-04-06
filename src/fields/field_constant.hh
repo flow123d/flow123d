@@ -83,8 +83,7 @@ public:
                        std::vector<typename Value::return_type>  &value_list);
 
     void cache_update(FieldValueCache<typename Value::element_type> &data_cache,
-            unsigned int i_cache_el_begin, unsigned int i_cache_el_end,
-            const std::vector< ElementAccessor<spacedim> > &element_set) override;
+			ElementCacheMap &cache_map, unsigned int region_idx) override;
 
 
     virtual ~FieldConstant();

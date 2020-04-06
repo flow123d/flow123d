@@ -85,7 +85,7 @@ public:
             this->register_eval_points(elm_cache_map_);
             elm_cache_map_.create_elements_points_map();
     	    this->cache_update(elm_cache_map_);
-            elm_cache_map_.clear_elements_to_update();
+            elm_cache_map_.finish_elements_update();
         }
 
 
@@ -175,6 +175,7 @@ TEST_F(FieldEvalConstantTest, evaluate) {
     std::vector<arma::mat33>  expected_tensor = {{0.1, 0.2, 0.3, 0.2, 0.4, 0.5, 0.3, 0.5, 0.6}, {0.1, 0.2, 0.3, 0.2, 0.4, 0.5, 0.3, 0.5, 0.6},
                                                  {0.1, 0.2, 0.3, 0.2, 0.4, 0.5, 0.3, 0.5, 0.6}, {2.1, 2.2, 2.3, 2.2, 2.4, 2.5, 2.3, 2.5, 2.6}};
     for (unsigned int i=0; i<cell_idx.size(); ++i) {
+    	data_->elm_cache_map_.start_elements_update();
     	data_->computed_dh_cell_ = DHCellAccessor(dh_.get(), cell_idx[i]);  // element ids stored to cache: (3 -> 2,3,4), (4 -> 3,4,5,10), (5 -> 0,4,5,11), (10 -> 8,9,10)
         data_->elm_cache_map_.add(data_->computed_dh_cell_);
         for (DHCellSide side : data_->computed_dh_cell_.side_range()) {

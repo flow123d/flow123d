@@ -72,7 +72,6 @@ ElementCacheMap::~ElementCacheMap() {
 
 void ElementCacheMap::init(std::shared_ptr<EvalPoints> eval_points) {
 	this->eval_points_ = eval_points;
-	this->ready_to_reading_ = true;
 
 	unsigned int size = this->eval_points_->max_size();
 	element_eval_points_map_ = new int* [ElementCacheMap::n_cached_elements];
@@ -82,23 +81,20 @@ void ElementCacheMap::init(std::shared_ptr<EvalPoints> eval_points) {
 
 
 void ElementCacheMap::add(const DHCellAccessor &dh_cell) {
-	ASSERT_DBG(ready_to_reading_);
+	ASSERT_DBG(!ready_to_reading_);
     ASSERT_LT(update_data_.n_elements_, ElementCacheMap::n_cached_elements).error("ElementCacheMap overflowed. List of added elements is too long!\n");
     this->add_to_region(dh_cell.elm());
 }
 
 
 void ElementCacheMap::add(const DHCellSide &cell_side) {
-	ASSERT_DBG(ready_to_reading_);
+	ASSERT_DBG(!ready_to_reading_);
     ASSERT_LT(update_data_.n_elements_, ElementCacheMap::n_cached_elements).error("ElementCacheMap overflowed. List of added elements is too long!\n");
     this->add_to_region(cell_side.cell().elm());
 }
 
 
 void ElementCacheMap::prepare_elements_to_update() {
-	// Start of cache update
-	ready_to_reading_ = false;
-
     // Erase element data of previous step
     cache_idx_.clear();
     std::fill(elm_idx_.begin(), elm_idx_.end(), ElementCacheMap::undef_elem_idx);
@@ -142,10 +138,14 @@ void ElementCacheMap::create_elements_points_map() {
 }
 
 
-void ElementCacheMap::clear_elements_to_update() {
+void ElementCacheMap::start_elements_update() {
 	update_data_.region_cache_indices_map_.clear();
 	update_data_.n_elements_ = 0;
-	ready_to_reading_ = true; // end of cache update
+	ready_to_reading_ = false;
+}
+
+void ElementCacheMap::finish_elements_update() {
+	ready_to_reading_ = true;
 }
 
 void ElementCacheMap::mark_used_eval_points(const DHCellAccessor &dh_cell, unsigned int subset_idx, unsigned int data_size, unsigned int start_point) {
