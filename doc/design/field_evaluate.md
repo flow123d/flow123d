@@ -315,7 +315,15 @@ after all fields are updated.
     presssure_field_fe.fe_values.update(cell);
 ```
 Two major algorithms are in use:
-- FieldFE - evaluates base func values in all quadrature points (done once per assembly),  dot product with DOFs, optionaly multiplied by the Mapping matrix (important optimization for vector fields and derivatives, must have support in FEValues)
+- FieldFE - evaluates base func values in all quadrature points (done once per assembly),  dot product with DOFs, 
+  optionaly multiplied by the Mapping matrix (important optimization for vector fields and derivatives, must have support in FEValues)
+  
+  - FieldFE has three instances of FEValues, one for every dimension. This is possible as the EvalPoints are structured by the dimension.
+  - During cache update we:
+    1. for every element in the elementcache map (range of elements in the region)
+    2. find element dimension, call fe_values[dim].reinit(el) for that element
+    3. update cache values in that row of the element cache map
+  - The reinit may be slightly inefficient as all values are computed not only the active. We can try to optimize that after it is in use and we can see if it is a real problem.
 - FieldFormula - evaluates all elements in the patch (same region), in all point from single continuous block od quad points
 
 
