@@ -418,6 +418,7 @@ void Elasticity::output_vector_gather()
 
 void Elasticity::update_output_fields()
 {
+    data_.output_stress_ptr->get_data_vec().zero_entries();
     data_.output_cross_section_ptr->get_data_vec().zero_entries();
     data_.output_div_ptr->get_data_vec().zero_entries();
     compute_output_fields<1>();
@@ -627,7 +628,7 @@ void Elasticity::compute_output_fields()
             
             for (unsigned int i=0; i<3; i++)
                 for (unsigned int j=0; j<3; j++)
-                    output_stress_vec[dof_indices_tensor[i*3+j]] = stress(i,j);
+                    output_stress_vec[dof_indices_tensor[i*3+j]] += stress(i,j);
             output_von_mises_stress_vec[dof_indices_scalar[0]] = von_mises_stress;
             
             output_cross_sec_vec[dof_indices_scalar[0]] += data_.cross_section.value(fv.point(0), elm);
@@ -637,6 +638,14 @@ void Elasticity::compute_output_fields()
             auto elm = cell.elm();
             vector<int> side_dof_indices(ndofs);
             double normal_displacement = 0;
+            double csection = data_.cross_section.value(fsv.point(0), elm);
+            arma::mat33 normal_stress = arma::zeros(3,3);
+
+            double poisson = data_.poisson_ratio.value(elm.centre(), elm);
+            double young = data_.young_modulus.value(elm.centre(), elm);
+            double mu = lame_mu(young, poisson);
+            double lambda = lame_lambda(young, poisson);
+
             for (unsigned int inb=0; inb<elm->n_neighs_vb(); inb++)
             {
                 auto side = elm->neigh_vb[inb]->side();
@@ -645,11 +654,19 @@ void Elasticity::compute_output_fields()
                 feo->dh()->cell_accessor_from_element(cell_side.idx()).get_loc_dof_indices(side_dof_indices);
                 
                 for (unsigned int i=0; i<ndofs; i++)
+                {
                     normal_displacement -= arma::dot(vec_side.value(i,0)*output_vec[side_dof_indices[i]], fsv.normal_vector(0));
+                    arma::mat33 grad = -arma::kron(vec_side.value(i,0)*output_vec[side_dof_indices[i]], fsv.normal_vector(0).t()) / csection;
+                    normal_stress += mu*(grad+grad.t()) + lambda*arma::trace(grad)*arma::eye(3,3);
+                }
             }
             cell_scalar.get_loc_dof_indices(dof_indices_scalar);
+            cell_tensor.get_loc_dof_indices(dof_indices_tensor);
+            for (unsigned int i=0; i<3; i++)
+                for (unsigned int j=0; j<3; j++)
+                    output_stress_vec[dof_indices_tensor[i*3+j]] += normal_stress(i,j);
             output_cross_sec_vec[dof_indices_scalar[0]] += normal_displacement;
-            output_div_vec[dof_indices_scalar[0]] += normal_displacement / data_.cross_section.value(fsv.point(0), elm);
+            output_div_vec[dof_indices_scalar[0]] += normal_displacement / csection;
         }
         cell_scalar.inc();
         cell_tensor.inc();
