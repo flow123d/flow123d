@@ -52,7 +52,15 @@ TEST(Armor_test, indexing2) {
 			m1(i,j) = a1(i,j);
 		}
 	}
-	EXPECT_TRUE(m1 == a1);
+
+	bool res = true;
+    for (uint i{0}; i < 3; ++i) {
+        for (uint j{0}; j < 3; ++j) {
+            res &= (m1(i,j) == a1(i,j));
+        }
+    }
+    EXPECT_TRUE(res);
+
 }
 
 TEST(Armor_test, assignment_list1) {
@@ -69,7 +77,13 @@ TEST(Armor_test, assignment_list2) {
 	double mem[9];
 	Armor::Mat<double, 3, 3> m1(mem);
 	m1 = {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
-	EXPECT_TRUE(m1 == a1);
+    bool res = true;
+    for (uint i{0}; i < 3; ++i) {
+        for (uint j{0}; j < 3; ++j) {
+            res &= (m1(i,j) == a1(i,j));
+        }
+    }
+	EXPECT_TRUE(res);
 }
 
 TEST(Armor_test, assignment_armor) {
