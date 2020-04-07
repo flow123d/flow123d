@@ -182,6 +182,11 @@ public:
         return update_data_;
     }
 
+    /// Return update cache data helper
+    inline UpdateCacheHelper &update_cache_data() {
+        return update_data_;
+    }
+
     /**
      * Set used element eval points to value ElementCacheMap::point_in_proggress
      *
