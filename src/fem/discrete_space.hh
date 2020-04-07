@@ -95,10 +95,10 @@ public:
   
   unsigned int n_node_dofs(unsigned int nid) const override;
   
-  FiniteElement<0> *fe0d(const ElementAccessor<3> &cell) const override { return fe0_; }
-  FiniteElement<1> *fe1d(const ElementAccessor<3> &cell) const override { return fe1_; }
-  FiniteElement<2> *fe2d(const ElementAccessor<3> &cell) const override { return fe2_; }
-  FiniteElement<3> *fe3d(const ElementAccessor<3> &cell) const override { return fe3_; }
+  FiniteElement<0> *fe0d(const ElementAccessor<3> &) const override { return fe0_; }
+  FiniteElement<1> *fe1d(const ElementAccessor<3> &) const override { return fe1_; }
+  FiniteElement<2> *fe2d(const ElementAccessor<3> &) const override { return fe2_; }
+  FiniteElement<3> *fe3d(const ElementAccessor<3> &) const override { return fe3_; }
   
   
 private:

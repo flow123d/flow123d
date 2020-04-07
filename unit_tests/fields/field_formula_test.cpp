@@ -54,7 +54,7 @@ TEST(FieldFormula, read_from_input) {
     typedef FieldAlgorithmBase<3, FieldValue<3>::TensorFixed > TensorField;
     typedef FieldAlgorithmBase<3, FieldValue<3>::VectorFixed > VectorField;
 
-    Profiler::initialize();
+    Profiler::instance();
 
     // setup FilePath directories
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
@@ -198,7 +198,7 @@ string set_time_input = R"INPUT(
 TEST(FieldFormula, set_time) {
     typedef FieldAlgorithmBase<3, FieldValue<3>::VectorFixed > VectorField;
 
-    Profiler::initialize();
+    Profiler::instance();
 
     // setup FilePath directories
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
@@ -244,7 +244,7 @@ TEST(FieldFormula, set_time) {
 
 
 TEST(SurfaceDepth, base_test) {
-    Profiler::initialize();
+    Profiler::instance();
 	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
 	std::string mesh_in_string = "{mesh_file=\"fields/surface_reg.msh\"}";

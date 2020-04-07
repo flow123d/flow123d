@@ -116,7 +116,7 @@ void LocalSystem::eliminate_solution()
         arma::mat tmp_mat = matrix;
         arma::vec tmp_rhs = rhs;
         
-        unsigned int ic, ir, row, col, j;
+        unsigned int ic, ir, row, col;
 
         // eliminate columns
         for(ic=0; ic < n_elim_cols; ic++) {

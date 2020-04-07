@@ -215,7 +215,7 @@ public:
 	: OutputTime()
 
 	{
-	    Profiler::initialize();
+	    Profiler::instance();
 		// read simple mesh
 	    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
 	    my_mesh = mesh_full_constructor("{mesh_file=\"" + (string)mesh_file + "\"}");
@@ -392,7 +392,7 @@ TEST_F( OutputTest, test_register_elem_fields_data ) {
 
     TimeGovernor tg(0.0, 1.0);
 
-    Profiler::initialize();
+    Profiler::instance();
 
     FilePath::set_io_dirs(".", UNIT_TESTS_SRC_DIR, "", ".");
 
@@ -470,7 +470,7 @@ TEST_F( OutputTest, test_register_corner_fields_data ) {
     Input::ReaderToStorage reader_output(foo_output, Foo::input_type, Input::FileFormat::format_JSON);
     TimeGovernor tg(0.0, 1.0);
 
-    Profiler::initialize();
+    Profiler::instance();
 
     FilePath::set_io_dirs(".", UNIT_TESTS_SRC_DIR, "", ".");
 
@@ -564,7 +564,7 @@ TEST_F( OutputTest, test_register_node_fields_data ) {
     Input::ReaderToStorage reader_output(foo_output, Foo::input_type, Input::FileFormat::format_JSON);
     TimeGovernor tg(0.0, 1.0);
 
-    Profiler::initialize();
+    Profiler::instance();
 
     FilePath::set_io_dirs(".", UNIT_TESTS_SRC_DIR, "", ".");
 

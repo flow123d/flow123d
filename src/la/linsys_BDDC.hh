@@ -36,7 +36,7 @@ namespace Input {
 }
 namespace la {
     class BddcmlWrapper; 
-};
+}
 
 class LinSys_BDDC : public LinSys
 {
@@ -52,6 +52,7 @@ public:
                  const int  numSubLoc = 1,
                  const bool swap_sign = false );
 
+    /// Sets tolerances. Note that BDDC does not use a_tol.
     void set_tolerances(double  r_tol, double a_tol, unsigned int max_it) override;
 
     void load_mesh( const int nDim, const int numNodes, const int numDofs,

@@ -9,14 +9,11 @@
 #include <algorithm>
 #include <cmath>
 
-#include "fadbad.h"
-#include "badiff.h"
-#include "fadiff.h"
 #include "system/logger.hh"
 
 #include "system/asserts.hh"
 #include "flow/soil_models.hh"
-
+#include "tools/include_fadbad.hh" // for "fadbad.h", "badiff.h", "fadiff.h"
 
 template <class Model>
 SoilModelImplBase<Model>::SoilModelImplBase(double cut_fraction)

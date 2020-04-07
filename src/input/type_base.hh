@@ -601,6 +601,7 @@ public:
     TypeHash content_hash() const   override;
 
     /// Particular descendants can check validity of the string.
+    /// This returns always true.
     virtual bool match(const string &value) const;
 
     /// Implements @p TypeBase::make_instance.

@@ -29,6 +29,7 @@
 #include <boost/exception/info.hpp>                    // for operator<<
 #include <string>                                      // for string
 #include "system/exceptions.hh"                        // for ExcChkErr::~Ex...
+#include "system/fmt/posix.h"                          // for FMT_UNUSED 
 
 
 #ifndef _BSD_SOURCE
@@ -158,6 +159,8 @@ inline void chkerr(unsigned int ierr) {
 inline void chkerr_assert(unsigned int ierr) {
 #ifdef FLOW123D_DEBUG_ASSERTS
     chkerr(ierr);
+#else
+    (void)ierr; // not used
 #endif
 }
 

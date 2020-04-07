@@ -21,7 +21,6 @@
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
 
-#include "mesh/side_impl.hh"
 #include "mesh/long_idx.hh"
 #include "mesh/mesh.h"
 #include "mesh/partitioning.hh"
@@ -53,7 +52,7 @@
 #include "flow/mh_dofhandler.hh"
 
 
-FLOW123D_FORCE_LINK_IN_CHILD(convectionTransport);
+FLOW123D_FORCE_LINK_IN_CHILD(convectionTransport)
 
 
 namespace IT = Input::Type;
@@ -111,9 +110,9 @@ ConvectionTransport::EqData::EqData() : TransportEqData()
 ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record in_rec)
 : ConcentrationTransportBase(init_mesh, in_rec),
   is_mass_diag_changed(false),
+  sources_corr(nullptr),
   input_rec(in_rec),
-  mh_dh(nullptr),
-  sources_corr(nullptr)
+  mh_dh(nullptr)
 {
 	START_TIMER("ConvectionTransport");
 	this->eq_data_ = &data_;
@@ -377,15 +376,15 @@ void ConvectionTransport::set_boundary_conditions()
         	LongIdx new_i = row_4_el[ elm.idx() ];
 
         	for (unsigned int si=0; si<elm->n_sides(); si++) {
-                Boundary *b = elm.side(si)->cond();
-                if (b != NULL) {
+                if (elm.side(si)->is_boundary()) {
+                    Boundary bcd = elm.side(si)->cond();
                     double flux = mh_dh->side_flux( *(elm.side(si)) );
                     if (flux < 0.0) {
                         double aij = -(flux / elm.measure() );
 
                         for (sbi=0; sbi<n_substances(); sbi++)
                         {
-                            double value = data_.bc_conc[sbi].value( b->element_accessor().centre(), b->element_accessor() );
+                            double value = data_.bc_conc[sbi].value( bcd.element_accessor().centre(), bcd.element_accessor() );
                             
                             VecSetValue(bcvcorr[sbi], new_i, value * aij, ADD_VALUES);
 
@@ -736,7 +735,6 @@ void ConvectionTransport::create_transport_matrix_mpi() {
 
     ElementAccessor<3> el2;
     ElementAccessor<3> elm;
-    const Edge *edg;
     int j;
     LongIdx new_j, new_i;
     double aij, aii;
@@ -752,7 +750,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
         new_i = row_4_el[ dh_cell.elm_idx() ];
         for( DHCellSide cell_side : dh_cell.side_range() ) {
             flux = mh_dh->side_flux( cell_side.side());
-            if (cell_side.cond() == NULL) {
+            if (! cell_side.side().is_boundary()) {
                 edg_flux = 0;
                 for( DHCellSide edge_side : cell_side.edge_sides() ) {
                 	flux2 = mh_dh->side_flux( edge_side.side() );

@@ -105,9 +105,9 @@ protected:
 	/**
 	 * Parse command line parameters before Flow123D initialization.
 	 *
-	 * Method can be override in derived class.
+	 * Method must be implemented in derived class.
 	 */
-	virtual void parse_cmd_line(const int argc, char ** argv) {}
+	virtual void parse_cmd_line(const int argc, char ** argv) = 0;
 
 	/**
 	 * Implement printf function for PETSc with support for redirecting.

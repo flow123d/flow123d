@@ -22,7 +22,7 @@
 #include "flow/richards_lmh.hh"
 
 
-FLOW123D_FORCE_LINK_IN_CHILD(coupling_iterative);
+FLOW123D_FORCE_LINK_IN_CHILD(coupling_iterative)
 
 
 namespace it = Input::Type;

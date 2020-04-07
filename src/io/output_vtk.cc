@@ -111,12 +111,12 @@ string OutputVTK::form_vtu_filename_(string basename, int i_step, int rank) {
     ostringstream ss;
     if (this->parallel_) {
         // parallel file
-        ss << main_output_basename_ << "/" << main_output_basename_ << "-"
-           << std::setw(6) << std::setfill('0') << current_step << "." << rank << ".vtu";
+        ss << basename << "/" << basename << "-"
+           << std::setw(6) << std::setfill('0') << i_step << "." << rank << ".vtu";
     } else {
         // serial file
-        ss << main_output_basename_ << "/" << main_output_basename_ << "-"
-           << std::setw(6) << std::setfill('0') << current_step << ".vtu";
+        ss << basename << "/" << basename << "-"
+           << std::setw(6) << std::setfill('0') << i_step << ".vtu";
     }
     return ss.str();
 }

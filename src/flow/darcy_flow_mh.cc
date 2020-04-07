@@ -33,7 +33,6 @@
 #include "system/sys_profiler.hh"
 #include "input/factory.hh"
 
-#include "mesh/side_impl.hh"
 #include "mesh/long_idx.hh"
 #include "mesh/mesh.h"
 #include "mesh/partitioning.hh"
@@ -68,7 +67,7 @@
 #include "intersection/intersection_local.hh"
 
 
-FLOW123D_FORCE_LINK_IN_CHILD(darcy_flow_mh);
+FLOW123D_FORCE_LINK_IN_CHILD(darcy_flow_mh)
 
 
 
@@ -594,7 +593,8 @@ void DarcyMH::solve_nonlinear()
         double mult = 1.0;
         if (nonlinear_iteration_ < 3) mult = 1.6;
         if (nonlinear_iteration_ > 7) mult = 0.7;
-        int result = time_->set_upper_constraint(time_->dt() * mult, "Darcy adaptivity.");
+        time_->set_upper_constraint(time_->dt() * mult, "Darcy adaptivity.");
+        // int result = time_->set_upper_constraint(time_->dt() * mult, "Darcy adaptivity.");
         //DebugOut().fmt("time adaptivity, res: {} it: {} m: {} dt: {} edt: {}\n", result, nonlinear_iteration_, mult, time_->dt(), time_->estimate_dt());
     }
 
@@ -1127,7 +1127,7 @@ void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
         // insert dofs related to compatible connections
         for ( unsigned int i_neigh = 0; i_neigh < ele_ac.element_accessor()->n_neighs_vb(); i_neigh++) {
             int edge_row = mh_dh.row_4_edge[ ele_ac.element_accessor()->neigh_vb[i_neigh]->edge_idx()  ];
-            arma::vec3 coord = ele_ac.element_accessor()->neigh_vb[i_neigh]->edge()->side(0)->centre();
+            arma::vec3 coord = ele_ac.element_accessor()->neigh_vb[i_neigh]->edge().side(0)->centre();
 
             localDofMap.insert( std::make_pair( edge_row, coord ) );
             inet.push_back( edge_row );

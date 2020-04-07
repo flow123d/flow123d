@@ -29,12 +29,12 @@
 #include "input/storage.hh"                  // for ExcStorageTypeMismatch
 #include "input/type_record.hh"              // for Record (ptr only), Recor...
 #include "mesh/long_idx.hh"                  // for LongIdx
-#include "mesh/boundaries.h"                 // for Boundary
-#include "mesh/edges.h"                      // for Edge
 #include "mesh/region.hh"                    // for RegionDB, RegionDB::MapE...
 #include "mesh/nodes.hh"
+#include "mesh/elements.h"
 #include "mesh/bounding_box.hh"              // for BoundingBox
 #include "mesh/range_wrapper.hh"
+#include "mesh/mesh_data.hh"
 #include "tools/bidirectional_map.hh"
 #include "tools/general_iterator.hh"
 #include "system/exceptions.hh"              // for operator<<, ExcStream, EI
@@ -47,6 +47,8 @@ class Partitioning;
 class MixedMeshIntersections;
 class Neighbour;
 class SideIter;
+class Boundary;
+class Edge;
 class BCMesh;
 class DuplicateNodes;
 template <int spacedim> class ElementAccessor;
@@ -66,8 +68,6 @@ class BoundarySegment {
 public:
     static Input::Type::Record input_type;
 };
-
-
 
 //=============================================================================
 // STRUCTURE OF THE MESH
@@ -103,7 +103,6 @@ public:
     static const Input::Type::Record & get_input_type();
 
 
-
     /** Labels for coordinate indexes in arma::vec3 representing vectors and points.*/
     enum {x_coord=0, y_coord=1, z_coord=2};
 
@@ -118,10 +117,6 @@ public:
      * Do not process input record. That is done in init_from_input.
      */
     Mesh(Input::Record in_record, MPI_Comm com = MPI_COMM_WORLD);
-    /**
-     * Common part of both previous constructors and way how to reinitialize a mesh from the  given input record.
-     */
-    void reinit(Input::Record in_record);
 
     /// Destructor.
     virtual ~Mesh();
@@ -137,6 +132,9 @@ public:
     inline unsigned int n_edges() const {
         return edges.size();
     }
+
+    Edge edge(uint edge_idx) const;
+    Boundary boundary(uint edge_idx) const;
 
     unsigned int n_corners();
 
@@ -246,10 +244,7 @@ public:
 
     /// Vector of boundary sides where is prescribed boundary condition.
     /// TODO: apply all boundary conditions in the main assembling cycle over elements and remove this Vector.
-    mutable vector<Boundary> boundary_;
-
-    /// Vector of MH edges, this should not be part of the geometrical mesh
-    std::vector<Edge> edges;
+    mutable vector<BoundaryData> boundary_;
 
     //flow::VectorId<int> bcd_group_id; // gives a index of group for an id
 
@@ -342,6 +337,9 @@ public:
     /// Returns range of nodes
     Range<NodeAccessor<3>> node_range() const;
 
+    /// Returns range of edges
+    Range<Edge> edge_range() const;
+
     /// Returns count of boundary or bulk elements
     virtual unsigned int n_elements(bool boundary=false) const {
     	if (boundary) return element_ids_.size()-bulk_size_;
@@ -391,6 +389,12 @@ public:
     BCMesh *get_bc_mesh();
 
 protected:
+
+    /**
+     * Part of the constructor whichdoes not depedn on input record.
+     * Initializes node-side numbering according to RefElement.
+     */
+    void init();
 
     /**
      * Allow store boundary element data to temporary structure.
@@ -527,9 +531,12 @@ protected:
     /// Maps node ids to indexes into vector node_vec_
     BidirectionalMap<int> node_ids_;
 
+    /// Vector of MH edges, this should not be part of the geometrical mesh
+    std::vector<EdgeData> edges;
 
 
-
+    friend class Edge;
+    friend class Side;
     friend class RegionSetBase;
     friend class Element;
     friend class BIHTree;

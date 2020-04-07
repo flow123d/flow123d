@@ -42,8 +42,8 @@
 #include "mesh/long_idx.hh"
 #include "mesh/accessors.hh"
 
-FLOW123D_FORCE_LINK_IN_CHILD(concentrationTransportModel);
-FLOW123D_FORCE_LINK_IN_CHILD(heatModel);
+FLOW123D_FORCE_LINK_IN_CHILD(concentrationTransportModel)
+FLOW123D_FORCE_LINK_IN_CHILD(heatModel)
 
 
 
@@ -153,11 +153,12 @@ template<> FiniteElement<1> *FEObjects::fe<1>() { return fe1_; }
 template<> FiniteElement<2> *FEObjects::fe<2>() { return fe2_; }
 template<> FiniteElement<3> *FEObjects::fe<3>() { return fe3_; }
 
-template<> FiniteElement<0> *FEObjects::fe_rt<0>() { return 0; }
+template<> FiniteElement<0> *FEObjects::fe_rt<0>() { return nullptr; }
 template<> FiniteElement<1> *FEObjects::fe_rt<1>() { return fe_rt1_; }
 template<> FiniteElement<2> *FEObjects::fe_rt<2>() { return fe_rt2_; }
 template<> FiniteElement<3> *FEObjects::fe_rt<3>() { return fe_rt3_; }
 
+template<> MappingP1<0,3> *FEObjects::mapping<0>() { return nullptr; }
 template<> MappingP1<1,3> *FEObjects::mapping<1>() { return map1_; }
 template<> MappingP1<2,3> *FEObjects::mapping<2>() { return map2_; }
 template<> MappingP1<3,3> *FEObjects::mapping<3>() { return map3_; }
@@ -572,7 +573,7 @@ void TransportDG<Model>::calculate_concentration_matrix()
 	for (auto cell : feo->dh()->own_range() )
     {
 
-        unsigned int n_dofs;
+        unsigned int n_dofs = 0;
         switch (cell.dim())
         {
         case 1:
@@ -1099,11 +1100,11 @@ void TransportDG<Model>::assemble_fluxes_boundary()
         for( DHCellSide cell_side : cell.side_range() )
         {
             Side side = cell_side.side();
-            if (side.edge()->n_sides > 1) continue;
+            if (side.edge().n_sides() > 1) continue;
             // check spatial dimension
             if (side.dim() != dim-1) continue;
             // skip edges lying not on the boundary
-            if (side.cond() == NULL) continue;
+            if (! side.is_boundary()) continue;
 
             ElementAccessor<3> elm_acc = cell.elm();
             cell.get_dof_indices(side_dof_indices);
@@ -1113,7 +1114,7 @@ void TransportDG<Model>::assemble_fluxes_boundary()
             calculate_velocity(elm_acc, side_velocity, fsv_rt);
             Model::compute_advection_diffusion_coefficients(fe_values_side.point_list(), side_velocity, elm_acc, ad_coef, dif_coef);
             arma::uvec bc_type;
-            Model::get_bc_type(side.cond()->element_accessor(), bc_type);
+            Model::get_bc_type(side.cond().element_accessor(), bc_type);
             data_.cross_section.value_list(fe_values_side.point_list(), elm_acc, csection);
 
             for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
@@ -1143,12 +1144,12 @@ void TransportDG<Model>::assemble_fluxes_boundary()
                     double flux_times_JxW;
                     if (bc_type[sbi] == AdvectionDiffusionModel::abc_total_flux)
                     {
-                        Model::get_flux_bc_sigma(sbi, fe_values_side.point_list(), side.cond()->element_accessor(), robin_sigma);
+                        Model::get_flux_bc_sigma(sbi, fe_values_side.point_list(), side.cond().element_accessor(), robin_sigma);
                         flux_times_JxW = csection[k]*robin_sigma[k]*fe_values_side.JxW(k);
                     }
                     else if (bc_type[sbi] == AdvectionDiffusionModel::abc_diffusive_flux)
                     {
-                        Model::get_flux_bc_sigma(sbi, fe_values_side.point_list(), side.cond()->element_accessor(), robin_sigma);
+                        Model::get_flux_bc_sigma(sbi, fe_values_side.point_list(), side.cond().element_accessor(), robin_sigma);
                         flux_times_JxW = (transport_flux + csection[k]*robin_sigma[k])*fe_values_side.JxW(k);
                     }
                     else if (bc_type[sbi] == AdvectionDiffusionModel::abc_inflow && side_flux < 0)
@@ -1339,18 +1340,18 @@ void TransportDG<Model>::set_boundary_conditions()
 
         for (unsigned int si=0; si<cell.elm()->n_sides(); si++)
         {
-            const Edge *edg = cell.elm().side(si)->edge();
-            if (edg->n_sides > 1) continue;
+            Edge edg = cell.elm().side(si)->edge();
+            if (edg.n_sides() > 1) continue;
             // skip edges lying not on the boundary
-            if (edg->side(0)->cond() == NULL) continue;
+            if (! edg.side(0)->is_boundary()) continue;
 
             // skip edges of different dimension
-            if (edg->side(0)->dim() != dim-1) continue;
+            if (edg.side(0)->dim() != dim-1) continue;
 
 
-            Side side = *(edg->side(0));
+            Side side = *(edg.side(0));
             ElementAccessor<3> elm = Model::mesh_->element_accessor( side.element().idx() );
-            ElementAccessor<3> ele_acc = side.cond()->element_accessor();
+            ElementAccessor<3> ele_acc = side.cond().element_accessor();
 
             arma::uvec bc_type;
             Model::get_bc_type(ele_acc, bc_type);
@@ -1615,7 +1616,7 @@ void TransportDG<Model>::update_after_reactions(bool solution_changed)
     	for (auto cell : feo->dh()->own_range() )
         {
 
-            unsigned int n_dofs;
+            unsigned int n_dofs = 0;
             switch (cell.dim())
             {
             case 1:
