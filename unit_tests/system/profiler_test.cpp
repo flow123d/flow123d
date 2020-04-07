@@ -244,8 +244,8 @@ void ProfilerTest::test_absolute_time() {
     // other processors should have empty string only
     if (mpi_rank == 0) {
         // test timer resolution, requiring atleast 2 digit places
-        EXPECT_NE( sout.str().find("cumul-time-min\": \"1.00"), string::npos );
-        EXPECT_NE( sout.str().find("cumul-time-max\": \"1.00"), string::npos );
+        EXPECT_NE( sout.str().find("cumul-time-min\": 1.00"), string::npos );
+        EXPECT_NE( sout.str().find("cumul-time-max\": 1.00"), string::npos );
     } else {
         EXPECT_TRUE( sout.str().empty() );
     }
