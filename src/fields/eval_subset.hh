@@ -233,7 +233,7 @@ public:
 
     /// Local coordinates within element
     template<unsigned int dim>
-    inline arma::vec loc_coords() const {
+    inline arma::vec::fixed<dim> loc_coords() const {
         return this->eval_points()->local_point<dim>( local_point_idx_ );
     }
 
@@ -301,7 +301,7 @@ public:
 
     // Local coordinates within element
     template<unsigned int dim>
-    inline arma::vec loc_coords() const {
+    inline arma::vec::fixed<dim> loc_coords() const {
         return this->eval_points()->local_point<dim>( this->eval_point_idx() );
     }
 

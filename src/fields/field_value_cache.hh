@@ -187,6 +187,11 @@ public:
         return update_data_;
     }
 
+    /// Getter of eval_points object.
+    inline std::shared_ptr<EvalPoints> eval_points() const {
+        return eval_points_;
+    }
+
     /**
      * Set used element eval points to value ElementCacheMap::point_in_proggress
      *
