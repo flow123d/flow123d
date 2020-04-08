@@ -52,6 +52,67 @@ namespace it = Input::Type;
 FLOW123D_FORCE_LINK_IN_CHILD(field_fe)
 
 
+/**
+ * Helper class, allow to simplify computing value of FieldFE.
+ *
+ * Use correct method FEValues<...>::shape_xxx given with Value::rank_.
+ * Is done by class partial specialization as, we were not able to do this using function overloading (since
+ * they differ only by return value) and partial specialization of the function templates is not supported  in C++.
+ */
+template<int rank, int spacedim, class Value>
+class FEShapeHandler {
+public:
+
+    inline static Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> fe_value(FEValues<spacedim> &fe_val, unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
+    {
+        ASSERT(false).error("Unsupported format of FieldFE!\n");
+        Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> ret;
+        ret.fill(0);
+        return ret;
+    }
+};
+
+
+/// Partial template specialization of FEShapeHandler for scalar fields
+template<int spacedim, class Value>
+class FEShapeHandler<0, spacedim, Value> {
+public:
+    inline static Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> fe_value(FEValues<3> &fe_val, unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
+    {
+        double val = fe_val.scalar_view(comp_index).value(i_dof, i_qp);
+        Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> ret;
+        ret(0) = val;
+        return ret;
+	}
+};
+
+
+/// Partial template specialization of FEShapeHandler for vector fields
+template<int spacedim, class Value>
+class FEShapeHandler<1, spacedim, Value> {
+public:
+    inline static Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> fe_value(FEValues<3> &fe_val, unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
+    {
+        return fe_val.vector_view(comp_index).value(i_dof, i_qp);
+    }
+};
+
+
+/// Partial template specialization of FEShapeHandler for tensor fields
+template<int spacedim, class Value>
+class FEShapeHandler<2, spacedim, Value> {
+public:
+    inline static Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> fe_value(FEValues<3> &fe_val, unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
+    {
+        return fe_val.tensor_view(comp_index).value(i_dof, i_qp);
+    }
+};
+
+
+
+/************************************************************************************
+ * Implementation of FieldFE methods
+ */
 template <int spacedim, class Value>
 const Input::Type::Record & FieldFE<spacedim, Value>::get_input_type()
 {
@@ -221,6 +282,59 @@ void FieldFE<spacedim, Value>::value_list (const Armor::array &point_list, const
 	}
 }
 
+
+
+template <int spacedim, class Value>
+void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::element_type> &data_cache,
+		ElementCacheMap &cache_map, unsigned int region_idx)
+{
+    ASSERT( !boundary_dofs_ ).error("boundary field NOT supported!!\n");
+    std::shared_ptr<EvalPoints> eval_points = cache_map.eval_points();
+    Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> mat_value;
+
+    if (fe_values_[0].dim() == -1) {
+        // initialize FEValues objects (when first using)
+        this->init_fe_value<1>(eval_points);
+        this->init_fe_value<2>(eval_points);
+        this->init_fe_value<3>(eval_points);
+    }
+
+    auto update_cache_data = cache_map.update_cache_data();
+    std::unordered_map<unsigned int, typename ElementCacheMap::RegionData>::iterator reg_elm_it =
+            update_cache_data.region_cache_indices_map_.find(region_idx);
+
+    for (unsigned int i_elm=0; i_elm<reg_elm_it->second.element_set_.size(); ++i_elm) {
+        unsigned int elm_idx = reg_elm_it->second.elm_indices_[i_elm];
+    	ElementAccessor<spacedim> elm(const_cast<const Mesh *>(dh_->mesh()), elm_idx);
+        fe_values_[elm.dim()-1].reinit( elm );
+
+        DHCellAccessor cell = dh_->cell_accessor_from_element( elm_idx );
+        LocDofVec loc_dofs = cell.get_loc_dof_indices();
+
+        for (unsigned int i_ep=0; i_ep<eval_points->max_size(); ++i_ep) { // i_eval_point
+            //DHCellAccessor cache_cell = cache_map(cell);
+            int field_cache_idx = cache_map.get_field_value_cache_index(cache_map(cell).element_cache_index(), i_ep);
+            if (field_cache_idx < 0) continue; // skip
+            mat_value.fill(0.0);
+    		for (unsigned int i_dof=0; i_dof<loc_dofs.n_elem; i_dof++) {
+    		    mat_value += data_vec_[loc_dofs[i_dof]]
+    		                     * FEShapeHandler<Value::rank_, spacedim, Value>::fe_value(fe_values_[elm.dim()-1], i_dof, i_ep, 0);
+    		}
+    		data_cache.data().set(field_cache_idx) = mat_value;
+        }
+    }
+}
+
+
+template <int spacedim, class Value>
+template <unsigned int dim>
+void FieldFE<spacedim, Value>::init_fe_value(std::shared_ptr<EvalPoints> eval_points)
+{
+    Quadrature quad(dim, eval_points->size(dim));
+    for (unsigned int k=0; k<eval_points->size(dim); k++)
+        quad.set(k) = eval_points->local_point<dim>(k);
+    fe_values_[dim-1].initialize(quad, *fe_.get<dim>(), update_values);
+}
 
 
 template <int spacedim, class Value>
