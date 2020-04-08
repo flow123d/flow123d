@@ -159,10 +159,10 @@ void ProfilerTest::test_code_point() {
 // testing profiler precision up to 2 decimal places relative to TIMER_RESOLUTION
 TEST_F(ProfilerTest, test_one_timer) {test_one_timer();}
  void ProfilerTest::test_one_timer() {
+    Profiler::instance();
     const double TIMER_RESOLUTION = Profiler::get_resolution();
     const double DELTA = TIMER_RESOLUTION*1000;
     double total=0;
-    Profiler::instance();
 
     { // uninitialize can not be in the same block as the START_TIMER
 
@@ -211,9 +211,7 @@ TEST_F(ProfilerTest, test_one_timer) {test_one_timer();}
     }
     std::stringstream sout;
     PI->output(MPI_COMM_WORLD, sout);
-    PI->output(MPI_COMM_WORLD, cout);
-
-    //EXPECT_NE( sout.str().find("\"tag\": \"Whole Program\""), string::npos );
+    // PI->output(MPI_COMM_WORLD, cout);
 
     Profiler::uninitialize();
 }
@@ -222,6 +220,9 @@ TEST_F(ProfilerTest, test_one_timer) {test_one_timer();}
 TEST_F(ProfilerTest, test_absolute_time) {test_absolute_time();}
 void ProfilerTest::test_absolute_time() {
     Profiler::instance();
+
+    int mpi_size;
+    MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
 
     // test absolute time
     {
@@ -239,7 +240,7 @@ void ProfilerTest::test_absolute_time() {
     int ierr, mpi_rank;
     ierr = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
     EXPECT_EQ( ierr, 0 );
-    
+
     // 0 processor will have valid profiler report
     // other processors should have empty string only
     if (mpi_rank == 0) {
@@ -259,7 +260,6 @@ void ProfilerTest::test_absolute_time() {
 TEST_F(ProfilerTest, test_structure) {test_structure();}
 void ProfilerTest::test_structure() {
     Profiler::instance();
-
     {
         START_TIMER("main");
         EXPECT_EQ("main", ATN);
@@ -482,14 +482,18 @@ TEST_F(ProfilerTest, test_multiple_instances) {test_multiple_instances();}
 void ProfilerTest::test_multiple_instances() {
     int allocated = 0;
     for (int i = 0; i < 5; i++) {
-        allocated = 0;
-        Profiler::instance();
-        {
-            allocated += alloc_and_dealloc<int>(25);
-        }
-        EXPECT_EQ(MALLOC, allocated);
         Profiler::uninitialize();
+        Profiler::instance();
+        EXPECT_EQ(MALLOC, 0);
+
+        {
+            EXPECT_EQ(
+                (MALLOC),
+                (alloc_and_dealloc<int>(25))
+            );
+        }
     }
+    Profiler::uninitialize();
 }
 
 // testing memory propagation with manual propagate_values call 
