@@ -61,17 +61,17 @@ public:
 	 */
     FESystemFunctionSpace(const std::vector<std::shared_ptr<FunctionSpace> > &fs_vector);
 
-    const double basis_value(unsigned int basis_index,
-                             const arma::vec &point,
-                             unsigned int comp_index = 0
-                            ) const override;
+    double basis_value(unsigned int basis_index,
+                       const arma::vec &point,
+                       unsigned int comp_index = 0
+                       ) const override;
     
     const arma::vec basis_grad(unsigned int basis_index,
                                const arma::vec &point,
                                unsigned int comp_index = 0
                               ) const override;
 
-    const unsigned int dim() const override { return dim_; }
+    unsigned int dim() const override { return dim_; }
     
     const std::vector<DofComponentData> &dof_indices() { return dof_indices_; }
     

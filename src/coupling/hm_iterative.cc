@@ -23,7 +23,7 @@
 #include "fields/field_fe.hh"         // for create_field()
 
 
-FLOW123D_FORCE_LINK_IN_CHILD(coupling_iterative);
+FLOW123D_FORCE_LINK_IN_CHILD(coupling_iterative)
 
 
 namespace it = Input::Type;

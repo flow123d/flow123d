@@ -34,7 +34,7 @@ Input::Record get_input_record(const std::string &input_str, Input::FileFormat f
 
 
 TEST(ReaderCache, get_bulk_element_) {
-	Profiler::initialize();
+	Profiler::instance();
 	unsigned int i, j;
 
     // has to introduce some flag for passing absolute path to 'test_units' in source tree
@@ -76,7 +76,7 @@ TEST(ReaderCache, get_bulk_element_) {
 
 
 TEST(ReaderCache, get_boundary_element_) {
-	Profiler::initialize();
+	Profiler::instance();
 	unsigned int i, j;
 
     // has to introduce some flag for passing absolute path to 'test_units' in source tree
@@ -117,7 +117,7 @@ TEST(ReaderCache, get_boundary_element_) {
 
 
 TEST(ReaderCache, find_header) {
-    Profiler::initialize();
+    Profiler::instance();
 
     // has to introduce some flag for passing absolute path to 'test_units' in source tree
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
@@ -186,7 +186,7 @@ TEST(ReaderCache, find_header) {
 
 
 TEST(ReaderCache, get_reader) {
-	Profiler::initialize();
+	Profiler::instance();
 
 	// has to introduce some flag for passing absolute path to 'test_units' in source tree
 	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");

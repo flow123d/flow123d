@@ -62,14 +62,14 @@ public:
     // TODO: implement and use general interpolations between discrete spaces
     virtual arma::vec3 make_element_vector(ElementAccessor<3> ele) = 0;
 
-    virtual void update_water_content(LocalElementAccessorBase<3> ele)
+    virtual void update_water_content(FMT_UNUSED LocalElementAccessorBase<3> ele)
     {}
 
 protected:
 
     virtual void assemble_sides(LocalElementAccessorBase<3> ele) =0;
     
-    virtual void assemble_source_term(LocalElementAccessorBase<3> ele)
+    virtual void assemble_source_term(FMT_UNUSED LocalElementAccessorBase<3> ele)
     {}
 };
 
@@ -227,7 +227,7 @@ public:
     }
 
 protected:
-    static const unsigned int size()
+    static unsigned int size()
     {
         // dofs: velocity, pressure, edge pressure
         return RefElement<dim>::n_sides + 1 + RefElement<dim>::n_sides;
@@ -244,7 +244,6 @@ protected:
         const unsigned int nsides = ele_ac.n_sides();
         LinSys *ls = ad_->lin_sys;
         
-        Boundary *bcd;
         unsigned int side_row, edge_row;
         
         dirichlet_edge.resize(nsides);
@@ -255,10 +254,10 @@ protected:
             loc_system_.row_dofs[side_row] = loc_system_.col_dofs[side_row] = ele_ac.side_row(i);    //global
             loc_system_.row_dofs[edge_row] = loc_system_.col_dofs[edge_row] = ele_ac.edge_row(i);    //global
             
-            bcd = ele_ac.side(i)->cond();
             dirichlet_edge[i] = 0;
-            if (bcd) {
-                ElementAccessor<3> b_ele = bcd->element_accessor();
+            if (ele_ac.side(i)->is_boundary()) {
+                Boundary bcd = ele_ac.side(i)->cond();
+                ElementAccessor<3> b_ele = bcd.element_accessor();
                 DarcyMH::EqData::BC_Type type = (DarcyMH::EqData::BC_Type)ad_->bc_type.value(b_ele.centre(), b_ele);
 
                 double cross_section = ad_->cross_section.value(ele_ac.centre(), ele_ac.element_accessor());
@@ -284,7 +283,7 @@ protected:
                 else if (type==DarcyMH::EqData::seepage) {
                     ad_->is_linear=false;
 
-                    unsigned int loc_edge_idx = bcd->bc_ele_idx_;
+                    unsigned int loc_edge_idx = bcd.bc_ele_idx();
                     char & switch_dirichlet = ad_->bc_switch_dirichlet[loc_edge_idx];
                     double bc_pressure = ad_->bc_switch_pressure.value(b_ele.centre(), b_ele);
                     double bc_flux = -ad_->bc_flux.value(b_ele.centre(), b_ele);
@@ -438,7 +437,7 @@ protected:
     }
     
     
-    void assemble_element(LocalElementAccessorBase<3> ele_ac){
+    void assemble_element(LocalElementAccessorBase<3> ){
         // set block B, B': element-side, side-element
         
         for(unsigned int side = 0; side < loc_side_dofs.size(); side++){
@@ -490,9 +489,7 @@ protected:
     void add_fluxes_in_balance_matrix(LocalElementAccessorBase<3> ele_ac){
 
         for (unsigned int i = 0; i < ele_ac.n_sides(); i++) {
-            Boundary* bcd = ele_ac.side(i)->cond();
-
-            if (bcd) {
+            if (ele_ac.side(i)->is_boundary()) {
                 /*
                     DebugOut().fmt("add_flux: {} {} {}\n",
                             ad_->mh_dh->el_ds->myp(),

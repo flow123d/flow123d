@@ -82,7 +82,7 @@ public:
     }
 
     /// Returns number of quadrature points.
-    inline const unsigned int size() const
+    inline unsigned int size() const
     { return weights.size(); }
 
     /// Returns the <tt>i</tt>th quadrature point.

@@ -23,9 +23,11 @@
 #include <vector>                     // for vector
 #include "input/accessors.hh"         // for Record
 #include "mesh/point.hh"
+#include "mesh/long_idx.hh"           // for LongIdx
 #include "tools/general_iterator.hh"  // for Iter
 
 class Mesh;
+class Distribution;
 class OutputElement;
 class OutputMesh;
 class OutputMeshDiscontinuous;

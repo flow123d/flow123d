@@ -92,7 +92,7 @@ public:
 	};
 
 	SomeEquation() {
-	    Profiler::initialize();
+	    Profiler::instance();
 	    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
         mesh_ = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
 	}

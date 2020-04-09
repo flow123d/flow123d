@@ -135,11 +135,12 @@ FEObjects::~FEObjects()
 	delete map3_;
 }
 
-template<> FiniteElement<0> *FEObjects::fe<0>() { return 0; }
+template<> FiniteElement<0> *FEObjects::fe<0>() { return nullptr; }
 template<> FiniteElement<1> *FEObjects::fe<1>() { return fe1_; }
 template<> FiniteElement<2> *FEObjects::fe<2>() { return fe2_; }
 template<> FiniteElement<3> *FEObjects::fe<3>() { return fe3_; }
 
+template<> MappingP1<0,3> *FEObjects::mapping<0>() { return nullptr; }
 template<> MappingP1<1,3> *FEObjects::mapping<1>() { return map1_; }
 template<> MappingP1<2,3> *FEObjects::mapping<2>() { return map2_; }
 template<> MappingP1<3,3> *FEObjects::mapping<3>() { return map3_; }
@@ -852,18 +853,18 @@ void Elasticity::assemble_fluxes_boundary()
     // assemble boundary integral
     for (unsigned int iedg=0; iedg<feo->dh()->n_loc_edges(); iedg++)
     {
-    	Edge *edg = &mesh_->edges[feo->dh()->edge_index(iedg)];
-    	if (edg->n_sides > 1) continue;
+    	Edge edg = mesh_->edge(feo->dh()->edge_index(iedg));
+    	if (edg.n_sides() > 1) continue;
     	// check spatial dimension
-    	if (edg->side(0)->dim() != dim-1) continue;
+    	if (edg.side(0)->dim() != dim-1) continue;
     	// skip edges lying not on the boundary
-    	if (edg->side(0)->cond() == NULL) continue;
+    	if (! edg.side(0)->is_boundary()) continue;
 
-    	SideIter side = edg->side(0);
+    	SideIter side = edg.side(0);
         ElementAccessor<3> cell = side->element();
         feo->dh()->cell_accessor_from_element(cell.idx()).get_dof_indices(side_dof_indices);
         fe_values_side.reinit(cell, side->side_idx());
-        unsigned int bc_type = data_.bc_type.value(side->centre(), side->cond()->element_accessor());
+        unsigned int bc_type = data_.bc_type.value(side->centre(), side->cond().element_accessor());
 
         for (unsigned int i=0; i<ndofs; i++)
             for (unsigned int j=0; j<ndofs; j++)
@@ -1086,10 +1087,10 @@ void Elasticity::assemble_boundary_conditions()
     		update_values | update_normal_vectors | update_side_JxW_values | update_quadrature_points);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim-1>()->size();
     vector<int> side_dof_indices(ndofs);
-    unsigned int loc_b=0;
+    // unsigned int loc_b=0;
     double local_rhs[ndofs];
     vector<PetscScalar> local_flux_balance_vector(ndofs);
-    PetscScalar local_flux_balance_rhs;
+    // PetscScalar local_flux_balance_rhs;
     vector<arma::vec3> bc_values(qsize), bc_traction(qsize);
     vector<double> csection(qsize), bc_potential(qsize);
     auto vec = fe_values_side.vector_view(0);
@@ -1101,20 +1102,20 @@ void Elasticity::assemble_boundary_conditions()
 
         for (unsigned int si=0; si<elm->n_sides(); ++si)
         {
-			const Edge *edg = elm.side(si)->edge();
-			if (edg->n_sides > 1) continue;
+			Edge edg = elm.side(si)->edge();
+			if (edg.n_sides() > 1) continue;
 			// skip edges lying not on the boundary
-			if (edg->side(0)->cond() == NULL) continue;
+			if (!edg.side(0)->is_boundary()) continue;
 
-			if (edg->side(0)->dim() != dim-1)
+			if (edg.side(0)->dim() != dim-1)
 			{
-				if (edg->side(0)->cond() != nullptr) ++loc_b;
+				// if (edg.side(0)->cond() != nullptr) ++loc_b;
 				continue;
 			}
 
-			SideIter side = edg->side(0);
+			SideIter side = edg.side(0);
 			ElementAccessor<3> cell = side->element();
-			ElementAccessor<3> bc_cell = side->cond()->element_accessor();
+			ElementAccessor<3> bc_cell = side->cond().element_accessor();
 
  			unsigned int bc_type = data_.bc_type.value(side->centre(), bc_cell);
 
@@ -1131,7 +1132,7 @@ void Elasticity::assemble_boundary_conditions()
 
             fill_n(local_rhs, ndofs, 0);
             local_flux_balance_vector.assign(ndofs, 0);
-            local_flux_balance_rhs = 0;
+            // local_flux_balance_rhs = 0;
 
             if (bc_type == EqData::bc_type_displacement)
             {
@@ -1159,7 +1160,7 @@ void Elasticity::assemble_boundary_conditions()
             
 //             balance_->add_flux_matrix_values(subst_idx, loc_b, side_dof_indices, local_flux_balance_vector);
 //             balance_->add_flux_vec_value(subst_idx, loc_b, local_flux_balance_rhs);
-			++loc_b;
+			// ++loc_b;
         }
     }
 }

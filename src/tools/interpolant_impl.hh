@@ -398,11 +398,12 @@ InterpolantImplicit::InterpolantImplicit(Func<Type>* func, bool interpolate_deri
     //constructor from templated implicit functor
     template<class TType>
     FuncExplicit(IFunctorBase<TType>& func_impl, IFixVariable::Type fix, double fix_val)
-      : func_impl(&func_impl), fix_(fix), fix_val(fix_val) {}
+      : func_impl(&func_impl), fix_(fix), fix_val(fix_val){}
     
     Type operator()(Type u)
     {
-      Type ret;
+      ASSERT_DBG(fix_ != IFixVariable::no_fix);
+      Type ret = 0;
       if(fix_ == IFixVariable::fix_x)
         ret = func_impl->operator()(fix_val,u);
       if(fix_ == IFixVariable::fix_y)

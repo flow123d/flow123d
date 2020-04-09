@@ -8,7 +8,7 @@
 #ifndef SRC_FLOW_MORTAR_ASSEMBLY_HH_
 #define SRC_FLOW_MORTAR_ASSEMBLY_HH_
 
-#include "mesh/side_impl.hh"
+#include "mesh/accessors.hh"
 #include "mesh/mesh.h"
 #include "quadrature/intersection_quadrature.hh"
 #include "flow/darcy_flow_mh.hh"
@@ -34,7 +34,7 @@ public:
     virtual ~MortarAssemblyBase() {};
 
     // Default assembly is empty to allow dummy implementation for dimensions without coupling.
-    virtual void assembly(LocalElementAccessorBase<3> ele_ac) {};
+    virtual void assembly(FMT_UNUSED LocalElementAccessorBase<3> ele_ac) {};
 
     void fix_velocity(LocalElementAccessorBase<3> ele_ac) {
         fix_velocity_flag = true;

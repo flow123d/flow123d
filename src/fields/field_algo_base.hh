@@ -38,7 +38,6 @@
 #include "fields/field_flag.hh"
 #include "input/type_selection.hh"         // for Selection
 #include "mesh/point.hh"                   // for Space
-#include "mesh/side_impl.hh"
 #include "mesh/accessors.hh"
 #include "system/asserts.hh"               // for Assert, ASSERT
 #include "tools/time_governor.hh"          // for TimeStep
@@ -237,7 +236,7 @@ public:
        /**
         * Postponed setter of Dof handler for FieldFE. For other types of fields has no effect.
         */
-       virtual void set_native_dh(std::shared_ptr<DOFHandlerMultiDim> dh)
+       virtual void set_native_dh(std::shared_ptr<DOFHandlerMultiDim>)
        {}
 
        /**

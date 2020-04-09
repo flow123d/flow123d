@@ -30,7 +30,7 @@
 #include "fem/mapping.hh"                      // for MappingInternalData (p...
 #include "fem/update_flags.hh"                 // for operator&, operator|
 #include "mesh/elements.h"                     // for Element::side
-#include "mesh/side_impl.hh"                   // for Side::node
+#include "mesh/accessors.hh"                   // for Side::node
 template <unsigned int dim, unsigned int spacedim> class FEValuesData;
 class Quadrature;
 

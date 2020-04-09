@@ -517,16 +517,11 @@ struct translator_between<std::basic_string< Ch, Traits, Alloc >, int> {
  */
 class Profiler {
 public:
-
-    /**
-     * Initializes the Profiler with specific MPI communicator object
-     */
-    //static void initialize(MPI_Comm communicator = MPI_COMM_WORLD);
-    static void initialize();
     /**
      * Returns unique Profiler object.
+     * if clear flag is set, will delete profiiler isntance
      */
-    static Profiler* instance();
+    static Profiler* instance(bool clear = false);
     /**
      * Sets task specific information. The string @p description with textual description of the task and the
      * number of elements of the mesh (parameter @p size). This is used for weak scaling graphs so it should
@@ -725,12 +720,6 @@ protected:
      */
     std::shared_ptr<std::ostream> get_default_output_stream();
 
-    /// Default code point.
-    static CodePoint null_code_point;
-
-    /// Pointer to the unique instance of singleton Profiler class.
-    static Profiler* _instance;
-
     /// Vector of all timers. Whole tree is stored in this array.
     vector<Timer, internal::SimpleAllocator<Timer>> timers_;
 
@@ -845,8 +834,7 @@ public:
 // dummy declaration of Profiler class
 class Profiler {
 public:
-    static void initialize();
-    static Profiler* instance();
+    static Profiler* instance(bool clear = false);
 
     void set_task_info(string description, int size)
     {}
@@ -872,7 +860,6 @@ public:
     { return 0.0; }
     static void uninitialize();
 private:
-    static Profiler* _instance;
     Profiler() {}
 };
 

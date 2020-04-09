@@ -54,7 +54,7 @@ string Tuple::class_name() const {
 }
 
 
-Tuple & Tuple::allow_auto_conversion(const string &from_key)
+Tuple & Tuple::allow_auto_conversion(const string &)
 {
 	ASSERT(false)(this->type_name()).error("Call of allow_auto_conversion method is forbidden for type Tuple");
 	return *this;
@@ -129,7 +129,7 @@ FinishStatus Tuple::finish(FinishStatus finish_type)
 }
 
 
-Tuple &Tuple::derive_from(Abstract &parent)
+Tuple &Tuple::derive_from(Abstract &)
 {
 	ASSERT(false)(this->type_name()).error("Call of derive_from method is forbidden for type Tuple");
 	return *this;

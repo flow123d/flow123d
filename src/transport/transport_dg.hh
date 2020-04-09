@@ -41,11 +41,9 @@
 #include "input/type_generic.hh"               // for Instance
 #include "input/type_record.hh"                // for Record::ExcRecordKeyNo...
 #include "mesh/long_idx.hh"                    // for LongIdx
-#include "mesh/accessors.hh"                   // for ElementAccessor
+#include "mesh/accessors.hh"                   // for ElementAccessor, SIdeIter
 #include "mesh/elements.h"                     // for Element::dim, Element:...
 #include "mesh/neighbours.h"                   // for Neighbour::element
-#include "mesh/side_impl.hh"                   // for Side::cond, Side::cond...
-#include "mesh/sides.h"                        // for SideIter
 #include "mpi.h"                               // for MPI_Comm_rank
 #include "petscmat.h"                          // for Mat, MatDestroy
 #include "petscvec.h"                          // for Vec, VecDestroy, VecSc...
@@ -206,7 +204,7 @@ public:
      */
 	void zero_time_step() override;
 	
-    bool evaluate_time_constraint(double &time_constraint)
+    bool evaluate_time_constraint(double &)
     { return false; }
 
     /**

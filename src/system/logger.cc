@@ -173,7 +173,7 @@ void Logger::print_to_screen(std::ostream& stream, std::stringstream& scr_stream
 
 		// print header, if method returns true, message continues on the same line and first line of message
 		// doesn't need indentation in following while cycle
-		bool header_line = this->print_screen_header(stream, scr_stream);
+		bool header_line = this->print_screen_header(stream);
 
 		// print message
 		std::string segment;
@@ -198,7 +198,7 @@ void Logger::print_to_file(std::ofstream& stream, std::stringstream& file_stream
 		stream << setfill(' ');
 
 		// print header
-		this->print_file_header(stream, file_stream);
+		this->print_file_header(stream);
 
 		// print message
 		std::string segment;
@@ -230,7 +230,7 @@ std::string Logger::compact_file_name(std::string file_name)
     return file_name;
 }
 
-bool Logger::print_screen_header(std::ostream& stream, std::stringstream& scr_stream)
+bool Logger::print_screen_header(std::ostream& stream)
 {
 	stream << date_time_ << " ";
 	if (every_process_) { // rank
@@ -254,7 +254,7 @@ bool Logger::print_screen_header(std::ostream& stream, std::stringstream& scr_st
 }
 
 
-void Logger::print_file_header(std::ofstream& stream, std::stringstream& file_stream)
+void Logger::print_file_header(std::ofstream& stream)
 {
 	stream << "- -" << std::setw(13) << "" << "[ ";
 	stream << msg_type_string(type_, false);

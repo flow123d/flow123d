@@ -741,7 +741,6 @@ const TimeStep &TimeGovernor::step(int index) const {
 
 void TimeGovernor::view(const char *name) const
 {
-	static char buffer[1024];
 #ifdef FLOW123D_DEBUG_MESSAGES
     MessageOut().fmt(
             "TG[{}]:{:06d}    t:{:10.4f}    dt:{:10.6f}    dt_int<{:10.6f},{:10.6f}>    "
@@ -756,9 +755,6 @@ void TimeGovernor::view(const char *name) const
     MessageOut().fmt(
             "TG[{}]:{:06d}    t:{:10.4f}    dt:{:10.6f}    dt_int<{:10.6f},{:10.6f}>\n",
             name, tlevel(), t(), dt(), lower_constraint_, upper_constraint_);
-
-	//sprintf(buffer, "TG[%s]:%06d    t:%10.4f    dt:%10.6f    dt_int<%10.6f,%10.6f>\n",
-	//            name, tlevel(), t(), dt(), lower_constraint_, upper_constraint_ );
 #endif
 }
 

@@ -271,7 +271,7 @@ void compute_intersection(Mesh* mesh)
 // ***************************************************************************************************   1D-2D
 
 TEST(speed_simple_12, all) {
-    Profiler::initialize();
+    Profiler::instance();
     Profiler::instance()->set_task_info("Speed test for 1d-2d ComputeIntersection class.",2);
     
     reset_statistics();
@@ -311,7 +311,7 @@ TEST(speed_simple_12, all) {
 // ***************************************************************************************************   2D-2D
 
 TEST(speed_simple_22, all) {
-    Profiler::initialize();
+    Profiler::instance();
     Profiler::instance()->set_task_info("Speed test for 2d-2d ComputeIntersection class.",2);
     
     reset_statistics();
@@ -353,7 +353,7 @@ TEST(speed_simple_22, all) {
 // ***************************************************************************************************   1D-3D
 
 TEST(speed_simple_13, all) {
-    Profiler::initialize();
+    Profiler::instance();
     Profiler::instance()->set_task_info("Speed test for 1d-3d ComputeIntersection class.",2);
     
     reset_statistics();
@@ -394,7 +394,7 @@ TEST(speed_simple_13, all) {
 // ***************************************************************************************************   2D-3D
 
 TEST(speed_simple_23, all) {
-    Profiler::initialize();
+    Profiler::instance();
     Profiler::instance()->set_task_info("Speed test for 2d-3d ComputeIntersection class.",2);
     
     reset_statistics();

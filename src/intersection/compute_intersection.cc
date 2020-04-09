@@ -4,7 +4,6 @@
 
 #include "compute_intersection.hh"
 #include "mesh/ref_element.hh"
-#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "mesh/accessors.hh"
 #include "system/system.hh"
@@ -24,11 +23,11 @@ ComputeIntersection<1,2>::ComputeIntersection()
     plucker_coordinates_abscissa_ = nullptr;
 	plucker_coordinates_triangle_.resize(3, nullptr);
     plucker_products_.resize(3, nullptr);
-};
+}
 
 
 ComputeIntersection<1,2>::ComputeIntersection(ElementAccessor<3> abscissa,
-                                              ElementAccessor<3> triangle, Mesh *mesh)
+                                              ElementAccessor<3> triangle, FMT_UNUSED Mesh *mesh)
 : computed_(false)
 {
     ASSERT_DBG(abscissa->dim() == 1);
@@ -50,7 +49,7 @@ ComputeIntersection<1,2>::ComputeIntersection(ElementAccessor<3> abscissa,
         // allocate and compute new Plucker products
         plucker_products_[side] = new double((*plucker_coordinates_abscissa_)*(*plucker_coordinates_triangle_[side]));
     }
-};
+}
 
 ComputeIntersection<1,2>::~ComputeIntersection()
 {
@@ -74,7 +73,7 @@ void ComputeIntersection<1,2>::clear_all(){
         plucker_coordinates_triangle_[side] = nullptr;
     }
     plucker_coordinates_abscissa_ = nullptr;
-};
+}
 
 void ComputeIntersection<1,2>::compute_plucker_products(){
 
@@ -97,7 +96,7 @@ void ComputeIntersection<1,2>::compute_plucker_products(){
         }
 //      DBGMSG("Plucker product = %e\n", *(plucker_products_[side]));
 	}
-};
+}
 
 
 int ComputeIntersection<1,2>::check_abscissa_topology(IPAux12& IP)
@@ -268,7 +267,7 @@ IntersectionResult ComputeIntersection<1,2>::compute(IPAux12 &IP)
         IP.set_result(IntersectionResult::degenerate);  // set deg. result
         return IntersectionResult::degenerate;
     }
-};
+}
 
 unsigned int ComputeIntersection<1,2>::compute_final(vector<IPAux12>& IP12s)
 {
@@ -508,7 +507,7 @@ void ComputeIntersection<1,2>::correct_triangle_ip_topology(
         case 2: ips[ip].set_topology_B(RefElement<2>::topology_idx<0>(zeros.second),0);
                 break;
     }
-};
+}
 
 
 void ComputeIntersection<1,2>::print_plucker_coordinates(std::ostream &os){
@@ -526,7 +525,7 @@ void ComputeIntersection<1,2>::print_plucker_coordinates(std::ostream &os){
 			os << plucker_coordinates_triangle_[i];
 		}
 	}
-};
+}
 
 
 
@@ -538,11 +537,11 @@ ComputeIntersection<2,2>::ComputeIntersection()
 {
     plucker_coordinates_.resize(2*RefElement<2>::n_sides, nullptr);
     plucker_products_.resize(3*RefElement<2>::n_sides, nullptr);
-};
+}
 
 ComputeIntersection<2,2>::ComputeIntersection(ElementAccessor<3> triaA,
                                               ElementAccessor<3> triaB,
-                                              Mesh *mesh)
+                                              FMT_UNUSED Mesh *mesh)
 {
     ASSERT_DBG(triaA->dim() == 2);
     ASSERT_DBG(triaB->dim() == 2);
@@ -561,7 +560,7 @@ ComputeIntersection<2,2>::ComputeIntersection(ElementAccessor<3> triaA,
     for(unsigned int p = 0; p < 3*RefElement<2>::n_sides; p++){
         plucker_products_[p] = new double(plucker_empty);
     }
-};
+}
 
 ComputeIntersection<2,2>::~ComputeIntersection()
 {
@@ -619,7 +618,7 @@ void ComputeIntersection<2,2>::init(){
         }
         
     }
-};
+}
 
 
 unsigned int ComputeIntersection<2,2>::compute(IntersectionAux<2,2>& intersection)
@@ -692,7 +691,7 @@ unsigned int ComputeIntersection<2,2>::compute(IntersectionAux<2,2>& intersectio
     }
 
     return ip_coutner;
-};
+}
 
 // void ComputeIntersection< 2, 2>::correct_triangle_ip_topology(IntersectionPointAux<2,2>& ip)
 // {
@@ -718,7 +717,7 @@ unsigned int ComputeIntersection<2,2>::compute(IntersectionAux<2,2>& intersectio
 //         case 2: ip.set_topology_B(RefElement<2>::topology_idx<0>(zeros),1);
 //                 break;
 //     }
-// };
+// }
 
 
 void ComputeIntersection<2,2>::print_plucker_coordinates(std::ostream &os){
@@ -739,7 +738,7 @@ void ComputeIntersection<2,2>::print_plucker_coordinates(std::ostream &os){
             os << plucker_coordinates_[RefElement<2>::n_lines + i];
         }
     }
-};
+}
 
 void ComputeIntersection<2,2>::print_plucker_coordinates_tree(std::ostream &os){
     os << "ComputeIntersection<2,2> Plucker Coordinates Tree:" << endl;
@@ -748,7 +747,7 @@ void ComputeIntersection<2,2>::print_plucker_coordinates_tree(std::ostream &os){
             os << "ComputeIntersection<1,2>["<< i <<"] Plucker Coordinates:" << endl;
             CI12[i].print_plucker_coordinates(os);
         }
-};
+}
 
 
 /*************************************************************************************************************
@@ -759,11 +758,11 @@ ComputeIntersection<1,3>::ComputeIntersection()
     plucker_coordinates_abscissa_ = nullptr;
     plucker_coordinates_tetrahedron.resize(6, nullptr);
     plucker_products_.resize(6, nullptr);
-};
+}
 
 ComputeIntersection<1,3>::ComputeIntersection(ElementAccessor<3> abscissa,
                                               ElementAccessor<3> tetrahedron,
-                                              Mesh *mesh)
+                                              FMT_UNUSED Mesh *mesh)
 {
     ASSERT_DBG(abscissa->dim() == 1);
     ASSERT_DBG(tetrahedron->dim() == 3);
@@ -778,7 +777,7 @@ ComputeIntersection<1,3>::ComputeIntersection(ElementAccessor<3> abscissa,
         // compute Plucker products (abscissa X tetrahedron line)
         plucker_products_[line] = new double(plucker_empty);
     }
-};
+}
 
 ComputeIntersection<1,3>::~ComputeIntersection()
 {
@@ -822,7 +821,7 @@ void ComputeIntersection<1,3>::init(){
 		}
 		CI12[side].set_pc_abscissa(plucker_coordinates_abscissa_);
 	}  
-};
+}
 
 
 unsigned int ComputeIntersection<1,3>::compute(IntersectionAux< 1, 3 >& intersection)
@@ -905,7 +904,7 @@ unsigned int ComputeIntersection<1,3>::compute(std::vector<IPAux> &IP13s){
     }
     
     return IP13s.size();
-};
+}
 
 void ComputeIntersection<1,3>::correct_tetrahedron_ip_topology(
         double t, unsigned int ip, std::vector<IPAux> &ips)
@@ -947,7 +946,7 @@ void ComputeIntersection<1,3>::correct_tetrahedron_ip_topology(
         case 3: ips[ip].set_topology_B(RefElement<3>::topology_idx<0>(zeros),0);
                 break;
     }
-};
+}
 
 
 void ComputeIntersection<1,3>::print_plucker_coordinates(std::ostream &os){
@@ -966,7 +965,7 @@ void ComputeIntersection<1,3>::print_plucker_coordinates(std::ostream &os){
 			os << plucker_coordinates_tetrahedron[i];
 		}
 	}
-};
+}
 
 void ComputeIntersection<1,3>::print_plucker_coordinates_tree(std::ostream &os){
 	os << "ComputeIntersection<1,3> Plucker Coordinates Tree:" << endl;
@@ -975,7 +974,7 @@ void ComputeIntersection<1,3>::print_plucker_coordinates_tree(std::ostream &os){
 			os << "ComputeIntersection<1,2>["<< i <<"] Plucker Coordinates:" << endl;
 			CI12[i].print_plucker_coordinates(os);
 		}
-};
+}
 
 
 
@@ -993,7 +992,7 @@ on_faces(_on_faces())
     plucker_coordinates_triangle_.resize(3, nullptr);
     plucker_coordinates_tetrahedron.resize(6, nullptr);
     plucker_products_.resize(3*6, nullptr);
-};
+}
 
 
 ComputeIntersection<2,3>::ComputeIntersection(ElementAccessor<3> triangle,
@@ -1025,7 +1024,7 @@ ComputeIntersection<2,3>::ComputeIntersection(ElementAccessor<3> triangle,
         plucker_products_[line] = new double(plucker_empty);
         
     }
-};
+}
 
 ComputeIntersection<2,3>::~ComputeIntersection()
 {
@@ -1051,7 +1050,7 @@ ComputeIntersection<2,3>::~ComputeIntersection()
         if(plucker_coordinates_triangle_[i] != nullptr)
             delete plucker_coordinates_triangle_[i];
     }
-};
+}
 
 void ComputeIntersection<2,3>::init(){
 
@@ -1078,7 +1077,7 @@ void ComputeIntersection<2,3>::init(){
     for(unsigned int line = 0; line < RefElement<3>::n_lines; line++)
         CI12[line].set_pc_abscissa(plucker_coordinates_tetrahedron[line]);
 
-};
+}
 
 
 
@@ -1224,8 +1223,9 @@ void ComputeIntersection<2,3>::compute(IntersectionAux< 2 , 3  >& intersection)
     // S3 Edge - S2 intersections; collect all signs, make dummy intersections
 	for(unsigned int tetra_edge = 0; tetra_edge < 6; tetra_edge++) {
         IPAux12 IP12;
-	    IntersectionResult result = CI12[tetra_edge].compute(IP12);
-// 	    DebugOut() << print_var(tetra_edge) << print_var(int(result));
+        CI12[tetra_edge].compute(IP12);
+	    // IntersectionResult result = CI12[tetra_edge].compute(IP12);
+	    // DebugOut() << print_var(tetra_edge) << print_var(int(result));
         // in degenerate case: IP12 is empty with degenerate result
         IP12s_.push_back(IP12);
 	}
@@ -1486,7 +1486,7 @@ void ComputeIntersection<2,3>::print_plucker_coordinates(std::ostream &os){
 			os << plucker_coordinates_tetrahedron[i];
 		}
 	}
-};
+}
 
 void ComputeIntersection<2,3>::print_plucker_coordinates_tree(std::ostream &os){
 	os << "ComputeIntersection<2,3> Plucker Coordinates Tree:" << endl;
@@ -1498,5 +1498,5 @@ void ComputeIntersection<2,3>::print_plucker_coordinates_tree(std::ostream &os){
 	for(unsigned int i = 0; i < 3;i++){
 		CI13[i].print_plucker_coordinates_tree(os);
 	}
-};
+}
 

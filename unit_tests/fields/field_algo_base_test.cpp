@@ -48,7 +48,7 @@ public:
 	static constexpr bool is_enum_valued = boost::is_same<typename FieldType::ValueType::element_type, FieldEnum>::value;
 
 	void SetUp() {
-	    Profiler::initialize();
+	    Profiler::instance();
 	    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
 	    my_mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
@@ -586,7 +586,7 @@ static const it::Selection &get_sorption_type_selection() {
 
 TEST(Field, init_from_input) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
-	Profiler::initialize();
+	Profiler::instance();
 	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
 	Mesh * mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
@@ -728,7 +728,7 @@ public:
 
 TEST(Field, field_result) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
-    Profiler::initialize();
+    Profiler::instance();
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
     TimeGovernor tg(0.0, 1.0);
@@ -806,7 +806,7 @@ TEST(Field, init_from_default) {
 
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-    Profiler::initialize();
+    Profiler::instance();
     
     Mesh * mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
 

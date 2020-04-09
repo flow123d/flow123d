@@ -211,7 +211,7 @@ public:
 
 
 TEST(ObservePoint, find_observe_point) {
-    Profiler::initialize();
+    Profiler::instance();
     armadillo_setup();
 
     FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
@@ -226,7 +226,7 @@ TEST(ObservePoint, find_observe_point) {
 
 
 TEST(Observe, all) {
-    Profiler::initialize();
+    Profiler::instance();
     armadillo_setup();
     EqData field_set;
 
@@ -258,7 +258,7 @@ TEST(Observe, all) {
     field_set.enum_field.observe_output(obs);
     field_set.vector_field.observe_output(obs);
     field_set.tensor_field.observe_output(obs);
-    obs->output_time_frame( tg.t(), true );
+    obs->output_time_frame( true );
 
     tg.next_time();
     field_set.set_time( tg.step(), LimitSide::right);
@@ -266,7 +266,7 @@ TEST(Observe, all) {
     field_set.enum_field.observe_output(obs);
     field_set.vector_field.observe_output(obs);
     field_set.tensor_field.observe_output(obs);
-    obs->output_time_frame( tg.t(), true );
+    obs->output_time_frame( true );
     }
     // closed observe file 'test_eq_observe.yaml'
     // check results

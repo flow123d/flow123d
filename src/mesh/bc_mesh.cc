@@ -18,7 +18,6 @@
 
 
 
-#include "mesh/side_impl.hh"
 #include "mesh/bc_mesh.hh"
 #include "mesh/long_idx.hh"
 #include "mesh/accessors.hh"
@@ -52,7 +51,7 @@ Range<ElementAccessor<3>> BCMesh::elements_range() const
 }
 
 
-unsigned int BCMesh::n_elements(bool boundary) const {
+unsigned int BCMesh::n_elements(FMT_UNUSED bool boundary) const {
 	return parent_mesh_->element_ids_.size()-parent_mesh_->bulk_size_;
 }
 
