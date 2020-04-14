@@ -60,7 +60,7 @@ FLOW123D_FORCE_LINK_IN_CHILD(field_fe)
  * they differ only by return value) and partial specialization of the function templates is not supported  in C++.
  */
 template<int rank, int spacedim, class Value>
-class FEShapeHandler {
+class EvalShapeHandler {
 public:
 
     inline static Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> fe_value(FEValues<spacedim> &fe_val, unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
@@ -73,9 +73,9 @@ public:
 };
 
 
-/// Partial template specialization of FEShapeHandler for scalar fields
+/// Partial template specialization of EvalShapeHandler for scalar fields
 template<int spacedim, class Value>
-class FEShapeHandler<0, spacedim, Value> {
+class EvalShapeHandler<0, spacedim, Value> {
 public:
     inline static Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> fe_value(FEValues<3> &fe_val, unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
     {
@@ -87,9 +87,9 @@ public:
 };
 
 
-/// Partial template specialization of FEShapeHandler for vector fields
+/// Partial template specialization of EvalShapeHandler for vector fields
 template<int spacedim, class Value>
-class FEShapeHandler<1, spacedim, Value> {
+class EvalShapeHandler<1, spacedim, Value> {
 public:
     inline static Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> fe_value(FEValues<3> &fe_val, unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
     {
@@ -98,9 +98,9 @@ public:
 };
 
 
-/// Partial template specialization of FEShapeHandler for tensor fields
+/// Partial template specialization of EvalShapeHandler for tensor fields
 template<int spacedim, class Value>
-class FEShapeHandler<2, spacedim, Value> {
+class EvalShapeHandler<2, spacedim, Value> {
 public:
     inline static Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> fe_value(FEValues<3> &fe_val, unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
     {
@@ -318,7 +318,7 @@ void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::elem
             mat_value.fill(0.0);
     		for (unsigned int i_dof=0; i_dof<loc_dofs.n_elem; i_dof++) {
     		    mat_value += data_vec_[loc_dofs[i_dof]]
-    		                     * FEShapeHandler<Value::rank_, spacedim, Value>::fe_value(fe_values_[elm.dim()-1], i_dof, i_ep, 0);
+    		                     * EvalShapeHandler<Value::rank_, spacedim, Value>::fe_value(fe_values_[elm.dim()-1], i_dof, i_ep, 0);
     		}
     		data_cache.data().set(field_cache_idx) = mat_value;
         }
