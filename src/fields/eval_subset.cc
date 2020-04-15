@@ -36,12 +36,12 @@ BaseIntegral::~BaseIntegral()
 BulkIntegral::~BulkIntegral()
 {}
 
-Range< BulkPoint > BulkIntegral::points(const DHCellAccessor &cell) const {
+Range< BulkPoint > BulkIntegral::points(const DHCellAccessor &cell, const ElementCacheMap *elm_cache_map) const {
     if (cell.element_cache_index() == ElementCacheMap::undef_elem_idx)
         THROW( ExcElementNotInCache() << EI_ElementIdx(cell.elm_idx()) );
 
-    auto bgn_it = make_iter<BulkPoint>( BulkPoint(cell, shared_from_this(), eval_points_->subset_begin(dim_, subset_index_)) );
-    auto end_it = make_iter<BulkPoint>( BulkPoint(cell, shared_from_this(), eval_points_->subset_end(dim_, subset_index_)) );
+    auto bgn_it = make_iter<BulkPoint>( BulkPoint(cell, elm_cache_map, shared_from_this(), eval_points_->subset_begin(dim_, subset_index_)) );
+    auto end_it = make_iter<BulkPoint>( BulkPoint(cell, elm_cache_map, shared_from_this(), eval_points_->subset_end(dim_, subset_index_)) );
     return Range<BulkPoint>(bgn_it, end_it);
 }
 
@@ -72,15 +72,15 @@ EdgeIntegral::~EdgeIntegral() {
     delete perm_indices_;
 }
 
-Range< EdgePoint > EdgeIntegral::points(const DHCellSide &cell_side) const {
+Range< EdgePoint > EdgeIntegral::points(const DHCellSide &cell_side, const ElementCacheMap *elm_cache_map) const {
     if (cell_side.cell().element_cache_index() == ElementCacheMap::undef_elem_idx)
         THROW( ExcElementNotInCache() << EI_ElementIdx(cell_side.cell().elm_idx()) );
 
     unsigned int begin_idx = eval_points_->subset_begin(dim_, subset_index_);
     unsigned int end_idx = eval_points_->subset_end(dim_, subset_index_);
     unsigned int points_per_side = (end_idx - begin_idx) / this->n_sides();
-    auto bgn_it = make_iter<EdgePoint>( EdgePoint(cell_side, shared_from_this(), 0 ) );
-    auto end_it = make_iter<EdgePoint>( EdgePoint(cell_side, shared_from_this(), points_per_side ) );
+    auto bgn_it = make_iter<EdgePoint>( EdgePoint(cell_side, elm_cache_map, shared_from_this(), 0 ) );
+    auto end_it = make_iter<EdgePoint>( EdgePoint(cell_side, elm_cache_map, shared_from_this(), points_per_side ) );
     return Range<EdgePoint>(bgn_it, end_it);
 }
 
@@ -99,12 +99,12 @@ CouplingIntegral::~CouplingIntegral() {
     bulk_integral_.reset();
 }
 
-Range< BulkPoint > CouplingIntegral::points(const DHCellAccessor &cell) const {
-    return bulk_integral_->points(cell);
+Range< BulkPoint > CouplingIntegral::points(const DHCellAccessor &cell, const ElementCacheMap *elm_cache_map) const {
+    return bulk_integral_->points(cell, elm_cache_map);
 }
 
-Range< EdgePoint > CouplingIntegral::points(const DHCellSide &cell_side) const {
-    return edge_integral_->points(cell_side);
+Range< EdgePoint > CouplingIntegral::points(const DHCellSide &cell_side, const ElementCacheMap *elm_cache_map) const {
+    return edge_integral_->points(cell_side, elm_cache_map);
 }
 
 
@@ -120,8 +120,8 @@ BoundaryIntegral::~BoundaryIntegral() {
     edge_integral_.reset();
 }
 
-Range< EdgePoint > BoundaryIntegral::points(const DHCellSide &cell_side) const {
-    return edge_integral_->points(cell_side);
+Range< EdgePoint > BoundaryIntegral::points(const DHCellSide &cell_side, const ElementCacheMap *elm_cache_map) const {
+    return edge_integral_->points(cell_side, elm_cache_map);
 }
 
 
@@ -135,5 +135,5 @@ Range< EdgePoint > BoundaryIntegral::points(const DHCellSide &cell_side) const {
  */
 
 EdgePoint EdgePoint::permute(DHCellSide edg_side) const {
-    return EdgePoint(edg_side, this->integral_, this->local_point_idx_);
+    return EdgePoint(edg_side, elm_cache_map_, this->integral_, this->local_point_idx_);
 }
