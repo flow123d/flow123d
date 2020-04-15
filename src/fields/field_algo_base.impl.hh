@@ -162,6 +162,14 @@ unsigned int FieldAlgorithmBase<spacedim, Value>::n_comp() const {
 }
 
 
+template<int spacedim, class Value>
+void FieldAlgorithmBase<spacedim, Value>::cache_update(
+            FMT_UNUSED FieldValueCache<typename Value::element_type> &data_cache,
+            FMT_UNUSED unsigned int i_cache_el_begin,
+            FMT_UNUSED unsigned int i_cache_el_end,
+   	        FMT_UNUSED const std::vector< ElementAccessor<spacedim> > &element_set)
+{}
+
 
 template<int spacedim, class Value>
 void FieldAlgorithmBase<spacedim, Value>::value_list(

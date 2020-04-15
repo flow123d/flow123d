@@ -146,7 +146,7 @@ void FieldConstant<spacedim, Value>::value_list (const Armor::array &point_list,
 template <int spacedim, class Value>
 void FieldConstant<spacedim, Value>::cache_update(FieldValueCache<typename Value::element_type> &data_cache,
         unsigned int i_cache_el_begin, unsigned int i_cache_el_end,
-        const std::vector< ElementAccessor<spacedim> > &element_set)
+        FMT_UNUSED const std::vector< ElementAccessor<spacedim> > &element_set)
 {
     Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> mat_value( const_cast<typename Value::element_type*>(this->value_.mem_ptr()) );
     for (unsigned int i_cache = i_cache_el_begin; i_cache < i_cache_el_end; ++i_cache)

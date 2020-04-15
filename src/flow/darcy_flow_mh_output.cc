@@ -414,7 +414,7 @@ void DarcyFlowMHOutput::l2_diff_local(DHCellAccessor dh_cell,
         // compute postprocesed pressure
         diff = 0;
         for(unsigned int i_shape=0; i_shape < ele->n_sides(); i_shape++) {
-            unsigned int oposite_node;
+            unsigned int oposite_node = 0;
             switch (dim) {
                 case 1: oposite_node =  RefElement<1>::oposite_node(i_shape); break;
                 case 2: oposite_node =  RefElement<2>::oposite_node(i_shape); break;

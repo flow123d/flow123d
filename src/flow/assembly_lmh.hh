@@ -75,7 +75,7 @@ public:
     ~AssemblyLMH<dim>() override
     {}
     
-    void fix_velocity(const DHCellAccessor& dh_cell) override
+    void fix_velocity(const DHCellAccessor&) override
     {
         // if (mortar_assembly)
         //     mortar_assembly->fix_velocity(ele_ac);
@@ -124,11 +124,11 @@ public:
         //     mortar_assembly->assembly(dh_cell);
     }
 
-    void update_water_content(const DHCellAccessor& dh_cell) override
+    void update_water_content(const DHCellAccessor&) override
     {};
 
 protected:
-    static const unsigned int size()
+    static unsigned int size()
     {
         // dofs: velocity, pressure, edge pressure
         return RefElement<dim>::n_sides + 1 + RefElement<dim>::n_sides;

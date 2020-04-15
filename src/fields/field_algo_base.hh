@@ -236,9 +236,10 @@ public:
 
        virtual void cache_update(FieldValueCache<typename Value::element_type> &data_cache,
                    unsigned int i_cache_el_begin, unsigned int i_cache_el_end,
-   	               const std::vector< ElementAccessor<spacedim> > &element_set) {
-    	   //ASSERT(false).error("Must be implemented in descendants!\n");
-       }
+   	               const std::vector< ElementAccessor<spacedim> > &element_set);
+      // {
+    	//    //ASSERT(false).error("Must be implemented in descendants!\n");
+      // }
 
        /**
         * Postponed setter of Dof handler for FieldFE. For other types of fields has no effect.

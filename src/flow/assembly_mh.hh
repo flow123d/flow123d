@@ -138,9 +138,9 @@ public:
 
     }
 
-    void assemble_reconstruct(const DHCellAccessor& dh_cell) override
+    void assemble_reconstruct(const DHCellAccessor&) override
     {};
-    void update_water_content(const DHCellAccessor& dh_cell) override
+    void update_water_content(const DHCellAccessor&) override
     {};
 
     ~AssemblyMH<dim>() override

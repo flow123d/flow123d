@@ -299,7 +299,8 @@ void ElementValues<spacedim>::fill_data()
                 data.jacobians.set(i) = Armor::mat<spacedim,dim>( jac );
 
         // calculation of determinant dependent data
-        if (data.update_flags & update_volume_elements | update_JxW_values)
+        if ((data.update_flags & update_volume_elements) |
+            (data.update_flags & update_JxW_values))
         {
             double det = fabs(::determinant(jac));
 

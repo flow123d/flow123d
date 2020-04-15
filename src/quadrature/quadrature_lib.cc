@@ -67,7 +67,7 @@ void QGauss::init(uint order) {
 
     this->quadrature_points.reinit(point_list->npoints);
     this->weights.resize(0);
-    for (uint i=0; i<point_list->npoints; i++)
+    for (int i=0; i<point_list->npoints; i++)
     {
         Armor::ArmaVec<double, Dim> p(& point_list->points[i*(Dim+1)]);
         this->quadrature_points.append(p);

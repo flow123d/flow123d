@@ -360,16 +360,16 @@ public:
     }
 
     /// Assembles the volume integrals on cell.
-    virtual void assemble_volume_integrals(DHCellAccessor cell) {}
+    virtual void assemble_volume_integrals(FMT_UNUSED DHCellAccessor cell) {}
 
     /// Assembles the fluxes on the boundary.
-    virtual void assemble_fluxes_boundary(DHCellSide cell_side) {}
+    virtual void assemble_fluxes_boundary(FMT_UNUSED DHCellSide cell_side) {}
 
     /// Assembles the fluxes between sides on the edge.
-    virtual void assemble_fluxes_element_element(RangeConvert<DHEdgeSide, DHCellSide> edge_side_range) {}
+    virtual void assemble_fluxes_element_element(FMT_UNUSED RangeConvert<DHEdgeSide, DHCellSide> edge_side_range) {}
 
     /// Assembles the fluxes between elements of different dimensions.
-    virtual void assemble_fluxes_element_side(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {}
+    virtual void assemble_fluxes_element_side(FMT_UNUSED DHCellAccessor cell_lower_dim, FMT_UNUSED DHCellSide neighb_side) {}
 
     /// Method prepares object before assemblation (e.g. balance, ...).
     virtual void begin() {}

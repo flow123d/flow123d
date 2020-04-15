@@ -434,9 +434,6 @@ void FieldFE<spacedim, Value>::interpolate_gauss(ElementDataCache<double>::Compo
 		q_weights.resize(quad.size());
 	}
 
-	Mesh *mesh;
-	if (this->boundary_domain_) mesh = dh_->mesh()->get_bc_mesh();
-	else mesh = dh_->mesh();
 	for (auto cell : dh_->own_range()) {
 		auto ele = cell.elm();
 		std::fill(elem_value.begin(), elem_value.end(), 0.0);
@@ -666,7 +663,7 @@ void FieldFE<spacedim, Value>::calculate_elementwise_values(ElementDataCache<dou
 			LocDofVec loc_dofs = value_handler1_.get_loc_dof_indices(ele.idx());
 			data_vec_i = ele.idx() * dh_->max_elem_dofs();
 			for (unsigned int i=0; i<loc_dofs.n_elem; ++i, ++data_vec_i) {
-				ASSERT_LT_DBG(loc_dofs[i], data_vec_.size());
+				ASSERT_LT_DBG(loc_dofs[i], (LongIdx)data_vec_.size());
 				data_vec_[ loc_dofs[i] ] += (*data_cache)[data_vec_i];
 				++count_vector[ loc_dofs[i] ];
 			}
@@ -678,7 +675,7 @@ void FieldFE<spacedim, Value>::calculate_elementwise_values(ElementDataCache<dou
 			LocDofVec loc_dofs = cell.get_loc_dof_indices();
 			data_vec_i = cell.elm_idx() * dh_->max_elem_dofs();
 			for (unsigned int i=0; i<loc_dofs.n_elem; ++i, ++data_vec_i) {
-				ASSERT_LT_DBG(loc_dofs[i], data_vec_.size());
+				ASSERT_LT_DBG(loc_dofs[i], (LongIdx)data_vec_.size());
 				data_vec_[ loc_dofs[i] ] += (*data_cache)[data_vec_i];
 				++count_vector[ loc_dofs[i] ];
 			}
@@ -696,7 +693,7 @@ template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::native_data_to_cache(ElementDataCache<double> &output_data_cache) {
 	ASSERT_EQ(output_data_cache.n_values() * output_data_cache.n_comp(), dh_->distr()->lsize()).error();
 	double loc_values[output_data_cache.n_comp()];
-	unsigned int i, dof_filled_size;
+	unsigned int i;
 
 	VectorMPI::VectorDataPtr data_vec = data_vec_.data_ptr();
 	for (auto dh_cell : dh_->own_range()) {

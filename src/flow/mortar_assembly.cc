@@ -140,7 +140,7 @@ void P0_CouplingAssembler::assembly(const DHCellAccessor& dh_cell_master)
     isec_data_list.clear();
     double cs_sqr_avg = 0.0;
     double isec_sum = 0.0;
-    unsigned int slave_dim;
+    unsigned int slave_dim = 0;
     uint i = 0;
     for(; i < isec_list.size(); ++i) {
         bool non_zero = quadrature_.reinit(isec_list[i].second);

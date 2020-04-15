@@ -158,8 +158,8 @@ Quadrature &FETransportObjects::q(unsigned int dim) { return q_[dim]; }
 ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record in_rec)
 : ConcentrationTransportBase(init_mesh, in_rec),
   is_mass_diag_changed(false),
-  input_rec(in_rec),
   sources_corr(nullptr),
+  input_rec(in_rec),
   changed_(true)
 {
 	START_TIMER("ConvectionTransport");

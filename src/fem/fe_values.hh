@@ -362,7 +362,7 @@ protected:
     
 
     /// Dimension of reference space.
-    int dim_;
+    unsigned int dim_;
 
     /// Number of integration points.
     unsigned int n_points_;
