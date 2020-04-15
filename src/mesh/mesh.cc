@@ -831,6 +831,7 @@ bool Mesh::check_compatible_mesh( Mesh & mesh, vector<LongIdx> & bulk_elements_i
                 {
                     static const double point_tolerance = 1E-10;
                     if ( arma::norm(*ele.node(i_node) - *nod, 1) < point_tolerance) {
+                        i_elm_node = ele.node(i_node).idx();
                         if (found_i_node == Mesh::undef_idx) found_i_node = i_elm_node;
                         else if (found_i_node != i_elm_node) {
                             // duplicate nodes in target mesh
