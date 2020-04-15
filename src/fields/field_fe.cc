@@ -292,11 +292,14 @@ void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::elem
     std::shared_ptr<EvalPoints> eval_points = cache_map.eval_points();
     Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> mat_value;
 
-    if (fe_values_[0].dim() == -1) {
+    if (fe_values_.size() == 0) {
         // initialize FEValues objects (when first using)
-        this->init_fe_value<1>(eval_points);
-        this->init_fe_value<2>(eval_points);
-        this->init_fe_value<3>(eval_points);
+        std::array<Quadrature, 4> quads{QGauss(0, 1), this->init_quad<1>(eval_points), this->init_quad<2>(eval_points), this->init_quad<3>(eval_points)};
+        fe_values_.resize(4);
+        fe_values_[0].initialize(quads[0], *fe_.get<0>(), update_values);
+        fe_values_[1].initialize(quads[1], *fe_.get<1>(), update_values);
+        fe_values_[2].initialize(quads[2], *fe_.get<2>(), update_values);
+        fe_values_[3].initialize(quads[3], *fe_.get<3>(), update_values);
     }
 
     auto update_cache_data = cache_map.update_cache_data();
@@ -306,7 +309,7 @@ void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::elem
     for (unsigned int i_elm=0; i_elm<reg_elm_it->second.element_set_.size(); ++i_elm) {
         unsigned int elm_idx = reg_elm_it->second.elm_indices_[i_elm];
     	ElementAccessor<spacedim> elm(const_cast<const Mesh *>(dh_->mesh()), elm_idx);
-        fe_values_[elm.dim()-1].reinit( elm );
+        fe_values_[elm.dim()].reinit( elm );
 
         DHCellAccessor cell = dh_->cell_accessor_from_element( elm_idx );
         LocDofVec loc_dofs = cell.get_loc_dof_indices();
@@ -318,7 +321,7 @@ void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::elem
             mat_value.fill(0.0);
     		for (unsigned int i_dof=0; i_dof<loc_dofs.n_elem; i_dof++) {
     		    mat_value += data_vec_[loc_dofs[i_dof]]
-    		                     * EvalShapeHandler<Value::rank_, spacedim, Value>::fe_value(fe_values_[elm.dim()-1], i_dof, i_ep, 0);
+    		                     * EvalShapeHandler<Value::rank_, spacedim, Value>::fe_value(fe_values_[elm.dim()], i_dof, i_ep, 0);
     		}
     		data_cache.data().set(field_cache_idx) = mat_value;
         }
@@ -328,12 +331,12 @@ void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::elem
 
 template <int spacedim, class Value>
 template <unsigned int dim>
-void FieldFE<spacedim, Value>::init_fe_value(std::shared_ptr<EvalPoints> eval_points)
+Quadrature FieldFE<spacedim, Value>::init_quad(std::shared_ptr<EvalPoints> eval_points)
 {
     Quadrature quad(dim, eval_points->size(dim));
     for (unsigned int k=0; k<eval_points->size(dim); k++)
         quad.set(k) = eval_points->local_point<dim>(k);
-    fe_values_[dim-1].initialize(quad, *fe_.get<dim>(), update_values);
+    return quad;
 }
 
 

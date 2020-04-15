@@ -181,7 +181,7 @@ private:
 
 	/// Initialize FEValues object of given dimension.
 	template <unsigned int dim>
-	void init_fe_value(std::shared_ptr<EvalPoints> eval_points);
+	Quadrature init_quad(std::shared_ptr<EvalPoints> eval_points);
 
 
 	/// DOF handler object
@@ -236,8 +236,8 @@ private:
      */
     std::shared_ptr< std::vector<Idx> > boundary_dofs_;
 
-    /// List of FEValues objects of dimensions 1,2,3 used for value calculation
-    std::array<FEValues<spacedim>, 3> fe_values_;
+    /// List of FEValues objects of dimensions 0,1,2,3 used for value calculation
+    std::vector<FEValues<spacedim>> fe_values_;
 
     /// Registrar of class to factory
     static const int registrar;
