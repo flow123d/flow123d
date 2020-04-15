@@ -100,6 +100,9 @@ private:
  *
  * Manage storing and updating element data (elements of same dimension) to cache. We need only
  * one shared instance of this class for all fields in equation (but typically for dim = 1,2,3).
+ *
+ * TODO: The logic of creating and updating this class is quite complex, describe in which order
+ * the methods are supposed to be called and which internal structures are updated when.
  */
 class ElementCacheMap {
 public:
@@ -138,15 +141,24 @@ public:
     };
 
     /// Holds helper data necessary for cache update.
+    // TODO:
+    // Is this like a public par of the data?
+    // The name is too generic.
+    //
     class UpdateCacheHelper {
     public:
-        /// Maps of data of different regions in cache
+        /// Maps a region idx to the RegionData, contains only regions of cached elements.
         std::unordered_map<unsigned int, RegionData> region_cache_indices_map_;
 
-        /// Maps of begin and end positions of different regions data in cache
+        /// Elements of the common region forms continuous chunks in the
+        /// ElementCacheMap table. This array gives start indices of the regions
+        /// in array of all cached elements.
+        /// The last value is number of actually cached elements.
         std::array<unsigned int, ElementCacheMap::n_cached_elements+1> region_cache_indices_range_;
 
         /// Number of elements in all regions stored in region_cache_indices_map_
+        // TODO: This is dulicated with the last element of region_cache_indices_range_
+        // We rather need number of regions, i.e. number of region chunks.
         unsigned int n_elements_;
     };
 
@@ -237,7 +249,13 @@ protected:
      * b. Used eval points are set to ElementCacheMap::point_in_proggress
      * c. Eval points marked in previous step are sequentially numbered
      */
+    // TODO: What are the dimensions of the table?
+    // should be n_cached_elements * n_eval_points, document it.
+    //
+    // Better use just int *, and use just single allocation of the whole table
+    // current impl. have bad memory locality. Define a private access method.
     int **element_eval_points_map_;
+
 
     /// Number of points stored in cache
     unsigned int points_in_cache_;

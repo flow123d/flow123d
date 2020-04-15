@@ -166,12 +166,17 @@ void ElementCacheMap::clear_element_eval_points_map() {
 
 
 void ElementCacheMap::add_to_region(ElementAccessor<3> elm) {
+    // TODO: see unordered_map::insert(map::begin(), pair) variant
+    // this can be used and avoid dupicit find and the condition.
+
     unsigned int reg_idx = elm.region_idx().idx();
     typename std::unordered_map<unsigned int, RegionData>::iterator region_it = update_data_.region_cache_indices_map_.find(reg_idx);
     if (region_it == update_data_.region_cache_indices_map_.end()) {
     	update_data_.region_cache_indices_map_.insert( {reg_idx, RegionData()} );
         region_it = update_data_.region_cache_indices_map_.find(reg_idx);
     }
+
+    // TODO: What is the reason for this condition, the elm should not be duplicate.
     if ( region_it->second.add(elm) ) update_data_.n_elements_++;
 }
 
