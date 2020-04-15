@@ -58,7 +58,13 @@ public:
     }
 
     /// Return data vector.
-    inline Armor::Array<elm_type> &data() {
+    inline const Armor::Array<elm_type> &data() const
+    {
+        return data_;
+    }
+
+    inline Armor::Array<elm_type> &data()
+    {
         return data_;
     }
 

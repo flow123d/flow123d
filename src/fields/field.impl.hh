@@ -137,8 +137,9 @@ Field<spacedim,Value> &Field<spacedim,Value>::operator=(const Field<spacedim,Val
 
 
 template<int spacedim, class Value>
-typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_> Field<spacedim,Value>::operator()
-(const ElementCacheMap &map, BulkPoint &p) {
+typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_>
+Field<spacedim,Value>::operator() (const ElementCacheMap &map, BulkPoint &p)
+{
     return value_cache_.template
     		get_value<Value::NRows_, Value::NCols_>(map, p.dh_cell(), p.eval_point_idx());
 }
@@ -146,8 +147,9 @@ typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, 
 
 
 template<int spacedim, class Value>
-typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_> Field<spacedim,Value>::operator()
-(const ElementCacheMap &map, EdgePoint &p) {
+typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_>
+Field<spacedim,Value>::operator() (const ElementCacheMap &map, EdgePoint &p)
+{
     return value_cache_.template
     		get_value<Value::NRows_, Value::NCols_>(map, p.dh_cell_side().cell(), p.eval_point_idx());
 }
@@ -155,8 +157,9 @@ typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, 
 
 
 template<int spacedim, class Value>
-typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_> Field<spacedim,Value>::operator[]
-(unsigned int i_cache_point) {
+typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_>
+Field<spacedim,Value>::operator[] (unsigned int i_cache_point) const
+{
 	return this->value_cache().data().template mat<Value::NRows_, Value::NCols_>(i_cache_point);
 }
 

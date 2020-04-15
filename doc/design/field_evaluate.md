@@ -247,20 +247,25 @@ The map is represented by the table with dimensions [n_cache_elements][n_eval_po
 n_eval_points given before assembly. Following algorithm must avoid allocations.
 
 New algo:
-1.  - Iterate over integrals collect them into a fronts (per integral type, four types).
+
+  1. step
+    - Iterate over integrals collect them into a fronts (per integral type, four types).
     - Count total number of QP. 
     - Stop when cache capacity is reached.
     - Put touched elements into an array patch_elements, pairs (region_idx, element_idx)
     - Drop last uncomplete integral group.
-2. - sort patch_elements by region
-   - set whole cache map table to -1
-   - loop over integrals (in fronts) mark needed QP by 1
-   - loop over whole cache map number active QPs
-3. - loop over fields in the field set 
-   - for every field make groups of regions for distiguish field algorithms
-   - for every field algorithm call cache update on QP subset (indices of beginings of SIMD groups)
-4. - loop over integrals
-   - call assembly routines
+  2. step
+    - sort patch_elements by region
+    - set whole cache map table to -1
+    - loop over integrals (in fronts) mark needed QP by 1
+    - loop over whole cache map number active QPs
+  3. step
+    - loop over fields in the field set 
+    - for every field make groups of regions for distiguish field algorithms
+    - for every field algorithm call cache update on QP subset (indices of beginings of SIMD groups)
+  4. step
+    - loop over integrals
+    - call assembly routines
 
 
 Notes:

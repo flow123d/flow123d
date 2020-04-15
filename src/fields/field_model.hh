@@ -54,35 +54,39 @@ namespace detail
     /**
      * base case for building up arguments for the function call
      */
-    template< typename CALLABLE, typename TUPLE, int INDEX >
+    template< typename CALLABLE, typename FIELD_TUPLE, int INDEX >
     struct model_cache_item
     {
         template< typename... Vs >
-        static auto eval(int i_cache, CALLABLE f, TUPLE t, Vs&&... args) -> decltype(auto)
-        {
-            return model_cache_item<CALLABLE, TUPLE, INDEX - 1>::eval(
-                i_cache,
-                f,
-                std::forward<decltype(t)>(t),
-                std::get<INDEX - 1>(std::forward<decltype(t)>(t))[i_cache],
-                std::forward<Vs>(args)...
-            );
-        }
+        static auto eval(int i_cache, CALLABLE f, FIELD_TUPLE fields, Vs&&... args) -> decltype(auto);
     };
 
     /**
      * terminal case - do the actual function call
      */
-    template< typename CALLABLE, typename TUPLE >
-    struct model_cache_item< CALLABLE, TUPLE, 0 >
+    template< typename CALLABLE, typename FIELD_TUPLE >
+    struct model_cache_item< CALLABLE, FIELD_TUPLE, 0 >
     {
         template< typename... Vs >
-        static auto eval(int i_cache, CALLABLE f, TUPLE t, Vs&&... args) -> decltype(auto)
+        static auto eval(int i_cache, CALLABLE f, FIELD_TUPLE fields, Vs&&... args) -> decltype(auto)
         {
             return f(std::forward<Vs>(args)...);
         };
     };
 
+/**
+ * base case for building up arguments for the function call
+ */
+template<typename CALLABLE, typename FIELD_TUPLE, int INDEX>
+template<typename ... Vs>
+inline auto model_cache_item<CALLABLE, FIELD_TUPLE, INDEX>::eval(int i_cache, CALLABLE f, FIELD_TUPLE fields, Vs&&... args) -> decltype(auto)
+{
+
+    const auto &single_field = std::get < INDEX - 1 > (std::forward<decltype(fields)>(fields));
+    return model_cache_item<CALLABLE, FIELD_TUPLE, INDEX - 1>::eval(
+            i_cache, f, std::forward<decltype(fields)>(fields),
+            single_field[i_cache], std::forward<Vs>(args)...);
+}
 
 }
 
