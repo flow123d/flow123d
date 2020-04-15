@@ -1042,12 +1042,12 @@ TEST(Field, field_values) {
     elm_cache_map.clear_elements_to_update();
 
     DHCellAccessor cache_cell = elm_cache_map(dh_cell);
-    for(BulkPoint q_point: mass_eval->points(cache_cell)) {
-        EXPECT_EQ( 1, color_field(elm_cache_map, q_point) );
-        EXPECT_EQ( -1, int_field(elm_cache_map, q_point) );
-        EXPECT_DOUBLE_EQ( 1.5, scalar_field(elm_cache_map, q_point) );
-        EXPECT_ARMA_EQ( arma::vec3("1 2 3"), vector_field(elm_cache_map, q_point) );
-        EXPECT_ARMA_EQ( arma::mat33("4 0 0; 0 5 0; 0 0 6"), tensor_field(elm_cache_map, q_point) );
+    for(BulkPoint q_point: mass_eval->points(cache_cell, &elm_cache_map)) {
+        EXPECT_EQ( 1, color_field(q_point) );
+        EXPECT_EQ( -1, int_field(q_point) );
+        EXPECT_DOUBLE_EQ( 1.5, scalar_field(q_point) );
+        EXPECT_ARMA_EQ( arma::vec3("1 2 3"), vector_field(q_point) );
+        EXPECT_ARMA_EQ( arma::mat33("4 0 0; 0 5 0; 0 0 6"), tensor_field(q_point) );
     }
 
     delete mesh;

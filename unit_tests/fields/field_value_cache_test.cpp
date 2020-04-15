@@ -89,14 +89,14 @@ TEST_F(FieldValueCacheTest, field_value_cache) {
 
     // check value
     dh_cell = (*this)(dh_cell);
-    for(BulkPoint q_point: bulk_eval->points(dh_cell)) {
+    for(BulkPoint q_point: bulk_eval->points(dh_cell, this)) {
         auto point_val = value_cache.template get_value<ScalarValue>(*this, dh_cell, q_point.eval_point_idx());
     	EXPECT_DOUBLE_EQ( point_val, const_val(0) );
     }
     for ( DHCellSide cell_side : dh_cell.side_range() )
       if ( cell_side.n_edge_sides() >= 2 )
         for( DHCellSide edge_side : cell_side.edge_sides() )
-            for ( EdgePoint q_point : edge_eval->points(edge_side) ) {
+            for ( EdgePoint q_point : edge_eval->points(edge_side, this) ) {
                 auto edge_cell = (*this)(edge_side.cell());
                 auto point_val = value_cache.template get_value<ScalarValue>(*this, edge_cell, q_point.eval_point_idx());
                 EXPECT_DOUBLE_EQ( point_val, const_val(0) );
