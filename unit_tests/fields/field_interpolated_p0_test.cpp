@@ -130,7 +130,7 @@ public:
         // setup FilePath directories
         FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-        Profiler::initialize();
+        Profiler::instance();
 
         mesh = new Mesh();
         auto mesh_reader = reader_constructor("{mesh_file=\"fields/interpolate_source.msh\"}");

@@ -479,7 +479,7 @@ void Record::RecordData::declare_key(const string &key,
        keys.push_back(tmp_key);
     } else {
     	ASSERT( keys[it->second].derived )(key)(type_name_).error("Re-declaration of the key in Record");
-        Key tmp_key = { it->second, key, description, type, default_value, false};
+        Key tmp_key = { it->second, key, description, type, default_value, false, {}};
         keys[ it->second ] = tmp_key;
     }
 

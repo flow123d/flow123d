@@ -212,7 +212,7 @@ Tuple::Tuple()
 
 
 Tuple::Tuple(const Tuple &tpl)
-: tuple_type_(tpl.tuple_type_)
+: Record(tpl), tuple_type_(tpl.tuple_type_)
 {
 	this->address_ = tpl.address_;
 }

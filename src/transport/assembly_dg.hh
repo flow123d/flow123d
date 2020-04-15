@@ -260,7 +260,7 @@ private:
         for( DHCellSide cell_side : cell.side_range() ) {
             if (active_integrals_ & ActiveIntegrals::boundary)
                 if (cell.is_own()) // Not ghost
-                    if ( (cell_side.side().edge()->n_sides == 1) && (cell_side.side().cond() != NULL) ) {
+                    if ( (cell_side.side().edge().n_sides() == 1) && (cell_side.side().is_boundary()) ) {
                         this->add_boundary_integral(cell_side);
                         element_cache_map_.add(cell_side);
                         continue;
@@ -668,7 +668,7 @@ public:
         calculate_velocity(elm_acc, velocity_, fsv_rt_.point_list());
         model_->compute_advection_diffusion_coefficients(fe_values_side_.point_list(), velocity_, elm_acc, data_->ad_coef, data_->dif_coef);
         arma::uvec bc_type;
-        model_->get_bc_type(side.cond()->element_accessor(), bc_type);
+        model_->get_bc_type(side.cond().element_accessor(), bc_type);
         data_->cross_section.value_list(fe_values_side_.point_list(), elm_acc, csection_);
 
         for (unsigned int sbi=0; sbi<model_->n_substances(); sbi++)
@@ -698,12 +698,12 @@ public:
                 if (bc_type[sbi] == AdvectionDiffusionModel::abc_total_flux)
                 {
                     //sigma_ corresponds to robin_sigma
-                    model_->get_flux_bc_sigma(sbi, fe_values_side_.point_list(), side.cond()->element_accessor(), sigma_);
+                    model_->get_flux_bc_sigma(sbi, fe_values_side_.point_list(), side.cond().element_accessor(), sigma_);
                     flux_times_JxW = csection_[k]*sigma_[k]*fe_values_side_.JxW(k);
                 }
                 else if (bc_type[sbi] == AdvectionDiffusionModel::abc_diffusive_flux)
                 {
-                    model_->get_flux_bc_sigma(sbi, fe_values_side_.point_list(), side.cond()->element_accessor(), sigma_);
+                    model_->get_flux_bc_sigma(sbi, fe_values_side_.point_list(), side.cond().element_accessor(), sigma_);
                     flux_times_JxW = (transport_flux + csection_[k]*sigma_[k])*fe_values_side_.JxW(k);
                 }
                 else if (bc_type[sbi] == AdvectionDiffusionModel::abc_inflow && side_flux < 0)
@@ -1240,11 +1240,11 @@ public:
         {
             if (dh_side.n_edge_sides() > 1) continue;
             // skip edges lying not on the boundary
-            if (! dh_side.cond()) continue;
+            if (! dh_side.side().is_boundary()) continue;
 
             const unsigned int cond_idx = dh_side.side().cond_idx();
 
-            ElementAccessor<3> bc_elm = dh_side.cond()->element_accessor();
+            ElementAccessor<3> bc_elm = dh_side.cond().element_accessor();
 
             arma::uvec bc_type;
             model_->get_bc_type(bc_elm, bc_type);

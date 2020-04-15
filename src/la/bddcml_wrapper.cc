@@ -77,7 +77,7 @@ la::BddcmlWrapper::~BddcmlWrapper()
  * where these are not Mesh or Grid objects, user can create own raw description
  * to exploit the flexibility of mesh format underlaying BDDCML.
  */
-void la::BddcmlWrapper::loadRawMesh( const int nDim, const int numNodes, const int numDofs,
+void la::BddcmlWrapper::loadRawMesh( const int nDim, const int numNodes,
                                      const std::vector<int> & inet, 
                                      const std::vector<int> & nnet, 
                                      const std::vector<int> & nndf, 
@@ -128,14 +128,14 @@ void la::BddcmlWrapper::loadRawMesh( const int nDim, const int numNodes, const i
                             "array inet size mismatch \n " );
     OLD_ASSERT( std::accumulate( nndf.begin(), nndf.end(), 0 ) == numDofsSub_,
                             "array nndf content mismatch: %d %d \n ",  std::accumulate( nndf.begin(), nndf.end(), 0 ), numDofsSub_ );
-    OLD_ASSERT( isvgvn.size() == numDofsSub_,
+    OLD_ASSERT( static_cast<int>(isvgvn.size()) == numDofsSub_,
                             "array isvgvn size mismatch \n " );
-    OLD_ASSERT( nnet.size() == numElemSub_,
+    OLD_ASSERT( static_cast<int>(nnet.size()) == numElemSub_,
                             "array nnet size mismatch \n " );
-    OLD_ASSERT( nndf.size() == numNodesSub_,
+    OLD_ASSERT( static_cast<int>(nndf.size()) == numNodesSub_,
                             "array nndf size mismatch \n " );
-    OLD_ASSERT( xyz.size() == numNodesSub_ * nDim_,
-                            "array xyz size mismatch: %d %d \n ", xyz.size(), numNodesSub_ * nDim_ );
+    OLD_ASSERT( static_cast<int>(xyz.size()) == numNodesSub_ * nDim_,
+                            "array xyz size mismatch: %d %d \n ", static_cast<int>(xyz.size()), numNodesSub_ * nDim_ );
 
     // Simply copy input data into the private object equivalents
     inet_.resize( inet.size() );
@@ -246,7 +246,7 @@ void la::BddcmlWrapper::insertToRhs( const SubVec_  & subVec,
  *  Scalar is not used, it is kept for compatibility with constraint functors.
  */
 void la::BddcmlWrapper::applyConstraints( ConstraintVec_ & constraints,
-                                          const double factor, const double scalar ) 
+                                          const double factor, FMT_UNUSED const double scalar ) 
 {
     // Constraint iterators
     ConstraintVec_::const_iterator cIter = constraints.begin( );
@@ -272,7 +272,7 @@ void la::BddcmlWrapper::applyConstraints( ConstraintVec_ & constraints,
 //------------------------------------------------------------------------------
 /** Simply set the dof with index 'index' to zero
  */
-void la::BddcmlWrapper::fixDOF( const unsigned index, const double scalar )
+void la::BddcmlWrapper::fixDOF( const unsigned index, FMT_UNUSED const double scalar )
 {
     std::vector< std::pair<unsigned,double> > thisConstraint;
     thisConstraint.push_back( std::make_pair( index, 0. ) );
@@ -334,9 +334,9 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
     if ( numSubAtLevels != NULL ) {
         // numbers are given 
         
-        OLD_ASSERT( numLevels == (*numSubAtLevels).size(), 
+        OLD_ASSERT( numLevels == static_cast<int>((*numSubAtLevels).size()),
                                 "Inconsistent size of numbers of subdomains at levels: %d %d \n",
-                                numLevels, (*numSubAtLevels).size() );
+                                numLevels, static_cast<int>((*numSubAtLevels).size()) );
         OLD_ASSERT( (*numSubAtLevels)[0] == numSub, 
                                 "Inconsistent number of subdomains at first level: %d %d \n",
                                 (*numSubAtLevels)[0], numSub );
@@ -477,8 +477,8 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
     }
 
     int lsub_diagonal = numDofsSub_;
-    OLD_ASSERT( lsub_diagonal == diag_sparse.size(),
-            "Array length mismatch: %d %d . \n ", lsub_diagonal, diag_sparse.size() );
+    OLD_ASSERT( lsub_diagonal == static_cast<int>(diag_sparse.size()),
+            "Array length mismatch: %d %d . \n ", lsub_diagonal, static_cast<int>(diag_sparse.size()) );
 
     std::vector<double> sub_diagonal( lsub_diagonal, -1. );
     // permute the vector according to subdomain indexing
@@ -499,7 +499,7 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
     else if ( matrixType_ == SPD )                      matrixTypeInt = 1 ;
     else if ( matrixType_ == SYMMETRICGENERAL )         matrixTypeInt = 2 ;
     else if ( matrixType_ == SPD_VIA_SYMMETRICGENERAL ) matrixTypeInt = 2 ; 
-    else    OLD_ASSERT( false, "Illegal matrixType \n " );
+    else    {OLD_ASSERT( false, "Illegal matrixType \n " );}
 
     // download local solution
     int lsol = sol_.size();

@@ -267,8 +267,9 @@ public:
 
 	/**
 	 * Permutations of nodes on sides.
+     * [n_side_permutations][n_nodes_per_side]
 	 */
-	static const unsigned int side_permutations[n_side_permutations][n_nodes_per_side];
+	static const std::vector< std::vector<unsigned int> > side_permutations;
 
 	/**
 	 * For a given permutation @p p of nodes finds its index within @p side_permutations.
@@ -393,12 +394,12 @@ private:
     template<unsigned int OutDim, unsigned int InDim> 
     static const IdxVector< (InDim>OutDim ? InDim+1 : dim-InDim) > interact_(unsigned int index);
     
-    static const IdxVector<n_nodes_per_line> line_nodes_[n_lines]; ///< For given line, returns its nodes indices.
-    static const IdxVector<n_lines_per_node> node_lines_[n_nodes]; ///< For given node, returns lines indices.
-    static const IdxVector<n_nodes_per_side> side_nodes_[n_sides]; ///< For given side, returns nodes indices. For @p dim == 3.
-    static const IdxVector<n_sides_per_node> node_sides_[n_nodes]; ///< For given node, returns sides indices. For @p dim == 3.
-    static const IdxVector<n_sides_per_line> line_sides_[n_lines]; ///< For given line, returns sides indices. For @p dim == 3.
-    static const IdxVector<n_lines_per_side> side_lines_[n_sides]; ///< For given side, returns lines indices. For @p dim == 3.
+    static const std::vector<IdxVector<n_nodes_per_line>> line_nodes_; ///< [n_lines] For given line, returns its nodes indices.
+    static const std::vector<IdxVector<n_lines_per_node>> node_lines_; ///< [n_nodes] For given node, returns lines indices.
+    static const std::vector<IdxVector<n_nodes_per_side>> side_nodes_; ///< [n_sides] For given side, returns nodes indices. For @p dim == 3.
+    static const std::vector<IdxVector<n_sides_per_node>> node_sides_; ///< [n_nodes] For given node, returns sides indices. For @p dim == 3.
+    static const std::vector<IdxVector<n_sides_per_line>> line_sides_; ///< [n_lines] For given line, returns sides indices. For @p dim == 3.
+    static const std::vector<IdxVector<n_lines_per_side>> side_lines_; ///< [n_sides] For given side, returns lines indices. For @p dim == 3.
 
     //TODO: implement for 1d and 2d
     /**
@@ -411,30 +412,6 @@ private:
     static const IdxVector<(n_lines > n_nodes) ? n_lines : n_nodes> topology_zeros_[dim+1];
 };
 
-
-
-
-
-
-template<> const IdxVector<2> RefElement<1>::line_nodes_[];
-template<> const IdxVector<2> RefElement<2>::line_nodes_[];
-template<> const IdxVector<2> RefElement<3>::line_nodes_[];
-
-template<> const IdxVector<1> RefElement<1>::node_lines_[];
-template<> const IdxVector<2> RefElement<2>::node_lines_[];
-template<> const IdxVector<3> RefElement<3>::node_lines_[];
-
-template<> const IdxVector<3> RefElement<3>::side_nodes_[];
-template<> const IdxVector<3> RefElement<3>::node_sides_[];
-
-template<> const IdxVector<2> RefElement<3>::line_sides_[];
-
-template<> const IdxVector<3> RefElement<3>::side_lines_[];
-
-template<> const unsigned int RefElement<0>::side_permutations[][n_nodes_per_side];
-template<> const unsigned int RefElement<1>::side_permutations[][n_nodes_per_side];
-template<> const unsigned int RefElement<2>::side_permutations[][n_nodes_per_side];
-template<> const unsigned int RefElement<3>::side_permutations[][n_nodes_per_side];
 
 template<> const IdxVector<1> RefElement<0>::topology_zeros_[];
 template<> const IdxVector<2> RefElement<1>::topology_zeros_[];
@@ -461,7 +438,7 @@ arma::mat::fixed<dim+1,subdim+1> RefElement<dim>::bary_coords(unsigned int sid){
         }       
     
         return bary_c;
-};
+}
 
 
 template<unsigned int dim> inline
@@ -484,7 +461,7 @@ template<unsigned int subdim>
 auto RefElement<dim>::interpolate(arma::vec::fixed<subdim+1> coord, int sub_simplex_idx) -> BaryPoint
 {
     return RefElement<dim>::bary_coords<subdim>(sub_simplex_idx)*coord;
-};
+}
 /*
 template <unsigned int Size>
 IdxVector<Size>::IdxVector(std::array<unsigned int,Size> data_in)

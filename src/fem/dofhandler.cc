@@ -103,10 +103,10 @@ void DOFHandlerMultiDim::init_dof_starts(
     node_dof_starts.push_back(n_node_dofs);
     
     unsigned int n_edge_dofs = 0;
-    for (unsigned int i=0; i<mesh_->n_edges(); i++)
+    for (auto edge : mesh_->edge_range())
     {
         edge_dof_starts.push_back(n_edge_dofs);
-        n_edge_dofs += ds_->n_edge_dofs(mesh_->edges[i]);
+        n_edge_dofs += ds_->n_edge_dofs(edge);
     }
     edge_dof_starts.push_back(n_edge_dofs);
 }
@@ -564,18 +564,17 @@ void DOFHandlerMultiDim::make_elem_partitioning()
     el_ds_ = mesh_->get_el_ds();
 
     // create local array of edges
-    for (unsigned int iedg=0; iedg<mesh_->n_edges(); iedg++)
+    for (auto edge : mesh_->edge_range())
     {
         bool is_edge_local = false;
-        Edge *edg = &mesh_->edges[iedg];
-        for (int sid=0; sid<edg->n_sides; sid++)
-        	if ( el_is_local(edg->side(sid)->element().idx()) )
+        for (uint sid=0; sid<edge.n_sides(); sid++)
+        	if ( el_is_local(edge.side(sid)->element().idx()) )
         	{
         		is_edge_local = true;
         		break;
         	}
         if (is_edge_local)
-        	edg_4_loc.push_back(iedg);
+        	edg_4_loc.push_back(edge.idx());
     }
 
     // create local array of neighbours
@@ -781,7 +780,7 @@ SubDOFHandlerMultiDim::SubDOFHandlerMultiDim(std::shared_ptr<DOFHandlerMultiDim>
         LocDofVec cell_dof_indices = cell.get_loc_dof_indices();
         for (auto sub_dof : sub_fe_dofs[cell.dim()])
         {
-            if (cell_dof_indices[sub_dof] < dh->lsize_ &&
+            if (cell_dof_indices[sub_dof] < static_cast<int>(dh->lsize_) &&
                 sub_local_indices[cell_dof_indices[sub_dof]] == INVALID_DOF)
             {
                 sub_local_indices[cell_dof_indices[sub_dof]] = local_to_global_dof_idx_.size();

@@ -25,7 +25,6 @@
 #include "system/index_types.hh"
 
 #include <petscmat.h>
-#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "mesh/accessors.hh"
 #include "io/output_time_set.hh"
@@ -234,11 +233,11 @@ void Balance::lazy_initialize()
         {
         	for(unsigned int si=0; si<elm->n_sides(); si++)
             {
-                Boundary *b = elm.side(si)->cond();
-                if (b != nullptr){
-                    LongIdx ele_side_uid = get_boundary_edge_uid(elm.side(si));
+                if (elm.side(si)->is_boundary()){
+					Boundary bcd = elm.side(si)->cond();
+					LongIdx ele_side_uid = get_boundary_edge_uid(elm.side(si));
                     be_id_map_[ele_side_uid] = be_id;
-                    be_regions_.push_back(b->region().boundary_idx());
+                    be_regions_.push_back(bcd.region().boundary_idx());
                     be_id++;
                 }
             }

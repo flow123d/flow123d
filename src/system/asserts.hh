@@ -22,6 +22,7 @@
 #include <string>
 #include <vector>                // for vector
 #include "system/exceptions.hh"
+#include "system/fmt/posix.h"
 
 namespace feal {
 
@@ -183,7 +184,7 @@ public:
 	  _FEAL_ASSERT_B (*this) {}
 
 	/// Copy constructor.
-	AssertNull(const Assert& other)
+	AssertNull(FMT_UNUSED const Assert& other)
 	: _FEAL_ASSERT_A (*this),
 	  _FEAL_ASSERT_B (*this) {}
 
@@ -195,15 +196,15 @@ public:
 
 	/// Empty method, only guarantees consistent code
 	template <typename T>
-	inline AssertNull& add_value(T var_current_val, const char* var_name) {
+	inline AssertNull& add_value(FMT_UNUSED T var_current_val, FMT_UNUSED const char* var_name) {
 		return *this;
 	}
 
 	/// Empty method, only guarantees consistent code
-	inline void error(std::string error_msg = "") {}
+	inline void error(FMT_UNUSED std::string error_msg = "") {}
 
 	/// Empty method, only guarantees consistent code
-	inline void warning(std::string warning_msg = "") {}
+	inline void warning(FMT_UNUSED std::string warning_msg = "") {}
 };
 
 } // namespace feal

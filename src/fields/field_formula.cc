@@ -183,7 +183,7 @@ bool FieldFormula<spacedim, Value>::set_time(const TimeStep &time) {
 
 
 template <int spacedim, class Value>
-void FieldFormula<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) {
+void FieldFormula<spacedim, Value>::set_mesh(const Mesh *mesh, FMT_UNUSED bool boundary_domain) {
     // create SurfaceDepth object if surface region is set
     std::string surface_region;
     if ( in_rec_.opt_val("surface_region", surface_region) ) {
@@ -196,7 +196,7 @@ void FieldFormula<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_dom
  * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
  */
 template <int spacedim, class Value>
-typename Value::return_type const & FieldFormula<spacedim, Value>::value(const Point &p, const ElementAccessor<spacedim> &elm)
+typename Value::return_type const & FieldFormula<spacedim, Value>::value(const Point &p, FMT_UNUSED  const ElementAccessor<spacedim> &elm)
 {
 
     auto p_depth = this->eval_depth_var(p);
@@ -212,7 +212,7 @@ typename Value::return_type const & FieldFormula<spacedim, Value>::value(const P
  * Returns std::vector of scalar values in several points at once.
  */
 template <int spacedim, class Value>
-void FieldFormula<spacedim, Value>::value_list (const Armor::array &point_list, const ElementAccessor<spacedim> &elm,
+void FieldFormula<spacedim, Value>::value_list (const Armor::array &point_list, FMT_UNUSED const ElementAccessor<spacedim> &elm,
                    std::vector<typename Value::return_type>  &value_list)
 {
 	ASSERT_EQ( point_list.size(), value_list.size() );

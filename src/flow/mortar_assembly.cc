@@ -57,10 +57,10 @@ void P0_CouplingAssembler::pressure_diff(const DHCellAccessor& dh_cell, double d
         i_data.dofs[i_side] = dh_cell.get_loc_dof_indices()[(ndofs+1)/2+i_side];   //edge dof
         i_data.vel_dofs[i_side] = dh_cell.get_loc_dof_indices()[i_side];   // side dof
         //i_data.z_sides[i_side]=ele.side(i_side)->centre()[2];
-        //DebugOut().fmt("edge: {} {}", i_side, dh_cell.get_loc_dof_indices()[(ndofs+1)/2+i_side;
-        Boundary * bcd = ele.side(i_side)->cond();
-        if (bcd) {
-            ElementAccessor<3> b_ele = bcd->element_accessor();
+        Side side = *dh_cell.elm().side(i_side);
+        if (side.is_boundary()) {
+            Boundary bcd = side.cond();
+            ElementAccessor<3> b_ele = bcd.element_accessor();
             auto type = (DarcyMH::EqData::BC_Type)data_->bc_type.value(b_ele.centre(), b_ele);
             //DebugOut().fmt("bcd id: {} sidx: {} type: {}\n", ele->id(), i_side, type);
             if (type == DarcyMH::EqData::dirichlet) {
@@ -261,10 +261,11 @@ void P1_CouplingAssembler::add_sides(const DHCellAccessor& dh_cell, unsigned int
     for(unsigned int i_side=0; i_side < ele->n_sides(); i_side++ ) {
         // TODO: replace with DHCell getter when available for FESystem component
         dofs[shift+i_side] =  dh_cell.get_loc_dof_indices()[(ndofs+1)/2+i_side];   //edge dof
-        Boundary * bcd = ele.side(i_side)->cond();
-
-        if (bcd) {
-            ElementAccessor<3> b_ele = bcd->element_accessor();
+        
+        Side side = *dh_cell.elm().side(i_side);
+        if (side.is_boundary()) {
+            Boundary bcd = side.cond();
+            ElementAccessor<3> b_ele = bcd.element_accessor();
             auto type = (DarcyMH::EqData::BC_Type)data_->bc_type.value(b_ele.centre(), b_ele);
             //DebugOut().fmt("bcd id: {} sidx: {} type: {}\n", ele->id(), i_side, type);
             if (type == DarcyMH::EqData::dirichlet) {
@@ -284,7 +285,7 @@ void P1_CouplingAssembler::add_sides(const DHCellAccessor& dh_cell, unsigned int
  * - 20.11. 2014 - very poor convergence, big error in pressure even at internal part of the fracture
  */
 
-void P1_CouplingAssembler::assembly(const DHCellAccessor& dh_cell) {
+void P1_CouplingAssembler::assembly(FMT_UNUSED const DHCellAccessor& dh_cell) {
 /*
     const IsecList &master_list = master_list_[ele_ac.ele_global_idx()];
     if (master_list.size() == 0) return; // skip empty masters

@@ -149,8 +149,8 @@ inline string field_value_to_yaml(const T &mat, unsigned int prec) {
     template string field_value_to_yaml(const arma::Col<int>::fixed<dim> &mat, unsigned int prec);   \
     template string field_value_to_yaml(const arma::Col<unsigned int>::fixed<dim> &mat, unsigned int prec);
 
-FIELD_VALUE_TO_YAML_DIM(2);
-FIELD_VALUE_TO_YAML_DIM(3);
+FIELD_VALUE_TO_YAML_DIM(2)
+FIELD_VALUE_TO_YAML_DIM(3)
 
 template string field_value_to_yaml(const arma::Col<double> &mat, unsigned int prec);
 template string field_value_to_yaml(const arma::Col<unsigned int> &mat, unsigned int prec);

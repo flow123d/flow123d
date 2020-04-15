@@ -85,7 +85,7 @@ static struct MsgFmt msg_fmt[] = {
 int _xprintf(const char * const xprintf_file, const char * const xprintf_func, const int xprintf_line, MessageType type, const char * const fmt, ... )
 {
 	struct MsgFmt	mf;
-	int rc;
+	int rc = 0;
 	FILE *screen=NULL;
 
 	static int mpi_msg_id = 0;

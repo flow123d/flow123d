@@ -569,7 +569,7 @@ void FEValues<spacedim>::reinit(const Side &cell_side)
 {
     ASSERT_EQ_DBG( dim_, cell_side.dim() );
     
-    if (!elm_values->side().valid() || 
+    if (!elm_values->side().is_valid() || 
         elm_values->side() != cell_side)
     {
         elm_values->reinit(cell_side);

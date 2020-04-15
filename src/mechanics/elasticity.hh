@@ -140,7 +140,7 @@ public:
      */
 	void zero_time_step() override;
 	
-    bool evaluate_time_constraint(double &time_constraint)
+    bool evaluate_time_constraint(double &)
     { return false; }
 
     /**

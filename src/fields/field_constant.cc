@@ -115,7 +115,7 @@ void FieldConstant<spacedim, Value>::init_from_input(const Input::Record &rec, c
  * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
  */
 template <int spacedim, class Value>
-typename Value::return_type const & FieldConstant<spacedim, Value>::value(const Point &p, const ElementAccessor<spacedim> &elm)
+typename Value::return_type const & FieldConstant<spacedim, Value>::value(const Point &, const ElementAccessor<spacedim> &)
 {
     return this->r_value_;
 }
@@ -126,7 +126,7 @@ typename Value::return_type const & FieldConstant<spacedim, Value>::value(const 
  * Returns std::vector of scalar values in several points at once.
  */
 template <int spacedim, class Value>
-void FieldConstant<spacedim, Value>::value_list (const Armor::array &point_list, const ElementAccessor<spacedim> &elm,
+void FieldConstant<spacedim, Value>::value_list (const Armor::array &point_list, FMT_UNUSED const ElementAccessor<spacedim> &elm,
                    std::vector<typename Value::return_type>  &value_list)
 {
 	OLD_ASSERT_EQUAL( point_list.size(), value_list.size() );

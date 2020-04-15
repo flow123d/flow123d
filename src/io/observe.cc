@@ -17,7 +17,6 @@
 #include "input/input_type.hh"
 #include "system/armadillo_tools.hh"
 
-#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "mesh/bih_tree.hh"
 #include "mesh/region.hh"
@@ -435,7 +434,7 @@ void Observe::output_header() {
 
 }
 
-void Observe::output_time_frame(double time, bool flush) {
+void Observe::output_time_frame(bool flush) {
     if (points_.size() == 0) return;
     
     if ( ! no_fields_warning ) {

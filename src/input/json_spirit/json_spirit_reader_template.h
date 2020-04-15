@@ -222,6 +222,7 @@ namespace json_spirit
         void begin_obj( Char_type c )
         {
             assert( c == '{' );
+            (void)c;
 
             begin_compound< Object_type >();
         }
@@ -229,6 +230,7 @@ namespace json_spirit
         void end_obj( Char_type c )
         {
             assert( c == '}' );
+            (void)c;
 
             end_compound();
         }
@@ -236,6 +238,7 @@ namespace json_spirit
         void begin_array( Char_type c )
         {
             assert( c == '[' );
+            (void)c;
      
             begin_compound< Array_type >();
         }
@@ -243,6 +246,7 @@ namespace json_spirit
         void end_array( Char_type c )
         {
             assert( c == ']' );
+            (void)c;
 
             end_compound();
         }
@@ -262,6 +266,8 @@ namespace json_spirit
         void new_true( Iter_type begin, Iter_type end )
         {
             assert( is_eq( begin, end, "true" ) );
+            (void)begin;
+            (void)end;
 
             add_to_current( true );
         }
@@ -269,6 +275,8 @@ namespace json_spirit
         void new_false( Iter_type begin, Iter_type end )
         {
             assert( is_eq( begin, end, "false" ) );
+            (void)begin;
+            (void)end;
 
             add_to_current( false );
         }
@@ -276,6 +284,8 @@ namespace json_spirit
         void new_null( Iter_type begin, Iter_type end )
         {
             assert( is_eq( begin, end, "null" ) );
+            (void)begin;
+            (void)end;
 
             add_to_current( Value_type() );
         }
@@ -369,9 +379,10 @@ namespace json_spirit
     }
 
     template< typename Iter_type >
-    void throw_error( Iter_type i, const std::string& reason )
+    void throw_error(Iter_type i, const std::string& reason )
     {
-       throw reason;
+        (void)i;
+        throw reason;
     }
 
     // the spirit grammer 
@@ -390,31 +401,37 @@ namespace json_spirit
 
         static void throw_not_value( Iter_type begin, Iter_type end )
         {
+            (void)end;
     	    throw_error( begin, "not a value" );
         }
 
         static void throw_not_array( Iter_type begin, Iter_type end )
         {
+            (void)end;
     	    throw_error( begin, "not an array" );
         }
 
         static void throw_not_object( Iter_type begin, Iter_type end )
         {
+            (void)end;
     	    throw_error( begin, "not an object" );
         }
 
         static void throw_not_pair( Iter_type begin, Iter_type end )
         {
+            (void)end;
     	    throw_error( begin, "not a pair" );
         }
 
         static void throw_not_colon( Iter_type begin, Iter_type end )
         {
+            (void)end;
     	    throw_error( begin, "no colon in pair" );
         }
 
         static void throw_not_string( Iter_type begin, Iter_type end )
         {
+            (void)end;
     	    throw_error( begin, "not a string" );
         }
 

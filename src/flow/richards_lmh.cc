@@ -8,6 +8,7 @@
 
 #include "system/global_defs.h"
 #include "system/sys_profiler.hh"
+#include "system/asserts.hh"
 
 #include "coupling/balance.hh"
 
@@ -27,14 +28,11 @@
 #include "la/schur.hh"
 #include "la/vector_mpi.hh"
 
-// in the third_party/FADBAD++ dir, namespace "fadbad"
-#include "fadbad.h"
-#include "badiff.h"
-#include "fadiff.h"
+
+#include "tools/include_fadbad.hh" // for "fadbad.h", "badiff.h", "fadiff.h"
 
 
-
-FLOW123D_FORCE_LINK_IN_CHILD(richards_lmh);
+FLOW123D_FORCE_LINK_IN_CHILD(richards_lmh)
 
 
 namespace it=Input::Type;

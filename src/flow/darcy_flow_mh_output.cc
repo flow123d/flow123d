@@ -231,7 +231,7 @@ void DarcyFlowMHOutput::prepare_specific_output(Input::Record in_rec)
 }
 
 DarcyFlowMHOutput::~DarcyFlowMHOutput()
-{};
+{}
 
 
 

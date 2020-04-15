@@ -280,25 +280,28 @@ string Timer::code_point_str() const {
  */
 
 
-Profiler * Profiler::instance() { 
+Profiler * Profiler::instance(bool clear) {
+    static Profiler * _instance = NULL;
+    
+    if (clear) {
+        if (_instance != NULL) {
+            delete _instance;
+            _instance = NULL;
+        }
+        return _instance;
+    }
+
     if (_instance == NULL) {
         MemoryAlloc::malloc_map().reserve(Profiler::malloc_map_reserve);
         _instance = new Profiler();
     }
+    
     return _instance;
  } 
 
 
-static CONSTEXPR_ CodePoint main_cp = CODE_POINT("Whole Program");
-Profiler* Profiler::_instance = NULL;
+// static CONSTEXPR_ CodePoint main_cp = CODE_POINT("Whole Program");
 const long Profiler::malloc_map_reserve = 100 * 1000;
-CodePoint Profiler::null_code_point = CodePoint("__no_tag__", "__no_file__", "__no_func__", 0);
-
-void Profiler::initialize() {
-    instance();
-    set_memory_monitoring(true, true);
-}
-
 
 Profiler::Profiler()
 : actual_node(0),
@@ -307,7 +310,10 @@ Profiler::Profiler()
   json_filepath("")
 
 {
+    static CONSTEXPR_ CodePoint main_cp = CODE_POINT("Whole Program");
+    set_memory_monitoring(true, true);
 #ifdef FLOW123D_DEBUG_PROFILER
+    MemoryAlloc::malloc_map().reserve(Profiler::malloc_map_reserve);
     timers_.push_back( Timer(main_cp, 0) );
     timers_[0].start();
 #endif
@@ -856,13 +862,12 @@ void Profiler::transform_profiler_data (const string &output_file_suffix, const 
 
 
 void Profiler::uninitialize() {
-    if (_instance) {
-    	ASSERT(_instance->actual_node==0)(_instance->timers_[_instance->actual_node].tag())
+    if (Profiler::instance()) {
+    	ASSERT(Profiler::instance()->actual_node==0)(Profiler::instance()->timers_[Profiler::instance()->actual_node].tag())
     			.error("Forbidden to uninitialize the Profiler when actual timer is not zero.");
-        _instance->stop_timer(0);
+        Profiler::instance()->stop_timer(0);
         set_memory_monitoring(false, false);
-        delete _instance;
-        _instance = NULL;
+        Profiler::instance(true);
     }
 }
 bool Profiler::global_monitor_memory = false;
@@ -923,28 +928,27 @@ void operator delete[]( void *p) throw() {
 
 #else // def FLOW123D_DEBUG_PROFILER
 
-Profiler * Profiler::instance() { 
-     initialize();
-     return _instance;
- } 
+Profiler * Profiler::instance(bool clear) { 
+    static Profiler * _instance = new Profiler();
+    return _instance;
+} 
 
-Profiler* Profiler::_instance = NULL;
 
-void Profiler::initialize() {
-    if (_instance == NULL) {
-        _instance = new Profiler();
-        set_memory_monitoring(true, true);
-    }
-}
+// void Profiler::initialize() {
+//     if (_instance == NULL) {
+//         _instance = new Profiler();
+//         set_memory_monitoring(true, true);
+//     }
+// }
 
 void Profiler::uninitialize() {
-    if (_instance) {
-        ASSERT(_instance->actual_node==0)(_instance->timers_[_instance->actual_node].tag())
+    if (Profiler::instance()) {
+        ASSERT(Profiler::instance()->actual_node==0)(Profiler::instance()->timers_[Profiler::instance()->actual_node].tag())
     			.error("Forbidden to uninitialize the Profiler when actual timer is not zero.");
         set_memory_monitoring(false, false);
-        _instance->stop_timer(0);
-        delete _instance;
-        _instance = NULL;
+        Profiler::instance()->stop_timer(0);
+        // delete _instance;
+        // _instance = NULL;
     }
 }
 

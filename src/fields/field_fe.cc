@@ -421,7 +421,7 @@ void FieldFE<spacedim, Value>::interpolate_gauss(ElementDataCache<double>::Compo
 	std::vector<unsigned int> searched_elements; // stored suspect elements in calculating the intersection
 	std::vector<arma::vec::fixed<3>> q_points; // real coordinates of quadrature points
 	std::vector<double> q_weights; // weights of quadrature points
-	unsigned int quadrature_size; // size of quadrature point and weight vector
+	unsigned int quadrature_size=0; // size of quadrature point and weight vector
 	std::vector<double> sum_val(dh_->max_elem_dofs()); // sum of value of one quadrature point
 	unsigned int elem_count; // count of intersect (source) elements of one quadrature point
 	std::vector<double> elem_value(dh_->max_elem_dofs()); // computed value of one (target) element
@@ -517,7 +517,8 @@ void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>
 	std::shared_ptr<Mesh> source_mesh = ReaderCache::get_mesh(reader_file_);
 	std::vector<unsigned int> searched_elements; // stored suspect elements in calculating the intersection
 	std::vector<double> value(dh_->max_elem_dofs());
-	double total_measure, measure;
+	double total_measure;
+	double measure = 0;
 
 	Mesh *mesh;
 	if (this->boundary_domain_) mesh = dh_->mesh()->get_bc_mesh();

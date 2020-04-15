@@ -112,7 +112,7 @@ public:
     ~BddcmlWrapper();
 
     //! Load raw data about mesh
-    void loadRawMesh( const int nDim, const int numNodes, const int numDofs,
+    void loadRawMesh( const int nDim, const int numNodes,
                       const std::vector<int> & inet, 
                       const std::vector<int> & nnet, 
                       const std::vector<int> & nndf, 

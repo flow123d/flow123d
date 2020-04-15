@@ -21,7 +21,6 @@
 #include "io/msh_gmshreader.h"
 #include "io/msh_vtkreader.hh"
 #include "io/msh_pvdreader.hh"
-#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "system/sys_profiler.hh"
 
@@ -156,7 +155,7 @@ CheckResult BaseMeshReader::scale_and_check_limits(string field_name, double coe
 template typename ElementDataCache<TYPE>::ComponentDataPtr BaseMeshReader::get_element_data<TYPE>(unsigned int n_entities, \
 		unsigned int n_components, bool boundary_domain, unsigned int component_idx);
 
-MESH_READER_GET_ELEMENT_DATA(int);
-MESH_READER_GET_ELEMENT_DATA(unsigned int);
-MESH_READER_GET_ELEMENT_DATA(double);
+MESH_READER_GET_ELEMENT_DATA(int)
+MESH_READER_GET_ELEMENT_DATA(unsigned int)
+MESH_READER_GET_ELEMENT_DATA(double)
 

@@ -203,7 +203,7 @@ public:
     }
 
 protected:
-    static const unsigned int size()
+    static unsigned int size()
     {
         // dofs: velocity, pressure, edge pressure
         return RefElement<dim>::n_sides + 1 + RefElement<dim>::n_sides;
@@ -224,7 +224,6 @@ protected:
         const unsigned int nsides = ele->n_sides();
         LinSys *ls = ad_->lin_sys;
         
-        Boundary *bcd;
         unsigned int side_row, edge_row;
         
         dirichlet_edge.resize(nsides);
@@ -235,10 +234,11 @@ protected:
             loc_system_.row_dofs[side_row] = loc_system_.col_dofs[side_row] = global_dofs_[side_row];    //global
             loc_system_.row_dofs[edge_row] = loc_system_.col_dofs[edge_row] = global_dofs_[edge_row];    //global
             
-            bcd = ele.side(i)->cond();
             dirichlet_edge[i] = 0;
-            if (bcd) {
-                ElementAccessor<3> b_ele = bcd->element_accessor();
+            Side side = *dh_cell.elm().side(i);
+            if (side.is_boundary()) {
+                Boundary bcd = side.cond();
+                ElementAccessor<3> b_ele = bcd.element_accessor();
                 DarcyMH::EqData::BC_Type type = (DarcyMH::EqData::BC_Type)ad_->bc_type.value(b_ele.centre(), b_ele);
 
                 double cross_section = ad_->cross_section.value(ele.centre(), ele);
@@ -264,7 +264,7 @@ protected:
                 else if (type==DarcyMH::EqData::seepage) {
                     ad_->is_linear=false;
 
-                    unsigned int loc_edge_idx = bcd->bc_ele_idx_;
+                    unsigned int loc_edge_idx = bcd.bc_ele_idx();
                     char & switch_dirichlet = ad_->bc_switch_dirichlet[loc_edge_idx];
                     double bc_pressure = ad_->bc_switch_pressure.value(b_ele.centre(), b_ele);
                     double bc_flux = -ad_->bc_flux.value(b_ele.centre(), b_ele);
@@ -413,7 +413,7 @@ protected:
     }
     
     
-    void assemble_element(const DHCellAccessor& dh_cell){
+    void assemble_element(const DHCellAccessor&){
         // set block B, B': element-side, side-element
         
         for(unsigned int side = 0; side < loc_side_dofs.size(); side++){
@@ -477,11 +477,10 @@ protected:
 
     void add_fluxes_in_balance_matrix(const DHCellAccessor& dh_cell){
         
-        for(DHCellSide side : dh_cell.side_range()){
-            unsigned int sidx = side.side_idx();
-
-            if (side.cond()) {
-                ad_->balance->add_flux_values(ad_->water_balance_idx, side,
+        for(DHCellSide dh_side : dh_cell.side_range()){
+            unsigned int sidx = dh_side.side_idx();
+            if (dh_side.side().is_boundary()) {
+                ad_->balance->add_flux_values(ad_->water_balance_idx, dh_side,
                                               {local_dofs_[loc_side_dofs[sidx]]},
                                               {1}, 0);
             }

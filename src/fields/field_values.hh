@@ -111,9 +111,9 @@ struct ReturnType<NRows,1, FieldEnum> { typedef typename arma::Col<unsigned int>
 
 
 // Resolution of helper functions for raw constructor
-template <class RT> inline RT & set_raw_scalar(RT &val, double *raw_data) { return *raw_data;}
-template <class RT> inline RT & set_raw_scalar(RT &val, int *raw_data) { return *raw_data;}
-template <class RT> inline RT & set_raw_scalar(RT &val, FieldEnum *raw_data) { return *raw_data;}
+template <class RT> inline RT & set_raw_scalar(RT &, double *raw_data) { return *raw_data;}
+template <class RT> inline RT & set_raw_scalar(RT &, int *raw_data) { return *raw_data;}
+template <class RT> inline RT & set_raw_scalar(RT &, FieldEnum *raw_data) { return *raw_data;}
 
 template <class RT> inline RT & set_raw_vec(RT &val, double *raw_data) { arma::access::rw(val.mem) = raw_data; return val;}
 template <class RT> inline RT & set_raw_vec(RT &val, int *raw_data) { arma::access::rw(val.mem) = raw_data; return val;}
@@ -364,7 +364,7 @@ public:
         { return 1; }
     inline ET &operator() ( unsigned int, unsigned int )
         { return value_; }
-    inline ET operator() ( unsigned int i, unsigned int j) const
+    inline ET operator() ( unsigned int, unsigned int) const
         { return value_; }
     inline operator return_type() const
         { return value_;}
@@ -435,7 +435,7 @@ public:
         { return value_.n_rows; }
     inline ET &operator() ( unsigned int i, unsigned int )
         { return value_.at(i); }
-    inline ET operator() ( unsigned int i, unsigned int j) const
+    inline ET operator() ( unsigned int i, unsigned int ) const
         { return value_.at(i); }
 
     inline operator return_type() const
@@ -507,7 +507,7 @@ public:
         { return NRows; }
     inline ET &operator() ( unsigned int i, unsigned int )
         { return value_.at(i); }
-    inline ET operator() ( unsigned int i, unsigned int j) const
+    inline ET operator() ( unsigned int i, unsigned int ) const
         { return value_.at(i); }
 
     inline operator return_type() const

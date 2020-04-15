@@ -16,7 +16,6 @@
 
 #include "system/sys_profiler.hh"
 
-#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "mesh/ref_element.hh"
 #include "mesh/bih_tree.hh"
@@ -456,7 +455,7 @@ std::vector< unsigned int > InspectElementsAlgorithm<dim>::get_element_neighbors
                                                                                  unsigned int ip_dim,
                                                                                  unsigned int ip_obj_idx)
 {
-    std::vector<Edge*> edges;
+    std::vector<Edge> edges;
     edges.reserve(ele_dim - ip_dim);  // reserve number of possible edges
 
     //DebugOut() << "dim " << ele_dim << ": ";
@@ -464,34 +463,34 @@ std::vector< unsigned int > InspectElementsAlgorithm<dim>::get_element_neighbors
     {
         // IP is at a node of tetrahedron; possible edges are from all connected sides (3)
         case 0: if(ele_dim == 1) {
-                    edges.push_back(&(mesh->edges[ele->edge_idx(ip_obj_idx)]));
+                    edges.push_back(mesh->edge(ele->edge_idx(ip_obj_idx)));
                     break;
                 }
                 
                 for(unsigned int j=0; j < RefElement<ele_dim>::n_sides_per_node; j++){
                     unsigned int local_edge = RefElement<ele_dim>::interact(Interaction<ele_dim-1,0>(ip_obj_idx))[j];
-                    edges.push_back(&(mesh->edges[ele->edge_idx(local_edge)]));
+                    edges.push_back(mesh->edge(ele->edge_idx(local_edge)));
                 }
                 //DebugOut() << "prolong (node)\n";
                 break;
         
         // IP is on a line of tetrahedron; possible edges are from all connected sides (2)
         case 1: if(ele_dim == 2) {
-                    edges.push_back(&(mesh->edges[ele->edge_idx(ip_obj_idx)]));
+                    edges.push_back(mesh->edge(ele->edge_idx(ip_obj_idx)));
                     break;
                 }
             
                 ASSERT_DBG(ele_dim == 3);
                 for(unsigned int j=0; j < RefElement<ele_dim>::n_sides_per_line; j++){
                     unsigned int local_edge = RefElement<ele_dim>::interact(Interaction<2,1>(ip_obj_idx))[j];
-                    edges.push_back(&(mesh->edges[ele->edge_idx(local_edge)]));
+                    edges.push_back(mesh->edge(ele->edge_idx(local_edge)));
                 }
                 //DebugOut() << "prolong (edge)\n";
                 break;
                 
         // IP is on a side of tetrahedron; only possible edge is from the given side (1)
         case 2: ASSERT_DBG(ele_dim == 3);
-                edges.push_back(&(mesh->edges[ele->edge_idx(ip_obj_idx)]));
+                edges.push_back(mesh->edge(ele->edge_idx(ip_obj_idx)));
                 //DebugOut() << "prolong (side)\n";
                 break;
         default: ASSERT_DBG(0);
@@ -500,10 +499,10 @@ std::vector< unsigned int > InspectElementsAlgorithm<dim>::get_element_neighbors
     // get indices of neighboring bulk elements
     std::vector<unsigned int> elements_idx;
     elements_idx.reserve(2*edges.size());    // twice the number of edges
-    for(Edge* edg : edges)
-    for(int j=0; j < edg->n_sides;j++) {
-        if ( edg->side(j)->element().idx() != ele.idx() )
-            elements_idx.push_back(edg->side(j)->element().idx());
+    for(Edge edg : edges)
+    for(uint j=0; j < edg.n_sides();j++) {
+        if ( edg.side(j)->element().idx() != ele.idx() )
+            elements_idx.push_back(edg.side(j)->element().idx());
     }
     
     return elements_idx;
@@ -561,10 +560,10 @@ void InspectElementsAlgorithm<dim>::prolongation_decide(const ElementAccessor<3>
             }
             // CASE B: incompatible neighboring with lower dim element
             else {
-                const Edge* edg = bulk_ele.side(sid)->edge();
-                if(edg->n_sides > 1){
+                Edge edg = bulk_ele.side(sid)->edge();
+                if(edg.n_sides() > 1){
                     //set n_sides duplicities
-                    is.set_duplicities(edg->n_sides);
+                    is.set_duplicities(edg.n_sides());
 //                     DBGCOUT(<< "incomp. neigh: N = " << is.duplicities() << "\n");
                     //possibly copy intersection object
                 }
@@ -846,10 +845,10 @@ void InspectElementsAlgorithm22::create_component_numbering()
                 queue.pop();
                 const ElementAccessor<3>& elm = mesh->element_accessor( ele_idx );
                 for(unsigned int sid=0; sid < elm->n_sides(); sid++) {
-                    const Edge* edg = elm.side(sid)->edge();
+                    Edge edg = elm.side(sid)->edge();
 
-                    for(int j=0; j < edg->n_sides;j++) {
-                        uint neigh_idx = edg->side(j)->element().idx();
+                    for(uint j=0; j < edg.n_sides();j++) {
+                        uint neigh_idx = edg.side(j)->element().idx();
                         if (component_idx_[neigh_idx] == (unsigned int)-1) {
                             component_idx_[neigh_idx] = component_counter_;
                             queue.push(neigh_idx);

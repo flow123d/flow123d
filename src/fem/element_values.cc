@@ -21,7 +21,6 @@
 #include "fem/mapping_p1.hh"
 #include "quadrature/quadrature.hh"
 #include "fem/element_values.hh"
-#include "mesh/side_impl.hh"
 
 
 
@@ -62,11 +61,11 @@ ElementData<spacedim>::ElementData(unsigned int size,
 template<unsigned int spacedim>
 void ElementData<spacedim>::print()
 {
-    if (cell.is_valid() || side.valid())
+    if (cell.is_valid() || side.is_valid())
     {
         if (cell.is_valid())
             printf("cell %d dim %d ", cell.elm_idx(), cell.dim());
-        else if (side.valid())
+        else if (side.is_valid())
             printf("cell %d dim %d side %d ", side.elem_idx(), side.dim(), side.side_idx());
         
         printf(" det[");

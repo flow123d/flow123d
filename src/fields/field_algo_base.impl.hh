@@ -135,7 +135,7 @@ FieldAlgorithmBase<spacedim, Value>::function_factory(const Input::AbstractRecor
 
 
 template <int spacedim, class Value>
-void FieldAlgorithmBase<spacedim, Value>::init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data) {
+void FieldAlgorithmBase<spacedim, Value>::init_from_input(const Input::Record &, const struct FieldAlgoBaseInitData&) {
     xprintf(PrgErr, "The field '%s' do not support initialization from input.\n",
             typeid(this).name());
 }
@@ -151,7 +151,7 @@ bool FieldAlgorithmBase<spacedim, Value>::set_time(const TimeStep &time) {
 
 
 template <int spacedim, class Value>
-void FieldAlgorithmBase<spacedim, Value>::set_mesh(const Mesh *mesh,  bool boundary_domain) {
+void FieldAlgorithmBase<spacedim, Value>::set_mesh(const Mesh *,  bool) {
 }
 
 

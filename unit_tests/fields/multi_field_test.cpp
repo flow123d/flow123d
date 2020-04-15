@@ -100,7 +100,7 @@ public:
 
 protected:
     virtual void SetUp() {
-    	Profiler::initialize();
+    	Profiler::instance();
     	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
         PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
 
@@ -221,7 +221,7 @@ string eq_data_input = R"JSON(
 )JSON";
 
 TEST(Operators, assignment) {
-    Profiler::initialize();
+    Profiler::instance();
 
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     auto mesh_reader = reader_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");

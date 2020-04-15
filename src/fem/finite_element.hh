@@ -86,8 +86,8 @@ public:
     
     /// Evaulate dof for basis function of given function space.
     template<class FS>
-    const double evaluate(const FS &function_space, 
-                          unsigned int basis_idx) const;
+    double evaluate(const FS &function_space, 
+                    unsigned int basis_idx) const;
     
     /// Association to n-face of given dimension (point, line, triangle, tetrahedron.
     unsigned int dim;
@@ -136,10 +136,10 @@ public:
      * @param point        Point coordinates.
      * @param comp_index   Index of component (>0 for vector-valued functions).
      */
-    virtual const double basis_value(unsigned int basis_index,
-                                     const arma::vec &point,
-                                     unsigned int comp_index = 0
-                                    ) const = 0;
+    virtual double basis_value(unsigned int basis_index,
+                               const arma::vec &point,
+                               unsigned int comp_index = 0
+                               ) const = 0;
     
     /**
      * @brief Gradient of the @p i th basis function at point @p point.
@@ -153,13 +153,13 @@ public:
                                       ) const = 0;
     
     /// Dimension of function space (number of basis functions).
-    virtual const unsigned int dim() const = 0;
+    virtual unsigned int dim() const = 0;
     
     /// Getter for space dimension.
-    const unsigned int space_dim() const { return space_dim_; }
+    unsigned int space_dim() const { return space_dim_; }
     
     /// Getter for number of components.
-    const unsigned int n_components() const { return n_components_; }
+    unsigned int n_components() const { return n_components_; }
     
     virtual ~FunctionSpace() {}
     
@@ -260,7 +260,7 @@ public:
      * @brief Returns the number of degrees of freedom needed by the finite
      * element.
      */
-    inline const unsigned int n_dofs() const
+    inline unsigned int n_dofs() const
     { return dofs_.size(); }
 
     /**
@@ -342,7 +342,7 @@ protected:
      * @brief Indicates whether the basis functions have one or more
      * nonzero components (scalar FE spaces are always primitive).
      */
-    inline const bool is_primitive() const
+    inline bool is_primitive() const
     { return is_primitive_; }
     
     /**

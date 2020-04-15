@@ -67,20 +67,20 @@ public:
     /**
      * This method initialize actual value of the field given from the given Input::Record @p rec.
      */
-    virtual void init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data);
+    virtual void init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data) override;
 
 
 
     /**
      * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
      */
-    virtual typename Value::return_type const &value(const Point &p, const ElementAccessor<spacedim> &elm);
+    virtual typename Value::return_type const &value(const Point &p, const ElementAccessor<spacedim> &elm) override;
 
     /**
      * Returns std::vector of scalar values in several points at once.
      */
     virtual void value_list (const Armor::array &point_list, const ElementAccessor<spacedim> &elm,
-                       std::vector<typename Value::return_type>  &value_list);
+                       std::vector<typename Value::return_type>  &value_list) override;
 
     void cache_update(FieldValueCache<typename Value::element_type> &data_cache,
             unsigned int i_cache_el_begin, unsigned int i_cache_el_end,

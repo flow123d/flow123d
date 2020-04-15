@@ -34,7 +34,6 @@
 #include "system/index_types.hh"
 #include "input/factory.hh"
 
-#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "mesh/partitioning.hh"
 #include "mesh/accessors.hh"
@@ -397,7 +396,7 @@ void DarcyLMH::read_initial_condition()
         data_->full_solution[p_idx] = init_value;
         
         for (unsigned int i=0; i<ele->n_sides(); i++) {
-             uint n_sides_of_edge =  ele.side(i)->edge()->n_sides;
+             uint n_sides_of_edge =  ele.side(i)->edge().n_sides();
              unsigned int l_idx = data_->dh_cr_->parent_indices()[l_indices[i]];
              data_->full_solution[l_idx] += init_value/n_sides_of_edge;
 
