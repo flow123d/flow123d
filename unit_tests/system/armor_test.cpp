@@ -414,6 +414,11 @@ TEST(Armor_test, array) {
     arr.set(1) = m2v;
     EXPECT_ARMA_EQ(m2v, arr.vec<3>(0));
 
+    // scalar returned value
+    Armor::Array<double> scl(1, 1, 3);
+    Armor::ArmaMat<double, 1, 1> s1{1.5};
+    scl.set(0) = s1;
+    EXPECT_DOUBLE_EQ(1.5, scl.scalar(0));
 }
 
 
