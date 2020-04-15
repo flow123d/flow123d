@@ -90,7 +90,7 @@ TEST(FieldModelTest, own_model) {
                                                  {107.25, 50.05, 8.25}};
 
     	auto f_product = Model<3, FieldValue<3>::VectorFixed>::create(fn_product, f_scal, f_vec);
-        f_product.cache_update(fvc, 0, fvc.size(), element_set);
+        f_product->cache_update(fvc, 0, fvc.size(), element_set);
         for (unsigned int i=0; i<n_items; ++i) {
             auto val = fvc.data().template mat<3, 1>(i);
             EXPECT_ARMA_EQ(val, expected_vals[i]);
@@ -111,7 +111,7 @@ TEST(FieldModelTest, own_model) {
                                                  {126.75, 59.15, 9.75}};
 
         auto f_other = Model<3, FieldValue<3>::VectorFixed>::create(fn_other, f_vec, f_scal, f_vec);
-        f_other.cache_update(fvc, 0, fvc.size(), element_set);
+        f_other->cache_update(fvc, 0, fvc.size(), element_set);
         for (unsigned int i=0; i<n_items; ++i) {
             auto val = fvc.data().template mat<3, 1>(i);
             EXPECT_ARMA_EQ(val, expected_vals[i]);
