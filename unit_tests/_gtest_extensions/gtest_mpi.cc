@@ -223,11 +223,11 @@ void MPI_PrettyUnitTestResultPrinter::OnTestPartResult(const TestPartResult& res
 void MPI_PrettyUnitTestResultPrinter::OnTestEnd(const TestInfo& test_info) {
   int passed=(test_info.result()->Passed());
   int skipped=(test_info.result()->Skipped());
-  int failed=(test_info.result()->Failed());
-  int global_passed, global_skipped, global_failed;
+  
+  int global_passed, global_skipped;
   MPI_Allreduce(&passed, &global_passed, 1, MPI_INT, MPI_MIN,MPI_COMM_WORLD);
-  MPI_Allreduce(&skipped, &global_skipped, 1, MPI_INT, MPI_MIN,MPI_COMM_WORLD);
-  MPI_Allreduce(&failed, &global_failed, 1, MPI_INT, MPI_MIN,MPI_COMM_WORLD);
+  MPI_Allreduce(&skipped, &global_skipped, 1, MPI_INT, MPI_MIN,MPI_COMM_WORLD);  
+  int any_failed = 0;
 
   if (rank == 0) {
       if (global_passed) {
@@ -236,16 +236,15 @@ void MPI_PrettyUnitTestResultPrinter::OnTestEnd(const TestInfo& test_info) {
           ColoredPrintf(COLOR_GREEN, "[  SKIPPED ] ");
       } else {
           ColoredPrintf(COLOR_RED, "[  FAILED  ] ");
+          any_failed = 1;
       }
       PrintTestName(test_info.test_case_name(), test_info.name());
 
       // HERE we should print comments for failed processes
-      if (global_failed) {
+      if (any_failed) {
           PrintFullTestCommentIfPresent(test_info);
-      } else {
-          printf("Error: Only some processes failed.\n");
       }
-
+      
       if (GTEST_FLAG(print_time)) {
           printf(" (%s ms)\n", internal::StreamableToString(
                   test_info.result()->elapsed_time()).c_str());

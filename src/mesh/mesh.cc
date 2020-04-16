@@ -98,12 +98,14 @@ const unsigned int Mesh::undef_idx;
 
 Mesh::Mesh()
 : tree(nullptr),
+  bulk_size_(0),
   row_4_el(nullptr),
   el_4_loc(nullptr),
   el_ds(nullptr),
   node_4_loc_(nullptr),
-  node_ds_(nullptr),
+  node_ds_(nullptr),  
   bc_mesh_(nullptr)
+  
 {}
 
 
