@@ -21,8 +21,6 @@
 #include "fem/dofhandler.hh"
 #include "fem/dh_cell_accessor.hh"
 #include "mesh/mesh.h"
-#include "mesh/sides.h"
-#include "mesh/side_impl.hh"
 #include "system/sys_profiler.hh"
 
 
@@ -108,7 +106,8 @@ TEST(IntegralTest, integrals_3d) {
                              {0.166666666666666657, 0.666666666666666741, 0.166666666666666657} };
         unsigned int i_side=0, i_point; // iter trought expected_vals
         for (auto side_acc : dh_cell.side_range()) {
-            if (side_acc.cond() == NULL) continue;
+            if (! side_acc.side().is_boundary())
+                continue;
             i_point=0;
             for ( auto p : boundary_integral->points(side_acc, &elm_cache_map) ) {
                 EXPECT_ARMA_EQ(p.loc_coords<3>(), expected_vals[i_side][i_point]);
