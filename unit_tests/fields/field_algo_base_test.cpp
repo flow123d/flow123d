@@ -1030,6 +1030,7 @@ TEST(Field, field_values) {
 
     // fill FieldValueCaches
     DHCellAccessor dh_cell(dh.get(), 4);
+    elm_cache_map.start_elements_update();
     elm_cache_map.add(dh_cell);
     elm_cache_map.prepare_elements_to_update();
     elm_cache_map.mark_used_eval_points( dh_cell, mass_eval->get_subset_idx(), eval_points->subset_size(dh_cell.dim(), mass_eval->get_subset_idx()) );
@@ -1039,7 +1040,7 @@ TEST(Field, field_values) {
     scalar_field.cache_update(elm_cache_map);
     vector_field.cache_update(elm_cache_map);
     tensor_field.cache_update(elm_cache_map);
-    elm_cache_map.clear_elements_to_update();
+    elm_cache_map.finish_elements_update();
 
     DHCellAccessor cache_cell = elm_cache_map(dh_cell);
     for(BulkPoint q_point: mass_eval->points(cache_cell, &elm_cache_map)) {
