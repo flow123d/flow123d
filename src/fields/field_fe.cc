@@ -306,7 +306,7 @@ void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::elem
     std::unordered_map<unsigned int, typename ElementCacheMap::RegionData>::iterator reg_elm_it =
             update_cache_data.region_cache_indices_map_.find(region_idx);
 
-    for (unsigned int i_elm=0; i_elm<reg_elm_it->second.element_set_.size(); ++i_elm) {
+    for (unsigned int i_elm=0; i_elm<reg_elm_it->second.n_elements_; ++i_elm) {
         unsigned int elm_idx = reg_elm_it->second.elm_indices_[i_elm];
     	ElementAccessor<spacedim> elm(const_cast<const Mesh *>(dh_->mesh()), elm_idx);
         fe_values_[elm.dim()].reinit( elm );

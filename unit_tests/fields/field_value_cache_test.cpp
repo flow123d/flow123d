@@ -119,7 +119,7 @@ TEST_F(FieldValueCacheTest, element_cache_map) {
     this->prepare_elements_to_update();
     EXPECT_EQ(update_cache_data.region_cache_indices_map_.size(), 1);
     EXPECT_TRUE(update_cache_data.region_cache_indices_map_.find(1)!=update_cache_data.region_cache_indices_map_.end());
-    EXPECT_EQ(update_cache_data.region_cache_indices_map_.find(1)->second.element_set_.size(), 2);
+    EXPECT_EQ(update_cache_data.region_cache_indices_map_.find(1)->second.n_elements_, 2);
 
     this->create_elements_points_map();
     EXPECT_EQ(update_cache_data.region_cache_indices_map_.size(), 1);
@@ -141,7 +141,7 @@ TEST_F(FieldValueCacheTest, element_cache_map) {
     this->prepare_elements_to_update();
     EXPECT_EQ(update_cache_data.region_cache_indices_map_.size(), 1);
     EXPECT_TRUE(update_cache_data.region_cache_indices_map_.find(1)!=update_cache_data.region_cache_indices_map_.end());
-    EXPECT_EQ(update_cache_data.region_cache_indices_map_.find(1)->second.element_set_.size(), 3);
+    EXPECT_EQ(update_cache_data.region_cache_indices_map_.find(1)->second.n_elements_, 3);
 
     for( DHCellSide cell_side : dh_cell2.side_range() )
         if ( cell_side.n_edge_sides() >= 2 )
@@ -168,8 +168,8 @@ TEST_F(FieldValueCacheTest, element_cache_map) {
     this->prepare_elements_to_update();
     EXPECT_EQ(update_cache_data.region_cache_indices_map_.size(), 2);
     EXPECT_TRUE(update_cache_data.region_cache_indices_map_.find(1)!=update_cache_data.region_cache_indices_map_.end());
-    EXPECT_EQ(update_cache_data.region_cache_indices_map_.find(1)->second.element_set_.size(), 2);
-    EXPECT_EQ(update_cache_data.region_cache_indices_map_.find(3)->second.element_set_.size(), 1);
+    EXPECT_EQ(update_cache_data.region_cache_indices_map_.find(1)->second.n_elements_, 2);
+    EXPECT_EQ(update_cache_data.region_cache_indices_map_.find(3)->second.n_elements_, 1);
 
     this->create_elements_points_map();
     EXPECT_EQ(update_cache_data.region_cache_indices_map_.size(), 2);

@@ -103,8 +103,6 @@ private:
  */
 class ElementCacheMap {
 public:
-	typedef std::vector<ElementAccessor<3>> ElementSet;
-
     /// Number of cached elements which values are stored in cache.
     static constexpr unsigned int n_cached_elements = 20;
 
@@ -114,16 +112,13 @@ public:
     struct RegionData {
     public:
         /// Constructor
-        RegionData() {
-        	element_set_.reserve(ElementCacheMap::n_cached_elements);
-        }
+        RegionData() : n_elements_(0) {}
 
         /// Add element if does not exist
         bool add(ElementAccessor<3> elm) {
-            unsigned int size = element_set_.size();
-            if (std::find(elm_indices_.begin(), elm_indices_.begin()+size, elm.idx()) == elm_indices_.begin()+size) {
-                elm_indices_[size] = elm.idx();
-                element_set_.push_back(elm);
+            if (std::find(elm_indices_.begin(), elm_indices_.begin()+n_elements_, elm.idx()) == elm_indices_.begin()+n_elements_) {
+                elm_indices_[n_elements_] = elm.idx();
+                n_elements_++;
                 return true;
             } else
                 return false;
@@ -131,8 +126,8 @@ public:
 
         /// Array of elements idx, ensures element uniqueness
         std::array<unsigned int, ElementCacheMap::n_cached_elements> elm_indices_;
-        /// Element vector
-        ElementSet element_set_;
+        /// Number of element indices
+        unsigned int n_elements_;
         /// Position in region in cache
         unsigned int pos_;
     };

@@ -105,8 +105,8 @@ void ElementCacheMap::prepare_elements_to_update() {
 	update_data_.region_cache_indices_range_[0] = 0;
     for (auto region_it = update_data_.region_cache_indices_map_.begin(); region_it != update_data_.region_cache_indices_map_.end(); region_it++) {
     	region_it->second.pos_ = n_region;
-        for (auto elm : region_it->second.element_set_) {
-            unsigned int elm_idx = elm.idx();
+        for (unsigned int i_elm=0; i_elm<region_it->second.n_elements_; ++i_elm) {
+            unsigned int elm_idx = region_it->second.elm_indices_[i_elm];
             cache_idx_[elm_idx] = n_stored_element;
             elm_idx_[n_stored_element] = elm_idx;
             n_stored_element++;
