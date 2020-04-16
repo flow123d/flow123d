@@ -79,9 +79,11 @@ class EvalShapeHandler<0, spacedim, Value> {
 public:
     inline static Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> fe_value(FEValues<3> &fe_val, unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
     {
-        double val = fe_val.scalar_view(comp_index).value(i_dof, i_qp);
+        ASSERT_LT_DBG( comp_index, spacedim);
+        ASSERT_LT_DBG( i_dof, fe_val.n_dofs() );
+        ASSERT_LT_DBG( i_qp, fe_val.n_points() );
         Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> ret;
-        ret(0) = val;
+        ret(0) = fe_val.shape_value_component(i_dof, i_qp, comp_index);
         return ret;
 	}
 };
@@ -93,7 +95,13 @@ class EvalShapeHandler<1, spacedim, Value> {
 public:
     inline static Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> fe_value(FEValues<3> &fe_val, unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
     {
-        return fe_val.vector_view(comp_index).value(i_dof, i_qp);
+        ASSERT_LT_DBG( comp_index, spacedim);
+        ASSERT_LT_DBG( i_dof, fe_val.n_dofs() );
+        ASSERT_LT_DBG( i_qp, fe_val.n_points() );
+        arma::vec::fixed<spacedim> v;
+        for (unsigned int c=0; c<spacedim; ++c)
+          v(c) = fe_val.shape_value_component(i_dof, i_qp, comp_index+c);
+        return v;
     }
 };
 
@@ -104,7 +112,13 @@ class EvalShapeHandler<2, spacedim, Value> {
 public:
     inline static Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> fe_value(FEValues<3> &fe_val, unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
     {
-        return fe_val.tensor_view(comp_index).value(i_dof, i_qp);
+        ASSERT_LT_DBG( comp_index, spacedim);
+        ASSERT_LT_DBG( i_dof, fe_val.n_dofs() );
+        ASSERT_LT_DBG( i_qp, fe_val.n_points() );
+        arma::mat::fixed<spacedim,spacedim> v;
+        for (unsigned int c=0; c<spacedim*spacedim; ++c)
+            v(c/spacedim,c%spacedim) = fe_val.shape_value_component(i_dof, i_qp, comp_index+c);
+        return v;
     }
 };
 
