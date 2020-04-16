@@ -22,6 +22,7 @@
 #include <memory>
 #include <armadillo>
 #include "fields/eval_points.hh"
+#include "fields/field_value_cache.hh"
 #include "mesh/range_wrapper.hh"
 #include "fem/dh_cell_accessor.hh"
 
@@ -88,7 +89,7 @@ public:
     }
 
     /// Returns range of bulk local points for appropriate cell accessor
-    Range< BulkPoint > points(const DHCellAccessor &cell) const;
+    Range< BulkPoint > points(const DHCellAccessor &cell, const ElementCacheMap *elm_cache_map) const;
 
 private:
     /// Index of data block according to subset in EvalPoints object.
@@ -120,7 +121,7 @@ public:
     }
 
     /// Returns range of side local points for appropriate cell side accessor
-    Range< EdgePoint > points(const DHCellSide &cell_side) const;
+    Range< EdgePoint > points(const DHCellSide &cell_side, const ElementCacheMap *elm_cache_map) const;
 
     /// Returns structure of permutation indices.
     inline int perm_idx_ptr(uint i_side, uint i_perm, uint i_point) const {
@@ -168,10 +169,10 @@ public:
     }
 
     /// Returns range of bulk local points for appropriate cell accessor
-    Range< BulkPoint > points(const DHCellAccessor &cell) const;
+    Range< BulkPoint > points(const DHCellAccessor &cell, const ElementCacheMap *elm_cache_map) const;
 
     /// Returns range of side local points for appropriate cell side accessor
-    Range< EdgePoint > points(const DHCellSide &cell_side) const;
+    Range< EdgePoint > points(const DHCellSide &cell_side, const ElementCacheMap *elm_cache_map) const;
 
 private:
     /// Integral according to side subset part (element of higher dim) in EvalPoints object.
@@ -200,7 +201,7 @@ public:
     }
 
     /// Returns range of bulk local points for appropriate cell accessor
-    Range< EdgePoint > points(const DHCellSide &cell_side) const;
+    Range< EdgePoint > points(const DHCellSide &cell_side, const ElementCacheMap *elm_cache_map) const;
 
 private:
     /// Boundary integral according to edge integral (? but need own special data members and methods ?).
@@ -218,8 +219,8 @@ public:
     : local_point_idx_(0) {}
 
     /// Constructor
-	BulkPoint(DHCellAccessor dh_cell, std::shared_ptr<const BulkIntegral> bulk_integral, unsigned int loc_point_idx)
-    : dh_cell_(dh_cell), integral_(bulk_integral), local_point_idx_(loc_point_idx) {}
+	BulkPoint(DHCellAccessor dh_cell, const ElementCacheMap *elm_cache_map, std::shared_ptr<const BulkIntegral> bulk_integral, unsigned int loc_point_idx)
+    : dh_cell_(dh_cell), integral_(bulk_integral), local_point_idx_(loc_point_idx), elm_cache_map_(elm_cache_map) {}
 
     /// Getter of BulkIntegral
     inline std::shared_ptr<const BulkIntegral> integral() const {
@@ -250,6 +251,11 @@ public:
         return dh_cell_;
     }
 
+    // Index of permutation
+    inline const ElementCacheMap *elm_cache_map() const {
+        return elm_cache_map_;
+    }
+
     /// Return index in EvalPoints object
     inline unsigned int eval_point_idx() const {
         return local_point_idx_;
@@ -272,6 +278,8 @@ private:
     std::shared_ptr<const BulkIntegral> integral_;
     /// Index of the local point in bulk point set.
     unsigned int local_point_idx_;
+    /// Pointer ElementCacheMap needed for point evaluation.
+    const ElementCacheMap* elm_cache_map_;
 };
 
 
@@ -282,12 +290,12 @@ class EdgePoint {
 public:
     /// Default constructor
 	EdgePoint()
-    : local_point_idx_(0) {}
+    : local_point_idx_(0), elm_cache_map_(nullptr) {}
 
     /// Constructor
-	EdgePoint(DHCellSide cell_side, std::shared_ptr<const EdgeIntegral> edge_integral, unsigned int local_point_idx)
+	EdgePoint(DHCellSide cell_side, const ElementCacheMap *elm_cache_map, std::shared_ptr<const EdgeIntegral> edge_integral, unsigned int local_point_idx)
     : cell_side_(cell_side), integral_(edge_integral), local_point_idx_(local_point_idx),
-	  permutation_idx_( cell_side.element()->permutation_idx( cell_side_.side_idx() ) ) {}
+	  permutation_idx_( cell_side.element()->permutation_idx( cell_side_.side_idx() ) ), elm_cache_map_(elm_cache_map) {}
 
     /// Getter of EdgeIntegral
     inline std::shared_ptr<const EdgeIntegral> integral() const {
@@ -323,6 +331,11 @@ public:
         return permutation_idx_;
     }
 
+    // Index of permutation
+    inline const ElementCacheMap *elm_cache_map() const {
+        return elm_cache_map_;
+    }
+
     /// Return index in EvalPoints object
     inline unsigned int eval_point_idx() const {
         return integral_->perm_idx_ptr(cell_side_.side_idx(), permutation_idx_, local_point_idx_);
@@ -350,6 +363,8 @@ private:
     unsigned int local_point_idx_;
     /// Permutation index corresponding with DHCellSide
     unsigned int permutation_idx_;
+    /// Pointer ElementCacheMap needed for point evaluation.
+    const ElementCacheMap* elm_cache_map_;
 };
 
 

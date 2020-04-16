@@ -80,8 +80,8 @@ public:
     }
 
     /// Return value of evaluation point given by DHCell and local point idx in EvalPoints.
-    template<uint nRows, uint nCols>
-    typename arma::Mat<elm_type>::template fixed<nRows, nCols> get_value(const ElementCacheMap &map,
+    template<class Value>
+    typename Value::return_type get_value(const ElementCacheMap &map,
             const DHCellAccessor &dh_cell, unsigned int eval_points_idx);
 
 private:

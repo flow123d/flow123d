@@ -40,6 +40,7 @@
 #include "input/type_base.hh"                          // for Array, String
 #include "input/type_generic.hh"                       // for Parameter
 #include "input/type_selection.hh"                     // for Selection
+#include "system/armor.hh"                             // for Armor::Array
 
 namespace IT=Input::Type;
 
@@ -276,6 +277,11 @@ public:
     	return value_.memptr();
     }
 
+    /// Casts value stored in Armor::Array to return type.
+    inline static return_type get_from_array(const Armor::Array<element_type> &arr, uint idx) {
+        return arr.template mat<NRows, NCols>(idx);
+    }
+
     void init_from_input( AccessType rec ) {
         internal::init_matrix_from_input(value_, rec);
     }
@@ -355,6 +361,11 @@ public:
     inline static const return_type &from_raw(return_type &val, ET *raw_data) {return internal::set_raw_scalar(val, raw_data);}
     const ET * mem_ptr() const { return &(value_); }
 
+    /// Casts value stored in Armor::Array to return type.
+    inline static return_type get_from_array(const Armor::Array<element_type> &arr, uint idx) {
+        return arr.scalar(idx);
+    }
+
     void init_from_input( AccessType val ) { value_ = return_type(val); }
 
     void set_n_comp(unsigned int) {};
@@ -420,6 +431,11 @@ public:
     }
     inline static const return_type &from_raw(return_type &val, ET *raw_data) {return internal::set_raw_vec(val, raw_data);}
     const ET * mem_ptr() const { return value_.memptr(); }
+
+    /// Casts value stored in Armor::Array to return type.
+    inline static return_type get_from_array(const Armor::Array<element_type> &arr, uint idx) {
+        return arr.template vec<NRows_>(idx);
+    }
 
     inline FieldValue_(return_type &val) : value_(val) {}
 
@@ -495,6 +511,11 @@ public:
     inline FieldValue_(return_type &val) : value_(val) {}
     inline static const return_type &from_raw(return_type &val, ET *raw_data) {return internal::set_raw_fix(val, raw_data);}
     const ET * mem_ptr() const { return value_.memptr(); }
+
+    /// Casts value stored in Armor::Array to return type.
+    inline static return_type get_from_array(const Armor::Array<element_type> &arr, uint idx) {
+        return arr.template vec<NRows>(idx);
+    }
 
     void init_from_input( AccessType rec ) {
         internal::init_vector_from_input(value_, rec);
