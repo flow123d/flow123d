@@ -957,7 +957,7 @@ static const it::Selection &get_color_selection() {
 
 TEST(Field, field_values) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
-	Profiler::initialize();
+	Profiler::instance();
 	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
 	Mesh * mesh = mesh_full_constructor("{mesh_file=\"mesh/cube_2x1.msh\"}");

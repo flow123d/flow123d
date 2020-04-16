@@ -32,7 +32,7 @@ class FieldValueCacheTest : public testing::Test, public ElementCacheMap {
 public:
     FieldValueCacheTest() {
         FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-        Profiler::initialize();
+        Profiler::instance();
         PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
 
         mesh_ = mesh_full_constructor("{mesh_file=\"mesh/cube_2x1.msh\"}");

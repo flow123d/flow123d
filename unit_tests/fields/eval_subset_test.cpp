@@ -43,7 +43,7 @@ TEST(EvalPointsTest, all) {
 
 TEST(IntegralTest, integrals_3d) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-    Profiler::initialize();
+    Profiler::instance();
     PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
 
 	std::shared_ptr<EvalPoints> eval_points = std::make_shared<EvalPoints>();
