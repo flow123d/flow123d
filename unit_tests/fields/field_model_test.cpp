@@ -52,6 +52,7 @@ TEST(FieldModelTest, own_model) {
     ScalarField f_scal;
     VectorField f_vec;
     FieldValueCache<typename FieldValue<3>::VectorFixed::element_type> fvc(FieldValue<3>::VectorFixed::NRows_, FieldValue<3>::VectorFixed::NCols_);
+    ElementCacheMap elm_cache_map;
     std::vector< ElementAccessor<3> > element_set;
 
     // initialize field caches
@@ -60,11 +61,18 @@ TEST(FieldModelTest, own_model) {
     Quadrature *q_side = new QGauss(2, 2);
     eval_points->add_bulk<3>(*q_bulk );
     eval_points->add_edge<3>(*q_side );
+    elm_cache_map.init(eval_points);
     fvc.init(eval_points, ElementCacheMap::n_cached_elements);
     f_scal.cache_allocate(eval_points);
     f_vec.cache_allocate(eval_points);
 
     // fill field caches
+    elm_cache_map.start_elements_update();
+    auto &cache_data = elm_cache_map.update_cache_data();
+    cache_data.region_cache_indices_map_.insert( {1, ElementCacheMap::RegionData()} );
+    cache_data.region_cache_indices_map_.find(1)->second.pos_ = 0;
+    cache_data.region_value_cache_range_[0] = 0;
+    cache_data.region_value_cache_range_[1] = 10;
     arma::mat::fixed<1,1> scalar_val;
     arma::mat::fixed<3,1> vector_val;
     for (unsigned int i=0; i<n_items; ++i) {
@@ -90,7 +98,7 @@ TEST(FieldModelTest, own_model) {
                                                  {107.25, 50.05, 8.25}};
 
     	auto f_product = Model<3, FieldValue<3>::VectorFixed>::create(fn_product, f_scal, f_vec);
-        f_product->cache_update(fvc, 0, fvc.size(), element_set);
+        f_product->cache_update(fvc, elm_cache_map, 1);
         for (unsigned int i=0; i<n_items; ++i) {
             auto val = fvc.data().template mat<3, 1>(i);
             EXPECT_ARMA_EQ(val, expected_vals[i]);
@@ -111,7 +119,7 @@ TEST(FieldModelTest, own_model) {
                                                  {126.75, 59.15, 9.75}};
 
         auto f_other = Model<3, FieldValue<3>::VectorFixed>::create(fn_other, f_vec, f_scal, f_vec);
-        f_other->cache_update(fvc, 0, fvc.size(), element_set);
+        f_other->cache_update(fvc, elm_cache_map, 1);
         for (unsigned int i=0; i<n_items; ++i) {
             auto val = fvc.data().template mat<3, 1>(i);
             EXPECT_ARMA_EQ(val, expected_vals[i]);

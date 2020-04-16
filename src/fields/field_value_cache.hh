@@ -112,8 +112,6 @@ private:
  */
 class ElementCacheMap {
 public:
-	typedef std::vector<ElementAccessor<3>> ElementSet;
-
     /// Number of cached elements which values are stored in cache.
     static constexpr unsigned int n_cached_elements = 20;
 
@@ -123,16 +121,13 @@ public:
     struct RegionData {
     public:
         /// Constructor
-        RegionData() {
-        	element_set_.reserve(ElementCacheMap::n_cached_elements);
-        }
+        RegionData() : n_elements_(0) {}
 
         /// Add element if does not exist
         bool add(ElementAccessor<3> elm) {
-            unsigned int size = element_set_.size();
-            if (std::find(elm_indices_.begin(), elm_indices_.begin()+size, elm.idx()) == elm_indices_.begin()+size) {
-                elm_indices_[size] = elm.idx();
-                element_set_.push_back(elm);
+            if (std::find(elm_indices_.begin(), elm_indices_.begin()+n_elements_, elm.idx()) == elm_indices_.begin()+n_elements_) {
+                elm_indices_[n_elements_] = elm.idx();
+                n_elements_++;
                 return true;
             } else
                 return false;
@@ -140,8 +135,8 @@ public:
 
         /// Array of elements idx, ensures element uniqueness
         std::array<unsigned int, ElementCacheMap::n_cached_elements> elm_indices_;
-        /// Element vector
-        ElementSet element_set_;
+        /// Number of element indices
+        unsigned int n_elements_;
         /// Position in region in cache
         unsigned int pos_;
     };
@@ -160,7 +155,11 @@ public:
         /// ElementCacheMap table. This array gives start indices of the regions
         /// in array of all cached elements.
         /// The last value is number of actually cached elements.
-        std::array<unsigned int, ElementCacheMap::n_cached_elements+1> region_cache_indices_range_;
+        /// Maps of begin and end positions of different regions data in FieldValueCache
+        std::array<unsigned int, ElementCacheMap::n_cached_elements+1> region_value_cache_range_;
+
+        /// Maps of begin and end positions of elements of different regions in ElementCacheMap
+        std::array<unsigned int, ElementCacheMap::n_cached_elements+1> region_element_cache_range_;
 
         /// Number of elements in all regions stored in region_cache_indices_map_
         // TODO: This is dulicated with the last element of region_cache_indices_range_
@@ -189,12 +188,25 @@ public:
     /// Create map of used eval points on cached elements.
     void create_elements_points_map();
 
-    /// Clean helper data after reading data to cache.
-    void clear_elements_to_update();
+    /// Start update of cache.
+    void start_elements_update();
+
+    /// Finish update after reading data to cache.
+    void finish_elements_update();
 
     /// Return update cache data helper
     inline const UpdateCacheHelper &update_cache_data() const {
         return update_data_;
+    }
+
+    /// Return update cache data helper
+    inline UpdateCacheHelper &update_cache_data() {
+        return update_data_;
+    }
+
+    /// Getter of eval_points object.
+    inline std::shared_ptr<EvalPoints> eval_points() const {
+        return eval_points_;
     }
 
     /**
@@ -211,6 +223,11 @@ public:
     inline int get_field_value_cache_index(unsigned int elm_idx, unsigned int loc_point_idx) const {
         ASSERT_PTR_DBG(element_eval_points_map_);
         return element_eval_points_map_[elm_idx][loc_point_idx];
+    }
+
+    /// Return idx of element stored at given position of ElementCacheMap
+    inline unsigned int elm_idx_on_position(unsigned pos) const {
+        return elm_idx_[pos];
     }
 
     /// Set index of cell in ElementCacheMap (or undef value if cell is not stored in cache).

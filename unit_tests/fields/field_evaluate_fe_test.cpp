@@ -1,10 +1,10 @@
 /*
- * field_evaluate_const_test.cpp
+ * field_evaluate_fe_test.cpp
  *
- *  Created on: Dec 03, 2019
+ *  Created on: Apr 07, 2020
  *      Author: David Flanderka
  *
- *  Tests evaluation of FieldConstant
+ *  Tests evaluation of FieldFE
  */
 
 #define TEST_USE_MPI
@@ -33,7 +33,7 @@
 #include "system/sys_profiler.hh"
 
 
-class FieldEvalConstantTest : public testing::Test {
+class FieldEvalFETest : public testing::Test {
 
 public:
     class EqData : public FieldSet {
@@ -101,7 +101,7 @@ public:
         DHCellAccessor computed_dh_cell_;
     };
 
-    FieldEvalConstantTest() {
+    FieldEvalFETest() {
         FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
         Profiler::initialize();
         PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
@@ -111,13 +111,13 @@ public:
         dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
     }
 
-    ~FieldEvalConstantTest() {}
+    ~FieldEvalFETest() {}
 
     static Input::Type::Record & get_input_type() {
         return IT::Record("SomeEquation","")
                 .declare_key("data", IT::Array(
                         IT::Record("SomeEquation_Data", FieldCommon::field_descriptor_record_description("SomeEquation_Data") )
-                        .copy_keys( FieldEvalConstantTest::EqData().make_field_descriptor_type("SomeEquation") )
+                        .copy_keys( FieldEvalFETest::EqData().make_field_descriptor_type("SomeEquation") )
                         .declare_key("scalar_field", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "" )
                         .declare_key("vector_field", FieldAlgorithmBase< 3, FieldValue<3>::VectorFixed >::get_input_type_instance(), "" )
                         .declare_key("tensor_field", FieldAlgorithmBase< 3, FieldValue<3>::TensorFixed >::get_input_type_instance(), "" )
@@ -151,29 +151,39 @@ public:
 };
 
 
-TEST_F(FieldEvalConstantTest, evaluate) {
+TEST_F(FieldEvalFETest, evaluate) {
     string eq_data_input = R"YAML(
     data:
       - region: 3D left
         time: 0.0
-        scalar_field: !FieldConstant
-          value: 0.5
-        vector_field: [1, 2, 3]
-        tensor_field: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
+        scalar_field: !FieldFE
+          mesh_data_file: mesh/cube_2x1.msh
+          field_name: scalar
+        vector_field: !FieldFE
+          mesh_data_file: mesh/cube_2x1.msh
+          field_name: vector
+        tensor_field: !FieldFE
+          mesh_data_file: mesh/cube_2x1.msh
+          field_name: tensor
       - region: 3D right
         time: 0.0
-        scalar_field: !FieldConstant
-          value: 1.5
-        vector_field: [4, 5, 6]
-        tensor_field: [2.1, 2.2, 2.3, 2.4, 2.5, 2.6]
+        scalar_field: !FieldFE
+          mesh_data_file: mesh/cube_2x1.msh
+          field_name: scalar
+        vector_field: !FieldFE
+          mesh_data_file: mesh/cube_2x1.msh
+          field_name: vector
+        tensor_field: !FieldFE
+          mesh_data_file: mesh/cube_2x1.msh
+          field_name: tensor
     )YAML";
 	this->read_input(eq_data_input);
 
     std::vector<unsigned int> cell_idx = {3, 4, 5, 9};
-    std::vector<double>       expected_scalar = {0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5};
-    std::vector<arma::vec3>   expected_vector = {{1, 2, 3}, {1, 2, 3}, {1, 2, 3}, {4, 5, 6}};
-    std::vector<arma::mat33>  expected_tensor = {{0.1, 0.2, 0.3, 0.2, 0.4, 0.5, 0.3, 0.5, 0.6}, {0.1, 0.2, 0.3, 0.2, 0.4, 0.5, 0.3, 0.5, 0.6},
-                                                 {0.1, 0.2, 0.3, 0.2, 0.4, 0.5, 0.3, 0.5, 0.6}, {2.1, 2.2, 2.3, 2.2, 2.4, 2.5, 2.3, 2.5, 2.6}};
+    std::vector<double>       expected_scalar = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.1, 1.2, 1.3};
+    std::vector<arma::vec3>   expected_vector = {{1, 4, 7}, {2, 5, 8}, {3, 6, 9}, {1, 4, 7}};
+    std::vector<arma::mat33>  expected_tensor = {{3.1, 3.4, 3.7, 3.2, 3.5, 3.8, 3.3, 3.6, 3.9}, {4.1, 4.4, 4.7, 4.2, 4.5, 4.8, 4.3, 4.6, 4.9},
+                                                 {5.1, 5.4, 5.7, 5.2, 5.5, 5.8, 5.3, 5.6, 5.9}, {9.1, 9.4, 9.7, 9.2, 9.5, 9.8, 9.3, 9.6, 9.9}};
     for (unsigned int i=0; i<cell_idx.size(); ++i) {
     	data_->elm_cache_map_.start_elements_update();
     	data_->computed_dh_cell_ = DHCellAccessor(dh_.get(), cell_idx[i]);  // element ids stored to cache: (3 -> 2,3,4), (4 -> 3,4,5,10), (5 -> 0,4,5,11), (10 -> 8,9,10)
@@ -189,6 +199,7 @@ TEST_F(FieldEvalConstantTest, evaluate) {
 
         // Bulk integral, no sides, no permutations.
         for(BulkPoint q_point: data_->mass_eval->points(cache_cell, &data_->elm_cache_map_)) {
+            //std::cout << "Element: " << cache_cell.elm_idx() << ", value: " << data_->scalar_field(data_->elm_cache_map_, q_point)[0] << std::endl;
             EXPECT_EQ(expected_scalar[cache_cell.elm_idx()], data_->scalar_field(q_point));
             EXPECT_ARMA_EQ(expected_vector[i], data_->vector_field(q_point));
             EXPECT_ARMA_EQ(expected_tensor[i], data_->tensor_field(q_point));

@@ -249,6 +249,7 @@ private:
      */
     void add_integrals_of_computing_step(DHCellAccessor cell) {
         for (unsigned int i=0; i<4; i++) integrals_size_[i] = 0; // clean integral data from previous step
+        element_cache_map_.start_elements_update();
 
         // generic_assembly.check_integral_data();
         if (active_integrals_ & ActiveIntegrals::bulk)
@@ -287,7 +288,7 @@ private:
         element_cache_map_.create_elements_points_map();
         // not used yet: TODO need fix in MultiField, HeatModel ...; need better access to EqData
         //multidim_assembly_.get<1>()->data_->cache_update(element_cache_map_);
-        element_cache_map_.clear_elements_to_update();
+        element_cache_map_.finish_elements_update();
     }
 
     /// Add data of volume integral to appropriate data structure.
