@@ -102,7 +102,7 @@ void ElementCacheMap::prepare_elements_to_update() {
 
     // Set new elements to elm_idx_, cache_idx_ sorted by region
 	unsigned int n_stored_element = 0, n_region = 0;
-	update_data_.region_cache_indices_range_[0] = 0;
+	update_data_.region_element_cache_range_[0] = 0;
     for (auto region_it = update_data_.region_cache_indices_map_.begin(); region_it != update_data_.region_cache_indices_map_.end(); region_it++) {
     	region_it->second.pos_ = n_region;
         for (unsigned int i_elm=0; i_elm<region_it->second.n_elements_; ++i_elm) {
@@ -111,7 +111,7 @@ void ElementCacheMap::prepare_elements_to_update() {
             elm_idx_[n_stored_element] = elm_idx;
             n_stored_element++;
         }
-        update_data_.region_cache_indices_range_[n_region+1] = n_stored_element;
+        update_data_.region_element_cache_range_[n_region+1] = n_stored_element;
         n_region++;
     }
 }
@@ -120,8 +120,9 @@ void ElementCacheMap::prepare_elements_to_update() {
 void ElementCacheMap::create_elements_points_map() {
     unsigned int size = this->eval_points_->max_size();
     unsigned int idx_to_region = 1;
-    unsigned int region_last_elm = update_data_.region_cache_indices_range_[idx_to_region];
+    unsigned int region_last_elm = update_data_.region_element_cache_range_[idx_to_region];
     points_in_cache_ = 0;
+    update_data_.region_value_cache_range_[0] = 0;
 	for (unsigned int i_elm=0; i_elm<ElementCacheMap::n_cached_elements; ++i_elm) {
 	    for (unsigned int i_point=0; i_point<size; ++i_point) {
 	        if (element_eval_points_map_[i_elm][i_point] == ElementCacheMap::point_in_proggress) {
@@ -130,9 +131,9 @@ void ElementCacheMap::create_elements_points_map() {
 	        }
 	    }
         if (region_last_elm==i_elm+1) {
-            update_data_.region_cache_indices_range_[idx_to_region] = points_in_cache_;
+            update_data_.region_value_cache_range_[idx_to_region] = points_in_cache_;
         	idx_to_region++;
-        	region_last_elm = update_data_.region_cache_indices_range_[idx_to_region];
+        	region_last_elm = update_data_.region_element_cache_range_[idx_to_region];
         }
 	}
 }

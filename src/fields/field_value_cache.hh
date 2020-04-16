@@ -138,8 +138,11 @@ public:
         /// Maps of data of different regions in cache
         std::unordered_map<unsigned int, RegionData> region_cache_indices_map_;
 
-        /// Maps of begin and end positions of different regions data in cache
-        std::array<unsigned int, ElementCacheMap::n_cached_elements+1> region_cache_indices_range_;
+        /// Maps of begin and end positions of different regions data in FieldValueCache
+        std::array<unsigned int, ElementCacheMap::n_cached_elements+1> region_value_cache_range_;
+
+        /// Maps of begin and end positions of elements of different regions in ElementCacheMap
+        std::array<unsigned int, ElementCacheMap::n_cached_elements+1> region_element_cache_range_;
 
         /// Number of elements in all regions stored in region_cache_indices_map_
         unsigned int n_elements_;
@@ -201,6 +204,11 @@ public:
     inline int get_field_value_cache_index(unsigned int elm_idx, unsigned int loc_point_idx) const {
         ASSERT_PTR_DBG(element_eval_points_map_);
         return element_eval_points_map_[elm_idx][loc_point_idx];
+    }
+
+    /// Return idx of element stored at given position of ElementCacheMap
+    inline unsigned int elm_idx_on_position(unsigned pos) const {
+        return elm_idx_[pos];
     }
 
     /// Set index of cell in ElementCacheMap (or undef value if cell is not stored in cache).

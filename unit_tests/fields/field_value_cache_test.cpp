@@ -150,8 +150,8 @@ TEST_F(FieldValueCacheTest, element_cache_map) {
             }
     this->create_elements_points_map();
     EXPECT_EQ(update_cache_data.region_cache_indices_map_.size(), 1);
-    EXPECT_EQ(update_cache_data.region_cache_indices_range_[0], 0);
-    EXPECT_EQ(update_cache_data.region_cache_indices_range_[1], 12);
+    EXPECT_EQ(update_cache_data.region_value_cache_range_[0], 0);
+    EXPECT_EQ(update_cache_data.region_value_cache_range_[1], 12);
     this->finish_elements_update();
     dh_cell2 = (*this)(dh_cell2);
     EXPECT_EQ(dh_cell2.element_cache_index(), 1);
