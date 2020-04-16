@@ -170,10 +170,10 @@ public:
     Field &operator=(const Field &other);
 
 
-    typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_> operator() (const ElementCacheMap &, BulkPoint &);
+    typename Value::return_type operator() (BulkPoint &p);
 
 
-    typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_> operator() (const ElementCacheMap &, EdgePoint &);
+    typename Value::return_type operator() (EdgePoint &p);
 
 
     /**

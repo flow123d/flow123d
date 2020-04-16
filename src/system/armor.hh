@@ -811,6 +811,13 @@ public:
         return ArmaVec<Type, nr>( data_ + mat_index * n_rows_ * n_cols_ );
     }
 
+    inline Type scalar(uint mat_index) const
+    {
+        ASSERT_DBG( (1 == n_rows_) && (1 == n_cols_) )(n_rows_)(n_cols_);
+        ASSERT_LT_DBG(mat_index, size());
+        return ArmaMat<Type,1,1>( data_ + mat_index * n_rows_ * n_cols_ )(0);
+    }
+
     inline ArrayMatSet set(uint index) {
         ASSERT_LT_DBG(index, size());
         return ArrayMatSet(data_ + index * n_rows_ * n_cols_, n_rows_, n_cols_);
