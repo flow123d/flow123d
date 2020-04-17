@@ -82,10 +82,11 @@ public:
         ASSERT_LT_DBG( comp_index, spacedim);
         ASSERT_LT_DBG( i_dof, fe_val.n_dofs() );
         ASSERT_LT_DBG( i_qp, fe_val.n_points() );
-        Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> ret;
-        ret(0) = fe_val.shape_value_component(i_dof, i_qp, comp_index);
-        return ret;
-	}
+        Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> v;
+        for (unsigned int c=0; c<Value::NRows_*Value::NCols_; ++c)
+            v(c%spacedim,c/spacedim) = fe_val.shape_value_component(i_dof, i_qp, comp_index+c);
+        return v;
+    }
 };
 
 
@@ -98,9 +99,9 @@ public:
         ASSERT_LT_DBG( comp_index, spacedim);
         ASSERT_LT_DBG( i_dof, fe_val.n_dofs() );
         ASSERT_LT_DBG( i_qp, fe_val.n_points() );
-        arma::vec::fixed<spacedim> v;
-        for (unsigned int c=0; c<spacedim; ++c)
-          v(c) = fe_val.shape_value_component(i_dof, i_qp, comp_index+c);
+        Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> v;
+        for (unsigned int c=0; c<Value::NRows_*Value::NCols_; ++c)
+            v(c%spacedim,c/spacedim) = fe_val.shape_value_component(i_dof, i_qp, comp_index+c);
         return v;
     }
 };
@@ -115,8 +116,8 @@ public:
         ASSERT_LT_DBG( comp_index, spacedim);
         ASSERT_LT_DBG( i_dof, fe_val.n_dofs() );
         ASSERT_LT_DBG( i_qp, fe_val.n_points() );
-        arma::mat::fixed<spacedim,spacedim> v;
-        for (unsigned int c=0; c<spacedim*spacedim; ++c)
+        Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> v;
+        for (unsigned int c=0; c<Value::NRows_*Value::NCols_; ++c)
             v(c/spacedim,c%spacedim) = fe_val.shape_value_component(i_dof, i_qp, comp_index+c);
         return v;
     }
