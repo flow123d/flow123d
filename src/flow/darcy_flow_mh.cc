@@ -34,7 +34,6 @@
 #include "system/index_types.hh"
 #include "input/factory.hh"
 
-#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "mesh/partitioning.hh"
 #include "mesh/accessors.hh"
@@ -68,7 +67,7 @@
 #include "fem/fe_p.hh"
 
 
-FLOW123D_FORCE_LINK_IN_CHILD(darcy_flow_mh);
+FLOW123D_FORCE_LINK_IN_CHILD(darcy_flow_mh)
 
 
 
@@ -654,7 +653,8 @@ void DarcyMH::solve_nonlinear()
         double mult = 1.0;
         if (nonlinear_iteration_ < 3) mult = 1.6;
         if (nonlinear_iteration_ > 7) mult = 0.7;
-        int result = time_->set_upper_constraint(time_->dt() * mult, "Darcy adaptivity.");
+        time_->set_upper_constraint(time_->dt() * mult, "Darcy adaptivity.");
+        // int result = time_->set_upper_constraint(time_->dt() * mult, "Darcy adaptivity.");
         //DebugOut().fmt("time adaptivity, res: {} it: {} m: {} dt: {} edt: {}\n", result, nonlinear_iteration_, mult, time_->dt(), time_->estimate_dt());
     }
 }

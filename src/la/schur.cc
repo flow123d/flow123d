@@ -95,7 +95,7 @@ SchurComplement::SchurComplement(Distribution *ds, IS ia, IS ib)
 
             const PetscInt *loc_indices;
             ISGetIndices(IsA, &loc_indices);
-            for(uint i=0; i < loc_size_A; i++)
+            for(int i=0; i < loc_size_A; i++)
                 a_used[ loc_indices[i] - ds->begin()] = true;
             ISRestoreIndices(IsA, &loc_indices);
 

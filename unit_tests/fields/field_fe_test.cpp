@@ -47,7 +47,7 @@ public:
         // setup FilePath directories
         FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-        Profiler::initialize();
+        Profiler::instance();
         PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
     }
 
@@ -293,7 +293,7 @@ public:
         // setup FilePath directories
         FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-        Profiler::initialize();
+        Profiler::instance();
 
         mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
 

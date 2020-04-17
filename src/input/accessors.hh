@@ -840,9 +840,9 @@ struct TypeDispatch<FullEnum> {
 template<class T>
 struct TypeDispatch<T, typename std::enable_if<std::is_integral<T>::value >::type> {
     typedef Input::Type::Integer InputType;
-    typedef const int ReadType;
+    typedef int ReadType;
     typedef int TmpType;
-    static inline ReadType value(const Address &a, const InputType&t) {
+    static inline ReadType value(const Address &a, const InputType&) {
     	std::int64_t val = a.storage_head()->get_int();
     	if (val >= std::numeric_limits<T>::min() &&
 				val <= std::numeric_limits<T>::max() ) {
@@ -857,7 +857,7 @@ struct TypeDispatch<T, typename std::enable_if<std::is_integral<T>::value >::typ
 template<>
 struct TypeDispatch<bool> {
     typedef Input::Type::Bool InputType;
-    typedef const bool ReadType;
+    typedef bool ReadType;
     typedef int TmpType;
     static inline ReadType value(const Address &a, const InputType&) { return a.storage_head()->get_bool(); }
 };
@@ -865,7 +865,7 @@ struct TypeDispatch<bool> {
 template<class T>
 struct TypeDispatch<T, typename std::enable_if<std::is_floating_point<T>::value >::type> {
     typedef Input::Type::Double InputType;
-    typedef const double ReadType;
+    typedef double ReadType;
     typedef int TmpType;
     static inline ReadType value(const Address &a, const InputType&) { return a.storage_head()->get_double(); }
 };

@@ -23,7 +23,7 @@ double fRand(double fMin, double fMax)
 
 TEST(Armor_speed, compare_speed) {
     
-    Profiler::initialize();
+    Profiler::instance();
     
     std::vector<arma::vec3> armaArray1(N);
     for (auto & item : armaArray1) {

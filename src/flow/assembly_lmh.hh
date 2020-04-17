@@ -9,6 +9,7 @@
 #define SRC_ASSEMBLY_LMH_HH_
 
 #include "system/index_types.hh"
+#include "system/fmt/posix.h"
 #include "mesh/mesh.h"
 #include "mesh/accessors.hh"
 #include "mesh/neighbours.h"
@@ -20,7 +21,6 @@
 #include "fem/fe_system.hh"
 #include "quadrature/quadrature_lib.hh"
 
-#include "la/linsys.hh"
 #include "la/linsys_PETSC.hh"
 // #include "la/linsys_BDDC.hh"
 #include "la/schur.hh"
@@ -75,7 +75,7 @@ public:
     ~AssemblyLMH<dim>() override
     {}
     
-    void fix_velocity(const DHCellAccessor& dh_cell) override
+    void fix_velocity(const DHCellAccessor&) override
     {
         // if (mortar_assembly)
         //     mortar_assembly->fix_velocity(ele_ac);
@@ -124,11 +124,11 @@ public:
         //     mortar_assembly->assembly(dh_cell);
     }
 
-    void update_water_content(const DHCellAccessor& dh_cell) override
+    void update_water_content(const DHCellAccessor&) override
     {};
 
 protected:
-    static const unsigned int size()
+    static unsigned int size()
     {
         // dofs: velocity, pressure, edge pressure
         return RefElement<dim>::n_sides + 1 + RefElement<dim>::n_sides;
@@ -232,16 +232,16 @@ protected:
         const ElementAccessor<3> ele = dh_cell.elm();
         
         dirichlet_edge.resize(ele->n_sides());
-        for(DHCellSide side : dh_cell.side_range()){
-            unsigned int sidx = side.side_idx();
+        for(DHCellSide dh_side : dh_cell.side_range()){
+            unsigned int sidx = dh_side.side_idx();
             dirichlet_edge[sidx] = 0;
 
             // assemble BC
-            if (side.cond()) {
+            if (dh_side.side().is_boundary()) {
                 double cross_section = ad_->cross_section.value(ele.centre(), ele);
-                assemble_side_bc(side, cross_section, use_dirichlet_switch);
+                assemble_side_bc(dh_side, cross_section, use_dirichlet_switch);
 
-                ad_->balance->add_flux_values(ad_->water_balance_idx, side,
+                ad_->balance->add_flux_values(ad_->water_balance_idx, dh_side,
                                               {loc_system_.row_dofs[loc_side_dofs[sidx]]},
                                               {1}, 0);
             }
@@ -259,7 +259,7 @@ protected:
         const unsigned int side_row = loc_side_dofs[sidx];    //local
         const unsigned int edge_row = loc_edge_dofs[sidx];    //local
 
-        ElementAccessor<3> b_ele = side.cond()->element_accessor();
+        ElementAccessor<3> b_ele = side.cond().element_accessor();
         DarcyMH::EqData::BC_Type type = (DarcyMH::EqData::BC_Type)ad_->bc_type.value(b_ele.centre(), b_ele);
 
         if ( type == DarcyMH::EqData::none) {
@@ -429,7 +429,7 @@ protected:
     }
     
     
-    void assemble_element(const DHCellAccessor& dh_cell){
+    void assemble_element(FMT_UNUSED const DHCellAccessor& dh_cell){
         // set block B, B': element-side, side-element
         
         for(unsigned int side = 0; side < loc_side_dofs.size(); side++){

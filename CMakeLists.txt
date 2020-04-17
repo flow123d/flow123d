@@ -189,6 +189,8 @@ set(CMAKE_FORTRAN_FLAGS_${CMAKE_BUILD_TYPE} "")
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+      # -Wvla - variable length arrays
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Wall -Wextra -Wno-vla -Wno-unused-local-typedefs -Wno-deprecated-declarations")
 
 ## Compiler-specific C++11 activation.
 ## It was replaced in commit a66193035 with C++14 specification.

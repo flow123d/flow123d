@@ -88,7 +88,7 @@ void compute_intersection(Mesh *mesh)
 /// Its purpose is to compute intersections on large meshes (bedrichov, melechov, cube etc. on bacula).
 
 // TEST(benchmark_meshes, all) {
-//     Profiler::initialize();
+//     Profiler::instance();
 //     
 //     // directory with testing meshes
 //     string dir_name = string(UNIT_TESTS_SRC_DIR) + "/intersection/benchmarks/";

@@ -135,7 +135,7 @@ FieldAlgorithmBase<spacedim, Value>::function_factory(const Input::AbstractRecor
 
 
 template <int spacedim, class Value>
-void FieldAlgorithmBase<spacedim, Value>::init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data) {
+void FieldAlgorithmBase<spacedim, Value>::init_from_input(const Input::Record &, const struct FieldAlgoBaseInitData&) {
     xprintf(PrgErr, "The field '%s' do not support initialization from input.\n",
             typeid(this).name());
 }
@@ -151,7 +151,7 @@ bool FieldAlgorithmBase<spacedim, Value>::set_time(const TimeStep &time) {
 
 
 template <int spacedim, class Value>
-void FieldAlgorithmBase<spacedim, Value>::set_mesh(const Mesh *mesh,  bool boundary_domain) {
+void FieldAlgorithmBase<spacedim, Value>::set_mesh(const Mesh *,  bool) {
 }
 
 
@@ -161,6 +161,15 @@ unsigned int FieldAlgorithmBase<spacedim, Value>::n_comp() const {
     return (Value::NRows_ ? 0 : value_.n_rows());
 }
 
+
+template<int spacedim, class Value>
+void FieldAlgorithmBase<spacedim, Value>::cache_update(
+            FMT_UNUSED FieldValueCache<typename Value::element_type> &data_cache,
+			FMT_UNUSED ElementCacheMap &cache_map,
+			FMT_UNUSED unsigned int region_idx)
+{
+	   //ASSERT(false).error("Must be implemented in descendants!\n");
+}
 
 
 template<int spacedim, class Value>

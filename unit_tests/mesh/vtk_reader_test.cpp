@@ -62,13 +62,13 @@ public:
 			case DataFormat::binary_uncompressed: {
 				ASSERT_PTR(data_stream_).error();
 				parse_binary_data( *current_cache, actual_header.n_components, actual_header.n_entities, actual_header.position,
-						false, actual_header.type );
+						false);
 				break;
 			}
 			case DataFormat::binary_zlib: {
 				ASSERT_PTR(data_stream_).error();
 				parse_compressed_data(* current_cache, actual_header.n_components, actual_header.n_entities, actual_header.position,
-						false, actual_header.type);
+						false);
 				break;
 			}
 			default: {

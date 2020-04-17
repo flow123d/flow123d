@@ -25,7 +25,6 @@
 #include "msh_vtkreader.hh"
 #include "system/system.hh"
 #include "system/index_types.hh"
-#include "mesh/side_impl.hh"
 #include "mesh/bih_tree.hh"
 #include "mesh/mesh.h"
 #include "mesh/accessors.hh"
@@ -349,14 +348,12 @@ void VtkMeshReader::read_element_data(ElementDataCacheBase &data_cache, MeshData
 		}
 		case DataFormat::binary_uncompressed: {
 			ASSERT_PTR(data_stream_).error();
-			parse_binary_data( data_cache, n_components, actual_header.n_entities, actual_header.position, boundary_domain,
-					actual_header.type );
+			parse_binary_data( data_cache, n_components, actual_header.n_entities, actual_header.position, boundary_domain);
 			break;
 		}
 		case DataFormat::binary_zlib: {
 			ASSERT_PTR(data_stream_).error();
-			parse_compressed_data( data_cache, n_components, actual_header.n_entities, actual_header.position, boundary_domain,
-					actual_header.type);
+			parse_compressed_data( data_cache, n_components, actual_header.n_entities, actual_header.position, boundary_domain);
 			break;
 		}
 		default: {
@@ -390,12 +387,12 @@ void VtkMeshReader::parse_ascii_data(ElementDataCacheBase &data_cache, unsigned 
 
 
 void VtkMeshReader::parse_binary_data(ElementDataCacheBase &data_cache, unsigned int n_components, unsigned int n_entities,
-		Tokenizer::Position pos, bool boundary_domain, DataType value_type)
+		Tokenizer::Position pos, bool boundary_domain)
 {
     n_read_ = 0;
 
     data_stream_->seekg(pos.file_position_);
-	uint64_t data_size = read_header_type(header_type_, *data_stream_) / type_value_size(value_type);
+	read_header_type(header_type_, *data_stream_);
 
 	for (unsigned int i_row = 0; i_row < n_entities; ++i_row) {
 		data_cache.read_binary_data(*data_stream_, n_components, get_element_vector(boundary_domain)[i_row]);
@@ -405,7 +402,7 @@ void VtkMeshReader::parse_binary_data(ElementDataCacheBase &data_cache, unsigned
 
 
 void VtkMeshReader::parse_compressed_data(ElementDataCacheBase &data_cache, unsigned int n_components, unsigned int n_entities,
-		Tokenizer::Position pos, bool boundary_domain, DataType value_type)
+		Tokenizer::Position pos, bool boundary_domain)
 {
 	data_stream_->seekg(pos.file_position_);
 	uint64_t n_blocks = read_header_type(header_type_, *data_stream_);
@@ -450,8 +447,6 @@ void VtkMeshReader::parse_compressed_data(ElementDataCacheBase &data_cache, unsi
 
     n_read_ = 0;
 
-	uint64_t data_size = decompressed_data_size / type_value_size(value_type);
-
 	for (unsigned int i_row = 0; i_row < n_entities; ++i_row) {
 		data_cache.read_binary_data(decompressed_data, n_components, get_element_vector(boundary_domain)[i_row]);
         n_read_++;
@@ -484,7 +479,7 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
     	node_ids.resize(n_nodes);
         for (unsigned int i=0; i<n_nodes; ++i) {
             arma::vec3 point = { node_vec[3*i], node_vec[3*i+1], node_vec[3*i+2] };
-            int found_i_node = -1;
+            uint found_i_node = Mesh::undef_idx;
             bih_tree.find_point(point, searched_elements);
 
             for (std::vector<unsigned int>::iterator it = searched_elements.begin(); it!=searched_elements.end(); it++) {
@@ -493,7 +488,7 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
                 {
                     if ( compare_points(*ele.node(i_node), point) ) {
                     	i_elm_node = ele.node(i_node).idx();
-                        if (found_i_node == -1) found_i_node = i_elm_node;
+                        if (found_i_node == Mesh::undef_idx) found_i_node = i_elm_node;
                         else if (found_i_node != i_elm_node) {
                         	THROW( ExcIncompatibleMesh() << EI_ErrMessage("duplicate nodes found in GMSH file")
                         			<< EI_VTKFile(tok_.f_name()));
@@ -501,10 +496,10 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
                     }
                 }
             }
-            if (found_i_node == -1) {
+            if (found_i_node == Mesh::undef_idx) {
             	THROW( ExcIncompatibleMesh() << EI_ErrMessage("no node found in GMSH file") << EI_VTKFile(tok_.f_name()));
             }
-            node_ids[i] = (unsigned int)found_i_node;
+            node_ids[i] = found_i_node;
             searched_elements.clear();
         }
 
@@ -564,8 +559,9 @@ bool VtkMeshReader::compare_points(const arma::vec3 &p1, const arma::vec3 &p2) {
 }
 
 
-void VtkMeshReader::read_physical_names(Mesh * mesh) {
+void VtkMeshReader::read_physical_names(Mesh*) {
 	// will be implemented later
+	// ASSERT(0).error("Not implemented!");
 }
 
 

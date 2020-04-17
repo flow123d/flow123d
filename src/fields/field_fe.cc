@@ -82,10 +82,11 @@ public:
         ASSERT_LT_DBG( comp_index, spacedim);
         ASSERT_LT_DBG( i_dof, fe_val.n_dofs() );
         ASSERT_LT_DBG( i_qp, fe_val.n_points() );
-        Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> ret;
-        ret(0) = fe_val.shape_value_component(i_dof, i_qp, comp_index);
-        return ret;
-	}
+        Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> v;
+        for (unsigned int c=0; c<Value::NRows_*Value::NCols_; ++c)
+            v(c%spacedim,c/spacedim) = fe_val.shape_value_component(i_dof, i_qp, comp_index+c);
+        return v;
+    }
 };
 
 
@@ -98,9 +99,9 @@ public:
         ASSERT_LT_DBG( comp_index, spacedim);
         ASSERT_LT_DBG( i_dof, fe_val.n_dofs() );
         ASSERT_LT_DBG( i_qp, fe_val.n_points() );
-        arma::vec::fixed<spacedim> v;
-        for (unsigned int c=0; c<spacedim; ++c)
-          v(c) = fe_val.shape_value_component(i_dof, i_qp, comp_index+c);
+        Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> v;
+        for (unsigned int c=0; c<Value::NRows_*Value::NCols_; ++c)
+            v(c%spacedim,c/spacedim) = fe_val.shape_value_component(i_dof, i_qp, comp_index+c);
         return v;
     }
 };
@@ -115,8 +116,8 @@ public:
         ASSERT_LT_DBG( comp_index, spacedim);
         ASSERT_LT_DBG( i_dof, fe_val.n_dofs() );
         ASSERT_LT_DBG( i_qp, fe_val.n_points() );
-        arma::mat::fixed<spacedim,spacedim> v;
-        for (unsigned int c=0; c<spacedim*spacedim; ++c)
+        Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> v;
+        for (unsigned int c=0; c<Value::NRows_*Value::NCols_; ++c)
             v(c/spacedim,c%spacedim) = fe_val.shape_value_component(i_dof, i_qp, comp_index+c);
         return v;
     }
@@ -554,7 +555,7 @@ void FieldFE<spacedim, Value>::interpolate_gauss(ElementDataCache<double>::Compo
 	std::vector<unsigned int> searched_elements; // stored suspect elements in calculating the intersection
 	std::vector<arma::vec::fixed<3>> q_points; // real coordinates of quadrature points
 	std::vector<double> q_weights; // weights of quadrature points
-	unsigned int quadrature_size; // size of quadrature point and weight vector
+	unsigned int quadrature_size=0; // size of quadrature point and weight vector
 	std::vector<double> sum_val(dh_->max_elem_dofs()); // sum of value of one quadrature point
 	unsigned int elem_count; // count of intersect (source) elements of one quadrature point
 	std::vector<double> elem_value(dh_->max_elem_dofs()); // computed value of one (target) element
@@ -567,9 +568,6 @@ void FieldFE<spacedim, Value>::interpolate_gauss(ElementDataCache<double>::Compo
 		q_weights.resize(quad.size());
 	}
 
-	Mesh *mesh;
-	if (this->boundary_domain_) mesh = dh_->mesh()->get_bc_mesh();
-	else mesh = dh_->mesh();
 	for (auto cell : dh_->own_range()) {
 		auto ele = cell.elm();
 		std::fill(elem_value.begin(), elem_value.end(), 0.0);
@@ -650,7 +648,8 @@ void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>
 	std::shared_ptr<Mesh> source_mesh = ReaderCache::get_mesh(reader_file_);
 	std::vector<unsigned int> searched_elements; // stored suspect elements in calculating the intersection
 	std::vector<double> value(dh_->max_elem_dofs());
-	double total_measure, measure;
+	double total_measure;
+	double measure = 0;
 
 	Mesh *mesh;
 	if (this->boundary_domain_) mesh = dh_->mesh()->get_bc_mesh();
@@ -798,7 +797,7 @@ void FieldFE<spacedim, Value>::calculate_elementwise_values(ElementDataCache<dou
 			LocDofVec loc_dofs = value_handler1_.get_loc_dof_indices(ele.idx());
 			data_vec_i = ele.idx() * dh_->max_elem_dofs();
 			for (unsigned int i=0; i<loc_dofs.n_elem; ++i, ++data_vec_i) {
-				ASSERT_LT_DBG(loc_dofs[i], data_vec_.size());
+				ASSERT_LT_DBG(loc_dofs[i], (LongIdx)data_vec_.size());
 				data_vec_[ loc_dofs[i] ] += (*data_cache)[data_vec_i];
 				++count_vector[ loc_dofs[i] ];
 			}
@@ -810,7 +809,7 @@ void FieldFE<spacedim, Value>::calculate_elementwise_values(ElementDataCache<dou
 			LocDofVec loc_dofs = cell.get_loc_dof_indices();
 			data_vec_i = cell.elm_idx() * dh_->max_elem_dofs();
 			for (unsigned int i=0; i<loc_dofs.n_elem; ++i, ++data_vec_i) {
-				ASSERT_LT_DBG(loc_dofs[i], data_vec_.size());
+				ASSERT_LT_DBG(loc_dofs[i], (LongIdx)data_vec_.size());
 				data_vec_[ loc_dofs[i] ] += (*data_cache)[data_vec_i];
 				++count_vector[ loc_dofs[i] ];
 			}
@@ -828,7 +827,7 @@ template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::native_data_to_cache(ElementDataCache<double> &output_data_cache) {
 	ASSERT_EQ(output_data_cache.n_values() * output_data_cache.n_comp(), dh_->distr()->lsize()).error();
 	double loc_values[output_data_cache.n_comp()];
-	unsigned int i, dof_filled_size;
+	unsigned int i;
 
 	VectorMPI::VectorDataPtr data_vec = data_vec_.data_ptr();
 	for (auto dh_cell : dh_->own_range()) {

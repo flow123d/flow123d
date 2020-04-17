@@ -11,7 +11,6 @@
 
 #include "system/global_defs.h"
 #include "system/file_path.hh"
-#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "mesh/range_wrapper.hh"
 #include "io/msh_gmshreader.h"

@@ -37,15 +37,15 @@
 #include "input/accessors.hh"
 
 
-FLOW123D_FORCE_LINK_IN_PARENT(transportOperatorSplitting);
-FLOW123D_FORCE_LINK_IN_PARENT(concentrationTransportModel);
-FLOW123D_FORCE_LINK_IN_PARENT(convectionTransport);
-FLOW123D_FORCE_LINK_IN_PARENT(heatModel);
+FLOW123D_FORCE_LINK_IN_PARENT(transportOperatorSplitting)
+FLOW123D_FORCE_LINK_IN_PARENT(concentrationTransportModel)
+FLOW123D_FORCE_LINK_IN_PARENT(convectionTransport)
+FLOW123D_FORCE_LINK_IN_PARENT(heatModel)
 
-// FLOW123D_FORCE_LINK_IN_PARENT(darcy_flow_mh);
-// FLOW123D_FORCE_LINK_IN_PARENT(darcy_flow_lmh);
-// FLOW123D_FORCE_LINK_IN_PARENT(richards_lmh);
-FLOW123D_FORCE_LINK_IN_PARENT(coupling_iterative);
+FLOW123D_FORCE_LINK_IN_PARENT(darcy_flow_mh)
+FLOW123D_FORCE_LINK_IN_PARENT(darcy_flow_lmh)
+FLOW123D_FORCE_LINK_IN_PARENT(richards_lmh)
+FLOW123D_FORCE_LINK_IN_PARENT(coupling_iterative)
 
 
 namespace it = Input::Type;

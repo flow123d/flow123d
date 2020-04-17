@@ -320,6 +320,8 @@ StorageBase * ReaderInternalBase::make_array_storage(PathBase &p, const Type::Ar
     	ss << "Do not fit the size " << arr_size << " of the Array.";
     	this->generate_input_error(p, array, ss.str(), false);
     }
+
+	return NULL; // suppress warning for non-void function
 }
 
 StorageBase * ReaderInternalBase::make_storage_from_default(const string &dflt_str, std::shared_ptr<Type::TypeBase> type) {

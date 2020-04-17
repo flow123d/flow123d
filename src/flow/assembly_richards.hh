@@ -149,7 +149,7 @@ protected:
         for (unsigned int i=0; i<ele->n_sides(); i++)
         {
 
-            uint local_side = cr_disc_dofs[i];
+            const int local_side = cr_disc_dofs[i];
             if (this->dirichlet_edge[i] == 0) {
 
                 double capacity = ad_->capacity[local_side];

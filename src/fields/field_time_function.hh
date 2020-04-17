@@ -65,7 +65,7 @@ public:
      * with FieldConstant::init_from_input and move initizaliation of FieldConstant value
      * to set_time method.
      */
-    void init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data);
+    void init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data) override;
 
     /**
      * Set time and init value_.

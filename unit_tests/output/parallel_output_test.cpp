@@ -86,7 +86,7 @@ protected:
 
     virtual void SetUp()
     {
-        Profiler::initialize();
+        Profiler::instance();
         FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/test_2_elem.msh", FilePath::input_file);
         my_mesh = mesh_full_constructor("{mesh_file=\"" + (string)mesh_file + "\"}");
 

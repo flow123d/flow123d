@@ -23,7 +23,7 @@
 #include <string>               // for string
 #include <vector>               // for vector
 #include <unordered_map>        // for unordered_map
-#include "mesh/side_impl.hh"    // for SideIter
+#include "mesh/accessors.hh"    // for SideIter
 #include "tools/unit_si.hh"    // for UnitSI
 #include "input/accessors.hh"   // for Record
 #include "petscmat.h"           // for Mat, _p_Mat

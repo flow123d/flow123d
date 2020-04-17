@@ -606,19 +606,19 @@ void Elasticity::assemble_fluxes_boundary()
     		update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs();
     vector<int> side_dof_indices(ndofs);
-//    PetscScalar local_matrix[ndofs*ndofs];
+    // PetscScalar local_matrix[ndofs*ndofs];
 
     // assemble boundary integral
     for (unsigned int iedg=0; iedg<feo->dh()->n_loc_edges(); iedg++)
     {
-    	Edge *edg = &mesh_->edges[feo->dh()->edge_index(iedg)];
-    	if (edg->n_sides > 1) continue;
+    	Edge edg = mesh_->edge(feo->dh()->edge_index(iedg));
+    	if (edg.n_sides() > 1) continue;
     	// check spatial dimension
-    	if (edg->side(0)->dim() != dim-1) continue;
+    	if (edg.side(0)->dim() != dim-1) continue;
     	// skip edges lying not on the boundary
-    	if (edg->side(0)->cond() == NULL) continue;
+    	if (! edg.side(0)->is_boundary()) continue;
 
-    	SideIter side = edg->side(0);
+    	SideIter side = edg.side(0);
         ElementAccessor<3> cell = side->element();
         DHCellAccessor dh_cell = feo->dh()->cell_accessor_from_element(cell.idx());
         DHCellSide dh_side(dh_cell, side->side_idx());
@@ -784,10 +784,10 @@ void Elasticity::set_boundary_conditions()
     		update_values | update_gradients | update_normal_vectors | update_side_JxW_values | update_quadrature_points);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim-1>()->size();
     vector<int> side_dof_indices(ndofs);
-    unsigned int loc_b=0;
+    // unsigned int loc_b=0;
     double local_rhs[ndofs];
     vector<PetscScalar> local_flux_balance_vector(ndofs);
-//    PetscScalar local_flux_balance_rhs;
+    // PetscScalar local_flux_balance_rhs;
     vector<arma::vec3> bc_values(qsize), bc_traction(qsize);
     vector<double> csection(qsize);
     auto vec = fe_values_side.vector_view(0);
@@ -799,26 +799,25 @@ void Elasticity::set_boundary_conditions()
 
         for (unsigned int si=0; si<elm->n_sides(); ++si)
         {
-			const Edge *edg = elm.side(si)->edge();
-			if (edg->n_sides > 1) continue;
-			// skip edges lying not on the boundary
-			if (edg->side(0)->cond() == NULL) continue;
+			Edge edg = elm.side(si)->edge();
+            Side side = *cell.elm().side(si);
 
-			if (edg->side(0)->dim() != dim-1)
+			if (edg.n_sides() > 1) continue;
+			// skip edges lying not on the boundary
+			if ( ! side.is_boundary()) continue;
+
+			if (side.dim() != dim-1)
 			{
-				if (edg->side(0)->cond() != nullptr) ++loc_b;
+				// if (edg.side(0)->cond() != nullptr) ++loc_b;
 				continue;
 			}
 
-			SideIter side = edg->side(0);
-			// ElementAccessor<3> cell = side->element();
-            ASSERT_DBG(side->element() == elm);
-			ElementAccessor<3> bc_cell = side->cond()->element_accessor();
-            DHCellSide dh_side(cell, side->side_idx());
+			ElementAccessor<3> bc_cell = side.element();
+            ASSERT_DBG(bc_cell == elm);
 
- 			unsigned int bc_type = data_.bc_type.value(side->centre(), bc_cell);
+ 			unsigned int bc_type = data_.bc_type.value(side.centre(), bc_cell);
 
-			fe_values_side.reinit(*side);
+			fe_values_side.reinit(side);
 
 			data_.cross_section.value_list(fe_values_side.point_list(), elm, csection);
 			// The b.c. data are fetched for all possible b.c. types since we allow
@@ -830,7 +829,7 @@ void Elasticity::set_boundary_conditions()
 
             fill_n(local_rhs, ndofs, 0);
             local_flux_balance_vector.assign(ndofs, 0);
-//            local_flux_balance_rhs = 0;
+            // local_flux_balance_rhs = 0;
 
             if (bc_type == EqData::bc_type_displacement)
             {
@@ -872,7 +871,7 @@ void Elasticity::set_boundary_conditions()
             
 //             balance_->add_flux_matrix_values(subst_idx, loc_b, side_dof_indices, local_flux_balance_vector);
 //             balance_->add_flux_vec_value(subst_idx, loc_b, local_flux_balance_rhs);
-			++loc_b;
+			// ++loc_b;
         }
     }
 }

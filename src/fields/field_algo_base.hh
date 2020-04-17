@@ -39,7 +39,6 @@
 #include "fields/field_value_cache.hh"
 #include "input/type_selection.hh"         // for Selection
 #include "mesh/point.hh"                   // for Space
-#include "mesh/side_impl.hh"
 #include "mesh/accessors.hh"
 #include "system/asserts.hh"               // for Assert, ASSERT
 #include "tools/time_governor.hh"          // for TimeStep
@@ -236,14 +235,12 @@ public:
                           std::vector<typename Value::return_type>  &value_list)=0;
 
        virtual void cache_update(FieldValueCache<typename Value::element_type> &data_cache,
-				   ElementCacheMap &cache_map, unsigned int region_idx) {
-    	   //ASSERT(false).error("Must be implemented in descendants!\n");
-       }
+				   ElementCacheMap &cache_map, unsigned int region_idx);
 
        /**
         * Postponed setter of Dof handler for FieldFE. For other types of fields has no effect.
         */
-       virtual void set_native_dh(std::shared_ptr<DOFHandlerMultiDim> dh)
+       virtual void set_native_dh(std::shared_ptr<DOFHandlerMultiDim>)
        {}
 
        /**

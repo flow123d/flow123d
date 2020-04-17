@@ -26,12 +26,10 @@
 #include <armadillo>
 #include "la/distribution.hh"                // for Distribution
 #include "system/index_types.hh"             // for LongIdx
-#include "mesh/accessors.hh"                 // for ElementAccessor
+#include "mesh/accessors.hh"                 // for ElementAccessor, Side::edge_idx
 #include "mesh/elements.h"                   // for Element::side, Element::dim
 #include "mesh/mesh.h"                       // for Mesh
 #include "mesh/region.hh"                    // for Region
-#include "mesh/side_impl.hh"                 // for Side::edge_idx
-#include "mesh/sides.h"                      // for SideIter, Side
 #include "fem/dh_cell_accessor.hh"           // for DHCellAccessor
 
 template <int spacedim> class LocalElementAccessorBase;

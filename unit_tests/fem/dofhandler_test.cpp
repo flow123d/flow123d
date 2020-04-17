@@ -304,7 +304,6 @@ TEST(DHAccessors, dh_cell_accessors) {
         std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, fe);
         dh_2.distribute_dofs(ds);
     }
-    auto el_ds = mesh->get_el_ds();
     unsigned int i_distr=0;
 
     std::vector<unsigned int> side_elm_idx, neigh_elem_idx;
@@ -319,10 +318,10 @@ TEST(DHAccessors, dh_cell_accessors) {
         	for( DHCellSide edge_side : cell_side.edge_sides() ) {
         		side_elm_idx.push_back( edge_side.elem_idx() );
         	}
-            const Edge *edg = cell_side.side().edge();
-            EXPECT_EQ( side_elm_idx.size(), edg->n_sides);
-            for (int sid=0; sid<edg->n_sides; sid++) {
-            	EXPECT_EQ( side_elm_idx[sid], edg->side(sid)->element().idx());
+            Edge edg = cell_side.side().edge();
+            EXPECT_EQ( side_elm_idx.size(), edg.n_sides());
+            for (uint sid=0; sid<edg.n_sides(); sid++) {
+            	EXPECT_EQ( side_elm_idx[sid], edg.side(sid)->element().idx());
             }
         }
 
@@ -331,7 +330,7 @@ TEST(DHAccessors, dh_cell_accessors) {
         	neigh_elem_idx.push_back( neighb_side.elem_idx() );
         }
         EXPECT_EQ( neigh_elem_idx.size(), cell.elm()->n_neighs_vb());
-        for (int nid=0; nid<cell.elm()->n_neighs_vb(); nid++) {
+        for (uint nid=0; nid<cell.elm()->n_neighs_vb(); nid++) {
         	EXPECT_EQ( neigh_elem_idx[nid], cell.elm()->neigh_vb[nid]->side()->elem_idx() );
         }
 

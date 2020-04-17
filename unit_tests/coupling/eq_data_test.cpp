@@ -167,7 +167,7 @@ protected:
     std::vector<string> component_names;
 
     virtual void SetUp() {
-        Profiler::initialize();
+        Profiler::instance();
         //data.gravity_=arma::vec4("3.0 2.0 1.0 -5.0");
         FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 

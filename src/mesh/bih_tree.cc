@@ -17,7 +17,6 @@
 
 #include "mesh/bih_tree.hh"
 #include "mesh/bih_node.hh"
-#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "system/global_defs.h"
 #include <ctime>

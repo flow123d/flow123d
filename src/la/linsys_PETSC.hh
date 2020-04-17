@@ -38,7 +38,7 @@ namespace Input {
 }
 namespace la {
     class BddcmlWrapper;
-};
+}
 
 class LinSys_PETSC : public LinSys
 {

@@ -15,12 +15,10 @@
  * @brief   
  */
 
-#include "mesh/side_impl.hh"
 #include "flow/mh_dofhandler.hh"
 #include "la/local_to_global_map.hh"
 #include "mesh/mesh.h"
 #include "mesh/partitioning.hh"
-#include "mesh/side_impl.hh"
 #include "mesh/accessors.hh"
 #include "mesh/range_wrapper.hh"
 #include "mesh/neighbours.h"
@@ -106,10 +104,11 @@ void MH_DofHandler::prepare_parallel() {
     id_4_old = new LongIdx[mesh_->n_edges()];
     {
         loc_i = 0;
-        for( vector<Edge>::iterator edg = mesh_->edges.begin(); edg != mesh_->edges.end(); ++edg) {
-            unsigned int i_edg = edg - mesh_->edges.begin();
+        for(auto edg: mesh_->edge_range())
+        {
+            unsigned int i_edg = edg.idx();
             // partition
-            e_idx = edg->side(0)->element().idx();
+            e_idx = edg.side(0)->element().idx();
             if (init_edge_ds.is_local(i_edg)) {
                 // find (new) proc of the first element of the edge
                 loc_part[loc_i++] = el_ds->get_proc(row_4_el[e_idx]);
