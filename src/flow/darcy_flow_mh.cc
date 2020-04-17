@@ -164,7 +164,7 @@ const it::Record & DarcyMH::get_input_type() {
                 "Includes raw output and some experimental functionality.")
         .declare_key("balance", Balance::get_input_type(), it::Default("{}"),
                 "Settings for computing mass balance.")
-        .declare_key("time", TimeGovernor::get_input_type(), it::Default::optional(),
+        .declare_key("time", TimeGovernor::get_input_type(), it::Default("{}"),
                 "Time governor settings for the unsteady Darcy flow model.")
 		.declare_key("n_schurs", it::Integer(0,2), it::Default("2"),
 				"Number of Schur complements to perform when solving MH system.")
@@ -305,18 +305,19 @@ DarcyMH::DarcyMH(Mesh &mesh_in, const Input::Record in_rec, TimeGovernor *tm)
 
     START_TIMER("Darcy constructor");
     {
-        auto time_rec = in_rec.find<Input::Record>("time");
+        auto time_rec = in_rec.val<Input::Record>("time");
         if (tm == nullptr)
         {
-            if (time_rec)
-                time_ = new TimeGovernor(*time_rec);
-            else
-                time_ = new TimeGovernor();
+            time_ = new TimeGovernor(time_rec);
         }
         else
         {
-            if (time_rec)
-                WarningOut() << "Time governor of DarcyFlowMH is initialized from parent class - input record will be ignored!";
+            TimeGovernor tm_from_rec(time_rec);
+            if (!tm_from_rec.is_default()) // is_default() == false when time record is present in input file
+            { 
+                MessageOut() << "Duplicate key 'time', time in flow equation is already initialized from parent class!";
+                ASSERT(false);
+            }
             time_ = tm;
         }
     }
