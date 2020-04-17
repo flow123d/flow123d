@@ -371,7 +371,7 @@ void topology(){
 }
 
 TEST(RefElement, write_down) {
-    Profiler::initialize();
+    Profiler::instance();
 
     coordinates<1>();
     coordinates<2>();

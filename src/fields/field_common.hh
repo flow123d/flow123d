@@ -216,7 +216,7 @@ public:
     /**
      * Set internal mesh pointer.
      */
-    virtual void set_mesh(const Mesh &mesh) {};
+    virtual void set_mesh(const Mesh &mesh) = 0;
     /**
      * Set the data list from which field will read its input. It is list of "field descriptors".
      * When reading from the input list we consider only field descriptors containing key of

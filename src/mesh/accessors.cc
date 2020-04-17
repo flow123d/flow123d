@@ -1,6 +1,6 @@
 /*!
  *
-﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
  * 
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License version 3 as published by the
@@ -11,16 +11,13 @@
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
  * 
- * @file    sides.cc
- * @ingroup mesh
- * @brief   Some side related functions - should be made strictly geometric.
+ * @file    accessors.cc
+ * @brief   Implementation of other functions of the mesh accessors.
  */
 
-#include "system/system.hh"
-#include "mesh/side_impl.hh"
-#include "mesh/mesh.h"
-#include "sides.h"
 #include "mesh/accessors.hh"
+#include "system/system.hh"
+#include "mesh/mesh.h"
 
 
 //=============================================================================
@@ -146,6 +143,3 @@ double Side::diameter() const {
         return h;
     }
 }
-
-//-----------------------------------------------------------------------------
-// vim: set cindent:

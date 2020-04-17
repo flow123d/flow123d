@@ -20,7 +20,7 @@
 
 #include <utility>
 #include <vector>
-#include "fadbad.h"
+#include "tools/include_fadbad.hh" // for "fadbad.h"
 
 template <class Type> class FunctorBase;
 template <class Type> class IFunctorBase;

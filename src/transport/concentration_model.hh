@@ -176,7 +176,8 @@ public:
 
     // Methods inherited from ConcentrationTransportBase:
 
-	void set_target_time(double target_time) override {};
+	// Must be implemented in descendants.
+	void set_target_time(double) override {};
 
 	void set_balance_object(std::shared_ptr<Balance> balance) override;
 

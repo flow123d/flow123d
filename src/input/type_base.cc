@@ -421,7 +421,7 @@ string Bool::class_name() const {
 }
 
 
-TypeBase::MakeInstanceReturnType Bool::make_instance(std::vector<ParameterPair> vec)  {
+TypeBase::MakeInstanceReturnType Bool::make_instance(FMT_UNUSED std::vector<ParameterPair> vec)  {
 	return std::make_pair( std::make_shared<Bool>(*this), ParameterMap() );
 }
 
@@ -462,7 +462,7 @@ string Integer::class_name() const {
 }
 
 
-TypeBase::MakeInstanceReturnType Integer::make_instance(std::vector<ParameterPair> vec) {
+TypeBase::MakeInstanceReturnType Integer::make_instance(FMT_UNUSED std::vector<ParameterPair> vec) {
 	return std::make_pair( std::make_shared<Integer>(*this), ParameterMap() );
 }
 
@@ -504,7 +504,7 @@ string Double::class_name() const {
 }
 
 
-TypeBase::MakeInstanceReturnType Double::make_instance(std::vector<ParameterPair> vec) {
+TypeBase::MakeInstanceReturnType Double::make_instance(FMT_UNUSED std::vector<ParameterPair> vec) {
 	return std::make_pair( std::make_shared<Double>(*this), ParameterMap() );
 }
 
@@ -573,7 +573,7 @@ bool FileName::match(const string &str) const {
 
 
 
-TypeBase::MakeInstanceReturnType FileName::make_instance(std::vector<ParameterPair> vec)  {
+TypeBase::MakeInstanceReturnType FileName::make_instance(FMT_UNUSED std::vector<ParameterPair> vec)  {
 	return std::make_pair( std::make_shared<FileName>(*this), ParameterMap() );
 }
 
@@ -619,13 +619,13 @@ string String::class_name() const {
 
 
 
-bool String::match(const string &str) const {
+bool String::match(FMT_UNUSED const string &str) const {
     return true;
 }
 
 
 
-TypeBase::MakeInstanceReturnType String::make_instance(std::vector<ParameterPair> vec) {
+TypeBase::MakeInstanceReturnType String::make_instance(FMT_UNUSED std::vector<ParameterPair> vec) {
 	return std::make_pair( std::make_shared<String>(*this), ParameterMap() );
 }
 

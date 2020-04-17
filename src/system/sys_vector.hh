@@ -415,7 +415,7 @@ public:
      }
 
      /// Gets iterator of the element specified by index.
-     inline const Iter operator()(unsigned int idx) const
+     inline Iter operator()(unsigned int idx) const
      {
     	 OLD_ASSERT( idx < this->size(), "Index %d outside of Vector of size %d\n",idx, this->size());
          return Iter( &(storage[idx]) );

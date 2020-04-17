@@ -134,7 +134,7 @@ public:
   
   void output_data(void) override;
   
-  bool evaluate_time_constraint(double &time_constraint) override { return false; }
+  bool evaluate_time_constraint(FMT_UNUSED double &time_constraint) override { return false; }
   
     
 protected:

@@ -45,14 +45,14 @@
 #include "input/flow_attribute_lib.hh"
 #include "fem/fe_p.hh"
 
-FLOW123D_FORCE_LINK_IN_CHILD(transportOperatorSplitting);
+FLOW123D_FORCE_LINK_IN_CHILD(transportOperatorSplitting)
 
-FLOW123D_FORCE_LINK_IN_PARENT(firstOrderReaction);
-FLOW123D_FORCE_LINK_IN_PARENT(radioactiveDecay);
-FLOW123D_FORCE_LINK_IN_PARENT(dualPorosity);
-FLOW123D_FORCE_LINK_IN_PARENT(sorptionMobile);
-FLOW123D_FORCE_LINK_IN_PARENT(sorptionImmobile);
-FLOW123D_FORCE_LINK_IN_PARENT(sorption);
+FLOW123D_FORCE_LINK_IN_PARENT(firstOrderReaction)
+FLOW123D_FORCE_LINK_IN_PARENT(radioactiveDecay)
+FLOW123D_FORCE_LINK_IN_PARENT(dualPorosity)
+FLOW123D_FORCE_LINK_IN_PARENT(sorptionMobile)
+FLOW123D_FORCE_LINK_IN_PARENT(sorptionImmobile)
+FLOW123D_FORCE_LINK_IN_PARENT(sorption)
 
 
 using namespace Input::Type;
@@ -364,7 +364,7 @@ void TransportOperatorSplitting::update_solution() {
 void TransportOperatorSplitting::set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field)
 {
 	convection->set_velocity_field( flux_field );
-};
+}
 
 
 

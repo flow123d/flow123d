@@ -171,7 +171,7 @@ string Selection::key_list() const {
 
 
 // Implements @p TypeBase::make_instance.
-TypeBase::MakeInstanceReturnType Selection::make_instance(std::vector<ParameterPair> vec) {
+TypeBase::MakeInstanceReturnType Selection::make_instance(FMT_UNUSED std::vector<ParameterPair> vec) {
 	return std::make_pair( std::make_shared<Selection>(*this), ParameterMap() );
 }
 

@@ -179,7 +179,8 @@ public:
 
     {
         // make module solved for ever
-        auto eq_mark_type = TimeGovernor::marks().new_mark_type();
+        TimeGovernor::marks().new_mark_type();
+        // auto eq_mark_type = TimeGovernor::marks().new_mark_type();
         time_= new TimeGovernor(TimeGovernor::inf_time, TimeGovernor::inf_time);
         time_->next_time();
     };
@@ -189,7 +190,7 @@ public:
         if(time_) delete time_;
     }
 
-    inline void set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field) override {};
+    inline void set_velocity_field(FMT_UNUSED std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field) override {};
 
     inline virtual void output_data() override {};
 

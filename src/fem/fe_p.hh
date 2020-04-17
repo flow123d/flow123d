@@ -47,17 +47,17 @@ public:
 	 */
     PolynomialSpace(unsigned int degree, unsigned int dim);
 
-    const double basis_value(unsigned int basis_index,
-                             const arma::vec &point,
-                             unsigned int comp_index = 0
-                            ) const override;
+    double basis_value(unsigned int basis_index,
+                       const arma::vec &point,
+                       unsigned int comp_index = 0
+                       ) const override;
     
     const arma::vec basis_grad(unsigned int basis_index,
                                const arma::vec &point,
                                unsigned int comp_index = 0
                               ) const override;
 
-    const unsigned int dim() const override { return powers.size(); }
+    unsigned int dim() const override { return powers.size(); }
 
 private:
 

@@ -31,8 +31,8 @@ using namespace std;
 
 
 
-template<class FS> const double Dof::evaluate(const FS &function_space,
-                                              unsigned int basis_idx) const
+template<class FS> double Dof::evaluate(const FS &function_space,
+                                        unsigned int basis_idx) const
 {
     // Check that FS is derived from FunctionSpace.
     static_assert(std::is_base_of<FunctionSpace, FS>::value, "FS must be derived from FunctionSpace.");
@@ -197,6 +197,10 @@ unsigned int FiniteElement<dim>::n_space_components(unsigned int spacedim)
                    +fe_sys->get_tensor_components().size()*spacedim*spacedim;
             break;
     }
+
+    // should be never reached
+    ASSERT(0).error("Unknown type of FiniteElement.");
+    return 0;
 }
 
 

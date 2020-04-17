@@ -29,7 +29,6 @@
 #include "system/sys_profiler.hh"
 #include "la/distribution.hh"
 
-#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "mesh/bc_mesh.hh"
 #include "mesh/ref_element.hh"
@@ -37,12 +36,10 @@
 #include "mesh/range_wrapper.hh"
 
 // think about following dependencies
-#include "mesh/boundaries.h"
 #include "mesh/accessors.hh"
 #include "mesh/node_accessor.hh"
 #include "mesh/partitioning.hh"
 #include "mesh/neighbours.h"
-#include "mesh/sides.h"
 
 
 #include "mesh/bih_tree.hh"
@@ -101,31 +98,31 @@ const IT::Record & Mesh::get_input_type() {
 const unsigned int Mesh::undef_idx;
 
 Mesh::Mesh()
-: row_4_el(nullptr),
+: tree(nullptr),
+  bulk_size_(0),
+  nodes_(3, 1, 0),
+  row_4_el(nullptr),
   el_4_loc(nullptr),
   el_ds(nullptr),
-  bc_mesh_(nullptr),
   node_4_loc_(nullptr),
   node_ds_(nullptr),
-  tree(nullptr),
-  nodes_(3, 1, 0),
-  bulk_size_(0)
+  bc_mesh_(nullptr)
 {}
 
 
 
 Mesh::Mesh(Input::Record in_record, MPI_Comm com)
-: in_record_(in_record),
+: tree(nullptr),
+  in_record_(in_record),
   comm_(com),
+  bulk_size_(0),
+  nodes_(3, 1, 0),
   row_4_el(nullptr),
   el_4_loc(nullptr),
   el_ds(nullptr),
-  bc_mesh_(nullptr),
   node_4_loc_(nullptr),
   node_ds_(nullptr),
-  tree(nullptr),
-  nodes_(3, 1, 0),
-  bulk_size_(0)
+  bc_mesh_(nullptr)
 {
 	// set in_record_, if input accessor is empty
 	if (in_record_.is_empty()) {
@@ -150,7 +147,7 @@ Mesh::Mesh(Input::Record in_record, MPI_Comm com)
             }
 
         }
-	reinit(in_record_);
+	init();
 }
 
 Mesh::IntersectionSearch Mesh::get_intersection_search()
@@ -159,7 +156,7 @@ Mesh::IntersectionSearch Mesh::get_intersection_search()
 }
 
 
-void Mesh::reinit(Input::Record in_record)
+void Mesh::init()
 {
 
     n_insides = NDEF;
@@ -205,7 +202,7 @@ void Mesh::reinit(Input::Record in_record)
 
 
 Mesh::~Mesh() {
-    for(Edge &edg : this->edges)
+    for(EdgeData &edg : this->edges)
         if (edg.side_) delete[] edg.side_;
 
     for (unsigned int idx=0; idx < bulk_size_; idx++) {
@@ -251,6 +248,18 @@ unsigned int Mesh::n_corners() {
         }
     }
     return count;
+}
+
+Edge Mesh::edge(uint edge_idx) const
+{
+    ASSERT_LT_DBG(edge_idx, edges.size());
+    return Edge(this, edge_idx);
+}
+
+Boundary Mesh::boundary(uint bc_idx) const
+{
+    ASSERT_LT_DBG(bc_idx, boundary_.size());
+    return Boundary(&boundary_[bc_idx]);
 }
 
 Partitioning *Mesh::get_part() {
@@ -429,8 +438,9 @@ void Mesh::make_neighbours_and_edges()
 			.error("Temporary structure of boundary element data is not empty. Did you call create_boundary_elements?");
 
     Neighbour neighbour;
-    Edge *edg;
-    unsigned int ngh_element_idx, last_edge_idx;
+    EdgeData *edg = nullptr;
+    unsigned int ngh_element_idx;
+    unsigned int last_edge_idx = Mesh::undef_idx;
 
     neighbour.mesh_ = this;
 
@@ -469,7 +479,7 @@ void Mesh::make_neighbours_and_edges()
             // common boundary object
             unsigned int bdr_idx=boundary_.size();
             boundary_.resize(bdr_idx+1);
-            Boundary &bdr=boundary_.back();
+            BoundaryData &bdr=boundary_.back();
             bdr.bc_ele_idx_ = i;
             bdr.edge_idx_ = last_edge_idx;
             bdr.mesh_=this;
@@ -550,7 +560,7 @@ void Mesh::make_neighbours_and_edges()
                     unsigned int bdr_idx=boundary_.size()+1; // need for VTK mesh that has no boundary elements
                                                              // and bulk elements are indexed from 0
                     boundary_.resize(bdr_idx+1);
-                    Boundary &bdr=boundary_.back();
+                    BoundaryData &bdr=boundary_.back();
                     elm.boundary_idx_[s] = bdr_idx;
 
                     // fill boundary element
@@ -590,7 +600,9 @@ void Mesh::make_neighbours_and_edges()
                             vb_neighbours_.push_back(neighbour); // copy neighbour with this edge setting
                         } else {
                             // connect the side to the edge, and side to the edge
+                            ASSERT_PTR_DBG(edg);
                             edg->side_[ edg->n_sides++ ] = si;
+                            ASSERT_DBG(last_edge_idx != Mesh::undef_idx);
                             element_vec_[elem.idx()].edge_idx_[ecs] = last_edge_idx;
                         }
                         break; // next element from intersection list
@@ -612,37 +624,37 @@ void Mesh::make_edge_permutations()
     // this maps the side nodes to the nodes of the reference side(0)
     std::unordered_map<unsigned int,unsigned int> node_numbers;
 
-    for (std::vector<Edge>::iterator edg=edges.begin(); edg!=edges.end(); edg++)
+    for (auto edg : edge_range())
 	{
-        unsigned int n_side_nodes = edg->side(0)->n_nodes();
+        unsigned int n_side_nodes = edg.side(0)->n_nodes();
 		// side 0 is reference, so its permutation is 0
-		edg->side(0)->element()->permutation_idx_[edg->side(0)->side_idx()] = 0;
+		edg.side(0)->element()->permutation_idx_[edg.side(0)->side_idx()] = 0;
 
-		if (edg->n_sides > 1)
+		if (edg.n_sides() > 1)
 		{
 		    // For every node on the reference side(0) give its local idx on the current side.
 		    unsigned int permutation[n_side_nodes];
 
 
 		    node_numbers.clear();
-			for (unsigned int i=0; i<n_side_nodes; i++)
-				node_numbers[edg->side(0)->node(i).idx()] = i;
+			for (uint i=0; i<n_side_nodes; i++)
+				node_numbers[edg.side(0)->node(i).idx()] = i;
 
-			for (int sid=1; sid<edg->n_sides; sid++)
+			for (uint sid=1; sid<edg.n_sides(); sid++)
 			{
-				for (unsigned int i=0; i<n_side_nodes; i++)
-					permutation[node_numbers[edg->side(sid)->node(i).idx()]] = i;
+				for (uint i=0; i<n_side_nodes; i++)
+					permutation[node_numbers[edg.side(sid)->node(i).idx()]] = i;
 
-				switch (edg->side(0)->dim())
+				switch (edg.side(0)->dim())
 				{
 				case 0:
-					edg->side(sid)->element()->permutation_idx_[edg->side(sid)->side_idx()] = RefElement<1>::permutation_index(permutation);
+					edg.side(sid)->element()->permutation_idx_[edg.side(sid)->side_idx()] = RefElement<1>::permutation_index(permutation);
 					break;
 				case 1:
-					edg->side(sid)->element()->permutation_idx_[edg->side(sid)->side_idx()] = RefElement<2>::permutation_index(permutation);
+					edg.side(sid)->element()->permutation_idx_[edg.side(sid)->side_idx()] = RefElement<2>::permutation_index(permutation);
 					break;
 				case 2:
-					edg->side(sid)->element()->permutation_idx_[edg->side(sid)->side_idx()] = RefElement<3>::permutation_index(permutation);
+					edg.side(sid)->element()->permutation_idx_[edg.side(sid)->side_idx()] = RefElement<3>::permutation_index(permutation);
 					break;
 				}
 			}
@@ -810,7 +822,7 @@ bool Mesh::check_compatible_mesh( Mesh & mesh, vector<LongIdx> & bulk_elements_i
         node_ids.resize( this->n_nodes() );
         i=0;
         for (auto nod : this->node_range()) {
-            int found_i_node = -1;
+            uint found_i_node = Mesh::undef_idx;
             bih_tree.find_point(*nod, searched_elements);
 
             for (std::vector<unsigned int>::iterator it = searched_elements.begin(); it!=searched_elements.end(); it++) {
@@ -819,8 +831,8 @@ bool Mesh::check_compatible_mesh( Mesh & mesh, vector<LongIdx> & bulk_elements_i
                 {
                     static const double point_tolerance = 1E-10;
                     if ( arma::norm(*ele.node(i_node) - *nod, 1) < point_tolerance) {
-                    	i_elm_node = ele.node(i_node).idx();
-                        if (found_i_node == -1) found_i_node = i_elm_node;
+                        i_elm_node = ele.node(i_node).idx();
+                        if (found_i_node == Mesh::undef_idx) found_i_node = i_elm_node;
                         else if (found_i_node != i_elm_node) {
                             // duplicate nodes in target mesh
                         	this->elements_id_maps(bulk_elements_id, boundary_elements_id);
@@ -829,12 +841,12 @@ bool Mesh::check_compatible_mesh( Mesh & mesh, vector<LongIdx> & bulk_elements_i
                     }
                 }
             }
-            if (found_i_node == -1) {
+            if (found_i_node == Mesh::undef_idx) {
                 // no node found in target mesh
             	this->elements_id_maps(bulk_elements_id, boundary_elements_id);
             	return false;
             }
-            node_ids[i] = (unsigned int)found_i_node;
+            node_ids[i] = found_i_node;
             searched_elements.clear();
             i++;
         }
@@ -1057,6 +1069,12 @@ Range<NodeAccessor<3>> Mesh::node_range() const {
     return Range<NodeAccessor<3>>(bgn_it, end_it);
 }
 
+Range<Edge> Mesh::edge_range() const {
+	auto bgn_it = make_iter<Edge>( Edge(this, 0) );
+	auto end_it = make_iter<Edge>( Edge(this, edges.size()) );
+    return Range<Edge>(bgn_it, end_it);
+}
+
 inline void Mesh::check_element_size(unsigned int elem_idx) const
 {
     ASSERT(elem_idx < element_vec_.size())(elem_idx)(element_vec_.size()).error("Index of element is out of bound of element vector!");
@@ -1106,7 +1124,7 @@ void Mesh::output_internal_ngh_data()
         
         auto search_neigh = neigh_vb_map.end();
         for (unsigned int i = 0; i < ele->n_sides(); i++) {
-            unsigned int n_side_neighs = ele.side(i)->edge()->n_sides-1;  //n_sides - the current one
+            unsigned int n_side_neighs = ele.side(i)->edge().n_sides()-1;  //n_sides - the current one
             // check vb neighbors (lower dimension)
             if(n_side_neighs == 0){
                 //update search
@@ -1121,11 +1139,11 @@ void Mesh::output_internal_ngh_data()
         }
         
         for (unsigned int i = 0; i < ele->n_sides(); i++) {
-            const Edge* edge = ele.side(i)->edge();
-            if(ele.side(i)->edge()->n_sides > 1){
-                for (int j = 0; j < edge->n_sides; j++) {
-                    if(edge->side(j) != ele.side(i))
-                        raw_ngh_output_file << edge->side(j)->element().idx() << " ";
+            Edge edge = ele.side(i)->edge();
+            if(edge.n_sides() > 1){
+                for (uint j = 0; j < edge.n_sides(); j++) {
+                    if(edge.side(j) != ele.side(i))
+                        raw_ngh_output_file << edge.side(j)->element().idx() << " ";
                 }
             }
             //check vb neighbour

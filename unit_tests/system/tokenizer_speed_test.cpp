@@ -48,7 +48,7 @@ TEST(TokenizerPosition, compare_speed) {
 	}
 	EXPECT_EQ(position_data.size(), file_line_count);
 
-	Profiler::initialize();
+	Profiler::instance();
 	FilePath in_file("./system/tokenizer_speed.txt", FilePath::input_file);
 
 	// read data by tokenizer

@@ -181,7 +181,8 @@ public:
 
 	void calculate_concentration_matrix() override {};
 
-	void update_after_reactions(bool solution_changed) override {};
+    /// Not used in this class.
+	void update_after_reactions(bool) override {};
 
     /**
      * Set time interval which is considered as one time step by TransportOperatorSplitting.

@@ -25,8 +25,7 @@
 #include "fem/dofhandler.hh"
 #include "fem/dh_cell_accessor.hh"
 #include "mesh/mesh.h"
-#include "mesh/sides.h"
-#include "mesh/side_impl.hh"
+#include "mesh/accessors.hh"
 #include "input/input_type.hh"
 #include "input/accessors.hh"
 #include "input/reader_to_storage.hh"
@@ -103,7 +102,7 @@ public:
 
     FieldEvalConstantTest() {
         FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-        Profiler::initialize();
+        Profiler::instance();
         PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
 
         data_ = std::make_shared<EqData>();

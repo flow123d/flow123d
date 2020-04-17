@@ -48,6 +48,7 @@ public:
     LinSys_BDDC( const Distribution * rows_ds,
                  const bool swap_sign = false );
 
+    /// Sets tolerances. Note that BDDC does not use a_tol.
     void set_tolerances(double  r_tol, double a_tol, unsigned int max_it) override;
 
     /**

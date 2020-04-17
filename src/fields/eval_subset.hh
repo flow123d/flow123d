@@ -53,12 +53,12 @@ public:
     virtual ~BaseIntegral();
 
     /// Getter of eval_points
-    inline std::shared_ptr<EvalPoints> eval_points() const {
+    std::shared_ptr<EvalPoints> eval_points() const {
         return eval_points_;
     }
 
     /// Returns dimension.
-    inline unsigned int dim() const {
+    unsigned int dim() const {
     	return dim_;
     }
 protected:
@@ -84,7 +84,7 @@ public:
     ~BulkIntegral();
 
     /// Return index of data block according to subset in EvalPoints object
-    inline int get_subset_idx() const {
+    int get_subset_idx() const {
         return subset_index_;
     }
 
@@ -111,12 +111,12 @@ public:
     ~EdgeIntegral();
 
     /// Getter of n_sides
-    inline const unsigned int n_sides() const {
+    unsigned int n_sides() const {
         return n_sides_;
     }
 
     /// Return index of data block according to subset in EvalPoints object
-    inline int get_subset_idx() const {
+    int get_subset_idx() const {
         return subset_index_;
     }
 
@@ -124,7 +124,7 @@ public:
     Range< EdgePoint > points(const DHCellSide &cell_side, const ElementCacheMap *elm_cache_map) const;
 
     /// Returns structure of permutation indices.
-    inline int perm_idx_ptr(uint i_side, uint i_perm, uint i_point) const {
+    int perm_idx_ptr(uint i_side, uint i_perm, uint i_point) const {
     	return perm_indices_[i_side][i_perm][i_point];
     }
 
@@ -159,12 +159,12 @@ public:
     ~CouplingIntegral();
 
     /// Return index of data block according to subset of higher dim in EvalPoints object
-    inline int get_subset_high_idx() const {
+    int get_subset_high_idx() const {
         return edge_integral_->get_subset_idx();
     }
 
     /// Return index of data block according to subset of lower dim in EvalPoints object
-    inline int get_subset_low_idx() const {
+    int get_subset_low_idx() const {
         return bulk_integral_->get_subset_idx();
     }
 
@@ -196,7 +196,7 @@ public:
     ~BoundaryIntegral();
 
     /// Return index of data block according to subset in EvalPoints object
-    inline int get_subset_idx() const {
+    int get_subset_idx() const {
         return edge_integral_->get_subset_idx();
     }
 
@@ -223,12 +223,12 @@ public:
     : dh_cell_(dh_cell), integral_(bulk_integral), local_point_idx_(loc_point_idx), elm_cache_map_(elm_cache_map) {}
 
     /// Getter of BulkIntegral
-    inline std::shared_ptr<const BulkIntegral> integral() const {
+    std::shared_ptr<const BulkIntegral> integral() const {
         return integral_;
     }
 
     /// Getter of EvalPoints
-    inline std::shared_ptr<EvalPoints> eval_points() const {
+    std::shared_ptr<EvalPoints> eval_points() const {
         return integral_->eval_points();
     }
 
@@ -242,12 +242,12 @@ public:
     //arma::vec3 coords() const;
 
     /// Return index of element in data cache.
-    inline unsigned int element_cache_index() const {
+    unsigned int element_cache_index() const {
         return dh_cell_.element_cache_index();
     }
 
     /// Return DH cell accessor.
-    inline DHCellAccessor dh_cell() const {
+    DHCellAccessor dh_cell() const {
         return dh_cell_;
     }
 
@@ -257,12 +257,12 @@ public:
     }
 
     /// Return index in EvalPoints object
-    inline unsigned int eval_point_idx() const {
+    unsigned int eval_point_idx() const {
         return local_point_idx_;
     }
 
     /// Iterates to next point.
-    inline void inc() {
+    void inc() {
     	local_point_idx_++;
     }
 
@@ -298,12 +298,12 @@ public:
 	  permutation_idx_( cell_side.element()->permutation_idx( cell_side_.side_idx() ) ), elm_cache_map_(elm_cache_map) {}
 
     /// Getter of EdgeIntegral
-    inline std::shared_ptr<const EdgeIntegral> integral() const {
+    std::shared_ptr<const EdgeIntegral> integral() const {
         return integral_;
     }
 
     /// Getter of evaluation points
-    inline std::shared_ptr<EvalPoints> eval_points() const {
+    std::shared_ptr<EvalPoints> eval_points() const {
         return integral_->eval_points();
     }
 
@@ -317,17 +317,17 @@ public:
     //arma::vec3 coords() const;
 
     /// Return index of element in data cache.
-    inline unsigned int element_cache_index() const {
+    unsigned int element_cache_index() const {
         return cell_side_.cell().element_cache_index();
     }
 
     /// Return DH cell accessor.
-    inline DHCellSide dh_cell_side() const {
+    DHCellSide dh_cell_side() const {
         return cell_side_;
     }
 
     // Index of permutation
-    inline unsigned int permutation_idx() const {
+    unsigned int permutation_idx() const {
         return permutation_idx_;
     }
 
@@ -337,7 +337,7 @@ public:
     }
 
     /// Return index in EvalPoints object
-    inline unsigned int eval_point_idx() const {
+    unsigned int eval_point_idx() const {
         return integral_->perm_idx_ptr(cell_side_.side_idx(), permutation_idx_, local_point_idx_);
     }
 
@@ -345,7 +345,7 @@ public:
     EdgePoint permute(DHCellSide edg_side) const;
 
     /// Iterates to next point.
-    inline void inc() {
+    void inc() {
     	local_point_idx_++;
     }
 
@@ -358,7 +358,7 @@ private:
     /// DOF handler accessor of element side.
     DHCellSide cell_side_;
     /// Pointer to edge point set
-    std::shared_ptr<const EdgeIntegral> integral_;;
+    std::shared_ptr<const EdgeIntegral> integral_;
     /// Index of the local point in the composed quadrature.
     unsigned int local_point_idx_;
     /// Permutation index corresponding with DHCellSide

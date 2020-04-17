@@ -13,7 +13,6 @@
 #include "armadillo"
 #include "system/armadillo_tools.hh"
 #include "system/sys_profiler.hh"
-#include "mesh/side_impl.hh"
 #include "quadrature/quadrature_lib.hh"
 #include "fem/fe_p.hh"
 #include "fem/fe_values.hh"
@@ -124,7 +123,7 @@ public:
 
 
 TEST(ElementMapping, element_map) {
-    Profiler::initialize();
+    Profiler::instance();
     armadillo_setup();
     MappingP1<3,3> mapping;
 

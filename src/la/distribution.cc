@@ -28,11 +28,8 @@ Distribution::Distribution(const unsigned int size, MPI_Comm comm)
 :communicator(comm),
 lsizes(NULL)
 {
-    int ierr;
-    ierr=MPI_Comm_rank(communicator, &(my_proc));
-    OLD_ASSERT( ! ierr , "Can not get MPI rank.\n" );
-    ierr=MPI_Comm_size(communicator, &(num_of_procs));
-    OLD_ASSERT( ! ierr  , "Can not get MPI size.\n" );
+    chkerr(MPI_Comm_rank(communicator, &(my_proc)));
+    chkerr(MPI_Comm_size(communicator, &(num_of_procs)));
 // TODO: zavest odchytavani vyjimek a pouzivat new a delete
 
     // communicate global sizes array
@@ -52,11 +49,8 @@ Distribution::Distribution(const unsigned int * const sizes, MPI_Comm comm)
 :communicator(comm),
  lsizes(NULL)
 {
-    int ierr;
-    ierr=MPI_Comm_rank(communicator, &(my_proc));
-    OLD_ASSERT( ! ierr , "Can not get MPI rank.\n" );
-    ierr=MPI_Comm_size(communicator, &(num_of_procs));
-    OLD_ASSERT( ! ierr  , "Can not get MPI size.\n" );
+    chkerr(MPI_Comm_rank(communicator, &(my_proc)));
+    chkerr(MPI_Comm_size(communicator, &(num_of_procs)));
 // TODO: zavest odchytavani vyjimek a pouzivat new a delete
     starts= new unsigned int [np()+1];
     starts[0]=0;
@@ -71,15 +65,11 @@ Distribution::Distribution(const Vec &petsc_vector)
 :communicator(PETSC_COMM_WORLD),
  lsizes(NULL)
 {
-    int ierr;
-    ierr=MPI_Comm_rank(communicator, &(my_proc));
-    OLD_ASSERT( ! ierr , "Can not get MPI rank.\n" );
-    ierr=MPI_Comm_size(communicator, &(num_of_procs));
-    OLD_ASSERT( ! ierr  , "Can not get MPI size.\n" );
+    chkerr(MPI_Comm_rank(communicator, &(my_proc)));
+    chkerr(MPI_Comm_size(communicator, &(num_of_procs)));
 
     const PetscInt *petsc_starts;
-    VecGetOwnershipRanges(petsc_vector,&petsc_starts);
-    OLD_ASSERT( ! ierr , "Can not get vector ownership range.\n" );
+    chkerr(VecGetOwnershipRanges(petsc_vector,&petsc_starts));
 
     starts= new unsigned int [np()+1];
     for(unsigned  int i=0 ; i<=np(); i++) starts[i]=petsc_starts[i];
@@ -93,11 +83,8 @@ Distribution::Distribution(const DistributionType &type, unsigned int global_siz
 :communicator(comm),
  lsizes(NULL)
 {
-    int ierr;
-    ierr=MPI_Comm_rank(communicator, &(my_proc));
-    OLD_ASSERT( ! ierr , "Can not get MPI rank.\n" );
-    ierr=MPI_Comm_size(communicator, &(num_of_procs));
-    OLD_ASSERT( ! ierr  , "Can not get MPI size.\n" );
+    chkerr(MPI_Comm_rank(communicator, &(my_proc)));
+    chkerr(MPI_Comm_size(communicator, &(num_of_procs)));
     OLD_ASSERT( num_of_procs > 0, "MPI size is not positive, possibly broken MPI communicator.\n");
 
     if (type.type_ == Block) {

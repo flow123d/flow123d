@@ -17,7 +17,6 @@
  */
 
 #include "input/input_type.hh"
-#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "mesh/accessors.hh"
 //#include "transport/transport_operator_splitting.hh"
@@ -368,7 +367,7 @@ void HeatTransferModel::get_flux_bc_data(unsigned int index,
 	for (auto f : bc_flux) f = -f;
 }
 
-void HeatTransferModel::get_flux_bc_sigma(unsigned int index,
+void HeatTransferModel::get_flux_bc_sigma(FMT_UNUSED unsigned int index,
         const Armor::array &point_list,
 		const ElementAccessor<3> &ele_acc,
 		std::vector< double > &bc_sigma)

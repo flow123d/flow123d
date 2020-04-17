@@ -22,7 +22,6 @@
 #include "system/sys_profiler.hh"
 #include "system/index_types.hh"
 
-#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "mesh/partitioning.hh"
 #include "mesh/accessors.hh"
@@ -57,7 +56,7 @@
 #include "quadrature/quadrature_lib.hh"
 
 
-FLOW123D_FORCE_LINK_IN_CHILD(convectionTransport);
+FLOW123D_FORCE_LINK_IN_CHILD(convectionTransport)
 
 
 namespace IT = Input::Type;
@@ -159,8 +158,8 @@ Quadrature &FETransportObjects::q(unsigned int dim) { return q_[dim]; }
 ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record in_rec)
 : ConcentrationTransportBase(init_mesh, in_rec),
   is_mass_diag_changed(false),
-  input_rec(in_rec),
   sources_corr(nullptr),
+  input_rec(in_rec),
   changed_(true)
 {
 	START_TIMER("ConvectionTransport");
@@ -413,8 +412,8 @@ void ConvectionTransport::set_boundary_conditions()
         LongIdx glob_p0_dof = dh_->get_local_to_global_map()[local_p0_dof];
 
         for(DHCellSide dh_side: dh_cell.side_range()) {
-            if (dh_side.cond() != NULL) {
-                ElementAccessor<3> bc_elm = dh_side.cond()->element_accessor();
+            if (dh_side.side().is_boundary()) {
+                ElementAccessor<3> bc_elm = dh_side.cond().element_accessor();
                 double flux = this->side_flux(dh_side);
                 if (flux < 0.0) {
                     double aij = -(flux / elm.measure() );
@@ -789,7 +788,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
         elm = dh_cell.elm();
         for( DHCellSide cell_side : dh_cell.side_range() ) {
             flux = this->side_flux(cell_side);
-            if (cell_side.cond() == NULL) {
+            if (! cell_side.side().is_boundary()) {
                 edg_flux = 0;
                 for( DHCellSide edge_side : cell_side.edge_sides() ) {
                     el2 = edge_side.element();
