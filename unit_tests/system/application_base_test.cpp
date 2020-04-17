@@ -11,6 +11,9 @@ class ApplicationBaseTest : public testing::Test, public ApplicationBase {
 public:
 	ApplicationBaseTest() : ApplicationBase(), testing::Test() {}
 protected:
+	void parse_cmd_line(const int argc, char ** argv) override
+	{}
+
 	void run() {
 		xprintf(Err, "testing error...\n");
 	}

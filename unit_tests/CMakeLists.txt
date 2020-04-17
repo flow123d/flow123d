@@ -7,9 +7,9 @@ set(TEST_TIMEOUT 300) # 30 s
 set(VALGRIND_TIMEOUT 300) # 5 min
 
 # build gtest itself
-set(GTEST_SOURCE_DIR "${CMAKE_SOURCE_DIR}/third_party/gtest-1.7.0")
-set(GTEST_BINARY_DIR "${CMAKE_BINARY_DIR}/third_party/gtest-1.7.0")
-include_directories( ${GTEST_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/unit_tests )
+set(GTEST_SOURCE_DIR "${CMAKE_SOURCE_DIR}/third_party/gtest-1.10.0")
+set(GTEST_BINARY_DIR "${CMAKE_BINARY_DIR}/third_party/gtest-1.10.0")
+include_directories( ${GTEST_SOURCE_DIR}/googletest/include ${CMAKE_SOURCE_DIR}/unit_tests )
 add_subdirectory( ${GTEST_SOURCE_DIR} ${GTEST_BINARY_DIR} )
 message(STATUS "Gtest tests allowed")
 
@@ -17,7 +17,7 @@ message(STATUS "Gtest tests allowed")
 set(mpi_gtest_sources  ${CMAKE_SOURCE_DIR}/unit_tests/_gtest_extensions/gtest_mpi.cc)
 # object library used by tests, but can be build once
 add_library(gtest_mpi_obj OBJECT ${mpi_gtest_sources})
-add_dependencies(gtest_mpi_obj gtest gtest_main)
+add_dependencies(gtest_mpi_obj gtestd gtest_maind)
 
 # Defines macro for absolute path to unit_tests, so that unit tests can read
 # some test files in its source directory, while the binary of the test is created
