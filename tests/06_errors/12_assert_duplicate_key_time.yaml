@@ -1,0 +1,25 @@
+flow123d_version: 3.1.0
+problem: !Coupling_Sequential
+  description: Test produces ASSERT Missing the key 'time'.
+  mesh:
+    mesh_file: ../00_mesh/prism_3el.msh
+  flow_equation: !Coupling_Iterative
+    time:
+      end_time: 10
+    input_fields:
+    flow_equation: !Flow_Richards_LMH
+### ERROR Duplicate key 'time'
+      time:
+        end_time: 10
+      input_fields:
+      nonlinear_solver:
+        linear_solver: !Petsc
+          a_tol: 1.0e-07
+      n_schurs: 2
+      output:
+        fields:
+          - pressure_p0
+      output_stream:
+        file: ./test10.pvd
+        format: !vtk
+          variant: ascii
