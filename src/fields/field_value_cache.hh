@@ -109,6 +109,15 @@ public:
     /// Index of invalid element in cache.
     static const unsigned int undef_elem_idx;
 
+    /**
+     * Holds elements indices of one region stored in cache.
+     *
+     * TODO: Auxilliary structure, needs optimization:
+     * Proposal -
+     *  - store element indices of all regions to one unique set (hold as data member of ElementCacheMap)
+     *  - sort elements by regions in prepare_elements_to_update method
+     *  - there is only problem that we have to construct ElementAccessors repeatedly
+     */
     struct RegionData {
     public:
         /// Constructor
@@ -128,15 +137,21 @@ public:
         std::array<unsigned int, ElementCacheMap::n_cached_elements> elm_indices_;
         /// Number of element indices
         unsigned int n_elements_;
-        /// Position in region in cache
-        unsigned int pos_;
     };
 
-    /// Holds helper data necessary for cache update.
+    /**
+     * Holds data of regions (and their elements) stored in ElementCacheMap.
+     *
+     * TODO: Needs further optimization.
+     */
     class UpdateCacheHelper {
     public:
         /// Maps of data of different regions in cache
+    	/// TODO: auxiliary data membershould be removed or moved to sepaate structure.
         std::unordered_map<unsigned int, RegionData> region_cache_indices_map_;
+
+        /// Holds positions of regions in cache
+        std::unordered_map<unsigned int, unsigned int> region_cache_indices_range_;
 
         /// Maps of begin and end positions of different regions data in FieldValueCache
         std::array<unsigned int, ElementCacheMap::n_cached_elements+1> region_value_cache_range_;
@@ -144,7 +159,7 @@ public:
         /// Maps of begin and end positions of elements of different regions in ElementCacheMap
         std::array<unsigned int, ElementCacheMap::n_cached_elements+1> region_element_cache_range_;
 
-        /// Number of elements in all regions stored in region_cache_indices_map_
+        /// Number of elements in all regions holds in cache
         unsigned int n_elements_;
     };
 
@@ -228,9 +243,11 @@ protected:
     void add_to_region(ElementAccessor<3> elm);
 
     /// Vector of element indexes stored in cache.
+    /// TODO: could be moved to UpdateCacheHelper structure
     std::vector<unsigned int> elm_idx_;
 
     /// Map of element indices stored in cache, allows reverse search to previous vector.
+    /// TODO: could be moved to UpdateCacheHelper structure
     std::unordered_map<unsigned int, unsigned int> cache_idx_;
 
     /// Pointer to EvalPoints

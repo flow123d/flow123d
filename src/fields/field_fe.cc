@@ -318,9 +318,7 @@ void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::elem
     }
 
     auto update_cache_data = cache_map.update_cache_data();
-    std::unordered_map<unsigned int, typename ElementCacheMap::RegionData>::iterator reg_elm_it =
-            update_cache_data.region_cache_indices_map_.find(region_idx);
-    unsigned int region_in_cache = reg_elm_it->second.pos_;
+    unsigned int region_in_cache = update_cache_data.region_cache_indices_range_.find(region_idx)->second;
 
     for (unsigned int i_elm=update_cache_data.region_element_cache_range_[region_in_cache];
             i_elm<update_cache_data.region_element_cache_range_[region_in_cache+1]; ++i_elm) {
