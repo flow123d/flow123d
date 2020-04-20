@@ -1091,9 +1091,7 @@ void Elasticity::assemble_boundary_conditions()
 				continue;
 			}
 
-			ElementAccessor<3> bc_cell = side.element();
-            ASSERT_DBG(bc_cell == elm);
-
+			ElementAccessor<3> bc_cell = side.cond().element_accessor();
  			unsigned int bc_type = data_.bc_type.value(side.centre(), bc_cell);
 
 			fe_values_side.reinit(side);
