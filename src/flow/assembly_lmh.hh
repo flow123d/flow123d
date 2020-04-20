@@ -453,7 +453,8 @@ protected:
         double cross_section = ad_->cross_section.value(ele.centre(), ele);
         double coef = alpha * ele.measure() * cross_section;
         
-        double source = ad_->water_source_density.value(ele.centre(), ele);
+        double source = ad_->water_source_density.value(ele.centre(), ele)
+                        + ad_->extra_source.value(ele.centre(), ele);
         double source_term = coef * source;
         
         // in unsteady, compute time term
@@ -462,7 +463,8 @@ protected:
         
         if(! ad_->use_steady_assembly_)
         {
-            storativity = ad_->storativity.value(ele.centre(), ele);
+            storativity = ad_->storativity.value(ele.centre(), ele)
+                          + ad_->extra_storativity.value(ele.centre(), ele);
             time_term = coef * storativity;
         }
         
@@ -538,7 +540,9 @@ protected:
                               * ad_->cross_section.value(ele.centre(), ele)
                               / ele->n_sides();
         
-        double edge_source_term = edge_scale * ad_->water_source_density.value(ele.centre(), ele);
+        double edge_source_term = edge_scale * 
+                ( ad_->water_source_density.value(ele.centre(), ele)
+                + ad_->extra_source.value(ele.centre(), ele));
       
         postprocess_velocity_specific(dh_cell, solution, edge_scale, edge_source_term);
     }
@@ -548,7 +552,8 @@ protected:
     {
         const ElementAccessor<3> ele = dh_cell.elm();
         
-        double storativity = ad_->storativity.value(ele.centre(), ele);
+        double storativity = ad_->storativity.value(ele.centre(), ele)
+                             + ad_->extra_storativity.value(ele.centre(), ele);
         double new_pressure, old_pressure, time_term = 0.0;
         
         for (unsigned int i=0; i<ele->n_sides(); i++) {
