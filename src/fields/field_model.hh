@@ -257,13 +257,13 @@ public:
     typedef std::shared_ptr< FieldBaseType > FieldBasePtr;
 
     template<typename Fn, class ... InputFields>
-    static auto create(Fn *fn,  InputFields... inputs) -> decltype(auto)
+    static auto create(Fn *fn,  InputFields&&... inputs) -> decltype(auto)
     {
         return std::make_shared<FieldModel<spacedim, Value, Fn, InputFields...>>(fn, std::forward<InputFields>(inputs)...);
     }
 
     template<typename Fn, class ... InputFields>
-    static auto create_multi(Fn *fn,  InputFields... inputs) -> decltype(auto)
+    static auto create_multi(Fn *fn,  InputFields&&... inputs) -> decltype(auto)
     {
         typedef std::tuple<InputFields...> FieldTuple;
         FieldTuple field_tuple = std::forward_as_tuple((inputs)...);

@@ -75,6 +75,8 @@ TEST(FieldModelTest, own_model) {
     cache_data.region_value_cache_range_[1] = 10;
     arma::mat::fixed<1,1> scalar_val;
     arma::mat::fixed<3,1> vector_val;
+	auto f_product = Model<3, FieldValue<3>::VectorFixed>::create(fn_product, f_scal, f_vec);
+    auto f_other = Model<3, FieldValue<3>::VectorFixed>::create(fn_other, f_vec, f_scal, f_vec);
     for (unsigned int i=0; i<n_items; ++i) {
         scalar_val(0,0) = 1.0 + i*0.5;
         vector_val(0,0) = 1.5 + 2*i;
@@ -97,7 +99,6 @@ TEST(FieldModelTest, own_model) {
                                                  { 87.50, 40.50, 2.50},
                                                  {107.25, 50.05, 8.25}};
 
-    	auto f_product = Model<3, FieldValue<3>::VectorFixed>::create(fn_product, f_scal, f_vec);
         f_product->cache_update(fvc, elm_cache_map, 1);
         for (unsigned int i=0; i<n_items; ++i) {
             auto val = fvc.data().template mat<3, 1>(i);
@@ -118,7 +119,6 @@ TEST(FieldModelTest, own_model) {
                                                  {105.00, 48.60, 3.00},
                                                  {126.75, 59.15, 9.75}};
 
-        auto f_other = Model<3, FieldValue<3>::VectorFixed>::create(fn_other, f_vec, f_scal, f_vec);
         f_other->cache_update(fvc, elm_cache_map, 1);
         for (unsigned int i=0; i<n_items; ++i) {
             auto val = fvc.data().template mat<3, 1>(i);
