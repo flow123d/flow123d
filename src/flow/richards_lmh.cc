@@ -104,8 +104,8 @@ const int RichardsLMH::registrar =
 
 
 
-RichardsLMH::RichardsLMH(Mesh &mesh_in, const  Input::Record in_rec)
-    : DarcyMH(mesh_in, in_rec)
+RichardsLMH::RichardsLMH(Mesh &mesh_in, const  Input::Record in_rec, TimeGovernor *tm)
+    : DarcyMH(mesh_in, in_rec, tm)
 {
     data_ = make_shared<EqData>();
     DarcyMH::data_ = data_;
@@ -296,7 +296,8 @@ void RichardsLMH::postprocess() {
 
       double ele_scale = ele_ac.measure() *
               data_->cross_section.value(ele_ac.centre(), ele_ac.element_accessor()) / ele_ac.n_sides();
-      double ele_source = data_->water_source_density.value(ele_ac.centre(), ele_ac.element_accessor());
+      double ele_source = data_->water_source_density.value(ele_ac.centre(), ele_ac.element_accessor())
+                          + data_->extra_source.value(ele_ac.centre(), ele_ac.element_accessor());
       //double storativity = data_->storativity.value(ele_ac.centre(), ele_ac.element_accessor());
 
       for (unsigned int i=0; i<ele_ac.element_accessor()->n_sides(); i++) {

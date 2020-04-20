@@ -256,6 +256,18 @@ DarcyMH::EqData::EqData()
             .description("Storativity (in time dependent problems).")
             .input_default("0.0")
             .units( UnitSI().m(-1) );
+    
+    *this += extra_storativity.name("extra_storativity")
+            .description("Storativity added from upstream equation.")
+            .units( UnitSI().m(-1) )
+            .input_default("0.0")
+            .flags( input_copy );
+    
+    *this += extra_source.name("extra_water_source_density")
+            .description("Water source density added from upstream equation.")
+            .input_default("0.0")
+            .units( UnitSI().s(-1) )
+            .flags( input_copy );
 
     //time_term_fields = this->subset({"storativity"});
     //main_matrix_fields = this->subset({"anisotropy", "conductivity", "cross_section", "sigma", "bc_type", "bc_robin_sigma"});
@@ -279,7 +291,7 @@ DarcyMH::EqData::EqData()
  *
  */
 //=============================================================================
-DarcyMH::DarcyMH(Mesh &mesh_in, const Input::Record in_rec)
+DarcyMH::DarcyMH(Mesh &mesh_in, const Input::Record in_rec, TimeGovernor *tm)
 : DarcyFlowInterface(mesh_in, in_rec),
     output_object(nullptr),
     solution(nullptr),
@@ -293,11 +305,21 @@ DarcyMH::DarcyMH(Mesh &mesh_in, const Input::Record in_rec)
 
     START_TIMER("Darcy constructor");
     {
-        auto time_record = input_record_.val<Input::Record>("time");
-        //if ( in_rec.opt_val("time", time_record) )
-            time_ = new TimeGovernor(time_record);
-        //else
-        //    time_ = new TimeGovernor();
+        auto time_rec = in_rec.val<Input::Record>("time");
+        if (tm == nullptr)
+        {
+            time_ = new TimeGovernor(time_rec);
+        }
+        else
+        {
+            TimeGovernor tm_from_rec(time_rec);
+            if (!tm_from_rec.is_default()) // is_default() == false when time record is present in input file
+            { 
+                MessageOut() << "Duplicate key 'time', time in flow equation is already initialized from parent class!";
+                ASSERT(false);
+            }
+            time_ = tm;
+        }
     }
 
     data_ = make_shared<EqData>();
@@ -454,7 +476,15 @@ void DarcyMH::update_solution()
     time_->next_time();
 
     time_->view("DARCY"); //time governor information output
+
+    solve_time_step();
+}
+
+
+void DarcyMH::solve_time_step(bool output)
+{
     data_changed_ = data_->set_time(time_->step(), LimitSide::left) || data_changed_;
+    
     bool zero_time_term_from_left=zero_time_term();
 
     bool jump_time = data_->storativity.is_jump_time();
@@ -464,7 +494,6 @@ void DarcyMH::update_solution()
 
         // this flag is necesssary for switching BC to avoid setting zero neumann on the whole boundary in the steady case
         use_steady_assembly_ = false;
-        prepare_new_time_step(); //SWAP
 
         solve_nonlinear(); // with left limit data
         if (jump_time) {
@@ -477,7 +506,7 @@ void DarcyMH::update_solution()
     if (time_->is_end()) {
         // output for unsteady case, end_time should not be the jump time
         // but rether check that
-        if (! zero_time_term_from_left && ! jump_time) output_data();
+        if (! zero_time_term_from_left && ! jump_time && output) output_data();
         return;
     }
 
@@ -493,10 +522,11 @@ void DarcyMH::update_solution()
         //solution_transfer(); // internally call set_time(T, left) and set_time(T,right) again
         //solve_nonlinear(); // with right limit data
     }
+    
     //solution_output(T,right_limit); // data for time T in any case
-    output_data();
-
+    if (output) output_data();
 }
+
 
 bool DarcyMH::zero_time_term(bool time_global) {
     if (time_global) {
@@ -605,7 +635,7 @@ void DarcyMH::solve_nonlinear()
 
 void DarcyMH::prepare_new_time_step()
 {
-    //VecSwap(previous_solution, schur0->get_solution());
+    VecSwap(previous_solution, schur0->get_solution());
 }
 
 void DarcyMH::postprocess() 
@@ -653,6 +683,8 @@ void DarcyMH::output_data() {
     balance_->calculate_cumulative(data_->water_balance_idx, schur0->get_solution());
     balance_->calculate_instant(data_->water_balance_idx, schur0->get_solution());
     balance_->output();
+    
+    prepare_new_time_step(); //SWAP
 }
 
 
@@ -834,7 +866,8 @@ void DarcyMH::assembly_source_term()
 
         // set sources
         double source = ele_ac.measure() * cs *
-                data_->water_source_density.value(ele_ac.centre(), ele_ac.element_accessor());
+                (data_->water_source_density.value(ele_ac.centre(), ele_ac.element_accessor())
+                +data_->extra_source.value(ele_ac.centre(), ele_ac.element_accessor()));
         schur0->rhs_set_value(ele_ac.ele_row(), -1.0 * source );
 
         balance_->add_source_values(data_->water_balance_idx, ele_ac.region().bulk_idx(), {(LongIdx) ele_ac.ele_local_row()}, {0}, {source});
@@ -1367,7 +1400,9 @@ void DarcyMH::setup_time_term() {
 
         // set new diagonal
         double diagonal_coeff = data_->cross_section.value(ele_ac.centre(), ele_ac.element_accessor())
-        		* data_->storativity.value(ele_ac.centre(), ele_ac.element_accessor())
+        		* ( data_->storativity.value(ele_ac.centre(), ele_ac.element_accessor())
+                   +data_->extra_storativity.value(ele_ac.centre(), ele_ac.element_accessor())
+                  )
 				* ele_ac.measure();
         local_diagonal[ele_ac.ele_local_row()]= - diagonal_coeff / time_->dt();
 
@@ -1399,8 +1434,8 @@ void DarcyMH::modify_system() {
 	}
 
     // modify RHS - add previous solution
-    //VecPointwiseMult(*( schur0->get_rhs()), new_diagonal, previous_solution);
-	VecPointwiseMult(*( schur0->get_rhs()), new_diagonal, schur0->get_solution());
+    VecPointwiseMult(*( schur0->get_rhs()), new_diagonal, previous_solution);
+// 	VecPointwiseMult(*( schur0->get_rhs()), new_diagonal, schur0->get_solution());
     VecAXPY(*( schur0->get_rhs()), 1.0, steady_rhs);
     schur0->set_rhs_changed();
 

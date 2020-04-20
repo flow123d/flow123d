@@ -305,8 +305,10 @@ void Mesh::setup_topology() {
     count_element_types();
 
     // check mesh quality
-    for (auto ele : this->elements_range())
-        if (ele.quality_measure_smooth(ele.side(0)) < 0.001) WarningOut().fmt("Bad quality (<0.001) of the element {}.\n", ele.idx());
+    for (auto ele : this->elements_range()) {
+    	double quality = ele.quality_measure_smooth(ele.side(0));
+        if ( quality< 0.001) WarningOut().fmt("Bad quality (<0.001) of the element {}.\n", ele.idx());
+    }
 
     make_neighbours_and_edges();
     element_to_neigh_vb();
@@ -451,7 +453,9 @@ void Mesh::make_neighbours_and_edges()
 	vector<unsigned int> intersection_list; // list of elements in intersection of node element lists
 
 	for( unsigned int i=bulk_size_; i<element_vec_.size(); ++i) {
+
 		ElementAccessor<3> bc_ele = this->element_accessor(i);
+		ASSERT(bc_ele.region().is_boundary());
         // Find all elements that share this side.
         side_nodes.resize(bc_ele->n_nodes());
         for (unsigned n=0; n<bc_ele->n_nodes(); n++) side_nodes[n] = bc_ele->node_idx(n);
@@ -493,9 +497,9 @@ void Mesh::make_neighbours_and_edges()
                             int last_bc_ele_idx=this->boundary_[elem->boundary_idx_[ecs]].bc_ele_idx_;
                             int new_bc_ele_idx=i;
                             THROW( ExcDuplicateBoundary()
-                                    << EI_ElemLast(this->elem_index(last_bc_ele_idx))
+                                    << EI_ElemLast(this->find_elem_id(last_bc_ele_idx))
                                     << EI_RegLast(this->element_accessor(last_bc_ele_idx).region().label())
-                                    << EI_ElemNew(this->elem_index(new_bc_ele_idx))
+                                    << EI_ElemNew(this->find_elem_id(new_bc_ele_idx))
                                     << EI_RegNew(this->element_accessor(new_bc_ele_idx).region().label())
                                     );
                         }
@@ -532,9 +536,10 @@ void Mesh::make_neighbours_and_edges()
 			bool is_neighbour = find_lower_dim_element(intersection_list, e->dim(), ngh_element_idx);
 
 			if (is_neighbour) { // edge connects elements of different dimensions
+				// Initialize for the neighbour case.
 			    neighbour.elem_idx_ = ngh_element_idx;
             } else { // edge connects only elements of the same dimension
-                // Allocate the array of sides.
+                // Initialize for the edge case.
                 last_edge_idx=edges.size();
                 edges.resize(last_edge_idx+1);
                 edg = &( edges.back() );
@@ -543,7 +548,8 @@ void Mesh::make_neighbours_and_edges()
                 if (intersection_list.size() > max_edge_sides_[e->dim()-1])
                 	max_edge_sides_[e->dim()-1] = intersection_list.size();
 
-                if (intersection_list.size() == 1) { // outer edge, create boundary object as well
+                if (intersection_list.size() == 1) {
+                	// outer edge, create boundary object as well
                 	Element &elm = element_vec_[e.idx()];
                     edg->n_sides=1;
                     edg->side_[0] = e.side(s);
@@ -576,10 +582,11 @@ void Mesh::make_neighbours_and_edges()
 			}
 
 			// go through the elements connected to the edge or neighbour
+			// setup neigbour or edge
             for( vector<unsigned int>::iterator isect = intersection_list.begin(); isect!=intersection_list.end(); ++isect) {
             	ElementAccessor<3> elem = this->element_accessor(*isect);
                 for (unsigned int ecs=0; ecs<elem->n_sides(); ecs++) {
-                    if (elem->edge_idx(ecs) != Mesh::undef_idx) continue;
+                    if (elem->edge_idx(ecs) != Mesh::undef_idx) continue; // ??? This should not happen.
                     SideIter si = elem.side(ecs);
                     if ( same_sides( si, side_nodes) ) {
                         if (is_neighbour) {
@@ -606,7 +613,9 @@ void Mesh::make_neighbours_and_edges()
                     }
                 } // search for side of other connected element
             } // connected elements
-            OLD_ASSERT( is_neighbour || ( (unsigned int) edg->n_sides ) == intersection_list.size(), "Some connected sides were not found.\n");
+
+            if (! is_neighbour)
+				ASSERT_EQ( (unsigned int) edg->n_sides, intersection_list.size())(e.index())(s).error("Missing edge sides.");
 		} // for element sides
 	}   // for elements
 

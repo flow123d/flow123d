@@ -76,7 +76,8 @@ public:
 
     void update_water_content(LocalElementAccessorBase<3> ele) override {
         reset_soil_model(ele);
-        double storativity = this->ad_->storativity.value(ele.centre(), ele.element_accessor());
+        double storativity = this->ad_->storativity.value(ele.centre(), ele.element_accessor())
+                            +this->ad_->extra_storativity.value(ele.centre(), ele.element_accessor());
         for (unsigned int i=0; i<ele.element_accessor()->n_sides(); i++) {
             double capacity = 0;
             double water_content = 0;
@@ -132,7 +133,10 @@ public:
         double diagonal_coef = ele.measure() * cross_section / ele.n_sides();
 
 
-        double source_diagonal = diagonal_coef * this->ad_->water_source_density.value(ele.centre(), ele.element_accessor());
+        double source_diagonal = diagonal_coef * (
+            this->ad_->water_source_density.value(ele.centre(), ele.element_accessor())
+            + this->ad_->extra_source.value(ele.centre(), ele.element_accessor())
+            );
 
         update_water_content(ele);
         for (unsigned int i=0; i<ele.element_accessor()->n_sides(); i++)

@@ -14,6 +14,7 @@
 #include "fields/field_values.hh"    // for FieldValue<>::Scalar, FieldValue
 #include "la/vector_mpi.hh"          // for VectorMPI
 #include "flow/darcy_flow_mh.hh"     // for DarcyMH, DarcyMH::EqData
+#include "flow/darcy_flow_mh_output.hh" // for DarcyFlowMHOutput
 #include "input/type_base.hh"        // for Array
 #include "input/type_generic.hh"     // for Instance
 #include "petscvec.h"                // for VecScatter, _p_VecScatter
@@ -91,9 +92,13 @@ public:
         std::shared_ptr<SoilModelBase> soil_model_;
     };
 
-    RichardsLMH(Mesh &mesh, const Input::Record in_rec);
+    RichardsLMH(Mesh &mesh, const Input::Record in_rec, TimeGovernor *tm = nullptr);
 
     static const Input::Type::Record & get_input_type();
+    
+    const DarcyFlowMHOutput::OutputFields &output_fields()
+    { return this->output_object->get_output_fields(); }
+    
 protected:
     /// Registrar of class to factory
     static const int registrar;
