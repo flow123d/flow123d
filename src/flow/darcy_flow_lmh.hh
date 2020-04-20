@@ -44,6 +44,7 @@
 #include <armadillo>
 #include "fields/bc_field.hh"                   // for BCField
 #include "fields/field.hh"                      // for Field
+#include "fields/field_fe.hh"                      // for FieldFE
 #include "fields/field_set.hh"                  // for FieldSet
 #include "fields/field_values.hh"               // for FieldValue<>::Scalar
 #include "flow/darcy_flow_interface.hh"         // for DarcyFlowInterface
@@ -161,6 +162,7 @@ public:
         double time_step_;
         
         std::shared_ptr<LinSys> lin_sys_schur;  //< Linear system of the 2. Schur complement.
+        FieldFE<3, FieldValue<3>::Scalar> field_edge_pressure;
         VectorMPI p_edge_solution;               //< 2. Schur complement solution
         VectorMPI p_edge_solution_previous;      //< 2. Schur complement previous solution (iterative)
         VectorMPI p_edge_solution_previous_time; //< 2. Schur complement previous solution (time)
@@ -175,7 +177,7 @@ public:
 
 
 
-    DarcyLMH(Mesh &mesh, const Input::Record in_rec);
+    DarcyLMH(Mesh &mesh, const Input::Record in_rec, TimeGovernor *tm = nullptr);
 
     static const Input::Type::Record & type_field_descriptor();
     static const Input::Type::Record & get_input_type();
@@ -191,11 +193,25 @@ public:
     virtual void initialize_specific();
     void zero_time_step() override;
     void update_solution() override;
+
+    /// Solve the problem without moving to next time and without output.
+    void solve_time_step(bool output = true);
     
     /// postprocess velocity field (add sources)
     virtual void accept_time_step();
     virtual void postprocess();
     virtual void output_data() override;
+
+
+    EqData &data() { return *data_; }
+
+    /// Sets external storarivity field (coupling with other equation).
+    void set_extra_storativity(const Field<3, FieldValue<3>::Scalar> &extra_stor)
+    { data_->extra_storativity = extra_stor; }
+
+    /// Sets external source field (coupling with other equation).
+    void set_extra_source(const Field<3, FieldValue<3>::Scalar> &extra_src)
+    { data_->extra_source = extra_src; }
 
     virtual ~DarcyLMH() override;
 

@@ -217,21 +217,6 @@ void copy_field(const Field<dim, Value> &from_field, FieldFE<dim, Value> &to_fie
 }
 
 
-template<int dim, class Value>
-void update_field_from_mh_dofhandler(const MH_DofHandler &mh_dh, FieldFE<dim, Value> &field)
-{
-    auto dh = field.get_dofhandler();
-    auto vec = field.get_data_vec();
-    
-    for ( auto cell : dh->own_range() )
-    {
-        auto elm = cell.elm();
-        vec[cell.local_idx()] = mh_dh.element_scalar(elm);
-    }
-}
-
-
-
 
 void HM_Iterative::zero_time_step()
 {
@@ -244,8 +229,8 @@ void HM_Iterative::zero_time_step()
     update_potential();
     mechanics_->zero_time_step();
     
-    update_field_from_mh_dofhandler(flow_->get_mh_dofhandler(), *data_.old_pressure_ptr_);
-    update_field_from_mh_dofhandler(flow_->get_mh_dofhandler(), *data_.old_iter_pressure_ptr_);
+    copy_field(flow_->data().field_ele_pressure, *data_.old_pressure_ptr_);
+    copy_field(flow_->data().field_ele_pressure, *data_.old_iter_pressure_ptr_);
     copy_field(mechanics_->data().output_divergence, *data_.div_u_ptr_);
 }
 
@@ -285,13 +270,13 @@ void HM_Iterative::update_solution()
         MessageOut().fmt("HM Iteration {} abs. difference: {}  rel. difference: {}\n"
                          "--------------------------------------------------------",
                          it, difference, difference/norm);
-        update_field_from_mh_dofhandler(flow_->get_mh_dofhandler(), *data_.old_iter_pressure_ptr_);
+        copy_field(flow_->data().field_ele_pressure, *data_.old_iter_pressure_ptr_);
     }
     
     flow_->output_data();
     mechanics_->output_data();
     
-    update_field_from_mh_dofhandler(flow_->get_mh_dofhandler(), *data_.old_pressure_ptr_);
+    copy_field(flow_->data().field_ele_pressure, *data_.old_pressure_ptr_);
     copy_field(mechanics_->data().output_divergence, *data_.old_div_u_ptr_);
 }
 
@@ -301,17 +286,16 @@ void HM_Iterative::update_potential()
     auto potential_vec_ = data_.potential_ptr_->get_data_vec();
     auto dh = data_.potential_ptr_->get_dofhandler();
     double difference2 = 0, norm2 = 0;
-    std::vector<int> dof_indices(dh->max_elem_dofs());
     for ( auto ele : dh->local_range() )
     {
         auto elm = ele.elm();
-        ele.get_loc_dof_indices(dof_indices);
+        LocDofVec dof_indices = ele.get_loc_dof_indices();
         for ( auto side : ele.side_range() )
         {
             double alpha = data_.alpha.value(side.centre(), elm);
             double density = data_.density.value(side.centre(), elm);
             double gravity = data_.gravity.value(side.centre(), elm);
-            double pressure = flow_->get_mh_dofhandler().side_scalar(side.side());
+            double pressure = flow_->data().field_edge_pressure.value(side.centre(), elm);
             double potential = -alpha*density*gravity*pressure;
         
             if (ele.is_own())
@@ -361,7 +345,7 @@ void HM_Iterative::update_flow_fields()
         double beta = beta_ * 0.5*alpha*alpha/(2*lame_mu(young, poisson)/elm.dim() + lame_lambda(young, poisson));
         
         double old_p = data_.old_pressure_ptr_->value(elm.centre(), elm);
-        double p = flow_->get_mh_dofhandler().element_scalar(elm);
+        double p = flow_->data().field_ele_pressure.value(elm.centre(), elm);
         double div_u = data_.div_u_ptr_->value(elm.centre(), elm);
         double old_div_u = data_.old_div_u_ptr_->value(elm.centre(), elm);
         double src = (beta*(p-old_p) + alpha*(old_div_u - div_u)) / time_->dt();
@@ -418,7 +402,7 @@ void HM_Iterative::compute_iteration_error(double& difference, double& norm)
     for (auto cell : dh->own_range())
     {
         auto elm = cell.elm();
-        double new_p = flow_->get_mh_dofhandler().element_scalar(elm);
+        double new_p = flow_->data().field_ele_pressure.value(elm.centre(), elm);
         double old_p = data_.old_iter_pressure_ptr_->value(elm.centre(), elm);
         p_dif2 += pow(new_p - old_p, 2)*elm.measure();
         p_norm2 += pow(old_p, 2)*elm.measure();

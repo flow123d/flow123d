@@ -253,7 +253,7 @@ public:
     virtual void postprocess();
     virtual void output_data() override;
 
-    inline EqData &data() { return *data_; }
+    EqData &data() { return *data_; }
     
     void set_extra_storativity(const Field<3, FieldValue<3>::Scalar> &extra_stor)
     { data_->extra_storativity = extra_stor; }
