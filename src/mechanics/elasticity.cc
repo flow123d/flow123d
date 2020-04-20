@@ -95,20 +95,15 @@ FEObjects::FEObjects(Mesh *mesh_, unsigned int fe_order)
 	dh_->distribute_dofs(ds_);
     
     
-    FE_P_disc<0> *fe0 = new FE_P_disc<0>(0);
-    FE_P_disc<1> *fe1 = new FE_P_disc<1>(0);
-    FE_P_disc<2> *fe2 = new FE_P_disc<2>(0);
-    FE_P_disc<3> *fe3 = new FE_P_disc<3>(0);
+    MixedPtr<FE_P_disc> fe_p(0);
     dh_scalar_ = make_shared<DOFHandlerMultiDim>(*mesh_);
-	std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh_, fe0, fe1, fe2, fe3);
+	std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh_, fe_p);
 	dh_scalar_->distribute_dofs(ds);
     
-    FESystem<0> *fe0t = new FESystem<0>(std::make_shared<FE_P_disc<0>>(0), FETensor, 9);
-    FESystem<1> *fe1t = new FESystem<1>(std::make_shared<FE_P_disc<1>>(0), FETensor, 9);
-    FESystem<2> *fe2t = new FESystem<2>(std::make_shared<FE_P_disc<2>>(0), FETensor, 9);
-    FESystem<3> *fe3t = new FESystem<3>(std::make_shared<FE_P_disc<3>>(0), FETensor, 9);
+
+    MixedPtr<FiniteElement> fe_t = mixed_fe_system(MixedPtr<FE_P_disc>(0), FEType::FETensor, 9);
     dh_tensor_ = make_shared<DOFHandlerMultiDim>(*mesh_);
-	std::shared_ptr<DiscreteSpace> dst = std::make_shared<EqualOrderDiscreteSpace>( mesh_, fe0t, fe1t, fe2t, fe3t);
+	std::shared_ptr<DiscreteSpace> dst = std::make_shared<EqualOrderDiscreteSpace>( mesh_, fe_t);
 	dh_tensor_->distribute_dofs(dst);
 }
 
@@ -553,7 +548,6 @@ void Elasticity::compute_output_fields()
     FEValues<3> fsv(q_sub, *feo->fe<dim>(),
     		update_values | update_normal_vectors | update_quadrature_points);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs();
-    std::vector<int> dof_indices(ndofs), dof_indices_scalar(1), dof_indices_tensor(9);
     auto vec = fv.vector_view(0);
     auto vec_side = fsv.vector_view(0);
     VectorMPI output_vec = data_.output_field_ptr->get_data_vec();
@@ -576,9 +570,9 @@ void Elasticity::compute_output_fields()
             double lambda = lame_lambda(young, poisson);
             
             fv.reinit(elm);
-            cell.get_loc_dof_indices(dof_indices);
-            cell_scalar.get_loc_dof_indices(dof_indices_scalar);
-            cell_tensor.get_loc_dof_indices(dof_indices_tensor);
+            LocDofVec dof_indices        = cell.get_loc_dof_indices();
+            LocDofVec dof_indices_scalar = cell_scalar.get_loc_dof_indices();
+            LocDofVec dof_indices_tensor = cell_tensor.get_loc_dof_indices();
             
             arma::mat33 stress = arma::zeros(3,3);
             double div = 0;
@@ -602,7 +596,6 @@ void Elasticity::compute_output_fields()
         else if (cell.dim() == dim-1)
         {
             auto elm = cell.elm();
-            vector<int> side_dof_indices(ndofs);
             double normal_displacement = 0;
             double csection = data_.cross_section.value(fsv.point(0), elm);
             arma::mat33 normal_stress = arma::zeros(3,3);
@@ -617,7 +610,8 @@ void Elasticity::compute_output_fields()
                 auto side = elm->neigh_vb[inb]->side();
                 auto cell_side = side->element();
                 fsv.reinit(*side);
-                feo->dh()->cell_accessor_from_element(cell_side.idx()).get_loc_dof_indices(side_dof_indices);
+                LocDofVec side_dof_indices =
+                    feo->dh()->cell_accessor_from_element(cell_side.idx()).get_loc_dof_indices();
                 
                 for (unsigned int i=0; i<ndofs; i++)
                 {
@@ -626,8 +620,8 @@ void Elasticity::compute_output_fields()
                     normal_stress += mu*(grad+grad.t()) + lambda*arma::trace(grad)*arma::eye(3,3);
                 }
             }
-            cell_scalar.get_loc_dof_indices(dof_indices_scalar);
-            cell_tensor.get_loc_dof_indices(dof_indices_tensor);
+            LocDofVec dof_indices_scalar = cell_scalar.get_loc_dof_indices();
+            LocDofVec dof_indices_tensor = cell_tensor.get_loc_dof_indices();
             for (unsigned int i=0; i<3; i++)
                 for (unsigned int j=0; j<3; j++)
                     output_stress_vec[dof_indices_tensor[i*3+j]] += normal_stress(i,j);
@@ -987,9 +981,9 @@ template<unsigned int dim>
 void Elasticity::assemble_rhs_element_side()
 {
 	if (dim == 1) return;
-    FEValues<dim-1,3> fe_values_sub(*feo->mapping<dim-1>(), *feo->q<dim-1>(), *feo->fe<dim-1>(),
+    FEValues<3> fe_values_sub(*feo->q<dim-1>(), *feo->fe<dim-1>(),
     		update_values | update_JxW_values | update_quadrature_points);
-    FESideValues<dim,3> fe_values_side(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe<dim>(),
+    FEValues<3> fe_values_side(*feo->q<dim-1>(), *feo->fe<dim>(),
     		update_values | update_normal_vectors);
  
     const unsigned int ndofs_side = feo->fe<dim>()->n_dofs();    // number of local dofs
@@ -1020,7 +1014,7 @@ void Elasticity::assemble_rhs_element_side()
 
 		ElementAccessor<3> cell = nb->side()->element();
 		feo->dh()->cell_accessor_from_element(cell.idx()).get_dof_indices(side_dof_indices[1]);
-		fe_values_side.reinit(cell, nb->side()->side_idx());
+		fe_values_side.reinit(*nb->side());
 
 		// Element id's for testing if they belong to local partition.
 		bool own_element_id[2];
@@ -1077,7 +1071,7 @@ void Elasticity::assemble_boundary_conditions()
     vector<double> csection(qsize), bc_potential(qsize);
     auto vec = fe_values_side.vector_view(0);
 
-    for (auto cell : feo->dh()->own_range())
+    for (DHCellAccessor cell : feo->dh()->own_range())
     {
         ElementAccessor<3> elm = cell.elm();
         if (elm->boundary_idx_ == nullptr) continue;
@@ -1109,7 +1103,7 @@ void Elasticity::assemble_boundary_conditions()
 			// different bc_type for each substance.
 			data_.bc_displacement.value_list(fe_values_side.point_list(), bc_cell, bc_values);
             data_.bc_traction.value_list(fe_values_side.point_list(), bc_cell, bc_traction);
-            data_.potential_load.value_list(fe_values_side.point_list(), cell, bc_potential);
+            data_.potential_load.value_list(fe_values_side.point_list(), elm, bc_potential);
 
 			cell.get_dof_indices(side_dof_indices);
 
