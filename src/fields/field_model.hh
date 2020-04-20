@@ -278,6 +278,7 @@ public:
             result_components.push_back(component_field);
         }
 
+        return result_components;
     }
 };
 

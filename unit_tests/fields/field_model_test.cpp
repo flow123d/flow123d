@@ -46,7 +46,7 @@ Vector fn_other(Vector a, Scalar c, Vector b) {
 
 
 // Test of FieldModel - used objects and functionalities in field_model.hh.
-TEST(FieldModelTest, own_model) {
+TEST(FieldModelTest, create) {
     unsigned int n_items = 10; // number of tested items
 
     ScalarField f_scal;
@@ -77,6 +77,7 @@ TEST(FieldModelTest, own_model) {
     arma::mat::fixed<3,1> vector_val;
 	auto f_product = Model<3, FieldValue<3>::VectorFixed>::create(fn_product, f_scal, f_vec);
     auto f_other = Model<3, FieldValue<3>::VectorFixed>::create(fn_other, f_vec, f_scal, f_vec);
+    // TODO set FieldAlgoBasePtr to Field
     for (unsigned int i=0; i<n_items; ++i) {
         scalar_val(0,0) = 1.0 + i*0.5;
         vector_val(0,0) = 1.5 + 2*i;
