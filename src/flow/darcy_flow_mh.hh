@@ -182,6 +182,8 @@ public:
         
         Field<3, FieldValue<3>::Scalar > init_pressure;
         Field<3, FieldValue<3>::Scalar > storativity;
+        Field<3, FieldValue<3>::Scalar > extra_storativity; /// Externally added storativity.
+        Field<3, FieldValue<3>::Scalar > extra_source; /// Externally added water source.
 
 	    Field<3, FieldValue<3>::Scalar> field_ele_pressure;
 	    Field<3, FieldValue<3>::Scalar> field_ele_piezo_head;
@@ -227,7 +229,7 @@ public:
 
 
 
-    DarcyMH(Mesh &mesh, const Input::Record in_rec);
+    DarcyMH(Mesh &mesh, const Input::Record in_rec, TimeGovernor *tm = nullptr);
 
     static const Input::Type::Record & type_field_descriptor();
     static const Input::Type::Record & get_input_type();
@@ -243,11 +245,21 @@ public:
     virtual void initialize_specific();
     void zero_time_step() override;
     void update_solution() override;
+    /// Solve the problem without moving to next time and without output.
+    void solve_time_step(bool output = true);
     
     /// postprocess velocity field (add sources)
     virtual void prepare_new_time_step();
     virtual void postprocess();
     virtual void output_data() override;
+
+    inline EqData &data() { return *data_; }
+    
+    void set_extra_storativity(const Field<3, FieldValue<3>::Scalar> &extra_stor)
+    { data_->extra_storativity = extra_stor; }
+    
+    void set_extra_source(const Field<3, FieldValue<3>::Scalar> &extra_src)
+    { data_->extra_source = extra_src; }
 
     virtual ~DarcyMH() override;
 

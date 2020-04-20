@@ -118,8 +118,8 @@ const int RichardsLMH::registrar =
 
 
 
-RichardsLMH::RichardsLMH(Mesh &mesh_in, const  Input::Record in_rec)
-    : DarcyLMH(mesh_in, in_rec)
+RichardsLMH::RichardsLMH(Mesh &mesh_in, const  Input::Record in_rec, TimeGovernor *tm)
+    : DarcyLMH(mesh_in, in_rec, tm)
 {
     data_ = make_shared<EqData>();
     DarcyLMH::data_ = data_;
