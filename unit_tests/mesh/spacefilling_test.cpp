@@ -33,9 +33,8 @@
 
 #define GROUP_SIZE 64
 
-double calculationBeforeSort(Mesh * mesh) {
+double calculation2DBeforeSort(Mesh * mesh) {
     double checksum = 0;
-//     for (uint i = 0; i < 14; ++i) {
         for (ElementAccessor<3> elm : mesh->elements_range()) {
             auto n0 = elm.node(0);
             auto n1 = elm.node(1);
@@ -58,13 +57,11 @@ double calculationBeforeSort(Mesh * mesh) {
                 }
             }
         }
-//     }
     return checksum;  
 }
 
-double calculationAfterSort(Mesh * mesh) {
+double calculation2DAfterSort(Mesh * mesh) {
     double checksum = 0;
-//     for (uint i = 0; i < 14; ++i) {
         for (ElementAccessor<3> elm : mesh->elements_range()) {
             auto n0 = elm.node(0);
             auto n1 = elm.node(1);
@@ -87,9 +84,62 @@ double calculationAfterSort(Mesh * mesh) {
                 }
             }
         }
-//     }
     return checksum;  
 }
+
+double calculation3DBeforeSort(Mesh * mesh) {
+    double checksum = 0;
+    for (ElementAccessor<3> elm : mesh->elements_range()) {
+        auto n0 = elm.node(0);
+        auto n1 = elm.node(1);
+        auto n2 = elm.node(2);
+        auto n3 = elm.node(3);
+        arma::mat::fixed<3, 3> M;
+        M.col(0) = *n1 - *n0;
+        M.col(1) = *n2 - *n0;
+        M.col(2) = *n3 - *n0;
+        double detM = arma::det(M);
+        double jac = std::abs(detM) / 6;
+        arma::mat::fixed<4, 4> phi_coefs = {{1, -1, -1,-1}, {0, 1, 0,0}, {0, 0, 1,0},{0, 0, 0, 1}};
+        arma::mat::fixed<4, 3> grad_phi = {{-1, -1, -1}, {1, 0,0}, {0, 1,0}, {0, 0, 1}};
+        arma::mat::fixed<4, 4> A_local = {{0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}};
+        for (uint i = 0; i < 4; ++i) {
+            for (uint j = 0; j < 4; ++j) {
+                A_local(i, j) += arma::dot(M * grad_phi[i], M * grad_phi[j]) * jac;
+                checksum += std::abs(A_local(i, j));
+            }
+        }
+    }
+    return checksum;
+}
+
+double calculation3DAfterSort(Mesh * mesh) {
+    double checksum = 0;
+    for (ElementAccessor<3> elm : mesh->elements_range()) {
+        auto n0 = elm.node(0);
+        auto n1 = elm.node(1);
+        auto n2 = elm.node(2);
+        auto n3 = elm.node(3);
+        arma::mat::fixed<3, 3> M;
+        M.col(0) = *n1 - *n0;
+        M.col(1) = *n2 - *n0;
+        M.col(2) = *n3 - *n0;
+        double detM = arma::det(M);
+        double jac = std::abs(detM) / 6;
+        arma::mat::fixed<4, 4> phi_coefs = {{1, -1, -1,-1}, {0, 1, 0,0}, {0, 0, 1,0},{0, 0, 0, 1}};
+        arma::mat::fixed<4, 3> grad_phi = {{-1, -1, -1}, {1, 0,0}, {0, 1,0}, {0, 0, 1}};
+        arma::mat::fixed<4, 4> A_local = {{0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}};
+        for (uint i = 0; i < 4; ++i) {
+            for (uint j = 0; j < 4; ++j) {
+                A_local(i, j) += arma::dot(M * grad_phi[i], M * grad_phi[j]) * jac;
+                checksum += std::abs(A_local(i, j));
+            }
+        }
+    }
+    return checksum;
+}
+
+
 
 struct NodeRef {
     NodeRef(const arma::vec3& _ref, uint _originalIndex, double _curveValue) : ref(_ref), originalIndex(_originalIndex), curveValue(_curveValue) {}
@@ -129,16 +179,16 @@ public:
         nodeSizes.resize(mesh.n_nodes(), INFINITY);
         elementSizes.reserve(mesh.n_elements());
         for (ElementAccessor<3> elm : mesh.elements_range()) {
-            double elmSize = std::min({
+            double elmSize = std::min({ // TODO adaptive (element.n_nodes())
                 arma::norm(*elm.node(0) - *elm.node(1)),
                 arma::norm(*elm.node(1) - *elm.node(2)),
                 arma::norm(*elm.node(2) - *elm.node(0))
             });
             elementSizes.push_back(elmSize);
             const Element& el = *elm.element();
-            nodeSizes[el.nodes_[0]] = std::min({nodeSizes[el.nodes_[0]], elmSize});
-            nodeSizes[el.nodes_[1]] = std::min({nodeSizes[el.nodes_[1]], elmSize});
-            nodeSizes[el.nodes_[2]] = std::min({nodeSizes[el.nodes_[2]], elmSize});
+            for (uint i = 0; i < el.n_nodes(); ++i) {
+                nodeSizes[el.nodes_[i]] = std::min({nodeSizes[el.nodes_[i]], elmSize});
+            }
         }
     }
     void calculateNodeHilbertValues2D() {
@@ -153,15 +203,15 @@ public:
             nodeRefs.emplace_back(nodesBackup[i], i, hilbertValue3D(normalize(nodesBackup[i], boundingBox), nodeSizes[i]));
         }
     }
-    void calculateElementHibertAsMeanOfNodes() {
+    void calculateElementCurveValueAsMeanOfNodes() {
         elementRefs.reserve(mesh.n_elements());
         for (uint i = 0; i < mesh.n_elements(); ++i) {
             const std::array<uint, 4>& nodeIndexes = elementsBackup[i].nodes_;
-            elementRefs.emplace_back(elementsBackup[i], 
-                                     nodeRefs[nodeIndexes[0]].curveValue 
-                                     + nodeRefs[nodeIndexes[1]].curveValue
-                                     + nodeRefs[nodeIndexes[2]].curveValue
-                                     / 3);
+            double tmpSum = 0;
+            for (uint j = 0; j < elementsBackup[i].n_nodes(); ++j) {
+                tmpSum += nodeRefs[nodeIndexes[j]].curveValue;
+            }
+            elementRefs.emplace_back(elementsBackup[i], tmpSum / elementsBackup[i].n_nodes());
         }
     }
     void calculateElementHibertByCenters() {
@@ -177,9 +227,9 @@ public:
             newNodeIndexes[nodeRefs[i].originalIndex] = i;
         }
         for (uint i = 0; i < mesh.n_elements(); ++i) {
-            elementsBackup[i].nodes_[0] = newNodeIndexes[elementsBackup[i].nodes_[0]];
-            elementsBackup[i].nodes_[1] = newNodeIndexes[elementsBackup[i].nodes_[1]];
-            elementsBackup[i].nodes_[2] = newNodeIndexes[elementsBackup[i].nodes_[2]];
+            for (uint j = 0; j < elementsBackup[i].n_nodes(); ++j) {
+                elementsBackup[i].nodes_[j] = newNodeIndexes[elementsBackup[i].nodes_[j]];
+            }
         }
     }
     void sortElements() {
@@ -192,7 +242,7 @@ public:
     }
     void exportElements() {
         for (uint i = 0; i < elementRefs.size(); ++i) {
-            mesh.element_vec_[i] = elementRefs[i].ref;
+            mesh.element_vec_[i] = elementRefs[i].ref.get();
         }
     }
 private:
@@ -271,7 +321,23 @@ private:
     }
 };
 
-TEST(Spacefilling, get_centers) {
+void printMesh(Mesh& mesh) {
+    arma::vec3 sum = {0, 0, 0};
+    uint j = 0;
+    for (ElementAccessor<3> elm : mesh.elements_range()) {
+        const Element& el = *elm.element();
+        std::cout << "Element " << j << ":\n";
+        for(uint i = 0; i < el.n_nodes(); ++i) {
+            arma::vec3 tmp = mesh.nodes_.vec<3>(el.nodes_[i]);
+            sum += tmp;
+            std::cout << "    " << tmp[0] << ' ' << tmp[1] << ' ' << tmp[2] << '\n';
+        }
+        ++j;
+    }
+    std::cout << "SUM = " << sum[0] << ' ' << sum[1] << ' ' << sum[2] << '\n';
+}
+
+TEST(Spacefilling, space_filling) {
     Profiler::initialize();
 
     // has to introduce some flag for passing absolute path to 'test_units' in source tree
@@ -281,17 +347,20 @@ TEST(Spacefilling, get_centers) {
 //     const std::string testName = "square_uniform_2";
 //     const std::string testName = "square_refined";
 //     const std::string testName = "lshape_refined";
-    const std::string testName = "lshape_refined_2";
+    const std::string testName = "lshape_refined_2_cube";
     const std::string mesh_in_string = "{mesh_file=\"mesh/" + testName + ".msh\"}";
     
     Mesh * mesh = mesh_full_constructor(mesh_in_string);
     
-    auto reader = reader_constructor(mesh_in_string);
-    reader->read_physical_names(mesh);
-    reader->read_raw_mesh(mesh);
+//     auto reader = reader_constructor(mesh_in_string);
+//     reader->read_physical_names(mesh);
+//     reader->read_raw_mesh(mesh);
+    
+//     printMesh(*mesh);
 
     START_TIMER("calculation_before_sort");
-    double checksum1 = calculationBeforeSort(mesh);
+//     double checksum1 = calculation2DBeforeSort(mesh);
+    double checksum1 = calculation3DBeforeSort(mesh);
     END_TIMER("calculation_before_sort");
     
     std::cout << "checksum 1: " << checksum1 << '\n';
@@ -306,7 +375,7 @@ TEST(Spacefilling, get_centers) {
     std::cout << "calculating node hilbert values" << '\n';
     mo.calculateNodeHilbertValues3D();
     std::cout << "calculating element hilbert values" << '\n';
-    mo.calculateElementHibertAsMeanOfNodes();
+    mo.calculateElementCurveValueAsMeanOfNodes();
     std::cout << "sorting nodes" << '\n';
     mo.sortNodes();
     std::cout << "sorting elements" << '\n';
@@ -317,10 +386,13 @@ TEST(Spacefilling, get_centers) {
     mo.exportElements();
     
     START_TIMER("calculation_after_sort");
-    double checksum2 = calculationAfterSort(mesh);
+//     double checksum2 = calculation2DAfterSort(mesh);
+    double checksum2 = calculation3DAfterSort(mesh);
     END_TIMER("calculation_after_sort");
     
     std::cout << "checksum 2: " << checksum2 << '\n';
+    
+//     printMesh(*mesh);
     
     const string test_output_time_input = R"JSON(
     {
