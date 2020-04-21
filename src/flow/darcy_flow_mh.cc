@@ -563,6 +563,7 @@ void DarcyMH::solve_time_step(bool output)
         // this flag is necesssary for switching BC to avoid setting zero neumann on the whole boundary in the steady case
         use_steady_assembly_ = false;
 
+        prepare_new_time_step();
         solve_nonlinear(); // with left limit data
         if (jump_time) {
         	WarningOut() << "Output of solution discontinuous in time not supported yet.\n";
@@ -687,6 +688,11 @@ void DarcyMH::solve_nonlinear()
         // int result = time_->set_upper_constraint(time_->dt() * mult, "Darcy adaptivity.");
         //DebugOut().fmt("time adaptivity, res: {} it: {} m: {} dt: {} edt: {}\n", result, nonlinear_iteration_, mult, time_->dt(), time_->estimate_dt());
     }
+}
+
+void DarcyMH::prepare_new_time_step()
+{
+    VecSwap(previous_solution, schur0->get_solution());
 }
 
 void DarcyMH::postprocess() 

@@ -276,6 +276,7 @@ protected:
     void solve_nonlinear();
     void modify_system();
     virtual void setup_time_term();
+    void prepare_new_time_step();
 
 
     //void prepare_parallel();
