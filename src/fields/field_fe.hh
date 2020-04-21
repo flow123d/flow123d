@@ -183,6 +183,9 @@ private:
 	template <unsigned int dim>
 	Quadrature init_quad(std::shared_ptr<EvalPoints> eval_points);
 
+    Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> handle_fe_shape(unsigned int dim,
+            unsigned int i_dof, unsigned int i_qp, unsigned int comp_index);
+
 
 	/// DOF handler object
     std::shared_ptr<DOFHandlerMultiDim> dh_;

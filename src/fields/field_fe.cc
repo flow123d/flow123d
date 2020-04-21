@@ -59,7 +59,7 @@ FLOW123D_FORCE_LINK_IN_CHILD(field_fe)
  * Is done by class partial specialization as, we were not able to do this using function overloading (since
  * they differ only by return value) and partial specialization of the function templates is not supported  in C++.
  */
-template<int rank, int spacedim, class Value>
+/*template<int rank, int spacedim, class Value>
 class EvalShapeHandler {
 public:
 
@@ -99,9 +99,9 @@ public:
         ASSERT_LT_DBG( comp_index, spacedim);
         ASSERT_LT_DBG( i_dof, fe_val.n_dofs() );
         ASSERT_LT_DBG( i_qp, fe_val.n_points() );
-        Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> v;
+        Armor::ArmaMat<typename Value::element_type, Value::NCols_, Value::NRows_> v;
         for (unsigned int c=0; c<Value::NRows_*Value::NCols_; ++c)
-            v(c%spacedim,c/spacedim) = fe_val.shape_value_component(i_dof, i_qp, comp_index+c);
+            v(c/spacedim,c%spacedim) = fe_val.shape_value_component(i_dof, i_qp, comp_index+c);
         return v;
     }
 };
@@ -121,7 +121,7 @@ public:
             v(c/spacedim,c%spacedim) = fe_val.shape_value_component(i_dof, i_qp, comp_index+c);
         return v;
     }
-};
+};*/
 
 
 
@@ -335,8 +335,8 @@ void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::elem
             if (field_cache_idx < 0) continue; // skip
             mat_value.fill(0.0);
     		for (unsigned int i_dof=0; i_dof<loc_dofs.n_elem; i_dof++) {
-    		    mat_value += data_vec_[loc_dofs[i_dof]]
-    		                     * EvalShapeHandler<Value::rank_, spacedim, Value>::fe_value(fe_values_[elm.dim()], i_dof, i_ep, 0);
+    		    mat_value += data_vec_[loc_dofs[i_dof]] * this->handle_fe_shape(elm.dim(), i_dof, i_ep, 0);
+//    		                     * EvalShapeHandler<Value::rank_, spacedim, Value>::fe_value(fe_values_[elm.dim()], i_dof, i_ep, 0);
     		}
     		data_cache.data().set(field_cache_idx) = mat_value;
         }
@@ -857,6 +857,21 @@ void FieldFE<spacedim, Value>::local_to_ghost_data_scatter_begin() {
 template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::local_to_ghost_data_scatter_end() {
 	data_vec_.local_to_ghost_end();
+}
+
+
+
+template <int spacedim, class Value>
+Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> FieldFE<spacedim, Value>::handle_fe_shape(unsigned int dim,
+        unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
+{
+    Armor::ArmaMat<typename Value::element_type, Value::NCols_, Value::NRows_> v;
+    for (unsigned int c=0; c<Value::NRows_*Value::NCols_; ++c)
+        v(c/spacedim,c%spacedim) = fe_values_[dim].shape_value_component(i_dof, i_qp, comp_index+c);
+    if (Value::NRows_ == Value::NCols_)
+        return v;
+    else
+        return v.t();
 }
 
 
