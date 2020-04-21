@@ -70,7 +70,8 @@ TEST(FieldModelTest, create) {
     elm_cache_map.start_elements_update();
     auto &cache_data = elm_cache_map.update_cache_data();
     cache_data.region_cache_indices_map_.insert( {1, ElementCacheMap::RegionData()} );
-    cache_data.region_cache_indices_map_.find(1)->second.pos_ = 0;
+    cache_data.region_cache_indices_range_.insert( {1, 0} );
+    cache_data.region_cache_indices_range_.find(1)->second = 0;
     cache_data.region_value_cache_range_[0] = 0;
     cache_data.region_value_cache_range_[1] = 10;
     arma::mat::fixed<1,1> scalar_val;

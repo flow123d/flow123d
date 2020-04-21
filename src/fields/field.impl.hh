@@ -724,8 +724,8 @@ void Field<spacedim, Value>::cache_update(ElementCacheMap &cache_map) {
     auto update_cache_data = cache_map.update_cache_data();
 
     // Call cache_update of FieldAlgoBase descendants
-    std::unordered_map<unsigned int, typename ElementCacheMap::RegionData>::iterator reg_elm_it;
-    for (reg_elm_it=update_cache_data.region_cache_indices_map_.begin(); reg_elm_it!=update_cache_data.region_cache_indices_map_.end(); ++reg_elm_it) {
+    std::unordered_map<unsigned int, unsigned int>::iterator reg_elm_it;
+    for (reg_elm_it=update_cache_data.region_cache_indices_range_.begin(); reg_elm_it!=update_cache_data.region_cache_indices_range_.end(); ++reg_elm_it) {
         region_fields_[reg_elm_it->first]->cache_update(value_cache_, cache_map, reg_elm_it->first);
     }
 }

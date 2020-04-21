@@ -104,7 +104,7 @@ void ElementCacheMap::prepare_elements_to_update() {
 	unsigned int n_stored_element = 0, n_region = 0;
 	update_data_.region_element_cache_range_[0] = 0;
     for (auto region_it = update_data_.region_cache_indices_map_.begin(); region_it != update_data_.region_cache_indices_map_.end(); region_it++) {
-    	region_it->second.pos_ = n_region;
+    	update_data_.region_cache_indices_range_[region_it->first] = n_region;
         for (unsigned int i_elm=0; i_elm<region_it->second.n_elements_; ++i_elm) {
             unsigned int elm_idx = region_it->second.elm_indices_[i_elm];
             cache_idx_[elm_idx] = n_stored_element;
@@ -140,12 +140,13 @@ void ElementCacheMap::create_elements_points_map() {
 
 
 void ElementCacheMap::start_elements_update() {
-	update_data_.region_cache_indices_map_.clear();
 	update_data_.n_elements_ = 0;
 	ready_to_reading_ = false;
 }
 
 void ElementCacheMap::finish_elements_update() {
+	update_data_.region_cache_indices_map_.clear();
+	update_data_.region_cache_indices_range_.clear();
 	ready_to_reading_ = true;
 }
 
