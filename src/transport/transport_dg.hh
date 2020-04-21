@@ -341,6 +341,11 @@ private:
 	 */
 	void set_initial_condition();
 
+    
+    
+    void output_region_statistics();
+
+
 
 	/// @name Physical parameters
 	// @{
@@ -384,6 +389,8 @@ private:
 
 	/// Record with input specification.
 	Input::Record input_rec;
+    
+    ofstream reg_stat_stream;
 
 
 	// @}

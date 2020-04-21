@@ -284,7 +284,7 @@ public:
     bool is_jump_time() {
         return is_jump_time_;
     }
-
+    
     /**
      * Returns number of field descriptors containing the field.
      */
@@ -655,6 +655,12 @@ protected:
         << " last limit side:" << limit_side_str[(unsigned int) field.last_limit_side_];
         return stream;
     }
+    
+public:
+    
+    /// Manually mark flag that the field has been changed.
+    void set_time_result_changed()
+    { set_time_result_ = TimeStatus::changed; }
 };
 
 

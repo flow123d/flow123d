@@ -173,7 +173,7 @@ DarcyLMH::EqData::EqData()
  *
  */
 //=============================================================================
-DarcyLMH::DarcyLMH(Mesh &mesh_in, const Input::Record in_rec)
+DarcyLMH::DarcyLMH(Mesh &mesh_in, const Input::Record in_rec, TimeGovernor *tm)
 : DarcyFlowInterface(mesh_in, in_rec),
     output_object(nullptr),
     data_changed_(false)
@@ -182,10 +182,20 @@ DarcyLMH::DarcyLMH(Mesh &mesh_in, const Input::Record in_rec)
     START_TIMER("Darcy constructor");
     {
         auto time_record = input_record_.val<Input::Record>("time");
-        //if ( in_rec.opt_val("time", time_record) )
+        if (tm == nullptr)
+        {
             time_ = new TimeGovernor(time_record);
-        //else
-        //    time_ = new TimeGovernor();
+        }
+        else
+        {
+            TimeGovernor tm_from_rec(time_record);
+            if (!tm_from_rec.is_default()) // is_default() == false when time record is present in input file
+            { 
+                MessageOut() << "Duplicate key 'time', time in flow equation is already initialized from parent class!";
+                ASSERT(false);
+            }
+            time_ = tm;
+        }
     }
 
     data_ = make_shared<EqData>();
@@ -320,6 +330,8 @@ void DarcyLMH::initialize() {
     data_->p_edge_solution = data_->dh_cr_->create_vector();
     data_->p_edge_solution_previous = data_->dh_cr_->create_vector();
     data_->p_edge_solution_previous_time = data_->dh_cr_->create_vector();
+
+    data_->field_edge_pressure.set_fe_data(data_->dh_cr_, 0, data_->p_edge_solution);
     
     // Initialize bc_switch_dirichlet to size of global boundary.
     data_->bc_switch_dirichlet.resize(mesh_->n_elements()+mesh_->n_elements(true), 1);
@@ -471,6 +483,12 @@ void DarcyLMH::update_solution()
     time_->next_time();
 
     time_->view("DARCY"); //time governor information output
+
+    solve_time_step();
+}
+
+void DarcyLMH::solve_time_step(bool output)
+{
     data_changed_ = data_->set_time(time_->step(), LimitSide::left) || data_changed_;
     bool zero_time_term_from_left=zero_time_term();
 
@@ -483,7 +501,8 @@ void DarcyLMH::update_solution()
         data_->use_steady_assembly_ = false;
 
         solve_nonlinear(); // with left limit data
-        accept_time_step();
+        if(output)
+            accept_time_step();
         if (jump_time) {
         	WarningOut() << "Output of solution discontinuous in time not supported yet.\n";
             //solution_output(T, left_limit); // output use time T- delta*dt
@@ -494,7 +513,8 @@ void DarcyLMH::update_solution()
     if (time_->is_end()) {
         // output for unsteady case, end_time should not be the jump time
         // but rether check that
-        if (! zero_time_term_from_left && ! jump_time) output_data();
+        if (! zero_time_term_from_left && ! jump_time && output)
+            output_data();
         return;
     }
 
@@ -504,7 +524,8 @@ void DarcyLMH::update_solution()
         // this flag is necesssary for switching BC to avoid setting zero neumann on the whole boundary in the steady case
         data_->use_steady_assembly_ = true;
         solve_nonlinear(); // with right limit data
-        accept_time_step();
+        if(output)
+            accept_time_step();
 
     } else if (! zero_time_term_from_left && jump_time) {
     	WarningOut() << "Discontinuous time term not supported yet.\n";
@@ -512,8 +533,8 @@ void DarcyLMH::update_solution()
         //solve_nonlinear(); // with right limit data
     }
     //solution_output(T,right_limit); // data for time T in any case
-    output_data();
-
+    if (output)
+        output_data();
 }
 
 bool DarcyLMH::zero_time_term(bool time_global) {
