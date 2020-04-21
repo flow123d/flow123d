@@ -313,28 +313,23 @@ void Elasticity::initialize()
 //     balance_->units(UnitSI().kg().m().s(-2));
 
     // create shared pointer to a FieldFE, pass FE data and push this FieldFE to output_field on all regions
-    data_.output_field_ptr = std::make_shared<FieldFE<3, FieldValue<3>::VectorFixed> >();
-    VectorMPI output_vec = data_.output_field_ptr->set_fe_data(feo->dh());
+    data_.output_field_ptr = create_field_fe<3, FieldValue<3>::VectorFixed>(feo->dh());
     data_.output_field.set_field(mesh_->region_db().get_region_set("ALL"), data_.output_field_ptr, 0.);
     
     // setup output stress
-    data_.output_stress_ptr = make_shared<FieldFE<3, FieldValue<3>::TensorFixed> >();
-    data_.output_stress_ptr->set_fe_data(feo->dh_tensor());
+    data_.output_stress_ptr = create_field_fe<3, FieldValue<3>::TensorFixed>(feo->dh_tensor());
     data_.output_stress.set_field(mesh_->region_db().get_region_set("ALL"), data_.output_stress_ptr);
     
     // setup output von Mises stress
-    data_.output_von_mises_stress_ptr = make_shared<FieldFE<3, FieldValue<3>::Scalar> >();
-    data_.output_von_mises_stress_ptr->set_fe_data(feo->dh_scalar());
+    data_.output_von_mises_stress_ptr = create_field_fe<3, FieldValue<3>::Scalar>(feo->dh_scalar());
     data_.output_von_mises_stress.set_field(mesh_->region_db().get_region_set("ALL"), data_.output_von_mises_stress_ptr);
     
     // setup output cross-section
-    data_.output_cross_section_ptr = make_shared<FieldFE<3, FieldValue<3>::Scalar> >();
-    data_.output_cross_section_ptr->set_fe_data(feo->dh_scalar());
+    data_.output_cross_section_ptr = create_field_fe<3, FieldValue<3>::Scalar>(feo->dh_scalar());
     data_.output_cross_section.set_field(mesh_->region_db().get_region_set("ALL"), data_.output_cross_section_ptr);
     
     // setup output divergence
-    data_.output_div_ptr = make_shared<FieldFE<3, FieldValue<3>::Scalar> >();
-    data_.output_div_ptr->set_fe_data(feo->dh_scalar());
+    data_.output_div_ptr = create_field_fe<3, FieldValue<3>::Scalar>(feo->dh_scalar());
     data_.output_divergence.set_field(mesh_->region_db().get_region_set("ALL"), data_.output_div_ptr);
     
     data_.output_field.output_type(OutputTime::CORNER_DATA);
@@ -349,7 +344,7 @@ void Elasticity::initialize()
     // allocate matrix and vector structures
     ls = new LinSys_PETSC(feo->dh()->distr().get(), petsc_default_opts);
     ( (LinSys_PETSC *)ls )->set_from_input( input_rec.val<Input::Record>("solver") );
-    ls->set_solution(output_vec.petsc_vec());
+    ls->set_solution(data_.output_field_ptr->get_data_vec().petsc_vec());
 
     // initialization of balance object
 //     balance_->allocate(feo->dh()->distr()->lsize(),
