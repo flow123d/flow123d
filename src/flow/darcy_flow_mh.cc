@@ -562,7 +562,6 @@ void DarcyMH::solve_time_step(bool output)
 
         // this flag is necesssary for switching BC to avoid setting zero neumann on the whole boundary in the steady case
         use_steady_assembly_ = false;
-        //prepare_new_time_step(); //SWAP
 
         solve_nonlinear(); // with left limit data
         if (jump_time) {
@@ -690,12 +689,6 @@ void DarcyMH::solve_nonlinear()
     }
 }
 
-
-void DarcyMH::prepare_new_time_step()
-{
-    VecSwap(previous_solution, schur0->get_solution());
-}
-
 void DarcyMH::postprocess() 
 {
     START_TIMER("postprocess");
@@ -743,8 +736,6 @@ void DarcyMH::output_data() {
     balance_->calculate_cumulative(data_->water_balance_idx, schur0->get_solution());
     balance_->calculate_instant(data_->water_balance_idx, schur0->get_solution());
     balance_->output();
-    
-    prepare_new_time_step(); //SWAP
 }
 
 

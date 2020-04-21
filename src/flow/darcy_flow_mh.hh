@@ -249,7 +249,6 @@ public:
     void solve_time_step(bool output = true);
     
     /// postprocess velocity field (add sources)
-    virtual void prepare_new_time_step();
     virtual void postprocess();
     virtual void output_data() override;
 
