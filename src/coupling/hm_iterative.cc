@@ -273,6 +273,7 @@ void HM_Iterative::update_solution()
         copy_field(flow_->data().field_ele_pressure, *data_.old_iter_pressure_ptr_);
     }
     
+    flow_->accept_time_step();
     flow_->output_data();
     mechanics_->output_data();
     

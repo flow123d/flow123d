@@ -98,6 +98,8 @@ public:
     
     const DarcyFlowMHOutput::OutputFields &output_fields()
     { return this->output_object->get_output_fields(); }
+
+    void accept_time_step() override;
     
 protected:
     /// Registrar of class to factory
@@ -109,7 +111,6 @@ protected:
 
     void initial_condition_postprocess() override;
     void assembly_linear_system() override;
-    void accept_time_step() override;
 private:
 
     std::shared_ptr<EqData> data_;

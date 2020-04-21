@@ -501,7 +501,8 @@ void DarcyLMH::solve_time_step(bool output)
         data_->use_steady_assembly_ = false;
 
         solve_nonlinear(); // with left limit data
-        accept_time_step();
+        if(output)
+            accept_time_step();
         if (jump_time) {
         	WarningOut() << "Output of solution discontinuous in time not supported yet.\n";
             //solution_output(T, left_limit); // output use time T- delta*dt
@@ -523,7 +524,8 @@ void DarcyLMH::solve_time_step(bool output)
         // this flag is necesssary for switching BC to avoid setting zero neumann on the whole boundary in the steady case
         data_->use_steady_assembly_ = true;
         solve_nonlinear(); // with right limit data
-        accept_time_step();
+        if(output)
+            accept_time_step();
 
     } else if (! zero_time_term_from_left && jump_time) {
     	WarningOut() << "Discontinuous time term not supported yet.\n";
