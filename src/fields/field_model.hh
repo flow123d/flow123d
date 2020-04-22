@@ -179,6 +179,12 @@ namespace detail
 
     ...
 
+    // Create ElementCacheMap
+    std::shared_ptr<EvalPoints> eval_points = std::make_shared<EvalPoints>();
+    eval_poinzs->add_bulk<3>( quad ); // initialize EvalPoints
+    ElementCacheMap elm_cache_map;
+    elm_cache_map.init(eval_points);
+
     // Definition of fields
     Field<3, FieldValue<3>::Scalar > f_scal;
     Field<3, FieldValue<3>::VectorFixed > f_vec;
@@ -188,11 +194,13 @@ namespace detail
     // create instance FieldModel class, use helper method Model::create to simply passsing of parameters
   	auto f_product = Model<3, FieldValue<3>::VectorFixed>::create(FnProduct(), f_scal, f_vec);
   	// set field on all regions
+    result.set_mesh( *mesh );
   	result.set_field(mesh->region_db().get_region_set("ALL"), f_product);
+    result.cache_allocate(eval_points);
+    result.set_time(tg.step(), LimitSide::right);
 
   	// cache_update
-  	FieldValueCache<double> &fvc = result.value_cache();
-    f_product.cache_update(fvc, 0, fvc.size(), element_set);
+    result.cache_update(elm_cache_map);
    @endcode
  *
  */
@@ -215,7 +223,7 @@ public:
 
 
     void cache_update(FieldValueCache<typename Value::element_type> &data_cache,
-				ElementCacheMap &cache_map, unsigned int region_idx)  {
+				ElementCacheMap &cache_map, unsigned int region_idx) override {
         auto update_cache_data = cache_map.update_cache_data();
         unsigned int region_in_cache = update_cache_data.region_cache_indices_range_.find(region_idx)->second;
         unsigned int i_cache_el_begin = update_cache_data.region_value_cache_range_[region_in_cache];
