@@ -20,54 +20,13 @@
 #include "system/sys_profiler.hh"
 #include "input/input_type.hh"
 #include "flow/richards_lmh.hh"
-#include "fields/field_fe.hh"         // for create_field()
+#include "fields/field_fe.hh"         // for create_field_fe()
 
 
 FLOW123D_FORCE_LINK_IN_CHILD(coupling_iterative)
 
 
 namespace it = Input::Type;
-
-
-
-/** Create elementwise FieldFE with parallel VectorMPI */
-template <int spacedim, class Value>
-std::shared_ptr<FieldFE<spacedim, Value> > create_field(Mesh & mesh, int n_comp)
-{
-    MixedPtr<FiniteElement> fe;
-
-	switch (n_comp) { // prepare FEM objects for DOF handler by number of components
-		case 1: { // scalar
-            fe = MixedPtr<FE_P_disc>(0);
-			break;
-		}
-		case -1: { // scalar with dof on sides
-            fe = MixedPtr<FE_CR>();
-			break;
-		}
-		case 3: { // vector
-			fe = mixed_fe_system(MixedPtr<FE_P_disc>(0), FEType::FEVector, 3);
-			break;
-		}
-		case 9: { // tensor
-            fe = mixed_fe_system(MixedPtr<FE_P_disc>(0), FEType::FETensor, 9);
-			break;
-		}
-		default:
-			ASSERT(false).error("Should not happen!\n");
-	}
-
-	// Prepare DOF handler
-	std::shared_ptr<DOFHandlerMultiDim> dh_par = std::make_shared<DOFHandlerMultiDim>(mesh);
-	std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( &mesh, fe);
-	dh_par->distribute_dofs(ds);
-
-	// Construct FieldFE
-	std::shared_ptr< FieldFE<spacedim, Value> > field_ptr = std::make_shared< FieldFE<spacedim, Value> >();
-	field_ptr->set_fe_data( dh_par, 0, dh_par->create_vector() );
-	return field_ptr;
-}
-
 
 
 const it::Record & HM_Iterative::get_input_type() {
@@ -141,19 +100,19 @@ void HM_Iterative::EqData::initialize(Mesh &mesh)
     // initialize coupling fields with FieldFE
     set_mesh(mesh);
     
-    potential_ptr_ = create_field<3, FieldValue<3>::Scalar>(mesh, -1);
+    potential_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(mesh, MixedPtr<FE_CR>());
     pressure_potential.set_field(mesh.region_db().get_region_set("ALL"), potential_ptr_);
     
-    beta_ptr_ = create_field<3, FieldValue<3>::Scalar>(mesh, 1);
+    beta_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(mesh, MixedPtr<FE_P_disc>(0));
     beta.set_field(mesh.region_db().get_region_set("ALL"), beta_ptr_);
     
-    flow_source_ptr_ = create_field<3, FieldValue<3>::Scalar>(mesh, 1);
+    flow_source_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(beta_ptr_->get_dofhandler());
     flow_source.set_field(mesh.region_db().get_region_set("ALL"), flow_source_ptr_);
     
-    old_pressure_ptr_ = create_field<3, FieldValue<3>::Scalar>(mesh, 1);
-    old_iter_pressure_ptr_ = create_field<3, FieldValue<3>::Scalar>(mesh, 1);
-    div_u_ptr_ = create_field<3, FieldValue<3>::Scalar>(mesh, 1);
-    old_div_u_ptr_ = create_field<3, FieldValue<3>::Scalar>(mesh, 1);
+    old_pressure_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(beta_ptr_->get_dofhandler());
+    old_iter_pressure_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(beta_ptr_->get_dofhandler());
+    div_u_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(beta_ptr_->get_dofhandler());
+    old_div_u_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(beta_ptr_->get_dofhandler());
 }
 
                                     
