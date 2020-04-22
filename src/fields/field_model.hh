@@ -279,7 +279,7 @@ public:
         std::vector<FieldBasePtr> result_components;
         for(uint i=0; i<n_comp; i++) {
             const auto & component_of_inputs = detail::get_components< FieldTuple, n_inputs>::eval(field_tuple, i);
-            const auto & all_args = std::tuple_cat(stdmake_tuple(fn), component_of_inputs);
+            const auto & all_args = std::tuple_cat(std::make_tuple(fn), component_of_inputs);
             FieldBasePtr component_field = detail::call(create, all_args);
             result_components.push_back(component_field);
         }

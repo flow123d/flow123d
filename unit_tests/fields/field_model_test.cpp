@@ -19,13 +19,11 @@
 #include <type_traits>
 
 #include "fields/field_model.hh"
+#include "fields/multi_field.hh"
 #include "mesh/accessors.hh"
+#include "mesh/mesh.h"
 #include "quadrature/quadrature.hh"
 #include "quadrature/quadrature_lib.hh"
-
-
-typedef Field<3, FieldValue<3>::Scalar > ScalarField;
-typedef Field<3, FieldValue<3>::VectorFixed > VectorField;
 
 
 using Scalar = typename arma::Col<double>::template fixed<1>;
@@ -45,15 +43,15 @@ Vector fn_other(Vector a, Scalar c, Vector b) {
 }
 
 
-// Test of FieldModel - used objects and functionalities in field_model.hh.
+// Test of FieldModel - simple test without MultiFields (static method Model::create)
 TEST(FieldModelTest, create) {
+	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+	PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
     unsigned int n_items = 10; // number of tested items
 
-    ScalarField f_scal;
-    VectorField f_vec;
-    FieldValueCache<typename FieldValue<3>::VectorFixed::element_type> fvc(FieldValue<3>::VectorFixed::NRows_, FieldValue<3>::VectorFixed::NCols_);
+    Field<3, FieldValue<3>::Scalar > f_scal;
+    Field<3, FieldValue<3>::VectorFixed > f_vec;
     ElementCacheMap elm_cache_map;
-    std::vector< ElementAccessor<3> > element_set;
 
     // initialize field caches
     std::shared_ptr<EvalPoints> eval_points = std::make_shared<EvalPoints>();
@@ -62,9 +60,25 @@ TEST(FieldModelTest, create) {
     eval_points->add_bulk<3>(*q_bulk );
     eval_points->add_edge<3>(*q_side );
     elm_cache_map.init(eval_points);
-    fvc.init(eval_points, ElementCacheMap::n_cached_elements);
     f_scal.cache_allocate(eval_points);
     f_vec.cache_allocate(eval_points);
+
+    // Create FieldModel (descendant of FieladAlgoBase) set to Field
+    Mesh *mesh = mesh_full_constructor("{mesh_file=\"mesh/cube_2x1.msh\"}");
+    TimeGovernor tg(0.0, 1.0);
+    auto f_product_ptr = Model<3, FieldValue<3>::VectorFixed>::create(fn_product, f_scal, f_vec);
+    Field<3, FieldValue<3>::VectorFixed > f_product;
+    f_product.set_mesh( *mesh );
+    f_product.set_field(mesh->region_db().get_region_set("ALL"), f_product_ptr);
+    f_product.cache_allocate(eval_points);
+    f_product.set_time(tg.step(), LimitSide::right);
+    // Same as previous but with other functor
+    auto f_other_ptr = Model<3, FieldValue<3>::VectorFixed>::create(fn_other, f_vec, f_scal, f_vec);
+    Field<3, FieldValue<3>::VectorFixed > f_other;
+    f_other.set_mesh( *mesh );
+    f_other.set_field(mesh->region_db().get_region_set("ALL"), f_other_ptr);
+    f_other.cache_allocate(eval_points);
+    f_other.set_time(tg.step(), LimitSide::right);
 
     // fill field caches
     elm_cache_map.start_elements_update();
@@ -76,9 +90,6 @@ TEST(FieldModelTest, create) {
     cache_data.region_value_cache_range_[1] = 10;
     arma::mat::fixed<1,1> scalar_val;
     arma::mat::fixed<3,1> vector_val;
-	auto f_product = Model<3, FieldValue<3>::VectorFixed>::create(fn_product, f_scal, f_vec);
-    auto f_other = Model<3, FieldValue<3>::VectorFixed>::create(fn_other, f_vec, f_scal, f_vec);
-    // TODO set FieldAlgoBasePtr to Field
     for (unsigned int i=0; i<n_items; ++i) {
         scalar_val(0,0) = 1.0 + i*0.5;
         vector_val(0,0) = 1.5 + 2*i;
@@ -101,9 +112,9 @@ TEST(FieldModelTest, create) {
                                                  { 87.50, 40.50, 2.50},
                                                  {107.25, 50.05, 8.25}};
 
-        f_product->cache_update(fvc, elm_cache_map, 1);
+        f_product.cache_update(elm_cache_map);
         for (unsigned int i=0; i<n_items; ++i) {
-            auto val = fvc.data().template mat<3, 1>(i);
+            auto val = f_product.value_cache().data().template mat<3, 1>(i);
             EXPECT_ARMA_EQ(val, expected_vals[i]);
         }
     }
@@ -121,11 +132,40 @@ TEST(FieldModelTest, create) {
                                                  {105.00, 48.60, 3.00},
                                                  {126.75, 59.15, 9.75}};
 
-        f_other->cache_update(fvc, elm_cache_map, 1);
+        f_other.cache_update(elm_cache_map);
         for (unsigned int i=0; i<n_items; ++i) {
-            auto val = fvc.data().template mat<3, 1>(i);
+            auto val = f_other.value_cache().data().template mat<3, 1>(i);
             EXPECT_ARMA_EQ(val, expected_vals[i]);
         }
     }
+
+}
+
+// Test of FieldModel - test of MultiFields (static method Model::create_multi)
+TEST(FieldModelTest, create_multi) {
+	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+	PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
+    unsigned int n_items = 10; // number of tested items
+
+    Field<3, FieldValue<3>::Scalar > f_scal;
+    MultiField<3, FieldValue<3>::Scalar> f_multi;
+    ElementCacheMap elm_cache_map;
+    std::vector<string> component_names = { "comp_0", "comp_1", "comp_2" };
+
+    // initialize field caches
+    std::shared_ptr<EvalPoints> eval_points = std::make_shared<EvalPoints>();
+    Quadrature *q_bulk = new QGauss(3, 2);
+    Quadrature *q_side = new QGauss(2, 2);
+    eval_points->add_bulk<3>(*q_bulk );
+    eval_points->add_edge<3>(*q_side );
+    elm_cache_map.init(eval_points);
+    f_scal.cache_allocate(eval_points);
+    f_multi.cache_allocate(eval_points);
+    f_multi.set_components(component_names);
+
+    // Create FieldModel (descendant of FieladAlgoBase) set to Field
+    Mesh *mesh = mesh_full_constructor("{mesh_file=\"mesh/cube_2x1.msh\"}");
+    TimeGovernor tg(0.0, 1.0);
+    //auto f_product_ptr = Model<3, FieldValue<3>::Scalar>::create_multi(fn_product, f_scal, f_multi);
 
 }
