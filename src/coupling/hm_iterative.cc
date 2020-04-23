@@ -298,7 +298,7 @@ void HM_Iterative::update_flow_fields()
     auto dh = data_.beta_ptr_->get_dofhandler();
     double beta_diff2 = 0, beta_norm2 = 0, src_diff2 = 0, src_norm2 = 0;
     Field<3,FieldValue<3>::Scalar> field_ele_pressure;
-    field_ele_pressure.copy_from(flow_->data().field("pressure_p0"));
+    field_ele_pressure.copy_from(*flow_->data().field("pressure_p0"));
     for ( auto ele : dh->local_range() )
     {
         auto elm = ele.elm();
@@ -364,7 +364,7 @@ void HM_Iterative::compute_iteration_error(double& difference, double& norm)
     auto dh = data_.beta_ptr_->get_dofhandler();
     double p_dif2 = 0, p_norm2 = 0;
     Field<3,FieldValue<3>::Scalar> field_ele_pressure;
-    field_ele_pressure.copy_from(flow_->data().field("pressure_p0"));
+    field_ele_pressure.copy_from(*flow_->data().field("pressure_p0"));
     for (auto cell : dh->own_range())
     {
         auto elm = cell.elm();
