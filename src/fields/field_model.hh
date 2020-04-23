@@ -31,6 +31,8 @@
 #include "fields/field_algo_base.hh"
 #include "fields/field_values.hh"
 #include "fields/field_value_cache.hh"
+#include "fields/field.hh"
+#include "fields/multi_field.hh"
 
 template <int spacedim> class ElementAccessor;
 
@@ -112,7 +114,7 @@ namespace detail
     /**
      * Return component 'i_comp' of the multifield 'f' or the field 'f'.
      */
-    template<class FIELD>
+    /*template<class FIELD>
     auto field_component(FIELD f, uint i_comp) -> decltype(auto)
     {
         if (f.is_multifield()) {
@@ -120,6 +122,26 @@ namespace detail
         } else {
             return f;
         }
+    }*/
+
+    /**
+     * Return component 'i_comp' of the multifield 'f'.
+     */
+    template<int spacedim, class Value>
+    auto field_component(MultiField<spacedim, Value> f, uint i_comp) -> decltype(auto)
+    {
+        ASSERT(f.is_multifield());
+        return f[i_comp];
+    }
+
+    /**
+     * Return the field 'f'. Variant to previous method.
+     */
+    template<int spacedim, class Value>
+    auto field_component(Field<spacedim, Value> f, uint i_comp) -> decltype(auto)
+    {
+        ASSERT(!f.is_multifield());
+        return f;
     }
 
     /**
