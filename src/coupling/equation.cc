@@ -33,6 +33,13 @@
  * Implementation of EqBase
  */
 
+Input::Type::Record & EquationBase::record_template() {
+    return Input::Type::Record("EquationBase_AUX", "Auxiliary record with keys common for equations. Should not be used.")
+        .declare_key("time", TimeGovernor::get_input_type(), Input::Type::Default("{}"),
+                    "Time governor setting.")
+		    .close();
+}
+
 EquationBase::EquationBase()
 : equation_empty_(true),
   mesh_(NULL),
