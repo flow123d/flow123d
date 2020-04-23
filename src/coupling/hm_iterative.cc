@@ -248,6 +248,8 @@ void HM_Iterative::update_potential()
     auto potential_vec_ = data_.potential_ptr_->get_data_vec();
     auto dh = data_.potential_ptr_->get_dofhandler();
     double difference2 = 0, norm2 = 0;
+    Field<3, FieldValue<3>::Scalar> field_edge_pressure;
+    field_edge_pressure.copy_from(*flow_->data().field("pressure_edge"));
     for ( auto ele : dh->local_range() )
     {
         auto elm = ele.elm();
@@ -257,7 +259,7 @@ void HM_Iterative::update_potential()
             double alpha = data_.alpha.value(side.centre(), elm);
             double density = data_.density.value(side.centre(), elm);
             double gravity = data_.gravity.value(side.centre(), elm);
-            double pressure = flow_->data().field_edge_pressure.value(side.centre(), elm);
+            double pressure = field_edge_pressure.value(side.centre(), elm);
             double potential = -alpha*density*gravity*pressure;
         
             if (ele.is_own())

@@ -233,11 +233,17 @@ private:
 
 /** Create FieldFE from dhf handler */
 template <int spacedim, class Value>
-std::shared_ptr<FieldFE<spacedim, Value> > create_field_fe(std::shared_ptr<DOFHandlerMultiDim> dh)
+std::shared_ptr<FieldFE<spacedim, Value> > create_field_fe(std::shared_ptr<DOFHandlerMultiDim> dh,
+                                                           unsigned int comp = 0,
+                                                           VectorMPI *vec = nullptr)
 {
 	// Construct FieldFE
 	std::shared_ptr< FieldFE<spacedim, Value> > field_ptr = std::make_shared< FieldFE<spacedim, Value> >();
-	field_ptr->set_fe_data( dh, 0, dh->create_vector() );
+    if (vec == nullptr)
+	    field_ptr->set_fe_data( dh, comp, dh->create_vector() );
+    else
+        field_ptr->set_fe_data( dh, comp, *vec );
+    
 	return field_ptr;
 }
 

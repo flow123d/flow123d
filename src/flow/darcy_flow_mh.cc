@@ -192,6 +192,11 @@ DarcyMH::EqData::EqData()
              .flags(FieldFlag::equation_result)
              .description("Pressure solution - P0 interpolation.");
 
+    *this += field_edge_pressure.name("pressure_edge")
+             .units(UnitSI().m())
+             .flags(FieldFlag::input_copy)
+             .description("Pressure solution - Crouzeix-Raviart interpolation.");
+
     *this += field_ele_piezo_head.name("piezo_head_p0")
 	         .units(UnitSI().m())
              .flags(FieldFlag::equation_result)
@@ -431,20 +436,22 @@ void DarcyMH::initialize() {
     output_object = new DarcyFlowMHOutput(this, input_record_);
 
     { // construct pressure, velocity and piezo head fields
-		ele_flux_ptr = std::make_shared< FieldFE<3, FieldValue<3>::VectorFixed> >();
 		uint rt_component = 0;
-		ele_flux_ptr->set_fe_data(data_->dh_, rt_component);
-		ele_velocity_ptr = std::make_shared< FieldDivide<3, FieldValue<3>::VectorFixed> >(ele_flux_ptr, data_->cross_section);
+        ele_flux_ptr = create_field_fe<3, FieldValue<3>::VectorFixed>(data_->dh_, rt_component);
+		auto ele_velocity_ptr = std::make_shared< FieldDivide<3, FieldValue<3>::VectorFixed> >(ele_flux_ptr, data_->cross_section);
 		data_->field_ele_velocity.set_field(mesh_->region_db().get_region_set("ALL"), ele_velocity_ptr);
 		data_->full_solution = ele_flux_ptr->get_data_vec();
 
-		ele_pressure_ptr = std::make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
 		uint p_ele_component = 0;
-		ele_pressure_ptr->set_fe_data(data_->dh_, p_ele_component, ele_flux_ptr->get_data_vec());
+        auto ele_pressure_ptr = create_field_fe<3, FieldValue<3>::Scalar>(data_->dh_, p_ele_component, &data_->full_solution);
 		data_->field_ele_pressure.set_field(mesh_->region_db().get_region_set("ALL"), ele_pressure_ptr);
 
+        uint p_edge_component = 1;
+        auto edge_pressure_ptr = create_field_fe<3, FieldValue<3>::Scalar>(data_->dh_, p_edge_component, &data_->full_solution);
+		data_->field_edge_pressure.set_field(mesh_->region_db().get_region_set("ALL"), edge_pressure_ptr);
+
 		arma::vec4 gravity = (-1) * data_->gravity_;
-		ele_piezo_head_ptr = std::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar> >(gravity, ele_pressure_ptr);
+		auto ele_piezo_head_ptr = std::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar> >(gravity, ele_pressure_ptr);
 		data_->field_ele_piezo_head.set_field(mesh_->region_db().get_region_set("ALL"), ele_piezo_head_ptr);
     }
 

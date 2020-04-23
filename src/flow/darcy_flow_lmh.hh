@@ -162,7 +162,6 @@ public:
         double time_step_;
         
         std::shared_ptr<LinSys> lin_sys_schur;  //< Linear system of the 2. Schur complement.
-        FieldFE<3, FieldValue<3>::Scalar> field_edge_pressure;
         VectorMPI p_edge_solution;               //< 2. Schur complement solution
         VectorMPI p_edge_solution_previous;      //< 2. Schur complement previous solution (iterative)
         VectorMPI p_edge_solution_previous_time; //< 2. Schur complement previous solution (time)
@@ -308,10 +307,7 @@ protected:
 
     // Temporary objects holding pointers to appropriate FieldFE
     // TODO remove after final fix of equations
-    std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> ele_pressure_ptr;             ///< Field of pressure head in barycenters of elements.
-    std::shared_ptr<FieldAddPotential<3, FieldValue<3>::Scalar>> ele_piezo_head_ptr; ///< Field of piezo-metric head in barycenters of elements.
     std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> ele_flux_ptr;            ///< Field of flux in barycenter of every element.
-    std::shared_ptr<FieldDivide<3, FieldValue<3>::VectorFixed>> ele_velocity_ptr;    ///< Field of velocity in barycenter of every element.
 
 	std::shared_ptr<EqData> data_;
 
