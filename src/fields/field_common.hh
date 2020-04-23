@@ -206,10 +206,12 @@ public:
 				THROW( Input::ExcInputMessage() << EI_Message("The field " + this->input_name()
 													+ " has set non-unique names of components.") );
 			}
+			shared_->n_comp_ = names.size();
+    	} else {
+            shared_->n_comp_ = (shared_->n_comp_ ? names.size() : 0);
     	}
 
-        shared_->comp_names_ = names;
-        shared_->n_comp_ = (shared_->n_comp_ ? names.size() : 0);
+    	shared_->comp_names_ = names;
     }
 
 
