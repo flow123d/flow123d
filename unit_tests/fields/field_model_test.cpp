@@ -141,16 +141,27 @@ TEST(FieldModelTest, create) {
 
 }
 
+
+
+typedef MultiField<3, FieldValue<3>::Scalar> MultiField3Comp;
+typedef MultiField3Comp::SubFieldBaseType ScalarField;
+
+
 // Test of FieldModel - test of MultiFields (static method Model::create_multi)
 TEST(FieldModelTest, create_multi) {
-	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+    typedef FieldAlgorithmBase<3, FieldValue<3>::Scalar> FieldBaseType;
+    typedef std::shared_ptr< FieldBaseType > FieldBasePtr;
+
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 	PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
     unsigned int n_items = 10; // number of tested items
 
-    Field<3, FieldValue<3>::Scalar > f_scal;
-    MultiField<3, FieldValue<3>::Scalar> f_multi;
+    Field<3, FieldValue<3>::Scalar> f_scal;
+    MultiField3Comp f_multi;
     ElementCacheMap elm_cache_map;
     std::vector<string> component_names = { "comp_0", "comp_1", "comp_2" };
+    Mesh *mesh = mesh_full_constructor("{mesh_file=\"mesh/cube_2x1.msh\"}");
+    TimeGovernor tg(0.0, 1.0);
 
     // initialize field caches
     std::shared_ptr<EvalPoints> eval_points = std::make_shared<EvalPoints>();
@@ -159,13 +170,19 @@ TEST(FieldModelTest, create_multi) {
     eval_points->add_bulk<3>(*q_bulk );
     eval_points->add_edge<3>(*q_side );
     elm_cache_map.init(eval_points);
+    f_scal.name("field_scalar");
     f_scal.cache_allocate(eval_points);
-    f_multi.cache_allocate(eval_points);
+    f_multi.name("field_multi");
     f_multi.set_components(component_names);
+    f_multi.set_mesh( *mesh );
+    std::vector<FieldBasePtr> field_vec;
+    for (uint i=0; i<3; ++i) {
+        field_vec.push_back( std::make_shared< FieldConstant<3, FieldValue<3>::Scalar> >() );
+    }
+    f_multi.set_fields(mesh->region_db().get_region_set("ALL"), field_vec);
+    f_multi.cache_allocate(eval_points); // cache_allocate must be called after set_fields!!
 
     // Create FieldModel (descendant of FieladAlgoBase) set to Field
-    Mesh *mesh = mesh_full_constructor("{mesh_file=\"mesh/cube_2x1.msh\"}");
-    TimeGovernor tg(0.0, 1.0);
     //auto f_product_ptr = Model<3, FieldValue<3>::Scalar>::create_multi(fn_product, f_scal, f_multi);
 
 }
