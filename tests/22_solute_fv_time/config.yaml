@@ -10,5 +10,5 @@ test_cases:
 
 - files:
   - 04_unsteady_flow.yaml
-  time_limit: 240
+  time_limit: 120
 
