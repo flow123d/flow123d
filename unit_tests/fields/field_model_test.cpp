@@ -147,6 +147,20 @@ typedef MultiField<3, FieldValue<3>::Scalar> MultiField3Comp;
 typedef MultiField3Comp::SubFieldBaseType ScalarField;
 
 
+// Functor with resolution 'scalar * multi'
+Scalar multi_product(Scalar a, Scalar v) {
+	std::cout << "Functor: " << std::endl;
+	std::cout << a << v;
+    return a * v;
+}
+
+
+// Functor with resolution 'multi + scalar * multi'
+Scalar multi_other(Scalar a, Scalar c, Scalar b) {
+    return a + c * b;
+}
+
+
 // Test of FieldModel - test of MultiFields (static method Model::create_multi)
 TEST(FieldModelTest, create_multi) {
     typedef FieldAlgorithmBase<3, FieldValue<3>::Scalar> FieldBaseType;
@@ -183,6 +197,83 @@ TEST(FieldModelTest, create_multi) {
     f_multi.cache_allocate(eval_points); // cache_allocate must be called after set_fields!!
 
     // Create FieldModel (descendant of FieladAlgoBase) set to Field
-    auto f_product_ptr = Model<3, FieldValue<3>::Scalar>::create_multi(fn_product, f_scal, f_multi);
+    auto f_product_ptr = Model<3, FieldValue<3>::Scalar>::create_multi(multi_product, f_scal, f_multi);
+    MultiField<3, FieldValue<3>::Scalar> f_product;
+    f_product.name("multi_product");
+    f_product.set_components(component_names);
+    f_product.set_mesh( *mesh );
+    f_product.set_fields(mesh->region_db().get_region_set("ALL"), f_product_ptr);
+    f_product.cache_allocate(eval_points);
+    f_product.set_time(tg.step(), LimitSide::right);
+    // Same as previous but with other functor
+    /*auto f_other_ptr = Model<3, FieldValue<3>::VectorFixed>::create(fn_other, f_multi, f_scal, f_multi);
+    MultiField<3, FieldValue<3>::Scalar> f_other;
+    f_other.name("multi_other");
+    f_other.set_components(component_names);
+    f_other.set_mesh( *mesh );
+    f_other.set_field(mesh->region_db().get_region_set("ALL"), f_other_ptr);
+    f_other.cache_allocate(eval_points);
+    f_other.set_time(tg.step(), LimitSide::right);*/
+
+    // fill field caches
+    elm_cache_map.start_elements_update();
+    auto &cache_data = elm_cache_map.update_cache_data();
+    cache_data.region_cache_indices_map_.insert( {1, ElementCacheMap::RegionData()} );
+    cache_data.region_cache_indices_range_.insert( {1, 0} );
+    cache_data.region_cache_indices_range_.find(1)->second = 0;
+    cache_data.region_value_cache_range_[0] = 0;
+    cache_data.region_value_cache_range_[1] = 10;
+    arma::mat::fixed<1,1> scalar_val;
+    std::vector< arma::mat::fixed<1,1> > multi_val;
+    multi_val.resize( f_multi.size() );
+    for (unsigned int i=0; i<n_items; ++i) {
+        scalar_val(0,0) = 1.0 + i*0.5;
+        multi_val[0](0,0) = 1.5 + 2*i;
+        multi_val[1](0,0) = i + 0.1;
+        multi_val[2](0,0) = 0.5 + i%2;
+        f_scal.value_cache().data().set(i) = scalar_val;
+        for (unsigned int j=0; j<f_multi.size(); ++j)
+            f_multi[j].value_cache().data().set(i) = multi_val[j];
+    }
+
+    {
+        // FieldModel scalar * vector
+        std::vector<arma::vec3> expected_vals = {{  1.50,  0.10, 0.50},
+                                                 {  5.25,  1.65, 2.25},
+                                                 { 11.00,  4.20, 1.00},
+                                                 { 18.75,  7.75, 3.75},
+                                                 { 28.50, 12.30, 1.50},
+                                                 { 40.25, 17.85, 5.25},
+                                                 { 54.00, 24.40, 2.00},
+                                                 { 69.75, 31.95, 6.75},
+                                                 { 87.50, 40.50, 2.50},
+                                                 {107.25, 50.05, 8.25}};
+
+        //f_product.cache_update(elm_cache_map);
+        //for (unsigned int i=0; i<n_items; ++i) {
+        //    auto val = f_product.value_cache().data().template mat<3, 1>(i);
+        //    EXPECT_ARMA_EQ(val, expected_vals[i]);
+        //}
+    }
+
+    /*{
+        // FieldModel vector + scalar * vector
+        std::vector<arma::vec3> expected_vals = {{  3.00,  0.20, 1.00},
+                                                 {  8.75,  2.75, 3.75},
+                                                 { 16.50,  6.30, 1.50},
+                                                 { 26.25, 10.85, 5.25},
+                                                 { 38.00, 16.40, 2.00},
+                                                 { 51.75, 22.95, 6.75},
+                                                 { 67.50, 30.50, 2.50},
+                                                 { 85.25, 39.05, 8.25},
+                                                 {105.00, 48.60, 3.00},
+                                                 {126.75, 59.15, 9.75}};
+
+        f_other.cache_update(elm_cache_map);
+        for (unsigned int i=0; i<n_items; ++i) {
+            auto val = f_other.value_cache().data().template mat<3, 1>(i);
+            EXPECT_ARMA_EQ(val, expected_vals[i]);
+        }
+    }*/
 
 }
