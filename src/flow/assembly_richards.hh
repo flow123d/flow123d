@@ -100,7 +100,8 @@ protected:
 
         reset_soil_model(dh_cell);
         const ElementAccessor<3> ele = dh_cell.elm();
-        double storativity = ad_->storativity.value(ele.centre(), ele);
+        double storativity = ad_->storativity.value(ele.centre(), ele)
+                             + ad_->extra_storativity.value(ele.centre(), ele);
         VectorMPI water_content_vec = ad_->water_content_ptr->get_data_vec();
 
         for (unsigned int i=0; i<ele->n_sides(); i++) {
@@ -142,7 +143,9 @@ protected:
         
         // set lumped source
         double diagonal_coef = ele.measure() * cross_section / ele->n_sides();
-        double source_diagonal = diagonal_coef * ad_->water_source_density.value(ele.centre(), ele);
+        double source_diagonal = diagonal_coef * 
+                        ( ad_->water_source_density.value(ele.centre(), ele)
+                        + ad_->extra_source.value(ele.centre(), ele));
 
         VectorMPI water_content_vec = ad_->water_content_ptr->get_data_vec();
 

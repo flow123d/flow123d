@@ -150,6 +150,7 @@ const it::Record & DarcyMH::get_input_type() {
     
     return it::Record("Flow_Darcy_MH", "Mixed-Hybrid  solver for saturated Darcy flow.")
 		.derive_from(DarcyFlowInterface::get_input_type())
+        .copy_keys(EquationBase::record_template())
         .declare_key("gravity", it::Array(it::Double(), 3,3), it::Default("[ 0, 0, -1]"),
                 "Vector of the gravity force. Dimensionless.")
 		.declare_key("input_fields", it::Array( type_field_descriptor() ), it::Default::obligatory(),
@@ -167,8 +168,6 @@ const it::Record & DarcyMH::get_input_type() {
                 "Includes raw output and some experimental functionality.")
         .declare_key("balance", Balance::get_input_type(), it::Default("{}"),
                 "Settings for computing mass balance.")
-        .declare_key("time", TimeGovernor::get_input_type(), it::Default("{}"),
-                "Time governor settings for the unsteady Darcy flow model.")
 		.declare_key("n_schurs", it::Integer(0,2), it::Default("2"),
 				"Number of Schur complements to perform when solving MH system.")
 		.declare_key("mortar_method", get_mh_mortar_selection(), it::Default("\"None\""),
@@ -191,6 +190,11 @@ DarcyMH::EqData::EqData()
              .units(UnitSI().m())
              .flags(FieldFlag::equation_result)
              .description("Pressure solution - P0 interpolation.");
+
+    *this += field_edge_pressure.name("pressure_edge")
+             .units(UnitSI().m())
+             .flags(FieldFlag::input_copy)
+             .description("Pressure solution - Crouzeix-Raviart interpolation.");
 
     *this += field_ele_piezo_head.name("piezo_head_p0")
 	         .units(UnitSI().m())
@@ -274,6 +278,18 @@ DarcyMH::EqData::EqData()
             .description("Storativity (in time dependent problems).")
             .input_default("0.0")
             .units( UnitSI().m(-1) );
+    
+    *this += extra_storativity.name("extra_storativity")
+            .description("Storativity added from upstream equation.")
+            .units( UnitSI().m(-1) )
+            .input_default("0.0")
+            .flags( input_copy );
+    
+    *this += extra_source.name("extra_water_source_density")
+            .description("Water source density added from upstream equation.")
+            .input_default("0.0")
+            .units( UnitSI().s(-1) )
+            .flags( input_copy );
 
     //time_term_fields = this->subset({"storativity"});
     //main_matrix_fields = this->subset({"anisotropy", "conductivity", "cross_section", "sigma", "bc_type", "bc_robin_sigma"});
@@ -294,7 +310,7 @@ DarcyMH::EqData::EqData()
  *
  */
 //=============================================================================
-DarcyMH::DarcyMH(Mesh &mesh_in, const Input::Record in_rec)
+DarcyMH::DarcyMH(Mesh &mesh_in, const Input::Record in_rec, TimeGovernor *tm)
 : DarcyFlowInterface(mesh_in, in_rec),
     output_object(nullptr),
     data_changed_(false),
@@ -307,11 +323,21 @@ DarcyMH::DarcyMH(Mesh &mesh_in, const Input::Record in_rec)
 
     START_TIMER("Darcy constructor");
     {
-        auto time_record = input_record_.val<Input::Record>("time");
-        //if ( in_rec.opt_val("time", time_record) )
-            time_ = new TimeGovernor(time_record);
-        //else
-        //    time_ = new TimeGovernor();
+        auto time_rec = in_rec.val<Input::Record>("time");
+        if (tm == nullptr)
+        {
+            time_ = new TimeGovernor(time_rec);
+        }
+        else
+        {
+            TimeGovernor tm_from_rec(time_rec);
+            if (!tm_from_rec.is_default()) // is_default() == false when time record is present in input file
+            { 
+                MessageOut() << "Duplicate key 'time', time in flow equation is already initialized from parent class!";
+                ASSERT(false);
+            }
+            time_ = tm;
+        }
     }
 
     data_ = make_shared<EqData>();
@@ -409,20 +435,22 @@ void DarcyMH::initialize() {
     output_object = new DarcyFlowMHOutput(this, input_record_);
 
     { // construct pressure, velocity and piezo head fields
-		ele_flux_ptr = std::make_shared< FieldFE<3, FieldValue<3>::VectorFixed> >();
 		uint rt_component = 0;
-		ele_flux_ptr->set_fe_data(data_->dh_, rt_component);
-		ele_velocity_ptr = std::make_shared< FieldDivide<3, FieldValue<3>::VectorFixed> >(ele_flux_ptr, data_->cross_section);
+        ele_flux_ptr = create_field_fe<3, FieldValue<3>::VectorFixed>(data_->dh_, rt_component);
+		auto ele_velocity_ptr = std::make_shared< FieldDivide<3, FieldValue<3>::VectorFixed> >(ele_flux_ptr, data_->cross_section);
 		data_->field_ele_velocity.set_field(mesh_->region_db().get_region_set("ALL"), ele_velocity_ptr);
 		data_->full_solution = ele_flux_ptr->get_data_vec();
 
-		ele_pressure_ptr = std::make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
 		uint p_ele_component = 0;
-		ele_pressure_ptr->set_fe_data(data_->dh_, p_ele_component, ele_flux_ptr->get_data_vec());
+        auto ele_pressure_ptr = create_field_fe<3, FieldValue<3>::Scalar>(data_->dh_, p_ele_component, &data_->full_solution);
 		data_->field_ele_pressure.set_field(mesh_->region_db().get_region_set("ALL"), ele_pressure_ptr);
 
+        uint p_edge_component = 1;
+        auto edge_pressure_ptr = create_field_fe<3, FieldValue<3>::Scalar>(data_->dh_, p_edge_component, &data_->full_solution);
+		data_->field_edge_pressure.set_field(mesh_->region_db().get_region_set("ALL"), edge_pressure_ptr);
+
 		arma::vec4 gravity = (-1) * data_->gravity_;
-		ele_piezo_head_ptr = std::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar> >(gravity, ele_pressure_ptr);
+		auto ele_piezo_head_ptr = std::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar> >(gravity, ele_pressure_ptr);
 		data_->field_ele_piezo_head.set_field(mesh_->region_db().get_region_set("ALL"), ele_piezo_head_ptr);
     }
 
@@ -522,7 +550,15 @@ void DarcyMH::update_solution()
     time_->next_time();
 
     time_->view("DARCY"); //time governor information output
+
+    solve_time_step();
+}
+
+
+void DarcyMH::solve_time_step(bool output)
+{
     data_changed_ = data_->set_time(time_->step(), LimitSide::left) || data_changed_;
+    
     bool zero_time_term_from_left=zero_time_term();
 
     bool jump_time = data_->storativity.is_jump_time();
@@ -532,8 +568,8 @@ void DarcyMH::update_solution()
 
         // this flag is necesssary for switching BC to avoid setting zero neumann on the whole boundary in the steady case
         use_steady_assembly_ = false;
-        prepare_new_time_step(); //SWAP
 
+        prepare_new_time_step();
         solve_nonlinear(); // with left limit data
         if (jump_time) {
         	WarningOut() << "Output of solution discontinuous in time not supported yet.\n";
@@ -545,7 +581,7 @@ void DarcyMH::update_solution()
     if (time_->is_end()) {
         // output for unsteady case, end_time should not be the jump time
         // but rether check that
-        if (! zero_time_term_from_left && ! jump_time) output_data();
+        if (! zero_time_term_from_left && ! jump_time && output) output_data();
         return;
     }
 
@@ -561,10 +597,11 @@ void DarcyMH::update_solution()
         //solution_transfer(); // internally call set_time(T, left) and set_time(T,right) again
         //solve_nonlinear(); // with right limit data
     }
+    
     //solution_output(T,right_limit); // data for time T in any case
-    output_data();
-
+    if (output) output_data();
 }
+
 
 bool DarcyMH::zero_time_term(bool time_global) {
     if (time_global) {
@@ -659,10 +696,9 @@ void DarcyMH::solve_nonlinear()
     }
 }
 
-
 void DarcyMH::prepare_new_time_step()
 {
-    //VecSwap(previous_solution, schur0->get_solution());
+    VecSwap(previous_solution, schur0->get_solution());
 }
 
 void DarcyMH::postprocess() 
@@ -882,7 +918,8 @@ void DarcyMH::assembly_source_term()
 
         // set sources
         double source = ele.measure() * cs *
-                data_->water_source_density.value(ele.centre(), ele);
+                (data_->water_source_density.value(ele.centre(), ele)
+                +data_->extra_source.value(ele.centre(), ele));
         // TODO: replace with DHCell getter when available for FESystem component
         schur0->rhs_set_value(global_dofs[ndofs/2], -1.0 * source );
 
@@ -1417,8 +1454,9 @@ void DarcyMH::setup_time_term() {
         const uint p_ele_dof = dh_cell.n_dofs() / 2;
         // set new diagonal
         double diagonal_coeff = data_->cross_section.value(ele.centre(), ele)
-        		* data_->storativity.value(ele.centre(), ele)
-				* ele.measure();
+            * ( data_->storativity.value(ele.centre(), ele)
+               +data_->extra_storativity.value(ele.centre(), ele))
+            * ele.measure();
         local_diagonal[dh_cell.get_loc_dof_indices()[p_ele_dof]]= - diagonal_coeff / time_->dt();
 
         balance_->add_mass_values(data_->water_balance_idx, dh_cell,
@@ -1448,8 +1486,8 @@ void DarcyMH::modify_system() {
 	}
 
     // modify RHS - add previous solution
-    //VecPointwiseMult(*( schur0->get_rhs()), new_diagonal, previous_solution);
-	VecPointwiseMult(*( schur0->get_rhs()), new_diagonal, schur0->get_solution());
+    VecPointwiseMult(*( schur0->get_rhs()), new_diagonal, previous_solution);
+// 	VecPointwiseMult(*( schur0->get_rhs()), new_diagonal, schur0->get_solution());
     VecAXPY(*( schur0->get_rhs()), 1.0, steady_rhs);
     schur0->set_rhs_changed();
 

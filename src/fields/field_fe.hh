@@ -247,4 +247,34 @@ private:
 };
 
 
+/** Create FieldFE from dhf handler */
+template <int spacedim, class Value>
+std::shared_ptr<FieldFE<spacedim, Value> > create_field_fe(std::shared_ptr<DOFHandlerMultiDim> dh,
+                                                           unsigned int comp = 0,
+                                                           VectorMPI *vec = nullptr)
+{
+	// Construct FieldFE
+	std::shared_ptr< FieldFE<spacedim, Value> > field_ptr = std::make_shared< FieldFE<spacedim, Value> >();
+    if (vec == nullptr)
+	    field_ptr->set_fe_data( dh, comp, dh->create_vector() );
+    else
+        field_ptr->set_fe_data( dh, comp, *vec );
+    
+	return field_ptr;
+}
+
+
+/** Create FieldFE with parallel VectorMPI from finite element */
+template <int spacedim, class Value>
+std::shared_ptr<FieldFE<spacedim, Value> > create_field_fe(Mesh & mesh, const MixedPtr<FiniteElement> &fe)
+{
+	// Prepare DOF handler
+	std::shared_ptr<DOFHandlerMultiDim> dh_par = std::make_shared<DOFHandlerMultiDim>(mesh);
+	std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( &mesh, fe);
+	dh_par->distribute_dofs(ds);
+
+	return create_field_fe<spacedim,Value>(dh_par);
+}
+
+
 #endif /* FIELD_FE_HH_ */

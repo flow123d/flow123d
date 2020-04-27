@@ -15,6 +15,7 @@
 #include "fields/field_values.hh"    // for FieldValue<>::Scalar, FieldValue
 #include "la/vector_mpi.hh"          // for VectorMPI
 #include "flow/darcy_flow_lmh.hh"    // for DarcyLMH, DarcyLMH::EqData
+#include "flow/darcy_flow_mh_output.hh" // for DarcyFlowMHOutput
 #include "input/type_base.hh"        // for Array
 #include "input/type_generic.hh"     // for Instance
 
@@ -91,9 +92,15 @@ public:
         std::shared_ptr<SoilModelBase> soil_model_;
     };
 
-    RichardsLMH(Mesh &mesh, const Input::Record in_rec);
+    RichardsLMH(Mesh &mesh, const Input::Record in_rec, TimeGovernor *tm = nullptr);
 
     static const Input::Type::Record & get_input_type();
+    
+    const DarcyFlowMHOutput::OutputFields &output_fields()
+    { return this->output_object->get_output_fields(); }
+
+    void accept_time_step() override;
+    
 protected:
     /// Registrar of class to factory
     static const int registrar;
@@ -104,7 +111,6 @@ protected:
 
     void initial_condition_postprocess() override;
     void assembly_linear_system() override;
-    void accept_time_step() override;
 private:
 
     std::shared_ptr<EqData> data_;

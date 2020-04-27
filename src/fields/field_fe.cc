@@ -52,78 +52,6 @@ namespace it = Input::Type;
 FLOW123D_FORCE_LINK_IN_CHILD(field_fe)
 
 
-/**
- * Helper class, allow to simplify computing value of FieldFE.
- *
- * Use correct method FEValues<...>::shape_xxx given with Value::rank_.
- * Is done by class partial specialization as, we were not able to do this using function overloading (since
- * they differ only by return value) and partial specialization of the function templates is not supported  in C++.
- */
-/*template<int rank, int spacedim, class Value>
-class EvalShapeHandler {
-public:
-
-    inline static Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> fe_value(FEValues<spacedim> &fe_val, unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
-    {
-        ASSERT(false).error("Unsupported format of FieldFE!\n");
-        Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> ret;
-        ret.fill(0);
-        return ret;
-    }
-};
-
-
-/// Partial template specialization of EvalShapeHandler for scalar fields
-template<int spacedim, class Value>
-class EvalShapeHandler<0, spacedim, Value> {
-public:
-    inline static Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> fe_value(FEValues<3> &fe_val, unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
-    {
-        ASSERT_LT_DBG( comp_index, spacedim);
-        ASSERT_LT_DBG( i_dof, fe_val.n_dofs() );
-        ASSERT_LT_DBG( i_qp, fe_val.n_points() );
-        Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> v;
-        for (unsigned int c=0; c<Value::NRows_*Value::NCols_; ++c)
-            v(c%spacedim,c/spacedim) = fe_val.shape_value_component(i_dof, i_qp, comp_index+c);
-        return v;
-    }
-};
-
-
-/// Partial template specialization of EvalShapeHandler for vector fields
-template<int spacedim, class Value>
-class EvalShapeHandler<1, spacedim, Value> {
-public:
-    inline static Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> fe_value(FEValues<3> &fe_val, unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
-    {
-        ASSERT_LT_DBG( comp_index, spacedim);
-        ASSERT_LT_DBG( i_dof, fe_val.n_dofs() );
-        ASSERT_LT_DBG( i_qp, fe_val.n_points() );
-        Armor::ArmaMat<typename Value::element_type, Value::NCols_, Value::NRows_> v;
-        for (unsigned int c=0; c<Value::NRows_*Value::NCols_; ++c)
-            v(c/spacedim,c%spacedim) = fe_val.shape_value_component(i_dof, i_qp, comp_index+c);
-        return v;
-    }
-};
-
-
-/// Partial template specialization of EvalShapeHandler for tensor fields
-template<int spacedim, class Value>
-class EvalShapeHandler<2, spacedim, Value> {
-public:
-    inline static Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> fe_value(FEValues<3> &fe_val, unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
-    {
-        ASSERT_LT_DBG( comp_index, spacedim);
-        ASSERT_LT_DBG( i_dof, fe_val.n_dofs() );
-        ASSERT_LT_DBG( i_qp, fe_val.n_points() );
-        Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> v;
-        for (unsigned int c=0; c<Value::NRows_*Value::NCols_; ++c)
-            v(c/spacedim,c%spacedim) = fe_val.shape_value_component(i_dof, i_qp, comp_index+c);
-        return v;
-    }
-};*/
-
-
 
 /************************************************************************************
  * Implementation of FieldFE methods
@@ -336,7 +264,6 @@ void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::elem
             mat_value.fill(0.0);
     		for (unsigned int i_dof=0; i_dof<loc_dofs.n_elem; i_dof++) {
     		    mat_value += data_vec_[loc_dofs[i_dof]] * this->handle_fe_shape(elm.dim(), i_dof, i_ep, 0);
-//    		                     * EvalShapeHandler<Value::rank_, spacedim, Value>::fe_value(fe_values_[elm.dim()], i_dof, i_ep, 0);
     		}
     		data_cache.data().set(field_cache_idx) = mat_value;
         }
