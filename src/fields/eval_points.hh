@@ -61,7 +61,7 @@ public:
 
     /// Return local coordinates of given local point and appropriate dim.
     template<unsigned int dim>
-    inline arma::vec local_point(unsigned int local_point_idx) const {
+    inline arma::vec::fixed<dim> local_point(unsigned int local_point_idx) const {
         return dim_eval_points_[dim-1].local_point<dim>(local_point_idx);
     }
 
@@ -122,7 +122,7 @@ private:
 
         /// Return local coordinates of given local point.
         template<unsigned int dim>
-        inline arma::vec local_point(unsigned int local_point_idx) const {
+        inline arma::vec::fixed<dim> local_point(unsigned int local_point_idx) const {
             ASSERT_LT_DBG(local_point_idx, this->size());
             return local_points_.vec<dim>(local_point_idx);
         }

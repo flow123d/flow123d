@@ -165,10 +165,11 @@ unsigned int FieldAlgorithmBase<spacedim, Value>::n_comp() const {
 template<int spacedim, class Value>
 void FieldAlgorithmBase<spacedim, Value>::cache_update(
             FMT_UNUSED FieldValueCache<typename Value::element_type> &data_cache,
-            FMT_UNUSED unsigned int i_cache_el_begin,
-            FMT_UNUSED unsigned int i_cache_el_end,
-   	        FMT_UNUSED const std::vector< ElementAccessor<spacedim> > &element_set)
-{}
+			FMT_UNUSED ElementCacheMap &cache_map,
+			FMT_UNUSED unsigned int region_idx)
+{
+	   //ASSERT(false).error("Must be implemented in descendants!\n");
+}
 
 
 template<int spacedim, class Value>

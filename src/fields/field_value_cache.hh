@@ -103,27 +103,31 @@ private:
  */
 class ElementCacheMap {
 public:
-	typedef std::vector<ElementAccessor<3>> ElementSet;
-
     /// Number of cached elements which values are stored in cache.
     static constexpr unsigned int n_cached_elements = 20;
 
     /// Index of invalid element in cache.
     static const unsigned int undef_elem_idx;
 
+    /**
+     * Holds elements indices of one region stored in cache.
+     *
+     * TODO: Auxilliary structure, needs optimization:
+     * Proposal -
+     *  - store element indices of all regions to one unique set (hold as data member of ElementCacheMap)
+     *  - sort elements by regions in prepare_elements_to_update method
+     *  - there is only problem that we have to construct ElementAccessors repeatedly
+     */
     struct RegionData {
     public:
         /// Constructor
-        RegionData() {
-        	element_set_.reserve(ElementCacheMap::n_cached_elements);
-        }
+        RegionData() : n_elements_(0) {}
 
         /// Add element if does not exist
         bool add(ElementAccessor<3> elm) {
-            unsigned int size = element_set_.size();
-            if (std::find(elm_indices_.begin(), elm_indices_.begin()+size, elm.idx()) == elm_indices_.begin()+size) {
-                elm_indices_[size] = elm.idx();
-                element_set_.push_back(elm);
+            if (std::find(elm_indices_.begin(), elm_indices_.begin()+n_elements_, elm.idx()) == elm_indices_.begin()+n_elements_) {
+                elm_indices_[n_elements_] = elm.idx();
+                n_elements_++;
                 return true;
             } else
                 return false;
@@ -131,22 +135,31 @@ public:
 
         /// Array of elements idx, ensures element uniqueness
         std::array<unsigned int, ElementCacheMap::n_cached_elements> elm_indices_;
-        /// Element vector
-        ElementSet element_set_;
-        /// Position in region in cache
-        unsigned int pos_;
+        /// Number of element indices
+        unsigned int n_elements_;
     };
 
-    /// Holds helper data necessary for cache update.
+    /**
+     * Holds data of regions (and their elements) stored in ElementCacheMap.
+     *
+     * TODO: Needs further optimization.
+     */
     class UpdateCacheHelper {
     public:
         /// Maps of data of different regions in cache
+    	/// TODO: auxiliary data membershould be removed or moved to sepaate structure.
         std::unordered_map<unsigned int, RegionData> region_cache_indices_map_;
 
-        /// Maps of begin and end positions of different regions data in cache
-        std::array<unsigned int, ElementCacheMap::n_cached_elements+1> region_cache_indices_range_;
+        /// Holds positions of regions in cache
+        std::unordered_map<unsigned int, unsigned int> region_cache_indices_range_;
 
-        /// Number of elements in all regions stored in region_cache_indices_map_
+        /// Maps of begin and end positions of different regions data in FieldValueCache
+        std::array<unsigned int, ElementCacheMap::n_cached_elements+1> region_value_cache_range_;
+
+        /// Maps of begin and end positions of elements of different regions in ElementCacheMap
+        std::array<unsigned int, ElementCacheMap::n_cached_elements+1> region_element_cache_range_;
+
+        /// Number of elements in all regions holds in cache
         unsigned int n_elements_;
     };
 
@@ -171,12 +184,25 @@ public:
     /// Create map of used eval points on cached elements.
     void create_elements_points_map();
 
-    /// Clean helper data after reading data to cache.
-    void clear_elements_to_update();
+    /// Start update of cache.
+    void start_elements_update();
+
+    /// Finish update after reading data to cache.
+    void finish_elements_update();
 
     /// Return update cache data helper
     inline const UpdateCacheHelper &update_cache_data() const {
         return update_data_;
+    }
+
+    /// Return update cache data helper
+    inline UpdateCacheHelper &update_cache_data() {
+        return update_data_;
+    }
+
+    /// Getter of eval_points object.
+    inline std::shared_ptr<EvalPoints> eval_points() const {
+        return eval_points_;
     }
 
     /**
@@ -193,6 +219,11 @@ public:
     inline int get_field_value_cache_index(unsigned int elm_idx, unsigned int loc_point_idx) const {
         ASSERT_PTR_DBG(element_eval_points_map_);
         return element_eval_points_map_[elm_idx][loc_point_idx];
+    }
+
+    /// Return idx of element stored at given position of ElementCacheMap
+    inline unsigned int elm_idx_on_position(unsigned pos) const {
+        return elm_idx_[pos];
     }
 
     /// Set index of cell in ElementCacheMap (or undef value if cell is not stored in cache).
@@ -212,9 +243,11 @@ protected:
     void add_to_region(ElementAccessor<3> elm);
 
     /// Vector of element indexes stored in cache.
+    /// TODO: could be moved to UpdateCacheHelper structure
     std::vector<unsigned int> elm_idx_;
 
     /// Map of element indices stored in cache, allows reverse search to previous vector.
+    /// TODO: could be moved to UpdateCacheHelper structure
     std::unordered_map<unsigned int, unsigned int> cache_idx_;
 
     /// Pointer to EvalPoints
