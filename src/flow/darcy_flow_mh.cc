@@ -150,6 +150,7 @@ const it::Record & DarcyMH::get_input_type() {
     
     return it::Record("Flow_Darcy_MH", "Mixed-Hybrid  solver for saturated Darcy flow.")
 		.derive_from(DarcyFlowInterface::get_input_type())
+        .copy_keys(EquationBase::record_template())
         .declare_key("gravity", it::Array(it::Double(), 3,3), it::Default("[ 0, 0, -1]"),
                 "Vector of the gravity force. Dimensionless.")
 		.declare_key("input_fields", it::Array( type_field_descriptor() ), it::Default::obligatory(),
@@ -167,8 +168,6 @@ const it::Record & DarcyMH::get_input_type() {
                 "Includes raw output and some experimental functionality.")
         .declare_key("balance", Balance::get_input_type(), it::Default("{}"),
                 "Settings for computing mass balance.")
-        .declare_key("time", TimeGovernor::get_input_type(), it::Default("{}"),
-                "Time governor settings for the unsteady Darcy flow model.")
 		.declare_key("n_schurs", it::Integer(0,2), it::Default("2"),
 				"Number of Schur complements to perform when solving MH system.")
 		.declare_key("mortar_method", get_mh_mortar_selection(), it::Default("\"None\""),
