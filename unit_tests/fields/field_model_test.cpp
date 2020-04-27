@@ -183,6 +183,6 @@ TEST(FieldModelTest, create_multi) {
     f_multi.cache_allocate(eval_points); // cache_allocate must be called after set_fields!!
 
     // Create FieldModel (descendant of FieladAlgoBase) set to Field
-    //auto f_product_ptr = Model<3, FieldValue<3>::Scalar>::create_multi(fn_product, f_scal, f_multi);
+    auto f_product_ptr = Model<3, FieldValue<3>::Scalar>::create_multi(fn_product, f_scal, f_multi);
 
 }

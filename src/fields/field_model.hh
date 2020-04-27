@@ -171,17 +171,10 @@ namespace detail
 
 
 
-    template<typename Function, typename Tuple, size_t ... I>
-    auto call(Function f, Tuple t, std::index_sequence<I ...>)
-    {
-         return f(std::get<I>(t) ...);
-    }
 
     template<typename Function, typename Tuple>
     auto call(Function f, Tuple t)
     {
-        static constexpr auto size = std::tuple_size<Tuple>::value;
-        return call(f, t, std::make_index_sequence<size>{});
     }
 }
 
@@ -290,6 +283,14 @@ public:
         return std::make_shared<FieldModel<spacedim, Value, Fn, InputFields...>>(fn, std::forward<InputFields>(inputs)...);
     }
 
+
+
+    template<typename Function, typename Tuple, size_t ... I>
+    static auto call_create(Function f, Tuple t, std::index_sequence<I ...>)
+    {
+        return create(f, std::get<I>(t) ...);
+    }
+
     template<typename Fn, class ... InputFields>
     static auto create_multi(Fn *fn,  InputFields&&... inputs) -> decltype(auto)
     {
@@ -301,8 +302,10 @@ public:
         std::vector<FieldBasePtr> result_components;
         for(uint i=0; i<n_comp; i++) {
             const auto & component_of_inputs = detail::get_components< FieldTuple, n_inputs>::eval(field_tuple, i);
-            const auto & all_args = std::tuple_cat(std::make_tuple(fn), component_of_inputs);
-            FieldBasePtr component_field = detail::call(create, all_args);
+            //const auto & all_args = std::tuple_cat(std::make_tuple(fn), component_of_inputs);
+            //FieldBasePtr component_field = detail::call(create<Fn, InputFields&&...>, all_args);
+
+            FieldBasePtr component_field = call_create(fn, component_of_inputs, std::make_index_sequence<n_inputs>{});
             result_components.push_back(component_field);
         }
 
