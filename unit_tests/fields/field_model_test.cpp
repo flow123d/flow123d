@@ -149,8 +149,6 @@ typedef MultiField3Comp::SubFieldBaseType ScalarField;
 
 // Functor with resolution 'scalar * multi'
 Scalar multi_product(Scalar a, Scalar v) {
-	std::cout << "Functor: " << std::endl;
-	std::cout << a << v;
     return a * v;
 }
 
@@ -199,21 +197,19 @@ TEST(FieldModelTest, create_multi) {
     // Create FieldModel (descendant of FieladAlgoBase) set to Field
     auto f_product_ptr = Model<3, FieldValue<3>::Scalar>::create_multi(multi_product, f_scal, f_multi);
     MultiField<3, FieldValue<3>::Scalar> f_product;
-    f_product.name("multi_product");
     f_product.set_components(component_names);
     f_product.set_mesh( *mesh );
     f_product.set_fields(mesh->region_db().get_region_set("ALL"), f_product_ptr);
     f_product.cache_allocate(eval_points);
     f_product.set_time(tg.step(), LimitSide::right);
     // Same as previous but with other functor
-    /*auto f_other_ptr = Model<3, FieldValue<3>::VectorFixed>::create(fn_other, f_multi, f_scal, f_multi);
+    auto f_other_ptr = Model<3, FieldValue<3>::Scalar>::create_multi(multi_other, f_multi, f_scal, f_multi);
     MultiField<3, FieldValue<3>::Scalar> f_other;
-    f_other.name("multi_other");
     f_other.set_components(component_names);
     f_other.set_mesh( *mesh );
-    f_other.set_field(mesh->region_db().get_region_set("ALL"), f_other_ptr);
+    f_other.set_fields(mesh->region_db().get_region_set("ALL"), f_other_ptr);
     f_other.cache_allocate(eval_points);
-    f_other.set_time(tg.step(), LimitSide::right);*/
+    f_other.set_time(tg.step(), LimitSide::right);
 
     // fill field caches
     elm_cache_map.start_elements_update();
@@ -237,7 +233,7 @@ TEST(FieldModelTest, create_multi) {
     }
 
     {
-        // FieldModel scalar * vector
+        // FieldModel scalar * multi
         std::vector<arma::vec3> expected_vals = {{  1.50,  0.10, 0.50},
                                                  {  5.25,  1.65, 2.25},
                                                  { 11.00,  4.20, 1.00},
@@ -249,15 +245,17 @@ TEST(FieldModelTest, create_multi) {
                                                  { 87.50, 40.50, 2.50},
                                                  {107.25, 50.05, 8.25}};
 
-        //f_product.cache_update(elm_cache_map);
-        //for (unsigned int i=0; i<n_items; ++i) {
-        //    auto val = f_product.value_cache().data().template mat<3, 1>(i);
-        //    EXPECT_ARMA_EQ(val, expected_vals[i]);
-        //}
+        f_product.cache_update(elm_cache_map);
+        for (unsigned int i_cache=0; i_cache<n_items; ++i_cache) {
+            for (unsigned int i_subfield=0; i_subfield<f_product.size(); ++i_subfield) {
+                auto val = f_product[i_subfield].value_cache().data().template mat<1, 1>(i_cache);
+                EXPECT_DOUBLE_EQ(expected_vals[i_cache](i_subfield), val(0));
+            }
+        }
     }
 
-    /*{
-        // FieldModel vector + scalar * vector
+    {
+        // FieldModel multi + scalar * multi
         std::vector<arma::vec3> expected_vals = {{  3.00,  0.20, 1.00},
                                                  {  8.75,  2.75, 3.75},
                                                  { 16.50,  6.30, 1.50},
@@ -270,10 +268,12 @@ TEST(FieldModelTest, create_multi) {
                                                  {126.75, 59.15, 9.75}};
 
         f_other.cache_update(elm_cache_map);
-        for (unsigned int i=0; i<n_items; ++i) {
-            auto val = f_other.value_cache().data().template mat<3, 1>(i);
-            EXPECT_ARMA_EQ(val, expected_vals[i]);
+        for (unsigned int i_cache=0; i_cache<n_items; ++i_cache) {
+            for (unsigned int i_subfield=0; i_subfield<f_other.size(); ++i_subfield) {
+                auto val = f_other[i_subfield].value_cache().data().template mat<1, 1>(i_cache);
+                EXPECT_DOUBLE_EQ(expected_vals[i_cache](i_subfield), val(0));
+            }
         }
-    }*/
+    }
 
 }
