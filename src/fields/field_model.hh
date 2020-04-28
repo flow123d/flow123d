@@ -128,7 +128,7 @@ namespace detail
      * Return component 'i_comp' of the multifield 'f'.
      */
     template<int spacedim, class Value>
-    auto field_component(MultiField<spacedim, Value> f, uint i_comp) -> decltype(auto)
+    auto field_component(const MultiField<spacedim, Value> &f, uint i_comp) -> decltype(auto)
     {
         ASSERT(f.is_multifield());
         return f[i_comp];
@@ -138,7 +138,7 @@ namespace detail
      * Return the field 'f'. Variant to previous method.
      */
     template<int spacedim, class Value>
-    auto field_component(Field<spacedim, Value> f, uint i_comp) -> decltype(auto)
+    auto field_component(const Field<spacedim, Value> &f, uint i_comp) -> decltype(auto)
     {
         ASSERT(!f.is_multifield());
         return f;
@@ -154,7 +154,7 @@ namespace detail
         {
             const auto &single_field = std::get < INDEX - 1 > (std::forward<decltype(fields)>(fields));
             return std::tuple_cat(
-                    std::make_tuple(field_component(single_field, i_comp)),
+                    std::forward_as_tuple(field_component(single_field, i_comp)),
                     get_components<FIELD_TUPLE, INDEX - 1>::eval(
                             std::forward<decltype(fields)>(fields), i_comp)
                     );
@@ -165,7 +165,7 @@ namespace detail
     struct get_components<FIELD_TUPLE, 0> {
         static auto eval(FIELD_TUPLE fields, uint n_comp) -> decltype(auto)
         {
-            return std::make_tuple<>();
+            return std::forward_as_tuple<>();
         };
     };
 
