@@ -60,8 +60,8 @@ TEST(FieldModelTest, create) {
     eval_points->add_bulk<3>(*q_bulk );
     eval_points->add_edge<3>(*q_side );
     elm_cache_map.init(eval_points);
-    f_scal.cache_allocate(eval_points);
-    f_vec.cache_allocate(eval_points);
+    f_scal.cache_reallocate(elm_cache_map);
+    f_vec.cache_reallocate(elm_cache_map);
 
     // Create FieldModel (descendant of FieladAlgoBase) set to Field
     Mesh *mesh = mesh_full_constructor("{mesh_file=\"mesh/cube_2x1.msh\"}");
@@ -70,14 +70,14 @@ TEST(FieldModelTest, create) {
     Field<3, FieldValue<3>::VectorFixed > f_product;
     f_product.set_mesh( *mesh );
     f_product.set_field(mesh->region_db().get_region_set("ALL"), f_product_ptr);
-    f_product.cache_allocate(eval_points);
+    f_product.cache_reallocate(elm_cache_map);
     f_product.set_time(tg.step(), LimitSide::right);
     // Same as previous but with other functor
     auto f_other_ptr = Model<3, FieldValue<3>::VectorFixed>::create(fn_other, f_vec, f_scal, f_vec);
     Field<3, FieldValue<3>::VectorFixed > f_other;
     f_other.set_mesh( *mesh );
     f_other.set_field(mesh->region_db().get_region_set("ALL"), f_other_ptr);
-    f_other.cache_allocate(eval_points);
+    f_other.cache_reallocate(elm_cache_map);
     f_other.set_time(tg.step(), LimitSide::right);
 
     // fill field caches
@@ -183,7 +183,7 @@ TEST(FieldModelTest, create_multi) {
     eval_points->add_edge<3>(*q_side );
     elm_cache_map.init(eval_points);
     f_scal.name("field_scalar");
-    f_scal.cache_allocate(eval_points);
+    f_scal.cache_reallocate(elm_cache_map);
     f_multi.name("field_multi");
     f_multi.set_components(component_names);
     f_multi.set_mesh( *mesh );
@@ -192,7 +192,7 @@ TEST(FieldModelTest, create_multi) {
         field_vec.push_back( std::make_shared< FieldConstant<3, FieldValue<3>::Scalar> >() );
     }
     f_multi.set_fields(mesh->region_db().get_region_set("ALL"), field_vec);
-    f_multi.cache_allocate(eval_points); // cache_allocate must be called after set_fields!!
+    f_multi.cache_reallocate(elm_cache_map); // cache_allocate must be called after set_fields!!
 
     // Create FieldModel (descendant of FieladAlgoBase) set to Field
     auto f_product_ptr = Model<3, FieldValue<3>::Scalar>::create_multi(multi_product, f_scal, f_multi);
@@ -200,7 +200,7 @@ TEST(FieldModelTest, create_multi) {
     f_product.set_components(component_names);
     f_product.set_mesh( *mesh );
     f_product.set_fields(mesh->region_db().get_region_set("ALL"), f_product_ptr);
-    f_product.cache_allocate(eval_points);
+    f_product.cache_reallocate(elm_cache_map);
     f_product.set_time(tg.step(), LimitSide::right);
     // Same as previous but with other functor
     auto f_other_ptr = Model<3, FieldValue<3>::Scalar>::create_multi(multi_other, f_multi, f_scal, f_multi);
@@ -208,7 +208,7 @@ TEST(FieldModelTest, create_multi) {
     f_other.set_components(component_names);
     f_other.set_mesh( *mesh );
     f_other.set_fields(mesh->region_db().get_region_set("ALL"), f_other_ptr);
-    f_other.cache_allocate(eval_points);
+    f_other.cache_reallocate(elm_cache_map);
     f_other.set_time(tg.step(), LimitSide::right);
 
     // fill field caches

@@ -126,6 +126,7 @@ public:
 	 */
     void assemble(std::shared_ptr<DOFHandlerMultiDim> dh) {
         unsigned int i;
+        multidim_assembly_.get<1>()->reallocate_cache(element_cache_map_);
         multidim_assembly_.get<1>()->begin();
         for (auto cell : dh->local_range() )
         {
@@ -378,6 +379,9 @@ public:
     /// Method finishes object after assemblation (e.g. balance, ...).
     virtual void end() {}
 
+    /// Reallocate data caches of fields in equation.
+    virtual void reallocate_cache(const ElementCacheMap &cache_map) =0;
+
     /// Create integrals according to dim of assembly object
     void create_integrals(std::shared_ptr<EvalPoints> eval_points, AssemblyIntegrals &integrals, int active_integrals) {
     	if (active_integrals & ActiveIntegrals::bulk)
@@ -488,6 +492,12 @@ public:
     void end() override
     {
         model_->balance()->finish_mass_assembly( model_->subst_idx() );
+    }
+
+    /// Implements @p AssemblyBase::reallocate_cache.
+    void reallocate_cache(const ElementCacheMap &cache_map) override
+    {
+        data_->cache_reallocate(cache_map);
     }
 
 
@@ -965,6 +975,12 @@ public:
         }
     }
 
+    /// Implements @p AssemblyBase::reallocate_cache.
+    void reallocate_cache(const ElementCacheMap &cache_map) override
+    {
+        data_->cache_reallocate(cache_map);
+    }
+
 
 private:
 	/**
@@ -1135,6 +1151,12 @@ public:
     void end() override
     {
         model_->balance()->finish_source_assembly( model_->subst_idx() );
+    }
+
+    /// Implements @p AssemblyBase::reallocate_cache.
+    void reallocate_cache(const ElementCacheMap &cache_map) override
+    {
+        data_->cache_reallocate(cache_map);
     }
 
 
@@ -1371,6 +1393,12 @@ public:
         model_->balance()->finish_flux_assembly( model_->subst_idx() );
     }
 
+    /// Implements @p AssemblyBase::reallocate_cache.
+    void reallocate_cache(const ElementCacheMap &cache_map) override
+    {
+        data_->cache_reallocate(cache_map);
+    }
+
 
     private:
     	/**
@@ -1484,6 +1512,12 @@ public:
             }
             data_->ls[sbi]->set_values(ndofs_, &(dof_indices_[0]), ndofs_, &(dof_indices_[0]), &(local_matrix_[0]), &(local_rhs_[0]));
         }
+    }
+
+    /// Implements @p AssemblyBase::reallocate_cache.
+    void reallocate_cache(const ElementCacheMap &cache_map) override
+    {
+        data_->cache_reallocate(cache_map);
     }
 
 

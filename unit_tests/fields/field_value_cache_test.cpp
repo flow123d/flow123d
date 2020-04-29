@@ -59,8 +59,8 @@ public:
 
 TEST_F(FieldValueCacheTest, field_value_cache) {
     FieldValueCache<double> value_cache(1, 1);
-    value_cache.init(eval_points, ElementCacheMap::n_cached_elements);
-    EXPECT_EQ(value_cache.n_cache_points(), eval_points->max_size()*ElementCacheMap::n_cached_elements);
+    value_cache.init(*this);
+    EXPECT_EQ(value_cache.max_size(), eval_points->max_size()*ElementCacheMap::n_cached_elements);
 
     this->start_elements_update();
     DHCellAccessor dh_cell(dh_.get(), 2);

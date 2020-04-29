@@ -238,10 +238,10 @@ public:
     bool is_jump_time() const;
 
     /**
-     * Collective interface to @p FieldCommon::cache_allocate().
+     * Collective interface to @p FieldCommon::recache_allocate().
      */
-    void cache_allocate(std::shared_ptr<EvalPoints> eval_points) {
-        for(auto field : field_list) field->cache_allocate(eval_points);
+    void cache_reallocate(const ElementCacheMap &cache_map) {
+        for(auto field : field_list) field->cache_reallocate(cache_map);
     }
 
     /**

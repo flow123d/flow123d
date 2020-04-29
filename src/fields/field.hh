@@ -327,7 +327,7 @@ public:
     void compute_field_data(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream);
 
     /// Implements FieldCommon::cache_allocate
-    void cache_allocate(std::shared_ptr<EvalPoints> eval_points) override;
+    void cache_reallocate(const ElementCacheMap &cache_map) override;
 
     /// Implements FieldCommon::cache_update
     void cache_update(ElementCacheMap &cache_map) override;

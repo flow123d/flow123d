@@ -714,8 +714,8 @@ std::shared_ptr< FieldFE<spacedim, Value> > Field<spacedim,Value>::get_field_fe(
 
 
 template<int spacedim, class Value>
-void Field<spacedim, Value>::cache_allocate(std::shared_ptr<EvalPoints> eval_points) {
-    value_cache_.init(eval_points, ElementCacheMap::n_cached_elements);
+void Field<spacedim, Value>::cache_reallocate(const ElementCacheMap &cache_map) {
+    value_cache_.reinit(cache_map);
 }
 
 

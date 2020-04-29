@@ -62,7 +62,7 @@ public:
             side_eval = eval_points_->add_edge<3>(*q_side );
             // ngh_side_eval = ...
             elm_cache_map_.init(eval_points_);
-            this->cache_allocate(eval_points_);
+            this->cache_reallocate(elm_cache_map_);
         }
 
         void register_eval_points(ElementCacheMap &cache_map) {

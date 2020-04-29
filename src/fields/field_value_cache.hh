@@ -48,8 +48,8 @@ public:
     /// Destructor
     ~FieldValueCache();
 
-    /// Initialize cache
-    void init(std::shared_ptr<EvalPoints> eval_points, unsigned int n_cache_elements);
+    /// Reinitialize size of cache
+    void reinit(const ElementCacheMap &cache_map);
 
     /// Return size of data cache (number of stored field values)
     inline unsigned int size() const {
@@ -74,9 +74,9 @@ public:
         return data_.template mat<nr, nc>(i);
     }
 
-    /// Return number of elements that data is stored in cache.
-    inline unsigned int n_cache_points() const {
-        return n_cache_points_;
+    /// Return maximal number of data stored in cache.
+    inline unsigned int max_size() const {
+        return data_.size();
     }
 
     /// Return value of evaluation point given by DHCell and local point idx in EvalPoints.
@@ -294,10 +294,6 @@ protected:
     // Better use just int *, and use just single allocation of the whole table
     // current impl. have bad memory locality. Define a private access method.
     int **element_eval_points_map_;
-
-
-    /// Number of points stored in cache
-    unsigned int points_in_cache_;
 };
 
 

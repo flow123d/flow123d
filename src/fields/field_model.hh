@@ -211,7 +211,7 @@ namespace detail
   	// set field on all regions
     result.set_mesh( *mesh );
   	result.set_field(mesh->region_db().get_region_set("ALL"), f_product);
-    result.cache_allocate(eval_points);
+    result.cache_reallocate(elm_cache_map);
     result.set_time(tg.step(), LimitSide::right);
 
   	// cache_update
