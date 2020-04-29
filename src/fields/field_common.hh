@@ -261,7 +261,7 @@ public:
     { return shared_->bc_;}
 
     unsigned int n_comp() const
-    { return shared_->n_comp_;}
+    { return shared_->comp_names_.size();}
 
     const Mesh * mesh() const
     { return shared_->mesh_;}
