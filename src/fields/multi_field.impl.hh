@@ -264,8 +264,8 @@ template<int spacedim, class Value>
 void MultiField<spacedim, Value>::setup_components() {
 	unsigned int comp_size = this->shared_->comp_names_.size();
 	string full_name;
-	OLD_ASSERT(comp_size, "Vector of component names is empty!\n");
-	OLD_ASSERT(this->shared_->mesh_, "Mesh is not set!\n");
+	ASSERT_GT(comp_size, 0).error("Vector of component names is empty!\n");
+	ASSERT_PTR(this->shared_->mesh_).error("Mesh is not set!\n");
 
     sub_fields_.reserve( comp_size );
     for(unsigned int i_comp=0; i_comp < comp_size; i_comp++)
@@ -385,6 +385,28 @@ void MultiField<spacedim, Value>::cache_allocate(std::shared_ptr<EvalPoints> eva
 template<int spacedim, class Value>
 void MultiField<spacedim, Value>::cache_update(ElementCacheMap &cache_map) {
     for(auto &field : sub_fields_) field.cache_update(cache_map);
+}
+
+
+template<int spacedim, class Value>
+void MultiField<spacedim, Value>::set_fields(
+        const RegionSet &domain,
+        std::vector<typename Field<spacedim, Value>::FieldBasePtr> field_vec,
+        double time)
+{
+	unsigned int comp_size = this->shared_->comp_names_.size();
+	ASSERT_GT(comp_size, 0).error("Vector of component names is empty!\n");
+	ASSERT_EQ(comp_size, field_vec.size());
+	ASSERT_PTR(this->shared_->mesh_).error("Mesh is not set!\n");
+
+    sub_fields_.reserve( comp_size );
+    for(unsigned int i_comp=0; i_comp < comp_size; i_comp++)
+    {
+    	sub_fields_.push_back( SubFieldType(i_comp, name(), "", is_bc()) );
+    	sub_fields_[i_comp].set_mesh( *(shared_->mesh_) );
+    	sub_fields_[i_comp].flags_ = this->flags_;
+    	sub_fields_[i_comp].set_field(domain, field_vec[i_comp], time);
+    }
 }
 
 

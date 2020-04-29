@@ -151,8 +151,9 @@ typename Value::return_type Field<spacedim,Value>::operator() (EdgePoint &p) {
 
 
 template<int spacedim, class Value>
-typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_> Field<spacedim,Value>::operator[]
-(unsigned int i_cache_point) {
+typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_>
+Field<spacedim,Value>::operator[] (unsigned int i_cache_point) const
+{
 	return this->value_cache().data().template mat<Value::NRows_, Value::NCols_>(i_cache_point);
 }
 
@@ -235,7 +236,7 @@ void Field<spacedim, Value>::set_field(
 	ASSERT_PTR( mesh() ).error("Null mesh pointer, set_mesh() has to be called before set_field().\n");
     if (domain.size() == 0) return;
 
-    ASSERT_EQ( field->n_comp() , n_comp());
+    ASSERT_EQ( field->n_comp() , shared_->n_comp_);
     field->set_mesh( mesh() , is_bc() );
 
     HistoryPoint hp = HistoryPoint(time, field);
@@ -476,7 +477,7 @@ void Field<spacedim,Value>::update_history(const TimeStep &time) {
 				if (field_instance)  // skip descriptors without related keys
 				{
 					// add to history
-					ASSERT_EQ( field_instance->n_comp() , n_comp());
+					ASSERT_EQ( field_instance->n_comp() , shared_->n_comp_);
 					field_instance->set_mesh( mesh() , is_bc() );
 					for(const Region &reg: domain) {
                         // if region history is empty, add new field
