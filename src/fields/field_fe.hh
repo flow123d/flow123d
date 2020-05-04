@@ -208,13 +208,6 @@ private:
     /// Value handler that allows get value of 3D elements.
     FEValueHandler<3, spacedim, Value> value_handler3_;
 
-    /**
-     * Used in DOFHandler::distribute_dofs method. Represents 0D element.
-     *
-     * For correct functionality must be created proper descendant of FiniteElement class.
-     */
-    MixedPtr<FiniteElement> fe_;
-
 	/// mesh reader file
 	FilePath reader_file_;
 
