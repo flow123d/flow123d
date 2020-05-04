@@ -142,8 +142,7 @@ VectorMPI FieldFE<spacedim, Value>::set_fe_data(std::shared_ptr<DOFHandlerMultiD
 		unsigned int component_index, VectorMPI dof_values)
 {
     dh_ = dh;
-    ElementAccessor<3> elm(dh_->mesh(), 0);
-    fe_ = dh_->ds()->fe(elm);
+    fe_ = dh_->ds()->fe();
     if (dof_values.size()==0) { //create data vector according to dof handler - Warning not tested yet
         data_vec_ = dh_->create_vector();
         data_vec_.zero_entries();
