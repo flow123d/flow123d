@@ -229,8 +229,7 @@ IT::Record HeatTransferModel::get_input_type(const string &implementation, const
 				std::string(ModelEqData::name()) + "_" + implementation,
 				description + " for heat transfer.")
 			.derive_from(AdvectionProcessBase::get_input_type())
-			.declare_key("time", TimeGovernor::get_input_type(), Default::obligatory(),
-					"Time governor setting for the secondary equation.")
+			.copy_keys(EquationBase::record_template())
 			.declare_key("balance", Balance::get_input_type(), Default("{}"),
 					"Settings for computing balance.")
 			.declare_key("output_stream", OutputTime::get_input_type(), Default("{}"),
@@ -253,6 +252,7 @@ HeatTransferModel::HeatTransferModel(Mesh &mesh, const Input::Record in_rec) :
 		flux_changed(true)
 {
 	time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
+	ASSERT( time_->is_default() == false ).error("Missing key 'time' in Heat_AdvectionDiffusion_DG.");
 	substances_.initialize({""});
 
     output_stream_ = OutputTime::create_output_stream("heat", in_rec.val<Input::Record>("output_stream"), time().get_unit_string());

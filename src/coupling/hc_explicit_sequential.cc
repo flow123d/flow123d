@@ -60,13 +60,12 @@ const it::Record & HC_ExplicitSequential::get_input_type() {
     return it::Record("Coupling_Sequential",
             "Record with data for a general sequential coupling.\n")
 		.derive_from( CouplingBase::get_input_type() )
+        .copy_keys(EquationBase::record_template())
 		.declare_key("description",it::String(),
 				"Short description of the solved problem.\n"
 				"Is displayed in the main log, and possibly in other text output files.")
 		.declare_key("mesh", Mesh::get_input_type(), it::Default::obligatory(),
 				"Computational mesh common to all equations.")
-		.declare_key("time", TimeGovernor::get_input_type(), it::Default::optional(),
-				"Simulation time frame and time step.")
 		.declare_key("flow_equation", DarcyFlowInterface::get_input_type(),
 		        it::Default::obligatory(),
 				"Flow equation, provides the velocity field as a result.")

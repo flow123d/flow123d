@@ -235,11 +235,7 @@ public:
                           std::vector<typename Value::return_type>  &value_list)=0;
 
        virtual void cache_update(FieldValueCache<typename Value::element_type> &data_cache,
-                   unsigned int i_cache_el_begin, unsigned int i_cache_el_end,
-   	               const std::vector< ElementAccessor<spacedim> > &element_set);
-      // {
-    	//    //ASSERT(false).error("Must be implemented in descendants!\n");
-      // }
+				   ElementCacheMap &cache_map, unsigned int region_idx);
 
        /**
         * Postponed setter of Dof handler for FieldFE. For other types of fields has no effect.

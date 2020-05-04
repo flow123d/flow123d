@@ -45,8 +45,7 @@ const Record & Elasticity::get_input_type() {
 	return IT::Record(
                 std::string(equation_name),
                 "FEM for linear elasticity.")
-           .declare_key("time", TimeGovernor::get_input_type(), Default::optional(),
-                    "Time governor setting for the secondary equation.")
+           .copy_keys(EquationBase::record_template())
            .declare_key("balance", Balance::get_input_type(), Default("{}"),
                     "Settings for computing balance.")
            .declare_key("output_stream", OutputTime::get_input_type(), Default::obligatory(),
@@ -267,18 +266,15 @@ Elasticity::Elasticity(Mesh & init_mesh, const Input::Record in_rec, TimeGoverno
 
 	this->eq_data_ = &data_;
     
-    auto time_rec = in_rec.find<Input::Record>("time");
+    auto time_rec = in_rec.val<Input::Record>("time");
     if (tm == nullptr)
     {
-        if (time_rec)
-            time_ = new TimeGovernor(time_rec);
-        else
-            time_ = new TimeGovernor();
+        time_ = new TimeGovernor(time_rec);
     }
     else
     {
-        if (time_rec)
-            WarningOut() << "Time governor of Elasticity is initialized from parent class - input record will be ignored!";
+        TimeGovernor time_from_rec(time_rec);
+        ASSERT( time_from_rec.is_default() ).error("Duplicate key 'time', time in elasticity is already initialized from parent class!");
         time_ = tm;
     }
 

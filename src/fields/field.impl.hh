@@ -151,8 +151,9 @@ typename Value::return_type Field<spacedim,Value>::operator() (EdgePoint &p) {
 
 
 template<int spacedim, class Value>
-typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_> Field<spacedim,Value>::operator[]
-(unsigned int i_cache_point) {
+typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_>
+Field<spacedim,Value>::operator[] (unsigned int i_cache_point) const
+{
 	return this->value_cache().data().template mat<Value::NRows_, Value::NCols_>(i_cache_point);
 }
 
@@ -235,7 +236,7 @@ void Field<spacedim, Value>::set_field(
 	ASSERT_PTR( mesh() ).error("Null mesh pointer, set_mesh() has to be called before set_field().\n");
     if (domain.size() == 0) return;
 
-    ASSERT_EQ( field->n_comp() , n_comp());
+    ASSERT_EQ( field->n_comp() , shared_->n_comp_);
     field->set_mesh( mesh() , is_bc() );
 
     HistoryPoint hp = HistoryPoint(time, field);
@@ -476,7 +477,7 @@ void Field<spacedim,Value>::update_history(const TimeStep &time) {
 				if (field_instance)  // skip descriptors without related keys
 				{
 					// add to history
-					ASSERT_EQ( field_instance->n_comp() , n_comp());
+					ASSERT_EQ( field_instance->n_comp() , shared_->n_comp_);
 					field_instance->set_mesh( mesh() , is_bc() );
 					for(const Region &reg: domain) {
                         // if region history is empty, add new field
@@ -723,12 +724,9 @@ void Field<spacedim, Value>::cache_update(ElementCacheMap &cache_map) {
     auto update_cache_data = cache_map.update_cache_data();
 
     // Call cache_update of FieldAlgoBase descendants
-    std::unordered_map<unsigned int, typename ElementCacheMap::RegionData>::iterator reg_elm_it;
-    for (reg_elm_it=update_cache_data.region_cache_indices_map_.begin(); reg_elm_it!=update_cache_data.region_cache_indices_map_.end(); ++reg_elm_it) {
-        unsigned int region_in_cache = reg_elm_it->second.pos_;
-        unsigned int i_cache_el_begin = update_cache_data.region_cache_indices_range_[region_in_cache];
-        unsigned int i_cache_el_end = update_cache_data.region_cache_indices_range_[region_in_cache+1];
-        region_fields_[reg_elm_it->first]->cache_update(value_cache_, i_cache_el_begin, i_cache_el_end, reg_elm_it->second.element_set_);
+    std::unordered_map<unsigned int, unsigned int>::iterator reg_elm_it;
+    for (reg_elm_it=update_cache_data.region_cache_indices_range_.begin(); reg_elm_it!=update_cache_data.region_cache_indices_range_.end(); ++reg_elm_it) {
+        region_fields_[reg_elm_it->first]->cache_update(value_cache_, cache_map, reg_elm_it->first);
     }
 }
 

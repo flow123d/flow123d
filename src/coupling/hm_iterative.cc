@@ -33,13 +33,12 @@ const it::Record & HM_Iterative::get_input_type() {
     return it::Record("Coupling_Iterative",
             "Record with data for iterative coupling of flow and mechanics.\n")
         .derive_from( DarcyFlowInterface::get_input_type() )
+        .copy_keys(EquationBase::record_template())
 		.declare_key("flow_equation", RichardsLMH::get_input_type(),
 		        it::Default::obligatory(),
 				"Flow equation, provides the velocity field as a result.")
 		.declare_key("mechanics_equation", Elasticity::get_input_type(),
 				"Mechanics, provides the displacement field.")
-        .declare_key("time", TimeGovernor::get_input_type(), it::Default::obligatory(),
-                    "Time governor setting for the HM coupling.")
         .declare_key("input_fields", it::Array(
 		        HM_Iterative::EqData()
 		            .make_field_descriptor_type("Coupling_Iterative")),
@@ -124,6 +123,7 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
     using namespace Input;
 
     time_ = new TimeGovernor(in_record.val<Record>("time"));
+    ASSERT( time_->is_default() == false ).error("Missing key 'time' in Coupling_Iterative.");
     
     // setup flow equation
     Record flow_rec = in_record.val<Record>("flow_equation");
@@ -248,6 +248,8 @@ void HM_Iterative::update_potential()
     auto potential_vec_ = data_.potential_ptr_->get_data_vec();
     auto dh = data_.potential_ptr_->get_dofhandler();
     double difference2 = 0, norm2 = 0;
+    Field<3, FieldValue<3>::Scalar> field_edge_pressure;
+    field_edge_pressure.copy_from(*flow_->data().field("pressure_edge"));
     for ( auto ele : dh->local_range() )
     {
         auto elm = ele.elm();
@@ -257,7 +259,7 @@ void HM_Iterative::update_potential()
             double alpha = data_.alpha.value(side.centre(), elm);
             double density = data_.density.value(side.centre(), elm);
             double gravity = data_.gravity.value(side.centre(), elm);
-            double pressure = flow_->data().field_edge_pressure.value(side.centre(), elm);
+            double pressure = field_edge_pressure.value(side.centre(), elm);
             double potential = -alpha*density*gravity*pressure;
         
             if (ele.is_own())

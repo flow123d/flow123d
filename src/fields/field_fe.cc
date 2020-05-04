@@ -52,6 +52,10 @@ namespace it = Input::Type;
 FLOW123D_FORCE_LINK_IN_CHILD(field_fe)
 
 
+
+/************************************************************************************
+ * Implementation of FieldFE methods
+ */
 template <int spacedim, class Value>
 const Input::Type::Record & FieldFE<spacedim, Value>::get_input_type()
 {
@@ -221,6 +225,61 @@ void FieldFE<spacedim, Value>::value_list (const Armor::array &point_list, const
 	}
 }
 
+
+
+template <int spacedim, class Value>
+void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::element_type> &data_cache,
+		ElementCacheMap &cache_map, unsigned int region_idx)
+{
+    ASSERT( !boundary_dofs_ ).error("boundary field NOT supported!!\n");
+    std::shared_ptr<EvalPoints> eval_points = cache_map.eval_points();
+    Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> mat_value;
+
+    if (fe_values_.size() == 0) {
+        // initialize FEValues objects (when first using)
+        std::array<Quadrature, 4> quads{QGauss(0, 1), this->init_quad<1>(eval_points), this->init_quad<2>(eval_points), this->init_quad<3>(eval_points)};
+        fe_values_.resize(4);
+        fe_values_[0].initialize(quads[0], *fe_.get<0>(), update_values);
+        fe_values_[1].initialize(quads[1], *fe_.get<1>(), update_values);
+        fe_values_[2].initialize(quads[2], *fe_.get<2>(), update_values);
+        fe_values_[3].initialize(quads[3], *fe_.get<3>(), update_values);
+    }
+
+    auto update_cache_data = cache_map.update_cache_data();
+    unsigned int region_in_cache = update_cache_data.region_cache_indices_range_.find(region_idx)->second;
+
+    for (unsigned int i_elm=update_cache_data.region_element_cache_range_[region_in_cache];
+            i_elm<update_cache_data.region_element_cache_range_[region_in_cache+1]; ++i_elm) {
+        unsigned int elm_idx = cache_map.elm_idx_on_position(i_elm);
+    	ElementAccessor<spacedim> elm(dh_->mesh(), elm_idx);
+        fe_values_[elm.dim()].reinit( elm );
+
+        DHCellAccessor cell = dh_->cell_accessor_from_element( elm_idx );
+        LocDofVec loc_dofs = cell.get_loc_dof_indices();
+
+        for (unsigned int i_ep=0; i_ep<eval_points->max_size(); ++i_ep) { // i_eval_point
+            //DHCellAccessor cache_cell = cache_map(cell);
+            int field_cache_idx = cache_map.get_field_value_cache_index(cache_map(cell).element_cache_index(), i_ep);
+            if (field_cache_idx < 0) continue; // skip
+            mat_value.fill(0.0);
+    		for (unsigned int i_dof=0; i_dof<loc_dofs.n_elem; i_dof++) {
+    		    mat_value += data_vec_[loc_dofs[i_dof]] * this->handle_fe_shape(elm.dim(), i_dof, i_ep, 0);
+    		}
+    		data_cache.data().set(field_cache_idx) = mat_value;
+        }
+    }
+}
+
+
+template <int spacedim, class Value>
+template <unsigned int dim>
+Quadrature FieldFE<spacedim, Value>::init_quad(std::shared_ptr<EvalPoints> eval_points)
+{
+    Quadrature quad(dim, eval_points->size(dim));
+    for (unsigned int k=0; k<eval_points->size(dim); k++)
+        quad.set(k) = eval_points->local_point<dim>(k);
+    return quad;
+}
 
 
 template <int spacedim, class Value>
@@ -725,6 +784,21 @@ void FieldFE<spacedim, Value>::local_to_ghost_data_scatter_begin() {
 template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::local_to_ghost_data_scatter_end() {
 	data_vec_.local_to_ghost_end();
+}
+
+
+
+template <int spacedim, class Value>
+Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> FieldFE<spacedim, Value>::handle_fe_shape(unsigned int dim,
+        unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
+{
+    Armor::ArmaMat<typename Value::element_type, Value::NCols_, Value::NRows_> v;
+    for (unsigned int c=0; c<Value::NRows_*Value::NCols_; ++c)
+        v(c/spacedim,c%spacedim) = fe_values_[dim].shape_value_component(i_dof, i_qp, comp_index+c);
+    if (Value::NRows_ == Value::NCols_)
+        return v;
+    else
+        return v.t();
 }
 
 

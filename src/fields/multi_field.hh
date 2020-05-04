@@ -213,7 +213,7 @@ public:
      */
     inline SubFieldType &operator[](unsigned int idx)
     {
-    	OLD_ASSERT(idx < sub_fields_.size(), "Index of subfield in MultiField '%s' is out of range.\n", this->input_name().c_str());
+    	ASSERT_LT(idx, sub_fields_.size())(this->input_name()).error("Index of subfield in MultiField is out of range.\n");
     	return sub_fields_[idx];
     }
     
@@ -222,7 +222,7 @@ public:
      */
     inline const SubFieldType &operator[](unsigned int idx) const
     {
-    	OLD_ASSERT(idx < sub_fields_.size(), "Index of subfield in MultiField '%s' is out of range.\n", this->input_name().c_str());
+    	ASSERT_LT(idx, sub_fields_.size())(this->input_name()).error("Index of subfield in MultiField is out of range.\n");
         return sub_fields_[idx];
     }
     
@@ -254,6 +254,10 @@ public:
 
     /// Implements FieldCommon::cache_update
     void cache_update(ElementCacheMap &cache_map) override;
+
+    void set_fields(const RegionSet &domain,
+            std::vector<typename Field<spacedim, Value>::FieldBasePtr> field_vec,
+            double time = 0.0);
 
 private:
     /// Subfields (items) of MultiField
