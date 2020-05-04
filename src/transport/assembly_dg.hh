@@ -288,7 +288,7 @@ private:
         this->insert_eval_points_from_integral_data();
         element_cache_map_.create_elements_points_map();
         // not used yet: TODO need fix in MultiField, HeatModel ...; need better access to EqData
-        //multidim_assembly_.get<1>()->data_->cache_update(element_cache_map_);
+        multidim_assembly_.get<1>()->data_->cache_update(element_cache_map_);
         element_cache_map_.finish_elements_update();
     }
 
