@@ -294,8 +294,26 @@ void Mesh::count_element_types() {
 
 
 void Mesh::modify_element_ids(const RegionDB::MapElementIDToRegionID &map) {
+
+    // get dim of the first element in the map, if it exists
+    uint dim_to_check = RegionDB::undefined_dim;
+    std::string reg_name = "UndefinedRegion";
+    if(map.size() > 0){
+        Element &ele = element_vec_[ elem_index(map.begin()->first) ];
+        dim_to_check = ele.dim();
+        reg_name = region_db_.find_id(map.begin()->second).label();
+    }
+
 	for (auto elem_to_region : map) {
 		Element &ele = element_vec_[ elem_index(elem_to_region.first) ];
+        
+        if( ele.dim() != dim_to_check){
+            xprintf(UsrErr, "User defined region '%s' (id %d) by 'From_Elements' cannot have elements of different dimensions.\n"
+                            "Thrown due to: dim %d neq dim %d (ele id %d).\n"
+                            "Split elements by dim, create separate regions and then possibly use Union.\n",
+                    reg_name.c_str(), elem_to_region.second, dim_to_check, ele.dim(), elem_to_region.first);
+        }
+
 		ele.region_idx_ = region_db_.get_region( elem_to_region.second, ele.dim() );
 		region_db_.mark_used_region(ele.region_idx_.idx());
 	}
