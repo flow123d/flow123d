@@ -716,11 +716,17 @@ std::shared_ptr< FieldFE<spacedim, Value> > Field<spacedim,Value>::get_field_fe(
 template<int spacedim, class Value>
 void Field<spacedim, Value>::cache_reallocate(const ElementCacheMap &cache_map) {
     value_cache_.reinit(cache_map);
+
+    // Call cache_reinit of FieldAlgoBase descendants
+    for (auto reg_field : region_fields_) {
+    	if (reg_field) reg_field->cache_reinit(cache_map);
+    }
 }
 
 
 template<int spacedim, class Value>
 void Field<spacedim, Value>::cache_update(ElementCacheMap &cache_map) {
+	if ( this->is_bc() ) return;
     auto update_cache_data = cache_map.update_cache_data();
 
     // Call cache_update of FieldAlgoBase descendants

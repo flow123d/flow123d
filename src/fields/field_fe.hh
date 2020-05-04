@@ -110,6 +110,13 @@ public:
     void cache_update(FieldValueCache<typename Value::element_type> &data_cache,
 			ElementCacheMap &cache_map, unsigned int region_idx) override;
 
+    /**
+     * Overload @p FieldAlgorithmBase::cache_reinit
+     *
+     * Reinit fe_values_ data member.
+     */
+    void cache_reinit(const ElementCacheMap &cache_map) override;
+
 	/**
 	 * Initialization from the input interface.
 	 */
