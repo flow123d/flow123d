@@ -220,9 +220,9 @@ void HM_Iterative::update_solution()
         // pass pressure to mechanics and solve mechanics
         update_potential();
         mechanics_->solve_linear_system();
-        mechanics_->output_vector_gather();
         
         // update displacement divergence
+        mechanics_->update_output_fields();
         copy_field(mechanics_->data().output_divergence, *data_.div_u_ptr_);
         
         // TODO: compute difference of iterates
