@@ -598,13 +598,6 @@ public:
         csection_higher_.resize(qsize_lower_dim_);
         dg_penalty_.resize(data_->ad_coef_edg.size());
 
-        mm_coef_.resize(qsize_);
-        ret_coef_.resize(model_->n_substances());
-        for (unsigned int sbi=0; sbi<model_->n_substances(); sbi++)
-        {
-            ret_coef_[sbi].resize(qsize_);
-        }
-
         fe_values_vec_.resize(data_->ad_coef_edg.size());
         for (unsigned int sid=0; sid<data_->ad_coef_edg.size(); sid++)
         {
@@ -1034,11 +1027,6 @@ private:
     vector<double> csection_;                                 ///< Auxiliary vector for assemble boundary fluxes, element-side fluxes and set boundary conditions
     vector<double> csection_higher_;                          ///< Auxiliary vector for assemble element-side fluxes
     vector<vector<double> > dg_penalty_;                      ///< Auxiliary vectors for assemble element-element fluxes
-
-	/// Mass matrix coefficients.
-	vector<double> mm_coef_;
-	/// Retardation coefficient due to sorption.
-	vector<vector<double> > ret_coef_;
 
 	/// @name Auxiliary variables used during element-element assembly
 	// @{
