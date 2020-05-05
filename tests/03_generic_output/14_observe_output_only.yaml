@@ -1,0 +1,77 @@
+#################
+# Test goal: Test observe output in flow and transport when there are no output fields. Similar to test 09.
+# Author: Pavel Exner
+# Source for reference: qualitative
+
+flow123d_version: 3.1.0
+problem: !Coupling_Sequential
+  description: Output of observe fields when there are no output fields.  
+  mesh:
+    mesh_file: ../00_mesh/square_1x1_frac_fork.msh
+  # mesh
+    regions:
+      - !Union
+        name: 1d_domain
+        regions:
+          - 1d_upper
+          - 1d_lower
+          - 1d_left_branch
+    global_snap_radius: 0.1
+
+  flow_equation: !Flow_Darcy_MH
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
+    input_fields:
+      - region: 1d_domain
+        conductivity: 1.0e-06
+        cross_section: 0.04
+        sigma: 0.9
+      - region: 2d
+        conductivity: 1.0e-07
+      - region: .BOUNDARY
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: x+y
+    output:
+      fields: []
+      observe_fields: [pressure_p0, velocity_p0, anisotropy]
+    output_stream:
+      observe_points:
+        - [0, 0.1, 0]
+        - {point: [0.55, 0.55, 0], snap_region: 1d_lower}
+        - {point: [0.7, 0.8, 0], snap_region: 1d_upper}
+  solute_equation: !Coupling_OperatorSplitting
+    substances:
+      - name: age
+        molar_mass: 0.018
+      # water age
+      - name: U235
+        molar_mass: 0.235
+      # uranium 235
+    time:
+      end_time: 1000000.0
+    output_stream:
+      times:
+        - step: 100000.0
+      observe_points:
+        - [0, 0.1, 0]
+        - {point: [0.55, 0.55, 0], snap_region: 1d_lower}
+        - {point: [0.7, 0.8, 0], snap_region: 1d_upper}
+    transport: !Solute_Advection_FV
+      input_fields:
+        - region: ALL
+          init_conc: 0
+          porosity: 0.25
+          sources_density:
+            - 0.25
+            - 0
+          # source is in the whole volume (l+s) -> times porosity
+        - region: .BOUNDARY
+          bc_conc:
+            - 0.0
+            - 1.0
+      output:
+        fields: []
+        observe_fields: [conc, porosity]
