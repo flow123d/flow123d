@@ -23,11 +23,28 @@
 #include "heat_model.hh"
 #include "tools/unit_si.hh"
 #include "coupling/balance.hh"
+#include "fields/field_model.hh"
 
 
 
 using namespace std;
 using namespace Input::Type;
+
+
+/*******************************************************************************
+ * Functors of FieldModels
+ */
+using Sclr = typename arma::Col<double>::template fixed<1>;
+using Vect = arma::vec3;
+using Tens = arma::mat33;
+
+/**
+ * Functor computing mass matrix coefficients:
+ * cross_section * (porosity*fluid_density*fluid_heat_capacity + (1.-porosity)*solid_density*solid_heat_capacity)
+ */
+Sclr fn_heat_mass_matrix(Sclr csec, Sclr por, Sclr f_rho, Sclr f_c, Sclr s_rho, Sclr s_c) {
+    return csec * (por*f_rho*f_c + (1.-por(0))*s_rho*s_c);
+}
 
 
 
@@ -219,6 +236,13 @@ HeatTransferModel::ModelEqData::ModelEqData()
             .description("Temperature solution.")
             .units( UnitSI().K() )
             .flags(equation_result);
+
+
+	// initiaization of FieldModels
+    *this += mass_matrix_coef.name("mass_matrix_coef")
+            .description("Matrix coefficients computed by model in mass assemblation.")
+            .input_default("0.0")
+            .units( UnitSI().m(3).md() );
 }
 
 
@@ -434,6 +458,14 @@ void HeatTransferModel::compute_sources_sigma(const Armor::array &point_list,
 	{
 		sources_sigma[0][k] = csection[k]*(por[k]*f_rho[k]*f_cap[k]*f_sigma[k] + (1.-por[k])*s_rho[k]*s_cap[k]*s_sigma[k]);
 	}
+}
+
+
+void HeatTransferModel::initialize()
+{
+    auto mass_matrix_coef_ptr = Model<3, FieldValue<3>::Scalar>::create(fn_heat_mass_matrix, data().cross_section,
+            data().porosity, data().fluid_density, data().fluid_heat_capacity, data().solid_density, data().solid_heat_capacity);
+    data().mass_matrix_coef.set_field(mesh_->region_db().get_region_set("ALL"), mass_matrix_coef_ptr);
 }
 
 

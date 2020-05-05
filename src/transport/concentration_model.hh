@@ -82,6 +82,10 @@ public:
 		MultiField<3, FieldValue<3>::Scalar> output_field;
 
 
+        /// Instances of FieldModel used in assembly methods
+        Field<3, FieldValue<3>::Scalar > mass_matrix_coef;
+
+
 
 		ModelEqData();
 
@@ -227,6 +231,11 @@ protected:
 			double porosity,
 			double cross_cut,
 			arma::mat33 &K);
+
+	/**
+	 * Initialize FieldModel instances.
+	 */
+	void initialize();
 
 	/// Indicator of change in advection vector field.
 	bool flux_changed;

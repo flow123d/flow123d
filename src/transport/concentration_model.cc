@@ -25,11 +25,27 @@
 #include "concentration_model.hh"
 #include "tools/unit_si.hh"
 #include "coupling/balance.hh"
+#include "fields/field_model.hh"
 
 
 
 using namespace std;
 using namespace Input::Type;
+
+
+/*******************************************************************************
+ * Functors of FieldModels
+ */
+using Sclr = typename arma::Col<double>::template fixed<1>;
+using Vect = arma::vec3;
+using Tens = arma::mat33;
+
+// Functor computing mass matrix coefficients (cross_section * water_content)
+Sclr fn_conc_mass_matrix(Sclr csec, Sclr wcont) {
+    return csec * wcont;
+}
+
+
 
 
 
@@ -135,6 +151,13 @@ ConcentrationTransportModel::ModelEqData::ModelEqData()
             .description("Concentration solution.")
 	        .units( UnitSI().kg().m(-3) )
 	        .flags( equation_result );
+
+
+	// initiaization of FieldModels
+    *this += mass_matrix_coef.name("mass_matrix_coef")
+            .description("Matrix coefficients computed by model in mass assemblation.")
+            .input_default("0.0")
+            .units( UnitSI().m(3).md() );
 }
 
 
@@ -392,6 +415,14 @@ void ConcentrationTransportModel::set_balance_object(std::shared_ptr<Balance> ba
 	balance_ = balance;
 	subst_idx = balance_->add_quantities(substances_.names());
 }
+
+
+void ConcentrationTransportModel::initialize()
+{
+    auto mass_matrix_coef_ptr = Model<3, FieldValue<3>::Scalar>::create(fn_conc_mass_matrix, data().cross_section, data().water_content);
+    data().mass_matrix_coef.set_field(mesh_->region_db().get_region_set("ALL"), mass_matrix_coef_ptr);
+}
+
 
 
 
