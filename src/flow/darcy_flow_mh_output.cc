@@ -478,7 +478,7 @@ void DarcyFlowMHOutput::make_node_scalar_param(ElementSetRef element_indices) {
                         ((node->getY() - ele.centre()[ 1 ])*(node->getY() - ele.centre()[ 1 ])) +
                         ((node->getZ() - ele.centre()[ 2 ])*(node->getZ() - ele.centre()[ 2 ]))
                 );
-                scalars[node_index] += ele_pressure[ ele.idx() ] *
+                scalars[node_index] += dh.element_scalar(ele) *
                         (1 - dist / (sum_ele_dist[node_index] + sum_side_dist[node_index])) /
                         (sum_elements[node_index] + sum_sides[node_index] - 1);
             }
