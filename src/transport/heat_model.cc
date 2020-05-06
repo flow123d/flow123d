@@ -301,7 +301,7 @@ void HeatTransferModel::output_data()
 }
 
 
-void HeatTransferModel::compute_mass_matrix_coefficient(const Armor::array &point_list,
+/*void HeatTransferModel::compute_mass_matrix_coefficient(const Armor::array &point_list,
 		const ElementAccessor<3> &ele_acc,
 		std::vector<double> &mm_coef)
 {
@@ -321,7 +321,7 @@ void HeatTransferModel::compute_mass_matrix_coefficient(const Armor::array &poin
 
 	for (unsigned int i=0; i<point_list.size(); i++)
 		mm_coef[i] = elem_csec[i]*(por[i]*f_rho[i]*f_c[i] + (1.-por[i])*s_rho[i]*s_c[i]);
-}
+}*/
 
 
 void HeatTransferModel::compute_advection_diffusion_coefficients(const Armor::array &point_list,

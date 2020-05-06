@@ -206,7 +206,7 @@ void ConcentrationTransportModel::init_from_input(const Input::Record &in_rec)
 
 
 
-void ConcentrationTransportModel::compute_mass_matrix_coefficient(const Armor::array &point_list,
+/*void ConcentrationTransportModel::compute_mass_matrix_coefficient(const Armor::array &point_list,
 		const ElementAccessor<3> &ele_acc,
 		std::vector<double> &mm_coef)
 {
@@ -218,11 +218,11 @@ void ConcentrationTransportModel::compute_mass_matrix_coefficient(const Armor::a
 
 	for (unsigned int i=0; i<point_list.size(); i++)
 		mm_coef[i] = elem_csec[i]*wc[i];
-}
+}*/
 // mm_coef - simple field
 
 
-void ConcentrationTransportModel::compute_retardation_coefficient(const Armor::array &point_list,
+/*void ConcentrationTransportModel::compute_retardation_coefficient(const Armor::array &point_list,
 		const ElementAccessor<3> &ele_acc,
 		std::vector<std::vector<double> > &ret_coef)
 {
@@ -245,7 +245,7 @@ void ConcentrationTransportModel::compute_retardation_coefficient(const Armor::a
 			ret_coef[sbi][i] = (1.-por_m[i])*rho_s[i]*sorp_mult[i]*elem_csec[i];
 		}
 	}
-}
+}*/
 // ret_coef - multifield, Field parameters pro_m, rho_s, rho_l; multifiled sorp_mult
 //
 // TransportDG::initialize() calls set_components

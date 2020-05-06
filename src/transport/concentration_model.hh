@@ -113,13 +113,13 @@ public:
 
         void init_from_input(const Input::Record &in_rec) override;
 
-	void compute_mass_matrix_coefficient(const Armor::array &point_list,
-			const ElementAccessor<3> &ele_acc,
-			std::vector<double> &mm_coef) override;
+	//void compute_mass_matrix_coefficient(const Armor::array &point_list,
+	//		const ElementAccessor<3> &ele_acc,
+	//		std::vector<double> &mm_coef) override;
 
-	void compute_retardation_coefficient(const Armor::array &point_list,
-			const ElementAccessor<3> &ele_acc,
-			std::vector<std::vector<double> > &ret_coef) override;
+	//void compute_retardation_coefficient(const Armor::array &point_list,
+	//		const ElementAccessor<3> &ele_acc,
+	//		std::vector<std::vector<double> > &ret_coef) override;
 
 
 

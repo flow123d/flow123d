@@ -51,9 +51,9 @@ public:
 	 * @param ele_acc      Element accessor.
 	 * @param mm_coef      Coefficient vector (output).
 	 */
-	virtual void compute_mass_matrix_coefficient(const Armor::array &point_list,
-			const ElementAccessor<3> &ele_acc,
-			std::vector<double> &mm_coef) = 0;
+	//virtual void compute_mass_matrix_coefficient(const Armor::array &point_list,
+	//		const ElementAccessor<3> &ele_acc,
+	//		std::vector<double> &mm_coef) = 0;
 
 
 	/**
@@ -62,9 +62,9 @@ public:
 	 * @param ele_acc	  Element accessor.
 	 * @param ret_coef    Coefficient vector (output).
 	 */
-	virtual void compute_retardation_coefficient(const Armor::array &point_list,
-			const ElementAccessor<3> &ele_acc,
-			std::vector<std::vector<double> > &ret_coef) = 0;
+	//virtual void compute_retardation_coefficient(const Armor::array &point_list,
+	//		const ElementAccessor<3> &ele_acc,
+	//		std::vector<std::vector<double> > &ret_coef) = 0;
 
 	/**
 	 * Compute coefficients of stiffness matrix.

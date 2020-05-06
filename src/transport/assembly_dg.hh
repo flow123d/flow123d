@@ -204,6 +204,17 @@ public:
         multidim_assembly_.get<1>()->end();
     }
 
+    /// Return ElementCacheMap
+    inline const ElementCacheMap &cache_map() const {
+        return element_cache_map_;
+    }
+
+    /// Return BulkIntegral of appropriate dimension
+    inline std::shared_ptr<BulkIntegral> bulk_integral(unsigned int dim) const {
+        ASSERT_DBG( (dim>0) && (dim<=3) )(dim).error("Invalid dimension, must be 1, 2 or 3!\n");
+	    return integrals_.bulk_[dim-1];
+    }
+
 private:
     /// Mark eval points in table of Element cache map.
     void insert_eval_points_from_integral_data() {
@@ -443,12 +454,13 @@ public:
     {
         ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
         ElementAccessor<3> elm = cell.elm();
+        unsigned int k;
 
         fe_values_.reinit(elm);
         cell.get_dof_indices(dof_indices_);
 
-        model_->compute_mass_matrix_coefficient(fe_values_.point_list(), elm, mm_coef_);
-        model_->compute_retardation_coefficient(fe_values_.point_list(), elm, ret_coef_);
+        //model_->compute_mass_matrix_coefficient(fe_values_.point_list(), elm, mm_coef_);
+        //model_->compute_retardation_coefficient(fe_values_.point_list(), elm, ret_coef_);
 
         for (unsigned int sbi=0; sbi<model_->n_substances(); ++sbi)
         {
@@ -458,8 +470,15 @@ public:
                 for (unsigned int j=0; j<ndofs_; j++)
                 {
                     local_matrix_[i*ndofs_+j] = 0;
-                    for (unsigned int k=0; k<qsize_; k++)
-                        local_matrix_[i*ndofs_+j] += (mm_coef_[k]+ret_coef_[sbi][k])*fe_values_.shape_value(j,k)*fe_values_.shape_value(i,k)*fe_values_.JxW(k);
+                    k=0;
+                    //for (unsigned int k=0; k<qsize_; k++)
+                    //    local_matrix_[i*ndofs_+j] += (mm_coef_[k]+ret_coef_[sbi][k])*fe_values_.shape_value(j,k)*fe_values_.shape_value(i,k)*fe_values_.JxW(k);
+                    for (auto p : data_->mass_assembly_->bulk_integral(dim)->points(cell, &(data_->mass_assembly_->cache_map())) )
+                    {
+                        local_matrix_[i*ndofs_+j] += (data_->mass_matrix_coef(p)+data_->retardation_coef[sbi](p)) *
+                                fe_values_.shape_value(j,k)*fe_values_.shape_value(i,k)*fe_values_.JxW(k);
+                        k++;
+                    }
                 }
             }
 
@@ -467,10 +486,17 @@ public:
             {
                 local_mass_balance_vector_[i] = 0;
                 local_retardation_balance_vector_[i] = 0;
-                for (unsigned int k=0; k<qsize_; k++)
+                //for (unsigned int k=0; k<qsize_; k++)
+                //{
+                //    local_mass_balance_vector_[i] += mm_coef_[k]*fe_values_.shape_value(i,k)*fe_values_.JxW(k);
+                //    local_retardation_balance_vector_[i] -= ret_coef_[sbi][k]*fe_values_.shape_value(i,k)*fe_values_.JxW(k);
+                //}
+                k=0;
+                for (auto p : data_->mass_assembly_->bulk_integral(dim)->points(cell, &(data_->mass_assembly_->cache_map())) )
                 {
-                    local_mass_balance_vector_[i] += mm_coef_[k]*fe_values_.shape_value(i,k)*fe_values_.JxW(k);
-                    local_retardation_balance_vector_[i] -= ret_coef_[sbi][k]*fe_values_.shape_value(i,k)*fe_values_.JxW(k);
+                    local_mass_balance_vector_[i] += data_->mass_matrix_coef(p)*fe_values_.shape_value(i,k)*fe_values_.JxW(k);
+                    local_retardation_balance_vector_[i] -= data_->retardation_coef[sbi](p)*fe_values_.shape_value(i,k)*fe_values_.JxW(k);
+                    k++;
                 }
             }
 
