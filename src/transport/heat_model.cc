@@ -243,6 +243,11 @@ HeatTransferModel::ModelEqData::ModelEqData()
             .description("Matrix coefficients computed by model in mass assemblation.")
             .input_default("0.0")
             .units( UnitSI().m(3).md() );
+
+    *this += retardation_coef.name("retardation_coef")
+            .description("Retardation coefficients computed by model in mass assemblation.")
+            .input_default("0.0")
+            .units( UnitSI().m(3).md() );
 }
 
 
@@ -466,6 +471,16 @@ void HeatTransferModel::initialize()
     auto mass_matrix_coef_ptr = Model<3, FieldValue<3>::Scalar>::create(fn_heat_mass_matrix, data().cross_section,
             data().porosity, data().fluid_density, data().fluid_heat_capacity, data().solid_density, data().solid_heat_capacity);
     data().mass_matrix_coef.set_field(mesh_->region_db().get_region_set("ALL"), mass_matrix_coef_ptr);
+
+    std::vector<typename Field<3, FieldValue<3>::Scalar>::FieldBasePtr> retardation_coef_ptr;
+    retardation_coef_ptr.push_back( std::make_shared< FieldConstant<3, FieldValue<3>::Scalar> >() ); // Fix size of substances == 1
+    data().retardation_coef.set_fields(mesh_->region_db().get_region_set("ALL"), retardation_coef_ptr);
+}
+
+
+void HeatTransferModel::setup_components()
+{
+    // empty for now
 }
 
 

@@ -156,8 +156,15 @@ public:
 		MultiField<3, FieldValue<3>::Scalar> output_field;
 
 
-        /// Instances of FieldModel used in assembly methods
+		/// @name Instances of FieldModel used in assembly methods
+		// @{
+
+		/// Field represents coefficients of mass matrix.
         Field<3, FieldValue<3>::Scalar > mass_matrix_coef;
+		/// Field represents retardation coefficients due to sorption.
+        MultiField<3, FieldValue<3>::Scalar> retardation_coef;
+
+    	// @}
 
 
 
@@ -277,6 +284,11 @@ protected:
 	 * Initialize FieldModel instances.
 	 */
 	void initialize();
+
+	/**
+	 * Call setup_components of all MultiFields necessary for creating FiedlModels.
+	 */
+	void setup_components();
 
 	/// Indicator of change in advection vector field.
 	bool flux_changed;

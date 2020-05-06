@@ -45,6 +45,12 @@ Sclr fn_conc_mass_matrix(Sclr csec, Sclr wcont) {
     return csec * wcont;
 }
 
+// Functor computing retardation coefficients:
+// (1-porosity) * rock_density * sorption_coefficient * rock_density
+Sclr fn_conc_retardation(Sclr csec, Sclr por_m, Sclr rho_s, Sclr sorp_mult) {
+    return (1.-por_m(0))*rho_s*sorp_mult*csec;
+}
+
 
 
 
@@ -156,6 +162,11 @@ ConcentrationTransportModel::ModelEqData::ModelEqData()
 	// initiaization of FieldModels
     *this += mass_matrix_coef.name("mass_matrix_coef")
             .description("Matrix coefficients computed by model in mass assemblation.")
+            .input_default("0.0")
+            .units( UnitSI().m(3).md() );
+
+    *this += retardation_coef.name("retardation_coef")
+            .description("Retardation coefficients computed by model in mass assemblation.")
             .input_default("0.0")
             .units( UnitSI().m(3).md() );
 }
@@ -421,6 +432,15 @@ void ConcentrationTransportModel::initialize()
 {
     auto mass_matrix_coef_ptr = Model<3, FieldValue<3>::Scalar>::create(fn_conc_mass_matrix, data().cross_section, data().water_content);
     data().mass_matrix_coef.set_field(mesh_->region_db().get_region_set("ALL"), mass_matrix_coef_ptr);
+    auto retardation_coef_ptr = Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_retardation, data().cross_section, data().porosity,
+            data().rock_density, data().sorption_coefficient);
+    data().retardation_coef.set_fields(mesh_->region_db().get_region_set("ALL"), retardation_coef_ptr);
+}
+
+
+void ConcentrationTransportModel::setup_components()
+{
+    data().sorption_coefficient.setup_components();
 }
 
 
