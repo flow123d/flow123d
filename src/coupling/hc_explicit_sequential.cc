@@ -244,9 +244,11 @@ void HC_ExplicitSequential::run_simulation()
         // in time 3*w_dt we can reconsider value of t_dt to better capture changing velocity.
         min_velocity_time = TimeGovernor::inf_time;
         for(auto &pdata : processes_) {
-            pdata.process->set_time_upper_constraint(water_dt, "Flow time step");
-            pdata.velocity_time = theta * pdata.process->planned_time() + (1-theta) * pdata.process->solved_time();
-            min_velocity_time = min(min_velocity_time, pdata.velocity_time);
+            if(! pdata.process->time().is_end()){
+                pdata.process->set_time_upper_constraint(water_dt, "Flow time step");
+                pdata.velocity_time = theta * pdata.process->planned_time() + (1-theta) * pdata.process->solved_time();
+                min_velocity_time = min(min_velocity_time, pdata.velocity_time);
+            }
         }
 
         // printing water and transport times every step

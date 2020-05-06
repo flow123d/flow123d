@@ -4,8 +4,6 @@ problem: !Coupling_Sequential
   mesh:
     mesh_file: ../00_mesh/rectangle_16x1_uns.msh
   flow_equation: !Flow_Darcy_LMH
-    output_specific:
-      raw_flow_output: ./raw_output.txt
     input_fields:
       - region: ALL
         storativity: 1.0
@@ -27,19 +25,18 @@ problem: !Coupling_Sequential
     output:
       fields:
         - pressure_p0
-        - velocity_p0
     balance:
       cumulative: true
     time:
-      end_time: 4.0
-      max_dt: 0.4
-      min_dt: 0.4
+      end_time: 2.0
+      max_dt: 0.5
+      min_dt: 0.5
     output_stream:
       file: ./flow.pvd
       format: !vtk
         variant: ascii
       times:
-        - step: 0.4
+        - step: 0.5
       precision: 15
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_Advection_FV
@@ -51,32 +48,17 @@ problem: !Coupling_Sequential
           time: 0.0
         - region: .left
           bc_conc: 0
-          time: 0.1
+          time: 0.5
     output_stream:
       file: ./transport.pvd
       format: !vtk
         variant: ascii
       times:
-        - step: 0.4
+        - step: 0.5
       precision: 15
     substances:
       - name: conc
-        molar_mass: 1.0
-    reaction_term: !Sorption
-      solvent_density: 1.0
-      substances:
-        - conc
-      solubility:
-        - 1.0
-      input_fields:
-        - region: ALL
-          rock_density: 1.0
-          sorption_type: linear
-          distribution_coefficient: 0.6
-          isotherm_other: 0.4
-      output:
-        fields: []
     time:
-      end_time: 4.0
+      end_time: 1.0
     balance:
       cumulative: true
