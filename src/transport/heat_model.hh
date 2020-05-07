@@ -163,6 +163,12 @@ public:
         Field<3, FieldValue<3>::Scalar > mass_matrix_coef;
 		/// Field represents retardation coefficients due to sorption.
         MultiField<3, FieldValue<3>::Scalar> retardation_coef;
+    	/// Concentration sources - density output
+    	MultiField<3, FieldValue<3>::Scalar> sources_density_out;
+    	/// Concentration sources - sigma output
+    	MultiField<3, FieldValue<3>::Scalar> sources_sigma_out;
+    	/// Concentration sources - concentration output
+    	MultiField<3, FieldValue<3>::Scalar> sources_conc_out;
 
     	// @}
 

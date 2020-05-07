@@ -46,6 +46,35 @@ Sclr fn_heat_mass_matrix(Sclr csec, Sclr por, Sclr f_rho, Sclr f_c, Sclr s_rho, 
     return csec * (por*f_rho*f_c + (1.-por(0))*s_rho*s_c);
 }
 
+/**
+ * Functor computing sources density output:
+ * cross_section * (porosity*fluid_thermal_source + (1-porosity)*solid_thermal_source)
+ */
+Sclr fn_heat_sources_dens(Sclr csec, Sclr por, Sclr f_source, Sclr s_source) {
+    return csec * (por * f_source + (1.-por(0)) * s_source);
+}
+
+/**
+ * Functor computing sources sigma output:
+ * cross_section * (porosity*fluid_density*fluid_heat_capacity*fluid_heat_exchange_rate + (1-porosity)*solid_density*solid_heat_capacity*solid_thermal_source)
+ */
+Sclr fn_heat_sources_sigma(Sclr csec, Sclr por, Sclr f_rho, Sclr f_cap, Sclr f_sigma, Sclr s_rho, Sclr s_cap, Sclr s_sigma) {
+    return csec * (por * f_rho * f_cap * f_sigma + (1.-por(0)) * s_rho * s_cap * s_sigma);
+}
+
+/**
+ * Functor computing sources concentration output for positive heat_sources_sigma (otherwise return 0):
+ * cross_section * (porosity*fluid_density*fluid_heat_capacity*fluid_heat_exchange_rate*fluid_ref_temperature + (1-porosity)*solid_density*solid_heat_capacity*solid_heat_exchange_rate*solid_ref_temperature)
+ */
+Sclr fn_heat_sources_conc(Sclr csec, Sclr por, Sclr f_rho, Sclr f_cap, Sclr f_sigma, Sclr f_temp, Sclr s_rho, Sclr s_cap, Sclr s_sigma, Sclr s_temp, Sclr sigma) {
+    if (fabs(sigma(0)) > numeric_limits<double>::epsilon())
+        return csec * (por * f_rho * f_cap * f_sigma * f_temp + (1.-por(0)) * s_rho * s_cap * s_sigma * s_temp);
+    else {
+        Sclr ret; ret(0) = 0.;
+    	return ret;
+    }
+}
+
 
 
 
@@ -248,6 +277,21 @@ HeatTransferModel::ModelEqData::ModelEqData()
             .description("Retardation coefficients computed by model in mass assemblation.")
             .input_default("0.0")
             .units( UnitSI().m(3).md() );
+
+    *this += sources_conc_out.name("sources_conc_out")
+            .description("Concentration sources output.")
+            .input_default("0.0")
+            .units( UnitSI().kg().m(-3) );
+
+    *this += sources_density_out.name("sources_density_out")
+            .description("Concentration sources output - density of substance source, only positive part is used..")
+            .input_default("0.0")
+            .units( UnitSI().kg().s(-1).md() );
+
+    *this += sources_sigma_out.name("sources_sigma_out")
+            .description("Concentration sources - Robin type, in_flux = sources_sigma * (sources_conc - mobile_conc).")
+            .input_default("0.0")
+            .units( UnitSI().s(-1).m(3).md() );
 }
 
 
@@ -473,8 +517,22 @@ void HeatTransferModel::initialize()
     data().mass_matrix_coef.set_field(mesh_->region_db().get_region_set("ALL"), mass_matrix_coef_ptr);
 
     std::vector<typename Field<3, FieldValue<3>::Scalar>::FieldBasePtr> retardation_coef_ptr;
-    retardation_coef_ptr.push_back( std::make_shared< FieldConstant<3, FieldValue<3>::Scalar> >() ); // Fix size of substances == 1
+    retardation_coef_ptr.push_back( std::make_shared< FieldConstant<3, FieldValue<3>::Scalar> >() ); // Fix size of substances == 1, with const value == 0
     data().retardation_coef.set_fields(mesh_->region_db().get_region_set("ALL"), retardation_coef_ptr);
+
+    auto sources_dens_ptr = Model<3, FieldValue<3>::Scalar>::create_multi(fn_heat_sources_dens, data().cross_section, data().porosity,
+            data().fluid_thermal_source, data().solid_thermal_source);
+    data().sources_density_out.set_fields(mesh_->region_db().get_region_set("ALL"), sources_dens_ptr);
+
+    auto sources_sigma_ptr = Model<3, FieldValue<3>::Scalar>::create_multi(fn_heat_sources_sigma, data().cross_section, data().porosity,
+            data().fluid_density, data().fluid_heat_capacity, data().fluid_heat_exchange_rate, data().solid_density,
+            data().solid_heat_capacity, data().solid_heat_exchange_rate);
+    data().sources_sigma_out.set_fields(mesh_->region_db().get_region_set("ALL"), sources_sigma_ptr);
+
+    auto sources_conc_ptr = Model<3, FieldValue<3>::Scalar>::create_multi(fn_heat_sources_conc, data().cross_section, data().porosity,
+            data().fluid_density, data().fluid_heat_capacity, data().fluid_heat_exchange_rate, data().fluid_ref_temperature, data().solid_density,
+            data().solid_heat_capacity, data().solid_heat_exchange_rate, data().solid_ref_temperature, data().sources_sigma_out);
+    data().sources_conc_out.set_fields(mesh_->region_db().get_region_set("ALL"), sources_conc_ptr);
 }
 
 

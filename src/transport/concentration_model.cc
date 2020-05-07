@@ -51,6 +51,21 @@ Sclr fn_conc_retardation(Sclr csec, Sclr por_m, Sclr rho_s, Sclr sorp_mult) {
     return (1.-por_m(0))*rho_s*sorp_mult*csec;
 }
 
+// Functor computing sources density output (cross_section * sources_density)
+Sclr fn_conc_sources_dens(Sclr csec, Sclr sdens) {
+    return csec * sdens;
+}
+
+// Functor computing sources sigma output (cross_section * sources_sigma)
+Sclr fn_conc_sources_sigma(Sclr csec, Sclr ssigma) {
+    return csec * ssigma;
+}
+
+// Functor computing sources concentration output (sources_conc)
+Sclr fn_conc_sources_conc(Sclr sconc) {
+    return sconc;
+}
+
 
 
 
@@ -169,6 +184,21 @@ ConcentrationTransportModel::ModelEqData::ModelEqData()
             .description("Retardation coefficients computed by model in mass assemblation.")
             .input_default("0.0")
             .units( UnitSI().m(3).md() );
+    *this += sources_density_out.name("sources_density_out")
+            .description("Concentration sources output - density of substance source, only positive part is used..")
+            .input_default("0.0")
+            .units( UnitSI().kg().s(-1).md() );
+
+    *this += sources_sigma_out.name("sources_sigma_out")
+            .description("Concentration sources - Robin type, in_flux = sources_sigma * (sources_conc - mobile_conc).")
+            .input_default("0.0")
+            .units( UnitSI().s(-1).m(3).md() );
+
+    *this += sources_conc_out.name("sources_conc_out")
+            .description("Concentration sources output.")
+            .input_default("0.0")
+            .units( UnitSI().kg().m(-3) );
+
 }
 
 
@@ -432,15 +462,28 @@ void ConcentrationTransportModel::initialize()
 {
     auto mass_matrix_coef_ptr = Model<3, FieldValue<3>::Scalar>::create(fn_conc_mass_matrix, data().cross_section, data().water_content);
     data().mass_matrix_coef.set_field(mesh_->region_db().get_region_set("ALL"), mass_matrix_coef_ptr);
+
     auto retardation_coef_ptr = Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_retardation, data().cross_section, data().porosity,
             data().rock_density, data().sorption_coefficient);
     data().retardation_coef.set_fields(mesh_->region_db().get_region_set("ALL"), retardation_coef_ptr);
+
+    auto sources_dens_ptr = Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_sources_dens, data().cross_section, data().sources_density);
+    data().sources_density_out.set_fields(mesh_->region_db().get_region_set("ALL"), sources_dens_ptr);
+
+    auto sources_sigma_ptr = Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_sources_sigma, data().cross_section, data().sources_sigma);
+    data().sources_sigma_out.set_fields(mesh_->region_db().get_region_set("ALL"), sources_sigma_ptr);
+
+    auto sources_conc_ptr = Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_sources_conc, data().sources_conc);
+    data().sources_conc_out.set_fields(mesh_->region_db().get_region_set("ALL"), sources_conc_ptr);
 }
 
 
 void ConcentrationTransportModel::setup_components()
 {
     data().sorption_coefficient.setup_components();
+    data().sources_conc.setup_components();
+    data().sources_density.setup_components();
+    data().sources_sigma.setup_components();
 }
 
 
