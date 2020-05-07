@@ -225,11 +225,11 @@ public:
 			const ElementAccessor<3> &ele_acc,
 			std::vector< double > &bc_sigma) override;
 
-	void compute_source_coefficients(const Armor::array &point_list,
-				const ElementAccessor<3> &ele_acc,
-				std::vector<std::vector<double> > &sources_conc,
-				std::vector<std::vector<double> > &sources_density,
-				std::vector<std::vector<double> > &sources_sigma) override;
+	//void compute_source_coefficients(const Armor::array &point_list,
+	//			const ElementAccessor<3> &ele_acc,
+	//			std::vector<std::vector<double> > &sources_conc,
+	//			std::vector<std::vector<double> > &sources_density,
+	//			std::vector<std::vector<double> > &sources_sigma) override;
 
 	void compute_sources_sigma(const Armor::array &point_list,
 				const ElementAccessor<3> &ele_acc,

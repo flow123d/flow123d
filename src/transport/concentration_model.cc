@@ -406,7 +406,7 @@ void ConcentrationTransportModel::get_flux_bc_sigma(unsigned int index,
 }
 
 
-void ConcentrationTransportModel::compute_source_coefficients(const Armor::array &point_list,
+/*void ConcentrationTransportModel::compute_source_coefficients(const Armor::array &point_list,
 			const ElementAccessor<3> &ele_acc,
 			std::vector<std::vector<double> > &sources_value,
 			std::vector<std::vector<double> > &sources_density,
@@ -427,7 +427,7 @@ void ConcentrationTransportModel::compute_source_coefficients(const Armor::array
           sources_sigma[sbi][k] *= csection[k];
       }
     }
-}
+}*/
 
 
 void ConcentrationTransportModel::compute_sources_sigma(const Armor::array &point_list,

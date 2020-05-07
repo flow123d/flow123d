@@ -144,11 +144,11 @@ public:
 	 * @param sources_density Source densities (output).
 	 * @param sources_sigma   Source sigmas (output).
 	 */
-	virtual void compute_source_coefficients(const Armor::array &point_list,
-			const ElementAccessor<3> &ele_acc,
-			std::vector<std::vector<double> > &sources_conc,
-			std::vector<std::vector<double> > &sources_density,
-			std::vector<std::vector<double> > &sources_sigma) = 0;
+	//virtual void compute_source_coefficients(const Armor::array &point_list,
+	//		const ElementAccessor<3> &ele_acc,
+	//		std::vector<std::vector<double> > &sources_conc,
+	//		std::vector<std::vector<double> > &sources_density,
+	//		std::vector<std::vector<double> > &sources_sigma) = 0;
 
 	/**
 	 * Compute coefficients of volume sources.

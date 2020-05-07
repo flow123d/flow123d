@@ -1119,11 +1119,12 @@ public:
     	ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
 
         ElementAccessor<3> elm = cell.elm();
+        unsigned int k;
 
         fe_values_.reinit(elm);
         cell.get_dof_indices(dof_indices_);
 
-        model_->compute_source_coefficients(fe_values_.point_list(), elm, sources_conc_, sources_density_, sources_sigma_);
+        //model_->compute_source_coefficients(fe_values_.point_list(), elm, sources_conc_, sources_density_, sources_sigma_);
 
         // assemble the local stiffness matrix
         for (unsigned int sbi=0; sbi<model_->n_substances(); sbi++)
@@ -1133,19 +1134,34 @@ public:
             local_source_balance_rhs_.assign(ndofs_, 0);
 
             // compute sources
-            for (unsigned int k=0; k<qsize_; k++)
+            /*for (unsigned int k=0; k<qsize_; k++)
             {
                 source = (sources_density_[sbi][k] + sources_conc_[sbi][k]*sources_sigma_[sbi][k])*fe_values_.JxW(k);
 
                 for (unsigned int i=0; i<ndofs_; i++)
                     local_rhs_[i] += source*fe_values_.shape_value(i,k);
+            }*/
+            k=0;
+            for (auto p : data_->sources_assembly_->bulk_integral(dim)->points(cell, &(data_->sources_assembly_->cache_map())) )
+            {
+                source = (data_->sources_density_out[sbi](p) + data_->sources_conc_out[sbi](p)*data_->sources_sigma_out[sbi](p))*fe_values_.JxW(k);
+
+                for (unsigned int i=0; i<ndofs_; i++)
+                    local_rhs_[i] += source*fe_values_.shape_value(i,k);
+                k++;
             }
             data_->ls[sbi]->rhs_set_values(ndofs_, &(dof_indices_[0]), &(local_rhs_[0]));
 
             for (unsigned int i=0; i<ndofs_; i++)
             {
-                for (unsigned int k=0; k<qsize_; k++)
-                    local_source_balance_vector_[i] -= sources_sigma_[sbi][k]*fe_values_.shape_value(i,k)*fe_values_.JxW(k);
+                //for (unsigned int k=0; k<qsize_; k++)
+                    //local_source_balance_vector_[i] -= sources_sigma_[sbi][k]*fe_values_.shape_value(i,k)*fe_values_.JxW(k);
+                k=0;
+                for (auto p : data_->sources_assembly_->bulk_integral(dim)->points(cell, &(data_->sources_assembly_->cache_map())) )
+                {
+                    local_source_balance_vector_[i] -= data_->sources_sigma_out[sbi](p)*fe_values_.shape_value(i,k)*fe_values_.JxW(k);
+                    k++;
+                }
 
                 local_source_balance_rhs_[i] += local_rhs_[i];
             }

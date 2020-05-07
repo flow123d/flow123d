@@ -449,7 +449,7 @@ void HeatTransferModel::get_flux_bc_sigma(FMT_UNUSED unsigned int index,
 }
 
 
-void HeatTransferModel::compute_source_coefficients(const Armor::array &point_list,
+/*void HeatTransferModel::compute_source_coefficients(const Armor::array &point_list,
 			const ElementAccessor<3> &ele_acc,
 			std::vector<std::vector<double> > &sources_value,
 			std::vector<std::vector<double> > &sources_density,
@@ -484,7 +484,7 @@ void HeatTransferModel::compute_source_coefficients(const Armor::array &point_li
 		else
 			sources_value[0][k] = 0;
 	}
-}
+}*/
 
 
 void HeatTransferModel::compute_sources_sigma(const Armor::array &point_list,
