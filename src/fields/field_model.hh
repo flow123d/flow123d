@@ -33,6 +33,7 @@
 #include "fields/field_value_cache.hh"
 #include "fields/field.hh"
 #include "fields/multi_field.hh"
+#include "system/fmt/posix.h"                          // for FMT_UNUSED
 
 template <int spacedim> class ElementAccessor;
 
@@ -76,10 +77,10 @@ namespace detail
     struct model_cache_item< CALLABLE, FIELD_TUPLE, 0 >
     {
         template< typename... Vs >
-        static auto eval(int i_cache, CALLABLE f, FIELD_TUPLE fields, Vs&&... args) -> decltype(auto)
+        static auto eval(FMT_UNUSED int i_cache, CALLABLE f, FMT_UNUSED FIELD_TUPLE fields, Vs&&... args) -> decltype(auto)
         {
             return f(std::forward<Vs>(args)...);
-        };
+        }
     };
 
     /**
@@ -104,7 +105,7 @@ namespace detail
 
     template<typename FIELD_TUPLE>
     struct n_components<FIELD_TUPLE, 0> {
-        static uint eval(FIELD_TUPLE fields, uint n_comp)
+        static uint eval(FMT_UNUSED FIELD_TUPLE fields, uint n_comp)
         {
             return n_comp;
         };
@@ -138,7 +139,7 @@ namespace detail
      * Return the field 'f'. Variant to previous method.
      */
     template<int spacedim, class Value>
-    auto field_component(const Field<spacedim, Value> &f, uint i_comp) -> decltype(auto)
+    auto field_component(const Field<spacedim, Value> &f, FMT_UNUSED uint i_comp) -> decltype(auto)
     {
         ASSERT(!f.is_multifield());
         return f;
@@ -163,7 +164,7 @@ namespace detail
 
     template<typename FIELD_TUPLE>
     struct get_components<FIELD_TUPLE, 0> {
-        static auto eval(FIELD_TUPLE fields, uint n_comp) -> decltype(auto)
+        static auto eval(FMT_UNUSED FIELD_TUPLE fields, FMT_UNUSED uint n_comp) -> decltype(auto)
         {
             return std::forward_as_tuple<>();
         };
@@ -254,14 +255,14 @@ public:
     }
 
     /// Implementation of virtual method
-    typename Value::return_type const &value(const Point &p, const ElementAccessor<spacedim> &elm) override {
+    typename Value::return_type const &value(FMT_UNUSED const Point &p, FMT_UNUSED const ElementAccessor<spacedim> &elm) override {
         ASSERT(false).error("Forbidden method!\n");
         return this->r_value_;
     }
 
     /// Implementation of virtual method
-    void value_list(const Armor::array &point_list, const ElementAccessor<spacedim> &elm,
-                std::vector<typename Value::return_type>  &value_list) override {
+    void value_list(FMT_UNUSED const Armor::array &point_list, FMT_UNUSED const ElementAccessor<spacedim> &elm,
+    	        FMT_UNUSED std::vector<typename Value::return_type> &value_list) override {
         ASSERT(false).error("Forbidden method!\n");
     }
 
