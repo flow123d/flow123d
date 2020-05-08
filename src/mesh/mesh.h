@@ -382,18 +382,6 @@ public:
 
     /// Create boundary mesh if doesn't exist and return it.
     BCMesh *get_bc_mesh();
-    
-    /**
-     * Vector of nodes of the mesh.
-     */
-    Armor::Array<double> nodes_;
-    
-    /**
-     * Vector of elements of the mesh.
-     *
-     * Store all elements of the mesh in order bulk elements - boundary elements
-     */
-    vector<Element> element_vec_;
 
 protected:
 
@@ -505,6 +493,13 @@ protected:
      */
     MPI_Comm comm_;
 
+    /**
+     * Vector of elements of the mesh.
+     *
+     * Store all elements of the mesh in order bulk elements - boundary elements
+     */
+    vector<Element> element_vec_;
+
     /// Hold data of boundary elements during reading mesh (allow to preserve correct order during reading of mix bulk-boundary element)
     vector<ElementTmpData> bc_element_tmp_;
 
@@ -516,6 +511,11 @@ protected:
 
     /// Maps element ids to indexes into vector element_vec_
     BidirectionalMap<int> element_ids_;
+
+    /**
+     * Vector of nodes of the mesh.
+     */
+    Armor::Array<double> nodes_;
 
     /// Maps node ids to indexes into vector node_vec_
     BidirectionalMap<int> node_ids_;
@@ -530,6 +530,7 @@ protected:
     friend class BCMesh;
     template <int spacedim> friend class ElementAccessor;
     template <int spacedim> friend class NodeAccessor;
+    template <uint DIM> friend class MeshOptimizer;
 
 
 

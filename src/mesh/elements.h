@@ -87,8 +87,6 @@ public:
     Neighbour **neigh_vb; // List og neighbours, V-B type (comp.)
         // TODO remove direct access in DarcyFlow, MhDofHandler, Mesh? Partitioning and Trabsport
 
-    /// indices to element's nodes
-    std::array<unsigned int, 4> nodes_;
 
 protected:
     int pid_;                            ///< Id # of mesh partition
@@ -112,10 +110,16 @@ protected:
     RegionIdx  region_idx_;
     unsigned int dim_;
 
+    /// indices to element's nodes
+    std::array<unsigned int, 4> nodes_;
+
     friend class Mesh;
 
     template<int spacedim, class Value>
     friend class Field;
+    
+    template <uint DIM>
+    friend class MeshOptimizer;
 
 };
 
