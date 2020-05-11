@@ -226,6 +226,7 @@ void HM_Iterative::update_after_converged()
     flow_->accept_time_step();
     flow_->output_data();
     mechanics_->output_data();
+    
     copy_field(*flow_->data().field("pressure_p0"), *data_.old_pressure_ptr_);
     copy_field(mechanics_->data().output_divergence, *data_.old_div_u_ptr_);
 }
