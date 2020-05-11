@@ -166,8 +166,9 @@ TEST(Spacefilling, space_filling) {
 //     const std::string testName = "square_uniform_2";
 //     const std::string testName = "square_refined";
 //     const std::string testName = "lshape_refined";
-    const std::string testName = "lshape_refined_2_cube_sum_bigger";
-    const std::string mesh_in_string = "{mesh_file=\"mesh/" + testName + ".msh\"}";
+    const std::string meshName = "lshape_refined_2_cube";
+    const std::string testName = "ne_hilb";
+    const std::string mesh_in_string = "{mesh_file=\"mesh/" + meshName + ".msh\"}";
     
     Mesh * mesh = mesh_full_constructor(mesh_in_string);
     
@@ -186,25 +187,25 @@ TEST(Spacefilling, space_filling) {
     
     MeshOptimizer<3> mo(*mesh);
     std::cout << "reading nodes" << '\n';
-    mo.readNodes();
+    mo.readNodesFromMesh();
     std::cout << "reading elemenst" << '\n';
-    mo.readElements();
+    mo.readElementsFromMesh();
     std::cout << "calculating sizes" << '\n';
     mo.calculateSizes();
-    std::cout << "calculating node hilbert values" << '\n';
-//     mo.calculateNodeCurveValueAsHilbert();
+    std::cout << "calculating node curve values" << '\n';
+//     mo.calculateNodeCurveValuesAsHilbert();
     mo.calculateNodeCurveValuesAsMeanOfCoords();
-//     mo.calculateNodeCurveValuesAsFirstCoords();
-    std::cout << "calculating element hilbert values" << '\n';
-    mo.calculateElementCurveValueAsMeanOfNodes();
+//     mo.calculateNodeCurveValuesAsFirstCoord();
+    std::cout << "calculating element curve values" << '\n';
+    mo.calculateElementCurveValuesAsMeanOfNodes();
     std::cout << "sorting nodes" << '\n';
     mo.sortNodes();
     std::cout << "sorting elements" << '\n';
     mo.sortElements();
-    std::cout << "exporting nodes" << '\n';
-    mo.exportNodes();
-    std::cout << "exporting elements" << '\n';
-    mo.exportElements();
+    std::cout << "writing nodes to mesh" << '\n';
+    mo.writeNodesToMesh();
+    std::cout << "writing elements to mesh" << '\n';
+    mo.writeElementsToMesh();
     
     START_TIMER("calculation_after_sort");
 //     double checksum2 = calculation2DAfterSort(mesh);
@@ -249,7 +250,7 @@ TEST(Spacefilling, space_filling) {
     std::stringstream tmpStream;
     tmpStream << unixTime;
     std::string unixTimeString = tmpStream.str();
-    std::ofstream jsonResult("../../../results/" + testName + "/" + unixTimeString + ".json");
+    std::ofstream jsonResult("../../../results/" + meshName + '_' + testName + '/' + unixTimeString + ".json");
     
     Profiler::instance()->output(jsonResult);
     Profiler::uninitialize();
