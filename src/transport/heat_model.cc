@@ -421,7 +421,7 @@ void HeatTransferModel::get_bc_type(const ElementAccessor<3> &ele_acc,
 {
 	// Currently the bc types for HeatTransfer are numbered in the same way as in TransportDG.
 	// In general we should use some map here.
-	bc_types = { data().bc_type.value(ele_acc.centre(), ele_acc) };
+	bc_types = { data().bc_type.value(ele_acc.centre(), ele_acc) }; //TODO change bc_type to MultiField
 }
 
 
@@ -512,6 +512,10 @@ void HeatTransferModel::compute_sources_sigma(const Armor::array &point_list,
 
 void HeatTransferModel::initialize()
 {
+    // initialize multifield components
+	// empty for now
+
+    // create FieldModels
     auto mass_matrix_coef_ptr = Model<3, FieldValue<3>::Scalar>::create(fn_heat_mass_matrix, data().cross_section,
             data().porosity, data().fluid_density, data().fluid_heat_capacity, data().solid_density, data().solid_heat_capacity);
     data().mass_matrix_coef.set_field(mesh_->region_db().get_region_set("ALL"), mass_matrix_coef_ptr);
@@ -533,12 +537,6 @@ void HeatTransferModel::initialize()
             data().fluid_density, data().fluid_heat_capacity, data().fluid_heat_exchange_rate, data().fluid_ref_temperature, data().solid_density,
             data().solid_heat_capacity, data().solid_heat_exchange_rate, data().solid_ref_temperature, data().sources_sigma_out);
     data().sources_conc_out.set_fields(mesh_->region_db().get_region_set("ALL"), sources_conc_ptr);
-}
-
-
-void HeatTransferModel::setup_components()
-{
-    // empty for now
 }
 
 

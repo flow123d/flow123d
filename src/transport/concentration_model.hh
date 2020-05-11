@@ -249,11 +249,6 @@ protected:
 	 */
 	void initialize();
 
-	/**
-	 * Call setup_components of all MultiFields necessary for creating FiedlModels.
-	 */
-	void setup_components();
-
 	/// Indicator of change in advection vector field.
 	bool flux_changed;
 

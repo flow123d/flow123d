@@ -460,6 +460,13 @@ void ConcentrationTransportModel::set_balance_object(std::shared_ptr<Balance> ba
 
 void ConcentrationTransportModel::initialize()
 {
+    // initialize multifield components
+	data().sorption_coefficient.setup_components();
+    data().sources_conc.setup_components();
+    data().sources_density.setup_components();
+    data().sources_sigma.setup_components();
+
+    // create FieldModels
     auto mass_matrix_coef_ptr = Model<3, FieldValue<3>::Scalar>::create(fn_conc_mass_matrix, data().cross_section, data().water_content);
     data().mass_matrix_coef.set_field(mesh_->region_db().get_region_set("ALL"), mass_matrix_coef_ptr);
 
@@ -475,15 +482,6 @@ void ConcentrationTransportModel::initialize()
 
     auto sources_conc_ptr = Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_sources_conc, data().sources_conc);
     data().sources_conc_out.set_fields(mesh_->region_db().get_region_set("ALL"), sources_conc_ptr);
-}
-
-
-void ConcentrationTransportModel::setup_components()
-{
-    data().sorption_coefficient.setup_components();
-    data().sources_conc.setup_components();
-    data().sources_density.setup_components();
-    data().sources_sigma.setup_components();
 }
 
 
