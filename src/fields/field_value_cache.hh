@@ -244,6 +244,13 @@ public:
         return elm_idx_[pos];
     }
 
+    /// Return position of element stored in ElementCacheMap
+    inline unsigned int position_in_cache(unsigned elm_idx) const {
+        std::unordered_map<unsigned int, unsigned int>::const_iterator it = cache_idx_.find(elm_idx);
+        if ( it != cache_idx_.end() ) return it->second;
+        else return ElementCacheMap::undef_elem_idx;
+    }
+
     /// Set index of cell in ElementCacheMap (or undef value if cell is not stored in cache).
     DHCellAccessor & operator() (DHCellAccessor &dh_cell) const;
 protected:
