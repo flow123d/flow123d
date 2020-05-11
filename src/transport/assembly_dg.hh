@@ -131,6 +131,7 @@ public:
         for (auto cell : dh->local_range() )
         {
             this->add_integrals_of_computing_step(cell);
+            element_cache_map_(cell);
 
             if ( cell.is_own() && (active_integrals_ & ActiveIntegrals::bulk) ) {
                 START_TIMER("assemble_volume_integrals");
@@ -663,7 +664,7 @@ public:
                 for (unsigned int j=0; j<ndofs_; j++)
                     local_matrix_[i*ndofs_+j] = 0;
 
-            for (unsigned int k=0; k<qsize_; k++)
+            /*for (unsigned int k=0; k<qsize_; k++)
             {
                 for (unsigned int i=0; i<ndofs_; i++)
                 {
@@ -675,6 +676,22 @@ public:
                                                   -fe_values_.shape_value(j,k)*ad_dot_grad_i
                                                   +sources_sigma_[sbi][k]*fe_values_.shape_value(j,k)*fe_values_.shape_value(i,k))*fe_values_.JxW(k);
                 }
+            }*/
+            unsigned int k=0;
+            for (auto p : data_->stiffness_assembly_->bulk_integral(dim)->points(cell, &(data_->stiffness_assembly_->cache_map())) )
+            {
+                for (unsigned int i=0; i<ndofs_; i++)
+                {
+                	stringstream ss;
+                    arma::vec3 Kt_grad_i = data_->dif_coef[sbi][k].t()*fe_values_.shape_grad(i,k);
+                    double ad_dot_grad_i = arma::dot(data_->ad_coef[sbi][k], fe_values_.shape_grad(i,k));
+
+                    for (unsigned int j=0; j<ndofs_; j++)
+                        local_matrix_[i*ndofs_+j] += (arma::dot(Kt_grad_i, fe_values_.shape_grad(j,k))
+                                                  -fe_values_.shape_value(j,k)*ad_dot_grad_i
+                                                  +data_->sources_sigma_out[sbi](p)*fe_values_.shape_value(j,k)*fe_values_.shape_value(i,k))*fe_values_.JxW(k);
+                }
+                k++;
             }
             data_->ls[sbi]->mat_set_values(ndofs_, &(dof_indices_[0]), ndofs_, &(dof_indices_[0]), &(local_matrix_[0]));
         }
