@@ -160,9 +160,9 @@ public:
 	//			std::vector<std::vector<double> > &sources_density,
 	//			std::vector<std::vector<double> > &sources_sigma) override;
 
-	void compute_sources_sigma(const Armor::array &point_list,
-				const ElementAccessor<3> &ele_acc,
-				std::vector<std::vector<double> > &sources_sigma) override;
+	//void compute_sources_sigma(const Armor::array &point_list,
+	//			const ElementAccessor<3> &ele_acc,
+	//			std::vector<std::vector<double> > &sources_sigma) override;
 
 	~ConcentrationTransportModel() override;
 

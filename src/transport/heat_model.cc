@@ -487,7 +487,7 @@ void HeatTransferModel::get_flux_bc_sigma(FMT_UNUSED unsigned int index,
 }*/
 
 
-void HeatTransferModel::compute_sources_sigma(const Armor::array &point_list,
+/*void HeatTransferModel::compute_sources_sigma(const Armor::array &point_list,
 			const ElementAccessor<3> &ele_acc,
 			std::vector<std::vector<double> > &sources_sigma)
 {
@@ -507,7 +507,7 @@ void HeatTransferModel::compute_sources_sigma(const Armor::array &point_list,
 	{
 		sources_sigma[0][k] = csection[k]*(por[k]*f_rho[k]*f_cap[k]*f_sigma[k] + (1.-por[k])*s_rho[k]*s_cap[k]*s_sigma[k]);
 	}
-}
+}*/
 
 
 void HeatTransferModel::initialize()

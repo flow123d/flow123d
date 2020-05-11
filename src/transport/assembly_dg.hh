@@ -441,12 +441,12 @@ public:
         local_retardation_balance_vector_.resize(ndofs_);
         local_mass_balance_vector_.resize(ndofs_);
 
-        mm_coef_.resize(qsize_);
-        ret_coef_.resize(model_->n_substances());
-        for (unsigned int sbi=0; sbi<model_->n_substances(); sbi++)
-        {
-            ret_coef_[sbi].resize(qsize_);
-        }
+        //mm_coef_.resize(qsize_);
+        //ret_coef_.resize(model_->n_substances());
+        //for (unsigned int sbi=0; sbi<model_->n_substances(); sbi++)
+        //{
+        //    ret_coef_[sbi].resize(qsize_);
+        //}
     }
 
 
@@ -529,20 +529,6 @@ public:
 
 
     private:
-    	/**
-    	 * @brief Calculates the velocity field on a given cell.
-    	 *
-    	 * @param cell       The cell.
-    	 * @param velocity   The computed velocity field (at quadrature points).
-    	 * @param point_list The quadrature points.
-    	 */
-        void calculate_velocity(const ElementAccessor<3> &cell, vector<arma::vec3> &velocity,
-                                const Armor::array &point_list)
-        {
-            velocity.resize(point_list.size());
-            model_->velocity_field_ptr()->value_list(point_list, cell, velocity);
-        }
-
         shared_ptr<FiniteElement<dim>> fe_;                    ///< Finite element for the solution of the advection-diffusion equation.
 
         /// Pointer to model (we must use common ancestor of concentration and heat model)
@@ -560,10 +546,8 @@ public:
         vector<PetscScalar> local_retardation_balance_vector_;    ///< Auxiliary vector for assemble mass matrix.
         vector<PetscScalar> local_mass_balance_vector_;           ///< Same as previous.
 
-    	/// Mass matrix coefficients.
-    	vector<double> mm_coef_;
-    	/// Retardation coefficient due to sorption.
-    	vector<vector<double> > ret_coef_;
+    	//vector<double> mm_coef_;                                  ///< Mass matrix coefficients.
+    	//vector<vector<double> > ret_coef_;                        ///< Retardation coefficient due to sorption.
 
         friend class TransportDG<Model>;
         template < template<Dim...> class DimAssembly>
@@ -619,7 +603,7 @@ public:
         local_mass_balance_vector_.resize(ndofs_);
         velocity_.resize(qsize_);
         side_velocity_vec_.resize(data_->ad_coef_edg.size());
-        sources_sigma_.resize(model_->n_substances(), std::vector<double>(qsize_));
+        //sources_sigma_.resize(model_->n_substances(), std::vector<double>(qsize_));
         sigma_.resize(qsize_lower_dim_);
         csection_.resize(qsize_lower_dim_);
         csection_higher_.resize(qsize_lower_dim_);
@@ -655,7 +639,7 @@ public:
 
         calculate_velocity(elm, velocity_, fv_rt_.point_list());
         model_->compute_advection_diffusion_coefficients(fe_values_.point_list(), velocity_, elm, data_->ad_coef, data_->dif_coef);
-        model_->compute_sources_sigma(fe_values_.point_list(), elm, sources_sigma_);
+        //model_->compute_sources_sigma(fe_values_.point_list(), elm, sources_sigma_);
 
         // assemble the local stiffness matrix
         for (unsigned int sbi=0; sbi<model_->n_substances(); sbi++)
@@ -1065,7 +1049,7 @@ private:
     vector<arma::vec3> velocity_;                             ///< Auxiliary results.
     vector<arma::vec3> velocity_higher_;                      ///< Velocity results of higher dim element (element-side computation).
     vector<vector<arma::vec3> > side_velocity_vec_;           ///< Vector of velocities results.
-    vector<vector<double> > sources_sigma_;                   ///< Auxiliary vectors for assemble volume integrals and set_sources method.
+    //vector<vector<double> > sources_sigma_;                   ///< Auxiliary vectors for assemble volume integrals and set_sources method.
     vector<double> sigma_;                                    ///< Auxiliary vector for assemble boundary fluxes (robin sigma), element-side fluxes (frac sigma) and set boundary conditions method
     vector<double> csection_;                                 ///< Auxiliary vector for assemble boundary fluxes, element-side fluxes and set boundary conditions
     vector<double> csection_higher_;                          ///< Auxiliary vector for assemble element-side fluxes
@@ -1124,9 +1108,9 @@ public:
         local_rhs_.resize(ndofs_);
         local_source_balance_vector_.resize(ndofs_);
         local_source_balance_rhs_.resize(ndofs_);
-        sources_conc_.resize(model_->n_substances(), std::vector<double>(qsize_));
-        sources_density_.resize(model_->n_substances(), std::vector<double>(qsize_));
-        sources_sigma_.resize(model_->n_substances(), std::vector<double>(qsize_));
+        //sources_conc_.resize(model_->n_substances(), std::vector<double>(qsize_));
+        //sources_density_.resize(model_->n_substances(), std::vector<double>(qsize_));
+        //sources_sigma_.resize(model_->n_substances(), std::vector<double>(qsize_));
     }
 
 
@@ -1208,20 +1192,6 @@ public:
 
 
     private:
-    	/**
-    	 * @brief Calculates the velocity field on a given cell.
-    	 *
-    	 * @param cell       The cell.
-    	 * @param velocity   The computed velocity field (at quadrature points).
-    	 * @param point_list The quadrature points.
-    	 */
-        void calculate_velocity(const ElementAccessor<3> &cell, vector<arma::vec3> &velocity,
-                                const Armor::array &point_list)
-        {
-            velocity.resize(point_list.size());
-            model_->velocity_field_ptr()->value_list(point_list, cell, velocity);
-        }
-
         shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
 
         /// Pointer to model (we must use common ancestor of concentration and heat model)
@@ -1239,9 +1209,9 @@ public:
         vector<PetscScalar> local_rhs_;                           ///< Auxiliary vector for set_sources method.
         vector<PetscScalar> local_source_balance_vector_;         ///< Auxiliary vector for set_sources method.
         vector<PetscScalar> local_source_balance_rhs_;            ///< Auxiliary vector for set_sources method.
-        vector<vector<double> > sources_conc_;                    ///< Auxiliary vectors for set_sources method.
-        vector<vector<double> > sources_density_;                 ///< Auxiliary vectors for set_sources method.
-        vector<vector<double> > sources_sigma_;                   ///< Auxiliary vectors for assemble volume integrals and set_sources method.
+        //vector<vector<double> > sources_conc_;                    ///< Auxiliary vectors for set_sources method.
+        //vector<vector<double> > sources_density_;                 ///< Auxiliary vectors for set_sources method.
+        //vector<vector<double> > sources_sigma_;                   ///< Auxiliary vectors for assemble volume integrals and set_sources method.
 
         /// @name Auxiliary variables used during set sources
     	// @{
@@ -1569,20 +1539,6 @@ public:
 
 
     private:
-    	/**
-    	 * @brief Calculates the velocity field on a given cell.
-    	 *
-    	 * @param cell       The cell.
-    	 * @param velocity   The computed velocity field (at quadrature points).
-    	 * @param point_list The quadrature points.
-    	 */
-        void calculate_velocity(const ElementAccessor<3> &cell, vector<arma::vec3> &velocity,
-                                const Armor::array &point_list)
-        {
-            velocity.resize(point_list.size());
-            model_->velocity_field_ptr()->value_list(point_list, cell, velocity);
-        }
-
         shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
 
         /// Pointer to model (we must use common ancestor of concentration and heat model)

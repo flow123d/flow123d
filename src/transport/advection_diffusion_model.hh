@@ -156,9 +156,9 @@ public:
 	 * @param ele_acc         Element accessor.
 	 * @param sources_sigma   Source sigmas (output).
 	 */
-	virtual void compute_sources_sigma(const Armor::array &point_list,
-			const ElementAccessor<3> &ele_acc,
-			std::vector<std::vector<double> > &sources_sigma) = 0;
+	//virtual void compute_sources_sigma(const Armor::array &point_list,
+	//		const ElementAccessor<3> &ele_acc,
+	//		std::vector<std::vector<double> > &sources_sigma) = 0;
 
 	/// Destructor.
 	virtual ~AdvectionDiffusionModel() {};
