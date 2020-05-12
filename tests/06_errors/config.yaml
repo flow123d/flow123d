@@ -87,4 +87,15 @@ test_cases:
         files: [job_output.log]
         substr: "User Error: The size of the input array 'solubility' does not match the number of substances"
             
-            
+- files: 14_duplicit_records.yaml
+  death_test: true
+  check_rules:
+    - regex:
+        files: [job_output.log]
+        substr: "Program Error: Violated assert! Duplicate keys in record map! Check the input file for the key reported below."
+    - regex:
+        files: [job_output.log]
+        substr: "head().Tag() : '!Flow_Darcy_MH'"
+    - regex:
+        files: [job_output.log]
+        substr: "key : 'balance'"
