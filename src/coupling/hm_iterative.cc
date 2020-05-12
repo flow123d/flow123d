@@ -220,9 +220,9 @@ void HM_Iterative::update_solution()
         // pass pressure to mechanics and solve mechanics
         update_potential();
         mechanics_->solve_linear_system();
-        mechanics_->output_vector_gather();
         
         // update displacement divergence
+        mechanics_->update_output_fields();
         copy_field(mechanics_->data().output_divergence, *data_.div_u_ptr_);
         
         // TODO: compute difference of iterates
@@ -247,7 +247,6 @@ void HM_Iterative::update_potential()
 {
     auto potential_vec_ = data_.potential_ptr_->get_data_vec();
     auto dh = data_.potential_ptr_->get_dofhandler();
-    double difference2 = 0, norm2 = 0;
     Field<3, FieldValue<3>::Scalar> field_edge_pressure;
     field_edge_pressure.copy_from(*flow_->data().field("pressure_edge"));
     for ( auto ele : dh->local_range() )
@@ -262,34 +261,12 @@ void HM_Iterative::update_potential()
             double pressure = field_edge_pressure.value(side.centre(), elm);
             double potential = -alpha*density*gravity*pressure;
         
-            if (ele.is_own())
-            {
-                difference2 += pow(potential_vec_[dof_indices[side.side_idx()]] - potential,2);
-                norm2 += pow(potential,2);
-            }
-        
             potential_vec_[dof_indices[side.side_idx()]] = potential;
         }
     }
     
-    double send_data[] = { difference2, norm2 };
-    double recv_data[2];
-    MPI_Allreduce(&send_data, &recv_data, 2, MPI_DOUBLE, MPI_SUM, PETSC_COMM_WORLD);
-    difference2 = recv_data[0];
-    norm2       = recv_data[1];
-
-    double dif2norm;
-    if (norm2 == 0)
-        dif2norm = (difference2 == 0)?0:numeric_limits<double>::max();
-    else 
-        dif2norm = sqrt(difference2/norm2);
-    DebugOut() << "Relative potential difference: " << dif2norm << endl;
-    
-    if (dif2norm > numeric_limits<double>::epsilon())
-    {
-        data_.pressure_potential.set_time_result_changed();
-        mechanics_->set_potential_load(data_.pressure_potential);
-    }
+    data_.pressure_potential.set_time_result_changed();
+    mechanics_->set_potential_load(data_.pressure_potential);
 }
 
 
@@ -298,7 +275,6 @@ void HM_Iterative::update_flow_fields()
     auto beta_vec = data_.beta_ptr_->get_data_vec();
     auto src_vec = data_.flow_source_ptr_->get_data_vec();
     auto dh = data_.beta_ptr_->get_dofhandler();
-    double beta_diff2 = 0, beta_norm2 = 0, src_diff2 = 0, src_norm2 = 0;
     Field<3,FieldValue<3>::Scalar> field_ele_pressure;
     field_ele_pressure.copy_from(*flow_->data().field("pressure_p0"));
     for ( auto ele : dh->local_range() )
@@ -316,48 +292,14 @@ void HM_Iterative::update_flow_fields()
         double old_div_u = data_.old_div_u_ptr_->value(elm.centre(), elm);
         double src = (beta*(p-old_p) + alpha*(old_div_u - div_u)) / time_->dt();
         
-        if (ele.is_own())
-        {
-            beta_diff2 += pow(beta_vec[ele.local_idx()] - beta,2);
-            beta_norm2 += pow(beta,2);
-            src_diff2 += pow(src_vec[ele.local_idx()] - src,2);
-            src_norm2 += pow(src,2);
-        }
-        
         beta_vec[ele.local_idx()] = beta;
         src_vec[ele.local_idx()] = src;
     }
     
-    double send_data[] = { beta_diff2, beta_norm2, src_diff2, src_norm2 };
-    double recv_data[4];
-    MPI_Allreduce(&send_data, &recv_data, 4, MPI_DOUBLE, MPI_SUM, PETSC_COMM_WORLD);
-    beta_diff2 = recv_data[0];
-    beta_norm2 = recv_data[1];
-    src_diff2  = recv_data[2];
-    src_norm2  = recv_data[3];
-    
-    double beta_dif2norm, src_dif2norm;
-    if (beta_norm2 == 0)
-        beta_dif2norm = (beta_diff2 == 0)?0:numeric_limits<double>::max();
-    else 
-        beta_dif2norm = sqrt(beta_diff2/beta_norm2);
-    if (src_norm2 == 0)
-        src_dif2norm = (src_diff2 == 0)?0:numeric_limits<double>::max();
-    else 
-        src_dif2norm = sqrt(src_diff2/src_norm2);
-    DebugOut() << "Relative difference in beta: " << beta_dif2norm << endl;
-    DebugOut() << "Relative difference in extra_source: " << src_dif2norm << endl;
-    
-    if (beta_dif2norm > numeric_limits<double>::epsilon())
-    {
-        data_.beta.set_time_result_changed();
-        flow_->set_extra_storativity(data_.beta);
-    }
-    if (src_dif2norm > numeric_limits<double>::epsilon())
-    {
-        data_.flow_source.set_time_result_changed();
-        flow_->set_extra_source(data_.flow_source);
-    }
+    data_.beta.set_time_result_changed();
+    data_.flow_source.set_time_result_changed();
+    flow_->set_extra_storativity(data_.beta);
+    flow_->set_extra_source(data_.flow_source);
 }
 
 

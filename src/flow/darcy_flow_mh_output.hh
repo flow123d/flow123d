@@ -103,7 +103,7 @@ public:
     /** \brief Calculate values for output.  **/
     void output();
 
-    const OutputFields &get_output_fields() { return output_fields; }
+    //const OutputFields &get_output_fields() { return output_fields; }
 
 
 

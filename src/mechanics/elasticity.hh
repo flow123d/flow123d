@@ -184,7 +184,8 @@ public:
 
 	void initialize() override;
     
-    void output_vector_gather();
+	// Recompute fields for output (stress, divergence etc.)
+	void update_output_fields();
     
     void set_potential_load(const Field<3, FieldValue<3>::Scalar> &potential)
     { data_.potential_load = potential; }
@@ -206,8 +207,6 @@ private:
     /// Registrar of class to factory
     static const int registrar;
 
-    void update_output_fields();
-    
     template<unsigned int dim>
     void compute_output_fields();
 
