@@ -1248,8 +1248,13 @@ void Mesh::distribute_nodes() {
     }
 
     unsigned int n_own_nodes=0, n_local_nodes=0; // number of own and ghost nodes
-    for(uint i_proc : node_proc) if (i_proc == my_proc) n_own_nodes++;
     for(uint loc_flag : local_node_flag) if (loc_flag) n_local_nodes++;
+    for(uint i_proc : node_proc) {
+        if (i_proc == my_proc)
+            n_own_nodes++;
+        else if (i_proc == n_proc)
+            ASSERT(0)(find_node_id(n_own_nodes)).error("A node does not belong to any element!");
+    }
 
     //DebugOut() << print_var(n_own_nodes) << print_var(n_local_nodes) << this->n_nodes();
     // create and fill node_4_loc_ (mapping local to global indexes)
