@@ -1223,6 +1223,12 @@ void Mesh::distribute_nodes() {
         }
     }
 
+    for(uint i_proc : node_proc) {
+        if (i_proc == my_proc)
+            n_own_nodes++;
+        else if (i_proc == n_proc)
+            ASSERT(0)(find_node_id(n_own_nodes)).error("A node does not belong to any element!");
+    }
     // create and fill node_4_loc_ (mapping local to global indexes)
     node_4_loc_ = new LongIdx [ n_own_nodes+n_ghost_nodes ];
     i_node=0;
