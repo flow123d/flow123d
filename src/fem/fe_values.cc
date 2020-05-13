@@ -599,8 +599,11 @@ std::vector<FEValues<3>> mixed_fe_values(
 
 
 
-
-
+// explicit instantiation
+template void FEValues<3>::initialize<0>(Quadrature&, FiniteElement<0>&, UpdateFlags);
+template void FEValues<3>::initialize<1>(Quadrature&, FiniteElement<1>&, UpdateFlags);
+template void FEValues<3>::initialize<2>(Quadrature&, FiniteElement<2>&, UpdateFlags);
+template void FEValues<3>::initialize<3>(Quadrature&, FiniteElement<3>&, UpdateFlags);
 
 
 
