@@ -266,6 +266,11 @@ HeatTransferModel::ModelEqData::ModelEqData()
             .units( UnitSI().K() )
             .flags(equation_result);
 
+    *this += velocity.name("velocity")
+            .description("Velocity field given from Flow equation.")
+            .input_default("0.0")
+            .units( UnitSI().m().s(-1) );
+
 
 	// initiaization of FieldModels
     *this += mass_matrix_coef.name("mass_matrix_coef")

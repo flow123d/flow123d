@@ -155,6 +155,9 @@ public:
 
 		MultiField<3, FieldValue<3>::Scalar> output_field;
 
+		/// Velocity field given from Flow equation.
+		Field<3, FieldValue<3>::VectorFixed > velocity;
+
 
 		/// @name Instances of FieldModel used in assembly methods
 		// @{
@@ -247,6 +250,7 @@ public:
 	inline void set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field) override
 	{
 		velocity_field_ptr_ = flux_field;
+		data().velocity.set_field(mesh_->region_db().get_region_set("ALL"), flux_field);
 		flux_changed = true;
 	}
 
@@ -302,7 +306,7 @@ protected:
 
 	std::shared_ptr<OutputTime> output_stream_;
 
-	/// Pointer to velocity field given from Flow equation.
+	/// Pointer to velocity field given from Flow equation - obsolete, will be replace with Field<...> data()->velocity.
 	std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> velocity_field_ptr_;
 
 
