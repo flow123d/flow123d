@@ -37,7 +37,6 @@
 #include "transport/transport_operator_splitting.hh"  // for ConcentrationTr...
 
 class Balance;
-class MH_DofHandler;
 class Mesh;
 class OutputTime;
 namespace Input { class Record; }
@@ -104,23 +103,23 @@ public:
 
         void init_from_input(const Input::Record &in_rec) override;
 
-	void compute_mass_matrix_coefficient(const std::vector<arma::vec3 > &point_list,
+	void compute_mass_matrix_coefficient(const Armor::array &point_list,
 			const ElementAccessor<3> &ele_acc,
 			std::vector<double> &mm_coef) override;
 
-	void compute_retardation_coefficient(const std::vector<arma::vec3 > &point_list,
+	void compute_retardation_coefficient(const Armor::array &point_list,
 			const ElementAccessor<3> &ele_acc,
 			std::vector<std::vector<double> > &ret_coef) override;
 
 
 
-	void compute_advection_diffusion_coefficients(const std::vector<arma::vec3 > &point_list,
+	void compute_advection_diffusion_coefficients(const Armor::array &point_list,
 			const std::vector<arma::vec3> &velocity,
 			const ElementAccessor<3> &ele_acc,
 			std::vector<std::vector<arma::vec3> > &ad_coef,
 			std::vector<std::vector<arma::mat33> > &dif_coef) override;
 
-	void compute_init_cond(const std::vector<arma::vec3> &point_list,
+	void compute_init_cond(const Armor::array &point_list,
 			const ElementAccessor<3> &ele_acc,
 			std::vector<std::vector<double> > &init_values) override;
 
@@ -128,24 +127,24 @@ public:
 				arma::uvec &bc_types) override;
 
 	void get_flux_bc_data(unsigned int index,
-            const std::vector<arma::vec3> &point_list,
+            const Armor::array &point_list,
 			const ElementAccessor<3> &ele_acc,
 			std::vector< double > &bc_flux,
 			std::vector< double > &bc_sigma,
 			std::vector< double > &bc_ref_value) override;
 
 	void get_flux_bc_sigma(unsigned int index,
-            const std::vector<arma::vec3> &point_list,
+            const Armor::array &point_list,
 			const ElementAccessor<3> &ele_acc,
 			std::vector< double > &bc_sigma) override;
 
-	void compute_source_coefficients(const std::vector<arma::vec3> &point_list,
+	void compute_source_coefficients(const Armor::array &point_list,
 				const ElementAccessor<3> &ele_acc,
 				std::vector<std::vector<double> > &sources_conc,
 				std::vector<std::vector<double> > &sources_density,
 				std::vector<std::vector<double> > &sources_sigma) override;
 
-	void compute_sources_sigma(const std::vector<arma::vec3> &point_list,
+	void compute_sources_sigma(const Armor::array &point_list,
 				const ElementAccessor<3> &ele_acc,
 				std::vector<std::vector<double> > &sources_sigma) override;
 
@@ -160,9 +159,9 @@ public:
 	 * (So far it does not work since the flow module returns a vector of zeros.)
 	 * @param velocity_vector Input array of velocity values.
 	 */
-	inline void set_velocity_field(const MH_DofHandler &dh) override
+	inline void set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field) override
 	{
-		mh_dh = &dh;
+		velocity_field_ptr_ = flux_field;
 		flux_changed = true;
 	}
 
@@ -182,7 +181,7 @@ public:
 
 	void set_balance_object(std::shared_ptr<Balance> balance) override;
 
-    const vector<unsigned int> &get_subst_idx() override
+    const vector<unsigned int> &get_subst_idx()
 	{ return subst_idx; }
 
     void set_output_stream(std::shared_ptr<OutputTime> stream)
@@ -190,6 +189,10 @@ public:
 
 	std::shared_ptr<OutputTime> output_stream() override
 	{ return output_stream_; }
+
+    std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> velocity_field_ptr() const {
+        return this->velocity_field_ptr_;
+    }
 
 
 
@@ -237,15 +240,10 @@ protected:
 	/// Density of liquid (a global constant).
 	double solvent_density_;
 
-    /**
-     * Temporary solution how to pass velocity field form the flow model.
-     * TODO: introduce FieldDiscrete -containing true DOFHandler and data vector and pass such object together with other
-     * data. Possibly make more general set_data method, allowing setting data given by name. needs support from EqDataBase.
-     */
-    const MH_DofHandler *mh_dh;
-
 	std::shared_ptr<OutputTime> output_stream_;
 
+	/// Pointer to velocity field given from Flow equation.
+	std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> velocity_field_ptr_;
 
 
 };

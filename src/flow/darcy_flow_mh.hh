@@ -47,7 +47,6 @@
 #include "fields/field_set.hh"                  // for FieldSet
 #include "fields/field_values.hh"               // for FieldValue<>::Scalar
 #include "flow/darcy_flow_interface.hh"         // for DarcyFlowInterface
-#include "flow/mh_dofhandler.hh"                // for MH_DofHandler, uint
 #include "input/input_exception.hh"             // for DECLARE_INPUT_EXCEPTION
 #include "input/type_base.hh"                   // for Array
 #include "input/type_generic.hh"                // for Instance
@@ -71,6 +70,10 @@ namespace Input {
 		class Selection;
 	}
 }
+typedef std::vector<std::shared_ptr<AssemblyBase> > MultidimAssembly;
+
+template<int spacedim, class Value> class FieldAddPotential;
+template<int spacedim, class Value> class FieldDivide;
 
 /**
  * @brief Mixed-hybrid model of linear Darcy flow, possibly unsteady.
@@ -121,6 +124,9 @@ namespace Input {
  * TODO:
  * - how we can reuse field values computed during assembly
  *
+ * TODO: Remove in future. It is supposed not to be improved anymore,
+ * however it is kept functioning aside of the LMH lumped version until
+ * the LMH version is stable and optimized.
  */
 
 class DarcyMH : public DarcyFlowInterface
@@ -133,19 +139,14 @@ public:
     DECLARE_INPUT_EXCEPTION(ExcMissingTimeGovernor,
             << "Missing the key 'time', obligatory for the transient problems.");
 
-
-    typedef std::vector<std::shared_ptr<AssemblyBase> > MultidimAssembly;
-
-    /// Type of experimental Mortar-like method for non-compatible 1d-2d interaction.
-    enum MortarMethod {
-        NoMortar = 0,
-        MortarP0 = 1,
-        MortarP1 = 2
-    };
-
-    /// Class with all fields used in the equation DarcyFlow.
-    /// This is common to all implementations since this provides interface
-    /// to this equation for possible coupling.
+    /** Class with all fields used in the equation DarcyFlow.
+    * This is common to all implementations since this provides interface
+    * to this equation for possible coupling.
+    * 
+    * This class is the base class for equation data also in DarcyLMH and RichardsLMH classes
+    * especially due to the common output class DarcyFlowMHOutput.
+    * This is the only dependence between DarcyMH and DarcyLMH classes.
+    */
     class EqData : public FieldSet {
     public:
 
@@ -184,6 +185,11 @@ public:
         Field<3, FieldValue<3>::Scalar > extra_storativity; /// Externally added storativity.
         Field<3, FieldValue<3>::Scalar > extra_source; /// Externally added water source.
 
+	    Field<3, FieldValue<3>::Scalar> field_ele_pressure;
+	    Field<3, FieldValue<3>::Scalar> field_ele_piezo_head;
+        Field<3, FieldValue<3>::VectorFixed > field_ele_velocity;
+        Field<3, FieldValue<3>::Scalar> field_edge_pressure;
+
         /**
          * Gravity vector and constant shift of pressure potential. Used to convert piezometric head
          * to pressure head and vice versa.
@@ -193,7 +199,9 @@ public:
 
         // Mirroring the following members of DarcyMH:
         Mesh *mesh;
-        MH_DofHandler *mh_dh;
+        std::shared_ptr<DOFHandlerMultiDim> dh_;         ///< full DOF handler represents DOFs of sides, elements and edges
+        std::shared_ptr<SubDOFHandlerMultiDim> dh_cr_;   ///< DOF handler represents DOFs of edges
+        std::shared_ptr<DOFHandlerMultiDim> dh_cr_disc_; ///< DOF handler represents DOFs of sides
 
 
         uint water_balance_idx;
@@ -205,10 +213,14 @@ public:
         
         unsigned int n_schur_compls;
         int is_linear;              ///< Hack fo BDDC solver.
-        bool force_bc_switch;       ///< auxiliary flag for switchting Dirichlet like BC
+        bool force_no_neumann_bc;       ///< auxiliary flag for switchting Dirichlet like BC
         
         /// Idicator of dirichlet or neumann type of switch boundary conditions.
         std::vector<char> bc_switch_dirichlet;
+
+    	VectorMPI full_solution;     //< full solution [vel,press,lambda] from 2. Schur complement
+        
+        MultidimAssembly multidim_assembler;
     };
 
     /// Selection for enum MortarMethod.
@@ -223,22 +235,11 @@ public:
     static const Input::Type::Record & type_field_descriptor();
     static const Input::Type::Record & get_input_type();
 
-    const MH_DofHandler &get_mh_dofhandler()  override {
-        double *array;
-        unsigned int size;
-        get_solution_vector(array, size);
-
-        // here assume that velocity field is extended as constant
-        // to the previous time, so here we set left bound of the interval where the velocity
-        // has current value; this may not be good for every transport !!
-        // we can resolve this when we use FieldFE to store computed velocities in few last steps and
-        // let every equation set time according to nature of the time scheme
-
-        // in particular this setting is necessary to prevent ConvectinTransport to recreate the transport matrix
-        // every timestep ( this may happen for unsteady flow if we would use time->t() here since it returns infinity.
-        mh_dh.set_solution(time_->last_t(), array, solution_precision());
-       return mh_dh;
+    double last_t() override {
+        return time_->last_t();
     }
+
+    std::shared_ptr< FieldFE<3, FieldValue<3>::VectorFixed> > get_velocity_field() override;
 
     void init_eq_data();
     void initialize() override;
@@ -247,16 +248,12 @@ public:
     void update_solution() override;
     /// Solve the problem without moving to next time and without output.
     void solve_time_step(bool output = true);
-
-    void get_solution_vector(double * &vec, unsigned int &vec_size) override;
-    void get_parallel_solution_vector(Vec &vector) override;
     
     /// postprocess velocity field (add sources)
-    virtual void prepare_new_time_step();
     virtual void postprocess();
     virtual void output_data() override;
 
-    inline EqData &data() { return *data_; }
+    EqData &data() { return *data_; }
     
     void set_extra_storativity(const Field<3, FieldValue<3>::Scalar> &extra_stor)
     { data_->extra_storativity = extra_stor; }
@@ -278,15 +275,13 @@ protected:
 
     /// Solve method common to zero_time_step and update solution.
     void solve_nonlinear();
-    void make_serial_scatter();
     void modify_system();
     virtual void setup_time_term();
+    void prepare_new_time_step();
 
 
     //void prepare_parallel();
     //void make_row_numberings();
-    /// Initialize global_row_4_sub_row.
-    //void prepare_parallel_bddc();
 
     /**
      * Create and preallocate MH linear system (including matrix, rhs and solution vectors)
@@ -349,10 +344,8 @@ protected:
     /// Print darcy flow matrix in matlab format into a file.
     void print_matlab_matrix(string matlab_file);
 
-    bool solution_changed_for_scatter;
-    //Vec velocity_vector;
-    MH_DofHandler mh_dh;    // provides access to seq. solution fluxes and pressures on sides
-
+    /// Get vector of all DOF indices of given component (0..side, 1..element, 2..edge)
+    std::vector<int> get_component_indices_vec(unsigned int component) const;
 
     std::shared_ptr<Balance> balance_;
 
@@ -360,7 +353,6 @@ protected:
 
 	int size;				    // global size of MH matrix
 	int  n_schur_compls;  	    // number of shur complements to make
-	double  *solution; 			// sequantial scattered solution vector
 
 	// Propagate test for the time term to the assembly.
 	// This flag is necessary for switching BC to avoid setting zero neumann on the whole boundary in the steady case.
@@ -376,15 +368,14 @@ protected:
 
 	LinSys *schur0;  		//< whole MH Linear System
 
-
-	// gather of the solution
-	Vec sol_vec;			                 //< vector over solution array
-	VecScatter par_to_all;
-
 	Vec steady_diagonal;
     Vec steady_rhs;
     Vec new_diagonal;
     Vec previous_solution;
+
+    // Temporary objects holding pointers to appropriate FieldFE
+    // TODO remove after final fix of equations
+    std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> ele_flux_ptr;            ///< Field of flux in barycenter of every element.
 
 	std::shared_ptr<EqData> data_;
 
@@ -400,6 +391,8 @@ private:
 
 
 void mat_count_off_proc_values(Mat m, Vec v);
+/// Helper method fills range (min and max) of given component
+void dofs_range(unsigned int n_dofs, unsigned int &min, unsigned int &max, unsigned int component);
 
 
 #endif  //DARCY_FLOW_MH_HH

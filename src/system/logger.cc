@@ -166,6 +166,7 @@ void Logger::set_mask()
 }
 
 
+
 void Logger::print_to_screen(std::ostream& stream, std::stringstream& scr_stream, StreamMask mask)
 {
 	if ( full_streams_mask_() & mask() ) {
@@ -173,7 +174,8 @@ void Logger::print_to_screen(std::ostream& stream, std::stringstream& scr_stream
 
 		// print header, if method returns true, message continues on the same line and first line of message
 		// doesn't need indentation in following while cycle
-		bool header_line = this->print_screen_header(stream);
+		std::stringstream message_stream;
+		bool header_line = this->print_screen_header(message_stream);
 
 		// print message
 		std::string segment;
@@ -182,11 +184,12 @@ void Logger::print_to_screen(std::ostream& stream, std::stringstream& scr_stream
 			if (header_line) {
 				header_line = false;
 			} else {
-				stream << std::setw(18) << "";
+			    message_stream << std::setw(18) << "";
 			}
-			stream << segment << "\n";
+			message_stream << segment << "\n";
 		}
 
+		stream << message_stream.str();
 		stream << std::flush;
 	}
 }
@@ -198,7 +201,8 @@ void Logger::print_to_file(std::ofstream& stream, std::stringstream& file_stream
 		stream << setfill(' ');
 
 		// print header
-		this->print_file_header(stream);
+		std::stringstream message_stream;
+		this->print_file_header(message_stream);
 
 		// print message
 		std::string segment;
@@ -208,13 +212,14 @@ void Logger::print_to_file(std::ofstream& stream, std::stringstream& file_stream
 			segments.push_back(segment);
 		}
 		if (segments.size() > 1) {
-			stream << "  - |" << "\n";
+		    message_stream << "  - |" << "\n";
 			for (auto seg : segments)
-				stream << std::setw(4) << "" << seg << "\n";
+			    message_stream << std::setw(4) << "" << seg << "\n";
 		} else if (segments.size() == 1) {
-			stream << "  - " << segments[0] << "\n";
+		    message_stream << "  - " << segments[0] << "\n";
 		}
 
+		stream << message_stream.str();
 		stream << std::flush;
 	}
 }
@@ -230,7 +235,7 @@ std::string Logger::compact_file_name(std::string file_name)
     return file_name;
 }
 
-bool Logger::print_screen_header(std::ostream& stream)
+bool Logger::print_screen_header(std::stringstream& stream)
 {
 	stream << date_time_ << " ";
 	if (every_process_) { // rank
@@ -241,20 +246,15 @@ bool Logger::print_screen_header(std::ostream& stream)
 		stream << std::setw(5) << "";
 	}
 
-	if (type_ != MsgType::message) { // type of message (besides Message)
-	    stream << msg_type_string(type_);
-	    if (type_ == MsgType::debug) {
-	        stream << "(" << compact_file_name(file_name_) << ":" << line_ << ")";
-	    }
-		stream << "\n";
-		return false; // logger message starts at new line
-	} else {
-		return true; // logger message continues on the same line as header
-	}
+    stream << msg_type_string(type_);
+    if (type_ == MsgType::debug) {
+        stream << "(" << compact_file_name(file_name_) << ":" << line_ << ")";
+    }
+	return true;
 }
 
 
-void Logger::print_file_header(std::ofstream& stream)
+void Logger::print_file_header(std::stringstream& stream)
 {
 	stream << "- -" << std::setw(13) << "" << "[ ";
 	stream << msg_type_string(type_, false);

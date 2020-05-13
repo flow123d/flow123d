@@ -1,0 +1,72 @@
+flow123d_version: 3.1.0
+problem: !Coupling_Sequential
+  description: Test user error on Region 'from elements' including different dimensions.
+  mesh:
+    mesh_file: ../00_mesh/cube_1x1x1_frac21.msh
+    # Error - includes elements of different dimensions
+    regions:
+      - !From_Elements
+        name: zdroj
+        element_list:
+          # 2d
+          - 61
+          - 97
+          - 129
+          - 165
+          # 3d
+          - 558
+          - 574
+          - 710
+          - 800
+          - 857
+          - 873
+          - 1006
+          - 1113
+  flow_equation: !Flow_Darcy_MH
+    output_specific:
+    nonlinear_solver:
+      linear_solver: !Petsc
+        r_tol: 1.0e-10
+        a_tol: 1.0e-10
+    n_schurs: 2
+    input_fields:
+      - region: 1d_channel
+        anisotropy: 10
+        sigma: 0.05
+      - region: 2d_fracture_1
+        anisotropy: 1
+        sigma: 0.5
+      - region: 2d_fracture_2
+        anisotropy: 1
+        sigma: 0.5
+      - region: 3d_cube
+        anisotropy: 0.1
+        
+      - region: zdroj
+        water_source_density: 5.0
+        
+      - region: .1d_channel
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: 0
+      - region: .2d_fracture_1
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: 0
+      - region: .2d_fracture_2
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: 0
+      - region: .3d_cube
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: 0
+    balance: {}
+    output:
+      fields:
+        - pressure_p0
+        - velocity_p0
+    output_stream: 
+      file: ./flow.pvd
+      format: !vtk
+        variant: ascii

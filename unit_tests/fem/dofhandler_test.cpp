@@ -8,6 +8,7 @@
 #include <mesh_constructor.hh>
 #include "fem/dofhandler.hh"
 #include "fem/dh_cell_accessor.hh"
+#include "tools/mixed.hh"
 
 
 
@@ -35,11 +36,8 @@ TEST(DOFHandler, test_all) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     Mesh * mesh = mesh_full_constructor("{mesh_file=\"fem/small_mesh.msh\"}");
     
-    FE_P<0> fe0(1);
-    FE_P<1> fe1(1);
-    FE_P<2> fe2(1);
-    FE_P<3> fe3(1);
-    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, &fe0, &fe1, &fe2, &fe3);
+    MixedPtr<FE_P> fe(1);
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, fe);
     DOFHandlerMultiDim dh(*mesh);
     dh.distribute_dofs(ds);
     
@@ -106,11 +104,8 @@ TEST(DOFHandler, test_all) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     Mesh * mesh = mesh_full_constructor("{mesh_file=\"fem/small_mesh_junction.msh\"}");
     
-    FE_P<0> fe0(1);
-    FE_P<1> fe1(1);
-    FE_P<2> fe2(1);
-    FE_P<3> fe3(1);
-    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, &fe0, &fe1, &fe2, &fe3);
+    MixedPtr<FE_P> fe(1);
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, fe);
     DOFHandlerMultiDim dh(*mesh);
     dh.distribute_dofs(ds);
     
@@ -180,15 +175,17 @@ TEST(DOFHandler, test_sub_handler)
     FESystem<3> fe_sys3({ std::make_shared<FE_RT0<3> >(),
                           std::make_shared<FE_P<3> >(0),
                           std::make_shared<FE_CR<3> >() });
-    
+    MixedPtr<FESystem> fe_sys( std::make_shared<FESystem<0>>(fe_sys0), std::make_shared<FESystem<1>>(fe_sys1),
+    	                                    std::make_shared<FESystem<2>>(fe_sys2), std::make_shared<FESystem<3>>(fe_sys3) );
+
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     Mesh * mesh = mesh_full_constructor("{mesh_file=\"fem/small_mesh_junction.msh\"}");
-    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, &fe_sys0, &fe_sys1, &fe_sys2, &fe_sys3);
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, fe_sys);
     std::shared_ptr<DOFHandlerMultiDim> dh = std::make_shared<DOFHandlerMultiDim>(*mesh);
     dh->distribute_dofs(ds);
     std::shared_ptr<SubDOFHandlerMultiDim> sub_dh = std::make_shared<SubDOFHandlerMultiDim>(dh, 0);
-    std::vector<std::vector<int> > loc_indices(mesh->n_elements(), std::vector<int>(dh->max_elem_dofs()));
-    std::vector<int> loc_sub_indices(sub_dh->max_elem_dofs());
+    std::vector<LocDofVec > loc_indices(mesh->n_elements());
+    LocDofVec loc_sub_indices;
 
     dh->print();    
     sub_dh->print();
@@ -198,7 +195,7 @@ TEST(DOFHandler, test_sub_handler)
     
     // init cell dof indices
     for (auto cell : dh->local_range())
-        cell.get_loc_dof_indices(loc_indices[cell.elm_idx()]);
+        loc_indices[cell.elm_idx()] = cell.get_loc_dof_indices();
     
     // init vec and update subvec
     for (auto cell : dh->own_range())
@@ -211,7 +208,7 @@ TEST(DOFHandler, test_sub_handler)
     // check that dofs on sub_dh are equal to dofs on dh
     for (auto cell : sub_dh->local_range())
     {
-        cell.get_loc_dof_indices(loc_sub_indices);
+        loc_sub_indices = cell.get_loc_dof_indices();
         for (unsigned int i=0; i<cell.n_dofs(); i++)
         {
             // local indices
@@ -224,7 +221,7 @@ TEST(DOFHandler, test_sub_handler)
     // modify subvec and update "parent" vec
     for (auto cell : sub_dh->own_range())
     {
-        cell.get_loc_dof_indices(loc_sub_indices);
+        loc_sub_indices = cell.get_loc_dof_indices();
         for (unsigned int i=0; i<sub_dh->ds()->n_elem_dofs(cell.elm()); i++)
             subvec[loc_sub_indices[i]] = -(cell.elm_idx()*dh->max_elem_dofs()+i);
     }
@@ -234,7 +231,7 @@ TEST(DOFHandler, test_sub_handler)
     // check values in mpi vectors
     for (auto cell : sub_dh->local_range())
     {
-        cell.get_loc_dof_indices(loc_sub_indices);
+        loc_sub_indices = cell.get_loc_dof_indices();
         for (unsigned int i=0; i<cell.n_dofs(); i++)
             EXPECT_EQ( vec[loc_indices[cell.elm_idx()][i]], subvec[loc_sub_indices[i]] );
     }
@@ -254,11 +251,8 @@ TEST(DOFHandler, test_rt)
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     Mesh * mesh = mesh_full_constructor("{mesh_file=\"fem/small_mesh_junction.msh\"}");
 
-    FE_RT0<0> fe0;
-    FE_RT0<1> fe1;
-    FE_RT0<2> fe2;
-    FE_RT0<3> fe3;
-    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, &fe0, &fe1, &fe2, &fe3);
+    MixedPtr<FE_RT0> fe;
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, fe);
     DOFHandlerMultiDim dh(*mesh);
     dh.distribute_dofs(ds);
 
@@ -298,18 +292,25 @@ TEST(DHAccessors, dh_cell_accessors) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     Mesh * mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
 
-    FE_P<0> fe0(1);
-    FE_P<1> fe1(1);
-    FE_P<2> fe2(1);
-    FE_P<3> fe3(1);
-    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, &fe0, &fe1, &fe2, &fe3);
     DOFHandlerMultiDim dh(*mesh);
-    dh.distribute_dofs(ds);
+    {
+        MixedPtr<FE_P> fe(1);
+        std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, fe);
+        dh.distribute_dofs(ds);
+    }
+    DOFHandlerMultiDim dh_2(*mesh); // test cell_with_other_dh method
+    {
+        MixedPtr<FE_RT0> fe;
+        std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, fe);
+        dh_2.distribute_dofs(ds);
+    }
     unsigned int i_distr=0;
 
     std::vector<unsigned int> side_elm_idx, neigh_elem_idx;
     for( DHCellAccessor cell : dh.own_range() ) {
     	EXPECT_EQ( cell.elm_idx(), dh.mesh()->get_el_4_loc()[i_distr] );
+    	DHCellAccessor cell_2 = cell.cell_with_other_dh(&dh_2);
+    	EXPECT_EQ( cell.local_idx(), cell_2.local_idx() );
 
     	for( DHCellSide cell_side : cell.side_range() ) {
             EXPECT_EQ( cell.elm_idx(), cell_side.elem_idx() );

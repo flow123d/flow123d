@@ -6,16 +6,15 @@ Plucker::Plucker()
 : coordinates_({0,0,0,0,0,0}),
   scale_(0),
   computed_(false),
-  points_{nullptr,nullptr}
+  points_(3, 1, 2)
 {}
 
 
-Plucker::Plucker(const Node* a, const Node* b)
+Plucker::Plucker(Point a, Point b)
+: Plucker()
 {
-    ASSERT_DBG(a);
-    ASSERT_DBG(b);
-    points_[0] = a;
-    points_[1] = b;
+    points_.set(0) = a;
+    points_.set(1) = b;
     coordinates_(arma::span(0,2)) = point(1) - point(0);
     
     // Check empty
@@ -29,7 +28,7 @@ Plucker::Plucker(const Node* a, const Node* b)
     computed_ = false;
 }
 
-Plucker::Plucker(const Node* a, const Node* b, bool compute_pc)
+Plucker::Plucker(Point a, Point b, bool compute_pc)
 : Plucker(a,b)
 {
     if(compute_pc) compute();
@@ -44,8 +43,6 @@ double Plucker::operator*(const Plucker &b){
 void Plucker::compute(){
     if(computed_) return;
     
-    ASSERT_DBG(points_[0]);
-    ASSERT_DBG(points_[1]);
     coordinates_[3] = coordinates_[1]*point(0)[2] - coordinates_[2]*point(0)[1];
     coordinates_[4] = coordinates_[2]*point(0)[0] - coordinates_[0]*point(0)[2];
     coordinates_[5] = coordinates_[0]*point(0)[1] - coordinates_[1]*point(0)[0];

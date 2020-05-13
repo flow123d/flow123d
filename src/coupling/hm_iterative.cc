@@ -20,7 +20,7 @@
 #include "system/sys_profiler.hh"
 #include "input/input_type.hh"
 #include "flow/richards_lmh.hh"
-#include "fields/field_fe.hh"         // for create_field()
+#include "fields/field_fe.hh"         // for create_field_fe()
 
 
 FLOW123D_FORCE_LINK_IN_CHILD(coupling_iterative)
@@ -29,81 +29,16 @@ FLOW123D_FORCE_LINK_IN_CHILD(coupling_iterative)
 namespace it = Input::Type;
 
 
-
-/** Create elementwise FieldFE with parallel VectorMPI */
-template <int spacedim, class Value>
-std::shared_ptr<FieldFE<spacedim, Value> > create_field(Mesh & mesh, int n_comp)
-{
-	FiniteElement<0> *fe0; // Finite element objects (allow to create DOF handler)
-	FiniteElement<1> *fe1;
-	FiniteElement<2> *fe2;
-	FiniteElement<3> *fe3;
-
-	switch (n_comp) { // prepare FEM objects for DOF handler by number of components
-		case 1: { // scalar
-			fe0 = new FE_P_disc<0>(0);
-			fe1 = new FE_P_disc<1>(0);
-			fe2 = new FE_P_disc<2>(0);
-			fe3 = new FE_P_disc<3>(0);
-			break;
-		}
-		case -1: { // scalar with dof on sides
-			fe0 = new FE_CR<0>;
-			fe1 = new FE_CR<1>;
-			fe2 = new FE_CR<2>;
-			fe3 = new FE_CR<3>;
-			break;
-		}
-		case 3: { // vector
-			std::shared_ptr< FiniteElement<0> > fe0_ptr = std::make_shared< FE_P_disc<0> >(0);
-			std::shared_ptr< FiniteElement<1> > fe1_ptr = std::make_shared< FE_P_disc<1> >(0);
-			std::shared_ptr< FiniteElement<2> > fe2_ptr = std::make_shared< FE_P_disc<2> >(0);
-			std::shared_ptr< FiniteElement<3> > fe3_ptr = std::make_shared< FE_P_disc<3> >(0);
-			fe0 = new FESystem<0>(fe0_ptr, FEType::FEVector, 3);
-			fe1 = new FESystem<1>(fe1_ptr, FEType::FEVector, 3);
-			fe2 = new FESystem<2>(fe2_ptr, FEType::FEVector, 3);
-			fe3 = new FESystem<3>(fe3_ptr, FEType::FEVector, 3);
-			break;
-		}
-		case 9: { // tensor
-			std::shared_ptr< FiniteElement<0> > fe0_ptr = std::make_shared< FE_P_disc<0> >(0);
-			std::shared_ptr< FiniteElement<1> > fe1_ptr = std::make_shared< FE_P_disc<1> >(0);
-			std::shared_ptr< FiniteElement<2> > fe2_ptr = std::make_shared< FE_P_disc<2> >(0);
-			std::shared_ptr< FiniteElement<3> > fe3_ptr = std::make_shared< FE_P_disc<3> >(0);
-			fe0 = new FESystem<0>(fe0_ptr, FEType::FETensor, 9);
-			fe1 = new FESystem<1>(fe1_ptr, FEType::FETensor, 9);
-			fe2 = new FESystem<2>(fe2_ptr, FEType::FETensor, 9);
-			fe3 = new FESystem<3>(fe3_ptr, FEType::FETensor, 9);
-			break;
-		}
-		default:
-			ASSERT(false).error("Should not happen!\n");
-	}
-
-	// Prepare DOF handler
-	std::shared_ptr<DOFHandlerMultiDim> dh_par = std::make_shared<DOFHandlerMultiDim>(mesh);
-	std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( &mesh, fe0, fe1, fe2, fe3);
-	dh_par->distribute_dofs(ds);
-
-	// Construct FieldFE
-	std::shared_ptr< FieldFE<spacedim, Value> > field_ptr = std::make_shared< FieldFE<spacedim, Value> >();
-	field_ptr->set_fe_data( dh_par, 0, dh_par->create_vector() );
-	return field_ptr;
-}
-
-
-
 const it::Record & HM_Iterative::get_input_type() {
     return it::Record("Coupling_Iterative",
             "Record with data for iterative coupling of flow and mechanics.\n")
         .derive_from( DarcyFlowInterface::get_input_type() )
+        .copy_keys(EquationBase::record_template())
 		.declare_key("flow_equation", RichardsLMH::get_input_type(),
 		        it::Default::obligatory(),
 				"Flow equation, provides the velocity field as a result.")
 		.declare_key("mechanics_equation", Elasticity::get_input_type(),
 				"Mechanics, provides the displacement field.")
-        .declare_key("time", TimeGovernor::get_input_type(), it::Default::obligatory(),
-                    "Time governor setting for the HM coupling.")
         .declare_key("input_fields", it::Array(
 		        HM_Iterative::EqData()
 		            .make_field_descriptor_type("Coupling_Iterative")),
@@ -164,19 +99,19 @@ void HM_Iterative::EqData::initialize(Mesh &mesh)
     // initialize coupling fields with FieldFE
     set_mesh(mesh);
     
-    potential_ptr_ = create_field<3, FieldValue<3>::Scalar>(mesh, -1);
+    potential_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(mesh, MixedPtr<FE_CR>());
     pressure_potential.set_field(mesh.region_db().get_region_set("ALL"), potential_ptr_);
     
-    beta_ptr_ = create_field<3, FieldValue<3>::Scalar>(mesh, 1);
+    beta_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(mesh, MixedPtr<FE_P_disc>(0));
     beta.set_field(mesh.region_db().get_region_set("ALL"), beta_ptr_);
     
-    flow_source_ptr_ = create_field<3, FieldValue<3>::Scalar>(mesh, 1);
+    flow_source_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(beta_ptr_->get_dofhandler());
     flow_source.set_field(mesh.region_db().get_region_set("ALL"), flow_source_ptr_);
     
-    old_pressure_ptr_ = create_field<3, FieldValue<3>::Scalar>(mesh, 1);
-    old_iter_pressure_ptr_ = create_field<3, FieldValue<3>::Scalar>(mesh, 1);
-    div_u_ptr_ = create_field<3, FieldValue<3>::Scalar>(mesh, 1);
-    old_div_u_ptr_ = create_field<3, FieldValue<3>::Scalar>(mesh, 1);
+    old_pressure_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(beta_ptr_->get_dofhandler());
+    old_iter_pressure_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(beta_ptr_->get_dofhandler());
+    div_u_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(beta_ptr_->get_dofhandler());
+    old_div_u_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(beta_ptr_->get_dofhandler());
 }
 
                                     
@@ -188,6 +123,7 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
     using namespace Input;
 
     time_ = new TimeGovernor(in_record.val<Record>("time"));
+    ASSERT( time_->is_default() == false ).error("Missing key 'time' in Coupling_Iterative.");
     
     // setup flow equation
     Record flow_rec = in_record.val<Record>("flow_equation");
@@ -227,10 +163,12 @@ void HM_Iterative::initialize()
 
 
 template<int dim, class Value>
-void copy_field(const Field<dim, Value> &from_field, FieldFE<dim, Value> &to_field)
+void copy_field(const FieldCommon &from_field_common, FieldFE<dim, Value> &to_field)
 {
     auto dh = to_field.get_dofhandler();
     auto vec = to_field.get_data_vec();
+    Field<dim,Value> from_field;
+    from_field.copy_from(from_field_common);
     
     for ( auto cell : dh->own_range() )
         vec[cell.local_idx()] = from_field.value(cell.elm().centre(), cell.elm());
@@ -238,21 +176,6 @@ void copy_field(const Field<dim, Value> &from_field, FieldFE<dim, Value> &to_fie
 //     vec.local_to_ghost_begin();
 //     vec.local_to_ghost_end();
 }
-
-
-template<int dim, class Value>
-void update_field_from_mh_dofhandler(const MH_DofHandler &mh_dh, FieldFE<dim, Value> &field)
-{
-    auto dh = field.get_dofhandler();
-    auto vec = field.get_data_vec();
-    
-    for ( auto cell : dh->own_range() )
-    {
-        auto elm = cell.elm();
-        vec[cell.local_idx()] = mh_dh.element_scalar(elm);
-    }
-}
-
 
 
 
@@ -267,8 +190,8 @@ void HM_Iterative::zero_time_step()
     update_potential();
     mechanics_->zero_time_step();
     
-    update_field_from_mh_dofhandler(flow_->get_mh_dofhandler(), *data_.old_pressure_ptr_);
-    update_field_from_mh_dofhandler(flow_->get_mh_dofhandler(), *data_.old_iter_pressure_ptr_);
+    copy_field(*flow_->data().field("pressure_p0"), *data_.old_pressure_ptr_);
+    copy_field(*flow_->data().field("pressure_p0"), *data_.old_iter_pressure_ptr_);
     copy_field(mechanics_->data().output_divergence, *data_.div_u_ptr_);
 }
 
@@ -297,9 +220,9 @@ void HM_Iterative::update_solution()
         // pass pressure to mechanics and solve mechanics
         update_potential();
         mechanics_->solve_linear_system();
-        mechanics_->output_vector_gather();
         
         // update displacement divergence
+        mechanics_->update_output_fields();
         copy_field(mechanics_->data().output_divergence, *data_.div_u_ptr_);
         
         // TODO: compute difference of iterates
@@ -308,13 +231,14 @@ void HM_Iterative::update_solution()
         MessageOut().fmt("HM Iteration {} abs. difference: {}  rel. difference: {}\n"
                          "--------------------------------------------------------",
                          it, difference, difference/norm);
-        update_field_from_mh_dofhandler(flow_->get_mh_dofhandler(), *data_.old_iter_pressure_ptr_);
+        copy_field(*flow_->data().field("pressure_p0"), *data_.old_iter_pressure_ptr_);
     }
     
+    flow_->accept_time_step();
     flow_->output_data();
     mechanics_->output_data();
     
-    update_field_from_mh_dofhandler(flow_->get_mh_dofhandler(), *data_.old_pressure_ptr_);
+    copy_field(*flow_->data().field("pressure_p0"), *data_.old_pressure_ptr_);
     copy_field(mechanics_->data().output_divergence, *data_.old_div_u_ptr_);
 }
 
@@ -323,48 +247,26 @@ void HM_Iterative::update_potential()
 {
     auto potential_vec_ = data_.potential_ptr_->get_data_vec();
     auto dh = data_.potential_ptr_->get_dofhandler();
-    double difference2 = 0, norm2 = 0;
-    std::vector<int> dof_indices(dh->max_elem_dofs());
+    Field<3, FieldValue<3>::Scalar> field_edge_pressure;
+    field_edge_pressure.copy_from(*flow_->data().field("pressure_edge"));
     for ( auto ele : dh->local_range() )
     {
         auto elm = ele.elm();
-        ele.get_loc_dof_indices(dof_indices);
+        LocDofVec dof_indices = ele.get_loc_dof_indices();
         for ( auto side : ele.side_range() )
         {
             double alpha = data_.alpha.value(side.centre(), elm);
             double density = data_.density.value(side.centre(), elm);
             double gravity = data_.gravity.value(side.centre(), elm);
-            double pressure = flow_->get_mh_dofhandler().side_scalar(side.side());
+            double pressure = field_edge_pressure.value(side.centre(), elm);
             double potential = -alpha*density*gravity*pressure;
-        
-            if (ele.is_own())
-            {
-                difference2 += pow(potential_vec_[dof_indices[side.side_idx()]] - potential,2);
-                norm2 += pow(potential,2);
-            }
         
             potential_vec_[dof_indices[side.side_idx()]] = potential;
         }
     }
     
-    double send_data[] = { difference2, norm2 };
-    double recv_data[2];
-    MPI_Allreduce(&send_data, &recv_data, 2, MPI_DOUBLE, MPI_SUM, PETSC_COMM_WORLD);
-    difference2 = recv_data[0];
-    norm2       = recv_data[1];
-
-    double dif2norm;
-    if (norm2 == 0)
-        dif2norm = (difference2 == 0)?0:numeric_limits<double>::max();
-    else 
-        dif2norm = sqrt(difference2/norm2);
-    DebugOut() << "Relative potential difference: " << dif2norm << endl;
-    
-    if (dif2norm > numeric_limits<double>::epsilon())
-    {
-        data_.pressure_potential.set_time_result_changed();
-        mechanics_->set_potential_load(data_.pressure_potential);
-    }
+    data_.pressure_potential.set_time_result_changed();
+    mechanics_->set_potential_load(data_.pressure_potential);
 }
 
 
@@ -373,7 +275,8 @@ void HM_Iterative::update_flow_fields()
     auto beta_vec = data_.beta_ptr_->get_data_vec();
     auto src_vec = data_.flow_source_ptr_->get_data_vec();
     auto dh = data_.beta_ptr_->get_dofhandler();
-    double beta_diff2 = 0, beta_norm2 = 0, src_diff2 = 0, src_norm2 = 0;
+    Field<3,FieldValue<3>::Scalar> field_ele_pressure;
+    field_ele_pressure.copy_from(*flow_->data().field("pressure_p0"));
     for ( auto ele : dh->local_range() )
     {
         auto elm = ele.elm();
@@ -384,53 +287,19 @@ void HM_Iterative::update_flow_fields()
         double beta = beta_ * 0.5*alpha*alpha/(2*lame_mu(young, poisson)/elm.dim() + lame_lambda(young, poisson));
         
         double old_p = data_.old_pressure_ptr_->value(elm.centre(), elm);
-        double p = flow_->get_mh_dofhandler().element_scalar(elm);
+        double p = field_ele_pressure.value(elm.centre(), elm);
         double div_u = data_.div_u_ptr_->value(elm.centre(), elm);
         double old_div_u = data_.old_div_u_ptr_->value(elm.centre(), elm);
         double src = (beta*(p-old_p) + alpha*(old_div_u - div_u)) / time_->dt();
-        
-        if (ele.is_own())
-        {
-            beta_diff2 += pow(beta_vec[ele.local_idx()] - beta,2);
-            beta_norm2 += pow(beta,2);
-            src_diff2 += pow(src_vec[ele.local_idx()] - src,2);
-            src_norm2 += pow(src,2);
-        }
         
         beta_vec[ele.local_idx()] = beta;
         src_vec[ele.local_idx()] = src;
     }
     
-    double send_data[] = { beta_diff2, beta_norm2, src_diff2, src_norm2 };
-    double recv_data[4];
-    MPI_Allreduce(&send_data, &recv_data, 4, MPI_DOUBLE, MPI_SUM, PETSC_COMM_WORLD);
-    beta_diff2 = recv_data[0];
-    beta_norm2 = recv_data[1];
-    src_diff2  = recv_data[2];
-    src_norm2  = recv_data[3];
-    
-    double beta_dif2norm, src_dif2norm;
-    if (beta_norm2 == 0)
-        beta_dif2norm = (beta_diff2 == 0)?0:numeric_limits<double>::max();
-    else 
-        beta_dif2norm = sqrt(beta_diff2/beta_norm2);
-    if (src_norm2 == 0)
-        src_dif2norm = (src_diff2 == 0)?0:numeric_limits<double>::max();
-    else 
-        src_dif2norm = sqrt(src_diff2/src_norm2);
-    DebugOut() << "Relative difference in beta: " << beta_dif2norm << endl;
-    DebugOut() << "Relative difference in extra_source: " << src_dif2norm << endl;
-    
-    if (beta_dif2norm > numeric_limits<double>::epsilon())
-    {
-        data_.beta.set_time_result_changed();
-        flow_->set_extra_storativity(data_.beta);
-    }
-    if (src_dif2norm > numeric_limits<double>::epsilon())
-    {
-        data_.flow_source.set_time_result_changed();
-        flow_->set_extra_source(data_.flow_source);
-    }
+    data_.beta.set_time_result_changed();
+    data_.flow_source.set_time_result_changed();
+    flow_->set_extra_storativity(data_.beta);
+    flow_->set_extra_source(data_.flow_source);
 }
 
 
@@ -438,10 +307,12 @@ void HM_Iterative::compute_iteration_error(double& difference, double& norm)
 {
     auto dh = data_.beta_ptr_->get_dofhandler();
     double p_dif2 = 0, p_norm2 = 0;
+    Field<3,FieldValue<3>::Scalar> field_ele_pressure;
+    field_ele_pressure.copy_from(*flow_->data().field("pressure_p0"));
     for (auto cell : dh->own_range())
     {
         auto elm = cell.elm();
-        double new_p = flow_->get_mh_dofhandler().element_scalar(elm);
+        double new_p = field_ele_pressure.value(elm.centre(), elm);
         double old_p = data_.old_iter_pressure_ptr_->value(elm.centre(), elm);
         p_dif2 += pow(new_p - old_p, 2)*elm.measure();
         p_norm2 += pow(old_p, 2)*elm.measure();
@@ -456,9 +327,9 @@ void HM_Iterative::compute_iteration_error(double& difference, double& norm)
 
 
 
-const MH_DofHandler & HM_Iterative::get_mh_dofhandler()
-{ 
-    return flow_->get_mh_dofhandler(); 
+double HM_Iterative::last_t()
+{
+    return flow_->last_t();
 }
 
 

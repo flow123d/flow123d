@@ -1,0 +1,64 @@
+flow123d_version: 3.1.0
+problem: !Coupling_Sequential
+  description: Test15 - 2D unsteady flow LM
+  mesh:
+    mesh_file: ../00_mesh/rectangle_16x1_uns.msh
+  flow_equation: !Flow_Darcy_LMH
+    input_fields:
+      - region: ALL
+        storativity: 1.0
+      - region: domain
+        anisotropy: 1
+        # default
+        cross_section: 1
+        # default
+        water_source_density: !FieldFormula
+          value: -x
+        init_piezo_head: 0
+      - region: .left
+        bc_type: dirichlet
+        bc_pressure: 0
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
+    output:
+      fields:
+        - pressure_p0
+    balance:
+      cumulative: true
+    time:
+      end_time: 2.0
+      max_dt: 0.5
+      min_dt: 0.5
+    output_stream:
+      file: ./flow.pvd
+      format: !vtk
+        variant: ascii
+      times:
+        - step: 0.5
+      precision: 15
+  solute_equation: !Coupling_OperatorSplitting
+    transport: !Solute_Advection_FV
+      input_fields:
+        - region: domain
+          init_conc: 0
+        - region: .left
+          bc_conc: 10
+          time: 0.0
+        - region: .left
+          bc_conc: 0
+          time: 0.5
+    output_stream:
+      file: ./transport.pvd
+      format: !vtk
+        variant: ascii
+      times:
+        - step: 0.5
+      precision: 15
+    substances:
+      - name: conc
+    time:
+      end_time: 1.0
+    balance:
+      cumulative: true

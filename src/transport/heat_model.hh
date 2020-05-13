@@ -38,7 +38,6 @@
 #include "input/type_record.hh"                 // for Record
 #include "input/type_selection.hh"              // for Selection
 
-class MH_DofHandler;
 class Mesh;
 class OutputTime;
 namespace Input { class Record; }
@@ -87,7 +86,7 @@ public:
     inline virtual ~HeatNothing()
     {}
 
-    inline void set_velocity_field(const MH_DofHandler &dh) override {};
+    inline void set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field) override {};
 
     inline virtual void output_data() override {};
 
@@ -176,21 +175,21 @@ public:
 
 	void init_from_input(const Input::Record &) override {};
 
-	void compute_mass_matrix_coefficient(const std::vector<arma::vec3 > &point_list,
+	void compute_mass_matrix_coefficient(const Armor::array &point_list,
 			const ElementAccessor<3> &ele_acc,
 			std::vector<double> &mm_coef) override;
 
-	void compute_retardation_coefficient(const std::vector<arma::vec3 > &,
+	void compute_retardation_coefficient(const Armor::array &,
 			const ElementAccessor<3> &,
 			std::vector<std::vector<double> > &) override {};
 
-	void compute_advection_diffusion_coefficients(const std::vector<arma::vec3 > &point_list,
+	void compute_advection_diffusion_coefficients(const Armor::array &point_list,
 			const std::vector<arma::vec3> &velocity,
 			const ElementAccessor<3> &ele_acc,
 			std::vector<std::vector<arma::vec3> > &ad_coef,
 			std::vector<std::vector<arma::mat33> > &dif_coef) override;
 
-	void compute_init_cond(const std::vector<arma::vec3> &point_list,
+	void compute_init_cond(const Armor::array &point_list,
 			const ElementAccessor<3> &ele_acc,
 			std::vector<std::vector<double> > &init_values) override;
 
@@ -198,24 +197,24 @@ public:
 				arma::uvec &bc_types) override;
 
 	void get_flux_bc_data(unsigned int index,
-            const std::vector<arma::vec3> &point_list,
+            const Armor::array &point_list,
 			const ElementAccessor<3> &ele_acc,
 			std::vector< double > &bc_flux,
 			std::vector< double > &bc_sigma,
 			std::vector< double > &bc_ref_value) override;
 
 	void get_flux_bc_sigma(unsigned int index,
-            const std::vector<arma::vec3> &point_list,
+            const Armor::array &point_list,
 			const ElementAccessor<3> &ele_acc,
 			std::vector< double > &bc_sigma) override;
 
-	void compute_source_coefficients(const std::vector<arma::vec3> &point_list,
+	void compute_source_coefficients(const Armor::array &point_list,
 				const ElementAccessor<3> &ele_acc,
 				std::vector<std::vector<double> > &sources_conc,
 				std::vector<std::vector<double> > &sources_density,
 				std::vector<std::vector<double> > &sources_sigma) override;
 
-	void compute_sources_sigma(const std::vector<arma::vec3> &point_list,
+	void compute_sources_sigma(const Armor::array &point_list,
 				const ElementAccessor<3> &ele_acc,
 				std::vector<std::vector<double> > &sources_sigma) override;
 
@@ -228,9 +227,9 @@ public:
          *
 	 * (So far it does not work since the flow module returns a vector of zeros.)
 	 */
-	inline void set_velocity_field(const MH_DofHandler &dh) override
+	inline void set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field) override
 	{
-		mh_dh = &dh;
+		velocity_field_ptr_ = flux_field;
 		flux_changed = true;
 	}
 
@@ -241,6 +240,13 @@ public:
     /// Returns reference to the vector of substance names.
     inline SubstanceList &substances()
     { return substances_; }
+
+    const vector<unsigned int> &get_subst_idx()
+	{ return subst_idx; }
+
+    std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> velocity_field_ptr() const {
+        return this->velocity_field_ptr_;
+    }
 
 
 protected:
@@ -269,17 +275,13 @@ protected:
     /// Transported substances.
     SubstanceList substances_;
 
-    /**
-     * Temporary solution how to pass velocity field form the flow model.
-     * TODO: introduce FieldDiscrete -containing true DOFHandler and data vector and pass such object together with other
-     * data. Possibly make more general set_data method, allowing setting data given by name. needs support from EqDataBase.
-     */
-    const MH_DofHandler *mh_dh;
-
 	/// List of indices used to call balance methods for a set of quantities.
 	vector<unsigned int> subst_idx;
 
 	std::shared_ptr<OutputTime> output_stream_;
+
+	/// Pointer to velocity field given from Flow equation.
+	std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> velocity_field_ptr_;
 
 
 };

@@ -1,0 +1,25 @@
+flow123d_version: 3.1.0
+problem: !Coupling_Sequential
+  description: Test of gravity vector
+  mesh:
+    mesh_file: ../00_mesh/square_1x1_shift.msh
+  flow_equation: !Flow_Darcy_LMH
+    nonlinear_solver:
+      linear_solver: !Petsc
+        r_tol: 1.0e-10
+        a_tol: 1.0e-10
+    input_fields:
+      - region: plane
+      - region: .plane_boundary
+        bc_type: dirichlet
+        bc_pressure: 0
+    gravity: [-0.6, -0.8, 0]
+    output:
+      fields:
+        - pressure_p0
+        - piezo_head_p0
+        - velocity_p0
+    output_stream:
+      file: ./flow.pvd
+      format: !vtk
+        variant: ascii

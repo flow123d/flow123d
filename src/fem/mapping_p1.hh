@@ -20,18 +20,11 @@
 #ifndef MAPPING_P1_HH_
 #define MAPPING_P1_HH_
 
-#include <string.h>                            // for memcpy
-#include <algorithm>                           // for min, swap
-#include <cmath>                               // for abs, pow, fabs, log10
-#include <ostream>                             // for operator<<
-#include <string>                              // for operator<<
 #include <armadillo>
-#include "fem/dofhandler.hh"                   // for DOFHandlerBase, DOFHan...
 #include "fem/mapping.hh"                      // for MappingInternalData (p...
 #include "fem/update_flags.hh"                 // for operator&, operator|
-#include "mesh/elements.h"                     // for Element::side
-#include "mesh/accessors.hh"                   // for Side::node
-template <unsigned int dim, unsigned int spacedim> class FEValuesData;
+#include "mesh/accessors.hh"                     // for ElementAccessor
+
 class Quadrature;
 
 
@@ -61,8 +54,8 @@ public:
  * @param dim Dimension of the cells.
  * @param spacedim Dimension of the Euclidean space.
  */
-template<unsigned int dim, unsigned int spacedim>
-class MappingP1 : public Mapping<dim,spacedim>
+template<unsigned int dim, unsigned int spacedim = 3>
+class MappingP1
 {
 public:
 
@@ -71,93 +64,48 @@ public:
     typedef arma::mat::fixed<spacedim, dim+1> ElementMap;
     
     /**
-     * @brief Constructor.
-     */
-    MappingP1();
-
-    /**
-     * @brief Initializes the structures and computes static data.
-     *
-     * @param q Quadrature rule.
-     * @param flags Update flags.
-     * @return The computed mapping data.
-     */
-    MappingInternalData *initialize(const Quadrature &q, UpdateFlags flags);
-
-    /**
      * @brief Determines which additional quantities have to be computed.
      *
      * @param flags Update flags for required quantities.
      * @return All necessary flags.
      */
-    UpdateFlags update_each(UpdateFlags flags);
-
-    /**
-     * @brief Calculates the mapping data on the actual cell.
-     *
-     * @param cell The actual cell.
-     * @param q Quadrature rule.
-     * @param data Precomputed mapping data.
-     * @param fv_data Data to be computed.
-     */
-    void fill_fe_values(const ElementAccessor<3> &cell,
-                            const Quadrature &q,
-                            MappingInternalData &data,
-                            FEValuesData<dim,spacedim> &fv_data);
-
-    /**
-     * @brief Calculates the mapping data on a side of a cell.
-     *
-     * @param cell The actual cell.
-     * @param sid  Number of the side.
-     * @param q The quadrature rule with points on the side.
-     * @param data Precomputed mapping data.
-     * @param fv_data Data to be computed.
-     */
-    void fill_fe_side_values(const ElementAccessor<3> &cell,
-                            unsigned int sid,
-                            const Quadrature &q,
-                            MappingInternalData &data,
-                            FEValuesData<dim,spacedim> &fv_data);
-
-   
+    static UpdateFlags update_each(UpdateFlags flags);
+    
     /**
      * Map from reference element (barycentric coords) to global coord system.
      * Matrix(3, dim+1) M: x_real = M * x_bary;
      * M columns are real coordinates of nodes.
      */
-    ElementMap element_map(ElementAccessor<3> elm) const;
+    static ElementMap element_map(ElementAccessor<3> elm);
+
+    /**
+     * Compute jacobian matrix for an element given by the @p coords element map.
+     */
+    static arma::mat::fixed<spacedim,dim> jacobian(const ElementMap &coords);
 
     /**
      * Project given point in real coordinates to reference element (barycentic coordinates).
      * Result vector have dimension dim()+1.
      * Use RefElement<dim>::bary_to_local() to get local coordinates.
      */
-    BaryPoint project_real_to_unit(const RealPoint &point, const ElementMap &map) const;
+    static BaryPoint project_real_to_unit(const RealPoint &point, const ElementMap &map);
     
     /**
      * Project given point from reference element (barycentic coordinates) to real coordinates.
      * Use RefElement<dim>::local_to_bary() to get barycentric coordinates in input.
      */
-    RealPoint project_unit_to_real(const BaryPoint &point, const ElementMap &map) const;
+    static RealPoint project_unit_to_real(const BaryPoint &point, const ElementMap &map);
 
     /**
      * Clip a point given by barycentric cocordinates to the element.
      * If the point is out of the element the closest point
      * projection to the element surface is used.
      */
-    BaryPoint clip_to_element(BaryPoint &barycentric);
+    static BaryPoint clip_to_element(BaryPoint &barycentric);
 
     /// Test if element contains given point.
-    bool contains_point(arma::vec point, ElementAccessor<3> elm);
+    static bool contains_point(arma::vec point, ElementAccessor<3> elm);
 
-private:
-
-    /**
-     * @brief Auxiliary matrix of gradients of shape functions (used for
-     * computation of the Jacobian).
-     */
-    arma::mat::fixed<dim+1,dim> grad;
 
 };
 

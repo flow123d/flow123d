@@ -33,16 +33,16 @@ ComputeIntersection<1,2>::ComputeIntersection(ElementAccessor<3> abscissa,
     ASSERT_DBG(abscissa->dim() == 1);
     ASSERT_DBG(triangle->dim() == 2);
     // in this constructor, we suppose this is the final object -> we create all data members
-    plucker_coordinates_abscissa_ = new Plucker(abscissa.node(0),
-                                                abscissa.node(1), true);
+    plucker_coordinates_abscissa_ = new Plucker(*abscissa.node(0),
+                                                *abscissa.node(1), true);
     scale_line_=plucker_coordinates_abscissa_->scale();
     
     plucker_coordinates_triangle_.resize(3);
     plucker_products_.resize(3);
     scale_triangle_=std::numeric_limits<double>::max();
     for(unsigned int side = 0; side < 3; side++){
-        plucker_coordinates_triangle_[side] = new Plucker(triangle.node(RefElement<2>::interact(Interaction<0,1>(side))[0]),
-                                                          triangle.node(RefElement<2>::interact(Interaction<0,1>(side))[1]),
+        plucker_coordinates_triangle_[side] = new Plucker(*triangle.node(RefElement<2>::interact(Interaction<0,1>(side))[0]),
+                                                          *triangle.node(RefElement<2>::interact(Interaction<0,1>(side))[1]),
                                                           true);
         scale_triangle_ = std::min( scale_triangle_, plucker_coordinates_triangle_[side]->scale());
         
@@ -549,11 +549,11 @@ ComputeIntersection<2,2>::ComputeIntersection(ElementAccessor<3> triaA,
     plucker_products_.resize(3*RefElement<2>::n_sides);
     
     for(unsigned int side = 0; side < RefElement<2>::n_sides; side++){
-        plucker_coordinates_[side] = new Plucker(triaA.node(RefElement<2>::interact(Interaction<0,1>(side))[0]),
-                                                 triaA.node(RefElement<2>::interact(Interaction<0,1>(side))[1]));
+        plucker_coordinates_[side] = new Plucker(*triaA.node(RefElement<2>::interact(Interaction<0,1>(side))[0]),
+                                                 *triaA.node(RefElement<2>::interact(Interaction<0,1>(side))[1]));
         plucker_coordinates_[RefElement<2>::n_sides+side]
-                                   = new Plucker(triaB.node(RefElement<2>::interact(Interaction<0,1>(side))[0]),
-                                                 triaB.node(RefElement<2>::interact(Interaction<0,1>(side))[1]));
+                                   = new Plucker(*triaB.node(RefElement<2>::interact(Interaction<0,1>(side))[0]),
+                                                 *triaB.node(RefElement<2>::interact(Interaction<0,1>(side))[1]));
     }
 
     // compute Plucker products for each pair triangle A side and triangle B side
@@ -767,13 +767,13 @@ ComputeIntersection<1,3>::ComputeIntersection(ElementAccessor<3> abscissa,
     ASSERT_DBG(abscissa->dim() == 1);
     ASSERT_DBG(tetrahedron->dim() == 3);
     
-    plucker_coordinates_abscissa_ = new Plucker(abscissa.node(0), abscissa.node(1));
+    plucker_coordinates_abscissa_ = new Plucker(*abscissa.node(0), *abscissa.node(1));
     plucker_coordinates_tetrahedron.resize(6);
     plucker_products_.resize(6);
     
     for(unsigned int line = 0; line < RefElement<3>::n_lines; line++){
-        plucker_coordinates_tetrahedron[line] = new Plucker(tetrahedron.node(RefElement<3>::interact(Interaction<0,1>(line))[0]),
-                                                            tetrahedron.node(RefElement<3>::interact(Interaction<0,1>(line))[1]));
+        plucker_coordinates_tetrahedron[line] = new Plucker(*tetrahedron.node(RefElement<3>::interact(Interaction<0,1>(line))[0]),
+                                                            *tetrahedron.node(RefElement<3>::interact(Interaction<0,1>(line))[1]));
         // compute Plucker products (abscissa X tetrahedron line)
         plucker_products_[line] = new double(plucker_empty);
     }
@@ -1006,13 +1006,13 @@ ComputeIntersection<2,3>::ComputeIntersection(ElementAccessor<3> triangle,
 
     // set CI object for 1D-2D intersection 'tetrahedron edge - triangle'
 	for(unsigned int i = 0; i < RefElement<3>::n_lines; i++){
-		plucker_coordinates_tetrahedron[i] = new Plucker(tetrahedron.node(RefElement<3>::interact(Interaction<0,1>(i))[0]),
-                                                         tetrahedron.node(RefElement<3>::interact(Interaction<0,1>(i))[1]));
+		plucker_coordinates_tetrahedron[i] = new Plucker(*tetrahedron.node(RefElement<3>::interact(Interaction<0,1>(i))[0]),
+                                                         *tetrahedron.node(RefElement<3>::interact(Interaction<0,1>(i))[1]));
 	}
 	// set CI object for 1D-3D intersection 'triangle side - tetrahedron'
 	for(unsigned int i = 0; i < RefElement<2>::n_lines;i++){
-		plucker_coordinates_triangle_[i] = new Plucker(triangle.node(RefElement<2>::interact(Interaction<0,1>(i))[0]),
-                                                       triangle.node(RefElement<2>::interact(Interaction<0,1>(i))[1]));
+		plucker_coordinates_triangle_[i] = new Plucker(*triangle.node(RefElement<2>::interact(Interaction<0,1>(i))[0]),
+                                                       *triangle.node(RefElement<2>::interact(Interaction<0,1>(i))[1]));
 	}
 	
 	// compute Plucker products (triangle side X tetrahedron line)

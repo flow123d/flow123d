@@ -1,0 +1,42 @@
+flow123d_version: 3.1.0
+problem: !Coupling_Sequential
+  description: Cube with vertical fractures, Dirichlet BC on top simulating simple terrain.
+  mesh:
+    mesh_file: ../00_mesh/big_cube_cc.msh # 20x20 km
+  flow_equation: !Flow_Darcy_LMH
+#    output_specific:
+#      compute_errors: true
+    nonlinear_solver:
+      linear_solver: !Petsc
+        #options: -ksp_monitor -ksp_type preonly -pc_type cholesky
+        options: -ksp_monitor -ksp_type preonly -pc_type cholesky -pc_factor_mat_solver_package mumps
+        #options: -ksp_monitor -ksp_type cg -pc_type icc -pc_factor_levels 1 -ksp_compute_eigenvalues 
+        r_tol: 1.0e-10
+        a_tol: 1.0e-10
+        max_it: 1000
+#    mortar_method: P0
+    input_fields:
+      - region: .3d_top
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: 200.0/(1.0 + 4*(x/10000)^2 + 4*(y/10000)^2)  # simple bell shape
+      - region: 2d
+        conductivity: 1e-5
+        cross_section: 1
+        sigma: 1.0
+
+      - region: 3d
+        conductivity: 1e-8
+
+    output:
+      fields:
+        - piezo_head_p0
+        - pressure_p0
+        - region_id
+        - velocity_p0
+#        - velocity_diff
+#        - pressure_diff
+#        - div_diff
+    output_stream:
+      file: ./flow.msh
+      format: !gmsh

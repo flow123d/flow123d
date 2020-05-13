@@ -16,7 +16,6 @@
  * @brief   Initialize neighbouring
  */
 
-#include "mesh/accessors.hh"
 #include "system/system.hh"
 #include "neighbours.h"
 #include "mesh/mesh.h"

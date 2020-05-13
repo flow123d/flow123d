@@ -18,14 +18,15 @@
 #ifndef FE_VALUE_HANDLER_HH_
 #define FE_VALUE_HANDLER_HH_
 
+#include "system/index_types.hh"
 #include "fields/field_values.hh"
-#include "fem/mapping_p1.hh"
 #include "fem/finite_element.hh"
 #include "mesh/point.hh"
-#include "mesh/long_idx.hh"
+#include "la/vector_mpi.hh"
 #include <armadillo>
+#include "system/armor.hh"
 
-class VectorMPI;
+class DOFHandlerMultiDim;
 template <int spacedim> class ElementAccessor;
 
 
@@ -58,15 +59,10 @@ public:
 
 	/// Initialize data members
 	void initialize(FEValueInitData init_data);
-	/// Return mapping object
-	inline MappingP1<elemdim,3> *get_mapping() {
-		ASSERT_PTR(map_).error("Uninitialized FEValueHandler!\n");
-		return map_;
-	}
     /// Returns one value in one given point.
     typename Value::return_type const &value(const Point &p, const ElementAccessor<spacedim> &elm);
     /// Returns std::vector of scalar values in several points at once.
-    void value_list (const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
+    void value_list (const Armor::array &point_list, const ElementAccessor<spacedim> &elm,
                        std::vector<typename Value::return_type> &value_list);
     /// Compute real coordinates and weights (use QGauss) for given element
     unsigned int compute_quadrature(std::vector<arma::vec::fixed<3>> & q_points, std::vector<double> & q_weights,
@@ -76,24 +72,27 @@ public:
 	~FEValueHandler();
 
 	/// TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
-	inline void set_boundary_dofs_vector(std::shared_ptr< std::vector<LongIdx> > boundary_dofs) {
+	inline void set_boundary_dofs_vector(std::shared_ptr< std::vector<Idx> > boundary_dofs) {
 		this->boundary_dofs_ = boundary_dofs;
 	}
 
 	/// TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
-	unsigned int get_dof_indices(const ElementAccessor<3> &cell, std::vector<LongIdx> &indices) const;
+    inline LocDofVec get_loc_dof_indices(unsigned int cell_idx) const
+    {
+        unsigned int ndofs = this->value_.n_rows() * this->value_.n_cols();
+        // create armadillo vector on top of existing array
+        // vec(ptr_aux_mem, number_of_elements, copy_aux_mem = true, strict = false)
+        Idx* mem_ptr = const_cast<Idx*>(&((*boundary_dofs_)[ndofs*cell_idx]));
+        return LocDofVec(mem_ptr, ndofs, false, false);
+    }
 private:
 	/// DOF handler object
     std::shared_ptr<DOFHandlerMultiDim> dh_;
     /// Store data of Field
     VectorMPI data_vec_;
-    /// Array of indexes to data_vec_, used for get/set values
-    std::vector<LongIdx> dof_indices;
     /// Last value, prevents passing large values (vectors) by value.
     Value value_;
     typename Value::return_type r_value_;
-    /// Mapping object.
-    MappingP1<elemdim,3> *map_;
     /// Index of component (of vector_value/tensor_value)
     unsigned int comp_index_;
 
@@ -102,7 +101,7 @@ private:
      *
      * TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
      */
-    std::shared_ptr< std::vector<LongIdx> > boundary_dofs_;
+    std::shared_ptr< std::vector<Idx> > boundary_dofs_;
 };
 
 
@@ -123,8 +122,8 @@ public:
 	void initialize(FEValueInitData init_data);
     /// Returns one value in one given point.
     typename Value::return_type const &value(const Point &p, const ElementAccessor<spacedim> &elm) {
-    	std::vector<Point> point_list;
-    	point_list.push_back(p);
+    	Armor::array point_list(spacedim, 1, 1);
+    	point_list.set(0) = Armor::ArmaVec<double,spacedim>( p );
     	std::vector<typename Value::return_type> v_list;
     	v_list.push_back(r_value_);
     	this->value_list(point_list, elm, v_list);
@@ -133,27 +132,32 @@ public:
     }
 
     /// Returns std::vector of scalar values in several points at once.
-    void value_list (const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
+    void value_list (const Armor::array &point_list, const ElementAccessor<spacedim> &elm,
                        std::vector<typename Value::return_type> &value_list);
 
     /// Destructor.
 	~FEValueHandler() {}
 
 	/// TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
-	inline void set_boundary_dofs_vector(std::shared_ptr< std::vector<LongIdx> > boundary_dofs) {
+	inline void set_boundary_dofs_vector(std::shared_ptr< std::vector<Idx> > boundary_dofs) {
 		this->boundary_dofs_ = boundary_dofs;
 	}
 
 	/// TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
-	unsigned int get_dof_indices(const ElementAccessor<3> &cell, std::vector<LongIdx> &indices) const;
+    inline LocDofVec get_loc_dof_indices(unsigned int cell_idx) const
+    {
+        unsigned int ndofs = this->value_.n_rows() * this->value_.n_cols();
+        // create armadillo vector on top of existing array
+        // vec(ptr_aux_mem, number_of_elements, copy_aux_mem = true, strict = false)
+        Idx* mem_ptr = const_cast<Idx*>(&((*boundary_dofs_)[ndofs*cell_idx]));
+        return LocDofVec(mem_ptr, ndofs, false, false);
+    }
 
 private:
 	/// DOF handler object
     std::shared_ptr<DOFHandlerMultiDim> dh_;
     /// Store data of Field
     VectorMPI data_vec_;
-    /// Array of indexes to data_vec_, used for get/set values
-    std::vector<LongIdx> dof_indices;
     /// Last value, prevents passing large values (vectors) by value.
     Value value_;
     typename Value::return_type r_value_;
@@ -163,7 +167,7 @@ private:
      *
      * TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
      */
-    std::shared_ptr< std::vector<LongIdx> > boundary_dofs_;
+    std::shared_ptr< std::vector<Idx> > boundary_dofs_;
 };
 
 

@@ -33,7 +33,6 @@ flow_equation: !Flow_Darcy_MH
   output:
     fields:
       - pressure_p0
-      - pressure_p1
       - velocity_p0
   output_stream:
     file: flow.msh

@@ -1,0 +1,35 @@
+# Test goal: Test anisotropic fields, conductivity in Darcy flow in particular.
+# Author: Pavel Exner
+# Source for reference: qualitative
+#   The results are compared with the solution using isotropic K=[1,1,1].
+#   When setting K=[1,1,0.1], the flux over boundaries .top_z and .bottom_z
+#   are exactly 0.1 of the fluxes in the isotropic case.
+
+flow123d_version: 3.1.0
+problem: !Coupling_Sequential
+  description: Test10 - Steady flow with anisotropic conductivity
+  mesh:
+    mesh_file: ../00_mesh/cube_2x2x2.msh
+  flow_equation: !Flow_Darcy_LMH
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-07
+    input_fields:
+      - region: BULK
+        #anisotropy: 1
+        anisotropy: [1, 1, 0.1]
+        #anisotropy: [30, 40, 50]
+        conductivity: 0.02
+      - region: .BOUNDARY
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: x+y+z
+    output:
+      fields:
+        - pressure_p0
+        - velocity_p0
+        #- anisotropy
+    output_stream:
+      file: ./flow.pvd
+      format: !vtk
+        variant: ascii

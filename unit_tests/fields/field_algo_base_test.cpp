@@ -13,6 +13,7 @@
 
 #include <flow_gtest_mpi.hh>
 #include <mesh_constructor.hh>
+#include "arma_expect.hh"
 
 
 #include "fields/field.hh"
@@ -23,6 +24,13 @@
 #include "input/reader_to_storage.hh"
 #include "fields/field_constant.hh"
 #include "fields/field_set.hh"
+#include "fields/eval_points.hh"
+#include "fields/eval_subset.hh"
+#include "fields/field_value_cache.hh"
+#include "quadrature/quadrature.hh"
+#include "quadrature/quadrature_lib.hh"
+#include "fem/dofhandler.hh"
+#include "fem/dh_cell_accessor.hh"
 
 #include "system/sys_profiler.hh"
 
@@ -927,6 +935,124 @@ TEST(Field, disable_where) {
     delete mesh;
 }
 
+
+
+string field_value_input = R"INPUT(
+{
+    color="blue",   
+    integer=-1,
+    scalar=1.5,
+    vector=[1, 2, 3],
+    tensor=[4, 5, 6]
+}
+)INPUT";
+
+
+static const it::Selection &get_color_selection() {
+	return it::Selection("ColorType")
+				.add_value(1,"blue")
+				.add_value(0,"red")
+				.close();
+}
+
+TEST(Field, field_values) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+	Profiler::instance();
+	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+
+	Mesh * mesh = mesh_full_constructor("{mesh_file=\"mesh/cube_2x1.msh\"}");
+	std::shared_ptr<DOFHandlerMultiDim> dh = std::make_shared<DOFHandlerMultiDim>(*mesh);
+
+    Field<3, FieldValue<0>::Enum > color_field;
+    Field<3, FieldValue<0>::Integer > int_field;
+    Field<3, FieldValue<3>::Scalar > scalar_field;
+    Field<3, FieldValue<3>::VectorFixed > vector_field;
+    Field<3, FieldValue<3>::TensorFixed > tensor_field;
+
+
+    //std::vector<string> component_names = { "comp_0", "comp_1", "comp_2" };
+    color_field.input_selection( get_color_selection() );
+    //init_conc.set_components(component_names);
+
+    it::Record main_record =
+            it::Record("main", "desc")
+            .declare_key("color", color_field.get_input_type(), it::Default::obligatory(), "desc")
+            .declare_key("integer", int_field.get_input_type(), it::Default::obligatory(), "desc")
+            .declare_key("scalar", scalar_field.get_input_type(), it::Default::obligatory(), "desc")
+            .declare_key("vector", vector_field.get_input_type(), it::Default::obligatory(), "desc")
+            .declare_key("tensor", tensor_field.get_input_type(), it::Default::obligatory(), "desc")
+			.close();
+
+
+    // read input string
+    Input::ReaderToStorage reader( field_value_input, main_record, Input::FileFormat::format_JSON );
+    Input::Record in_rec=reader.get_root_interface<Input::Record>();
+
+    color_field.set_mesh(*mesh);
+    int_field.set_mesh(*mesh);
+    scalar_field.set_mesh(*mesh);
+    vector_field.set_mesh(*mesh);
+    tensor_field.set_mesh(*mesh);
+
+    color_field.units( UnitSI().m() );
+    int_field.units( UnitSI().m() );
+    scalar_field.units( UnitSI().m() );
+    vector_field.units( UnitSI().m() );
+    tensor_field.units( UnitSI().m() );
+
+    auto region_set = mesh->region_db().get_region_set("BULK");
+
+    color_field.set_field(region_set, in_rec.val<Input::AbstractRecord>("color"));
+    int_field.set_field(region_set, in_rec.val<Input::AbstractRecord>("integer"));
+    scalar_field.set_field(region_set, in_rec.val<Input::AbstractRecord>("scalar"));
+    vector_field.set_field(region_set, in_rec.val<Input::AbstractRecord>("vector"));
+    tensor_field.set_field(region_set, in_rec.val<Input::AbstractRecord>("tensor"));
+
+    color_field.set_time(TimeGovernor().step(), LimitSide::right);
+    int_field.set_time(TimeGovernor().step(), LimitSide::right);
+    scalar_field.set_time(TimeGovernor().step(), LimitSide::right);
+    vector_field.set_time(TimeGovernor().step(), LimitSide::right);
+    tensor_field.set_time(TimeGovernor().step(), LimitSide::right);
+
+    // initialize and allocate FieldValueCaches
+    std::shared_ptr<EvalPoints> eval_points = std::make_shared<EvalPoints>();
+    Quadrature *q_bulk = new QGauss(3, 2);
+    Quadrature *q_side = new QGauss(2, 2);
+    std::shared_ptr<BulkIntegral> mass_eval = eval_points->add_bulk<3>(*q_bulk );
+    std::shared_ptr<EdgeIntegral> side_eval = eval_points->add_edge<3>(*q_side );
+    ElementCacheMap elm_cache_map;
+    elm_cache_map.init(eval_points);
+    color_field.cache_allocate(eval_points);
+    int_field.cache_allocate(eval_points);
+    scalar_field.cache_allocate(eval_points);
+    vector_field.cache_allocate(eval_points);
+    tensor_field.cache_allocate(eval_points);
+
+    // fill FieldValueCaches
+    DHCellAccessor dh_cell(dh.get(), 4);
+    elm_cache_map.start_elements_update();
+    elm_cache_map.add(dh_cell);
+    elm_cache_map.prepare_elements_to_update();
+    elm_cache_map.mark_used_eval_points( dh_cell, mass_eval->get_subset_idx(), eval_points->subset_size(dh_cell.dim(), mass_eval->get_subset_idx()) );
+    elm_cache_map.create_elements_points_map();
+    color_field.cache_update(elm_cache_map);
+    int_field.cache_update(elm_cache_map);
+    scalar_field.cache_update(elm_cache_map);
+    vector_field.cache_update(elm_cache_map);
+    tensor_field.cache_update(elm_cache_map);
+    elm_cache_map.finish_elements_update();
+
+    DHCellAccessor cache_cell = elm_cache_map(dh_cell);
+    for(BulkPoint q_point: mass_eval->points(cache_cell, &elm_cache_map)) {
+        EXPECT_EQ( 1, color_field(q_point) );
+        EXPECT_EQ( -1, int_field(q_point) );
+        EXPECT_DOUBLE_EQ( 1.5, scalar_field(q_point) );
+        EXPECT_ARMA_EQ( arma::vec3("1 2 3"), vector_field(q_point) );
+        EXPECT_ARMA_EQ( arma::mat33("4 0 0; 0 5 0; 0 0 6"), tensor_field(q_point) );
+    }
+
+    delete mesh;
+}
 
 
 

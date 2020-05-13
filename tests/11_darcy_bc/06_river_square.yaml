@@ -51,7 +51,6 @@ problem: !Coupling_Sequential
       fields:
         - piezo_head_p0
         - pressure_p0
-        - pressure_p1
         - velocity_p0
     nonlinear_solver:
       tolerance: 1e-6

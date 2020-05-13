@@ -204,6 +204,14 @@ unsigned int FiniteElement<dim>::n_space_components(unsigned int spacedim)
 }
 
 
+template<unsigned int dim>
+vector< arma::vec::fixed<dim+1> > FiniteElement<dim>::dof_points() const {
+    std::vector<arma::vec::fixed<dim+1>> points(20);
+    points.resize(0);
+    for(auto dof : this->dofs_)
+        points.push_back(dof.coords);
+    return points;
+}
 
 
 

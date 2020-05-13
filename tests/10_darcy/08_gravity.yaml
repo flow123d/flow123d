@@ -17,7 +17,6 @@ problem: !Coupling_Sequential
     output:
       fields:
         - pressure_p0
-        - pressure_p1
         - piezo_head_p0
         - velocity_p0
     output_stream:

@@ -22,7 +22,9 @@
 #include <armadillo>
 #include "mesh/accessors.hh"
 #include "mesh/neighbours.h"
+#include "fem/finite_element.hh"
 #include "fem/dofhandler.hh"
+#include "system/index_types.hh"
 
 class DHCellSide;
 class DHNeighbSide;
@@ -75,16 +77,16 @@ public:
      *
      * @param indices Vector of dof indices on the cell.
      */
-    unsigned int get_dof_indices(std::vector<int> &indices) const
+    unsigned int get_dof_indices(std::vector<LongIdx> &indices) const
     { return dof_handler_->get_dof_indices( *this, indices ); }
 
     /**
-     * @brief Returns the indices of dofs associated to the cell on the local process.
+     * @brief Returns the local indices of dofs associated to the cell on the local process.
      *
      * @param indices Array of dof indices on the cell.
      */
-    unsigned int get_loc_dof_indices(std::vector<LongIdx> &indices) const
-    { return dof_handler_->get_loc_dof_indices( *this, indices ); }
+    LocDofVec get_loc_dof_indices() const
+    { return dof_handler_->get_loc_dof_indices(loc_ele_idx_); }
 
     /// Return number of dofs on given cell.
     unsigned int n_dofs() const;
@@ -100,18 +102,33 @@ public:
     	return elm().dim();
     }
 
+    /// Return DOF handler
+    inline const DOFHandlerMultiDim *dh() const{
+        return dof_handler_;
+    }
+
     /**
      * @brief Returns finite element object for given space dimension.
      */
     template<unsigned int dim>
-    FiniteElement<dim> *fe() const {
+    FEPtr<dim> fe() const {
         ElementAccessor<3> elm_acc = this->elm();
-        return dof_handler_->ds_->fe<dim>(elm_acc);
+        return dof_handler_->ds_->fe(elm_acc).get<dim>();
     }
 
     /// Check validity of accessor (see default constructor)
     inline bool is_valid() const {
         return dof_handler_ != NULL;
+    }
+
+    /// Getter of elm_cache_index_.
+    inline unsigned int element_cache_index() const {
+        return elm_cache_index_;
+    }
+
+    /// Setter of elm_cache_index_.
+    inline void set_element_cache_index(unsigned int idx) const {
+        elm_cache_index_ = idx;
     }
 
     /// Returns range of cell sides
@@ -125,21 +142,37 @@ public:
     	return (loc_ele_idx_ < dof_handler_->el_ds_->lsize());
     }
 
+    /// Create new accessor with same local idx and given DOF handler. Actual and given DOF handler must be create on same Mesh.
+    DHCellAccessor cell_with_other_dh(const DOFHandlerMultiDim * dh) const{
+    	ASSERT( (dh->mesh()->n_nodes() == dof_handler_->mesh()->n_nodes()) && (dh->mesh()->n_elements() == dof_handler_->mesh()->n_elements()) )
+    			.error("Incompatible DOF handlers!");
+    	return DHCellAccessor(dh, loc_ele_idx_);
+    }
+
     /// Iterates to next local element.
     inline void inc() {
         loc_ele_idx_++;
     }
 
     /// Comparison of accessors.
-    bool operator==(const DHCellAccessor& other) {
+    bool operator==(const DHCellAccessor& other) const {
     	return (loc_ele_idx_ == other.loc_ele_idx_);
     }
+
+    /// Comparison of accessors.
+    bool operator!=(const DHCellAccessor& other) const {
+    	return (loc_ele_idx_ != other.loc_ele_idx_);
+    }
+
 
 private:
     /// Pointer to the DOF handler owning the element.
     const DOFHandlerMultiDim * dof_handler_;
     /// Index into DOFHandler::el_4_loc array.
     unsigned int loc_ele_idx_;
+
+    /// Optional member used in field evaluation, holds index of cell in field data cache.
+    mutable unsigned int elm_cache_index_;
 
     friend class DHCellSide;
     friend class DHEdgeSide;
@@ -182,7 +215,12 @@ public:
     }
 
     /// Return DHCellAccessor appropriate to the side.
-    inline const DHCellAccessor cell() const {
+    inline const DHCellAccessor &cell() const {
+    	return dh_cell_accessor_;
+    }
+
+    /// Return DHCellAccessor appropriate to the side.
+    inline DHCellAccessor &cell() {
     	return dh_cell_accessor_;
     }
 
@@ -241,7 +279,7 @@ public:
 		return this->elem_idx() == other.elem_idx() && side_idx_ == other.side_idx_;
 	}
 
-	inline bool operator !=(const DHCellSide &other) {
+	inline bool operator !=(const DHCellSide &other) const {
 		return this->elem_idx() != other.elem_idx() || side_idx_ != other.side_idx_;
 	}
 

@@ -55,7 +55,7 @@ public:
      * @brief Constructor.
      * @param n_quadrature_points Number of quadrature points to be allocated.
      */
-    Quadrature(unsigned int dimension, const unsigned int n_quadrature_points = 0);
+    Quadrature(unsigned int dimension, unsigned int n_quadrature_points = 0);
 
     /** @brief Constructor from quadrature of lower dimension (e.g. for side integration).
      * @param sub_quadrature lower dimensional (dim-1) quadrature
@@ -66,7 +66,9 @@ public:
 //     explicit Quadrature(const Quadrature &sub_quadrature, unsigned int sid, unsigned int pid);
     
     /// Virtual destructor.
-    virtual ~Quadrature() {};
+    virtual ~Quadrature()
+    {
+    };
     
     inline unsigned int dim() const
     { return dim_; }
@@ -75,7 +77,7 @@ public:
      * @brief Modify the number of quadrature points.
      * @param n_q_points New number of quadrature points.
      */
-    inline void resize(const unsigned int n_q_points)
+    inline void resize(unsigned int n_q_points)
     {
         quadrature_points.resize(n_q_points);
         weights.resize(n_q_points, 0);
@@ -87,22 +89,27 @@ public:
 
     /// Returns the <tt>i</tt>th quadrature point.
     template<unsigned int point_dim>
-    inline Armor::vec<point_dim> point(const unsigned int i) const
+    inline Armor::ArmaVec<double, point_dim> point(unsigned int i) const
     {
         ASSERT_EQ_DBG(point_dim, dim_);
-        return quadrature_points.get<point_dim>(i);
+        return quadrature_points.vec<point_dim>(i);
+    }
+
+    inline Armor::Array<double>::ArrayMatSet set(uint i)
+    {
+        return quadrature_points.set(i);
     }
 
     /// Return a reference to the whole array of quadrature points.
-    inline const Armor::array & get_points() const
+    inline const Armor::Array<double> & get_points() const
     { return quadrature_points; }
 
     /// Returns the <tt>i</tt>th weight.
-    inline double weight(const unsigned int i) const
+    inline double weight(unsigned int i) const
     { return weights[i]; }
     
     /// Returns the <tt>i</tt>th weight (non-const version).
-    inline double &weight(const unsigned int i)
+    inline double &weight(unsigned int i)
     { return weights[i]; }
 
     /// Return a reference to the whole array of weights.
@@ -118,7 +125,7 @@ public:
      * higher dimensional quadrature considering side and permutation index.
      */
     template<unsigned int bulk_dim>
-    Quadrature make_from_side(unsigned int sid, unsigned int pid);
+    Quadrature make_from_side(unsigned int sid, unsigned int pid) const;
     
 
 protected:
@@ -131,7 +138,7 @@ protected:
      *
      * To be filled by the constructors of the derived classes.
      */
-    Armor::array quadrature_points;
+    Armor::Array<double> quadrature_points;
 
     /**
      * @brief List of weights to the quadrature points.
@@ -141,8 +148,5 @@ protected:
     std::vector<double> weights;
 
 };
-
-
-
 
 #endif /* QUADRATURE_HH_ */

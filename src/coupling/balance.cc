@@ -22,16 +22,18 @@
 
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
+#include "system/index_types.hh"
 
 #include <petscmat.h>
 #include "mesh/mesh.h"
-#include "mesh/long_idx.hh"
 #include "mesh/accessors.hh"
 #include "io/output_time_set.hh"
 #include "coupling/balance.hh"
 #include "tools/unit_si.hh"
 #include "tools/time_governor.hh"
 #include "la/distribution.hh"
+#include "fem/dofhandler.hh"
+#include "fem/dh_cell_accessor.hh"
 
 using namespace Input::Type;
 
@@ -181,7 +183,19 @@ void Balance::allocate(unsigned int n_loc_dofs,
 		unsigned int max_dofs_per_boundary)
 {
     ASSERT(! allocation_done_);
-    n_loc_dofs_ = n_loc_dofs;
+    n_loc_dofs_seq_ = n_loc_dofs;
+	n_loc_dofs_par_ = n_loc_dofs;
+    max_dofs_per_boundary_ = max_dofs_per_boundary;
+}
+
+void Balance::allocate(const std::shared_ptr<DOFHandlerMultiDim>& dh,
+		unsigned int max_dofs_per_boundary)
+{
+    ASSERT(! allocation_done_);
+	// for sequential matrices, we need to include ghost values
+    n_loc_dofs_seq_ = dh->get_local_to_global_map().size();
+	// for parallel matrices, we use the local size from dof distribution
+	n_loc_dofs_par_ = dh->distr()->lsize();
     max_dofs_per_boundary_ = max_dofs_per_boundary;
 }
 
@@ -265,10 +279,11 @@ void Balance::lazy_initialize()
     region_mass_vec_ = new Vec[n_quant];
 	be_flux_vec_ = new Vec[n_quant];
 
+
 	for (unsigned int c=0; c<n_quant; ++c)
 	{
 		chkerr(MatCreateAIJ(PETSC_COMM_WORLD,
-				n_loc_dofs_,
+				n_loc_dofs_par_,
 				(rank_==0)?mesh_->region_db().bulk_size():0,
 				PETSC_DECIDE,
 				PETSC_DECIDE,
@@ -279,14 +294,14 @@ void Balance::lazy_initialize()
 				&(region_mass_matrix_[c])));
 
         chkerr(MatCreateSeqAIJ(PETSC_COMM_SELF,
-               n_loc_dofs_,
+               n_loc_dofs_seq_,
                mesh_->region_db().bulk_size(),
                n_bulk_regs_per_dof,
                NULL,
                &(region_source_matrix_[c])));
 
         chkerr(MatCreateSeqAIJ(PETSC_COMM_SELF,
-               n_loc_dofs_,
+               n_loc_dofs_seq_,
                mesh_->region_db().bulk_size(),
                n_bulk_regs_per_dof,
                NULL,
@@ -294,7 +309,7 @@ void Balance::lazy_initialize()
     
        chkerr(MatCreateAIJ(PETSC_COMM_WORLD,
                be_regions_.size(),  // n local rows, number of local boundary edges
-               n_loc_dofs_,         // n local cols (local rows of multiplying vector)
+               n_loc_dofs_par_,     // n local cols (local rows of multiplying vector)
                PETSC_DECIDE,        // n global rows
                PETSC_DECIDE,        // n global cols
                max_dofs_per_boundary_,  // allocation, local poriton
@@ -423,51 +438,76 @@ void Balance::finish_source_assembly(unsigned int quantity_idx)
 }
 
 
-
-
-void Balance::add_mass_matrix_values(unsigned int quantity_idx,
-		unsigned int region_idx,
-		const vector<LongIdx> &dof_indices,
-		const vector<double> &values)
+void Balance::add_mass_values(unsigned int quantity_idx,
+		const DHCellAccessor &dh_cell,
+		const LocDofVec &loc_dof_indices,
+		const std::vector<double> &mat_values,
+		double vec_value)
 {
-    ASSERT_DBG(allocation_done_);
+	ASSERT_DBG(allocation_done_);
     if (! balance_on_) return;
 
-	PetscInt reg_array[1] = { (int)region_idx };
+	// map local dof indices to global
+	uint m = mat_values.size();
+	int row_dofs[m];
+	for (uint i=0; i<m; i++)
+		row_dofs[i]= dh_cell.dh()->get_local_to_global_map()[loc_dof_indices[i]];
+
+	PetscInt reg_array[1] = { (int)dh_cell.elm().region_idx().bulk_idx() };
 
 	chkerr_assert(MatSetValues(region_mass_matrix_[quantity_idx],
-			dof_indices.size(),
-			&(dof_indices[0]),
+			m,
+			row_dofs,
 			1,
 			reg_array,
-			&(values[0]),
+			&(mat_values[0]),
 			ADD_VALUES));
+
+	chkerr_assert(VecSetValue(region_mass_vec_[quantity_idx],
+            dh_cell.elm().region_idx().bulk_idx(),
+            vec_value,
+            ADD_VALUES));
 }
 
-
-void Balance::add_flux_matrix_values(unsigned int quantity_idx,
-		SideIter side,
-		const vector<LongIdx> &dof_indices,
-		const vector<double> &values)
+void Balance::add_flux_values(unsigned int quantity_idx,
+		const DHCellSide &side,
+		const LocDofVec &loc_dof_indices,
+		const std::vector<double> &mat_values,
+		double vec_value)
 {
-    ASSERT_DBG(allocation_done_);
+	ASSERT_DBG(allocation_done_);
     if (! balance_on_) return;
 
-	PetscInt elem_array[1] = { int(be_offset_ + be_id_map_[get_boundary_edge_uid(side)]) };
+	// filling row elements corresponding to a boundary edge
+
+	// map local dof indices to global
+	uint m = mat_values.size();
+	int col_dofs[m];
+	for (uint i=0; i<m; i++)
+		col_dofs[i]= side.cell().dh()->get_local_to_global_map()[loc_dof_indices[i]];
+
+	SideIter s = SideIter(side.side());
+	PetscInt glob_be_idx[1] = { int(be_offset_ + be_id_map_[get_boundary_edge_uid(s)]) };
+
 	chkerr_assert(MatSetValues(be_flux_matrix_[quantity_idx],
 			1,
-			elem_array,
-			dof_indices.size(),
-			&(dof_indices[0]),
-			&(values[0]),
+			glob_be_idx,
+			m,
+			col_dofs,
+			&(mat_values[0]),
+			ADD_VALUES));
+
+	chkerr_assert(VecSetValue(be_flux_vec_[quantity_idx],
+			glob_be_idx[0],
+			vec_value,
 			ADD_VALUES));
 }
 
 void Balance::add_source_values(unsigned int quantity_idx,
 		unsigned int region_idx,
-		const vector<LongIdx> &loc_dof_indices,
-		const vector<double> &mat_values,
-        const vector<double> &vec_values)
+		const LocDofVec &loc_dof_indices,
+		const vector<double> &mult_mat_values,
+        const vector<double> &add_mat_values)
 {
     ASSERT_DBG(allocation_done_);
     if (! balance_on_) return;
@@ -476,42 +516,18 @@ void Balance::add_source_values(unsigned int quantity_idx,
 
 	chkerr_assert(MatSetValues(region_source_matrix_[quantity_idx],
 			loc_dof_indices.size(),
-			&(loc_dof_indices[0]),
+			loc_dof_indices.memptr(),
 			1,
 			reg_array,
-			&(mat_values[0]),
+			&(mult_mat_values[0]),
 			ADD_VALUES));
     
     chkerr_assert(MatSetValues(region_source_rhs_[quantity_idx],
 			loc_dof_indices.size(),
-			&(loc_dof_indices[0]),
+			loc_dof_indices.memptr(),
 			1,
 			reg_array,
-			&(vec_values[0]),
-			ADD_VALUES));
-}
-
-void Balance::add_mass_vec_value(unsigned int quantity_idx,
-        unsigned int region_idx,
-        double value)
-{
-  chkerr_assert(VecSetValue(region_mass_vec_[quantity_idx],
-            region_idx,
-            value,
-            ADD_VALUES));
-}
-
-
-void Balance::add_flux_vec_value(unsigned int quantity_idx,
-		SideIter side,
-		double value)
-{
-    ASSERT_DBG(allocation_done_);
-    if (! balance_on_) return;
-
-    chkerr_assert(VecSetValue(be_flux_vec_[quantity_idx],
-			be_offset_ + be_id_map_[get_boundary_edge_uid(side)],
-			value,
+			&(add_mat_values[0]),
 			ADD_VALUES));
 }
 
@@ -538,7 +554,9 @@ void Balance::calculate_cumulative(unsigned int quantity_idx,
     int lsize, n_cols_mat, n_cols_rhs;
     //const int *cols;
 	const double *vals_mat, *vals_rhs, *sol_array;
-    chkerr(VecGetLocalSize(solution, &lsize));
+    // chkerr(VecGetLocalSize(solution, &lsize));
+	// chkerr(ISLocalToGlobalMappingGetSize(solution->mapping, &lsize);  // cannot do for const
+	lsize = n_loc_dofs_seq_;
     chkerr(VecGetArrayRead(solution, &sol_array));
     
     // computes transpose multiplication and sums region_source_rhs_ over dofs
@@ -624,7 +642,9 @@ void Balance::calculate_instant(unsigned int quantity_idx, const Vec& solution)
     int lsize, n_cols_mat, n_cols_rhs;
     const int *cols;    // the columns must be same - matrices created and filled in the same way
 	const double *vals_mat, *vals_rhs, *sol_array;
-    chkerr(VecGetLocalSize(solution, &lsize));
+    // chkerr(VecGetLocalSize(solution, &lsize));
+	// chkerr(ISLocalToGlobalMappingGetSize(solution->mapping, &lsize);	// cannot do for const
+	lsize = n_loc_dofs_seq_;
     chkerr(VecGetArrayRead(solution, &sol_array));
     
     // computes transpose multiplication and sums region_source_rhs_ over dofs

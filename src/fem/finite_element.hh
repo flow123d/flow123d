@@ -33,10 +33,7 @@
 #include "system/exceptions.hh"                // for ExcAssertMsg::~ExcAsse...
 
 template<unsigned int dim> class FESystem;
-template<unsigned int dim, unsigned int spacedim> class FESideValues;
-template<unsigned int dim, unsigned int spacedim> class FEValues;
-template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
-template<unsigned int dim, unsigned int spacedim> class FEValuesData;
+template<unsigned int spacedim> class FEValues;
 template<unsigned int dim> class FE_P_disc;
 
 
@@ -303,6 +300,10 @@ public:
     /// Number of components of FE in a mapped space with dimension @p spacedim.
     unsigned int n_space_components(unsigned int spacedim);
     
+    /// Get barycentric coordinates of the points on the reference element associated with the dofs.
+    /// Used in BDDC for unknown reason.
+    virtual std::vector< arma::vec::fixed<dim+1> > dof_points() const;
+
     /**
      * @brief Destructor.
      */
@@ -389,9 +390,7 @@ protected:
     
     
     friend class FESystem<dim>;
-    friend class FEValuesBase<dim,3>;
-    friend class FEValues<dim,3>;
-    friend class FESideValues<dim,3>;
+    friend class FEValues<3>;
     friend class FE_P_disc<dim>;
     friend class SubDOFHandlerMultiDim;
 };

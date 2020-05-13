@@ -37,7 +37,6 @@ problem: !Coupling_Sequential
     output:
       fields:
         - pressure_p0
-        - pressure_p1
         - velocity_p0
     balance: {add_output_times: false}
 

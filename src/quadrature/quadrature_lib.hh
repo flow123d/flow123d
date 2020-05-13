@@ -19,7 +19,9 @@
 #ifndef QUADRATURE_LIB_HH_
 #define QUADRATURE_LIB_HH_
 
+#include <array>
 #include "quadrature/quadrature.hh"
+
 
 
 /**
@@ -31,12 +33,24 @@
  */
 class QGauss : public Quadrature {
 public:
+    typedef std::array<QGauss, 4> array;
+    /**
+     * Create a
+     */
+    inline static std::array<QGauss, 4> make_array(unsigned int order)
+    {
+        return {QGauss(0, order), QGauss(1, order), QGauss(2, order), QGauss(3, order)};
+    }
+
     /**
      * @brief Create a formula of given order.
      *
      * The formula is exact for polynomials of degree @p order.
      */
     QGauss(unsigned int dim, const unsigned int order);
+
+    template<int dim>
+    void init(uint order);
 };
 
 

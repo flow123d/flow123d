@@ -25,19 +25,16 @@
 #include "fields/multi_field.hh"
 #include "la/linsys.hh"
 #include "la/vector_mpi.hh"
-#include "flow/mh_dofhandler.hh"
 #include "fields/equation_output.hh"
-#include "fem/mapping_p1.hh"
 #include "coupling/equation.hh"
 #include "fem/fe_values_views.hh"
+#include "tools/mixed.hh"
+#include "quadrature/quadrature_lib.hh"
 
 class Distribution;
 class OutputTime;
 class DOFHandlerMultiDim;
-template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim> class FiniteElement;
-template<unsigned int dim, unsigned int spacedim> class Mapping;
-class Quadrature;
 class Elasticity;
 
 
@@ -55,13 +52,10 @@ public:
 	~FEObjects();
 
 	template<unsigned int dim>
-	inline FiniteElement<dim> *fe();
+	inline std::shared_ptr<FiniteElement<dim>> fe();
 
 	template<unsigned int dim>
-	inline Quadrature *q() { return q_[dim]; }
-
-	template<unsigned int dim>
-	inline MappingP1<dim,3> *mapping();
+	inline Quadrature *q() { return &(q_[dim]); }
 
 	inline std::shared_ptr<DOFHandlerMultiDim> dh();
     inline std::shared_ptr<DOFHandlerMultiDim> dh_scalar();
@@ -71,19 +65,9 @@ public:
 
 private:
 
-	/// Finite elements for the solution of the mechanics equation.
-    FiniteElement<0> *fe0_;
-	FiniteElement<1> *fe1_;
-	FiniteElement<2> *fe2_;
-	FiniteElement<3> *fe3_;
+        MixedPtr<FiniteElement> fe_;  ///< Finite elements for the solution of the mechanics equation.
+	QGauss::array q_;
 
-	/// Quadratures used in assembling methods.
-	Quadrature *q_[4];
-
-	/// Auxiliary mappings of reference elements.
-	MappingP1<1,3> *map1_;
-	MappingP1<2,3> *map2_;
-	MappingP1<3,3> *map3_;
 
     std::shared_ptr<DiscreteSpace> ds_;
     
@@ -200,7 +184,8 @@ public:
 
 	void initialize() override;
     
-    void output_vector_gather();
+	// Recompute fields for output (stress, divergence etc.)
+	void update_output_fields();
     
     void set_potential_load(const Field<3, FieldValue<3>::Scalar> &potential)
     { data_.potential_load = potential; }
@@ -222,8 +207,6 @@ private:
     /// Registrar of class to factory
     static const int registrar;
 
-    void update_output_fields();
-    
     template<unsigned int dim>
     void compute_output_fields();
 

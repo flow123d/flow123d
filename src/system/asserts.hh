@@ -283,13 +283,13 @@ if ( !(expr) ) \
 
 /// Definition of assert for debug mode only
 #ifdef FLOW123D_DEBUG_ASSERTS
-#define FEAL_ASSERT_DBG( expr) \
-if ( !(expr) ) \
-  feal::Assert( #expr).set_context( __FILE__, __func__, __LINE__)._FEAL_ASSERT_A
+    #define FEAL_ASSERT_DBG( expr) \
+    if ( !(expr) ) \
+      feal::Assert( #expr).set_context( __FILE__, __func__, __LINE__)._FEAL_ASSERT_A
 #else
-#define FEAL_ASSERT_DBG( expr) \
-if ( !(expr) ) \
-  feal::AssertNull()._FEAL_ASSERT_A
+    #define FEAL_ASSERT_DBG( expr) \
+    if ( !(expr) ) \
+      feal::AssertNull()._FEAL_ASSERT_A
 #endif
 
 /// Definition of comparative assert macro (Less Than)
