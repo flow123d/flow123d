@@ -460,6 +460,11 @@ protected:
     void count_side_types();
 
     /**
+     * Check the element quality and remove unused nodes.
+     */
+    void check_mesh_on_read();
+
+    /**
      * Possibly modify region id of elements sets by user in "regions" part of input file.
      *
      * TODO: This method needs check in issue 'Review mesh setting'.
