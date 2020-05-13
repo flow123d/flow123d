@@ -102,10 +102,7 @@ test_cases:
   check_rules:
     - regex:
         files: [job_output.log]
-        substr: "Program Error: Violated assert! Duplicate keys in record map! Check the input file for the key reported below."
+        substr: "Duplicit Tag: 'balance'"
     - regex:
         files: [job_output.log]
-        substr: "head().Tag() : '!Flow_Darcy_MH'"
-    - regex:
-        files: [job_output.log]
-        substr: "key : 'balance'"
+        substr: "/problem/flow_equation"

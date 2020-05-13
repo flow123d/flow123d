@@ -163,8 +163,11 @@ bool PathYAML::get_record_key_set(std::set<std::string> &keys_list) const {
 			std::string key = it->first.as<std::string>();
 			// returns pair<iterator,true> if inserted, it expects uniqueness
 			bool key_inserted = keys_list.insert( key ).second;
-			ASSERT(key_inserted)(head().Tag())(key)
-				.error("Duplicate keys in record map! Check the input file for the key reported below." );
+			if(! key_inserted)
+				THROW( ReaderInternalBase::ExcDuplicitTag()
+						<< ReaderInternalBase::EI_Tag(key)
+						<< EI_ErrorAddress(this->as_string())
+						<< EI_Address(this->as_string()));
 		}
         return true;
     }
