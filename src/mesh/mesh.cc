@@ -298,17 +298,60 @@ void Mesh::modify_element_ids(const RegionDB::MapElementIDToRegionID &map) {
 }
 
 
+void Mesh::check_mesh_on_read() {
+    std::vector<uint> nodes_new_idx( this->n_nodes(), Mesh::undef_idx );
+
+    // check element quality and flag used nodes
+    for (auto ele : this->elements_range()) {
+        // element quality
+    	double quality = ele.quality_measure_smooth(ele.side(0));
+        if ( quality< 0.001)
+            WarningOut().fmt("Bad quality (<0.001) of the element {}.\n", ele.idx());
+
+        // flag used nodes
+        for (uint ele_node=0; ele_node<ele->n_nodes(); ele_node++) {
+            uint inode = ele->node_idx(ele_node);
+            nodes_new_idx[inode] = inode;
+        }
+    }
+
+    // remove unused nodes from the mesh
+    uint n_used_nodes = 0;
+    for(uint inode = 0; inode < nodes_new_idx.size(); inode++) {
+        if(nodes_new_idx[inode] == Mesh::undef_idx){
+            WarningOut().fmt("A node {} does not belong to any element "
+                         " and will be removed.",
+                         find_node_id(inode));
+
+            node_ids_.erase_item(inode);
+            node_vec_.erase(node_vec_.begin() + inode);
+        }
+        else{
+            nodes_new_idx[inode] = n_used_nodes;
+            n_used_nodes++;
+        }
+    }
+
+    // if some node erased, update node ids in elements
+    if(n_used_nodes < nodes_new_idx.size()){
+        DebugOut() << "Updating node-element numbering due to unused nodes: "
+            << print_var(n_used_nodes) << print_var(nodes_new_idx.size()) << "\n";
+        for (auto ele : this->elements_range()) {
+            for (uint ele_node=0; ele_node<ele->n_nodes(); ele_node++) {
+                uint inode_orig = ele->node_idx(ele_node);
+                uint inode_new = nodes_new_idx[inode_orig];
+                ASSERT_DBG(inode_new != Mesh::undef_idx);
+                const_cast<Element*>(ele.element())->nodes_[ele_node] = inode_new;
+            }
+        }
+    }
+}
 
 void Mesh::setup_topology() {
     START_TIMER("MESH - setup topology");
     
     count_element_types();
-
-    // check mesh quality
-    for (auto ele : this->elements_range()) {
-    	double quality = ele.quality_measure_smooth(ele.side(0));
-        if ( quality< 0.001) WarningOut().fmt("Bad quality (<0.001) of the element {}.\n", ele.idx());
-    }
+    check_mesh_on_read();
 
     make_neighbours_and_edges();
     element_to_neigh_vb();

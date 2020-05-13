@@ -47,6 +47,11 @@ public:
 	 */
 	void set_item(T val, unsigned int pos);
 
+	/**
+	 * Erase item at the given @p pos.
+	 */
+	void erase_item(unsigned int pos);
+
 	/// Add new item at the end position of map.
 	unsigned int add_item(T val);
 
@@ -80,6 +85,17 @@ inline void BidirectionalMap<T>::set_item(T val, unsigned int pos) {
 	ASSERT( vals_vec_[pos] == -1 )(pos).error("Repeated setting of item.");
 	vals_map_[val] = pos;
 	vals_vec_[pos] = val;
+}
+
+template<typename T>
+inline void BidirectionalMap<T>::erase_item(unsigned int pos) {
+	ASSERT_LT( pos, vals_vec_.size() )(pos)(vals_vec_.size()).error("Value id is out of vector size.");
+	
+	typename std::map<T, unsigned int>::const_iterator iter = vals_map_.find(vals_vec_[pos]);
+	if (iter != vals_map_.end()){
+		vals_map_.erase(iter);
+		vals_vec_.erase(vals_vec_.begin() + pos);
+	}
 }
 
 template<typename T>
