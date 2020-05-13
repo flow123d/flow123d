@@ -51,7 +51,7 @@ public:
         // local numbering of dofs for MH system
         // note: this shortcut supposes that the fe_system is the same on all elements
         // the function DiscreteSpace.fe(ElementAccessor) does not in fact depend on the element accessor
-        auto fe = ad_->dh_->ds()->fe(ad_->dh_->own_range().begin()->elm()).get<dim>();
+        auto fe = ad_->dh_->ds()->fe(ad_->dh_->own_range().begin()->elm())[Dim<dim>{}];
         FESystem<dim>* fe_system = dynamic_cast<FESystem<dim>*>(fe.get());
         loc_side_dofs = fe_system->fe_dofs(0);
         loc_ele_dof = fe_system->fe_dofs(1)[0];

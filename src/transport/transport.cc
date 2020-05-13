@@ -408,7 +408,7 @@ void ConvectionTransport::set_boundary_conditions()
         ElementAccessor<3> elm = dh_cell.elm();
         // we have currently zero order P_Disc FE
         ASSERT_DBG(dh_cell.get_loc_dof_indices().size() == 1);
-        Idx local_p0_dof = dh_cell.get_loc_dof_indices()[0];
+        IntIdx local_p0_dof = dh_cell.get_loc_dof_indices()[0];
         LongIdx glob_p0_dof = dh_->get_local_to_global_map()[local_p0_dof];
 
         for(DHCellSide dh_side: dh_cell.side_range()) {
@@ -476,7 +476,7 @@ void ConvectionTransport::compute_concentration_sources() {
             ElementAccessor<3> elm = dh_cell.elm();
             // we have currently zero order P_Disc FE
             ASSERT_DBG(dh_cell.get_loc_dof_indices().size() == 1);
-            Idx local_p0_dof = dh_cell.get_loc_dof_indices()[0];
+            IntIdx local_p0_dof = dh_cell.get_loc_dof_indices()[0];
 
             arma::vec3 center = elm.centre();
             csection = data_.cross_section.value(center, elm);
@@ -742,7 +742,7 @@ void ConvectionTransport::create_mass_matrix()
         ElementAccessor<3> elm = dh_cell.elm();
         // we have currently zero order P_Disc FE
         ASSERT_DBG(dh_cell.get_loc_dof_indices().size() == 1);
-        Idx local_p0_dof = dh_cell.get_loc_dof_indices()[0];
+        IntIdx local_p0_dof = dh_cell.get_loc_dof_indices()[0];
 
         double csection = data_.cross_section.value(elm.centre(), elm);
         //double por_m = data_.porosity.value(elm.centre(), elm->element_accessor());

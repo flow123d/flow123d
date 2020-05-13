@@ -366,7 +366,7 @@ protected:
         unsigned int ndofs = cell_starts[loc_ele_idx+1]-cell_starts[loc_ele_idx];
         // create armadillo vector on top of existing array
         // vec(ptr_aux_mem, number_of_elements, copy_aux_mem = true, strict = false)
-        Idx* mem_ptr = const_cast<Idx*>(&(dof_indices[cell_starts[loc_ele_idx]]));
+        IntIdx* mem_ptr = const_cast<IntIdx*>(&(dof_indices[cell_starts[loc_ele_idx]]));
         return LocDofVec(mem_ptr, ndofs, false, false);
     }
 
@@ -424,7 +424,7 @@ protected:
      * Dofs are ordered accordingly with cell_starts and local dof order
      * given by the finite element. See cell_starts for more description.
      */
-    std::vector<Idx> dof_indices;
+    std::vector<IntIdx> dof_indices;
     
     /**
      * @brief Maps local and ghost dof indices to global ones.

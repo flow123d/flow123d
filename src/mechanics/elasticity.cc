@@ -111,10 +111,10 @@ FEObjects::~FEObjects()
 {
 }
 
-template<> std::shared_ptr<FiniteElement<0>> FEObjects::fe<0>() { return fe_.get<0>(); }
-template<> std::shared_ptr<FiniteElement<1>> FEObjects::fe<1>() { return fe_.get<1>(); }
-template<> std::shared_ptr<FiniteElement<2>> FEObjects::fe<2>() { return fe_.get<2>(); }
-template<> std::shared_ptr<FiniteElement<3>> FEObjects::fe<3>() { return fe_.get<3>(); }
+template<> std::shared_ptr<FiniteElement<0>> FEObjects::fe<0>() { return fe_[0_d]; }
+template<> std::shared_ptr<FiniteElement<1>> FEObjects::fe<1>() { return fe_[1_d]; }
+template<> std::shared_ptr<FiniteElement<2>> FEObjects::fe<2>() { return fe_[2_d]; }
+template<> std::shared_ptr<FiniteElement<3>> FEObjects::fe<3>() { return fe_[3_d]; }
 
 std::shared_ptr<DOFHandlerMultiDim> FEObjects::dh() { return dh_; }
 std::shared_ptr<DOFHandlerMultiDim> FEObjects::dh_scalar() { return dh_scalar_; }

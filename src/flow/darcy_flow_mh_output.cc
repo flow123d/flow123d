@@ -456,7 +456,7 @@ void DarcyFlowMHOutput::l2_diff_local(DHCellAccessor dh_cell,
 
     // DHCell constructed with diff fields DH, get DOF indices of actual element
     DHCellAccessor sub_dh_cell = dh_cell.cell_with_other_dh(result.dh_.get());
-    Idx idx = sub_dh_cell.get_loc_dof_indices()[0];
+    IntIdx idx = sub_dh_cell.get_loc_dof_indices()[0];
 
     auto velocity_data = result.vel_diff_ptr->get_data_vec();
     velocity_data[ idx ] = sqrt(velocity_diff);
