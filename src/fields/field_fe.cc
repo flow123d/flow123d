@@ -148,6 +148,7 @@ VectorMPI FieldFE<spacedim, Value>::set_fe_data(std::shared_ptr<DOFHandlerMultiD
     } else {
         data_vec_ = dof_values;
     }
+    this->comp_index_ = component_index;
 
     unsigned int ndofs = dh_->max_elem_dofs();
 
@@ -266,6 +267,19 @@ void FieldFE<spacedim, Value>::cache_reinit(const ElementCacheMap &cache_map)
 {
     std::shared_ptr<EvalPoints> eval_points = cache_map.eval_points();
     MixedPtr<FiniteElement> fe = dh_->ds()->fe();
+
+    FESystem<1> *fe_sys1 = dynamic_cast<FESystem<1>*>( fe.get<1>().get() );
+    if (fe_sys1 != nullptr) {
+        FESystem<0> *fe_sys0 = dynamic_cast<FESystem<0>*>( fe.get<0>().get() );
+        FESystem<2> *fe_sys2 = dynamic_cast<FESystem<2>*>( fe.get<2>().get() );
+        FESystem<3> *fe_sys3 = dynamic_cast<FESystem<3>*>( fe.get<3>().get() );
+        ASSERT_PTR_DBG( fe_sys0 );
+        ASSERT_PTR_DBG( fe_sys2 );
+        ASSERT_PTR_DBG( fe_sys3 );
+        fe = MixedPtr<FiniteElement>(fe_sys0->fe()[comp_index_], fe_sys1->fe()[comp_index_],
+                                     fe_sys2->fe()[comp_index_], fe_sys3->fe()[comp_index_]);
+    }
+
     std::array<Quadrature, 4> quads{QGauss(0, 1), this->init_quad<1>(eval_points), this->init_quad<2>(eval_points), this->init_quad<3>(eval_points)};
     fe_values_[0].initialize(quads[0], *fe.get<0>(), update_values);
     fe_values_[1].initialize(quads[1], *fe.get<1>(), update_values);
@@ -377,6 +391,8 @@ void FieldFE<spacedim, Value>::fill_boundary_dofs() {
 
 template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::make_dof_handler(const Mesh *mesh) {
+	this->comp_index_ = 0;
+
 	// temporary solution - these objects will be set through FieldCommon
 	MixedPtr<FiniteElement> fe;
 	switch (this->value_.n_rows() * this->value_.n_cols()) { // by number of components

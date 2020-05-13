@@ -242,6 +242,9 @@ private:
     /// List of FEValues objects of dimensions 0,1,2,3 used for value calculation
     std::vector<FEValues<spacedim>> fe_values_;
 
+    /// Index of component (of vector_value/tensor_value)
+    unsigned int comp_index_;
+
     /// Registrar of class to factory
     static const int registrar;
 };
