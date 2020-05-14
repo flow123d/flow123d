@@ -2,7 +2,6 @@
 #ifndef MESH_OPTIMIZER_HH_
 #define MESH_OPTIMIZER_HH_
 
-#include <functional>
 #include <vector>
 
 #include <armadillo>
@@ -12,8 +11,8 @@
 #include "mesh/range_wrapper.hh"
 #include "bounding_box.hh"
 
-struct Vertex {
-    inline Vertex(arma::vec3 other) {
+struct Vec3 {
+    inline Vec3(arma::vec3 other) {
         for (uint i = 0; i < 3; ++i) {
             data[i] = other[i];
         }
@@ -30,24 +29,26 @@ struct Vertex {
     double data[3];
 };
 
-struct NodeRef {
-    NodeRef(const Vertex& _ref, uint _originalIndex, double _curveValue) : ref(_ref), originalIndex(_originalIndex), curveValue(_curveValue) {}
-    std::reference_wrapper<const Vertex> ref;
+struct Permutee {
+    inline Permutee(uint _originalIndex, double _curveValue) : originalIndex(_originalIndex), curveValue(_curveValue) {}
     uint originalIndex;
     double curveValue;
 };
 
-inline bool operator<(const NodeRef& first, const NodeRef& second) {
-    return first.curveValue < second.curveValue;
-}
-
-struct ElementRef {
-    ElementRef(const Element& _ref, double _curveValue) : ref(_ref), curveValue(_curveValue) {}
-    std::reference_wrapper<const Element> ref;
-    double curveValue;
+struct Normalizer {
+    inline Normalizer() : shift({0, 0, 0}), scalar(1) {}
+    inline Normalizer(Vec3 _shift, double _scalar) : shift(_shift), scalar(_scalar) {}
+    inline Vec3 normalize(const Vec3 vec) {
+        return arma::vec3((vec.arma() - shift.arma()) / scalar);
+    }
+    inline double normalize(double size) {
+        return size / scalar;
+    }
+    Vec3 shift;
+    double scalar;
 };
 
-inline bool operator<(const ElementRef& first, const ElementRef& second) {
+inline bool operator<(const Permutee& first, const Permutee& second) {
     return first.curveValue < second.curveValue;
 }
 
@@ -56,15 +57,6 @@ class MeshOptimizer {
     static_assert(DIM == 2 || DIM == 3, "DIM must be either 2 or 3.");
 public:
     inline MeshOptimizer(Mesh& _mesh) : mesh(_mesh) {}
-    inline void readNodesFromMesh() {
-        nodesBackup.reserve(mesh.n_nodes());
-        for (uint i = 0; i < mesh.n_nodes(); ++i) {
-            nodesBackup.push_back(mesh.nodes_.vec<3>(i));
-        }
-    }
-    inline void readElementsFromMesh() {
-        elementsBackup = mesh.element_vec_;
-    }
     inline void calculateSizes() {
         nodeSizes.resize(mesh.n_nodes(), INFINITY);
         elementSizes.reserve(mesh.n_elements());
@@ -79,117 +71,114 @@ public:
         std::vector<arma::vec3> tmpArmas;
         tmpArmas.reserve(mesh.n_nodes());
         for (uint i = 0; i < mesh.n_nodes(); ++i) {
-            tmpArmas.push_back(nodesBackup[i].arma());
+            tmpArmas.push_back(mesh.nodes_.vec<3>(i));
         }
-        boundingBox = BoundingBox(tmpArmas);
+        BoundingBox boundingBox(tmpArmas);
+        const Vec3 dimensions = arma::vec3(boundingBox.max() - boundingBox.min());
+        normalizer = Normalizer(boundingBox.min(), std::max({dimensions[0], dimensions[1], dimensions[2]}));
     }
     inline void calculateNodeCurveValuesAsHilbert() {
         nodeRefs.reserve(mesh.n_nodes());
         for (uint i = 0; i < mesh.n_nodes(); ++i) {
-            nodeRefs.emplace_back(nodesBackup[i], i, hilbertValue(normalize(nodesBackup[i], boundingBox), nodeSizes[i]));
+            nodeRefs.emplace_back(i, hilbertValue(normalizer.normalize(mesh.nodes_.vec<3>(i)), normalizer.normalize(nodeSizes[i])));
         }
     }
     inline void calculateNodeCurveValuesAsZCurve() {
         nodeRefs.reserve(mesh.n_nodes());
         for (uint i = 0; i < mesh.n_nodes(); ++i) {
-            nodeRefs.emplace_back(nodesBackup[i], i, zCurveValue(normalize(nodesBackup[i], boundingBox), nodeSizes[i]));
+            nodeRefs.emplace_back(i, zCurveValue(normalizer.normalize(mesh.nodes_.vec<3>(i)), normalizer.normalize(nodeSizes[i])));
         }
     }
     inline void calculateNodeCurveValuesAsMeanOfCoords() {
         nodeRefs.reserve(mesh.n_nodes());
         for (uint i = 0; i < mesh.n_nodes(); ++i) {
-            const Vertex tmpNorm = normalize(nodesBackup[i], boundingBox);
-            nodeRefs.emplace_back(nodesBackup[i], i, (tmpNorm[0] + tmpNorm[1] + tmpNorm[2]) / 3);
+            const Vec3 tmpNorm = normalizer.normalize(mesh.nodes_.vec<3>(i));
+            nodeRefs.emplace_back(i, (tmpNorm[0] + tmpNorm[1] + tmpNorm[2]) / 3);
         }
     }
     inline void calculateNodeCurveValuesAsFirstCoord() {
         nodeRefs.reserve(mesh.n_nodes());
         for (uint i = 0; i < mesh.n_nodes(); ++i) {
-            const Vertex tmpNorm = normalize(nodesBackup[i], boundingBox);
-            nodeRefs.emplace_back(nodesBackup[i], i, tmpNorm[0]);
+            const Vec3 tmpNorm = normalizer.normalize(mesh.nodes_.vec<3>(i));
+            nodeRefs.emplace_back(i, tmpNorm[0]);
         }
     }
     inline void calculateNodeCurveValuesAsObtainedFromElements() {
         nodeRefs.reserve(mesh.n_nodes());
         for (uint i = 0; i < mesh.n_elements(); ++i) {
-            const ElementRef& elRf = elementRefs[i];
+            const Element& el = mesh.element_vec_[elementRefs[i].originalIndex];
             for (uint j = 0; j < DIM + 1; ++j) {
-                uint nodeIdx = elRf.ref.get().nodes_[j];
-                nodeRefs.emplace_back(nodesBackup[nodeIdx], nodeIdx, elementRefs[i].curveValue);
+                nodeRefs.emplace_back(el.nodes_[j], elementRefs[i].curveValue);
             }
         }
     }
     inline void calculateElementCurveValuesAsMeanOfNodes() {
         elementRefs.reserve(mesh.n_elements());
         for (uint i = 0; i < mesh.n_elements(); ++i) {
-            const std::array<uint, 4>& nodeIndexes = elementsBackup[i].nodes_;
+            const std::array<uint, 4>& nodeIndexes = mesh.element_vec_[i].nodes_;
             double tmpSum = 0;
             for (uint j = 0; j < DIM + 1; ++j) {
                 tmpSum += nodeRefs[nodeIndexes[j]].curveValue;
             }
-            elementRefs.emplace_back(elementsBackup[i], tmpSum / DIM + 1);
+            elementRefs.emplace_back(i, tmpSum / DIM + 1);
         }
     }
     inline void calculateElementCurveValuesAsHilbertOfCenters() {
         elementRefs.reserve(mesh.n_elements());
         for (uint i = 0; i < mesh.n_elements(); ++i) {
-            elementRefs.emplace_back(elementsBackup[i], hilbertValue(normalize(ElementAccessor<3>(&mesh, i).centre(), boundingBox), elementSizes[i]));
+            elementRefs.emplace_back(i, hilbertValue(normalizer.normalize(ElementAccessor<3>(&mesh, i).centre()), normalizer.normalize(elementSizes[i])));
         }
     }
     inline void calculateElementCurveValuesAsZCurveOfCenters() {
         elementRefs.reserve(mesh.n_elements());
         for (uint i = 0; i < mesh.n_elements(); ++i) {
-            elementRefs.emplace_back(elementsBackup[i], zCurveValue(normalize(ElementAccessor<3>(&mesh, i).centre(), boundingBox), elementSizes[i]));
+            elementRefs.emplace_back(i, zCurveValue(normalizer.normalize(ElementAccessor<3>(&mesh, i).centre()), normalizer.normalize(elementSizes[i])));
         }
     }
     inline void calculateElementCurveValuesAsMeanOfCoords() {
         elementRefs.reserve(mesh.n_elements());
         for (uint i = 0; i < mesh.n_elements(); ++i) {
-            arma::vec3 tmpNorm = normalize(ElementAccessor<3>(&mesh, i).centre(), boundingBox);
-            nodeRefs.emplace_back(nodesBackup[i], i, (tmpNorm[0] + tmpNorm[1] + tmpNorm[2]) / 3);
+            Vec3 tmpNorm = normalizer.normalize(ElementAccessor<3>(&mesh, i).centre());
+            elementRefs.emplace_back(i, (tmpNorm[0] + tmpNorm[1] + tmpNorm[2]) / 3);
         }
     }
     inline void calculateElementCurveValuesAsFirstCoord() {
         elementRefs.reserve(mesh.n_elements());
         for (uint i = 0; i < mesh.n_elements(); ++i) {
-            arma::vec3 tmpNorm = normalize(ElementAccessor<3>(&mesh, i).centre(), boundingBox);
-            nodeRefs.emplace_back(nodesBackup[i], i, tmpNorm[0]);
+            Vec3 tmpNorm = normalizer.normalize(ElementAccessor<3>(&mesh, i).centre());
+            elementRefs.emplace_back(i, tmpNorm[0]);
         }
     }
     inline void sortNodes() {
         std::sort(nodeRefs.begin(), nodeRefs.end());
         std::vector<uint> newNodeIndexes(nodeRefs.size());
+        Armor::Array<double> nodesBackup = mesh.nodes_;
         for (uint i = 0; i < nodeRefs.size(); ++i) {
             newNodeIndexes[nodeRefs[i].originalIndex] = i;
         }
         for (uint i = 0; i < mesh.n_elements(); ++i) {
             for (uint j = 0; j < DIM + 1; ++j) {
-                elementsBackup[i].nodes_[j] = newNodeIndexes[elementsBackup[i].nodes_[j]];
+                mesh.element_vec_[i].nodes_[j] = newNodeIndexes[mesh.element_vec_[i].nodes_[j]];
             }
+        }
+        for (uint i = 0; i < nodeRefs.size(); ++i) {
+            mesh.nodes_.set(i) = nodesBackup.vec<3>(nodeRefs[i].originalIndex);
         }
     }
     inline void sortElements() {
         std::sort(elementRefs.begin(), elementRefs.end());
-    }
-    inline void writeNodesToMesh() {
-        for (uint i = 0; i < nodeRefs.size(); ++i) {
-            mesh.nodes_.set(i) = nodeRefs[i].ref.get().arma();
-        }
-    }
-    inline void writeElementsToMesh() {
+        std::vector<Element> elementsBackup = mesh.element_vec_;
         for (uint i = 0; i < elementRefs.size(); ++i) {
-            mesh.element_vec_[i] = elementRefs[i].ref.get();
+            mesh.element_vec_[i] = elementsBackup[elementRefs[i].originalIndex];
         }
     }
 private:
     Mesh& mesh;
-    std::vector<Vertex> nodesBackup;
-    std::vector<Element> elementsBackup;
-    std::vector<NodeRef> nodeRefs;
-    std::vector<ElementRef> elementRefs;
+    std::vector<Permutee> nodeRefs;
+    std::vector<Permutee> elementRefs;
     std::vector<double> nodeSizes;
     std::vector<double> elementSizes;
-    BoundingBox boundingBox;
+    Normalizer normalizer;
     inline double calculateSizeOfElement(const ElementAccessor<3>& elm) {
         return std::min({arma::norm(*elm.node(0) - *elm.node(1)),
                          arma::norm(*elm.node(1) - *elm.node(2)),
@@ -306,16 +295,11 @@ private:
             }
         }
     }
-    inline double hilbertValue(const Vertex vec, double size) {
+    inline double hilbertValue(const Vec3 vec, double size) {
         return hilbertValue(vec[0], vec[1], vec[2], size * size * size);
     }
-    inline double zCurveValue(const Vertex vec, double size) {
+    inline double zCurveValue(const Vec3 vec, double size) {
         return zCurveValue(vec[0], vec[1], vec[2], size * size * size);
-    }
-    inline Vertex normalize(const Vertex& vec, const BoundingBox& boundingBox) {
-        const Vertex tmp = arma::vec3(boundingBox.max() - boundingBox.min());
-        double scalar = std::max({tmp[0], tmp[1], tmp[2]});
-        return arma::vec3((vec.arma() - boundingBox.min()) / scalar);
     }
 };
 
@@ -327,12 +311,12 @@ inline double MeshOptimizer<2>::calculateSizeOfElement(const ElementAccessor<3>&
 }
 
 template <>
-inline double MeshOptimizer<2>::hilbertValue(const Vertex vec, double size) {
+inline double MeshOptimizer<2>::hilbertValue(const Vec3 vec, double size) {
     return hilbertValue(vec[0], vec[1], size * size);
 }
 
 template <>
-inline double MeshOptimizer<2>::zCurveValue(const Vertex vec, double size) {
+inline double MeshOptimizer<2>::zCurveValue(const Vec3 vec, double size) {
     return zCurveValue(vec[0], vec[1], size * size);
 }
 

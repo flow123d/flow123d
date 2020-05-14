@@ -26,6 +26,7 @@
 #include "io/msh_gmshreader.h"
 
 #include <iostream>
+#include <algorithm>
 
 #include "fields/generic_field.hh"
 #include "io/output_mesh.hh"
@@ -33,6 +34,30 @@
 
 
 // #define GROUP_SIZE 64
+
+// double petscCalculation(Mesh * mesh) {
+//     PetscInt dofs[4];
+//     Mat global_matrix;
+//     uint n_global_dofs = mesh->n_nodes();
+//     int *nnz = new int[n_global_dofs];
+//     // determine preallocation size
+//     std::fill(nnz, nnz + n_global_dofs, 0);
+//     for (ElementAccessor<3> elm : mesh->elements_range()) {
+//         for(uint i = 0; i <= elm.dim(); ++i) {
+//             uint i_dof = elm.node(i).idx();
+//             nnz[i_dof] += 1;
+//         }
+//     }
+//     MatCreateSeqAIJ(PETSC_COMM_SELF, n_global_dofs, n_global_dofs, 0, nnz, &global_matrix);
+//     MatAssemblyBegin(global_matrix, MAT_FINAL_ASSEMBLY);
+//     for (ElementAccessor<3> elm : mesh->elements_range()) {
+//         for(uint i = 0; i <= elm.dim(); ++i) {
+//             dofs[i] = elm.node(i).idx();
+//         }
+//         MatSetValues(global_matrix, 4, dofs, 4, dofs, local_matrix, ADD_VALUES)
+//     }
+//     MatAssemblyEnd(global_matrix, MAT_FINAL_ASSEMBLY);
+// }
 
 double calculation2DBeforeSort(Mesh * mesh) {
     double checksum = 0;
@@ -166,8 +191,12 @@ TEST(Spacefilling, space_filling) {
 //     const std::string testName = "square_uniform_2";
 //     const std::string testName = "square_refined";
 //     const std::string testName = "lshape_refined";
-    const std::string meshName = "lshape_refined_2_cube";
-    const std::string testName = "ne_hilb";
+    const std::string meshName = "lshape_refined_2_2D";
+//     const std::string meshName = "lshape_refined_2_3D";
+    const std::string testName = "hilbert_try";
+//     const std::string testName = "mean_try";
+//     const std::string testName = "zcurve_try";
+//     const std::string testName = "hilbert_try";
     const std::string mesh_in_string = "{mesh_file=\"mesh/" + meshName + ".msh\"}";
     
     Mesh * mesh = mesh_full_constructor(mesh_in_string);
@@ -179,37 +208,43 @@ TEST(Spacefilling, space_filling) {
 //     printMesh(*mesh);
 
     START_TIMER("calculation_before_sort");
-//     double checksum1 = calculation2DBeforeSort(mesh);
-    double checksum1 = calculation3DBeforeSort(mesh);
+    double checksum1 = calculation2DBeforeSort(mesh);
+//     double checksum1 = calculation3DBeforeSort(mesh);
     END_TIMER("calculation_before_sort");
     
     std::cout << "checksum 1: " << checksum1 << '\n';
     
-    MeshOptimizer<3> mo(*mesh);
-    std::cout << "reading nodes" << '\n';
-    mo.readNodesFromMesh();
-    std::cout << "reading elemenst" << '\n';
-    mo.readElementsFromMesh();
+//     MeshOptimizer<3> mo(*mesh);
+    MeshOptimizer<2> mo(*mesh);
+//     std::cout << "reading nodes" << '\n';
+//     mo.readNodesFromMesh();
+//     std::cout << "reading elemenst" << '\n';
+//     mo.readElementsFromMesh();
     std::cout << "calculating sizes" << '\n';
     mo.calculateSizes();
     std::cout << "calculating node curve values" << '\n';
-//     mo.calculateNodeCurveValuesAsHilbert();
-    mo.calculateNodeCurveValuesAsMeanOfCoords();
+    mo.calculateNodeCurveValuesAsHilbert();
+//     mo.calculateNodeCurveValuesAsZCurve();
+//     mo.calculateNodeCurveValuesAsMeanOfCoords();
 //     mo.calculateNodeCurveValuesAsFirstCoord();
     std::cout << "calculating element curve values" << '\n';
-    mo.calculateElementCurveValuesAsMeanOfNodes();
+    mo.calculateElementCurveValuesAsHilbertOfCenters();
+//     mo.calculateElementCurveValuesAsZCurveOfCenters();
+//     mo.calculateElementCurveValuesAsMeanOfCoords();
+//     mo.calculateElementCurveValuesAsFirstCoord();
+//     mo.calculateElementCurveValuesAsMeanOfNodes();
     std::cout << "sorting nodes" << '\n';
     mo.sortNodes();
     std::cout << "sorting elements" << '\n';
     mo.sortElements();
-    std::cout << "writing nodes to mesh" << '\n';
-    mo.writeNodesToMesh();
-    std::cout << "writing elements to mesh" << '\n';
-    mo.writeElementsToMesh();
+//     std::cout << "writing nodes to mesh" << '\n';
+//     mo.writeNodesToMesh();
+//     std::cout << "writing elements to mesh" << '\n';
+//     mo.writeElementsToMesh();
     
     START_TIMER("calculation_after_sort");
-//     double checksum2 = calculation2DAfterSort(mesh);
-    double checksum2 = calculation3DAfterSort(mesh);
+    double checksum2 = calculation2DAfterSort(mesh);
+//     double checksum2 = calculation3DAfterSort(mesh);
     END_TIMER("calculation_after_sort");
     
     std::cout << "checksum 2: " << checksum2 << '\n';
