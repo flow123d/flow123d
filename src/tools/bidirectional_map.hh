@@ -111,6 +111,8 @@ inline void BidirectionalMap<T>::reinit(unsigned int init_size) {
 	vals_map_.clear();
 	vals_vec_.clear();
 	vals_vec_.resize(init_size, -1);
+}
+
 /// Reset data of map, reserve space for given size.
 template<typename T>
 inline void BidirectionalMap<T>::resize(unsigned int new_size)
@@ -121,7 +123,6 @@ inline void BidirectionalMap<T>::resize(unsigned int new_size)
 	}
 	vals_vec_.resize(new_size);
 	ASSERT_DBG(vals_vec_.size() == vals_map_.size())(vals_vec_.size())(vals_map_.size());
-}
 }
 
 template<typename T>

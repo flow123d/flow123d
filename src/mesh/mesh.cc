@@ -333,7 +333,7 @@ void Mesh::check_mesh_on_read() {
             << print_var(n_nodes_new) << print_var(nodes_new_idx.size()) << "\n";
 
         // throw away unused nodes
-        nodes_.resize(n_nodes_new);
+        node_vec_.resize(n_nodes_new);
         node_ids_.resize(n_nodes_new);
 
         // update node-element numbering
@@ -1280,12 +1280,6 @@ void Mesh::distribute_nodes() {
         }
     }
 
-    for(uint i_proc : node_proc) {
-        if (i_proc == my_proc)
-            n_own_nodes++;
-        else if (i_proc == n_proc)
-            ASSERT(0)(find_node_id(n_own_nodes)).error("A node does not belong to any element!");
-    }
     // create and fill node_4_loc_ (mapping local to global indexes)
     node_4_loc_ = new LongIdx [ n_own_nodes+n_ghost_nodes ];
     i_node=0;
