@@ -305,32 +305,44 @@ void Mesh::check_mesh_on_read() {
     }
 
     // remove unused nodes from the mesh
-    uint n_used_nodes = 0;
+    uint inode_new = 0;
     for(uint inode = 0; inode < nodes_new_idx.size(); inode++) {
         if(nodes_new_idx[inode] == Mesh::undef_idx){
             WarningOut().fmt("A node {} does not belong to any element "
                          " and will be removed.",
                          find_node_id(inode));
-
-            node_ids_.erase_item(inode);
-            node_vec_.erase(node_vec_.begin() + inode);
         }
         else{
-            nodes_new_idx[inode] = n_used_nodes;
-            n_used_nodes++;
+            // map new node numbering
+            nodes_new_idx[inode] = inode_new;
+            
+            // possibly move the nodes
+            node_vec_[inode_new] = node_vec_[inode];
+            node_ids_.set_item(node_ids_[inode],inode_new);
+
+            inode_new++;
         }
     }
 
+    uint n_nodes_new = inode_new;
+
     // if some node erased, update node ids in elements
-    if(n_used_nodes < nodes_new_idx.size()){
+    if(n_nodes_new < nodes_new_idx.size()){
+        
         DebugOut() << "Updating node-element numbering due to unused nodes: "
-            << print_var(n_used_nodes) << print_var(nodes_new_idx.size()) << "\n";
+            << print_var(n_nodes_new) << print_var(nodes_new_idx.size()) << "\n";
+
+        // throw away unused nodes
+        nodes_.resize(n_nodes_new);
+        node_ids_.resize(n_nodes_new);
+
+        // update node-element numbering
         for (auto ele : this->elements_range()) {
             for (uint ele_node=0; ele_node<ele->n_nodes(); ele_node++) {
                 uint inode_orig = ele->node_idx(ele_node);
-                uint inode_new = nodes_new_idx[inode_orig];
-                ASSERT_DBG(inode_new != Mesh::undef_idx);
-                const_cast<Element*>(ele.element())->nodes_[ele_node] = inode_new;
+                uint inode = nodes_new_idx[inode_orig];
+                ASSERT_DBG(inode != Mesh::undef_idx);
+                const_cast<Element*>(ele.element())->nodes_[ele_node] = inode;
             }
         }
     }

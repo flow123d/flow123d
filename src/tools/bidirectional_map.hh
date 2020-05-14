@@ -47,11 +47,6 @@ public:
 	 */
 	void set_item(T val, unsigned int pos);
 
-	/**
-	 * Erase item at the given @p pos.
-	 */
-	void erase_item(unsigned int pos);
-
 	/// Add new item at the end position of map.
 	unsigned int add_item(T val);
 
@@ -60,6 +55,10 @@ public:
 
 	/// Reset data of map, allow reserve size.
 	void reinit(unsigned int init_size = 0);
+
+	/// Resizes to given @p new_size if new size is smaller than the actual.
+	/// The rest of data are thrown away and removed from the map.
+	void resize(unsigned int new_size);
 
 	/// Return value on given position.
 	T operator[](unsigned int pos) const;
@@ -81,21 +80,15 @@ inline unsigned int BidirectionalMap<T>::size() const {
 
 template<typename T>
 inline void BidirectionalMap<T>::set_item(T val, unsigned int pos) {
-	ASSERT_LT( pos, vals_vec_.size() )(pos)(vals_vec_.size()).error("Value id is out of vector size.");
-	ASSERT( vals_vec_[pos] == -1 )(pos).error("Repeated setting of item.");
+	ASSERT_LT_DBG( pos, vals_vec_.size() )(pos)(vals_vec_.size()).error("Value id is out of vector size.");
+	//ASSERT( vals_vec_[pos] == -1 )(pos).error("Repeated setting of item.");
+	// auto it = vals_map_.find(vals_vec_[pos]);
+	// if (it != vals_map_.end()) {
+	// DebugOut() << print_var(vals_map_.size()) << print_var(pos) << print_var(vals_vec_[pos]) << "\n";
+	// 	vals_map_.erase(it);
+	// }
 	vals_map_[val] = pos;
 	vals_vec_[pos] = val;
-}
-
-template<typename T>
-inline void BidirectionalMap<T>::erase_item(unsigned int pos) {
-	ASSERT_LT( pos, vals_vec_.size() )(pos)(vals_vec_.size()).error("Value id is out of vector size.");
-	
-	typename std::map<T, unsigned int>::const_iterator iter = vals_map_.find(vals_vec_[pos]);
-	if (iter != vals_map_.end()){
-		vals_map_.erase(iter);
-		vals_vec_.erase(vals_vec_.begin() + pos);
-	}
 }
 
 template<typename T>
@@ -118,6 +111,17 @@ inline void BidirectionalMap<T>::reinit(unsigned int init_size) {
 	vals_map_.clear();
 	vals_vec_.clear();
 	vals_vec_.resize(init_size, -1);
+/// Reset data of map, reserve space for given size.
+template<typename T>
+inline void BidirectionalMap<T>::resize(unsigned int new_size)
+{
+	ASSERT_LT_DBG(new_size, vals_vec_.size());
+	for(uint pos = new_size; pos < vals_vec_.size(); pos++){
+		vals_map_.erase(vals_vec_[pos]);
+	}
+	vals_vec_.resize(new_size);
+	ASSERT_DBG(vals_vec_.size() == vals_map_.size())(vals_vec_.size())(vals_map_.size());
+}
 }
 
 template<typename T>
