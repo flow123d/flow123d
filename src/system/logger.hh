@@ -23,7 +23,7 @@
 #include <algorithm>            // for forward
 #include <string>               // for string
 #include <sstream>
-//#include <vector>
+#include <vector>
 #include <string>
 
 
@@ -107,32 +107,30 @@ private:
  *
  @code
    MessageOut() << "End of simulation at time: " << secondary_eq->solved_time() << "\n";
-   WarningOut() << "Unprocessed key '" << key_name << "' in Record '" << rec->type_name() << "'." << "\n";
+   WarningOut() << "Unprocessed keys '" << keys_vec << "'." << "\n";
    LogOut() << "Write output to output stream: " << this->_base_filename << " for time: " << time << "\n";
    DebugOut() << "Calling 'initialize' of empty equation '" << typeid(*this).name() << "'." << "\n";
  @endcode
  *
- * Logger message can be created by more than one line ("\n" can be used multiple
- * times):
+ * See that output of vectors of printable objects is supported.
+ * Implementation of Logger does not support manipulator std::endl. Please, use "\n" instead.
+ * New line character "\n" can be used multiple times.
  *
- @code
-   MessageOut() << "Start time: " << this->start_time() << "\n" << "End time: " << this->end_time() << "\n";
- @endcode
- *
- * Or Logger allow using fmtlib functionality for simpler formatting of message:
+ * Logger allow using fmtlib functionality for simpler formatting of message:
  *
  @code
    MessageOut() << fmt::format("Start time: {}\nEnd time: {}\n", this->start_time(), this->end_time());
    MessageOut().fmt("Start time: {}\nEnd time: {}\n", this->start_time(), this->end_time());
  @endcode
  *
- * In some cases message can be printed for all processes:
+ * Messages are printed only on the zero MPI process by default.
+ * Parallel output on all processes must be required explicitly:
  *
  @code
    MessageOut().every_proc() << "Size distributed at process: " << distr->lsize() << "\n";
  @endcode
  *
- * Implementation of Logger does not support manipulator std::endl. Please, use "\n" instead.
+ *
  */
 class Logger : public std::ostream {
 public:
@@ -187,10 +185,10 @@ private:
 	void print_to_file(std::ofstream& stream, std::stringstream& file_stream, StreamMask mask);
 
 	/// Print header to screen stream, helper method called from \p print_to_screen.
-	bool print_screen_header(std::ostream& stream);
+	bool print_screen_header(std::stringstream& scr_stream);
 
 	/// Print header to file stream, helper method called from \p print_to_file.
-	void print_file_header(std::ofstream& stream);
+	void print_file_header(std::stringstream& file_stream);
 
 	/// Return compact (relative) path to the given source file.
 	std::string compact_file_name(std::string file_name);
@@ -209,9 +207,15 @@ private:
 	StreamMask streams_mask_;             ///< Mask of logger, specifies streams in actual time into which to be written
 	StreamMask full_streams_mask_;        ///< Mask of logger, specifies all streams into which to be written in logger message
 
+	// Generic printing.
 	template <class T>
 	friend Logger &operator<<(Logger & log, const T & x);
-    friend Logger &operator<<(Logger & log, std::ostream & (*pf) (std::ostream &) );
+	// Vector printing support.
+	template <class T>
+	friend Logger &operator<<(Logger & log, const std::vector<T> & vec);
+	// Parametric stream modificator (.
+	friend Logger &operator<<(Logger & log, std::ostream & (*pf) (std::ostream &) );
+	// Stream mask modificator.
 	friend Logger &operator<<(Logger & log, StreamMask mask);
 };
 
@@ -223,6 +227,15 @@ Logger &operator<<(Logger & log, std::ostream & (*pf) (std::ostream &) );
 
 
 template <class T>
+Logger &operator<<(Logger & log, const std::vector<T> & vec)
+{
+    for (T const& c : vec)
+        log << c << " ";
+	return log;
+}
+
+
+template <class T>
 Logger &operator<<(Logger & log, const T & x)
 {
 	if ( (log.streams_mask_ & StreamMask::cout)() ) log.cout_stream_ << x;
@@ -230,7 +243,6 @@ Logger &operator<<(Logger & log, const T & x)
 	if ( (log.streams_mask_ & StreamMask::log )() ) log.file_stream_ << x;
     return log;
 }
-
 
 
 

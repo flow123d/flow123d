@@ -23,6 +23,10 @@
 #include "field.hh"
 #include "field_algo_base.impl.hh"
 #include "field_fe.hh"
+#include "fields/eval_subset.hh"
+#include "fields/eval_points.hh"
+#include "fields/field_value_cache.hh"
+#include "fields/field_value_cache.impl.hh"
 #include "mesh/region.hh"
 #include "input/reader_to_storage.hh"
 #include "input/accessors.hh"
@@ -37,7 +41,8 @@
 
 template<int spacedim, class Value>
 Field<spacedim,Value>::Field()
-: data_(std::make_shared<SharedData>())
+: data_(std::make_shared<SharedData>()),
+  value_cache_( FieldValueCache<typename Value::element_type>(Value::NRows_, Value::NCols_) )
 {
 	// n_comp is nonzero only for variable size vectors Vector, VectorEnum, ..
 	// this invariant is kept also by n_comp setter
@@ -50,8 +55,8 @@ Field<spacedim,Value>::Field()
 
 template<int spacedim, class Value>
 Field<spacedim,Value>::Field(const string &name, bool bc)
-: data_(std::make_shared<SharedData>())
-
+: data_(std::make_shared<SharedData>()),
+  value_cache_( FieldValueCache<typename Value::element_type>(Value::NRows_, Value::NCols_) )
 {
 		// n_comp is nonzero only for variable size vectors Vector, VectorEnum, ..
 		// this invariant is kept also by n_comp setter
@@ -66,7 +71,8 @@ Field<spacedim,Value>::Field(const string &name, bool bc)
 
 template<int spacedim, class Value>
 Field<spacedim,Value>::Field(unsigned int component_index, string input_name, string name, bool bc)
-: data_(std::make_shared<SharedData>())
+: data_(std::make_shared<SharedData>()),
+  value_cache_( FieldValueCache<typename Value::element_type>(Value::NRows_, Value::NCols_) )
 {
 	// n_comp is nonzero only for variable size vectors Vector, VectorEnum, ..
 	// this invariant is kept also by n_comp setter
@@ -85,7 +91,8 @@ Field<spacedim,Value>::Field(const Field &other)
 : FieldCommon(other),
   data_(other.data_),
   region_fields_(other.region_fields_),
-  factories_(other.factories_)
+  factories_(other.factories_),
+  value_cache_(other.value_cache_)
 {
 	if (other.no_check_control_field_)
 		no_check_control_field_ =  make_shared<ControlField>(*other.no_check_control_field_);
@@ -118,12 +125,36 @@ Field<spacedim,Value> &Field<spacedim,Value>::operator=(const Field<spacedim,Val
 	data_ = other.data_;
 	factories_ = other.factories_;
 	region_fields_ = other.region_fields_;
+	value_cache_ = other.value_cache_;
 
 	if (other.no_check_control_field_) {
 		no_check_control_field_ =  make_shared<ControlField>(*other.no_check_control_field_);
 	}
 
 	return *this;
+}
+
+
+
+template<int spacedim, class Value>
+typename Value::return_type Field<spacedim,Value>::operator() (BulkPoint &p) {
+    return value_cache_.template get_value<Value>(*p.elm_cache_map(), p.dh_cell(), p.eval_point_idx());
+}
+
+
+
+template<int spacedim, class Value>
+typename Value::return_type Field<spacedim,Value>::operator() (EdgePoint &p) {
+    return value_cache_.template get_value<Value>(*p.elm_cache_map(), p.dh_cell_side().cell(), p.eval_point_idx());
+}
+
+
+
+template<int spacedim, class Value>
+typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_>
+Field<spacedim,Value>::operator[] (unsigned int i_cache_point) const
+{
+	return this->value_cache().data().template mat<Value::NRows_, Value::NCols_>(i_cache_point);
 }
 
 
@@ -205,7 +236,7 @@ void Field<spacedim, Value>::set_field(
 	ASSERT_PTR( mesh() ).error("Null mesh pointer, set_mesh() has to be called before set_field().\n");
     if (domain.size() == 0) return;
 
-    ASSERT_EQ( field->n_comp() , n_comp());
+    ASSERT_EQ( field->n_comp() , shared_->n_comp_);
     field->set_mesh( mesh() , is_bc() );
 
     HistoryPoint hp = HistoryPoint(time, field);
@@ -446,7 +477,7 @@ void Field<spacedim,Value>::update_history(const TimeStep &time) {
 				if (field_instance)  // skip descriptors without related keys
 				{
 					// add to history
-					ASSERT_EQ( field_instance->n_comp() , n_comp());
+					ASSERT_EQ( field_instance->n_comp() , shared_->n_comp_);
 					field_instance->set_mesh( mesh() , is_bc() );
 					for(const Region &reg: domain) {
                         // if region history is empty, add new field
@@ -680,6 +711,25 @@ std::shared_ptr< FieldFE<spacedim, Value> > Field<spacedim,Value>::get_field_fe(
 
 	return field_fe_ptr;
 }
+
+
+template<int spacedim, class Value>
+void Field<spacedim, Value>::cache_allocate(std::shared_ptr<EvalPoints> eval_points) {
+    value_cache_.init(eval_points, ElementCacheMap::n_cached_elements);
+}
+
+
+template<int spacedim, class Value>
+void Field<spacedim, Value>::cache_update(ElementCacheMap &cache_map) {
+    auto update_cache_data = cache_map.update_cache_data();
+
+    // Call cache_update of FieldAlgoBase descendants
+    std::unordered_map<unsigned int, unsigned int>::iterator reg_elm_it;
+    for (reg_elm_it=update_cache_data.region_cache_indices_range_.begin(); reg_elm_it!=update_cache_data.region_cache_indices_range_.end(); ++reg_elm_it) {
+        region_fields_[reg_elm_it->first]->cache_update(value_cache_, cache_map, reg_elm_it->first);
+    }
+}
+
 
 
 

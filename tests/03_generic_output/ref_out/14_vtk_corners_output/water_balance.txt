@@ -1,9 +1,0 @@
-"time [s]"	"region"	"quantity [m(3)]"	"flux"	"flux_in"	"flux_out"	"mass"	"source"	"source_in"	"source_out"	"flux_increment"	"source_increment"	"flux_cumulative"	"source_cumulative"	"error"
-0	"fracture"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
-0	"rock"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
-0	".fracture_bottom"	"water_volume"	0.0100868	0.0100868	0	0	0	0	0	0	0	0	0	0
-0	".fracture_top"	"water_volume"	-0.00991366	0	-0.00991366	0	0	0	0	0	0	0	0	0
-0	".left"	"water_volume"	2.77827e-19	9.00565e-18	-8.72783e-18	0	0	0	0	0	0	0	0	0
-0	".right"	"water_volume"	-3.11708e-19	7.33192e-18	-7.64363e-18	0	0	0	0	0	0	0	0	0
-0	".rock_bottom"	"water_volume"	0.000212491	0.000212491	0	0	0	0	0	0	0	0	0	0
-0	".rock_top"	"water_volume"	-0.000385633	0	-0.000385633	0	0	0	0	0	0	0	0	0

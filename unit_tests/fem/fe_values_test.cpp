@@ -43,13 +43,13 @@ double integrate(ElementAccessor<3> &ele) {
     FE_P_disc<dim> fe(0);
     QGauss quad( dim, 2 );
     MappingP1<dim,3> map;
-    FEValues<dim,3> fe_values(map, quad,   fe, update_JxW_values | update_quadrature_points);
+    FEValues<3> fe_values(quad, fe, update_JxW_values | update_quadrature_points);
     
     fe_values.reinit( ele );
     
     double sum = 0.0;
     for(unsigned int i_point=0; i_point < fe_values.n_points(); i_point++) {
-        sum += func<dim>( quad.point<dim>(i_point).arma() ) * fe_values.JxW(i_point);
+        sum += func<dim>( quad.point<dim>(i_point) ) * fe_values.JxW(i_point);
     }
     return sum;
 }
@@ -60,6 +60,7 @@ TEST(FeValues, test_all) {
     {
         // 1d case interval (1,3)   det(jac) = 2
     	Mesh mesh;
+    	mesh.init_node_vector(2);
     	mesh.add_node(0, arma::vec3("1 0 0"));
     	mesh.add_node(1, arma::vec3("3 0 0"));
     	std::vector<unsigned int> node_ids = {0, 1};
@@ -79,6 +80,7 @@ TEST(FeValues, test_all) {
     {
         // 2d case: triangle (0,1) (2,0) (3,4) surface = 3*4 - 1*2/2 - 1*4/4 - 3*3/2 = 9/2, det(jac) = 9
     	Mesh mesh;
+    	mesh.init_node_vector(3);
     	mesh.add_node(0, arma::vec3("0 1 0"));
     	mesh.add_node(1, arma::vec3("2 0 0"));
     	mesh.add_node(2, arma::vec3("3 4 0"));

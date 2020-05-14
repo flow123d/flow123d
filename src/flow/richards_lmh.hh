@@ -11,13 +11,13 @@
 #include <boost/exception/info.hpp>  // for operator<<, error_info::error_in...
 #include <memory>                    // for shared_ptr
 #include "fields/field.hh"           // for Field
+#include "fields/field_fe.hh"           // for FieldFE
 #include "fields/field_values.hh"    // for FieldValue<>::Scalar, FieldValue
 #include "la/vector_mpi.hh"          // for VectorMPI
-#include "flow/darcy_flow_mh.hh"     // for DarcyMH, DarcyMH::EqData
+#include "flow/darcy_flow_lmh.hh"    // for DarcyLMH, DarcyLMH::EqData
 #include "flow/darcy_flow_mh_output.hh" // for DarcyFlowMHOutput
 #include "input/type_base.hh"        // for Array
 #include "input/type_generic.hh"     // for Instance
-#include "petscvec.h"                // for VecScatter, _p_VecScatter
 
 class Mesh;
 class SoilModelBase;
@@ -59,32 +59,32 @@ namespace Input {
  * -# Nonlinear solve.
  * -# In case of slow convergence, use shorter time-step, within estimated limits. Otherwise there is a different problem.
  */
-class RichardsLMH : public DarcyMH
+class RichardsLMH : public DarcyLMH
 {
 public:
     /// Class with all fields used in the equation DarcyFlow.
     /// This is common to all implementations since this provides interface
     /// to this equation for possible coupling.
-    class EqData : public DarcyMH::EqData {
+    class EqData : public DarcyLMH::EqData {
     public:
         EqData();
         // input fields
-        Field<3, FieldValue<3>::Scalar > water_content_saturated;
+        Field<3, FieldValue<3>::Scalar > water_content_saturated;   // corresponds to the porosity (theta_s = Vw/V = porosity)
         Field<3, FieldValue<3>::Scalar > water_content_residual;
         Field<3, FieldValue<3>::Scalar > genuchten_p_head_scale;
         Field<3, FieldValue<3>::Scalar > genuchten_n_exponent;
 
         //output fields
+        Field<3, FieldValue<3>::Scalar > water_content;
+        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> water_content_ptr;
+
+        Field<3, FieldValue<3>::Scalar > conductivity_richards;
+//         FieldFE<3, FieldValue<3>::Scalar > conductivity_richards;
+        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> conductivity_ptr;
 
         // Auxiliary assembly fields.
-        //std::unordered_map<unsigned int, unsigned int> *edge_new_local_4_mesh_idx_;
-        VectorMPI phead_edge_;
-        VectorMPI water_content_previous_it;
         VectorMPI water_content_previous_time;
         VectorMPI capacity;
-        // source terms to be added to the side fluxes, in order to get proper (continuous) velocity field
-        VectorMPI postprocess_side_sources;
-
 
         // This is necessary in the assembly
         // TODO: store time information in the field set and in fields, is it ok also for more complex discretization methods?
@@ -96,8 +96,7 @@ public:
 
     static const Input::Type::Record & get_input_type();
     
-    const DarcyFlowMHOutput::OutputFields &output_fields()
-    { return this->output_object->get_output_fields(); }
+    void accept_time_step() override;
     
 protected:
     /// Registrar of class to factory
@@ -106,28 +105,12 @@ protected:
     bool zero_time_term(bool time_global=false) override;
 
     void initialize_specific() override;
-    //void local_assembly_specific(LocalAssemblyData &local_data) override;
-    void assembly_source_term() override;
 
-    void read_initial_condition() override;
+    void initial_condition_postprocess() override;
     void assembly_linear_system() override;
-    void setup_time_term() override;
-    void prepare_new_time_step() override;
-    void postprocess() override;
 private:
 
     std::shared_ptr<EqData> data_;
-    /// PETSC scatter from the solution vector to the parallel edge vector with ghost values.
-    VecScatter solution_2_edge_scatter_;
-
-    /*
-    Vec steady_diagonal;
-    Vec steady_rhs;
-    Vec new_diagonal;
-    Vec previous_solution;
-*/
-
-    //Vec time_term;
 };
 
 

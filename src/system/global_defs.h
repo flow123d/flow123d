@@ -87,53 +87,53 @@
 
 #ifdef FLOW123D_DEBUG_ASSERTS
 
-/**
- * Just quick hack to fix some unit tests.
- * TODO:
- * We should make better implementation, rather minimizing
- * usage of macros. And make robust "system" part, that
- * is MPI aware, but not MPI dependent.
- */
-//#ifdef FLOW123D_DEBUG_ASSERTS_WITHOUT_MPI
-//#define MPI_Comm_rank(A, B)
-//#endif // FLOW123D_DEBUG_ASSERTS_WITHOUT_MPI
+    /**
+     * Just quick hack to fix some unit tests.
+     * TODO:
+     * We should make better implementation, rather minimizing
+     * usage of macros. And make robust "system" part, that
+     * is MPI aware, but not MPI dependent.
+     */
+    //#ifdef FLOW123D_DEBUG_ASSERTS_WITHOUT_MPI
+    //#define MPI_Comm_rank(A, B)
+    //#endif // FLOW123D_DEBUG_ASSERTS_WITHOUT_MPI
 
-#define OLD_ASSERT(i,...)   do {\
-    if (!(i))  {\
-        char msg[1024];\
-        sprintf( msg, __VA_ARGS__);\
-        int rank=-1;\
-        THROW( ExcAssertMsg() << EI_Message(std::string(msg)) << EI_MPI_Rank(rank) );\
-    }} while (0)
+    #define OLD_ASSERT(i,...)   do {\
+        if (!(i))  {\
+            char msg[1024];\
+            sprintf( msg, __VA_ARGS__);\
+            int rank=-1;\
+            THROW( ExcAssertMsg() << EI_Message(std::string(msg)) << EI_MPI_Rank(rank) );\
+        }} while (0)
 
-//#define OLD_WARN_ASSERT(i,...) do { if (!(i))    xprintf(Warn,__VA_ARGS__); } while (0)
+    //#define OLD_WARN_ASSERT(i,...) do { if (!(i))    xprintf(Warn,__VA_ARGS__); } while (0)
 
-#define OLD_ASSERT_EQUAL( a, b)  do {\
-    stringstream ss; ss << (a) << " != " << (b); \
-    OLD_ASSERT( ((a) == (b)), "Violated assert: %s == %s,\n observed: %s.\n",#a, #b, ss.str().c_str()); \
-    } while (0)
+    #define OLD_ASSERT_EQUAL( a, b)  do {\
+        stringstream ss; ss << (a) << " != " << (b); \
+        OLD_ASSERT( ((a) == (b)), "Violated assert: %s == %s,\n observed: %s.\n",#a, #b, ss.str().c_str()); \
+        } while (0)
 
-#define OLD_ASSERT_LESS( a, b) do {\
-    stringstream ss; ss << (a) << " >= " << (b); \
-    OLD_ASSERT( ((a) < (b)) , "Violated assert: %s < %s,\n observed: %s.\n",#a,#b, ss.str().c_str()); \
-    } while (0)
+    #define OLD_ASSERT_LESS( a, b) do {\
+        stringstream ss; ss << (a) << " >= " << (b); \
+        OLD_ASSERT( ((a) < (b)) , "Violated assert: %s < %s,\n observed: %s.\n",#a,#b, ss.str().c_str()); \
+        } while (0)
 
-#define OLD_ASSERT_LE( a, b) do {\
-    stringstream ss; ss << (a) << " > " << (b); \
-    OLD_ASSERT( ((a) <= (b)) , "Violated assert: %s <= %s,\n observed: %s.\n",#a,#b, ss.str().c_str()); \
-    } while (0)
+    #define OLD_ASSERT_LE( a, b) do {\
+        stringstream ss; ss << (a) << " > " << (b); \
+        OLD_ASSERT( ((a) <= (b)) , "Violated assert: %s <= %s,\n observed: %s.\n",#a,#b, ss.str().c_str()); \
+        } while (0)
 
-#define OLD_ASSERT_PTR( ptr ) do {\
-    OLD_ASSERT( ((ptr) != nullptr) , "Null pointer: %s\n", #ptr ); \
-    } while (0)
+    #define OLD_ASSERT_PTR( ptr ) do {\
+        OLD_ASSERT( ((ptr) != nullptr) , "Null pointer: %s\n", #ptr ); \
+        } while (0)
 #else
 
-#define OLD_ASSERT(...)
-#define OLD_WARN_ASSERT(...)
-#define OLD_ASSERT_EQUAL( a, b)
-#define OLD_ASSERT_LESS( a, b)
-#define OLD_ASSERT_LE( a, b)
-#define OLD_ASSERT_PTR( ptr )
+    #define OLD_ASSERT(...)
+    #define OLD_WARN_ASSERT(...)
+    #define OLD_ASSERT_EQUAL( a, b)
+    #define OLD_ASSERT_LESS( a, b)
+    #define OLD_ASSERT_LE( a, b)
+    #define OLD_ASSERT_PTR( ptr )
 
 #endif
 

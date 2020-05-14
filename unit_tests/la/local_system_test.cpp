@@ -460,3 +460,47 @@ TEST_F(SetValues, add_value_single) {
     }  
 };
 
+
+TEST(la, schur_complement) {
+
+    const unsigned int m = 5,
+                       n = 5;
+    
+    arma::mat M = {{1, 1, -1, 1, 2}, {1, 2, 1, 2, 0}, {2, -1, 1, 3, 1},
+                   {1, 2, 3, 4, 1}, {2, 0, 1, 1, 2}};
+//     M.print();
+    arma::vec rhs = {1, -2, 1, 2, -1};
+    
+    // set sparsity pattern
+    arma::umat sp(m,n);
+    sp.ones();
+    
+    LocalSystem ls(m, n);
+    
+    // set sparsity pattern
+    ls.set_sparsity(sp);
+    
+    ls.set_matrix(M);
+    ls.set_rhs(rhs);
+    
+//     ls.eliminate_solution();
+    LocalSystem schur;
+    ls.compute_schur_complement(3, schur);
+    
+//     schur.get_matrix().print();
+//     schur.get_rhs().print();
+    
+    arma::mat res_mat = {{1+1./9, 3}, {-2-1./9, 1}};
+    arma::vec res_rhs = {6+2./9, -1-2./9};
+    EXPECT_ARMA_EQ(res_mat, schur.get_matrix());
+    EXPECT_ARMA_EQ(res_rhs, schur.get_rhs());
+    
+    
+    arma::vec schur_sol = arma::solve(res_mat, res_rhs);
+    arma::vec res_sol = arma::solve(M, rhs);
+    
+    arma::vec reconstructed_solution;
+    ls.reconstruct_solution_schur(3, schur_sol, reconstructed_solution);
+//     reconstructed_solution.print();
+    EXPECT_ARMA_EQ(res_sol.subvec(0,2), reconstructed_solution);
+}

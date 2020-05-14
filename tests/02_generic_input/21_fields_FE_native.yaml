@@ -1,10 +1,16 @@
+#################
+# Test goal: Test of native data input interpolation.
+# Author: David Flanderka
+# Source for reference: qualitative
+
 flow123d_version: 3.1.0
 problem: !Coupling_Sequential
-  description: Test of FieldFE native data - init_pressure, init_conc fields
+  description: Test of input FieldFE native data - init_pressure, read native data from output of test 03 / 41
   mesh:
     mesh_file: ../00_mesh/square_0.2x0.2.msh
   # steady velocity field, with velocity v:0.1
-  flow_equation: !Flow_Richards_LMH
+  flow_equation: !Flow_Darcy_MH
+    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-12
@@ -12,11 +18,9 @@ problem: !Coupling_Sequential
     input_fields:
       - region: bulk
         init_pressure: !FieldFE
-          mesh_data_file: ./ref_out/21_fields_FE_native/test21/test21-000000.vtu
+          mesh_data_file: ../03_generic_output/ref_out/41_native_data_output/test41/test41-000000.vtu
           field_name: init_pressure
           input_discretization: native_data
-        conductivity: 1
-        sigma: 0.5
       - region: .BOUNDARY
         bc_type: dirichlet
         bc_pressure: 0.1
@@ -24,7 +28,6 @@ problem: !Coupling_Sequential
     output:
       fields:
         - pressure_p0
-        - pressure_p1
         - velocity_p0
         - field: init_pressure
           interpolation: Native
@@ -32,34 +35,6 @@ problem: !Coupling_Sequential
       file: ./test21.pvd
       format: !vtk
         variant: ascii
-  solute_equation: !Coupling_OperatorSplitting
-    transport: !Solute_Advection_FV
-      input_fields:
-        - region: bulk
-          init_conc: !FieldFE
-            mesh_data_file: ./ref_out/21_fields_FE_native/transport/transport-000000.vtu
-            field_name: A_conc
-            input_discretization: native_data
-        - region: .BOUNDARY
-          bc_conc: 0.0
-      output:
-        fields:
-          - field: conc
-            interpolation: Native
-    substances:
-      - A
-    time:
-      # test forcing smaller time step then output,
-      # but still larger then 0.01 necessary for capture input
-      min_dt: 0.1
-      max_dt: 0.1
-      end_time: 0.05
-    output_stream:
-      file: ./transport.pvd
-      format: !vtk
-        variant: ascii
-      times:
-        - step: 0.1
-      precision: 14  
-    balance:
-      cumulative: true
+      name: flow_output_stream
+#      times:
+#        - step: 0.25

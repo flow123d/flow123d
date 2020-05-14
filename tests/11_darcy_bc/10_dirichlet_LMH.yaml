@@ -10,11 +10,10 @@ problem: !Coupling_Sequential
   description: Test05 - Steady flow with Dirichlet/Neumann/Newton boundary condition
   mesh:
     mesh_file: ../00_mesh/square_1x1_xy.msh
-  flow_equation: !Flow_Richards_LMH
+  flow_equation: !Flow_Darcy_LMH
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-07
-    n_schurs: 2
     input_fields:
       - region: bulk
         anisotropy: 1
@@ -36,7 +35,6 @@ problem: !Coupling_Sequential
       fields:
         - piezo_head_p0
         - pressure_p0
-        - pressure_p1
         - velocity_p0
     output_stream:
       file: ./test05.pvd

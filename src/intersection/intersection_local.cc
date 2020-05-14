@@ -113,10 +113,10 @@ arma::vec3 IntersectionPoint<dimA,dimB>::coords(ElementAccessor<3> comp_ele) con
     double complement = 1.0;
     for(unsigned int i=0; i<dimA; i++)
     {
-        c += comp_coords_[i]*comp_ele.node(i+1)->point();
+        c += comp_coords_[i] * (*comp_ele.node(i+1));
         complement -= comp_coords_[i];
     }
-    c += complement * comp_ele.node(0)->point();
+    c += complement * (*comp_ele.node(0));
         
     return c;
 }

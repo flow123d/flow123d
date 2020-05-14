@@ -2,14 +2,15 @@
 #include "local_system.hh"
 
 #include <armadillo>
-#include "system/sys_vector.hh"
+#include "system/asserts.hh"
+#include "system/index_types.hh"
 
 
 LocalSystem::LocalSystem()
 {}
 
 
-LocalSystem::LocalSystem(unsigned int nrows, unsigned int ncols)
+LocalSystem::LocalSystem(uint nrows, uint ncols)
 : row_dofs(nrows),
   col_dofs(ncols),
   matrix(nrows, ncols),
@@ -24,7 +25,7 @@ LocalSystem::LocalSystem(unsigned int nrows, unsigned int ncols)
     reset();
 }
 
-void LocalSystem::set_size(unsigned int nrows, unsigned int ncols)
+void LocalSystem::set_size(uint nrows, uint ncols)
 {
     row_dofs.set_size(nrows);
     col_dofs.set_size(ncols);
@@ -36,7 +37,8 @@ void LocalSystem::set_size(unsigned int nrows, unsigned int ncols)
     solution_cols.set_size(ncols);
     diag_rows.set_size(nrows);
     // destroy previous sparsity pattern
-    sparsity.zeros(nrows,ncols);
+    sparsity.set_size(nrows,ncols);
+    sparsity.fill(almost_zero);
 }
 
 
@@ -50,22 +52,25 @@ void LocalSystem::reset()
 }
 
 
-void LocalSystem::reset(arma::uword nrows, arma::uword ncols)
+void LocalSystem::reset(uint nrows, uint ncols)
 {
-    matrix.set_size(nrows, ncols);
-    rhs.set_size(nrows);
-    row_dofs.resize(matrix.n_rows);
-    col_dofs.resize(matrix.n_cols);
-    // destroy previous sparsity pattern
-    sparsity.zeros(nrows,ncols);
+    if(matrix.n_rows != nrows || matrix.n_cols != ncols)
+    {
+        set_size(nrows, ncols);
+    }
+    
     reset();
 }
 
 
 
-void LocalSystem::reset(const DofVec &rdofs, const DofVec &cdofs)
+void LocalSystem::reset(const LocDofVec &rdofs, const LocDofVec &cdofs)
 {
-    set_size(rdofs.n_rows, cdofs.n_rows);
+    if(matrix.n_rows != rdofs.n_rows || matrix.n_cols != cdofs.n_rows)
+    {
+        set_size(rdofs.n_rows, cdofs.n_rows);
+    }
+    
     reset();
     row_dofs = rdofs;
     col_dofs = cdofs;
@@ -73,7 +78,7 @@ void LocalSystem::reset(const DofVec &rdofs, const DofVec &cdofs)
 
 
 
-void LocalSystem::set_solution(unsigned int loc_dof, double solution, double diag)
+void LocalSystem::set_solution(uint loc_dof, double solution, double diag)
 {
     // check that dofs are same
     //ASSERT_DBG( arma::all(row_dofs == col_dofs) );
@@ -94,18 +99,6 @@ void LocalSystem::set_solution_col(uint loc_col, double solution) {
     n_elim_cols++;
 }
 
-/*
-
-void LocalSystem::set_solution(const DofVec & loc_rows, const arma::vec &solution, const arma::vec &diag) {
-    ASSERT_EQ_DBG(loc_rows.n_rows(), solution)
-    set_solution_rows(loc_rows, solution, diag);
-    set_solution_cols()
-}
-void LocalSystem::set_solution_rows(DofVec & loc_rows, const arma::vec &solution, const arma::vec &diag);
-void LocalSystem::set_solution_cols(DofVec & loc_cols, const arma::vec &solution);
-
-*/
-
 void LocalSystem::eliminate_solution()
 {
     //if there is solution set, eliminate:
@@ -116,7 +109,7 @@ void LocalSystem::eliminate_solution()
         arma::mat tmp_mat = matrix;
         arma::vec tmp_rhs = rhs;
         
-        unsigned int ic, ir, row, col;
+        uint ic, ir, row, col;
 
         // eliminate columns
         for(ic=0; ic < n_elim_cols; ic++) {
@@ -173,7 +166,7 @@ void LocalSystem::eliminate_solution()
 }
 
 
-void LocalSystem::add_value(unsigned int row, unsigned int col, double mat_val, double rhs_val)
+void LocalSystem::add_value(uint row, uint col, double mat_val, double rhs_val)
 {
     ASSERT_DBG(row < matrix.n_rows);
     ASSERT_DBG(col < matrix.n_cols);
@@ -183,7 +176,7 @@ void LocalSystem::add_value(unsigned int row, unsigned int col, double mat_val, 
     rhs(row) += rhs_val;
 }
 
-void LocalSystem::add_value(unsigned int row, unsigned int col, double mat_val)
+void LocalSystem::add_value(uint row, uint col, double mat_val)
 {
     ASSERT_DBG(row < matrix.n_rows);
     ASSERT_DBG(col < matrix.n_cols);
@@ -192,7 +185,7 @@ void LocalSystem::add_value(unsigned int row, unsigned int col, double mat_val)
     matrix(row, col) += mat_val;
 }
 
-void LocalSystem::add_value(unsigned int row, double rhs_val)
+void LocalSystem::add_value(uint row, double rhs_val)
 {
     ASSERT_DBG(row < matrix.n_rows);
     
@@ -217,9 +210,45 @@ void LocalSystem::set_sparsity(const arma::umat & sp)
     ASSERT_EQ_DBG(sparsity.n_cols, sp.n_cols);
     
     sparsity.zeros();
-    for(unsigned int i=0; i < sp.n_rows; i++)
-        for(unsigned int j=0; j < sp.n_cols; j++)
+    for(uint i=0; i < sp.n_rows; i++)
+        for(uint j=0; j < sp.n_cols; j++)
             if( sp(i,j) != 0 )
                 sparsity(i,j) = almost_zero;
-//     sparsity.print("sparsity");
+//      sparsity.print("sparsity");
+}
+
+void LocalSystem::compute_schur_complement(uint offset, LocalSystem& schur, bool negative) const
+{
+    // only for square matrix
+    ASSERT_EQ_DBG(matrix.n_rows, matrix.n_cols)("Cannot compute Schur complement for non-square matrix.");
+    arma::uword n = matrix.n_rows - 1;
+    ASSERT_LT_DBG(offset, n)("Schur complement (offset) dimension mismatch.");
+
+    // B * invA
+    arma::mat BinvA = matrix.submat(offset, 0, n, offset-1) * matrix.submat(0, 0, offset-1, offset-1).i();
+    
+    // Schur complement S = C - B * invA * Bt
+    schur.matrix = matrix.submat(offset, offset, n, n) - BinvA * matrix.submat(0, offset, offset-1, n);
+    schur.rhs = rhs.subvec(offset, n) - BinvA * rhs.subvec(0, offset-1);
+    
+    if(negative)
+    {
+        schur.matrix = -1.0 * schur.matrix;
+        schur.rhs = -1.0 * schur.rhs;
+    }
+}
+
+void LocalSystem::reconstruct_solution_schur(uint offset, const arma::vec &schur_solution, arma::vec& reconstructed_solution) const
+{
+    // only for square matrix
+    ASSERT_EQ_DBG(matrix.n_rows, matrix.n_cols)("Cannot compute Schur complement for non-square matrix.");
+    arma::uword n = matrix.n_rows - 1;
+    ASSERT_LT_DBG(offset, n)("Schur complement (offset) dimension mismatch.");
+
+    reconstructed_solution.set_size(offset);
+    // invA
+    arma::mat invA =  matrix.submat(0, 0, offset-1, offset-1).i();
+    
+    // x = invA*b - invA * Bt * schur_solution
+    reconstructed_solution = invA * rhs.subvec(0,offset-1) - invA * matrix.submat(0, offset, offset-1, n) * schur_solution;
 }

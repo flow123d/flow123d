@@ -9,14 +9,14 @@
 
 class ApplicationBaseTest : public testing::Test, public ApplicationBase {
 public:
-	ApplicationBaseTest() : ApplicationBase(), testing::Test() {}
+	ApplicationBaseTest() : testing::Test(), ApplicationBase() {}
 protected:
-	void parse_cmd_line(const int argc, char ** argv) override
-	{}
-
 	void run() {
 		xprintf(Err, "testing error...\n");
 	}
+
+    void parse_cmd_line(const int, char **) override 
+    {}
 	
 	void seg_fault() {
       // Attempt to read from unallocated memory.
@@ -25,10 +25,10 @@ protected:
       printf("%d", i[0]);
     }
 
-    virtual void SetUp() {
-    }
-    virtual void TearDown() {
-    };
+    void SetUp() override
+    {}
+    void TearDown() override
+    {}
 };
 
 

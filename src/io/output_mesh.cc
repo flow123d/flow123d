@@ -15,11 +15,11 @@
  * @brief   Classes for auxiliary output mesh.
  */
 
+#include "system/index_types.hh"
 #include "output_mesh.hh"
 #include "output_element.hh"
 #include "mesh/mesh.h"
 #include "mesh/ref_element.hh"
-#include "mesh/long_idx.hh"
 #include "mesh/accessors.hh"
 #include "mesh/node_accessor.hh"
 #include "mesh/range_wrapper.hh"
@@ -190,22 +190,21 @@ void OutputMeshBase::create_sub_mesh()
     for (unsigned int loc_el = 0; loc_el < n_local_elements; loc_el++) {
         elm = orig_mesh_->element_accessor( el_4_loc_[loc_el] );
         for (unsigned int li=0; li<elm->n_nodes(); li++) {
-        	ASSERT_DBG(local_nodes_map[ elm.node_accessor(li).idx() ] != Mesh::undef_idx)(elm.node_accessor(li).idx()).error("Undefined global to local node index!");
-        	connectivity_vec[conn_id++] = local_nodes_map[ elm.node_accessor(li).idx() ];
+        	ASSERT_DBG(local_nodes_map[ elm.node(li).idx() ] != Mesh::undef_idx)(elm.node(li).idx()).error("Undefined global to local node index!");
+        	connectivity_vec[conn_id++] = local_nodes_map[ elm.node(li).idx() ];
         }
     }
 
     // set coords of nodes
     nodes_ = std::make_shared<ElementDataCache<double>>("", (unsigned int)ElementDataCacheBase::N_VECTOR, n_local_nodes_);
-    auto &node_vec = *( nodes_->get_component_data(0).get() );
-    NodeAccessor<3> node;
+    auto &node_vec = *( nodes_->get_component_data(0) );
     for(unsigned int i_node=0; i_node<local_nodes_map.size(); ++i_node) {
         if (local_nodes_map[i_node]==Mesh::undef_idx) continue; // skip element if it is not local
-        node = orig_mesh_->node_accessor(i_node);
+        auto node = *orig_mesh_->node(i_node);
         coord_id = 3*local_nodes_map[i_node]; // id of first coordinates in node_vec
-        node_vec[coord_id++] = node->getX();
-        node_vec[coord_id++] = node->getY();
-        node_vec[coord_id] = node->getZ();
+        node_vec[coord_id++] = node[0];
+        node_vec[coord_id++] = node[1];
+        node_vec[coord_id] = node[2];
     }
 }
 
@@ -544,9 +543,10 @@ bool OutputMeshDiscontinuous::refinement_criterion_error(const OutputMeshDiscont
 
     // evaluate at nodes and center in a single call
     std::vector<double> val_list(ele.nodes.size()+1);
-    std::vector< Space<spacedim>::Point > point_list;
-    point_list.push_back(centre);
-    point_list.insert(point_list.end(), ele.nodes.begin(), ele.nodes.end());
+    Armor::array point_list(spacedim,1,1+ele.nodes.size());
+    point_list.set(0) = centre;
+    unsigned int i=0;
+    for (auto node : ele.nodes) point_list.set(++i) = node;
     error_control_field_func_(point_list, ele_acc, val_list);
 
     //TODO: compute L1 or L2 error using standard quadrature
@@ -654,7 +654,7 @@ void OutputMeshDiscontinuous::create_refined_sub_mesh()
 
         unsigned int li;
         for (li=0; li<ele->n_nodes(); li++) {
-            aux_ele.nodes[li] = ele.node_accessor(li)->point();
+            aux_ele.nodes[li] = *ele.node(li);
         }
 
         std::vector<AuxElement> refinement;

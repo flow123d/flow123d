@@ -60,6 +60,14 @@ const arma::vec RT0_space::basis_grad(FMT_UNUSED unsigned int basis_index,
 
 template<> FE_RT0<0>::FE_RT0()
 {
+    arma::vec::fixed<1> sp; sp[0] = 0.;
+    arma::vec::fixed<2> bsp; bsp[0] = 1.; bsp[1] = 0.;
+
+    this->init(false, FEVectorPiola);
+    this->function_space_ = make_shared<RT0_space>(0);
+
+    this->dofs_.push_back(Dof(0, 0, bsp, sp, Value));
+    this->component_indices_.clear();
 }
 
 
@@ -102,6 +110,14 @@ template class FE_RT0<3>;
 
 template<> FE_RT0_disc<0>::FE_RT0_disc()
 {
+    arma::vec::fixed<1> sp; sp[0] = 0.;
+    arma::vec::fixed<1> bsp; bsp[0] = 1.;
+
+    this->init(false, FEVectorPiola);
+    this->function_space_ = make_shared<RT0_space>(0);
+
+    this->dofs_.push_back(Dof(0, 0, bsp, sp, Value));
+    this->component_indices_.clear();
 }
 
 

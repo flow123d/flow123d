@@ -13,7 +13,7 @@
 #include "quadrature/qmidpoint.hh"
 #include "arma_expect.hh"
 
-#define INTEGRATE( _func_, _dim_ ) for( unsigned int i=0; i < quad.size(); i++) sum +=  _func_( quad.point<_dim_>(i).arma() ) * quad.weight(i);
+#define INTEGRATE(dim,  _func_ ) for( unsigned int i=0; i < quad.size(); i++) sum +=  _func_( quad.point<dim>(i)) * quad.weight(i);
 
 double test_1_1d( const arma::vec::fixed<1> & p) {
     return 3 * p[0] + 1.0;
@@ -30,7 +30,7 @@ TEST(Quadrature, test_1d) {
     QGauss quad( 1, 1 ); // should integrate P1 exactly
     EXPECT_EQ(1, quad.size());
     double sum =0.0;
-    INTEGRATE(test_1_1d, 1);
+    INTEGRATE(1, test_1_1d);
     EXPECT_DOUBLE_EQ(5.0/2.0, sum); // 3 * 1/2 + 1
     }
 
@@ -38,7 +38,7 @@ TEST(Quadrature, test_1d) {
     QGauss quad( 1, 2 ); // should integrate P2 exactly
     EXPECT_EQ(2, quad.size());
     double sum =0.0;
-    INTEGRATE(test_2_1d, 1);
+    INTEGRATE(1, test_2_1d);
     EXPECT_DOUBLE_EQ(2.5, sum); // 3 * 1/3 + 1/2 + 1
     }
 }
@@ -61,7 +61,7 @@ TEST(Quadrature, test_2d) {
     QGauss quad( 2, 1 ); // should integrate P1 exactly
     EXPECT_EQ(1, quad.size());
     double sum =0.0;
-    INTEGRATE(test_1_2d, 2);
+    INTEGRATE(2,test_1_2d);
     EXPECT_DOUBLE_EQ(8.0/6.0, sum); // 3 * 1/6 + 2 * 1/6 + 1/2 = 8/6
     }
 
@@ -69,7 +69,7 @@ TEST(Quadrature, test_2d) {
     QGauss quad( 2, 2 ); // should integrate P2 exactly
     EXPECT_EQ(3, quad.size());
     double sum =0.0;
-    INTEGRATE(test_2_2d, 2);
+    INTEGRATE(2, test_2_2d);
     EXPECT_DOUBLE_EQ(19.0 / 12.0 , sum); // 3 * 1/12 + 1/6 + 6 * 1/12 + 1/6 + 1/2 = 19/12
     }
 }
@@ -80,7 +80,7 @@ TEST(Quadrature, midpoint){
     EXPECT_EQ(25, quad.size());
     
     double sum =0.0;
-    INTEGRATE(test_1_1d, 1);   // should integrate P1 exactly
+    INTEGRATE(1, test_1_1d);   // should integrate P1 exactly
     EXPECT_DOUBLE_EQ(5.0/2.0, sum); // 3 * 1/2 + 1
 }
 
@@ -118,8 +118,8 @@ void test_side_projection(Quadrature &subq)
             // Setup barycentric coordinates of quadrature points.
             for (unsigned int i=0; i<subq.size(); i++)
             {
-                bary_subq.push_back(RefElement<dim-1>::local_to_bary(subq.point<dim-1>(i).arma()));
-                bary_q.push_back(RefElement<dim>::local_to_bary(q.point<dim>(i).arma()));
+                bary_subq.push_back(RefElement<dim-1>::local_to_bary(subq.point<dim-1>(i)));
+                bary_q.push_back(RefElement<dim>::local_to_bary(q.point<dim>(i)));
             }
             
             // Map barycentric coordinates of subquadrature and quadrature points to 3d space

@@ -1,0 +1,47 @@
+flow123d_version: 3.1.0
+problem: !Coupling_Sequential
+  description: Test1 - Steady flow with multidimensional connections 1D-2D-3D
+  mesh:
+    mesh_file: ../00_mesh/cube_1x1x1_frac21.msh
+  flow_equation: !Flow_Darcy_LMH
+    nonlinear_solver:
+      linear_solver: !Petsc
+        r_tol: 1.0e-10
+        a_tol: 1.0e-10
+    input_fields:
+      - region: 1d_channel
+        anisotropy: 10
+        sigma: 0.05
+      - region: 2d_fracture_1
+        anisotropy: 1
+        sigma: 0.5
+      - region: 2d_fracture_2
+        anisotropy: 1
+        sigma: 0.5
+      - region: 3d_cube
+        anisotropy: 0.1
+      - region: .1d_channel
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: x-z
+      - region: .2d_fracture_1
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: x-z
+      - region: .2d_fracture_2
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: x-z
+      - region: .3d_cube
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: x-z
+    output:
+      fields:
+        - piezo_head_p0
+        - pressure_p0
+        - velocity_p0
+    output_stream:
+      file: ./flow.pvd
+      format: !vtk
+        variant: ascii

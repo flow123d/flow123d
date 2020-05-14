@@ -1,0 +1,26 @@
+"time [s]"	"region"	"quantity [m(3)]"	"flux"	"flux_in"	"flux_out"	"mass"	"source"	"source_in"	"source_out"	"flux_increment"	"source_increment"	"flux_cumulative"	"source_cumulative"	"error"
+0	"domain"	"water_volume"	0	0	0	0	-128	0	-128	0	0	0	0	0
+0	".right"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
+0	".left"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
+0	".IMPLICIT_BOUNDARY"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
+0	"ALL"	"water_volume"	0	0	0	0	-128	0	-128	0	0	0	0	0
+0.5	"domain"	"water_volume"	0	0	0	-63.7492	-128	0	-128	0	0	0	0	0
+0.5	".right"	"water_volume"	1.27051e-13	1.27051e-13	0	0	0	0	0	0	0	0	0	0
+0.5	".left"	"water_volume"	0.501574	0.501574	0	0	0	0	0	0	0	0	0	0
+0.5	".IMPLICIT_BOUNDARY"	"water_volume"	-3.38806e-13	1.17635e-11	-1.21023e-11	0	0	0	0	0	0	0	0	0
+0.5	"ALL"	"water_volume"	0.501574	0.501574	-1.21023e-11	-63.7492	-128	0	-128	0.250787	-64	0.250787	-64	-2.87059e-12
+1	"domain"	"water_volume"	0	0	0	-127.248	-128	0	-128	0	0	0	0	0
+1	".right"	"water_volume"	2.31773e-13	2.44457e-13	-1.26843e-14	0	0	0	0	0	0	0	0	0
+1	".left"	"water_volume"	1.00161	1.00161	0	0	0	0	0	0	0	0	0	0
+1	".IMPLICIT_BOUNDARY"	"water_volume"	9.53179e-13	2.56752e-11	-2.47221e-11	0	0	0	0	0	0	0	0	0
+1	"ALL"	"water_volume"	1.00161	1.00161	-2.47348e-11	-127.248	-128	0	-128	0.500803	-64	0.75159	-128	-6.43752e-12
+1.5	"domain"	"water_volume"	0	0	0	-190.498	-128	0	-128	0	0	0	0	0
+1.5	".right"	"water_volume"	3.10404e-13	3.69177e-13	-5.87724e-14	0	0	0	0	0	0	0	0	0
+1.5	".left"	"water_volume"	1.50162	1.50162	0	0	0	0	0	0	0	0	0	0
+1.5	".IMPLICIT_BOUNDARY"	"water_volume"	4.04472e-12	3.75309e-11	-3.34862e-11	0	0	0	0	0	0	0	0	0
+1.5	"ALL"	"water_volume"	1.50162	1.50162	-3.3545e-11	-190.498	-128	0	-128	0.75081	-64	1.5024	-192	-1.08855e-11
+2	"domain"	"water_volume"	0	0	0	-253.497	-128	0	-128	0	0	0	0	0
+2	".right"	"water_volume"	4.67834e-13	4.67834e-13	0	0	0	0	0	0	0	0	0	0
+2	".left"	"water_volume"	2.00163	2.00163	0	0	0	0	0	0	0	0	0	0
+2	".IMPLICIT_BOUNDARY"	"water_volume"	7.61808e-12	4.84032e-11	-4.07852e-11	0	0	0	0	0	0	0	0	0
+2	"ALL"	"water_volume"	2.00163	2.00163	-4.07852e-11	-253.497	-128	0	-128	1.00081	-64	2.50321	-256	-1.61435e-11

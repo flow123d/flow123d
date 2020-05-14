@@ -1,0 +1,68 @@
+# Test goal: Darcy flow Neumann boundary condition, solved by Lumped Mixed Hybrid method.
+# Author: Pavel Exner
+# Source for reference:
+#   It is the same problem as in test 02_neumann.
+#   Difference between MH and LMH:
+#       water balance: 0.0 (ndiff)
+#       greater difference in flow near the boundary
+#       caused most probably due the prescribed source term
+#   analytical solution available: p=(x-0.5)^2 + y^2, u=-K*(2x-1,2y)
+#   analytical boundary conditions: Dirichlet: p, Neumann: -q.n
+#       x=0:    0.25+y^1 (Dir.)
+#       x=1:    -(-K*(2x-1,2y)).(1,0) = K
+#       y=0:    -(-K*(2x-1,2y)).(0,-1) = 0
+#       y=1:    -(-K*(2x-1,2y)).(0,1) = 2K
+#   checked in Paraview
+
+flow123d_version: 3.1.0
+problem: !Coupling_Sequential
+  description: Steady flow with Dirichlet/Neumann/Newton boundary condition
+  mesh:
+    mesh_file: ../00_mesh/square_1x1_xy.msh
+  flow_equation: !Flow_Darcy_LMH
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-07
+    input_fields:
+      - region: bulk
+        conductivity: 0.03
+        water_source_density: !FieldFormula
+          value: -4*0.03
+      - region: .bottom_y
+        bc_type: total_flux
+        bc_flux: 0.0
+      - region: .right_x
+        bc_type: total_flux
+        bc_flux: 0.03
+      - region: .top_y
+        bc_type: total_flux
+        bc_flux: 0.06
+      # Unused Dirichlet BC
+      #- region: .left_x
+        #bc_type: total_flux
+        #bc_flux: 0.03
+      #- region: .bottom_y
+        #bc_type: dirichlet
+        #bc_pressure: !FieldFormula
+          #value: (x-0.5)^2
+      #- region: .right_x
+        #bc_type: dirichlet
+        #bc_pressure: !FieldFormula
+          #value: 0.25+y*y
+      #- region: .top_y
+        #bc_type: dirichlet
+        #bc_pressure: !FieldFormula
+          #value: (x-0.5)^2 + 1
+      - region: .left_x
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: 0.25+y*y
+    output:
+      fields:
+        - piezo_head_p0
+        - pressure_p0
+        - velocity_p0
+    output_stream:
+      file: ./flow.pvd
+      format: !vtk
+        variant: ascii

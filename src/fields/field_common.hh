@@ -47,6 +47,8 @@
 
 class Mesh;
 class Observe;
+class EvalPoints;
+class ElementCacheMap;
 
 
 using namespace std;
@@ -204,10 +206,12 @@ public:
 				THROW( Input::ExcInputMessage() << EI_Message("The field " + this->input_name()
 													+ " has set non-unique names of components.") );
 			}
+			shared_->n_comp_ = names.size();
+    	} else {
+            shared_->n_comp_ = (shared_->n_comp_ ? names.size() : 0);
     	}
 
-        shared_->comp_names_ = names;
-        shared_->n_comp_ = (shared_->n_comp_ ? names.size() : 0);
+    	shared_->comp_names_ = names;
     }
 
 
@@ -257,7 +261,7 @@ public:
     { return shared_->bc_;}
 
     unsigned int n_comp() const
-    { return shared_->n_comp_;}
+    { return shared_->comp_names_.size();}
 
     const Mesh * mesh() const
     { return shared_->mesh_;}
@@ -439,6 +443,17 @@ public:
     {
     	return this->multifield_;
     }
+
+    /**
+     * Allocate data cache of dimension appropriate to subset object.
+     */
+    virtual void cache_allocate(std::shared_ptr<EvalPoints> eval_points) = 0;
+
+    /**
+     * Read data to cache for appropriate elements given by ElementCacheMap object.
+     */
+    virtual void cache_update(ElementCacheMap &cache_map) = 0;
+
 
     /**
      * Print stored messages to table.

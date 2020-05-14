@@ -42,12 +42,11 @@ problem: !Coupling_Sequential
       linear_solver:
         a_tol: 1e-12
         r_tol: 1e-12
-    n_schurs: 2
     output:
       fields:
         - pressure_p0
         - velocity_p0
-      observe_fields: [pressure_p0, velocity_p0]
+      observe_fields: [pressure_p0, velocity_p0, conductivity_richards, water_content]
     balance:
       cumulative: true
 

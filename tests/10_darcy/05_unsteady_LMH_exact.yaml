@@ -20,8 +20,7 @@ problem: !Coupling_Sequential
   description: Unsteady flow in 2D, Lumped Mixed Hybrid, analytical solution.
   mesh:
     mesh_file: ../00_mesh/square_1x1_xy.msh
-  flow_equation: !Flow_Richards_LMH
-  #flow_equation: !Flow_Darcy_MH
+  flow_equation: !Flow_Darcy_LMH
     time:
       end_time: 1
       max_dt: 0.01
@@ -44,11 +43,9 @@ problem: !Coupling_Sequential
       linear_solver: !Petsc
         a_tol: 1.0e-07
         r_tol: 1.0e-5
-    n_schurs: 2
     output:
       fields:
         - pressure_p0
-        - pressure_p1
         - velocity_p0
     balance:
       cumulative: true

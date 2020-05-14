@@ -10,6 +10,8 @@
 
 #include <flow_gtest.hh>
 #include <fields/field_values.hh>
+#include "arma_expect.hh"
+#include <system/armor.hh>
 
 #include <iostream>
 using namespace std;
@@ -390,3 +392,48 @@ TEST(FieldValue_, string_values_init_from_input) {
     }
 }
 
+
+TEST(FieldValue_, get_from_array) {
+    {  // scalar
+        Armor::Array<double> arr(1, 1, 1);
+        Armor::ArmaMat<double, 1, 1> m1{1.5}; // first item
+        arr.set(0) = m1;
+
+        typedef FieldValue_<1,1,double> T;
+        EXPECT_EQ(T::get_from_array(arr, 0), 1.5);
+    }
+    {  // vector
+        Armor::Array<double> arr(3, 1, 1);
+        Armor::ArmaMat<double, 3, 1> m1{1, 2, 3}; // first item
+        arr.set(0) = m1;
+
+        typedef FieldValue_<3,1,double> T;
+        arma::vec3 expected = {1, 2, 3};
+        EXPECT_ARMA_EQ(T::get_from_array(arr, 0), expected);
+    }
+    {  // tensor
+        Armor::Array<double> arr(3, 3, 1);
+        Armor::ArmaMat<double, 3, 3> m1{1, 2, 3, 4, 5, 6, 7, 8, 9}; // first item
+        arr.set(0) = m1;
+
+        typedef FieldValue_<3,3,double> T;
+        arma::mat33 expected = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+        EXPECT_ARMA_EQ(T::get_from_array(arr, 0), expected);
+    }
+    {  // FieldEnum
+        Armor::Array<unsigned int> arr(1, 1, 1);
+        Armor::ArmaMat<unsigned int, 1, 1> m1{0}; // first item
+        arr.set(0) = m1;
+
+        typedef FieldValue_<1,1,FieldEnum> T;
+        EXPECT_EQ(T::get_from_array(arr, 0), 0);
+    }
+    {  // int
+        Armor::Array<int> arr(1, 1, 1);
+        Armor::ArmaMat<int, 1, 1> m1{1}; // first item
+        arr.set(0) = m1;
+
+        typedef FieldValue_<1,1,int> T;
+        EXPECT_EQ(T::get_from_array(arr, 0), 1);
+    }
+}

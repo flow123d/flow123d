@@ -116,7 +116,7 @@ arma::vec::fixed< 3  > IntersectionPointAux<N,M>::coords(ElementAccessor<3> ele)
     arma::vec::fixed< 3  > c;
     c.zeros();
     for(unsigned int i=0; i<N+1; i++)
-        c += local_bcoords_A_[i]*ele.node(i)->point();
+        c += local_bcoords_A_[i]**ele.node(i);
         
     return c;
 }

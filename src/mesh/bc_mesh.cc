@@ -17,9 +17,8 @@
  */
 
 
-
+#include "system/index_types.hh"
 #include "mesh/bc_mesh.hh"
-#include "mesh/long_idx.hh"
 #include "mesh/accessors.hh"
 #include "mesh/partitioning.hh"
 #include "mesh/neighbours.h"
@@ -82,7 +81,7 @@ bool BCMesh::check_compatible_mesh( Mesh & mesh, vector<LongIdx> & bulk_elements
 
 
 unsigned int BCMesh::n_nodes() const {
-    return parent_mesh_->node_vec_.size();
+    return parent_mesh_->nodes_.size();
 }
 
 

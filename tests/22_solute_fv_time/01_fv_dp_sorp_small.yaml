@@ -27,7 +27,6 @@ problem: !Coupling_Sequential
     output:
       fields:
         - pressure_p0
-        - pressure_p1
         - velocity_p0
     nonlinear_solver:
       linear_solver: !Petsc

@@ -1,0 +1,57 @@
+# Test goal: Unsteady Darcy flow with time depedent fields (both bulk and b.c.), solved by Lumped Mixed Hybrid method.
+# Author: Pavel Exner
+# Source for reference:
+#   It is the same problem as in test 02_unsteady_MH_time_dep.
+#   Difference between MH and LMH:
+#       different treatment of time term (lumping) causes differences
+flow123d_version: 3.1.0
+problem: !Coupling_Sequential
+  description: Test unsteady LMH with time dependent data.
+  mesh:
+    mesh_file: ../00_mesh/line_x_20el.msh
+  flow_equation: !Flow_Darcy_LMH
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-07
+    time:
+      end_time: 5
+      max_dt: 0.2
+      min_dt: 0.2
+    input_fields:
+      - region: plane
+        conductivity: 0.1
+        storativity: 1.0
+      - region: .left
+        time: 0
+        bc_type: dirichlet
+        bc_pressure: 0
+      - region: .right
+        time: 0
+        bc_type: total_flux
+        bc_flux: 0
+      - region: .right
+        time: 1
+        bc_type: total_flux
+        bc_flux: 1
+      - region: .right
+        time: 2
+        bc_flux: 2
+      - region: .right
+        time: 3
+        bc_type: dirichlet
+        bc_pressure: -10
+      - region: plane
+        time: 4
+        conductivity: 1
+
+    output:
+      times:
+        - step: 0.2
+      fields:
+        - pressure_p0
+        - velocity_p0
+      add_input_times: true
+    output_stream:
+      format: !vtk
+        variant: ascii
+      precision: 14

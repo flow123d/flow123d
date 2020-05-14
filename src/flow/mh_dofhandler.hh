@@ -25,14 +25,17 @@
 #include <vector>                            // for vector
 #include <armadillo>
 #include "la/distribution.hh"                // for Distribution
-#include "mesh/long_idx.hh"                  // for LongIdx
+#include "system/index_types.hh"             // for LongIdx
 #include "mesh/accessors.hh"                 // for ElementAccessor, Side::edge_idx
 #include "mesh/elements.h"                   // for Element::side, Element::dim
 #include "mesh/mesh.h"                       // for Mesh
 #include "mesh/region.hh"                    // for Region
+#include "fem/dh_cell_accessor.hh"           // for DHCellAccessor
 
-class LocalToGlobalMap;
 template <int spacedim> class LocalElementAccessorBase;
+class DarcyMH;
+class DarcyLMH;
+class RichardsLMH;
 
 using namespace std;
 
@@ -46,9 +49,8 @@ public:
 
     void prepare_parallel();
     void make_row_numberings();
-    void prepare_parallel_bddc();
 
-    void set_solution( double time, double * solution, double precision);
+    void set_solution( double time, double * solution);
 
     inline double time_changed() const
         { return time_; }
@@ -64,11 +66,7 @@ public:
     /// temporary replacement for DofHandler accessor, scalar (pressure) on element
     double element_scalar( ElementAccessor<3> &ele ) const;
 
-    inline double precision() const { return solution_precision; };
-
-    LocalElementAccessorBase<3> accessor(uint local_ele_idx);
-
-//protected:
+protected:
     vector< vector<unsigned int> > elem_side_to_global;
 
     Mesh *mesh_;
@@ -83,22 +81,19 @@ public:
     Distribution *edge_ds;          //< optimal distribution of edges
     Distribution *el_ds;            //< optimal distribution of elements
     Distribution *side_ds;          //< optimal distribution of elements
-    std::shared_ptr<Distribution> rows_ds;          //< final distribution of rows of MH matrix
 
 
     /// Maps mesh index of the edge to the edge index in the mesh portion local to the processor.
     /// Temporary solution until we have parallel mesh which should provide such information.
     std::unordered_map<unsigned int, unsigned int> edge_new_local_4_mesh_idx_;
 
-    /// Necessary only for BDDC solver.
-    std::shared_ptr<LocalToGlobalMap> global_row_4_sub_row;           //< global dof index for subdomain index
-
-
     double * mh_solution;
-    double solution_precision;
     double time_;
 
     friend LocalElementAccessorBase<3>;
+    friend DarcyMH;
+    friend DarcyLMH;
+    friend RichardsLMH;
 };
 
 
@@ -109,108 +104,80 @@ template <int spacedim>
 class LocalElementAccessorBase {
 public:
 
-    LocalElementAccessorBase(MH_DofHandler *dh, uint loc_ele_idx=0)
-    : dh(dh), local_ele_idx_(loc_ele_idx), ele( dh->mesh_->element_accessor(ele_global_idx()) )
-    {}
-
-    void reinit( uint loc_ele_idx)
+    LocalElementAccessorBase(DHCellAccessor dh_cell)
+    : dh_cell_(dh_cell), global_indices_(dh_cell_.dh()->max_elem_dofs())
     {
-        local_ele_idx_=loc_ele_idx;
-        ele=dh->mesh_->element_accessor(ele_global_idx());
+        n_indices_ = dh_cell_.get_dof_indices(global_indices_);
     }
 
-    uint dim() {
-        return ele->dim();
+    inline DHCellAccessor dh_cell() const {
+        return dh_cell_;
     }
 
-    uint n_sides() {
-        return ele->n_sides();
+    uint dim() const {
+        return dh_cell_.dim();
     }
 
-    ElementAccessor<3> element_accessor() {
-        return ele;
+    uint n_sides() const {
+        return element_accessor()->n_sides();
+    }
+
+    inline ElementAccessor<3> element_accessor() const {
+        return dh_cell_.elm();
     }
 
     const arma::vec3 centre() const {
-        return ele.centre();
+        return element_accessor().centre();
     }
 
     double measure() const {
-        return ele.measure();
+        return element_accessor().measure();
     }
 
     Region region() const {
-        return ele.region();
+        return element_accessor().region();
     }
 
     uint ele_global_idx() {
-        return dh->el_4_loc[local_ele_idx_];
+        return element_accessor().idx();
     }
 
-    uint ele_local_idx() {
-        return local_ele_idx_;
+    uint ele_local_idx() const {
+        return dh_cell_.local_idx();
     }
 
     uint ele_row() {
-        return dh->row_4_el[ele_global_idx()];
+        return global_indices_[n_indices_/2];
     }
 
     uint ele_local_row() {
-        return ele_row() - dh->rows_ds->begin(); //  i_loc_el + side_ds->lsize();
-    }
-
-    uint edge_global_idx(uint i) {
-        return ele.side(i)->edge_idx();
-    }
-
-    uint edge_local_idx(uint i) {
-        return dh->edge_new_local_4_mesh_idx_[edge_global_idx(i)];
+        return dh_cell_.get_loc_dof_indices()[n_indices_/2];
     }
 
     uint edge_row(uint i) {
-        return dh->row_4_edge[edge_global_idx(i)];
+        return global_indices_[(n_indices_+1)/2+i];
     }
 
     uint edge_local_row( uint i) {
-        return edge_row(i) - dh->rows_ds->begin();
-    }
-
-    int *edge_rows() {
-        for(uint i=0; i< dim(); i++) edge_rows_[i] = edge_row(i);
-        return edge_rows_;
+        return dh_cell_.get_loc_dof_indices()[(n_indices_+1)/2+i];
     }
 
     SideIter side(uint i) {
-        return ele.side(i);
-    }
-
-    uint side_global_idx(uint i) {
-        return dh->elem_side_to_global[ ele.idx() ][ i ];
-    }
-
-    uint side_local_idx(uint i) {
-        return dh->side_row_4_id[side_global_idx(i)] - dh->rows_ds->begin();
+        return element_accessor().side(i);
     }
 
     uint side_row(uint i) {
-        return dh->side_row_4_id[side_global_idx(i)];
+        return global_indices_[i];
     }
 
     uint side_local_row( uint i) {
-        return side_row(i) - dh->rows_ds->begin();
-    }
-
-    int *side_rows() {
-        for(uint i=0; i< dim(); i++) side_rows_[i] = side_row(i);
-        return side_rows_;
+        return dh_cell_.get_loc_dof_indices()[i];
     }
 
 private:
-    int side_rows_[4];
-    int edge_rows_[4];
-    MH_DofHandler *dh;
-    uint local_ele_idx_;
-    ElementAccessor<3> ele;
+    DHCellAccessor dh_cell_;
+    std::vector<LongIdx> global_indices_;
+    uint n_indices_;
 };
 
 /**

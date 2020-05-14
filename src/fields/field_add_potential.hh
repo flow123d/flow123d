@@ -44,6 +44,12 @@ public:
      */
     FieldAddPotential( const arma::vec::fixed<spacedim+1> &potential_grad, const Input::AbstractRecord &rec, unsigned int n_comp=0);
 
+    /**
+     * Constructor allows to set existing Field as inner_field_
+     */
+    FieldAddPotential( const arma::vec::fixed<spacedim+1> &potential_grad, std::shared_ptr< FieldAlgorithmBase<spacedim, Value> > inner_field,
+    		unsigned int n_comp=0);
+
 
     /**
      * Factory class (descendant of @p Field<...>::FactoryBase) that is necessary
@@ -83,7 +89,7 @@ public:
     /**
      * Returns std::vector of scalar values in several points at once.
      */
-    virtual void value_list (const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
+    virtual void value_list (const Armor::array &point_list, const ElementAccessor<spacedim> &elm,
                        std::vector<typename Value::return_type>  &value_list);
 
 

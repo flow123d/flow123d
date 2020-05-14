@@ -34,7 +34,6 @@ problem: !Coupling_Sequential
     output:
       fields:
         - pressure_p0
-        - pressure_p1
         - velocity_p0
         - region_id
     output_stream:

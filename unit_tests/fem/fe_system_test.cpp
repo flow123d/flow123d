@@ -69,6 +69,7 @@ public:
   FESystemTest()
     : q(3, 4)
   {
+    mesh.init_node_vector(4);
   	mesh.add_node(0, arma::vec3("1 0 0"));
   	mesh.add_node(1, arma::vec3("0 1 0"));
   	mesh.add_node(2, arma::vec3("0 0 1"));
@@ -79,13 +80,12 @@ public:
   	ele = mesh.element_accessor(0);
 
   	for (unsigned int i=0; i<mesh.n_nodes(); i++)
-      q.point<3>(i) = mesh.node_accessor(i)->point();
+      q.set(i) = *mesh.node(i);
   }
   
 protected:
   Mesh mesh;
   ElementAccessor<3> ele;
-  MappingP1<3,3> map;
   Quadrature q;
 
 };
@@ -101,7 +101,7 @@ protected:
 TEST_F(FESystemTest, test_vector) {
   // Test vector-valued FESystem using P1 element on tetrahedron.
   FESystem<3> fe_sys(std::make_shared<FE_P<3> >(1), FEVectorContravariant);
-  FEValues<3,3> fe_values(map, q, fe_sys, update_values | update_gradients);
+  FEValues<3> fe_values(q, fe_sys, update_values | update_gradients);
   
   fe_values.reinit(ele);
   
@@ -142,7 +142,7 @@ TEST_F(FESystemTest, test_vector) {
 TEST_F(FESystemTest, test_tensor) {
   // Test vector-valued FESystem using P1 element on tetrahedron.
   FESystem<3> fe_tensor(std::make_shared<FE_P<3> >(1), FETensor, 9);
-  FEValues<3,3> fe_values(map, q, fe_tensor, update_values | update_gradients);
+  FEValues<3> fe_values(q, fe_tensor, update_values | update_gradients);
   
   fe_values.reinit(ele);
   
@@ -197,7 +197,7 @@ TEST_F(FESystemTest, test_mixed_system) {
   // functions from P1^3 and the RT0 functions are at the end.
   FESystem<3> fe_vec(std::make_shared<FE_P<3> >(1), FEVector, 3);
   FESystem<3> fe_sys({ std::make_shared<FE_P<3> >(0), std::make_shared<FESystem<3> >(fe_vec), std::make_shared<FE_RT0<3> >() });
-  FEValues<3,3> fe_values(map, q, fe_sys, update_values | update_gradients);
+  FEValues<3> fe_values(q, fe_sys, update_values | update_gradients);
   
   std::vector<std::vector<unsigned int> > fe_dof_indices = { fe_sys.fe_dofs(0), fe_sys.fe_dofs(1), fe_sys.fe_dofs(2) };
   std::vector<std::vector<unsigned int> > ref_indices = { {0}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}, {13, 14, 15, 16} };

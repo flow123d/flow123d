@@ -7,8 +7,17 @@ test_cases:
   - 01_fv_dp_sorp_small.yaml
   - 02_bc.yaml
   - 03_bc_short_pulse.yaml
+  - 05_fv_shorther_than_flow.yaml
 
-- files:
-  - 04_unsteady_flow.yaml
-  time_limit: 240
+- files: 04_unsteady_flow.yaml
+  proc: [1]
+  time_limit: 120
 
+  # due to skipping raw_output in parallel run
+- files: 04_unsteady_flow.yaml
+  proc: [2]
+  time_limit: 120
+  check_rules:
+    - ndiff:
+        files: ["*.vtu", "*.pvd", "*_balance.txt"]
+      

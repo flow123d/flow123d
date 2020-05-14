@@ -3,7 +3,7 @@ problem: !Coupling_Sequential
   description: Test8 - Steady flow with sources
   mesh:
     mesh_file: ../00_mesh/square_1x1_shift.msh
-  flow_equation: !Flow_Richards_LMH
+  flow_equation: !Flow_Darcy_LMH
     nonlinear_solver:
       linear_solver: !Petsc
         r_tol: 1.0e-10
@@ -19,7 +19,6 @@ problem: !Coupling_Sequential
     output:
       fields:
         - pressure_p0
-        - pressure_p1
         - velocity_p0
     output_stream:
       file: ./flow.pvd

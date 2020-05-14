@@ -25,7 +25,6 @@ problem: !Coupling_Sequential
     output:
       fields:
         - pressure_p0
-        - pressure_p1
         - velocity_p0
     output_stream:
       file: ./test18.pvd

@@ -97,6 +97,13 @@ test_cases:
         files: [job_output.log]  # same file can be checked several times
         regex: "Program [Ee]rror: Violated assert!"
             
+- files: 13_reg_from_ele.yaml
+  death_test: true
+  check_rules:
+    - regex:
+        files: [job_output.log]
+        substr: "User defined region 'zdroj' (id 9) by 'From_Elements' cannot have elements of different dimensions!"
+
 - files: 14_duplicit_records.yaml
   death_test: true
   check_rules:

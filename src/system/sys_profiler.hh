@@ -643,6 +643,8 @@ public:
      * functions are called by delete-expressions.
      */
     static void operator delete (void* p);
+    /// Sized deallocator, doesthe same as operator delete (void* p)
+    static void operator delete (void* p, std::size_t);
     
     /**
      * Public setter to turn on/off memory monitoring

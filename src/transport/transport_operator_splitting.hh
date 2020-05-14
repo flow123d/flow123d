@@ -33,14 +33,13 @@
 #include "petscvec.h"                           // for Vec
 #include "tools/time_governor.hh"               // for TimeGovernor, TimeGov...
 #include "tools/time_marks.hh"                  // for TimeMarks
-#include "mesh/long_idx.hh"
+#include "system/index_types.hh"
 
 /// external types:
 class Mesh;
 class ReactionTerm;
 class Balance;
 class Distribution;
-class MH_DofHandler;
 class OutputTime;
 class SubstanceList;
 namespace Input {
@@ -126,7 +125,7 @@ public:
 	virtual LongIdx *get_row_4_el() = 0;
 
 	/// Pass velocity from flow to transport.
-    virtual void set_velocity_field(const MH_DofHandler &dh) = 0;
+    virtual void set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field) = 0;
 
     /// Returns number of trnasported substances.
     virtual unsigned int n_substances() = 0;
@@ -191,7 +190,7 @@ public:
         if(time_) delete time_;
     }
 
-    inline void set_velocity_field(const MH_DofHandler &) override {};
+    inline void set_velocity_field(FMT_UNUSED std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field) override {};
 
     inline virtual void output_data() override {};
 
@@ -229,7 +228,7 @@ public:
     /// Destructor.
     virtual ~TransportOperatorSplitting();
 
-    virtual void set_velocity_field(const MH_DofHandler &dh) override;
+    virtual void set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field) override;
 
     void initialize() override;
     void zero_time_step() override;

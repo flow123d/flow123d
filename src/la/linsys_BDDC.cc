@@ -19,10 +19,11 @@
 #include <mpi.h>
 #include "config.h"
 
+
 // need BDDCML wrapper
 #ifdef FLOW123D_HAVE_BDDCML
   #include <map>
-  #include "la/bddcml_wrapper.hpp"
+  #include "la/bddcml_wrapper.hh"
 #endif // FLOW123D_HAVE_BDDCML
 
 #include "la/linsys.hh"
@@ -60,54 +61,16 @@ const int LinSys_BDDC::registrar = LinSys_BDDC::get_input_type().size();
 
 
 
-LinSys_BDDC::LinSys_BDDC( const unsigned numDofsSub,
-                          const Distribution * rows_ds,
-                          const int matrixTypeInt,
-                          const int  numSubLoc,
-                          const bool swap_sign )
+LinSys_BDDC::LinSys_BDDC(  const Distribution * rows_ds,
+                           const bool swap_sign )
         : LinSys( rows_ds ),
           swap_sign_(swap_sign)
 {
 #ifdef FLOW123D_HAVE_BDDCML
     // from the point of view of assembly, BDDC linsys is in the ADD state
     status_ = LinSys::ADD;
-
-    la::BddcmlWrapper::MatrixType matrixType;
-    switch ( matrixTypeInt ) {
-        case 0:
-            matrixType = la::BddcmlWrapper::GENERAL;
-            break;
-        case 1:
-            matrixType = la::BddcmlWrapper::SPD;
-            break;
-        case 2:
-            matrixType = la::BddcmlWrapper::SYMMETRICGENERAL;
-            break;
-        case 3:
-            matrixType = la::BddcmlWrapper::SPD_VIA_SYMMETRICGENERAL;
-            break;
-        default:
-            matrixType = la::BddcmlWrapper::GENERAL;
-            OLD_ASSERT( true, "Unknown matrix type %d", matrixTypeInt );
-    }
-
-    bddcml_ = new Bddcml_( size_,
-                           numDofsSub,
-                           matrixType,
-                           rows_ds->get_comm(),
-                           numSubLoc );
-
-    // prepare space for local solution
-    locSolution_.resize( numDofsSub );
-
-    // identify it with PETSc vector
-    PetscErrorCode ierr;
-    //PetscInt numDofsSubInt = static_cast<PetscInt>( numDofsSub );
-    //ierr = VecCreateSeq( PETSC_COMM_SELF, numDofsSubInt, &locSolVec_ ); 
-    ierr = VecCreateSeqWithArray( PETSC_COMM_SELF, 1, numDofsSub, &(locSolution_[0]), &locSolVec_ ); 
-    CHKERRV( ierr );
 #else
-    xprintf(UsrErr, "Compiled without support for BDDCML solver.\n");  
+    throw ExcInputMessage << EI_Message("Unsupported solver BDDC. Compiled without support for the BDDCML solver.")''
 #endif // FLOW123D_HAVE_BDDCML
 }
 
@@ -124,7 +87,8 @@ void LinSys_BDDC::set_tolerances(double  r_tol, FMT_UNUSED double a_tol, unsigne
 }
 
 
-void LinSys_BDDC::load_mesh( const int nDim, const int numNodes, FMT_UNUSED const int numDofs,
+void LinSys_BDDC::load_mesh( BDDCMatrixType matrix_type,
+                             const int nDim, const int numNodes, FMT_UNUSED const int numDofs,
                              const std::vector<int> & inet, 
                              const std::vector<int> & nnet, 
                              const std::vector<int> & nndf, 
@@ -136,6 +100,18 @@ void LinSys_BDDC::load_mesh( const int nDim, const int numNodes, FMT_UNUSED cons
                              const int meshDim ) 
 {
 #ifdef FLOW123D_HAVE_BDDCML
+
+    uint num_of_local_subdomains = 1;
+    bddcml_ = new Bddcml_( size_,
+                           nndf.size(),
+                           matrix_type,
+                           rows_ds_->get_comm(),
+                           num_of_local_subdomains);
+
+    // prepare space for local solution
+    locSolution_.resize( nndf.size() );
+    chkerr( VecCreateSeqWithArray( PETSC_COMM_SELF, 1, nndf.size(), &(locSolution_[0]), &locSolVec_ ));
+
     // simply pass the data to BDDCML solver
     isngn_.resize(isngn.size());
     std::copy( isngn.begin(), isngn.end(), isngn_.begin() );

@@ -421,7 +421,7 @@ void MixedMeshIntersections::print_mesh_to_file_13(string name)
 
         unsigned int idx = 1;
         for (auto nod : mesh->node_range()) {
-            arma::vec3 _nod = nod->point();
+            arma::vec3 _nod = *nod;
             fprintf(file,"%d %.16f %.16f %.16f\n", idx, _nod[0], _nod[1], _nod[2]);
             idx++;
         }
@@ -456,21 +456,21 @@ void MixedMeshIntersections::print_mesh_to_file_13(string name)
 
         for (auto elee : mesh->elements_range()) {
             if(elee->dim() == 3){
-                int id1 = elee.node_accessor(0).idx() + 1;
-                int id2 = elee.node_accessor(1).idx() + 1;
-                int id3 = elee.node_accessor(2).idx() + 1;
-                int id4 = elee.node_accessor(3).idx() + 1;
+                int id1 = elee.node(0).idx() + 1;
+                int id2 = elee.node(1).idx() + 1;
+                int id3 = elee.node(2).idx() + 1;
+                int id4 = elee.node(3).idx() + 1;
 
                 fprintf(file,"%d 4 2 %d %d %d %d %d %d\n", elee.idx(), elee.region().id(), elee->pid(), id1, id2, id3, id4);
             }else if(elee->dim() == 2){
-                int id1 = elee.node_accessor(0).idx() + 1;
-                int id2 = elee.node_accessor(1).idx() + 1;
-                int id3 = elee.node_accessor(2).idx() + 1;
+                int id1 = elee.node(0).idx() + 1;
+                int id2 = elee.node(1).idx() + 1;
+                int id3 = elee.node(2).idx() + 1;
                 fprintf(file,"%d 2 2 %d %d %d %d %d\n", elee.idx(), elee.region().id(), elee->pid(), id1, id2, id3);
 
             }else if(elee->dim() == 1){
-                int id1 = elee.node_accessor(0).idx() + 1;
-                int id2 = elee.node_accessor(1).idx() + 1;
+                int id1 = elee.node(0).idx() + 1;
+                int id2 = elee.node(1).idx() + 1;
                 fprintf(file,"%d 1 2 %d %d %d %d\n",elee.idx(), elee.region().id(), elee->pid(), id1, id2);
             }
         }
@@ -517,7 +517,7 @@ void MixedMeshIntersections::print_mesh_to_file_23(string name)
 
         unsigned int idx = 1;
         for (auto nod : mesh->node_range()) {
-            arma::vec3 _nod = nod->point();
+            arma::vec3 _nod = *nod;
             fprintf(file,"%d %.16f %.16f %.16f\n", idx, _nod[0], _nod[1], _nod[2]);
             idx++;
         }
@@ -553,21 +553,21 @@ void MixedMeshIntersections::print_mesh_to_file_23(string name)
 
         for (auto elee : mesh->elements_range()) {
             if(elee->dim() == 3){
-                int id1 = elee.node_accessor(0).idx() + 1;
-                int id2 = elee.node_accessor(1).idx() + 1;
-                int id3 = elee.node_accessor(2).idx() + 1;
-                int id4 = elee.node_accessor(3).idx() + 1;
+                int id1 = elee.node(0).idx() + 1;
+                int id2 = elee.node(1).idx() + 1;
+                int id3 = elee.node(2).idx() + 1;
+                int id4 = elee.node(3).idx() + 1;
 
                 fprintf(file,"%d 4 2 %d %d %d %d %d %d\n", elee.idx(), elee.region().id(), elee->pid(), id1, id2, id3, id4);
             }else if(elee->dim() == 2){
-                int id1 = elee.node_accessor(0).idx() + 1;
-                int id2 = elee.node_accessor(1).idx() + 1;
-                int id3 = elee.node_accessor(2).idx() + 1;
+                int id1 = elee.node(0).idx() + 1;
+                int id2 = elee.node(1).idx() + 1;
+                int id3 = elee.node(2).idx() + 1;
                 fprintf(file,"%d 2 2 %d %d %d %d %d\n", elee.idx(), elee.region().id(), elee->pid(), id1, id2, id3);
 
             }else{
-                int id1 = elee.node_accessor(0).idx() + 1;
-                int id2 = elee.node_accessor(1).idx() + 1;
+                int id1 = elee.node(0).idx() + 1;
+                int id2 = elee.node(1).idx() + 1;
                 fprintf(file,"%d 1 2 %d %d %d %d\n",elee.idx(), elee.region().id(), elee->pid(), id1, id2);
             }
         }

@@ -24,6 +24,9 @@
 #include <vector>                  // for vector
 #include "fields/field_common.hh"  // for FieldCommon, FieldCommon::EI_Field
 #include "fields/field_flag.hh"    // for FieldFlag, FieldFlag::Flags
+#include "fields/eval_subset.hh"   // for EvalSubset
+#include "fields/eval_points.hh"   // for EvalPoints
+#include "fields/field_value_cache.hh"
 #include "input/accessors.hh"      // for Array
 #include "input/type_record.hh"    // for Record
 #include "io/output_time.hh"       // for OutputTime, OutputTime::DiscreteSpace
@@ -234,8 +237,21 @@ public:
      */
     bool is_jump_time() const;
 
-protected:
+    /**
+     * Collective interface to @p FieldCommon::cache_allocate().
+     */
+    void cache_allocate(std::shared_ptr<EvalPoints> eval_points) {
+        for(auto field : field_list) field->cache_allocate(eval_points);
+    }
 
+    /**
+     * Collective interface to @p FieldCommon::cache_update().
+     */
+    void cache_update(ElementCacheMap &cache_map) {
+	    for(auto field : field_list) field->cache_update(cache_map);
+    }
+
+protected:
 
     /// List of all fields.
     std::vector<FieldCommon *> field_list;

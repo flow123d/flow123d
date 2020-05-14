@@ -23,16 +23,9 @@
 
 #include <armadillo>
 #include <vector>
-#include "fem/dofhandler.hh"
-#include "mesh/accessors.hh"
-#include "fem/update_flags.hh"
-#include "mesh/ref_element.hh"
 #include "system/fmt/posix.h"           // for FMT_UNUSED
 
 
-
-class Quadrature;
-template<unsigned int dim, unsigned int spacedim> class FEValuesData;
 
 
 
@@ -92,83 +85,8 @@ template<arma::uword n> inline double determinant(const arma::mat::fixed<n,n> &M
 }
 
 
-/**
- * @brief Mapping data that can be precomputed on the actual cell.
- *
- * So far this involves only the (local) barycentric coordinates of quadrature points.
- */
-class MappingInternalData
-{
-public:
-    /**
-     * @brief Auxiliary array of barycentric coordinates of quadrature points.
-     */
-    std::vector<arma::vec> bar_coords;
-};
 
 
 
-/**
- * @brief Abstract class for the mapping between reference and actual cell.
- *
- * Class Mapping calculates data related to the mapping of the
- * reference cell to the actual cell, such as Jacobian and normal
- * vectors.
- */
-template<unsigned int dim, unsigned int spacedim>
-class Mapping
-{
-public:
-
-    /**
-     * @brief Calculates the mapping data on the reference cell.
-     *
-     * @param q Quadrature rule.
-     * @param flags Update flags.
-     */
-    virtual MappingInternalData *initialize(const Quadrature &q, UpdateFlags flags) = 0;
-
-    /**
-     * @brief Decides which additional quantities have to be computed
-     * for each cell.
-     *
-     * @param flags Flags of required quantities.
-     * @return Flags of all necessary quantities.
-     */
-    virtual UpdateFlags update_each(UpdateFlags flags) = 0;
-
-    /**
-     * @brief Calculates the mapping data and stores them in the provided
-     * structures.
-     *
-     * @param cell The actual cell.
-     * @param q Quadrature rule.
-     * @param data Precomputed mapping data.
-     * @param fv_data Data to be computed.
-     */
-    virtual void fill_fe_values(const ElementAccessor<3> &cell,
-                        const Quadrature &q,
-                        MappingInternalData &data,
-                        FEValuesData<dim,spacedim> &fv_data) = 0;
-
-    /**
-     * @brief Calculates the mapping data related to a given side, namely the
-     * jacobian determinants and the normal vectors.
-     *
-     * @param cell The actual cell.
-     * @param side Number of the side.
-     * @param q Quadrature rule.
-     * @param data Precomputed mapping data.
-     * @param fv_data Data to be computed.
-     */
-    virtual void fill_fe_side_values(const ElementAccessor<3> &cell,
-                            unsigned int sid,
-                            const Quadrature &q,
-                            MappingInternalData &data,
-                            FEValuesData<dim,spacedim> &fv_data) = 0;
-
-    /// Destructor.
-    virtual ~Mapping() {};
-};
 
 #endif /* MAPPING_HH_ */

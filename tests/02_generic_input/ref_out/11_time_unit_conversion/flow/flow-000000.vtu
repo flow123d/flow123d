@@ -18,11 +18,6 @@
 10 10 10 10 10 10 10 10 10 10 10 
 </DataArray>
 </Cells>
-<PointData Scalars="pressure_p1," Vectors="" Tensors="">
-<DataArray type="Float64" Name="pressure_p1" format="ascii">
-0.0249151791 0.0248471653 0.0248471653 0.0249151791 0.0248471653 0.0248471653 0.0250304589 0.0249796423 0.0250304589 
-</DataArray>
-</PointData>
 <CellData Scalars="pressure_p0,cross_section,conductivity,sigma,water_source_density,init_pressure,storativity," Vectors="velocity_p0," Tensors="anisotropy,">
 <DataArray type="Float64" Name="pressure_p0" format="ascii">
 0.1000000000 0.1000000000 0.1000000000 0.1000000000 0.1000000000 0.1000000000 0.1000000000 0.1000000000 0.1000000000 0.1000000000 0.1000000000 

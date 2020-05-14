@@ -28,18 +28,19 @@
 #include "input/accessors_impl.hh"           // for Record::val
 #include "input/storage.hh"                  // for ExcStorageTypeMismatch
 #include "input/type_record.hh"              // for Record (ptr only), Recor...
-#include "mesh/long_idx.hh"                  // for LongIdx
 #include "mesh/region.hh"                    // for RegionDB, RegionDB::MapE...
-#include "mesh/nodes.hh"
 #include "mesh/elements.h"
 #include "mesh/bounding_box.hh"              // for BoundingBox
 #include "mesh/range_wrapper.hh"
 #include "mesh/mesh_data.hh"
 #include "tools/bidirectional_map.hh"
 #include "tools/general_iterator.hh"
+#include "system/index_types.hh"             // for LongIdx
 #include "system/exceptions.hh"              // for operator<<, ExcStream, EI
 #include "system/file_path.hh"               // for FilePath
 #include "system/sys_vector.hh"              // for FullIterator, VectorId<>...
+#include "system/armor.hh"
+
 
 class BIHTree;
 class Distribution;
@@ -53,6 +54,7 @@ class BCMesh;
 class DuplicateNodes;
 template <int spacedim> class ElementAccessor;
 template <int spacedim> class NodeAccessor;
+
 
 
 #define ELM  0
@@ -122,7 +124,7 @@ public:
     virtual ~Mesh();
 
     virtual inline unsigned int n_nodes() const {
-        return node_vec_.size();
+        return nodes_.size();
     }
 
     inline unsigned int n_boundaries() const {
@@ -141,16 +143,6 @@ public:
     inline const RegionDB &region_db() const {
         return region_db_;
     }
-
-//    /// Reserve size of node vector
-//    inline void reserve_node_size(unsigned int n_nodes) {
-//    	node_vector.reserve(n_nodes);
-//    }
-//
-//    /// Reserve size of element vector
-//    inline void reserve_element_size(unsigned int n_elements) {
-//    	element.reserve(n_elements);
-//    }
 
     /**
      * Returns pointer to partitioning object. Partitioning is created during setup_topology.
@@ -227,7 +219,7 @@ public:
     virtual ElementAccessor<3> element_accessor(unsigned int idx) const;
 
     /// Create and return NodeAccessor to node of given idx
-    NodeAccessor<3> node_accessor(unsigned int idx) const;
+    NodeAccessor<3> node(unsigned int idx) const;
 
     /**
      * Reads elements and their affiliation to regions and region sets defined by user in input file
@@ -280,6 +272,7 @@ public:
     // Mesh::side_nodes can be removed as soon as Element
     // is templated by dimension.
     //
+    // side_nodes[dim][elm_side_idx][side_node_idx]
     // for every side dimension D = 0 .. 2
     // for every element side 0 .. D+1
     // for every side node 0 .. D
@@ -469,7 +462,7 @@ protected:
     void modify_element_ids(const RegionDB::MapElementIDToRegionID &map);
 
     /// Adds element to mesh data structures (element_vec_, element_ids_), returns pointer to this element.
-    Element * add_element_to_vector(int id, bool boundary=false);
+    Element * add_element_to_vector(int id);
 
     /// Initialize element
     void init_element(Element *ele, unsigned int elm_id, unsigned int dim, RegionIdx region_idx, unsigned int partition_id,
@@ -531,7 +524,7 @@ protected:
     /**
      * Vector of nodes of the mesh.
      */
-    vector<Node> node_vec_;
+    Armor::Array<double> nodes_;
 
     /// Maps node ids to indexes into vector node_vec_
     BidirectionalMap<int> node_ids_;

@@ -25,8 +25,6 @@
 #include <string>                              // for operator<<
 #include <vector>                              // for vector
 #include <armadillo>
-#include "mesh/nodes.hh"                       // for Node
-#include "mesh/ref_element.hh"                 // for RefElement
 #include "mesh/region.hh"                      // for RegionIdx, Region
 #include "system/asserts.hh"                   // for Assert, ASSERT
 
@@ -72,8 +70,8 @@ public:
 
     /// Return index (in Mesh::node_vec) of ni-th node.
     inline unsigned int node_idx(unsigned int ni) const {
-    	ASSERT(ni < n_nodes()).error("Node index is out of bound!");
-    	return nodes_.at(ni);
+    	ASSERT_DBG(ni < n_nodes()).error("Node index is out of bound!");
+    	return nodes_[ni];
     }
 
 

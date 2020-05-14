@@ -23,8 +23,9 @@
 #include <vector>                     // for vector
 #include "input/accessors.hh"         // for Record
 #include "mesh/point.hh"
-#include "mesh/long_idx.hh"           // for LongIdx
 #include "tools/general_iterator.hh"  // for Iter
+#include "system/armor.hh"            // for Armor::array
+#include "system/index_types.hh"      // for LongIdx
 
 class Mesh;
 class Distribution;
@@ -72,7 +73,7 @@ public:
     /// Shortcut instead of spacedim template. We suppose only spacedim=3 at the moment.
     static const unsigned int spacedim = 3;
 
-    typedef std::function<void(const std::vector< Space<spacedim>::Point > &, const ElementAccessor<spacedim> &, std::vector<double> &)>
+    typedef std::function<void(const Armor::array &, const ElementAccessor<spacedim> &, std::vector<double> &)>
         ErrorControlFieldFunc;
     
     /// Constructor. Takes computational mesh as a parameter.

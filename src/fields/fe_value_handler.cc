@@ -34,11 +34,11 @@
  * Is done by class partial specialization as, we were not able to do this using function overloading (since
  * they differ only by return value) and partial specialization of the function templates is not supported  in C++.
  */
-template<int rank, int elemdim, int spacedim, class Value>
+template<int rank, int spacedim, class Value>
 class FEShapeHandler {
 public:
 
-	inline static typename Value::return_type fe_value(FEValues<elemdim,3> &fe_val, unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
+	inline static typename Value::return_type fe_value(FEValues<spacedim> &fe_val, unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
 	{
 		ASSERT(false).error("Unsupported format of FieldFE!\n");
 		typename Value::return_type ret;
@@ -50,21 +50,21 @@ public:
 
 
 /// Partial template specialization of FEShapeHandler for scalar fields
-template<int elemdim, int spacedim, class Value>
-class FEShapeHandler<0, elemdim, spacedim, Value> {
+template<int spacedim, class Value>
+class FEShapeHandler<0, spacedim, Value> {
 public:
-	inline static typename Value::return_type fe_value(FEValues<elemdim,3> &fe_val, unsigned int i_dof, unsigned int i_qp, FMT_UNUSED unsigned int comp_index)
+	inline static typename Value::return_type fe_value(FEValues<3> &fe_val, unsigned int i_dof, unsigned int i_qp, FMT_UNUSED unsigned int comp_index)
 	{
-		return fe_val.shape_value(i_dof, i_qp);
+		return fe_val.scalar_view(comp_index).value(i_dof, i_qp);
 	}
 };
 
 
 /// Partial template specialization of FEShapeHandler for vector fields
-template<int elemdim, int spacedim, class Value>
-class FEShapeHandler<1, elemdim, spacedim, Value> {
+template<int spacedim, class Value>
+class FEShapeHandler<1, spacedim, Value> {
 public:
-	inline static typename Value::return_type fe_value(FEValues<elemdim,3> &fe_val, unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
+	inline static typename Value::return_type fe_value(FEValues<3> &fe_val, unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
 	{
 		return fe_val.vector_view(comp_index).value(i_dof, i_qp);
 	}
@@ -72,10 +72,10 @@ public:
 
 
 /// Partial template specialization of FEShapeHandler for tensor fields
-template<int elemdim, int spacedim, class Value>
-class FEShapeHandler<2, elemdim, spacedim, Value> {
+template<int spacedim, class Value>
+class FEShapeHandler<2, spacedim, Value> {
 public:
-	inline static typename Value::return_type fe_value(FEValues<elemdim,3> &fe_val, unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
+	inline static typename Value::return_type fe_value(FEValues<3> &fe_val, unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
 	{
 		return fe_val.tensor_view(comp_index).value(i_dof, i_qp);
 	}
@@ -85,33 +85,28 @@ public:
 
 template <int elemdim, int spacedim, class Value>
 FEValueHandler<elemdim, spacedim, Value>::FEValueHandler()
-: value_(r_value_),
-  map_(nullptr)
+: value_(r_value_)
 {}
 
 
 template <int elemdim, int spacedim, class Value>
 void FEValueHandler<elemdim, spacedim, Value>::initialize(FEValueInitData init_data)
 {
-	if (dof_indices.size() > 0)
+	if (dh_)
 		WarningOut() << "Multiple initialization of FEValueHandler!";
 
 	dh_ = init_data.dh;
 	data_vec_ = init_data.data_vec;
-    dof_indices.resize(init_data.ndofs);
     value_.set_n_comp(init_data.n_comp);
     comp_index_ = init_data.comp_index;
-
-	// temporary solution - these objects will be set through FieldCommon
-	map_ = new MappingP1<elemdim,3>();
 }
 
 
 template <int elemdim, int spacedim, class Value> inline
 typename Value::return_type const &FEValueHandler<elemdim, spacedim, Value>::value(const Point &p, const ElementAccessor<spacedim> &elm)
 {
-	std::vector<Point> point_list;
-	point_list.push_back(p);
+	Armor::array point_list(spacedim, 1, 1);
+	point_list.set(0) = Armor::ArmaVec<double,spacedim>( p );
 	std::vector<typename Value::return_type> v_list;
 	v_list.push_back(r_value_);
 	this->value_list(point_list, elm, v_list);
@@ -121,29 +116,33 @@ typename Value::return_type const &FEValueHandler<elemdim, spacedim, Value>::val
 
 
 template <int elemdim, int spacedim, class Value>
-void FEValueHandler<elemdim, spacedim, Value>::value_list(const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
+void FEValueHandler<elemdim, spacedim, Value>::value_list(const Armor::array  &point_list, const ElementAccessor<spacedim> &elm,
                    std::vector<typename Value::return_type> &value_list)
 {
-    ASSERT_PTR(map_).error();
     ASSERT_EQ( point_list.size(), value_list.size() ).error();
 
-    const DHCellAccessor cell = dh_->cell_accessor_from_element( elm.idx() );
-    if (boundary_dofs_) this->get_dof_indices( elm, dof_indices);
-    else cell.get_loc_dof_indices( dof_indices );
+	const DHCellAccessor cell = dh_->cell_accessor_from_element( elm.idx() );
+	LocDofVec loc_dofs;
+	if (boundary_dofs_) loc_dofs = this->get_loc_dof_indices(elm.idx());
+	else loc_dofs = cell.get_loc_dof_indices();
 
-    arma::mat map_mat = map_->element_map(elm);
+	// map points to reference cell, create quadrature and FEValues object
+    arma::mat map_mat = MappingP1<elemdim,spacedim>::element_map(elm);
+	Quadrature quad(elemdim, point_list.size());
+	for (unsigned int k=0; k<point_list.size(); k++)
+        quad.set(k) = RefElement<elemdim>::bary_to_local(MappingP1<elemdim,spacedim>::project_real_to_unit(point_list.vec<spacedim>(k), map_mat));
+	
+	MixedPtr<FiniteElement> fe_mixed_ptr = dh_->ds()->fe(elm);
+	std::shared_ptr<FiniteElement<elemdim>> fe_ptr = fe_mixed_ptr.get<elemdim>();
+	FEValues<spacedim> fe_values(quad, *fe_ptr, update_values);
+    fe_values.reinit( elm );
+
     for (unsigned int k=0; k<point_list.size(); k++) {
-		Quadrature quad(elemdim, 1);
-        quad.point<elemdim>(0) = RefElement<elemdim>::bary_to_local(map_->project_real_to_unit(point_list[k], map_mat));
-
-		FEValues<elemdim,3> fe_values(*this->get_mapping(), quad, *dh_->ds()->fe<elemdim>(elm), update_values);
-		fe_values.reinit( const_cast<ElementAccessor<spacedim> &>(elm) );
-
 		Value envelope(value_list[k]);
 		envelope.zeros();
-		for (unsigned int i=0; i<dh_->ds()->fe<elemdim>(elm)->n_dofs(); i++) {
-			value_list[k] += data_vec_[dof_indices[i]]
-										  * FEShapeHandler<Value::rank_, elemdim, spacedim, Value>::fe_value(fe_values, i, 0, comp_index_);
+		for (unsigned int i=0; i<loc_dofs.n_elem; i++) {
+			value_list[k] += data_vec_[loc_dofs[i]]
+							* FEShapeHandler<Value::rank_, spacedim, Value>::fe_value(fe_values, i, k, comp_index_);
 		}
 	}
 }
@@ -156,76 +155,53 @@ unsigned int FEValueHandler<elemdim, spacedim, Value>::compute_quadrature(std::v
 	static const double weight_coefs[] = { 1., 1., 2., 6. };
 
 	QGauss qgauss(elemdim, order);
-	arma::mat map_mat = map_->element_map(ele);
+	arma::mat map_mat = MappingP1<elemdim,spacedim>::element_map(ele);
 
 	for(unsigned i=0; i<qgauss.size(); ++i) {
 		q_weights[i] = qgauss.weight(i)*weight_coefs[elemdim];
-		q_points[i] = map_->project_unit_to_real(RefElement<elemdim>::local_to_bary(qgauss.point<elemdim>(i).arma()), map_mat);
+		q_points[i] = MappingP1<elemdim,spacedim>::project_unit_to_real(RefElement<elemdim>::local_to_bary(qgauss.point<elemdim>(i)), map_mat);
 	}
 
 	return qgauss.size();
 }
 
 
-template <int elemdim, int spacedim, class Value>
-unsigned int FEValueHandler<elemdim, spacedim, Value>::get_dof_indices(const ElementAccessor<3> &cell, std::vector<LongIdx> &indices) const
-{
-    unsigned int ndofs = this->value_.n_rows() * this->value_.n_cols();
-    for (unsigned int k=0; k<ndofs; k++) {
-        indices[k] = (*boundary_dofs_)[ndofs*cell.idx()+k];
-    }
-    return ndofs;
-}
-
-
 template <int spacedim, class Value>
 void FEValueHandler<0, spacedim, Value>::initialize(FEValueInitData init_data)
 {
-	if (dof_indices.size() > 0)
+	if (dh_)
 		WarningOut() << "Multiple initialization of FEValueHandler!";
 
 	dh_ = init_data.dh;
 	data_vec_ = init_data.data_vec;
-    dof_indices.resize(init_data.ndofs);
     value_.set_n_comp(init_data.n_comp);
 }
 
 
 template <int spacedim, class Value>
-void FEValueHandler<0, spacedim, Value>::value_list(const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
+void FEValueHandler<0, spacedim, Value>::value_list(const Armor::array &point_list, const ElementAccessor<spacedim> &elm,
                    std::vector<typename Value::return_type> &value_list)
 {
 	ASSERT_EQ( point_list.size(), value_list.size() ).error();
 
 	const DHCellAccessor cell = dh_->cell_accessor_from_element( elm.idx() );
-	if (boundary_dofs_) this->get_dof_indices( elm, dof_indices);
-	else cell.get_loc_dof_indices( dof_indices );
+	LocDofVec loc_dofs;
+	if (boundary_dofs_) loc_dofs = this->get_loc_dof_indices(elm.idx());
+	else loc_dofs = cell.get_loc_dof_indices();
 
 	for (unsigned int k=0; k<point_list.size(); k++) {
 		Value envelope(value_list[k]);
 		envelope.zeros();
-		for (unsigned int i=0; i<dh_->ds()->fe<0>(elm)->n_dofs(); i++) {
-			envelope(i / envelope.n_cols(), i % envelope.n_rows()) += data_vec_[dof_indices[i]];
+		for (unsigned int i=0; i<loc_dofs.n_elem; i++) {
+			envelope(i / envelope.n_cols(), i % envelope.n_rows()) += data_vec_[loc_dofs[i]];
 		}
 	}
-}
-
-
-template <int spacedim, class Value>
-unsigned int FEValueHandler<0, spacedim, Value>::get_dof_indices(const ElementAccessor<3> &cell, std::vector<LongIdx> &indices) const
-{
-    unsigned int ndofs = this->value_.n_rows() * this->value_.n_cols();
-    for (unsigned int k=0; k<ndofs; k++) {
-        indices[k] = (*boundary_dofs_)[ndofs*cell.idx()+k];
-    }
-    return ndofs;
 }
 
 
 template <int elemdim, int spacedim, class Value>
 FEValueHandler<elemdim, spacedim, Value>::~FEValueHandler()
 {
-	if (map_ != nullptr) delete map_;
 }
 
 
@@ -235,12 +211,7 @@ template class FEValueHandler<dim, spacedim, FieldValue<0>::Enum >;             
 template class FEValueHandler<dim, spacedim, FieldValue<0>::Integer >;                \
 template class FEValueHandler<dim, spacedim, FieldValue<0>::Scalar >;                 \
 template class FEValueHandler<dim, spacedim, FieldValue<spacedim>::VectorFixed >;     \
-template class FEValueHandler<dim, spacedim, FieldValue<spacedim>::TensorFixed >;     \
-template class FEShapeHandler<0, dim, spacedim, FieldValue<0>::Enum >;                \
-template class FEShapeHandler<0, dim, spacedim, FieldValue<0>::Integer >;             \
-template class FEShapeHandler<0, dim, spacedim, FieldValue<0>::Scalar >;              \
-template class FEShapeHandler<1, dim, spacedim, FieldValue<spacedim>::VectorFixed >;  \
-template class FEShapeHandler<2, dim, spacedim, FieldValue<spacedim>::TensorFixed >;
+template class FEValueHandler<dim, spacedim, FieldValue<spacedim>::TensorFixed >;
 
 #define INSTANCE_VALUE_HANDLER(dim) \
 INSTANCE_VALUE_HANDLER_ALL(dim,3)
@@ -250,3 +221,9 @@ INSTANCE_VALUE_HANDLER(0)
 INSTANCE_VALUE_HANDLER(1)
 INSTANCE_VALUE_HANDLER(2)
 INSTANCE_VALUE_HANDLER(3)
+
+template class FEShapeHandler<0, 3, FieldValue<0>::Enum >;
+template class FEShapeHandler<0, 3, FieldValue<0>::Integer >;
+template class FEShapeHandler<0, 3, FieldValue<0>::Scalar >;
+template class FEShapeHandler<1, 3, FieldValue<3>::VectorFixed >;
+template class FEShapeHandler<2, 3, FieldValue<3>::TensorFixed >;

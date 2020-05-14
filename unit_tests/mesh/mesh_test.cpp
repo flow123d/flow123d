@@ -141,8 +141,13 @@ TEST(Mesh, decompose_problem) {
     auto reader = reader_constructor(mesh_in_string);
     reader->read_physical_names(mesh);
     reader->read_raw_mesh(mesh);
-    EXPECT_THROW_WHAT( { mesh->setup_topology(); }, Partitioning::ExcDecomposeMesh,
-    		"greater then number of elements 1. Can not make partitioning of the mesh");
+
+    int np;
+    MPI_Comm_size(MPI_COMM_WORLD, &np);
+    if (np > 1) {
+        EXPECT_THROW_WHAT( { mesh->setup_topology(); }, Partitioning::ExcDecomposeMesh,
+                "greater then number of elements 1. Can not make partitioning of the mesh");
+    }
 
     delete mesh;
 }

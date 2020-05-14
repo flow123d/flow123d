@@ -21,7 +21,6 @@
 
 #include "io/output_time.hh"
 #include "quadrature/quadrature_lib.hh"
-#include "fem/mapping_p1.hh"
 #include "fem/fe_values.hh"
 #include "fem/fe_p.hh"
 #include "fem/fe_rt.hh"
@@ -46,8 +45,7 @@ const Record & Elasticity::get_input_type() {
 	return IT::Record(
                 std::string(equation_name),
                 "FEM for linear elasticity.")
-           .declare_key("time", TimeGovernor::get_input_type(), Default::optional(),
-                    "Time governor setting for the secondary equation.")
+           .copy_keys(EquationBase::record_template())
            .declare_key("balance", Balance::get_input_type(), Default("{}"),
                     "Settings for computing balance.")
            .declare_key("output_stream", OutputTime::get_input_type(), Default::obligatory(),
@@ -75,75 +73,48 @@ const int Elasticity::registrar =
 namespace Mechanics {
 
 FEObjects::FEObjects(Mesh *mesh_, unsigned int fe_order)
+: q_(QGauss::make_array(2))
 {
-    unsigned int q_order;
-
 	switch (fe_order)
 	{
-	case 1:
-		q_order = 2;
-        fe0_ = new FESystem<0>(std::make_shared<FE_P<0> >(1), FEVector, 3);
-		fe1_ = new FESystem<1>(std::make_shared<FE_P<1> >(1), FEVector, 3);
-        fe2_ = new FESystem<2>(std::make_shared<FE_P<2> >(1), FEVector, 3);
-        fe3_ = new FESystem<3>(std::make_shared<FE_P<3> >(1), FEVector, 3);
+	case 1: {
+        MixedPtr<FE_P> fe_p(1);
+        fe_ = mixed_fe_system(fe_p, FEVector, 3);
 		break;
-
+    }
 	default:
-	    q_order=0;
 		xprintf(PrgErr, "Unsupported polynomial order %d for finite elements in Elasticity", fe_order);
 		break;
 	}
 
-	for (unsigned int dim = 0; dim < 4; dim++) q_[dim] = new QGauss(dim, q_order);
 
-	map1_ = new MappingP1<1,3>;
-	map2_ = new MappingP1<2,3>;
-	map3_ = new MappingP1<3,3>;
-
-    ds_ = std::make_shared<EqualOrderDiscreteSpace>(mesh_, fe0_, fe1_, fe2_, fe3_);
+    ds_ = std::make_shared<EqualOrderDiscreteSpace>(mesh_, fe_);
 	dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
 
 	dh_->distribute_dofs(ds_);
     
     
-    FE_P_disc<0> *fe0 = new FE_P_disc<0>(0);
-    FE_P_disc<1> *fe1 = new FE_P_disc<1>(0);
-    FE_P_disc<2> *fe2 = new FE_P_disc<2>(0);
-    FE_P_disc<3> *fe3 = new FE_P_disc<3>(0);
+    MixedPtr<FE_P_disc> fe_p(0);
     dh_scalar_ = make_shared<DOFHandlerMultiDim>(*mesh_);
-	std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh_, fe0, fe1, fe2, fe3);
+	std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh_, fe_p);
 	dh_scalar_->distribute_dofs(ds);
     
-    FESystem<0> *fe0t = new FESystem<0>(std::make_shared<FE_P_disc<0>>(0), FETensor, 9);
-    FESystem<1> *fe1t = new FESystem<1>(std::make_shared<FE_P_disc<1>>(0), FETensor, 9);
-    FESystem<2> *fe2t = new FESystem<2>(std::make_shared<FE_P_disc<2>>(0), FETensor, 9);
-    FESystem<3> *fe3t = new FESystem<3>(std::make_shared<FE_P_disc<3>>(0), FETensor, 9);
+
+    MixedPtr<FiniteElement> fe_t = mixed_fe_system(MixedPtr<FE_P_disc>(0), FEType::FETensor, 9);
     dh_tensor_ = make_shared<DOFHandlerMultiDim>(*mesh_);
-	std::shared_ptr<DiscreteSpace> dst = std::make_shared<EqualOrderDiscreteSpace>( mesh_, fe0t, fe1t, fe2t, fe3t);
+	std::shared_ptr<DiscreteSpace> dst = std::make_shared<EqualOrderDiscreteSpace>( mesh_, fe_t);
 	dh_tensor_->distribute_dofs(dst);
 }
 
 
 FEObjects::~FEObjects()
 {
-	delete fe1_;
-	delete fe2_;
-	delete fe3_;
-	for (unsigned int dim=0; dim < 4; dim++) delete q_[dim];
-	delete map1_;
-	delete map2_;
-	delete map3_;
 }
 
-template<> FiniteElement<0> *FEObjects::fe<0>() { return nullptr; }
-template<> FiniteElement<1> *FEObjects::fe<1>() { return fe1_; }
-template<> FiniteElement<2> *FEObjects::fe<2>() { return fe2_; }
-template<> FiniteElement<3> *FEObjects::fe<3>() { return fe3_; }
-
-template<> MappingP1<0,3> *FEObjects::mapping<0>() { return nullptr; }
-template<> MappingP1<1,3> *FEObjects::mapping<1>() { return map1_; }
-template<> MappingP1<2,3> *FEObjects::mapping<2>() { return map2_; }
-template<> MappingP1<3,3> *FEObjects::mapping<3>() { return map3_; }
+template<> std::shared_ptr<FiniteElement<0>> FEObjects::fe<0>() { return fe_.get<0>(); }
+template<> std::shared_ptr<FiniteElement<1>> FEObjects::fe<1>() { return fe_.get<1>(); }
+template<> std::shared_ptr<FiniteElement<2>> FEObjects::fe<2>() { return fe_.get<2>(); }
+template<> std::shared_ptr<FiniteElement<3>> FEObjects::fe<3>() { return fe_.get<3>(); }
 
 std::shared_ptr<DOFHandlerMultiDim> FEObjects::dh() { return dh_; }
 std::shared_ptr<DOFHandlerMultiDim> FEObjects::dh_scalar() { return dh_scalar_; }
@@ -295,18 +266,15 @@ Elasticity::Elasticity(Mesh & init_mesh, const Input::Record in_rec, TimeGoverno
 
 	this->eq_data_ = &data_;
     
-    auto time_rec = in_rec.find<Input::Record>("time");
+    auto time_rec = in_rec.val<Input::Record>("time");
     if (tm == nullptr)
     {
-        if (time_rec)
-            time_ = new TimeGovernor(time_rec);
-        else
-            time_ = new TimeGovernor();
+        time_ = new TimeGovernor(time_rec);
     }
     else
     {
-        if (time_rec)
-            WarningOut() << "Time governor of Elasticity is initialized from parent class - input record will be ignored!";
+        TimeGovernor time_from_rec(time_rec);
+        ASSERT( time_from_rec.is_default() ).error("Duplicate key 'time', time in elasticity is already initialized from parent class!");
         time_ = tm;
     }
 
@@ -341,28 +309,23 @@ void Elasticity::initialize()
 //     balance_->units(UnitSI().kg().m().s(-2));
 
     // create shared pointer to a FieldFE, pass FE data and push this FieldFE to output_field on all regions
-    data_.output_field_ptr = std::make_shared<FieldFE<3, FieldValue<3>::VectorFixed> >();
-    VectorMPI output_vec = data_.output_field_ptr->set_fe_data(feo->dh());
+    data_.output_field_ptr = create_field_fe<3, FieldValue<3>::VectorFixed>(feo->dh());
     data_.output_field.set_field(mesh_->region_db().get_region_set("ALL"), data_.output_field_ptr, 0.);
     
     // setup output stress
-    data_.output_stress_ptr = make_shared<FieldFE<3, FieldValue<3>::TensorFixed> >();
-    data_.output_stress_ptr->set_fe_data(feo->dh_tensor());
+    data_.output_stress_ptr = create_field_fe<3, FieldValue<3>::TensorFixed>(feo->dh_tensor());
     data_.output_stress.set_field(mesh_->region_db().get_region_set("ALL"), data_.output_stress_ptr);
     
     // setup output von Mises stress
-    data_.output_von_mises_stress_ptr = make_shared<FieldFE<3, FieldValue<3>::Scalar> >();
-    data_.output_von_mises_stress_ptr->set_fe_data(feo->dh_scalar());
+    data_.output_von_mises_stress_ptr = create_field_fe<3, FieldValue<3>::Scalar>(feo->dh_scalar());
     data_.output_von_mises_stress.set_field(mesh_->region_db().get_region_set("ALL"), data_.output_von_mises_stress_ptr);
     
     // setup output cross-section
-    data_.output_cross_section_ptr = make_shared<FieldFE<3, FieldValue<3>::Scalar> >();
-    data_.output_cross_section_ptr->set_fe_data(feo->dh_scalar());
+    data_.output_cross_section_ptr = create_field_fe<3, FieldValue<3>::Scalar>(feo->dh_scalar());
     data_.output_cross_section.set_field(mesh_->region_db().get_region_set("ALL"), data_.output_cross_section_ptr);
     
     // setup output divergence
-    data_.output_div_ptr = make_shared<FieldFE<3, FieldValue<3>::Scalar> >();
-    data_.output_div_ptr->set_fe_data(feo->dh_scalar());
+    data_.output_div_ptr = create_field_fe<3, FieldValue<3>::Scalar>(feo->dh_scalar());
     data_.output_divergence.set_field(mesh_->region_db().get_region_set("ALL"), data_.output_div_ptr);
     
     data_.output_field.output_type(OutputTime::CORNER_DATA);
@@ -377,7 +340,7 @@ void Elasticity::initialize()
     // allocate matrix and vector structures
     ls = new LinSys_PETSC(feo->dh()->distr().get(), petsc_default_opts);
     ( (LinSys_PETSC *)ls )->set_from_input( input_rec.val<Input::Record>("solver") );
-    ls->set_solution(output_vec.petsc_vec());
+    ls->set_solution(data_.output_field_ptr->get_data_vec().petsc_vec());
 
     // initialization of balance object
 //     balance_->allocate(feo->dh()->distr()->lsize(),
@@ -399,21 +362,21 @@ Elasticity::~Elasticity()
 
 
 
-void Elasticity::output_vector_gather()
-{
-    data_.output_field_ptr->get_data_vec().local_to_ghost_begin();
-    data_.output_field_ptr->get_data_vec().local_to_ghost_end();
-}
-
-
 void Elasticity::update_output_fields()
 {
+    // update ghost values of solution vector
+    data_.output_field_ptr->get_data_vec().local_to_ghost_begin();
+    data_.output_field_ptr->get_data_vec().local_to_ghost_end();
+
+    // compute new output fields depending on solution (stress, divergence etc.)
     data_.output_stress_ptr->get_data_vec().zero_entries();
     data_.output_cross_section_ptr->get_data_vec().zero_entries();
     data_.output_div_ptr->get_data_vec().zero_entries();
     compute_output_fields<1>();
     compute_output_fields<2>();
     compute_output_fields<3>();
+
+    // update ghost values of computed fields
     data_.output_stress_ptr->get_data_vec().local_to_ghost_begin();
     data_.output_stress_ptr->get_data_vec().local_to_ghost_end();
     data_.output_von_mises_stress_ptr->get_data_vec().local_to_ghost_begin();
@@ -553,7 +516,6 @@ void Elasticity::output_data()
     // gather the solution from all processors
     data_.output_fields.set_time( this->time().step(), LimitSide::left);
     //if (data_.output_fields.is_field_output_time(data_.output_field, this->time().step()) )
-    output_vector_gather();
     update_output_fields();
     data_.output_fields.output(this->time().step());
     output_stream_->write_time_frame();
@@ -571,12 +533,11 @@ template<unsigned int dim>
 void Elasticity::compute_output_fields()
 {
     QGauss q(dim, 0), q_sub(dim-1, 0);
-    FEValues<dim,3> fv(*feo->mapping<dim>(), q, *feo->fe<dim>(),
+    FEValues<3> fv(q, *feo->fe<dim>(),
     		update_values | update_gradients | update_quadrature_points);
-    FESideValues<dim,3> fsv(*feo->mapping<dim>(), q_sub, *feo->fe<dim>(),
+    FEValues<3> fsv(q_sub, *feo->fe<dim>(),
     		update_values | update_normal_vectors | update_quadrature_points);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs();
-    std::vector<int> dof_indices(ndofs), dof_indices_scalar(1), dof_indices_tensor(9);
     auto vec = fv.vector_view(0);
     auto vec_side = fsv.vector_view(0);
     VectorMPI output_vec = data_.output_field_ptr->get_data_vec();
@@ -599,9 +560,9 @@ void Elasticity::compute_output_fields()
             double lambda = lame_lambda(young, poisson);
             
             fv.reinit(elm);
-            cell.get_loc_dof_indices(dof_indices);
-            cell_scalar.get_loc_dof_indices(dof_indices_scalar);
-            cell_tensor.get_loc_dof_indices(dof_indices_tensor);
+            LocDofVec dof_indices        = cell.get_loc_dof_indices();
+            LocDofVec dof_indices_scalar = cell_scalar.get_loc_dof_indices();
+            LocDofVec dof_indices_tensor = cell_tensor.get_loc_dof_indices();
             
             arma::mat33 stress = arma::zeros(3,3);
             double div = 0;
@@ -625,7 +586,6 @@ void Elasticity::compute_output_fields()
         else if (cell.dim() == dim-1)
         {
             auto elm = cell.elm();
-            vector<int> side_dof_indices(ndofs);
             double normal_displacement = 0;
             double csection = data_.cross_section.value(fsv.point(0), elm);
             arma::mat33 normal_stress = arma::zeros(3,3);
@@ -639,8 +599,9 @@ void Elasticity::compute_output_fields()
             {
                 auto side = elm->neigh_vb[inb]->side();
                 auto cell_side = side->element();
-                fsv.reinit(cell_side, side->side_idx());
-                feo->dh()->cell_accessor_from_element(cell_side.idx()).get_loc_dof_indices(side_dof_indices);
+                fsv.reinit(*side);
+                LocDofVec side_dof_indices =
+                    feo->dh()->cell_accessor_from_element(cell_side.idx()).get_loc_dof_indices();
                 
                 for (unsigned int i=0; i<ndofs; i++)
                 {
@@ -649,8 +610,8 @@ void Elasticity::compute_output_fields()
                     normal_stress += mu*(grad+grad.t()) + lambda*arma::trace(grad)*arma::eye(3,3);
                 }
             }
-            cell_scalar.get_loc_dof_indices(dof_indices_scalar);
-            cell_tensor.get_loc_dof_indices(dof_indices_tensor);
+            LocDofVec dof_indices_scalar = cell_scalar.get_loc_dof_indices();
+            LocDofVec dof_indices_tensor = cell_tensor.get_loc_dof_indices();
             for (unsigned int i=0; i<3; i++)
                 for (unsigned int j=0; j<3; j++)
                     output_stress_vec[dof_indices_tensor[i*3+j]] += normal_stress(i,j);
@@ -709,7 +670,7 @@ void Elasticity::assemble_stiffness_matrix()
 template<unsigned int dim>
 void Elasticity::assemble_volume_integrals()
 {
-    FEValues<dim,3> fe_values(*feo->mapping<dim>(), *feo->q<dim>(), *feo->fe<dim>(),
+    FEValues<3> fe_values(*feo->q<dim>(), *feo->fe<dim>(),
     		update_values | update_gradients | update_JxW_values | update_quadrature_points);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim>()->size();
     vector<int> dof_indices(ndofs);
@@ -778,7 +739,7 @@ void Elasticity::assemble_rhs()
 template<unsigned int dim>
 void Elasticity::assemble_sources()
 {
-    FEValues<dim,3> fe_values(*feo->mapping<dim>(), *feo->q<dim>(), *feo->fe<dim>(),
+    FEValues<3> fe_values(*feo->q<dim>(), *feo->fe<dim>(),
     		update_values | update_gradients | update_JxW_values | update_quadrature_points);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim>()->size();
     vector<arma::vec3> load(qsize);
@@ -843,7 +804,7 @@ double Elasticity::dirichlet_penalty(SideIter side)
 template<unsigned int dim>
 void Elasticity::assemble_fluxes_boundary()
 {
-    FESideValues<dim,3> fe_values_side(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe<dim>(),
+    FEValues<3> fe_values_side(*feo->q<dim-1>(), *feo->fe<dim>(),
     		update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim-1>()->size();
     vector<int> side_dof_indices(ndofs);
@@ -862,9 +823,11 @@ void Elasticity::assemble_fluxes_boundary()
 
     	SideIter side = edg.side(0);
         ElementAccessor<3> cell = side->element();
-        feo->dh()->cell_accessor_from_element(cell.idx()).get_dof_indices(side_dof_indices);
-        fe_values_side.reinit(cell, side->side_idx());
+        DHCellAccessor dh_cell = feo->dh()->cell_accessor_from_element(cell.idx());
+        DHCellSide dh_side(dh_cell, side->side_idx());
+        dh_cell.get_dof_indices(side_dof_indices);
         unsigned int bc_type = data_.bc_type.value(side->centre(), side->cond().element_accessor());
+        fe_values_side.reinit(*side);
 
         for (unsigned int i=0; i<ndofs; i++)
             for (unsigned int j=0; j<ndofs; j++)
@@ -901,9 +864,9 @@ template<unsigned int dim>
 void Elasticity::assemble_matrix_element_side()
 {
 	if (dim == 1) return;
-    FEValues<dim-1,3> fe_values_sub(*feo->mapping<dim-1>(), *feo->q<dim-1>(), *feo->fe<dim-1>(),
+    FEValues<3> fe_values_sub(*feo->q<dim-1>(), *feo->fe<dim-1>(),
     		update_values | update_gradients | update_JxW_values | update_quadrature_points);
-    FESideValues<dim,3> fe_values_side(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe<dim>(),
+    FEValues<3> fe_values_side(*feo->q<dim-1>(), *feo->fe<dim>(),
     		update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
  
     const unsigned int ndofs_side = feo->fe<dim>()->n_dofs();    // number of local dofs
@@ -930,12 +893,15 @@ void Elasticity::assemble_matrix_element_side()
         if (nb->element()->dim() != dim-1) continue;
 
 		ElementAccessor<3> cell_sub = nb->element();
-		feo->dh()->cell_accessor_from_element(cell_sub.idx()).get_dof_indices(side_dof_indices[0]);
+        DHCellAccessor dh_cell_sub = feo->dh()->cell_accessor_from_element(cell_sub.idx());
+        dh_cell_sub.get_dof_indices(side_dof_indices[0]);
 		fe_values_sub.reinit(cell_sub);
 
 		ElementAccessor<3> cell = nb->side()->element();
-		feo->dh()->cell_accessor_from_element(cell.idx()).get_dof_indices(side_dof_indices[1]);
-		fe_values_side.reinit(cell, nb->side()->side_idx());
+		DHCellAccessor dh_cell = feo->dh()->cell_accessor_from_element(cell.idx());
+        DHCellSide dh_side(dh_cell, nb->side()->side_idx());
+        dh_cell.get_dof_indices(side_dof_indices[1]);
+		fe_values_side.reinit(dh_side.side());
 
 		// Element id's for testing if they belong to local partition.
 		bool own_element_id[2];
@@ -1005,9 +971,9 @@ template<unsigned int dim>
 void Elasticity::assemble_rhs_element_side()
 {
 	if (dim == 1) return;
-    FEValues<dim-1,3> fe_values_sub(*feo->mapping<dim-1>(), *feo->q<dim-1>(), *feo->fe<dim-1>(),
+    FEValues<3> fe_values_sub(*feo->q<dim-1>(), *feo->fe<dim-1>(),
     		update_values | update_JxW_values | update_quadrature_points);
-    FESideValues<dim,3> fe_values_side(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe<dim>(),
+    FEValues<3> fe_values_side(*feo->q<dim-1>(), *feo->fe<dim>(),
     		update_values | update_normal_vectors);
  
     const unsigned int ndofs_side = feo->fe<dim>()->n_dofs();    // number of local dofs
@@ -1038,7 +1004,7 @@ void Elasticity::assemble_rhs_element_side()
 
 		ElementAccessor<3> cell = nb->side()->element();
 		feo->dh()->cell_accessor_from_element(cell.idx()).get_dof_indices(side_dof_indices[1]);
-		fe_values_side.reinit(cell, nb->side()->side_idx());
+		fe_values_side.reinit(*nb->side());
 
 		// Element id's for testing if they belong to local partition.
 		bool own_element_id[2];
@@ -1083,7 +1049,7 @@ void Elasticity::assemble_rhs_element_side()
 template<unsigned int dim>
 void Elasticity::assemble_boundary_conditions()
 {
-    FESideValues<dim,3> fe_values_side(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe<dim>(),
+    FEValues<3> fe_values_side(*feo->q<dim-1>(), *feo->fe<dim>(),
     		update_values | update_normal_vectors | update_side_JxW_values | update_quadrature_points);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim-1>()->size();
     vector<int> side_dof_indices(ndofs);
@@ -1095,7 +1061,7 @@ void Elasticity::assemble_boundary_conditions()
     vector<double> csection(qsize), bc_potential(qsize);
     auto vec = fe_values_side.vector_view(0);
 
-    for (auto cell : feo->dh()->own_range())
+    for (DHCellAccessor cell : feo->dh()->own_range())
     {
         ElementAccessor<3> elm = cell.elm();
         if (elm->boundary_idx_ == nullptr) continue;
@@ -1103,32 +1069,31 @@ void Elasticity::assemble_boundary_conditions()
         for (unsigned int si=0; si<elm->n_sides(); ++si)
         {
 			Edge edg = elm.side(si)->edge();
+            Side side = *cell.elm().side(si);
+
 			if (edg.n_sides() > 1) continue;
 			// skip edges lying not on the boundary
-			if (!edg.side(0)->is_boundary()) continue;
+			if ( ! side.is_boundary()) continue;
 
-			if (edg.side(0)->dim() != dim-1)
+			if (side.dim() != dim-1)
 			{
 				// if (edg.side(0)->cond() != nullptr) ++loc_b;
 				continue;
 			}
 
-			SideIter side = edg.side(0);
-			ElementAccessor<3> cell = side->element();
-			ElementAccessor<3> bc_cell = side->cond().element_accessor();
+			ElementAccessor<3> bc_cell = side.cond().element_accessor();
+ 			unsigned int bc_type = data_.bc_type.value(side.centre(), bc_cell);
 
- 			unsigned int bc_type = data_.bc_type.value(side->centre(), bc_cell);
+			fe_values_side.reinit(side);
 
-			fe_values_side.reinit(cell, side->side_idx());
-
-			data_.cross_section.value_list(fe_values_side.point_list(), cell, csection);
+			data_.cross_section.value_list(fe_values_side.point_list(), elm, csection);
 			// The b.c. data are fetched for all possible b.c. types since we allow
 			// different bc_type for each substance.
 			data_.bc_displacement.value_list(fe_values_side.point_list(), bc_cell, bc_values);
             data_.bc_traction.value_list(fe_values_side.point_list(), bc_cell, bc_traction);
-            data_.potential_load.value_list(fe_values_side.point_list(), cell, bc_potential);
+            data_.potential_load.value_list(fe_values_side.point_list(), elm, bc_potential);
 
-			feo->dh()->cell_accessor_from_element(cell.idx()).get_dof_indices(side_dof_indices);
+			cell.get_dof_indices(side_dof_indices);
 
             fill_n(local_rhs, ndofs, 0);
             local_flux_balance_vector.assign(ndofs, 0);

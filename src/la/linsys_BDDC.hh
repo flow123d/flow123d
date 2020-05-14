@@ -26,6 +26,7 @@
 #include "la/linsys.hh"           // for LinSys
 #include "petscsys.h"             // for PetscErrorCode
 #include "petscvec.h"             // for Vec, VecScatter, _p_Vec, _p_VecScatter
+#include "la/bddcml_wrapper.hh"
 
 class Distribution;
 namespace Input {
@@ -34,28 +35,41 @@ namespace Input {
 		class Record;
 	}
 }
-namespace la {
-    class BddcmlWrapper; 
-}
 
 class LinSys_BDDC : public LinSys
 {
 
 public:
 	typedef LinSys FactoryBaseType;
+	typedef la::BddcmlWrapper::MatrixType BDDCMatrixType;
 
     static const Input::Type::Record & get_input_type();
 
-    LinSys_BDDC( const unsigned numDofsSub,
-                 const Distribution * rows_ds,
-                 const int matrixTypeInt = 0,
-                 const int  numSubLoc = 1,
+    LinSys_BDDC( const Distribution * rows_ds,
                  const bool swap_sign = false );
 
     /// Sets tolerances. Note that BDDC does not use a_tol.
     void set_tolerances(double  r_tol, double a_tol, unsigned int max_it) override;
 
-    void load_mesh( const int nDim, const int numNodes, const int numDofs,
+    /**
+     * Extracted from bddcml_wrapper.hpp:
+     *
+     * nDim - dimension of the ambient space
+     * numNodes - number of nodes (auxiliary points related to dofs)
+     * numDofs - size of the linear system
+     * inet - local dof indices on elements
+     * nnet - numbers of dofs per elements
+     * nndf - number of dofs per node, size numNodes
+     *
+     * isegn - global indices of subdomain elements
+     * isngn - global indices of subdomain nodes
+     * isvggn - global indices of subdomain dofs
+     * xyz - coordinates of nodes
+     * element_permability - scaling parameters one per element
+     * meshDim - topological dimension of the problem (e.g. shell in 3d)
+     */
+    void load_mesh(  BDDCMatrixType matrix_type,
+                    const int nDim, const int numNodes, const int numDofs,
                     const std::vector<int> & inet, 
                     const std::vector<int> & nnet, 
                     const std::vector<int> & nndf, 

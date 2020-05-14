@@ -10,8 +10,9 @@
 
 #include "input/input_type_forward.hh"
 #include "coupling/equation.hh"
+#include "fields/field_values.hh"
 
-class MH_DofHandler;
+template <int spacedim, class Value> class FieldFE;
 
 class DarcyFlowInterface : public EquationBase {
 public:
@@ -23,13 +24,25 @@ public:
                 "Darcy flow model. Abstraction of various porous media flow models.")
                 .close();
     }
+    
+    /// Type of experimental Mortar-like method for non-compatible 1d-2d interaction.
+    enum MortarMethod {
+        NoMortar = 0,
+        MortarP0 = 1,
+        MortarP1 = 2
+    };
 
     DarcyFlowInterface(Mesh &mesh, const Input::Record in_rec)
     : EquationBase(mesh, in_rec)
     {}
 
-    virtual const MH_DofHandler &get_mh_dofhandler() =0;
+    /// Return last time of TimeGovernor.
+    virtual double last_t() =0;
 
+    // TODO: remove! Due to MH and LMH Darcy flow versions.
+    virtual std::shared_ptr< FieldFE<3, FieldValue<3>::VectorFixed> > get_velocity_field()
+    { return nullptr; }
+    
     virtual ~DarcyFlowInterface()
     {}
 };

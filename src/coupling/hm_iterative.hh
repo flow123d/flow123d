@@ -39,10 +39,6 @@ class RichardsLMH;
  * Flow and mechanics are solved separately and within each iteration the coupling terms are updated.
  * Here we use the fixed-stress splitting [see Mikelic&Wheeler, Comput. Geosci. 17(3), 2013] which uses
  * a tuning parameter "beta" to speed up the convergence.
- * 
- * TODO: The class is currently inherited from DarcyFlowInterface in order to provide MH_DofHandler for
- * transport processes. This should be changed as soon as we replace MH_DofHandler by fields for velocity
- * and pressure.
  */
 class HM_Iterative : public DarcyFlowInterface {
 public:
@@ -80,7 +76,7 @@ public:
     void initialize() override;
     void zero_time_step() override;
     void update_solution() override;
-    const MH_DofHandler & get_mh_dofhandler() override;
+    double last_t() override;
     ~HM_Iterative();
 
 private:
