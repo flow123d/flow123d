@@ -19,7 +19,7 @@
 #define BALANCE_HH_
 
 
-#include <iosfwd>               // for ofstream
+#include <fstream>              // for ofstream
 #include <string>               // for string
 #include <vector>               // for vector
 #include <unordered_map>        // for unordered_map
@@ -30,10 +30,13 @@
 #include "petscvec.h"           // for Vec, _p_Vec
 #include "system/file_path.hh"  // for FilePath
 #include "tools/time_marks.hh"  // for TimeMark, TimeMark::Type
-#include "mesh/long_idx.hh"     // for LongIdx
+#include "system/index_types.hh" // for LongIdx
 
 class Mesh;
 class TimeGovernor;
+class DOFHandlerMultiDim;
+class DHCellSide;
+class DHCellAccessor;
 namespace Input {
 	namespace Type {
 		class Record;
@@ -202,13 +205,20 @@ public:
 	std::vector<unsigned int> add_quantities(const std::vector<string> &names);
 
 	/**
+	 * Allocates matrices and vectors for balance based on DofHandler.
+	 * @param dh DofHandler of the corresponding linear system (and solution).
+	 * @param max_dofs_per_boundary Number of dofs contributing to one boundary edge.
+	 */
+	void allocate(const std::shared_ptr<DOFHandlerMultiDim>& dh,
+			unsigned int max_dofs_per_boundary);
+
+	/**
 	 * Allocates matrices and vectors for balance.
 	 * @param n_loc_dofs            Number of solution dofs on the local process.
 	 * @param max_dofs_per_boundary Number of dofs contributing to one boundary edge.
 	 */
 	void allocate(unsigned int n_loc_dofs,
 			unsigned int max_dofs_per_boundary);
-
 
     /// Returns true if the current time step is marked for the balance output.
     bool is_current();
@@ -252,67 +262,60 @@ public:
 			start_source_assembly(idx);
 	}
 
+	
 	/**
 	 * Adds elements into matrix for computing mass.
+	 * The mass matrix M is in format [n_dofs x n_bulk_regions] for each quantity.
+	 * The mass vector mv is in format [n_bulk_regions] for each quantity.
+	 * The region mass is later computed using transpose multiplication (M'*u + mv)[r].
+	 * See class @p Balance description above for details.
 	 * @param quantity_idx  Index of quantity.
-	 * @param region_idx    Index of bulk region.
-	 * @param dof_indices   Dof indices to be added.
-	 * @param values        Values to be added.
+	 * @param dh_cell       Dofhandler cell accessor.
+	 * @param loc_dof_indices   Local dof indices (to the solution vector) to be added.
+	 * @param mat_values    Values to be added into matrix M.
+     * @param vec_value     Value to be added into vector mv.
 	 */
-	void add_mass_matrix_values(unsigned int quantity_idx,
-			unsigned int region_idx,
-			const std::vector<LongIdx> &dof_indices,
-			const std::vector<double> &values);
+	void add_mass_values(unsigned int quantity_idx,
+			const DHCellAccessor &dh_cell,
+			const LocDofVec &loc_dof_indices,
+			const std::vector<double> &mat_values,
+			double vec_value);
 
 	/**
 	 * Adds elements into matrix for computing (outgoing) flux.
+	 * The flux matrix F is in format [n_boundary_edges x n_dofs] for each quantity.
+	 * The flux vector fv is in format [n_boundary_edges] for each quantity.
+	 * See class @p Balance description above for details.
 	 * @param quantity_idx  Index of quantity.
-	 * @param side          Element side iterator.
-	 * @param dof_indices   Dof indices (to the solution vector) to be added.
-	 * @param values        Values to be added.
-     * 
-     * TODO: Instead of SideIter and dof_indices, use DHCellSide,
-     * when it is available in all equations.
+	 * @param side          DHCellSide iterator.
+	 * @param loc_dof_indices   Local dof indices (to the solution vector) to be added.
+	 * @param mat_values    Values to be added into matrix F.
+     * @param vec_value     Value to be added into vector fv.
 	 */
-	void add_flux_matrix_values(unsigned int quantity_idx,
-			SideIter side,
-			const std::vector<LongIdx> &dof_indices,
-			const std::vector<double> &values);
-
-    /**
-     * Adds element into vector for computing mass.
-     * @param quantity_idx  Index of quantity.
-     * @param region_idx    Index of bulk region.
-     * @param value         Value to be added.
-     */
-    void add_mass_vec_value(unsigned int quantity_idx,
-            unsigned int region_idx,
-            double value);
+	void add_flux_values(unsigned int quantity_idx,
+			const DHCellSide &side,
+			const LocDofVec &loc_dof_indices,
+			const std::vector<double> &mat_values,
+			double vec_value);
 
     /**
 	 * Adds elements into matrix and vector for computing source.
+	 * The source region matrix S is in format [n_dofs x n_bulk_regions] for each quantity (multiplies solution).
+	 * The source region rhs matrix SV is in format [n_dofs x n_bulk_regions] for each quantity (addition).
+	 * The region source is then computed as (S'(q) * solution + sv(q))[r], while sv(q) being column sum of SV(q).
+	 * The source term for a specific region and quantity is then
 	 * @param quantity_idx  Index of quantity.
 	 * @param region_idx    Index of bulk region.
-	 * @param dof_indices   Local dof indices to be added.
-	 * @param mat_values    Values to be added into matrix.
-     * @param vec_values    Values to be added into vector.
+	 * @param loc_dof_indices   Local dof indices (to the solution vector) to be added.
+	 * @param mult_mat_values   Values to be added into matrix S.
+     * @param add_mat_values    Values to be added into matrix SV.
 	 */
 	void add_source_values(unsigned int quantity_idx,
 			unsigned int region_idx,
-			const std::vector<LongIdx> &loc_dof_indices,
-			const std::vector<double> &mat_values,
-            const std::vector<double> &vec_values);
-    
-	/**
-	 * Adds element into vector for computing (outgoing) flux.
-	 * @param quantity_idx  Index of quantity.
-	 * @param side          Element side iterator.
-	 * @param value         Value to be added.
-     * 
-	 */
-	void add_flux_vec_value(unsigned int quantity_idx,
-			SideIter side,
-			double value);
+			const LocDofVec &loc_dof_indices,
+			const std::vector<double> &mult_mat_values,
+            const std::vector<double> &add_mat_values);
+
 
 	/// This method must be called after assembling the matrix for computing mass.
 	void finish_mass_assembly(unsigned int quantity_idx);
@@ -428,7 +431,8 @@ private:
 	static bool do_yaml_output_;
 
 	/// Allocation parameters. Set by the allocate method used in the lazy_initialize.
-    unsigned int n_loc_dofs_;
+	unsigned int n_loc_dofs_par_;
+	unsigned int n_loc_dofs_seq_;
     unsigned int max_dofs_per_boundary_;
 
 
@@ -439,10 +443,10 @@ private:
     FilePath balance_output_file_;
 
     /// Handle for file for output in given OutputFormat of balance and total fluxes over individual regions and region sets.
-    ofstream output_;
+    std::ofstream output_;
 
     // The same as the previous case, but for output in YAML format.
-    ofstream output_yaml_;
+    std::ofstream output_yaml_;
 
     /// Format of output file.
     OutputFormat output_format_;

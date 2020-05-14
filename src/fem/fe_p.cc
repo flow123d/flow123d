@@ -64,14 +64,13 @@ double PolynomialSpace::basis_value(unsigned int i,
                                     unsigned int comp_index
                                     ) const
 {
-    ASSERT(comp_index == 0);
-	OLD_ASSERT(i<=powers.size(), "Index of basis function is out of range.");
-    ASSERT(point.size()==space_dim_);
+    ASSERT_EQ_DBG(comp_index, 0);
+	ASSERT_LE_DBG(i, powers.size());
+    ASSERT_EQ_DBG(point.size(), space_dim_);
 
     double v = 1;
     for (unsigned int j=0; j<this->space_dim_; j++)
         v *= pow(point[j], (int) powers[i][j]);
-
     return v;
 }
 
@@ -81,8 +80,8 @@ const arma::vec PolynomialSpace::basis_grad(unsigned int i,
                                             unsigned int comp_index
                                            ) const
 {
-    ASSERT(comp_index == 0);
-	OLD_ASSERT(i<=powers.size(), "Index of basis function is out of range.");
+    ASSERT_EQ_DBG(comp_index, 0);
+	ASSERT_LE_DBG(i, powers.size());
 
     arma::vec grad(this->space_dim_);
 
@@ -325,4 +324,10 @@ template class FE_CR<0>;
 template class FE_CR<1>;
 template class FE_CR<2>;
 template class FE_CR<3>;
+
+
+template class FE_CR_disc<0>;
+template class FE_CR_disc<1>;
+template class FE_CR_disc<2>;
+template class FE_CR_disc<3>;
 

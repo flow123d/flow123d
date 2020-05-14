@@ -1,0 +1,21 @@
+12_darcy_frac/51_gmsh_LMH.yaml
+    zero difference (ndiff)
+12_darcy_frac/52_vtk_LMH.yaml
+    zero difference (ndiff)
+12_darcy_frac/53_piezo_LMH.yaml
+    zero difference (ndiff)
+12_darcy_frac/54_bddc_LMH.yaml
+    zero difference (ndiff)
+12_darcy_frac/55_square_LMH.yaml
+    flow and water balance up to 1e-11 (ndiff)
+12_darcy_frac/56_cube_LMH.yaml
+    flow and water balance up to 1e-6 (ndiff)
+12_darcy_frac/60_exact_2d_cc_LMH.yaml
+    zero difference (ndiff)
+12_darcy_frac/61_exact_2d_nc_p0_LMH.yaml
+    zero difference (ndiff)
+12_darcy_frac/80_surf_cube_cc_LMH.yaml
+    zero difference (ndiff)
+12_darcy_frac/81_surf_cube_23d_p0_LMH.yaml
+    zero difference (ndiff)
+

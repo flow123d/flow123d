@@ -32,6 +32,18 @@ FieldAddPotential<spacedim, Value>::FieldAddPotential(const arma::vec::fixed<spa
 
 
 
+template <int spacedim, class Value>
+FieldAddPotential<spacedim, Value>::FieldAddPotential(const arma::vec::fixed<spacedim+1> &potential,
+		std::shared_ptr< FieldAlgorithmBase<spacedim, Value> > inner_field, unsigned int n_comp)
+: FieldAlgorithmBase<spacedim, Value>(n_comp),
+  inner_field_( inner_field )
+{
+    grad_=potential.subvec(0,spacedim-1);
+    zero_level_=potential[spacedim];
+}
+
+
+
 /**
  * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
  */
@@ -54,13 +66,14 @@ typename Value::return_type const & FieldAddPotential<spacedim, Value>::value(co
  * Returns std::vector of scalar values in several points at once.
  */
 template <int spacedim, class Value>
-void FieldAddPotential<spacedim, Value>::value_list (const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
+void FieldAddPotential<spacedim, Value>::value_list (const Armor::array &point_list, const ElementAccessor<spacedim> &elm,
                    std::vector<typename Value::return_type>  &value_list)
 {
 	ASSERT_EQ( point_list.size(), value_list.size() ).error();
+    ASSERT_DBG( point_list.n_rows() == spacedim && point_list.n_cols() == 1 ).error("Invalid point size.\n");
     inner_field_->value_list(point_list, elm, value_list);
     for(unsigned int i=0; i< point_list.size(); i++) {
-        double potential= arma::dot(grad_ , point_list[i]) + zero_level_;
+        double potential= arma::dot(grad_ , point_list.vec<spacedim>(i)) + zero_level_;
         Value envelope(value_list[i]);
 
         for(unsigned int row=0; row < this->value_.n_rows(); row++)

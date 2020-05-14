@@ -22,9 +22,10 @@
 #include "mesh/region.hh"
 #include "mesh/elements.h"
 #include "mesh/mesh.h"
-#include "mesh/nodes.hh"
 #include "mesh/node_accessor.hh"
+#include "mesh/ref_element.hh"
 #include "la/distribution.hh"
+#include "mesh/point.hh"
 #include <vector>
 #include <armadillo>
 
@@ -195,12 +196,9 @@ public:
         return mesh_->get_el_ds()->get_proc(mesh_->get_row_4_el()[element_idx_]);
     }
 
-    const Node * node(unsigned int ni) const {
-    	return &(mesh_->node_vec_[element()->node_idx(ni)]);
-    }
 
-    NodeAccessor<3> node_accessor(unsigned int ni) const {
-    	return mesh_->node_accessor( element()->node_idx(ni) );
+    NodeAccessor<3> node(unsigned int ni) const {
+        return mesh_->node( element()->node_idx(ni) );
     }
 
     /**
@@ -211,8 +209,12 @@ public:
         return BoundingBox(this->vertex_list());
     }
 
-    bool operator==(const ElementAccessor<spacedim>& other) {
+    bool operator==(const ElementAccessor<spacedim>& other) const {
     	return (element_idx_ == other.element_idx_);
+    }
+
+    inline bool operator!=(const ElementAccessor<spacedim>& other) const {
+    	return (element_idx_ != other.element_idx_);
     }
 
     /**
@@ -425,6 +427,15 @@ public:
     void inc() {
         ASSERT_DBG(is_valid()).error("Do not call inc() for invalid accessor!");
         side_idx_++;
+    }
+
+    bool operator==(const Side &other) const {
+        return (mesh_ == other.mesh_ ) && ( elem_idx_ == other.elem_idx_ )
+        		&& ( side_idx_ == other.side_idx_ );
+    }
+
+    bool operator!=(const Side &other) const {
+        return !( *this == other);
     }
 
     /// This is necessary by current DofHandler, should change this

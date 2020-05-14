@@ -74,6 +74,7 @@
 #include <vector>                      // for vector
 #include <array>
 #include <armadillo>
+#include "system/armor.hh"
 #include "system/asserts.hh"
 
 
@@ -169,8 +170,8 @@ public:
      * e.g. coordinates (a,b,c) on triangle with vertices X, Y, Z
      * represents a point: a*X+b*Y+c*Z
      */
-    typedef arma::vec::fixed<dim+1> BaryPoint;
-    typedef arma::vec::fixed<dim> FaceBaryPoint;
+    typedef Armor::ArmaVec<double, dim+1> BaryPoint;
+    typedef Armor::ArmaVec<double, dim> FaceBaryPoint;
         
 	/**
 	 * Return coordinates of given node.
@@ -262,7 +263,7 @@ public:
 	 * 2     2
 	 * 3     6
 	 */
-	static const unsigned int n_side_permutations = (dim+1)*(2*dim*dim-5*dim+6)/6;
+	static constexpr unsigned int n_side_permutations = (dim+1)*(2*dim*dim-5*dim+6)/6;
 
 	/**
 	 * Permutations of nodes on sides.
@@ -586,7 +587,7 @@ inline const IdxVector< (InDim>OutDim ? InDim+1 : dim-InDim) > RefElement<dim>::
     ASSERT(false)(dim)(OutDim)(InDim)(i).error("Not implemented.");
     //ASSERT_LT_DBG(OutDim, dim);
     //ASSERT_LT_DBG(InDim, dim);
-    return IdxVector<(InDim>OutDim ? InDim+1 : dim-InDim)>();
+    return IdxVector< (InDim>OutDim ? InDim+1 : dim-InDim) >();  // just to avoid warning for missing return
 }
 
 

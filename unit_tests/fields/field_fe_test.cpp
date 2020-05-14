@@ -32,6 +32,7 @@
 #include "mesh/mesh.h"
 #include "io/msh_gmshreader.h"
 #include "io/reader_cache.hh"
+#include "tools/mixed.hh"
 
 
 
@@ -95,21 +96,23 @@ TEST_F(FieldFETest, scalar) {
     create_mesh("fields/one_element_2d.msh");
     create_dof_handler(1, 2, 3);
 
-	FE_P_disc<0> fe0(1);
-	FE_P_disc<1> fe1(1);
-	FE_P_disc<2> fe2(1);
-	FE_P_disc<3> fe3(1);
-    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, &fe0, &fe1, &fe2, &fe3);
+	MixedPtr<FE_P_disc> fe(1);
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, fe);
     ScalarField field;
 
     dh->distribute_dofs(ds);
     field.set_fe_data(dh, 0, v);
     field.set_time(0.0);
 
+    Armor::array pts(3, 1);
+    pts.reinit(3);
+    pts.append(Armor::vec<3>({ 1, 1, 5 }));
+    pts.append(Armor::vec<3>({ 4, 0, 5 }));
+    pts.append(Armor::vec<3>({ 2, 3, 5 }));
     vector<double> values(3);
 
     // test values at vertices of the triangle
-    field.value_list( { { 1, 1, 5 }, { 4, 0, 5 }, { 2, 3, 5 } }, mesh->element_accessor(0), values );
+    field.value_list( pts, mesh->element_accessor(0), values );
     EXPECT_DOUBLE_EQ( dof_values[0], values[0] );
     EXPECT_DOUBLE_EQ( dof_values[1], values[1] );
     EXPECT_DOUBLE_EQ( dof_values[2], values[2] );
@@ -123,11 +126,8 @@ TEST_F(FieldFETest, vector) {
     create_mesh("fields/one_element_2d.msh");
     create_dof_handler(0, 0, 1);
 
-    FE_P_disc<0> fe0(1); //TODO temporary solution, we don't support FE_RTO<0> objects
-    FE_RT0<1> fe1;
-	FE_RT0<2> fe2;
-	FE_RT0<3> fe3;
-    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, &fe0, &fe1, &fe2, &fe3);
+	MixedPtr<FE_RT0> fe;
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, fe);
     VecField field;
 
     dh->distribute_dofs(ds);

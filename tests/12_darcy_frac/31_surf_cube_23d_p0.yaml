@@ -35,7 +35,6 @@ problem: !Coupling_Sequential
         - piezo_head_p0
         - pressure_p0
         - region_id
-#        - pressure_p1
         - velocity_p0
 #        - velocity_diff
 #        - pressure_diff

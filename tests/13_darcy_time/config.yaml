@@ -7,3 +7,6 @@ test_cases:
   - files:
       - 01_square.yaml
       - 02_unsteady_MH_time_dep.yaml
+      - 11_square_LMH.yaml
+      - 12_unsteady_LMH_time_dep.yaml
+

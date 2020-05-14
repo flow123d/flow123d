@@ -3,7 +3,7 @@ problem: !Coupling_Sequential
   description: Test15 - 2D unsteady flow LM
   mesh:
     mesh_file: ../00_mesh/rectangle_16x1_str.msh
-  flow_equation: !Flow_Richards_LMH
+  flow_equation: !Flow_Darcy_LMH
     output_specific:
       raw_flow_output: ./raw_output.txt
     input_fields:
@@ -24,11 +24,9 @@ problem: !Coupling_Sequential
       linear_solver: !Petsc
         a_tol: 1.0e-07
         r_tol: 1.0e-07
-    n_schurs: 2
     output:
       fields:
         - pressure_p0
-        - pressure_p1
         - velocity_p0
     balance:
       cumulative: true

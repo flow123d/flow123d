@@ -61,7 +61,7 @@ void ElementAccessor<spacedim>::inc() {
 template <int spacedim> inline
 vector<arma::vec3> ElementAccessor<spacedim>::vertex_list() const {
     vector<arma::vec3> vertices(element()->n_nodes());
-    for(unsigned int i=0; i<element()->n_nodes(); i++) vertices[i]=node(i)->point();
+    for(unsigned int i=0; i<element()->n_nodes(); i++) vertices[i]=*node(i);
     return vertices;
 }
 
@@ -117,7 +117,7 @@ arma::vec::fixed<spacedim> ElementAccessor<spacedim>::centre() const {
     centre.zeros();
 
     for (unsigned int li=0; li<element()->n_nodes(); li++) {
-        centre += node( li )->point();
+        centre += *node( li );
     }
     centre /= (double) element()->n_nodes();
     return centre;
@@ -227,7 +227,7 @@ inline bool Side::is_boundary() const {
 inline NodeAccessor<3> Side::node(unsigned int i) const {
     int i_n = mesh_->side_nodes[dim()][side_idx_][i];
 
-    return element().node_accessor( i_n );
+    return element().node( i_n );
 }
 
 inline ElementAccessor<3> Side::element() const {

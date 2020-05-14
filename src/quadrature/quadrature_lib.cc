@@ -29,17 +29,10 @@
 #undef SHORT
 #undef _F
 
-
-using namespace arma;
-
-
-QGauss::QGauss(unsigned int dim, const unsigned int order)
-: Quadrature(dim)
-{
-    typedef QUAD* pQUAD;
-
-    static const pQUAD
-        q1d[] = { QUAD_1D_P1,
+typedef std::vector<QUAD *> DimQuadList;
+std::vector<DimQuadList> __gauss_quadratures = {
+        {},
+        { QUAD_1D_P1,
                 QUAD_1D_P1, QUAD_1D_P2, QUAD_1D_P3,
                 QUAD_1D_P4, QUAD_1D_P5, QUAD_1D_P6,
                 QUAD_1D_P7, QUAD_1D_P8, QUAD_1D_P9,
@@ -48,7 +41,7 @@ QGauss::QGauss(unsigned int dim, const unsigned int order)
                 QUAD_1D_P16,    QUAD_1D_P17,    QUAD_1D_P18,
                 QUAD_1D_P19,    QUAD_1D_P20,    QUAD_1D_P21
               },
-        q2d[] = { QUAD_2D_P1,
+        { QUAD_2D_P1,
                 QUAD_2D_P1, QUAD_2D_P2, QUAD_2D_P3, QUAD_2D_P4,
                 QUAD_2D_P5, QUAD_2D_P6, QUAD_2D_P7, QUAD_2D_P8,
                 QUAD_2D_P9, QUAD_2D_P10,    QUAD_2D_P11,    QUAD_2D_P12,
@@ -56,52 +49,62 @@ QGauss::QGauss(unsigned int dim, const unsigned int order)
                 QUAD_2D_P17,    QUAD_2D_P18,    QUAD_2D_P19,    QUAD_2D_P20,
                 QUAD_2D_P21
               },
-        q3d[] = { QUAD_3D_P1,
+        { QUAD_3D_P1,
                 QUAD_3D_P1, QUAD_3D_P2, QUAD_3D_P3, QUAD_3D_P4,
                 QUAD_3D_P5, QUAD_3D_P6, QUAD_3D_P7, QUAD_3D_P8,
                 QUAD_3D_P9, QUAD_3D_P10,    QUAD_3D_P11,    QUAD_3D_P12,
                 QUAD_3D_P13,    QUAD_3D_P14
-              };
-    static const double unit_cell_volume[] = { 1, 1, 0.5, 1./6 };
-    const pQUAD *q = nullptr;
-    unsigned int nquads = 0;
+              }
+};
+
+double __unit_cell_volume[] = { 1, 1, 0.5, 1./6 };
+
+template<int Dim>
+void QGauss::init(uint order) {
+    DimQuadList & quads = __gauss_quadratures[Dim];
+    OLD_ASSERT(order < quads.size(), "Quadrature of given order is not implemented.");
+    auto &point_list = quads[order];
+
+    this->quadrature_points.reinit(point_list->npoints);
+    this->weights.resize(0);
+    for (int i=0; i<point_list->npoints; i++)
+    {
+        Armor::ArmaVec<double, Dim> p(& point_list->points[i*(Dim+1)]);
+        this->quadrature_points.append(p);
+        this->weights.push_back(point_list->weights[i] * __unit_cell_volume[Dim]);
+    }
+}
+
+
+QGauss::QGauss(unsigned int dim, unsigned int order)
+: Quadrature(dim)
+{
 
     switch (dim)
     {
     case 0:
-        this->quadrature_points.push_back({});
+        // Quadrature on 0-dim element have single quadrature point
+        // with 0 local coordinates.
+        // No way to append 0-dim arma vec, we just resize the Array.
+        this->quadrature_points.reinit(1);
+        this->quadrature_points.resize(1);
         this->weights.push_back(1);
+        ASSERT_EQ_DBG(size(), 1);
         return;
     case 1:
-        q = q1d;
-        nquads = sizeof(q1d) / sizeof(pQUAD);
+        init<1>(order);
         break;
     case 2:
-        q = q2d;
-        nquads = sizeof(q2d) / sizeof(pQUAD);
+        init<2>(order);
         break;
     case 3:
-        q = q3d;
-        nquads = sizeof(q3d) / sizeof(pQUAD);
+        init<3>(order);
         break;
     }
 
-    ASSERT_DBG(order < nquads).error("Quadrature of given order is not implemented.");
-    ASSERT_PTR_DBG(q);
 
-    vector<double> p(dim, 0);
-    for (int i=0; i<q[order]->npoints; i++)
-    {
-        for (unsigned int j=0; j<dim; j++)
-            p[j] = q[order]->points[i*(dim+1)+j];
-
-        this->quadrature_points.push_back(p);
-        // The weights must be adjusted according to the volume of the unit cell:
-        // 1D cell: volume 1
-        // 2D cell: volume 1/2
-        // 3D cell: volume 1/6
-        this->weights.push_back(q[order]->weights[i]*unit_cell_volume[dim]);
-    }
 }
+
+
 
 

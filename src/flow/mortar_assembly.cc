@@ -9,6 +9,7 @@
 #include "quadrature/intersection_quadrature.hh"
 #include "la/linsys.hh"
 #include "mesh/accessors.hh"
+#include "fem/dh_cell_accessor.hh"
 #include "intersection/mixed_mesh_intersections.hh"
 #include <armadillo>
 
@@ -16,8 +17,7 @@ P0_CouplingAssembler::P0_CouplingAssembler(AssemblyDataPtr data)
 : MortarAssemblyBase(data),
   tensor_average_(16),
   col_average_(4),
-  quadrature_(*(data->mesh)),
-  slave_ac_(data->mh_dh)
+  quadrature_(*(data->mesh))
 {
     isec_data_list.reserve(30);
 
@@ -35,26 +35,31 @@ P0_CouplingAssembler::P0_CouplingAssembler(AssemblyDataPtr data)
 }
 
 
-void P0_CouplingAssembler::pressure_diff(LocalElementAccessorBase<3> ele_ac, double delta) {
+void P0_CouplingAssembler::pressure_diff(const DHCellAccessor& dh_cell, double delta) {
     isec_data_list.push_back(IsecData());
     IsecData &i_data = isec_data_list.back();
 
-    i_data.dim= ele_ac.dim();
-    i_data.delta = delta;
-    i_data.dofs.resize(ele_ac.n_sides());
-    i_data.vel_dofs.resize(ele_ac.n_sides());
-    i_data.dirichlet_dofs.resize(ele_ac.n_sides());
-    i_data.dirichlet_sol.resize(ele_ac.n_sides());
-    i_data.n_dirichlet=0;
-    i_data.ele_z_coord_=ele_ac.centre()[2];
+    ElementAccessor<3> ele = dh_cell.elm();
+    const uint nsides = ele->n_sides();
+    const uint ndofs = dh_cell.n_dofs();
 
-    for(unsigned int i_side=0; i_side < ele_ac.n_sides(); i_side++ ) {
-        i_data.dofs[i_side]=ele_ac.edge_row(i_side);
-        i_data.vel_dofs[i_side] = ele_ac.side_row(i_side);
-        //i_data.z_sides[i_side]=ele_ac.side(i_side)->centre()[2];
-        //DebugOut().fmt("edge: {} {}", i_side, ele_ac.edge_row(i_side));
-        if (ele_ac.element_accessor().side(i_side)->is_boundary()) {
-            Boundary bcd = ele_ac.element_accessor().side(i_side)->cond();
+    i_data.dim= ele.dim();
+    i_data.delta = delta;
+    i_data.dofs.resize(nsides);
+    i_data.vel_dofs.resize(nsides);
+    i_data.dirichlet_dofs.resize(nsides);
+    i_data.dirichlet_sol.resize(nsides);
+    i_data.n_dirichlet=0;
+    i_data.ele_z_coord_=ele.centre()[2];
+
+    for(unsigned int i_side=0; i_side < nsides; i_side++ ) {
+        // TODO: replace with DHCell getter when available for FESystem component
+        i_data.dofs[i_side] = dh_cell.get_loc_dof_indices()[(ndofs+1)/2+i_side];   //edge dof
+        i_data.vel_dofs[i_side] = dh_cell.get_loc_dof_indices()[i_side];   // side dof
+        //i_data.z_sides[i_side]=ele.side(i_side)->centre()[2];
+        Side side = *dh_cell.elm().side(i_side);
+        if (side.is_boundary()) {
+            Boundary bcd = side.cond();
             ElementAccessor<3> b_ele = bcd.element_accessor();
             auto type = (DarcyMH::EqData::BC_Type)data_->bc_type.value(b_ele.centre(), b_ele);
             //DebugOut().fmt("bcd id: {} sidx: {} type: {}\n", ele->id(), i_side, type);
@@ -77,7 +82,7 @@ void P0_CouplingAssembler::pressure_diff(LocalElementAccessorBase<3> ele_ac, dou
 /**
  * Works well but there is large error next to the boundary.
  */
-void P0_CouplingAssembler::assembly(LocalElementAccessorBase<3> master_ac)
+void P0_CouplingAssembler::assembly(const DHCellAccessor& dh_cell_master)
 {
 
 
@@ -103,14 +108,14 @@ void P0_CouplingAssembler::assembly(LocalElementAccessorBase<3> master_ac)
      *  - use one big or more smaller local systems to set.
      */
 
-
-    if (master_ac.dim() > 2) return; // supported only for 1D and 2D master elements
-    auto &isec_list = mixed_mesh_.element_intersections_[master_ac.ele_global_idx()];
+    ElementAccessor<3> ele = dh_cell_master.elm();
+    
+    if (ele.dim() > 2) return; // supported only for 1D and 2D master elements
+    auto &isec_list = mixed_mesh_.element_intersections_[ele.idx()];
     if (isec_list.size() == 0) return; // skip empty masters
 
     //slave_ac_.setup(master_ac);
 
-    ElementAccessor<3> ele = master_ac.element_accessor();
     arma::vec3 ele_centre = ele.centre();
     double m_sigma = data_->sigma.value( ele_centre, ele);
     double m_conductivity = data_->conductivity.value( ele_centre, ele);
@@ -135,27 +140,30 @@ void P0_CouplingAssembler::assembly(LocalElementAccessorBase<3> master_ac)
     isec_data_list.clear();
     double cs_sqr_avg = 0.0;
     double isec_sum = 0.0;
+    unsigned int slave_dim = 0;
     uint i = 0;
     for(; i < isec_list.size(); ++i) {
         bool non_zero = quadrature_.reinit(isec_list[i].second);
-        slave_ac_.reinit( quadrature_.slave_idx() );
-        if (slave_ac_.dim() == master_ac.dim()) break;
+        DHCellAccessor dh_cell_slave(this->data_->dh_.get(), quadrature_.slave_idx());
+        ElementAccessor<3> ele_slave = dh_cell_slave.elm();
+        slave_dim = ele_slave.dim();
+        if (slave_dim == ele.dim()) break;
         if (! non_zero) continue; // skip quadratures close to zero
 
-        double cs = data_->cross_section.value(slave_ac_.element_accessor().centre(), slave_ac_.element_accessor());
+        double cs = data_->cross_section.value(ele_slave.centre(), ele_slave);
         double isec_measure = quadrature_.measure();
         //DebugOut() << print_var(cs) << print_var(isec_measure);
         cs_sqr_avg += cs*cs*isec_measure;
         isec_sum += isec_measure;
-        //DebugOut().fmt("Assembly23: {} {} {} ", ele.idx(), slave_ac_.element_accessor()->id(), isec_measure);
-        pressure_diff(slave_ac_, isec_measure);
+        //DebugOut().fmt("Assembly23: {} {} {} ", ele.idx(), ele_slave->id(), isec_measure);
+        pressure_diff(dh_cell_slave, isec_measure);
     }
-    if ( ! (slave_ac_.dim() == 2 && master_ac.dim() ==2 ) ) {
+    if ( ! (slave_dim == 2 && ele.dim() ==2 ) ) {
         if( fabs(isec_sum - ele.measure()) > 1E-5) {
             string out;
             for(auto & isec : isec_list) {
-                slave_ac_.reinit(isec.second->bulk_ele_idx());
-                out += fmt::format(" {}", slave_ac_.element_accessor().idx());
+                DHCellAccessor dh_cell_slave(this->data_->dh_.get(), isec.second->bulk_ele_idx());
+                out += fmt::format(" {}", dh_cell_slave.elm().idx());
             }
 
             double diff = (isec_sum - ele.measure())/ele.measure();
@@ -166,7 +174,7 @@ void P0_CouplingAssembler::assembly(LocalElementAccessorBase<3> master_ac)
 
         }
     }
-    pressure_diff(master_ac, -isec_sum);
+    pressure_diff(dh_cell_master, -isec_sum);
 
     //DebugOut().fmt( "cs2: {} d0: {}", cs_sqr_avg, delta_0);
     master_sigma = master_sigma * (cs_sqr_avg / isec_sum)
@@ -183,13 +191,13 @@ void P0_CouplingAssembler::assembly(LocalElementAccessorBase<3> master_ac)
         isec_sum = 0.0;
         for(; i < isec_list.size(); ++i) {
                 quadrature_.reinit(isec_list[i].second);
-                slave_ac_.reinit( quadrature_.slave_idx() );
+                DHCellAccessor dh_cell_slave(this->data_->dh_.get(), quadrature_.slave_idx());
                 double isec_measure = quadrature_.measure();
                 isec_sum += isec_measure;
-                //DebugOut().fmt("Assembly22: {} {} {}", ele.idx(), slave_ac_.element_accessor().idx(), isec_measure);
-                pressure_diff(slave_ac_, isec_measure);
+                //DebugOut().fmt("Assembly22: {} {} {}", ele.idx(), dh_cell_slave.elm().idx(), isec_measure);
+                pressure_diff(dh_cell_slave, isec_measure);
         }
-        pressure_diff(master_ac, -isec_sum);
+        pressure_diff(dh_cell_master, -isec_sum);
 
         master_sigma = 100 * m_conductivity/ m_crossection / isec_sum;
 
@@ -223,7 +231,8 @@ void P0_CouplingAssembler::add_to_linsys(double scale)
              if (fix_velocity_flag) {
                  this->fix_velocity_local(row_ele, col_ele);
              } else {
-                 data_->lin_sys->set_local_system(loc_system_);
+                 loc_system_.eliminate_solution();
+                 data_->lin_sys->set_local_system(loc_system_, data_->dh_->get_local_to_global_map());
              }
          }
      }
@@ -237,20 +246,25 @@ void P0_CouplingAssembler::fix_velocity_local(const IsecData &row_ele, const Ise
     uint n_cols = col_ele.dofs.n_rows;
     arma::vec pressure(n_cols);
     arma::vec add_velocity(n_rows);
-    double * solution = data_->lin_sys->get_solution_array();
-    for(uint icol=0; icol < n_cols; icol++ ) pressure[icol] = solution[col_ele.dofs[icol]];
+    
+    for(uint icol=0; icol < n_cols; icol++ ) pressure[icol] = data_->full_solution[col_ele.dofs[icol]];
     add_velocity =  loc_system_.get_matrix() * pressure - loc_system_.get_rhs();
     //DebugOut() << "fix_velocity\n" << pressure << add_velocity;
-    for(uint irow=0; irow < n_rows; irow++ ) solution[row_ele.vel_dofs[irow]] += add_velocity[irow] ;
+    for(uint irow=0; irow < n_rows; irow++ ) data_->full_solution[row_ele.vel_dofs[irow]] += add_velocity[irow] ;
 }
 
-void P1_CouplingAssembler::add_sides(LocalElementAccessorBase<3> ele_ac, unsigned int shift, vector<int> &dofs, vector<double> &dirichlet)
+void P1_CouplingAssembler::add_sides(const DHCellAccessor& dh_cell, unsigned int shift, vector<int> &dofs, vector<double> &dirichlet)
 {
-    for(unsigned int i_side=0; i_side < ele_ac.n_sides(); i_side++ ) {
-        dofs[shift+i_side] =  ele_ac.edge_row(i_side);
+    ElementAccessor<3> ele = dh_cell.elm();
+    const uint ndofs = dh_cell.n_dofs();
 
-        if (ele_ac.element_accessor().side(i_side)->is_boundary()) {
-            Boundary bcd = ele_ac.element_accessor().side(i_side)->cond();
+    for(unsigned int i_side=0; i_side < ele->n_sides(); i_side++ ) {
+        // TODO: replace with DHCell getter when available for FESystem component
+        dofs[shift+i_side] =  dh_cell.get_loc_dof_indices()[(ndofs+1)/2+i_side];   //edge dof
+        
+        Side side = *dh_cell.elm().side(i_side);
+        if (side.is_boundary()) {
+            Boundary bcd = side.cond();
             ElementAccessor<3> b_ele = bcd.element_accessor();
             auto type = (DarcyMH::EqData::BC_Type)data_->bc_type.value(b_ele.centre(), b_ele);
             //DebugOut().fmt("bcd id: {} sidx: {} type: {}\n", ele->id(), i_side, type);
@@ -271,7 +285,7 @@ void P1_CouplingAssembler::add_sides(LocalElementAccessorBase<3> ele_ac, unsigne
  * - 20.11. 2014 - very poor convergence, big error in pressure even at internal part of the fracture
  */
 
-void P1_CouplingAssembler::assembly(FMT_UNUSED LocalElementAccessorBase<3> ele_ac) {
+void P1_CouplingAssembler::assembly(FMT_UNUSED const DHCellAccessor& dh_cell) {
 /*
     const IsecList &master_list = master_list_[ele_ac.ele_global_idx()];
     if (master_list.size() == 0) return; // skip empty masters

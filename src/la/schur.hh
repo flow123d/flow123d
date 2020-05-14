@@ -134,6 +134,8 @@ public:
      * The solve or resolve must be called prior to computing the residual.
      */
     double compute_residual() override;
+    int loc_size_A, loc_size_B; // loc size of the A and B block
+    IS IsA, IsB;                // parallel index sets of the A and B block
 
 protected:
     /// create IA matrix
@@ -143,16 +145,18 @@ protected:
 
 
 
+    Mat A;                      // Submatrix of matrix_ contains only data given by IsA parallel index set
     Mat IA;                     // Inverse of block A
 
     Mat B, Bt;                  // B and B' block (could be different from real B transpose)
     Mat C;                      // Sub matrix.
     Mat xA;                     // Bt*IA*B
     Mat IAB;                    // reconstruction matrix IA * B
-    int loc_size_A, loc_size_B; // loc size of the A and B block
-    IS IsA, IsB;                // parallel index sets of the A and B block
+
     Vec RHS1, RHS2;             // A and B - part of the RHS
     Vec Sol1, Sol2;             // A and B part of solution
+    VecScatter rhs1sc, rhs2sc;  // scatter to parts of rhs
+    VecScatter sol1sc, sol2sc;  // scatter to parts of solution
 
     SchurState state;           // object internal state
     int orig_lsize;             ///< Size of local vector part of original system

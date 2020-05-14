@@ -127,56 +127,54 @@ include (Flow123d_config_header)
 
 
 
-if(FLOW_CC_FLAGS) 
+  
+message(STATUS "Using build type: ${FLOW_BUILD_TYPE}")
+if(FLOW_BUILD_TYPE STREQUAL "debug")
+  # debug mode
+  set(CMAKE_CXX_FLAGS "-g -O0")
+  set(CMAKE_C_FLAGS "-g -O0")
+  set(CMAKE_EXE_LINKER_FLAGS "-g ")
+  set(CMAKE_BUILD_TYPE Debug)
+  flow_define(DEBUG)
+elseif(FLOW_BUILD_TYPE STREQUAL "release")
+  # Release mode
+  set(CMAKE_CXX_FLAGS "-O3 -DNDEBUG" )
+  set(CMAKE_C_FLAGS "-O3 -DNDEBUG")
+  set(CMAKE_BUILD_TYPE Release)
+  # armadillo is configured using this definition
+  add_definitions(-DARMA_NO_DEBUG)    # no bound checks in armadillo 
+  flow_define(DEBUG_PROFILER)
+  flow_define(RUN_UNIT_BENCHMARKS)    # build benchmark unit tests
+elseif(FLOW_BUILD_TYPE STREQUAL "release_with_debug")
+  # Release mode with debug info 
+  set(CMAKE_CXX_FLAGS "-O3")
+  set(CMAKE_C_FLAGS "-O3")
+  set(CMAKE_BUILD_TYPE Debug)
+  flow_define(DEBUG)
+elseif(FLOW_BUILD_TYPE STREQUAL "coverage")
+  # Coverage mode creates instrumented binary
+  SET(CMAKE_CXX_FLAGS "-g -O0 --coverage")
+  SET(CMAKE_C_FLAGS "-g -O0 --coverage")
+  SET(CMAKE_EXE_LINKER_FLAGS "-g -O0 --coverage")
+  set(CMAKE_BUILD_TYPE Debug)
+  
+  # set external libs flags
+  SET(EXTERNAL_LIBS_CXX_FLAGS "-g -O0")
+  SET(EXTERNAL_LIBS_C_FLAGS "-g -O0")
+  
+  flow_define(DEBUG)
+  # INCLUDE(CodeCoverage)
+  # add custom target to collect coverage into xml file
+  # COVERAGE_SETUP_COBERTURA_COLLECTION (cobertura-collect-coverage coverage.xml)
+else()
+endif()
+
+if(FLOW_CC_FLAGS)
   # user given flags overrides everything  
   message(STATUS "Using user specified compiler options: ${FLOW_CC_FLAGS}")
   set(CMAKE_CXX_FLAGS  "${FLOW_CC_FLAGS}")
   set(CMAKE_C_FLAGS  "${FLOW_CC_FLAGS}")
   set(CMAKE_EXE_LINKER_FLAGS "${FLOW_CC_FLAGS}")
-  set(CMAKE_BUILD_TYPE Debug)
-  
-else(FLOW_CC_FLAGS)
- 
-  message(STATUS "Using build type: ${FLOW_BUILD_TYPE}")
-  if(FLOW_BUILD_TYPE STREQUAL "debug")
-    # debug mode
-    set(CMAKE_CXX_FLAGS "-g -O0")
-    set(CMAKE_C_FLAGS "-g -O0")
-    set(CMAKE_EXE_LINKER_FLAGS "-g ")
-    set(CMAKE_BUILD_TYPE Debug)
-    flow_define(DEBUG)
-  elseif(FLOW_BUILD_TYPE STREQUAL "release")
-    # Release mode
-    set(CMAKE_CXX_FLAGS "-O3 -DNDEBUG" )
-    set(CMAKE_C_FLAGS "-O3 -DNDEBUG")
-    set(CMAKE_BUILD_TYPE Release)
-    # armadillo is configured using this definition
-    add_definitions(-DARMA_NO_DEBUG)    # no bound checks in armadillo 
-    flow_define(DEBUG_PROFILER)
-    flow_define(RUN_UNIT_BENCHMARKS)    # build benchmark unit tests
-  elseif(FLOW_BUILD_TYPE STREQUAL "release_with_debug")
-    # Release mode with debug info 
-    set(CMAKE_CXX_FLAGS "-O3")
-    set(CMAKE_C_FLAGS "-O3")
-    set(CMAKE_BUILD_TYPE Debug)
-    flow_define(DEBUG)
-  elseif(FLOW_BUILD_TYPE STREQUAL "coverage")
-    # Coverage mode creates instrumented binary
-    SET(CMAKE_CXX_FLAGS "-g -O0 --coverage")
-    SET(CMAKE_C_FLAGS "-g -O0 --coverage")
-    SET(CMAKE_EXE_LINKER_FLAGS "-g -O0 --coverage")
-    set(CMAKE_BUILD_TYPE Debug)
-    
-    # set external libs flags
-    SET(EXTERNAL_LIBS_CXX_FLAGS "-g -O0")
-    SET(EXTERNAL_LIBS_C_FLAGS "-g -O0")
-    
-    flow_define(DEBUG)
-    # INCLUDE(CodeCoverage)
-    # add custom target to collect coverage into xml file
-    # COVERAGE_SETUP_COBERTURA_COLLECTION (cobertura-collect-coverage coverage.xml)
-  else()
-  endif()
 endif(FLOW_CC_FLAGS)
 
 # unset predefined build type resolution variables to have better control over
@@ -185,55 +183,28 @@ set(CMAKE_C_FLAGS_${CMAKE_BUILD_TYPE} "")
 set(CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE} "")
 set(CMAKE_FORTRAN_FLAGS_${CMAKE_BUILD_TYPE} "")
 
-# Compiler-specific C++11 activation.
-if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")        
-      execute_process(
-          COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
+# Compiler-specific C++14 activation.
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
       # -Wvla - variable length arrays
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Wall -Wextra -Wno-vla -Wno-unused-local-typedefs -Wno-deprecated-declarations")
 
-      # is cygwin env?
-      if (CYGWIN)
-          # is version 4.8 or higher?
-          if (GCC_VERSION VERSION_GREATER 4.8 OR GCC_VERSION VERSION_EQUAL 4.8)
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -fext-numeric-literals")
-            flow_define(HAVE_CYGWIN)
-          # version is too low
-          else ()
-            message(SEND_ERROR "Error: Minimal GCC version under Cygwin is 4.8!." )
-          endif ()
-
-      # not cygwin 
-      # is version 4.7 or higher?
-      elseif (GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7)
-          set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-      # version is too low
-      else()
-          message(SEND_ERROR "Error: Minimal GCC version is 4.7!.") 
-      endif()   
-
-    # Necessary for FParser - TODO: move to better place
-    # ?? what about Clang
-    flow_define(HAVE_SINCOS)
-    
-elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wno-uninitialized -Wno-inconsistent-missing-override") 
-    
-    # for some reason BOOST doesn't work with option -std=c++11
-    # BOOST must be compiled with clang in order to use C++11 standard. 
-    # set(Boost_FORCE_REBUILD "true")
-    # set(Boost_CONFIG_FLAGS " --with-toolset=clang ")
-    # set(Boost_BUILD_FLAGS " toolset=clang cxxflags=\"-stdlib=libc++\" linkflags=\"-stdlib=libc++\" " )        
-    
-    # 
-    # TODO: make test for presence of sincos() function and set FLOW123D_HAVE_SINCOS appropriatly, used in fparser extsrc/fpaux.cc
-    #
-else ()
-    message(STATUS "Your C++ compiler does not support C++11. Some features may be disabled.")
-endif()
+## Compiler-specific C++11 activation.
+## It was replaced in commit a66193035 with C++14 specification.
+## Needs special definition of trigonometric functions held in the comment below:
+# if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")        
+#     ...
+#     # Necessary for FParser - TODO: move to better place
+#     # ?? what about Clang
+#     flow_define(HAVE_SINCOS)
+# else()
+#     ...
+# endif()
 
 # set encoding of VTU output files to Little Endian, VTU files can be encoded in Little Endian or Big Endian format  
 flow_define(LITTLE_ENDIAN true)
+
 
 #########################################################################
 # Determining timer with highest resolution

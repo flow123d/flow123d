@@ -1,0 +1,38 @@
+flow123d_version: 3.1.0
+problem: !Coupling_Sequential
+  description: Flow in 2d-1d domain, non-compatible mesh
+  mesh:
+    mesh_file: ../00_mesh/square_2x2_frac_nc.msh
+  flow_equation: !Flow_Darcy_LMH
+    output_specific:
+      compute_errors: true
+      fields:
+        - velocity_diff
+        - pressure_diff
+        - div_diff
+    nonlinear_solver:
+      linear_solver: !Petsc
+        r_tol: 1.0e-10
+        a_tol: 1.0e-10
+    mortar_method: P0
+    input_fields:
+      - region: 1d
+        conductivity: 1
+        sigma: 25
+      - region: 2d
+        conductivity: 5
+      - region: .1d
+        bc_type: dirichlet
+        bc_pressure: 5
+      - region: .2d_bottom_top
+        bc_type: dirichlet
+        bc_pressure: 10
+    output:
+      fields:
+        - piezo_head_p0
+        - pressure_p0
+        - velocity_p0
+    output_stream:
+      file: ./flow.pvd
+      format: !vtk
+        variant: ascii

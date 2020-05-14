@@ -134,7 +134,8 @@ void MPI_PrettyUnitTestResultPrinter::PrintTestName(const char * test_case, cons
 // Fired before each iteration of tests starts.
 // (not yet MPI friendly)
 
-void MPI_PrettyUnitTestResultPrinter::OnTestIterationStart(const UnitTest& unit_test, int iteration) {
+// void MPI_PrettyUnitTestResultPrinter::OnTestIterationStart(const UnitTest& unit_test, int iteration) {
+void MPI_PrettyUnitTestResultPrinter::OnTestIterationStart(const UnitTest&, int) {
 	/*
 	    if (GTEST_FLAG(repeat) != 1)
 	    printf("\nRepeating all tests (iteration %d) . . .\n\n", iteration + 1);

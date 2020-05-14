@@ -18,7 +18,7 @@
 #ifndef POINT_HH_
 #define POINT_HH_
 
-#include <armadillo>
+#include "system/armor.hh"
 
 
 /*
@@ -36,10 +36,10 @@
  * Try to use Armor instead of Armadillo fixed vectors.
  */
 
-template<int spacedim>
+template <uint spacedim>
 class Space {
 public:
-    typedef typename arma::vec::fixed<spacedim> Point;
+    typedef typename Armor::ArmaVec<double, spacedim> Point;
 };
 
 

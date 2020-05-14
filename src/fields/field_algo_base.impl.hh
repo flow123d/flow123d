@@ -162,18 +162,28 @@ unsigned int FieldAlgorithmBase<spacedim, Value>::n_comp() const {
 }
 
 
+template<int spacedim, class Value>
+void FieldAlgorithmBase<spacedim, Value>::cache_update(
+            FMT_UNUSED FieldValueCache<typename Value::element_type> &data_cache,
+			FMT_UNUSED ElementCacheMap &cache_map,
+			FMT_UNUSED unsigned int region_idx)
+{
+	   //ASSERT(false).error("Must be implemented in descendants!\n");
+}
+
 
 template<int spacedim, class Value>
 void FieldAlgorithmBase<spacedim, Value>::value_list(
-        const std::vector< Point >  &point_list,
+        const Armor::array  &point_list,
         const ElementAccessor<spacedim> &elm,
         std::vector<typename Value::return_type>  &value_list)
 {
 	ASSERT_EQ( point_list.size(), value_list.size() ).error();
+    ASSERT_DBG(point_list.n_rows() == spacedim && point_list.n_cols() == 1).error("Invalid point size.\n");
     for(unsigned int i=0; i< point_list.size(); i++) {
     	ASSERT( Value(value_list[i]).n_rows()==this->value_.n_rows() )(i)(Value(value_list[i]).n_rows())(this->value_.n_rows())
                 .error("value_list has wrong number of rows");
-        value_list[i]=this->value(point_list[i], elm);
+        value_list[i]=this->value(point_list.vec<spacedim>(i), elm);
     }
 
 }

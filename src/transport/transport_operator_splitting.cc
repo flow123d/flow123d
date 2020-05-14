@@ -20,6 +20,7 @@
 
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
+#include "system/index_types.hh"
 
 #include "transport/transport_operator_splitting.hh"
 #include <petscmat.h>
@@ -30,7 +31,6 @@
 #include "coupling/balance.hh"
 #include "transport/transport.h"
 #include "mesh/mesh.h"
-#include "mesh/long_idx.hh"
 
 #include "reaction/reaction_term.hh"
 #include "reaction/first_order_reaction.hh"
@@ -73,8 +73,7 @@ const Record & TransportOperatorSplitting::get_input_type() {
             " via operator splitting.")
 		.derive_from(AdvectionProcessBase::get_input_type())
 		.add_attribute( FlowAttribute::subfields_address(), "\"/problem/solute_equation/substances/*/name\"")
-		.declare_key("time", TimeGovernor::get_input_type(), Default::obligatory(),
-				"Time governor settings for the transport equation.")
+    .copy_keys(EquationBase::record_template())
 		.declare_key("balance", Balance::get_input_type(), Default("{}"),
 				"Settings for computing mass balance.")
 		.declare_key("output_stream", OutputTime::get_input_type(), Default("{}"),
@@ -165,6 +164,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 	convection = trans.factory< ConcentrationTransportBase, Mesh &, const Input::Record >(init_mesh, trans);
 
 	time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), TimeMark::none_type, false);
+  ASSERT( time_->is_default() == false ).error("Missing key 'time' in Coupling_OperatorSplitting.");
 	convection->set_time_governor(time());
 
 	// Initialize list of substances.
@@ -199,12 +199,9 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 		reaction = (*reactions_it).factory< ReactionTerm, Mesh &, Input::Record >(init_mesh, *reactions_it);
 
         //initialization of DOF handler
-        static FE_P_disc<0> fe0(0);
-        static FE_P_disc<1> fe1(0);
-        static FE_P_disc<2> fe2(0);
-        static FE_P_disc<3> fe3(0);
+        static MixedPtr<FE_P_disc> fe(0);
         shared_ptr<DOFHandlerMultiDim> dof_handler = make_shared<DOFHandlerMultiDim>(*mesh_);
-        shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>( mesh_, &fe0, &fe1, &fe2, &fe3);
+        shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>( mesh_, fe);
         dof_handler->distribute_dofs(ds);
 
         reaction->substances(convection->substances())
@@ -364,9 +361,9 @@ void TransportOperatorSplitting::update_solution() {
 
 
 
-void TransportOperatorSplitting::set_velocity_field(const MH_DofHandler &dh)
+void TransportOperatorSplitting::set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field)
 {
-	convection->set_velocity_field( dh );
+	convection->set_velocity_field( flux_field );
 }
 
 

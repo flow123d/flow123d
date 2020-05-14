@@ -1,0 +1,48 @@
+# Test goal: Darcy flow Seepage boundary condition - stagnation, solved by Lumped Mixed Hybrid method.
+# Author: Pavel Exner
+# Source for reference:
+#   it is the same problem as in test 09_seepage_stagnation
+#   results between MH and LMH are the same, passed ndiff with 0
+flow123d_version: 3.1.0
+problem: !Coupling_Sequential
+  description: Steady flow with Seepage face boundary condition
+  #      * The test problem use square computational domain and emulate slope of the top surface
+  #      * by prescribing the switch pressure (hS) as a linear function.
+  #      * The output could be visualized with Paraview using ref_output/flow_seepage.pvsm.
+  #      * According to the internal output, the interface between h<hS and h:hS should be
+  #      * just in the middle. However since we can not display values on the boundary yet, the
+  #      * velocities in the elements (z component in the left view) seem to have negative Z component
+  #      * even on the right half of the domain so the switch point seems to be slightly on the right.
+  #      * On the other hand the "plot over line" of the pressure and the switch pressure near the boundary
+  #      * clearly displays the switch point in for x:0.5. Again the pressure is slightly above the switch pressure
+  #      * since we do not plot values directly on the boundary.
+  mesh:
+    mesh_file: ../00_mesh/square_xz_1x1.msh
+  flow_equation: !Flow_Darcy_LMH
+    input_fields:
+      - region: plane
+        conductivity: 0.001
+      - region: .top
+        bc_type: seepage
+        bc_switch_pressure: !FieldFormula
+          value: -x+0.5
+        bc_flux: 0.0005
+    output:
+      fields:
+        - piezo_head_p0
+        - pressure_p0
+        - velocity_p0
+#        - subdomain
+    nonlinear_solver:
+      tolerance: 1e-5
+      max_it: 10 # should stop after 5 iterations due to stagnation
+      converge_on_stagnation: true
+      linear_solver: !Petsc
+        # set r tolerance to high to force stagnation of the nonlin solver
+        r_tol: 0.9999
+        a_tol: 1000.0
+
+    output_stream:
+      file: ./flow.pvd
+      format: !vtk
+        variant: ascii

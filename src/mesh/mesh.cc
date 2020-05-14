@@ -18,17 +18,17 @@
 
 #include <unistd.h>
 #include <set>
-
+#include <unordered_map>
 
 #include "system/system.hh"
 #include "system/exceptions.hh"
+#include "system/index_types.hh"
 #include "input/reader_to_storage.hh"
 #include "input/input_type.hh"
 #include "input/accessors.hh"
 #include "system/sys_profiler.hh"
 #include "la/distribution.hh"
 
-#include "mesh/long_idx.hh"
 #include "mesh/mesh.h"
 #include "mesh/bc_mesh.hh"
 #include "mesh/ref_element.hh"
@@ -46,6 +46,7 @@
 #include "mesh/duplicate_nodes.h"
 
 #include "intersection/mixed_mesh_intersections.hh"
+
 
 
 //TODO: sources, concentrations, initial condition  and similarly boundary conditions should be
@@ -99,6 +100,7 @@ const unsigned int Mesh::undef_idx;
 Mesh::Mesh()
 : tree(nullptr),
   bulk_size_(0),
+  nodes_(3, 1, 0),
   row_4_el(nullptr),
   el_4_loc(nullptr),
   el_ds(nullptr),
@@ -114,6 +116,8 @@ Mesh::Mesh(Input::Record in_record, MPI_Comm com)
 : tree(nullptr),
   in_record_(in_record),
   comm_(com),
+  bulk_size_(0),
+  nodes_(3, 1, 0),
   row_4_el(nullptr),
   el_4_loc(nullptr),
   el_ds(nullptr),
@@ -178,10 +182,10 @@ void Mesh::init()
     // This speedup normal calculation.
 
     side_nodes.resize(3); // three side dimensions
-    for(int i=0; i < 3; i++) {
-        side_nodes[i].resize(i+2); // number of sides
-        for(int j=0; j < i+2; j++)
-            side_nodes[i][j].resize(i+1);
+    for(int dim=0; dim < 3; dim++) {
+        side_nodes[dim].resize(dim+2); // number of sides
+        for(int i_side=0; i_side < dim+2; i_side++)
+            side_nodes[dim][i_side].resize(dim+1);
     }
 
     for (unsigned int sid=0; sid<RefElement<1>::n_sides; sid++)
@@ -290,8 +294,26 @@ void Mesh::count_element_types() {
 
 
 void Mesh::modify_element_ids(const RegionDB::MapElementIDToRegionID &map) {
+
+    // get dim of the first element in the map, if it exists
+    uint dim_to_check = RegionDB::undefined_dim;
+    std::string reg_name = "UndefinedRegion";
+    if(map.size() > 0){
+        Element &ele = element_vec_[ elem_index(map.begin()->first) ];
+        dim_to_check = ele.dim();
+        reg_name = region_db_.find_id(map.begin()->second).label();
+    }
+
 	for (auto elem_to_region : map) {
 		Element &ele = element_vec_[ elem_index(elem_to_region.first) ];
+        
+        if( ele.dim() != dim_to_check){
+            xprintf(UsrErr, "User defined region '%s' (id %d) by 'From_Elements' cannot have elements of different dimensions.\n"
+                            "Thrown due to: dim %d neq dim %d (ele id %d).\n"
+                            "Split elements by dim, create separate regions and then possibly use Union.\n",
+                    reg_name.c_str(), elem_to_region.second, dim_to_check, ele.dim(), elem_to_region.first);
+        }
+
 		ele.region_idx_ = region_db_.get_region( elem_to_region.second, ele.dim() );
 		region_db_.mark_used_region(ele.region_idx_.idx());
 	}
@@ -355,7 +377,7 @@ void Mesh::create_node_element_lists() {
 
     for (auto ele : this->elements_range())
         for (unsigned int n=0; n<ele->n_nodes(); n++)
-            node_elements_[ele.node_accessor(n).idx()].push_back(ele.idx());
+            node_elements_[ele.node(n).idx()].push_back(ele.idx());
 
     for (vector<vector<unsigned int> >::iterator n=node_elements_.begin(); n!=node_elements_.end(); n++)
         stable_sort(n->begin(), n->end());
@@ -567,7 +589,7 @@ void Mesh::make_neighbours_and_edges()
                     elm.boundary_idx_[s] = bdr_idx;
 
                     // fill boundary element
-                    Element * bc_ele = add_element_to_vector(-bdr_idx, true);
+                    Element * bc_ele = add_element_to_vector(-bdr_idx);
                     bc_ele->init(e->dim()-1, region_db_.implicit_boundary_region() );
                     region_db_.mark_used_region( bc_ele->region_idx_.idx() );
                     for(unsigned int ni = 0; ni< side_nodes.size(); ni++) bc_ele->nodes_[ni] = side_nodes[ni];
@@ -626,25 +648,30 @@ void Mesh::make_neighbours_and_edges()
 
 void Mesh::make_edge_permutations()
 {
+    // node numbers is the local index of the node on the last side
+    // this maps the side nodes to the nodes of the reference side(0)
+    std::unordered_map<unsigned int,unsigned int> node_numbers;
+
     for (auto edg : edge_range())
 	{
+        unsigned int n_side_nodes = edg.side(0)->n_nodes();
 		// side 0 is reference, so its permutation is 0
 		edg.side(0)->element()->permutation_idx_[edg.side(0)->side_idx()] = 0;
 
 		if (edg.n_sides() > 1)
 		{
-			map<unsigned int,unsigned int> node_numbers;
-			unsigned int permutation[edg.side(0)->n_nodes()];
+		    // For every node on the reference side(0) give its local idx on the current side.
+		    unsigned int permutation[n_side_nodes];
 
-			for (unsigned int i=0; i<edg.side(0)->n_nodes(); i++)
+
+		    node_numbers.clear();
+			for (uint i=0; i<n_side_nodes; i++)
 				node_numbers[edg.side(0)->node(i).idx()] = i;
-				//node_numbers[edg.side(0)->node(i).node()] = i;
 
 			for (uint sid=1; sid<edg.n_sides(); sid++)
 			{
-				for (unsigned int i=0; i<edg.side(0)->n_nodes(); i++)
+				for (uint i=0; i<n_side_nodes; i++)
 					permutation[node_numbers[edg.side(sid)->node(i).idx()]] = i;
-					//permutation[node_numbers[edg.side(sid)->node(i).node()]] = i;
 
 				switch (edg.side(0)->dim())
 				{
@@ -664,16 +691,19 @@ void Mesh::make_edge_permutations()
 
 	for (vector<Neighbour>::iterator nb=vb_neighbours_.begin(); nb!=vb_neighbours_.end(); nb++)
 	{
-		map<const Node*,unsigned int> node_numbers;
-		unsigned int permutation[nb->element()->n_nodes()];
+        // node numbers is the local index of the node on the last side
+        // this maps the side nodes to the nodes of the side(0)
+	    unsigned int n_side_nodes = nb->element()->n_nodes();
+	    unsigned int permutation[n_side_nodes];
+        node_numbers.clear();
 
 		// element of lower dimension is reference, so
 		// we calculate permutation for the adjacent side
-		for (unsigned int i=0; i<nb->element()->n_nodes(); i++)
-			node_numbers[nb->element().node(i)] = i;
+		for (unsigned int i=0; i<n_side_nodes; i++)
+			node_numbers[nb->element().node(i).idx()] = i;
 
-		for (unsigned int i=0; i<nb->side()->n_nodes(); i++)
-			permutation[node_numbers[nb->side()->node(i).node()]] = i;
+		for (unsigned int i=0; i<n_side_nodes; i++)
+			permutation[node_numbers[nb->side()->node(i).idx()]] = i;
 
 		switch (nb->side()->dim())
 		{
@@ -753,7 +783,7 @@ ElementAccessor<3> Mesh::element_accessor(unsigned int idx) const {
 
 
 
-NodeAccessor<3> Mesh::node_accessor(unsigned int idx) const {
+NodeAccessor<3> Mesh::node(unsigned int idx) const {
     return NodeAccessor<3>(this, idx);
 }
 
@@ -793,7 +823,7 @@ void Mesh::elements_id_maps( vector<LongIdx> & bulk_elements_id, vector<LongIdx>
 
 
 bool compare_points(const arma::vec3 &p1, const arma::vec3 &p2) {
-	static const double point_tolerance = 1E-10;
+    static const double point_tolerance = 1E-10;
 	return fabs(p1[0]-p2[0]) < point_tolerance
 		&& fabs(p1[1]-p2[1]) < point_tolerance
 		&& fabs(p1[2]-p2[2]) < point_tolerance;
@@ -820,16 +850,16 @@ bool Mesh::check_compatible_mesh( Mesh & mesh, vector<LongIdx> & bulk_elements_i
         node_ids.resize( this->n_nodes() );
         i=0;
         for (auto nod : this->node_range()) {
-            arma::vec3 point = nod->point();
             uint found_i_node = Mesh::undef_idx;
-            bih_tree.find_point(point, searched_elements);
+            bih_tree.find_point(*nod, searched_elements);
 
             for (std::vector<unsigned int>::iterator it = searched_elements.begin(); it!=searched_elements.end(); it++) {
                 ElementAccessor<3> ele = mesh.element_accessor( *it );
                 for (i_node=0; i_node<ele->n_nodes(); i_node++)
                 {
-                    if ( compare_points(ele.node(i_node)->point(), point) ) {
-                    	i_elm_node = ele.node_accessor(i_node).idx();
+                    static const double point_tolerance = 1E-10;
+                    if ( arma::norm(*ele.node(i_node) - *nod, 1) < point_tolerance) {
+                        i_elm_node = ele.node(i_node).idx();
                         if (found_i_node == Mesh::undef_idx) found_i_node = i_elm_node;
                         else if (found_i_node != i_elm_node) {
                             // duplicate nodes in target mesh
@@ -971,9 +1001,8 @@ void Mesh::add_physical_name(unsigned int dim, unsigned int id, std::string name
 
 
 void Mesh::add_node(unsigned int node_id, arma::vec3 coords) {
-    node_vec_.push_back( Node() );
-    Node &node = node_vec_[node_vec_.size()-1];
-    node.point() = coords;
+
+    nodes_.append(coords);
     node_ids_.add_item(node_id);
 }
 
@@ -994,6 +1023,7 @@ void Mesh::add_element(unsigned int elm_id, unsigned int dim, unsigned int regio
 		}
 		else {
 			Element *ele = add_element_to_vector(elm_id);
+			bulk_size_++;
 			this->init_element(ele, elm_id, dim, region_idx, partition_id, node_ids);
 		}
 	}
@@ -1012,9 +1042,11 @@ void Mesh::init_element(Element *ele, unsigned int elm_id, unsigned int dim, Reg
     // check that tetrahedron element is numbered correctly and is not degenerated
     if(ele->dim() == 3)
     {
-        double jac = this->element_accessor( this->elem_index(elm_id) ).tetrahedron_jacobian();
-        if( ! (jac > 0) )
-            WarningOut().fmt("Tetrahedron element with id {} has wrong numbering or is degenerated (Jacobian = {}).",elm_id,jac);
+        ElementAccessor<3> ea = this->element_accessor( this->elem_index(elm_id) );
+        double jac = ea.tetrahedron_jacobian();
+        if( ! (jac > 0) ) {
+            WarningOut().fmt("Tetrahedron element with id {} has wrong numbering or is degenerated (Jacobian = {}).",elm_id, jac);
+        }
     }
 }
 
@@ -1029,8 +1061,9 @@ vector<vector<unsigned int> > const & Mesh::node_elements() {
 
 void Mesh::init_element_vector(unsigned int size) {
 	element_vec_.clear();
-	element_vec_.resize(size);
-	element_ids_.reinit(size);
+    element_ids_.clear();
+	element_vec_.reserve(size);
+    element_ids_.reserve(size);
 	bc_element_tmp_.clear();
 	bc_element_tmp_.reserve(size);
 	bulk_size_ = 0;
@@ -1039,25 +1072,16 @@ void Mesh::init_element_vector(unsigned int size) {
 
 
 void Mesh::init_node_vector(unsigned int size) {
-	node_vec_.clear();
-	node_vec_.reserve(size);
-	node_ids_.reinit(0);
+	nodes_.reinit(size);
+	node_ids_.clear();
+	node_ids_.reserve(size);
 }
 
 
-Element * Mesh::add_element_to_vector(int id, bool boundary) {
-	Element * elem=nullptr;
-	if (boundary) {
-        ASSERT_DBG(id<0)(id).error("Add boundary element from mesh file trough temporary structure!");
-		element_vec_.push_back( Element() );
-        elem = &element_vec_[element_vec_.size()-1];
-        element_ids_.add_item(id);
-	} else {
-		elem = &element_vec_[bulk_size_];
-		element_ids_.set_item(id, bulk_size_);
-		bulk_size_++;
-	}
-
+Element * Mesh::add_element_to_vector(int id) {
+    element_vec_.push_back( Element() );
+    Element * elem = &element_vec_.back(); //[element_vec_.size()-1];
+    element_ids_.add_item((unsigned int)(id));
 	return elem;
 }
 
@@ -1069,7 +1093,7 @@ Range<ElementAccessor<3>> Mesh::elements_range() const {
 
 Range<NodeAccessor<3>> Mesh::node_range() const {
 	auto bgn_it = make_iter<NodeAccessor<3>>( NodeAccessor<3>(this, 0) );
-	auto end_it = make_iter<NodeAccessor<3>>( NodeAccessor<3>(this, node_vec_.size()) );
+	auto end_it = make_iter<NodeAccessor<3>>( NodeAccessor<3>(this, n_nodes()) );
     return Range<NodeAccessor<3>>(bgn_it, end_it);
 }
 
@@ -1170,19 +1194,14 @@ void Mesh::output_internal_ngh_data()
 
 
 void Mesh::create_boundary_elements() {
-	unsigned int i, pos;
-	boundary_loaded_size_ = bc_element_tmp_.size();
-	for (i=0, pos=bulk_size_; i<bc_element_tmp_.size(); ++i, ++pos) {
-		Element *ele = &element_vec_[pos];
-		element_ids_.set_item(bc_element_tmp_[i].elm_id, pos);
-		this->init_element(ele, bc_element_tmp_[i].elm_id, bc_element_tmp_[i].dim, bc_element_tmp_[i].region_idx,
-				bc_element_tmp_[i].partition_id, bc_element_tmp_[i].node_ids);
-
+    // Copy boundary elements in temporary storage to the second part of the element vector
+	for(ElementTmpData &e_data : bc_element_tmp_) {
+	    Element *ele = add_element_to_vector(e_data.elm_id);
+		this->init_element(ele, e_data.elm_id, e_data.dim, e_data.region_idx,
+				e_data.partition_id, e_data.node_ids);
 	}
-
-	element_vec_.resize(pos); // remove empty element (count is equal with zero-dimensional bulk elements)
-	bc_element_tmp_.clear();
-	bc_element_tmp_.reserve(0);
+	// release memory
+	vector<ElementTmpData>().swap(bc_element_tmp_);
 }
 
 
@@ -1234,7 +1253,7 @@ void Mesh::distribute_nodes() {
     unsigned int n_proc = el_ds->np();
 
     // distribute nodes between processes, every node is assigned to minimal process of elements that own node
-    // fill min_node_proc vector with same values on all processes
+    // fill node_proc vector with same values on all processes
     std::vector<unsigned int> node_proc( this->n_nodes(), n_proc );
     std::vector<bool> local_node_flag( this->n_nodes(), false );
 

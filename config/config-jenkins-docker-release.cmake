@@ -3,6 +3,7 @@
 
 # main config
 set(FLOW_BUILD_TYPE release)
+set(FLOW_CC_FLAGS "-O3 -DNDEBUG -Werror")
 set(CMAKE_VERBOSE_MAKEFILE on)
 
 

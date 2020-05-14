@@ -29,9 +29,9 @@ Quadrature& Quadrature::operator=(const Quadrature &q)
 }
     
 
-Quadrature::Quadrature(unsigned int dimension, const unsigned int n_q)
+Quadrature::Quadrature(unsigned int dimension, unsigned int n_q)
 : dim_(dimension),
-  quadrature_points(n_q, dimension),
+  quadrature_points(dimension, 1,  n_q),
   weights(n_q, 0)
 {}
 
@@ -43,13 +43,8 @@ Quadrature::Quadrature(const Quadrature &q) :
 {}
 
 
-
-
-
-
-
 template<unsigned int bulk_dim>
-Quadrature Quadrature::make_from_side(unsigned int sid, unsigned int pid)
+Quadrature Quadrature::make_from_side(unsigned int sid, unsigned int pid) const
 {
     ASSERT_DBG( bulk_dim == dim_ + 1 );
     
@@ -58,38 +53,41 @@ Quadrature Quadrature::make_from_side(unsigned int sid, unsigned int pid)
     ASSERT_DBG( RefElement<bulk_dim>::n_nodes_per_side == bulk_dim );
     
     Quadrature q(dim_+1, size());
-    arma::vec::fixed<bulk_dim+1> el_bar_coords, final_bar;
+    Armor::ArmaVec<double, bulk_dim+1> el_bar_coords, final_bar;
     
     for (unsigned int k=0; k<size(); k++)
     {
         //compute barycentric coordinates on element
-        arma::vec::fixed<bulk_dim> p = RefElement<bulk_dim-1>::local_to_bary(point<bulk_dim-1>(k).arma());
-        arma::vec::fixed<bulk_dim> pp;
+        Armor::ArmaVec<double, bulk_dim> p = RefElement<bulk_dim-1>::local_to_bary(point<bulk_dim-1>(k));
+        Armor::ArmaVec<double, bulk_dim> pp;
         
         //permute
         for (unsigned int i=0; i<RefElement<bulk_dim>::n_nodes_per_side; i++) {
             pp(RefElement<bulk_dim>::side_permutations[pid][i]) = p(i);
         }
         
-        el_bar_coords = RefElement<bulk_dim>::template interpolate<bulk_dim-1>(pp,sid);
+        el_bar_coords = RefElement<bulk_dim>::template interpolate<bulk_dim-1>(pp, sid);
         
         //get local coordinates and set
-        q.point<bulk_dim>(k) = RefElement<bulk_dim>::bary_to_local(el_bar_coords);
-        q.weight(k) = weight(k);
+        q.quadrature_points.set(k) = RefElement<bulk_dim>::bary_to_local(el_bar_coords);
+        q.weights[k] = weight(k);
     }
     
     return q;
 }
 
 // Specialized subquadrature consructor for dim=1.
-template<> Quadrature Quadrature::make_from_side<1>(unsigned int sid, unsigned int)
+template<> Quadrature Quadrature::make_from_side<1>(unsigned int sid, unsigned int) const
 {
+    ASSERT_EQ_DBG(size(), 1);
     Quadrature q(1, 1);
-    q.point<1>(0) = { (double)sid };
+    q.quadrature_points.set(0) = Armor::ArmaVec<double, 1>({ (double)sid });
     q.weight(0) = 1;
-    
+
     return q;
 }
 
-template Quadrature Quadrature::make_from_side<2>(unsigned int sid, unsigned int pid);
-template Quadrature Quadrature::make_from_side<3>(unsigned int sid, unsigned int pid);
+template Quadrature Quadrature::make_from_side<2>(unsigned int sid, unsigned int pid) const;
+template Quadrature Quadrature::make_from_side<3>(unsigned int sid, unsigned int pid) const;
+
+

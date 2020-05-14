@@ -281,6 +281,10 @@ public:
      * Key has name given by parameter @p key, the type given by target of pointer @p type,
      * default value by parameter @p default_value, and with given @p description.
      * The parameter @p type points to a descendant of TypeBase.
+     * 
+     * If the the function is called with the already existing key name @p key, an assert takes place,
+     * Howeverf, if the the function is called with the same key name @p key in the derived Record,
+     * the key is overwritten. 
      *
      * The optional attributes map may be provided, e.g.:
      *

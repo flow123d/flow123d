@@ -36,18 +36,18 @@
 #include "input/type_base.hh"                         // for Array
 #include "input/type_generic.hh"                      // for Instance
 #include "input/accessors.hh"
-#include "mesh/long_idx.hh"
+#include "system/index_types.hh"
 #include "mesh/region.hh"                             // for RegionSet
 #include "petscvec.h"                                 // for Vec, _p_Vec
 #include "tools/time_marks.hh"                        // for TimeMark, TimeM...
 #include "transport/substance.hh"                     // for SubstanceList
 #include "transport/transport_operator_splitting.hh"
+#include "quadrature/quadrature_lib.hh"
 
 class OutputTime;
 class Mesh;
 class Distribution;
 class Balance;
-class MH_DofHandler;
 namespace Input {
 	namespace Type {
 		class Record;
@@ -71,6 +71,44 @@ template <int spacedim, class Value> class FieldFE;
  *   : field->next_change_time() - returns time jump or actual time in case of time dep. field
  */
 
+
+
+/**
+ * Auxiliary container class for Finite element and related objects of all dimensions.
+ * Its purpose is to provide templated access to these objects, applicable in
+ * the assembling methods.
+ */
+class FETransportObjects {
+public:
+
+	FETransportObjects();
+	~FETransportObjects();
+
+	template<unsigned int dim>
+	inline FiniteElement<dim> *fe();
+
+	inline Quadrature &q(unsigned int dim);
+
+	inline FEValues<3> &fe_values(unsigned int dim)
+    { 
+        ASSERT_DBG( dim >= 1 && dim <= 3 );
+        return fe_values_[dim-1];
+    }
+
+private:
+
+	/// Finite elements for the solution of the advection-diffusion equation.
+	FiniteElement<0> *fe0_;
+	FiniteElement<1> *fe1_;
+	FiniteElement<2> *fe2_;
+	FiniteElement<3> *fe3_;
+
+	/// Quadratures used in assembling methods.
+	QGauss::array q_;
+
+    /// FESideValues objects for side flux calculating.
+	FEValues<3> fe_values_[3];
+};
 
 
 /**
@@ -177,8 +215,8 @@ public:
      */
     virtual void output_data() override;
 
-    inline void set_velocity_field(const MH_DofHandler &dh) override
-    { mh_dh=&dh; }
+    inline void set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field) override
+    { velocity_field_ptr_ = flux_field; changed_ = true; }
 
     void set_output_stream(std::shared_ptr<OutputTime> stream) override
     { output_stream_ = stream; }
@@ -243,9 +281,15 @@ private:
     void alloc_transport_structs_mpi();
 
 	/**
-	 * Communicate parallel concentration vectors into sequential output vector.
+	 * @brief Wrapper of following method, call side_flux with correct template parameter.
 	 */
-	void output_vector_gather();
+	double side_flux(const DHCellSide &cell_side);
+
+	/**
+	 * @brief Calculate flux on side of given element specified by dimension.
+	 */
+	template<unsigned int dim>
+	double calculate_side_flux(const DHCellSide &cell);
 
 
 
@@ -330,11 +374,19 @@ private:
      * TODO: introduce FieldDiscrete -containing true DOFHandler and data vector and pass such object together with other
      * data. Possibly make more general set_data method, allowing setting data given by name. needs support from EqDataBase.
      */
-    const MH_DofHandler *mh_dh;
     std::shared_ptr<DOFHandlerMultiDim> dh_;
 
 	/// List of indices used to call balance methods for a set of quantities.
 	vector<unsigned int> subst_idx;
+
+	/// Pointer to velocity field given from Flow equation.
+	std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> velocity_field_ptr_;
+
+	/// Indicator of change in velocity field.
+	bool changed_;
+
+	/// Finite element objects
+	FETransportObjects feo_;
 
     friend class TransportOperatorSplitting;
 };

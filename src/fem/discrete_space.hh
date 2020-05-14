@@ -20,9 +20,12 @@
 #define DISCRETE_SPACE_HH_
 
 #include "mesh/accessors.hh"
-
-
+#include "tools/mixed.hh"
+#include "mesh/duplicate_nodes.h"
+#include "fem/finite_element.hh"
 template<unsigned int dim> class FiniteElement;
+template<Dim dim>
+using FEPtr = std::shared_ptr<FiniteElement<dim>>;
 class Mesh;
 
 
@@ -55,9 +58,8 @@ public:
     return 0;
   }
   
-  /// Return finite element object for given element.
-  template<unsigned int dim>
-  FiniteElement<dim> *fe(const ElementAccessor<3> &) const;
+  /// Return Mixed of finite element objects.
+  virtual MixedPtr<FiniteElement> fe(const ElementAccessor<3> &) const = 0;
 
   /// Destructor.
   virtual ~DiscreteSpace() {};
@@ -68,11 +70,6 @@ protected:
   /// Constructor.
   DiscreteSpace(Mesh *mesh)
   : mesh_(mesh) {}
-  
-  virtual FiniteElement<0> *fe0d(const ElementAccessor<3> &) const = 0;
-  virtual FiniteElement<1> *fe1d(const ElementAccessor<3> &) const = 0;
-  virtual FiniteElement<2> *fe2d(const ElementAccessor<3> &) const = 0;
-  virtual FiniteElement<3> *fe3d(const ElementAccessor<3> &) const = 0;
   
   Mesh *mesh_;
 
@@ -85,29 +82,50 @@ protected:
  */
 class EqualOrderDiscreteSpace : public DiscreteSpace {
 public:
+  EqualOrderDiscreteSpace(Mesh *mesh, MixedPtr<FiniteElement> fe)
+  : DiscreteSpace(mesh), fe_(fe),
+    _n_elem_dofs(4, 0),
+    _n_edge_dofs(4, 0),
+    _n_node_dofs(4, 0)
+  {
+      _init_n_dofs<0>();
+      _init_n_dofs<1>();
+      _init_n_dofs<2>();
+      _init_n_dofs<3>();
+  }
+
+  unsigned int n_elem_dofs(const ElementAccessor<3> &cell) const override
+  {return _n_elem_dofs[cell.dim()];}
   
-  EqualOrderDiscreteSpace(Mesh *mesh, FiniteElement<0> *fe0, FiniteElement<1> *fe1, FiniteElement<2> *fe2, FiniteElement<3> *fe3)
-  : DiscreteSpace(mesh), fe0_(fe0), fe1_(fe1), fe2_(fe2), fe3_(fe3) {}
+  unsigned int n_edge_dofs(const Edge &edge) const override
+  {return _n_edge_dofs[edge.side(0)->dim() + 1];}
   
-  unsigned int n_elem_dofs(const ElementAccessor<3> &cell) const override;
+  unsigned int n_node_dofs(unsigned int nid) const override
+  {return _n_node_dofs[mesh_->tree->node_dim()[nid]];}
   
-  unsigned int n_edge_dofs(const Edge &edge) const override;
-  
-  unsigned int n_node_dofs(unsigned int nid) const override;
-  
-  FiniteElement<0> *fe0d(const ElementAccessor<3> &) const override { return fe0_; }
-  FiniteElement<1> *fe1d(const ElementAccessor<3> &) const override { return fe1_; }
-  FiniteElement<2> *fe2d(const ElementAccessor<3> &) const override { return fe2_; }
-  FiniteElement<3> *fe3d(const ElementAccessor<3> &) const override { return fe3_; }
+  MixedPtr<FiniteElement> fe(const ElementAccessor<3> &cell) const override;
   
   
 private:
+  template<Dim dim>
+  void _init_n_dofs() {
+      auto fe_ptr = fe_.get<dim>();
+      for (unsigned int d=0; d < fe_ptr->n_dofs(); d++) {
+          if (fe_ptr->dof(d).dim == 0)
+              _n_elem_dofs[dim]++;
+          if (fe_ptr->dof(d).dim == dim-1 && fe_ptr->dof(d).n_face_idx == 0)
+              _n_edge_dofs[dim]++;
+          if (fe_ptr->dof(d).dim == 0 && fe_ptr->dof(d).n_face_idx == 0)
+              _n_node_dofs[dim]++;
+      }
+  }
+
+  MixedPtr<FiniteElement> fe_;
+  std::vector<unsigned int> _n_elem_dofs;
+  std::vector<unsigned int> _n_edge_dofs;
+  std::vector<unsigned int> _n_node_dofs;
   
-  FiniteElement<0> *fe0_;
-  FiniteElement<1> *fe1_;
-  FiniteElement<2> *fe2_;
-  FiniteElement<3> *fe3_;
-  
+
 };
 
 
