@@ -127,56 +127,54 @@ include (Flow123d_config_header)
 
 
 
-if(FLOW_CC_FLAGS) 
+  
+message(STATUS "Using build type: ${FLOW_BUILD_TYPE}")
+if(FLOW_BUILD_TYPE STREQUAL "debug")
+  # debug mode
+  set(CMAKE_CXX_FLAGS "-g -O0")
+  set(CMAKE_C_FLAGS "-g -O0")
+  set(CMAKE_EXE_LINKER_FLAGS "-g ")
+  set(CMAKE_BUILD_TYPE Debug)
+  flow_define(DEBUG)
+elseif(FLOW_BUILD_TYPE STREQUAL "release")
+  # Release mode
+  set(CMAKE_CXX_FLAGS "-O3 -DNDEBUG" )
+  set(CMAKE_C_FLAGS "-O3 -DNDEBUG")
+  set(CMAKE_BUILD_TYPE Release)
+  # armadillo is configured using this definition
+  add_definitions(-DARMA_NO_DEBUG)    # no bound checks in armadillo 
+  flow_define(DEBUG_PROFILER)
+  flow_define(RUN_UNIT_BENCHMARKS)    # build benchmark unit tests
+elseif(FLOW_BUILD_TYPE STREQUAL "release_with_debug")
+  # Release mode with debug info 
+  set(CMAKE_CXX_FLAGS "-O3")
+  set(CMAKE_C_FLAGS "-O3")
+  set(CMAKE_BUILD_TYPE Debug)
+  flow_define(DEBUG)
+elseif(FLOW_BUILD_TYPE STREQUAL "coverage")
+  # Coverage mode creates instrumented binary
+  SET(CMAKE_CXX_FLAGS "-g -O0 --coverage")
+  SET(CMAKE_C_FLAGS "-g -O0 --coverage")
+  SET(CMAKE_EXE_LINKER_FLAGS "-g -O0 --coverage")
+  set(CMAKE_BUILD_TYPE Debug)
+  
+  # set external libs flags
+  SET(EXTERNAL_LIBS_CXX_FLAGS "-g -O0")
+  SET(EXTERNAL_LIBS_C_FLAGS "-g -O0")
+  
+  flow_define(DEBUG)
+  # INCLUDE(CodeCoverage)
+  # add custom target to collect coverage into xml file
+  # COVERAGE_SETUP_COBERTURA_COLLECTION (cobertura-collect-coverage coverage.xml)
+else()
+endif()
+
+if(FLOW_CC_FLAGS)
   # user given flags overrides everything  
   message(STATUS "Using user specified compiler options: ${FLOW_CC_FLAGS}")
   set(CMAKE_CXX_FLAGS  "${FLOW_CC_FLAGS}")
   set(CMAKE_C_FLAGS  "${FLOW_CC_FLAGS}")
   set(CMAKE_EXE_LINKER_FLAGS "${FLOW_CC_FLAGS}")
-  set(CMAKE_BUILD_TYPE Debug)
-  
-else(FLOW_CC_FLAGS)
- 
-  message(STATUS "Using build type: ${FLOW_BUILD_TYPE}")
-  if(FLOW_BUILD_TYPE STREQUAL "debug")
-    # debug mode
-    set(CMAKE_CXX_FLAGS "-g -O0")
-    set(CMAKE_C_FLAGS "-g -O0")
-    set(CMAKE_EXE_LINKER_FLAGS "-g ")
-    set(CMAKE_BUILD_TYPE Debug)
-    flow_define(DEBUG)
-  elseif(FLOW_BUILD_TYPE STREQUAL "release")
-    # Release mode
-    set(CMAKE_CXX_FLAGS "-O3 -DNDEBUG" )
-    set(CMAKE_C_FLAGS "-O3 -DNDEBUG")
-    set(CMAKE_BUILD_TYPE Release)
-    # armadillo is configured using this definition
-    add_definitions(-DARMA_NO_DEBUG)    # no bound checks in armadillo 
-    flow_define(DEBUG_PROFILER)
-    flow_define(RUN_UNIT_BENCHMARKS)    # build benchmark unit tests
-  elseif(FLOW_BUILD_TYPE STREQUAL "release_with_debug")
-    # Release mode with debug info 
-    set(CMAKE_CXX_FLAGS "-O3")
-    set(CMAKE_C_FLAGS "-O3")
-    set(CMAKE_BUILD_TYPE Debug)
-    flow_define(DEBUG)
-  elseif(FLOW_BUILD_TYPE STREQUAL "coverage")
-    # Coverage mode creates instrumented binary
-    SET(CMAKE_CXX_FLAGS "-g -O0 --coverage")
-    SET(CMAKE_C_FLAGS "-g -O0 --coverage")
-    SET(CMAKE_EXE_LINKER_FLAGS "-g -O0 --coverage")
-    set(CMAKE_BUILD_TYPE Debug)
-    
-    # set external libs flags
-    SET(EXTERNAL_LIBS_CXX_FLAGS "-g -O0")
-    SET(EXTERNAL_LIBS_C_FLAGS "-g -O0")
-    
-    flow_define(DEBUG)
-    # INCLUDE(CodeCoverage)
-    # add custom target to collect coverage into xml file
-    # COVERAGE_SETUP_COBERTURA_COLLECTION (cobertura-collect-coverage coverage.xml)
-  else()
-  endif()
 endif(FLOW_CC_FLAGS)
 
 # unset predefined build type resolution variables to have better control over
@@ -190,7 +188,7 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
       # -Wvla - variable length arrays
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Werror -Wall -Wextra -Wno-vla -Wno-unused-local-typedefs -Wno-deprecated-declarations")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Wall -Wextra -Wno-vla -Wno-unused-local-typedefs -Wno-deprecated-declarations")
 
 ## Compiler-specific C++11 activation.
 ## It was replaced in commit a66193035 with C++14 specification.

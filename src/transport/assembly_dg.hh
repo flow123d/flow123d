@@ -104,9 +104,9 @@ public:
     {
         eval_points_ = std::make_shared<EvalPoints>();
         // first step - create integrals, then - initialize cache
-        multidim_assembly_.get<1>()->create_integrals(eval_points_, integrals_, active_integrals_);
-        multidim_assembly_.get<2>()->create_integrals(eval_points_, integrals_, active_integrals_);
-        multidim_assembly_.get<3>()->create_integrals(eval_points_, integrals_, active_integrals_);
+        multidim_assembly_.template get<1>()->create_integrals(eval_points_, integrals_, active_integrals_);
+        multidim_assembly_.template get<2>()->create_integrals(eval_points_, integrals_, active_integrals_);
+        multidim_assembly_.template get<3>()->create_integrals(eval_points_, integrals_, active_integrals_);
         element_cache_map_.init(eval_points_);
     }
 
@@ -126,7 +126,7 @@ public:
 	 */
     void assemble(std::shared_ptr<DOFHandlerMultiDim> dh) {
         unsigned int i;
-        multidim_assembly_.get<1>()->begin();
+        multidim_assembly_.template get<1>()->begin();
         for (auto cell : dh->local_range() )
         {
             this->add_integrals_of_computing_step(cell);
@@ -136,13 +136,13 @@ public:
                 for (i=0; i<integrals_size_[0]; ++i) { // volume integral
                     switch (bulk_integral_data_[i].cell.dim()) {
                     case 1:
-                        multidim_assembly_.get<1>()->assemble_volume_integrals(bulk_integral_data_[i].cell);
+                        multidim_assembly_.template get<1>()->assemble_volume_integrals(bulk_integral_data_[i].cell);
                         break;
                     case 2:
-                        multidim_assembly_.get<2>()->assemble_volume_integrals(bulk_integral_data_[i].cell);
+                        multidim_assembly_.template get<2>()->assemble_volume_integrals(bulk_integral_data_[i].cell);
                         break;
                     case 3:
-                        multidim_assembly_.get<3>()->assemble_volume_integrals(bulk_integral_data_[i].cell);
+                        multidim_assembly_.template get<3>()->assemble_volume_integrals(bulk_integral_data_[i].cell);
                         break;
                     }
                 }
@@ -154,13 +154,13 @@ public:
                 for (i=0; i<integrals_size_[3]; ++i) { // boundary integral
                     switch (boundary_integral_data_[i].side.dim()) {
                     case 1:
-                        multidim_assembly_.get<1>()->assemble_fluxes_boundary(boundary_integral_data_[i].side);
+                        multidim_assembly_.template get<1>()->assemble_fluxes_boundary(boundary_integral_data_[i].side);
                         break;
                     case 2:
-                        multidim_assembly_.get<2>()->assemble_fluxes_boundary(boundary_integral_data_[i].side);
+                        multidim_assembly_.template get<2>()->assemble_fluxes_boundary(boundary_integral_data_[i].side);
                         break;
                     case 3:
-                        multidim_assembly_.get<3>()->assemble_fluxes_boundary(boundary_integral_data_[i].side);
+                        multidim_assembly_.template get<3>()->assemble_fluxes_boundary(boundary_integral_data_[i].side);
                         break;
                     }
                 }
@@ -172,13 +172,13 @@ public:
                 for (i=0; i<integrals_size_[1]; ++i) { // edge integral
                     switch (edge_integral_data_[i].edge_side_range.begin()->dim()) {
                     case 1:
-                        multidim_assembly_.get<1>()->assemble_fluxes_element_element(edge_integral_data_[i].edge_side_range);
+                        multidim_assembly_.template get<1>()->assemble_fluxes_element_element(edge_integral_data_[i].edge_side_range);
                         break;
                     case 2:
-                        multidim_assembly_.get<2>()->assemble_fluxes_element_element(edge_integral_data_[i].edge_side_range);
+                        multidim_assembly_.template get<2>()->assemble_fluxes_element_element(edge_integral_data_[i].edge_side_range);
                         break;
                     case 3:
-                        multidim_assembly_.get<3>()->assemble_fluxes_element_element(edge_integral_data_[i].edge_side_range);
+                        multidim_assembly_.template get<3>()->assemble_fluxes_element_element(edge_integral_data_[i].edge_side_range);
                         break;
                     }
                 }
@@ -190,17 +190,17 @@ public:
                 for (i=0; i<integrals_size_[2]; ++i) { // coupling integral
                     switch (coupling_integral_data_[i].side.dim()) {
                     case 2:
-                        multidim_assembly_.get<2>()->assemble_fluxes_element_side(coupling_integral_data_[i].cell, coupling_integral_data_[i].side);
+                        multidim_assembly_.template get<2>()->assemble_fluxes_element_side(coupling_integral_data_[i].cell, coupling_integral_data_[i].side);
                         break;
                     case 3:
-                        multidim_assembly_.get<3>()->assemble_fluxes_element_side(coupling_integral_data_[i].cell, coupling_integral_data_[i].side);
+                        multidim_assembly_.template get<3>()->assemble_fluxes_element_side(coupling_integral_data_[i].cell, coupling_integral_data_[i].side);
                         break;
                     }
                 }
                 END_TIMER("assemble_fluxes_elem_side");
             }
         }
-        multidim_assembly_.get<1>()->end();
+        multidim_assembly_.template get<1>()->end();
     }
 
 private:

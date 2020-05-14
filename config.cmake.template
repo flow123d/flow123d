@@ -157,7 +157,6 @@
 
 set(FLOW_BUILD_TYPE debug)
 
-
 # you can override these settings through variable FLOW_CC_FLAGS
 #
 # Flow recognize  following definitions:
@@ -170,6 +169,10 @@ set(FLOW_BUILD_TYPE debug)
 #
 # example:
 #set(FLOW_CC_FLAGS "-O3 -DFLOW123D_NODEBUG -pg")
+
+# Developers are supposed to use -Werror (warnings as errors).
+set(FLOW_CC_FLAGS "-g -O0 -Werror")       # for debug build
+#set(FLOW_CC_FLAGS "-O3 -DNDEBUG -Werror") # for release build
 
 ### Install package platform ###
 # This string is used as part of package name to distinguish 

@@ -327,21 +327,21 @@ void TransportDG<Model>::initialize()
     Model::balance_->allocate(data_->dh_->distr()->lsize(), data_->mass_assembly_->eval_points()->max_size());
 
     // initialization of assembly object
-    data_->mass_assembly_->multidim_assembly().get<1>()->initialize(*this);
-    data_->mass_assembly_->multidim_assembly().get<2>()->initialize(*this);
-    data_->mass_assembly_->multidim_assembly().get<3>()->initialize(*this);
-    data_->stiffness_assembly_->multidim_assembly().get<1>()->initialize(*this);
-    data_->stiffness_assembly_->multidim_assembly().get<2>()->initialize(*this);
-    data_->stiffness_assembly_->multidim_assembly().get<3>()->initialize(*this);
-    data_->sources_assembly_->multidim_assembly().get<1>()->initialize(*this);
-    data_->sources_assembly_->multidim_assembly().get<2>()->initialize(*this);
-    data_->sources_assembly_->multidim_assembly().get<3>()->initialize(*this);
-    data_->bdr_cond_assembly_->multidim_assembly().get<1>()->initialize(*this);
-    data_->bdr_cond_assembly_->multidim_assembly().get<2>()->initialize(*this);
-    data_->bdr_cond_assembly_->multidim_assembly().get<3>()->initialize(*this);
-    data_->init_cond_assembly_->multidim_assembly().get<1>()->initialize(*this);
-    data_->init_cond_assembly_->multidim_assembly().get<2>()->initialize(*this);
-    data_->init_cond_assembly_->multidim_assembly().get<3>()->initialize(*this);
+    data_->mass_assembly_->multidim_assembly().template get<1>()->initialize(*this);
+    data_->mass_assembly_->multidim_assembly().template get<2>()->initialize(*this);
+    data_->mass_assembly_->multidim_assembly().template get<3>()->initialize(*this);
+    data_->stiffness_assembly_->multidim_assembly().template get<1>()->initialize(*this);
+    data_->stiffness_assembly_->multidim_assembly().template get<2>()->initialize(*this);
+    data_->stiffness_assembly_->multidim_assembly().template get<3>()->initialize(*this);
+    data_->sources_assembly_->multidim_assembly().template get<1>()->initialize(*this);
+    data_->sources_assembly_->multidim_assembly().template get<2>()->initialize(*this);
+    data_->sources_assembly_->multidim_assembly().template get<3>()->initialize(*this);
+    data_->bdr_cond_assembly_->multidim_assembly().template get<1>()->initialize(*this);
+    data_->bdr_cond_assembly_->multidim_assembly().template get<2>()->initialize(*this);
+    data_->bdr_cond_assembly_->multidim_assembly().template get<3>()->initialize(*this);
+    data_->init_cond_assembly_->multidim_assembly().template get<1>()->initialize(*this);
+    data_->init_cond_assembly_->multidim_assembly().template get<2>()->initialize(*this);
+    data_->init_cond_assembly_->multidim_assembly().template get<3>()->initialize(*this);
 }
 
 
