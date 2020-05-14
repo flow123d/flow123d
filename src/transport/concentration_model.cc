@@ -40,6 +40,12 @@ using Sclr = typename arma::Col<double>::template fixed<1>;
 using Vect = arma::vec3;
 using Tens = arma::mat33;
 
+// Functor computing velocity norm
+Sclr fn_conc_v_norm(Vect vel) {
+	Sclr ret; ret(0) = arma::norm(vel, 2);
+    return ret;
+}
+
 // Functor computing mass matrix coefficients (cross_section * water_content)
 Sclr fn_conc_mass_matrix(Sclr csec, Sclr wcont) {
     return csec * wcont;
@@ -185,6 +191,11 @@ ConcentrationTransportModel::ModelEqData::ModelEqData()
 
 
 	// initiaization of FieldModels
+    *this += v_norm.name("v_norm")
+            .description("Velocity norm field.")
+            .input_default("0.0")
+            .units( UnitSI().m().s(-1) );
+
     *this += mass_matrix_coef.name("mass_matrix_coef")
             .description("Matrix coefficients computed by model in mass assemblation.")
             .input_default("0.0")
@@ -482,6 +493,9 @@ void ConcentrationTransportModel::initialize()
     data().sources_sigma.setup_components();
 
     // create FieldModels
+    auto v_norm_ptr = Model<3, FieldValue<3>::Scalar>::create(fn_conc_v_norm, data().velocity);
+    data().v_norm.set_field(mesh_->region_db().get_region_set("ALL"), v_norm_ptr);
+
     auto mass_matrix_coef_ptr = Model<3, FieldValue<3>::Scalar>::create(fn_conc_mass_matrix, data().cross_section, data().water_content);
     data().mass_matrix_coef.set_field(mesh_->region_db().get_region_set("ALL"), mass_matrix_coef_ptr);
 

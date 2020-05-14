@@ -88,6 +88,8 @@ public:
 		/// @name Instances of FieldModel used in assembly methods
 		// @{
 
+		/// Velocity norm field.
+        Field<3, FieldValue<3>::Scalar > v_norm;
 		/// Field represents coefficients of mass matrix.
         Field<3, FieldValue<3>::Scalar > mass_matrix_coef;
 		/// Field represents retardation coefficients due to sorption.

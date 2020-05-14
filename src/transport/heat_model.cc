@@ -38,6 +38,12 @@ using Sclr = typename arma::Col<double>::template fixed<1>;
 using Vect = arma::vec3;
 using Tens = arma::mat33;
 
+// Functor computing velocity norm
+Sclr fn_heat_v_norm(Vect vel) {
+	Sclr ret; ret(0) = arma::norm(vel, 2);
+    return ret;
+}
+
 /**
  * Functor computing mass matrix coefficients:
  * cross_section * (porosity*fluid_density*fluid_heat_capacity + (1.-porosity)*solid_density*solid_heat_capacity)
@@ -281,6 +287,10 @@ HeatTransferModel::ModelEqData::ModelEqData()
 
 
 	// initiaization of FieldModels
+            .description("Velocity norm field.")
+            .input_default("0.0")
+            .units( UnitSI().m().s(-1) );
+
     *this += mass_matrix_coef.name("mass_matrix_coef")
             .description("Matrix coefficients computed by model in mass assemblation.")
             .input_default("0.0")
@@ -534,6 +544,9 @@ void HeatTransferModel::initialize()
 	// empty for now
 
     // create FieldModels
+    auto v_norm_ptr = Model<3, FieldValue<3>::Scalar>::create(fn_heat_v_norm, data().velocity);
+    data().v_norm.set_field(mesh_->region_db().get_region_set("ALL"), v_norm_ptr);
+
     auto mass_matrix_coef_ptr = Model<3, FieldValue<3>::Scalar>::create(fn_heat_mass_matrix, data().cross_section,
             data().porosity, data().fluid_density, data().fluid_heat_capacity, data().solid_density, data().solid_heat_capacity);
     data().mass_matrix_coef.set_field(mesh_->region_db().get_region_set("ALL"), mass_matrix_coef_ptr);
