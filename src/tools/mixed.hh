@@ -14,12 +14,15 @@
 #include <type_traits>
 
 const int __spacedim = 3;
+
+/// A dimension index type.
 using IntDim = unsigned int;
 
-
+/// Auxiliary class to resolve dimension dependent templates.
+/// This allow automatic template resolution without specifying template argument explicitly which
+/// often requires usage of the ugly template keyword before the method call.
 template <IntDim I>
 struct Dim {};
-
 
 
 /**
@@ -38,7 +41,6 @@ constexpr std::size_t parse_dim()
     return digits[0] - '0';
 }
 
-
 template <char... Digits>
 auto operator"" _d()
 {
@@ -47,13 +49,16 @@ auto operator"" _d()
 
 
 
-
+/***
+ * Basic tuple types.
+ */
 
 template<template<IntDim ...> class T>
 using _MixedBase0 = std::tuple<T<0>, T<1>, T<2>, T<3>>;
 
 template<template<IntDim ...> class T>
 using _MixedBase1 = std::tuple<T<1>, T<2>, T<3>>;
+
 
 template< template<IntDim ...> class T, int lower_dim=0>
 class Mixed : public _MixedBase0<T> {
@@ -66,12 +71,12 @@ class Mixed : public _MixedBase0<T> {
  * auto gauss = Mixed<QGauss>(q_order);      // template <int dim> class QGauss;
  * auto mapping = MixedSpaceDim<Mapping>();  // template <int dim, int spacedim> class Mapping;
  * ...
- * fe_values = FEValues<dim>(mapping[Dim<dim>{}], gauss.get<dim>(), ...)
+ * fe_values = FEValues<dim>(mapping[Dim<dim>{}], gauss[Dim<dim>{}], ...)
  *
  * or
  *
- * fe_values = FEValues<dim>(mapping[0_d], gauss.get<dim>(), ...)
- * fe_values = FEValues<dim>(mapping[1_d], gauss.get<dim>(), ...)
+ * fe_values = FEValues<dim>(mapping[0_d], gauss[0_d], ...)
+ * fe_values = FEValues<dim>(mapping[1_d], gauss[1_d], ...)
  * ...
  *
  * All parameters of the Mixed<T>(...) constructor are forwarder (by value) to the T(...) constructor for every dimension.
@@ -107,18 +112,8 @@ public:
             T<3>(std::forward<Args>(args)...))
     {}
 
-//    template<IntDim i_dim>
-//    T<i_dim> &get() {
-//        return std::get<i_dim>(*this);
-//    }
-//
-//    template<IntDim i_dim>
-//    const T<i_dim> &get() const {
-//        return std::get<i_dim>(*this);
-//    }
-
     /**
-     * Beautiful index/like access insired by:
+     * Beautiful index/like access inspired by:
      * https://arne-mertz.de/2017/03/tuple-compile-time-access/
      */
     template <IntDim i_dim>
@@ -133,6 +128,9 @@ public:
         return std::get<i_dim>(*this);
     }
 
+    /**
+     * Conversion operator for inner type conversions.
+     */
     template< template<IntDim...> class TParent, typename std::enable_if<std::is_convertible<TParent<0>, T<0>>::value, T<0> >::type >
     operator Mixed<TParent> () const {
     	//ASSERT(std::is_base_of<TParent, T>::value);
@@ -152,19 +150,8 @@ public:
 template< template<IntDim ...> class T>
 class Mixed<T, 1> : public _MixedBase1<T> {
 /**
- * Template to simplify storing and passing tuples of instances of dimension parametrized templates.
- * Currently instances for dim = 0,1,2,3 are created. We assume spacedim=3.
- * Usage:
- *
- * fe_order = 10;
- * auto gauss = Mixed<QGauss>(q_order);      // template <int dim> class QGauss;
- * auto mapping = MixedSpaceDim<Mapping>();  // template <int dim, int spacedim> class Mapping;
- * ...
- * fe_values = FEValues<dim>(mapping.get<dim>(), gauss.get<dim>(), ...)
- *
- * All parameters of the Mixed<T>(...) constructor are forwarder (by value) to the T(...) constructor for every dimension.
- * Only forwarding by value is supported due to problems with MixedPtr.
- * Can not resolve copy constructor correctly.
+ * Explicit specialization for tuple containing just 1,2,3.
+ * TODO: implement generic Mixed with the lower_dim parameter.
  *
  */
 public:
@@ -193,15 +180,6 @@ public:
             T<3>(std::forward<Args>(args)...))
     {}
 
-//    template<IntDim i_dim>
-//    T<i_dim> &get() {
-//        return std::get<i_dim-1>(*this);
-//    }
-//
-//    template<IntDim i_dim>
-//    const T<i_dim> &get() const {
-//        return std::get<i_dim-1>(*this);
-//    }
 
     /**
      * Beautiful index/like access insired by:
@@ -268,15 +246,14 @@ using _MixedPtrBase1 = std::tuple< std::shared_ptr<T<1>>,
 template< template<IntDim...> class T, int lower_dim=0>
 class MixedPtr : public _MixedPtrBase0<T> {
 /**
- * Template to simplify storing and passing tuples of shatred_ptr to instances of dimension parametrized templates.
- * Currently instances for dim = 0,1,2,3 are created. We assume spacedim=3.
+ * Similar to the mixed template but storing and providing shared pointers to the inner type.
  * Usage:
  *
  * fe_order = 10;
  * auto gauss = MixedPtr<QGauss>(q_order);      // template <int dim> class QGauss;
  * auto mapping = MixedSpaceDimPtr<Mapping>();  // template <int dim, int spacedim> class Mapping;
  * ...
- * fe_values = FEValues<dim>(*mapping.get<dim>(), *gauss.get<dim>(), ...)
+ * fe_values = FEValues<dim>(*mapping[Dim<dim>{}], *gauss[Dim<dim>{}], ...)
  *
  * All parameters of the Mixed<T>(...) constructor are forwarder (by value) to the T(...) constructor for every dimension.
  * Only forwarding by value is supported due to problems with MixedPtr.
@@ -309,15 +286,6 @@ public:
     {}
 
 
-//    template<IntDim i_dim>
-//    std::shared_ptr<T<i_dim>> get() {
-//        return std::get<i_dim>(*this);
-//    }
-//
-//    template<int i_dim>
-//    const std::shared_ptr<T<i_dim>> get() const {
-//        return std::get<i_dim>(*this);
-//    }
 
     /**
      * Beautiful index/like access insired by:
@@ -351,19 +319,8 @@ public:
 template< template<IntDim...> class T>
 class MixedPtr<T, 1> : public _MixedPtrBase1<T> {
 /**
- * Template to simplify storing and passing tuples of shatred_ptr to instances of dimension parametrized templates.
- * Currently instances for dim = 0,1,2,3 are created. We assume spacedim=3.
- * Usage:
- *
- * fe_order = 10;
- * auto gauss = MixedPtr<QGauss>(q_order);      // template <int dim> class QGauss;
- * auto mapping = MixedSpaceDimPtr<Mapping>();  // template <int dim, int spacedim> class Mapping;
- * ...
- * fe_values = FEValues<dim>(*mapping.get<dim>(), *gauss.get<dim>(), ...)
- *
- * All parameters of the Mixed<T>(...) constructor are forwarder (by value) to the T(...) constructor for every dimension.
- * Only forwarding by value is supported due to problems with MixedPtr.
- * We are unable to give precedence to the copy constructor over the prefect forwarding constructor MixedPtr(Args&& ...).
+ * Similar to MixedPtr.
+ * TODO: make generic implementation.
  */
 public:
     template <IntDim dim>
@@ -390,16 +347,6 @@ public:
     {}
 
 
-//    template<IntDim i_dim>
-//    std::shared_ptr<T<i_dim>> get() {
-//        return std::get<i_dim-1>(*this);
-//    }
-//
-//    template<int i_dim>
-//    const std::shared_ptr<T<i_dim>> get() const {
-//        return std::get<i_dim-1>(*this);
-//    }
-//
 
     /**
      * Beautiful index/like access insired by:
