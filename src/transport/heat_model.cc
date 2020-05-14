@@ -75,6 +75,14 @@ Sclr fn_heat_sources_conc(Sclr csec, Sclr por, Sclr f_rho, Sclr f_cap, Sclr f_si
     }
 }
 
+/**
+ * Functor computing advection coefficient // for positive heat_sources_sigma (otherwise return 0):
+ * velocity * fluid_density * fluid_heat_capacity
+ */
+Vect fn_heat_ad_coef(Sclr f_rho, Sclr f_cap, Vect velocity) {
+    return velocity * f_rho * f_cap;
+}
+
 
 
 
@@ -297,6 +305,11 @@ HeatTransferModel::ModelEqData::ModelEqData()
             .description("Concentration sources - Robin type, in_flux = sources_sigma * (sources_conc - mobile_conc).")
             .input_default("0.0")
             .units( UnitSI().s(-1).m(3).md() );
+
+    *this += advection_coef.name("advection_coef")
+            .description("Advection coefficients model.")
+            .input_default("0.0")
+            .units( UnitSI().m().s(-1) );
 }
 
 
@@ -542,6 +555,11 @@ void HeatTransferModel::initialize()
             data().fluid_density, data().fluid_heat_capacity, data().fluid_heat_exchange_rate, data().fluid_ref_temperature, data().solid_density,
             data().solid_heat_capacity, data().solid_heat_exchange_rate, data().solid_ref_temperature, data().sources_sigma_out);
     data().sources_conc_out.set_fields(mesh_->region_db().get_region_set("ALL"), sources_conc_ptr);
+
+    auto ad_coef_ptr = Model<3, FieldValue<3>::VectorFixed>::create(fn_heat_ad_coef, data().fluid_density, data().fluid_heat_capacity, data().velocity);
+    std::vector<typename Field<3, FieldValue<3>::VectorFixed>::FieldBasePtr> ad_coef_ptr_vec;
+    ad_coef_ptr_vec.push_back(ad_coef_ptr);
+    data().advection_coef.set_fields(mesh_->region_db().get_region_set("ALL"), ad_coef_ptr_vec);
 }
 
 

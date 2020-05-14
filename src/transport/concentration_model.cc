@@ -66,6 +66,11 @@ Sclr fn_conc_sources_conc(Sclr sconc) {
     return sconc;
 }
 
+// Functor computing advection coefficient (velocity)
+Vect fn_conc_ad_coef(Vect velocity) {
+    return velocity;
+}
+
 
 
 
@@ -203,6 +208,11 @@ ConcentrationTransportModel::ModelEqData::ModelEqData()
             .description("Concentration sources output.")
             .input_default("0.0")
             .units( UnitSI().kg().m(-3) );
+
+    *this += advection_coef.name("advection_coef")
+            .description("Advection coefficients model.")
+            .input_default("0.0")
+            .units( UnitSI().m().s(-1) );
 
 }
 
@@ -487,6 +497,12 @@ void ConcentrationTransportModel::initialize()
 
     auto sources_conc_ptr = Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_sources_conc, data().sources_conc);
     data().sources_conc_out.set_fields(mesh_->region_db().get_region_set("ALL"), sources_conc_ptr);
+
+    auto ad_coef_ptr = Model<3, FieldValue<3>::VectorFixed>::create(fn_conc_ad_coef, data().velocity);
+    std::vector<typename Field<3, FieldValue<3>::VectorFixed>::FieldBasePtr> ad_coef_ptr_vec;
+    for (unsigned int sbi=0; sbi<substances_.names().size(); sbi++)
+        ad_coef_ptr_vec.push_back(ad_coef_ptr);
+    data().advection_coef.set_fields(mesh_->region_db().get_region_set("ALL"), ad_coef_ptr_vec);
 }
 
 

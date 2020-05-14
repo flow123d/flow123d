@@ -172,6 +172,8 @@ public:
     	MultiField<3, FieldValue<3>::Scalar> sources_sigma_out;
     	/// Concentration sources - concentration output
     	MultiField<3, FieldValue<3>::Scalar> sources_conc_out;
+		/// Advection coefficients.
+		MultiField<3, FieldValue<3>::VectorFixed> advection_coef;
 
     	// @}
 

@@ -666,9 +666,8 @@ public:
             {
                 for (unsigned int i=0; i<ndofs_; i++)
                 {
-                	stringstream ss;
                     arma::vec3 Kt_grad_i = data_->dif_coef[sbi][k].t()*fe_values_.shape_grad(i,k);
-                    double ad_dot_grad_i = arma::dot(data_->ad_coef[sbi][k], fe_values_.shape_grad(i,k));
+                    double ad_dot_grad_i = arma::dot(data_->advection_coef[sbi](p), fe_values_.shape_grad(i,k));
 
                     for (unsigned int j=0; j<ndofs_; j++)
                         local_matrix_[i*ndofs_+j] += (arma::dot(Kt_grad_i, fe_values_.shape_grad(j,k))
