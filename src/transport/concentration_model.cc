@@ -77,6 +77,41 @@ Vect fn_conc_ad_coef(Vect velocity) {
     return velocity;
 }
 
+// Functor computing diffusion coefficient (see notes in function)
+Tens fn_conc_diff_coef(Tens diff_m, FMT_UNUSED Vect velocity, Sclr v_norm, FMT_UNUSED Sclr alphaL, Sclr alphaT, Sclr water_content, Sclr porosity, Sclr c_sec) {
+
+    // used tortuosity model dues to Millington and Quirk(1961) (should it be with power 10/3 ?)
+    // for an overview of other models see: Chou, Wu, Zeng, Chang (2011)
+    double tortuosity = pow(water_content(0), 7.0 / 3.0)/ (porosity(0) * porosity(0));
+
+    // result
+    Tens K;
+
+    // Note that the velocity vector is in fact the Darcian flux,
+    // so we need not to multiply vnorm by water_content and cross_section.
+	//K = ((alphaL-alphaT) / vnorm) * K + (alphaT*vnorm + Dm*tortuosity*cross_cut*water_content) * arma::eye(3,3);
+
+    if (fabs(v_norm(0)) > 0) {
+        /*
+        for (int i=0; i<3; i++)
+            for (int j=0; j<3; j++)
+               K(i,j) = (velocity[i]/vnorm)*(velocity[j]);
+        */
+        K = ((alphaL - alphaT) / v_norm) * arma::kron(velocity.t(), velocity);
+
+        //arma::mat33 abs_diff_mat = arma::abs(K -  kk);
+        //double diff = arma::min( arma::min(abs_diff_mat) );
+        //ASSERT(  diff < 1e-12 )(diff)(K)(kk);
+    } else
+        K.zeros();
+
+    // Note that the velocity vector is in fact the Darcian flux,
+    // so to obtain |v| we have to divide vnorm by porosity and cross_section.
+    K += alphaT*v_norm*arma::eye(3,3) + diff_m*(tortuosity*c_sec*water_content);
+
+    return K;
+}
+
 
 
 
@@ -224,6 +259,11 @@ ConcentrationTransportModel::ModelEqData::ModelEqData()
             .description("Advection coefficients model.")
             .input_default("0.0")
             .units( UnitSI().m().s(-1) );
+
+    *this += diffusion_coef.name("diffusion_coef")
+            .description("Diffusion coefficients model.")
+            .input_default("0.0")
+            .units( UnitSI().m(2).s(-1) );
 
 }
 
@@ -491,6 +531,9 @@ void ConcentrationTransportModel::initialize()
     data().sources_conc.setup_components();
     data().sources_density.setup_components();
     data().sources_sigma.setup_components();
+    data().diff_m.setup_components();
+    data().disp_l.setup_components();
+    data().disp_t.setup_components();
 
     // create FieldModels
     auto v_norm_ptr = Model<3, FieldValue<3>::Scalar>::create(fn_conc_v_norm, data().velocity);
@@ -517,6 +560,11 @@ void ConcentrationTransportModel::initialize()
     for (unsigned int sbi=0; sbi<substances_.names().size(); sbi++)
         ad_coef_ptr_vec.push_back(ad_coef_ptr);
     data().advection_coef.set_fields(mesh_->region_db().get_region_set("ALL"), ad_coef_ptr_vec);
+
+    auto diffusion_coef_ptr = Model<3, FieldValue<3>::TensorFixed>::create_multi(fn_conc_diff_coef, data().diff_m, data().velocity, data().v_norm,
+            data().disp_l, data().disp_t, data().water_content, data().porosity, data().cross_section);
+    std::cout << diffusion_coef_ptr.size() << std::endl;
+    data().diffusion_coef.set_fields(mesh_->region_db().get_region_set("ALL"), diffusion_coef_ptr);
 }
 
 
