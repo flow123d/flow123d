@@ -131,7 +131,7 @@ const int FieldFE<spacedim, Value>::registrar =
 template <int spacedim, class Value>
 FieldFE<spacedim, Value>::FieldFE( unsigned int n_comp)
 : FieldAlgorithmBase<spacedim, Value>(n_comp),
-  field_name_(""), fe_values_(4)
+  field_name_(""), fe_values_(4), mixed_n_dofs_{-1, -1, -1, -1}
 {
 	this->is_constant_in_space_ = false;
 }
@@ -247,14 +247,15 @@ void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::elem
 
         DHCellAccessor cell = dh_->cell_accessor_from_element( elm_idx );
         LocDofVec loc_dofs = cell.get_loc_dof_indices();
+        unsigned int n_loc_dofs = (mixed_n_dofs_[elm.dim()] == -1) ? loc_dofs.n_elem : mixed_n_dofs_[elm.dim()];
 
         for (unsigned int i_ep=0; i_ep<eval_points->size(elm.dim()); ++i_ep) { // i_eval_point
             //DHCellAccessor cache_cell = cache_map(cell);
             int field_cache_idx = cache_map.get_field_value_cache_index(cache_map(cell).element_cache_index(), i_ep);
             if (field_cache_idx < 0) continue; // skip
             mat_value.fill(0.0);
-    		for (unsigned int i_dof=0; i_dof<loc_dofs.n_elem; i_dof++) {
-    		    mat_value += data_vec_[loc_dofs[i_dof]] * this->handle_fe_shape(elm.dim(), i_dof, i_ep, 0);
+    		for (unsigned int i_dof=0; i_dof<n_loc_dofs; i_dof++) {
+    		    mat_value += data_vec_[loc_dofs[i_dof]] * this->handle_fe_shape(elm.dim(), i_dof, i_ep, comp_index_);
     		}
     		data_cache.data().set(field_cache_idx) = mat_value;
         }
@@ -278,7 +279,9 @@ void FieldFE<spacedim, Value>::cache_reinit(const ElementCacheMap &cache_map)
         ASSERT_PTR_DBG( fe_sys3 );
         fe = MixedPtr<FiniteElement>(fe_sys0->fe()[comp_index_], fe_sys1->fe()[comp_index_],
                                      fe_sys2->fe()[comp_index_], fe_sys3->fe()[comp_index_]);
-    }
+        mixed_n_dofs_ = {1, int(fe.get<1>()->n_dofs()), int(fe.get<2>()->n_dofs()), int(fe.get<3>()->n_dofs()) };
+    } else
+    	mixed_n_dofs_ = {-1, -1, -1, -1};
 
     std::array<Quadrature, 4> quads{QGauss(0, 1), this->init_quad<1>(eval_points), this->init_quad<2>(eval_points), this->init_quad<3>(eval_points)};
     fe_values_[0].initialize(quads[0], *fe.get<0>(), update_values);
