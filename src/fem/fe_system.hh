@@ -171,10 +171,10 @@ template<class... Args>
 MixedPtr<FESystem> mixed_fe_system(MixedPtr<FiniteElement> fe, Args&&... args)
 {
     return MixedPtr<FESystem>(
-      std::make_shared<FESystem<0>>(fe.get<0>(), std::forward<Args>(args)...),
-      std::make_shared<FESystem<1>>(fe.get<1>(), std::forward<Args>(args)...),
-      std::make_shared<FESystem<2>>(fe.get<2>(), std::forward<Args>(args)...),
-      std::make_shared<FESystem<3>>(fe.get<3>(), std::forward<Args>(args)...)
+      std::make_shared<FESystem<0>>(fe[0_d], std::forward<Args>(args)...),
+      std::make_shared<FESystem<1>>(fe[1_d], std::forward<Args>(args)...),
+      std::make_shared<FESystem<2>>(fe[2_d], std::forward<Args>(args)...),
+      std::make_shared<FESystem<3>>(fe[3_d], std::forward<Args>(args)...)
       );
 }
 
