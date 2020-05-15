@@ -429,13 +429,13 @@ void ConcentrationTransportModel::compute_advection_diffusion_coefficients(const
 }
 
 
-void ConcentrationTransportModel::compute_init_cond(const Armor::array &point_list,
+/*void ConcentrationTransportModel::compute_init_cond(const Armor::array &point_list,
 		const ElementAccessor<3> &ele_acc,
 		std::vector<std::vector<double> > &init_values)
 {
     for (unsigned int sbi=0; sbi<n_substances(); sbi++)
         data().init_conc[sbi].value_list(point_list, ele_acc, init_values[sbi]);
-}
+}*/
 
 void ConcentrationTransportModel::get_bc_type(const ElementAccessor<3> &ele_acc,
 			arma::uvec &bc_types)

@@ -215,9 +215,14 @@ public:
 			std::vector<std::vector<arma::vec3> > &ad_coef,
 			std::vector<std::vector<arma::mat33> > &dif_coef) override;
 
-	void compute_init_cond(const Armor::array &point_list,
-			const ElementAccessor<3> &ele_acc,
-			std::vector<std::vector<double> > &init_values) override;
+	//void compute_init_cond(const Armor::array &point_list,
+	//		const ElementAccessor<3> &ele_acc,
+	//		std::vector<std::vector<double> > &init_values) override;
+
+    inline Field<3, FieldValue<3>::Scalar> &init_cond_field(FMT_UNUSED unsigned int sbi)
+    {
+        return data().init_temperature;
+    }
 
 	void get_bc_type(const ElementAccessor<3> &ele_acc,
 				arma::uvec &bc_types) override;

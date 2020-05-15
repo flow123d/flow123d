@@ -87,9 +87,9 @@ public:
 	 * @param ele_acc      Element accessor.
 	 * @param init_values  Vector of intial values (output).
 	 */
-	virtual void compute_init_cond(const Armor::array &point_list,
-			const ElementAccessor<3> &ele_acc,
-			std::vector<std::vector<double> > &init_values) = 0;
+	//virtual void compute_init_cond(const Armor::array &point_list,
+	//		const ElementAccessor<3> &ele_acc,
+	//		std::vector<std::vector<double> > &init_values) = 0;
 
 	/**
 	 * Return types of boundary conditions for each solution component.

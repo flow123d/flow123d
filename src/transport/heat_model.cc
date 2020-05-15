@@ -464,12 +464,12 @@ void HeatTransferModel::compute_advection_diffusion_coefficients(const Armor::ar
 }
 
 
-void HeatTransferModel::compute_init_cond(const Armor::array &point_list,
+/*void HeatTransferModel::compute_init_cond(const Armor::array &point_list,
 		const ElementAccessor<3> &ele_acc,
 		std::vector<std::vector<double> > &init_values)
 {
 	data().init_temperature.value_list(point_list, ele_acc, init_values[0]);
-}
+}*/
 
 
 void HeatTransferModel::get_bc_type(const ElementAccessor<3> &ele_acc,

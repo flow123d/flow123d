@@ -1500,10 +1500,11 @@ public:
     {
         ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
 
+        unsigned int k;
         ElementAccessor<3> elem = cell.elm();
         cell.get_dof_indices(dof_indices_);
         fe_values_.reinit(elem);
-        model_->compute_init_cond(fe_values_.point_list(), elem, init_values_);
+        //model_->compute_init_cond(fe_values_.point_list(), elem, init_values_);
 
         for (unsigned int sbi=0; sbi<model_->n_substances(); sbi++)
         {
@@ -1514,7 +1515,7 @@ public:
                     local_matrix_[i*ndofs_+j] = 0;
             }
 
-            for (unsigned int k=0; k<qsize_; k++)
+            /*for (unsigned int k=0; k<qsize_; k++)
             {
                 double rhs_term = init_values_[sbi][k]*fe_values_.JxW(k);
 
@@ -1525,6 +1526,20 @@ public:
 
                     local_rhs_[i] += fe_values_.shape_value(i,k)*rhs_term;
                 }
+            } // */
+            k=0;
+            for (auto p : data_->init_cond_assembly_->bulk_integral(dim)->points(cell, &(data_->init_cond_assembly_->cache_map())) )
+            {
+                double rhs_term = model_->init_cond_field(sbi)(p)*fe_values_.JxW(k);
+
+                for (unsigned int i=0; i<ndofs_; i++)
+                {
+                    for (unsigned int j=0; j<ndofs_; j++)
+                        local_matrix_[i*ndofs_+j] += fe_values_.shape_value(i,k)*fe_values_.shape_value(j,k)*fe_values_.JxW(k);
+
+                    local_rhs_[i] += fe_values_.shape_value(i,k)*rhs_term;
+                }
+                k++;
             }
             data_->ls[sbi]->set_values(ndofs_, &(dof_indices_[0]), ndofs_, &(dof_indices_[0]), &(local_matrix_[0]), &(local_rhs_[0]));
         }
