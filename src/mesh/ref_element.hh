@@ -413,10 +413,53 @@ private:
 };
 
 
+// Declarations of explicit specialization of static memebers.
+
 template<> const IdxVector<1> RefElement<0>::topology_zeros_[];
 template<> const IdxVector<2> RefElement<1>::topology_zeros_[];
 template<> const IdxVector<3> RefElement<2>::topology_zeros_[];
 template<> const IdxVector<6> RefElement<3>::topology_zeros_[];
+
+
+template<> const std::vector<IdxVector<2>> RefElement<1>::line_nodes_;
+template<> const std::vector<IdxVector<2>> RefElement<2>::line_nodes_;
+template<> const std::vector<IdxVector<2>> RefElement<3>::line_nodes_;
+template<> const std::vector<IdxVector<1>> RefElement<1>::node_lines_;
+template<> const std::vector<IdxVector<2>> RefElement<2>::node_lines_;
+
+template<> const std::vector<IdxVector<3>> RefElement<3>::node_lines_;
+template<> const std::vector<IdxVector<3>> RefElement<3>::side_nodes_;
+template<> const std::vector<IdxVector<3>> RefElement<3>::node_sides_;
+template<> const std::vector<IdxVector<2>> RefElement<3>::line_sides_;
+template<> const std::vector<IdxVector<3>> RefElement<3>::side_lines_;
+
+
+template<> const std::vector< std::vector<unsigned int> > RefElement<0>::side_permutations;
+template<> const std::vector< std::vector<unsigned int> > RefElement<1>::side_permutations;
+template<> const std::vector< std::vector<unsigned int> > RefElement<2>::side_permutations;
+template<> const std::vector< std::vector<unsigned int> > RefElement<3>::side_permutations;
+
+template<> const IdxVector<1> RefElement<0>::topology_zeros_[];
+template<> const IdxVector<2> RefElement<1>::topology_zeros_[];
+template<> const IdxVector<3> RefElement<2>::topology_zeros_[];
+template<> const IdxVector<6> RefElement<3>::topology_zeros_[];
+
+
+
+
+
+
+// 0: nodes of nodes
+// 1: nodes of lines
+// 2: nodes of sides
+// 3: nodes of tetrahedron
+template<> const std::vector< std::vector< std::vector<unsigned int> > > RefElement<0>::nodes_of_subelements;
+template<> const std::vector< std::vector< std::vector<unsigned int> > > RefElement<1>::nodes_of_subelements;
+template<> const std::vector< std::vector< std::vector<unsigned int> > > RefElement<2>::nodes_of_subelements;
+template<> const std::vector< std::vector< std::vector<unsigned int> > > RefElement<3>::nodes_of_subelements;
+
+
+
 
 
 

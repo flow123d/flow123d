@@ -218,7 +218,7 @@ protected:
                 += edge_source_term - edge_scale * (water_content - water_content_previous_time) / ad_->time_step_;
         }
          
-        Idx p_dof = dh_cell.cell_with_other_dh(ad_->dh_p_.get()).get_loc_dof_indices()(0);
+        IntIdx p_dof = dh_cell.cell_with_other_dh(ad_->dh_p_.get()).get_loc_dof_indices()(0);
         ad_->conductivity_ptr->get_data_vec()[p_dof] = compute_conductivity(ele);
     }
 

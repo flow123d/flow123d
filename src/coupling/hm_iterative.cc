@@ -34,6 +34,7 @@ const it::Record & HM_Iterative::get_input_type() {
             "Record with data for iterative coupling of flow and mechanics.\n")
         .derive_from( DarcyFlowInterface::get_input_type() )
         .copy_keys(EquationBase::record_template())
+        .copy_keys(IterativeCoupling::record_template())
 		.declare_key("flow_equation", RichardsLMH::get_input_type(),
 		        it::Default::obligatory(),
 				"Flow equation, provides the velocity field as a result.")
@@ -117,7 +118,8 @@ void HM_Iterative::EqData::initialize(Mesh &mesh)
                                     
 
 HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
-: DarcyFlowInterface(mesh, in_record)
+: DarcyFlowInterface(mesh, in_record),
+  IterativeCoupling(in_record)
 {
 	START_TIMER("HM constructor");
     using namespace Input;
@@ -142,10 +144,6 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
     
     // read parameters controlling the iteration
     beta_ = in_record.val<double>("iteration_parameter");
-    min_it_ = in_record.val<unsigned int>("min_it");
-    max_it_ = in_record.val<unsigned int>("max_it");
-    a_tol_ = in_record.val<double>("a_tol");
-    r_tol_ = in_record.val<double>("r_tol");
 
     this->eq_data_ = &data_;
     
@@ -172,9 +170,6 @@ void copy_field(const FieldCommon &from_field_common, FieldFE<dim, Value> &to_fi
     
     for ( auto cell : dh->own_range() )
         vec[cell.local_idx()] = from_field.value(cell.elm().centre(), cell.elm());
-    
-//     vec.local_to_ghost_begin();
-//     vec.local_to_ghost_end();
 }
 
 
@@ -198,42 +193,36 @@ void HM_Iterative::zero_time_step()
 
 void HM_Iterative::update_solution()
 {
-    unsigned it = 0;
-    double difference = 0;
-    double norm = 1;
-    
     time_->next_time();
     time_->view("HM");
     data_.set_time(time_->step(), LimitSide::right);
-    
-    while (it < min_it_ || 
-           (it < max_it_ && difference > a_tol_ && difference/norm > r_tol_)
-          )
-    {
-        it++;
 
-        // pass displacement (divergence) to flow
-        // and solve flow problem
-        update_flow_fields();
-        flow_->solve_time_step(false);
-        
-        // pass pressure to mechanics and solve mechanics
-        update_potential();
-        mechanics_->solve_linear_system();
-        
-        // update displacement divergence
-        mechanics_->update_output_fields();
-        copy_field(mechanics_->data().output_divergence, *data_.div_u_ptr_);
-        
-        // TODO: compute difference of iterates
-        compute_iteration_error(difference, norm);
-        
-        MessageOut().fmt("HM Iteration {} abs. difference: {}  rel. difference: {}\n"
-                         "--------------------------------------------------------",
-                         it, difference, difference/norm);
-        copy_field(*flow_->data().field("pressure_p0"), *data_.old_iter_pressure_ptr_);
-    }
+    solve_step();
+}
+
+void HM_Iterative::solve_iteration()
+{
+    // pass displacement (divergence) to flow
+    // and solve flow problem
+    update_flow_fields();
+    flow_->solve_time_step(false);
     
+    // pass pressure to mechanics and solve mechanics
+    update_potential();
+    mechanics_->solve_linear_system();
+}
+
+
+void HM_Iterative::update_after_iteration()
+{
+    mechanics_->update_output_fields();
+    copy_field(mechanics_->data().output_divergence, *data_.div_u_ptr_);
+    copy_field(*flow_->data().field("pressure_p0"), *data_.old_iter_pressure_ptr_);
+}
+
+
+void HM_Iterative::update_after_converged()
+{
     flow_->accept_time_step();
     flow_->output_data();
     mechanics_->output_data();
@@ -303,7 +292,7 @@ void HM_Iterative::update_flow_fields()
 }
 
 
-void HM_Iterative::compute_iteration_error(double& difference, double& norm)
+void HM_Iterative::compute_iteration_error(double& abs_error, double& rel_error)
 {
     auto dh = data_.beta_ptr_->get_dofhandler();
     double p_dif2 = 0, p_norm2 = 0;
@@ -321,8 +310,12 @@ void HM_Iterative::compute_iteration_error(double& difference, double& norm)
     double send_data[] = { p_dif2, p_norm2 };
     double recv_data[2];
     MPI_Allreduce(&send_data, &recv_data, 2, MPI_DOUBLE, MPI_SUM, PETSC_COMM_WORLD);
-    difference = sqrt(recv_data[0]);
-    norm = sqrt(recv_data[1]);
+    abs_error = sqrt(recv_data[0]);
+    rel_error = abs_error / sqrt(recv_data[1]);
+    
+    MessageOut().fmt("HM Iteration {} abs. difference: {}  rel. difference: {}\n"
+                         "--------------------------------------------------------",
+                         iteration(), abs_error, rel_error);
 }
 
 

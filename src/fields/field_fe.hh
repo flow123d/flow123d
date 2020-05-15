@@ -237,7 +237,7 @@ private:
      *
      * TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
      */
-    std::shared_ptr< std::vector<Idx> > boundary_dofs_;
+    std::shared_ptr< std::vector<IntIdx> > boundary_dofs_;
 
     /// List of FEValues objects of dimensions 0,1,2,3 used for value calculation
     std::vector<FEValues<spacedim>> fe_values_;

@@ -22,10 +22,10 @@
 
 /// Define type that represents indices of large arrays (elements, nodes, dofs etc.)
 typedef int LongIdx;
-typedef int Idx;
+typedef int IntIdx;
 
 typedef arma::Col<LongIdx> GlobalDofVec;
-typedef arma::Col<Idx> LocDofVec;
+typedef arma::Col<IntIdx> LocDofVec;
 
 #define MPI_LONG_IDX MPI_INT
 
