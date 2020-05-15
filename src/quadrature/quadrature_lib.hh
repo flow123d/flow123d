@@ -49,7 +49,7 @@ public:
      */
     QGauss(unsigned int dim, const unsigned int order);
 
-    template<int dim>
+    template<uint dimension>
     void init(uint order);
 };
 

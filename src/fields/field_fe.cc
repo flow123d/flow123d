@@ -239,10 +239,10 @@ void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::elem
         // initialize FEValues objects (when first using)
         std::array<Quadrature, 4> quads{QGauss(0, 1), this->init_quad<1>(eval_points), this->init_quad<2>(eval_points), this->init_quad<3>(eval_points)};
         fe_values_.resize(4);
-        fe_values_[0].initialize(quads[0], *fe_.get<0>(), update_values);
-        fe_values_[1].initialize(quads[1], *fe_.get<1>(), update_values);
-        fe_values_[2].initialize(quads[2], *fe_.get<2>(), update_values);
-        fe_values_[3].initialize(quads[3], *fe_.get<3>(), update_values);
+        fe_values_[0].initialize(quads[0], *fe_[0_d], update_values);
+        fe_values_[1].initialize(quads[1], *fe_[1_d], update_values);
+        fe_values_[2].initialize(quads[2], *fe_[2_d], update_values);
+        fe_values_[3].initialize(quads[3], *fe_[3_d], update_values);
     }
 
     auto update_cache_data = cache_map.update_cache_data();
@@ -351,12 +351,12 @@ void FieldFE<spacedim, Value>::fill_boundary_dofs() {
 
 	auto bc_mesh = dh_->mesh()->get_bc_mesh();
 	unsigned int n_comp = this->value_.n_rows() * this->value_.n_cols();
-	boundary_dofs_ = std::make_shared< std::vector<Idx> >( n_comp * bc_mesh->n_elements() );
-	std::vector<Idx> &in_vec = *( boundary_dofs_.get() );
+	boundary_dofs_ = std::make_shared< std::vector<IntIdx> >( n_comp * bc_mesh->n_elements() );
+	std::vector<IntIdx> &in_vec = *( boundary_dofs_.get() );
 	unsigned int j = 0; // actual index to boundary_dofs_ vector
 
 	for (auto ele : bc_mesh->elements_range()) {
-		Idx elm_shift = n_comp * ele.idx();
+		IntIdx elm_shift = n_comp * ele.idx();
 		for (unsigned int i=0; i<n_comp; ++i, ++j) {
 			in_vec[j] = elm_shift + i;
 		}
