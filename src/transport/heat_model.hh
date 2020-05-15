@@ -176,6 +176,8 @@ public:
     	MultiField<3, FieldValue<3>::Scalar> sources_conc_out;
 		/// Advection coefficients.
 		MultiField<3, FieldValue<3>::VectorFixed> advection_coef;
+		/// Diffusion coefficients.
+		MultiField<3, FieldValue<3>::TensorFixed> diffusion_coef;
 
     	// @}
 

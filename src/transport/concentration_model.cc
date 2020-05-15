@@ -78,7 +78,7 @@ Vect fn_conc_ad_coef(Vect velocity) {
 }
 
 // Functor computing diffusion coefficient (see notes in function)
-Tens fn_conc_diff_coef(Tens diff_m, FMT_UNUSED Vect velocity, Sclr v_norm, FMT_UNUSED Sclr alphaL, Sclr alphaT, Sclr water_content, Sclr porosity, Sclr c_sec) {
+Tens fn_conc_diff_coef(Tens diff_m, Vect velocity, Sclr v_norm, Sclr alphaL, Sclr alphaT, Sclr water_content, Sclr porosity, Sclr c_sec) {
 
     // used tortuosity model dues to Millington and Quirk(1961) (should it be with power 10/3 ?)
     // for an overview of other models see: Chou, Wu, Zeng, Chang (2011)
@@ -97,7 +97,7 @@ Tens fn_conc_diff_coef(Tens diff_m, FMT_UNUSED Vect velocity, Sclr v_norm, FMT_U
             for (int j=0; j<3; j++)
                K(i,j) = (velocity[i]/vnorm)*(velocity[j]);
         */
-        K = ((alphaL - alphaT) / v_norm) * arma::kron(velocity.t(), velocity);
+        K = ((alphaL(0) - alphaT(0)) / v_norm(0)) * arma::kron(velocity.t(), velocity);
 
         //arma::mat33 abs_diff_mat = arma::abs(K -  kk);
         //double diff = arma::min( arma::min(abs_diff_mat) );
@@ -107,7 +107,7 @@ Tens fn_conc_diff_coef(Tens diff_m, FMT_UNUSED Vect velocity, Sclr v_norm, FMT_U
 
     // Note that the velocity vector is in fact the Darcian flux,
     // so to obtain |v| we have to divide vnorm by porosity and cross_section.
-    K += alphaT*v_norm*arma::eye(3,3) + diff_m*(tortuosity*c_sec*water_content);
+    K += alphaT(0)*v_norm(0)*arma::eye(3,3) + diff_m*(tortuosity*c_sec(0)*water_content(0));
 
     return K;
 }
@@ -563,7 +563,6 @@ void ConcentrationTransportModel::initialize()
 
     auto diffusion_coef_ptr = Model<3, FieldValue<3>::TensorFixed>::create_multi(fn_conc_diff_coef, data().diff_m, data().velocity, data().v_norm,
             data().disp_l, data().disp_t, data().water_content, data().porosity, data().cross_section);
-    std::cout << diffusion_coef_ptr.size() << std::endl;
     data().diffusion_coef.set_fields(mesh_->region_db().get_region_set("ALL"), diffusion_coef_ptr);
 }
 

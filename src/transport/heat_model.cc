@@ -82,11 +82,33 @@ Sclr fn_heat_sources_conc(Sclr csec, Sclr por, Sclr f_rho, Sclr f_cap, Sclr f_si
 }
 
 /**
- * Functor computing advection coefficient // for positive heat_sources_sigma (otherwise return 0):
+ * Functor computing advection coefficient
  * velocity * fluid_density * fluid_heat_capacity
  */
 Vect fn_heat_ad_coef(Sclr f_rho, Sclr f_cap, Vect velocity) {
     return velocity * f_rho * f_cap;
+}
+
+/**
+ * Functor computing diffusion coefficient (see notes in function)
+ */
+Tens fn_heat_diff_coef(Vect velocity, Sclr v_norm, Sclr f_rho, Sclr disp_l, Sclr disp_t, Sclr f_cond, Sclr s_cond, Sclr c_sec, Sclr por) {
+	// result
+	Tens dif_coef;
+
+	// dispersive part of thermal diffusion
+	// Note that the velocity vector is in fact the Darcian flux,
+	// so to obtain |v| we have to divide vnorm by porosity and cross_section.
+	if ( fabs(v_norm(0)) > 0 )
+		for (int i=0; i<3; i++)
+			for (int j=0; j<3; j++)
+				dif_coef(i,j) = ( (velocity(i)/v_norm(0)) * (velocity(j)/v_norm(0)) * (disp_l(0)-disp_t(0)) + disp_t(0)*(i==j?1:0))*v_norm(0)*f_rho(0)*f_cond(0);
+	else
+		dif_coef.zeros();
+
+	// conductive part of thermal diffusion
+	dif_coef += c_sec(0) * (por(0)*f_cond(0) + (1.-por(0))*s_cond(0)) * arma::eye(3,3);
+    return dif_coef;
 }
 
 
@@ -287,6 +309,7 @@ HeatTransferModel::ModelEqData::ModelEqData()
 
 
 	// initiaization of FieldModels
+    *this += v_norm.name("v_norm")
             .description("Velocity norm field.")
             .input_default("0.0")
             .units( UnitSI().m().s(-1) );
@@ -320,6 +343,11 @@ HeatTransferModel::ModelEqData::ModelEqData()
             .description("Advection coefficients model.")
             .input_default("0.0")
             .units( UnitSI().m().s(-1) );
+
+    *this += diffusion_coef.name("diffusion_coef")
+            .description("Diffusion coefficients model.")
+            .input_default("0.0")
+            .units( UnitSI().m(2).s(-1) );
 }
 
 
@@ -573,6 +601,12 @@ void HeatTransferModel::initialize()
     std::vector<typename Field<3, FieldValue<3>::VectorFixed>::FieldBasePtr> ad_coef_ptr_vec;
     ad_coef_ptr_vec.push_back(ad_coef_ptr);
     data().advection_coef.set_fields(mesh_->region_db().get_region_set("ALL"), ad_coef_ptr_vec);
+
+    auto diff_coef_ptr = Model<3, FieldValue<3>::TensorFixed>::create(fn_heat_diff_coef, data().velocity, data().v_norm, data().fluid_density,
+            data().disp_l, data().disp_t, data().fluid_heat_conductivity, data().solid_heat_conductivity, data().cross_section, data().porosity);
+    std::vector<typename Field<3, FieldValue<3>::TensorFixed>::FieldBasePtr> diff_coef_ptr_vec;
+    diff_coef_ptr_vec.push_back(diff_coef_ptr);
+    data().diffusion_coef.set_fields(mesh_->region_db().get_region_set("ALL"), diff_coef_ptr_vec);
 }
 
 
