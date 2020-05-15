@@ -337,6 +337,10 @@ void Mesh::check_mesh_on_read() {
         }
     }
 
+    // possibly build new node ids map
+    BidirectionalMap<int> new_node_ids_;
+    new_node_ids_.reserve(node_ids_.size());
+
     // remove unused nodes from the mesh
     uint inode_new = 0;
     for(uint inode = 0; inode < nodes_new_idx.size(); inode++) {
@@ -351,7 +355,7 @@ void Mesh::check_mesh_on_read() {
             
             // possibly move the nodes
             nodes_.vec<3>(inode_new) = nodes_.vec<3>(inode);
-            node_ids_.set_item(node_ids_[inode],inode_new);
+            new_node_ids_.add_item(node_ids_[inode]);
 
             inode_new++;
         }
@@ -367,7 +371,7 @@ void Mesh::check_mesh_on_read() {
 
         // throw away unused nodes
         nodes_.resize(n_nodes_new);
-        node_ids_.resize(n_nodes_new);
+        node_ids_ = new_node_ids_;
 
         // update node-element numbering
         for (auto ele : this->elements_range()) {
