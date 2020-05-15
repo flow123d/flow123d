@@ -112,7 +112,7 @@ public:
      */
     template<unsigned int dim>
     FEPtr<dim> fe() const {
-        return dof_handler_->ds_->fe().get<dim>();
+        return dof_handler_->ds_->fe()[Dim<dim>{}];
     }
 
     /// Check validity of accessor (see default constructor)

@@ -60,7 +60,7 @@ struct AssemblyIntegrals {
  *  - provides general assemble method
  *  - provides methods that allow construction of element patches
  */
-template < template<Dim...> class DimAssembly>
+template < template<IntDim...> class DimAssembly>
 class GenericAssembly
 {
 private:
@@ -104,9 +104,9 @@ public:
     {
         eval_points_ = std::make_shared<EvalPoints>();
         // first step - create integrals, then - initialize cache
-        multidim_assembly_.get<1>()->create_integrals(eval_points_, integrals_, active_integrals_);
-        multidim_assembly_.get<2>()->create_integrals(eval_points_, integrals_, active_integrals_);
-        multidim_assembly_.get<3>()->create_integrals(eval_points_, integrals_, active_integrals_);
+        multidim_assembly_[1_d]->create_integrals(eval_points_, integrals_, active_integrals_);
+        multidim_assembly_[2_d]->create_integrals(eval_points_, integrals_, active_integrals_);
+        multidim_assembly_[3_d]->create_integrals(eval_points_, integrals_, active_integrals_);
         element_cache_map_.init(eval_points_);
     }
 
@@ -126,8 +126,8 @@ public:
 	 */
     void assemble(std::shared_ptr<DOFHandlerMultiDim> dh) {
         unsigned int i;
-        multidim_assembly_.get<1>()->reallocate_cache(element_cache_map_);
-        multidim_assembly_.get<1>()->begin();
+        multidim_assembly_[1_d]->reallocate_cache(element_cache_map_);
+        multidim_assembly_[1_d]->begin();
         for (auto cell : dh->local_range() )
         {
             this->add_integrals_of_computing_step(cell);
@@ -138,13 +138,13 @@ public:
                 for (i=0; i<integrals_size_[0]; ++i) { // volume integral
                     switch (bulk_integral_data_[i].cell.dim()) {
                     case 1:
-                        multidim_assembly_.get<1>()->assemble_volume_integrals(bulk_integral_data_[i].cell);
+                        multidim_assembly_[1_d]->assemble_volume_integrals(bulk_integral_data_[i].cell);
                         break;
                     case 2:
-                        multidim_assembly_.get<2>()->assemble_volume_integrals(bulk_integral_data_[i].cell);
+                        multidim_assembly_[2_d]->assemble_volume_integrals(bulk_integral_data_[i].cell);
                         break;
                     case 3:
-                        multidim_assembly_.get<3>()->assemble_volume_integrals(bulk_integral_data_[i].cell);
+                        multidim_assembly_[3_d]->assemble_volume_integrals(bulk_integral_data_[i].cell);
                         break;
                     }
                 }
@@ -156,13 +156,13 @@ public:
                 for (i=0; i<integrals_size_[3]; ++i) { // boundary integral
                     switch (boundary_integral_data_[i].side.dim()) {
                     case 1:
-                        multidim_assembly_.get<1>()->assemble_fluxes_boundary(boundary_integral_data_[i].side);
+                        multidim_assembly_[1_d]->assemble_fluxes_boundary(boundary_integral_data_[i].side);
                         break;
                     case 2:
-                        multidim_assembly_.get<2>()->assemble_fluxes_boundary(boundary_integral_data_[i].side);
+                        multidim_assembly_[2_d]->assemble_fluxes_boundary(boundary_integral_data_[i].side);
                         break;
                     case 3:
-                        multidim_assembly_.get<3>()->assemble_fluxes_boundary(boundary_integral_data_[i].side);
+                        multidim_assembly_[3_d]->assemble_fluxes_boundary(boundary_integral_data_[i].side);
                         break;
                     }
                 }
@@ -174,13 +174,13 @@ public:
                 for (i=0; i<integrals_size_[1]; ++i) { // edge integral
                     switch (edge_integral_data_[i].edge_side_range.begin()->dim()) {
                     case 1:
-                        multidim_assembly_.get<1>()->assemble_fluxes_element_element(edge_integral_data_[i].edge_side_range);
+                        multidim_assembly_[1_d]->assemble_fluxes_element_element(edge_integral_data_[i].edge_side_range);
                         break;
                     case 2:
-                        multidim_assembly_.get<2>()->assemble_fluxes_element_element(edge_integral_data_[i].edge_side_range);
+                        multidim_assembly_[2_d]->assemble_fluxes_element_element(edge_integral_data_[i].edge_side_range);
                         break;
                     case 3:
-                        multidim_assembly_.get<3>()->assemble_fluxes_element_element(edge_integral_data_[i].edge_side_range);
+                        multidim_assembly_[3_d]->assemble_fluxes_element_element(edge_integral_data_[i].edge_side_range);
                         break;
                     }
                 }
@@ -192,17 +192,17 @@ public:
                 for (i=0; i<integrals_size_[2]; ++i) { // coupling integral
                     switch (coupling_integral_data_[i].side.dim()) {
                     case 2:
-                        multidim_assembly_.get<2>()->assemble_fluxes_element_side(coupling_integral_data_[i].cell, coupling_integral_data_[i].side);
+                        multidim_assembly_[2_d]->assemble_fluxes_element_side(coupling_integral_data_[i].cell, coupling_integral_data_[i].side);
                         break;
                     case 3:
-                        multidim_assembly_.get<3>()->assemble_fluxes_element_side(coupling_integral_data_[i].cell, coupling_integral_data_[i].side);
+                        multidim_assembly_[3_d]->assemble_fluxes_element_side(coupling_integral_data_[i].cell, coupling_integral_data_[i].side);
                         break;
                     }
                 }
                 END_TIMER("assemble_fluxes_elem_side");
             }
         }
-        multidim_assembly_.get<1>()->end();
+        multidim_assembly_[1_d]->end();
     }
 
     /// Return ElementCacheMap
@@ -300,7 +300,7 @@ private:
         this->insert_eval_points_from_integral_data();
         element_cache_map_.create_elements_points_map();
         // not used yet: TODO need fix in MultiField, HeatModel ...; need better access to EqData
-        multidim_assembly_.get<1>()->data_->cache_update(element_cache_map_);
+        multidim_assembly_[1_d]->data_->cache_update(element_cache_map_);
         element_cache_map_.finish_elements_update();
     }
 
@@ -550,7 +550,7 @@ public:
     	//vector<vector<double> > ret_coef_;                        ///< Retardation coefficient due to sorption.
 
         friend class TransportDG<Model>;
-        template < template<Dim...> class DimAssembly>
+        template < template<IntDim...> class DimAssembly>
         friend class GenericAssembly;
 
 };
@@ -1072,7 +1072,7 @@ private:
 	// @}
 
     friend class TransportDG<Model>;
-    template < template<Dim...> class DimAssembly>
+    template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
 
 };
@@ -1220,7 +1220,7 @@ public:
     	// @}
 
         friend class TransportDG<Model>;
-        template < template<Dim...> class DimAssembly>
+        template < template<IntDim...> class DimAssembly>
         friend class GenericAssembly;
 
 };
@@ -1458,7 +1458,7 @@ public:
         vector<double> bc_ref_values_;                            ///< Same as previous
 
         friend class TransportDG<Model>;
-        template < template<Dim...> class DimAssembly>
+        template < template<IntDim...> class DimAssembly>
         friend class GenericAssembly;
 
 };
@@ -1571,7 +1571,7 @@ public:
         std::vector<std::vector<double> > init_values_;           ///< Auxiliary vectors for prepare initial condition
 
         friend class TransportDG<Model>;
-        template < template<Dim...> class DimAssembly>
+        template < template<IntDim...> class DimAssembly>
         friend class GenericAssembly;
 
 };

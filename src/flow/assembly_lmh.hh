@@ -52,7 +52,7 @@ public:
         // note: this shortcut supposes that the fe_system is the same on all elements
         // TODO the function should be DiscreteSpace.fe(ElementAccessor)
         // and correct form fe(ad_->dh_->own_range().begin()->elm()) (see documentation of DiscreteSpace::fe)
-        auto fe = ad_->dh_->ds()->fe().get<dim>();
+        auto fe = ad_->dh_->ds()->fe()[Dim<dim>{}];
         FESystem<dim>* fe_system = dynamic_cast<FESystem<dim>*>(fe.get());
         loc_side_dofs = fe_system->fe_dofs(0);
         loc_ele_dof = fe_system->fe_dofs(1)[0];

@@ -24,7 +24,7 @@
 #include "mesh/duplicate_nodes.h"
 #include "fem/finite_element.hh"
 template<unsigned int dim> class FiniteElement;
-template<Dim dim>
+template<IntDim dim>
 using FEPtr = std::shared_ptr<FiniteElement<dim>>;
 class Mesh;
 
@@ -116,9 +116,9 @@ public:
   
   
 private:
-  template<Dim dim>
+  template<IntDim dim>
   void _init_n_dofs() {
-      auto fe_ptr = fe_.get<dim>();
+      auto fe_ptr = fe_[Dim<dim>{}];
       for (unsigned int d=0; d < fe_ptr->n_dofs(); d++) {
           if (fe_ptr->dof(d).dim == 0)
               _n_elem_dofs[dim]++;

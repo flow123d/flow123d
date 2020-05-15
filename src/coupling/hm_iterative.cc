@@ -34,6 +34,7 @@ const it::Record & HM_Iterative::get_input_type() {
             "Record with data for iterative coupling of flow and mechanics.\n")
         .derive_from( DarcyFlowInterface::get_input_type() )
         .copy_keys(EquationBase::record_template())
+        .copy_keys(IterativeCoupling::record_template())
 		.declare_key("flow_equation", RichardsLMH::get_input_type(),
 		        it::Default::obligatory(),
 				"Flow equation, provides the velocity field as a result.")
@@ -117,7 +118,8 @@ void HM_Iterative::EqData::initialize(Mesh &mesh)
                                     
 
 HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
-: DarcyFlowInterface(mesh, in_record)
+: DarcyFlowInterface(mesh, in_record),
+  IterativeCoupling(in_record)
 {
 	START_TIMER("HM constructor");
     using namespace Input;
@@ -142,10 +144,6 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
     
     // read parameters controlling the iteration
     beta_ = in_record.val<double>("iteration_parameter");
-    min_it_ = in_record.val<unsigned int>("min_it");
-    max_it_ = in_record.val<unsigned int>("max_it");
-    a_tol_ = in_record.val<double>("a_tol");
-    r_tol_ = in_record.val<double>("r_tol");
 
     this->eq_data_ = &data_;
     
@@ -172,9 +170,6 @@ void copy_field(const FieldCommon &from_field_common, FieldFE<dim, Value> &to_fi
     
     for ( auto cell : dh->own_range() )
         vec[cell.local_idx()] = from_field.value(cell.elm().centre(), cell.elm());
-    
-//     vec.local_to_ghost_begin();
-//     vec.local_to_ghost_end();
 }
 
 
@@ -198,42 +193,36 @@ void HM_Iterative::zero_time_step()
 
 void HM_Iterative::update_solution()
 {
-    unsigned it = 0;
-    double difference = 0;
-    double norm = 1;
-    
     time_->next_time();
     time_->view("HM");
     data_.set_time(time_->step(), LimitSide::right);
-    
-    while (it < min_it_ || 
-           (it < max_it_ && difference > a_tol_ && difference/norm > r_tol_)
-          )
-    {
-        it++;
 
-        // pass displacement (divergence) to flow
-        // and solve flow problem
-        update_flow_fields();
-        flow_->solve_time_step(false);
-        
-        // pass pressure to mechanics and solve mechanics
-        update_potential();
-        mechanics_->solve_linear_system();
-        mechanics_->output_vector_gather();
-        
-        // update displacement divergence
-        copy_field(mechanics_->data().output_divergence, *data_.div_u_ptr_);
-        
-        // TODO: compute difference of iterates
-        compute_iteration_error(difference, norm);
-        
-        MessageOut().fmt("HM Iteration {} abs. difference: {}  rel. difference: {}\n"
-                         "--------------------------------------------------------",
-                         it, difference, difference/norm);
-        copy_field(*flow_->data().field("pressure_p0"), *data_.old_iter_pressure_ptr_);
-    }
+    solve_step();
+}
+
+void HM_Iterative::solve_iteration()
+{
+    // pass displacement (divergence) to flow
+    // and solve flow problem
+    update_flow_fields();
+    flow_->solve_time_step(false);
     
+    // pass pressure to mechanics and solve mechanics
+    update_potential();
+    mechanics_->solve_linear_system();
+}
+
+
+void HM_Iterative::update_after_iteration()
+{
+    mechanics_->update_output_fields();
+    copy_field(mechanics_->data().output_divergence, *data_.div_u_ptr_);
+    copy_field(*flow_->data().field("pressure_p0"), *data_.old_iter_pressure_ptr_);
+}
+
+
+void HM_Iterative::update_after_converged()
+{
     flow_->accept_time_step();
     flow_->output_data();
     mechanics_->output_data();
@@ -247,7 +236,6 @@ void HM_Iterative::update_potential()
 {
     auto potential_vec_ = data_.potential_ptr_->get_data_vec();
     auto dh = data_.potential_ptr_->get_dofhandler();
-    double difference2 = 0, norm2 = 0;
     Field<3, FieldValue<3>::Scalar> field_edge_pressure;
     field_edge_pressure.copy_from(*flow_->data().field("pressure_edge"));
     for ( auto ele : dh->local_range() )
@@ -262,34 +250,12 @@ void HM_Iterative::update_potential()
             double pressure = field_edge_pressure.value(side.centre(), elm);
             double potential = -alpha*density*gravity*pressure;
         
-            if (ele.is_own())
-            {
-                difference2 += pow(potential_vec_[dof_indices[side.side_idx()]] - potential,2);
-                norm2 += pow(potential,2);
-            }
-        
             potential_vec_[dof_indices[side.side_idx()]] = potential;
         }
     }
     
-    double send_data[] = { difference2, norm2 };
-    double recv_data[2];
-    MPI_Allreduce(&send_data, &recv_data, 2, MPI_DOUBLE, MPI_SUM, PETSC_COMM_WORLD);
-    difference2 = recv_data[0];
-    norm2       = recv_data[1];
-
-    double dif2norm;
-    if (norm2 == 0)
-        dif2norm = (difference2 == 0)?0:numeric_limits<double>::max();
-    else 
-        dif2norm = sqrt(difference2/norm2);
-    DebugOut() << "Relative potential difference: " << dif2norm << endl;
-    
-    if (dif2norm > numeric_limits<double>::epsilon())
-    {
-        data_.pressure_potential.set_time_result_changed();
-        mechanics_->set_potential_load(data_.pressure_potential);
-    }
+    data_.pressure_potential.set_time_result_changed();
+    mechanics_->set_potential_load(data_.pressure_potential);
 }
 
 
@@ -298,7 +264,6 @@ void HM_Iterative::update_flow_fields()
     auto beta_vec = data_.beta_ptr_->get_data_vec();
     auto src_vec = data_.flow_source_ptr_->get_data_vec();
     auto dh = data_.beta_ptr_->get_dofhandler();
-    double beta_diff2 = 0, beta_norm2 = 0, src_diff2 = 0, src_norm2 = 0;
     Field<3,FieldValue<3>::Scalar> field_ele_pressure;
     field_ele_pressure.copy_from(*flow_->data().field("pressure_p0"));
     for ( auto ele : dh->local_range() )
@@ -316,52 +281,18 @@ void HM_Iterative::update_flow_fields()
         double old_div_u = data_.old_div_u_ptr_->value(elm.centre(), elm);
         double src = (beta*(p-old_p) + alpha*(old_div_u - div_u)) / time_->dt();
         
-        if (ele.is_own())
-        {
-            beta_diff2 += pow(beta_vec[ele.local_idx()] - beta,2);
-            beta_norm2 += pow(beta,2);
-            src_diff2 += pow(src_vec[ele.local_idx()] - src,2);
-            src_norm2 += pow(src,2);
-        }
-        
         beta_vec[ele.local_idx()] = beta;
         src_vec[ele.local_idx()] = src;
     }
     
-    double send_data[] = { beta_diff2, beta_norm2, src_diff2, src_norm2 };
-    double recv_data[4];
-    MPI_Allreduce(&send_data, &recv_data, 4, MPI_DOUBLE, MPI_SUM, PETSC_COMM_WORLD);
-    beta_diff2 = recv_data[0];
-    beta_norm2 = recv_data[1];
-    src_diff2  = recv_data[2];
-    src_norm2  = recv_data[3];
-    
-    double beta_dif2norm, src_dif2norm;
-    if (beta_norm2 == 0)
-        beta_dif2norm = (beta_diff2 == 0)?0:numeric_limits<double>::max();
-    else 
-        beta_dif2norm = sqrt(beta_diff2/beta_norm2);
-    if (src_norm2 == 0)
-        src_dif2norm = (src_diff2 == 0)?0:numeric_limits<double>::max();
-    else 
-        src_dif2norm = sqrt(src_diff2/src_norm2);
-    DebugOut() << "Relative difference in beta: " << beta_dif2norm << endl;
-    DebugOut() << "Relative difference in extra_source: " << src_dif2norm << endl;
-    
-    if (beta_dif2norm > numeric_limits<double>::epsilon())
-    {
-        data_.beta.set_time_result_changed();
-        flow_->set_extra_storativity(data_.beta);
-    }
-    if (src_dif2norm > numeric_limits<double>::epsilon())
-    {
-        data_.flow_source.set_time_result_changed();
-        flow_->set_extra_source(data_.flow_source);
-    }
+    data_.beta.set_time_result_changed();
+    data_.flow_source.set_time_result_changed();
+    flow_->set_extra_storativity(data_.beta);
+    flow_->set_extra_source(data_.flow_source);
 }
 
 
-void HM_Iterative::compute_iteration_error(double& difference, double& norm)
+void HM_Iterative::compute_iteration_error(double& abs_error, double& rel_error)
 {
     auto dh = data_.beta_ptr_->get_dofhandler();
     double p_dif2 = 0, p_norm2 = 0;
@@ -379,8 +310,12 @@ void HM_Iterative::compute_iteration_error(double& difference, double& norm)
     double send_data[] = { p_dif2, p_norm2 };
     double recv_data[2];
     MPI_Allreduce(&send_data, &recv_data, 2, MPI_DOUBLE, MPI_SUM, PETSC_COMM_WORLD);
-    difference = sqrt(recv_data[0]);
-    norm = sqrt(recv_data[1]);
+    abs_error = sqrt(recv_data[0]);
+    rel_error = abs_error / sqrt(recv_data[1]);
+    
+    MessageOut().fmt("HM Iteration {} abs. difference: {}  rel. difference: {}\n"
+                         "--------------------------------------------------------",
+                         iteration(), abs_error, rel_error);
 }
 
 

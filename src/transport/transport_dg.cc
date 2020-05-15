@@ -194,7 +194,7 @@ void TransportDG<Model>::EqData::set_DG_parameters_boundary(Side side,
 
 
 
-template<class Model>
+template<typename Model>
 TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
         : Model(init_mesh, in_rec),
           input_rec(in_rec),
@@ -328,21 +328,21 @@ void TransportDG<Model>::initialize()
     Model::balance_->allocate(data_->dh_->distr()->lsize(), data_->mass_assembly_->eval_points()->max_size());
 
     // initialization of assembly object
-    data_->mass_assembly_->multidim_assembly().get<1>()->initialize(*this);
-    data_->mass_assembly_->multidim_assembly().get<2>()->initialize(*this);
-    data_->mass_assembly_->multidim_assembly().get<3>()->initialize(*this);
-    data_->stiffness_assembly_->multidim_assembly().get<1>()->initialize(*this);
-    data_->stiffness_assembly_->multidim_assembly().get<2>()->initialize(*this);
-    data_->stiffness_assembly_->multidim_assembly().get<3>()->initialize(*this);
-    data_->sources_assembly_->multidim_assembly().get<1>()->initialize(*this);
-    data_->sources_assembly_->multidim_assembly().get<2>()->initialize(*this);
-    data_->sources_assembly_->multidim_assembly().get<3>()->initialize(*this);
-    data_->bdr_cond_assembly_->multidim_assembly().get<1>()->initialize(*this);
-    data_->bdr_cond_assembly_->multidim_assembly().get<2>()->initialize(*this);
-    data_->bdr_cond_assembly_->multidim_assembly().get<3>()->initialize(*this);
-    data_->init_cond_assembly_->multidim_assembly().get<1>()->initialize(*this);
-    data_->init_cond_assembly_->multidim_assembly().get<2>()->initialize(*this);
-    data_->init_cond_assembly_->multidim_assembly().get<3>()->initialize(*this);
+    data_->mass_assembly_->multidim_assembly()[1_d]->initialize(*this);
+    data_->mass_assembly_->multidim_assembly()[2_d]->initialize(*this);
+    data_->mass_assembly_->multidim_assembly()[3_d]->initialize(*this);
+    data_->stiffness_assembly_->multidim_assembly()[1_d]->initialize(*this);
+    data_->stiffness_assembly_->multidim_assembly()[2_d]->initialize(*this);
+    data_->stiffness_assembly_->multidim_assembly()[3_d]->initialize(*this);
+    data_->sources_assembly_->multidim_assembly()[1_d]->initialize(*this);
+    data_->sources_assembly_->multidim_assembly()[2_d]->initialize(*this);
+    data_->sources_assembly_->multidim_assembly()[3_d]->initialize(*this);
+    data_->bdr_cond_assembly_->multidim_assembly()[1_d]->initialize(*this);
+    data_->bdr_cond_assembly_->multidim_assembly()[2_d]->initialize(*this);
+    data_->bdr_cond_assembly_->multidim_assembly()[3_d]->initialize(*this);
+    data_->init_cond_assembly_->multidim_assembly()[1_d]->initialize(*this);
+    data_->init_cond_assembly_->multidim_assembly()[2_d]->initialize(*this);
+    data_->init_cond_assembly_->multidim_assembly()[3_d]->initialize(*this);
 }
 
 

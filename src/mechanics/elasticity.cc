@@ -111,10 +111,10 @@ FEObjects::~FEObjects()
 {
 }
 
-template<> std::shared_ptr<FiniteElement<0>> FEObjects::fe<0>() { return fe_.get<0>(); }
-template<> std::shared_ptr<FiniteElement<1>> FEObjects::fe<1>() { return fe_.get<1>(); }
-template<> std::shared_ptr<FiniteElement<2>> FEObjects::fe<2>() { return fe_.get<2>(); }
-template<> std::shared_ptr<FiniteElement<3>> FEObjects::fe<3>() { return fe_.get<3>(); }
+template<> std::shared_ptr<FiniteElement<0>> FEObjects::fe<0>() { return fe_[0_d]; }
+template<> std::shared_ptr<FiniteElement<1>> FEObjects::fe<1>() { return fe_[1_d]; }
+template<> std::shared_ptr<FiniteElement<2>> FEObjects::fe<2>() { return fe_[2_d]; }
+template<> std::shared_ptr<FiniteElement<3>> FEObjects::fe<3>() { return fe_[3_d]; }
 
 std::shared_ptr<DOFHandlerMultiDim> FEObjects::dh() { return dh_; }
 std::shared_ptr<DOFHandlerMultiDim> FEObjects::dh_scalar() { return dh_scalar_; }
@@ -362,21 +362,21 @@ Elasticity::~Elasticity()
 
 
 
-void Elasticity::output_vector_gather()
-{
-    data_.output_field_ptr->get_data_vec().local_to_ghost_begin();
-    data_.output_field_ptr->get_data_vec().local_to_ghost_end();
-}
-
-
 void Elasticity::update_output_fields()
 {
+    // update ghost values of solution vector
+    data_.output_field_ptr->get_data_vec().local_to_ghost_begin();
+    data_.output_field_ptr->get_data_vec().local_to_ghost_end();
+
+    // compute new output fields depending on solution (stress, divergence etc.)
     data_.output_stress_ptr->get_data_vec().zero_entries();
     data_.output_cross_section_ptr->get_data_vec().zero_entries();
     data_.output_div_ptr->get_data_vec().zero_entries();
     compute_output_fields<1>();
     compute_output_fields<2>();
     compute_output_fields<3>();
+
+    // update ghost values of computed fields
     data_.output_stress_ptr->get_data_vec().local_to_ghost_begin();
     data_.output_stress_ptr->get_data_vec().local_to_ghost_end();
     data_.output_von_mises_stress_ptr->get_data_vec().local_to_ghost_begin();
@@ -516,7 +516,6 @@ void Elasticity::output_data()
     // gather the solution from all processors
     data_.output_fields.set_time( this->time().step(), LimitSide::left);
     //if (data_.output_fields.is_field_output_time(data_.output_field, this->time().step()) )
-    output_vector_gather();
     update_output_fields();
     data_.output_fields.output(this->time().step());
     output_stream_->write_time_frame();

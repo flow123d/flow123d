@@ -269,25 +269,25 @@ void FieldFE<spacedim, Value>::cache_reinit(const ElementCacheMap &cache_map)
     std::shared_ptr<EvalPoints> eval_points = cache_map.eval_points();
     MixedPtr<FiniteElement> fe = dh_->ds()->fe();
 
-    FESystem<1> *fe_sys1 = dynamic_cast<FESystem<1>*>( fe.get<1>().get() );
+    FESystem<1> *fe_sys1 = dynamic_cast<FESystem<1>*>( fe[1_d].get() );
     if (fe_sys1 != nullptr) {
-        FESystem<0> *fe_sys0 = dynamic_cast<FESystem<0>*>( fe.get<0>().get() );
-        FESystem<2> *fe_sys2 = dynamic_cast<FESystem<2>*>( fe.get<2>().get() );
-        FESystem<3> *fe_sys3 = dynamic_cast<FESystem<3>*>( fe.get<3>().get() );
+        FESystem<0> *fe_sys0 = dynamic_cast<FESystem<0>*>( fe[0_d].get() );
+        FESystem<2> *fe_sys2 = dynamic_cast<FESystem<2>*>( fe[2_d].get() );
+        FESystem<3> *fe_sys3 = dynamic_cast<FESystem<3>*>( fe[3_d].get() );
         ASSERT_PTR_DBG( fe_sys0 );
         ASSERT_PTR_DBG( fe_sys2 );
         ASSERT_PTR_DBG( fe_sys3 );
         fe = MixedPtr<FiniteElement>(fe_sys0->fe()[comp_index_], fe_sys1->fe()[comp_index_],
                                      fe_sys2->fe()[comp_index_], fe_sys3->fe()[comp_index_]);
-        mixed_n_dofs_ = {1, int(fe.get<1>()->n_dofs()), int(fe.get<2>()->n_dofs()), int(fe.get<3>()->n_dofs()) };
+        mixed_n_dofs_ = {1, int(fe[1_d]->n_dofs()), int(fe[2_d]->n_dofs()), int(fe[2_d]->n_dofs()) };
     } else
     	mixed_n_dofs_ = {-1, -1, -1, -1};
 
     std::array<Quadrature, 4> quads{QGauss(0, 1), this->init_quad<1>(eval_points), this->init_quad<2>(eval_points), this->init_quad<3>(eval_points)};
-    fe_values_[0].initialize(quads[0], *fe.get<0>(), update_values);
-    fe_values_[1].initialize(quads[1], *fe.get<1>(), update_values);
-    fe_values_[2].initialize(quads[2], *fe.get<2>(), update_values);
-    fe_values_[3].initialize(quads[3], *fe.get<3>(), update_values);
+    fe_values_[0].initialize(quads[0], *fe[0_d], update_values);
+    fe_values_[1].initialize(quads[1], *fe[1_d], update_values);
+    fe_values_[2].initialize(quads[2], *fe[2_d], update_values);
+    fe_values_[3].initialize(quads[3], *fe[3_d], update_values);
 }
 
 
@@ -371,12 +371,12 @@ void FieldFE<spacedim, Value>::fill_boundary_dofs() {
 
 	auto bc_mesh = dh_->mesh()->get_bc_mesh();
 	unsigned int n_comp = this->value_.n_rows() * this->value_.n_cols();
-	boundary_dofs_ = std::make_shared< std::vector<Idx> >( n_comp * bc_mesh->n_elements() );
-	std::vector<Idx> &in_vec = *( boundary_dofs_.get() );
+	boundary_dofs_ = std::make_shared< std::vector<IntIdx> >( n_comp * bc_mesh->n_elements() );
+	std::vector<IntIdx> &in_vec = *( boundary_dofs_.get() );
 	unsigned int j = 0; // actual index to boundary_dofs_ vector
 
 	for (auto ele : bc_mesh->elements_range()) {
-		Idx elm_shift = n_comp * ele.idx();
+		IntIdx elm_shift = n_comp * ele.idx();
 		for (unsigned int i=0; i<n_comp; ++i, ++j) {
 			in_vec[j] = elm_shift + i;
 		}

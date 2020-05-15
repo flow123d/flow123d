@@ -72,7 +72,7 @@ public:
 	~FEValueHandler();
 
 	/// TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
-	inline void set_boundary_dofs_vector(std::shared_ptr< std::vector<Idx> > boundary_dofs) {
+	inline void set_boundary_dofs_vector(std::shared_ptr< std::vector<IntIdx> > boundary_dofs) {
 		this->boundary_dofs_ = boundary_dofs;
 	}
 
@@ -82,7 +82,7 @@ public:
         unsigned int ndofs = this->value_.n_rows() * this->value_.n_cols();
         // create armadillo vector on top of existing array
         // vec(ptr_aux_mem, number_of_elements, copy_aux_mem = true, strict = false)
-        Idx* mem_ptr = const_cast<Idx*>(&((*boundary_dofs_)[ndofs*cell_idx]));
+        IntIdx* mem_ptr = const_cast<IntIdx*>(&((*boundary_dofs_)[ndofs*cell_idx]));
         return LocDofVec(mem_ptr, ndofs, false, false);
     }
 private:
@@ -101,7 +101,7 @@ private:
      *
      * TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
      */
-    std::shared_ptr< std::vector<Idx> > boundary_dofs_;
+    std::shared_ptr< std::vector<IntIdx> > boundary_dofs_;
 };
 
 
@@ -139,7 +139,7 @@ public:
 	~FEValueHandler() {}
 
 	/// TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
-	inline void set_boundary_dofs_vector(std::shared_ptr< std::vector<Idx> > boundary_dofs) {
+	inline void set_boundary_dofs_vector(std::shared_ptr< std::vector<IntIdx> > boundary_dofs) {
 		this->boundary_dofs_ = boundary_dofs;
 	}
 
@@ -149,7 +149,7 @@ public:
         unsigned int ndofs = this->value_.n_rows() * this->value_.n_cols();
         // create armadillo vector on top of existing array
         // vec(ptr_aux_mem, number_of_elements, copy_aux_mem = true, strict = false)
-        Idx* mem_ptr = const_cast<Idx*>(&((*boundary_dofs_)[ndofs*cell_idx]));
+        IntIdx* mem_ptr = const_cast<IntIdx*>(&((*boundary_dofs_)[ndofs*cell_idx]));
         return LocDofVec(mem_ptr, ndofs, false, false);
     }
 
@@ -167,7 +167,7 @@ private:
      *
      * TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
      */
-    std::shared_ptr< std::vector<Idx> > boundary_dofs_;
+    std::shared_ptr< std::vector<IntIdx> > boundary_dofs_;
 };
 
 

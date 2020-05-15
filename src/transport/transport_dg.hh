@@ -59,7 +59,7 @@ template<unsigned int dim, class Model> class StiffnessAssemblyDG;
 template<unsigned int dim, class Model> class SourcesAssemblyDG;
 template<unsigned int dim, class Model> class BdrConditionAssemblyDG;
 template<unsigned int dim, class Model> class InitConditionAssemblyDG;
-template< template<Dim...> class DimAssembly> class GenericAssembly;
+template< template<IntDim...> class DimAssembly> class GenericAssembly;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim> class FiniteElement;
 template<unsigned int dim, unsigned int spacedim> class Mapping;
@@ -278,7 +278,7 @@ public:
 	/**
 	 * @brief Destructor.
 	 */
-	~TransportDG();
+	~TransportDG() override;
 
 	void initialize() override;
 

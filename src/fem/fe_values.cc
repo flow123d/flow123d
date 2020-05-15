@@ -590,17 +590,20 @@ std::vector<FEValues<3>> mixed_fe_values(
         UpdateFlags flags)
 {
     std::vector<FEValues<3>> fv(4);
-    fv[0].initialize(quadrature[0], *fe.get<0>(), flags);
-    fv[1].initialize(quadrature[1], *fe.get<1>(), flags);
-    fv[2].initialize(quadrature[2], *fe.get<2>(), flags);
-    fv[3].initialize(quadrature[3], *fe.get<3>(), flags);
+    fv[0].initialize(quadrature[0], *fe[0_d], flags);
+    fv[1].initialize(quadrature[1], *fe[1_d], flags);
+    fv[2].initialize(quadrature[2], *fe[2_d], flags);
+    fv[3].initialize(quadrature[3], *fe[3_d], flags);
     return fv;
 }
 
 
 
-
-
+// explicit instantiation
+template void FEValues<3>::initialize<0>(Quadrature&, FiniteElement<0>&, UpdateFlags);
+template void FEValues<3>::initialize<1>(Quadrature&, FiniteElement<1>&, UpdateFlags);
+template void FEValues<3>::initialize<2>(Quadrature&, FiniteElement<2>&, UpdateFlags);
+template void FEValues<3>::initialize<3>(Quadrature&, FiniteElement<3>&, UpdateFlags);
 
 
 

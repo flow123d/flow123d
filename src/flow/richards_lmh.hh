@@ -96,9 +96,6 @@ public:
 
     static const Input::Type::Record & get_input_type();
     
-    const DarcyFlowMHOutput::OutputFields &output_fields()
-    { return this->output_object->get_output_fields(); }
-
     void accept_time_step() override;
     
 protected:

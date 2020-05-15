@@ -734,10 +734,10 @@ SubDOFHandlerMultiDim::SubDOFHandlerMultiDim(std::shared_ptr<DOFHandlerMultiDim>
     // create discrete space, we assume equal type of FE on each cell.
     ASSERT_DBG( dynamic_cast<EqualOrderDiscreteSpace *>(dh->ds().get()) != nullptr )
                 .error("sub_handler can be used only with dof handler using EqualOrderDiscreteSpace!");
-    FESystem<0> *fe_sys0 = dynamic_cast<FESystem<0>*>( dh->ds()->fe().get<0>().get() );
-    FESystem<1> *fe_sys1 = dynamic_cast<FESystem<1>*>( dh->ds()->fe().get<1>().get() );
-    FESystem<2> *fe_sys2 = dynamic_cast<FESystem<2>*>( dh->ds()->fe().get<2>().get() );
-    FESystem<3> *fe_sys3 = dynamic_cast<FESystem<3>*>( dh->ds()->fe().get<3>().get() );
+    FESystem<0> *fe_sys0 = dynamic_cast<FESystem<0>*>( dh->ds()->fe()[0_d].get() );
+    FESystem<1> *fe_sys1 = dynamic_cast<FESystem<1>*>( dh->ds()->fe()[1_d].get() );
+    FESystem<2> *fe_sys2 = dynamic_cast<FESystem<2>*>( dh->ds()->fe()[2_d].get() );
+    FESystem<3> *fe_sys3 = dynamic_cast<FESystem<3>*>( dh->ds()->fe()[3_d].get() );
     ASSERT_DBG( fe_sys0 != nullptr ).error("sub_handler assumes that dof handler uses FESystem<0>!");
     ASSERT_DBG( fe_sys1 != nullptr ).error("sub_handler assumes that dof handler uses FESystem<1>!");
     ASSERT_DBG( fe_sys2 != nullptr ).error("sub_handler assumes that dof handler uses FESystem<2>!");

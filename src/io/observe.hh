@@ -265,6 +265,9 @@ public:
 
 
 protected:
+    /// Effectively writes the data into the observe stream.
+    void flush_values();
+
     /// Maximal size of observe values times vector
     static const unsigned int max_observe_value_time;
 
