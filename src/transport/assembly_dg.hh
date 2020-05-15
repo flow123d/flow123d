@@ -216,6 +216,12 @@ public:
 	    return integrals_.bulk_[dim-1];
     }
 
+    /// Return BoundaryIntegral of appropriate dimension
+    inline std::shared_ptr<BoundaryIntegral> boundary_integral(unsigned int dim) const {
+        ASSERT_DBG( (dim>0) && (dim<=3) )(dim).error("Invalid dimension, must be 1, 2 or 3!\n");
+	    return integrals_.boundary_[dim-1];
+    }
+
 private:
     /// Mark eval points in table of Element cache map.
     void insert_eval_points_from_integral_data() {
@@ -1274,6 +1280,7 @@ public:
     {
         ElementAccessor<3> elm = cell.elm();
         if (elm->boundary_idx_ == nullptr) return;
+        unsigned int k;
 
         for (DHCellSide dh_side : cell.side_range())
         {
@@ -1295,7 +1302,7 @@ public:
             cell.get_dof_indices(dof_indices_);
 
             model_->compute_advection_diffusion_coefficients(fe_values_side_.point_list(), velocity_, elm, data_->ad_coef, data_->dif_coef);
-            data_->cross_section.value_list(fe_values_side_.point_list(), elm, csection_);
+            //data_->cross_section.value_list(fe_values_side_.point_list(), elm, csection_);
 
             for (unsigned int sbi=0; sbi<model_->n_substances(); sbi++)
             {
@@ -1349,34 +1356,52 @@ public:
                 else if (bc_type[sbi] == AdvectionDiffusionModel::abc_total_flux)
                 {
                 	model_->get_flux_bc_data(sbi, fe_values_side_.point_list(), bc_elm, bc_fluxes_, sigma_, bc_ref_values_);
-                    for (unsigned int k=0; k<qsize_lower_dim_; k++)
+                	k=0;
+                	for (auto p : data_->bdr_cond_assembly_->boundary_integral(dim)->points(dh_side, &(data_->bdr_cond_assembly_->cache_map())) )
+                    //for (unsigned int k=0; k<qsize_lower_dim_; k++)
                     {
-                        double bc_term = csection_[k]*(sigma_[k]*bc_ref_values_[k]+bc_fluxes_[k])*fe_values_side_.JxW(k);
+                        double bc_term = data_->cross_section(p)*(sigma_[k]*bc_ref_values_[k]+bc_fluxes_[k])*fe_values_side_.JxW(k);
+                        //double bc_term = csection_[k]*(sigma_[k]*bc_ref_values_[k]+bc_fluxes_[k])*fe_values_side_.JxW(k);
                         for (unsigned int i=0; i<ndofs_; i++)
                             local_rhs_[i] += bc_term*fe_values_side_.shape_value(i,k);
+                        k++;
                     }
 
                     for (unsigned int i=0; i<ndofs_; i++)
                     {
-                        for (unsigned int k=0; k<qsize_lower_dim_; k++)
-                            local_flux_balance_vector_[i] += csection_[k]*sigma_[k]*fe_values_side_.JxW(k)*fe_values_side_.shape_value(i,k);
+                    	k=0;
+                    	for (auto p : data_->bdr_cond_assembly_->boundary_integral(dim)->points(dh_side, &(data_->bdr_cond_assembly_->cache_map())) ) {
+                        //for (unsigned int k=0; k<qsize_lower_dim_; k++)
+                            local_flux_balance_vector_[i] += data_->cross_section(p)*sigma_[k]*fe_values_side_.JxW(k)*fe_values_side_.shape_value(i,k);
+                            //local_flux_balance_vector_[i] += csection_[k]*sigma_[k]*fe_values_side_.JxW(k)*fe_values_side_.shape_value(i,k);
+                            k++;
+                    	}
                         local_flux_balance_rhs_ -= local_rhs_[i];
                     }
                 }
                 else if (bc_type[sbi] == AdvectionDiffusionModel::abc_diffusive_flux)
                 {
                 	model_->get_flux_bc_data(sbi, fe_values_side_.point_list(), bc_elm, bc_fluxes_, sigma_, bc_ref_values_);
-                    for (unsigned int k=0; k<qsize_lower_dim_; k++)
+                	k=0;
+                	for (auto p : data_->bdr_cond_assembly_->boundary_integral(dim)->points(dh_side, &(data_->bdr_cond_assembly_->cache_map())) )
+                    //for (unsigned int k=0; k<qsize_lower_dim_; k++)
                     {
-                        double bc_term = csection_[k]*(sigma_[k]*bc_ref_values_[k]+bc_fluxes_[k])*fe_values_side_.JxW(k);
+                        double bc_term = data_->cross_section(p)*(sigma_[k]*bc_ref_values_[k]+bc_fluxes_[k])*fe_values_side_.JxW(k);
+                        //double bc_term = csection_[k]*(sigma_[k]*bc_ref_values_[k]+bc_fluxes_[k])*fe_values_side_.JxW(k);
                         for (unsigned int i=0; i<ndofs_; i++)
                             local_rhs_[i] += bc_term*fe_values_side_.shape_value(i,k);
+                        k++;
                     }
 
                     for (unsigned int i=0; i<ndofs_; i++)
                     {
-                        for (unsigned int k=0; k<qsize_lower_dim_; k++)
-                            local_flux_balance_vector_[i] += csection_[k]*(arma::dot(data_->ad_coef[sbi][k], fe_values_side_.normal_vector(k)) + sigma_[k])*fe_values_side_.JxW(k)*fe_values_side_.shape_value(i,k);
+                    	k=0;
+                    	for (auto p : data_->bdr_cond_assembly_->boundary_integral(dim)->points(dh_side, &(data_->bdr_cond_assembly_->cache_map())) ) {
+                    	//for (unsigned int k=0; k<qsize_lower_dim_; k++)
+                            local_flux_balance_vector_[i] += data_->cross_section(p)*(arma::dot(data_->ad_coef[sbi][k], fe_values_side_.normal_vector(k)) + sigma_[k])*fe_values_side_.JxW(k)*fe_values_side_.shape_value(i,k);
+                            //local_flux_balance_vector_[i] += csection_[k]*(arma::dot(data_->ad_coef[sbi][k], fe_values_side_.normal_vector(k)) + sigma_[k])*fe_values_side_.JxW(k)*fe_values_side_.shape_value(i,k);
+                            k++;
+                    	}
                         local_flux_balance_rhs_ -= local_rhs_[i];
                     }
                 }
