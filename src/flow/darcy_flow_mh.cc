@@ -1423,7 +1423,7 @@ void DarcyMH::read_initial_condition()
 	    ElementAccessor<3> ele = dh_cell.elm();
 	    // set initial condition
         // TODO: replace with DHCell getter when available for FESystem component
-        const Idx p_ele_dof = dh_cell.get_loc_dof_indices()[dh_cell.n_dofs()/2];
+        const IntIdx p_ele_dof = dh_cell.get_loc_dof_indices()[dh_cell.n_dofs()/2];
 	    local_sol[p_ele_dof] = data_->init_pressure.value(ele.centre(),ele);
 	}
 }

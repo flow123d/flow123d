@@ -33,6 +33,86 @@ class FieldCommon;
 class RichardsLMH;
 
 
+class IterativeCoupling {
+public:
+
+    static const Input::Type::Record &record_template() {
+        return it::Record("Coupling_Iterative_AUX",
+                "Record with data for iterative coupling.\n")
+            .declare_key( "max_it", it::Integer(0), it::Default("100"),
+                    "Maximal count of HM iterations." )
+            .declare_key( "min_it", it::Integer(0), it::Default("1"),
+                    "Minimal count of HM iterations." )
+            .declare_key( "a_tol", it::Double(0), it::Default("0"),
+                    "Absolute tolerance for difference in HM iteration." )
+            .declare_key( "r_tol", it::Double(0), it::Default("1e-7"),
+                    "Relative tolerance for difference in HM iteration." )
+            .close();
+    }
+
+    IterativeCoupling(Input::Record in_record)
+    : it(0)
+    {
+        min_it_ = in_record.val<unsigned int>("min_it");
+        max_it_ = in_record.val<unsigned int>("max_it");
+        a_tol_ = in_record.val<double>("a_tol");
+        r_tol_ = in_record.val<double>("r_tol");
+    }
+
+    void solve_step()
+    {
+        it = 0;
+        double abs_error = std::numeric_limits<double>::max();
+        double rel_error = std::numeric_limits<double>::max();
+
+        while ( it < min_it_ || (abs_error > a_tol_ && rel_error > r_tol_ && it < max_it_) )
+        {
+            it++;
+            solve_iteration();
+            compute_iteration_error(abs_error, rel_error);
+            update_after_iteration();
+        }
+        update_after_converged();
+    }
+
+    unsigned int iteration()
+    { return it; }
+
+protected:
+
+    /// Solve equations and update data (fields).
+    virtual void solve_iteration() = 0;
+
+    /// Compute absolute and relative error in the solution.
+    virtual void compute_iteration_error(double &abs_error, double &rel_error) = 0;
+
+    /// Save data (e.g. solution fields) for the next iteration.
+    virtual void update_after_iteration() = 0;
+
+    /// Save data after iterations have finished.
+    virtual void update_after_converged() = 0;
+
+
+    /// Minimal number of iterations to perform.
+    unsigned int min_it_;
+    
+    /// Maximal number of iterations.
+    unsigned int max_it_;
+    
+    /// Absolute tolerance for difference between two succeeding iterations.
+    double a_tol_;
+    
+    /// Relative tolerance for difference between two succeeding iterations.
+    double r_tol_;
+
+private:
+
+    /// Iteration index.
+    unsigned int it;
+
+};
+
+
 /**
  * @brief Class for solution of fully coupled flow and mechanics using fixed-stress iterative splitting.
  * 
@@ -40,7 +120,7 @@ class RichardsLMH;
  * Here we use the fixed-stress splitting [see Mikelic&Wheeler, Comput. Geosci. 17(3), 2013] which uses
  * a tuning parameter "beta" to speed up the convergence.
  */
-class HM_Iterative : public DarcyFlowInterface {
+class HM_Iterative : public DarcyFlowInterface, public IterativeCoupling {
 public:
     
     class EqData : public FieldSet
@@ -84,8 +164,14 @@ private:
     void update_potential();
     
     void update_flow_fields();
+
+    void solve_iteration() override;
+
+    void update_after_iteration() override;
+
+    void update_after_converged() override;
     
-    void compute_iteration_error(double &difference, double &norm);
+    void compute_iteration_error(double &abs_error, double &rel_error) override;
     
     static const int registrar;
 
@@ -100,18 +186,6 @@ private:
     /// Tuning parameter for iterative splitting.
     double beta_;
     
-    /// Minimal number of iterations to perform.
-    unsigned int min_it_;
-    
-    /// Maximal number of iterations.
-    unsigned int max_it_;
-    
-    /// Absolute tolerance for difference between two succeeding iterations.
-    double a_tol_;
-    
-    /// Relative tolerance for difference between two succeeding iterations.
-    double r_tol_;
-
 };
 
 #endif /* HC_EXPLICIT_SEQUENTIAL_HH_ */
