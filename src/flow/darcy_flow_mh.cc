@@ -198,7 +198,7 @@ DarcyMH::EqData::EqData()
              .flags(FieldFlag::equation_result)
              .description("Piezo head solution - P0 interpolation.");
 
-	*this += field_ele_velocity.name("velocity_p0")
+    *this += field_ele_velocity.name("velocity_p0")
 	         .units(UnitSI().m().s(-1))
              .flags(FieldFlag::equation_result)
              .description("Velocity solution - P0 interpolation.");
@@ -223,6 +223,7 @@ DarcyMH::EqData::EqData()
             .description("Transition coefficient between dimensions.")
             .input_default("1.0")
             .units( UnitSI::dimensionless() );
+
 
     *this += water_source_density.name("water_source_density")
             .description("Water source density.")
@@ -275,6 +276,12 @@ DarcyMH::EqData::EqData()
             .description("Storativity (in time dependent problems).")
             .input_default("0.0")
             .units( UnitSI().m(-1) );
+
+    //Darcy-Forchheimer
+    *this += beta.name("beta")
+            .description("Forchheimer coefficient")
+            .input_default("0.0")
+            .units( UnitSI::dimensionless() );
 
     //time_term_fields = this->subset({"storativity"});
     //main_matrix_fields = this->subset({"anisotropy", "conductivity", "cross_section", "sigma", "bc_type", "bc_robin_sigma"});

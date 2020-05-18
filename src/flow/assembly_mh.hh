@@ -356,7 +356,9 @@ protected:
         const ElementAccessor<3> ele = dh_cell.elm();
         double cs = ad_->cross_section.value(ele.centre(), ele);
         double conduct =  ad_->conductivity.value(ele.centre(), ele);
-        double scale = 1 / cs /conduct;
+		double bet =  ad_->beta.value(ele.centre(), ele);
+		double w = ad_->field_ele_velocity.value(ele.centre(), ele)
+        double scale = 1 / cs /conduct + bet * w;
         
         assemble_sides_scale(dh_cell, scale);
     }
@@ -415,7 +417,6 @@ protected:
     
     void assemble_element(const DHCellAccessor& dh_cell){
         // set block B, B': element-side, side-element
-        
         for(unsigned int side = 0; side < loc_side_dofs.size(); side++){
             loc_system_.add_value(loc_ele_dof, loc_side_dofs[side], -1.0);
             loc_system_.add_value(loc_side_dofs[side], loc_ele_dof, -1.0);
@@ -425,7 +426,7 @@ protected:
             double val_ele =  1.;
             static_cast<LinSys_BDDC*>(ad_->lin_sys)->
                             diagonal_weights_set_value( loc_system_.row_dofs[loc_ele_dof], val_ele );
-        }
+		}
     }
     
 
