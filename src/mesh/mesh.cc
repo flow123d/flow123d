@@ -320,17 +320,76 @@ void Mesh::modify_element_ids(const RegionDB::MapElementIDToRegionID &map) {
 }
 
 
+void Mesh::check_mesh_on_read() {
+    std::vector<uint> nodes_new_idx( this->n_nodes(), Mesh::undef_idx );
+
+    // check element quality and flag used nodes
+    for (auto ele : this->elements_range()) {
+        // element quality
+    	double quality = ele.quality_measure_smooth(ele.side(0));
+        if ( quality< 0.001)
+            WarningOut().fmt("Bad quality (<0.001) of the element {}.\n", ele.idx());
+
+        // flag used nodes
+        for (uint ele_node=0; ele_node<ele->n_nodes(); ele_node++) {
+            uint inode = ele->node_idx(ele_node);
+            nodes_new_idx[inode] = inode;
+        }
+    }
+
+    // possibly build new node ids map
+    BidirectionalMap<int> new_node_ids_;
+    new_node_ids_.reserve(node_ids_.size());
+
+    // remove unused nodes from the mesh
+    uint inode_new = 0;
+    for(uint inode = 0; inode < nodes_new_idx.size(); inode++) {
+        if(nodes_new_idx[inode] == Mesh::undef_idx){
+            WarningOut().fmt("A node {} does not belong to any element "
+                         " and will be removed.",
+                         find_node_id(inode));
+        }
+        else{
+            // map new node numbering
+            nodes_new_idx[inode] = inode_new;
+            
+            // possibly move the nodes
+            nodes_.vec<3>(inode_new) = nodes_.vec<3>(inode);
+            new_node_ids_.add_item(node_ids_[inode]);
+
+            inode_new++;
+        }
+    }
+
+    uint n_nodes_new = inode_new;
+
+    // if some node erased, update node ids in elements
+    if(n_nodes_new < nodes_new_idx.size()){
+        
+        DebugOut() << "Updating node-element numbering due to unused nodes: "
+            << print_var(n_nodes_new) << print_var(nodes_new_idx.size()) << "\n";
+
+        // throw away unused nodes
+        nodes_.resize(n_nodes_new);
+        node_ids_ = new_node_ids_;
+
+        // update node-element numbering
+        for (auto ele : this->elements_range()) {
+            for (uint ele_node=0; ele_node<ele->n_nodes(); ele_node++) {
+                uint inode_orig = ele->node_idx(ele_node);
+                uint inode = nodes_new_idx[inode_orig];
+                ASSERT_DBG(inode != Mesh::undef_idx);
+                const_cast<Element*>(ele.element())->nodes_[ele_node] = inode;
+            }
+        }
+    }
+}
 
 void Mesh::setup_topology() {
     START_TIMER("MESH - setup topology");
     
     count_element_types();
-
-    // check mesh quality
-    for (auto ele : this->elements_range()) {
-    	double quality = ele.quality_measure_smooth(ele.side(0));
-        if ( quality< 0.001) WarningOut().fmt("Bad quality (<0.001) of the element {}.\n", ele.idx());
-    }
+    check_mesh_on_read();
 
     make_neighbours_and_edges();
     element_to_neigh_vb();
@@ -1267,8 +1326,13 @@ void Mesh::distribute_nodes() {
     }
 
     unsigned int n_own_nodes=0, n_local_nodes=0; // number of own and ghost nodes
-    for(uint i_proc : node_proc) if (i_proc == my_proc) n_own_nodes++;
     for(uint loc_flag : local_node_flag) if (loc_flag) n_local_nodes++;
+    for(uint i_proc : node_proc) {
+        if (i_proc == my_proc)
+            n_own_nodes++;
+        else if (i_proc == n_proc)
+            ASSERT(0)(find_node_id(n_own_nodes)).error("A node does not belong to any element!");
+    }
 
     //DebugOut() << print_var(n_own_nodes) << print_var(n_local_nodes) << this->n_nodes();
     // create and fill node_4_loc_ (mapping local to global indexes)

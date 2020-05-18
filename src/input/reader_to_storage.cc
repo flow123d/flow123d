@@ -69,13 +69,17 @@ ReaderToStorage::ReaderToStorage(const FilePath &in_file, Type::TypeBase &root_t
 		THROW(ExcInputMessage() << EI_Message("Invalid extension of file " + fname + ".\nMust be 'con' or 'yaml'."));
 	}
 
-	std::ifstream in;
-	in_file.open_stream(in);
+	try {
+		std::ifstream in;
+		in_file.open_stream(in);
 
-    // finish of root_type ensures finish of whole IST
-    root_type.finish();
+		// finish of root_type ensures finish of whole IST
+		root_type.finish();
 
-	read_stream(in, root_type, format);
+		read_stream(in, root_type, format);
+    } catch (Input::Exception &e ) {
+      e << Input::ReaderInternalBase::EI_File(in_file); throw;
+    }
 }
 
 
