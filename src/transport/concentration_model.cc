@@ -36,14 +36,13 @@ using namespace Input::Type;
 /*******************************************************************************
  * Functors of FieldModels
  */
-using Sclr = typename arma::Col<double>::template fixed<1>;
+using Sclr = double;
 using Vect = arma::vec3;
 using Tens = arma::mat33;
 
 // Functor computing velocity norm
 Sclr fn_conc_v_norm(Vect vel) {
-	Sclr ret; ret(0) = arma::norm(vel, 2);
-    return ret;
+	return arma::norm(vel, 2);
 }
 
 // Functor computing mass matrix coefficients (cross_section * water_content)
@@ -54,7 +53,7 @@ Sclr fn_conc_mass_matrix(Sclr csec, Sclr wcont) {
 // Functor computing retardation coefficients:
 // (1-porosity) * rock_density * sorption_coefficient * rock_density
 Sclr fn_conc_retardation(Sclr csec, Sclr por_m, Sclr rho_s, Sclr sorp_mult) {
-    return (1.-por_m(0))*rho_s*sorp_mult*csec;
+    return (1.-por_m)*rho_s*sorp_mult*csec;
 }
 
 // Functor computing sources density output (cross_section * sources_density)
@@ -82,7 +81,7 @@ Tens fn_conc_diff_coef(Tens diff_m, Vect velocity, Sclr v_norm, Sclr alphaL, Scl
 
     // used tortuosity model dues to Millington and Quirk(1961) (should it be with power 10/3 ?)
     // for an overview of other models see: Chou, Wu, Zeng, Chang (2011)
-    double tortuosity = pow(water_content(0), 7.0 / 3.0)/ (porosity(0) * porosity(0));
+    double tortuosity = pow(water_content, 7.0 / 3.0)/ (porosity * porosity);
 
     // result
     Tens K;
@@ -91,13 +90,13 @@ Tens fn_conc_diff_coef(Tens diff_m, Vect velocity, Sclr v_norm, Sclr alphaL, Scl
     // so we need not to multiply vnorm by water_content and cross_section.
 	//K = ((alphaL-alphaT) / vnorm) * K + (alphaT*vnorm + Dm*tortuosity*cross_cut*water_content) * arma::eye(3,3);
 
-    if (fabs(v_norm(0)) > 0) {
+    if (fabs(v_norm) > 0) {
         /*
         for (int i=0; i<3; i++)
             for (int j=0; j<3; j++)
                K(i,j) = (velocity[i]/vnorm)*(velocity[j]);
         */
-        K = ((alphaL(0) - alphaT(0)) / v_norm(0)) * arma::kron(velocity.t(), velocity);
+        K = ((alphaL - alphaT) / v_norm) * arma::kron(velocity.t(), velocity);
 
         //arma::mat33 abs_diff_mat = arma::abs(K -  kk);
         //double diff = arma::min( arma::min(abs_diff_mat) );
@@ -107,7 +106,7 @@ Tens fn_conc_diff_coef(Tens diff_m, Vect velocity, Sclr v_norm, Sclr alphaL, Scl
 
     // Note that the velocity vector is in fact the Darcian flux,
     // so to obtain |v| we have to divide vnorm by porosity and cross_section.
-    K += alphaT(0)*v_norm(0)*arma::eye(3,3) + diff_m*(tortuosity*c_sec(0)*water_content(0));
+    K += alphaT*v_norm*arma::eye(3,3) + diff_m*(tortuosity*c_sec*water_content);
 
     return K;
 }

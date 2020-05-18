@@ -345,7 +345,7 @@ public:
 protected:
 
     /// Return item of @p value_cache_ given by i_cache_point.
-    typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_> operator[] (unsigned int i_cache_point) const;
+    typename Value::return_type operator[] (unsigned int i_cache_point) const;
 
     /**
      * Read input into @p regions_history_ possibly pop some old values from the

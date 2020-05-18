@@ -151,10 +151,10 @@ typename Value::return_type Field<spacedim,Value>::operator() (EdgePoint &p) {
 
 
 template<int spacedim, class Value>
-typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_>
+typename Value::return_type
 Field<spacedim,Value>::operator[] (unsigned int i_cache_point) const
 {
-	return this->value_cache().data().template mat<Value::NRows_, Value::NCols_>(i_cache_point);
+	return Value::get_from_array( this->value_cache().data(), i_cache_point );
 }
 
 
