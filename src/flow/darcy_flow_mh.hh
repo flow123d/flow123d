@@ -173,6 +173,7 @@ public:
         Field<3, FieldValue<3>::Scalar > cross_section;
         Field<3, FieldValue<3>::Scalar > water_source_density;
         Field<3, FieldValue<3>::Scalar > sigma;
+	Field<3, FieldValue<3>::Scalar > beta;
         
         BCField<3, FieldValue<3>::Enum > bc_type; // Discrete need Selection for initialization
         BCField<3, FieldValue<3>::Scalar > bc_pressure; 
@@ -183,8 +184,8 @@ public:
         Field<3, FieldValue<3>::Scalar > init_pressure;
         Field<3, FieldValue<3>::Scalar > storativity;
 
-	    Field<3, FieldValue<3>::Scalar> field_ele_pressure;
-	    Field<3, FieldValue<3>::Scalar> field_ele_piezo_head;
+	Field<3, FieldValue<3>::Scalar> field_ele_pressure;
+	Field<3, FieldValue<3>::Scalar> field_ele_piezo_head;
         Field<3, FieldValue<3>::VectorFixed > field_ele_velocity;
 
         /**
