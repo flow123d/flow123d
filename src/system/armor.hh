@@ -631,6 +631,15 @@ public:
         }
 
 
+        ArrayMatSet &operator=(const Type& arma_x)
+        {
+            ASSERT_EQ(n_rows_, 1);
+            ASSERT_EQ(n_cols_, 1);
+            copy<1, 1>(&arma_x);
+            return *this;
+        }
+
+
         template <uint nr, uint nc>
         void copy(const Type *other_ptr) {
             for (uint i = 0; i < nr * nc; ++i) {
