@@ -305,15 +305,72 @@ void Mesh::modify_element_ids(const RegionDB::MapElementIDToRegionID &map) {
 }
 
 
+void Mesh::check_mesh_on_read() {
+    std::vector<uint> nodes_new_idx( this->n_nodes(), Mesh::undef_idx );
+
+    // check element quality and flag used nodes
+    for (auto ele : this->elements_range()) {
+        // element quality
+    	double quality = ele.quality_measure_smooth(ele.side(0));
+        if ( quality< 0.001)
+            WarningOut().fmt("Bad quality (<0.001) of the element {}.\n", ele.idx());
+
+        // flag used nodes
+        for (uint ele_node=0; ele_node<ele->n_nodes(); ele_node++) {
+            uint inode = ele->node_idx(ele_node);
+            nodes_new_idx[inode] = inode;
+        }
+    }
+
+    // remove unused nodes from the mesh
+    uint inode_new = 0;
+    for(uint inode = 0; inode < nodes_new_idx.size(); inode++) {
+        if(nodes_new_idx[inode] == Mesh::undef_idx){
+            WarningOut().fmt("A node {} does not belong to any element "
+                         " and will be removed.",
+                         find_node_id(inode));
+        }
+        else{
+            // map new node numbering
+            nodes_new_idx[inode] = inode_new;
+            
+            // possibly move the nodes
+            node_vec_[inode_new] = node_vec_[inode];
+            node_ids_.set_item(node_ids_[inode],inode_new);
+
+            inode_new++;
+        }
+    }
+
+    uint n_nodes_new = inode_new;
+
+    // if some node erased, update node ids in elements
+    if(n_nodes_new < nodes_new_idx.size()){
+        
+        DebugOut() << "Updating node-element numbering due to unused nodes: "
+            << print_var(n_nodes_new) << print_var(nodes_new_idx.size()) << "\n";
+
+        // throw away unused nodes
+        node_vec_.resize(n_nodes_new);
+        node_ids_.resize(n_nodes_new);
+
+        // update node-element numbering
+        for (auto ele : this->elements_range()) {
+            for (uint ele_node=0; ele_node<ele->n_nodes(); ele_node++) {
+                uint inode_orig = ele->node_idx(ele_node);
+                uint inode = nodes_new_idx[inode_orig];
+                ASSERT_DBG(inode != Mesh::undef_idx);
+                const_cast<Element*>(ele.element())->nodes_[ele_node] = inode;
+            }
+        }
+    }
+}
 
 void Mesh::setup_topology() {
     START_TIMER("MESH - setup topology");
     
     count_element_types();
-
-    // check mesh quality
-    for (auto ele : this->elements_range())
-        if (ele.quality_measure_smooth(ele.side(0)) < 0.001) WarningOut().fmt("Bad quality (<0.001) of the element {}.\n", ele.idx());
+    check_mesh_on_read();
 
     make_neighbours_and_edges();
     element_to_neigh_vb();

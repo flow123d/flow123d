@@ -957,7 +957,7 @@ Profiler* Profiler::_instance = NULL;
 void Profiler::initialize() {
     if (_instance == NULL) {
         _instance = new Profiler();
-        set_memory_monitoring(true, true);
+        // set_memory_monitoring(true, true);
     }
 }
 
@@ -965,7 +965,7 @@ void Profiler::uninitialize() {
     if (_instance) {
         ASSERT(_instance->actual_node==0)(_instance->timers_[_instance->actual_node].tag())
     			.error("Forbidden to uninitialize the Profiler when actual timer is not zero.");
-        set_memory_monitoring(false, false);
+        // set_memory_monitoring(false, false);
         _instance->stop_timer(0);
         delete _instance;
         _instance = NULL;
