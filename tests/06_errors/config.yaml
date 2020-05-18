@@ -92,7 +92,7 @@ test_cases:
   check_rules:
     - regex:
         files: [job_output.log]
-        substr: "User defined region 'zdroj' (id 9) by 'From_Elements' cannot have elements of different dimensions!"
+        substr: "User defined region 'zdroj' (id 9) by 'From_Elements' cannot have elements of different dimensions."
         
 - files: 14_duplicit_records.yaml
   death_test: true
