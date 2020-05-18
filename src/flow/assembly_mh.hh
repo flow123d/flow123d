@@ -357,7 +357,11 @@ protected:
         double cs = ad_->cross_section.value(ele.centre(), ele);
         double conduct =  ad_->conductivity.value(ele.centre(), ele);
 		double bet =  ad_->beta.value(ele.centre(), ele);
-		double w = ad_->field_ele_velocity.value(ele.centre(), ele)
+		double w = 0.0;
+		for (unsigned int i = 0; i < field_ele_velocity.size(), i++){
+			w = w + field_ele_velocity[i]^2;
+		}
+		w = sqrt{w}
         double scale = 1 / cs /conduct + bet * w;
         
         assemble_sides_scale(dh_cell, scale);
