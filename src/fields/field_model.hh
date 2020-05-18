@@ -155,9 +155,9 @@ namespace detail
         {
             const auto &single_field = std::get < INDEX - 1 > (std::forward<decltype(fields)>(fields));
             return std::tuple_cat(
-                    std::forward_as_tuple(field_component(single_field, i_comp)),
                     get_components<FIELD_TUPLE, INDEX - 1>::eval(
-                            std::forward<decltype(fields)>(fields), i_comp)
+                            std::forward<decltype(fields)>(fields), i_comp),
+                    std::forward_as_tuple(field_component(single_field, i_comp))
                     );
         };
     };
