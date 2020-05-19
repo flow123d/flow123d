@@ -619,7 +619,7 @@ public:
         local_matrix_.resize(4*ndofs_*ndofs_);
         local_retardation_balance_vector_.resize(ndofs_);
         local_mass_balance_vector_.resize(ndofs_);
-        velocity_.resize(qsize_);
+        //velocity_.resize(qsize_);
         //side_velocity_vec_.resize(data_->ad_coef_edg.size());
         //sources_sigma_.resize(model_->n_substances(), std::vector<double>(qsize_));
         sigma_.resize(qsize_lower_dim_);
@@ -998,13 +998,14 @@ public:
 
         fsv_rt_.reinit(neighb_side.side());
         fv_rt_vb_.reinit(elm_lower_dim);
-        calculate_velocity(elm_higher_dim, velocity_higher_, fsv_rt_.point_list());
-        calculate_velocity(elm_lower_dim, velocity_, fv_rt_vb_.point_list());
-        model_->compute_advection_diffusion_coefficients(fe_values_vb_.point_list(), velocity_, elm_lower_dim, data_->ad_coef_edg[0], data_->dif_coef_edg[0]);
-        model_->compute_advection_diffusion_coefficients(fe_values_vb_.point_list(), velocity_higher_, elm_higher_dim, data_->ad_coef_edg[1], data_->dif_coef_edg[1]);
+        //calculate_velocity(elm_higher_dim, velocity_higher_, fsv_rt_.point_list());
+        //calculate_velocity(elm_lower_dim, velocity_, fv_rt_vb_.point_list());
+        //model_->compute_advection_diffusion_coefficients(fe_values_vb_.point_list(), velocity_, elm_lower_dim, data_->ad_coef_edg[0], data_->dif_coef_edg[0]);
+        //model_->compute_advection_diffusion_coefficients(fe_values_vb_.point_list(), velocity_higher_, elm_higher_dim, data_->ad_coef_edg[1], data_->dif_coef_edg[1]);
         data_->cross_section.value_list(fe_values_vb_.point_list(), elm_lower_dim, csection_);
         data_->cross_section.value_list(fe_values_vb_.point_list(), elm_higher_dim, csection_higher_);
 
+        unsigned int k;
         for (unsigned int sbi=0; sbi<model_->n_substances(); sbi++) // Optimize: SWAP LOOPS
         {
             for (unsigned int i=0; i<n_dofs[0]+n_dofs[1]; i++)
@@ -1015,7 +1016,10 @@ public:
             data_->fracture_sigma[sbi].value_list(fe_values_vb_.point_list(), elm_lower_dim, sigma_);
 
             // set transmission conditions
-            for (unsigned int k=0; k<qsize_lower_dim_; k++)
+            k=0;
+            auto p_high = *( data_->stiffness_assembly_->coupling_integral(dim)->points(cell_lower_dim, &(data_->stiffness_assembly_->cache_map())).begin() );
+            for (auto p_low : data_->stiffness_assembly_->coupling_integral(dim)->points(neighb_side, &(data_->stiffness_assembly_->cache_map())) )
+            //for (unsigned int k=0; k<qsize_lower_dim_; k++)
             {
                 // The communication flux has two parts:
                 // - "diffusive" term containing sigma
@@ -1024,10 +1028,13 @@ public:
                 // The calculation differs from the reference manual, since ad_coef and dif_coef have different meaning
                 // than b and A in the manual.
                 // In calculation of sigma there appears one more csection_lower in the denominator.
-                double sigma = sigma_[k]*arma::dot(data_->dif_coef_edg[0][sbi][k]*fe_values_side_.normal_vector(k),fe_values_side_.normal_vector(k))*
+                //double sigma = sigma_[k]*arma::dot(data_->dif_coef_edg[0][sbi][k]*fe_values_side_.normal_vector(k),fe_values_side_.normal_vector(k))*
+                //        2*csection_higher_[k]*csection_higher_[k]/(csection_[k]*csection_[k]);
+                double sigma = sigma_[k]*arma::dot(data_->diffusion_coef[sbi](p_high)*fe_values_side_.normal_vector(k),fe_values_side_.normal_vector(k))*
                         2*csection_higher_[k]*csection_higher_[k]/(csection_[k]*csection_[k]);
 
-                double transport_flux = arma::dot(data_->ad_coef_edg[1][sbi][k], fe_values_side_.normal_vector(k));
+                //double transport_flux = arma::dot(data_->ad_coef_edg[1][sbi][k], fe_values_side_.normal_vector(k));
+                double transport_flux = arma::dot(data_->advection_coef[sbi](p_low), fe_values_side_.normal_vector(k));
 
                 comm_flux[0][0] =  (sigma-min(0.,transport_flux))*fv_sb_[0]->JxW(k);
                 comm_flux[0][1] = -(sigma-min(0.,transport_flux))*fv_sb_[0]->JxW(k);
@@ -1044,6 +1051,8 @@ public:
                                 local_matrix_[(i+n*n_dofs[0])*(n_dofs[0]+n_dofs[1]) + m*n_dofs[0] + j] +=
                                         comm_flux[m][n]*fv_sb_[m]->shape_value(j,k)*fv_sb_[n]->shape_value(i,k);
                 }
+                p_high.inc();
+                k++;
             }
             data_->ls[sbi]->mat_set_values(n_dofs[0]+n_dofs[1], &(side_dof_indices_vb_[0]), n_dofs[0]+n_dofs[1], &(side_dof_indices_vb_[0]), &(local_matrix_[0]));
         }
@@ -1100,8 +1109,8 @@ private:
     vector<PetscScalar> local_matrix_;                        ///< Auxiliary vector for assemble methods
     vector<PetscScalar> local_retardation_balance_vector_;    ///< Auxiliary vector for assemble mass matrix.
     vector<PetscScalar> local_mass_balance_vector_;           ///< Same as previous.
-    vector<arma::vec3> velocity_;                             ///< Auxiliary results.
-    vector<arma::vec3> velocity_higher_;                      ///< Velocity results of higher dim element (element-side computation).
+    //vector<arma::vec3> velocity_;                             ///< Auxiliary results.
+    //vector<arma::vec3> velocity_higher_;                      ///< Velocity results of higher dim element (element-side computation).
     //vector<vector<arma::vec3> > side_velocity_vec_;           ///< Vector of velocities results.
     //vector<vector<double> > sources_sigma_;                   ///< Auxiliary vectors for assemble volume integrals and set_sources method.
     vector<double> sigma_;                                    ///< Auxiliary vector for assemble boundary fluxes (robin sigma), element-side fluxes (frac sigma) and set boundary conditions method
