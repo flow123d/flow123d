@@ -642,9 +642,10 @@ public:
         fe_values_.reinit(elm);
         fv_rt_.reinit(elm);
         cell.get_dof_indices(dof_indices_);
+        unsigned int k;
 
-        calculate_velocity(elm, velocity_, fv_rt_.point_list());
-        model_->compute_advection_diffusion_coefficients(fe_values_.point_list(), velocity_, elm, data_->ad_coef, data_->dif_coef);
+        //calculate_velocity(elm, velocity_, fv_rt_.point_list());
+        //model_->compute_advection_diffusion_coefficients(fe_values_.point_list(), velocity_, elm, data_->ad_coef, data_->dif_coef);
         //model_->compute_sources_sigma(fe_values_.point_list(), elm, sources_sigma_);
 
         // assemble the local stiffness matrix
@@ -667,12 +668,12 @@ public:
                                                   +sources_sigma_[sbi][k]*fe_values_.shape_value(j,k)*fe_values_.shape_value(i,k))*fe_values_.JxW(k);
                 }
             }*/
-            unsigned int k=0;
+            k=0;
             for (auto p : data_->stiffness_assembly_->bulk_integral(dim)->points(cell, &(data_->stiffness_assembly_->cache_map())) )
             {
                 for (unsigned int i=0; i<ndofs_; i++)
                 {
-                    arma::vec3 Kt_grad_i = data_->dif_coef[sbi][k].t()*fe_values_.shape_grad(i,k);
+                    arma::vec3 Kt_grad_i = data_->diffusion_coef[sbi](p).t()*fe_values_.shape_grad(i,k);
                     double ad_dot_grad_i = arma::dot(data_->advection_coef[sbi](p), fe_values_.shape_grad(i,k));
 
                     for (unsigned int j=0; j<ndofs_; j++)
@@ -700,9 +701,10 @@ public:
         cell.get_dof_indices(dof_indices_);
         fe_values_side_.reinit(side);
         fsv_rt_.reinit(side);
+        unsigned int k;
 
-        calculate_velocity(elm_acc, velocity_, fsv_rt_.point_list());
-        model_->compute_advection_diffusion_coefficients(fe_values_side_.point_list(), velocity_, elm_acc, data_->ad_coef, data_->dif_coef);
+        //calculate_velocity(elm_acc, velocity_, fsv_rt_.point_list());
+        //model_->compute_advection_diffusion_coefficients(fe_values_side_.point_list(), velocity_, elm_acc, data_->ad_coef, data_->dif_coef);
         arma::uvec bc_type;
         model_->get_bc_type(side.cond().element_accessor(), bc_type);
         data_->cross_section.value_list(fe_values_side_.point_list(), elm_acc, csection_);
@@ -714,21 +716,33 @@ public:
             // On Neumann boundaries we have only term from integrating by parts the advective term,
             // on Dirichlet boundaries we additionally apply the penalty which enforces the prescribed value.
             double side_flux = 0;
-            for (unsigned int k=0; k<qsize_lower_dim_; k++)
-                side_flux += arma::dot(data_->ad_coef[sbi][k], fe_values_side_.normal_vector(k))*fe_values_side_.JxW(k);
+            //for (unsigned int k=0; k<qsize_lower_dim_; k++)
+            //    side_flux += arma::dot(data_->ad_coef[sbi][k], fe_values_side_.normal_vector(k))*fe_values_side_.JxW(k);
+            k=0;
+            for (auto p : data_->stiffness_assembly_->boundary_integral(dim)->points(cell_side, &(data_->stiffness_assembly_->cache_map())) ) {
+                side_flux += arma::dot(data_->advection_coef[sbi](p), fe_values_side_.normal_vector(k))*fe_values_side_.JxW(k);
+                k++;
+            }
             double transport_flux = side_flux/side.measure();
 
             if (bc_type[sbi] == AdvectionDiffusionModel::abc_dirichlet)
             {
                 // set up the parameters for DG method
                 double gamma_l;
+                k=0; // temporary solution, set dif_coef until set_DG_parameters_boundary will not be removed
+                for (auto p : data_->stiffness_assembly_->boundary_integral(dim)->points(cell_side, &(data_->stiffness_assembly_->cache_map())) ) {
+                    data_->dif_coef[sbi][k] = data_->diffusion_coef[sbi](p);
+                    k++;
+                }
                 data_->set_DG_parameters_boundary(side, qsize_lower_dim_, data_->dif_coef[sbi], transport_flux, fe_values_side_.normal_vector(0), data_->dg_penalty[sbi].value(elm_acc.centre(), elm_acc), gamma_l);
                 data_->gamma[sbi][side.cond_idx()] = gamma_l;
                 transport_flux += gamma_l;
             }
 
             // fluxes and penalty
-            for (unsigned int k=0; k<qsize_lower_dim_; k++)
+            k=0;
+            for (auto p : data_->stiffness_assembly_->boundary_integral(dim)->points(cell_side, &(data_->stiffness_assembly_->cache_map())) )
+            //for (unsigned int k=0; k<qsize_lower_dim_; k++)
             {
                 double flux_times_JxW;
                 if (bc_type[sbi] == AdvectionDiffusionModel::abc_total_flux)
@@ -756,11 +770,15 @@ public:
 
                         // flux due to diffusion (only on dirichlet and inflow boundary)
                         if (bc_type[sbi] == AdvectionDiffusionModel::abc_dirichlet)
-                            local_matrix_[i*ndofs_+j] -= (arma::dot(data_->dif_coef[sbi][k]*fe_values_side_.shape_grad(j,k),fe_values_side_.normal_vector(k))*fe_values_side_.shape_value(i,k)
-                                    + arma::dot(data_->dif_coef[sbi][k]*fe_values_side_.shape_grad(i,k),fe_values_side_.normal_vector(k))*fe_values_side_.shape_value(j,k)*data_->dg_variant
+                            //local_matrix_[i*ndofs_+j] -= (arma::dot(data_->dif_coef[sbi][k]*fe_values_side_.shape_grad(j,k),fe_values_side_.normal_vector(k))*fe_values_side_.shape_value(i,k)
+                            //        + arma::dot(data_->dif_coef[sbi][k]*fe_values_side_.shape_grad(i,k),fe_values_side_.normal_vector(k))*fe_values_side_.shape_value(j,k)*data_->dg_variant
+                            //        )*fe_values_side_.JxW(k);
+                            local_matrix_[i*ndofs_+j] -= (arma::dot(data_->diffusion_coef[sbi](p)*fe_values_side_.shape_grad(j,k),fe_values_side_.normal_vector(k))*fe_values_side_.shape_value(i,k)
+                                    + arma::dot(data_->diffusion_coef[sbi](p)*fe_values_side_.shape_grad(i,k),fe_values_side_.normal_vector(k))*fe_values_side_.shape_value(j,k)*data_->dg_variant
                                     )*fe_values_side_.JxW(k);
                     }
                 }
+                k++;
             }
 
             data_->ls[sbi]->mat_set_values(ndofs_, &(dof_indices_[0]), ndofs_, &(dof_indices_[0]), &(local_matrix_[0]));
