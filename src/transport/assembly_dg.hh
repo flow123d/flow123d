@@ -216,6 +216,18 @@ public:
 	    return integrals_.bulk_[dim-1];
     }
 
+    /// Return EdgeIntegral of appropriate dimension
+    inline std::shared_ptr<EdgeIntegral> edge_integral(unsigned int dim) const {
+        ASSERT_DBG( (dim>0) && (dim<=3) )(dim).error("Invalid dimension, must be 1, 2 or 3!\n");
+	    return integrals_.edge_[dim-1];
+    }
+
+    /// Return CouplingIntegral between dimensions dim-1 and dim
+    inline std::shared_ptr<CouplingIntegral> coupling_integral(unsigned int dim) const {
+        ASSERT_DBG( (dim>1) && (dim<=3) )(dim).error("Invalid dimension, must be 2 or 3!\n");
+	    return integrals_.coupling_[dim-2];
+    }
+
     /// Return BoundaryIntegral of appropriate dimension
     inline std::shared_ptr<BoundaryIntegral> boundary_integral(unsigned int dim) const {
         ASSERT_DBG( (dim>0) && (dim<=3) )(dim).error("Invalid dimension, must be 1, 2 or 3!\n");
@@ -608,7 +620,7 @@ public:
         local_retardation_balance_vector_.resize(ndofs_);
         local_mass_balance_vector_.resize(ndofs_);
         velocity_.resize(qsize_);
-        side_velocity_vec_.resize(data_->ad_coef_edg.size());
+        //side_velocity_vec_.resize(data_->ad_coef_edg.size());
         //sources_sigma_.resize(model_->n_substances(), std::vector<double>(qsize_));
         sigma_.resize(qsize_lower_dim_);
         csection_.resize(qsize_lower_dim_);
@@ -790,6 +802,7 @@ public:
     void assemble_fluxes_element_element(RangeConvert<DHEdgeSide, DHCellSide> edge_side_range) override {
         ASSERT_EQ_DBG(edge_side_range.begin()->element().dim(), dim).error("Dimension of element mismatch!");
 
+        unsigned int k;
    	    sid=0;
         for( DHCellSide edge_side : edge_side_range )
         {
@@ -798,8 +811,8 @@ public:
             dh_edge_cell.get_dof_indices(side_dof_indices_[sid]);
             fe_values_vec_[sid].reinit(edge_side.side());
             fsv_rt_.reinit(edge_side.side());
-            calculate_velocity(edg_elm, side_velocity_vec_[sid], fsv_rt_.point_list());
-            model_->compute_advection_diffusion_coefficients(fe_values_vec_[sid].point_list(), side_velocity_vec_[sid], edg_elm, data_->ad_coef_edg[sid], data_->dif_coef_edg[sid]);
+            //calculate_velocity(edg_elm, side_velocity_vec_[sid], fsv_rt_.point_list());
+            //model_->compute_advection_diffusion_coefficients(fe_values_vec_[sid].point_list(), side_velocity_vec_[sid], edg_elm, data_->ad_coef_edg[sid], data_->dif_coef_edg[sid]);
             dg_penalty_[sid].resize(model_->n_substances());
             for (unsigned int sbi=0; sbi<model_->n_substances(); sbi++)
                 dg_penalty_[sid][sbi] = data_->dg_penalty[sbi].value(edg_elm.centre(), edg_elm);
@@ -816,8 +829,13 @@ public:
             for( DHCellSide edge_side : edge_side_range )
             {
                 fluxes[sid] = 0;
-                for (unsigned int k=0; k<qsize_lower_dim_; k++)
-                    fluxes[sid] += arma::dot(data_->ad_coef_edg[sid][sbi][k], fe_values_vec_[sid].normal_vector(k))*fe_values_vec_[sid].JxW(k);
+                //for (unsigned int k=0; k<qsize_lower_dim_; k++)
+                //    fluxes[sid] += arma::dot(data_->ad_coef_edg[sid][sbi][k], fe_values_vec_[sid].normal_vector(k))*fe_values_vec_[sid].JxW(k);
+                k=0;
+                for (auto p : data_->stiffness_assembly_->edge_integral(dim)->points(edge_side, &(data_->stiffness_assembly_->cache_map())) ) {
+                    fluxes[sid] += arma::dot(data_->advection_coef[sbi](p), fe_values_vec_[sid].normal_vector(k))*fe_values_vec_[sid].JxW(k);
+                    k++;
+                }
                 fluxes[sid] /= edge_side.measure();
                 if (fluxes[sid] > 0)
                     pflux += fluxes[sid];
@@ -851,10 +869,17 @@ public:
 
                     delta[0] = 0;
                     delta[1] = 0;
-                    for (unsigned int k=0; k<qsize_lower_dim_; k++)
+                    /*for (unsigned int k=0; k<qsize_lower_dim_; k++)
                     {
                         delta[0] += dot(data_->dif_coef_edg[s1][sbi][k]*normal_vector,normal_vector);
                         delta[1] += dot(data_->dif_coef_edg[s2][sbi][k]*normal_vector,normal_vector);
+                    } // */
+                    auto p2 = *( data_->stiffness_assembly_->edge_integral(dim)->points(edge_side2, &(data_->stiffness_assembly_->cache_map())).begin() );
+                    for (auto p1 : data_->stiffness_assembly_->edge_integral(dim)->points(edge_side1, &(data_->stiffness_assembly_->cache_map())) )
+                    {
+                        delta[0] += dot(data_->diffusion_coef[sbi](p1)*normal_vector,normal_vector);
+                        delta[1] += dot(data_->diffusion_coef[sbi](p2)*normal_vector,normal_vector);
+                        p2.inc();
                     }
                     delta[0] /= qsize_lower_dim_;
                     delta[1] /= qsize_lower_dim_;
@@ -894,7 +919,10 @@ public:
                                 for (unsigned int j=0; j<fe_values_vec_[sd[m]].n_dofs(); j++)
                                     local_matrix_[i*fe_values_vec_[sd[m]].n_dofs()+j] = 0;
 
-                            for (unsigned int k=0; k<qsize_lower_dim_; k++)
+                            k=0;
+                            auto p2 = *( data_->stiffness_assembly_->edge_integral(dim)->points(edge_side2, &(data_->stiffness_assembly_->cache_map())).begin() );
+                            for (auto p1 : data_->stiffness_assembly_->edge_integral(dim)->points(edge_side1, &(data_->stiffness_assembly_->cache_map())) )
+                            //for (unsigned int k=0; k<qsize_lower_dim_; k++)
                             {
                                 double flux_times_JxW = transport_flux*fe_values_vec_[0].JxW(k);
                                 double gamma_times_JxW = gamma_l*fe_values_vec_[0].JxW(k);
@@ -905,8 +933,9 @@ public:
                                     double gamma_JxW_jump_i = gamma_times_JxW*JUMP(i,k,n);
                                     double JxW_jump_i = fe_values_vec_[0].JxW(k)*JUMP(i,k,n);
                                     double JxW_var_wavg_i = fe_values_vec_[0].JxW(k) *
-                                            arma::dot(data_->dif_coef_edg[sd[n]][sbi][k]*fe_values_vec_[sd[n]].shape_grad(i,k),nv) * omega[n] *
-                                            data_->dg_variant;
+                                            //arma::dot(data_->dif_coef_edg[sd[n]][sbi][k]*fe_values_vec_[sd[n]].shape_grad(i,k),nv) *
+                                            arma::dot(data_->diffusion_coef[sbi](p2)*fe_values_vec_[sd[n]].shape_grad(i,k),nv) *
+                                            omega[n] * data_->dg_variant;
 
                                     for (unsigned int j=0; j<fe_values_vec_[sd[m]].n_dofs(); j++)
                                     {
@@ -919,10 +948,12 @@ public:
                                         local_matrix_[index] += gamma_JxW_jump_i*JUMP(j,k,m);
 
                                         // terms due to diffusion
-                                        local_matrix_[index] -= arma::dot(data_->dif_coef_edg[sd[m]][sbi][k]*fe_values_vec_[sd[m]].shape_grad(j,k),nv) * omega[m] * JxW_jump_i;
+                                        //local_matrix_[index] -= arma::dot(data_->dif_coef_edg[sd[m]][sbi][k]*fe_values_vec_[sd[m]].shape_grad(j,k),nv) * omega[m] * JxW_jump_i;
+                                        local_matrix_[index] -= arma::dot(data_->diffusion_coef[sbi](p1)*fe_values_vec_[sd[m]].shape_grad(j,k),nv) * omega[m] * JxW_jump_i;
                                         local_matrix_[index] -= JUMP(j,k,m)*JxW_var_wavg_i;
                                     }
                                 }
+                                k++;
                             }
                             data_->ls[sbi]->mat_set_values(fe_values_vec_[sd[n]].n_dofs(), &(side_dof_indices_[sd[n]][0]), fe_values_vec_[sd[m]].n_dofs(), &(side_dof_indices_[sd[m]][0]), &(local_matrix_[0]));
                         }
@@ -1071,7 +1102,7 @@ private:
     vector<PetscScalar> local_mass_balance_vector_;           ///< Same as previous.
     vector<arma::vec3> velocity_;                             ///< Auxiliary results.
     vector<arma::vec3> velocity_higher_;                      ///< Velocity results of higher dim element (element-side computation).
-    vector<vector<arma::vec3> > side_velocity_vec_;           ///< Vector of velocities results.
+    //vector<vector<arma::vec3> > side_velocity_vec_;           ///< Vector of velocities results.
     //vector<vector<double> > sources_sigma_;                   ///< Auxiliary vectors for assemble volume integrals and set_sources method.
     vector<double> sigma_;                                    ///< Auxiliary vector for assemble boundary fluxes (robin sigma), element-side fluxes (frac sigma) and set boundary conditions method
     vector<double> csection_;                                 ///< Auxiliary vector for assemble boundary fluxes, element-side fluxes and set boundary conditions
