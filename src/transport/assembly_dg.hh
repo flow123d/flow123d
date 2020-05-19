@@ -881,7 +881,6 @@ public:
                     sd[1] = s2; is_side_own[1] = edge_side2.cell().is_own();
 
 #define AVERAGE(i,k,side_id)  (fe_values_vec_[sd[side_id]].shape_value(i,k)*0.5)
-#define WAVERAGE(i,k,side_id) (arma::dot(data_->dif_coef_edg[sd[side_id]][sbi][k]*fe_values_vec_[sd[side_id]].shape_grad(i,k),nv)*omega[side_id])
 #define JUMP(i,k,side_id)     ((side_id==0?1:-1)*fe_values_vec_[sd[side_id]].shape_value(i,k))
 
                     // For selected pair of elements:
@@ -905,7 +904,9 @@ public:
                                     double flux_JxW_jump_i = flux_times_JxW*JUMP(i,k,n);
                                     double gamma_JxW_jump_i = gamma_times_JxW*JUMP(i,k,n);
                                     double JxW_jump_i = fe_values_vec_[0].JxW(k)*JUMP(i,k,n);
-                                    double JxW_var_wavg_i = fe_values_vec_[0].JxW(k)*WAVERAGE(i,k,n)*data_->dg_variant;
+                                    double JxW_var_wavg_i = fe_values_vec_[0].JxW(k) *
+                                            arma::dot(data_->dif_coef_edg[sd[n]][sbi][k]*fe_values_vec_[sd[n]].shape_grad(i,k),nv) * omega[n] *
+                                            data_->dg_variant;
 
                                     for (unsigned int j=0; j<fe_values_vec_[sd[m]].n_dofs(); j++)
                                     {
@@ -918,7 +919,7 @@ public:
                                         local_matrix_[index] += gamma_JxW_jump_i*JUMP(j,k,m);
 
                                         // terms due to diffusion
-                                        local_matrix_[index] -= WAVERAGE(j,k,m)*JxW_jump_i;
+                                        local_matrix_[index] -= arma::dot(data_->dif_coef_edg[sd[m]][sbi][k]*fe_values_vec_[sd[m]].shape_grad(j,k),nv) * omega[m] * JxW_jump_i;
                                         local_matrix_[index] -= JUMP(j,k,m)*JxW_var_wavg_i;
                                     }
                                 }
@@ -927,7 +928,6 @@ public:
                         }
                     }
 #undef AVERAGE
-#undef WAVERAGE
 #undef JUMP
                 }
             s1++;
