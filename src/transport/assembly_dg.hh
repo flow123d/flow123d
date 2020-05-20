@@ -623,8 +623,8 @@ public:
         //side_velocity_vec_.resize(data_->ad_coef_edg.size());
         //sources_sigma_.resize(model_->n_substances(), std::vector<double>(qsize_));
         sigma_.resize(qsize_lower_dim_);
-        csection_.resize(qsize_lower_dim_);
-        csection_higher_.resize(qsize_lower_dim_);
+        //csection_.resize(qsize_lower_dim_);
+        //csection_higher_.resize(qsize_lower_dim_);
         dg_penalty_.resize(data_->ad_coef_edg.size());
 
         fe_values_vec_.resize(data_->ad_coef_edg.size());
@@ -719,7 +719,7 @@ public:
         //model_->compute_advection_diffusion_coefficients(fe_values_side_.point_list(), velocity_, elm_acc, data_->ad_coef, data_->dif_coef);
         arma::uvec bc_type;
         model_->get_bc_type(side.cond().element_accessor(), bc_type);
-        data_->cross_section.value_list(fe_values_side_.point_list(), elm_acc, csection_);
+        //data_->cross_section.value_list(fe_values_side_.point_list(), elm_acc, csection_);
 
         for (unsigned int sbi=0; sbi<model_->n_substances(); sbi++)
         {
@@ -761,12 +761,14 @@ public:
                 {
                     //sigma_ corresponds to robin_sigma
                     model_->get_flux_bc_sigma(sbi, fe_values_side_.point_list(), side.cond().element_accessor(), sigma_);
-                    flux_times_JxW = csection_[k]*sigma_[k]*fe_values_side_.JxW(k);
+                    //flux_times_JxW = csection_[k]*sigma_[k]*fe_values_side_.JxW(k);
+                    flux_times_JxW = data_->cross_section(p)*sigma_[k]*fe_values_side_.JxW(k);
                 }
                 else if (bc_type[sbi] == AdvectionDiffusionModel::abc_diffusive_flux)
                 {
                     model_->get_flux_bc_sigma(sbi, fe_values_side_.point_list(), side.cond().element_accessor(), sigma_);
-                    flux_times_JxW = (transport_flux + csection_[k]*sigma_[k])*fe_values_side_.JxW(k);
+                    //flux_times_JxW = (transport_flux + csection_[k]*sigma_[k])*fe_values_side_.JxW(k);
+                    flux_times_JxW = (transport_flux + data_->cross_section(p)*sigma_[k])*fe_values_side_.JxW(k);
                 }
                 else if (bc_type[sbi] == AdvectionDiffusionModel::abc_inflow && side_flux < 0)
                     flux_times_JxW = 0;
@@ -983,7 +985,7 @@ public:
         n_dofs[0] = fv_sb_[0]->n_dofs();
 
         DHCellAccessor cell_higher_dim = data_->dh_->cell_accessor_from_element( neighb_side.element().idx() );
-        ElementAccessor<3> elm_higher_dim = cell_higher_dim.elm();
+        //ElementAccessor<3> elm_higher_dim = cell_higher_dim.elm();
         n_indices = cell_higher_dim.get_dof_indices(dof_indices_);
         for(unsigned int i=0; i<n_indices; ++i) {
             side_dof_indices_vb_[i+n_dofs[0]] = dof_indices_[i];
@@ -1002,8 +1004,8 @@ public:
         //calculate_velocity(elm_lower_dim, velocity_, fv_rt_vb_.point_list());
         //model_->compute_advection_diffusion_coefficients(fe_values_vb_.point_list(), velocity_, elm_lower_dim, data_->ad_coef_edg[0], data_->dif_coef_edg[0]);
         //model_->compute_advection_diffusion_coefficients(fe_values_vb_.point_list(), velocity_higher_, elm_higher_dim, data_->ad_coef_edg[1], data_->dif_coef_edg[1]);
-        data_->cross_section.value_list(fe_values_vb_.point_list(), elm_lower_dim, csection_);
-        data_->cross_section.value_list(fe_values_vb_.point_list(), elm_higher_dim, csection_higher_);
+        //data_->cross_section.value_list(fe_values_vb_.point_list(), elm_lower_dim, csection_);
+        //data_->cross_section.value_list(fe_values_vb_.point_list(), elm_higher_dim, csection_higher_);
 
         unsigned int k;
         for (unsigned int sbi=0; sbi<model_->n_substances(); sbi++) // Optimize: SWAP LOOPS
@@ -1013,12 +1015,12 @@ public:
                     local_matrix_[i*(n_dofs[0]+n_dofs[1])+j] = 0;
 
             // sigma_ corresponds to frac_sigma
-            data_->fracture_sigma[sbi].value_list(fe_values_vb_.point_list(), elm_lower_dim, sigma_);
+            //data_->fracture_sigma[sbi].value_list(fe_values_vb_.point_list(), elm_lower_dim, sigma_);
 
             // set transmission conditions
             k=0;
-            auto p_high = *( data_->stiffness_assembly_->coupling_integral(dim)->points(cell_lower_dim, &(data_->stiffness_assembly_->cache_map())).begin() );
-            for (auto p_low : data_->stiffness_assembly_->coupling_integral(dim)->points(neighb_side, &(data_->stiffness_assembly_->cache_map())) )
+            auto p_high = *( data_->stiffness_assembly_->coupling_integral(dim)->points(neighb_side, &(data_->stiffness_assembly_->cache_map())).begin() );
+            for (auto p_low : data_->stiffness_assembly_->coupling_integral(dim)->points(cell_lower_dim, &(data_->stiffness_assembly_->cache_map())) )
             //for (unsigned int k=0; k<qsize_lower_dim_; k++)
             {
                 // The communication flux has two parts:
@@ -1030,11 +1032,11 @@ public:
                 // In calculation of sigma there appears one more csection_lower in the denominator.
                 //double sigma = sigma_[k]*arma::dot(data_->dif_coef_edg[0][sbi][k]*fe_values_side_.normal_vector(k),fe_values_side_.normal_vector(k))*
                 //        2*csection_higher_[k]*csection_higher_[k]/(csection_[k]*csection_[k]);
-                double sigma = sigma_[k]*arma::dot(data_->diffusion_coef[sbi](p_high)*fe_values_side_.normal_vector(k),fe_values_side_.normal_vector(k))*
-                        2*csection_higher_[k]*csection_higher_[k]/(csection_[k]*csection_[k]);
+                double sigma = data_->fracture_sigma[sbi](p_low)*arma::dot(data_->diffusion_coef[sbi](p_low)*fe_values_side_.normal_vector(k),fe_values_side_.normal_vector(k))*
+                        2*data_->cross_section(p_high)*data_->cross_section(p_high)/(data_->cross_section(p_low)*data_->cross_section(p_low));
 
                 //double transport_flux = arma::dot(data_->ad_coef_edg[1][sbi][k], fe_values_side_.normal_vector(k));
-                double transport_flux = arma::dot(data_->advection_coef[sbi](p_low), fe_values_side_.normal_vector(k));
+                double transport_flux = arma::dot(data_->advection_coef[sbi](p_high), fe_values_side_.normal_vector(k));
 
                 comm_flux[0][0] =  (sigma-min(0.,transport_flux))*fv_sb_[0]->JxW(k);
                 comm_flux[0][1] = -(sigma-min(0.,transport_flux))*fv_sb_[0]->JxW(k);
@@ -1114,8 +1116,8 @@ private:
     //vector<vector<arma::vec3> > side_velocity_vec_;           ///< Vector of velocities results.
     //vector<vector<double> > sources_sigma_;                   ///< Auxiliary vectors for assemble volume integrals and set_sources method.
     vector<double> sigma_;                                    ///< Auxiliary vector for assemble boundary fluxes (robin sigma), element-side fluxes (frac sigma) and set boundary conditions method
-    vector<double> csection_;                                 ///< Auxiliary vector for assemble boundary fluxes, element-side fluxes and set boundary conditions
-    vector<double> csection_higher_;                          ///< Auxiliary vector for assemble element-side fluxes
+    //vector<double> csection_;                                 ///< Auxiliary vector for assemble boundary fluxes, element-side fluxes and set boundary conditions
+    //vector<double> csection_higher_;                          ///< Auxiliary vector for assemble element-side fluxes
     vector<vector<double> > dg_penalty_;                      ///< Auxiliary vectors for assemble element-element fluxes
 
 	/// @name Auxiliary variables used during element-element assembly
