@@ -349,7 +349,7 @@ void ConcentrationTransportModel::init_from_input(const Input::Record &in_rec)
 //
 
 
-void ConcentrationTransportModel::calculate_dispersivity_tensor(const arma::vec3 &velocity,
+/*void ConcentrationTransportModel::calculate_dispersivity_tensor(const arma::vec3 &velocity,
 		const arma::mat33 &Dm, double alphaL, double alphaT, double water_content, double porosity, double cross_cut,
 		arma::mat33 &K)
 {
@@ -365,11 +365,6 @@ void ConcentrationTransportModel::calculate_dispersivity_tensor(const arma::vec3
 	//K = ((alphaL-alphaT) / vnorm) * K + (alphaT*vnorm + Dm*tortuosity*cross_cut*water_content) * arma::eye(3,3);
 
     if (fabs(vnorm) > 0) {
-        /*
-        for (int i=0; i<3; i++)
-            for (int j=0; j<3; j++)
-               K(i,j) = (velocity[i]/vnorm)*(velocity[j]);
-        */
         K = ((alphaL - alphaT) / vnorm) * arma::kron(velocity.t(), velocity);
 
         //arma::mat33 abs_diff_mat = arma::abs(K -  kk);
@@ -382,7 +377,7 @@ void ConcentrationTransportModel::calculate_dispersivity_tensor(const arma::vec3
    // so to obtain |v| we have to divide vnorm by porosity and cross_section.
    K += alphaT*vnorm*arma::eye(3,3) + Dm*(tortuosity*cross_cut*water_content);
 
-}
+}*/
 // result multifield: dispersivity_tensor (here the K parameter)
 // input fields: water_content, porosity, velocity, cross_cut
 // input multifields: diff_m, disp_l, disp_t
@@ -397,7 +392,7 @@ void ConcentrationTransportModel::calculate_dispersivity_tensor(const arma::vec3
 
 
 
-void ConcentrationTransportModel::compute_advection_diffusion_coefficients(const Armor::array &point_list,
+/*void ConcentrationTransportModel::compute_advection_diffusion_coefficients(const Armor::array &point_list,
 		const std::vector<arma::vec3> &velocity,
 		const ElementAccessor<3> &ele_acc,
 		std::vector<std::vector<arma::vec3> > &ad_coef,
@@ -425,7 +420,7 @@ void ConcentrationTransportModel::compute_advection_diffusion_coefficients(const
 					dif_coef[sbi][i]);
 		}
 	}
-}
+}*/
 
 
 /*void ConcentrationTransportModel::compute_init_cond(const Armor::array &point_list,

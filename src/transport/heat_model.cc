@@ -422,7 +422,7 @@ void HeatTransferModel::output_data()
 }*/
 
 
-void HeatTransferModel::compute_advection_diffusion_coefficients(const Armor::array &point_list,
+/*void HeatTransferModel::compute_advection_diffusion_coefficients(const Armor::array &point_list,
 		const std::vector<arma::vec3> &velocity,
 		const ElementAccessor<3> &ele_acc,
 		std::vector<std::vector<arma::vec3> > &ad_coef,
@@ -459,7 +459,7 @@ void HeatTransferModel::compute_advection_diffusion_coefficients(const Armor::ar
 		// conductive part of thermal diffusion
 		dif_coef[0][k] += csection[k]*(por[k]*f_cond[k] + (1.-por[k])*s_cond[k])*arma::eye(3,3);
 	}
-}
+}*/
 
 
 /*void HeatTransferModel::compute_init_cond(const Armor::array &point_list,

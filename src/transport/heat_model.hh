@@ -209,11 +209,11 @@ public:
 	//		const ElementAccessor<3> &,
 	//		std::vector<std::vector<double> > &) override {};
 
-	void compute_advection_diffusion_coefficients(const Armor::array &point_list,
-			const std::vector<arma::vec3> &velocity,
-			const ElementAccessor<3> &ele_acc,
-			std::vector<std::vector<arma::vec3> > &ad_coef,
-			std::vector<std::vector<arma::mat33> > &dif_coef) override;
+	//void compute_advection_diffusion_coefficients(const Armor::array &point_list,
+	//		const std::vector<arma::vec3> &velocity,
+	//		const ElementAccessor<3> &ele_acc,
+	//		std::vector<std::vector<arma::vec3> > &ad_coef,
+	//		std::vector<std::vector<arma::mat33> > &dif_coef) override;
 
 	//void compute_init_cond(const Armor::array &point_list,
 	//		const ElementAccessor<3> &ele_acc,

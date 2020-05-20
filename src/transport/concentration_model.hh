@@ -138,11 +138,11 @@ public:
 
 
 
-	void compute_advection_diffusion_coefficients(const Armor::array &point_list,
-			const std::vector<arma::vec3> &velocity,
-			const ElementAccessor<3> &ele_acc,
-			std::vector<std::vector<arma::vec3> > &ad_coef,
-			std::vector<std::vector<arma::mat33> > &dif_coef) override;
+	//void compute_advection_diffusion_coefficients(const Armor::array &point_list,
+	//		const std::vector<arma::vec3> &velocity,
+	//		const ElementAccessor<3> &ele_acc,
+	//		std::vector<std::vector<arma::vec3> > &ad_coef,
+	//		std::vector<std::vector<arma::mat33> > &dif_coef) override;
 
 	//void compute_init_cond(const Armor::array &point_list,
 	//		const ElementAccessor<3> &ele_acc,
@@ -250,14 +250,14 @@ protected:
 	 * @param cross_cut Cross-section.
 	 * @param K         Dispersivity tensor (output).
 	 */
-	void calculate_dispersivity_tensor(const arma::vec3 &velocity,
-			const arma::mat33 &Dm,
-			double alphaL,
-			double alphaT,
-			double water_content,
-			double porosity,
-			double cross_cut,
-			arma::mat33 &K);
+	//void calculate_dispersivity_tensor(const arma::vec3 &velocity,
+	//		const arma::mat33 &Dm,
+	//		double alphaL,
+	//		double alphaT,
+	//		double water_content,
+	//		double porosity,
+	//		double cross_cut,
+	//		arma::mat33 &K);
 
 	/**
 	 * Initialize FieldModel instances.

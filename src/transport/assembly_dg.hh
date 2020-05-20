@@ -1355,11 +1355,11 @@ public:
 
             fe_values_side_.reinit(dh_side.side());
             fsv_rt_.reinit(dh_side.side());
-            calculate_velocity(elm, velocity_, fsv_rt_.point_list());
+            //calculate_velocity(elm, velocity_, fsv_rt_.point_list());
 
             cell.get_dof_indices(dof_indices_);
 
-            model_->compute_advection_diffusion_coefficients(fe_values_side_.point_list(), velocity_, elm, data_->ad_coef, data_->dif_coef);
+            //model_->compute_advection_diffusion_coefficients(fe_values_side_.point_list(), velocity_, elm, data_->ad_coef, data_->dif_coef);
             //data_->cross_section.value_list(fe_values_side_.point_list(), elm, csection_);
 
             for (unsigned int sbi=0; sbi<model_->n_substances(); sbi++)
@@ -1373,8 +1373,13 @@ public:
                 data_->bc_dirichlet_value[sbi].value_list(fe_values_side_.point_list(), bc_elm, bc_values_);
 
                 double side_flux = 0;
-                for (unsigned int k=0; k<qsize_lower_dim_; k++)
-                    side_flux += arma::dot(data_->ad_coef[sbi][k], fe_values_side_.normal_vector(k))*fe_values_side_.JxW(k);
+                k=0;
+                for (auto p : data_->bdr_cond_assembly_->boundary_integral(dim)->points(dh_side, &(data_->bdr_cond_assembly_->cache_map())) ) {
+                //for (unsigned int k=0; k<qsize_lower_dim_; k++)
+                    //side_flux += arma::dot(data_->ad_coef[sbi][k], fe_values_side_.normal_vector(k))*fe_values_side_.JxW(k);
+                    side_flux += arma::dot(data_->advection_coef[sbi](p), fe_values_side_.normal_vector(k))*fe_values_side_.JxW(k);
+                    k++;
+                }
                 double transport_flux = side_flux/dh_side.measure();
 
                 if (bc_type[sbi] == AdvectionDiffusionModel::abc_inflow && side_flux < 0)
@@ -1390,22 +1395,32 @@ public:
                 }
                 else if (bc_type[sbi] == AdvectionDiffusionModel::abc_dirichlet)
                 {
-                    for (unsigned int k=0; k<qsize_lower_dim_; k++)
+                    k=0;
+                    for (auto p : data_->bdr_cond_assembly_->boundary_integral(dim)->points(dh_side, &(data_->bdr_cond_assembly_->cache_map())) )
+                    //for (unsigned int k=0; k<qsize_lower_dim_; k++)
                     {
                         double bc_term = data_->gamma[sbi][cond_idx]*bc_values_[k]*fe_values_side_.JxW(k);
-                        arma::vec3 bc_grad = -bc_values_[k]*fe_values_side_.JxW(k)*data_->dg_variant*(arma::trans(data_->dif_coef[sbi][k])*fe_values_side_.normal_vector(k));
+                        //arma::vec3 bc_grad = -bc_values_[k]*fe_values_side_.JxW(k)*data_->dg_variant*(arma::trans(data_->dif_coef[sbi][k])*fe_values_side_.normal_vector(k));
+                        arma::vec3 bc_grad = -bc_values_[k]*fe_values_side_.JxW(k)*data_->dg_variant*(arma::trans(data_->diffusion_coef[sbi](p))*fe_values_side_.normal_vector(k));
                         for (unsigned int i=0; i<ndofs_; i++)
                             local_rhs_[i] += bc_term*fe_values_side_.shape_value(i,k)
                                     + arma::dot(bc_grad,fe_values_side_.shape_grad(i,k));
+                        k++;
                     }
-                    for (unsigned int k=0; k<qsize_lower_dim_; k++)
+                    k=0;
+                    for (auto p : data_->bdr_cond_assembly_->boundary_integral(dim)->points(dh_side, &(data_->bdr_cond_assembly_->cache_map())) )
+                    //for (unsigned int k=0; k<qsize_lower_dim_; k++)
                     {
                         for (unsigned int i=0; i<ndofs_; i++)
                         {
-                            local_flux_balance_vector_[i] += (arma::dot(data_->ad_coef[sbi][k], fe_values_side_.normal_vector(k))*fe_values_side_.shape_value(i,k)
-                                    - arma::dot(data_->dif_coef[sbi][k]*fe_values_side_.shape_grad(i,k),fe_values_side_.normal_vector(k))
+                            //local_flux_balance_vector_[i] += (arma::dot(data_->ad_coef[sbi][k], fe_values_side_.normal_vector(k))*fe_values_side_.shape_value(i,k)
+                            //        - arma::dot(data_->dif_coef[sbi][k]*fe_values_side_.shape_grad(i,k),fe_values_side_.normal_vector(k))
+                            //        + data_->gamma[sbi][cond_idx]*fe_values_side_.shape_value(i,k))*fe_values_side_.JxW(k);
+                            local_flux_balance_vector_[i] += (arma::dot(data_->advection_coef[sbi](p), fe_values_side_.normal_vector(k))*fe_values_side_.shape_value(i,k)
+                                    - arma::dot(data_->diffusion_coef[sbi](p)*fe_values_side_.shape_grad(i,k),fe_values_side_.normal_vector(k))
                                     + data_->gamma[sbi][cond_idx]*fe_values_side_.shape_value(i,k))*fe_values_side_.JxW(k);
                         }
+                        k++;
                     }
                     if (model_->time().tlevel() > 0)
                         for (unsigned int i=0; i<ndofs_; i++)
@@ -1427,8 +1442,8 @@ public:
 
                     for (unsigned int i=0; i<ndofs_; i++)
                     {
-                    	k=0;
-                    	for (auto p : data_->bdr_cond_assembly_->boundary_integral(dim)->points(dh_side, &(data_->bdr_cond_assembly_->cache_map())) ) {
+                        k=0;
+                        for (auto p : data_->bdr_cond_assembly_->boundary_integral(dim)->points(dh_side, &(data_->bdr_cond_assembly_->cache_map())) ) {
                         //for (unsigned int k=0; k<qsize_lower_dim_; k++)
                             local_flux_balance_vector_[i] += data_->cross_section(p)*sigma_[k]*fe_values_side_.JxW(k)*fe_values_side_.shape_value(i,k);
                             //local_flux_balance_vector_[i] += csection_[k]*sigma_[k]*fe_values_side_.JxW(k)*fe_values_side_.shape_value(i,k);
@@ -1453,10 +1468,10 @@ public:
 
                     for (unsigned int i=0; i<ndofs_; i++)
                     {
-                    	k=0;
-                    	for (auto p : data_->bdr_cond_assembly_->boundary_integral(dim)->points(dh_side, &(data_->bdr_cond_assembly_->cache_map())) ) {
-                    	//for (unsigned int k=0; k<qsize_lower_dim_; k++)
-                            local_flux_balance_vector_[i] += data_->cross_section(p)*(arma::dot(data_->ad_coef[sbi][k], fe_values_side_.normal_vector(k)) + sigma_[k])*fe_values_side_.JxW(k)*fe_values_side_.shape_value(i,k);
+                        k=0;
+                        for (auto p : data_->bdr_cond_assembly_->boundary_integral(dim)->points(dh_side, &(data_->bdr_cond_assembly_->cache_map())) ) {
+                        //for (unsigned int k=0; k<qsize_lower_dim_; k++)
+                            local_flux_balance_vector_[i] += data_->cross_section(p)*(arma::dot(data_->advection_coef[sbi](p), fe_values_side_.normal_vector(k)) + sigma_[k])*fe_values_side_.JxW(k)*fe_values_side_.shape_value(i,k);
                             //local_flux_balance_vector_[i] += csection_[k]*(arma::dot(data_->ad_coef[sbi][k], fe_values_side_.normal_vector(k)) + sigma_[k])*fe_values_side_.JxW(k)*fe_values_side_.shape_value(i,k);
                             k++;
                     	}
@@ -1465,10 +1480,14 @@ public:
                 }
                 else if (bc_type[sbi] == AdvectionDiffusionModel::abc_inflow && side_flux >= 0)
                 {
-                    for (unsigned int k=0; k<qsize_lower_dim_; k++)
+                    k=0;
+                    for (auto p : data_->bdr_cond_assembly_->boundary_integral(dim)->points(dh_side, &(data_->bdr_cond_assembly_->cache_map())) )
+                    //for (unsigned int k=0; k<qsize_lower_dim_; k++)
                     {
                         for (unsigned int i=0; i<ndofs_; i++)
-                            local_flux_balance_vector_[i] += arma::dot(data_->ad_coef[sbi][k], fe_values_side_.normal_vector(k))*fe_values_side_.JxW(k)*fe_values_side_.shape_value(i,k);
+                            local_flux_balance_vector_[i] += arma::dot(data_->advection_coef[sbi](p), fe_values_side_.normal_vector(k))*fe_values_side_.JxW(k)*fe_values_side_.shape_value(i,k);
+                            //local_flux_balance_vector_[i] += arma::dot(data_->ad_coef[sbi][k], fe_values_side_.normal_vector(k))*fe_values_side_.JxW(k)*fe_values_side_.shape_value(i,k);
+                        k++;
                     }
                 }
                 data_->ls[sbi]->rhs_set_values(ndofs_, &(dof_indices_[0]), &(local_rhs_[0]));
