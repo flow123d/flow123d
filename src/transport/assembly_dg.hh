@@ -1073,12 +1073,12 @@ private:
 	 * @param velocity   The computed velocity field (at quadrature points).
 	 * @param point_list The quadrature points.
 	 */
-    void calculate_velocity(const ElementAccessor<3> &cell, vector<arma::vec3> &velocity,
-                            const Armor::array &point_list)
-    {
-        velocity.resize(point_list.size());
-        model_->velocity_field_ptr()->value_list(point_list, cell, velocity);
-    }
+    //void calculate_velocity(const ElementAccessor<3> &cell, vector<arma::vec3> &velocity,
+    //                        const Armor::array &point_list)
+    //{
+    //    velocity.resize(point_list.size());
+    //    model_->velocity_field_ptr()->value_list(point_list, cell, velocity);
+    //}
 
     shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
     shared_ptr<FiniteElement<dim-1>> fe_low_;   ///< Finite element for the solution of the advection-diffusion equation (dim-1).
@@ -1324,7 +1324,7 @@ public:
         dof_indices_.resize(ndofs_);
         local_rhs_.resize(ndofs_);
         local_flux_balance_vector_.resize(ndofs_);
-        velocity_.resize(qsize_);
+        //velocity_.resize(qsize_);
         sigma_.resize(qsize_lower_dim_);
         csection_.resize(qsize_lower_dim_);
         bc_values_.resize(qsize_lower_dim_);
@@ -1526,12 +1526,12 @@ public:
     	 * @param velocity   The computed velocity field (at quadrature points).
     	 * @param point_list The quadrature points.
     	 */
-        void calculate_velocity(const ElementAccessor<3> &cell, vector<arma::vec3> &velocity,
-                                const Armor::array &point_list)
-        {
-            velocity.resize(point_list.size());
-            model_->velocity_field_ptr()->value_list(point_list, cell, velocity);
-        }
+        //void calculate_velocity(const ElementAccessor<3> &cell, vector<arma::vec3> &velocity,
+        //                        const Armor::array &point_list)
+        //{
+        //    velocity.resize(point_list.size());
+        //    model_->velocity_field_ptr()->value_list(point_list, cell, velocity);
+        //}
 
         shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
         FiniteElement<dim> *fe_rt_;                 ///< Finite element for the water velocity field.
@@ -1552,7 +1552,7 @@ public:
         vector<PetscScalar> local_rhs_;                           ///< Auxiliary vector for set_sources method.
         vector<PetscScalar> local_flux_balance_vector_;           ///< Auxiliary vector for set_boundary_conditions method.
         PetscScalar local_flux_balance_rhs_;                      ///< Auxiliary variable for set_boundary_conditions method.
-        vector<arma::vec3> velocity_;                             ///< Auxiliary results.
+        //vector<arma::vec3> velocity_;                             ///< Auxiliary results.
         vector<double> sigma_;                                    ///< Auxiliary vector for assemble boundary fluxes (robin sigma), element-side fluxes (frac sigma) and set boundary conditions method
         vector<double> csection_;                                 ///< Auxiliary vector for assemble boundary fluxes, element-side fluxes and set boundary conditions
         vector<double> bc_values_;                                ///< Auxiliary vector for set boundary conditions method
