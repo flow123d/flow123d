@@ -295,6 +295,8 @@ private:
                     if ( (cell_side.side().edge().n_sides() == 1) && (cell_side.side().is_boundary()) ) {
                         this->add_boundary_integral(cell_side);
                         element_cache_map_.add(cell_side);
+                        auto bdr_elm_acc = cell_side.cond().element_accessor();
+                        element_cache_map_.add(bdr_elm_acc);
                         continue;
                     }
             if (active_integrals_ & ActiveIntegrals::edge)
@@ -317,7 +319,6 @@ private:
         element_cache_map_.prepare_elements_to_update();
         this->insert_eval_points_from_integral_data();
         element_cache_map_.create_elements_points_map();
-        // not used yet: TODO need fix in MultiField, HeatModel ...; need better access to EqData
         multidim_assembly_[1_d]->data_->cache_update(element_cache_map_);
         element_cache_map_.finish_elements_update();
     }

@@ -726,12 +726,12 @@ void Field<spacedim, Value>::cache_reallocate(const ElementCacheMap &cache_map) 
 
 template<int spacedim, class Value>
 void Field<spacedim, Value>::cache_update(ElementCacheMap &cache_map) {
-	if ( this->is_bc() ) return;
     auto update_cache_data = cache_map.update_cache_data();
 
     // Call cache_update of FieldAlgoBase descendants
     std::unordered_map<unsigned int, unsigned int>::iterator reg_elm_it;
     for (reg_elm_it=update_cache_data.region_cache_indices_range_.begin(); reg_elm_it!=update_cache_data.region_cache_indices_range_.end(); ++reg_elm_it) {
+        if (region_fields_[reg_elm_it->first] == nullptr) continue; // skips bounadry regions for bulk fields and vice versa
         region_fields_[reg_elm_it->first]->cache_update(value_cache_, cache_map, reg_elm_it->first);
     }
 }

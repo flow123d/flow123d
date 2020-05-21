@@ -196,6 +196,9 @@ public:
     /// Same as previous but passes DHCellSide as parameter.
     void add(const DHCellSide &cell_side);
 
+    /// Adds element to region_cache_indices_map_ set.
+    void add(const ElementAccessor<3> &elm_acc);
+
     /// Prepare data member before reading data to cache.
     void prepare_elements_to_update();
 

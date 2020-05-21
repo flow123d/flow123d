@@ -95,6 +95,13 @@ void ElementCacheMap::add(const DHCellSide &cell_side) {
 }
 
 
+void ElementCacheMap::add(const ElementAccessor<3> &elm_acc) {
+	ASSERT_DBG(!ready_to_reading_);
+    ASSERT_LT(update_data_.n_elements_, ElementCacheMap::n_cached_elements).error("ElementCacheMap overflowed. List of added elements is too long!\n");
+    this->add_to_region(elm_acc);
+}
+
+
 void ElementCacheMap::prepare_elements_to_update() {
     // Erase element data of previous step
     cache_idx_.clear();
