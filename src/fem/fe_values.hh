@@ -332,7 +332,7 @@ protected:
     
     /// Precompute finite element data on reference element.
     template<unsigned int DIM>
-    FEInternalData *init_fe_data(const FiniteElement<DIM> &fe, const Quadrature &q);
+    std::shared_ptr<FEInternalData> init_fe_data(const FiniteElement<DIM> &fe, const Quadrature &q);
     
     /**
      * @brief Computes the shape function values and gradients on the actual cell
@@ -393,7 +393,7 @@ protected:
     UpdateFlags update_flags;
 
     /// Auxiliary object for calculation of element-dependent data.
-    ElementValues<spacedim> *elm_values;
+    std::shared_ptr<ElementValues<spacedim> > elm_values;
     
     /// Vector of FEValues for sub-elements of FESystem.
     std::vector<FEValues<spacedim>> fe_values_vec;
@@ -405,10 +405,10 @@ protected:
     ViewsCache views_cache_;
 
     /// Precomputed finite element data.
-    typename FEValues<spacedim>::FEInternalData *fe_data;
+    std::shared_ptr<FEInternalData> fe_data;
 
     /// Precomputed FE data (shape functions on reference element) for all sides and permuted quadrature points.
-    std::vector<std::vector<typename FEValues<spacedim>::FEInternalData*>> side_fe_data;
+    std::vector<std::vector<shared_ptr<FEInternalData> > > side_fe_data;
 };
 
 
