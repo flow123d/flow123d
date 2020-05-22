@@ -303,10 +303,6 @@ protected:
 	unsigned int max_n_it_;
 	unsigned int nonlinear_iteration_; //< Actual number of completed nonlinear iterations, need to pass this information into assembly.
 
-    // Temporary objects holding pointers to appropriate FieldFE
-    // TODO remove after final fix of equations
-    std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> ele_flux_ptr;            ///< Field of flux in barycenter of every element.
-
 	std::shared_ptr<EqData> data_;
 
     friend class DarcyFlowMHOutput;

@@ -113,10 +113,6 @@ template<int spacedim, class Value> class FieldDivide;
  *
  * The time key is optional, when not specified the equation is forced to steady regime. Using Steady TimeGovernor which have no dt constraints.
  *
- *
- * TODO:
- * Make solution regular field (need FeSeystem and parallel DofHandler for edge pressures), then remove get_solution_vector from
- * Equation interface.
  */
 /**
  * Model for transition coefficients due to Martin, Jaffre, Roberts (see manual for full reference)
@@ -371,10 +367,6 @@ protected:
     Vec steady_rhs;
     Vec new_diagonal;
     Vec previous_solution;
-
-    // Temporary objects holding pointers to appropriate FieldFE
-    // TODO remove after final fix of equations
-    std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> ele_flux_ptr;            ///< Field of flux in barycenter of every element.
 
 	std::shared_ptr<EqData> data_;
 

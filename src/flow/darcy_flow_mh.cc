@@ -441,12 +441,12 @@ void DarcyMH::initialize() {
 
     { // construct pressure, velocity and piezo head fields
 		uint rt_component = 0;
-        ele_flux_ptr = create_field_fe<3, FieldValue<3>::VectorFixed>(data_->dh_, rt_component);
+        auto ele_flux_ptr = create_field_fe<3, FieldValue<3>::VectorFixed>(data_->dh_, rt_component);
+        data_->full_solution = ele_flux_ptr->get_data_vec();
+        data_->flux.set_field(mesh_->region_db().get_region_set("ALL"), ele_flux_ptr);
+
 		auto ele_velocity_ptr = std::make_shared< FieldDivide<3, FieldValue<3>::VectorFixed> >(ele_flux_ptr, data_->cross_section);
 		data_->field_ele_velocity.set_field(mesh_->region_db().get_region_set("ALL"), ele_velocity_ptr);
-		data_->full_solution = ele_flux_ptr->get_data_vec();
-
-        data_->flux.set_field(mesh_->region_db().get_region_set("ALL"), ele_flux_ptr);
 
 		uint p_ele_component = 0;
         auto ele_pressure_ptr = create_field_fe<3, FieldValue<3>::Scalar>(data_->dh_, p_ele_component, &data_->full_solution);
@@ -560,8 +560,8 @@ void DarcyMH::update_solution()
 
     solve_time_step();
 
-    ele_flux_ptr->local_to_ghost_data_scatter_begin();
-    ele_flux_ptr->local_to_ghost_data_scatter_end();
+    data_->full_solution.local_to_ghost_begin();
+    data_->full_solution.local_to_ghost_end();
 }
 
 
@@ -960,7 +960,7 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
             LinSys_BDDC *ls = new LinSys_BDDC(&(*data_->dh_->distr()),
                     true); // swap signs of matrix and rhs to make the matrix SPD
             ls->set_from_input(in_rec);
-            ls->set_solution( ele_flux_ptr->get_data_vec().petsc_vec() );
+            ls->set_solution( data_->full_solution.petsc_vec() );
             // possible initialization particular to BDDC
             START_TIMER("BDDC set mesh data");
             set_mesh_data_for_bddc(ls);
@@ -990,7 +990,7 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
                     ls->LinSys::set_from_input(in_rec); // get only common options
                 }
 
-                ls->set_solution( ele_flux_ptr->get_data_vec().petsc_vec() );
+                ls->set_solution( data_->full_solution.petsc_vec() );
                 schur0=ls;
             } else {
                 IS is;
@@ -1035,7 +1035,7 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
                 }
                 ls->set_complement( schur1 );
                 ls->set_from_input(in_rec);
-                ls->set_solution( ele_flux_ptr->get_data_vec().petsc_vec() );
+                ls->set_solution( data_->full_solution.petsc_vec() );
                 schur0=ls;
             }
 
