@@ -44,6 +44,7 @@ enum ActiveIntegrals {
 /// Set of all used integral necessary in assemblation
 struct AssemblyIntegrals {
     std::array<std::shared_ptr<BulkIntegral>, 3> bulk_;          ///< Bulk integrals of elements of dimensions 1, 2, 3
+    std::array<std::shared_ptr<BulkIntegral>, 3> center_;        ///< Bulk integrals represents center of elements of dimensions 1, 2, 3
     std::array<std::shared_ptr<EdgeIntegral>, 3> edge_;          ///< Edge integrals between elements of dimensions 1, 2, 3
     std::array<std::shared_ptr<CouplingIntegral>, 2> coupling_;  ///< Coupling integrals between elements of dimensions 1-2, 2-3
     std::array<std::shared_ptr<BoundaryIntegral>, 3> boundary_;  ///< Boundary integrals betwwen elements of dimensions 1, 2, 3 and boundaries
@@ -100,7 +101,7 @@ public:
     /// Constructor
     GenericAssembly( typename DimAssembly<1>::EqDataDG *eq_data, int active_integrals )
     : multidim_assembly_(eq_data),
-      active_integrals_(active_integrals), integrals_size_({0, 0, 0, 0})
+      active_integrals_(active_integrals), integrals_size_({0, 0, 0, 0, 0})
     {
         eval_points_ = std::make_shared<EvalPoints>();
         // first step - create integrals, then - initialize cache
@@ -216,6 +217,12 @@ public:
 	    return integrals_.bulk_[dim-1];
     }
 
+    /// Return CenterIntegral of appropriate dimension
+    inline std::shared_ptr<BulkIntegral> center_integral(unsigned int dim) const {
+        ASSERT_DBG( (dim>0) && (dim<=3) )(dim).error("Invalid dimension, must be 1, 2 or 3!\n");
+	    return integrals_.center_[dim-1];
+    }
+
     /// Return EdgeIntegral of appropriate dimension
     inline std::shared_ptr<EdgeIntegral> edge_integral(unsigned int dim) const {
         ASSERT_DBG( (dim>0) && (dim<=3) )(dim).error("Invalid dimension, must be 1, 2 or 3!\n");
@@ -271,6 +278,13 @@ private:
             unsigned int start_point = data_size * boundary_integral_data_[i].side.side_idx();
             element_cache_map_.mark_used_eval_points(boundary_integral_data_[i].side.cell(), boundary_integral_data_[i].subset_index, data_size, start_point);
         }
+
+        for (unsigned int i=0; i<integrals_size_[4]; ++i) {
+            // add data to cache if there is free space, else return
+        	unsigned int data_size = eval_points_->subset_size( center_integral_data_[i].cell.dim(), center_integral_data_[i].subset_index );
+        	element_cache_map_.mark_used_eval_points(center_integral_data_[i].cell, center_integral_data_[i].subset_index, data_size);
+        }
+
     }
 
     /**
@@ -279,14 +293,16 @@ private:
      * Types of used integrals must be set in data member \p active_integrals_.
      */
     void add_integrals_of_computing_step(DHCellAccessor cell) {
-        for (unsigned int i=0; i<4; i++) integrals_size_[i] = 0; // clean integral data from previous step
+        for (unsigned int i=0; i<5; i++) integrals_size_[i] = 0; // clean integral data from previous step
         element_cache_map_.start_elements_update();
 
         // generic_assembly.check_integral_data();
+        this->add_center_integral(cell);
+        element_cache_map_.add(cell);
+
         if (active_integrals_ & ActiveIntegrals::bulk)
     	    if (cell.is_own()) { // Not ghost
                 this->add_volume_integral(cell);
-                element_cache_map_.add(cell);
     	    }
 
         for( DHCellSide cell_side : cell.side_range() ) {
@@ -296,6 +312,7 @@ private:
                         this->add_boundary_integral(cell_side);
                         element_cache_map_.add(cell_side);
                         auto bdr_elm_acc = cell_side.cond().element_accessor();
+                        //this->add_center_integral( dh->cell_accessor_from_element(bdr_elm_acc) ); //TODO need DHCell constructed from boundary element
                         element_cache_map_.add(bdr_elm_acc);
                         continue;
                     }
@@ -303,6 +320,8 @@ private:
                 if ( (cell_side.n_edge_sides() >= 2) && (cell_side.edge_sides().begin()->element().idx() == cell.elm_idx())) {
                     this->add_edge_integral(cell_side.edge_sides());
                 	for( DHCellSide edge_side : cell_side.edge_sides() ) {
+                	    if (cell_side.elem_idx() != edge_side.elem_idx())
+                	        this->add_center_integral(edge_side.cell());
                 		element_cache_map_.add(edge_side);
                     }
                 }
@@ -312,6 +331,7 @@ private:
             for( DHCellSide neighb_side : cell.neighb_sides() ) { // cell -> elm lower dim, neighb_side -> elm higher dim
                 if (cell.dim() != neighb_side.dim()-1) continue;
                 this->add_coupling_integral(cell, neighb_side);
+                this->add_center_integral(neighb_side.cell());
                 element_cache_map_.add(cell);
                 element_cache_map_.add(neighb_side);
             }
@@ -353,6 +373,13 @@ private:
         integrals_size_[3]++;
     }
 
+    /// Add data of integral of element.center eval point to appropriate data structure.
+    void add_center_integral(const DHCellAccessor &cell) {
+    	center_integral_data_[ integrals_size_[4] ].cell = cell;
+    	center_integral_data_[ integrals_size_[4] ].subset_index = integrals_.center_[cell.dim()-1]->get_subset_idx();
+        integrals_size_[4]++;
+    }
+
 
     /// Assembly object
     MixedPtr<DimAssembly, 1> multidim_assembly_;
@@ -369,7 +396,8 @@ private:
     std::array<EdgeIntegralData, 4>     edge_integral_data_;      ///< Holds data for computing edge integrals.
     std::array<CouplingIntegralData, 6> coupling_integral_data_;  ///< Holds data for computing couplings integrals.
     std::array<BoundaryIntegralData, 4> boundary_integral_data_;  ///< Holds data for computing boundary integrals.
-    std::array<unsigned int, 4>         integrals_size_;          ///< Holds used sizes of previous integral data types
+    std::array<BulkIntegralData, 11>    center_integral_data_;    ///< Holds data for computing bulk integrals in element.center point.
+    std::array<unsigned int, 5>         integrals_size_;          ///< Holds used sizes of previous integral data types
 };
 
 
@@ -384,12 +412,14 @@ public:
 	AssemblyBase(unsigned int quad_order) {
         quad_ = new QGauss(dim, 2*quad_order);
         quad_low_ = new QGauss(dim-1, 2*quad_order);
+        quad_center_ = new QGauss(dim, 0);
 	}
 
 	// Destructor
     virtual ~AssemblyBase() {
         delete quad_;
         delete quad_low_;
+        delete quad_center_;
     }
 
     /// Assembles the volume integrals on cell.
@@ -417,6 +447,8 @@ public:
     void create_integrals(std::shared_ptr<EvalPoints> eval_points, AssemblyIntegrals &integrals, int active_integrals) {
     	if (active_integrals & ActiveIntegrals::bulk)
     	    integrals.bulk_[dim-1] = eval_points->add_bulk<dim>(*quad_);
+    	// one-point integral represents element.center adds always
+	    integrals.center_[dim-1] = eval_points->add_bulk<dim>(*quad_center_);
     	if (active_integrals & ActiveIntegrals::edge)
     	    integrals.edge_[dim-1] = eval_points->add_edge<dim>(*quad_low_);
        	if ((dim>1) && (active_integrals & ActiveIntegrals::coupling))
@@ -428,6 +460,7 @@ public:
 protected:
     Quadrature *quad_;                                     ///< Quadrature used in assembling methods.
     Quadrature *quad_low_;                                 ///< Quadrature used in assembling methods (dim-1).
+    Quadrature *quad_center_;                              ///< Quadrature used in assembling methods (only for elm.center point).
 };
 
 
