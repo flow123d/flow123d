@@ -206,6 +206,11 @@ DarcyMH::EqData::EqData()
              .flags(FieldFlag::equation_result)
              .description("Velocity solution - P0 interpolation.");
 
+    *this += flux.name("flux")
+	         .units(UnitSI().m().s(-1))
+             .flags(FieldFlag::equation_result)
+             .description("Darcy flow flux.");
+
     *this += anisotropy.name("anisotropy")
             .description("Anisotropy of the conductivity tensor.")
             .input_default("1.0")
@@ -441,6 +446,8 @@ void DarcyMH::initialize() {
 		data_->field_ele_velocity.set_field(mesh_->region_db().get_region_set("ALL"), ele_velocity_ptr);
 		data_->full_solution = ele_flux_ptr->get_data_vec();
 
+        data_->flux.set_field(mesh_->region_db().get_region_set("ALL"), ele_flux_ptr);
+
 		uint p_ele_component = 0;
         auto ele_pressure_ptr = create_field_fe<3, FieldValue<3>::Scalar>(data_->dh_, p_ele_component, &data_->full_solution);
 		data_->field_ele_pressure.set_field(mesh_->region_db().get_region_set("ALL"), ele_pressure_ptr);
@@ -552,6 +559,9 @@ void DarcyMH::update_solution()
     time_->view("DARCY"); //time governor information output
 
     solve_time_step();
+
+    ele_flux_ptr->local_to_ghost_data_scatter_begin();
+    ele_flux_ptr->local_to_ghost_data_scatter_end();
 }
 
 
@@ -1492,11 +1502,6 @@ void DarcyMH::modify_system() {
     schur0->set_rhs_changed();
 
     //VecSwap(previous_solution, schur0->get_solution());
-}
-
-
-std::shared_ptr< FieldFE<3, FieldValue<3>::VectorFixed> > DarcyMH::get_velocity_field() {
-    return ele_flux_ptr;
 }
 
 

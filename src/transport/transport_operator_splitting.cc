@@ -119,6 +119,10 @@ TransportEqData::TransportEqData()
     *this += cross_section.name("cross_section")
                .flags( FieldFlag::input_copy )
                .flags_add(in_time_term & in_main_matrix & in_rhs);
+    
+    *this += flow_flux.name("flow_flux")
+               .flags( FieldFlag::input_copy )
+               .flags_add(in_time_term & in_main_matrix & in_rhs);
 
     *this += sources_density.name("sources_density")
             .description("Density of concentration sources.")
@@ -361,9 +365,9 @@ void TransportOperatorSplitting::update_solution() {
 
 
 
-void TransportOperatorSplitting::set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field)
+void TransportOperatorSplitting::set_velocity_changed()
 {
-	convection->set_velocity_field( flux_field );
+	convection->set_velocity_changed();
 }
 
 

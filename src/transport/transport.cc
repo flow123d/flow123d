@@ -900,7 +900,7 @@ double ConvectionTransport::calculate_side_flux(const DHCellSide &cell_side)
     ASSERT_EQ(cell_side.dim(), dim).error("Element dimension mismatch!");
 
     feo_.fe_values(dim).reinit(cell_side.side());
-    auto vel = velocity_field_ptr_->value(cell_side.centre(), cell_side.element());
+    auto vel = data_.flow_flux.value(cell_side.centre(), cell_side.element());
     double side_flux = arma::dot(vel, feo_.fe_values(dim).normal_vector(0)) * feo_.fe_values(dim).JxW(0);
     return side_flux;
 }

@@ -188,6 +188,7 @@ public:
 	    Field<3, FieldValue<3>::Scalar> field_ele_pressure;
 	    Field<3, FieldValue<3>::Scalar> field_ele_piezo_head;
         Field<3, FieldValue<3>::VectorFixed > field_ele_velocity;
+        Field<3, FieldValue<3>::VectorFixed > flux;
         Field<3, FieldValue<3>::Scalar> field_edge_pressure;
 
         /**
@@ -238,8 +239,6 @@ public:
     double last_t() override {
         return time_->last_t();
     }
-
-    std::shared_ptr< FieldFE<3, FieldValue<3>::VectorFixed> > get_velocity_field() override;
 
     void init_eq_data();
     void initialize() override;

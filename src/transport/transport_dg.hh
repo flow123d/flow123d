@@ -309,13 +309,11 @@ public:
     }
 
 
-
+	inline typename Model::ModelEqData &data() { return *data_; }
 
 private:
     /// Registrar of class to factory
     static const int registrar;
-
-	inline typename Model::ModelEqData &data() { return *data_; }
 
 	void preallocate();
 

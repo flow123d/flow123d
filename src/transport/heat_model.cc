@@ -113,6 +113,10 @@ HeatTransferModel::ModelEqData::ModelEqData()
             .input_default("1.0")
             .flags_add(input_copy & in_main_matrix & in_time_term);
 
+    *this += flow_flux.name("flow_flux")
+               .flags( FieldFlag::input_copy )
+               .flags_add(in_time_term & in_main_matrix & in_rhs);
+
     *this+=fluid_density
             .name("fluid_density")
             .description("Density of fluid.")

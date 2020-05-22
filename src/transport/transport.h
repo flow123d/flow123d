@@ -215,8 +215,8 @@ public:
      */
     virtual void output_data() override;
 
-    inline void set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field) override
-    { velocity_field_ptr_ = flux_field; changed_ = true; }
+    inline void set_velocity_changed() override
+    { changed_ = true; }
 
     void set_output_stream(std::shared_ptr<OutputTime> stream) override
     { output_stream_ = stream; }
@@ -378,9 +378,6 @@ private:
 
 	/// List of indices used to call balance methods for a set of quantities.
 	vector<unsigned int> subst_idx;
-
-	/// Pointer to velocity field given from Flow equation.
-	std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> velocity_field_ptr_;
 
 	/// Indicator of change in velocity field.
 	bool changed_;

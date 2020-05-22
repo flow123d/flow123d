@@ -294,6 +294,8 @@ void DarcyLMH::initialize() {
 		data_->field_ele_velocity.set_field(mesh_->region_db().get_region_set("ALL"), ele_velocity_ptr);
 		data_->full_solution = ele_flux_ptr->get_data_vec();
 
+        data_->flux.set_field(mesh_->region_db().get_region_set("ALL"), ele_flux_ptr);
+
 		uint p_ele_component = 0;
         auto ele_pressure_ptr = create_field_fe<3, FieldValue<3>::Scalar>(data_->dh_, p_ele_component, &data_->full_solution);
 		data_->field_ele_pressure.set_field(mesh_->region_db().get_region_set("ALL"), ele_pressure_ptr);
@@ -484,6 +486,9 @@ void DarcyLMH::update_solution()
     time_->view("DARCY"); //time governor information output
 
     solve_time_step();
+    
+    ele_flux_ptr->local_to_ghost_data_scatter_begin();
+    ele_flux_ptr->local_to_ghost_data_scatter_end();
 }
 
 void DarcyLMH::solve_time_step(bool output)
@@ -1298,11 +1303,6 @@ DarcyLMH::~DarcyLMH() {
     if(time_ != nullptr)
         delete time_;
     
-}
-
-
-std::shared_ptr< FieldFE<3, FieldValue<3>::VectorFixed> > DarcyLMH::get_velocity_field() {
-    return ele_flux_ptr;
 }
 
 

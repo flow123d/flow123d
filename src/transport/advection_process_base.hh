@@ -34,7 +34,7 @@ public:
      *
      * TODO: We should pass whole velocity field object (description of base functions and dof numbering) and vector.
      */
-    virtual void set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field) = 0;
+    virtual void set_velocity_changed() = 0;
 
     /// Common specification of the input record for secondary equations.
     static Input::Type::Abstract & get_input_type() {

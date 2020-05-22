@@ -61,7 +61,7 @@ template <int spacedim> class ElementAccessor;
 //      *
 //      * TODO: We should pass whole velocity field object (description of base functions and dof numbering) and vector.
 //      */
-//     virtual void set_velocity_field(const MH_DofHandler &dh) = 0;
+//     virtual void set_velocity_changed() = 0;
 
 //     /// Common specification of the input record for secondary equations.
 //     static Input::Type::Abstract & get_input_type() {
@@ -86,7 +86,7 @@ public:
     inline virtual ~HeatNothing()
     {}
 
-    inline void set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field) override {};
+    inline void set_velocity_changed() override {};
 
     inline virtual void output_data() override {};
 
@@ -120,6 +120,8 @@ public:
 		Field<3, FieldValue<3>::Scalar> porosity;
 		/// Water content passed from Darcy flow model
 		Field<3, FieldValue<3>::Scalar> water_content;
+		/// Flow flux, can be result of water flow model.
+    	Field<3, FieldValue<3>::VectorFixed> flow_flux;
 		/// Density of fluid.
 		Field<3, FieldValue<3>::Scalar> fluid_density;
 		/// Heat capacity of fluid.
@@ -227,9 +229,8 @@ public:
          *
 	 * (So far it does not work since the flow module returns a vector of zeros.)
 	 */
-	inline void set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field) override
+	inline void set_velocity_changed() override
 	{
-		velocity_field_ptr_ = flux_field;
 		flux_changed = true;
 	}
 
@@ -244,16 +245,12 @@ public:
     const vector<unsigned int> &get_subst_idx()
 	{ return subst_idx; }
 
-    std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> velocity_field_ptr() const {
-        return this->velocity_field_ptr_;
-    }
-
-
-protected:
 
 	/// Derived class should implement getter for ModelEqData instance.
 	virtual ModelEqData &data() = 0;
 
+protected:
+	
 	/**
 	 * Create input type that can be passed to the derived class.
 	 * @param implementation String characterizing the numerical method, e.g. DG, FEM, FVM.
@@ -279,11 +276,6 @@ protected:
 	vector<unsigned int> subst_idx;
 
 	std::shared_ptr<OutputTime> output_stream_;
-
-	/// Pointer to velocity field given from Flow equation.
-	std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> velocity_field_ptr_;
-
-
 };
 
 
