@@ -245,9 +245,6 @@ private:
     /// Index of component (of vector_value/tensor_value)
     unsigned int comp_index_;
 
-    /// Number of DOfs of al dimensions (temporary solution used for mixed system)
-    std::array<int, 4> mixed_n_dofs_;
-
     /// Registrar of class to factory
     static const int registrar;
 };
