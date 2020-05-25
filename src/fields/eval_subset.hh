@@ -209,18 +209,68 @@ private:
 };
 
 
+
+/**
+ * @brief Base point accessor class.
+ */
+class PointBase {
+public:
+    /// Default constructor
+	PointBase()
+    : local_point_idx_(0), elm_cache_map_(nullptr) {}
+
+    /// Constructor
+	PointBase(const ElementCacheMap *elm_cache_map, unsigned int loc_point_idx)
+    : local_point_idx_(loc_point_idx), elm_cache_map_(elm_cache_map) {}
+
+    /// Getter of EvalPoints object.
+	virtual std::shared_ptr<EvalPoints> eval_points() const =0;
+
+	// Getter of ElementCacheMap object.
+    inline const ElementCacheMap *elm_cache_map() const {
+        return elm_cache_map_;
+    }
+
+    /// Local coordinates within element
+    template<unsigned int dim>
+    inline arma::vec::fixed<dim> loc_coords() const {
+        return this->eval_points()->local_point<dim>( this->eval_point_idx() );
+    }
+
+    // Global coordinates within element
+    //arma::vec3 coords() const;
+
+    /// Return index in EvalPoints object
+    virtual unsigned int eval_point_idx() const =0;
+
+    /// Return index of element in data cache.
+    virtual unsigned int element_cache_index() const =0;
+
+    /// Iterates to next point.
+    void inc() {
+    	local_point_idx_++;
+    }
+
+protected:
+    /// Index of the local point in the composed quadrature.
+    unsigned int local_point_idx_;
+    /// Pointer ElementCacheMap needed for point evaluation.
+    const ElementCacheMap* elm_cache_map_;
+};
+
+
 /**
  * @brief Point accessor allow iterate over bulk quadrature points defined in local element coordinates.
  */
-class BulkPoint {
+class BulkPoint : public PointBase {
 public:
     /// Default constructor
 	BulkPoint()
-    : local_point_idx_(0) {}
+    : PointBase() {}
 
     /// Constructor
-	BulkPoint(DHCellAccessor dh_cell, const ElementCacheMap *elm_cache_map, std::shared_ptr<const BulkIntegral> bulk_integral, unsigned int loc_point_idx)
-    : dh_cell_(dh_cell), integral_(bulk_integral), local_point_idx_(loc_point_idx), elm_cache_map_(elm_cache_map) {}
+	BulkPoint(DHCellAccessor dh_cell, const ElementCacheMap *elm_cache_map, std::shared_ptr<const BulkIntegral> bulk_integral, unsigned int local_point_idx)
+    : PointBase(elm_cache_map, local_point_idx), dh_cell_(dh_cell), integral_(bulk_integral) {}
 
     /// Getter of BulkIntegral
     std::shared_ptr<const BulkIntegral> integral() const {
@@ -228,21 +278,12 @@ public:
     }
 
     /// Getter of EvalPoints
-    std::shared_ptr<EvalPoints> eval_points() const {
+    std::shared_ptr<EvalPoints> eval_points() const override {
         return integral_->eval_points();
     }
 
-    /// Local coordinates within element
-    template<unsigned int dim>
-    inline arma::vec::fixed<dim> loc_coords() const {
-        return this->eval_points()->local_point<dim>( local_point_idx_ );
-    }
-
-    // Global coordinates within element
-    //arma::vec3 coords() const;
-
     /// Return index of element in data cache.
-    unsigned int element_cache_index() const {
+    unsigned int element_cache_index() const override {
         return dh_cell_.element_cache_index();
     }
 
@@ -251,19 +292,9 @@ public:
         return dh_cell_;
     }
 
-    // Index of permutation
-    inline const ElementCacheMap *elm_cache_map() const {
-        return elm_cache_map_;
-    }
-
     /// Return index in EvalPoints object
-    unsigned int eval_point_idx() const {
+    unsigned int eval_point_idx() const override {
         return local_point_idx_;
-    }
-
-    /// Iterates to next point.
-    void inc() {
-    	local_point_idx_++;
     }
 
     /// Comparison of accessors.
@@ -276,26 +307,22 @@ private:
     DHCellAccessor dh_cell_;
     /// Pointer to bulk integral.
     std::shared_ptr<const BulkIntegral> integral_;
-    /// Index of the local point in bulk point set.
-    unsigned int local_point_idx_;
-    /// Pointer ElementCacheMap needed for point evaluation.
-    const ElementCacheMap* elm_cache_map_;
 };
 
 
 /**
  * @brief Point accessor allow iterate over quadrature points of given side defined in local element coordinates.
  */
-class EdgePoint {
+class EdgePoint : public PointBase {
 public:
     /// Default constructor
 	EdgePoint()
-    : local_point_idx_(0), elm_cache_map_(nullptr) {}
+    : PointBase() {}
 
     /// Constructor
 	EdgePoint(DHCellSide cell_side, const ElementCacheMap *elm_cache_map, std::shared_ptr<const EdgeIntegral> edge_integral, unsigned int local_point_idx)
-    : cell_side_(cell_side), integral_(edge_integral), local_point_idx_(local_point_idx),
-	  permutation_idx_( cell_side.element()->permutation_idx( cell_side_.side_idx() ) ), elm_cache_map_(elm_cache_map) {}
+    : PointBase(elm_cache_map, local_point_idx), cell_side_(cell_side), integral_(edge_integral),
+	  permutation_idx_( cell_side.element()->permutation_idx( cell_side_.side_idx() ) ) {}
 
     /// Getter of EdgeIntegral
     std::shared_ptr<const EdgeIntegral> integral() const {
@@ -303,21 +330,12 @@ public:
     }
 
     /// Getter of evaluation points
-    std::shared_ptr<EvalPoints> eval_points() const {
+    std::shared_ptr<EvalPoints> eval_points() const override {
         return integral_->eval_points();
     }
 
-    // Local coordinates within element
-    template<unsigned int dim>
-    inline arma::vec::fixed<dim> loc_coords() const {
-        return this->eval_points()->local_point<dim>( this->eval_point_idx() );
-    }
-
-    // Global coordinates within element
-    //arma::vec3 coords() const;
-
     /// Return index of element in data cache.
-    unsigned int element_cache_index() const {
+    unsigned int element_cache_index() const override {
         return cell_side_.cell().element_cache_index();
     }
 
@@ -331,23 +349,13 @@ public:
         return permutation_idx_;
     }
 
-    // Index of permutation
-    inline const ElementCacheMap *elm_cache_map() const {
-        return elm_cache_map_;
-    }
-
     /// Return index in EvalPoints object
-    unsigned int eval_point_idx() const {
+    unsigned int eval_point_idx() const override {
         return integral_->perm_idx_ptr(cell_side_.side_idx(), permutation_idx_, local_point_idx_);
     }
 
     /// Return corresponds EdgePoint of neighbour side of same dimension (computing of side integrals).
     EdgePoint point_on(DHCellSide edg_side) const;
-
-    /// Iterates to next point.
-    void inc() {
-    	local_point_idx_++;
-    }
 
     /// Comparison of accessors.
     bool operator==(const EdgePoint& other) {
@@ -359,12 +367,8 @@ private:
     DHCellSide cell_side_;
     /// Pointer to edge point set
     std::shared_ptr<const EdgeIntegral> integral_;
-    /// Index of the local point in the composed quadrature.
-    unsigned int local_point_idx_;
     /// Permutation index corresponding with DHCellSide
     unsigned int permutation_idx_;
-    /// Pointer ElementCacheMap needed for point evaluation.
-    const ElementCacheMap* elm_cache_map_;
 };
 
 
