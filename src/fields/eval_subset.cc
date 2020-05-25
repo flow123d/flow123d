@@ -134,6 +134,6 @@ Range< EdgePoint > BoundaryIntegral::points(const DHCellSide &cell_side, const E
  * Implementation of EdgePoint methods
  */
 
-EdgePoint EdgePoint::permute(DHCellSide edg_side) const {
+EdgePoint EdgePoint::point_on(DHCellSide edg_side) const {
     return EdgePoint(edg_side, elm_cache_map_, this->integral_, this->local_point_idx_);
 }

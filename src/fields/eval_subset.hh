@@ -342,7 +342,7 @@ public:
     }
 
     /// Return corresponds EdgePoint of neighbour side of same dimension (computing of side integrals).
-    EdgePoint permute(DHCellSide edg_side) const;
+    EdgePoint point_on(DHCellSide edg_side) const;
 
     /// Iterates to next point.
     void inc() {

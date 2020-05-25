@@ -914,12 +914,11 @@ public:
                         delta[0] += dot(data_->dif_coef_edg[s1][sbi][k]*normal_vector,normal_vector);
                         delta[1] += dot(data_->dif_coef_edg[s2][sbi][k]*normal_vector,normal_vector);
                     } // */
-                    auto p2 = *( data_->stiffness_assembly_->edge_integral(dim)->points(edge_side2, &(data_->stiffness_assembly_->cache_map())).begin() );
                     for (auto p1 : data_->stiffness_assembly_->edge_integral(dim)->points(edge_side1, &(data_->stiffness_assembly_->cache_map())) )
                     {
+                        auto p2 = p1.point_on(edge_side1);
                         delta[0] += dot(data_->diffusion_coef[sbi](p1)*normal_vector,normal_vector);
                         delta[1] += dot(data_->diffusion_coef[sbi](p2)*normal_vector,normal_vector);
-                        p2.inc();
                     }
                     delta[0] /= qsize_lower_dim_;
                     delta[1] /= qsize_lower_dim_;
@@ -960,10 +959,10 @@ public:
                                     local_matrix_[i*fe_values_vec_[sd[m]].n_dofs()+j] = 0;
 
                             k=0;
-                            auto p2 = *( data_->stiffness_assembly_->edge_integral(dim)->points(edge_side2, &(data_->stiffness_assembly_->cache_map())).begin() );
                             for (auto p1 : data_->stiffness_assembly_->edge_integral(dim)->points(edge_side1, &(data_->stiffness_assembly_->cache_map())) )
                             //for (unsigned int k=0; k<qsize_lower_dim_; k++)
                             {
+                                auto p2 = p1.point_on(edge_side1);
                                 double flux_times_JxW = transport_flux*fe_values_vec_[0].JxW(k);
                                 double gamma_times_JxW = gamma_l*fe_values_vec_[0].JxW(k);
 

@@ -221,7 +221,7 @@ TEST_F(FieldEvalFETest, evaluate) {
                     EXPECT_EQ(expected_scalar[cache_cell.elm_idx()], data_->scalar_field(side_p));
                     EXPECT_ARMA_EQ(expected_vector[i], data_->vector_field(side_p));
                     EXPECT_ARMA_EQ(expected_tensor[i], data_->tensor_field(side_p));
-                    EdgePoint ngh_p = side_p.permute(el_ngh_side);
+                    EdgePoint ngh_p = side_p.point_on(el_ngh_side);
                     EXPECT_EQ(expected_scalar[el_ngh_side.cell().elm_idx()], data_->scalar_field(ngh_p));
         	        //loc_mat += cross_section(side_p) * sigma(side_p) *
         		    //    (conc.base_value(side_p) * velocity(side_p)
