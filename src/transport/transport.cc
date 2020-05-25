@@ -203,11 +203,10 @@ void ConvectionTransport::initialize()
 	for (unsigned int sbi=0; sbi<n_substances(); sbi++)
 	{
 		// create shared pointer to a FieldFE and push this Field to output_field on all regions
-		output_field_ptr[sbi] = std::make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
-		output_field_ptr[sbi]->set_fe_data(dh_ );
-		data_.conc_mobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr[sbi], 0);
-		vconc[sbi] = output_field_ptr[sbi]->get_data_vec().petsc_vec();
-		conc[sbi] = &(output_field_ptr[sbi]->get_data_vec().data()[0]);
+        auto output_field_ptr = create_field_fe< 3, FieldValue<3>::Scalar >(dh_);
+		data_.conc_mobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
+		vconc[sbi] = output_field_ptr->get_data_vec().petsc_vec();
+		conc[sbi] = &(output_field_ptr->get_data_vec().data()[0]);
 	}
 	//output_stream_->add_admissible_field_names(input_rec.val<Input::Array>("output_fields"));
     //output_stream_->mark_output_times(*time_);
@@ -305,7 +304,7 @@ void ConvectionTransport::set_initial_condition()
 		ElementAccessor<3> ele_acc = mesh_->element_accessor( dh_cell.elm_idx() );
 
 		for (unsigned int sbi=0; sbi<n_substances(); sbi++) // Optimize: SWAP LOOPS
-			output_field_ptr[sbi]->get_data_vec().data()[index] = data_.init_conc[sbi].value(ele_acc.centre(), ele_acc);
+			conc[sbi][index] = data_.init_conc[sbi].value(ele_acc.centre(), ele_acc);
 	}
 }
 
@@ -328,13 +327,6 @@ void ConvectionTransport::alloc_transport_vectors() {
 
     conc = new double*[n_subst];
     vconc = new Vec[n_subst];
-    out_conc.clear();
-    out_conc.resize(n_subst);
-    output_field_ptr.clear();
-    output_field_ptr.resize(n_subst);
-    for (sbi = 0; sbi < n_subst; sbi++) {
-        out_conc[sbi].resize( el_ds->size() );
-    }
     
     cfl_flow_ = new double[el_ds->lsize()];
     cfl_source_ = new double[el_ds->lsize()];
@@ -375,7 +367,6 @@ void ConvectionTransport::alloc_transport_structs_mpi() {
                 tm_diag[sbi],&v_tm_diag[sbi]);
 
         VecZeroEntries(vcumulative_corr[sbi]);
-        VecZeroEntries(out_conc[sbi].petsc_vec());
     }
 
 

@@ -44,7 +44,6 @@
 #include <armadillo>
 #include "fields/bc_field.hh"                   // for BCField
 #include "fields/field.hh"                      // for Field
-#include "fields/field_fe.hh"                      // for FieldFE
 #include "fields/field_set.hh"                  // for FieldSet
 #include "fields/field_values.hh"               // for FieldValue<>::Scalar
 #include "flow/darcy_flow_interface.hh"         // for DarcyFlowInterface
