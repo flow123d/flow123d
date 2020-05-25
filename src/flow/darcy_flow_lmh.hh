@@ -181,10 +181,6 @@ public:
     static const Input::Type::Record & type_field_descriptor();
     static const Input::Type::Record & get_input_type();
 
-    double last_t() override {
-        return time_->last_t();
-    }
-
     void init_eq_data();
     void initialize() override;
     virtual void initialize_specific();
