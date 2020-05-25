@@ -252,8 +252,7 @@ IT::Selection HeatTransferModel::ModelEqData::get_output_selection()
 
 
 HeatTransferModel::HeatTransferModel(Mesh &mesh, const Input::Record in_rec) :
-		AdvectionProcessBase(mesh, in_rec),
-		flux_changed(true)
+		AdvectionProcessBase(mesh, in_rec)
 {
 	time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
 	ASSERT( time_->is_default() == false ).error("Missing key 'time' in Heat_AdvectionDiffusion_DG.");

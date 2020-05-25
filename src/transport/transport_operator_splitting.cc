@@ -360,16 +360,3 @@ void TransportOperatorSplitting::update_solution() {
 
     LogOut().fmt("CONVECTION: steps: {}\n", steps);
 }
-
-
-
-
-
-void TransportOperatorSplitting::set_velocity_changed()
-{
-	convection->set_velocity_changed();
-}
-
-
-
-

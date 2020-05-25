@@ -175,8 +175,9 @@ void HC_ExplicitSequential::advection_process_step(AdvectionData &pdata)
         // for simplicity we use only last velocity field
         if (pdata.velocity_changed) {
             //DBGMSG("velocity update\n");
-            pdata.process->data()["flow_flux"].copy_from(water->data()["flux"]);
-            pdata.process->set_velocity_changed();
+            auto& flux = pdata.process->data()["flow_flux"];
+            flux.copy_from(water->data()["flux"]);
+            flux.set_time_result_changed();
             pdata.velocity_changed = false;
         }
         if (pdata.process->time().tlevel() == 0) pdata.process->zero_time_step();

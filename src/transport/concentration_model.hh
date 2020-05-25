@@ -150,20 +150,6 @@ public:
 
 	~ConcentrationTransportModel() override;
 
-
-	/**
-	 * @brief Updates the velocity field which determines some coefficients of the transport equation.
-	 *
-         * @param dh mixed hybrid dof handler
-         *
-	 * (So far it does not work since the flow module returns a vector of zeros.)
-	 * @param velocity_vector Input array of velocity values.
-	 */
-	inline void set_velocity_changed() override
-	{
-		flux_changed = true;
-	}
-
     /// Returns number of transported substances.
     inline unsigned int n_substances() override
     { return substances_.size(); }
@@ -221,9 +207,6 @@ protected:
 			double porosity,
 			double cross_cut,
 			arma::mat33 &K);
-
-	/// Indicator of change in advection vector field.
-	bool flux_changed;
 
     /// Transported substances.
     SubstanceList substances_;

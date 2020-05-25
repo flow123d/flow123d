@@ -27,6 +27,7 @@
 #include <memory>                                     // for shared_ptr
 #include <vector>                                     // for vector
 #include <petscmat.h>
+#include "fem/fe_values.hh"                           // for FEValues
 #include "fields/field.hh"                            // for Field
 #include "fields/bc_multi_field.hh"
 #include "fields/field_values.hh"
@@ -214,9 +215,6 @@ public:
      */
     virtual void output_data() override;
 
-    inline void set_velocity_changed() override
-    { changed_ = true; }
-
     void set_output_stream(std::shared_ptr<OutputTime> stream) override
     { output_stream_ = stream; }
 
@@ -370,9 +368,6 @@ private:
 
 	/// List of indices used to call balance methods for a set of quantities.
 	vector<unsigned int> subst_idx;
-
-	/// Indicator of change in velocity field.
-	bool changed_;
 
 	/// Finite element objects
 	FETransportObjects feo_;

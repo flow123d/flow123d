@@ -124,9 +124,6 @@ public:
 	/// Return global array of order of elements within parallel vector.
 	virtual LongIdx *get_row_4_el() = 0;
 
-	/// Pass velocity from flow to transport.
-    virtual void set_velocity_changed() = 0;
-
     /// Returns number of trnasported substances.
     virtual unsigned int n_substances() = 0;
 
@@ -193,8 +190,6 @@ public:
         if(time_) delete time_;
     }
 
-    inline void set_velocity_changed() override {};
-
     inline virtual void output_data() override {};
 
 
@@ -230,8 +225,6 @@ public:
     TransportOperatorSplitting(Mesh &init_mesh, const Input::Record in_rec);
     /// Destructor.
     virtual ~TransportOperatorSplitting();
-
-    virtual void set_velocity_changed() override;
 
     void initialize() override;
     void zero_time_step() override;

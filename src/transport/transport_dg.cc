@@ -505,7 +505,7 @@ void TransportDG<Model>::update_solution()
     // assemble stiffness matrix
     if (stiffness_matrix[0] == NULL
             || data_->subset(FieldFlag::in_main_matrix).changed()
-            || Model::flux_changed)
+            || data_->flow_flux.changed())
     {
         // new fluxes can change the location of Neumann boundary,
         // thus stiffness matrix must be reassembled
@@ -531,7 +531,7 @@ void TransportDG<Model>::update_solution()
     // assemble right hand side (due to sources and boundary conditions)
     if (rhs[0] == NULL
             || data_->subset(FieldFlag::in_rhs).changed()
-            || Model::flux_changed)
+            || data_->flow_flux.changed())
     {
         for (unsigned int i=0; i<Model::n_substances(); i++)
         {
@@ -552,8 +552,6 @@ void TransportDG<Model>::update_solution()
             VecCopy(*( data_->ls[i]->get_rhs() ), rhs[i]);
         }
     }
-    
-    Model::flux_changed = false;
 
 
     /* Apply backward Euler time integration.
