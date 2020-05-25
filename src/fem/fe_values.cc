@@ -120,7 +120,7 @@ void FEValues<spacedim>::ViewsCache::initialize(const FEValues<spacedim> &fv, co
 
 template<unsigned int spacedim>
 FEValues<spacedim>::FEValues()
-: dim_(-1), n_points_(0), n_dofs_(0), elm_values(nullptr), fe_data(nullptr)
+: dim_(-1), n_points_(0), n_dofs_(0)
 {
 }
 
@@ -128,11 +128,52 @@ FEValues<spacedim>::FEValues()
 
 template<unsigned int spacedim>
 FEValues<spacedim>::~FEValues() {
-    if (elm_values != nullptr) delete elm_values;
-    if (fe_data) delete fe_data;
-    for (unsigned int sid=0; sid<side_fe_data.size(); sid++)
-        for (unsigned int pid=0; pid<side_fe_data[sid].size(); pid++)
-            delete side_fe_data[sid][pid];
+}
+
+
+template<unsigned int spacedim>
+template<unsigned int DIM>
+void FEValues<spacedim>::initialize(
+         Quadrature &q,
+         FiniteElement<DIM> &_fe,
+         UpdateFlags _flags)
+{
+    if (DIM == 0) return; // avoid unnecessary allocation of dummy 0 dimensional objects
+
+    allocate( q.size(), _fe, _flags);
+    elm_values = std::make_shared<ElementValues<spacedim> >(q, update_flags, DIM);
+
+    // In case of mixed system allocate data for sub-elements.
+    if (fe_type_ == FEMixedSystem)
+    {
+        FESystem<DIM> *fe = dynamic_cast<FESystem<DIM>*>(&_fe);
+        ASSERT_DBG(fe != nullptr).error("Mixed system must be represented by FESystem.");
+        
+        fe_values_vec.resize(fe->fe().size());
+        for (unsigned int f=0; f<fe->fe().size(); f++)
+            fe_values_vec[f].initialize(q, *fe->fe()[f], update_flags);
+    }
+
+    // precompute finite element data
+    if ( q.dim() == DIM )
+    {
+        fe_data = init_fe_data(_fe, q);
+    }
+    else if ( q.dim() + 1 == DIM )
+    {
+        side_fe_data.resize(RefElement<DIM>::n_sides);
+        for (unsigned int sid = 0; sid < RefElement<DIM>::n_sides; sid++)
+        {
+            side_fe_data[sid].resize(RefElement<DIM>::n_side_permutations);
+
+            // For each side transform the side quadrature points to the cell quadrature points
+            // and then precompute side_fe_data.
+            for (unsigned int pid = 0; pid < RefElement<DIM>::n_side_permutations; pid++)
+                side_fe_data[sid][pid] = init_fe_data(_fe, q.make_from_side<DIM>(sid,pid));
+        }
+    }
+    else
+        ASSERT_DBG(false)(q.dim())(DIM).error("Dimension mismatch in FEValues::initialize().");
 }
 
 
@@ -151,6 +192,10 @@ void FEValues<spacedim>::allocate(
     } else if (_fe.type_ == FETensor) {
         ASSERT_DBG(_fe.n_components() == spacedim*spacedim).error("FETensor must have spacedim*spacedim components.");
     }
+
+    fe_sys_dofs_.clear();
+    fe_sys_n_components_.clear();
+    fe_sys_n_space_components_.clear();
     
     dim_ = DIM;
     n_points_ = n_points;
@@ -184,11 +229,11 @@ void FEValues<spacedim>::allocate(
 
 template<unsigned int spacedim>
 template<unsigned int DIM>
-typename FEValues<spacedim>::FEInternalData *FEValues<spacedim>::init_fe_data(const FiniteElement<DIM> &fe, const Quadrature &q)
+std::shared_ptr<typename FEValues<spacedim>::FEInternalData> FEValues<spacedim>::init_fe_data(const FiniteElement<DIM> &fe, const Quadrature &q)
 {
     ASSERT_DBG( DIM == dim_ );
     ASSERT_DBG( q.dim() == DIM );
-    FEInternalData *data = new FEInternalData(q.size(), n_dofs_);
+    std::shared_ptr<FEInternalData> data = std::make_shared<FEInternalData>(q.size(), n_dofs_);
 
     arma::mat shape_values(n_dofs_, fe.n_components());
     for (unsigned int i=0; i<q.size(); i++)
@@ -494,56 +539,6 @@ void FEValues<spacedim>::fill_data(const ElementValues<spacedim> &elm_values, co
 }
 
 
-
-
-
-
-
-
-template<unsigned int spacedim>
-template<unsigned int DIM>
-void FEValues<spacedim>::initialize(
-         Quadrature &q,
-         FiniteElement<DIM> &_fe,
-         UpdateFlags _flags)
-{
-    if (DIM == 0) return; // avoid unnecessary allocation of dummy 0 dimensional objects
-
-    allocate( q.size(), _fe, _flags);
-    elm_values = new ElementValues<spacedim>(q, update_flags, DIM);
-
-    // In case of mixed system allocate data for sub-elements.
-    if (fe_type_ == FEMixedSystem)
-    {
-        FESystem<DIM> *fe = dynamic_cast<FESystem<DIM>*>(&_fe);
-        ASSERT_DBG(fe != nullptr).error("Mixed system must be represented by FESystem.");
-        
-        fe_values_vec.resize(fe->fe().size());
-        for (unsigned int f=0; f<fe->fe().size(); f++)
-            fe_values_vec[f].initialize(q, *fe->fe()[f], update_flags);
-    }
-
-    // precompute finite element data
-    if ( q.dim() == DIM )
-    {
-        fe_data = init_fe_data(_fe, q);
-    }
-    else if ( q.dim() + 1 == DIM )
-    {
-        side_fe_data.resize(RefElement<DIM>::n_sides);
-        for (unsigned int sid = 0; sid < RefElement<DIM>::n_sides; sid++)
-        {
-            side_fe_data[sid].resize(RefElement<DIM>::n_side_permutations);
-
-            // For each side transform the side quadrature points to the cell quadrature points
-            // and then precompute side_fe_data.
-            for (unsigned int pid = 0; pid < RefElement<DIM>::n_side_permutations; pid++)
-                side_fe_data[sid][pid] = init_fe_data(_fe, q.make_from_side<DIM>(sid,pid));
-        }
-    }
-    else
-        ASSERT_DBG(false)(q.dim())(DIM).error("Dimension mismatch in FEValues::initialize().");
-}
 
 
 
