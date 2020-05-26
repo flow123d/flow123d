@@ -30,6 +30,7 @@
 class Side;
 class BulkPoint;
 class EdgePoint;
+class CouplingPoint;
 
 
 /**
@@ -168,17 +169,15 @@ public:
         return bulk_integral_->get_subset_idx();
     }
 
-    /// Returns range of bulk local points for appropriate cell accessor
-    Range< BulkPoint > points(const DHCellAccessor &cell, const ElementCacheMap *elm_cache_map) const;
-
     /// Returns range of side local points for appropriate cell side accessor
-    Range< EdgePoint > points(const DHCellSide &cell_side, const ElementCacheMap *elm_cache_map) const;
-
+    Range< CouplingPoint > points(const DHCellSide &cell_side, const ElementCacheMap *elm_cache_map) const;
 private:
     /// Integral according to side subset part (element of higher dim) in EvalPoints object.
     std::shared_ptr<EdgeIntegral> edge_integral_;
     /// Integral according to bulk subset part (element of lower dim) in EvalPoints object.
     std::shared_ptr<BulkIntegral> bulk_integral_;
+
+    friend class CouplingPoint;
 };
 
 /**
@@ -391,5 +390,45 @@ private:
 };
 
 
+/**
+ * @brief Point accessor allow iterate over quadrature points of given side defined in local element coordinates.
+ */
+class CouplingPoint : public SidePoint {
+public:
+    /// Default constructor
+	CouplingPoint()
+    : SidePoint() {}
+
+    /// Constructor
+	CouplingPoint(DHCellSide cell_side, const ElementCacheMap *elm_cache_map, std::shared_ptr<const CouplingIntegral> coupling_integral, unsigned int local_point_idx)
+    : SidePoint(cell_side, elm_cache_map, local_point_idx), integral_(coupling_integral) {}
+
+    /// Getter of EdgeIntegral
+    std::shared_ptr<const CouplingIntegral> integral() const {
+        return integral_;
+    }
+
+    /// Getter of evaluation points
+    std::shared_ptr<EvalPoints> eval_points() const override {
+        return integral_->eval_points();
+    }
+
+    /// Return index in EvalPoints object
+    unsigned int eval_point_idx() const override {
+        return integral_->edge_integral_->perm_idx_ptr(cell_side_.side_idx(), permutation_idx_, local_point_idx_);
+    }
+
+    /// Return corresponds EdgePoint of neighbour side of same dimension (computing of side integrals).
+    BulkPoint lower_dim(DHCellAccessor cell_lower) const;
+
+    /// Comparison of accessors.
+    bool operator==(const CouplingPoint& other) {
+    	return (cell_side_ == other.cell_side_) && (local_point_idx_ == other.local_point_idx_);
+    }
+
+private:
+    /// Pointer to edge point set
+    std::shared_ptr<const CouplingIntegral> integral_;
+};
 
 #endif /* EVAL_SUBSET_HH_ */

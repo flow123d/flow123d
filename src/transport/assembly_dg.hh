@@ -1056,10 +1056,10 @@ public:
 
             // set transmission conditions
             k=0;
-            auto p_high = *( data_->stiffness_assembly_->coupling_integral(dim)->points(neighb_side, &(data_->stiffness_assembly_->cache_map())).begin() );
-            for (auto p_low : data_->stiffness_assembly_->coupling_integral(dim)->points(cell_lower_dim, &(data_->stiffness_assembly_->cache_map())) )
+            for (auto p_high : data_->stiffness_assembly_->coupling_integral(dim)->points(neighb_side, &(data_->stiffness_assembly_->cache_map())) )
             //for (unsigned int k=0; k<qsize_lower_dim_; k++)
             {
+                auto p_low = p_high.lower_dim(cell_lower_dim);
                 // The communication flux has two parts:
                 // - "diffusive" term containing sigma
                 // - "advective" term representing usual upwind
@@ -1090,7 +1090,6 @@ public:
                                 local_matrix_[(i+n*n_dofs[0])*(n_dofs[0]+n_dofs[1]) + m*n_dofs[0] + j] +=
                                         comm_flux[m][n]*fv_sb_[m]->shape_value(j,k)*fv_sb_[n]->shape_value(i,k);
                 }
-                p_high.inc();
                 k++;
             }
             data_->ls[sbi]->mat_set_values(n_dofs[0]+n_dofs[1], &(side_dof_indices_vb_[0]), n_dofs[0]+n_dofs[1], &(side_dof_indices_vb_[0]), &(local_matrix_[0]));

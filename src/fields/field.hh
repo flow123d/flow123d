@@ -55,7 +55,7 @@ class Mesh;
 class Observe;
 class EvalPoints;
 class BulkPoint;
-class EdgePoint;
+class SidePoint;
 template <int spacedim> class ElementAccessor;
 template <int spacedim, class Value> class FieldFE;
 namespace detail
@@ -173,7 +173,7 @@ public:
     typename Value::return_type operator() (BulkPoint &p);
 
 
-    typename Value::return_type operator() (EdgePoint &p);
+    typename Value::return_type operator() (SidePoint &p);
 
 
     /**
