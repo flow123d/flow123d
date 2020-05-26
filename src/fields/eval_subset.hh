@@ -311,28 +311,20 @@ private:
 
 
 /**
- * @brief Point accessor allow iterate over quadrature points of given side defined in local element coordinates.
+ * @brief General point accessor allow iterate over quadrature points of given side defined in local element coordinates.
+ *
+ * Common ancestor of all side points classes (Edge-, Coupling-, BoundaryPoint)
  */
-class EdgePoint : public PointBase {
+class SidePoint : public PointBase {
 public:
     /// Default constructor
-	EdgePoint()
+	SidePoint()
     : PointBase() {}
 
     /// Constructor
-	EdgePoint(DHCellSide cell_side, const ElementCacheMap *elm_cache_map, std::shared_ptr<const EdgeIntegral> edge_integral, unsigned int local_point_idx)
-    : PointBase(elm_cache_map, local_point_idx), cell_side_(cell_side), integral_(edge_integral),
+	SidePoint(DHCellSide cell_side, const ElementCacheMap *elm_cache_map, unsigned int local_point_idx)
+    : PointBase(elm_cache_map, local_point_idx), cell_side_(cell_side),
 	  permutation_idx_( cell_side.element()->permutation_idx( cell_side_.side_idx() ) ) {}
-
-    /// Getter of EdgeIntegral
-    std::shared_ptr<const EdgeIntegral> integral() const {
-        return integral_;
-    }
-
-    /// Getter of evaluation points
-    std::shared_ptr<EvalPoints> eval_points() const override {
-        return integral_->eval_points();
-    }
 
     /// Return index of element in data cache.
     unsigned int element_cache_index() const override {
@@ -349,6 +341,37 @@ public:
         return permutation_idx_;
     }
 
+protected:
+    /// DOF handler accessor of element side.
+    DHCellSide cell_side_;
+    /// Permutation index corresponding with DHCellSide
+    unsigned int permutation_idx_;
+};
+
+
+/**
+ * @brief Point accessor allow iterate over quadrature points of given side defined in local element coordinates.
+ */
+class EdgePoint : public SidePoint {
+public:
+    /// Default constructor
+	EdgePoint()
+    : SidePoint() {}
+
+    /// Constructor
+	EdgePoint(DHCellSide cell_side, const ElementCacheMap *elm_cache_map, std::shared_ptr<const EdgeIntegral> edge_integral, unsigned int local_point_idx)
+    : SidePoint(cell_side, elm_cache_map, local_point_idx), integral_(edge_integral) {}
+
+    /// Getter of EdgeIntegral
+    std::shared_ptr<const EdgeIntegral> integral() const {
+        return integral_;
+    }
+
+    /// Getter of evaluation points
+    std::shared_ptr<EvalPoints> eval_points() const override {
+        return integral_->eval_points();
+    }
+
     /// Return index in EvalPoints object
     unsigned int eval_point_idx() const override {
         return integral_->perm_idx_ptr(cell_side_.side_idx(), permutation_idx_, local_point_idx_);
@@ -363,12 +386,8 @@ public:
     }
 
 private:
-    /// DOF handler accessor of element side.
-    DHCellSide cell_side_;
-    /// Pointer to edge point set
+    /// Pointer to edge point integral
     std::shared_ptr<const EdgeIntegral> integral_;
-    /// Permutation index corresponding with DHCellSide
-    unsigned int permutation_idx_;
 };
 
 
