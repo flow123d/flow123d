@@ -104,6 +104,7 @@ RegionSetFromLabel::RegionSetFromLabel(const Input::Record &rec, Mesh *mesh)
 {
 	string new_name = rec.val<string>("name");
 	string mesh_label = rec.val<string>("mesh_label");
+	bool allow_empty = rec.val<bool>("allow_empty");
 
 	Region reg = mesh->region_db().find_label(mesh_label);
 	if ( reg.is_valid() ) {
@@ -114,7 +115,25 @@ RegionSetFromLabel::RegionSetFromLabel(const Input::Record &rec, Mesh *mesh)
 			throw;
 		}
 	} else {
-		WarningOut().fmt("Unknown region in mesh with label '%s'\n", mesh_label);
+		if(allow_empty){
+			try
+			{
+				uint new_region_id = this->get_max_region_id();
+				region_db_.add_region(new_region_id, new_name, 0, rec.address_string());
+			}
+			catch (RegionDB::ExcNonuniqueLabel &e) {
+				e << rec.ei_address();
+				throw;
+			} catch (RegionDB::ExcAddingIntoClosed &e) {
+				e << rec.ei_address();
+				throw;
+			} catch (RegionDB::ExcCantAdd &e) {
+				e << rec.ei_address();
+				throw;
+			}
+		}
+		else
+			WarningOut().fmt("Unknown region in mesh with label '{}'\n", mesh_label);
 	}
 }
 
@@ -130,6 +149,8 @@ const IT::Record & RegionSetFromLabel::get_region_input_type()
 				"New name (label) of the region. It has to be unique per single mesh.")
 		.declare_key("mesh_label", IT::String(), IT::Default::obligatory(),
 				"The original region name in the input file, e.g. a physical volume name in the GMSH format.")
+		.declare_key("allow_empty", IT::Bool(), IT::Default("false"),
+				"If true it allows to the region set to be empty (no elements).")
 		.close();
 }
 
