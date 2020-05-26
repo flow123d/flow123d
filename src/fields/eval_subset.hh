@@ -31,6 +31,7 @@ class Side;
 class BulkPoint;
 class EdgePoint;
 class CouplingPoint;
+class BoundaryPoint;
 
 
 /**
@@ -183,7 +184,7 @@ private:
 /**
  * Integral class of boundary points, allows assemblation of fluxes between sides and neighbouring boundary elements.
  */
-class BoundaryIntegral : public BaseIntegral {
+class BoundaryIntegral : public BaseIntegral, public std::enable_shared_from_this<BoundaryIntegral> {
 public:
     /// Default constructor
     BoundaryIntegral() : BaseIntegral() {}
@@ -200,11 +201,13 @@ public:
     }
 
     /// Returns range of bulk local points for appropriate cell accessor
-    Range< EdgePoint > points(const DHCellSide &cell_side, const ElementCacheMap *elm_cache_map) const;
+    Range< BoundaryPoint > points(const DHCellSide &cell_side, const ElementCacheMap *elm_cache_map) const;
 
 private:
     /// Boundary integral according to edge integral (? but need own special data members and methods ?).
     std::shared_ptr<EdgeIntegral> edge_integral_;
+
+    friend class BoundaryPoint;
 };
 
 
@@ -429,6 +432,47 @@ public:
 private:
     /// Pointer to edge point set
     std::shared_ptr<const CouplingIntegral> integral_;
+};
+
+/**
+ * @brief Point accessor allow iterate over quadrature points of given side defined in local element coordinates.
+ */
+class BoundaryPoint : public SidePoint {
+public:
+    /// Default constructor
+	BoundaryPoint()
+    : SidePoint() {}
+
+    /// Constructor
+	BoundaryPoint(DHCellSide cell_side, const ElementCacheMap *elm_cache_map, std::shared_ptr<const BoundaryIntegral> bdr_integral, unsigned int local_point_idx)
+    : SidePoint(cell_side, elm_cache_map, local_point_idx), integral_(bdr_integral) {}
+
+    /// Getter of EdgeIntegral
+    std::shared_ptr<const BoundaryIntegral> integral() const {
+        return integral_;
+    }
+
+    /// Getter of evaluation points
+    std::shared_ptr<EvalPoints> eval_points() const override {
+        return integral_->eval_points();
+    }
+
+    /// Return index in EvalPoints object
+    unsigned int eval_point_idx() const override {
+        return integral_->edge_integral_->perm_idx_ptr(cell_side_.side_idx(), permutation_idx_, local_point_idx_);
+    }
+
+    /// Return corresponds BulkPoint of boundary element.
+    //BulkBdrPoint point_bdr(ElementAccessor<3> bdr_elm) const;
+
+    /// Comparison of accessors.
+    bool operator==(const BoundaryPoint& other) {
+    	return (cell_side_ == other.cell_side_) && (local_point_idx_ == other.local_point_idx_);
+    }
+
+private:
+    /// Pointer to edge point set
+    std::shared_ptr<const BoundaryIntegral> integral_;
 };
 
 #endif /* EVAL_SUBSET_HH_ */
