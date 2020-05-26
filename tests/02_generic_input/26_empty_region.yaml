@@ -1,0 +1,65 @@
+flow123d_version: 3.1.0
+problem: !Coupling_Sequential
+  description: Operation with unknown region set .side at address /problem/solute_equation/output_stream/observe_points/0
+  mesh:
+    mesh_file: ../00_mesh/prism_11el.msh
+    regions:
+      
+      # region 'empty_region_label' will be created with no elements
+      - !From_Label
+        name: empty_region_label
+        # region not defined in the mesh
+        mesh_label: missing_region
+        allow_empty: true
+        
+      # region '.up' will be renamed to '.top'
+      - !From_Label
+        name: .top
+        # region defined in the mesh
+        mesh_label: .up
+        #allow_empty: true
+      
+      # region '.down' will be renamed to '.bottom',
+      # allowing no elements (however this region is not empty)
+      - !From_Label
+        name: .bottom
+        # region defined in the mesh
+        mesh_label: .down
+        allow_empty: true
+        
+  flow_equation: !Flow_Darcy_MH
+    nonlinear_solver:
+      linear_solver: !Petsc
+        r_tol: 1.0e-10
+        a_tol: 1.0e-10
+    n_schurs: 2
+    input_fields:
+      - region: ALL
+        conductivity: 1e-6
+        
+      # region not defined in the mesh
+      - region: empty_region_label
+        conductivity: 1e-3
+      
+      # renamed region
+      - region: [.top]
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: z
+      
+      # renamed region
+      - region: [.bottom]
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: z
+          
+      - region: [.back, .front]
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: x
+    balance: {}
+    output:
+      fields:
+        - velocity_p0
+    output_stream:
+      format: !gmsh
