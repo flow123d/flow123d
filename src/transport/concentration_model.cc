@@ -442,7 +442,7 @@ void ConcentrationTransportModel::get_bc_type(const ElementAccessor<3> &ele_acc,
 }
 
 
-void ConcentrationTransportModel::get_flux_bc_data(unsigned int index,
+/*void ConcentrationTransportModel::get_flux_bc_data(unsigned int index,
         const Armor::array &point_list,
 		const ElementAccessor<3> &ele_acc,
 		std::vector< double > &bc_flux,
@@ -455,7 +455,7 @@ void ConcentrationTransportModel::get_flux_bc_data(unsigned int index,
 	
 	// Change sign in bc_flux since internally we work with outgoing fluxes.
 	for (auto f : bc_flux) f = -f;
-}
+}*/
 
 void ConcentrationTransportModel::get_flux_bc_sigma(unsigned int index,
         const Armor::array &point_list,

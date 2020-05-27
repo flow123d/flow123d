@@ -113,12 +113,12 @@ public:
 	 * @param bc_sigma     Transition parameter (output).
 	 * @param bc_ref_value Reference value (output).
 	 */
-	virtual void get_flux_bc_data(unsigned int index,
-            const Armor::array &point_list,
-			const ElementAccessor<3> &ele_acc,
-			std::vector< double > &bc_flux,
-			std::vector< double > &bc_sigma,
-			std::vector< double > &bc_ref_value) = 0;
+	//virtual void get_flux_bc_data(unsigned int index,
+    //        const Armor::array &point_list,
+	//        const ElementAccessor<3> &ele_acc,
+	//        std::vector< double > &bc_flux,
+	//        std::vector< double > &bc_sigma,
+	//        std::vector< double > &bc_ref_value) = 0;
 
 	/**
 	 * \brief Return transition coefficient for flux b.c.

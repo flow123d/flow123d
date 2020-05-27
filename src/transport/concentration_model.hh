@@ -156,12 +156,12 @@ public:
 	void get_bc_type(const ElementAccessor<3> &ele_acc,
 				arma::uvec &bc_types) override;
 
-	void get_flux_bc_data(unsigned int index,
-            const Armor::array &point_list,
-			const ElementAccessor<3> &ele_acc,
-			std::vector< double > &bc_flux,
-			std::vector< double > &bc_sigma,
-			std::vector< double > &bc_ref_value) override;
+	//void get_flux_bc_data(unsigned int index,
+    //        const Armor::array &point_list,
+	//        const ElementAccessor<3> &ele_acc,
+	//        std::vector< double > &bc_flux,
+	//        std::vector< double > &bc_sigma,
+	//        std::vector< double > &bc_ref_value) override;
 
 	void get_flux_bc_sigma(unsigned int index,
             const Armor::array &point_list,
