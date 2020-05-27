@@ -475,7 +475,7 @@ void HeatTransferModel::get_bc_type(const ElementAccessor<3> &ele_acc,
 {
 	// Currently the bc types for HeatTransfer are numbered in the same way as in TransportDG.
 	// In general we should use some map here.
-	bc_types = { data().bc_type.value(ele_acc.centre(), ele_acc) }; //TODO change bc_type to MultiField
+	bc_types = { data().bc_type[0].value(ele_acc.centre(), ele_acc) }; //TODO change bc_type to MultiField
 }
 
 
@@ -486,8 +486,8 @@ void HeatTransferModel::get_flux_bc_data(unsigned int index,
 		std::vector< double > &bc_sigma,
 		std::vector< double > &bc_ref_value)
 {
-	data().bc_flux.value_list(point_list, ele_acc, bc_flux);
-	data().bc_robin_sigma.value_list(point_list, ele_acc, bc_sigma);
+	data().bc_flux[index].value_list(point_list, ele_acc, bc_flux);
+	data().bc_robin_sigma[index].value_list(point_list, ele_acc, bc_sigma);
 	data().bc_dirichlet_value[index].value_list(point_list, ele_acc, bc_ref_value);
 	
 	// Change sign in bc_flux since internally we work with outgoing fluxes.
@@ -499,7 +499,7 @@ void HeatTransferModel::get_flux_bc_sigma(FMT_UNUSED unsigned int index,
 		const ElementAccessor<3> &ele_acc,
 		std::vector< double > &bc_sigma)
 {
-	data().bc_robin_sigma.value_list(point_list, ele_acc, bc_sigma);
+	data().bc_robin_sigma[index].value_list(point_list, ele_acc, bc_sigma);
 }
 
 
