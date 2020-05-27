@@ -166,7 +166,7 @@ BulkPoint CouplingPoint::lower_dim(DHCellAccessor cell_lower) const {
  * Implementation of BoundaryPoint methods
  */
 
-//BulkBdrPoint BoundaryPoint::point_bdr(ElementAccessor<3> bdr_elm) const {
-//    return BulkBdrPoint(bdr_elm, elm_cache_map_, integral_->edge_integral_,
-//            this->eval_points()->subset_begin(cell_lower.dim(), integral_->get_subset_low_idx())+local_point_idx_);
-//}
+BulkBdrPoint BoundaryPoint::point_bdr(ElementAccessor<3> bdr_elm) const {
+    return BulkBdrPoint(bdr_elm, elm_cache_map_, integral_->edge_integral_,
+            this->eval_points()->subset_begin(bdr_elm.dim()+1, integral_->get_subset_idx())+local_point_idx_);
+}

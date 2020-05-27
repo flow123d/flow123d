@@ -24,6 +24,7 @@
 #include "fields/eval_points.hh"
 #include "fields/field_value_cache.hh"
 #include "mesh/range_wrapper.hh"
+#include "mesh/accessors.hh"
 #include "fem/dh_cell_accessor.hh"
 
 
@@ -313,6 +314,60 @@ private:
 
 
 /**
+ * @brief Point accessor allow iterate over bulk quadrature points defined in local element coordinates.
+ *
+ * Temporary class, we can't construct DHCellAccessor from boundary element, this class uses ElementAccessor.
+ * Will be merged with BulkPoint in future.
+ */
+class BulkBdrPoint : public PointBase {
+public:
+    /// Default constructor
+	BulkBdrPoint()
+    : PointBase() {}
+
+    /// Constructor
+	BulkBdrPoint(ElementAccessor<3> elm_acc, const ElementCacheMap *elm_cache_map, std::shared_ptr<const EdgeIntegral> edge_integral, unsigned int local_point_idx)
+    : PointBase(elm_cache_map, local_point_idx), elm_acc_(elm_acc), integral_(edge_integral) {}
+
+    /// Getter of BulkIntegral
+    std::shared_ptr<const EdgeIntegral> integral() const {
+        return integral_;
+    }
+
+    /// Getter of EvalPoints
+    std::shared_ptr<EvalPoints> eval_points() const override {
+        return integral_->eval_points();
+    }
+
+    /// Return index of element in data cache.
+    unsigned int element_cache_index() const override {
+        return this->elm_cache_map_->position_in_cache(elm_acc_.idx());
+    }
+
+    /// Return ElementAccessor.
+    ElementAccessor<3> elm_accessor() const {
+        return elm_acc_;
+    }
+
+    /// Return index in EvalPoints object
+    unsigned int eval_point_idx() const override {
+        return local_point_idx_;
+    }
+
+    /// Comparison of accessors.
+    bool operator==(const BulkBdrPoint& other) {
+    	return (elm_acc_ == other.elm_acc_) && (local_point_idx_ == other.local_point_idx_);
+    }
+
+private:
+    /// Appropriate ElementAccessor.
+    ElementAccessor<3> elm_acc_;
+    /// Pointer to edge integral of side of neigbouring bulk element.
+    std::shared_ptr<const EdgeIntegral> integral_;
+};
+
+
+/**
  * @brief General point accessor allow iterate over quadrature points of given side defined in local element coordinates.
  *
  * Common ancestor of all side points classes (Edge-, Coupling-, BoundaryPoint)
@@ -463,7 +518,7 @@ public:
     }
 
     /// Return corresponds BulkPoint of boundary element.
-    //BulkBdrPoint point_bdr(ElementAccessor<3> bdr_elm) const;
+    BulkBdrPoint point_bdr(ElementAccessor<3> bdr_elm) const;
 
     /// Comparison of accessors.
     bool operator==(const BoundaryPoint& other) {
