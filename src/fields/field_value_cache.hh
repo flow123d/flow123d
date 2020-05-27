@@ -84,6 +84,15 @@ public:
     typename Value::return_type get_value(const ElementCacheMap &map,
             const DHCellAccessor &dh_cell, unsigned int eval_points_idx);
 
+    /**
+     * Return value of evaluation point given by ElementAccessor and local point idx in EvalPoints.
+     *
+     * Temporary overload of previous method used on boundary elements.
+     */
+    template<class Value>
+    typename Value::return_type get_value(const ElementCacheMap &map,
+            const ElementAccessor<3> elm, unsigned int eval_points_idx);
+
 private:
     /**
      * Data cache.
@@ -235,6 +244,12 @@ public:
      * @param start_point Index of first used point in subset (e.g. subset holds eval points of all sides but EdgeIntegral represents only one of them)
      */
     void mark_used_eval_points(const DHCellAccessor &dh_cell, unsigned int subset_idx, unsigned int data_size, unsigned int start_point=0);
+
+    /**
+     * Same as previous but passes ElementAccessor.
+     * Temporary method used on boundary elements.
+     */
+    void mark_used_eval_points(const ElementAccessor<3> elm, unsigned int subset_idx, unsigned int data_size, unsigned int start_point=0);
 
     /// Return index of point in FieldValueCache
     inline int get_field_value_cache_index(unsigned int elm_idx, unsigned int loc_point_idx) const {

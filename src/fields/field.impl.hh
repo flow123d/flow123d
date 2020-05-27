@@ -144,6 +144,13 @@ typename Value::return_type Field<spacedim,Value>::operator() (BulkPoint &p) {
 
 
 template<int spacedim, class Value>
+typename Value::return_type Field<spacedim,Value>::operator() (BulkBdrPoint &p) {
+    return value_cache_.template get_value<Value>(*p.elm_cache_map(), p.elm_accessor(), p.eval_point_idx());
+}
+
+
+
+template<int spacedim, class Value>
 typename Value::return_type Field<spacedim,Value>::operator() (SidePoint &p) {
     return value_cache_.template get_value<Value>(*p.elm_cache_map(), p.dh_cell_side().cell(), p.eval_point_idx());
 }

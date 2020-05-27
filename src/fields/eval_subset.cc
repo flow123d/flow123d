@@ -134,7 +134,6 @@ Range< BoundaryPoint > BoundaryIntegral::points(const DHCellSide &cell_side, con
     auto bgn_it = make_iter<BoundaryPoint>( BoundaryPoint(cell_side, elm_cache_map, shared_from_this(), 0 ) );
     auto end_it = make_iter<BoundaryPoint>( BoundaryPoint(cell_side, elm_cache_map, shared_from_this(), points_per_side ) );
     return Range<BoundaryPoint>(bgn_it, end_it);
-    //return edge_integral_->points(cell_side, elm_cache_map);
 }
 
 

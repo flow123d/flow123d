@@ -55,6 +55,7 @@ class Mesh;
 class Observe;
 class EvalPoints;
 class BulkPoint;
+class BulkBdrPoint;
 class SidePoint;
 template <int spacedim> class ElementAccessor;
 template <int spacedim, class Value> class FieldFE;
@@ -170,9 +171,15 @@ public:
     Field &operator=(const Field &other);
 
 
+    /// Return appropriate value to BulkPoint in FieldValueCache
     typename Value::return_type operator() (BulkPoint &p);
 
 
+    /// Return appropriate value to BulkBdrPoint in FieldValueCache
+    typename Value::return_type operator() (BulkBdrPoint &p);
+
+
+    /// Return appropriate value to SidePoint in FieldValueCache
     typename Value::return_type operator() (SidePoint &p);
 
 
