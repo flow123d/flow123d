@@ -797,15 +797,17 @@ public:
                 if (bc_type[sbi] == AdvectionDiffusionModel::abc_total_flux)
                 {
                     //sigma_ corresponds to robin_sigma
-                    model_->get_flux_bc_sigma(sbi, fe_values_side_.point_list(), side.cond().element_accessor(), sigma_);
+                    auto p_bdr = p.point_bdr(side.cond().element_accessor());
+                    //model_->get_flux_bc_sigma(sbi, fe_values_side_.point_list(), side.cond().element_accessor(), sigma_);
                     //flux_times_JxW = csection_[k]*sigma_[k]*fe_values_side_.JxW(k);
-                    flux_times_JxW = data_->cross_section(p)*sigma_[k]*fe_values_side_.JxW(k);
+                    flux_times_JxW = data_->cross_section(p)*data_->bc_robin_sigma[sbi](p_bdr)*fe_values_side_.JxW(k);
                 }
                 else if (bc_type[sbi] == AdvectionDiffusionModel::abc_diffusive_flux)
                 {
-                    model_->get_flux_bc_sigma(sbi, fe_values_side_.point_list(), side.cond().element_accessor(), sigma_);
+                    auto p_bdr = p.point_bdr(side.cond().element_accessor());
+                    //model_->get_flux_bc_sigma(sbi, fe_values_side_.point_list(), side.cond().element_accessor(), sigma_);
                     //flux_times_JxW = (transport_flux + csection_[k]*sigma_[k])*fe_values_side_.JxW(k);
-                    flux_times_JxW = (transport_flux + data_->cross_section(p)*sigma_[k])*fe_values_side_.JxW(k);
+                    flux_times_JxW = (transport_flux + data_->cross_section(p)*data_->bc_robin_sigma[sbi](p_bdr))*fe_values_side_.JxW(k);
                 }
                 else if (bc_type[sbi] == AdvectionDiffusionModel::abc_inflow && side_flux < 0)
                     flux_times_JxW = 0;

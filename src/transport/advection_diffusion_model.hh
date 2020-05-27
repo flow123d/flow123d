@@ -131,10 +131,10 @@ public:
 	 * @param ele_acc      Element accessor.
 	 * @param bc_sigma     Transition parameter (output).
 	 */
-	virtual void get_flux_bc_sigma(unsigned int index,
-            const Armor::array &point_list,
-			const ElementAccessor<3> &ele_acc,
-			std::vector< double > &bc_sigma) = 0;
+	//virtual void get_flux_bc_sigma(unsigned int index,
+    //        const Armor::array &point_list,
+	//        const ElementAccessor<3> &ele_acc,
+	//        std::vector< double > &bc_sigma) = 0;
 
 	/**
 	 * Compute coefficients of volume sources.

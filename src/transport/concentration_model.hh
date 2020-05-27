@@ -163,10 +163,10 @@ public:
 	//        std::vector< double > &bc_sigma,
 	//        std::vector< double > &bc_ref_value) override;
 
-	void get_flux_bc_sigma(unsigned int index,
-            const Armor::array &point_list,
-			const ElementAccessor<3> &ele_acc,
-			std::vector< double > &bc_sigma) override;
+	//void get_flux_bc_sigma(unsigned int index,
+    //        const Armor::array &point_list,
+	//        const ElementAccessor<3> &ele_acc,
+	//        std::vector< double > &bc_sigma) override;
 
 	//void compute_source_coefficients(const Armor::array &point_list,
 	//			const ElementAccessor<3> &ele_acc,

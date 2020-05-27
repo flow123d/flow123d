@@ -457,13 +457,13 @@ void ConcentrationTransportModel::get_bc_type(const ElementAccessor<3> &ele_acc,
 	for (auto f : bc_flux) f = -f;
 }*/
 
-void ConcentrationTransportModel::get_flux_bc_sigma(unsigned int index,
+/*void ConcentrationTransportModel::get_flux_bc_sigma(unsigned int index,
         const Armor::array &point_list,
 		const ElementAccessor<3> &ele_acc,
 		std::vector< double > &bc_sigma)
 {
 	data().bc_robin_sigma[index].value_list(point_list, ele_acc, bc_sigma);
-}
+}*/
 
 
 /*void ConcentrationTransportModel::compute_source_coefficients(const Armor::array &point_list,
