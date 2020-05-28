@@ -1425,11 +1425,16 @@ public:
 
                 if (bc_type[sbi] == AdvectionDiffusionModel::abc_inflow && side_flux < 0)
                 {
-                    for (unsigned int k=0; k<qsize_lower_dim_; k++)
+                    k=0;
+                    for (auto p : data_->bdr_cond_assembly_->boundary_integral(dim)->points(dh_side, &(data_->bdr_cond_assembly_->cache_map())) )
+                    //for (unsigned int k=0; k<qsize_lower_dim_; k++)
                     {
-                        double bc_term = -transport_flux*bc_values_[k]*fe_values_side_.JxW(k);
+                        //double bc_term = -transport_flux*bc_values_[k]*fe_values_side_.JxW(k);
+                        auto p_bdr = p.point_bdr(bc_elm);
+                        double bc_term = -transport_flux*data_->bc_dirichlet_value[sbi](p_bdr)*fe_values_side_.JxW(k);
                         for (unsigned int i=0; i<ndofs_; i++)
                             local_rhs_[i] += bc_term*fe_values_side_.shape_value(i,k);
+                        k++;
                     }
                     for (unsigned int i=0; i<ndofs_; i++)
                         local_flux_balance_rhs_ -= local_rhs_[i];
@@ -1440,9 +1445,11 @@ public:
                     for (auto p : data_->bdr_cond_assembly_->boundary_integral(dim)->points(dh_side, &(data_->bdr_cond_assembly_->cache_map())) )
                     //for (unsigned int k=0; k<qsize_lower_dim_; k++)
                     {
-                        double bc_term = data_->gamma[sbi][cond_idx]*bc_values_[k]*fe_values_side_.JxW(k);
+                        //double bc_term = data_->gamma[sbi][cond_idx]*bc_values_[k]*fe_values_side_.JxW(k);
                         //arma::vec3 bc_grad = -bc_values_[k]*fe_values_side_.JxW(k)*data_->dg_variant*(arma::trans(data_->dif_coef[sbi][k])*fe_values_side_.normal_vector(k));
-                        arma::vec3 bc_grad = -bc_values_[k]*fe_values_side_.JxW(k)*data_->dg_variant*(arma::trans(data_->diffusion_coef[sbi](p))*fe_values_side_.normal_vector(k));
+                        auto p_bdr = p.point_bdr(bc_elm);
+                        double bc_term = data_->gamma[sbi][cond_idx]*data_->bc_dirichlet_value[sbi](p_bdr)*fe_values_side_.JxW(k);
+                        arma::vec3 bc_grad = -data_->bc_dirichlet_value[sbi](p_bdr)*fe_values_side_.JxW(k)*data_->dg_variant*(arma::trans(data_->diffusion_coef[sbi](p))*fe_values_side_.normal_vector(k));
                         for (unsigned int i=0; i<ndofs_; i++)
                             local_rhs_[i] += bc_term*fe_values_side_.shape_value(i,k)
                                     + arma::dot(bc_grad,fe_values_side_.shape_grad(i,k));
