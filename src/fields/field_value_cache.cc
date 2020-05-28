@@ -159,7 +159,7 @@ void ElementCacheMap::finish_elements_update() {
 }
 
 void ElementCacheMap::mark_used_eval_points(const DHCellAccessor &dh_cell, unsigned int subset_idx, unsigned int data_size, unsigned int start_point) {
-    unsigned int elem_idx_in_cache = cache_idx_[dh_cell.elm_idx()];
+    unsigned int elem_idx_in_cache = cache_idx_[dh_cell.elm().mesh_idx()];
     unsigned int points_begin = eval_points_->subset_begin(dh_cell.dim(), subset_idx) + start_point;
     for (unsigned int i=points_begin; i<points_begin+data_size; ++i)
         element_eval_points_map_[elem_idx_in_cache][i] = ElementCacheMap::point_in_proggress;
@@ -167,7 +167,7 @@ void ElementCacheMap::mark_used_eval_points(const DHCellAccessor &dh_cell, unsig
 
 
 void ElementCacheMap::mark_used_eval_points(const ElementAccessor<3> elm, unsigned int subset_idx, unsigned int data_size, unsigned int start_point) {
-    unsigned int elem_idx_in_cache = cache_idx_[elm.idx()];
+    unsigned int elem_idx_in_cache = cache_idx_[elm.mesh_idx()];
     unsigned int points_begin = eval_points_->subset_begin(elm.dim()+1, subset_idx) + start_point;
     for (unsigned int i=points_begin; i<points_begin+data_size; ++i)
         element_eval_points_map_[elem_idx_in_cache][i] = ElementCacheMap::point_in_proggress;

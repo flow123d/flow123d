@@ -116,6 +116,9 @@ private:
  * Manage storing and updating element data (elements of same dimension) to cache. We need only
  * one shared instance of this class for all fields in equation (but typically for dim = 1,2,3).
  *
+ * IMPORTANT: Because there are combuned bulk and boundary elements, we must use mesh_idx value
+ * to correct identification of elements.
+ *
  * TODO: The logic of creating and updating this class is quite complex, describe in which order
  * the methods are supposed to be called and which internal structures are updated when.
  */
@@ -143,15 +146,15 @@ public:
 
         /// Add element if does not exist
         bool add(ElementAccessor<3> elm) {
-            if (std::find(elm_indices_.begin(), elm_indices_.begin()+n_elements_, elm.idx()) == elm_indices_.begin()+n_elements_) {
-                elm_indices_[n_elements_] = elm.idx();
+            if (std::find(elm_indices_.begin(), elm_indices_.begin()+n_elements_, elm.mesh_idx()) == elm_indices_.begin()+n_elements_) {
+                elm_indices_[n_elements_] = elm.mesh_idx();
                 n_elements_++;
                 return true;
             } else
                 return false;
         }
 
-        /// Array of elements idx, ensures element uniqueness
+        /// Array of elements mesh_idx, ensures element uniqueness
         std::array<unsigned int, ElementCacheMap::n_cached_elements> elm_indices_;
         /// Number of element indices
         unsigned int n_elements_;
@@ -251,20 +254,25 @@ public:
      */
     void mark_used_eval_points(const ElementAccessor<3> elm, unsigned int subset_idx, unsigned int data_size, unsigned int start_point=0);
 
-    /// Return index of point in FieldValueCache
-    inline int get_field_value_cache_index(unsigned int elm_idx, unsigned int loc_point_idx) const {
+    /*
+     * Return index of point in FieldValueCache.
+     *
+     * @param cache_elm_idx  idx of ElementAccessor in ElementCacheMap
+     * @param loc_point_idx  Index of local point in EvalPoints
+     */
+    inline int get_field_value_cache_index(unsigned int cache_elm_idx, unsigned int loc_point_idx) const {
         ASSERT_PTR_DBG(element_eval_points_map_);
-        return element_eval_points_map_[elm_idx][loc_point_idx];
+        return element_eval_points_map_[cache_elm_idx][loc_point_idx];
     }
 
-    /// Return idx of element stored at given position of ElementCacheMap
+    /// Return mesh_idx of element stored at given position of ElementCacheMap
     inline unsigned int elm_idx_on_position(unsigned pos) const {
         return elm_idx_[pos];
     }
 
     /// Return position of element stored in ElementCacheMap
-    inline unsigned int position_in_cache(unsigned elm_idx) const {
-        std::unordered_map<unsigned int, unsigned int>::const_iterator it = cache_idx_.find(elm_idx);
+    inline unsigned int position_in_cache(unsigned mesh_elm_idx) const {
+        std::unordered_map<unsigned int, unsigned int>::const_iterator it = cache_idx_.find(mesh_elm_idx);
         if ( it != cache_idx_.end() ) return it->second;
         else return ElementCacheMap::undef_elem_idx;
     }

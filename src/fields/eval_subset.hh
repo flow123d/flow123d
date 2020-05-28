@@ -341,7 +341,7 @@ public:
 
     /// Return index of element in data cache.
     unsigned int element_cache_index() const override {
-        return this->elm_cache_map_->position_in_cache(elm_acc_.idx());
+        return this->elm_cache_map_->position_in_cache(elm_acc_.mesh_idx());
     }
 
     /// Return ElementAccessor.
