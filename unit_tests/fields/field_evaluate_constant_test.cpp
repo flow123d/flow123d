@@ -25,8 +25,7 @@
 #include "fem/dofhandler.hh"
 #include "fem/dh_cell_accessor.hh"
 #include "mesh/mesh.h"
-#include "mesh/sides.h"
-#include "mesh/side_impl.hh"
+#include "mesh/accessors.hh"
 #include "input/input_type.hh"
 #include "input/accessors.hh"
 #include "input/reader_to_storage.hh"
@@ -55,17 +54,37 @@ public:
                         .units( UnitSI::dimensionless() )
                         .flags_add(in_main_matrix);
 
-            for (unsigned int i=0; i<3; ++i)
-                elm_cache_map_[i].init(i+1);
+            // Asumme following types:
+            eval_points_ = std::make_shared<EvalPoints>();
+            Quadrature *q_bulk = new QGauss(3, 2);
+            Quadrature *q_side = new QGauss(2, 2);
+            mass_eval = eval_points_->add_bulk<3>(*q_bulk );
+            side_eval = eval_points_->add_edge<3>(*q_side );
+            // ngh_side_eval = ...
+            elm_cache_map_.init(eval_points_);
+            this->cache_allocate(eval_points_);
         }
 
-        ElementCacheMap *get_element_cache_map(unsigned int dim) {
-            return &elm_cache_map_[dim-1];
+        void register_eval_points(ElementCacheMap &cache_map) {
+            unsigned int subset_index, data_size;
+
+            subset_index = mass_eval->get_subset_idx();
+            cache_map.mark_used_eval_points( computed_dh_cell_, subset_index, eval_points_->subset_size(computed_dh_cell_.dim(), subset_index) );
+            for (DHCellSide side : computed_dh_cell_.side_range()) {
+                for(DHCellSide el_ngh_side : side.edge_sides()) {
+                    subset_index = side_eval->get_subset_idx();
+                    data_size = eval_points_->subset_size(el_ngh_side.dim(), subset_index) / (el_ngh_side.dim() +1);
+                	cache_map.mark_used_eval_points(el_ngh_side.cell(), subset_index, data_size, data_size * el_ngh_side.side_idx());
+                }
+            }
         }
 
-        /// Add DHCellAccessor to appropriate ElementDataCache.
-        void add_cell_to_cache(const DHCellAccessor &cell) {
-        	elm_cache_map_[cell.dim()-1].add(cell);
+        void update_cache() {
+            elm_cache_map_.prepare_elements_to_update();
+            this->register_eval_points(elm_cache_map_);
+            elm_cache_map_.create_elements_points_map();
+    	    this->cache_update(elm_cache_map_);
+            elm_cache_map_.finish_elements_update();
         }
 
 
@@ -73,14 +92,17 @@ public:
         Field<3, FieldValue<3>::Scalar > scalar_field;
         Field<3, FieldValue<3>::VectorFixed > vector_field;
         Field<3, FieldValue<3>::TensorFixed > tensor_field;
-        /// Element cache map of dimensions 1,2,3
-        std::array< ElementCacheMap, 3 > elm_cache_map_;
-
+        ElementCacheMap elm_cache_map_;
+        std::shared_ptr<EvalPoints> eval_points_;
+        std::shared_ptr<BulkIntegral> mass_eval;
+        std::shared_ptr<EdgeIntegral> side_eval;
+        //std::shared_ptr<CouplingIntegral> ngh_side_eval;
+        DHCellAccessor computed_dh_cell_;
     };
 
     FieldEvalConstantTest() {
         FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-        Profiler::initialize();
+        Profiler::instance();
         PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
 
         data_ = std::make_shared<EqData>();
@@ -121,6 +143,7 @@ public:
         data_->set_time(tg.step(), LimitSide::right);
     }
 
+
     std::shared_ptr<EqData> data_;
     Mesh * mesh_;
     std::shared_ptr<DOFHandlerMultiDim> dh_;
@@ -145,37 +168,27 @@ TEST_F(FieldEvalConstantTest, evaluate) {
     )YAML";
 	this->read_input(eq_data_input);
 
-    // Asumme following types:
-	std::shared_ptr<EvalPoints> feval = std::make_shared<EvalPoints>();
-    Quadrature *q_bulk = new QGauss(3, 2);
-    Quadrature *q_side = new QGauss(2, 2);
-    std::shared_ptr<EvalSubset> mass_eval = feval->add_bulk_old<3>(*q_bulk );
-    std::shared_ptr<EvalSubset> side_eval = feval->add_side_old<3>(*q_side );
-    //std::shared_ptr<EvalSubset> this->ngh_side_eval;
-
-    data_->cache_allocate(mass_eval);
-    data_->cache_allocate(side_eval);
-
     std::vector<unsigned int> cell_idx = {3, 4, 5, 9};
     std::vector<double>       expected_scalar = {0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5};
     std::vector<arma::vec3>   expected_vector = {{1, 2, 3}, {1, 2, 3}, {1, 2, 3}, {4, 5, 6}};
     std::vector<arma::mat33>  expected_tensor = {{0.1, 0.2, 0.3, 0.2, 0.4, 0.5, 0.3, 0.5, 0.6}, {0.1, 0.2, 0.3, 0.2, 0.4, 0.5, 0.3, 0.5, 0.6},
                                                  {0.1, 0.2, 0.3, 0.2, 0.4, 0.5, 0.3, 0.5, 0.6}, {2.1, 2.2, 2.3, 2.2, 2.4, 2.5, 2.3, 2.5, 2.6}};
     for (unsigned int i=0; i<cell_idx.size(); ++i) {
-        DHCellAccessor dh_cell(dh_.get(), cell_idx[i]);  // element ids stored to cache: (3 -> 2,3,4), (4 -> 3,4,5,10), (5 -> 0,4,5,11), (10 -> 8,9,10)
-        data_->add_cell_to_cache(dh_cell);
-        for (DHCellSide side : dh_cell.side_range()) {
+    	data_->elm_cache_map_.start_elements_update();
+    	data_->computed_dh_cell_ = DHCellAccessor(dh_.get(), cell_idx[i]);  // element ids stored to cache: (3 -> 2,3,4), (4 -> 3,4,5,10), (5 -> 0,4,5,11), (10 -> 8,9,10)
+        data_->elm_cache_map_.add(data_->computed_dh_cell_);
+        for (DHCellSide side : data_->computed_dh_cell_.side_range()) {
             for(DHCellSide el_ngh_side : side.edge_sides()) {
-                data_->add_cell_to_cache( el_ngh_side.cell() );
+                data_->elm_cache_map_.add(el_ngh_side);
     	    }
         }
-        data_->cache_update(*data_->get_element_cache_map(3), mesh_);
+        data_->update_cache();
 
-        DHCellAccessor cache_cell = this->data_->elm_cache_map_[dh_cell.dim()-1](dh_cell);
+        DHCellAccessor cache_cell = this->data_->elm_cache_map_(data_->computed_dh_cell_);
 
         // Bulk integral, no sides, no permutations.
-        for(BulkPointOld q_point: mass_eval->points(cache_cell)) {
-            EXPECT_EQ(expected_scalar[cache_cell.elm_idx()], data_->scalar_field(q_point)[0]);
+        for(BulkPoint q_point: data_->mass_eval->points(cache_cell, &data_->elm_cache_map_)) {
+            EXPECT_EQ(expected_scalar[cache_cell.elm_idx()], data_->scalar_field(q_point));
             EXPECT_ARMA_EQ(expected_vector[i], data_->vector_field(q_point));
             EXPECT_ARMA_EQ(expected_tensor[i], data_->tensor_field(q_point));
             /* // Extracting the cached values.
@@ -191,15 +204,15 @@ TEST_F(FieldEvalConstantTest, evaluate) {
         // FieldFE<..> conc;
         for (DHCellSide side : cache_cell.side_range()) {
         	for(DHCellSide el_ngh_side : side.edge_sides()) {
-        		el_ngh_side.cell() = this->data_->elm_cache_map_[el_ngh_side.cell().dim()-1](el_ngh_side.cell());
+        		el_ngh_side.cell() = this->data_->elm_cache_map_(el_ngh_side.cell());
            	    // vector of local side quadrature points in the correct side permutation
-        	    Range<SidePointOld> side_points = side_eval->points(side);
-        	    for (SidePointOld side_p : side_points) {
-                    EXPECT_EQ(expected_scalar[cache_cell.elm_idx()], data_->scalar_field(side_p)[0]);
+        	    Range<EdgePoint> side_points = data_->side_eval->points(side, &data_->elm_cache_map_);
+        	    for (EdgePoint side_p : side_points) {
+                    EXPECT_EQ(expected_scalar[cache_cell.elm_idx()], data_->scalar_field(side_p));
                     EXPECT_ARMA_EQ(expected_vector[i], data_->vector_field(side_p));
                     EXPECT_ARMA_EQ(expected_tensor[i], data_->tensor_field(side_p));
-                    SidePointOld ngh_p = side_p.permute(el_ngh_side);
-                    EXPECT_EQ(expected_scalar[el_ngh_side.cell().elm_idx()], data_->scalar_field(ngh_p)[0]);
+                    EdgePoint ngh_p = side_p.permute(el_ngh_side);
+                    EXPECT_EQ(expected_scalar[el_ngh_side.cell().elm_idx()], data_->scalar_field(ngh_p));
         	        //loc_mat += cross_section(side_p) * sigma(side_p) *
         		    //    (conc.base_value(side_p) * velocity(side_p)
         		    //    + conc.base_value(ngh_p) * velocity(ngh_p)) * side_p.normal() / 2;

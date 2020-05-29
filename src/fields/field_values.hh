@@ -40,6 +40,7 @@
 #include "input/type_base.hh"                          // for Array, String
 #include "input/type_generic.hh"                       // for Parameter
 #include "input/type_selection.hh"                     // for Selection
+#include "system/armor.hh"                             // for Armor::Array
 
 namespace IT=Input::Type;
 
@@ -111,9 +112,9 @@ struct ReturnType<NRows,1, FieldEnum> { typedef typename arma::Col<unsigned int>
 
 
 // Resolution of helper functions for raw constructor
-template <class RT> inline RT & set_raw_scalar(RT &val, double *raw_data) { return *raw_data;}
-template <class RT> inline RT & set_raw_scalar(RT &val, int *raw_data) { return *raw_data;}
-template <class RT> inline RT & set_raw_scalar(RT &val, FieldEnum *raw_data) { return *raw_data;}
+template <class RT> inline RT & set_raw_scalar(RT &, double *raw_data) { return *raw_data;}
+template <class RT> inline RT & set_raw_scalar(RT &, int *raw_data) { return *raw_data;}
+template <class RT> inline RT & set_raw_scalar(RT &, FieldEnum *raw_data) { return *raw_data;}
 
 template <class RT> inline RT & set_raw_vec(RT &val, double *raw_data) { arma::access::rw(val.mem) = raw_data; return val;}
 template <class RT> inline RT & set_raw_vec(RT &val, int *raw_data) { arma::access::rw(val.mem) = raw_data; return val;}
@@ -276,6 +277,11 @@ public:
     	return value_.memptr();
     }
 
+    /// Casts value stored in Armor::Array to return type.
+    inline static return_type get_from_array(const Armor::Array<element_type> &arr, uint idx) {
+        return arr.template mat<NRows, NCols>(idx);
+    }
+
     void init_from_input( AccessType rec ) {
         internal::init_matrix_from_input(value_, rec);
     }
@@ -355,6 +361,11 @@ public:
     inline static const return_type &from_raw(return_type &val, ET *raw_data) {return internal::set_raw_scalar(val, raw_data);}
     const ET * mem_ptr() const { return &(value_); }
 
+    /// Casts value stored in Armor::Array to return type.
+    inline static return_type get_from_array(const Armor::Array<element_type> &arr, uint idx) {
+        return arr.scalar(idx);
+    }
+
     void init_from_input( AccessType val ) { value_ = return_type(val); }
 
     void set_n_comp(unsigned int) {};
@@ -364,7 +375,7 @@ public:
         { return 1; }
     inline ET &operator() ( unsigned int, unsigned int )
         { return value_; }
-    inline ET operator() ( unsigned int i, unsigned int j) const
+    inline ET operator() ( unsigned int, unsigned int) const
         { return value_; }
     inline operator return_type() const
         { return value_;}
@@ -421,6 +432,11 @@ public:
     inline static const return_type &from_raw(return_type &val, ET *raw_data) {return internal::set_raw_vec(val, raw_data);}
     const ET * mem_ptr() const { return value_.memptr(); }
 
+    /// Casts value stored in Armor::Array to return type.
+    inline static return_type get_from_array(const Armor::Array<element_type> &arr, uint idx) {
+        return arr.template vec<NRows_>(idx);
+    }
+
     inline FieldValue_(return_type &val) : value_(val) {}
 
 
@@ -435,7 +451,7 @@ public:
         { return value_.n_rows; }
     inline ET &operator() ( unsigned int i, unsigned int )
         { return value_.at(i); }
-    inline ET operator() ( unsigned int i, unsigned int j) const
+    inline ET operator() ( unsigned int i, unsigned int ) const
         { return value_.at(i); }
 
     inline operator return_type() const
@@ -496,6 +512,11 @@ public:
     inline static const return_type &from_raw(return_type &val, ET *raw_data) {return internal::set_raw_fix(val, raw_data);}
     const ET * mem_ptr() const { return value_.memptr(); }
 
+    /// Casts value stored in Armor::Array to return type.
+    inline static return_type get_from_array(const Armor::Array<element_type> &arr, uint idx) {
+        return arr.template vec<NRows>(idx);
+    }
+
     void init_from_input( AccessType rec ) {
         internal::init_vector_from_input(value_, rec);
     }
@@ -507,7 +528,7 @@ public:
         { return NRows; }
     inline ET &operator() ( unsigned int i, unsigned int )
         { return value_.at(i); }
-    inline ET operator() ( unsigned int i, unsigned int j) const
+    inline ET operator() ( unsigned int i, unsigned int ) const
         { return value_.at(i); }
 
     inline operator return_type() const

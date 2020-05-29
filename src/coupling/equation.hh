@@ -59,6 +59,9 @@ class Mesh;
 class EquationBase {
 public:
 
+    /// Template Record with common keys for derived equations.
+    static Input::Type::Record & record_template();
+
     /**
      * Default constructor. Sets all virtual methods empty. Necessary to make tests fixtures for equations.
      * TODO:

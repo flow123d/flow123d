@@ -11,7 +11,6 @@
 #include "arma_expect.hh"
 
 #include <mesh_constructor.hh>
-#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "input/input_type.hh"
 #include "input/accessors.hh"

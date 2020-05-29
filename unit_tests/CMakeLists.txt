@@ -7,9 +7,9 @@ set(TEST_TIMEOUT 300) # 30 s
 set(VALGRIND_TIMEOUT 300) # 5 min
 
 # build gtest itself
-set(GTEST_SOURCE_DIR "${CMAKE_SOURCE_DIR}/third_party/gtest-1.7.0")
-set(GTEST_BINARY_DIR "${CMAKE_BINARY_DIR}/third_party/gtest-1.7.0")
-include_directories( ${GTEST_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/unit_tests )
+set(GTEST_SOURCE_DIR "${CMAKE_SOURCE_DIR}/third_party/gtest-1.10.0")
+set(GTEST_BINARY_DIR "${CMAKE_BINARY_DIR}/third_party/gtest-1.10.0")
+include_directories( ${GTEST_SOURCE_DIR}/googletest/include ${CMAKE_SOURCE_DIR}/unit_tests )
 add_subdirectory( ${GTEST_SOURCE_DIR} ${GTEST_BINARY_DIR} )
 message(STATUS "Gtest tests allowed")
 
@@ -86,7 +86,7 @@ macro(define_test class_name)
 
   # executable rule
   add_executable(${test_binary} EXCLUDE_FROM_ALL  ${test_source} )
-  #set_target_properties(${test_binary} PROPERTIES COMPILE_FLAGS "${CMAKE_CXX_FLAGS}")
+  set_target_properties(${test_binary} PROPERTIES COMPILE_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error")
   target_link_libraries(${test_binary} ${super_test_libs} gtest gtest_main)
   add_dependencies(${test_binary} update_source_tree)
 
@@ -134,6 +134,7 @@ macro(define_mpi_test class_name n_proc)
   	target_link_libraries(${test_binary} ${super_test_libs} gtest gtest_main  ${MPI_CXX_LIBRARIES})
   	# add_dependencies(${test_binary} mpiexec_link)      # make
   endif()
+  set_target_properties(${test_binary} PROPERTIES COMPILE_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error")
 
   # rule to run the test
   # set(RUN_COMMAND ulimit -t 300\; )

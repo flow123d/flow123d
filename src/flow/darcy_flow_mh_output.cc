@@ -231,7 +231,7 @@ void DarcyFlowMHOutput::prepare_specific_output(Input::Record in_rec)
 }
 
 DarcyFlowMHOutput::~DarcyFlowMHOutput()
-{};
+{}
 
 
 
@@ -300,33 +300,20 @@ void DarcyFlowMHOutput::output_internal_flow_data()
 
     
     DarcyMH::EqData* data = nullptr;
-    std::vector<shared_ptr<AssemblyBase>> multidim_assembler;
     if(DarcyMH* d = dynamic_cast<DarcyMH*>(darcy_flow))
     {
         data = d->data_.get();
-        auto ma = AssemblyBase::create< AssemblyMH >(d->data_);
-        for (auto a: ma)
-            multidim_assembler.push_back(a);
     }
     else if(DarcyLMH* d = dynamic_cast<DarcyLMH*>(darcy_flow))
     {
         data = d->data_.get();
-        auto ma = AssemblyBase::create< AssemblyLMH >(d->data_);
-        for (auto a: ma)
-            multidim_assembler.push_back(a);
     }
     ASSERT_PTR(data);
-    ASSERT_EQ(multidim_assembler.size(),3);
     
-    
-//     std::shared_ptr<DarcyMH::EqData> data = darcy_flow->data_;
-//     auto multidim_assembler = AssemblyBase::create< AssemblyMH >(data);
     arma::vec3 flux_in_center;
     
     int cit = 0;
     for ( DHCellAccessor dh_cell : data->dh_->own_range() ) {
-    	LocalElementAccessorBase<3> ele_ac(dh_cell);
-        
         ElementAccessor<3> ele = dh_cell.elm();
         LocDofVec indices = dh_cell.get_loc_dof_indices();
 
@@ -334,7 +321,7 @@ void DarcyFlowMHOutput::output_internal_flow_data()
         raw_output_file << fmt::format("{} {} ", dh_cell.elm().index(), data->full_solution[indices[ele->n_sides()]]);
         
         // velocity at element center
-        flux_in_center = multidim_assembler[ele.dim() -1]->make_element_vector(ele_ac);
+        flux_in_center = data->field_ele_velocity.value(ele.centre(), ele);
         for (unsigned int i = 0; i < 3; i++)
         	raw_output_file << flux_in_center[i] << " ";
 
@@ -374,13 +361,14 @@ typedef FieldPython<3, FieldValue<3>::Vector > ExactSolution;
  * 3) difference of divergence
  * */
 
-template <int dim>
 void DarcyFlowMHOutput::l2_diff_local(DHCellAccessor dh_cell,
-                   FEValues<dim,3> &fe_values, FEValues<dim,3> &fv_rt,
+                   FEValues<3> &fe_values, FEValues<3> &fv_rt,
                    ExactSolution &anal_sol,  DarcyFlowMHOutput::DiffData &result) {
 
+    ASSERT_DBG( fe_values.dim() == fv_rt.dim());
+    unsigned int dim = fe_values.dim();
+
     ElementAccessor<3> ele = dh_cell.elm();
-    LocalElementAccessorBase<3> ele_ac(dh_cell);
     fv_rt.reinit(ele);
     fe_values.reinit(ele);
     
@@ -393,10 +381,12 @@ void DarcyFlowMHOutput::l2_diff_local(DHCellAccessor dh_cell,
 //     vector<double> pressure_traces(dim+1);
 
     for (unsigned int li = 0; li < ele->n_sides(); li++) {
-        fluxes[li] = diff_data.data_->full_solution[ ele_ac.side_local_row(li) ];
+        fluxes[li] = diff_data.data_->full_solution[ dh_cell.get_loc_dof_indices()[li] ];
 //         pressure_traces[li] = result.dh->side_scalar( *(ele->side( li ) ) );
     }
-    double pressure_mean = diff_data.data_->full_solution[ ele_ac.ele_local_row() ];
+    const uint ndofs = dh_cell.n_dofs();
+    // TODO: replace with DHCell getter when available for FESystem component
+    double pressure_mean = diff_data.data_->full_solution[ dh_cell.get_loc_dof_indices()[ndofs/2] ];
 
     arma::vec analytical(5);
     arma::vec3 flux_in_q_point;
@@ -424,7 +414,13 @@ void DarcyFlowMHOutput::l2_diff_local(DHCellAccessor dh_cell,
         // compute postprocesed pressure
         diff = 0;
         for(unsigned int i_shape=0; i_shape < ele->n_sides(); i_shape++) {
-            unsigned int oposite_node = RefElement<dim>::oposite_node(i_shape);
+            unsigned int oposite_node = 0;
+            switch (dim) {
+                case 1: oposite_node =  RefElement<1>::oposite_node(i_shape); break;
+                case 2: oposite_node =  RefElement<2>::oposite_node(i_shape); break;
+                case 3: oposite_node =  RefElement<3>::oposite_node(i_shape); break;
+                default: ASSERT(false)(dim).error("Unsupported FE dimension."); break;
+            }
 
             diff += fluxes[ i_shape ] *
                                (  arma::dot( q_point, q_point )/ 2
@@ -460,7 +456,7 @@ void DarcyFlowMHOutput::l2_diff_local(DHCellAccessor dh_cell,
 
     // DHCell constructed with diff fields DH, get DOF indices of actual element
     DHCellAccessor sub_dh_cell = dh_cell.cell_with_other_dh(result.dh_.get());
-    Idx idx = sub_dh_cell.get_loc_dof_indices()[0];
+    IntIdx idx = sub_dh_cell.get_loc_dof_indices()[0];
 
     auto velocity_data = result.vel_diff_ptr->get_data_vec();
     velocity_data[ idx ] = sqrt(velocity_diff);
@@ -518,13 +514,13 @@ void DarcyFlowMHOutput::compute_l2_difference() {
 
     	switch (dh_cell.dim()) {
         case 1:
-            l2_diff_local<1>( dh_cell, *fe_data.fe_values.get<1>(), *fe_data.fv_rt.get<1>(), anal_sol_1d, diff_data);
+            l2_diff_local( dh_cell, fe_data.fe_values[1], fe_data.fv_rt[1], anal_sol_1d, diff_data);
             break;
         case 2:
-            l2_diff_local<2>( dh_cell, *fe_data.fe_values.get<2>(), *fe_data.fv_rt.get<2>(), anal_sol_2d, diff_data);
+            l2_diff_local( dh_cell, fe_data.fe_values[2], fe_data.fv_rt[2], anal_sol_2d, diff_data);
             break;
         case 3:
-            l2_diff_local<3>( dh_cell, *fe_data.fe_values.get<3>(), *fe_data.fv_rt.get<3>(), anal_sol_3d, diff_data);
+            l2_diff_local( dh_cell, fe_data.fe_values[3], fe_data.fv_rt[3], anal_sol_3d, diff_data);
             break;
         }
     }

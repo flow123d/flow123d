@@ -24,7 +24,7 @@
 #ifndef GTEST_FLOW_HH_
 #define GTEST_FLOW_HH_
 
-#include <gtest/gtest.h>
+#include "gtest/gtest.h"
 
 #ifdef TEST_USE_PETSC
 #define TEST_USE_MPI
@@ -52,15 +52,16 @@ namespace internal {
 // A test filter that matches everything.
 static const char kUniversalFilter[] = "*";
 
-enum GTestColor {
-  COLOR_DEFAULT,
-  COLOR_RED,
-  COLOR_GREEN,
-  COLOR_YELLOW
-};
+//enum GTestColor {
+//  COLOR_DEFAULT,
+//  COLOR_RED,
+//  COLOR_GREEN,
+//  COLOR_YELLOW
+//};
 
 void ColoredPrintf(GTestColor color, const char* fmt, ...);
-void PrintFullTestCommentIfPresent(const TestInfo& test_info);
+
+
 
 // This class implements the TestEventListener interface.
 //

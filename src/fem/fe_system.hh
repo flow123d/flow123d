@@ -61,17 +61,17 @@ public:
 	 */
     FESystemFunctionSpace(const std::vector<std::shared_ptr<FunctionSpace> > &fs_vector);
 
-    const double basis_value(unsigned int basis_index,
-                             const arma::vec &point,
-                             unsigned int comp_index = 0
-                            ) const override;
+    double basis_value(unsigned int basis_index,
+                       const arma::vec &point,
+                       unsigned int comp_index = 0
+                       ) const override;
     
     const arma::vec basis_grad(unsigned int basis_index,
                                const arma::vec &point,
                                unsigned int comp_index = 0
                               ) const override;
 
-    const unsigned int dim() const override { return dim_; }
+    unsigned int dim() const override { return dim_; }
     
     const std::vector<DofComponentData> &dof_indices() { return dof_indices_; }
     
@@ -144,7 +144,7 @@ public:
     virtual std::vector< arma::vec::fixed<dim+1> > dof_points() const;
 
 
-    const std::vector<std::shared_ptr<FiniteElement<dim> > > &fe()
+    const std::vector<std::shared_ptr<FiniteElement<dim> > > &fe() const
     { return fe_; }
     
     /// Return dof indices belonging to given sub-FE.
@@ -171,10 +171,10 @@ template<class... Args>
 MixedPtr<FESystem> mixed_fe_system(MixedPtr<FiniteElement> fe, Args&&... args)
 {
     return MixedPtr<FESystem>(
-      std::make_shared<FESystem<0>>(fe.get<0>(), std::forward<Args>(args)...),
-      std::make_shared<FESystem<1>>(fe.get<1>(), std::forward<Args>(args)...),
-      std::make_shared<FESystem<2>>(fe.get<2>(), std::forward<Args>(args)...),
-      std::make_shared<FESystem<3>>(fe.get<3>(), std::forward<Args>(args)...)
+      std::make_shared<FESystem<0>>(fe[0_d], std::forward<Args>(args)...),
+      std::make_shared<FESystem<1>>(fe[1_d], std::forward<Args>(args)...),
+      std::make_shared<FESystem<2>>(fe[2_d], std::forward<Args>(args)...),
+      std::make_shared<FESystem<3>>(fe[3_d], std::forward<Args>(args)...)
       );
 }
 

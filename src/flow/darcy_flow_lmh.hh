@@ -44,10 +44,10 @@
 #include <armadillo>
 #include "fields/bc_field.hh"                   // for BCField
 #include "fields/field.hh"                      // for Field
+#include "fields/field_fe.hh"                      // for FieldFE
 #include "fields/field_set.hh"                  // for FieldSet
 #include "fields/field_values.hh"               // for FieldValue<>::Scalar
 #include "flow/darcy_flow_interface.hh"         // for DarcyFlowInterface
-#include "flow/mh_dofhandler.hh"                // for LocalElementAccessorBase, uint
 #include "input/input_exception.hh"             // for DECLARE_INPUT_EXCEPTION
 #include "input/type_base.hh"                   // for Array
 #include "input/type_generic.hh"                // for Instance
@@ -176,7 +176,7 @@ public:
 
 
 
-    DarcyLMH(Mesh &mesh, const Input::Record in_rec);
+    DarcyLMH(Mesh &mesh, const Input::Record in_rec, TimeGovernor *tm = nullptr);
 
     static const Input::Type::Record & type_field_descriptor();
     static const Input::Type::Record & get_input_type();
@@ -192,11 +192,25 @@ public:
     virtual void initialize_specific();
     void zero_time_step() override;
     void update_solution() override;
+
+    /// Solve the problem without moving to next time and without output.
+    void solve_time_step(bool output = true);
     
     /// postprocess velocity field (add sources)
     virtual void accept_time_step();
     virtual void postprocess();
     virtual void output_data() override;
+
+
+    EqData &data() { return *data_; }
+
+    /// Sets external storarivity field (coupling with other equation).
+    void set_extra_storativity(const Field<3, FieldValue<3>::Scalar> &extra_stor)
+    { data_->extra_storativity = extra_stor; }
+
+    /// Sets external source field (coupling with other equation).
+    void set_extra_source(const Field<3, FieldValue<3>::Scalar> &extra_src)
+    { data_->extra_source = extra_src; }
 
     virtual ~DarcyLMH() override;
 
@@ -293,10 +307,7 @@ protected:
 
     // Temporary objects holding pointers to appropriate FieldFE
     // TODO remove after final fix of equations
-    std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> ele_pressure_ptr;             ///< Field of pressure head in barycenters of elements.
-    std::shared_ptr<FieldAddPotential<3, FieldValue<3>::Scalar>> ele_piezo_head_ptr; ///< Field of piezo-metric head in barycenters of elements.
     std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> ele_flux_ptr;            ///< Field of flux in barycenter of every element.
-    std::shared_ptr<FieldDivide<3, FieldValue<3>::VectorFixed>> ele_velocity_ptr;    ///< Field of velocity in barycenter of every element.
 
 	std::shared_ptr<EqData> data_;
 

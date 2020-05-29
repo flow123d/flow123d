@@ -53,7 +53,7 @@ public:
     void update_solution(arma::vec &init_vec, arma::vec &output_vec);
     
     /// Estimate upper bound for time step. Return true if constraint was set.
-     virtual bool evaluate_time_constraint(double &time_constraint) { return false; }
+     virtual bool evaluate_time_constraint(FMT_UNUSED double &time_constraint) { return false; }
                                  
 protected:
     arma::mat system_matrix_;     ///< the square matrix of ODE system

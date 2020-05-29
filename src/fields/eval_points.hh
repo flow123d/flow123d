@@ -29,7 +29,6 @@
 
 class Side;
 class Quadrature;
-class EvalSubset;
 class BulkIntegral;
 class EdgeIntegral;
 class CouplingIntegral;
@@ -62,7 +61,7 @@ public:
 
     /// Return local coordinates of given local point and appropriate dim.
     template<unsigned int dim>
-    inline arma::vec local_point(unsigned int local_point_idx) const {
+    inline arma::vec::fixed<dim> local_point(unsigned int local_point_idx) const {
         return dim_eval_points_[dim-1].local_point<dim>(local_point_idx);
     }
 
@@ -105,19 +104,10 @@ public:
     template <unsigned int dim>
     std::shared_ptr<BoundaryIntegral> add_boundary(const Quadrature &);
 
-    /**
-     * Registers point set from quadrature.
-     * Returns an object referencing to the EvalPoints and list of its points.
-     *
-     * TODO Old method will be replaced with method returning BulkIntegral
-     */
-    template <unsigned int dim>
-    std::shared_ptr<EvalSubset> add_bulk_old(const Quadrature &);
-
-    /// The same as add_bulk but for points on sides.
-    /// TODO Old method will be replaced with method returning EdgeIntegral
-    template <unsigned int dim>
-    std::shared_ptr<EvalSubset> add_side_old(const Quadrature &);
+    /// Return maximal size of evaluation points objects .
+    inline unsigned int max_size() const {
+        return std::max( size(1), std::max( size(2), size(3) ) );
+    }
 
 private:
     class DimEvalPoints {
@@ -132,7 +122,7 @@ private:
 
         /// Return local coordinates of given local point.
         template<unsigned int dim>
-        inline arma::vec local_point(unsigned int local_point_idx) const {
+        inline arma::vec::fixed<dim> local_point(unsigned int local_point_idx) const {
             ASSERT_LT_DBG(local_point_idx, this->size());
             return local_points_.vec<dim>(local_point_idx);
         }

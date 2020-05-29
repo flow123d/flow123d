@@ -69,8 +69,8 @@ class FlowMHData : public FieldSet {
 
 };
 
-template <int Dim>
-class FlowMHAssembly : public AssemblyGroupBase< SomeEqAssembly<Dim> > {
+template <int dim>
+class FlowMHAssembly : public AssemblyGroupBase< SomeEqAssembly<dim> > {
     FlowMHAssembly(std::shared_ptr<FlowMHData> data);
     std::shared_ptr<FlowMHData> data_;
 };
@@ -87,8 +87,8 @@ class FlowLMHData : public FlowMHData {
 
 };
 
-template <int Dim>
-class FlowLMHAssembly : public AssemblyGroupBase< SomeEqAssembly<Dim> > {
+template <int dim>
+class FlowLMHAssembly : public AssemblyGroupBase< SomeEqAssembly<dim> > {
     FlowLMHAssembly(std::shared_ptr<FlowLMHData> data)
     :FlowMHAssembly(data)
     {}

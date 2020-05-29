@@ -15,7 +15,6 @@
  * @brief   Classes for auxiliary output mesh.
  */
 
-#include "mesh/side_impl.hh"
 #include "system/index_types.hh"
 #include "output_mesh.hh"
 #include "output_element.hh"
@@ -123,7 +122,7 @@ void OutputMeshBase::create_id_caches()
 	partitions_ = std::make_shared< ElementDataCache<int> >("partitions", (unsigned int)1, this->n_elements());
 	OutputElementIterator it = this->begin();
 	for (unsigned int i = 0; i < this->n_elements(); ++i, ++it) {
-		if (mesh_type_ == MeshType::orig) elm_idx[0] = orig_mesh_->find_elem_id(it->idx());
+        if (mesh_type_ == MeshType::orig) elm_idx[0] = orig_mesh_->find_elem_id(it->idx());
 		else elm_idx[0] = it->idx();
 		elem_ids_->store_value( i, elm_idx );
 
@@ -305,7 +304,7 @@ std::shared_ptr<OutputMeshBase> OutputMesh::construct_mesh()
 }
 
 
-std::shared_ptr<ElementDataCache<double>> OutputMesh::make_serial_nodes_cache(std::shared_ptr<ElementDataCache<unsigned int>> global_offsets)
+std::shared_ptr<ElementDataCache<double>> OutputMesh::make_serial_nodes_cache(FMT_UNUSED std::shared_ptr<ElementDataCache<unsigned int>> global_offsets)
 {
 	std::shared_ptr<ElementDataCache<double>> serial_nodes_cache;
 
@@ -544,9 +543,10 @@ bool OutputMeshDiscontinuous::refinement_criterion_error(const OutputMeshDiscont
 
     // evaluate at nodes and center in a single call
     std::vector<double> val_list(ele.nodes.size()+1);
-    std::vector< Space<spacedim>::Point > point_list;
-    point_list.push_back(centre);
-    point_list.insert(point_list.end(), ele.nodes.begin(), ele.nodes.end());
+    Armor::array point_list(spacedim,1,1+ele.nodes.size());
+    point_list.set(0) = centre;
+    unsigned int i=0;
+    for (auto node : ele.nodes) point_list.set(++i) = node;
     error_control_field_func_(point_list, ele_acc, val_list);
 
     //TODO: compute L1 or L2 error using standard quadrature

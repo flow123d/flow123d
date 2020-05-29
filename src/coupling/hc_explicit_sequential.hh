@@ -35,7 +35,7 @@ class FieldCommon;
 /**
  * TODO: should be derived from EquationBase in order to chain couplings
  */
-class CouplingBase {
+class CouplingBase : public EquationBase {
 public:
     static Input::Type::Abstract & get_input_type();
 

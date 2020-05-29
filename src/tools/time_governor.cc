@@ -45,11 +45,11 @@ using namespace Input::Type;
 
 const Tuple & TimeGovernor::get_input_time_type(double lower_bound, double upper_bound)
 {
-    return Tuple("TimeValue", "A time with unit specification.")
+    return Tuple("TimeValue", "A time with optional unit specification.")
         .declare_key("time", Double(lower_bound, upper_bound), Default::obligatory(),
-                                    "Numeric value of time." )
-		.declare_key("unit", String(), Default::read_time("Common time unit of equation defined in Time Governor"),
-									"Specify unit of an input time value.")
+                                    "The time value." )
+		.declare_key("unit", String(), Default::read_time("Common time unit of the equation's Time Governor."),
+				"The time unit. Possible values: 's' seconds, 'min' minutes, 'h' hours, 'd' days, 'y' years.")
 		.close();
 }
 
@@ -741,7 +741,6 @@ const TimeStep &TimeGovernor::step(int index) const {
 
 void TimeGovernor::view(const char *name) const
 {
-	static char buffer[1024];
 #ifdef FLOW123D_DEBUG_MESSAGES
     MessageOut().fmt(
             "TG[{}]:{:06d}    t:{:10.4f}    dt:{:10.6f}    dt_int<{:10.6f},{:10.6f}>    "
@@ -756,9 +755,6 @@ void TimeGovernor::view(const char *name) const
     MessageOut().fmt(
             "TG[{}]:{:06d}    t:{:10.4f}    dt:{:10.6f}    dt_int<{:10.6f},{:10.6f}>\n",
             name, tlevel(), t(), dt(), lower_constraint_, upper_constraint_);
-
-	//sprintf(buffer, "TG[%s]:%06d    t:%10.4f    dt:%10.6f    dt_int<%10.6f,%10.6f>\n",
-	//            name, tlevel(), t(), dt(), lower_constraint_, upper_constraint_ );
 #endif
 }
 

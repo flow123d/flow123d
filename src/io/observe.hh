@@ -230,7 +230,7 @@ public:
      * Sets next output time frame of observe. If the table is full, writes field values to the output
      * file. Using the YAML format. Argument flush starts writing to output file explicitly.
      */
-    void output_time_frame(double time, bool flush);
+    void output_time_frame(bool flush);
 
     /**
      * Return \p points_ vector
@@ -265,6 +265,9 @@ public:
 
 
 protected:
+    /// Effectively writes the data into the observe stream.
+    void flush_values();
+
     /// Maximal size of observe values times vector
     static const unsigned int max_observe_value_time;
 

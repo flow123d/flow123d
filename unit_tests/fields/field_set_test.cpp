@@ -92,7 +92,7 @@ public:
 	};
 
 	SomeEquation() {
-	    Profiler::initialize();
+	    Profiler::instance();
 	    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
         mesh_ = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
 	}
@@ -209,9 +209,9 @@ TEST_F(SomeEquation, collective_interface) {
     component_names_ = { "component_0", "component_1", "component_2", "component_3" };
 
     data.set_components(component_names_);
-    EXPECT_EQ(0,data["init_pressure"].n_comp());
-    EXPECT_EQ(0,data["velocity"].n_comp());
-    EXPECT_EQ(0,data["reaction_type"].n_comp());
+    EXPECT_EQ(component_names_.size(), data["init_pressure"].n_comp());
+    EXPECT_EQ(component_names_.size(), data["velocity"].n_comp());
+    EXPECT_EQ(component_names_.size(), data["reaction_type"].n_comp());
 
     EXPECT_EQ(nullptr,data["init_pressure"].mesh());
     data.set_mesh(*mesh_);

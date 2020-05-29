@@ -618,6 +618,7 @@ public:
             ASSERT_EQ(n_rows_, nr);
             ASSERT_EQ(n_cols_, nc);
             copy<nr, nc>(arma_x.memptr());
+            return *this;
         }
 
         template<long long unsigned int nr>
@@ -646,11 +647,11 @@ public:
      * @param nc    Number of columns in each matrix.
      */
     Array(uint nr, uint nc = 1, uint size = 0)
-    : n_rows_(nr),
+    : data_(new Type[nr * nc * size]),
+      n_rows_(nr),
       n_cols_(nc),
       size_(size),
-      reserved_(size),
-      data_(new Type[nr * nc * size])
+      reserved_(size)
     {
     }
     
@@ -699,6 +700,16 @@ public:
     void resize(uint size) {
         ASSERT_LE_DBG(size, reserved_);
         size_ = size;
+    }
+
+    inline uint n_rows() const
+    {
+        return n_rows_;
+    }
+
+    inline uint n_cols() const
+    {
+        return n_cols_;
     }
 
     /**
@@ -800,6 +811,13 @@ public:
         return ArmaVec<Type, nr>( data_ + mat_index * n_rows_ * n_cols_ );
     }
 
+    inline Type scalar(uint mat_index) const
+    {
+        ASSERT_DBG( (1 == n_rows_) && (1 == n_cols_) )(n_rows_)(n_cols_);
+        ASSERT_LT_DBG(mat_index, size());
+        return ArmaMat<Type,1,1>( data_ + mat_index * n_rows_ * n_cols_ )(0);
+    }
+
     inline ArrayMatSet set(uint index) {
         ASSERT_LT_DBG(index, size());
         return ArrayMatSet(data_ + index * n_rows_ * n_cols_, n_rows_, n_cols_);
@@ -810,21 +828,23 @@ public:
      * Return armadillo matrix at given position in array.
      * @param i  Index of matrix.
      */
-//    inline arma::mat arma_mat(uint i) const
-//    {
-//    	return arma::vec( (Type*)(data.data()) + i*nRows*nCols, nRows*nCols );
-//    }
+    inline arma::mat arma_mat(uint i) const
+    {
+        ASSERT_LT_DBG(i, size());
+   	    return arma::mat( data_ + i*n_rows_*n_cols_, n_rows_, n_cols_ );
+    }
 
     /**
      * Return armadillo vector at given position in array.
      * Warning! Method can be used only if nCols == 1.
      * @param i  Index of matrix.
      */
-//    inline arma::vec arma_vec(uint i) const
-//    {
-//        ASSERT_EQ_DBG(nCols, 1);
-//    	return arma::vec( (Type*)(data.data()) + i*nRows, nRows );
-//    }
+    inline arma::vec arma_vec(uint i) const
+    {
+        ASSERT_LT_DBG(i, size());
+        ASSERT_EQ_DBG(n_cols_, 1);
+   	    return arma::vec( data_ + i*n_rows_, n_rows_ );
+    }
 
     Type * data_;
 
@@ -837,6 +857,13 @@ private:
 };
 
 
+template <uint N>
+using vec = ArmaVec<double, N>;
+
+template <uint N, uint M>
+using mat = ArmaMat<double, N, M>;
+
+using array = Array<double>;
 }
 
 #endif

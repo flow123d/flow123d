@@ -21,10 +21,10 @@
 
 #include "fields/bc_field.hh"
 #include "fields/field.hh"
+#include "fields/field_fe.hh"
 #include "fields/multi_field.hh"
 #include "la/linsys.hh"
 #include "la/vector_mpi.hh"
-#include "flow/mh_dofhandler.hh"
 #include "fields/equation_output.hh"
 #include "coupling/equation.hh"
 #include "fem/fe_values_views.hh"
@@ -34,7 +34,6 @@
 class Distribution;
 class OutputTime;
 class DOFHandlerMultiDim;
-template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim> class FiniteElement;
 class Elasticity;
 
@@ -59,12 +58,14 @@ public:
 	inline Quadrature *q() { return &(q_[dim]); }
 
 	inline std::shared_ptr<DOFHandlerMultiDim> dh();
+    inline std::shared_ptr<DOFHandlerMultiDim> dh_scalar();
+    inline std::shared_ptr<DOFHandlerMultiDim> dh_tensor();
     
 //     const FEValuesViews::Vector<dim,3> vec;
 
 private:
 
-        MixedPtr<FiniteElement> fe_;  ///< Finite elements for the solution of the advection-diffusion equation.
+        MixedPtr<FiniteElement> fe_;  ///< Finite elements for the solution of the mechanics equation.
 	QGauss::array q_;
 
 
@@ -72,6 +73,8 @@ private:
     
 	/// Object for distribution of dofs.
 	std::shared_ptr<DOFHandlerMultiDim> dh_;
+    std::shared_ptr<DOFHandlerMultiDim> dh_scalar_;
+    std::shared_ptr<DOFHandlerMultiDim> dh_tensor_;
 };
 
 
@@ -90,6 +93,7 @@ public:
       
         enum Bc_types {
           bc_type_displacement,
+          bc_type_displacement_normal,
           bc_type_traction
         };
 
@@ -114,10 +118,21 @@ public:
 		
 		/// Pointer to DarcyFlow field cross_section
         Field<3, FieldValue<3>::Scalar > cross_section;
+        Field<3, FieldValue<3>::Scalar > potential_load;   ///< Potential of an additional (external) load.
         Field<3, FieldValue<3>::Scalar> region_id;
         Field<3, FieldValue<3>::Scalar> subdomain;
         
         Field<3, FieldValue<3>::VectorFixed> output_field;
+        Field<3, FieldValue<3>::TensorFixed> output_stress;
+        Field<3, FieldValue<3>::Scalar> output_von_mises_stress;
+        Field<3, FieldValue<3>::Scalar> output_cross_section;
+        Field<3, FieldValue<3>::Scalar> output_divergence;
+        
+        std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed> > output_field_ptr;
+        std::shared_ptr<FieldFE<3, FieldValue<3>::TensorFixed> > output_stress_ptr;
+        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_von_mises_stress_ptr;
+        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_cross_section_ptr;
+        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_div_ptr;
 
         EquationOutput output_fields;
 
@@ -129,8 +144,9 @@ public:
      * @brief Constructor.
      * @param init_mesh         computational mesh
      * @param in_rec            input record
+     * @param tm                time governor (if nullptr then it is created from input record)
      */
-    Elasticity(Mesh &init_mesh, const Input::Record in_rec);
+    Elasticity(Mesh &init_mesh, const Input::Record in_rec, TimeGovernor *tm = nullptr);
     /**
 
      * @brief Declare input record type for the equation TransportDG.
@@ -142,13 +158,19 @@ public:
      */
 	void zero_time_step() override;
 	
-    bool evaluate_time_constraint(double &time_constraint)
+    bool evaluate_time_constraint(double &)
     { return false; }
 
     /**
      * @brief Computes the solution in one time instant.
      */
 	void update_solution() override;
+    
+    /// Pass to next time and update equation data.
+    void next_time();
+    
+    /// Solve without updating time step and without output.
+    void solve_linear_system();
 
 	/**
 	 * @brief Postprocesses the solution and writes to output file.
@@ -161,6 +183,12 @@ public:
 	~Elasticity();
 
 	void initialize() override;
+    
+	// Recompute fields for output (stress, divergence etc.)
+	void update_output_fields();
+    
+    void set_potential_load(const Field<3, FieldValue<3>::Scalar> &potential)
+    { data_.potential_load = potential; }
 
     void calculate_cumulative_balance();
 
@@ -179,7 +207,8 @@ private:
     /// Registrar of class to factory
     static const int registrar;
 
-	void output_vector_gather();
+    template<unsigned int dim>
+    void compute_output_fields();
 
 	void preallocate();
 
@@ -199,17 +228,15 @@ private:
 	void assemble_volume_integrals();
 
 	/**
-	 * @brief Assembles the right hand side due to volume sources.
-	 *
-	 * This method just calls set_sources() for each space dimension.
+	 * @brief Assembles the right hand side (forces, boundary conditions, tractions).
 	 */
-	void set_sources();
+	void assemble_rhs();
 
 	/**
 	 * @brief Assembles the right hand side vector due to volume sources.
 	 */
 	template<unsigned int dim>
-	void set_sources();
+	void assemble_sources();
     
     /**
      * @brief Assembles the fluxes on the boundary.
@@ -218,26 +245,26 @@ private:
     void assemble_fluxes_boundary();
 
 	/**
-	 * @brief Assembles the fluxes between elements of different dimensions.
+	 * @brief Assembles the fluxes between elements of different dimensions depending on displacement.
 	 */
 	template<unsigned int dim>
-	void assemble_fluxes_element_side();
+	void assemble_matrix_element_side();
+    
+    /** @brief Assemble fluxes between different dimensions that are independent of displacement. */
+    template<unsigned int dim>
+    void assemble_rhs_element_side();
 
-
-	/**
-	 * @brief Assembles the r.h.s. components corresponding to the Dirichlet boundary conditions.
-	 *
-	 * The routine just calls templated method set_boundary_condition() for each space dimension.
-	 */
-	void set_boundary_conditions();
 
 	/**
 	 * @brief Assembles the r.h.s. components corresponding to the Dirichlet boundary conditions
 	 * for a given space dimension.
 	 */
 	template<unsigned int dim>
-	void set_boundary_conditions();
-
+	void assemble_boundary_conditions();
+    
+    /** @brief Penalty to enforce boundary value in weak sense. */
+    double dirichlet_penalty(SideIter side);
+    
     
 
 
@@ -278,9 +305,6 @@ private:
 	/// @name Output to file
 	// @{
 
-	/// Vector of solution data.
-	VectorMPI output_vec;
-    
     std::shared_ptr<OutputTime> output_stream_;
 
 	/// Record with input specification.
@@ -298,11 +322,13 @@ private:
     /// Indicates whether matrices have been preallocated.
     bool allocation_done;
     
-    /// Indicator of change in advection vector field.
-    bool flux_changed;
-
     // @}
 };
+
+
+
+double lame_mu(double young, double poisson);
+double lame_lambda(double young, double poisson);
 
 
 

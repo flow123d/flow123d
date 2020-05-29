@@ -39,7 +39,6 @@
 #include "fields/field_value_cache.hh"
 #include "input/type_selection.hh"         // for Selection
 #include "mesh/point.hh"                   // for Space
-#include "mesh/side_impl.hh"
 #include "mesh/accessors.hh"
 #include "system/asserts.hh"               // for Assert, ASSERT
 #include "tools/time_governor.hh"          // for TimeStep
@@ -232,19 +231,16 @@ public:
         * FieldAlgorithmBase provides a slow implementation using the value() method. Derived Field can implement its value_list method
         * as call of FieldAlgoritmBase<...>::value_list().
         */
-       virtual void value_list(const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
+       virtual void value_list(const Armor::array &point_list, const ElementAccessor<spacedim> &elm,
                           std::vector<typename Value::return_type>  &value_list)=0;
 
-       virtual void cache_update(FieldValueCache<typename Value::element_type, typename Value::return_type> &data_cache,
-                   unsigned int i_cache_el_begin, unsigned int i_cache_el_end,
-   	               const std::vector< ElementAccessor<spacedim> > &element_set) {
-    	   ASSERT(false).error("Must be implemented in descendants!\n");
-       }
+       virtual void cache_update(FieldValueCache<typename Value::element_type> &data_cache,
+				   ElementCacheMap &cache_map, unsigned int region_idx);
 
        /**
         * Postponed setter of Dof handler for FieldFE. For other types of fields has no effect.
         */
-       virtual void set_native_dh(std::shared_ptr<DOFHandlerMultiDim> dh)
+       virtual void set_native_dh(std::shared_ptr<DOFHandlerMultiDim>)
        {}
 
        /**

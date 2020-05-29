@@ -24,7 +24,6 @@
 #include "mesh/mesh.h"
 #include "mesh/node_accessor.hh"
 #include "mesh/accessors.hh"
-#include "mesh/side_impl.hh"
 
 
 
@@ -61,7 +60,7 @@ void DuplicateNodes::init_nodes()
 void DuplicateNodes::init_from_edges()
 {
   // initialize the objects from edges
-  for (auto edge : mesh_->edges) {
+  for (auto edge : mesh_->edge_range()) {
     MeshObject obj(edge.side(0)->dim());
     for (unsigned int i=0; i<edge.side(0)->dim()+1; ++i)
       obj.nodes[i] = edge.side(0)->node(i).idx();
@@ -121,8 +120,8 @@ void DuplicateNodes::duplicate_nodes()
         // add to queue adjacent elements sharing one of node_edges
         for (unsigned int sid=0; sid<elem->n_sides(); ++sid) {
           auto side = elem.side(sid);
-          for (unsigned int esid=0; esid < side->edge()->n_sides; ++esid) {
-            auto adj_el_idx = side->edge()->side(esid)->elem_idx();
+          for (unsigned int esid=0; esid < side->edge().n_sides(); ++esid) {
+            auto adj_el_idx = side->edge().side(esid)->elem_idx();
             if (adj_el_idx != elem.idx())
             {
               auto it = std::find(node_elements.begin(), node_elements.end(), adj_el_idx);

@@ -63,7 +63,7 @@ public:
     	  field_name_(field_name)
     	{}
 
-    	virtual typename Field<spacedim,Value>::FieldBasePtr create_field(Input::Record rec, const FieldCommon &field) {
+    	typename Field<spacedim,Value>::FieldBasePtr create_field(Input::Record rec, const FieldCommon &) override {
        		Input::AbstractRecord field_a_rec;
         	if (rec.opt_val(field_name_, field_a_rec)) {
         		return std::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar > >( potential_, field_a_rec);
@@ -72,7 +72,7 @@ public:
         	}
     	}
 
-    	bool is_active_field_descriptor(const Input::Record &in_rec, const std::string &input_name) override {
+    	bool is_active_field_descriptor(const Input::Record &in_rec, FMT_UNUSED const std::string &input_name) override {
     		return in_rec.find<Input::AbstractRecord>(field_name_);
     	}
 
@@ -89,7 +89,7 @@ public:
     /**
      * Returns std::vector of scalar values in several points at once.
      */
-    virtual void value_list (const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
+    virtual void value_list (const Armor::array &point_list, const ElementAccessor<spacedim> &elm,
                        std::vector<typename Value::return_type>  &value_list);
 
 

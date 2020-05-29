@@ -52,12 +52,16 @@
 
 class Mesh;
 class Observe;
-class EvalSubset;
 class EvalPoints;
-class BulkPointOld;
-class SidePointOld;
+class BulkPoint;
+class EdgePoint;
 template <int spacedim> class ElementAccessor;
 template <int spacedim, class Value> class FieldFE;
+namespace detail
+{
+    template< typename CALLABLE, typename TUPLE, int INDEX >
+    struct model_cache_item;
+}
 
 using namespace std;
 namespace IT=Input::Type;
@@ -165,10 +169,10 @@ public:
     Field &operator=(const Field &other);
 
 
-    typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_> operator() (BulkPointOld &);
+    typename Value::return_type operator() (BulkPoint &p);
 
 
-    typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_> operator() (SidePointOld &);
+    typename Value::return_type operator() (EdgePoint &p);
 
 
     /**
@@ -298,7 +302,7 @@ public:
      * trivial implementation using the @p value(,,) method. This is not optimal as it involves lot of virtual calls,
      * but this overhead can be negligible for more complex fields as Python of Formula.
      */
-    virtual void value_list(const std::vector< Point >  &point_list, const  ElementAccessor<spacedim> &elm,
+    virtual void value_list(const Armor::array &point_list, const  ElementAccessor<spacedim> &elm,
                        std::vector<typename Value::return_type>  &value_list) const;
 
     /**
@@ -322,12 +326,25 @@ public:
     void compute_field_data(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream);
 
     /// Implements FieldCommon::cache_allocate
-    void cache_allocate(std::shared_ptr<EvalSubset> sub_set) override;
+    void cache_allocate(std::shared_ptr<EvalPoints> eval_points) override;
 
     /// Implements FieldCommon::cache_update
     void cache_update(ElementCacheMap &cache_map) override;
 
+    /// returns reference to FieldValueCache.
+    inline const FieldValueCache<typename Value::element_type> &value_cache() const {
+        return value_cache_;
+    }
+
+    /// Same as previous but return non-const reference.
+    inline FieldValueCache<typename Value::element_type> &value_cache() {
+        return value_cache_;
+    }
+
 protected:
+
+    /// Return item of @p value_cache_ given by i_cache_point.
+    typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_> operator[] (unsigned int i_cache_point) const;
 
     /**
      * Read input into @p regions_history_ possibly pop some old values from the
@@ -385,14 +402,17 @@ protected:
     std::vector<std::shared_ptr<FactoryBase> >  factories_;
 
     /**
-     * Field value data cache of elements of dimension 1,2,3
+     * Field value data cache
      */
-    std::array< FieldValueCache<typename Value::element_type, typename Value::return_type>, 3 > value_cache_;
+    FieldValueCache<typename Value::element_type> value_cache_;
 
 
 
     template<int dim, class Val>
     friend class MultiField;
+
+    template< typename CALLABLE, typename TUPLE, int INDEX >
+    friend struct detail::model_cache_item;
 
 };
 
@@ -421,7 +441,7 @@ inline typename Value::return_type const & Field<spacedim,Value>::value(const Po
 
 
 template<int spacedim, class Value>
-inline void Field<spacedim,Value>::value_list(const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
+inline void Field<spacedim,Value>::value_list(const Armor::array &point_list, const ElementAccessor<spacedim> &elm,
                    std::vector<typename Value::return_type>  &value_list) const
 {
     ASSERT(this->set_time_result_ != TimeStatus::unknown)(this->name()).error("Unknown time status.\n");
@@ -429,6 +449,7 @@ inline void Field<spacedim,Value>::value_list(const std::vector< Point >  &point
            elm.region_idx().idx(), (unsigned long int) region_fields_.size(), name().c_str());
 	OLD_ASSERT( region_fields_[elm.region_idx().idx()] ,
     		"Null field ptr on region id: %d, field: %s\n", elm.region().id(), name().c_str());
+    ASSERT_DBG(point_list.n_rows() == spacedim && point_list.n_cols() == 1).error("Invalid point size.\n");
 
     region_fields_[elm.region_idx().idx()]->value_list(point_list,elm, value_list);
 }

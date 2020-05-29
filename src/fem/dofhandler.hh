@@ -22,7 +22,6 @@
 #include <vector>                   // for vector
 #include <unordered_map>            // for unordered_map
 #include "system/index_types.hh"    // for LongIdx
-#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "mesh/accessors.hh"
 #include "mesh/range_wrapper.hh"
@@ -59,17 +58,17 @@ public:
      * @brief Getter for the number of all mesh dofs required by the given
      * finite element.
      */
-    const unsigned int n_global_dofs() const { return n_global_dofs_; }
+    unsigned int n_global_dofs() const { return n_global_dofs_; }
     
     /**
      * @brief Returns the number of dofs on the current process.
      */
-    const unsigned int lsize() const { return lsize_; }
+    unsigned int lsize() const { return lsize_; }
 
     /**
      * @brief Returns max. number of dofs on one element.
      */
-    const unsigned int max_elem_dofs() const { return max_elem_dofs_; }
+    unsigned int max_elem_dofs() const { return max_elem_dofs_; }
 
     std::shared_ptr<Distribution> distr() const { return dof_ds_; }
 
@@ -367,7 +366,7 @@ protected:
         unsigned int ndofs = cell_starts[loc_ele_idx+1]-cell_starts[loc_ele_idx];
         // create armadillo vector on top of existing array
         // vec(ptr_aux_mem, number_of_elements, copy_aux_mem = true, strict = false)
-        Idx* mem_ptr = const_cast<unsigned int*>(&(dof_indices[cell_starts[loc_ele_idx]]));
+        IntIdx* mem_ptr = const_cast<IntIdx*>(&(dof_indices[cell_starts[loc_ele_idx]]));
         return LocDofVec(mem_ptr, ndofs, false, false);
     }
 
@@ -425,7 +424,7 @@ protected:
      * Dofs are ordered accordingly with cell_starts and local dof order
      * given by the finite element. See cell_starts for more description.
      */
-    std::vector<Idx> dof_indices;
+    std::vector<IntIdx> dof_indices;
     
     /**
      * @brief Maps local and ghost dof indices to global ones.

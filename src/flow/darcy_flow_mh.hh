@@ -47,7 +47,6 @@
 #include "fields/field_set.hh"                  // for FieldSet
 #include "fields/field_values.hh"               // for FieldValue<>::Scalar
 #include "flow/darcy_flow_interface.hh"         // for DarcyFlowInterface
-#include "flow/mh_dofhandler.hh"                // for LocalElementAccessorBase, uint
 #include "input/input_exception.hh"             // for DECLARE_INPUT_EXCEPTION
 #include "input/type_base.hh"                   // for Array
 #include "input/type_generic.hh"                // for Instance
@@ -183,10 +182,13 @@ public:
         
         Field<3, FieldValue<3>::Scalar > init_pressure;
         Field<3, FieldValue<3>::Scalar > storativity;
+        Field<3, FieldValue<3>::Scalar > extra_storativity; /// Externally added storativity.
+        Field<3, FieldValue<3>::Scalar > extra_source; /// Externally added water source.
 
 	    Field<3, FieldValue<3>::Scalar> field_ele_pressure;
 	    Field<3, FieldValue<3>::Scalar> field_ele_piezo_head;
         Field<3, FieldValue<3>::VectorFixed > field_ele_velocity;
+        Field<3, FieldValue<3>::Scalar> field_edge_pressure;
 
         /**
          * Gravity vector and constant shift of pressure potential. Used to convert piezometric head
@@ -211,7 +213,7 @@ public:
         
         unsigned int n_schur_compls;
         int is_linear;              ///< Hack fo BDDC solver.
-        bool force_bc_switch;       ///< auxiliary flag for switchting Dirichlet like BC
+        bool force_no_neumann_bc;       ///< auxiliary flag for switchting Dirichlet like BC
         
         /// Idicator of dirichlet or neumann type of switch boundary conditions.
         std::vector<char> bc_switch_dirichlet;
@@ -228,7 +230,7 @@ public:
 
 
 
-    DarcyMH(Mesh &mesh, const Input::Record in_rec);
+    DarcyMH(Mesh &mesh, const Input::Record in_rec, TimeGovernor *tm = nullptr);
 
     static const Input::Type::Record & type_field_descriptor();
     static const Input::Type::Record & get_input_type();
@@ -244,11 +246,20 @@ public:
     virtual void initialize_specific();
     void zero_time_step() override;
     void update_solution() override;
+    /// Solve the problem without moving to next time and without output.
+    void solve_time_step(bool output = true);
     
     /// postprocess velocity field (add sources)
-    virtual void prepare_new_time_step();
     virtual void postprocess();
     virtual void output_data() override;
+
+    EqData &data() { return *data_; }
+    
+    void set_extra_storativity(const Field<3, FieldValue<3>::Scalar> &extra_stor)
+    { data_->extra_storativity = extra_stor; }
+    
+    void set_extra_source(const Field<3, FieldValue<3>::Scalar> &extra_src)
+    { data_->extra_source = extra_src; }
 
     virtual ~DarcyMH() override;
 
@@ -266,6 +277,7 @@ protected:
     void solve_nonlinear();
     void modify_system();
     virtual void setup_time_term();
+    void prepare_new_time_step();
 
 
     //void prepare_parallel();
@@ -363,10 +375,7 @@ protected:
 
     // Temporary objects holding pointers to appropriate FieldFE
     // TODO remove after final fix of equations
-    std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> ele_pressure_ptr;             ///< Field of pressure head in barycenters of elements.
-    std::shared_ptr<FieldAddPotential<3, FieldValue<3>::Scalar>> ele_piezo_head_ptr; ///< Field of piezo-metric head in barycenters of elements.
     std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> ele_flux_ptr;            ///< Field of flux in barycenter of every element.
-    std::shared_ptr<FieldDivide<3, FieldValue<3>::VectorFixed>> ele_velocity_ptr;    ///< Field of velocity in barycenter of every element.
 
 	std::shared_ptr<EqData> data_;
 

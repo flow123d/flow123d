@@ -240,21 +240,18 @@ public:
     /**
      * Collective interface to @p FieldCommon::cache_allocate().
      */
-    void cache_allocate(std::shared_ptr<EvalSubset> sub_set) {
-        for(auto field : field_list) field->cache_allocate(sub_set);
+    void cache_allocate(std::shared_ptr<EvalPoints> eval_points) {
+        for(auto field : field_list) field->cache_allocate(eval_points);
     }
 
     /**
      * Collective interface to @p FieldCommon::cache_update().
      */
-    void cache_update(ElementCacheMap &cache_map, Mesh *mesh) {
-        cache_map.prepare_elements_to_update(mesh);
+    void cache_update(ElementCacheMap &cache_map) {
 	    for(auto field : field_list) field->cache_update(cache_map);
-        cache_map.clear_elements_to_update();
     }
 
 protected:
-
 
     /// List of all fields.
     std::vector<FieldCommon *> field_list;

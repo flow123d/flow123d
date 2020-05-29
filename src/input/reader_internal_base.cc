@@ -320,6 +320,8 @@ StorageBase * ReaderInternalBase::make_array_storage(PathBase &p, const Type::Ar
     	ss << "Do not fit the size " << arr_size << " of the Array.";
     	this->generate_input_error(p, array, ss.str(), false);
     }
+
+	return NULL; // suppress warning for non-void function
 }
 
 StorageBase * ReaderInternalBase::make_storage_from_default(const string &dflt_str, std::shared_ptr<Type::TypeBase> type) {
@@ -359,16 +361,8 @@ StorageBase * ReaderInternalBase::make_include_storage(PathBase &p, const Type::
     }
 
     FilePath fpath(included_path, FilePath::FileType::input_file);
-    try {
-    	ReaderToStorage include_reader(fpath, *(const_cast<Type::TypeBase *>(type)) );
-        return include_reader.get_storage();
-    } catch (ExcInputError &e ) {
-      e << EI_File(fpath); throw;
-    } catch (ExcNotJSONFormat &e) {
-      e << EI_File(fpath); throw;
-    }
-
-	return NULL;
+	ReaderToStorage include_reader(fpath, *(const_cast<Type::TypeBase *>(type)) );
+	return include_reader.get_storage();
 }
 
 bool ReaderInternalBase::read_bool_value(PathBase &p, const Type::TypeBase *type)

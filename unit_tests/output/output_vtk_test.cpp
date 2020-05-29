@@ -51,7 +51,7 @@ public:
     TestOutputVTK()
     : OutputVTK()
     {
-        Profiler::initialize();
+        Profiler::instance();
         LoggerOptions::get_instance().set_log_file("");
 
         FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/fields/simplest_cube_3d.msh", FilePath::input_file);

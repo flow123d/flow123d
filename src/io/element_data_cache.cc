@@ -222,7 +222,7 @@ void ElementDataCache<T>::store_value(unsigned int idx, const T * value) {
     for(unsigned int i = 0; i < this->n_comp_; i++, vec_idx++) {
     	vec[vec_idx] = value[i];
     }
-};
+}
 
 /**
  * Add value to given index
@@ -235,7 +235,7 @@ void ElementDataCache<T>::add(unsigned int idx, const T * value) {
     for(unsigned int i = 0; i < this->n_comp_; i++, vec_idx++) {
     	vec[vec_idx] += value[i];
     }
-};
+}
 
 /**
  * Reset values at given index
@@ -248,7 +248,7 @@ void ElementDataCache<T>::zero(unsigned int idx) {
     for(unsigned int i = 0; i < this->n_comp_; i++, vec_idx++) {
     	vec[vec_idx] = 0;
     }
-};
+}
 
 /**
  * Normalize values at given index
@@ -261,7 +261,7 @@ void ElementDataCache<T>::normalize(unsigned int idx, unsigned int divisor) {
     for(unsigned int i = 0; i < this->n_comp_; i++, vec_idx++) {
     	vec[vec_idx] /= divisor;
     }
-};
+}
 
 template <typename T>
 CheckResult ElementDataCache<T>::check_values(double default_val, double lower_bound, double upper_bound) {
@@ -283,7 +283,7 @@ CheckResult ElementDataCache<T>::check_values(double default_val, double lower_b
     if (is_nan) return CheckResult::not_a_number;
     else if (out_of_limit) return CheckResult::out_of_limits;
     else return CheckResult::ok;
-};
+}
 
 template <typename T>
 void ElementDataCache<T>::scale_data(double coef) {
@@ -298,7 +298,7 @@ void ElementDataCache<T>::scale_data(double coef) {
     }
 
     check_scale_data_ = CheckScaleData::scale;
-};
+}
 
 
 template <typename T>
@@ -307,11 +307,11 @@ std::shared_ptr< ElementDataCacheBase > ElementDataCache<T>::gather(Distribution
     int rank = distr->myp();
     int n_proc = distr->np();
 
-    unsigned int n_global_data;   // global number of data
-    int rec_starts[n_proc];       // displacement of first value that is received from each process
-    int rec_counts[n_proc];       // number of values that are received from each process
-    int *rec_indices_ids;         // collective values of local to global indexes map of data
-    T *rec_data;                  // collective values of data
+    unsigned int n_global_data;     // global number of data
+    int rec_starts[n_proc];         // displacement of first value that is received from each process
+    int rec_counts[n_proc];         // number of values that are received from each process
+    int *rec_indices_ids = nullptr; // collective values of local to global indexes map of data
+    T *rec_data = nullptr;          // collective values of data
 
     // collects values of data vectors and local to global indexes map on each process
     if (rank==0) {
@@ -432,17 +432,17 @@ std::shared_ptr< ElementDataCacheBase > ElementDataCache<T>::compute_node_data(s
 template<>
 MPI_Datatype ElementDataCache<double>::mpi_data_type() {
     return MPI_DOUBLE;
-};
+}
 
 template<>
 MPI_Datatype ElementDataCache<int>::mpi_data_type() {
     return MPI_INT;
-};
+}
 
 template<>
 MPI_Datatype ElementDataCache<unsigned int>::mpi_data_type() {
     return MPI_UNSIGNED;
-};
+}
 
 
 /// Access i-th element in the data vector.

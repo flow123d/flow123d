@@ -45,14 +45,14 @@
 #include "input/flow_attribute_lib.hh"
 #include "fem/fe_p.hh"
 
-FLOW123D_FORCE_LINK_IN_CHILD(transportOperatorSplitting);
+FLOW123D_FORCE_LINK_IN_CHILD(transportOperatorSplitting)
 
-FLOW123D_FORCE_LINK_IN_PARENT(firstOrderReaction);
-FLOW123D_FORCE_LINK_IN_PARENT(radioactiveDecay);
-FLOW123D_FORCE_LINK_IN_PARENT(dualPorosity);
-FLOW123D_FORCE_LINK_IN_PARENT(sorptionMobile);
-FLOW123D_FORCE_LINK_IN_PARENT(sorptionImmobile);
-FLOW123D_FORCE_LINK_IN_PARENT(sorption);
+FLOW123D_FORCE_LINK_IN_PARENT(firstOrderReaction)
+FLOW123D_FORCE_LINK_IN_PARENT(radioactiveDecay)
+FLOW123D_FORCE_LINK_IN_PARENT(dualPorosity)
+FLOW123D_FORCE_LINK_IN_PARENT(sorptionMobile)
+FLOW123D_FORCE_LINK_IN_PARENT(sorptionImmobile)
+FLOW123D_FORCE_LINK_IN_PARENT(sorption)
 
 
 using namespace Input::Type;
@@ -73,8 +73,7 @@ const Record & TransportOperatorSplitting::get_input_type() {
             " via operator splitting.")
 		.derive_from(AdvectionProcessBase::get_input_type())
 		.add_attribute( FlowAttribute::subfields_address(), "\"/problem/solute_equation/substances/*/name\"")
-		.declare_key("time", TimeGovernor::get_input_type(), Default::obligatory(),
-				"Time governor settings for the transport equation.")
+    .copy_keys(EquationBase::record_template())
 		.declare_key("balance", Balance::get_input_type(), Default("{}"),
 				"Settings for computing mass balance.")
 		.declare_key("output_stream", OutputTime::get_input_type(), Default("{}"),
@@ -165,6 +164,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 	convection = trans.factory< ConcentrationTransportBase, Mesh &, const Input::Record >(init_mesh, trans);
 
 	time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), TimeMark::none_type, false);
+  ASSERT( time_->is_default() == false ).error("Missing key 'time' in Coupling_OperatorSplitting.");
 	convection->set_time_governor(time());
 
 	// Initialize list of substances.
@@ -364,7 +364,7 @@ void TransportOperatorSplitting::update_solution() {
 void TransportOperatorSplitting::set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field)
 {
 	convection->set_velocity_field( flux_field );
-};
+}
 
 
 

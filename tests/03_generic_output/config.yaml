@@ -14,6 +14,7 @@ test_cases:
     - 08_fv_balance_times.yaml
     - 09_observe_output.yaml
     - 12_file_names.yaml
+    - 14_observe_output_only.yaml
     - 21_gmsh_cont_output.yaml
     - 22_gmsh_discont_output.yaml
     - 31_serial_vtk_node_interp.yaml

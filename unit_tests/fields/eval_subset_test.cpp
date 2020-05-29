@@ -4,7 +4,7 @@
  *  Created on: Dec 03, 2019
  *      Author: David Flanderka
  *
- *  Tests EvalPoints, EvalSubset, BulkPoint and SidePoint classes
+ *  Tests EvalPoints, Integral classes ...
  */
 
 #define TEST_USE_MPI
@@ -15,13 +15,12 @@
 
 #include "fields/eval_points.hh"
 #include "fields/eval_subset.hh"
+#include "fields/field_value_cache.hh"
 #include "quadrature/quadrature.hh"
 #include "quadrature/quadrature_lib.hh"
 #include "fem/dofhandler.hh"
 #include "fem/dh_cell_accessor.hh"
 #include "mesh/mesh.h"
-#include "mesh/sides.h"
-#include "mesh/side_impl.hh"
 #include "system/sys_profiler.hh"
 
 
@@ -42,7 +41,7 @@ TEST(EvalPointsTest, all) {
 
 TEST(IntegralTest, integrals_3d) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-    Profiler::initialize();
+    Profiler::instance();
     PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
 
 	std::shared_ptr<EvalPoints> eval_points = std::make_shared<EvalPoints>();
@@ -56,6 +55,7 @@ TEST(IntegralTest, integrals_3d) {
     Mesh * mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
     std::shared_ptr<DOFHandlerMultiDim> dh = std::make_shared<DOFHandlerMultiDim>(*mesh);
     DHCellAccessor dh_cell(dh.get(), 3);
+    ElementCacheMap elm_cache_map;
 
     {
         // Test of bulk local points
@@ -64,7 +64,7 @@ TEST(IntegralTest, integrals_3d) {
 												 {0.138196601125010504, 0.585410196624968515, 0.138196601125010504},
 												 {0.585410196624968515, 0.138196601125010504, 0.138196601125010504}};
     	unsigned int i=0; // iter trought expected_vals
-    	for (auto p : bulk_integral->points(dh_cell)) {
+    	for (auto p : bulk_integral->points(dh_cell, &elm_cache_map)) {
             EXPECT_ARMA_EQ(p.loc_coords<3>(), expected_vals[i]);
 			++i;
         }
@@ -87,7 +87,7 @@ TEST(IntegralTest, integrals_3d) {
         unsigned int i_side=0, i_point; // iter trought expected_vals
         for (auto side_acc : dh_cell.side_range()) {
             i_point=0;
-            for ( auto p : edge_integral->points(side_acc) ) {
+            for ( auto p : edge_integral->points(side_acc, &elm_cache_map) ) {
             	EXPECT_ARMA_EQ(p.loc_coords<3>(), expected_vals[i_side][i_point]);
                 ++i_point;
             }
@@ -106,9 +106,10 @@ TEST(IntegralTest, integrals_3d) {
                              {0.166666666666666657, 0.666666666666666741, 0.166666666666666657} };
         unsigned int i_side=0, i_point; // iter trought expected_vals
         for (auto side_acc : dh_cell.side_range()) {
-            if (side_acc.cond() == NULL) continue;
+            if (! side_acc.side().is_boundary())
+                continue;
             i_point=0;
-            for ( auto p : boundary_integral->points(side_acc) ) {
+            for ( auto p : boundary_integral->points(side_acc, &elm_cache_map) ) {
                 EXPECT_ARMA_EQ(p.loc_coords<3>(), expected_vals[i_side][i_point]);
                 ++i_point;
             }
@@ -135,12 +136,12 @@ TEST(IntegralTest, integrals_3d) {
         unsigned int i_side=0, i_point; // iter trought expected_vals
         for (auto ngh_side_acc : dh_ngh_cell.neighb_sides()) {
             i_point=0;
-            for ( auto p : coupling_integral->points(dh_ngh_cell) ) {
+            for ( auto p : coupling_integral->points(dh_ngh_cell, &elm_cache_map) ) {
                 EXPECT_ARMA_EQ(p.loc_coords<2>(), expected_vals[i_side][i_point]);
                 ++i_point;
             }
             i_point=0; ++i_side;
-            for ( auto p : coupling_integral->points(ngh_side_acc) ) {
+            for ( auto p : coupling_integral->points(ngh_side_acc, &elm_cache_map) ) {
                 EXPECT_ARMA_EQ(p.loc_coords<3>(), expected_vals[i_side][i_point]);
                 ++i_point;
             }

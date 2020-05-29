@@ -21,7 +21,6 @@
 
 #include <armadillo>
 #include "mesh/accessors.hh"
-#include "mesh/side_impl.hh"
 #include "mesh/neighbours.h"
 #include "fem/finite_element.hh"
 #include "fem/dofhandler.hh"
@@ -114,7 +113,7 @@ public:
     template<unsigned int dim>
     FEPtr<dim> fe() const {
         ElementAccessor<3> elm_acc = this->elm();
-        return dof_handler_->ds_->fe(elm_acc).get<dim>();
+        return dof_handler_->ds_->fe(elm_acc)[Dim<dim>{}];
     }
 
     /// Check validity of accessor (see default constructor)
@@ -156,8 +155,13 @@ public:
     }
 
     /// Comparison of accessors.
-    bool operator==(const DHCellAccessor& other) {
+    bool operator==(const DHCellAccessor& other) const {
     	return (loc_ele_idx_ == other.loc_ele_idx_);
+    }
+
+    /// Comparison of accessors.
+    bool operator!=(const DHCellAccessor& other) const {
+    	return (loc_ele_idx_ != other.loc_ele_idx_);
     }
 
 
@@ -238,7 +242,7 @@ public:
     	return side().elem_idx();
     }
 
-    inline Boundary * cond() const {
+    inline Boundary cond() const {
         return side().cond();
     }
 
@@ -275,7 +279,7 @@ public:
 		return this->elem_idx() == other.elem_idx() && side_idx_ == other.side_idx_;
 	}
 
-	inline bool operator !=(const DHCellSide &other) {
+	inline bool operator !=(const DHCellSide &other) const {
 		return this->elem_idx() != other.elem_idx() || side_idx_ != other.side_idx_;
 	}
 
@@ -331,7 +335,7 @@ public:
 
     /// This class is implicitly convertible to DHCellSide.
     operator DHCellSide() const {
-    	SideIter side = dof_handler_->mesh()->edges[edge_idx_].side(side_idx_);
+    	SideIter side = dof_handler_->mesh()->edge(edge_idx_).side(side_idx_);
     	DHCellAccessor cell = dof_handler_->cell_accessor_from_element( side->elem_idx() );
         return DHCellSide(cell, side->side_idx());
     }
@@ -458,6 +462,10 @@ inline const Dof &DHCellAccessor::cell_dof(unsigned int idof) const
             return fe<3>()->dof(idof);
             break;
     }
+
+    ASSERT(0)(this->dim()).error("Unsupported FE dimension.");
+    // cannot be reached:
+    return fe<1>()->dof(idof);;
 }
 
 
@@ -484,9 +492,9 @@ inline RangeConvert<DHEdgeSide, DHCellSide> DHCellSide::edge_sides() const {
 
 inline unsigned int DHCellSide::n_edge_sides() const {
     unsigned int edge_idx = dh_cell_accessor_.elm()->edge_idx(side_idx_);
-    Edge *edg = &dh_cell_accessor_.dof_handler_->mesh()->edges[edge_idx];
-    for (int sid=0; sid<edg->n_sides; sid++)
-        if ( dh_cell_accessor_.dof_handler_->el_is_local(edg->side(sid)->element().idx()) ) return edg->n_sides;
+    Edge edg = dh_cell_accessor_.dof_handler_->mesh()->edge(edge_idx);
+    for (uint sid=0; sid<edg.n_sides(); sid++)
+        if ( dh_cell_accessor_.dof_handler_->el_is_local(edg.side(sid)->element().idx()) ) return edg.n_sides();
     return 0;
 }
 

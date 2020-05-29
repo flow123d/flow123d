@@ -9,8 +9,9 @@
 #define	_HYDRO_FUNCTIONS_HH
 
 
-#include "badiff.h"  // for B::d, B::deriv, B::diff, B::getBTypeNameHV, B::o...
-#include "fadbad.h"  // for B
+// #include "badiff.h"  // for B::d, B::deriv, B::diff, B::getBTypeNameHV, B::o...
+// #include "fadbad.h"  // for B
+#include "tools/include_fadbad.hh" // for "fadbad.h", "badiff.h"
 namespace internal { class Irmay; }
 namespace internal { class VanGenuchten; }
 

@@ -99,8 +99,9 @@ protected:
         update_dofs(dh_cell);
 
         reset_soil_model(dh_cell);
-        ElementAccessor<3> ele = dh_cell.elm();
-        double storativity = ad_->storativity.value(ele.centre(), ele);
+        const ElementAccessor<3> ele = dh_cell.elm();
+        double storativity = ad_->storativity.value(ele.centre(), ele)
+                             + ad_->extra_storativity.value(ele.centre(), ele);
         VectorMPI water_content_vec = ad_->water_content_ptr->get_data_vec();
 
         for (unsigned int i=0; i<ele->n_sides(); i++) {
@@ -120,34 +121,38 @@ protected:
         }
     }
 
-    void assemble_sides(LocalElementAccessorBase<3> ele) override
+    void assemble_sides(const DHCellAccessor& dh_cell) override
     {
-        reset_soil_model(ele.dh_cell());
-        cross_section = ad_->cross_section.value(ele.centre(), ele.element_accessor());
+        reset_soil_model(dh_cell);
+        const ElementAccessor<3> ele = dh_cell.elm();
+        cross_section = ad_->cross_section.value(ele.centre(), ele);
 
-        double conductivity = compute_conductivity(ele.element_accessor());
+        double conductivity = compute_conductivity(ele);
         double scale = 1 / cross_section / conductivity;
-        this->assemble_sides_scale(ele,scale);
+        this->assemble_sides_scale(dh_cell,scale);
     }
 
     /***
      * Called from assembly_local_matrix, assumes precomputed:
      * cross_section, genuchten_on, soil_model
      */
-    void assemble_source_term(LocalElementAccessorBase<3> ele) override
+    void assemble_source_term(const DHCellAccessor& dh_cell) override
     {
-        update_water_content(ele.dh_cell());
+        update_water_content(dh_cell);
+        const ElementAccessor<3> ele = dh_cell.elm();
         
         // set lumped source
-        double diagonal_coef = ele.measure() * cross_section / ele.n_sides();
-        double source_diagonal = diagonal_coef * ad_->water_source_density.value(ele.centre(), ele.element_accessor());
+        double diagonal_coef = ele.measure() * cross_section / ele->n_sides();
+        double source_diagonal = diagonal_coef * 
+                        ( ad_->water_source_density.value(ele.centre(), ele)
+                        + ad_->extra_source.value(ele.centre(), ele));
 
         VectorMPI water_content_vec = ad_->water_content_ptr->get_data_vec();
 
-        for (unsigned int i=0; i<ele.element_accessor()->n_sides(); i++)
+        for (unsigned int i=0; i<ele->n_sides(); i++)
         {
 
-            uint local_side = cr_disc_dofs[i];
+            const int local_side = cr_disc_dofs[i];
             if (this->dirichlet_edge[i] == 0) {
 
                 double capacity = ad_->capacity[local_side];
@@ -178,9 +183,10 @@ protected:
                                             -source_diagonal - mass_rhs);
             }
 
-            ad_->balance->add_mass_vec_value(ad_->water_balance_idx, ele.region().bulk_idx(),
-                    diagonal_coef*water_content_vec[local_side]);
-            ad_->balance->add_source_values(ad_->water_balance_idx, ele.region().bulk_idx(), {(LongIdx)ele.edge_local_row(i)},
+            ad_->balance->add_mass_values(ad_->water_balance_idx, dh_cell, {local_side},
+                                          {0.0}, diagonal_coef*water_content_vec[local_side]);
+            ad_->balance->add_source_values(ad_->water_balance_idx, ele.region().bulk_idx(),
+                                            {this->loc_system_.row_dofs[this->loc_edge_dofs[i]]},
                                             {0},{source_diagonal});
         }
 
@@ -199,7 +205,7 @@ protected:
     {   
         update_water_content(dh_cell);
         
-        ElementAccessor<3> ele = dh_cell.elm();
+        const ElementAccessor<3> ele = dh_cell.elm();
 
         VectorMPI water_content_vec = ad_->water_content_ptr->get_data_vec();
         
@@ -212,7 +218,7 @@ protected:
                 += edge_source_term - edge_scale * (water_content - water_content_previous_time) / ad_->time_step_;
         }
          
-        Idx p_dof = dh_cell.cell_with_other_dh(ad_->dh_p_.get()).get_loc_dof_indices()(0);
+        IntIdx p_dof = dh_cell.cell_with_other_dh(ad_->dh_p_.get()).get_loc_dof_indices()(0);
         ad_->conductivity_ptr->get_data_vec()[p_dof] = compute_conductivity(ele);
     }
 

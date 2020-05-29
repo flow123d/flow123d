@@ -17,7 +17,6 @@
  */
 
 #include "input/input_type.hh"
-#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "mesh/accessors.hh"
 //#include "transport/transport_operator_splitting.hh"
@@ -230,8 +229,7 @@ IT::Record HeatTransferModel::get_input_type(const string &implementation, const
 				std::string(ModelEqData::name()) + "_" + implementation,
 				description + " for heat transfer.")
 			.derive_from(AdvectionProcessBase::get_input_type())
-			.declare_key("time", TimeGovernor::get_input_type(), Default::obligatory(),
-					"Time governor setting for the secondary equation.")
+			.copy_keys(EquationBase::record_template())
 			.declare_key("balance", Balance::get_input_type(), Default("{}"),
 					"Settings for computing balance.")
 			.declare_key("output_stream", OutputTime::get_input_type(), Default("{}"),
@@ -254,6 +252,7 @@ HeatTransferModel::HeatTransferModel(Mesh &mesh, const Input::Record in_rec) :
 		flux_changed(true)
 {
 	time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
+	ASSERT( time_->is_default() == false ).error("Missing key 'time' in Heat_AdvectionDiffusion_DG.");
 	substances_.initialize({""});
 
     output_stream_ = OutputTime::create_output_stream("heat", in_rec.val<Input::Record>("output_stream"), time().get_unit_string());
@@ -273,7 +272,7 @@ void HeatTransferModel::output_data()
 }
 
 
-void HeatTransferModel::compute_mass_matrix_coefficient(const std::vector<arma::vec3 > &point_list,
+void HeatTransferModel::compute_mass_matrix_coefficient(const Armor::array &point_list,
 		const ElementAccessor<3> &ele_acc,
 		std::vector<double> &mm_coef)
 {
@@ -296,7 +295,7 @@ void HeatTransferModel::compute_mass_matrix_coefficient(const std::vector<arma::
 }
 
 
-void HeatTransferModel::compute_advection_diffusion_coefficients(const std::vector<arma::vec3 > &point_list,
+void HeatTransferModel::compute_advection_diffusion_coefficients(const Armor::array &point_list,
 		const std::vector<arma::vec3> &velocity,
 		const ElementAccessor<3> &ele_acc,
 		std::vector<std::vector<arma::vec3> > &ad_coef,
@@ -336,7 +335,7 @@ void HeatTransferModel::compute_advection_diffusion_coefficients(const std::vect
 }
 
 
-void HeatTransferModel::compute_init_cond(const std::vector<arma::vec3> &point_list,
+void HeatTransferModel::compute_init_cond(const Armor::array &point_list,
 		const ElementAccessor<3> &ele_acc,
 		std::vector<std::vector<double> > &init_values)
 {
@@ -354,7 +353,7 @@ void HeatTransferModel::get_bc_type(const ElementAccessor<3> &ele_acc,
 
 
 void HeatTransferModel::get_flux_bc_data(unsigned int index,
-        const std::vector<arma::vec3> &point_list,
+        const Armor::array &point_list,
 		const ElementAccessor<3> &ele_acc,
 		std::vector< double > &bc_flux,
 		std::vector< double > &bc_sigma,
@@ -368,8 +367,8 @@ void HeatTransferModel::get_flux_bc_data(unsigned int index,
 	for (auto f : bc_flux) f = -f;
 }
 
-void HeatTransferModel::get_flux_bc_sigma(unsigned int index,
-        const std::vector<arma::vec3> &point_list,
+void HeatTransferModel::get_flux_bc_sigma(FMT_UNUSED unsigned int index,
+        const Armor::array &point_list,
 		const ElementAccessor<3> &ele_acc,
 		std::vector< double > &bc_sigma)
 {
@@ -377,7 +376,7 @@ void HeatTransferModel::get_flux_bc_sigma(unsigned int index,
 }
 
 
-void HeatTransferModel::compute_source_coefficients(const std::vector<arma::vec3> &point_list,
+void HeatTransferModel::compute_source_coefficients(const Armor::array &point_list,
 			const ElementAccessor<3> &ele_acc,
 			std::vector<std::vector<double> > &sources_value,
 			std::vector<std::vector<double> > &sources_density,
@@ -415,7 +414,7 @@ void HeatTransferModel::compute_source_coefficients(const std::vector<arma::vec3
 }
 
 
-void HeatTransferModel::compute_sources_sigma(const std::vector<arma::vec3> &point_list,
+void HeatTransferModel::compute_sources_sigma(const Armor::array &point_list,
 			const ElementAccessor<3> &ele_acc,
 			std::vector<std::vector<double> > &sources_sigma)
 {

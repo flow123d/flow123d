@@ -53,7 +53,7 @@ void logger_messages() {
 
 TEST(Logger, no_log_file) {
 	// log file is set to empty
-	Profiler::initialize();
+	Profiler::instance();
 	LoggerOptions::get_instance().setup_mpi(MPI_COMM_WORLD);
 	LoggerOptions::get_instance().set_log_file("");
 
@@ -62,7 +62,7 @@ TEST(Logger, no_log_file) {
 
 TEST(Logger, without_init_log_file) {
 	// log file is not set > Log and Debug messages are redirect to screen output
-	Profiler::initialize();
+	Profiler::instance();
 	LoggerOptions::get_instance().setup_mpi(MPI_COMM_WORLD);
 
 	logger_messages();
@@ -70,7 +70,7 @@ TEST(Logger, without_init_log_file) {
 
 TEST(Logger, log_file_without_mpi) {
 	// MPI is not set > random rank of process is generated
-	Profiler::initialize();
+	Profiler::instance();
 	LoggerOptions::get_instance().set_log_file("without_mpi");
 
 	logger_messages();
@@ -78,7 +78,7 @@ TEST(Logger, log_file_without_mpi) {
 
 TEST(Logger, log_file_with_mpi) {
 	// full usage of log
-	Profiler::initialize();
+	Profiler::instance();
 	LoggerOptions::get_instance().setup_mpi(MPI_COMM_WORLD);
 	LoggerOptions::get_instance().set_log_file("with_mpi");
 
@@ -86,7 +86,7 @@ TEST(Logger, log_file_with_mpi) {
 }
 
 TEST(Logger, mask_manipulator) {
-	Profiler::initialize();
+	Profiler::instance();
 	LoggerOptions::get_instance().setup_mpi(MPI_COMM_WORLD);
 	LoggerOptions::get_instance().set_log_file("manip");
 
@@ -99,7 +99,7 @@ TEST(Logger, mask_manipulator) {
 }
 
 TEST(Logger, fmt_lib) {
-	Profiler::initialize();
+	Profiler::instance();
 	LoggerOptions::get_instance().setup_mpi(MPI_COMM_WORLD);
 	LoggerOptions::get_instance().set_log_file("");
 
@@ -113,7 +113,7 @@ TEST(Logger, fmt_lib) {
 }
 
 TEST(FealAssert, warning) {
-	Profiler::initialize();
+	Profiler::instance();
 	LoggerOptions::get_instance().setup_mpi(MPI_COMM_WORLD);
 	LoggerOptions::get_instance().set_log_file("assert_warn");
 

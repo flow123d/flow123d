@@ -13,7 +13,6 @@
 #include "armadillo"
 #include "system/armadillo_tools.hh"
 #include "system/sys_profiler.hh"
-#include "mesh/side_impl.hh"
 #include "quadrature/quadrature_lib.hh"
 #include "fem/fe_p.hh"
 #include "fem/fe_values.hh"
@@ -44,7 +43,7 @@ double integrate(ElementAccessor<3> &ele) {
     FE_P_disc<dim> fe(0);
     QGauss quad( dim, 2 );
     MappingP1<dim,3> map;
-    FEValues<dim,3> fe_values(quad, fe, update_JxW_values | update_quadrature_points);
+    FEValues<3> fe_values(quad, fe, update_JxW_values | update_quadrature_points);
     
     fe_values.reinit( ele );
     
@@ -124,7 +123,7 @@ public:
 
 
 TEST(ElementMapping, element_map) {
-    Profiler::initialize();
+    Profiler::instance();
     armadillo_setup();
     MappingP1<3,3> mapping;
 

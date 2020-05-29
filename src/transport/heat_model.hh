@@ -43,33 +43,33 @@ class OutputTime;
 namespace Input { class Record; }
 template <int spacedim> class ElementAccessor;
 
-/*
-class HeatProcessBase : public EquationBase
-{
-public:
-    typedef HeatProcessBase FactoryBaseType;
+
+// class HeatProcessBase : public EquationBase
+// {
+// public:
+//     typedef HeatProcessBase FactoryBaseType;
 
 
-    HeatProcessBase(Mesh &mesh, const Input::Record in_rec)
-    : EquationBase(mesh, in_rec)
-    {};
+//     HeatProcessBase(Mesh &mesh, const Input::Record in_rec)
+//     : EquationBase(mesh, in_rec)
+//     {};
 
-    /**
-     * This method takes sequential PETSc vector of side velocities and update
-     * transport matrix. The ordering is same as ordering of sides in the mesh.
-     * We just keep the pointer, but do not destroy the object.
-     *
-     * TODO: We should pass whole velocity field object (description of base functions and dof numbering) and vector.
-     *
-    virtual void set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field) = 0;
+//     /**
+//      * This method takes sequential PETSc vector of side velocities and update
+//      * transport matrix. The ordering is same as ordering of sides in the mesh.
+//      * We just keep the pointer, but do not destroy the object.
+//      *
+//      * TODO: We should pass whole velocity field object (description of base functions and dof numbering) and vector.
+//      */
+//     virtual void set_velocity_field(const MH_DofHandler &dh) = 0;
 
-    /// Common specification of the input record for secondary equations.
-    static Input::Type::Abstract & get_input_type() {
-        return Input::Type::Abstract("Heat",
-                "Equation for heat transfer.")
-                .close();
-    }
-};*/
+//     /// Common specification of the input record for secondary equations.
+//     static Input::Type::Abstract & get_input_type() {
+//         return Input::Type::Abstract("Heat",
+//                 "Equation for heat transfer.")
+//                 .close();
+//     }
+// };
 
 /*
 class HeatNothing : public HeatProcessBase {
@@ -173,23 +173,23 @@ public:
 
 	HeatTransferModel(Mesh &mesh, const Input::Record in_rec);
 
-	void init_from_input(const Input::Record &in_rec) override {};
+	void init_from_input(const Input::Record &) override {};
 
-	void compute_mass_matrix_coefficient(const std::vector<arma::vec3 > &point_list,
+	void compute_mass_matrix_coefficient(const Armor::array &point_list,
 			const ElementAccessor<3> &ele_acc,
 			std::vector<double> &mm_coef) override;
 
-	void compute_retardation_coefficient(const std::vector<arma::vec3 > &point_list,
-			const ElementAccessor<3> &ele_acc,
-			std::vector<std::vector<double> > &ret_coef) override {};
+	void compute_retardation_coefficient(const Armor::array &,
+			const ElementAccessor<3> &,
+			std::vector<std::vector<double> > &) override {};
 
-	void compute_advection_diffusion_coefficients(const std::vector<arma::vec3 > &point_list,
+	void compute_advection_diffusion_coefficients(const Armor::array &point_list,
 			const std::vector<arma::vec3> &velocity,
 			const ElementAccessor<3> &ele_acc,
 			std::vector<std::vector<arma::vec3> > &ad_coef,
 			std::vector<std::vector<arma::mat33> > &dif_coef) override;
 
-	void compute_init_cond(const std::vector<arma::vec3> &point_list,
+	void compute_init_cond(const Armor::array &point_list,
 			const ElementAccessor<3> &ele_acc,
 			std::vector<std::vector<double> > &init_values) override;
 
@@ -197,24 +197,24 @@ public:
 				arma::uvec &bc_types) override;
 
 	void get_flux_bc_data(unsigned int index,
-            const std::vector<arma::vec3> &point_list,
+            const Armor::array &point_list,
 			const ElementAccessor<3> &ele_acc,
 			std::vector< double > &bc_flux,
 			std::vector< double > &bc_sigma,
 			std::vector< double > &bc_ref_value) override;
 
 	void get_flux_bc_sigma(unsigned int index,
-            const std::vector<arma::vec3> &point_list,
+            const Armor::array &point_list,
 			const ElementAccessor<3> &ele_acc,
 			std::vector< double > &bc_sigma) override;
 
-	void compute_source_coefficients(const std::vector<arma::vec3> &point_list,
+	void compute_source_coefficients(const Armor::array &point_list,
 				const ElementAccessor<3> &ele_acc,
 				std::vector<std::vector<double> > &sources_conc,
 				std::vector<std::vector<double> > &sources_density,
 				std::vector<std::vector<double> > &sources_sigma) override;
 
-	void compute_sources_sigma(const std::vector<arma::vec3> &point_list,
+	void compute_sources_sigma(const Armor::array &point_list,
 				const ElementAccessor<3> &ele_acc,
 				std::vector<std::vector<double> > &sources_sigma) override;
 

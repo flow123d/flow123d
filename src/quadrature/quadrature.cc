@@ -77,7 +77,7 @@ Quadrature Quadrature::make_from_side(unsigned int sid, unsigned int pid) const
 }
 
 // Specialized subquadrature consructor for dim=1.
-template<> Quadrature Quadrature::make_from_side<1>(unsigned int sid, unsigned int pid) const
+template<> Quadrature Quadrature::make_from_side<1>(unsigned int sid, unsigned int) const
 {
     ASSERT_EQ_DBG(size(), 1);
     Quadrature q(1, 1);

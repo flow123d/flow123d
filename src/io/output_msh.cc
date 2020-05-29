@@ -15,7 +15,6 @@
  * @brief   The functions for outputs to GMSH files.
  */
 
-#include "mesh/side_impl.hh"
 #include "output_msh.hh"
 #include "output_mesh.hh"
 #include "output_element.hh"
@@ -48,7 +47,7 @@ public:
     virtual ~DummyOutputData() override
     {}
 
-    void print_ascii(ostream &out_stream, unsigned int idx) override
+    void print_ascii(ostream &out_stream, unsigned int) override
     {
         for(unsigned int i=0; i< n_comp_;i++) out_stream << 0 << " ";
     }
@@ -58,39 +57,39 @@ public:
         for(unsigned int i=0; i< n_comp_;i++) out_stream << 0 << " ";
     }
 
-    void print_binary_all(ostream &out_stream, bool print_data_size = true) override
+    void print_binary_all(ostream &, bool) override
     {
         ASSERT(false).error("Not implemented.");
     }
 
-    void print_yaml_subarray(ostream &out_stream, unsigned int precision, unsigned int begin, unsigned int end) override
+    void print_yaml_subarray(ostream &, unsigned int, unsigned int , unsigned int) override
     {}
 
-    void get_min_max_range(double &min, double &max) override
+    void get_min_max_range(double &, double &) override
     {}
 
-    void read_ascii_data(Tokenizer &tok, unsigned int n_components, unsigned int i_row) override
+    void read_ascii_data(Tokenizer &, unsigned int, unsigned int ) override
     {}
 
-    void read_binary_data(std::istream &data_stream, unsigned int n_components, unsigned int i_row) override
+    void read_binary_data(std::istream &, unsigned int, unsigned int) override
     {}
 
-    std::shared_ptr< ElementDataCacheBase > gather(Distribution *distr, LongIdx *local_to_global) override
+    std::shared_ptr< ElementDataCacheBase > gather(Distribution *, LongIdx *) override
     {
     	return std::make_shared<DummyOutputData>(this->field_input_name_, this->n_comp_);
     }
 
-    std::shared_ptr< ElementDataCacheBase > element_node_cache_fixed_size(std::vector<unsigned int> &offset_vec) override
+    std::shared_ptr< ElementDataCacheBase > element_node_cache_fixed_size(std::vector<unsigned int> &) override
     {
     	return std::make_shared<DummyOutputData>(this->field_input_name_, this->n_comp_);
     }
 
-    std::shared_ptr< ElementDataCacheBase > element_node_cache_optimize_size(std::vector<unsigned int> &offset_vec) override
+    std::shared_ptr< ElementDataCacheBase > element_node_cache_optimize_size(std::vector<unsigned int> &) override
     {
     	return std::make_shared<DummyOutputData>(this->field_input_name_, this->n_comp_);
     }
 
-    std::shared_ptr< ElementDataCacheBase > compute_node_data(std::vector<unsigned int> &conn_vec, unsigned int data_size) override
+    std::shared_ptr< ElementDataCacheBase > compute_node_data(std::vector<unsigned int> &, unsigned int ) override
     {
     	return std::make_shared<DummyOutputData>(this->field_input_name_, this->n_comp_);
     }
@@ -150,7 +149,6 @@ void OutputMSH::write_msh_geometry(void)
     file << "$Nodes" << endl;
     file << this->nodes_->n_values() << endl;
     auto &id_node_vec = *( this->node_ids_->get_component_data(0).get() );
-    unsigned int i_node=0;
     for(unsigned int i_node=0; i_node < id_node_vec.size(); ++i_node) {
         file << id_node_vec[i_node] << " ";
         this->nodes_->print_ascii(file, i_node);

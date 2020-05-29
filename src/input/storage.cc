@@ -57,13 +57,13 @@ const std::string & StorageBase::get_string() const {
 
 
 
-void StorageBase::set_item(unsigned int index, StorageBase* item) {
+void StorageBase::set_item(FMT_UNUSED unsigned int index, FMT_UNUSED StorageBase* item) {
 	THROW( ExcStorageTypeMismatch() << EI_RequestedType("array") << EI_StoredType( typeid(*this).name()) );
 }
 
 
 
-StorageBase * StorageBase::get_item(const unsigned int index) const {
+StorageBase * StorageBase::get_item(FMT_UNUSED const unsigned int index) const {
     THROW( ExcStorageTypeMismatch() << EI_RequestedType("array") << EI_StoredType( typeid(*this).name()) );
     return 0;
 }

@@ -187,14 +187,12 @@ target_link_libraries(tools_lib
 # mesh_lib
 add_library(mesh_lib 
     mesh/region.cc
-    mesh/boundaries.cc
-    mesh/edges.cc
     mesh/elements.cc
     mesh/duplicate_nodes.cc
     mesh/mesh.cc
     mesh/bc_mesh.cc
     mesh/neighbours.cc
-    mesh/sides.cc
+    mesh/accessors.cc
 #    mesh/intersection.cc
     mesh/ref_element.cc
     mesh/partitioning.cc
@@ -340,7 +338,6 @@ set(sources_lib_non_system
 )
 # all remaining sources 
 add_library(flow123d_lib 
-    flow/mh_dofhandler.cc
     flow/darcy_flow_mh_output.cc
     flow/darcy_flow_mh.cc
     flow/darcy_flow_lmh.cc

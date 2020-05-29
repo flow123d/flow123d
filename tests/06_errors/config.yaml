@@ -87,4 +87,29 @@ test_cases:
         files: [job_output.log]
         substr: "User Error: The size of the input array 'solubility' does not match the number of substances"
             
+- files: 12_assert_duplicate_key_time.yaml
+  death_test: true
+  check_rules:
+    - regex:
+        files: [job_output.log]  # file must exists in ref_out folder!
+        substr: "Duplicate key 'time', time in flow equation is already initialized from parent class!"
+    - regex:
+        files: [job_output.log]  # same file can be checked several times
+        regex: "Program [Ee]rror: Violated assert!"
             
+- files: 13_reg_from_ele.yaml
+  death_test: true
+  check_rules:
+    - regex:
+        files: [job_output.log]
+        substr: "User defined region 'zdroj' (id 9) by 'From_Elements' cannot have elements of different dimensions."
+
+- files: 14_duplicit_records.yaml
+  death_test: true
+  check_rules:
+    - regex:
+        files: [job_output.log]
+        substr: "Duplicit Tag: 'balance'"
+    - regex:
+        files: [job_output.log]
+        substr: "/problem/flow_equation"
