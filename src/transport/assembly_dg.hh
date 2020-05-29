@@ -777,8 +777,8 @@ public:
 
         //calculate_velocity(elm_acc, velocity_, fsv_rt_.point_list());
         //model_->compute_advection_diffusion_coefficients(fe_values_side_.point_list(), velocity_, elm_acc, data_->ad_coef, data_->dif_coef);
-        arma::uvec bc_type;
-        model_->get_bc_type(side.cond().element_accessor(), bc_type);
+        //arma::uvec bc_type;
+        //model_->get_bc_type(side.cond().element_accessor(), bc_type);
         //data_->cross_section.value_list(fe_values_side_.point_list(), elm_acc, csection_);
 
         for (unsigned int sbi=0; sbi<model_->n_substances(); sbi++)
@@ -797,7 +797,11 @@ public:
             }
             double transport_flux = side_flux/side.measure();
 
-            if (bc_type[sbi] == AdvectionDiffusionModel::abc_dirichlet)
+            auto p_side = *( data_->stiffness_assembly_->boundary_integral(dim)->points(cell_side, &(data_->stiffness_assembly_->cache_map())).begin() );
+            auto p_bdr_center = p_side.point_bdr_center(side.cond().element_accessor(), data_->stiffness_assembly_->center_integral(dim) );
+            unsigned int bc_type = data_->bc_type[sbi](p_bdr_center);
+            //if (bc_type[sbi] == AdvectionDiffusionModel::abc_dirichlet)
+            if (bc_type == AdvectionDiffusionModel::abc_dirichlet)
             {
                 // set up the parameters for DG method
                 double gamma_l;
@@ -819,7 +823,8 @@ public:
             //for (unsigned int k=0; k<qsize_lower_dim_; k++)
             {
                 double flux_times_JxW;
-                if (bc_type[sbi] == AdvectionDiffusionModel::abc_total_flux)
+                //if (bc_type[sbi] == AdvectionDiffusionModel::abc_total_flux)
+                if (bc_type == AdvectionDiffusionModel::abc_total_flux)
                 {
                     //sigma_ corresponds to robin_sigma
                     auto p_bdr = p.point_bdr(side.cond().element_accessor());
@@ -827,14 +832,16 @@ public:
                     //flux_times_JxW = csection_[k]*sigma_[k]*fe_values_side_.JxW(k);
                     flux_times_JxW = data_->cross_section(p)*data_->bc_robin_sigma[sbi](p_bdr)*fe_values_side_.JxW(k);
                 }
-                else if (bc_type[sbi] == AdvectionDiffusionModel::abc_diffusive_flux)
+                //else if (bc_type[sbi] == AdvectionDiffusionModel::abc_diffusive_flux)
+                else if (bc_type == AdvectionDiffusionModel::abc_diffusive_flux)
                 {
                     auto p_bdr = p.point_bdr(side.cond().element_accessor());
                     //model_->get_flux_bc_sigma(sbi, fe_values_side_.point_list(), side.cond().element_accessor(), sigma_);
                     //flux_times_JxW = (transport_flux + csection_[k]*sigma_[k])*fe_values_side_.JxW(k);
                     flux_times_JxW = (transport_flux + data_->cross_section(p)*data_->bc_robin_sigma[sbi](p_bdr))*fe_values_side_.JxW(k);
                 }
-                else if (bc_type[sbi] == AdvectionDiffusionModel::abc_inflow && side_flux < 0)
+                //else if (bc_type[sbi] == AdvectionDiffusionModel::abc_inflow && side_flux < 0)
+                else if (bc_type == AdvectionDiffusionModel::abc_inflow && side_flux < 0)
                     flux_times_JxW = 0;
                 else
                     flux_times_JxW = transport_flux*fe_values_side_.JxW(k);
@@ -847,7 +854,8 @@ public:
                         local_matrix_[i*ndofs_+j] += flux_times_JxW*fe_values_side_.shape_value(i,k)*fe_values_side_.shape_value(j,k);
 
                         // flux due to diffusion (only on dirichlet and inflow boundary)
-                        if (bc_type[sbi] == AdvectionDiffusionModel::abc_dirichlet)
+                        //if (bc_type[sbi] == AdvectionDiffusionModel::abc_dirichlet)
+                        if (bc_type == AdvectionDiffusionModel::abc_dirichlet)
                             //local_matrix_[i*ndofs_+j] -= (arma::dot(data_->dif_coef[sbi][k]*fe_values_side_.shape_grad(j,k),fe_values_side_.normal_vector(k))*fe_values_side_.shape_value(i,k)
                             //        + arma::dot(data_->dif_coef[sbi][k]*fe_values_side_.shape_grad(i,k),fe_values_side_.normal_vector(k))*fe_values_side_.shape_value(j,k)*data_->dg_variant
                             //        )*fe_values_side_.JxW(k);
@@ -1416,8 +1424,8 @@ public:
 
             ElementAccessor<3> bc_elm = dh_side.cond().element_accessor();
 
-            arma::uvec bc_type;
-            model_->get_bc_type(bc_elm, bc_type);
+            //arma::uvec bc_type;
+            //model_->get_bc_type(bc_elm, bc_type);
 
             fe_values_side_.reinit(dh_side.side());
             fsv_rt_.reinit(dh_side.side());
@@ -1436,7 +1444,7 @@ public:
 
                 // The b.c. data are fetched for all possible b.c. types since we allow
                 // different bc_type for each substance.
-                data_->bc_dirichlet_value[sbi].value_list(fe_values_side_.point_list(), bc_elm, bc_values_);
+                //data_->bc_dirichlet_value[sbi].value_list(fe_values_side_.point_list(), bc_elm, bc_values_);
 
                 double side_flux = 0;
                 k=0;
@@ -1448,7 +1456,11 @@ public:
                 }
                 double transport_flux = side_flux/dh_side.measure();
 
-                if (bc_type[sbi] == AdvectionDiffusionModel::abc_inflow && side_flux < 0)
+                auto p_side = *( data_->bdr_cond_assembly_->boundary_integral(dim)->points(dh_side, &(data_->bdr_cond_assembly_->cache_map())).begin() );
+                auto p_bdr_center = p_side.point_bdr_center(dh_side.cond().element_accessor(), data_->bdr_cond_assembly_->center_integral(dim) );
+                unsigned int bc_type = data_->bc_type[sbi](p_bdr_center);
+                //if (bc_type[sbi] == AdvectionDiffusionModel::abc_inflow && side_flux < 0)
+                if (bc_type == AdvectionDiffusionModel::abc_inflow && side_flux < 0)
                 {
                     k=0;
                     for (auto p : data_->bdr_cond_assembly_->boundary_integral(dim)->points(dh_side, &(data_->bdr_cond_assembly_->cache_map())) )
@@ -1464,7 +1476,8 @@ public:
                     for (unsigned int i=0; i<ndofs_; i++)
                         local_flux_balance_rhs_ -= local_rhs_[i];
                 }
-                else if (bc_type[sbi] == AdvectionDiffusionModel::abc_dirichlet)
+                //else if (bc_type[sbi] == AdvectionDiffusionModel::abc_dirichlet)
+                else if (bc_type == AdvectionDiffusionModel::abc_dirichlet)
                 {
                     k=0;
                     for (auto p : data_->bdr_cond_assembly_->boundary_integral(dim)->points(dh_side, &(data_->bdr_cond_assembly_->cache_map())) )
@@ -1499,7 +1512,8 @@ public:
                         for (unsigned int i=0; i<ndofs_; i++)
                             local_flux_balance_rhs_ -= local_rhs_[i];
                 }
-                else if (bc_type[sbi] == AdvectionDiffusionModel::abc_total_flux)
+                //else if (bc_type[sbi] == AdvectionDiffusionModel::abc_total_flux)
+                else if (bc_type == AdvectionDiffusionModel::abc_total_flux)
                 {
                 	//model_->get_flux_bc_data(sbi, fe_values_side_.point_list(), bc_elm, bc_fluxes_, sigma_, bc_ref_values_);
                 	k=0;
@@ -1529,7 +1543,8 @@ public:
                         local_flux_balance_rhs_ -= local_rhs_[i];
                     }
                 }
-                else if (bc_type[sbi] == AdvectionDiffusionModel::abc_diffusive_flux)
+                //else if (bc_type[sbi] == AdvectionDiffusionModel::abc_diffusive_flux)
+                else if (bc_type == AdvectionDiffusionModel::abc_diffusive_flux)
                 {
                 	//model_->get_flux_bc_data(sbi, fe_values_side_.point_list(), bc_elm, bc_fluxes_, sigma_, bc_ref_values_);
                 	k=0;
@@ -1559,7 +1574,8 @@ public:
                         local_flux_balance_rhs_ -= local_rhs_[i];
                     }
                 }
-                else if (bc_type[sbi] == AdvectionDiffusionModel::abc_inflow && side_flux >= 0)
+                //else if (bc_type[sbi] == AdvectionDiffusionModel::abc_inflow && side_flux >= 0)
+                else if (bc_type == AdvectionDiffusionModel::abc_inflow && side_flux >= 0)
                 {
                     k=0;
                     for (auto p : data_->bdr_cond_assembly_->boundary_integral(dim)->points(dh_side, &(data_->bdr_cond_assembly_->cache_map())) )

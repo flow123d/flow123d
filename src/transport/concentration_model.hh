@@ -153,8 +153,8 @@ public:
         return data().init_conc[sbi];
     }
 
-	void get_bc_type(const ElementAccessor<3> &ele_acc,
-				arma::uvec &bc_types) override;
+	//void get_bc_type(const ElementAccessor<3> &ele_acc,
+	//			arma::uvec &bc_types) override;
 
 	//void get_flux_bc_data(unsigned int index,
     //        const Armor::array &point_list,

@@ -470,13 +470,13 @@ void HeatTransferModel::output_data()
 }*/
 
 
-void HeatTransferModel::get_bc_type(const ElementAccessor<3> &ele_acc,
+/*void HeatTransferModel::get_bc_type(const ElementAccessor<3> &ele_acc,
 			arma::uvec &bc_types)
 {
 	// Currently the bc types for HeatTransfer are numbered in the same way as in TransportDG.
 	// In general we should use some map here.
 	bc_types = { data().bc_type[0].value(ele_acc.centre(), ele_acc) };
-}
+}*/
 
 
 /*void HeatTransferModel::get_flux_bc_data(unsigned int index,

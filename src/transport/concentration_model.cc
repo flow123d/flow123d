@@ -431,7 +431,7 @@ void ConcentrationTransportModel::init_from_input(const Input::Record &in_rec)
         data().init_conc[sbi].value_list(point_list, ele_acc, init_values[sbi]);
 }*/
 
-void ConcentrationTransportModel::get_bc_type(const ElementAccessor<3> &ele_acc,
+/*void ConcentrationTransportModel::get_bc_type(const ElementAccessor<3> &ele_acc,
 			arma::uvec &bc_types)
 {
 	// Currently the bc types for ConcentrationTransport are numbered in the same way as in TransportDG.
@@ -439,7 +439,7 @@ void ConcentrationTransportModel::get_bc_type(const ElementAccessor<3> &ele_acc,
     bc_types.resize(n_substances());
     for (unsigned int sbi=0; sbi<n_substances(); sbi++)
         bc_types[sbi] = data().bc_type[sbi].value(ele_acc.centre(), ele_acc);
-}
+}*/
 
 
 /*void ConcentrationTransportModel::get_flux_bc_data(unsigned int index,

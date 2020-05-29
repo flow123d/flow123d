@@ -96,8 +96,8 @@ public:
 	 * @param ele_acc  Element accessor.
 	 * @param bc_types Vector of bc. types (output, see BC_Type)
 	 */
-	virtual void get_bc_type(const ElementAccessor<3> &ele_acc,
-			arma::uvec &bc_types) = 0;
+	//virtual void get_bc_type(const ElementAccessor<3> &ele_acc,
+	//		arma::uvec &bc_types) = 0;
 
 	/**
 	 * \brief Return data for diffusive or total flux b.c.
