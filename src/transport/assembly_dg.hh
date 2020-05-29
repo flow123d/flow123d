@@ -96,12 +96,24 @@ private:
 	    unsigned int subset_index;
 	};
 
+    /**
+     * Temporary struct holds data od boundary element.
+     *
+     * It will be merge to BulkIntegralData after making implementation of DHCellAccessor on boundary elements.
+     */
+    struct BdrElementIntegralData {
+    	BdrElementIntegralData() {}
+
+        ElementAccessor<3> elm;
+        unsigned int subset_index;
+    };
+
 public:
 
     /// Constructor
     GenericAssembly( typename DimAssembly<1>::EqDataDG *eq_data, int active_integrals )
     : multidim_assembly_(eq_data),
-      active_integrals_(active_integrals), integrals_size_({0, 0, 0, 0, 0})
+      active_integrals_(active_integrals), integrals_size_({0, 0, 0, 0, 0, 0})
     {
         eval_points_ = std::make_shared<EvalPoints>();
         // first step - create integrals, then - initialize cache
@@ -286,6 +298,11 @@ private:
         	element_cache_map_.mark_used_eval_points(center_integral_data_[i].cell, center_integral_data_[i].subset_index, data_size);
         }
 
+        for (unsigned int i=0; i<integrals_size_[5]; ++i) {
+            // add data to cache if there is free space, else return
+        	unsigned int data_size = eval_points_->subset_size( bdr_elem_integral_data_[i].elm.dim()+1, bdr_elem_integral_data_[i].subset_index );
+        	element_cache_map_.mark_used_eval_points(bdr_elem_integral_data_[i].elm, bdr_elem_integral_data_[i].subset_index, data_size);
+        }
     }
 
     /**
@@ -294,7 +311,7 @@ private:
      * Types of used integrals must be set in data member \p active_integrals_.
      */
     void add_integrals_of_computing_step(DHCellAccessor cell) {
-        for (unsigned int i=0; i<5; i++) integrals_size_[i] = 0; // clean integral data from previous step
+        for (unsigned int i=0; i<6; i++) integrals_size_[i] = 0; // clean integral data from previous step
         element_cache_map_.start_elements_update();
 
         // generic_assembly.check_integral_data();
@@ -313,7 +330,7 @@ private:
                         this->add_boundary_integral(cell_side);
                         element_cache_map_.add(cell_side);
                         auto bdr_elm_acc = cell_side.cond().element_accessor();
-                        //this->add_center_integral( dh->cell_accessor_from_element(bdr_elm_acc) ); //TODO need DHCell constructed from boundary element
+                        this->add_bdr_elem_integral( bdr_elm_acc ); //TODO need DHCell constructed from boundary element
                         element_cache_map_.add(bdr_elm_acc);
                         continue;
                     }
@@ -381,6 +398,13 @@ private:
         integrals_size_[4]++;
     }
 
+    /// Add data of integral of element.center eval point to appropriate data structure.
+    void add_bdr_elem_integral(const ElementAccessor<3> elm) {
+    	bdr_elem_integral_data_[ integrals_size_[5] ].elm = elm;
+    	bdr_elem_integral_data_[ integrals_size_[5] ].subset_index = integrals_.center_[elm.dim()]->get_subset_idx();
+        integrals_size_[5]++;
+    }
+
 
     /// Assembly object
     MixedPtr<DimAssembly, 1> multidim_assembly_;
@@ -393,12 +417,13 @@ private:
     ElementCacheMap element_cache_map_;                           ///< ElementCacheMap according to EvalPoints
 
     // Following variables hold data of all integrals depending of actual computed element.
-    std::array<BulkIntegralData, 1>     bulk_integral_data_;      ///< Holds data for computing bulk integrals.
-    std::array<EdgeIntegralData, 4>     edge_integral_data_;      ///< Holds data for computing edge integrals.
-    std::array<CouplingIntegralData, 6> coupling_integral_data_;  ///< Holds data for computing couplings integrals.
-    std::array<BoundaryIntegralData, 4> boundary_integral_data_;  ///< Holds data for computing boundary integrals.
-    std::array<BulkIntegralData, 11>    center_integral_data_;    ///< Holds data for computing bulk integrals in element.center point.
-    std::array<unsigned int, 5>         integrals_size_;          ///< Holds used sizes of previous integral data types
+    std::array<BulkIntegralData, 1>       bulk_integral_data_;      ///< Holds data for computing bulk integrals.
+    std::array<EdgeIntegralData, 4>       edge_integral_data_;      ///< Holds data for computing edge integrals.
+    std::array<CouplingIntegralData, 6>   coupling_integral_data_;  ///< Holds data for computing couplings integrals.
+    std::array<BoundaryIntegralData, 4>   boundary_integral_data_;  ///< Holds data for computing boundary integrals.
+    std::array<BulkIntegralData, 11>      center_integral_data_;    ///< Holds data for computing bulk integrals in element.center point.
+    std::array<BdrElementIntegralData, 4> bdr_elem_integral_data_;  ///< Holds data for computing boundary integrals in element.center point.
+    std::array<unsigned int, 6>           integrals_size_;          ///< Holds used sizes of previous integral data types
 };
 
 

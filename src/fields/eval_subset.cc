@@ -169,3 +169,9 @@ BulkBdrPoint BoundaryPoint::point_bdr(ElementAccessor<3> bdr_elm) const {
     return BulkBdrPoint(bdr_elm, elm_cache_map_, integral_->edge_integral_,
             this->eval_points()->subset_begin(bdr_elm.dim()+1, integral_->get_subset_idx())+local_point_idx_);
 }
+
+
+BulkBdrPoint BoundaryPoint::point_bdr_center(ElementAccessor<3> bdr_elm, std::shared_ptr<const BulkIntegral> bulk_int) const {
+    return BulkBdrPoint(bdr_elm, elm_cache_map_, integral_->edge_integral_,
+            this->eval_points()->subset_begin(bdr_elm.dim()+1, bulk_int->get_subset_idx()));
+}
