@@ -33,6 +33,8 @@
 #include "input/type_record.hh"         // for Record::ExcRecordKeyNotFound
 #include "system/exceptions.hh"         // for ExcAssertMsg::~ExcAssertMsg
 #include "tools/time_governor.hh"       // for TimeStep
+#include "include/assert.hh"            // bparser
+#include "include/parser.hh"            // bparser
 
 class FunctionParser;
 template <int spacedim> class ElementAccessor;
@@ -61,6 +63,9 @@ public:
 
 
     static const Input::Type::Record & get_input_type();
+
+    /// Size of data processed in BParser.
+    static const uint bparser_vec_size;
 
     virtual void init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data);
 
@@ -105,6 +110,7 @@ private:
 
     // Matrix of parsers corresponding to the formula matrix returned by formula_matrix_helper_
     std::vector< std::vector<FunctionParser> > parser_matrix_;
+    bparser::Parser b_parser_;
 
     /// Accessor to Input::Record
     Input::Record in_rec_;

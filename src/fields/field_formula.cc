@@ -31,6 +31,9 @@ FLOW123D_FORCE_LINK_IN_CHILD(field_formula)
 
 
 template <int spacedim, class Value>
+const uint FieldFormula<spacedim, Value>::bparser_vec_size = 128;
+
+template <int spacedim, class Value>
 const Input::Type::Record & FieldFormula<spacedim, Value>::get_input_type()
 {
 
@@ -70,6 +73,7 @@ template <int spacedim, class Value>
 FieldFormula<spacedim, Value>::FieldFormula( unsigned int n_comp)
 : FieldAlgorithmBase<spacedim, Value>(n_comp),
   formula_matrix_(this->value_.n_rows(), this->value_.n_cols()),
+  b_parser_(FieldFormula<spacedim, Value>::bparser_vec_size),
   first_time_set_(true)
 {
 	this->is_constant_in_space_ = false;
