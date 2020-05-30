@@ -35,29 +35,122 @@
 
 // #define GROUP_SIZE 64
 
-// double petscCalculation(Mesh * mesh) {
-//     PetscInt dofs[4];
-//     Mat global_matrix;
-//     uint n_global_dofs = mesh->n_nodes();
-//     int *nnz = new int[n_global_dofs];
-//     // determine preallocation size
-//     std::fill(nnz, nnz + n_global_dofs, 0);
-//     for (ElementAccessor<3> elm : mesh->elements_range()) {
-//         for(uint i = 0; i <= elm.dim(); ++i) {
-//             uint i_dof = elm.node(i).idx();
-//             nnz[i_dof] += 1;
-//         }
+double petscCalculation(Mesh * mesh) {
+    PetscInt dofs[4];
+    Mat global_matrix;
+    int n_global_dofs = mesh->n_nodes();
+    PetscInt *nnz = new PetscInt[n_global_dofs];
+    // determine preallocation size
+    for (int i = 0; i < n_global_dofs; ++i) {
+        nnz[i] = 0;
+    }
+    for (ElementAccessor<3> elm : mesh->elements_range()) {
+        for(uint i = 0; i <= elm.dim(); ++i) {
+            uint i_dof = elm.node(i).idx();
+            nnz[i_dof] += 1;
+        }
+    }
+//     for (int i = 0; i < n_global_dofs; ++i) {
+//         nnz[i] += 1;
 //     }
 //     MatCreateSeqAIJ(PETSC_COMM_SELF, n_global_dofs, n_global_dofs, 0, nnz, &global_matrix);
-//     MatAssemblyBegin(global_matrix, MAT_FINAL_ASSEMBLY);
-//     for (ElementAccessor<3> elm : mesh->elements_range()) {
-//         for(uint i = 0; i <= elm.dim(); ++i) {
-//             dofs[i] = elm.node(i).idx();
-//         }
-//         MatSetValues(global_matrix, 4, dofs, 4, dofs, local_matrix, ADD_VALUES)
-//     }
-//     MatAssemblyEnd(global_matrix, MAT_FINAL_ASSEMBLY);
-// }
+    MatCreateSeqAIJ(PETSC_COMM_SELF, n_global_dofs, n_global_dofs, 30, NULL, &global_matrix);
+//     MatSetOption(global_matrix, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
+    MatAssemblyBegin(global_matrix, MAT_FINAL_ASSEMBLY);
+    for (ElementAccessor<3> elm : mesh->elements_range()) {
+        auto n0 = elm.node(0);
+        auto n1 = elm.node(1);
+        auto n2 = elm.node(2);
+        auto n3 = elm.node(3);
+        arma::mat::fixed<3, 3> M;
+        M.col(0) = *n1 - *n0;
+        M.col(1) = *n2 - *n0;
+        M.col(2) = *n3 - *n0;
+        double detM = arma::det(M);
+        double jac = std::abs(detM) / 6;
+        arma::mat::fixed<4, 4> phi_coefs = {{1, -1, -1,-1}, {0, 1, 0,0}, {0, 0, 1,0},{0, 0, 0, 1}};
+        arma::mat::fixed<4, 3> grad_phi = {{-1, -1, -1}, {1, 0,0}, {0, 1,0}, {0, 0, 1}};
+        arma::mat::fixed<4, 4> local_matrix = {{0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}};
+        for (uint i = 0; i < 4; ++i) {
+            for (uint j = 0; j < 4; ++j) {
+                local_matrix(i, j) += arma::dot(M * grad_phi[i], M * grad_phi[j]) * jac;
+            }
+        }
+        for(uint i = 0; i <= elm.dim(); ++i) {
+            dofs[i] = elm.node(i).idx();
+        }
+        if (MatSetValues(global_matrix, 4, dofs, 4, dofs, &local_matrix[0], ADD_VALUES) != 0) {
+            break;
+        }
+    }
+    MatAssemblyEnd(global_matrix, MAT_FINAL_ASSEMBLY);
+    PetscScalar result;
+    int idx = n_global_dofs - 1;
+    MatGetValues(global_matrix, 1, &idx, 1, &idx, &result);
+    return result;
+}
+
+Mat getGlobalMatrix(Mesh * mesh) {
+    PetscInt dofs[4];
+    Mat global_matrix;
+    int n_global_dofs = mesh->n_nodes();
+    PetscInt *nnz = new PetscInt[n_global_dofs];
+    // determine preallocation size
+    for (int i = 0; i < n_global_dofs; ++i) {
+        nnz[i] = 0;
+    }
+    for (ElementAccessor<3> elm : mesh->elements_range()) {
+        for(uint i = 0; i <= elm.dim(); ++i) {
+            uint i_dof = elm.node(i).idx();
+            nnz[i_dof] += 1;
+        }
+    }
+//     MatCreateSeqAIJ(PETSC_COMM_SELF, n_global_dofs, n_global_dofs, 0, nnz, &global_matrix);
+    MatCreateSeqAIJ(PETSC_COMM_SELF, n_global_dofs, n_global_dofs, 30, NULL, &global_matrix);
+//     MatSetOption(global_matrix, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
+    MatAssemblyBegin(global_matrix, MAT_FINAL_ASSEMBLY);
+    for (ElementAccessor<3> elm : mesh->elements_range()) {
+        auto n0 = elm.node(0);
+        auto n1 = elm.node(1);
+        auto n2 = elm.node(2);
+        auto n3 = elm.node(3);
+        arma::mat::fixed<3, 3> M;
+        M.col(0) = *n1 - *n0;
+        M.col(1) = *n2 - *n0;
+        M.col(2) = *n3 - *n0;
+        double detM = arma::det(M);
+        double jac = std::abs(detM) / 6;
+        arma::mat::fixed<4, 4> phi_coefs = {{1, -1, -1,-1}, {0, 1, 0,0}, {0, 0, 1,0},{0, 0, 0, 1}};
+        arma::mat::fixed<4, 3> grad_phi = {{-1, -1, -1}, {1, 0,0}, {0, 1,0}, {0, 0, 1}};
+        arma::mat::fixed<4, 4> local_matrix = {{0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}};
+        for (uint i = 0; i < 4; ++i) {
+            for (uint j = 0; j < 4; ++j) {
+                local_matrix(i, j) += arma::dot(M * grad_phi[i], M * grad_phi[j]) * jac;
+            }
+        }
+        for(uint i = 0; i <= elm.dim(); ++i) {
+            dofs[i] = elm.node(i).idx();
+        }
+        if (MatSetValues(global_matrix, 4, dofs, 4, dofs, &local_matrix[0], ADD_VALUES) != 0) {
+            break;
+        }
+    }
+    MatAssemblyEnd(global_matrix, MAT_FINAL_ASSEMBLY);
+    return global_matrix;
+}
+
+double performMultiplication(Mat& global_matrix, PetscInt n_global_dofs) {
+    Vec x, y;
+    VecCreateSeq(PETSC_COMM_SELF, n_global_dofs, &x);
+    VecDuplicate(x, &y);
+    for (uint i = 0; i < 200; ++i) {
+        MatMult(global_matrix, x, y);
+    }
+    PetscInt ix = 0;
+    PetscScalar result;
+    VecGetValues(y, 1, &ix, &result);
+    return result;
+}
 
 double calculation2DBeforeSort(Mesh * mesh) {
     double checksum = 0;
@@ -165,61 +258,57 @@ double calculation3DAfterSort(Mesh * mesh) {
     return checksum;
 }
 
-// void printMesh(Mesh& mesh) {
-//     arma::vec3 sum = {0, 0, 0};
-//     uint j = 0;
-//     for (ElementAccessor<3> elm : mesh.elements_range()) {
-//         const Element& el = *elm.element();
-//         std::cout << "Element " << j << ":\n";
-//         for(uint i = 0; i < el.n_nodes(); ++i) {
-//             arma::vec3 tmp = mesh.nodes_.vec<3>(el.nodes_[i]);
-//             sum += tmp;
-//             std::cout << "    " << tmp[0] << ' ' << tmp[1] << ' ' << tmp[2] << '\n';
-//         }
-//         ++j;
-//     }
-//     std::cout << "SUM = " << sum[0] << ' ' << sum[1] << ' ' << sum[2] << '\n';
-// }
-
 TEST(Spacefilling, space_filling) {
     Profiler::initialize();
 
     // has to introduce some flag for passing absolute path to 'test_units' in source tree
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-
-//     const std::string testName = "square_uniform;
-//     const std::string testName = "square_uniform_2";
-//     const std::string testName = "square_refined";
-//     const std::string testName = "lshape_refined";
-    const std::string meshName = "lshape_refined_2_2D";
-//     const std::string meshName = "lshape_refined_2_3D";
-    const std::string testName = "hilbert_try";
-//     const std::string testName = "mean_try";
-//     const std::string testName = "zcurve_try";
-//     const std::string testName = "hilbert_try";
+    const std::string meshName = "square_uniform_3D";
+//     const std::string meshName = "square_refined_3D";
+//     const std::string meshName = "lshape_uniform_3D";
+//     const std::string meshName = "lshape_refined_3D";
+    
+//     const std::string meshName = "square_uniform_2D";
+//     const std::string meshName = "square_refined_2D";
+//     const std::string meshName = "lshape_uniform_2D";
+//     const std::string meshName = "lshape_refined_2D";
+    
+//     const std::string meshName = "square_uniform_3D_small";
+//     const std::string meshName = "square_refined_3D_small";
+//     const std::string meshName = "lshape_uniform_3D_small";
+//     const std::string meshName = "lshape_refined_3D_small";
+    
+//     const std::string meshName = "square_uniform_2D_small";
+//     const std::string meshName = "square_refined_2D_small";
+//     const std::string meshName = "lshape_uniform_2D_small";
+//     const std::string meshName = "lshape_refined_2D_small";
+//  --------------------------------------------------------
+//     const std::string testName = "first";
+//     const std::string testName = "mean";
+//     const std::string testName = "zcurve";
+    const std::string testName = "hilbert";
+    
+//     const std::string testName = "first_petsc";
+//     const std::string testName = "mean_petsc";
+//     const std::string testName = "zcurve_petsc";
+//     const std::string testName = "hilbert_petsc";
+    
+//     const std::string testName = "first_petsc_matmult";
+//     const std::string testName = "mean_petsc_matmult";
+//     const std::string testName = "zcurve_petsc_matmult";
+//     const std::string testName = "hilbert_petsc_matmult";
+    
     const std::string mesh_in_string = "{mesh_file=\"mesh/" + meshName + ".msh\"}";
     
     Mesh * mesh = mesh_full_constructor(mesh_in_string);
     
-//     auto reader = reader_constructor(mesh_in_string);
-//     reader->read_physical_names(mesh);
-//     reader->read_raw_mesh(mesh);
+    std::cout << "copying mesh" << '\n';
+    Mesh * meshBackup = mesh_full_constructor(mesh_in_string);
     
-//     printMesh(*mesh);
-
-    START_TIMER("calculation_before_sort");
-    double checksum1 = calculation2DBeforeSort(mesh);
-//     double checksum1 = calculation3DBeforeSort(mesh);
-    END_TIMER("calculation_before_sort");
+//     Mat global_matrix_before_sort = getGlobalMatrix(mesh);
     
-    std::cout << "checksum 1: " << checksum1 << '\n';
-    
-//     MeshOptimizer<3> mo(*mesh);
-    MeshOptimizer<2> mo(*mesh);
-//     std::cout << "reading nodes" << '\n';
-//     mo.readNodesFromMesh();
-//     std::cout << "reading elemenst" << '\n';
-//     mo.readElementsFromMesh();
+//     MeshOptimizer<2> mo(*mesh);
+    MeshOptimizer<3> mo(*mesh);
     std::cout << "calculating sizes" << '\n';
     mo.calculateSizes();
     std::cout << "calculating node curve values" << '\n';
@@ -237,19 +326,27 @@ TEST(Spacefilling, space_filling) {
     mo.sortNodes();
     std::cout << "sorting elements" << '\n';
     mo.sortElements();
-//     std::cout << "writing nodes to mesh" << '\n';
-//     mo.writeNodesToMesh();
-//     std::cout << "writing elements to mesh" << '\n';
-//     mo.writeElementsToMesh();
     
+    std::cout << "performing calculation" << '\n';
     START_TIMER("calculation_after_sort");
-    double checksum2 = calculation2DAfterSort(mesh);
-//     double checksum2 = calculation3DAfterSort(mesh);
+//     double result1 = calculation2DBeforeSort(mesh);
+    double result1 = calculation3DBeforeSort(mesh);
+//     double result1 = petscCalculation(mesh);
+//     double result1 = performMultiplication(global_matrix_before_sort, mesh->n_nodes());
     END_TIMER("calculation_after_sort");
     
-    std::cout << "checksum 2: " << checksum2 << '\n';
+    std::cout << "result 1: " << result1 << '\n';
     
-//     printMesh(*mesh);
+//     Mat global_matrix_after_sort = getGlobalMatrix(mesh);
+    std::cout << "performing calculation" << '\n';
+    START_TIMER("calculation_before_sort");
+//     double result2 = calculation2DAfterSort(mesh);
+    double result2 = calculation3DAfterSort(meshBackup);
+//     double result2 = petscCalculation(mesh);
+//     double result2 = performMultiplication(global_matrix_after_sort, mesh->n_nodes());
+    END_TIMER("calculation_before_sort");
+    
+    std::cout << "result 2: " << result2 << '\n';
     
     const string test_output_time_input = R"JSON(
     {

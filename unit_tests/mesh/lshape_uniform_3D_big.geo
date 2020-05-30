@@ -1,16 +1,16 @@
-fine_step = 0.0020;
-mesh = 0.09;
+mesh = 0.020566761;
+
 Point(1) = {0, 0, 0, mesh};
 Point(2) = {2, 0, 0, mesh};
 Point(3) = {2, 1, 0, mesh};
-Point(4) = {1, 1, 0, fine_step};
+Point(4) = {1, 1, 0, mesh};
 Point(5) = {1, 2, 0, mesh};
 Point(6) = {0, 2, 0, mesh};
 
 Point(7) = {0, 0, 2, mesh};
 Point(8) = {2, 0, 2, mesh};
 Point(9) = {2, 1, 2, mesh};
-Point(10) = {1, 1, 2, fine_step};
+Point(10) = {1, 1, 2, mesh};
 Point(11) = {1, 2, 2, mesh};
 Point(12) = {0, 2, 2, mesh};
 

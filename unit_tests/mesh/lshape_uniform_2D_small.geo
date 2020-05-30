@@ -1,9 +1,8 @@
-fine_step = 1e-8;
-mesh = 0.018;
+mesh = 0.006;
 Point(1) = {0, 0, 0, mesh};
 Point(2) = {2, 0, 0, mesh};
 Point(3) = {2, 1, 0, mesh};
-Point(4) = {1, 1, 0, fine_step};
+Point(4) = {1, 1, 0, mesh};
 Point(5) = {1, 2, 0, mesh};
 Point(6) = {0, 2, 0, mesh};
 Line(1) = {1, 2};

@@ -1,5 +1,5 @@
-fine_step = 1e-6;
-mesh = 0.1;
+fine_step = 1.7320508e-6;
+mesh = 0.015761662;
 Point(1) = {0, 0, 0, fine_step};
 Point(2) = {1, 0, 0, mesh};
 Point(3) = {1, 1, 0, fine_step};
