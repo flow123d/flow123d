@@ -19,6 +19,9 @@
 #define FIELD_FORMULA_HH_
 
 
+#define BOOST_MATH_DISABLE_FLOAT128
+
+
 #include <stdio.h>                      // for sprintf
 #include <boost/exception/info.hpp>     // for operator<<, error_info::error...
 #include <string>                       // for operator==, string
