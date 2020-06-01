@@ -95,6 +95,9 @@ public:
     virtual void value_list (const Armor::array &point_list, const ElementAccessor<spacedim> &elm,
                        std::vector<typename Value::return_type>  &value_list);
 
+    void cache_update(FieldValueCache<typename Value::element_type> &data_cache,
+			ElementCacheMap &cache_map, unsigned int region_idx) override;
+
 
     virtual ~FieldFormula();
 

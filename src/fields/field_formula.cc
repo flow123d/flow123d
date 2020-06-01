@@ -16,12 +16,14 @@
  */
 
 
+
 #include "fields/field_formula.hh"
 #include "fields/field_instances.hh"	// for instantiation macros
 #include "fields/surface_depth.hh"
 #include "fparser.hh"
 #include "input/input_type.hh"
 #include <boost/foreach.hpp>
+
 
 /// Implementation.
 
@@ -232,6 +234,17 @@ void FieldFormula<spacedim, Value>::value_list (const Armor::array &point_list, 
                 envelope(row,col) = this->unit_conversion_coefficient_ * parser_matrix_[row][col].Eval(p_depth.memptr());
             }
     }
+}
+
+
+template <int spacedim, class Value>
+void FieldFormula<spacedim, Value>::cache_update(FMT_UNUSED FieldValueCache<typename Value::element_type> &data_cache,
+        FMT_UNUSED ElementCacheMap &cache_map, FMT_UNUSED unsigned int region_idx)
+{
+    //auto update_cache_data = cache_map.update_cache_data();
+    //unsigned int region_in_cache = update_cache_data.region_cache_indices_range_.find(region_idx)->second;
+    //unsigned int i_cache_el_begin = update_cache_data.region_value_cache_range_[region_in_cache];
+    //unsigned int i_cache_el_end = update_cache_data.region_value_cache_range_[region_in_cache+1];
 }
 
 
