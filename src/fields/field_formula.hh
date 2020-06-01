@@ -30,6 +30,7 @@
 #include <armadillo>
 #include "fields/field_algo_base.hh"    // for FieldAlgorithmBase
 #include "fields/field_values.hh"       // for FieldValue<>::Enum, FieldValu...
+#include "fields/field_set.hh"
 #include "input/accessors.hh"           // for ExcAccessorForNullStorage
 #include "input/accessors_impl.hh"      // for Record::val
 #include "input/storage.hh"             // for ExcStorageTypeMismatch
@@ -99,6 +100,11 @@ public:
 			ElementCacheMap &cache_map, unsigned int region_idx) override;
 
 
+    /**
+     * Set reference of FieldSet.
+     */
+    void set_dependency(FieldSet &field_set) override;
+
     virtual ~FieldFormula();
 
 private:
@@ -129,6 +135,12 @@ private:
 
     /// Flag indicates first call of set_time method, when FunctionParsers in parser_matrix_ must be initialized
     bool first_time_set_;
+
+    /// Holds FieldSet, allows evaluate values of Fields in formula expressions.
+    FieldSet *field_set_;
+
+    /// Holds names of fields.
+    std::set<std::string> field_set_names_;
 
     /// Registrar of class to factory
     static const int registrar;

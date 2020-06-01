@@ -76,7 +76,7 @@ FieldFormula<spacedim, Value>::FieldFormula( unsigned int n_comp)
 : FieldAlgorithmBase<spacedim, Value>(n_comp),
   formula_matrix_(this->value_.n_rows(), this->value_.n_cols()),
   b_parser_(FieldFormula<spacedim, Value>::bparser_vec_size),
-  first_time_set_(true)
+  first_time_set_(true), field_set_(nullptr)
 {
 	this->is_constant_in_space_ = false;
     parser_matrix_.resize(this->value_.n_rows());
@@ -266,6 +266,13 @@ inline arma::vec FieldFormula<spacedim, Value>::eval_depth_var(const Point &p)
 	} else {
 		return p;
 	}
+}
+
+
+template <int spacedim, class Value>
+void FieldFormula<spacedim, Value>::set_dependency(FieldSet &field_set) {
+    field_set_ = &field_set;
+    for(auto field : field_set.field_list) field_set_names_.insert( field->name() );
 }
 
 

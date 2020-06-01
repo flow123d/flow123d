@@ -35,6 +35,7 @@
 #include "tools/time_governor.hh"  // for TimeGovernor (ptr only), TimeStep
 class Mesh;
 class Region;
+template <int spacedim, class Value> class FieldFormula;
 
 
 
@@ -251,6 +252,13 @@ public:
 	    for(auto field : field_list) field->cache_update(cache_map);
     }
 
+    /**
+     * Set reference of FieldSet to all instances of FieldFormula.
+     */
+    void set_dependency() {
+    	for(auto field : field_list) field->set_dependency(*this);
+    }
+
 protected:
 
     /// List of all fields.
@@ -260,6 +268,9 @@ protected:
      * Stream output operator
      */
     friend std::ostream &operator<<(std::ostream &stream, const FieldSet &set);
+
+    template<int dim, class Val>
+    friend class FieldFormula;
 };
 
 

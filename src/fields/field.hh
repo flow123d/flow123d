@@ -55,6 +55,7 @@ class Observe;
 class EvalPoints;
 class BulkPoint;
 class EdgePoint;
+class FieldSet;
 template <int spacedim> class ElementAccessor;
 template <int spacedim, class Value> class FieldFE;
 namespace detail
@@ -340,6 +341,11 @@ public:
     inline FieldValueCache<typename Value::element_type> &value_cache() {
         return value_cache_;
     }
+
+    /**
+     * Implementation of FieldCommon::set_dependency().
+     */
+    void set_dependency(FieldSet &field_set) override;
 
 protected:
 

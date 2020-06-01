@@ -46,6 +46,7 @@
 class Mesh;
 class UnitSI;
 class DOFHandlerMultiDim;
+class FieldSet;
 namespace Input {
 	class AbstractRecord;
 	class Record;
@@ -248,6 +249,13 @@ public:
         */
        inline bool is_constant_in_space() const {
     	   return is_constant_in_space_;
+       }
+
+       /**
+        * Set reference of FieldSet to FieldFormula instance.
+        */
+       virtual void set_dependency(FMT_UNUSED FieldSet &field_set) {
+           // Implementation only in FieldFormula!
        }
 
        /**
