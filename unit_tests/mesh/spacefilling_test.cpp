@@ -27,6 +27,8 @@
 
 #include <iostream>
 #include <algorithm>
+#include <array>
+#include <sstream>
 
 #include "fields/generic_field.hh"
 #include "io/output_mesh.hh"
@@ -54,7 +56,7 @@ double petscCalculation(Mesh * mesh) {
 //         nnz[i] += 1;
 //     }
 //     MatCreateSeqAIJ(PETSC_COMM_SELF, n_global_dofs, n_global_dofs, 0, nnz, &global_matrix);
-    MatCreateSeqAIJ(PETSC_COMM_SELF, n_global_dofs, n_global_dofs, 30, NULL, &global_matrix);
+    MatCreateSeqAIJ(PETSC_COMM_SELF, n_global_dofs, n_global_dofs, 34, NULL, &global_matrix);
 //     MatSetOption(global_matrix, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
     MatAssemblyBegin(global_matrix, MAT_FINAL_ASSEMBLY);
     for (ElementAccessor<3> elm : mesh->elements_range()) {
@@ -87,6 +89,7 @@ double petscCalculation(Mesh * mesh) {
     PetscScalar result;
     int idx = n_global_dofs - 1;
     MatGetValues(global_matrix, 1, &idx, 1, &idx, &result);
+    MatDestroy(&global_matrix);
     return result;
 }
 
@@ -106,7 +109,7 @@ Mat getGlobalMatrix(Mesh * mesh) {
         }
     }
 //     MatCreateSeqAIJ(PETSC_COMM_SELF, n_global_dofs, n_global_dofs, 0, nnz, &global_matrix);
-    MatCreateSeqAIJ(PETSC_COMM_SELF, n_global_dofs, n_global_dofs, 30, NULL, &global_matrix);
+    MatCreateSeqAIJ(PETSC_COMM_SELF, n_global_dofs, n_global_dofs, 34, NULL, &global_matrix);
 //     MatSetOption(global_matrix, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
     MatAssemblyBegin(global_matrix, MAT_FINAL_ASSEMBLY);
     for (ElementAccessor<3> elm : mesh->elements_range()) {
@@ -258,133 +261,224 @@ double calculation3DAfterSort(Mesh * mesh) {
     return checksum;
 }
 
-TEST(Spacefilling, space_filling) {
-    Profiler::initialize();
-
-    // has to introduce some flag for passing absolute path to 'test_units' in source tree
-    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-    const std::string meshName = "square_uniform_3D";
-//     const std::string meshName = "square_refined_3D";
-//     const std::string meshName = "lshape_uniform_3D";
-//     const std::string meshName = "lshape_refined_3D";
-    
-//     const std::string meshName = "square_uniform_2D";
-//     const std::string meshName = "square_refined_2D";
-//     const std::string meshName = "lshape_uniform_2D";
-//     const std::string meshName = "lshape_refined_2D";
-    
-//     const std::string meshName = "square_uniform_3D_small";
-//     const std::string meshName = "square_refined_3D_small";
-//     const std::string meshName = "lshape_uniform_3D_small";
-//     const std::string meshName = "lshape_refined_3D_small";
-    
-//     const std::string meshName = "square_uniform_2D_small";
-//     const std::string meshName = "square_refined_2D_small";
-//     const std::string meshName = "lshape_uniform_2D_small";
-//     const std::string meshName = "lshape_refined_2D_small";
-//  --------------------------------------------------------
-//     const std::string testName = "first";
-//     const std::string testName = "mean";
-//     const std::string testName = "zcurve";
-    const std::string testName = "hilbert";
-    
-//     const std::string testName = "first_petsc";
-//     const std::string testName = "mean_petsc";
-//     const std::string testName = "zcurve_petsc";
-//     const std::string testName = "hilbert_petsc";
-    
-//     const std::string testName = "first_petsc_matmult";
-//     const std::string testName = "mean_petsc_matmult";
-//     const std::string testName = "zcurve_petsc_matmult";
-//     const std::string testName = "hilbert_petsc_matmult";
-    
-    const std::string mesh_in_string = "{mesh_file=\"mesh/" + meshName + ".msh\"}";
-    
-    Mesh * mesh = mesh_full_constructor(mesh_in_string);
-    
-    std::cout << "copying mesh" << '\n';
-    Mesh * meshBackup = mesh_full_constructor(mesh_in_string);
-    
-//     Mat global_matrix_before_sort = getGlobalMatrix(mesh);
-    
-//     MeshOptimizer<2> mo(*mesh);
-    MeshOptimizer<3> mo(*mesh);
-    std::cout << "calculating sizes" << '\n';
-    mo.calculateSizes();
-    std::cout << "calculating node curve values" << '\n';
-    mo.calculateNodeCurveValuesAsHilbert();
-//     mo.calculateNodeCurveValuesAsZCurve();
-//     mo.calculateNodeCurveValuesAsMeanOfCoords();
-//     mo.calculateNodeCurveValuesAsFirstCoord();
-    std::cout << "calculating element curve values" << '\n';
-    mo.calculateElementCurveValuesAsHilbertOfCenters();
-//     mo.calculateElementCurveValuesAsZCurveOfCenters();
-//     mo.calculateElementCurveValuesAsMeanOfCoords();
-//     mo.calculateElementCurveValuesAsFirstCoord();
-//     mo.calculateElementCurveValuesAsMeanOfNodes();
-    std::cout << "sorting nodes" << '\n';
-    mo.sortNodes();
-    std::cout << "sorting elements" << '\n';
-    mo.sortElements();
-    
-    std::cout << "performing calculation" << '\n';
-    START_TIMER("calculation_after_sort");
-//     double result1 = calculation2DBeforeSort(mesh);
-    double result1 = calculation3DBeforeSort(mesh);
-//     double result1 = petscCalculation(mesh);
-//     double result1 = performMultiplication(global_matrix_before_sort, mesh->n_nodes());
-    END_TIMER("calculation_after_sort");
-    
-    std::cout << "result 1: " << result1 << '\n';
-    
-//     Mat global_matrix_after_sort = getGlobalMatrix(mesh);
-    std::cout << "performing calculation" << '\n';
-    START_TIMER("calculation_before_sort");
-//     double result2 = calculation2DAfterSort(mesh);
-    double result2 = calculation3DAfterSort(meshBackup);
-//     double result2 = petscCalculation(mesh);
-//     double result2 = performMultiplication(global_matrix_after_sort, mesh->n_nodes());
-    END_TIMER("calculation_before_sort");
-    
-    std::cout << "result 2: " << result2 << '\n';
-    
-    const string test_output_time_input = R"JSON(
-    {
-        format = {
-            TYPE = "gmsh",
-            variant = "ascii"
-        }
+class Stopwatch {
+public:
+    inline void start() {
+        m_begin = std::chrono::high_resolution_clock::now();
     }
-    )JSON";
+    inline void stop() {
+        m_end = std::chrono::high_resolution_clock::now();
+    }
+    uint microseconds() {
+        return std::chrono::duration_cast<std::chrono::microseconds>(m_end - m_begin).count();
+    }
+    uint milliseconds() {
+        return std::chrono::duration_cast<std::chrono::milliseconds>(m_end - m_begin).count();
+    }
+    uint nanoseconds() {
+        return std::chrono::duration_cast<std::chrono::nanoseconds>(m_end - m_begin).count();
+    }
+private:
+    std::chrono::time_point<std::chrono::_V2::system_clock, std::chrono::duration<long int, std::ratio<1, 1000000000>>> m_begin;
+    std::chrono::time_point<std::chrono::_V2::system_clock, std::chrono::duration<long int, std::ratio<1, 1000000000>>> m_end;
+};
 
-    auto in_rec = Input::ReaderToStorage(test_output_time_input,
-    const_cast<Input::Type::Record &>(OutputTime::get_input_type()),
-    Input::FileFormat::format_JSON).get_root_interface<Input::Record>();
-    auto output = OutputTime::create_output_stream("dummy_equation", in_rec, "s");
-    std::shared_ptr<OutputMeshBase> output_mesh = std::make_shared<OutputMeshDiscontinuous>(*mesh);
-    output_mesh->create_sub_mesh();
-    output->set_output_data_caches(output_mesh);
-    output->update_time(0.0);
-    auto data_cache = output->prepare_compute_data<double>("patch_id", OutputTime::ELEM_DATA, 1, 1);
+class TimeWriter {
+public:
+    TimeWriter(const std::string& filePath) : firstTest(true), file(filePath) {
+        file.put('{');
+    }
+    ~TimeWriter() {
+        file.put('}');
+        file.put('\n');
+    }
+    void writeTime(const std::string& testName, double time) {
+        if (!firstTest) {
+            file.put(',');
+        }
+        file << '"' << testName << '"' << ": " << time;
+        file.flush();
+        firstTest = false;
+    }
+private:
+    bool firstTest;
+    std::ofstream file;
+};
 
-//     std::vector<double> groupIndices;
+TEST(Spacefilling, space_filling) {
 
-//     pm.fillGroupIndices(groupIndices);
-
-//     for(auto el : mesh->elements_range()) {
-//         data_cache.store_value(el.idx(), &groupIndices[el.idx()]);
-//     }
-//     output->write_time_frame();
-
-    delete mesh;
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+    
+//     const std::array<std::string, 2> shapes = {"square", "lshape"};
+    const std::array<std::string, 1> shapes = {"square"/*, "lshape"*/};
+//     const std::array<std::string, 2> structures = {"uniform", "refined"};
+    const std::array<std::string, 1> structures = {"uniform"/*, "refined"*/};
+//     const std::array<std::string, 2> sizes = {"small", "big"};
+    const std::array<std::string, 1> sizes = {/*"small",*/ "big"};
+    
+    uint progressIndex = 1;
+    
+    Stopwatch stopwatch;
     
     std::time_t unixTime = std::time(nullptr);
     std::stringstream tmpStream;
     tmpStream << unixTime;
     std::string unixTimeString = tmpStream.str();
-    std::ofstream jsonResult("../../../results/" + meshName + '_' + testName + '/' + unixTimeString + ".json");
+    TimeWriter tw("../../../results/multitest_" + unixTimeString + ".json");
     
-    Profiler::instance()->output(jsonResult);
-    Profiler::uninitialize();
+    for (const std::string& size : sizes) {
+        for (const std::string& structure : structures) {
+            for (const std::string& shape : shapes) {
+                
+                const std::string meshName = shape + '_' + structure + '_' + "3D" + '_' + size;
+                const std::string meshNameJson = "{mesh_file=\"mesh/" + meshName + ".msh\"}";
+                
+                std::cout << '(' << progressIndex <<  "/40)" << '\n';
+                ++progressIndex;
+                
+                Mesh * mesh = mesh_full_constructor(meshNameJson);
+                
+                MeshOptimizer<3> backuper(*mesh);
+                std::vector<Element> elementsBackup = backuper.getElements();
+                Armor::Array<double> nodesBackup = backuper.getNodes();
+                
+                std::cout << meshName << '\n';
+                std::cout << "nNodes: " << mesh->n_nodes() << '\n';
+                std::cout << "nElements: " << mesh->n_elements() << '\n';
+                
+                std::array<double, 5> results;
+                
+//                 {
+//                     MeshOptimizer<3> mo(*mesh);
+//                     std::cout << '(' << progressIndex <<  "/40)" << '\n';
+//                     ++progressIndex;
+//                     std::cout << "calculating sizes" << '\n';
+//                     mo.calculateSizes();
+//                     std::cout << "calculating node curve values" << '\n';
+//                     mo.calculateNodeCurveValuesAsFirstCoord();
+//                     std::cout << "calculating element curve values" << '\n';
+//                     mo.calculateElementCurveValuesAsFirstCoord();
+//                     std::cout << "sorting nodes" << '\n';
+//                     mo.sortNodes();
+//                     std::cout << "sorting elements" << '\n';
+//                     mo.sortElements();
+//                     std::cout << "getting global matrix" << '\n';
+//                     Mat global_matrix = getGlobalMatrix(mesh);
+//                     std::cout << "performing calculation" << '\n';
+//                     stopwatch.start();
+//                     results[1] = performMultiplication(global_matrix, mesh->n_nodes());
+//                     stopwatch.stop();
+//                     std::cout << "result 2: " << results[1] << '\n';
+//                     tw.writeTime(meshName + "_first", stopwatch.microseconds());
+//                     std::cout << "copying mesh from backup" << '\n';
+//                     mo.setElements(elementsBackup);
+//                     mo.setNodes(nodesBackup);
+//                     MatDestroy(&global_matrix);
+//                 }
+//                 
+//                 {
+//                     MeshOptimizer<3> mo(*mesh);
+//                     std::cout << '(' << progressIndex <<  "/40)" << '\n';
+//                     ++progressIndex;
+//                     std::cout << "calculating sizes" << '\n';
+//                     mo.calculateSizes();
+//                     std::cout << "calculating node curve values" << '\n';
+//                     mo.calculateNodeCurveValuesAsMeanOfCoords();
+//                     std::cout << "calculating element curve values" << '\n';
+//                     mo.calculateElementCurveValuesAsMeanOfCoords();
+//                     std::cout << "sorting nodes" << '\n';
+//                     mo.sortNodes();
+//                     std::cout << "sorting elements" << '\n';
+//                     mo.sortElements();
+//                     std::cout << "getting global matrix" << '\n';
+//                     Mat global_matrix = getGlobalMatrix(mesh);
+//                     std::cout << "performing calculation" << '\n';
+//                     stopwatch.start();
+//                     results[2] = performMultiplication(global_matrix, mesh->n_nodes());
+//                     stopwatch.stop();
+//                     std::cout << "result 3: " << results[2] << '\n';
+//                     tw.writeTime(meshName + "_mean", stopwatch.microseconds());
+//                     std::cout << "copying mesh from backup" << '\n';
+//                     mo.setElements(elementsBackup);
+//                     mo.setNodes(nodesBackup);
+//                     MatDestroy(&global_matrix);
+//                 }
+//                 
+//                 {
+//                     MeshOptimizer<3> mo(*mesh);
+//                     std::cout << '(' << progressIndex <<  "/40)" << '\n';
+//                     ++progressIndex;
+//                     std::cout << "calculating sizes" << '\n';
+//                     mo.calculateSizes();
+//                     std::cout << "calculating node curve values" << '\n';
+//                     mo.calculateNodeCurveValuesAsZCurve();
+//                     std::cout << "calculating element curve values" << '\n';
+//                     mo.calculateElementCurveValuesAsZCurveOfCenter();
+//                     std::cout << "sorting nodes" << '\n';
+//                     mo.sortNodes();
+//                     std::cout << "sorting elements" << '\n';
+//                     mo.sortElements();
+//                     std::cout << "getting global matrix" << '\n';
+//                     Mat global_matrix = getGlobalMatrix(mesh);
+//                     std::cout << "performing calculation" << '\n';
+//                     stopwatch.start();
+//                     results[3] = performMultiplication(global_matrix, mesh->n_nodes());
+//                     stopwatch.stop();
+//                     std::cout << "result 4: " << results[3] << '\n';
+//                     tw.writeTime(meshName + "_zcurve", stopwatch.microseconds());
+//                     std::cout << "copying mesh from backup" << '\n';
+//                     mo.setElements(elementsBackup);
+//                     mo.setNodes(nodesBackup);
+//                     MatDestroy(&global_matrix);
+//                 }
+                
+                {
+                    MeshOptimizer<3> mo(*mesh);
+                    std::cout << '(' << progressIndex <<  "/40)" << '\n';
+                    ++progressIndex;
+                    std::cout << "calculating sizes" << '\n';
+                    mo.calculateSizes();
+                    std::cout << "calculating node curve values" << '\n';
+                    mo.calculateNodeCurveValuesAsHilbert();
+                    std::cout << "calculating element curve values" << '\n';
+                    mo.calculateElementCurveValuesAsHilbertOfCenters();
+                    std::cout << "sorting nodes" << '\n';
+                    mo.sortNodes();
+                    std::cout << "sorting elements" << '\n';
+                    mo.sortElements();
+                    std::cout << "performing calculation" << '\n';
+                    stopwatch.start();
+                    results[4] = calculation3DAfterSort(mesh);
+                    stopwatch.stop();
+                    std::cout << "result 5: " << results[4] << '\n';
+                    tw.writeTime(meshName + "_hilbert", stopwatch.microseconds());
+                    std::cout << "copying mesh from backup" << '\n';
+                    mo.setElements(elementsBackup);
+                    mo.setNodes(nodesBackup);
+                }
+                
+                {
+                    //
+                    //
+                    //
+                    //
+                    //
+                    //
+                    //
+                    //
+                    std::cout << "performing calculation" << '\n';
+                    stopwatch.start();
+                    results[0] = calculation3DBeforeSort(mesh);
+                    stopwatch.stop();
+                    std::cout << "result 1: " << results[0] << '\n';
+                    tw.writeTime(meshName + "_nosort", stopwatch.microseconds());
+                }
+                
+                delete mesh;
+                
+            }
+        }
+    }
+    
 }
 

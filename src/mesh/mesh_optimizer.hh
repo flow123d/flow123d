@@ -129,7 +129,7 @@ public:
             elementRefs.emplace_back(i, hilbertValue(normalizer.normalize(ElementAccessor<3>(&mesh, i).centre()), normalizer.normalize(elementSizes[i])));
         }
     }
-    inline void calculateElementCurveValuesAsZCurveOfCenters() {
+    inline void calculateElementCurveValuesAsZCurveOfCenter() {
         elementRefs.reserve(mesh.n_elements());
         for (uint i = 0; i < mesh.n_elements(); ++i) {
             elementRefs.emplace_back(i, zCurveValue(normalizer.normalize(ElementAccessor<3>(&mesh, i).centre()), normalizer.normalize(elementSizes[i])));
@@ -171,6 +171,26 @@ public:
         for (uint i = 0; i < elementRefs.size(); ++i) {
             mesh.element_vec_[i] = elementsBackup[elementRefs[i].originalIndex];
         }
+    }
+    void copyMeshFrom(const Mesh& from) {
+        for (uint i = 0; i < from.n_elements(); ++i) {
+            for (uint j = 0; j < DIM + 1; ++j) {
+                mesh.element_vec_[i].nodes_[j] = from.element_vec_[i].nodes_[j];
+            }
+        }
+        mesh.nodes_ = from.nodes_;
+    }
+    std::vector<Element> getElements() {
+        return mesh.element_vec_;
+    }
+    Armor::Array<double> getNodes() {
+        return mesh.nodes_;
+    }
+    void setElements(const std::vector<Element>& els) {
+        mesh.element_vec_ = els;
+    }
+    void setNodes(const Armor::Array<double>& nds) {
+        mesh.nodes_ = nds;
     }
 private:
     Mesh& mesh;
