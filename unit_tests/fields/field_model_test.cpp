@@ -20,6 +20,7 @@
 
 #include "fields/field_model.hh"
 #include "fields/multi_field.hh"
+#include "fields/field_constant.hh"
 #include "mesh/accessors.hh"
 #include "mesh/mesh.h"
 #include "quadrature/quadrature.hh"
