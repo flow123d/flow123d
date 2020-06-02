@@ -118,6 +118,9 @@ public:
     /// Index of invalid element in cache.
     static const unsigned int undef_elem_idx;
 
+    /// Size of block (evaluation of FieldFormula) must be multiple of this value.
+    static const unsigned int formula_block_divisor;
+
     /**
      * Holds elements indices of one region stored in cache.
      *

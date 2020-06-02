@@ -51,6 +51,7 @@ void FieldValueCache<elm_type>::init(std::shared_ptr<EvalPoints> eval_points, un
  */
 
 const unsigned int ElementCacheMap::undef_elem_idx = std::numeric_limits<unsigned int>::max();
+const unsigned int ElementCacheMap::formula_block_divisor = 4;
 
 
 ElementCacheMap::ElementCacheMap()
@@ -131,9 +132,10 @@ void ElementCacheMap::create_elements_points_map() {
 	        }
 	    }
         if (region_last_elm==i_elm+1) {
+            while (points_in_cache_%ElementCacheMap::formula_block_divisor > 0) points_in_cache_++;
             update_data_.region_value_cache_range_[idx_to_region] = points_in_cache_;
-        	idx_to_region++;
-        	region_last_elm = update_data_.region_element_cache_range_[idx_to_region];
+            idx_to_region++;
+            region_last_elm = update_data_.region_element_cache_range_[idx_to_region];
         }
 	}
 }
