@@ -185,6 +185,7 @@ public:
      * Collective interface to @p FieldCommonBase::set_mesh().
      */
     void set_mesh(const Mesh &mesh) {
+    	this->mesh_ = &mesh;
         for(FieldCommon *field : field_list) field->set_mesh(mesh);
     }
 
@@ -242,6 +243,9 @@ public:
      * Collective interface to @p FieldCommon::cache_allocate().
      */
     void cache_allocate(std::shared_ptr<EvalPoints> eval_points) {
+        x_coord_.init(eval_points, ElementCacheMap::n_cached_elements);
+        y_coord_.init(eval_points, ElementCacheMap::n_cached_elements);
+        z_coord_.init(eval_points, ElementCacheMap::n_cached_elements);
         for(auto field : field_list) field->cache_allocate(eval_points);
     }
 
@@ -249,6 +253,7 @@ public:
      * Collective interface to @p FieldCommon::cache_update().
      */
     void cache_update(ElementCacheMap &cache_map) {
+        update_coords_caches(cache_map);
 	    for(auto field : field_list) field->cache_update(cache_map);
     }
 
@@ -260,9 +265,21 @@ public:
     }
 
 protected:
+    /// Update caches holding coordinates values (for FieldFormula)
+    void update_coords_caches(ElementCacheMap &cache_map);
 
     /// List of all fields.
     std::vector<FieldCommon *> field_list;
+
+    /*
+     * Following caches represents data of x,y,z coordinates. Temporary solution, these caches will be part
+     * of appropriate Fields in future (when field params of FieldFormula will be applicated).
+     * Mesh allows construct ElementAccessors (for compute coordinates).
+     */
+    FieldValueCache<double> x_coord_;  ///< Holds values of x-coordinates (for FieldFormula)
+    FieldValueCache<double> y_coord_;  ///< Holds values of y-coordinates (for FieldFormula)
+    FieldValueCache<double> z_coord_;  ///< Holds values of z-coordinates (for FieldFormula)
+    const Mesh *mesh_;                 ///< Pointer to the mesh.
 
     /**
      * Stream output operator

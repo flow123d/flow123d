@@ -43,7 +43,7 @@ template<class elm_type>
 class FieldValueCache {
 public:
     /// Constructor
-    FieldValueCache(unsigned int n_rows, unsigned int n_cols);
+    FieldValueCache(unsigned int n_rows = 1, unsigned int n_cols = 1);
 
     /// Destructor
     ~FieldValueCache();
