@@ -254,8 +254,8 @@ public:
 
     void set_input_list(const Input::Array &list, const TimeGovernor &tg) override;
 
-    /// Implements FieldCommon::cache_allocate
-    void cache_allocate(std::shared_ptr<EvalPoints> eval_points) override;
+    /// Implements FieldCommon::cache_reallocate
+    void cache_reallocate(const ElementCacheMap &cache_map) override;
 
     /// Implements FieldCommon::cache_update
     void cache_update(ElementCacheMap &cache_map) override;

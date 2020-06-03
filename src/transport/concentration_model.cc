@@ -25,11 +25,93 @@
 #include "concentration_model.hh"
 #include "tools/unit_si.hh"
 #include "coupling/balance.hh"
+#include "fields/field_model.hh"
 
 
 
 using namespace std;
 using namespace Input::Type;
+
+
+/*******************************************************************************
+ * Functors of FieldModels
+ */
+using Sclr = double;
+using Vect = arma::vec3;
+using Tens = arma::mat33;
+
+// Functor computing velocity norm
+Sclr fn_conc_v_norm(Vect vel) {
+	return arma::norm(vel, 2);
+}
+
+// Functor computing mass matrix coefficients (cross_section * water_content)
+Sclr fn_conc_mass_matrix(Sclr csec, Sclr wcont) {
+    return csec * wcont;
+}
+
+// Functor computing retardation coefficients:
+// (1-porosity) * rock_density * sorption_coefficient * rock_density
+Sclr fn_conc_retardation(Sclr csec, Sclr por_m, Sclr rho_s, Sclr sorp_mult) {
+    return (1.-por_m)*rho_s*sorp_mult*csec;
+}
+
+// Functor computing sources density output (cross_section * sources_density)
+Sclr fn_conc_sources_dens(Sclr csec, Sclr sdens) {
+    return csec * sdens;
+}
+
+// Functor computing sources sigma output (cross_section * sources_sigma)
+Sclr fn_conc_sources_sigma(Sclr csec, Sclr ssigma) {
+    return csec * ssigma;
+}
+
+// Functor computing sources concentration output (sources_conc)
+Sclr fn_conc_sources_conc(Sclr sconc) {
+    return sconc;
+}
+
+// Functor computing advection coefficient (velocity)
+Vect fn_conc_ad_coef(Vect velocity) {
+    return velocity;
+}
+
+// Functor computing diffusion coefficient (see notes in function)
+Tens fn_conc_diff_coef(Tens diff_m, Vect velocity, Sclr v_norm, Sclr alphaL, Sclr alphaT, Sclr water_content, Sclr porosity, Sclr c_sec) {
+
+    // used tortuosity model dues to Millington and Quirk(1961) (should it be with power 10/3 ?)
+    // for an overview of other models see: Chou, Wu, Zeng, Chang (2011)
+    double tortuosity = pow(water_content, 7.0 / 3.0)/ (porosity * porosity);
+
+    // result
+    Tens K;
+
+    // Note that the velocity vector is in fact the Darcian flux,
+    // so we need not to multiply vnorm by water_content and cross_section.
+	//K = ((alphaL-alphaT) / vnorm) * K + (alphaT*vnorm + Dm*tortuosity*cross_cut*water_content) * arma::eye(3,3);
+
+    if (fabs(v_norm) > 0) {
+        /*
+        for (int i=0; i<3; i++)
+            for (int j=0; j<3; j++)
+               K(i,j) = (velocity[i]/vnorm)*(velocity[j]);
+        */
+        K = ((alphaL - alphaT) / v_norm) * arma::kron(velocity.t(), velocity);
+
+        //arma::mat33 abs_diff_mat = arma::abs(K -  kk);
+        //double diff = arma::min( arma::min(abs_diff_mat) );
+        //ASSERT(  diff < 1e-12 )(diff)(K)(kk);
+    } else
+        K.zeros();
+
+    // Note that the velocity vector is in fact the Darcian flux,
+    // so to obtain |v| we have to divide vnorm by porosity and cross_section.
+    K += alphaT*v_norm*arma::eye(3,3) + diff_m*(tortuosity*c_sec*water_content);
+
+    return K;
+}
+
+
 
 
 
@@ -135,6 +217,53 @@ ConcentrationTransportModel::ModelEqData::ModelEqData()
             .description("Concentration solution.")
 	        .units( UnitSI().kg().m(-3) )
 	        .flags( equation_result );
+
+    *this += velocity.name("velocity")
+            .description("Velocity field given from Flow equation.")
+            .input_default("0.0")
+            .units( UnitSI().m().s(-1) );
+
+
+	// initiaization of FieldModels
+    *this += v_norm.name("v_norm")
+            .description("Velocity norm field.")
+            .input_default("0.0")
+            .units( UnitSI().m().s(-1) );
+
+    *this += mass_matrix_coef.name("mass_matrix_coef")
+            .description("Matrix coefficients computed by model in mass assemblation.")
+            .input_default("0.0")
+            .units( UnitSI().m(3).md() );
+
+    *this += retardation_coef.name("retardation_coef")
+            .description("Retardation coefficients computed by model in mass assemblation.")
+            .input_default("0.0")
+            .units( UnitSI().m(3).md() );
+    *this += sources_density_out.name("sources_density_out")
+            .description("Concentration sources output - density of substance source, only positive part is used..")
+            .input_default("0.0")
+            .units( UnitSI().kg().s(-1).md() );
+
+    *this += sources_sigma_out.name("sources_sigma_out")
+            .description("Concentration sources - Robin type, in_flux = sources_sigma * (sources_conc - mobile_conc).")
+            .input_default("0.0")
+            .units( UnitSI().s(-1).m(3).md() );
+
+    *this += sources_conc_out.name("sources_conc_out")
+            .description("Concentration sources output.")
+            .input_default("0.0")
+            .units( UnitSI().kg().m(-3) );
+
+    *this += advection_coef.name("advection_coef")
+            .description("Advection coefficients model.")
+            .input_default("0.0")
+            .units( UnitSI().m().s(-1) );
+
+    *this += diffusion_coef.name("diffusion_coef")
+            .description("Diffusion coefficients model.")
+            .input_default("0.0")
+            .units( UnitSI().m(2).s(-1) );
+
 }
 
 
@@ -172,7 +301,7 @@ void ConcentrationTransportModel::init_from_input(const Input::Record &in_rec)
 
 
 
-void ConcentrationTransportModel::compute_mass_matrix_coefficient(const Armor::array &point_list,
+/*void ConcentrationTransportModel::compute_mass_matrix_coefficient(const Armor::array &point_list,
 		const ElementAccessor<3> &ele_acc,
 		std::vector<double> &mm_coef)
 {
@@ -184,11 +313,11 @@ void ConcentrationTransportModel::compute_mass_matrix_coefficient(const Armor::a
 
 	for (unsigned int i=0; i<point_list.size(); i++)
 		mm_coef[i] = elem_csec[i]*wc[i];
-}
+}*/
 // mm_coef - simple field
 
 
-void ConcentrationTransportModel::compute_retardation_coefficient(const Armor::array &point_list,
+/*void ConcentrationTransportModel::compute_retardation_coefficient(const Armor::array &point_list,
 		const ElementAccessor<3> &ele_acc,
 		std::vector<std::vector<double> > &ret_coef)
 {
@@ -211,7 +340,7 @@ void ConcentrationTransportModel::compute_retardation_coefficient(const Armor::a
 			ret_coef[sbi][i] = (1.-por_m[i])*rho_s[i]*sorp_mult[i]*elem_csec[i];
 		}
 	}
-}
+}*/
 // ret_coef - multifield, Field parameters pro_m, rho_s, rho_l; multifiled sorp_mult
 //
 // TransportDG::initialize() calls set_components
@@ -220,7 +349,7 @@ void ConcentrationTransportModel::compute_retardation_coefficient(const Armor::a
 //
 
 
-void ConcentrationTransportModel::calculate_dispersivity_tensor(const arma::vec3 &velocity,
+/*void ConcentrationTransportModel::calculate_dispersivity_tensor(const arma::vec3 &velocity,
 		const arma::mat33 &Dm, double alphaL, double alphaT, double water_content, double porosity, double cross_cut,
 		arma::mat33 &K)
 {
@@ -236,11 +365,6 @@ void ConcentrationTransportModel::calculate_dispersivity_tensor(const arma::vec3
 	//K = ((alphaL-alphaT) / vnorm) * K + (alphaT*vnorm + Dm*tortuosity*cross_cut*water_content) * arma::eye(3,3);
 
     if (fabs(vnorm) > 0) {
-        /*
-        for (int i=0; i<3; i++)
-            for (int j=0; j<3; j++)
-               K(i,j) = (velocity[i]/vnorm)*(velocity[j]);
-        */
         K = ((alphaL - alphaT) / vnorm) * arma::kron(velocity.t(), velocity);
 
         //arma::mat33 abs_diff_mat = arma::abs(K -  kk);
@@ -253,7 +377,7 @@ void ConcentrationTransportModel::calculate_dispersivity_tensor(const arma::vec3
    // so to obtain |v| we have to divide vnorm by porosity and cross_section.
    K += alphaT*vnorm*arma::eye(3,3) + Dm*(tortuosity*cross_cut*water_content);
 
-}
+}*/
 // result multifield: dispersivity_tensor (here the K parameter)
 // input fields: water_content, porosity, velocity, cross_cut
 // input multifields: diff_m, disp_l, disp_t
@@ -268,7 +392,7 @@ void ConcentrationTransportModel::calculate_dispersivity_tensor(const arma::vec3
 
 
 
-void ConcentrationTransportModel::compute_advection_diffusion_coefficients(const Armor::array &point_list,
+/*void ConcentrationTransportModel::compute_advection_diffusion_coefficients(const Armor::array &point_list,
 		const std::vector<arma::vec3> &velocity,
 		const ElementAccessor<3> &ele_acc,
 		std::vector<std::vector<arma::vec3> > &ad_coef,
@@ -296,18 +420,18 @@ void ConcentrationTransportModel::compute_advection_diffusion_coefficients(const
 					dif_coef[sbi][i]);
 		}
 	}
-}
+}*/
 
 
-void ConcentrationTransportModel::compute_init_cond(const Armor::array &point_list,
+/*void ConcentrationTransportModel::compute_init_cond(const Armor::array &point_list,
 		const ElementAccessor<3> &ele_acc,
 		std::vector<std::vector<double> > &init_values)
 {
     for (unsigned int sbi=0; sbi<n_substances(); sbi++)
         data().init_conc[sbi].value_list(point_list, ele_acc, init_values[sbi]);
-}
+}*/
 
-void ConcentrationTransportModel::get_bc_type(const ElementAccessor<3> &ele_acc,
+/*void ConcentrationTransportModel::get_bc_type(const ElementAccessor<3> &ele_acc,
 			arma::uvec &bc_types)
 {
 	// Currently the bc types for ConcentrationTransport are numbered in the same way as in TransportDG.
@@ -315,10 +439,10 @@ void ConcentrationTransportModel::get_bc_type(const ElementAccessor<3> &ele_acc,
     bc_types.resize(n_substances());
     for (unsigned int sbi=0; sbi<n_substances(); sbi++)
         bc_types[sbi] = data().bc_type[sbi].value(ele_acc.centre(), ele_acc);
-}
+}*/
 
 
-void ConcentrationTransportModel::get_flux_bc_data(unsigned int index,
+/*void ConcentrationTransportModel::get_flux_bc_data(unsigned int index,
         const Armor::array &point_list,
 		const ElementAccessor<3> &ele_acc,
 		std::vector< double > &bc_flux,
@@ -331,18 +455,18 @@ void ConcentrationTransportModel::get_flux_bc_data(unsigned int index,
 	
 	// Change sign in bc_flux since internally we work with outgoing fluxes.
 	for (auto f : bc_flux) f = -f;
-}
+}*/
 
-void ConcentrationTransportModel::get_flux_bc_sigma(unsigned int index,
+/*void ConcentrationTransportModel::get_flux_bc_sigma(unsigned int index,
         const Armor::array &point_list,
 		const ElementAccessor<3> &ele_acc,
 		std::vector< double > &bc_sigma)
 {
 	data().bc_robin_sigma[index].value_list(point_list, ele_acc, bc_sigma);
-}
+}*/
 
 
-void ConcentrationTransportModel::compute_source_coefficients(const Armor::array &point_list,
+/*void ConcentrationTransportModel::compute_source_coefficients(const Armor::array &point_list,
 			const ElementAccessor<3> &ele_acc,
 			std::vector<std::vector<double> > &sources_value,
 			std::vector<std::vector<double> > &sources_density,
@@ -363,10 +487,10 @@ void ConcentrationTransportModel::compute_source_coefficients(const Armor::array
           sources_sigma[sbi][k] *= csection[k];
       }
     }
-}
+}*/
 
 
-void ConcentrationTransportModel::compute_sources_sigma(const Armor::array &point_list,
+/*void ConcentrationTransportModel::compute_sources_sigma(const Armor::array &point_list,
 			const ElementAccessor<3> &ele_acc,
 			std::vector<std::vector<double> > &sources_sigma)
 {
@@ -380,7 +504,7 @@ void ConcentrationTransportModel::compute_sources_sigma(const Armor::array &poin
         for (unsigned int k=0; k<qsize; k++)
             sources_sigma[sbi][k] *= csection[k];
     }
-}
+}*/
 
 
 ConcentrationTransportModel::~ConcentrationTransportModel()
@@ -392,6 +516,50 @@ void ConcentrationTransportModel::set_balance_object(std::shared_ptr<Balance> ba
 	balance_ = balance;
 	subst_idx = balance_->add_quantities(substances_.names());
 }
+
+
+void ConcentrationTransportModel::initialize()
+{
+    // initialize multifield components
+	data().sorption_coefficient.setup_components();
+    data().sources_conc.setup_components();
+    data().sources_density.setup_components();
+    data().sources_sigma.setup_components();
+    data().diff_m.setup_components();
+    data().disp_l.setup_components();
+    data().disp_t.setup_components();
+
+    // create FieldModels
+    auto v_norm_ptr = Model<3, FieldValue<3>::Scalar>::create(fn_conc_v_norm, data().velocity);
+    data().v_norm.set_field(mesh_->region_db().get_region_set("ALL"), v_norm_ptr);
+
+    auto mass_matrix_coef_ptr = Model<3, FieldValue<3>::Scalar>::create(fn_conc_mass_matrix, data().cross_section, data().water_content);
+    data().mass_matrix_coef.set_field(mesh_->region_db().get_region_set("ALL"), mass_matrix_coef_ptr);
+
+    auto retardation_coef_ptr = Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_retardation, data().cross_section, data().porosity,
+            data().rock_density, data().sorption_coefficient);
+    data().retardation_coef.set_fields(mesh_->region_db().get_region_set("ALL"), retardation_coef_ptr);
+
+    auto sources_dens_ptr = Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_sources_dens, data().cross_section, data().sources_density);
+    data().sources_density_out.set_fields(mesh_->region_db().get_region_set("ALL"), sources_dens_ptr);
+
+    auto sources_sigma_ptr = Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_sources_sigma, data().cross_section, data().sources_sigma);
+    data().sources_sigma_out.set_fields(mesh_->region_db().get_region_set("ALL"), sources_sigma_ptr);
+
+    auto sources_conc_ptr = Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_sources_conc, data().sources_conc);
+    data().sources_conc_out.set_fields(mesh_->region_db().get_region_set("ALL"), sources_conc_ptr);
+
+    auto ad_coef_ptr = Model<3, FieldValue<3>::VectorFixed>::create(fn_conc_ad_coef, data().velocity);
+    std::vector<typename Field<3, FieldValue<3>::VectorFixed>::FieldBasePtr> ad_coef_ptr_vec;
+    for (unsigned int sbi=0; sbi<substances_.names().size(); sbi++)
+        ad_coef_ptr_vec.push_back(ad_coef_ptr);
+    data().advection_coef.set_fields(mesh_->region_db().get_region_set("ALL"), ad_coef_ptr_vec);
+
+    auto diffusion_coef_ptr = Model<3, FieldValue<3>::TensorFixed>::create_multi(fn_conc_diff_coef, data().diff_m, data().velocity, data().v_norm,
+            data().disp_l, data().disp_t, data().water_content, data().porosity, data().cross_section);
+    data().diffusion_coef.set_fields(mesh_->region_db().get_region_set("ALL"), diffusion_coef_ptr);
+}
+
 
 
 

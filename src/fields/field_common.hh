@@ -450,9 +450,9 @@ public:
     }
 
     /**
-     * Allocate data cache of dimension appropriate to subset object.
+     * Reallocate field value cache of Field or all SubFields of MultiField.
      */
-    virtual void cache_allocate(std::shared_ptr<EvalPoints> eval_points) = 0;
+    virtual void cache_reallocate(const ElementCacheMap &cache_map) = 0;
 
     /**
      * Read data to cache for appropriate elements given by ElementCacheMap object.

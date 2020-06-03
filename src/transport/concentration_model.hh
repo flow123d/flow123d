@@ -81,6 +81,31 @@ public:
 
 		MultiField<3, FieldValue<3>::Scalar> output_field;
 
+		/// Velocity field given from Flow equation.
+		Field<3, FieldValue<3>::VectorFixed > velocity;
+
+
+		/// @name Instances of FieldModel used in assembly methods
+		// @{
+
+		/// Velocity norm field.
+        Field<3, FieldValue<3>::Scalar > v_norm;
+		/// Field represents coefficients of mass matrix.
+        Field<3, FieldValue<3>::Scalar > mass_matrix_coef;
+		/// Field represents retardation coefficients due to sorption.
+        MultiField<3, FieldValue<3>::Scalar> retardation_coef;
+    	/// Concentration sources - density output
+    	MultiField<3, FieldValue<3>::Scalar> sources_density_out;
+    	/// Concentration sources - sigma output
+    	MultiField<3, FieldValue<3>::Scalar> sources_sigma_out;
+    	/// Concentration sources - concentration output
+    	MultiField<3, FieldValue<3>::Scalar> sources_conc_out;
+		/// Advection coefficients.
+		MultiField<3, FieldValue<3>::VectorFixed> advection_coef;
+		/// Diffusion coefficients.
+		MultiField<3, FieldValue<3>::TensorFixed> diffusion_coef;
+
+    	// @}
 
 
 		ModelEqData();
@@ -103,50 +128,55 @@ public:
 
         void init_from_input(const Input::Record &in_rec) override;
 
-	void compute_mass_matrix_coefficient(const Armor::array &point_list,
-			const ElementAccessor<3> &ele_acc,
-			std::vector<double> &mm_coef) override;
+	//void compute_mass_matrix_coefficient(const Armor::array &point_list,
+	//		const ElementAccessor<3> &ele_acc,
+	//		std::vector<double> &mm_coef) override;
 
-	void compute_retardation_coefficient(const Armor::array &point_list,
-			const ElementAccessor<3> &ele_acc,
-			std::vector<std::vector<double> > &ret_coef) override;
+	//void compute_retardation_coefficient(const Armor::array &point_list,
+	//		const ElementAccessor<3> &ele_acc,
+	//		std::vector<std::vector<double> > &ret_coef) override;
 
 
 
-	void compute_advection_diffusion_coefficients(const Armor::array &point_list,
-			const std::vector<arma::vec3> &velocity,
-			const ElementAccessor<3> &ele_acc,
-			std::vector<std::vector<arma::vec3> > &ad_coef,
-			std::vector<std::vector<arma::mat33> > &dif_coef) override;
+	//void compute_advection_diffusion_coefficients(const Armor::array &point_list,
+	//		const std::vector<arma::vec3> &velocity,
+	//		const ElementAccessor<3> &ele_acc,
+	//		std::vector<std::vector<arma::vec3> > &ad_coef,
+	//		std::vector<std::vector<arma::mat33> > &dif_coef) override;
 
-	void compute_init_cond(const Armor::array &point_list,
-			const ElementAccessor<3> &ele_acc,
-			std::vector<std::vector<double> > &init_values) override;
+	//void compute_init_cond(const Armor::array &point_list,
+	//		const ElementAccessor<3> &ele_acc,
+	//		std::vector<std::vector<double> > &init_values) override;
 
-	void get_bc_type(const ElementAccessor<3> &ele_acc,
-				arma::uvec &bc_types) override;
+    inline Field<3, FieldValue<3>::Scalar> &init_cond_field(unsigned int sbi)
+    {
+        return data().init_conc[sbi];
+    }
 
-	void get_flux_bc_data(unsigned int index,
-            const Armor::array &point_list,
-			const ElementAccessor<3> &ele_acc,
-			std::vector< double > &bc_flux,
-			std::vector< double > &bc_sigma,
-			std::vector< double > &bc_ref_value) override;
+	//void get_bc_type(const ElementAccessor<3> &ele_acc,
+	//			arma::uvec &bc_types) override;
 
-	void get_flux_bc_sigma(unsigned int index,
-            const Armor::array &point_list,
-			const ElementAccessor<3> &ele_acc,
-			std::vector< double > &bc_sigma) override;
+	//void get_flux_bc_data(unsigned int index,
+    //        const Armor::array &point_list,
+	//        const ElementAccessor<3> &ele_acc,
+	//        std::vector< double > &bc_flux,
+	//        std::vector< double > &bc_sigma,
+	//        std::vector< double > &bc_ref_value) override;
 
-	void compute_source_coefficients(const Armor::array &point_list,
-				const ElementAccessor<3> &ele_acc,
-				std::vector<std::vector<double> > &sources_conc,
-				std::vector<std::vector<double> > &sources_density,
-				std::vector<std::vector<double> > &sources_sigma) override;
+	//void get_flux_bc_sigma(unsigned int index,
+    //        const Armor::array &point_list,
+	//        const ElementAccessor<3> &ele_acc,
+	//        std::vector< double > &bc_sigma) override;
 
-	void compute_sources_sigma(const Armor::array &point_list,
-				const ElementAccessor<3> &ele_acc,
-				std::vector<std::vector<double> > &sources_sigma) override;
+	//void compute_source_coefficients(const Armor::array &point_list,
+	//			const ElementAccessor<3> &ele_acc,
+	//			std::vector<std::vector<double> > &sources_conc,
+	//			std::vector<std::vector<double> > &sources_density,
+	//			std::vector<std::vector<double> > &sources_sigma) override;
+
+	//void compute_sources_sigma(const Armor::array &point_list,
+	//			const ElementAccessor<3> &ele_acc,
+	//			std::vector<std::vector<double> > &sources_sigma) override;
 
 	~ConcentrationTransportModel() override;
 
@@ -162,6 +192,7 @@ public:
 	inline void set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field) override
 	{
 		velocity_field_ptr_ = flux_field;
+		data().velocity.set_field(mesh_->region_db().get_region_set("ALL"), flux_field);
 		flux_changed = true;
 	}
 
@@ -219,14 +250,19 @@ protected:
 	 * @param cross_cut Cross-section.
 	 * @param K         Dispersivity tensor (output).
 	 */
-	void calculate_dispersivity_tensor(const arma::vec3 &velocity,
-			const arma::mat33 &Dm,
-			double alphaL,
-			double alphaT,
-			double water_content,
-			double porosity,
-			double cross_cut,
-			arma::mat33 &K);
+	//void calculate_dispersivity_tensor(const arma::vec3 &velocity,
+	//		const arma::mat33 &Dm,
+	//		double alphaL,
+	//		double alphaT,
+	//		double water_content,
+	//		double porosity,
+	//		double cross_cut,
+	//		arma::mat33 &K);
+
+	/**
+	 * Initialize FieldModel instances.
+	 */
+	void initialize();
 
 	/// Indicator of change in advection vector field.
 	bool flux_changed;
@@ -242,7 +278,7 @@ protected:
 
 	std::shared_ptr<OutputTime> output_stream_;
 
-	/// Pointer to velocity field given from Flow equation.
+	/// Pointer to velocity field given from Flow equation - obsolete, will be replace with Field<...> data()->velocity.
 	std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> velocity_field_ptr_;
 
 

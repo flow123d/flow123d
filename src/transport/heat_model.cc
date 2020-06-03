@@ -23,11 +23,91 @@
 #include "heat_model.hh"
 #include "tools/unit_si.hh"
 #include "coupling/balance.hh"
+#include "fields/field_model.hh"
 
 
 
 using namespace std;
 using namespace Input::Type;
+
+
+/*******************************************************************************
+ * Functors of FieldModels
+ */
+using Sclr = double;
+using Vect = arma::vec3;
+using Tens = arma::mat33;
+
+// Functor computing velocity norm
+Sclr fn_heat_v_norm(Vect vel) {
+	return arma::norm(vel, 2);
+}
+
+/**
+ * Functor computing mass matrix coefficients:
+ * cross_section * (porosity*fluid_density*fluid_heat_capacity + (1.-porosity)*solid_density*solid_heat_capacity)
+ */
+Sclr fn_heat_mass_matrix(Sclr csec, Sclr por, Sclr f_rho, Sclr f_c, Sclr s_rho, Sclr s_c) {
+    return csec * (por*f_rho*f_c + (1.-por)*s_rho*s_c);
+}
+
+/**
+ * Functor computing sources density output:
+ * cross_section * (porosity*fluid_thermal_source + (1-porosity)*solid_thermal_source)
+ */
+Sclr fn_heat_sources_dens(Sclr csec, Sclr por, Sclr f_source, Sclr s_source) {
+    return csec * (por * f_source + (1.-por) * s_source);
+}
+
+/**
+ * Functor computing sources sigma output:
+ * cross_section * (porosity*fluid_density*fluid_heat_capacity*fluid_heat_exchange_rate + (1-porosity)*solid_density*solid_heat_capacity*solid_thermal_source)
+ */
+Sclr fn_heat_sources_sigma(Sclr csec, Sclr por, Sclr f_rho, Sclr f_cap, Sclr f_sigma, Sclr s_rho, Sclr s_cap, Sclr s_sigma) {
+    return csec * (por * f_rho * f_cap * f_sigma + (1.-por) * s_rho * s_cap * s_sigma);
+}
+
+/**
+ * Functor computing sources concentration output for positive heat_sources_sigma (otherwise return 0):
+ * cross_section * (porosity*fluid_density*fluid_heat_capacity*fluid_heat_exchange_rate*fluid_ref_temperature + (1-porosity)*solid_density*solid_heat_capacity*solid_heat_exchange_rate*solid_ref_temperature)
+ */
+Sclr fn_heat_sources_conc(Sclr csec, Sclr por, Sclr f_rho, Sclr f_cap, Sclr f_sigma, Sclr f_temp, Sclr s_rho, Sclr s_cap, Sclr s_sigma, Sclr s_temp, Sclr sigma) {
+    if (fabs(sigma) > numeric_limits<double>::epsilon())
+        return csec * (por * f_rho * f_cap * f_sigma * f_temp + (1.-por) * s_rho * s_cap * s_sigma * s_temp);
+    else {
+    	return 0;
+    }
+}
+
+/**
+ * Functor computing advection coefficient
+ * velocity * fluid_density * fluid_heat_capacity
+ */
+Vect fn_heat_ad_coef(Sclr f_rho, Sclr f_cap, Vect velocity) {
+    return velocity * f_rho * f_cap;
+}
+
+/**
+ * Functor computing diffusion coefficient (see notes in function)
+ */
+Tens fn_heat_diff_coef(Vect velocity, Sclr v_norm, Sclr f_rho, Sclr disp_l, Sclr disp_t, Sclr f_cond, Sclr s_cond, Sclr c_sec, Sclr por) {
+	// result
+	Tens dif_coef;
+
+	// dispersive part of thermal diffusion
+	// Note that the velocity vector is in fact the Darcian flux,
+	// so to obtain |v| we have to divide vnorm by porosity and cross_section.
+	if ( fabs(v_norm) > 0 )
+		for (int i=0; i<3; i++)
+			for (int j=0; j<3; j++)
+				dif_coef(i,j) = ( (velocity(i)/v_norm) * (velocity(j)/v_norm) * (disp_l-disp_t) + disp_t*(i==j?1:0))*v_norm*f_rho*f_cond;
+	else
+		dif_coef.zeros();
+
+	// conductive part of thermal diffusion
+	dif_coef += c_sec * (por*f_cond + (1.-por)*s_cond) * arma::eye(3,3);
+    return dif_coef;
+}
 
 
 
@@ -219,6 +299,53 @@ HeatTransferModel::ModelEqData::ModelEqData()
             .description("Temperature solution.")
             .units( UnitSI().K() )
             .flags(equation_result);
+
+    *this += velocity.name("velocity")
+            .description("Velocity field given from Flow equation.")
+            .input_default("0.0")
+            .units( UnitSI().m().s(-1) );
+
+
+	// initiaization of FieldModels
+    *this += v_norm.name("v_norm")
+            .description("Velocity norm field.")
+            .input_default("0.0")
+            .units( UnitSI().m().s(-1) );
+
+    *this += mass_matrix_coef.name("mass_matrix_coef")
+            .description("Matrix coefficients computed by model in mass assemblation.")
+            .input_default("0.0")
+            .units( UnitSI().m(3).md() );
+
+    *this += retardation_coef.name("retardation_coef")
+            .description("Retardation coefficients computed by model in mass assemblation.")
+            .input_default("0.0")
+            .units( UnitSI().m(3).md() );
+
+    *this += sources_conc_out.name("sources_conc_out")
+            .description("Concentration sources output.")
+            .input_default("0.0")
+            .units( UnitSI().kg().m(-3) );
+
+    *this += sources_density_out.name("sources_density_out")
+            .description("Concentration sources output - density of substance source, only positive part is used..")
+            .input_default("0.0")
+            .units( UnitSI().kg().s(-1).md() );
+
+    *this += sources_sigma_out.name("sources_sigma_out")
+            .description("Concentration sources - Robin type, in_flux = sources_sigma * (sources_conc - mobile_conc).")
+            .input_default("0.0")
+            .units( UnitSI().s(-1).m(3).md() );
+
+    *this += advection_coef.name("advection_coef")
+            .description("Advection coefficients model.")
+            .input_default("0.0")
+            .units( UnitSI().m().s(-1) );
+
+    *this += diffusion_coef.name("diffusion_coef")
+            .description("Diffusion coefficients model.")
+            .input_default("0.0")
+            .units( UnitSI().m(2).s(-1) );
 }
 
 
@@ -272,7 +399,7 @@ void HeatTransferModel::output_data()
 }
 
 
-void HeatTransferModel::compute_mass_matrix_coefficient(const Armor::array &point_list,
+/*void HeatTransferModel::compute_mass_matrix_coefficient(const Armor::array &point_list,
 		const ElementAccessor<3> &ele_acc,
 		std::vector<double> &mm_coef)
 {
@@ -292,10 +419,10 @@ void HeatTransferModel::compute_mass_matrix_coefficient(const Armor::array &poin
 
 	for (unsigned int i=0; i<point_list.size(); i++)
 		mm_coef[i] = elem_csec[i]*(por[i]*f_rho[i]*f_c[i] + (1.-por[i])*s_rho[i]*s_c[i]);
-}
+}*/
 
 
-void HeatTransferModel::compute_advection_diffusion_coefficients(const Armor::array &point_list,
+/*void HeatTransferModel::compute_advection_diffusion_coefficients(const Armor::array &point_list,
 		const std::vector<arma::vec3> &velocity,
 		const ElementAccessor<3> &ele_acc,
 		std::vector<std::vector<arma::vec3> > &ad_coef,
@@ -332,51 +459,51 @@ void HeatTransferModel::compute_advection_diffusion_coefficients(const Armor::ar
 		// conductive part of thermal diffusion
 		dif_coef[0][k] += csection[k]*(por[k]*f_cond[k] + (1.-por[k])*s_cond[k])*arma::eye(3,3);
 	}
-}
+}*/
 
 
-void HeatTransferModel::compute_init_cond(const Armor::array &point_list,
+/*void HeatTransferModel::compute_init_cond(const Armor::array &point_list,
 		const ElementAccessor<3> &ele_acc,
 		std::vector<std::vector<double> > &init_values)
 {
 	data().init_temperature.value_list(point_list, ele_acc, init_values[0]);
-}
+}*/
 
 
-void HeatTransferModel::get_bc_type(const ElementAccessor<3> &ele_acc,
+/*void HeatTransferModel::get_bc_type(const ElementAccessor<3> &ele_acc,
 			arma::uvec &bc_types)
 {
 	// Currently the bc types for HeatTransfer are numbered in the same way as in TransportDG.
 	// In general we should use some map here.
-	bc_types = { data().bc_type.value(ele_acc.centre(), ele_acc) };
-}
+	bc_types = { data().bc_type[0].value(ele_acc.centre(), ele_acc) };
+}*/
 
 
-void HeatTransferModel::get_flux_bc_data(unsigned int index,
+/*void HeatTransferModel::get_flux_bc_data(unsigned int index,
         const Armor::array &point_list,
 		const ElementAccessor<3> &ele_acc,
 		std::vector< double > &bc_flux,
 		std::vector< double > &bc_sigma,
 		std::vector< double > &bc_ref_value)
 {
-	data().bc_flux.value_list(point_list, ele_acc, bc_flux);
-	data().bc_robin_sigma.value_list(point_list, ele_acc, bc_sigma);
+	data().bc_flux[index].value_list(point_list, ele_acc, bc_flux);
+	data().bc_robin_sigma[index].value_list(point_list, ele_acc, bc_sigma);
 	data().bc_dirichlet_value[index].value_list(point_list, ele_acc, bc_ref_value);
 	
 	// Change sign in bc_flux since internally we work with outgoing fluxes.
 	for (auto f : bc_flux) f = -f;
-}
+}*/
 
-void HeatTransferModel::get_flux_bc_sigma(FMT_UNUSED unsigned int index,
+/*void HeatTransferModel::get_flux_bc_sigma(FMT_UNUSED unsigned int index,
         const Armor::array &point_list,
 		const ElementAccessor<3> &ele_acc,
 		std::vector< double > &bc_sigma)
 {
-	data().bc_robin_sigma.value_list(point_list, ele_acc, bc_sigma);
-}
+	data().bc_robin_sigma[index].value_list(point_list, ele_acc, bc_sigma);
+}*/
 
 
-void HeatTransferModel::compute_source_coefficients(const Armor::array &point_list,
+/*void HeatTransferModel::compute_source_coefficients(const Armor::array &point_list,
 			const ElementAccessor<3> &ele_acc,
 			std::vector<std::vector<double> > &sources_value,
 			std::vector<std::vector<double> > &sources_density,
@@ -411,10 +538,10 @@ void HeatTransferModel::compute_source_coefficients(const Armor::array &point_li
 		else
 			sources_value[0][k] = 0;
 	}
-}
+}*/
 
 
-void HeatTransferModel::compute_sources_sigma(const Armor::array &point_list,
+/*void HeatTransferModel::compute_sources_sigma(const Armor::array &point_list,
 			const ElementAccessor<3> &ele_acc,
 			std::vector<std::vector<double> > &sources_sigma)
 {
@@ -434,6 +561,50 @@ void HeatTransferModel::compute_sources_sigma(const Armor::array &point_list,
 	{
 		sources_sigma[0][k] = csection[k]*(por[k]*f_rho[k]*f_cap[k]*f_sigma[k] + (1.-por[k])*s_rho[k]*s_cap[k]*s_sigma[k]);
 	}
+}*/
+
+
+void HeatTransferModel::initialize()
+{
+    // initialize multifield components
+	// empty for now
+
+    // create FieldModels
+    auto v_norm_ptr = Model<3, FieldValue<3>::Scalar>::create(fn_heat_v_norm, data().velocity);
+    data().v_norm.set_field(mesh_->region_db().get_region_set("ALL"), v_norm_ptr);
+
+    auto mass_matrix_coef_ptr = Model<3, FieldValue<3>::Scalar>::create(fn_heat_mass_matrix, data().cross_section,
+            data().porosity, data().fluid_density, data().fluid_heat_capacity, data().solid_density, data().solid_heat_capacity);
+    data().mass_matrix_coef.set_field(mesh_->region_db().get_region_set("ALL"), mass_matrix_coef_ptr);
+
+    std::vector<typename Field<3, FieldValue<3>::Scalar>::FieldBasePtr> retardation_coef_ptr;
+    retardation_coef_ptr.push_back( std::make_shared< FieldConstant<3, FieldValue<3>::Scalar> >() ); // Fix size of substances == 1, with const value == 0
+    data().retardation_coef.set_fields(mesh_->region_db().get_region_set("ALL"), retardation_coef_ptr);
+
+    auto sources_dens_ptr = Model<3, FieldValue<3>::Scalar>::create_multi(fn_heat_sources_dens, data().cross_section, data().porosity,
+            data().fluid_thermal_source, data().solid_thermal_source);
+    data().sources_density_out.set_fields(mesh_->region_db().get_region_set("ALL"), sources_dens_ptr);
+
+    auto sources_sigma_ptr = Model<3, FieldValue<3>::Scalar>::create_multi(fn_heat_sources_sigma, data().cross_section, data().porosity,
+            data().fluid_density, data().fluid_heat_capacity, data().fluid_heat_exchange_rate, data().solid_density,
+            data().solid_heat_capacity, data().solid_heat_exchange_rate);
+    data().sources_sigma_out.set_fields(mesh_->region_db().get_region_set("ALL"), sources_sigma_ptr);
+
+    auto sources_conc_ptr = Model<3, FieldValue<3>::Scalar>::create_multi(fn_heat_sources_conc, data().cross_section, data().porosity,
+            data().fluid_density, data().fluid_heat_capacity, data().fluid_heat_exchange_rate, data().fluid_ref_temperature, data().solid_density,
+            data().solid_heat_capacity, data().solid_heat_exchange_rate, data().solid_ref_temperature, data().sources_sigma_out);
+    data().sources_conc_out.set_fields(mesh_->region_db().get_region_set("ALL"), sources_conc_ptr);
+
+    auto ad_coef_ptr = Model<3, FieldValue<3>::VectorFixed>::create(fn_heat_ad_coef, data().fluid_density, data().fluid_heat_capacity, data().velocity);
+    std::vector<typename Field<3, FieldValue<3>::VectorFixed>::FieldBasePtr> ad_coef_ptr_vec;
+    ad_coef_ptr_vec.push_back(ad_coef_ptr);
+    data().advection_coef.set_fields(mesh_->region_db().get_region_set("ALL"), ad_coef_ptr_vec);
+
+    auto diff_coef_ptr = Model<3, FieldValue<3>::TensorFixed>::create(fn_heat_diff_coef, data().velocity, data().v_norm, data().fluid_density,
+            data().disp_l, data().disp_t, data().fluid_heat_conductivity, data().solid_heat_conductivity, data().cross_section, data().porosity);
+    std::vector<typename Field<3, FieldValue<3>::TensorFixed>::FieldBasePtr> diff_coef_ptr_vec;
+    diff_coef_ptr_vec.push_back(diff_coef_ptr);
+    data().diffusion_coef.set_fields(mesh_->region_db().get_region_set("ALL"), diff_coef_ptr_vec);
 }
 
 

@@ -62,7 +62,6 @@ public:
             side_eval = eval_points_->add_edge<3>(*q_side );
             // ngh_side_eval = ...
             elm_cache_map_.init(eval_points_);
-            this->cache_allocate(eval_points_);
         }
 
         void register_eval_points(ElementCacheMap &cache_map) {
@@ -141,6 +140,7 @@ public:
         data_->set_mesh(*mesh_);
         data_->set_input_list( inputs[input_last], tg );
         data_->set_time(tg.step(), LimitSide::right);
+        data_->cache_reallocate(data_->elm_cache_map_);
     }
 
 
@@ -198,7 +198,6 @@ TEST_F(FieldEvalFETest, evaluate) {
 
         // Bulk integral, no sides, no permutations.
         for(BulkPoint q_point: data_->mass_eval->points(cache_cell, &data_->elm_cache_map_)) {
-            //std::cout << "Element: " << cache_cell.elm_idx() << ", value: " << data_->scalar_field(data_->elm_cache_map_, q_point)[0] << std::endl;
             EXPECT_EQ(expected_scalar[cache_cell.elm_idx()], data_->scalar_field(q_point));
             EXPECT_ARMA_EQ(expected_vector[i], data_->vector_field(q_point));
             EXPECT_ARMA_EQ(expected_tensor[i], data_->tensor_field(q_point));
@@ -222,7 +221,7 @@ TEST_F(FieldEvalFETest, evaluate) {
                     EXPECT_EQ(expected_scalar[cache_cell.elm_idx()], data_->scalar_field(side_p));
                     EXPECT_ARMA_EQ(expected_vector[i], data_->vector_field(side_p));
                     EXPECT_ARMA_EQ(expected_tensor[i], data_->tensor_field(side_p));
-                    EdgePoint ngh_p = side_p.permute(el_ngh_side);
+                    EdgePoint ngh_p = side_p.point_on(el_ngh_side);
                     EXPECT_EQ(expected_scalar[el_ngh_side.cell().elm_idx()], data_->scalar_field(ngh_p));
         	        //loc_mat += cross_section(side_p) * sigma(side_p) *
         		    //    (conc.base_value(side_p) * velocity(side_p)

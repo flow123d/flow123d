@@ -172,6 +172,11 @@ void FieldAlgorithmBase<spacedim, Value>::cache_update(
 
 
 template<int spacedim, class Value>
+void FieldAlgorithmBase<spacedim, Value>::cache_reinit(FMT_UNUSED const ElementCacheMap &cache_map)
+{}
+
+
+template<int spacedim, class Value>
 void FieldAlgorithmBase<spacedim, Value>::value_list(
         const Armor::array  &point_list,
         const ElementAccessor<spacedim> &elm,

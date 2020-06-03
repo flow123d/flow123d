@@ -145,17 +145,24 @@ typename Value::return_type Field<spacedim,Value>::operator() (BulkPoint &p) {
 
 
 template<int spacedim, class Value>
-typename Value::return_type Field<spacedim,Value>::operator() (EdgePoint &p) {
+typename Value::return_type Field<spacedim,Value>::operator() (BulkBdrPoint &p) {
+    return value_cache_.template get_value<Value>(*p.elm_cache_map(), p.elm_accessor(), p.eval_point_idx());
+}
+
+
+
+template<int spacedim, class Value>
+typename Value::return_type Field<spacedim,Value>::operator() (SidePoint &p) {
     return value_cache_.template get_value<Value>(*p.elm_cache_map(), p.dh_cell_side().cell(), p.eval_point_idx());
 }
 
 
 
 template<int spacedim, class Value>
-typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_>
+typename Value::return_type
 Field<spacedim,Value>::operator[] (unsigned int i_cache_point) const
 {
-	return this->value_cache().data().template mat<Value::NRows_, Value::NCols_>(i_cache_point);
+	return Value::get_from_array( this->value_cache().data(), i_cache_point );
 }
 
 
@@ -715,8 +722,13 @@ std::shared_ptr< FieldFE<spacedim, Value> > Field<spacedim,Value>::get_field_fe(
 
 
 template<int spacedim, class Value>
-void Field<spacedim, Value>::cache_allocate(std::shared_ptr<EvalPoints> eval_points) {
-    value_cache_.init(eval_points, ElementCacheMap::n_cached_elements);
+void Field<spacedim, Value>::cache_reallocate(const ElementCacheMap &cache_map) {
+    value_cache_.reinit(cache_map);
+
+    // Call cache_reinit of FieldAlgoBase descendants
+    for (auto reg_field : region_fields_) {
+    	if (reg_field) reg_field->cache_reinit(cache_map);
+    }
 }
 
 
@@ -727,6 +739,7 @@ void Field<spacedim, Value>::cache_update(ElementCacheMap &cache_map) {
     // Call cache_update of FieldAlgoBase descendants
     std::unordered_map<unsigned int, unsigned int>::iterator reg_elm_it;
     for (reg_elm_it=update_cache_data.region_cache_indices_range_.begin(); reg_elm_it!=update_cache_data.region_cache_indices_range_.end(); ++reg_elm_it) {
+        if (region_fields_[reg_elm_it->first] == nullptr) continue; // skips bounadry regions for bulk fields and vice versa
         region_fields_[reg_elm_it->first]->cache_update(value_cache_, cache_map, reg_elm_it->first);
     }
 }

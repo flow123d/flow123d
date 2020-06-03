@@ -54,7 +54,8 @@ class Mesh;
 class Observe;
 class EvalPoints;
 class BulkPoint;
-class EdgePoint;
+class BulkBdrPoint;
+class SidePoint;
 class FieldSet;
 template <int spacedim> class ElementAccessor;
 template <int spacedim, class Value> class FieldFE;
@@ -170,10 +171,16 @@ public:
     Field &operator=(const Field &other);
 
 
+    /// Return appropriate value to BulkPoint in FieldValueCache
     typename Value::return_type operator() (BulkPoint &p);
 
 
-    typename Value::return_type operator() (EdgePoint &p);
+    /// Return appropriate value to BulkBdrPoint in FieldValueCache
+    typename Value::return_type operator() (BulkBdrPoint &p);
+
+
+    /// Return appropriate value to SidePoint in FieldValueCache
+    typename Value::return_type operator() (SidePoint &p);
 
 
     /**
@@ -327,7 +334,7 @@ public:
     void compute_field_data(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream);
 
     /// Implements FieldCommon::cache_allocate
-    void cache_allocate(std::shared_ptr<EvalPoints> eval_points) override;
+    void cache_reallocate(const ElementCacheMap &cache_map) override;
 
     /// Implements FieldCommon::cache_update
     void cache_update(ElementCacheMap &cache_map) override;
@@ -350,7 +357,7 @@ public:
 protected:
 
     /// Return item of @p value_cache_ given by i_cache_point.
-    typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_> operator[] (unsigned int i_cache_point) const;
+    typename Value::return_type operator[] (unsigned int i_cache_point) const;
 
     /**
      * Read input into @p regions_history_ possibly pop some old values from the

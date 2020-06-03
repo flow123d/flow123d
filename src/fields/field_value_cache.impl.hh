@@ -29,11 +29,24 @@ typename Value::return_type FieldValueCache<elm_type>::get_value(const ElementCa
         const DHCellAccessor &dh_cell, unsigned int eval_points_idx) {
     static_assert( std::is_same<elm_type, typename Value::element_type>::value, "Wrong element type.");
 
-    ASSERT(dh_cell.element_cache_index() != ElementCacheMap::undef_elem_idx)(dh_cell.elm_idx());
     ASSERT_EQ_DBG(Value::NRows_, data_.n_rows());
     ASSERT_EQ_DBG(Value::NCols_, data_.n_cols());
-    int value_cache_idx = map.get_field_value_cache_index(dh_cell.element_cache_index(), eval_points_idx);
-    ASSERT_GE(value_cache_idx, 0);
+    unsigned int value_cache_idx = map.get_field_value_cache_index(map.position_in_cache(dh_cell.elm().mesh_idx()), eval_points_idx);
+    ASSERT_DBG(value_cache_idx != ElementCacheMap::undef_elem_idx);
+    return Value::get_from_array(data_, value_cache_idx);
+}
+
+
+template<class elm_type>
+template<class Value>
+typename Value::return_type FieldValueCache<elm_type>::get_value(const ElementCacheMap &map,
+        const ElementAccessor<3> elm, unsigned int eval_points_idx) {
+    static_assert( std::is_same<elm_type, typename Value::element_type>::value, "Wrong element type.");
+
+    ASSERT_EQ_DBG(Value::NRows_, data_.n_rows());
+    ASSERT_EQ_DBG(Value::NCols_, data_.n_cols());
+    unsigned int value_cache_idx = map.get_field_value_cache_index(map.position_in_cache(elm.mesh_idx()), eval_points_idx);
+    ASSERT_DBG(value_cache_idx != ElementCacheMap::undef_elem_idx);
     return Value::get_from_array(data_, value_cache_idx);
 }
 

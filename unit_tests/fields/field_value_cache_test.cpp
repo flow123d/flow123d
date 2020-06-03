@@ -59,8 +59,8 @@ public:
 
 TEST_F(FieldValueCacheTest, field_value_cache) {
     FieldValueCache<double> value_cache(1, 1);
-    value_cache.init(eval_points, ElementCacheMap::n_cached_elements);
-    EXPECT_EQ(value_cache.n_cache_points(), eval_points->max_size()*ElementCacheMap::n_cached_elements);
+    value_cache.reinit(*this);
+    EXPECT_EQ(value_cache.max_size(), eval_points->max_size()*ElementCacheMap::n_cached_elements);
 
     this->start_elements_update();
     DHCellAccessor dh_cell(dh_.get(), 2);
@@ -83,9 +83,10 @@ TEST_F(FieldValueCacheTest, field_value_cache) {
     this->create_elements_points_map();
 
     // set value
-    EXPECT_EQ(this->points_in_cache_, 16);
+    unsigned int points_in_cache = update_data_.region_value_cache_range_[update_data_.region_cache_indices_range_.size()];
+    EXPECT_EQ(points_in_cache, 16);
     Armor::ArmaMat<double, 1, 1> const_val{0.5};
-    for (unsigned int i=0; i<this->points_in_cache_; ++i) value_cache.data().set(i) = const_val;
+    for (unsigned int i=0; i<points_in_cache; ++i) value_cache.data().set(i) = const_val;
     this->finish_elements_update();
 
     // check value

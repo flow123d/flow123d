@@ -131,7 +131,7 @@ const int FieldFE<spacedim, Value>::registrar =
 template <int spacedim, class Value>
 FieldFE<spacedim, Value>::FieldFE( unsigned int n_comp)
 : FieldAlgorithmBase<spacedim, Value>(n_comp),
-  field_name_("")
+  field_name_(""), fe_values_(4)
 {
 	this->is_constant_in_space_ = false;
 }
@@ -148,6 +148,7 @@ VectorMPI FieldFE<spacedim, Value>::set_fe_data(std::shared_ptr<DOFHandlerMultiD
     } else {
         data_vec_ = dof_values;
     }
+    this->comp_index_ = component_index;
 
     unsigned int ndofs = dh_->max_elem_dofs();
 
@@ -235,16 +236,6 @@ void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::elem
     std::shared_ptr<EvalPoints> eval_points = cache_map.eval_points();
     Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> mat_value;
 
-    if (fe_values_.size() == 0) {
-        // initialize FEValues objects (when first using)
-        std::array<Quadrature, 4> quads{QGauss(0, 1), this->init_quad<1>(eval_points), this->init_quad<2>(eval_points), this->init_quad<3>(eval_points)};
-        fe_values_.resize(4);
-        fe_values_[0].initialize(quads[0], *fe_[0_d], update_values);
-        fe_values_[1].initialize(quads[1], *fe_[1_d], update_values);
-        fe_values_[2].initialize(quads[2], *fe_[2_d], update_values);
-        fe_values_[3].initialize(quads[3], *fe_[3_d], update_values);
-    }
-
     auto update_cache_data = cache_map.update_cache_data();
     unsigned int region_in_cache = update_cache_data.region_cache_indices_range_.find(region_idx)->second;
 
@@ -257,17 +248,30 @@ void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::elem
         DHCellAccessor cell = dh_->cell_accessor_from_element( elm_idx );
         LocDofVec loc_dofs = cell.get_loc_dof_indices();
 
-        for (unsigned int i_ep=0; i_ep<eval_points->max_size(); ++i_ep) { // i_eval_point
+        for (unsigned int i_ep=0; i_ep<eval_points->size(elm.dim()); ++i_ep) { // i_eval_point
             //DHCellAccessor cache_cell = cache_map(cell);
             int field_cache_idx = cache_map.get_field_value_cache_index(cache_map(cell).element_cache_index(), i_ep);
             if (field_cache_idx < 0) continue; // skip
             mat_value.fill(0.0);
     		for (unsigned int i_dof=0; i_dof<loc_dofs.n_elem; i_dof++) {
-    		    mat_value += data_vec_[loc_dofs[i_dof]] * this->handle_fe_shape(elm.dim(), i_dof, i_ep, 0);
+    		    mat_value += data_vec_[loc_dofs[i_dof]] * this->handle_fe_shape(elm.dim(), i_dof, i_ep, comp_index_);
     		}
     		data_cache.data().set(field_cache_idx) = mat_value;
         }
     }
+}
+
+
+template <int spacedim, class Value>
+void FieldFE<spacedim, Value>::cache_reinit(const ElementCacheMap &cache_map)
+{
+    std::shared_ptr<EvalPoints> eval_points = cache_map.eval_points();
+    MixedPtr<FiniteElement> fe = dh_->ds()->fe();
+    std::array<Quadrature, 4> quads{QGauss(0, 1), this->init_quad<1>(eval_points), this->init_quad<2>(eval_points), this->init_quad<3>(eval_points)};
+    fe_values_[0].initialize(quads[0], *fe[0_d], update_values);
+    fe_values_[1].initialize(quads[1], *fe[1_d], update_values);
+    fe_values_[2].initialize(quads[2], *fe[2_d], update_values);
+    fe_values_[3].initialize(quads[3], *fe[3_d], update_values);
 }
 
 
@@ -374,20 +378,23 @@ void FieldFE<spacedim, Value>::fill_boundary_dofs() {
 
 template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::make_dof_handler(const Mesh *mesh) {
+	this->comp_index_ = 0;
+
 	// temporary solution - these objects will be set through FieldCommon
+	MixedPtr<FiniteElement> fe;
 	switch (this->value_.n_rows() * this->value_.n_cols()) { // by number of components
 		case 1: { // scalar
-			fe_ = MixedPtr<FE_P_disc>(0);
+			fe = MixedPtr<FE_P_disc>(0);
 			break;
 		}
 		case 3: { // vector
 			 MixedPtr<FE_P_disc>   fe_base(0) ;
-			fe_ = mixed_fe_system(fe_base, FEType::FEVector, 3);
+			fe = mixed_fe_system(fe_base, FEType::FEVector, 3);
 			break;
 		}
 		case 9: { // tensor
 		    MixedPtr<FE_P_disc>   fe_base(0) ;
-            fe_ = mixed_fe_system(fe_base, FEType::FETensor, 9);
+            fe = mixed_fe_system(fe_base, FEType::FETensor, 9);
 			break;
 		}
 		default:
@@ -395,7 +402,7 @@ void FieldFE<spacedim, Value>::make_dof_handler(const Mesh *mesh) {
 	}
 
 	std::shared_ptr<DOFHandlerMultiDim> dh_par = std::make_shared<DOFHandlerMultiDim>( const_cast<Mesh &>(*mesh) );
-    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( &const_cast<Mesh &>(*mesh), fe_);
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( &const_cast<Mesh &>(*mesh), fe);
 	dh_par->distribute_dofs(ds);
 	dh_ = dh_par;
     unsigned int ndofs = dh_->max_elem_dofs();

@@ -110,6 +110,13 @@ public:
     void cache_update(FieldValueCache<typename Value::element_type> &data_cache,
 			ElementCacheMap &cache_map, unsigned int region_idx) override;
 
+    /**
+     * Overload @p FieldAlgorithmBase::cache_reinit
+     *
+     * Reinit fe_values_ data member.
+     */
+    void cache_reinit(const ElementCacheMap &cache_map) override;
+
 	/**
 	 * Initialization from the input interface.
 	 */
@@ -201,13 +208,6 @@ private:
     /// Value handler that allows get value of 3D elements.
     FEValueHandler<3, spacedim, Value> value_handler3_;
 
-    /**
-     * Used in DOFHandler::distribute_dofs method. Represents 0D element.
-     *
-     * For correct functionality must be created proper descendant of FiniteElement class.
-     */
-    MixedPtr<FiniteElement> fe_;
-
 	/// mesh reader file
 	FilePath reader_file_;
 
@@ -241,6 +241,9 @@ private:
 
     /// List of FEValues objects of dimensions 0,1,2,3 used for value calculation
     std::vector<FEValues<spacedim>> fe_values_;
+
+    /// Index of component (of vector_value/tensor_value)
+    unsigned int comp_index_;
 
     /// Registrar of class to factory
     static const int registrar;

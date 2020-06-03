@@ -51,9 +51,9 @@ public:
 	 * @param ele_acc      Element accessor.
 	 * @param mm_coef      Coefficient vector (output).
 	 */
-	virtual void compute_mass_matrix_coefficient(const Armor::array &point_list,
-			const ElementAccessor<3> &ele_acc,
-			std::vector<double> &mm_coef) = 0;
+	//virtual void compute_mass_matrix_coefficient(const Armor::array &point_list,
+	//		const ElementAccessor<3> &ele_acc,
+	//		std::vector<double> &mm_coef) = 0;
 
 
 	/**
@@ -62,9 +62,9 @@ public:
 	 * @param ele_acc	  Element accessor.
 	 * @param ret_coef    Coefficient vector (output).
 	 */
-	virtual void compute_retardation_coefficient(const Armor::array &point_list,
-			const ElementAccessor<3> &ele_acc,
-			std::vector<std::vector<double> > &ret_coef) = 0;
+	//virtual void compute_retardation_coefficient(const Armor::array &point_list,
+	//		const ElementAccessor<3> &ele_acc,
+	//		std::vector<std::vector<double> > &ret_coef) = 0;
 
 	/**
 	 * Compute coefficients of stiffness matrix.
@@ -75,11 +75,11 @@ public:
 	 * @param ad_coef     Coefficients of advection (output).
 	 * @param dif_coef    Coefficients of diffusion (output).
 	 */
-	virtual void compute_advection_diffusion_coefficients(const Armor::array &point_list,
-			const std::vector<arma::vec3> &velocity,
-			const ElementAccessor<3> &ele_acc,
-			std::vector<std::vector<arma::vec3> > &ad_coef,
-			std::vector<std::vector<arma::mat33> > &dif_coef) = 0;
+	//virtual void compute_advection_diffusion_coefficients(const Armor::array &point_list,
+	//		const std::vector<arma::vec3> &velocity,
+	//		const ElementAccessor<3> &ele_acc,
+	//		std::vector<std::vector<arma::vec3> > &ad_coef,
+	//		std::vector<std::vector<arma::mat33> > &dif_coef) = 0;
 
 	/**
 	 * Compute initial conditions.
@@ -87,17 +87,17 @@ public:
 	 * @param ele_acc      Element accessor.
 	 * @param init_values  Vector of intial values (output).
 	 */
-	virtual void compute_init_cond(const Armor::array &point_list,
-			const ElementAccessor<3> &ele_acc,
-			std::vector<std::vector<double> > &init_values) = 0;
+	//virtual void compute_init_cond(const Armor::array &point_list,
+	//		const ElementAccessor<3> &ele_acc,
+	//		std::vector<std::vector<double> > &init_values) = 0;
 
 	/**
 	 * Return types of boundary conditions for each solution component.
 	 * @param ele_acc  Element accessor.
 	 * @param bc_types Vector of bc. types (output, see BC_Type)
 	 */
-	virtual void get_bc_type(const ElementAccessor<3> &ele_acc,
-			arma::uvec &bc_types) = 0;
+	//virtual void get_bc_type(const ElementAccessor<3> &ele_acc,
+	//		arma::uvec &bc_types) = 0;
 
 	/**
 	 * \brief Return data for diffusive or total flux b.c.
@@ -113,12 +113,12 @@ public:
 	 * @param bc_sigma     Transition parameter (output).
 	 * @param bc_ref_value Reference value (output).
 	 */
-	virtual void get_flux_bc_data(unsigned int index,
-            const Armor::array &point_list,
-			const ElementAccessor<3> &ele_acc,
-			std::vector< double > &bc_flux,
-			std::vector< double > &bc_sigma,
-			std::vector< double > &bc_ref_value) = 0;
+	//virtual void get_flux_bc_data(unsigned int index,
+    //        const Armor::array &point_list,
+	//        const ElementAccessor<3> &ele_acc,
+	//        std::vector< double > &bc_flux,
+	//        std::vector< double > &bc_sigma,
+	//        std::vector< double > &bc_ref_value) = 0;
 
 	/**
 	 * \brief Return transition coefficient for flux b.c.
@@ -131,10 +131,10 @@ public:
 	 * @param ele_acc      Element accessor.
 	 * @param bc_sigma     Transition parameter (output).
 	 */
-	virtual void get_flux_bc_sigma(unsigned int index,
-            const Armor::array &point_list,
-			const ElementAccessor<3> &ele_acc,
-			std::vector< double > &bc_sigma) = 0;
+	//virtual void get_flux_bc_sigma(unsigned int index,
+    //        const Armor::array &point_list,
+	//        const ElementAccessor<3> &ele_acc,
+	//        std::vector< double > &bc_sigma) = 0;
 
 	/**
 	 * Compute coefficients of volume sources.
@@ -144,11 +144,11 @@ public:
 	 * @param sources_density Source densities (output).
 	 * @param sources_sigma   Source sigmas (output).
 	 */
-	virtual void compute_source_coefficients(const Armor::array &point_list,
-			const ElementAccessor<3> &ele_acc,
-			std::vector<std::vector<double> > &sources_conc,
-			std::vector<std::vector<double> > &sources_density,
-			std::vector<std::vector<double> > &sources_sigma) = 0;
+	//virtual void compute_source_coefficients(const Armor::array &point_list,
+	//		const ElementAccessor<3> &ele_acc,
+	//		std::vector<std::vector<double> > &sources_conc,
+	//		std::vector<std::vector<double> > &sources_density,
+	//		std::vector<std::vector<double> > &sources_sigma) = 0;
 
 	/**
 	 * Compute coefficients of volume sources.
@@ -156,9 +156,9 @@ public:
 	 * @param ele_acc         Element accessor.
 	 * @param sources_sigma   Source sigmas (output).
 	 */
-	virtual void compute_sources_sigma(const Armor::array &point_list,
-			const ElementAccessor<3> &ele_acc,
-			std::vector<std::vector<double> > &sources_sigma) = 0;
+	//virtual void compute_sources_sigma(const Armor::array &point_list,
+	//		const ElementAccessor<3> &ele_acc,
+	//		std::vector<std::vector<double> > &sources_sigma) = 0;
 
 	/// Destructor.
 	virtual ~AdvectionDiffusionModel() {};

@@ -227,7 +227,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
 	data_->stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyDim >(data_.get(),
 	        (ActiveIntegrals::bulk | ActiveIntegrals::edge | ActiveIntegrals::coupling | ActiveIntegrals::boundary) );
 	data_->sources_assembly_ = new GenericAssembly< SourcesAssemblyDim >(data_.get(), ActiveIntegrals::bulk);
-	data_->bdr_cond_assembly_ = new GenericAssembly< BdrConditionAssemblyDim >(data_.get(), ActiveIntegrals::bulk);
+	data_->bdr_cond_assembly_ = new GenericAssembly< BdrConditionAssemblyDim >(data_.get(), ActiveIntegrals::bulk | ActiveIntegrals::boundary);
 	data_->init_cond_assembly_ = new GenericAssembly< InitConditionAssemblyDim >(data_.get(), ActiveIntegrals::bulk);
 
 	MixedPtr<FE_P_disc> fe(data_->dg_order);
@@ -244,6 +244,7 @@ void TransportDG<Model>::initialize()
 {
     data_->set_components(Model::substances_.names());
     data_->set_input_list( input_rec.val<Input::Array>("input_fields"), *(Model::time_) );
+    Model::initialize();
 
     // DG stabilization parameters on boundary edges
     data_->gamma.resize(Model::n_substances());

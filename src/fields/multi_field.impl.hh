@@ -386,8 +386,8 @@ void MultiField<spacedim, Value>::set_dependency(FieldSet &field_set) {
 
 
 template<int spacedim, class Value>
-void MultiField<spacedim, Value>::cache_allocate(std::shared_ptr<EvalPoints> eval_points) {
-    for(auto &field : sub_fields_) field.cache_allocate(eval_points);
+void MultiField<spacedim, Value>::cache_reallocate(const ElementCacheMap &cache_map) {
+    for(auto &field : sub_fields_) field.cache_reallocate(cache_map);
 }
 
 
