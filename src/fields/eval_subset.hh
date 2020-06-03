@@ -215,6 +215,8 @@ private:
 
 /**
  * @brief Base point accessor class.
+ *
+ * TODO: remove virtual methods from Points classes, need changes also in Field::operator().
  */
 class PointBase {
 public:
