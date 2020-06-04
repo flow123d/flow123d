@@ -747,7 +747,7 @@ void Field<spacedim, Value>::cache_update(ElementCacheMap &cache_map) {
 template<int spacedim, class Value>
 void Field<spacedim, Value>::set_dependency(FieldSet &field_set) {
     for( auto field_ptr : region_fields_) {
-    	field_ptr->set_dependency(field_set);
+    	if (field_ptr != nullptr) field_ptr->set_dependency(field_set);
     }
 }
 

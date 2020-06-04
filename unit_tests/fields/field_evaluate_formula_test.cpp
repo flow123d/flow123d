@@ -141,6 +141,8 @@ public:
         data_->set_mesh(*mesh_);
         data_->set_input_list( inputs[input_last], tg );
         data_->set_time(tg.step(), LimitSide::right);
+        data_->cache_reallocate(data_->elm_cache_map_);
+        data_->set_dependency();
     }
 
 

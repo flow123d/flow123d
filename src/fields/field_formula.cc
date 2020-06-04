@@ -22,6 +22,7 @@
 #include "fields/surface_depth.hh"
 #include "fparser.hh"
 #include "input/input_type.hh"
+#include "include/arena_alloc.hh"       // bparser
 #include <boost/foreach.hpp>
 
 
@@ -76,7 +77,7 @@ FieldFormula<spacedim, Value>::FieldFormula( unsigned int n_comp)
 : FieldAlgorithmBase<spacedim, Value>(n_comp),
   formula_matrix_(this->value_.n_rows(), this->value_.n_cols()),
   b_parser_(FieldFormula<spacedim, Value>::bparser_vec_size),
-  first_time_set_(true), field_set_(nullptr)
+  first_time_set_(true), field_set_(nullptr), x_(nullptr)
 {
 	this->is_constant_in_space_ = false;
     parser_matrix_.resize(this->value_.n_rows());
@@ -245,6 +246,24 @@ void FieldFormula<spacedim, Value>::cache_update(FMT_UNUSED FieldValueCache<type
     //unsigned int region_in_cache = update_cache_data.region_cache_indices_range_.find(region_idx)->second;
     //unsigned int i_cache_el_begin = update_cache_data.region_value_cache_range_[region_in_cache];
     //unsigned int i_cache_el_end = update_cache_data.region_value_cache_range_[region_in_cache+1];
+}
+
+
+template <int spacedim, class Value>
+void FieldFormula<spacedim, Value>::cache_reinit(const ElementCacheMap &cache_map)
+{
+	if (x_!=nullptr) {
+	    delete x_;
+	    delete y_;
+	    delete z_;
+	    delete res_;
+	}
+	uint vec_size = cache_map.eval_points()->max_size() * ElementCacheMap::n_cached_elements;
+	bparser::ArenaAlloc arena_alloc(ElementCacheMap::formula_block_divisor, 4 * vec_size * sizeof(double));
+	x_ = arena_alloc.create_array<double>(vec_size);
+	y_ = arena_alloc.create_array<double>(vec_size);
+	z_ = arena_alloc.create_array<double>(vec_size);
+	res_ = arena_alloc.create_array<double>(vec_size);
 }
 
 

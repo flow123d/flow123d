@@ -99,6 +99,13 @@ public:
     void cache_update(FieldValueCache<typename Value::element_type> &data_cache,
 			ElementCacheMap &cache_map, unsigned int region_idx) override;
 
+    /**
+     * Overload @p FieldAlgorithmBase::cache_reinit
+     *
+     * Reinit Bparser::ArenaAlloc data member.
+     */
+    void cache_reinit(const ElementCacheMap &cache_map) override;
+
 
     /**
      * Set reference of FieldSet.
@@ -141,6 +148,12 @@ private:
 
     /// Holds names of fields.
     std::set<std::string> field_set_names_;
+
+    /// BParser data arrays: x, y, z coordinates and result
+	double *x_;
+	double *y_;
+	double *z_;
+	double *res_;
 
     /// Registrar of class to factory
     static const int registrar;
