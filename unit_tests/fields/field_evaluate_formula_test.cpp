@@ -164,18 +164,25 @@ TEST_F(FieldEvalFormulaTest, evaluate) {
       - region: 3D right
         time: 0.0
         scalar_field: !FieldFormula
-          value: x+y
+          value: y
         vector_field: [4, 5, 6]
         tensor_field: [2.1, 2.2, 2.3, 2.4, 2.5, 2.6]
     )YAML";
 	this->read_input(eq_data_input);
 
     std::vector<unsigned int> cell_idx = {3, 4, 5, 9};
-    std::vector<double>       expected_scalar = {0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5};
+    std::vector<double> dbl_scalar = { -1.447213595499958094, -0.552786404500041906, -0.276393202250021008, -1.170820393249937030, -0.723606797749979047,
+                                       +0.170820393249937058, -1.666666666666666741, -1.333333333333333481, -0.333333333333333315, -0.666666666666666519,
+                                       +0.000000000000000000, +0.333333333333333481, -1.000000000000000000, +0.666666666666666741 };
+    std::vector< std::vector<uint> > expected_scalar = { {0,1,0,1,9,9,6,6,6,6,9,9,6,6,6,6,7,7,8,8,8,8,6,6,9,9,6,6,8,8,8,8,7,7,8,8,8,8,7,7},
+            {2,2,3,2,8,8,8,8,7,7,8,8,8,8,7,7,10,10,10,10,10,10,10,9,10,9,10,11,8,8,8,8,7,7,8,8,8,8,7,7,8,8,8,8,7,7},
+			{2,2,3,2,8,8,8,8,7,7,8,8,8,8,7,7,10,10,10,10,10,10,10,8,10,13,10,13,8,8,8,8,7,7,8,8,7,7,8,8,8,8,7,7,8,8},
+			{4,4,4,5,9,9,9,9,11,11,9,9,9,9,11,11,9,9,9,9,11,11,9,9,9,9,11,11,12,12,12,12,12,12,11,11,9,9,9,9} };
     std::vector<arma::vec3>   expected_vector = {{1, 2, 3}, {1, 2, 3}, {1, 2, 3}, {4, 5, 6}};
     std::vector<arma::mat33>  expected_tensor = {{0.1, 0.2, 0.3, 0.2, 0.4, 0.5, 0.3, 0.5, 0.6}, {0.1, 0.2, 0.3, 0.2, 0.4, 0.5, 0.3, 0.5, 0.6},
                                                  {0.1, 0.2, 0.3, 0.2, 0.4, 0.5, 0.3, 0.5, 0.6}, {2.1, 2.2, 2.3, 2.2, 2.4, 2.5, 2.3, 2.5, 2.6}};
-    for (unsigned int i=0; i<cell_idx.size(); ++i) {
+    for (uint i=0; i<cell_idx.size(); ++i) {
+        uint test_point = 0; // index to expected vals
     	data_->elm_cache_map_.start_elements_update();
     	data_->computed_dh_cell_ = DHCellAccessor(dh_.get(), cell_idx[i]);  // element ids stored to cache: (3 -> 2,3,4), (4 -> 3,4,5,10), (5 -> 0,4,5,11), (10 -> 8,9,10)
         data_->elm_cache_map_.add(data_->computed_dh_cell_);
@@ -190,9 +197,10 @@ TEST_F(FieldEvalFormulaTest, evaluate) {
 
         // Bulk integral, no sides, no permutations.
         for(BulkPoint q_point: data_->mass_eval->points(cache_cell, &data_->elm_cache_map_)) {
-            EXPECT_EQ(/*expected_scalar[cache_cell.elm_idx()]*/ 0, data_->scalar_field(q_point));
+            EXPECT_DOUBLE_EQ( dbl_scalar[ expected_scalar[i][test_point] ], data_->scalar_field(q_point));
             EXPECT_ARMA_EQ(expected_vector[i], data_->vector_field(q_point));
             EXPECT_ARMA_EQ(expected_tensor[i], data_->tensor_field(q_point));
+            test_point++;
             /* // Extracting the cached values.
             double cs = cross_section(q_point);
 
@@ -210,11 +218,13 @@ TEST_F(FieldEvalFormulaTest, evaluate) {
            	    // vector of local side quadrature points in the correct side permutation
         	    Range<EdgePoint> side_points = data_->side_eval->points(side, &data_->elm_cache_map_);
         	    for (EdgePoint side_p : side_points) {
-                    EXPECT_EQ(/*expected_scalar[cache_cell.elm_idx()]*/ 0, data_->scalar_field(side_p));
+                    EXPECT_DOUBLE_EQ( dbl_scalar[ expected_scalar[i][test_point] ], data_->scalar_field(side_p));
+                    test_point++;
                     EXPECT_ARMA_EQ(expected_vector[i], data_->vector_field(side_p));
                     EXPECT_ARMA_EQ(expected_tensor[i], data_->tensor_field(side_p));
                     EdgePoint ngh_p = side_p.point_on(el_ngh_side);
-                    EXPECT_EQ(/*expected_scalar[el_ngh_side.cell().elm_idx()]*/ 0, data_->scalar_field(ngh_p));
+                    EXPECT_DOUBLE_EQ( dbl_scalar[ expected_scalar[i][test_point] ], data_->scalar_field(ngh_p));
+                    test_point++;
         	        //loc_mat += cross_section(side_p) * sigma(side_p) *
         		    //    (conc.base_value(side_p) * velocity(side_p)
         		    //    + conc.base_value(ngh_p) * velocity(ngh_p)) * side_p.normal() / 2;
