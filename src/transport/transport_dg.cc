@@ -234,6 +234,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
 	shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>(Model::mesh_, fe);
 	data_->dh_ = make_shared<DOFHandlerMultiDim>(*Model::mesh_);
 	data_->dh_->distribute_dofs(ds);
+	data_->set_dependency();
     //DebugOut().fmt("TDG: solution size {}\n", data_->dh_->n_global_dofs());
 
 }
