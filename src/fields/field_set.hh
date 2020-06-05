@@ -264,6 +264,10 @@ public:
     	for(auto field : field_list) field->set_dependency(*this);
     }
 
+    inline const FieldValueCache<double> &x() const { return x_coord_; }  ///< Return x-coord FieldValueCache
+    inline const FieldValueCache<double> &y() const { return y_coord_; }  ///< Return y-coord FieldValueCache
+    inline const FieldValueCache<double> &z() const { return z_coord_; }  ///< Return z-coord FieldValueCache
+
 protected:
     /// Update caches holding coordinates values (for FieldFormula)
     void update_coords_caches(ElementCacheMap &cache_map);

@@ -192,6 +192,7 @@ void FieldSet::update_coords_caches(ElementCacheMap &cache_map) {
 
     for (uint i_elm=0; i_elm<n_cached_elements; ++i_elm) {
         ElementAccessor<3> elm = mesh_->element_accessor( cache_map.elm_idx_on_position(i_elm) );
+        if (elm.is_boundary()) continue; // TODO remove after fix EvalPoints of boundary elements
         unsigned int dim = elm.dim();
         for (uint i_point=0; i_point<eval_points->size(dim); ++i_point) {
             int cache_idx = cache_map.get_field_value_cache_index(i_elm, i_point); // index in FieldValueCache
