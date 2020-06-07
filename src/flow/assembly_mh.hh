@@ -356,10 +356,10 @@ protected:
         const ElementAccessor<3> ele = dh_cell.elm();
         double cs = ad_->cross_section.value(ele.centre(), ele);
         double conduct =  ad_->conductivity.value(ele.centre(), ele);
-		double bet =  ad_->beta.value(ele.centre(), ele);
-		auto w = ad_->field_ele_velocity.value(ele.centre(), ele);
-        double scale = 1 / cs /conduct + bet * w;
-        
+	double bet =  ad_->beta.value(ele.centre(), ele);
+	auto w = ad_->field_ele_velocity.value(ele.centre(), ele);
+        double scale = 1 / cs /conduct + bet * arma::norm(w) / cs;
+//        printf("%f \n", arma::norm(w)); 
         assemble_sides_scale(dh_cell, scale);
     }
     

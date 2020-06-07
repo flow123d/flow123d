@@ -327,6 +327,7 @@ DarcyMH::DarcyMH(Mesh &mesh_in, const Input::Record in_rec)
     
     data_->is_linear=true;
 
+
     size = mesh_->n_elements() + mesh_->n_sides() + mesh_->n_edges();
     n_schur_compls = in_rec.val<int>("n_schurs");
     data_->mortar_method_= in_rec.val<MortarMethod>("mortar_method");
@@ -1023,7 +1024,8 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
 void DarcyMH::assembly_linear_system() {
     START_TIMER("DarcyFlowMH_Steady::assembly_linear_system");
 
-    data_->is_linear=true;
+//    data_->is_linear=true;
+    data_-> is_linear = data_->beta.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
     bool is_steady = zero_time_term();
 	//DebugOut() << "Assembly linear system\n";
 	if (data_changed_) {
