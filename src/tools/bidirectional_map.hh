@@ -59,6 +59,10 @@ public:
 	/// Reset data of map, reserve space for given size.
 	void reserve(unsigned int init_size = 0);
 
+	/// Resizes to given @p new_size if new size is smaller than the actual.
+	/// The rest of data are thrown away and removed from the map.
+	void resize(unsigned int new_size);
+
 	/// Return value on given position.
 	T operator[](unsigned int pos) const;
 
@@ -81,9 +85,19 @@ inline unsigned int BidirectionalMap<T>::size() const {
 template<typename T>
 inline void BidirectionalMap<T>::set_item(T val, unsigned int pos) {
 	ASSERT_LT_DBG( pos, vals_vec_.size() )(pos)(vals_vec_.size()).error("Value id is out of vector size.");
-	//ASSERT( vals_vec_[pos] == -1 )(pos).error("Repeated setting of item.");
+	
 	auto it = vals_map_.find(vals_vec_[pos]);
-	if (it != vals_map_.end()) vals_map_.erase(it);
+	// possibly erase vals_map[vals_vec_[pos]] if it exists
+	if (it != vals_map_.end()) {
+
+		// check that the user does not want to duplicate values
+		auto it_dupl = vals_map_.find(val);
+		if(it_dupl != vals_map_.end()){
+			ASSERT_DBG(vals_map_[val] == pos)(pos).error("'val' already used in different 'pos'.");
+		}
+		vals_map_.erase(it);
+	}
+	
 	vals_map_[val] = pos;
 	vals_vec_[pos] = val;
 }
@@ -109,6 +123,17 @@ inline void BidirectionalMap<T>::clear() {
     vals_vec_.clear();
 }
 
+/// Reset data of map, reserve space for given size.
+template<typename T>
+inline void BidirectionalMap<T>::resize(unsigned int new_size)
+{
+	ASSERT_LT_DBG(new_size, vals_vec_.size());
+	for(uint pos = new_size; pos < vals_vec_.size(); pos++){
+		vals_map_.erase(vals_vec_[pos]);
+	}
+	vals_vec_.resize(new_size);
+	ASSERT_DBG(vals_vec_.size() == vals_map_.size())(vals_vec_.size())(vals_map_.size());
+}
 
 template<typename T>
 inline void BidirectionalMap<T>::reserve(unsigned int init_size) {

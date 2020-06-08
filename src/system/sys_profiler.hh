@@ -838,19 +838,19 @@ class Profiler {
 public:
     static Profiler* instance(bool clear = false);
 
-    void set_task_info(string description, int size)
+    void set_task_info(string, int)
     {}
-    void set_program_info(string program_name, string program_version, string branch, string revision, string build)
+    void set_program_info(string, string, string, string, string)
     {}
-    void notify_malloc(const size_t size )
+    void notify_malloc(const size_t )
     {}
-    void notify_free(const size_t size )
+    void notify_free(const size_t )
     {}
-    void output(MPI_Comm comm, ostream &os)
+    void output(MPI_Comm, ostream &)
     {}
-    void output(MPI_Comm comm)
+    void output(MPI_Comm)
     {}
-    void transform_profiler_data(const string &output_file_suffix, const string &formatter)
+    void transform_profiler_data(const string &, const string &)
     {}
     double get_resolution () const
     { return 0.0; }
