@@ -76,13 +76,17 @@ template <int spacedim, class Value>
 FieldFormula<spacedim, Value>::FieldFormula( unsigned int n_comp)
 : FieldAlgorithmBase<spacedim, Value>(n_comp),
   formula_matrix_(this->value_.n_rows(), this->value_.n_cols()),
-  b_parser_(this->value_.n_rows()*this->value_.n_cols()),
   first_time_set_(true), field_set_(nullptr), x_(nullptr)
 {
 	this->is_constant_in_space_ = false;
     parser_matrix_.resize(this->value_.n_rows());
     for(unsigned int row=0; row < this->value_.n_rows(); row++) {
         parser_matrix_[row].resize(this->value_.n_cols());
+    }
+    b_parser_.reserve(this->value_.n_rows()*this->value_.n_cols());
+    for(unsigned int i=0; i < this->value_.n_rows()*this->value_.n_cols(); i++) {
+        bparser::Parser parser(FieldFormula<spacedim, Value>::bparser_vec_size);
+    	b_parser_.push_back( parser );
     }
 }
 
@@ -262,8 +266,8 @@ void FieldFormula<spacedim, Value>::cache_update(FieldValueCache<typename Value:
 
     for(unsigned int row=0; row < this->value_.n_rows(); row++)
         for(unsigned int col=0; col < this->value_.n_cols(); col++) {
-            b_parser_[row*this->value_.n_rows()+col]->set_subset(subsets);
-            b_parser_[row*this->value_.n_rows()+col]->run();
+            b_parser_[row*this->value_.n_cols()+col].set_subset(subsets);
+            b_parser_[row*this->value_.n_cols()+col].run();
             for (unsigned int i=i_cache_el_begin; i<i_cache_el_end; ++i) {
                 auto cache_val = data_cache.data().template mat<Value::NRows_, Value::NCols_>(i);
                 cache_val(row, col) = res_[i];
@@ -290,18 +294,17 @@ void FieldFormula<spacedim, Value>::cache_reinit(const ElementCacheMap &cache_ma
 	res_ = arena_alloc.create_array<double>(vec_size);
     for(unsigned int row=0; row < this->value_.n_rows(); row++)
         for(unsigned int col=0; col < this->value_.n_cols(); col++) {
-            b_parser_[row*this->value_.n_rows()+col] = new bparser::Parser(vec_size);
             // set expression and data to BParser
-            bparser::Parser & parser = *b_parser_[row*this->value_.n_rows()+col];
-            parser.parse(formula_matrix_.at(row,col));
-            parser.set_constant("Pi", {}, {3.14159265358979323846});
-            parser.set_constant("E",  {}, {2.71828182845904523536});
-            parser.set_variable("x",  {}, x_);
-            parser.set_variable("y",  {}, y_);
-            parser.set_variable("z",  {}, z_);
-            parser.set_constant("t",  {}, {this->time_.end()});
-            parser.set_variable("_result_", {}, res_);
-            parser.compile();
+            unsigned int i_p = row*this->value_.n_cols()+col;
+            b_parser_[i_p].parse(formula_matrix_.at(row,col));
+            b_parser_[i_p].set_constant("Pi", {}, {3.14159265358979323846});
+            b_parser_[i_p].set_constant("E",  {}, {2.71828182845904523536});
+            b_parser_[i_p].set_variable("x",  {}, x_);
+            b_parser_[i_p].set_variable("y",  {}, y_);
+            b_parser_[i_p].set_variable("z",  {}, z_);
+            b_parser_[i_p].set_constant("t",  {}, {this->time_.end()});
+            b_parser_[i_p].set_variable("_result_", {}, res_);
+            b_parser_[i_p].compile();
         }
 }
 
@@ -335,9 +338,7 @@ void FieldFormula<spacedim, Value>::set_dependency(FieldSet &field_set) {
 
 
 template <int spacedim, class Value>
-FieldFormula<spacedim, Value>::~FieldFormula() {
-    for(unsigned int i=0; i < this->value_.n_rows() * this->value_.n_cols(); i++) delete b_parser_[i];
-}
+FieldFormula<spacedim, Value>::~FieldFormula() {}
 
 
 // Instantiations of FieldFormula
