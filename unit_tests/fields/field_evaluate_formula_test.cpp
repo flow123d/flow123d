@@ -159,14 +159,18 @@ TEST_F(FieldEvalFormulaTest, evaluate) {
         time: 0.0
         scalar_field: !FieldFormula
           value: x
-        vector_field: [1, 2, 3]
-        tensor_field: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
+        vector_field: !FieldFormula
+          value: [x, 2*x, 0.5]
+        tensor_field: !FieldFormula
+          value: [x, 0.2, 0.3, 0.4, 0.5, 0.6]
       - region: 3D right
         time: 0.0
         scalar_field: !FieldFormula
           value: y
-        vector_field: [4, 5, 6]
-        tensor_field: [2.1, 2.2, 2.3, 2.4, 2.5, 2.6]
+        vector_field:  !FieldFormula
+          value: [y, 2*y, 0.5]
+        tensor_field: !FieldFormula
+          value: [y, 2.2, 2.3, 2.4, 2.5, 2.6]
     )YAML";
 	this->read_input(eq_data_input);
 
@@ -178,7 +182,6 @@ TEST_F(FieldEvalFormulaTest, evaluate) {
             {2,2,3,2,8,8,8,8,7,7,8,8,8,8,7,7,10,10,10,10,10,10,10,9,10,9,10,11,8,8,8,8,7,7,8,8,8,8,7,7,8,8,8,8,7,7},
 			{2,2,3,2,8,8,8,8,7,7,8,8,8,8,7,7,10,10,10,10,10,10,10,8,10,13,10,13,8,8,8,8,7,7,8,8,7,7,8,8,8,8,7,7,8,8},
 			{4,4,4,5,9,9,9,9,11,11,9,9,9,9,11,11,9,9,9,9,11,11,9,9,9,9,11,11,12,12,12,12,12,12,11,11,9,9,9,9} };
-    std::vector<arma::vec3>   expected_vector = {{1, 2, 3}, {1, 2, 3}, {1, 2, 3}, {4, 5, 6}};
     std::vector<arma::mat33>  expected_tensor = {{0.1, 0.2, 0.3, 0.2, 0.4, 0.5, 0.3, 0.5, 0.6}, {0.1, 0.2, 0.3, 0.2, 0.4, 0.5, 0.3, 0.5, 0.6},
                                                  {0.1, 0.2, 0.3, 0.2, 0.4, 0.5, 0.3, 0.5, 0.6}, {2.1, 2.2, 2.3, 2.2, 2.4, 2.5, 2.3, 2.5, 2.6}};
     for (uint i=0; i<cell_idx.size(); ++i) {
@@ -198,8 +201,14 @@ TEST_F(FieldEvalFormulaTest, evaluate) {
         // Bulk integral, no sides, no permutations.
         for(BulkPoint q_point: data_->mass_eval->points(cache_cell, &data_->elm_cache_map_)) {
             EXPECT_DOUBLE_EQ( dbl_scalar[ expected_scalar[i][test_point] ], data_->scalar_field(q_point));
-            EXPECT_ARMA_EQ(expected_vector[i], data_->vector_field(q_point));
-            EXPECT_ARMA_EQ(expected_tensor[i], data_->tensor_field(q_point));
+            arma::vec3 expected_vector;
+            expected_vector(0) = dbl_scalar[ expected_scalar[i][test_point] ];
+            expected_vector(1) = 2*expected_vector(0);
+            expected_vector(2) = 0.5;
+            EXPECT_ARMA_EQ(expected_vector, data_->vector_field(q_point));
+            auto exp_tensor = expected_tensor[i];
+            exp_tensor(0,0) = dbl_scalar[ expected_scalar[i][test_point] ];
+            EXPECT_ARMA_EQ(exp_tensor, data_->tensor_field(q_point));
             test_point++;
             /* // Extracting the cached values.
             double cs = cross_section(q_point);
@@ -219,9 +228,15 @@ TEST_F(FieldEvalFormulaTest, evaluate) {
         	    Range<EdgePoint> side_points = data_->side_eval->points(side, &data_->elm_cache_map_);
         	    for (EdgePoint side_p : side_points) {
                     EXPECT_DOUBLE_EQ( dbl_scalar[ expected_scalar[i][test_point] ], data_->scalar_field(side_p));
+                    arma::vec3 expected_vector;
+                    expected_vector(0) = dbl_scalar[ expected_scalar[i][test_point] ];
+                    expected_vector(1) = 2*expected_vector(0);
+                    expected_vector(2) = 0.5;
+                    EXPECT_ARMA_EQ(expected_vector, data_->vector_field(side_p));
+                    auto exp_tensor = expected_tensor[i];
+                    exp_tensor(0,0) = dbl_scalar[ expected_scalar[i][test_point] ];
+                    EXPECT_ARMA_EQ(exp_tensor, data_->tensor_field(side_p));
                     test_point++;
-                    EXPECT_ARMA_EQ(expected_vector[i], data_->vector_field(side_p));
-                    EXPECT_ARMA_EQ(expected_tensor[i], data_->tensor_field(side_p));
                     EdgePoint ngh_p = side_p.point_on(el_ngh_side);
                     EXPECT_DOUBLE_EQ( dbl_scalar[ expected_scalar[i][test_point] ], data_->scalar_field(ngh_p));
                     test_point++;
