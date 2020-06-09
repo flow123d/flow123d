@@ -149,11 +149,16 @@ private:
     /// Holds names of fields.
     std::set<std::string> field_set_names_;
 
-    /// BParser data arrays: x, y, z coordinates and result
-	double *x_;
-	double *y_;
-	double *z_;
-	double *res_;
+    /// Arena object providing data arrays
+    bparser::ArenaAlloc * arena_alloc_;
+
+    // BParser data arrays
+	double *X_;     ///< Data of coordinates, holds blocks of x, y, z
+	double *x_;     ///< Coordinates x, part of previous array
+	double *y_;     ///< Coordinates y, part of previous array
+	double *z_;     ///< Coordinates z, part of previous array
+	double *res_;   ///< Result vector of BParser
+	uint *subsets_; ///< Subsets indices in range 0 ... n-1
 
     /// Registrar of class to factory
     static const int registrar;

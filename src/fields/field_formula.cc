@@ -76,7 +76,7 @@ template <int spacedim, class Value>
 FieldFormula<spacedim, Value>::FieldFormula( unsigned int n_comp)
 : FieldAlgorithmBase<spacedim, Value>(n_comp),
   formula_matrix_(this->value_.n_rows(), this->value_.n_cols()),
-  first_time_set_(true), field_set_(nullptr), x_(nullptr)
+  first_time_set_(true), field_set_(nullptr), arena_alloc_(nullptr)
 {
 	this->is_constant_in_space_ = false;
     parser_matrix_.resize(this->value_.n_rows());
@@ -259,14 +259,15 @@ void FieldFormula<spacedim, Value>::cache_update(FieldValueCache<typename Value:
         res_[i] = 0.0;
     }
 
-    uint n_subsets = (i_cache_el_end - i_cache_el_begin) / ElementCacheMap::formula_block_divisor;
-	std::vector<uint> subsets = std::vector<uint>(n_subsets);
-	for (uint i=0, i_block=i_cache_el_begin/ElementCacheMap::formula_block_divisor; i<n_subsets; ++i, ++i_block)
-	    subsets[i] = i_block;
+    // Get vector of subsets as subarray
+    uint subsets_begin = i_cache_el_begin / ElementCacheMap::formula_block_divisor;
+    uint subsets_end = i_cache_el_end / ElementCacheMap::formula_block_divisor;
+    std::vector<uint> subset_vec;
+    subset_vec.assign(subsets_ + subsets_begin, subsets_ + subsets_end);
 
     for(unsigned int row=0; row < this->value_.n_rows(); row++)
         for(unsigned int col=0; col < this->value_.n_cols(); col++) {
-            b_parser_[row*this->value_.n_cols()+col].set_subset(subsets);
+            b_parser_[row*this->value_.n_cols()+col].set_subset(subset_vec);
             b_parser_[row*this->value_.n_cols()+col].run();
             for (unsigned int i=i_cache_el_begin; i<i_cache_el_end; ++i) {
                 auto cache_val = data_cache.data().template mat<Value::NRows_, Value::NCols_>(i);
@@ -280,18 +281,20 @@ void FieldFormula<spacedim, Value>::cache_update(FieldValueCache<typename Value:
 template <int spacedim, class Value>
 void FieldFormula<spacedim, Value>::cache_reinit(const ElementCacheMap &cache_map)
 {
-	if (x_!=nullptr) {
-	    delete x_;
-	    delete y_;
-	    delete z_;
-	    delete res_;
+	if (arena_alloc_!=nullptr) {
+	    delete arena_alloc_;
 	}
 	uint vec_size = cache_map.eval_points()->max_size() * ElementCacheMap::n_cached_elements;
-	bparser::ArenaAlloc arena_alloc(ElementCacheMap::formula_block_divisor, 4 * vec_size * sizeof(double));
-	x_ = arena_alloc.create_array<double>(vec_size);
-	y_ = arena_alloc.create_array<double>(vec_size);
-	z_ = arena_alloc.create_array<double>(vec_size);
-	res_ = arena_alloc.create_array<double>(vec_size);
+	while (vec_size%ElementCacheMap::formula_block_divisor > 0) vec_size++; // alignment of block size
+	// number of subset alignment to block size
+	uint n_subsets = (vec_size+ElementCacheMap::formula_block_divisor-1) / ElementCacheMap::formula_block_divisor;
+	arena_alloc_ = new bparser::ArenaAlloc(ElementCacheMap::formula_block_divisor, 4 * vec_size * sizeof(double) + n_subsets * sizeof(uint));
+	X_ = arena_alloc_->create_array<double>(3*vec_size);
+	x_ = X_ + 0;
+	y_ = X_ + vec_size;
+	z_ = X_ + 2*vec_size;
+	res_ = arena_alloc_->create_array<double>(vec_size);
+	subsets_ = arena_alloc_->create_array<uint>(n_subsets);
     for(unsigned int row=0; row < this->value_.n_rows(); row++)
         for(unsigned int col=0; col < this->value_.n_cols(); col++) {
             // set expression and data to BParser
@@ -306,6 +309,8 @@ void FieldFormula<spacedim, Value>::cache_reinit(const ElementCacheMap &cache_ma
             b_parser_[i_p].set_variable("_result_", {}, res_);
             b_parser_[i_p].compile();
         }
+    for (uint i=0; i<n_subsets; ++i)
+        subsets_[i] = i;
 }
 
 
