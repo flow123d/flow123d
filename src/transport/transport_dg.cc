@@ -234,7 +234,6 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
 	shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>(Model::mesh_, fe);
 	data_->dh_ = make_shared<DOFHandlerMultiDim>(*Model::mesh_);
 	data_->dh_->distribute_dofs(ds);
-	data_->set_dependency();
     //DebugOut().fmt("TDG: solution size {}\n", data_->dh_->n_global_dofs());
 
 }
@@ -397,6 +396,7 @@ void TransportDG<Model>::zero_time_step()
     START_TIMER(Model::ModelEqData::name());
     data_->mark_input_times( *(Model::time_) );
     data_->set_time(Model::time_->step(), LimitSide::left);
+    data_->set_dependency();
     std::stringstream ss; // print warning message with table of uninitialized fields
     if ( FieldCommon::print_message_table(ss, "transport DG") ) {
         WarningOut() << ss.str();
@@ -474,7 +474,9 @@ void TransportDG<Model>::update_solution()
     START_TIMER("data reinit");
     data_->set_time(Model::time_->step(), LimitSide::left);
     END_TIMER("data reinit");
-    
+
+    data_->set_dependency();
+
     // assemble mass matrix
     if (mass_matrix[0] == NULL || data_->subset(FieldFlag::in_time_term).changed() )
     {
