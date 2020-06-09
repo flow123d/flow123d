@@ -24,8 +24,6 @@
 using namespace std;
 
 #include "fields/field_algo_base.hh"
-#include "fields/field_python.hh"
-#include "fields/field_constant.hh"
 
 #include "fields/field_values.hh"
 
