@@ -246,4 +246,73 @@ protected:
 };
 
 
+
+
+
+/**
+ * Auxiliary implementation of ElementDataCacheBase that performs output of single zero data for the fields that are
+ * off for current time frame.
+ */
+class DummyElementDataCache : public ElementDataCacheBase {
+public:
+
+    DummyElementDataCache(std::string field_name_in, unsigned int n_comp_in)
+   {
+        this->field_input_name_ = field_name_in;
+        this->n_comp_ = n_comp_in;
+        this->n_values_ = 0;
+    }
+
+    virtual ~DummyElementDataCache() override
+    {}
+
+    void print_ascii(ostream &out_stream, unsigned int) override
+    {
+        for(unsigned int i=0; i< n_comp_;i++) out_stream << 0 << " ";
+    }
+
+    void print_ascii_all(ostream &out_stream) override
+    {
+        for(unsigned int i=0; i< n_comp_;i++) out_stream << 0 << " ";
+    }
+
+    void print_binary_all(ostream &, bool) override
+    {
+        ASSERT(false).error("Not implemented.");
+    }
+
+    void print_yaml_subarray(ostream &, unsigned int, unsigned int , unsigned int) override
+    {}
+
+    void get_min_max_range(double &, double &) override
+    {}
+
+    void read_ascii_data(Tokenizer &, unsigned int, unsigned int ) override
+    {}
+
+    void read_binary_data(std::istream &, unsigned int, unsigned int) override
+    {}
+
+    std::shared_ptr< ElementDataCacheBase > gather(Distribution *, LongIdx *) override
+    {
+    	return std::make_shared<DummyElementDataCache>(this->field_input_name_, this->n_comp_);
+    }
+
+    std::shared_ptr< ElementDataCacheBase > element_node_cache_fixed_size(std::vector<unsigned int> &) override
+    {
+    	return std::make_shared<DummyElementDataCache>(this->field_input_name_, this->n_comp_);
+    }
+
+    std::shared_ptr< ElementDataCacheBase > element_node_cache_optimize_size(std::vector<unsigned int> &) override
+    {
+    	return std::make_shared<DummyElementDataCache>(this->field_input_name_, this->n_comp_);
+    }
+
+    std::shared_ptr< ElementDataCacheBase > compute_node_data(std::vector<unsigned int> &, unsigned int ) override
+    {
+    	return std::make_shared<DummyElementDataCache>(this->field_input_name_, this->n_comp_);
+    }
+
+};
+
 #endif /* ELEMENT_DATA_CACHE_BASE_HH_ */

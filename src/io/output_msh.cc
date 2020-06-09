@@ -31,78 +31,6 @@ FLOW123D_FORCE_LINK_IN_CHILD(gmsh)
 using namespace Input::Type;
 
 
-/**
- * Auxiliary implementation of ElementDataCacheBase that performs output of single zero data for the fields that are
- * off for current time frame.
- */
-class DummyOutputData : public ElementDataCacheBase {
-public:
-
-    DummyOutputData(std::string field_name_in, unsigned int n_comp_in)
-   {
-        this->field_input_name_ = field_name_in;
-        this->n_comp_ = n_comp_in;
-        this->n_values_ = 1;
-    }
-
-    virtual ~DummyOutputData() override
-    {}
-
-    void print_ascii(ostream &out_stream, unsigned int idx) override
-    {
-        for(unsigned int i=0; i< n_comp_;i++) out_stream << 0 << " ";
-    }
-
-    void print_ascii_all(ostream &out_stream) override
-    {
-        for(unsigned int i=0; i< n_comp_;i++) out_stream << 0 << " ";
-    }
-
-    void print_binary_all(ostream &out_stream, bool print_data_size = true) override
-    {
-        ASSERT(false).error("Not implemented.");
-    }
-
-    void print_yaml_subarray(ostream &out_stream, unsigned int precision, unsigned int begin, unsigned int end) override
-    {}
-
-    void get_min_max_range(double &min, double &max) override
-    {}
-
-    void read_ascii_data(Tokenizer &tok, unsigned int n_components, unsigned int i_row) override
-    {}
-
-    void read_binary_data(std::istream &data_stream, unsigned int n_components, unsigned int i_row) override
-    {}
-
-    std::shared_ptr< ElementDataCacheBase > gather(Distribution *distr, LongIdx *local_to_global) override
-    {
-    	return std::make_shared<DummyOutputData>(this->field_input_name_, this->n_comp_);
-    }
-
-    std::shared_ptr< ElementDataCacheBase > element_node_cache_fixed_size(std::vector<unsigned int> &offset_vec) override
-    {
-    	return std::make_shared<DummyOutputData>(this->field_input_name_, this->n_comp_);
-    }
-
-    std::shared_ptr< ElementDataCacheBase > element_node_cache_optimize_size(std::vector<unsigned int> &offset_vec) override
-    {
-    	return std::make_shared<DummyOutputData>(this->field_input_name_, this->n_comp_);
-    }
-
-    std::shared_ptr< ElementDataCacheBase > compute_node_data(std::vector<unsigned int> &conn_vec, unsigned int data_size) override
-    {
-    	return std::make_shared<DummyOutputData>(this->field_input_name_, this->n_comp_);
-    }
-
-};
-
-
-
-
-
-
-
 const Record & OutputMSH::get_input_type() {
 	return Record("gmsh", "Parameters of gmsh output format.")
 		// It is derived from abstract class
@@ -150,7 +78,6 @@ void OutputMSH::write_msh_geometry(void)
     file << "$Nodes" << endl;
     file << this->nodes_->n_values() << endl;
     auto &id_node_vec = *( this->node_ids_->get_component_data(0).get() );
-    unsigned int i_node=0;
     for(unsigned int i_node=0; i_node < id_node_vec.size(); ++i_node) {
         file << id_node_vec[i_node] << " ";
         this->nodes_->print_ascii(file, i_node);
@@ -358,27 +285,32 @@ int OutputMSH::write_tail(void)
 
 void OutputMSH::add_dummy_fields()
 {
-	const std::vector<OutputTime::DiscreteSpace> space_types = {OutputTime::NODE_DATA, OutputTime::CORNER_DATA, OutputTime::ELEM_DATA};
-	for (auto type_idx : space_types) {
-	    auto &dummy_data_list = dummy_data_list_[type_idx];
-	    auto &data_list = this->output_data_vec_[type_idx];
+    // DebugOut() << "OutputMSH::add_dummy_fields()\n";
+	// const std::vector<OutputTime::DiscreteSpace> space_types = {OutputTime::NODE_DATA, OutputTime::CORNER_DATA, OutputTime::ELEM_DATA};
+	// for (auto type_idx : space_types) {
+	//     auto &dummy_data_list = dummy_data_list_[type_idx];
+	//     auto &data_list = this->output_data_vec_[type_idx];
 
-        // Collect all output fields
-		if (dummy_data_list.size() == 0)
-			for(auto out_ptr : data_list)
-				dummy_data_list.push_back( std::make_shared<DummyOutputData>(out_ptr->field_input_name(), out_ptr->n_comp()));
+    //     // Collect all output fields
+	// 	if (dummy_data_list.size() == 0)
+	// 		for(auto out_ptr : data_list){
+	// 			dummy_data_list.push_back( std::make_shared<DummyOutputData>(out_ptr->field_input_name(), out_ptr->n_comp()));
+    //             DebugOut() << "Add Dummy Data: " << out_ptr->field_input_name() << " n_comp " <<  out_ptr->n_comp() << "\n";
+    //         }
 
-	    auto data_it = data_list.begin();
-	    for(auto dummy_it = dummy_data_list.begin(); dummy_it != dummy_data_list.end(); ++dummy_it) {
-	        if ( data_it == data_list.end() ) {
-	        	data_list.push_back( *dummy_it );
-	        } else if ((*dummy_it)->field_input_name() == (*data_it)->field_input_name()) {
-	        	++data_it;
-	        } else {
-	        	data_list.push_back( *dummy_it );
-	        }
-	    }
-	}
+	//     auto data_it = data_list.begin();
+	//     for(auto dummy_it = dummy_data_list.begin(); dummy_it != dummy_data_list.end(); ++dummy_it) {
+	//         if ( data_it == data_list.end() ) {
+    //             DebugOut() << "PushBack *dummy_it 1" << (*dummy_it)->field_input_name() << "\n";
+	//         	data_list.push_back( *dummy_it );
+	//         } else if ((*dummy_it)->field_input_name() == (*data_it)->field_input_name()) {
+	//         	++data_it;
+	//         } else {
+    //             DebugOut() << "PushBack *dummy_it 2" << (*dummy_it)->field_input_name() << "\n";
+	//         	data_list.push_back( *dummy_it );
+	//         }
+	//     }
+	// }
 }
 
 
