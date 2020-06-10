@@ -117,7 +117,7 @@ OutputTime::OutputDataPtr OutputTime::prepare_compute_data(std::string field_nam
             [&field_name](OutputDataPtr ptr) { return (ptr->field_input_name() == field_name); });
     
     if(current_step == 0 && it == od_vec.end() ) {
-        DebugOut() << "OutputTime::prepare_compute_data: PUSH BACK " << field_name << "\n";
+        // DebugOut() << "OutputTime::prepare_compute_data: PUSH BACK " << field_name << "\n";
         od_vec.push_back( std::make_shared< ElementDataCache<T> >(field_name, n_rows*n_cols, size) );
         it=--od_vec.end();
     }

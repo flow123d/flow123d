@@ -50,7 +50,7 @@ public:
 	/// Constructor.
 	ElementDataCacheBase()
 	: time_(-std::numeric_limits<double>::infinity()),
-	  field_name_("") {}
+	  field_name_(""), is_dummy_(false) {}
 
 	/// Destructor
 	virtual ~ElementDataCacheBase() {}
@@ -130,6 +130,13 @@ public:
      */
     inline unsigned int n_values() const {
     	return this->n_values_;
+    }
+
+    /**
+     * Is only true when the object is DummyElementDataCache.
+     */
+    inline bool is_dummy() const {
+        return this->is_dummy_;
     }
 
     /**
@@ -243,6 +250,9 @@ protected:
 
     /// Hash of DOF handler (attribute of native VTK data)
     std::size_t dof_handler_hash_;
+
+    /// Is true for DummyElementDataCache
+    bool is_dummy_;
 };
 
 
@@ -257,10 +267,11 @@ class DummyElementDataCache : public ElementDataCacheBase {
 public:
 
     DummyElementDataCache(std::string field_name_in, unsigned int n_comp_in)
-   {
+    {
         this->field_input_name_ = field_name_in;
         this->n_comp_ = n_comp_in;
-        this->n_values_ = 0;
+        this->n_values_ = 1;
+        this->is_dummy_ = true;
     }
 
     virtual ~DummyElementDataCache() override

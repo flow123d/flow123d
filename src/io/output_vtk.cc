@@ -394,7 +394,8 @@ void OutputVTK::compress_data(stringstream &uncompressed_stream, stringstream &c
 void OutputVTK::write_vtk_field_data(OutputDataFieldVec &output_data_vec)
 {
     for(OutputDataPtr data :  output_data_vec)
-        write_vtk_data(data);
+        if( ! data->is_dummy())
+            write_vtk_data(data);
 }
 
 
@@ -407,17 +408,23 @@ void OutputVTK::write_vtk_data_names(ofstream &file,
 
     file << "Scalars=\"";
     for(OutputDataPtr data :  output_data_vec )
-		if (data->n_comp() == ElementDataCacheBase::N_SCALAR) file << data->field_input_name() << ",";
+		if (data->n_comp() == ElementDataCacheBase::N_SCALAR
+            && ! data->is_dummy())
+                file << data->field_input_name() << ",";
 	file << "\" ";
 
     file << "Vectors=\"";
     for(OutputDataPtr data :  output_data_vec )
-		if (data->n_comp() == ElementDataCacheBase::N_VECTOR) file << data->field_input_name() << ",";
+		if (data->n_comp() == ElementDataCacheBase::N_VECTOR
+            && ! data->is_dummy())
+                file << data->field_input_name() << ",";
 	file << "\" ";
 
     file << "Tensors=\"";
     for(OutputDataPtr data :  output_data_vec )
-		if (data->n_comp() == ElementDataCacheBase::N_TENSOR) file << data->field_input_name() << ",";
+		if (data->n_comp() == ElementDataCacheBase::N_TENSOR
+            && ! data->is_dummy())
+                file << data->field_input_name() << ",";
 	file << "\"";
 }
 
