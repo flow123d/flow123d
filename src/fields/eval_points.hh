@@ -64,7 +64,8 @@ public:
 
     /// Return size of evaluation points object (number of points).
     inline unsigned int size(unsigned int dim) const {
-        return dim_eval_points_[dim-1].size();
+        if (dim==0) return dim_zero_eval_points_.size();
+        else return dim_eval_points_[dim-1].size();
     }
 
     /// Return local coordinates of given local point and appropriate dim.
@@ -75,22 +76,26 @@ public:
 
     /// Return begin index of appropriate subset data.
     inline int subset_begin(unsigned int dim, unsigned int idx) const {
-        return dim_eval_points_[dim-1].subset_begin(idx);
+        if (dim==0) return dim_zero_eval_points_.subset_begin(idx);
+        else return dim_eval_points_[dim-1].subset_begin(idx);
     }
 
     /// Return end index of appropriate subset data.
     inline int subset_end(unsigned int dim, unsigned int idx) const {
-        return dim_eval_points_[dim-1].subset_end(idx);
+        if (dim==0) return dim_zero_eval_points_.subset_end(idx);
+        else return dim_eval_points_[dim-1].subset_end(idx);
     }
 
     /// Return number of local points corresponding to subset.
     inline int subset_size(unsigned int dim, unsigned int idx) const {
-        return dim_eval_points_[dim-1].subset_size(idx);
+        if (dim==0) return dim_zero_eval_points_.subset_size(idx);
+   	    else return dim_eval_points_[dim-1].subset_size(idx);
     }
 
     /// Return number of subsets.
     inline unsigned int n_subsets(unsigned int dim) const {
-        return dim_eval_points_[dim-1].n_subsets();
+        if (dim==0) return dim_zero_eval_points_.n_subsets();
+        else return dim_eval_points_[dim-1].n_subsets();
     }
 
     /**
@@ -118,6 +123,7 @@ public:
     }
 
 private:
+    /// Subobject holds evaluation points data of one dimension (1,2,3)
     class DimEvalPoints {
     public:
         /// Constructor
@@ -175,10 +181,53 @@ private:
         unsigned int dim_;                                            ///< Dimension of local points
     };
 
+    /// Same as previous, but specialization for dimension 0
+    class DimZeroEvalPoints {
+    public:
+        /// Constructor
+        DimZeroEvalPoints()
+        : n_subsets_(0) {}
+
+        /// Return size of evaluation points object (number of points).
+        inline unsigned int size() const {
+            return n_subsets_;
+        }
+
+        /// Return begin index of appropriate subset data.
+        inline int subset_begin(unsigned int idx) const {
+            ASSERT_LT_DBG(idx, n_subsets());
+        	return idx;
+        }
+
+        /// Return end index of appropriate subset data.
+        inline int subset_end(unsigned int idx) const {
+            ASSERT_LT_DBG(idx, n_subsets());
+        	return idx+1;
+        }
+
+        /// Return number of local points corresponding to subset.
+        inline int subset_size(unsigned int idx) const {
+            ASSERT_LT_DBG(idx, n_subsets());
+        	return 1;
+        }
+
+        /// Return number of subsets.
+        inline unsigned int n_subsets() const {
+            return n_subsets_;
+        }
+
+        /// Adds new subset and its end size to subset_starts_ array.
+        void add_subset();
+    private:
+        /// Number of subset
+        unsigned int n_subsets_;
+    };
+
+    /// Sub object of dimension 0
+    DimZeroEvalPoints dim_zero_eval_points_;
     /// Sub objects of dimensions 1,2,3
     std::array<DimEvalPoints, 3> dim_eval_points_;
 
-    friend class EvalSubSet;
 };
 
 

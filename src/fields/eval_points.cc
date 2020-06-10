@@ -39,6 +39,15 @@ std::shared_ptr<BulkIntegral> EvalPoints::add_bulk(const Quadrature &quad)
     return bulk_integral;
 }
 
+template <>
+std::shared_ptr<BulkIntegral> EvalPoints::add_bulk<0>(const Quadrature &quad)
+{
+    ASSERT_EQ(0, quad.dim());
+    std::shared_ptr<BulkIntegral> bulk_integral = std::make_shared<BulkIntegral>(shared_from_this(), 0);
+    dim_zero_eval_points_.add_subset();
+    return bulk_integral;
+}
+
 template <unsigned int dim>
 std::shared_ptr<EdgeIntegral> EvalPoints::add_edge(const Quadrature &quad)
 {
@@ -129,6 +138,13 @@ void EvalPoints::DimEvalPoints::add_subset() {
 }
 
 
+void EvalPoints::DimZeroEvalPoints::add_subset() {
+    ASSERT_LT_DBG(n_subsets_, EvalPoints::max_subsets).error("Maximal number of subsets exceeded!\n");
+    n_subsets_++;
+}
+
+
+template std::shared_ptr<BulkIntegral> EvalPoints::add_bulk<0>(const Quadrature &);
 template std::shared_ptr<BulkIntegral> EvalPoints::add_bulk<1>(const Quadrature &);
 template std::shared_ptr<BulkIntegral> EvalPoints::add_bulk<2>(const Quadrature &);
 template std::shared_ptr<BulkIntegral> EvalPoints::add_bulk<3>(const Quadrature &);

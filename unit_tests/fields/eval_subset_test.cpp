@@ -29,13 +29,21 @@ TEST(EvalPointsTest, all) {
 	EXPECT_EQ(eval_points->size(3), 0);
 	EXPECT_EQ(eval_points->n_subsets(3), 0);
 
-    Quadrature *q_bulk = new QGauss(3, 2);
-    eval_points->add_bulk<3>(*q_bulk );
+    Quadrature *q_bulk_3 = new QGauss(3, 2); // dim 3
+    eval_points->add_bulk<3>(*q_bulk_3 );
 	EXPECT_EQ(eval_points->size(3), 4);
 	EXPECT_EQ(eval_points->n_subsets(3), 1);
 	EXPECT_EQ(eval_points->subset_begin(3, 0), 0);
 	EXPECT_EQ(eval_points->subset_end(3, 0), 4);
 	EXPECT_EQ(eval_points->subset_size(3, 0), 4);
+
+	Quadrature *q_bulk_0 = new QGauss(0, 2); // dim 0
+    eval_points->add_bulk<0>(*q_bulk_0 );
+	EXPECT_EQ(eval_points->size(0), 1);
+	EXPECT_EQ(eval_points->n_subsets(0), 1);
+	EXPECT_EQ(eval_points->subset_begin(0, 0), 0);
+	EXPECT_EQ(eval_points->subset_end(0, 0), 1);
+	EXPECT_EQ(eval_points->subset_size(0, 0), 1);
 }
 
 
