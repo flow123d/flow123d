@@ -117,8 +117,8 @@ Range< CouplingPoint > CouplingIntegral::points(const DHCellSide &cell_side, con
  * Implementation of BoundaryIntegral methods
  */
 
-BoundaryIntegral::BoundaryIntegral(std::shared_ptr<EdgeIntegral> edge_integral)
- : BaseIntegral(edge_integral->eval_points(), edge_integral->dim()), edge_integral_(edge_integral) {}
+BoundaryIntegral::BoundaryIntegral(std::shared_ptr<EdgeIntegral> edge_integral, std::shared_ptr<BulkIntegral> bulk_integral)
+ : BaseIntegral(edge_integral->eval_points(), edge_integral->dim()), edge_integral_(edge_integral), bulk_integral_(bulk_integral) {}
 
 BoundaryIntegral::~BoundaryIntegral() {
     edge_integral_.reset();
@@ -128,8 +128,8 @@ Range< BoundaryPoint > BoundaryIntegral::points(const DHCellSide &cell_side, con
     if (cell_side.cell().element_cache_index() == ElementCacheMap::undef_elem_idx)
         THROW( ExcElementNotInCache() << EI_ElementIdx(cell_side.cell().elm_idx()) );
 
-    unsigned int begin_idx = eval_points_->subset_begin(dim_, get_subset_idx());
-    unsigned int end_idx = eval_points_->subset_end(dim_, get_subset_idx());
+    unsigned int begin_idx = eval_points_->subset_begin(dim_, get_subset_high_idx());
+    unsigned int end_idx = eval_points_->subset_end(dim_, get_subset_high_idx());
     unsigned int points_per_side = (end_idx - begin_idx) / edge_integral_->n_sides();
     auto bgn_it = make_iter<BoundaryPoint>( BoundaryPoint(cell_side, elm_cache_map, shared_from_this(), 0 ) );
     auto end_it = make_iter<BoundaryPoint>( BoundaryPoint(cell_side, elm_cache_map, shared_from_this(), points_per_side ) );
@@ -166,12 +166,12 @@ BulkPoint CouplingPoint::lower_dim(DHCellAccessor cell_lower) const {
  */
 
 BulkBdrPoint BoundaryPoint::point_bdr(ElementAccessor<3> bdr_elm) const {
-    return BulkBdrPoint(bdr_elm, elm_cache_map_, integral_->edge_integral_,
-            this->eval_points()->subset_begin(bdr_elm.dim()+1, integral_->get_subset_idx())+local_point_idx_);
+    return BulkBdrPoint(bdr_elm, elm_cache_map_, integral_->bulk_integral_,
+            this->eval_points()->subset_begin(bdr_elm.dim(), integral_->get_subset_low_idx())+local_point_idx_);
 }
 
 
 BulkBdrPoint BoundaryPoint::point_bdr_center(ElementAccessor<3> bdr_elm, std::shared_ptr<const BulkIntegral> bulk_int) const {
-    return BulkBdrPoint(bdr_elm, elm_cache_map_, integral_->edge_integral_,
-            this->eval_points()->subset_begin(bdr_elm.dim()+1, bulk_int->get_subset_idx()));
+    return BulkBdrPoint(bdr_elm, elm_cache_map_, bulk_int,
+            this->eval_points()->subset_begin(bdr_elm.dim(), bulk_int->get_subset_idx()));
 }

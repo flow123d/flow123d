@@ -44,7 +44,7 @@ enum ActiveIntegrals {
 /// Set of all used integral necessary in assemblation
 struct AssemblyIntegrals {
     std::array<std::shared_ptr<BulkIntegral>, 3> bulk_;          ///< Bulk integrals of elements of dimensions 1, 2, 3
-    std::array<std::shared_ptr<BulkIntegral>, 3> center_;        ///< Bulk integrals represents center of elements of dimensions 1, 2, 3
+    std::array<std::shared_ptr<BulkIntegral>, 4> center_;        ///< Bulk integrals represents center of elements of dimensions 0, 1, 2, 3
     std::array<std::shared_ptr<EdgeIntegral>, 3> edge_;          ///< Edge integrals between elements of dimensions 1, 2, 3
     std::array<std::shared_ptr<CouplingIntegral>, 2> coupling_;  ///< Coupling integrals between elements of dimensions 1-2, 2-3
     std::array<std::shared_ptr<BoundaryIntegral>, 3> boundary_;  ///< Boundary integrals betwwen elements of dimensions 1, 2, 3 and boundaries
@@ -92,8 +92,10 @@ private:
     struct BoundaryIntegralData {
     	BoundaryIntegralData() {}
 
+    	// We don't need hold ElementAccessor of boundary element, side.cond().element_accessor() provides it.
+	    unsigned int bdr_subset_index; // index of subset on boundary element
 	    DHCellSide side;
-	    unsigned int subset_index;
+	    unsigned int side_subset_index;
 	};
 
     /**
@@ -117,6 +119,8 @@ public:
     {
         eval_points_ = std::make_shared<EvalPoints>();
         // first step - create integrals, then - initialize cache
+        Quadrature *quad_center_0d = new QGauss(0, 1);
+        integrals_.center_[0] = eval_points_->add_bulk<0>(*quad_center_0d);
         multidim_assembly_[1_d]->create_integrals(eval_points_, integrals_, active_integrals_);
         multidim_assembly_[2_d]->create_integrals(eval_points_, integrals_, active_integrals_);
         multidim_assembly_[3_d]->create_integrals(eval_points_, integrals_, active_integrals_);
@@ -231,8 +235,8 @@ public:
 
     /// Return CenterIntegral of appropriate dimension
     inline std::shared_ptr<BulkIntegral> center_integral(unsigned int dim) const {
-        ASSERT_DBG( (dim>0) && (dim<=3) )(dim).error("Invalid dimension, must be 1, 2 or 3!\n");
-	    return integrals_.center_[dim-1];
+        ASSERT_DBG( dim<=3 )(dim).error("Invalid dimension, must be 0, 1, 2 or 3!\n");
+        return integrals_.center_[dim];
     }
 
     /// Return EdgeIntegral of appropriate dimension
@@ -285,11 +289,13 @@ private:
 
         for (unsigned int i=0; i<integrals_size_[3]; ++i) {
             // add data to cache if there is free space, else return
-        	unsigned int side_dim = boundary_integral_data_[i].side.dim();
-            unsigned int data_size = eval_points_->subset_size( side_dim, boundary_integral_data_[i].subset_index ) / (side_dim+1);
+            unsigned int bdr_data_size = eval_points_->subset_size( boundary_integral_data_[i].side.cond().element_accessor().dim(), boundary_integral_data_[i].bdr_subset_index );
+            element_cache_map_.mark_used_eval_points(boundary_integral_data_[i].side.cond().element_accessor(), boundary_integral_data_[i].bdr_subset_index, bdr_data_size);
+
+            unsigned int side_dim = boundary_integral_data_[i].side.dim();
+            unsigned int data_size = eval_points_->subset_size( side_dim, boundary_integral_data_[i].side_subset_index ) / (side_dim+1);
             unsigned int start_point = data_size * boundary_integral_data_[i].side.side_idx();
-            element_cache_map_.mark_used_eval_points(boundary_integral_data_[i].side.cell(), boundary_integral_data_[i].subset_index, data_size, start_point);
-            element_cache_map_.mark_used_eval_points(boundary_integral_data_[i].side.cond().element_accessor(), boundary_integral_data_[i].subset_index, data_size);
+            element_cache_map_.mark_used_eval_points(boundary_integral_data_[i].side.cell(), boundary_integral_data_[i].side_subset_index, data_size, start_point);
         }
 
         for (unsigned int i=0; i<integrals_size_[4]; ++i) {
@@ -300,7 +306,7 @@ private:
 
         for (unsigned int i=0; i<integrals_size_[5]; ++i) {
             // add data to cache if there is free space, else return
-        	unsigned int data_size = eval_points_->subset_size( bdr_elem_integral_data_[i].elm.dim()+1, bdr_elem_integral_data_[i].subset_index );
+        	unsigned int data_size = eval_points_->subset_size( bdr_elem_integral_data_[i].elm.dim(), bdr_elem_integral_data_[i].subset_index );
         	element_cache_map_.mark_used_eval_points(bdr_elem_integral_data_[i].elm, bdr_elem_integral_data_[i].subset_index, data_size);
         }
     }
@@ -330,7 +336,7 @@ private:
                         this->add_boundary_integral(cell_side);
                         element_cache_map_.add(cell_side);
                         auto bdr_elm_acc = cell_side.cond().element_accessor();
-                        this->add_bdr_elem_integral( bdr_elm_acc ); //TODO need DHCell constructed from boundary element
+                        this->add_bdr_elem_integral( bdr_elm_acc ); // TODO need DHCell constructed from boundary element
                         element_cache_map_.add(bdr_elm_acc);
                         continue;
                     }
@@ -387,18 +393,19 @@ private:
     /// Add data of boundary integral to appropriate data structure.
     void add_boundary_integral(const DHCellSide &bdr_side) {
     	boundary_integral_data_[ integrals_size_[3] ].side = bdr_side;
-    	boundary_integral_data_[ integrals_size_[3] ].subset_index = integrals_.boundary_[bdr_side.dim()-1]->get_subset_idx();
+    	boundary_integral_data_[ integrals_size_[3] ].bdr_subset_index = integrals_.boundary_[bdr_side.dim()-1]->get_subset_low_idx();
+    	boundary_integral_data_[ integrals_size_[3] ].side_subset_index = integrals_.boundary_[bdr_side.dim()-1]->get_subset_high_idx();
         integrals_size_[3]++;
     }
 
     /// Add data of integral of element.center eval point to appropriate data structure.
     void add_center_integral(const DHCellAccessor &cell) {
     	center_integral_data_[ integrals_size_[4] ].cell = cell;
-    	center_integral_data_[ integrals_size_[4] ].subset_index = integrals_.center_[cell.dim()-1]->get_subset_idx();
+    	center_integral_data_[ integrals_size_[4] ].subset_index = integrals_.center_[cell.dim()]->get_subset_idx();
         integrals_size_[4]++;
     }
 
-    /// Add data of integral of element.center eval point to appropriate data structure.
+    /// Add data of integral of boundary element.center eval point to appropriate data structure.
     void add_bdr_elem_integral(const ElementAccessor<3> elm) {
     	bdr_elem_integral_data_[ integrals_size_[5] ].elm = elm;
     	bdr_elem_integral_data_[ integrals_size_[5] ].subset_index = integrals_.center_[elm.dim()]->get_subset_idx();
@@ -474,7 +481,7 @@ public:
     	if (active_integrals & ActiveIntegrals::bulk)
     	    integrals.bulk_[dim-1] = eval_points->add_bulk<dim>(*quad_);
     	// one-point integral represents element.center adds always
-	    integrals.center_[dim-1] = eval_points->add_bulk<dim>(*quad_center_);
+	    integrals.center_[dim] = eval_points->add_bulk<dim>(*quad_center_);
     	if (active_integrals & ActiveIntegrals::edge)
     	    integrals.edge_[dim-1] = eval_points->add_edge<dim>(*quad_low_);
        	if ((dim>1) && (active_integrals & ActiveIntegrals::coupling))
@@ -798,7 +805,7 @@ public:
             double transport_flux = side_flux/side.measure();
 
             auto p_side = *( data_->stiffness_assembly_->boundary_integral(dim)->points(cell_side, &(data_->stiffness_assembly_->cache_map())).begin() );
-            auto p_bdr_center = p_side.point_bdr_center(side.cond().element_accessor(), data_->stiffness_assembly_->center_integral(dim) );
+            auto p_bdr_center = p_side.point_bdr_center(side.cond().element_accessor(), data_->stiffness_assembly_->center_integral(dim-1) ); // dim of boundary
             unsigned int bc_type = data_->bc_type[sbi](p_bdr_center);
             //if (bc_type[sbi] == AdvectionDiffusionModel::abc_dirichlet)
             if (bc_type == AdvectionDiffusionModel::abc_dirichlet)
@@ -1457,7 +1464,7 @@ public:
                 double transport_flux = side_flux/dh_side.measure();
 
                 auto p_side = *( data_->bdr_cond_assembly_->boundary_integral(dim)->points(dh_side, &(data_->bdr_cond_assembly_->cache_map())).begin() );
-                auto p_bdr_center = p_side.point_bdr_center(dh_side.cond().element_accessor(), data_->bdr_cond_assembly_->center_integral(dim) );
+                auto p_bdr_center = p_side.point_bdr_center(dh_side.cond().element_accessor(), data_->bdr_cond_assembly_->center_integral(dim-1) ); // dim of boundary
                 unsigned int bc_type = data_->bc_type[sbi](p_bdr_center);
                 //if (bc_type[sbi] == AdvectionDiffusionModel::abc_inflow && side_flux < 0)
                 if (bc_type == AdvectionDiffusionModel::abc_inflow && side_flux < 0)

@@ -100,7 +100,9 @@ std::shared_ptr<CouplingIntegral> EvalPoints::add_coupling(const Quadrature &qua
 template <unsigned int dim>
 std::shared_ptr<BoundaryIntegral> EvalPoints::add_boundary(const Quadrature &quad) {
     ASSERT_EQ(dim, quad.dim()+1);
-    return std::make_shared<BoundaryIntegral>(this->add_edge<dim>(quad));
+    std::shared_ptr<BulkIntegral> bulk_integral = this->add_bulk<dim-1>(quad);
+    std::shared_ptr<EdgeIntegral> edge_integral = this->add_edge<dim>(quad);
+    return std::make_shared<BoundaryIntegral>(edge_integral, bulk_integral);
 }
 
 EvalPoints::DimEvalPoints::DimEvalPoints(unsigned int dim)

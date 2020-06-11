@@ -191,22 +191,29 @@ public:
     BoundaryIntegral() : BaseIntegral() {}
 
     /// Constructor of bulk subset
-    BoundaryIntegral(std::shared_ptr<EdgeIntegral> edge_integral);
+    BoundaryIntegral(std::shared_ptr<EdgeIntegral> edge_integral, std::shared_ptr<BulkIntegral> bulk_integral);
 
     /// Destructor
     ~BoundaryIntegral();
 
-    /// Return index of data block according to subset in EvalPoints object
-    int get_subset_idx() const {
+    /// Return index of data block according to subset of higher dim in EvalPoints object
+    int get_subset_high_idx() const {
         return edge_integral_->get_subset_idx();
+    }
+
+    /// Return index of data block according to subset of lower dim (boundary) in EvalPoints object
+    int get_subset_low_idx() const {
+        return bulk_integral_->get_subset_idx();
     }
 
     /// Returns range of bulk local points for appropriate cell accessor
     Range< BoundaryPoint > points(const DHCellSide &cell_side, const ElementCacheMap *elm_cache_map) const;
 
 private:
-    /// Boundary integral according to edge integral (? but need own special data members and methods ?).
+    /// Integral according to higher dim (bulk) element subset part in EvalPoints object.
     std::shared_ptr<EdgeIntegral> edge_integral_;
+    /// Integral according to kower dim (boundary) element subset part in EvalPoints object.
+    std::shared_ptr<BulkIntegral> bulk_integral_;
 
     friend class BoundaryPoint;
 };
@@ -328,11 +335,11 @@ public:
     : PointBase() {}
 
     /// Constructor
-	BulkBdrPoint(ElementAccessor<3> elm_acc, const ElementCacheMap *elm_cache_map, std::shared_ptr<const EdgeIntegral> edge_integral, unsigned int local_point_idx)
-    : PointBase(elm_cache_map, local_point_idx), elm_acc_(elm_acc), integral_(edge_integral) {}
+	BulkBdrPoint(ElementAccessor<3> elm_acc, const ElementCacheMap *elm_cache_map, std::shared_ptr<const BulkIntegral> bulk_integral, unsigned int local_point_idx)
+    : PointBase(elm_cache_map, local_point_idx), elm_acc_(elm_acc), integral_(bulk_integral) {}
 
     /// Getter of BulkIntegral
-    std::shared_ptr<const EdgeIntegral> integral() const {
+    std::shared_ptr<const BulkIntegral> integral() const {
         return integral_;
     }
 
@@ -364,8 +371,8 @@ public:
 private:
     /// Appropriate ElementAccessor.
     ElementAccessor<3> elm_acc_;
-    /// Pointer to edge integral of side of neigbouring bulk element.
-    std::shared_ptr<const EdgeIntegral> integral_;
+    /// Pointer to bulk integral.
+    std::shared_ptr<const BulkIntegral> integral_;
 };
 
 
