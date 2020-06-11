@@ -219,9 +219,6 @@ public:
         return this->n_proc_;
     }
 
-    /// Complete information about dummy fields, method has effect only for GMSH output.
-    virtual void add_dummy_fields();
-
 
 protected:
     

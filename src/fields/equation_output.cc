@@ -205,9 +205,6 @@ void EquationOutput::output(TimeStep step)
             }
         }
     }
-
-    // complete information about dummy fields
-    stream_->add_dummy_fields();
 }
 
 

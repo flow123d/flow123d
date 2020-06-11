@@ -282,39 +282,6 @@ int OutputMSH::write_tail(void)
 }
 
 
-
-void OutputMSH::add_dummy_fields()
-{
-    // DebugOut() << "OutputMSH::add_dummy_fields()\n";
-	// const std::vector<OutputTime::DiscreteSpace> space_types = {OutputTime::NODE_DATA, OutputTime::CORNER_DATA, OutputTime::ELEM_DATA};
-	// for (auto type_idx : space_types) {
-	//     auto &dummy_data_list = dummy_data_list_[type_idx];
-	//     auto &data_list = this->output_data_vec_[type_idx];
-
-    //     // Collect all output fields
-	// 	if (dummy_data_list.size() == 0)
-	// 		for(auto out_ptr : data_list){
-	// 			dummy_data_list.push_back( std::make_shared<DummyOutputData>(out_ptr->field_input_name(), out_ptr->n_comp()));
-    //             DebugOut() << "Add Dummy Data: " << out_ptr->field_input_name() << " n_comp " <<  out_ptr->n_comp() << "\n";
-    //         }
-
-	//     auto data_it = data_list.begin();
-	//     for(auto dummy_it = dummy_data_list.begin(); dummy_it != dummy_data_list.end(); ++dummy_it) {
-	//         if ( data_it == data_list.end() ) {
-    //             DebugOut() << "PushBack *dummy_it 1" << (*dummy_it)->field_input_name() << "\n";
-	//         	data_list.push_back( *dummy_it );
-	//         } else if ((*dummy_it)->field_input_name() == (*data_it)->field_input_name()) {
-	//         	++data_it;
-	//         } else {
-    //             DebugOut() << "PushBack *dummy_it 2" << (*dummy_it)->field_input_name() << "\n";
-	//         	data_list.push_back( *dummy_it );
-	//         }
-	//     }
-	// }
-}
-
-
-
 void OutputMSH::set_output_data_caches(std::shared_ptr<OutputMeshBase> mesh_ptr) {
     OutputTime::set_output_data_caches(mesh_ptr);
 

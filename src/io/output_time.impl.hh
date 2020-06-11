@@ -100,16 +100,9 @@ OutputTime::OutputDataPtr OutputTime::prepare_compute_data(std::string field_nam
     /**
      * supposing that everything is output at the first step !
      * - if(current_step == 0) push_back all the non-existing fields shared<ElementDataCache<T>>
-     * - else just set the correct shared<ElementDataCache<T>> 
-     * TODO:(we can keep a map fieldname -> index in output_data_vec)
+     * - else just set the correct shared<ElementDataCache<T>>
      * - when clearing output_data_vec, set all to shared<DummyElementCache>
      * - this can be done in many equations sharing the same OutputTime stream
-     * 
-     * TODO:
-     * - remove add_dummy_fields and Dummy in output_msh
-     * - finally in write_time_frame (in msh and vtk) react properly if cache is DummyElementCache
-     * - DummyElementCache can have n_vals == 0, (check whether n_comp must be correct in msh)
-     * 
      * 
     */
     auto &od_vec=this->output_data_vec_[space_type];
