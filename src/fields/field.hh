@@ -30,7 +30,6 @@
 #include <vector>                                      // for vector
 #include <armadillo>
 #include "fields/field_algo_base.hh"                   // for FieldAlgorithm...
-#include "fields/field_algo_base.impl.hh"              // for FieldAlgorithm...
 #include "fields/field_common.hh"                      // for FieldCommon::T...
 #include "fields/field_values.hh"                      // for FieldValue<>::...
 #include "fields/field_value_cache.hh"                 // for FieldValueCache
@@ -57,6 +56,7 @@ class EvalPoints;
 class BulkPoint;
 class BulkBdrPoint;
 class SidePoint;
+class FieldSet;
 template <int spacedim> class ElementAccessor;
 template <int spacedim, class Value> class FieldFE;
 namespace detail
@@ -348,6 +348,11 @@ public:
     inline FieldValueCache<typename Value::element_type> &value_cache() {
         return value_cache_;
     }
+
+    /**
+     * Implementation of FieldCommon::set_dependency().
+     */
+    void set_dependency(FieldSet &field_set) override;
 
 protected:
 

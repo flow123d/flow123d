@@ -27,6 +27,7 @@
 #include "fields/field_fe.hh"
 #include "la/vector_mpi.hh"
 #include "fields/fe_value_handler.hh"
+#include "fields/field_constant.hh"
 
 #include "fem/mapping_p1.hh"
 #include "fem/fe_p.hh"

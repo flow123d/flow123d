@@ -35,6 +35,7 @@
 #include "tools/time_governor.hh"  // for TimeGovernor (ptr only), TimeStep
 class Mesh;
 class Region;
+template <int spacedim, class Value> class FieldFormula;
 
 
 
@@ -184,6 +185,7 @@ public:
      * Collective interface to @p FieldCommonBase::set_mesh().
      */
     void set_mesh(const Mesh &mesh) {
+    	this->mesh_ = &mesh;
         for(FieldCommon *field : field_list) field->set_mesh(mesh);
     }
 
@@ -241,6 +243,9 @@ public:
      * Collective interface to @p FieldCommon::recache_allocate().
      */
     void cache_reallocate(const ElementCacheMap &cache_map) {
+        x_coord_.reinit(cache_map);
+        y_coord_.reinit(cache_map);
+        z_coord_.reinit(cache_map);
         for(auto field : field_list) field->cache_reallocate(cache_map);
     }
 
@@ -248,18 +253,45 @@ public:
      * Collective interface to @p FieldCommon::cache_update().
      */
     void cache_update(ElementCacheMap &cache_map) {
+        update_coords_caches(cache_map);
 	    for(auto field : field_list) field->cache_update(cache_map);
     }
 
+    /**
+     * Set reference of FieldSet to all instances of FieldFormula.
+     */
+    void set_dependency() {
+    	for(auto field : field_list) field->set_dependency(*this);
+    }
+
+    inline const FieldValueCache<double> &x() const { return x_coord_; }  ///< Return x-coord FieldValueCache
+    inline const FieldValueCache<double> &y() const { return y_coord_; }  ///< Return y-coord FieldValueCache
+    inline const FieldValueCache<double> &z() const { return z_coord_; }  ///< Return z-coord FieldValueCache
+
 protected:
+    /// Update caches holding coordinates values (for FieldFormula)
+    void update_coords_caches(ElementCacheMap &cache_map);
 
     /// List of all fields.
     std::vector<FieldCommon *> field_list;
+
+    /*
+     * Following caches represents data of x,y,z coordinates. Temporary solution, these caches will be part
+     * of appropriate Fields in future (when field params of FieldFormula will be applicated).
+     * Mesh allows construct ElementAccessors (for compute coordinates).
+     */
+    FieldValueCache<double> x_coord_;  ///< Holds values of x-coordinates (for FieldFormula)
+    FieldValueCache<double> y_coord_;  ///< Holds values of y-coordinates (for FieldFormula)
+    FieldValueCache<double> z_coord_;  ///< Holds values of z-coordinates (for FieldFormula)
+    const Mesh *mesh_;                 ///< Pointer to the mesh.
 
     /**
      * Stream output operator
      */
     friend std::ostream &operator<<(std::ostream &stream, const FieldSet &set);
+
+    template<int dim, class Val>
+    friend class FieldFormula;
 };
 
 

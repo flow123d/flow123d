@@ -49,6 +49,7 @@ class Mesh;
 class Observe;
 class EvalPoints;
 class ElementCacheMap;
+class FieldSet;
 
 
 using namespace std;
@@ -426,6 +427,10 @@ public:
      */
     virtual void observe_output(std::shared_ptr<Observe> observe) =0;
 
+    /**
+     * Set reference of FieldSet to all instances of FieldFormula.
+     */
+    virtual void set_dependency(FieldSet &field_set) =0;
 
     /**
      * Sets @p component_index_

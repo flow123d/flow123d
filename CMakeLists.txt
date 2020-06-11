@@ -653,6 +653,7 @@ include_directories(
     ${CONFIG_FILE_INCLUDES_DIRECTORY}
     #${CMAKE_SOURCE_DIR}/third_party/metis-include
     ${CMAKE_SOURCE_DIR}/third_party/fparser-4.5.1
+    ${CMAKE_SOURCE_DIR}/third_party/bparser
     ${CMAKE_SOURCE_DIR}/third_party/FADBAD++
     ${PETSC_INCLUDES}
     ${PYTHON_INCLUDE_DIRS}

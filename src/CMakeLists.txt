@@ -314,6 +314,9 @@ add_library(coupling_lib
     coupling/equation.cc
     coupling/balance.cc
     # coupling/hc_explicit_sequential.cc
+    
+    ### in BParser
+    ../third_party/bparser/include/grammar.cc
 )
 target_link_libraries(coupling_lib
     system_lib input_lib mesh_lib tools_lib fem_lib io_lib
