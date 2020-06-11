@@ -597,8 +597,10 @@ void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_t
 
     try{
         // try casting actual ElementDataCache
-        auto output_data = std::dynamic_pointer_cast<ElementDataCache<ElemType>>(output_data_base);
-        fill_data_cache(space_type, stream, output_data);
+        if( ! output_data_base->is_dummy()){
+            auto output_data = std::dynamic_pointer_cast<ElementDataCache<ElemType>>(output_data_base);
+            fill_data_cache(space_type, stream, output_data);
+        }
 
     } catch(const std::bad_cast& e){
         // skip
