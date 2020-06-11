@@ -254,10 +254,6 @@ int OutputTime::get_parallel_current_step()
 }
 
 
-void OutputTime::add_dummy_fields()
-{}
-
-
 void OutputTime::gather_output_data(void)
 {
     /* for serial output call gather of all data sets */
