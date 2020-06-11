@@ -623,78 +623,15 @@ template<int spacedim, class Value>
 void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream) {
 	typedef typename Value::element_type ElemType;
 
-	std::shared_ptr<OutputMeshBase> output_mesh = stream->get_output_mesh_ptr();
-
-    ASSERT(output_mesh);
-
     OutputTime::OutputDataPtr output_data_base = stream->prepare_compute_data<ElemType>(this->name(), space_type,
     		(unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
-
 
     try{
         // try casting actual ElementDataCache
         auto output_data = std::dynamic_pointer_cast<ElementDataCache<ElemType>>(output_data_base);
-    
-    
-    /* Copy data to array */
-    switch(space_type) {
-    case OutputTime::NODE_DATA:
-    case OutputTime::CORNER_DATA: {
-    	unsigned int node_index = 0;
-        for(const auto & ele : *output_mesh )
-        {
-            std::vector<Space<3>::Point> vertices = ele.vertex_list();
-            for(unsigned int i=0; i < ele.n_nodes(); i++)
-            {
-                const Value &node_value =
-                        Value( const_cast<typename Value::return_type &>(
-                        		this->value(vertices[i],
-                                            ElementAccessor<spacedim>(ele.orig_mesh(), ele.orig_element_idx()) ))
-                             );
-                ASSERT_EQ(output_data->n_comp(), node_value.n_rows()*node_value.n_cols()).error();
-                output_data->store_value(node_index, node_value.mem_ptr() );
-                ++node_index;
-            }
-        }
-    }
-    break;
-    case OutputTime::ELEM_DATA: {
-        for(const auto & ele : *output_mesh )
-        {
-            unsigned int ele_index = ele.idx();
-            const Value &ele_value =
-                        Value( const_cast<typename Value::return_type &>(
-                        		this->value(ele.centre(),
-                                            ElementAccessor<spacedim>(ele.orig_mesh(), ele.orig_element_idx()))
-                                                                        )
-                             );
-            ASSERT_EQ(output_data->n_comp(), ele_value.n_rows()*ele_value.n_cols()).error();
-            output_data->store_value(ele_index, ele_value.mem_ptr() );
-        }
-    }
-    break;
-    case OutputTime::NATIVE_DATA: {
-        std::shared_ptr< FieldFE<spacedim, Value> > field_fe_ptr = this->get_field_fe();
+        fill_data_cache(space_type, stream, output_data);
 
-        if (field_fe_ptr) {
-            auto native_output_data_base = stream->prepare_compute_data<double>(this->name(), space_type,
-                    (unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
-            // try casting actual ElementDataCache
-            auto native_output_data = std::dynamic_pointer_cast<ElementDataCache<double>>(native_output_data_base);
-            field_fe_ptr->native_data_to_cache(*native_output_data);
-        } else {
-            WarningOut().fmt("Field '{}' of native data space type is not of type FieldFE. Output will be skipped.\n", this->name());
-        }
-    }
-    break;
-    case OutputTime::MESH_DEFINITION:
-    case OutputTime::UNDEFINED:
-        //should not happen
-    break;
-    }
-
-    } catch(const std::bad_cast& e)
-    {
+    } catch(const std::bad_cast& e){
         // skip
     }
 
@@ -703,6 +640,71 @@ void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_t
 
 }
 
+template<int spacedim, class Value>
+void Field<spacedim,Value>::fill_data_cache(OutputTime::DiscreteSpace space_type,
+                                            std::shared_ptr<OutputTime> stream,
+                                            std::shared_ptr<ElementDataCache<typename Value::element_type>> data_cache)
+{
+    std::shared_ptr<OutputMeshBase> output_mesh = stream->get_output_mesh_ptr();
+    ASSERT(output_mesh);
+
+    /* Copy data to array */
+    switch(space_type) {
+        case OutputTime::NODE_DATA:
+        case OutputTime::CORNER_DATA: {
+            unsigned int node_index = 0;
+            for(const auto & ele : *output_mesh )
+            {
+                std::vector<Space<3>::Point> vertices = ele.vertex_list();
+                for(unsigned int i=0; i < ele.n_nodes(); i++)
+                {
+                    const Value &node_value =
+                            Value( const_cast<typename Value::return_type &>(
+                                    this->value(vertices[i],
+                                                ElementAccessor<spacedim>(ele.orig_mesh(), ele.orig_element_idx()) ))
+                                );
+                    ASSERT_EQ(data_cache->n_comp(), node_value.n_rows()*node_value.n_cols()).error();
+                    data_cache->store_value(node_index, node_value.mem_ptr() );
+                    ++node_index;
+                }
+            }
+        }
+        break;
+        case OutputTime::ELEM_DATA: {
+            for(const auto & ele : *output_mesh )
+            {
+                unsigned int ele_index = ele.idx();
+                const Value &ele_value =
+                            Value( const_cast<typename Value::return_type &>(
+                                    this->value(ele.centre(),
+                                                ElementAccessor<spacedim>(ele.orig_mesh(), ele.orig_element_idx()))
+                                                                            )
+                                );
+                ASSERT_EQ(data_cache->n_comp(), ele_value.n_rows()*ele_value.n_cols()).error();
+                data_cache->store_value(ele_index, ele_value.mem_ptr() );
+            }
+        }
+        break;
+        case OutputTime::NATIVE_DATA: {
+            std::shared_ptr< FieldFE<spacedim, Value> > field_fe_ptr = this->get_field_fe();
+
+            if (field_fe_ptr) {
+                auto native_output_data_base = stream->prepare_compute_data<double>(this->name(), space_type,
+                        (unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
+                // try casting actual ElementDataCache
+                auto native_output_data = std::dynamic_pointer_cast<ElementDataCache<double>>(native_output_data_base);
+                field_fe_ptr->native_data_to_cache(*native_output_data);
+            } else {
+                WarningOut().fmt("Field '{}' of native data space type is not of type FieldFE. Output will be skipped.\n", this->name());
+            }
+        }
+        break;
+        case OutputTime::MESH_DEFINITION:
+        case OutputTime::UNDEFINED:
+            //should not happen
+        break;
+    }
+}
 
 template<int spacedim, class Value>
 std::shared_ptr< FieldFE<spacedim, Value> > Field<spacedim,Value>::get_field_fe() {
