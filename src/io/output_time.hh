@@ -196,7 +196,7 @@ public:
      * @param size       Size of data cache (used only if new cache is created and only for native data)
      */
     template <typename T>
-    ElementDataCache<T> & prepare_compute_data(std::string field_name, DiscreteSpace space_type, unsigned int n_rows, unsigned int n_cols);
+    OutputDataPtr prepare_compute_data(std::string field_name, DiscreteSpace space_type, unsigned int n_rows, unsigned int n_cols);
 
     /**
      * Return if output is serial or parallel
@@ -218,9 +218,6 @@ public:
     inline int n_proc() const {
         return this->n_proc_;
     }
-
-    /// Complete information about dummy fields, method has effect only for GMSH output.
-    virtual void add_dummy_fields();
 
 
 protected:
