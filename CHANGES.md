@@ -2,6 +2,19 @@ List of all changes in user interface and major internal changes.
 
 ***********************************************
 
+# Flow123d version 3.0.4
+(2020-06-16)
+
+
+### Bug fixes
+* incorrect values when exporting only pressure_p1 in Darcy Flow model
+* check and do not allow duplicit input record keys
+* no output of observe data when no equation output fields selected
+* when creating region from element ids, check the same dimension of elements
+* bug in output when applying DummyDataCache (ended with bad_cast)
+* give only warning when mesh contains unused nodes (not belonging to any elements)
+
+
 #Flow123d version 3.0.3
 (2019-09-02)
 
