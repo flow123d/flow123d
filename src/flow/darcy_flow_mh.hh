@@ -139,6 +139,7 @@ public:
     DECLARE_INPUT_EXCEPTION(ExcMissingTimeGovernor,
             << "Missing the key 'time', obligatory for the transient problems.");
 
+    double compute_full_residual();
     /** Class with all fields used in the equation DarcyFlow.
     * This is common to all implementations since this provides interface
     * to this equation for possible coupling.
@@ -219,6 +220,7 @@ public:
     	VectorMPI full_solution;     //< full solution [vel,press,lambda] from 2. Schur complement
         
         MultidimAssembly multidim_assembler;
+
     };
 
     /// Selection for enum MortarMethod.

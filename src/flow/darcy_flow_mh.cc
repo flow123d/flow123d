@@ -583,12 +583,23 @@ bool DarcyMH::zero_time_term(bool time_global) {
     }
 }
 
+double DarcyMH::compute_full_residual()
+{
+    Vec residual_;
+    VecDuplicate(schur0->get_solution(), &residual_);
+    MatMult(*schur0->get_matrix(), schur0->get_solution(), residual_);
+    VecAXPY(residual_,-1.0, *schur0->get_rhs());
+    double residual_norm;
+    VecNorm(residual_, NORM_2, &residual_norm);
+    return residual_norm;
+}
+
 
 void DarcyMH::solve_nonlinear()
 {
 
     assembly_linear_system();
-    double residual_norm = schur0->compute_residual();
+    double residual_norm = compute_full_residual();
     nonlinear_iteration_ = 0;
     MessageOut().fmt("[nonlinear solver] norm of initial residual: {}\n", residual_norm);
 
@@ -608,6 +619,7 @@ void DarcyMH::solve_nonlinear()
     }
     vector<double> convergence_history;
 
+    residual_norm = compute_full_residual();
     Vec save_solution;
     VecDuplicate(schur0->get_solution(), &save_solution);
     while (nonlinear_iteration_ < this->min_n_it_ ||
@@ -616,7 +628,7 @@ void DarcyMH::solve_nonlinear()
         convergence_history.push_back(residual_norm);
 
         // stagnation test
-        if (convergence_history.size() >= 5 &&
+        /*if (convergence_history.size() >= 5 &&
             convergence_history[ convergence_history.size() - 1]/convergence_history[ convergence_history.size() - 2] > 0.9 &&
             convergence_history[ convergence_history.size() - 1]/convergence_history[ convergence_history.size() - 5] > 0.8) {
             // stagnation
@@ -626,7 +638,7 @@ void DarcyMH::solve_nonlinear()
             } else {
                 THROW(ExcSolverDiverge() << EI_Reason("Stagnation."));
             }
-        }
+        }*/
 
         if (! is_linear_common)
             VecCopy( schur0->get_solution(), save_solution);
@@ -650,7 +662,7 @@ void DarcyMH::solve_nonlinear()
         //OLD_ASSERT( si.converged_reason >= 0, "Linear solver failed to converge. Convergence reason %d \n", si.converged_reason );
         assembly_linear_system();
 
-        residual_norm = schur0->compute_residual();
+        residual_norm = compute_full_residual();
         MessageOut().fmt("[nonlinear solver] it: {} lin. it: {}, reason: {}, residual: {}\n",
         		nonlinear_iteration_, si.n_iterations, si.converged_reason, residual_norm);
     }
