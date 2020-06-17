@@ -46,7 +46,7 @@ DOFHandlerBase::~DOFHandlerBase()
 
 
 
-DOFHandlerMultiDim::DOFHandlerMultiDim(Mesh& _mesh, bool make_elem_part)
+DOFHandlerMultiDim::DOFHandlerMultiDim(MeshBase& _mesh, bool make_elem_part)
 	: DOFHandlerBase(_mesh),
 	  ds_(nullptr),
 	  is_parallel_(true),
@@ -580,7 +580,7 @@ void DOFHandlerMultiDim::make_elem_partitioning()
     // create local array of neighbours
 	for (unsigned int inb=0; inb<mesh_->n_vb_neighbours(); inb++)
 	{
-		Neighbour *nb = &mesh_->vb_neighbours_[inb];
+		const Neighbour *nb = &mesh_->vb_neighbour(inb);
 		if ( el_is_local(nb->element().idx())
 				|| el_is_local(nb->side()->element().idx()) )
 			nb_4_loc.push_back(inb);
@@ -623,7 +623,7 @@ void DOFHandlerMultiDim::make_elem_partitioning()
     }
     for (auto nb : nb_4_loc)
     {
-        auto cell = mesh_->vb_neighbours_[nb].element();
+        auto cell = mesh_->vb_neighbour(nb).element();
         if (!el_is_local(cell.idx()) && find(ghost_4_loc.begin(), ghost_4_loc.end(), cell.idx()) == ghost_4_loc.end())
         {
             ghost_4_loc.push_back(cell.idx());
@@ -631,7 +631,7 @@ void DOFHandlerMultiDim::make_elem_partitioning()
             ghost_proc_el[cell.proc()].push_back(cell.idx());
             global_to_local_el_idx_[cell.idx()] = el_ds_->lsize() - 1 + ghost_4_loc.size();
         }
-        cell = mesh_->vb_neighbours_[nb].side()->element();
+        cell = mesh_->vb_neighbour(nb).side()->element();
         if (!el_is_local(cell.idx()) && find(ghost_4_loc.begin(), ghost_4_loc.end(), cell.idx()) == ghost_4_loc.end())
         {
             ghost_4_loc.push_back(cell.idx());

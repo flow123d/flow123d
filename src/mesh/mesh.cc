@@ -97,8 +97,19 @@ const IT::Record & Mesh::get_input_type() {
 
 const unsigned int Mesh::undef_idx;
 
+MeshBase::MeshBase()
+: tree(nullptr)
+{}
+
+
+MeshBase::~MeshBase()
+{
+    if (tree != nullptr) delete tree;
+}
+
+
 Mesh::Mesh()
-: tree(nullptr),
+: MeshBase(),
   bulk_size_(0),
   nodes_(3, 1, 0),
   row_4_el(nullptr),
@@ -113,7 +124,7 @@ Mesh::Mesh()
 
 
 Mesh::Mesh(Input::Record in_record, MPI_Comm com)
-: tree(nullptr),
+: MeshBase(),
   in_record_(in_record),
   comm_(com),
   bulk_size_(0),
@@ -223,7 +234,6 @@ Mesh::~Mesh() {
     if (node_4_loc_ != nullptr) delete[] node_4_loc_;
     if (node_ds_ != nullptr) delete node_ds_;
     if (bc_mesh_ != nullptr) delete bc_mesh_;
-    if (tree != nullptr) delete tree;
 }
 
 
@@ -1353,6 +1363,18 @@ void Mesh::distribute_nodes() {
     node_ds_->get_lsizes_array(); // need to initialize lsizes data member
     n_local_nodes_ = n_local_nodes;
 
+}
+
+
+const Element &Mesh::element(unsigned idx) const
+{
+    return element_vec_[idx];
+}
+
+
+const Neighbour &Mesh::vb_neighbour(unsigned int nb) const
+{ 
+    return vb_neighbours_[nb];
 }
 
 //-----------------------------------------------------------------------------

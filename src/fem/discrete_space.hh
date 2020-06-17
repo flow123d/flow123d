@@ -26,7 +26,7 @@
 template<unsigned int dim> class FiniteElement;
 template<IntDim dim>
 using FEPtr = std::shared_ptr<FiniteElement<dim>>;
-class Mesh;
+class MeshBase;
 
 
 /**
@@ -68,10 +68,10 @@ public:
 protected:
   
   /// Constructor.
-  DiscreteSpace(Mesh *mesh)
+  DiscreteSpace(MeshBase *mesh)
   : mesh_(mesh) {}
   
-  Mesh *mesh_;
+  MeshBase *mesh_;
 
 };
 
@@ -82,7 +82,7 @@ protected:
  */
 class EqualOrderDiscreteSpace : public DiscreteSpace {
 public:
-  EqualOrderDiscreteSpace(Mesh *mesh, MixedPtr<FiniteElement> fe)
+  EqualOrderDiscreteSpace(MeshBase *mesh, MixedPtr<FiniteElement> fe)
   : DiscreteSpace(mesh), fe_(fe),
     _n_elem_dofs(4, 0),
     _n_edge_dofs(4, 0),

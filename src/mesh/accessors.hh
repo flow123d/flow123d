@@ -102,10 +102,10 @@ public:
     ElementAccessor();
 
     /// Regional accessor.
-    ElementAccessor(const Mesh *mesh, RegionIdx r_idx);
+    ElementAccessor(const MeshBase *mesh, RegionIdx r_idx);
 
     /// Element accessor.
-    ElementAccessor(const Mesh *mesh, unsigned int idx);
+    ElementAccessor(const MeshBase *mesh, unsigned int idx);
 
     /// Incremental function of the Element iterator.
     void inc();
@@ -158,7 +158,7 @@ public:
         { return dim_; }
 
     const Element * element() const {
-        return &(mesh_->element_vec_[element_idx_]);
+        return &(mesh_->element(element_idx_));
     }
     
 
@@ -179,7 +179,7 @@ public:
 
     /// Return local idx of element in boundary / bulk part of element vector
     unsigned int idx() const {
-        if (boundary_) return ( element_idx_ - mesh_->bulk_size_ );
+        if (boundary_) return ( element_idx_ - mesh_->n_elements() );
         else return element_idx_;
     }
 
@@ -229,7 +229,7 @@ public:
  @endcode
      */
     const Element * operator ->() const {
-    	return &(mesh_->element_vec_[element_idx_]);
+    	return &(mesh_->element(element_idx_));
     }
     
 
@@ -244,7 +244,7 @@ private:
     unsigned int dim_;
 
     /// Pointer to the mesh owning the element.
-    const Mesh *mesh_;
+    const MeshBase *mesh_;
     /// True if the element is boundary
     bool boundary_;
 
@@ -364,7 +364,7 @@ public:
     Side();
 
     /// Valid edge accessor constructor.
-    Side(const Mesh * mesh, unsigned int elem_idx, unsigned int set_lnum);
+    Side(const MeshBase * mesh, unsigned int elem_idx, unsigned int set_lnum);
 
     double measure() const;    ///< Calculate metrics of the side
     arma::vec3 centre() const; ///< Centre of side
@@ -408,7 +408,7 @@ public:
     { return dim()+1; }
 
     /// Returns pointer to the mesh.
-    const Mesh * mesh() const
+    const MeshBase * mesh() const
     { return this->mesh_; }
 
     /// Returns local index of the side on the element.
@@ -448,7 +448,7 @@ private:
 
     // Topology of the mesh
 
-    const Mesh * mesh_;     ///< Pointer to Mesh to which belonged
+    const MeshBase * mesh_;     ///< Pointer to Mesh to which belonged
     unsigned int elem_idx_; ///< Index of element in Mesh::element_vec_
     unsigned int side_idx_; ///< Local # of side in element  (to remove it, we heve to remove calc_side_rhs)
 

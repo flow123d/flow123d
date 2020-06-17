@@ -71,11 +71,49 @@ public:
     static Input::Type::Record input_type;
 };
 
+
+/// Base class for Mesh and BCMesh.
+class MeshBase {
+public:
+
+    MeshBase();
+    ~MeshBase();
+
+    virtual unsigned int n_edges() const = 0;
+    virtual unsigned int n_elements(bool boundary=false) const = 0;
+    virtual unsigned int n_nodes() const = 0;
+    virtual unsigned int n_vb_neighbours() const = 0;
+
+    virtual LongIdx *get_el_4_loc() const = 0;
+    virtual LongIdx *get_row_4_el() const = 0;
+    virtual Distribution *get_el_ds() const = 0;
+
+    virtual const Element &element(unsigned idx) const = 0;
+    virtual NodeAccessor<3> node(unsigned int idx) const = 0;
+    virtual Edge edge(uint edge_idx) const = 0;
+    virtual Boundary boundary(uint edge_idx) const = 0;
+    virtual const Neighbour &vb_neighbour(unsigned int nb) const = 0;
+    virtual ElementAccessor<3> element_accessor(unsigned int idx) const = 0;
+    virtual Range<Edge> edge_range() const = 0;
+    virtual Range<ElementAccessor<3>> elements_range() const = 0;
+
+    virtual void check_element_size(unsigned int elem_idx) const = 0;
+    virtual int find_elem_id(unsigned int pos) const = 0;
+    
+    virtual const std::vector<unsigned int> &get_side_nodes(unsigned int dim, unsigned int side) const = 0;
+    virtual BCMesh *get_bc_mesh() = 0;
+    virtual const RegionDB &region_db() const = 0;
+    
+
+    DuplicateNodes *tree;
+
+};
+
 //=============================================================================
 // STRUCTURE OF THE MESH
 //=============================================================================
 
-class Mesh {
+class Mesh : public MeshBase {
 public:
     TYPEDEF_ERR_INFO( EI_ElemLast, int);
     TYPEDEF_ERR_INFO( EI_ElemNew, int);
@@ -123,7 +161,7 @@ public:
     /// Destructor.
     virtual ~Mesh();
 
-    virtual inline unsigned int n_nodes() const {
+    virtual inline unsigned int n_nodes() const override {
         return nodes_.size();
     }
 
@@ -131,16 +169,16 @@ public:
         return boundary_.size();
     }
 
-    inline unsigned int n_edges() const {
+    inline unsigned int n_edges() const override {
         return edges.size();
     }
 
-    Edge edge(uint edge_idx) const;
-    Boundary boundary(uint edge_idx) const;
+    Edge edge(uint edge_idx) const override;
+    Boundary boundary(uint edge_idx) const override;
 
     unsigned int n_corners();
 
-    inline const RegionDB &region_db() const {
+    inline const RegionDB &region_db() const override {
         return region_db_;
     }
 
@@ -151,13 +189,13 @@ public:
 
     virtual const LongIdx *get_local_part();
 
-    Distribution *get_el_ds() const
+    Distribution *get_el_ds() const override
     { return el_ds; }
 
-    LongIdx *get_row_4_el() const
+    LongIdx *get_row_4_el() const override
     { return row_4_el; }
 
-    LongIdx *get_el_4_loc() const
+    LongIdx *get_el_4_loc() const override
     { return el_4_loc; }
 
     Distribution *get_node_ds() const
@@ -179,7 +217,11 @@ public:
 
     unsigned int n_sides() const;
 
-    unsigned int n_vb_neighbours() const;
+    unsigned int n_vb_neighbours() const override;
+
+    const Element &element(unsigned idx) const override;
+
+    const Neighbour &vb_neighbour(unsigned int nb) const override;
 
     /**
      * Returns maximal number of sides of one edge, which connects elements of dimension @p dim.
@@ -216,10 +258,10 @@ public:
     virtual bool check_compatible_mesh( Mesh & mesh, vector<LongIdx> & bulk_elements_id, vector<LongIdx> & boundary_elements_id );
 
     /// Create and return ElementAccessor to element of given idx
-    virtual ElementAccessor<3> element_accessor(unsigned int idx) const;
+    virtual ElementAccessor<3> element_accessor(unsigned int idx) const override;
 
     /// Create and return NodeAccessor to node of given idx
-    NodeAccessor<3> node(unsigned int idx) const;
+    NodeAccessor<3> node(unsigned int idx) const override;
 
     /**
      * Reads elements and their affiliation to regions and region sets defined by user in input file
@@ -252,7 +294,7 @@ public:
      */
     vector<vector<unsigned int> >  master_elements;
     
-    DuplicateNodes *tree;
+    
 
     /**
      * Vector of compatible neighbourings.
@@ -325,16 +367,16 @@ public:
     void init_node_vector(unsigned int size);
 
     /// Returns range of bulk elements
-    virtual Range<ElementAccessor<3>> elements_range() const;
+    virtual Range<ElementAccessor<3>> elements_range() const override;
 
     /// Returns range of nodes
     Range<NodeAccessor<3>> node_range() const;
 
     /// Returns range of edges
-    Range<Edge> edge_range() const;
+    Range<Edge> edge_range() const override;
 
     /// Returns count of boundary or bulk elements
-    virtual unsigned int n_elements(bool boundary=false) const {
+    virtual unsigned int n_elements(bool boundary=false) const override {
     	if (boundary) return element_ids_.size()-bulk_size_;
     	else return bulk_size_;
     }
@@ -349,7 +391,7 @@ public:
     }
 
     /// Return element id (in GMSH file) of element of given position in element vector.
-    inline int find_elem_id(unsigned int pos) const
+    inline int find_elem_id(unsigned int pos) const override
     {
         return element_ids_[pos];
     }
@@ -367,7 +409,7 @@ public:
     }
 
     /// Check if given index is in element_vec_
-    void check_element_size(unsigned int elem_idx) const;
+    void check_element_size(unsigned int elem_idx) const override;
 
     /// Create boundary elements from data of temporary structure, this method MUST be call after read mesh from
     void create_boundary_elements();
@@ -379,7 +421,10 @@ public:
     void permute_triangle(unsigned int elm_idx, std::vector<unsigned int> permutation_vec);
 
     /// Create boundary mesh if doesn't exist and return it.
-    BCMesh *get_bc_mesh();
+    BCMesh *get_bc_mesh() override;
+
+    const std::vector<unsigned int> &get_side_nodes(unsigned int dim, unsigned int side) const override
+    { return side_nodes[dim][side]; }
 
 protected:
 

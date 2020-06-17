@@ -576,7 +576,7 @@ void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>
 	double total_measure;
 	double measure = 0;
 
-	Mesh *mesh;
+	MeshBase *mesh;
 	if (this->boundary_domain_) mesh = dh_->mesh()->get_bc_mesh();
 	else mesh = dh_->mesh();
 	for (auto elm : mesh->elements_range()) {

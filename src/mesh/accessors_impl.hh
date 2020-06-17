@@ -30,7 +30,7 @@ ElementAccessor<spacedim>::ElementAccessor()
  * Regional accessor.
  */
 template <int spacedim> inline
-ElementAccessor<spacedim>::ElementAccessor(const Mesh *mesh, RegionIdx r_idx)
+ElementAccessor<spacedim>::ElementAccessor(const MeshBase *mesh, RegionIdx r_idx)
 : dim_(undefined_dim_),
   mesh_(mesh),
   r_idx_(r_idx)
@@ -40,7 +40,7 @@ ElementAccessor<spacedim>::ElementAccessor(const Mesh *mesh, RegionIdx r_idx)
  * Element accessor.
  */
 template <int spacedim> inline
-ElementAccessor<spacedim>::ElementAccessor(const Mesh *mesh, unsigned int idx)
+ElementAccessor<spacedim>::ElementAccessor(const MeshBase *mesh, unsigned int idx)
 : mesh_(mesh),
   boundary_(idx>=mesh->n_elements()),
   element_idx_(idx),
@@ -204,7 +204,7 @@ inline Side::Side()
 : mesh_(NULL), elem_idx_(0), side_idx_(0)
 {}
 
-inline Side::Side(const Mesh * mesh, unsigned int elem_idx, unsigned int set_lnum)
+inline Side::Side(const MeshBase * mesh, unsigned int elem_idx, unsigned int set_lnum)
 : mesh_(mesh), elem_idx_(elem_idx), side_idx_(set_lnum)
 {
 	mesh_->check_element_size(elem_idx);
@@ -225,7 +225,7 @@ inline bool Side::is_boundary() const {
 }
 
 inline NodeAccessor<3> Side::node(unsigned int i) const {
-    int i_n = mesh_->side_nodes[dim()][side_idx_][i];
+    int i_n = mesh_->get_side_nodes(dim(), side_idx_)[i];
 
     return element().node( i_n );
 }
