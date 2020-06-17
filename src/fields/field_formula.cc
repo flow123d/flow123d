@@ -85,8 +85,7 @@ FieldFormula<spacedim, Value>::FieldFormula( unsigned int n_comp)
     }
     b_parser_.reserve(this->value_.n_rows()*this->value_.n_cols());
     for(unsigned int i=0; i < this->value_.n_rows()*this->value_.n_cols(); i++) {
-        bparser::Parser parser(FieldFormula<spacedim, Value>::bparser_vec_size);
-    	b_parser_.push_back( parser );
+        b_parser_.emplace_back( FieldFormula<spacedim, Value>::bparser_vec_size );
     }
 }
 
