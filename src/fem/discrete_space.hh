@@ -41,7 +41,7 @@ class MeshBase;
 class DiscreteSpace {
 public:
     
-  /// Number of dofs associated to node. @p nid is the node index in the mesh tree.
+  /// Number of dofs associated to node. @p nid is the node index in the mesh duplicate_nodes object.
   virtual unsigned int n_node_dofs(unsigned int nid) const = 0;
 
   /// Number of dofs associated to edge.
@@ -101,7 +101,7 @@ public:
   {return _n_edge_dofs[edge.side(0)->dim() + 1];}
   
   unsigned int n_node_dofs(unsigned int nid) const override
-  {return _n_node_dofs[mesh_->tree->node_dim()[nid]];}
+  {return _n_node_dofs[mesh_->duplicate_nodes()->node_dim()[nid]];}
   
   MixedPtr<FiniteElement> fe(const ElementAccessor<3> &cell) const override;
   

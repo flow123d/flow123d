@@ -97,35 +97,25 @@ const IT::Record & Mesh::get_input_type() {
 
 const unsigned int Mesh::undef_idx;
 
-MeshBase::MeshBase()
-: tree(nullptr)
-{}
-
-
-MeshBase::~MeshBase()
-{
-    if (tree != nullptr) delete tree;
-}
 
 
 Mesh::Mesh()
-: MeshBase(),
-  bulk_size_(0),
+: bulk_size_(0),
   nodes_(3, 1, 0),
   row_4_el(nullptr),
   el_4_loc(nullptr),
   el_ds(nullptr),
   node_4_loc_(nullptr),
   node_ds_(nullptr),  
-  bc_mesh_(nullptr)
+  bc_mesh_(nullptr),
+  duplicate_nodes_(nullptr)
   
 {}
 
 
 
 Mesh::Mesh(Input::Record in_record, MPI_Comm com)
-: MeshBase(),
-  in_record_(in_record),
+: in_record_(in_record),
   comm_(com),
   bulk_size_(0),
   nodes_(3, 1, 0),
@@ -134,7 +124,8 @@ Mesh::Mesh(Input::Record in_record, MPI_Comm com)
   el_ds(nullptr),
   node_4_loc_(nullptr),
   node_ds_(nullptr),
-  bc_mesh_(nullptr)
+  bc_mesh_(nullptr),
+  duplicate_nodes_(nullptr)
 {
 	// set in_record_, if input accessor is empty
 	if (in_record_.is_empty()) {
@@ -234,6 +225,7 @@ Mesh::~Mesh() {
     if (node_4_loc_ != nullptr) delete[] node_4_loc_;
     if (node_ds_ != nullptr) delete node_ds_;
     if (bc_mesh_ != nullptr) delete bc_mesh_;
+    if (duplicate_nodes_ != nullptr) delete duplicate_nodes_;
 }
 
 
@@ -406,7 +398,7 @@ void Mesh::setup_topology() {
     make_edge_permutations();
     count_side_types();
     
-    tree = new DuplicateNodes(this);
+    duplicate_nodes_ = new DuplicateNodes(this);
 
     part_ = std::make_shared<Partitioning>(this, in_record_.val<Input::Record>("partitioning") );
 

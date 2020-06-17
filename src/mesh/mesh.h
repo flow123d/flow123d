@@ -76,9 +76,6 @@ public:
 class MeshBase {
 public:
 
-    MeshBase();
-    ~MeshBase();
-
     virtual unsigned int n_edges() const = 0;
     virtual unsigned int n_elements(bool boundary=false) const = 0;
     virtual unsigned int n_nodes() const = 0;
@@ -103,9 +100,7 @@ public:
     virtual const std::vector<unsigned int> &get_side_nodes(unsigned int dim, unsigned int side) const = 0;
     virtual BCMesh *get_bc_mesh() = 0;
     virtual const RegionDB &region_db() const = 0;
-    
-
-    DuplicateNodes *tree;
+    virtual const DuplicateNodes *duplicate_nodes() const = 0;
 
 };
 
@@ -426,6 +421,9 @@ public:
     const std::vector<unsigned int> &get_side_nodes(unsigned int dim, unsigned int side) const override
     { return side_nodes[dim][side]; }
 
+    const DuplicateNodes *duplicate_nodes() const override
+    { return duplicate_nodes_; }
+
 protected:
 
     /**
@@ -611,6 +609,8 @@ private:
 	BCMesh *bc_mesh_;
         
     ofstream raw_ngh_output_file;
+
+    DuplicateNodes *duplicate_nodes_;
 };
 
 #endif
