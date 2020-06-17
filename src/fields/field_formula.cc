@@ -24,6 +24,7 @@
 #include "input/input_type.hh"
 #include "include/arena_alloc.hh"       // bparser
 #include <boost/foreach.hpp>
+#include <boost/algorithm/string/replace.hpp>
 
 
 /// Implementation.
@@ -298,7 +299,12 @@ void FieldFormula<spacedim, Value>::cache_reinit(const ElementCacheMap &cache_ma
         for(unsigned int col=0; col < this->value_.n_cols(); col++) {
             // set expression and data to BParser
             unsigned int i_p = row*this->value_.n_cols()+col;
-            b_parser_[i_p].parse(formula_matrix_.at(row,col));
+            //b_parser_[i_p].parse(formula_matrix_.at(row,col));
+            std::string expr = formula_matrix_.at(row,col); // Need replace some operations to be compilable in BParser.
+                                                            // It will be solved by conversion script after remove fparser, but
+                                                            // we mix using of BParser and fparser and need this solution now.
+            boost::replace_all(expr, "^", "**");
+            b_parser_[i_p].parse( expr );
             b_parser_[i_p].set_constant("Pi", {}, {3.14159265358979323846});
             b_parser_[i_p].set_constant("E",  {}, {2.71828182845904523536});
             b_parser_[i_p].set_variable("x",  {}, x_);
