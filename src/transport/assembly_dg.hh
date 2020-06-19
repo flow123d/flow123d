@@ -1529,7 +1529,7 @@ public:
                     {
                         auto p_bdr = p.point_bdr(bc_elm);
                         double bc_term = data_->cross_section(p) * (data_->bc_robin_sigma[sbi](p_bdr)*data_->bc_dirichlet_value[sbi](p_bdr) +
-                                (-data_->bc_flux[sbi](p_bdr))) * fe_values_side_.JxW(k);
+                                data_->bc_flux[sbi](p_bdr)) * fe_values_side_.JxW(k);
                         //double bc_term = csection_[k]*(sigma_[k]*bc_ref_values_[k]+bc_fluxes_[k])*fe_values_side_.JxW(k);
                         for (unsigned int i=0; i<ndofs_; i++)
                             local_rhs_[i] += bc_term*fe_values_side_.shape_value(i,k);
@@ -1560,7 +1560,7 @@ public:
                     {
                         auto p_bdr = p.point_bdr(bc_elm);
                         double bc_term = data_->cross_section(p) * (data_->bc_robin_sigma[sbi](p_bdr)*data_->bc_dirichlet_value[sbi](p_bdr) +
-                                (-data_->bc_flux[sbi](p_bdr))) * fe_values_side_.JxW(k);
+                                data_->bc_flux[sbi](p_bdr)) * fe_values_side_.JxW(k);
                         //double bc_term = csection_[k]*(sigma_[k]*bc_ref_values_[k]+bc_fluxes_[k])*fe_values_side_.JxW(k);
                         for (unsigned int i=0; i<ndofs_; i++)
                             local_rhs_[i] += bc_term*fe_values_side_.shape_value(i,k);
