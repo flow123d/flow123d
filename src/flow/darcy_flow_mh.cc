@@ -591,7 +591,16 @@ double DarcyMH::compute_full_residual()
     VecAXPY(residual_,-1.0, *schur0->get_rhs());
     double residual_norm;
     VecNorm(residual_, NORM_2, &residual_norm);
+    VecDestroy(&residual_);
     return residual_norm;
+}
+
+Vec DarcyMH::compute_full_residual_vec()
+{
+    Vec residual_;
+    VecDuplicate(schur0->get_solution(), &residual_);
+    MatMult(*schur0->get_matrix(), schur0->get_solution(), residual_);
+    return residual_;
 }
 
 
@@ -628,7 +637,7 @@ void DarcyMH::solve_nonlinear()
         convergence_history.push_back(residual_norm);
 
         // stagnation test
-        /*if (convergence_history.size() >= 5 &&
+        if (convergence_history.size() >= 5 &&
             convergence_history[ convergence_history.size() - 1]/convergence_history[ convergence_history.size() - 2] > 0.9 &&
             convergence_history[ convergence_history.size() - 1]/convergence_history[ convergence_history.size() - 5] > 0.8) {
             // stagnation
@@ -638,7 +647,7 @@ void DarcyMH::solve_nonlinear()
             } else {
                 THROW(ExcSolverDiverge() << EI_Reason("Stagnation."));
             }
-        }*/
+        }
 
         if (! is_linear_common)
             VecCopy( schur0->get_solution(), save_solution);

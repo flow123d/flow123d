@@ -139,7 +139,6 @@ public:
     DECLARE_INPUT_EXCEPTION(ExcMissingTimeGovernor,
             << "Missing the key 'time', obligatory for the transient problems.");
 
-    double compute_full_residual();
     /** Class with all fields used in the equation DarcyFlow.
     * This is common to all implementations since this provides interface
     * to this equation for possible coupling.
@@ -379,6 +378,8 @@ protected:
 private:
   /// Registrar of class to factory
   static const int registrar;
+  double compute_full_residual();
+  Vec compute_full_residual_vec();
 };
 
 
