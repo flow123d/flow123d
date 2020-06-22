@@ -641,7 +641,7 @@ void Mesh::make_neighbours_and_edges()
                         std::fill( elm.boundary_idx_, elm.boundary_idx_ + e->n_sides(), Mesh::undef_idx);
                     }
 
-                    unsigned int bdr_idx=boundary_.size()+1; // need for VTK mesh that has no boundary elements
+                    unsigned int bdr_idx=boundary_.size();   // need for VTK mesh that has no boundary elements
                                                              // and bulk elements are indexed from 0
                     boundary_.resize(bdr_idx+1);
                     BoundaryData &bdr=boundary_.back();
