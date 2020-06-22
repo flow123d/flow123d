@@ -641,7 +641,7 @@ void Mesh::make_neighbours_and_edges()
                         std::fill( elm.boundary_idx_, elm.boundary_idx_ + e->n_sides(), Mesh::undef_idx);
                     }
 
-                    unsigned int bdr_idx=boundary_.size();   // need for VTK mesh that has no boundary elements
+                    unsigned int bdr_idx=boundary_.size()+1; // need for VTK mesh that has no boundary elements
                                                              // and bulk elements are indexed from 0
                     boundary_.resize(bdr_idx+1);
                     BoundaryData &bdr=boundary_.back();
@@ -780,6 +780,7 @@ void Mesh::make_edge_permutations()
 
 	for (vector<BoundaryData>::iterator bdr=boundary_.begin(); bdr!=boundary_.end(); bdr++)
 	{
+        if (bdr->bc_ele_idx_ >= element_vec_.size()) continue; // skip invalid boundary item
         Edge edg = this->edge(bdr->edge_idx_);
         ElementAccessor<3> bdr_elm = this->element_accessor(bdr->bc_ele_idx_);
 
