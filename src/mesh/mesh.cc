@@ -777,6 +777,44 @@ void Mesh::make_edge_permutations()
 			break;
 		}
 	}
+
+	for (vector<BoundaryData>::iterator bdr=boundary_.begin(); bdr!=boundary_.end(); bdr++)
+	{
+        Edge edg = this->edge(bdr->edge_idx_);
+        ElementAccessor<3> bdr_elm = this->element_accessor(bdr->bc_ele_idx_);
+
+        // node numbers is the local index of the node on the last side
+        // this maps the side nodes to the nodes of the side(0)
+        unsigned int n_side_nodes = bdr_elm->n_nodes();
+        unsigned int permutation[n_side_nodes];
+        node_numbers.clear();
+
+        // boundary element (lower dim) is reference, so
+        // we calculate permutation for the adjacent side
+        for (unsigned int i=0; i<n_side_nodes; i++) {
+            node_numbers[bdr_elm.node(i).idx()] = i;
+        }
+
+        for (uint sid=0; sid<edg.n_sides(); sid++)
+        {
+            for (uint i=0; i<n_side_nodes; i++) {
+                permutation[node_numbers[edg.side(sid)->node(i).idx()]] = i;
+            }
+
+            switch (bdr_elm.dim())
+            {
+            case 0:
+                edg.side(sid)->element()->permutation_idx_[edg.side(sid)->side_idx()] = RefElement<1>::permutation_index(permutation);
+                break;
+            case 1:
+                edg.side(sid)->element()->permutation_idx_[edg.side(sid)->side_idx()] = RefElement<2>::permutation_index(permutation);
+                break;
+            case 2:
+                edg.side(sid)->element()->permutation_idx_[edg.side(sid)->side_idx()] = RefElement<3>::permutation_index(permutation);
+                break;
+            }
+        }
+    }
 }
 
 
