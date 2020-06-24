@@ -959,7 +959,7 @@ public:
                     } // */
                     for (auto p1 : data_->stiffness_assembly_->edge_integral(dim)->points(edge_side1, &(data_->stiffness_assembly_->cache_map())) )
                     {
-                        auto p2 = p1.point_on(edge_side1);
+                        auto p2 = p1.point_on(edge_side2);
                         delta[0] += dot(data_->diffusion_coef[sbi](p1)*normal_vector,normal_vector);
                         delta[1] += dot(data_->diffusion_coef[sbi](p2)*normal_vector,normal_vector);
                     }
@@ -1005,7 +1005,7 @@ public:
                             for (auto p1 : data_->stiffness_assembly_->edge_integral(dim)->points(edge_side1, &(data_->stiffness_assembly_->cache_map())) )
                             //for (unsigned int k=0; k<qsize_lower_dim_; k++)
                             {
-                                auto p2 = p1.point_on(edge_side1);
+                                auto p2 = p1.point_on(edge_side2);
                                 double flux_times_JxW = transport_flux*fe_values_vec_[0].JxW(k);
                                 double gamma_times_JxW = gamma_l*fe_values_vec_[0].JxW(k);
 
@@ -1016,7 +1016,7 @@ public:
                                     double JxW_jump_i = fe_values_vec_[0].JxW(k)*JUMP(i,k,n);
                                     double JxW_var_wavg_i = fe_values_vec_[0].JxW(k) *
                                             //arma::dot(data_->dif_coef_edg[sd[n]][sbi][k]*fe_values_vec_[sd[n]].shape_grad(i,k),nv) *
-                                            arma::dot(data_->diffusion_coef[sbi](p2)*fe_values_vec_[sd[n]].shape_grad(i,k),nv) *
+                                            arma::dot(data_->diffusion_coef[sbi]( (n==0 ? p1 : p2) )*fe_values_vec_[sd[n]].shape_grad(i,k),nv) *
                                             omega[n] * data_->dg_variant;
 
                                     for (unsigned int j=0; j<fe_values_vec_[sd[m]].n_dofs(); j++)
@@ -1031,7 +1031,7 @@ public:
 
                                         // terms due to diffusion
                                         //local_matrix_[index] -= arma::dot(data_->dif_coef_edg[sd[m]][sbi][k]*fe_values_vec_[sd[m]].shape_grad(j,k),nv) * omega[m] * JxW_jump_i;
-                                        local_matrix_[index] -= arma::dot(data_->diffusion_coef[sbi](p1)*fe_values_vec_[sd[m]].shape_grad(j,k),nv) * omega[m] * JxW_jump_i;
+                                        local_matrix_[index] -= arma::dot(data_->diffusion_coef[sbi]( (m==0 ? p1 : p2) )*fe_values_vec_[sd[m]].shape_grad(j,k),nv) * omega[m] * JxW_jump_i;
                                         local_matrix_[index] -= JUMP(j,k,m)*JxW_var_wavg_i;
                                     }
                                 }
