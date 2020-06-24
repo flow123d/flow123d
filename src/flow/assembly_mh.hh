@@ -259,7 +259,7 @@ protected:
                     dirichlet_edge[i] = 2;  // to be skipped in LMH source assembly
                     loc_system_.add_value(edge_row, edge_row,
                                             -b_ele.measure() * bc_sigma * cross_section,
-                                            (bc_flux - bc_sigma * bc_pressure) * b_ele.measure() * cross_section);
+                                            -(bc_flux - bc_sigma * bc_pressure) * b_ele.measure() * cross_section);
                 }
                 else if (type==DarcyMH::EqData::seepage) {
                     ad_->is_linear=false;
@@ -358,11 +358,12 @@ protected:
         double conduct =  ad_->conductivity.value(ele.centre(), ele);
 	    double bet =  ad_->beta.value(ele.centre(), ele);
 	    auto w = ad_->field_ele_velocity.value(ele.centre(), ele);
-        double scale = 1 / cs /conduct + bet * arma::norm(w) / cs;
+        auto an = ad_->anisotropy.value(ele.centre(), ele );
+        arma::mat33 scale = an.i() / cs / conduct + bet * arma::norm(w) * arma::eye(3,3) / cs; //inverze an
         assemble_sides_scale(dh_cell, scale);
     }
     
-    void assemble_sides_scale(const DHCellAccessor& dh_cell, double scale)
+    void assemble_sides_scale(const DHCellAccessor& dh_cell, arma::mat33 scale)
     {
         arma::vec3 &gravity_vec = ad_->gravity_vec_;
         const ElementAccessor<3> ele = dh_cell.elm();
@@ -381,10 +382,9 @@ protected:
                 
                 for (unsigned int j=0; j<ndofs; j++){
                     double mat_val = 
-                        arma::dot(velocity.value(i,k), //TODO: compute anisotropy before
-                                    (ad_->anisotropy.value(ele.centre(), ele )).i()
-                                        * velocity.value(j,k))
-                        * scale * fe_values_.JxW(k);
+                        arma::dot(velocity.value(i,k), 
+                                        scale * velocity.value(j,k))
+                        * fe_values_.JxW(k);
                     
                     loc_system_.add_value(i, j, mat_val);
                 }
@@ -693,8 +693,7 @@ protected:
                     
                     dirichlet_edge[i] = 2;  // to be skipped in LMH source assembly
                     loc_system_.add_value(edge_row, edge_row,
-                                            -b_ele.measure() * bc_sigma * cross_section,
-                                            (bc_flux - bc_sigma * bc_pressure) * b_ele.measure() * cross_section);
+                                            -b_ele.measure() * bc_sigma * cross_section);
                 }
                 else if (type==DarcyMH::EqData::seepage) {
                     ad_->is_linear=false;
@@ -746,11 +745,7 @@ protected:
                             //DebugOut().fmt("x: {}, dirich, bcp: {}\n", b_ele.centre()[0], bc_pressure);
                             loc_system_.set_solution(loc_edge_dofs[i],bc_pressure, -1);
                             dirichlet_edge[i] = 1;
-                        } else {
-                            //DebugOut()("x: {}, neuman, q: {}  bcq: {}\n", b_ele.centre()[0], side_flux, bc_flux);
-                            loc_system_.add_value(edge_row, side_flux);
                         }
-
                 } else if (type==DarcyMH::EqData::river) {
                     ad_->is_linear=false;
 
@@ -767,14 +762,7 @@ protected:
                         // Robin BC
                         //DebugOut().fmt("x: {}, robin, bcp: {}\n", b_ele.centre()[0], bc_pressure);
                         loc_system_.add_value(edge_row, edge_row,
-                                                -b_ele.measure() * bc_sigma * cross_section,
-												b_ele.measure() * cross_section * (bc_flux - bc_sigma * bc_pressure)  );
-                    } else {
-                        // Neumann BC
-                        //DebugOut().fmt("x: {}, neuman, q: {}  bcq: {}\n", b_ele.centre()[0], bc_switch_pressure, bc_pressure);
-                        double bc_total_flux = bc_flux + bc_sigma*(bc_switch_pressure - bc_pressure);
-                        
-                        loc_system_.add_value(edge_row, bc_total_flux * b_ele.measure() * cross_section);
+                                                -b_ele.measure() * bc_sigma * cross_section);
                     }
                 } 
                 else {
@@ -793,12 +781,11 @@ protected:
         double conduct =  ad_->conductivity.value(ele.centre(), ele);
 	    double bet =  ad_->beta.value(ele.centre(), ele);
 	    auto w = ad_->field_ele_velocity.value(ele.centre(), ele);
-        double scale = 1 / cs /conduct;
+        arma::mat33 scale = 1 / cs /conduct * arma::eye(3,3) + bet*((arma::kron(w,w) / arma::norm(w)) + arma::norm(w)*arma::eye(3,3) ) / cs;
         assemble_sides_scale(dh_cell, scale);
-        std::vector<double> newt_met = bet*((arma::cross(w,w) / arma::norm(w)) + arma::norm(w) ) / cs;
     }
     
-    void assemble_sides_scale(const DHCellAccessor& dh_cell, double scale, double newt_met)
+    void assemble_sides_scale(const DHCellAccessor& dh_cell, arma::mat33 scale)
     {
         arma::vec3 &gravity_vec = ad_->gravity_vec_;
         const ElementAccessor<3> ele = dh_cell.elm();
@@ -807,21 +794,15 @@ protected:
         unsigned int ndofs = fe_values_.n_dofs();
         unsigned int qsize = fe_values_.n_points();
         auto velocity = fe_values_.vector_view(0);
-        auto w = ad_->field_ele_velocity();
 
         for (unsigned int k=0; k<qsize; k++)
             for (unsigned int i=0; i<ndofs; i++){
-                double rhs_val =
-                        arma::dot(gravity_vec,velocity.value(i,k))
-                        * fe_values_.JxW(k);
-                loc_system_.add_value(i, rhs_val);
                 
                 for (unsigned int j=0; j<ndofs; j++){
                     double mat_val = 
                         arma::dot(velocity.value(i,k), //TODO: compute anisotropy before
-                                    (ad_->anisotropy.value(ele.centre(), ele )).i()
-                                        * w.value(j, k))
-                        * (scale + newt_met)* fe_values_.JxW(k);
+                                    scale * velocity.value(j, k))
+                        * fe_values_.JxW(k);
                     
                     loc_system_.add_value(i, j, mat_val);
                 }
