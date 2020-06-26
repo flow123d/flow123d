@@ -40,9 +40,9 @@ ElementAccessor<spacedim>::ElementAccessor(const MeshBase *mesh, RegionIdx r_idx
  * Element accessor.
  */
 template <int spacedim> inline
-ElementAccessor<spacedim>::ElementAccessor(const MeshBase *mesh, unsigned int idx)
+ElementAccessor<spacedim>::ElementAccessor(const MeshBase *mesh, unsigned int idx, bool is_boundary)
 : mesh_(mesh),
-  boundary_(idx>=mesh->n_elements()),
+  boundary_(is_boundary),
   element_idx_(idx),
   r_idx_(element()->region_idx())
 {
@@ -55,7 +55,6 @@ void ElementAccessor<spacedim>::inc() {
     element_idx_++;
     r_idx_ = element()->region_idx();
     dim_=element()->dim();
-    boundary_ = (element_idx_>=mesh_->n_elements());
 }
 
 template <int spacedim> inline
@@ -274,7 +273,7 @@ inline Edge Boundary::edge()
 inline ElementAccessor<3> Boundary::element_accessor()
 {
     ASSERT_DBG(is_valid());
-    return boundary_data_->mesh_->element_accessor(boundary_data_->bc_ele_idx_);
+    return boundary_data_->mesh_->element_accessor(boundary_data_->bc_ele_idx_, true);
 }
 
 inline Region Boundary::region()
@@ -282,8 +281,8 @@ inline Region Boundary::region()
     return element_accessor().region();
 }
 
-inline Element * Boundary::element()
+inline const Element * Boundary::element()
 {
     ASSERT_DBG(is_valid());
-    return &( boundary_data_->mesh_->element_vec_[boundary_data_->bc_ele_idx_] );
+    return &( boundary_data_->mesh_->element(boundary_data_->bc_ele_idx_, true) );
 }

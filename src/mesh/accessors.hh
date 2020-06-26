@@ -105,7 +105,7 @@ public:
     ElementAccessor(const MeshBase *mesh, RegionIdx r_idx);
 
     /// Element accessor.
-    ElementAccessor(const MeshBase *mesh, unsigned int idx);
+    ElementAccessor(const MeshBase *mesh, unsigned int idx, bool is_boundary = false);
 
     /// Incremental function of the Element iterator.
     void inc();
@@ -158,7 +158,7 @@ public:
         { return dim_; }
 
     const Element * element() const {
-        return &(mesh_->element(element_idx_));
+        return &(mesh_->element(element_idx_, boundary_));
     }
     
 
@@ -179,8 +179,7 @@ public:
 
     /// Return local idx of element in boundary / bulk part of element vector
     unsigned int idx() const {
-        if (boundary_) return ( element_idx_ - mesh_->n_elements() );
-        else return element_idx_;
+        return element_idx_;
     }
 
     /// Return global idx of element in full element vector
@@ -210,11 +209,11 @@ public:
     }
 
     bool operator==(const ElementAccessor<spacedim>& other) const {
-    	return (element_idx_ == other.element_idx_);
+    	return (element_idx_ == other.element_idx_) && (boundary_ == other.boundary_);
     }
 
     inline bool operator!=(const ElementAccessor<spacedim>& other) const {
-    	return (element_idx_ != other.element_idx_);
+    	return (element_idx_ != other.element_idx_) || (boundary_ != other.boundary_);
     }
 
     /**
@@ -229,7 +228,7 @@ public:
  @endcode
      */
     const Element * operator ->() const {
-    	return &(mesh_->element(element_idx_));
+    	return &(mesh_->element(element_idx_, boundary_));
     }
     
 
@@ -326,7 +325,7 @@ public:
     Edge edge();
     ElementAccessor<3> element_accessor();
     Region region();
-    Element * element();
+    const Element * element();
 
     bool is_valid() const {
         return boundary_data_ != nullptr;

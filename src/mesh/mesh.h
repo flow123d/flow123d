@@ -85,12 +85,12 @@ public:
     virtual LongIdx *get_row_4_el() const = 0;
     virtual Distribution *get_el_ds() const = 0;
 
-    virtual const Element &element(unsigned idx) const = 0;
+    virtual const Element &element(unsigned idx, bool is_boundary = false) const = 0;
     virtual NodeAccessor<3> node(unsigned int idx) const = 0;
     virtual Edge edge(uint edge_idx) const = 0;
     virtual Boundary boundary(uint edge_idx) const = 0;
     virtual const Neighbour &vb_neighbour(unsigned int nb) const = 0;
-    virtual ElementAccessor<3> element_accessor(unsigned int idx) const = 0;
+    virtual ElementAccessor<3> element_accessor(unsigned int idx, bool is_boundary = false) const = 0;
     virtual Range<Edge> edge_range() const = 0;
     virtual Range<ElementAccessor<3>> elements_range() const = 0;
 
@@ -214,7 +214,7 @@ public:
 
     unsigned int n_vb_neighbours() const override;
 
-    const Element &element(unsigned idx) const override;
+    virtual const Element &element(unsigned idx, bool is_boundary = false) const override;
 
     const Neighbour &vb_neighbour(unsigned int nb) const override;
 
@@ -253,7 +253,7 @@ public:
     virtual bool check_compatible_mesh( Mesh & mesh, vector<LongIdx> & bulk_elements_id, vector<LongIdx> & boundary_elements_id );
 
     /// Create and return ElementAccessor to element of given idx
-    virtual ElementAccessor<3> element_accessor(unsigned int idx) const override;
+    virtual ElementAccessor<3> element_accessor(unsigned int idx, bool is_boundary = false) const override;
 
     /// Create and return NodeAccessor to node of given idx
     NodeAccessor<3> node(unsigned int idx) const override;
@@ -372,16 +372,16 @@ public:
 
     /// Returns count of boundary or bulk elements
     virtual unsigned int n_elements(bool boundary=false) const override {
-    	if (boundary) return element_ids_.size()-bulk_size_;
-    	else return bulk_size_;
+        return boundary ? bc_element_vec_.size() : bulk_size_;
     }
 
     /// For each node the vector contains a list of elements that use this node
     vector<vector<unsigned int> > node_elements_;
 
     /// For element of given elem_id returns index in element_vec_ or (-1) if element doesn't exist.
-    inline int elem_index(int elem_id) const
+    inline int elem_index(int elem_id, bool boundary = false) const
     {
+        ASSERT( !boundary ); // method is implemented only for bulk elements
         return element_ids_.get_position(elem_id);
     }
 
@@ -551,6 +551,9 @@ protected:
      * Store all elements of the mesh in order bulk elements - boundary elements
      */
     vector<Element> element_vec_;
+
+    /// Vector of boundary elements.
+    vector<Element> bc_element_vec_;
 
     /// Hold data of boundary elements during reading mesh (allow to preserve correct order during reading of mix bulk-boundary element)
     vector<ElementTmpData> bc_element_tmp_;

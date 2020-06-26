@@ -214,8 +214,8 @@ Mesh::~Mesh() {
         if (ele->neigh_vb) delete[] ele->neigh_vb;
     }
 
-    for(unsigned int idx=bulk_size_; idx < element_vec_.size(); idx++) {
-        Element *ele=&(element_vec_[idx]);
+    for(unsigned int idx=0; idx < bc_element_vec_.size(); idx++) {
+        Element *ele=&(bc_element_vec_[idx]);
         if (ele->boundary_idx_) delete[] ele->boundary_idx_;
     }
 
@@ -414,6 +414,11 @@ void Mesh::setup_topology() {
     this->distribute_nodes();
 
     output_internal_ngh_data();
+
+    // make separate vector of boundary elements
+    std::move(element_vec_.begin()+bulk_size_, element_vec_.end(), std::back_inserter(bc_element_vec_));
+    element_vec_.resize(bulk_size_);
+    for (BoundaryData &b : boundary_) b.bc_ele_idx_ -= bulk_size_;
 }
 
 
@@ -838,8 +843,8 @@ MixedMeshIntersections & Mesh::mixed_intersections() {
 
 
 
-ElementAccessor<3> Mesh::element_accessor(unsigned int idx) const {
-    return ElementAccessor<3>(this, idx);
+ElementAccessor<3> Mesh::element_accessor(unsigned int idx, bool is_boundary) const {
+    return ElementAccessor<3>(this, idx, is_boundary);
 }
 
 
@@ -1125,6 +1130,7 @@ void Mesh::init_element_vector(unsigned int size) {
     element_ids_.clear();
 	element_vec_.reserve(size);
     element_ids_.reserve(size);
+    bc_element_vec_.reserve(size);
 	bc_element_tmp_.clear();
 	bc_element_tmp_.reserve(size);
 	bulk_size_ = 0;
@@ -1358,9 +1364,9 @@ void Mesh::distribute_nodes() {
 }
 
 
-const Element &Mesh::element(unsigned idx) const
+const Element &Mesh::element(unsigned idx, bool is_boundary) const
 {
-    return element_vec_[idx];
+    return is_boundary ? bc_element_vec_[idx] : element_vec_[idx];
 }
 
 

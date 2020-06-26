@@ -44,8 +44,8 @@ BCMesh::~BCMesh()
 
 Range<ElementAccessor<3>> BCMesh::elements_range() const
 {
-	auto bgn_it = make_iter<ElementAccessor<3>>( ElementAccessor<3>(parent_mesh_, parent_mesh_->bulk_size_) );
-	auto end_it = make_iter<ElementAccessor<3>>( ElementAccessor<3>(parent_mesh_, parent_mesh_->element_vec_.size()) );
+	auto bgn_it = make_iter<ElementAccessor<3>>( ElementAccessor<3>(parent_mesh_, 0, true) );
+	auto end_it = make_iter<ElementAccessor<3>>( ElementAccessor<3>(parent_mesh_, parent_mesh_->bc_element_vec_.size(), true) );
     return Range<ElementAccessor<3>>(bgn_it, end_it);
 }
 
@@ -85,8 +85,9 @@ unsigned int BCMesh::n_nodes() const {
 }
 
 
-ElementAccessor<3> BCMesh::element_accessor(unsigned int idx) const {
-    return ElementAccessor<3>(parent_mesh_, idx+parent_mesh_->bulk_size_);
+ElementAccessor<3> BCMesh::element_accessor(unsigned int idx, bool is_boundary) const {
+	ASSERT( is_boundary == false ); // we do not support boundary of boundary elements
+    return ElementAccessor<3>(parent_mesh_, idx, true);
 }
 
 
