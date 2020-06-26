@@ -95,7 +95,7 @@ public:
     virtual Range<ElementAccessor<3>> elements_range() const = 0;
 
     virtual void check_element_size(unsigned int elem_idx) const = 0;
-    virtual int find_elem_id(unsigned int pos) const = 0;
+    virtual int find_elem_id(unsigned int pos, bool is_boundary = false) const = 0;
     
     virtual const std::vector<unsigned int> &get_side_nodes(unsigned int dim, unsigned int side) const = 0;
     virtual BCMesh *get_bc_mesh() = 0;
@@ -379,16 +379,15 @@ public:
     vector<vector<unsigned int> > node_elements_;
 
     /// For element of given elem_id returns index in element_vec_ or (-1) if element doesn't exist.
-    inline int elem_index(int elem_id, bool boundary = false) const
+    inline int elem_index(int elem_id, bool is_boundary = false) const
     {
-        ASSERT( !boundary ); // method is implemented only for bulk elements
-        return element_ids_.get_position(elem_id);
+        return is_boundary ? bc_element_ids_.get_position(elem_id) : element_ids_.get_position(elem_id);
     }
 
     /// Return element id (in GMSH file) of element of given position in element vector.
-    inline int find_elem_id(unsigned int pos) const override
+    inline int find_elem_id(unsigned int pos, bool is_boundary = false) const override
     {
-        return element_ids_[pos];
+        return is_boundary ? bc_element_ids_[pos] : element_ids_[pos];
     }
 
     /// For node of given node_id returns index in element_vec_ or (-1) if node doesn't exist.
@@ -405,9 +404,6 @@ public:
 
     /// Check if given index is in element_vec_
     void check_element_size(unsigned int elem_idx) const override;
-
-    /// Create boundary elements from data of temporary structure, this method MUST be call after read mesh from
-    void create_boundary_elements();
 
     /// Permute nodes of 3D elements of given elm_idx
     void permute_tetrahedron(unsigned int elm_idx, std::vector<unsigned int> permutation_vec);
@@ -431,23 +427,6 @@ protected:
      * Initializes node-side numbering according to RefElement.
      */
     void init();
-
-    /**
-     * Allow store boundary element data to temporary structure.
-     *
-     * We need this structure to preserve correct order of boundary elements.
-     */
-    struct ElementTmpData {
-    	/// Constructor
-    	ElementTmpData(unsigned int e_id, unsigned int dm, RegionIdx reg_idx, unsigned int part_id, std::vector<unsigned int> nodes)
-    	: elm_id(e_id), dim(dm), region_idx(reg_idx), partition_id(part_id), node_ids(nodes) {}
-
-        unsigned int elm_id;
-        unsigned int dim;
-        RegionIdx region_idx;
-        unsigned int partition_id;
-        std::vector<unsigned int> node_ids;
-    };
 
     /**
      *  This replaces read_neighbours() in order to avoid using NGH preprocessor.
@@ -505,7 +484,7 @@ protected:
     void modify_element_ids(const RegionDB::MapElementIDToRegionID &map);
 
     /// Adds element to mesh data structures (element_vec_, element_ids_), returns pointer to this element.
-    Element * add_element_to_vector(int id);
+    Element * add_element_to_vector(int id, bool is_boundary = false);
 
     /// Initialize element
     void init_element(Element *ele, unsigned int elm_id, unsigned int dim, RegionIdx region_idx, unsigned int partition_id,
@@ -555,9 +534,6 @@ protected:
     /// Vector of boundary elements.
     vector<Element> bc_element_vec_;
 
-    /// Hold data of boundary elements during reading mesh (allow to preserve correct order during reading of mix bulk-boundary element)
-    vector<ElementTmpData> bc_element_tmp_;
-
     /// Count of bulk elements
     unsigned int bulk_size_;
 
@@ -566,6 +542,9 @@ protected:
 
     /// Maps element ids to indexes into vector element_vec_
     BidirectionalMap<int> element_ids_;
+
+    /// Maps element ids to indexes into vector bc_element_vec_
+    BidirectionalMap<int> bc_element_ids_;
 
     /**
      * Vector of nodes of the mesh.

@@ -188,7 +188,7 @@ public:
     }
 
     unsigned int index() const {
-    	return (unsigned int)mesh_->find_elem_id(element_idx_);
+    	return (unsigned int)mesh_->find_elem_id(element_idx_, boundary_);
     }
     
     unsigned int proc() const {
