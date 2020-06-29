@@ -765,7 +765,7 @@ double DarcyMH::solution_precision() const
 // =======================================================================================
 void DarcyMH::assembly_mh_matrix(MultidimAssembly& assembler)
 {
-    START_TIMER("DarcyFlowMH_Steady::assembly_steady_mh_matrix");
+    START_TIMER("DarcyFlowMHy::assembly_mh_matrix");
 
     // set auxiliary flag for switchting Dirichlet like BC
     data_->force_no_neumann_bc = use_steady_assembly_ && (nonlinear_iteration_ == 0);
@@ -789,7 +789,7 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembly& assembler)
 
 void DarcyMH::allocate_mh_matrix()
 {
-    START_TIMER("DarcyFlowMH_Steady::allocate_mh_matrix");
+    START_TIMER("DarcyFlowMH::allocate_mh_matrix");
 
     // set auxiliary flag for switchting Dirichlet like BC
     data_->n_schur_compls = n_schur_compls;
