@@ -365,7 +365,7 @@ TEST_F(FieldFENewTest, bc_scalar) {
     	field.set_time(test_time[j]);
 
         for(unsigned int i=9; i < 15; i++) {
-            EXPECT_DOUBLE_EQ( 1.0+j*0.1+(i-8)*0.1 , field.value(point,mesh->element_accessor(i-9, true)) );
+            EXPECT_DOUBLE_EQ( 1.0+j*0.1+(i-8)*0.1 , field.value(point,mesh->get_bc_mesh()->element_accessor(i-9)) );
         }
     }
 
@@ -394,7 +394,7 @@ TEST_F(FieldFENewTest, bc_scalar_unit_conv) {
     for (unsigned int j=0; j<3; j++) {
     	field.set_time(test_time[j]);
         for(unsigned int i=9; i < 13; i++) {
-            EXPECT_DOUBLE_EQ( 110.0+j*10.0+(i-9)*10.0 , field.value(point,mesh->element_accessor(i-9,true)) );
+            EXPECT_DOUBLE_EQ( 110.0+j*10.0+(i-9)*10.0 , field.value(point,mesh->get_bc_mesh()->element_accessor(i-9)) );
         }
     }
 
@@ -437,7 +437,7 @@ TEST_F(FieldFENewTest, bc_vector_fixed) {
      for (unsigned int j=0; j<2; j++) {
     	field.set_time(test_time[j]);
      	for(unsigned int i=0; i < 6; i++) {
-            EXPECT_TRUE( arma::min(arma::vec3(expected_vals[j]) == field.value(point,mesh->element_accessor(i,true))) );
+            EXPECT_TRUE( arma::min(arma::vec3(expected_vals[j]) == field.value(point,mesh->get_bc_mesh()->element_accessor(i))) );
         }
     }
 }
@@ -466,7 +466,7 @@ TEST_F(FieldFENewTest, bc_tensor_fixed) {
      for (unsigned int j=0; j<2; j++) {
     	field.set_time(test_time[j]);
          for(unsigned int i=0; i < 6; i++) {
-            arma::umat match = ( arma::mat33(expected_vals[j]) == field.value(point,mesh->element_accessor(i,true)) );
+            arma::umat match = ( arma::mat33(expected_vals[j]) == field.value(point,mesh->get_bc_mesh()->element_accessor(i)) );
             EXPECT_TRUE( match.min() );
         }
     }
@@ -531,7 +531,7 @@ TEST_F(FieldFENewTest, bc_scalar_enum) {
     for (unsigned int j=0; j<2; j++) {
 		field.set_time(test_time[j]);
  		for(unsigned int i=0; i < 4; i++) {
-			EXPECT_EQ( j+1, field.value(point,mesh->element_accessor(i,true)) );
+			EXPECT_EQ( j+1, field.value(point,mesh->get_bc_mesh()->element_accessor(i)) );
 		}
     }
 }
@@ -545,7 +545,7 @@ TEST_F(FieldFENewTest, default_values) {
     for (unsigned int j=0; j<2; j++) {
     	field.set_time(test_time[j]);
      	for(unsigned int i=0; i < 4; i++) {
-            EXPECT_TRUE( arma::min(arma::vec3(expected_vals) == field.value(point,mesh->element_accessor(i,true))) );
+            EXPECT_TRUE( arma::min(arma::vec3(expected_vals) == field.value(point,mesh->get_bc_mesh()->element_accessor(i))) );
         }
     }
 }
@@ -573,7 +573,7 @@ TEST_F(FieldFENewTest, bc_scalar_identic_mesh) {
     	field.set_time(test_time[j]);
 
         for(unsigned int i=9; i < 13; i++) {
-            EXPECT_DOUBLE_EQ( 2.0+j*0.1+(i-8)*0.1 , field.value(point,mesh->element_accessor(i-9,true)) );
+            EXPECT_DOUBLE_EQ( 2.0+j*0.1+(i-8)*0.1 , field.value(point,mesh->get_bc_mesh()->element_accessor(i-9)) );
         }
     }
 
@@ -602,7 +602,7 @@ TEST_F(FieldFENewTest, bc_vector_fixed_identic_mesh) {
      for (unsigned int j=0; j<2; j++) {
     	field.set_time(test_time[j]);
      	for(unsigned int i=0; i < 4; i++) {
-            EXPECT_TRUE( arma::min(arma::vec3(expected_vals[j]) == field.value(point,mesh->element_accessor(i,true))) );
+            EXPECT_TRUE( arma::min(arma::vec3(expected_vals[j]) == field.value(point,mesh->get_bc_mesh()->element_accessor(i))) );
         }
     }
 }
@@ -619,7 +619,7 @@ TEST_F(FieldFENewTest, intersection_1d_2d_elements_small_scalar) {
     	std::cout << "Time: " << test_time[j] << std::endl;
 
     	for (unsigned int i=0; i<4; ++i) {
-    		ElementAccessor<3> elm = mesh->element_accessor(i,true);
+    		ElementAccessor<3> elm = mesh->get_bc_mesh()->element_accessor(i);
     		std::cout << " - " << field.value(elm.centre(), elm) << std::endl;
     		//EXPECT_DOUBLE_EQ( 0.1*(j+expected_vals[i]), field.value(point, mesh->element_accessor(i+9)) );
     	}
@@ -639,7 +639,7 @@ TEST_F(FieldFENewTest, intersection_1d_2d_elements_small_vector) {
     	std::cout << "Time: " << test_time[j] << std::endl;
 
     	for (unsigned int i=0; i<4; ++i) {
-    		ElementAccessor<3> elm = mesh->element_accessor(i,true);
+    		ElementAccessor<3> elm = mesh->get_bc_mesh()->element_accessor(i);
     		std::cout << " - " << field.value(elm.centre(), elm) << std::endl;
     		//EXPECT_DOUBLE_EQ( 0.1*(j+expected_vals[i]), field.value(point, mesh->element_accessor(i+9)) );
     	}
@@ -659,7 +659,7 @@ TEST_F(FieldFENewTest, gauss_1d_2d_elements_small_scalar) {
     	std::cout << "Time: " << test_time[j] << std::endl;
 
     	for (unsigned int i=0; i<4; ++i) {
-    		ElementAccessor<3> elm = mesh->element_accessor(i,true);
+    		ElementAccessor<3> elm = mesh->get_bc_mesh()->element_accessor(i);
     		std::cout << " - " << field.value(elm.centre(), elm) << std::endl;
     		//EXPECT_DOUBLE_EQ( 0.1*(j+expected_vals[i]), field.value(point, mesh->element_accessor(i+9)) );
     	}
@@ -679,7 +679,7 @@ TEST_F(FieldFENewTest, gauss_1d_2d_elements_small_vector) {
     	std::cout << "Time: " << test_time[j] << std::endl;
 
     	for (unsigned int i=0; i<4; ++i) {
-    		ElementAccessor<3> elm = mesh->element_accessor(i,true);
+    		ElementAccessor<3> elm = mesh->get_bc_mesh()->element_accessor(i);
     		std::cout << " - " << field.value(elm.centre(), elm) << std::endl;
     		//EXPECT_DOUBLE_EQ( 0.1*(j+expected_vals[i]), field.value(point, mesh->element_accessor(i+9)) );
     	}

@@ -77,7 +77,10 @@ class MeshBase {
 public:
 
     virtual unsigned int n_edges() const = 0;
-    virtual unsigned int n_elements(bool boundary=false) const = 0;
+    
+    unsigned int n_elements() const
+    { return element_vec_.size(); }
+
     virtual unsigned int n_nodes() const = 0;
     virtual unsigned int n_vb_neighbours() const = 0;
 
@@ -90,15 +93,18 @@ public:
     virtual Edge edge(uint edge_idx) const = 0;
     virtual Boundary boundary(uint edge_idx) const = 0;
     virtual const Neighbour &vb_neighbour(unsigned int nb) const = 0;
-    virtual ElementAccessor<3> element_accessor(unsigned int idx, bool is_boundary = false) const = 0;
+    virtual ElementAccessor<3> element_accessor(unsigned int idx) const = 0;
     virtual Range<Edge> edge_range() const = 0;
     virtual Range<ElementAccessor<3>> elements_range() const = 0;
 
     virtual void check_element_size(unsigned int elem_idx) const = 0;
-    virtual int find_elem_id(unsigned int pos, bool is_boundary = false) const = 0;
+    
+    /// Return element id (in GMSH file) of element of given position in element vector.
+    int find_elem_id(unsigned int pos) const
+    { return element_ids_[pos]; }
     
     virtual const std::vector<unsigned int> &get_side_nodes(unsigned int dim, unsigned int side) const = 0;
-    virtual BCMesh *get_bc_mesh() = 0;
+    virtual BCMesh *get_bc_mesh() const = 0;
     virtual const RegionDB &region_db() const = 0;
     virtual const DuplicateNodes *duplicate_nodes() const = 0;
 
@@ -265,7 +271,7 @@ public:
     virtual bool check_compatible_mesh( Mesh & mesh, vector<LongIdx> & bulk_elements_id, vector<LongIdx> & boundary_elements_id );
 
     /// Create and return ElementAccessor to element of given idx
-    virtual ElementAccessor<3> element_accessor(unsigned int idx, bool is_boundary = false) const override;
+    virtual ElementAccessor<3> element_accessor(unsigned int idx) const override;
 
     /// Create and return NodeAccessor to node of given idx
     NodeAccessor<3> node(unsigned int idx) const override;
@@ -382,17 +388,11 @@ public:
     /// Returns range of edges
     Range<Edge> edge_range() const override;
 
-    /// Returns count of boundary or bulk elements
-    virtual unsigned int n_elements(bool boundary=false) const override;
-
     /// For each node the vector contains a list of elements that use this node
     vector<vector<unsigned int> > node_elements_;
 
     /// For element of given elem_id returns index in element_vec_ or (-1) if element doesn't exist.
     inline int elem_index(int elem_id, bool is_boundary = false) const;
-
-    /// Return element id (in GMSH file) of element of given position in element vector.
-    int find_elem_id(unsigned int pos, bool is_boundary = false) const override;
 
     /// For node of given node_id returns index in element_vec_ or (-1) if node doesn't exist.
     inline int node_index(int node_id) const
@@ -416,7 +416,7 @@ public:
     void permute_triangle(unsigned int elm_idx, std::vector<unsigned int> permutation_vec);
 
     /// Create boundary mesh if doesn't exist and return it.
-    BCMesh *get_bc_mesh() override;
+    BCMesh *get_bc_mesh() const override;
 
     const std::vector<unsigned int> &get_side_nodes(unsigned int dim, unsigned int side) const override
     { return side_nodes[dim][side]; }

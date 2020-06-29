@@ -45,9 +45,6 @@ public:
     /// Returns range of boundary elements of parent mesh
     Range<ElementAccessor<3>> elements_range() const override;
 
-    /// Returns count of boundary elements of parent mesh
-    unsigned int n_elements(bool boundary=false) const override;
-
     /// Overwrite Mesh::get_part()
     Partitioning *get_part() override;
 
@@ -61,7 +58,7 @@ public:
     unsigned int n_nodes() const override;
 
     /// Overwrite Mesh::element_accessor()
-    ElementAccessor<3> element_accessor(unsigned int idx, bool is_boundary = false) const override;
+    ElementAccessor<3> element_accessor(unsigned int idx) const override;
 
     const Element &element(unsigned idx, bool is_boundary = false) const override
     { 

@@ -22,6 +22,7 @@
 #include "mesh/region.hh"
 #include "mesh/elements.h"
 #include "mesh/mesh.h"
+#include "mesh/bc_mesh.hh"
 #include "mesh/node_accessor.hh"
 #include "mesh/ref_element.hh"
 #include "la/distribution.hh"
@@ -183,7 +184,7 @@ public:
     }
 
     unsigned int index() const {
-    	return (unsigned int)mesh_->find_elem_id(element_idx_, boundary_);
+    	return (unsigned int)(boundary_ ? mesh_->get_bc_mesh()->find_elem_id(element_idx_) : mesh_->find_elem_id(element_idx_) );
     }
     
     unsigned int proc() const {

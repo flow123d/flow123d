@@ -761,8 +761,6 @@ TEST(Field, field_result) {
     Region diagonal_2d = mesh->region_db().find_label("2D XY diagonal");
     Region front_3d = mesh->region_db().find_label("3D front");
     Region back_3d = mesh->region_db().find_label("3D back");
-    Region top_side = mesh->region_db().find_label(".top side");
-    Region bottom_side = mesh->region_db().find_label(".bottom side");
 
     EXPECT_EQ( result_none, data.scalar.field_result({diagonal_1d}) );
     EXPECT_EQ( result_none, data.scalar.field_result({diagonal_2d}) );
@@ -855,7 +853,7 @@ TEST(Field, init_from_default) {
 
         enum_field.set_time(TimeGovernor().step(), LimitSide::right);
 
-        EXPECT_EQ( 0 , enum_field.value(p, mesh->element_accessor(3, true)) );
+        EXPECT_EQ( 0 , enum_field.value(p, mesh->get_bc_mesh()->element_accessor(3)) );
 
     }
 

@@ -50,12 +50,6 @@ Range<ElementAccessor<3>> BCMesh::elements_range() const
 }
 
 
-unsigned int BCMesh::n_elements(FMT_UNUSED bool boundary) const {
-	ASSERT( !boundary );
-	return element_vec_.size();
-}
-
-
 Partitioning *BCMesh::get_part() {
     return parent_mesh_->get_part();
 }
@@ -86,8 +80,7 @@ unsigned int BCMesh::n_nodes() const {
 }
 
 
-ElementAccessor<3> BCMesh::element_accessor(unsigned int idx, bool is_boundary) const {
-	ASSERT( is_boundary == false ); // we do not support boundary of boundary elements
+ElementAccessor<3> BCMesh::element_accessor(unsigned int idx) const {
     return ElementAccessor<3>(parent_mesh_, idx, true);
 }
 

@@ -273,7 +273,7 @@ inline Edge Boundary::edge()
 inline ElementAccessor<3> Boundary::element_accessor()
 {
     ASSERT_DBG(is_valid());
-    return boundary_data_->mesh_->element_accessor(boundary_data_->bc_ele_idx_, true);
+    return boundary_data_->mesh_->get_bc_mesh()->element_accessor(boundary_data_->bc_ele_idx_);
 }
 
 inline Region Boundary::region()

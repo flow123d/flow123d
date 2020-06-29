@@ -69,15 +69,15 @@ TEST(MeshTopology, make_neighbours_and_edges) {
     Mesh * mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
 
     EXPECT_EQ(9, mesh->n_elements());
-    EXPECT_EQ(18, mesh->n_elements(true));
+    EXPECT_EQ(18, mesh->get_bc_mesh()->n_elements());
 
     // check boundary elements
-    EXPECT_EQ(101 , mesh->element_accessor(0,true).region().id() );
-    EXPECT_EQ(101 , mesh->element_accessor(1,true).region().id() );
-    EXPECT_EQ(102 , mesh->element_accessor(2,true).region().id() );
-    EXPECT_EQ(102 , mesh->element_accessor(3,true).region().id() );
-    EXPECT_EQ( -3 , int( mesh->element_accessor(4,true).region().id() ) );
-    EXPECT_EQ( -3 , int( mesh->element_accessor(17,true).region().id() ) );
+    EXPECT_EQ(101 , mesh->get_bc_mesh()->element_accessor(0).region().id() );
+    EXPECT_EQ(101 , mesh->get_bc_mesh()->element_accessor(1).region().id() );
+    EXPECT_EQ(102 , mesh->get_bc_mesh()->element_accessor(2).region().id() );
+    EXPECT_EQ(102 , mesh->get_bc_mesh()->element_accessor(3).region().id() );
+    EXPECT_EQ( -3 , int( mesh->get_bc_mesh()->element_accessor(4).region().id() ) );
+    EXPECT_EQ( -3 , int( mesh->get_bc_mesh()->element_accessor(17).region().id() ) );
 
     //check edges
     EXPECT_EQ(28,mesh->n_edges());

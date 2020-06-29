@@ -527,7 +527,7 @@ void Mesh::make_neighbours_and_edges()
 
 	for( unsigned int i=0; i<get_bc_mesh()->element_vec_.size(); ++i) {
 
-		ElementAccessor<3> bc_ele = this->element_accessor(i, true);
+		ElementAccessor<3> bc_ele = bc_mesh_->element_accessor(i);
 		ASSERT(bc_ele.region().is_boundary());
         // Find all elements that share this side.
         side_nodes.resize(bc_ele->n_nodes());
@@ -570,10 +570,10 @@ void Mesh::make_neighbours_and_edges()
                             int last_bc_ele_idx=this->boundary_[elem->boundary_idx_[ecs]].bc_ele_idx_;
                             int new_bc_ele_idx=i;
                             THROW( ExcDuplicateBoundary()
-                                    << EI_ElemLast(this->find_elem_id(last_bc_ele_idx, true))
-                                    << EI_RegLast(this->element_accessor(last_bc_ele_idx).region().label())
-                                    << EI_ElemNew(this->find_elem_id(new_bc_ele_idx, true))
-                                    << EI_RegNew(this->element_accessor(new_bc_ele_idx).region().label())
+                                    << EI_ElemLast(bc_mesh_->find_elem_id(last_bc_ele_idx))
+                                    << EI_RegLast(bc_mesh_->element_accessor(last_bc_ele_idx).region().label())
+                                    << EI_ElemNew(bc_mesh_->find_elem_id(new_bc_ele_idx))
+                                    << EI_RegNew(bc_mesh_->element_accessor(new_bc_ele_idx).region().label())
                                     );
                         }
                         element_vec_[*isect].edge_idx_[ecs] = last_edge_idx;
@@ -828,8 +828,8 @@ MixedMeshIntersections & Mesh::mixed_intersections() {
 
 
 
-ElementAccessor<3> Mesh::element_accessor(unsigned int idx, bool is_boundary) const {
-    return ElementAccessor<3>(this, idx, is_boundary);
+ElementAccessor<3> Mesh::element_accessor(unsigned int idx) const {
+    return ElementAccessor<3>(this, idx, false);
 }
 
 
@@ -855,11 +855,11 @@ void Mesh::elements_id_maps( vector<LongIdx> & bulk_elements_id, vector<LongIdx>
             last_id=*map_it = id;
         }
 
-        boundary_elements_id.resize(n_elements(true));
+        boundary_elements_id.resize(bc_mesh_->n_elements());
         map_it = boundary_elements_id.begin();
         last_id = -1;
-        for(unsigned int idx=0; idx<n_elements(true); idx++, ++map_it) {
-        	LongIdx id = this->find_elem_id(idx, true);
+        for(unsigned int idx=0; idx<bc_mesh_->n_elements(); idx++, ++map_it) {
+        	LongIdx id = bc_mesh_->find_elem_id(idx);
             // We set ID for boundary elements created by the mesh itself to "-1"
             // this force gmsh reader to skip all remaining entries in boundary_elements_id
             // and thus report error for any remaining data lines
@@ -1276,8 +1276,8 @@ void Mesh::permute_triangle(unsigned int elm_idx, std::vector<unsigned int> perm
 }
 
 
-BCMesh *Mesh::get_bc_mesh() {
-	if (bc_mesh_ == nullptr) bc_mesh_ = new BCMesh(this);
+BCMesh *Mesh::get_bc_mesh() const {
+	// if (bc_mesh_ == nullptr) bc_mesh_ = new BCMesh(this);
 	return bc_mesh_;
 }
 
@@ -1339,21 +1339,10 @@ const Element &Mesh::element(unsigned idx, bool is_boundary) const
     return is_boundary ? bc_mesh_->element_vec_[idx] : element_vec_[idx];
 }
 
-unsigned int Mesh::n_elements(bool boundary) const
-{
-    return boundary ? bc_mesh_->n_elements() : element_vec_.size();
-}
-
 
 inline int Mesh::elem_index(int elem_id, bool is_boundary) const
 {
     return is_boundary ? bc_mesh_->element_ids_.get_position(elem_id) : element_ids_.get_position(elem_id);
-}
-
-
-inline int Mesh::find_elem_id(unsigned int pos, bool is_boundary) const
-{
-    return is_boundary ? bc_mesh_->element_ids_[pos] : element_ids_[pos];
 }
 
 
