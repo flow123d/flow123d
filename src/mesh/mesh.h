@@ -372,7 +372,7 @@ public:
 
     /// Returns count of boundary or bulk elements
     virtual unsigned int n_elements(bool boundary=false) const override {
-        return boundary ? bc_element_vec_.size() : bulk_size_;
+        return boundary ? bc_element_vec_.size() : element_vec_.size();
     }
 
     /// For each node the vector contains a list of elements that use this node
@@ -533,12 +533,6 @@ protected:
 
     /// Vector of boundary elements.
     vector<Element> bc_element_vec_;
-
-    /// Count of bulk elements
-    unsigned int bulk_size_;
-
-    /// Count of boundary elements loaded from mesh file
-    unsigned int boundary_loaded_size_;
 
     /// Maps element ids to indexes into vector element_vec_
     BidirectionalMap<int> element_ids_;

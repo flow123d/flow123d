@@ -100,8 +100,7 @@ const unsigned int Mesh::undef_idx;
 
 
 Mesh::Mesh()
-: bulk_size_(0),
-  nodes_(3, 1, 0),
+: nodes_(3, 1, 0),
   row_4_el(nullptr),
   el_4_loc(nullptr),
   el_ds(nullptr),
@@ -117,7 +116,6 @@ Mesh::Mesh()
 Mesh::Mesh(Input::Record in_record, MPI_Comm com)
 : in_record_(in_record),
   comm_(com),
-  bulk_size_(0),
   nodes_(3, 1, 0),
   row_4_el(nullptr),
   el_4_loc(nullptr),
@@ -208,7 +206,7 @@ Mesh::~Mesh() {
     for(EdgeData &edg : this->edges)
         if (edg.side_) delete[] edg.side_;
 
-    for (unsigned int idx=0; idx < bulk_size_; idx++) {
+    for (unsigned int idx=0; idx < element_vec_.size(); idx++) {
     	Element *ele=&(element_vec_[idx]);
         if (ele->boundary_idx_) delete[] ele->boundary_idx_;
         if (ele->neigh_vb) delete[] ele->neigh_vb;
@@ -790,14 +788,14 @@ void Mesh::element_to_neigh_vb()
 
 	//MessageOut() << "Element to neighbours of vb2 type... "/*orig verb 5*/;
 
-	for (vector<Element>::iterator ele = element_vec_.begin(); ele!= element_vec_.begin()+bulk_size_; ++ele)
+	for (vector<Element>::iterator ele = element_vec_.begin(); ele!= element_vec_.end(); ++ele)
 		ele->n_neighs_vb_ =0;
 
     // count vb neighs per element
     for (auto & ngh : this->vb_neighbours_)  ngh.element()->n_neighs_vb_++;
 
     // Allocation of the array per element
-    for (vector<Element>::iterator ele = element_vec_.begin(); ele!= element_vec_.begin()+bulk_size_; ++ele)
+    for (vector<Element>::iterator ele = element_vec_.begin(); ele!= element_vec_.end(); ++ele)
         if( ele->n_neighs_vb() > 0 ) {
             ele->neigh_vb = new struct Neighbour* [ele->n_neighs_vb()];
             ele->n_neighs_vb_=0;
@@ -1073,18 +1071,11 @@ void Mesh::add_element(unsigned int elm_id, unsigned int dim, unsigned int regio
 	}
 	region_db_.mark_used_region(region_idx.idx());
 
-	if (region_idx.is_boundary()) {
-        Element *ele = add_element_to_vector(elm_id, true);
+	if (!region_idx.is_boundary() && dim == 0) {
+        WarningOut().fmt("Bulk elements of zero size(dim=0) are not supported. Element ID: {}.\n", elm_id);
+    } else {
+        Element *ele = add_element_to_vector(elm_id, region_idx.is_boundary());
         this->init_element(ele, elm_id, dim, region_idx, partition_id, node_ids);
-	} else {
-		if(dim == 0 ) {
-			WarningOut().fmt("Bulk elements of zero size(dim=0) are not supported. Element ID: {}.\n", elm_id);
-		}
-		else {
-			Element *ele = add_element_to_vector(elm_id);
-			bulk_size_++;
-			this->init_element(ele, elm_id, dim, region_idx, partition_id, node_ids);
-		}
 	}
 }
 
@@ -1127,8 +1118,6 @@ void Mesh::init_element_vector(unsigned int size) {
     element_ids_.reserve(size);
     bc_element_vec_.reserve(size);
     bc_element_ids_.reserve(size);
-	bulk_size_ = 0;
-	boundary_loaded_size_ = 0;
 }
 
 
@@ -1155,7 +1144,7 @@ Element * Mesh::add_element_to_vector(int id, bool is_boundary) {
 
 Range<ElementAccessor<3>> Mesh::elements_range() const {
 	auto bgn_it = make_iter<ElementAccessor<3>>( ElementAccessor<3>(this, 0) );
-	auto end_it = make_iter<ElementAccessor<3>>( ElementAccessor<3>(this, bulk_size_) );
+	auto end_it = make_iter<ElementAccessor<3>>( ElementAccessor<3>(this, element_vec_.size()) );
 	return Range<ElementAccessor<3>>(bgn_it, end_it);
 }
 

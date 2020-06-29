@@ -182,11 +182,6 @@ public:
         return element_idx_;
     }
 
-    /// Return global idx of element in full element vector
-    unsigned int mesh_idx() const {
-        return element_idx_;
-    }
-
     unsigned int index() const {
     	return (unsigned int)mesh_->find_elem_id(element_idx_, boundary_);
     }

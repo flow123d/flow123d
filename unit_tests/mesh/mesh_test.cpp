@@ -207,12 +207,10 @@ TEST(BCMesh, element_ranges) {
 
     for (auto elm : mesh->elements_range()) {
     	EXPECT_EQ(elm.idx(), expected_val);
-    	EXPECT_EQ(elm.mesh_idx(), expected_val);
     	expected_val++;
     }
     for (auto elm : bc_mesh->elements_range()) {
     	EXPECT_EQ(elm.idx(), expected_val-mesh->n_elements());
-    	EXPECT_EQ(elm.mesh_idx(), expected_val-mesh->n_elements());
     	expected_val++;
     }
 

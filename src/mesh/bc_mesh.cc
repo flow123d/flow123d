@@ -68,7 +68,7 @@ const LongIdx *BCMesh::get_local_part() {
 				for (unsigned int i=0; i<ele->n_sides(); ++i)
 					if ((int)ele->boundary_idx_[i] != -1) {
 						bc_ele_idx = parent_mesh_->boundary_[ ele->boundary_idx_[i] ].bc_ele_idx_;
-						local_part_[bc_ele_idx - parent_mesh_->bulk_size_] = parent_mesh_->get_local_part()[ele.idx()];
+						local_part_[bc_ele_idx] = parent_mesh_->get_local_part()[ele.idx()];
 					}
 	}
 	return local_part_;
