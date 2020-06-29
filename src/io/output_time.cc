@@ -240,7 +240,10 @@ std::shared_ptr<Observe> OutputTime::observe(Mesh *mesh)
 
 void OutputTime::clear_data(void)
 {
-    for(auto &map : output_data_vec_)  map.clear();
+    // fill all the existing output data with dummy cash
+    for(auto &od_vec : output_data_vec_)
+        for(auto &od : od_vec)
+            od = std::make_shared<DummyElementDataCache>(od->field_input_name(), od->n_comp());
 }
 
 
@@ -249,10 +252,6 @@ int OutputTime::get_parallel_current_step()
 	if (parallel_) return n_proc_*current_step+rank_;
 	else return current_step;
 }
-
-
-void OutputTime::add_dummy_fields()
-{}
 
 
 void OutputTime::gather_output_data(void)
@@ -311,7 +310,7 @@ void OutputTime::gather_output_data(void)
 
 // explicit instantiation of template methods
 #define OUTPUT_PREPARE_COMPUTE_DATA(TYPE) \
-template ElementDataCache<TYPE> & OutputTime::prepare_compute_data<TYPE>(std::string field_name, DiscreteSpace space_type, \
+template OutputTime::OutputDataPtr OutputTime::prepare_compute_data<TYPE>(std::string field_name, DiscreteSpace space_type, \
 		unsigned int n_rows, unsigned int n_cols)
 
 OUTPUT_PREPARE_COMPUTE_DATA(int);

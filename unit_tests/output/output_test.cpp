@@ -302,9 +302,9 @@ public:
 
 
 		this->clear_data();
-		EXPECT_EQ(0, output_data_vec_[NODE_DATA].size());
-		EXPECT_EQ(0, output_data_vec_[ELEM_DATA].size());
-		EXPECT_EQ(0, output_data_vec_[CORNER_DATA].size());
+		EXPECT_EQ(1, output_data_vec_[NODE_DATA].size());   // filled with DummyElementDataCache
+		EXPECT_EQ(1, output_data_vec_[ELEM_DATA].size());   // filled with DummyElementDataCache
+		EXPECT_EQ(0, output_data_vec_[CORNER_DATA].size()); // no date at all
 
 		/*
 
