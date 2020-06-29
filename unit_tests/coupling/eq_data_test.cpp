@@ -301,9 +301,9 @@ TEST_F(SomeEquation, values) {
     EXPECT_EQ(38, el_2d.region().id());
     ElementAccessor<3> el_3d=mesh->element_accessor(3); // region 39 "3D back"
     EXPECT_EQ(39, el_3d.region().id());
-    ElementAccessor<3> el_bc_top=mesh->element_accessor(10); // region 101 ".top side"
+    ElementAccessor<3> el_bc_top=mesh->element_accessor(1,true); // region 101 ".top side"
     EXPECT_EQ(101, el_bc_top.region().id());
-    ElementAccessor<3> el_bc_bottom=mesh->element_accessor(12); // region 102 ".top side"
+    ElementAccessor<3> el_bc_bottom=mesh->element_accessor(3,true); // region 102 ".top side"
     EXPECT_EQ(102, el_bc_bottom.region().id());
 
     // bulk fields

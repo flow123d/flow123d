@@ -855,7 +855,7 @@ TEST(Field, init_from_default) {
 
         enum_field.set_time(TimeGovernor().step(), LimitSide::right);
 
-        EXPECT_EQ( 0 , enum_field.value(p, mesh->element_accessor(12)) );
+        EXPECT_EQ( 0 , enum_field.value(p, mesh->element_accessor(3, true)) );
 
     }
 

@@ -72,12 +72,12 @@ TEST(MeshTopology, make_neighbours_and_edges) {
     EXPECT_EQ(18, mesh->n_elements(true));
 
     // check boundary elements
-    EXPECT_EQ(101 , mesh->element_accessor(9).region().id() );
-    EXPECT_EQ(101 , mesh->element_accessor(10).region().id() );
-    EXPECT_EQ(102 , mesh->element_accessor(11).region().id() );
-    EXPECT_EQ(102 , mesh->element_accessor(12).region().id() );
-    EXPECT_EQ( -3 , int( mesh->element_accessor(13).region().id() ) );
-    EXPECT_EQ( -3 , int( mesh->element_accessor(26).region().id() ) );
+    EXPECT_EQ(101 , mesh->element_accessor(0,true).region().id() );
+    EXPECT_EQ(101 , mesh->element_accessor(1,true).region().id() );
+    EXPECT_EQ(102 , mesh->element_accessor(2,true).region().id() );
+    EXPECT_EQ(102 , mesh->element_accessor(3,true).region().id() );
+    EXPECT_EQ( -3 , int( mesh->element_accessor(4,true).region().id() ) );
+    EXPECT_EQ( -3 , int( mesh->element_accessor(17,true).region().id() ) );
 
     //check edges
     EXPECT_EQ(28,mesh->n_edges());
@@ -212,7 +212,7 @@ TEST(BCMesh, element_ranges) {
     }
     for (auto elm : bc_mesh->elements_range()) {
     	EXPECT_EQ(elm.idx(), expected_val-mesh->n_elements());
-    	EXPECT_EQ(elm.mesh_idx(), expected_val);
+    	EXPECT_EQ(elm.mesh_idx(), expected_val-mesh->n_elements());
     	expected_val++;
     }
 
