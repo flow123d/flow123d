@@ -122,7 +122,7 @@ Mesh::Mesh(Input::Record in_record, MPI_Comm com)
   el_ds(nullptr),
   node_4_loc_(nullptr),
   node_ds_(nullptr),
-  bc_mesh_(nullptr),
+  bc_mesh_(new BCMesh(this)),
   duplicate_nodes_(nullptr)
 {
 	// set in_record_, if input accessor is empty
@@ -210,11 +210,6 @@ Mesh::~Mesh() {
     	Element *ele=&(element_vec_[idx]);
         if (ele->boundary_idx_) delete[] ele->boundary_idx_;
         if (ele->neigh_vb) delete[] ele->neigh_vb;
-    }
-
-    for(unsigned int idx=0; idx < bc_element_vec_.size(); idx++) {
-        Element *ele=&(bc_element_vec_[idx]);
-        if (ele->boundary_idx_) delete[] ele->boundary_idx_;
     }
 
     if (row_4_el != nullptr) delete[] row_4_el;
@@ -530,7 +525,7 @@ void Mesh::make_neighbours_and_edges()
 	vector<unsigned int> side_nodes;
 	vector<unsigned int> intersection_list; // list of elements in intersection of node element lists
 
-	for( unsigned int i=0; i<bc_element_vec_.size(); ++i) {
+	for( unsigned int i=0; i<get_bc_mesh()->element_vec_.size(); ++i) {
 
 		ElementAccessor<3> bc_ele = this->element_accessor(i, true);
 		ASSERT(bc_ele.region().is_boundary());
@@ -863,7 +858,7 @@ void Mesh::elements_id_maps( vector<LongIdx> & bulk_elements_id, vector<LongIdx>
         boundary_elements_id.resize(n_elements(true));
         map_it = boundary_elements_id.begin();
         last_id = -1;
-        for(unsigned int idx=0; idx<bc_element_vec_.size(); idx++, ++map_it) {
+        for(unsigned int idx=0; idx<n_elements(true); idx++, ++map_it) {
         	LongIdx id = this->find_elem_id(idx, true);
             // We set ID for boundary elements created by the mesh itself to "-1"
             // this force gmsh reader to skip all remaining entries in boundary_elements_id
@@ -1112,12 +1107,8 @@ vector<vector<unsigned int> > const & Mesh::node_elements() {
 void Mesh::init_element_vector(unsigned int size) {
 	element_vec_.clear();
     element_ids_.clear();
-    bc_element_vec_.clear();
-    bc_element_ids_.clear();
 	element_vec_.reserve(size);
     element_ids_.reserve(size);
-    bc_element_vec_.reserve(size);
-    bc_element_ids_.reserve(size);
 }
 
 
@@ -1131,9 +1122,9 @@ void Mesh::init_node_vector(unsigned int size) {
 Element * Mesh::add_element_to_vector(int id, bool is_boundary) {
     Element * elem;
     if (is_boundary) {
-        bc_element_vec_.push_back( Element() );
-        elem = &bc_element_vec_.back();
-        bc_element_ids_.add_item((unsigned int)(id));
+        get_bc_mesh()->element_vec_.push_back( Element() );
+        elem = &get_bc_mesh()->element_vec_.back();
+        get_bc_mesh()->element_ids_.add_item((unsigned int)(id));
     } else {
         element_vec_.push_back( Element() );
         elem = &element_vec_.back(); //[element_vec_.size()-1];
@@ -1345,7 +1336,24 @@ void Mesh::distribute_nodes() {
 
 const Element &Mesh::element(unsigned idx, bool is_boundary) const
 {
-    return is_boundary ? bc_element_vec_[idx] : element_vec_[idx];
+    return is_boundary ? bc_mesh_->element_vec_[idx] : element_vec_[idx];
+}
+
+unsigned int Mesh::n_elements(bool boundary) const
+{
+    return boundary ? bc_mesh_->n_elements() : element_vec_.size();
+}
+
+
+inline int Mesh::elem_index(int elem_id, bool is_boundary) const
+{
+    return is_boundary ? bc_mesh_->element_ids_.get_position(elem_id) : element_ids_.get_position(elem_id);
+}
+
+
+inline int Mesh::find_elem_id(unsigned int pos, bool is_boundary) const
+{
+    return is_boundary ? bc_mesh_->element_ids_[pos] : element_ids_[pos];
 }
 
 

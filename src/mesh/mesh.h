@@ -102,6 +102,18 @@ public:
     virtual const RegionDB &region_db() const = 0;
     virtual const DuplicateNodes *duplicate_nodes() const = 0;
 
+protected:
+
+    /**
+     * Vector of elements of the mesh.
+     *
+     * Store all elements of the mesh in order bulk elements - boundary elements
+     */
+    vector<Element> element_vec_;
+
+    /// Maps element ids to indexes into vector element_vec_
+    BidirectionalMap<int> element_ids_;
+
 };
 
 //=============================================================================
@@ -371,24 +383,16 @@ public:
     Range<Edge> edge_range() const override;
 
     /// Returns count of boundary or bulk elements
-    virtual unsigned int n_elements(bool boundary=false) const override {
-        return boundary ? bc_element_vec_.size() : element_vec_.size();
-    }
+    virtual unsigned int n_elements(bool boundary=false) const override;
 
     /// For each node the vector contains a list of elements that use this node
     vector<vector<unsigned int> > node_elements_;
 
     /// For element of given elem_id returns index in element_vec_ or (-1) if element doesn't exist.
-    inline int elem_index(int elem_id, bool is_boundary = false) const
-    {
-        return is_boundary ? bc_element_ids_.get_position(elem_id) : element_ids_.get_position(elem_id);
-    }
+    inline int elem_index(int elem_id, bool is_boundary = false) const;
 
     /// Return element id (in GMSH file) of element of given position in element vector.
-    inline int find_elem_id(unsigned int pos, bool is_boundary = false) const override
-    {
-        return is_boundary ? bc_element_ids_[pos] : element_ids_[pos];
-    }
+    int find_elem_id(unsigned int pos, bool is_boundary = false) const override;
 
     /// For node of given node_id returns index in element_vec_ or (-1) if node doesn't exist.
     inline int node_index(int node_id) const
@@ -523,22 +527,6 @@ protected:
      * MPI communicator used for partitioning and ...
      */
     MPI_Comm comm_;
-
-    /**
-     * Vector of elements of the mesh.
-     *
-     * Store all elements of the mesh in order bulk elements - boundary elements
-     */
-    vector<Element> element_vec_;
-
-    /// Vector of boundary elements.
-    vector<Element> bc_element_vec_;
-
-    /// Maps element ids to indexes into vector element_vec_
-    BidirectionalMap<int> element_ids_;
-
-    /// Maps element ids to indexes into vector bc_element_vec_
-    BidirectionalMap<int> bc_element_ids_;
 
     /**
      * Vector of nodes of the mesh.

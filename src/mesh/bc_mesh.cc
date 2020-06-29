@@ -31,7 +31,7 @@ BCMesh::BCMesh(Mesh* parent_mesh)
 : parent_mesh_(parent_mesh),
   local_part_(nullptr)
 {
-	this->init_element_vector(0);
+	this->init_element_vector(1);
 	this->init_node_vector(0);
 }
 
@@ -45,13 +45,14 @@ BCMesh::~BCMesh()
 Range<ElementAccessor<3>> BCMesh::elements_range() const
 {
 	auto bgn_it = make_iter<ElementAccessor<3>>( ElementAccessor<3>(parent_mesh_, 0, true) );
-	auto end_it = make_iter<ElementAccessor<3>>( ElementAccessor<3>(parent_mesh_, parent_mesh_->bc_element_vec_.size(), true) );
+	auto end_it = make_iter<ElementAccessor<3>>( ElementAccessor<3>(parent_mesh_, element_vec_.size(), true) );
     return Range<ElementAccessor<3>>(bgn_it, end_it);
 }
 
 
 unsigned int BCMesh::n_elements(FMT_UNUSED bool boundary) const {
-	return parent_mesh_->bc_element_vec_.size();
+	ASSERT( !boundary );
+	return element_vec_.size();
 }
 
 
