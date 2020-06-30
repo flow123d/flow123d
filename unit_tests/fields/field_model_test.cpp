@@ -121,14 +121,14 @@ TEST_F(FieldModelTest, create) {
     auto f_product_ptr = Model<3, FieldValue<3>::VectorFixed>::create(fn_product, f_scal, f_vec);
     Field<3, FieldValue<3>::VectorFixed > f_product;
     f_product.set_mesh( *mesh );
-    f_product.set_field(mesh->region_db().get_region_set("ALL"), f_product_ptr);
+    f_product.set_field(mesh->region_db().get_region_set("ALL"), f_product_ptr, 0.0);
     f_product.cache_reallocate(elm_cache_map);
     f_product.set_time(tg.step(), LimitSide::right);
     // Same as previous but with other functor
     auto f_other_ptr = Model<3, FieldValue<3>::VectorFixed>::create(fn_other, f_vec, f_scal, f_vec);
     Field<3, FieldValue<3>::VectorFixed > f_other;
     f_other.set_mesh( *mesh );
-    f_other.set_field(mesh->region_db().get_region_set("ALL"), f_other_ptr);
+    f_other.set_field(mesh->region_db().get_region_set("ALL"), f_other_ptr, 0.0);
     f_other.cache_reallocate(elm_cache_map);
     f_other.set_time(tg.step(), LimitSide::right);
 

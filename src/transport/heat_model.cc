@@ -572,11 +572,11 @@ void HeatTransferModel::initialize()
 
     // create FieldModels
     auto v_norm_ptr = Model<3, FieldValue<3>::Scalar>::create(fn_heat_v_norm, data().velocity);
-    data().v_norm.set_field(mesh_->region_db().get_region_set("ALL"), v_norm_ptr);
+    data().v_norm.set_field(mesh_->region_db().get_region_set("ALL"), v_norm_ptr, 0.0);
 
     auto mass_matrix_coef_ptr = Model<3, FieldValue<3>::Scalar>::create(fn_heat_mass_matrix, data().cross_section,
             data().porosity, data().fluid_density, data().fluid_heat_capacity, data().solid_density, data().solid_heat_capacity);
-    data().mass_matrix_coef.set_field(mesh_->region_db().get_region_set("ALL"), mass_matrix_coef_ptr);
+    data().mass_matrix_coef.set_field(mesh_->region_db().get_region_set("ALL"), mass_matrix_coef_ptr, 0.0);
 
     std::vector<typename Field<3, FieldValue<3>::Scalar>::FieldBasePtr> retardation_coef_ptr;
     retardation_coef_ptr.push_back( std::make_shared< FieldConstant<3, FieldValue<3>::Scalar> >() ); // Fix size of substances == 1, with const value == 0

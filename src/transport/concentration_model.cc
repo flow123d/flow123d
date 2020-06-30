@@ -531,10 +531,10 @@ void ConcentrationTransportModel::initialize()
 
     // create FieldModels
     auto v_norm_ptr = Model<3, FieldValue<3>::Scalar>::create(fn_conc_v_norm, data().velocity);
-    data().v_norm.set_field(mesh_->region_db().get_region_set("ALL"), v_norm_ptr);
+    data().v_norm.set_field(mesh_->region_db().get_region_set("ALL"), v_norm_ptr, 0.0);
 
     auto mass_matrix_coef_ptr = Model<3, FieldValue<3>::Scalar>::create(fn_conc_mass_matrix, data().cross_section, data().water_content);
-    data().mass_matrix_coef.set_field(mesh_->region_db().get_region_set("ALL"), mass_matrix_coef_ptr);
+    data().mass_matrix_coef.set_field(mesh_->region_db().get_region_set("ALL"), mass_matrix_coef_ptr, 0.0);
 
     auto retardation_coef_ptr = Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_retardation, data().cross_section, data().porosity,
             data().rock_density, data().sorption_coefficient);
