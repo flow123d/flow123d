@@ -158,8 +158,8 @@ public:
     unsigned int dim() const
         { return dim_; }
 
-    const Element * element() const {
-        return &(mesh_->element(element_idx_, boundary_));
+    inline const Element * element() const {
+        return boundary_ ? &(mesh_->get_bc_mesh()->element(element_idx_)) : &(mesh_->element(element_idx_));
     }
     
 
@@ -223,8 +223,8 @@ public:
      centre = elm_ac->node_idx(0);            // short format with dereference operator
  @endcode
      */
-    const Element * operator ->() const {
-    	return &(mesh_->element(element_idx_, boundary_));
+    inline const Element * operator ->() const {
+    	return element();
     }
     
 

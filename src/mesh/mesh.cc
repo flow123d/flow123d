@@ -1334,12 +1334,6 @@ void Mesh::distribute_nodes() {
 }
 
 
-const Element &Mesh::element(unsigned idx, bool is_boundary) const
-{
-    return is_boundary ? bc_mesh_->element_vec_[idx] : element_vec_[idx];
-}
-
-
 inline int Mesh::elem_index(int elem_id, bool is_boundary) const
 {
     return is_boundary ? bc_mesh_->element_ids_.get_position(elem_id) : element_ids_.get_position(elem_id);

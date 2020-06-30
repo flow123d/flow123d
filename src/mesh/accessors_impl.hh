@@ -284,5 +284,5 @@ inline Region Boundary::region()
 inline const Element * Boundary::element()
 {
     ASSERT_DBG(is_valid());
-    return &( boundary_data_->mesh_->element(boundary_data_->bc_ele_idx_, true) );
+    return &( boundary_data_->mesh_->get_bc_mesh()->element(boundary_data_->bc_ele_idx_) );
 }

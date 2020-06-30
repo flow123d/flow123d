@@ -60,11 +60,6 @@ public:
     /// Overwrite Mesh::element_accessor()
     ElementAccessor<3> element_accessor(unsigned int idx) const override;
 
-    const Element &element(unsigned idx, bool is_boundary = false) const override
-    { 
-        ASSERT( !is_boundary );
-        return parent_mesh_->element(idx, true);
-    }
 
 private:
     /// Pointer to parent (bulk) mesh

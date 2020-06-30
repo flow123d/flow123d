@@ -88,7 +88,9 @@ public:
     virtual LongIdx *get_row_4_el() const = 0;
     virtual Distribution *get_el_ds() const = 0;
 
-    virtual const Element &element(unsigned idx, bool is_boundary = false) const = 0;
+    const Element &element(unsigned idx) const
+    { return element_vec_[idx]; }
+
     virtual NodeAccessor<3> node(unsigned int idx) const = 0;
     virtual Edge edge(uint edge_idx) const = 0;
     virtual Boundary boundary(uint edge_idx) const = 0;
@@ -231,8 +233,6 @@ public:
     unsigned int n_sides() const;
 
     unsigned int n_vb_neighbours() const override;
-
-    virtual const Element &element(unsigned idx, bool is_boundary = false) const override;
 
     const Neighbour &vb_neighbour(unsigned int nb) const override;
 
