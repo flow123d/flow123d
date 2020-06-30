@@ -303,7 +303,22 @@ void FieldFormula<spacedim, Value>::cache_reinit(const ElementCacheMap &cache_ma
             std::string expr = formula_matrix_.at(row,col); // Need replace some operations to be compilable in BParser.
                                                             // It will be solved by conversion script after remove fparser, but
                                                             // we mix using of BParser and fparser and need this solution now.
-            boost::replace_all(expr, "^", "**");
+            boost::replace_all(expr, "^", "**"); // power function
+            boost::replace_all(expr, "max(", "maximum("); // max function
+            boost::replace_all(expr, "min(", "minimum("); // min function
+            {  // ternary operator
+                std::string pref("if(");
+                auto res = std::mismatch(pref.begin(), pref.end(), expr.begin());
+                if ( (res.first == pref.end()) && (expr.back() == ')') ) {
+                    std::string subexpr = expr.substr(3, expr.size()-4);
+                    std::string delimiter = ",";
+                    std::string cond = subexpr.substr(0, subexpr.find(delimiter));
+                    subexpr.erase(0, cond.size()+1);
+                    std::string if_case = subexpr.substr(0, subexpr.find(delimiter));
+                    std::string else_case = subexpr.substr(if_case.size()+1);
+                    expr = "(" + if_case + " if " + cond + " else " + else_case +")";
+                }
+            }
             b_parser_[i_p].parse( expr );
             b_parser_[i_p].set_constant("Pi", {}, {3.14159265358979323846});
             b_parser_[i_p].set_constant("E",  {}, {2.71828182845904523536});
