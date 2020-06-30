@@ -157,6 +157,7 @@ private:
 	double *x_;     ///< Coordinates x, part of previous array
 	double *y_;     ///< Coordinates y, part of previous array
 	double *z_;     ///< Coordinates z, part of previous array
+	double *d_;     ///< Surface depth variable, used optionally if 'd' variable is set
 	double *res_;   ///< Result vector of BParser
 	uint *subsets_; ///< Subsets indices in range 0 ... n-1
 

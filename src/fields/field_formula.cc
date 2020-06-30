@@ -256,6 +256,11 @@ void FieldFormula<spacedim, Value>::cache_update(FieldValueCache<typename Value:
     	x_[i] = field_set_->x().data().template mat<1,1>(i)(0);
         y_[i] = field_set_->y().data().template mat<1,1>(i)(0);
         z_[i] = field_set_->z().data().template mat<1,1>(i)(0);
+        if (surface_depth_ && has_depth_var_) {
+            Point p;
+            p(0) = x_[i]; p(1) = y_[i]; p(2) = z_[i];
+            d_[i] = surface_depth_->compute_distance(p);
+        }
         res_[i] = 0.0;
     }
 
@@ -281,6 +286,7 @@ void FieldFormula<spacedim, Value>::cache_update(FieldValueCache<typename Value:
 template <int spacedim, class Value>
 void FieldFormula<spacedim, Value>::cache_reinit(const ElementCacheMap &cache_map)
 {
+	bool use_depth_var = (surface_depth_ && has_depth_var_); // TODO need better check of using 'd' variable (from 'Parser::variables()').
 	if (arena_alloc_!=nullptr) {
 	    delete arena_alloc_;
 	}
@@ -288,11 +294,13 @@ void FieldFormula<spacedim, Value>::cache_reinit(const ElementCacheMap &cache_ma
 	while (vec_size%ElementCacheMap::formula_block_divisor > 0) vec_size++; // alignment of block size
 	// number of subset alignment to block size
 	uint n_subsets = (vec_size+ElementCacheMap::formula_block_divisor-1) / ElementCacheMap::formula_block_divisor;
-	arena_alloc_ = new bparser::ArenaAlloc(ElementCacheMap::formula_block_divisor, 4 * vec_size * sizeof(double) + n_subsets * sizeof(uint));
+	uint n_vectors = (use_depth_var ? 5 : 4); // needs vectors of coordinates x, y, z, result vector and optionally d (depth)
+	arena_alloc_ = new bparser::ArenaAlloc(ElementCacheMap::formula_block_divisor, n_vectors * vec_size * sizeof(double) + n_subsets * sizeof(uint));
 	X_ = arena_alloc_->create_array<double>(3*vec_size);
 	x_ = X_ + 0;
 	y_ = X_ + vec_size;
 	z_ = X_ + 2*vec_size;
+	if (use_depth_var) d_ = arena_alloc_->create_array<double>(vec_size);
 	res_ = arena_alloc_->create_array<double>(vec_size);
 	subsets_ = arena_alloc_->create_array<uint>(n_subsets);
     for(unsigned int row=0; row < this->value_.n_rows(); row++)
@@ -300,7 +308,7 @@ void FieldFormula<spacedim, Value>::cache_reinit(const ElementCacheMap &cache_ma
             // set expression and data to BParser
             unsigned int i_p = row*this->value_.n_cols()+col;
             //b_parser_[i_p].parse(formula_matrix_.at(row,col));
-            std::string expr = formula_matrix_.at(row,col); // Need replace some operations to be compilable in BParser.
+            std::string expr = formula_matrix_.at(row,col); // Need replace some operations to make them compatible with BParser.
                                                             // It will be solved by conversion script after remove fparser, but
                                                             // we mix using of BParser and fparser and need this solution now.
             boost::replace_all(expr, "^", "**"); // power function
@@ -325,6 +333,7 @@ void FieldFormula<spacedim, Value>::cache_reinit(const ElementCacheMap &cache_ma
             b_parser_[i_p].set_variable("x",  {}, x_);
             b_parser_[i_p].set_variable("y",  {}, y_);
             b_parser_[i_p].set_variable("z",  {}, z_);
+            if (use_depth_var) b_parser_[i_p].set_variable("d",  {}, d_);
             b_parser_[i_p].set_constant("t",  {}, {this->time_.end()});
             b_parser_[i_p].set_variable("_result_", {}, res_);
             b_parser_[i_p].compile();
