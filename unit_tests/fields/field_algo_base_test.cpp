@@ -275,7 +275,7 @@ TYPED_TEST(FieldFix, mark_input_times) {
 
 
 TYPED_TEST(FieldFix, set_mesh) {
-	EXPECT_ASSERT_DEATH( {this->set_field(this->my_domain, this->my_field_algo_base);}, "Null; mesh pointer");
+	EXPECT_ASSERT_DEATH( {this->set_field(this->my_domain, this->my_field_algo_base, 0.0);}, "Null; mesh pointer");
 
 	EXPECT_EQ(nullptr, this->shared_->mesh_);
 	this->set_mesh(*(this->my_mesh));
@@ -291,7 +291,7 @@ TYPED_TEST(FieldFix, set_mesh) {
 
 TYPED_TEST(FieldFix, set_field) {
 	this->set_mesh(*(this->my_mesh));
-	this->set_field(this->my_domain, this->my_field_algo_base);
+	this->set_field(this->my_domain, this->my_field_algo_base, 0.0);
 
 	Region reg = this->my_domain[0];
 	auto const &history = this->data_->region_history_[reg.idx()];
@@ -636,10 +636,10 @@ TEST(Field, init_from_input) {
 
     auto region_set = mesh->region_db().get_region_set("BULK");
 
-    sorption_type.set_field(region_set, in_rec.val<Input::AbstractRecord>("sorption_type"));
-    init_conc.set_field(region_set, in_rec.val<Input::AbstractRecord>("init_conc"));
-    conductivity.set_field(region_set, in_rec.val<Input::AbstractRecord>("conductivity"));
-    conductivity_3d.set_field(region_set, in_rec.val<Input::AbstractRecord>("conductivity_3d"));
+    sorption_type.set_field(region_set, in_rec.val<Input::AbstractRecord>("sorption_type"), 0.0);
+    init_conc.set_field(region_set, in_rec.val<Input::AbstractRecord>("init_conc"), 0.0);
+    conductivity.set_field(region_set, in_rec.val<Input::AbstractRecord>("conductivity"), 0.0);
+    conductivity_3d.set_field(region_set, in_rec.val<Input::AbstractRecord>("conductivity_3d"), 0.0);
 
 
 
@@ -912,15 +912,15 @@ TEST(Field, disable_where) {
     auto one = std::make_shared<SConst>();
     one->set_value(1.0);
 
-    bc_type.set_field(RegionSet(1, mesh->region_db().find_id(101)), neumann_type );
-    bc_flux.set_field(RegionSet(1, mesh->region_db().find_id(101)), one );
+    bc_type.set_field(RegionSet(1, mesh->region_db().find_id(101)), neumann_type, 0.0 );
+    bc_flux.set_field(RegionSet(1, mesh->region_db().find_id(101)), one, 0.0 );
 
-    bc_type.set_field(RegionSet(1, mesh->region_db().find_id(102)), robin_type );
-    bc_value.set_field(RegionSet(1, mesh->region_db().find_id(102)), one );
-    bc_sigma.set_field(RegionSet(1, mesh->region_db().find_id(102)), one );
+    bc_type.set_field(RegionSet(1, mesh->region_db().find_id(102)), robin_type, 0.0 );
+    bc_value.set_field(RegionSet(1, mesh->region_db().find_id(102)), one, 0.0 );
+    bc_sigma.set_field(RegionSet(1, mesh->region_db().find_id(102)), one, 0.0 );
 
-    bc_type.set_field(RegionSet(1, mesh->region_db().find_id(-3)), neumann_type );
-    bc_flux.set_field(RegionSet(1, mesh->region_db().find_id(-3)), one );
+    bc_type.set_field(RegionSet(1, mesh->region_db().find_id(-3)), neumann_type, 0.0 );
+    bc_flux.set_field(RegionSet(1, mesh->region_db().find_id(-3)), one, 0.0 );
 
 
 
@@ -1002,11 +1002,11 @@ TEST(Field, field_values) {
 
     auto region_set = mesh->region_db().get_region_set("BULK");
 
-    color_field.set_field(region_set, in_rec.val<Input::AbstractRecord>("color"));
-    int_field.set_field(region_set, in_rec.val<Input::AbstractRecord>("integer"));
-    scalar_field.set_field(region_set, in_rec.val<Input::AbstractRecord>("scalar"));
-    vector_field.set_field(region_set, in_rec.val<Input::AbstractRecord>("vector"));
-    tensor_field.set_field(region_set, in_rec.val<Input::AbstractRecord>("tensor"));
+    color_field.set_field(region_set, in_rec.val<Input::AbstractRecord>("color"), 0.0);
+    int_field.set_field(region_set, in_rec.val<Input::AbstractRecord>("integer"), 0.0);
+    scalar_field.set_field(region_set, in_rec.val<Input::AbstractRecord>("scalar"), 0.0);
+    vector_field.set_field(region_set, in_rec.val<Input::AbstractRecord>("vector"), 0.0);
+    tensor_field.set_field(region_set, in_rec.val<Input::AbstractRecord>("tensor"), 0.0);
 
     color_field.set_time(TimeGovernor().step(), LimitSide::right);
     int_field.set_time(TimeGovernor().step(), LimitSide::right);

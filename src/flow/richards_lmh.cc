@@ -151,12 +151,12 @@ void RichardsLMH::initialize_specific() {
     data_->water_content_ptr = std::make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
     data_->water_content_ptr->set_fe_data(data_->dh_cr_disc_, 0);
     data_->water_content.set_mesh(*mesh_);
-    data_->water_content.set_field(mesh_->region_db().get_region_set("ALL"), data_->water_content_ptr);
+    data_->water_content.set_field(mesh_->region_db().get_region_set("ALL"), data_->water_content_ptr, 0.0);
     
     data_->conductivity_ptr = std::make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
     data_->conductivity_ptr->set_fe_data(data_->dh_p_, 0);
     data_->conductivity_richards.set_mesh(*mesh_);
-    data_->conductivity_richards.set_field(mesh_->region_db().get_region_set("ALL"), data_->conductivity_ptr);
+    data_->conductivity_richards.set_field(mesh_->region_db().get_region_set("ALL"), data_->conductivity_ptr, 0.0);
 
 
     data_->multidim_assembler = AssemblyBase::create< AssemblyRichards >(data_);

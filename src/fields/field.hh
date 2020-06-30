@@ -233,13 +233,13 @@ public:
      *
      * Default time simplify setting steady fields.
      */
-    void set_field(const RegionSet &domain, FieldBasePtr field, double time=0.0);
+    void set_field(const RegionSet &domain, FieldBasePtr field, double time);
 
     /**
      * Same as before but the field is first created using FieldBase::function_factory(), from
      * given abstract record accessor @p a_rec.
      */
-    void set_field(const RegionSet &domain, const Input::AbstractRecord &a_rec, double time=0.0);
+    void set_field(const RegionSet &domain, const Input::AbstractRecord &a_rec, double time);
 
     /**
      * Check that whole field list is set, possibly use default values for unset regions

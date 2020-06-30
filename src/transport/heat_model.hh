@@ -261,7 +261,7 @@ public:
 	inline void set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field) override
 	{
 		velocity_field_ptr_ = flux_field;
-		data().velocity.set_field(mesh_->region_db().get_region_set("ALL"), flux_field);
+		data().velocity.set_field(mesh_->region_db().get_region_set("ALL"), flux_field, data().velocity.time());
 		flux_changed = true;
 	}
 
