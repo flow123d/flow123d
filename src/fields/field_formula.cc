@@ -256,6 +256,7 @@ void FieldFormula<spacedim, Value>::cache_update(FieldValueCache<typename Value:
         if (surface_depth_ && has_depth_var_) {
             Point p;
             p(0) = x_[i]; p(1) = y_[i]; p(2) = z_[i];
+            // TODO computation of depth var needs better solution, probably we add field to FieldSet
             d_[i] = surface_depth_->compute_distance(p);
         }
         res_[i] = 0.0;
@@ -311,6 +312,8 @@ void FieldFormula<spacedim, Value>::cache_reinit(const ElementCacheMap &cache_ma
             boost::replace_all(expr, "^", "**"); // power function
             boost::replace_all(expr, "max(", "maximum("); // max function
             boost::replace_all(expr, "min(", "minimum("); // min function
+            boost::replace_all(expr, "Pi", "pi"); // Math.pi
+            boost::replace_all(expr, "E", "e"); // Math.e
             {  // ternary operator
                 std::string pref("if(");
                 auto res = std::mismatch(pref.begin(), pref.end(), expr.begin());
@@ -325,8 +328,6 @@ void FieldFormula<spacedim, Value>::cache_reinit(const ElementCacheMap &cache_ma
                 }
             }
             b_parser_[i_p].parse( expr );
-            b_parser_[i_p].set_constant("Pi", {}, {3.14159265358979323846});
-            b_parser_[i_p].set_constant("E",  {}, {2.71828182845904523536});
             b_parser_[i_p].set_variable("x",  {}, x_);
             b_parser_[i_p].set_variable("y",  {}, y_);
             b_parser_[i_p].set_variable("z",  {}, z_);
