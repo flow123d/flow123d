@@ -69,7 +69,7 @@ public:
     static const Input::Type::Record & get_input_type();
 
     /// Size of data processed in BParser.
-    static const uint bparser_vec_size;
+    static constexpr unsigned int bparser_vec_size = 128;
 
     virtual void init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data);
 
@@ -166,6 +166,10 @@ private:
 
 
 };
+
+// Necessary to linking.
+template <int spacedim, class Value>
+constexpr unsigned int FieldFormula<spacedim, Value>::bparser_vec_size;
 
 
 

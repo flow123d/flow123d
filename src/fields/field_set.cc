@@ -24,6 +24,10 @@
 
 
 
+FieldSet::FieldSet()
+: x_coord_(1,1), y_coord_(1,1), z_coord_(1,1)
+{}
+
 FieldSet &FieldSet::operator +=(FieldCommon &add_field) {
     FieldCommon *found_field = field(add_field.name());
     if (found_field) {

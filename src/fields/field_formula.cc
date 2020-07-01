@@ -35,9 +35,6 @@ FLOW123D_FORCE_LINK_IN_CHILD(field_formula)
 
 
 template <int spacedim, class Value>
-const uint FieldFormula<spacedim, Value>::bparser_vec_size = 128;
-
-template <int spacedim, class Value>
 const Input::Type::Record & FieldFormula<spacedim, Value>::get_input_type()
 {
 
@@ -265,8 +262,8 @@ void FieldFormula<spacedim, Value>::cache_update(FieldValueCache<typename Value:
     }
 
     // Get vector of subsets as subarray
-    uint subsets_begin = i_cache_el_begin / ElementCacheMap::formula_block_divisor;
-    uint subsets_end = i_cache_el_end / ElementCacheMap::formula_block_divisor;
+    uint subsets_begin = i_cache_el_begin / ElementCacheMap::simd_size_double;
+    uint subsets_end = i_cache_el_end / ElementCacheMap::simd_size_double;
     std::vector<uint> subset_vec;
     subset_vec.assign(subsets_ + subsets_begin, subsets_ + subsets_end);
 
@@ -291,11 +288,11 @@ void FieldFormula<spacedim, Value>::cache_reinit(const ElementCacheMap &cache_ma
 	    delete arena_alloc_;
 	}
 	uint vec_size = cache_map.eval_points()->max_size() * ElementCacheMap::n_cached_elements;
-	while (vec_size%ElementCacheMap::formula_block_divisor > 0) vec_size++; // alignment of block size
+	while (vec_size%ElementCacheMap::simd_size_double > 0) vec_size++; // alignment of block size
 	// number of subset alignment to block size
-	uint n_subsets = (vec_size+ElementCacheMap::formula_block_divisor-1) / ElementCacheMap::formula_block_divisor;
+	uint n_subsets = (vec_size+ElementCacheMap::simd_size_double-1) / ElementCacheMap::simd_size_double;
 	uint n_vectors = (use_depth_var ? 5 : 4); // needs vectors of coordinates x, y, z, result vector and optionally d (depth)
-	arena_alloc_ = new bparser::ArenaAlloc(ElementCacheMap::formula_block_divisor, n_vectors * vec_size * sizeof(double) + n_subsets * sizeof(uint));
+	arena_alloc_ = new bparser::ArenaAlloc(ElementCacheMap::simd_size_double, n_vectors * vec_size * sizeof(double) + n_subsets * sizeof(uint));
 	X_ = arena_alloc_->create_array<double>(3*vec_size);
 	x_ = X_ + 0;
 	y_ = X_ + vec_size;
