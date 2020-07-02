@@ -289,10 +289,12 @@ void DarcyLMH::initialize() {
 
     { // construct pressure, velocity and piezo head fields
 		uint rt_component = 0;
-        ele_flux_ptr = create_field_fe<3, FieldValue<3>::VectorFixed>(data_->dh_, rt_component);
+        auto ele_flux_ptr = create_field_fe<3, FieldValue<3>::VectorFixed>(data_->dh_, rt_component);
+        data_->full_solution = ele_flux_ptr->get_data_vec();
+        data_->flux.set_field(mesh_->region_db().get_region_set("ALL"), ele_flux_ptr);
+
 		auto ele_velocity_ptr = std::make_shared< FieldDivide<3, FieldValue<3>::VectorFixed> >(ele_flux_ptr, data_->cross_section);
 		data_->field_ele_velocity.set_field(mesh_->region_db().get_region_set("ALL"), ele_velocity_ptr);
-		data_->full_solution = ele_flux_ptr->get_data_vec();
 
 		uint p_ele_component = 0;
         auto ele_pressure_ptr = create_field_fe<3, FieldValue<3>::Scalar>(data_->dh_, p_ele_component, &data_->full_solution);
@@ -484,6 +486,9 @@ void DarcyLMH::update_solution()
     time_->view("DARCY"); //time governor information output
 
     solve_time_step();
+    
+    data_->full_solution.local_to_ghost_begin();
+    data_->full_solution.local_to_ghost_end();
 }
 
 void DarcyLMH::solve_time_step(bool output)
@@ -1298,11 +1303,6 @@ DarcyLMH::~DarcyLMH() {
     if(time_ != nullptr)
         delete time_;
     
-}
-
-
-std::shared_ptr< FieldFE<3, FieldValue<3>::VectorFixed> > DarcyLMH::get_velocity_field() {
-    return ele_flux_ptr;
 }
 
 
