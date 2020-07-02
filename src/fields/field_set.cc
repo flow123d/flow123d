@@ -18,9 +18,15 @@
 #include "fields/field_set.hh"
 #include "system/sys_profiler.hh"
 #include "input/flow_attribute_lib.hh"
+#include "fem/mapping_p1.hh"
+#include "mesh/ref_element.hh"
 #include <boost/algorithm/string/replace.hpp>
 
 
+
+FieldSet::FieldSet()
+: x_coord_(1,1), y_coord_(1,1), z_coord_(1,1)
+{}
 
 FieldSet &FieldSet::operator +=(FieldCommon &add_field) {
     FieldCommon *found_field = field(add_field.name());
@@ -181,6 +187,47 @@ bool FieldSet::is_jump_time() const {
     bool is_jump = false;
     for(auto field : field_list) is_jump = is_jump || field->is_jump_time();
     return is_jump;
+}
+
+
+void FieldSet::update_coords_caches(ElementCacheMap &cache_map) {
+    unsigned int n_cached_elements = cache_map.update_cache_data().n_elements_;
+    std::shared_ptr<EvalPoints> eval_points = cache_map.eval_points();
+
+    for (uint i_elm=0; i_elm<n_cached_elements; ++i_elm) {
+        ElementAccessor<3> elm = mesh_->element_accessor( cache_map.elm_idx_on_position(i_elm) );
+        if (elm.is_boundary()) continue; // TODO remove after fix EvalPoints of boundary elements
+        unsigned int dim = elm.dim();
+        for (uint i_point=0; i_point<eval_points->size(dim); ++i_point) {
+            int cache_idx = cache_map.get_field_value_cache_index(i_elm, i_point); // index in FieldValueCache
+            if (cache_idx<0) continue;
+            arma::vec3 coords;
+            switch (dim) {
+            //TODO add case 0 for boundary elements, should be elm.node(0)
+            case 1:
+                coords = MappingP1<1,3>::project_unit_to_real(RefElement<1>::local_to_bary(eval_points->local_point<1>(i_point)),
+                        MappingP1<1,3>::element_map(elm));
+                break;
+            case 2:
+                coords = MappingP1<2,3>::project_unit_to_real(RefElement<2>::local_to_bary(eval_points->local_point<2>(i_point)),
+                        MappingP1<2,3>::element_map(elm));
+                break;
+            case 3:
+                coords = MappingP1<3,3>::project_unit_to_real(RefElement<3>::local_to_bary(eval_points->local_point<3>(i_point)),
+                        MappingP1<3,3>::element_map(elm));
+                break;
+            default:
+            	coords = arma::vec3("0 0 0"); //Should not happen
+            }
+            Armor::ArmaMat<double, 1, 1> coord_val;
+            coord_val(0,0) = coords(0);
+            x_coord_.data().set(cache_idx) = coord_val;
+            coord_val(0,0) = coords(1);
+            y_coord_.data().set(cache_idx) = coord_val;
+            coord_val(0,0) = coords(2);
+            z_coord_.data().set(cache_idx) = coord_val;
+        }
+    }
 }
 
 

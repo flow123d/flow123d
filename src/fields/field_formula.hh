@@ -19,6 +19,9 @@
 #define FIELD_FORMULA_HH_
 
 
+#define BOOST_MATH_DISABLE_FLOAT128
+
+
 #include <stdio.h>                      // for sprintf
 #include <boost/exception/info.hpp>     // for operator<<, error_info::error...
 #include <string>                       // for operator==, string
@@ -27,12 +30,15 @@
 #include <armadillo>
 #include "fields/field_algo_base.hh"    // for FieldAlgorithmBase
 #include "fields/field_values.hh"       // for FieldValue<>::Enum, FieldValu...
+#include "fields/field_set.hh"
 #include "input/accessors.hh"           // for ExcAccessorForNullStorage
 #include "input/accessors_impl.hh"      // for Record::val
 #include "input/storage.hh"             // for ExcStorageTypeMismatch
 #include "input/type_record.hh"         // for Record::ExcRecordKeyNotFound
 #include "system/exceptions.hh"         // for ExcAssertMsg::~ExcAssertMsg
 #include "tools/time_governor.hh"       // for TimeStep
+#include "include/assert.hh"            // bparser
+#include "include/parser.hh"            // bparser
 
 class FunctionParser;
 template <int spacedim> class ElementAccessor;
@@ -62,6 +68,9 @@ public:
 
     static const Input::Type::Record & get_input_type();
 
+    /// Size of data processed in BParser.
+    static constexpr unsigned int bparser_vec_size = 128;
+
     virtual void init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data);
 
     /**
@@ -87,6 +96,21 @@ public:
     virtual void value_list (const Armor::array &point_list, const ElementAccessor<spacedim> &elm,
                        std::vector<typename Value::return_type>  &value_list);
 
+    void cache_update(FieldValueCache<typename Value::element_type> &data_cache,
+			ElementCacheMap &cache_map, unsigned int region_idx) override;
+
+    /**
+     * Overload @p FieldAlgorithmBase::cache_reinit
+     *
+     * Reinit Bparser::ArenaAlloc data member.
+     */
+    void cache_reinit(const ElementCacheMap &cache_map) override;
+
+
+    /**
+     * Set reference of FieldSet.
+     */
+    void set_dependency(FieldSet &field_set) override;
 
     virtual ~FieldFormula();
 
@@ -105,6 +129,7 @@ private:
 
     // Matrix of parsers corresponding to the formula matrix returned by formula_matrix_helper_
     std::vector< std::vector<FunctionParser> > parser_matrix_;
+    std::vector< bparser::Parser > b_parser_;
 
     /// Accessor to Input::Record
     Input::Record in_rec_;
@@ -118,11 +143,33 @@ private:
     /// Flag indicates first call of set_time method, when FunctionParsers in parser_matrix_ must be initialized
     bool first_time_set_;
 
+    /// Holds FieldSet, allows evaluate values of Fields in formula expressions.
+    FieldSet *field_set_;
+
+    /// Holds names of fields.
+    std::set<std::string> field_set_names_;
+
+    /// Arena object providing data arrays
+    bparser::ArenaAlloc * arena_alloc_;
+
+    // BParser data arrays
+	double *X_;     ///< Data of coordinates, holds blocks of x, y, z
+	double *x_;     ///< Coordinates x, part of previous array
+	double *y_;     ///< Coordinates y, part of previous array
+	double *z_;     ///< Coordinates z, part of previous array
+	double *d_;     ///< Surface depth variable, used optionally if 'd' variable is set
+	double *res_;   ///< Result vector of BParser
+	uint *subsets_; ///< Subsets indices in range 0 ... n-1
+
     /// Registrar of class to factory
     static const int registrar;
 
 
 };
+
+// Necessary to linking.
+template <int spacedim, class Value>
+constexpr unsigned int FieldFormula<spacedim, Value>::bparser_vec_size;
 
 
 

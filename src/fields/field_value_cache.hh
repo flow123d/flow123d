@@ -130,6 +130,10 @@ public:
     /// Index of invalid element in cache.
     static const unsigned int undef_elem_idx;
 
+    /// Size of block (evaluation of FieldFormula) must be multiple of this value.
+    /// TODO We should take this value from BParser and it should be dependent on processor configuration.
+    static const unsigned int simd_size_double;
+
     /**
      * Holds elements indices of one region stored in cache.
      *

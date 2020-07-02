@@ -24,6 +24,7 @@
 #include "tools/unit_si.hh"
 #include "coupling/balance.hh"
 #include "fields/field_model.hh"
+#include "fields/field_constant.hh"
 
 
 

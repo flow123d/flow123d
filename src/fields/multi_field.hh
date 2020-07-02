@@ -35,7 +35,6 @@ using namespace std;
 #include <vector>                                      // for vector
 #include "fields/field.hh"                             // for Field<>::Field...
 #include "fields/field_algo_base.hh"                   // for FieldAlgorithm...
-#include "fields/field_algo_base.impl.hh"              // for FieldAlgorithm...
 #include "fields/field_common.hh"                      // for FieldCommon
 #include "fields/field_values.hh"                      // for FieldValue<>::...
 #include "input/accessors.hh"                          // for ExcTypeMismatch
@@ -57,6 +56,7 @@ class Observe;
 class OutputTime;
 class EvalPoints;
 class ElementCacheMap;
+class FieldSet;
 
 
 namespace IT=Input::Type;
@@ -207,6 +207,11 @@ public:
     /// Number of subfields that compose the multi-field.
     inline unsigned int size() const
     { return sub_fields_.size(); }
+
+    /**
+     * Implementation of FieldCommon::set_dependency().
+     */
+    void set_dependency(FieldSet &field_set) override;
 
     /**
      * Returns reference to the sub-field (component) of given index @p idx.
