@@ -216,7 +216,7 @@ void DualPorosity::initialize_fields()
     auto output_field_ptr = create_field_fe< 3, FieldValue<3>::Scalar >(this->dof_handler_);
     data_.conc_immobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
     
-    conc_immobile_out[sbi] = output_field_ptr->get_data_vec();
+    conc_immobile_out[sbi] = output_field_ptr->vec();
     double *out_array;
     VecGetArray(conc_immobile_out[sbi].petsc_vec(), &out_array);
     conc_immobile[sbi] = out_array;
