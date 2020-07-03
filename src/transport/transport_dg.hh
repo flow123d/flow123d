@@ -284,7 +284,7 @@ public:
 
     void calculate_cumulative_balance();
 
-	const Vec &get_solution(unsigned int sbi)
+	Vec get_solution(unsigned int sbi)
 	{ return data_->ls[sbi]->get_solution(); }
 
 	double **get_concentration_matrix()

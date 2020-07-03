@@ -138,8 +138,9 @@ public:
 
 		Field<3, FieldValue<3>::Scalar> region_id;
         Field<3, FieldValue<3>::Scalar> subdomain;
-        MultiField<3, FieldValue<3>::Scalar>    conc_mobile;    ///< Calculated concentrations in the mobile zone.
 
+        MultiField<3, FieldValue<3>::Scalar>    conc_mobile;    ///< Calculated concentrations in the mobile zone.
+        std::vector<std::shared_ptr<FieldFE< 3, FieldValue<3>::Scalar>>> conc_mobile_fe;
 
         /// Fields indended for output, i.e. all input fields plus those representing solution.
         EquationOutput output_fields;
@@ -227,8 +228,7 @@ public:
 
 	double **get_concentration_matrix() override;
 
-	const Vec &get_solution(unsigned int sbi) override
-	{ return vconc[sbi]; }
+	Vec get_solution(unsigned int sbi) override;
 
 	void get_par_info(LongIdx * &el_4_loc, Distribution * &el_ds) override;
 
@@ -334,11 +334,6 @@ private:
     /// necessity for matrix update
     double transport_matrix_time;
     double transport_bc_time;   ///< Time of the last update of the boundary condition terms.
-
-    /// Concentration vectors for mobile phase.
-    Vec *vconc; // concentration vector
-    /// Concentrations for phase, substance, element
-    double **conc;
 
     ///
     Vec *vpconc; // previous concentration vector

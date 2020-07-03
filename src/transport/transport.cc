@@ -202,10 +202,8 @@ void ConvectionTransport::initialize()
 	for (unsigned int sbi=0; sbi<n_substances(); sbi++)
 	{
 		// create shared pointer to a FieldFE and push this Field to output_field on all regions
-        auto output_field_ptr = create_field_fe< 3, FieldValue<3>::Scalar >(dh_);
-		data_.conc_mobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
-		vconc[sbi] = output_field_ptr->vec().petsc_vec();
-		conc[sbi] = &(output_field_ptr->vec().data()[0]);
+        data_.conc_mobile_fe[sbi] = create_field_fe< 3, FieldValue<3>::Scalar >(dh_);
+		data_.conc_mobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), data_.conc_mobile_fe[sbi], 0);
 	}
 	//output_stream_->add_admissible_field_names(input_rec.val<Input::Array>("output_fields"));
     //output_stream_->mark_output_times(*time_);
@@ -216,6 +214,12 @@ void ConvectionTransport::initialize()
 
     balance_->allocate(el_ds->lsize(), 1);
 
+}
+
+
+Vec ConvectionTransport::get_solution(unsigned int sbi)
+{
+    return data_.conc_mobile_fe[sbi]->vec().petsc_vec(); 
 }
 
 
@@ -285,7 +289,6 @@ ConvectionTransport::~ConvectionTransport()
         delete v_sources_corr;
         
         // arrays of arrays
-        delete conc;
         delete cumulative_corr;
         delete tm_diag;
         delete sources_corr;
@@ -298,12 +301,19 @@ ConvectionTransport::~ConvectionTransport()
 
 void ConvectionTransport::set_initial_condition()
 {
+    DebugOut() << "ConvectionTransport::set_initial_condition()\n";
+    // get vecs
+    std::vector<VectorMPI> vecs;
+    for (unsigned int sbi=0; sbi<n_substances(); sbi++)
+        vecs.push_back(data_.conc_mobile_fe[sbi]->vec());
+
 	for ( DHCellAccessor dh_cell : dh_->own_range() ) {
 		LongIdx index = dh_cell.local_idx();
 		ElementAccessor<3> ele_acc = mesh_->element_accessor( dh_cell.elm_idx() );
-
-		for (unsigned int sbi=0; sbi<n_substances(); sbi++) // Optimize: SWAP LOOPS
-			conc[sbi][index] = data_.init_conc[sbi].value(ele_acc.centre(), ele_acc);
+        
+		for (unsigned int sbi=0; sbi<n_substances(); sbi++) { // Optimize: SWAP LOOPS
+			vecs[sbi][index] = data_.init_conc[sbi].value(ele_acc.centre(), ele_acc);
+        }
 	}
 }
 
@@ -324,8 +334,7 @@ void ConvectionTransport::alloc_transport_vectors() {
       tm_diag[sbi] = new double[el_ds->lsize()];
     }
 
-    conc = new double*[n_subst];
-    vconc = new Vec[n_subst];
+    data_.conc_mobile_fe.resize(n_subst);
     
     cfl_flow_ = new double[el_ds->lsize()];
     cfl_source_ = new double[el_ds->lsize()];
@@ -661,6 +670,7 @@ void ConvectionTransport::update_solution() {
     for (unsigned int sbi = 0; sbi < n_substances(); sbi++) {
       // one step in MOBILE phase
       START_TIMER("mat mult");
+      Vec vconc = data_.conc_mobile_fe[sbi]->vec().petsc_vec();
       
       // tm_diag is a diagonal part of transport matrix, which depends on substance data (sources_sigma)
       // Wwe need keep transport matrix independent of substance, therefore we keep this diagonal part
@@ -668,24 +678,24 @@ void ConvectionTransport::update_solution() {
       // Computation: first, we compute this diagonal addition D*pconc and save it temporaly into RHS
         
       // RHS = D*pconc, where D is diagonal matrix represented by a vector
-      VecPointwiseMult(vcumulative_corr[sbi], v_tm_diag[sbi], vconc[sbi]); //w = x.*y
+      VecPointwiseMult(vcumulative_corr[sbi], v_tm_diag[sbi], vconc); //w = x.*y
       
       // Then we add boundary terms ans other source terms into RHS.
       // RHS = 1.0 * bcvcorr + 1.0 * v_sources_corr + 1.0 * rhs
       VecAXPBYPCZ(vcumulative_corr[sbi], 1.0, 1.0, 1.0, bcvcorr[sbi], v_sources_corr[sbi]);   //z = ax + by + cz
       
       // Then we set the new previous concentration.
-      VecCopy(vconc[sbi], vpconc[sbi]); // pconc = conc
+      VecCopy(vconc, vpconc[sbi]); // pconc = conc
       // And finally proceed with transport matrix multiplication.
       if (is_mass_diag_changed) {
-        VecPointwiseMult(vconc[sbi], vconc[sbi], vpmass_diag); // vconc*=vpmass_diag
-        MatMultAdd(tm, vpconc[sbi], vconc[sbi], vconc[sbi]);   // vconc+=tm*vpconc
-        VecAXPY(vconc[sbi], 1, vcumulative_corr[sbi]);         // vconc+=vcumulative_corr
-        VecPointwiseDivide(vconc[sbi], vconc[sbi], mass_diag); // vconc/=mass_diag
+        VecPointwiseMult(vconc, vconc, vpmass_diag); // vconc*=vpmass_diag
+        MatMultAdd(tm, vpconc[sbi], vconc, vconc);   // vconc+=tm*vpconc
+        VecAXPY(vconc, 1, vcumulative_corr[sbi]);    // vconc+=vcumulative_corr
+        VecPointwiseDivide(vconc, vconc, mass_diag); // vconc/=mass_diag
       } else {
-        MatMultAdd(tm, vpconc[sbi], vcumulative_corr[sbi], vconc[sbi]); // vconc =tm*vpconc+vcumulative_corr
-        VecPointwiseDivide(vconc[sbi], vconc[sbi], mass_diag);          // vconc/=mass_diag
-        VecAXPY(vconc[sbi], 1, vpconc[sbi]);                            // vconc+=vpconc
+        MatMultAdd(tm, vpconc[sbi], vcumulative_corr[sbi], vconc);  // vconc =tm*vpconc+vcumulative_corr
+        VecPointwiseDivide(vconc, vconc, mass_diag);                // vconc/=mass_diag
+        VecAXPY(vconc, 1, vpconc[sbi]);                             // vconc+=vpconc
       }
 
       END_TIMER("mat mult");
@@ -841,6 +851,9 @@ void ConvectionTransport::create_transport_matrix_mpi() {
 
 
 double **ConvectionTransport::get_concentration_matrix() {
+    double ** conc = new double*[n_substances()];
+    for(uint sbi=0; sbi<n_substances(); sbi++)
+        conc[sbi] = data_.conc_mobile_fe[sbi]->vec().data().data();
 	return conc;
 }
 
@@ -867,7 +880,7 @@ void ConvectionTransport::output_data() {
     
     START_TIMER("TOS-balance");
     for (unsigned int sbi=0; sbi<n_substances(); ++sbi)
-      balance_->calculate_instant(sbi, vconc[sbi]);
+        balance_->calculate_instant(sbi, data_.conc_mobile_fe[sbi]->vec().petsc_vec());
     balance_->output();
     END_TIMER("TOS-balance");
 }

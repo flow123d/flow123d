@@ -116,7 +116,7 @@ public:
 	virtual double **get_concentration_matrix() = 0;
 
 	/// Return PETSc vector with solution for sbi-th substance.
-	virtual const Vec &get_solution(unsigned int sbi) = 0;
+	virtual Vec get_solution(unsigned int sbi) = 0;
 
 	/// Return array of indices of local elements and parallel distribution of elements.
 	virtual void get_par_info(LongIdx * &el_4_loc, Distribution * &el_ds) = 0;
