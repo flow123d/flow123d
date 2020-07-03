@@ -61,7 +61,7 @@ template <int spacedim> class ElementAccessor;
 //      *
 //      * TODO: We should pass whole velocity field object (description of base functions and dof numbering) and vector.
 //      */
-//     virtual void set_velocity_field(const MH_DofHandler &dh) = 0;
+//     virtual void set_velocity_changed() = 0;
 
 //     /// Common specification of the input record for secondary equations.
 //     static Input::Type::Abstract & get_input_type() {
@@ -86,7 +86,7 @@ public:
     inline virtual ~HeatNothing()
     {}
 
-    inline void set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field) override {};
+    inline void set_velocity_changed() override {};
 
     inline virtual void output_data() override {};
 
@@ -120,6 +120,8 @@ public:
 		Field<3, FieldValue<3>::Scalar> porosity;
 		/// Water content passed from Darcy flow model
 		Field<3, FieldValue<3>::Scalar> water_content;
+		/// Flow flux, can be result of water flow model.
+    	Field<3, FieldValue<3>::VectorFixed> flow_flux;
 		/// Density of fluid.
 		Field<3, FieldValue<3>::Scalar> fluid_density;
 		/// Heat capacity of fluid.
@@ -154,9 +156,6 @@ public:
 
 
 		MultiField<3, FieldValue<3>::Scalar> output_field;
-
-		/// Velocity field given from Flow equation.
-		Field<3, FieldValue<3>::VectorFixed > velocity;
 
 
 		/// @name Instances of FieldModel used in assembly methods
@@ -201,69 +200,12 @@ public:
 
 	void init_from_input(const Input::Record &) override {};
 
-	//void compute_mass_matrix_coefficient(const Armor::array &point_list,
-	//		const ElementAccessor<3> &ele_acc,
-	//		std::vector<double> &mm_coef) override;
-
-	//void compute_retardation_coefficient(const Armor::array &,
-	//		const ElementAccessor<3> &,
-	//		std::vector<std::vector<double> > &) override {};
-
-	//void compute_advection_diffusion_coefficients(const Armor::array &point_list,
-	//		const std::vector<arma::vec3> &velocity,
-	//		const ElementAccessor<3> &ele_acc,
-	//		std::vector<std::vector<arma::vec3> > &ad_coef,
-	//		std::vector<std::vector<arma::mat33> > &dif_coef) override;
-
-	//void compute_init_cond(const Armor::array &point_list,
-	//		const ElementAccessor<3> &ele_acc,
-	//		std::vector<std::vector<double> > &init_values) override;
-
     inline Field<3, FieldValue<3>::Scalar> &init_cond_field(FMT_UNUSED unsigned int sbi)
     {
         return data().init_temperature;
     }
 
-	//void get_bc_type(const ElementAccessor<3> &ele_acc,
-	//			arma::uvec &bc_types) override;
-
-	//void get_flux_bc_data(unsigned int index,
-    //        const Armor::array &point_list,
-	//        const ElementAccessor<3> &ele_acc,
-	//        std::vector< double > &bc_flux,
-	//        std::vector< double > &bc_sigma,
-	//        std::vector< double > &bc_ref_value) override;
-
-	//void get_flux_bc_sigma(unsigned int index,
-    //        const Armor::array &point_list,
-	//        const ElementAccessor<3> &ele_acc,
-	//        std::vector< double > &bc_sigma) override;
-
-	//void compute_source_coefficients(const Armor::array &point_list,
-	//			const ElementAccessor<3> &ele_acc,
-	//			std::vector<std::vector<double> > &sources_conc,
-	//			std::vector<std::vector<double> > &sources_density,
-	//			std::vector<std::vector<double> > &sources_sigma) override;
-
-	//void compute_sources_sigma(const Armor::array &point_list,
-	//			const ElementAccessor<3> &ele_acc,
-	//			std::vector<std::vector<double> > &sources_sigma) override;
-
 	~HeatTransferModel() override;
-
-	/**
-	 * @brief Updates the velocity field which determines some coefficients of the transport equation.
-	 *
-         * @param dh mixed hybrid dof handler
-         *
-	 * (So far it does not work since the flow module returns a vector of zeros.)
-	 */
-	inline void set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field) override
-	{
-		velocity_field_ptr_ = flux_field;
-		data().velocity.set_field(mesh_->region_db().get_region_set("ALL"), flux_field);
-		flux_changed = true;
-	}
 
     /// Returns number of transported substances.
     inline unsigned int n_substances()
@@ -276,16 +218,12 @@ public:
     const vector<unsigned int> &get_subst_idx()
 	{ return subst_idx; }
 
-    std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> velocity_field_ptr() const {
-        return this->velocity_field_ptr_;
-    }
-
-
-protected:
 
 	/// Derived class should implement getter for ModelEqData instance.
 	virtual ModelEqData &data() = 0;
 
+protected:
+	
 	/**
 	 * Create input type that can be passed to the derived class.
 	 * @param implementation String characterizing the numerical method, e.g. DG, FEM, FVM.
@@ -306,9 +244,6 @@ protected:
 	 */
 	void initialize();
 
-	/// Indicator of change in advection vector field.
-	bool flux_changed;
-
     /// Transported substances.
     SubstanceList substances_;
 
@@ -316,11 +251,6 @@ protected:
 	vector<unsigned int> subst_idx;
 
 	std::shared_ptr<OutputTime> output_stream_;
-
-	/// Pointer to velocity field given from Flow equation - obsolete, will be replace with Field<...> data()->velocity.
-	std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> velocity_field_ptr_;
-
-
 };
 
 

@@ -43,7 +43,7 @@ template<class elm_type>
 class FieldValueCache {
 public:
     /// Constructor
-    FieldValueCache(unsigned int n_rows = 1, unsigned int n_cols = 1);
+    FieldValueCache(unsigned int n_rows, unsigned int n_cols);
 
     /// Destructor
     ~FieldValueCache();
@@ -131,7 +131,8 @@ public:
     static const unsigned int undef_elem_idx;
 
     /// Size of block (evaluation of FieldFormula) must be multiple of this value.
-    static const unsigned int formula_block_divisor;
+    /// TODO We should take this value from BParser and it should be dependent on processor configuration.
+    static const unsigned int simd_size_double;
 
     /**
      * Holds elements indices of one region stored in cache.

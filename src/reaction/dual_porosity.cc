@@ -213,9 +213,10 @@ void DualPorosity::initialize_fields()
   for (unsigned int sbi=0; sbi<substances_.size(); sbi++)
   {
     // create shared pointer to a FieldFE and push this Field to output_field on all regions
-    std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_field_ptr = make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
-    conc_immobile_out[sbi] = output_field_ptr->set_fe_data(this->dof_handler_);
+    auto output_field_ptr = create_field_fe< 3, FieldValue<3>::Scalar >(this->dof_handler_);
     data_.conc_immobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
+    
+    conc_immobile_out[sbi] = output_field_ptr->get_data_vec();
     double *out_array;
     VecGetArray(conc_immobile_out[sbi].petsc_vec(), &out_array);
     conc_immobile[sbi] = out_array;

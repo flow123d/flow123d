@@ -101,13 +101,13 @@ void HM_Iterative::EqData::initialize(Mesh &mesh)
     set_mesh(mesh);
     
     potential_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(mesh, MixedPtr<FE_CR>());
-    pressure_potential.set_field(mesh.region_db().get_region_set("ALL"), potential_ptr_);
+    pressure_potential.set_field(mesh.region_db().get_region_set("ALL"), potential_ptr_, 0.0);
     
     beta_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(mesh, MixedPtr<FE_P_disc>(0));
-    beta.set_field(mesh.region_db().get_region_set("ALL"), beta_ptr_);
+    beta.set_field(mesh.region_db().get_region_set("ALL"), beta_ptr_, 0.0);
     
     flow_source_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(beta_ptr_->get_dofhandler());
-    flow_source.set_field(mesh.region_db().get_region_set("ALL"), flow_source_ptr_);
+    flow_source.set_field(mesh.region_db().get_region_set("ALL"), flow_source_ptr_, 0.0);
     
     old_pressure_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(beta_ptr_->get_dofhandler());
     old_iter_pressure_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(beta_ptr_->get_dofhandler());
@@ -318,12 +318,6 @@ void HM_Iterative::compute_iteration_error(double& abs_error, double& rel_error)
                          iteration(), abs_error, rel_error);
 }
 
-
-
-double HM_Iterative::last_t()
-{
-    return flow_->last_t();
-}
 
 
 HM_Iterative::~HM_Iterative() {

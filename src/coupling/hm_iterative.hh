@@ -158,7 +158,6 @@ public:
     void initialize() override;
     void zero_time_step() override;
     void update_solution() override;
-    double last_t() override;
     ~HM_Iterative();
 
 private:
