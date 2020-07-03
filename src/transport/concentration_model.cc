@@ -218,11 +218,6 @@ ConcentrationTransportModel::ModelEqData::ModelEqData()
 	        .units( UnitSI().kg().m(-3) )
 	        .flags( equation_result );
 
-    *this += velocity.name("velocity")
-            .description("Velocity field given from Flow equation.")
-            .input_default("0.0")
-            .units( UnitSI().m().s(-1) );
-
 
 	// initiaization of FieldModels
     *this += v_norm.name("v_norm")
@@ -529,7 +524,7 @@ void ConcentrationTransportModel::initialize()
     data().disp_t.setup_components();
 
     // create FieldModels
-    auto v_norm_ptr = Model<3, FieldValue<3>::Scalar>::create(fn_conc_v_norm, data().velocity);
+    auto v_norm_ptr = Model<3, FieldValue<3>::Scalar>::create(fn_conc_v_norm, data().flow_flux);
     data().v_norm.set_field(mesh_->region_db().get_region_set("ALL"), v_norm_ptr, 0.0);
 
     auto mass_matrix_coef_ptr = Model<3, FieldValue<3>::Scalar>::create(fn_conc_mass_matrix, data().cross_section, data().water_content);
@@ -548,13 +543,13 @@ void ConcentrationTransportModel::initialize()
     auto sources_conc_ptr = Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_sources_conc, data().sources_conc);
     data().sources_conc_out.set_fields(mesh_->region_db().get_region_set("ALL"), sources_conc_ptr);
 
-    auto ad_coef_ptr = Model<3, FieldValue<3>::VectorFixed>::create(fn_conc_ad_coef, data().velocity);
+    auto ad_coef_ptr = Model<3, FieldValue<3>::VectorFixed>::create(fn_conc_ad_coef, data().flow_flux);
     std::vector<typename Field<3, FieldValue<3>::VectorFixed>::FieldBasePtr> ad_coef_ptr_vec;
     for (unsigned int sbi=0; sbi<substances_.names().size(); sbi++)
         ad_coef_ptr_vec.push_back(ad_coef_ptr);
     data().advection_coef.set_fields(mesh_->region_db().get_region_set("ALL"), ad_coef_ptr_vec);
 
-    auto diffusion_coef_ptr = Model<3, FieldValue<3>::TensorFixed>::create_multi(fn_conc_diff_coef, data().diff_m, data().velocity, data().v_norm,
+    auto diffusion_coef_ptr = Model<3, FieldValue<3>::TensorFixed>::create_multi(fn_conc_diff_coef, data().diff_m, data().flow_flux, data().v_norm,
             data().disp_l, data().disp_t, data().water_content, data().porosity, data().cross_section);
     data().diffusion_coef.set_fields(mesh_->region_db().get_region_set("ALL"), diffusion_coef_ptr);
 }

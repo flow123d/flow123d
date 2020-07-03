@@ -81,9 +81,6 @@ public:
 
 		MultiField<3, FieldValue<3>::Scalar> output_field;
 
-		/// Velocity field given from Flow equation.
-		Field<3, FieldValue<3>::VectorFixed > velocity;
-
 
 		/// @name Instances of FieldModel used in assembly methods
 		// @{
