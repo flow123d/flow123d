@@ -314,19 +314,19 @@ void Elasticity::initialize()
     
     // setup output stress
     data_.output_stress_ptr = create_field_fe<3, FieldValue<3>::TensorFixed>(feo->dh_tensor());
-    data_.output_stress.set_field(mesh_->region_db().get_region_set("ALL"), data_.output_stress_ptr);
+    data_.output_stress.set_field(mesh_->region_db().get_region_set("ALL"), data_.output_stress_ptr, 0.);
     
     // setup output von Mises stress
     data_.output_von_mises_stress_ptr = create_field_fe<3, FieldValue<3>::Scalar>(feo->dh_scalar());
-    data_.output_von_mises_stress.set_field(mesh_->region_db().get_region_set("ALL"), data_.output_von_mises_stress_ptr);
+    data_.output_von_mises_stress.set_field(mesh_->region_db().get_region_set("ALL"), data_.output_von_mises_stress_ptr, 0.);
     
     // setup output cross-section
     data_.output_cross_section_ptr = create_field_fe<3, FieldValue<3>::Scalar>(feo->dh_scalar());
-    data_.output_cross_section.set_field(mesh_->region_db().get_region_set("ALL"), data_.output_cross_section_ptr);
+    data_.output_cross_section.set_field(mesh_->region_db().get_region_set("ALL"), data_.output_cross_section_ptr, 0.);
     
     // setup output divergence
     data_.output_div_ptr = create_field_fe<3, FieldValue<3>::Scalar>(feo->dh_scalar());
-    data_.output_divergence.set_field(mesh_->region_db().get_region_set("ALL"), data_.output_div_ptr);
+    data_.output_divergence.set_field(mesh_->region_db().get_region_set("ALL"), data_.output_div_ptr, 0.);
     
     data_.output_field.output_type(OutputTime::CORNER_DATA);
 

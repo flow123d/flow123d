@@ -76,6 +76,9 @@ class FieldSet : public FieldFlag {
 public:
 	DECLARE_EXCEPTION(ExcUnknownField, << "Field set has no field with name: " << FieldCommon::EI_Field::qval);
 
+	/// Default constructor.
+	FieldSet();
+
 	/**
 	 * Add an existing Field to the list. It stores just pointer to the field.
 	 * Be careful to not destroy passed Field before the FieldSet.

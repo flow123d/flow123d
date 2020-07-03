@@ -35,9 +35,6 @@ FLOW123D_FORCE_LINK_IN_CHILD(field_formula)
 
 
 template <int spacedim, class Value>
-const uint FieldFormula<spacedim, Value>::bparser_vec_size = 128;
-
-template <int spacedim, class Value>
 const Input::Type::Record & FieldFormula<spacedim, Value>::get_input_type()
 {
 
@@ -256,12 +253,18 @@ void FieldFormula<spacedim, Value>::cache_update(FieldValueCache<typename Value:
     	x_[i] = field_set_->x().data().template mat<1,1>(i)(0);
         y_[i] = field_set_->y().data().template mat<1,1>(i)(0);
         z_[i] = field_set_->z().data().template mat<1,1>(i)(0);
+        if (surface_depth_ && has_depth_var_) {
+            Point p;
+            p(0) = x_[i]; p(1) = y_[i]; p(2) = z_[i];
+            // TODO computation of depth var needs better solution, probably we add field to FieldSet
+            d_[i] = surface_depth_->compute_distance(p);
+        }
         res_[i] = 0.0;
     }
 
     // Get vector of subsets as subarray
-    uint subsets_begin = i_cache_el_begin / ElementCacheMap::formula_block_divisor;
-    uint subsets_end = i_cache_el_end / ElementCacheMap::formula_block_divisor;
+    uint subsets_begin = i_cache_el_begin / ElementCacheMap::simd_size_double;
+    uint subsets_end = i_cache_el_end / ElementCacheMap::simd_size_double;
     std::vector<uint> subset_vec;
     subset_vec.assign(subsets_ + subsets_begin, subsets_ + subsets_end);
 
@@ -281,18 +284,21 @@ void FieldFormula<spacedim, Value>::cache_update(FieldValueCache<typename Value:
 template <int spacedim, class Value>
 void FieldFormula<spacedim, Value>::cache_reinit(const ElementCacheMap &cache_map)
 {
+	bool use_depth_var = (surface_depth_ && has_depth_var_); // TODO need better check of using 'd' variable (from 'Parser::variables()').
 	if (arena_alloc_!=nullptr) {
 	    delete arena_alloc_;
 	}
 	uint vec_size = cache_map.eval_points()->max_size() * ElementCacheMap::n_cached_elements;
-	while (vec_size%ElementCacheMap::formula_block_divisor > 0) vec_size++; // alignment of block size
+	while (vec_size%ElementCacheMap::simd_size_double > 0) vec_size++; // alignment of block size
 	// number of subset alignment to block size
-	uint n_subsets = (vec_size+ElementCacheMap::formula_block_divisor-1) / ElementCacheMap::formula_block_divisor;
-	arena_alloc_ = new bparser::ArenaAlloc(ElementCacheMap::formula_block_divisor, 4 * vec_size * sizeof(double) + n_subsets * sizeof(uint));
+	uint n_subsets = (vec_size+ElementCacheMap::simd_size_double-1) / ElementCacheMap::simd_size_double;
+	uint n_vectors = (use_depth_var ? 5 : 4); // needs vectors of coordinates x, y, z, result vector and optionally d (depth)
+	arena_alloc_ = new bparser::ArenaAlloc(ElementCacheMap::simd_size_double, n_vectors * vec_size * sizeof(double) + n_subsets * sizeof(uint));
 	X_ = arena_alloc_->create_array<double>(3*vec_size);
 	x_ = X_ + 0;
 	y_ = X_ + vec_size;
 	z_ = X_ + 2*vec_size;
+	if (use_depth_var) d_ = arena_alloc_->create_array<double>(vec_size);
 	res_ = arena_alloc_->create_array<double>(vec_size);
 	subsets_ = arena_alloc_->create_array<uint>(n_subsets);
     for(unsigned int row=0; row < this->value_.n_rows(); row++)
@@ -300,16 +306,32 @@ void FieldFormula<spacedim, Value>::cache_reinit(const ElementCacheMap &cache_ma
             // set expression and data to BParser
             unsigned int i_p = row*this->value_.n_cols()+col;
             //b_parser_[i_p].parse(formula_matrix_.at(row,col));
-            std::string expr = formula_matrix_.at(row,col); // Need replace some operations to be compilable in BParser.
+            std::string expr = formula_matrix_.at(row,col); // Need replace some operations to make them compatible with BParser.
                                                             // It will be solved by conversion script after remove fparser, but
                                                             // we mix using of BParser and fparser and need this solution now.
-            boost::replace_all(expr, "^", "**");
+            boost::replace_all(expr, "^", "**"); // power function
+            boost::replace_all(expr, "max(", "maximum("); // max function
+            boost::replace_all(expr, "min(", "minimum("); // min function
+            boost::replace_all(expr, "Pi", "pi"); // Math.pi
+            boost::replace_all(expr, "E", "e"); // Math.e
+            {  // ternary operator
+                std::string pref("if(");
+                auto res = std::mismatch(pref.begin(), pref.end(), expr.begin());
+                if ( (res.first == pref.end()) && (expr.back() == ')') ) {
+                    std::string subexpr = expr.substr(3, expr.size()-4);
+                    std::string delimiter = ",";
+                    std::string cond = subexpr.substr(0, subexpr.find(delimiter));
+                    subexpr.erase(0, cond.size()+1);
+                    std::string if_case = subexpr.substr(0, subexpr.find(delimiter));
+                    std::string else_case = subexpr.substr(if_case.size()+1);
+                    expr = "(" + if_case + " if " + cond + " else " + else_case +")";
+                }
+            }
             b_parser_[i_p].parse( expr );
-            b_parser_[i_p].set_constant("Pi", {}, {3.14159265358979323846});
-            b_parser_[i_p].set_constant("E",  {}, {2.71828182845904523536});
             b_parser_[i_p].set_variable("x",  {}, x_);
             b_parser_[i_p].set_variable("y",  {}, y_);
             b_parser_[i_p].set_variable("z",  {}, z_);
+            if (use_depth_var) b_parser_[i_p].set_variable("d",  {}, d_);
             b_parser_[i_p].set_constant("t",  {}, {this->time_.end()});
             b_parser_[i_p].set_variable("_result_", {}, res_);
             b_parser_[i_p].compile();

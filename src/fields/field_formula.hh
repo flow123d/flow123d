@@ -69,7 +69,7 @@ public:
     static const Input::Type::Record & get_input_type();
 
     /// Size of data processed in BParser.
-    static const uint bparser_vec_size;
+    static constexpr unsigned int bparser_vec_size = 128;
 
     virtual void init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data);
 
@@ -157,6 +157,7 @@ private:
 	double *x_;     ///< Coordinates x, part of previous array
 	double *y_;     ///< Coordinates y, part of previous array
 	double *z_;     ///< Coordinates z, part of previous array
+	double *d_;     ///< Surface depth variable, used optionally if 'd' variable is set
 	double *res_;   ///< Result vector of BParser
 	uint *subsets_; ///< Subsets indices in range 0 ... n-1
 
@@ -165,6 +166,10 @@ private:
 
 
 };
+
+// Necessary to linking.
+template <int spacedim, class Value>
+constexpr unsigned int FieldFormula<spacedim, Value>::bparser_vec_size;
 
 
 

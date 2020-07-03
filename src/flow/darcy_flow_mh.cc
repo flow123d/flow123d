@@ -206,6 +206,11 @@ DarcyMH::EqData::EqData()
              .flags(FieldFlag::equation_result)
              .description("Velocity solution - P0 interpolation.");
 
+    *this += flux.name("flux")
+	         .units(UnitSI().m().s(-1))
+             .flags(FieldFlag::equation_result)
+             .description("Darcy flow flux.");
+
     *this += anisotropy.name("anisotropy")
             .description("Anisotropy of the conductivity tensor.")
             .input_default("1.0")
@@ -436,22 +441,24 @@ void DarcyMH::initialize() {
 
     { // construct pressure, velocity and piezo head fields
 		uint rt_component = 0;
-        ele_flux_ptr = create_field_fe<3, FieldValue<3>::VectorFixed>(data_->dh_, rt_component);
+        auto ele_flux_ptr = create_field_fe<3, FieldValue<3>::VectorFixed>(data_->dh_, rt_component);
+        data_->full_solution = ele_flux_ptr->get_data_vec();
+        data_->flux.set_field(mesh_->region_db().get_region_set("ALL"), ele_flux_ptr, 0.0);
+
 		auto ele_velocity_ptr = std::make_shared< FieldDivide<3, FieldValue<3>::VectorFixed> >(ele_flux_ptr, data_->cross_section);
-		data_->field_ele_velocity.set_field(mesh_->region_db().get_region_set("ALL"), ele_velocity_ptr);
-		data_->full_solution = ele_flux_ptr->get_data_vec();
+		data_->field_ele_velocity.set_field(mesh_->region_db().get_region_set("ALL"), ele_velocity_ptr, 0.0);
 
 		uint p_ele_component = 0;
         auto ele_pressure_ptr = create_field_fe<3, FieldValue<3>::Scalar>(data_->dh_, p_ele_component, &data_->full_solution);
-		data_->field_ele_pressure.set_field(mesh_->region_db().get_region_set("ALL"), ele_pressure_ptr);
+		data_->field_ele_pressure.set_field(mesh_->region_db().get_region_set("ALL"), ele_pressure_ptr, 0.0);
 
         uint p_edge_component = 1;
         auto edge_pressure_ptr = create_field_fe<3, FieldValue<3>::Scalar>(data_->dh_, p_edge_component, &data_->full_solution);
-		data_->field_edge_pressure.set_field(mesh_->region_db().get_region_set("ALL"), edge_pressure_ptr);
+		data_->field_edge_pressure.set_field(mesh_->region_db().get_region_set("ALL"), edge_pressure_ptr, 0.0);
 
 		arma::vec4 gravity = (-1) * data_->gravity_;
 		auto ele_piezo_head_ptr = std::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar> >(gravity, ele_pressure_ptr);
-		data_->field_ele_piezo_head.set_field(mesh_->region_db().get_region_set("ALL"), ele_piezo_head_ptr);
+		data_->field_ele_piezo_head.set_field(mesh_->region_db().get_region_set("ALL"), ele_piezo_head_ptr, 0.0);
     }
 
     { // init DOF handlers represents edge DOFs
@@ -552,6 +559,9 @@ void DarcyMH::update_solution()
     time_->view("DARCY"); //time governor information output
 
     solve_time_step();
+
+    data_->full_solution.local_to_ghost_begin();
+    data_->full_solution.local_to_ghost_end();
 }
 
 
@@ -765,7 +775,7 @@ double DarcyMH::solution_precision() const
 // =======================================================================================
 void DarcyMH::assembly_mh_matrix(MultidimAssembly& assembler)
 {
-    START_TIMER("DarcyFlowMH_Steady::assembly_steady_mh_matrix");
+    START_TIMER("DarcyFlowMHy::assembly_mh_matrix");
 
     // set auxiliary flag for switchting Dirichlet like BC
     data_->force_no_neumann_bc = use_steady_assembly_ && (nonlinear_iteration_ == 0);
@@ -789,7 +799,7 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembly& assembler)
 
 void DarcyMH::allocate_mh_matrix()
 {
-    START_TIMER("DarcyFlowMH_Steady::allocate_mh_matrix");
+    START_TIMER("DarcyFlowMH::allocate_mh_matrix");
 
     // set auxiliary flag for switchting Dirichlet like BC
     data_->n_schur_compls = n_schur_compls;
@@ -950,7 +960,7 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
             LinSys_BDDC *ls = new LinSys_BDDC(&(*data_->dh_->distr()),
                     true); // swap signs of matrix and rhs to make the matrix SPD
             ls->set_from_input(in_rec);
-            ls->set_solution( ele_flux_ptr->get_data_vec().petsc_vec() );
+            ls->set_solution( data_->full_solution.petsc_vec() );
             // possible initialization particular to BDDC
             START_TIMER("BDDC set mesh data");
             set_mesh_data_for_bddc(ls);
@@ -980,7 +990,7 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
                     ls->LinSys::set_from_input(in_rec); // get only common options
                 }
 
-                ls->set_solution( ele_flux_ptr->get_data_vec().petsc_vec() );
+                ls->set_solution( data_->full_solution.petsc_vec() );
                 schur0=ls;
             } else {
                 IS is;
@@ -1025,7 +1035,7 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
                 }
                 ls->set_complement( schur1 );
                 ls->set_from_input(in_rec);
-                ls->set_solution( ele_flux_ptr->get_data_vec().petsc_vec() );
+                ls->set_solution( data_->full_solution.petsc_vec() );
                 schur0=ls;
             }
 
@@ -1492,11 +1502,6 @@ void DarcyMH::modify_system() {
     schur0->set_rhs_changed();
 
     //VecSwap(previous_solution, schur0->get_solution());
-}
-
-
-std::shared_ptr< FieldFE<3, FieldValue<3>::VectorFixed> > DarcyMH::get_velocity_field() {
-    return ele_flux_ptr;
 }
 
 

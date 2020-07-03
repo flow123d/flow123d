@@ -218,11 +218,6 @@ ConcentrationTransportModel::ModelEqData::ModelEqData()
 	        .units( UnitSI().kg().m(-3) )
 	        .flags( equation_result );
 
-    *this += velocity.name("velocity")
-            .description("Velocity field given from Flow equation.")
-            .input_default("0.0")
-            .units( UnitSI().m().s(-1) );
-
 
 	// initiaization of FieldModels
     *this += v_norm.name("v_norm")
@@ -289,8 +284,7 @@ IT::Selection ConcentrationTransportModel::ModelEqData::get_output_selection()
 
 
 ConcentrationTransportModel::ConcentrationTransportModel(Mesh &mesh, const Input::Record &in_rec) :
-		ConcentrationTransportBase(mesh, in_rec),
-		flux_changed(true)
+		ConcentrationTransportBase(mesh, in_rec)
 {}
 
 
@@ -298,213 +292,6 @@ void ConcentrationTransportModel::init_from_input(const Input::Record &in_rec)
 {
 	solvent_density_ = in_rec.val<double>("solvent_density");
 }
-
-
-
-/*void ConcentrationTransportModel::compute_mass_matrix_coefficient(const Armor::array &point_list,
-		const ElementAccessor<3> &ele_acc,
-		std::vector<double> &mm_coef)
-{
-	vector<double> elem_csec(point_list.size()), wc(point_list.size()); //por_m(point_list.size()),
-
-	data().cross_section.value_list(point_list, ele_acc, elem_csec);
-	//data().porosity.value_list(point_list, ele_acc, por_m);
-	data().water_content.value_list(point_list, ele_acc, wc);
-
-	for (unsigned int i=0; i<point_list.size(); i++)
-		mm_coef[i] = elem_csec[i]*wc[i];
-}*/
-// mm_coef - simple field
-
-
-/*void ConcentrationTransportModel::compute_retardation_coefficient(const Armor::array &point_list,
-		const ElementAccessor<3> &ele_acc,
-		std::vector<std::vector<double> > &ret_coef)
-{
-	vector<double> elem_csec(point_list.size()),
-			por_m(point_list.size()),
-			rho_l(point_list.size()),
-			rho_s(point_list.size()),
-			sorp_mult(point_list.size());
-
-	data().cross_section.value_list(point_list, ele_acc, elem_csec);
-	data().porosity.value_list(point_list, ele_acc, por_m);
-	data().rock_density.value_list(point_list, ele_acc, rho_s);
-
-	// Note: Noe effective water content here, since sorption happen only in the rock (1-porosity).
-	for (unsigned int sbi=0; sbi<substances_.size(); sbi++)
-	{
-        data().sorption_coefficient[sbi].value_list(point_list, ele_acc, sorp_mult);
-		for (unsigned int i=0; i<point_list.size(); i++)
-		{
-			ret_coef[sbi][i] = (1.-por_m[i])*rho_s[i]*sorp_mult[i]*elem_csec[i];
-		}
-	}
-}*/
-// ret_coef - multifield, Field parameters pro_m, rho_s, rho_l; multifiled sorp_mult
-//
-// TransportDG::initialize() calls set_components
-// after that we TransportModel::initialize() - there we have to create the FieldModel for components
-// calling Model<>::create_multi and then use MultiField::set_fields to set it.
-//
-
-
-/*void ConcentrationTransportModel::calculate_dispersivity_tensor(const arma::vec3 &velocity,
-		const arma::mat33 &Dm, double alphaL, double alphaT, double water_content, double porosity, double cross_cut,
-		arma::mat33 &K)
-{
-    double vnorm = arma::norm(velocity, 2);
-
-
-	// used tortuosity model dues to Millington and Quirk(1961) (should it be with power 10/3 ?)
-	// for an overview of other models see: Chou, Wu, Zeng, Chang (2011)
-	double tortuosity = pow(water_content, 7.0 / 3.0)/ (porosity * porosity);
-
-    // Note that the velocity vector is in fact the Darcian flux,
-    // so we need not to multiply vnorm by water_content and cross_section.
-	//K = ((alphaL-alphaT) / vnorm) * K + (alphaT*vnorm + Dm*tortuosity*cross_cut*water_content) * arma::eye(3,3);
-
-    if (fabs(vnorm) > 0) {
-        K = ((alphaL - alphaT) / vnorm) * arma::kron(velocity.t(), velocity);
-
-        //arma::mat33 abs_diff_mat = arma::abs(K -  kk);
-        //double diff = arma::min( arma::min(abs_diff_mat) );
-        //ASSERT(  diff < 1e-12 )(diff)(K)(kk);
-    } else
-        K.zeros();
-
-   // Note that the velocity vector is in fact the Darcian flux,
-   // so to obtain |v| we have to divide vnorm by porosity and cross_section.
-   K += alphaT*vnorm*arma::eye(3,3) + Dm*(tortuosity*cross_cut*water_content);
-
-}*/
-// result multifield: dispersivity_tensor (here the K parameter)
-// input fields: water_content, porosity, velocity, cross_cut
-// input multifields: diff_m, disp_l, disp_t
-//
-// Need to return specific field value (Scalar, Vector, Tensor) from Field<>::operator[] in ortder to simplify
-// model function, e.g. just write:
-//      product (Scalar a, Tensor t) { return a * t; }
-// instead of
-//      product (Scalar a, Tensor t) { return a * t; }
-
-
-
-
-
-/*void ConcentrationTransportModel::compute_advection_diffusion_coefficients(const Armor::array &point_list,
-		const std::vector<arma::vec3> &velocity,
-		const ElementAccessor<3> &ele_acc,
-		std::vector<std::vector<arma::vec3> > &ad_coef,
-		std::vector<std::vector<arma::mat33> > &dif_coef)
-{
-	const unsigned int qsize = point_list.size();
-	const unsigned int n_subst = dif_coef.size();
-    std::vector<arma::mat33> Dm(qsize);
-	std::vector<double> alphaL(qsize), alphaT(qsize), por_m(qsize), csection(qsize), wc(qsize);
-
-	data().porosity.value_list(point_list, ele_acc, por_m);
-	data().water_content.value_list(point_list, ele_acc, wc);
-	data().cross_section.value_list(point_list, ele_acc, csection);
-
-    for (unsigned int sbi=0; sbi<n_subst; sbi++)
-    {
-        data().diff_m[sbi].value_list(point_list, ele_acc, Dm);
-        data().disp_l[sbi].value_list(point_list, ele_acc, alphaL);
-        data().disp_t[sbi].value_list(point_list, ele_acc, alphaT);
-		for (unsigned int i=0; i<qsize; i++)
-        {
-			ad_coef[sbi][i] = velocity[i];
-			calculate_dispersivity_tensor(velocity[i],
-					Dm[i], alphaL[i], alphaT[i], wc[i], por_m[i], csection[i],
-					dif_coef[sbi][i]);
-		}
-	}
-}*/
-
-
-/*void ConcentrationTransportModel::compute_init_cond(const Armor::array &point_list,
-		const ElementAccessor<3> &ele_acc,
-		std::vector<std::vector<double> > &init_values)
-{
-    for (unsigned int sbi=0; sbi<n_substances(); sbi++)
-        data().init_conc[sbi].value_list(point_list, ele_acc, init_values[sbi]);
-}*/
-
-/*void ConcentrationTransportModel::get_bc_type(const ElementAccessor<3> &ele_acc,
-			arma::uvec &bc_types)
-{
-	// Currently the bc types for ConcentrationTransport are numbered in the same way as in TransportDG.
-	// In general we should use some map here.
-    bc_types.resize(n_substances());
-    for (unsigned int sbi=0; sbi<n_substances(); sbi++)
-        bc_types[sbi] = data().bc_type[sbi].value(ele_acc.centre(), ele_acc);
-}*/
-
-
-/*void ConcentrationTransportModel::get_flux_bc_data(unsigned int index,
-        const Armor::array &point_list,
-		const ElementAccessor<3> &ele_acc,
-		std::vector< double > &bc_flux,
-		std::vector< double > &bc_sigma,
-		std::vector< double > &bc_ref_value)
-{
-	data().bc_flux[index].value_list(point_list, ele_acc, bc_flux);
-	data().bc_robin_sigma[index].value_list(point_list, ele_acc, bc_sigma);
-	data().bc_dirichlet_value[index].value_list(point_list, ele_acc, bc_ref_value);
-	
-	// Change sign in bc_flux since internally we work with outgoing fluxes.
-	for (auto f : bc_flux) f = -f;
-}*/
-
-/*void ConcentrationTransportModel::get_flux_bc_sigma(unsigned int index,
-        const Armor::array &point_list,
-		const ElementAccessor<3> &ele_acc,
-		std::vector< double > &bc_sigma)
-{
-	data().bc_robin_sigma[index].value_list(point_list, ele_acc, bc_sigma);
-}*/
-
-
-/*void ConcentrationTransportModel::compute_source_coefficients(const Armor::array &point_list,
-			const ElementAccessor<3> &ele_acc,
-			std::vector<std::vector<double> > &sources_value,
-			std::vector<std::vector<double> > &sources_density,
-			std::vector<std::vector<double> > &sources_sigma)
-{
-	const unsigned int qsize = point_list.size();
-	vector<double> csection(qsize);
-	data().cross_section.value_list(point_list, ele_acc, csection);
-    for (unsigned int sbi=0; sbi<n_substances(); sbi++)
-    {
-      data().sources_conc[sbi].value_list(point_list, ele_acc, sources_value[sbi]);
-      data().sources_density[sbi].value_list(point_list, ele_acc, sources_density[sbi]);
-      data().sources_sigma[sbi].value_list(point_list, ele_acc, sources_sigma[sbi]);
-      
-      for (unsigned int k=0; k<qsize; k++)
-      {
-          sources_density[sbi][k] *= csection[k];
-          sources_sigma[sbi][k] *= csection[k];
-      }
-    }
-}*/
-
-
-/*void ConcentrationTransportModel::compute_sources_sigma(const Armor::array &point_list,
-			const ElementAccessor<3> &ele_acc,
-			std::vector<std::vector<double> > &sources_sigma)
-{
-	const unsigned int qsize = point_list.size();
-	vector<double> csection(qsize);
-	data().cross_section.value_list(point_list, ele_acc, csection);
-    for (unsigned int sbi=0; sbi<n_substances(); sbi++)
-    {
-        data().sources_sigma[sbi].value_list(point_list, ele_acc, sources_sigma[sbi]);
-
-        for (unsigned int k=0; k<qsize; k++)
-            sources_sigma[sbi][k] *= csection[k];
-    }
-}*/
 
 
 ConcentrationTransportModel::~ConcentrationTransportModel()
@@ -530,11 +317,11 @@ void ConcentrationTransportModel::initialize()
     data().disp_t.setup_components();
 
     // create FieldModels
-    auto v_norm_ptr = Model<3, FieldValue<3>::Scalar>::create(fn_conc_v_norm, data().velocity);
-    data().v_norm.set_field(mesh_->region_db().get_region_set("ALL"), v_norm_ptr);
+    auto v_norm_ptr = Model<3, FieldValue<3>::Scalar>::create(fn_conc_v_norm, data().flow_flux);
+    data().v_norm.set_field(mesh_->region_db().get_region_set("ALL"), v_norm_ptr, 0.0);
 
     auto mass_matrix_coef_ptr = Model<3, FieldValue<3>::Scalar>::create(fn_conc_mass_matrix, data().cross_section, data().water_content);
-    data().mass_matrix_coef.set_field(mesh_->region_db().get_region_set("ALL"), mass_matrix_coef_ptr);
+    data().mass_matrix_coef.set_field(mesh_->region_db().get_region_set("ALL"), mass_matrix_coef_ptr, 0.0);
 
     auto retardation_coef_ptr = Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_retardation, data().cross_section, data().porosity,
             data().rock_density, data().sorption_coefficient);
@@ -549,13 +336,13 @@ void ConcentrationTransportModel::initialize()
     auto sources_conc_ptr = Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_sources_conc, data().sources_conc);
     data().sources_conc_out.set_fields(mesh_->region_db().get_region_set("ALL"), sources_conc_ptr);
 
-    auto ad_coef_ptr = Model<3, FieldValue<3>::VectorFixed>::create(fn_conc_ad_coef, data().velocity);
+    auto ad_coef_ptr = Model<3, FieldValue<3>::VectorFixed>::create(fn_conc_ad_coef, data().flow_flux);
     std::vector<typename Field<3, FieldValue<3>::VectorFixed>::FieldBasePtr> ad_coef_ptr_vec;
     for (unsigned int sbi=0; sbi<substances_.names().size(); sbi++)
         ad_coef_ptr_vec.push_back(ad_coef_ptr);
     data().advection_coef.set_fields(mesh_->region_db().get_region_set("ALL"), ad_coef_ptr_vec);
 
-    auto diffusion_coef_ptr = Model<3, FieldValue<3>::TensorFixed>::create_multi(fn_conc_diff_coef, data().diff_m, data().velocity, data().v_norm,
+    auto diffusion_coef_ptr = Model<3, FieldValue<3>::TensorFixed>::create_multi(fn_conc_diff_coef, data().diff_m, data().flow_flux, data().v_norm,
             data().disp_l, data().disp_t, data().water_content, data().porosity, data().cross_section);
     data().diffusion_coef.set_fields(mesh_->region_db().get_region_set("ALL"), diffusion_coef_ptr);
 }
