@@ -124,9 +124,6 @@ public:
 	/// Return global array of order of elements within parallel vector.
 	virtual LongIdx *get_row_4_el() = 0;
 
-	/// Pass velocity from flow to transport.
-    virtual void set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field) = 0;
-
     /// Returns number of trnasported substances.
     virtual unsigned int n_substances() = 0;
 
@@ -157,6 +154,9 @@ public:
 
 	/// Pointer to DarcyFlow field cross_section
 	Field<3, FieldValue<3>::Scalar > cross_section;
+
+    /// Flow flux, can be result of water flow model.
+    Field<3, FieldValue<3>::VectorFixed > flow_flux;
 
 	/// Concentration sources - density of substance source, only positive part is used.
 	MultiField<3, FieldValue<3>::Scalar> sources_density;
@@ -189,8 +189,6 @@ public:
     {
         if(time_) delete time_;
     }
-
-    inline void set_velocity_field(FMT_UNUSED std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field) override {};
 
     inline virtual void output_data() override {};
 
@@ -227,8 +225,6 @@ public:
     TransportOperatorSplitting(Mesh &init_mesh, const Input::Record in_rec);
     /// Destructor.
     virtual ~TransportOperatorSplitting();
-
-    virtual void set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field) override;
 
     void initialize() override;
     void zero_time_step() override;

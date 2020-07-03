@@ -365,7 +365,10 @@ protected:
      */
     void update_history(const TimeStep &time);
 
-
+    /// Fills acutally the data cache with field values, used in @p compute_field_data
+    void fill_data_cache(OutputTime::DiscreteSpace space_type,
+                         std::shared_ptr<OutputTime> stream,
+                         std::shared_ptr<ElementDataCache<typename Value::element_type>> data_cache);
 
     /**
      *  Check that whole field list (@p region_fields_) is set, possibly use default values for unset regions.

@@ -75,8 +75,8 @@
  */
 
 template <typename T>
-ElementDataCache<T> & OutputTime::prepare_compute_data(std::string field_name, DiscreteSpace space_type, unsigned int n_rows,
-		unsigned int n_cols)
+OutputTime::OutputDataPtr OutputTime::prepare_compute_data(std::string field_name,
+    DiscreteSpace space_type, unsigned int n_rows, unsigned int n_cols)
 {
     // get possibly existing data for the same field, check both name and type
     unsigned int size;
@@ -97,14 +97,29 @@ ElementDataCache<T> & OutputTime::prepare_compute_data(std::string field_name, D
             break;
     }
 
+    /**
+     * supposing that everything is output at the first step !
+     * - if(current_step == 0) push_back all the non-existing fields shared<ElementDataCache<T>>
+     * - else just set the correct shared<ElementDataCache<T>>
+     * - when clearing output_data_vec, set all to shared<DummyElementCache>
+     * - this can be done in many equations sharing the same OutputTime stream
+     * 
+    */
     auto &od_vec=this->output_data_vec_[space_type];
     auto it=std::find_if(od_vec.begin(), od_vec.end(),
             [&field_name](OutputDataPtr ptr) { return (ptr->field_input_name() == field_name); });
-    if ( it == od_vec.end() ) {
+    
+    if(current_step == 0 && it == od_vec.end() ) {
+        // DebugOut() << "OutputTime::prepare_compute_data: PUSH BACK " << field_name << "\n";
         od_vec.push_back( std::make_shared< ElementDataCache<T> >(field_name, n_rows*n_cols, size) );
         it=--od_vec.end();
     }
-    return dynamic_cast<ElementDataCache<T> &>(*(*it));
+    else{
+        ASSERT(it != od_vec.end()).error("Try to add non-existing output field after first step.");
+        *it = std::make_shared< ElementDataCache<T> >(field_name, n_rows*n_cols, size);
+    }
+
+    return *it;
 }
 
 #endif

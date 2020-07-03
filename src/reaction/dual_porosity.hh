@@ -44,7 +44,6 @@ namespace Input {
 		class Record;
 	}
 }
-template <int spacedim, class Value> class FieldFE;
 
 
 /// Class representing dual porosity model in transport.

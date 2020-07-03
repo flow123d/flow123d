@@ -320,12 +320,6 @@ void HM_Iterative::compute_iteration_error(double& abs_error, double& rel_error)
 
 
 
-double HM_Iterative::last_t()
-{
-    return flow_->last_t();
-}
-
-
 HM_Iterative::~HM_Iterative() {
 	flow_.reset();
     mechanics_.reset();

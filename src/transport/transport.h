@@ -27,6 +27,7 @@
 #include <memory>                                     // for shared_ptr
 #include <vector>                                     // for vector
 #include <petscmat.h>
+#include "fem/fe_values.hh"                           // for FEValues
 #include "fields/field.hh"                            // for Field
 #include "fields/bc_multi_field.hh"
 #include "fields/field_values.hh"
@@ -54,7 +55,6 @@ namespace Input {
 		class Selection;
 	}
 }
-template <int spacedim, class Value> class FieldFE;
 
 
 //=============================================================================
@@ -215,9 +215,6 @@ public:
      */
     virtual void output_data() override;
 
-    inline void set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field) override
-    { velocity_field_ptr_ = flux_field; changed_ = true; }
-
     void set_output_stream(std::shared_ptr<OutputTime> stream) override
     { output_stream_ = stream; }
 
@@ -349,13 +346,6 @@ private:
     Vec *vcumulative_corr;
     double **cumulative_corr;
 
-    std::vector<VectorMPI> out_conc;
-
-    // Temporary objects holding pointers to appropriate FieldFE
-    // TODO remove after final fix of equations
-    /// Fields correspond with \p out_conc.
-    std::vector< std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> > output_field_ptr;
-
 	/// Record with input specification.
 	const Input::Record input_rec;
 
@@ -378,12 +368,6 @@ private:
 
 	/// List of indices used to call balance methods for a set of quantities.
 	vector<unsigned int> subst_idx;
-
-	/// Pointer to velocity field given from Flow equation.
-	std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> velocity_field_ptr_;
-
-	/// Indicator of change in velocity field.
-	bool changed_;
 
 	/// Finite element objects
 	FETransportObjects feo_;

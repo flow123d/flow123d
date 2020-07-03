@@ -44,7 +44,6 @@
 #include <armadillo>
 #include "fields/bc_field.hh"                   // for BCField
 #include "fields/field.hh"                      // for Field
-#include "fields/field_fe.hh"                      // for FieldFE
 #include "fields/field_set.hh"                  // for FieldSet
 #include "fields/field_values.hh"               // for FieldValue<>::Scalar
 #include "flow/darcy_flow_interface.hh"         // for DarcyFlowInterface
@@ -181,12 +180,6 @@ public:
     static const Input::Type::Record & type_field_descriptor();
     static const Input::Type::Record & get_input_type();
 
-    double last_t() override {
-        return time_->last_t();
-    }
-
-    std::shared_ptr< FieldFE<3, FieldValue<3>::VectorFixed> > get_velocity_field() override;
-
     void init_eq_data();
     void initialize() override;
     virtual void initialize_specific();
@@ -304,10 +297,6 @@ protected:
 	unsigned int min_n_it_;
 	unsigned int max_n_it_;
 	unsigned int nonlinear_iteration_; //< Actual number of completed nonlinear iterations, need to pass this information into assembly.
-
-    // Temporary objects holding pointers to appropriate FieldFE
-    // TODO remove after final fix of equations
-    std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> ele_flux_ptr;            ///< Field of flux in barycenter of every element.
 
 	std::shared_ptr<EqData> data_;
 

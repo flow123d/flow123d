@@ -1151,7 +1151,7 @@ private:
     //                        const Armor::array &point_list)
     //{
     //    velocity.resize(point_list.size());
-    //    model_->velocity_field_ptr()->value_list(point_list, cell, velocity);
+    //    model_->data().flow_flux.value_list(point_list, cell, velocity);
     //}
 
     shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
@@ -1627,7 +1627,7 @@ public:
         //                        const Armor::array &point_list)
         //{
         //    velocity.resize(point_list.size());
-        //    model_->velocity_field_ptr()->value_list(point_list, cell, velocity);
+        //    model_->data().flow_flux.value_list(point_list, cell, velocity);
         //}
 
         shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
