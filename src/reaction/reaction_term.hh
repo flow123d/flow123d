@@ -108,15 +108,10 @@ public:
   void choose_next_time(void) override;
 
 protected:
-  /**
-   * Computation of reaction term on a single element.
-   * Inputs should be loc_el and local copies of concentrations of the element, which is then returned.
-   */
+  /// Compute reaction on a single element.
   virtual void compute_reaction(const DHCellAccessor& dh_cell) = 0;
 
-  /**
-   * Pointer to two-dimensional array[species][elements] containing concentrations.
-   */
+  /// FieldFEs representing P0 interpolation of mobile concentration (passed from transport).
   FieldFEScalarVec conc_mobile_fe;
   
   /// Names belonging to substances.

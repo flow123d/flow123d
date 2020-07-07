@@ -302,12 +302,12 @@ void TransportDG<Model>::initialize()
     // allocate matrix and vector structures
     data_->ls    = new LinSys*[Model::n_substances()];
     data_->ls_dt = new LinSys*[Model::n_substances()];
-    conc_fe.resize(Model::n_substances());
+    data_->conc_fe.resize(Model::n_substances());
     
     MixedPtr<FE_P_disc> fe(0);
     shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>(Model::mesh_, fe);
-    dh_p0 = make_shared<DOFHandlerMultiDim>(*Model::mesh_);
-    dh_p0->distribute_dofs(ds);    
+    data_->dh_p0 = make_shared<DOFHandlerMultiDim>(*Model::mesh_);
+    data_->dh_p0->distribute_dofs(ds);    
 
 
     stiffness_matrix.resize(Model::n_substances(), nullptr);
@@ -324,7 +324,7 @@ void TransportDG<Model>::initialize()
         data_->ls_dt[sbi] = new LinSys_PETSC(data_->dh_->distr().get(), petsc_default_opts);
         ( (LinSys_PETSC *)data_->ls_dt[sbi] )->set_from_input( input_rec.val<Input::Record>("solver") );
         
-        conc_fe[sbi] = create_field_fe< 3, FieldValue<3>::Scalar >(dh_p0);
+        data_->conc_fe[sbi] = create_field_fe< 3, FieldValue<3>::Scalar >(data_->dh_p0);
         
         VecDuplicate(data_->ls[sbi]->get_solution(), &data_->ret_vec[sbi]);
     }
@@ -612,17 +612,17 @@ void TransportDG<Model>::compute_p0_interpolation()
 		LocDofVec loc_dof_indices = cell.get_loc_dof_indices();
 		unsigned int n_dofs=loc_dof_indices.n_rows;
 
-        DHCellAccessor dh_p0_cell = dh_p0->cell_accessor_from_element(cell.elm_idx());
+        DHCellAccessor dh_p0_cell = data_->dh_p0->cell_accessor_from_element(cell.elm_idx());
         IntIdx dof_p0 = dh_p0_cell.get_loc_dof_indices()[0];
 
         for (unsigned int sbi=0; sbi<Model::n_substances(); ++sbi)
         {
-            conc_fe[sbi]->vec()[dof_p0] = 0;
+            data_->conc_fe[sbi]->vec()[dof_p0] = 0;
 
             for (unsigned int j=0; j<n_dofs; ++j)
-                conc_fe[sbi]->vec()[dof_p0] += data_->ls[sbi]->get_solution_array()[loc_dof_indices[j]];
+                data_->conc_fe[sbi]->vec()[dof_p0] += data_->ls[sbi]->get_solution_array()[loc_dof_indices[j]];
 
-            conc_fe[sbi]->vec()[dof_p0] = max(conc_fe[sbi]->vec()[dof_p0]/n_dofs, 0.);
+            data_->conc_fe[sbi]->vec()[dof_p0] = max(data_->conc_fe[sbi]->vec()[dof_p0]/n_dofs, 0.);
         }
     }
 }
@@ -715,7 +715,7 @@ void TransportDG<Model>::update_after_reactions(bool solution_changed)
     	    LocDofVec loc_dof_indices = cell.get_loc_dof_indices();
             unsigned int n_dofs=loc_dof_indices.n_rows;
             
-            DHCellAccessor dh_p0_cell = dh_p0->cell_accessor_from_element(cell.elm_idx());
+            DHCellAccessor dh_p0_cell = data_->dh_p0->cell_accessor_from_element(cell.elm_idx());
             IntIdx dof_p0 = dh_p0_cell.get_loc_dof_indices()[0];
 
             for (unsigned int sbi=0; sbi<Model::n_substances(); ++sbi)
@@ -726,7 +726,8 @@ void TransportDG<Model>::update_after_reactions(bool solution_changed)
                 old_average /= n_dofs;
 
                 for (unsigned int j=0; j<n_dofs; ++j)
-                    data_->ls[sbi]->get_solution_array()[loc_dof_indices[j]] += conc_fe[sbi]->vec()[dof_p0] - old_average;
+                    data_->ls[sbi]->get_solution_array()[loc_dof_indices[j]]
+                        += data_->conc_fe[sbi]->vec()[dof_p0] - old_average;
             }
         }
     }

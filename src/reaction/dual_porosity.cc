@@ -169,7 +169,7 @@ void DualPorosity::initialize()
   {
     reaction_immobile->substances(substances_)
                 .output_stream(output_stream_)
-                .concentration_fields(conc_immobile_fe)
+                .concentration_fields(data_.conc_immobile_fe)
                 .set_time_governor(*time_);
     reaction_immobile->initialize();
   }
@@ -194,11 +194,11 @@ void DualPorosity::initialize_fields()
 
 
   //creating field fe and output multifield for sorbed concentrations
-  conc_immobile_fe.resize(substances_.size());
+  data_.conc_immobile_fe.resize(substances_.size());
   for (unsigned int sbi = 0; sbi < substances_.size(); sbi++)
   {
-      conc_immobile_fe[sbi] = create_field_fe< 3, FieldValue<3>::Scalar >(dof_handler_);
-      data_.conc_immobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), conc_immobile_fe[sbi], 0);
+      data_.conc_immobile_fe[sbi] = create_field_fe< 3, FieldValue<3>::Scalar >(dof_handler_);
+      data_.conc_immobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), data_.conc_immobile_fe[sbi], 0);
   }
 
   data_.output_fields.initialize(output_stream_, mesh_, input_record_.val<Input::Record>("output"),time());
@@ -251,7 +251,7 @@ void DualPorosity::set_initial_condition()
         //setting initial solid concentration for substances involved in adsorption
         for (unsigned int sbi = 0; sbi < substances_.size(); sbi++)
         {
-            conc_immobile_fe[sbi]->vec()[dof_p0] = data_.init_conc_immobile[sbi].value(ele.centre(), ele);
+            data_.conc_immobile_fe[sbi]->vec()[dof_p0] = data_.init_conc_immobile[sbi].value(ele.centre(), ele);
         }
     }
 }
@@ -302,7 +302,7 @@ void DualPorosity::compute_reaction(const DHCellAccessor& dh_cell)
         exponent = diff_vec[sbi] * temp_exponent;
         //previous values
         previous_conc_mob = conc_mobile_fe[sbi]->vec()[dof_p0];
-        previous_conc_immob = conc_immobile_fe[sbi]->vec()[dof_p0];
+        previous_conc_immob = data_.conc_immobile_fe[sbi]->vec()[dof_p0];
         
         // ---compute average concentration------------------------------------------
         conc_average = ((por_mob * previous_conc_mob) + (por_immob * previous_conc_immob)) 
@@ -334,7 +334,7 @@ void DualPorosity::compute_reaction(const DHCellAccessor& dh_cell)
         }
         
         conc_mobile_fe[sbi]->vec()[dof_p0] = conc_mob;
-        conc_immobile_fe[sbi]->vec()[dof_p0] = conc_immob;
+        data_.conc_immobile_fe[sbi]->vec()[dof_p0] = conc_immob;
     }
 }
 

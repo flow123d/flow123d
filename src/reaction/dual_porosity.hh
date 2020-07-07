@@ -72,7 +72,8 @@ public:
 
     Field<3, FieldValue<3>::Scalar > porosity; ///< Porosity field.
     
-    MultiField<3, FieldValue<3>::Scalar>  conc_immobile;    ///< Calculated concentrations in the immobile zone.
+    MultiField<3, FieldValue<3>::Scalar>  conc_immobile;  ///< Calculated concentrations in the immobile zone.
+    FieldFEScalarVec conc_immobile_fe;                    ///< Underlaying FieldFE for each substance of conc_immobile.
 
     /// Fields indended for output, i.e. all input fields plus those representing solution.
     EquationOutput output_fields;
@@ -121,12 +122,8 @@ protected:
   /// Initializes field sets.
   void initialize_fields();
   
+  /// Compute reaction on a single element.
   void compute_reaction(const DHCellAccessor& dh_cell) override;
-  
-  /**
-   * Pointer to twodimensional array[substance][elements] containing concentrations either in immobile.
-   */
-  FieldFEScalarVec conc_immobile_fe;
 
   /**
    * Equation data - all data fields are in this set.

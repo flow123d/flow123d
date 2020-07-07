@@ -139,6 +139,8 @@ public:
     template<unsigned int dim> using BdrConditionAssemblyDim = BdrConditionAssemblyDG<dim, Model>;
     template<unsigned int dim> using InitConditionAssemblyDim = InitConditionAssemblyDG<dim, Model>;
 
+	typedef std::vector<std::shared_ptr<FieldFE< 3, FieldValue<3>::Scalar>>> FieldFEScalarVec;
+
 	class EqData : public Model::ModelEqData {
 	public:
 
@@ -226,9 +228,10 @@ public:
         GenericAssembly< SourcesAssemblyDim > * sources_assembly_;
         GenericAssembly< BdrConditionAssemblyDim > * bdr_cond_assembly_;
         GenericAssembly< InitConditionAssemblyDim > * init_cond_assembly_;
-	};
 
-	typedef std::vector<std::shared_ptr<FieldFE< 3, FieldValue<3>::Scalar>>> FieldFEScalarVec;
+		FieldFEScalarVec conc_fe;
+		std::shared_ptr<DOFHandlerMultiDim> dh_p0;
+	};
 
 	enum DGVariant {
 		// Non-symmetric weighted interior penalty DG
@@ -285,11 +288,13 @@ public:
 
     void calculate_cumulative_balance();
 
+	/// Return PETSc vector with solution for sbi-th component.
 	Vec get_component_vec(unsigned int sbi)
 	{ return data_->ls[sbi]->get_solution(); }
 
-	FieldFEScalarVec& get_conc_fields()
-	{ return conc_fe;}
+	/// Getter for P0 interpolation by FieldFE.
+	FieldFEScalarVec& get_p0_interpolation()
+	{ return data_->conc_fe;}
 
 	/// Compute P0 interpolation of the solution (used in reaction term).
 	void compute_p0_interpolation();
@@ -371,9 +376,6 @@ private:
 	
 	/// Mass from previous time instant (necessary when coefficients of mass matrix change in time).
 	std::vector<Vec> mass_vec;
-
-	FieldFEScalarVec conc_fe;
-	std::shared_ptr<DOFHandlerMultiDim> dh_p0;
 	// @}
 
 

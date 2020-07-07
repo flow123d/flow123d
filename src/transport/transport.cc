@@ -850,7 +850,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
 }
 
 
-ConvectionTransport::FieldFEScalarVec& ConvectionTransport::get_conc_fields() {
+ConvectionTransport::FieldFEScalarVec& ConvectionTransport::get_p0_interpolation() {
     return data_.conc_mobile_fe;
 }
 

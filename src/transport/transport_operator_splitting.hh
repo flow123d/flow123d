@@ -115,8 +115,8 @@ public:
     /// Getter for output stream.
     virtual std::shared_ptr<OutputTime> output_stream() = 0;
 
-    /// Getter for array of concentrations per element.
-	virtual FieldFEScalarVec& get_conc_fields() = 0;
+    /// Getter for P0 interpolation by FieldFE.
+	virtual FieldFEScalarVec& get_p0_interpolation() = 0;
 
 	/// Return PETSc vector with solution for sbi-th substance.
 	virtual Vec get_component_vec(unsigned int sbi) = 0;

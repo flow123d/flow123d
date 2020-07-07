@@ -199,7 +199,7 @@ void SorptionBase::initialize()
   if(reaction_solid)
   {
     reaction_solid->substances(substances_)
-      .concentration_fields(conc_solid_fe)
+      .concentration_fields(data_->conc_solid_fe)
       .set_time_governor(*time_);
     reaction_solid->initialize();
   }
@@ -325,11 +325,11 @@ void SorptionBase::initialize_fields()
   data_->conc_solid.setup_components();
 
   //creating field fe and output multifield for sorbed concentrations
-  conc_solid_fe.resize(substances_.size());
+  data_->conc_solid_fe.resize(substances_.size());
   for (unsigned int sbi = 0; sbi < substances_.size(); sbi++)
   {
-    conc_solid_fe[sbi] = create_field_fe< 3, FieldValue<3>::Scalar >(dof_handler_);
-		data_->conc_solid[sbi].set_field(mesh_->region_db().get_region_set("ALL"), conc_solid_fe[sbi], 0);
+    data_->conc_solid_fe[sbi] = create_field_fe< 3, FieldValue<3>::Scalar >(dof_handler_);
+		data_->conc_solid[sbi].set_field(mesh_->region_db().get_region_set("ALL"), data_->conc_solid_fe[sbi], 0);
   }
   //output_stream_->add_admissible_field_names(output_array);
   data_->output_fields.initialize(output_stream_, mesh_, input_record_.val<Input::Record>("output"), time());
@@ -372,7 +372,7 @@ void SorptionBase::set_initial_condition()
         for (unsigned int sbi = 0; sbi < n_substances_; sbi++)
         {
             int subst_id = substance_global_idx_[sbi];
-            conc_solid_fe[subst_id]->vec()[dof_p0] = data_->init_conc_solid[sbi].value(ele.centre(), ele);
+            data_->conc_solid_fe[subst_id]->vec()[dof_p0] = data_->init_conc_solid[sbi].value(ele.centre(), ele);
         }
     }
 }
@@ -545,7 +545,7 @@ void SorptionBase::compute_reaction(const DHCellAccessor& dh_cell)
             if (isotherm.is_precomputed()){
 //                 DebugOut().fmt("isotherms precomputed - interpolate, subst[{}]\n", i_subst);
                 isotherm.interpolate(conc_mobile_fe[subst_id]->vec()[dof_p0],
-                                     conc_solid_fe[subst_id]->vec()[dof_p0]);
+                                     data_->conc_solid_fe[subst_id]->vec()[dof_p0]);
             }
             else{
 //                 DebugOut().fmt("isotherms reinit - compute , subst[{}]\n", i_subst);
@@ -556,7 +556,7 @@ void SorptionBase::compute_reaction(const DHCellAccessor& dh_cell)
                 
                 isotherm_reinit(i_subst, ele);
                 isotherm.compute(conc_mobile_fe[subst_id]->vec()[dof_p0],
-                                 conc_solid_fe[subst_id]->vec()[dof_p0]);
+                                 data_->conc_solid_fe[subst_id]->vec()[dof_p0]);
             }
             
             // update maximal concentration per region (optimization for interpolation)

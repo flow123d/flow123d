@@ -209,7 +209,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
         dof_handler->distribute_dofs(ds);
 
         reaction->substances(convection->substances())
-          .concentration_fields(convection->get_conc_fields())
+          .concentration_fields(convection->get_p0_interpolation())
 				  .output_stream(convection->output_stream())
 				  .set_time_governor((TimeGovernor &)convection->time());
 

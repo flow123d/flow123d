@@ -139,7 +139,7 @@ public:
         Field<3, FieldValue<3>::Scalar> subdomain;
 
         MultiField<3, FieldValue<3>::Scalar>    conc_mobile;    ///< Calculated concentrations in the mobile zone.
-        FieldFEScalarVec conc_mobile_fe;
+        FieldFEScalarVec conc_mobile_fe;                        ///< Underlaying FieldFE for each substance of conc_mobile.
 
         /// Fields indended for output, i.e. all input fields plus those representing solution.
         EquationOutput output_fields;
@@ -228,7 +228,8 @@ public:
 	inline std::shared_ptr<OutputTime> output_stream() override
 	{ return output_stream_; }
 
-	FieldFEScalarVec& get_conc_fields() override;
+    /// Getter for P0 interpolation by FieldFE.
+	FieldFEScalarVec& get_p0_interpolation() override;
 
 	Vec get_component_vec(unsigned int sbi) override;
 
