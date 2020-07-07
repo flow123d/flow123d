@@ -372,6 +372,7 @@ private:
 	std::vector<Vec> mass_vec;
 
 	FieldFEScalarVec conc_fe;
+	std::shared_ptr<DOFHandlerMultiDim> dh_p0;
 	// @}
 
 
