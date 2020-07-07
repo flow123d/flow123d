@@ -302,7 +302,13 @@ void TransportDG<Model>::initialize()
     // allocate matrix and vector structures
     data_->ls    = new LinSys*[Model::n_substances()];
     data_->ls_dt = new LinSys*[Model::n_substances()];
-    solution_elem_ = new double*[Model::n_substances()];
+    conc_fe.resize(Model::n_substances());
+    
+    MixedPtr<FE_P_disc> fe(0);
+    shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>(Model::mesh_, fe);
+    auto dh_p0 = make_shared<DOFHandlerMultiDim>(*Model::mesh_);
+    dh_p0->distribute_dofs(ds);    
+
 
     stiffness_matrix.resize(Model::n_substances(), nullptr);
     mass_matrix.resize(Model::n_substances(), nullptr);
@@ -317,7 +323,8 @@ void TransportDG<Model>::initialize()
 
         data_->ls_dt[sbi] = new LinSys_PETSC(data_->dh_->distr().get(), petsc_default_opts);
         ( (LinSys_PETSC *)data_->ls_dt[sbi] )->set_from_input( input_rec.val<Input::Record>("solver") );
-        solution_elem_[sbi] = new double[Model::mesh_->get_el_ds()->lsize()];
+        
+        conc_fe[sbi] = create_field_fe< 3, FieldValue<3>::Scalar >(dh_p0);
         
         VecDuplicate(data_->ls[sbi]->get_solution(), &data_->ret_vec[sbi]);
     }
@@ -356,7 +363,6 @@ TransportDG<Model>::~TransportDG()
         for (unsigned int i=0; i<Model::n_substances(); i++)
         {
             delete data_->ls[i];
-            delete[] solution_elem_[i];
             delete data_->ls_dt[i];
 
             if (stiffness_matrix[i])
@@ -371,7 +377,6 @@ TransportDG<Model>::~TransportDG()
             	chkerr(VecDestroy(&data_->ret_vec[i]));
         }
         delete[] data_->ls;
-        delete[] solution_elem_;
         delete[] data_->ls_dt;
         //delete[] stiffness_matrix;
         //delete[] mass_matrix;
@@ -602,22 +607,21 @@ template<class Model>
 void TransportDG<Model>::calculate_concentration_matrix()
 {
     // calculate element averages of solution
-	unsigned int i_cell=0;
 	for (auto cell : data_->dh_->own_range() )
     {
 		LocDofVec loc_dof_indices = cell.get_loc_dof_indices();
 		unsigned int n_dofs=loc_dof_indices.n_rows;
+        LongIdx loc_el = cell.elm_idx();
 
         for (unsigned int sbi=0; sbi<Model::n_substances(); ++sbi)
         {
-            solution_elem_[sbi][i_cell] = 0;
+            conc_fe[sbi]->vec()[loc_el] = 0;
 
             for (unsigned int j=0; j<n_dofs; ++j)
-                solution_elem_[sbi][i_cell] += data_->ls[sbi]->get_solution_array()[loc_dof_indices[j]];
+                conc_fe[sbi]->vec()[loc_el] += data_->ls[sbi]->get_solution_array()[loc_dof_indices[j]];
 
-            solution_elem_[sbi][i_cell] = max(solution_elem_[sbi][i_cell]/n_dofs, 0.);
+            conc_fe[sbi]->vec()[loc_el] = max(conc_fe[sbi]->vec()[loc_el]/n_dofs, 0.);
         }
-        ++i_cell;
     }
 }
 
@@ -718,7 +722,7 @@ void TransportDG<Model>::update_after_reactions(bool solution_changed)
                 old_average /= n_dofs;
 
                 for (unsigned int j=0; j<n_dofs; ++j)
-                    data_->ls[sbi]->get_solution_array()[loc_dof_indices[j]] += solution_elem_[sbi][i_cell] - old_average;
+                    data_->ls[sbi]->get_solution_array()[loc_dof_indices[j]] += conc_fe[sbi]->vec()[i_cell] - old_average;
             }
             ++i_cell;
         }

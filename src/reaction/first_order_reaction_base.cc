@@ -83,23 +83,23 @@ void FirstOrderReactionBase::zero_time_step()
 }
 
 
-double **FirstOrderReactionBase::compute_reaction(double **concentrations, int loc_el) //multiplication of concentrations array by reaction matrix
+void FirstOrderReactionBase::compute_reaction(const DHCellAccessor& dh_cell)
 {      
-    unsigned int rows;  // row in the concentration matrix, regards the substance index
+    unsigned int sbi;  // row in the concentration matrix, regards the substance index
     arma::vec new_conc;
     
+    LongIdx loc_el = dh_cell.local_idx();
+
     // save previous concentrations to column vector
-    for(rows = 0; rows < n_substances_; rows++)
-        prev_conc_(rows) = concentrations[rows][loc_el];
+    for(sbi = 0; sbi < n_substances_; sbi++)
+        prev_conc_(sbi) = conc_mobile_fe[sbi]->vec()[loc_el];
     
     // compute new concetrations R*c
     linear_ode_solver_->update_solution(prev_conc_, new_conc);
     
     // save new concentrations to the concentration matrix
-    for(rows = 0; rows < n_substances_; rows++)
-        concentrations[rows][loc_el] = new_conc(rows);
- 
-    return concentrations;
+    for(sbi = 0; sbi < n_substances_; sbi++)
+        conc_mobile_fe[sbi]->vec()[loc_el] = new_conc(sbi);
 }
 
 void FirstOrderReactionBase::update_solution(void)
@@ -112,9 +112,10 @@ void FirstOrderReactionBase::update_solution(void)
 
     START_TIMER("linear reaction step");
 
-    for (unsigned int loc_el = 0; loc_el < distribution_->lsize(); loc_el++)
-        this->compute_reaction(concentration_matrix_, loc_el);
-    
+    for ( DHCellAccessor dh_cell : dof_handler_->own_range() )
+    {
+        compute_reaction(dh_cell);
+    }
     END_TIMER("linear reaction step");
 }
 

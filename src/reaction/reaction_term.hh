@@ -29,6 +29,7 @@
 #include "system/exceptions.hh"      // for ExcStream, operator<<, EI, TYPED...
 #include "transport/substance.hh"    // for SubstanceList
 #include "fem/dofhandler.hh"         // for DOFHandlerMultiDim
+#include "fields/field_fe.hh"        // for FieldFE
 
 class Distribution;
 class Mesh;
@@ -49,6 +50,8 @@ public:
     DECLARE_INPUT_EXCEPTION( ExcUnknownSubstance, << "Unknown substance name: " << EI_Substance::qval);
     DECLARE_INPUT_EXCEPTION( ExcWrongDescendantModel, << "Impossible descendant model: " << EI_Model::qval);
     
+    typedef std::vector<std::shared_ptr<FieldFE< 3, FieldValue<3>::Scalar>>> FieldFEScalarVec;
+
   /**
    * Static variable for definition of common input record in reaction term.
    */
@@ -84,13 +87,10 @@ public:
    * Sets the pointer to concentration matrix for the mobile zone, 
    * all substances and on all elements (given by transport).
    */
-  ReactionTerm &concentration_matrix(double **concentration, Distribution *conc_distr, 
-                                     LongIdx *el_4_loc, LongIdx *row_4_el)
+  ReactionTerm &concentration_fields(FieldFEScalarVec& conc_mobile)
   {
-    concentration_matrix_ = concentration;
-    distribution_ = conc_distr;
-    el_4_loc_ = el_4_loc;
-    row_4_el_ = row_4_el;
+    conc_mobile_fe = conc_mobile;
+    dof_handler_ = conc_mobile_fe[0]->get_dofhandler();
     return *this;
   }
   //@}
@@ -107,32 +107,17 @@ public:
   /// Disable changes in TimeGovernor by empty method.
   void choose_next_time(void) override;
 
-  /// Sets the pointer to DOF handler (shared through the reaction tree)
-  ReactionTerm &set_dh(std::shared_ptr<DOFHandlerMultiDim> dof_handler)
-  {
-	  dof_handler_ = dof_handler;
-	  return *this;
-  }
-
 protected:
   /**
    * Computation of reaction term on a single element.
    * Inputs should be loc_el and local copies of concentrations of the element, which is then returned.
    */
-  virtual double **compute_reaction(double **concentrations, int loc_el) =0;
+  virtual void compute_reaction(const DHCellAccessor& dh_cell) = 0;
 
   /**
    * Pointer to two-dimensional array[species][elements] containing concentrations.
    */
-  double **concentration_matrix_;
-  
-  /// Indices of elements belonging to local dofs.
-  LongIdx *el_4_loc_;
-  /// Indices of rows belonging to elements.
-  LongIdx *row_4_el_;
-  
-  /// Pointer to reference to distribution of elements between processors.
-  Distribution *distribution_;
+  FieldFEScalarVec conc_mobile_fe;
   
   /// Names belonging to substances.
   /**  

@@ -25,6 +25,7 @@
 #include "fields/field.hh"                      // for Field
 #include "fields/field_values.hh"
 #include "fields/field_set.hh"
+#include "fields/field_fe.hh"
 #include "fields/multi_field.hh"
 #include "transport/advection_process_base.hh"
 #include "input/accessors.hh"                   // for Record
@@ -59,6 +60,8 @@ namespace Input {
  */
 class ConcentrationTransportBase : public EquationBase {
 public:
+
+    typedef std::vector<std::shared_ptr<FieldFE< 3, FieldValue<3>::Scalar>>> FieldFEScalarVec;
 
     /**
      * Constructor.
@@ -113,7 +116,7 @@ public:
     virtual std::shared_ptr<OutputTime> output_stream() = 0;
 
     /// Getter for array of concentrations per element.
-	virtual double **get_concentration_matrix() = 0;
+	virtual FieldFEScalarVec& get_conc_fields() = 0;
 
 	/// Return PETSc vector with solution for sbi-th substance.
 	virtual Vec get_solution(unsigned int sbi) = 0;

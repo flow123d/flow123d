@@ -117,7 +117,6 @@ private:
  */
 class ConvectionTransport : public ConcentrationTransportBase {
 public:
-
     class EqData : public TransportEqData {
     public:
 
@@ -140,7 +139,7 @@ public:
         Field<3, FieldValue<3>::Scalar> subdomain;
 
         MultiField<3, FieldValue<3>::Scalar>    conc_mobile;    ///< Calculated concentrations in the mobile zone.
-        std::vector<std::shared_ptr<FieldFE< 3, FieldValue<3>::Scalar>>> conc_mobile_fe;
+        FieldFEScalarVec conc_mobile_fe;
 
         /// Fields indended for output, i.e. all input fields plus those representing solution.
         EquationOutput output_fields;
@@ -226,7 +225,7 @@ public:
 	inline std::shared_ptr<OutputTime> output_stream() override
 	{ return output_stream_; }
 
-	double **get_concentration_matrix() override;
+	FieldFEScalarVec& get_conc_fields() override;
 
 	Vec get_solution(unsigned int sbi) override;
 

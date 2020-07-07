@@ -29,6 +29,7 @@
 #include "fem/update_flags.hh"                 // for operator|
 #include "fields/field_values.hh"              // for FieldValue<>::Scalar
 #include "fields/field.hh"
+#include "fields/field_fe.hh"
 #include "fields/multi_field.hh"
 #include "la/vector_mpi.hh"
 #include "fields/equation_output.hh"
@@ -227,7 +228,7 @@ public:
         GenericAssembly< InitConditionAssemblyDim > * init_cond_assembly_;
 	};
 
-
+	typedef std::vector<std::shared_ptr<FieldFE< 3, FieldValue<3>::Scalar>>> FieldFEScalarVec;
 
 	enum DGVariant {
 		// Non-symmetric weighted interior penalty DG
@@ -287,8 +288,8 @@ public:
 	Vec get_solution(unsigned int sbi)
 	{ return data_->ls[sbi]->get_solution(); }
 
-	double **get_concentration_matrix()
-	{ return solution_elem_; }
+	FieldFEScalarVec& get_conc_fields()
+	{ return conc_fe;}
 
 	void calculate_concentration_matrix();
 
@@ -369,10 +370,8 @@ private:
 	
 	/// Mass from previous time instant (necessary when coefficients of mass matrix change in time).
 	std::vector<Vec> mass_vec;
-    
-	/// Element averages of solution (the array is passed to reactions in operator splitting).
-	double **solution_elem_;
 
+	FieldFEScalarVec conc_fe;
 	// @}
 
 

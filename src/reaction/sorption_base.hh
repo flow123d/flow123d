@@ -165,7 +165,7 @@ protected:
   /**
    * For simulation of sorption in just one element either inside of MOBILE or IMMOBILE pores.
    */
-  double **compute_reaction(double **concentrations, int loc_el) override;
+  void compute_reaction(const DHCellAccessor& dh_cell) override;
   
   /// Reinitializes the isotherm.
   /**
@@ -230,18 +230,14 @@ protected:
   /**
    * Array for storage infos about sorbed species concentrations.
    */
-  double** conc_solid;
+  FieldFEScalarVec conc_solid_fe;
 
   /**
    * Reaction model that follows the sorption.
    */
   std::shared_ptr<ReactionTerm> reaction_liquid;
   std::shared_ptr<ReactionTerm> reaction_solid;
-                  
-  ///@name members used in output routines
-  //@{
-  std::vector<VectorMPI> conc_solid_out; ///< sorbed concentration array output (gathered - sequential)
-  //@}
+  
 
   /** Structure for data respectful to element, but indepedent of actual isotherm.
    * Reads mobile/immobile porosity, rock density and then computes concentration scaling parameters.

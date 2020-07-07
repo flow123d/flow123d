@@ -850,11 +850,8 @@ void ConvectionTransport::create_transport_matrix_mpi() {
 }
 
 
-double **ConvectionTransport::get_concentration_matrix() {
-    double ** conc = new double*[n_substances()];
-    for(uint sbi=0; sbi<n_substances(); sbi++)
-        conc[sbi] = data_.conc_mobile_fe[sbi]->vec().data().data();
-	return conc;
+ConvectionTransport::FieldFEScalarVec& ConvectionTransport::get_conc_fields() {
+    return data_.conc_mobile_fe;
 }
 
 void ConvectionTransport::get_par_info(LongIdx * &el_4_loc_out, Distribution * &el_distribution_out){

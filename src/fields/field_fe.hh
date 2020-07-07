@@ -143,7 +143,7 @@ public:
     	return dh_;
     }
 
-    inline VectorMPI vec() const {
+    inline VectorMPI& vec() {
     	return data_vec_;
     }
 

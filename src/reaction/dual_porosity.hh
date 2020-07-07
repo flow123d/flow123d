@@ -121,12 +121,12 @@ protected:
   /// Initializes field sets.
   void initialize_fields();
   
-  double **compute_reaction(double **concentrations, int loc_el) override;
+  void compute_reaction(const DHCellAccessor& dh_cell) override;
   
   /**
    * Pointer to twodimensional array[substance][elements] containing concentrations either in immobile.
    */
-  double **conc_immobile;
+  FieldFEScalarVec conc_immobile_fe;
 
   /**
    * Equation data - all data fields are in this set.
@@ -146,11 +146,6 @@ protected:
    * simple forward difference approximation of concentrations is chosen for computation.
    */
   double scheme_tolerance_;
-  
-  ///@name members used in output routines
-  //@{
-  std::vector<VectorMPI> conc_immobile_out; ///< concentration array output for immobile phase (parallel, shared with FieldFE)
-  //@}
   
 private:
   /// Registrar of class to factory
