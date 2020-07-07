@@ -285,13 +285,14 @@ public:
 
     void calculate_cumulative_balance();
 
-	Vec get_solution(unsigned int sbi)
+	Vec get_component_vec(unsigned int sbi)
 	{ return data_->ls[sbi]->get_solution(); }
 
 	FieldFEScalarVec& get_conc_fields()
 	{ return conc_fe;}
 
-	void calculate_concentration_matrix();
+	/// Compute P0 interpolation of the solution (used in reaction term).
+	void compute_p0_interpolation();
 
 	void update_after_reactions(bool solution_changed);
 

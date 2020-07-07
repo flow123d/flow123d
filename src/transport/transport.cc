@@ -217,7 +217,7 @@ void ConvectionTransport::initialize()
 }
 
 
-Vec ConvectionTransport::get_solution(unsigned int sbi)
+Vec ConvectionTransport::get_component_vec(unsigned int sbi)
 {
     return data_.conc_mobile_fe[sbi]->vec().petsc_vec(); 
 }

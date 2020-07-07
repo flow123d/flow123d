@@ -604,7 +604,7 @@ void TransportDG<Model>::update_solution()
 
 
 template<class Model>
-void TransportDG<Model>::calculate_concentration_matrix()
+void TransportDG<Model>::compute_p0_interpolation()
 {
     // calculate element averages of solution
 	for (auto cell : data_->dh_->own_range() )

@@ -262,7 +262,7 @@ void TransportOperatorSplitting::zero_time_step()
 {
     //DebugOut() << "tos ZERO TIME STEP.\n";
     convection->zero_time_step();
-    convection->calculate_concentration_matrix();   // due to reading of init_conc in reactions
+    convection->compute_p0_interpolation();   // due to reading of init_conc in reactions
     if(reaction)
     {
       reaction->zero_time_step();
@@ -316,7 +316,7 @@ void TransportOperatorSplitting::update_solution() {
 			// save mass after transport step
 	    	for (unsigned int sbi=0; sbi<convection->n_substances(); sbi++)
 	    	{
-	    		balance_->calculate_mass(convection->get_subst_idx()[sbi], convection->get_solution(sbi), region_mass);
+	    		balance_->calculate_mass(convection->get_subst_idx()[sbi], convection->get_component_vec(sbi), region_mass);
 	    		source[sbi] = 0;
 	    		for (unsigned int ri=0; ri<mesh_->region_db().bulk_size(); ri++)
 	    			source[sbi] -= region_mass[ri];
@@ -326,7 +326,7 @@ void TransportOperatorSplitting::update_solution() {
 	    }
 
         if(reaction) {
-        	convection->calculate_concentration_matrix();
+        	convection->compute_p0_interpolation();
         	reaction->update_solution();
         	convection->update_after_reactions(true);
         }
@@ -344,7 +344,7 @@ void TransportOperatorSplitting::update_solution() {
 	    	for (unsigned int sbi=0; sbi<convection->n_substances(); sbi++)
 	    	{
 	    		// compute mass difference due to reactions
-	    		balance_->calculate_mass(convection->get_subst_idx()[sbi], convection->get_solution(sbi), region_mass);
+	    		balance_->calculate_mass(convection->get_subst_idx()[sbi], convection->get_component_vec(sbi), region_mass);
 	    		for (unsigned int ri=0; ri<mesh_->region_db().bulk_size(); ri++)
 	    			source[sbi] += region_mass[ri];
 

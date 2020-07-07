@@ -103,8 +103,8 @@ public:
     /// Return substance indices used in balance.
     virtual const vector<unsigned int> &get_subst_idx() = 0;
 
-    /// Calculate the array of concentrations per element (for reactions).
-    virtual void calculate_concentration_matrix() = 0;
+    /// Compute P0 interpolation of the solution (used in reaction term).
+    virtual void compute_p0_interpolation() = 0;
 
     /// Perform changes to transport solution after reaction step.
     virtual void update_after_reactions(bool solution_changed) = 0;
@@ -119,7 +119,7 @@ public:
 	virtual FieldFEScalarVec& get_conc_fields() = 0;
 
 	/// Return PETSc vector with solution for sbi-th substance.
-	virtual Vec get_solution(unsigned int sbi) = 0;
+	virtual Vec get_component_vec(unsigned int sbi) = 0;
 
 	/// Return array of indices of local elements and parallel distribution of elements.
 	virtual void get_par_info(LongIdx * &el_4_loc, Distribution * &el_ds) = 0;

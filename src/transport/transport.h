@@ -177,9 +177,12 @@ public:
 	/**
 	 * Calculates one time step of explicit transport.
 	 */
-	void update_solution() override;
+    void update_solution() override;
 
-	void calculate_concentration_matrix() override {};
+    /** Compute P0 interpolation of the solution (used reaction term).
+     * Empty - solution is already P0 interpolation.
+     */
+    void compute_p0_interpolation() override {};
 
     /// Not used in this class.
 	void update_after_reactions(bool) override {};
@@ -227,7 +230,7 @@ public:
 
 	FieldFEScalarVec& get_conc_fields() override;
 
-	Vec get_solution(unsigned int sbi) override;
+	Vec get_component_vec(unsigned int sbi) override;
 
 	void get_par_info(LongIdx * &el_4_loc, Distribution * &el_ds) override;
 
