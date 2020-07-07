@@ -150,10 +150,9 @@ void DualPorosity::make_reactions() {
 
 void DualPorosity::initialize()
 {
-  OLD_ASSERT(distribution_ != nullptr, "Distribution has not been set yet.\n");
-  OLD_ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
-  OLD_ASSERT(output_stream_,"Null output stream.");
-  OLD_ASSERT_LESS(0, substances_.size());
+  ASSERT(time_ != nullptr).error("Time governor has not been set yet.\n");
+  ASSERT_LT(0, substances_.size()).error("No substances for rection term.\n");
+  ASSERT(output_stream_ != nullptr).error("Null output stream.\n");
   
   initialize_fields();
 
@@ -208,11 +207,10 @@ void DualPorosity::initialize_fields()
 
 void DualPorosity::zero_time_step()
 {
-  OLD_ASSERT(distribution_ != nullptr, "Distribution has not been set yet.\n");
-  OLD_ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
-  OLD_ASSERT(output_stream_,"Null output stream.");
-  OLD_ASSERT_LESS(0, substances_.size());
- 
+  ASSERT(time_ != nullptr).error("Time governor has not been set yet.\n");
+  ASSERT_LT(0, substances_.size()).error("No substances for rection term.\n");
+  ASSERT(output_stream_ != nullptr).error("Null output stream.\n");
+  
   //coupling - passing fields
   if(reaction_mobile)
   if (typeid(*reaction_mobile) == typeid(SorptionMob))
