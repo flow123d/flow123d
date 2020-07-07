@@ -64,33 +64,34 @@ public:
 
     /// Return size of evaluation points object (number of points).
     inline unsigned int size(unsigned int dim) const {
-        return dim_eval_points_[dim-1].size();
+        return dim_eval_points_[dim].size();
     }
 
     /// Return local coordinates of given local point and appropriate dim.
     template<unsigned int dim>
     inline arma::vec::fixed<dim> local_point(unsigned int local_point_idx) const {
-        return dim_eval_points_[dim-1].local_point<dim>(local_point_idx);
+    	ASSERT_GT(dim, 0).error("Dimension 0 not supported!\n");
+        return dim_eval_points_[dim].local_point<dim>(local_point_idx);
     }
 
     /// Return begin index of appropriate subset data.
     inline int subset_begin(unsigned int dim, unsigned int idx) const {
-        return dim_eval_points_[dim-1].subset_begin(idx);
+        return dim_eval_points_[dim].subset_begin(idx);
     }
 
     /// Return end index of appropriate subset data.
     inline int subset_end(unsigned int dim, unsigned int idx) const {
-        return dim_eval_points_[dim-1].subset_end(idx);
+        return dim_eval_points_[dim].subset_end(idx);
     }
 
     /// Return number of local points corresponding to subset.
     inline int subset_size(unsigned int dim, unsigned int idx) const {
-        return dim_eval_points_[dim-1].subset_size(idx);
+        return dim_eval_points_[dim].subset_size(idx);
     }
 
     /// Return number of subsets.
     inline unsigned int n_subsets(unsigned int dim) const {
-        return dim_eval_points_[dim-1].n_subsets();
+        return dim_eval_points_[dim].n_subsets();
     }
 
     /**
@@ -112,12 +113,13 @@ public:
     template <unsigned int dim>
     std::shared_ptr<BoundaryIntegral> add_boundary(const Quadrature &);
 
-    /// Return maximal size of evaluation points objects .
+    /// Return maximal size of evaluation points objects.
     inline unsigned int max_size() const {
-        return std::max( size(1), std::max( size(2), size(3) ) );
+        return std::max( std::max( size(0), size(1) ), std::max( size(2), size(3) ) );
     }
 
 private:
+    /// Subobject holds evaluation points data of one dimension (0,1,2,3)
     class DimEvalPoints {
     public:
         /// Constructor
@@ -125,7 +127,8 @@ private:
 
         /// Return size of evaluation points object (number of points).
         inline unsigned int size() const {
-            return local_points_.size();
+            if (dim_==0) return n_subsets_;
+        	else return local_points_.size();
         }
 
         /// Return local coordinates of given local point.
@@ -175,10 +178,9 @@ private:
         unsigned int dim_;                                            ///< Dimension of local points
     };
 
-    /// Sub objects of dimensions 1,2,3
-    std::array<DimEvalPoints, 3> dim_eval_points_;
+    /// Sub objects of dimensions 0,1,2,3
+    std::array<DimEvalPoints, 4> dim_eval_points_;
 
-    friend class EvalSubSet;
 };
 
 
