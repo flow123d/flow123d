@@ -245,13 +245,13 @@ void DualPorosity::zero_time_step()
 void DualPorosity::set_initial_condition()
 {
     for ( DHCellAccessor dh_cell : dof_handler_->own_range() ) {
-        LongIdx loc_idx = dh_cell.local_idx();
+        IntIdx dof_p0 = dh_cell.get_loc_dof_indices()[0];
         const ElementAccessor<3> ele = dh_cell.elm();
 
         //setting initial solid concentration for substances involved in adsorption
         for (unsigned int sbi = 0; sbi < substances_.size(); sbi++)
         {
-            conc_immobile_fe[sbi]->vec()[loc_idx] = data_.init_conc_immobile[sbi].value(ele.centre(), ele);
+            conc_immobile_fe[sbi]->vec()[dof_p0] = data_.init_conc_immobile[sbi].value(ele.centre(), ele);
         }
     }
 }
@@ -283,7 +283,7 @@ void DualPorosity::compute_reaction(const DHCellAccessor& dh_cell)
     
     // get data from fields
     ElementAccessor<3> ele = dh_cell.elm();
-    LongIdx loc_el = dh_cell.local_idx();
+    IntIdx dof_p0 = dh_cell.get_loc_dof_indices()[0];
     por_mob = data_.porosity.value(ele.centre(),ele);
     por_immob = data_.porosity_immobile.value(ele.centre(),ele);
     arma::Col<double> diff_vec(substances_.size());
@@ -301,8 +301,8 @@ void DualPorosity::compute_reaction(const DHCellAccessor& dh_cell)
     {
         exponent = diff_vec[sbi] * temp_exponent;
         //previous values
-        previous_conc_mob = conc_mobile_fe[sbi]->vec()[loc_el];
-        previous_conc_immob = conc_immobile_fe[sbi]->vec()[loc_el];
+        previous_conc_mob = conc_mobile_fe[sbi]->vec()[dof_p0];
+        previous_conc_immob = conc_immobile_fe[sbi]->vec()[dof_p0];
         
         // ---compute average concentration------------------------------------------
         conc_average = ((por_mob * previous_conc_mob) + (por_immob * previous_conc_immob)) 
@@ -333,8 +333,8 @@ void DualPorosity::compute_reaction(const DHCellAccessor& dh_cell)
             conc_immob = (previous_conc_immob - conc_average) * temp + conc_average;
         }
         
-        conc_mobile_fe[sbi]->vec()[loc_el] = conc_mob;
-        conc_immobile_fe[sbi]->vec()[loc_el] = conc_immob;
+        conc_mobile_fe[sbi]->vec()[dof_p0] = conc_mob;
+        conc_immobile_fe[sbi]->vec()[dof_p0] = conc_immob;
     }
 }
 

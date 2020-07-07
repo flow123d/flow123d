@@ -86,18 +86,18 @@ void FirstOrderReactionBase::compute_reaction(const DHCellAccessor& dh_cell)
     unsigned int sbi;  // row in the concentration matrix, regards the substance index
     arma::vec new_conc;
     
-    LongIdx loc_el = dh_cell.local_idx();
+    IntIdx dof_p0 = dh_cell.get_loc_dof_indices()[0];
 
     // save previous concentrations to column vector
     for(sbi = 0; sbi < n_substances_; sbi++)
-        prev_conc_(sbi) = conc_mobile_fe[sbi]->vec()[loc_el];
+        prev_conc_(sbi) = conc_mobile_fe[sbi]->vec()[dof_p0];
     
     // compute new concetrations R*c
     linear_ode_solver_->update_solution(prev_conc_, new_conc);
     
     // save new concentrations to the concentration matrix
     for(sbi = 0; sbi < n_substances_; sbi++)
-        conc_mobile_fe[sbi]->vec()[loc_el] = new_conc(sbi);
+        conc_mobile_fe[sbi]->vec()[dof_p0] = new_conc(sbi);
 }
 
 void FirstOrderReactionBase::update_solution(void)
