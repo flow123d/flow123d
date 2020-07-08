@@ -81,11 +81,11 @@ test_cases:
         regex: "Program [Ee]rror: Violated assert!"
             
 - files: 11_size_of_solubility_vec.yaml
-  death_test: true
-  check_rules:
-    - regex:
-        files: [job_output.log]
-        substr: "User Error: The size of the input array 'solubility' does not match the number of substances"
+#  death_test: true
+#  check_rules:
+#    - regex:
+#        files: [job_output.log]
+#        substr: "User Error: The size of the input array 'solubility' does not match the number of substances"
             
 - files: 12_assert_duplicate_key_time.yaml
   death_test: true
