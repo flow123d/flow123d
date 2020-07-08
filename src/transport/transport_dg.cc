@@ -30,6 +30,7 @@
 #include "fields/fe_value_handler.hh"
 #include "la/linsys_PETSC.hh"
 #include "coupling/balance.hh"
+#include "coupling/generic_assembly.hh"
 #include "transport/advection_diffusion_model.hh"
 #include "transport/concentration_model.hh"
 #include "transport/heat_model.hh"
