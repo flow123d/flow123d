@@ -125,7 +125,7 @@ SorptionBase::EqData::EqData(const string &output_field_name, const string &outp
 
 SorptionBase::SorptionBase(Mesh &init_mesh, Input::Record in_rec)//
 	: ReactionTerm(init_mesh, in_rec),
-	  data_(nullptr)
+	  data_(nullptr), conc_solid(nullptr)
 {
   // creating reaction from input and setting their parameters
   make_reactions();
@@ -141,7 +141,7 @@ SorptionBase::~SorptionBase(void)
 	//    //no mpi vectors
 	//    delete [] conc_solid[sbi];
     //}
-    delete [] conc_solid;
+    if (conc_solid != nullptr) delete [] conc_solid;
 }
 
 void SorptionBase::make_reactions()
