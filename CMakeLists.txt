@@ -816,6 +816,10 @@ make_link_in_source(unit_tests/Makefile)
 message(STATUS "add subdir FParser")
 add_subdirectory(third_party/fparser-4.5.1)
 
+# add bparser sources
+message(STATUS "add subdir BParser")
+add_subdirectory(third_party/bparser)
+
 # add tbb sources
 #message(STATUS "add subdir TBB")
 #add_subdirectory(third_party/tbb43_20150316oss)
