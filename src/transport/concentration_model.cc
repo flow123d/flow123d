@@ -283,7 +283,7 @@ IT::Selection ConcentrationTransportModel::ModelEqData::get_output_selection()
 }
 
 
-void ConcentrationTransportModel::ModelEqData::initialize(Mesh * mesh)
+void ConcentrationTransportModel::ModelEqData::initialize()
 {
     // initialize multifield components
 	sorption_coefficient.setup_components();
@@ -295,34 +295,22 @@ void ConcentrationTransportModel::ModelEqData::initialize(Mesh * mesh)
     disp_t.setup_components();
 
     // create FieldModels
-    auto v_norm_ptr = Model<3, FieldValue<3>::Scalar>::create(fn_conc_v_norm, flow_flux);
-    v_norm.set_field(mesh->region_db().get_region_set("ALL"), v_norm_ptr, 0.0);
-
-    auto mass_matrix_coef_ptr = Model<3, FieldValue<3>::Scalar>::create(fn_conc_mass_matrix, cross_section, water_content);
-    mass_matrix_coef.set_field(mesh->region_db().get_region_set("ALL"), mass_matrix_coef_ptr, 0.0);
-
-    auto retardation_coef_ptr = Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_retardation, cross_section, porosity,
-            rock_density, sorption_coefficient);
-    retardation_coef.set_fields(mesh->region_db().get_region_set("ALL"), retardation_coef_ptr);
-
-    auto sources_dens_ptr = Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_sources_dens, cross_section, sources_density);
-    sources_density_out.set_fields(mesh->region_db().get_region_set("ALL"), sources_dens_ptr);
-
-    auto sources_sigma_ptr = Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_sources_sigma, cross_section, sources_sigma);
-    sources_sigma_out.set_fields(mesh->region_db().get_region_set("ALL"), sources_sigma_ptr);
-
-    auto sources_conc_ptr = Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_sources_conc, sources_conc);
-    sources_conc_out.set_fields(mesh->region_db().get_region_set("ALL"), sources_conc_ptr);
-
-    auto ad_coef_ptr = Model<3, FieldValue<3>::VectorFixed>::create(fn_conc_ad_coef, flow_flux);
-    std::vector<typename Field<3, FieldValue<3>::VectorFixed>::FieldBasePtr> ad_coef_ptr_vec;
-    for (unsigned int sbi=0; sbi<diff_m.size(); sbi++)
-        ad_coef_ptr_vec.push_back(ad_coef_ptr);
-    advection_coef.set_fields(mesh->region_db().get_region_set("ALL"), ad_coef_ptr_vec);
-
-    auto diffusion_coef_ptr = Model<3, FieldValue<3>::TensorFixed>::create_multi(fn_conc_diff_coef, diff_m, flow_flux, v_norm,
-            disp_l, disp_t, water_content, porosity, cross_section);
-    diffusion_coef.set_fields(mesh->region_db().get_region_set("ALL"), diffusion_coef_ptr);
+    v_norm.set(Model<3, FieldValue<3>::Scalar>::create(fn_conc_v_norm, flow_flux), 0.0);
+    mass_matrix_coef.set(Model<3, FieldValue<3>::Scalar>::create(fn_conc_mass_matrix, cross_section, water_content), 0.0);
+    retardation_coef.set(
+        Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_retardation, cross_section, porosity, rock_density, sorption_coefficient),
+		0.0
+    );
+    sources_density_out.set(Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_sources_dens, cross_section, sources_density), 0.0);
+    sources_sigma_out.set(Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_sources_sigma, cross_section, sources_sigma), 0.0);
+    sources_conc_out.set(Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_sources_conc, sources_conc), 0.0);
+    advection_coef.set(Model<3, FieldValue<3>::VectorFixed>::create(fn_conc_ad_coef, flow_flux), 0.0);
+    diffusion_coef.set(
+        Model<3, FieldValue<3>::TensorFixed>::create_multi(
+            fn_conc_diff_coef, diff_m, flow_flux, v_norm, disp_l, disp_t, water_content, porosity, cross_section
+        ),
+        0.0
+    );
 }
 
 

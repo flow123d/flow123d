@@ -245,7 +245,7 @@ void TransportDG<Model>::initialize()
 {
     data_->set_components(Model::substances_.names());
     data_->set_input_list( input_rec.val<Input::Array>("input_fields"), *(Model::time_) );
-    data_->initialize(Model::mesh_);
+    data_->initialize();
 
     // DG stabilization parameters on boundary edges
     data_->gamma.resize(Model::n_substances());

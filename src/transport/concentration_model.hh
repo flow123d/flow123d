@@ -118,7 +118,7 @@ public:
 		/**
 		 * Initialize FieldModel instances.
 		 */
-		void initialize(Mesh * mesh);
+		void initialize();
 	};
 
 

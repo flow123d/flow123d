@@ -274,6 +274,36 @@ void Field<spacedim, Value>::set_field(
 
 
 template<int spacedim, class Value>
+void Field<spacedim, Value>::set(
+		FieldBasePtr field,
+		double time,
+		std::vector<std::string> region_set_names)
+{
+	ASSERT_PTR(field).error("Null field pointer.\n");
+
+	ASSERT_PTR( mesh() ).error("Null mesh pointer, set_mesh() has to be called before set_field().\n");
+    ASSERT_EQ( field->n_comp() , shared_->n_comp_);
+    field->set_mesh( mesh() , is_bc() );
+
+	for (auto set_name : region_set_names) {
+		RegionSet domain = mesh()->region_db().get_region_set(set_name);
+        if (domain.size() == 0) continue;
+
+        HistoryPoint hp = HistoryPoint(time, field);
+        for(const Region &reg: domain) {
+    	    RegionHistory &region_history = data_->region_history_[reg.idx()];
+    	    // insert hp into descending time sequence
+    	    ASSERT( region_history.size() == 0 || region_history[0].first < hp.first)(hp.first)(region_history[0].first)
+    		        .error("Can not insert smaller time then last time in field's history.\n");
+    	    region_history.push_front(hp);
+        }
+	}
+    set_history_changed();
+}
+
+
+
+template<int spacedim, class Value>
 bool Field<spacedim, Value>::set_time(const TimeStep &time_step, LimitSide limit_side)
 {
 	ASSERT_PTR( mesh() )( name() ).error("NULL mesh pointer of field with given name. set_mesh must be called before.\n");

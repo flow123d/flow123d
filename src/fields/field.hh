@@ -230,8 +230,6 @@ public:
      * Caller is responsible for correct construction of given field.
      *
      * Use this method only if necessary.
-     *
-     * Default time simplify setting steady fields.
      */
     void set_field(const RegionSet &domain, FieldBasePtr field, double time);
 
@@ -240,6 +238,17 @@ public:
      * given abstract record accessor @p a_rec.
      */
     void set_field(const RegionSet &domain, const Input::AbstractRecord &a_rec, double time);
+
+    /**
+     * Assigns given @p field to all regions in region set given by @p region_set_names.
+     * Field is added to the history with given time and possibly used in the next call of the set_time method.
+     * Caller is responsible for correct construction of given field.
+     *
+     * Use this method only if necessary.
+     *
+     * Same as set_field method but gets region sets by names and doesn't need mesh for calling.
+     */
+    void set(FieldBasePtr field, double time, std::vector<std::string> region_set_names = {"ALL"});
 
     /**
      * Check that whole field list is set, possibly use default values for unset regions

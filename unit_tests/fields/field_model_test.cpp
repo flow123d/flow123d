@@ -121,14 +121,14 @@ TEST_F(FieldModelTest, create) {
     auto f_product_ptr = Model<3, FieldValue<3>::VectorFixed>::create(fn_product, f_scal, f_vec);
     Field<3, FieldValue<3>::VectorFixed > f_product;
     f_product.set_mesh( *mesh );
-    f_product.set_field(mesh->region_db().get_region_set("ALL"), f_product_ptr, 0.0);
+    f_product.set(f_product_ptr, 0.0);
     f_product.cache_reallocate(elm_cache_map);
     f_product.set_time(tg.step(), LimitSide::right);
     // Same as previous but with other functor
     auto f_other_ptr = Model<3, FieldValue<3>::VectorFixed>::create(fn_other, f_vec, f_scal, f_vec);
     Field<3, FieldValue<3>::VectorFixed > f_other;
     f_other.set_mesh( *mesh );
-    f_other.set_field(mesh->region_db().get_region_set("ALL"), f_other_ptr, 0.0);
+    f_other.set(f_other_ptr, 0.0);
     f_other.cache_reallocate(elm_cache_map);
     f_other.set_time(tg.step(), LimitSide::right);
 
@@ -202,7 +202,7 @@ TEST_F(FieldModelTest, create_multi_scalar) {
     for (uint i=0; i<3; ++i) {
         field_vec.push_back( std::make_shared< FieldConstant<3, FieldValue<3>::Scalar> >() );
     }
-    f_multi.set_fields(mesh->region_db().get_region_set("ALL"), field_vec);
+    f_multi.set(field_vec, 0.0);
     f_multi.cache_reallocate(elm_cache_map); // cache_allocate must be called after set_fields!!
 
     // Create FieldModel (descendant of FieladAlgoBase) set to Field
@@ -210,7 +210,7 @@ TEST_F(FieldModelTest, create_multi_scalar) {
     MultiField<3, FieldValue<3>::Scalar> f_product;
     f_product.set_components(component_names);
     f_product.set_mesh( *mesh );
-    f_product.set_fields(mesh->region_db().get_region_set("ALL"), f_product_ptr);
+    f_product.set(f_product_ptr, 0.0);
     f_product.cache_reallocate(elm_cache_map);
     f_product.set_time(tg.step(), LimitSide::right);
     // Same as previous but with other functor
@@ -218,7 +218,7 @@ TEST_F(FieldModelTest, create_multi_scalar) {
     MultiField<3, FieldValue<3>::Scalar> f_other;
     f_other.set_components(component_names);
     f_other.set_mesh( *mesh );
-    f_other.set_fields(mesh->region_db().get_region_set("ALL"), f_other_ptr);
+    f_other.set(f_other_ptr, 0.0);
     f_other.cache_reallocate(elm_cache_map);
     f_other.set_time(tg.step(), LimitSide::right);
 
@@ -281,7 +281,7 @@ TEST_F(FieldModelTest, create_multi_vector) {
     for (uint i=0; i<3; ++i) {
         field_vec.push_back( std::make_shared< FieldConstant<3, FieldValue<3>::VectorFixed> >() );
     }
-    f_multi.set_fields(mesh->region_db().get_region_set("ALL"), field_vec);
+    f_multi.set(field_vec, 0.0);
     f_multi.cache_reallocate(elm_cache_map); // cache_allocate must be called after set_fields!!
 
     // Create FieldModel (descendant of FieladAlgoBase) set to Field
@@ -289,7 +289,7 @@ TEST_F(FieldModelTest, create_multi_vector) {
     MultiField<3, FieldValue<3>::VectorFixed> f_product;
     f_product.set_components(component_names);
     f_product.set_mesh( *mesh );
-    f_product.set_fields(mesh->region_db().get_region_set("ALL"), f_product_ptr);
+    f_product.set(f_product_ptr, 0.0);
     f_product.cache_reallocate(elm_cache_map);
     f_product.set_time(tg.step(), LimitSide::right);
     // Same as previous but with other functor
@@ -297,7 +297,7 @@ TEST_F(FieldModelTest, create_multi_vector) {
     MultiField<3, FieldValue<3>::VectorFixed> f_other;
     f_other.set_components(component_names);
     f_other.set_mesh( *mesh );
-    f_other.set_fields(mesh->region_db().get_region_set("ALL"), f_other_ptr);
+    f_other.set(f_other_ptr, 0.0);
     f_other.cache_reallocate(elm_cache_map);
     f_other.set_time(tg.step(), LimitSide::right);
 

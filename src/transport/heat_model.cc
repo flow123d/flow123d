@@ -374,43 +374,42 @@ IT::Selection HeatTransferModel::ModelEqData::get_output_selection()
 }
 
 
-void HeatTransferModel::ModelEqData::initialize(Mesh * mesh)
+void HeatTransferModel::ModelEqData::initialize()
 {
     // create FieldModels
-    auto v_norm_ptr = Model<3, FieldValue<3>::Scalar>::create(fn_heat_v_norm, flow_flux);
-    v_norm.set_field(mesh->region_db().get_region_set("ALL"), v_norm_ptr, 0.0);
-
-    auto mass_matrix_coef_ptr = Model<3, FieldValue<3>::Scalar>::create(fn_heat_mass_matrix, cross_section,
-            porosity, fluid_density, fluid_heat_capacity, solid_density, solid_heat_capacity);
-    mass_matrix_coef.set_field(mesh->region_db().get_region_set("ALL"), mass_matrix_coef_ptr, 0.0);
-
-    std::vector<typename Field<3, FieldValue<3>::Scalar>::FieldBasePtr> retardation_coef_ptr;
-    retardation_coef_ptr.push_back( std::make_shared< FieldConstant<3, FieldValue<3>::Scalar> >() ); // Fix size of substances == 1, with const value == 0
-    retardation_coef.set_fields(mesh->region_db().get_region_set("ALL"), retardation_coef_ptr);
-
-    auto sources_dens_ptr = Model<3, FieldValue<3>::Scalar>::create_multi(fn_heat_sources_dens, cross_section, porosity,
-            fluid_thermal_source, solid_thermal_source);
-    sources_density_out.set_fields(mesh->region_db().get_region_set("ALL"), sources_dens_ptr);
-
-    auto sources_sigma_ptr = Model<3, FieldValue<3>::Scalar>::create_multi(fn_heat_sources_sigma, cross_section, porosity,
-            fluid_density, fluid_heat_capacity, fluid_heat_exchange_rate, solid_density, solid_heat_capacity, solid_heat_exchange_rate);
-    sources_sigma_out.set_fields(mesh->region_db().get_region_set("ALL"), sources_sigma_ptr);
-
-    auto sources_conc_ptr = Model<3, FieldValue<3>::Scalar>::create_multi(fn_heat_sources_conc, cross_section, porosity,
-            fluid_density, fluid_heat_capacity, fluid_heat_exchange_rate, fluid_ref_temperature, solid_density, solid_heat_capacity,
-            solid_heat_exchange_rate, solid_ref_temperature, sources_sigma_out);
-    sources_conc_out.set_fields(mesh->region_db().get_region_set("ALL"), sources_conc_ptr);
-
-    auto ad_coef_ptr = Model<3, FieldValue<3>::VectorFixed>::create(fn_heat_ad_coef, fluid_density, fluid_heat_capacity, flow_flux);
-    std::vector<typename Field<3, FieldValue<3>::VectorFixed>::FieldBasePtr> ad_coef_ptr_vec;
-    ad_coef_ptr_vec.push_back(ad_coef_ptr);
-    advection_coef.set_fields(mesh->region_db().get_region_set("ALL"), ad_coef_ptr_vec);
-
-    auto diff_coef_ptr = Model<3, FieldValue<3>::TensorFixed>::create(fn_heat_diff_coef, flow_flux, v_norm, fluid_density, disp_l, disp_t,
-            fluid_heat_conductivity, solid_heat_conductivity, cross_section, porosity);
-    std::vector<typename Field<3, FieldValue<3>::TensorFixed>::FieldBasePtr> diff_coef_ptr_vec;
-    diff_coef_ptr_vec.push_back(diff_coef_ptr);
-    diffusion_coef.set_fields(mesh->region_db().get_region_set("ALL"), diff_coef_ptr_vec);
+    v_norm.set(Model<3, FieldValue<3>::Scalar>::create(fn_heat_v_norm, flow_flux), 0.0);
+    mass_matrix_coef.set(
+        Model<3, FieldValue<3>::Scalar>::create(
+            fn_heat_mass_matrix, cross_section, porosity, fluid_density, fluid_heat_capacity, solid_density, solid_heat_capacity
+	    ),
+	    0.0
+	);
+    retardation_coef.set(std::make_shared< FieldConstant<3, FieldValue<3>::Scalar> >(), 0.0);
+    sources_density_out.set(
+        Model<3, FieldValue<3>::Scalar>::create_multi(fn_heat_sources_dens, cross_section, porosity, fluid_thermal_source, solid_thermal_source),
+        0.0
+    );
+    sources_sigma_out.set(
+        Model<3, FieldValue<3>::Scalar>::create_multi(
+            fn_heat_sources_sigma, cross_section, porosity, fluid_density, fluid_heat_capacity, fluid_heat_exchange_rate, solid_density,
+            solid_heat_capacity, solid_heat_exchange_rate
+        ),
+        0.0
+    );
+    sources_conc_out.set(
+        Model<3, FieldValue<3>::Scalar>::create_multi(
+            fn_heat_sources_conc, cross_section, porosity, fluid_density, fluid_heat_capacity, fluid_heat_exchange_rate, fluid_ref_temperature,
+            solid_density, solid_heat_capacity, solid_heat_exchange_rate, solid_ref_temperature, sources_sigma_out
+        ),
+        0.0
+    );
+    advection_coef.set(Model<3, FieldValue<3>::VectorFixed>::create(fn_heat_ad_coef, fluid_density, fluid_heat_capacity, flow_flux), 0.0);
+    diffusion_coef.set(
+        Model<3, FieldValue<3>::TensorFixed>::create(
+            fn_heat_diff_coef, flow_flux, v_norm, fluid_density, disp_l, disp_t, fluid_heat_conductivity, solid_heat_conductivity, cross_section, porosity
+        ),
+        0.0
+    );
 }
 
 
