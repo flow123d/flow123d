@@ -174,7 +174,7 @@ HeatTransferModel::ModelEqData::ModelEqData()
 			.input_default("0.0")
 			.flags_add(FieldFlag::in_rhs & FieldFlag::in_main_matrix);
 
-    *this+=init_temperature
+    *this+=init_condition
             .name("init_temperature")
             .description("Initial temperature.")
             .units( UnitSI().K() )

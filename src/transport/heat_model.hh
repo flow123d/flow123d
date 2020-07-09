@@ -115,7 +115,7 @@ public:
 		/// Transition coefficient in total/diffusive flux b.c.
 		BCMultiField<3, FieldValue<3>::Scalar > bc_robin_sigma;
 		/// Initial temperature.
-		Field<3, FieldValue<3>::Scalar> init_temperature;
+		MultiField<3, FieldValue<3>::Scalar> init_condition;
 		/// Porosity of solid.
 		Field<3, FieldValue<3>::Scalar> porosity;
 		/// Water content passed from Darcy flow model
@@ -199,11 +199,6 @@ public:
 	HeatTransferModel(Mesh &mesh, const Input::Record in_rec);
 
 	void init_from_input(const Input::Record &) override {};
-
-    inline Field<3, FieldValue<3>::Scalar> &init_cond_field(FMT_UNUSED unsigned int sbi)
-    {
-        return data().init_temperature;
-    }
 
 	~HeatTransferModel() override;
 

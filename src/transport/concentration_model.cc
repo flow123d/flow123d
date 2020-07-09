@@ -176,7 +176,7 @@ ConcentrationTransportModel::ModelEqData::ModelEqData()
 			.units( UnitSI().m(4).s(-1).md() )
 			.input_default("0.0")
 			.flags_add(FieldFlag::in_rhs & FieldFlag::in_main_matrix);
-    *this+=init_conc
+    *this+=init_condition
             .name("init_conc")
             .units( UnitSI().kg().m(-3) )
             .description("Initial values for concentration of substances.")

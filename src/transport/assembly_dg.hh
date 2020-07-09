@@ -1001,7 +1001,7 @@ public:
             k=0;
             for (auto p : data_->init_cond_assembly_->bulk_integral(dim)->points(cell, &(data_->init_cond_assembly_->cache_map())) )
             {
-                double rhs_term = model_->init_cond_field(sbi)(p)*fe_values_.JxW(k);
+                double rhs_term = data_->init_condition[sbi](p)*fe_values_.JxW(k);
 
                 for (unsigned int i=0; i<ndofs_; i++)
                 {

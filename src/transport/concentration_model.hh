@@ -67,7 +67,7 @@ public:
 		/// Transition coefficient in total/diffusive flux b.c.
 		BCMultiField<3, FieldValue<3>::Scalar > bc_robin_sigma;
 		/// Initial concentrations.
-		MultiField<3, FieldValue<3>::Scalar> init_conc;
+		MultiField<3, FieldValue<3>::Scalar> init_condition;
 		/// Longitudal dispersivity (for each substance).
 		MultiField<3, FieldValue<3>::Scalar> disp_l;
 		/// Transversal dispersivity (for each substance).
@@ -125,11 +125,6 @@ public:
 
         void init_from_input(const Input::Record &in_rec) override;
 
-
-    inline Field<3, FieldValue<3>::Scalar> &init_cond_field(unsigned int sbi)
-    {
-        return data().init_conc[sbi];
-    }
 
 	~ConcentrationTransportModel() override;
 
