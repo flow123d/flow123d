@@ -305,7 +305,7 @@ public:
 
     /// Return vector of substances indices
     inline const vector<unsigned int> subst_idx() const {
-        return Model::subst_idx;
+        return data_->subst_idx;
     }
 
 

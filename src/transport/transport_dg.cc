@@ -209,6 +209,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
 
     data_ = make_shared<EqData>();
     this->eq_data_ = data_.get();
+    Model::init_balance(in_rec);
 
 
     // Set up physical parameters.
@@ -243,7 +244,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
 template<class Model>
 void TransportDG<Model>::initialize()
 {
-    data_->set_components(Model::substances_.names());
+    data_->set_components(data_->substances_.names());
     data_->set_input_list( input_rec.val<Input::Array>("input_fields"), *(Model::time_) );
     data_->initialize();
 
@@ -278,7 +279,7 @@ void TransportDG<Model>::initialize()
     }
 
     output_vec.resize(Model::n_substances());
-    data_->output_field.set_components(Model::substances_.names());
+    data_->output_field.set_components(data_->substances_.names());
     data_->output_field.set_mesh(*Model::mesh_);
     data_->output_type(OutputTime::CORNER_DATA);
 
@@ -415,7 +416,7 @@ void TransportDG<Model>::zero_time_step()
     // after preallocation we assemble the matrices and vectors required for mass balance
     for (unsigned int sbi=0; sbi<Model::n_substances(); ++sbi)
     {
-        Model::balance_->calculate_instant(Model::subst_idx[sbi], data_->ls[sbi]->get_solution());
+        Model::balance_->calculate_instant(data_->subst_idx[sbi], data_->ls[sbi]->get_solution());
 
         // add sources due to sorption
         ret_sources_prev[sbi] = 0;
@@ -646,7 +647,7 @@ void TransportDG<Model>::output_data()
     
     START_TIMER("TOS-balance");
     for (unsigned int sbi=0; sbi<Model::n_substances(); ++sbi)
-      Model::balance_->calculate_instant(Model::subst_idx[sbi], data_->ls[sbi]->get_solution());
+      Model::balance_->calculate_instant(data_->subst_idx[sbi], data_->ls[sbi]->get_solution());
     Model::balance_->output();
     END_TIMER("TOS-balance");
 
@@ -661,12 +662,12 @@ void TransportDG<Model>::calculate_cumulative_balance()
     {
         for (unsigned int sbi=0; sbi<Model::n_substances(); ++sbi)
         {
-            Model::balance_->calculate_cumulative(Model::subst_idx[sbi], data_->ls[sbi]->get_solution());
+            Model::balance_->calculate_cumulative(data_->subst_idx[sbi], data_->ls[sbi]->get_solution());
 
             // update source increment due to retardation
             VecDot(data_->ret_vec[sbi], data_->ls[sbi]->get_solution(), &ret_sources[sbi]);
 
-            Model::balance_->add_cumulative_source(Model::subst_idx[sbi], (ret_sources[sbi]-ret_sources_prev[sbi])/Model::time_->dt());
+            Model::balance_->add_cumulative_source(data_->subst_idx[sbi], (ret_sources[sbi]-ret_sources_prev[sbi])/Model::time_->dt());
             ret_sources_prev[sbi] = ret_sources[sbi];
         }
     }

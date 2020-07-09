@@ -196,6 +196,18 @@ public:
 		 * Initialize FieldModel instances.
 		 */
 		void initialize();
+
+
+		/// @name Data of substances
+		// @{
+
+	    /// Transported substances.
+	    SubstanceList substances_;
+
+		/// List of indices used to call balance methods for a set of quantities.
+		vector<unsigned int> subst_idx;
+
+    	// @}
 	};
 
 	typedef AdvectionProcessBase FactoryBaseType;
@@ -213,10 +225,10 @@ public:
 
     /// Returns reference to the vector of substance names.
     inline SubstanceList &substances()
-    { return substances_; }
+    { return data().substances_; }
 
     const vector<unsigned int> &get_subst_idx()
-	{ return subst_idx; }
+	{ return data().subst_idx; }
 
 
 	/// Derived class should implement getter for ModelEqData instance.
@@ -239,11 +251,10 @@ protected:
 
 	virtual void calculate_cumulative_balance() = 0;
 
-    /// Transported substances.
-    SubstanceList substances_;
-
-	/// List of indices used to call balance methods for a set of quantities.
-	vector<unsigned int> subst_idx;
+	/**
+	 * Temporary method, sets balance object after construction of EqData object.
+	 */
+	void init_balance(const Input::Record &in_rec);
 
 	std::shared_ptr<OutputTime> output_stream_;
 };

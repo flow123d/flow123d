@@ -145,7 +145,9 @@ const Selection & HeatTransferModel::ModelEqData::get_bc_type_selection() {
 
 HeatTransferModel::ModelEqData::ModelEqData()
 {
-    *this+=bc_type
+	substances_.initialize({""});
+
+	*this+=bc_type
             .name("bc_type")
             .description(
             "Type of boundary condition.")
@@ -418,22 +420,25 @@ HeatTransferModel::HeatTransferModel(Mesh &mesh, const Input::Record in_rec) :
 {
 	time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
 	ASSERT( time_->is_default() == false ).error("Missing key 'time' in Heat_AdvectionDiffusion_DG.");
-	substances_.initialize({""});
 
     output_stream_ = OutputTime::create_output_stream("heat", in_rec.val<Input::Record>("output_stream"), time().get_unit_string());
     //output_stream_->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"));
-
-    balance_ = std::make_shared<Balance>("energy", mesh_);
-    balance_->init_from_input(in_rec.val<Input::Record>("balance"), *time_);
-    // initialization of balance object
-    subst_idx = {balance_->add_quantity("energy")};
-    balance_->units(UnitSI().m(2).kg().s(-2));
 }
 
 
 void HeatTransferModel::output_data()
 {
 	output_stream_->write_time_frame();
+}
+
+
+void HeatTransferModel::init_balance(const Input::Record &in_rec)
+{
+    balance_ = std::make_shared<Balance>("energy", mesh_);
+    balance_->init_from_input(in_rec.val<Input::Record>("balance"), *time_);
+    // initialization of balance object
+    data().subst_idx = {balance_->add_quantity("energy")};
+    balance_->units(UnitSI().m(2).kg().s(-2));
 }
 
 
