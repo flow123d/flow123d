@@ -191,6 +191,11 @@ public:
         static const Input::Type::Selection & get_bc_type_selection();
 
 		static IT::Selection get_output_selection();
+
+		/**
+		 * Initialize FieldModel instances.
+		 */
+		void initialize(Mesh * mesh);
 	};
 
 	typedef AdvectionProcessBase FactoryBaseType;
@@ -233,11 +238,6 @@ protected:
 	{ return output_stream_; }
 
 	virtual void calculate_cumulative_balance() = 0;
-
-	/**
-	 * Initialize FieldModel instances.
-	 */
-	void initialize();
 
     /// Transported substances.
     SubstanceList substances_;

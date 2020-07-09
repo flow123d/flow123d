@@ -115,6 +115,10 @@ public:
 
 		static IT::Selection get_output_selection();
 
+		/**
+		 * Initialize FieldModel instances.
+		 */
+		void initialize(Mesh * mesh);
 	};
 
 
@@ -166,11 +170,6 @@ protected:
 	 * @return
 	 */
 	static IT::Record get_input_type(const string &implementation, const string &description);
-
-	/**
-	 * Initialize FieldModel instances.
-	 */
-	void initialize();
 
     /// Transported substances.
     SubstanceList substances_;
