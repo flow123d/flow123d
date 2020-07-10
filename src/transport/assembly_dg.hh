@@ -163,15 +163,13 @@ public:
 
     /// Constructor.
     StiffnessAssemblyDG(EqDataDG *data)
-    : AssemblyBase<dim>(data->dg_order), model_(nullptr), data_(data) {}
+    : AssemblyBase<dim>(data->dg_order), data_(data) {}
 
     /// Destructor.
     ~StiffnessAssemblyDG() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(TransportDG<Model> &model) {
-        this->model_ = &model;
-
+    void initialize() {
         fe_ = std::make_shared< FE_P_disc<dim> >(data_->dg_order);
         fe_low_ = std::make_shared< FE_P_disc<dim-1> >(data_->dg_order);
         fe_values_.initialize(*this->quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
@@ -567,9 +565,6 @@ private:
     shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
     shared_ptr<FiniteElement<dim-1>> fe_low_;   ///< Finite element for the solution of the advection-diffusion equation (dim-1).
 
-    /// Pointer to model (we must use common ancestor of concentration and heat model)
-    TransportDG<Model> *model_;
-
     /// Data object shared with TransportDG
     EqDataDG *data_;
 
@@ -604,7 +599,6 @@ private:
 
 	// @}
 
-    friend class TransportDG<Model>;
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
 
@@ -961,15 +955,13 @@ public:
 
     /// Constructor.
     InitConditionAssemblyDG(EqDataDG *data)
-    : AssemblyBase<dim>(data->dg_order), model_(nullptr), data_(data) {}
+    : AssemblyBase<dim>(data->dg_order), data_(data) {}
 
     /// Destructor.
     ~InitConditionAssemblyDG() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(TransportDG<Model> &model) {
-        this->model_ = &model;
-
+    void initialize() {
         fe_ = std::make_shared< FE_P_disc<dim> >(data_->dg_order);
         fe_values_.initialize(*this->quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
         ndofs_ = fe_->n_dofs();
@@ -1026,9 +1018,6 @@ public:
     private:
         shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
 
-        /// Pointer to model (we must use common ancestor of concentration and heat model)
-        TransportDG<Model> *model_;
-
         /// Data object shared with TransportDG
         EqDataDG *data_;
 
@@ -1039,7 +1028,6 @@ public:
         vector<PetscScalar> local_matrix_;                        ///< Auxiliary vector for assemble methods
         vector<PetscScalar> local_rhs_;                           ///< Auxiliary vector for set_sources method.
 
-        friend class TransportDG<Model>;
         template < template<IntDim...> class DimAssembly>
         friend class GenericAssembly;
 

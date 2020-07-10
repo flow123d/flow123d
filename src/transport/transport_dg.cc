@@ -333,18 +333,18 @@ void TransportDG<Model>::initialize()
     data_->mass_assembly_->multidim_assembly()[1_d]->initialize(*this);
     data_->mass_assembly_->multidim_assembly()[2_d]->initialize(*this);
     data_->mass_assembly_->multidim_assembly()[3_d]->initialize(*this);
-    data_->stiffness_assembly_->multidim_assembly()[1_d]->initialize(*this);
-    data_->stiffness_assembly_->multidim_assembly()[2_d]->initialize(*this);
-    data_->stiffness_assembly_->multidim_assembly()[3_d]->initialize(*this);
+    data_->stiffness_assembly_->multidim_assembly()[1_d]->initialize();
+    data_->stiffness_assembly_->multidim_assembly()[2_d]->initialize();
+    data_->stiffness_assembly_->multidim_assembly()[3_d]->initialize();
     data_->sources_assembly_->multidim_assembly()[1_d]->initialize(*this);
     data_->sources_assembly_->multidim_assembly()[2_d]->initialize(*this);
     data_->sources_assembly_->multidim_assembly()[3_d]->initialize(*this);
     data_->bdr_cond_assembly_->multidim_assembly()[1_d]->initialize(*this);
     data_->bdr_cond_assembly_->multidim_assembly()[2_d]->initialize(*this);
     data_->bdr_cond_assembly_->multidim_assembly()[3_d]->initialize(*this);
-    data_->init_cond_assembly_->multidim_assembly()[1_d]->initialize(*this);
-    data_->init_cond_assembly_->multidim_assembly()[2_d]->initialize(*this);
-    data_->init_cond_assembly_->multidim_assembly()[3_d]->initialize(*this);
+    data_->init_cond_assembly_->multidim_assembly()[1_d]->initialize();
+    data_->init_cond_assembly_->multidim_assembly()[2_d]->initialize();
+    data_->init_cond_assembly_->multidim_assembly()[3_d]->initialize();
 }
 
 
