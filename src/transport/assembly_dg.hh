@@ -40,14 +40,14 @@ public:
 
     /// Constructor.
     MassAssemblyDG(EqDataDG *data)
-    : AssemblyBase<dim>(data->dg_order), model_(nullptr), data_(data) {}
+    : AssemblyBase<dim>(data->dg_order), data_(data) {}
 
     /// Destructor.
     ~MassAssemblyDG() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(TransportDG<Model> &model) {
-        this->model_ = &model;
+    void initialize(std::shared_ptr<Balance> balance) {
+        this->balance_ = balance;
 
         fe_ = std::make_shared< FE_P_disc<dim> >(data_->dg_order);
         fe_values_.initialize(*this->quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
@@ -101,7 +101,7 @@ public:
                 }
             }
 
-            model_->balance()->add_mass_values(data_->subst_idx()[sbi], cell, cell.get_loc_dof_indices(),
+            balance_->add_mass_values(data_->subst_idx()[sbi], cell, cell.get_loc_dof_indices(),
                                                local_mass_balance_vector_, 0);
 
             data_->ls_dt[sbi]->mat_set_values(ndofs_, &(dof_indices_[0]), ndofs_, &(dof_indices_[0]), &(local_matrix_[0]));
@@ -112,13 +112,13 @@ public:
     /// Implements @p AssemblyBase::begin.
     void begin() override
     {
-        model_->balance()->start_mass_assembly( data_->subst_idx() );
+        balance_->start_mass_assembly( data_->subst_idx() );
     }
 
     /// Implements @p AssemblyBase::end.
     void end() override
     {
-        model_->balance()->finish_mass_assembly( data_->subst_idx() );
+        balance_->finish_mass_assembly( data_->subst_idx() );
     }
 
     /// Implements @p AssemblyBase::reallocate_cache.
@@ -131,8 +131,8 @@ public:
     private:
         shared_ptr<FiniteElement<dim>> fe_;                    ///< Finite element for the solution of the advection-diffusion equation.
 
-        /// Pointer to model (we must use common ancestor of concentration and heat model)
-        TransportDG<Model> *model_;
+        /// Pointer to balance object
+        std::shared_ptr<Balance> balance_;
 
         /// Data object shared with TransportDG
         EqDataDG *data_;
@@ -145,7 +145,6 @@ public:
         vector<PetscScalar> local_retardation_balance_vector_;    ///< Auxiliary vector for assemble mass matrix.
         vector<PetscScalar> local_mass_balance_vector_;           ///< Same as previous.
 
-        friend class TransportDG<Model>;
         template < template<IntDim...> class DimAssembly>
         friend class GenericAssembly;
 
@@ -616,14 +615,14 @@ public:
 
     /// Constructor.
     SourcesAssemblyDG(EqDataDG *data)
-    : AssemblyBase<dim>(data->dg_order), model_(nullptr), data_(data) {}
+    : AssemblyBase<dim>(data->dg_order), data_(data) {}
 
     /// Destructor.
     ~SourcesAssemblyDG() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(TransportDG<Model> &model) {
-        this->model_ = &model;
+    void initialize(std::shared_ptr<Balance> balance) {
+        this->balance_ = balance;
 
         fe_ = std::make_shared< FE_P_disc<dim> >(data_->dg_order);
         fe_values_.initialize(*this->quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
@@ -675,7 +674,7 @@ public:
 
                 local_source_balance_rhs_[i] += local_rhs_[i];
             }
-            model_->balance()->add_source_values(data_->subst_idx()[sbi], elm.region().bulk_idx(),
+            balance_->add_source_values(data_->subst_idx()[sbi], elm.region().bulk_idx(),
                                                  cell.get_loc_dof_indices(),
                                                  local_source_balance_vector_, local_source_balance_rhs_);
         }
@@ -684,13 +683,13 @@ public:
     /// Implements @p AssemblyBase::begin.
     void begin() override
     {
-        model_->balance()->start_source_assembly( data_->subst_idx() );
+        balance_->start_source_assembly( data_->subst_idx() );
     }
 
     /// Implements @p AssemblyBase::end.
     void end() override
     {
-        model_->balance()->finish_source_assembly( data_->subst_idx() );
+        balance_->finish_source_assembly( data_->subst_idx() );
     }
 
     /// Implements @p AssemblyBase::reallocate_cache.
@@ -703,8 +702,8 @@ public:
     private:
         shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
 
-        /// Pointer to model (we must use common ancestor of concentration and heat model)
-        TransportDG<Model> *model_;
+        /// Pointer to balance object
+        std::shared_ptr<Balance> balance_;
 
         /// Data object shared with TransportDG
         EqDataDG *data_;
@@ -724,7 +723,6 @@ public:
 
     	// @}
 
-        friend class TransportDG<Model>;
         template < template<IntDim...> class DimAssembly>
         friend class GenericAssembly;
 
@@ -742,14 +740,15 @@ public:
 
     /// Constructor.
     BdrConditionAssemblyDG(EqDataDG *data)
-    : AssemblyBase<dim>(data->dg_order), model_(nullptr), data_(data) {}
+    : AssemblyBase<dim>(data->dg_order), data_(data) {}
 
     /// Destructor.
     ~BdrConditionAssemblyDG() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(TransportDG<Model> &model) {
-        this->model_ = &model;
+    void initialize(std::shared_ptr<Balance> balance, const TimeGovernor *time) {
+        this->balance_ = balance;
+        this->time_ = time;
 
         fe_ = std::make_shared< FE_P_disc<dim> >(data_->dg_order);
         fe_values_side_.initialize(*this->quad_low_, *fe_, update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
@@ -829,7 +828,7 @@ public:
                     }
                     k++;
                 }
-                if (model_->time().tlevel() > 0)
+                if (time_->tlevel() > 0)
                     for (unsigned int i=0; i<ndofs_; i++)
                         local_flux_balance_rhs_ -= local_rhs_[i];
             }
@@ -895,7 +894,7 @@ public:
             }
             data_->ls[sbi]->rhs_set_values(ndofs_, &(dof_indices_[0]), &(local_rhs_[0]));
 
-            model_->balance()->add_flux_values(data_->subst_idx()[sbi], cell_side,
+            balance_->add_flux_values(data_->subst_idx()[sbi], cell_side,
                                           cell.get_loc_dof_indices(),
                                           local_flux_balance_vector_, local_flux_balance_rhs_);
         }
@@ -904,13 +903,13 @@ public:
     /// Implements @p AssemblyBase::begin.
     void begin() override
     {
-        model_->balance()->start_flux_assembly( data_->subst_idx() );
+        balance_->start_flux_assembly( data_->subst_idx() );
     }
 
     /// Implements @p AssemblyBase::end.
     void end() override
     {
-        model_->balance()->finish_flux_assembly( data_->subst_idx() );
+        balance_->finish_flux_assembly( data_->subst_idx() );
     }
 
     /// Implements @p AssemblyBase::reallocate_cache.
@@ -923,8 +922,10 @@ public:
     private:
         shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
 
-        /// Pointer to model (we must use common ancestor of concentration and heat model)
-        TransportDG<Model> *model_;
+        /// Pointer to balance object
+        std::shared_ptr<Balance> balance_;
+        /// Pointer to TimeGovernor object
+        const TimeGovernor *time_;
 
         /// Data object shared with TransportDG
         EqDataDG *data_;
@@ -937,7 +938,6 @@ public:
         vector<PetscScalar> local_flux_balance_vector_;           ///< Auxiliary vector for set_boundary_conditions method.
         PetscScalar local_flux_balance_rhs_;                      ///< Auxiliary variable for set_boundary_conditions method.
 
-        friend class TransportDG<Model>;
         template < template<IntDim...> class DimAssembly>
         friend class GenericAssembly;
 
