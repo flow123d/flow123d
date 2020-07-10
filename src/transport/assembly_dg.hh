@@ -70,7 +70,7 @@ public:
         fe_values_.reinit(elm);
         cell.get_dof_indices(dof_indices_);
 
-        for (unsigned int sbi=0; sbi<model_->n_substances(); ++sbi)
+        for (unsigned int sbi=0; sbi<data_->n_substances(); ++sbi)
         {
             // assemble the local mass matrix
             for (unsigned int i=0; i<ndofs_; i++)
@@ -215,7 +215,7 @@ public:
         unsigned int k;
 
         // assemble the local stiffness matrix
-        for (unsigned int sbi=0; sbi<model_->n_substances(); sbi++)
+        for (unsigned int sbi=0; sbi<data_->n_substances(); sbi++)
         {
             for (unsigned int i=0; i<ndofs_; i++)
                 for (unsigned int j=0; j<ndofs_; j++)
@@ -254,7 +254,7 @@ public:
         fe_values_side_.reinit(side);
         unsigned int k;
 
-        for (unsigned int sbi=0; sbi<model_->n_substances(); sbi++)
+        for (unsigned int sbi=0; sbi<data_->n_substances(); sbi++)
         {
             std::fill(local_matrix_.begin(), local_matrix_.end(), 0);
 
@@ -339,16 +339,16 @@ public:
             auto dh_edge_cell = data_->dh_->cell_accessor_from_element( edge_side.elem_idx() );
             dh_edge_cell.get_dof_indices(side_dof_indices_[sid]);
             fe_values_vec_[sid].reinit(edge_side.side());
-            dg_penalty_[sid].resize(model_->n_substances());
+            dg_penalty_[sid].resize(data_->n_substances());
             auto p_center = *( data_->stiffness_assembly_->center_integral(dim)->points(dh_edge_cell, &(data_->stiffness_assembly_->cache_map())).begin() );
-            for (unsigned int sbi=0; sbi<model_->n_substances(); sbi++)
+            for (unsigned int sbi=0; sbi<data_->n_substances(); sbi++)
                 dg_penalty_[sid][sbi] = data_->dg_penalty[sbi](p_center);
             ++sid;
         }
         arma::vec3 normal_vector = fe_values_vec_[0].normal_vector(0);
 
         // fluxes and penalty
-        for (unsigned int sbi=0; sbi<model_->n_substances(); sbi++)
+        for (unsigned int sbi=0; sbi<data_->n_substances(); sbi++)
         {
             vector<double> fluxes(edge_side_range.begin()->n_edge_sides());
             double pflux = 0, nflux = 0; // calculate the total in- and out-flux through the edge
@@ -512,7 +512,7 @@ public:
         own_element_id[1] = cell_higher_dim.is_own();
 
         unsigned int k;
-        for (unsigned int sbi=0; sbi<model_->n_substances(); sbi++) // Optimize: SWAP LOOPS
+        for (unsigned int sbi=0; sbi<data_->n_substances(); sbi++) // Optimize: SWAP LOOPS
         {
             for (unsigned int i=0; i<n_dofs[0]+n_dofs[1]; i++)
                 for (unsigned int j=0; j<n_dofs[0]+n_dofs[1]; j++)
@@ -653,7 +653,7 @@ public:
         cell.get_dof_indices(dof_indices_);
 
         // assemble the local stiffness matrix
-        for (unsigned int sbi=0; sbi<model_->n_substances(); sbi++)
+        for (unsigned int sbi=0; sbi<data_->n_substances(); sbi++)
         {
             fill_n( &(local_rhs_[0]), ndofs_, 0 );
             local_source_balance_vector_.assign(ndofs_, 0);
@@ -780,7 +780,7 @@ public:
         const DHCellAccessor &cell = cell_side.cell();
         cell.get_dof_indices(dof_indices_);
 
-        for (unsigned int sbi=0; sbi<model_->n_substances(); sbi++)
+        for (unsigned int sbi=0; sbi<data_->n_substances(); sbi++)
         {
             fill_n(&(local_rhs_[0]), ndofs_, 0);
             local_flux_balance_vector_.assign(ndofs_, 0);
@@ -989,7 +989,7 @@ public:
         cell.get_dof_indices(dof_indices_);
         fe_values_.reinit(elem);
 
-        for (unsigned int sbi=0; sbi<model_->n_substances(); sbi++)
+        for (unsigned int sbi=0; sbi<data_->n_substances(); sbi++)
         {
             for (unsigned int i=0; i<ndofs_; i++)
             {

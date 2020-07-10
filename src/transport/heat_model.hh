@@ -197,6 +197,10 @@ public:
 		 */
 		void initialize();
 
+        /// Returns number of transported substances.
+        inline unsigned int n_substances()
+        { return 1; }
+
 
 		/// @name Data of substances
 		// @{
@@ -218,10 +222,6 @@ public:
 	void init_from_input(const Input::Record &) override {};
 
 	~HeatTransferModel() override;
-
-    /// Returns number of transported substances.
-    inline unsigned int n_substances()
-    { return 1; }
 
     /// Returns reference to the vector of substance names.
     inline SubstanceList &substances()

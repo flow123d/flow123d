@@ -120,6 +120,10 @@ public:
 		 */
 		void initialize();
 
+        /// Returns number of transported substances.
+        inline unsigned int n_substances()
+        { return substances_.size(); }
+
 
 		/// @name Data of substances
 		// @{
@@ -146,7 +150,7 @@ public:
 
     /// Returns number of transported substances.
     inline unsigned int n_substances() override
-    { return data().substances_.size(); }
+    { return data().n_substances(); }
 
     /// Returns reference to the vector of substance names.
     inline SubstanceList &substances() override
@@ -184,7 +188,7 @@ protected:
 	static IT::Record get_input_type(const string &implementation, const string &description);
 
 	/**
-	 * Empty temporary method (must be implemented for continuity with HeatModel)
+	 * Empty temporary method (must be implemented for continuity with HeatTransferModel)
 	 */
 	void init_balance(const Input::Record &in_rec);
 
