@@ -416,7 +416,7 @@ void TransportDG<Model>::zero_time_step()
     // after preallocation we assemble the matrices and vectors required for mass balance
     for (unsigned int sbi=0; sbi<data_->n_substances(); ++sbi)
     {
-        Model::balance_->calculate_instant(data_->subst_idx[sbi], data_->ls[sbi]->get_solution());
+        Model::balance_->calculate_instant(data_->subst_idx_[sbi], data_->ls[sbi]->get_solution());
 
         // add sources due to sorption
         ret_sources_prev[sbi] = 0;
@@ -647,7 +647,7 @@ void TransportDG<Model>::output_data()
     
     START_TIMER("TOS-balance");
     for (unsigned int sbi=0; sbi<data_->n_substances(); ++sbi)
-      Model::balance_->calculate_instant(data_->subst_idx[sbi], data_->ls[sbi]->get_solution());
+      Model::balance_->calculate_instant(data_->subst_idx_[sbi], data_->ls[sbi]->get_solution());
     Model::balance_->output();
     END_TIMER("TOS-balance");
 
@@ -662,12 +662,12 @@ void TransportDG<Model>::calculate_cumulative_balance()
     {
         for (unsigned int sbi=0; sbi<data_->n_substances(); ++sbi)
         {
-            Model::balance_->calculate_cumulative(data_->subst_idx[sbi], data_->ls[sbi]->get_solution());
+            Model::balance_->calculate_cumulative(data_->subst_idx_[sbi], data_->ls[sbi]->get_solution());
 
             // update source increment due to retardation
             VecDot(data_->ret_vec[sbi], data_->ls[sbi]->get_solution(), &ret_sources[sbi]);
 
-            Model::balance_->add_cumulative_source(data_->subst_idx[sbi], (ret_sources[sbi]-ret_sources_prev[sbi])/Model::time_->dt());
+            Model::balance_->add_cumulative_source(data_->subst_idx_[sbi], (ret_sources[sbi]-ret_sources_prev[sbi])/Model::time_->dt());
             ret_sources_prev[sbi] = ret_sources[sbi];
         }
     }

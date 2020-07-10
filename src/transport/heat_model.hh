@@ -201,6 +201,14 @@ public:
         inline unsigned int n_substances()
         { return 1; }
 
+        /// Returns reference to the vector of substance indices.
+        const vector<unsigned int> &subst_idx()
+    	{ return subst_idx_; }
+
+        /// Returns reference to the vector of substance names.
+        inline SubstanceList &substances()
+        { return substances_; }
+
 
 		/// @name Data of substances
 		// @{
@@ -209,7 +217,7 @@ public:
 	    SubstanceList substances_;
 
 		/// List of indices used to call balance methods for a set of quantities.
-		vector<unsigned int> subst_idx;
+		vector<unsigned int> subst_idx_;
 
     	// @}
 	};
@@ -222,14 +230,6 @@ public:
 	void init_from_input(const Input::Record &) override {};
 
 	~HeatTransferModel() override;
-
-    /// Returns reference to the vector of substance names.
-    inline SubstanceList &substances()
-    { return data().substances_; }
-
-    const vector<unsigned int> &get_subst_idx()
-	{ return data().subst_idx; }
-
 
 	/// Derived class should implement getter for ModelEqData instance.
 	virtual ModelEqData &data() = 0;

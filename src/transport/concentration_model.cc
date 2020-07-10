@@ -332,7 +332,7 @@ ConcentrationTransportModel::~ConcentrationTransportModel()
 void ConcentrationTransportModel::set_balance_object(std::shared_ptr<Balance> balance)
 {
 	balance_ = balance;
-	data().subst_idx = balance_->add_quantities(data().substances_.names());
+	data().subst_idx_ = balance_->add_quantities(data().substances_.names());
 }
 
 

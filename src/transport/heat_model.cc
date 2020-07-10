@@ -437,7 +437,7 @@ void HeatTransferModel::init_balance(const Input::Record &in_rec)
     balance_ = std::make_shared<Balance>("energy", mesh_);
     balance_->init_from_input(in_rec.val<Input::Record>("balance"), *time_);
     // initialization of balance object
-    data().subst_idx = {balance_->add_quantity("energy")};
+    data().subst_idx_ = {balance_->add_quantity("energy")};
     balance_->units(UnitSI().m(2).kg().s(-2));
 }
 

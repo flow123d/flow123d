@@ -124,6 +124,14 @@ public:
         inline unsigned int n_substances()
         { return substances_.size(); }
 
+        /// Returns reference to the vector of substance indices.
+        const vector<unsigned int> &subst_idx()
+    	{ return subst_idx_; }
+
+        /// Returns reference to the vector of substance names.
+        inline SubstanceList &substances()
+        { return substances_; }
+
 
 		/// @name Data of substances
 		// @{
@@ -132,7 +140,7 @@ public:
 	    SubstanceList substances_;
 
 		/// List of indices used to call balance methods for a set of quantities.
-		vector<unsigned int> subst_idx;
+		vector<unsigned int> subst_idx_;
 
     	// @}
 	};
@@ -154,7 +162,7 @@ public:
 
     /// Returns reference to the vector of substance names.
     inline SubstanceList &substances() override
-    { return data().substances_; }
+    { return data().substances(); }
 
 
     // Methods inherited from ConcentrationTransportBase:
@@ -164,8 +172,8 @@ public:
 
 	void set_balance_object(std::shared_ptr<Balance> balance) override;
 
-    const vector<unsigned int> &get_subst_idx()
-	{ return data().subst_idx; }
+    const vector<unsigned int> &get_subst_idx() override
+	{ return data().subst_idx(); }
 
     void set_output_stream(std::shared_ptr<OutputTime> stream)
     { output_stream_ = stream; }

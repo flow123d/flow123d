@@ -101,7 +101,7 @@ public:
                 }
             }
 
-            model_->balance()->add_mass_values(model_->get_subst_idx()[sbi], cell, cell.get_loc_dof_indices(),
+            model_->balance()->add_mass_values(data_->subst_idx()[sbi], cell, cell.get_loc_dof_indices(),
                                                local_mass_balance_vector_, 0);
 
             data_->ls_dt[sbi]->mat_set_values(ndofs_, &(dof_indices_[0]), ndofs_, &(dof_indices_[0]), &(local_matrix_[0]));
@@ -112,13 +112,13 @@ public:
     /// Implements @p AssemblyBase::begin.
     void begin() override
     {
-        model_->balance()->start_mass_assembly( model_->subst_idx() );
+        model_->balance()->start_mass_assembly( data_->subst_idx() );
     }
 
     /// Implements @p AssemblyBase::end.
     void end() override
     {
-        model_->balance()->finish_mass_assembly( model_->subst_idx() );
+        model_->balance()->finish_mass_assembly( data_->subst_idx() );
     }
 
     /// Implements @p AssemblyBase::reallocate_cache.
@@ -681,7 +681,7 @@ public:
 
                 local_source_balance_rhs_[i] += local_rhs_[i];
             }
-            model_->balance()->add_source_values(model_->get_subst_idx()[sbi], elm.region().bulk_idx(),
+            model_->balance()->add_source_values(data_->subst_idx()[sbi], elm.region().bulk_idx(),
                                                  cell.get_loc_dof_indices(),
                                                  local_source_balance_vector_, local_source_balance_rhs_);
         }
@@ -690,13 +690,13 @@ public:
     /// Implements @p AssemblyBase::begin.
     void begin() override
     {
-        model_->balance()->start_source_assembly( model_->subst_idx() );
+        model_->balance()->start_source_assembly( data_->subst_idx() );
     }
 
     /// Implements @p AssemblyBase::end.
     void end() override
     {
-        model_->balance()->finish_source_assembly( model_->subst_idx() );
+        model_->balance()->finish_source_assembly( data_->subst_idx() );
     }
 
     /// Implements @p AssemblyBase::reallocate_cache.
@@ -901,7 +901,7 @@ public:
             }
             data_->ls[sbi]->rhs_set_values(ndofs_, &(dof_indices_[0]), &(local_rhs_[0]));
 
-            model_->balance()->add_flux_values(model_->get_subst_idx()[sbi], cell_side,
+            model_->balance()->add_flux_values(data_->subst_idx()[sbi], cell_side,
                                           cell.get_loc_dof_indices(),
                                           local_flux_balance_vector_, local_flux_balance_rhs_);
         }
@@ -910,13 +910,13 @@ public:
     /// Implements @p AssemblyBase::begin.
     void begin() override
     {
-        model_->balance()->start_flux_assembly( model_->subst_idx() );
+        model_->balance()->start_flux_assembly( data_->subst_idx() );
     }
 
     /// Implements @p AssemblyBase::end.
     void end() override
     {
-        model_->balance()->finish_flux_assembly( model_->subst_idx() );
+        model_->balance()->finish_flux_assembly( data_->subst_idx() );
     }
 
     /// Implements @p AssemblyBase::reallocate_cache.

@@ -303,12 +303,6 @@ public:
         return Model::balance_;
     }
 
-    /// Return vector of substances indices
-    inline const vector<unsigned int> subst_idx() const {
-        return data_->subst_idx;
-    }
-
-
 	inline typename Model::ModelEqData &data() { return *data_; }
 
 private:
