@@ -128,6 +128,15 @@ const it::Record & DarcyMH::type_field_descriptor() {
         return field_descriptor;
 }
 
+const it::Selection & DarcyMH::EqData::nonlinear_solver_type() {
+	return it::Selection("Flow_Darcy_nonlinear_solver_type")
+        .add_value(Picard, "Picard",
+            "Solving nonlinear term by using Picard's iterations.")
+        .add_value(Newton, "Newton",
+            "Solving nonlinear term by using Newton's method.")
+        .close();
+}
+
 const it::Record & DarcyMH::get_input_type() {
 
     it::Record ns_rec = Input::Type::Record("NonlinearSolver", "Non-linear solver settings.")
@@ -283,6 +292,12 @@ DarcyMH::EqData::EqData()
             .input_default("0.0")
             .units( UnitSI::dimensionless() );
 
+    *this += nonlinear_solver.name("nonlinear_solver")
+            .description("Nonlinear solver type.")
+            .input_selection( nonlinear_solver_type() )
+            .input_default("\"none\"")
+            .units( UnitSI::dimensionless() );
+
     //time_term_fields = this->subset({"storativity"});
     //main_matrix_fields = this->subset({"anisotropy", "conductivity", "cross_section", "sigma", "bc_type", "bc_robin_sigma"});
     //rhs_fields = this->subset({"water_source_density", "bc_pressure", "bc_flux"});
@@ -307,6 +322,7 @@ DarcyMH::DarcyMH(Mesh &mesh_in, const Input::Record in_rec)
     output_object(nullptr),
     data_changed_(false),
     schur0(nullptr),
+    schur0_Newton(nullptr),
 	steady_diagonal(nullptr),
 	steady_rhs(nullptr),
 	new_diagonal(nullptr),
@@ -458,12 +474,12 @@ void DarcyMH::initialize() {
 
     // auxiliary set_time call  since allocation assembly evaluates fields as well
     data_changed_ = data_->set_time(time_->step(), LimitSide::right) || data_changed_;
-    create_linear_system(rec);
+    create_linear_system_Newton(rec);
 
 
 
     // allocate time term vectors
-    VecDuplicate(schur0->get_solution(), &previous_solution);
+    VecDuplicate(schur0_Newton->get_solution(), &previous_solution);
     VecCreateMPI(PETSC_COMM_WORLD, data_->dh_->distr()->lsize(),PETSC_DETERMINE,&(steady_diagonal));
     VecDuplicate(steady_diagonal,& new_diagonal);
     VecZeroEntries(new_diagonal);
@@ -480,6 +496,7 @@ void DarcyMH::initialize() {
 
     data_->balance = balance_;
     data_->lin_sys = schur0;
+    data_->lin_sys_Newton = schur0_Newton;
 
 
     initialize_specific();
@@ -505,12 +522,12 @@ void DarcyMH::zero_time_step()
 
     if (zero_time_term_from_right) {
         // steady case
-        VecZeroEntries(schur0->get_solution());
+        VecZeroEntries(schur0_Newton->get_solution());
         //read_initial_condition(); // Possible solution guess for steady case.
         use_steady_assembly_ = true;
         solve_nonlinear(); // with right limit data
     } else {
-        VecZeroEntries(schur0->get_solution());
+        VecZeroEntries(schur0_Newton->get_solution());
         VecZeroEntries(previous_solution);
         read_initial_condition();
         assembly_linear_system(); // in particular due to balance
@@ -586,9 +603,9 @@ bool DarcyMH::zero_time_term(bool time_global) {
 double DarcyMH::compute_full_residual()
 {
     Vec residual_;
-    VecDuplicate(schur0->get_solution(), &residual_);
-    MatMult(*schur0->get_matrix(), schur0->get_solution(), residual_);
-    VecAXPY(residual_,-1.0, *schur0->get_rhs());
+    VecDuplicate(schur0_Newton->get_solution(), &residual_);
+    MatMult(*schur0_Newton->get_matrix(), schur0_Newton->get_solution(), residual_);
+    VecAXPY(residual_,-1.0, *schur0_Newton->get_rhs());
     double residual_norm;
     VecNorm(residual_, NORM_2, &residual_norm);
     VecDestroy(&residual_);
@@ -597,6 +614,7 @@ double DarcyMH::compute_full_residual()
 
 Vec DarcyMH::compute_full_residual_vec()
 {
+    assembly_linear_system();
     Vec residual_;
     VecDuplicate(schur0->get_solution(), &residual_);
     MatMult(*schur0->get_matrix(), schur0->get_solution(), residual_);
@@ -606,8 +624,10 @@ Vec DarcyMH::compute_full_residual_vec()
 
 void DarcyMH::solve_nonlinear()
 {
-
-    assembly_linear_system();
+    Vec residual_ = compute_full_residual_vec();
+    assembly_linear_system_Newton(residual_);
+    //assembly_linear_system();
+    //Vec residual_ = compute_full_residual_vec();
     double residual_norm = compute_full_residual();
     nonlinear_iteration_ = 0;
     MessageOut().fmt("[nonlinear solver] norm of initial residual: {}\n", residual_norm);
@@ -630,7 +650,7 @@ void DarcyMH::solve_nonlinear()
 
     residual_norm = compute_full_residual();
     Vec save_solution;
-    VecDuplicate(schur0->get_solution(), &save_solution);
+    VecDuplicate(schur0_Newton->get_solution(), &save_solution);
     while (nonlinear_iteration_ < this->min_n_it_ ||
            (residual_norm > this->tolerance_ &&  nonlinear_iteration_ < this->max_n_it_ )) {
     	OLD_ASSERT_EQUAL( convergence_history.size(), nonlinear_iteration_ );
@@ -650,8 +670,8 @@ void DarcyMH::solve_nonlinear()
         }
 
         if (! is_linear_common)
-            VecCopy( schur0->get_solution(), save_solution);
-        LinSys::SolveInfo si = schur0->solve();
+            VecCopy( schur0_Newton->get_solution(), save_solution);
+        LinSys::SolveInfo si = schur0_Newton->solve();
         nonlinear_iteration_++;
 
         // hack to make BDDC work with empty compute_residual
@@ -665,15 +685,16 @@ void DarcyMH::solve_nonlinear()
         data_changed_=true; // force reassembly for non-linear case
 
         double alpha = 1; // how much of new solution
-        VecAXPBY(schur0->get_solution(), (1-alpha), alpha, save_solution);
+        VecAXPBY(schur0_Newton->get_solution(), (1-alpha), alpha, save_solution);
 
         //LogOut().fmt("Linear solver ended with reason: {} \n", si.converged_reason );
         //OLD_ASSERT( si.converged_reason >= 0, "Linear solver failed to converge. Convergence reason %d \n", si.converged_reason );
-        assembly_linear_system();
+        assembly_linear_system_Newton(residual_);
 
         residual_norm = compute_full_residual();
         MessageOut().fmt("[nonlinear solver] it: {} lin. it: {}, reason: {}, residual: {}\n",
         		nonlinear_iteration_, si.n_iterations, si.converged_reason, residual_norm);
+        chkerr(VecDestroy(&residual_));
     }
     chkerr(VecDestroy(&save_solution));
     this -> postprocess();
@@ -738,15 +759,15 @@ void DarcyMH::output_data() {
 
 
     START_TIMER("Darcy balance output");
-    balance_->calculate_cumulative(data_->water_balance_idx, schur0->get_solution());
-    balance_->calculate_instant(data_->water_balance_idx, schur0->get_solution());
+    balance_->calculate_cumulative(data_->water_balance_idx, schur0_Newton->get_solution());
+    balance_->calculate_instant(data_->water_balance_idx, schur0_Newton->get_solution());
     balance_->output();
 }
 
 
 double DarcyMH::solution_precision() const
 {
-	return schur0->get_solution_precision();
+	return schur0_Newton->get_solution_precision();
 }
 
 
@@ -870,6 +891,98 @@ void DarcyMH::allocate_mh_matrix()
         ls->mat_set_values(tmp_rows.size(), tmp_rows.data(), tmp_rows.size(), tmp_rows.data(), zeros);  // neigh edges  x neigh edges
 
     }
+}
+    void DarcyMH::allocate_mh_matrix_Newton()
+{
+    START_TIMER("DarcyFlowMH_Steady::allocate_mh_matrix_Newton");
+
+    // set auxiliary flag for switchting Dirichlet like BC
+    data_->n_schur_compls = n_schur_compls;
+    LinSys *ls = schur0_Newton;
+
+    // to make space for second schur complement, max. 10 neighbour edges of one el.
+    double zeros[100000];
+    for(int i=0; i<100000; i++) zeros[i] = 0.0;
+
+    std::vector<LongIdx> tmp_rows;
+    tmp_rows.reserve(200);
+
+    std::vector<LongIdx> dofs, dofs_ngh;
+    dofs.reserve(data_->dh_->max_elem_dofs());
+    dofs_ngh.reserve(data_->dh_->max_elem_dofs());
+
+    for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
+        ElementAccessor<3> ele = dh_cell.elm();
+        
+        const uint ndofs = dh_cell.n_dofs();
+        dofs.resize(ndofs);
+        dh_cell.get_dof_indices(dofs);
+        
+        // whole local MH matrix
+        ls->mat_set_values(ndofs, dofs.data(), ndofs, dofs.data(), zeros);
+
+        tmp_rows.clear();
+
+        // compatible neighborings rows
+        unsigned int n_neighs = ele->n_neighs_vb();
+        for ( DHCellSide neighb_side : dh_cell.neighb_sides() ) {
+            // every compatible connection adds a 2x2 matrix involving
+            // current element pressure  and a connected edge pressure
+
+            // read neighbor dofs (dh dofhandler)
+            // neighbor cell owning neighb_side
+            DHCellAccessor dh_neighb_cell = neighb_side.cell();
+
+            const uint ndofs_ngh = dh_neighb_cell.n_dofs();
+            dofs_ngh.resize(ndofs_ngh);
+            dh_neighb_cell.get_dof_indices(dofs_ngh);
+
+            // local index of pedge dof on neighboring cell
+            // (dim+1) is number of edges of higher dim element
+            // TODO: replace with DHCell getter when available for FESystem component
+            const unsigned int t = dh_neighb_cell.n_dofs() - (dh_neighb_cell.dim()+1) + neighb_side.side().side_idx();
+            tmp_rows.push_back(dofs_ngh[t]);
+        }
+
+        const uint nsides = ele->n_sides();
+        LongIdx * edge_rows = dofs.data() + nsides; // pointer to start of ele
+        // allocate always also for schur 2
+        ls->mat_set_values(nsides+1, edge_rows, n_neighs, tmp_rows.data(), zeros); // (edges, ele)  x (neigh edges)
+        ls->mat_set_values(n_neighs, tmp_rows.data(), nsides+1, edge_rows, zeros); // (neigh edges) x (edges, ele)
+        ls->mat_set_values(n_neighs, tmp_rows.data(), n_neighs, tmp_rows.data(), zeros);  // (neigh edges) x (neigh edges)
+
+        tmp_rows.clear();
+
+        if (data_->mortar_method_ != NoMortar) {
+            auto &isec_list = mesh_->mixed_intersections().element_intersections_[ele.idx()];
+            for(auto &isec : isec_list ) {
+                IntersectionLocalBase *local = isec.second;
+                DHCellAccessor dh_cell_slave = data_->dh_->cell_accessor_from_element(local->bulk_ele_idx());
+
+                const uint ndofs_slave = dh_cell_slave.n_dofs();
+                dofs_ngh.resize(ndofs_slave);
+                dh_cell_slave.get_dof_indices(dofs_ngh);
+
+                //DebugOut().fmt("Alloc: {} {}", ele.idx(), local->bulk_ele_idx());
+                for(unsigned int i_side=0; i_side < dh_cell_slave.elm()->n_sides(); i_side++) {
+                    // TODO: replace with DHCell getter when available for FESystem component
+                    tmp_rows.push_back( dofs_ngh[(ndofs_slave+1)/2+i_side] );
+                    //DebugOut() << "aedge" << print_var(tmp_rows[tmp_rows.size()-1]);
+                }
+            }
+        }
+        /*
+        for(unsigned int i_side=0; i_side < ele->n_sides(); i_side++) {
+            DebugOut() << "aedge:" << print_var(edge_rows[i_side]);
+        }*/
+
+        edge_rows = dofs.data() + nsides +1; // pointer to start of edges
+        ls->mat_set_values(nsides, edge_rows, tmp_rows.size(), tmp_rows.data(), zeros);   // master edges x neigh edges
+        ls->mat_set_values(tmp_rows.size(), tmp_rows.data(), nsides, edge_rows, zeros);   // neigh edges  x master edges
+        ls->mat_set_values(tmp_rows.size(), tmp_rows.data(), tmp_rows.size(), tmp_rows.data(), zeros);  // neigh edges  x neigh edges
+
+    }
+}
 /*
     // alloc edge diagonal entries
     if(rank == 0)
@@ -891,7 +1004,6 @@ void DarcyMH::allocate_mh_matrix()
     } else if (mortar_method_ == MortarP1) {
         P1_CouplingAssembler(*this).assembly(*ls);
     }*/
-}
 
 void DarcyMH::assembly_source_term()
 {
@@ -1039,13 +1151,122 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
 
 }
 
+void DarcyMH::create_linear_system_Newton(Input::AbstractRecord in_rec) {
+  
+    START_TIMER("preallocation");
+
+    if (schur0_Newton == NULL) { // create Linear System for MH matrix
+       
+    	if (in_rec.type() == LinSys_BDDC::get_input_type()) {
+#ifdef FLOW123D_HAVE_BDDCML
+    		WarningOut() << "For BDDC no Schur complements are used.";
+            n_schur_compls = 0;
+            LinSys_BDDC *ls = new LinSys_BDDC(&(*data_->dh_->distr()),
+                    true); // swap signs of matrix and rhs to make the matrix SPD
+            ls->set_from_input(in_rec);
+            ls->set_solution( ele_flux_ptr->get_data_vec().petsc_vec() );
+            // possible initialization particular to BDDC
+            START_TIMER("BDDC set mesh data");
+            set_mesh_data_for_bddc(ls);
+            schur0_Newton=ls;
+            END_TIMER("BDDC set mesh data");
+#else
+            Exception
+            xprintf(Err, "Flow123d was not build with BDDCML support.\n");
+#endif // FLOW123D_HAVE_BDDCML
+        } 
+        else if (in_rec.type() == LinSys_PETSC::get_input_type()) {
+        // use PETSC for serial case even when user wants BDDC
+            if (n_schur_compls > 2) {
+            	WarningOut() << "Invalid number of Schur Complements. Using 2.";
+                n_schur_compls = 2;
+            }
+
+            LinSys_PETSC *schur1, *schur2;
+
+            if (n_schur_compls == 0) {
+                LinSys_PETSC *ls = new LinSys_PETSC( &(*data_->dh_->distr()) );
+
+                // temporary solution; we have to set precision also for sequantial case of BDDC
+                // final solution should be probably call of direct solver for oneproc case
+                if (in_rec.type() != LinSys_BDDC::get_input_type()) ls->set_from_input(in_rec);
+                else {
+                    ls->LinSys::set_from_input(in_rec); // get only common options
+                }
+
+                ls->set_solution( ele_flux_ptr->get_data_vec().petsc_vec() );
+                schur0_Newton=ls;
+            } else {
+                IS is;
+                auto side_dofs_vec = get_component_indices_vec(0);
+
+                ISCreateGeneral(PETSC_COMM_SELF, side_dofs_vec.size(), &(side_dofs_vec[0]), PETSC_COPY_VALUES, &is);
+                //ISView(is, PETSC_VIEWER_STDOUT_SELF);
+                //OLD_ASSERT(err == 0,"Error in ISCreateStride.");
+
+                SchurComplement *ls = new SchurComplement(&(*data_->dh_->distr()), is);
+
+                // make schur1
+                Distribution *ds = ls->make_complement_distribution();
+                if (n_schur_compls==1) {
+                    schur1 = new LinSys_PETSC(ds);
+                    schur1->set_positive_definite();
+                } else {
+                    IS is;
+                    auto elem_dofs_vec = get_component_indices_vec(1);
+
+                    const PetscInt *b_indices;
+                    ISGetIndices(ls->IsB, &b_indices);
+                    uint b_size = ls->loc_size_B;
+                    for(uint i_b=0, i_bb=0; i_b < b_size && i_bb < elem_dofs_vec.size(); i_b++) {
+                        if (b_indices[i_b] == elem_dofs_vec[i_bb])
+                            elem_dofs_vec[i_bb++] = i_b + ds->begin();
+                    }
+                    ISRestoreIndices(ls->IsB, &b_indices);
+
+
+                    ISCreateGeneral(PETSC_COMM_SELF, elem_dofs_vec.size(), &(elem_dofs_vec[0]), PETSC_COPY_VALUES, &is);
+                    //ISView(is, PETSC_VIEWER_STDOUT_SELF);
+                    //OLD_ASSERT(err == 0,"Error in ISCreateStride.");
+                    SchurComplement *ls1 = new SchurComplement(ds, is); // is is deallocated by SchurComplement
+                    ls1->set_negative_definite();
+
+                    // make schur2
+                    schur2 = new LinSys_PETSC( ls1->make_complement_distribution() );
+                    schur2->set_positive_definite();
+                    ls1->set_complement( schur2 );
+                    schur1 = ls1;
+                }
+                ls->set_complement( schur1 );
+                ls->set_from_input(in_rec);
+                ls->set_solution( ele_flux_ptr->get_data_vec().petsc_vec() );
+                schur0_Newton=ls;
+            }
+
+            START_TIMER("PETSC PREALLOCATION");
+            schur0_Newton->set_symmetric();
+            schur0_Newton->start_allocation();
+            
+            allocate_mh_matrix_Newton();
+            
+    	    VecZeroEntries(schur0_Newton->get_solution());
+            END_TIMER("PETSC PREALLOCATION");
+        }
+        else {
+            xprintf(Err, "Unknown solver type. Internal error.\n");
+        }
+
+        END_TIMER("preallocation");
+    }
+
+}
+
 
 
 
 void DarcyMH::assembly_linear_system() {
     START_TIMER("DarcyFlowMH_Steady::assembly_linear_system");
 
-//    data_->is_linear=true;
     data_-> is_linear = data_->beta.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
     bool is_steady = zero_time_term();
 	//DebugOut() << "Assembly linear system\n";
@@ -1089,6 +1310,63 @@ void DarcyMH::assembly_linear_system() {
 		START_TIMER("modify system");
 		if (! is_steady) {
 			modify_system();
+		} else {
+			//xprintf(PrgErr, "Planned computation time for steady solver, but data are not changed.\n");
+		}
+		END_TIMER("modiffy system");
+	}
+
+}
+
+void DarcyMH::assembly_linear_system_Newton(const Vec residual_) {
+    START_TIMER("DarcyFlowMH_Steady::assembly_linear_system");
+
+    data_-> is_linear = data_->beta.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
+    bool is_steady = zero_time_term();
+	//DebugOut() << "Assembly linear system\n";
+	if (data_changed_) {
+	    data_changed_ = false;
+	    //DebugOut()  << "Data changed\n";
+		// currently we have no optimization for cases when just time term data or RHS data are changed
+	    START_TIMER("full assembly");
+        if (typeid(*schur0_Newton) != typeid(LinSys_BDDC)) {
+            schur0_Newton->start_add_assembly(); // finish allocation and create matrix
+        }
+
+        schur0_Newton->mat_zero_entries();
+        schur0_Newton->rhs_zero_entries();
+
+        assembly_source_term();
+        
+
+	    assembly_mh_matrix( data_->multidim_assembler ); // fill matrix
+
+        Vec rhs = residual_;
+        schur0_Newton->set_rhs(rhs);
+
+	    schur0_Newton->finish_assembly();
+//         print_matlab_matrix("matrix");
+	    schur0_Newton->set_matrix_changed();
+            //MatView( *const_cast<Mat*>(schur0->get_matrix()), PETSC_VIEWER_STDOUT_WORLD  );
+            //VecView( *const_cast<Vec*>(schur0->get_rhs()),   PETSC_VIEWER_STDOUT_WORLD);
+
+	    /*if (! is_steady) {
+	        START_TIMER("fix time term");
+	    	//DebugOut() << "setup time term\n";
+	    	// assembly time term and rhs
+	    	setup_time_term();
+	    	modify_system();
+	    }
+	    else
+	    {
+	    	balance_->start_mass_assembly(data_->water_balance_idx);
+	    	balance_->finish_mass_assembly(data_->water_balance_idx);
+	    }*/
+	    END_TIMER("full assembly");
+	} else {
+		START_TIMER("modify system");
+		if (! is_steady) {
+			modify_system_Newton();
 		} else {
 			//xprintf(PrgErr, "Planned computation time for steady solver, but data are not changed.\n");
 		}
@@ -1361,6 +1639,10 @@ DarcyMH::~DarcyMH() {
         delete schur0;
     }
 
+    if (schur0_Newton != NULL) {
+        delete schur0_Newton;
+    }
+
 	if (output_object)	delete output_object;
 
     if(time_ != nullptr)
@@ -1482,6 +1764,29 @@ void DarcyMH::modify_system() {
 	VecPointwiseMult(*( schur0->get_rhs()), new_diagonal, schur0->get_solution());
     VecAXPY(*( schur0->get_rhs()), 1.0, steady_rhs);
     schur0->set_rhs_changed();
+
+    //VecSwap(previous_solution, schur0->get_solution());
+}
+
+void DarcyMH::modify_system_Newton() {
+	START_TIMER("modify system");
+	if (time_->is_changed_dt() && time_->step().index()>0) {
+        double scale_factor=time_->step(-2).length()/time_->step().length();
+        if (scale_factor != 1.0) {
+            // if time step has changed and setup_time_term not called
+            MatDiagonalSet(*( schur0_Newton->get_matrix() ),steady_diagonal, INSERT_VALUES);
+
+            VecScale(new_diagonal, time_->last_dt()/time_->dt());
+            MatDiagonalSet(*( schur0_Newton->get_matrix() ),new_diagonal, ADD_VALUES);
+            schur0_Newton->set_matrix_changed();
+        }
+	}
+
+    // modify RHS - add previous solution
+    //VecPointwiseMult(*( schur0->get_rhs()), new_diagonal, previous_solution);
+	VecPointwiseMult(*( schur0_Newton->get_rhs()), new_diagonal, schur0_Newton->get_solution());
+    VecAXPY(*( schur0_Newton->get_rhs()), 1.0, steady_rhs);
+    schur0_Newton->set_rhs_changed();
 
     //VecSwap(previous_solution, schur0->get_solution());
 }

@@ -161,8 +161,14 @@ public:
             river=6
         };
 
+        enum nonlinear_solver {
+            Picard = 0,
+            Newton = 1
+        };
+
         /// Return a Selection corresponding to enum BC_Type.
         static const Input::Type::Selection & get_bc_type_selection();
+        static const Input::Type::Selection & nonlinear_solver_type();
 
         /// Creation of all fields.
         EqData();
@@ -173,7 +179,7 @@ public:
         Field<3, FieldValue<3>::Scalar > cross_section;
         Field<3, FieldValue<3>::Scalar > water_source_density;
         Field<3, FieldValue<3>::Scalar > sigma;
-	Field<3, FieldValue<3>::Scalar > beta;
+	    Field<3, FieldValue<3>::Scalar > beta;
         
         BCField<3, FieldValue<3>::Enum > bc_type; // Discrete need Selection for initialization
         BCField<3, FieldValue<3>::Scalar > bc_pressure; 
@@ -187,6 +193,8 @@ public:
 	Field<3, FieldValue<3>::Scalar> field_ele_pressure;
 	Field<3, FieldValue<3>::Scalar> field_ele_piezo_head;
         Field<3, FieldValue<3>::VectorFixed > field_ele_velocity;
+
+        BCField<3, FieldValue<3>::Enum > nonlinear_solver;
 
         /**
          * Gravity vector and constant shift of pressure potential. Used to convert piezometric head
@@ -208,6 +216,7 @@ public:
 
         std::shared_ptr<Balance> balance;
         LinSys *lin_sys;
+        LinSys *lin_sys_Newton;
         
         unsigned int n_schur_compls;
         int is_linear;              ///< Hack fo BDDC solver.
@@ -266,6 +275,7 @@ protected:
     /// Solve method common to zero_time_step and update solution.
     void solve_nonlinear();
     void modify_system();
+    void modify_system_Newton();
     virtual void setup_time_term();
 
 
@@ -276,6 +286,7 @@ protected:
      * Create and preallocate MH linear system (including matrix, rhs and solution vectors)
      */
     void create_linear_system(Input::AbstractRecord rec);
+    void create_linear_system_Newton(Input::AbstractRecord rec);
 
     /**
      * Read initial condition into solution vector.
@@ -302,6 +313,7 @@ protected:
      * - use general preallocation methods in DofHandler
      */
     void allocate_mh_matrix();
+    void allocate_mh_matrix_Newton();
 
     /**
      * Assembles linear system matrix for MH.
@@ -314,6 +326,8 @@ protected:
      */
     void assembly_mh_matrix(MultidimAssembly& assembler);
 
+    void assembly_mh_matrix_Newt(MultidimAssembly& assembler);
+
     /// Source term is implemented differently in LMH version.
     virtual void assembly_source_term();
 
@@ -321,6 +335,9 @@ protected:
      * Assembly or update whole linear system.
      */
     virtual void assembly_linear_system();
+
+    virtual void assembly_linear_system_Newton(const Vec residual_);
+
 
     void set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls);
     /**
@@ -356,6 +373,7 @@ protected:
 
 
 	LinSys *schur0;  		//< whole MH Linear System
+    LinSys *schur0_Newton;  //< whole MH for Newton
 
 	Vec steady_diagonal;
     Vec steady_rhs;

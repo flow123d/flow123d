@@ -259,7 +259,7 @@ protected:
                     dirichlet_edge[i] = 2;  // to be skipped in LMH source assembly
                     loc_system_.add_value(edge_row, edge_row,
                                             -b_ele.measure() * bc_sigma * cross_section,
-                                            -(bc_flux - bc_sigma * bc_pressure) * b_ele.measure() * cross_section);
+                                            (bc_flux - bc_sigma * bc_pressure) * b_ele.measure() * cross_section);
                 }
                 else if (type==DarcyMH::EqData::seepage) {
                     ad_->is_linear=false;
@@ -359,11 +359,11 @@ protected:
 	    double bet =  ad_->beta.value(ele.centre(), ele);
 	    auto w = ad_->field_ele_velocity.value(ele.centre(), ele);
         auto an = ad_->anisotropy.value(ele.centre(), ele );
-        arma::mat33 scale = an.i() / cs / conduct + bet * arma::norm(w) * arma::eye(3,3) / cs; //inverze an
+        const arma::mat33 scale = an.i() / cs / conduct + bet * arma::norm(w) * arma::eye(3,3) / cs; //inverze an
         assemble_sides_scale(dh_cell, scale);
     }
     
-    void assemble_sides_scale(const DHCellAccessor& dh_cell, arma::mat33 scale)
+    void assemble_sides_scale(const DHCellAccessor& dh_cell, const arma::mat33& scale)
     {
         arma::vec3 &gravity_vec = ad_->gravity_vec_;
         const ElementAccessor<3> ele = dh_cell.elm();
@@ -657,7 +657,7 @@ protected:
         
         //shortcuts
         const unsigned int nsides = ele->n_sides();
-        LinSys *ls = ad_->lin_sys;
+        LinSys *ls = ad_->lin_sys_Newton;
         
         Boundary *bcd;
         unsigned int side_row, edge_row;
@@ -781,11 +781,12 @@ protected:
         double conduct =  ad_->conductivity.value(ele.centre(), ele);
 	    double bet =  ad_->beta.value(ele.centre(), ele);
 	    auto w = ad_->field_ele_velocity.value(ele.centre(), ele);
-        arma::mat33 scale = 1 / cs /conduct * arma::eye(3,3) + bet*((arma::kron(w,w) / arma::norm(w)) + arma::norm(w)*arma::eye(3,3) ) / cs;
+        auto an = ad_->anisotropy.value(ele.centre(), ele );
+        const arma::mat33 scale = 1 / cs /conduct * an.i() + bet*((arma::kron(w,w) / arma::norm(w)) + arma::norm(w)*arma::eye(3,3) ) / cs;
         assemble_sides_scale(dh_cell, scale);
     }
     
-    void assemble_sides_scale(const DHCellAccessor& dh_cell, arma::mat33 scale)
+    void assemble_sides_scale(const DHCellAccessor& dh_cell, const arma::mat33& scale)
     {
         arma::vec3 &gravity_vec = ad_->gravity_vec_;
         const ElementAccessor<3> ele = dh_cell.elm();
@@ -817,7 +818,7 @@ protected:
         // to a continuous one
         // it is important to scale the effect - if conductivity is low for one subdomain and high for the other,
         // trust more the one with low conductivity - it will be closer to the truth than an arithmetic average
-        if ( typeid(*ad_->lin_sys) == typeid(LinSys_BDDC) ) {
+        if ( typeid(*ad_->lin_sys_Newton) == typeid(LinSys_BDDC) ) {
             const arma::mat& local_matrix = loc_system_.get_matrix();
             for(unsigned int i=0; i < ndofs; i++) {
                 double val_side =  local_matrix(i,i);
@@ -825,8 +826,8 @@ protected:
 
                 unsigned int side_row = loc_system_.row_dofs[loc_side_dofs[i]];
                 unsigned int edge_row = loc_system_.row_dofs[loc_edge_dofs[i]];
-                static_cast<LinSys_BDDC*>(ad_->lin_sys)->diagonal_weights_set_value( side_row, val_side );
-                static_cast<LinSys_BDDC*>(ad_->lin_sys)->diagonal_weights_set_value( edge_row, val_edge );
+                static_cast<LinSys_BDDC*>(ad_->lin_sys_Newton)->diagonal_weights_set_value( side_row, val_side );
+                static_cast<LinSys_BDDC*>(ad_->lin_sys_Newton)->diagonal_weights_set_value( edge_row, val_edge );
             }
         }
     }
@@ -839,9 +840,9 @@ protected:
             loc_system_.add_value(loc_side_dofs[side], loc_ele_dof, -1.0);
         }
         
-        if ( typeid(*ad_->lin_sys) == typeid(LinSys_BDDC) ) {
+        if ( typeid(*ad_->lin_sys_Newton) == typeid(LinSys_BDDC) ) {
             double val_ele =  1.;
-            static_cast<LinSys_BDDC*>(ad_->lin_sys)->
+            static_cast<LinSys_BDDC*>(ad_->lin_sys_Newton)->
                             diagonal_weights_set_value( loc_system_.row_dofs[loc_ele_dof], val_ele );
 		}
     }
@@ -880,14 +881,14 @@ protected:
             assembly_local_vb(ele, neighb_side);
 
             loc_system_vb_.eliminate_solution();
-            ad_->lin_sys->set_local_system(loc_system_vb_);
+            ad_->lin_sys_Newton->set_local_system(loc_system_vb_);
 
             // update matrix for weights in BDDCML
-            if ( typeid(*ad_->lin_sys) == typeid(LinSys_BDDC) ) {
+            if ( typeid(*ad_->lin_sys_Newton) == typeid(LinSys_BDDC) ) {
                int ind = loc_system_vb_.row_dofs[1];
                // there is -value on diagonal in block C!
                double new_val = loc_system_vb_.get_matrix()(0,0);
-               static_cast<LinSys_BDDC*>(ad_->lin_sys)->diagonal_weights_set_value( ind, new_val );
+               static_cast<LinSys_BDDC*>(ad_->lin_sys_Newton)->diagonal_weights_set_value( ind, new_val );
             }
             ++i;
         }
