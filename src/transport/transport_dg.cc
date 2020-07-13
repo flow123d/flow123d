@@ -236,6 +236,13 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
 	data_->dh_->distribute_dofs(ds);
     //DebugOut().fmt("TDG: solution size {}\n", data_->dh_->n_global_dofs());
 
+    if (Model::mesh_->get_el_ds()->myp() == 0)
+    {
+        FilePath reg_stat_file(std::string(Model::ModelEqData::name()) + "_region_stat.yaml", FilePath::output_file);
+        reg_stat_file.open_stream(reg_stat_stream);
+        reg_stat_stream << "data:" << endl;
+    }
+
 }
 
 
@@ -645,7 +652,94 @@ void TransportDG<Model>::output_data()
     Model::balance_->output();
     END_TIMER("TOS-balance");
 
+    output_region_statistics();
+
     END_TIMER("DG-OUTPUT");
+}
+
+
+template<class Model>
+void TransportDG<Model>::output_region_statistics()
+{
+    const unsigned int nreg = Model::mesh_->region_db().size();
+    const unsigned int nsubst = Model::n_substances();
+    //std::vector<unsigned int> active_region(nreg, 0); // indicates on which region we calculate statistics
+    std::vector<double> r_area(nreg, 0);  // area of regions
+    std::vector<std::vector<double>> r_avg(nreg, std::vector<double>(nsubst, 0)), // average value at regions
+                                     r_max(nreg, std::vector<double>(nsubst, -numeric_limits<double>::infinity())), // maximal value
+                                     r_min(nreg, std::vector<double>(nsubst, numeric_limits<double>::infinity()));  // minimal value
+
+    // calculate area, average, min and max on bulk elements
+    for (auto cell : data_->dh_->own_range() )
+    {
+        auto elm = cell.elm();
+        unsigned int rid = elm.region().idx();
+        //active_region[rid] = 1;
+
+        r_area[rid] += elm.measure();
+        for (unsigned int sbi = 0; sbi<nsubst; sbi++)
+        {
+            double value = data_->output_field[sbi].value(elm.centre(), elm);
+            r_avg[rid][sbi] += elm.measure()*value;
+            r_max[rid][sbi] = max(r_max[rid][sbi], value);
+            r_min[rid][sbi] = min(r_min[rid][sbi], value);
+        }
+    }
+
+    // calculate area, average, min and max on boundary elements
+    for (auto cell : data_->dh_->own_range() )
+    {
+        for (auto side : cell.side_range())
+        {
+            if( ! side.side().is_boundary())
+                continue;
+
+            auto elm = side.cond().element_accessor();
+            unsigned int rid = side.cond().region().idx();
+            //active_region[rid] = true;
+
+            r_area[rid] += elm.measure();
+            for (unsigned int sbi = 0; sbi<nsubst; sbi++)
+            {
+                double value = data_->output_field[sbi].value(side.centre(), side.element());
+                r_avg[rid][sbi] += elm.measure()*value;
+                r_max[rid][sbi] = max(r_max[rid][sbi], value);
+                r_min[rid][sbi] = min(r_min[rid][sbi], value);
+            }
+        }
+    }
+
+    // communicate all values to process 0
+    MPI_Reduce(r_area.data(), r_area.data(), nreg, MPI_DOUBLE, MPI_SUM, 0, PETSC_COMM_WORLD);
+    //MPI_Reduce(active_region.data(), active_region.data(), nreg, MPI_UNSIGNED, MPI_MAX, 0, PETSC_COMM_WORLD);
+    for (unsigned int r=0; r<nreg; r++)
+    {
+        MPI_Reduce(r_avg[r].data(), r_avg[r].data(), nsubst, MPI_DOUBLE, MPI_SUM, 0, PETSC_COMM_WORLD);
+        MPI_Reduce(r_max[r].data(), r_max[r].data(), nsubst, MPI_DOUBLE, MPI_MAX, 0, PETSC_COMM_WORLD);
+        MPI_Reduce(r_min[r].data(), r_min[r].data(), nsubst, MPI_DOUBLE, MPI_MIN, 0, PETSC_COMM_WORLD);
+    }
+
+    // output values to yaml file
+    if (Model::mesh_->get_el_ds()->myp() == 0)
+    {
+    	for(Region reg : Model::mesh_->region_db().get_region_set("ALL"))
+        {
+    		unsigned int r = reg.idx();
+            reg_stat_stream << " - time: " << this->time().t() << endl;
+            reg_stat_stream << "   region: " << reg.label() << endl
+                            << "   area: " << r_area[r] << endl
+                            << "   average: [ ";
+            for (auto v : r_avg[r]) reg_stat_stream << v / r_area[r];
+            reg_stat_stream << " ]" << endl;
+
+            reg_stat_stream << "   min: [ ";
+            for (auto v : r_min[r]) reg_stat_stream << v;
+            reg_stat_stream << " ]" << endl;
+            reg_stat_stream << "   max: [ ";
+            for (auto v : r_max[r]) reg_stat_stream << v;
+            reg_stat_stream << " ]" << endl;
+        }
+    }
 }
 
 
