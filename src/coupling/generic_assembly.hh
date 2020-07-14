@@ -141,10 +141,18 @@ public:
         multidim_assembly_[1_d]->begin();
         for (auto cell : dh->local_range() )
         {
+            element_cache_map_.start_elements_update();
+
             this->add_integrals_of_computing_step(cell);
             element_cache_map_(cell);
 
-            if ( cell.is_own() && (active_integrals_ & ActiveIntegrals::bulk) ) {
+            element_cache_map_.prepare_elements_to_update();
+            this->insert_eval_points_from_integral_data();
+            element_cache_map_.create_elements_points_map();
+            multidim_assembly_[1_d]->data_->cache_update(element_cache_map_);
+            element_cache_map_.finish_elements_update();
+
+            if (active_integrals_ & ActiveIntegrals::bulk) {
                 START_TIMER("assemble_volume_integrals");
                 for (i=0; i<integrals_size_[0]; ++i) { // volume integral
                     switch (bulk_integral_data_[i].cell.dim()) {
@@ -162,7 +170,7 @@ public:
                 END_TIMER("assemble_volume_integrals");
             }
 
-            if ( cell.is_own() && (active_integrals_ & ActiveIntegrals::boundary) ) {
+            if (active_integrals_ & ActiveIntegrals::boundary) {
                 START_TIMER("assemble_fluxes_boundary");
                 for (i=0; i<integrals_size_[3]; ++i) { // boundary integral
                     switch (boundary_integral_data_[i].side.dim()) {
@@ -212,6 +220,7 @@ public:
                 }
                 END_TIMER("assemble_fluxes_elem_side");
             }
+            for (unsigned int i=0; i<6; i++) integrals_size_[i] = 0; // clean integral data
         }
         multidim_assembly_[1_d]->end();
     }
@@ -311,9 +320,6 @@ private:
      * Types of used integrals must be set in data member \p active_integrals_.
      */
     void add_integrals_of_computing_step(DHCellAccessor cell) {
-        for (unsigned int i=0; i<6; i++) integrals_size_[i] = 0; // clean integral data from previous step
-        element_cache_map_.start_elements_update();
-
         // generic_assembly.check_integral_data();
         this->add_center_integral(cell);
         element_cache_map_.add(cell);
@@ -353,12 +359,6 @@ private:
                 element_cache_map_.add(cell);
                 element_cache_map_.add(neighb_side);
             }
-
-        element_cache_map_.prepare_elements_to_update();
-        this->insert_eval_points_from_integral_data();
-        element_cache_map_.create_elements_points_map();
-        multidim_assembly_[1_d]->data_->cache_update(element_cache_map_);
-        element_cache_map_.finish_elements_update();
     }
 
     /// Add data of volume integral to appropriate data structure.
