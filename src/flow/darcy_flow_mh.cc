@@ -135,13 +135,15 @@ const it::Selection & DarcyMH::EqData::nonlinear_solver_type() {
         .add_value(Newton, "Newton",
             "Solving nonlinear term by using Newton's method.")
         .close();
-}
+} 
 
 const it::Record & DarcyMH::get_input_type() {
 
     it::Record ns_rec = Input::Type::Record("NonlinearSolver", "Non-linear solver settings.")
         .declare_key("linear_solver", LinSys::get_input_type(), it::Default("{}"),
             "Linear solver for MH problem.")
+        .declare_key("solver_type", DarcyMH::EqData::nonlinear_solver_type(), it::Default("Picard"),
+            "Nonlinear solver.") 
         .declare_key("tolerance", it::Double(0.0), it::Default("1E-6"),
             "Residual tolerance.")
         .declare_key("min_it", it::Integer(0), it::Default("1"),
@@ -290,12 +292,6 @@ DarcyMH::EqData::EqData()
     *this += beta.name("beta")
             .description("Forchheimer coefficient")
             .input_default("0.0")
-            .units( UnitSI::dimensionless() );
-
-    *this += nonlinear_solver.name("nonlinear_solver")
-            .description("Nonlinear solver type.")
-            .input_selection( nonlinear_solver_type() )
-            .input_default("\"none\"")
             .units( UnitSI::dimensionless() );
 
     //time_term_fields = this->subset({"storativity"});
@@ -474,7 +470,11 @@ void DarcyMH::initialize() {
 
     // auxiliary set_time call  since allocation assembly evaluates fields as well
     data_changed_ = data_->set_time(time_->step(), LimitSide::right) || data_changed_;
-    create_linear_system_Newton(rec);
+    create_linear_system(rec);
+    int ns_type = input_record_.val<Input::Record>("nonlinear_solver_type").val<int>("type");
+    if (ns_type == Newton){
+        create_linear_system_Newton(rec);
+    }
 
 
 
@@ -522,12 +522,12 @@ void DarcyMH::zero_time_step()
 
     if (zero_time_term_from_right) {
         // steady case
-        VecZeroEntries(schur0_Newton->get_solution());
+        VecZeroEntries(schur0->get_solution());
         //read_initial_condition(); // Possible solution guess for steady case.
         use_steady_assembly_ = true;
         solve_nonlinear(); // with right limit data
     } else {
-        VecZeroEntries(schur0_Newton->get_solution());
+        VecZeroEntries(schur0->get_solution());
         VecZeroEntries(previous_solution);
         read_initial_condition();
         assembly_linear_system(); // in particular due to balance
@@ -603,9 +603,9 @@ bool DarcyMH::zero_time_term(bool time_global) {
 double DarcyMH::compute_full_residual()
 {
     Vec residual_;
-    VecDuplicate(schur0_Newton->get_solution(), &residual_);
-    MatMult(*schur0_Newton->get_matrix(), schur0_Newton->get_solution(), residual_);
-    VecAXPY(residual_,-1.0, *schur0_Newton->get_rhs());
+    VecDuplicate(schur0->get_solution(), &residual_);
+    MatMult(*schur0->get_matrix(), schur0->get_solution(), residual_);
+    VecAXPY(residual_,-1.0, *schur0->get_rhs());
     double residual_norm;
     VecNorm(residual_, NORM_2, &residual_norm);
     VecDestroy(&residual_);
@@ -614,7 +614,6 @@ double DarcyMH::compute_full_residual()
 
 Vec DarcyMH::compute_full_residual_vec()
 {
-    assembly_linear_system();
     Vec residual_;
     VecDuplicate(schur0->get_solution(), &residual_);
     MatMult(*schur0->get_matrix(), schur0->get_solution(), residual_);
@@ -624,10 +623,8 @@ Vec DarcyMH::compute_full_residual_vec()
 
 void DarcyMH::solve_nonlinear()
 {
+    assembly_linear_system();
     Vec residual_ = compute_full_residual_vec();
-    assembly_linear_system_Newton(residual_);
-    //assembly_linear_system();
-    //Vec residual_ = compute_full_residual_vec();
     double residual_norm = compute_full_residual();
     nonlinear_iteration_ = 0;
     MessageOut().fmt("[nonlinear solver] norm of initial residual: {}\n", residual_norm);
@@ -650,7 +647,7 @@ void DarcyMH::solve_nonlinear()
 
     residual_norm = compute_full_residual();
     Vec save_solution;
-    VecDuplicate(schur0_Newton->get_solution(), &save_solution);
+    VecDuplicate(schur0->get_solution(), &save_solution);
     while (nonlinear_iteration_ < this->min_n_it_ ||
            (residual_norm > this->tolerance_ &&  nonlinear_iteration_ < this->max_n_it_ )) {
     	OLD_ASSERT_EQUAL( convergence_history.size(), nonlinear_iteration_ );
@@ -669,15 +666,28 @@ void DarcyMH::solve_nonlinear()
             }
         }
 
-        if (! is_linear_common)
-            VecCopy( schur0_Newton->get_solution(), save_solution);
-        LinSys::SolveInfo si = schur0_Newton->solve();
-        nonlinear_iteration_++;
+        if (! is_linear_common){
+            int ns_type = input_record_.val<Input::Record>("nonlinear_solver_type").val<int>("type");
+            Vec solution_;
+            VecDuplicate(schur0->get_solution(), &solution_);
+            if (ns_type == Newton){
+                assembly_linear_system_Newton(residual_);
+                VecCopy( schur0_Newton->get_solution(), save_solution);
+                LinSys::SolveInfo si = schur0_Newton->solve();
+                //schur0 = set_solution(solution_ + si);
+                solution_ = schur0->get_solution();
+                nonlinear_iteration_++;
+            }else{
+            VecCopy( schur0->get_solution(), save_solution);
+            LinSys::SolveInfo si = schur0->solve();
+            nonlinear_iteration_++;
+            }
+        }
 
         // hack to make BDDC work with empty compute_residual
         if (is_linear_common){
             // we want to print this info in linear (and steady) case
-            residual_norm = schur0->compute_residual();
+            residual_norm = compute_full_residual();
             MessageOut().fmt("[nonlinear solver] lin. it: {}, reason: {}, residual: {}\n",
         		si.n_iterations, si.converged_reason, residual_norm);
             break;
@@ -685,11 +695,11 @@ void DarcyMH::solve_nonlinear()
         data_changed_=true; // force reassembly for non-linear case
 
         double alpha = 1; // how much of new solution
-        VecAXPBY(schur0_Newton->get_solution(), (1-alpha), alpha, save_solution);
+        VecAXPBY(schur0->get_solution(), (1-alpha), alpha, save_solution);
 
         //LogOut().fmt("Linear solver ended with reason: {} \n", si.converged_reason );
         //OLD_ASSERT( si.converged_reason >= 0, "Linear solver failed to converge. Convergence reason %d \n", si.converged_reason );
-        assembly_linear_system_Newton(residual_);
+        assembly_linear_system();
 
         residual_norm = compute_full_residual();
         MessageOut().fmt("[nonlinear solver] it: {} lin. it: {}, reason: {}, residual: {}\n",
@@ -759,15 +769,15 @@ void DarcyMH::output_data() {
 
 
     START_TIMER("Darcy balance output");
-    balance_->calculate_cumulative(data_->water_balance_idx, schur0_Newton->get_solution());
-    balance_->calculate_instant(data_->water_balance_idx, schur0_Newton->get_solution());
+    balance_->calculate_cumulative(data_->water_balance_idx, schur0->get_solution());
+    balance_->calculate_instant(data_->water_balance_idx, schur0->get_solution());
     balance_->output();
 }
 
 
 double DarcyMH::solution_precision() const
 {
-	return schur0_Newton->get_solution_precision();
+	return schur0->get_solution_precision();
 }
 
 
@@ -801,104 +811,12 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembly& assembler)
 }
 
 
-void DarcyMH::allocate_mh_matrix()
+void DarcyMH::allocate_mh_matrix(LinSys *ls)
 {
     START_TIMER("DarcyFlowMH_Steady::allocate_mh_matrix");
 
     // set auxiliary flag for switchting Dirichlet like BC
     data_->n_schur_compls = n_schur_compls;
-    LinSys *ls = schur0;
-
-    // to make space for second schur complement, max. 10 neighbour edges of one el.
-    double zeros[100000];
-    for(int i=0; i<100000; i++) zeros[i] = 0.0;
-
-    std::vector<LongIdx> tmp_rows;
-    tmp_rows.reserve(200);
-
-    std::vector<LongIdx> dofs, dofs_ngh;
-    dofs.reserve(data_->dh_->max_elem_dofs());
-    dofs_ngh.reserve(data_->dh_->max_elem_dofs());
-
-    for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
-        ElementAccessor<3> ele = dh_cell.elm();
-        
-        const uint ndofs = dh_cell.n_dofs();
-        dofs.resize(ndofs);
-        dh_cell.get_dof_indices(dofs);
-        
-        // whole local MH matrix
-        ls->mat_set_values(ndofs, dofs.data(), ndofs, dofs.data(), zeros);
-
-        tmp_rows.clear();
-
-        // compatible neighborings rows
-        unsigned int n_neighs = ele->n_neighs_vb();
-        for ( DHCellSide neighb_side : dh_cell.neighb_sides() ) {
-            // every compatible connection adds a 2x2 matrix involving
-            // current element pressure  and a connected edge pressure
-
-            // read neighbor dofs (dh dofhandler)
-            // neighbor cell owning neighb_side
-            DHCellAccessor dh_neighb_cell = neighb_side.cell();
-
-            const uint ndofs_ngh = dh_neighb_cell.n_dofs();
-            dofs_ngh.resize(ndofs_ngh);
-            dh_neighb_cell.get_dof_indices(dofs_ngh);
-
-            // local index of pedge dof on neighboring cell
-            // (dim+1) is number of edges of higher dim element
-            // TODO: replace with DHCell getter when available for FESystem component
-            const unsigned int t = dh_neighb_cell.n_dofs() - (dh_neighb_cell.dim()+1) + neighb_side.side().side_idx();
-            tmp_rows.push_back(dofs_ngh[t]);
-        }
-
-        const uint nsides = ele->n_sides();
-        LongIdx * edge_rows = dofs.data() + nsides; // pointer to start of ele
-        // allocate always also for schur 2
-        ls->mat_set_values(nsides+1, edge_rows, n_neighs, tmp_rows.data(), zeros); // (edges, ele)  x (neigh edges)
-        ls->mat_set_values(n_neighs, tmp_rows.data(), nsides+1, edge_rows, zeros); // (neigh edges) x (edges, ele)
-        ls->mat_set_values(n_neighs, tmp_rows.data(), n_neighs, tmp_rows.data(), zeros);  // (neigh edges) x (neigh edges)
-
-        tmp_rows.clear();
-
-        if (data_->mortar_method_ != NoMortar) {
-            auto &isec_list = mesh_->mixed_intersections().element_intersections_[ele.idx()];
-            for(auto &isec : isec_list ) {
-                IntersectionLocalBase *local = isec.second;
-                DHCellAccessor dh_cell_slave = data_->dh_->cell_accessor_from_element(local->bulk_ele_idx());
-
-                const uint ndofs_slave = dh_cell_slave.n_dofs();
-                dofs_ngh.resize(ndofs_slave);
-                dh_cell_slave.get_dof_indices(dofs_ngh);
-
-                //DebugOut().fmt("Alloc: {} {}", ele.idx(), local->bulk_ele_idx());
-                for(unsigned int i_side=0; i_side < dh_cell_slave.elm()->n_sides(); i_side++) {
-                    // TODO: replace with DHCell getter when available for FESystem component
-                    tmp_rows.push_back( dofs_ngh[(ndofs_slave+1)/2+i_side] );
-                    //DebugOut() << "aedge" << print_var(tmp_rows[tmp_rows.size()-1]);
-                }
-            }
-        }
-        /*
-        for(unsigned int i_side=0; i_side < ele->n_sides(); i_side++) {
-            DebugOut() << "aedge:" << print_var(edge_rows[i_side]);
-        }*/
-
-        edge_rows = dofs.data() + nsides +1; // pointer to start of edges
-        ls->mat_set_values(nsides, edge_rows, tmp_rows.size(), tmp_rows.data(), zeros);   // master edges x neigh edges
-        ls->mat_set_values(tmp_rows.size(), tmp_rows.data(), nsides, edge_rows, zeros);   // neigh edges  x master edges
-        ls->mat_set_values(tmp_rows.size(), tmp_rows.data(), tmp_rows.size(), tmp_rows.data(), zeros);  // neigh edges  x neigh edges
-
-    }
-}
-    void DarcyMH::allocate_mh_matrix_Newton()
-{
-    START_TIMER("DarcyFlowMH_Steady::allocate_mh_matrix_Newton");
-
-    // set auxiliary flag for switchting Dirichlet like BC
-    data_->n_schur_compls = n_schur_compls;
-    LinSys *ls = schur0_Newton;
 
     // to make space for second schur complement, max. 10 neighbour edges of one el.
     double zeros[100000];
@@ -1136,8 +1054,8 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
             START_TIMER("PETSC PREALLOCATION");
             schur0->set_symmetric();
             schur0->start_allocation();
-            
-            allocate_mh_matrix();
+
+            allocate_mh_matrix(schur0);
             
     	    VecZeroEntries(schur0->get_solution());
             END_TIMER("PETSC PREALLOCATION");
@@ -1246,10 +1164,10 @@ void DarcyMH::create_linear_system_Newton(Input::AbstractRecord in_rec) {
             START_TIMER("PETSC PREALLOCATION");
             schur0_Newton->set_symmetric();
             schur0_Newton->start_allocation();
+
+            allocate_mh_matrix(schur0_Newton);
             
-            allocate_mh_matrix_Newton();
-            
-    	    VecZeroEntries(schur0_Newton->get_solution());
+    	    VecZeroEntries(schur0->get_solution());
             END_TIMER("PETSC PREALLOCATION");
         }
         else {
@@ -1260,9 +1178,6 @@ void DarcyMH::create_linear_system_Newton(Input::AbstractRecord in_rec) {
     }
 
 }
-
-
-
 
 void DarcyMH::assembly_linear_system() {
     START_TIMER("DarcyFlowMH_Steady::assembly_linear_system");
@@ -1318,7 +1233,7 @@ void DarcyMH::assembly_linear_system() {
 
 }
 
-void DarcyMH::assembly_linear_system_Newton(const Vec residual_) {
+void DarcyMH::assembly_linear_system_Newton(Vec &residual_) {
     START_TIMER("DarcyFlowMH_Steady::assembly_linear_system");
 
     data_-> is_linear = data_->beta.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
@@ -1341,8 +1256,7 @@ void DarcyMH::assembly_linear_system_Newton(const Vec residual_) {
 
 	    assembly_mh_matrix( data_->multidim_assembler ); // fill matrix
 
-        Vec rhs = residual_;
-        schur0_Newton->set_rhs(rhs);
+        schur0_Newton->set_rhs(residual_);
 
 	    schur0_Newton->finish_assembly();
 //         print_matlab_matrix("matrix");

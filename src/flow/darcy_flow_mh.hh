@@ -160,11 +160,11 @@ public:
             seepage=5,
             river=6
         };
-
+        
         enum nonlinear_solver {
             Picard = 0,
             Newton = 1
-        };
+        }; 
 
         /// Return a Selection corresponding to enum BC_Type.
         static const Input::Type::Selection & get_bc_type_selection();
@@ -190,11 +190,9 @@ public:
         Field<3, FieldValue<3>::Scalar > init_pressure;
         Field<3, FieldValue<3>::Scalar > storativity;
 
-	Field<3, FieldValue<3>::Scalar> field_ele_pressure;
-	Field<3, FieldValue<3>::Scalar> field_ele_piezo_head;
+	    Field<3, FieldValue<3>::Scalar> field_ele_pressure;
+	    Field<3, FieldValue<3>::Scalar> field_ele_piezo_head;
         Field<3, FieldValue<3>::VectorFixed > field_ele_velocity;
-
-        BCField<3, FieldValue<3>::Enum > nonlinear_solver;
 
         /**
          * Gravity vector and constant shift of pressure potential. Used to convert piezometric head
@@ -312,8 +310,7 @@ protected:
      * TODO:
      * - use general preallocation methods in DofHandler
      */
-    void allocate_mh_matrix();
-    void allocate_mh_matrix_Newton();
+    void allocate_mh_matrix(LinSys *ls);
 
     /**
      * Assembles linear system matrix for MH.
@@ -326,8 +323,6 @@ protected:
      */
     void assembly_mh_matrix(MultidimAssembly& assembler);
 
-    void assembly_mh_matrix_Newt(MultidimAssembly& assembler);
-
     /// Source term is implemented differently in LMH version.
     virtual void assembly_source_term();
 
@@ -336,7 +331,7 @@ protected:
      */
     virtual void assembly_linear_system();
 
-    virtual void assembly_linear_system_Newton(const Vec residual_);
+    virtual void assembly_linear_system_Newton(Vec &residual_);
 
 
     void set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls);
