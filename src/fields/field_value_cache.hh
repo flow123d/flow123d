@@ -36,8 +36,7 @@ class DHCellSide;
 /**
  * @brief Class holds precomputed field values of selected element set.
  *
- * Every field in equation use own instance for every dimension of elements
- * (typically 3 instances for dim = 1,2,3).
+ * Every field in equation use own instance used for elements of all dimensions.
  */
 template<class elm_type>
 class FieldValueCache {

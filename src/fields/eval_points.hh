@@ -39,14 +39,6 @@ template <int spacedim> class ElementAccessor;
 /**
  * @brief Class holds local coordinations of evaluating points (bulk and sides)
  * specified by element dimension.
- *
- * TODO: Fix problem with zero dim eval points for BC of 1D.
- * Solution: We need to add DimEvalPoints of dim 0. This instance can't implement methods local_point, add_local_points
- * and find_permute_point.
- * - local_point is used in:
- *    - EvalPoints::local_point - move implementation of method to .cc file and use explicit instantiations
- * - next two methods use explicit instantiations now
- * Possible problem should be in method add_bulk, maybe we will need to implement this method for dim=0.
  */
 class EvalPoints : public std::enable_shared_from_this<EvalPoints> {
 public:
