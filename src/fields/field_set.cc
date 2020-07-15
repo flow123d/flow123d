@@ -191,7 +191,7 @@ bool FieldSet::is_jump_time() const {
 
 
 void FieldSet::update_coords_caches(ElementCacheMap &cache_map) {
-    unsigned int n_cached_elements = cache_map.update_cache_data().n_elements_;
+    unsigned int n_cached_elements = cache_map.n_elements();
     std::shared_ptr<EvalPoints> eval_points = cache_map.eval_points();
 
     for (uint i_elm=0; i_elm<n_cached_elements; ++i_elm) {

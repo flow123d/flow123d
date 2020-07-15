@@ -190,11 +190,6 @@ public:
 
         /// Maps of begin and end positions of elements of different regions in ElementCacheMap
         std::array<unsigned int, ElementCacheMap::n_cached_elements+1> region_element_cache_range_;
-
-        /// Number of elements in all regions holds in cache
-        // TODO: This is dulicated with the last element of region_cache_indices_range_
-        // We rather need number of regions, i.e. number of region chunks.
-        unsigned int n_elements_;
     };
 
     /// Constructor
@@ -279,6 +274,11 @@ public:
         std::unordered_map<unsigned int, unsigned int>::const_iterator it = cache_idx_.find(mesh_elm_idx);
         if ( it != cache_idx_.end() ) return it->second;
         else return ElementCacheMap::undef_elem_idx;
+    }
+
+    /// Return number of stored elements.
+    inline unsigned int n_elements() const {
+        return update_data_.region_element_cache_range_[update_data_.region_cache_indices_range_.size()];
     }
 
     /// Set index of cell in ElementCacheMap (or undef value if cell is not stored in cache).

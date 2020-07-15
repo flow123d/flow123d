@@ -59,7 +59,6 @@ ElementCacheMap::ElementCacheMap()
 : elm_idx_(ElementCacheMap::n_cached_elements, ElementCacheMap::undef_elem_idx),
   ready_to_reading_(false), element_eval_points_map_(nullptr) {
     cache_idx_.reserve(ElementCacheMap::n_cached_elements);
-    update_data_.n_elements_ = 0;
 }
 
 
@@ -84,21 +83,21 @@ void ElementCacheMap::init(std::shared_ptr<EvalPoints> eval_points) {
 
 void ElementCacheMap::add(const DHCellAccessor &dh_cell) {
 	ASSERT_DBG(!ready_to_reading_);
-    ASSERT_LT(update_data_.n_elements_, ElementCacheMap::n_cached_elements).error("ElementCacheMap overflowed. List of added elements is too long!\n");
+    ASSERT_LT(this->n_elements(), ElementCacheMap::n_cached_elements).error("ElementCacheMap overflowed. List of added elements is too long!\n");
     this->add_to_region(dh_cell.elm());
 }
 
 
 void ElementCacheMap::add(const DHCellSide &cell_side) {
 	ASSERT_DBG(!ready_to_reading_);
-    ASSERT_LT(update_data_.n_elements_, ElementCacheMap::n_cached_elements).error("ElementCacheMap overflowed. List of added elements is too long!\n");
+    ASSERT_LT(this->n_elements(), ElementCacheMap::n_cached_elements).error("ElementCacheMap overflowed. List of added elements is too long!\n");
     this->add_to_region(cell_side.cell().elm());
 }
 
 
 void ElementCacheMap::add(const ElementAccessor<3> &elm_acc) {
 	ASSERT_DBG(!ready_to_reading_);
-    ASSERT_LT(update_data_.n_elements_, ElementCacheMap::n_cached_elements).error("ElementCacheMap overflowed. List of added elements is too long!\n");
+    ASSERT_LT(this->n_elements(), ElementCacheMap::n_cached_elements).error("ElementCacheMap overflowed. List of added elements is too long!\n");
     this->add_to_region(elm_acc);
 }
 
@@ -150,7 +149,6 @@ void ElementCacheMap::create_elements_points_map() {
 
 
 void ElementCacheMap::start_elements_update() {
-	update_data_.n_elements_ = 0;
 	ready_to_reading_ = false;
 }
 
@@ -196,8 +194,7 @@ void ElementCacheMap::add_to_region(ElementAccessor<3> elm) {
         region_it = update_data_.region_cache_indices_map_.find(reg_idx);
     }
 
-    // TODO: What is the reason for this condition, the elm should not be duplicate.
-    if ( region_it->second.add(elm) ) update_data_.n_elements_++;
+    region_it->second.add(elm);
 }
 
 

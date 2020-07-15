@@ -115,9 +115,9 @@ TEST_F(FieldValueCacheTest, element_cache_map) {
     DHCellAccessor dh_cell2(dh_.get(), 2);
     this->add(dh_cell1);
     this->add(dh_cell2);
-    EXPECT_EQ(update_cache_data.n_elements_, 2);
 
     this->prepare_elements_to_update();
+    EXPECT_EQ(this->n_elements(), 2);
     EXPECT_EQ(update_cache_data.region_cache_indices_map_.size(), 1);
     EXPECT_TRUE(update_cache_data.region_cache_indices_map_.find(1)!=update_cache_data.region_cache_indices_map_.end());
     EXPECT_EQ(update_cache_data.region_cache_indices_map_.find(1)->second.n_elements_, 2);
@@ -131,15 +131,15 @@ TEST_F(FieldValueCacheTest, element_cache_map) {
 
     // Test of edge connectivity
     this->start_elements_update();
-    EXPECT_EQ(update_cache_data.n_elements_, 0);
+    //EXPECT_EQ(this->n_elements(), 0);
     EXPECT_EQ(update_cache_data.region_cache_indices_range_.size(), 0);
     for( DHCellSide cell_side : dh_cell2.side_range() )
         if ( cell_side.n_edge_sides() >= 2 )
             for( DHCellSide edge_side : cell_side.edge_sides() ) {
             	this->add(edge_side);
             }
-    EXPECT_EQ(update_cache_data.n_elements_, 3);
     this->prepare_elements_to_update();
+    EXPECT_EQ(this->n_elements(), 3);
     EXPECT_EQ(update_cache_data.region_cache_indices_range_.size(), 1);
     EXPECT_TRUE(update_cache_data.region_cache_indices_map_.find(1)!=update_cache_data.region_cache_indices_map_.end());
     EXPECT_EQ(update_cache_data.region_cache_indices_map_.find(1)->second.n_elements_, 3);
@@ -164,9 +164,9 @@ TEST_F(FieldValueCacheTest, element_cache_map) {
     this->add(dh_cell1);
     this->add(dh_cell3);
     this->add(dh_cell6);
-    EXPECT_EQ(update_cache_data.n_elements_, 3);
 
     this->prepare_elements_to_update();
+    EXPECT_EQ(this->n_elements(), 3);
     EXPECT_EQ(update_cache_data.region_cache_indices_range_.size(), 2);
     EXPECT_TRUE(update_cache_data.region_cache_indices_map_.find(1)!=update_cache_data.region_cache_indices_map_.end());
     EXPECT_EQ(update_cache_data.region_cache_indices_map_.find(1)->second.n_elements_, 2);
