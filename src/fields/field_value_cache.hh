@@ -146,7 +146,7 @@ public:
     struct RegionData {
     public:
         /// Constructor
-        RegionData() : n_elements_(0) {}
+        RegionData() : n_elements_(0), cache_position_(ElementCacheMap::undef_elem_idx) {}
 
         /// Add element if does not exist
         bool add(ElementAccessor<3> elm) {
@@ -162,6 +162,11 @@ public:
         std::array<unsigned int, ElementCacheMap::n_cached_elements> elm_indices_;
         /// Number of element indices
         unsigned int n_elements_;
+        /// Holds positions of regions in cache
+		/// Elements of the common region forms continuous chunks in the
+        /// ElementCacheMap table. This array gives start indices of the regions
+        /// in array of all cached elements.
+        unsigned int cache_position_;
     };
 
     /**
@@ -176,14 +181,6 @@ public:
         /// Maps of data of different regions in cache
     	/// TODO: auxiliary data membershould be removed or moved to sepaate structure.
         std::unordered_map<unsigned int, RegionData> region_cache_indices_map_;
-
-        /// Holds positions of regions in cache
-        /// TODO
-		/// Elements of the common region forms continuous chunks in the
-        /// ElementCacheMap table. This array gives start indices of the regions
-        /// in array of all cached elements.
-        /// The last value is number of actually cached elements.
-        std::unordered_map<unsigned int, unsigned int> region_cache_indices_range_;
 
         /// Maps of begin and end positions of different regions data in FieldValueCache
         std::array<unsigned int, ElementCacheMap::n_cached_elements+1> region_value_cache_range_;
@@ -278,7 +275,11 @@ public:
 
     /// Return number of stored elements.
     inline unsigned int n_elements() const {
-        return update_data_.region_element_cache_range_[update_data_.region_cache_indices_range_.size()];
+        return update_data_.region_element_cache_range_[update_data_.region_cache_indices_map_.size()];
+    }
+
+    inline unsigned int region_chunk(unsigned int region_idx) const {
+        return update_data_.region_cache_indices_map_.find(region_idx)->second.cache_position_;
     }
 
     /// Set index of cell in ElementCacheMap (or undef value if cell is not stored in cache).

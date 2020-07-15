@@ -78,8 +78,7 @@ public:
     void fill_cache_data() {
         auto &cache_data = elm_cache_map.update_cache_data();
         cache_data.region_cache_indices_map_.insert( {1, ElementCacheMap::RegionData()} );
-        cache_data.region_cache_indices_range_.insert( {1, 0} );
-        cache_data.region_cache_indices_range_.find(1)->second = 0;
+        cache_data.region_cache_indices_map_.find(1)->second.cache_position_ = 0;
         cache_data.region_value_cache_range_[0] = 0;
         cache_data.region_value_cache_range_[1] = n_items;
     }

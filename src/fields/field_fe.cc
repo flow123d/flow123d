@@ -237,7 +237,7 @@ void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::elem
     Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> mat_value;
 
     auto update_cache_data = cache_map.update_cache_data();
-    unsigned int region_in_cache = update_cache_data.region_cache_indices_range_.find(region_idx)->second;
+    unsigned int region_in_cache = cache_map.region_chunk(region_idx);
 
     for (unsigned int i_elm=update_cache_data.region_element_cache_range_[region_in_cache];
             i_elm<update_cache_data.region_element_cache_range_[region_in_cache+1]; ++i_elm) {
