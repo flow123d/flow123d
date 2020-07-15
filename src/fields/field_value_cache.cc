@@ -64,20 +64,14 @@ ElementCacheMap::ElementCacheMap()
 
 ElementCacheMap::~ElementCacheMap() {
     if (element_eval_points_map_!=nullptr) {
-        for (unsigned int i=0; i<ElementCacheMap::n_cached_elements; ++i)
-            delete element_eval_points_map_[i];
         delete element_eval_points_map_;
     }
 }
 
 
 void ElementCacheMap::init(std::shared_ptr<EvalPoints> eval_points) {
-	this->eval_points_ = eval_points;
-
-	unsigned int size = this->eval_points_->max_size();
-	element_eval_points_map_ = new int* [ElementCacheMap::n_cached_elements];
-	for (unsigned int i=0; i<ElementCacheMap::n_cached_elements; ++i)
-	    element_eval_points_map_[i] = new int [size];
+    this->eval_points_ = eval_points;
+    element_eval_points_map_ = new int [ElementCacheMap::n_cached_elements * eval_points->max_size()];
 }
 
 
@@ -133,8 +127,8 @@ void ElementCacheMap::create_elements_points_map() {
     update_data_.region_value_cache_range_[0] = 0;
 	for (unsigned int i_elm=0; i_elm<ElementCacheMap::n_cached_elements; ++i_elm) {
 	    for (unsigned int i_point=0; i_point<size; ++i_point) {
-	        if (element_eval_points_map_[i_elm][i_point] == ElementCacheMap::point_in_proggress) {
-	    	    element_eval_points_map_[i_elm][i_point] = points_in_cache;
+	        if (element_eval_point(i_elm, i_point) == ElementCacheMap::point_in_proggress) {
+	            set_element_eval_point(i_elm, i_point, points_in_cache);
 	            points_in_cache++;
 	        }
 	    }
@@ -161,7 +155,7 @@ void ElementCacheMap::mark_used_eval_points(const DHCellAccessor &dh_cell, unsig
     unsigned int elem_idx_in_cache = cache_idx_[dh_cell.elm().mesh_idx()];
     unsigned int points_begin = eval_points_->subset_begin(dh_cell.dim(), subset_idx) + start_point;
     for (unsigned int i=points_begin; i<points_begin+data_size; ++i)
-        element_eval_points_map_[elem_idx_in_cache][i] = ElementCacheMap::point_in_proggress;
+        set_element_eval_point(elem_idx_in_cache, i, ElementCacheMap::point_in_proggress);
 }
 
 
@@ -169,7 +163,7 @@ void ElementCacheMap::mark_used_eval_points(const ElementAccessor<3> elm, unsign
     unsigned int elem_idx_in_cache = cache_idx_[elm.mesh_idx()];
     unsigned int points_begin = eval_points_->subset_begin(elm.dim(), subset_idx) + start_point;
     for (unsigned int i=points_begin; i<points_begin+data_size; ++i)
-        element_eval_points_map_[elem_idx_in_cache][i] = ElementCacheMap::point_in_proggress;
+        set_element_eval_point(elem_idx_in_cache, i, ElementCacheMap::point_in_proggress);
 }
 
 
@@ -178,7 +172,7 @@ void ElementCacheMap::clear_element_eval_points_map() {
     unsigned int size = this->eval_points_->max_size();
 	for (unsigned int i_elm=0; i_elm<ElementCacheMap::n_cached_elements; ++i_elm)
 	    for (unsigned int i_point=0; i_point<size; ++i_point)
-	        element_eval_points_map_[i_elm][i_point] = ElementCacheMap::unused_point;
+	        set_element_eval_point(i_elm, i_point, ElementCacheMap::unused_point);
 }
 
 

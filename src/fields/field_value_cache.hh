@@ -250,14 +250,15 @@ public:
     void mark_used_eval_points(const ElementAccessor<3> elm, unsigned int subset_idx, unsigned int data_size, unsigned int start_point=0);
 
     /*
-     * Return index of point in FieldValueCache.
+     * Access to item of \p element_eval_points_map_ like to two-dimensional array.
      *
-     * @param cache_elm_idx  idx of ElementAccessor in ElementCacheMap
-     * @param loc_point_idx  Index of local point in EvalPoints
+     * @param i_elem_in_cache  idx of ElementAccessor in ElementCacheMap
+     * @param i_eval_point     index of local point in EvalPoints
+     * @return                 index of point in FieldValueCache.
      */
-    inline int get_field_value_cache_index(unsigned int cache_elm_idx, unsigned int loc_point_idx) const {
+    inline int element_eval_point(unsigned int i_elem_in_cache, unsigned int i_eval_point) const {
         ASSERT_PTR_DBG(element_eval_points_map_);
-        return element_eval_points_map_[cache_elm_idx][loc_point_idx];
+        return element_eval_points_map_[i_elem_in_cache*eval_points_->max_size()+i_eval_point];
     }
 
     /// Return mesh_idx of element stored at given position of ElementCacheMap
@@ -277,6 +278,7 @@ public:
         return update_data_.region_element_cache_range_[update_data_.region_cache_indices_map_.size()];
     }
 
+    /// Return position of region chunk in cache.
     inline unsigned int region_chunk(unsigned int region_idx) const {
         return update_data_.region_cache_indices_map_.find(region_idx)->second.cache_position_;
     }
@@ -297,6 +299,12 @@ protected:
     /// Add element to appropriate region data of update_data_ object
     void add_to_region(ElementAccessor<3> elm);
 
+    /// Set item of \p element_eval_points_map_.
+    inline void set_element_eval_point(unsigned int i_elem_in_cache, unsigned int i_eval_point, int val) const {
+        ASSERT_PTR_DBG(element_eval_points_map_);
+        element_eval_points_map_[i_elem_in_cache*eval_points_->max_size()+i_eval_point] = val;
+    }
+
     /// Vector of element indexes stored in cache.
     /// TODO: could be moved to UpdateCacheHelper structure
     std::vector<unsigned int> elm_idx_;
@@ -315,22 +323,24 @@ protected:
     bool ready_to_reading_;
 
     /**
-     * Two dimensional array provides indexes to FieldValueCache.
+     * This array provides indexes to FieldValueCache.
+     *
+     * This one dimensional array behaves like two dimensional factually.
+     * Size is set to 'n_cached_elements * n_eval_points' and items are
+     * accessible through two indices:
      *
      * 1: Over elements holds in ElementCacheMap
      * 2: Over EvalPoints for each element
+     *
+     * Use always and only methods \p element_eval_point for read and
+     * \p set_element_eval_point (for write) to access to items!
      *
      * Array is filled in those three steps:
      * a. Reset - all items are set to ElementCacheMap::unused_point
      * b. Used eval points are set to ElementCacheMap::point_in_proggress
      * c. Eval points marked in previous step are sequentially numbered
      */
-    // TODO: What are the dimensions of the table?
-    // should be n_cached_elements * n_eval_points, document it.
-    //
-    // Better use just int *, and use just single allocation of the whole table
-    // current impl. have bad memory locality. Define a private access method.
-    int **element_eval_points_map_;
+    int *element_eval_points_map_;
 };
 
 

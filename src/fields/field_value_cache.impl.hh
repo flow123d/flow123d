@@ -31,7 +31,7 @@ typename Value::return_type FieldValueCache<elm_type>::get_value(const ElementCa
 
     ASSERT_EQ_DBG(Value::NRows_, data_.n_rows());
     ASSERT_EQ_DBG(Value::NCols_, data_.n_cols());
-    unsigned int value_cache_idx = map.get_field_value_cache_index(map.position_in_cache(dh_cell.elm().mesh_idx()), eval_points_idx);
+    unsigned int value_cache_idx = map.element_eval_point(map.position_in_cache(dh_cell.elm().mesh_idx()), eval_points_idx);
     ASSERT_DBG(value_cache_idx != ElementCacheMap::undef_elem_idx);
     return Value::get_from_array(data_, value_cache_idx);
 }
@@ -45,7 +45,7 @@ typename Value::return_type FieldValueCache<elm_type>::get_value(const ElementCa
 
     ASSERT_EQ_DBG(Value::NRows_, data_.n_rows());
     ASSERT_EQ_DBG(Value::NCols_, data_.n_cols());
-    unsigned int value_cache_idx = map.get_field_value_cache_index(map.position_in_cache(elm.mesh_idx()), eval_points_idx);
+    unsigned int value_cache_idx = map.element_eval_point(map.position_in_cache(elm.mesh_idx()), eval_points_idx);
     ASSERT_DBG(value_cache_idx != ElementCacheMap::undef_elem_idx);
     return Value::get_from_array(data_, value_cache_idx);
 }

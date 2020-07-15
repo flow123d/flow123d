@@ -250,7 +250,7 @@ void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::elem
 
         for (unsigned int i_ep=0; i_ep<eval_points->size(elm.dim()); ++i_ep) { // i_eval_point
             //DHCellAccessor cache_cell = cache_map(cell);
-            int field_cache_idx = cache_map.get_field_value_cache_index(cache_map(cell).element_cache_index(), i_ep);
+            int field_cache_idx = cache_map.element_eval_point(cache_map(cell).element_cache_index(), i_ep);
             if (field_cache_idx < 0) continue; // skip
             mat_value.fill(0.0);
     		for (unsigned int i_dof=0; i_dof<loc_dofs.n_elem; i_dof++) {

@@ -198,7 +198,7 @@ void FieldSet::update_coords_caches(ElementCacheMap &cache_map) {
         ElementAccessor<3> elm = mesh_->element_accessor( cache_map.elm_idx_on_position(i_elm) );
         unsigned int dim = elm.dim();
         for (uint i_point=0; i_point<eval_points->size(dim); ++i_point) {
-            int cache_idx = cache_map.get_field_value_cache_index(i_elm, i_point); // index in FieldValueCache
+            int cache_idx = cache_map.element_eval_point(i_elm, i_point); // index in FieldValueCache
             if (cache_idx<0) continue;
             arma::vec3 coords;
             switch (dim) {
