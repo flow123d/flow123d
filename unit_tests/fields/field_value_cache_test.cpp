@@ -60,7 +60,7 @@ public:
 TEST_F(FieldValueCacheTest, field_value_cache) {
     FieldValueCache<double> value_cache(1, 1);
     value_cache.reinit(*this);
-    EXPECT_EQ(value_cache.max_size(), eval_points->max_size()*ElementCacheMap::n_cached_elements);
+    EXPECT_EQ(value_cache.size(), eval_points->max_size()*ElementCacheMap::n_cached_elements);
 
     this->start_elements_update();
     DHCellAccessor dh_cell(dh_.get(), 2);
@@ -92,7 +92,7 @@ TEST_F(FieldValueCacheTest, field_value_cache) {
     // check value
     dh_cell = (*this)(dh_cell);
     for(BulkPoint q_point: bulk_eval->points(dh_cell, this)) {
-        auto point_val = value_cache.template get_value<ScalarValue>(*this, dh_cell, q_point.eval_point_idx());
+        auto point_val = this->get_value<ScalarValue>(value_cache, dh_cell, q_point.eval_point_idx());
     	EXPECT_DOUBLE_EQ( point_val, const_val(0) );
     }
     for ( DHCellSide cell_side : dh_cell.side_range() )
@@ -100,7 +100,7 @@ TEST_F(FieldValueCacheTest, field_value_cache) {
         for( DHCellSide edge_side : cell_side.edge_sides() )
             for ( EdgePoint q_point : edge_eval->points(edge_side, this) ) {
                 auto edge_cell = (*this)(edge_side.cell());
-                auto point_val = value_cache.template get_value<ScalarValue>(*this, edge_cell, q_point.eval_point_idx());
+                auto point_val = this->get_value<ScalarValue>(value_cache, edge_cell, q_point.eval_point_idx());
                 EXPECT_DOUBLE_EQ( point_val, const_val(0) );
             }
 }

@@ -73,20 +73,6 @@ public:
         return data_.template mat<nr, nc>(i);
     }
 
-    /// Return value of evaluation point given by DHCell and local point idx in EvalPoints.
-    template<class Value>
-    typename Value::return_type get_value(const ElementCacheMap &map,
-            const DHCellAccessor &dh_cell, unsigned int eval_points_idx);
-
-    /**
-     * Return value of evaluation point given by ElementAccessor and local point idx in EvalPoints.
-     *
-     * Temporary overload of previous method used on boundary elements.
-     */
-    template<class Value>
-    typename Value::return_type get_value(const ElementCacheMap &map,
-            const ElementAccessor<3> elm, unsigned int eval_points_idx);
-
 private:
     /**
      * Data cache.
@@ -274,6 +260,20 @@ public:
     inline unsigned int region_chunk(unsigned int region_idx) const {
         return update_data_.region_cache_indices_map_.find(region_idx)->second.cache_position_;
     }
+
+    /// Return value of evaluation point given by DHCell and local point idx in EvalPoints from cache.
+    template<class Value>
+    typename Value::return_type get_value(const FieldValueCache<typename Value::element_type> &field_cache,
+            const DHCellAccessor &dh_cell, unsigned int eval_points_idx) const;
+
+    /**
+     * Return value of evaluation point given by ElementAccessor and local point idx in EvalPoints from cache.
+     *
+     * Temporary overload of previous method used on boundary elements.
+     */
+    template<class Value>
+    typename Value::return_type get_value(const FieldValueCache<typename Value::element_type> &field_cache,
+            const ElementAccessor<3> elm, unsigned int eval_points_idx) const;
 
     /// Set index of cell in ElementCacheMap (or undef value if cell is not stored in cache).
     DHCellAccessor & operator() (DHCellAccessor &dh_cell) const;
