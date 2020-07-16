@@ -242,11 +242,6 @@ protected:
   //@{
   std::vector<VectorMPI> conc_solid_out; ///< sorbed concentration array output (gathered - sequential)
   //@}
-  
-  // Temporary objects holding pointers to appropriate FieldFE
-  // TODO remove after final fix of equations
-  /// Fields correspond with \p conc_solid_out.
-  std::vector< std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> > output_field_ptr;
 
   /** Structure for data respectful to element, but indepedent of actual isotherm.
    * Reads mobile/immobile porosity, rock density and then computes concentration scaling parameters.

@@ -160,8 +160,7 @@ IT::Selection ConcentrationTransportModel::ModelEqData::get_output_selection()
 
 
 ConcentrationTransportModel::ConcentrationTransportModel(Mesh &mesh, const Input::Record &in_rec) :
-		ConcentrationTransportBase(mesh, in_rec),
-		flux_changed(true)
+		ConcentrationTransportBase(mesh, in_rec)
 {}
 
 

@@ -159,8 +159,7 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record in
 : ConcentrationTransportBase(init_mesh, in_rec),
   is_mass_diag_changed(false),
   sources_corr(nullptr),
-  input_rec(in_rec),
-  changed_(true)
+  input_rec(in_rec)
 {
 	START_TIMER("ConvectionTransport");
 	this->eq_data_ = &data_;
@@ -203,11 +202,10 @@ void ConvectionTransport::initialize()
 	for (unsigned int sbi=0; sbi<n_substances(); sbi++)
 	{
 		// create shared pointer to a FieldFE and push this Field to output_field on all regions
-		output_field_ptr[sbi] = std::make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
-		output_field_ptr[sbi]->set_fe_data(dh_ );
-		data_.conc_mobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr[sbi], 0);
-		vconc[sbi] = output_field_ptr[sbi]->get_data_vec().petsc_vec();
-		conc[sbi] = &(output_field_ptr[sbi]->get_data_vec().data()[0]);
+        auto output_field_ptr = create_field_fe< 3, FieldValue<3>::Scalar >(dh_);
+		data_.conc_mobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
+		vconc[sbi] = output_field_ptr->get_data_vec().petsc_vec();
+		conc[sbi] = &(output_field_ptr->get_data_vec().data()[0]);
 	}
 	//output_stream_->add_admissible_field_names(input_rec.val<Input::Array>("output_fields"));
     //output_stream_->mark_output_times(*time_);
@@ -305,7 +303,7 @@ void ConvectionTransport::set_initial_condition()
 		ElementAccessor<3> ele_acc = mesh_->element_accessor( dh_cell.elm_idx() );
 
 		for (unsigned int sbi=0; sbi<n_substances(); sbi++) // Optimize: SWAP LOOPS
-			output_field_ptr[sbi]->get_data_vec().data()[index] = data_.init_conc[sbi].value(ele_acc.centre(), ele_acc);
+			conc[sbi][index] = data_.init_conc[sbi].value(ele_acc.centre(), ele_acc);
 	}
 }
 
@@ -328,13 +326,6 @@ void ConvectionTransport::alloc_transport_vectors() {
 
     conc = new double*[n_subst];
     vconc = new Vec[n_subst];
-    out_conc.clear();
-    out_conc.resize(n_subst);
-    output_field_ptr.clear();
-    output_field_ptr.resize(n_subst);
-    for (sbi = 0; sbi < n_subst; sbi++) {
-        out_conc[sbi].resize( el_ds->size() );
-    }
     
     cfl_flow_ = new double[el_ds->lsize()];
     cfl_source_ = new double[el_ds->lsize()];
@@ -375,7 +366,6 @@ void ConvectionTransport::alloc_transport_structs_mpi() {
                 tm_diag[sbi],&v_tm_diag[sbi]);
 
         VecZeroEntries(vcumulative_corr[sbi]);
-        VecZeroEntries(out_conc[sbi].petsc_vec());
     }
 
 
@@ -542,14 +532,16 @@ void ConvectionTransport::zero_time_step()
 bool ConvectionTransport::evaluate_time_constraint(double& time_constraint)
 {
 	ASSERT_PTR(dh_).error( "Null DOF handler object.\n" );
+    // read changed status before setting time
+    bool changed_flux = data_.flow_flux.changed();
     data_.set_time(time_->step(), LimitSide::right); // set to the last computed time
-    
+
     START_TIMER("data reinit");
     
     bool cfl_changed = false;
     
     // if FLOW or DATA changed ---------------------> recompute transport matrix
-    if (changed_)
+    if (changed_flux)
     {
         create_transport_matrix_mpi();
         is_convection_matrix_scaled=false;
@@ -588,7 +580,7 @@ bool ConvectionTransport::evaluate_time_constraint(double& time_constraint)
     }
     
     // although it does not influence CFL, compute BC so the full system is assembled
-    if ( changed_
+    if ( data_.flow_flux.changed()
         || data_.porosity.changed()
         || data_.water_content.changed()
         || data_.bc_conc.changed() )
@@ -601,7 +593,6 @@ bool ConvectionTransport::evaluate_time_constraint(double& time_constraint)
     
     // return time constraint
     time_constraint = cfl_max_step;
-    changed_ = false;
     return cfl_changed;
 }
 
@@ -900,7 +891,7 @@ double ConvectionTransport::calculate_side_flux(const DHCellSide &cell_side)
     ASSERT_EQ(cell_side.dim(), dim).error("Element dimension mismatch!");
 
     feo_.fe_values(dim).reinit(cell_side.side());
-    auto vel = velocity_field_ptr_->value(cell_side.centre(), cell_side.element());
+    auto vel = data_.flow_flux.value(cell_side.centre(), cell_side.element());
     double side_flux = arma::dot(vel, feo_.fe_values(dim).normal_vector(0)) * feo_.fe_values(dim).JxW(0);
     return side_flux;
 }
