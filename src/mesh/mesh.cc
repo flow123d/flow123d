@@ -100,8 +100,7 @@ const unsigned int Mesh::undef_idx;
 
 
 Mesh::Mesh()
-: nodes_(3, 1, 0),
-  row_4_el(nullptr),
+: row_4_el(nullptr),
   el_4_loc(nullptr),
   el_ds(nullptr),
   node_4_loc_(nullptr),
@@ -116,7 +115,6 @@ Mesh::Mesh()
 Mesh::Mesh(Input::Record in_record, MPI_Comm com)
 : in_record_(in_record),
   comm_(com),
-  nodes_(3, 1, 0),
   row_4_el(nullptr),
   el_4_loc(nullptr),
   el_ds(nullptr),
@@ -425,7 +423,7 @@ void Mesh::count_side_types()
 
 
 
-void Mesh::create_node_element_lists() {
+void MeshBase::create_node_element_lists() {
     // for each node we make a list of elements that use this node
     node_elements_.resize( this->n_nodes() );
 
@@ -438,7 +436,7 @@ void Mesh::create_node_element_lists() {
 }
 
 
-void Mesh::intersect_element_lists(vector<unsigned int> const &nodes_list, vector<unsigned int> &intersection_element_list)
+void MeshBase::intersect_element_lists(vector<unsigned int> const &nodes_list, vector<unsigned int> &intersection_element_list)
 {
 	if (node_elements_.size() == 0) {
 		this->create_node_element_lists();
@@ -525,7 +523,7 @@ void Mesh::make_neighbours_and_edges()
 	vector<unsigned int> side_nodes;
 	vector<unsigned int> intersection_list; // list of elements in intersection of node element lists
 
-	for( unsigned int i=0; i<get_bc_mesh()->element_vec_.size(); ++i) {
+	for( unsigned int i=0; i<get_bc_mesh()->n_elements(); ++i) {
 
 		ElementAccessor<3> bc_ele = bc_mesh_->element_accessor(i);
 		ASSERT(bc_ele.region().is_boundary());
@@ -647,7 +645,7 @@ void Mesh::make_neighbours_and_edges()
 
                     // fill Boundary object
                     bdr.edge_idx_ = last_edge_idx;
-                    bdr.bc_ele_idx_ = elem_index(-bdr_idx, true);
+                    bdr.bc_ele_idx_ = get_bc_mesh()->elem_index(-bdr_idx);
                     bdr.mesh_=this;
 
                     continue; // next side of element e
@@ -1104,7 +1102,7 @@ vector<vector<unsigned int> > const & Mesh::node_elements() {
 }
 
 
-void Mesh::init_element_vector(unsigned int size) {
+void MeshBase::init_element_vector(unsigned int size) {
 	element_vec_.clear();
     element_ids_.clear();
 	element_vec_.reserve(size);
@@ -1112,19 +1110,17 @@ void Mesh::init_element_vector(unsigned int size) {
 }
 
 
-void Mesh::init_node_vector(unsigned int size) {
+void MeshBase::init_node_vector(unsigned int size) {
 	nodes_.reinit(size);
 	node_ids_.clear();
 	node_ids_.reserve(size);
 }
 
 
-Element * Mesh::add_element_to_vector(int id, bool is_boundary) {
+Element * MeshBase::add_element_to_vector(int id, bool is_boundary) {
     Element * elem;
     if (is_boundary) {
-        get_bc_mesh()->element_vec_.push_back( Element() );
-        elem = &get_bc_mesh()->element_vec_.back();
-        get_bc_mesh()->element_ids_.add_item((unsigned int)(id));
+        elem = get_bc_mesh()->add_element_to_vector(id, false);
     } else {
         element_vec_.push_back( Element() );
         elem = &element_vec_.back(); //[element_vec_.size()-1];
@@ -1334,9 +1330,9 @@ void Mesh::distribute_nodes() {
 }
 
 
-inline int Mesh::elem_index(int elem_id, bool is_boundary) const
+inline int MeshBase::elem_index(int elem_id) const
 {
-    return is_boundary ? bc_mesh_->element_ids_.get_position(elem_id) : element_ids_.get_position(elem_id);
+    return element_ids_.get_position(elem_id);
 }
 
 

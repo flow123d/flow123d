@@ -717,7 +717,7 @@ void FieldFE<spacedim, Value>::calculate_elementwise_values(ElementDataCache<dou
 
 	// iterate through elements, assembly global vector and count number of writes
 	if (this->boundary_domain_) {
-		Mesh *mesh = dh_->mesh()->get_bc_mesh();
+		BCMesh *mesh = dh_->mesh()->get_bc_mesh();
 		for (auto ele : mesh->elements_range()) { // remove special case for rank == 0 - necessary for correct output
 			LocDofVec loc_dofs = value_handler1_.get_loc_dof_indices(ele.idx());
 			data_vec_i = ele.idx() * dh_->max_elem_dofs();

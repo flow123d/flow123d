@@ -18,6 +18,8 @@
 #ifndef BC_MESH_H
 #define BC_MESH_H
 
+#define NOT_IMPLEMENTED { ASSERT(false); return 0; }
+
 
 #include "mesh/mesh.h"
 
@@ -32,7 +34,7 @@ class Neighbour;
  * elements and other functionality and structures necessary to work above boundary
  * part of mesh.
  */
-class BCMesh : public Mesh {
+class BCMesh : public MeshBase {
 public:
 	/**
 	 * Constructor from parent (bulk) Mesh.
@@ -40,7 +42,7 @@ public:
 	BCMesh(Mesh* parent_mesh);
 
 	/// Destructor
-	~BCMesh();
+	~BCMesh() override;
 
     /// Returns range of boundary elements of parent mesh
     Range<ElementAccessor<3>> elements_range() const override;
@@ -62,6 +64,26 @@ public:
 
 
 private:
+
+    // unused methods (should not be used)
+    unsigned int n_edges() const override NOT_IMPLEMENTED;
+    unsigned int n_vb_neighbours() const override NOT_IMPLEMENTED;
+    LongIdx *get_el_4_loc() const override NOT_IMPLEMENTED;
+    LongIdx *get_row_4_el() const override NOT_IMPLEMENTED;
+    Distribution *get_el_ds() const override NOT_IMPLEMENTED;
+    NodeAccessor<3> node(unsigned int) const override;
+    Edge edge(unsigned int) const override;
+    Boundary boundary(unsigned int) const override;
+    const Neighbour &vb_neighbour(unsigned int) const override;
+    Range<Edge> edge_range() const override;
+    void check_element_size(unsigned int) const override;
+    const std::vector<unsigned int> &get_side_nodes(unsigned int dim, unsigned int side) const override;
+    BCMesh *get_bc_mesh() const override NOT_IMPLEMENTED;
+    const RegionDB &region_db() const override;
+    const DuplicateNodes *duplicate_nodes() const override NOT_IMPLEMENTED;
+
+
+
     /// Pointer to parent (bulk) mesh
 	Mesh *parent_mesh_;
 

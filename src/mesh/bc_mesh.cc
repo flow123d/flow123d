@@ -85,3 +85,54 @@ ElementAccessor<3> BCMesh::element_accessor(unsigned int idx) const {
 }
 
 
+NodeAccessor<3> BCMesh::node(unsigned int) const
+{
+	ASSERT(	false );
+	return NodeAccessor<3>();
+}
+
+Edge BCMesh::edge(unsigned int) const
+{
+	ASSERT( false );
+	return Edge();
+}
+
+Boundary BCMesh::boundary(unsigned int) const
+{
+	ASSERT( false );
+	return Boundary();
+}
+
+const Neighbour &BCMesh::vb_neighbour(unsigned int) const
+{
+	ASSERT( false );
+	static Neighbour n;
+	return n;
+}
+
+Range<Edge> BCMesh::edge_range() const
+{
+	ASSERT( false );
+	auto it = make_iter<Edge>( Edge(nullptr, 0) );
+	return Range<Edge>(it, it);
+}
+
+void BCMesh::check_element_size(unsigned int) const
+{
+	ASSERT( false );
+}
+
+const std::vector<unsigned int> &BCMesh::get_side_nodes(unsigned int dim, unsigned int side) const
+{
+	ASSERT( false );
+	(void)dim; (void)side;
+	static std::vector<unsigned int> sn;
+	return sn;
+}
+
+const RegionDB &BCMesh::region_db() const
+{
+	ASSERT( false );
+	static RegionDB r;
+	return r;
+}
