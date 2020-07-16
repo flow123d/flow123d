@@ -40,7 +40,7 @@ template<class elm_type>
 void FieldValueCache<elm_type>::reinit(const ElementCacheMap &cache_map) {
     unsigned int new_size = ElementCacheMap::n_cached_elements * cache_map.eval_points()->max_size();
 
-    if (new_size > this->max_size()) { // resize only if new size is higher than old
+    if (new_size > this->size()) { // resize only if new size is higher than old
         data_.reinit(new_size);
         data_.resize(new_size);
     }

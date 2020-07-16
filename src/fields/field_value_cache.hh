@@ -73,11 +73,6 @@ public:
         return data_.template mat<nr, nc>(i);
     }
 
-    /// Return maximal number of data stored in cache.
-    inline unsigned int max_size() const {
-        return data_.size();
-    }
-
     /// Return value of evaluation point given by DHCell and local point idx in EvalPoints.
     template<class Value>
     typename Value::return_type get_value(const ElementCacheMap &map,
@@ -103,9 +98,6 @@ private:
      * Order of subsets is same as in eval_points.
      */
     Armor::Array<elm_type> data_;
-
-    /// Maximal number of points stored in cache.
-    unsigned int n_cache_points_;
 };
 
 
