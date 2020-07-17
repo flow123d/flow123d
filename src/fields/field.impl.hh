@@ -740,7 +740,11 @@ std::shared_ptr< FieldFE<spacedim, Value> > Field<spacedim,Value>::get_field_fe(
 
 template<int spacedim, class Value>
 void Field<spacedim, Value>::cache_reallocate(const ElementCacheMap &cache_map) {
-    value_cache_.reinit(cache_map);
+    unsigned int new_size = ElementCacheMap::n_cached_elements * cache_map.eval_points()->max_size();
+    if (new_size > value_cache_.size()) { // resize only if new size is higher than old
+        value_cache_.data().reinit(new_size);
+        value_cache_.data().resize(new_size);
+    }
 
     // Call cache_reinit of FieldAlgoBase descendants
     for (auto reg_field : region_fields_) {

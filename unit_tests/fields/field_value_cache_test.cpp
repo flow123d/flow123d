@@ -59,7 +59,9 @@ public:
 
 TEST_F(FieldValueCacheTest, field_value_cache) {
     FieldValueCache<double> value_cache(1, 1);
-    value_cache.reinit(*this);
+    unsigned int cache_size = ElementCacheMap::n_cached_elements * eval_points->max_size();
+    value_cache.data().reinit(cache_size);
+    value_cache.data().resize(cache_size);
     EXPECT_EQ(value_cache.size(), eval_points->max_size()*ElementCacheMap::n_cached_elements);
 
     this->start_elements_update();

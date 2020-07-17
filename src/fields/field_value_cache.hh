@@ -47,9 +47,6 @@ public:
     /// Destructor
     ~FieldValueCache();
 
-    /// Reinitialize size of cache
-    void reinit(const ElementCacheMap &cache_map);
-
     /// Return size of data cache (number of stored field values)
     inline unsigned int size() const {
         return data_.size();
