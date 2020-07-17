@@ -153,7 +153,7 @@ void FieldConstant<spacedim, Value>::cache_update(FieldValueCache<typename Value
     unsigned int i_cache_el_end = update_cache_data.region_value_cache_range_[region_in_cache+1];
     Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> mat_value( const_cast<typename Value::element_type*>(this->value_.mem_ptr()) );
     for (unsigned int i_cache = i_cache_el_begin; i_cache < i_cache_el_end; ++i_cache)
-        data_cache.data().set(i_cache) = mat_value;
+        data_cache.set(i_cache) = mat_value;
 }
 
 

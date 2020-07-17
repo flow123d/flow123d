@@ -26,24 +26,22 @@
 template<class Value>
 typename Value::return_type ElementCacheMap::get_value(const FieldValueCache<typename Value::element_type> &field_cache,
         const DHCellAccessor &dh_cell, unsigned int eval_points_idx) const {
-    const auto &data = field_cache.data();
-    ASSERT_EQ_DBG(Value::NRows_, data.n_rows());
-    ASSERT_EQ_DBG(Value::NCols_, data.n_cols());
+    ASSERT_EQ_DBG(Value::NRows_, field_cache.n_rows());
+    ASSERT_EQ_DBG(Value::NCols_, field_cache.n_cols());
     unsigned int value_cache_idx = this->element_eval_point(this->position_in_cache(dh_cell.elm().mesh_idx()), eval_points_idx);
     ASSERT_DBG(value_cache_idx != ElementCacheMap::undef_elem_idx);
-    return Value::get_from_array(data, value_cache_idx);
+    return Value::get_from_array(field_cache, value_cache_idx);
 }
 
 
 template<class Value>
 typename Value::return_type ElementCacheMap::get_value(const FieldValueCache<typename Value::element_type> &field_cache,
         const ElementAccessor<3> elm, unsigned int eval_points_idx) const {
-    const auto &data = field_cache.data();
-    ASSERT_EQ_DBG(Value::NRows_, data.n_rows());
-    ASSERT_EQ_DBG(Value::NCols_, data.n_cols());
+    ASSERT_EQ_DBG(Value::NRows_, field_cache.n_rows());
+    ASSERT_EQ_DBG(Value::NCols_, field_cache.n_cols());
     unsigned int value_cache_idx = this->element_eval_point(this->position_in_cache(elm.mesh_idx()), eval_points_idx);
     ASSERT_DBG(value_cache_idx != ElementCacheMap::undef_elem_idx);
-    return Value::get_from_array(data, value_cache_idx);
+    return Value::get_from_array(field_cache, value_cache_idx);
 }
 
 

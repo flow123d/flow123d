@@ -222,11 +222,11 @@ void FieldSet::update_coords_caches(ElementCacheMap &cache_map) {
             }
             Armor::ArmaMat<double, 1, 1> coord_val;
             coord_val(0,0) = coords(0);
-            x_coord_.data().set(cache_idx) = coord_val;
+            x_coord_.set(cache_idx) = coord_val;
             coord_val(0,0) = coords(1);
-            y_coord_.data().set(cache_idx) = coord_val;
+            y_coord_.set(cache_idx) = coord_val;
             coord_val(0,0) = coords(2);
-            z_coord_.data().set(cache_idx) = coord_val;
+            z_coord_.set(cache_idx) = coord_val;
         }
     }
 }

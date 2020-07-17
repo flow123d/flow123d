@@ -60,8 +60,8 @@ public:
 TEST_F(FieldValueCacheTest, field_value_cache) {
     FieldValueCache<double> value_cache(1, 1);
     unsigned int cache_size = ElementCacheMap::n_cached_elements * eval_points->max_size();
-    value_cache.data().reinit(cache_size);
-    value_cache.data().resize(cache_size);
+    value_cache.reinit(cache_size);
+    value_cache.resize(cache_size);
     EXPECT_EQ(value_cache.size(), eval_points->max_size()*ElementCacheMap::n_cached_elements);
 
     this->start_elements_update();
@@ -88,7 +88,7 @@ TEST_F(FieldValueCacheTest, field_value_cache) {
     unsigned int points_in_cache = update_data_.region_value_cache_range_[update_data_.region_cache_indices_map_.size()];
     EXPECT_EQ(points_in_cache, 16);
     Armor::ArmaMat<double, 1, 1> const_val{0.5};
-    for (unsigned int i=0; i<points_in_cache; ++i) value_cache.data().set(i) = const_val;
+    for (unsigned int i=0; i<points_in_cache; ++i) value_cache.set(i) = const_val;
     this->finish_elements_update();
 
     // check value

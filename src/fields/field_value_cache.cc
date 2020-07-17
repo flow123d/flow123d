@@ -29,12 +29,12 @@
  * Implementation of FieldValueCache methods
  */
 
-template<class elm_type>
+/*template<class elm_type>
 FieldValueCache<elm_type>::FieldValueCache(unsigned int n_rows, unsigned int n_cols)
 : data_(n_rows, n_cols) {}
 
 template<class elm_type>
-FieldValueCache<elm_type>::~FieldValueCache() {}
+FieldValueCache<elm_type>::~FieldValueCache() {}*/
 
 /******************************************************************************
  * Implementation of ElementCacheMap methods
@@ -194,6 +194,6 @@ DHCellAccessor & ElementCacheMap::operator() (DHCellAccessor &dh_cell) const {
  * Explicit instantiation of templates
  */
 
-template class FieldValueCache<unsigned int>;
-template class FieldValueCache<int>;
-template class FieldValueCache<double>;
+//template class FieldValueCache<unsigned int>;
+//template class FieldValueCache<int>;
+//template class FieldValueCache<double>;

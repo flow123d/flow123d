@@ -256,7 +256,7 @@ void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::elem
     		for (unsigned int i_dof=0; i_dof<loc_dofs.n_elem; i_dof++) {
     		    mat_value += data_vec_[loc_dofs[i_dof]] * this->handle_fe_shape(elm.dim(), i_dof, i_ep, comp_index_);
     		}
-    		data_cache.data().set(field_cache_idx) = mat_value;
+    		data_cache.set(field_cache_idx) = mat_value;
         }
     }
 }

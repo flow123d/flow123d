@@ -419,6 +419,12 @@ protected:
 
     /**
      * Field value data cache
+     *
+     * Data is ordered like three dimensional table. The highest level is determinated by subsets,
+     * those data ranges are holds in subset_starts. Data block size of each subset is determined
+     * by number of eval_points (of subset) and maximal number of stored elements.
+     * The table is allocated to hold all subsets, but only those marked in used_subsets are updated.
+     * Order of subsets is same as in eval_points.
      */
     FieldValueCache<typename Value::element_type> value_cache_;
 

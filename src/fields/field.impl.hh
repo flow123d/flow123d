@@ -162,7 +162,7 @@ template<int spacedim, class Value>
 typename Value::return_type
 Field<spacedim,Value>::operator[] (unsigned int i_cache_point) const
 {
-	return Value::get_from_array( this->value_cache().data(), i_cache_point );
+	return Value::get_from_array( this->value_cache(), i_cache_point );
 }
 
 
@@ -742,8 +742,8 @@ template<int spacedim, class Value>
 void Field<spacedim, Value>::cache_reallocate(const ElementCacheMap &cache_map) {
     unsigned int new_size = ElementCacheMap::n_cached_elements * cache_map.eval_points()->max_size();
     if (new_size > value_cache_.size()) { // resize only if new size is higher than old
-        value_cache_.data().reinit(new_size);
-        value_cache_.data().resize(new_size);
+        value_cache_.reinit(new_size);
+        value_cache_.resize(new_size);
     }
 
     // Call cache_reinit of FieldAlgoBase descendants

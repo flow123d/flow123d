@@ -250,9 +250,9 @@ void FieldFormula<spacedim, Value>::cache_update(FieldValueCache<typename Value:
 
     for (unsigned int i=i_cache_el_begin; i<i_cache_el_end; ++i) {
         // fill data vectors
-    	x_[i] = field_set_->x().data().template mat<1,1>(i)(0);
-        y_[i] = field_set_->y().data().template mat<1,1>(i)(0);
-        z_[i] = field_set_->z().data().template mat<1,1>(i)(0);
+    	x_[i] = field_set_->x().template mat<1,1>(i)(0);
+        y_[i] = field_set_->y().template mat<1,1>(i)(0);
+        z_[i] = field_set_->z().template mat<1,1>(i)(0);
         if (surface_depth_ && has_depth_var_) {
             Point p;
             p(0) = x_[i]; p(1) = y_[i]; p(2) = z_[i];
@@ -273,9 +273,9 @@ void FieldFormula<spacedim, Value>::cache_update(FieldValueCache<typename Value:
             b_parser_[row*this->value_.n_cols()+col].set_subset(subset_vec);
             b_parser_[row*this->value_.n_cols()+col].run();
             for (unsigned int i=i_cache_el_begin; i<i_cache_el_end; ++i) {
-                auto cache_val = data_cache.data().template mat<Value::NRows_, Value::NCols_>(i);
+                auto cache_val = data_cache.template mat<Value::NRows_, Value::NCols_>(i);
                 cache_val(row, col) = res_[i];
-                data_cache.data().set(i) = cache_val;
+                data_cache.set(i) = cache_val;
             }
         }
 }

@@ -38,7 +38,8 @@ class DHCellSide;
  *
  * Every field in equation use own instance used for elements of all dimensions.
  */
-template<class elm_type>
+template<class elm_type> using FieldValueCache = Armor::Array<elm_type>;
+/*template<class elm_type>
 class FieldValueCache {
 public:
     /// Constructor
@@ -71,17 +72,8 @@ public:
     }
 
 private:
-    /**
-     * Data cache.
-     *
-     * Data is ordered like three dimensional table. The highest level is determinated by subsets,
-     * those data ranges are holds in subset_starts. Data block size of each subset is determined
-     * by number of eval_points (of subset) and maximal number of stored elements.
-     * The table is allocated to hold all subsets, but only those marked in used_subsets are updated.
-     * Order of subsets is same as in eval_points.
-     */
     Armor::Array<elm_type> data_;
-};
+};*/
 
 
 /**
