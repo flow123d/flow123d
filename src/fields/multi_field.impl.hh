@@ -425,18 +425,14 @@ void MultiField<spacedim, Value>::set(
         double time,
 		std::vector<std::string> region_set_names)
 {
-	unsigned int comp_size = this->shared_->comp_names_.size();
-	ASSERT_GT(comp_size, 0).error("Vector of component names is empty!\n");
+	ASSERT_EQ(this->shared_->comp_names_.size(), 1).error("Size of component names vector must be 1!\n");
 	ASSERT_PTR(this->shared_->mesh_).error("Mesh is not set!\n");
 
-    sub_fields_.reserve( comp_size );
-    for(unsigned int i_comp=0; i_comp < comp_size; i_comp++)
-    {
-    	sub_fields_.push_back( SubFieldType(i_comp, name(), "", is_bc()) );
-    	sub_fields_[i_comp].set_mesh( *(shared_->mesh_) );
-    	sub_fields_[i_comp].flags_ = this->flags_;
-    	sub_fields_[i_comp].set(field, time, region_set_names);
-    }
+    sub_fields_.reserve(1);
+   	sub_fields_.push_back( SubFieldType(0, name(), "", is_bc()) );
+   	sub_fields_[0].set_mesh( *(shared_->mesh_) );
+   	sub_fields_[0].flags_ = this->flags_;
+   	sub_fields_[0].set(field, time, region_set_names);
 }
 
 
