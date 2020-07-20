@@ -135,7 +135,7 @@ public:
 	 * Loops through local cells and calls assemble methods of assembly
 	 * object of each cells over space dimension.
 	 */
-    void assemble(std::shared_ptr<DOFHandlerMultiDim> dh) {
+    void assemble(std::shared_ptr<DOFHandlerMultiDim> dh, const TimeStep &step) {
         unsigned int i;
         multidim_assembly_[1_d]->reallocate_cache(element_cache_map_);
         multidim_assembly_[1_d]->begin();
@@ -167,13 +167,13 @@ public:
                 for (i=0; i<integrals_size_[3]; ++i) { // boundary integral
                     switch (boundary_integral_data_[i].side.dim()) {
                     case 1:
-                        multidim_assembly_[1_d]->assemble_fluxes_boundary(boundary_integral_data_[i].side);
+                        multidim_assembly_[1_d]->assemble_fluxes_boundary(boundary_integral_data_[i].side, step);
                         break;
                     case 2:
-                        multidim_assembly_[2_d]->assemble_fluxes_boundary(boundary_integral_data_[i].side);
+                        multidim_assembly_[2_d]->assemble_fluxes_boundary(boundary_integral_data_[i].side, step);
                         break;
                     case 3:
-                        multidim_assembly_[3_d]->assemble_fluxes_boundary(boundary_integral_data_[i].side);
+                        multidim_assembly_[3_d]->assemble_fluxes_boundary(boundary_integral_data_[i].side, step);
                         break;
                     }
                 }

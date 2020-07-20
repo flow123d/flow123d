@@ -239,7 +239,7 @@ public:
 
 
     /// Assembles the fluxes on the boundary.
-    void assemble_fluxes_boundary(DHCellSide cell_side) override
+    void assemble_fluxes_boundary(DHCellSide cell_side, FMT_UNUSED const TimeStep &step) override
     {
         ASSERT_EQ_DBG(cell_side.dim(), dim).error("Dimension of element mismatch!");
         if (!cell_side.cell().is_own()) return;
@@ -746,9 +746,8 @@ public:
     ~BdrConditionAssemblyDG() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(std::shared_ptr<Balance> balance, const TimeGovernor *time) {
+    void initialize(std::shared_ptr<Balance> balance) {
         this->balance_ = balance;
-        this->time_ = time;
 
         fe_ = std::make_shared< FE_P_disc<dim> >(data_->dg_order);
         fe_values_side_.initialize(*this->quad_low_, *fe_, update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
@@ -760,7 +759,7 @@ public:
 
 
     /// Implements @p AssemblyBase::assemble_fluxes_boundary.
-    void assemble_fluxes_boundary(DHCellSide cell_side) override
+    void assemble_fluxes_boundary(DHCellSide cell_side, const TimeStep &step) override
     {
         unsigned int k;
 
@@ -828,7 +827,7 @@ public:
                     }
                     k++;
                 }
-                if (time_->tlevel() > 0)
+                if (step.index() > 0)
                     for (unsigned int i=0; i<ndofs_; i++)
                         local_flux_balance_rhs_ -= local_rhs_[i];
             }
@@ -924,8 +923,6 @@ public:
 
         /// Pointer to balance object
         std::shared_ptr<Balance> balance_;
-        /// Pointer to TimeGovernor object
-        const TimeGovernor *time_;
 
         /// Data object shared with TransportDG
         EqDataDG *data_;

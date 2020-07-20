@@ -51,7 +51,7 @@ public:
     virtual void assemble_volume_integrals(FMT_UNUSED DHCellAccessor cell) {}
 
     /// Assembles the fluxes on the boundary.
-    virtual void assemble_fluxes_boundary(FMT_UNUSED DHCellSide cell_side) {}
+    virtual void assemble_fluxes_boundary(FMT_UNUSED DHCellSide cell_side, FMT_UNUSED const TimeStep &step) {}
 
     /// Assembles the fluxes between sides on the edge.
     virtual void assemble_fluxes_element_element(FMT_UNUSED RangeConvert<DHEdgeSide, DHCellSide> edge_side_range) {}
