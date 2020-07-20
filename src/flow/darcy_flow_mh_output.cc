@@ -251,12 +251,6 @@ void DarcyFlowMHOutput::output()
         }
     }
 
-    {
-        START_TIMER("evaluate output fields");
-        output_fields.set_time(darcy_flow->time().step(), LimitSide::right);
-        output_fields.output(darcy_flow->time().step());
-    }
-    
     if (compute_errors_)
     {
         START_TIMER("compute specific output fields");
@@ -268,6 +262,12 @@ void DarcyFlowMHOutput::output()
         START_TIMER("evaluate output fields");
         output_specific_fields.set_time(darcy_flow->time().step(), LimitSide::right);
         output_specific_fields.output(darcy_flow->time().step());
+    }
+
+    {
+        START_TIMER("evaluate output fields");
+        output_fields.set_time(darcy_flow->time().step(), LimitSide::right);
+        output_fields.output(darcy_flow->time().step());
     }
 
     {

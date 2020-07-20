@@ -184,7 +184,7 @@ bool EquationOutput::is_field_output_time(const FieldCommon &field, TimeStep ste
 }
 
 
-void EquationOutput::output(TimeStep step)
+void EquationOutput::output(TimeStep step) // add arg: bool write_time_frame = true
 {
     ASSERT_PTR(mesh_).error();
 
@@ -205,6 +205,8 @@ void EquationOutput::output(TimeStep step)
             }
         }
     }
+
+    //if (write_time_frame) stream_->write_time_frame();
 }
 
 
