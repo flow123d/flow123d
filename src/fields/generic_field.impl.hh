@@ -46,10 +46,10 @@ auto GenericField<spacedim>::region_id(Mesh &mesh) -> IndexField {
 	for(Region reg : all_regions) {
 		auto field_algo=std::make_shared<FieldConstant<spacedim, DoubleScalar>>();
 		field_algo->set_value(reg.id());
-		region_id.set_field(
-				{reg} ,
+		region_id.set(
 				field_algo,
-				0.0); // time=0.0
+				0.0,              // time=0.0
+				{ reg.label() }); // set to region by its name
 	}
 	return region_id;
 }
@@ -78,10 +78,10 @@ auto GenericField<spacedim>::subdomain(Mesh &mesh) -> IndexField {
 	subdomain.units( UnitSI::dimensionless() );
 	subdomain.set_mesh(mesh);
 
-    subdomain.set_field(
-		mesh.region_db().get_region_set("ALL"),
+    subdomain.set(
 		field_ptr,
-		0.0); // time=0.0
+		0.0,        // time=0.0
+		{ "ALL" }); // ALL regions
 
 	return subdomain;
 }
