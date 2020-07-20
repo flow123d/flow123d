@@ -255,28 +255,9 @@ void TransportDG<Model>::initialize()
 
     // Resize coefficient arrays
     int qsize = data_->mass_assembly_->eval_points()->max_size();
-    int max_edg_sides = max(Model::mesh_->max_edge_sides(1), max(Model::mesh_->max_edge_sides(2), Model::mesh_->max_edge_sides(3)));
+    data_->max_edg_sides = max(Model::mesh_->max_edge_sides(1), max(Model::mesh_->max_edge_sides(2), Model::mesh_->max_edge_sides(3)));
     ret_sources.resize(data_->n_substances());
     ret_sources_prev.resize(data_->n_substances());
-    data_->ad_coef.resize(data_->n_substances());
-    data_->dif_coef.resize(data_->n_substances());
-    for (unsigned int sbi=0; sbi<data_->n_substances(); sbi++)
-    {
-        data_->ad_coef[sbi].resize(qsize);
-        data_->dif_coef[sbi].resize(qsize);
-    }
-    data_->ad_coef_edg.resize(max_edg_sides);
-    data_->dif_coef_edg.resize(max_edg_sides);
-    for (int sd=0; sd<max_edg_sides; sd++)
-    {
-        data_->ad_coef_edg[sd].resize(data_->n_substances());
-        data_->dif_coef_edg[sd].resize(data_->n_substances());
-        for (unsigned int sbi=0; sbi<data_->n_substances(); sbi++)
-        {
-            data_->ad_coef_edg[sd][sbi].resize(qsize);
-            data_->dif_coef_edg[sd][sbi].resize(qsize);
-        }
-    }
 
     output_vec.resize(data_->n_substances());
     data_->output_field.set_components(data_->substances_.names());
@@ -345,6 +326,12 @@ void TransportDG<Model>::initialize()
     data_->init_cond_assembly_->multidim_assembly()[1_d]->initialize();
     data_->init_cond_assembly_->multidim_assembly()[2_d]->initialize();
     data_->init_cond_assembly_->multidim_assembly()[3_d]->initialize();
+
+    data_->dif_coef.resize(data_->n_substances());
+    for (unsigned int sbi=0; sbi<data_->n_substances(); sbi++)
+    {
+        data_->dif_coef[sbi].resize(qsize);
+    }
 }
 
 

@@ -181,10 +181,10 @@ public:
         dof_indices_.resize(ndofs_);
         side_dof_indices_vb_.resize(2*ndofs_);
         local_matrix_.resize(4*ndofs_*ndofs_);
-        dg_penalty_.resize(data_->ad_coef_edg.size());
+        dg_penalty_.resize(data_->max_edg_sides);
 
-        fe_values_vec_.resize(data_->ad_coef_edg.size());
-        for (unsigned int sid=0; sid<data_->ad_coef_edg.size(); sid++)
+        fe_values_vec_.resize(data_->max_edg_sides);
+        for (unsigned int sid=0; sid<data_->max_edg_sides; sid++)
         {
             side_dof_indices_.push_back( vector<LongIdx>(ndofs_) );
             fe_values_vec_[sid].initialize(*this->quad_low_, *fe_,
