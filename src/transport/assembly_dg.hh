@@ -168,7 +168,7 @@ public:
     ~StiffnessAssemblyDG() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize() {
+    void initialize(FMT_UNUSED std::shared_ptr<Balance> balance) {
         fe_ = std::make_shared< FE_P_disc<dim> >(data_->dg_order);
         fe_low_ = std::make_shared< FE_P_disc<dim-1> >(data_->dg_order);
         fe_values_.initialize(*this->quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
@@ -958,7 +958,7 @@ public:
     ~InitConditionAssemblyDG() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize() {
+    void initialize(FMT_UNUSED std::shared_ptr<Balance> balance) {
         fe_ = std::make_shared< FE_P_disc<dim> >(data_->dg_order);
         fe_values_.initialize(*this->quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
         ndofs_ = fe_->n_dofs();

@@ -22,6 +22,7 @@
 #include "fields/eval_subset.hh"
 #include "fields/eval_points.hh"
 #include "fields/field_value_cache.hh"
+#include "coupling/balance.hh"
 
 
 
@@ -107,18 +108,21 @@ private:
 public:
 
     /// Constructor
-    GenericAssembly( typename DimAssembly<1>::EqDataDG *eq_data, int active_integrals )
+    GenericAssembly( typename DimAssembly<1>::EqDataDG *eq_data, std::shared_ptr<Balance> balance, int active_integrals )
     : multidim_assembly_(eq_data),
       active_integrals_(active_integrals), integrals_size_({0, 0, 0, 0, 0, 0})
     {
         eval_points_ = std::make_shared<EvalPoints>();
-        // first step - create integrals, then - initialize cache
+        // first step - create integrals, then - initialize cache and initialize subobject of dimensions
         Quadrature *quad_center_0d = new QGauss(0, 1);
         integrals_.center_[0] = eval_points_->add_bulk<0>(*quad_center_0d);
         multidim_assembly_[1_d]->create_integrals(eval_points_, integrals_, active_integrals_);
         multidim_assembly_[2_d]->create_integrals(eval_points_, integrals_, active_integrals_);
         multidim_assembly_[3_d]->create_integrals(eval_points_, integrals_, active_integrals_);
         element_cache_map_.init(eval_points_);
+        multidim_assembly_[1_d]->initialize(balance);
+        multidim_assembly_[2_d]->initialize(balance);
+        multidim_assembly_[3_d]->initialize(balance);
     }
 
     inline MixedPtr<DimAssembly, 1> multidim_assembly() const {

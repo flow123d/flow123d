@@ -224,14 +224,6 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
     
     Model::init_from_input(in_rec);
 
-    // create assemblation object, finite element structures and distribute DOFs
-	data_->mass_assembly_ = new GenericAssembly< MassAssemblyDim >(data_.get(), ActiveIntegrals::bulk);
-	data_->stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyDim >(data_.get(),
-	        (ActiveIntegrals::bulk | ActiveIntegrals::edge | ActiveIntegrals::coupling | ActiveIntegrals::boundary) );
-	data_->sources_assembly_ = new GenericAssembly< SourcesAssemblyDim >(data_.get(), ActiveIntegrals::bulk);
-	data_->bdr_cond_assembly_ = new GenericAssembly< BdrConditionAssemblyDim >(data_.get(), ActiveIntegrals::boundary);
-	data_->init_cond_assembly_ = new GenericAssembly< InitConditionAssemblyDim >(data_.get(), ActiveIntegrals::bulk);
-
 	MixedPtr<FE_P_disc> fe(data_->dg_order);
 	shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>(Model::mesh_, fe);
 	data_->dh_ = make_shared<DOFHandlerMultiDim>(*Model::mesh_);
@@ -254,7 +246,6 @@ void TransportDG<Model>::initialize()
     	data_->gamma[sbi].resize(Model::mesh_->boundary_.size());
 
     // Resize coefficient arrays
-    int qsize = data_->mass_assembly_->eval_points()->max_size();
     data_->max_edg_sides = max(Model::mesh_->max_edge_sides(1), max(Model::mesh_->max_edge_sides(2), Model::mesh_->max_edge_sides(3)));
     ret_sources.resize(data_->n_substances());
     ret_sources_prev.resize(data_->n_substances());
@@ -307,26 +298,18 @@ void TransportDG<Model>::initialize()
     }
 
 
+    // create assemblation object, finite element structures and distribute DOFs
+	data_->mass_assembly_ = new GenericAssembly< MassAssemblyDim >(data_.get(), this->balance(), ActiveIntegrals::bulk);
+	data_->stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyDim >(data_.get(), this->balance(),
+	        (ActiveIntegrals::bulk | ActiveIntegrals::edge | ActiveIntegrals::coupling | ActiveIntegrals::boundary) );
+	data_->sources_assembly_ = new GenericAssembly< SourcesAssemblyDim >(data_.get(), this->balance(), ActiveIntegrals::bulk);
+	data_->bdr_cond_assembly_ = new GenericAssembly< BdrConditionAssemblyDim >(data_.get(), this->balance(), ActiveIntegrals::boundary);
+	data_->init_cond_assembly_ = new GenericAssembly< InitConditionAssemblyDim >(data_.get(), this->balance(), ActiveIntegrals::bulk);
+
     // initialization of balance object
     Model::balance_->allocate(data_->dh_->distr()->lsize(), data_->mass_assembly_->eval_points()->max_size());
 
-    // initialization of assembly object
-    data_->mass_assembly_->multidim_assembly()[1_d]->initialize(this->balance());
-    data_->mass_assembly_->multidim_assembly()[2_d]->initialize(this->balance());
-    data_->mass_assembly_->multidim_assembly()[3_d]->initialize(this->balance());
-    data_->stiffness_assembly_->multidim_assembly()[1_d]->initialize();
-    data_->stiffness_assembly_->multidim_assembly()[2_d]->initialize();
-    data_->stiffness_assembly_->multidim_assembly()[3_d]->initialize();
-    data_->sources_assembly_->multidim_assembly()[1_d]->initialize(this->balance());
-    data_->sources_assembly_->multidim_assembly()[2_d]->initialize(this->balance());
-    data_->sources_assembly_->multidim_assembly()[3_d]->initialize(this->balance());
-    data_->bdr_cond_assembly_->multidim_assembly()[1_d]->initialize(this->balance());
-    data_->bdr_cond_assembly_->multidim_assembly()[2_d]->initialize(this->balance());
-    data_->bdr_cond_assembly_->multidim_assembly()[3_d]->initialize(this->balance());
-    data_->init_cond_assembly_->multidim_assembly()[1_d]->initialize();
-    data_->init_cond_assembly_->multidim_assembly()[2_d]->initialize();
-    data_->init_cond_assembly_->multidim_assembly()[3_d]->initialize();
-
+    int qsize = data_->mass_assembly_->eval_points()->max_size();
     data_->dif_coef.resize(data_->n_substances());
     for (unsigned int sbi=0; sbi<data_->n_substances(); sbi++)
     {
