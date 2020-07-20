@@ -283,8 +283,8 @@ protected:
     /**
      * Create and preallocate MH linear system (including matrix, rhs and solution vectors)
      */
-    void create_linear_system(Input::AbstractRecord rec);
-    void create_linear_system_Newton(Input::AbstractRecord rec);
+    void create_linear_system(Input::AbstractRecord rec, LinSys *ls);
+    //void create_linear_system_Newton(Input::AbstractRecord rec);
 
     /**
      * Read initial condition into solution vector.
@@ -391,7 +391,6 @@ protected:
 private:
   /// Registrar of class to factory
   static const int registrar;
-  double compute_full_residual();
   Vec compute_full_residual_vec();
 };
 

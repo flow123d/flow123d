@@ -470,10 +470,10 @@ void DarcyMH::initialize() {
 
     // auxiliary set_time call  since allocation assembly evaluates fields as well
     data_changed_ = data_->set_time(time_->step(), LimitSide::right) || data_changed_;
-    create_linear_system(rec);
-    int ns_type = input_record_.val<Input::Record>("nonlinear_solver_type").val<int>("type");
-    if (ns_type == Newton){
-        create_linear_system_Newton(rec);
+    create_linear_system(rec, schur0);
+    int ns_type = input_record_.val<Input::Record>("nonlinear_solver").val<int>("solver_type");
+    if (ns_type == EqData::nonlinear_solver::Newton){
+        create_linear_system(rec, schur0_Newton);
     }
 
 
@@ -600,32 +600,20 @@ bool DarcyMH::zero_time_term(bool time_global) {
     }
 }
 
-double DarcyMH::compute_full_residual()
-{
-    Vec residual_;
-    VecDuplicate(schur0->get_solution(), &residual_);
-    MatMult(*schur0->get_matrix(), schur0->get_solution(), residual_);
-    VecAXPY(residual_,-1.0, *schur0->get_rhs());
-    double residual_norm;
-    VecNorm(residual_, NORM_2, &residual_norm);
-    VecDestroy(&residual_);
-    return residual_norm;
-}
-
 Vec DarcyMH::compute_full_residual_vec()
 {
     Vec residual_;
     VecDuplicate(schur0->get_solution(), &residual_);
     MatMult(*schur0->get_matrix(), schur0->get_solution(), residual_);
+    VecAXPY(residual_,-1.0, *schur0->get_rhs());
     return residual_;
 }
-
 
 void DarcyMH::solve_nonlinear()
 {
     assembly_linear_system();
     Vec residual_ = compute_full_residual_vec();
-    double residual_norm = compute_full_residual();
+    double residual_norm = VecNorm(residual_, NORM_2, &residual_norm);
     nonlinear_iteration_ = 0;
     MessageOut().fmt("[nonlinear solver] norm of initial residual: {}\n", residual_norm);
 
@@ -645,7 +633,8 @@ void DarcyMH::solve_nonlinear()
     }
     vector<double> convergence_history;
 
-    residual_norm = compute_full_residual();
+    residual_ = compute_full_residual_vec();
+    residual_norm = VecNorm(residual_, NORM_2, &residual_norm);
     Vec save_solution;
     VecDuplicate(schur0->get_solution(), &save_solution);
     while (nonlinear_iteration_ < this->min_n_it_ ||
@@ -665,29 +654,26 @@ void DarcyMH::solve_nonlinear()
                 THROW(ExcSolverDiverge() << EI_Reason("Stagnation."));
             }
         }
-
+        auto si = LinSys::SolveInfo(0,0);
         if (! is_linear_common){
-            int ns_type = input_record_.val<Input::Record>("nonlinear_solver_type").val<int>("type");
-            Vec solution_;
-            VecDuplicate(schur0->get_solution(), &solution_);
-            if (ns_type == Newton){
+            int ns_type = input_record_.val<Input::Record>("nonlinear_solver").val<int>("solver_type");
+            if (ns_type == EqData::nonlinear_solver::Newton){
                 assembly_linear_system_Newton(residual_);
                 VecCopy( schur0_Newton->get_solution(), save_solution);
-                LinSys::SolveInfo si = schur0_Newton->solve();
-                //schur0 = set_solution(solution_ + si);
-                solution_ = schur0->get_solution();
-                nonlinear_iteration_++;
+                si = schur0_Newton->solve();
+                VecAXPY(schur0->get_solution(),-1.0, schur0_Newton->get_solution());
             }else{
             VecCopy( schur0->get_solution(), save_solution);
-            LinSys::SolveInfo si = schur0->solve();
-            nonlinear_iteration_++;
+            si = schur0->solve();
             }
+            nonlinear_iteration_++;
         }
 
         // hack to make BDDC work with empty compute_residual
         if (is_linear_common){
             // we want to print this info in linear (and steady) case
-            residual_norm = compute_full_residual();
+            residual_ = compute_full_residual_vec();
+            residual_norm = VecNorm(residual_, NORM_2, &residual_norm);
             MessageOut().fmt("[nonlinear solver] lin. it: {}, reason: {}, residual: {}\n",
         		si.n_iterations, si.converged_reason, residual_norm);
             break;
@@ -701,7 +687,8 @@ void DarcyMH::solve_nonlinear()
         //OLD_ASSERT( si.converged_reason >= 0, "Linear solver failed to converge. Convergence reason %d \n", si.converged_reason );
         assembly_linear_system();
 
-        residual_norm = compute_full_residual();
+        residual_ = compute_full_residual_vec();
+        residual_norm = VecNorm(residual_, NORM_2, &residual_norm);
         MessageOut().fmt("[nonlinear solver] it: {} lin. it: {}, reason: {}, residual: {}\n",
         		nonlinear_iteration_, si.n_iterations, si.converged_reason, residual_norm);
         chkerr(VecDestroy(&residual_));
@@ -959,11 +946,11 @@ void DarcyMH::assembly_source_term()
  * COMPOSE WATER MH MATRIX WITHOUT SCHUR COMPLEMENT
  ******************************************************************************/
 
-void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
+void DarcyMH::create_linear_system(Input::AbstractRecord in_rec, LinSys *ls) {
   
     START_TIMER("preallocation");
 
-    if (schur0 == NULL) { // create Linear System for MH matrix
+    if (ls == NULL) { // create Linear System for MH matrix
        
     	if (in_rec.type() == LinSys_BDDC::get_input_type()) {
 #ifdef FLOW123D_HAVE_BDDCML
@@ -976,7 +963,6 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
             // possible initialization particular to BDDC
             START_TIMER("BDDC set mesh data");
             set_mesh_data_for_bddc(ls);
-            schur0=ls;
             END_TIMER("BDDC set mesh data");
 #else
             Exception
@@ -1003,7 +989,7 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
                 }
 
                 ls->set_solution( ele_flux_ptr->get_data_vec().petsc_vec() );
-                schur0=ls;
+                //schur0=ls;
             } else {
                 IS is;
                 auto side_dofs_vec = get_component_indices_vec(0);
@@ -1048,126 +1034,16 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
                 ls->set_complement( schur1 );
                 ls->set_from_input(in_rec);
                 ls->set_solution( ele_flux_ptr->get_data_vec().petsc_vec() );
-                schur0=ls;
+                //schur0=ls;
             }
 
             START_TIMER("PETSC PREALLOCATION");
-            schur0->set_symmetric();
-            schur0->start_allocation();
+            ls->set_symmetric();
+            ls->start_allocation();
 
-            allocate_mh_matrix(schur0);
+            allocate_mh_matrix(ls);
             
-    	    VecZeroEntries(schur0->get_solution());
-            END_TIMER("PETSC PREALLOCATION");
-        }
-        else {
-            xprintf(Err, "Unknown solver type. Internal error.\n");
-        }
-
-        END_TIMER("preallocation");
-    }
-
-}
-
-void DarcyMH::create_linear_system_Newton(Input::AbstractRecord in_rec) {
-  
-    START_TIMER("preallocation");
-
-    if (schur0_Newton == NULL) { // create Linear System for MH matrix
-       
-    	if (in_rec.type() == LinSys_BDDC::get_input_type()) {
-#ifdef FLOW123D_HAVE_BDDCML
-    		WarningOut() << "For BDDC no Schur complements are used.";
-            n_schur_compls = 0;
-            LinSys_BDDC *ls = new LinSys_BDDC(&(*data_->dh_->distr()),
-                    true); // swap signs of matrix and rhs to make the matrix SPD
-            ls->set_from_input(in_rec);
-            ls->set_solution( ele_flux_ptr->get_data_vec().petsc_vec() );
-            // possible initialization particular to BDDC
-            START_TIMER("BDDC set mesh data");
-            set_mesh_data_for_bddc(ls);
-            schur0_Newton=ls;
-            END_TIMER("BDDC set mesh data");
-#else
-            Exception
-            xprintf(Err, "Flow123d was not build with BDDCML support.\n");
-#endif // FLOW123D_HAVE_BDDCML
-        } 
-        else if (in_rec.type() == LinSys_PETSC::get_input_type()) {
-        // use PETSC for serial case even when user wants BDDC
-            if (n_schur_compls > 2) {
-            	WarningOut() << "Invalid number of Schur Complements. Using 2.";
-                n_schur_compls = 2;
-            }
-
-            LinSys_PETSC *schur1, *schur2;
-
-            if (n_schur_compls == 0) {
-                LinSys_PETSC *ls = new LinSys_PETSC( &(*data_->dh_->distr()) );
-
-                // temporary solution; we have to set precision also for sequantial case of BDDC
-                // final solution should be probably call of direct solver for oneproc case
-                if (in_rec.type() != LinSys_BDDC::get_input_type()) ls->set_from_input(in_rec);
-                else {
-                    ls->LinSys::set_from_input(in_rec); // get only common options
-                }
-
-                ls->set_solution( ele_flux_ptr->get_data_vec().petsc_vec() );
-                schur0_Newton=ls;
-            } else {
-                IS is;
-                auto side_dofs_vec = get_component_indices_vec(0);
-
-                ISCreateGeneral(PETSC_COMM_SELF, side_dofs_vec.size(), &(side_dofs_vec[0]), PETSC_COPY_VALUES, &is);
-                //ISView(is, PETSC_VIEWER_STDOUT_SELF);
-                //OLD_ASSERT(err == 0,"Error in ISCreateStride.");
-
-                SchurComplement *ls = new SchurComplement(&(*data_->dh_->distr()), is);
-
-                // make schur1
-                Distribution *ds = ls->make_complement_distribution();
-                if (n_schur_compls==1) {
-                    schur1 = new LinSys_PETSC(ds);
-                    schur1->set_positive_definite();
-                } else {
-                    IS is;
-                    auto elem_dofs_vec = get_component_indices_vec(1);
-
-                    const PetscInt *b_indices;
-                    ISGetIndices(ls->IsB, &b_indices);
-                    uint b_size = ls->loc_size_B;
-                    for(uint i_b=0, i_bb=0; i_b < b_size && i_bb < elem_dofs_vec.size(); i_b++) {
-                        if (b_indices[i_b] == elem_dofs_vec[i_bb])
-                            elem_dofs_vec[i_bb++] = i_b + ds->begin();
-                    }
-                    ISRestoreIndices(ls->IsB, &b_indices);
-
-
-                    ISCreateGeneral(PETSC_COMM_SELF, elem_dofs_vec.size(), &(elem_dofs_vec[0]), PETSC_COPY_VALUES, &is);
-                    //ISView(is, PETSC_VIEWER_STDOUT_SELF);
-                    //OLD_ASSERT(err == 0,"Error in ISCreateStride.");
-                    SchurComplement *ls1 = new SchurComplement(ds, is); // is is deallocated by SchurComplement
-                    ls1->set_negative_definite();
-
-                    // make schur2
-                    schur2 = new LinSys_PETSC( ls1->make_complement_distribution() );
-                    schur2->set_positive_definite();
-                    ls1->set_complement( schur2 );
-                    schur1 = ls1;
-                }
-                ls->set_complement( schur1 );
-                ls->set_from_input(in_rec);
-                ls->set_solution( ele_flux_ptr->get_data_vec().petsc_vec() );
-                schur0_Newton=ls;
-            }
-
-            START_TIMER("PETSC PREALLOCATION");
-            schur0_Newton->set_symmetric();
-            schur0_Newton->start_allocation();
-
-            allocate_mh_matrix(schur0_Newton);
-            
-    	    VecZeroEntries(schur0->get_solution());
+    	    VecZeroEntries(ls->get_solution());
             END_TIMER("PETSC PREALLOCATION");
         }
         else {
