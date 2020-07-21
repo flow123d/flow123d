@@ -263,13 +263,13 @@ void TransportOperatorSplitting::output_data(){
 void TransportOperatorSplitting::zero_time_step()
 {
     //DebugOut() << "tos ZERO TIME STEP.\n";
-    convection->zero_time_step();
-    convection->calculate_concentration_matrix();   // due to reading of init_conc in reactions
     if(reaction)
     {
       reaction->zero_time_step();
       reaction->output_data(); // do not perform write_time_frame - change: do not unset write_time_frame flag
     }
+    convection->zero_time_step();
+    convection->calculate_concentration_matrix();   // due to reading of init_conc in reactions
     //convection->output_stream()->write_time_frame();
 
 }

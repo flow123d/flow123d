@@ -608,5 +608,5 @@ void SorptionBase::output_data(void )
 {
     data_->output_fields.set_time(time().step(), LimitSide::right);
     // Register fresh output data
-    data_->output_fields.output(time().step());
+    data_->output_fields.output(time().step(), false);
 }

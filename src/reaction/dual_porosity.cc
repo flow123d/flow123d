@@ -368,7 +368,7 @@ void DualPorosity::output_data(void )
     data_.output_fields.set_time(time_->step(), LimitSide::right);
 
     // Register fresh output data
-    data_.output_fields.output(time_->step());
+    data_.output_fields.output(time_->step(), false);
 
     if (time_->tlevel() !=0) {
         // zero_time_step call zero_time_Step of subreactions which performs its own output
