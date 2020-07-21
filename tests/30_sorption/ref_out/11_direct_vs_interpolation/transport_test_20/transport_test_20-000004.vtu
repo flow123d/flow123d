@@ -18,19 +18,7 @@
 10 10 10 10 10 10 10 10 10 10 10 
 </DataArray>
 </Cells>
-<CellData Scalars="As-lin-limit_conc,As-lin_conc,Bs-lin-limit_conc,Bs-lin_conc,As-lin-limit_conc_solid,As-lin_conc_solid,Bs-lin-limit_conc_solid,Bs-lin_conc_solid," Vectors="" Tensors="">
-<DataArray type="Float64" Name="As-lin-limit_conc" format="ascii">
-0.6 0.6 0.6 0.6 0.6 0.6 0.6 0.6 0.6 0.6 0.6 
-</DataArray>
-<DataArray type="Float64" Name="As-lin_conc" format="ascii">
-0.713043478260861 0.713043478260861 0.713043478260614 0.713043478260672 0.713043478260678 0.713043478260861 0.713043478260778 0.713043478258751 0.713043478260737 0.713043478260461 0.713043478259997 
-</DataArray>
-<DataArray type="Float64" Name="Bs-lin-limit_conc" format="ascii">
-0.6 0.6 0.6 0.6 0.6 0.6 0.6 0.6 0.6 0.6 0.6 
-</DataArray>
-<DataArray type="Float64" Name="Bs-lin_conc" format="ascii">
-0.71304347826087 0.71304347826087 0.713043478260622 0.713043478260681 0.713043478260686 0.71304347826087 0.713043478260787 0.71304347825876 0.713043478260746 0.71304347826047 0.713043478260006 
-</DataArray>
+<CellData Scalars="As-lin-limit_conc_solid,As-lin_conc_solid,Bs-lin-limit_conc_solid,Bs-lin_conc_solid,As-lin-limit_conc,As-lin_conc,Bs-lin-limit_conc,Bs-lin_conc," Vectors="" Tensors="">
 <DataArray type="Float64" Name="As-lin-limit_conc_solid" format="ascii">
 0.446666666666667 0.446666666666667 0.446666666666482 0.446666666666525 0.446666666666529 0.446666666666667 0.446666666666604 0.446666666665086 0.446666666666574 0.446666666666367 0.44666666666602 
 </DataArray>
@@ -42,6 +30,18 @@
 </DataArray>
 <DataArray type="Float64" Name="Bs-lin_conc_solid" format="ascii">
 0.427826086956522 0.427826086956522 0.427826086956373 0.427826086956408 0.427826086956412 0.427826086956522 0.427826086956472 0.427826086955256 0.427826086956447 0.427826086956282 0.427826086956004 
+</DataArray>
+<DataArray type="Float64" Name="As-lin-limit_conc" format="ascii">
+0.6 0.6 0.6 0.6 0.6 0.6 0.6 0.6 0.6 0.6 0.6 
+</DataArray>
+<DataArray type="Float64" Name="As-lin_conc" format="ascii">
+0.713043478260861 0.713043478260861 0.713043478260614 0.713043478260672 0.713043478260678 0.713043478260861 0.713043478260778 0.713043478258751 0.713043478260737 0.713043478260461 0.713043478259997 
+</DataArray>
+<DataArray type="Float64" Name="Bs-lin-limit_conc" format="ascii">
+0.6 0.6 0.6 0.6 0.6 0.6 0.6 0.6 0.6 0.6 0.6 
+</DataArray>
+<DataArray type="Float64" Name="Bs-lin_conc" format="ascii">
+0.71304347826087 0.71304347826087 0.713043478260622 0.713043478260681 0.713043478260686 0.71304347826087 0.713043478260787 0.71304347825876 0.713043478260746 0.71304347826047 0.713043478260006 
 </DataArray>
 </CellData>
 </Piece>

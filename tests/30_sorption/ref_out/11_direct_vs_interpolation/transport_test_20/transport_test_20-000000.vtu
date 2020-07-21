@@ -18,19 +18,7 @@
 10 10 10 10 10 10 10 10 10 10 10 
 </DataArray>
 </Cells>
-<CellData Scalars="As-lin-limit_conc,As-lin_conc,Bs-lin-limit_conc,Bs-lin_conc,As-lin-limit_conc_solid,As-lin_conc_solid,Bs-lin-limit_conc_solid,Bs-lin_conc_solid," Vectors="" Tensors="">
-<DataArray type="Float64" Name="As-lin-limit_conc" format="ascii">
-0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 
-</DataArray>
-<DataArray type="Float64" Name="As-lin_conc" format="ascii">
-0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 
-</DataArray>
-<DataArray type="Float64" Name="Bs-lin-limit_conc" format="ascii">
-0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 
-</DataArray>
-<DataArray type="Float64" Name="Bs-lin_conc" format="ascii">
-0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 
-</DataArray>
+<CellData Scalars="As-lin-limit_conc_solid,As-lin_conc_solid,Bs-lin-limit_conc_solid,Bs-lin_conc_solid,As-lin-limit_conc,As-lin_conc,Bs-lin-limit_conc,Bs-lin_conc," Vectors="" Tensors="">
 <DataArray type="Float64" Name="As-lin-limit_conc_solid" format="ascii">
 0.3 0.3 0.3 0.3 0.3 0.3 0.3 0.3 0.3 0.3 0.3 
 </DataArray>
@@ -42,6 +30,18 @@
 </DataArray>
 <DataArray type="Float64" Name="Bs-lin_conc_solid" format="ascii">
 0.3 0.3 0.3 0.3 0.3 0.3 0.3 0.3 0.3 0.3 0.3 
+</DataArray>
+<DataArray type="Float64" Name="As-lin-limit_conc" format="ascii">
+0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 
+</DataArray>
+<DataArray type="Float64" Name="As-lin_conc" format="ascii">
+0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 
+</DataArray>
+<DataArray type="Float64" Name="Bs-lin-limit_conc" format="ascii">
+0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 
+</DataArray>
+<DataArray type="Float64" Name="Bs-lin_conc" format="ascii">
+0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 
 </DataArray>
 </CellData>
 </Piece>
