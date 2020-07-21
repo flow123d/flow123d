@@ -12,6 +12,7 @@
 #include "fields/field.hh"
 #include "io/output_time_set.hh"
 #include "input/flow_attribute_lib.hh"
+#include "system/sys_profiler.hh"
 #include <memory>
 
 
@@ -184,7 +185,7 @@ bool EquationOutput::is_field_output_time(const FieldCommon &field, TimeStep ste
 }
 
 
-void EquationOutput::output(TimeStep step) // add arg: bool write_time_frame = true
+void EquationOutput::output(TimeStep step, bool write_time_frame)
 {
     ASSERT_PTR(mesh_).error();
 
@@ -206,7 +207,10 @@ void EquationOutput::output(TimeStep step) // add arg: bool write_time_frame = t
         }
     }
 
-    //if (write_time_frame) stream_->write_time_frame();
+    if (write_time_frame) {
+        START_TIMER("write time frame");
+        stream_->write_time_frame();
+    }
 }
 
 

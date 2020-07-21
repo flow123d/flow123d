@@ -254,7 +254,7 @@ void TransportOperatorSplitting::output_data(){
 
         if(reaction) reaction->output_data(); // do not perform write_time_frame, set write_time_frame flag to false
         convection->output_data();
-        convection->output_stream()->write_time_frame();
+        //convection->output_stream()->write_time_frame();
 
         END_TIMER("TOS-output data");
 }
@@ -270,7 +270,7 @@ void TransportOperatorSplitting::zero_time_step()
       reaction->zero_time_step();
       reaction->output_data(); // do not perform write_time_frame - change: do not unset write_time_frame flag
     }
-    convection->output_stream()->write_time_frame();
+    //convection->output_stream()->write_time_frame();
 
 }
 

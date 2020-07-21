@@ -73,9 +73,16 @@ public:
     bool is_field_output_time(const FieldCommon &field, TimeStep step) const;
 
     /**
-     * Performs output of the fields marked for output in the time @param step.
+     * Performs output of the fields marked for output.
+     *
+     * Allow to call method write_time_frame. This calling can be switched off
+     * (eg if transport and reaction equation use same output data object, print
+     * to fiels is performed only for transport - that must be called second).
+     *
+     * @param step             Provides output time.
+     * @param write_time_frame If flag set calls method write_time_frame too.
      */
-    void output(TimeStep step);
+    void output(TimeStep step, bool write_time_frame = true);
 
     /// Selects the error control field out of output field set according to input record.
     typename OutputMeshBase::ErrorControlFieldFunc select_error_control_field();

@@ -611,10 +611,8 @@ void TransportDG<Model>::output_data()
     // gather the solution from all processors
     data_->output_fields.set_time( this->time().step(), LimitSide::left);
     //if (data_->output_fields.is_field_output_time(data_->output_field, this->time().step()) )
-    data_->output_fields.output(this->time().step()); // call write_time_frame directly
+    data_->output_fields.output(this->time().step());
 
-    Model::output_data(); // do not call this - allow to remove HeatModel::output_data
-    
     START_TIMER("TOS-balance");
     for (unsigned int sbi=0; sbi<data_->n_substances(); ++sbi)
       Model::balance_->calculate_instant(data_->subst_idx_[sbi], data_->ls[sbi]->get_solution());
