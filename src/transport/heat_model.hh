@@ -115,7 +115,7 @@ public:
 		/// Transition coefficient in total/diffusive flux b.c.
 		BCMultiField<3, FieldValue<3>::Scalar > bc_robin_sigma;
 		/// Initial temperature.
-		Field<3, FieldValue<3>::Scalar> init_temperature;
+		MultiField<3, FieldValue<3>::Scalar> init_condition;
 		/// Porosity of solid.
 		Field<3, FieldValue<3>::Scalar> porosity;
 		/// Water content passed from Darcy flow model
@@ -191,6 +191,35 @@ public:
         static const Input::Type::Selection & get_bc_type_selection();
 
 		static IT::Selection get_output_selection();
+
+		/**
+		 * Initialize FieldModel instances.
+		 */
+		void initialize();
+
+        /// Returns number of transported substances.
+        inline unsigned int n_substances()
+        { return 1; }
+
+        /// Returns reference to the vector of substance indices.
+        const vector<unsigned int> &subst_idx()
+    	{ return subst_idx_; }
+
+        /// Returns reference to the vector of substance names.
+        inline SubstanceList &substances()
+        { return substances_; }
+
+
+		/// @name Data of substances
+		// @{
+
+	    /// Transported substances.
+	    SubstanceList substances_;
+
+		/// List of indices used to call balance methods for a set of quantities.
+		vector<unsigned int> subst_idx_;
+
+    	// @}
 	};
 
 	typedef AdvectionProcessBase FactoryBaseType;
@@ -200,24 +229,7 @@ public:
 
 	void init_from_input(const Input::Record &) override {};
 
-    inline Field<3, FieldValue<3>::Scalar> &init_cond_field(FMT_UNUSED unsigned int sbi)
-    {
-        return data().init_temperature;
-    }
-
 	~HeatTransferModel() override;
-
-    /// Returns number of transported substances.
-    inline unsigned int n_substances()
-    { return 1; }
-
-    /// Returns reference to the vector of substance names.
-    inline SubstanceList &substances()
-    { return substances_; }
-
-    const vector<unsigned int> &get_subst_idx()
-	{ return subst_idx; }
-
 
 	/// Derived class should implement getter for ModelEqData instance.
 	virtual ModelEqData &data() = 0;
@@ -240,15 +252,9 @@ protected:
 	virtual void calculate_cumulative_balance() = 0;
 
 	/**
-	 * Initialize FieldModel instances.
+	 * Temporary method, sets balance object after construction of EqData object.
 	 */
-	void initialize();
-
-    /// Transported substances.
-    SubstanceList substances_;
-
-	/// List of indices used to call balance methods for a set of quantities.
-	vector<unsigned int> subst_idx;
+	void init_balance(const Input::Record &in_rec);
 
 	std::shared_ptr<OutputTime> output_stream_;
 };

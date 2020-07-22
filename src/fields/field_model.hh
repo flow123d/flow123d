@@ -211,7 +211,7 @@ namespace detail
   	auto f_product = Model<3, FieldValue<3>::VectorFixed>::create(FnProduct(), f_scal, f_vec);
   	// set field on all regions
     result.set_mesh( *mesh );
-  	result.set_field(mesh->region_db().get_region_set("ALL"), f_product, time);
+  	result.set(f_product, time);
     result.cache_reallocate(elm_cache_map);
     result.set_time(tg.step(), LimitSide::right);
 

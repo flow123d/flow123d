@@ -67,7 +67,7 @@ public:
 		/// Transition coefficient in total/diffusive flux b.c.
 		BCMultiField<3, FieldValue<3>::Scalar > bc_robin_sigma;
 		/// Initial concentrations.
-		MultiField<3, FieldValue<3>::Scalar> init_conc;
+		MultiField<3, FieldValue<3>::Scalar> init_condition;
 		/// Longitudal dispersivity (for each substance).
 		MultiField<3, FieldValue<3>::Scalar> disp_l;
 		/// Transversal dispersivity (for each substance).
@@ -115,6 +115,34 @@ public:
 
 		static IT::Selection get_output_selection();
 
+		/**
+		 * Initialize FieldModel instances.
+		 */
+		void initialize();
+
+        /// Returns number of transported substances.
+        inline unsigned int n_substances()
+        { return substances_.size(); }
+
+        /// Returns reference to the vector of substance indices.
+        const vector<unsigned int> &subst_idx()
+    	{ return subst_idx_; }
+
+        /// Returns reference to the vector of substance names.
+        inline SubstanceList &substances()
+        { return substances_; }
+
+
+		/// @name Data of substances
+		// @{
+
+	    /// Transported substances.
+	    SubstanceList substances_;
+
+		/// List of indices used to call balance methods for a set of quantities.
+		vector<unsigned int> subst_idx_;
+
+    	// @}
 	};
 
 
@@ -126,20 +154,15 @@ public:
         void init_from_input(const Input::Record &in_rec) override;
 
 
-    inline Field<3, FieldValue<3>::Scalar> &init_cond_field(unsigned int sbi)
-    {
-        return data().init_conc[sbi];
-    }
-
 	~ConcentrationTransportModel() override;
 
     /// Returns number of transported substances.
     inline unsigned int n_substances() override
-    { return substances_.size(); }
+    { return data().n_substances(); }
 
     /// Returns reference to the vector of substance names.
     inline SubstanceList &substances() override
-    { return substances_; }
+    { return data().substances(); }
 
 
     // Methods inherited from ConcentrationTransportBase:
@@ -149,8 +172,8 @@ public:
 
 	void set_balance_object(std::shared_ptr<Balance> balance) override;
 
-    const vector<unsigned int> &get_subst_idx()
-	{ return subst_idx; }
+    const vector<unsigned int> &get_subst_idx() override
+	{ return data().subst_idx(); }
 
     void set_output_stream(std::shared_ptr<OutputTime> stream)
     { output_stream_ = stream; }
@@ -173,15 +196,9 @@ protected:
 	static IT::Record get_input_type(const string &implementation, const string &description);
 
 	/**
-	 * Initialize FieldModel instances.
+	 * Empty temporary method (must be implemented for continuity with HeatTransferModel)
 	 */
-	void initialize();
-
-    /// Transported substances.
-    SubstanceList substances_;
-
-	/// List of indices used to call balance methods for a set of quantities.
-	vector<unsigned int> subst_idx;
+	void init_balance(const Input::Record &in_rec);
 
 	/// Density of liquid (a global constant).
 	double solvent_density_;

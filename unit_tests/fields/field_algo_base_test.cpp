@@ -77,6 +77,7 @@ public:
 		test_input_list->finish();
 
 		my_domain = my_mesh->region_db().get_region_set("BULK");
+		my_domain_names = {"BULK"};
 
 		string field_input = "[{a=314}]";
 		if (this->is_enum_valued) field_input = "[{a=\"white\"}]";
@@ -148,6 +149,9 @@ public:
 
 	// BULK domain
 	RegionSet my_domain;
+
+	// Vector of names of BULK domain
+	std::vector<std::string> my_domain_names;
 
 	// FieldConstant with value 314 (numeric return value) or "white" (enum return value)
 	std::shared_ptr<typename FieldType::FieldBaseType> my_field_algo_base;
@@ -275,7 +279,7 @@ TYPED_TEST(FieldFix, mark_input_times) {
 
 
 TYPED_TEST(FieldFix, set_mesh) {
-	EXPECT_ASSERT_DEATH( {this->set_field(this->my_domain, this->my_field_algo_base, 0.0);}, "Null; mesh pointer");
+	EXPECT_ASSERT_DEATH( {this->set(this->my_field_algo_base, 0.0, this->my_domain_names);}, "Null; mesh pointer");
 
 	EXPECT_EQ(nullptr, this->shared_->mesh_);
 	this->set_mesh(*(this->my_mesh));
@@ -291,7 +295,7 @@ TYPED_TEST(FieldFix, set_mesh) {
 
 TYPED_TEST(FieldFix, set_field) {
 	this->set_mesh(*(this->my_mesh));
-	this->set_field(this->my_domain, this->my_field_algo_base, 0.0);
+	this->set(this->my_field_algo_base, 0.0, this->my_domain_names);
 
 	Region reg = this->my_domain[0];
 	auto const &history = this->data_->region_history_[reg.idx()];
@@ -300,20 +304,20 @@ TYPED_TEST(FieldFix, set_field) {
 	EXPECT_EQ(0.0, history[0].first);
 	EXPECT_TRUE( bool(history[0].second) );
 
-	this->set_field(this->my_domain, this->my_field_algo_base, 3.0);
+	this->set(this->my_field_algo_base, 3.0, this->my_domain_names);
 	EXPECT_EQ(2, history.size());
 	EXPECT_EQ(3.0, history[0].first);
 	EXPECT_EQ(0.0, history[1].first);
 
-	EXPECT_ASSERT_DEATH( {this->set_field(this->my_domain, this->my_field_algo_base, 1.0);}, "" );
+	EXPECT_ASSERT_DEATH( {this->set(this->my_field_algo_base, 1.0, this->my_domain_names);}, "" );
 
-	this->set_field(this->my_domain, this->my_field_algo_base, 6.0);
+	this->set(this->my_field_algo_base, 6.0, this->my_domain_names);
 	EXPECT_EQ(3, history.size());
 	EXPECT_EQ(6.0, history[0].first);
 	EXPECT_EQ(3.0, history[1].first);
 	EXPECT_EQ(0.0, history[2].first);
 
-	this->set_field(this->my_domain, this->my_field_algo_base, 7.0);
+	this->set(this->my_field_algo_base, 7.0, this->my_domain_names);
 	EXPECT_EQ(3, history.size());
 	EXPECT_EQ(7.0, history[0].first);
 	EXPECT_EQ(6.0, history[1].first);
@@ -634,12 +638,12 @@ TEST(Field, init_from_input) {
     conductivity.units( UnitSI().m() );
     conductivity_3d.units( UnitSI().m() );
 
-    auto region_set = mesh->region_db().get_region_set("BULK");
+    std::vector<std::string> region_set_names = {"BULK"};
 
-    sorption_type.set_field(region_set, in_rec.val<Input::AbstractRecord>("sorption_type"), 0.0);
-    init_conc.set_field(region_set, in_rec.val<Input::AbstractRecord>("init_conc"), 0.0);
-    conductivity.set_field(region_set, in_rec.val<Input::AbstractRecord>("conductivity"), 0.0);
-    conductivity_3d.set_field(region_set, in_rec.val<Input::AbstractRecord>("conductivity_3d"), 0.0);
+    sorption_type.set(in_rec.val<Input::AbstractRecord>("sorption_type"), 0.0, region_set_names);
+    init_conc.set(in_rec.val<Input::AbstractRecord>("init_conc"), 0.0, region_set_names);
+    conductivity.set(in_rec.val<Input::AbstractRecord>("conductivity"), 0.0, region_set_names);
+    conductivity_3d.set(in_rec.val<Input::AbstractRecord>("conductivity_3d"), 0.0, region_set_names);
 
 
 
@@ -912,15 +916,15 @@ TEST(Field, disable_where) {
     auto one = std::make_shared<SConst>();
     one->set_value(1.0);
 
-    bc_type.set_field(RegionSet(1, mesh->region_db().find_id(101)), neumann_type, 0.0 );
-    bc_flux.set_field(RegionSet(1, mesh->region_db().find_id(101)), one, 0.0 );
+    bc_type.set(neumann_type, 0.0, {".top side"} );
+    bc_flux.set(one, 0.0, {".top side"} );
 
-    bc_type.set_field(RegionSet(1, mesh->region_db().find_id(102)), robin_type, 0.0 );
-    bc_value.set_field(RegionSet(1, mesh->region_db().find_id(102)), one, 0.0 );
-    bc_sigma.set_field(RegionSet(1, mesh->region_db().find_id(102)), one, 0.0 );
+    bc_type.set(robin_type, 0.0, {".bottom side"} );
+    bc_value.set(one, 0.0, {".bottom side"} );
+    bc_sigma.set(one, 0.0, {".bottom side"} );
 
-    bc_type.set_field(RegionSet(1, mesh->region_db().find_id(-3)), neumann_type, 0.0 );
-    bc_flux.set_field(RegionSet(1, mesh->region_db().find_id(-3)), one, 0.0 );
+    bc_type.set(neumann_type, 0.0, {".IMPLICIT_BOUNDARY"}  );
+    bc_flux.set(one, 0.0, {".IMPLICIT_BOUNDARY"}  );
 
 
 
@@ -1001,12 +1005,13 @@ TEST(Field, field_values) {
     tensor_field.units( UnitSI().m() );
 
     auto region_set = mesh->region_db().get_region_set("BULK");
+    std::vector<std::string> region_set_names = {"BULK"};
 
-    color_field.set_field(region_set, in_rec.val<Input::AbstractRecord>("color"), 0.0);
-    int_field.set_field(region_set, in_rec.val<Input::AbstractRecord>("integer"), 0.0);
-    scalar_field.set_field(region_set, in_rec.val<Input::AbstractRecord>("scalar"), 0.0);
-    vector_field.set_field(region_set, in_rec.val<Input::AbstractRecord>("vector"), 0.0);
-    tensor_field.set_field(region_set, in_rec.val<Input::AbstractRecord>("tensor"), 0.0);
+    color_field.set(in_rec.val<Input::AbstractRecord>("color"), 0.0, region_set_names);
+    int_field.set(in_rec.val<Input::AbstractRecord>("integer"), 0.0, region_set_names);
+    scalar_field.set(in_rec.val<Input::AbstractRecord>("scalar"), 0.0, region_set_names);
+    vector_field.set(in_rec.val<Input::AbstractRecord>("vector"), 0.0, region_set_names);
+    tensor_field.set(in_rec.val<Input::AbstractRecord>("tensor"), 0.0, region_set_names);
 
     color_field.set_time(TimeGovernor().step(), LimitSide::right);
     int_field.set_time(TimeGovernor().step(), LimitSide::right);

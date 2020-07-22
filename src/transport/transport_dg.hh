@@ -205,14 +205,10 @@ public:
     	/// @name Auxiliary fields used during assembly
     	// @{
 
-    	/// Advection coefficients.
-    	vector<vector<arma::vec3> > ad_coef;
     	/// Diffusion coefficients.
     	vector<vector<arma::mat33> > dif_coef;
-    	/// Advection coefficients on edges.
-    	vector<vector<vector<arma::vec3> > > ad_coef_edg;
-    	/// Diffusion coefficients on edges.
-    	vector<vector<vector<arma::mat33> > > dif_coef_edg;
+    	/// Maximal number of edge sides (evaluate from dim 1,2,3)
+    	unsigned int max_edg_sides;
 
     	// @}
 
@@ -302,12 +298,6 @@ public:
     inline std::shared_ptr<Balance> balance() const {
         return Model::balance_;
     }
-
-    /// Return vector of substances indices
-    inline const vector<unsigned int> subst_idx() const {
-        return Model::subst_idx;
-    }
-
 
 	inline typename Model::ModelEqData &data() { return *data_; }
 

@@ -260,9 +260,23 @@ public:
     /// Implements FieldCommon::cache_update
     void cache_update(ElementCacheMap &cache_map) override;
 
-    void set_fields(const RegionSet &domain,
-            std::vector<typename Field<spacedim, Value>::FieldBasePtr> field_vec,
-            double time = 0.0);
+    /**
+     * Assigns fields from @p field_vec to individual components and all regions in region sets given by @p region_set_names.
+     * Field is added to the history with given time and possibly used in the next call of the set_time method.
+     * Caller is responsible for correct construction of given field.
+     *
+     * Use this method only if necessary.
+     */
+    void set(std::vector<typename Field<spacedim, Value>::FieldBasePtr> field_vec,
+            double time,
+            std::vector<std::string> region_set_names = {"ALL"});
+
+    /**
+     * Same as previous but only for one-component MultiField (simplification for HeatModel).
+     */
+    void set(typename Field<spacedim, Value>::FieldBasePtr field,
+            double time,
+            std::vector<std::string> region_set_names = {"ALL"});
 
 private:
     /// Subfields (items) of MultiField
