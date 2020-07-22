@@ -66,21 +66,21 @@ void ElementCacheMap::init(std::shared_ptr<EvalPoints> eval_points) {
 
 void ElementCacheMap::add(const DHCellAccessor &dh_cell) {
 	ASSERT_DBG(!ready_to_reading_);
-    ASSERT_LT(this->n_elements(), ElementCacheMap::n_cached_elements).error("ElementCacheMap overflowed. List of added elements is too long!\n");
+    ASSERT_LT_DBG(this->n_elements(), ElementCacheMap::n_cached_elements).error("ElementCacheMap overflowed. List of added elements is too long!\n");
     this->add_to_region(dh_cell.elm());
 }
 
 
 void ElementCacheMap::add(const DHCellSide &cell_side) {
 	ASSERT_DBG(!ready_to_reading_);
-    ASSERT_LT(this->n_elements(), ElementCacheMap::n_cached_elements).error("ElementCacheMap overflowed. List of added elements is too long!\n");
+    ASSERT_LT_DBG(this->n_elements(), ElementCacheMap::n_cached_elements).error("ElementCacheMap overflowed. List of added elements is too long!\n");
     this->add_to_region(cell_side.cell().elm());
 }
 
 
 void ElementCacheMap::add(const ElementAccessor<3> &elm_acc) {
 	ASSERT_DBG(!ready_to_reading_);
-    ASSERT_LT(this->n_elements(), ElementCacheMap::n_cached_elements).error("ElementCacheMap overflowed. List of added elements is too long!\n");
+    ASSERT_LT_DBG(this->n_elements(), ElementCacheMap::n_cached_elements).error("ElementCacheMap overflowed. List of added elements is too long!\n");
     this->add_to_region(elm_acc);
 }
 
