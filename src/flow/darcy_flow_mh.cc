@@ -600,10 +600,8 @@ bool DarcyMH::zero_time_term(bool time_global) {
     }
 }
 
-Vec DarcyMH::compute_full_residual_vec()
+Vec DarcyMH::compute_full_residual_vec(Vec residual_)
 {
-    Vec residual_;
-    VecDuplicate(schur0->get_solution(), &residual_);
     MatMult(*schur0->get_matrix(), schur0->get_solution(), residual_);
     VecAXPY(residual_,-1.0, *schur0->get_rhs());
     return residual_;
@@ -612,9 +610,13 @@ Vec DarcyMH::compute_full_residual_vec()
 void DarcyMH::solve_nonlinear()
 {
     assembly_linear_system();
-    Vec residual_ = compute_full_residual_vec();
-    double residual_norm = VecNorm(residual_, NORM_2, &residual_norm);
+    Vec residual_;
+    VecDuplicate(schur0->get_solution(), &residual_);
+    double residual_norm;
+    residual_ = compute_full_residual_vec(residual_);
+    VecNorm(residual_, NORM_2, &residual_norm);
     nonlinear_iteration_ = 0;
+    int ns_type = input_record_.val<Input::Record>("nonlinear_solver").val<int>("solver_type");
     MessageOut().fmt("[nonlinear solver] norm of initial residual: {}\n", residual_norm);
 
     // Reduce is_linear flag.
@@ -633,8 +635,8 @@ void DarcyMH::solve_nonlinear()
     }
     vector<double> convergence_history;
 
-    residual_ = compute_full_residual_vec();
-    residual_norm = VecNorm(residual_, NORM_2, &residual_norm);
+    residual_ = compute_full_residual_vec(residual_);
+    VecNorm(residual_, NORM_2, &residual_norm);
     Vec save_solution;
     VecDuplicate(schur0->get_solution(), &save_solution);
     while (nonlinear_iteration_ < this->min_n_it_ ||
@@ -656,7 +658,6 @@ void DarcyMH::solve_nonlinear()
         }
         auto si = LinSys::SolveInfo(0,0);
         if (! is_linear_common){
-            int ns_type = input_record_.val<Input::Record>("nonlinear_solver").val<int>("solver_type");
             if (ns_type == EqData::nonlinear_solver::Newton){
                 assembly_linear_system_Newton(residual_);
                 VecCopy( schur0_Newton->get_solution(), save_solution);
@@ -672,8 +673,8 @@ void DarcyMH::solve_nonlinear()
         // hack to make BDDC work with empty compute_residual
         if (is_linear_common){
             // we want to print this info in linear (and steady) case
-            residual_ = compute_full_residual_vec();
-            residual_norm = VecNorm(residual_, NORM_2, &residual_norm);
+            residual_ = compute_full_residual_vec(residual_);
+            VecNorm(residual_, NORM_2, &residual_norm);
             MessageOut().fmt("[nonlinear solver] lin. it: {}, reason: {}, residual: {}\n",
         		si.n_iterations, si.converged_reason, residual_norm);
             break;
@@ -687,8 +688,8 @@ void DarcyMH::solve_nonlinear()
         //OLD_ASSERT( si.converged_reason >= 0, "Linear solver failed to converge. Convergence reason %d \n", si.converged_reason );
         assembly_linear_system();
 
-        residual_ = compute_full_residual_vec();
-        residual_norm = VecNorm(residual_, NORM_2, &residual_norm);
+        residual_ = compute_full_residual_vec(residual_);
+        VecNorm(residual_, NORM_2, &residual_norm);
         MessageOut().fmt("[nonlinear solver] it: {} lin. it: {}, reason: {}, residual: {}\n",
         		nonlinear_iteration_, si.n_iterations, si.converged_reason, residual_norm);
         chkerr(VecDestroy(&residual_));
