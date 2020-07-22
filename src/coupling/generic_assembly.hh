@@ -151,6 +151,7 @@ public:
             }
 
             this->add_integrals_of_computing_step(cell);
+            // TODO: make appropriate method in ElementCacheMap instead of the call operator
             element_cache_map_(cell);
 
             if (element_cache_map_.update_cache_data().n_elements_ >
