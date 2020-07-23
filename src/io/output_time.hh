@@ -219,6 +219,11 @@ public:
         return this->n_proc_;
     }
 
+    /// Getter to time
+    inline double get_time() const {
+    	return time;
+    }
+
 
 protected:
     

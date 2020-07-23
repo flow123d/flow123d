@@ -175,7 +175,8 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 	convection->substances().initialize(in_rec.val<Input::Array>("substances"));
 
 	// Initialize output stream.
-    convection->set_output_stream(OutputTime::create_output_stream("solute", in_rec.val<Input::Record>("output_stream"), time().get_unit_string()));
+	stream_ = OutputTime::create_output_stream("solute", in_rec.val<Input::Record>("output_stream"), time().get_unit_string());
+    convection->set_output_stream(stream_);
 
 
     // initialization of balance object
@@ -211,7 +212,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
         reaction->substances(convection->substances())
                     .concentration_matrix(convection->get_concentration_matrix(),
 						el_distribution, el_4_loc, convection->get_row_4_el())
-				.output_stream(convection->output_stream())
+				.output_stream(stream_)
 				.set_dh(dof_handler)
 				.set_time_governor((TimeGovernor &)convection->time());
 
@@ -254,7 +255,6 @@ void TransportOperatorSplitting::output_data(){
 
         convection->output_data();
         if(reaction) reaction->output_data(); // do not perform write_time_frame
-        convection->output_stream()->write_time_frame();
 
         END_TIMER("TOS-output data");
 }
@@ -270,7 +270,6 @@ void TransportOperatorSplitting::zero_time_step()
       reaction->zero_time_step();
       reaction->output_data(); // do not perform write_time_frame
     }
-    convection->output_stream()->write_time_frame();
 
 }
 

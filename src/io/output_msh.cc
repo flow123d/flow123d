@@ -53,7 +53,10 @@ OutputMSH::OutputMSH()
 
 OutputMSH::~OutputMSH()
 {
-    this->write_tail();
+	// Perform output of last time step
+	this->write_time_frame();
+
+	this->write_tail();
 }
 
 

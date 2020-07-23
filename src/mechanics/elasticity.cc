@@ -518,7 +518,6 @@ void Elasticity::output_data()
     //if (data_.output_fields.is_field_output_time(data_.output_field, this->time().step()) )
     update_output_fields();
     data_.output_fields.output(this->time().step());
-    output_stream_->write_time_frame();
 
 //     START_TIMER("MECH-balance");
 //     balance_->calculate_instant(subst_idx, ls->get_solution());

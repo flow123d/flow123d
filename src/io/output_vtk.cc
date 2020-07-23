@@ -79,6 +79,9 @@ OutputVTK::OutputVTK()
 
 OutputVTK::~OutputVTK()
 {
+	// Perform output of last time step
+	this->write_time_frame();
+
     this->write_tail();
 }
 
