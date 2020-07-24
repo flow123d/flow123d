@@ -58,6 +58,8 @@ public:
         this->_mesh = mesh_full_constructor("{mesh_file=\"" + (string)mesh_file + "\"}");
 
         component_names = { "comp_0", "comp_1", "comp_2" };
+
+        this->write_time = 0.0; // hack: unset condition in OutputTime::write_time_frame and output is not performed
     }
 
     ~TestOutputVTK()
