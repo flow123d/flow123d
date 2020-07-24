@@ -241,11 +241,11 @@ public:
     void cache_update(FieldValueCache<typename Value::element_type> &data_cache,
 				ElementCacheMap &cache_map, unsigned int region_idx) override {
         auto update_cache_data = cache_map.update_cache_data();
-        unsigned int region_in_cache = update_cache_data.region_cache_indices_range_.find(region_idx)->second;
+        unsigned int region_in_cache = cache_map.region_chunk(region_idx);
         unsigned int i_cache_el_begin = update_cache_data.region_value_cache_range_[region_in_cache];
         unsigned int i_cache_el_end = update_cache_data.region_value_cache_range_[region_in_cache+1];
         for(unsigned int i_cache=i_cache_el_begin; i_cache<i_cache_el_end; ++i_cache) {
-            data_cache.data().set(i_cache) =
+            data_cache.set(i_cache) =
                 detail::model_cache_item<
                     Fn,
                     decltype(input_fields),

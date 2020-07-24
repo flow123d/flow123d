@@ -36,10 +36,10 @@ class DHCellSide;
 /**
  * @brief Class holds precomputed field values of selected element set.
  *
- * Every field in equation use own instance for every dimension of elements
- * (typically 3 instances for dim = 1,2,3).
+ * Every field in equation use own instance used for elements of all dimensions.
  */
-template<class elm_type>
+template<class elm_type> using FieldValueCache = Armor::Array<elm_type>;
+/*template<class elm_type>
 class FieldValueCache {
 public:
     /// Constructor
@@ -47,9 +47,6 @@ public:
 
     /// Destructor
     ~FieldValueCache();
-
-    /// Reinitialize size of cache
-    void reinit(const ElementCacheMap &cache_map);
 
     /// Return size of data cache (number of stored field values)
     inline unsigned int size() const {
@@ -74,40 +71,9 @@ public:
         return data_.template mat<nr, nc>(i);
     }
 
-    /// Return maximal number of data stored in cache.
-    inline unsigned int max_size() const {
-        return data_.size();
-    }
-
-    /// Return value of evaluation point given by DHCell and local point idx in EvalPoints.
-    template<class Value>
-    typename Value::return_type get_value(const ElementCacheMap &map,
-            const DHCellAccessor &dh_cell, unsigned int eval_points_idx);
-
-    /**
-     * Return value of evaluation point given by ElementAccessor and local point idx in EvalPoints.
-     *
-     * Temporary overload of previous method used on boundary elements.
-     */
-    template<class Value>
-    typename Value::return_type get_value(const ElementCacheMap &map,
-            const ElementAccessor<3> elm, unsigned int eval_points_idx);
-
 private:
-    /**
-     * Data cache.
-     *
-     * Data is ordered like three dimensional table. The highest level is determinated by subsets,
-     * those data ranges are holds in subset_starts. Data block size of each subset is determined
-     * by number of eval_points (of subset) and maximal number of stored elements.
-     * The table is allocated to hold all subsets, but only those marked in used_subsets are updated.
-     * Order of subsets is same as in eval_points.
-     */
     Armor::Array<elm_type> data_;
-
-    /// Maximal number of points stored in cache.
-    unsigned int n_cache_points_;
-};
+};*/
 
 
 /**
@@ -146,7 +112,7 @@ public:
     struct RegionData {
     public:
         /// Constructor
-        RegionData() : n_elements_(0) {}
+        RegionData() : n_elements_(0), cache_position_(ElementCacheMap::undef_elem_idx) {}
 
         /// Add element if does not exist
         bool add(ElementAccessor<3> elm) {
@@ -162,6 +128,11 @@ public:
         std::array<unsigned int, ElementCacheMap::n_cached_elements> elm_indices_;
         /// Number of element indices
         unsigned int n_elements_;
+        /// Holds positions of regions in cache
+		/// Elements of the common region forms continuous chunks in the
+        /// ElementCacheMap table. This array gives start indices of the regions
+        /// in array of all cached elements.
+        unsigned int cache_position_;
     };
 
     /**
@@ -177,24 +148,11 @@ public:
     	/// TODO: auxiliary data membershould be removed or moved to sepaate structure.
         std::unordered_map<unsigned int, RegionData> region_cache_indices_map_;
 
-        /// Holds positions of regions in cache
-        /// TODO
-		/// Elements of the common region forms continuous chunks in the
-        /// ElementCacheMap table. This array gives start indices of the regions
-        /// in array of all cached elements.
-        /// The last value is number of actually cached elements.
-        std::unordered_map<unsigned int, unsigned int> region_cache_indices_range_;
-
         /// Maps of begin and end positions of different regions data in FieldValueCache
         std::array<unsigned int, ElementCacheMap::n_cached_elements+1> region_value_cache_range_;
 
         /// Maps of begin and end positions of elements of different regions in ElementCacheMap
         std::array<unsigned int, ElementCacheMap::n_cached_elements+1> region_element_cache_range_;
-
-        /// Number of elements in all regions holds in cache
-        // TODO: This is dulicated with the last element of region_cache_indices_range_
-        // We rather need number of regions, i.e. number of region chunks.
-        unsigned int n_elements_;
     };
 
     /// Constructor
@@ -259,14 +217,15 @@ public:
     void mark_used_eval_points(const ElementAccessor<3> elm, unsigned int subset_idx, unsigned int data_size, unsigned int start_point=0);
 
     /*
-     * Return index of point in FieldValueCache.
+     * Access to item of \p element_eval_points_map_ like to two-dimensional array.
      *
-     * @param cache_elm_idx  idx of ElementAccessor in ElementCacheMap
-     * @param loc_point_idx  Index of local point in EvalPoints
+     * @param i_elem_in_cache  idx of ElementAccessor in ElementCacheMap
+     * @param i_eval_point     index of local point in EvalPoints
+     * @return                 index of point in FieldValueCache.
      */
-    inline int get_field_value_cache_index(unsigned int cache_elm_idx, unsigned int loc_point_idx) const {
+    inline int element_eval_point(unsigned int i_elem_in_cache, unsigned int i_eval_point) const {
         ASSERT_PTR_DBG(element_eval_points_map_);
-        return element_eval_points_map_[cache_elm_idx][loc_point_idx];
+        return element_eval_points_map_[i_elem_in_cache*eval_points_->max_size()+i_eval_point];
     }
 
     /// Return mesh_idx of element stored at given position of ElementCacheMap
@@ -280,6 +239,30 @@ public:
         if ( it != cache_idx_.end() ) return it->second;
         else return ElementCacheMap::undef_elem_idx;
     }
+
+    /// Return number of stored elements.
+    inline unsigned int n_elements() const {
+        return update_data_.region_element_cache_range_[update_data_.region_cache_indices_map_.size()];
+    }
+
+    /// Return position of region chunk in cache.
+    inline unsigned int region_chunk(unsigned int region_idx) const {
+        return update_data_.region_cache_indices_map_.find(region_idx)->second.cache_position_;
+    }
+
+    /// Return value of evaluation point given by DHCell and local point idx in EvalPoints from cache.
+    template<class Value>
+    typename Value::return_type get_value(const FieldValueCache<typename Value::element_type> &field_cache,
+            const DHCellAccessor &dh_cell, unsigned int eval_points_idx) const;
+
+    /**
+     * Return value of evaluation point given by ElementAccessor and local point idx in EvalPoints from cache.
+     *
+     * Temporary overload of previous method used on boundary elements.
+     */
+    template<class Value>
+    typename Value::return_type get_value(const FieldValueCache<typename Value::element_type> &field_cache,
+            const ElementAccessor<3> elm, unsigned int eval_points_idx) const;
 
     /// Set index of cell in ElementCacheMap (or undef value if cell is not stored in cache).
     DHCellAccessor & operator() (DHCellAccessor &dh_cell) const;
@@ -296,6 +279,12 @@ protected:
 
     /// Add element to appropriate region data of update_data_ object
     void add_to_region(ElementAccessor<3> elm);
+
+    /// Set item of \p element_eval_points_map_.
+    inline void set_element_eval_point(unsigned int i_elem_in_cache, unsigned int i_eval_point, int val) const {
+        ASSERT_PTR_DBG(element_eval_points_map_);
+        element_eval_points_map_[i_elem_in_cache*eval_points_->max_size()+i_eval_point] = val;
+    }
 
     /// Vector of element indexes stored in cache.
     /// TODO: could be moved to UpdateCacheHelper structure
@@ -315,22 +304,24 @@ protected:
     bool ready_to_reading_;
 
     /**
-     * Two dimensional array provides indexes to FieldValueCache.
+     * This array provides indexes to FieldValueCache.
+     *
+     * This one dimensional array behaves like two dimensional factually.
+     * Size is set to 'n_cached_elements * n_eval_points' and items are
+     * accessible through two indices:
      *
      * 1: Over elements holds in ElementCacheMap
      * 2: Over EvalPoints for each element
+     *
+     * Use always and only methods \p element_eval_point for read and
+     * \p set_element_eval_point (for write) to access to items!
      *
      * Array is filled in those three steps:
      * a. Reset - all items are set to ElementCacheMap::unused_point
      * b. Used eval points are set to ElementCacheMap::point_in_proggress
      * c. Eval points marked in previous step are sequentially numbered
      */
-    // TODO: What are the dimensions of the table?
-    // should be n_cached_elements * n_eval_points, document it.
-    //
-    // Better use just int *, and use just single allocation of the whole table
-    // current impl. have bad memory locality. Define a private access method.
-    int **element_eval_points_map_;
+    int *element_eval_points_map_;
 };
 
 
