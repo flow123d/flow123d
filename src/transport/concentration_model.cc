@@ -304,7 +304,10 @@ void ConcentrationTransportModel::ModelEqData::initialize()
     sources_density_out.set(Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_sources_dens, cross_section, sources_density), 0.0);
     sources_sigma_out.set(Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_sources_sigma, cross_section, sources_sigma), 0.0);
     sources_conc_out.set(Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_sources_conc, sources_conc), 0.0);
-    advection_coef.set(Model<3, FieldValue<3>::VectorFixed>::create(fn_conc_ad_coef, flow_flux), 0.0);
+    std::vector<typename Field<3, FieldValue<3>::VectorFixed>::FieldBasePtr> ad_coef_ptr_vec;
+    for (unsigned int sbi=0; sbi<substances_.names().size(); sbi++)
+        ad_coef_ptr_vec.push_back( Model<3, FieldValue<3>::VectorFixed>::create(fn_conc_ad_coef, flow_flux) );
+    advection_coef.set(ad_coef_ptr_vec, 0.0);
     diffusion_coef.set(
         Model<3, FieldValue<3>::TensorFixed>::create_multi(
             fn_conc_diff_coef, diff_m, flow_flux, v_norm, disp_l, disp_t, water_content, porosity, cross_section

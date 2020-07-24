@@ -22,6 +22,7 @@
 #include "fields/eval_subset.hh"
 #include "fields/eval_points.hh"
 #include "fields/field_value_cache.hh"
+#include "coupling/balance.hh"
 
 
 
@@ -110,18 +111,21 @@ private:
 public:
 
     /// Constructor
-    GenericAssembly( typename DimAssembly<1>::EqDataDG *eq_data, int active_integrals )
+    GenericAssembly( typename DimAssembly<1>::EqDataDG *eq_data, std::shared_ptr<Balance> balance, int active_integrals )
     : multidim_assembly_(eq_data),
       active_integrals_(active_integrals), integrals_size_({0, 0, 0, 0, 0, 0})
     {
         eval_points_ = std::make_shared<EvalPoints>();
-        // first step - create integrals, then - initialize cache
+        // first step - create integrals, then - initialize cache and initialize subobject of dimensions
         Quadrature *quad_center_0d = new QGauss(0, 1);
         integrals_.center_[0] = eval_points_->add_bulk<0>(*quad_center_0d);
         multidim_assembly_[1_d]->create_integrals(eval_points_, integrals_, active_integrals_);
         multidim_assembly_[2_d]->create_integrals(eval_points_, integrals_, active_integrals_);
         multidim_assembly_[3_d]->create_integrals(eval_points_, integrals_, active_integrals_);
         element_cache_map_.init(eval_points_);
+        multidim_assembly_[1_d]->initialize(balance);
+        multidim_assembly_[2_d]->initialize(balance);
+        multidim_assembly_[3_d]->initialize(balance);
     }
 
     inline MixedPtr<DimAssembly, 1> multidim_assembly() const {
@@ -138,7 +142,7 @@ public:
 	 * Loops through local cells and calls assemble methods of assembly
 	 * object of each cells over space dimension.
 	 */
-    void assemble(std::shared_ptr<DOFHandlerMultiDim> dh) {
+    void assemble(std::shared_ptr<DOFHandlerMultiDim> dh, const TimeStep &step) {
         multidim_assembly_[1_d]->reallocate_cache(element_cache_map_);
         multidim_assembly_[1_d]->begin();
 
@@ -154,14 +158,17 @@ public:
             // TODO: make appropriate method in ElementCacheMap instead of the call operator
             element_cache_map_(cell);
 
-            if (element_cache_map_.update_cache_data().n_elements_ >
-                    ElementCacheMap::n_cached_elements-GenericAssembly<DimAssembly>::maximal_neighbouring_elem) {
-                this->assemble_integrals();
+            unsigned int n_elements = 0; // TODO remove - temporary solution
+            for (auto const& i : element_cache_map_.update_cache_data().region_cache_indices_map_) {
+                n_elements += i.second.n_elements_;
+            }
+            if (n_elements > ElementCacheMap::n_cached_elements-GenericAssembly<DimAssembly>::maximal_neighbouring_elem) {
+                this->assemble_integrals(step);
                 add_into_patch = false;
             }
         }
         if (add_into_patch)
-            this->assemble_integrals();
+            this->assemble_integrals(step);
 
         multidim_assembly_[1_d]->end();
     }
@@ -203,7 +210,7 @@ public:
 
 private:
     /// Call assemblations when patch is filled
-    void assemble_integrals() {
+    void assemble_integrals(const TimeStep &step) {
         unsigned int i;
         element_cache_map_.prepare_elements_to_update();
         this->insert_eval_points_from_integral_data();
@@ -234,13 +241,13 @@ private:
             for (i=0; i<integrals_size_[3]; ++i) { // boundary integral
                 switch (boundary_integral_data_[i].side.dim()) {
                 case 1:
-                    multidim_assembly_[1_d]->assemble_fluxes_boundary(boundary_integral_data_[i].side);
+                    multidim_assembly_[1_d]->assemble_fluxes_boundary(boundary_integral_data_[i].side, step);
                     break;
                 case 2:
-                    multidim_assembly_[2_d]->assemble_fluxes_boundary(boundary_integral_data_[i].side);
+                    multidim_assembly_[2_d]->assemble_fluxes_boundary(boundary_integral_data_[i].side, step);
                     break;
                 case 3:
-                    multidim_assembly_[3_d]->assemble_fluxes_boundary(boundary_integral_data_[i].side);
+                    multidim_assembly_[3_d]->assemble_fluxes_boundary(boundary_integral_data_[i].side, step);
                     break;
                 }
             }

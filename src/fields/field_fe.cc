@@ -237,7 +237,7 @@ void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::elem
     Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> mat_value;
 
     auto update_cache_data = cache_map.update_cache_data();
-    unsigned int region_in_cache = update_cache_data.region_cache_indices_range_.find(region_idx)->second;
+    unsigned int region_in_cache = cache_map.region_chunk(region_idx);
 
     for (unsigned int i_elm=update_cache_data.region_element_cache_range_[region_in_cache];
             i_elm<update_cache_data.region_element_cache_range_[region_in_cache+1]; ++i_elm) {
@@ -250,13 +250,13 @@ void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::elem
 
         for (unsigned int i_ep=0; i_ep<eval_points->size(elm.dim()); ++i_ep) { // i_eval_point
             //DHCellAccessor cache_cell = cache_map(cell);
-            int field_cache_idx = cache_map.get_field_value_cache_index(cache_map(cell).element_cache_index(), i_ep);
+            int field_cache_idx = cache_map.element_eval_point(cache_map(cell).element_cache_index(), i_ep);
             if (field_cache_idx < 0) continue; // skip
             mat_value.fill(0.0);
     		for (unsigned int i_dof=0; i_dof<loc_dofs.n_elem; i_dof++) {
     		    mat_value += data_vec_[loc_dofs[i_dof]] * this->handle_fe_shape(elm.dim(), i_dof, i_ep, comp_index_);
     		}
-    		data_cache.data().set(field_cache_idx) = mat_value;
+    		data_cache.set(field_cache_idx) = mat_value;
         }
     }
 }

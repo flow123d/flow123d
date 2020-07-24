@@ -225,30 +225,19 @@ public:
     bool is_constant(Region reg) override;
 
     /**
-     * Assigns given @p field to all regions in given region set @p domain.
-     * Field is added to the history with given time and possibly used in the next call of the set_time method.
-     * Caller is responsible for correct construction of given field.
-     *
-     * Use this method only if necessary.
-     */
-    void set_field(const RegionSet &domain, FieldBasePtr field, double time);
-
-    /**
-     * Same as before but the field is first created using FieldBase::function_factory(), from
-     * given abstract record accessor @p a_rec.
-     */
-    void set_field(const RegionSet &domain, const Input::AbstractRecord &a_rec, double time);
-
-    /**
      * Assigns given @p field to all regions in region set given by @p region_set_names.
      * Field is added to the history with given time and possibly used in the next call of the set_time method.
      * Caller is responsible for correct construction of given field.
      *
      * Use this method only if necessary.
-     *
-     * Same as set_field method but gets region sets by names and doesn't need mesh for calling.
      */
     void set(FieldBasePtr field, double time, std::vector<std::string> region_set_names = {"ALL"});
+
+    /**
+     * Same as before but the field is first created using FieldBase::function_factory(), from
+     * given abstract record accessor @p a_rec.
+     */
+    void set(const Input::AbstractRecord &a_rec, double time, std::vector<std::string> region_set_names = {"ALL"});
 
     /**
      * Check that whole field list is set, possibly use default values for unset regions
@@ -428,6 +417,12 @@ protected:
 
     /**
      * Field value data cache
+     *
+     * Data is ordered like three dimensional table. The highest level is determinated by subsets,
+     * those data ranges are holds in subset_starts. Data block size of each subset is determined
+     * by number of eval_points (of subset) and maximal number of stored elements.
+     * The table is allocated to hold all subsets, but only those marked in used_subsets are updated.
+     * Order of subsets is same as in eval_points.
      */
     FieldValueCache<typename Value::element_type> value_cache_;
 

@@ -272,7 +272,7 @@ public:
             std::vector<std::string> region_set_names = {"ALL"});
 
     /**
-     * Same as previous but assigns same field to all components of MultiField.
+     * Same as previous but only for one-component MultiField (simplification for HeatModel).
      */
     void set(typename Field<spacedim, Value>::FieldBasePtr field,
             double time,

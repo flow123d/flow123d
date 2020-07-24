@@ -128,7 +128,7 @@ public:
 		auto native_data_ptr = make_shared< FieldFE<3, FieldVal> >();
 		native_data_ptr->set_fe_data(dh, 0, v);
 
-		field.set_field(_mesh->region_db().get_region_set("ALL"), native_data_ptr, 0.0);
+		field.set(native_data_ptr, 0.0);
 		field.output_type(OutputTime::NATIVE_DATA);
 		field.set_time(TimeGovernor(0.0, 1.0).step(), LimitSide::left);
 

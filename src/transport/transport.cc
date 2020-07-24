@@ -203,7 +203,7 @@ void ConvectionTransport::initialize()
 	{
 		// create shared pointer to a FieldFE and push this Field to output_field on all regions
         auto output_field_ptr = create_field_fe< 3, FieldValue<3>::Scalar >(dh_);
-		data_.conc_mobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
+		data_.conc_mobile[sbi].set(output_field_ptr, 0);
 		vconc[sbi] = output_field_ptr->get_data_vec().petsc_vec();
 		conc[sbi] = &(output_field_ptr->get_data_vec().data()[0]);
 	}

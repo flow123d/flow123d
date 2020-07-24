@@ -224,14 +224,6 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
     
     Model::init_from_input(in_rec);
 
-    // create assemblation object, finite element structures and distribute DOFs
-	data_->mass_assembly_ = new GenericAssembly< MassAssemblyDim >(data_.get(), ActiveIntegrals::bulk);
-	data_->stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyDim >(data_.get(),
-	        (ActiveIntegrals::bulk | ActiveIntegrals::edge | ActiveIntegrals::coupling | ActiveIntegrals::boundary) );
-	data_->sources_assembly_ = new GenericAssembly< SourcesAssemblyDim >(data_.get(), ActiveIntegrals::bulk);
-	data_->bdr_cond_assembly_ = new GenericAssembly< BdrConditionAssemblyDim >(data_.get(), ActiveIntegrals::boundary);
-	data_->init_cond_assembly_ = new GenericAssembly< InitConditionAssemblyDim >(data_.get(), ActiveIntegrals::bulk);
-
 	MixedPtr<FE_P_disc> fe(data_->dg_order);
 	shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>(Model::mesh_, fe);
 	data_->dh_ = make_shared<DOFHandlerMultiDim>(*Model::mesh_);
@@ -254,29 +246,9 @@ void TransportDG<Model>::initialize()
     	data_->gamma[sbi].resize(Model::mesh_->boundary_.size());
 
     // Resize coefficient arrays
-    int qsize = data_->mass_assembly_->eval_points()->max_size();
-    int max_edg_sides = max(Model::mesh_->max_edge_sides(1), max(Model::mesh_->max_edge_sides(2), Model::mesh_->max_edge_sides(3)));
+    data_->max_edg_sides = max(Model::mesh_->max_edge_sides(1), max(Model::mesh_->max_edge_sides(2), Model::mesh_->max_edge_sides(3)));
     ret_sources.resize(data_->n_substances());
     ret_sources_prev.resize(data_->n_substances());
-    data_->ad_coef.resize(data_->n_substances());
-    data_->dif_coef.resize(data_->n_substances());
-    for (unsigned int sbi=0; sbi<data_->n_substances(); sbi++)
-    {
-        data_->ad_coef[sbi].resize(qsize);
-        data_->dif_coef[sbi].resize(qsize);
-    }
-    data_->ad_coef_edg.resize(max_edg_sides);
-    data_->dif_coef_edg.resize(max_edg_sides);
-    for (int sd=0; sd<max_edg_sides; sd++)
-    {
-        data_->ad_coef_edg[sd].resize(data_->n_substances());
-        data_->dif_coef_edg[sd].resize(data_->n_substances());
-        for (unsigned int sbi=0; sbi<data_->n_substances(); sbi++)
-        {
-            data_->ad_coef_edg[sd][sbi].resize(qsize);
-            data_->dif_coef_edg[sd][sbi].resize(qsize);
-        }
-    }
 
     output_vec.resize(data_->n_substances());
     data_->output_field.set_components(data_->substances_.names());
@@ -288,7 +260,7 @@ void TransportDG<Model>::initialize()
     {
         // create shared pointer to a FieldFE, pass FE data and push this FieldFE to output_field on all regions
         auto output_field_ptr = create_field_fe< 3, FieldValue<3>::Scalar >(data_->dh_);
-        data_->output_field[sbi].set_field(Model::mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
+        data_->output_field[sbi].set(output_field_ptr, 0);
         output_vec[sbi] = output_field_ptr->get_data_vec();
     }
 
@@ -326,25 +298,23 @@ void TransportDG<Model>::initialize()
     }
 
 
+    // create assemblation object, finite element structures and distribute DOFs
+	data_->mass_assembly_ = new GenericAssembly< MassAssemblyDim >(data_.get(), this->balance(), ActiveIntegrals::bulk);
+	data_->stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyDim >(data_.get(), this->balance(),
+	        (ActiveIntegrals::bulk | ActiveIntegrals::edge | ActiveIntegrals::coupling | ActiveIntegrals::boundary) );
+	data_->sources_assembly_ = new GenericAssembly< SourcesAssemblyDim >(data_.get(), this->balance(), ActiveIntegrals::bulk);
+	data_->bdr_cond_assembly_ = new GenericAssembly< BdrConditionAssemblyDim >(data_.get(), this->balance(), ActiveIntegrals::boundary);
+	data_->init_cond_assembly_ = new GenericAssembly< InitConditionAssemblyDim >(data_.get(), this->balance(), ActiveIntegrals::bulk);
+
     // initialization of balance object
     Model::balance_->allocate(data_->dh_->distr()->lsize(), data_->mass_assembly_->eval_points()->max_size());
 
-    // initialization of assembly object
-    data_->mass_assembly_->multidim_assembly()[1_d]->initialize(this->balance());
-    data_->mass_assembly_->multidim_assembly()[2_d]->initialize(this->balance());
-    data_->mass_assembly_->multidim_assembly()[3_d]->initialize(this->balance());
-    data_->stiffness_assembly_->multidim_assembly()[1_d]->initialize();
-    data_->stiffness_assembly_->multidim_assembly()[2_d]->initialize();
-    data_->stiffness_assembly_->multidim_assembly()[3_d]->initialize();
-    data_->sources_assembly_->multidim_assembly()[1_d]->initialize(this->balance());
-    data_->sources_assembly_->multidim_assembly()[2_d]->initialize(this->balance());
-    data_->sources_assembly_->multidim_assembly()[3_d]->initialize(this->balance());
-    data_->bdr_cond_assembly_->multidim_assembly()[1_d]->initialize(this->balance(), this->time_);
-    data_->bdr_cond_assembly_->multidim_assembly()[2_d]->initialize(this->balance(), this->time_);
-    data_->bdr_cond_assembly_->multidim_assembly()[3_d]->initialize(this->balance(), this->time_);
-    data_->init_cond_assembly_->multidim_assembly()[1_d]->initialize();
-    data_->init_cond_assembly_->multidim_assembly()[2_d]->initialize();
-    data_->init_cond_assembly_->multidim_assembly()[3_d]->initialize();
+    int qsize = data_->mass_assembly_->eval_points()->max_size();
+    data_->dif_coef.resize(data_->n_substances());
+    for (unsigned int sbi=0; sbi<data_->n_substances(); sbi++)
+    {
+        data_->dif_coef[sbi].resize(qsize);
+    }
 }
 
 
@@ -443,16 +413,16 @@ void TransportDG<Model>::preallocate()
         VecZeroEntries(data_->ret_vec[i]);
     }
     START_TIMER("assemble_stiffness");
-    data_->stiffness_assembly_->assemble(data_->dh_);
+    data_->stiffness_assembly_->assemble(data_->dh_, Model::time_->step());
     END_TIMER("assemble_stiffness");
     START_TIMER("assemble_mass");
-    data_->mass_assembly_->assemble(data_->dh_);
+    data_->mass_assembly_->assemble(data_->dh_, Model::time_->step());
     END_TIMER("assemble_mass");
     START_TIMER("assemble_sources");
-    data_->sources_assembly_->assemble(data_->dh_);
+    data_->sources_assembly_->assemble(data_->dh_, Model::time_->step());
     END_TIMER("assemble_sources");
     START_TIMER("assemble_bc");
-    data_->bdr_cond_assembly_->assemble(data_->dh_);
+    data_->bdr_cond_assembly_->assemble(data_->dh_, Model::time_->step());
     END_TIMER("assemble_bc");
     for (unsigned int i=0; i<data_->n_substances(); i++)
     {
@@ -489,7 +459,7 @@ void TransportDG<Model>::update_solution()
             VecZeroEntries(data_->ret_vec[i]);
         }
         START_TIMER("assemble_mass");
-        data_->mass_assembly_->assemble(data_->dh_);
+        data_->mass_assembly_->assemble(data_->dh_, Model::time_->step());
         END_TIMER("assemble_mass");
         for (unsigned int i=0; i<data_->n_substances(); i++)
         {
@@ -521,7 +491,7 @@ void TransportDG<Model>::update_solution()
             data_->ls[i]->mat_zero_entries();
         }
         START_TIMER("assemble_stiffness");
-        data_->stiffness_assembly_->assemble(data_->dh_);
+        data_->stiffness_assembly_->assemble(data_->dh_, Model::time_->step());
         END_TIMER("assemble_stiffness");
         for (unsigned int i=0; i<data_->n_substances(); i++)
         {
@@ -545,10 +515,10 @@ void TransportDG<Model>::update_solution()
             data_->ls[i]->rhs_zero_entries();
         }
         START_TIMER("assemble_sources");
-        data_->sources_assembly_->assemble(data_->dh_);
+        data_->sources_assembly_->assemble(data_->dh_, Model::time_->step());
         END_TIMER("assemble_sources");
         START_TIMER("assemble_bc");
-        data_->bdr_cond_assembly_->assemble(data_->dh_);
+        data_->bdr_cond_assembly_->assemble(data_->dh_, Model::time_->step());
         END_TIMER("assemble_bc");
         for (unsigned int i=0; i<data_->n_substances(); i++)
         {
@@ -682,11 +652,11 @@ void TransportDG<Model>::set_initial_condition()
     START_TIMER("set_init_cond");
     for (unsigned int sbi=0; sbi<data_->n_substances(); sbi++)
         data_->ls[sbi]->start_allocation();
-    data_->init_cond_assembly_->assemble(data_->dh_);
+    data_->init_cond_assembly_->assemble(data_->dh_, Model::time_->step());
 
     for (unsigned int sbi=0; sbi<data_->n_substances(); sbi++)
         data_->ls[sbi]->start_add_assembly();
-    data_->init_cond_assembly_->assemble(data_->dh_);
+    data_->init_cond_assembly_->assemble(data_->dh_, Model::time_->step());
 
     for (unsigned int sbi=0; sbi<data_->n_substances(); sbi++)
     {
