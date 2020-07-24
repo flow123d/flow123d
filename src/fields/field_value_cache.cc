@@ -180,7 +180,7 @@ void ElementCacheMap::add_to_region(ElementAccessor<3> elm) {
 }
 
 
-DHCellAccessor & ElementCacheMap::operator() (DHCellAccessor &dh_cell) const {
+DHCellAccessor & ElementCacheMap::cache_map_index(DHCellAccessor &dh_cell) const {
 	ASSERT_DBG(ready_to_reading_);
 	unsigned int elm_idx = dh_cell.elm_idx();
 	std::unordered_map<unsigned int, unsigned int>::const_iterator it = cache_idx_.find(elm_idx);

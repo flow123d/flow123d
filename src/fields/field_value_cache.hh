@@ -265,7 +265,7 @@ public:
             const ElementAccessor<3> elm, unsigned int eval_points_idx) const;
 
     /// Set index of cell in ElementCacheMap (or undef value if cell is not stored in cache).
-    DHCellAccessor & operator() (DHCellAccessor &dh_cell) const;
+    DHCellAccessor & cache_map_index(DHCellAccessor &dh_cell) const;
 protected:
 
     /// Special constant (@see element_eval_points_map_).

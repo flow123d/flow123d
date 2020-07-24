@@ -156,7 +156,7 @@ public:
 
             this->add_integrals_of_computing_step(cell);
             // TODO: make appropriate method in ElementCacheMap instead of the call operator
-            element_cache_map_(cell);
+            element_cache_map_.cache_map_index(cell);
 
             unsigned int n_elements = 0; // TODO remove - temporary solution
             for (auto const& i : element_cache_map_.update_cache_data().region_cache_indices_map_) {

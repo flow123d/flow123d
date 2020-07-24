@@ -92,7 +92,7 @@ TEST_F(FieldValueCacheTest, field_value_cache) {
     this->finish_elements_update();
 
     // check value
-    dh_cell = (*this)(dh_cell);
+    dh_cell = this->cache_map_index(dh_cell);
     for(BulkPoint q_point: bulk_eval->points(dh_cell, this)) {
         auto point_val = this->get_value<ScalarValue>(value_cache, dh_cell, q_point.eval_point_idx());
     	EXPECT_DOUBLE_EQ( point_val, const_val(0) );
@@ -101,7 +101,7 @@ TEST_F(FieldValueCacheTest, field_value_cache) {
       if ( cell_side.n_edge_sides() >= 2 )
         for( DHCellSide edge_side : cell_side.edge_sides() )
             for ( EdgePoint q_point : edge_eval->points(edge_side, this) ) {
-                auto edge_cell = (*this)(edge_side.cell());
+                auto edge_cell = this->cache_map_index(edge_side.cell());
                 auto point_val = this->get_value<ScalarValue>(value_cache, edge_cell, q_point.eval_point_idx());
                 EXPECT_DOUBLE_EQ( point_val, const_val(0) );
             }
@@ -128,7 +128,7 @@ TEST_F(FieldValueCacheTest, element_cache_map) {
     EXPECT_EQ(update_cache_data.region_cache_indices_map_.size(), 1);
     this->finish_elements_update();
 
-    dh_cell1 = (*this)(dh_cell1);
+    dh_cell1 = this->cache_map_index(dh_cell1);
     EXPECT_EQ(dh_cell1.element_cache_index(), 0);
 
     // Test of edge connectivity
@@ -156,7 +156,7 @@ TEST_F(FieldValueCacheTest, element_cache_map) {
     EXPECT_EQ(update_cache_data.region_value_cache_range_[0], 0);
     EXPECT_EQ(update_cache_data.region_value_cache_range_[1], 12);
     this->finish_elements_update();
-    dh_cell2 = (*this)(dh_cell2);
+    dh_cell2 = this->cache_map_index(dh_cell2);
     EXPECT_EQ(dh_cell2.element_cache_index(), 1);
 
     // Test of 3 elements on 2 different regions
@@ -177,6 +177,6 @@ TEST_F(FieldValueCacheTest, element_cache_map) {
     this->create_elements_points_map();
     EXPECT_EQ(update_cache_data.region_cache_indices_map_.size(), 2);
     this->finish_elements_update();
-    dh_cell1 = (*this)(dh_cell1);
+    dh_cell1 = this->cache_map_index(dh_cell1);
     EXPECT_EQ(dh_cell1.element_cache_index(), 1);
 }

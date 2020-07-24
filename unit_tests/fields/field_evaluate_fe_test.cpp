@@ -194,7 +194,7 @@ TEST_F(FieldEvalFETest, evaluate) {
         }
         data_->update_cache();
 
-        DHCellAccessor cache_cell = this->data_->elm_cache_map_(data_->computed_dh_cell_);
+        DHCellAccessor cache_cell = this->data_->elm_cache_map_.cache_map_index(data_->computed_dh_cell_);
 
         // Bulk integral, no sides, no permutations.
         for(BulkPoint q_point: data_->mass_eval->points(cache_cell, &data_->elm_cache_map_)) {
@@ -214,7 +214,7 @@ TEST_F(FieldEvalFETest, evaluate) {
         // FieldFE<..> conc;
         for (DHCellSide side : cache_cell.side_range()) {
         	for(DHCellSide el_ngh_side : side.edge_sides()) {
-        		el_ngh_side.cell() = this->data_->elm_cache_map_(el_ngh_side.cell());
+        		el_ngh_side.cell() = this->data_->elm_cache_map_.cache_map_index(el_ngh_side.cell());
            	    // vector of local side quadrature points in the correct side permutation
         	    Range<EdgePoint> side_points = data_->side_eval->points(side, &data_->elm_cache_map_);
         	    for (EdgePoint side_p : side_points) {
