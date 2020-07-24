@@ -765,8 +765,8 @@ TEST(Field, field_result) {
     Region diagonal_2d = mesh->region_db().find_label("2D XY diagonal");
     Region front_3d = mesh->region_db().find_label("3D front");
     Region back_3d = mesh->region_db().find_label("3D back");
-    Region top_side = mesh->region_db().find_label(".top side");
-    Region bottom_side = mesh->region_db().find_label(".bottom side");
+    //Region top_side = mesh->region_db().find_label(".top side");
+    //Region bottom_side = mesh->region_db().find_label(".bottom side");
 
     EXPECT_EQ( result_none, data.scalar.field_result({diagonal_1d}) );
     EXPECT_EQ( result_none, data.scalar.field_result({diagonal_2d}) );
@@ -1047,7 +1047,7 @@ TEST(Field, field_values) {
     tensor_field.cache_update(elm_cache_map);
     elm_cache_map.finish_elements_update();
 
-    DHCellAccessor cache_cell = elm_cache_map(dh_cell);
+    DHCellAccessor cache_cell = elm_cache_map.cache_map_index(dh_cell);
     for(BulkPoint q_point: mass_eval->points(cache_cell, &elm_cache_map)) {
         EXPECT_EQ( 1, color_field(q_point) );
         EXPECT_EQ( -1, int_field(q_point) );
