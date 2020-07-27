@@ -266,8 +266,8 @@ public:
             double transport_flux = side_flux/side.measure();
 
             auto p_side = *( data_->stiffness_assembly_->boundary_integral(dim)->points(cell_side, &(data_->stiffness_assembly_->cache_map())).begin() );
-            auto p_bdr_center = p_side.point_bdr_center(side.cond().element_accessor(), data_->stiffness_assembly_->center_integral(dim-1) ); // dim of boundary
-            unsigned int bc_type = data_->bc_type[sbi](p_bdr_center);
+            auto p_bdr = p_side.point_bdr( side.cond().element_accessor() );
+            unsigned int bc_type = data_->bc_type[sbi](p_bdr);
             if (bc_type == AdvectionDiffusionModel::abc_dirichlet)
             {
                 // set up the parameters for DG method
@@ -787,8 +787,8 @@ public:
             double transport_flux = side_flux/cell_side.measure();
 
             auto p_side = *( data_->bdr_cond_assembly_->boundary_integral(dim)->points(cell_side, &(data_->bdr_cond_assembly_->cache_map())).begin() );
-            auto p_bdr_center = p_side.point_bdr_center(cell_side.cond().element_accessor(), data_->bdr_cond_assembly_->center_integral(dim-1) ); // dim of boundary
-            unsigned int bc_type = data_->bc_type[sbi](p_bdr_center);
+            auto p_bdr = p_side.point_bdr(cell_side.cond().element_accessor() );
+            unsigned int bc_type = data_->bc_type[sbi](p_bdr);
             if (bc_type == AdvectionDiffusionModel::abc_inflow && side_flux < 0)
             {
                 k=0;

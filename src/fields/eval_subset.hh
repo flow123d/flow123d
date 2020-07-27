@@ -529,9 +529,6 @@ public:
     /// Return corresponds BulkPoint of boundary element.
     BulkBdrPoint point_bdr(ElementAccessor<3> bdr_elm) const;
 
-    /// Return BulkPoint on center of boundary element.
-    BulkBdrPoint point_bdr_center(ElementAccessor<3> bdr_elm, std::shared_ptr<const BulkIntegral> bulk_int) const;
-
     /// Comparison of accessors.
     bool operator==(const BoundaryPoint& other) {
     	return (cell_side_ == other.cell_side_) && (local_point_idx_ == other.local_point_idx_);
