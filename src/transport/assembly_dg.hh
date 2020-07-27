@@ -276,8 +276,7 @@ public:
                     data_->dif_coef[sbi][k] = data_->diffusion_coef[sbi](p);
                     k++;
                 }
-                auto p_center = *( data_->stiffness_assembly_->center_integral(dim)->points(cell, &(data_->stiffness_assembly_->cache_map())).begin() );
-                data_->set_DG_parameters_boundary(side, qsize_lower_dim_, data_->dif_coef[sbi], transport_flux, fe_values_side_.normal_vector(0), data_->dg_penalty[sbi](p_center), gamma_l);
+                data_->set_DG_parameters_boundary(side, qsize_lower_dim_, data_->dif_coef[sbi], transport_flux, fe_values_side_.normal_vector(0), data_->dg_penalty[sbi](p_side), gamma_l);
                 data_->gamma[sbi][side.cond_idx()] = gamma_l;
                 transport_flux += gamma_l;
             }
@@ -337,9 +336,9 @@ public:
             dh_edge_cell.get_dof_indices(side_dof_indices_[sid]);
             fe_values_vec_[sid].reinit(edge_side.side());
             dg_penalty_[sid].resize(data_->n_substances());
-            auto p_center = *( data_->stiffness_assembly_->center_integral(dim)->points(dh_edge_cell, &(data_->stiffness_assembly_->cache_map())).begin() );
+            auto point_side = *( data_->stiffness_assembly_->edge_integral(dim)->points(edge_side, &(data_->stiffness_assembly_->cache_map())).begin() );
             for (unsigned int sbi=0; sbi<data_->n_substances(); sbi++)
-                dg_penalty_[sid][sbi] = data_->dg_penalty[sbi](p_center);
+                dg_penalty_[sid][sbi] = data_->dg_penalty[sbi](point_side);
             ++sid;
         }
         arma::vec3 normal_vector = fe_values_vec_[0].normal_vector(0);
