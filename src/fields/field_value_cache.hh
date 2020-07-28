@@ -39,41 +39,6 @@ class DHCellSide;
  * Every field in equation use own instance used for elements of all dimensions.
  */
 template<class elm_type> using FieldValueCache = Armor::Array<elm_type>;
-/*template<class elm_type>
-class FieldValueCache {
-public:
-    /// Constructor
-    FieldValueCache(unsigned int n_rows, unsigned int n_cols);
-
-    /// Destructor
-    ~FieldValueCache();
-
-    /// Return size of data cache (number of stored field values)
-    inline unsigned int size() const {
-        return data_.size();
-
-    }
-
-    /// Return data vector.
-    inline const Armor::Array<elm_type> &data() const
-    {
-        return data_;
-    }
-
-    inline Armor::Array<elm_type> &data()
-    {
-        return data_;
-    }
-
-    /// Return data vector.
-    template<uint nr, uint nc = 1>
-    typename arma::Mat<elm_type>::template fixed<nr, nc> &get(uint i) {
-        return data_.template mat<nr, nc>(i);
-    }
-
-private:
-    Armor::Array<elm_type> data_;
-};*/
 
 
 /**
