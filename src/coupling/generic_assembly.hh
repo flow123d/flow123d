@@ -46,6 +46,23 @@ struct AssemblyIntegrals {
 };
 
 
+/*
+ * Specifies eval points by idx of region, element and eval point.
+ *
+ * TODO Add better description after finish implementation
+ */
+struct EvalPointData {
+	EvalPointData() {}              ///< Default constructor
+	/// Constructor sets all data members
+	EvalPointData(unsigned int i_reg, unsigned int i_ele, unsigned int i_ep)
+	: i_reg_(i_reg), i_element_(i_ele), i_eval_point_(i_ep) {}
+
+	unsigned int i_reg_;            ///< region_idx of element
+    unsigned int i_element_;        ///< mesh_idx of ElementAccessor appropriate to element
+    unsigned int i_eval_point_;     ///< index of point in EvalPoint object
+};
+
+
 
 /**
  * @brief Generic class of assemblation.
@@ -99,7 +116,7 @@ private:
     /**
      * Temporary struct holds data od boundary element.
      *
-     * It will be merge to BulkIntegralData after making implementation of DHCellAccessor on boundary elements.
+     * It will be merged to BulkIntegralData after making implementation of DHCellAccessor on boundary elements.
      */
     struct BdrElementIntegralData {
     	BdrElementIntegralData() {}
@@ -117,7 +134,8 @@ public:
 	  bulk_integral_data_(12),
 	  edge_integral_data_(12),
 	  coupling_integral_data_(12),
-	  boundary_integral_data_(8)
+	  boundary_integral_data_(8),
+	  eval_point_data_(0)
     {
         eval_points_ = std::make_shared<EvalPoints>();
         // first step - create integrals, then - initialize cache and initialize subobject of dimensions
@@ -128,6 +146,8 @@ public:
         multidim_assembly_[1_d]->initialize(balance);
         multidim_assembly_[2_d]->initialize(balance);
         multidim_assembly_[3_d]->initialize(balance);
+        unsigned int ep_data_size = ElementCacheMap::n_cached_elements * eval_points_->max_size();
+        eval_point_data_.resize(ep_data_size);
     }
 
     inline MixedPtr<DimAssembly, 1> multidim_assembly() const {
@@ -158,6 +178,7 @@ public:
 
             this->add_integrals_of_computing_step(cell);
             element_cache_map_.cache_map_index(cell);
+            eval_point_data_.finalize_tmp(); // check if there is space in FieldValueCache (if not call revert_tmp() and repeat iteration with same cell)
 
             unsigned int n_elements = 0; // TODO remove - temporary solution
             for (auto const& i : element_cache_map_.update_cache_data().region_cache_indices_map_) {
@@ -291,6 +312,7 @@ private:
         edge_integral_data_.reset();
         coupling_integral_data_.reset();
         boundary_integral_data_.reset();
+        eval_point_data_.reset();
     }
 
     /// Mark eval points in table of Element cache map.
@@ -360,7 +382,7 @@ private:
                     }
             if (active_integrals_ & ActiveIntegrals::edge)
                 if ( (cell_side.n_edge_sides() >= 2) && (cell_side.edge_sides().begin()->element().idx() == cell.elm_idx())) {
-                    this->add_edge_integral(cell_side.edge_sides());
+                    this->add_edge_integral(cell_side);
                 	for( DHCellSide edge_side : cell_side.edge_sides() ) {
                 		element_cache_map_.add(edge_side);
                     }
@@ -382,14 +404,31 @@ private:
         data.cell = cell;
         data.subset_index = integrals_.bulk_[cell.dim()-1]->get_subset_idx();
         bulk_integral_data_.add(data);
+
+        unsigned int reg_idx = cell.elm().region_idx().idx();
+        for (auto p : integrals_.bulk_[cell.dim()-1]->points(cell, &element_cache_map_) ) {
+            EvalPointData epd(reg_idx, cell.elm_idx(), p.eval_point_idx());
+        	eval_point_data_.add(epd);
+        }
     }
 
     /// Add data of edge integral to appropriate data structure.
-    void add_edge_integral(RangeConvert<DHEdgeSide, DHCellSide> edge_side_range) {
+    void add_edge_integral(const DHCellSide &cell_side) {
         EdgeIntegralData data;
-        data.edge_side_range = edge_side_range;
-        data.subset_index = integrals_.edge_[edge_side_range.begin()->dim()-1]->get_subset_idx();
+        data.edge_side_range = cell_side.edge_sides();
+        data.subset_index = integrals_.edge_[data.edge_side_range.begin()->dim()-1]->get_subset_idx();
         edge_integral_data_.add(data);
+
+        unsigned int reg_idx = cell_side.element().region_idx().idx();
+        for (auto p : integrals_.edge_[data.edge_side_range.begin()->dim()-1]->points(cell_side, &element_cache_map_) ) {
+            EvalPointData epd(reg_idx, cell_side.elem_idx(), p.eval_point_idx());
+        	eval_point_data_.add(epd);
+
+        	auto p_ghost = p.point_on(cell_side); // point on neghbouring side on one edge
+        	unsigned int ghost_reg = p_ghost.dh_cell_side().element().region_idx().idx();
+        	EvalPointData epd_ghost(ghost_reg, p_ghost.dh_cell_side().elem_idx(), p_ghost.eval_point_idx());
+        	eval_point_data_.add(epd_ghost);
+        }
     }
 
     /// Add data of coupling integral to appropriate data structure.
@@ -400,6 +439,17 @@ private:
         data.bulk_subset_index = integrals_.coupling_[cell.dim()-1]->get_subset_low_idx();
         data.side_subset_index = integrals_.coupling_[cell.dim()-1]->get_subset_high_idx();
         coupling_integral_data_.add(data);
+
+        unsigned int reg_idx_low = cell.elm().region_idx().idx();
+        unsigned int reg_idx_high = ngh_side.element().region_idx().idx();
+        for (auto p : integrals_.coupling_[ngh_side.dim()-1]->points(ngh_side, &element_cache_map_) ) {
+            EvalPointData epd(reg_idx_high, ngh_side.elem_idx(), p.eval_point_idx());
+        	eval_point_data_.add(epd);
+
+        	auto p_low = p.lower_dim(cell); // equivalent point on low dim cell
+        	EvalPointData epd_low(reg_idx_low, cell.elm_idx(), p_low.eval_point_idx());
+        	eval_point_data_.add(epd_low);
+        }
     }
 
     /// Add data of boundary integral to appropriate data structure.
@@ -409,6 +459,17 @@ private:
         data.bdr_subset_index = integrals_.boundary_[bdr_side.dim()-1]->get_subset_low_idx();
         data.side_subset_index = integrals_.boundary_[bdr_side.dim()-1]->get_subset_high_idx();
         boundary_integral_data_.add(data);
+
+        unsigned int reg_idx = bdr_side.element().region_idx().idx();
+        for (auto p : integrals_.boundary_[bdr_side.dim()-1]->points(bdr_side, &element_cache_map_) ) {
+            EvalPointData epd(reg_idx, bdr_side.elem_idx(), p.eval_point_idx());
+        	eval_point_data_.add(epd);
+
+        	auto p_bdr = p.point_bdr(bdr_side.cond().element_accessor()); // equivalent point on boundary element
+        	unsigned int bdr_reg = p_bdr.elm_accessor().region_idx().idx();
+        	EvalPointData epd_bdr(bdr_reg, p_bdr.elm_accessor().mesh_idx(), p_bdr.eval_point_idx());
+        	eval_point_data_.add(epd_bdr);
+        }
     }
 
 
@@ -428,6 +489,7 @@ private:
     TmpSizeList<EdgeIntegralData>       edge_integral_data_;      ///< Holds data for computing edge integrals.
     TmpSizeList<CouplingIntegralData>   coupling_integral_data_;  ///< Holds data for computing couplings integrals.
     TmpSizeList<BoundaryIntegralData>   boundary_integral_data_;  ///< Holds data for computing boundary integrals.
+    TmpSizeList<EvalPointData>          eval_point_data_;         ///< Holds data of evaluating points in patch.
 };
 
 
