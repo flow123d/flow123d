@@ -23,7 +23,7 @@
 #include "fields/eval_points.hh"
 #include "fields/field_value_cache.hh"
 #include "coupling/balance.hh"
-#include "tools/tmp_size_list.hh"
+#include "tools/revertable_list.hh"
 
 
 
@@ -485,11 +485,11 @@ private:
 
     // Following variables hold data of all integrals depending of actual computed element.
     // TODO sizes of arrays should be set dynamically, depend on number of elements in ElementCacheMap,
-    TmpSizeList<BulkIntegralData>       bulk_integral_data_;      ///< Holds data for computing bulk integrals.
-    TmpSizeList<EdgeIntegralData>       edge_integral_data_;      ///< Holds data for computing edge integrals.
-    TmpSizeList<CouplingIntegralData>   coupling_integral_data_;  ///< Holds data for computing couplings integrals.
-    TmpSizeList<BoundaryIntegralData>   boundary_integral_data_;  ///< Holds data for computing boundary integrals.
-    TmpSizeList<EvalPointData>          eval_point_data_;         ///< Holds data of evaluating points in patch.
+    RevertableList<BulkIntegralData>       bulk_integral_data_;      ///< Holds data for computing bulk integrals.
+    RevertableList<EdgeIntegralData>       edge_integral_data_;      ///< Holds data for computing edge integrals.
+    RevertableList<CouplingIntegralData>   coupling_integral_data_;  ///< Holds data for computing couplings integrals.
+    RevertableList<BoundaryIntegralData>   boundary_integral_data_;  ///< Holds data for computing boundary integrals.
+    RevertableList<EvalPointData>          eval_point_data_;         ///< Holds data of evaluating points in patch.
 };
 
 

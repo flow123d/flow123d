@@ -31,7 +31,7 @@ define_test(time_marks)
 define_test(unit_si)
 define_test(bidirectional_map)
 define_test(mixed)
-define_test(tmp_size_list)
+define_test(revertable_list)
 
 
 

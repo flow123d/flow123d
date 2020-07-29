@@ -11,12 +11,12 @@
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
  *
- * @file    tmp_size_list.hh
+ * @file    revertable_list.hh
  * @brief
  */
 
-#ifndef TMP_SIZE_LIST_HH_
-#define TMP_SIZE_LIST_HH_
+#ifndef REVARTABLE_LIST_HH_
+#define REVARTABLE_LIST_HH_
 
 
 #include <new>
@@ -35,10 +35,10 @@
  * and possibly reverts unfinished block if condition is not met.
  */
 template<class Type>
-struct TmpSizeList {
+struct RevertableList {
 public:
     /// Constructor, create new instance with reserved size
-    TmpSizeList(std::size_t reserved_size)
+	RevertableList(std::size_t reserved_size)
     : tmp_size_(0), final_size_(0)
     {
         data_.resize(reserved_size);
@@ -115,4 +115,4 @@ private:
     std::size_t final_size_;  ///< Final size of data (part of finalize data).
 };
 
-#endif /* TMP_SIZE_LIST_HH_ */
+#endif /* REVARTABLE_LIST_HH_ */

@@ -11,13 +11,13 @@
 
 #include <flow_gtest.hh>
 
-#include "tools/tmp_size_list.hh"
+#include "tools/revertable_list.hh"
 
 
-TEST(TmpSizeList, all) {
+TEST(RevertableList, all) {
     std::array<int, 10> data = {0, 2, 4, 6, 8, 1, 3, 5, 7, 9};
 
-    TmpSizeList<int> list(10);
+    RevertableList<int> list(10);
     EXPECT_EQ(list.final_size(), 0);
     EXPECT_EQ(list.tmp_size(), 0);
     EXPECT_EQ(list.max_size(), 10);
