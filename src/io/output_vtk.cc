@@ -159,7 +159,7 @@ int OutputVTK::write_data(void)
     	//int current_step = this->get_parallel_current_step();
 
         /* Write dataset lines to the PVD file. */
-        double corrected_time = (isfinite(this->time)?this->time:0);
+        double corrected_time = (isfinite(this->registered_time_)?this->registered_time_:0);
         corrected_time /= UnitSI().s().convert_unit_from(this->unit_string_);
         if (parallel_) {
         	for (int i_rank=0; i_rank<n_proc_; ++i_rank) {

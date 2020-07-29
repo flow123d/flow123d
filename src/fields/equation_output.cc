@@ -189,7 +189,7 @@ void EquationOutput::output(TimeStep step)
     ASSERT_PTR(mesh_).error();
 
     // automatically call of stream_->write_time_frame if the time in the TimeStep is higher then in output stream
-    if (step.end() > stream_->get_time()) {
+    if (step.end() > stream_->registered_time()) {
         stream_->write_time_frame();
     }
 

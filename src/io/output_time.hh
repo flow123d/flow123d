@@ -219,9 +219,9 @@ public:
         return this->n_proc_;
     }
 
-    /// Getter to time
-    inline double get_time() const {
-    	return time;
+    /// Getter to registered time
+    inline double registered_time() const {
+    	return registered_time_;
     }
 
 
@@ -277,7 +277,7 @@ protected:
     /**
      * The newest time of registered data
      */
-    double time;
+    double registered_time_;
 
     /**
      * The last time, when data was wrote to this stream

@@ -150,7 +150,7 @@ void OutputMSH::write_msh_ascii_data(std::shared_ptr<ElementDataCache<unsigned i
 void OutputMSH::write_node_data(OutputDataPtr output_data)
 {
     ofstream &file = this->_base_file;
-    double time_fixed = isfinite(this->time)?this->time:0;
+    double time_fixed = isfinite(this->registered_time_)?this->registered_time_:0;
     time_fixed /= UnitSI().s().convert_unit_from(this->unit_string_);
 
     file << "$NodeData" << endl;
@@ -175,7 +175,7 @@ void OutputMSH::write_node_data(OutputDataPtr output_data)
 void OutputMSH::write_corner_data(OutputDataPtr output_data)
 {
     ofstream &file = this->_base_file;
-    double time_fixed = isfinite(this->time)?this->time:0;
+    double time_fixed = isfinite(this->registered_time_)?this->registered_time_:0;
 
     file << "$ElementNodeData" << endl;
 
@@ -183,7 +183,7 @@ void OutputMSH::write_corner_data(OutputDataPtr output_data)
     file << "\"" << output_data->field_input_name() <<"\"" << endl;
 
     file << "1" << endl;     // one real tag
-    file << time_fixed << endl;    // first real tag = time
+    file << time_fixed << endl;    // first real tag = registered_time_
 
     file << "3" << endl;     // 3 integer tags
     file << this->current_step << endl;    // step number (start = 0)
@@ -198,7 +198,7 @@ void OutputMSH::write_corner_data(OutputDataPtr output_data)
 void OutputMSH::write_elem_data(OutputDataPtr output_data)
 {
     ofstream &file = this->_base_file;
-    double time_fixed = isfinite(this->time)?this->time:0;
+    double time_fixed = isfinite(this->registered_time_)?this->registered_time_:0;
 
     file << "$ElementData" << endl;
 
@@ -206,7 +206,7 @@ void OutputMSH::write_elem_data(OutputDataPtr output_data)
     file << "\"" << output_data->field_input_name() <<"\"" << endl;
 
     file << "1" << endl;     // one real tag
-    file << time_fixed << endl;    // first real tag = time
+    file << time_fixed << endl;    // first real tag = registered_time_
 
     file << "3" << endl;     // 3 integer tags
     file << this->current_step << endl;    // step number (start = 0)
