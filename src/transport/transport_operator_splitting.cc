@@ -175,8 +175,8 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 	convection->substances().initialize(in_rec.val<Input::Array>("substances"));
 
 	// Initialize output stream.
-	stream_ = OutputTime::create_output_stream("solute", in_rec.val<Input::Record>("output_stream"), time().get_unit_string());
-    convection->set_output_stream(stream_);
+	std::shared_ptr<OutputTime> stream = OutputTime::create_output_stream("solute", in_rec.val<Input::Record>("output_stream"), time().get_unit_string());
+    convection->set_output_stream(stream);
 
 
     // initialization of balance object
@@ -212,7 +212,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
         reaction->substances(convection->substances())
                     .concentration_matrix(convection->get_concentration_matrix(),
 						el_distribution, el_4_loc, convection->get_row_4_el())
-				.output_stream(stream_)
+				.output_stream(stream)
 				.set_dh(dof_handler)
 				.set_time_governor((TimeGovernor &)convection->time());
 
