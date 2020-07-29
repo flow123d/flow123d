@@ -27,9 +27,9 @@
  * @brief Struct is a container that encapsulates variable size arrays.
  *
  * Allows to:
- *  1. Add new items to container, items are stored as temporary.
- *  2. Mark block of temporary items as final (use method finalize_tmp)
- *     or cancelled temporary item (method revert_tmp)
+ *  1. Add new items to container (method push_back, items are stored as temporary.
+ *  2. Mark block of temporary items as final (use method make_permanent)
+ *     or cancelled temporary item (method revert_temporary)
  *
  * This algorith allows to add blocks of data, evaluates external condition
  * and possibly reverts unfinished block if condition is not met.
@@ -39,7 +39,7 @@ struct RevertableList {
 public:
     /// Constructor, create new instance with reserved size
 	RevertableList(std::size_t reserved_size)
-    : tmp_size_(0), final_size_(0)
+    : temporary_size_(0), permanent_size_(0)
     {
         data_.resize(reserved_size);
     }
@@ -51,68 +51,68 @@ public:
      */
     void resize(std::size_t new_size)
     {
-    	ASSERT_GT(new_size, max_size());
+    	ASSERT_GT(new_size, reserved_size());
     	data_.resize(new_size);
     }
 
-    /// Return final size (part of finalize data).
-    inline std::size_t final_size() const
+    /// Return permanent size of list.
+    inline std::size_t permanent_size() const
     {
-        return final_size_;
+        return permanent_size_;
     }
 
-    /// Return temporary size (full size of stored data).
-    inline std::size_t tmp_size() const
+    /// Return temporary size of list (full size of stored data).
+    inline std::size_t temporary_size() const
     {
-        return tmp_size_;
+        return temporary_size_;
     }
 
-    /// Return maximal (reserved) size.
-    inline std::size_t max_size() const
+    /// Return reserved (maximal) size.
+    inline std::size_t reserved_size() const
     {
         return data_.size();
     }
 
     /// Add new item to list.
-    inline std::size_t add(const Type &t)
+    inline std::size_t push_back(const Type &t)
     {
-        ASSERT_LT_DBG(tmp_size_, max_size()).error("Data array overflowed!\n");
-        data_[tmp_size_] = t;
-    	tmp_size_++;
-        return tmp_size_;
+        ASSERT_LT_DBG(temporary_size_, reserved_size()).error("Data array overflowed!\n");
+        data_[temporary_size_] = t;
+        temporary_size_++;
+        return temporary_size_;
     }
 
     /// Finalize temporary part of data.
-    inline std::size_t finalize_tmp()
+    inline std::size_t make_permanent()
     {
-        final_size_ = tmp_size_;
-        return tmp_size_;
+    	permanent_size_ = temporary_size_;
+        return temporary_size_;
     }
 
     /// Erase temporary part of data.
-    inline std::size_t revert_tmp()
+    inline std::size_t revert_temporary()
     {
-        tmp_size_ = final_size_;
-        return tmp_size_;
+    	temporary_size_ = permanent_size_;
+        return temporary_size_;
     }
 
-    /// Reset stored data.
+    /// Clear the list.
     inline void reset()
     {
-        tmp_size_ = 0;
-        final_size_ = 0;
+    	temporary_size_ = 0;
+    	permanent_size_ = 0;
     }
 
     /// Return item on given position
     const Type &operator[](std::size_t pos) const {
-        ASSERT_LT_DBG(pos, tmp_size_).error("Position is out of data size!\n");
+        ASSERT_LT_DBG(pos, temporary_size_).error("Position is out of data size!\n");
         return data_[pos];
     }
 
 private:
-    std::vector<Type> data_;  ///< Vector of items.
-    std::size_t tmp_size_;    ///< Temporary size (full size of used data).
-    std::size_t final_size_;  ///< Final size of data (part of finalize data).
+    std::vector<Type> data_;      ///< Vector of items.
+    std::size_t temporary_size_;  ///< Temporary size (full size of used data).
+    std::size_t permanent_size_;  ///< Final size of data (part of finalize data).
 };
 
 #endif /* REVARTABLE_LIST_HH_ */
