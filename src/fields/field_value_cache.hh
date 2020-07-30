@@ -26,11 +26,14 @@
 #include "system/armor.hh"
 #include "fields/eval_points.hh"
 #include "mesh/accessors.hh"
+#include "tools/mixed.hh"
+#include "tools/revertable_list.hh"
 
 class EvalPoints;
 class ElementCacheMap;
 class DHCellAccessor;
 class DHCellSide;
+template < template<IntDim...> class DimAssembly> class GenericAssembly;
 
 
 /**
@@ -39,6 +42,34 @@ class DHCellSide;
  * Every field in equation use own instance used for elements of all dimensions.
  */
 template<class elm_type> using FieldValueCache = Armor::Array<elm_type>;
+
+
+/**
+ * Specifies eval points by idx of region, element and eval point.
+ *
+ * TODO Add better description after finish implementation
+ */
+struct EvalPointData {
+    EvalPointData() {}              ///< Default constructor
+    /// Constructor sets all data members
+    EvalPointData(unsigned int i_reg, unsigned int i_ele, unsigned int i_ep)
+    : i_reg_(i_reg), i_element_(i_ele), i_eval_point_(i_ep) {}
+
+    bool operator < (const EvalPointData &other) {
+        if (i_reg_ == other.i_reg_) {
+            if (i_element_ == other.i_element_)
+                return (i_eval_point_ < other.i_eval_point_);
+            else
+                return (i_element_ < other.i_element_);
+        } else
+            return (i_reg_ < other.i_reg_);
+    }
+
+    unsigned int i_reg_;            ///< region_idx of element
+    unsigned int i_element_;        ///< mesh_idx of ElementAccessor appropriate to element
+    unsigned int i_eval_point_;     ///< index of point in EvalPoint object
+};
+
 
 
 /**
@@ -287,6 +318,12 @@ protected:
      * c. Eval points marked in previous step are sequentially numbered
      */
     int *element_eval_points_map_;
+
+    ///< Holds data of evaluating points in patch.
+    RevertableList<EvalPointData> eval_point_data_;
+
+    template < template<IntDim...> class DimAssembly>
+    friend class GenericAssembly;
 };
 
 

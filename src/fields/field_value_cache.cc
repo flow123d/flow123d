@@ -35,7 +35,7 @@ const unsigned int ElementCacheMap::simd_size_double = 4;
 
 ElementCacheMap::ElementCacheMap()
 : elm_idx_(ElementCacheMap::n_cached_elements, ElementCacheMap::undef_elem_idx),
-  ready_to_reading_(false), element_eval_points_map_(nullptr) {
+  ready_to_reading_(false), element_eval_points_map_(nullptr), eval_point_data_(0) {
     cache_idx_.reserve(ElementCacheMap::n_cached_elements);
 }
 
@@ -49,6 +49,8 @@ ElementCacheMap::~ElementCacheMap() {
 
 void ElementCacheMap::init(std::shared_ptr<EvalPoints> eval_points) {
     this->eval_points_ = eval_points;
+    unsigned int ep_data_size = ElementCacheMap::n_cached_elements * eval_points_->max_size();
+    eval_point_data_.resize(ep_data_size);
     element_eval_points_map_ = new int [ElementCacheMap::n_cached_elements * eval_points->max_size()];
 }
 
@@ -75,6 +77,7 @@ void ElementCacheMap::add(const ElementAccessor<3> &elm_acc) {
 
 
 void ElementCacheMap::prepare_elements_to_update() {
+    std::sort(eval_point_data_.begin(), eval_point_data_.end());
     // Erase element data of previous step
     cache_idx_.clear();
     std::fill(elm_idx_.begin(), elm_idx_.end(), ElementCacheMap::undef_elem_idx);
