@@ -52,16 +52,25 @@ struct AssemblyIntegrals {
  * TODO Add better description after finish implementation
  */
 struct EvalPointData {
-	EvalPointData() {}              ///< Default constructor
-	/// Constructor sets all data members
-	EvalPointData(unsigned int i_reg, unsigned int i_ele, unsigned int i_ep)
-	: i_reg_(i_reg), i_element_(i_ele), i_eval_point_(i_ep) {}
+    EvalPointData() {}              ///< Default constructor
+    /// Constructor sets all data members
+    EvalPointData(unsigned int i_reg, unsigned int i_ele, unsigned int i_ep)
+    : i_reg_(i_reg), i_element_(i_ele), i_eval_point_(i_ep) {}
 
-	unsigned int i_reg_;            ///< region_idx of element
+    bool operator < (const EvalPointData &other) {
+        if (i_reg_ == other.i_reg_) {
+            if (i_element_ == other.i_element_)
+                return (i_eval_point_ < other.i_eval_point_);
+            else
+                return (i_element_ < other.i_element_);
+        } else
+            return (i_reg_ < other.i_reg_);
+    }
+
+    unsigned int i_reg_;            ///< region_idx of element
     unsigned int i_element_;        ///< mesh_idx of ElementAccessor appropriate to element
     unsigned int i_eval_point_;     ///< index of point in EvalPoint object
 };
-
 
 
 /**
@@ -232,6 +241,7 @@ private:
         edge_integral_data_.make_permanent();
         coupling_integral_data_.make_permanent();
         boundary_integral_data_.make_permanent();
+        std::sort(eval_point_data_.begin(), eval_point_data_.end());
         element_cache_map_.prepare_elements_to_update();
         this->insert_eval_points_from_integral_data();
         element_cache_map_.create_elements_points_map();
@@ -363,11 +373,10 @@ private:
      * Types of used integrals must be set in data member \p active_integrals_.
      */
     void add_integrals_of_computing_step(DHCellAccessor cell) {
-        element_cache_map_.add(cell);
-
         if (active_integrals_ & ActiveIntegrals::bulk)
     	    if (cell.is_own()) { // Not ghost
                 this->add_volume_integral(cell);
+                element_cache_map_.add(cell);
     	    }
 
         for( DHCellSide cell_side : cell.side_range() ) {

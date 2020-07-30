@@ -103,6 +103,16 @@ public:
     	permanent_size_ = 0;
     }
 
+    inline typename std::vector<Type>::iterator begin()
+    {
+    	return data_.begin();
+    }
+
+    inline typename std::vector<Type>::iterator end()
+    {
+    	return data_.begin() + permanent_size_;
+    }
+
     /// Return item on given position
     const Type &operator[](std::size_t pos) const {
         ASSERT_LT_DBG(pos, temporary_size_).error("Position is out of data size!\n");
