@@ -249,9 +249,14 @@ public:
         else return ElementCacheMap::undef_elem_idx;
     }
 
+    /// Return number of stored regions.
+    inline unsigned int n_regions() const {
+        return regions_starts_.permanent_size() - 1;
+    }
+
     /// Return number of stored elements.
     inline unsigned int n_elements() const {
-        return update_data_.region_element_cache_range_[update_data_.region_cache_indices_map_.size()];
+        return element_starts_.permanent_size() - 1;
     }
 
     /// Return position of region chunk in cache.
