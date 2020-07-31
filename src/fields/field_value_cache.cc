@@ -58,6 +58,7 @@ void ElementCacheMap::init(std::shared_ptr<EvalPoints> eval_points) {
 
 
 void ElementCacheMap::add(const DHCellAccessor &dh_cell) {
+    /// obsolete method
 	ASSERT_DBG(!ready_to_reading_);
     ASSERT_LT_DBG(this->n_elements(), ElementCacheMap::n_cached_elements).error("ElementCacheMap overflowed. List of added elements is too long!\n");
     this->add_to_region(dh_cell.elm());
@@ -65,6 +66,7 @@ void ElementCacheMap::add(const DHCellAccessor &dh_cell) {
 
 
 void ElementCacheMap::add(const DHCellSide &cell_side) {
+    /// obsolete method
 	ASSERT_DBG(!ready_to_reading_);
     ASSERT_LT_DBG(this->n_elements(), ElementCacheMap::n_cached_elements).error("ElementCacheMap overflowed. List of added elements is too long!\n");
     this->add_to_region(cell_side.cell().elm());
@@ -72,6 +74,7 @@ void ElementCacheMap::add(const DHCellSide &cell_side) {
 
 
 void ElementCacheMap::add(const ElementAccessor<3> &elm_acc) {
+    /// obsolete method
 	ASSERT_DBG(!ready_to_reading_);
     ASSERT_LT_DBG(this->n_elements(), ElementCacheMap::n_cached_elements).error("ElementCacheMap overflowed. List of added elements is too long!\n");
     this->add_to_region(elm_acc);
@@ -104,6 +107,7 @@ void ElementCacheMap::prepare_elements_to_update() {
     regions_starts_.make_permanent();
     element_starts_.make_permanent();
 
+    /*** OLD CODE of create map ***/
     // Erase element data of previous step
     cache_idx_.clear();
     std::fill(elm_idx_.begin(), elm_idx_.end(), ElementCacheMap::undef_elem_idx);
@@ -123,10 +127,12 @@ void ElementCacheMap::prepare_elements_to_update() {
         update_data_.region_element_cache_range_[n_region+1] = n_stored_element;
         n_region++;
     }
+    /*** end of OLD CODE ***/
 }
 
 
 void ElementCacheMap::create_elements_points_map() {
+    /*** OLD CODE of create map ***/
     unsigned int size = this->eval_points_->max_size();
     unsigned int idx_to_region = 1;
     unsigned int region_last_elm = update_data_.region_element_cache_range_[idx_to_region];
@@ -146,6 +152,7 @@ void ElementCacheMap::create_elements_points_map() {
             region_last_elm = update_data_.region_element_cache_range_[idx_to_region];
         }
 	}
+    /*** end of OLD CODE ***/
 }
 
 
@@ -154,11 +161,12 @@ void ElementCacheMap::start_elements_update() {
 }
 
 void ElementCacheMap::finish_elements_update() {
-	update_data_.region_cache_indices_map_.clear();
+	update_data_.region_cache_indices_map_.clear(); /*** OLD CODE of create map ***/
 	ready_to_reading_ = true;
 }
 
 void ElementCacheMap::mark_used_eval_points(const DHCellAccessor &dh_cell, unsigned int subset_idx, unsigned int data_size, unsigned int start_point) {
+    /// obsolete method
     unsigned int elem_idx_in_cache = cache_idx_[dh_cell.elm().mesh_idx()];
     unsigned int points_begin = eval_points_->subset_begin(dh_cell.dim(), subset_idx) + start_point;
     for (unsigned int i=points_begin; i<points_begin+data_size; ++i)
@@ -167,6 +175,7 @@ void ElementCacheMap::mark_used_eval_points(const DHCellAccessor &dh_cell, unsig
 
 
 void ElementCacheMap::mark_used_eval_points(const ElementAccessor<3> elm, unsigned int subset_idx, unsigned int data_size, unsigned int start_point) {
+    /// obsolete method
     unsigned int elem_idx_in_cache = cache_idx_[elm.mesh_idx()];
     unsigned int points_begin = eval_points_->subset_begin(elm.dim(), subset_idx) + start_point;
     for (unsigned int i=points_begin; i<points_begin+data_size; ++i)
@@ -175,6 +184,7 @@ void ElementCacheMap::mark_used_eval_points(const ElementAccessor<3> elm, unsign
 
 
 void ElementCacheMap::clear_element_eval_points_map() {
+    /// obsolete method
 	ASSERT_PTR_DBG(element_eval_points_map_);
     unsigned int size = this->eval_points_->max_size();
 	for (unsigned int i_elm=0; i_elm<ElementCacheMap::n_cached_elements; ++i_elm)
@@ -184,8 +194,7 @@ void ElementCacheMap::clear_element_eval_points_map() {
 
 
 void ElementCacheMap::add_to_region(ElementAccessor<3> elm) {
-    // TODO: see unordered_map::insert(map::begin(), pair) variant
-    // this can be used and avoid dupicit find and the condition.
+    /// obsolete method
 
     unsigned int reg_idx = elm.region_idx().idx();
     typename std::unordered_map<unsigned int, RegionData>::iterator region_it = update_data_.region_cache_indices_map_.find(reg_idx);

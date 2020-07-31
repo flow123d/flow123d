@@ -159,6 +159,7 @@ public:
             element_cache_map_.cache_map_index(cell);
             element_cache_map_.eval_point_data_.make_permanent(); // check if there is space in FieldValueCache
                                                                   // (if not call revert_temporary() and repeat iteration with same cell)
+                                                                  // it will replace next condition (n_elements > ElementCacheMap...)
 
             unsigned int n_elements = 0; // TODO remove - temporary solution
             for (auto const& i : element_cache_map_.update_cache_data().region_cache_indices_map_) {
@@ -296,7 +297,9 @@ private:
     }
 
     /// Mark eval points in table of Element cache map.
+    /// obsolete method
     void insert_eval_points_from_integral_data() {
+        /*** OLD CODE of create map ***/
         for (unsigned int i=0; i<bulk_integral_data_.permanent_size(); ++i) {
             // add data to cache if there is free space, else return
         	unsigned int data_size = eval_points_->subset_size( bulk_integral_data_[i].cell.dim(), bulk_integral_data_[i].subset_index );
@@ -335,6 +338,7 @@ private:
             unsigned int start_point = data_size * boundary_integral_data_[i].side.side_idx();
             element_cache_map_.mark_used_eval_points(boundary_integral_data_[i].side.cell(), boundary_integral_data_[i].side_subset_index, data_size, start_point);
         }
+        /*** end of OLD CODE ***/
     }
 
     /**
@@ -343,6 +347,9 @@ private:
      * Types of used integrals must be set in data member \p active_integrals_.
      */
     void add_integrals_of_computing_step(DHCellAccessor cell) {
+    	/*
+    	 * TODO optimization of ElementCacheMap - remove all calls of element_cache_map_.add(...) method
+    	 */
         if (active_integrals_ & ActiveIntegrals::bulk)
     	    if (cell.is_own()) { // Not ghost
                 this->add_volume_integral(cell);
