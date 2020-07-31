@@ -33,13 +33,18 @@
  *
  * This algorith allows to add blocks of data, evaluates external condition
  * and possibly reverts unfinished block if condition is not met.
+ *
+ * Reserved (maximal) size is set in constructor. This size can be enlarged manually
+ * through method resize or constructor accepts parameter enlarged_by. If this value
+ * is greater than 0 size of container is automatically enlarged during call push_back
+ * if container is full.
  */
 template<class Type>
 struct RevertableList {
 public:
     /// Constructor, create new instance with reserved size
-	RevertableList(std::size_t reserved_size)
-    : temporary_size_(0), permanent_size_(0)
+	RevertableList(std::size_t reserved_size, std::size_t enlarged_by = 0)
+    : temporary_size_(0), permanent_size_(0), enlardeg_by_(enlarged_by)
     {
         data_.resize(reserved_size);
     }
@@ -76,7 +81,11 @@ public:
     /// Add new item to list.
     inline std::size_t push_back(const Type &t)
     {
-        ASSERT_LT_DBG(temporary_size_, reserved_size()).error("Data array overflowed!\n");
+        if (enlardeg_by_ == 0) { // list with fixed size
+            ASSERT_LT_DBG(temporary_size_, reserved_size()).error("Data array overflowed!\n");
+        } else if (temporary_size_ == reserved_size()) { // enlarge reserved size
+        	this->resize( this->reserved_size() + enlardeg_by_ );
+        }
         data_[temporary_size_] = t;
         temporary_size_++;
         return temporary_size_;
@@ -123,6 +132,7 @@ private:
     std::vector<Type> data_;      ///< Vector of items.
     std::size_t temporary_size_;  ///< Temporary size (full size of used data).
     std::size_t permanent_size_;  ///< Final size of data (part of finalize data).
+    std::size_t enlardeg_by_;     ///< Allow to enlarge list dynamically during call push_back if reserved size is full
 };
 
 #endif /* REVARTABLE_LIST_HH_ */
