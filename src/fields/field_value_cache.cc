@@ -35,7 +35,9 @@ const unsigned int ElementCacheMap::simd_size_double = 4;
 
 ElementCacheMap::ElementCacheMap()
 : elm_idx_(ElementCacheMap::n_cached_elements, ElementCacheMap::undef_elem_idx),
-  ready_to_reading_(false), element_eval_points_map_(nullptr), eval_point_data_(0) {
+  ready_to_reading_(false), element_eval_points_map_(nullptr), eval_point_data_(0),
+  regions_starts_(2*ElementCacheMap::regions_in_chunk,ElementCacheMap::regions_in_chunk),
+  element_starts_(2*ElementCacheMap::elements_in_chunk,ElementCacheMap::elements_in_chunk) {
     cache_idx_.reserve(ElementCacheMap::n_cached_elements);
 }
 
@@ -78,6 +80,30 @@ void ElementCacheMap::add(const ElementAccessor<3> &elm_acc) {
 
 void ElementCacheMap::prepare_elements_to_update() {
     std::sort(eval_point_data_.begin(), eval_point_data_.end());
+    unsigned int last_region_idx = -1;
+    unsigned int last_element_idx = -1;
+    unsigned int i_pos=0; // position in eval_point_data_
+    regions_starts_.reset();
+    element_starts_.reset();
+    regions_to_map_.clear();
+    element_to_map_.clear();
+    for (auto it=eval_point_data_.begin(); it!=eval_point_data_.end(); ++it, ++i_pos) {
+        if (it->i_element_ != last_element_idx) { // new element
+            if (it->i_reg_ != last_region_idx) { // new region
+                regions_to_map_[it->i_reg_] = regions_starts_.temporary_size();
+                regions_starts_.push_back( element_starts_.temporary_size() );
+                last_region_idx = it->i_reg_;
+            }
+            element_to_map_[it->i_element_] = element_starts_.temporary_size();
+            element_starts_.push_back(i_pos);
+            last_element_idx = it->i_element_;
+        }
+    }
+    regions_starts_.push_back( element_starts_.temporary_size() );
+    element_starts_.push_back(i_pos);
+    regions_starts_.make_permanent();
+    element_starts_.make_permanent();
+
     // Erase element data of previous step
     cache_idx_.clear();
     std::fill(elm_idx_.begin(), elm_idx_.end(), ElementCacheMap::undef_elem_idx);

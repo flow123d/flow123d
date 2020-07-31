@@ -270,6 +270,12 @@ protected:
     /// Special constant (@see element_eval_points_map_).
     static const int point_in_proggress = -1;
 
+    /// Base number of stored regions in patch
+    static const unsigned int regions_in_chunk = 3;
+
+    /// Base number of stored elements in patch
+    static const unsigned int elements_in_chunk = 10;
+
     /// Reset all items of elements_eval_points_map
     void clear_element_eval_points_map();
 
@@ -321,6 +327,16 @@ protected:
 
     ///< Holds data of evaluating points in patch.
     RevertableList<EvalPointData> eval_point_data_;
+
+    /// @name Holds start positions and orders of region chunks and element chunks
+    // @{
+
+    RevertableList<unsigned int> regions_starts_;         ///< Start positions of elements in regions (size = n_regions+1, last value is end of last region)
+    RevertableList<unsigned int> element_starts_;         ///< Start positions of elements in eval_point_data_ (size = n_elements+1)
+    std::map<unsigned int, unsigned int> regions_to_map_; ///< Maps region_idx to index in map
+    std::map<unsigned int, unsigned int> element_to_map_; ///< Maps element_idx to index in map
+
+    // @}
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
