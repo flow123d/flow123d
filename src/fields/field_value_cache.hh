@@ -184,6 +184,9 @@ public:
     /// obsolete method
     void create_elements_points_map();
 
+    /// Reset all items of elements_eval_points_map
+    void clear_element_eval_points_map();
+
     /// Start update of cache.
     void start_elements_update();
 
@@ -334,10 +337,6 @@ protected:
 
     /// Base number of stored elements in patch
     static const unsigned int elements_in_chunk = 10;
-
-    /// Reset all items of elements_eval_points_map
-    /// obsolete method
-    void clear_element_eval_points_map();
 
     /// Add element to appropriate region data of update_data_ object
     /// obsolete method

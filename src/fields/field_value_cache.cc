@@ -53,7 +53,7 @@ void ElementCacheMap::init(std::shared_ptr<EvalPoints> eval_points) {
     this->eval_points_ = eval_points;
     unsigned int ep_data_size = ElementCacheMap::n_cached_elements * eval_points_->max_size();
     eval_point_data_.resize(ep_data_size);
-    element_eval_points_map_ = new int [ElementCacheMap::n_cached_elements * eval_points->max_size()];
+    element_eval_points_map_ = new int [ep_data_size];
 }
 
 
@@ -111,7 +111,6 @@ void ElementCacheMap::prepare_elements_to_update() {
     // Erase element data of previous step
     cache_idx_.clear();
     std::fill(elm_idx_.begin(), elm_idx_.end(), ElementCacheMap::undef_elem_idx);
-    this->clear_element_eval_points_map();
 
     // Set new elements to elm_idx_, cache_idx_ sorted by region
 	unsigned int n_stored_element = 0, n_region = 0;
@@ -184,7 +183,7 @@ void ElementCacheMap::mark_used_eval_points(const ElementAccessor<3> elm, unsign
 
 
 void ElementCacheMap::clear_element_eval_points_map() {
-    /// obsolete method
+	/// optimize loops, set to ElementCacheMap::unused_point only items stored in eval_point_data_
 	ASSERT_PTR_DBG(element_eval_points_map_);
     unsigned int size = this->eval_points_->max_size();
 	for (unsigned int i_elm=0; i_elm<ElementCacheMap::n_cached_elements; ++i_elm)
