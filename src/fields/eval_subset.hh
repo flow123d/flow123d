@@ -236,7 +236,10 @@ public:
     : local_point_idx_(loc_point_idx), elm_cache_map_(elm_cache_map) {}
 
     /// Getter of EvalPoints object.
-	virtual std::shared_ptr<EvalPoints> eval_points() const =0;
+	inline std::shared_ptr<EvalPoints> eval_points() const {
+        ASSERT_PTR(elm_cache_map_).error("Invalid point.\n");
+        return elm_cache_map_->eval_points();
+    }
 
 	// Getter of ElementCacheMap object.
     inline const ElementCacheMap *elm_cache_map() const {
@@ -256,7 +259,9 @@ public:
     virtual unsigned int eval_point_idx() const =0;
 
     /// Return index of element in data cache.
-    virtual unsigned int element_cache_index() const =0;
+    unsigned int element_cache_index() const {
+        return element_cache_index_;
+    }
 
     /// Iterates to next point.
     void inc() {
@@ -264,10 +269,12 @@ public:
     }
 
 protected:
-    /// Index of the local point in the composed quadrature.
+    /// Index of the local point in the integral object.
     unsigned int local_point_idx_;
     /// Pointer ElementCacheMap needed for point evaluation.
     const ElementCacheMap* elm_cache_map_;
+    /// Index of element in data cache
+    unsigned int element_cache_index_;
 };
 
 
@@ -282,21 +289,13 @@ public:
 
     /// Constructor
 	BulkPoint(DHCellAccessor dh_cell, const ElementCacheMap *elm_cache_map, std::shared_ptr<const BulkIntegral> bulk_integral, unsigned int local_point_idx)
-    : PointBase(elm_cache_map, local_point_idx), dh_cell_(dh_cell), integral_(bulk_integral) {}
+    : PointBase(elm_cache_map, local_point_idx), dh_cell_(dh_cell), integral_(bulk_integral) {
+	    this->element_cache_index_ = dh_cell_.element_cache_index();
+	}
 
     /// Getter of BulkIntegral
     std::shared_ptr<const BulkIntegral> integral() const {
         return integral_;
-    }
-
-    /// Getter of EvalPoints
-    std::shared_ptr<EvalPoints> eval_points() const override {
-        return integral_->eval_points();
-    }
-
-    /// Return index of element in data cache.
-    unsigned int element_cache_index() const override {
-        return dh_cell_.element_cache_index();
     }
 
     /// Return DH cell accessor.
@@ -336,21 +335,13 @@ public:
 
     /// Constructor
 	BulkBdrPoint(ElementAccessor<3> elm_acc, const ElementCacheMap *elm_cache_map, std::shared_ptr<const BulkIntegral> bulk_integral, unsigned int local_point_idx)
-    : PointBase(elm_cache_map, local_point_idx), elm_acc_(elm_acc), integral_(bulk_integral) {}
+    : PointBase(elm_cache_map, local_point_idx), elm_acc_(elm_acc), integral_(bulk_integral) {
+	    this->element_cache_index_ = this->elm_cache_map_->position_in_cache(elm_acc_.mesh_idx());
+	}
 
     /// Getter of BulkIntegral
     std::shared_ptr<const BulkIntegral> integral() const {
         return integral_;
-    }
-
-    /// Getter of EvalPoints
-    std::shared_ptr<EvalPoints> eval_points() const override {
-        return integral_->eval_points();
-    }
-
-    /// Return index of element in data cache.
-    unsigned int element_cache_index() const override {
-        return this->elm_cache_map_->position_in_cache(elm_acc_.mesh_idx());
     }
 
     /// Return ElementAccessor.
@@ -390,12 +381,9 @@ public:
     /// Constructor
 	SidePoint(DHCellSide cell_side, const ElementCacheMap *elm_cache_map, unsigned int local_point_idx)
     : PointBase(elm_cache_map, local_point_idx), cell_side_(cell_side),
-	  permutation_idx_( cell_side.element()->permutation_idx( cell_side_.side_idx() ) ) {}
-
-    /// Return index of element in data cache.
-    unsigned int element_cache_index() const override {
-        return cell_side_.cell().element_cache_index();
-    }
+	  permutation_idx_( cell_side.element()->permutation_idx( cell_side_.side_idx() ) ) {
+	    this->element_cache_index_ = cell_side_.cell().element_cache_index();
+	}
 
     /// Return DH cell accessor.
     DHCellSide dh_cell_side() const {
@@ -431,11 +419,6 @@ public:
     /// Getter of EdgeIntegral
     std::shared_ptr<const EdgeIntegral> integral() const {
         return integral_;
-    }
-
-    /// Getter of evaluation points
-    std::shared_ptr<EvalPoints> eval_points() const override {
-        return integral_->eval_points();
     }
 
     /// Return index in EvalPoints object
@@ -475,11 +458,6 @@ public:
         return integral_;
     }
 
-    /// Getter of evaluation points
-    std::shared_ptr<EvalPoints> eval_points() const override {
-        return integral_->eval_points();
-    }
-
     /// Return index in EvalPoints object
     unsigned int eval_point_idx() const override {
         return integral_->edge_integral_->perm_idx_ptr(cell_side_.side_idx(), permutation_idx_, local_point_idx_);
@@ -514,11 +492,6 @@ public:
     /// Getter of EdgeIntegral
     std::shared_ptr<const BoundaryIntegral> integral() const {
         return integral_;
-    }
-
-    /// Getter of evaluation points
-    std::shared_ptr<EvalPoints> eval_points() const override {
-        return integral_->eval_points();
     }
 
     /// Return index in EvalPoints object
