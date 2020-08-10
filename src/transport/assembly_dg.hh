@@ -353,6 +353,9 @@ public:
             {
                 fluxes[sid] = 0;
                 k=0;
+                // TODO:
+                // seems there is no direct use of XYZ_integral always ..._assembly_->XYZ_integral(dim)->points(..., ..cache_map..)
+                // replace with XYZ_points(dim, ...) taking the cache map directly form the assembly class
                 for (auto p : data_->stiffness_assembly_->edge_integral(dim)->points(edge_side, &(data_->stiffness_assembly_->cache_map())) ) {
                     fluxes[sid] += arma::dot(data_->advection_coef[sbi](p), fe_values_vec_[sid].normal_vector(k))*fe_values_vec_[sid].JxW(k);
                     k++;
@@ -368,7 +371,7 @@ public:
             s1=0;
             for( DHCellSide edge_side1 : edge_side_range )
             {
-                s2=-1; // need increment at begin of loop (see conditionally 'continue' directions)
+                s2=-1; // we need increment at begging of the loop (see the conditional 'continue')
                 for( DHCellSide edge_side2 : edge_side_range )
                 {
                     s2++;
@@ -420,6 +423,12 @@ public:
                     sd[0] = s1; is_side_own[0] = edge_side1.cell().is_own();
                     sd[1] = s2; is_side_own[1] = edge_side2.cell().is_own();
 
+                    /* TODO:
+                     * - rewrite without loops as  jump/average terms explicitly
+                     * - get rid of `(n==0 ? p1 : p2)` like terms
+                     * - add to the global matrix at once
+                     * - get rid of AVERAGE and JUMP macros, possibly use local value for JUMP(i,k,n)
+                     */
 #define AVERAGE(i,k,side_id)  (fe_values_vec_[sd[side_id]].shape_value(i,k)*0.5)
 #define JUMP(i,k,side_id)     ((side_id==0?1:-1)*fe_values_vec_[sd[side_id]].shape_value(i,k))
 
@@ -578,11 +587,14 @@ private:
     vector< vector<LongIdx> > side_dof_indices_;              ///< Vector of vectors of side DOF indices
     vector<LongIdx> side_dof_indices_vb_;                     ///< Vector of side DOF indices (assemble element-side fluxex)
     vector<PetscScalar> local_matrix_;                        ///< Auxiliary vector for assemble methods
+    // TODO: dg_penalty_ can be possibly replaced by cached field values
+    // no need to have a local caching mechanism
     vector<vector<double> > dg_penalty_;                      ///< Auxiliary vectors for assemble element-element fluxes
 
 	/// @name Auxiliary variables used during element-element assembly
 	// @{
-
+    // TODO: should be local variables of element-element assembly
+    // Any values passed implicitly between assembly methods are DANGEROUS, should be eliminated.
 	double gamma_l, omega[2], transport_flux, delta[2], delta_sum;
     double aniso1, aniso2;
     int sid, s1, s2;
@@ -591,7 +603,7 @@ private:
 
 	/// @name Auxiliary variables used during element-side assembly
 	// @{
-
+    // TODO: use local variables there
     unsigned int n_dofs[2], n_indices;
     double comm_flux[2][2];
 
