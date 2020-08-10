@@ -259,6 +259,45 @@ public:
         return element_starts_.permanent_size() - 1;
     }
 
+    /// Return begin position of element chunk in FieldValueCache
+    inline unsigned int element_chunk_begin(unsigned int mesh_elm_idx) const {
+        std::map<unsigned int, unsigned int>::const_iterator it = element_to_map_.find(mesh_elm_idx);
+        if ( it != element_to_map_.end() ) return element_starts_[it->second];
+        else return ElementCacheMap::undef_elem_idx;
+    }
+
+    /// Return end position of element chunk in FieldValueCache
+    inline unsigned int element_chunk_end(unsigned int mesh_elm_idx) const {
+        std::map<unsigned int, unsigned int>::const_iterator it = element_to_map_.find(mesh_elm_idx);
+        if ( it != element_to_map_.end() ) return element_starts_[it->second+1];
+        else return ElementCacheMap::undef_elem_idx;
+    }
+
+    /// Return begin position of region chunk in FieldValueCache
+    inline unsigned int region_chunk_begin(unsigned int region_idx) const {
+        std::map<unsigned int, unsigned int>::const_iterator it = regions_to_map_.find(region_idx);
+        if ( it != regions_to_map_.end() ) return element_starts_[ regions_starts_[it->second] ];
+        else return ElementCacheMap::undef_elem_idx;
+    }
+
+    /// Return end position of region chunk in FieldValueCache
+    inline unsigned int region_chunk_end(unsigned int region_idx) const {
+        std::map<unsigned int, unsigned int>::const_iterator it = regions_to_map_.find(region_idx);
+        if ( it != regions_to_map_.end() ) return element_starts_[ regions_starts_[it->second+1] ];
+        else return ElementCacheMap::undef_elem_idx;
+    }
+
+    /*
+     * We need new methods:
+     *
+     * inline unsigned int element_chunk_begin(unsigned int elm_idx) const; - done
+     * inline unsigned int element_chunk_end(unsigned int elm_idx) const; - done
+     * inline unsigned int region_chunk_begin(unsigned int region_idx) const; - done
+     * inline unsigned int region_chunk_end(unsigned int region_idx) const; - done
+     * inline unsigned int region_to_elem_begin(unsigned int region_idx) const; ??
+     * inline unsigned int region_to_elem_end(unsigned int region_idx) const; ??
+     */
+
     /// Return position of region chunk in cache.
     inline unsigned int region_chunk(unsigned int region_idx) const {
         return update_data_.region_cache_indices_map_.find(region_idx)->second.cache_position_;
