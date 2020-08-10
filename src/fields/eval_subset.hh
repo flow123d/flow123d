@@ -294,12 +294,12 @@ public:
 	}
 
     /// Getter of BulkIntegral
-    std::shared_ptr<const BulkIntegral> integral() const {
+    inline std::shared_ptr<const BulkIntegral> integral() const {
         return integral_;
     }
 
     /// Return DH cell accessor.
-    DHCellAccessor dh_cell() const {
+    inline DHCellAccessor dh_cell() const {
         return dh_cell_;
     }
 
@@ -342,12 +342,12 @@ public:
 	}
 
     /// Getter of BulkIntegral
-    std::shared_ptr<const BulkIntegral> integral() const {
+    inline std::shared_ptr<const BulkIntegral> integral() const {
         return integral_;
     }
 
     /// Return ElementAccessor.
-    ElementAccessor<3> elm_accessor() const {
+    inline ElementAccessor<3> elm_accessor() const {
         return elm_acc_;
     }
 
@@ -389,12 +389,12 @@ public:
 	}
 
     /// Return DH cell accessor.
-    DHCellSide dh_cell_side() const {
+    inline DHCellSide dh_cell_side() const {
         return cell_side_;
     }
 
     // Index of permutation
-    unsigned int permutation_idx() const {
+    inline unsigned int permutation_idx() const {
         return permutation_idx_;
     }
 
@@ -422,7 +422,7 @@ public:
     }
 
     /// Getter of EdgeIntegral
-    std::shared_ptr<const EdgeIntegral> integral() const {
+    inline std::shared_ptr<const EdgeIntegral> integral() const {
         return integral_;
     }
 
@@ -462,7 +462,7 @@ public:
     }
 
     /// Getter of EdgeIntegral
-    std::shared_ptr<const CouplingIntegral> integral() const {
+    inline std::shared_ptr<const CouplingIntegral> integral() const {
         return integral_;
     }
 
@@ -501,7 +501,7 @@ public:
     }
 
     /// Getter of EdgeIntegral
-    std::shared_ptr<const BoundaryIntegral> integral() const {
+    inline std::shared_ptr<const BoundaryIntegral> integral() const {
         return integral_;
     }
 
