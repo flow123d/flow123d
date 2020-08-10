@@ -68,7 +68,9 @@ protected:
 
     class OutputVTKTest : public OutputVTK {
     public:
-        OutputVTKTest() : OutputVTK() {};
+        OutputVTKTest() : OutputVTK() {
+            this->write_time = 0.0; // hack: unset condition in OutputTime::write_time_frame and output is not performed
+        };
 
         void gather_data(Mesh* mesh) {
             auto &elm_data_map = this->output_data_vec_[ELEM_DATA];
@@ -93,6 +95,7 @@ protected:
         component_names = { "comp_0", "comp_1", "comp_2" };
         stream = std::make_shared<OutputVTKTest>();
         rank = my_mesh->get_el_ds()->myp();
+
 	}
     virtual void TearDown() {
         delete my_mesh;

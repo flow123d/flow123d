@@ -178,9 +178,6 @@ public:
     void set_output_stream(std::shared_ptr<OutputTime> stream)
     { output_stream_ = stream; }
 
-	std::shared_ptr<OutputTime> output_stream() override
-	{ return output_stream_; }
-
 
 	/// Derived class should implement getter for ModelEqData instance.
 	virtual ModelEqData &data() = 0;
