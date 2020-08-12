@@ -114,7 +114,7 @@ public:
     : multidim_assembly_(eq_data),
       active_integrals_(active_integrals),
 	  bulk_integral_data_(12),
-	  edge_integral_data_(12),
+	  edge_integral_data_(12, 4),
 	  coupling_integral_data_(12),
 	  boundary_integral_data_(8)
     {
@@ -369,20 +369,23 @@ private:
                     }
             if (active_integrals_ & ActiveIntegrals::edge)
                 if ( (cell_side.n_edge_sides() >= 2) && (cell_side.edge_sides().begin()->element().idx() == cell.elm_idx())) {
-                    this->add_edge_integral(cell_side);
                 	for( DHCellSide edge_side : cell_side.edge_sides() ) {
+                		this->add_edge_integral(edge_side);
                 		element_cache_map_.add(edge_side);
                     }
                 }
         }
 
-        if (active_integrals_ & ActiveIntegrals::coupling)
-            for( DHCellSide neighb_side : cell.neighb_sides() ) { // cell -> elm lower dim, neighb_side -> elm higher dim
+        if (active_integrals_ & ActiveIntegrals::coupling) {
+            bool add_low = true;
+        	for( DHCellSide neighb_side : cell.neighb_sides() ) { // cell -> elm lower dim, neighb_side -> elm higher dim
                 if (cell.dim() != neighb_side.dim()-1) continue;
-                this->add_coupling_integral(cell, neighb_side);
+                this->add_coupling_integral(cell, neighb_side, add_low);
                 element_cache_map_.add(cell);
                 element_cache_map_.add(neighb_side);
+                add_low = false;
             }
+        }
     }
 
     /// Add data of volume integral to appropriate data structure.
@@ -410,16 +413,11 @@ private:
         for (auto p : integrals_.edge_[data.edge_side_range.begin()->dim()-1]->points(cell_side, &element_cache_map_) ) {
             EvalPointData epd(reg_idx, cell_side.elem_idx(), p.eval_point_idx());
             element_cache_map_.eval_point_data_.push_back(epd);
-
-        	auto p_ghost = p.point_on(cell_side); // point on neghbouring side on one edge
-        	unsigned int ghost_reg = p_ghost.dh_cell_side().element().region_idx().idx();
-        	EvalPointData epd_ghost(ghost_reg, p_ghost.dh_cell_side().elem_idx(), p_ghost.eval_point_idx());
-        	element_cache_map_.eval_point_data_.push_back(epd_ghost);
         }
     }
 
     /// Add data of coupling integral to appropriate data structure.
-    void add_coupling_integral(const DHCellAccessor &cell, const DHCellSide &ngh_side) {
+    void add_coupling_integral(const DHCellAccessor &cell, const DHCellSide &ngh_side, bool add_low) {
         CouplingIntegralData data;
         data.cell = cell;
         data.side = ngh_side;
@@ -429,13 +427,15 @@ private:
 
         unsigned int reg_idx_low = cell.elm().region_idx().idx();
         unsigned int reg_idx_high = ngh_side.element().region_idx().idx();
-        for (auto p : integrals_.coupling_[ngh_side.dim()-1]->points(ngh_side, &element_cache_map_) ) {
+        for (auto p : integrals_.coupling_[cell.dim()-1]->points(ngh_side, &element_cache_map_) ) {
             EvalPointData epd(reg_idx_high, ngh_side.elem_idx(), p.eval_point_idx());
             element_cache_map_.eval_point_data_.push_back(epd);
 
-        	auto p_low = p.lower_dim(cell); // equivalent point on low dim cell
-        	EvalPointData epd_low(reg_idx_low, cell.elm_idx(), p_low.eval_point_idx());
-        	element_cache_map_.eval_point_data_.push_back(epd_low);
+        	if (add_low) {
+                auto p_low = p.lower_dim(cell); // equivalent point on low dim cell
+               	EvalPointData epd_low(reg_idx_low, cell.elm_idx(), p_low.eval_point_idx());
+                element_cache_map_.eval_point_data_.push_back(epd_low);
+        	}
         }
     }
 
