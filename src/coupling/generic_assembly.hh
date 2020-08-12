@@ -214,8 +214,8 @@ private:
         coupling_integral_data_.make_permanent();
         boundary_integral_data_.make_permanent();
         element_cache_map_.prepare_elements_to_update();
-        this->insert_eval_points_from_integral_data();
-        element_cache_map_.create_elements_points_map();
+        //this->insert_eval_points_from_integral_data();
+        //element_cache_map_.create_elements_points_map();
         multidim_assembly_[1_d]->data_->cache_update(element_cache_map_);
         element_cache_map_.finish_elements_update();
 

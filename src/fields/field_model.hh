@@ -240,11 +240,9 @@ public:
 
     void cache_update(FieldValueCache<typename Value::element_type> &data_cache,
 				ElementCacheMap &cache_map, unsigned int region_idx) override {
-        auto update_cache_data = cache_map.update_cache_data();
-        unsigned int region_in_cache = cache_map.region_chunk(region_idx);
-        unsigned int i_cache_el_begin = update_cache_data.region_value_cache_range_[region_in_cache];
-        unsigned int i_cache_el_end = update_cache_data.region_value_cache_range_[region_in_cache+1];
-        for(unsigned int i_cache=i_cache_el_begin; i_cache<i_cache_el_end; ++i_cache) {
+        unsigned int reg_chunk_begin = cache_map.region_chunk_begin(region_idx);
+        unsigned int reg_chunk_end = cache_map.region_chunk_end(region_idx);
+        for(unsigned int i_cache=reg_chunk_begin; i_cache<reg_chunk_end; ++i_cache) {
             data_cache.set(i_cache) =
                 detail::model_cache_item<
                     Fn,

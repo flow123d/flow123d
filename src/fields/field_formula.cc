@@ -243,12 +243,10 @@ template <int spacedim, class Value>
 void FieldFormula<spacedim, Value>::cache_update(FieldValueCache<typename Value::element_type> &data_cache,
         ElementCacheMap &cache_map, unsigned int region_idx)
 {
-    auto update_cache_data = cache_map.update_cache_data();
-    unsigned int region_in_cache = cache_map.region_chunk(region_idx);
-    unsigned int i_cache_el_begin = update_cache_data.region_value_cache_range_[region_in_cache];
-    unsigned int i_cache_el_end = update_cache_data.region_value_cache_range_[region_in_cache+1];
+    unsigned int reg_chunk_begin = cache_map.region_chunk_begin(region_idx);
+    unsigned int reg_chunk_end = cache_map.region_chunk_end(region_idx);
 
-    for (unsigned int i=i_cache_el_begin; i<i_cache_el_end; ++i) {
+    for (unsigned int i=reg_chunk_begin; i<reg_chunk_end; ++i) {
         // fill data vectors
     	x_[i] = field_set_->x().template mat<1,1>(i)(0);
         y_[i] = field_set_->y().template mat<1,1>(i)(0);
@@ -263,8 +261,8 @@ void FieldFormula<spacedim, Value>::cache_update(FieldValueCache<typename Value:
     }
 
     // Get vector of subsets as subarray
-    uint subsets_begin = i_cache_el_begin / ElementCacheMap::simd_size_double;
-    uint subsets_end = i_cache_el_end / ElementCacheMap::simd_size_double;
+    uint subsets_begin = reg_chunk_begin / ElementCacheMap::simd_size_double;
+    uint subsets_end = reg_chunk_end / ElementCacheMap::simd_size_double;
     std::vector<uint> subset_vec;
     subset_vec.assign(subsets_ + subsets_begin, subsets_ + subsets_end);
 
@@ -272,7 +270,7 @@ void FieldFormula<spacedim, Value>::cache_update(FieldValueCache<typename Value:
         for(unsigned int col=0; col < this->value_.n_cols(); col++) {
             b_parser_[row*this->value_.n_cols()+col].set_subset(subset_vec);
             b_parser_[row*this->value_.n_cols()+col].run();
-            for (unsigned int i=i_cache_el_begin; i<i_cache_el_end; ++i) {
+            for (unsigned int i=reg_chunk_begin; i<reg_chunk_end; ++i) {
                 auto cache_val = data_cache.template mat<Value::NRows_, Value::NCols_>(i);
                 cache_val(row, col) = res_[i];
                 data_cache.set(i) = cache_val;

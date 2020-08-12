@@ -37,9 +37,7 @@ ElementCacheMap::ElementCacheMap()
 : elm_idx_(ElementCacheMap::n_cached_elements, ElementCacheMap::undef_elem_idx),
   ready_to_reading_(false), element_eval_points_map_(nullptr), eval_point_data_(0),
   regions_starts_(2*ElementCacheMap::regions_in_chunk,ElementCacheMap::regions_in_chunk),
-  element_starts_(2*ElementCacheMap::elements_in_chunk,ElementCacheMap::elements_in_chunk) {
-    cache_idx_.reserve(ElementCacheMap::n_cached_elements);
-}
+  element_starts_(2*ElementCacheMap::elements_in_chunk,ElementCacheMap::elements_in_chunk) {}
 
 
 ElementCacheMap::~ElementCacheMap() {
@@ -54,6 +52,7 @@ void ElementCacheMap::init(std::shared_ptr<EvalPoints> eval_points) {
     unsigned int ep_data_size = ElementCacheMap::n_cached_elements * eval_points_->max_size();
     eval_point_data_.resize(ep_data_size);
     element_eval_points_map_ = new int [ep_data_size];
+    this->clear_element_eval_points_map(); // use loop
 }
 
 
@@ -86,10 +85,15 @@ void ElementCacheMap::prepare_elements_to_update() {
     unsigned int last_region_idx = -1;
     unsigned int last_element_idx = -1;
     unsigned int i_pos=0; // position in eval_point_data_
+    unsigned int points_in_cache = 0; // index to cache in table element_eval_points_map_
+
+    // Erase element data of previous step
     regions_starts_.reset();
     element_starts_.reset();
     regions_to_map_.clear();
     element_to_map_.clear();
+    std::fill(elm_idx_.begin(), elm_idx_.end(), ElementCacheMap::undef_elem_idx);
+
     for (auto it=eval_point_data_.begin(); it!=eval_point_data_.end(); ++it, ++i_pos) {
         if (it->i_element_ != last_element_idx) { // new element
             if (it->i_reg_ != last_region_idx) { // new region
@@ -97,10 +101,13 @@ void ElementCacheMap::prepare_elements_to_update() {
                 regions_starts_.push_back( element_starts_.temporary_size() );
                 last_region_idx = it->i_reg_;
             }
+			elm_idx_[element_to_map_.size()] = it->i_element_;
             element_to_map_[it->i_element_] = element_starts_.temporary_size();
             element_starts_.push_back(i_pos);
             last_element_idx = it->i_element_;
         }
+        set_element_eval_point(element_to_map_.find(it->i_element_)->second, it->i_eval_point_, points_in_cache);
+        points_in_cache++;
     }
     regions_starts_.push_back( element_starts_.temporary_size() );
     element_starts_.push_back(i_pos);
@@ -108,10 +115,7 @@ void ElementCacheMap::prepare_elements_to_update() {
     element_starts_.make_permanent();
 
     /*** OLD CODE of create map ***/
-    // Erase element data of previous step
-    cache_idx_.clear();
-    std::fill(elm_idx_.begin(), elm_idx_.end(), ElementCacheMap::undef_elem_idx);
-
+    /*cache_idx_.clear();
     // Set new elements to elm_idx_, cache_idx_ sorted by region
 	unsigned int n_stored_element = 0, n_region = 0;
 	update_data_.region_element_cache_range_[0] = 0;
@@ -125,7 +129,7 @@ void ElementCacheMap::prepare_elements_to_update() {
         }
         update_data_.region_element_cache_range_[n_region+1] = n_stored_element;
         n_region++;
-    }
+    }*/
     /*** end of OLD CODE ***/
 }
 
@@ -166,7 +170,7 @@ void ElementCacheMap::finish_elements_update() {
 
 void ElementCacheMap::mark_used_eval_points(const DHCellAccessor &dh_cell, unsigned int subset_idx, unsigned int data_size, unsigned int start_point) {
     /// obsolete method
-    unsigned int elem_idx_in_cache = cache_idx_[dh_cell.elm().mesh_idx()];
+    unsigned int elem_idx_in_cache = element_to_map_[dh_cell.elm().mesh_idx()];
     unsigned int points_begin = eval_points_->subset_begin(dh_cell.dim(), subset_idx) + start_point;
     for (unsigned int i=points_begin; i<points_begin+data_size; ++i)
         set_element_eval_point(elem_idx_in_cache, i, ElementCacheMap::point_in_proggress);
@@ -175,7 +179,7 @@ void ElementCacheMap::mark_used_eval_points(const DHCellAccessor &dh_cell, unsig
 
 void ElementCacheMap::mark_used_eval_points(const ElementAccessor<3> elm, unsigned int subset_idx, unsigned int data_size, unsigned int start_point) {
     /// obsolete method
-    unsigned int elem_idx_in_cache = cache_idx_[elm.mesh_idx()];
+    unsigned int elem_idx_in_cache = element_to_map_[elm.mesh_idx()];
     unsigned int points_begin = eval_points_->subset_begin(elm.dim(), subset_idx) + start_point;
     for (unsigned int i=points_begin; i<points_begin+data_size; ++i)
         set_element_eval_point(elem_idx_in_cache, i, ElementCacheMap::point_in_proggress);
@@ -209,8 +213,8 @@ void ElementCacheMap::add_to_region(ElementAccessor<3> elm) {
 DHCellAccessor & ElementCacheMap::cache_map_index(DHCellAccessor &dh_cell) const {
 	ASSERT_DBG(ready_to_reading_);
 	unsigned int elm_idx = dh_cell.elm_idx();
-	std::unordered_map<unsigned int, unsigned int>::const_iterator it = cache_idx_.find(elm_idx);
-	if ( it != cache_idx_.end() ) dh_cell.set_element_cache_index( it->second );
+	std::map<unsigned int, unsigned int>::const_iterator it = element_to_map_.find(elm_idx);
+	if ( it != element_to_map_.end() ) dh_cell.set_element_cache_index( it->second );
 	else dh_cell.set_element_cache_index( ElementCacheMap::undef_elem_idx );
     return dh_cell;
 }

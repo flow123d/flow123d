@@ -247,8 +247,8 @@ public:
 
     /// Return position of element stored in ElementCacheMap
     inline unsigned int position_in_cache(unsigned mesh_elm_idx) const {
-        std::unordered_map<unsigned int, unsigned int>::const_iterator it = cache_idx_.find(mesh_elm_idx);
-        if ( it != cache_idx_.end() ) return it->second;
+        std::map<unsigned int, unsigned int>::const_iterator it = element_to_map_.find(mesh_elm_idx);
+        if ( it != element_to_map_.end() ) return it->second;
         else return ElementCacheMap::undef_elem_idx;
     }
 
@@ -290,6 +290,16 @@ public:
         else return ElementCacheMap::undef_elem_idx;
     }
 
+    /// Return begin position of region chunk specified by position in map
+    inline unsigned int region_chunk_by_map_index(unsigned int r_idx) const {
+        if (r_idx <= n_regions()) return element_starts_[ regions_starts_[r_idx] ];
+        else return ElementCacheMap::undef_elem_idx;
+    }
+
+    /// Return item of eval_point_data_ specified by its position
+    inline const EvalPointData &eval_point_data(unsigned int point_idx) const {
+        return eval_point_data_[point_idx];
+    }
     /*
      * We need new methods:
      *
@@ -300,11 +310,6 @@ public:
      * inline unsigned int region_to_elem_begin(unsigned int region_idx) const; ??
      * inline unsigned int region_to_elem_end(unsigned int region_idx) const; ??
      */
-
-    /// Return position of region chunk in cache.
-    inline unsigned int region_chunk(unsigned int region_idx) const {
-        return update_data_.region_cache_indices_map_.find(region_idx)->second.cache_position_;
-    }
 
     /// Return value of evaluation point given by DHCell and local point idx in EvalPoints from cache.
     template<class Value>
@@ -329,7 +334,7 @@ protected:
     static const int unused_point = -2;
 
     /// Special constant (@see element_eval_points_map_).
-    /// obsolete data member
+    /// rename to unused_point
     static const int point_in_proggress = -1;
 
     /// Base number of stored regions in patch
@@ -355,7 +360,7 @@ protected:
 
     /// Map of element indices stored in cache, allows reverse search to previous vector.
     /// obsolete data member
-    std::unordered_map<unsigned int, unsigned int> cache_idx_;
+    //std::unordered_map<unsigned int, unsigned int> cache_idx_;
 
     /// Pointer to EvalPoints
     std::shared_ptr<EvalPoints> eval_points_;
