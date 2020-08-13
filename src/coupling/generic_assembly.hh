@@ -161,12 +161,10 @@ public:
                                                                   // (if not call revert_temporary() and repeat iteration with same cell)
                                                                   // it will replace next condition (n_elements > ElementCacheMap...)
 
-            unsigned int n_elements = 0; // TODO remove - temporary solution
-            for (auto const& i : element_cache_map_.update_cache_data().region_cache_indices_map_) {
-                n_elements += i.second.n_elements_;
-            }
-            if (n_elements > ElementCacheMap::n_cached_elements-GenericAssembly<DimAssembly>::maximal_neighbouring_elem) {
+            // TODO temporary solution of check of cache size
+            if (elm_idx_.size() > ElementCacheMap::n_cached_elements-GenericAssembly<DimAssembly>::maximal_neighbouring_elem) {
                 this->assemble_integrals(step);
+                elm_idx_.clear();
                 add_into_patch = false;
             }
         }
@@ -355,6 +353,7 @@ private:
     	    if (cell.is_own()) { // Not ghost
                 this->add_volume_integral(cell);
                 element_cache_map_.add(cell);
+                elm_idx_.insert(cell.elm_idx());
     	    }
 
         for( DHCellSide cell_side : cell.side_range() ) {
@@ -363,8 +362,10 @@ private:
                     if ( (cell_side.side().edge().n_sides() == 1) && (cell_side.side().is_boundary()) ) {
                         this->add_boundary_integral(cell_side);
                         element_cache_map_.add(cell_side);
+                        elm_idx_.insert(cell_side.elem_idx());
                         auto bdr_elm_acc = cell_side.cond().element_accessor();
                         element_cache_map_.add(bdr_elm_acc);
+                        elm_idx_.insert(bdr_elm_acc.mesh_idx());
                         continue;
                     }
             if (active_integrals_ & ActiveIntegrals::edge)
@@ -372,6 +373,7 @@ private:
                     this->add_edge_integral(cell_side);
                     for( DHCellSide edge_side : cell_side.edge_sides() ) {
                         element_cache_map_.add(edge_side);
+                        elm_idx_.insert(edge_side.elem_idx());
                     }
                 }
         }
@@ -383,6 +385,8 @@ private:
                 this->add_coupling_integral(cell, neighb_side, add_low);
                 element_cache_map_.add(cell);
                 element_cache_map_.add(neighb_side);
+                elm_idx_.insert(cell.elm_idx());
+                elm_idx_.insert(neighb_side.elem_idx());
                 add_low = false;
             }
         }
@@ -478,6 +482,9 @@ private:
     RevertableList<EdgeIntegralData>       edge_integral_data_;      ///< Holds data for computing edge integrals.
     RevertableList<CouplingIntegralData>   coupling_integral_data_;  ///< Holds data for computing couplings integrals.
     RevertableList<BoundaryIntegralData>   boundary_integral_data_;  ///< Holds data for computing boundary integrals.
+
+    /// Set of element idx used in patch, temporary data member, TODO it will be replaced
+    std::set<unsigned int> elm_idx_;
 };
 
 
