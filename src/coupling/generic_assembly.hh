@@ -369,9 +369,9 @@ private:
                     }
             if (active_integrals_ & ActiveIntegrals::edge)
                 if ( (cell_side.n_edge_sides() >= 2) && (cell_side.edge_sides().begin()->element().idx() == cell.elm_idx())) {
-                	for( DHCellSide edge_side : cell_side.edge_sides() ) {
-                		this->add_edge_integral(edge_side);
-                		element_cache_map_.add(edge_side);
+                    this->add_edge_integral(cell_side);
+                    for( DHCellSide edge_side : cell_side.edge_sides() ) {
+                        element_cache_map_.add(edge_side);
                     }
                 }
         }
@@ -409,10 +409,12 @@ private:
         data.subset_index = integrals_.edge_[data.edge_side_range.begin()->dim()-1]->get_subset_idx();
         edge_integral_data_.push_back(data);
 
-        unsigned int reg_idx = cell_side.element().region_idx().idx();
-        for (auto p : integrals_.edge_[data.edge_side_range.begin()->dim()-1]->points(cell_side, &element_cache_map_) ) {
-            EvalPointData epd(reg_idx, cell_side.elem_idx(), p.eval_point_idx());
-            element_cache_map_.eval_point_data_.push_back(epd);
+        for( DHCellSide edge_side : data.edge_side_range ) {
+            unsigned int reg_idx = edge_side.element().region_idx().idx();
+            for (auto p : integrals_.edge_[data.edge_side_range.begin()->dim()-1]->points(edge_side, &element_cache_map_) ) {
+                EvalPointData epd(reg_idx, edge_side.elem_idx(), p.eval_point_idx());
+                element_cache_map_.eval_point_data_.push_back(epd);
+            }
         }
     }
 
