@@ -55,7 +55,7 @@ public:
             this->eval_point_data_.push_back(epd);
         }
         this->eval_point_data_.make_permanent();
-        this->add(cell); // temporary: old code, remove
+        elm_to_patch_.insert(cell.elm_idx());
     }
 
     void add_side_points(DHCellSide cell_side) {
@@ -69,7 +69,7 @@ public:
         	EvalPointData epd_ghost(ghost_reg, p_ghost.dh_cell_side().elem_idx(), p_ghost.eval_point_idx());
         	this->eval_point_data_.push_back(epd_ghost);
         }
-        this->add(cell_side); // temporary: old code, remove
+        elm_to_patch_.insert(cell_side.elem_idx());
     }
 
     Mesh * mesh_;
@@ -78,6 +78,8 @@ public:
     std::shared_ptr<EvalPoints> eval_points;
     std::shared_ptr<BulkIntegral> bulk_eval;
     std::shared_ptr<EdgeIntegral> edge_eval;
+
+    std::set<unsigned int> elm_to_patch_;
 };
 
 
@@ -90,26 +92,32 @@ TEST_F(FieldValueCacheTest, field_value_cache) {
 
     this->start_elements_update();
     DHCellAccessor dh_cell(dh_.get(), 2);
-    this->add(dh_cell);
+
+    unsigned int reg_idx = dh_cell.elm().region_idx().idx();
+    for (auto p : bulk_eval->points(dh_cell, this) ) {
+        EvalPointData epd(reg_idx, dh_cell.elm_idx(), p.eval_point_idx());
+        this->eval_point_data_.push_back(epd);
+    }
+    elm_to_patch_.insert(dh_cell.elm_idx());
+
     for( DHCellSide cell_side : dh_cell.side_range() )
-      if ( cell_side.n_edge_sides() >= 2 )
-        for( DHCellSide edge_side : cell_side.edge_sides() ) {
-            this->add(edge_side);
+        if ( cell_side.n_edge_sides() >= 2 ) {
+            for( DHCellSide edge_side : cell_side.edge_sides() ) {
+                unsigned int reg_idx = edge_side.element().region_idx().idx();
+                for (auto p : edge_eval->points(edge_side, this) ) {
+                    EvalPointData epd(reg_idx, edge_side.elem_idx(), p.eval_point_idx());
+                    this->eval_point_data_.push_back(epd);
+                }
+                elm_to_patch_.insert(edge_side.elem_idx());
+            }
         }
 
+    this->eval_point_data_.make_permanent();
     this->prepare_elements_to_update();
 
-    // mark used points
-    this->mark_used_eval_points(dh_cell, bulk_eval->get_subset_idx(), 4);
-    for( DHCellSide cell_side : dh_cell.side_range() )
-      if ( cell_side.n_edge_sides() >= 2 )
-    	for( DHCellSide edge_side : cell_side.edge_sides() ) {
-            this->mark_used_eval_points(edge_side.cell(), edge_eval->get_subset_idx(), 3, 3*edge_side.side_idx());
-        }
-    this->create_elements_points_map();
-
     // set value
-    unsigned int points_in_cache = update_data_.region_value_cache_range_[update_data_.region_cache_indices_map_.size()];
+    unsigned int n_elements = this->n_elements();
+    unsigned int points_in_cache = this->element_starts_[n_elements];
     EXPECT_EQ(points_in_cache, 16);
     Armor::ArmaMat<double, 1, 1> const_val{0.5};
     for (unsigned int i=0; i<points_in_cache; ++i) value_cache.set(i) = const_val;
@@ -133,8 +141,6 @@ TEST_F(FieldValueCacheTest, field_value_cache) {
 
 
 TEST_F(FieldValueCacheTest, element_cache_map) {
-    const ElementCacheMap::UpdateCacheHelper &update_cache_data = this->update_cache_data();
-
     // Test of 2 elements on same region
     this->start_elements_update();
     DHCellAccessor dh_cell1(dh_.get(), 1);
@@ -142,49 +148,54 @@ TEST_F(FieldValueCacheTest, element_cache_map) {
     this->add_bulk_points(dh_cell1);
     this->add_bulk_points(dh_cell2);
 
+    this->eval_point_data_.make_permanent();
     this->prepare_elements_to_update();
     EXPECT_EQ(this->n_elements(), 2);
-    EXPECT_EQ(update_cache_data.region_cache_indices_map_.size(), 1);
-    EXPECT_TRUE(update_cache_data.region_cache_indices_map_.find(1)!=update_cache_data.region_cache_indices_map_.end());
-    EXPECT_EQ(update_cache_data.region_cache_indices_map_.find(1)->second.n_elements_, 2);
-
-    this->create_elements_points_map();
-    EXPECT_EQ(update_cache_data.region_cache_indices_map_.size(), 1);
+    EXPECT_EQ(this->n_regions(), 1);
+    EXPECT_TRUE(element_to_map_.find(1)!=element_to_map_.end());
+    EXPECT_EQ(elm_idx_[0], 1);
+    EXPECT_EQ(elm_idx_[1], 2);
     this->finish_elements_update();
     this->eval_point_data_.reset();
+    elm_to_patch_.clear();
 
     dh_cell1 = this->cache_map_index(dh_cell1);
     EXPECT_EQ(dh_cell1.element_cache_index(), 0);
+    this->eval_point_data_.reset();
     this->clear_element_eval_points_map();
 
     // Test of edge connectivity
     this->start_elements_update();
-    //EXPECT_EQ(this->n_elements(), 0);
-    EXPECT_EQ(update_cache_data.region_cache_indices_map_.size(), 0);
     for( DHCellSide cell_side : dh_cell2.side_range() )
         if ( cell_side.n_edge_sides() >= 2 )
             for( DHCellSide edge_side : cell_side.edge_sides() ) {
             	this->add_side_points(edge_side);
             }
+    this->eval_point_data_.make_permanent();
     this->prepare_elements_to_update();
-    //EXPECT_EQ(this->n_elements(), 3); //TODO fix test here
-    EXPECT_EQ(update_cache_data.region_cache_indices_map_.size(), 1);
-    EXPECT_TRUE(update_cache_data.region_cache_indices_map_.find(1)!=update_cache_data.region_cache_indices_map_.end());
-    EXPECT_EQ(update_cache_data.region_cache_indices_map_.find(1)->second.n_elements_, 3);
 
     for( DHCellSide cell_side : dh_cell2.side_range() )
         if ( cell_side.n_edge_sides() >= 2 )
             for( DHCellSide edge_side : cell_side.edge_sides() ) {
-                this->mark_used_eval_points(edge_side.cell(), edge_eval->get_subset_idx(), 3, 3*edge_side.side_idx());
+                unsigned int reg_idx = edge_side.element().region_idx().idx();
+                for (auto p : edge_eval->points(edge_side, this) ) {
+                    EvalPointData epd(reg_idx, edge_side.elem_idx(), p.eval_point_idx());
+                    this->eval_point_data_.push_back(epd);
+                }
+                elm_to_patch_.insert(edge_side.elem_idx());
             }
-    this->create_elements_points_map();
-    EXPECT_EQ(update_cache_data.region_cache_indices_map_.size(), 1);
-    EXPECT_EQ(update_cache_data.region_value_cache_range_[0], 0);
-    EXPECT_EQ(update_cache_data.region_value_cache_range_[1], 12);
+    EXPECT_EQ(this->n_regions(), 1);
+    EXPECT_EQ(this->n_elements(), 3);
+    EXPECT_EQ(element_starts_[0], 0);
+    EXPECT_EQ(element_starts_[element_to_map_.size()], 24);
+    EXPECT_EQ(regions_starts_[0], 0);
+    EXPECT_EQ(regions_starts_[regions_to_map_.size()], 3);
     this->finish_elements_update();
     this->eval_point_data_.reset();
+    elm_to_patch_.clear();
     dh_cell2 = this->cache_map_index(dh_cell2);
     EXPECT_EQ(dh_cell2.element_cache_index(), 1);
+    this->eval_point_data_.reset();
     this->clear_element_eval_points_map();
 
     // Test of 3 elements on 2 different regions
@@ -195,18 +206,24 @@ TEST_F(FieldValueCacheTest, element_cache_map) {
     this->add_bulk_points(dh_cell3);
     this->add_bulk_points(dh_cell6);
 
+    this->eval_point_data_.make_permanent();
     this->prepare_elements_to_update();
     EXPECT_EQ(this->n_elements(), 3);
-    EXPECT_EQ(update_cache_data.region_cache_indices_map_.size(), 2);
-    EXPECT_TRUE(update_cache_data.region_cache_indices_map_.find(1)!=update_cache_data.region_cache_indices_map_.end());
-    EXPECT_EQ(update_cache_data.region_cache_indices_map_.find(1)->second.n_elements_, 2);
-    EXPECT_EQ(update_cache_data.region_cache_indices_map_.find(3)->second.n_elements_, 1);
+    EXPECT_EQ(this->n_regions(), 2);
+    EXPECT_TRUE(element_to_map_.find(1)!=element_to_map_.end());
+    EXPECT_TRUE(element_to_map_.find(2)==element_to_map_.end()); // NOT in patch
+    EXPECT_TRUE(element_to_map_.find(3)!=element_to_map_.end());
+    EXPECT_EQ(this->region_chunk_begin(1), 0);
+    EXPECT_EQ(this->region_chunk_end(1), 8);
+    EXPECT_EQ(this->region_chunk_begin(2), ElementCacheMap::undef_elem_idx);
+    EXPECT_EQ(this->region_chunk_begin(3), 8);
+    EXPECT_EQ(this->region_chunk_end(3), 12);
 
-    this->create_elements_points_map();
-    EXPECT_EQ(update_cache_data.region_cache_indices_map_.size(), 2);
     this->finish_elements_update();
     this->eval_point_data_.reset();
-    dh_cell1 = this->cache_map_index(dh_cell1);
-    EXPECT_EQ(dh_cell1.element_cache_index(), 1);
+    elm_to_patch_.clear();
+    dh_cell3 = this->cache_map_index(dh_cell3);
+    EXPECT_EQ(dh_cell3.element_cache_index(), 1);
+    this->eval_point_data_.reset();
     this->clear_element_eval_points_map();
 }
