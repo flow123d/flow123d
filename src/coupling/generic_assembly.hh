@@ -302,7 +302,6 @@ private:
         if (active_integrals_ & ActiveIntegrals::bulk)
     	    if (cell.is_own()) { // Not ghost
                 this->add_volume_integral(cell);
-                elm_idx_.insert(cell.elm_idx());
     	    }
 
         for( DHCellSide cell_side : cell.side_range() ) {
@@ -310,17 +309,11 @@ private:
                 if (cell.is_own()) // Not ghost
                     if ( (cell_side.side().edge().n_sides() == 1) && (cell_side.side().is_boundary()) ) {
                         this->add_boundary_integral(cell_side);
-                        elm_idx_.insert(cell_side.elem_idx());
-                        auto bdr_elm_acc = cell_side.cond().element_accessor();
-                        elm_idx_.insert(bdr_elm_acc.mesh_idx());
                         continue;
                     }
             if (active_integrals_ & ActiveIntegrals::edge)
                 if ( (cell_side.n_edge_sides() >= 2) && (cell_side.edge_sides().begin()->element().idx() == cell.elm_idx())) {
                     this->add_edge_integral(cell_side);
-                    for( DHCellSide edge_side : cell_side.edge_sides() ) {
-                        elm_idx_.insert(edge_side.elem_idx());
-                    }
                 }
         }
 
@@ -329,8 +322,6 @@ private:
         	for( DHCellSide neighb_side : cell.neighb_sides() ) { // cell -> elm lower dim, neighb_side -> elm higher dim
                 if (cell.dim() != neighb_side.dim()-1) continue;
                 this->add_coupling_integral(cell, neighb_side, add_low);
-                elm_idx_.insert(cell.elm_idx());
-                elm_idx_.insert(neighb_side.elem_idx());
                 add_low = false;
             }
         }
@@ -348,6 +339,7 @@ private:
             EvalPointData epd(reg_idx, cell.elm_idx(), p.eval_point_idx());
             element_cache_map_.eval_point_data_.push_back(epd);
         }
+        elm_idx_.insert(cell.elm_idx());
     }
 
     /// Add data of edge integral to appropriate data structure.
@@ -363,6 +355,7 @@ private:
                 EvalPointData epd(reg_idx, edge_side.elem_idx(), p.eval_point_idx());
                 element_cache_map_.eval_point_data_.push_back(epd);
             }
+            elm_idx_.insert(edge_side.elem_idx());
         }
     }
 
@@ -387,6 +380,8 @@ private:
                 element_cache_map_.eval_point_data_.push_back(epd_low);
         	}
         }
+        elm_idx_.insert(cell.elm_idx());
+        elm_idx_.insert(ngh_side.elem_idx());
     }
 
     /// Add data of boundary integral to appropriate data structure.
@@ -407,6 +402,9 @@ private:
         	EvalPointData epd_bdr(bdr_reg, p_bdr.elm_accessor().mesh_idx(), p_bdr.eval_point_idx());
         	element_cache_map_.eval_point_data_.push_back(epd_bdr);
         }
+        elm_idx_.insert(bdr_side.elem_idx());
+        auto bdr_elm_acc = bdr_side.cond().element_accessor();
+        elm_idx_.insert(bdr_elm_acc.mesh_idx());
     }
 
 
