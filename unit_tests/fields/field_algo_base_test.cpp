@@ -1054,7 +1054,7 @@ TEST(Field, field_values) {
     DHCellAccessor dh_cell(dh.get(), 4);
     elm_cache_map.start_elements_update();
     elm_cache_map.add_cell_eval_points(dh_cell, mass_eval);
-    elm_cache_map.prepare_elements_to_update();
+    elm_cache_map.create_patch();
     color_field.cache_update(elm_cache_map);
     int_field.cache_update(elm_cache_map);
     scalar_field.cache_update(elm_cache_map);

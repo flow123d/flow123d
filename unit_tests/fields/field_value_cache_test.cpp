@@ -113,7 +113,7 @@ TEST_F(FieldValueCacheTest, field_value_cache) {
         }
 
     this->eval_point_data_.make_permanent();
-    this->prepare_elements_to_update();
+    this->create_patch();
 
     // set value
     unsigned int n_elements = this->n_elements();
@@ -149,7 +149,7 @@ TEST_F(FieldValueCacheTest, element_cache_map) {
     this->add_bulk_points(dh_cell2);
 
     this->eval_point_data_.make_permanent();
-    this->prepare_elements_to_update();
+    this->create_patch();
     EXPECT_EQ(this->n_elements(), 2);
     EXPECT_EQ(this->n_regions(), 1);
     EXPECT_TRUE(element_to_map_.find(1)!=element_to_map_.end());
@@ -172,7 +172,7 @@ TEST_F(FieldValueCacheTest, element_cache_map) {
             	this->add_side_points(edge_side);
             }
     this->eval_point_data_.make_permanent();
-    this->prepare_elements_to_update();
+    this->create_patch();
 
     for( DHCellSide cell_side : dh_cell2.side_range() )
         if ( cell_side.n_edge_sides() >= 2 )
@@ -207,7 +207,7 @@ TEST_F(FieldValueCacheTest, element_cache_map) {
     this->add_bulk_points(dh_cell6);
 
     this->eval_point_data_.make_permanent();
-    this->prepare_elements_to_update();
+    this->create_patch();
     EXPECT_EQ(this->n_elements(), 3);
     EXPECT_EQ(this->n_regions(), 2);
     EXPECT_TRUE(element_to_map_.find(1)!=element_to_map_.end());

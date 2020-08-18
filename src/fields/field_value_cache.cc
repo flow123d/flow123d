@@ -57,7 +57,7 @@ void ElementCacheMap::init(std::shared_ptr<EvalPoints> eval_points) {
 }
 
 
-void ElementCacheMap::prepare_elements_to_update() {
+void ElementCacheMap::create_patch() {
     std::sort(eval_point_data_.begin(), eval_point_data_.end());
     unsigned int last_region_idx = -1;
     unsigned int last_element_idx = -1;

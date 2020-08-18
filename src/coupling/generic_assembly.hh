@@ -214,7 +214,7 @@ private:
         coupling_integral_data_.make_permanent();
         boundary_integral_data_.make_permanent();
         //START_TIMER("create_patch");
-        element_cache_map_.prepare_elements_to_update();
+        element_cache_map_.create_patch();
         //END_TIMER("create_patch");
         //START_TIMER("cache_update");
         multidim_assembly_[1_d]->data_->cache_update(element_cache_map_);

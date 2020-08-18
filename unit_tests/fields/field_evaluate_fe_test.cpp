@@ -85,7 +85,7 @@ public:
 
         void update_cache() {
             this->register_eval_points();
-            this->prepare_elements_to_update();
+            this->create_patch();
             this->cache_update(*this);
             this->finish_elements_update();
         }

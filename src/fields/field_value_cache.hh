@@ -107,8 +107,8 @@ public:
     /// Init cache
     void init(std::shared_ptr<EvalPoints> eval_points);
 
-    /// Prepare data member before reading data to cache.
-    void prepare_elements_to_update();
+    /// Create patch of cached elements before reading data to cache.
+    void create_patch();
 
     /// Reset all items of elements_eval_points_map
     void clear_element_eval_points_map();
