@@ -49,6 +49,11 @@ public:
         data_.resize(reserved_size);
     }
 
+    /// Copy constructor
+	RevertableList(const RevertableList& other)
+    : data_(other.data_), temporary_size_(other.temporary_size_), permanent_size_(other.permanent_size_), enlardeg_by_(other.enlardeg_by_)
+    {}
+
     /**
      * Resize to new reserved size.
      *

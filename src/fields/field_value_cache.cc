@@ -58,11 +58,13 @@ void ElementCacheMap::init(std::shared_ptr<EvalPoints> eval_points) {
 
 
 void ElementCacheMap::create_patch() {
-    std::sort(eval_point_data_.begin(), eval_point_data_.end());
+    RevertableList<EvalPointData> eval_point_data_tmp = eval_point_data_;
+    std::sort(eval_point_data_tmp.begin(), eval_point_data_tmp.end());
+    eval_point_data_.reset();
+
     unsigned int last_region_idx = -1;
     unsigned int last_element_idx = -1;
     unsigned int i_pos=0; // position in eval_point_data_
-    unsigned int points_in_cache = 0; // index to cache in table element_eval_points_map_
 
     // Erase element data of previous step
     regions_starts_.reset();
@@ -71,9 +73,15 @@ void ElementCacheMap::create_patch() {
     element_to_map_.clear();
     std::fill(elm_idx_.begin(), elm_idx_.end(), ElementCacheMap::undef_elem_idx);
 
-    for (auto it=eval_point_data_.begin(); it!=eval_point_data_.end(); ++it, ++i_pos) {
+    for (auto it=eval_point_data_tmp.begin(); it!=eval_point_data_tmp.end(); ++it) {
         if (it->i_element_ != last_element_idx) { // new element
             if (it->i_reg_ != last_region_idx) { // new region
+                unsigned int last_eval_point = i_pos-1; // set size of block by SIMD size
+                while (i_pos % ElementCacheMap::simd_size_double > 0) {
+                	eval_point_data_.push_back( eval_point_data_[last_eval_point] );
+                    i_pos++;
+                }
+
                 regions_to_map_[it->i_reg_] = regions_starts_.temporary_size();
                 regions_starts_.push_back( element_starts_.temporary_size() );
                 last_region_idx = it->i_reg_;
@@ -83,13 +91,21 @@ void ElementCacheMap::create_patch() {
             element_starts_.push_back(i_pos);
             last_element_idx = it->i_element_;
         }
-        set_element_eval_point(element_to_map_.find(it->i_element_)->second, it->i_eval_point_, points_in_cache);
-        points_in_cache++;
+        eval_point_data_.push_back( *it );
+        set_element_eval_point(element_to_map_.find(it->i_element_)->second, it->i_eval_point_, i_pos);
+        i_pos++;
     }
+    unsigned int last_eval_point = i_pos-1; // set size of block of last region by SIMD size
+    while (i_pos % ElementCacheMap::simd_size_double > 0) {
+        eval_point_data_.push_back( eval_point_data_[last_eval_point] );
+        i_pos++;
+    }
+
     regions_starts_.push_back( element_starts_.temporary_size() );
     element_starts_.push_back(i_pos);
     regions_starts_.make_permanent();
     element_starts_.make_permanent();
+    eval_point_data_.make_permanent();
 }
 
 
