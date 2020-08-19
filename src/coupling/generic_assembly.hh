@@ -59,9 +59,6 @@ template < template<IntDim...> class DimAssembly>
 class GenericAssembly
 {
 private:
-    /// Holds maximum number of neighbouring element adding in one step to patch (own element and its side, coupling, boundary neighbours).
-    static const unsigned int maximal_neighbouring_elem = 9;
-
     struct BulkIntegralData {
         BulkIntegralData() {}
 
@@ -113,10 +110,10 @@ public:
     GenericAssembly( typename DimAssembly<1>::EqDataDG *eq_data, std::shared_ptr<Balance> balance, int active_integrals )
     : multidim_assembly_(eq_data),
       active_integrals_(active_integrals),
-	  bulk_integral_data_(12),
+	  bulk_integral_data_(21),
 	  edge_integral_data_(12, 4),
-	  coupling_integral_data_(12),
-	  boundary_integral_data_(8)
+	  coupling_integral_data_(12, 4),
+	  boundary_integral_data_(8, 2)
     {
         eval_points_ = std::make_shared<EvalPoints>();
         // first step - create integrals, then - initialize cache and initialize subobject of dimensions
@@ -148,8 +145,9 @@ public:
         multidim_assembly_[1_d]->begin();
 
         bool add_into_patch = false; // control variable
-        for (auto cell : dh->local_range() )
+        for (unsigned int i_cell=0; i_cell<dh->local_size();)
         {
+        	DHCellAccessor cell(dh.get(), i_cell);
             if (!add_into_patch) {
         	    element_cache_map_.start_elements_update();
         	    add_into_patch = true;
@@ -158,16 +156,28 @@ public:
             //START_TIMER("add_integrals_to_patch");
             this->add_integrals_of_computing_step(cell);
             //END_TIMER("add_integrals_to_patch");
-            element_cache_map_.cache_map_index(cell);
-            element_cache_map_.eval_point_data_.make_permanent(); // check if there is space in FieldValueCache
-                                                                  // (if not call revert_temporary() and repeat iteration with same cell)
-                                                                  // it will replace next condition (n_elements > ElementCacheMap...)
 
-            // TODO temporary solution of check of cache size
-            if (elm_idx_.size() > ElementCacheMap::n_cached_elements-GenericAssembly<DimAssembly>::maximal_neighbouring_elem) {
+            if (elm_idx_.size() > ElementCacheMap::n_cached_elements) {
+                bulk_integral_data_.revert_temporary();
+                edge_integral_data_.revert_temporary();
+                coupling_integral_data_.revert_temporary();
+                boundary_integral_data_.revert_temporary();
+                element_cache_map_.eval_point_data_.revert_temporary();
                 this->assemble_integrals(step);
                 elm_idx_.clear();
                 add_into_patch = false;
+            } else {
+                bulk_integral_data_.make_permanent();
+                edge_integral_data_.make_permanent();
+                coupling_integral_data_.make_permanent();
+                boundary_integral_data_.make_permanent();
+                element_cache_map_.eval_point_data_.make_permanent();
+                if (elm_idx_.size() == ElementCacheMap::n_cached_elements) {
+                    this->assemble_integrals(step);
+                    elm_idx_.clear();
+                    add_into_patch = false;
+                }
+                ++i_cell;
             }
         }
         if (add_into_patch)
@@ -209,10 +219,6 @@ private:
     /// Call assemblations when patch is filled
     void assemble_integrals(const TimeStep &step) {
         unsigned int i;
-        bulk_integral_data_.make_permanent();
-        edge_integral_data_.make_permanent();
-        coupling_integral_data_.make_permanent();
-        boundary_integral_data_.make_permanent();
         //START_TIMER("create_patch");
         element_cache_map_.create_patch();
         //END_TIMER("create_patch");
