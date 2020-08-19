@@ -250,6 +250,7 @@ public:
         cell.get_dof_indices(dof_indices_);
         fe_values_side_.reinit(side);
         unsigned int k;
+        double gamma_l;
 
         for (unsigned int sbi=0; sbi<data_->n_substances(); sbi++)
         {
@@ -329,7 +330,9 @@ public:
         ASSERT_EQ_DBG(edge_side_range.begin()->element().dim(), dim).error("Dimension of element mismatch!");
 
         unsigned int k;
-   	    sid=0;
+        double gamma_l, omega[2], transport_flux, delta[2], delta_sum;
+        double aniso1, aniso2;
+        int sid=0, s1, s2;
         for( DHCellSide edge_side : edge_side_range )
         {
             auto dh_edge_cell = data_->dh_->cell_accessor_from_element( edge_side.elem_idx() );
@@ -486,8 +489,10 @@ public:
 
         // Note: use data members csection_ and velocity_ for appropriate quantities of lower dim element
 
+        double comm_flux[2][2];
+        unsigned int n_dofs[2];
         ElementAccessor<3> elm_lower_dim = cell_lower_dim.elm();
-        n_indices = cell_lower_dim.get_dof_indices(dof_indices_);
+        unsigned int n_indices = cell_lower_dim.get_dof_indices(dof_indices_);
         for(unsigned int i=0; i<n_indices; ++i) {
             side_dof_indices_vb_[i] = dof_indices_[i];
         }
@@ -580,23 +585,6 @@ private:
     vector<PetscScalar> local_matrix_;                        ///< Auxiliary vector for assemble methods
     vector<vector<double> > dg_penalty_;                      ///< Auxiliary vectors for assemble element-element fluxes
 
-	/// @name Auxiliary variables used during element-element assembly
-	// @{
-
-	double gamma_l, omega[2], transport_flux, delta[2], delta_sum;
-    double aniso1, aniso2;
-    int sid, s1, s2;
-
-	// @}
-
-	/// @name Auxiliary variables used during element-side assembly
-	// @{
-
-    unsigned int n_dofs[2], n_indices;
-    double comm_flux[2][2];
-
-	// @}
-
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
 
@@ -640,6 +628,7 @@ public:
 
         ElementAccessor<3> elm = cell.elm();
         unsigned int k;
+        double source;
 
         fe_values_.reinit(elm);
         cell.get_dof_indices(dof_indices_);
@@ -714,13 +703,6 @@ public:
         vector<PetscScalar> local_rhs_;                           ///< Auxiliary vector for set_sources method.
         vector<PetscScalar> local_source_balance_vector_;         ///< Auxiliary vector for set_sources method.
         vector<PetscScalar> local_source_balance_rhs_;            ///< Auxiliary vector for set_sources method.
-
-        /// @name Auxiliary variables used during set sources
-    	// @{
-
-        double source;
-
-    	// @}
 
         template < template<IntDim...> class DimAssembly>
         friend class GenericAssembly;
