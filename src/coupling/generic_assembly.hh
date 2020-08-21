@@ -191,28 +191,28 @@ public:
         return element_cache_map_;
     }
 
-    /// Return BulkIntegral of appropriate dimension
-    inline std::shared_ptr<BulkIntegral> bulk_integral(unsigned int dim) const {
+    /// Return BulkPoint range of appropriate dimension
+    Range< BulkPoint > bulk_points(unsigned int dim, const DHCellAccessor &cell) const {
         ASSERT_DBG( (dim>0) && (dim<=3) )(dim).error("Invalid dimension, must be 1, 2 or 3!\n");
-	    return integrals_.bulk_[dim-1];
+        return integrals_.bulk_[dim-1]->points(cell, &(element_cache_map_));
     }
 
-    /// Return EdgeIntegral of appropriate dimension
-    inline std::shared_ptr<EdgeIntegral> edge_integral(unsigned int dim) const {
+    /// Return EdgePoint range of appropriate dimension
+    Range< EdgePoint > edge_points(unsigned int dim, const DHCellSide &cell_side) const {
         ASSERT_DBG( (dim>0) && (dim<=3) )(dim).error("Invalid dimension, must be 1, 2 or 3!\n");
-	    return integrals_.edge_[dim-1];
+	    return integrals_.edge_[dim-1]->points(cell_side, &(element_cache_map_));
     }
 
-    /// Return CouplingIntegral between dimensions dim-1 and dim
-    inline std::shared_ptr<CouplingIntegral> coupling_integral(unsigned int dim) const {
+    /// Return CouplingPoint range of appropriate dimension
+    Range< CouplingPoint > coupling_points(unsigned int dim, const DHCellSide &cell_side) const {
         ASSERT_DBG( (dim>1) && (dim<=3) )(dim).error("Invalid dimension, must be 2 or 3!\n");
-	    return integrals_.coupling_[dim-2];
+	    return integrals_.coupling_[dim-2]->points(cell_side, &(element_cache_map_));
     }
 
-    /// Return BoundaryIntegral of appropriate dimension
-    inline std::shared_ptr<BoundaryIntegral> boundary_integral(unsigned int dim) const {
+    /// Return BoundaryPoint range of appropriate dimension
+    Range< BoundaryPoint > boundary_points(unsigned int dim, const DHCellSide &cell_side) const {
         ASSERT_DBG( (dim>0) && (dim<=3) )(dim).error("Invalid dimension, must be 1, 2 or 3!\n");
-	    return integrals_.boundary_[dim-1];
+	    return integrals_.boundary_[dim-1]->points(cell_side, &(element_cache_map_));
     }
 
 private:
