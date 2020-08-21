@@ -181,7 +181,6 @@ public:
         dof_indices_.resize(ndofs_);
         side_dof_indices_vb_.resize(2*ndofs_);
         local_matrix_.resize(4*ndofs_*ndofs_);
-        dg_penalty_.resize(data_->max_edg_sides);
 
         fe_values_vec_.resize(data_->max_edg_sides);
         for (unsigned int sid=0; sid<data_->max_edg_sides; sid++)
@@ -332,16 +331,13 @@ public:
         unsigned int k;
         double gamma_l, omega[2], transport_flux, delta[2], delta_sum;
         double aniso1, aniso2;
+        double local_alpha=0.0;
         int sid=0, s1, s2;
         for( DHCellSide edge_side : edge_side_range )
         {
             auto dh_edge_cell = data_->dh_->cell_accessor_from_element( edge_side.elem_idx() );
             dh_edge_cell.get_dof_indices(side_dof_indices_[sid]);
             fe_values_vec_[sid].reinit(edge_side.side());
-            dg_penalty_[sid].resize(data_->n_substances());
-            auto point_side = *( data_->stiffness_assembly_->edge_integral(dim)->points(edge_side, &(data_->stiffness_assembly_->cache_map())).begin() );
-            for (unsigned int sbi=0; sbi<data_->n_substances(); sbi++)
-                dg_penalty_[sid][sbi] = data_->dg_penalty[sbi](point_side);
             ++sid;
         }
         arma::vec3 normal_vector = fe_values_vec_[0].normal_vector(0);
@@ -398,6 +394,7 @@ public:
                         auto p2 = p1.point_on(edge_side2);
                         delta[0] += dot(data_->diffusion_coef[sbi](p1)*normal_vector,normal_vector);
                         delta[1] += dot(data_->diffusion_coef[sbi](p2)*normal_vector,normal_vector);
+                        local_alpha = max(data_->dg_penalty[sbi](p1), data_->dg_penalty[sbi](p2));
                     }
                     delta[0] /= qsize_lower_dim_;
                     delta[1] /= qsize_lower_dim_;
@@ -409,7 +406,6 @@ public:
                     {
                         omega[0] = delta[1]/delta_sum;
                         omega[1] = delta[0]/delta_sum;
-                        double local_alpha = max(dg_penalty_[s1][sbi], dg_penalty_[s2][sbi]);
                         double h = edge_side1.diameter();
                         aniso1 = data_->elem_anisotropy(edge_side1.element());
                         aniso2 = data_->elem_anisotropy(edge_side2.element());
@@ -583,7 +579,6 @@ private:
     vector< vector<LongIdx> > side_dof_indices_;              ///< Vector of vectors of side DOF indices
     vector<LongIdx> side_dof_indices_vb_;                     ///< Vector of side DOF indices (assemble element-side fluxex)
     vector<PetscScalar> local_matrix_;                        ///< Auxiliary vector for assemble methods
-    vector<vector<double> > dg_penalty_;                      ///< Auxiliary vectors for assemble element-element fluxes
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
