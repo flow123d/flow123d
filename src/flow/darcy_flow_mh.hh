@@ -391,7 +391,7 @@ protected:
 private:
   /// Registrar of class to factory
   static const int registrar;
-  Vec compute_full_residual_vec(Vec residual);
+  void compute_full_residual_vec(Vec residual);
 };
 
 

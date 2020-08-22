@@ -142,7 +142,7 @@ const it::Record & DarcyMH::get_input_type() {
     it::Record ns_rec = Input::Type::Record("NonlinearSolver", "Non-linear solver settings.")
         .declare_key("linear_solver", LinSys::get_input_type(), it::Default("{}"),
             "Linear solver for MH problem.")
-        .declare_key("solver_type", DarcyMH::EqData::nonlinear_solver_type(), it::Default("Picard"),
+        .declare_key("solver_type", DarcyMH::EqData::nonlinear_solver_type(), it::Default("\"Picard\""),
             "Nonlinear solver.") 
         .declare_key("tolerance", it::Double(0.0), it::Default("1E-6"),
             "Residual tolerance.")
@@ -468,6 +468,17 @@ void DarcyMH::initialize() {
             .val<Input::Record>("nonlinear_solver")
             .val<Input::AbstractRecord>("linear_solver");
 
+    // initialization of balance object
+    balance_ = std::make_shared<Balance>("water", mesh_);
+    balance_->init_from_input(input_record_.val<Input::Record>("balance"), time());
+    data_->water_balance_idx = balance_->add_quantity("water_volume");
+    balance_->allocate(data_->dh_->distr()->lsize(), 1);
+    balance_->units(UnitSI().m(3));
+
+    data_->balance = balance_;
+    data_->lin_sys = schur0;
+    data_->lin_sys_Newton = schur0_Newton;
+
     // auxiliary set_time call  since allocation assembly evaluates fields as well
     data_changed_ = data_->set_time(time_->step(), LimitSide::right) || data_changed_;
     create_linear_system(rec, schur0);
@@ -476,28 +487,12 @@ void DarcyMH::initialize() {
         create_linear_system(rec, schur0_Newton);
     }
 
-
-
-    // allocate time term vectors
+     // allocate time term vectors
     VecDuplicate(schur0_Newton->get_solution(), &previous_solution);
     VecCreateMPI(PETSC_COMM_WORLD, data_->dh_->distr()->lsize(),PETSC_DETERMINE,&(steady_diagonal));
     VecDuplicate(steady_diagonal,& new_diagonal);
     VecZeroEntries(new_diagonal);
     VecDuplicate(steady_diagonal, &steady_rhs);
-
-
-    // initialization of balance object
-    balance_ = std::make_shared<Balance>("water", mesh_);
-    balance_->init_from_input(input_record_.val<Input::Record>("balance"), time());
-    data_->water_balance_idx = balance_->add_quantity("water_volume");
-    balance_->allocate(data_->dh_->distr()->lsize(), 1);
-    balance_->units(UnitSI().m(3));
-
-
-    data_->balance = balance_;
-    data_->lin_sys = schur0;
-    data_->lin_sys_Newton = schur0_Newton;
-
 
     initialize_specific();
 }
@@ -600,11 +595,10 @@ bool DarcyMH::zero_time_term(bool time_global) {
     }
 }
 
-Vec DarcyMH::compute_full_residual_vec(Vec residual_)
+void DarcyMH::compute_full_residual_vec(Vec residual_)
 {
     MatMult(*schur0->get_matrix(), schur0->get_solution(), residual_);
     VecAXPY(residual_,-1.0, *schur0->get_rhs());
-    return residual_;
 }
 
 void DarcyMH::solve_nonlinear()
@@ -613,7 +607,7 @@ void DarcyMH::solve_nonlinear()
     Vec residual_;
     VecDuplicate(schur0->get_solution(), &residual_);
     double residual_norm;
-    residual_ = compute_full_residual_vec(residual_);
+    compute_full_residual_vec(residual_);
     VecNorm(residual_, NORM_2, &residual_norm);
     nonlinear_iteration_ = 0;
     int ns_type = input_record_.val<Input::Record>("nonlinear_solver").val<int>("solver_type");
@@ -635,7 +629,7 @@ void DarcyMH::solve_nonlinear()
     }
     vector<double> convergence_history;
 
-    residual_ = compute_full_residual_vec(residual_);
+    compute_full_residual_vec(residual_);
     VecNorm(residual_, NORM_2, &residual_norm);
     Vec save_solution;
     VecDuplicate(schur0->get_solution(), &save_solution);
@@ -673,7 +667,7 @@ void DarcyMH::solve_nonlinear()
         // hack to make BDDC work with empty compute_residual
         if (is_linear_common){
             // we want to print this info in linear (and steady) case
-            residual_ = compute_full_residual_vec(residual_);
+            compute_full_residual_vec(residual_);
             VecNorm(residual_, NORM_2, &residual_norm);
             MessageOut().fmt("[nonlinear solver] lin. it: {}, reason: {}, residual: {}\n",
         		si.n_iterations, si.converged_reason, residual_norm);
@@ -688,7 +682,7 @@ void DarcyMH::solve_nonlinear()
         //OLD_ASSERT( si.converged_reason >= 0, "Linear solver failed to converge. Convergence reason %d \n", si.converged_reason );
         assembly_linear_system();
 
-        residual_ = compute_full_residual_vec(residual_);
+        compute_full_residual_vec(residual_);
         VecNorm(residual_, NORM_2, &residual_norm);
         MessageOut().fmt("[nonlinear solver] it: {} lin. it: {}, reason: {}, residual: {}\n",
         		nonlinear_iteration_, si.n_iterations, si.converged_reason, residual_norm);
