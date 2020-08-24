@@ -634,6 +634,22 @@ message(STATUS "PugiXml_INCLUDE_DIR = ${PugiXml_INCLUDE_DIR}")
 message(STATUS "=======================================================\n\n")
 
 
+message(STATUS "=======================================================")
+message(STATUS "====== BParser  =======================================")
+message(STATUS "=======================================================")
+
+include(ExternalProject)
+ExternalProject_Add(bparser
+  GIT_REPOSITORY    https://github.com/flow123d/bparser.git
+  GIT_TAG           master
+  SOURCE_DIR        "${CMAKE_BINARY_DIR}/bparser-src"
+  BINARY_DIR        "${CMAKE_BINARY_DIR}/bparser-build"
+  CONFIGURE_COMMAND "make cmake_rel"
+  BUILD_COMMAND     "make grammar"
+  INSTALL_COMMAND   ""
+  TEST_COMMAND      ""
+)
+
 message(STATUS "Installing HTML documentation")
 include(InstallHTMLDOC)
 
