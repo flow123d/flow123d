@@ -145,16 +145,16 @@ public:
         multidim_assembly_[1_d]->begin();
 
         bool add_into_patch = false; // control variable
-        for (unsigned int i_cell=0; i_cell<dh->local_size();)
+        for(auto cell_it = dh->local_range().begin(); cell_it != dh->local_range().end(); )
         {
-        	DHCellAccessor cell(dh.get(), i_cell);
+
             if (!add_into_patch) {
         	    element_cache_map_.start_elements_update();
         	    add_into_patch = true;
             }
 
             //START_TIMER("add_integrals_to_patch");
-            this->add_integrals_of_computing_step(cell);
+            this->add_integrals_of_computing_step(*cell_it);
             //END_TIMER("add_integrals_to_patch");
 
             if (elm_idx_.size() > ElementCacheMap::n_cached_elements) {
@@ -177,7 +177,7 @@ public:
                     elm_idx_.clear();
                     add_into_patch = false;
                 }
-                ++i_cell;
+                ++cell_it;
             }
         }
         if (add_into_patch)
