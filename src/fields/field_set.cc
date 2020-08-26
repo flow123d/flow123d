@@ -26,7 +26,16 @@
 
 FieldSet::FieldSet()
 : x_coord_(1,1), y_coord_(1,1), z_coord_(1,1)
-{}
+{
+    // TODO after replace caches with fields call method cache_reallocate directly
+    unsigned int cache_size = 1.1 * ElementCacheMap::n_cached_elements;
+    x_coord_.reinit(cache_size);
+    x_coord_.resize(cache_size);
+    y_coord_.reinit(cache_size);
+    y_coord_.resize(cache_size);
+    z_coord_.reinit(cache_size);
+    z_coord_.resize(cache_size);
+}
 
 FieldSet &FieldSet::operator +=(FieldCommon &add_field) {
     FieldCommon *found_field = field(add_field.name());

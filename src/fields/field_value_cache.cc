@@ -31,6 +31,7 @@
 
 const unsigned int ElementCacheMap::undef_elem_idx = std::numeric_limits<unsigned int>::max();
 const unsigned int ElementCacheMap::simd_size_double = 4;
+const unsigned int ElementCacheMap::n_cached_elements = 300;
 
 
 ElementCacheMap::ElementCacheMap()
