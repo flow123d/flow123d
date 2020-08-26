@@ -120,13 +120,12 @@ void ElementCacheMap::finish_elements_update() {
 void ElementCacheMap::clear_element_eval_points_map() {
 	/// optimize loops, set to ElementCacheMap::unused_point only items stored in eval_point_data_
 	ASSERT_PTR_DBG(element_eval_points_map_);
-	for (auto it = eval_point_data_.begin(); it != eval_point_data_.end(); ++it) {
-	    set_element_eval_point(it->i_element_, it->i_eval_point_, ElementCacheMap::unused_point);
-	}
-/*    unsigned int size = this->eval_points_->max_size();
-	for (unsigned int i_elm=0; i_elm<ElementCacheMap::n_cached_elements; ++i_elm)
-	    for (unsigned int i_point=0; i_point<size; ++i_point)
-	        set_element_eval_point(i_elm, i_point, ElementCacheMap::unused_point);*/
+    unsigned int ep_data_size = ElementCacheMap::n_cached_elements * this->eval_points_->max_size();
+    for (unsigned int i=0; i<ep_data_size; ++i)
+    	element_eval_points_map_[i] = ElementCacheMap::unused_point;
+	//for (auto it = eval_point_data_.begin(); it != eval_point_data_.end(); ++it) {
+	//    set_element_eval_point(this->position_in_cache(it->i_element_), it->i_eval_point_, ElementCacheMap::unused_point);
+	//}
 }
 
 
