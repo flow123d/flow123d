@@ -88,7 +88,7 @@ class ElementCacheMap {
 public:
     /// Number of cached elements which values are stored in cache.
     /// obsolete data member
-    static constexpr unsigned int n_cached_elements = 20;
+    static const unsigned int n_cached_elements;
 
     /// Index of invalid element in cache.
     /// obsolete data member

@@ -110,10 +110,10 @@ public:
     GenericAssembly( typename DimAssembly<1>::EqDataDG *eq_data, std::shared_ptr<Balance> balance, int active_integrals )
     : multidim_assembly_(eq_data),
       active_integrals_(active_integrals),
-	  bulk_integral_data_(21),
-	  edge_integral_data_(12, 4),
-	  coupling_integral_data_(12, 4),
-	  boundary_integral_data_(8, 2)
+	  bulk_integral_data_(20, 10),
+	  edge_integral_data_(12, 6),
+	  coupling_integral_data_(12, 6),
+	  boundary_integral_data_(8, 4)
     {
         eval_points_ = std::make_shared<EvalPoints>();
         // first step - create integrals, then - initialize cache and initialize subobject of dimensions
@@ -157,7 +157,7 @@ public:
             this->add_integrals_of_computing_step(*cell_it);
             //END_TIMER("add_integrals_to_patch");
 
-            if (elm_idx_.size() > ElementCacheMap::n_cached_elements) {
+            if (element_cache_map_.eval_point_data_.temporary_size() > ElementCacheMap::n_cached_elements) {
                 bulk_integral_data_.revert_temporary();
                 edge_integral_data_.revert_temporary();
                 coupling_integral_data_.revert_temporary();
@@ -172,7 +172,7 @@ public:
                 coupling_integral_data_.make_permanent();
                 boundary_integral_data_.make_permanent();
                 element_cache_map_.eval_point_data_.make_permanent();
-                if (elm_idx_.size() == ElementCacheMap::n_cached_elements) {
+                if (element_cache_map_.eval_point_data_.temporary_size() == ElementCacheMap::n_cached_elements) {
                     this->assemble_integrals(step);
                     elm_idx_.clear();
                     add_into_patch = false;
@@ -180,8 +180,10 @@ public:
                 ++cell_it;
             }
         }
-        if (add_into_patch)
+        if (add_into_patch) {
             this->assemble_integrals(step);
+            elm_idx_.clear();
+        }
 
         multidim_assembly_[1_d]->end();
     }
