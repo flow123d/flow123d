@@ -173,7 +173,7 @@ void RichardsLMH::initial_condition_postprocess()
 void RichardsLMH::accept_time_step()
 {
     data_->p_edge_solution_previous_time.copy_from(data_->p_edge_solution);
-    VectorMPI water_content_vec = data_->water_content_ptr->get_data_vec();
+    VectorMPI water_content_vec = data_->water_content_ptr->vec();
     data_->water_content_previous_time.copy_from(water_content_vec);
 
     data_->p_edge_solution_previous_time.local_to_ghost_begin();
