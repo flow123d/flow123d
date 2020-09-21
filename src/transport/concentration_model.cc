@@ -41,9 +41,17 @@ using Vect = arma::vec3;
 using Tens = arma::mat33;
 
 // Functor computing velocity norm
-Sclr fn_conc_v_norm(Vect vel) {
-	return arma::norm(vel, 2);
-}
+//Sclr fn_conc_v_norm(Vect vel) {
+//	return arma::norm(vel, 2);
+//}
+
+// REimplement using a functor class
+struct fn_conc_v_norm {
+    Sclr operator ()(Vect vel) {
+        return arma::norm(vel, 2);
+    }
+};
+
 
 // Functor computing mass matrix coefficients (cross_section * water_content)
 Sclr fn_conc_mass_matrix(Sclr csec, Sclr wcont) {
@@ -62,6 +70,7 @@ Sclr fn_conc_sources_dens(Sclr csec, Sclr sdens) {
 }
 
 // Functor computing sources sigma output (cross_section * sources_sigma)
+
 Sclr fn_conc_sources_sigma(Sclr csec, Sclr ssigma) {
     return csec * ssigma;
 }
@@ -295,7 +304,7 @@ void ConcentrationTransportModel::ModelEqData::initialize()
     disp_t.setup_components();
 
     // create FieldModels
-    v_norm.set(Model<3, FieldValue<3>::Scalar>::create(fn_conc_v_norm, flow_flux), 0.0);
+    v_norm.set(Model<3, FieldValue<3>::Scalar>::create(fn_conc_v_norm(), flow_flux), 0.0);
     mass_matrix_coef.set(Model<3, FieldValue<3>::Scalar>::create(fn_conc_mass_matrix, cross_section, water_content), 0.0);
     retardation_coef.set(
         Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_retardation, cross_section, porosity, rock_density, sorption_coefficient),

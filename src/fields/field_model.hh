@@ -224,14 +224,14 @@ template<int spacedim, class Value, typename Fn, class ... InputFields>
 class FieldModel : public FieldAlgorithmBase<spacedim, Value>
 {
 private:
-	Fn* fn;
+	Fn fn;
 	typedef std::tuple<InputFields...> FieldsTuple;
     FieldsTuple input_fields;
 
 public:
     typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
 
-    FieldModel(Fn* func, InputFields... args)
+    FieldModel(Fn func, InputFields... args)
     : fn(func), input_fields( std::forward_as_tuple((args)...) )
     {}
 
@@ -278,8 +278,11 @@ public:
     typedef FieldAlgorithmBase<spacedim, Value> FieldBaseType;
     typedef std::shared_ptr< FieldBaseType > FieldBasePtr;
 
+    /**
+     * Fn is a functor class and fn its instance.
+     */
     template<typename Fn, class ... InputFields>
-    static auto create(Fn *fn,  InputFields&&... inputs) -> decltype(auto)
+    static auto create(Fn fn,  InputFields&&... inputs) -> decltype(auto)
     {
         return std::make_shared<FieldModel<spacedim, Value, Fn, InputFields...>>(fn, std::forward<InputFields>(inputs)...);
     }
