@@ -270,11 +270,6 @@ void DarcyFlowMHOutput::output()
         output_specific_fields.output(darcy_flow->time().step());
     }
 
-    {
-        START_TIMER("write time frame");
-        output_stream->write_time_frame();
-    }
-
     
 }
 

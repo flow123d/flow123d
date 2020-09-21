@@ -222,9 +222,6 @@ public:
 	/**
 	 * Getters.
 	 */
-	inline std::shared_ptr<OutputTime> output_stream() override
-	{ return output_stream_; }
-
 	double **get_concentration_matrix() override;
 
 	const Vec &get_solution(unsigned int sbi) override
