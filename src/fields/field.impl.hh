@@ -50,7 +50,7 @@ Field<spacedim,Value>::Field()
 	shared_->n_comp_ = (Value::NRows_ ? 0 : 1);
 	this->add_factory( std::make_shared<FactoryBase>() );
 
-	unsigned int cache_size = 1.1 * ElementCacheMap::n_cached_elements;
+	unsigned int cache_size = 1.1 * CacheMapElementNumber::get();
 	value_cache_.reinit(cache_size);
 	value_cache_.resize(cache_size);
 
@@ -69,7 +69,7 @@ Field<spacedim,Value>::Field(const string &name, bool bc)
 		shared_->bc_=bc;
 		this->name( name );
 		this->add_factory( std::make_shared<FactoryBase>() );
-		unsigned int cache_size = 1.1 * ElementCacheMap::n_cached_elements;
+		unsigned int cache_size = 1.1 * CacheMapElementNumber::get();
 		value_cache_.reinit(cache_size);
 		value_cache_.resize(cache_size);
 
@@ -91,7 +91,7 @@ Field<spacedim,Value>::Field(unsigned int component_index, string input_name, st
 	this->shared_->input_name_ = input_name;
     shared_->bc_ = bc;
 
-	unsigned int cache_size = 1.1 * ElementCacheMap::n_cached_elements;
+	unsigned int cache_size = 1.1 * CacheMapElementNumber::get();
 	value_cache_.reinit(cache_size);
 	value_cache_.resize(cache_size);
 

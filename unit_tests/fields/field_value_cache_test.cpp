@@ -85,10 +85,10 @@ public:
 
 TEST_F(FieldValueCacheTest, field_value_cache) {
     FieldValueCache<double> value_cache(1, 1);
-    unsigned int cache_size = ElementCacheMap::n_cached_elements * eval_points->max_size();
+    unsigned int cache_size = CacheMapElementNumber::get() * eval_points->max_size();
     value_cache.reinit(cache_size);
     value_cache.resize(cache_size);
-    EXPECT_EQ(value_cache.size(), eval_points->max_size()*ElementCacheMap::n_cached_elements);
+    EXPECT_EQ(value_cache.size(), eval_points->max_size()*CacheMapElementNumber::get());
 
     this->start_elements_update();
     DHCellAccessor dh_cell(dh_.get(), 2);

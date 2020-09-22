@@ -71,6 +71,42 @@ struct EvalPointData {
 };
 
 
+/**
+ * @brief Auxiliary data class holds number of elements in cache and allow to set this value
+ * explicitly (e.g. as input parameter).
+ *
+ * Implementation is done as singletone with two access through static methods 'get' and 'set'.
+ */
+class CacheMapElementNumber {
+public:
+	/// Return number of stored elements
+	static unsigned int get() {
+	    return get_instance().n_elem_;
+	}
+
+	/// Set number of stored elements
+	static void set(unsigned int n_elem) {
+	    get_instance().n_elem_ = n_elem;
+	}
+
+	CacheMapElementNumber(CacheMapElementNumber const&) = delete;  ///< We don't need copy constructor.
+	void operator=(CacheMapElementNumber const&)        = delete;  ///< We don't need assignment operator.
+
+private:
+	/// Forbiden default constructor
+	CacheMapElementNumber() : n_elem_(300) {}
+
+
+    static CacheMapElementNumber& get_instance()
+    {
+        static CacheMapElementNumber instance;
+        return instance;
+    }
+
+    /// Maximal number of elements stored in cache.
+    unsigned int n_elem_;
+};
+
 
 /**
  * @brief Directing class of FieldValueCache.
@@ -86,12 +122,7 @@ struct EvalPointData {
  */
 class ElementCacheMap {
 public:
-    /// Number of cached elements which values are stored in cache.
-    /// obsolete data member
-    static const unsigned int n_cached_elements;
-
     /// Index of invalid element in cache.
-    /// obsolete data member
     static const unsigned int undef_elem_idx;
 
     /// Size of block (evaluation of FieldFormula) must be multiple of this value.

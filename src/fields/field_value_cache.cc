@@ -31,11 +31,10 @@
 
 const unsigned int ElementCacheMap::undef_elem_idx = std::numeric_limits<unsigned int>::max();
 const unsigned int ElementCacheMap::simd_size_double = 4;
-const unsigned int ElementCacheMap::n_cached_elements = 300;
 
 
 ElementCacheMap::ElementCacheMap()
-: elm_idx_(ElementCacheMap::n_cached_elements, ElementCacheMap::undef_elem_idx),
+: elm_idx_(CacheMapElementNumber::get(), ElementCacheMap::undef_elem_idx),
   ready_to_reading_(false), element_eval_points_map_(nullptr), eval_point_data_(0),
   regions_starts_(2*ElementCacheMap::regions_in_chunk,ElementCacheMap::regions_in_chunk),
   element_starts_(2*ElementCacheMap::elements_in_chunk,ElementCacheMap::elements_in_chunk) {}
@@ -50,7 +49,7 @@ ElementCacheMap::~ElementCacheMap() {
 
 void ElementCacheMap::init(std::shared_ptr<EvalPoints> eval_points) {
     this->eval_points_ = eval_points;
-    unsigned int ep_data_size = ElementCacheMap::n_cached_elements * eval_points_->max_size();
+    unsigned int ep_data_size = CacheMapElementNumber::get() * eval_points_->max_size();
     eval_point_data_.resize(ep_data_size);
     element_eval_points_map_ = new int [ep_data_size];
     for (unsigned int i=0; i<ep_data_size; ++i)
@@ -121,7 +120,7 @@ void ElementCacheMap::finish_elements_update() {
 void ElementCacheMap::clear_element_eval_points_map() {
 	/// optimize loops, set to ElementCacheMap::unused_point only items stored in eval_point_data_
 	ASSERT_PTR_DBG(element_eval_points_map_);
-    unsigned int ep_data_size = ElementCacheMap::n_cached_elements * this->eval_points_->max_size();
+    unsigned int ep_data_size = CacheMapElementNumber::get() * this->eval_points_->max_size();
     for (unsigned int i=0; i<ep_data_size; ++i)
     	element_eval_points_map_[i] = ElementCacheMap::unused_point;
 	//for (auto it = eval_point_data_.begin(); it != eval_point_data_.end(); ++it) {
