@@ -153,9 +153,9 @@ public:
         	    add_into_patch = true;
             }
 
-            //START_TIMER("add_integrals_to_patch");
+            START_TIMER("add_integrals_to_patch");
             this->add_integrals_of_computing_step(*cell_it);
-            //END_TIMER("add_integrals_to_patch");
+            END_TIMER("add_integrals_to_patch");
 
             if (element_cache_map_.eval_point_data_.temporary_size() > CacheMapElementNumber::get()) {
                 bulk_integral_data_.revert_temporary();
@@ -221,16 +221,16 @@ private:
     /// Call assemblations when patch is filled
     void assemble_integrals(const TimeStep &step) {
         unsigned int i;
-        //START_TIMER("create_patch");
+        START_TIMER("create_patch");
         element_cache_map_.create_patch();
-        //END_TIMER("create_patch");
-        //START_TIMER("cache_update");
+        END_TIMER("create_patch");
+        START_TIMER("cache_update");
         multidim_assembly_[1_d]->data_->cache_update(element_cache_map_);
-        //END_TIMER("cache_update");
+        END_TIMER("cache_update");
         element_cache_map_.finish_elements_update();
 
         if (active_integrals_ & ActiveIntegrals::bulk) {
-            //START_TIMER("assemble_volume_integrals");
+            START_TIMER("assemble_volume_integrals");
             for (i=0; i<bulk_integral_data_.permanent_size(); ++i) { // volume integral
                 switch (bulk_integral_data_[i].cell.dim()) {
                 case 1:
@@ -244,11 +244,11 @@ private:
                     break;
                 }
             }
-            //END_TIMER("assemble_volume_integrals");
+            END_TIMER("assemble_volume_integrals");
         }
 
         if (active_integrals_ & ActiveIntegrals::boundary) {
-            //START_TIMER("assemble_fluxes_boundary");
+            START_TIMER("assemble_fluxes_boundary");
             for (i=0; i<boundary_integral_data_.permanent_size(); ++i) { // boundary integral
                 switch (boundary_integral_data_[i].side.dim()) {
                 case 1:
@@ -262,11 +262,11 @@ private:
                     break;
                 }
             }
-            //END_TIMER("assemble_fluxes_boundary");
+            END_TIMER("assemble_fluxes_boundary");
         }
 
         if (active_integrals_ & ActiveIntegrals::edge) {
-            //START_TIMER("assemble_fluxes_elem_elem");
+            START_TIMER("assemble_fluxes_elem_elem");
             for (i=0; i<edge_integral_data_.permanent_size(); ++i) { // edge integral
             	auto range = edge_integral_data_[i].edge_side_range;
                 switch (range.begin()->dim()) {
@@ -281,11 +281,11 @@ private:
                     break;
                 }
             }
-            //END_TIMER("assemble_fluxes_elem_elem");
+            END_TIMER("assemble_fluxes_elem_elem");
         }
 
         if (active_integrals_ & ActiveIntegrals::coupling) {
-            //START_TIMER("assemble_fluxes_elem_side");
+            START_TIMER("assemble_fluxes_elem_side");
             for (i=0; i<coupling_integral_data_.permanent_size(); ++i) { // coupling integral
                 switch (coupling_integral_data_[i].side.dim()) {
                 case 2:
@@ -296,7 +296,7 @@ private:
                     break;
                 }
             }
-            //END_TIMER("assemble_fluxes_elem_side");
+            END_TIMER("assemble_fluxes_elem_side");
         }
         // clean integral data
         bulk_integral_data_.reset();
