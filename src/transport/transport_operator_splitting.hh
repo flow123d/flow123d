@@ -25,6 +25,7 @@
 #include "fields/field.hh"                      // for Field
 #include "fields/field_values.hh"
 #include "fields/field_set.hh"
+#include "fields/field_fe.hh"
 #include "fields/multi_field.hh"
 #include "transport/advection_process_base.hh"
 #include "input/accessors.hh"                   // for Record
@@ -59,6 +60,8 @@ namespace Input {
  */
 class ConcentrationTransportBase : public EquationBase {
 public:
+
+    typedef std::vector<std::shared_ptr<FieldFE< 3, FieldValue<3>::Scalar>>> FieldFEScalarVec;
 
     /**
      * Constructor.
@@ -100,8 +103,8 @@ public:
     /// Return substance indices used in balance.
     virtual const vector<unsigned int> &get_subst_idx() = 0;
 
-    /// Calculate the array of concentrations per element (for reactions).
-    virtual void calculate_concentration_matrix() = 0;
+    /// Compute P0 interpolation of the solution (used in reaction term).
+    virtual void compute_p0_interpolation() = 0;
 
     /// Perform changes to transport solution after reaction step.
     virtual void update_after_reactions(bool solution_changed) = 0;
@@ -109,14 +112,11 @@ public:
     /// Setter for output stream.
     virtual void set_output_stream(std::shared_ptr<OutputTime> stream) = 0;
 
-    /// Getter for output stream.
-    virtual std::shared_ptr<OutputTime> output_stream() = 0;
-
-    /// Getter for array of concentrations per element.
-	virtual double **get_concentration_matrix() = 0;
+    /// Getter for P0 interpolation by FieldFE.
+	virtual FieldFEScalarVec& get_p0_interpolation() = 0;
 
 	/// Return PETSc vector with solution for sbi-th substance.
-	virtual const Vec &get_solution(unsigned int sbi) = 0;
+	virtual Vec get_component_vec(unsigned int sbi) = 0;
 
 	/// Return array of indices of local elements and parallel distribution of elements.
 	virtual void get_par_info(LongIdx * &el_4_loc, Distribution * &el_ds) = 0;

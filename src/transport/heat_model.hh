@@ -244,11 +244,6 @@ protected:
 	 */
 	static IT::Record get_input_type(const string &implementation, const string &description);
 
-	void output_data() override;
-
-	std::shared_ptr<OutputTime> &output_stream()
-	{ return output_stream_; }
-
 	virtual void calculate_cumulative_balance() = 0;
 
 	/**

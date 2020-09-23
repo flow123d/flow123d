@@ -117,7 +117,6 @@ private:
  */
 class ConvectionTransport : public ConcentrationTransportBase {
 public:
-
     class EqData : public TransportEqData {
     public:
 
@@ -138,8 +137,9 @@ public:
 
 		Field<3, FieldValue<3>::Scalar> region_id;
         Field<3, FieldValue<3>::Scalar> subdomain;
-        MultiField<3, FieldValue<3>::Scalar>    conc_mobile;    ///< Calculated concentrations in the mobile zone.
 
+        MultiField<3, FieldValue<3>::Scalar>    conc_mobile;    ///< Calculated concentrations in the mobile zone.
+        FieldFEScalarVec conc_mobile_fe;                        ///< Underlaying FieldFE for each substance of conc_mobile.
 
         /// Fields indended for output, i.e. all input fields plus those representing solution.
         EquationOutput output_fields;
@@ -177,9 +177,12 @@ public:
 	/**
 	 * Calculates one time step of explicit transport.
 	 */
-	void update_solution() override;
+    void update_solution() override;
 
-	void calculate_concentration_matrix() override {};
+    /** Compute P0 interpolation of the solution (used reaction term).
+     * Empty - solution is already P0 interpolation.
+     */
+    void compute_p0_interpolation() override {};
 
     /// Not used in this class.
 	void update_after_reactions(bool) override {};
@@ -222,13 +225,11 @@ public:
 	/**
 	 * Getters.
 	 */
-	inline std::shared_ptr<OutputTime> output_stream() override
-	{ return output_stream_; }
 
-	double **get_concentration_matrix() override;
+    /// Getter for P0 interpolation by FieldFE.
+	FieldFEScalarVec& get_p0_interpolation() override;
 
-	const Vec &get_solution(unsigned int sbi) override
-	{ return vconc[sbi]; }
+	Vec get_component_vec(unsigned int sbi) override;
 
 	void get_par_info(LongIdx * &el_4_loc, Distribution * &el_ds) override;
 
@@ -334,11 +335,6 @@ private:
     /// necessity for matrix update
     double transport_matrix_time;
     double transport_bc_time;   ///< Time of the last update of the boundary condition terms.
-
-    /// Concentration vectors for mobile phase.
-    Vec *vconc; // concentration vector
-    /// Concentrations for phase, substance, element
-    double **conc;
 
     ///
     Vec *vpconc; // previous concentration vector

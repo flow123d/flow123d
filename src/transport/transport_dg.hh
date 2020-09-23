@@ -29,6 +29,7 @@
 #include "fem/update_flags.hh"                 // for operator|
 #include "fields/field_values.hh"              // for FieldValue<>::Scalar
 #include "fields/field.hh"
+#include "fields/field_fe.hh"
 #include "fields/multi_field.hh"
 #include "la/vector_mpi.hh"
 #include "fields/equation_output.hh"
@@ -138,6 +139,8 @@ public:
     template<unsigned int dim> using BdrConditionAssemblyDim = BdrConditionAssemblyDG<dim, Model>;
     template<unsigned int dim> using InitConditionAssemblyDim = InitConditionAssemblyDG<dim, Model>;
 
+	typedef std::vector<std::shared_ptr<FieldFE< 3, FieldValue<3>::Scalar>>> FieldFEScalarVec;
+
 	class EqData : public Model::ModelEqData {
 	public:
 
@@ -221,9 +224,10 @@ public:
         GenericAssembly< SourcesAssemblyDim > * sources_assembly_;
         GenericAssembly< BdrConditionAssemblyDim > * bdr_cond_assembly_;
         GenericAssembly< InitConditionAssemblyDim > * init_cond_assembly_;
+
+		FieldFEScalarVec conc_fe;
+		std::shared_ptr<DOFHandlerMultiDim> dh_p0;
 	};
-
-
 
 	enum DGVariant {
 		// Non-symmetric weighted interior penalty DG
@@ -280,13 +284,16 @@ public:
 
     void calculate_cumulative_balance();
 
-	const Vec &get_solution(unsigned int sbi)
+	/// Return PETSc vector with solution for sbi-th component.
+	Vec get_component_vec(unsigned int sbi)
 	{ return data_->ls[sbi]->get_solution(); }
 
-	double **get_concentration_matrix()
-	{ return solution_elem_; }
+	/// Getter for P0 interpolation by FieldFE.
+	FieldFEScalarVec& get_p0_interpolation()
+	{ return data_->conc_fe;}
 
-	void calculate_concentration_matrix();
+	/// Compute P0 interpolation of the solution (used in reaction term).
+	void compute_p0_interpolation();
 
 	void update_after_reactions(bool solution_changed);
 
@@ -359,10 +366,6 @@ private:
 	
 	/// Mass from previous time instant (necessary when coefficients of mass matrix change in time).
 	std::vector<Vec> mass_vec;
-    
-	/// Element averages of solution (the array is passed to reactions in operator splitting).
-	double **solution_elem_;
-
 	// @}
 
 

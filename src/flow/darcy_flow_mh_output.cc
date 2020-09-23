@@ -270,11 +270,6 @@ void DarcyFlowMHOutput::output()
         output_specific_fields.output(darcy_flow->time().step());
     }
 
-    {
-        START_TIMER("write time frame");
-        output_stream->write_time_frame();
-    }
-
     
 }
 
@@ -455,18 +450,18 @@ void DarcyFlowMHOutput::l2_diff_local(DHCellAccessor dh_cell,
     DHCellAccessor sub_dh_cell = dh_cell.cell_with_other_dh(result.dh_.get());
     IntIdx idx = sub_dh_cell.get_loc_dof_indices()[0];
 
-    auto velocity_data = result.vel_diff_ptr->get_data_vec();
+    auto velocity_data = result.vel_diff_ptr->vec();
     velocity_data[ idx ] = sqrt(velocity_diff);
     result.velocity_error[dim-1] += velocity_diff;
     if (dim == 2 && result.velocity_mask.size() != 0 ) {
     	result.mask_vel_error += (result.velocity_mask[ ele.idx() ])? 0 : velocity_diff;
     }
 
-    auto pressure_data = result.pressure_diff_ptr->get_data_vec();
+    auto pressure_data = result.pressure_diff_ptr->vec();
     pressure_data[ idx ] = sqrt(pressure_diff);
     result.pressure_error[dim-1] += pressure_diff;
 
-    auto div_data = result.div_diff_ptr->get_data_vec();
+    auto div_data = result.div_diff_ptr->vec();
     div_data[ idx ] = sqrt(divergence_diff);
     result.div_error[dim-1] += divergence_diff;
 

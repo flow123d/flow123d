@@ -442,7 +442,7 @@ void DarcyMH::initialize() {
     { // construct pressure, velocity and piezo head fields
 		uint rt_component = 0;
         auto ele_flux_ptr = create_field_fe<3, FieldValue<3>::VectorFixed>(data_->dh_, rt_component);
-        data_->full_solution = ele_flux_ptr->get_data_vec();
+        data_->full_solution = ele_flux_ptr->vec();
         data_->flux.set(ele_flux_ptr, 0.0);
 
 		auto ele_velocity_ptr = std::make_shared< FieldDivide<3, FieldValue<3>::VectorFixed> >(ele_flux_ptr, data_->cross_section);
