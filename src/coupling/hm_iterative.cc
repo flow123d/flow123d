@@ -164,7 +164,7 @@ template<int dim, class Value>
 void copy_field(const FieldCommon &from_field_common, FieldFE<dim, Value> &to_field)
 {
     auto dh = to_field.get_dofhandler();
-    auto vec = to_field.get_data_vec();
+    auto vec = to_field.vec();
     Field<dim,Value> from_field;
     from_field.copy_from(from_field_common);
     
@@ -234,7 +234,7 @@ void HM_Iterative::update_after_converged()
 
 void HM_Iterative::update_potential()
 {
-    auto potential_vec_ = data_.potential_ptr_->get_data_vec();
+    auto potential_vec_ = data_.potential_ptr_->vec();
     auto dh = data_.potential_ptr_->get_dofhandler();
     Field<3, FieldValue<3>::Scalar> field_edge_pressure;
     field_edge_pressure.copy_from(*flow_->data().field("pressure_edge"));
@@ -261,8 +261,8 @@ void HM_Iterative::update_potential()
 
 void HM_Iterative::update_flow_fields()
 {
-    auto beta_vec = data_.beta_ptr_->get_data_vec();
-    auto src_vec = data_.flow_source_ptr_->get_data_vec();
+    auto beta_vec = data_.beta_ptr_->vec();
+    auto src_vec = data_.flow_source_ptr_->vec();
     auto dh = data_.beta_ptr_->get_dofhandler();
     Field<3,FieldValue<3>::Scalar> field_ele_pressure;
     field_ele_pressure.copy_from(*flow_->data().field("pressure_p0"));

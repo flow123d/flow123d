@@ -82,7 +82,7 @@ protected:
     virtual void assemble_ode_matrix(void) = 0;
     
     /// Computes the reaction on a specified element.
-    virtual double **compute_reaction(double **concentrations, int loc_el) override;
+    virtual void compute_reaction(const DHCellAccessor& dh_cell) override;
             
     /// Initializes private members of sorption from the input record.
     virtual void initialize_from_input() = 0;

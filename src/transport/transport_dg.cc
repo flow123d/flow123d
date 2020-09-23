@@ -261,7 +261,7 @@ void TransportDG<Model>::initialize()
         // create shared pointer to a FieldFE, pass FE data and push this FieldFE to output_field on all regions
         auto output_field_ptr = create_field_fe< 3, FieldValue<3>::Scalar >(data_->dh_);
         data_->output_field[sbi].set(output_field_ptr, 0);
-        output_vec[sbi] = output_field_ptr->get_data_vec();
+        output_vec[sbi] = output_field_ptr->vec();
     }
 
     // set time marks for writing the output
@@ -277,7 +277,12 @@ void TransportDG<Model>::initialize()
     // allocate matrix and vector structures
     data_->ls    = new LinSys*[data_->n_substances()];
     data_->ls_dt = new LinSys*[data_->n_substances()];
-    solution_elem_ = new double*[data_->n_substances()];
+    data_->conc_fe.resize(data_->n_substances());
+    
+    MixedPtr<FE_P_disc> fe(0);
+    shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>(Model::mesh_, fe);
+    data_->dh_p0 = make_shared<DOFHandlerMultiDim>(*Model::mesh_);
+    data_->dh_p0->distribute_dofs(ds);    
 
     stiffness_matrix.resize(data_->n_substances(), nullptr);
     mass_matrix.resize(data_->n_substances(), nullptr);
@@ -292,7 +297,8 @@ void TransportDG<Model>::initialize()
 
         data_->ls_dt[sbi] = new LinSys_PETSC(data_->dh_->distr().get(), petsc_default_opts);
         ( (LinSys_PETSC *)data_->ls_dt[sbi] )->set_from_input( input_rec.val<Input::Record>("solver") );
-        solution_elem_[sbi] = new double[Model::mesh_->get_el_ds()->lsize()];
+        
+        data_->conc_fe[sbi] = create_field_fe< 3, FieldValue<3>::Scalar >(data_->dh_p0);
         
         VecDuplicate(data_->ls[sbi]->get_solution(), &data_->ret_vec[sbi]);
     }
@@ -329,7 +335,6 @@ TransportDG<Model>::~TransportDG()
         for (unsigned int i=0; i<data_->n_substances(); i++)
         {
             delete data_->ls[i];
-            delete[] solution_elem_[i];
             delete data_->ls_dt[i];
 
             if (stiffness_matrix[i])
@@ -344,7 +349,6 @@ TransportDG<Model>::~TransportDG()
             	chkerr(VecDestroy(&data_->ret_vec[i]));
         }
         delete[] data_->ls;
-        delete[] solution_elem_;
         delete[] data_->ls_dt;
         //delete[] stiffness_matrix;
         //delete[] mass_matrix;
@@ -575,25 +579,26 @@ void TransportDG<Model>::update_solution()
 
 
 template<class Model>
-void TransportDG<Model>::calculate_concentration_matrix()
+void TransportDG<Model>::compute_p0_interpolation()
 {
     // calculate element averages of solution
-	unsigned int i_cell=0;
 	for (auto cell : data_->dh_->own_range() )
     {
 		LocDofVec loc_dof_indices = cell.get_loc_dof_indices();
 		unsigned int n_dofs=loc_dof_indices.n_rows;
 
+        DHCellAccessor dh_p0_cell = data_->dh_p0->cell_accessor_from_element(cell.elm_idx());
+        IntIdx dof_p0 = dh_p0_cell.get_loc_dof_indices()[0];
+
         for (unsigned int sbi=0; sbi<data_->n_substances(); ++sbi)
         {
-            solution_elem_[sbi][i_cell] = 0;
+            data_->conc_fe[sbi]->vec()[dof_p0] = 0;
 
             for (unsigned int j=0; j<n_dofs; ++j)
-                solution_elem_[sbi][i_cell] += data_->ls[sbi]->get_solution_array()[loc_dof_indices[j]];
+                data_->conc_fe[sbi]->vec()[dof_p0] += data_->ls[sbi]->get_solution_array()[loc_dof_indices[j]];
 
-            solution_elem_[sbi][i_cell] = max(solution_elem_[sbi][i_cell]/n_dofs, 0.);
+            data_->conc_fe[sbi]->vec()[dof_p0] = max(data_->conc_fe[sbi]->vec()[dof_p0]/n_dofs, 0.);
         }
-        ++i_cell;
     }
 }
 
@@ -680,11 +685,13 @@ void TransportDG<Model>::update_after_reactions(bool solution_changed)
 {
     if (solution_changed)
     {
-    	unsigned int i_cell=0;
     	for (auto cell : data_->dh_->own_range() )
         {
     	    LocDofVec loc_dof_indices = cell.get_loc_dof_indices();
             unsigned int n_dofs=loc_dof_indices.n_rows;
+            
+            DHCellAccessor dh_p0_cell = data_->dh_p0->cell_accessor_from_element(cell.elm_idx());
+            IntIdx dof_p0 = dh_p0_cell.get_loc_dof_indices()[0];
 
             for (unsigned int sbi=0; sbi<data_->n_substances(); ++sbi)
             {
@@ -694,9 +701,9 @@ void TransportDG<Model>::update_after_reactions(bool solution_changed)
                 old_average /= n_dofs;
 
                 for (unsigned int j=0; j<n_dofs; ++j)
-                    data_->ls[sbi]->get_solution_array()[loc_dof_indices[j]] += solution_elem_[sbi][i_cell] - old_average;
+                    data_->ls[sbi]->get_solution_array()[loc_dof_indices[j]]
+                        += data_->conc_fe[sbi]->vec()[dof_p0] - old_average;
             }
-            ++i_cell;
         }
     }
     // update mass_vec for the case that mass matrix changes in next time step

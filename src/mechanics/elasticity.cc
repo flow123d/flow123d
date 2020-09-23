@@ -340,7 +340,7 @@ void Elasticity::initialize()
     // allocate matrix and vector structures
     ls = new LinSys_PETSC(feo->dh()->distr().get(), petsc_default_opts);
     ( (LinSys_PETSC *)ls )->set_from_input( input_rec.val<Input::Record>("solver") );
-    ls->set_solution(data_.output_field_ptr->get_data_vec().petsc_vec());
+    ls->set_solution(data_.output_field_ptr->vec().petsc_vec());
 
     // initialization of balance object
 //     balance_->allocate(feo->dh()->distr()->lsize(),
@@ -365,26 +365,26 @@ Elasticity::~Elasticity()
 void Elasticity::update_output_fields()
 {
     // update ghost values of solution vector
-    data_.output_field_ptr->get_data_vec().local_to_ghost_begin();
-    data_.output_field_ptr->get_data_vec().local_to_ghost_end();
+    data_.output_field_ptr->vec().local_to_ghost_begin();
+    data_.output_field_ptr->vec().local_to_ghost_end();
 
     // compute new output fields depending on solution (stress, divergence etc.)
-    data_.output_stress_ptr->get_data_vec().zero_entries();
-    data_.output_cross_section_ptr->get_data_vec().zero_entries();
-    data_.output_div_ptr->get_data_vec().zero_entries();
+    data_.output_stress_ptr->vec().zero_entries();
+    data_.output_cross_section_ptr->vec().zero_entries();
+    data_.output_div_ptr->vec().zero_entries();
     compute_output_fields<1>();
     compute_output_fields<2>();
     compute_output_fields<3>();
 
     // update ghost values of computed fields
-    data_.output_stress_ptr->get_data_vec().local_to_ghost_begin();
-    data_.output_stress_ptr->get_data_vec().local_to_ghost_end();
-    data_.output_von_mises_stress_ptr->get_data_vec().local_to_ghost_begin();
-    data_.output_von_mises_stress_ptr->get_data_vec().local_to_ghost_end();
-    data_.output_cross_section_ptr->get_data_vec().local_to_ghost_begin();
-    data_.output_cross_section_ptr->get_data_vec().local_to_ghost_end();
-    data_.output_div_ptr->get_data_vec().local_to_ghost_begin();
-    data_.output_div_ptr->get_data_vec().local_to_ghost_end();
+    data_.output_stress_ptr->vec().local_to_ghost_begin();
+    data_.output_stress_ptr->vec().local_to_ghost_end();
+    data_.output_von_mises_stress_ptr->vec().local_to_ghost_begin();
+    data_.output_von_mises_stress_ptr->vec().local_to_ghost_end();
+    data_.output_cross_section_ptr->vec().local_to_ghost_begin();
+    data_.output_cross_section_ptr->vec().local_to_ghost_end();
+    data_.output_div_ptr->vec().local_to_ghost_begin();
+    data_.output_div_ptr->vec().local_to_ghost_end();
 }
 
 
@@ -539,11 +539,11 @@ void Elasticity::compute_output_fields()
     const unsigned int ndofs = feo->fe<dim>()->n_dofs();
     auto vec = fv.vector_view(0);
     auto vec_side = fsv.vector_view(0);
-    VectorMPI output_vec = data_.output_field_ptr->get_data_vec();
-    VectorMPI output_stress_vec = data_.output_stress_ptr->get_data_vec();
-    VectorMPI output_von_mises_stress_vec = data_.output_von_mises_stress_ptr->get_data_vec();
-    VectorMPI output_cross_sec_vec = data_.output_cross_section_ptr->get_data_vec();
-    VectorMPI output_div_vec = data_.output_div_ptr->get_data_vec();
+    VectorMPI output_vec = data_.output_field_ptr->vec();
+    VectorMPI output_stress_vec = data_.output_stress_ptr->vec();
+    VectorMPI output_von_mises_stress_vec = data_.output_von_mises_stress_ptr->vec();
+    VectorMPI output_cross_sec_vec = data_.output_cross_section_ptr->vec();
+    VectorMPI output_div_vec = data_.output_div_ptr->vec();
     
     DHCellAccessor cell_tensor = *feo->dh_tensor()->own_range().begin();
     DHCellAccessor cell_scalar = *feo->dh_scalar()->own_range().begin();

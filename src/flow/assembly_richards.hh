@@ -102,7 +102,7 @@ protected:
         const ElementAccessor<3> ele = dh_cell.elm();
         double storativity = ad_->storativity.value(ele.centre(), ele)
                              + ad_->extra_storativity.value(ele.centre(), ele);
-        VectorMPI water_content_vec = ad_->water_content_ptr->get_data_vec();
+        VectorMPI water_content_vec = ad_->water_content_ptr->vec();
 
         for (unsigned int i=0; i<ele->n_sides(); i++) {
             double capacity = 0;
@@ -147,7 +147,7 @@ protected:
                         ( ad_->water_source_density.value(ele.centre(), ele)
                         + ad_->extra_source.value(ele.centre(), ele));
 
-        VectorMPI water_content_vec = ad_->water_content_ptr->get_data_vec();
+        VectorMPI water_content_vec = ad_->water_content_ptr->vec();
 
         for (unsigned int i=0; i<ele->n_sides(); i++)
         {
@@ -207,7 +207,7 @@ protected:
         
         const ElementAccessor<3> ele = dh_cell.elm();
 
-        VectorMPI water_content_vec = ad_->water_content_ptr->get_data_vec();
+        VectorMPI water_content_vec = ad_->water_content_ptr->vec();
         
         for (unsigned int i=0; i<ele->n_sides(); i++) {
             
@@ -219,7 +219,7 @@ protected:
         }
          
         IntIdx p_dof = dh_cell.cell_with_other_dh(ad_->dh_p_.get()).get_loc_dof_indices()(0);
-        ad_->conductivity_ptr->get_data_vec()[p_dof] = compute_conductivity(ele);
+        ad_->conductivity_ptr->vec()[p_dof] = compute_conductivity(ele);
     }
 
     AssemblyDataPtrRichards ad_;
