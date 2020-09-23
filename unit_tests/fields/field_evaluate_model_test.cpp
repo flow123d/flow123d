@@ -42,12 +42,14 @@ class Balance;
  * Results:
  * Mesh 27936 elements, 100 assemblation loops
  * Checked GenericAssembly with active bulk integral only vs. with all active integrals
- * (times in brackets are times of FieldConstant fields of field_evaluate_const_test)
+ * (times in brackets are )
  *
- *                           bulk             all
- * add_integrals_to_patch   18.99            42.38
- * create_patch              2.97            18.30
- * cache_update             11.63 (-8.43)    34.19 (-26.38)
+ *                           bulk                     all
+ * add_integrals_to_patch   18.99                    42.38
+ * create_patch              2.97                    18.30
+ * cache_update             10.30  11.63* -8.43**    31.38  34.19* -26.38**
+ * *) times of cache_update with functions passed to model ( not struct and operator() )
+ * **) times of FieldConstant fields of field_evaluate_const_test
  *
  ****************************************************************************************/
 
@@ -60,17 +62,23 @@ using Vect = arma::vec3;
 using Tens = arma::mat33;
 
 // Functors of FieldModels
-Sclr fn_model_scalar(Vect vec) {
-	return arma::norm(vec, 2);
-}
+struct fn_model_scalar {
+    inline Sclr operator() (Vect vec) {
+        return arma::norm(vec, 2);
+    }
+};
 
-Vect fn_model_vector(Sclr scal, Vect vec) {
-	return scal * vec + vec;
-}
+struct fn_model_vector {
+	inline Vect operator() (Sclr scal, Vect vec) {
+        return scal * vec + vec;
+    }
+};
 
-Tens fn_model_tensor(Sclr scal, Tens ten) {
-	return 0.5 * scal * ten;
-}
+struct fn_model_tensor {
+	inline Tens operator() (Sclr scal, Tens ten) {
+        return 0.5 * scal * ten;
+    }
+};
 
 
 class FieldModelSpeedTest : public testing::Test {
@@ -115,9 +123,9 @@ public:
 
         /// Initialiye FieldModels
         void initialize() {
-            scalar_field.set(Model<3, FieldValue<3>::Scalar>::create(fn_model_scalar, vector_const_field), 0.0);
-            vector_field.set(Model<3, FieldValue<3>::VectorFixed>::create(fn_model_vector, scalar_const_field, vector_const_field), 0.0);
-            tensor_field.set(Model<3, FieldValue<3>::TensorFixed>::create(fn_model_tensor, scalar_const_field, tensor_const_field), 0.0);
+            scalar_field.set(Model<3, FieldValue<3>::Scalar>::create(fn_model_scalar(), vector_const_field), 0.0);
+            vector_field.set(Model<3, FieldValue<3>::VectorFixed>::create(fn_model_vector(), scalar_const_field, vector_const_field), 0.0);
+            tensor_field.set(Model<3, FieldValue<3>::TensorFixed>::create(fn_model_tensor(), scalar_const_field, tensor_const_field), 0.0);
         }
 
     	/// Polynomial order of finite elements.

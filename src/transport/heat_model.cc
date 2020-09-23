@@ -40,75 +40,89 @@ using Vect = arma::vec3;
 using Tens = arma::mat33;
 
 // Functor computing velocity norm
-Sclr fn_heat_v_norm(Vect vel) {
-	return arma::norm(vel, 2);
-}
+struct fn_heat_v_norm {
+    inline Sclr operator() (Vect vel) {
+        return arma::norm(vel, 2);
+    }
+};
 
 /**
  * Functor computing mass matrix coefficients:
  * cross_section * (porosity*fluid_density*fluid_heat_capacity + (1.-porosity)*solid_density*solid_heat_capacity)
  */
-Sclr fn_heat_mass_matrix(Sclr csec, Sclr por, Sclr f_rho, Sclr f_c, Sclr s_rho, Sclr s_c) {
-    return csec * (por*f_rho*f_c + (1.-por)*s_rho*s_c);
-}
+struct fn_heat_mass_matrix {
+    inline Sclr operator() (Sclr csec, Sclr por, Sclr f_rho, Sclr f_c, Sclr s_rho, Sclr s_c) {
+        return csec * (por*f_rho*f_c + (1.-por)*s_rho*s_c);
+    }
+};
 
 /**
  * Functor computing sources density output:
  * cross_section * (porosity*fluid_thermal_source + (1-porosity)*solid_thermal_source)
  */
-Sclr fn_heat_sources_dens(Sclr csec, Sclr por, Sclr f_source, Sclr s_source) {
-    return csec * (por * f_source + (1.-por) * s_source);
-}
+struct fn_heat_sources_dens {
+    inline Sclr operator() (Sclr csec, Sclr por, Sclr f_source, Sclr s_source) {
+        return csec * (por * f_source + (1.-por) * s_source);
+    }
+};
 
 /**
  * Functor computing sources sigma output:
  * cross_section * (porosity*fluid_density*fluid_heat_capacity*fluid_heat_exchange_rate + (1-porosity)*solid_density*solid_heat_capacity*solid_thermal_source)
  */
-Sclr fn_heat_sources_sigma(Sclr csec, Sclr por, Sclr f_rho, Sclr f_cap, Sclr f_sigma, Sclr s_rho, Sclr s_cap, Sclr s_sigma) {
-    return csec * (por * f_rho * f_cap * f_sigma + (1.-por) * s_rho * s_cap * s_sigma);
-}
+struct fn_heat_sources_sigma {
+    inline Sclr operator() (Sclr csec, Sclr por, Sclr f_rho, Sclr f_cap, Sclr f_sigma, Sclr s_rho, Sclr s_cap, Sclr s_sigma) {
+        return csec * (por * f_rho * f_cap * f_sigma + (1.-por) * s_rho * s_cap * s_sigma);
+    }
+};
 
 /**
  * Functor computing sources concentration output for positive heat_sources_sigma (otherwise return 0):
  * cross_section * (porosity*fluid_density*fluid_heat_capacity*fluid_heat_exchange_rate*fluid_ref_temperature + (1-porosity)*solid_density*solid_heat_capacity*solid_heat_exchange_rate*solid_ref_temperature)
  */
-Sclr fn_heat_sources_conc(Sclr csec, Sclr por, Sclr f_rho, Sclr f_cap, Sclr f_sigma, Sclr f_temp, Sclr s_rho, Sclr s_cap, Sclr s_sigma, Sclr s_temp, Sclr sigma) {
-    if (fabs(sigma) > numeric_limits<double>::epsilon())
-        return csec * (por * f_rho * f_cap * f_sigma * f_temp + (1.-por) * s_rho * s_cap * s_sigma * s_temp);
-    else {
-    	return 0;
+struct fn_heat_sources_conc {
+    inline Sclr operator() (Sclr csec, Sclr por, Sclr f_rho, Sclr f_cap, Sclr f_sigma, Sclr f_temp, Sclr s_rho, Sclr s_cap, Sclr s_sigma, Sclr s_temp, Sclr sigma) {
+        if (fabs(sigma) > numeric_limits<double>::epsilon())
+            return csec * (por * f_rho * f_cap * f_sigma * f_temp + (1.-por) * s_rho * s_cap * s_sigma * s_temp);
+        else {
+            return 0;
+        }
     }
-}
+};
 
 /**
  * Functor computing advection coefficient
  * velocity * fluid_density * fluid_heat_capacity
  */
-Vect fn_heat_ad_coef(Sclr f_rho, Sclr f_cap, Vect velocity) {
-    return velocity * f_rho * f_cap;
-}
+struct fn_heat_ad_coef {
+    inline Vect operator() (Sclr f_rho, Sclr f_cap, Vect velocity) {
+        return velocity * f_rho * f_cap;
+    }
+};
 
 /**
  * Functor computing diffusion coefficient (see notes in function)
  */
-Tens fn_heat_diff_coef(Vect velocity, Sclr v_norm, Sclr f_rho, Sclr disp_l, Sclr disp_t, Sclr f_cond, Sclr s_cond, Sclr c_sec, Sclr por) {
-	// result
-	Tens dif_coef;
+struct fn_heat_diff_coef {
+    inline Tens operator() (Vect velocity, Sclr v_norm, Sclr f_rho, Sclr disp_l, Sclr disp_t, Sclr f_cond, Sclr s_cond, Sclr c_sec, Sclr por) {
+        // result
+        Tens dif_coef;
 
-	// dispersive part of thermal diffusion
-	// Note that the velocity vector is in fact the Darcian flux,
-	// so to obtain |v| we have to divide vnorm by porosity and cross_section.
-	if ( fabs(v_norm) > 0 )
-		for (int i=0; i<3; i++)
-			for (int j=0; j<3; j++)
-				dif_coef(i,j) = ( (velocity(i)/v_norm) * (velocity(j)/v_norm) * (disp_l-disp_t) + disp_t*(i==j?1:0))*v_norm*f_rho*f_cond;
-	else
-		dif_coef.zeros();
+        // dispersive part of thermal diffusion
+        // Note that the velocity vector is in fact the Darcian flux,
+        // so to obtain |v| we have to divide vnorm by porosity and cross_section.
+        if ( fabs(v_norm) > 0 )
+            for (int i=0; i<3; i++)
+                for (int j=0; j<3; j++)
+                    dif_coef(i,j) = ( (velocity(i)/v_norm) * (velocity(j)/v_norm) * (disp_l-disp_t) + disp_t*(i==j?1:0))*v_norm*f_rho*f_cond;
+        else
+            dif_coef.zeros();
 
-	// conductive part of thermal diffusion
-	dif_coef += c_sec * (por*f_cond + (1.-por)*s_cond) * arma::eye(3,3);
-    return dif_coef;
-}
+        // conductive part of thermal diffusion
+        dif_coef += c_sec * (por*f_cond + (1.-por)*s_cond) * arma::eye(3,3);
+        return dif_coef;
+    }
+};
 
 
 
@@ -379,36 +393,36 @@ IT::Selection HeatTransferModel::ModelEqData::get_output_selection()
 void HeatTransferModel::ModelEqData::initialize()
 {
     // create FieldModels
-    v_norm.set(Model<3, FieldValue<3>::Scalar>::create(fn_heat_v_norm, flow_flux), 0.0);
+    v_norm.set(Model<3, FieldValue<3>::Scalar>::create(fn_heat_v_norm(), flow_flux), 0.0);
     mass_matrix_coef.set(
         Model<3, FieldValue<3>::Scalar>::create(
-            fn_heat_mass_matrix, cross_section, porosity, fluid_density, fluid_heat_capacity, solid_density, solid_heat_capacity
+            fn_heat_mass_matrix(), cross_section, porosity, fluid_density, fluid_heat_capacity, solid_density, solid_heat_capacity
 	    ),
 	    0.0
 	);
     retardation_coef.set(std::make_shared< FieldConstant<3, FieldValue<3>::Scalar> >(), 0.0);
     sources_density_out.set(
-        Model<3, FieldValue<3>::Scalar>::create_multi(fn_heat_sources_dens, cross_section, porosity, fluid_thermal_source, solid_thermal_source),
+        Model<3, FieldValue<3>::Scalar>::create_multi(fn_heat_sources_dens(), cross_section, porosity, fluid_thermal_source, solid_thermal_source),
         0.0
     );
     sources_sigma_out.set(
         Model<3, FieldValue<3>::Scalar>::create_multi(
-            fn_heat_sources_sigma, cross_section, porosity, fluid_density, fluid_heat_capacity, fluid_heat_exchange_rate, solid_density,
+            fn_heat_sources_sigma(), cross_section, porosity, fluid_density, fluid_heat_capacity, fluid_heat_exchange_rate, solid_density,
             solid_heat_capacity, solid_heat_exchange_rate
         ),
         0.0
     );
     sources_conc_out.set(
         Model<3, FieldValue<3>::Scalar>::create_multi(
-            fn_heat_sources_conc, cross_section, porosity, fluid_density, fluid_heat_capacity, fluid_heat_exchange_rate, fluid_ref_temperature,
+            fn_heat_sources_conc(), cross_section, porosity, fluid_density, fluid_heat_capacity, fluid_heat_exchange_rate, fluid_ref_temperature,
             solid_density, solid_heat_capacity, solid_heat_exchange_rate, solid_ref_temperature, sources_sigma_out
         ),
         0.0
     );
-    advection_coef.set(Model<3, FieldValue<3>::VectorFixed>::create(fn_heat_ad_coef, fluid_density, fluid_heat_capacity, flow_flux), 0.0);
+    advection_coef.set(Model<3, FieldValue<3>::VectorFixed>::create(fn_heat_ad_coef(), fluid_density, fluid_heat_capacity, flow_flux), 0.0);
     diffusion_coef.set(
         Model<3, FieldValue<3>::TensorFixed>::create(
-            fn_heat_diff_coef, flow_flux, v_norm, fluid_density, disp_l, disp_t, fluid_heat_conductivity, solid_heat_conductivity, cross_section, porosity
+            fn_heat_diff_coef(), flow_flux, v_norm, fluid_density, disp_l, disp_t, fluid_heat_conductivity, solid_heat_conductivity, cross_section, porosity
         ),
         0.0
     );
