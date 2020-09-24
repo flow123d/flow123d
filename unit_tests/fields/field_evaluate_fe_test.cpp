@@ -18,6 +18,7 @@
 #include "fields/field_value_cache.hh"
 #include "fields/field_values.hh"
 #include "fields/field_set.hh"
+#include "fields/field_fe.hh"
 #include "tools/unit_si.hh"
 #include "fields/bc_field.hh"
 #include "quadrature/quadrature.hh"
@@ -30,6 +31,8 @@
 #include "input/accessors.hh"
 #include "input/reader_to_storage.hh"
 #include "system/sys_profiler.hh"
+#include "coupling/generic_assembly.hh"
+#include "coupling/assembly_base.hh"
 
 
 class FieldEvalFETest : public testing::Test {
@@ -230,3 +233,188 @@ TEST_F(FieldEvalFETest, evaluate) {
     }
 
 }
+
+
+/****************************************************************************************
+ *                 Speed test of FieldFE evaluation
+ *
+ * Results:
+ * Mesh 27936 elements, 100 assemblation loops
+ * Checked GenericAssembly with active bulk integral only vs. with all active integrals
+ *
+ *                           bulk      all
+ * add_integrals_to_patch   19.05    43.12
+ * create_patch              2.95    18.45
+ * cache_update              8.38    26.17
+ *
+ ****************************************************************************************/
+
+#ifdef FLOW123D_RUN_UNIT_BENCHMARKS
+
+static const unsigned int profiler_loop = 100;
+
+
+class FieldFESpeedTest : public testing::Test {
+public:
+    class EqData : public FieldSet {
+    public:
+        EqData() : order(2) {
+            *this += vector_field
+                        .name("vector_field")
+                        .description("Velocity vector.")
+                        .input_default("0.0")
+                        .flags_add(in_main_matrix)
+                        .units( UnitSI().kg(3).m() );
+            *this += scalar_field
+                        .name("scalar_field")
+                        .description("Pressure head")
+                        .units( UnitSI().m() );
+            *this += tensor_field
+                        .name("tensor_field")
+                        .description("")
+                        .units( UnitSI::dimensionless() )
+                        .flags_add(in_main_matrix);
+
+        }
+
+    	/// Polynomial order of finite elements.
+    	unsigned int order;
+
+    	// fields
+        Field<3, FieldValue<3>::Scalar > scalar_field;
+        Field<3, FieldValue<3>::VectorFixed > vector_field;
+        Field<3, FieldValue<3>::TensorFixed > tensor_field;
+    };
+
+    FieldFESpeedTest() : tg_(0.0, 1.0) {
+    	Profiler::instance();
+
+        FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+        Profiler::instance();
+        PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
+
+        data_ = std::make_shared<EqData>();
+        mesh_ = mesh_full_constructor("{mesh_file=\"mesh/test_27936_elem.msh\"}");
+        dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
+    }
+
+    ~FieldFESpeedTest() {
+        Profiler::uninitialize();
+    }
+
+    static Input::Type::Record & get_input_type() {
+        return IT::Record("SomeEquation","")
+                .declare_key("data", IT::Array(
+                        IT::Record("SomeEquation_Data", FieldCommon::field_descriptor_record_description("SomeEquation_Data") )
+                        .copy_keys( FieldFESpeedTest::EqData().make_field_descriptor_type("SomeEquation") )
+                        .declare_key("scalar_field", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "" )
+                        .declare_key("vector_field", FieldAlgorithmBase< 3, FieldValue<3>::VectorFixed >::get_input_type_instance(), "" )
+                        .declare_key("tensor_field", FieldAlgorithmBase< 3, FieldValue<3>::TensorFixed >::get_input_type_instance(), "" )
+                        .close()
+                        ), IT::Default::obligatory(), ""  )
+                .close();
+    }
+
+    void read_input(const string &input) {
+        // read input string
+        Input::ReaderToStorage reader( input, get_input_type(), Input::FileFormat::format_YAML );
+        Input::Record in_rec=reader.get_root_interface<Input::Record>();
+
+        //data.set_components(component_names);        // set number of substances posibly read from elsewhere
+
+        static std::vector<Input::Array> inputs;
+        unsigned int input_last = inputs.size(); // position of new item
+        inputs.push_back( in_rec.val<Input::Array>("data") );
+
+        data_->set_mesh(*mesh_);
+        data_->set_input_list( inputs[input_last], tg_ );
+
+        auto scalar_fe_ptr = create_field_fe<3, FieldValue<3>::Scalar>(dh_);
+        auto vector_fe_ptr = create_field_fe<3, FieldValue<3>::VectorFixed>(dh_);
+        auto tensor_fe_ptr = create_field_fe<3, FieldValue<3>::TensorFixed>(dh_);
+    	auto scalar_vec = scalar_fe_ptr->vec();
+    	auto vector_vec = vector_fe_ptr->vec();
+    	auto tensor_vec = tensor_fe_ptr->vec();
+    	for (unsigned int i=0; i<scalar_vec.size(); ++i) {
+    	    scalar_vec[i] = 1 + i % 9;
+    	}
+    	for (unsigned int i=0; i<vector_vec.size(); ++i) {
+    		vector_vec[i] = 1 + i % 9;
+    	}
+    	for (unsigned int i=0; i<tensor_vec.size(); ++i) {
+    		tensor_vec[i] = 1 + i % 9;
+    	}
+
+    	data_->scalar_field.set(scalar_fe_ptr, 0.0);
+    	data_->vector_field.set(vector_fe_ptr, 0.0);
+    	data_->tensor_field.set(tensor_fe_ptr, 0.0);
+        data_->set_time(tg_.step(), LimitSide::right);
+    }
+
+
+	void profiler_output() {
+		static ofstream os( FilePath("speed_eval_fe_test.log", FilePath::output_file) );
+		Profiler::instance()->output(MPI_COMM_WORLD, os);
+		os << "" << std::setfill('=') << setw(80) << "" << std::setfill(' ') << endl << endl;
+	}
+
+    std::shared_ptr<EqData> data_;
+    Mesh * mesh_;
+    std::shared_ptr<DOFHandlerMultiDim> dh_;
+    TimeGovernor tg_;
+};
+
+template <unsigned int dim>
+class AssemblyDimTest : public AssemblyBase<dim> {
+public:
+    typedef typename FieldFESpeedTest::EqData EqDataDG;
+
+    /// Constructor.
+    AssemblyDimTest(EqDataDG *data)
+    : AssemblyBase<dim>(data->order), data_(data) {}
+
+    void initialize(FMT_UNUSED std::shared_ptr<Balance> balance) {
+    }
+
+    void reallocate_cache(const ElementCacheMap &cache_map) override
+    {
+        data_->cache_reallocate(cache_map);
+    }
+
+    /// Data object shared with Test class
+    EqDataDG *data_;
+};
+
+string eq_data_input_speed = R"YAML(
+data:
+  - region: ALL
+    time: 0.0
+    scalar_field: !FieldConstant
+      value: 0.5
+    vector_field: [1, 2, 3]
+    tensor_field: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
+)YAML";
+
+
+TEST_F(FieldFESpeedTest, speed_test) {
+	this->read_input(eq_data_input_speed);
+
+	std::shared_ptr<Balance> balance;
+	GenericAssembly< AssemblyDimTest > ga_bulk(data_.get(), balance, ActiveIntegrals::bulk);
+	START_TIMER("assemble_bulk");
+	for (unsigned int i=0; i<profiler_loop; ++i)
+		ga_bulk.assemble(this->dh_, this->tg_.step());
+	END_TIMER("assemble_bulk");
+
+	GenericAssembly< AssemblyDimTest > ga_all(data_.get(), balance,
+	        (ActiveIntegrals::bulk | ActiveIntegrals::edge | ActiveIntegrals::coupling | ActiveIntegrals::boundary) );
+	START_TIMER("assemble_all_integrals");
+	for (unsigned int i=0; i<profiler_loop; ++i)
+		ga_all.assemble(this->dh_, this->tg_.step());
+	END_TIMER("assemble_all_integrals");
+
+	this->profiler_output();
+}
+
+
+#endif // FLOW123D_RUN_UNIT_BENCHMARKS
