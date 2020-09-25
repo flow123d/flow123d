@@ -239,19 +239,21 @@ TEST_F(FieldEvalFETest, evaluate) {
  *                 Speed test of FieldFE evaluation
  *
  * Results:
- * Mesh 27936 elements, 100 assemblation loops
+ * Mesh 27936 elements, 50 assemblation loops
  * Checked GenericAssembly with active bulk integral only vs. with all active integrals
  *
  *                           bulk      all
- * add_integrals_to_patch   19.05    43.12
- * create_patch              2.95    18.45
- * cache_update              8.38    26.17
+ * add_integrals_to_patch   19.10    44.12
+ * create_patch              3.14    19.28
+ * cache_update             58.30   314.10
+ * (times are multiplied by 2 for simple compare with other speed tests with 100
+ * assemblation loops - FieldConstant and FieldModel)
  *
  ****************************************************************************************/
 
 #ifdef FLOW123D_RUN_UNIT_BENCHMARKS
 
-static const unsigned int profiler_loop = 100;
+static const unsigned int profiler_loop = 50;
 
 
 class FieldFESpeedTest : public testing::Test {
@@ -329,25 +331,19 @@ public:
         data_->set_mesh(*mesh_);
         data_->set_input_list( inputs[input_last], tg_ );
 
-        auto scalar_fe_ptr = create_field_fe<3, FieldValue<3>::Scalar>(dh_);
-        auto vector_fe_ptr = create_field_fe<3, FieldValue<3>::VectorFixed>(dh_);
-        auto tensor_fe_ptr = create_field_fe<3, FieldValue<3>::TensorFixed>(dh_);
-    	auto scalar_vec = scalar_fe_ptr->vec();
-    	auto vector_vec = vector_fe_ptr->vec();
-    	auto tensor_vec = tensor_fe_ptr->vec();
-    	for (unsigned int i=0; i<scalar_vec.size(); ++i) {
-    	    scalar_vec[i] = 1 + i % 9;
-    	}
-    	for (unsigned int i=0; i<vector_vec.size(); ++i) {
-    		vector_vec[i] = 1 + i % 9;
-    	}
-    	for (unsigned int i=0; i<tensor_vec.size(); ++i) {
-    		tensor_vec[i] = 1 + i % 9;
-    	}
+    	//auto scalar_vec = data_->scalar_field.get_field_fe()->vec();
+    	//auto vector_vec = data_->vector_field.get_field_fe()->vec();
+    	//auto tensor_vec = data_->tensor_field.get_field_fe()->vec();
+    	//for (unsigned int i=0; i<scalar_vec.size(); ++i) {
+    	//    scalar_vec[i] = 1 + i % 9;
+    	//}
+    	//for (unsigned int i=0; i<vector_vec.size(); ++i) {
+    	//	vector_vec[i] = 1 + i % 9;
+    	//}
+    	//for (unsigned int i=0; i<tensor_vec.size(); ++i) {
+    	//	tensor_vec[i] = 1 + i % 9;
+    	//}
 
-    	data_->scalar_field.set(scalar_fe_ptr, 0.0);
-    	data_->vector_field.set(vector_fe_ptr, 0.0);
-    	data_->tensor_field.set(tensor_fe_ptr, 0.0);
         data_->set_time(tg_.step(), LimitSide::right);
     }
 
@@ -389,10 +385,18 @@ string eq_data_input_speed = R"YAML(
 data:
   - region: ALL
     time: 0.0
-    scalar_field: !FieldConstant
-      value: 0.5
-    vector_field: [1, 2, 3]
-    tensor_field: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
+    scalar_field: !FieldFE
+      mesh_data_file: mesh/test_27936_elem.msh
+      field_name: scalar
+      default_value: 0.0
+    vector_field: !FieldFE
+      mesh_data_file: mesh/test_27936_elem.msh
+      field_name: vector
+      default_value: 0.1
+    tensor_field: !FieldFE
+      mesh_data_file: mesh/test_27936_elem.msh
+      field_name: tensor
+      default_value: 0.2
 )YAML";
 
 
