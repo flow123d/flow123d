@@ -282,7 +282,7 @@ arma::vec::fixed<spacedim> FEValues<spacedim>::shape_grad(const unsigned int fun
 }
 
 
-template<unsigned int spacedim>
+/*template<unsigned int spacedim>
 double FEValues<spacedim>::shape_value_component(const unsigned int function_no, 
                                     const unsigned int point_no, 
                                     const unsigned int comp) const
@@ -291,7 +291,7 @@ double FEValues<spacedim>::shape_value_component(const unsigned int function_no,
   ASSERT_LT_DBG(point_no, n_points_);
   ASSERT_LT_DBG(comp, n_components_);
   return shape_values[point_no][function_no*n_components_+comp];
-}
+}*/
 
 
 template<unsigned int spacedim>

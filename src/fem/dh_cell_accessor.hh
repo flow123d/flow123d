@@ -85,7 +85,7 @@ public:
      *
      * @param indices Array of dof indices on the cell.
      */
-    LocDofVec get_loc_dof_indices() const
+    inline LocDofVec get_loc_dof_indices() const
     { return dof_handler_->get_loc_dof_indices(loc_ele_idx_); }
 
     /// Return number of dofs on given cell.
