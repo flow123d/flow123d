@@ -7,10 +7,13 @@
 
 #define TEST_USE_MPI        // include headers for MPI functions
 #define TEST_HAS_MAIN       // do not include main in this unit
+
 #include "gtest_mpi.hh"
+#include "gtest/gtest.h"
 
 
 namespace testing {
+
 ///////////////////////////////////////
 // Following functions are unfortunately static in gtest.c, so we have no access to them BAD, BAD, BAD design
 
@@ -19,6 +22,12 @@ namespace testing {
 //
 // FormatCountableNoun(1, "formula", "formuli") returns "1 formula".
 // FormatCountableNoun(5, "book", "books") returns "5 books".
+
+
+
+
+
+
 static std::string FormatCountableNoun(int count,
                                             const char * singular_form,
                                             const char * plural_form) {
@@ -68,7 +77,7 @@ static std::string PrintTestPartResultToString(
 
 // Prints a TestPartResult.
 static void PrintTestPartResult(const TestPartResult& test_part_result) {
-  const internal::string& result =
+  const std::string& result =
       PrintTestPartResultToString(test_part_result);
   printf("%s\n", result.c_str());
   fflush(stdout);
@@ -88,6 +97,26 @@ static void PrintTestPartResult(const TestPartResult& test_part_result) {
 
 namespace internal {
 
+// Text printed in Google Test's text output and --gtest_list_tests
+// output to label the type parameter and value parameter for a test.
+static const char kTypeParamLabel[] = "TypeParam";
+static const char kValueParamLabel[] = "GetParam()";
+
+static void PrintFullTestCommentIfPresent(const TestInfo& test_info) {
+  const char* const type_param = test_info.type_param();
+  const char* const value_param = test_info.value_param();
+
+  if (type_param != nullptr || value_param != nullptr) {
+    printf(", where ");
+    if (type_param != nullptr) {
+      printf("%s = %s", kTypeParamLabel, type_param);
+      if (value_param != nullptr) printf(" and ");
+    }
+    if (value_param != nullptr) {
+      printf("%s = %s", kValueParamLabel, value_param);
+    }
+  }
+}
 
 MPI_PrettyUnitTestResultPrinter::MPI_PrettyUnitTestResultPrinter() {
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -105,7 +134,8 @@ void MPI_PrettyUnitTestResultPrinter::PrintTestName(const char * test_case, cons
 // Fired before each iteration of tests starts.
 // (not yet MPI friendly)
 
-void MPI_PrettyUnitTestResultPrinter::OnTestIterationStart(const UnitTest& unit_test, int iteration) {
+// void MPI_PrettyUnitTestResultPrinter::OnTestIterationStart(const UnitTest& unit_test, int iteration) {
+void MPI_PrettyUnitTestResultPrinter::OnTestIterationStart(const UnitTest&, int) {
 	/*
 	    if (GTEST_FLAG(repeat) != 1)
 	    printf("\nRepeating all tests (iteration %d) . . .\n\n", iteration + 1);
@@ -192,22 +222,30 @@ void MPI_PrettyUnitTestResultPrinter::OnTestPartResult(const TestPartResult& res
 
 // (no yet fully MPI friendly)
 void MPI_PrettyUnitTestResultPrinter::OnTestEnd(const TestInfo& test_info) {
-  int success=(test_info.result()->Passed());
-  int reduced_success;
-  MPI_Allreduce(&success, &reduced_success, 1, MPI_INT, MPI_MIN,MPI_COMM_WORLD);
+  int passed=(test_info.result()->Passed());
+  int skipped=(test_info.result()->Skipped());
+  
+  int global_passed, global_skipped;
+  MPI_Allreduce(&passed, &global_passed, 1, MPI_INT, MPI_MIN,MPI_COMM_WORLD);
+  MPI_Allreduce(&skipped, &global_skipped, 1, MPI_INT, MPI_MIN,MPI_COMM_WORLD);  
+  int any_failed = 0;
 
   if (rank == 0) {
-      if (reduced_success) {
+      if (global_passed) {
           ColoredPrintf(COLOR_GREEN, "[       OK ] ");
+      } else if (global_skipped) {
+          ColoredPrintf(COLOR_GREEN, "[  SKIPPED ] ");
       } else {
           ColoredPrintf(COLOR_RED, "[  FAILED  ] ");
+          any_failed = 1;
       }
       PrintTestName(test_info.test_case_name(), test_info.name());
 
       // HERE we should print comments for failed processes
-      if (! reduced_success)
+      if (any_failed) {
           PrintFullTestCommentIfPresent(test_info);
-
+      }
+      
       if (GTEST_FLAG(print_time)) {
           printf(" (%s ms)\n", internal::StreamableToString(
                   test_info.result()->elapsed_time()).c_str());
@@ -218,6 +256,10 @@ void MPI_PrettyUnitTestResultPrinter::OnTestEnd(const TestInfo& test_info) {
   }
   MPI_Barrier(MPI_COMM_WORLD);
 }
+
+
+
+
 
 void MPI_PrettyUnitTestResultPrinter::OnTestCaseEnd(const TestCase& test_case) {
   if (!GTEST_FLAG(print_time)) return;

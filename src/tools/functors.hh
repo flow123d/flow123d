@@ -18,10 +18,7 @@
 #ifndef FUNCTORBASE_H
 #define FUNCTORBASE_H
 
-//include thirdparty/FADBAD++
-#include "fadbad.h"
-#include "badiff.h"
-#include "tadiff.h"
+#include "tools/include_fadbad.hh" // for "fadbad.h", "badiff.h", "tadiff.h"
 
 using namespace fadbad;
 

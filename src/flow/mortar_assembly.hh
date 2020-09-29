@@ -9,7 +9,6 @@
 #define SRC_FLOW_MORTAR_ASSEMBLY_HH_
 
 #include "system/index_types.hh"
-#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "quadrature/intersection_quadrature.hh"
 #include "flow/darcy_flow_mh.hh"
@@ -36,7 +35,7 @@ public:
     virtual ~MortarAssemblyBase() {};
 
     // Default assembly is empty to allow dummy implementation for dimensions without coupling.
-    virtual void assembly(const DHCellAccessor& dh_cell) {};
+    virtual void assembly(FMT_UNUSED const DHCellAccessor& dh_cell) {};
 
     void fix_velocity(const DHCellAccessor& dh_cell) {
         fix_velocity_flag = true;

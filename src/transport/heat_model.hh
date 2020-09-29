@@ -43,33 +43,33 @@ class OutputTime;
 namespace Input { class Record; }
 template <int spacedim> class ElementAccessor;
 
-/*
-class HeatProcessBase : public EquationBase
-{
-public:
-    typedef HeatProcessBase FactoryBaseType;
+
+// class HeatProcessBase : public EquationBase
+// {
+// public:
+//     typedef HeatProcessBase FactoryBaseType;
 
 
-    HeatProcessBase(Mesh &mesh, const Input::Record in_rec)
-    : EquationBase(mesh, in_rec)
-    {};
+//     HeatProcessBase(Mesh &mesh, const Input::Record in_rec)
+//     : EquationBase(mesh, in_rec)
+//     {};
 
-    /**
-     * This method takes sequential PETSc vector of side velocities and update
-     * transport matrix. The ordering is same as ordering of sides in the mesh.
-     * We just keep the pointer, but do not destroy the object.
-     *
-     * TODO: We should pass whole velocity field object (description of base functions and dof numbering) and vector.
-     *
-    virtual void set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field) = 0;
+//     /**
+//      * This method takes sequential PETSc vector of side velocities and update
+//      * transport matrix. The ordering is same as ordering of sides in the mesh.
+//      * We just keep the pointer, but do not destroy the object.
+//      *
+//      * TODO: We should pass whole velocity field object (description of base functions and dof numbering) and vector.
+//      */
+//     virtual void set_velocity_changed() = 0;
 
-    /// Common specification of the input record for secondary equations.
-    static Input::Type::Abstract & get_input_type() {
-        return Input::Type::Abstract("Heat",
-                "Equation for heat transfer.")
-                .close();
-    }
-};*/
+//     /// Common specification of the input record for secondary equations.
+//     static Input::Type::Abstract & get_input_type() {
+//         return Input::Type::Abstract("Heat",
+//                 "Equation for heat transfer.")
+//                 .close();
+//     }
+// };
 
 /*
 class HeatNothing : public HeatProcessBase {
@@ -86,7 +86,7 @@ public:
     inline virtual ~HeatNothing()
     {}
 
-    inline void set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field) override {};
+    inline void set_velocity_changed() override {};
 
     inline virtual void output_data() override {};
 
@@ -120,6 +120,8 @@ public:
 		Field<3, FieldValue<3>::Scalar> porosity;
 		/// Water content passed from Darcy flow model
 		Field<3, FieldValue<3>::Scalar> water_content;
+		/// Flow flux, can be result of water flow model.
+    	Field<3, FieldValue<3>::VectorFixed> flow_flux;
 		/// Density of fluid.
 		Field<3, FieldValue<3>::Scalar> fluid_density;
 		/// Heat capacity of fluid.
@@ -173,15 +175,15 @@ public:
 
 	HeatTransferModel(Mesh &mesh, const Input::Record in_rec);
 
-	void init_from_input(const Input::Record &in_rec) override {};
+	void init_from_input(const Input::Record &) override {};
 
 	void compute_mass_matrix_coefficient(const Armor::array &point_list,
 			const ElementAccessor<3> &ele_acc,
 			std::vector<double> &mm_coef) override;
 
-	void compute_retardation_coefficient(const Armor::array &point_list,
-			const ElementAccessor<3> &ele_acc,
-			std::vector<std::vector<double> > &ret_coef) override {};
+	void compute_retardation_coefficient(const Armor::array &,
+			const ElementAccessor<3> &,
+			std::vector<std::vector<double> > &) override {};
 
 	void compute_advection_diffusion_coefficients(const Armor::array &point_list,
 			const std::vector<arma::vec3> &velocity,
@@ -220,19 +222,6 @@ public:
 
 	~HeatTransferModel() override;
 
-	/**
-	 * @brief Updates the velocity field which determines some coefficients of the transport equation.
-	 *
-         * @param dh mixed hybrid dof handler
-         *
-	 * (So far it does not work since the flow module returns a vector of zeros.)
-	 */
-	inline void set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field) override
-	{
-		velocity_field_ptr_ = flux_field;
-		flux_changed = true;
-	}
-
     /// Returns number of transported substances.
     inline unsigned int n_substances()
     { return 1; }
@@ -244,16 +233,12 @@ public:
     const vector<unsigned int> &get_subst_idx()
 	{ return subst_idx; }
 
-    std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> velocity_field_ptr() const {
-        return this->velocity_field_ptr_;
-    }
-
-
-protected:
 
 	/// Derived class should implement getter for ModelEqData instance.
 	virtual ModelEqData &data() = 0;
 
+protected:
+	
 	/**
 	 * Create input type that can be passed to the derived class.
 	 * @param implementation String characterizing the numerical method, e.g. DG, FEM, FVM.
@@ -269,9 +254,6 @@ protected:
 
 	virtual void calculate_cumulative_balance() = 0;
 
-	/// Indicator of change in advection vector field.
-	bool flux_changed;
-
     /// Transported substances.
     SubstanceList substances_;
 
@@ -279,11 +261,6 @@ protected:
 	vector<unsigned int> subst_idx;
 
 	std::shared_ptr<OutputTime> output_stream_;
-
-	/// Pointer to velocity field given from Flow equation.
-	std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> velocity_field_ptr_;
-
-
 };
 
 

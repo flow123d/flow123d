@@ -618,6 +618,7 @@ public:
             ASSERT_EQ(n_rows_, nr);
             ASSERT_EQ(n_cols_, nc);
             copy<nr, nc>(arma_x.memptr());
+            return *this;
         }
 
         template<long long unsigned int nr>
@@ -646,11 +647,11 @@ public:
      * @param nc    Number of columns in each matrix.
      */
     Array(uint nr, uint nc = 1, uint size = 0)
-    : n_rows_(nr),
+    : data_(new Type[nr * nc * size]),
+      n_rows_(nr),
       n_cols_(nc),
       size_(size),
-      reserved_(size),
-      data_(new Type[nr * nc * size])
+      reserved_(size)
     {
     }
     
@@ -808,6 +809,13 @@ public:
         ASSERT_DBG( (nr == n_rows_) && (1 == n_cols_) )(n_rows_)(n_cols_);
         ASSERT_LT_DBG(mat_index, size());
         return ArmaVec<Type, nr>( data_ + mat_index * n_rows_ * n_cols_ );
+    }
+
+    inline Type scalar(uint mat_index) const
+    {
+        ASSERT_DBG( (1 == n_rows_) && (1 == n_cols_) )(n_rows_)(n_cols_);
+        ASSERT_LT_DBG(mat_index, size());
+        return ArmaMat<Type,1,1>( data_ + mat_index * n_rows_ * n_cols_ )(0);
     }
 
     inline ArrayMatSet set(uint index) {

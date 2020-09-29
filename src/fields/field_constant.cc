@@ -115,7 +115,7 @@ void FieldConstant<spacedim, Value>::init_from_input(const Input::Record &rec, c
  * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
  */
 template <int spacedim, class Value>
-typename Value::return_type const & FieldConstant<spacedim, Value>::value(const Point &p, const ElementAccessor<spacedim> &elm)
+typename Value::return_type const & FieldConstant<spacedim, Value>::value(const Point &, const ElementAccessor<spacedim> &)
 {
     return this->r_value_;
 }
@@ -126,7 +126,7 @@ typename Value::return_type const & FieldConstant<spacedim, Value>::value(const 
  * Returns std::vector of scalar values in several points at once.
  */
 template <int spacedim, class Value>
-void FieldConstant<spacedim, Value>::value_list (const Armor::array &point_list, const ElementAccessor<spacedim> &elm,
+void FieldConstant<spacedim, Value>::value_list (const Armor::array &point_list, FMT_UNUSED const ElementAccessor<spacedim> &elm,
                    std::vector<typename Value::return_type>  &value_list)
 {
 	OLD_ASSERT_EQUAL( point_list.size(), value_list.size() );
@@ -144,10 +144,13 @@ void FieldConstant<spacedim, Value>::value_list (const Armor::array &point_list,
 
 
 template <int spacedim, class Value>
-void FieldConstant<spacedim, Value>::cache_update(FieldValueCache<typename Value::element_type, typename Value::return_type> &data_cache,
-        unsigned int i_cache_el_begin, unsigned int i_cache_el_end,
-        const std::vector< ElementAccessor<spacedim> > &element_set)
+void FieldConstant<spacedim, Value>::cache_update(FieldValueCache<typename Value::element_type> &data_cache,
+		ElementCacheMap &cache_map, unsigned int region_idx)
 {
+    auto update_cache_data = cache_map.update_cache_data();
+    unsigned int region_in_cache = update_cache_data.region_cache_indices_range_.find(region_idx)->second;
+    unsigned int i_cache_el_begin = update_cache_data.region_value_cache_range_[region_in_cache];
+    unsigned int i_cache_el_end = update_cache_data.region_value_cache_range_[region_in_cache+1];
     Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> mat_value( const_cast<typename Value::element_type*>(this->value_.mem_ptr()) );
     for (unsigned int i_cache = i_cache_el_begin; i_cache < i_cache_el_end; ++i_cache)
         data_cache.data().set(i_cache) = mat_value;

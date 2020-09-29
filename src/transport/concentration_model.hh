@@ -150,21 +150,6 @@ public:
 
 	~ConcentrationTransportModel() override;
 
-
-	/**
-	 * @brief Updates the velocity field which determines some coefficients of the transport equation.
-	 *
-         * @param dh mixed hybrid dof handler
-         *
-	 * (So far it does not work since the flow module returns a vector of zeros.)
-	 * @param velocity_vector Input array of velocity values.
-	 */
-	inline void set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field) override
-	{
-		velocity_field_ptr_ = flux_field;
-		flux_changed = true;
-	}
-
     /// Returns number of transported substances.
     inline unsigned int n_substances() override
     { return substances_.size(); }
@@ -176,7 +161,8 @@ public:
 
     // Methods inherited from ConcentrationTransportBase:
 
-	void set_target_time(double target_time) override {};
+	// Must be implemented in descendants.
+	void set_target_time(double) override {};
 
 	void set_balance_object(std::shared_ptr<Balance> balance) override;
 
@@ -189,16 +175,11 @@ public:
 	std::shared_ptr<OutputTime> output_stream() override
 	{ return output_stream_; }
 
-    std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> velocity_field_ptr() const {
-        return this->velocity_field_ptr_;
-    }
-
-
-
-protected:
 
 	/// Derived class should implement getter for ModelEqData instance.
 	virtual ModelEqData &data() = 0;
+
+protected:
 
 	/**
 	 * Create input type that can be passed to the derived class.
@@ -227,9 +208,6 @@ protected:
 			double cross_cut,
 			arma::mat33 &K);
 
-	/// Indicator of change in advection vector field.
-	bool flux_changed;
-
     /// Transported substances.
     SubstanceList substances_;
 
@@ -240,11 +218,6 @@ protected:
 	double solvent_density_;
 
 	std::shared_ptr<OutputTime> output_stream_;
-
-	/// Pointer to velocity field given from Flow equation.
-	std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> velocity_field_ptr_;
-
-
 };
 
 

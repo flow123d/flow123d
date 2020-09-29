@@ -17,7 +17,6 @@
  */
 
 #include "input/input_type.hh"
-#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "mesh/accessors.hh"
 //#include "transport/transport_operator_splitting.hh"
@@ -113,6 +112,10 @@ HeatTransferModel::ModelEqData::ModelEqData()
             .units( UnitSI::dimensionless() )
             .input_default("1.0")
             .flags_add(input_copy & in_main_matrix & in_time_term);
+
+    *this += flow_flux.name("flow_flux")
+               .flags( FieldFlag::input_copy )
+               .flags_add(in_time_term & in_main_matrix & in_rhs);
 
     *this+=fluid_density
             .name("fluid_density")
@@ -230,8 +233,7 @@ IT::Record HeatTransferModel::get_input_type(const string &implementation, const
 				std::string(ModelEqData::name()) + "_" + implementation,
 				description + " for heat transfer.")
 			.derive_from(AdvectionProcessBase::get_input_type())
-			.declare_key("time", TimeGovernor::get_input_type(), Default::obligatory(),
-					"Time governor setting for the secondary equation.")
+			.copy_keys(EquationBase::record_template())
 			.declare_key("balance", Balance::get_input_type(), Default("{}"),
 					"Settings for computing balance.")
 			.declare_key("output_stream", OutputTime::get_input_type(), Default("{}"),
@@ -250,10 +252,10 @@ IT::Selection HeatTransferModel::ModelEqData::get_output_selection()
 
 
 HeatTransferModel::HeatTransferModel(Mesh &mesh, const Input::Record in_rec) :
-		AdvectionProcessBase(mesh, in_rec),
-		flux_changed(true)
+		AdvectionProcessBase(mesh, in_rec)
 {
 	time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
+	ASSERT( time_->is_default() == false ).error("Missing key 'time' in Heat_AdvectionDiffusion_DG.");
 	substances_.initialize({""});
 
     output_stream_ = OutputTime::create_output_stream("heat", in_rec.val<Input::Record>("output_stream"), time().get_unit_string());
@@ -368,7 +370,7 @@ void HeatTransferModel::get_flux_bc_data(unsigned int index,
 	for (auto f : bc_flux) f = -f;
 }
 
-void HeatTransferModel::get_flux_bc_sigma(unsigned int index,
+void HeatTransferModel::get_flux_bc_sigma(FMT_UNUSED unsigned int index,
         const Armor::array &point_list,
 		const ElementAccessor<3> &ele_acc,
 		std::vector< double > &bc_sigma)

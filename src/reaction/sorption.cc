@@ -21,6 +21,7 @@
 #include "reaction/isotherm.hh"
 #include "reaction/sorption.hh"
 #include "system/sys_profiler.hh"
+#include "system/asserts.hh"
 #include "mesh/accessors.hh"
 #include "input/factory.hh"
 

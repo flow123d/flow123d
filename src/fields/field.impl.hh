@@ -42,9 +42,7 @@
 template<int spacedim, class Value>
 Field<spacedim,Value>::Field()
 : data_(std::make_shared<SharedData>()),
-  value_cache_({ FieldValueCache<typename Value::element_type, typename Value::return_type>(Value::NRows_, Value::NCols_),
-                 FieldValueCache<typename Value::element_type, typename Value::return_type>(Value::NRows_, Value::NCols_),
-                 FieldValueCache<typename Value::element_type, typename Value::return_type>(Value::NRows_, Value::NCols_) })
+  value_cache_( FieldValueCache<typename Value::element_type>(Value::NRows_, Value::NCols_) )
 {
 	// n_comp is nonzero only for variable size vectors Vector, VectorEnum, ..
 	// this invariant is kept also by n_comp setter
@@ -58,9 +56,7 @@ Field<spacedim,Value>::Field()
 template<int spacedim, class Value>
 Field<spacedim,Value>::Field(const string &name, bool bc)
 : data_(std::make_shared<SharedData>()),
-  value_cache_({ FieldValueCache<typename Value::element_type, typename Value::return_type>(Value::NRows_, Value::NCols_),
-                 FieldValueCache<typename Value::element_type, typename Value::return_type>(Value::NRows_, Value::NCols_),
-                 FieldValueCache<typename Value::element_type, typename Value::return_type>(Value::NRows_, Value::NCols_) })
+  value_cache_( FieldValueCache<typename Value::element_type>(Value::NRows_, Value::NCols_) )
 {
 		// n_comp is nonzero only for variable size vectors Vector, VectorEnum, ..
 		// this invariant is kept also by n_comp setter
@@ -76,9 +72,7 @@ Field<spacedim,Value>::Field(const string &name, bool bc)
 template<int spacedim, class Value>
 Field<spacedim,Value>::Field(unsigned int component_index, string input_name, string name, bool bc)
 : data_(std::make_shared<SharedData>()),
-  value_cache_({ FieldValueCache<typename Value::element_type, typename Value::return_type>(Value::NRows_, Value::NCols_),
-                 FieldValueCache<typename Value::element_type, typename Value::return_type>(Value::NRows_, Value::NCols_),
-                 FieldValueCache<typename Value::element_type, typename Value::return_type>(Value::NRows_, Value::NCols_) })
+  value_cache_( FieldValueCache<typename Value::element_type>(Value::NRows_, Value::NCols_) )
 {
 	// n_comp is nonzero only for variable size vectors Vector, VectorEnum, ..
 	// this invariant is kept also by n_comp setter
@@ -143,17 +137,24 @@ Field<spacedim,Value> &Field<spacedim,Value>::operator=(const Field<spacedim,Val
 
 
 template<int spacedim, class Value>
-typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_> Field<spacedim,Value>::operator() (BulkPoint &p) {
-    return value_cache_[p.dh_cell().dim()-1].template
-    		get_value<Value::NRows_, Value::NCols_>(p.dh_cell(), p.eval_subset()->get_subset_idx(), p.eval_point_idx());
+typename Value::return_type Field<spacedim,Value>::operator() (BulkPoint &p) {
+    return value_cache_.template get_value<Value>(*p.elm_cache_map(), p.dh_cell(), p.eval_point_idx());
 }
 
 
 
 template<int spacedim, class Value>
-typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_> Field<spacedim,Value>::operator() (SidePoint &p) {
-    return value_cache_[p.dh_cell_side().cell().dim()-1].template
-    		get_value<Value::NRows_, Value::NCols_>(p.dh_cell_side().cell(), p.eval_subset()->get_subset_idx(), p.eval_point_idx());
+typename Value::return_type Field<spacedim,Value>::operator() (EdgePoint &p) {
+    return value_cache_.template get_value<Value>(*p.elm_cache_map(), p.dh_cell_side().cell(), p.eval_point_idx());
+}
+
+
+
+template<int spacedim, class Value>
+typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_>
+Field<spacedim,Value>::operator[] (unsigned int i_cache_point) const
+{
+	return this->value_cache().data().template mat<Value::NRows_, Value::NCols_>(i_cache_point);
 }
 
 
@@ -235,7 +236,7 @@ void Field<spacedim, Value>::set_field(
 	ASSERT_PTR( mesh() ).error("Null mesh pointer, set_mesh() has to be called before set_field().\n");
     if (domain.size() == 0) return;
 
-    ASSERT_EQ( field->n_comp() , n_comp());
+    ASSERT_EQ( field->n_comp() , shared_->n_comp_);
     field->set_mesh( mesh() , is_bc() );
 
     HistoryPoint hp = HistoryPoint(time, field);
@@ -476,7 +477,7 @@ void Field<spacedim,Value>::update_history(const TimeStep &time) {
 				if (field_instance)  // skip descriptors without related keys
 				{
 					// add to history
-					ASSERT_EQ( field_instance->n_comp() , n_comp());
+					ASSERT_EQ( field_instance->n_comp() , shared_->n_comp_);
 					field_instance->set_mesh( mesh() , is_bc() );
 					for(const Region &reg: domain) {
                         // if region history is empty, add new field
@@ -622,66 +623,18 @@ template<int spacedim, class Value>
 void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream) {
 	typedef typename Value::element_type ElemType;
 
-	std::shared_ptr<OutputMeshBase> output_mesh = stream->get_output_mesh_ptr();
-
-    ASSERT(output_mesh);
-
-    ElementDataCache<ElemType> &output_data = stream->prepare_compute_data<ElemType>(this->name(), space_type,
+    OutputTime::OutputDataPtr output_data_base = stream->prepare_compute_data<ElemType>(this->name(), space_type,
     		(unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
 
-    /* Copy data to array */
-    switch(space_type) {
-    case OutputTime::NODE_DATA:
-    case OutputTime::CORNER_DATA: {
-    	unsigned int node_index = 0;
-        for(const auto & ele : *output_mesh )
-        {
-            std::vector<Space<3>::Point> vertices = ele.vertex_list();
-            for(unsigned int i=0; i < ele.n_nodes(); i++)
-            {
-                const Value &node_value =
-                        Value( const_cast<typename Value::return_type &>(
-                        		this->value(vertices[i],
-                                            ElementAccessor<spacedim>(ele.orig_mesh(), ele.orig_element_idx()) ))
-                             );
-                ASSERT_EQ(output_data.n_comp(), node_value.n_rows()*node_value.n_cols()).error();
-                output_data.store_value(node_index, node_value.mem_ptr() );
-                ++node_index;
-            }
+    try{
+        // try casting actual ElementDataCache
+        if( ! output_data_base->is_dummy()){
+            auto output_data = std::dynamic_pointer_cast<ElementDataCache<ElemType>>(output_data_base);
+            fill_data_cache(space_type, stream, output_data);
         }
-    }
-    break;
-    case OutputTime::ELEM_DATA: {
-        for(const auto & ele : *output_mesh )
-        {
-            unsigned int ele_index = ele.idx();
-            const Value &ele_value =
-                        Value( const_cast<typename Value::return_type &>(
-                        		this->value(ele.centre(),
-                                            ElementAccessor<spacedim>(ele.orig_mesh(), ele.orig_element_idx()))
-                                                                        )
-                             );
-            ASSERT_EQ(output_data.n_comp(), ele_value.n_rows()*ele_value.n_cols()).error();
-            output_data.store_value(ele_index, ele_value.mem_ptr() );
-        }
-    }
-    break;
-    case OutputTime::NATIVE_DATA: {
-        std::shared_ptr< FieldFE<spacedim, Value> > field_fe_ptr = this->get_field_fe();
 
-        if (field_fe_ptr) {
-            ElementDataCache<double> &native_output_data = stream->prepare_compute_data<double>(this->name(), space_type,
-                    (unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
-            field_fe_ptr->native_data_to_cache(native_output_data);
-        } else {
-            WarningOut().fmt("Field '{}' of native data space type is not of type FieldFE. Output will be skipped.\n", this->name());
-        }
-    }
-    break;
-    case OutputTime::MESH_DEFINITION:
-    case OutputTime::UNDEFINED:
-        //should not happen
-    break;
+    } catch(const std::bad_cast& e){
+        // skip
     }
 
     /* Set the last time */
@@ -689,6 +642,71 @@ void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_t
 
 }
 
+template<int spacedim, class Value>
+void Field<spacedim,Value>::fill_data_cache(OutputTime::DiscreteSpace space_type,
+                                            std::shared_ptr<OutputTime> stream,
+                                            std::shared_ptr<ElementDataCache<typename Value::element_type>> data_cache)
+{
+    std::shared_ptr<OutputMeshBase> output_mesh = stream->get_output_mesh_ptr();
+    ASSERT(output_mesh);
+
+    /* Copy data to array */
+    switch(space_type) {
+        case OutputTime::NODE_DATA:
+        case OutputTime::CORNER_DATA: {
+            unsigned int node_index = 0;
+            for(const auto & ele : *output_mesh )
+            {
+                std::vector<Space<3>::Point> vertices = ele.vertex_list();
+                for(unsigned int i=0; i < ele.n_nodes(); i++)
+                {
+                    const Value &node_value =
+                            Value( const_cast<typename Value::return_type &>(
+                                    this->value(vertices[i],
+                                                ElementAccessor<spacedim>(ele.orig_mesh(), ele.orig_element_idx()) ))
+                                );
+                    ASSERT_EQ(data_cache->n_comp(), node_value.n_rows()*node_value.n_cols()).error();
+                    data_cache->store_value(node_index, node_value.mem_ptr() );
+                    ++node_index;
+                }
+            }
+        }
+        break;
+        case OutputTime::ELEM_DATA: {
+            for(const auto & ele : *output_mesh )
+            {
+                unsigned int ele_index = ele.idx();
+                const Value &ele_value =
+                            Value( const_cast<typename Value::return_type &>(
+                                    this->value(ele.centre(),
+                                                ElementAccessor<spacedim>(ele.orig_mesh(), ele.orig_element_idx()))
+                                                                            )
+                                );
+                ASSERT_EQ(data_cache->n_comp(), ele_value.n_rows()*ele_value.n_cols()).error();
+                data_cache->store_value(ele_index, ele_value.mem_ptr() );
+            }
+        }
+        break;
+        case OutputTime::NATIVE_DATA: {
+            std::shared_ptr< FieldFE<spacedim, Value> > field_fe_ptr = this->get_field_fe();
+
+            if (field_fe_ptr) {
+                auto native_output_data_base = stream->prepare_compute_data<double>(this->name(), space_type,
+                        (unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
+                // try casting actual ElementDataCache
+                auto native_output_data = std::dynamic_pointer_cast<ElementDataCache<double>>(native_output_data_base);
+                field_fe_ptr->native_data_to_cache(*native_output_data);
+            } else {
+                WarningOut().fmt("Field '{}' of native data space type is not of type FieldFE. Output will be skipped.\n", this->name());
+            }
+        }
+        break;
+        case OutputTime::MESH_DEFINITION:
+        case OutputTime::UNDEFINED:
+            //should not happen
+        break;
+    }
+}
 
 template<int spacedim, class Value>
 std::shared_ptr< FieldFE<spacedim, Value> > Field<spacedim,Value>::get_field_fe() {
@@ -713,47 +731,19 @@ std::shared_ptr< FieldFE<spacedim, Value> > Field<spacedim,Value>::get_field_fe(
 
 
 template<int spacedim, class Value>
-void Field<spacedim, Value>::cache_allocate(std::shared_ptr<EvalSubset> sub_set) {
-    unsigned int point_dim = sub_set->eval_points()->point_dim();
-
-    if ( value_cache_[point_dim-1].dim()==EvalPoints::undefined_dim )
-        value_cache_[point_dim-1].init(sub_set->eval_points(), ElementCacheMap::n_cached_elements);
-    // else TODO check same sub_set->eval_points()
-    value_cache_[point_dim-1].mark_used(sub_set);
+void Field<spacedim, Value>::cache_allocate(std::shared_ptr<EvalPoints> eval_points) {
+    value_cache_.init(eval_points, ElementCacheMap::n_cached_elements);
 }
 
 
 template<int spacedim, class Value>
 void Field<spacedim, Value>::cache_update(ElementCacheMap &cache_map) {
-    unsigned int dim = cache_map.dim();
     auto update_cache_data = cache_map.update_cache_data();
-    FieldValueCache<typename Value::element_type, typename Value::return_type> &field_value_cache = value_cache_[dim-1];
 
-    // Iterate over subsets
-    for (unsigned int i=0; i<EvalPoints::max_subsets; ++i) {
-        // Skip unused subsets
-        if (!field_value_cache.used_subsets()[i]) continue;
-
-        int subset_begin_pos = field_value_cache.subset_begin(i);
-        int points_per_element = field_value_cache.subset_size(i) / field_value_cache.n_cache_elements();
-
-        // Move preserved element data to begin of block
-        std::unordered_map<unsigned int, unsigned int>::const_iterator it;
-        for (it = update_cache_data.preserved_elements_.begin(); it != update_cache_data.preserved_elements_.end(); it++) {
-            unsigned int old_start = subset_begin_pos+it->first*points_per_element;
-            unsigned int new_start = subset_begin_pos+it->second*points_per_element;
-        	for (unsigned int i_old = old_start, i_new = new_start; i_old < old_start + points_per_element; ++i_old, ++i_new)
-        	    field_value_cache.data().set(i_new) = field_value_cache.data().set(i_old);
-        }
-
-        // Call cache_update of FieldAlgoBase descendants
-        std::unordered_map<unsigned int, typename ElementCacheMap::ElementSet>::iterator reg_elm_it;
-        for (reg_elm_it=update_cache_data.region_element_map_.begin(); reg_elm_it!=update_cache_data.region_element_map_.end(); ++reg_elm_it) {
-            std::unordered_map<unsigned int, unsigned int>::iterator bgn_it = update_cache_data.region_cache_begin_.find(reg_elm_it->first);
-		    unsigned int i_cache_el_begin = subset_begin_pos + bgn_it->second * points_per_element;
-		    unsigned int i_cache_el_end = subset_begin_pos + (bgn_it->second + reg_elm_it->second.size()) * points_per_element;
-			region_fields_[reg_elm_it->first]->cache_update(field_value_cache, i_cache_el_begin, i_cache_el_end, reg_elm_it->second);
-        }
+    // Call cache_update of FieldAlgoBase descendants
+    std::unordered_map<unsigned int, unsigned int>::iterator reg_elm_it;
+    for (reg_elm_it=update_cache_data.region_cache_indices_range_.begin(); reg_elm_it!=update_cache_data.region_cache_indices_range_.end(); ++reg_elm_it) {
+        region_fields_[reg_elm_it->first]->cache_update(value_cache_, cache_map, reg_elm_it->first);
     }
 }
 

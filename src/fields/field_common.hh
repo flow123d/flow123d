@@ -47,7 +47,6 @@
 
 class Mesh;
 class Observe;
-class EvalSubset;
 class EvalPoints;
 class ElementCacheMap;
 
@@ -207,17 +206,19 @@ public:
 				THROW( Input::ExcInputMessage() << EI_Message("The field " + this->input_name()
 													+ " has set non-unique names of components.") );
 			}
+			shared_->n_comp_ = names.size();
+    	} else {
+            shared_->n_comp_ = (shared_->n_comp_ ? names.size() : 0);
     	}
 
-        shared_->comp_names_ = names;
-        shared_->n_comp_ = (shared_->n_comp_ ? names.size() : 0);
+    	shared_->comp_names_ = names;
     }
 
 
     /**
      * Set internal mesh pointer.
      */
-    virtual void set_mesh(const Mesh &mesh) {};
+    virtual void set_mesh(const Mesh &mesh) = 0;
     /**
      * Set the data list from which field will read its input. It is list of "field descriptors".
      * When reading from the input list we consider only field descriptors containing key of
@@ -260,7 +261,7 @@ public:
     { return shared_->bc_;}
 
     unsigned int n_comp() const
-    { return shared_->n_comp_;}
+    { return shared_->comp_names_.size();}
 
     const Mesh * mesh() const
     { return shared_->mesh_;}
@@ -285,7 +286,7 @@ public:
     bool is_jump_time() {
         return is_jump_time_;
     }
-
+    
     /**
      * Returns number of field descriptors containing the field.
      */
@@ -446,7 +447,7 @@ public:
     /**
      * Allocate data cache of dimension appropriate to subset object.
      */
-    virtual void cache_allocate(std::shared_ptr<EvalSubset> sub_set) = 0;
+    virtual void cache_allocate(std::shared_ptr<EvalPoints> eval_points) = 0;
 
     /**
      * Read data to cache for appropriate elements given by ElementCacheMap object.
@@ -656,6 +657,12 @@ protected:
         << " last limit side:" << limit_side_str[(unsigned int) field.last_limit_side_];
         return stream;
     }
+    
+public:
+    
+    /// Manually mark flag that the field has been changed.
+    void set_time_result_changed()
+    { set_time_result_ = TimeStatus::changed; }
 };
 
 

@@ -44,7 +44,6 @@ namespace Input {
 		class Record;
 	}
 }
-template <int spacedim, class Value> class FieldFE;
 
 
 /// Class representing dual porosity model in transport.
@@ -73,7 +72,8 @@ public:
 
     Field<3, FieldValue<3>::Scalar > porosity; ///< Porosity field.
     
-    MultiField<3, FieldValue<3>::Scalar>  conc_immobile;    ///< Calculated concentrations in the immobile zone.
+    MultiField<3, FieldValue<3>::Scalar>  conc_immobile;  ///< Calculated concentrations in the immobile zone.
+    FieldFEScalarVec conc_immobile_fe;                    ///< Underlaying FieldFE for each substance of conc_immobile.
 
     /// Fields indended for output, i.e. all input fields plus those representing solution.
     EquationOutput output_fields;
@@ -122,12 +122,8 @@ protected:
   /// Initializes field sets.
   void initialize_fields();
   
-  double **compute_reaction(double **concentrations, int loc_el) override;
-  
-  /**
-   * Pointer to twodimensional array[substance][elements] containing concentrations either in immobile.
-   */
-  double **conc_immobile;
+  /// Compute reaction on a single element.
+  void compute_reaction(const DHCellAccessor& dh_cell) override;
 
   /**
    * Equation data - all data fields are in this set.
@@ -147,11 +143,6 @@ protected:
    * simple forward difference approximation of concentrations is chosen for computation.
    */
   double scheme_tolerance_;
-  
-  ///@name members used in output routines
-  //@{
-  std::vector<VectorMPI> conc_immobile_out; ///< concentration array output for immobile phase (parallel, shared with FieldFE)
-  //@}
   
 private:
   /// Registrar of class to factory

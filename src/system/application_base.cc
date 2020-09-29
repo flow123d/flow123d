@@ -43,8 +43,9 @@
 
 
 
-// Function that catches all program signals.
-PetscErrorCode petsc_signal_handler(int signal, void *context)
+/// Function that catches all program signals.
+/// Note: context variable required by PETSc function PetscPushSignalHandler
+PetscErrorCode petsc_signal_handler(int signal, FMT_UNUSED void *context)
 {
   if (signal == SIGINT) {
       cout << "SIGINT\n";
@@ -184,7 +185,7 @@ int ApplicationBase::petcs_finalize() {
 void ApplicationBase::init(int argc, char ** argv) {
     // parse our own command line arguments, leave others for PETSc
 	this->parse_cmd_line(argc, argv);
-    Profiler::initialize();
+    Profiler::instance();
 
     armadillo_setup(); // set catching armadillo exceptions and reporting stacktrace
 

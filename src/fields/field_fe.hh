@@ -104,6 +104,12 @@ public:
     virtual void value_list (const Armor::array &point_list, const ElementAccessor<spacedim> &elm,
                        std::vector<typename Value::return_type>  &value_list);
 
+    /**
+     * Overload @p FieldAlgorithmBase::cache_update
+     */
+    void cache_update(FieldValueCache<typename Value::element_type> &data_cache,
+			ElementCacheMap &cache_map, unsigned int region_idx) override;
+
 	/**
 	 * Initialization from the input interface.
 	 */
@@ -137,7 +143,7 @@ public:
     	return dh_;
     }
 
-    inline VectorMPI get_data_vec() const {
+    inline VectorMPI& vec() {
     	return data_vec_;
     }
 
@@ -172,6 +178,13 @@ private:
 	 * TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
 	 */
 	void fill_boundary_dofs();
+
+	/// Initialize FEValues object of given dimension.
+	template <unsigned int dim>
+	Quadrature init_quad(std::shared_ptr<EvalPoints> eval_points);
+
+    Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> handle_fe_shape(unsigned int dim,
+            unsigned int i_dof, unsigned int i_qp, unsigned int comp_index);
 
 
 	/// DOF handler object
@@ -224,11 +237,44 @@ private:
      *
      * TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
      */
-    std::shared_ptr< std::vector<Idx> > boundary_dofs_;
+    std::shared_ptr< std::vector<IntIdx> > boundary_dofs_;
+
+    /// List of FEValues objects of dimensions 0,1,2,3 used for value calculation
+    std::vector<FEValues<spacedim>> fe_values_;
 
     /// Registrar of class to factory
     static const int registrar;
 };
+
+
+/** Create FieldFE from dhf handler */
+template <int spacedim, class Value>
+std::shared_ptr<FieldFE<spacedim, Value> > create_field_fe(std::shared_ptr<DOFHandlerMultiDim> dh,
+                                                           unsigned int comp = 0,
+                                                           VectorMPI *vec = nullptr)
+{
+	// Construct FieldFE
+	std::shared_ptr< FieldFE<spacedim, Value> > field_ptr = std::make_shared< FieldFE<spacedim, Value> >();
+    if (vec == nullptr)
+	    field_ptr->set_fe_data( dh, comp, dh->create_vector() );
+    else
+        field_ptr->set_fe_data( dh, comp, *vec );
+    
+	return field_ptr;
+}
+
+
+/** Create FieldFE with parallel VectorMPI from finite element */
+template <int spacedim, class Value>
+std::shared_ptr<FieldFE<spacedim, Value> > create_field_fe(Mesh & mesh, const MixedPtr<FiniteElement> &fe)
+{
+	// Prepare DOF handler
+	std::shared_ptr<DOFHandlerMultiDim> dh_par = std::make_shared<DOFHandlerMultiDim>(mesh);
+	std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( &mesh, fe);
+	dh_par->distribute_dofs(ds);
+
+	return create_field_fe<spacedim,Value>(dh_par);
+}
 
 
 #endif /* FIELD_FE_HH_ */

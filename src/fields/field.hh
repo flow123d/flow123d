@@ -53,12 +53,16 @@
 
 class Mesh;
 class Observe;
-class EvalSubset;
 class EvalPoints;
 class BulkPoint;
-class SidePoint;
+class EdgePoint;
 template <int spacedim> class ElementAccessor;
 template <int spacedim, class Value> class FieldFE;
+namespace detail
+{
+    template< typename CALLABLE, typename TUPLE, int INDEX >
+    struct model_cache_item;
+}
 
 using namespace std;
 namespace IT=Input::Type;
@@ -166,10 +170,10 @@ public:
     Field &operator=(const Field &other);
 
 
-    typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_> operator() (BulkPoint &);
+    typename Value::return_type operator() (BulkPoint &p);
 
 
-    typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_> operator() (SidePoint &);
+    typename Value::return_type operator() (EdgePoint &p);
 
 
     /**
@@ -323,12 +327,25 @@ public:
     void compute_field_data(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream);
 
     /// Implements FieldCommon::cache_allocate
-    void cache_allocate(std::shared_ptr<EvalSubset> sub_set) override;
+    void cache_allocate(std::shared_ptr<EvalPoints> eval_points) override;
 
     /// Implements FieldCommon::cache_update
     void cache_update(ElementCacheMap &cache_map) override;
 
+    /// returns reference to FieldValueCache.
+    inline const FieldValueCache<typename Value::element_type> &value_cache() const {
+        return value_cache_;
+    }
+
+    /// Same as previous but return non-const reference.
+    inline FieldValueCache<typename Value::element_type> &value_cache() {
+        return value_cache_;
+    }
+
 protected:
+
+    /// Return item of @p value_cache_ given by i_cache_point.
+    typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_> operator[] (unsigned int i_cache_point) const;
 
     /**
      * Read input into @p regions_history_ possibly pop some old values from the
@@ -336,7 +353,10 @@ protected:
      */
     void update_history(const TimeStep &time);
 
-
+    /// Fills acutally the data cache with field values, used in @p compute_field_data
+    void fill_data_cache(OutputTime::DiscreteSpace space_type,
+                         std::shared_ptr<OutputTime> stream,
+                         std::shared_ptr<ElementDataCache<typename Value::element_type>> data_cache);
 
     /**
      *  Check that whole field list (@p region_fields_) is set, possibly use default values for unset regions.
@@ -386,14 +406,17 @@ protected:
     std::vector<std::shared_ptr<FactoryBase> >  factories_;
 
     /**
-     * Field value data cache of elements of dimension 1,2,3
+     * Field value data cache
      */
-    std::array< FieldValueCache<typename Value::element_type, typename Value::return_type>, 3 > value_cache_;
+    FieldValueCache<typename Value::element_type> value_cache_;
 
 
 
     template<int dim, class Val>
     friend class MultiField;
+
+    template< typename CALLABLE, typename TUPLE, int INDEX >
+    friend struct detail::model_cache_item;
 
 };
 

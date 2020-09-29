@@ -471,7 +471,10 @@ void RegionDB::check_regions() {
 	for (RegionTable::index<Index>::type::iterator it = region_table_.get<Index>().begin();
 			it!= region_table_.get<Index>().end();
 			++it) {
-		ASSERT(it->used)(it->label)(it->get_id()).warning("Region with given id and label is not used in any element.");
+		if(! it->used){
+			WarningOut().fmt("Region [id = {}, label = '{}'] is not used in any element.",
+				it->get_id(), it->label);
+		}
 	}
 }
 

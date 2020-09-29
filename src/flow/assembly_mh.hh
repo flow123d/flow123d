@@ -68,10 +68,11 @@ private:
 public:
     NeighSideValues<dim>()
     :  side_quad_(dim, 1),
-       fe_p_disc_(0),
-       fe_side_values_(side_quad_, fe_p_disc_, update_normal_vectors)
-    {}
-    FESideValues<dim+1,3> fe_side_values_;
+       fe_p_disc_(0)
+    {
+        fe_side_values_.initialize(side_quad_, fe_p_disc_, update_normal_vectors);
+    }
+    FEValues<3> fe_side_values_;
 
 };
 
@@ -88,18 +89,15 @@ public:
     
     AssemblyMH<dim>(AssemblyDataPtrMH data)
     : quad_(dim, 3),
-        fe_values_(quad_, fe_rt_,
-                update_values | update_gradients | update_JxW_values | update_quadrature_points),
-
-        velocity_interpolation_quad_(dim, 0), // veloctiy values in barycenter
-        velocity_interpolation_fv_(velocity_interpolation_quad_, fe_rt_, update_values | update_quadrature_points),
-
-        ad_(data),
-        loc_system_(size(), size()),
-        loc_system_vb_(2,2)
+      velocity_interpolation_quad_(dim, 0), // veloctiy values in barycenter
+      ad_(data),
+      loc_system_(size(), size()),
+      loc_system_vb_(2,2)
 
     {
-
+        fe_values_.initialize(quad_, fe_rt_,
+                update_values | update_gradients | update_JxW_values | update_quadrature_points);
+        velocity_interpolation_fv_.initialize(velocity_interpolation_quad_, fe_rt_, update_values | update_quadrature_points);
 
         // local numbering of dofs for MH system
         unsigned int nsides = dim+1;
@@ -140,9 +138,9 @@ public:
 
     }
 
-    void assemble_reconstruct(const DHCellAccessor& dh_cell) override
+    void assemble_reconstruct(const DHCellAccessor&) override
     {};
-    void update_water_content(const DHCellAccessor& dh_cell) override
+    void update_water_content(const DHCellAccessor&) override
     {};
 
     ~AssemblyMH<dim>() override
@@ -187,7 +185,7 @@ public:
         // compute normal vector to side
         arma::vec3 nv;
         ElementAccessor<3> ele_higher = ad_->mesh->element_accessor( neighb_side.element().idx() );
-        ngh_values_.fe_side_values_.reinit(neighb_side);
+        ngh_values_.fe_side_values_.reinit(neighb_side.side());
         nv = ngh_values_.fe_side_values_.normal_vector(0);
 
         double value = ad_->sigma.value( ele.centre(), ele) *
@@ -205,7 +203,7 @@ public:
     }
 
 protected:
-    static const unsigned int size()
+    static unsigned int size()
     {
         // dofs: velocity, pressure, edge pressure
         return RefElement<dim>::n_sides + 1 + RefElement<dim>::n_sides;
@@ -226,7 +224,6 @@ protected:
         const unsigned int nsides = ele->n_sides();
         LinSys *ls = ad_->lin_sys;
         
-        Boundary *bcd;
         unsigned int side_row, edge_row;
         
         dirichlet_edge.resize(nsides);
@@ -237,10 +234,11 @@ protected:
             loc_system_.row_dofs[side_row] = loc_system_.col_dofs[side_row] = global_dofs_[side_row];    //global
             loc_system_.row_dofs[edge_row] = loc_system_.col_dofs[edge_row] = global_dofs_[edge_row];    //global
             
-            bcd = ele.side(i)->cond();
             dirichlet_edge[i] = 0;
-            if (bcd) {
-                ElementAccessor<3> b_ele = bcd->element_accessor();
+            Side side = *dh_cell.elm().side(i);
+            if (side.is_boundary()) {
+                Boundary bcd = side.cond();
+                ElementAccessor<3> b_ele = bcd.element_accessor();
                 DarcyMH::EqData::BC_Type type = (DarcyMH::EqData::BC_Type)ad_->bc_type.value(b_ele.centre(), b_ele);
 
                 double cross_section = ad_->cross_section.value(ele.centre(), ele);
@@ -266,7 +264,7 @@ protected:
                 else if (type==DarcyMH::EqData::seepage) {
                     ad_->is_linear=false;
 
-                    unsigned int loc_edge_idx = bcd->bc_ele_idx_;
+                    unsigned int loc_edge_idx = bcd.bc_ele_idx();
                     char & switch_dirichlet = ad_->bc_switch_dirichlet[loc_edge_idx];
                     double bc_pressure = ad_->bc_switch_pressure.value(b_ele.centre(), b_ele);
                     double bc_flux = -ad_->bc_flux.value(b_ele.centre(), b_ele);
@@ -309,7 +307,7 @@ protected:
                     
                         // ** Apply BCUpdate BC type. **
                         // Force Dirichlet type during the first iteration of the unsteady case.
-                        if (switch_dirichlet || ad_->force_bc_switch ) {
+                        if (switch_dirichlet || ad_->force_no_neumann_bc ) {
                             //DebugOut().fmt("x: {}, dirich, bcp: {}\n", b_ele.centre()[0], bc_pressure);
                             loc_system_.set_solution(loc_edge_dofs[i],bc_pressure, -1);
                             dirichlet_edge[i] = 1;
@@ -330,7 +328,7 @@ protected:
                     double & solution_head = ls->get_solution_array()[loc_edge_row];
 
                     // Force Robin type during the first iteration of the unsteady case.
-                    if (solution_head > bc_switch_pressure  || ad_->force_bc_switch) {
+                    if (solution_head > bc_switch_pressure  || ad_->force_no_neumann_bc) {
                         // Robin BC
                         //DebugOut().fmt("x: {}, robin, bcp: {}\n", b_ele.centre()[0], bc_pressure);
                         loc_system_.add_value(edge_row, edge_row,
@@ -368,8 +366,8 @@ protected:
         arma::vec3 &gravity_vec = ad_->gravity_vec_;
         const ElementAccessor<3> ele = dh_cell.elm();
         
-        fe_values_.reinit(dh_cell);
-        unsigned int ndofs = fe_values_.get_fe()->n_dofs();
+        fe_values_.reinit(ele);
+        unsigned int ndofs = fe_values_.n_dofs();
         unsigned int qsize = fe_values_.n_points();
         auto velocity = fe_values_.vector_view(0);
 
@@ -415,7 +413,7 @@ protected:
     }
     
     
-    void assemble_element(const DHCellAccessor& dh_cell){
+    void assemble_element(const DHCellAccessor&){
         // set block B, B': element-side, side-element
         
         for(unsigned int side = 0; side < loc_side_dofs.size(); side++){
@@ -479,13 +477,12 @@ protected:
 
     void add_fluxes_in_balance_matrix(const DHCellAccessor& dh_cell){
         
-        auto ele = dh_cell.elm(); //ElementAccessor<3>
-        for (unsigned int i = 0; i < ele->n_sides(); i++) {
-            Boundary* bcd = ele.side(i)->cond();
-
-            if (bcd) {
-                ad_->balance->add_flux_matrix_values(ad_->water_balance_idx, ele.side(i),
-                                                     {global_dofs_[loc_side_dofs[i]]}, {1});
+        for(DHCellSide dh_side : dh_cell.side_range()){
+            unsigned int sidx = dh_side.side_idx();
+            if (dh_side.side().is_boundary()) {
+                ad_->balance->add_flux_values(ad_->water_balance_idx, dh_side,
+                                              {local_dofs_[loc_side_dofs[sidx]]},
+                                              {1}, 0);
             }
         }
     }
@@ -495,13 +492,13 @@ protected:
     // assembly volume integrals
     FE_RT0<dim> fe_rt_;
     QGauss quad_;
-    FEValues<dim,3> fe_values_;
+    FEValues<3> fe_values_;
 
     NeighSideValues< (dim<3) ? dim : 2> ngh_values_;
 
     // Interpolation of velocity into barycenters
     QGauss velocity_interpolation_quad_;
-    FEValues<dim,3> velocity_interpolation_fv_;
+    FEValues<3> velocity_interpolation_fv_;
 
     // data shared by assemblers of different dimension
     AssemblyDataPtrMH ad_;

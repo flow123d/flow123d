@@ -1,0 +1,23 @@
+flow123d_version: 3.1.0
+problem: !Coupling_Sequential
+  description: Operation with unknown region set .side at address /problem/solute_equation/output_stream/observe_points/0
+  mesh:
+    mesh_file: ../00_mesh/prism_3el.msh
+  flow_equation: !Flow_Darcy_MH
+    nonlinear_solver:
+      linear_solver: !Petsc
+        r_tol: 1.0e-10
+        a_tol: 1.0e-10
+    n_schurs: 2
+    input_fields:
+      - region: ALL
+        conductivity: 1e-6
+    balance: {}
+    output:
+      fields:
+        - velocity_p0
+    output_stream:
+      format: !gmsh
+    # duplicit record
+    balance:
+      cumulative: true

@@ -1,0 +1,16 @@
+"time [s]"	"region"	"quantity [kg]"	"flux"	"flux_in"	"flux_out"	"mass"	"source"	"source_in"	"source_out"	"flux_increment"	"source_increment"	"flux_cumulative"	"source_cumulative"	"error"
+0	"domain"	"conc"	0	0	0	0	0	0	0	0	0	0	0	0
+0	".right"	"conc"	0	0	0	0	0	0	0	0	0	0	0	0
+0	".left"	"conc"	5.01574	5.01574	0	0	0	0	0	0	0	0	0	0
+0	".IMPLICIT_BOUNDARY"	"conc"	0	0	0	0	0	0	0	0	0	0	0	0
+0	"ALL"	"conc"	5.01574	5.01574	0	0	0	0	0	0	0	0	0	0
+0.5	"domain"	"conc"	0	0	0	2.50787	0	0	0	0	0	0	0	0
+0.5	".right"	"conc"	0	0	0	0	0	0	0	0	0	0	0	0
+0.5	".left"	"conc"	5.01574	5.01574	0	0	0	0	0	0	0	0	0	0
+0.5	".IMPLICIT_BOUNDARY"	"conc"	-9.32808e-14	0	-9.32808e-14	0	0	0	0	0	0	0	0	0
+0.5	"ALL"	"conc"	5.01574	5.01574	-9.32808e-14	2.50787	0	0	0	2.50787	0	2.50787	0	-9.61897e-13
+1	"domain"	"conc"	0	0	0	2.50787	0	0	0	0	0	0	0	0
+1	".right"	"conc"	0	0	0	0	0	0	0	0	0	0	0	0
+1	".left"	"conc"	0	0	0	0	0	0	0	0	0	0	0	0
+1	".IMPLICIT_BOUNDARY"	"conc"	-4.35294e-12	0	-4.35294e-12	0	0	0	0	0	0	0	0	0
+1	"ALL"	"conc"	-4.35294e-12	0	-4.35294e-12	2.50787	0	0	0	-5.52388e-13	0	2.50787	0	-5.67857e-12

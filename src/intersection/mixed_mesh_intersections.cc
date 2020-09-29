@@ -13,7 +13,6 @@
 #include "system/global_defs.h"
 #include "system/sys_profiler.hh"
 
-#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "mesh/ref_element.hh"
 #include "mixed_mesh_intersections.hh"

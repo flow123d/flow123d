@@ -21,7 +21,6 @@
 #include "fem/mapping_p1.hh"
 #include "quadrature/quadrature.hh"
 #include "fem/element_values.hh"
-#include "mesh/side_impl.hh"
 
 
 
@@ -214,7 +213,7 @@ ElementValues<spacedim>::~ElementValues()
 
 
 template<unsigned int spacedim>
-void ElementValues<spacedim>::reinit(const DHCellAccessor & cell)
+void ElementValues<spacedim>::reinit(const ElementAccessor<spacedim> & cell)
 {
 	OLD_ASSERT_EQUAL( dim_, cell.dim() );
     data.cell = cell;
@@ -239,7 +238,7 @@ void ElementValues<spacedim>::reinit(const DHCellAccessor & cell)
 
 
 template<unsigned int spacedim>
-void ElementValues<spacedim>::reinit(const DHCellSide & cell_side)
+void ElementValues<spacedim>::reinit(const Side & cell_side)
 {
     ASSERT_EQ_DBG( dim_, cell_side.dim() );
     data.side = cell_side;
@@ -280,7 +279,7 @@ void ElementValues<spacedim>::fill_data()
         (data.update_flags & update_quadrature_points))
     {
         if (cell().is_valid())
-            coords = MappingP1<dim,spacedim>::element_map(cell().elm());
+            coords = MappingP1<dim,spacedim>::element_map(cell());
         else
             coords = MappingP1<dim,spacedim>::element_map(side().element());
     }
@@ -300,7 +299,8 @@ void ElementValues<spacedim>::fill_data()
                 data.jacobians.set(i) = Armor::mat<spacedim,dim>( jac );
 
         // calculation of determinant dependent data
-        if (data.update_flags & update_volume_elements | update_JxW_values)
+        if ((data.update_flags & update_volume_elements) |
+            (data.update_flags & update_JxW_values))
         {
             double det = fabs(::determinant(jac));
 
@@ -382,7 +382,7 @@ void ElementValues<spacedim>::fill_side_data()
             // calculation of side Jacobian
             for (unsigned int n=0; n<dim; n++)
                 for (unsigned int c=0; c<spacedim; c++)
-                    side_coords(c,n) = (*data.side.side().node(n))[c];
+                    side_coords(c,n) = (*data.side.node(n))[c];
             side_jac = MappingP1<MatrixSizes<dim>::dim_minus_one,spacedim>::jacobian(side_coords);
 
             // calculation of JxW

@@ -1,0 +1,73 @@
+flow123d_version: 2.0.0
+problem: !Coupling_Sequential
+  description: Injection into 2 fractures differing in cross section.
+  mesh:
+    mesh_file: ../00_mesh/square_2frac.msh
+  flow_equation: !Coupling_Iterative
+    time:
+      end_time: 10
+    input_fields:
+      - region: BULK
+        biot_alpha: 1
+        fluid_density: 1
+        gravity: 1
+    flow_equation: !Flow_Richards_LMH
+        input_fields:
+          - region: rock
+            conductivity: 1e-3
+            storativity: 1
+          - region: fracture_lower
+            conductivity: 1
+            storativity: 1
+            cross_section: 1e-3
+          - region: fracture_upper
+            conductivity: 1
+            storativity: 1
+            cross_section: 2e-3
+          - region: [ .right_fl, .right_fu ]
+            bc_type: total_flux
+            bc_flux: 1
+          - region: .left
+            bc_type: dirichlet
+            bc_pressure: 0
+        nonlinear_solver:
+          max_it: 1
+          linear_solver: !Petsc
+        n_schurs: 2
+        output:
+          times:
+            - step: 2
+          fields:
+            - pressure_p0
+            - velocity_p0
+            - region_id
+        balance: {}
+        output_stream: 
+          format: !vtk
+            variant: ascii
+        output_specific:
+    mechanics_equation:
+        input_fields:
+          - region: rock
+            young_modulus: 1e3
+            poisson_ratio: 0.25
+          - region: [ fracture_lower, fracture_upper ]
+            young_modulus: 1
+            poisson_ratio: 0.25
+          - region: .left
+            bc_type: displacement
+            bc_displacement: 0
+        solver: !Petsc
+        output_stream:
+          file: mechanics.pvd
+          format: !vtk
+            variant: ascii
+        output:
+          times:
+            - step: 2
+          fields:
+            - displacement
+            - stress
+            - cross_section_updated
+            - displacement_divergence
+            - region_id

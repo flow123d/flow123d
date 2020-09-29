@@ -8,6 +8,7 @@
 
 #include "system/global_defs.h"
 #include "system/sys_profiler.hh"
+#include "system/asserts.hh"
 
 #include "coupling/balance.hh"
 
@@ -27,14 +28,11 @@
 #include "la/schur.hh"
 #include "la/vector_mpi.hh"
 
-// in the third_party/FADBAD++ dir, namespace "fadbad"
-#include "fadbad.h"
-#include "badiff.h"
-#include "fadiff.h"
+
+#include "tools/include_fadbad.hh" // for "fadbad.h", "badiff.h", "fadiff.h"
 
 
-
-FLOW123D_FORCE_LINK_IN_CHILD(richards_lmh);
+FLOW123D_FORCE_LINK_IN_CHILD(richards_lmh)
 
 
 namespace it=Input::Type;
@@ -120,8 +118,8 @@ const int RichardsLMH::registrar =
 
 
 
-RichardsLMH::RichardsLMH(Mesh &mesh_in, const  Input::Record in_rec)
-    : DarcyLMH(mesh_in, in_rec)
+RichardsLMH::RichardsLMH(Mesh &mesh_in, const  Input::Record in_rec, TimeGovernor *tm)
+    : DarcyLMH(mesh_in, in_rec, tm)
 {
     data_ = make_shared<EqData>();
     DarcyLMH::data_ = data_;
@@ -150,14 +148,10 @@ void RichardsLMH::initialize_specific() {
     data_->mesh = mesh_;
     data_->set_mesh(*mesh_);
 
-    data_->water_content_ptr = std::make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
-    data_->water_content_ptr->set_fe_data(data_->dh_cr_disc_, 0);
-    data_->water_content.set_mesh(*mesh_);
+    data_->water_content_ptr = create_field_fe< 3, FieldValue<3>::Scalar >(data_->dh_cr_disc_);
     data_->water_content.set_field(mesh_->region_db().get_region_set("ALL"), data_->water_content_ptr);
     
-    data_->conductivity_ptr = std::make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
-    data_->conductivity_ptr->set_fe_data(data_->dh_p_, 0);
-    data_->conductivity_richards.set_mesh(*mesh_);
+    data_->conductivity_ptr = create_field_fe< 3, FieldValue<3>::Scalar >(data_->dh_p_);
     data_->conductivity_richards.set_field(mesh_->region_db().get_region_set("ALL"), data_->conductivity_ptr);
 
 
@@ -179,7 +173,7 @@ void RichardsLMH::initial_condition_postprocess()
 void RichardsLMH::accept_time_step()
 {
     data_->p_edge_solution_previous_time.copy_from(data_->p_edge_solution);
-    VectorMPI water_content_vec = data_->water_content_ptr->get_data_vec();
+    VectorMPI water_content_vec = data_->water_content_ptr->vec();
     data_->water_content_previous_time.copy_from(water_content_vec);
 
     data_->p_edge_solution_previous_time.local_to_ghost_begin();

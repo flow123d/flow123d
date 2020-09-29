@@ -71,9 +71,6 @@ public:
      */
     int write_tail(void);
 
-    /// Complete information about dummy fields that are not in output_data_list_.
-    void add_dummy_fields() override;
-
     /**
      * Set shared pointers of output data caches.
      */
@@ -92,7 +89,6 @@ private:
      */
     std::vector< std::vector< OutputDataPtr >> dummy_data_list_;
 
-    /**
     /**
      * \brief This function write header of GMSH (.msh) file format
      */

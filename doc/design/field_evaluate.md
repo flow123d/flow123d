@@ -241,30 +241,51 @@ TODO:
 
 
 ### 4. ElementCacheMap
+
+
+The map is represented by the table with dimensions [n_cache_elements][n_eval_points]. n_cache_elements is choosen as fixed (relative to number of QP in dimensions, some heuristic formula necessary),
+n_eval_points given before assembly. Following algorithm must avoid allocations.
+
 New algo:
-1. Set whole table [i_cache_element][i_eval_point] to -1.
-2. Iterate through the elementary integrals, add them to the actual patch until we reach given number of points.
-   The elements to which we distribute the points are added to the element_map, mapping global element ID to its cache index.
-   Add active points of single elementary integral, i.e. set [i_cache_element][i_eval_point] to the n_active_points. 
-3. Pass through the every field. For single field:
-   1. Pass through the patch elements:
-      ```
-	  for (el : el_cache_map.patch_elements())
-	  		// Some algorithms may update the field value cache right here
-			if (field.region_fields[el.region_id].mark_cache_points(el_cache_map.points(el))) {
-				postponed_fields_set.add(field.region_fields[el.region_id]);
-	  ```
-   2. Update marked points, release marks.
-   ```
-   for (f in postponed_fields_set)
-   		f.fill_cache(el_cache);
-   ```		   	
 
-TODO: Need two pass iteration through the Mesh, the is the hard part of the algorithm. Try to write it in Python as a pseudo code. 
-			
-			
-			
+  1. step
+    - Iterate over integrals collect them into a fronts (per integral type, four types).
+    - Count total number of QP. 
+    - Stop when cache capacity is reached.
+    - Put touched elements into an array patch_elements, pairs (region_idx, element_idx)
+    - Drop last uncomplete integral group.
+  2. step
+    - sort patch_elements by region
+    - set whole cache map table to -1
+    - loop over integrals (in fronts) mark needed QP by 1
+    - loop over whole cache map number active QPs
+  3. step
+    - loop over fields in the field set 
+    - for every field make groups of regions for distiguish field algorithms
+    - for every field algorithm call cache update on QP subset (indices of beginings of SIMD groups)
+  4. step
+    - loop over integrals
+    - call assembly routines
 
+
+Notes:
+- Every integral struct implements methods for steps: 1. and 2.
+- For step 1. and 2. the method modifies the element cache map object passed as an argument. Use specific modification methods in ElementCacheMap.
+- Step 3. independent of integrals.
+- For step 4. we pass the integral object to the assembly routine. 
+
+- EdgeIntegral keeps range returned by cell_side.edge_sides() + subset index
+- BulkIntegral DHCellAccessor + subset index
+- CouplingIntegral DHCellAccessor, DHCellSideAccessor + bulk_subset, side_subset
+- BoundaryIntegral DHCellSideAccessor + side_subset
+
+- When fields are changed make a topological sort of dependent fields on every region.
+- Question: optimisation of FieldFormula evaluation over more regions is a bit complex. Need further analysis of relationships.
+- 
+
+   
+   
+DEPRECATED:   
 This class synchronize the cached elements between (all) fields of single equation. It provides mapping from elements to the cache index and list of elements to cache. This have overloaded evaluation operator, which returns the index in the cache for the given element (or element index). The last cache line is overwritten if the index is not in the cache.
 The implementation use: table cache_idx -> el_idx, hash mapping el_idx -> cache_idx, list of cache lines that schould be updated.
 ```
@@ -299,11 +320,38 @@ after all fields are updated.
     presssure_field_fe.fe_values.update(cell);
 ```
 Two major algorithms are in use:
-- FieldFE - evaluates base func values in all quadrature points (done once per assembly),  dot product with DOFs, optionaly multiplied by the Mapping matrix (important optimization for vector fields and derivatives, must have support in FEValues)
+- FieldFE - evaluates base func values in all quadrature points (done once per assembly),  dot product with DOFs, 
+  optionaly multiplied by the Mapping matrix (important optimization for vector fields and derivatives, must have support in FEValues)
+  
+  - FieldFE has three instances of FEValues, one for every dimension. This is possible as the EvalPoints are structured by the dimension.
+  - During cache update we:
+    1. for every element in the elementcache map (range of elements in the region)
+    2. find element dimension, call fe_values[dim].reinit(el) for that element
+    3. update cache values in that row of the element cache map
+  - The reinit may be slightly inefficient as all values are computed not only the active. We can try to optimize that after it is in use and we can see if it is a real problem.
 - FieldFormula - evaluates all elements in the patch (same region), in all point from single continuous block od quad points
 
 
 ### 5 Assembly, cache read
+
+####
+
+#### GenericAssembly<...> 
+- templated by a class derived from AssemblyBase<int dim>
+- contains the assembly machinary, wrap it to a single method 'assembly'
+- 
+
+#### XYZAsm<int dim>
+- descendants of AssemblyBase<int dim> implementing internals of a single assemblation process
+- methods:
+  - initialize(data, ...) reinit called typicaly once per simulation
+  - begin .. caled at beginning of the general assembly (e.g. start balance or matrix assembly)
+  - end .. caled after general asssembly
+  - assembly_bulk
+  - assembly_boundary
+  - assembly_coupling
+  - assembly_edge
+
 ```
     /*
     // Asumme following types:

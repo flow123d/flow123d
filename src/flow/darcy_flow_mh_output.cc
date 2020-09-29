@@ -216,14 +216,11 @@ void DarcyFlowMHOutput::prepare_specific_output(Input::Record in_rec)
 
     output_specific_fields.set_mesh(*mesh_);
 
-    diff_data.vel_diff_ptr = std::make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
-    diff_data.vel_diff_ptr->set_fe_data(diff_data.dh_);
+    diff_data.vel_diff_ptr = create_field_fe<3, FieldValue<3>::Scalar>(diff_data.dh_);
     output_specific_fields.velocity_diff.set_field(mesh_->region_db().get_region_set("ALL"), diff_data.vel_diff_ptr, 0);
-    diff_data.pressure_diff_ptr = std::make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
-    diff_data.pressure_diff_ptr->set_fe_data(diff_data.dh_);
+    diff_data.pressure_diff_ptr = create_field_fe<3, FieldValue<3>::Scalar>(diff_data.dh_);
     output_specific_fields.pressure_diff.set_field(mesh_->region_db().get_region_set("ALL"), diff_data.pressure_diff_ptr, 0);
-    diff_data.div_diff_ptr = std::make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
-    diff_data.div_diff_ptr->set_fe_data(diff_data.dh_);
+    diff_data.div_diff_ptr = create_field_fe<3, FieldValue<3>::Scalar>(diff_data.dh_);
     output_specific_fields.div_diff.set_field(mesh_->region_db().get_region_set("ALL"), diff_data.div_diff_ptr, 0);
 
     output_specific_fields.set_time(darcy_flow->time().step(), LimitSide::right);
@@ -231,7 +228,7 @@ void DarcyFlowMHOutput::prepare_specific_output(Input::Record in_rec)
 }
 
 DarcyFlowMHOutput::~DarcyFlowMHOutput()
-{};
+{}
 
 
 
@@ -361,14 +358,16 @@ typedef FieldPython<3, FieldValue<3>::Vector > ExactSolution;
  * 3) difference of divergence
  * */
 
-template <int dim>
 void DarcyFlowMHOutput::l2_diff_local(DHCellAccessor dh_cell,
-                   FEValues<dim,3> &fe_values, FEValues<dim,3> &fv_rt,
+                   FEValues<3> &fe_values, FEValues<3> &fv_rt,
                    ExactSolution &anal_sol,  DarcyFlowMHOutput::DiffData &result) {
 
+    ASSERT_DBG( fe_values.dim() == fv_rt.dim());
+    unsigned int dim = fe_values.dim();
+
     ElementAccessor<3> ele = dh_cell.elm();
-    fv_rt.reinit(dh_cell);
-    fe_values.reinit(dh_cell);
+    fv_rt.reinit(ele);
+    fe_values.reinit(ele);
     
     double conductivity = result.data_->conductivity.value(ele.centre(), ele );
     double cross = result.data_->cross_section.value(ele.centre(), ele );
@@ -412,7 +411,13 @@ void DarcyFlowMHOutput::l2_diff_local(DHCellAccessor dh_cell,
         // compute postprocesed pressure
         diff = 0;
         for(unsigned int i_shape=0; i_shape < ele->n_sides(); i_shape++) {
-            unsigned int oposite_node = RefElement<dim>::oposite_node(i_shape);
+            unsigned int oposite_node = 0;
+            switch (dim) {
+                case 1: oposite_node =  RefElement<1>::oposite_node(i_shape); break;
+                case 2: oposite_node =  RefElement<2>::oposite_node(i_shape); break;
+                case 3: oposite_node =  RefElement<3>::oposite_node(i_shape); break;
+                default: ASSERT(false)(dim).error("Unsupported FE dimension."); break;
+            }
 
             diff += fluxes[ i_shape ] *
                                (  arma::dot( q_point, q_point )/ 2
@@ -448,20 +453,20 @@ void DarcyFlowMHOutput::l2_diff_local(DHCellAccessor dh_cell,
 
     // DHCell constructed with diff fields DH, get DOF indices of actual element
     DHCellAccessor sub_dh_cell = dh_cell.cell_with_other_dh(result.dh_.get());
-    Idx idx = sub_dh_cell.get_loc_dof_indices()[0];
+    IntIdx idx = sub_dh_cell.get_loc_dof_indices()[0];
 
-    auto velocity_data = result.vel_diff_ptr->get_data_vec();
+    auto velocity_data = result.vel_diff_ptr->vec();
     velocity_data[ idx ] = sqrt(velocity_diff);
     result.velocity_error[dim-1] += velocity_diff;
     if (dim == 2 && result.velocity_mask.size() != 0 ) {
     	result.mask_vel_error += (result.velocity_mask[ ele.idx() ])? 0 : velocity_diff;
     }
 
-    auto pressure_data = result.pressure_diff_ptr->get_data_vec();
+    auto pressure_data = result.pressure_diff_ptr->vec();
     pressure_data[ idx ] = sqrt(pressure_diff);
     result.pressure_error[dim-1] += pressure_diff;
 
-    auto div_data = result.div_diff_ptr->get_data_vec();
+    auto div_data = result.div_diff_ptr->vec();
     div_data[ idx ] = sqrt(divergence_diff);
     result.div_error[dim-1] += divergence_diff;
 
@@ -506,13 +511,13 @@ void DarcyFlowMHOutput::compute_l2_difference() {
 
     	switch (dh_cell.dim()) {
         case 1:
-            l2_diff_local<1>( dh_cell, *fe_data.fe_values.get<1>(), *fe_data.fv_rt.get<1>(), anal_sol_1d, diff_data);
+            l2_diff_local( dh_cell, fe_data.fe_values[1], fe_data.fv_rt[1], anal_sol_1d, diff_data);
             break;
         case 2:
-            l2_diff_local<2>( dh_cell, *fe_data.fe_values.get<2>(), *fe_data.fv_rt.get<2>(), anal_sol_2d, diff_data);
+            l2_diff_local( dh_cell, fe_data.fe_values[2], fe_data.fv_rt[2], anal_sol_2d, diff_data);
             break;
         case 3:
-            l2_diff_local<3>( dh_cell, *fe_data.fe_values.get<3>(), *fe_data.fv_rt.get<3>(), anal_sol_3d, diff_data);
+            l2_diff_local( dh_cell, fe_data.fe_values[3], fe_data.fv_rt[3], anal_sol_3d, diff_data);
             break;
         }
     }

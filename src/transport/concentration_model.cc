@@ -17,7 +17,6 @@
  */
 
 #include "input/input_type.hh"
-#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "mesh/accessors.hh"
 //#include "flow/darcy_flow_mh.hh"
@@ -161,8 +160,7 @@ IT::Selection ConcentrationTransportModel::ModelEqData::get_output_selection()
 
 
 ConcentrationTransportModel::ConcentrationTransportModel(Mesh &mesh, const Input::Record &in_rec) :
-		ConcentrationTransportBase(mesh, in_rec),
-		flux_changed(true)
+		ConcentrationTransportBase(mesh, in_rec)
 {}
 
 
@@ -186,6 +184,7 @@ void ConcentrationTransportModel::compute_mass_matrix_coefficient(const Armor::a
 	for (unsigned int i=0; i<point_list.size(); i++)
 		mm_coef[i] = elem_csec[i]*wc[i];
 }
+// mm_coef - simple field
 
 
 void ConcentrationTransportModel::compute_retardation_coefficient(const Armor::array &point_list,
@@ -212,10 +211,17 @@ void ConcentrationTransportModel::compute_retardation_coefficient(const Armor::a
 		}
 	}
 }
+// ret_coef - multifield, Field parameters pro_m, rho_s, rho_l; multifiled sorp_mult
+//
+// TransportDG::initialize() calls set_components
+// after that we TransportModel::initialize() - there we have to create the FieldModel for components
+// calling Model<>::create_multi and then use MultiField::set_fields to set it.
+//
 
 
 void ConcentrationTransportModel::calculate_dispersivity_tensor(const arma::vec3 &velocity,
-		const arma::mat33 &Dm, double alphaL, double alphaT, double water_content, double porosity, double cross_cut, arma::mat33 &K)
+		const arma::mat33 &Dm, double alphaL, double alphaT, double water_content, double porosity, double cross_cut,
+		arma::mat33 &K)
 {
     double vnorm = arma::norm(velocity, 2);
 
@@ -247,6 +253,16 @@ void ConcentrationTransportModel::calculate_dispersivity_tensor(const arma::vec3
    K += alphaT*vnorm*arma::eye(3,3) + Dm*(tortuosity*cross_cut*water_content);
 
 }
+// result multifield: dispersivity_tensor (here the K parameter)
+// input fields: water_content, porosity, velocity, cross_cut
+// input multifields: diff_m, disp_l, disp_t
+//
+// Need to return specific field value (Scalar, Vector, Tensor) from Field<>::operator[] in ortder to simplify
+// model function, e.g. just write:
+//      product (Scalar a, Tensor t) { return a * t; }
+// instead of
+//      product (Scalar a, Tensor t) { return a * t; }
+
 
 
 

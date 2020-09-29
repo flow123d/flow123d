@@ -34,11 +34,11 @@
  * Is done by class partial specialization as, we were not able to do this using function overloading (since
  * they differ only by return value) and partial specialization of the function templates is not supported  in C++.
  */
-template<int rank, int elemdim, int spacedim, class Value>
+template<int rank, int spacedim, class Value>
 class FEShapeHandler {
 public:
 
-	inline static typename Value::return_type fe_value(FEValues<elemdim,3> &fe_val, unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
+	inline static typename Value::return_type fe_value(FEValues<spacedim> &fe_val, unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
 	{
 		ASSERT(false).error("Unsupported format of FieldFE!\n");
 		typename Value::return_type ret;
@@ -50,10 +50,10 @@ public:
 
 
 /// Partial template specialization of FEShapeHandler for scalar fields
-template<int elemdim, int spacedim, class Value>
-class FEShapeHandler<0, elemdim, spacedim, Value> {
+template<int spacedim, class Value>
+class FEShapeHandler<0, spacedim, Value> {
 public:
-	inline static typename Value::return_type fe_value(FEValues<elemdim,3> &fe_val, unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
+	inline static typename Value::return_type fe_value(FEValues<3> &fe_val, unsigned int i_dof, unsigned int i_qp, FMT_UNUSED unsigned int comp_index)
 	{
 		return fe_val.scalar_view(comp_index).value(i_dof, i_qp);
 	}
@@ -61,10 +61,10 @@ public:
 
 
 /// Partial template specialization of FEShapeHandler for vector fields
-template<int elemdim, int spacedim, class Value>
-class FEShapeHandler<1, elemdim, spacedim, Value> {
+template<int spacedim, class Value>
+class FEShapeHandler<1, spacedim, Value> {
 public:
-	inline static typename Value::return_type fe_value(FEValues<elemdim,3> &fe_val, unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
+	inline static typename Value::return_type fe_value(FEValues<3> &fe_val, unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
 	{
 		return fe_val.vector_view(comp_index).value(i_dof, i_qp);
 	}
@@ -72,10 +72,10 @@ public:
 
 
 /// Partial template specialization of FEShapeHandler for tensor fields
-template<int elemdim, int spacedim, class Value>
-class FEShapeHandler<2, elemdim, spacedim, Value> {
+template<int spacedim, class Value>
+class FEShapeHandler<2, spacedim, Value> {
 public:
-	inline static typename Value::return_type fe_value(FEValues<elemdim,3> &fe_val, unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
+	inline static typename Value::return_type fe_value(FEValues<3> &fe_val, unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
 	{
 		return fe_val.tensor_view(comp_index).value(i_dof, i_qp);
 	}
@@ -131,16 +131,18 @@ void FEValueHandler<elemdim, spacedim, Value>::value_list(const Armor::array  &p
 	Quadrature quad(elemdim, point_list.size());
 	for (unsigned int k=0; k<point_list.size(); k++)
         quad.set(k) = RefElement<elemdim>::bary_to_local(MappingP1<elemdim,spacedim>::project_real_to_unit(point_list.vec<spacedim>(k), map_mat));
-	FEValues<elemdim,spacedim> fe_values(quad, *dh_->ds()->fe(elm).get<elemdim>(), update_values);
+	
+	MixedPtr<FiniteElement> fe_mixed_ptr = dh_->ds()->fe(elm);
+	std::shared_ptr<FiniteElement<elemdim>> fe_ptr = fe_mixed_ptr[Dim<elemdim>{}];
+	FEValues<spacedim> fe_values(quad, *fe_ptr, update_values);
+    fe_values.reinit( elm );
 
     for (unsigned int k=0; k<point_list.size(); k++) {
-		fe_values.reinit( cell );
-
 		Value envelope(value_list[k]);
 		envelope.zeros();
 		for (unsigned int i=0; i<loc_dofs.n_elem; i++) {
 			value_list[k] += data_vec_[loc_dofs[i]]
-							* FEShapeHandler<Value::rank_, elemdim, spacedim, Value>::fe_value(fe_values, i, k, comp_index_);
+							* FEShapeHandler<Value::rank_, spacedim, Value>::fe_value(fe_values, i, k, comp_index_);
 		}
 	}
 }
@@ -209,18 +211,19 @@ template class FEValueHandler<dim, spacedim, FieldValue<0>::Enum >;             
 template class FEValueHandler<dim, spacedim, FieldValue<0>::Integer >;                \
 template class FEValueHandler<dim, spacedim, FieldValue<0>::Scalar >;                 \
 template class FEValueHandler<dim, spacedim, FieldValue<spacedim>::VectorFixed >;     \
-template class FEValueHandler<dim, spacedim, FieldValue<spacedim>::TensorFixed >;     \
-template class FEShapeHandler<0, dim, spacedim, FieldValue<0>::Enum >;                \
-template class FEShapeHandler<0, dim, spacedim, FieldValue<0>::Integer >;             \
-template class FEShapeHandler<0, dim, spacedim, FieldValue<0>::Scalar >;              \
-template class FEShapeHandler<1, dim, spacedim, FieldValue<spacedim>::VectorFixed >;  \
-template class FEShapeHandler<2, dim, spacedim, FieldValue<spacedim>::TensorFixed >;
+template class FEValueHandler<dim, spacedim, FieldValue<spacedim>::TensorFixed >;
 
 #define INSTANCE_VALUE_HANDLER(dim) \
 INSTANCE_VALUE_HANDLER_ALL(dim,3)
-//INSTANCE_VALUE_HANDLER_ALL(dim,2)   \
+//INSTANCE_VALUE_HANDLER_ALL(dim,2)
 
-INSTANCE_VALUE_HANDLER(0);
-INSTANCE_VALUE_HANDLER(1);
-INSTANCE_VALUE_HANDLER(2);
-INSTANCE_VALUE_HANDLER(3);
+INSTANCE_VALUE_HANDLER(0)
+INSTANCE_VALUE_HANDLER(1)
+INSTANCE_VALUE_HANDLER(2)
+INSTANCE_VALUE_HANDLER(3)
+
+template class FEShapeHandler<0, 3, FieldValue<0>::Enum >;
+template class FEShapeHandler<0, 3, FieldValue<0>::Integer >;
+template class FEShapeHandler<0, 3, FieldValue<0>::Scalar >;
+template class FEShapeHandler<1, 3, FieldValue<3>::VectorFixed >;
+template class FEShapeHandler<2, 3, FieldValue<3>::TensorFixed >;
