@@ -115,7 +115,6 @@ protected:
     template<int spacedim, class Value>
     friend class Field;
     
-    template <uint DIM>
     friend class MeshOptimizer;
 
 };

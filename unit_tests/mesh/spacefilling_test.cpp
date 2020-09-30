@@ -338,7 +338,7 @@ TEST(Spacefilling, space_filling) {
                 
                 Mesh * mesh = mesh_full_constructor(meshNameJson);
                 
-                MeshOptimizer<3> backuper(*mesh);
+                MeshOptimizer backuper(*mesh);
                 std::vector<Element> elementsBackup = backuper.getElements();
                 Armor::Array<double> nodesBackup = backuper.getNodes();
                 
@@ -349,7 +349,7 @@ TEST(Spacefilling, space_filling) {
                 std::array<double, 5> results;
                 
 //                 {
-//                     MeshOptimizer<3> mo(*mesh);
+//                     MeshOptimizer mo(*mesh);
 //                     std::cout << '(' << progressIndex <<  "/40)" << '\n';
 //                     ++progressIndex;
 //                     std::cout << "calculating sizes" << '\n';
@@ -377,7 +377,7 @@ TEST(Spacefilling, space_filling) {
 //                 }
 //                 
 //                 {
-//                     MeshOptimizer<3> mo(*mesh);
+//                     MeshOptimizer mo(*mesh);
 //                     std::cout << '(' << progressIndex <<  "/40)" << '\n';
 //                     ++progressIndex;
 //                     std::cout << "calculating sizes" << '\n';
@@ -405,7 +405,7 @@ TEST(Spacefilling, space_filling) {
 //                 }
 //                 
 //                 {
-//                     MeshOptimizer<3> mo(*mesh);
+//                     MeshOptimizer mo(*mesh);
 //                     std::cout << '(' << progressIndex <<  "/40)" << '\n';
 //                     ++progressIndex;
 //                     std::cout << "calculating sizes" << '\n';
@@ -433,7 +433,7 @@ TEST(Spacefilling, space_filling) {
 //                 }
                 
                 {
-                    MeshOptimizer<3> mo(*mesh);
+                    MeshOptimizer mo(*mesh);
                     std::cout << '(' << progressIndex <<  "/40)" << '\n';
                     ++progressIndex;
                     std::cout << "calculating sizes" << '\n';

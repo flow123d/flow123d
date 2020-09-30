@@ -52,9 +52,7 @@ inline bool operator<(const Permutee& first, const Permutee& second) {
     return first.curveValue < second.curveValue;
 }
 
-template <uint DIM>
 class MeshOptimizer {
-    static_assert(DIM == 2 || DIM == 3, "DIM must be either 2 or 3.");
 public:
     inline MeshOptimizer(Mesh& _mesh) : mesh(_mesh) {}
     inline void calculateSizes() {
@@ -64,7 +62,7 @@ public:
             double elmSize = calculateSizeOfElement(elm);
             elementSizes.push_back(elmSize);
             const Element& el = *elm.element();
-            for (uint i = 0; i < DIM + 1; ++i) {
+            for (uint i = 0; i < elm.dim() + 1; ++i) {
                 nodeSizes[el.nodes_[i]] = std::min({nodeSizes[el.nodes_[i]], elmSize});
             }
         }
@@ -80,13 +78,13 @@ public:
     inline void calculateNodeCurveValuesAsHilbert() {
         nodeRefs.reserve(mesh.n_nodes());
         for (uint i = 0; i < mesh.n_nodes(); ++i) {
-            nodeRefs.emplace_back(i, hilbertValue(normalizer.normalize(mesh.nodes_.vec<3>(i)), normalizer.normalize(nodeSizes[i])));
+            nodeRefs.emplace_back(i, hilbertValue(normalizer.normalize(mesh.nodes_.vec<3>(i)), normalizer.normalize(nodeSizes[i]), mesh.element_vec_[i].dim()));
         }
     }
     inline void calculateNodeCurveValuesAsZCurve() {
         nodeRefs.reserve(mesh.n_nodes());
         for (uint i = 0; i < mesh.n_nodes(); ++i) {
-            nodeRefs.emplace_back(i, zCurveValue(normalizer.normalize(mesh.nodes_.vec<3>(i)), normalizer.normalize(nodeSizes[i])));
+            nodeRefs.emplace_back(i, zCurveValue(normalizer.normalize(mesh.nodes_.vec<3>(i)), normalizer.normalize(nodeSizes[i]), mesh.element_vec_[i].dim()));
         }
     }
     inline void calculateNodeCurveValuesAsMeanOfCoords() {
@@ -107,7 +105,7 @@ public:
         nodeRefs.reserve(mesh.n_nodes());
         for (uint i = 0; i < mesh.n_elements(); ++i) {
             const Element& el = mesh.element_vec_[elementRefs[i].originalIndex];
-            for (uint j = 0; j < DIM + 1; ++j) {
+            for (uint j = 0; j < el.dim() + 1; ++j) {
                 nodeRefs.emplace_back(el.nodes_[j], elementRefs[i].curveValue);
             }
         }
@@ -117,22 +115,22 @@ public:
         for (uint i = 0; i < mesh.n_elements(); ++i) {
             const std::array<uint, 4>& nodeIndexes = mesh.element_vec_[i].nodes_;
             double tmpSum = 0;
-            for (uint j = 0; j < DIM + 1; ++j) {
+            for (uint j = 0; j < mesh.element_vec_[i].dim() + 1; ++j) {
                 tmpSum += nodeRefs[nodeIndexes[j]].curveValue;
             }
-            elementRefs.emplace_back(i, tmpSum / DIM + 1);
+            elementRefs.emplace_back(i, tmpSum / (mesh.element_vec_[i].dim() + 1));
         }
     }
     inline void calculateElementCurveValuesAsHilbertOfCenters() {
         elementRefs.reserve(mesh.n_elements());
         for (uint i = 0; i < mesh.n_elements(); ++i) {
-            elementRefs.emplace_back(i, hilbertValue(normalizer.normalize(ElementAccessor<3>(&mesh, i).centre()), normalizer.normalize(elementSizes[i])));
+            elementRefs.emplace_back(i, hilbertValue(normalizer.normalize(ElementAccessor<3>(&mesh, i).centre()), normalizer.normalize(elementSizes[i]), mesh.element_vec_[i].dim()));
         }
     }
     inline void calculateElementCurveValuesAsZCurveOfCenter() {
         elementRefs.reserve(mesh.n_elements());
         for (uint i = 0; i < mesh.n_elements(); ++i) {
-            elementRefs.emplace_back(i, zCurveValue(normalizer.normalize(ElementAccessor<3>(&mesh, i).centre()), normalizer.normalize(elementSizes[i])));
+            elementRefs.emplace_back(i, zCurveValue(normalizer.normalize(ElementAccessor<3>(&mesh, i).centre()), normalizer.normalize(elementSizes[i]), mesh.element_vec_[i].dim()));
         }
     }
     inline void calculateElementCurveValuesAsMeanOfCoords() {
@@ -157,7 +155,7 @@ public:
             newNodeIndexes[nodeRefs[i].originalIndex] = i;
         }
         for (uint i = 0; i < mesh.n_elements(); ++i) {
-            for (uint j = 0; j < DIM + 1; ++j) {
+            for (uint j = 0; j < mesh.element_vec_[i].dim() + 1; ++j) {
                 mesh.element_vec_[i].nodes_[j] = newNodeIndexes[mesh.element_vec_[i].nodes_[j]];
             }
         }
@@ -174,7 +172,7 @@ public:
     }
     void copyMeshFrom(const Mesh& from) {
         for (uint i = 0; i < from.n_elements(); ++i) {
-            for (uint j = 0; j < DIM + 1; ++j) {
+            for (uint j = 0; j < from.element_vec_[i].dim() + 1; ++j) {
                 mesh.element_vec_[i].nodes_[j] = from.element_vec_[i].nodes_[j];
             }
         }
@@ -200,12 +198,34 @@ private:
     std::vector<double> elementSizes;
     Normalizer normalizer;
     inline double calculateSizeOfElement(const ElementAccessor<3>& elm) {
-        return std::min({arma::norm(*elm.node(0) - *elm.node(1)),
-                         arma::norm(*elm.node(1) - *elm.node(2)),
-                         arma::norm(*elm.node(2) - *elm.node(0)),
-                         arma::norm(*elm.node(3) - *elm.node(0)),
-                         arma::norm(*elm.node(3) - *elm.node(1)),
-                         arma::norm(*elm.node(3) - *elm.node(2))});
+    	switch (elm.dim()) {
+    	case 1:
+    	    return arma::norm(*elm.node(0) - *elm.node(1));
+    	case 2:
+    	    return std::min({arma::norm(*elm.node(0) - *elm.node(1)),
+                             arma::norm(*elm.node(1) - *elm.node(2)),
+                             arma::norm(*elm.node(2) - *elm.node(0))});
+    	case 3:
+    	    return std::min({arma::norm(*elm.node(0) - *elm.node(1)),
+                             arma::norm(*elm.node(1) - *elm.node(2)),
+                             arma::norm(*elm.node(2) - *elm.node(0)),
+                             arma::norm(*elm.node(3) - *elm.node(0)),
+                             arma::norm(*elm.node(3) - *elm.node(1)),
+                             arma::norm(*elm.node(3) - *elm.node(2))});
+    	default:
+    	    return 0.0; // should not happen
+    	}
+    }
+    inline double hilbertValue(double x, double eps) {
+        if (eps > 1) {
+            return 0;
+        } else {
+            if (x < 0.5) {
+                return hilbertValue(2 * x, 2 * eps) / 2;
+            } else {
+                return (1 + hilbertValue(2 * x - 1, 2 * eps)) / 2;
+            }
+        }
     }
     inline double hilbertValue(double x, double y, double eps) {
         if (eps > 1) {
@@ -258,6 +278,17 @@ private:
                         return (7 + hilbertValue(2 - 2 * z, 2 * x, 1 - 2 * y, 8 * eps)) / 8;
                     }
                 }
+            }
+        }
+    }
+    inline double zCurveValue(double x, double eps) {
+        if (eps > 1) {
+            return 0;
+        } else {
+            if (x < 0.5) {
+                return zCurveValue(2 * x, 2 * eps) / 2;
+            } else {
+                return (1 + zCurveValue(2 * x - 1, 2 * eps)) / 2;
             }
         }
     }
@@ -315,15 +346,33 @@ private:
             }
         }
     }
-    inline double hilbertValue(const Vec3 vec, double size) {
-        return hilbertValue(vec[0], vec[1], vec[2], size * size * size);
+    inline double hilbertValue(const Vec3 vec, double size, unsigned int dim) {
+        switch (dim) {
+        case 1:
+            return hilbertValue(vec[0], size);
+        case 2:
+            return hilbertValue(vec[0], vec[1], size * size);
+        case 3:
+            return hilbertValue(vec[0], vec[1], vec[2], size * size * size);
+        default:
+            return 0.0; // should not happen
+        }
     }
-    inline double zCurveValue(const Vec3 vec, double size) {
-        return zCurveValue(vec[0], vec[1], vec[2], size * size * size);
+    inline double zCurveValue(const Vec3 vec, double size, unsigned int dim) {
+        switch (dim) {
+        case 1:
+            return zCurveValue(vec[0], size);
+        case 2:
+            return zCurveValue(vec[0], vec[1], size * size);
+        case 3:
+            return zCurveValue(vec[0], vec[1], vec[2], size * size * size);
+        default:
+            return 0.0; // should not happen
+        }
     }
 };
 
-template<>
+/*template<>
 inline double MeshOptimizer<2>::calculateSizeOfElement(const ElementAccessor<3>& elm) {
     return std::min({arma::norm(*elm.node(0) - *elm.node(1)),
                      arma::norm(*elm.node(1) - *elm.node(2)),
@@ -338,6 +387,6 @@ inline double MeshOptimizer<2>::hilbertValue(const Vec3 vec, double size) {
 template <>
 inline double MeshOptimizer<2>::zCurveValue(const Vec3 vec, double size) {
     return zCurveValue(vec[0], vec[1], size * size);
-}
+}*/
 
 #endif /* MESH_OPTIMIZER_HH_ */
