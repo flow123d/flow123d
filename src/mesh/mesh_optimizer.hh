@@ -166,7 +166,7 @@ public:
         for (uint i = 0; i < node_refs_.size(); ++i) {
             newNodeIndexes[node_refs_[i].original_index_] = i;
         }
-        for (uint i = 0; i < mesh_->n_elements(); ++i) {
+        for (uint i = 0; i < mesh_->element_vec_.size(); ++i) {
             for (uint j = 0; j < mesh_->element_vec_[i].dim() + 1; ++j) {
                 mesh_->element_vec_[i].nodes_[j] = newNodeIndexes[mesh_->element_vec_[i].nodes_[j]];
             }
