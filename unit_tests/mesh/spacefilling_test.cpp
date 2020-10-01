@@ -338,9 +338,9 @@ TEST(Spacefilling, space_filling) {
                 
                 Mesh * mesh = mesh_full_constructor(meshNameJson);
                 
-                MeshOptimizer backuper(*mesh);
-                std::vector<Element> elementsBackup = backuper.getElements();
-                Armor::Array<double> nodesBackup = backuper.getNodes();
+                MeshOptimizer backuper(mesh);
+                std::vector<Element> elementsBackup = backuper.get_elements();
+                Armor::Array<double> nodesBackup = backuper.get_nodes();
                 
                 std::cout << meshName << '\n';
                 std::cout << "nNodes: " << mesh->n_nodes() << '\n';
@@ -349,19 +349,19 @@ TEST(Spacefilling, space_filling) {
                 std::array<double, 5> results;
                 
 //                 {
-//                     MeshOptimizer mo(*mesh);
+//                     MeshOptimizer mo(mesh);
 //                     std::cout << '(' << progressIndex <<  "/40)" << '\n';
 //                     ++progressIndex;
 //                     std::cout << "calculating sizes" << '\n';
-//                     mo.calculateSizes();
+//                     mo.calculate_sizes();
 //                     std::cout << "calculating node curve values" << '\n';
-//                     mo.calculateNodeCurveValuesAsFirstCoord();
+//                     mo.calculate_node_curve_values_as_first_coord();
 //                     std::cout << "calculating element curve values" << '\n';
-//                     mo.calculateElementCurveValuesAsFirstCoord();
+//                     mo.calculate_element_curve_values_as_first_coord();
 //                     std::cout << "sorting nodes" << '\n';
-//                     mo.sortNodes();
+//                     mo.sort_nodes();
 //                     std::cout << "sorting elements" << '\n';
-//                     mo.sortElements();
+//                     mo.sort_elements();
 //                     std::cout << "getting global matrix" << '\n';
 //                     Mat global_matrix = getGlobalMatrix(mesh);
 //                     std::cout << "performing calculation" << '\n';
@@ -371,25 +371,25 @@ TEST(Spacefilling, space_filling) {
 //                     std::cout << "result 2: " << results[1] << '\n';
 //                     tw.writeTime(meshName + "_first", stopwatch.microseconds());
 //                     std::cout << "copying mesh from backup" << '\n';
-//                     mo.setElements(elementsBackup);
-//                     mo.setNodes(nodesBackup);
+//                     mo.set_elements(elementsBackup);
+//                     mo.set_nodes(nodesBackup);
 //                     MatDestroy(&global_matrix);
 //                 }
 //                 
 //                 {
-//                     MeshOptimizer mo(*mesh);
+//                     MeshOptimizer mo(mesh);
 //                     std::cout << '(' << progressIndex <<  "/40)" << '\n';
 //                     ++progressIndex;
 //                     std::cout << "calculating sizes" << '\n';
-//                     mo.calculateSizes();
+//                     mo.calculate_sizes();
 //                     std::cout << "calculating node curve values" << '\n';
-//                     mo.calculateNodeCurveValuesAsMeanOfCoords();
+//                     mo.calculate_node_curve_values_as_mean_of_coords();
 //                     std::cout << "calculating element curve values" << '\n';
-//                     mo.calculateElementCurveValuesAsMeanOfCoords();
+//                     mo.calculate_element_curve_values_as_mean_of_coords();
 //                     std::cout << "sorting nodes" << '\n';
-//                     mo.sortNodes();
+//                     mo.sort_nodes();
 //                     std::cout << "sorting elements" << '\n';
-//                     mo.sortElements();
+//                     mo.sort_elements();
 //                     std::cout << "getting global matrix" << '\n';
 //                     Mat global_matrix = getGlobalMatrix(mesh);
 //                     std::cout << "performing calculation" << '\n';
@@ -399,25 +399,25 @@ TEST(Spacefilling, space_filling) {
 //                     std::cout << "result 3: " << results[2] << '\n';
 //                     tw.writeTime(meshName + "_mean", stopwatch.microseconds());
 //                     std::cout << "copying mesh from backup" << '\n';
-//                     mo.setElements(elementsBackup);
-//                     mo.setNodes(nodesBackup);
+//                     mo.set_elements(elementsBackup);
+//                     mo.set_nodes(nodesBackup);
 //                     MatDestroy(&global_matrix);
 //                 }
 //                 
 //                 {
-//                     MeshOptimizer mo(*mesh);
+//                     MeshOptimizer mo(mesh);
 //                     std::cout << '(' << progressIndex <<  "/40)" << '\n';
 //                     ++progressIndex;
 //                     std::cout << "calculating sizes" << '\n';
-//                     mo.calculateSizes();
+//                     mo.calculate_sizes();
 //                     std::cout << "calculating node curve values" << '\n';
-//                     mo.calculateNodeCurveValuesAsZCurve();
+//                     mo.calculate_node_curve_values_as_zcurve();
 //                     std::cout << "calculating element curve values" << '\n';
-//                     mo.calculateElementCurveValuesAsZCurveOfCenter();
+//                     mo.calculate_element_curve_values_as_zcurve_of_center();
 //                     std::cout << "sorting nodes" << '\n';
-//                     mo.sortNodes();
+//                     mo.sort_nodes();
 //                     std::cout << "sorting elements" << '\n';
-//                     mo.sortElements();
+//                     mo.sort_elements();
 //                     std::cout << "getting global matrix" << '\n';
 //                     Mat global_matrix = getGlobalMatrix(mesh);
 //                     std::cout << "performing calculation" << '\n';
@@ -427,25 +427,25 @@ TEST(Spacefilling, space_filling) {
 //                     std::cout << "result 4: " << results[3] << '\n';
 //                     tw.writeTime(meshName + "_zcurve", stopwatch.microseconds());
 //                     std::cout << "copying mesh from backup" << '\n';
-//                     mo.setElements(elementsBackup);
-//                     mo.setNodes(nodesBackup);
+//                     mo.set_elements(elementsBackup);
+//                     mo.set_nodes(nodesBackup);
 //                     MatDestroy(&global_matrix);
 //                 }
                 
                 {
-                    MeshOptimizer mo(*mesh);
+                    MeshOptimizer mo(mesh);
                     std::cout << '(' << progressIndex <<  "/40)" << '\n';
                     ++progressIndex;
                     std::cout << "calculating sizes" << '\n';
-                    mo.calculateSizes();
+                    mo.calculate_sizes();
                     std::cout << "calculating node curve values" << '\n';
-                    mo.calculateNodeCurveValuesAsHilbert();
+                    mo.calculate_node_curve_values_as_hilbert();
                     std::cout << "calculating element curve values" << '\n';
-                    mo.calculateElementCurveValuesAsHilbertOfCenters();
+                    mo.calculate_element_curve_values_as_hilbert_of_centers();
                     std::cout << "sorting nodes" << '\n';
-                    mo.sortNodes();
+                    mo.sort_nodes();
                     std::cout << "sorting elements" << '\n';
-                    mo.sortElements();
+                    mo.sort_elements();
                     std::cout << "performing calculation" << '\n';
                     stopwatch.start();
                     results[4] = calculation3DAfterSort(mesh);
@@ -453,8 +453,8 @@ TEST(Spacefilling, space_filling) {
                     std::cout << "result 5: " << results[4] << '\n';
                     tw.writeTime(meshName + "_hilbert", stopwatch.microseconds());
                     std::cout << "copying mesh from backup" << '\n';
-                    mo.setElements(elementsBackup);
-                    mo.setNodes(nodesBackup);
+                    mo.set_elements(elementsBackup);
+                    mo.set_nodes(nodesBackup);
                 }
                 
                 {
