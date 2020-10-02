@@ -243,9 +243,9 @@ TEST_F(FieldEvalFETest, evaluate) {
  * Checked GenericAssembly with active bulk integral only vs. with all active integrals
  *
  *                           bulk            all
- * add_integrals_to_patch   19.10 (19.28)   44.12  (44.38)
- * create_patch              3.14  (3.12)   19.28  (19.32)
- * cache_update             58.30 (41.16)  314.10 (267.20)
+ * add_integrals_to_patch   19.10 (19.16)   44.12  (44.56)
+ * create_patch              3.14  (3.06)   19.28  (19.80)
+ * cache_update             58.30 (37.06)  314.10 (256.38)
  * (times are multiplied by 2 for simple compare with other speed tests with 100
  * assemblation loops - FieldConstant and FieldModel)
  * (values in brackets are for inlined functions get_loc_dof_indices and shape_value_component)

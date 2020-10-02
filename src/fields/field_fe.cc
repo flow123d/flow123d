@@ -795,7 +795,7 @@ void FieldFE<spacedim, Value>::local_to_ghost_data_scatter_end() {
 
 
 
-template <int spacedim, class Value>
+/*template <int spacedim, class Value>
 Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> FieldFE<spacedim, Value>::handle_fe_shape(unsigned int dim,
         unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
 {
@@ -806,7 +806,7 @@ Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> Field
         return v;
     else
         return v.t();
-}
+}*/
 
 
 
