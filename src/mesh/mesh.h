@@ -354,6 +354,12 @@ public:
         return element_ids_[pos];
     }
 
+    /// Return permutation of element on given position
+    inline unsigned int element_permutation(unsigned int pos) const
+    {
+        return elem_permutation_[pos];
+    }
+
     /// For node of given node_id returns index in element_vec_ or (-1) if node doesn't exist.
     inline int node_index(int node_id) const
     {
@@ -364,6 +370,12 @@ public:
     inline int find_node_id(unsigned int pos) const
     {
         return node_ids_[pos];
+    }
+
+    /// Return permutation of node on given position
+    inline unsigned int node_permutation(unsigned int pos) const
+    {
+        return node_permutation_[pos];
     }
 
     /// Check if given index is in element_vec_
@@ -531,6 +543,12 @@ protected:
 
     /// Vector of MH edges, this should not be part of the geometrical mesh
     std::vector<EdgeData> edges;
+
+    /// Vector of node permutations of optimized mesh (see class MeshOptimizer)
+    std::vector<unsigned int> node_permutation_;
+
+    /// Vector of element permutations of optimized mesh (see class MeshOptimizer)
+    std::vector<unsigned int> elem_permutation_;
 
 
     friend class Edge;
