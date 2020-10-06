@@ -81,8 +81,9 @@ void OutputMSH::write_msh_geometry(void)
     file << this->nodes_->n_values() << endl;
     auto &id_node_vec = *( this->node_ids_->get_component_data(0).get() );
     for(unsigned int i_node=0; i_node < id_node_vec.size(); ++i_node) {
-        file << id_node_vec[i_node] << " ";
-        this->nodes_->print_ascii(file, i_node);
+        unsigned int i_gmsh_node = output_mesh_->orig_mesh_->node_permutation(i_node);
+        file << id_node_vec[i_gmsh_node] << " ";
+        this->nodes_->print_ascii(file, i_gmsh_node);
         file << endl;
     }
     file << "$EndNodes" << endl;
@@ -101,19 +102,29 @@ void OutputMSH::write_msh_topology(void)
 
     unsigned int n_nodes, i_node=0;
 
+    std::vector<unsigned int> gmsh_connectivity(4*id_elem_vec.size(), 0);
+    for(unsigned int i_elm=0; i_elm < id_elem_vec.size(); ++i_elm) {
+        n_nodes = (i_elm==0) ? (offsets_vec[0]) : (offsets_vec[i_elm]-offsets_vec[i_elm-1]);
+        for(unsigned int i=4*i_elm; i<4*i_elm+n_nodes; i++, i_node++) {
+            gmsh_connectivity[i] = connectivity_vec[i_node];
+        }
+    }
+
+
     // Write information about elements
     file << "$Elements" << endl;
     file << this->offsets_->n_values() << endl;
     ElementAccessor<OutputElement::spacedim> elm;
     for(unsigned int i_elm=0; i_elm < id_elem_vec.size(); ++i_elm) {
-    	n_nodes = (i_elm==0) ? (offsets_vec[0]) : (offsets_vec[i_elm]-offsets_vec[i_elm-1]);
+        unsigned int i_gmsh_elm = output_mesh_->orig_mesh_->element_permutation(i_elm);
+    	n_nodes = (i_gmsh_elm==0) ? (offsets_vec[0]) : (offsets_vec[i_gmsh_elm]-offsets_vec[i_gmsh_elm-1]);
         // element_id element_type 3_other_tags material region partition
-        file << id_elem_vec[i_elm]
+        file << id_elem_vec[i_gmsh_elm]
              << " " << gmsh_simplex_types_[ n_nodes-1 ]
-             << " 3 " << regions_vec[i_elm] << " " << regions_vec[i_elm] << " " << partition_vec[i_elm];
+             << " 3 " << regions_vec[i_gmsh_elm] << " " << regions_vec[i_gmsh_elm] << " " << partition_vec[i_gmsh_elm];
 
-        for(unsigned int i=0; i<n_nodes; i++, i_node++) {
-            file << " " << id_node_vec[connectivity_vec[i_node]];
+        for(unsigned int i=4*i_gmsh_elm; i<4*i_gmsh_elm+n_nodes; i++) {
+            file << " " << id_node_vec[gmsh_connectivity[i]];
         }
         file << endl;
     }
@@ -213,7 +224,15 @@ void OutputMSH::write_elem_data(OutputDataPtr output_data)
     file << output_data->n_comp() << endl;   // number of components
     file << output_data->n_values() << endl;  // number of values
 
-    this->write_msh_ascii_data(this->elem_ids_, output_data);
+    //this->write_msh_ascii_data(this->elem_ids_, output_data);
+    unsigned int i_gmsh;
+    auto &id_vec = *( this->elem_ids_->get_component_data(0).get() );
+    for(unsigned int i=0; i < output_data->n_values(); ++i) {
+        i_gmsh = output_mesh_->orig_mesh_->element_permutation(i);
+        file << id_vec[i_gmsh] << " ";
+        output_data->print_ascii(file, i_gmsh);
+        file << std::endl;
+    }
 
     file << "$EndElementData" << endl;
 }
