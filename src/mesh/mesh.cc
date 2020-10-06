@@ -1102,6 +1102,7 @@ void Mesh::add_node(unsigned int node_id, arma::vec3 coords) {
 
     nodes_.append(coords);
     node_ids_.add_item(node_id);
+    node_permutation_.push_back(node_permutation_.size());
 }
 
 
@@ -1160,8 +1161,10 @@ vector<vector<unsigned int> > const & Mesh::node_elements() {
 void Mesh::init_element_vector(unsigned int size) {
 	element_vec_.clear();
     element_ids_.clear();
+    elem_permutation_.clear();
 	element_vec_.reserve(size);
     element_ids_.reserve(size);
+    elem_permutation_.reserve(size);
 	bc_element_tmp_.clear();
 	bc_element_tmp_.reserve(size);
 	bulk_size_ = 0;
@@ -1173,6 +1176,8 @@ void Mesh::init_node_vector(unsigned int size) {
 	nodes_.reinit(size);
 	node_ids_.clear();
 	node_ids_.reserve(size);
+	node_permutation_.clear();
+	node_permutation_.reserve(size);
 }
 
 
@@ -1180,6 +1185,7 @@ Element * Mesh::add_element_to_vector(int id) {
     element_vec_.push_back( Element() );
     Element * elem = &element_vec_.back(); //[element_vec_.size()-1];
     element_ids_.add_item((unsigned int)(id));
+    elem_permutation_.push_back(elem_permutation_.size());
 	return elem;
 }
 

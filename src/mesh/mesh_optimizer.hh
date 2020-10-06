@@ -161,27 +161,41 @@ public:
 
     inline void sort_nodes() {
         std::sort(node_refs_.begin(), node_refs_.end());
-        std::vector<uint> newNodeIndexes(node_refs_.size());
-        Armor::Array<double> nodesBackup = mesh_->nodes_;
+        std::vector<uint> new_node_indexes(node_refs_.size());
+        Armor::Array<double> nodes_backup = mesh_->nodes_;
         for (uint i = 0; i < node_refs_.size(); ++i) {
-            newNodeIndexes[node_refs_[i].original_index_] = i;
+        	new_node_indexes[node_refs_[i].original_index_] = i;
         }
         for (uint i = 0; i < mesh_->element_vec_.size(); ++i) {
             for (uint j = 0; j < mesh_->element_vec_[i].dim() + 1; ++j) {
-                mesh_->element_vec_[i].nodes_[j] = newNodeIndexes[mesh_->element_vec_[i].nodes_[j]];
+                mesh_->element_vec_[i].nodes_[j] = new_node_indexes[mesh_->element_vec_[i].nodes_[j]];
             }
         }
+        std::vector<unsigned int> new_node_permutation(node_refs_.size());
+        BidirectionalMap<int> node_ids;
+        node_ids.reserve(node_refs_.size());
         for (uint i = 0; i < node_refs_.size(); ++i) {
-            mesh_->nodes_.set(i) = nodesBackup.vec<3>(node_refs_[i].original_index_);
+            mesh_->nodes_.set(i) = nodes_backup.vec<3>(node_refs_[i].original_index_);
+            new_node_permutation[ node_refs_[i].original_index_ ] = i;
+            node_ids.add_item( mesh_->find_node_id(node_refs_[i].original_index_) );
         }
+        mesh_->node_permutation_ = new_node_permutation;
+        mesh_->node_ids_ = node_ids;
     }
 
     inline void sort_elements() {
         std::sort(element_refs_.begin(), element_refs_.end());
-        std::vector<Element> elementsBackup = mesh_->element_vec_;
+        std::vector<Element> elements_backup = mesh_->element_vec_;
+        std::vector<unsigned int> new_elem_permutation(element_refs_.size());
+        BidirectionalMap<int> element_ids;
+        element_ids.reserve(element_refs_.size());
         for (uint i = 0; i < element_refs_.size(); ++i) {
-            mesh_->element_vec_[i] = elementsBackup[element_refs_[i].original_index_];
+            mesh_->element_vec_[i] = elements_backup[element_refs_[i].original_index_];
+            new_elem_permutation[ element_refs_[i].original_index_ ] = i;
+            element_ids.add_item( mesh_->find_elem_id(element_refs_[i].original_index_) );
         }
+        mesh_->elem_permutation_ = new_elem_permutation;
+        mesh_->element_ids_ = element_ids;
     }
 
     void copy_mesh_from(const Mesh& from) {
