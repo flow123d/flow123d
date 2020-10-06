@@ -304,9 +304,9 @@ void DarcyFlowMHOutput::output_internal_flow_data()
     
     arma::vec3 flux_in_center;
     
-    int cit = 0;
-    for ( DHCellAccessor dh_cell : data->dh_->own_range() ) {
-        ElementAccessor<3> ele = dh_cell.elm();
+    for (unsigned int i_elem=0; i_elem<data->dh_->own_size(); ++i_elem) {
+        ElementAccessor<3> ele(data->dh_->mesh(), data->dh_->mesh()->element_permutation(i_elem));
+        DHCellAccessor dh_cell = data->dh_->cell_accessor_from_element( ele.idx() );
         LocDofVec indices = dh_cell.get_loc_dof_indices();
 
         // pressure
@@ -331,7 +331,6 @@ void DarcyFlowMHOutput::output_internal_flow_data()
         }
         
         raw_output_file << endl;
-        cit ++;
     }    
     
     raw_output_file << "$EndFlowField\n" << endl;
