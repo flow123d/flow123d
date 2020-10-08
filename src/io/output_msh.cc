@@ -132,7 +132,7 @@ void OutputMSH::write_msh_topology(void)
 }
 
 
-void OutputMSH::write_msh_ascii_data(std::shared_ptr<ElementDataCache<unsigned int>> id_cache, OutputDataPtr output_data, bool discont)
+/*void OutputMSH::write_msh_ascii_data(std::shared_ptr<ElementDataCache<unsigned int>> id_cache, OutputDataPtr output_data, bool discont)
 {
 	ofstream &file = this->_base_file;
     auto &id_vec = *( id_cache->get_component_data(0).get() );
@@ -155,7 +155,7 @@ void OutputMSH::write_msh_ascii_data(std::shared_ptr<ElementDataCache<unsigned i
         }
 
     }
-}
+}*/
 
 
 void OutputMSH::write_node_data(OutputDataPtr output_data)
@@ -177,7 +177,15 @@ void OutputMSH::write_node_data(OutputDataPtr output_data)
     file << output_data->n_comp() << endl;   // number of components
     file << output_data->n_values() << endl;  // number of values
 
-    this->write_msh_ascii_data(this->node_ids_, output_data);
+    //this->write_msh_ascii_data(this->node_ids_, output_data);
+    unsigned int i_gmsh;
+    auto &id_vec = *( this->node_ids_->get_component_data(0).get() );
+    for(unsigned int i=0; i < output_data->n_values(); ++i) {
+        i_gmsh = output_mesh_->orig_mesh_->node_permutation(i);
+        file << id_vec[i_gmsh] << " ";
+        output_data->print_ascii(file, i_gmsh);
+        file << std::endl;
+    }
 
     file << "$EndNodeData" << endl;
 }
@@ -201,7 +209,18 @@ void OutputMSH::write_corner_data(OutputDataPtr output_data)
     file << output_data->n_comp() << endl;   // number of components
     file << this->offsets_->n_values() << endl; // number of values
 
-    this->write_msh_ascii_data(this->elem_ids_, output_data, true);
+    //this->write_msh_ascii_data(this->elem_ids_, output_data, true);
+    auto &id_vec = *( this->elem_ids_->get_component_data(0).get() );
+	auto &offsets_vec = *( this->offsets_->get_component_data(0).get() );
+	unsigned int n_nodes, i_corner=0;
+    for(unsigned int i=0; i < id_vec.size(); ++i) {
+        unsigned int i_gmsh_elm = output_mesh_->orig_mesh_->element_permutation(i);
+        n_nodes = (i_gmsh_elm==0) ? (offsets_vec[0]) : (offsets_vec[i_gmsh_elm]-offsets_vec[i_gmsh_elm-1]);
+        file << id_vec[i_gmsh_elm] << " " << n_nodes << " ";
+        for (unsigned int j=0; j<n_nodes; j++)
+            output_data->print_ascii(file, i_corner++);
+        file << std::endl;
+    }
 
     file << "$EndElementNodeData" << endl;
 }
