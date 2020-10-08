@@ -113,7 +113,7 @@ private:
      * \param[in]   output_data  The pointer at structure storing pointer at own data.
      * \param[in]   discont      Flag determines continuous or discontinuous mesh.
      */
-    void write_msh_ascii_data(std::shared_ptr<ElementDataCache<unsigned int>> id_cache, OutputDataPtr output_data, bool discont = false);
+    //void write_msh_ascii_data(std::shared_ptr<ElementDataCache<unsigned int>> id_cache, OutputDataPtr output_data, bool discont = false);
 
     /**
      * \brief This function write all data on nodes to output file. This function
