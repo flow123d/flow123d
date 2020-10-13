@@ -375,7 +375,8 @@ public:
     /// Return permutation of node on given position
     inline unsigned int node_permutation(unsigned int pos) const
     {
-        return node_permutation_[pos];
+        if (pos < node_permutation_.size()) return node_permutation_[pos];
+        else return pos;
     }
 
     /// Check if given index is in element_vec_
