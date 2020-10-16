@@ -759,11 +759,11 @@ template<int spacedim, class Value>
 void Field<spacedim, Value>::cache_update(ElementCacheMap &cache_map, unsigned int i_reg) {
     auto update_cache_data = cache_map.update_cache_data();
 
-    // Call cache_update of FieldAlgoBase descendants
-    std::unordered_map<unsigned int, ElementCacheMap::RegionData>::iterator reg_elm_it;
-    for (reg_elm_it=update_cache_data.region_cache_indices_map_.begin(); reg_elm_it!=update_cache_data.region_cache_indices_map_.end(); ++reg_elm_it) {
-        if (region_fields_[reg_elm_it->first] == nullptr) continue; // skips bounadry regions for bulk fields and vice versa
-        region_fields_[reg_elm_it->first]->cache_update(value_cache_, cache_map, reg_elm_it->first);
+    std::unordered_map<unsigned int, ElementCacheMap::RegionData>::iterator reg_elm_it =
+            update_cache_data.region_cache_indices_map_.find(i_reg);
+    if (reg_elm_it != update_cache_data.region_cache_indices_map_.end()) {
+        if (region_fields_[reg_elm_it->first] != nullptr) // skips bounadry regions for bulk fields and vice versa
+            region_fields_[reg_elm_it->first]->cache_update(value_cache_, cache_map, reg_elm_it->first);
     }
 }
 
