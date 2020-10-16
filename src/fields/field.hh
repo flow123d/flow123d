@@ -335,7 +335,7 @@ public:
     void cache_reallocate(const ElementCacheMap &cache_map) override;
 
     /// Implements FieldCommon::cache_update
-    void cache_update(ElementCacheMap &cache_map) override;
+    void cache_update(ElementCacheMap &cache_map, unsigned int i_reg) override;
 
     /// returns reference to FieldValueCache.
     inline const FieldValueCache<typename Value::element_type> &value_cache() const {

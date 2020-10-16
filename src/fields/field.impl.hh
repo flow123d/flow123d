@@ -756,7 +756,7 @@ void Field<spacedim, Value>::cache_reallocate(const ElementCacheMap &cache_map) 
 
 
 template<int spacedim, class Value>
-void Field<spacedim, Value>::cache_update(ElementCacheMap &cache_map) {
+void Field<spacedim, Value>::cache_update(ElementCacheMap &cache_map, unsigned int i_reg) {
     auto update_cache_data = cache_map.update_cache_data();
 
     // Call cache_update of FieldAlgoBase descendants

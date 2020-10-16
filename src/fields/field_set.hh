@@ -266,7 +266,8 @@ public:
      */
     void cache_update(ElementCacheMap &cache_map) {
         update_coords_caches(cache_map);
-	    for(auto field : field_list) field->cache_update(cache_map);
+        for (unsigned int i_reg=0; i_reg<mesh_->region_db().size(); ++i_reg)
+	        for(unsigned int i_f=0; i_f<field_list.size(); ++i_f) field_list[region_dependency_list_[i_reg][i_f]]->cache_update(cache_map, i_reg);
     }
 
     /**
