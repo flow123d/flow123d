@@ -99,6 +99,10 @@ FEObjects::FEObjects(Mesh *mesh_, unsigned int fe_order)
 	std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh_, fe_p);
 	dh_scalar_->distribute_dofs(ds);
     
+    MixedPtr<FiniteElement> fe_v = mixed_fe_system(MixedPtr<FE_P_disc>(0), FEType::FEVector, 3);
+    dh_vector_ = make_shared<DOFHandlerMultiDim>(*mesh_);
+	std::shared_ptr<DiscreteSpace> dsv = std::make_shared<EqualOrderDiscreteSpace>( mesh_, fe_v);
+	dh_vector_->distribute_dofs(dsv);
 
     MixedPtr<FiniteElement> fe_t = mixed_fe_system(MixedPtr<FE_P_disc>(0), FEType::FETensor, 9);
     dh_tensor_ = make_shared<DOFHandlerMultiDim>(*mesh_);
@@ -118,6 +122,7 @@ template<> std::shared_ptr<FiniteElement<3>> FEObjects::fe<3>() { return fe_[3_d
 
 std::shared_ptr<DOFHandlerMultiDim> FEObjects::dh() { return dh_; }
 std::shared_ptr<DOFHandlerMultiDim> FEObjects::dh_scalar() { return dh_scalar_; }
+std::shared_ptr<DOFHandlerMultiDim> FEObjects::dh_vector() { return dh_vector_; }
 std::shared_ptr<DOFHandlerMultiDim> FEObjects::dh_tensor() { return dh_tensor_; }
 
 
@@ -249,6 +254,11 @@ Elasticity::EqData::EqData()
             .name("displacement_divergence")
             .units( UnitSI().dimensionless() )
             .flags(equation_result);
+    
+    *this+=output_displ_jump
+            .name("displacement_jump")
+            .units( UnitSI().m() )
+            .flags(equation_result);
 
     // add all input fields to the output list
     output_fields += *this;
@@ -327,6 +337,10 @@ void Elasticity::initialize()
     // setup output divergence
     data_.output_div_ptr = create_field_fe<3, FieldValue<3>::Scalar>(feo->dh_scalar());
     data_.output_divergence.set_field(mesh_->region_db().get_region_set("ALL"), data_.output_div_ptr);
+
+    // setup output displacement jump
+    data_.output_displ_jump_ptr = create_field_fe<3, FieldValue<3>::VectorFixed>(feo->dh_vector());
+    data_.output_displ_jump.set_field(mesh_->region_db().get_region_set("ALL"), data_.output_displ_jump_ptr, 0.);
     
     data_.output_field.output_type(OutputTime::CORNER_DATA);
 
@@ -372,6 +386,7 @@ void Elasticity::update_output_fields()
     data_.output_stress_ptr->vec().zero_entries();
     data_.output_cross_section_ptr->vec().zero_entries();
     data_.output_div_ptr->vec().zero_entries();
+    data_.output_displ_jump_ptr->vec().zero_entries();
     compute_output_fields<1>();
     compute_output_fields<2>();
     compute_output_fields<3>();
@@ -385,6 +400,8 @@ void Elasticity::update_output_fields()
     data_.output_cross_section_ptr->vec().local_to_ghost_end();
     data_.output_div_ptr->vec().local_to_ghost_begin();
     data_.output_div_ptr->vec().local_to_ghost_end();
+    data_.output_displ_jump_ptr->vec().local_to_ghost_begin();
+    data_.output_displ_jump_ptr->vec().local_to_ghost_end();
 }
 
 
@@ -537,6 +554,7 @@ void Elasticity::compute_output_fields()
     		update_values | update_gradients | update_quadrature_points);
     FEValues<3> fsv(q_sub, *feo->fe<dim>(),
     		update_values | update_normal_vectors | update_quadrature_points);
+
     const unsigned int ndofs = feo->fe<dim>()->n_dofs();
     auto vec = fv.vector_view(0);
     auto vec_side = fsv.vector_view(0);
@@ -545,8 +563,10 @@ void Elasticity::compute_output_fields()
     VectorMPI output_von_mises_stress_vec = data_.output_von_mises_stress_ptr->vec();
     VectorMPI output_cross_sec_vec = data_.output_cross_section_ptr->vec();
     VectorMPI output_div_vec = data_.output_div_ptr->vec();
+    VectorMPI output_displ_jump_vec = data_.output_displ_jump_ptr->vec();
     
     DHCellAccessor cell_tensor = *feo->dh_tensor()->own_range().begin();
+    DHCellAccessor cell_vector = *feo->dh_vector()->own_range().begin();
     DHCellAccessor cell_scalar = *feo->dh_scalar()->own_range().begin();
     for (auto cell : feo->dh()->own_range())
     {
@@ -589,6 +609,7 @@ void Elasticity::compute_output_fields()
             double normal_displacement = 0;
             double csection = data_.cross_section.value(fsv.point(0), elm);
             arma::mat33 normal_stress = arma::zeros(3,3);
+            arma::vec3 displ_jump = arma::zeros(3);
 
             double poisson = data_.poisson_ratio.value(elm.centre(), elm);
             double young = data_.young_modulus.value(elm.centre(), elm);
@@ -603,13 +624,19 @@ void Elasticity::compute_output_fields()
                 LocDofVec side_dof_indices =
                     feo->dh()->cell_accessor_from_element(cell_side.idx()).get_loc_dof_indices();
                 
+                int side_sign = 0; // fix sign of sides for calculation of displacement jump
+                if (inb == 0) side_sign = 1;
+                else if (inb == 1) side_sign = -1;
+                
                 for (unsigned int i=0; i<ndofs; i++)
                 {
                     normal_displacement -= arma::dot(vec_side.value(i,0)*output_vec[side_dof_indices[i]], fsv.normal_vector(0));
                     arma::mat33 grad = -arma::kron(vec_side.value(i,0)*output_vec[side_dof_indices[i]], fsv.normal_vector(0).t()) / csection;
                     normal_stress += mu*(grad+grad.t()) + lambda*arma::trace(grad)*arma::eye(3,3);
+                    displ_jump += vec_side.value(i,0)*(output_vec[side_dof_indices[i]]*side_sign);
                 }
             }
+            LocDofVec dof_indices_vector = cell_vector.get_loc_dof_indices();
             LocDofVec dof_indices_scalar = cell_scalar.get_loc_dof_indices();
             LocDofVec dof_indices_tensor = cell_tensor.get_loc_dof_indices();
             for (unsigned int i=0; i<3; i++)
@@ -617,8 +644,13 @@ void Elasticity::compute_output_fields()
                     output_stress_vec[dof_indices_tensor[i*3+j]] += normal_stress(i,j);
             output_cross_sec_vec[dof_indices_scalar[0]] += normal_displacement;
             output_div_vec[dof_indices_scalar[0]] += normal_displacement / csection;
+
+            if (output_displ_jump_vec[dof_indices_vector[0]] == 0)
+                for (unsigned int i=0; i<3; i++)
+                    output_displ_jump_vec[dof_indices_vector[i]] = displ_jump(i);
         }
         cell_scalar.inc();
+        cell_vector.inc();
         cell_tensor.inc();
     }
 }
