@@ -227,6 +227,7 @@ private:
 	Fn* fn;
 	typedef std::tuple<InputFields...> FieldsTuple;
     FieldsTuple input_fields;
+    std::vector<std::string> dependency_list_;
 
 public:
     typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
@@ -236,8 +237,12 @@ public:
     {}
 
 
+    /// Setter of dependency_list_
+    void dependency_list(std::vector<string> dl) override {
+        dependency_list_ = dl;
+    }
 
-
+    /// Implements FieldAlgoBase::cache_update
     void cache_update(FieldValueCache<typename Value::element_type> &data_cache,
 				ElementCacheMap &cache_map, unsigned int region_idx) override {
         auto update_cache_data = cache_map.update_cache_data();
@@ -279,7 +284,7 @@ public:
     typedef std::shared_ptr< FieldBaseType > FieldBasePtr;
 
     template<typename Fn, class ... InputFields>
-    static auto create(Fn *fn,  InputFields&&... inputs) -> decltype(auto)
+    static auto create(Fn *fn, InputFields&&... inputs) -> decltype(auto)
     {
         return std::make_shared<FieldModel<spacedim, Value, Fn, InputFields...>>(fn, std::forward<InputFields>(inputs)...);
     }
@@ -293,7 +298,7 @@ public:
     }
 
     template<typename Fn, class ... InputFields>
-    static auto create_multi(Fn *fn,  InputFields&&... inputs) -> decltype(auto)
+    static auto create_multi(Fn *fn, InputFields&&... inputs) -> decltype(auto)
     {
         typedef std::tuple<InputFields...> FieldTuple;
         FieldTuple field_tuple = std::forward_as_tuple((inputs)...);
