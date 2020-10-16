@@ -430,7 +430,7 @@ public:
     /**
      * Set reference of FieldSet to all instances of FieldFormula.
      */
-    virtual void set_dependency(FieldSet &field_set) =0;
+    virtual std::vector<string> set_dependency(FieldSet &field_set, unsigned int i_reg) =0;
 
     /**
      * Sets @p component_index_

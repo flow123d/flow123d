@@ -257,8 +257,12 @@ public:
        /**
         * Set reference of FieldSet to FieldFormula instance.
         */
-       virtual void set_dependency(FMT_UNUSED FieldSet &field_set) {
-           // Implementation only in FieldFormula!
+       virtual std::vector<string> set_dependency(FMT_UNUSED FieldSet &field_set) {
+           return std::vector<string>();
+       }
+
+       /// Empty method, override in FieldModel class
+       virtual void dependency_list(FMT_UNUSED std::vector<string> dl) {
        }
 
        /**

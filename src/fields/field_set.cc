@@ -26,7 +26,15 @@
 
 FieldSet::FieldSet()
 : x_coord_(1,1), y_coord_(1,1), z_coord_(1,1)
-{}
+{
+    X_.name("X")
+         .units(UnitSI().m())
+         .flags(FieldFlag::in_time_term)
+         .description("Coordinates fields.");
+
+	// TODO initialize coords field
+	//X_.set(coord fields, 0.0);
+}
 
 FieldSet &FieldSet::operator +=(FieldCommon &add_field) {
     FieldCommon *found_field = field(add_field.name());
@@ -229,6 +237,46 @@ void FieldSet::update_coords_caches(ElementCacheMap &cache_map) {
             z_coord_.set(cache_idx) = coord_val;
         }
     }
+}
+
+
+unsigned int FieldSet::compute_depth(string field_name, const map<string, vector<string>> &dependency_map) {
+    auto it = dependency_map.find(field_name);
+    ASSERT(it != dependency_map.end()).error("Invalid field name!\n");
+    unsigned int depth = 0;
+    for (auto prev_field : it->second) {
+	    depth = std::max(depth, compute_depth(prev_field, dependency_map)+1);
+    }
+	return depth;
+}
+
+
+void FieldSet::set_dependency() {
+	// Fill map of field indices if field_list was changed
+	if (field_indices_map_.size() < field_list.size()) {
+	    field_indices_map_.clear();
+	    for (unsigned int i=0; i<field_list.size(); ++i)
+	        field_indices_map_[ field_list[i]->name() ] = i;
+	}
+	region_dependency_list_.clear();
+
+    map<string, vector<string>> dependency_map;
+    map<unsigned int, vector<string>> depth_map;
+    set<string> used_fields;
+	for (unsigned int i_reg=0; i_reg<mesh_->region_db().size(); ++i_reg) {
+		dependency_map["X"] = vector<string>(); // Temporary solution, remove after replace coord data cache with Field
+		for(auto field : field_list) dependency_map[field->name()] = field->set_dependency(*this, i_reg);
+		for(auto d : dependency_map) {
+		    unsigned int depth = compute_depth(d.first, dependency_map);
+		    depth_map[depth].push_back(d.first);
+		}
+		region_dependency_list_[i_reg].reserve(field_list.size());
+		for(auto d : depth_map) {
+		    for (auto field_name : d.second) region_dependency_list_[i_reg].push_back(field_indices_map_[field_name]);
+		}
+		dependency_map.clear();
+		depth_map.clear();
+	}
 }
 
 

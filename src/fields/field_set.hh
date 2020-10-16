@@ -27,6 +27,7 @@
 #include "fields/eval_subset.hh"   // for EvalSubset
 #include "fields/eval_points.hh"   // for EvalPoints
 #include "fields/field_value_cache.hh"
+#include "fields/field.hh"
 #include "input/accessors.hh"      // for Array
 #include "input/type_record.hh"    // for Record
 #include "io/output_time.hh"       // for OutputTime, OutputTime::DiscreteSpace
@@ -271,9 +272,7 @@ public:
     /**
      * Set reference of FieldSet to all instances of FieldFormula.
      */
-    void set_dependency() {
-    	for(auto field : field_list) field->set_dependency(*this);
-    }
+    void set_dependency();
 
     inline const FieldValueCache<double> &x() const { return x_coord_; }  ///< Return x-coord FieldValueCache
     inline const FieldValueCache<double> &y() const { return y_coord_; }  ///< Return y-coord FieldValueCache
@@ -282,6 +281,9 @@ public:
 protected:
     /// Update caches holding coordinates values (for FieldFormula)
     void update_coords_caches(ElementCacheMap &cache_map);
+
+    /// Compute depth (recursively) of given field in dependecy tree.
+    unsigned int compute_depth(string field_name, const std::map<string, std::vector<string>> &dependency_map);
 
     /// List of all fields.
     std::vector<FieldCommon *> field_list;
@@ -295,6 +297,20 @@ protected:
     FieldValueCache<double> y_coord_;  ///< Holds values of y-coordinates (for FieldFormula)
     FieldValueCache<double> z_coord_;  ///< Holds values of z-coordinates (for FieldFormula)
     const Mesh *mesh_;                 ///< Pointer to the mesh.
+
+    /// Holds map of indices of fields stored in field_list
+    std::map<std::string, unsigned int> field_indices_map_;
+
+    /**
+     * Holds vector of indices of fields in field_list sorted by dependency for every region.
+     *
+     * - first: index of region
+     * - second: vector of indices of fields
+     */
+    std::map<unsigned int, std::vector<unsigned int>> region_dependency_list_;
+
+    /// Field holds coordinates for computing of FieldFormulas
+    Field<3, FieldValue<3>::VectorFixed > X_;
 
     /**
      * Stream output operator

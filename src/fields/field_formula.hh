@@ -110,7 +110,7 @@ public:
     /**
      * Set reference of FieldSet.
      */
-    void set_dependency(FieldSet &field_set) override;
+    std::vector<string> set_dependency(FieldSet &field_set) override;
 
     virtual ~FieldFormula();
 
@@ -147,7 +147,7 @@ private:
     FieldSet *field_set_;
 
     /// Holds names of fields.
-    std::set<std::string> field_set_names_;
+    std::vector<std::string> field_set_names_;
 
     /// Arena object providing data arrays
     bparser::ArenaAlloc * arena_alloc_;

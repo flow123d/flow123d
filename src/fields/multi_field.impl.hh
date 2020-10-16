@@ -377,10 +377,21 @@ bool MultiField<spacedim, Value>::MultiFieldFactory::is_active_field_descriptor(
 
 
 template<int spacedim, class Value>
-void MultiField<spacedim, Value>::set_dependency(FieldSet &field_set) {
+void MultiField<spacedim, Value>::dependency_list(std::vector<string> dl) {
+	for(auto &field : sub_fields_) field.dependency_list(dl);
+}
+
+
+template<int spacedim, class Value>
+std::vector<string> MultiField<spacedim, Value>::set_dependency(FieldSet &field_set, unsigned int i_reg) {
+    std::vector<string> depend_fields;
     for(unsigned int i_comp=0; i_comp < this->shared_->comp_names_.size(); i_comp++) {
-        sub_fields_[i_comp].set_dependency(field_set);
+        auto add = sub_fields_[i_comp].set_dependency(field_set, i_reg);
+        depend_fields.insert(depend_fields.end(), add.begin(), add.end());
     }
+    std::sort(depend_fields.begin(), depend_fields.end());
+    depend_fields.erase( unique( depend_fields.begin(), depend_fields.end() ), depend_fields.end() );
+    return depend_fields;
 }
 
 

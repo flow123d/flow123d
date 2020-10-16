@@ -208,10 +208,13 @@ public:
     inline unsigned int size() const
     { return sub_fields_.size(); }
 
+    /// Set dependency list to algorithm instances.
+    void dependency_list(std::vector<string> dl);
+
     /**
      * Implementation of FieldCommon::set_dependency().
      */
-    void set_dependency(FieldSet &field_set) override;
+    std::vector<string> set_dependency(FieldSet &field_set, unsigned int i_reg) override;
 
     /**
      * Returns reference to the sub-field (component) of given index @p idx.

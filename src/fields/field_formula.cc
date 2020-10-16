@@ -301,6 +301,7 @@ void FieldFormula<spacedim, Value>::cache_reinit(const ElementCacheMap &cache_ma
 	if (use_depth_var) d_ = arena_alloc_->create_array<double>(vec_size);
 	res_ = arena_alloc_->create_array<double>(vec_size);
 	subsets_ = arena_alloc_->create_array<uint>(n_subsets);
+    field_set_names_ = {"X"}; // coordinates vector (x, y, z)
     for(unsigned int row=0; row < this->value_.n_rows(); row++)
         for(unsigned int col=0; col < this->value_.n_cols(); col++) {
             // set expression and data to BParser
@@ -331,7 +332,10 @@ void FieldFormula<spacedim, Value>::cache_reinit(const ElementCacheMap &cache_ma
             b_parser_[i_p].set_variable("x",  {}, x_);
             b_parser_[i_p].set_variable("y",  {}, y_);
             b_parser_[i_p].set_variable("z",  {}, z_);
-            if (use_depth_var) b_parser_[i_p].set_variable("d",  {}, d_);
+            if (use_depth_var) {
+                b_parser_[i_p].set_variable("d",  {}, d_);
+                if (field_set_names_.size()==1) field_set_names_.push_back("d"); // add dependency on 'd' only one time
+            }
             b_parser_[i_p].set_constant("t",  {}, {this->time_.end()});
             b_parser_[i_p].set_variable("_result_", {}, res_);
             b_parser_[i_p].compile();
@@ -363,9 +367,12 @@ inline arma::vec FieldFormula<spacedim, Value>::eval_depth_var(const Point &p)
 
 
 template <int spacedim, class Value>
-void FieldFormula<spacedim, Value>::set_dependency(FieldSet &field_set) {
+std::vector<string> FieldFormula<spacedim, Value>::set_dependency(FieldSet &field_set) {
     field_set_ = &field_set;
-    for(auto field : field_set.field_list) field_set_names_.insert( field->name() );
+    //TODO Add field names contains in formula string as variables to field_set_names_ vector
+    //for(auto field : field_set.field_list)
+    //    if("field_name_in_b_parser_variable_list") field_set_names_.push_back( field->name() );
+    return field_set_names_;
 }
 
 

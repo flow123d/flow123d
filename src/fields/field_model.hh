@@ -236,6 +236,10 @@ public:
     : fn(func), input_fields( std::forward_as_tuple((args)...) )
     {}
 
+    /// Implements FieldAlgoBase::set_dependency
+    std::vector<string> set_dependency(FMT_UNUSED FieldSet &field_set) {
+        return dependency_list_;
+    }
 
     /// Setter of dependency_list_
     void dependency_list(std::vector<string> dl) override {
