@@ -23,6 +23,8 @@
 //#include <iterator>
 //#include <algorithm>
 #include <armadillo>
+#include <cstdlib>
+#include <stdio.h>
 
 #include "petscmat.h"
 #include "petscviewer.h"
@@ -426,7 +428,11 @@ void DarcyMH::initialize() {
     }
 
     init_eq_data();
+    int ns_type = input_record_.val<Input::Record>("nonlinear_solver").val<EqData::nonlinear_solver>("solver_type");
     this->data_->multidim_assembler =  AssemblyBase::create< AssemblyMH >(data_);
+    if (ns_type == EqData::nonlinear_solver::Newton) {
+        this->data_->multidim_assembler_Newton =  AssemblyBase::create< AssemblyMH_Newton >(data_);
+    }
     output_object = new DarcyFlowMHOutput(this, input_record_);
 
     { // construct pressure, velocity and piezo head fields
@@ -468,6 +474,20 @@ void DarcyMH::initialize() {
             .val<Input::Record>("nonlinear_solver")
             .val<Input::AbstractRecord>("linear_solver");
 
+    // auxiliary set_time call  since allocation assembly evaluates fields as well
+    data_changed_ = data_->set_time(time_->step(), LimitSide::right) || data_changed_;
+    create_linear_system(rec, schur0);
+    if (ns_type == EqData::nonlinear_solver::Newton){
+        create_linear_system(rec, schur0_Newton);
+    }
+
+    // allocate time term vectors
+    VecDuplicate(schur0->get_solution(), &previous_solution);
+    VecCreateMPI(PETSC_COMM_WORLD, data_->dh_->distr()->lsize(),PETSC_DETERMINE,&(steady_diagonal));
+    VecDuplicate(steady_diagonal,& new_diagonal);
+    VecZeroEntries(new_diagonal);
+    VecDuplicate(steady_diagonal, &steady_rhs);
+
     // initialization of balance object
     balance_ = std::make_shared<Balance>("water", mesh_);
     balance_->init_from_input(input_record_.val<Input::Record>("balance"), time());
@@ -479,20 +499,6 @@ void DarcyMH::initialize() {
     data_->lin_sys = schur0;
     data_->lin_sys_Newton = schur0_Newton;
 
-    // auxiliary set_time call  since allocation assembly evaluates fields as well
-    data_changed_ = data_->set_time(time_->step(), LimitSide::right) || data_changed_;
-    create_linear_system(rec, schur0);
-    int ns_type = input_record_.val<Input::Record>("nonlinear_solver").val<int>("solver_type");
-    if (ns_type == EqData::nonlinear_solver::Newton){
-        create_linear_system(rec, schur0_Newton);
-    }
-
-     // allocate time term vectors
-    VecDuplicate(schur0_Newton->get_solution(), &previous_solution);
-    VecCreateMPI(PETSC_COMM_WORLD, data_->dh_->distr()->lsize(),PETSC_DETERMINE,&(steady_diagonal));
-    VecDuplicate(steady_diagonal,& new_diagonal);
-    VecZeroEntries(new_diagonal);
-    VecDuplicate(steady_diagonal, &steady_rhs);
 
     initialize_specific();
 }
@@ -610,7 +616,7 @@ void DarcyMH::solve_nonlinear()
     compute_full_residual_vec(residual_);
     VecNorm(residual_, NORM_2, &residual_norm);
     nonlinear_iteration_ = 0;
-    int ns_type = input_record_.val<Input::Record>("nonlinear_solver").val<int>("solver_type");
+    int ns_type = input_record_.val<Input::Record>("nonlinear_solver").val<EqData::nonlinear_solver>("solver_type");
     MessageOut().fmt("[nonlinear solver] norm of initial residual: {}\n", residual_norm);
 
     // Reduce is_linear flag.
@@ -941,11 +947,11 @@ void DarcyMH::assembly_source_term()
  * COMPOSE WATER MH MATRIX WITHOUT SCHUR COMPLEMENT
  ******************************************************************************/
 
-void DarcyMH::create_linear_system(Input::AbstractRecord in_rec, LinSys *ls) {
+void DarcyMH::create_linear_system(Input::AbstractRecord in_rec, LinSys *&linsys) {
   
     START_TIMER("preallocation");
 
-    if (ls == NULL) { // create Linear System for MH matrix
+    if (linsys == NULL) { // create Linear System for MH matrix
        
     	if (in_rec.type() == LinSys_BDDC::get_input_type()) {
 #ifdef FLOW123D_HAVE_BDDCML
@@ -958,6 +964,7 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec, LinSys *ls) {
             // possible initialization particular to BDDC
             START_TIMER("BDDC set mesh data");
             set_mesh_data_for_bddc(ls);
+            linsys = ls;
             END_TIMER("BDDC set mesh data");
 #else
             Exception
@@ -984,7 +991,7 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec, LinSys *ls) {
                 }
 
                 ls->set_solution( ele_flux_ptr->get_data_vec().petsc_vec() );
-                //schur0=ls;
+                linsys=ls;
             } else {
                 IS is;
                 auto side_dofs_vec = get_component_indices_vec(0);
@@ -1029,16 +1036,16 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec, LinSys *ls) {
                 ls->set_complement( schur1 );
                 ls->set_from_input(in_rec);
                 ls->set_solution( ele_flux_ptr->get_data_vec().petsc_vec() );
-                //schur0=ls;
+                linsys=ls;
             }
 
             START_TIMER("PETSC PREALLOCATION");
-            ls->set_symmetric();
-            ls->start_allocation();
+            linsys->set_symmetric();
+            linsys->start_allocation();
 
-            allocate_mh_matrix(ls);
+            allocate_mh_matrix(linsys);
             
-    	    VecZeroEntries(ls->get_solution());
+    	    VecZeroEntries(linsys->get_solution());
             END_TIMER("PETSC PREALLOCATION");
         }
         else {
@@ -1125,7 +1132,7 @@ void DarcyMH::assembly_linear_system_Newton(Vec &residual_) {
         assembly_source_term();
         
 
-	    assembly_mh_matrix( data_->multidim_assembler ); // fill matrix
+	    assembly_mh_matrix( data_->multidim_assembler_Newton ); // fill matrix
 
         schur0_Newton->set_rhs(residual_);
 

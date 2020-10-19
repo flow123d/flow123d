@@ -601,7 +601,7 @@ public:
         assemble_element(dh_cell);
         
         loc_system_.eliminate_solution();
-        ad_->lin_sys->set_local_system(loc_system_);
+        ad_->lin_sys_Newton->set_local_system(loc_system_);
 
         assembly_dim_connections(dh_cell);
 
