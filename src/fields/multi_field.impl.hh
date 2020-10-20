@@ -377,12 +377,6 @@ bool MultiField<spacedim, Value>::MultiFieldFactory::is_active_field_descriptor(
 
 
 template<int spacedim, class Value>
-void MultiField<spacedim, Value>::dependency_list(std::vector<string> dl) {
-	for(auto &field : sub_fields_) field.dependency_list(dl);
-}
-
-
-template<int spacedim, class Value>
 std::vector<string> MultiField<spacedim, Value>::set_dependency(FieldSet &field_set, unsigned int i_reg) {
     std::vector<string> depend_fields;
     for(unsigned int i_comp=0; i_comp < this->shared_->comp_names_.size(); i_comp++) {
@@ -404,7 +398,7 @@ void MultiField<spacedim, Value>::cache_reallocate(const ElementCacheMap &cache_
 
 template<int spacedim, class Value>
 void MultiField<spacedim, Value>::cache_update(ElementCacheMap &cache_map, unsigned int i_reg) {
-    for(auto &field : sub_fields_) field.cache_update(cache_map, i_reg);
+   for(auto &field : sub_fields_) field.cache_update(cache_map, i_reg);
 }
 
 

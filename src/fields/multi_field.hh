@@ -208,9 +208,6 @@ public:
     inline unsigned int size() const
     { return sub_fields_.size(); }
 
-    /// Set dependency list to algorithm instances.
-    void dependency_list(std::vector<string> dl);
-
     /**
      * Implementation of FieldCommon::set_dependency().
      */

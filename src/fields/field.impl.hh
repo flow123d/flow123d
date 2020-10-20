@@ -768,12 +768,6 @@ void Field<spacedim, Value>::cache_update(ElementCacheMap &cache_map, unsigned i
     }
 }
 
-template<int spacedim, class Value>
-void Field<spacedim, Value>::dependency_list(std::vector<string> dl) {
-    for (auto reg_field : region_fields_) {
-    	if (reg_field) reg_field->dependency_list(dl);
-    }
-}
 
 template<int spacedim, class Value>
 std::vector<string> Field<spacedim, Value>::set_dependency(FieldSet &field_set, unsigned int i_reg) {

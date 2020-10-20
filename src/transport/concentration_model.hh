@@ -85,8 +85,6 @@ public:
 		/// @name Instances of FieldModel used in assembly methods
 		// @{
 
-		/// Velocity norm field.
-        Field<3, FieldValue<3>::Scalar > v_norm;
 		/// Field represents coefficients of mass matrix.
         Field<3, FieldValue<3>::Scalar > mass_matrix_coef;
 		/// Field represents retardation coefficients due to sorption.
@@ -101,6 +99,8 @@ public:
 		MultiField<3, FieldValue<3>::VectorFixed> advection_coef;
 		/// Diffusion coefficients.
 		MultiField<3, FieldValue<3>::TensorFixed> diffusion_coef;
+		/// Velocity norm field.
+        Field<3, FieldValue<3>::Scalar > v_norm;
 
     	// @}
 

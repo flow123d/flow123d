@@ -240,9 +240,18 @@ void FieldSet::update_coords_caches(ElementCacheMap &cache_map) {
 }
 
 
+void FieldSet::cache_update(ElementCacheMap &cache_map) {
+    update_coords_caches(cache_map);
+	static uint b=0;
+    for (unsigned int i_reg=0; i_reg<mesh_->region_db().size(); ++i_reg) {
+        for(unsigned int i_f=0; i_f<region_dependency_list_[i_reg].size(); ++i_f) field_list[region_dependency_list_[i_reg][i_f]]->cache_update(cache_map, i_reg);
+    }
+}
+
+
 unsigned int FieldSet::compute_depth(string field_name, const map<string, vector<string>> &dependency_map) {
     auto it = dependency_map.find(field_name);
-    ASSERT(it != dependency_map.end()).error("Invalid field name!\n");
+    ASSERT(it != dependency_map.end())(field_name).error("Invalid field name!\n");
     unsigned int depth = 0;
     for (auto prev_field : it->second) {
 	    depth = std::max(depth, compute_depth(prev_field, dependency_map)+1);

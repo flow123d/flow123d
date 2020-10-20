@@ -295,41 +295,25 @@ void ConcentrationTransportModel::ModelEqData::initialize()
     disp_t.setup_components();
 
     // create FieldModels
-    auto v_norm_model = Model<3, FieldValue<3>::Scalar>::create(fn_conc_v_norm, flow_flux);
-    auto mass_matrix_model = Model<3, FieldValue<3>::Scalar>::create(fn_conc_mass_matrix, cross_section, water_content);
-    auto retardation_model = Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_retardation, cross_section, porosity, rock_density, sorption_coefficient);
-    auto sources_density_model = Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_sources_dens, cross_section, sources_density);
-    auto sources_sigma_model = Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_sources_sigma, cross_section, sources_sigma);
-    auto sources_conc_model = Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_sources_conc, sources_conc);
-    auto diffusion_coef_model = Model<3, FieldValue<3>::TensorFixed>::create_multi(
-            fn_conc_diff_coef, diff_m, flow_flux, v_norm, disp_l, disp_t, water_content, porosity, cross_section
-        );
-
-    v_norm_model->dependency_list( {"flow_flux"} );
-    mass_matrix_model->dependency_list( {"cross_section", "water_content"} );
-    for (unsigned int sbi=0; sbi<substances_.names().size(); sbi++) {
-        retardation_model[sbi]->dependency_list( {"cross_section", "porosity", "rock_density", "sorption_coefficient"} );
-        sources_density_model[sbi]->dependency_list( {"cross_section", "sources_density"} );
-        sources_sigma_model[sbi]->dependency_list( {"cross_section", "sources_sigma"} );
-		sources_conc_model[sbi]->dependency_list( {"sources_conc"} );
-		diffusion_coef_model[sbi]->dependency_list( {"diff_m", "flow_flux", "v_norm", "disp_l", "disp_t", "porosity", "sorption_coefficient", "cross_section"} );
-    }
-
-    v_norm.set(v_norm_model, 0.0);
-    mass_matrix_coef.set(mass_matrix_model, 0.0);
-    retardation_coef.set(retardation_model, 0.0);
-    sources_density_out.set(sources_density_model, 0.0);
-    sources_sigma_out.set(sources_sigma_model, 0.0);
-    sources_conc_out.set(sources_conc_model, 0.0);
-    diffusion_coef.set(diffusion_coef_model, 0.0);
-
+    v_norm.set(Model<3, FieldValue<3>::Scalar>::create(fn_conc_v_norm, flow_flux), 0.0);
+    mass_matrix_coef.set(Model<3, FieldValue<3>::Scalar>::create(fn_conc_mass_matrix, cross_section, water_content), 0.0);
+    retardation_coef.set(
+        Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_retardation, cross_section, porosity, rock_density, sorption_coefficient),
+		0.0
+    );
+    sources_density_out.set(Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_sources_dens, cross_section, sources_density), 0.0);
+    sources_sigma_out.set(Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_sources_sigma, cross_section, sources_sigma), 0.0);
+    sources_conc_out.set(Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_sources_conc, sources_conc), 0.0);
     std::vector<typename Field<3, FieldValue<3>::VectorFixed>::FieldBasePtr> ad_coef_ptr_vec;
-    for (unsigned int sbi=0; sbi<substances_.names().size(); sbi++) {
-        auto ad_coef_model = Model<3, FieldValue<3>::VectorFixed>::create(fn_conc_ad_coef, flow_flux);
-        ad_coef_model->dependency_list( {"flow_flux"} );
-    	ad_coef_ptr_vec.push_back( ad_coef_model );
-    }
+    for (unsigned int sbi=0; sbi<substances_.names().size(); sbi++)
+        ad_coef_ptr_vec.push_back( Model<3, FieldValue<3>::VectorFixed>::create(fn_conc_ad_coef, flow_flux) );
     advection_coef.set(ad_coef_ptr_vec, 0.0);
+    diffusion_coef.set(
+        Model<3, FieldValue<3>::TensorFixed>::create_multi(
+            fn_conc_diff_coef, diff_m, flow_flux, v_norm, disp_l, disp_t, water_content, porosity, cross_section
+        ),
+        0.0
+    );
 }
 
 

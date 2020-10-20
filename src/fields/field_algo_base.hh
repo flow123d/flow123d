@@ -261,10 +261,6 @@ public:
            return std::vector<string>();
        }
 
-       /// Empty method, override in FieldModel class
-       virtual void dependency_list(FMT_UNUSED std::vector<string> dl) {
-       }
-
        /**
         * Virtual destructor.
         */

@@ -170,6 +170,30 @@ namespace detail
         };
     };
 
+    /**
+     * Check common number of components of the input fields/multifields.
+     * Return number of components.
+     * Return 0 for no multifields.
+     * Throw for different number of components.
+     */
+    template<typename FIELD_TUPLE, int INDEX >
+    struct get_dependency {
+        static std::vector<const FieldCommon *> eval(FIELD_TUPLE fields) {
+            const auto &single_field = std::get < INDEX - 1 > (std::forward<decltype(fields)>(fields));
+            auto vec = get_dependency<FIELD_TUPLE, INDEX - 1>::eval(std::forward<decltype(fields)>(fields));
+            vec.push_back(&single_field);
+            return vec;
+        };
+    };
+
+    template<typename FIELD_TUPLE>
+    struct get_dependency<FIELD_TUPLE, 0> {
+        static std::vector<const FieldCommon *> eval(FMT_UNUSED FIELD_TUPLE fields)
+        {
+            return std::vector<const FieldCommon *>();
+        };
+    };
+
 
 
 
@@ -227,7 +251,6 @@ private:
 	Fn* fn;
 	typedef std::tuple<InputFields...> FieldsTuple;
     FieldsTuple input_fields;
-    std::vector<std::string> dependency_list_;
 
 public:
     typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
@@ -238,12 +261,16 @@ public:
 
     /// Implements FieldAlgoBase::set_dependency
     std::vector<string> set_dependency(FMT_UNUSED FieldSet &field_set) {
-        return dependency_list_;
-    }
-
-    /// Setter of dependency_list_
-    void dependency_list(std::vector<string> dl) override {
-        dependency_list_ = dl;
+    	auto field_vec = detail::get_dependency<
+    	                    decltype(input_fields),
+                            std::tuple_size<FieldsTuple>::value
+    	                >::eval(input_fields);
+    	std::vector<string> dependency_vec;
+    	for (const auto *field : field_vec) {
+    	    std::string name = (field->name().substr(0,2)=="A_") ? field->input_name() : field->name();
+    	    dependency_vec.push_back(name);
+    	}
+        return dependency_vec;
     }
 
     /// Implements FieldAlgoBase::cache_update

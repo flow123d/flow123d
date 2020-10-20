@@ -352,9 +352,6 @@ public:
      */
     std::vector<string> set_dependency(FieldSet &field_set, unsigned int i_reg) override;
 
-    /// Set dependency list to algorithm instances.
-    void dependency_list(std::vector<string> dl);
-
 protected:
 
     /// Return item of @p value_cache_ given by i_cache_point.
