@@ -763,7 +763,6 @@ void Field<spacedim, Value>::cache_update(ElementCacheMap &cache_map, unsigned i
             update_cache_data.region_cache_indices_map_.find(i_reg);
     if (reg_elm_it != update_cache_data.region_cache_indices_map_.end()) {
         if (region_fields_[reg_elm_it->first] != nullptr) { // skips bounadry regions for bulk fields and vice versa
-            unsigned int region_in_cache = cache_map.region_chunk(i_reg);
             region_fields_[reg_elm_it->first]->cache_update(value_cache_, cache_map, reg_elm_it->first);
         }
     }
