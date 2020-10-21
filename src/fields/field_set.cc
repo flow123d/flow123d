@@ -26,15 +26,7 @@
 
 FieldSet::FieldSet()
 : x_coord_(1,1), y_coord_(1,1), z_coord_(1,1)
-{
-    X_.name("X")
-         .units(UnitSI().m())
-         .flags(FieldFlag::in_time_term)
-         .description("Coordinates fields.");
-
-	// TODO initialize coords field
-	//X_.set(coord fields, 0.0);
-}
+{}
 
 FieldSet &FieldSet::operator +=(FieldCommon &add_field) {
     FieldCommon *found_field = field(add_field.name());
@@ -264,8 +256,9 @@ void FieldSet::set_dependency() {
 	// Fill map of field indices if field_list was changed
 	if (field_indices_map_.size() < field_list.size()) {
 	    field_indices_map_.clear();
-	    for (unsigned int i=0; i<field_list.size(); ++i)
+	    for (unsigned int i=0; i<field_list.size(); ++i) {
 	        field_indices_map_[ field_list[i]->name() ] = i;
+	    }
 	}
 	region_dependency_list_.clear();
 
@@ -273,10 +266,11 @@ void FieldSet::set_dependency() {
     map<unsigned int, vector<string>> depth_map;
     set<string> used_fields;
 	for (unsigned int i_reg=0; i_reg<mesh_->region_db().size(); ++i_reg) {
-		//dependency_map["X_"] = vector<const FieldCommon *>(); // Temporary solution, remove after replace coord data cache with Field
+		dependency_map["X"] = vector<const FieldCommon *>(); // Temporary solution, remove after replace coord data cache with Field
 		for(auto field : field_list) dependency_map[field->name()] = field->set_dependency(*this, i_reg);
-		depth_map[0].push_back("X_"); // Temporary solution, remove after replace coord data cache with Field
+		depth_map[0].push_back("X"); // Temporary solution, remove after replace coord data cache with Field
 		for(auto d : dependency_map) {
+			if (d.first=="X") continue;
 		    unsigned int depth = compute_depth(field_list[ field_indices_map_.find(d.first)->second ], dependency_map);
 		    depth_map[depth].push_back(d.first);
 		}
@@ -287,6 +281,17 @@ void FieldSet::set_dependency() {
 		dependency_map.clear();
 		depth_map.clear();
 	}
+}
+
+void FieldSet::add_coords_field() {
+    *this += X_.name("X")
+               .units(UnitSI().m())
+               .input_default("0.0")
+               .flags( FieldFlag::input_copy )
+               .description("Coordinates fields.");
+
+    // TODO initialize coords field
+    //X_.set(coord fields, 0.0);
 }
 
 

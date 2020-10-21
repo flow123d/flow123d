@@ -208,6 +208,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
     static_assert(std::is_base_of<AdvectionDiffusionModel, Model>::value, "");
 
     data_ = make_shared<EqData>();
+    data_->add_coords_field();
     this->eq_data_ = data_.get();
     Model::init_balance(in_rec);
 

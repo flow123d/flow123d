@@ -271,6 +271,14 @@ public:
      */
     void set_dependency();
 
+    /**
+     * Add coords fields (X_) to field_list.
+     *
+     * We can't add this field automatically in constructor, because there is problem
+     * in equation where we add one FieldSet to other.
+     */
+    void add_coords_field();
+
     inline const FieldValueCache<double> &x() const { return x_coord_; }  ///< Return x-coord FieldValueCache
     inline const FieldValueCache<double> &y() const { return y_coord_; }  ///< Return y-coord FieldValueCache
     inline const FieldValueCache<double> &z() const { return z_coord_; }  ///< Return z-coord FieldValueCache
