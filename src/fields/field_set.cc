@@ -242,19 +242,18 @@ void FieldSet::update_coords_caches(ElementCacheMap &cache_map) {
 
 void FieldSet::cache_update(ElementCacheMap &cache_map) {
     update_coords_caches(cache_map);
-	static uint b=0;
     for (unsigned int i_reg=0; i_reg<mesh_->region_db().size(); ++i_reg) {
         for(unsigned int i_f=0; i_f<region_dependency_list_[i_reg].size(); ++i_f) field_list[region_dependency_list_[i_reg][i_f]]->cache_update(cache_map, i_reg);
     }
 }
 
 
-unsigned int FieldSet::compute_depth(string field_name, const map<string, vector<string>> &dependency_map) {
+unsigned int FieldSet::compute_depth(std::string field_name, const map<string, vector<const FieldCommon *>> &dependency_map) {
     auto it = dependency_map.find(field_name);
-    ASSERT(it != dependency_map.end())(field_name).error("Invalid field name!\n");
+    ASSERT(it != dependency_map.end())(field_name).error("Invalid field!\n");
     unsigned int depth = 0;
     for (auto prev_field : it->second) {
-	    depth = std::max(depth, compute_depth(prev_field, dependency_map)+1);
+	    depth = std::max(depth, compute_depth(prev_field->name(), dependency_map)+1);
     }
 	return depth;
 }
@@ -269,11 +268,11 @@ void FieldSet::set_dependency() {
 	}
 	region_dependency_list_.clear();
 
-    map<string, vector<string>> dependency_map;
+    map<string, vector<const FieldCommon *>> dependency_map;
     map<unsigned int, vector<string>> depth_map;
     set<string> used_fields;
 	for (unsigned int i_reg=0; i_reg<mesh_->region_db().size(); ++i_reg) {
-		dependency_map["X"] = vector<string>(); // Temporary solution, remove after replace coord data cache with Field
+		dependency_map["X_"] = vector<const FieldCommon *>(); // Temporary solution, remove after replace coord data cache with Field
 		for(auto field : field_list) dependency_map[field->name()] = field->set_dependency(*this, i_reg);
 		for(auto d : dependency_map) {
 		    unsigned int depth = compute_depth(d.first, dependency_map);

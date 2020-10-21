@@ -377,8 +377,8 @@ bool MultiField<spacedim, Value>::MultiFieldFactory::is_active_field_descriptor(
 
 
 template<int spacedim, class Value>
-std::vector<string> MultiField<spacedim, Value>::set_dependency(FieldSet &field_set, unsigned int i_reg) {
-    std::vector<string> depend_fields;
+std::vector<const FieldCommon *> MultiField<spacedim, Value>::set_dependency(FieldSet &field_set, unsigned int i_reg) {
+    std::vector<const FieldCommon *> depend_fields;
     for(unsigned int i_comp=0; i_comp < this->shared_->comp_names_.size(); i_comp++) {
         auto add = sub_fields_[i_comp].set_dependency(field_set, i_reg);
         depend_fields.insert(depend_fields.end(), add.begin(), add.end());

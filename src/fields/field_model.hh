@@ -260,17 +260,11 @@ public:
     {}
 
     /// Implements FieldAlgoBase::set_dependency
-    std::vector<string> set_dependency(FMT_UNUSED FieldSet &field_set) {
-    	auto field_vec = detail::get_dependency<
+    std::vector<const FieldCommon *> set_dependency(FMT_UNUSED FieldSet &field_set) {
+    	return detail::get_dependency<
     	                    decltype(input_fields),
                             std::tuple_size<FieldsTuple>::value
     	                >::eval(input_fields);
-    	std::vector<string> dependency_vec;
-    	for (const auto *field : field_vec) {
-    	    std::string name = (field->name().substr(0,2)=="A_") ? field->input_name() : field->name();
-    	    dependency_vec.push_back(name);
-    	}
-        return dependency_vec;
     }
 
     /// Implements FieldAlgoBase::cache_update

@@ -47,6 +47,7 @@ class Mesh;
 class UnitSI;
 class DOFHandlerMultiDim;
 class FieldSet;
+class FieldCommon;
 namespace Input {
 	class AbstractRecord;
 	class Record;
@@ -257,8 +258,8 @@ public:
        /**
         * Set reference of FieldSet to FieldFormula instance.
         */
-       virtual std::vector<string> set_dependency(FMT_UNUSED FieldSet &field_set) {
-           return std::vector<string>();
+       virtual std::vector<const FieldCommon *> set_dependency(FMT_UNUSED FieldSet &field_set) {
+           return std::vector<const FieldCommon *>();
        }
 
        /**

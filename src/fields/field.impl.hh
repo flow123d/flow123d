@@ -770,9 +770,9 @@ void Field<spacedim, Value>::cache_update(ElementCacheMap &cache_map, unsigned i
 
 
 template<int spacedim, class Value>
-std::vector<string> Field<spacedim, Value>::set_dependency(FieldSet &field_set, unsigned int i_reg) {
+std::vector<const FieldCommon *> Field<spacedim, Value>::set_dependency(FieldSet &field_set, unsigned int i_reg) {
    	if (region_fields_[i_reg] != nullptr) return region_fields_[i_reg]->set_dependency(field_set);
-   	else return std::vector<string>();
+   	else return std::vector<const FieldCommon *>();
 }
 
 

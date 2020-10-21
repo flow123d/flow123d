@@ -350,7 +350,7 @@ public:
     /**
      * Implementation of FieldCommon::set_dependency().
      */
-    std::vector<string> set_dependency(FieldSet &field_set, unsigned int i_reg) override;
+    std::vector<const FieldCommon *> set_dependency(FieldSet &field_set, unsigned int i_reg) override;
 
 protected:
 

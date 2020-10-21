@@ -280,7 +280,7 @@ protected:
     void update_coords_caches(ElementCacheMap &cache_map);
 
     /// Compute depth (recursively) of given field in dependecy tree.
-    unsigned int compute_depth(string field_name, const std::map<string, std::vector<string>> &dependency_map);
+    unsigned int compute_depth(std::string field_name, const std::map<string, std::vector<const FieldCommon *>> &dependency_map);
 
     /// List of all fields.
     std::vector<FieldCommon *> field_list;
