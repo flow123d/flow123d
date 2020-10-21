@@ -59,6 +59,7 @@ public:
 
 	inline std::shared_ptr<DOFHandlerMultiDim> dh();
     inline std::shared_ptr<DOFHandlerMultiDim> dh_scalar();
+	inline std::shared_ptr<DOFHandlerMultiDim> dh_vector();
     inline std::shared_ptr<DOFHandlerMultiDim> dh_tensor();
     
 //     const FEValuesViews::Vector<dim,3> vec;
@@ -74,6 +75,7 @@ private:
 	/// Object for distribution of dofs.
 	std::shared_ptr<DOFHandlerMultiDim> dh_;
     std::shared_ptr<DOFHandlerMultiDim> dh_scalar_;
+	std::shared_ptr<DOFHandlerMultiDim> dh_vector_;
     std::shared_ptr<DOFHandlerMultiDim> dh_tensor_;
 };
 
@@ -127,12 +129,14 @@ public:
         Field<3, FieldValue<3>::Scalar> output_von_mises_stress;
         Field<3, FieldValue<3>::Scalar> output_cross_section;
         Field<3, FieldValue<3>::Scalar> output_divergence;
+		Field<3, FieldValue<3>::VectorFixed> output_displ_jump;
         
         std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed> > output_field_ptr;
         std::shared_ptr<FieldFE<3, FieldValue<3>::TensorFixed> > output_stress_ptr;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_von_mises_stress_ptr;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_cross_section_ptr;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_div_ptr;
+		std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed> > output_displ_jump_ptr;
 
         EquationOutput output_fields;
 
