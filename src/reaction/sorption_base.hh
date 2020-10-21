@@ -95,7 +95,8 @@ public:
     MultiField<3, FieldValue<3>::Scalar> init_conc_solid;    ///< Initial sorbed concentrations. 
     Field<3, FieldValue<3>::Scalar > porosity;          ///< Porosity field copied from transport.
     
-    MultiField<3, FieldValue<3>::Scalar>  conc_solid;    ///< Calculated sorbed concentrations, for output only.
+    MultiField<3, FieldValue<3>::Scalar>  conc_solid;   ///< Calculated sorbed concentrations, for output only.
+    FieldFEScalarVec conc_solid_fe;                     ///< Underlaying FieldFE for each substance of conc_solid.
 
     /// Input data set - fields in this set are read from the input file.
     FieldSet input_data_set_;
@@ -162,10 +163,8 @@ protected:
   ///Reads and sets initial condition for concentration in solid.
   void set_initial_condition();
     
-  /**
-   * For simulation of sorption in just one element either inside of MOBILE or IMMOBILE pores.
-   */
-  double **compute_reaction(double **concentrations, int loc_el) override;
+  /// Compute reaction on a single element.
+  void compute_reaction(const DHCellAccessor& dh_cell) override;
   
   /// Reinitializes the isotherm.
   /**
@@ -226,22 +225,13 @@ protected:
   
   /// Mapping from local indexing of substances to global.
   std::vector<unsigned int> substance_global_idx_;
-  
-  /**
-   * Array for storage infos about sorbed species concentrations.
-   */
-  double** conc_solid;
 
   /**
    * Reaction model that follows the sorption.
    */
   std::shared_ptr<ReactionTerm> reaction_liquid;
   std::shared_ptr<ReactionTerm> reaction_solid;
-                  
-  ///@name members used in output routines
-  //@{
-  std::vector<VectorMPI> conc_solid_out; ///< sorbed concentration array output (gathered - sequential)
-  //@}
+  
 
   /** Structure for data respectful to element, but indepedent of actual isotherm.
    * Reads mobile/immobile porosity, rock density and then computes concentration scaling parameters.
