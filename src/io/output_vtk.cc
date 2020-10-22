@@ -282,7 +282,7 @@ std::shared_ptr<ElementDataCache<unsigned int>> OutputVTK::fill_element_types_da
 
 
 
-void OutputVTK::write_vtk_data(OutputTime::OutputDataPtr output_data)
+void OutputVTK::write_vtk_data(OutputTime::OutputDataPtr output_data, const std::vector<unsigned int> &permutation_vec)
 {
     // names of types in DataArray section
 	static const std::vector<std::string> types = {
@@ -306,7 +306,7 @@ void OutputVTK::write_vtk_data(OutputTime::OutputDataPtr output_data)
     	// ascii output
     	file << ">" << endl;
     	//file << std::fixed << std::setprecision(10); // Set precision to max
-    	output_data->print_ascii_all(file);
+    	output_data->print_ascii_all(file, permutation_vec);
     	file << "\n</DataArray>" << endl;
     } else {
     	// binary output is stored to appended_data_ stream
@@ -397,7 +397,7 @@ void OutputVTK::write_vtk_field_data(OutputDataFieldVec &output_data_vec)
 {
     for(OutputDataPtr data :  output_data_vec)
         if( ! data->is_dummy())
-            write_vtk_data(data);
+            write_vtk_data(data, output_mesh_->orig_mesh_->element_permutation_vec());
 }
 
 
@@ -478,7 +478,7 @@ void OutputVTK::write_vtk_element_data(void)
 }
 
 
-void OutputVTK::write_vtk_native_data(void)
+void OutputVTK::write_vtk_native_data(const std::vector<unsigned int> &permutation_vec)
 {
     ofstream &file = this->_data_file;
 
@@ -502,7 +502,7 @@ void OutputVTK::write_vtk_native_data(void)
         	// ascii output
         	file << ">" << endl;
         	file << std::fixed << std::setprecision(10); // Set precision to max
-        	output_data->print_ascii_all(file);
+        	output_data->print_ascii_all(file, permutation_vec);
         	file << "\n</DataArray>" << endl;
         } else {
         	// binary output is stored to appended_data_ stream
@@ -546,6 +546,41 @@ void OutputVTK::write_vtk_vtu(void)
 {
     ofstream &file = this->_data_file;
 
+    /* Compute permutated offsets */
+    auto &offsets_vec = *( this->offsets_->get_component_data(0).get() );
+    std::shared_ptr<ElementDataCache<unsigned int>> offsets_permutate =
+	    std::make_shared<ElementDataCache<unsigned int>>("offsets", (unsigned int)ElementDataCacheBase::N_SCALAR, offsets_vec.size());
+    {
+        auto &offsets_perm_vec = *( offsets_permutate->get_component_data(0).get() );
+        for (unsigned int i_elm=0; i_elm<offsets_vec.size(); ++i_elm) {
+            unsigned int perm_idx = output_mesh_->orig_mesh_->element_permutation(i_elm);
+    	    if (perm_idx==0) offsets_perm_vec[i_elm] = offsets_vec[0];
+            else offsets_perm_vec[i_elm] = offsets_vec[perm_idx] - offsets_vec[perm_idx-1];
+        }
+        for (unsigned int i_elm=1; i_elm<offsets_perm_vec.size(); ++i_elm)
+        	offsets_perm_vec[i_elm] += offsets_perm_vec[i_elm-1];
+    }
+
+    /* Compute permutated connectivities */
+    auto &connectivity_vec = *( this->connectivity_->get_component_data(0).get() );
+    std::shared_ptr<ElementDataCache<unsigned int>> conn_permutate =
+	    std::make_shared<ElementDataCache<unsigned int>>("connectivity", (unsigned int)ElementDataCacheBase::N_SCALAR, connectivity_vec.size());
+    {
+        std::vector<unsigned int> reverse_node_permutation(this->nodes_->get_component_data(0)->size()/3); //spacedim=3
+        for (unsigned int i_node=0; i_node<reverse_node_permutation.size(); ++i_node) {
+        	reverse_node_permutation[ output_mesh_->orig_mesh_->node_permutation(i_node) ] = i_node;
+        }
+        unsigned int i_conn=0;
+        auto &conn_perm_vec = *( conn_permutate->get_component_data(0).get() );
+        for (unsigned int i_elm=0; i_elm<offsets_vec.size(); ++i_elm) {
+            unsigned int perm_idx = output_mesh_->orig_mesh_->element_permutation(i_elm);
+    	    unsigned int conn_old_low = (perm_idx==0) ? 0 : offsets_vec[perm_idx-1];
+    	    unsigned int conn_old_high = offsets_vec[perm_idx];
+    	    for (unsigned int i=conn_old_low; i<conn_old_high; ++i, ++i_conn)
+    	        conn_perm_vec[i_conn] = reverse_node_permutation[ connectivity_vec[i] ];
+        }
+    }
+
     /* Write header */
     this->write_vtk_vtu_head();
 
@@ -554,26 +589,43 @@ void OutputVTK::write_vtk_vtu(void)
               << "\" NumberOfCells=\"" << this->offsets_->n_values() <<"\">" << endl;
 
     /* Write VTK Geometry */
+    std::cout << "write_vtk_vtu: Points" << std::endl;
     file << "<Points>" << endl;
-        write_vtk_data(this->nodes_);
+        write_vtk_data(this->nodes_, output_mesh_->orig_mesh_->node_permutation_vec());
     file << "</Points>" << endl;
+    std::cout << " - OK" << std::endl;
 
     /* Write VTK Topology */
     file << "<Cells>" << endl;
-        write_vtk_data(this->connectivity_);
-        write_vtk_data(this->offsets_);
+        std::cout << "write_vtk_vtu: connectivity" << std::endl;
+        std::vector<unsigned int> conn_perm(this->connectivity_->get_component_data(0)->size());
+        for (unsigned int i=0; i<this->connectivity_->get_component_data(0)->size(); ++i) conn_perm[i] = i;
+        write_vtk_data(conn_permutate, conn_perm);
+        std::cout << " - OK\nwrite_vtk_vtu: offsets" << std::endl;
+        std::vector<unsigned int> offset_perm(output_mesh_->orig_mesh_->element_permutation_vec().size());
+        for (unsigned int i=0; i<output_mesh_->orig_mesh_->element_permutation_vec().size(); ++i) offset_perm[i] = i;
+        write_vtk_data(offsets_permutate, offset_perm);
+        std::cout << " - OK" << std::endl;
         auto types = fill_element_types_data();
-       	write_vtk_data( types );
+        std::cout << "write_vtk_vtu: data" << std::endl;
+       	write_vtk_data( types, output_mesh_->orig_mesh_->element_permutation_vec() );
+        std::cout << " - OK" << std::endl;
     file << "</Cells>" << endl;
 
     /* Write VTK scalar and vector data on nodes to the file */
+    std::cout << "write_vtk_vtu: node data" << std::endl;
     this->write_vtk_node_data();
+    std::cout << " - OK" << std::endl;
 
     /* Write VTK data on elements */
+    std::cout << "write_vtk_vtu: element data" << std::endl;
     this->write_vtk_element_data();
+    std::cout << " - OK" << std::endl;
 
     /* Write own VTK native data (skipped by Paraview) */
-    this->write_vtk_native_data();
+    std::cout << "write_vtk_vtu: native data" << std::endl;
+    this->write_vtk_native_data(output_mesh_->orig_mesh_->element_permutation_vec());
+    std::cout << " - OK" << std::endl;
 
     /* Write Piece end */
     file << "</Piece>" << endl;

@@ -134,11 +134,12 @@ void ElementDataCache<T>::print_ascii(ostream &out_stream, unsigned int idx)
  *       Class OutputData stores always in raw-first order.
  */
 template <typename T>
-void ElementDataCache<T>::print_ascii_all(ostream &out_stream)
+void ElementDataCache<T>::print_ascii_all(ostream &out_stream, const std::vector<unsigned int> &permutation_vec)
 {
     std::vector<T> &vec = *( this->data_[0].get() );
 	for(unsigned int idx = 0; idx < this->n_values_; idx++) {
-    	for(unsigned int i = n_comp_*idx; i < n_comp_*(idx+1); ++i )
+	    unsigned int i_perm = permutation_vec[idx];
+    	for(unsigned int i = n_comp_*i_perm; i < n_comp_*(i_perm+1); ++i )
     		out_stream << vec[i] << " ";
     }
 }

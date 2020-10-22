@@ -159,7 +159,7 @@ protected:
     /**
      * Write output data stored in OutputData vector to output stream
      */
-    void write_vtk_data(OutputDataPtr output_data);
+    void write_vtk_data(OutputDataPtr output_data, const std::vector<unsigned int> &permutation_vec);
     
     /**
      * \brief Write names of data sets in @p output_data vector that have value type equal to @p type.
@@ -183,7 +183,7 @@ protected:
     *
     * Tags of native data are subtags of 'Flow123dData' tag, that is subtag of 'Piece' tag
     */
-  void write_vtk_native_data(void);
+  void write_vtk_native_data(const std::vector<unsigned int> &permutation_vec);
 
    /**
     * \brief Write tail of VTK file (.vtu)
