@@ -393,11 +393,11 @@ void OutputVTK::compress_data(stringstream &uncompressed_stream, stringstream &c
 }
 
 
-void OutputVTK::write_vtk_field_data(OutputDataFieldVec &output_data_vec)
+void OutputVTK::write_vtk_field_data(OutputDataFieldVec &output_data_vec, const std::vector<unsigned int> &permutation_vec)
 {
     for(OutputDataPtr data :  output_data_vec)
         if( ! data->is_dummy())
-            write_vtk_data(data, output_mesh_->orig_mesh_->element_permutation_vec());
+            write_vtk_data(data, permutation_vec);
 }
 
 
@@ -447,10 +447,10 @@ void OutputVTK::write_vtk_node_data(void)
         file << ">" << endl;
 
         /* Write data on nodes */
-        this->write_vtk_field_data(output_data_vec_[NODE_DATA]);
+        this->write_vtk_field_data(output_data_vec_[NODE_DATA], output_mesh_->orig_mesh_->node_permutation_vec());
 
         /* Write data in corners of elements */
-        this->write_vtk_field_data(output_data_vec_[CORNER_DATA]);
+        this->write_vtk_field_data(output_data_vec_[CORNER_DATA], output_mesh_->orig_mesh_->element_permutation_vec());
 
         /* Write PointData end */
         file << "</PointData>" << endl;
@@ -471,7 +471,7 @@ void OutputVTK::write_vtk_element_data(void)
     file << ">" << endl;
 
     /* Write own data */
-    this->write_vtk_field_data(data_map);
+    this->write_vtk_field_data(data_map, output_mesh_->orig_mesh_->element_permutation_vec());
 
     /* Write PointData end */
     file << "</CellData>" << endl;

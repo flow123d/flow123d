@@ -154,7 +154,7 @@ protected:
     /**
      * Write registered data of all components of given Field to output stream
      */
-    void write_vtk_field_data(OutputDataFieldVec &output_data_map);
+    void write_vtk_field_data(OutputDataFieldVec &output_data_map, const std::vector<unsigned int> &permutation_vec);
 
     /**
      * Write output data stored in OutputData vector to output stream
