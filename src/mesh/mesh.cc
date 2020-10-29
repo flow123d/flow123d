@@ -602,6 +602,7 @@ void Mesh::make_neighbours_and_edges()
 
 	}
 	// Now we go through all element sides and create edges and neighbours
+	unsigned int new_bc_elem_idx = element_vec_.size();  //Mesh_idx of new boundary element generated in following block
 	for (auto e : this->elements_range()) {
 		for (unsigned int s=0; s<e->n_sides(); s++)
 		{
@@ -655,8 +656,9 @@ void Mesh::make_neighbours_and_edges()
 
                     // fill Boundary object
                     bdr.edge_idx_ = last_edge_idx;
-                    bdr.bc_ele_idx_ = elem_index(-bdr_idx);
+                    bdr.bc_ele_idx_ = new_bc_elem_idx; //elem_index(-bdr_idx);
                     bdr.mesh_=this;
+                    new_bc_elem_idx++;
 
                     continue; // next side of element e
                 }
