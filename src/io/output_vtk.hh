@@ -170,8 +170,10 @@ protected:
 
     /**
      * \brief Write data on nodes to the VTK file (.vtu)
+     *
+     * Temporary solution: passed permutation_corner_vec for correct output of corner data
      */
-    void write_vtk_node_data(void);
+    void write_vtk_node_data(const std::vector<unsigned int> &permutation_corner_vec);
 
     /**
      * \brief Write data on elements to the VTK file (.vtu)

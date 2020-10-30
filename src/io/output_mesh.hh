@@ -132,6 +132,11 @@ public:
 		else return shared_from_this();
 	};
 
+	/// Temporary method, allows to keep original order of node and elements on output.
+	inline bool is_orig_mesh() const {
+	    return mesh_type_ == MeshType::orig;
+	}
+
 protected:
 	/**
 	 * Possible types of OutputMesh.

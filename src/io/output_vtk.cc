@@ -431,7 +431,7 @@ void OutputVTK::write_vtk_data_names(ofstream &file,
 }
 
 
-void OutputVTK::write_vtk_node_data(void)
+void OutputVTK::write_vtk_node_data(const std::vector<unsigned int> &permutation_corner_vec)
 {
     ofstream &file = this->_data_file;
 
@@ -447,10 +447,12 @@ void OutputVTK::write_vtk_node_data(void)
         file << ">" << endl;
 
         /* Write data on nodes */
+        std::cout << " ----- NODE_DATA" << std::endl;
         this->write_vtk_field_data(output_data_vec_[NODE_DATA], output_mesh_->orig_mesh_->node_permutation_vec());
 
         /* Write data in corners of elements */
-        this->write_vtk_field_data(output_data_vec_[CORNER_DATA], output_mesh_->orig_mesh_->element_permutation_vec());
+        std::cout << " ----- CORNER_DATA" << std::endl;
+        this->write_vtk_field_data(output_data_vec_[CORNER_DATA], permutation_corner_vec);
 
         /* Write PointData end */
         file << "</PointData>" << endl;
@@ -545,8 +547,10 @@ void OutputVTK::write_vtk_vtu_tail(void)
 void OutputVTK::write_vtk_vtu(void)
 {
     ofstream &file = this->_data_file;
+    bool is_orig = output_mesh_->is_orig_mesh();
 
     /* Compute permutated offsets */
+    std::cout << "write_vtk_vtu begin - is orig " << is_orig << std::endl;
     auto &offsets_vec = *( this->offsets_->get_component_data(0).get() );
     std::shared_ptr<ElementDataCache<unsigned int>> offsets_permutate =
 	    std::make_shared<ElementDataCache<unsigned int>>("offsets", (unsigned int)ElementDataCacheBase::N_SCALAR, offsets_vec.size());
@@ -560,6 +564,7 @@ void OutputVTK::write_vtk_vtu(void)
         for (unsigned int i_elm=1; i_elm<offsets_perm_vec.size(); ++i_elm)
         	offsets_perm_vec[i_elm] += offsets_perm_vec[i_elm-1];
     }
+    std::cout << "write_vtk_vtu: permutated offsetts OK" << std::endl;
 
     /* Compute permutated connectivities */
     auto &connectivity_vec = *( this->connectivity_->get_component_data(0).get() );
@@ -567,9 +572,12 @@ void OutputVTK::write_vtk_vtu(void)
 	    std::make_shared<ElementDataCache<unsigned int>>("connectivity", (unsigned int)ElementDataCacheBase::N_SCALAR, connectivity_vec.size());
     {
         std::vector<unsigned int> reverse_node_permutation(this->nodes_->get_component_data(0)->size()/3); //spacedim=3
+        std::cout << "write_vtk_vtu: in 1" << std::endl;
         for (unsigned int i_node=0; i_node<reverse_node_permutation.size(); ++i_node) {
-        	reverse_node_permutation[ output_mesh_->orig_mesh_->node_permutation(i_node) ] = i_node;
+        	if (is_orig) reverse_node_permutation[ output_mesh_->orig_mesh_->node_permutation(i_node) ] = i_node;
+        	else reverse_node_permutation[i_node] = i_node;
         }
+        std::cout << "write_vtk_vtu: in 2" << std::endl;
         unsigned int i_conn=0;
         auto &conn_perm_vec = *( conn_permutate->get_component_data(0).get() );
         for (unsigned int i_elm=0; i_elm<offsets_vec.size(); ++i_elm) {
@@ -580,6 +588,7 @@ void OutputVTK::write_vtk_vtu(void)
     	        conn_perm_vec[i_conn] = reverse_node_permutation[ connectivity_vec[i] ];
         }
     }
+    std::cout << "write_vtk_vtu: permutated connectivities OK" << std::endl;
 
     /* Write header */
     this->write_vtk_vtu_head();
@@ -591,7 +600,8 @@ void OutputVTK::write_vtk_vtu(void)
     /* Write VTK Geometry */
     std::cout << "write_vtk_vtu: Points" << std::endl;
     file << "<Points>" << endl;
-        write_vtk_data(this->nodes_, output_mesh_->orig_mesh_->node_permutation_vec());
+        if (is_orig) write_vtk_data(this->nodes_, output_mesh_->orig_mesh_->node_permutation_vec());
+        else write_vtk_data(this->nodes_, *( conn_permutate->get_component_data(0).get() ));
     file << "</Points>" << endl;
     std::cout << " - OK" << std::endl;
 
@@ -600,7 +610,8 @@ void OutputVTK::write_vtk_vtu(void)
         std::cout << "write_vtk_vtu: connectivity" << std::endl;
         std::vector<unsigned int> conn_perm(this->connectivity_->get_component_data(0)->size());
         for (unsigned int i=0; i<this->connectivity_->get_component_data(0)->size(); ++i) conn_perm[i] = i;
-        write_vtk_data(conn_permutate, conn_perm);
+        if (is_orig) write_vtk_data(conn_permutate, conn_perm);
+        else write_vtk_data(this->connectivity_, conn_perm);
         std::cout << " - OK\nwrite_vtk_vtu: offsets" << std::endl;
         std::vector<unsigned int> offset_perm(output_mesh_->orig_mesh_->element_permutation_vec().size());
         for (unsigned int i=0; i<output_mesh_->orig_mesh_->element_permutation_vec().size(); ++i) offset_perm[i] = i;
@@ -614,7 +625,7 @@ void OutputVTK::write_vtk_vtu(void)
 
     /* Write VTK scalar and vector data on nodes to the file */
     std::cout << "write_vtk_vtu: node data" << std::endl;
-    this->write_vtk_node_data();
+    this->write_vtk_node_data(*( conn_permutate->get_component_data(0).get() ));
     std::cout << " - OK" << std::endl;
 
     /* Write VTK data on elements */
