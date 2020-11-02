@@ -190,8 +190,17 @@ private:
 	template <unsigned int dim>
 	Quadrature init_quad(std::shared_ptr<EvalPoints> eval_points);
 
-    Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> handle_fe_shape(unsigned int dim,
-            unsigned int i_dof, unsigned int i_qp, unsigned int comp_index);
+    inline Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> handle_fe_shape(unsigned int dim,
+            unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
+    {
+        Armor::ArmaMat<typename Value::element_type, Value::NCols_, Value::NRows_> v;
+        for (unsigned int c=0; c<Value::NRows_*Value::NCols_; ++c)
+            v(c/spacedim,c%spacedim) = fe_values_[dim].shape_value_component(i_dof, i_qp, comp_index+c);
+        if (Value::NRows_ == Value::NCols_)
+            return v;
+        else
+            return v.t();
+    }
 
 
 	/// DOF handler object

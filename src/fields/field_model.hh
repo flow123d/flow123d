@@ -224,14 +224,14 @@ template<int spacedim, class Value, typename Fn, class ... InputFields>
 class FieldModel : public FieldAlgorithmBase<spacedim, Value>
 {
 private:
-	Fn* fn;
+	Fn fn;
 	typedef std::tuple<InputFields...> FieldsTuple;
     FieldsTuple input_fields;
 
 public:
     typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
 
-    FieldModel(Fn* func, InputFields... args)
+    FieldModel(Fn func, InputFields... args)
     : fn(func), input_fields( std::forward_as_tuple((args)...) )
     {}
 
@@ -240,11 +240,9 @@ public:
 
     void cache_update(FieldValueCache<typename Value::element_type> &data_cache,
 				ElementCacheMap &cache_map, unsigned int region_idx) override {
-        auto update_cache_data = cache_map.update_cache_data();
-        unsigned int region_in_cache = cache_map.region_chunk(region_idx);
-        unsigned int i_cache_el_begin = update_cache_data.region_value_cache_range_[region_in_cache];
-        unsigned int i_cache_el_end = update_cache_data.region_value_cache_range_[region_in_cache+1];
-        for(unsigned int i_cache=i_cache_el_begin; i_cache<i_cache_el_end; ++i_cache) {
+        unsigned int reg_chunk_begin = cache_map.region_chunk_begin(region_idx);
+        unsigned int reg_chunk_end = cache_map.region_chunk_end(region_idx);
+        for(unsigned int i_cache=reg_chunk_begin; i_cache<reg_chunk_end; ++i_cache) {
             data_cache.set(i_cache) =
                 detail::model_cache_item<
                     Fn,
@@ -278,8 +276,11 @@ public:
     typedef FieldAlgorithmBase<spacedim, Value> FieldBaseType;
     typedef std::shared_ptr< FieldBaseType > FieldBasePtr;
 
+    /**
+     * Fn is a functor class and fn its instance.
+     */
     template<typename Fn, class ... InputFields>
-    static auto create(Fn *fn,  InputFields&&... inputs) -> decltype(auto)
+    static auto create(Fn fn,  InputFields&&... inputs) -> decltype(auto)
     {
         return std::make_shared<FieldModel<spacedim, Value, Fn, InputFields...>>(fn, std::forward<InputFields>(inputs)...);
     }
@@ -292,8 +293,11 @@ public:
         return create(f, std::get<I>(t) ...);
     }
 
+    /**
+     * Fn is a functor class and fn its instance.
+     */
     template<typename Fn, class ... InputFields>
-    static auto create_multi(Fn *fn,  InputFields&&... inputs) -> decltype(auto)
+    static auto create_multi(Fn fn,  InputFields&&... inputs) -> decltype(auto)
     {
         typedef std::tuple<InputFields...> FieldTuple;
         FieldTuple field_tuple = std::forward_as_tuple((inputs)...);

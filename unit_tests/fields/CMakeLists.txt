@@ -52,6 +52,7 @@ define_mpi_test(field_value_cache 1)
 define_mpi_test(field_evaluate_constant 1)
 define_mpi_test(field_evaluate_fe 1)
 define_mpi_test(field_evaluate_formula 1)
+define_mpi_test(field_evaluate_model 1)
 
 define_test(bparser)
 define_test(field_model)

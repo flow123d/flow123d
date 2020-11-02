@@ -50,6 +50,10 @@ Field<spacedim,Value>::Field()
 	shared_->n_comp_ = (Value::NRows_ ? 0 : 1);
 	this->add_factory( std::make_shared<FactoryBase>() );
 
+	unsigned int cache_size = 1.1 * CacheMapElementNumber::get();
+	value_cache_.reinit(cache_size);
+	value_cache_.resize(cache_size);
+
 	this->multifield_ = false;
 }
 
@@ -65,6 +69,10 @@ Field<spacedim,Value>::Field(const string &name, bool bc)
 		shared_->bc_=bc;
 		this->name( name );
 		this->add_factory( std::make_shared<FactoryBase>() );
+		unsigned int cache_size = 1.1 * CacheMapElementNumber::get();
+		value_cache_.reinit(cache_size);
+		value_cache_.resize(cache_size);
+
 		this->multifield_ = false;
 }
 
@@ -82,6 +90,10 @@ Field<spacedim,Value>::Field(unsigned int component_index, string input_name, st
 	this->name_ = (name=="") ? input_name : name;
 	this->shared_->input_name_ = input_name;
     shared_->bc_ = bc;
+
+	unsigned int cache_size = 1.1 * CacheMapElementNumber::get();
+	value_cache_.reinit(cache_size);
+	value_cache_.resize(cache_size);
 
 	this->multifield_ = false;
 }
@@ -742,12 +754,6 @@ std::shared_ptr< FieldFE<spacedim, Value> > Field<spacedim,Value>::get_field_fe(
 
 template<int spacedim, class Value>
 void Field<spacedim, Value>::cache_reallocate(const ElementCacheMap &cache_map) {
-    unsigned int new_size = ElementCacheMap::n_cached_elements * cache_map.eval_points()->max_size();
-    if (new_size > value_cache_.size()) { // resize only if new size is higher than old
-        value_cache_.reinit(new_size);
-        value_cache_.resize(new_size);
-    }
-
     // Call cache_reinit of FieldAlgoBase descendants
     for (auto reg_field : region_fields_) {
     	if (reg_field) reg_field->cache_reinit(cache_map);
@@ -757,13 +763,11 @@ void Field<spacedim, Value>::cache_reallocate(const ElementCacheMap &cache_map) 
 
 template<int spacedim, class Value>
 void Field<spacedim, Value>::cache_update(ElementCacheMap &cache_map) {
-    auto update_cache_data = cache_map.update_cache_data();
-
     // Call cache_update of FieldAlgoBase descendants
-    std::unordered_map<unsigned int, ElementCacheMap::RegionData>::iterator reg_elm_it;
-    for (reg_elm_it=update_cache_data.region_cache_indices_map_.begin(); reg_elm_it!=update_cache_data.region_cache_indices_map_.end(); ++reg_elm_it) {
-        if (region_fields_[reg_elm_it->first] == nullptr) continue; // skips bounadry regions for bulk fields and vice versa
-        region_fields_[reg_elm_it->first]->cache_update(value_cache_, cache_map, reg_elm_it->first);
+    for (unsigned int i_reg=0; i_reg<cache_map.n_regions(); ++i_reg) {
+        unsigned int region_idx = cache_map.eval_point_data( cache_map.region_chunk_by_map_index(i_reg) ).i_reg_;
+        if (region_fields_[region_idx] == nullptr) continue; // skips bounadry regions for bulk fields and vice versa
+        region_fields_[region_idx]->cache_update(value_cache_, cache_map, region_idx);
     }
 }
 

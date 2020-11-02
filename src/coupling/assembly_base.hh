@@ -37,14 +37,12 @@ public:
 	AssemblyBase(unsigned int quad_order) {
         quad_ = new QGauss(dim, 2*quad_order);
         quad_low_ = new QGauss(dim-1, 2*quad_order);
-        quad_center_ = new QGauss(dim, 0);
 	}
 
 	// Destructor
     virtual ~AssemblyBase() {
         delete quad_;
         delete quad_low_;
-        delete quad_center_;
     }
 
     /// Assembles the volume integrals on cell.
@@ -72,8 +70,6 @@ public:
     void create_integrals(std::shared_ptr<EvalPoints> eval_points, AssemblyIntegrals &integrals, int active_integrals) {
     	if (active_integrals & ActiveIntegrals::bulk)
     	    integrals.bulk_[dim-1] = eval_points->add_bulk<dim>(*quad_);
-    	// one-point integral represents element.center adds always
-	    integrals.center_[dim] = eval_points->add_bulk<dim>(*quad_center_);
     	if (active_integrals & ActiveIntegrals::edge)
     	    integrals.edge_[dim-1] = eval_points->add_edge<dim>(*quad_low_);
        	if ((dim>1) && (active_integrals & ActiveIntegrals::coupling))
@@ -85,7 +81,6 @@ public:
 protected:
     Quadrature *quad_;                                     ///< Quadrature used in assembling methods.
     Quadrature *quad_low_;                                 ///< Quadrature used in assembling methods (dim-1).
-    Quadrature *quad_center_;                              ///< Quadrature used in assembling methods (only for elm.center point).
 };
 
 

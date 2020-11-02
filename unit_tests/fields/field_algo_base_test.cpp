@@ -765,8 +765,8 @@ TEST(Field, field_result) {
     Region diagonal_2d = mesh->region_db().find_label("2D XY diagonal");
     Region front_3d = mesh->region_db().find_label("3D front");
     Region back_3d = mesh->region_db().find_label("3D back");
-    Region top_side = mesh->region_db().find_label(".top side");
-    Region bottom_side = mesh->region_db().find_label(".bottom side");
+    //Region top_side = mesh->region_db().find_label(".top side");
+    //Region bottom_side = mesh->region_db().find_label(".bottom side");
 
     EXPECT_EQ( result_none, data.scalar.field_result({diagonal_1d}) );
     EXPECT_EQ( result_none, data.scalar.field_result({diagonal_2d}) );
@@ -941,6 +941,23 @@ TEST(Field, disable_where) {
 
 
 
+// Inherited class that allows to set EvalPointData
+class ElementCacheMapTest : public ElementCacheMap {
+public:
+    ElementCacheMapTest(): ElementCacheMap() {}
+
+    void add_cell_eval_points(DHCellAccessor cell, std::shared_ptr<BulkIntegral> bulk_int) {
+        unsigned int reg_idx = cell.elm().region_idx().idx();
+        for (auto p : bulk_int->points(cell, this) ) {
+            EvalPointData epd(reg_idx, cell.elm_idx(), p.eval_point_idx());
+            this->eval_point_data_.push_back(epd);
+        }
+        this->eval_point_data_.make_permanent();
+    }
+
+};
+
+
 string field_value_input = R"INPUT(
 {
     color="blue",   
@@ -1025,7 +1042,7 @@ TEST(Field, field_values) {
     Quadrature *q_side = new QGauss(2, 2);
     std::shared_ptr<BulkIntegral> mass_eval = eval_points->add_bulk<3>(*q_bulk );
     std::shared_ptr<EdgeIntegral> side_eval = eval_points->add_edge<3>(*q_side );
-    ElementCacheMap elm_cache_map;
+    ElementCacheMapTest elm_cache_map;
     elm_cache_map.init(eval_points);
     color_field.cache_reallocate(elm_cache_map);
     int_field.cache_reallocate(elm_cache_map);
@@ -1036,10 +1053,8 @@ TEST(Field, field_values) {
     // fill FieldValueCaches
     DHCellAccessor dh_cell(dh.get(), 4);
     elm_cache_map.start_elements_update();
-    elm_cache_map.add(dh_cell);
-    elm_cache_map.prepare_elements_to_update();
-    elm_cache_map.mark_used_eval_points( dh_cell, mass_eval->get_subset_idx(), eval_points->subset_size(dh_cell.dim(), mass_eval->get_subset_idx()) );
-    elm_cache_map.create_elements_points_map();
+    elm_cache_map.add_cell_eval_points(dh_cell, mass_eval);
+    elm_cache_map.create_patch();
     color_field.cache_update(elm_cache_map);
     int_field.cache_update(elm_cache_map);
     scalar_field.cache_update(elm_cache_map);
@@ -1047,8 +1062,7 @@ TEST(Field, field_values) {
     tensor_field.cache_update(elm_cache_map);
     elm_cache_map.finish_elements_update();
 
-    DHCellAccessor cache_cell = elm_cache_map(dh_cell);
-    for(BulkPoint q_point: mass_eval->points(cache_cell, &elm_cache_map)) {
+    for(BulkPoint q_point: mass_eval->points(dh_cell, &elm_cache_map)) {
         EXPECT_EQ( 1, color_field(q_point) );
         EXPECT_EQ( -1, int_field(q_point) );
         EXPECT_DOUBLE_EQ( 1.5, scalar_field(q_point) );

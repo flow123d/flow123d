@@ -233,31 +233,31 @@ void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::elem
 		ElementCacheMap &cache_map, unsigned int region_idx)
 {
     ASSERT( !boundary_dofs_ ).error("boundary field NOT supported!!\n");
-    std::shared_ptr<EvalPoints> eval_points = cache_map.eval_points();
     Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> mat_value;
 
-    auto update_cache_data = cache_map.update_cache_data();
-    unsigned int region_in_cache = cache_map.region_chunk(region_idx);
+    unsigned int reg_chunk_begin = cache_map.region_chunk_begin(region_idx);
+    unsigned int reg_chunk_end = cache_map.region_chunk_end(region_idx);
+    unsigned int last_element_idx = -1;
+    DHCellAccessor cell;
+    LocDofVec loc_dofs;
 
-    for (unsigned int i_elm=update_cache_data.region_element_cache_range_[region_in_cache];
-            i_elm<update_cache_data.region_element_cache_range_[region_in_cache+1]; ++i_elm) {
-        unsigned int elm_idx = cache_map.elm_idx_on_position(i_elm);
-    	ElementAccessor<spacedim> elm(dh_->mesh(), elm_idx);
-        fe_values_[elm.dim()].reinit( elm );
-
-        DHCellAccessor cell = dh_->cell_accessor_from_element( elm_idx );
-        LocDofVec loc_dofs = cell.get_loc_dof_indices();
-
-        for (unsigned int i_ep=0; i_ep<eval_points->size(elm.dim()); ++i_ep) { // i_eval_point
-            //DHCellAccessor cache_cell = cache_map(cell);
-            int field_cache_idx = cache_map.element_eval_point(cache_map(cell).element_cache_index(), i_ep);
-            if (field_cache_idx < 0) continue; // skip
-            mat_value.fill(0.0);
-    		for (unsigned int i_dof=0; i_dof<loc_dofs.n_elem; i_dof++) {
-    		    mat_value += data_vec_[loc_dofs[i_dof]] * this->handle_fe_shape(elm.dim(), i_dof, i_ep, comp_index_);
-    		}
-    		data_cache.set(field_cache_idx) = mat_value;
+    for (unsigned int i_data = reg_chunk_begin; i_data < reg_chunk_end; ++i_data) { // i_eval_point_data
+        unsigned int elm_idx = cache_map.eval_point_data(i_data).i_element_;
+        if (elm_idx != last_element_idx) {
+            ElementAccessor<spacedim> elm(dh_->mesh(), elm_idx);
+            fe_values_[elm.dim()].reinit( elm );
+            cell = dh_->cell_accessor_from_element( elm_idx );
+            loc_dofs = cell.get_loc_dof_indices();
+            last_element_idx = elm_idx;
         }
+
+        unsigned int i_ep=cache_map.eval_point_data(i_data).i_eval_point_;
+        //DHCellAccessor cache_cell = cache_map(cell);
+        mat_value.fill(0.0);
+        for (unsigned int i_dof=0; i_dof<loc_dofs.n_elem; i_dof++) {
+            mat_value += data_vec_[loc_dofs[i_dof]] * this->handle_fe_shape(cell.dim(), i_dof, i_ep, comp_index_);
+        }
+        data_cache.set(i_data) = mat_value;
     }
 }
 
@@ -795,7 +795,7 @@ void FieldFE<spacedim, Value>::local_to_ghost_data_scatter_end() {
 
 
 
-template <int spacedim, class Value>
+/*template <int spacedim, class Value>
 Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> FieldFE<spacedim, Value>::handle_fe_shape(unsigned int dim,
         unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
 {
@@ -806,7 +806,7 @@ Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> Field
         return v;
     else
         return v.t();
-}
+}*/
 
 
 

@@ -41,75 +41,91 @@ using Vect = arma::vec3;
 using Tens = arma::mat33;
 
 // Functor computing velocity norm
-Sclr fn_conc_v_norm(Vect vel) {
-	return arma::norm(vel, 2);
-}
+struct fn_conc_v_norm {
+    inline Sclr operator() (Vect vel) {
+        return arma::norm(vel, 2);
+    }
+};
 
 // Functor computing mass matrix coefficients (cross_section * water_content)
-Sclr fn_conc_mass_matrix(Sclr csec, Sclr wcont) {
-    return csec * wcont;
-}
+struct fn_conc_mass_matrix {
+	inline Sclr operator() (Sclr csec, Sclr wcont) {
+        return csec * wcont;
+    }
+};
 
 // Functor computing retardation coefficients:
 // (1-porosity) * rock_density * sorption_coefficient * rock_density
-Sclr fn_conc_retardation(Sclr csec, Sclr por_m, Sclr rho_s, Sclr sorp_mult) {
-    return (1.-por_m)*rho_s*sorp_mult*csec;
-}
+struct fn_conc_retardation {
+    inline Sclr operator() (Sclr csec, Sclr por_m, Sclr rho_s, Sclr sorp_mult) {
+        return (1.-por_m)*rho_s*sorp_mult*csec;
+    }
+};
 
 // Functor computing sources density output (cross_section * sources_density)
-Sclr fn_conc_sources_dens(Sclr csec, Sclr sdens) {
-    return csec * sdens;
-}
+struct fn_conc_sources_dens {
+    inline Sclr operator() (Sclr csec, Sclr sdens) {
+        return csec * sdens;
+    }
+};
 
 // Functor computing sources sigma output (cross_section * sources_sigma)
-Sclr fn_conc_sources_sigma(Sclr csec, Sclr ssigma) {
-    return csec * ssigma;
-}
+struct fn_conc_sources_sigma {
+    inline Sclr operator() (Sclr csec, Sclr ssigma) {
+        return csec * ssigma;
+    }
+};
 
 // Functor computing sources concentration output (sources_conc)
-Sclr fn_conc_sources_conc(Sclr sconc) {
-    return sconc;
-}
+struct fn_conc_sources_conc {
+    inline Sclr operator() (Sclr sconc) {
+        return sconc;
+    }
+};
 
 // Functor computing advection coefficient (velocity)
-Vect fn_conc_ad_coef(Vect velocity) {
-    return velocity;
-}
+struct fn_conc_ad_coef {
+    inline Vect operator() (Vect velocity) {
+        return velocity;
+    }
+};
 
 // Functor computing diffusion coefficient (see notes in function)
-Tens fn_conc_diff_coef(Tens diff_m, Vect velocity, Sclr v_norm, Sclr alphaL, Sclr alphaT, Sclr water_content, Sclr porosity, Sclr c_sec) {
+struct fn_conc_diff_coef {
+    inline Tens operator() (Tens diff_m, Vect velocity, Sclr v_norm, Sclr alphaL, Sclr alphaT, Sclr water_content, Sclr porosity, Sclr c_sec) {
 
-    // used tortuosity model dues to Millington and Quirk(1961) (should it be with power 10/3 ?)
-    // for an overview of other models see: Chou, Wu, Zeng, Chang (2011)
-    double tortuosity = pow(water_content, 7.0 / 3.0)/ (porosity * porosity);
+        // used tortuosity model dues to Millington and Quirk(1961) (should it be with power 10/3 ?)
+        // for an overview of other models see: Chou, Wu, Zeng, Chang (2011)
+        double tortuosity = pow(water_content, 7.0 / 3.0)/ (porosity * porosity);
 
-    // result
-    Tens K;
+        // result
+        Tens K;
 
-    // Note that the velocity vector is in fact the Darcian flux,
-    // so we need not to multiply vnorm by water_content and cross_section.
-	//K = ((alphaL-alphaT) / vnorm) * K + (alphaT*vnorm + Dm*tortuosity*cross_cut*water_content) * arma::eye(3,3);
+        // Note that the velocity vector is in fact the Darcian flux,
+        // so we need not to multiply vnorm by water_content and cross_section.
+	    //K = ((alphaL-alphaT) / vnorm) * K + (alphaT*vnorm + Dm*tortuosity*cross_cut*water_content) * arma::eye(3,3);
 
-    if (fabs(v_norm) > 0) {
-        /*
-        for (int i=0; i<3; i++)
-            for (int j=0; j<3; j++)
-               K(i,j) = (velocity[i]/vnorm)*(velocity[j]);
-        */
-        K = ((alphaL - alphaT) / v_norm) * arma::kron(velocity.t(), velocity);
+        if (fabs(v_norm) > 0) {
+            /*
+            for (int i=0; i<3; i++)
+                for (int j=0; j<3; j++)
+                    K(i,j) = (velocity[i]/vnorm)*(velocity[j]);
+            */
+            K = ((alphaL - alphaT) / v_norm) * arma::kron(velocity.t(), velocity);
 
-        //arma::mat33 abs_diff_mat = arma::abs(K -  kk);
-        //double diff = arma::min( arma::min(abs_diff_mat) );
-        //ASSERT(  diff < 1e-12 )(diff)(K)(kk);
-    } else
-        K.zeros();
+            //arma::mat33 abs_diff_mat = arma::abs(K -  kk);
+            //double diff = arma::min( arma::min(abs_diff_mat) );
+            //ASSERT(  diff < 1e-12 )(diff)(K)(kk);
+        } else
+            K.zeros();
 
-    // Note that the velocity vector is in fact the Darcian flux,
-    // so to obtain |v| we have to divide vnorm by porosity and cross_section.
-    K += alphaT*v_norm*arma::eye(3,3) + diff_m*(tortuosity*c_sec*water_content);
+        // Note that the velocity vector is in fact the Darcian flux,
+        // so to obtain |v| we have to divide vnorm by porosity and cross_section.
+        K += alphaT*v_norm*arma::eye(3,3) + diff_m*(tortuosity*c_sec*water_content);
 
-    return K;
-}
+        return K;
+    }
+};
 
 
 
@@ -295,22 +311,22 @@ void ConcentrationTransportModel::ModelEqData::initialize()
     disp_t.setup_components();
 
     // create FieldModels
-    v_norm.set(Model<3, FieldValue<3>::Scalar>::create(fn_conc_v_norm, flow_flux), 0.0);
-    mass_matrix_coef.set(Model<3, FieldValue<3>::Scalar>::create(fn_conc_mass_matrix, cross_section, water_content), 0.0);
+    v_norm.set(Model<3, FieldValue<3>::Scalar>::create(fn_conc_v_norm(), flow_flux), 0.0);
+    mass_matrix_coef.set(Model<3, FieldValue<3>::Scalar>::create(fn_conc_mass_matrix(), cross_section, water_content), 0.0);
     retardation_coef.set(
-        Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_retardation, cross_section, porosity, rock_density, sorption_coefficient),
+        Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_retardation(), cross_section, porosity, rock_density, sorption_coefficient),
 		0.0
     );
-    sources_density_out.set(Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_sources_dens, cross_section, sources_density), 0.0);
-    sources_sigma_out.set(Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_sources_sigma, cross_section, sources_sigma), 0.0);
-    sources_conc_out.set(Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_sources_conc, sources_conc), 0.0);
+    sources_density_out.set(Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_sources_dens(), cross_section, sources_density), 0.0);
+    sources_sigma_out.set(Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_sources_sigma(), cross_section, sources_sigma), 0.0);
+    sources_conc_out.set(Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_sources_conc(), sources_conc), 0.0);
     std::vector<typename Field<3, FieldValue<3>::VectorFixed>::FieldBasePtr> ad_coef_ptr_vec;
     for (unsigned int sbi=0; sbi<substances_.names().size(); sbi++)
-        ad_coef_ptr_vec.push_back( Model<3, FieldValue<3>::VectorFixed>::create(fn_conc_ad_coef, flow_flux) );
+        ad_coef_ptr_vec.push_back( Model<3, FieldValue<3>::VectorFixed>::create(fn_conc_ad_coef(), flow_flux) );
     advection_coef.set(ad_coef_ptr_vec, 0.0);
     diffusion_coef.set(
         Model<3, FieldValue<3>::TensorFixed>::create_multi(
-            fn_conc_diff_coef, diff_m, flow_flux, v_norm, disp_l, disp_t, water_content, porosity, cross_section
+            fn_conc_diff_coef(), diff_m, flow_flux, v_norm, disp_l, disp_t, water_content, porosity, cross_section
         ),
         0.0
     );
