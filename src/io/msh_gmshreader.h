@@ -64,15 +64,6 @@ public:
     void read_physical_names(Mesh * mesh) override;
 
     /**
-     * Empty method for GMSH reader now.
-     *
-     * Implements @p BaseMeshReader::check_compatible_mesh.
-     *
-     * OBSOLETE method - will be replace with Mesh::check_compatible_mesh after merge fields!
-     */
-    void check_compatible_mesh(Mesh &mesh) override;
-
-    /**
      * Finds GMSH data header for ElementData given by time and field_name and stores it as \p actual_header_.
      */
     MeshDataHeader & find_header(HeaderQuery &header_query) override;

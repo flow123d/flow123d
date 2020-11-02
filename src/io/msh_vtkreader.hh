@@ -88,18 +88,6 @@ public:
      */
     void read_physical_names(Mesh * mesh) override;
 
-	/**
-	 * Check if nodes and elements of VTK mesh is compatible with \p mesh.
-	 *
-	 *  - to all nodes of VTK mesh must exists one and only one nodes in second mesh
-	 *  - the same must occur for elements
-	 *  - method fill vector \p bulk_elements_id_
-	 *  - it is necessary to call this method before calling \p get_element_data
-	 *
-	 * OBSOLETE method - will be replace with Mesh::check_compatible_mesh after merge fields!
-	 */
-	void check_compatible_mesh(Mesh &mesh) override;
-
     /**
 	 * Find header of DataArray section of VTK file by field name given by header_query.
 	 */
@@ -172,14 +160,6 @@ protected:
      */
     void read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader actual_header, unsigned int n_components,
     		bool boundary_domain) override;
-
-    /**
-     * Compare two points representing by armadillo vector.
-     *
-     *  - used in \p check_compatible_mesh method
-     *  - calculate with \p point_tolerance parameter
-     */
-    bool compare_points(const arma::vec3 &p1, const arma::vec3 &p2);
 
     /// Tolerance during comparison point data with GMSH nodes.
     static const double point_tolerance;
