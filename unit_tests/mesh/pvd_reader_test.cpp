@@ -17,6 +17,7 @@
 
 #include "mesh/mesh.h"
 #include "io/msh_pvdreader.hh"
+#include "io/reader_cache.hh"
 
 
 class PvdMeshReaderTest : public PvdMeshReader {
@@ -55,7 +56,6 @@ TEST(PVDReader, get_element_data) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     FilePath mesh_file("mesh/pvd-test.pvd", FilePath::input_file);
 
-    PvdMeshReaderTest reader(mesh_file);
     {
         std::string mesh_in_string = "{mesh_file=\"fields/simplest_cube_3d.msh\"}";
         auto gmsh_reader = reader_constructor( mesh_in_string );
@@ -64,14 +64,14 @@ TEST(PVDReader, get_element_data) {
         gmsh_reader->read_raw_mesh(source_mesh);
         source_mesh->setup_topology();
         source_mesh->check_and_finish();
-        reader.check_compatible_mesh(*source_mesh);
+        ReaderCache::check_compatible_mesh( mesh_file, const_cast<Mesh &>(*source_mesh) );
         delete source_mesh;
     }
 
     for (unsigned int i=0; i<3; ++i) {
     	BaseMeshReader::HeaderQuery header_params("scalar_field", i*0.1, OutputTime::DiscreteSpace::ELEM_DATA);
-    	reader.find_header(header_params);
-        typename ElementDataCache<double>::ComponentDataPtr scalar_data = reader.get_element_data<double>(6, 1, false, 0);
+    	ReaderCache::get_reader(mesh_file)->find_header(header_params);
+        typename ElementDataCache<double>::ComponentDataPtr scalar_data = ReaderCache::get_reader(mesh_file)->template get_element_data<double>(6, 1, false, 0);
         std::vector<double> &vec = *( scalar_data.get() );
         EXPECT_EQ(6, vec.size());
         for (unsigned int j=0; j<vec.size(); j++) {
@@ -81,8 +81,8 @@ TEST(PVDReader, get_element_data) {
 
     for (unsigned int i=0; i<3; ++i) {
     	BaseMeshReader::HeaderQuery header_params("vector_field", i*0.1, OutputTime::DiscreteSpace::ELEM_DATA);
-    	reader.find_header(header_params);
-        typename ElementDataCache<double>::ComponentDataPtr vector_data = reader.get_element_data<double>(6, 3, false, 0);
+    	ReaderCache::get_reader(mesh_file)->find_header(header_params);
+        typename ElementDataCache<double>::ComponentDataPtr vector_data = ReaderCache::get_reader(mesh_file)->template get_element_data<double>(6, 3, false, 0);
         std::vector<double> &vec = *( vector_data.get() );
         EXPECT_EQ(18, vec.size());
         for (unsigned int j=0; j<vec.size(); j++) {
