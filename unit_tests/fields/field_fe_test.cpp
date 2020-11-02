@@ -1,5 +1,5 @@
 /*
- * field_elementwise_test.cpp
+ * field_fe_test.cpp
  *
  *  Created on: Jan 25, 2013
  *      Author: jb
