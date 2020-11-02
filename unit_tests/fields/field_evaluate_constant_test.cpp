@@ -240,6 +240,9 @@ TEST_F(FieldEvalConstantTest, evaluate) {
 
 static const unsigned int profiler_loop = 100;
 
+// allow running tests of all type of fields (unset allow runnig only vector field)
+#define ALL_FIELDS
+
 
 class FieldConstantSpeedTest : public testing::Test {
 public:
@@ -252,6 +255,7 @@ public:
                         .input_default("0.0")
                         .flags_add(in_main_matrix)
                         .units( UnitSI().kg(3).m() );
+#ifdef ALL_FIELDS
             *this += scalar_field
                         .name("scalar_field")
                         .description("Pressure head")
@@ -261,6 +265,7 @@ public:
                         .description("")
                         .units( UnitSI::dimensionless() )
                         .flags_add(in_main_matrix);
+#endif // ALL_FIELDS
 
         }
 
@@ -268,9 +273,11 @@ public:
     	unsigned int order;
 
     	// fields
-        Field<3, FieldValue<3>::Scalar > scalar_field;
         Field<3, FieldValue<3>::VectorFixed > vector_field;
+#ifdef ALL_FIELDS
+        Field<3, FieldValue<3>::Scalar > scalar_field;
         Field<3, FieldValue<3>::TensorFixed > tensor_field;
+#endif // ALL_FIELDS
     };
 
     FieldConstantSpeedTest() : tg_(0.0, 1.0) {
@@ -294,9 +301,11 @@ public:
                 .declare_key("data", IT::Array(
                         IT::Record("SomeEquation_Data", FieldCommon::field_descriptor_record_description("SomeEquation_Data") )
                         .copy_keys( FieldEvalConstantTest::EqData().make_field_descriptor_type("SomeEquation") )
-                        .declare_key("scalar_field", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "" )
                         .declare_key("vector_field", FieldAlgorithmBase< 3, FieldValue<3>::VectorFixed >::get_input_type_instance(), "" )
+#ifdef ALL_FIELDS
+                        .declare_key("scalar_field", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "" )
                         .declare_key("tensor_field", FieldAlgorithmBase< 3, FieldValue<3>::TensorFixed >::get_input_type_instance(), "" )
+#endif // ALL_FIELDS
                         .close()
                         ), IT::Default::obligatory(), ""  )
                 .close();
