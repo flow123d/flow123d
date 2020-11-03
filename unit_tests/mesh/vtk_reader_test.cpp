@@ -57,19 +57,17 @@ public:
 
 		switch (data_format_) {
 			case DataFormat::ascii: {
-				parse_ascii_data( *current_cache, actual_header.n_components, actual_header.n_entities, actual_header.position, false );
+				parse_ascii_data( *current_cache, actual_header.n_components, actual_header.n_entities, actual_header.position );
 				break;
 			}
 			case DataFormat::binary_uncompressed: {
 				ASSERT_PTR(data_stream_).error();
-				parse_binary_data( *current_cache, actual_header.n_components, actual_header.n_entities, actual_header.position,
-						false);
+				parse_binary_data( *current_cache, actual_header.n_components, actual_header.n_entities, actual_header.position);
 				break;
 			}
 			case DataFormat::binary_zlib: {
 				ASSERT_PTR(data_stream_).error();
-				parse_compressed_data(* current_cache, actual_header.n_components, actual_header.n_entities, actual_header.position,
-						false);
+				parse_compressed_data(* current_cache, actual_header.n_components, actual_header.n_entities, actual_header.position);
 				break;
 			}
 			default: {

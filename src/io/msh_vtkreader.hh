@@ -139,15 +139,15 @@ protected:
 
 	/// Parse ascii data to data cache
 	void parse_ascii_data(ElementDataCacheBase &data_cache, unsigned int n_components, unsigned int n_entities,
-			Tokenizer::Position pos, bool boundary_domain);
+			Tokenizer::Position pos);
 
 	/// Parse binary data to data cache
 	void parse_binary_data(ElementDataCacheBase &data_cache, unsigned int n_components, unsigned int n_entities,
-			Tokenizer::Position pos, bool boundary_domain);
+			Tokenizer::Position pos);
 
 	/// Uncompress and parse binary compressed data to data cache
 	void parse_compressed_data(ElementDataCacheBase &data_cache, unsigned int n_components, unsigned int n_entities,
-			Tokenizer::Position pos, bool boundary_domain);
+			Tokenizer::Position pos);
 
 	/// Set base attributes of VTK and get count of nodes and elements.
 	void read_base_vtk_attributes(pugi::xml_node vtk_node, unsigned int &n_nodes, unsigned int &n_elements);

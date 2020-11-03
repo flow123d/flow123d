@@ -343,17 +343,17 @@ void VtkMeshReader::read_element_data(ElementDataCacheBase &data_cache, MeshData
 
     switch (data_format_) {
 		case DataFormat::ascii: {
-			parse_ascii_data( data_cache, n_components, actual_header.n_entities, actual_header.position, boundary_domain );
+			parse_ascii_data( data_cache, n_components, actual_header.n_entities, actual_header.position );
 			break;
 		}
 		case DataFormat::binary_uncompressed: {
 			ASSERT_PTR(data_stream_).error();
-			parse_binary_data( data_cache, n_components, actual_header.n_entities, actual_header.position, boundary_domain);
+			parse_binary_data( data_cache, n_components, actual_header.n_entities, actual_header.position);
 			break;
 		}
 		case DataFormat::binary_zlib: {
 			ASSERT_PTR(data_stream_).error();
-			parse_compressed_data( data_cache, n_components, actual_header.n_entities, actual_header.position, boundary_domain);
+			parse_compressed_data( data_cache, n_components, actual_header.n_entities, actual_header.position);
 			break;
 		}
 		default: {
@@ -368,7 +368,7 @@ void VtkMeshReader::read_element_data(ElementDataCacheBase &data_cache, MeshData
 
 
 void VtkMeshReader::parse_ascii_data(ElementDataCacheBase &data_cache, unsigned int n_components, unsigned int n_entities,
-		Tokenizer::Position pos, bool boundary_domain)
+		Tokenizer::Position pos)
 {
     n_read_ = 0;
 
@@ -387,7 +387,7 @@ void VtkMeshReader::parse_ascii_data(ElementDataCacheBase &data_cache, unsigned 
 
 
 void VtkMeshReader::parse_binary_data(ElementDataCacheBase &data_cache, unsigned int n_components, unsigned int n_entities,
-		Tokenizer::Position pos, bool boundary_domain)
+		Tokenizer::Position pos)
 {
     n_read_ = 0;
 
@@ -402,7 +402,7 @@ void VtkMeshReader::parse_binary_data(ElementDataCacheBase &data_cache, unsigned
 
 
 void VtkMeshReader::parse_compressed_data(ElementDataCacheBase &data_cache, unsigned int n_components, unsigned int n_entities,
-		Tokenizer::Position pos, bool boundary_domain)
+		Tokenizer::Position pos)
 {
 	data_stream_->seekg(pos.file_position_);
 	uint64_t n_blocks = read_header_type(header_type_, *data_stream_);
