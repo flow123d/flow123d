@@ -376,7 +376,7 @@ void VtkMeshReader::parse_ascii_data(ElementDataCacheBase &data_cache, unsigned 
     try {
     	tok_.next_line();
     	for (unsigned int i_row = 0; i_row < n_entities; ++i_row) {
-    		data_cache.read_ascii_data(tok_, n_components, get_element_vector(boundary_domain)[i_row]);
+    		data_cache.read_ascii_data(tok_, n_components, i_row);
             n_read_++;
     	}
 	} catch (boost::bad_lexical_cast &) {
@@ -395,7 +395,7 @@ void VtkMeshReader::parse_binary_data(ElementDataCacheBase &data_cache, unsigned
 	read_header_type(header_type_, *data_stream_);
 
 	for (unsigned int i_row = 0; i_row < n_entities; ++i_row) {
-		data_cache.read_binary_data(*data_stream_, n_components, get_element_vector(boundary_domain)[i_row]);
+		data_cache.read_binary_data(*data_stream_, n_components, i_row);
         n_read_++;
 	}
 }
@@ -448,7 +448,7 @@ void VtkMeshReader::parse_compressed_data(ElementDataCacheBase &data_cache, unsi
     n_read_ = 0;
 
 	for (unsigned int i_row = 0; i_row < n_entities; ++i_row) {
-		data_cache.read_binary_data(decompressed_data, n_components, get_element_vector(boundary_domain)[i_row]);
+		data_cache.read_binary_data(decompressed_data, n_components, i_row);
         n_read_++;
 	}
 }
