@@ -55,7 +55,7 @@ public:
     const LongIdx *get_local_part() override;
 
     /// Overwrite Mesh::check_compatible_mesh()
-    bool check_compatible_mesh( Mesh & mesh, vector<LongIdx> & bulk_elements_id, vector<LongIdx> & boundary_elements_id ) override;
+    bool check_compatible_mesh( Mesh & mesh, vector<LongIdx> & element_ids_map ) override;
 
     /// Overwrite Mesh::n_nodes()
     unsigned int n_nodes() const override;

@@ -70,13 +70,6 @@ ReaderCache::ReaderTable::iterator ReaderCache::get_reader_data(const FilePath &
 	return it;
 }
 
-bool ReaderCache::check_compatible_mesh(const FilePath &file_path, Mesh &mesh) {
-	auto mesh_ptr = ReaderCache::get_mesh(file_path);
-	auto reader_ptr = ReaderCache::get_reader(file_path);
-	reader_ptr->has_compatible_mesh_ = true;
-	return mesh_ptr->check_compatible_mesh(mesh, reader_ptr->bulk_elements_id_, reader_ptr->boundary_elements_id_);
-}
-
 void ReaderCache::get_element_ids(const FilePath &file_path, const Mesh &mesh) {
 	auto reader_ptr = ReaderCache::get_reader(file_path);
 	reader_ptr->has_compatible_mesh_ = true;

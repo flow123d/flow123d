@@ -889,7 +889,7 @@ bool compare_points(const arma::vec3 &p1, const arma::vec3 &p2) {
 }
 
 
-bool Mesh::check_compatible_mesh( Mesh & mesh, FMT_UNUSED vector<LongIdx> & bulk_elements_id, FMT_UNUSED vector<LongIdx> & boundary_elements_id )
+bool Mesh::check_compatible_mesh( Mesh & mesh, FMT_UNUSED vector<LongIdx> & element_ids_map )
 {
 	std::vector<unsigned int> node_ids; // allow mapping ids of nodes from source mesh to target mesh
 	std::vector<unsigned int> node_list;

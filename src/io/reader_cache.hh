@@ -52,16 +52,7 @@ public:
 	static std::shared_ptr<Mesh> get_mesh(const FilePath &file_path);
 
 	/**
-	 * Check if nodes and elements of reader mesh are compatible with \p mesh and fill element id vectors of reader.
-	 *
-	 * OBSOLETE method - will be removed.
-	 */
-	static bool check_compatible_mesh(const FilePath &file_path, Mesh &mesh);
-
-	/**
 	 * Fill element id vectors of reader without checking compatibility.
-	 *
-	 * OBSOLETE method - will be removed or change.
 	 */
 	static void get_element_ids(const FilePath &file_path, const Mesh &mesh);
 

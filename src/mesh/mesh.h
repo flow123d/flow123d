@@ -213,7 +213,7 @@ public:
     /*
      * Check if nodes and elements are compatible with \p mesh.
      */
-    virtual bool check_compatible_mesh( Mesh & mesh, vector<LongIdx> & bulk_elements_id, vector<LongIdx> & boundary_elements_id );
+    virtual bool check_compatible_mesh( Mesh & mesh, vector<LongIdx> & element_ids_map);
 
     /// Create and return ElementAccessor to element of given idx
     virtual ElementAccessor<3> element_accessor(unsigned int idx) const;
