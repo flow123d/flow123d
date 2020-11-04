@@ -47,7 +47,7 @@ TEST(ReaderCache, get_bulk_element_) {
     reader->read_physical_names(mesh);
     reader->read_raw_mesh(mesh);
     mesh->setup_topology();
-    ReaderCache::check_compatible_mesh(file_name, *mesh);
+    ReaderCache::get_element_ids(file_name, *mesh);
 
     // read  by components for MultiField
     BaseMeshReader::HeaderQuery header_params("vector_fixed", 0.0, OutputTime::DiscreteSpace::ELEM_DATA);
@@ -88,7 +88,7 @@ TEST(ReaderCache, get_boundary_element_) {
     auto reader = ReaderCache::get_reader(file_name);
     reader->read_physical_names(mesh);
     reader->read_raw_mesh(mesh);
-    ReaderCache::check_compatible_mesh(file_name, *mesh);
+    ReaderCache::get_element_ids(file_name, *mesh);
 
     // read  by components for MultiField
     BaseMeshReader::HeaderQuery header_params("vector_fixed", 0.0, OutputTime::DiscreteSpace::ELEM_DATA);
@@ -129,7 +129,7 @@ TEST(ReaderCache, find_header) {
     reader->read_physical_names(mesh);
     reader->read_raw_mesh(mesh);
     mesh->setup_topology();
-    ReaderCache::check_compatible_mesh(file_name, *mesh);
+    ReaderCache::get_element_ids(file_name, *mesh);
     delete mesh;
 
     BaseMeshReader::HeaderQuery header_params("vector_fixed", 0.0, OutputTime::DiscreteSpace::ELEM_DATA);

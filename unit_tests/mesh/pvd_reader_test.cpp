@@ -64,7 +64,9 @@ TEST(PVDReader, get_element_data) {
         gmsh_reader->read_raw_mesh(source_mesh);
         source_mesh->setup_topology();
         source_mesh->check_and_finish();
-        ReaderCache::check_compatible_mesh( mesh_file, const_cast<Mesh &>(*source_mesh) );
+    	vector<LongIdx> mesh_element_map;
+    	ReaderCache::get_mesh(mesh_file)->check_compatible_mesh(const_cast<Mesh &>(*source_mesh), mesh_element_map);
+    	ReaderCache::get_element_ids(mesh_file, *source_mesh);
         delete source_mesh;
     }
 
