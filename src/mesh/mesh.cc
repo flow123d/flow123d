@@ -889,7 +889,7 @@ bool compare_points(const arma::vec3 &p1, const arma::vec3 &p2) {
 }
 
 
-bool Mesh::check_compatible_mesh( Mesh & mesh, vector<LongIdx> & bulk_elements_id, vector<LongIdx> & boundary_elements_id )
+bool Mesh::check_compatible_mesh( Mesh & mesh, FMT_UNUSED vector<LongIdx> & bulk_elements_id, FMT_UNUSED vector<LongIdx> & boundary_elements_id )
 {
 	std::vector<unsigned int> node_ids; // allow mapping ids of nodes from source mesh to target mesh
 	std::vector<unsigned int> node_list;
@@ -922,7 +922,7 @@ bool Mesh::check_compatible_mesh( Mesh & mesh, vector<LongIdx> & bulk_elements_i
                         if (found_i_node == Mesh::undef_idx) found_i_node = i_elm_node;
                         else if (found_i_node != i_elm_node) {
                             // duplicate nodes in target mesh
-                        	this->elements_id_maps(bulk_elements_id, boundary_elements_id);
+                        	//this->elements_id_maps(bulk_elements_id, boundary_elements_id);
                             return false;
                         }
                     }
@@ -930,7 +930,7 @@ bool Mesh::check_compatible_mesh( Mesh & mesh, vector<LongIdx> & bulk_elements_i
             }
             if (found_i_node == Mesh::undef_idx) {
                 // no node found in target mesh
-            	this->elements_id_maps(bulk_elements_id, boundary_elements_id);
+            	//this->elements_id_maps(bulk_elements_id, boundary_elements_id);
             	return false;
             }
             node_ids[i] = found_i_node;
@@ -943,8 +943,8 @@ bool Mesh::check_compatible_mesh( Mesh & mesh, vector<LongIdx> & bulk_elements_i
         // iterates over bulk elements of \p this object
         // elements in both meshes must be in ratio 1:1
         // store orders (mapping between both mesh files) into bulk_elements_id vector
-        bulk_elements_id.clear();
-        bulk_elements_id.resize(this->n_elements());
+        //bulk_elements_id.clear();
+        //bulk_elements_id.resize(this->n_elements());
         // iterate trough bulk part of element vector, to each element in source mesh must exist only one element in target mesh
         // fill bulk_elements_id vector
         i=0;
@@ -958,10 +958,10 @@ bool Mesh::check_compatible_mesh( Mesh & mesh, vector<LongIdx> & bulk_elements_i
             }
             if (result_list.size() != 1) {
             	// intersect_element_lists must produce one element
-            	this->elements_id_maps(bulk_elements_id, boundary_elements_id);
+            	//this->elements_id_maps(bulk_elements_id, boundary_elements_id);
             	return false;
             }
-            bulk_elements_id[i] = (LongIdx)result_list[0];
+            //bulk_elements_id[i] = (LongIdx)result_list[0];
             node_list.clear();
             result_list.clear();
         	i++;
@@ -973,8 +973,8 @@ bool Mesh::check_compatible_mesh( Mesh & mesh, vector<LongIdx> & bulk_elements_i
         // elements in both meshes must be in ratio 1:1
         // store orders (mapping between both mesh files) into boundary_elements_id vector
     	auto bc_mesh = this->get_bc_mesh();
-        boundary_elements_id.clear();
-        boundary_elements_id.resize(bc_mesh->n_elements());
+        //boundary_elements_id.clear();
+        //boundary_elements_id.resize(bc_mesh->n_elements());
         // iterate trough boundary part of element vector, to each element in source mesh must exist only one element in target mesh
         // fill boundary_elements_id vector
         i=0;
@@ -988,10 +988,10 @@ bool Mesh::check_compatible_mesh( Mesh & mesh, vector<LongIdx> & bulk_elements_i
             }
             if (result_list.size() != 1) {
             	// intersect_element_lists must produce one element
-            	this->elements_id_maps(bulk_elements_id, boundary_elements_id);
+            	//this->elements_id_maps(bulk_elements_id, boundary_elements_id);
             	return false;
             }
-            boundary_elements_id[i] = (LongIdx)result_list[0];
+            //boundary_elements_id[i] = (LongIdx)result_list[0];
             node_list.clear();
             result_list.clear();
         	i++;

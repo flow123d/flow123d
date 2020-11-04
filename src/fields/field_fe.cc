@@ -311,9 +311,10 @@ void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) 
 	if ( flags_.match(FieldFlag::equation_input) && flags_.match(FieldFlag::declare_input) ) {
 		ASSERT(field_name_ != "").error("Uninitialized FieldFE, did you call init_from_input()?\n");
 		this->boundary_domain_ = boundary_domain;
+		auto source_mesh = ReaderCache::get_mesh(reader_file_);
+		ReaderCache::get_element_ids(reader_file_, *(source_mesh.get()));
 		switch (this->interpolation_) {
 			case DataInterpolation::identic_msh:
-				ReaderCache::get_element_ids(reader_file_, *mesh);
 				break;
 			case DataInterpolation::equivalent_msh:
 				if (!ReaderCache::check_compatible_mesh( reader_file_, const_cast<Mesh &>(*mesh) )) {
@@ -323,15 +324,9 @@ void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) 
 				}
 				break;
 			case DataInterpolation::gauss_p0:
-			{
-				auto source_mesh = ReaderCache::get_mesh(reader_file_);
-				ReaderCache::get_element_ids(reader_file_, *(source_mesh.get()) );
 				break;
-			}
 			case DataInterpolation::interp_p0:
 			{
-				auto source_msh = ReaderCache::get_mesh(reader_file_);
-				ReaderCache::get_element_ids(reader_file_, *(source_msh.get()) );
 				if (!boundary_domain) {
 					this->interpolation_ = DataInterpolation::gauss_p0;
 					WarningOut().fmt("Interpolation 'P0_intersection' of FieldFE '{}' can't be used on bulk region.\nIt will be changed to 'P0_gauss'.\n", field_name_);
