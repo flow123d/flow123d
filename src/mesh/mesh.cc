@@ -889,13 +889,14 @@ bool compare_points(const arma::vec3 &p1, const arma::vec3 &p2) {
 }
 
 
-bool Mesh::check_compatible_mesh( Mesh & mesh, FMT_UNUSED vector<LongIdx> & element_ids_map )
+bool Mesh::check_compatible_mesh( Mesh & computational_mesh, vector<LongIdx> & element_ids_map )
 {
 	std::vector<unsigned int> node_ids; // allow mapping ids of nodes from source mesh to target mesh
 	std::vector<unsigned int> node_list;
 	std::vector<unsigned int> candidate_list; // returned by intersect_element_lists
 	std::vector<unsigned int> result_list; // list of elements with same dimension as vtk element
 	unsigned int i; // counter over vectors
+	element_ids_map.resize(computational_mesh.n_elements()+computational_mesh.n_elements(true));
 
     {
         // iterates over node vector of \p this object
@@ -903,7 +904,7 @@ bool Mesh::check_compatible_mesh( Mesh & mesh, FMT_UNUSED vector<LongIdx> & elem
         // store orders (mapping between source and target meshes) into node_ids vector
         std::vector<unsigned int> searched_elements; // for BIH tree
         unsigned int i_node, i_elm_node;
-        const BIHTree &bih_tree=mesh.get_bih_tree();
+        const BIHTree &bih_tree=computational_mesh.get_bih_tree();
 
     	// create nodes of mesh
         node_ids.resize( this->n_nodes() );
@@ -913,7 +914,7 @@ bool Mesh::check_compatible_mesh( Mesh & mesh, FMT_UNUSED vector<LongIdx> & elem
             bih_tree.find_point(*nod, searched_elements);
 
             for (std::vector<unsigned int>::iterator it = searched_elements.begin(); it!=searched_elements.end(); it++) {
-                ElementAccessor<3> ele = mesh.element_accessor( *it );
+                ElementAccessor<3> ele = computational_mesh.element_accessor( *it );
                 for (i_node=0; i_node<ele->n_nodes(); i_node++)
                 {
                     static const double point_tolerance = 1E-10;
@@ -922,49 +923,51 @@ bool Mesh::check_compatible_mesh( Mesh & mesh, FMT_UNUSED vector<LongIdx> & elem
                         if (found_i_node == Mesh::undef_idx) found_i_node = i_elm_node;
                         else if (found_i_node != i_elm_node) {
                             // duplicate nodes in target mesh
-                        	//this->elements_id_maps(bulk_elements_id, boundary_elements_id);
                             return false;
                         }
                     }
                 }
-            }
-            if (found_i_node == Mesh::undef_idx) {
-                // no node found in target mesh
-            	//this->elements_id_maps(bulk_elements_id, boundary_elements_id);
-            	return false;
             }
             node_ids[i] = found_i_node;
             searched_elements.clear();
             i++;
         }
     }
-
     {
         // iterates over bulk elements of \p this object
         // elements in both meshes must be in ratio 1:1
         // store orders (mapping between both mesh files) into bulk_elements_id vector
-        //bulk_elements_id.clear();
-        //bulk_elements_id.resize(this->n_elements());
         // iterate trough bulk part of element vector, to each element in source mesh must exist only one element in target mesh
         // fill bulk_elements_id vector
         i=0;
-        for (auto elm : this->elements_range()) {
+        unsigned int n_found=0; // number of found equivalent elements
+        bool valid_nodes;
+        for (auto elm : computational_mesh.elements_range()) {
+            valid_nodes = true;
             for (unsigned int j=0; j<elm->n_nodes(); j++) { // iterate trough all nodes of any element
-                node_list.push_back( node_ids[ elm->node_idx(j) ] );
+            	if (node_ids[ elm->node_idx(j) ] == Mesh::undef_idx) valid_nodes = false;
+            	node_list.push_back( node_ids[ elm->node_idx(j) ] );
             }
-            mesh.intersect_element_lists(node_list, candidate_list);
-            for (auto i_elm : candidate_list) {
-            	if ( mesh.element_accessor(i_elm)->dim() == elm.dim() ) result_list.push_back( elm.index() );
+            if (valid_nodes) {
+                this->intersect_element_lists(node_list, candidate_list);
+                for (auto i_elm : candidate_list) {
+                    if ( this->element_accessor(i_elm)->dim() == elm.dim() ) result_list.push_back( this->element_accessor(i_elm).index() );
+                }
             }
-            if (result_list.size() != 1) {
-            	// intersect_element_lists must produce one element
-            	//this->elements_id_maps(bulk_elements_id, boundary_elements_id);
-            	return false;
+            if (result_list.size() == 1) {
+                element_ids_map[i] = (LongIdx)result_list[0];
+                n_found++;
+            } else {
+                element_ids_map[i] = (LongIdx)Mesh::undef_idx;
             }
-            //bulk_elements_id[i] = (LongIdx)result_list[0];
             node_list.clear();
             result_list.clear();
         	i++;
+        }
+
+        if (n_found==0) {
+        	// no equivalent bulk element found - mesh is not compatible
+            return false;
         }
     }
 
@@ -973,25 +976,23 @@ bool Mesh::check_compatible_mesh( Mesh & mesh, FMT_UNUSED vector<LongIdx> & elem
         // elements in both meshes must be in ratio 1:1
         // store orders (mapping between both mesh files) into boundary_elements_id vector
     	auto bc_mesh = this->get_bc_mesh();
-        //boundary_elements_id.clear();
-        //boundary_elements_id.resize(bc_mesh->n_elements());
+    	auto cmpt_bc_mesh = computational_mesh.get_bc_mesh();
         // iterate trough boundary part of element vector, to each element in source mesh must exist only one element in target mesh
         // fill boundary_elements_id vector
-        i=0;
-        for (auto elm : bc_mesh->elements_range()) {
+        i=computational_mesh.n_elements();
+        for (auto elm : cmpt_bc_mesh->elements_range()) {
             for (unsigned int j=0; j<elm->n_nodes(); j++) { // iterate trough all nodes of any element
                 node_list.push_back( node_ids[ elm->node_idx(j) ] );
             }
-            mesh.get_bc_mesh()->intersect_element_lists(node_list, candidate_list);
+            bc_mesh->intersect_element_lists(node_list, candidate_list);
             for (auto i_elm : candidate_list) {
-            	if ( mesh.get_bc_mesh()->element_accessor(i_elm)->dim() == elm.dim() ) result_list.push_back( elm.index() );
+            	if ( bc_mesh->element_accessor(i_elm)->dim() == elm.dim() ) result_list.push_back( bc_mesh->element_accessor(i_elm).index() );
             }
-            if (result_list.size() != 1) {
-            	// intersect_element_lists must produce one element
-            	//this->elements_id_maps(bulk_elements_id, boundary_elements_id);
-            	return false;
+            if (result_list.size() == 1) {
+                element_ids_map[i] = (LongIdx)result_list[0];
+            } else {
+                element_ids_map[i] = (LongIdx)Mesh::undef_idx;
             }
-            //boundary_elements_id[i] = (LongIdx)result_list[0];
             node_list.clear();
             result_list.clear();
         	i++;

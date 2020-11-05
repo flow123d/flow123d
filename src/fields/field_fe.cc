@@ -709,6 +709,7 @@ void FieldFE<spacedim, Value>::calculate_elementwise_values(ElementDataCache<dou
 	unsigned int data_vec_i;
 	std::vector<unsigned int> count_vector(data_vec_.size(), 0);
 	data_vec_.zero_entries();
+	std::vector<int> const & el_ids = ReaderCache::get_reader(reader_file_)->get_element_vector(this->boundary_domain_);
 
 	// iterate through elements, assembly global vector and count number of writes
 	if (this->boundary_domain_) {
@@ -727,7 +728,8 @@ void FieldFE<spacedim, Value>::calculate_elementwise_values(ElementDataCache<dou
 		// iterate through cells, assembly global vector and count number of writes - prepared solution for further development
 		for (auto cell : dh_->own_range()) {
 			LocDofVec loc_dofs = cell.get_loc_dof_indices();
-			data_vec_i = cell.elm_idx() * dh_->max_elem_dofs();
+			auto pos = std::find(el_ids.begin(), el_ids.end(), source_target_mesh_elm_map_[cell.elm_idx()]) - el_ids.begin();
+			data_vec_i = pos /*cell.elm_idx()*/ * dh_->max_elem_dofs();
 			for (unsigned int i=0; i<loc_dofs.n_elem; ++i, ++data_vec_i) {
 				ASSERT_LT_DBG(loc_dofs[i], (LongIdx)data_vec_.size());
 				data_vec_[ loc_dofs[i] ] += (*data_cache)[data_vec_i];
