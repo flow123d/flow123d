@@ -112,7 +112,7 @@ TEST(ReaderCache, get_boundary_element_) {
     	for (j=0; j<3*mesh->n_elements(true); j++) EXPECT_EQ( 5+(j%3), vec[j] );
     }
 
-    delete mesh;
+    //delete mesh;
 }
 
 
