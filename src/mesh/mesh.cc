@@ -904,17 +904,17 @@ bool Mesh::check_compatible_mesh( Mesh & computational_mesh, vector<LongIdx> & e
         // store orders (mapping between source and target meshes) into node_ids vector
         std::vector<unsigned int> searched_elements; // for BIH tree
         unsigned int i_node, i_elm_node;
-        const BIHTree &bih_tree=computational_mesh.get_bih_tree();
+        const BIHTree &bih_tree=this->get_bih_tree();
 
     	// create nodes of mesh
-        node_ids.resize( this->n_nodes() );
+        node_ids.resize( computational_mesh.n_nodes() );
         i=0;
-        for (auto nod : this->node_range()) {
+        for (auto nod : computational_mesh.node_range()) {
             uint found_i_node = Mesh::undef_idx;
             bih_tree.find_point(*nod, searched_elements);
 
             for (std::vector<unsigned int>::iterator it = searched_elements.begin(); it!=searched_elements.end(); it++) {
-                ElementAccessor<3> ele = computational_mesh.element_accessor( *it );
+                ElementAccessor<3> ele = this->element_accessor( *it );
                 for (i_node=0; i_node<ele->n_nodes(); i_node++)
                 {
                     static const double point_tolerance = 1E-10;
