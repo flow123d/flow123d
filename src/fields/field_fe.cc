@@ -718,7 +718,8 @@ void FieldFE<spacedim, Value>::calculate_elementwise_values(ElementDataCache<dou
 		Mesh *mesh = dh_->mesh()->get_bc_mesh();
 		for (auto ele : mesh->elements_range()) { // remove special case for rank == 0 - necessary for correct output
 			LocDofVec loc_dofs = value_handler1_.get_loc_dof_indices(ele.idx());
-			data_vec_i = ele.idx() * dh_->max_elem_dofs();
+			auto pos = std::find(el_ids.begin(), el_ids.end(), source_target_mesh_elm_map_[ele.mesh_idx()]) - el_ids.begin();
+			data_vec_i = pos * dh_->max_elem_dofs();
 			for (unsigned int i=0; i<loc_dofs.n_elem; ++i, ++data_vec_i) {
 				ASSERT_LT_DBG(loc_dofs[i], (LongIdx)data_vec_.size());
 				data_vec_[ loc_dofs[i] ] += (*data_cache)[data_vec_i];
