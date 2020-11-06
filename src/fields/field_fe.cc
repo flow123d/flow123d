@@ -682,15 +682,17 @@ void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>:
 	data_vec_.zero_entries();
 	VectorMPI::VectorDataPtr data_vector = data_vec_.data_ptr();
 	std::vector<LongIdx> global_dof_indices(dh_->max_elem_dofs());
+	std::vector<int> const & el_ids = ReaderCache::get_reader(reader_file_)->get_element_vector(this->boundary_domain_);
 
 	// iterate through cells, assembly MPIVector
 	for (auto cell : dh_->own_range()) {
 		dof_size = cell.get_dof_indices(global_dof_indices);
 		LocDofVec loc_dofs = cell.get_loc_dof_indices();
-		data_vec_i = cell.elm_idx() * dof_size;
+		auto pos = std::find(el_ids.begin(), el_ids.end(), source_target_mesh_elm_map_[cell.elm_idx()]) - el_ids.begin();
+		data_vec_i = pos * dof_size;
 		ASSERT_EQ_DBG(dof_size, loc_dofs.n_elem);
 		for (unsigned int i=0; i<dof_size; ++i, ++data_vec_i) {
-			(*data_vector)[ loc_dofs[i] ] += (*data_cache)[ global_dof_indices[i] ];
+			(*data_vector)[ loc_dofs[i] ] += (*data_cache)[ data_vec_i ];
 			++count_vector[ loc_dofs[i] ];
 		}
 	}
@@ -729,7 +731,7 @@ void FieldFE<spacedim, Value>::calculate_elementwise_values(ElementDataCache<dou
 		for (auto cell : dh_->own_range()) {
 			LocDofVec loc_dofs = cell.get_loc_dof_indices();
 			auto pos = std::find(el_ids.begin(), el_ids.end(), source_target_mesh_elm_map_[cell.elm_idx()]) - el_ids.begin();
-			data_vec_i = pos /*cell.elm_idx()*/ * dh_->max_elem_dofs();
+			data_vec_i = pos * dh_->max_elem_dofs();
 			for (unsigned int i=0; i<loc_dofs.n_elem; ++i, ++data_vec_i) {
 				ASSERT_LT_DBG(loc_dofs[i], (LongIdx)data_vec_.size());
 				data_vec_[ loc_dofs[i] ] += (*data_cache)[data_vec_i];
