@@ -659,6 +659,7 @@ void DarcyMH::solve_nonlinear()
         auto si = LinSys::SolveInfo(0,0);
         if (! is_linear_common){
             if (ns_type == EqData::nonlinear_solver::Newton){
+                data_changed_=true;
                 assembly_linear_system_Newton(residual_);
                 VecCopy( schur0_Newton->get_solution(), save_solution);
                 si = schur0_Newton->solve();
@@ -918,23 +919,44 @@ void DarcyMH::assembly_source_term()
 
     std::vector<LongIdx> global_dofs(data_->dh_->max_elem_dofs());
 
-   	for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
-        ElementAccessor<3> ele = dh_cell.elm();
+    if (ns_type == EqData::nonlinear_solver::Newton) {    
+   	    for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
+            ElementAccessor<3> ele = dh_cell.elm();
 
-        const uint ndofs = dh_cell.n_dofs();
-        global_dofs.resize(ndofs);
-        dh_cell.get_dof_indices(global_dofs);
+            const uint ndofs = dh_cell.n_dofs();
+            global_dofs.resize(ndofs);
+            dh_cell.get_dof_indices(global_dofs);
         
-        double cs = data_->cross_section.value(ele.centre(), ele);
+            double cs = data_->cross_section.value(ele.centre(), ele);
 
-        // set sources
-        double source = ele.measure() * cs *
+            // set sources
+            double source = ele.measure() * cs *
                 data_->water_source_density.value(ele.centre(), ele);
-        // TODO: replace with DHCell getter when available for FESystem component
-        schur0->rhs_set_value(global_dofs[ndofs/2], -1.0 * source );
+            // TODO: replace with DHCell getter when available for FESystem component
+            schur0_Newton->rhs_set_value(global_dofs[ndofs/2], -1.0 * source );
 
-        balance_->add_source_values(data_->water_balance_idx, ele.region().bulk_idx(),
+            balance_->add_source_values(data_->water_balance_idx, ele.region().bulk_idx(),
                                     {dh_cell.get_loc_dof_indices()[ndofs/2]}, {0}, {source});
+        }
+    }else{
+  	    for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
+            ElementAccessor<3> ele = dh_cell.elm();
+
+            const uint ndofs = dh_cell.n_dofs();
+            global_dofs.resize(ndofs);
+            dh_cell.get_dof_indices(global_dofs);
+        
+            double cs = data_->cross_section.value(ele.centre(), ele);
+
+            // set sources
+            double source = ele.measure() * cs *
+                data_->water_source_density.value(ele.centre(), ele);
+            // TODO: replace with DHCell getter when available for FESystem component
+            schur0->rhs_set_value(global_dofs[ndofs/2], -1.0 * source );
+
+            balance_->add_source_values(data_->water_balance_idx, ele.region().bulk_idx(),
+                                    {dh_cell.get_loc_dof_indices()[ndofs/2]}, {0}, {source});
+
     }
 
     balance_->finish_source_assembly(data_->water_balance_idx);
