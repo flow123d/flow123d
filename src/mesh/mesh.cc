@@ -951,7 +951,7 @@ bool Mesh::check_compatible_mesh( Mesh & computational_mesh, vector<LongIdx> & e
             if (valid_nodes) {
                 this->intersect_element_lists(node_list, candidate_list);
                 for (auto i_elm : candidate_list) {
-                    if ( this->element_accessor(i_elm)->dim() == elm.dim() ) result_list.push_back( this->element_accessor(i_elm).index() );
+                    if ( this->element_accessor(i_elm)->dim() == elm.dim() ) result_list.push_back(i_elm);
                 }
             }
             if (result_list.size() == 1) {
@@ -990,7 +990,7 @@ bool Mesh::check_compatible_mesh( Mesh & computational_mesh, vector<LongIdx> & e
             if (valid_nodes) {
                 bc_mesh->intersect_element_lists(node_list, candidate_list);
                 for (auto i_elm : candidate_list) {
-                	if ( bc_mesh->element_accessor(i_elm)->dim() == elm.dim() ) result_list.push_back( bc_mesh->element_accessor(i_elm).index() );
+                	if ( bc_mesh->element_accessor(i_elm)->dim() == elm.dim() ) result_list.push_back(i_elm);
                 }
             }
             if (result_list.size() == 1) {
