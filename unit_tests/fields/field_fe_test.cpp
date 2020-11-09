@@ -364,7 +364,7 @@ TEST_F(FieldFENewTest, bc_scalar) {
     for (unsigned int j=0; j<2; j++) {
     	field.set_time(test_time[j]);
 
-        for(unsigned int i=9; i < 15; i++) {
+        for(unsigned int i=9; i < 13; i++) {
             EXPECT_DOUBLE_EQ( 1.0+j*0.1+(i-8)*0.1 , field.value(point,mesh->element_accessor(i)) );
         }
     }

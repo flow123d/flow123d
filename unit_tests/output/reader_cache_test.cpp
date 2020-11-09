@@ -224,7 +224,7 @@ TEST(ReaderCache, get_reader) {
 
 	{
 		// repeat call
-        Input::Record i_rec = get_input_record("{mesh_file=\"mesh/test_108_elem.msh\"}");
+        Input::Record i_rec = get_input_record("{mesh_file=\"mesh/simplest_cube.msh\"}");
         for (unsigned int i=0; i<2; ++i) {
             auto mesh_reader = ReaderCache::get_reader( i_rec.val<FilePath>("mesh_file") );
             Mesh * mesh = new Mesh(i_rec);
