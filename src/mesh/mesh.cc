@@ -979,14 +979,19 @@ bool Mesh::check_compatible_mesh( Mesh & computational_mesh, vector<LongIdx> & e
     	auto cmpt_bc_mesh = computational_mesh.get_bc_mesh();
         // iterate trough boundary part of element vector, to each element in source mesh must exist only one element in target mesh
         // fill boundary_elements_id vector
+        bool valid_nodes;
         i=computational_mesh.n_elements();
         for (auto elm : cmpt_bc_mesh->elements_range()) {
+            valid_nodes = true;
             for (unsigned int j=0; j<elm->n_nodes(); j++) { // iterate trough all nodes of any element
+            	if (node_ids[ elm->node_idx(j) ] == Mesh::undef_idx) valid_nodes = false;
                 node_list.push_back( node_ids[ elm->node_idx(j) ] );
             }
-            bc_mesh->intersect_element_lists(node_list, candidate_list);
-            for (auto i_elm : candidate_list) {
-            	if ( bc_mesh->element_accessor(i_elm)->dim() == elm.dim() ) result_list.push_back( bc_mesh->element_accessor(i_elm).index() );
+            if (valid_nodes) {
+                bc_mesh->intersect_element_lists(node_list, candidate_list);
+                for (auto i_elm : candidate_list) {
+                	if ( bc_mesh->element_accessor(i_elm)->dim() == elm.dim() ) result_list.push_back( bc_mesh->element_accessor(i_elm).index() );
+                }
             }
             if (result_list.size() == 1) {
                 element_ids_map[i] = (LongIdx)result_list[0];
