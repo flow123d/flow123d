@@ -221,18 +221,16 @@ TEST(ReaderCache, get_reader) {
 
 		delete mesh;
 	}
-}
 
-
-TEST(ReaderCache, repeat_call) {
-    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-
-    Input::Record i_rec = get_input_record("{mesh_file=\"mesh/test_108_elem.msh\"}");
-    for (unsigned int i=0; i<2; ++i) {
-        auto mesh_reader = ReaderCache::get_reader( i_rec.val<FilePath>("mesh_file") );
-        Mesh * mesh = new Mesh(i_rec);
-        mesh_reader->read_physical_names(mesh);
-        mesh_reader->read_raw_mesh(mesh);
-        delete mesh;
+	{
+		// repeat call
+        Input::Record i_rec = get_input_record("{mesh_file=\"mesh/test_108_elem.msh\"}");
+        for (unsigned int i=0; i<2; ++i) {
+            auto mesh_reader = ReaderCache::get_reader( i_rec.val<FilePath>("mesh_file") );
+            Mesh * mesh = new Mesh(i_rec);
+            mesh_reader->read_physical_names(mesh);
+            mesh_reader->read_raw_mesh(mesh);
+            delete mesh;
+        }
     }
 }
