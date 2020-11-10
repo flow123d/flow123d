@@ -23,6 +23,7 @@
 #include <memory>               // for shared_ptr
 #include <string>               // for string
 #include "system/file_path.hh"  // for FilePath
+#include "system/index_types.hh" // for LongIdx
 
 class BaseMeshReader;
 class Mesh;
@@ -35,8 +36,12 @@ class Mesh;
 class ReaderCache {
 public:
 	struct ReaderData {
+		/// Constructor
+		ReaderData() : target_mesh_element_map_(nullptr) {};
+
 		std::shared_ptr<BaseMeshReader> reader_;
 		std::shared_ptr<Mesh> mesh_;
+		std::shared_ptr<std::vector<LongIdx>> target_mesh_element_map_;
 	};
 
 	typedef std::map< string, ReaderData > ReaderTable;
@@ -55,6 +60,14 @@ public:
 	 * Fill element id vectors of reader without checking compatibility.
 	 */
 	static void get_element_ids(const FilePath &file_path, const Mesh &mesh);
+
+	/**
+	 * Returns shared vector mapping elements to target mesh.
+	 *
+	 * Reader and appropriate input data mesh are given by FilePath.
+	 * If map is not created method check_compatible_mesh of \p computational_mesh is called.
+	 */
+	static std::shared_ptr<std::vector<LongIdx>> get_target_mesh_element_map(const FilePath &file_path, Mesh *computational_mesh);
 
 private:
 	/// Returns singleton instance

@@ -215,12 +215,12 @@ public:
      *
      * Call this method on computational mesh.
      * @param input_mesh data mesh of input fields
-     * @param element_ids_map Holds mapping between eleemnts of data and computational meshes
-     *             For every element in computational mesh hold idx of equivalent element in input mesh.
+     * @return vector that holds mapping between eleemnts of data and computational meshes
+     *             for every element in computational mesh hold idx of equivalent element in input mesh.
      *             If element doesn't exist in input mesh value is set to Mesh::undef_idx.
-     * @return true if data and computational meshes are at least partly compatible
+     *             If meshes are not compatible returns empty vector.
      */
-    virtual bool check_compatible_mesh( Mesh & input_mesh, vector<LongIdx> & element_ids_map);
+    virtual std::shared_ptr<std::vector<LongIdx>> check_compatible_mesh( Mesh & input_mesh);
 
     /// Create and return ElementAccessor to element of given idx
     virtual ElementAccessor<3> element_accessor(unsigned int idx) const;

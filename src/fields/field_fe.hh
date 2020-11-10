@@ -243,7 +243,7 @@ private:
     std::vector<FEValues<spacedim>> fe_values_;
 
     /// Maps element indices between source (data) and target (computational) mesh if data interpolation is set to equivalent_msh
-    vector<LongIdx> source_target_mesh_elm_map_;
+    std::shared_ptr<std::vector<LongIdx>> source_target_mesh_elm_map_;
 
     /// Registrar of class to factory
     static const int registrar;

@@ -317,12 +317,15 @@ void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) 
 			case DataInterpolation::identic_msh:
 				break;
 			case DataInterpolation::equivalent_msh:
-				if (!const_cast<Mesh *>(mesh)->check_compatible_mesh(*(ReaderCache::get_mesh(reader_file_).get()), source_target_mesh_elm_map_)) {
+			{
+			    source_target_mesh_elm_map_ = ReaderCache::get_target_mesh_element_map(reader_file_, const_cast<Mesh *>(mesh));
+				if (source_target_mesh_elm_map_->size() == 0) { // incompatible meshes
 					this->interpolation_ = DataInterpolation::gauss_p0;
 					WarningOut().fmt("Source mesh of FieldFE '{}' is not compatible with target mesh.\nInterpolation of input data will be changed to 'P0_gauss'.\n",
 							field_name_);
 				}
 				break;
+			}
 			case DataInterpolation::gauss_p0:
 				break;
 			case DataInterpolation::interp_p0:
@@ -681,12 +684,13 @@ void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>:
 	data_vec_.zero_entries();
 	VectorMPI::VectorDataPtr data_vector = data_vec_.data_ptr();
 	std::vector<LongIdx> global_dof_indices(dh_->max_elem_dofs());
+	std::vector<LongIdx> &source_target_vec = *(source_target_mesh_elm_map_.get());
 
 	// iterate through cells, assembly MPIVector
 	for (auto cell : dh_->own_range()) {
 		dof_size = cell.get_dof_indices(global_dof_indices);
 		LocDofVec loc_dofs = cell.get_loc_dof_indices();
-		data_vec_i = source_target_mesh_elm_map_[cell.elm_idx()] * dof_size;
+		data_vec_i = source_target_vec[cell.elm_idx()] * dof_size;
 		ASSERT_EQ_DBG(dof_size, loc_dofs.n_elem);
 		for (unsigned int i=0; i<dof_size; ++i, ++data_vec_i) {
 			(*data_vector)[ loc_dofs[i] ] += (*data_cache)[ data_vec_i ];
@@ -708,13 +712,14 @@ void FieldFE<spacedim, Value>::calculate_elementwise_values(ElementDataCache<dou
 	unsigned int data_vec_i;
 	std::vector<unsigned int> count_vector(data_vec_.size(), 0);
 	data_vec_.zero_entries();
+	std::vector<LongIdx> &source_target_vec = *(source_target_mesh_elm_map_.get());
 
 	// iterate through elements, assembly global vector and count number of writes
 	if (this->boundary_domain_) {
 		Mesh *mesh = dh_->mesh()->get_bc_mesh();
 		for (auto ele : mesh->elements_range()) {
 			LocDofVec loc_dofs = value_handler1_.get_loc_dof_indices(ele.idx());
-			if (source_target_mesh_elm_map_[ele.mesh_idx()] == (int)(Mesh::undef_idx)) { // undefined value in input data mesh
+			if (source_target_vec[ele.mesh_idx()] == (int)(Mesh::undef_idx)) { // undefined value in input data mesh
 				if ( std::isnan(default_value_) )
 					THROW( ExcUndefElementValue() << EI_Field(field_name_) );
 				for (unsigned int i=0; i<loc_dofs.n_elem; ++i) {
@@ -723,7 +728,7 @@ void FieldFE<spacedim, Value>::calculate_elementwise_values(ElementDataCache<dou
 					++count_vector[ loc_dofs[i] ];
 				}
 			} else {
-				data_vec_i = source_target_mesh_elm_map_[ele.mesh_idx()] * dh_->max_elem_dofs();
+				data_vec_i = source_target_vec[ele.mesh_idx()] * dh_->max_elem_dofs();
 				for (unsigned int i=0; i<loc_dofs.n_elem; ++i, ++data_vec_i) {
 					ASSERT_LT_DBG(loc_dofs[i], (LongIdx)data_vec_.size());
 					data_vec_[ loc_dofs[i] ] += (*data_cache)[data_vec_i];
@@ -736,7 +741,7 @@ void FieldFE<spacedim, Value>::calculate_elementwise_values(ElementDataCache<dou
 		// iterate through cells, assembly global vector and count number of writes - prepared solution for further development
 		for (auto cell : dh_->own_range()) {
 			LocDofVec loc_dofs = cell.get_loc_dof_indices();
-			if (source_target_mesh_elm_map_[cell.elm_idx()] == (int)(Mesh::undef_idx)) { // undefined value in input data mesh
+			if (source_target_vec[cell.elm_idx()] == (int)(Mesh::undef_idx)) { // undefined value in input data mesh
 				if ( std::isnan(default_value_) )
 					THROW( ExcUndefElementValue() << EI_Field(field_name_) );
 				for (unsigned int i=0; i<loc_dofs.n_elem; ++i) {
@@ -745,7 +750,7 @@ void FieldFE<spacedim, Value>::calculate_elementwise_values(ElementDataCache<dou
 					++count_vector[ loc_dofs[i] ];
 				}
 			} else {
-				data_vec_i = source_target_mesh_elm_map_[cell.elm_idx()] * dh_->max_elem_dofs();
+				data_vec_i = source_target_vec[cell.elm_idx()] * dh_->max_elem_dofs();
 				for (unsigned int i=0; i<loc_dofs.n_elem; ++i, ++data_vec_i) {
 					ASSERT_LT_DBG(loc_dofs[i], (LongIdx)data_vec_.size());
 					data_vec_[ loc_dofs[i] ] += (*data_cache)[data_vec_i];

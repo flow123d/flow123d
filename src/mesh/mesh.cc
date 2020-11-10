@@ -889,14 +889,15 @@ bool compare_points(const arma::vec3 &p1, const arma::vec3 &p2) {
 }
 
 
-bool Mesh::check_compatible_mesh( Mesh & input_mesh, vector<LongIdx> & element_ids_map )
+std::shared_ptr<std::vector<LongIdx>> Mesh::check_compatible_mesh( Mesh & input_mesh)
 {
 	std::vector<unsigned int> node_ids; // allow mapping ids of nodes from source mesh to target mesh
 	std::vector<unsigned int> node_list;
 	std::vector<unsigned int> candidate_list; // returned by intersect_element_lists
 	std::vector<unsigned int> result_list; // list of elements with same dimension as vtk element
 	unsigned int i; // counter over vectors
-	element_ids_map.resize(this->n_elements()+this->n_elements(true));
+	std::shared_ptr<std::vector<LongIdx>> map_ptr = std::make_shared<std::vector<LongIdx>>(this->n_elements()+this->n_elements(true));
+	std::vector<LongIdx> &element_ids_map = *(map_ptr.get());
 
     {
         // iterates over node vector of \p this object
@@ -922,8 +923,8 @@ bool Mesh::check_compatible_mesh( Mesh & input_mesh, vector<LongIdx> & element_i
                         i_elm_node = ele.node(i_node).idx();
                         if (found_i_node == Mesh::undef_idx) found_i_node = i_elm_node;
                         else if (found_i_node != i_elm_node) {
-                            // duplicate nodes in target mesh
-                            return false;
+                            // duplicate nodes in target mesh - not compatible
+                            return std::make_shared<std::vector<LongIdx>>(0);
                         }
                     }
                 }
@@ -966,7 +967,7 @@ bool Mesh::check_compatible_mesh( Mesh & input_mesh, vector<LongIdx> & element_i
 
         if (n_found==0) {
         	// no equivalent bulk element found - mesh is not compatible
-            return false;
+            return std::make_shared<std::vector<LongIdx>>(0);
         }
     }
 
@@ -1003,7 +1004,7 @@ bool Mesh::check_compatible_mesh( Mesh & input_mesh, vector<LongIdx> & element_i
         }
     }
 
-    return true;
+    return map_ptr;
 }
 
 void Mesh::read_regions_from_input(Input::Array region_list)
