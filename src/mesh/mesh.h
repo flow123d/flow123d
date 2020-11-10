@@ -211,14 +211,16 @@ public:
     void elements_id_maps( vector<LongIdx> & bulk_elements_id, vector<LongIdx> & boundary_elements_id) const;
 
     /*
-     * Check if nodes and elements are compatible with \p computational_mesh.
+     * Check if nodes and elements are compatible with \p input_mesh.
      *
-     * Call this method on data mesh.
-     * @param computational_mesh mesh of equation
+     * Call this method on computational mesh.
+     * @param input_mesh data mesh of input fields
      * @param element_ids_map Holds mapping between eleemnts of data and computational meshes
+     *             For every element in computational mesh hold idx of equivalent element in input mesh.
+     *             If element doesn't exist in input mesh value is set to Mesh::undef_idx.
      * @return true if data and computational meshes are at least partly compatible
      */
-    virtual bool check_compatible_mesh( Mesh & computational_mesh, vector<LongIdx> & element_ids_map);
+    virtual bool check_compatible_mesh( Mesh & input_mesh, vector<LongIdx> & element_ids_map);
 
     /// Create and return ElementAccessor to element of given idx
     virtual ElementAccessor<3> element_accessor(unsigned int idx) const;

@@ -75,8 +75,8 @@ const LongIdx *BCMesh::get_local_part() {
 }
 
 
-bool BCMesh::check_compatible_mesh( Mesh & mesh, vector<LongIdx> & element_ids_map ) {
-	return parent_mesh_->check_compatible_mesh(mesh, element_ids_map);
+bool BCMesh::check_compatible_mesh( Mesh & input_mesh, vector<LongIdx> & element_ids_map ) {
+	return parent_mesh_->check_compatible_mesh(input_mesh, element_ids_map);
 }
 
 

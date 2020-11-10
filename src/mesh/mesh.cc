@@ -889,14 +889,14 @@ bool compare_points(const arma::vec3 &p1, const arma::vec3 &p2) {
 }
 
 
-bool Mesh::check_compatible_mesh( Mesh & computational_mesh, vector<LongIdx> & element_ids_map )
+bool Mesh::check_compatible_mesh( Mesh & input_mesh, vector<LongIdx> & element_ids_map )
 {
 	std::vector<unsigned int> node_ids; // allow mapping ids of nodes from source mesh to target mesh
 	std::vector<unsigned int> node_list;
 	std::vector<unsigned int> candidate_list; // returned by intersect_element_lists
 	std::vector<unsigned int> result_list; // list of elements with same dimension as vtk element
 	unsigned int i; // counter over vectors
-	element_ids_map.resize(computational_mesh.n_elements()+computational_mesh.n_elements(true));
+	element_ids_map.resize(this->n_elements()+this->n_elements(true));
 
     {
         // iterates over node vector of \p this object
@@ -907,9 +907,9 @@ bool Mesh::check_compatible_mesh( Mesh & computational_mesh, vector<LongIdx> & e
         const BIHTree &bih_tree=this->get_bih_tree();
 
     	// create nodes of mesh
-        node_ids.resize( computational_mesh.n_nodes() );
+        node_ids.resize( this->n_nodes(), Mesh::undef_idx );
         i=0;
-        for (auto nod : computational_mesh.node_range()) {
+        for (auto nod : input_mesh.node_range()) {
             uint found_i_node = Mesh::undef_idx;
             bih_tree.find_point(*nod, searched_elements);
 
@@ -928,7 +928,7 @@ bool Mesh::check_compatible_mesh( Mesh & computational_mesh, vector<LongIdx> & e
                     }
                 }
             }
-            node_ids[i] = found_i_node;
+            if (found_i_node!=Mesh::undef_idx) node_ids[found_i_node] = i;
             searched_elements.clear();
             i++;
         }
@@ -938,20 +938,19 @@ bool Mesh::check_compatible_mesh( Mesh & computational_mesh, vector<LongIdx> & e
         // elements in both meshes must be in ratio 1:1
         // store orders (mapping between both mesh files) into bulk_elements_id vector
         // iterate trough bulk part of element vector, to each element in source mesh must exist only one element in target mesh
-        // fill bulk_elements_id vector
         i=0;
         unsigned int n_found=0; // number of found equivalent elements
         bool valid_nodes;
-        for (auto elm : computational_mesh.elements_range()) {
+        for (auto elm : this->elements_range()) {
             valid_nodes = true;
             for (unsigned int j=0; j<elm->n_nodes(); j++) { // iterate trough all nodes of any element
             	if (node_ids[ elm->node_idx(j) ] == Mesh::undef_idx) valid_nodes = false;
             	node_list.push_back( node_ids[ elm->node_idx(j) ] );
             }
             if (valid_nodes) {
-                this->intersect_element_lists(node_list, candidate_list);
+            	input_mesh.intersect_element_lists(node_list, candidate_list);
                 for (auto i_elm : candidate_list) {
-                    if ( this->element_accessor(i_elm)->dim() == elm.dim() ) result_list.push_back(i_elm);
+                    if ( input_mesh.element_accessor(i_elm)->dim() == elm.dim() ) result_list.push_back(i_elm);
                 }
             }
             if (result_list.size() == 1) {
@@ -976,21 +975,21 @@ bool Mesh::check_compatible_mesh( Mesh & computational_mesh, vector<LongIdx> & e
         // elements in both meshes must be in ratio 1:1
         // store orders (mapping between both mesh files) into boundary_elements_id vector
     	auto bc_mesh = this->get_bc_mesh();
-    	auto cmpt_bc_mesh = computational_mesh.get_bc_mesh();
+    	auto input_bc_mesh = input_mesh.get_bc_mesh();
         // iterate trough boundary part of element vector, to each element in source mesh must exist only one element in target mesh
         // fill boundary_elements_id vector
         bool valid_nodes;
-        i=computational_mesh.n_elements();
-        for (auto elm : cmpt_bc_mesh->elements_range()) {
+        i=this->n_elements();
+        for (auto elm : bc_mesh->elements_range()) {
             valid_nodes = true;
             for (unsigned int j=0; j<elm->n_nodes(); j++) { // iterate trough all nodes of any element
             	if (node_ids[ elm->node_idx(j) ] == Mesh::undef_idx) valid_nodes = false;
                 node_list.push_back( node_ids[ elm->node_idx(j) ] );
             }
             if (valid_nodes) {
-                bc_mesh->intersect_element_lists(node_list, candidate_list);
+                input_bc_mesh->intersect_element_lists(node_list, candidate_list);
                 for (auto i_elm : candidate_list) {
-                	if ( bc_mesh->element_accessor(i_elm)->dim() == elm.dim() ) result_list.push_back(i_elm);
+                	if ( input_bc_mesh->element_accessor(i_elm)->dim() == elm.dim() ) result_list.push_back(i_elm);
                 }
             }
             if (result_list.size() == 1) {

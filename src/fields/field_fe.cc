@@ -317,7 +317,7 @@ void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) 
 			case DataInterpolation::identic_msh:
 				break;
 			case DataInterpolation::equivalent_msh:
-				if (!ReaderCache::get_mesh(reader_file_)->check_compatible_mesh(const_cast<Mesh &>(*mesh), source_target_mesh_elm_map_)) {
+				if (!const_cast<Mesh *>(mesh)->check_compatible_mesh(*(ReaderCache::get_mesh(reader_file_).get()), source_target_mesh_elm_map_)) {
 					this->interpolation_ = DataInterpolation::gauss_p0;
 					WarningOut().fmt("Source mesh of FieldFE '{}' is not compatible with target mesh.\nInterpolation of input data will be changed to 'P0_gauss'.\n",
 							field_name_);
