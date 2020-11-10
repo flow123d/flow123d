@@ -435,12 +435,11 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 		bool is_native = (header_query.discretization == OutputTime::DiscreteSpace::NATIVE_DATA);
 		bool boundary;
 		if (is_native || this->interpolation_==DataInterpolation::identic_msh || this->interpolation_==DataInterpolation::equivalent_msh) {
-			n_entities = ReaderCache::get_mesh(reader_file_)->n_elements(this->boundary_domain_); //dh_->mesh()->n_elements();
 			boundary = this->boundary_domain_;
 		} else {
-			n_entities = ReaderCache::get_mesh(reader_file_)->n_elements();
 			boundary = false;
 		}
+		n_entities = ReaderCache::get_mesh(reader_file_)->n_elements(boundary);
 		auto input_data_cache = ReaderCache::get_reader(reader_file_)->template get_element_data<double>(n_entities, n_components,
 				boundary, this->component_idx_);
 		CheckResult checked_data = ReaderCache::get_reader(reader_file_)->scale_and_check_limits(field_name_,
