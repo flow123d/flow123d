@@ -166,8 +166,7 @@ TEST(VtkReaderTest, read_binary_vtu) {
     	vector<LongIdx> bulk_elms_id, boundary_elms_id;
     	source_mesh->setup_topology();
     	source_mesh->check_and_finish();
-    	vector<LongIdx> mesh_element_map;
-    	ReaderCache::get_mesh(mesh_file)->check_compatible_mesh(const_cast<Mesh &>(*source_mesh), mesh_element_map);
+    	ReaderCache::get_mesh(mesh_file)->check_compatible_mesh(const_cast<Mesh &>(*source_mesh));
     	ReaderCache::get_element_ids(mesh_file, *source_mesh);
         delete source_mesh;
     }

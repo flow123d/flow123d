@@ -222,7 +222,7 @@ TEST(ReaderCache, get_reader) {
 		delete mesh;
 	}
 
-	{
+	/*{
 		// repeat call
         Input::Record i_rec = get_input_record("{mesh_file=\"mesh/simplest_cube.msh\"}");
         for (unsigned int i=0; i<2; ++i) {
@@ -232,5 +232,5 @@ TEST(ReaderCache, get_reader) {
             mesh_reader->read_raw_mesh(mesh);
             delete mesh;
         }
-    }
+    }*/
 }
