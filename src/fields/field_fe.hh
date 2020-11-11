@@ -169,8 +169,11 @@ private:
 	/// Calculate native data over all elements of target mesh.
 	void calculate_native_values(ElementDataCache<double>::ComponentDataPtr data_cache);
 
-	/// Calculate elementwise data over all elements of target mesh.
-	void calculate_elementwise_values(ElementDataCache<double>::ComponentDataPtr data_cache);
+	/// Calculate data of identict_mesh interpolation on input data over all elements of target mesh.
+	void calculate_identic_values(ElementDataCache<double>::ComponentDataPtr data_cache);
+
+	/// Calculate data of equivalent_mesh interpolation on input over all elements of target mesh.
+	void calculate_equivalent_values(ElementDataCache<double>::ComponentDataPtr data_cache);
 
 	/**
 	 * Fill data to boundary_dofs_ vector.
