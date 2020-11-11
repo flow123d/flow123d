@@ -169,8 +169,11 @@ private:
 	/// Calculate native data over all elements of target mesh.
 	void calculate_native_values(ElementDataCache<double>::ComponentDataPtr data_cache);
 
-	/// Calculate elementwise data over all elements of target mesh.
-	void calculate_elementwise_values(ElementDataCache<double>::ComponentDataPtr data_cache);
+	/// Calculate data of identict_mesh interpolation on input data over all elements of target mesh.
+	void calculate_identic_values(ElementDataCache<double>::ComponentDataPtr data_cache);
+
+	/// Calculate data of equivalent_mesh interpolation on input over all elements of target mesh.
+	void calculate_equivalent_values(ElementDataCache<double>::ComponentDataPtr data_cache);
 
 	/**
 	 * Fill data to boundary_dofs_ vector.
@@ -241,6 +244,9 @@ private:
 
     /// List of FEValues objects of dimensions 0,1,2,3 used for value calculation
     std::vector<FEValues<spacedim>> fe_values_;
+
+    /// Maps element indices between source (data) and target (computational) mesh if data interpolation is set to equivalent_msh
+    std::shared_ptr<std::vector<LongIdx>> source_target_mesh_elm_map_;
 
     /// Registrar of class to factory
     static const int registrar;

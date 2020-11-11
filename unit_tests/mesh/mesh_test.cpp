@@ -156,8 +156,6 @@ TEST(Mesh, decompose_problem) {
 TEST(Mesh, check_compatible_mesh) {
 	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-	vector<LongIdx> bulk_elms_id, boundary_elms_id;
-
     std::string mesh_string = "{mesh_file=\"mesh/simplest_cube.msh\"}";
     Mesh * target_mesh = mesh_constructor(mesh_string);
     auto target_reader = reader_constructor(mesh_string);
@@ -172,7 +170,7 @@ TEST(Mesh, check_compatible_mesh) {
         //reader->read_physical_names(mesh); // not implemented
         reader->read_raw_mesh(mesh);
 
-        EXPECT_TRUE( mesh->check_compatible_mesh(*target_mesh, bulk_elms_id, boundary_elms_id) );
+        EXPECT_TRUE( mesh->check_compatible_mesh(*target_mesh)->size() > 0 );
 
         delete mesh;
     }
@@ -184,7 +182,7 @@ TEST(Mesh, check_compatible_mesh) {
         // reader->read_physical_names(mesh); // not implemented
         reader->read_raw_mesh(mesh);
 
-        EXPECT_FALSE( mesh->check_compatible_mesh(*target_mesh, bulk_elms_id, boundary_elms_id) );
+        EXPECT_EQ( mesh->check_compatible_mesh(*target_mesh)->size(), 0 );
 
         delete mesh;
     }
