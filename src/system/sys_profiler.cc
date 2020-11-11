@@ -855,7 +855,7 @@ void Profiler::transform_profiler_data (const string &output_file_suffix, const 
     #endif // FLOW123D_HAVE_CYGWIN
 }
 #else
-void Profiler::transform_profiler_data (const string &output_file_suffix, const string &formatter) {
+void Profiler::transform_profiler_data (const string &, const string &) {
 }
 
 #endif // FLOW123D_HAVE_PYTHON

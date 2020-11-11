@@ -48,18 +48,6 @@ public:
      */
     void read_physical_names(Mesh * mesh) override;
 
-	/**
-	 * Check if nodes and elements of VTK mesh is compatible with \p mesh.
-	 *
-	 *  - to all nodes of VTK mesh must exists one and only one nodes in second mesh
-	 *  - the same must occur for elements
-	 *  - method fill vector \p bulk_elements_id_
-	 *  - it is necessary to call this method before calling \p get_element_data
-	 *
-	 * OBSOLETE method - will be replace with Mesh::check_compatible_mesh after merge fields!
-	 */
-	void check_compatible_mesh(Mesh &mesh) override;
-
     /**
 	 * Find header of DataArray section of VTK file given by field_name.
 	 */
