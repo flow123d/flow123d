@@ -87,9 +87,11 @@ formula_field_base: !FieldFormula
 fe_field: !FieldFE
   mesh_data_file: fields/simplest_cube_data.msh
   field_name: vector_fixed
+  default_value: 0.0
 interpolated_p0_field: !FieldFE
   mesh_data_file: fields/simplest_cube_3d.msh
   field_name: scalar
+  default_value: 0.0
   interpolation: P0_intersection
 )YAML";
 

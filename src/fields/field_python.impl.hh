@@ -75,7 +75,7 @@ FieldPython<spacedim, Value>::FieldPython(unsigned int n_comp)
 
 
 template <int spacedim, class Value>
-void FieldPython<spacedim, Value>::set_python_field_from_string(const string &python_source, const string &func_name)
+void FieldPython<spacedim, Value>::set_python_field_from_string(FMT_UNUSED const string &python_source, FMT_UNUSED const string &func_name)
 {
 #ifdef FLOW123D_HAVE_PYTHON
     p_module_ = PythonLoader::load_module_from_string("python_field_"+func_name, python_source);
@@ -106,7 +106,7 @@ void FieldPython<spacedim, Value>::init_from_input(const Input::Record &rec, con
 
 
 template <int spacedim, class Value>
-void FieldPython<spacedim, Value>::set_python_field_from_file(const FilePath &file_name, const string &func_name)
+void FieldPython<spacedim, Value>::set_python_field_from_file(FMT_UNUSED const FilePath &file_name, FMT_UNUSED const string &func_name)
 {
 #ifdef FLOW123D_HAVE_PYTHON
     p_module_ = PythonLoader::load_module_from_file( string(file_name) );
@@ -118,7 +118,7 @@ void FieldPython<spacedim, Value>::set_python_field_from_file(const FilePath &fi
 
 
 template <int spacedim, class Value>
-void FieldPython<spacedim, Value>::set_func(const string &func_name)
+void FieldPython<spacedim, Value>::set_func(FMT_UNUSED const string &func_name)
 {
 #ifdef FLOW123D_HAVE_PYTHON
 	p_func_ = PythonLoader::get_callable(p_module_, func_name);
@@ -186,7 +186,7 @@ void FieldPython<spacedim, Value>::value_list (const Armor::array &point_list, c
 * Returns one vector value in one given point.
 */
 template <int spacedim, class Value>
-void FieldPython<spacedim, Value>::set_value(const Point &p, FMT_UNUSED const ElementAccessor<spacedim> &elm, Value &value)
+void FieldPython<spacedim, Value>::set_value(FMT_UNUSED const Point &p, FMT_UNUSED const ElementAccessor<spacedim> &elm, FMT_UNUSED Value &value)
 {
 #ifdef FLOW123D_HAVE_PYTHON
     for(unsigned int i = 0; i < spacedim; i++) {

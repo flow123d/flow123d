@@ -1,0 +1,42 @@
+#################
+# Test goal: Test of elementwise fields input with different sets of input and computational meshes  
+# Author: David Flanderka
+# Source for reference: qualitative
+
+flow123d_version: 3.1.0
+problem: !Coupling_Sequential
+  description: Test different order and number of elements in source (input data) and target (computational) mesh
+  mesh:
+    mesh_file: ../00_mesh/rectangle_6_el.msh
+  flow_equation: !Flow_Darcy_MH
+    nonlinear_solver:
+      linear_solver: !Petsc
+        r_tol: 1.0e-12
+        a_tol: 1.0e-12
+    input_fields:
+      - region: 2d
+        conductivity: 1
+        cross_section: 0.1
+        sigma: !FieldFE
+          mesh_data_file: ./27_mesh_data.msh
+          field_name: sigma
+          default_value: 0.7
+      - region: .BOUNDARY
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: 0.1*x
+    n_schurs: 2
+    output:
+      fields:
+        - pressure_p0
+        - velocity_p0
+        - sigma
+    time:
+      end_time: 300
+      init_dt: 1
+      max_dt: 300
+      min_dt: 0.1
+    output_stream:
+      file: ./flow.pvd
+      format: !vtk
+        variant: ascii
