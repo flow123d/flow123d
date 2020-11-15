@@ -370,8 +370,7 @@ template <class ValueType>
 Array::Array(const ValueType &type, unsigned int min_size, unsigned int max_size)
 : Array(std::static_pointer_cast<TypeBase>( std::make_shared<ValueType>(type) ), min_size, max_size)
 {
-    // ASSERT MESSAGE: The type of declared keys has to be a class derived from TypeBase.
-    static_assert( (std::is_base_of<TypeBase, ValueType >::value) );
+    static_assert(std::is_base_of<TypeBase, ValueType >::value, "The type of declared keys has to be a class derived from TypeBase.");
 }
 
 // explicit instantiation
