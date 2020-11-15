@@ -8,7 +8,7 @@
 #ifndef SRC_IO_OBSERVE_HH_
 #define SRC_IO_OBSERVE_HH_
 
-#include <boost/exception/info.hpp>          // for error_info::~error_info<...
+
 #include <iosfwd>                            // for ofstream, ostream
 #include <map>                               // for map, map<>::value_compare
 #include <memory>                            // for shared_ptr

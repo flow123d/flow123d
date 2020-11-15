@@ -25,7 +25,6 @@
 #include <mesh_constructor.hh>
 
 #include <vector>
-#include <boost/foreach.hpp>
 
 #include "system/sys_profiler.hh"
 

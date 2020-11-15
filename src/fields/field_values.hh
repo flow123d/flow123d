@@ -20,9 +20,6 @@
 
 #include <string.h>                                    // for memcpy
 #include <boost/core/explicit_operator_bool.hpp>       // for optional::oper...
-#include <boost/exception/detail/error_info_impl.hpp>  // for error_info
-#include <boost/exception/info.hpp>                    // for operator<<
-#include <boost/format.hpp>                            // for str
 #include <boost/optional/optional.hpp>                 // for get_pointer
 #include <cmath>                                       // for abs
 #include <cstdlib>                                     // for abs
@@ -34,6 +31,8 @@
 #include <type_traits>                                 // for is_floating_point
 #include <vector>                                      // for vector
 #include <armadillo>
+
+#include "system/fmt/format.h"
 #include "input/accessors.hh"                          // for Array, Iterator
 #include "input/accessors_impl.hh"                     // for Array::size
 #include "input/input_exception.hh"                    // for ExcFV_Input::~...
@@ -168,8 +167,9 @@ void init_matrix_from_input( MatrixType &value, Input::Array rec ) {
         } else {
             THROW( ExcFV_Input()
                     << EI_InputMsg(
-                            boost::str(boost::format("Initializing symmetric matrix %dx%d by vector of wrong size %d, should be 1, %d, or %d.")
-                            % nrows % ncols % rec.size() % nrows % ((nrows+1)*nrows/2)))
+                            fmt::format("Initializing symmetric matrix {:d}x{:d} by vector of wrong size {:d}, "
+                                    "should be 1, {:d}, or {:d}.",
+                                    nrows, ncols, rec.size(), nrows, (nrows+1)*nrows/2))
                     << rec.ei_address()
 
                  );
@@ -190,8 +190,8 @@ void init_matrix_from_input( MatrixType &value, Input::Array rec ) {
         } else {
             THROW( ExcFV_Input()
                     << EI_InputMsg(
-                            boost::str(boost::format("Initializing matrix %dx%d by matrix of wrong size %dx%d.")
-                                % nrows % ncols % rec.size() % it->size() ))
+                            fmt::format("Initializing symmetric matrix {:d}x{:d} by vector of wrong size {:d}x{:d}.",
+                                    nrows, ncols, rec.size(), it->size()))
                     << rec.ei_address()
                  );
         }
@@ -221,8 +221,8 @@ void init_vector_from_input( VectorType &value, Input::Array rec ) {
     } else {
         THROW( ExcFV_Input()
                 << EI_InputMsg(
-                        boost::str(boost::format("Initializing vector of size %d by vector of size %d.")
-                            % nrows % rec.size() ))
+                        fmt::format("Initializing vector of size {:d} by vector of size {%d.}",
+                            nrows, rec.size()))
                 << rec.ei_address()
              );
     }
@@ -254,7 +254,7 @@ public:
     const static int NCols_ = NCols;
     const static int rank_ = 2;
 
-    static std::string type_name() { return boost::str(boost::format("R[%d,%d]") % NRows % NCols); }
+    static std::string type_name() { return fmt::format("R[{:d},{:d}]", NRows, NCols); }
     static IT::Array get_input_type() {
 		if (NRows == NCols) {
 			// for square tensors allow initialization by diagonal vector, etc.
@@ -484,7 +484,7 @@ public:
     const static int rank_ = 1;
 
 
-    static std::string type_name() { return boost::str(boost::format("R[%d]") % NRows ); }
+    static std::string type_name() { return fmt::format("R[{:d}]", NRows); }
     static IT::Array get_input_type() {
         return IT::Array( IT::Parameter("element_input_type"), 1, NRows);
     }

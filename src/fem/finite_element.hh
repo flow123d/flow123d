@@ -23,8 +23,7 @@
 #include <stdio.h>                             // for sprintf
 #include <string.h>                            // for memcpy
 #include <algorithm>                           // for max, min
-#include <boost/assign/list_of.hpp>            // for generic_list, list_of
-#include <boost/exception/info.hpp>            // for error_info::error_info...
+
 #include <new>                                 // for operator new[]
 #include <ostream>                             // for operator<<
 #include <string>                              // for operator<<

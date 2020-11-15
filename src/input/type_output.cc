@@ -16,7 +16,6 @@
  */
 
 #include <string>
-//#include <limits>
 #include <regex>
 
 #include "system/exceptions.hh"                        // for ExcUnknownDesc...
@@ -25,13 +24,9 @@
 #include "input/type_generic.hh"
 #include "input/type_tuple.hh"
 #include "input/type_selection.hh"
-//#include "system/system.hh"
+
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/tokenizer.hpp>                         // for tokenizer<>::i...
-
-//#include <boost/iostreams/filtering_stream.hpp>
-//#include <boost/iostreams/concepts.hpp>
-//#include <boost/iostreams/operations.hpp> // put
 #include <boost/functional/hash.hpp>
 
 

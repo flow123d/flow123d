@@ -23,7 +23,7 @@
 #ifndef DUAL_POROSITY_H_
 #define DUAL_POROSITY_H_
 
-#include <boost/exception/info.hpp>   // for operator<<, error_info::error_i...
+
 #include <memory>                     // for shared_ptr
 #include <vector>
 #include "fields/field.hh"            // for Field

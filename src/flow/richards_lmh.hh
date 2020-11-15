@@ -8,7 +8,7 @@
 #ifndef SRC_FLOW_RICHARDS_LMH_HH_
 #define SRC_FLOW_RICHARDS_LMH_HH_
 
-#include <boost/exception/info.hpp>  // for operator<<, error_info::error_in...
+
 #include <memory>                    // for shared_ptr
 #include "fields/field.hh"           // for Field
 #include "fields/field_values.hh"    // for FieldValue<>::Scalar, FieldValue

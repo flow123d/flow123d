@@ -58,8 +58,8 @@
 #include <mpi.h>                                       // for MPI_Comm, MPI_...
 #include <stdlib.h>                                    // for NULL, abs
 #include <string.h>                                    // for memcpy
-#include <boost/exception/detail/error_info_impl.hpp>  // for error_info
-#include <boost/exception/info.hpp>                    // for operator<<
+//
+
 #include <cmath>                                       // for abs, fabs
 #include <new>                                         // for operator new[]
 #include <string>                                      // for basic_string

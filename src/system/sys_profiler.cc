@@ -22,6 +22,7 @@
 #include <fstream>
 #include <iomanip>
 #include <sys/param.h>
+#include <unordered_map>
 
 #ifdef FLOW123D_HAVE_PYTHON
     #include "Python.h"
@@ -34,7 +35,6 @@
 #include <boost/format.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
-#include <boost/unordered_map.hpp>
 
 #include "system/file_path.hh"
 #include "system/python_loader.hh"
@@ -276,7 +276,8 @@ void Timer::add_child(int child_index, const Timer &child)
 
 
 string Timer::code_point_str() const {
-    return boost::str( boost::format("%s:%d, %s()") % code_point_->file_ % code_point_->line_ % code_point_->func_ );
+    return fmt::format("{%s}:{%d}, {%s}()",
+            code_point_->file_, code_point_->line_, code_point_->func_ );
 }
 
 

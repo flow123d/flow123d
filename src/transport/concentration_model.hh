@@ -19,7 +19,7 @@
 #ifndef CONC_TRANS_MODEL_HH_
 #define CONC_TRANS_MODEL_HH_
 
-#include <boost/exception/info.hpp>                   // for operator<<, err...
+
 #include <memory>                                     // for shared_ptr
 #include <string>                                     // for string
 #include <vector>                                     // for vector

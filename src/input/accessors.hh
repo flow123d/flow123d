@@ -45,7 +45,6 @@
 
 
 #include "system/exceptions.hh"
-//#include <boost/core/enable_if.hpp>                    // for enable_if
 #include "input/storage.hh"
 #include "input/input_exception.hh"
 
