@@ -19,7 +19,7 @@
 #ifndef MSH_VTK_READER_HH
 #define	MSH_VTK_READER_HH
 
-#include <boost/exception/info.hpp>          // for error_info::~error_info<...
+
 #include <istream>                           // for istream
 #include <map>                               // for map, map<>::value_compare
 #include <string>                            // for string

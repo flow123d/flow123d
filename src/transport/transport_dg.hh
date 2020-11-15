@@ -22,7 +22,7 @@
 #include <math.h>                              // for fabs
 #include <string.h>                            // for memcpy
 #include <algorithm>                           // for max
-#include <boost/exception/info.hpp>            // for operator<<, error_info...
+
 #include <string>                              // for operator<<
 #include <vector>                              // for vector
 #include <armadillo>

@@ -21,7 +21,7 @@
 
 #include <stdio.h>                       // for sprintf
 #include <string.h>                      // for memcpy
-#include <boost/exception/info.hpp>      // for operator<<, error_info::erro...
+
 #include <cmath>                         // for pow
 #include <iosfwd>                        // for ofstream
 #include <memory>                        // for shared_ptr

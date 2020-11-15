@@ -19,7 +19,7 @@
 #ifndef HEAT_MODEL_HH_
 #define HEAT_MODEL_HH_
 
-#include <boost/exception/info.hpp>             // for operator<<, error_inf...
+
 #include <memory>                               // for shared_ptr
 #include <string>                               // for string
 #include <vector>                               // for vector

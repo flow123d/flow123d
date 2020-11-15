@@ -21,8 +21,6 @@
 
 
 #include <petscvec.h>                                  // for Vec
-#include <boost/exception/detail/error_info_impl.hpp>  // for error_info
-#include <boost/exception/info.hpp>                    // for operator<<
 #include <memory>                                      // for shared_ptr
 #include <string>                                      // for basic_string
 #include <typeinfo>                                    // for type_info
