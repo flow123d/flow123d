@@ -25,8 +25,8 @@
 #include "system/global_defs.h"
 #include "system/exc_common.hh"
 #include <stdio.h>                                     // for FILE
-#include <boost/exception/detail/error_info_impl.hpp>  // for error_info
-#include <boost/exception/info.hpp>                    // for operator<<
+
+
 #include <string>                                      // for string
 #include "system/exceptions.hh"                        // for ExcChkErr::~Ex...
 #include "system/fmt/posix.h"                          // for FMT_UNUSED 

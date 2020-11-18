@@ -23,7 +23,6 @@
 
 
 #include <stdio.h>                      // for sprintf
-#include <boost/exception/info.hpp>     // for operator<<, error_info::error...
 #include <string>                       // for operator==, string
 #include <vector>                       // for vector
 #include <memory>

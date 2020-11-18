@@ -9,7 +9,7 @@
 #define REGION_SET_HH_
 
 
-#include <boost/exception/info.hpp>  // for error_info::~error_info<Tag, T>
+
 #include <string>                    // for string
 #include "input/input_exception.hh"  // for DECLARE_INPUT_EXCEPTION, Exception
 #include "mesh/region.hh"            // for RegionDB, RegionSet, RegionDB::M...

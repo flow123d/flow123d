@@ -23,7 +23,6 @@
 #include "fparser.hh"
 #include "input/input_type.hh"
 #include "include/arena_alloc.hh"       // bparser
-#include <boost/foreach.hpp>
 #include <boost/algorithm/string/replace.hpp>
 
 
@@ -130,7 +129,7 @@ bool FieldFormula<spacedim, Value>::set_time(const TimeStep &time) {
             }
 #pragma GCC diagnostic pop
 
-            BOOST_FOREACH(std::string &var_name, var_list ) {
+            for(std::string &var_name : var_list ) {
                 if (var_name == std::string("t") ) time_dependent[row*this->value_.n_rows()+col]=true;
                 else if (var_name == std::string("d") ) {
                 	this->is_constant_in_space_ = false;

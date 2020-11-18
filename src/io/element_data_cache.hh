@@ -18,7 +18,7 @@
 #ifndef ELEMENT_DATA_CACHE_HH_
 #define ELEMENT_DATA_CACHE_HH_
 
-#include <boost/exception/info.hpp>           // for error_info::~error_info...
+
 #include <memory>                             // for shared_ptr
 #include <sstream>                            // for basic_ostream::write
 #include <string>                             // for string, operator<<

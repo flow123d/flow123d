@@ -19,8 +19,8 @@
 #define TYPE_RECORD_HH_
 
 #include "system/exceptions.hh"
-#include <boost/exception/detail/error_info_impl.hpp>  // for error_info
-#include <boost/exception/info.hpp>                    // for error_info::~e...
+//
+
 #include <utility>                                     // for pair
 #include "system/asserts.hh"                           // for Assert, ASSERT
 namespace Input { class StorageBase; }

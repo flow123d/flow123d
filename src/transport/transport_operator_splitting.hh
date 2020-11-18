@@ -18,7 +18,7 @@
 #ifndef TRANSPORT_OPERATOR_SPLITTING_HH_
 #define TRANSPORT_OPERATOR_SPLITTING_HH_
 
-#include <boost/exception/info.hpp>             // for operator<<, error_inf...
+
 #include <memory>                               // for shared_ptr
 #include <vector>                               // for vector
 #include "coupling/equation.hh"

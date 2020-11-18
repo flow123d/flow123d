@@ -19,7 +19,7 @@
 #define MAKE_MESH_H
 
 #include <mpi.h>                             // for MPI_Comm, MPI_COMM_WORLD
-#include <boost/exception/info.hpp>          // for error_info::~error_info<...
+
 //#include <boost/range.hpp>
 #include <memory>                            // for shared_ptr
 #include <string>                            // for string
