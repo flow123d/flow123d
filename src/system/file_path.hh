@@ -21,7 +21,7 @@
 #include <string>
 #include "system/exceptions.hh"
 
-#include <boost/exception/info.hpp>  // for error_info::~error_info<Tag, T>
+
 #include <iosfwd>                    // for ostream
 #include <map>                       // for map
 #include <memory>                    // for shared_ptr

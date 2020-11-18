@@ -18,8 +18,6 @@
 #ifndef FIELD_IMPL_HH_
 #define FIELD_IMPL_HH_
 
-#include <boost/foreach.hpp>
-
 #include "field.hh"
 #include "field_algo_base.impl.hh"
 #include "field_fe.hh"

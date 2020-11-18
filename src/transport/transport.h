@@ -23,7 +23,7 @@
 #ifndef TRANSPORT_H_
 #define TRANSPORT_H_
 
-#include <boost/exception/info.hpp>                   // for operator<<, err...
+
 #include <memory>                                     // for shared_ptr
 #include <vector>                                     // for vector
 #include <petscmat.h>

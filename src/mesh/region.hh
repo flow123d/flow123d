@@ -32,8 +32,8 @@
 #include <string>                                      // for string, basic_...
 #include <utility>                                     // for pair
 #include <vector>                                      // for vector
-#include <boost/exception/detail/error_info_impl.hpp>  // for error_info
-#include <boost/exception/info.hpp>                    // for error_info::~e...
+
+
 #include <boost/multi_index/hashed_index.hpp>          // for hashed_non_unique
 #include <boost/multi_index/identity_fwd.hpp>          // for multi_index
 #include <boost/multi_index/indexed_by.hpp>            // for indexed_by

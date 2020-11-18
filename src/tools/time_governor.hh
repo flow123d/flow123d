@@ -24,7 +24,7 @@
 #include <algorithm>
 #include <fstream>
 #include <boost/circular_buffer.hpp>
-#include <boost/exception/info.hpp>
+
 #include <iosfwd>
 #include <string>
 

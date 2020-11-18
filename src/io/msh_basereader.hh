@@ -20,7 +20,7 @@
 #define	MSH_BASE_READER_HH
 
 
-#include <boost/exception/info.hpp>  // for error_info::~error_info<Tag, T>
+
 #include <map>                       // for map, map<>::value_compare
 #include <memory>                    // for shared_ptr
 #include <string>                    // for string

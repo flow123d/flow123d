@@ -10,6 +10,7 @@
 
 #include <memory>
 #include <regex>
+#include <type_traits>
 
 #include <flow_gtest_mpi.hh>
 #include <mesh_constructor.hh>
@@ -53,7 +54,7 @@ template <class F>
 class FieldFix : public testing::Test, public F {
 public:
 	typedef F FieldType;
-	static constexpr bool is_enum_valued = boost::is_same<typename FieldType::ValueType::element_type, FieldEnum>::value;
+	static constexpr bool is_enum_valued = std::is_same<typename FieldType::ValueType::element_type, FieldEnum>::value;
 
 	void SetUp() {
 	    Profiler::instance();

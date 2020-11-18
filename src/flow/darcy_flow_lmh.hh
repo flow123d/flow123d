@@ -36,7 +36,7 @@
 #include <petscmat.h>                           // for Mat
 #include <string.h>                             // for memcpy
 #include <algorithm>                            // for swap
-#include <boost/exception/info.hpp>             // for operator<<, error_inf...
+
 #include <memory>                               // for shared_ptr, allocator...
 #include <new>                                  // for operator new[]
 #include <string>                               // for string, operator<<

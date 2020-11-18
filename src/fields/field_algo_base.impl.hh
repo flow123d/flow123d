@@ -57,7 +57,7 @@ FieldAlgorithmBase<spacedim, Value>::FieldAlgorithmBase(unsigned int n_comp)
 
 template <int spacedim, class Value>
 string FieldAlgorithmBase<spacedim, Value>::template_name() {
-	return boost::str(boost::format("R%i_to_%s") % spacedim % Value::type_name() );
+	return fmt::format("R{:d}_to_{}", spacedim, Value::type_name() );
 }
 
 

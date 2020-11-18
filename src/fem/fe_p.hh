@@ -19,8 +19,6 @@
 #ifndef FE_P_HH_
 #define FE_P_HH_
 
-#include <boost/exception/detail/error_info_impl.hpp>  // for error_info
-#include <boost/exception/info.hpp>                    // for operator<<
 #include <string>                                      // for string
 #include <vector>                                      // for vector
 #include <armadillo>

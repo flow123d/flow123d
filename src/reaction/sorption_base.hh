@@ -24,7 +24,7 @@
 #ifndef SORPTION_BASE_H
 #define SORPTION_BASE_H
 
-#include <boost/exception/info.hpp>     // for operator<<, error_info::~erro...
+
 #include <memory>                       // for shared_ptr
 #include <string>                       // for string
 #include <vector>
@@ -39,6 +39,7 @@
 #include "input/type_base.hh"           // for Array
 #include "input/type_generic.hh"        // for Instance
 #include "petscvec.h"                   // for Vec, VecScatter, _p_VecScatter
+//
 #include "system/exceptions.hh"         // for operator<<, ExcStream, EI
 
 class Isotherm;
