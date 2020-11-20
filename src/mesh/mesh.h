@@ -341,9 +341,8 @@ public:
     Range<Edge> edge_range() const;
 
     /// Returns count of boundary or bulk elements
-    virtual unsigned int n_elements(bool boundary=false) const {
-    	if (boundary) return element_ids_.size()-bulk_size_;
-    	else return bulk_size_;
+    virtual unsigned int n_elements() const {
+    	return bulk_size_;
     }
 
     /// For each node the vector contains a list of elements that use this node
@@ -400,8 +399,8 @@ public:
     /// Check if given index is in element_vec_
     void check_element_size(unsigned int elem_idx) const;
 
-    /// Create boundary elements from data of temporary structure, this method MUST be call after read mesh from
-    void create_boundary_elements();
+    /// Create boundary elements from data of temporary structure, this method MUST be call after read mesh from file, return number of read boundary elements
+    unsigned int create_boundary_elements();
 
     /// Permute nodes of 3D elements of given elm_idx
     void permute_tetrahedron(unsigned int elm_idx, std::vector<unsigned int> permutation_vec);

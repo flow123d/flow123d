@@ -904,10 +904,10 @@ void Mesh::elements_id_maps( vector<LongIdx> & bulk_elements_id, vector<LongIdx>
             last_id=*map_it = id;
         }
 
-        boundary_elements_id.resize(n_elements(true));
+        boundary_elements_id.resize(element_ids_.size()-bulk_size_);
         map_it = boundary_elements_id.begin();
         last_id = -1;
-        for(unsigned int idx=bulk_size_; idx<element_vec_.size(); idx++, ++map_it) {
+        for(unsigned int idx=bulk_size_; idx<element_ids_.size(); idx++, ++map_it) {
         	LongIdx id = this->find_elem_id(idx);
             // We set ID for boundary elements created by the mesh itself to "-1"
             // this force gmsh reader to skip all remaining entries in boundary_elements_id
@@ -1305,7 +1305,7 @@ void Mesh::output_internal_ngh_data()
 }
 
 
-void Mesh::create_boundary_elements() {
+unsigned int Mesh::create_boundary_elements() {
     // Copy boundary elements in temporary storage to the second part of the element vector
 	for(ElementTmpData &e_data : bc_element_tmp_) {
 	    Element *ele = add_element_to_vector(e_data.elm_id);
@@ -1313,7 +1313,9 @@ void Mesh::create_boundary_elements() {
 				e_data.partition_id, e_data.node_ids);
 	}
 	// release memory
+	//unsigned int bdr_size = bc_element_tmp_.size();
 	vector<ElementTmpData>().swap(bc_element_tmp_);
+	//return bdr_size;
 }
 
 

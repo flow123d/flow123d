@@ -156,8 +156,8 @@ void GmshMeshReader::read_elements(Mesh * mesh) {
     	THROW(ExcWrongFormat() << EI_Type("number") << EI_TokenizerMsg(tok_.position_msg()) << EI_MeshFile(tok_.f_name()) );
     }
 
-    mesh->create_boundary_elements();
-    MessageOut().fmt("... {} bulk elements, {} boundary elements. \n", mesh->n_elements(), mesh->n_elements(true));
+    unsigned int n_read_boundary = mesh->create_boundary_elements();
+    MessageOut().fmt("... {} bulk elements, {} boundary elements. \n", mesh->n_elements(), n_read_boundary);
 }
 
 
