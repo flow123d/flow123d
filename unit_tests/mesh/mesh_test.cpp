@@ -69,7 +69,7 @@ TEST(MeshTopology, make_neighbours_and_edges) {
     Mesh * mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
 
     EXPECT_EQ(9, mesh->n_elements());
-    EXPECT_EQ(18, mesh->n_elements(true));
+    EXPECT_EQ(18, mesh->get_bc_mesh()->n_elements());
 
     // check boundary elements
     EXPECT_EQ(101 , mesh->element_accessor(9).region().id() );

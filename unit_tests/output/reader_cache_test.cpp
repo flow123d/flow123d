@@ -16,6 +16,7 @@
 #include "system/sys_profiler.hh"
 
 #include "mesh/mesh.h"
+#include "mesh/bc_mesh.hh"
 #include "io/msh_gmshreader.h"
 #include "io/reader_cache.hh"
 
@@ -98,7 +99,7 @@ TEST(ReaderCache, get_boundary_element_) {
         		ReaderCache::get_reader(file_name)->get_element_data<int>(4, 1, true, i);
     	std::vector<int> &vec = *( multifield_.get() );
     	EXPECT_EQ(4, vec.size());
-    	for (j=0; j<mesh->n_elements(true); j++) EXPECT_EQ( i+4, vec[j] );
+    	for (j=0; j<mesh->get_bc_mesh()->n_elements(); j++) EXPECT_EQ( i+4, vec[j] );
     }
 
     // read  to one vector for Field
@@ -109,7 +110,7 @@ TEST(ReaderCache, get_boundary_element_) {
     			ReaderCache::get_reader(file_name)->get_element_data<int>(4, 3, true, 0);
     	std::vector<int> &vec = *( field_.get() );
     	EXPECT_EQ(12, vec.size());
-    	for (j=0; j<3*mesh->n_elements(true); j++) EXPECT_EQ( 5+(j%3), vec[j] );
+    	for (j=0; j<3*mesh->get_bc_mesh()->n_elements(); j++) EXPECT_EQ( 5+(j%3), vec[j] );
     }
 
     //delete mesh;

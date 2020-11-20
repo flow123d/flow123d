@@ -41,6 +41,7 @@
 #include "coupling/equation.hh"
 
 #include "mesh/mesh.h"
+#include "mesh/bc_mesh.hh"
 #include "io/msh_gmshreader.h"
 #include "mesh/region.hh"
 #include <armadillo>
@@ -291,7 +292,7 @@ TEST_F(SomeEquation, values) {
     Space<3>::Point p;
     p(0)=1.0; p(1)= 2.0; p(2)=3.0;
 
-    DebugOut().fmt("elements size: {} {}\n", mesh->n_elements(), mesh->n_elements(true));
+    DebugOut().fmt("elements size: {} {}\n", mesh->n_elements(), mesh->get_bc_mesh()->n_elements());
 
     // check element accessors
     ElementAccessor<3> el_1d=mesh->element_accessor(0); // region 37 "1D diagonal"
