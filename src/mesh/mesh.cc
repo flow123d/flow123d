@@ -1313,9 +1313,9 @@ unsigned int Mesh::create_boundary_elements() {
 				e_data.partition_id, e_data.node_ids);
 	}
 	// release memory
-	//unsigned int bdr_size = bc_element_tmp_.size();
+	unsigned int bdr_size = bc_element_tmp_.size();
 	vector<ElementTmpData>().swap(bc_element_tmp_);
-	//return bdr_size;
+	return bdr_size;
 }
 
 
