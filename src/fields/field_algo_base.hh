@@ -26,7 +26,7 @@
 #define field_algo_base_HH_
 
 #include <string.h>                        // for memcpy
-#include <boost/type_traits/is_same.hpp>   // for is_same
+#include <type_traits>   // for is_same
 #include <limits>                          // for numeric_limits
 #include <memory>                          // for shared_ptr
 #include <ostream>                         // for operator<<
@@ -112,7 +112,7 @@ public:
        // expose template parameters
        typedef typename Space<spacedim>::Point Point;
        static const unsigned int spacedim_=spacedim;
-       static constexpr bool is_enum_valued = boost::is_same<typename Value::element_type, FieldEnum>::value;
+       static constexpr bool is_enum_valued = std::is_same<typename Value::element_type, FieldEnum>::value;
 
 
        /**

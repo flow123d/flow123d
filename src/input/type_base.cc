@@ -24,7 +24,7 @@
 
 #include "system/system.hh"
 
-#include <boost/type_traits.hpp>
+#include <type_traits>
 #include <boost/tokenizer.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/functional/hash.hpp>
@@ -372,7 +372,7 @@ Array::Array(const ValueType &type, unsigned int min_size, unsigned int max_size
 : Array(std::static_pointer_cast<TypeBase>( std::make_shared<ValueType>(type) ), min_size, max_size)
 {
     // ASSERT MESSAGE: The type of declared keys has to be a class derived from TypeBase.
-    BOOST_STATIC_ASSERT( (boost::is_base_of<TypeBase, ValueType >::value) );
+    static_assert( (std::is_base_of<TypeBase, ValueType >::value) );
 }
 
 // explicit instantiation
