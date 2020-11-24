@@ -112,7 +112,7 @@ public:
      *       and possibly implement transposition. Set such property for individual file formats.
      *       Class OutputData stores always in raw-first order.
      */
-    void print_ascii_all(ostream &out_stream, const std::vector<unsigned int> &permutation_vec) override;
+    void print_ascii_all(ostream &out_stream) override;
 
     /**
      * \brief Print all data stored in output data to appended binary format

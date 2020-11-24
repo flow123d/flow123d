@@ -86,7 +86,7 @@ public:
     /**
      * Print all data in ascii format at once stored in database
      */
-    virtual void print_ascii_all(ostream &out_stream, const std::vector<unsigned int> &permutation_vec) = 0;
+    virtual void print_ascii_all(ostream &out_stream) = 0;
 
     /**
      * Print all data in binary format at once stored in database
@@ -282,7 +282,7 @@ public:
         for(unsigned int i=0; i< n_comp_;i++) out_stream << 0 << " ";
     }
 
-    void print_ascii_all(ostream &out_stream, FMT_UNUSED const std::vector<unsigned int> &permutation_vec) override
+    void print_ascii_all(ostream &out_stream) override
     {
         for(unsigned int i=0; i< n_comp_;i++) out_stream << 0 << " ";
     }

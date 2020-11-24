@@ -154,12 +154,12 @@ protected:
     /**
      * Write registered data of all components of given Field to output stream
      */
-    void write_vtk_field_data(OutputDataFieldVec &output_data_map, const std::vector<unsigned int> &permutation_vec);
+    void write_vtk_field_data(OutputDataFieldVec &output_data_map);
 
     /**
      * Write output data stored in OutputData vector to output stream
      */
-    void write_vtk_data(OutputDataPtr output_data, const std::vector<unsigned int> &permutation_vec);
+    void write_vtk_data(OutputDataPtr output_data);
     
     /**
      * \brief Write names of data sets in @p output_data vector that have value type equal to @p type.
@@ -170,10 +170,8 @@ protected:
 
     /**
      * \brief Write data on nodes to the VTK file (.vtu)
-     *
-     * Temporary solution: passed permutation_corner_vec for correct output of corner data
      */
-    void write_vtk_node_data(const std::vector<unsigned int> &permutation_corner_vec);
+    void write_vtk_node_data(void);
 
     /**
      * \brief Write data on elements to the VTK file (.vtu)
@@ -185,7 +183,7 @@ protected:
     *
     * Tags of native data are subtags of 'Flow123dData' tag, that is subtag of 'Piece' tag
     */
-  void write_vtk_native_data(const std::vector<unsigned int> &permutation_vec);
+  void write_vtk_native_data(void);
 
    /**
     * \brief Write tail of VTK file (.vtu)

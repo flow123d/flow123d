@@ -79,7 +79,7 @@ void OutputMSH::write_msh_geometry(void)
     // Write information about nodes
     file << "$Nodes" << endl;
     file << this->nodes_->n_values() << endl;
-    bool is_corner_output = (this->nodes_->n_values() != output_mesh_->orig_mesh_->node_permutation_vec().size());
+    bool is_corner_output = (this->nodes_->n_values() != output_mesh_->orig_mesh_->n_permuted_nodes());
     unsigned int i_gmsh_node;
     auto &id_node_vec = *( this->node_ids_->get_component_data(0).get() );
     for(unsigned int i_node=0; i_node < id_node_vec.size(); ++i_node) {
@@ -118,7 +118,7 @@ void OutputMSH::write_msh_topology(void)
     file << "$Elements" << endl;
     file << this->offsets_->n_values() << endl;
     ElementAccessor<OutputElement::spacedim> elm;
-    bool is_corner_output = (this->nodes_->n_values() != output_mesh_->orig_mesh_->node_permutation_vec().size());
+    bool is_corner_output = (this->nodes_->n_values() != output_mesh_->orig_mesh_->n_permuted_nodes());
     unsigned int gmsh_id;
     for(unsigned int i_elm=0; i_elm < id_elem_vec.size(); ++i_elm) {
         unsigned int i_gmsh_elm = output_mesh_->orig_mesh_->element_permutation(i_elm);
