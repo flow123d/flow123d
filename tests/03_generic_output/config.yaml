@@ -5,7 +5,6 @@ common_config:
 test_cases:
 - files:
     - 01_darcy_unsteady_nobalance.yaml
-    - 02_richards_nobalance.yaml
     - 03_darcy_frac_nobalance.yaml
     - 04_fv_dp_sorp_small_nobalance.yaml
     - 05_fv_dp_sorp_small_output_input_fields.yaml
