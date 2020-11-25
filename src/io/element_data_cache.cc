@@ -134,10 +134,10 @@ void ElementDataCache<T>::print_ascii(ostream &out_stream, unsigned int idx)
  *       Class OutputData stores always in raw-first order.
  */
 template <typename T>
-void ElementDataCache<T>::print_ascii_all(ostream &out_stream)
+void ElementDataCache<T>::print_ascii_all(ostream &out_stream, unsigned int start)
 {
     std::vector<T> &vec = *( this->data_[0].get() );
-	for(unsigned int idx = 0; idx < this->n_values_; idx++) {
+	for(unsigned int idx = start; idx < this->n_values_; idx++) {
 	    for(unsigned int i = n_comp_*idx; i < n_comp_*(idx+1); ++i )
     		out_stream << vec[i] << " ";
     }
@@ -146,7 +146,7 @@ void ElementDataCache<T>::print_ascii_all(ostream &out_stream)
 
 /// Prints the whole data vector into stream.
 template <typename T>
-void ElementDataCache<T>::print_binary_all(ostream &out_stream, bool print_data_size)
+void ElementDataCache<T>::print_binary_all(ostream &out_stream, bool print_data_size, unsigned int start)
 {
 	if (print_data_size) {
 		// write size of data
@@ -155,7 +155,7 @@ void ElementDataCache<T>::print_binary_all(ostream &out_stream, bool print_data_
 	}
     // write data
 	std::vector<T> &vec = *( this->data_[0].get() );
-    for(unsigned int idx = 0; idx < this->n_values_; idx++) {
+    for(unsigned int idx = start; idx < this->n_values_; idx++) {
     	for(unsigned int i = n_comp_*idx; i < n_comp_*(idx+1); ++i )
     		out_stream.write(reinterpret_cast<const char*>(&(vec[i])), sizeof(T));
     }

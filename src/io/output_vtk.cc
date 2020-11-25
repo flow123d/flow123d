@@ -282,7 +282,7 @@ std::shared_ptr<ElementDataCache<unsigned int>> OutputVTK::fill_element_types_da
 
 
 
-void OutputVTK::write_vtk_data(OutputTime::OutputDataPtr output_data)
+void OutputVTK::write_vtk_data(OutputTime::OutputDataPtr output_data, unsigned int start)
 {
     // names of types in DataArray section
 	static const std::vector<std::string> types = {
@@ -306,7 +306,7 @@ void OutputVTK::write_vtk_data(OutputTime::OutputDataPtr output_data)
     	// ascii output
     	file << ">" << endl;
     	//file << std::fixed << std::setprecision(10); // Set precision to max
-    	output_data->print_ascii_all(file);
+    	output_data->print_ascii_all(file, start);
     	file << "\n</DataArray>" << endl;
     } else {
     	// binary output is stored to appended_data_ stream
@@ -315,10 +315,10 @@ void OutputVTK::write_vtk_data(OutputTime::OutputDataPtr output_data)
     	file    << " offset=\"" << appended_data_.tellp() << "\" ";
     	file    << "RangeMin=\"" << range_min << "\" RangeMax=\"" << range_max << "\"/>" << endl;
     	if ( this->variant_type_ == VTKVariant::VARIANT_BINARY_UNCOMPRESSED ) {
-    		output_data->print_binary_all( appended_data_ );
+    		output_data->print_binary_all( appended_data_, true, start );
     	} else { // ZLib compression
     		stringstream uncompressed_data, compressed_data;
-    		output_data->print_binary_all( uncompressed_data, false );
+    		output_data->print_binary_all( uncompressed_data, false, start );
     		this->compress_data(uncompressed_data, compressed_data);
     		appended_data_ << compressed_data.str();
     	}
