@@ -90,7 +90,7 @@ protected:
     {
         Profiler::instance();
         FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/test_2_elem.msh", FilePath::input_file);
-        my_mesh = mesh_full_constructor("{mesh_file=\"" + (string)mesh_file + "\"}");
+        my_mesh = mesh_full_constructor("{ mesh_file=\"" + (string)mesh_file + "\", optimize_mesh=false }");
 
         component_names = { "comp_0", "comp_1", "comp_2" };
         stream = std::make_shared<OutputVTKTest>();

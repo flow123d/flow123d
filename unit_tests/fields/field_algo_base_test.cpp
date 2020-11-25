@@ -60,7 +60,7 @@ public:
 	    Profiler::instance();
 	    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-	    my_mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
+	    my_mesh = mesh_full_constructor("{ mesh_file=\"mesh/simplest_cube.msh\", optimize_mesh=false }");
 
 
 	    field_.name("test_field");
@@ -602,7 +602,7 @@ TEST(Field, init_from_input) {
 	Profiler::instance();
 	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-	Mesh * mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
+	Mesh * mesh = mesh_full_constructor("{ mesh_file=\"mesh/simplest_cube.msh\", optimize_mesh=false }");
 
     Field<3, FieldValue<3>::Enum > sorption_type;
     Field<3, FieldValue<3>::VectorFixed > init_conc;
@@ -746,7 +746,7 @@ TEST(Field, field_result) {
 
     TimeGovernor tg(0.0, 1.0);
 
-    Mesh * mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
+    Mesh * mesh = mesh_full_constructor("{ mesh_file=\"mesh/simplest_cube.msh\", optimize_mesh=false }");
 
     it::Array main_array =IT::Array(
             TestFieldSet().make_field_descriptor_type("TestFieldSet")
@@ -821,7 +821,7 @@ TEST(Field, init_from_default) {
 
     Profiler::instance();
     
-    Mesh * mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
+    Mesh * mesh = mesh_full_constructor("{ mesh_file=\"mesh/simplest_cube.msh\", optimize_mesh=false }");
 
     Space<3>::Point p("1 2 3");
 
@@ -891,7 +891,7 @@ TEST(Field, disable_where) {
 
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-    Mesh * mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
+    Mesh * mesh = mesh_full_constructor("{ mesh_file=\"mesh/simplest_cube.msh\", optimize_mesh=false }");
 
     bc_type.set_mesh(*mesh);
     bc_flux.set_mesh(*mesh);
@@ -982,7 +982,7 @@ TEST(Field, field_values) {
 	Profiler::instance();
 	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-	Mesh * mesh = mesh_full_constructor("{mesh_file=\"mesh/cube_2x1.msh\"}");
+	Mesh * mesh = mesh_full_constructor("{ mesh_file=\"mesh/cube_2x1.msh\", optimize_mesh=false }");
 	std::shared_ptr<DOFHandlerMultiDim> dh = std::make_shared<DOFHandlerMultiDim>(*mesh);
 
     Field<3, FieldValue<0>::Enum > color_field;

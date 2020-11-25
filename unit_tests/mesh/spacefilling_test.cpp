@@ -331,7 +331,8 @@ TEST(Spacefilling, space_filling) {
             for (const std::string& shape : shapes) {
                 
                 const std::string meshName = shape + '_' + structure + '_' + "3D" + '_' + size;
-                const std::string meshNameJson = "{mesh_file=\"mesh/" + meshName + ".msh\"}";
+                //optimize_mesh=false is necessary for explicit call of optimizer
+                const std::string meshNameJson = " {mesh_file=\"mesh/" + meshName + ".msh\", optimize_mesh=false }";
                 
                 std::cout << '(' << progressIndex <<  "/40)" << '\n';
                 ++progressIndex;

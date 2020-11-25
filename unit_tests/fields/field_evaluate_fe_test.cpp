@@ -116,7 +116,7 @@ public:
         PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
 
         data_ = std::make_shared<EqData>();
-        mesh_ = mesh_full_constructor("{mesh_file=\"mesh/cube_2x1.msh\"}");
+        mesh_ = mesh_full_constructor("{ mesh_file=\"mesh/cube_2x1.msh\", optimize_mesh=false }");
         dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
     }
 
@@ -305,7 +305,7 @@ public:
         PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
 
         data_ = std::make_shared<EqData>();
-        mesh_ = mesh_full_constructor("{mesh_file=\"mesh/test_27936_elem.msh\"}");
+        mesh_ = mesh_full_constructor("{ mesh_file=\"mesh/test_27936_elem.msh\", optimize_mesh=false }");
     	MixedPtr<FE_RT0> fe_rt0;
         std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh_, fe_rt0);
         dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);

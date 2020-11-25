@@ -156,7 +156,7 @@ public:
      * Allow to make optimization of elements and nodes order if flag optimize_mesh is set
      * Returns pointer to Mesh.
      */
-    static Mesh * mesh_factory(const Input::Record &input_mesh_rec, bool optimize_mesh=false);
+    static Mesh * mesh_factory(const Input::Record &input_mesh_rec);
 
     /**
      * Reads @p raw data of mesh (only nodes and elements) from the GMSH or VTKfile.

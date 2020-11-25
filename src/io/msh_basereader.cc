@@ -22,7 +22,6 @@
 #include "io/msh_vtkreader.hh"
 #include "io/msh_pvdreader.hh"
 #include "mesh/mesh.h"
-#include "mesh/mesh_optimizer.hh"
 #include "system/sys_profiler.hh"
 
 
@@ -50,7 +49,7 @@ std::shared_ptr< BaseMeshReader > BaseMeshReader::reader_factory(const FilePath 
 	return reader_ptr;
 }
 
-Mesh * BaseMeshReader::mesh_factory(const Input::Record &input_mesh_rec, bool optimize_mesh) {
+Mesh * BaseMeshReader::mesh_factory(const Input::Record &input_mesh_rec) {
     START_TIMER("BaseMeshReader - mesh factory");
 
 	Input::Array region_list;
@@ -64,20 +63,6 @@ Mesh * BaseMeshReader::mesh_factory(const Input::Record &input_mesh_rec, bool op
 		}
 		reader->read_raw_mesh(mesh);
     } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, input_mesh_rec)
-
-    // Optimize mesh
-    if (optimize_mesh) {
-        START_TIMER("HC mesh optimizer");
-
-        MeshOptimizer mo(mesh);
-        mo.calculate_sizes();
-        mo.calculate_node_curve_values_as_hilbert();
-        mo.calculate_element_curve_values_as_hilbert_of_centers();
-        mo.sort_nodes();
-        mo.sort_elements();
-
-        END_TIMER("HC mesh optimizer");
-    } // */
 
     mesh->setup_topology();
     mesh->check_and_finish();

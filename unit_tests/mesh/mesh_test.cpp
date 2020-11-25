@@ -106,6 +106,7 @@ regions:
    region_ids:
     - 39
     - 40
+optimize_mesh: false
 )YAML";
 
 TEST(Mesh, init_from_input) {

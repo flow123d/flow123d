@@ -49,7 +49,7 @@ TEST(OutputMesh, create_identical)
 {
     // read mesh - simplest cube from test1
     FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
-    Mesh *mesh = mesh_full_constructor("{mesh_file=\"" + (string)mesh_file + "\"}");
+    Mesh *mesh = mesh_full_constructor("{ mesh_file=\"" + (string)mesh_file + "\", optimize_mesh=false }");
     
     auto output_mesh = std::make_shared<OutputMeshTest>(*mesh);
     output_mesh->create_sub_mesh();

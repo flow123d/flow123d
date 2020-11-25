@@ -44,6 +44,7 @@
 
 #include "mesh/bih_tree.hh"
 #include "mesh/duplicate_nodes.h"
+#include "mesh/mesh_optimizer.hh"
 
 #include "intersection/mixed_mesh_intersections.hh"
 
@@ -92,7 +93,9 @@ const IT::Record & Mesh::get_input_type() {
                      "element in plan view (Z projection).")
         .declare_key("raw_ngh_output", IT::FileName::output(), IT::Default::optional(),
                      "Output file with neighboring data from mesh.")
-		.close();
+        .declare_key("optimize_mesh", IT::Bool(), IT::Default("true"), "If true, make optimization of nodes and elements order. "
+        		     "This will speed up the calculations in assembations.")
+        .close();
 }
 
 const unsigned int Mesh::undef_idx;
@@ -386,8 +389,21 @@ void Mesh::check_mesh_on_read() {
 }
 
 void Mesh::setup_topology() {
+    if ( in_record_.val<bool>("optimize_mesh") ) {
+        START_TIMER("MESH - optimizer");
+
+        MeshOptimizer mo(this);
+        mo.calculate_sizes();
+        mo.calculate_node_curve_values_as_hilbert();
+        mo.calculate_element_curve_values_as_hilbert_of_centers();
+        mo.sort_nodes();
+        mo.sort_elements();
+
+        END_TIMER("MESH - optimizer");
+    }
+
     START_TIMER("MESH - setup topology");
-    
+
     count_element_types();
     check_mesh_on_read();
 
