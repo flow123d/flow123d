@@ -638,7 +638,7 @@ void OutputMeshDiscontinuous::create_refined_sub_mesh()
 
     node_vec.reserve(4*orig_mesh_->n_nodes());
     conn_vec.reserve(4*4*orig_mesh_->n_elements());
-    offset_vec.reserve(4*orig_mesh_->n_elements()+1);
+    offset_vec.reserve(4*orig_mesh_->n_elements()+4);
     offset_vec.push_back(0);
 
     LongIdx *el_4_loc = orig_mesh_->get_el_4_loc();
@@ -704,7 +704,7 @@ void OutputMeshDiscontinuous::create_refined_sub_mesh()
     offsets_->set_n_values(offset_vec.size());
 
     // Create special distributions and arrays of local to global indexes of refined mesh
-	el_ds_ = new Distribution(offset_vec.size(), PETSC_COMM_WORLD);
+	el_ds_ = new Distribution(offset_vec.size()-1, PETSC_COMM_WORLD);
 	node_ds_ = new Distribution(offset_vec[offset_vec.size()-1], PETSC_COMM_WORLD);
 	n_local_nodes_ = node_ds_->lsize();
 	el_4_loc_ = new LongIdx [ el_ds_->lsize() ];
