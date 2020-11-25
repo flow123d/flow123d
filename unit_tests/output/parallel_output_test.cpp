@@ -167,7 +167,7 @@ TEST_F(TestParallelOutput, continuous_mesh)
     if (rank == 0) {
         std::vector<double> expected_nodes = { -3, 3, 0, 3, 3, 0, 3, -3, 0, -3, -3, 0 };
         std::vector<unsigned int> expected_connectivities = { 0, 3, 2, 0, 2, 1 };
-        std::vector<unsigned int> expected_offsets = { 3, 6 };
+        std::vector<unsigned int> expected_offsets = { 0, 3, 6 };
         auto &node_vec = *( stream->nodes_cache()->get_component_data(0).get() );
         for (unsigned int i=0; i<node_vec.size(); ++i) EXPECT_DOUBLE_EQ( node_vec[i], expected_nodes[i]);
         auto &conn_vec = *( stream->connectivity_cache()->get_component_data(0).get() );
@@ -206,7 +206,7 @@ TEST_F(TestParallelOutput, discontinuous_mesh)
     if (rank == 0) {
         std::vector<double> expected_nodes = { -3, 3, 0, -3, -3, 0, 3, -3, 0, -3, 3, 0, 3, -3, 0, 3, 3, 0 };
         std::vector<unsigned int> expected_connectivities = { 0, 1, 2, 3, 4, 5 };
-        std::vector<unsigned int> expected_offsets = { 3, 6 };
+        std::vector<unsigned int> expected_offsets = { 0, 3, 6 };
         auto &node_vec = *( stream->nodes_cache()->get_component_data(0).get() );
         for (unsigned int i=0; i<node_vec.size(); ++i) EXPECT_DOUBLE_EQ( node_vec[i], expected_nodes[i]);
         auto &conn_vec = *( stream->connectivity_cache()->get_component_data(0).get() );

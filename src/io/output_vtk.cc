@@ -242,28 +242,15 @@ void OutputVTK::write_vtk_vtu_head(void)
 std::shared_ptr<ElementDataCache<unsigned int>> OutputVTK::fill_element_types_data()
 {    
     auto &offsets = *( this->offsets_->get_component_data(0).get() );
-    unsigned int n_elements = offsets.size();
+    unsigned int n_elements = offsets.size()-1;
     
     auto types = std::make_shared<ElementDataCache<unsigned int>>("types", (unsigned int)ElementDataCacheBase::N_SCALAR, n_elements);
     std::vector< unsigned int >& data = *( types->get_component_data(0).get() );
     int n_nodes;
     
-    n_nodes = offsets[0];
-    switch(n_nodes) {
-        case 2:
-            data[0] = (unsigned int)VTK_LINE;
-            break;
-        case 3:
-            data[0] = (unsigned int)VTK_TRIANGLE;
-            break;
-        case 4:
-            data[0] = (unsigned int)VTK_TETRA;
-            break;
-        }
-    
-    for(unsigned int i=1; i < n_elements; i++)
+    for(unsigned int i=0; i < n_elements; i++)
     {
-        n_nodes = offsets[i]-offsets[i-1];
+        n_nodes = offsets[i+1]-offsets[i];
         switch(n_nodes) {
         case 2:
             data[i] = (unsigned int)VTK_LINE;
@@ -551,7 +538,7 @@ void OutputVTK::write_vtk_vtu(void)
 
     /* Write Piece begin */
     file << "<Piece NumberOfPoints=\"" << this->nodes_->n_values()
-              << "\" NumberOfCells=\"" << this->offsets_->n_values() <<"\">" << endl;
+              << "\" NumberOfCells=\"" << this->offsets_->n_values()-1 <<"\">" << endl;
 
     /* Write VTK Geometry */
     file << "<Points>" << endl;
@@ -561,7 +548,7 @@ void OutputVTK::write_vtk_vtu(void)
     /* Write VTK Topology */
     file << "<Cells>" << endl;
         write_vtk_data(this->connectivity_);
-        write_vtk_data(this->offsets_);
+        write_vtk_data(this->offsets_, 1);
         auto types = fill_element_types_data();
        	write_vtk_data( types );
     file << "</Cells>" << endl;

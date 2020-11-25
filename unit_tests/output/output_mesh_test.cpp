@@ -33,11 +33,11 @@ public:
         this->connectivity_->print_ascii_all(std::cout);
         std::cout << endl;
         std::cout << "offsets: ";
-        this->offsets_->print_ascii_all(std::cout);
+        this->offsets_->print_ascii_all(std::cout, 1);
         std::cout << endl;
 
         EXPECT_EQ(this->nodes_->n_values(), mesh->n_nodes());
-        EXPECT_EQ(this->offsets_->n_values(), mesh->n_elements());
+        EXPECT_EQ(this->offsets_->n_values()-1, mesh->n_elements());
     }
 
     ~OutputMeshTest() {}
