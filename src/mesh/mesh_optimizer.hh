@@ -91,22 +91,6 @@ public:
         }
     }
 
-    inline void calculate_node_curve_values_as_mean_of_coords() {
-        node_refs_.reserve(mesh_->n_nodes());
-        for (uint i = 0; i < mesh_->n_nodes(); ++i) {
-            const Vec3 tmp_norm = normalizer_.normalize(mesh_->nodes_.vec<3>(i));
-            node_refs_.emplace_back(i, (tmp_norm[0] + tmp_norm[1] + tmp_norm[2]) / 3);
-        }
-    }
-
-    inline void calculate_node_curve_values_as_first_coord() {
-        node_refs_.reserve(mesh_->n_nodes());
-        for (uint i = 0; i < mesh_->n_nodes(); ++i) {
-            const Vec3 tmp_norm = normalizer_.normalize(mesh_->nodes_.vec<3>(i));
-            node_refs_.emplace_back(i, tmp_norm[0]);
-        }
-    }
-
     inline void calculate_node_curve_values_as_obtained_from_elements() {
         node_refs_.reserve(mesh_->n_nodes());
         for (uint i = 0; i < mesh_->n_elements(); ++i) {
@@ -114,18 +98,6 @@ public:
             for (uint j = 0; j < el.dim() + 1; ++j) {
                 node_refs_.emplace_back(el.nodes_[j], element_refs_[i].curve_value_);
             }
-        }
-    }
-
-    inline void calculate_element_curve_values_as_mean_of_nodes() {
-        element_refs_.reserve(mesh_->n_elements());
-        for (uint i = 0; i < mesh_->n_elements(); ++i) {
-            const std::array<uint, 4>& nodeIndexes = mesh_->element_vec_[i].nodes_;
-            double tmp_sum = 0;
-            for (uint j = 0; j < mesh_->element_vec_[i].dim() + 1; ++j) {
-                tmp_sum += node_refs_[nodeIndexes[j]].curve_value_;
-            }
-            element_refs_.emplace_back(i, tmp_sum / (mesh_->element_vec_[i].dim() + 1));
         }
     }
 
@@ -140,22 +112,6 @@ public:
         element_refs_.reserve(mesh_->n_elements());
         for (uint i = 0; i < mesh_->n_elements(); ++i) {
             element_refs_.emplace_back(i, zcurve_value(normalizer_.normalize(ElementAccessor<3>(mesh_, i).centre()), normalizer_.normalize(element_sizes_[i]), mesh_->element_vec_[i].dim()));
-        }
-    }
-
-    inline void calculate_element_curve_values_as_mean_of_coords() {
-        element_refs_.reserve(mesh_->n_elements());
-        for (uint i = 0; i < mesh_->n_elements(); ++i) {
-            Vec3 tmp_norm = normalizer_.normalize(ElementAccessor<3>(mesh_, i).centre());
-            element_refs_.emplace_back(i, (tmp_norm[0] + tmp_norm[1] + tmp_norm[2]) / 3);
-        }
-    }
-
-    inline void calculate_element_curve_values_as_first_coord() {
-        element_refs_.reserve(mesh_->n_elements());
-        for (uint i = 0; i < mesh_->n_elements(); ++i) {
-            Vec3 tmpNorm = normalizer_.normalize(ElementAccessor<3>(mesh_, i).centre());
-            element_refs_.emplace_back(i, tmpNorm[0]);
         }
     }
 
