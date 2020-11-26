@@ -107,13 +107,13 @@ private:
     void write_msh_topology(void);
 
     /**
-     * \brief This function writes ascii data to GMSH (.msh) output file.
+     * \brief This function writes nodes / elements ascii data to GMSH (.msh) output file.
      *
-     * \param[in]   id_cache     Data cache of node or element ids.
-     * \param[in]   output_data  The pointer at structure storing pointer at own data.
-     * \param[in]   discont      Flag determines continuous or discontinuous mesh.
+     * \param[in]   id_cache      Data cache of node or element ids.
+     * \param[in]   output_data   The pointer at structure storing pointer at own data.
+     * \param[in]   permutations  Permutation vector of optimized order of nodes / elements.
      */
-    //void write_msh_ascii_data(std::shared_ptr<ElementDataCache<unsigned int>> id_cache, OutputDataPtr output_data, bool discont = false);
+    void write_msh_ascii_data(std::shared_ptr<ElementDataCache<unsigned int>> id_cache, OutputDataPtr output_data, const std::vector<unsigned int> &permutations);
 
     /**
      * \brief This function write all data on nodes to output file. This function

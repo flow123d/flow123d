@@ -360,10 +360,10 @@ public:
         return element_ids_[pos];
     }
 
-    /// Return permutation of element on given position
-    inline unsigned int element_permutation(unsigned int pos) const
+    /// Return permutation vector of elements
+    inline const std::vector<unsigned int> &element_permutations() const
     {
-        return elem_permutation_[pos];
+        return elem_permutation_;
     }
 
     /// For node of given node_id returns index in element_vec_ or (-1) if node doesn't exist.
@@ -378,16 +378,10 @@ public:
         return node_ids_[pos];
     }
 
-    /// Return permutation of node on given position
-    inline unsigned int node_permutation(unsigned int pos) const
+    /// Return permutation vector of nodes
+    inline const std::vector<unsigned int> &node_permutations() const
     {
-        return node_permutation_[pos];
-    }
-
-    /// Return size of permutation node vector
-    inline unsigned int n_permuted_nodes() const
-    {
-        return node_permutation_.size();
+        return node_permutation_;
     }
 
     /// Check if given index is in element_vec_
