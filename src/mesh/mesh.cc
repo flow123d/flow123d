@@ -396,8 +396,23 @@ void Mesh::setup_topology() {
         mo.calculate_sizes();
         mo.calculate_node_curve_values_as_hilbert();
         mo.calculate_element_curve_values_as_hilbert_of_centers();
-        mo.sort_nodes();
-        mo.sort_elements();
+
+        this->node_ids_ = mo.sort_nodes(this->node_permutation_);
+        Armor::Array<double> nodes_backup = this->nodes_;
+        for (uint i = 0; i < this->element_vec_.size(); ++i) {
+            for (uint j = 0; j < this->element_vec_[i].dim() + 1; ++j) {
+                this->element_vec_[i].nodes_[j] = this->node_permutation_[this->element_vec_[i].nodes_[j]];
+            }
+        }
+        for (uint i = 0; i < this->n_nodes(); ++i) {
+        	this->nodes_.set(node_permutation_[i]) = nodes_backup.vec<3>(i);
+        }
+
+        this->element_ids_ = mo.sort_elements(this->elem_permutation_);
+        std::vector<Element> elements_backup = this->element_vec_;
+        for (uint i = 0; i < bulk_size_; ++i) {
+            this->element_vec_[elem_permutation_[i]] = elements_backup[i];
+        }
 
         END_TIMER("MESH - optimizer");
     }

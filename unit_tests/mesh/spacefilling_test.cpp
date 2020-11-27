@@ -340,8 +340,8 @@ TEST(Spacefilling, space_filling) {
                 Mesh * mesh = mesh_full_constructor(meshNameJson);
                 
                 MeshOptimizer backuper(mesh);
-                std::vector<Element> elementsBackup = backuper.get_elements();
-                Armor::Array<double> nodesBackup = backuper.get_nodes();
+                std::vector<Element> elementsBackup = backuper.get_elements(); // method removed
+                Armor::Array<double> nodesBackup = backuper.get_nodes(); // method removed
                 
                 std::cout << meshName << '\n';
                 std::cout << "nNodes: " << mesh->n_nodes() << '\n';
@@ -454,8 +454,8 @@ TEST(Spacefilling, space_filling) {
                     std::cout << "result 5: " << results[4] << '\n';
                     tw.writeTime(meshName + "_hilbert", stopwatch.microseconds());
                     std::cout << "copying mesh from backup" << '\n';
-                    mo.set_elements(elementsBackup);
-                    mo.set_nodes(nodesBackup);
+                    mo.set_elements(elementsBackup); // method removed
+                    mo.set_nodes(nodesBackup); // method removed
                 }
                 
                 {

@@ -73,8 +73,7 @@ public:
             tmp_armas.push_back(mesh_->nodes_.vec<3>(i));
         }
         BoundingBox bounding_box(tmp_armas);
-        const Vec3 dimensions = arma::vec3(bounding_box.max() - bounding_box.min());
-        normalizer_ = Normalizer(bounding_box.min(), std::max({dimensions[0], dimensions[1], dimensions[2]}));
+        normalizer_ = Normalizer(bounding_box.min(), arma::vec3(bounding_box.max() - bounding_box.min()).max());
     }
 
     inline void calculate_node_curve_values_as_hilbert() {
@@ -115,73 +114,14 @@ public:
         }
     }
 
-    inline void sort_nodes() {
-        std::sort(node_refs_.begin(), node_refs_.end());
-        std::vector<uint> new_node_indexes(node_refs_.size());
-        Armor::Array<double> nodes_backup = mesh_->nodes_;
-        for (uint i = 0; i < node_refs_.size(); ++i) {
-        	new_node_indexes[node_refs_[i].original_index_] = i;
-        }
-        for (uint i = 0; i < mesh_->element_vec_.size(); ++i) {
-            for (uint j = 0; j < mesh_->element_vec_[i].dim() + 1; ++j) {
-                mesh_->element_vec_[i].nodes_[j] = new_node_indexes[mesh_->element_vec_[i].nodes_[j]];
-            }
-        }
-        std::vector<unsigned int> new_node_permutation(node_refs_.size());
-        BidirectionalMap<int> node_ids;
-        node_ids.reserve(node_refs_.size());
-        for (uint i = 0; i < node_refs_.size(); ++i) {
-            mesh_->nodes_.set(i) = nodes_backup.vec<3>(node_refs_[i].original_index_);
-            new_node_permutation[ node_refs_[i].original_index_ ] = i;
-            node_ids.add_item( mesh_->find_node_id(node_refs_[i].original_index_) );
-        }
-        mesh_->node_permutation_ = new_node_permutation;
-        mesh_->node_ids_ = node_ids;
+    inline BidirectionalMap<int> sort_nodes(std::vector<unsigned int> & node_permutation) {
+        return this->sort(node_refs_, node_permutation);
     }
 
-    inline void sort_elements() {
-        std::sort(element_refs_.begin(), element_refs_.end());
-        std::vector<Element> elements_backup = mesh_->element_vec_;
-        std::vector<unsigned int> new_elem_permutation(element_refs_.size());
-        BidirectionalMap<int> element_ids;
-        element_ids.reserve(element_refs_.size());
-        for (uint i = 0; i < element_refs_.size(); ++i) {
-            mesh_->element_vec_[i] = elements_backup[element_refs_[i].original_index_];
-            new_elem_permutation[ element_refs_[i].original_index_ ] = i;
-            element_ids.add_item( mesh_->find_elem_id(element_refs_[i].original_index_) );
-        }
-        mesh_->elem_permutation_ = new_elem_permutation;
-        mesh_->element_ids_ = element_ids;
+    inline BidirectionalMap<int> sort_elements(std::vector<unsigned int> & elem_permutation) {
+        return this->sort(element_refs_, elem_permutation);
     }
 
-    void copy_mesh_from(const Mesh& from) {
-        for (uint i = 0; i < from.n_elements(); ++i) {
-            for (uint j = 0; j < from.element_vec_[i].dim() + 1; ++j) {
-                mesh_->element_vec_[i].nodes_[j] = from.element_vec_[i].nodes_[j];
-            }
-        }
-        mesh_->nodes_ = from.nodes_;
-    }
-
-    inline std::vector<Element> get_elements() const {
-    	ASSERT_PTR_DBG(mesh_);
-        return mesh_->element_vec_;
-    }
-
-    inline Armor::Array<double> get_nodes() const {
-    	ASSERT_PTR_DBG(mesh_);
-        return mesh_->nodes_;
-    }
-
-    void set_elements(const std::vector<Element>& els) {
-    	ASSERT_PTR_DBG(mesh_);
-        mesh_->element_vec_ = els;
-    }
-
-    void set_nodes(const Armor::Array<double>& nds) {
-    	ASSERT_PTR_DBG(mesh_);
-        mesh_->nodes_ = nds;
-    }
 private:
     Mesh* mesh_;
     std::vector<Permutee> node_refs_;
@@ -371,6 +311,19 @@ private:
             return 0.0; // should not happen
         }
     }
+
+    inline BidirectionalMap<int> sort(std::vector<Permutee> &refs, std::vector<unsigned int> &mesh_perm) {
+    	ASSERT_DBG(refs.size() <= mesh_perm.size());
+        std::sort(refs.begin(), refs.end());
+        BidirectionalMap<int> mesh_ids;
+        mesh_ids.reserve(refs.size());
+        for (uint i = 0; i < refs.size(); ++i) {
+            mesh_perm[ refs[i].original_index_ ] = i;
+            mesh_ids.add_item( mesh_->find_elem_id(refs[i].original_index_) );
+        }
+        return mesh_ids;
+    }
+
 };
 
 /*template<>
