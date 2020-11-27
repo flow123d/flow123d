@@ -114,11 +114,11 @@ public:
         }
     }
 
-    inline BidirectionalMap<int> sort_nodes(std::vector<unsigned int> & node_permutation) {
+    inline std::vector<int> sort_nodes(std::vector<unsigned int> & node_permutation) {
         return this->sort(node_refs_, node_permutation);
     }
 
-    inline BidirectionalMap<int> sort_elements(std::vector<unsigned int> & elem_permutation) {
+    inline std::vector<int> sort_elements(std::vector<unsigned int> & elem_permutation) {
         return this->sort(element_refs_, elem_permutation);
     }
 
@@ -312,14 +312,14 @@ private:
         }
     }
 
-    inline BidirectionalMap<int> sort(std::vector<Permutee> &refs, std::vector<unsigned int> &mesh_perm) {
+    inline std::vector<int> sort(std::vector<Permutee> &refs, std::vector<unsigned int> &mesh_perm) {
     	ASSERT_DBG(refs.size() <= mesh_perm.size());
         std::sort(refs.begin(), refs.end());
-        BidirectionalMap<int> mesh_ids;
+        std::vector<int> mesh_ids;
         mesh_ids.reserve(refs.size());
         for (uint i = 0; i < refs.size(); ++i) {
             mesh_perm[ refs[i].original_index_ ] = i;
-            mesh_ids.add_item( mesh_->find_elem_id(refs[i].original_index_) );
+            mesh_ids.push_back( refs[i].original_index_ );
         }
         return mesh_ids;
     }

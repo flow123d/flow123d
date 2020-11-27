@@ -391,29 +391,7 @@ void Mesh::check_mesh_on_read() {
 void Mesh::setup_topology() {
     if ( in_record_.val<bool>("optimize_mesh") ) {
         START_TIMER("MESH - optimizer");
-
-        MeshOptimizer mo(this);
-        mo.calculate_sizes();
-        mo.calculate_node_curve_values_as_hilbert();
-        mo.calculate_element_curve_values_as_hilbert_of_centers();
-
-        this->node_ids_ = mo.sort_nodes(this->node_permutation_);
-        Armor::Array<double> nodes_backup = this->nodes_;
-        for (uint i = 0; i < this->element_vec_.size(); ++i) {
-            for (uint j = 0; j < this->element_vec_[i].dim() + 1; ++j) {
-                this->element_vec_[i].nodes_[j] = this->node_permutation_[this->element_vec_[i].nodes_[j]];
-            }
-        }
-        for (uint i = 0; i < this->n_nodes(); ++i) {
-        	this->nodes_.set(node_permutation_[i]) = nodes_backup.vec<3>(i);
-        }
-
-        this->element_ids_ = mo.sort_elements(this->elem_permutation_);
-        std::vector<Element> elements_backup = this->element_vec_;
-        for (uint i = 0; i < bulk_size_; ++i) {
-            this->element_vec_[elem_permutation_[i]] = elements_backup[i];
-        }
-
+        this->optimize();
         END_TIMER("MESH - optimizer");
     }
 
@@ -443,6 +421,39 @@ void Mesh::setup_topology() {
     this->distribute_nodes();
 
     output_internal_ngh_data();
+}
+
+
+void Mesh::optimize() {
+    MeshOptimizer mo(this);
+    mo.calculate_sizes();
+    mo.calculate_node_curve_values_as_hilbert();
+    mo.calculate_element_curve_values_as_hilbert_of_centers();
+
+    auto new_node_ids = mo.sort_nodes(this->node_permutation_);
+    BidirectionalMap<int> node_ids_backup = this->node_ids_;
+    this->node_ids_.clear();
+    this->node_ids_.reserve(this->n_nodes());
+    Armor::Array<double> nodes_backup = this->nodes_;
+    for (uint i = 0; i < this->element_vec_.size(); ++i) {
+        for (uint j = 0; j < this->element_vec_[i].dim() + 1; ++j) {
+            this->element_vec_[i].nodes_[j] = this->node_permutation_[this->element_vec_[i].nodes_[j]];
+        }
+    }
+    for (uint i = 0; i < this->n_nodes(); ++i) {
+    	this->nodes_.set(node_permutation_[i]) = nodes_backup.vec<3>(i);
+    	this->node_ids_.add_item( node_ids_backup[new_node_ids[i]] );
+    }
+
+    auto new_elem_ids = mo.sort_elements(this->elem_permutation_);
+    BidirectionalMap<int> elem_ids_backup = this->element_ids_;
+    this->element_ids_.clear();
+    this->element_ids_.reserve(bulk_size_);
+    std::vector<Element> elements_backup = this->element_vec_;
+    for (uint i = 0; i < bulk_size_; ++i) {
+        this->element_vec_[elem_permutation_[i]] = elements_backup[i];
+    	this->element_ids_.add_item( elem_ids_backup[new_elem_ids[i]] );
+    }
 }
 
 

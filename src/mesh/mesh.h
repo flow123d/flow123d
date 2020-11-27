@@ -494,6 +494,9 @@ protected:
     /// Output of neighboring data into raw output.
     void output_internal_ngh_data();
     
+    /// Apply functionality of MeshOptimizer to sort nodes and elements.
+    void optimize();
+
     /**
      * Database of regions (both bulk and boundary) of the mesh. Regions are logical parts of the
      * domain that allows setting of different data and boundary conditions on them.
