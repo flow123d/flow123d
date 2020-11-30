@@ -60,7 +60,7 @@ public:
         node_sizes_.resize(mesh_->n_nodes(), INFINITY);
         element_sizes_.reserve(mesh_->n_elements());
         for (const ElementAccessor<3>& elm : mesh_->elements_range()) {
-            double elm_size = this->calculate_size_of_element(elm);
+            double elm_size = elm.bounding_box().longest_size();
             element_sizes_.push_back(elm_size);
             const Element& el = *elm.element();
             for (uint i = 0; i < elm.dim() + 1; ++i) {
