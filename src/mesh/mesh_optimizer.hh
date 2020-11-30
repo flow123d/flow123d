@@ -41,9 +41,6 @@ struct Normalizer {
     inline Vec3 normalize(const Vec3 vec) {
         return arma::vec3((vec.arma() - shift_.arma()) / scalar_);
     }
-    inline double normalize(double size) {
-        return size / scalar_;
-    }
     Vec3 shift_;
     double scalar_;
 };
@@ -57,36 +54,38 @@ public:
     inline MeshOptimizer(Mesh* mesh) : mesh_(mesh) {}
 
     inline void calculate_sizes() {
+    	BoundingBox bounding_box( *mesh_->node(0) );
+    	for (auto nod : mesh_->node_range()) {
+    	    bounding_box.expand(*nod);
+    	}
+    	double mesh_longest_size = bounding_box.longest_size();
+    	normalizer_ = Normalizer(bounding_box.min(), mesh_longest_size);
+
         node_sizes_.resize(mesh_->n_nodes(), INFINITY);
         element_sizes_.reserve(mesh_->n_elements());
         for (const ElementAccessor<3>& elm : mesh_->elements_range()) {
-            double elm_size = elm.bounding_box().longest_size();
-            element_sizes_.push_back(elm_size);
-            const Element& el = *elm.element();
+            double elm_norm_size = elm.bounding_box().longest_size() / mesh_longest_size;
+            element_sizes_.push_back(elm_norm_size);
             for (uint i = 0; i < elm.dim() + 1; ++i) {
-                node_sizes_[el.nodes_[i]] = std::min({node_sizes_[el.nodes_[i]], elm_size});
+                node_sizes_[elm->node_idx(i)] = std::min({ node_sizes_[elm->node_idx(i)], elm_norm_size });
             }
         }
-        std::vector<arma::vec3> tmp_armas;
-        tmp_armas.reserve(mesh_->n_nodes());
-        for (uint i = 0; i < mesh_->n_nodes(); ++i) {
-            tmp_armas.push_back(mesh_->nodes_.vec<3>(i));
-        }
-        BoundingBox bounding_box(tmp_armas);
-        normalizer_ = Normalizer(bounding_box.min(), arma::vec3(bounding_box.max() - bounding_box.min()).max());
     }
 
     inline void calculate_node_curve_values_as_hilbert() {
         node_refs_.reserve(mesh_->n_nodes());
-        for (uint i = 0; i < mesh_->n_nodes(); ++i) {
-            node_refs_.emplace_back(i, hilbert_value(normalizer_.normalize(mesh_->nodes_.vec<3>(i)), normalizer_.normalize(node_sizes_[i]), mesh_->element_vec_[i].dim()));
+        uint i = 0;
+        for (auto nod : mesh_->node_range()) {
+            node_refs_.emplace_back(i, hilbert_value(normalizer_.normalize( *nod ), node_sizes_[i], mesh_->element_vec_[i].dim()));
+            i++;
         }
     }
 
     inline void calculate_node_curve_values_as_zcurve() {
         node_refs_.reserve(mesh_->n_nodes());
-        for (uint i = 0; i < mesh_->n_nodes(); ++i) {
-            node_refs_.emplace_back(i, zcurve_value(normalizer_.normalize(mesh_->nodes_.vec<3>(i)), normalizer_.normalize(node_sizes_[i]), mesh_->element_vec_[i].dim()));
+        uint i = 0;
+        for (auto nod : mesh_->node_range()) {
+            node_refs_.emplace_back(i, zcurve_value(normalizer_.normalize( *nod ), node_sizes_[i], mesh_->element_vec_[i].dim()));
         }
     }
 
@@ -102,15 +101,19 @@ public:
 
     inline void calculate_element_curve_values_as_hilbert_of_centers() {
         element_refs_.reserve(mesh_->n_elements());
-        for (uint i = 0; i < mesh_->n_elements(); ++i) {
-            element_refs_.emplace_back(i, hilbert_value(normalizer_.normalize(ElementAccessor<3>(mesh_, i).centre()), normalizer_.normalize(element_sizes_[i]), mesh_->element_vec_[i].dim()));
+        uint i = 0;
+        for (auto elm : mesh_->elements_range()) {
+            element_refs_.emplace_back(i, hilbert_value(normalizer_.normalize(elm.centre()), element_sizes_[i], elm.dim()));
+            i++;
         }
     }
 
     inline void calculate_element_curve_values_as_zcurve_of_center() {
         element_refs_.reserve(mesh_->n_elements());
-        for (uint i = 0; i < mesh_->n_elements(); ++i) {
-            element_refs_.emplace_back(i, zcurve_value(normalizer_.normalize(ElementAccessor<3>(mesh_, i).centre()), normalizer_.normalize(element_sizes_[i]), mesh_->element_vec_[i].dim()));
+        uint i = 0;
+        for (auto elm : mesh_->elements_range()) {
+            element_refs_.emplace_back(i, zcurve_value(normalizer_.normalize(elm.centre()), element_sizes_[i], elm.dim()));
+            i++;
         }
     }
 
@@ -129,26 +132,6 @@ private:
     std::vector<double> node_sizes_;
     std::vector<double> element_sizes_;
     Normalizer normalizer_;
-
-    inline double calculate_size_of_element(const ElementAccessor<3>& elm) const {
-    	switch (elm.dim()) {
-    	case 1:
-    	    return arma::norm(*elm.node(0) - *elm.node(1));
-    	case 2:
-    	    return std::min({arma::norm(*elm.node(0) - *elm.node(1)),
-                             arma::norm(*elm.node(1) - *elm.node(2)),
-                             arma::norm(*elm.node(2) - *elm.node(0))});
-    	case 3:
-    	    return std::min({arma::norm(*elm.node(0) - *elm.node(1)),
-                             arma::norm(*elm.node(1) - *elm.node(2)),
-                             arma::norm(*elm.node(2) - *elm.node(0)),
-                             arma::norm(*elm.node(3) - *elm.node(0)),
-                             arma::norm(*elm.node(3) - *elm.node(1)),
-                             arma::norm(*elm.node(3) - *elm.node(2))});
-    	default:
-    	    return 0.0; // should not happen
-    	}
-    }
 
     inline double hilbert_value(double x, double eps) const {
         if (eps > 1) {
@@ -327,13 +310,6 @@ private:
 };
 
 /*template<>
-inline double MeshOptimizer<2>::calculate_size_of_element(const ElementAccessor<3>& elm) {
-    return std::min({arma::norm(*elm.node(0) - *elm.node(1)),
-                     arma::norm(*elm.node(1) - *elm.node(2)),
-                     arma::norm(*elm.node(2) - *elm.node(0))});
-}
-
-template <>
 inline double MeshOptimizer<2>::hilbert_value(const Vec3 vec, double size) {
     return hilbert_value(vec[0], vec[1], size * size);
 }
