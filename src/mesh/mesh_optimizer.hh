@@ -49,7 +49,9 @@ inline bool operator<(const Permutee& first, const Permutee& second) {
     return first.curve_value_ < second.curve_value_;
 }
 
+template <uint DIM>
 class MeshOptimizer {
+    static_assert(DIM == 2 || DIM == 3, "DIM must be either 2 or 3.");
 public:
     inline MeshOptimizer(Mesh* mesh) : mesh_(mesh) {}
 
@@ -76,7 +78,7 @@ public:
         node_refs_.reserve(mesh_->n_nodes());
         uint i = 0;
         for (auto nod : mesh_->node_range()) {
-            node_refs_.emplace_back(i, hilbert_value(normalizer_.normalize( *nod ), node_sizes_[i], mesh_->element_vec_[i].dim()));
+            node_refs_.emplace_back(i, hilbert_value(normalizer_.normalize( *nod ), node_sizes_[i]));
             i++;
         }
     }
@@ -85,16 +87,16 @@ public:
         node_refs_.reserve(mesh_->n_nodes());
         uint i = 0;
         for (auto nod : mesh_->node_range()) {
-            node_refs_.emplace_back(i, zcurve_value(normalizer_.normalize( *nod ), node_sizes_[i], mesh_->element_vec_[i].dim()));
+            node_refs_.emplace_back(i, zcurve_value(normalizer_.normalize( *nod ), node_sizes_[i]));
         }
     }
 
     inline void calculate_node_curve_values_as_obtained_from_elements() {
         node_refs_.reserve(mesh_->n_nodes());
         for (uint i = 0; i < mesh_->n_elements(); ++i) {
-            const Element& el = mesh_->element_vec_[element_refs_[i].original_index_];
-            for (uint j = 0; j < el.dim() + 1; ++j) {
-                node_refs_.emplace_back(el.nodes_[j], element_refs_[i].curve_value_);
+        	auto elm = mesh_->element_accessor(element_refs_[i].original_index_);
+            for (uint j = 0; j < elm->dim() + 1; ++j) {
+                node_refs_.emplace_back(elm->node_idx(j), element_refs_[i].curve_value_);
             }
         }
     }
@@ -103,7 +105,7 @@ public:
         element_refs_.reserve(mesh_->n_elements());
         uint i = 0;
         for (auto elm : mesh_->elements_range()) {
-            element_refs_.emplace_back(i, hilbert_value(normalizer_.normalize(elm.centre()), element_sizes_[i], elm.dim()));
+            element_refs_.emplace_back(i, hilbert_value(normalizer_.normalize(elm.centre()), element_sizes_[i]));
             i++;
         }
     }
@@ -112,7 +114,7 @@ public:
         element_refs_.reserve(mesh_->n_elements());
         uint i = 0;
         for (auto elm : mesh_->elements_range()) {
-            element_refs_.emplace_back(i, zcurve_value(normalizer_.normalize(elm.centre()), element_sizes_[i], elm.dim()));
+            element_refs_.emplace_back(i, zcurve_value(normalizer_.normalize(elm.centre()), element_sizes_[i]));
             i++;
         }
     }
@@ -132,18 +134,6 @@ private:
     std::vector<double> node_sizes_;
     std::vector<double> element_sizes_;
     Normalizer normalizer_;
-
-    inline double hilbert_value(double x, double eps) const {
-        if (eps > 1) {
-            return 0;
-        } else {
-            if (x < 0.5) {
-                return hilbert_value(2 * x, 2 * eps) / 2;
-            } else {
-                return (1 + hilbert_value(2 * x - 1, 2 * eps)) / 2;
-            }
-        }
-    }
 
     inline double hilbert_value(double x, double y, double eps) const {
         if (eps > 1) {
@@ -197,18 +187,6 @@ private:
                         return (7 + hilbert_value(2 - 2 * z, 2 * x, 1 - 2 * y, 8 * eps)) / 8;
                     }
                 }
-            }
-        }
-    }
-
-    inline double zcurve_value(double x, double eps) const {
-        if (eps > 1) {
-            return 0;
-        } else {
-            if (x < 0.5) {
-                return zcurve_value(2 * x, 2 * eps) / 2;
-            } else {
-                return (1 + zcurve_value(2 * x - 1, 2 * eps)) / 2;
             }
         }
     }
@@ -269,30 +247,12 @@ private:
         }
     }
 
-    inline double hilbert_value(const Vec3 vec, double size, unsigned int dim) const {
-        switch (dim) {
-        case 1:
-            return hilbert_value(vec[0], size);
-        case 2:
-            return hilbert_value(vec[0], vec[1], size * size);
-        case 3:
-            return hilbert_value(vec[0], vec[1], vec[2], size * size * size);
-        default:
-            return 0.0; // should not happen
-        }
+    inline double hilbert_value(const Vec3 vec, double size) const {
+        return hilbert_value(vec[0], vec[1], vec[2], size * size * size);
     }
 
-    inline double zcurve_value(const Vec3 vec, double size, unsigned int dim) const {
-        switch (dim) {
-        case 1:
-            return zcurve_value(vec[0], size);
-        case 2:
-            return zcurve_value(vec[0], vec[1], size * size);
-        case 3:
-            return zcurve_value(vec[0], vec[1], vec[2], size * size * size);
-        default:
-            return 0.0; // should not happen
-        }
+    inline double zcurve_value(const Vec3 vec, double size) const {
+        return zcurve_value(vec[0], vec[1], vec[2], size * size * size);
     }
 
     inline std::vector<int> sort(std::vector<Permutee> &refs, std::vector<unsigned int> &mesh_perm) {
@@ -309,14 +269,14 @@ private:
 
 };
 
-/*template<>
-inline double MeshOptimizer<2>::hilbert_value(const Vec3 vec, double size) {
+template<>
+inline double MeshOptimizer<2>::hilbert_value(const Vec3 vec, double size) const {
     return hilbert_value(vec[0], vec[1], size * size);
 }
 
 template <>
-inline double MeshOptimizer<2>::zcurve_value(const Vec3 vec, double size) {
+inline double MeshOptimizer<2>::zcurve_value(const Vec3 vec, double size) const {
     return zcurve_value(vec[0], vec[1], size * size);
-}*/
+}
 
 #endif /* MESH_OPTIMIZER_HH_ */

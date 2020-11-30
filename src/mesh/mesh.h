@@ -569,7 +569,6 @@ protected:
     friend class BCMesh;
     template <int spacedim> friend class ElementAccessor;
     template <int spacedim> friend class NodeAccessor;
-    friend class MeshOptimizer;
 
 
 

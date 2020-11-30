@@ -425,7 +425,7 @@ void Mesh::setup_topology() {
 
 
 void Mesh::optimize() {
-    MeshOptimizer mo(this);
+    MeshOptimizer<3> mo(this);
     mo.calculate_sizes();
     mo.calculate_node_curve_values_as_hilbert();
     mo.calculate_element_curve_values_as_hilbert_of_centers();
