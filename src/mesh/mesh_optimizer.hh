@@ -11,24 +11,6 @@
 #include "mesh/range_wrapper.hh"
 #include "bounding_box.hh"
 
-struct Vec3 {
-    inline Vec3(arma::vec3 other) {
-        for (uint i = 0; i < 3; ++i) {
-            data[i] = other[i];
-        }
-    }
-    inline arma::vec3 arma() const {
-        return data;
-    }
-    inline double& operator[](uint i) {
-        return data[i];
-    }
-    inline double operator[](uint i) const {
-        return data[i];
-    }
-    double data[3];
-};
-
 struct Permutee {
     inline Permutee(uint original_index, double curve_value) : original_index_(original_index), curve_value_(curve_value) {}
     uint original_index_;
@@ -37,11 +19,11 @@ struct Permutee {
 
 struct Normalizer {
     inline Normalizer() : shift_({0, 0, 0}), scalar_(1) {}
-    inline Normalizer(Vec3 shift, double scalar) : shift_(shift), scalar_(scalar) {}
-    inline Vec3 normalize(const Vec3 vec) {
-        return arma::vec3((vec.arma() - shift_.arma()) / scalar_);
+    inline Normalizer(arma::vec3 shift, double scalar) : shift_(shift), scalar_(scalar) {}
+    inline arma::vec3 normalize(const arma::vec3 vec) {
+        return (vec - shift_) / scalar_;
     }
-    Vec3 shift_;
+    arma::vec3 shift_;
     double scalar_;
 };
 
@@ -247,11 +229,11 @@ private:
         }
     }
 
-    inline double hilbert_value(const Vec3 vec, double size) const {
+    inline double hilbert_value(arma::vec3 vec, double size) const {
         return hilbert_value(vec[0], vec[1], vec[2], size * size * size);
     }
 
-    inline double zcurve_value(const Vec3 vec, double size) const {
+    inline double zcurve_value(arma::vec3 vec, double size) const {
         return zcurve_value(vec[0], vec[1], vec[2], size * size * size);
     }
 
@@ -270,12 +252,12 @@ private:
 };
 
 template<>
-inline double MeshOptimizer<2>::hilbert_value(const Vec3 vec, double size) const {
+inline double MeshOptimizer<2>::hilbert_value(arma::vec3 vec, double size) const {
     return hilbert_value(vec[0], vec[1], size * size);
 }
 
 template <>
-inline double MeshOptimizer<2>::zcurve_value(const Vec3 vec, double size) const {
+inline double MeshOptimizer<2>::zcurve_value(arma::vec3 vec, double size) const {
     return zcurve_value(vec[0], vec[1], size * size);
 }
 
