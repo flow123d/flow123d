@@ -11,7 +11,7 @@ test_cases:
     - 06_fv_dp_sorp_small_output_multi_fields.yaml
     - 07_dg_dp_sorp_small_output_multi_fields.yaml
     - 08_fv_balance_times.yaml
-#    - 09_observe_output.yaml
+    - 09_observe_output.yaml
     - 12_file_names.yaml
     - 14_observe_output_only.yaml
     - 21_gmsh_cont_output.yaml
@@ -19,9 +19,6 @@ test_cases:
     - 31_serial_vtk_node_interp.yaml
     - 32_serial_vtk_elem_interp.yaml
     - 33_serial_vtk_corn_interp.yaml
-
-- files: 09_observe_output.yaml
-  proc: [2]
 
 - files: 11_time_marks_mixed_times.yaml
   memory_limit: 1300
