@@ -9,7 +9,7 @@
 </Points>
 <Cells>
 <DataArray type="UInt32" Name="connectivity" format="ascii">
-2 1 0 7 6 2 0 7 5 6 0 7 1 5 0 7 5 4 7 1 6 5 0 8 4 5 7 8 5 6 7 8 2 6 3 7 8 6 7 3 4 8 7 3 
+2 1 0 7 6 2 0 7 5 6 0 7 1 5 0 7 2 6 3 7 5 4 7 1 6 5 0 8 5 6 7 8 4 5 7 8 8 6 7 3 4 8 7 3 
 </DataArray>
 <DataArray type="UInt32" Name="offsets" format="ascii">
 4 8 12 16 20 24 28 32 36 40 44 

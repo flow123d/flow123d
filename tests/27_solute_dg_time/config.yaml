@@ -8,7 +8,7 @@ test_cases:
   - 02_dg_dp_sorp_small.yaml
   - 03_bc.yaml
   - 04_bc_short_pulse.yaml
-  - 06_sources.yaml      
+  - 06_sources.yaml        
 
 - files:
   - 05_unsteady_flow.yaml
