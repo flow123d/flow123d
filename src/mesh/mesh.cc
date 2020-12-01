@@ -942,9 +942,9 @@ void Mesh::elements_id_maps( vector<LongIdx> & bulk_elements_id, vector<LongIdx>
         last_id = -1;
         for(unsigned int idx=0; idx < n_elements(); idx++, ++map_it) {
         	LongIdx id = this->find_elem_id(idx);
-            if (last_id >= id) xprintf(UsrErr, "Element IDs in non-increasing order, ID: %d\n", id);
             last_id=*map_it = id;
         }
+        std::sort(bulk_elements_id.begin(), bulk_elements_id.end());
 
         boundary_elements_id.resize(element_ids_.size()-bulk_size_);
         map_it = boundary_elements_id.begin();
