@@ -430,7 +430,11 @@ void Mesh::optimize() {
     mo.calculate_node_curve_values_as_hilbert();
     mo.calculate_element_curve_values_as_hilbert_of_centers();
 
-    auto new_node_ids = mo.sort_nodes(this->node_permutation_);
+    this->sort_permuted_nodes_elements( mo.sort_nodes(this->node_permutation_), mo.sort_elements(this->elem_permutation_) );
+}
+
+
+void Mesh::sort_permuted_nodes_elements(std::vector<int> new_node_ids, std::vector<int> new_elem_ids) {
     BidirectionalMap<int> node_ids_backup = this->node_ids_;
     this->node_ids_.clear();
     this->node_ids_.reserve(this->n_nodes());
@@ -445,7 +449,6 @@ void Mesh::optimize() {
     	this->node_ids_.add_item( node_ids_backup[new_node_ids[i]] );
     }
 
-    auto new_elem_ids = mo.sort_elements(this->elem_permutation_);
     BidirectionalMap<int> elem_ids_backup = this->element_ids_;
     this->element_ids_.clear();
     this->element_ids_.reserve(bulk_size_);

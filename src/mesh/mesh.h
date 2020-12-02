@@ -494,8 +494,15 @@ protected:
     /// Output of neighboring data into raw output.
     void output_internal_ngh_data();
     
-    /// Apply functionality of MeshOptimizer to sort nodes and elements.
+    /**
+     * Apply functionality of MeshOptimizer to sort nodes and elements.
+     *
+     * Use Hilbert curve, need call sort_permuted_nodes_elements method.
+     */
     void optimize();
+
+    /// Sort elements and nodes by order stored in permutation vectors.
+    void sort_permuted_nodes_elements(std::vector<int> new_node_ids, std::vector<int> new_elem_ids);
 
     /**
      * Database of regions (both bulk and boundary) of the mesh. Regions are logical parts of the
