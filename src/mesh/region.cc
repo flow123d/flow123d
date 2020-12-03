@@ -25,7 +25,6 @@
 #include "input/input_type.hh"
 #include "input/type_base.hh"
 #include "input/accessors.hh"
-#include <boost/foreach.hpp>
 
 using namespace std;
 

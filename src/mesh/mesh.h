@@ -19,7 +19,7 @@
 #define MAKE_MESH_H
 
 #include <mpi.h>                             // for MPI_Comm, MPI_COMM_WORLD
-#include <boost/exception/info.hpp>          // for error_info::~error_info<...
+
 //#include <boost/range.hpp>
 #include <memory>                            // for shared_ptr
 #include <string>                            // for string
@@ -211,9 +211,16 @@ public:
     void elements_id_maps( vector<LongIdx> & bulk_elements_id, vector<LongIdx> & boundary_elements_id) const;
 
     /*
-     * Check if nodes and elements are compatible with \p mesh.
+     * Check if nodes and elements are compatible with \p input_mesh.
+     *
+     * Call this method on computational mesh.
+     * @param input_mesh data mesh of input fields
+     * @return vector that holds mapping between eleemnts of data and computational meshes
+     *             for every element in computational mesh hold idx of equivalent element in input mesh.
+     *             If element doesn't exist in input mesh value is set to Mesh::undef_idx.
+     *             If meshes are not compatible returns empty vector.
      */
-    virtual bool check_compatible_mesh( Mesh & mesh, vector<LongIdx> & bulk_elements_id, vector<LongIdx> & boundary_elements_id );
+    virtual std::shared_ptr<std::vector<LongIdx>> check_compatible_mesh( Mesh & input_mesh);
 
     /// Create and return ElementAccessor to element of given idx
     virtual ElementAccessor<3> element_accessor(unsigned int idx) const;

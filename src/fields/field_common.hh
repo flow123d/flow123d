@@ -19,8 +19,6 @@
 #define FIELD_COMMON_HH_
 
 #include <algorithm>                                   // for sort, unique
-#include <boost/exception/detail/error_info_impl.hpp>  // for error_info
-#include <boost/exception/info.hpp>                    // for operator<<
 #include <limits>                                      // for numeric_limits
 #include <memory>                                      // for shared_ptr
 #include <ostream>                                     // for operator<<

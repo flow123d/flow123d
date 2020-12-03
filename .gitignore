@@ -5,6 +5,7 @@ flow*.log
 *.orig
 unit_tests/*/makefile
 unit_tests/makefile
+unit_tests/speed_eval_*_test.log
 unit_tests/fields/speed_test_*.log
 unit_tests/output/*.pvd
 unit_tests/output/*.msh

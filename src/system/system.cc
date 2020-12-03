@@ -62,13 +62,13 @@ struct MsgFmt {
 #define	NUM_OF_FMTS		8
 static struct MsgFmt msg_fmt[] = {
 	{Msg, 		true,  false,   SCR_STDOUT,	false,	NULL},
-	{MsgDbg,    true,  false,   SCR_STDOUT, false,  "    DBG (%s, %s(), %d):"},
+	{MsgDbg,    true,  false,   SCR_STDOUT, false,  "    DBG ({}, {}(), {:d}):"},
 	{MsgLog,	true,  false,   SCR_NONE,	false,	NULL},
 	{MsgVerb,	false, false,   SCR_STDOUT,	false,	NULL},
-	{Warn,		true,  false,   SCR_STDERR,	false,	"\nWarning (%s, %s(), %d):\n"},
-	{UsrErr,	true,  false,   SCR_NONE,	true,	"\nUser Error (%s, %s(), %d):\n"},
-	{Err,		true,  false,   SCR_NONE,	true,	"\nError (%s, %s(), %d):\n"},
-	{PrgErr,	true,  false,   SCR_NONE,	true,	"\nInternal Error (%s, %s(), %d):\n"}
+	{Warn,		true,  false,   SCR_STDERR,	false,	"\nWarning ({}, {}(), {:d}):\n"},
+	{UsrErr,	true,  false,   SCR_NONE,	true,	"\nUser Error ({}, {}(), {:d}):\n"},
+	{Err,		true,  false,   SCR_NONE,	true,	"\nError ({}, {}(), {:d}):\n"},
+	{PrgErr,	true,  false,   SCR_NONE,	true,	"\nInternal Error ({}, {}(), {:d}):\n"}
 };
 
 /// @}
@@ -117,7 +117,7 @@ int _xprintf(const char * const xprintf_file, const char * const xprintf_func, c
 			// explicit flush of all streams
 			fflush(NULL);
 			BOOST_THROW_EXCEPTION( ExcXprintfMsg()
-				<< EI_XprintfHeader( boost::str(boost::format(mf.head) % xprintf_file % xprintf_func % xprintf_line) )
+				<< EI_XprintfHeader( fmt::format(mf.head, xprintf_file, xprintf_func, xprintf_line) )
 				<< EI_XprintfMessage( format_message ) );
 		}
 	}

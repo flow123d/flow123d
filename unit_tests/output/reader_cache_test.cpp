@@ -47,7 +47,7 @@ TEST(ReaderCache, get_bulk_element_) {
     reader->read_physical_names(mesh);
     reader->read_raw_mesh(mesh);
     mesh->setup_topology();
-    ReaderCache::check_compatible_mesh(file_name, *mesh);
+    ReaderCache::get_element_ids(file_name, *mesh);
 
     // read  by components for MultiField
     BaseMeshReader::HeaderQuery header_params("vector_fixed", 0.0, OutputTime::DiscreteSpace::ELEM_DATA);
@@ -88,7 +88,7 @@ TEST(ReaderCache, get_boundary_element_) {
     auto reader = ReaderCache::get_reader(file_name);
     reader->read_physical_names(mesh);
     reader->read_raw_mesh(mesh);
-    reader->check_compatible_mesh(*mesh);
+    ReaderCache::get_element_ids(file_name, *mesh);
 
     // read  by components for MultiField
     BaseMeshReader::HeaderQuery header_params("vector_fixed", 0.0, OutputTime::DiscreteSpace::ELEM_DATA);
@@ -112,7 +112,7 @@ TEST(ReaderCache, get_boundary_element_) {
     	for (j=0; j<3*mesh->n_elements(true); j++) EXPECT_EQ( 5+(j%3), vec[j] );
     }
 
-    delete mesh;
+    //delete mesh;
 }
 
 
@@ -129,7 +129,7 @@ TEST(ReaderCache, find_header) {
     reader->read_physical_names(mesh);
     reader->read_raw_mesh(mesh);
     mesh->setup_topology();
-    ReaderCache::check_compatible_mesh(file_name, *mesh);
+    ReaderCache::get_element_ids(file_name, *mesh);
     delete mesh;
 
     BaseMeshReader::HeaderQuery header_params("vector_fixed", 0.0, OutputTime::DiscreteSpace::ELEM_DATA);
@@ -221,18 +221,16 @@ TEST(ReaderCache, get_reader) {
 
 		delete mesh;
 	}
-}
 
-
-TEST(ReaderCache, repeat_call) {
-    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-
-    Input::Record i_rec = get_input_record("{mesh_file=\"mesh/test_108_elem.msh\"}");
-    for (unsigned int i=0; i<2; ++i) {
-        auto mesh_reader = ReaderCache::get_reader( i_rec.val<FilePath>("mesh_file") );
-        Mesh * mesh = new Mesh(i_rec);
-        mesh_reader->read_physical_names(mesh);
-        mesh_reader->read_raw_mesh(mesh);
-        delete mesh;
-    }
+	/*{
+		// repeat call
+        Input::Record i_rec = get_input_record("{mesh_file=\"mesh/simplest_cube.msh\"}");
+        for (unsigned int i=0; i<2; ++i) {
+            auto mesh_reader = ReaderCache::get_reader( i_rec.val<FilePath>("mesh_file") );
+            Mesh * mesh = new Mesh(i_rec);
+            mesh_reader->read_physical_names(mesh);
+            mesh_reader->read_raw_mesh(mesh);
+            delete mesh;
+        }
+    }*/
 }

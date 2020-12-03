@@ -247,17 +247,6 @@ public:
      * Collective interface to @p FieldCommon::recache_allocate().
      */
     void cache_reallocate(const ElementCacheMap &cache_map) {
-    	// resize coordinates caches
-    	// TODO after replace caches with fields call method cache_reallocate directly
-    	unsigned int new_size = ElementCacheMap::n_cached_elements * cache_map.eval_points()->max_size();
-    	if (new_size > x_coord_.size()) {
-    		x_coord_.reinit(new_size);
-    		x_coord_.resize(new_size);
-    		y_coord_.reinit(new_size);
-    		y_coord_.resize(new_size);
-    		z_coord_.reinit(new_size);
-    		z_coord_.resize(new_size);
-        }
         for(auto field : field_list) field->cache_reallocate(cache_map);
     }
 

@@ -176,8 +176,11 @@ private:
 	/// Calculate native data over all elements of target mesh.
 	void calculate_native_values(ElementDataCache<double>::ComponentDataPtr data_cache);
 
-	/// Calculate elementwise data over all elements of target mesh.
-	void calculate_elementwise_values(ElementDataCache<double>::ComponentDataPtr data_cache);
+	/// Calculate data of identict_mesh interpolation on input data over all elements of target mesh.
+	void calculate_identic_values(ElementDataCache<double>::ComponentDataPtr data_cache);
+
+	/// Calculate data of equivalent_mesh interpolation on input over all elements of target mesh.
+	void calculate_equivalent_values(ElementDataCache<double>::ComponentDataPtr data_cache);
 
 	/**
 	 * Fill data to boundary_dofs_ vector.
@@ -190,8 +193,17 @@ private:
 	template <unsigned int dim>
 	Quadrature init_quad(std::shared_ptr<EvalPoints> eval_points);
 
-    Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> handle_fe_shape(unsigned int dim,
-            unsigned int i_dof, unsigned int i_qp, unsigned int comp_index);
+    inline Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> handle_fe_shape(unsigned int dim,
+            unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
+    {
+        Armor::ArmaMat<typename Value::element_type, Value::NCols_, Value::NRows_> v;
+        for (unsigned int c=0; c<Value::NRows_*Value::NCols_; ++c)
+            v(c/spacedim,c%spacedim) = fe_values_[dim].shape_value_component(i_dof, i_qp, comp_index+c);
+        if (Value::NRows_ == Value::NCols_)
+            return v;
+        else
+            return v.t();
+    }
 
 
 	/// DOF handler object
@@ -244,6 +256,9 @@ private:
 
     /// Index of component (of vector_value/tensor_value)
     unsigned int comp_index_;
+
+    /// Maps element indices between source (data) and target (computational) mesh if data interpolation is set to equivalent_msh
+    std::shared_ptr<std::vector<LongIdx>> source_target_mesh_elm_map_;
 
     /// Registrar of class to factory
     static const int registrar;

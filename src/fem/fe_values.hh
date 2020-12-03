@@ -160,9 +160,15 @@ public:
      * @param function_no Number of the shape function.
      * @param point_no Number of the quadrature point.
      */
-    double shape_value_component(const unsigned int function_no, 
+    inline double shape_value_component(const unsigned int function_no,
                                         const unsigned int point_no, 
-                                        const unsigned int comp) const;
+                                        const unsigned int comp) const
+    {
+        ASSERT_LT_DBG(function_no, n_dofs_);
+        ASSERT_LT_DBG(point_no, n_points_);
+        ASSERT_LT_DBG(comp, n_components_);
+        return shape_values[point_no][function_no*n_components_+comp];
+    }
 
     /**
      * @brief Return the gradient of the @p function_no-th shape function at

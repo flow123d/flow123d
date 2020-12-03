@@ -30,7 +30,7 @@
 #endif
 
 #include <string.h>                                    // for strsignal
-#include <boost/exception/detail/error_info_impl.hpp>  // for error_info
+
 #include <iostream>                                    // for cout
 #include <sstream>                                     // for operator<<, endl
 #include "mpi.h"                                       // for MPI_Comm_size

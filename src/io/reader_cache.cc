@@ -70,15 +70,17 @@ ReaderCache::ReaderTable::iterator ReaderCache::get_reader_data(const FilePath &
 	return it;
 }
 
-bool ReaderCache::check_compatible_mesh(const FilePath &file_path, Mesh &mesh) {
-	auto mesh_ptr = ReaderCache::get_mesh(file_path);
-	auto reader_ptr = ReaderCache::get_reader(file_path);
-	reader_ptr->has_compatible_mesh_ = true;
-	return mesh_ptr->check_compatible_mesh(mesh, reader_ptr->bulk_elements_id_, reader_ptr->boundary_elements_id_);
-}
-
 void ReaderCache::get_element_ids(const FilePath &file_path, const Mesh &mesh) {
 	auto reader_ptr = ReaderCache::get_reader(file_path);
 	reader_ptr->has_compatible_mesh_ = true;
 	mesh.elements_id_maps(reader_ptr->bulk_elements_id_, reader_ptr->boundary_elements_id_);
+}
+
+std::shared_ptr<std::vector<LongIdx>> ReaderCache::get_target_mesh_element_map(const FilePath &file_path, Mesh *computational_mesh) {
+	auto it = ReaderCache::get_reader_data(file_path);
+	ASSERT( (*it).second.mesh_ != nullptr ).error("Mesh is not created. Did you call 'ReaderCache::get_mesh(file_path)'?\n");
+	if ( (*it).second.target_mesh_element_map_ == nullptr ) {
+	    (*it).second.target_mesh_element_map_ = computational_mesh->check_compatible_mesh( *((*it).second.mesh_.get()) );
+	}
+	return (*it).second.target_mesh_element_map_;
 }

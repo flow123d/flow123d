@@ -35,7 +35,7 @@
 class FieldEvalFormulaTest : public testing::Test {
 
 public:
-    class EqData : public FieldSet {
+    class EqData : public FieldSet, public ElementCacheMap {
     public:
         EqData() {
             *this += vector_field
@@ -61,30 +61,38 @@ public:
             mass_eval = eval_points_->add_bulk<3>(*q_bulk );
             side_eval = eval_points_->add_edge<3>(*q_side );
             // ngh_side_eval = ...
-            elm_cache_map_.init(eval_points_);
-            this->cache_reallocate(elm_cache_map_);
+            this->init(eval_points_);
+            this->cache_reallocate(*this);
         }
 
-        void register_eval_points(ElementCacheMap &cache_map) {
-            unsigned int subset_index, data_size;
+        void register_eval_points() {
+            unsigned int reg_idx = computed_dh_cell_.elm().region_idx().idx();
+            for (auto p : mass_eval->points(computed_dh_cell_, this) ) {
+                EvalPointData epd(reg_idx, computed_dh_cell_.elm_idx(), p.eval_point_idx());
+                this->eval_point_data_.push_back(epd);
+            }
 
-            subset_index = mass_eval->get_subset_idx();
-            cache_map.mark_used_eval_points( computed_dh_cell_, subset_index, eval_points_->subset_size(computed_dh_cell_.dim(), subset_index) );
-            for (DHCellSide side : computed_dh_cell_.side_range()) {
-                for(DHCellSide el_ngh_side : side.edge_sides()) {
-                    subset_index = side_eval->get_subset_idx();
-                    data_size = eval_points_->subset_size(el_ngh_side.dim(), subset_index) / (el_ngh_side.dim() +1);
-                	cache_map.mark_used_eval_points(el_ngh_side.cell(), subset_index, data_size, data_size * el_ngh_side.side_idx());
+            for (DHCellSide cell_side : computed_dh_cell_.side_range()) {
+            	for( DHCellSide edge_side : cell_side.edge_sides() ) {
+                    unsigned int reg_idx = edge_side.element().region_idx().idx();
+                    for (auto p : side_eval->points(edge_side, this) ) {
+                        EvalPointData epd(reg_idx, edge_side.elem_idx(), p.eval_point_idx());
+                        this->eval_point_data_.push_back(epd);
+                    }
                 }
             }
+            this->eval_point_data_.make_permanent();
         }
 
         void update_cache() {
-            elm_cache_map_.prepare_elements_to_update();
-            this->register_eval_points(elm_cache_map_);
-            elm_cache_map_.create_elements_points_map();
-    	    this->cache_update(elm_cache_map_);
-            elm_cache_map_.finish_elements_update();
+            this->register_eval_points();
+            this->create_patch();
+            this->cache_update(*this);
+            this->finish_elements_update();
+        }
+
+        void reallocate_cache() {
+            this->cache_reallocate(*this);
         }
 
 
@@ -92,7 +100,6 @@ public:
         Field<3, FieldValue<3>::Scalar > scalar_field;
         Field<3, FieldValue<3>::VectorFixed > vector_field;
         Field<3, FieldValue<3>::TensorFixed > tensor_field;
-        ElementCacheMap elm_cache_map_;
         std::shared_ptr<EvalPoints> eval_points_;
         std::shared_ptr<BulkIntegral> mass_eval;
         std::shared_ptr<EdgeIntegral> side_eval;
@@ -141,7 +148,7 @@ public:
         data_->set_mesh(*mesh_);
         data_->set_input_list( inputs[input_last], tg );
         data_->set_time(tg.step(), LimitSide::right);
-        data_->cache_reallocate(data_->elm_cache_map_);
+        data_->reallocate_cache();
         data_->set_dependency();
     }
 
@@ -180,26 +187,18 @@ TEST_F(FieldEvalFormulaTest, evaluate) {
                                        +0.000000000000000000, +0.333333333333333481, -1.000000000000000000, +0.666666666666666741 };
     std::vector< std::vector<uint> > expected_scalar = { {0,1,0,1,9,9,6,6,6,6,9,9,6,6,6,6,7,7,8,8,8,8,6,6,9,9,6,6,8,8,8,8,7,7,8,8,8,8,7,7},
             {2,2,3,2,8,8,8,8,7,7,8,8,8,8,7,7,10,10,10,10,10,10,10,9,10,9,10,11,8,8,8,8,7,7,8,8,8,8,7,7,8,8,8,8,7,7},
-			{2,2,3,2,8,8,8,8,7,7,8,8,8,8,7,7,10,10,10,10,10,10,10,8,10,13,10,13,8,8,8,8,7,7,8,8,7,7,8,8,8,8,7,7,8,8},
-			{4,4,4,5,9,9,9,9,11,11,9,9,9,9,11,11,9,9,9,9,11,11,9,9,9,9,11,11,12,12,12,12,12,12,11,11,9,9,9,9} };
+			{2,2,3,2,8,8,8,8,7,7,8,8,8,8,7,7,10,10,10,10,10,10,10,8,10,13,10,13,8,8,8,8,7,7,8,9,7,6,8,6,8,8,7,7,8,8},
+			{4,4,4,5,9,13,9,8,11,11,9,9,9,9,11,11,9,9,9,9,11,11,9,9,9,9,11,11,12,12,12,12,12,12,11,11,9,9,9,9} };
     std::vector<arma::mat33>  expected_tensor = {{0.1, 0.2, 0.3, 0.2, 0.4, 0.5, 0.3, 0.5, 0.6}, {0.1, 0.2, 0.3, 0.2, 0.4, 0.5, 0.3, 0.5, 0.6},
                                                  {0.1, 0.2, 0.3, 0.2, 0.4, 0.5, 0.3, 0.5, 0.6}, {2.1, 2.2, 2.3, 2.2, 2.4, 2.5, 2.3, 2.5, 2.6}};
     for (uint i=0; i<cell_idx.size(); ++i) {
         uint test_point = 0; // index to expected vals
-    	data_->elm_cache_map_.start_elements_update();
+    	data_->start_elements_update();
     	data_->computed_dh_cell_ = DHCellAccessor(dh_.get(), cell_idx[i]);  // element ids stored to cache: (3 -> 2,3,4), (4 -> 3,4,5,10), (5 -> 0,4,5,11), (10 -> 8,9,10)
-        data_->elm_cache_map_.add(data_->computed_dh_cell_);
-        for (DHCellSide side : data_->computed_dh_cell_.side_range()) {
-            for(DHCellSide el_ngh_side : side.edge_sides()) {
-                data_->elm_cache_map_.add(el_ngh_side);
-    	    }
-        }
         data_->update_cache();
 
-        DHCellAccessor cache_cell = this->data_->elm_cache_map_(data_->computed_dh_cell_);
-
         // Bulk integral, no sides, no permutations.
-        for(BulkPoint q_point: data_->mass_eval->points(cache_cell, &data_->elm_cache_map_)) {
+        for( BulkPoint q_point: data_->mass_eval->points(data_->computed_dh_cell_, data_.get()) ) {
             EXPECT_DOUBLE_EQ( dbl_scalar[ expected_scalar[i][test_point] ], data_->scalar_field(q_point));
             arma::vec3 expected_vector;
             expected_vector(0) = dbl_scalar[ expected_scalar[i][test_point] ];
@@ -221,11 +220,10 @@ TEST_F(FieldEvalFormulaTest, evaluate) {
 
         // Side integrals.
         // FieldFE<..> conc;
-        for (DHCellSide side : cache_cell.side_range()) {
+        for (DHCellSide side : data_->computed_dh_cell_.side_range()) {
         	for(DHCellSide el_ngh_side : side.edge_sides()) {
-        		el_ngh_side.cell() = this->data_->elm_cache_map_(el_ngh_side.cell());
            	    // vector of local side quadrature points in the correct side permutation
-        	    Range<EdgePoint> side_points = data_->side_eval->points(side, &data_->elm_cache_map_);
+        	    Range<EdgePoint> side_points = data_->side_eval->points(side, data_.get());
         	    for (EdgePoint side_p : side_points) {
                     EXPECT_DOUBLE_EQ( dbl_scalar[ expected_scalar[i][test_point] ], data_->scalar_field(side_p));
                     arma::vec3 expected_vector;

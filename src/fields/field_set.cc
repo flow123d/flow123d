@@ -26,7 +26,16 @@
 
 FieldSet::FieldSet()
 : x_coord_(1,1), y_coord_(1,1), z_coord_(1,1)
-{}
+{
+    // TODO after replace caches with fields call method cache_reallocate directly
+    unsigned int cache_size = 1.1 * CacheMapElementNumber::get();
+    x_coord_.reinit(cache_size);
+    x_coord_.resize(cache_size);
+    y_coord_.reinit(cache_size);
+    y_coord_.resize(cache_size);
+    z_coord_.reinit(cache_size);
+    z_coord_.resize(cache_size);
+}
 
 FieldSet &FieldSet::operator +=(FieldCommon &add_field) {
     FieldCommon *found_field = field(add_field.name());
@@ -234,8 +243,9 @@ void FieldSet::update_coords_caches(ElementCacheMap &cache_map) {
 
 void FieldSet::cache_update(ElementCacheMap &cache_map) {
     update_coords_caches(cache_map);
-    for (unsigned int i_reg=0; i_reg<mesh_->region_db().size(); ++i_reg) {
-        for(unsigned int i_f=0; i_f<region_dependency_list_[i_reg].size(); ++i_f) field_list[region_dependency_list_[i_reg][i_f]]->cache_update(cache_map, i_reg);
+    for (unsigned int i_reg=0; i_reg<cache_map.n_regions(); ++i_reg) {
+        unsigned int region_idx = cache_map.eval_point_data( cache_map.region_chunk_by_map_index(i_reg) ).i_reg_;
+        for(unsigned int i_f=0; i_f<region_dependency_list_[region_idx].size(); ++i_f) field_list[region_dependency_list_[region_idx][i_f]]->cache_update(cache_map, region_idx);
     }
 }
 

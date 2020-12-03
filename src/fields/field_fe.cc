@@ -233,31 +233,31 @@ void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::elem
 		ElementCacheMap &cache_map, unsigned int region_idx)
 {
     ASSERT( !boundary_dofs_ ).error("boundary field NOT supported!!\n");
-    std::shared_ptr<EvalPoints> eval_points = cache_map.eval_points();
     Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> mat_value;
 
-    auto update_cache_data = cache_map.update_cache_data();
-    unsigned int region_in_cache = cache_map.region_chunk(region_idx);
+    unsigned int reg_chunk_begin = cache_map.region_chunk_begin(region_idx);
+    unsigned int reg_chunk_end = cache_map.region_chunk_end(region_idx);
+    unsigned int last_element_idx = -1;
+    DHCellAccessor cell;
+    LocDofVec loc_dofs;
 
-    for (unsigned int i_elm=update_cache_data.region_element_cache_range_[region_in_cache];
-            i_elm<update_cache_data.region_element_cache_range_[region_in_cache+1]; ++i_elm) {
-        unsigned int elm_idx = cache_map.elm_idx_on_position(i_elm);
-    	ElementAccessor<spacedim> elm(dh_->mesh(), elm_idx);
-        fe_values_[elm.dim()].reinit( elm );
-
-        DHCellAccessor cell = dh_->cell_accessor_from_element( elm_idx );
-        LocDofVec loc_dofs = cell.get_loc_dof_indices();
-
-        for (unsigned int i_ep=0; i_ep<eval_points->size(elm.dim()); ++i_ep) { // i_eval_point
-            //DHCellAccessor cache_cell = cache_map(cell);
-            int field_cache_idx = cache_map.element_eval_point(cache_map(cell).element_cache_index(), i_ep);
-            if (field_cache_idx < 0) continue; // skip
-            mat_value.fill(0.0);
-    		for (unsigned int i_dof=0; i_dof<loc_dofs.n_elem; i_dof++) {
-    		    mat_value += data_vec_[loc_dofs[i_dof]] * this->handle_fe_shape(elm.dim(), i_dof, i_ep, comp_index_);
-    		}
-    		data_cache.set(field_cache_idx) = mat_value;
+    for (unsigned int i_data = reg_chunk_begin; i_data < reg_chunk_end; ++i_data) { // i_eval_point_data
+        unsigned int elm_idx = cache_map.eval_point_data(i_data).i_element_;
+        if (elm_idx != last_element_idx) {
+            ElementAccessor<spacedim> elm(dh_->mesh(), elm_idx);
+            fe_values_[elm.dim()].reinit( elm );
+            cell = dh_->cell_accessor_from_element( elm_idx );
+            loc_dofs = cell.get_loc_dof_indices();
+            last_element_idx = elm_idx;
         }
+
+        unsigned int i_ep=cache_map.eval_point_data(i_data).i_eval_point_;
+        //DHCellAccessor cache_cell = cache_map(cell);
+        mat_value.fill(0.0);
+        for (unsigned int i_dof=0; i_dof<loc_dofs.n_elem; i_dof++) {
+            mat_value += data_vec_[loc_dofs[i_dof]] * this->handle_fe_shape(cell.dim(), i_dof, i_ep, comp_index_);
+        }
+        data_cache.set(i_data) = mat_value;
     }
 }
 
@@ -311,39 +311,31 @@ void FieldFE<spacedim, Value>::init_from_input(const Input::Record &rec, const s
 
 template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) {
-	// Mesh can be set only for field initialized from input.
-	if ( flags_.match(FieldFlag::equation_input) && flags_.match(FieldFlag::declare_input) ) {
-		ASSERT(field_name_ != "").error("Uninitialized FieldFE, did you call init_from_input()?\n");
-		this->boundary_domain_ = boundary_domain;
-		switch (this->interpolation_) {
-			case DataInterpolation::identic_msh:
-				ReaderCache::get_element_ids(reader_file_, *mesh);
-				break;
-			case DataInterpolation::equivalent_msh:
-				if (!ReaderCache::check_compatible_mesh( reader_file_, const_cast<Mesh &>(*mesh) )) {
-					this->interpolation_ = DataInterpolation::gauss_p0;
-					WarningOut().fmt("Source mesh of FieldFE '{}' is not compatible with target mesh.\nInterpolation of input data will be changed to 'P0_gauss'.\n",
-							field_name_);
-				}
-				break;
-			case DataInterpolation::gauss_p0:
-			{
-				auto source_mesh = ReaderCache::get_mesh(reader_file_);
-				ReaderCache::get_element_ids(reader_file_, *(source_mesh.get()) );
-				break;
-			}
-			case DataInterpolation::interp_p0:
-			{
-				auto source_msh = ReaderCache::get_mesh(reader_file_);
-				ReaderCache::get_element_ids(reader_file_, *(source_msh.get()) );
-				if (!boundary_domain) {
-					this->interpolation_ = DataInterpolation::gauss_p0;
-					WarningOut().fmt("Interpolation 'P0_intersection' of FieldFE '{}' can't be used on bulk region.\nIt will be changed to 'P0_gauss'.\n", field_name_);
-				}
-				break;
-			}
-		}
-		this->make_dof_handler(mesh);
+    // Mesh can be set only for field initialized from input.
+    if ( flags_.match(FieldFlag::equation_input) && flags_.match(FieldFlag::declare_input) ) {
+        ASSERT(field_name_ != "").error("Uninitialized FieldFE, did you call init_from_input()?\n");
+        this->boundary_domain_ = boundary_domain;
+        if (this->interpolation_ == DataInterpolation::identic_msh) {
+            ReaderCache::get_element_ids(reader_file_, *mesh);
+        } else {
+            auto source_mesh = ReaderCache::get_mesh(reader_file_);
+            ReaderCache::get_element_ids(reader_file_, *(source_mesh.get()));
+            if (this->interpolation_ == DataInterpolation::equivalent_msh) {
+                source_target_mesh_elm_map_ = ReaderCache::get_target_mesh_element_map(reader_file_, const_cast<Mesh *>(mesh));
+                if (source_target_mesh_elm_map_->size() == 0) { // incompatible meshes
+                    this->interpolation_ = DataInterpolation::gauss_p0;
+                    WarningOut().fmt("Source mesh of FieldFE '{}' is not compatible with target mesh.\nInterpolation of input data will be changed to 'P0_gauss'.\n",
+                            field_name_);
+                }
+            } else if (this->interpolation_ == DataInterpolation::interp_p0) {
+                if (!boundary_domain) {
+                    this->interpolation_ = DataInterpolation::gauss_p0;
+                    WarningOut().fmt("Interpolation 'P0_intersection' of FieldFE '{}' can't be used on bulk region.\nIt will be changed to 'P0_gauss'.\n",
+                            field_name_);
+                }
+            }
+        }
+        this->make_dof_handler(mesh);
 	}
 }
 
@@ -447,11 +439,14 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 		bool is_native = (header_query.discretization == OutputTime::DiscreteSpace::NATIVE_DATA);
 		bool boundary;
 		if (is_native || this->interpolation_==DataInterpolation::identic_msh || this->interpolation_==DataInterpolation::equivalent_msh) {
-			n_entities = dh_->mesh()->n_elements();
 			boundary = this->boundary_domain_;
 		} else {
-			n_entities = ReaderCache::get_mesh(reader_file_)->n_elements();
 			boundary = false;
+		}
+		if (this->interpolation_==DataInterpolation::identic_msh) {
+			n_entities = dh_->mesh()->n_elements(boundary);
+		} else {
+			n_entities = ReaderCache::get_mesh(reader_file_)->n_elements(boundary);
 		}
 		auto input_data_cache = ReaderCache::get_reader(reader_file_)->template get_element_data<double>(n_entities, n_components,
 				boundary, this->component_idx_);
@@ -465,8 +460,10 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 
 		if (is_native) {
 			this->calculate_native_values(input_data_cache);
-		} else if (this->interpolation_==DataInterpolation::identic_msh || this->interpolation_==DataInterpolation::equivalent_msh) {
-			this->calculate_elementwise_values(input_data_cache);
+		} else if (this->interpolation_==DataInterpolation::identic_msh) {
+			this->calculate_identic_values(input_data_cache);
+		} else if (this->interpolation_==DataInterpolation::equivalent_msh) {
+			this->calculate_equivalent_values(input_data_cache);
 		} else if (this->interpolation_==DataInterpolation::gauss_p0) {
 			this->interpolate_gauss(input_data_cache);
 		} else { // DataInterpolation::interp_p0
@@ -694,15 +691,16 @@ void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>:
 	data_vec_.zero_entries();
 	VectorMPI::VectorDataPtr data_vector = data_vec_.data_ptr();
 	std::vector<LongIdx> global_dof_indices(dh_->max_elem_dofs());
+	std::vector<LongIdx> &source_target_vec = *(source_target_mesh_elm_map_.get());
 
 	// iterate through cells, assembly MPIVector
 	for (auto cell : dh_->own_range()) {
 		dof_size = cell.get_dof_indices(global_dof_indices);
 		LocDofVec loc_dofs = cell.get_loc_dof_indices();
-		data_vec_i = cell.elm_idx() * dof_size;
+		data_vec_i = source_target_vec[cell.elm_idx()] * dof_size;
 		ASSERT_EQ_DBG(dof_size, loc_dofs.n_elem);
 		for (unsigned int i=0; i<dof_size; ++i, ++data_vec_i) {
-			(*data_vector)[ loc_dofs[i] ] += (*data_cache)[ global_dof_indices[i] ];
+			(*data_vector)[ loc_dofs[i] ] += (*data_cache)[ data_vec_i ];
 			++count_vector[ loc_dofs[i] ];
 		}
 	}
@@ -715,23 +713,79 @@ void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>:
 
 
 template <int spacedim, class Value>
-void FieldFE<spacedim, Value>::calculate_elementwise_values(ElementDataCache<double>::ComponentDataPtr data_cache)
+void FieldFE<spacedim, Value>::calculate_identic_values(ElementDataCache<double>::ComponentDataPtr data_cache)
+{
+	// Same algorithm as in output of Node_data. Possibly code reuse.
+	unsigned int data_vec_i, i_elm;
+	std::vector<unsigned int> count_vector(data_vec_.size(), 0);
+	data_vec_.zero_entries();
+
+	if (this->boundary_domain_) {
+		// iterate through elements, assembly global vector and count number of writes
+		Mesh *mesh = dh_->mesh()->get_bc_mesh();
+		i_elm=0;
+		for (auto ele : mesh->elements_range()) {
+			LocDofVec loc_dofs = value_handler1_.get_loc_dof_indices(ele.idx());
+			data_vec_i = i_elm * dh_->max_elem_dofs();
+			for (unsigned int i=0; i<loc_dofs.n_elem; ++i, ++data_vec_i) {
+				ASSERT_LT_DBG(loc_dofs[i], (LongIdx)data_vec_.size());
+				data_vec_[ loc_dofs[i] ] += (*data_cache)[data_vec_i];
+				++count_vector[ loc_dofs[i] ];
+			}
+			i_elm++;
+		}
+	}
+	else {
+		// iterate through cells, assembly global vector and count number of writes - prepared solution for further development
+		i_elm=0;
+		for (auto cell : dh_->own_range()) {
+			LocDofVec loc_dofs = cell.get_loc_dof_indices();
+			data_vec_i = i_elm * dh_->max_elem_dofs();
+			for (unsigned int i=0; i<loc_dofs.n_elem; ++i, ++data_vec_i) {
+				ASSERT_LT_DBG(loc_dofs[i], (LongIdx)data_vec_.size());
+				data_vec_[ loc_dofs[i] ] += (*data_cache)[data_vec_i];
+				++count_vector[ loc_dofs[i] ];
+			}
+			i_elm++;
+		}
+	}
+
+	// compute averages of values
+	for (unsigned int i=0; i<data_vec_.size(); ++i) {
+		if (count_vector[i]>0) data_vec_[i] /= count_vector[i];
+	}
+}
+
+
+template <int spacedim, class Value>
+void FieldFE<spacedim, Value>::calculate_equivalent_values(ElementDataCache<double>::ComponentDataPtr data_cache)
 {
 	// Same algorithm as in output of Node_data. Possibly code reuse.
 	unsigned int data_vec_i;
 	std::vector<unsigned int> count_vector(data_vec_.size(), 0);
 	data_vec_.zero_entries();
+	std::vector<LongIdx> &source_target_vec = *(source_target_mesh_elm_map_.get());
 
 	// iterate through elements, assembly global vector and count number of writes
 	if (this->boundary_domain_) {
 		Mesh *mesh = dh_->mesh()->get_bc_mesh();
-		for (auto ele : mesh->elements_range()) { // remove special case for rank == 0 - necessary for correct output
+		for (auto ele : mesh->elements_range()) {
 			LocDofVec loc_dofs = value_handler1_.get_loc_dof_indices(ele.idx());
-			data_vec_i = ele.idx() * dh_->max_elem_dofs();
-			for (unsigned int i=0; i<loc_dofs.n_elem; ++i, ++data_vec_i) {
-				ASSERT_LT_DBG(loc_dofs[i], (LongIdx)data_vec_.size());
-				data_vec_[ loc_dofs[i] ] += (*data_cache)[data_vec_i];
-				++count_vector[ loc_dofs[i] ];
+			if (source_target_vec[ele.mesh_idx()] == (int)(Mesh::undef_idx)) { // undefined value in input data mesh
+				if ( std::isnan(default_value_) )
+					THROW( ExcUndefElementValue() << EI_Field(field_name_) );
+				for (unsigned int i=0; i<loc_dofs.n_elem; ++i) {
+					ASSERT_LT_DBG(loc_dofs[i], (LongIdx)data_vec_.size());
+					data_vec_[ loc_dofs[i] ] += default_value_ * this->unit_conversion_coefficient_;
+					++count_vector[ loc_dofs[i] ];
+				}
+			} else {
+				data_vec_i = source_target_vec[ele.mesh_idx()] * dh_->max_elem_dofs();
+				for (unsigned int i=0; i<loc_dofs.n_elem; ++i, ++data_vec_i) {
+					ASSERT_LT_DBG(loc_dofs[i], (LongIdx)data_vec_.size());
+					data_vec_[ loc_dofs[i] ] += (*data_cache)[data_vec_i];
+					++count_vector[ loc_dofs[i] ];
+				}
 			}
 		}
 	}
@@ -739,11 +793,21 @@ void FieldFE<spacedim, Value>::calculate_elementwise_values(ElementDataCache<dou
 		// iterate through cells, assembly global vector and count number of writes - prepared solution for further development
 		for (auto cell : dh_->own_range()) {
 			LocDofVec loc_dofs = cell.get_loc_dof_indices();
-			data_vec_i = cell.elm_idx() * dh_->max_elem_dofs();
-			for (unsigned int i=0; i<loc_dofs.n_elem; ++i, ++data_vec_i) {
-				ASSERT_LT_DBG(loc_dofs[i], (LongIdx)data_vec_.size());
-				data_vec_[ loc_dofs[i] ] += (*data_cache)[data_vec_i];
-				++count_vector[ loc_dofs[i] ];
+			if (source_target_vec[cell.elm_idx()] == (int)(Mesh::undef_idx)) { // undefined value in input data mesh
+				if ( std::isnan(default_value_) )
+					THROW( ExcUndefElementValue() << EI_Field(field_name_) );
+				for (unsigned int i=0; i<loc_dofs.n_elem; ++i) {
+					ASSERT_LT_DBG(loc_dofs[i], (LongIdx)data_vec_.size());
+					data_vec_[ loc_dofs[i] ] += default_value_ * this->unit_conversion_coefficient_;
+					++count_vector[ loc_dofs[i] ];
+				}
+			} else {
+				data_vec_i = source_target_vec[cell.elm_idx()] * dh_->max_elem_dofs();
+				for (unsigned int i=0; i<loc_dofs.n_elem; ++i, ++data_vec_i) {
+					ASSERT_LT_DBG(loc_dofs[i], (LongIdx)data_vec_.size());
+					data_vec_[ loc_dofs[i] ] += (*data_cache)[data_vec_i];
+					++count_vector[ loc_dofs[i] ];
+				}
 			}
 		}
 	}
@@ -795,7 +859,7 @@ void FieldFE<spacedim, Value>::local_to_ghost_data_scatter_end() {
 
 
 
-template <int spacedim, class Value>
+/*template <int spacedim, class Value>
 Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> FieldFE<spacedim, Value>::handle_fe_shape(unsigned int dim,
         unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
 {
@@ -806,7 +870,7 @@ Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> Field
         return v;
     else
         return v.t();
-}
+}*/
 
 
 

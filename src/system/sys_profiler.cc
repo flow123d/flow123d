@@ -22,6 +22,7 @@
 #include <fstream>
 #include <iomanip>
 #include <sys/param.h>
+#include <unordered_map>
 
 #ifdef FLOW123D_HAVE_PYTHON
     #include "Python.h"
@@ -32,7 +33,6 @@
 #include "system/python_loader.hh"
 #include <iostream>
 #include <boost/format.hpp>
-#include <boost/unordered_map.hpp>
 
 #include "system/file_path.hh"
 #include "system/python_loader.hh"
@@ -271,7 +271,8 @@ void Timer::add_child(int child_index, const Timer &child)
 
 
 string Timer::code_point_str() const {
-    return boost::str( boost::format("%s:%d, %s()") % code_point_->file_ % code_point_->line_ % code_point_->func_ );
+    return fmt::format("{%s}:{%d}, {%s}()",
+            code_point_->file_, code_point_->line_, code_point_->func_ );
 }
 
 
@@ -855,7 +856,7 @@ void Profiler::transform_profiler_data (const string &output_file_suffix, const 
     #endif // FLOW123D_HAVE_CYGWIN
 }
 #else
-void Profiler::transform_profiler_data (const string &output_file_suffix, const string &formatter) {
+void Profiler::transform_profiler_data (const string &, const string &) {
 }
 
 #endif // FLOW123D_HAVE_PYTHON

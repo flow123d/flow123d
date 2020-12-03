@@ -18,7 +18,7 @@
 #ifndef PYTHON_UTILS_HH_
 #define PYTHON_UTILS_HH_
 
-#include <boost/exception/info.hpp>  // for error_info::~error_info<Tag, T>
+
 #include "config.h"                  // for FLOW123D_HAVE_PYTHON
 #include "Python.h"                  // for PyObject
 #include "system/exceptions.hh"      // for ExcStream, operator<<, DECLARE_E...

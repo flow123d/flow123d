@@ -410,6 +410,7 @@ endif()
 
 message(STATUS "-------------------------------------------------------")
 message(STATUS "Boost_FOUND = ${Boost_FOUND}")
+message(STATUS "BOOST_VERSION = ${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION}.${Boost_SUBMINOR_VERSION}")
 message(STATUS "BOOST_ROOT = ${BOOST_ROOT}")
 message(STATUS "Boost_LIBRARIES = ${Boost_LIBRARIES}")
 message(STATUS "Boost_LIBRARY_DIRS = ${Boost_LIBRARY_DIRS}")

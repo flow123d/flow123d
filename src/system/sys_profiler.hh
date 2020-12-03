@@ -52,11 +52,13 @@
 
 #include <mpi.h>
 #include <ostream>
+#include <unordered_map>
+
 namespace boost { template <class T> struct hash; }
 #include <boost/functional/hash/hash.hpp>      // for hash
 #include <boost/ref.hpp>
 #include <boost/tuple/detail/tuple_basic.hpp>  // for get
-#include <boost/unordered/unordered_map.hpp>   // for unordered_map
+
 #include <nlohmann/json.hpp>
 
 #include "time_point.hh"
@@ -816,7 +818,7 @@ public:
 // gcc version 4.9 and lower has following bug: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=59751
 // fix in version 4.9: https://gcc.gnu.org/gcc-4.9/changes.html#cxx
 // typedef unordered_map<long, int, hash<long>, equal_to<long>, internal::SimpleAllocator<pair<const long, int>>> unordered_map_with_alloc;
-typedef boost::unordered_map<long, int, boost::hash<long>, equal_to<long>, internal::SimpleAllocator<std::pair<const long, int>>> unordered_map_with_alloc;
+typedef std::unordered_map<long, int, boost::hash<long>, equal_to<long>, internal::SimpleAllocator<std::pair<const long, int>>> unordered_map_with_alloc;
 class MemoryAlloc {
 public:
     /**

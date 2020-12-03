@@ -23,7 +23,6 @@
 
 
 #include <stdio.h>                      // for sprintf
-#include <boost/exception/info.hpp>     // for operator<<, error_info::error...
 #include <string>                       // for operator==, string
 #include <vector>                       // for vector
 #include <memory>
@@ -67,9 +66,6 @@ public:
 
 
     static const Input::Type::Record & get_input_type();
-
-    /// Size of data processed in BParser.
-    static constexpr unsigned int bparser_vec_size = 128;
 
     virtual void init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data);
 
@@ -163,11 +159,6 @@ private:
 
 
 };
-
-// Necessary to linking.
-template <int spacedim, class Value>
-constexpr unsigned int FieldFormula<spacedim, Value>::bparser_vec_size;
-
 
 
 #endif /* FIELD_FORMULA_HH_ */
