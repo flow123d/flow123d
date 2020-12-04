@@ -292,14 +292,11 @@ protected:
     FieldValueCache<double> z_coord_;  ///< Holds values of z-coordinates (for FieldFormula)
     const Mesh *mesh_;                 ///< Pointer to the mesh.
 
-    /// Holds map of indices of fields stored in field_list
-    std::map<std::string, unsigned int> field_indices_map_;
-
     /**
      * Holds vector of indices of fields in field_list sorted by dependency for every region.
      *
      * - first: index of region
-     * - second: vector of indices of fields
+     * - second: vector of indices of fields (corresponding to position in field_list vector)
      */
     std::map<unsigned int, std::vector<unsigned int>> region_dependency_list_;
 

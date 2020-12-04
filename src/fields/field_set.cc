@@ -20,6 +20,7 @@
 #include "input/flow_attribute_lib.hh"
 #include "fem/mapping_p1.hh"
 #include "mesh/ref_element.hh"
+#include "fields/dfs_topo_sort.hh"
 #include <boost/algorithm/string/replace.hpp>
 
 
@@ -242,6 +243,7 @@ void FieldSet::update_coords_caches(ElementCacheMap &cache_map) {
 
 
 void FieldSet::cache_update(ElementCacheMap &cache_map) {
+	ASSERT_LT_DBG(region_dependency_list_.size(), 0).error("Variable 'region_dependency_list' is empty. Did you call 'set_dependency' method?\n");
     update_coords_caches(cache_map);
     for (unsigned int i_reg=0; i_reg<cache_map.n_regions(); ++i_reg) {
         unsigned int region_idx = cache_map.eval_point_data( cache_map.region_chunk_by_map_index(i_reg) ).i_reg_;
@@ -263,34 +265,28 @@ unsigned int FieldSet::compute_depth(const FieldCommon *field, const map<string,
 
 
 void FieldSet::set_dependency() {
-	// Fill map of field indices if field_list was changed
-	if (field_indices_map_.size() < field_list.size()) {
-	    field_indices_map_.clear();
-	    for (unsigned int i=0; i<field_list.size(); ++i) {
-	        field_indices_map_[ field_list[i]->name() ] = i;
-	    }
-	}
-	region_dependency_list_.clear();
+	std::unordered_map<std::string, unsigned int> field_indices_map;
+    for (unsigned int i=0; i<field_list.size(); ++i) {
+        field_indices_map[ field_list[i]->name() ] = i;
+    }
+    region_dependency_list_.clear();
 
-    map<string, vector<const FieldCommon *>> dependency_map;
-    map<unsigned int, vector<string>> depth_map;
-    set<string> used_fields;
-	for (unsigned int i_reg=0; i_reg<mesh_->region_db().size(); ++i_reg) {
-		dependency_map["X"] = vector<const FieldCommon *>(); // Temporary solution, remove after replace coord data cache with Field
-		for(auto field : field_list) dependency_map[field->name()] = field->set_dependency(*this, i_reg);
-		depth_map[0].push_back("X"); // Temporary solution, remove after replace coord data cache with Field
-		for(auto d : dependency_map) {
-			if (d.first=="X") continue;
-		    unsigned int depth = compute_depth(field_list[ field_indices_map_.find(d.first)->second ], dependency_map);
-		    depth_map[depth].push_back(d.first);
-		}
-		region_dependency_list_[i_reg].reserve(field_list.size());
-		for(auto d : depth_map) {
-		    for (auto field_name : d.second) region_dependency_list_[i_reg].push_back(field_indices_map_[field_name]);
-		}
-		dependency_map.clear();
-		depth_map.clear();
-	}
+    unordered_map<std::string, unsigned int>::iterator it;
+    for (unsigned int i_reg=0; i_reg<mesh_->region_db().size(); ++i_reg) {
+        DfsTopoSort dfs(field_list.size());
+        for(auto field : field_list) {
+        	it = field_indices_map.find(field->name());
+        	if (it==field_indices_map.end()) it = field_indices_map.find(field->input_name());
+            unsigned int field_ind = it->second;
+        	auto dep_vec = field->set_dependency(*this, i_reg); // vector of dependent fields
+        	for (auto f : dep_vec) {
+                it = field_indices_map.find(f->name());
+                if (it==field_indices_map.end()) it = field_indices_map.find(f->input_name());
+        	    dfs.add_edge(field_ind, it->second);
+        	}
+        }
+        region_dependency_list_[i_reg] = dfs.topological_sort();
+    }
 }
 
 void FieldSet::add_coords_field() {
