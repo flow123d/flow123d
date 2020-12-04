@@ -243,7 +243,7 @@ void FieldSet::update_coords_caches(ElementCacheMap &cache_map) {
 
 
 void FieldSet::cache_update(ElementCacheMap &cache_map) {
-	ASSERT_LT_DBG(region_dependency_list_.size(), 0).error("Variable 'region_dependency_list' is empty. Did you call 'set_dependency' method?\n");
+	ASSERT_GT_DBG(region_dependency_list_.size(), 0).error("Variable 'region_dependency_list' is empty. Did you call 'set_dependency' method?\n");
     update_coords_caches(cache_map);
     for (unsigned int i_reg=0; i_reg<cache_map.n_regions(); ++i_reg) {
         unsigned int region_idx = cache_map.eval_point_data( cache_map.region_chunk_by_map_index(i_reg) ).i_reg_;
