@@ -38,7 +38,7 @@ public:
     	PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
         n_items = 10; // number of tested items
 
-        mesh = mesh_full_constructor("{mesh_file=\"mesh/cube_2x1.msh\"}");
+        mesh = mesh_full_constructor("{ mesh_file=\"mesh/cube_2x1.msh\", optimize_mesh=false }");
 
         expected_product = {{  1.50,  0.10, 0.50},
                             {  5.25,  1.65, 2.25},

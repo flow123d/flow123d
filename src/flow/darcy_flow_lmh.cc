@@ -35,6 +35,7 @@
 #include "input/factory.hh"
 
 #include "mesh/mesh.h"
+#include "mesh/bc_mesh.hh"
 #include "mesh/partitioning.hh"
 #include "mesh/accessors.hh"
 #include "mesh/range_wrapper.hh"
@@ -335,7 +336,7 @@ void DarcyLMH::initialize() {
     data_->p_edge_solution_previous_time = data_->dh_cr_->create_vector();
 
     // Initialize bc_switch_dirichlet to size of global boundary.
-    data_->bc_switch_dirichlet.resize(mesh_->n_elements()+mesh_->n_elements(true), 1);
+    data_->bc_switch_dirichlet.resize(mesh_->n_elements()+mesh_->get_bc_mesh()->n_elements(), 1);
 
 
     nonlinear_iteration_=0;

@@ -341,9 +341,8 @@ public:
     Range<Edge> edge_range() const;
 
     /// Returns count of boundary or bulk elements
-    virtual unsigned int n_elements(bool boundary=false) const {
-    	if (boundary) return element_ids_.size()-bulk_size_;
-    	else return bulk_size_;
+    virtual unsigned int n_elements() const {
+    	return bulk_size_;
     }
 
     /// For each node the vector contains a list of elements that use this node
@@ -361,6 +360,12 @@ public:
         return element_ids_[pos];
     }
 
+    /// Return permutation vector of elements
+    inline const std::vector<unsigned int> &element_permutations() const
+    {
+        return elem_permutation_;
+    }
+
     /// For node of given node_id returns index in element_vec_ or (-1) if node doesn't exist.
     inline int node_index(int node_id) const
     {
@@ -373,11 +378,17 @@ public:
         return node_ids_[pos];
     }
 
+    /// Return permutation vector of nodes
+    inline const std::vector<unsigned int> &node_permutations() const
+    {
+        return node_permutation_;
+    }
+
     /// Check if given index is in element_vec_
     void check_element_size(unsigned int elem_idx) const;
 
-    /// Create boundary elements from data of temporary structure, this method MUST be call after read mesh from
-    void create_boundary_elements();
+    /// Create boundary elements from data of temporary structure, this method MUST be call after read mesh from file, return number of read boundary elements
+    unsigned int create_boundary_elements();
 
     /// Permute nodes of 3D elements of given elm_idx
     void permute_tetrahedron(unsigned int elm_idx, std::vector<unsigned int> permutation_vec);
@@ -484,6 +495,16 @@ protected:
     void output_internal_ngh_data();
     
     /**
+     * Apply functionality of MeshOptimizer to sort nodes and elements.
+     *
+     * Use Hilbert curve, need call sort_permuted_nodes_elements method.
+     */
+    void optimize();
+
+    /// Sort elements and nodes by order stored in permutation vectors.
+    void sort_permuted_nodes_elements(std::vector<int> new_node_ids, std::vector<int> new_elem_ids);
+
+    /**
      * Database of regions (both bulk and boundary) of the mesh. Regions are logical parts of the
      * domain that allows setting of different data and boundary conditions on them.
      */
@@ -538,6 +559,12 @@ protected:
 
     /// Vector of MH edges, this should not be part of the geometrical mesh
     std::vector<EdgeData> edges;
+
+    /// Vector of node permutations of optimized mesh (see class MeshOptimizer)
+    std::vector<unsigned int> node_permutation_;
+
+    /// Vector of element permutations of optimized mesh (see class MeshOptimizer)
+    std::vector<unsigned int> elem_permutation_;
 
 
     friend class Edge;

@@ -13,6 +13,7 @@ test_cases:
   - 23_elementwise_bc.yaml
   - 24_elementwise_integer_field.yaml
   - 27_FE_equivalent_mesh.yaml
+  - 28_FE_identic_mesh.yaml
   proc: [1]
   
   

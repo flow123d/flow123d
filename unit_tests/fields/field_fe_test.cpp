@@ -57,7 +57,7 @@ public:
     }
 
     void create_mesh(std::string mesh_file_str) {
-        mesh = mesh_full_constructor("{mesh_file=\"" + mesh_file_str + "\"}");
+        mesh = mesh_full_constructor("{ mesh_file=\"" + mesh_file_str + "\", optimize_mesh=false }");
     }
 
     void create_dof_handler(double val1, double val2, double val3) {
@@ -295,7 +295,7 @@ public:
 
         Profiler::instance();
 
-        mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
+        mesh = mesh_full_constructor("{ mesh_file=\"mesh/simplest_cube.msh\", optimize_mesh=false }");
 
         Input::Type::Record rec_type = Input::Type::Record("Test","")
             .declare_key("scalar", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )

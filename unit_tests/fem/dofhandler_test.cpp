@@ -34,7 +34,7 @@ TEST(DOFHandler, test_all) {
     //  | /           \ |
     //  1---------------2
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-    Mesh * mesh = mesh_full_constructor("{mesh_file=\"fem/small_mesh.msh\"}");
+    Mesh * mesh = mesh_full_constructor("{ mesh_file=\"fem/small_mesh.msh\", optimize_mesh=false }");
     
     MixedPtr<FE_P> fe(1);
     std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, fe);
@@ -102,7 +102,7 @@ TEST(DOFHandler, test_all) {
     //  | /           \ |
     //  1---------------2
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-    Mesh * mesh = mesh_full_constructor("{mesh_file=\"fem/small_mesh_junction.msh\"}");
+    Mesh * mesh = mesh_full_constructor("{ mesh_file=\"fem/small_mesh_junction.msh\", optimize_mesh=false }");
     
     MixedPtr<FE_P> fe(1);
     std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, fe);
@@ -249,7 +249,7 @@ TEST(DOFHandler, test_sub_handler)
 TEST(DOFHandler, test_rt)
 {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-    Mesh * mesh = mesh_full_constructor("{mesh_file=\"fem/small_mesh_junction.msh\"}");
+    Mesh * mesh = mesh_full_constructor("{ mesh_file=\"fem/small_mesh_junction.msh\", optimize_mesh=false }");
 
     MixedPtr<FE_RT0> fe;
     std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, fe);

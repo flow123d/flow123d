@@ -89,7 +89,7 @@ OutputElementIterator OutputMeshBase::end()
 {
     ASSERT_PTR_DBG(offsets_);
 //     ASSERT_DBG(offsets_->n_values() > 0);
-    return OutputElementIterator(OutputElement(offsets_->n_values(), shared_from_this()));
+    return OutputElementIterator(OutputElement(offsets_->n_values()-1, shared_from_this()));
 }
 
 
@@ -101,7 +101,7 @@ void OutputMeshBase::set_error_control_field(ErrorControlFieldFunc error_control
 unsigned int OutputMeshBase::n_elements()
 {
     ASSERT_PTR(offsets_);
-    return offsets_->n_values();
+    return offsets_->n_values()-1;
 }
 
 unsigned int OutputMeshBase::n_nodes()
@@ -172,14 +172,15 @@ void OutputMeshBase::create_sub_mesh()
     for (unsigned int i=0; i<n_local_nodes_; ++i) local_nodes_map[ node_4_loc_[i] ] = i;
 
     orig_element_indices_ = std::make_shared<std::vector<unsigned int>>(n_local_elements);
-    offsets_ = std::make_shared<ElementDataCache<unsigned int>>("offsets", (unsigned int)ElementDataCacheBase::N_SCALAR, n_local_elements);
+    offsets_ = std::make_shared<ElementDataCache<unsigned int>>("offsets", (unsigned int)ElementDataCacheBase::N_SCALAR, n_local_elements+1);
     auto &offset_vec = *( offsets_->get_component_data(0).get() );
 
+    offset_vec[0] = 0;
     for (unsigned int loc_el = 0; loc_el < n_local_elements; loc_el++) {
         elm = orig_mesh_->element_accessor( el_4_loc_[loc_el] );
         // increase offset by number of nodes of the simplicial element
         offset += elm->dim() + 1;
-        offset_vec[ele_id] = offset;
+        offset_vec[ele_id+1] = offset;
         (*orig_element_indices_)[ele_id] = el_4_loc_[loc_el];
         ele_id++;
     }
@@ -221,13 +222,14 @@ void OutputMeshBase::make_serial_master_mesh()
     	unsigned int n_elems = el_ds_->end( el_ds_->np()-1 );
     	master_mesh_ = this->construct_mesh();
     	master_mesh_->orig_element_indices_ = std::make_shared<std::vector<unsigned int>>(n_elems);
-    	master_mesh_->offsets_ = std::make_shared<ElementDataCache<unsigned int>>("offsets", ElementDataCacheBase::N_SCALAR, n_elems);
+    	master_mesh_->offsets_ = std::make_shared<ElementDataCache<unsigned int>>("offsets", ElementDataCacheBase::N_SCALAR, n_elems+1);
         auto &offsets_vec = *( master_mesh_->offsets_->get_component_data(0).get() );
         auto &elems_n_nodes_vec = *( elems_n_nodes->get_component_data(0).get() );
         unsigned int offset=0;
+        offsets_vec[0] = 0;
         for (unsigned int i=0; i<n_elems; ++i) {
             offset += elems_n_nodes_vec[i];
-            offsets_vec[i] = offset;
+            offsets_vec[i+1] = offset;
             (*master_mesh_->orig_element_indices_)[i] = i;
         }
         global_offsets = master_mesh_->offsets_;
@@ -250,11 +252,10 @@ void OutputMeshBase::make_serial_master_mesh()
 std::shared_ptr<ElementDataCache<unsigned int>> OutputMeshBase::get_elems_n_nodes()
 {
 	// Compute (locally) number of nodes of each elements
-	ElementDataCache<unsigned int> local_elems_n_nodes("elems_n_nodes", ElementDataCacheBase::N_SCALAR, offsets_->n_values());
+	ElementDataCache<unsigned int> local_elems_n_nodes("elems_n_nodes", ElementDataCacheBase::N_SCALAR, offsets_->n_values()-1);
 	auto &local_elems_n_nodes_vec = *( local_elems_n_nodes.get_component_data(0).get() );
 	auto &offset_vec = *( offsets_->get_component_data(0).get() );
-	for (unsigned int i=offset_vec.size()-1; i>0; --i) local_elems_n_nodes_vec[i] = offset_vec[i] - offset_vec[i-1];
-	local_elems_n_nodes_vec[0] = offset_vec[0];
+	for (unsigned int i=0; i<local_elems_n_nodes.n_values(); ++i) local_elems_n_nodes_vec[i] = offset_vec[i+1] - offset_vec[i];
 
 	// Collect data, set on zero process
 	std::shared_ptr<ElementDataCache<unsigned int>> global_elems_n_nodes;
@@ -637,7 +638,8 @@ void OutputMeshDiscontinuous::create_refined_sub_mesh()
 
     node_vec.reserve(4*orig_mesh_->n_nodes());
     conn_vec.reserve(4*4*orig_mesh_->n_elements());
-    offset_vec.reserve(4*orig_mesh_->n_elements());
+    offset_vec.reserve(4*orig_mesh_->n_elements()+4);
+    offset_vec.push_back(0);
 
     LongIdx *el_4_loc = orig_mesh_->get_el_4_loc();
     const unsigned int n_local_elements = orig_mesh_->get_el_ds()->lsize();
@@ -702,7 +704,7 @@ void OutputMeshDiscontinuous::create_refined_sub_mesh()
     offsets_->set_n_values(offset_vec.size());
 
     // Create special distributions and arrays of local to global indexes of refined mesh
-	el_ds_ = new Distribution(offset_vec.size(), PETSC_COMM_WORLD);
+	el_ds_ = new Distribution(offset_vec.size()-1, PETSC_COMM_WORLD);
 	node_ds_ = new Distribution(offset_vec[offset_vec.size()-1], PETSC_COMM_WORLD);
 	n_local_nodes_ = node_ds_->lsize();
 	el_4_loc_ = new LongIdx [ el_ds_->lsize() ];
