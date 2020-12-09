@@ -28,6 +28,8 @@
 #include "fields/eval_points.hh"   // for EvalPoints
 #include "fields/field_value_cache.hh"
 #include "fields/field.hh"
+#include "mesh/range_wrapper.hh"
+#include "tools/general_iterator.hh"
 #include "input/accessors.hh"      // for Array
 #include "input/type_record.hh"    // for Record
 #include "io/output_time.hh"       // for OutputTime, OutputTime::DiscreteSpace
@@ -350,12 +352,12 @@ public:
     inline const FieldValueCache<double> &y() const { return y_coord_; }  ///< Return y-coord FieldValueCache
     inline const FieldValueCache<double> &z() const { return z_coord_; }  ///< Return z-coord FieldValueCache
 
+    /// Returns range of Fields held in field_list
+    Range<FieldListAccessor> fields_range() const;
+
 protected:
     /// Update caches holding coordinates values (for FieldFormula)
     void update_coords_caches(ElementCacheMap &cache_map);
-
-    /// Compute depth (recursively) of given field in dependecy tree.
-    unsigned int compute_depth(const FieldCommon *field, const std::map<string, std::vector<const FieldCommon *>> &dependency_map);
 
     /// List of all fields.
     std::vector<FieldCommon *> field_list;
@@ -376,7 +378,7 @@ protected:
      * - first: index of region
      * - second: vector of indices of fields (corresponding to position in field_list vector)
      */
-    std::map<unsigned int, std::vector<unsigned int>> region_dependency_list_;
+    std::map<unsigned int, std::vector<const FieldCommon *>> region_dependency_list_;
 
     /// Field holds coordinates for computing of FieldFormulas
     Field<3, FieldValue<3>::VectorFixed > X_;

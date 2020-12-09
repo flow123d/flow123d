@@ -397,7 +397,7 @@ void MultiField<spacedim, Value>::cache_reallocate(const ElementCacheMap &cache_
 
 
 template<int spacedim, class Value>
-void MultiField<spacedim, Value>::cache_update(ElementCacheMap &cache_map, unsigned int i_reg) {
+void MultiField<spacedim, Value>::cache_update(ElementCacheMap &cache_map, unsigned int i_reg) const {
    for(auto &field : sub_fields_) field.cache_update(cache_map, i_reg);
 }
 

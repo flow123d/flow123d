@@ -760,7 +760,7 @@ void Field<spacedim, Value>::cache_reallocate(const ElementCacheMap &cache_map) 
 
 
 template<int spacedim, class Value>
-void Field<spacedim, Value>::cache_update(ElementCacheMap &cache_map, unsigned int i_reg) {
+void Field<spacedim, Value>::cache_update(ElementCacheMap &cache_map, unsigned int i_reg) const {
     if (region_fields_[i_reg] != nullptr) // skips bounadry regions for bulk fields and vice versa
         region_fields_[i_reg]->cache_update(value_cache_, cache_map, i_reg);
 }

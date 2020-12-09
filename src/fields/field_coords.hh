@@ -95,7 +95,7 @@ public:
     }
 
     /// Implements FieldCommon::cache_update
-    void cache_update(ElementCacheMap &cache_map, unsigned int i_reg) override {
+    void cache_update(ElementCacheMap &cache_map, unsigned int i_reg) const override {
         // Modify code of FieldSet::update_coords_caches method.
     }
 
@@ -110,7 +110,7 @@ private:
      *
      * See implementation of Field<spacedim, Value>::value_cache_
      */
-    FieldValueCache<double> value_cache_;
+    mutable FieldValueCache<double> value_cache_;
 
     const Mesh *mesh_;                 ///< Pointer to the mesh.
 };
