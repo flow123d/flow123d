@@ -36,7 +36,7 @@ TEST(InputTypeTypeBase, includes) {
 /**
  * Check is boost type traits can distinguish int and enum.
  */
-#include <boost/type_traits.hpp>
+#include <type_traits>
 
 enum x_enum {
     one=1,
@@ -45,8 +45,8 @@ enum x_enum {
 typedef x_enum XX;
 
 TEST(BoostTypeTraits, Enum) {
-    EXPECT_TRUE( boost::is_enum<XX>::value);
-    EXPECT_FALSE( boost::is_integral<XX>::value);
+    EXPECT_TRUE( std::is_enum<XX>::value);
+    EXPECT_FALSE( std::is_integral<XX>::value);
 };
 
 

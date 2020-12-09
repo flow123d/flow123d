@@ -18,7 +18,7 @@
 #ifndef UNIT_CONVERTER_HH_
 #define UNIT_CONVERTER_HH_
 
-#include <boost/exception/info.hpp>  // for error_info::~error_info<Tag, T>
+
 #include <map>                       // for map, map<>::value_compare
 #include <string>                    // for string
 #include <vector>                    // for vector

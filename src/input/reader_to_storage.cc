@@ -27,7 +27,7 @@
 #include "input/accessors.hh"
 #include "input/reader_internal.hh"
 #include <stddef.h>                                    // for NULL
-#include <boost/exception/detail/error_info_impl.hpp>  // for error_info
+
 #include <ostream>                                     // for operator<<
 #include <set>                                         // for set, _Rb_tree_...
 #include <typeinfo>                                    // for type_info

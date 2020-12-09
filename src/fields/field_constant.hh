@@ -20,7 +20,6 @@
 
 #include <stdio.h>                            // for sprintf
 #include <string.h>                           // for memcpy
-#include <boost/exception/info.hpp>           // for operator<<, error_info:...
 #include <new>                                // for operator new[]
 #include <string>                             // for operator<<
 #include <vector>                             // for vector

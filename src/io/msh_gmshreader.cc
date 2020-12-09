@@ -358,11 +358,3 @@ BaseMeshReader::MeshDataHeader & GmshMeshReader::find_header(BaseMeshReader::Hea
 	actual_header_ = *headers_it;
 	return actual_header_;
 }
-
-void GmshMeshReader::check_compatible_mesh(Mesh &mesh)
-{
-	bulk_elements_id_.clear();
-	boundary_elements_id_.clear();
-	mesh.elements_id_maps(bulk_elements_id_, boundary_elements_id_);
-	has_compatible_mesh_ = true;
-}

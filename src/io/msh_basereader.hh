@@ -20,7 +20,7 @@
 #define	MSH_BASE_READER_HH
 
 
-#include <boost/exception/info.hpp>  // for error_info::~error_info<Tag, T>
+
 #include <map>                       // for map, map<>::value_compare
 #include <memory>                    // for shared_ptr
 #include <string>                    // for string
@@ -186,13 +186,6 @@ public:
     template<typename T>
     typename ElementDataCache<T>::ComponentDataPtr get_element_data( unsigned int n_entities, unsigned int n_components,
     		bool boundary_domain, unsigned int component_idx);
-
-    /**
-     * Check if nodes and elements of reader mesh is compatible with \p mesh.
-     *
-     * OBSOLETE method - will be replace with Mesh::check_compatible_mesh after merge fields!
-     */
-    virtual void check_compatible_mesh(Mesh &mesh)=0;
 
     /**
      * Returns vector of boundary or bulk element ids by parameter boundary_domain

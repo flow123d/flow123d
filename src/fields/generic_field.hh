@@ -26,7 +26,6 @@
  * depends only on data in mesh.
  */
 
-#include <boost/exception/info.hpp>  // for operator<<, error_info::error_in...
 #include "fields/field.hh"           // for Field
 #include "fields/field_values.hh"    // for FieldValue
 #include "input/type_base.hh"        // for Array

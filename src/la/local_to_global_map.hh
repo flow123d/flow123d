@@ -18,8 +18,8 @@
 #ifndef LOCAL_TO_GLOBAL_MAP_HH_
 #define LOCAL_TO_GLOBAL_MAP_HH_
 
-#include <boost/exception/detail/error_info_impl.hpp>
-#include <boost/exception/info.hpp>
+//
+
 #include <iosfwd>
 #include <memory>
 #include <set>

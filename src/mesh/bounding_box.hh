@@ -20,8 +20,8 @@
 
 #include <string.h>                                    // for memcpy
 #include <algorithm>                                   // for max, min
-#include <boost/exception/detail/error_info_impl.hpp>  // for error_info
-#include <boost/exception/info.hpp>                    // for operator<<
+
+
 #include <new>                                         // for operator new[]
 #include <ostream>                                     // for operator<<
 #include <string>                                      // for basic_string

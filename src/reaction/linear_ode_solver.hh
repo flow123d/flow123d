@@ -18,8 +18,8 @@
 #ifndef LINEAR_ODE_SOLVER_H_
 #define LINEAR_ODE_SOLVER_H_
 
-#include <boost/exception/detail/error_info_impl.hpp>  // for error_info
-#include <boost/exception/info.hpp>                    // for operator<<
+
+
 #include <iosfwd>                                      // for stringstream
 #include <string>                                      // for string, basic_...
 #include <vector>                                      // for vector

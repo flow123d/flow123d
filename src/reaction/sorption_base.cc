@@ -15,8 +15,6 @@
  * @brief   
  */
 
-#include <boost/foreach.hpp>
-
 #include "reaction/sorption_base.hh"
 #include "reaction/reaction_term.hh"
 #include "reaction/first_order_reaction.hh"
