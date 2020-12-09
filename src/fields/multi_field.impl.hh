@@ -377,15 +377,9 @@ bool MultiField<spacedim, Value>::MultiFieldFactory::is_active_field_descriptor(
 
 
 template<int spacedim, class Value>
-std::vector<const FieldCommon *> MultiField<spacedim, Value>::set_dependency(FieldSet &field_set, unsigned int i_reg) {
-    std::vector<const FieldCommon *> depend_fields;
-    for(unsigned int i_comp=0; i_comp < this->shared_->comp_names_.size(); i_comp++) {
-        auto add = sub_fields_[i_comp].set_dependency(field_set, i_reg);
-        depend_fields.insert(depend_fields.end(), add.begin(), add.end());
-    }
-    std::sort(depend_fields.begin(), depend_fields.end());
-    depend_fields.erase( unique( depend_fields.begin(), depend_fields.end() ), depend_fields.end() );
-    return depend_fields;
+std::vector<const FieldCommon *> MultiField<spacedim, Value>::set_dependency(FMT_UNUSED FieldSet &field_set, FMT_UNUSED unsigned int i_reg) {
+	ASSERT(false).error("Set dependency of MultiField should be performed by individual components!\n");
+    return std::vector<const FieldCommon *>();
 }
 
 
@@ -397,8 +391,8 @@ void MultiField<spacedim, Value>::cache_reallocate(const ElementCacheMap &cache_
 
 
 template<int spacedim, class Value>
-void MultiField<spacedim, Value>::cache_update(ElementCacheMap &cache_map, unsigned int i_reg) const {
-   for(auto &field : sub_fields_) field.cache_update(cache_map, i_reg);
+void MultiField<spacedim, Value>::cache_update(FMT_UNUSED ElementCacheMap &cache_map, FMT_UNUSED unsigned int i_reg) const {
+   ASSERT(false).error("Cache update of MultiField should be performed by individual components!\n");
 }
 
 
