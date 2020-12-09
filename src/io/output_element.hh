@@ -128,10 +128,7 @@ inline unsigned int OutputElement::idx() const
 
 inline unsigned int OutputElement::n_nodes() const
 {
-    if(ele_idx_ == 0)
-        return (*output_mesh_->offsets_)[0];
-    else
-        return (*output_mesh_->offsets_)[ele_idx_] - (*output_mesh_->offsets_)[ele_idx_-1];
+    return (*output_mesh_->offsets_)[ele_idx_+1] - (*output_mesh_->offsets_)[ele_idx_];
 }
 
 inline unsigned int OutputElement::dim() const
@@ -144,7 +141,7 @@ inline unsigned int OutputElement::node_index(unsigned int loc_idx) const
 {
     unsigned int n = n_nodes();
     ASSERT_DBG(loc_idx < n);
-    unsigned int con_off = (*output_mesh_->offsets_)[ele_idx_];
+    unsigned int con_off = (*output_mesh_->offsets_)[ele_idx_+1];
     return (* output_mesh_->connectivity_)[con_off - n + loc_idx];
 }
 
@@ -153,7 +150,7 @@ inline OutputElement::Point OutputElement::vertex(unsigned int loc_idx) const
 {
     unsigned int n = n_nodes();
     ASSERT_DBG(loc_idx < n);
-    unsigned int con_off = (*output_mesh_->offsets_)[ele_idx_];
+    unsigned int con_off = (*output_mesh_->offsets_)[ele_idx_+1];
     unsigned int off = spacedim * (* output_mesh_->connectivity_)[con_off - n + loc_idx];
     auto &d = *( output_mesh_->nodes_->get_component_data(0).get() );
     Point point({d[off], d[off+1], d[off+2]});
@@ -166,7 +163,7 @@ inline std::vector< OutputElement::Point > OutputElement::vertex_list() const
     const unsigned int n = n_nodes();
     std::vector<Point> vertices(n);
     
-    unsigned int con_off = (*output_mesh_->offsets_)[ele_idx_];
+    unsigned int con_off = (*output_mesh_->offsets_)[ele_idx_+1];
     auto &d = *( output_mesh_->nodes_->get_component_data(0).get() );
     for(unsigned int i=0; i<n; i++) {
         unsigned int off = spacedim * (* output_mesh_->connectivity_)[con_off - n + i];
@@ -180,7 +177,7 @@ inline std::vector< OutputElement::Point > OutputElement::vertex_list() const
 inline std::vector< unsigned int > OutputElement::node_list() const
 {
     unsigned int n = n_nodes();
-    unsigned int con_off = (*output_mesh_->offsets_)[ele_idx_];
+    unsigned int con_off = (*output_mesh_->offsets_)[ele_idx_+1];
     std::vector<unsigned int> indices(n);
     for(unsigned int i=0; i<n; i++) {
         indices[i] = (* output_mesh_->connectivity_)[con_off - n + i];

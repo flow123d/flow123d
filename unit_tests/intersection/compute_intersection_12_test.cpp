@@ -152,7 +152,7 @@ TEST(intersections_12d, all) {
         FilePath mesh_file(dir_name + file_name, FilePath::input_file);
         ASSERT(mesh_file.exists())(dir_name+file_name);
         
-        string in_mesh_string = "{mesh_file=\"" + (string)mesh_file + "\"}";
+        string in_mesh_string = "{ mesh_file=\"" + (string)mesh_file + "\", optimize_mesh=false }";
         
         const unsigned int np = permutations_triangle.size();
 //         const unsigned int np = 1;

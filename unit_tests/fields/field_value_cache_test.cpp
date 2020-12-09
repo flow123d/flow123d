@@ -35,7 +35,7 @@ public:
         Profiler::instance();
         PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
 
-        mesh_ = mesh_full_constructor("{mesh_file=\"mesh/cube_2x1.msh\"}");
+        mesh_ = mesh_full_constructor("{ mesh_file=\"mesh/cube_2x1.msh\", optimize_mesh=false }");
         dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
 
         eval_points = std::make_shared<EvalPoints>();

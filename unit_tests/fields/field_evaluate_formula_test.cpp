@@ -114,7 +114,7 @@ public:
 
         data_ = std::make_shared<EqData>();
         data_->add_coords_field();
-        mesh_ = mesh_full_constructor("{mesh_file=\"mesh/cube_2x1.msh\"}");
+        mesh_ = mesh_full_constructor("{ mesh_file=\"mesh/cube_2x1.msh\", optimize_mesh=false }");
         dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
     }
 
