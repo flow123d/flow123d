@@ -459,6 +459,14 @@ public:
 
 
     /**
+     *  Returns pointer to this (Field) or the sub-field component (MultiField).
+     */
+    virtual FieldCommon *get_component(FMT_UNUSED unsigned int idx) {
+        return this;
+    }
+
+
+    /**
      * Print stored messages to table.
      *
      * Return true if messages_data_ vector is nonempty and clear its.

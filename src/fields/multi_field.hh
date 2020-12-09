@@ -230,6 +230,15 @@ public:
     }
     
     /**
+     * Returns pointer to the sub-field (component, as FieldCommon) of given index @p idx.
+     */
+    FieldCommon *get_component(unsigned int idx) override
+    {
+    	ASSERT_LT(idx, sub_fields_.size())(this->input_name()).error("Index of subfield in MultiField is out of range.\n");
+    	return &(sub_fields_[idx]);
+    }
+
+    /**
      * Initialize components of MultiField.
      *
      * Must be call after setting components, mesh and limit side.
