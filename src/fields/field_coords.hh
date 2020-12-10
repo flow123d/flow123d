@@ -20,6 +20,9 @@
 
 #include "fields/field_common.hh"                      // for FieldCommon::T...
 #include "fields/field_value_cache.hh"                 // for FieldValueCache
+#include "fields/eval_points.hh"                       // for EvalPoints
+#include "fem/mapping_p1.hh"
+#include "mesh/ref_element.hh"
 
 namespace IT=Input::Type;
 
@@ -32,6 +35,9 @@ public:
       : value_cache_( FieldValueCache<double>(3, 1) )
     {
         this->multifield_ = false;
+    	unsigned int cache_size = 1.1 * CacheMapElementNumber::get();
+    	value_cache_.reinit(cache_size);
+    	value_cache_.resize(cache_size);
     }
 
     IT::Instance get_input_type() override {
@@ -62,15 +68,15 @@ public:
     }
 
     void copy_from(FMT_UNUSED const FieldCommon & other) override {
-        ASSERT(false).error("Forbidden method for FieldCoords!")
+        ASSERT(false).error("Forbidden method for FieldCoords!");
     }
 
     void field_output(FMT_UNUSED std::shared_ptr<OutputTime> stream) override {
-        ASSERT(false).error("Forbidden method for FieldCoords!")
+        ASSERT(false).error("Forbidden method for FieldCoords!");
     }
 
     void observe_output(FMT_UNUSED std::shared_ptr<Observe> observe) override {
-        ASSERT(false).error("Forbidden method for FieldCoords!")
+        ASSERT(false).error("Forbidden method for FieldCoords!");
     }
 
     FieldResult field_result(FMT_UNUSED RegionSet region_set) const override {
@@ -86,17 +92,59 @@ public:
     {}
 
     /// Implements FieldCommon::cache_allocate
-    void cache_reallocate(const ElementCacheMap &cache_map) override {
-        unsigned int new_size = ElementCacheMap::n_cached_elements * cache_map.eval_points()->max_size();
-        if (new_size > value_cache_.size()) {
-            value_cache_.reinit(new_size);
-            value_cache_.resize(new_size);
-        }
-    }
+    void cache_reallocate(FMT_UNUSED const ElementCacheMap &cache_map) override
+    {}
 
     /// Implements FieldCommon::cache_update
     void cache_update(ElementCacheMap &cache_map, unsigned int i_reg) const override {
-        // Modify code of FieldSet::update_coords_caches method.
+    	std::shared_ptr<EvalPoints> eval_points = cache_map.eval_points();
+        unsigned int reg_chunk_begin = cache_map.region_chunk_begin(i_reg);
+        unsigned int reg_chunk_end = cache_map.region_chunk_end(i_reg);
+        unsigned int last_element_idx = -1;
+        ElementAccessor<3> elm;
+    	arma::vec3 coords;
+        unsigned int dim = 0;
+
+        for (unsigned int i_data = reg_chunk_begin; i_data < reg_chunk_end; ++i_data) { // i_eval_point_data
+            unsigned int elm_idx = cache_map.eval_point_data(i_data).i_element_;
+            if (elm_idx != last_element_idx) {
+                elm = mesh_->element_accessor( elm_idx );
+                dim = elm.dim();
+                last_element_idx = elm_idx;
+            }
+
+            unsigned int i_point = cache_map.eval_point_data(i_data).i_eval_point_;
+            switch (dim) {
+            case 0:
+                coords = *elm.node(0);
+                break;
+            case 1:
+                coords = MappingP1<1,3>::project_unit_to_real(RefElement<1>::local_to_bary(eval_points->local_point<1>(i_point)),
+                        MappingP1<1,3>::element_map(elm));
+                break;
+            case 2:
+                coords = MappingP1<2,3>::project_unit_to_real(RefElement<2>::local_to_bary(eval_points->local_point<2>(i_point)),
+                        MappingP1<2,3>::element_map(elm));
+                break;
+            case 3:
+                coords = MappingP1<3,3>::project_unit_to_real(RefElement<3>::local_to_bary(eval_points->local_point<3>(i_point)),
+                        MappingP1<3,3>::element_map(elm));
+                break;
+            default:
+            	coords = arma::vec3("0 0 0"); //Should not happen
+            }
+            value_cache_.set(i_data) = coords;
+        }
+    }
+
+    /// returns reference to FieldValueCache.
+    inline const FieldValueCache<double> &value_cache() const {
+        return value_cache_;
+    }
+
+    /// Same as previous but return non-const reference.
+    inline FieldValueCache<double> &value_cache() {
+        return value_cache_;
     }
 
     /// Implements FieldCommon::set_dependency().
