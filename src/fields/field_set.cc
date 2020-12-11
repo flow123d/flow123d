@@ -191,10 +191,11 @@ bool FieldSet::is_jump_time() const {
 
 
 void FieldSet::cache_update(ElementCacheMap &cache_map) {
-	ASSERT_GT_DBG(region_dependency_list_.size(), 0).error("Variable 'region_dependency_list' is empty. Did you call 'set_dependency' method?\n");
+    ASSERT_GT_DBG(region_field_update_order_.size(), 0).error("Variable 'region_dependency_list' is empty. Did you call 'set_dependency' method?\n");
     for (unsigned int i_reg=0; i_reg<cache_map.n_regions(); ++i_reg) {
         unsigned int region_idx = cache_map.eval_point_data( cache_map.region_chunk_by_map_index(i_reg) ).i_reg_;
-        for(unsigned int i_f=0; i_f<region_dependency_list_[region_idx].size(); ++i_f) region_dependency_list_[region_idx][i_f]->cache_update(cache_map, region_idx);
+        for (const FieldCommon *field : region_field_update_order_[region_idx]) field->cache_update(cache_map, region_idx);
+        //for(unsigned int i_f=0; i_f<region_field_update_order_[region_idx].size(); ++i_f) region_field_update_order_[region_idx][i_f]->cache_update(cache_map, region_idx);
     }
 }
 
@@ -203,7 +204,7 @@ void FieldSet::set_dependency() {
     BidirectionalMap<const FieldCommon *> field_indices_map;
     for (FieldListAccessor f_acc : this->fields_range())
         field_indices_map.add_item( f_acc.field() );
-    region_dependency_list_.clear();
+    region_field_update_order_.clear();
 
     unordered_map<std::string, unsigned int>::iterator it;
     for (unsigned int i_reg=0; i_reg<mesh_->region_db().size(); ++i_reg) {
@@ -217,9 +218,9 @@ void FieldSet::set_dependency() {
         	}
         }
         auto sort_vec = dfs.topological_sort();
-        region_dependency_list_[i_reg] = std::vector<const FieldCommon *>(sort_vec.size());
+        region_field_update_order_[i_reg] = std::vector<const FieldCommon *>(sort_vec.size());
         for (unsigned int i_field=0; i_field<sort_vec.size(); ++i_field)
-            region_dependency_list_[i_reg][i_field] = field_indices_map[ sort_vec[i_field] ];
+            region_field_update_order_[i_reg][i_field] = field_indices_map[ sort_vec[i_field] ];
     }
 }
 

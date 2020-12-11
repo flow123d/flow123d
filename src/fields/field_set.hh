@@ -370,7 +370,7 @@ protected:
      * - first: index of region
      * - second: vector of indices of fields (corresponding to position in field_list vector)
      */
-    std::map<unsigned int, std::vector<const FieldCommon *>> region_dependency_list_;
+    std::map<unsigned int, std::vector<const FieldCommon *>> region_field_update_order_;
 
     /// Field holds coordinates for computing of FieldFormulas
     FieldCoords X_;

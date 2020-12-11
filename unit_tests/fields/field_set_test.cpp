@@ -367,7 +367,7 @@ public:
             for (auto f : this->field_list) std::cout << " " << f->name();
             std::cout << "\n----------------------------------------------------\n";
             std::cout << "Sorted order by regions:\n";
-            for (auto r : this->region_dependency_list_) {
+            for (auto r : this->region_field_update_order_) {
                 std::cout << " " << r.first << ":  ";
                 for (auto f : r.second) std::cout << " " << f->name();
                 std::cout << "\n";
@@ -378,7 +378,7 @@ public:
             // check
             std::vector<std::string> orig_order; // holds original order in field_list
             for (auto f : this->field_list) orig_order.push_back(f->name());
-            for (auto r : this->region_dependency_list_) {
+            for (auto r : this->region_field_update_order_) {
                 EXPECT_EQ(r.second.size(), 7);
                 if (r.first % 2) // only bulk regions are sorted
                     for (unsigned int i=1; i<r.second.size(); ++i)
