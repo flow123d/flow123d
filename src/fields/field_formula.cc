@@ -244,12 +244,14 @@ void FieldFormula<spacedim, Value>::cache_update(FieldValueCache<typename Value:
 {
     unsigned int reg_chunk_begin = cache_map.region_chunk_begin(region_idx);
     unsigned int reg_chunk_end = cache_map.region_chunk_end(region_idx);
+    const auto &coords_cache = field_set_->coords_cache();
 
     for (unsigned int i=reg_chunk_begin; i<reg_chunk_end; ++i) {
+        arma::vec3 coords = coords_cache.template vec<3>(i);
         // fill data vectors
-    	x_[i] = field_set_->x().template mat<1,1>(i)(0);
-        y_[i] = field_set_->y().template mat<1,1>(i)(0);
-        z_[i] = field_set_->z().template mat<1,1>(i)(0);
+        x_[i] = coords(0);
+        y_[i] = coords(1);
+        z_[i] = coords(2);
         if (surface_depth_ && has_depth_var_) {
             Point p;
             p(0) = x_[i]; p(1) = y_[i]; p(2) = z_[i];

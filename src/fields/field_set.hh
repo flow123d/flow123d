@@ -28,6 +28,7 @@
 #include "fields/eval_points.hh"   // for EvalPoints
 #include "fields/field_value_cache.hh"
 #include "fields/field.hh"
+#include "fields/field_coords.hh"  // for FieldCoords
 #include "mesh/range_wrapper.hh"
 #include "tools/general_iterator.hh"
 #include "input/accessors.hh"      // for Array
@@ -348,29 +349,20 @@ public:
      */
     void add_coords_field();
 
-    inline const FieldValueCache<double> &x() const { return x_coord_; }  ///< Return x-coord FieldValueCache
-    inline const FieldValueCache<double> &y() const { return y_coord_; }  ///< Return y-coord FieldValueCache
-    inline const FieldValueCache<double> &z() const { return z_coord_; }  ///< Return z-coord FieldValueCache
+    /// Return FieldValueCache of FieldCoords (X_)
+    inline const FieldValueCache<double> &coords_cache() const {
+        return X_.value_cache();
+    }
 
     /// Returns range of Fields held in field_list
     Range<FieldListAccessor> fields_range() const;
 
 protected:
-    /// Update caches holding coordinates values (for FieldFormula)
-    void update_coords_caches(ElementCacheMap &cache_map);
-
     /// List of all fields.
     std::vector<FieldCommon *> field_list;
 
-    /*
-     * Following caches represents data of x,y,z coordinates. Temporary solution, these caches will be part
-     * of appropriate Fields in future (when field params of FieldFormula will be applicated).
-     * Mesh allows construct ElementAccessors (for compute coordinates).
-     */
-    FieldValueCache<double> x_coord_;  ///< Holds values of x-coordinates (for FieldFormula)
-    FieldValueCache<double> y_coord_;  ///< Holds values of y-coordinates (for FieldFormula)
-    FieldValueCache<double> z_coord_;  ///< Holds values of z-coordinates (for FieldFormula)
-    const Mesh *mesh_;                 ///< Pointer to the mesh.
+    /// Pointer to the mesh.
+    const Mesh *mesh_;
 
     /**
      * Holds vector of indices of fields in field_list sorted by dependency for every region.
@@ -381,7 +373,7 @@ protected:
     std::map<unsigned int, std::vector<const FieldCommon *>> region_dependency_list_;
 
     /// Field holds coordinates for computing of FieldFormulas
-    Field<3, FieldValue<3>::VectorFixed > X_;
+    FieldCoords X_;
 
     /**
      * Stream output operator
