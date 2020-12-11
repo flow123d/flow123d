@@ -96,14 +96,6 @@ public:
 			ElementCacheMap &cache_map, unsigned int region_idx) override;
 
     /**
-     * Overload @p FieldAlgorithmBase::cache_reinit
-     *
-     * Reinit Bparser::ArenaAlloc data member.
-     */
-    void cache_reinit(const ElementCacheMap &cache_map) override;
-
-
-    /**
      * Set reference of FieldSet.
      */
     std::vector<const FieldCommon *> set_dependency(FieldSet &field_set) override;
