@@ -195,7 +195,6 @@ void FieldSet::cache_update(ElementCacheMap &cache_map) {
     for (unsigned int i_reg=0; i_reg<cache_map.n_regions(); ++i_reg) {
         unsigned int region_idx = cache_map.eval_point_data( cache_map.region_chunk_by_map_index(i_reg) ).i_reg_;
         for (const FieldCommon *field : region_field_update_order_[region_idx]) field->cache_update(cache_map, region_idx);
-        //for(unsigned int i_f=0; i_f<region_field_update_order_[region_idx].size(); ++i_f) region_field_update_order_[region_idx][i_f]->cache_update(cache_map, region_idx);
     }
 }
 

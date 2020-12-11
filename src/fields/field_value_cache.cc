@@ -123,9 +123,6 @@ void ElementCacheMap::clear_element_eval_points_map() {
     unsigned int ep_data_size = CacheMapElementNumber::get() * this->eval_points_->max_size();
     for (unsigned int i=0; i<ep_data_size; ++i)
     	element_eval_points_map_[i] = ElementCacheMap::unused_point;
-	//for (auto it = eval_point_data_.begin(); it != eval_point_data_.end(); ++it) {
-	//    set_element_eval_point(this->position_in_cache(it->i_element_), it->i_eval_point_, ElementCacheMap::unused_point);
-	//}
 }
 
 
