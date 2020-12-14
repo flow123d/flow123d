@@ -599,10 +599,10 @@ public:
     class ArrayMatSet {
         Type * ptr_;
         uint n_rows_, n_cols_;
-        uint size_;            ///< Reserved size of Armor::Array
+        uint reserved_;            ///< Reserved size of Armor::Array
     public:
-        inline ArrayMatSet(Type *ptr,  uint n_rows, uint n_cols, uint size)
-        : ptr_(ptr), n_rows_(n_rows), n_cols_(n_cols), size_(size)  {}
+        inline ArrayMatSet(Type *ptr,  uint n_rows, uint n_cols, uint reserved)
+        : ptr_(ptr), n_rows_(n_rows), n_cols_(n_cols), reserved_(reserved)  {}
 
 //        template<class T>
 //        ArrayMatSet &operator=(const typename arma::Base<Type, T>& arma_x)
@@ -644,7 +644,7 @@ public:
         template <uint nr, uint nc>
         void copy(const Type *other_ptr) {
             for (uint i = 0; i < nr * nc; ++i) {
-                *(ptr_ + i * size_) = *(other_ptr + i);
+                *(ptr_ + i * reserved_) = *(other_ptr + i);
             }
         }
     };
