@@ -151,7 +151,7 @@ TEST_F(FieldModelTest, create) {
 
     {
         // FieldModel scalar * vector
-        f_product.cache_update(*this);
+        f_product.cache_update(*this, 1);
         for (unsigned int i=0; i<n_items; ++i) {
             auto val = f_product.value_cache().template mat<3, 1>(i);
             EXPECT_ARMA_EQ(val, expected_product[i]);
@@ -160,7 +160,7 @@ TEST_F(FieldModelTest, create) {
 
     {
         // FieldModel vector + scalar * vector
-        f_other.cache_update(*this);
+        f_other.cache_update(*this, 1);
         for (unsigned int i=0; i<n_items; ++i) {
             auto val = f_other.value_cache().template mat<3, 1>(i);
             EXPECT_ARMA_EQ(val, expected_other[i]);
@@ -243,7 +243,8 @@ TEST_F(FieldModelTest, create_multi_scalar) {
 
     {
         // FieldModel scalar * multi
-        f_product.cache_update(*this);
+    	for (unsigned int i=0; i<f_product.size(); ++i)
+    	    f_product[i].cache_update(*this, 1);
         for (unsigned int i_cache=0; i_cache<n_items; ++i_cache) {
             for (unsigned int i_subfield=0; i_subfield<f_product.size(); ++i_subfield) {
                 auto val = f_product[i_subfield].value_cache().template mat<1, 1>(i_cache);
@@ -254,7 +255,8 @@ TEST_F(FieldModelTest, create_multi_scalar) {
 
     {
         // FieldModel multi + scalar * multi
-        f_other.cache_update(*this);
+    	for (unsigned int i=0; i<f_other.size(); ++i)
+    	    f_other[i].cache_update(*this, 1);
         for (unsigned int i_cache=0; i_cache<n_items; ++i_cache) {
             for (unsigned int i_subfield=0; i_subfield<f_other.size(); ++i_subfield) {
                 auto val = f_other[i_subfield].value_cache().template mat<1, 1>(i_cache);
@@ -321,7 +323,8 @@ TEST_F(FieldModelTest, create_multi_vector) {
 
     {
         // FieldModel scalar * multi
-        f_product.cache_update(*this);
+    	for (unsigned int i=0; i<f_product.size(); ++i)
+            f_product[i].cache_update(*this, 1);
         for (unsigned int i_cache=0; i_cache<n_items; ++i_cache) {
             for (unsigned int i_subfield=0; i_subfield<f_product.size(); ++i_subfield) {
                 auto val = f_product[i_subfield].value_cache().template mat<3, 1>(i_cache);
@@ -332,7 +335,8 @@ TEST_F(FieldModelTest, create_multi_vector) {
 
     {
         // FieldModel multi + scalar * multi
-        f_other.cache_update(*this);
+    	for (unsigned int i=0; i<f_other.size(); ++i)
+    	    f_other[i].cache_update(*this, 1);
         for (unsigned int i_cache=0; i_cache<n_items; ++i_cache) {
             for (unsigned int i_subfield=0; i_subfield<f_other.size(); ++i_subfield) {
                 auto val = f_other[i_subfield].value_cache().template mat<3, 1>(i_cache);

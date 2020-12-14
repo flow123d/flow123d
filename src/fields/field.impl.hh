@@ -760,20 +760,16 @@ void Field<spacedim, Value>::cache_reallocate(const ElementCacheMap &cache_map) 
 
 
 template<int spacedim, class Value>
-void Field<spacedim, Value>::cache_update(ElementCacheMap &cache_map) {
-    // Call cache_update of FieldAlgoBase descendants
-    for (unsigned int i_reg=0; i_reg<cache_map.n_regions(); ++i_reg) {
-        unsigned int region_idx = cache_map.eval_point_data( cache_map.region_chunk_by_map_index(i_reg) ).i_reg_;
-        if (region_fields_[region_idx] == nullptr) continue; // skips bounadry regions for bulk fields and vice versa
-        region_fields_[region_idx]->cache_update(value_cache_, cache_map, region_idx);
-    }
+void Field<spacedim, Value>::cache_update(ElementCacheMap &cache_map, unsigned int i_reg) const {
+    if (region_fields_[i_reg] != nullptr) // skips bounadry regions for bulk fields and vice versa
+        region_fields_[i_reg]->cache_update(value_cache_, cache_map, i_reg);
 }
 
+
 template<int spacedim, class Value>
-void Field<spacedim, Value>::set_dependency(FieldSet &field_set) {
-    for( auto field_ptr : region_fields_) {
-    	if (field_ptr != nullptr) field_ptr->set_dependency(field_set);
-    }
+std::vector<const FieldCommon *> Field<spacedim, Value>::set_dependency(FieldSet &field_set, unsigned int i_reg) {
+   	if (region_fields_[i_reg] != nullptr) return region_fields_[i_reg]->set_dependency(field_set);
+   	else return std::vector<const FieldCommon *>();
 }
 
 

@@ -335,7 +335,7 @@ public:
     void cache_reallocate(const ElementCacheMap &cache_map) override;
 
     /// Implements FieldCommon::cache_update
-    void cache_update(ElementCacheMap &cache_map) override;
+    void cache_update(ElementCacheMap &cache_map, unsigned int i_reg) const override;
 
     /// returns reference to FieldValueCache.
     inline const FieldValueCache<typename Value::element_type> &value_cache() const {
@@ -350,7 +350,7 @@ public:
     /**
      * Implementation of FieldCommon::set_dependency().
      */
-    void set_dependency(FieldSet &field_set) override;
+    std::vector<const FieldCommon *> set_dependency(FieldSet &field_set, unsigned int i_reg) override;
 
 protected:
 
@@ -424,7 +424,7 @@ protected:
      * The table is allocated to hold all subsets, but only those marked in used_subsets are updated.
      * Order of subsets is same as in eval_points.
      */
-    FieldValueCache<typename Value::element_type> value_cache_;
+    mutable FieldValueCache<typename Value::element_type> value_cache_;
 
 
 

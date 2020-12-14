@@ -328,7 +328,9 @@ void FieldFormula<spacedim, Value>::cache_reinit(const ElementCacheMap &cache_ma
             b_parser_[i_p].set_variable("x",  {}, x_);
             b_parser_[i_p].set_variable("y",  {}, y_);
             b_parser_[i_p].set_variable("z",  {}, z_);
-            if (use_depth_var) b_parser_[i_p].set_variable("d",  {}, d_);
+            if (use_depth_var) {
+                b_parser_[i_p].set_variable("d",  {}, d_);
+            }
             b_parser_[i_p].set_constant("t",  {}, {this->time_.end()});
             b_parser_[i_p].set_variable("_result_", {}, res_);
             b_parser_[i_p].compile();
@@ -360,9 +362,14 @@ inline arma::vec FieldFormula<spacedim, Value>::eval_depth_var(const Point &p)
 
 
 template <int spacedim, class Value>
-void FieldFormula<spacedim, Value>::set_dependency(FieldSet &field_set) {
+std::vector<const FieldCommon * > FieldFormula<spacedim, Value>::set_dependency(FieldSet &field_set) {
     field_set_ = &field_set;
-    for(auto field : field_set.field_list) field_set_names_.insert( field->name() );
+    std::vector<const FieldCommon * > field_vec;
+    field_vec.push_back( field_set.field("X") ); // add coords fields, TODO add 'd' (surface depth) if it is contained in formula
+    //TODO Add field pointers that names are contained in formula string as to field_vec vector
+    //for(auto field : field_set.field_list)
+    //    if("field_name_in_b_parser_variable_list") field_vec.push_back( field_set.field(field->name()) );
+    return field_vec;
 }
 
 

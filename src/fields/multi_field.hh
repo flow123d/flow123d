@@ -209,7 +209,7 @@ public:
     /**
      * Implementation of FieldCommon::set_dependency().
      */
-    void set_dependency(FieldSet &field_set) override;
+    std::vector<const FieldCommon *> set_dependency(FieldSet &field_set, unsigned int i_reg) override;
 
     /**
      * Returns reference to the sub-field (component) of given index @p idx.
@@ -229,6 +229,15 @@ public:
         return sub_fields_[idx];
     }
     
+    /**
+     * Returns pointer to the sub-field (component, as FieldCommon) of given index @p idx.
+     */
+    FieldCommon *get_component(unsigned int idx) override
+    {
+    	ASSERT_LT(idx, sub_fields_.size())(this->input_name()).error("Index of subfield in MultiField is out of range.\n");
+    	return &(sub_fields_[idx]);
+    }
+
     /**
      * Initialize components of MultiField.
      *
@@ -256,7 +265,7 @@ public:
     void cache_reallocate(const ElementCacheMap &cache_map) override;
 
     /// Implements FieldCommon::cache_update
-    void cache_update(ElementCacheMap &cache_map) override;
+    void cache_update(ElementCacheMap &cache_map, unsigned int i_reg) const override;
 
     /**
      * Assigns fields from @p field_vec to individual components and all regions in region sets given by @p region_set_names.

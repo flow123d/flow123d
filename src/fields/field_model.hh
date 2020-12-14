@@ -170,6 +170,30 @@ namespace detail
         };
     };
 
+    /**
+     * Check common number of components of the input fields/multifields.
+     * Return number of components.
+     * Return 0 for no multifields.
+     * Throw for different number of components.
+     */
+    template<typename FIELD_TUPLE, int INDEX >
+    struct get_dependency {
+        static std::vector<const FieldCommon *> eval(FIELD_TUPLE fields) {
+            const auto &single_field = std::get < INDEX - 1 > (std::forward<decltype(fields)>(fields));
+            auto vec = get_dependency<FIELD_TUPLE, INDEX - 1>::eval(std::forward<decltype(fields)>(fields));
+            vec.push_back(&single_field);
+            return vec;
+        };
+    };
+
+    template<typename FIELD_TUPLE>
+    struct get_dependency<FIELD_TUPLE, 0> {
+        static std::vector<const FieldCommon *> eval(FMT_UNUSED FIELD_TUPLE fields)
+        {
+            return std::vector<const FieldCommon *>();
+        };
+    };
+
 
 
 
@@ -235,9 +259,15 @@ public:
     : fn(func), input_fields( std::forward_as_tuple((args)...) )
     {}
 
+    /// Implements FieldAlgoBase::set_dependency
+    std::vector<const FieldCommon *> set_dependency(FMT_UNUSED FieldSet &field_set) {
+    	return detail::get_dependency<
+    	                    decltype(input_fields),
+                            std::tuple_size<FieldsTuple>::value
+    	                >::eval(input_fields);
+    }
 
-
-
+    /// Implements FieldAlgoBase::cache_update
     void cache_update(FieldValueCache<typename Value::element_type> &data_cache,
 				ElementCacheMap &cache_map, unsigned int region_idx) override {
         unsigned int reg_chunk_begin = cache_map.region_chunk_begin(region_idx);
@@ -280,6 +310,7 @@ public:
      * Fn is a functor class and fn its instance.
      */
     template<typename Fn, class ... InputFields>
+    //static auto create(Fn *fn, InputFields&&... inputs) -> decltype(auto)
     static auto create(Fn fn,  InputFields&&... inputs) -> decltype(auto)
     {
         return std::make_shared<FieldModel<spacedim, Value, Fn, InputFields...>>(fn, std::forward<InputFields>(inputs)...);
@@ -297,6 +328,7 @@ public:
      * Fn is a functor class and fn its instance.
      */
     template<typename Fn, class ... InputFields>
+    //static auto create_multi(Fn *fn, InputFields&&... inputs) -> decltype(auto)
     static auto create_multi(Fn fn,  InputFields&&... inputs) -> decltype(auto)
     {
         typedef std::tuple<InputFields...> FieldTuple;

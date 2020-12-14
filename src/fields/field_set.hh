@@ -27,6 +27,9 @@
 #include "fields/eval_subset.hh"   // for EvalSubset
 #include "fields/eval_points.hh"   // for EvalPoints
 #include "fields/field_value_cache.hh"
+#include "fields/field.hh"
+#include "mesh/range_wrapper.hh"
+#include "tools/general_iterator.hh"
 #include "input/accessors.hh"      // for Array
 #include "input/type_record.hh"    // for Record
 #include "io/output_time.hh"       // for OutputTime, OutputTime::DiscreteSpace
@@ -37,6 +40,84 @@ class Mesh;
 class Region;
 template <int spacedim, class Value> class FieldFormula;
 
+
+
+/**
+ * Accessor to vector of Fields holds in FieldSet.
+ *
+ * Class holds position to vector and allows iterate through all instances of Field class
+ * and all components (SubFields) of MultiFields.
+ *
+ * Base methods:
+ * - inc() - increment to next Field instance:
+ *     Field - iterates to next item in field list
+ *     MultiFields - iterates to next component of MultiField or if actual position is last component
+ *                   jumps to next item in field list
+ * - operator ->() - returns pointer to actual Field.
+ */
+class FieldListAccessor {
+public:
+    /// Default constructor
+    FieldListAccessor()
+    : field_idx_(0), field_component_idx_(0) {}
+
+    /// Constructor
+    FieldListAccessor(std::vector<FieldCommon *> field_list, unsigned int field_idx)
+    : field_list_(field_list), field_idx_(field_idx), field_component_idx_(0) {}
+
+    /// Iterates to next Field.
+    inline void inc() {
+        if (field_list_[field_idx_]->is_multifield()) {
+            field_component_idx_++;
+            if (field_component_idx_ == field_list_[field_idx_]->n_comp()) {
+                field_idx_++;
+                field_component_idx_ = 0;
+            }
+        } else {
+        	field_idx_++;
+        }
+    }
+
+    /// Getter for field_idx_
+    inline unsigned int field_idx() const {
+        return field_idx_;
+    }
+
+    /// Getter for field_component_idx_
+    inline unsigned int field_component_idx() const {
+        return field_component_idx_;
+    }
+
+	/// Returns pointer to actual field held by accessor
+    FieldCommon * field() const {
+        if (field_list_[field_idx_]->is_multifield())
+            return field_list_[field_idx_]->get_component(field_component_idx_);
+        else
+            return field_list_[field_idx_];
+    }
+
+    /// Comparison of accessors.
+	inline bool operator ==(const FieldListAccessor &other) {
+		return this->field_idx_ == other.field_idx_ && field_component_idx_ == other.field_component_idx_;
+	}
+
+	inline bool operator !=(const FieldListAccessor &other) const {
+		return this->field_idx_ != other.field_idx_ || field_component_idx_ != other.field_component_idx_;
+	}
+
+	/// Dereference operator simplify access to actual field held by accessor
+    FieldCommon * operator ->() const {
+        if (field_list_[field_idx_]->is_multifield())
+            return field_list_[field_idx_]->get_component(field_component_idx_);
+        else
+            return field_list_[field_idx_];
+    }
+
+private:
+    std::vector<FieldCommon *> field_list_;  ///< List of FieldCommon objects (combine Fields and MultiFields
+    unsigned int field_idx_;                 ///< Index of actual Field in field_list
+    unsigned int field_component_idx_;       ///< Index of subfield in MultiField (fo fields hold only value 0 that is not used)
+};
 
 
 /**
@@ -252,21 +333,27 @@ public:
     /**
      * Collective interface to @p FieldCommon::cache_update().
      */
-    void cache_update(ElementCacheMap &cache_map) {
-        update_coords_caches(cache_map);
-	    for(auto field : field_list) field->cache_update(cache_map);
-    }
+    void cache_update(ElementCacheMap &cache_map);
 
     /**
      * Set reference of FieldSet to all instances of FieldFormula.
      */
-    void set_dependency() {
-    	for(auto field : field_list) field->set_dependency(*this);
-    }
+    void set_dependency();
+
+    /**
+     * Add coords fields (X_) to field_list.
+     *
+     * We can't add this field automatically in constructor, because there is problem
+     * in equation where we add one FieldSet to other.
+     */
+    void add_coords_field();
 
     inline const FieldValueCache<double> &x() const { return x_coord_; }  ///< Return x-coord FieldValueCache
     inline const FieldValueCache<double> &y() const { return y_coord_; }  ///< Return y-coord FieldValueCache
     inline const FieldValueCache<double> &z() const { return z_coord_; }  ///< Return z-coord FieldValueCache
+
+    /// Returns range of Fields held in field_list
+    Range<FieldListAccessor> fields_range() const;
 
 protected:
     /// Update caches holding coordinates values (for FieldFormula)
@@ -284,6 +371,17 @@ protected:
     FieldValueCache<double> y_coord_;  ///< Holds values of y-coordinates (for FieldFormula)
     FieldValueCache<double> z_coord_;  ///< Holds values of z-coordinates (for FieldFormula)
     const Mesh *mesh_;                 ///< Pointer to the mesh.
+
+    /**
+     * Holds vector of indices of fields in field_list sorted by dependency for every region.
+     *
+     * - first: index of region
+     * - second: vector of indices of fields (corresponding to position in field_list vector)
+     */
+    std::map<unsigned int, std::vector<const FieldCommon *>> region_dependency_list_;
+
+    /// Field holds coordinates for computing of FieldFormulas
+    Field<3, FieldValue<3>::VectorFixed > X_;
 
     /**
      * Stream output operator

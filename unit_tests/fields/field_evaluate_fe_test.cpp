@@ -116,6 +116,7 @@ public:
         PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
 
         data_ = std::make_shared<EqData>();
+        data_->add_coords_field();
         mesh_ = mesh_full_constructor("{ mesh_file=\"mesh/cube_2x1.msh\", optimize_mesh=false }");
         dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
     }
@@ -151,6 +152,7 @@ public:
         data_->set_mesh(*mesh_);
         data_->set_input_list( inputs[input_last], tg );
         data_->set_time(tg.step(), LimitSide::right);
+        data_->set_dependency();
         data_->realocate_cache();
     }
 
@@ -305,6 +307,7 @@ public:
         PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
 
         data_ = std::make_shared<EqData>();
+        data_->add_coords_field();
         mesh_ = mesh_full_constructor("{ mesh_file=\"mesh/test_27936_elem.msh\", optimize_mesh=false }");
     	MixedPtr<FE_RT0> fe_rt0;
         std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh_, fe_rt0);
@@ -346,6 +349,7 @@ public:
         data_->set_input_list( inputs[input_last], tg_ );
 
         data_->set_time(tg_.step(), LimitSide::right);
+        data_->set_dependency();
     }
 
     void create_fe_fields() {
