@@ -292,7 +292,7 @@ public:
     /**
      * Collective interface to @p FieldCommonBase::set_mesh().
      */
-    bool set_time(const TimeStep &time, LimitSide limit_side);
+    bool set_time(const TimeStep &time, LimitSide limit_side, bool set_dependency = false);
 
     /**
      * Collective interface to @p FieldCommonBase::output_type().
