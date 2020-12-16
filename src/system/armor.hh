@@ -599,10 +599,9 @@ public:
     class ArrayMatSet {
         Type * ptr_;
         uint n_rows_, n_cols_;
-        uint reserved_;            ///< Reserved size of Armor::Array
     public:
-        inline ArrayMatSet(Type *ptr,  uint n_rows, uint n_cols, uint reserved)
-        : ptr_(ptr), n_rows_(n_rows), n_cols_(n_cols), reserved_(reserved)  {}
+        inline ArrayMatSet(Type *ptr,  uint n_rows, uint n_cols)
+        : ptr_(ptr), n_rows_(n_rows), n_cols_(n_cols)  {}
 
 //        template<class T>
 //        ArrayMatSet &operator=(const typename arma::Base<Type, T>& arma_x)
@@ -644,7 +643,7 @@ public:
         template <uint nr, uint nc>
         void copy(const Type *other_ptr) {
             for (uint i = 0; i < nr * nc; ++i) {
-                *(ptr_ + i * reserved_) = *(other_ptr + i);
+                *(ptr_ + i) = *(other_ptr + i);
             }
         }
     };
@@ -735,7 +734,7 @@ public:
     template<unsigned long long int nr, unsigned long long int nc = 1>
     inline void append(const ArmaMat<Type,nr,nc> &item)
     {
-        ASSERT_LT_DBG(size_, reserved_);
+        ASSERT_LE_DBG(size_, reserved_);
         size_ += 1;
         set(size_ - 1) = item;
 
@@ -785,11 +784,7 @@ public:
 //        double ** ptr = const_cast<double **>(&(m.mem));
 //        *ptr = data_ + mat_index * n_rows_ * n_cols_;
 //        return m;
-        ArmaMat<Type,nr,nc> mat;
-        for (uint row=0; row<n_rows_; ++row)
-            for (uint col=0; col<n_cols_; ++col)
-                mat(row,col) = data_[mat_index + (col*n_rows_+row) * reserved_];
-        return mat;
+        return ArmaMat<Type,nr,nc>(data_ + mat_index * n_rows_ * n_cols_);
     }
 
 //    template<long long unsigned int nr, long long unsigned int nc = 1>
@@ -822,22 +817,19 @@ public:
     {
         ASSERT_DBG( (nr == n_rows_) && (1 == n_cols_) )(n_rows_)(n_cols_);
         ASSERT_LT_DBG(mat_index, size());
-        ArmaVec<Type, nr> vec;
-        for (uint i=0; i<n_rows_; ++i)
-            vec(i) = data_[mat_index + i * reserved_];
-        return vec;
+        return ArmaVec<Type, nr>( data_ + mat_index * n_rows_ * n_cols_ );
     }
 
     inline Type scalar(uint mat_index) const
     {
         ASSERT_DBG( (1 == n_rows_) && (1 == n_cols_) )(n_rows_)(n_cols_);
         ASSERT_LT_DBG(mat_index, size());
-        return ArmaMat<Type,1,1>( data_ + mat_index )(0);
+        return ArmaMat<Type,1,1>( data_ + mat_index * n_rows_ * n_cols_ )(0);
     }
 
     inline ArrayMatSet set(uint index) {
         ASSERT_LT_DBG(index, size());
-        return ArrayMatSet(data_ + index, n_rows_, n_cols_, reserved_);
+        return ArrayMatSet(data_ + index * n_rows_ * n_cols_, n_rows_, n_cols_);
     }
 
 
@@ -848,11 +840,7 @@ public:
     inline arma::mat arma_mat(uint i) const
     {
         ASSERT_LT_DBG(i, size());
-        arma::mat mat(n_rows_, n_cols_);
-        for (uint row=0; row<n_rows_; ++row)
-            for (uint col=0; col<n_cols_; ++col)
-                mat(row,col) = data_[i + (col*n_rows_+row) * reserved_];
-        return mat;
+   	    return arma::mat( data_ + i*n_rows_*n_cols_, n_rows_, n_cols_ );
     }
 
     /**
@@ -864,10 +852,7 @@ public:
     {
         ASSERT_LT_DBG(i, size());
         ASSERT_EQ_DBG(n_cols_, 1);
-        arma::vec vec(n_rows_);
-        for (uint row=0; row<n_rows_; ++row)
-            vec(i) = data_[i + row * reserved_];
-        return vec;
+   	    return arma::vec( data_ + i*n_rows_, n_rows_ );
     }
 
     Type * data_;
