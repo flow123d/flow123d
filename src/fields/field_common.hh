@@ -467,6 +467,12 @@ public:
 
 
     /**
+     *  Returns number of components given by shape of descendant (Field or MultiField).
+     */
+    virtual unsigned int n_shape_comp() const =0;
+
+
+    /**
      * Print stored messages to table.
      *
      * Return true if messages_data_ vector is nonempty and clear its.

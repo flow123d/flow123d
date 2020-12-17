@@ -285,6 +285,11 @@ public:
             double time,
             std::vector<std::string> region_set_names = {"ALL"});
 
+    /// Implementation of FieldCommon::n_shape_comp().
+    unsigned int n_shape_comp() const override {
+        return Value::NRows_*Value::NCols_;
+    }
+
 private:
     /// Subfields (items) of MultiField
     std::vector< SubFieldType > sub_fields_;

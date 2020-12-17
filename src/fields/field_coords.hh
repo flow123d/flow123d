@@ -152,6 +152,11 @@ public:
         return std::vector<const FieldCommon *>();
     }
 
+    /// Implementation of FieldCommon::n_shape_comp().
+    unsigned int n_shape_comp() const override {
+        return 3;
+    }
+
 private:
     /**
      * Field value data cache

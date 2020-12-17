@@ -352,6 +352,11 @@ public:
      */
     std::vector<const FieldCommon *> set_dependency(FieldSet &field_set, unsigned int i_reg) override;
 
+    /// Implementation of FieldCommon::n_shape_comp().
+    unsigned int n_shape_comp() const override {
+        return Value::NRows_*Value::NCols_;
+    }
+
 protected:
 
     /// Return item of @p value_cache_ given by i_cache_point.
