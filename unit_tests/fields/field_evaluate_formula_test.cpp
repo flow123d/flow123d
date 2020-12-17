@@ -53,6 +53,11 @@ public:
                         .description("")
                         .units( UnitSI::dimensionless() )
                         .flags_add(in_main_matrix);
+            *this += const_scalar
+                        .name("const_scalar")
+                        .input_default("0.0")
+                        .description("")
+                        .units( UnitSI::dimensionless() );
 
             // Asumme following types:
             eval_points_ = std::make_shared<EvalPoints>();
@@ -100,6 +105,7 @@ public:
         Field<3, FieldValue<3>::Scalar > scalar_field;
         Field<3, FieldValue<3>::VectorFixed > vector_field;
         Field<3, FieldValue<3>::TensorFixed > tensor_field;
+        Field<3, FieldValue<3>::Scalar > const_scalar;
         std::shared_ptr<EvalPoints> eval_points_;
         std::shared_ptr<BulkIntegral> mass_eval;
         std::shared_ptr<EdgeIntegral> side_eval;
@@ -128,6 +134,7 @@ public:
                         .declare_key("scalar_field", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "" )
                         .declare_key("vector_field", FieldAlgorithmBase< 3, FieldValue<3>::VectorFixed >::get_input_type_instance(), "" )
                         .declare_key("tensor_field", FieldAlgorithmBase< 3, FieldValue<3>::TensorFixed >::get_input_type_instance(), "" )
+                        .declare_key("const_scalar", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "" )
                         .close()
                         ), IT::Default::obligatory(), ""  )
                 .close();
@@ -248,3 +255,79 @@ TEST_F(FieldEvalFormulaTest, evaluate) {
     }
 
 }
+
+/**
+ * Prepared test of dependency in formula, test must be finish after remove FParser from FieldFormula class.
+TEST_F(FieldEvalFormulaTest, field_dependency) {
+    string eq_data_input = R"YAML(
+    data:
+      - region: 3D left
+        time: 0.0
+        scalar_field: !FieldFormula
+          value: const_scalar * const_scalar
+        vector_field: !FieldFormula
+          value: [x, 2*x, 0.5]
+        tensor_field: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
+        const_scalar: 0.5
+      - region: 3D right
+        time: 0.0
+        scalar_field: !FieldFormula
+          value: 0.5 * const_scalar
+        vector_field:  !FieldFormula
+          value: [y, 2*y, 0.5]
+        tensor_field: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
+        const_scalar: 1.5
+    )YAML";
+	this->read_input(eq_data_input);
+
+    std::vector<unsigned int> cell_idx = {3, 4, 5, 9};
+    std::vector<double> dbl_scalar = { -1.447213595499958094, -0.552786404500041906, -0.276393202250021008, -1.170820393249937030, -0.723606797749979047,
+                                       +0.170820393249937058, -1.666666666666666741, -1.333333333333333481, -0.333333333333333315, -0.666666666666666519,
+                                       +0.000000000000000000, +0.333333333333333481, -1.000000000000000000, +0.666666666666666741 };
+    std::vector< std::vector<uint> > expected_scalar = { {0,1,0,1,9,9,6,6,6,6,9,9,6,6,6,6,7,7,8,8,8,8,6,6,9,9,6,6,8,8,8,8,7,7,8,8,8,8,7,7},
+            {2,2,3,2,8,8,8,8,7,7,8,8,8,8,7,7,10,10,10,10,10,10,10,9,10,9,10,11,8,8,8,8,7,7,8,8,8,8,7,7,8,8,8,8,7,7},
+			{2,2,3,2,8,8,8,8,7,7,8,8,8,8,7,7,10,10,10,10,10,10,10,8,10,13,10,13,8,8,8,8,7,7,8,8,7,7,8,8,8,8,7,7,8,8},
+			{4,4,4,5,9,9,9,9,11,11,9,9,9,9,11,11,9,9,9,9,11,11,9,9,9,9,11,11,12,12,12,12,12,12,11,11,9,9,9,9} };
+    for (uint i=0; i<cell_idx.size(); ++i) {
+        uint test_point = 0; // index to expected vals
+    	data_->start_elements_update();
+    	data_->computed_dh_cell_ = DHCellAccessor(dh_.get(), cell_idx[i]);  // element ids stored to cache: (3 -> 2,3,4), (4 -> 3,4,5,10), (5 -> 0,4,5,11), (10 -> 8,9,10)
+        data_->update_cache();
+
+        // Bulk integral, no sides, no permutations.
+        for( BulkPoint q_point: data_->mass_eval->points(data_->computed_dh_cell_, data_.get()) ) {
+        	std::cout << "Bulk point scalar: " << data_->scalar_field(q_point) << std::endl;
+            //EXPECT_DOUBLE_EQ( dbl_scalar[ expected_scalar[i][test_point] ], data_->scalar_field(q_point));
+            //arma::vec3 expected_vector;
+            //expected_vector(0) = dbl_scalar[ expected_scalar[i][test_point] ];
+            //expected_vector(1) = 2*expected_vector(0);
+            //expected_vector(2) = 0.5;
+            //EXPECT_ARMA_EQ(expected_vector, data_->vector_field(q_point));
+        	std::cout << "Bulk point vector: " << data_->vector_field(q_point)(0) << ", " << data_->vector_field(q_point)(1) << ", " << data_->vector_field(q_point)(2) << std::endl;
+            test_point++;
+        }
+
+        // Side integrals.
+        // FieldFE<..> conc;
+//        for (DHCellSide side : data_->computed_dh_cell_.side_range()) {
+//        	for(DHCellSide el_ngh_side : side.edge_sides()) {
+//           	    // vector of local side quadrature points in the correct side permutation
+//        	    Range<EdgePoint> side_points = data_->side_eval->points(side, data_.get());
+//        	    for (EdgePoint side_p : side_points) {
+//                    EXPECT_DOUBLE_EQ( dbl_scalar[ expected_scalar[i][test_point] ], data_->scalar_field(side_p));
+//                    arma::vec3 expected_vector;
+//                    expected_vector(0) = dbl_scalar[ expected_scalar[i][test_point] ];
+//                    expected_vector(1) = 2*expected_vector(0);
+//                    expected_vector(2) = 0.5;
+//                    EXPECT_ARMA_EQ(expected_vector, data_->vector_field(side_p));
+//                    test_point++;
+//                    EdgePoint ngh_p = side_p.point_on(el_ngh_side);
+//                    EXPECT_DOUBLE_EQ( dbl_scalar[ expected_scalar[i][test_point] ], data_->scalar_field(ngh_p));
+//                    test_point++;
+//                }
+//            }
+//        }
+    }
+
+}
+*/
