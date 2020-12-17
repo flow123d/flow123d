@@ -29,6 +29,8 @@
 #include "fields/field_value_cache.hh"
 #include "fields/field.hh"
 #include "fields/field_coords.hh"  // for FieldCoords
+#include "fields/field_depth.hh"   // for FieldDepth
+#include "fields/surface_depth.hh" // for SurfaceDepth
 #include "mesh/range_wrapper.hh"
 #include "tools/general_iterator.hh"
 #include "input/accessors.hh"      // for Array
@@ -342,7 +344,7 @@ public:
     void set_dependency();
 
     /**
-     * Add coords fields (X_) to field_list.
+     * Add coords field (X_) and depth field to field_list.
      *
      * We can't add this field automatically in constructor, because there is problem
      * in equation where we add one FieldSet to other.
@@ -352,6 +354,15 @@ public:
     /// Return FieldValueCache of FieldCoords (X_)
     inline const FieldValueCache<double> &coords_cache() const {
         return X_.value_cache();
+    }
+
+    /// Return FieldValueCache of Fielddepth (depth_)
+    inline const FieldValueCache<double> &depth_cache() const {
+        return depth_.value_cache();
+    }
+
+    inline void set_surface_depth(std::shared_ptr<SurfaceDepth> surface_depth) {
+        depth_.set_surface_depth( surface_depth );
     }
 
     /// Returns range of Fields held in field_list
@@ -374,6 +385,9 @@ protected:
 
     /// Field holds coordinates for computing of FieldFormulas
     FieldCoords X_;
+
+    /// Field holds surface depth for computing of FieldFormulas
+    FieldDepth depth_;
 
     /**
      * Stream output operator

@@ -230,10 +230,15 @@ void FieldSet::add_coords_field() {
                .units(UnitSI().m())
                .input_default("0.0")
                .flags( FieldFlag::input_copy )
-               .description("Coordinates fields.");
+               .description("Coordinates field.");
 
-    // TODO initialize coords field
-    //X_.set(coord fields, 0.0);
+    *this += depth_.name("d")
+               .units(UnitSI().m())
+               .input_default("0.0")
+               .flags( FieldFlag::input_copy )
+               .description("Depth field.");
+
+    depth_.set_field_coords(&X_);
 }
 
 

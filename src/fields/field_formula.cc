@@ -245,6 +245,7 @@ void FieldFormula<spacedim, Value>::cache_update(FieldValueCache<typename Value:
     unsigned int reg_chunk_begin = cache_map.region_chunk_begin(region_idx);
     unsigned int reg_chunk_end = cache_map.region_chunk_end(region_idx);
     const auto &coords_cache = field_set_->coords_cache();
+    const auto &depth_cache = field_set_->depth_cache();
 
     for (unsigned int i=reg_chunk_begin; i<reg_chunk_end; ++i) {
     	if (has_coords_) {
@@ -255,15 +256,15 @@ void FieldFormula<spacedim, Value>::cache_update(FieldValueCache<typename Value:
             z_[i] = coords(2);
     	}
         if (has_depth_) {
-            Point p;
-            p(0) = x_[i]; p(1) = y_[i]; p(2) = z_[i];
-            // TODO computation of depth var needs better solution, probably we add field to FieldSet
-            d_[i] = surface_depth_->compute_distance(p);
+            //Point p;
+            //p(0) = x_[i]; p(1) = y_[i]; p(2) = z_[i];
+            //d_[i] = surface_depth_->compute_distance(p);
+            d_[i] = depth_cache.scalar(i);
         }
         res_[i] = 0.0;
     }
     for (auto it : eval_field_data_) {
-
+         // copy data from dependent fields to arena
     }
 
     // Get vector of subsets as subarray
@@ -355,7 +356,8 @@ std::vector<const FieldCommon * > FieldFormula<spacedim, Value>::set_dependency(
         }
         else if (var == "d") {
             has_depth_ = true;
-            // TODO add 'd' (surface depth) field if it is contained in formula
+            dependency_field_vec_.push_back( field_set.field("d") );
+            field_set_->set_surface_depth(this->surface_depth_);
             sum_shape_sizes++;
         }
         else if (var == "t") has_time = true;
