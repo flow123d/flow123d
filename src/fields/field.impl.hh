@@ -53,6 +53,8 @@ Field<spacedim,Value>::Field()
 	value_cache_.resize(cache_size);
 
 	this->multifield_ = false;
+	if (Value::NCols_==1) this->shape_ = { Value::NRows_ };
+	else this->shape_ = { Value::NRows_, Value::NCols_ };
 }
 
 
@@ -72,6 +74,8 @@ Field<spacedim,Value>::Field(const string &name, bool bc)
 		value_cache_.resize(cache_size);
 
 		this->multifield_ = false;
+		if (Value::NCols_==1) this->shape_ = { Value::NRows_ };
+		else this->shape_ = { Value::NRows_, Value::NCols_ };
 }
 
 
@@ -94,6 +98,8 @@ Field<spacedim,Value>::Field(unsigned int component_index, string input_name, st
 	value_cache_.resize(cache_size);
 
 	this->multifield_ = false;
+	if (Value::NCols_==1) this->shape_ = { Value::NRows_ };
+	else this->shape_ = { Value::NRows_, Value::NCols_ };
 }
 
 
@@ -109,6 +115,8 @@ Field<spacedim,Value>::Field(const Field &other)
 		no_check_control_field_ =  make_shared<ControlField>(*other.no_check_control_field_);
 
 	this->multifield_ = false;
+	if (Value::NCols_==1) this->shape_ = { Value::NRows_ };
+	else this->shape_ = { Value::NRows_, Value::NCols_ };
 }
 
 
@@ -137,6 +145,7 @@ Field<spacedim,Value> &Field<spacedim,Value>::operator=(const Field<spacedim,Val
 	factories_ = other.factories_;
 	region_fields_ = other.region_fields_;
 	value_cache_ = other.value_cache_;
+	this->shape_ = other.shape_;
 
 	if (other.no_check_control_field_) {
 		no_check_control_field_ =  make_shared<ControlField>(*other.no_check_control_field_);

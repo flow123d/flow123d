@@ -484,6 +484,13 @@ public:
      */
     virtual ~FieldCommon();
 
+    /**
+     * Hold shape of Field.
+     *
+     * Value is set in constructor of descendant class.
+     */
+    std::vector<uint> shape_;
+
 
 protected:
     /**

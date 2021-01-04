@@ -365,7 +365,7 @@ std::vector<const FieldCommon * > FieldFormula<spacedim, Value>::set_dependency(
             auto field_ptr = field_set.field(var);
             if (field_ptr != nullptr) dependency_field_vec_.push_back( field_ptr );
             else THROW( ExcUnknownField() << EI_Field(var) );
-            sum_shape_sizes += field_ptr->n_shape_comp();
+            sum_shape_sizes += n_shape( field_ptr->shape_ );
         }
     }
 
@@ -390,7 +390,7 @@ std::vector<const FieldCommon * > FieldFormula<spacedim, Value>::set_dependency(
     for (auto field : dependency_field_vec_) {
         std::string field_name = field->name();
         if (field_name == "X") continue; // skip coords field, TODO skip depth field after implementation
-        eval_field_data_[field_name] = arena_alloc_->create_array<double>(field->n_shape_comp() * vec_size);
+        eval_field_data_[field_name] = arena_alloc_->create_array<double>(n_shape( field->shape_ ) * vec_size);
         std::cout << " - add field: " << field_name << std::endl;
     }
     subsets_ = arena_alloc_->create_array<uint>(n_subsets);
