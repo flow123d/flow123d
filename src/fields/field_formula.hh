@@ -67,6 +67,9 @@ public:
     DECLARE_INPUT_EXCEPTION(ExcUnknownField,
             << "Field " << EI_Field::qval << " doesn't exist in equation.\n"
     		   << "Please use field of correct name.\n");
+    DECLARE_INPUT_EXCEPTION(ExcNotDoubleField,
+            << "Field " << EI_Field::qval << " is not field of floating point element type.\n"
+    		   << "Please use fields of element type double.\n");
 
     FieldFormula(unsigned int n_comp=0);
 
@@ -159,7 +162,7 @@ private:
 	 *
 	 * Temporary data member, we need to copy data from FieldValueCaches to arrays allocated in arena.
 	 */
-	std::unordered_map<std::string, double *> eval_field_data_;
+	std::unordered_map<const FieldCommon *, double *> eval_field_data_;
 
     /// Registrar of class to factory
     static const int registrar;

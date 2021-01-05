@@ -261,7 +261,12 @@ void FieldFormula<spacedim, Value>::cache_update(FieldValueCache<typename Value:
         res_[i] = 0.0;
     }
     for (auto it : eval_field_data_) {
-         // copy data from dependent fields to arena
+        // Copy data from dependent fields to arena. Temporary solution.
+        // TODO hold field data caches in arena, remove this step
+        auto value_cache = it.first->value_cache();
+        for (unsigned int i=reg_chunk_begin; i<reg_chunk_end; ++i) {
+            it.second[i] = value_cache->data_[i];
+        }
     }
 
     // Get vector of subsets as subarray
@@ -368,6 +373,7 @@ std::vector<const FieldCommon * > FieldFormula<spacedim, Value>::set_dependency(
             auto field_ptr = field_set.field(var);
             if (field_ptr != nullptr) dependency_field_vec_.push_back( field_ptr );
             else THROW( ExcUnknownField() << EI_Field(var) );
+            if (field_ptr->value_cache() == nullptr) THROW( ExcNotDoubleField() << EI_Field(var) );
             sum_shape_sizes += n_shape( field_ptr->shape_ );
         }
     }
@@ -392,9 +398,8 @@ std::vector<const FieldCommon * > FieldFormula<spacedim, Value>::set_dependency(
     if (has_depth_) d_ = arena_alloc_->create_array<double>(vec_size);
     for (auto field : dependency_field_vec_) {
         std::string field_name = field->name();
-        if (field_name == "X") continue; // skip coords field, TODO skip depth field after implementation
-        eval_field_data_[field_name] = arena_alloc_->create_array<double>(n_shape( field->shape_ ) * vec_size);
-        std::cout << " - add field: " << field_name << std::endl;
+        if ( (field_name == "X") || (field_name == "d") ) continue; // skip coords and depth field
+        eval_field_data_[field] = arena_alloc_->create_array<double>(n_shape( field->shape_ ) * vec_size);
     }
     subsets_ = arena_alloc_->create_array<uint>(n_subsets);
 
@@ -415,8 +420,8 @@ std::vector<const FieldCommon * > FieldFormula<spacedim, Value>::set_dependency(
             }
             for (auto field : dependency_field_vec_) {
                 std::string field_name = field->name();
-                if (field_name == "X") continue; // skip coords field, TODO skip depth field after implementation
-                b_parser_[i_p].set_variable(field_name,  {}, eval_field_data_[field_name]);
+                if ( (field_name == "X") || (field_name == "d") ) continue; // skip coords and depth field
+                b_parser_[i_p].set_variable(field_name,  {}, eval_field_data_[field]);
             }
             b_parser_[i_p].set_variable("_result_", {}, res_);
             b_parser_[i_p].compile();
