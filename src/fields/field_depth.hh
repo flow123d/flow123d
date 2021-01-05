@@ -108,23 +108,18 @@ public:
     	std::shared_ptr<EvalPoints> eval_points = cache_map.eval_points();
         unsigned int reg_chunk_begin = cache_map.region_chunk_begin(i_reg);
         unsigned int reg_chunk_end = cache_map.region_chunk_end(i_reg);
-        const auto &coords_cache = field_coords_->value_cache();
+        auto * coords_cache = field_coords_->value_cache();
     	arma::vec3 p; // evaluated point
 
         for (unsigned int i_data = reg_chunk_begin; i_data < reg_chunk_end; ++i_data) { // i_eval_point_data
-            p = coords_cache.template vec<3>(i_data);
+            p = coords_cache->template vec<3>(i_data);
             value_cache_.set(i_data) = surface_depth_->compute_distance(p);
         }
     }
 
-    /// returns reference to FieldValueCache.
-    inline const FieldValueCache<double> &value_cache() const {
-        return value_cache_;
-    }
-
-    /// Same as previous but return non-const reference.
-    inline FieldValueCache<double> &value_cache() {
-        return value_cache_;
+    /// Implements FieldCommon::value_cache
+    FieldValueCache<double> * value_cache() override {
+    	return &value_cache_;
     }
 
     /// Implements FieldCommon::set_dependency().
@@ -134,18 +129,13 @@ public:
         return res;
     }
 
-    /// Implementation of FieldCommon::n_shape_comp().
-    unsigned int n_shape_comp() const override {
-        return 1;
-    }
-
     /// Setter of surface_depth data member
     inline void set_surface_depth(std::shared_ptr<SurfaceDepth> surface_depth) {
         surface_depth_ = surface_depth;
     }
 
     /// Setter of field_coords data member
-    inline void set_field_coords(const FieldCoords * field_coords) {
+    inline void set_field_coords(FieldCoords * field_coords) {
     	field_coords_ = field_coords;
     }
 
@@ -161,7 +151,7 @@ private:
     std::shared_ptr<SurfaceDepth> surface_depth_;
 
     const Mesh *mesh_;                  ///< Pointer to the mesh.
-    const FieldCoords * field_coords_;  ///< Pointer to coordinates field.
+    FieldCoords * field_coords_;        ///< Pointer to coordinates field.
 };
 
 #endif /* FIELD_DEPTH_HH_ */

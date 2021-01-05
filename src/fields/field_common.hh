@@ -467,9 +467,9 @@ public:
 
 
     /**
-     *  Returns number of components given by shape of descendant (Field or MultiField).
+     *  Returns FieldValueCache if element_type of field is double or nullptr for other element_types.
      */
-    virtual unsigned int n_shape_comp() const =0;
+    virtual FieldValueCache<double> * value_cache() =0;
 
 
     /**

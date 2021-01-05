@@ -352,12 +352,12 @@ public:
     void add_coords_field();
 
     /// Return FieldValueCache of FieldCoords (X_)
-    inline const FieldValueCache<double> &coords_cache() const {
+    inline FieldValueCache<double> * coords_cache() {
         return X_.value_cache();
     }
 
     /// Return FieldValueCache of Fielddepth (depth_)
-    inline const FieldValueCache<double> &depth_cache() const {
+    inline FieldValueCache<double> * depth_cache() {
         return depth_.value_cache();
     }
 

@@ -181,7 +181,7 @@ template<int spacedim, class Value>
 typename Value::return_type
 Field<spacedim,Value>::operator[] (unsigned int i_cache_point) const
 {
-	return Value::get_from_array( this->value_cache(), i_cache_point );
+	return Value::get_from_array( this->value_cache_, i_cache_point );
 }
 
 
@@ -779,6 +779,23 @@ template<int spacedim, class Value>
 std::vector<const FieldCommon *> Field<spacedim, Value>::set_dependency(FieldSet &field_set, unsigned int i_reg) {
    	if (region_fields_[i_reg] != nullptr) return region_fields_[i_reg]->set_dependency(field_set);
    	else return std::vector<const FieldCommon *>();
+}
+
+
+template<int spacedim, class Value>
+FieldValueCache<double> * Field<spacedim, Value>::value_cache() {
+    return &value_cache_;
+}
+
+
+template<>
+FieldValueCache<double> * Field<3, FieldValue<0>::Enum>::value_cache() {
+    return nullptr;
+}
+
+template<>
+FieldValueCache<double> * Field<3, FieldValue<0>::Integer>::value_cache() {
+    return nullptr;
 }
 
 

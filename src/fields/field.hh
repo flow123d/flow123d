@@ -337,25 +337,13 @@ public:
     /// Implements FieldCommon::cache_update
     void cache_update(ElementCacheMap &cache_map, unsigned int i_reg) const override;
 
-    /// returns reference to FieldValueCache.
-    inline const FieldValueCache<typename Value::element_type> &value_cache() const {
-        return value_cache_;
-    }
-
-    /// Same as previous but return non-const reference.
-    inline FieldValueCache<typename Value::element_type> &value_cache() {
-        return value_cache_;
-    }
+    /// Implements FieldCommon::value_cache
+    FieldValueCache<double> * value_cache() override;
 
     /**
      * Implementation of FieldCommon::set_dependency().
      */
     std::vector<const FieldCommon *> set_dependency(FieldSet &field_set, unsigned int i_reg) override;
-
-    /// Implementation of FieldCommon::n_shape_comp().
-    unsigned int n_shape_comp() const override {
-        return Value::NRows_*Value::NCols_;
-    }
 
 protected:
 
@@ -478,7 +466,6 @@ inline void Field<spacedim,Value>::value_list(const Armor::array &point_list, co
 
     region_fields_[elm.region_idx().idx()]->value_list(point_list,elm, value_list);
 }
-
 
 
 

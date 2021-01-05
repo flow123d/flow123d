@@ -244,22 +244,19 @@ void FieldFormula<spacedim, Value>::cache_update(FieldValueCache<typename Value:
 {
     unsigned int reg_chunk_begin = cache_map.region_chunk_begin(region_idx);
     unsigned int reg_chunk_end = cache_map.region_chunk_end(region_idx);
-    const auto &coords_cache = field_set_->coords_cache();
-    const auto &depth_cache = field_set_->depth_cache();
+    auto * coords_cache = field_set_->coords_cache();
+    auto * depth_cache = field_set_->depth_cache();
 
     for (unsigned int i=reg_chunk_begin; i<reg_chunk_end; ++i) {
     	if (has_coords_) {
-    	    arma::vec3 coords = coords_cache.template vec<3>(i);
+    	    arma::vec3 coords = coords_cache->template vec<3>(i);
             // fill data vectors
             x_[i] = coords(0);
             y_[i] = coords(1);
             z_[i] = coords(2);
-    	}
+        }
         if (has_depth_) {
-            //Point p;
-            //p(0) = x_[i]; p(1) = y_[i]; p(2) = z_[i];
-            //d_[i] = surface_depth_->compute_distance(p);
-            d_[i] = depth_cache.scalar(i);
+            d_[i] = depth_cache->scalar(i);
         }
         res_[i] = 0.0;
     }
@@ -304,6 +301,12 @@ inline arma::vec FieldFormula<spacedim, Value>::eval_depth_var(const Point &p)
 	} else {
 		return p;
 	}
+}
+
+uint n_shape(std::vector<uint> shape) {
+    uint r = 1;
+    for (auto i : shape) r *= i;
+    return r;
 }
 
 

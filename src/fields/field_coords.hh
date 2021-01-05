@@ -141,24 +141,14 @@ public:
         }
     }
 
-    /// returns reference to FieldValueCache.
-    inline const FieldValueCache<double> &value_cache() const {
-        return value_cache_;
-    }
-
-    /// Same as previous but return non-const reference.
-    inline FieldValueCache<double> &value_cache() {
-        return value_cache_;
+    /// Implements FieldCommon::value_cache
+    FieldValueCache<double> * value_cache() override {
+    	return &value_cache_;
     }
 
     /// Implements FieldCommon::set_dependency().
     std::vector<const FieldCommon *> set_dependency(FMT_UNUSED FieldSet &field_set, FMT_UNUSED unsigned int i_reg) override {
         return std::vector<const FieldCommon *>();
-    }
-
-    /// Implementation of FieldCommon::n_shape_comp().
-    unsigned int n_shape_comp() const override {
-        return 3;
     }
 
 private:
