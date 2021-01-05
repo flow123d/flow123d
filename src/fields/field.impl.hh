@@ -799,6 +799,23 @@ FieldValueCache<double> * Field<3, FieldValue<0>::Integer>::value_cache() {
 }
 
 
+template<int spacedim, class Value>
+const FieldValueCache<double> * Field<spacedim, Value>::value_cache() const {
+    return &value_cache_;
+}
+
+
+template<>
+const FieldValueCache<double> * Field<3, FieldValue<0>::Enum>::value_cache() const {
+    return nullptr;
+}
+
+template<>
+const FieldValueCache<double> * Field<3, FieldValue<0>::Integer>::value_cache() const {
+    return nullptr;
+}
+
+
 
 
 #endif /* FIELD_IMPL_HH_ */

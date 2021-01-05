@@ -146,6 +146,11 @@ public:
     	return &value_cache_;
     }
 
+    /// Implements FieldCommon::value_cache
+    const FieldValueCache<double> * value_cache() const override {
+    	return &value_cache_;
+    }
+
     /// Implements FieldCommon::set_dependency().
     std::vector<const FieldCommon *> set_dependency(FMT_UNUSED FieldSet &field_set, FMT_UNUSED unsigned int i_reg) override {
         return std::vector<const FieldCommon *>();

@@ -290,6 +290,11 @@ public:
         return nullptr;
     }
 
+    /// Implements FieldCommon::value_cache
+    const FieldValueCache<double> * value_cache() const override {
+        return nullptr;
+    }
+
 
 private:
     /// Subfields (items) of MultiField

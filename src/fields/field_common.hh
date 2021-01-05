@@ -473,6 +473,12 @@ public:
 
 
     /**
+     * Same as previous but return const pointer
+     */
+    virtual const FieldValueCache<double> * value_cache() const =0;
+
+
+    /**
      * Print stored messages to table.
      *
      * Return true if messages_data_ vector is nonempty and clear its.
