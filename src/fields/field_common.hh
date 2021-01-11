@@ -520,6 +520,11 @@ protected:
         last_time_ = -numeric_limits<double>::infinity();
     }
 
+    void set_shape(uint n_rows, uint n_cols) {
+        if (n_cols==1) this->shape_ = { n_rows };
+        else this->shape_ = { n_rows, n_cols };
+    }
+
     /**
      * Setters for essential field properties.
      */

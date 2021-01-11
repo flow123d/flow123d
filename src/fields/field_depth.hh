@@ -43,7 +43,7 @@ public:
     	unsigned int cache_size = 1.1 * CacheMapElementNumber::get();
     	value_cache_.reinit(cache_size);
     	value_cache_.resize(cache_size);
-    	this->shape_ = {1};
+    	this->set_shape(1, 1);
     }
 
     IT::Instance get_input_type() override {

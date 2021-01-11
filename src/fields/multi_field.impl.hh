@@ -42,8 +42,7 @@ MultiField<spacedim, Value>::MultiField(bool bc)
 // 	static_assert(Value::NRows_ == 1 && Value::NCols_ == 1, "");
 	this->multifield_ = true;
     this->shared_->bc_ = bc;
-	if (Value::NCols_==1) this->shape_ = { Value::NRows_ };
-	else this->shape_ = { Value::NRows_, Value::NCols_ };
+    this->set_shape( Value::NRows_, Value::NCols_ );
 }
 
 
@@ -56,8 +55,7 @@ MultiField<spacedim, Value>::MultiField(const MultiField &other)
   no_check_control_field_(other.no_check_control_field_)
 {
 	this->multifield_ = true;
-	if (Value::NCols_==1) this->shape_ = { Value::NRows_ };
-	else this->shape_ = { Value::NRows_, Value::NCols_ };
+	this->set_shape( Value::NRows_, Value::NCols_ );
 }
 
 

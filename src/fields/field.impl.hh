@@ -53,8 +53,7 @@ Field<spacedim,Value>::Field()
 	value_cache_.resize(cache_size);
 
 	this->multifield_ = false;
-	if (Value::NCols_==1) this->shape_ = { Value::NRows_ };
-	else this->shape_ = { Value::NRows_, Value::NCols_ };
+	this->set_shape( Value::NRows_, Value::NCols_ );
 }
 
 
@@ -74,8 +73,7 @@ Field<spacedim,Value>::Field(const string &name, bool bc)
 		value_cache_.resize(cache_size);
 
 		this->multifield_ = false;
-		if (Value::NCols_==1) this->shape_ = { Value::NRows_ };
-		else this->shape_ = { Value::NRows_, Value::NCols_ };
+		this->set_shape( Value::NRows_, Value::NCols_ );
 }
 
 
@@ -98,8 +96,7 @@ Field<spacedim,Value>::Field(unsigned int component_index, string input_name, st
 	value_cache_.resize(cache_size);
 
 	this->multifield_ = false;
-	if (Value::NCols_==1) this->shape_ = { Value::NRows_ };
-	else this->shape_ = { Value::NRows_, Value::NCols_ };
+	this->set_shape( Value::NRows_, Value::NCols_ );
 }
 
 
@@ -115,8 +112,7 @@ Field<spacedim,Value>::Field(const Field &other)
 		no_check_control_field_ =  make_shared<ControlField>(*other.no_check_control_field_);
 
 	this->multifield_ = false;
-	if (Value::NCols_==1) this->shape_ = { Value::NRows_ };
-	else this->shape_ = { Value::NRows_, Value::NCols_ };
+	this->set_shape( Value::NRows_, Value::NCols_ );
 }
 
 
