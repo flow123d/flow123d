@@ -245,20 +245,8 @@ void FieldFormula<spacedim, Value>::cache_update(FieldValueCache<typename Value:
 {
     unsigned int reg_chunk_begin = cache_map.region_chunk_begin(region_idx);
     unsigned int reg_chunk_end = cache_map.region_chunk_end(region_idx);
-    auto * coords_cache = field_set_->coords_cache();
-    auto * depth_cache = field_set_->depth_cache();
 
     for (unsigned int i=reg_chunk_begin; i<reg_chunk_end; ++i) {
-    	if (has_coords_) {
-    	    arma::vec3 coords = coords_cache->template vec<3>(i);
-            // fill data vectors
-            x_[i] = coords(0);
-            y_[i] = coords(1);
-            z_[i] = coords(2);
-        }
-        if (has_depth_) {
-            d_[i] = depth_cache->scalar(i);
-        }
         res_[i] = 0.0;
     }
     for (auto it : eval_field_data_) {
@@ -266,7 +254,12 @@ void FieldFormula<spacedim, Value>::cache_update(FieldValueCache<typename Value:
         // TODO hold field data caches in arena, remove this step
         auto value_cache = it.first->value_cache();
         for (unsigned int i=reg_chunk_begin; i<reg_chunk_end; ++i) {
-            it.second[i] = value_cache->data_[i];
+            if (it.first->name() == "X") {
+                x_[i] = value_cache->template vec<3>(i)(0);
+                y_[i] = value_cache->template vec<3>(i)(1);
+                z_[i] = value_cache->template vec<3>(i)(2);
+            } else
+        	   it.second[i] = value_cache->data_[i];
         }
     }
 
@@ -354,20 +347,12 @@ std::vector<const FieldCommon * > FieldFormula<spacedim, Value>::set_dependency(
 
     std::sort( variables.begin(), variables.end() );
     variables.erase( std::unique( variables.begin(), variables.end() ), variables.end() );
-    has_coords_=false; has_depth_=false;
     bool has_time=false;
     uint sum_shape_sizes=0; // scecifies size of arena
     for (auto var : variables) {
         if (var == "x" || var == "y" || var == "z") {
-            has_coords_ = true;
             dependency_field_vec_.push_back( field_set.field("X") );
             sum_shape_sizes += spacedim;
-        }
-        else if (var == "d") {
-            has_depth_ = true;
-            dependency_field_vec_.push_back( field_set.field("d") );
-            field_set_->set_surface_depth(this->surface_depth_);
-            sum_shape_sizes++;
         }
         else if (var == "t") has_time = true;
         else {
@@ -376,6 +361,9 @@ std::vector<const FieldCommon * > FieldFormula<spacedim, Value>::set_dependency(
             else THROW( ExcUnknownField() << EI_Field(var) );
             if (field_ptr->value_cache() == nullptr) THROW( ExcNotDoubleField() << EI_Field(var) );
             sum_shape_sizes += n_shape( field_ptr->shape_ );
+            if (var == "d") {
+                field_set_->set_surface_depth(this->surface_depth_);
+            }
         }
     }
 
@@ -390,17 +378,14 @@ std::vector<const FieldCommon * > FieldFormula<spacedim, Value>::set_dependency(
     uint n_vectors = sum_shape_sizes + 1; // needs add space of result vector
     arena_alloc_ = new bparser::ArenaAlloc(ElementCacheMap::simd_size_double, n_vectors * vec_size * sizeof(double) + n_subsets * sizeof(uint));
     res_ = arena_alloc_->create_array<double>(vec_size);
-    if (has_coords_) {
-        X_ = arena_alloc_->create_array<double>(3*vec_size);
-        x_ = X_ + 0;
-        y_ = X_ + vec_size;
-        z_ = X_ + 2*vec_size;
-    }
-    if (has_depth_) d_ = arena_alloc_->create_array<double>(vec_size);
     for (auto field : dependency_field_vec_) {
         std::string field_name = field->name();
-        if ( (field_name == "X") || (field_name == "d") ) continue; // skip coords and depth field
         eval_field_data_[field] = arena_alloc_->create_array<double>(n_shape( field->shape_ ) * vec_size);
+        if (field_name == "X") {
+            x_ = eval_field_data_[field] + 0;
+            y_ = eval_field_data_[field] + vec_size;
+            z_ = eval_field_data_[field] + 2*vec_size;
+        }
     }
     subsets_ = arena_alloc_->create_array<uint>(n_subsets);
 
@@ -408,21 +393,17 @@ std::vector<const FieldCommon * > FieldFormula<spacedim, Value>::set_dependency(
         for(unsigned int col=0; col < this->value_.n_cols(); col++) {
             // set expression and data to BParser
             unsigned int i_p = row*this->value_.n_cols()+col;
-            if (has_coords_) {
-                b_parser_[i_p].set_variable("x",  {}, x_);
-                b_parser_[i_p].set_variable("y",  {}, y_);
-                b_parser_[i_p].set_variable("z",  {}, z_);
-            }
-            if (has_depth_) {
-                b_parser_[i_p].set_variable("d",  {}, d_);
-            }
             if (has_time) {
                 b_parser_[i_p].set_constant("t",  {}, {this->time_.end()});
             }
             for (auto field : dependency_field_vec_) {
                 std::string field_name = field->name();
-                if ( (field_name == "X") || (field_name == "d") ) continue; // skip coords and depth field
-                b_parser_[i_p].set_variable(field_name,  {}, eval_field_data_[field]);
+                if (field_name == "X") {
+                    b_parser_[i_p].set_variable("x",  {}, x_);
+                    b_parser_[i_p].set_variable("y",  {}, y_);
+                    b_parser_[i_p].set_variable("z",  {}, z_);
+                } else
+                    b_parser_[i_p].set_variable(field_name,  {}, eval_field_data_[field]);
             }
             b_parser_[i_p].set_variable("_result_", {}, res_);
             b_parser_[i_p].compile();

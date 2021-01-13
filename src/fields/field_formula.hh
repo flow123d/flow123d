@@ -147,15 +147,12 @@ private:
     bparser::ArenaAlloc * arena_alloc_;
 
     // BParser data arrays and variables
-	double *X_;       ///< Data of coordinates, holds blocks of x, y, z
 	double *x_;       ///< Coordinates x, part of previous array
 	double *y_;       ///< Coordinates y, part of previous array
 	double *z_;       ///< Coordinates z, part of previous array
 	double *d_;       ///< Surface depth variable, used optionally if 'd' variable is set
 	double *res_;     ///< Result vector of BParser
 	uint *subsets_;   ///< Subsets indices in range 0 ... n-1
-	bool has_coords_; ///< Indicates that coords field is used
-	bool has_depth_;  ///< Indicates that depth variable is used
 	std::vector<const FieldCommon * > dependency_field_vec_;
 	/**
 	 * Data of fields evaluated in expressions.

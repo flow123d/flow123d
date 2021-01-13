@@ -351,16 +351,7 @@ public:
      */
     void add_coords_field();
 
-    /// Return FieldValueCache of FieldCoords (X_)
-    inline FieldValueCache<double> * coords_cache() {
-        return X_.value_cache();
-    }
-
-    /// Return FieldValueCache of Fielddepth (depth_)
-    inline FieldValueCache<double> * depth_cache() {
-        return depth_.value_cache();
-    }
-
+    /// Set surface depth object  to "d" field.
     inline void set_surface_depth(std::shared_ptr<SurfaceDepth> surface_depth) {
         depth_.set_surface_depth( surface_depth );
     }
