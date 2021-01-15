@@ -372,8 +372,7 @@ void TransportDG<Model>::zero_time_step()
 {
     START_TIMER(Model::ModelEqData::name());
     data_->mark_input_times( *(Model::time_) );
-    data_->set_time(Model::time_->step(), LimitSide::left);
-    data_->set_dependency();
+    data_->set_time(Model::time_->step(), LimitSide::left, true);
     std::stringstream ss; // print warning message with table of uninitialized fields
     if ( FieldCommon::print_message_table(ss, "transport DG") ) {
         WarningOut() << ss.str();
@@ -449,10 +448,8 @@ void TransportDG<Model>::update_solution()
     Model::time_->view("TDG");
     
     START_TIMER("data reinit");
-    data_->set_time(Model::time_->step(), LimitSide::left);
+    data_->set_time(Model::time_->step(), LimitSide::left, true);
     END_TIMER("data reinit");
-
-    data_->set_dependency();
 
     // assemble mass matrix
     if (mass_matrix[0] == NULL || data_->subset(FieldFlag::in_time_term).changed() )

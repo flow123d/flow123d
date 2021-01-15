@@ -142,18 +142,18 @@ TEST_F(FieldModelTest, create) {
     this->fill_cache_data();
     arma::mat::fixed<3,1> vector_val;
     for (unsigned int i=0; i<n_items; ++i) {
-        f_scal.value_cache().set(i) = 1.0 + i*0.5;
+        f_scal.value_cache()->set(i) = 1.0 + i*0.5;
         vector_val(0,0) = 1.5 + 2*i;
         vector_val(1,0) = i + 0.1;
         vector_val(2,0) = 0.5 + i%2;
-        f_vec.value_cache().set(i) = vector_val;
+        f_vec.value_cache()->set(i) = vector_val;
     }
 
     {
         // FieldModel scalar * vector
         f_product.cache_update(*this, 1);
         for (unsigned int i=0; i<n_items; ++i) {
-            auto val = f_product.value_cache().template mat<3, 1>(i);
+            auto val = f_product.value_cache()->template mat<3, 1>(i);
             EXPECT_ARMA_EQ(val, expected_product[i]);
         }
     }
@@ -162,7 +162,7 @@ TEST_F(FieldModelTest, create) {
         // FieldModel vector + scalar * vector
         f_other.cache_update(*this, 1);
         for (unsigned int i=0; i<n_items; ++i) {
-            auto val = f_other.value_cache().template mat<3, 1>(i);
+            auto val = f_other.value_cache()->template mat<3, 1>(i);
             EXPECT_ARMA_EQ(val, expected_other[i]);
         }
     }
@@ -233,12 +233,12 @@ TEST_F(FieldModelTest, create_multi_scalar) {
     std::vector< arma::mat::fixed<1,1> > multi_val;
     multi_val.resize( f_multi.size() );
     for (unsigned int i=0; i<n_items; ++i) {
-        f_scal.value_cache().set(i) = 1.0 + i*0.5;
+        f_scal.value_cache()->set(i) = 1.0 + i*0.5;
         multi_val[0](0,0) = 1.5 + 2*i;
         multi_val[1](0,0) = i + 0.1;
         multi_val[2](0,0) = 0.5 + i%2;
         for (unsigned int j=0; j<f_multi.size(); ++j)
-            f_multi[j].value_cache().set(i) = multi_val[j];
+            f_multi[j].value_cache()->set(i) = multi_val[j];
     }
 
     {
@@ -247,7 +247,7 @@ TEST_F(FieldModelTest, create_multi_scalar) {
     	    f_product[i].cache_update(*this, 1);
         for (unsigned int i_cache=0; i_cache<n_items; ++i_cache) {
             for (unsigned int i_subfield=0; i_subfield<f_product.size(); ++i_subfield) {
-                auto val = f_product[i_subfield].value_cache().template mat<1, 1>(i_cache);
+                auto val = f_product[i_subfield].value_cache()->template mat<1, 1>(i_cache);
                 EXPECT_DOUBLE_EQ(expected_product[i_cache](i_subfield), val(0));
             }
         }
@@ -259,7 +259,7 @@ TEST_F(FieldModelTest, create_multi_scalar) {
     	    f_other[i].cache_update(*this, 1);
         for (unsigned int i_cache=0; i_cache<n_items; ++i_cache) {
             for (unsigned int i_subfield=0; i_subfield<f_other.size(); ++i_subfield) {
-                auto val = f_other[i_subfield].value_cache().template mat<1, 1>(i_cache);
+                auto val = f_other[i_subfield].value_cache()->template mat<1, 1>(i_cache);
                 EXPECT_DOUBLE_EQ(expected_other[i_cache](i_subfield), val(0));
             }
         }
@@ -313,12 +313,12 @@ TEST_F(FieldModelTest, create_multi_vector) {
     this->fill_cache_data();
     arma::mat::fixed<3,1> vector_val;
     for (unsigned int i=0; i<n_items; ++i) {
-        f_scal.value_cache().set(i) = 1.0 + i*0.5;
+        f_scal.value_cache()->set(i) = 1.0 + i*0.5;
         vector_val(0,0) = 1.5 + 2*i;
         vector_val(1,0) = i + 0.1;
         vector_val(2,0) = 0.5 + i%2;
         for (unsigned int j=0; j<f_multi.size(); ++j)
-            f_multi[j].value_cache().set(i) = vector_val;
+            f_multi[j].value_cache()->set(i) = vector_val;
     }
 
     {
@@ -327,7 +327,7 @@ TEST_F(FieldModelTest, create_multi_vector) {
             f_product[i].cache_update(*this, 1);
         for (unsigned int i_cache=0; i_cache<n_items; ++i_cache) {
             for (unsigned int i_subfield=0; i_subfield<f_product.size(); ++i_subfield) {
-                auto val = f_product[i_subfield].value_cache().template mat<3, 1>(i_cache);
+                auto val = f_product[i_subfield].value_cache()->template mat<3, 1>(i_cache);
                 EXPECT_ARMA_EQ(val, expected_product[i_cache]);
             }
         }
@@ -339,7 +339,7 @@ TEST_F(FieldModelTest, create_multi_vector) {
     	    f_other[i].cache_update(*this, 1);
         for (unsigned int i_cache=0; i_cache<n_items; ++i_cache) {
             for (unsigned int i_subfield=0; i_subfield<f_other.size(); ++i_subfield) {
-                auto val = f_other[i_subfield].value_cache().template mat<3, 1>(i_cache);
+                auto val = f_other[i_subfield].value_cache()->template mat<3, 1>(i_cache);
                 EXPECT_ARMA_EQ(val, expected_other[i_cache]);
             }
         }

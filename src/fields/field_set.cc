@@ -26,17 +26,7 @@
 
 
 FieldSet::FieldSet()
-: x_coord_(1,1), y_coord_(1,1), z_coord_(1,1)
-{
-    // TODO after replace caches with fields call method cache_reallocate directly
-    unsigned int cache_size = 1.1 * CacheMapElementNumber::get();
-    x_coord_.reinit(cache_size);
-    x_coord_.resize(cache_size);
-    y_coord_.reinit(cache_size);
-    y_coord_.resize(cache_size);
-    z_coord_.reinit(cache_size);
-    z_coord_.resize(cache_size);
-}
+{}
 
 FieldSet &FieldSet::operator +=(FieldCommon &add_field) {
     FieldCommon *found_field = field(add_field.name());
@@ -170,9 +160,10 @@ FieldCommon &FieldSet::operator[](const std::string &field_name) const {
 }
 
 
-bool FieldSet::set_time(const TimeStep &time, LimitSide limit_side) {
+bool FieldSet::set_time(const TimeStep &time, LimitSide limit_side, bool set_dependency) {
     bool changed_all=false;
     for(auto field : field_list) changed_all = field->set_time(time, limit_side) || changed_all;
+    if (set_dependency) this->set_dependency();
     return changed_all;
 }
 
@@ -200,54 +191,11 @@ bool FieldSet::is_jump_time() const {
 }
 
 
-void FieldSet::update_coords_caches(ElementCacheMap &cache_map) {
-    unsigned int n_cached_elements = cache_map.n_elements();
-    std::shared_ptr<EvalPoints> eval_points = cache_map.eval_points();
-
-    for (uint i_elm=0; i_elm<n_cached_elements; ++i_elm) {
-        ElementAccessor<3> elm = mesh_->element_accessor( cache_map.elm_idx_on_position(i_elm) );
-        unsigned int dim = elm.dim();
-        for (uint i_point=0; i_point<eval_points->size(dim); ++i_point) {
-            int cache_idx = cache_map.element_eval_point(i_elm, i_point); // index in FieldValueCache
-            if (cache_idx<0) continue;
-            arma::vec3 coords;
-            switch (dim) {
-            case 0:
-                coords = *elm.node(0);
-                break;
-            case 1:
-                coords = MappingP1<1,3>::project_unit_to_real(RefElement<1>::local_to_bary(eval_points->local_point<1>(i_point)),
-                        MappingP1<1,3>::element_map(elm));
-                break;
-            case 2:
-                coords = MappingP1<2,3>::project_unit_to_real(RefElement<2>::local_to_bary(eval_points->local_point<2>(i_point)),
-                        MappingP1<2,3>::element_map(elm));
-                break;
-            case 3:
-                coords = MappingP1<3,3>::project_unit_to_real(RefElement<3>::local_to_bary(eval_points->local_point<3>(i_point)),
-                        MappingP1<3,3>::element_map(elm));
-                break;
-            default:
-            	coords = arma::vec3("0 0 0"); //Should not happen
-            }
-            Armor::ArmaMat<double, 1, 1> coord_val;
-            coord_val(0,0) = coords(0);
-            x_coord_.set(cache_idx) = coord_val;
-            coord_val(0,0) = coords(1);
-            y_coord_.set(cache_idx) = coord_val;
-            coord_val(0,0) = coords(2);
-            z_coord_.set(cache_idx) = coord_val;
-        }
-    }
-}
-
-
 void FieldSet::cache_update(ElementCacheMap &cache_map) {
-	ASSERT_GT_DBG(region_dependency_list_.size(), 0).error("Variable 'region_dependency_list' is empty. Did you call 'set_dependency' method?\n");
-    update_coords_caches(cache_map);
+    ASSERT_GT_DBG(region_field_update_order_.size(), 0).error("Variable 'region_dependency_list' is empty. Did you call 'set_dependency' method?\n");
     for (unsigned int i_reg=0; i_reg<cache_map.n_regions(); ++i_reg) {
         unsigned int region_idx = cache_map.eval_point_data( cache_map.region_chunk_by_map_index(i_reg) ).i_reg_;
-        for(unsigned int i_f=0; i_f<region_dependency_list_[region_idx].size(); ++i_f) region_dependency_list_[region_idx][i_f]->cache_update(cache_map, region_idx);
+        for (const FieldCommon *field : region_field_update_order_[region_idx]) field->cache_update(cache_map, region_idx);
     }
 }
 
@@ -256,7 +204,7 @@ void FieldSet::set_dependency() {
     BidirectionalMap<const FieldCommon *> field_indices_map;
     for (FieldListAccessor f_acc : this->fields_range())
         field_indices_map.add_item( f_acc.field() );
-    region_dependency_list_.clear();
+    region_field_update_order_.clear();
 
     unordered_map<std::string, unsigned int>::iterator it;
     for (unsigned int i_reg=0; i_reg<mesh_->region_db().size(); ++i_reg) {
@@ -270,9 +218,9 @@ void FieldSet::set_dependency() {
         	}
         }
         auto sort_vec = dfs.topological_sort();
-        region_dependency_list_[i_reg] = std::vector<const FieldCommon *>(sort_vec.size());
+        region_field_update_order_[i_reg] = std::vector<const FieldCommon *>(sort_vec.size());
         for (unsigned int i_field=0; i_field<sort_vec.size(); ++i_field)
-            region_dependency_list_[i_reg][i_field] = field_indices_map[ sort_vec[i_field] ];
+            region_field_update_order_[i_reg][i_field] = field_indices_map[ sort_vec[i_field] ];
     }
 }
 
@@ -282,10 +230,15 @@ void FieldSet::add_coords_field() {
                .units(UnitSI().m())
                .input_default("0.0")
                .flags( FieldFlag::input_copy )
-               .description("Coordinates fields.");
+               .description("Coordinates field.");
 
-    // TODO initialize coords field
-    //X_.set(coord fields, 0.0);
+    *this += depth_.name("d")
+               .units(UnitSI().m())
+               .input_default("0.0")
+               .flags( FieldFlag::input_copy )
+               .description("Depth field.");
+
+    depth_.set_field_coords(&X_);
 }
 
 

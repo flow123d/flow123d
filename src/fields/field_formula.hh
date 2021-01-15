@@ -27,6 +27,7 @@
 #include <vector>                       // for vector
 #include <memory>
 #include <armadillo>
+#include <map>
 #include "fields/field_algo_base.hh"    // for FieldAlgorithmBase
 #include "fields/field_values.hh"       // for FieldValue<>::Enum, FieldValu...
 #include "fields/field_set.hh"
@@ -62,6 +63,14 @@ public:
     typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
     typedef FieldAlgorithmBase<spacedim, Value> FactoryBaseType;
 
+    TYPEDEF_ERR_INFO(EI_Field, std::string);
+    DECLARE_INPUT_EXCEPTION(ExcUnknownField,
+            << "Field " << EI_Field::qval << " doesn't exist in equation.\n"
+    		   << "Please use field of correct name.\n");
+    DECLARE_INPUT_EXCEPTION(ExcNotDoubleField,
+            << "Field " << EI_Field::qval << " is not field of floating point element type.\n"
+    		   << "Please use fields of element type double.\n");
+
     FieldFormula(unsigned int n_comp=0);
 
 
@@ -96,14 +105,6 @@ public:
 			ElementCacheMap &cache_map, unsigned int region_idx) override;
 
     /**
-     * Overload @p FieldAlgorithmBase::cache_reinit
-     *
-     * Reinit Bparser::ArenaAlloc data member.
-     */
-    void cache_reinit(const ElementCacheMap &cache_map) override;
-
-
-    /**
      * Set reference of FieldSet.
      */
     std::vector<const FieldCommon *> set_dependency(FieldSet &field_set) override;
@@ -133,7 +134,7 @@ private:
     /// Surface depth object calculate distance from surface.
     std::shared_ptr<SurfaceDepth> surface_depth_;
 
-    /// Flag indicates if depth variable 'd' is used in formula
+    /// Flag indicates if depth variable 'd' is used in formula - obsolete parameter of FParser
     bool has_depth_var_;
 
     /// Flag indicates first call of set_time method, when FunctionParsers in parser_matrix_ must be initialized
@@ -145,14 +146,20 @@ private:
     /// Arena object providing data arrays
     bparser::ArenaAlloc * arena_alloc_;
 
-    // BParser data arrays
-	double *X_;     ///< Data of coordinates, holds blocks of x, y, z
-	double *x_;     ///< Coordinates x, part of previous array
-	double *y_;     ///< Coordinates y, part of previous array
-	double *z_;     ///< Coordinates z, part of previous array
-	double *d_;     ///< Surface depth variable, used optionally if 'd' variable is set
-	double *res_;   ///< Result vector of BParser
-	uint *subsets_; ///< Subsets indices in range 0 ... n-1
+    // BParser data arrays and variables
+	double *x_;       ///< Coordinates x, part of previous array
+	double *y_;       ///< Coordinates y, part of previous array
+	double *z_;       ///< Coordinates z, part of previous array
+	double *d_;       ///< Surface depth variable, used optionally if 'd' variable is set
+	double *res_;     ///< Result vector of BParser
+	uint *subsets_;   ///< Subsets indices in range 0 ... n-1
+	std::vector<const FieldCommon * > dependency_field_vec_;
+	/**
+	 * Data of fields evaluated in expressions.
+	 *
+	 * Temporary data member, we need to copy data from FieldValueCaches to arrays allocated in arena.
+	 */
+	std::unordered_map<const FieldCommon *, double *> eval_field_data_;
 
     /// Registrar of class to factory
     static const int registrar;

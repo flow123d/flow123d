@@ -285,6 +285,17 @@ public:
             double time,
             std::vector<std::string> region_set_names = {"ALL"});
 
+    /// Implements FieldCommon::value_cache
+    FieldValueCache<double> * value_cache() override {
+        return nullptr;
+    }
+
+    /// Implements FieldCommon::value_cache
+    const FieldValueCache<double> * value_cache() const override {
+        return nullptr;
+    }
+
+
 private:
     /// Subfields (items) of MultiField
     std::vector< SubFieldType > sub_fields_;

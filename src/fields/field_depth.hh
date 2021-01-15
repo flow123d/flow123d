@@ -11,16 +11,18 @@
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
  *
- * @file    field_coords.hh
+ * @file    field_depth.hh
  * @brief
  */
 
-#ifndef FIELD_COORDS_HH_
-#define FIELD_COORDS_HH_
+#ifndef FIELD_DEPTH_HH_
+#define FIELD_DEPTH_HH_
 
 #include "fields/field_common.hh"                      // for FieldCommon::T...
 #include "fields/field_value_cache.hh"                 // for FieldValueCache
 #include "fields/eval_points.hh"                       // for EvalPoints
+#include "fields/field_coords.hh"
+#include "fields/surface_depth.hh"
 #include "fem/mapping_p1.hh"
 #include "mesh/ref_element.hh"
 
@@ -28,24 +30,24 @@ namespace IT=Input::Type;
 
 
 /**
- * Specialized field represents coordinate variables ('x', 'y', 'z') of FieldFormula.
+ * Specialized field represents surface depth ('d' variable) of FieldFormula.
  */
-class FieldCoords : public FieldCommon {
+class FieldDepth : public FieldCommon {
 public:
 
     /// Constructor
-    FieldCoords()
-      : value_cache_( FieldValueCache<double>(3, 1) )
+	FieldDepth()
+      : value_cache_( FieldValueCache<double>(1, 1) ), surface_depth_(nullptr)
     {
         this->multifield_ = false;
     	unsigned int cache_size = 1.1 * CacheMapElementNumber::get();
     	value_cache_.reinit(cache_size);
     	value_cache_.resize(cache_size);
-    	this->set_shape(3, 1);
+    	this->set_shape(1, 1);
     }
 
     IT::Instance get_input_type() override {
-        ASSERT(false).error("This method can't be used for FieldCoords");
+        ASSERT(false).error("This method can't be used for FieldDepth");
 
         IT::Abstract abstract = IT::Abstract();
         IT::Instance inst = IT::Instance( abstract, std::vector<IT::TypeBase::ParameterPair>() );
@@ -53,7 +55,7 @@ public:
     }
 
     IT::Array get_multifield_input_type() override {
-        ASSERT(false).error("This method can't be used for FieldCoords");
+        ASSERT(false).error("This method can't be used for FieldDepth");
 
         IT::Array arr = IT::Array( IT::Integer() );
         return arr;
@@ -89,7 +91,7 @@ public:
 
     std::string get_value_attribute() const override {
         double limit = std::numeric_limits<double>::max();
-        return fmt::format("{{ \"shape\": [ 3, 1 ], \"type\": \"Double\", \"limit\": [ {}, {} ] }}", -limit, +limit);
+        return fmt::format("{{ \"shape\": [ 1, 1 ], \"type\": \"Double\", \"limit\": [ {}, {} ] }}", -limit, +limit);
     }
 
     void set_input_list(FMT_UNUSED const Input::Array &list, FMT_UNUSED const TimeGovernor &tg) override
@@ -101,43 +103,17 @@ public:
 
     /// Implements FieldCommon::cache_update
     void cache_update(ElementCacheMap &cache_map, unsigned int i_reg) const override {
+    	if (surface_depth_ == nullptr) return;
+
     	std::shared_ptr<EvalPoints> eval_points = cache_map.eval_points();
         unsigned int reg_chunk_begin = cache_map.region_chunk_begin(i_reg);
         unsigned int reg_chunk_end = cache_map.region_chunk_end(i_reg);
-        unsigned int last_element_idx = -1;
-        ElementAccessor<3> elm;
-    	arma::vec3 coords;
-        unsigned int dim = 0;
+        auto * coords_cache = field_coords_->value_cache();
+    	arma::vec3 p; // evaluated point
 
         for (unsigned int i_data = reg_chunk_begin; i_data < reg_chunk_end; ++i_data) { // i_eval_point_data
-            unsigned int elm_idx = cache_map.eval_point_data(i_data).i_element_;
-            if (elm_idx != last_element_idx) {
-                elm = mesh_->element_accessor( elm_idx );
-                dim = elm.dim();
-                last_element_idx = elm_idx;
-            }
-
-            unsigned int i_point = cache_map.eval_point_data(i_data).i_eval_point_;
-            switch (dim) {
-            case 0:
-                coords = *elm.node(0);
-                break;
-            case 1:
-                coords = MappingP1<1,3>::project_unit_to_real(RefElement<1>::local_to_bary(eval_points->local_point<1>(i_point)),
-                        MappingP1<1,3>::element_map(elm));
-                break;
-            case 2:
-                coords = MappingP1<2,3>::project_unit_to_real(RefElement<2>::local_to_bary(eval_points->local_point<2>(i_point)),
-                        MappingP1<2,3>::element_map(elm));
-                break;
-            case 3:
-                coords = MappingP1<3,3>::project_unit_to_real(RefElement<3>::local_to_bary(eval_points->local_point<3>(i_point)),
-                        MappingP1<3,3>::element_map(elm));
-                break;
-            default:
-            	coords = arma::vec3("0 0 0"); //Should not happen
-            }
-            value_cache_.set(i_data) = coords;
+            p = coords_cache->template vec<3>(i_data);
+            value_cache_.set(i_data) = surface_depth_->compute_distance(p);
         }
     }
 
@@ -153,7 +129,19 @@ public:
 
     /// Implements FieldCommon::set_dependency().
     std::vector<const FieldCommon *> set_dependency(FMT_UNUSED FieldSet &field_set, FMT_UNUSED unsigned int i_reg) override {
-        return std::vector<const FieldCommon *>();
+    	std::vector<const FieldCommon *> res;
+    	res.push_back(field_coords_);
+        return res;
+    }
+
+    /// Setter of surface_depth data member
+    inline void set_surface_depth(std::shared_ptr<SurfaceDepth> surface_depth) {
+        surface_depth_ = surface_depth;
+    }
+
+    /// Setter of field_coords data member
+    inline void set_field_coords(FieldCoords * field_coords) {
+    	field_coords_ = field_coords;
     }
 
 private:
@@ -164,7 +152,11 @@ private:
      */
     mutable FieldValueCache<double> value_cache_;
 
-    const Mesh *mesh_;                 ///< Pointer to the mesh.
+    /// Surface depth object calculate distance from surface.
+    std::shared_ptr<SurfaceDepth> surface_depth_;
+
+    const Mesh *mesh_;                  ///< Pointer to the mesh.
+    FieldCoords * field_coords_;        ///< Pointer to coordinates field.
 };
 
-#endif /* FIELD_COORDS_HH_ */
+#endif /* FIELD_DEPTH_HH_ */

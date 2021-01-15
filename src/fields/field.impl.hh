@@ -53,6 +53,7 @@ Field<spacedim,Value>::Field()
 	value_cache_.resize(cache_size);
 
 	this->multifield_ = false;
+	this->set_shape( Value::NRows_, Value::NCols_ );
 }
 
 
@@ -72,6 +73,7 @@ Field<spacedim,Value>::Field(const string &name, bool bc)
 		value_cache_.resize(cache_size);
 
 		this->multifield_ = false;
+		this->set_shape( Value::NRows_, Value::NCols_ );
 }
 
 
@@ -94,6 +96,7 @@ Field<spacedim,Value>::Field(unsigned int component_index, string input_name, st
 	value_cache_.resize(cache_size);
 
 	this->multifield_ = false;
+	this->set_shape( Value::NRows_, Value::NCols_ );
 }
 
 
@@ -109,6 +112,7 @@ Field<spacedim,Value>::Field(const Field &other)
 		no_check_control_field_ =  make_shared<ControlField>(*other.no_check_control_field_);
 
 	this->multifield_ = false;
+	this->set_shape( Value::NRows_, Value::NCols_ );
 }
 
 
@@ -137,6 +141,7 @@ Field<spacedim,Value> &Field<spacedim,Value>::operator=(const Field<spacedim,Val
 	factories_ = other.factories_;
 	region_fields_ = other.region_fields_;
 	value_cache_ = other.value_cache_;
+	this->shape_ = other.shape_;
 
 	if (other.no_check_control_field_) {
 		no_check_control_field_ =  make_shared<ControlField>(*other.no_check_control_field_);
@@ -172,7 +177,7 @@ template<int spacedim, class Value>
 typename Value::return_type
 Field<spacedim,Value>::operator[] (unsigned int i_cache_point) const
 {
-	return Value::get_from_array( this->value_cache(), i_cache_point );
+	return Value::get_from_array( this->value_cache_, i_cache_point );
 }
 
 
@@ -770,6 +775,40 @@ template<int spacedim, class Value>
 std::vector<const FieldCommon *> Field<spacedim, Value>::set_dependency(FieldSet &field_set, unsigned int i_reg) {
    	if (region_fields_[i_reg] != nullptr) return region_fields_[i_reg]->set_dependency(field_set);
    	else return std::vector<const FieldCommon *>();
+}
+
+
+template<int spacedim, class Value>
+FieldValueCache<double> * Field<spacedim, Value>::value_cache() {
+    return &value_cache_;
+}
+
+
+template<>
+FieldValueCache<double> * Field<3, FieldValue<0>::Enum>::value_cache() {
+    return nullptr;
+}
+
+template<>
+FieldValueCache<double> * Field<3, FieldValue<0>::Integer>::value_cache() {
+    return nullptr;
+}
+
+
+template<int spacedim, class Value>
+const FieldValueCache<double> * Field<spacedim, Value>::value_cache() const {
+    return &value_cache_;
+}
+
+
+template<>
+const FieldValueCache<double> * Field<3, FieldValue<0>::Enum>::value_cache() const {
+    return nullptr;
+}
+
+template<>
+const FieldValueCache<double> * Field<3, FieldValue<0>::Integer>::value_cache() const {
+    return nullptr;
 }
 
 

@@ -467,6 +467,18 @@ public:
 
 
     /**
+     *  Returns FieldValueCache if element_type of field is double or nullptr for other element_types.
+     */
+    virtual FieldValueCache<double> * value_cache() =0;
+
+
+    /**
+     * Same as previous but return const pointer
+     */
+    virtual const FieldValueCache<double> * value_cache() const =0;
+
+
+    /**
      * Print stored messages to table.
      *
      * Return true if messages_data_ vector is nonempty and clear its.
@@ -477,6 +489,13 @@ public:
      * Virtual destructor.
      */
     virtual ~FieldCommon();
+
+    /**
+     * Hold shape of Field.
+     *
+     * Value is set in constructor of descendant class.
+     */
+    std::vector<uint> shape_;
 
 
 protected:
@@ -499,6 +518,11 @@ protected:
     void set_history_changed()
     {
         last_time_ = -numeric_limits<double>::infinity();
+    }
+
+    void set_shape(uint n_rows, uint n_cols) {
+        if (n_cols==1) this->shape_ = { n_rows };
+        else this->shape_ = { n_rows, n_cols };
     }
 
     /**
