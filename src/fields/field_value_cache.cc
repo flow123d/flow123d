@@ -117,14 +117,6 @@ void ElementCacheMap::finish_elements_update() {
 	ready_to_reading_ = true;
 }
 
-void ElementCacheMap::clear_element_eval_points_map() {
-	/// optimize loops, set to ElementCacheMap::unused_point only items stored in eval_point_data_
-	ASSERT_PTR_DBG(element_eval_points_map_);
-    unsigned int ep_data_size = CacheMapElementNumber::get() * this->eval_points_->max_size();
-    for (unsigned int i=0; i<ep_data_size; ++i)
-    	element_eval_points_map_[i] = ElementCacheMap::unused_point;
-}
-
 
 DHCellAccessor & ElementCacheMap::cache_map_index(DHCellAccessor &dh_cell) const {
 	ASSERT_DBG(ready_to_reading_);

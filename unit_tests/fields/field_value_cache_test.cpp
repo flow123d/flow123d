@@ -161,7 +161,6 @@ TEST_F(FieldValueCacheTest, element_cache_map) {
 
     dh_cell1 = this->cache_map_index(dh_cell1);
     EXPECT_EQ(dh_cell1.element_cache_index(), 0);
-    this->eval_point_data_.reset();
     this->clear_element_eval_points_map();
 
     // Test of edge connectivity
@@ -195,7 +194,6 @@ TEST_F(FieldValueCacheTest, element_cache_map) {
     elm_to_patch_.clear();
     dh_cell2 = this->cache_map_index(dh_cell2);
     EXPECT_EQ(dh_cell2.element_cache_index(), 1);
-    this->eval_point_data_.reset();
     this->clear_element_eval_points_map();
 
     // Test of 3 elements on 2 different regions
@@ -224,6 +222,5 @@ TEST_F(FieldValueCacheTest, element_cache_map) {
     elm_to_patch_.clear();
     dh_cell3 = this->cache_map_index(dh_cell3);
     EXPECT_EQ(dh_cell3.element_cache_index(), 1);
-    this->eval_point_data_.reset();
     this->clear_element_eval_points_map();
 }

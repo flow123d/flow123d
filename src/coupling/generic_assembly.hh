@@ -303,7 +303,6 @@ private:
         edge_integral_data_.reset();
         coupling_integral_data_.reset();
         boundary_integral_data_.reset();
-        element_cache_map_.eval_point_data_.reset();
         element_cache_map_.clear_element_eval_points_map();
     }
 
