@@ -131,7 +131,7 @@ const int FieldFE<spacedim, Value>::registrar =
 template <int spacedim, class Value>
 FieldFE<spacedim, Value>::FieldFE( unsigned int n_comp)
 : FieldAlgorithmBase<spacedim, Value>(n_comp),
-  field_name_(""), fe_values_(4), fe_item_()
+  field_name_(""), fe_values_(4)
 {
 	this->is_constant_in_space_ = false;
 }
@@ -159,47 +159,6 @@ VectorMPI FieldFE<spacedim, Value>::set_fe_data(std::shared_ptr<DOFHandlerMultiD
 	init_data.ndofs = ndofs;
 	init_data.n_comp = this->n_comp();
 	init_data.comp_index = component_index;
-
-	// initialize value handler objects
-	value_handler0_.initialize(init_data);
-	value_handler1_.initialize(init_data);
-	value_handler2_.initialize(init_data);
-	value_handler3_.initialize(init_data);
-
-	// set discretization
-	discretization_ = OutputTime::DiscreteSpace::UNDEFINED;
-	interpolation_ = DataInterpolation::equivalent_msh;
-
-	return data_vec_;
-}
-
-
-template <int spacedim, class Value>
-VectorMPI FieldFE<spacedim, Value>::set_fe_system_data(std::shared_ptr<DOFHandlerMultiDim> dh,
-		unsigned int block_index, VectorMPI dof_values)
-{
-    dh_ = dh;
-    if (dof_values.size()==0) { //create data vector according to dof handler - Warning not tested yet
-        data_vec_ = dh_->create_vector();
-        data_vec_.zero_entries();
-    } else {
-        data_vec_ = dof_values;
-    }
-    this->fill_fe_system_data<0>(block_index);
-    this->fill_fe_system_data<1>(block_index);
-    this->fill_fe_system_data<2>(block_index);
-    this->fill_fe_system_data<3>(block_index);
-    this->comp_index_ = this->fe_item_[Dim<1>{}]->comp_index_; // FIX
-
-    unsigned int ndofs = dh_->max_elem_dofs();
-
-    // initialization data of value handlers
-	FEValueInitData init_data;
-	init_data.dh = dh_;
-	init_data.data_vec = data_vec_;
-	init_data.ndofs = ndofs;
-	init_data.n_comp = this->n_comp();
-	init_data.comp_index = this->comp_index_;
 
 	// initialize value handler objects
 	value_handler0_.initialize(init_data);
