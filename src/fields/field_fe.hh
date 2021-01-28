@@ -86,12 +86,22 @@ public:
     /**
      * Setter for the finite element data.
      * @param dh              Dof handler.
-     * @param data            Vector of dof values, optional (create own vector according to dofhandler).
+     * @param dof_values      Vector of dof values, optional (create own vector according to dofhandler).
      * @param component_index Index of component (for vector_view/tensor_view)
      * @return                Data vector of dof values.
      */
     VectorMPI set_fe_data(std::shared_ptr<DOFHandlerMultiDim> dh,
     		unsigned int component_index = 0, VectorMPI dof_values = VectorMPI::sequential(0));
+
+    /**
+     * Setter for the finite element data.
+     * @param dh              Dof handler.
+     * @param dof_values      Vector of dof values, optional (create own vector according to dofhandler).
+     * @param block_index     Index of block (in FESystem)
+     * @return                Data vector of dof values.
+     */
+    VectorMPI set_fe_system_data(std::shared_ptr<DOFHandlerMultiDim> dh,
+            unsigned int block_index = 0, VectorMPI dof_values = VectorMPI::sequential(0));
 
     /**
      * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
@@ -164,6 +174,18 @@ public:
 	virtual ~FieldFE();
 
 private:
+	/**
+	 * Helper class holds specific data of field evaluation.
+	 */
+    template <unsigned int dim>
+    class FEItem {
+    public:
+        std::shared_ptr<FiniteElement<dim>> fe_;
+        unsigned int comp_index_;
+        unsigned int range_begin_;
+        unsigned int range_end_;
+    };
+
 	/// Create DofHandler object
 	void make_dof_handler(const Mesh *mesh);
 
@@ -203,6 +225,23 @@ private:
             return v;
         else
             return v.t();
+    }
+
+    template<unsigned int dim>
+    void fill_fe_system_data(unsigned int block_index) {
+        auto fe_system_ptr = std::dynamic_pointer_cast<FESystem<dim>>( dh_->ds()->fe()[Dim<dim>{}] );
+        ASSERT_DBG(fe_system_ptr != nullptr).error("Wrong type, must be FESystem!\n");
+        this->fe_item_[Dim<dim>{}]->fe_ = fe_system_ptr->fe()[block_index];
+        this->fe_item_[Dim<dim>{}]->comp_index_ = fe_system_ptr->function_space()->dof_indices()[block_index].component_offset;
+        this->fe_item_[Dim<dim>{}]->range_begin_ = fe_system_ptr->fe_dofs(block_index)[0];
+        this->fe_item_[Dim<dim>{}]->range_end_ = this->fe_item_[Dim<dim>{}]->range_begin_ + this->fe_item_[Dim<dim>{}]->fe_->n_dofs();
+    }
+
+
+    template<unsigned int dim>
+    void get_ranges(unsigned int &range_begin, unsigned int &range_end) {
+        range_begin = this->fe_item_[Dim<dim>{}]->range_begin_;
+        range_end = this->fe_item_[Dim<dim>{}]->range_end_;
     }
 
 
@@ -254,18 +293,21 @@ private:
     /// List of FEValues objects of dimensions 0,1,2,3 used for value calculation
     std::vector<FEValues<spacedim>> fe_values_;
 
-    /// Index of component (of vector_value/tensor_value)
+    /// Index of component within FESystem.
     unsigned int comp_index_;
 
     /// Maps element indices between source (data) and target (computational) mesh if data interpolation is set to equivalent_msh
     std::shared_ptr<std::vector<LongIdx>> source_target_mesh_elm_map_;
+
+    /// Holds specific data of field evaluation over all dimensions.
+    MixedPtr<FEItem> fe_item_;
 
     /// Registrar of class to factory
     static const int registrar;
 };
 
 
-/** Create FieldFE from dhf handler */
+/** Create FieldFE from dof handler */
 template <int spacedim, class Value>
 std::shared_ptr<FieldFE<spacedim, Value> > create_field_fe(std::shared_ptr<DOFHandlerMultiDim> dh,
                                                            unsigned int comp = 0,
@@ -277,6 +319,23 @@ std::shared_ptr<FieldFE<spacedim, Value> > create_field_fe(std::shared_ptr<DOFHa
 	    field_ptr->set_fe_data( dh, comp, dh->create_vector() );
     else
         field_ptr->set_fe_data( dh, comp, *vec );
+
+	return field_ptr;
+}
+
+
+/** Same as previous, but create automatically MPI vector */
+template <int spacedim, class Value>
+std::shared_ptr<FieldFE<spacedim, Value> > create_field_fe_from_system(std::shared_ptr<DOFHandlerMultiDim> dh,
+                                                           unsigned int block = 0,
+                                                           VectorMPI *vec = nullptr)
+{
+	// Construct FieldFE
+	std::shared_ptr< FieldFE<spacedim, Value> > field_ptr = std::make_shared< FieldFE<spacedim, Value> >();
+    if (vec == nullptr)
+	    field_ptr->set_fe_system_data( dh, block, dh->create_vector() );
+    else
+        field_ptr->set_fe_system_data( dh, block, *vec );
     
 	return field_ptr;
 }
