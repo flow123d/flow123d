@@ -429,7 +429,6 @@ void FieldFE<spacedim, Value>::fill_boundary_dofs() {
 
 template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::make_dof_handler(const Mesh *mesh) {
-	this->comp_index_ = 0;
 
 	// temporary solution - these objects will be set through FieldCommon
 	MixedPtr<FiniteElement> fe;
@@ -458,8 +457,14 @@ void FieldFE<spacedim, Value>::make_dof_handler(const Mesh *mesh) {
 	dh_ = dh_par;
     unsigned int ndofs = dh_->max_elem_dofs();
 
-	if (this->boundary_domain_) fill_boundary_dofs(); // temporary solution for boundary mesh
-	else data_vec_ = VectorMPI::sequential( dh_->lsize() ); // allocate data_vec_
+    this->fill_fe_item<0>();
+    this->fill_fe_item<1>();
+    this->fill_fe_item<2>();
+    this->fill_fe_item<3>();
+    this->comp_index_ = this->fe_item_[Dim<0>{}]->comp_index_; // FIX
+
+    if (this->boundary_domain_) fill_boundary_dofs(); // temporary solution for boundary mesh
+    else data_vec_ = VectorMPI::sequential( dh_->lsize() ); // allocate data_vec_
 
 	// initialization data of value handlers
 	FEValueInitData init_data;
