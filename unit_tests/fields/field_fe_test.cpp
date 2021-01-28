@@ -101,7 +101,7 @@ TEST_F(FieldFETest, scalar) {
     ScalarField field;
 
     dh->distribute_dofs(ds);
-    field.set_fe_data(dh, 0, v);
+    field.set_fe_data(dh, v);
     field.set_time(0.0);
 
     Armor::array pts(3, 1);
@@ -131,7 +131,7 @@ TEST_F(FieldFETest, vector) {
     VecField field;
 
     dh->distribute_dofs(ds);
-    field.set_fe_data(dh, 0, v);
+    field.set_fe_data(dh, v);
     field.set_time(0.0);
 
     // The Raviart-Thomas function given by the following dofs
