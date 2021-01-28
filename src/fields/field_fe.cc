@@ -281,6 +281,7 @@ void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::elem
     unsigned int last_element_idx = -1;
     DHCellAccessor cell;
     LocDofVec loc_dofs;
+    unsigned int range_bgn=0, range_end=0;
 
     for (unsigned int i_data = reg_chunk_begin; i_data < reg_chunk_end; ++i_data) { // i_eval_point_data
         unsigned int elm_idx = cache_map.eval_point_data(i_data).i_element_;
@@ -290,12 +291,26 @@ void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::elem
             cell = dh_->cell_accessor_from_element( elm_idx );
             loc_dofs = cell.get_loc_dof_indices();
             last_element_idx = elm_idx;
+            switch (elm.dim()) {
+            case 0:
+                this->get_ranges<0>(range_bgn, range_end);
+                break;
+            case 1:
+                this->get_ranges<1>(range_bgn, range_end);
+                break;
+            case 2:
+                this->get_ranges<2>(range_bgn, range_end);
+                break;
+            case 3:
+                this->get_ranges<3>(range_bgn, range_end);
+                break;
+            }
         }
 
         unsigned int i_ep=cache_map.eval_point_data(i_data).i_eval_point_;
         //DHCellAccessor cache_cell = cache_map(cell);
         mat_value.fill(0.0);
-        for (unsigned int i_dof=0; i_dof<loc_dofs.n_elem; i_dof++) {
+        for (unsigned int i_dof=range_bgn; i_dof<range_end; i_dof++) {
             mat_value += data_vec_[loc_dofs[i_dof]] * this->handle_fe_shape(cell.dim(), i_dof, i_ep, comp_index_);
         }
         data_cache.set(i_data) = mat_value;
