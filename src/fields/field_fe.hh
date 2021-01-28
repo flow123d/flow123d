@@ -87,11 +87,9 @@ public:
      * Setter for the finite element data.
      * @param dh              Dof handler.
      * @param dof_values      Vector of dof values, optional (create own vector according to dofhandler).
-     * @param component_index Index of component (for vector_view/tensor_view)
      * @return                Data vector of dof values.
      */
-    VectorMPI set_fe_data(std::shared_ptr<DOFHandlerMultiDim> dh,
-    		unsigned int component_index = 0, VectorMPI dof_values = VectorMPI::sequential(0));
+    VectorMPI set_fe_data(std::shared_ptr<DOFHandlerMultiDim> dh, VectorMPI dof_values = VectorMPI::sequential(0));
 
     /**
      * Setter for the finite element data.
@@ -239,6 +237,15 @@ private:
 
 
     template<unsigned int dim>
+    void fill_fe_item() {
+        this->fe_item_[Dim<dim>{}]->fe_ = dh_->ds()->fe()[Dim<dim>{}];
+        this->fe_item_[Dim<dim>{}]->comp_index_ = 0;
+        this->fe_item_[Dim<dim>{}]->range_begin_ = 0;
+        this->fe_item_[Dim<dim>{}]->range_end_ = this->fe_item_[Dim<dim>{}]->fe_->n_dofs();
+    }
+
+
+    template<unsigned int dim>
     void get_ranges(unsigned int &range_begin, unsigned int &range_end) {
         range_begin = this->fe_item_[Dim<dim>{}]->range_begin_;
         range_end = this->fe_item_[Dim<dim>{}]->range_end_;
@@ -310,15 +317,14 @@ private:
 /** Create FieldFE from dof handler */
 template <int spacedim, class Value>
 std::shared_ptr<FieldFE<spacedim, Value> > create_field_fe(std::shared_ptr<DOFHandlerMultiDim> dh,
-                                                           unsigned int comp = 0,
                                                            VectorMPI *vec = nullptr)
 {
 	// Construct FieldFE
 	std::shared_ptr< FieldFE<spacedim, Value> > field_ptr = std::make_shared< FieldFE<spacedim, Value> >();
     if (vec == nullptr)
-	    field_ptr->set_fe_data( dh, comp, dh->create_vector() );
+	    field_ptr->set_fe_data( dh, dh->create_vector() );
     else
-        field_ptr->set_fe_data( dh, comp, *vec );
+        field_ptr->set_fe_data( dh, *vec );
 
 	return field_ptr;
 }

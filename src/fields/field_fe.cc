@@ -138,8 +138,7 @@ FieldFE<spacedim, Value>::FieldFE( unsigned int n_comp)
 
 
 template <int spacedim, class Value>
-VectorMPI FieldFE<spacedim, Value>::set_fe_data(std::shared_ptr<DOFHandlerMultiDim> dh,
-		unsigned int component_index, VectorMPI dof_values)
+VectorMPI FieldFE<spacedim, Value>::set_fe_data(std::shared_ptr<DOFHandlerMultiDim> dh, VectorMPI dof_values)
 {
     dh_ = dh;
     if (dof_values.size()==0) { //create data vector according to dof handler - Warning not tested yet
@@ -148,7 +147,11 @@ VectorMPI FieldFE<spacedim, Value>::set_fe_data(std::shared_ptr<DOFHandlerMultiD
     } else {
         data_vec_ = dof_values;
     }
-    this->comp_index_ = component_index;
+    this->fill_fe_item<0>();
+    this->fill_fe_item<1>();
+    this->fill_fe_item<2>();
+    this->fill_fe_item<3>();
+    this->comp_index_ = this->fe_item_[Dim<0>{}]->comp_index_; // FIX
 
     unsigned int ndofs = dh_->max_elem_dofs();
 
@@ -158,7 +161,7 @@ VectorMPI FieldFE<spacedim, Value>::set_fe_data(std::shared_ptr<DOFHandlerMultiD
 	init_data.data_vec = data_vec_;
 	init_data.ndofs = ndofs;
 	init_data.n_comp = this->n_comp();
-	init_data.comp_index = component_index;
+	init_data.comp_index = this->comp_index_;
 
 	// initialize value handler objects
 	value_handler0_.initialize(init_data);
@@ -311,7 +314,7 @@ void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::elem
         //DHCellAccessor cache_cell = cache_map(cell);
         mat_value.fill(0.0);
         for (unsigned int i_dof=range_bgn; i_dof<range_end; i_dof++) {
-            mat_value += data_vec_[loc_dofs[i_dof]] * this->handle_fe_shape(cell.dim(), i_dof, i_ep, comp_index_);
+            mat_value += data_vec_[loc_dofs[i_dof]] * this->handle_fe_shape(cell.dim(), i_dof, i_ep, 0);
         }
         data_cache.set(i_data) = mat_value;
     }
