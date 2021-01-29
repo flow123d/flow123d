@@ -300,9 +300,6 @@ private:
     /// List of FEValues objects of dimensions 0,1,2,3 used for value calculation
     std::vector<FEValues<spacedim>> fe_values_;
 
-    /// Index of component within FESystem.
-    unsigned int comp_index_;
-
     /// Maps element indices between source (data) and target (computational) mesh if data interpolation is set to equivalent_msh
     std::shared_ptr<std::vector<LongIdx>> source_target_mesh_elm_map_;
 

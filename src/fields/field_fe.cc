@@ -151,7 +151,6 @@ VectorMPI FieldFE<spacedim, Value>::set_fe_data(std::shared_ptr<DOFHandlerMultiD
     this->fill_fe_item<1>();
     this->fill_fe_item<2>();
     this->fill_fe_item<3>();
-    this->comp_index_ = this->fe_item_[Dim<0>{}]->comp_index_; // FIX
 
     unsigned int ndofs = dh_->max_elem_dofs();
 
@@ -161,7 +160,6 @@ VectorMPI FieldFE<spacedim, Value>::set_fe_data(std::shared_ptr<DOFHandlerMultiD
 	init_data.data_vec = data_vec_;
 	init_data.ndofs = ndofs;
 	init_data.n_comp = this->n_comp();
-	init_data.comp_index = this->comp_index_;
 
 	// initialize value handler objects
 	init_data.range_begin = this->fe_item_[Dim<0>{}]->range_begin_;
@@ -200,7 +198,6 @@ VectorMPI FieldFE<spacedim, Value>::set_fe_system_data(std::shared_ptr<DOFHandle
     this->fill_fe_system_data<1>(block_index);
     this->fill_fe_system_data<2>(block_index);
     this->fill_fe_system_data<3>(block_index);
-    this->comp_index_ = this->fe_item_[Dim<1>{}]->comp_index_; // FIX
 
     unsigned int ndofs = dh_->max_elem_dofs();
 
@@ -210,7 +207,6 @@ VectorMPI FieldFE<spacedim, Value>::set_fe_system_data(std::shared_ptr<DOFHandle
 	init_data.data_vec = data_vec_;
 	init_data.ndofs = ndofs;
 	init_data.n_comp = this->n_comp();
-	init_data.comp_index = this->comp_index_;
 
 	// initialize value handler objects
 	init_data.range_begin = this->fe_item_[Dim<0>{}]->range_begin_;
@@ -477,7 +473,6 @@ void FieldFE<spacedim, Value>::make_dof_handler(const Mesh *mesh) {
     this->fill_fe_item<1>();
     this->fill_fe_item<2>();
     this->fill_fe_item<3>();
-    this->comp_index_ = this->fe_item_[Dim<0>{}]->comp_index_; // FIX
 
     if (this->boundary_domain_) fill_boundary_dofs(); // temporary solution for boundary mesh
     else data_vec_ = VectorMPI::sequential( dh_->lsize() ); // allocate data_vec_
@@ -488,7 +483,6 @@ void FieldFE<spacedim, Value>::make_dof_handler(const Mesh *mesh) {
 	init_data.data_vec = data_vec_;
 	init_data.ndofs = ndofs;
 	init_data.n_comp = this->n_comp();
-	init_data.comp_index = 0;
 
 	// initialize value handler objects
 	init_data.range_begin = this->fe_item_[Dim<0>{}]->range_begin_;

@@ -98,7 +98,6 @@ void FEValueHandler<elemdim, spacedim, Value>::initialize(FEValueInitData init_d
 	dh_ = init_data.dh;
 	data_vec_ = init_data.data_vec;
     value_.set_n_comp(init_data.n_comp);
-    comp_index_ = init_data.comp_index;
     range_begin_ = init_data.range_begin;
     range_end_ = init_data.range_end;
 }
@@ -144,7 +143,7 @@ void FEValueHandler<elemdim, spacedim, Value>::value_list(const Armor::array  &p
 		envelope.zeros();
 		for (unsigned int i=this->range_begin_; i<this->range_end_; i++) {
 			value_list[k] += data_vec_[loc_dofs[i]]
-							* FEShapeHandler<Value::rank_, spacedim, Value>::fe_value(fe_values, i, k, comp_index_);
+							* FEShapeHandler<Value::rank_, spacedim, Value>::fe_value(fe_values, i, k, 0);
 		}
 	}
 }
