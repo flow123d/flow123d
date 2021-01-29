@@ -99,6 +99,8 @@ void FEValueHandler<elemdim, spacedim, Value>::initialize(FEValueInitData init_d
 	data_vec_ = init_data.data_vec;
     value_.set_n_comp(init_data.n_comp);
     comp_index_ = init_data.comp_index;
+    range_begin_ = init_data.range_begin;
+    range_end_ = init_data.range_end;
 }
 
 
@@ -140,7 +142,7 @@ void FEValueHandler<elemdim, spacedim, Value>::value_list(const Armor::array  &p
     for (unsigned int k=0; k<point_list.size(); k++) {
 		Value envelope(value_list[k]);
 		envelope.zeros();
-		for (unsigned int i=0; i<loc_dofs.n_elem; i++) {
+		for (unsigned int i=this->range_begin_; i<this->range_end_; i++) {
 			value_list[k] += data_vec_[loc_dofs[i]]
 							* FEShapeHandler<Value::rank_, spacedim, Value>::fe_value(fe_values, i, k, comp_index_);
 		}
@@ -175,6 +177,8 @@ void FEValueHandler<0, spacedim, Value>::initialize(FEValueInitData init_data)
 	dh_ = init_data.dh;
 	data_vec_ = init_data.data_vec;
     value_.set_n_comp(init_data.n_comp);
+    range_begin_ = init_data.range_begin;
+    range_end_ = init_data.range_end;
 }
 
 
@@ -192,7 +196,7 @@ void FEValueHandler<0, spacedim, Value>::value_list(const Armor::array &point_li
 	for (unsigned int k=0; k<point_list.size(); k++) {
 		Value envelope(value_list[k]);
 		envelope.zeros();
-		for (unsigned int i=0; i<loc_dofs.n_elem; i++) {
+		for (unsigned int i=this->range_begin_; i<this->range_end_; i++) {
 			envelope(i / envelope.n_cols(), i % envelope.n_rows()) += data_vec_[loc_dofs[i]];
 		}
 	}

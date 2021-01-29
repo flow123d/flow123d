@@ -164,9 +164,17 @@ VectorMPI FieldFE<spacedim, Value>::set_fe_data(std::shared_ptr<DOFHandlerMultiD
 	init_data.comp_index = this->comp_index_;
 
 	// initialize value handler objects
+	init_data.range_begin = this->fe_item_[Dim<0>{}]->range_begin_;
+	init_data.range_end = this->fe_item_[Dim<0>{}]->range_end_;
 	value_handler0_.initialize(init_data);
+	init_data.range_begin = this->fe_item_[Dim<1>{}]->range_begin_;
+	init_data.range_end = this->fe_item_[Dim<1>{}]->range_end_;
 	value_handler1_.initialize(init_data);
+	init_data.range_begin = this->fe_item_[Dim<2>{}]->range_begin_;
+	init_data.range_end = this->fe_item_[Dim<2>{}]->range_end_;
 	value_handler2_.initialize(init_data);
+	init_data.range_begin = this->fe_item_[Dim<3>{}]->range_begin_;
+	init_data.range_end = this->fe_item_[Dim<3>{}]->range_end_;
 	value_handler3_.initialize(init_data);
 
 	// set discretization
@@ -205,9 +213,17 @@ VectorMPI FieldFE<spacedim, Value>::set_fe_system_data(std::shared_ptr<DOFHandle
 	init_data.comp_index = this->comp_index_;
 
 	// initialize value handler objects
+	init_data.range_begin = this->fe_item_[Dim<0>{}]->range_begin_;
+	init_data.range_end = this->fe_item_[Dim<0>{}]->range_end_;
 	value_handler0_.initialize(init_data);
+	init_data.range_begin = this->fe_item_[Dim<1>{}]->range_begin_;
+	init_data.range_end = this->fe_item_[Dim<1>{}]->range_end_;
 	value_handler1_.initialize(init_data);
+	init_data.range_begin = this->fe_item_[Dim<2>{}]->range_begin_;
+	init_data.range_end = this->fe_item_[Dim<2>{}]->range_end_;
 	value_handler2_.initialize(init_data);
+	init_data.range_begin = this->fe_item_[Dim<3>{}]->range_begin_;
+	init_data.range_end = this->fe_item_[Dim<3>{}]->range_end_;
 	value_handler3_.initialize(init_data);
 
 	// set discretization
@@ -475,9 +491,17 @@ void FieldFE<spacedim, Value>::make_dof_handler(const Mesh *mesh) {
 	init_data.comp_index = 0;
 
 	// initialize value handler objects
+	init_data.range_begin = this->fe_item_[Dim<0>{}]->range_begin_;
+	init_data.range_end = this->fe_item_[Dim<0>{}]->range_end_;
 	value_handler0_.initialize(init_data);
+	init_data.range_begin = this->fe_item_[Dim<1>{}]->range_begin_;
+	init_data.range_end = this->fe_item_[Dim<1>{}]->range_end_;
 	value_handler1_.initialize(init_data);
+	init_data.range_begin = this->fe_item_[Dim<2>{}]->range_begin_;
+	init_data.range_end = this->fe_item_[Dim<2>{}]->range_end_;
 	value_handler2_.initialize(init_data);
+	init_data.range_begin = this->fe_item_[Dim<3>{}]->range_begin_;
+	init_data.range_end = this->fe_item_[Dim<3>{}]->range_end_;
 	value_handler3_.initialize(init_data);
 }
 
