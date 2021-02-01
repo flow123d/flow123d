@@ -175,10 +175,8 @@ private:
 	/**
 	 * Helper class holds specific data of field evaluation.
 	 */
-    template <unsigned int dim>
     class FEItem {
     public:
-        std::shared_ptr<FiniteElement<dim>> fe_;
         unsigned int comp_index_;
         unsigned int range_begin_;
         unsigned int range_end_;
@@ -229,26 +227,17 @@ private:
     void fill_fe_system_data(unsigned int block_index) {
         auto fe_system_ptr = std::dynamic_pointer_cast<FESystem<dim>>( dh_->ds()->fe()[Dim<dim>{}] );
         ASSERT_DBG(fe_system_ptr != nullptr).error("Wrong type, must be FESystem!\n");
-        this->fe_item_[Dim<dim>{}]->fe_ = fe_system_ptr->fe()[block_index];
-        this->fe_item_[Dim<dim>{}]->comp_index_ = fe_system_ptr->function_space()->dof_indices()[block_index].component_offset;
-        this->fe_item_[Dim<dim>{}]->range_begin_ = fe_system_ptr->fe_dofs(block_index)[0];
-        this->fe_item_[Dim<dim>{}]->range_end_ = this->fe_item_[Dim<dim>{}]->range_begin_ + this->fe_item_[Dim<dim>{}]->fe_->n_dofs();
+        this->fe_item_[dim].comp_index_ = fe_system_ptr->function_space()->dof_indices()[block_index].component_offset;
+        this->fe_item_[dim].range_begin_ = fe_system_ptr->fe_dofs(block_index)[0];
+        this->fe_item_[dim].range_end_ = this->fe_item_[dim].range_begin_ + fe_system_ptr->fe()[block_index]->n_dofs();
     }
 
 
     template<unsigned int dim>
     void fill_fe_item() {
-        this->fe_item_[Dim<dim>{}]->fe_ = dh_->ds()->fe()[Dim<dim>{}];
-        this->fe_item_[Dim<dim>{}]->comp_index_ = 0;
-        this->fe_item_[Dim<dim>{}]->range_begin_ = 0;
-        this->fe_item_[Dim<dim>{}]->range_end_ = this->fe_item_[Dim<dim>{}]->fe_->n_dofs();
-    }
-
-
-    template<unsigned int dim>
-    void get_ranges(unsigned int &range_begin, unsigned int &range_end) {
-        range_begin = this->fe_item_[Dim<dim>{}]->range_begin_;
-        range_end = this->fe_item_[Dim<dim>{}]->range_end_;
+        this->fe_item_[dim].comp_index_ = 0;
+        this->fe_item_[dim].range_begin_ = 0;
+        this->fe_item_[dim].range_end_ = dh_->ds()->fe()[Dim<dim>{}]->n_dofs();
     }
 
 
@@ -304,7 +293,8 @@ private:
     std::shared_ptr<std::vector<LongIdx>> source_target_mesh_elm_map_;
 
     /// Holds specific data of field evaluation over all dimensions.
-    MixedPtr<FEItem> fe_item_;
+    std::array<FEItem, 4> fe_item_;
+    MixedPtr<FiniteElement> fe_;
 
     /// Registrar of class to factory
     static const int registrar;
