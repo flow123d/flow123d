@@ -161,6 +161,7 @@ VectorMPI FieldFE<spacedim, Value>::set_fe_data(std::shared_ptr<DOFHandlerMultiD
 	init_data.data_vec = data_vec_;
 	init_data.ndofs = ndofs;
 	init_data.n_comp = this->n_comp();
+	init_data.mixed_fe = this->fe_;
 
 	// initialize value handler objects
 	init_data.range_begin = this->fe_item_[0].range_begin_;
@@ -175,10 +176,6 @@ VectorMPI FieldFE<spacedim, Value>::set_fe_data(std::shared_ptr<DOFHandlerMultiD
 	init_data.range_begin = this->fe_item_[3].range_begin_;
 	init_data.range_end = this->fe_item_[3].range_end_;
 	value_handler3_.initialize(init_data);
-	std::cout << "Ranges1 " << this->fe_item_[0].range_begin_ << " " << this->fe_item_[0].range_end_ << ", "
-			<< this->fe_item_[1].range_begin_ << " " << this->fe_item_[1].range_end_ << ", "
-			<< this->fe_item_[2].range_begin_ << " " << this->fe_item_[2].range_end_ << ", "
-			<< this->fe_item_[3].range_begin_ << " " << this->fe_item_[3].range_end_ << std::endl;
 
 	// set discretization
 	discretization_ = OutputTime::DiscreteSpace::UNDEFINED;
@@ -204,7 +201,10 @@ VectorMPI FieldFE<spacedim, Value>::set_fe_system_data(std::shared_ptr<DOFHandle
     this->fill_fe_system_data<2>(block_index);
     this->fill_fe_system_data<3>(block_index);
     this->fe_ = MixedPtr<FiniteElement>(
-    		dh_->ds()->fe()[Dim<0>{}], dh_->ds()->fe()[Dim<1>{}], dh_->ds()->fe()[Dim<2>{}], dh_->ds()->fe()[Dim<3>{}]
+	        std::dynamic_pointer_cast<FESystem<0>>( dh_->ds()->fe()[Dim<0>{}] )->fe()[block_index],
+	        std::dynamic_pointer_cast<FESystem<1>>( dh_->ds()->fe()[Dim<1>{}] )->fe()[block_index],
+	        std::dynamic_pointer_cast<FESystem<2>>( dh_->ds()->fe()[Dim<2>{}] )->fe()[block_index],
+	        std::dynamic_pointer_cast<FESystem<3>>( dh_->ds()->fe()[Dim<3>{}] )->fe()[block_index]
             );
 
     unsigned int ndofs = dh_->max_elem_dofs();
@@ -215,6 +215,7 @@ VectorMPI FieldFE<spacedim, Value>::set_fe_system_data(std::shared_ptr<DOFHandle
 	init_data.data_vec = data_vec_;
 	init_data.ndofs = ndofs;
 	init_data.n_comp = this->n_comp();
+	init_data.mixed_fe = this->fe_;
 
 	// initialize value handler objects
 	init_data.range_begin = this->fe_item_[0].range_begin_;
@@ -229,10 +230,6 @@ VectorMPI FieldFE<spacedim, Value>::set_fe_system_data(std::shared_ptr<DOFHandle
 	init_data.range_begin = this->fe_item_[3].range_begin_;
 	init_data.range_end = this->fe_item_[3].range_end_;
 	value_handler3_.initialize(init_data);
-	std::cout << "Ranges2 " << this->fe_item_[0].range_begin_ << " " << this->fe_item_[0].range_end_ << ", "
-			<< this->fe_item_[1].range_begin_ << " " << this->fe_item_[1].range_end_ << ", "
-			<< this->fe_item_[2].range_begin_ << " " << this->fe_item_[2].range_end_ << ", "
-			<< this->fe_item_[3].range_begin_ << " " << this->fe_item_[3].range_end_ << std::endl;
 
 	// set discretization
 	discretization_ = OutputTime::DiscreteSpace::UNDEFINED;
@@ -337,12 +334,11 @@ template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::cache_reinit(const ElementCacheMap &cache_map)
 {
     std::shared_ptr<EvalPoints> eval_points = cache_map.eval_points();
-    MixedPtr<FiniteElement> fe = dh_->ds()->fe();
     std::array<Quadrature, 4> quads{QGauss(0, 1), this->init_quad<1>(eval_points), this->init_quad<2>(eval_points), this->init_quad<3>(eval_points)};
-    fe_values_[0].initialize(quads[0], *fe[0_d], update_values);
-    fe_values_[1].initialize(quads[1], *fe[1_d], update_values);
-    fe_values_[2].initialize(quads[2], *fe[2_d], update_values);
-    fe_values_[3].initialize(quads[3], *fe[3_d], update_values);
+    fe_values_[0].initialize(quads[0], *this->fe_[0_d], update_values);
+    fe_values_[1].initialize(quads[1], *this->fe_[1_d], update_values);
+    fe_values_[2].initialize(quads[2], *this->fe_[2_d], update_values);
+    fe_values_[3].initialize(quads[3], *this->fe_[3_d], update_values);
 }
 
 
@@ -484,6 +480,7 @@ void FieldFE<spacedim, Value>::make_dof_handler(const Mesh *mesh) {
 	init_data.data_vec = data_vec_;
 	init_data.ndofs = ndofs;
 	init_data.n_comp = this->n_comp();
+	init_data.mixed_fe = this->fe_;
 
 	// initialize value handler objects
 	init_data.range_begin = this->fe_item_[0].range_begin_;

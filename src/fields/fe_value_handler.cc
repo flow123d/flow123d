@@ -100,6 +100,7 @@ void FEValueHandler<elemdim, spacedim, Value>::initialize(FEValueInitData init_d
     value_.set_n_comp(init_data.n_comp);
     range_begin_ = init_data.range_begin;
     range_end_ = init_data.range_end;
+    fe_ = init_data.mixed_fe[Dim<elemdim>{}];
 }
 
 
@@ -133,9 +134,7 @@ void FEValueHandler<elemdim, spacedim, Value>::value_list(const Armor::array  &p
 	for (unsigned int k=0; k<point_list.size(); k++)
         quad.set(k) = RefElement<elemdim>::bary_to_local(MappingP1<elemdim,spacedim>::project_real_to_unit(point_list.vec<spacedim>(k), map_mat));
 	
-	MixedPtr<FiniteElement> fe_mixed_ptr = dh_->ds()->fe();
-	std::shared_ptr<FiniteElement<elemdim>> fe_ptr = fe_mixed_ptr[Dim<elemdim>{}];
-	FEValues<spacedim> fe_values(quad, *fe_ptr, update_values);
+	FEValues<spacedim> fe_values(quad, *fe_, update_values);
     fe_values.reinit( elm );
 
     for (unsigned int k=0; k<point_list.size(); k++) {
@@ -143,7 +142,7 @@ void FEValueHandler<elemdim, spacedim, Value>::value_list(const Armor::array  &p
 		envelope.zeros();
 		for (unsigned int i=this->range_begin_; i<this->range_end_; i++) {
 			value_list[k] += data_vec_[loc_dofs[i]]
-							* FEShapeHandler<Value::rank_, spacedim, Value>::fe_value(fe_values, i, k, 0);
+							* FEShapeHandler<Value::rank_, spacedim, Value>::fe_value(fe_values, i-this->range_begin_, k, 0);
 		}
 	}
 }
