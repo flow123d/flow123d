@@ -138,7 +138,7 @@ FieldFE<spacedim, Value>::FieldFE( unsigned int n_comp)
 
 
 template <int spacedim, class Value>
-VectorMPI FieldFE<spacedim, Value>::set_fe_data(std::shared_ptr<DOFHandlerMultiDim> dh, VectorMPI dof_values)
+VectorMPI FieldFE<spacedim, Value>::set_fe_data(std::shared_ptr<DOFHandlerMultiDim> dh, VectorMPI dof_values, unsigned int block_index)
 {
     dh_ = dh;
     if (dof_values.size()==0) { //create data vector according to dof handler - Warning not tested yet
@@ -147,65 +147,25 @@ VectorMPI FieldFE<spacedim, Value>::set_fe_data(std::shared_ptr<DOFHandlerMultiD
     } else {
         data_vec_ = dof_values;
     }
-    this->fill_fe_item<0>();
-    this->fill_fe_item<1>();
-    this->fill_fe_item<2>();
-    this->fill_fe_item<3>();
-    this->fe_ = dh_->ds()->fe();
 
-    unsigned int ndofs = dh_->max_elem_dofs();
-
-    // initialization data of value handlers
-	FEValueInitData init_data;
-	init_data.dh = dh_;
-	init_data.data_vec = data_vec_;
-	init_data.ndofs = ndofs;
-	init_data.n_comp = this->n_comp();
-	init_data.mixed_fe = this->fe_;
-
-	// initialize value handler objects
-	init_data.range_begin = this->fe_item_[0].range_begin_;
-	init_data.range_end = this->fe_item_[0].range_end_;
-	value_handler0_.initialize(init_data);
-	init_data.range_begin = this->fe_item_[1].range_begin_;
-	init_data.range_end = this->fe_item_[1].range_end_;
-	value_handler1_.initialize(init_data);
-	init_data.range_begin = this->fe_item_[2].range_begin_;
-	init_data.range_end = this->fe_item_[2].range_end_;
-	value_handler2_.initialize(init_data);
-	init_data.range_begin = this->fe_item_[3].range_begin_;
-	init_data.range_end = this->fe_item_[3].range_end_;
-	value_handler3_.initialize(init_data);
-
-	// set discretization
-	discretization_ = OutputTime::DiscreteSpace::UNDEFINED;
-	interpolation_ = DataInterpolation::equivalent_msh;
-
-	return data_vec_;
-}
-
-
-template <int spacedim, class Value>
-VectorMPI FieldFE<spacedim, Value>::set_fe_system_data(std::shared_ptr<DOFHandlerMultiDim> dh,
-		unsigned int block_index, VectorMPI dof_values)
-{
-    dh_ = dh;
-    if (dof_values.size()==0) { //create data vector according to dof handler - Warning not tested yet
-        data_vec_ = dh_->create_vector();
-        data_vec_.zero_entries();
+    if ( block_index == FieldFE<spacedim, Value>::undef_uint ) {
+        this->fill_fe_item<0>();
+        this->fill_fe_item<1>();
+        this->fill_fe_item<2>();
+        this->fill_fe_item<3>();
+        this->fe_ = dh_->ds()->fe();
     } else {
-        data_vec_ = dof_values;
+        this->fill_fe_system_data<0>(block_index);
+        this->fill_fe_system_data<1>(block_index);
+        this->fill_fe_system_data<2>(block_index);
+        this->fill_fe_system_data<3>(block_index);
+        this->fe_ = MixedPtr<FiniteElement>(
+                std::dynamic_pointer_cast<FESystem<0>>( dh_->ds()->fe()[Dim<0>{}] )->fe()[block_index],
+                std::dynamic_pointer_cast<FESystem<1>>( dh_->ds()->fe()[Dim<1>{}] )->fe()[block_index],
+                std::dynamic_pointer_cast<FESystem<2>>( dh_->ds()->fe()[Dim<2>{}] )->fe()[block_index],
+                std::dynamic_pointer_cast<FESystem<3>>( dh_->ds()->fe()[Dim<3>{}] )->fe()[block_index]
+                );
     }
-    this->fill_fe_system_data<0>(block_index);
-    this->fill_fe_system_data<1>(block_index);
-    this->fill_fe_system_data<2>(block_index);
-    this->fill_fe_system_data<3>(block_index);
-    this->fe_ = MixedPtr<FiniteElement>(
-	        std::dynamic_pointer_cast<FESystem<0>>( dh_->ds()->fe()[Dim<0>{}] )->fe()[block_index],
-	        std::dynamic_pointer_cast<FESystem<1>>( dh_->ds()->fe()[Dim<1>{}] )->fe()[block_index],
-	        std::dynamic_pointer_cast<FESystem<2>>( dh_->ds()->fe()[Dim<2>{}] )->fe()[block_index],
-	        std::dynamic_pointer_cast<FESystem<3>>( dh_->ds()->fe()[Dim<3>{}] )->fe()[block_index]
-            );
 
     unsigned int ndofs = dh_->max_elem_dofs();
 

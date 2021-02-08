@@ -63,7 +63,9 @@ public:
 		interp_p0       //!< P0 interpolation (with the use of calculation of intersections)
 	};
 
-    /**
+	static const unsigned int undef_uint = -1;
+
+	/**
      * Default constructor, optionally we need number of components @p n_comp in the case of Vector valued fields.
      */
     FieldFE(unsigned int n_comp=0);
@@ -87,19 +89,11 @@ public:
      * Setter for the finite element data.
      * @param dh              Dof handler.
      * @param dof_values      Vector of dof values, optional (create own vector according to dofhandler).
+     * @param block_index     Index of block (in FESystem) or '-1' for FieldFE under simple DOF handler.
      * @return                Data vector of dof values.
      */
-    VectorMPI set_fe_data(std::shared_ptr<DOFHandlerMultiDim> dh, VectorMPI dof_values = VectorMPI::sequential(0));
-
-    /**
-     * Setter for the finite element data.
-     * @param dh              Dof handler.
-     * @param dof_values      Vector of dof values, optional (create own vector according to dofhandler).
-     * @param block_index     Index of block (in FESystem)
-     * @return                Data vector of dof values.
-     */
-    VectorMPI set_fe_system_data(std::shared_ptr<DOFHandlerMultiDim> dh,
-            unsigned int block_index = 0, VectorMPI dof_values = VectorMPI::sequential(0));
+    VectorMPI set_fe_data(std::shared_ptr<DOFHandlerMultiDim> dh, VectorMPI dof_values = VectorMPI::sequential(0),
+            unsigned int block_index = FieldFE<spacedim, Value>::undef_uint);
 
     /**
      * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
@@ -304,32 +298,16 @@ private:
 /** Create FieldFE from dof handler */
 template <int spacedim, class Value>
 std::shared_ptr<FieldFE<spacedim, Value> > create_field_fe(std::shared_ptr<DOFHandlerMultiDim> dh,
-                                                           VectorMPI *vec = nullptr)
+                                                           VectorMPI *vec = nullptr,
+														   unsigned int block_index = FieldFE<spacedim, Value>::undef_uint)
 {
 	// Construct FieldFE
 	std::shared_ptr< FieldFE<spacedim, Value> > field_ptr = std::make_shared< FieldFE<spacedim, Value> >();
     if (vec == nullptr)
-	    field_ptr->set_fe_data( dh, dh->create_vector() );
+	    field_ptr->set_fe_data( dh, dh->create_vector(), block_index );
     else
-        field_ptr->set_fe_data( dh, *vec );
+        field_ptr->set_fe_data( dh, *vec, block_index );
 
-	return field_ptr;
-}
-
-
-/** Same as previous, but create automatically MPI vector */
-template <int spacedim, class Value>
-std::shared_ptr<FieldFE<spacedim, Value> > create_field_fe_from_system(std::shared_ptr<DOFHandlerMultiDim> dh,
-                                                           unsigned int block = 0,
-                                                           VectorMPI *vec = nullptr)
-{
-	// Construct FieldFE
-	std::shared_ptr< FieldFE<spacedim, Value> > field_ptr = std::make_shared< FieldFE<spacedim, Value> >();
-    if (vec == nullptr)
-	    field_ptr->set_fe_system_data( dh, block, dh->create_vector() );
-    else
-        field_ptr->set_fe_system_data( dh, block, *vec );
-    
 	return field_ptr;
 }
 
