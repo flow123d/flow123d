@@ -138,8 +138,7 @@ FieldFE<spacedim, Value>::FieldFE( unsigned int n_comp)
 
 
 template <int spacedim, class Value>
-VectorMPI FieldFE<spacedim, Value>::set_fe_data(std::shared_ptr<DOFHandlerMultiDim> dh,
-		unsigned int component_index, VectorMPI dof_values)
+VectorMPI FieldFE<spacedim, Value>::set_fe_data(std::shared_ptr<DOFHandlerMultiDim> dh, VectorMPI dof_values, unsigned int block_index)
 {
     dh_ = dh;
     if (dof_values.size()==0) { //create data vector according to dof handler - Warning not tested yet
@@ -148,7 +147,25 @@ VectorMPI FieldFE<spacedim, Value>::set_fe_data(std::shared_ptr<DOFHandlerMultiD
     } else {
         data_vec_ = dof_values;
     }
-    this->comp_index_ = component_index;
+
+    if ( block_index == FieldFE<spacedim, Value>::undef_uint ) {
+        this->fill_fe_item<0>();
+        this->fill_fe_item<1>();
+        this->fill_fe_item<2>();
+        this->fill_fe_item<3>();
+        this->fe_ = dh_->ds()->fe();
+    } else {
+        this->fill_fe_system_data<0>(block_index);
+        this->fill_fe_system_data<1>(block_index);
+        this->fill_fe_system_data<2>(block_index);
+        this->fill_fe_system_data<3>(block_index);
+        this->fe_ = MixedPtr<FiniteElement>(
+                std::dynamic_pointer_cast<FESystem<0>>( dh_->ds()->fe()[Dim<0>{}] )->fe()[block_index],
+                std::dynamic_pointer_cast<FESystem<1>>( dh_->ds()->fe()[Dim<1>{}] )->fe()[block_index],
+                std::dynamic_pointer_cast<FESystem<2>>( dh_->ds()->fe()[Dim<2>{}] )->fe()[block_index],
+                std::dynamic_pointer_cast<FESystem<3>>( dh_->ds()->fe()[Dim<3>{}] )->fe()[block_index]
+                );
+    }
 
     unsigned int ndofs = dh_->max_elem_dofs();
 
@@ -158,12 +175,20 @@ VectorMPI FieldFE<spacedim, Value>::set_fe_data(std::shared_ptr<DOFHandlerMultiD
 	init_data.data_vec = data_vec_;
 	init_data.ndofs = ndofs;
 	init_data.n_comp = this->n_comp();
-	init_data.comp_index = component_index;
+	init_data.mixed_fe = this->fe_;
 
 	// initialize value handler objects
+	init_data.range_begin = this->fe_item_[0].range_begin_;
+	init_data.range_end = this->fe_item_[0].range_end_;
 	value_handler0_.initialize(init_data);
+	init_data.range_begin = this->fe_item_[1].range_begin_;
+	init_data.range_end = this->fe_item_[1].range_end_;
 	value_handler1_.initialize(init_data);
+	init_data.range_begin = this->fe_item_[2].range_begin_;
+	init_data.range_end = this->fe_item_[2].range_end_;
 	value_handler2_.initialize(init_data);
+	init_data.range_begin = this->fe_item_[3].range_begin_;
+	init_data.range_end = this->fe_item_[3].range_end_;
 	value_handler3_.initialize(init_data);
 
 	// set discretization
@@ -240,6 +265,7 @@ void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::elem
     unsigned int last_element_idx = -1;
     DHCellAccessor cell;
     LocDofVec loc_dofs;
+    unsigned int range_bgn=0, range_end=0;
 
     for (unsigned int i_data = reg_chunk_begin; i_data < reg_chunk_end; ++i_data) { // i_eval_point_data
         unsigned int elm_idx = cache_map.eval_point_data(i_data).i_element_;
@@ -249,13 +275,15 @@ void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::elem
             cell = dh_->cell_accessor_from_element( elm_idx );
             loc_dofs = cell.get_loc_dof_indices();
             last_element_idx = elm_idx;
+            range_bgn = this->fe_item_[elm.dim()].range_begin_;
+            range_end = this->fe_item_[elm.dim()].range_end_;
         }
 
         unsigned int i_ep=cache_map.eval_point_data(i_data).i_eval_point_;
         //DHCellAccessor cache_cell = cache_map(cell);
         mat_value.fill(0.0);
-        for (unsigned int i_dof=0; i_dof<loc_dofs.n_elem; i_dof++) {
-            mat_value += data_vec_[loc_dofs[i_dof]] * this->handle_fe_shape(cell.dim(), i_dof, i_ep, comp_index_);
+        for (unsigned int i_dof=range_bgn, i_cdof=0; i_dof<range_end; i_dof++, i_cdof++) {
+            mat_value += data_vec_[loc_dofs[i_dof]] * this->handle_fe_shape(cell.dim(), i_cdof, i_ep);
         }
         data_cache.set(i_data) = mat_value;
     }
@@ -266,12 +294,11 @@ template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::cache_reinit(const ElementCacheMap &cache_map)
 {
     std::shared_ptr<EvalPoints> eval_points = cache_map.eval_points();
-    MixedPtr<FiniteElement> fe = dh_->ds()->fe();
     std::array<Quadrature, 4> quads{QGauss(0, 1), this->init_quad<1>(eval_points), this->init_quad<2>(eval_points), this->init_quad<3>(eval_points)};
-    fe_values_[0].initialize(quads[0], *fe[0_d], update_values);
-    fe_values_[1].initialize(quads[1], *fe[1_d], update_values);
-    fe_values_[2].initialize(quads[2], *fe[2_d], update_values);
-    fe_values_[3].initialize(quads[3], *fe[3_d], update_values);
+    fe_values_[0].initialize(quads[0], *this->fe_[0_d], update_values);
+    fe_values_[1].initialize(quads[1], *this->fe_[1_d], update_values);
+    fe_values_[2].initialize(quads[2], *this->fe_[2_d], update_values);
+    fe_values_[3].initialize(quads[3], *this->fe_[3_d], update_values);
 }
 
 
@@ -370,7 +397,6 @@ void FieldFE<spacedim, Value>::fill_boundary_dofs() {
 
 template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::make_dof_handler(const Mesh *mesh) {
-	this->comp_index_ = 0;
 
 	// temporary solution - these objects will be set through FieldCommon
 	MixedPtr<FiniteElement> fe;
@@ -399,8 +425,14 @@ void FieldFE<spacedim, Value>::make_dof_handler(const Mesh *mesh) {
 	dh_ = dh_par;
     unsigned int ndofs = dh_->max_elem_dofs();
 
-	if (this->boundary_domain_) fill_boundary_dofs(); // temporary solution for boundary mesh
-	else data_vec_ = VectorMPI::sequential( dh_->lsize() ); // allocate data_vec_
+    this->fill_fe_item<0>();
+    this->fill_fe_item<1>();
+    this->fill_fe_item<2>();
+    this->fill_fe_item<3>();
+    this->fe_ = dh_->ds()->fe();
+
+    if (this->boundary_domain_) fill_boundary_dofs(); // temporary solution for boundary mesh
+    else data_vec_ = VectorMPI::sequential( dh_->lsize() ); // allocate data_vec_
 
 	// initialization data of value handlers
 	FEValueInitData init_data;
@@ -408,12 +440,20 @@ void FieldFE<spacedim, Value>::make_dof_handler(const Mesh *mesh) {
 	init_data.data_vec = data_vec_;
 	init_data.ndofs = ndofs;
 	init_data.n_comp = this->n_comp();
-	init_data.comp_index = 0;
+	init_data.mixed_fe = this->fe_;
 
 	// initialize value handler objects
+	init_data.range_begin = this->fe_item_[0].range_begin_;
+	init_data.range_end = this->fe_item_[0].range_end_;
 	value_handler0_.initialize(init_data);
+	init_data.range_begin = this->fe_item_[1].range_begin_;
+	init_data.range_end = this->fe_item_[1].range_end_;
 	value_handler1_.initialize(init_data);
+	init_data.range_begin = this->fe_item_[2].range_begin_;
+	init_data.range_end = this->fe_item_[2].range_end_;
 	value_handler2_.initialize(init_data);
+	init_data.range_begin = this->fe_item_[3].range_begin_;
+	init_data.range_end = this->fe_item_[3].range_end_;
 	value_handler3_.initialize(init_data);
 }
 

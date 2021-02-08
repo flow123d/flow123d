@@ -63,7 +63,9 @@ public:
 		interp_p0       //!< P0 interpolation (with the use of calculation of intersections)
 	};
 
-    /**
+	static const unsigned int undef_uint = -1;
+
+	/**
      * Default constructor, optionally we need number of components @p n_comp in the case of Vector valued fields.
      */
     FieldFE(unsigned int n_comp=0);
@@ -86,12 +88,12 @@ public:
     /**
      * Setter for the finite element data.
      * @param dh              Dof handler.
-     * @param data            Vector of dof values, optional (create own vector according to dofhandler).
-     * @param component_index Index of component (for vector_view/tensor_view)
+     * @param dof_values      Vector of dof values, optional (create own vector according to dofhandler).
+     * @param block_index     Index of block (in FESystem) or '-1' for FieldFE under simple DOF handler.
      * @return                Data vector of dof values.
      */
-    VectorMPI set_fe_data(std::shared_ptr<DOFHandlerMultiDim> dh,
-    		unsigned int component_index = 0, VectorMPI dof_values = VectorMPI::sequential(0));
+    VectorMPI set_fe_data(std::shared_ptr<DOFHandlerMultiDim> dh, VectorMPI dof_values = VectorMPI::sequential(0),
+            unsigned int block_index = FieldFE<spacedim, Value>::undef_uint);
 
     /**
      * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
@@ -164,6 +166,16 @@ public:
 	virtual ~FieldFE();
 
 private:
+	/**
+	 * Helper class holds specific data of field evaluation.
+	 */
+    class FEItem {
+    public:
+        unsigned int comp_index_;
+        unsigned int range_begin_;
+        unsigned int range_end_;
+    };
+
 	/// Create DofHandler object
 	void make_dof_handler(const Mesh *mesh);
 
@@ -194,15 +206,32 @@ private:
 	Quadrature init_quad(std::shared_ptr<EvalPoints> eval_points);
 
     inline Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> handle_fe_shape(unsigned int dim,
-            unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
+            unsigned int i_dof, unsigned int i_qp)
     {
         Armor::ArmaMat<typename Value::element_type, Value::NCols_, Value::NRows_> v;
         for (unsigned int c=0; c<Value::NRows_*Value::NCols_; ++c)
-            v(c/spacedim,c%spacedim) = fe_values_[dim].shape_value_component(i_dof, i_qp, comp_index+c);
+            v(c/spacedim,c%spacedim) = fe_values_[dim].shape_value_component(i_dof, i_qp, c);
         if (Value::NRows_ == Value::NCols_)
             return v;
         else
             return v.t();
+    }
+
+    template<unsigned int dim>
+    void fill_fe_system_data(unsigned int block_index) {
+        auto fe_system_ptr = std::dynamic_pointer_cast<FESystem<dim>>( dh_->ds()->fe()[Dim<dim>{}] );
+        ASSERT_DBG(fe_system_ptr != nullptr).error("Wrong type, must be FESystem!\n");
+        this->fe_item_[dim].comp_index_ = fe_system_ptr->function_space()->dof_indices()[block_index].component_offset;
+        this->fe_item_[dim].range_begin_ = fe_system_ptr->fe_dofs(block_index)[0];
+        this->fe_item_[dim].range_end_ = this->fe_item_[dim].range_begin_ + fe_system_ptr->fe()[block_index]->n_dofs();
+    }
+
+
+    template<unsigned int dim>
+    void fill_fe_item() {
+        this->fe_item_[dim].comp_index_ = 0;
+        this->fe_item_[dim].range_begin_ = 0;
+        this->fe_item_[dim].range_end_ = dh_->ds()->fe()[Dim<dim>{}]->n_dofs();
     }
 
 
@@ -254,30 +283,31 @@ private:
     /// List of FEValues objects of dimensions 0,1,2,3 used for value calculation
     std::vector<FEValues<spacedim>> fe_values_;
 
-    /// Index of component (of vector_value/tensor_value)
-    unsigned int comp_index_;
-
     /// Maps element indices between source (data) and target (computational) mesh if data interpolation is set to equivalent_msh
     std::shared_ptr<std::vector<LongIdx>> source_target_mesh_elm_map_;
+
+    /// Holds specific data of field evaluation over all dimensions.
+    std::array<FEItem, 4> fe_item_;
+    MixedPtr<FiniteElement> fe_;
 
     /// Registrar of class to factory
     static const int registrar;
 };
 
 
-/** Create FieldFE from dhf handler */
+/** Create FieldFE from dof handler */
 template <int spacedim, class Value>
 std::shared_ptr<FieldFE<spacedim, Value> > create_field_fe(std::shared_ptr<DOFHandlerMultiDim> dh,
-                                                           unsigned int comp = 0,
-                                                           VectorMPI *vec = nullptr)
+                                                           VectorMPI *vec = nullptr,
+														   unsigned int block_index = FieldFE<spacedim, Value>::undef_uint)
 {
 	// Construct FieldFE
 	std::shared_ptr< FieldFE<spacedim, Value> > field_ptr = std::make_shared< FieldFE<spacedim, Value> >();
     if (vec == nullptr)
-	    field_ptr->set_fe_data( dh, comp, dh->create_vector() );
+	    field_ptr->set_fe_data( dh, dh->create_vector(), block_index );
     else
-        field_ptr->set_fe_data( dh, comp, *vec );
-    
+        field_ptr->set_fe_data( dh, *vec, block_index );
+
 	return field_ptr;
 }
 

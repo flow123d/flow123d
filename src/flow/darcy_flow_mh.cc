@@ -442,19 +442,19 @@ void DarcyMH::initialize() {
 
     { // construct pressure, velocity and piezo head fields
 		uint rt_component = 0;
-        auto ele_flux_ptr = create_field_fe<3, FieldValue<3>::VectorFixed>(data_->dh_, rt_component);
-        data_->full_solution = ele_flux_ptr->vec();
+        data_->full_solution = data_->dh_->create_vector();
+        auto ele_flux_ptr = create_field_fe<3, FieldValue<3>::VectorFixed>(data_->dh_, &data_->full_solution, rt_component);
         data_->flux.set(ele_flux_ptr, 0.0);
 
 		auto ele_velocity_ptr = std::make_shared< FieldDivide<3, FieldValue<3>::VectorFixed> >(ele_flux_ptr, data_->cross_section);
 		data_->field_ele_velocity.set(ele_velocity_ptr, 0.0);
 
-		uint p_ele_component = 0;
-        auto ele_pressure_ptr = create_field_fe<3, FieldValue<3>::Scalar>(data_->dh_, p_ele_component, &data_->full_solution);
+		uint p_ele_component = 1;
+        auto ele_pressure_ptr = create_field_fe<3, FieldValue<3>::Scalar>(data_->dh_, &data_->full_solution, p_ele_component);
 		data_->field_ele_pressure.set(ele_pressure_ptr, 0.0);
 
-        uint p_edge_component = 1;
-        auto edge_pressure_ptr = create_field_fe<3, FieldValue<3>::Scalar>(data_->dh_, p_edge_component, &data_->full_solution);
+        uint p_edge_component = 2;
+        auto edge_pressure_ptr = create_field_fe<3, FieldValue<3>::Scalar>(data_->dh_, &data_->full_solution, p_edge_component);
 		data_->field_edge_pressure.set(edge_pressure_ptr, 0.0);
 
 		arma::vec4 gravity = (-1) * data_->gravity_;

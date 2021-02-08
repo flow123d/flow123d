@@ -71,7 +71,7 @@ auto GenericField<spacedim>::subdomain(Mesh &mesh) -> IndexField {
 		++i_ele;
 	}
     std::shared_ptr< FieldFE<spacedim, DoubleScalar> > field_ptr = std::make_shared< FieldFE<spacedim, DoubleScalar> >();
-    field_ptr->set_fe_data(dh, 0, data_vec);
+    field_ptr->set_fe_data(dh, data_vec);
 
 	IndexField subdomain;
 	subdomain.name("subdomain");

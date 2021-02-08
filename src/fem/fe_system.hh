@@ -150,6 +150,11 @@ public:
     /// Return dof indices belonging to given sub-FE.
     std::vector<unsigned int> fe_dofs(unsigned int fe_index);
     
+    /// Return function space casting to FESystemFunctionSpace type.
+    inline std::shared_ptr<FESystemFunctionSpace> function_space() const {
+        return std::dynamic_pointer_cast<FESystemFunctionSpace>(this->function_space_);
+    }
+
 
 private:
 

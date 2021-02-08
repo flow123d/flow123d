@@ -354,7 +354,7 @@ public:
 
     void create_fe_fields() {
     	VectorMPI * vector_vec = new VectorMPI(dh_->distr()->lsize() * 3);
-    	auto vector_ptr = create_field_fe<3, FieldValue<3>::VectorFixed>(dh_, 0, vector_vec);
+    	auto vector_ptr = create_field_fe<3, FieldValue<3>::VectorFixed>(dh_, vector_vec);
         data_->vector_field.set(vector_ptr, 0.0);
     	for (unsigned int i=0; i<vector_vec->size(); ++i) {
     		vector_vec->data()[i] = i % 10 + 0.5;
@@ -362,14 +362,14 @@ public:
 
 #ifdef ALL_FIELDS
         VectorMPI * scalar_vec = new VectorMPI(dh_->distr()->lsize());
-        auto scalar_ptr = create_field_fe<3, FieldValue<3>::Scalar>(dh_, 0, scalar_vec);
+        auto scalar_ptr = create_field_fe<3, FieldValue<3>::Scalar>(dh_, scalar_vec);
         data_->scalar_field.set(scalar_ptr, 0.0);
     	for (unsigned int i=0; i<scalar_vec->size(); ++i) {
     	    scalar_vec[i] = 1 + i % 9;
     	}
 
     	VectorMPI * tensor_vec = new VectorMPI(dh_->distr()->lsize() * 9);
-        auto tensor_ptr = create_field_fe<3, FieldValue<3>::TensorFixed>(dh_, 0, tensor_vec);
+        auto tensor_ptr = create_field_fe<3, FieldValue<3>::TensorFixed>(dh_, tensor_vec);
         data_->tensor_field.set(tensor_ptr, 0.0);
     	for (unsigned int i=0; i<tensor_vec->size(); ++i) {
     		tensor_vec->data()[i] = (1 + i % 98) * 0.1;
