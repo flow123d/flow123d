@@ -282,8 +282,8 @@ void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::elem
         unsigned int i_ep=cache_map.eval_point_data(i_data).i_eval_point_;
         //DHCellAccessor cache_cell = cache_map(cell);
         mat_value.fill(0.0);
-        for (unsigned int i_dof=range_bgn; i_dof<range_end; i_dof++) {
-            mat_value += data_vec_[loc_dofs[i_dof]] * this->handle_fe_shape(cell.dim(), i_dof, i_ep);
+        for (unsigned int i_dof=range_bgn, i_cdof=0; i_dof<range_end; i_dof++, i_cdof++) {
+            mat_value += data_vec_[loc_dofs[i_dof]] * this->handle_fe_shape(cell.dim(), i_cdof, i_ep);
         }
         data_cache.set(i_data) = mat_value;
     }
