@@ -61,7 +61,7 @@ public:
 
 
     /// Assemble integral over element
-    void assemble_volume_integrals(DHCellAccessor cell) override
+    void cell_integral(DHCellAccessor cell) override
     {
         ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
         ElementAccessor<3> elm = cell.elm();
@@ -198,8 +198,8 @@ public:
     }
 
 
-    /// Assembles the volume integrals into the stiffness matrix.
-    void assemble_volume_integrals(DHCellAccessor cell) override
+    /// Assembles the cell (volume) integral into the stiffness matrix.
+    void cell_integral(DHCellAccessor cell) override
     {
         ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
         if (!cell.is_own()) return;
@@ -238,7 +238,7 @@ public:
 
 
     /// Assembles the fluxes on the boundary.
-    void assemble_fluxes_boundary(DHCellSide cell_side, FMT_UNUSED const TimeStep &step) override
+    void boundary_side_integral(DHCellSide cell_side, FMT_UNUSED const TimeStep &step) override
     {
         ASSERT_EQ_DBG(cell_side.dim(), dim).error("Dimension of element mismatch!");
         if (!cell_side.cell().is_own()) return;
@@ -324,8 +324,8 @@ public:
     }
 
 
-    /// Assembles the fluxes between elements of the same dimension.
-    void assemble_fluxes_element_element(RangeConvert<DHEdgeSide, DHCellSide> edge_side_range) override {
+    /// Assembles the fluxes between sides of elements of the same dimension.
+    void edge_integral(RangeConvert<DHEdgeSide, DHCellSide> edge_side_range) override {
         ASSERT_EQ_DBG(edge_side_range.begin()->element().dim(), dim).error("Dimension of element mismatch!");
 
         unsigned int k;
@@ -479,7 +479,7 @@ public:
 
 
     /// Assembles the fluxes between elements of different dimensions.
-    void assemble_fluxes_element_side(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) override {
+    void neigbour_integral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) override {
         if (dim == 1) return;
         ASSERT_EQ_DBG(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
 
@@ -617,7 +617,7 @@ public:
 
 
     /// Assemble integral over element
-    void assemble_volume_integrals(DHCellAccessor cell) override
+    void cell_integral(DHCellAccessor cell) override
     {
     	ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
 
@@ -734,8 +734,8 @@ public:
     }
 
 
-    /// Implements @p AssemblyBase::assemble_fluxes_boundary.
-    void assemble_fluxes_boundary(DHCellSide cell_side, const TimeStep &step) override
+    /// Implements @p AssemblyBase::boundary_side_integral.
+    void boundary_side_integral(DHCellSide cell_side, const TimeStep &step) override
     {
         unsigned int k;
 
@@ -945,7 +945,7 @@ public:
 
 
     /// Assemble integral over element
-    void assemble_volume_integrals(DHCellAccessor cell) override
+    void cell_integral(DHCellAccessor cell) override
     {
         ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
 
