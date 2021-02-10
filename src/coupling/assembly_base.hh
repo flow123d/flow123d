@@ -49,7 +49,7 @@ public:
     inline void cell_integral(FMT_UNUSED DHCellAccessor cell) {}
 
     /// Assembles the fluxes on the boundary.
-    inline void boundary_side_integral(FMT_UNUSED DHCellSide cell_side, FMT_UNUSED const TimeStep &step) {}
+    inline void boundary_side_integral(FMT_UNUSED DHCellSide cell_side) {}
 
     /// Assembles the fluxes between sides on the edge.
     inline void edge_integral(FMT_UNUSED RangeConvert<DHEdgeSide, DHCellSide> edge_side_range) {}

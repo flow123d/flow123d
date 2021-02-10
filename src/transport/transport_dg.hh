@@ -168,6 +168,12 @@ public:
 		            double &gamma);
 
 
+		inline void set_time_governor(TimeGovernor *time) {
+		    ASSERT_PTR_DBG(time);
+		    this->time_ = time;
+		}
+
+
 		/// Compute and return anisotropy of given element
 		double elem_anisotropy(ElementAccessor<3> e) const;
 
@@ -227,6 +233,7 @@ public:
 
 		FieldFEScalarVec conc_fe;
 		std::shared_ptr<DOFHandlerMultiDim> dh_p0;
+		TimeGovernor *time_;
 	};
 
 	enum DGVariant {

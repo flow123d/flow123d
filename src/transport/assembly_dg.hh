@@ -242,7 +242,7 @@ public:
 
 
     /// Assembles the fluxes on the boundary.
-    inline void boundary_side_integral(DHCellSide cell_side, FMT_UNUSED const TimeStep &step)
+    inline void boundary_side_integral(DHCellSide cell_side)
     {
         ASSERT_EQ_DBG(cell_side.dim(), dim).error("Dimension of element mismatch!");
         if (!cell_side.cell().is_own()) return;
@@ -743,7 +743,7 @@ public:
 
 
     /// Implements @p AssemblyBase::boundary_side_integral.
-    inline void boundary_side_integral(DHCellSide cell_side, const TimeStep &step)
+    inline void boundary_side_integral(DHCellSide cell_side)
     {
         unsigned int k;
 
@@ -811,7 +811,7 @@ public:
                     }
                     k++;
                 }
-                if (step.index() > 0)
+                if (data_->time_->step().index() > 0)
                     for (unsigned int i=0; i<ndofs_; i++)
                         local_flux_balance_rhs_ -= local_rhs_[i];
             }

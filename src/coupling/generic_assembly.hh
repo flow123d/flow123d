@@ -140,7 +140,7 @@ public:
 	 * Loops through local cells and calls assemble methods of assembly
 	 * object of each cells over space dimension.
 	 */
-    void assemble(std::shared_ptr<DOFHandlerMultiDim> dh, const TimeStep &step) {
+    void assemble(std::shared_ptr<DOFHandlerMultiDim> dh) {
         multidim_assembly_[1_d]->reallocate_cache(element_cache_map_);
         multidim_assembly_[1_d]->begin();
 
@@ -163,7 +163,7 @@ public:
                 coupling_integral_data_.revert_temporary();
                 boundary_integral_data_.revert_temporary();
                 element_cache_map_.eval_point_data_.revert_temporary();
-                this->assemble_integrals(step);
+                this->assemble_integrals();
                 elm_idx_.clear();
                 add_into_patch = false;
             } else {
@@ -173,7 +173,7 @@ public:
                 boundary_integral_data_.make_permanent();
                 element_cache_map_.eval_point_data_.make_permanent();
                 if (element_cache_map_.eval_point_data_.temporary_size() == CacheMapElementNumber::get()) {
-                    this->assemble_integrals(step);
+                    this->assemble_integrals();
                     elm_idx_.clear();
                     add_into_patch = false;
                 }
@@ -181,7 +181,7 @@ public:
             }
         }
         if (add_into_patch) {
-            this->assemble_integrals(step);
+            this->assemble_integrals();
             elm_idx_.clear();
         }
 
@@ -229,10 +229,10 @@ private:
 
     /// Assembles the boundary side integrals for the given dimension.
     template<unsigned int dim>
-    inline void assemble_boundary_side_integrals(const TimeStep &step) {
+    inline void assemble_boundary_side_integrals() {
         for (unsigned int i=0; i<boundary_integral_data_.permanent_size(); ++i) {
             if (boundary_integral_data_[i].side.dim() != dim) continue;
-            multidim_assembly_[Dim<dim>{}]->boundary_side_integral(boundary_integral_data_[i].side, step);
+            multidim_assembly_[Dim<dim>{}]->boundary_side_integral(boundary_integral_data_[i].side);
         }
     }
 
@@ -256,7 +256,7 @@ private:
     }
 
     /// Call assemblations when patch is filled
-    void assemble_integrals(const TimeStep &step) {
+    void assemble_integrals() {
         START_TIMER("create_patch");
         element_cache_map_.create_patch();
         END_TIMER("create_patch");
@@ -275,9 +275,9 @@ private:
 
         {
             START_TIMER("assemble_fluxes_boundary");
-            this->assemble_boundary_side_integrals<1>(step);
-            this->assemble_boundary_side_integrals<2>(step);
-            this->assemble_boundary_side_integrals<3>(step);
+            this->assemble_boundary_side_integrals<1>();
+            this->assemble_boundary_side_integrals<2>();
+            this->assemble_boundary_side_integrals<3>();
             END_TIMER("assemble_fluxes_boundary");
         }
 
