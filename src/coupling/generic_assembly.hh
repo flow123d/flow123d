@@ -194,27 +194,27 @@ public:
     }
 
     /// Return BulkPoint range of appropriate dimension
-    Range< BulkPoint > bulk_points(unsigned int dim, const DHCellAccessor &cell) const {
-        ASSERT_DBG( (dim>0) && (dim<=3) )(dim).error("Invalid dimension, must be 1, 2 or 3!\n");
-        return integrals_.bulk_[dim-1]->points(cell, &(element_cache_map_));
+    Range< BulkPoint > bulk_points(const DHCellAccessor &cell) const {
+        ASSERT_DBG( cell.dim() > 0 ).error("Invalid cell dimension, must be 1, 2 or 3!\n");
+        return integrals_.bulk_[cell.dim()-1]->points(cell, &(element_cache_map_));
     }
 
     /// Return EdgePoint range of appropriate dimension
-    Range< EdgePoint > edge_points(unsigned int dim, const DHCellSide &cell_side) const {
-        ASSERT_DBG( (dim>0) && (dim<=3) )(dim).error("Invalid dimension, must be 1, 2 or 3!\n");
-	    return integrals_.edge_[dim-1]->points(cell_side, &(element_cache_map_));
+    Range< EdgePoint > edge_points(const DHCellSide &cell_side) const {
+        ASSERT_DBG( cell_side.dim() > 0 ).error("Invalid cell dimension, must be 1, 2 or 3!\n");
+	    return integrals_.edge_[cell_side.dim()-1]->points(cell_side, &(element_cache_map_));
     }
 
     /// Return CouplingPoint range of appropriate dimension
-    Range< CouplingPoint > coupling_points(unsigned int dim, const DHCellSide &cell_side) const {
-        ASSERT_DBG( (dim>1) && (dim<=3) )(dim).error("Invalid dimension, must be 2 or 3!\n");
-	    return integrals_.coupling_[dim-2]->points(cell_side, &(element_cache_map_));
+    Range< CouplingPoint > coupling_points(const DHCellSide &cell_side) const {
+        ASSERT_DBG( cell_side.dim() > 1 ).error("Invalid cell dimension, must be 2 or 3!\n");
+	    return integrals_.coupling_[cell_side.dim()-2]->points(cell_side, &(element_cache_map_));
     }
 
     /// Return BoundaryPoint range of appropriate dimension
-    Range< BoundaryPoint > boundary_points(unsigned int dim, const DHCellSide &cell_side) const {
-        ASSERT_DBG( (dim>0) && (dim<=3) )(dim).error("Invalid dimension, must be 1, 2 or 3!\n");
-	    return integrals_.boundary_[dim-1]->points(cell_side, &(element_cache_map_));
+    Range< BoundaryPoint > boundary_points(const DHCellSide &cell_side) const {
+        ASSERT_DBG( cell_side.dim() > 0 ).error("Invalid cell dimension, must be 1, 2 or 3!\n");
+	    return integrals_.boundary_[cell_side.dim()-1]->points(cell_side, &(element_cache_map_));
     }
 
 private:
