@@ -218,9 +218,45 @@ public:
     }
 
 private:
+    /// Assembles the cell integrals for the given dimension.
+    template<unsigned int dim>
+    inline void assemble_cell_integrals() {
+        for (unsigned int i=0; i<bulk_integral_data_.permanent_size(); ++i) {
+            if (bulk_integral_data_[i].cell.dim() != dim) continue;
+            multidim_assembly_[Dim<dim>{}]->cell_integral(bulk_integral_data_[i].cell);
+        }
+    }
+
+    /// Assembles the boundary side integrals for the given dimension.
+    template<unsigned int dim>
+    inline void assemble_boundary_side_integrals(const TimeStep &step) {
+        for (unsigned int i=0; i<boundary_integral_data_.permanent_size(); ++i) {
+            if (boundary_integral_data_[i].side.dim() != dim) continue;
+            multidim_assembly_[Dim<dim>{}]->boundary_side_integral(boundary_integral_data_[i].side, step);
+        }
+    }
+
+    /// Assembles the edge integrals for the given dimension.
+    template<unsigned int dim>
+    inline void assemble_edge_integrals() {
+        for (unsigned int i=0; i<edge_integral_data_.permanent_size(); ++i) {
+        	auto range = edge_integral_data_[i].edge_side_range;
+            if (range.begin()->dim() != dim) continue;
+            multidim_assembly_[Dim<dim>{}]->edge_integral(edge_integral_data_[i].edge_side_range);
+        }
+    }
+
+    /// Assembles the neighbours integrals for the given dimension.
+    template<unsigned int dim>
+    inline void assemble_neighbour_integrals() {
+        for (unsigned int i=0; i<coupling_integral_data_.permanent_size(); ++i) {
+            if (coupling_integral_data_[i].side.dim() != dim) continue;
+            multidim_assembly_[Dim<dim>{}]->neigbour_integral(coupling_integral_data_[i].cell, coupling_integral_data_[i].side);
+        }
+    }
+
     /// Call assemblations when patch is filled
     void assemble_integrals(const TimeStep &step) {
-        unsigned int i;
         START_TIMER("create_patch");
         element_cache_map_.create_patch();
         END_TIMER("create_patch");
@@ -229,73 +265,34 @@ private:
         END_TIMER("cache_update");
         element_cache_map_.finish_elements_update();
 
-        if (active_integrals_ & ActiveIntegrals::bulk) {
+        {
             START_TIMER("assemble_volume_integrals");
-            for (i=0; i<bulk_integral_data_.permanent_size(); ++i) { // volume integral
-                switch (bulk_integral_data_[i].cell.dim()) {
-                case 1:
-                    multidim_assembly_[1_d]->cell_integral(bulk_integral_data_[i].cell);
-                    break;
-                case 2:
-                    multidim_assembly_[2_d]->cell_integral(bulk_integral_data_[i].cell);
-                    break;
-                case 3:
-                    multidim_assembly_[3_d]->cell_integral(bulk_integral_data_[i].cell);
-                    break;
-                }
-            }
+            this->assemble_cell_integrals<1>();
+            this->assemble_cell_integrals<2>();
+            this->assemble_cell_integrals<3>();
             END_TIMER("assemble_volume_integrals");
         }
 
-        if (active_integrals_ & ActiveIntegrals::boundary) {
+        {
             START_TIMER("assemble_fluxes_boundary");
-            for (i=0; i<boundary_integral_data_.permanent_size(); ++i) { // boundary integral
-                switch (boundary_integral_data_[i].side.dim()) {
-                case 1:
-                    multidim_assembly_[1_d]->boundary_side_integral(boundary_integral_data_[i].side, step);
-                    break;
-                case 2:
-                    multidim_assembly_[2_d]->boundary_side_integral(boundary_integral_data_[i].side, step);
-                    break;
-                case 3:
-                    multidim_assembly_[3_d]->boundary_side_integral(boundary_integral_data_[i].side, step);
-                    break;
-                }
-            }
+            this->assemble_boundary_side_integrals<1>(step);
+            this->assemble_boundary_side_integrals<2>(step);
+            this->assemble_boundary_side_integrals<3>(step);
             END_TIMER("assemble_fluxes_boundary");
         }
 
-        if (active_integrals_ & ActiveIntegrals::edge) {
+        {
             START_TIMER("assemble_fluxes_elem_elem");
-            for (i=0; i<edge_integral_data_.permanent_size(); ++i) { // edge integral
-            	auto range = edge_integral_data_[i].edge_side_range;
-                switch (range.begin()->dim()) {
-                case 1:
-                    multidim_assembly_[1_d]->edge_integral(edge_integral_data_[i].edge_side_range);
-                    break;
-                case 2:
-                    multidim_assembly_[2_d]->edge_integral(edge_integral_data_[i].edge_side_range);
-                    break;
-                case 3:
-                    multidim_assembly_[3_d]->edge_integral(edge_integral_data_[i].edge_side_range);
-                    break;
-                }
-            }
+            this->assemble_edge_integrals<1>();
+            this->assemble_edge_integrals<2>();
+            this->assemble_edge_integrals<3>();
             END_TIMER("assemble_fluxes_elem_elem");
         }
 
-        if (active_integrals_ & ActiveIntegrals::coupling) {
+        {
             START_TIMER("assemble_fluxes_elem_side");
-            for (i=0; i<coupling_integral_data_.permanent_size(); ++i) { // coupling integral
-                switch (coupling_integral_data_[i].side.dim()) {
-                case 2:
-                    multidim_assembly_[2_d]->neigbour_integral(coupling_integral_data_[i].cell, coupling_integral_data_[i].side);
-                    break;
-                case 3:
-                    multidim_assembly_[3_d]->neigbour_integral(coupling_integral_data_[i].cell, coupling_integral_data_[i].side);
-                    break;
-                }
-            }
+            this->assemble_neighbour_integrals<2>();
+            this->assemble_neighbour_integrals<3>();
             END_TIMER("assemble_fluxes_elem_side");
         }
         // clean integral data
