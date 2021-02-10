@@ -46,16 +46,16 @@ public:
     }
 
     /// Assembles the volume integrals on cell.
-    virtual void cell_integral(FMT_UNUSED DHCellAccessor cell) {}
+    inline void cell_integral(FMT_UNUSED DHCellAccessor cell) {}
 
     /// Assembles the fluxes on the boundary.
-    virtual void boundary_side_integral(FMT_UNUSED DHCellSide cell_side, FMT_UNUSED const TimeStep &step) {}
+    inline void boundary_side_integral(FMT_UNUSED DHCellSide cell_side, FMT_UNUSED const TimeStep &step) {}
 
     /// Assembles the fluxes between sides on the edge.
-    virtual void edge_integral(FMT_UNUSED RangeConvert<DHEdgeSide, DHCellSide> edge_side_range) {}
+    inline void edge_integral(FMT_UNUSED RangeConvert<DHEdgeSide, DHCellSide> edge_side_range) {}
 
     /// Assembles the fluxes between elements of different dimensions.
-    virtual void neigbour_integral(FMT_UNUSED DHCellAccessor cell_lower_dim, FMT_UNUSED DHCellSide neighb_side) {}
+    inline void neigbour_integral(FMT_UNUSED DHCellAccessor cell_lower_dim, FMT_UNUSED DHCellSide neighb_side) {}
 
     /// Method prepares object before assemblation (e.g. balance, ...).
     virtual void begin() {}
