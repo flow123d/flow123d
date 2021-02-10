@@ -67,20 +67,21 @@ public:
     virtual void reallocate_cache(const ElementCacheMap &cache_map) =0;
 
     /// Create integrals according to dim of assembly object
-    void create_integrals(std::shared_ptr<EvalPoints> eval_points, AssemblyIntegrals &integrals, int active_integrals) {
-    	if (active_integrals & ActiveIntegrals::bulk)
+    void create_integrals(std::shared_ptr<EvalPoints> eval_points, AssemblyIntegrals &integrals) {
+    	if (active_integrals_ & ActiveIntegrals::bulk)
     	    integrals.bulk_[dim-1] = eval_points->add_bulk<dim>(*quad_);
-    	if (active_integrals & ActiveIntegrals::edge)
+    	if (active_integrals_ & ActiveIntegrals::edge)
     	    integrals.edge_[dim-1] = eval_points->add_edge<dim>(*quad_low_);
-       	if ((dim>1) && (active_integrals & ActiveIntegrals::coupling))
+       	if ((dim>1) && (active_integrals_ & ActiveIntegrals::coupling))
        	    integrals.coupling_[dim-2] = eval_points->add_coupling<dim>(*quad_low_);
-       	if (active_integrals & ActiveIntegrals::boundary)
+       	if (active_integrals_ & ActiveIntegrals::boundary)
        	    integrals.boundary_[dim-1] = eval_points->add_boundary<dim>(*quad_low_);
     }
 
 protected:
     Quadrature *quad_;                                     ///< Quadrature used in assembling methods.
     Quadrature *quad_low_;                                 ///< Quadrature used in assembling methods (dim-1).
+    int active_integrals_;                                 ///< Holds mask of active integrals.
 };
 
 

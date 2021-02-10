@@ -40,7 +40,9 @@ public:
 
     /// Constructor.
     MassAssemblyDG(EqDataDG *data)
-    : AssemblyBase<dim>(data->dg_order), data_(data) {}
+    : AssemblyBase<dim>(data->dg_order), data_(data) {
+        this->active_integrals_ = ActiveIntegrals::bulk;
+    }
 
     /// Destructor.
     ~MassAssemblyDG() {}
@@ -162,7 +164,9 @@ public:
 
     /// Constructor.
     StiffnessAssemblyDG(EqDataDG *data)
-    : AssemblyBase<dim>(data->dg_order), data_(data) {}
+    : AssemblyBase<dim>(data->dg_order), data_(data) {
+        this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::edge | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
+    }
 
     /// Destructor.
     ~StiffnessAssemblyDG() {}
@@ -597,7 +601,9 @@ public:
 
     /// Constructor.
     SourcesAssemblyDG(EqDataDG *data)
-    : AssemblyBase<dim>(data->dg_order), data_(data) {}
+    : AssemblyBase<dim>(data->dg_order), data_(data) {
+        this->active_integrals_ = ActiveIntegrals::bulk;
+    }
 
     /// Destructor.
     ~SourcesAssemblyDG() {}
@@ -716,7 +722,9 @@ public:
 
     /// Constructor.
     BdrConditionAssemblyDG(EqDataDG *data)
-    : AssemblyBase<dim>(data->dg_order), data_(data) {}
+    : AssemblyBase<dim>(data->dg_order), data_(data) {
+        this->active_integrals_ = ActiveIntegrals::boundary;
+    }
 
     /// Destructor.
     ~BdrConditionAssemblyDG() {}
@@ -928,7 +936,9 @@ public:
 
     /// Constructor.
     InitConditionAssemblyDG(EqDataDG *data)
-    : AssemblyBase<dim>(data->dg_order), data_(data) {}
+    : AssemblyBase<dim>(data->dg_order), data_(data) {
+        this->active_integrals_ = ActiveIntegrals::bulk;
+    }
 
     /// Destructor.
     ~InitConditionAssemblyDG() {}

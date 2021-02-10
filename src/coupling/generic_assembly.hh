@@ -107,9 +107,8 @@ private:
 public:
 
     /// Constructor
-    GenericAssembly( typename DimAssembly<1>::EqDataDG *eq_data, std::shared_ptr<Balance> balance, int active_integrals )
+    GenericAssembly( typename DimAssembly<1>::EqDataDG *eq_data, std::shared_ptr<Balance> balance )
     : multidim_assembly_(eq_data),
-      active_integrals_(active_integrals),
 	  bulk_integral_data_(20, 10),
 	  edge_integral_data_(12, 6),
 	  coupling_integral_data_(12, 6),
@@ -117,13 +116,14 @@ public:
     {
         eval_points_ = std::make_shared<EvalPoints>();
         // first step - create integrals, then - initialize cache and initialize subobject of dimensions
-        multidim_assembly_[1_d]->create_integrals(eval_points_, integrals_, active_integrals_);
-        multidim_assembly_[2_d]->create_integrals(eval_points_, integrals_, active_integrals_);
-        multidim_assembly_[3_d]->create_integrals(eval_points_, integrals_, active_integrals_);
+        multidim_assembly_[1_d]->create_integrals(eval_points_, integrals_);
+        multidim_assembly_[2_d]->create_integrals(eval_points_, integrals_);
+        multidim_assembly_[3_d]->create_integrals(eval_points_, integrals_);
         element_cache_map_.init(eval_points_);
         multidim_assembly_[1_d]->initialize(balance);
         multidim_assembly_[2_d]->initialize(balance);
         multidim_assembly_[3_d]->initialize(balance);
+        active_integrals_ = multidim_assembly_[1_d]->active_integrals_;
     }
 
     inline MixedPtr<DimAssembly, 1> multidim_assembly() const {
