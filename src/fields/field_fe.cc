@@ -299,6 +299,7 @@ void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::elem
 {
     ASSERT( !boundary_dofs_ ).error("boundary field NOT supported!!\n");
     Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> mat_value;
+    Armor::ArmaMat<double, Value::NRows_, Value::NCols_> dbl_mat_value;
 
     unsigned int reg_chunk_begin = cache_map.region_chunk_begin(region_idx);
     unsigned int reg_chunk_end = cache_map.region_chunk_end(region_idx);
@@ -311,7 +312,10 @@ void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::elem
         unsigned int elm_idx = cache_map.eval_point_data(i_data).i_element_;
         if (elm_idx != last_element_idx) {
             ElementAccessor<spacedim> elm(dh_->mesh(), elm_idx);
-            fe_values_[elm.dim()].reinit( elm );
+            if (fe_values_[elm.dim()].flags() & update_jacobians)
+                fe_values_[elm.dim()].elem_values()->reinit( elm );
+            else
+            	fe_values_[elm.dim()].reinit( elm );
             cell = dh_->cell_accessor_from_element( elm_idx );
             loc_dofs = cell.get_loc_dof_indices();
             last_element_idx = elm_idx;
@@ -319,13 +323,33 @@ void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::elem
             range_end = this->fe_item_[elm.dim()].range_end_;
         }
 
-        unsigned int i_ep=cache_map.eval_point_data(i_data).i_eval_point_;
-        //DHCellAccessor cache_cell = cache_map(cell);
-        mat_value.fill(0.0);
-        for (unsigned int i_dof=range_bgn; i_dof<range_end; i_dof++) {
-            mat_value += data_vec_[loc_dofs[i_dof]] * this->handle_fe_shape(cell.dim(), i_dof, i_ep);
+        if (fe_values_[cell.dim()].flags() & update_jacobians) {
+            unsigned int i_ep=cache_map.eval_point_data(i_data).i_eval_point_;
+            arma::vec ref_shape_value( cell.dim() );
+            arma::mat jacobian = fe_values_[cell.dim()].elem_values()->jacobian(i_ep);
+            double determinant = fe_values_[cell.dim()].elem_values()->determinant(i_ep);
+            auto jac_det = jacobian / determinant;
+            //DHCellAccessor cache_cell = cache_map(cell);
+            mat_value.fill(0.0);
+            ref_shape_value.fill(0.0);
+            for (unsigned int i_dof=range_bgn; i_dof<range_end; i_dof++) {
+                auto shape_value = fe_values_[cell.dim()].ref_shape_vals()[i_ep][i_dof];
+                ref_shape_value += data_vec_[loc_dofs[i_dof]] * fe_values_[cell.dim()].ref_shape_vals()[i_ep][i_dof];
+            }
+            dbl_mat_value = jac_det * ref_shape_value;  // armadillo matrix - vector multiplication
+            // just single matrix multiplication per value, not per every dof
+            for (uint i=0; i<Value::NRows_*Value::NCols_; i++)
+                mat_value[i] = dbl_mat_value[i];
+            data_cache.set(i_data) = mat_value;
+        } else {
+            unsigned int i_ep=cache_map.eval_point_data(i_data).i_eval_point_;
+            //DHCellAccessor cache_cell = cache_map(cell);
+            mat_value.fill(0.0);
+            for (unsigned int i_dof=range_bgn; i_dof<range_end; i_dof++) {
+                mat_value += data_vec_[loc_dofs[i_dof]] * this->handle_fe_shape(cell.dim(), i_dof, i_ep);
+            }
+            data_cache.set(i_data) = mat_value;
         }
-        data_cache.set(i_data) = mat_value;
     }
 }
 
