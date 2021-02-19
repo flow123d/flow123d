@@ -282,14 +282,14 @@ public:
     : PointBase() {}
 
     /// Constructor
-	BulkPoint(DHCellAccessor dh_cell, const ElementCacheMap *elm_cache_map, std::shared_ptr<const BulkIntegral> bulk_integral, unsigned int local_point_idx)
+	BulkPoint(DHCellAccessor dh_cell, const ElementCacheMap *elm_cache_map, const BulkIntegral *bulk_integral, unsigned int local_point_idx)
     : PointBase(elm_cache_map, local_point_idx), dh_cell_(dh_cell), integral_(bulk_integral) {
 	    this->element_cache_index_ = dh_cell_.element_cache_index();
 	    this->eval_point_idx_ = local_point_idx_;
 	}
 
     /// Getter of BulkIntegral
-    inline std::shared_ptr<const BulkIntegral> integral() const {
+    inline const BulkIntegral *integral() const {
         return integral_;
     }
 
@@ -313,7 +313,7 @@ private:
     /// DOF handler accessor of element.
     DHCellAccessor dh_cell_;
     /// Pointer to bulk integral.
-    std::shared_ptr<const BulkIntegral> integral_;
+    const BulkIntegral *integral_;
 };
 
 
@@ -330,14 +330,14 @@ public:
     : PointBase() {}
 
     /// Constructor
-	BulkBdrPoint(ElementAccessor<3> elm_acc, const ElementCacheMap *elm_cache_map, std::shared_ptr<const BulkIntegral> bulk_integral, unsigned int local_point_idx)
+	BulkBdrPoint(ElementAccessor<3> elm_acc, const ElementCacheMap *elm_cache_map, const BulkIntegral *bulk_integral, unsigned int local_point_idx)
     : PointBase(elm_cache_map, local_point_idx), elm_acc_(elm_acc), integral_(bulk_integral) {
 	    this->element_cache_index_ = this->elm_cache_map_->position_in_cache(elm_acc_.mesh_idx());
 	    this->eval_point_idx_ = local_point_idx_;
 	}
 
     /// Getter of BulkIntegral
-    inline std::shared_ptr<const BulkIntegral> integral() const {
+	const BulkIntegral *integral() const {
         return integral_;
     }
 
@@ -361,7 +361,7 @@ private:
     /// Appropriate ElementAccessor.
     ElementAccessor<3> elm_acc_;
     /// Pointer to bulk integral.
-    std::shared_ptr<const BulkIntegral> integral_;
+    const BulkIntegral *integral_;
 };
 
 
@@ -411,13 +411,13 @@ public:
     : SidePoint() {}
 
     /// Constructor
-    EdgePoint(DHCellSide cell_side, const ElementCacheMap *elm_cache_map, std::shared_ptr<const EdgeIntegral> edge_integral, unsigned int local_point_idx)
+    EdgePoint(DHCellSide cell_side, const ElementCacheMap *elm_cache_map, const EdgeIntegral *edge_integral, unsigned int local_point_idx)
     : SidePoint(cell_side, elm_cache_map, local_point_idx), integral_(edge_integral) {
         this->eval_point_idx_ = integral_->perm_idx_ptr(cell_side_.side_idx(), permutation_idx_, local_point_idx_);
     }
 
     /// Getter of EdgeIntegral
-    inline std::shared_ptr<const EdgeIntegral> integral() const {
+    inline const EdgeIntegral *integral() const {
         return integral_;
     }
 
@@ -437,7 +437,7 @@ public:
 
 private:
     /// Pointer to edge point integral
-    std::shared_ptr<const EdgeIntegral> integral_;
+    const EdgeIntegral *integral_;
 };
 
 
@@ -451,13 +451,13 @@ public:
     : SidePoint() {}
 
     /// Constructor
-    CouplingPoint(DHCellSide cell_side, const ElementCacheMap *elm_cache_map, std::shared_ptr<const CouplingIntegral> coupling_integral, unsigned int local_point_idx)
+    CouplingPoint(DHCellSide cell_side, const ElementCacheMap *elm_cache_map, const CouplingIntegral *coupling_integral, unsigned int local_point_idx)
     : SidePoint(cell_side, elm_cache_map, local_point_idx), integral_(coupling_integral) {
         this->eval_point_idx_ = integral_->edge_integral_->perm_idx_ptr(cell_side_.side_idx(), permutation_idx_, local_point_idx_);
     }
 
     /// Getter of EdgeIntegral
-    inline std::shared_ptr<const CouplingIntegral> integral() const {
+    inline const CouplingIntegral *integral() const {
         return integral_;
     }
 
@@ -477,7 +477,7 @@ public:
 
 private:
     /// Pointer to edge point set
-    std::shared_ptr<const CouplingIntegral> integral_;
+    const CouplingIntegral *integral_;
 };
 
 /**
@@ -490,13 +490,13 @@ public:
     : SidePoint() {}
 
     /// Constructor
-    BoundaryPoint(DHCellSide cell_side, const ElementCacheMap *elm_cache_map, std::shared_ptr<const BoundaryIntegral> bdr_integral, unsigned int local_point_idx)
+    BoundaryPoint(DHCellSide cell_side, const ElementCacheMap *elm_cache_map, const BoundaryIntegral *bdr_integral, unsigned int local_point_idx)
     : SidePoint(cell_side, elm_cache_map, local_point_idx), integral_(bdr_integral) {
         this->eval_point_idx_ = integral_->edge_integral_->perm_idx_ptr(cell_side_.side_idx(), permutation_idx_, local_point_idx_);
     }
 
     /// Getter of EdgeIntegral
-    inline std::shared_ptr<const BoundaryIntegral> integral() const {
+    inline const BoundaryIntegral *integral() const {
         return integral_;
     }
 
@@ -516,7 +516,7 @@ public:
 
 private:
     /// Pointer to edge point set
-    std::shared_ptr<const BoundaryIntegral> integral_;
+    const BoundaryIntegral *integral_;
 };
 
 #endif /* EVAL_SUBSET_HH_ */

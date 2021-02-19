@@ -39,8 +39,8 @@ BulkIntegral::~BulkIntegral()
 Range< BulkPoint > BulkIntegral::points(const DHCellAccessor &cell, const ElementCacheMap *elm_cache_map) const {
     ASSERT_DBG(cell.element_cache_index() != ElementCacheMap::undef_elem_idx)(cell.elm_idx()).error("Undefined element cache index!\n");
 
-    auto bgn_it = make_iter<BulkPoint>( BulkPoint(cell, elm_cache_map, shared_from_this(), eval_points_->subset_begin(dim_, subset_index_)) );
-    auto end_it = make_iter<BulkPoint>( BulkPoint(cell, elm_cache_map, shared_from_this(), eval_points_->subset_end(dim_, subset_index_)) );
+    auto bgn_it = make_iter<BulkPoint>( BulkPoint(cell, elm_cache_map, this, eval_points_->subset_begin(dim_, subset_index_)) );
+    auto end_it = make_iter<BulkPoint>( BulkPoint(cell, elm_cache_map, this, eval_points_->subset_end(dim_, subset_index_)) );
     return Range<BulkPoint>(bgn_it, end_it);
 }
 
@@ -77,8 +77,8 @@ Range< EdgePoint > EdgeIntegral::points(const DHCellSide &cell_side, const Eleme
     unsigned int begin_idx = eval_points_->subset_begin(dim_, subset_index_);
     unsigned int end_idx = eval_points_->subset_end(dim_, subset_index_);
     unsigned int points_per_side = (end_idx - begin_idx) / this->n_sides();
-    auto bgn_it = make_iter<EdgePoint>( EdgePoint(cell_side, elm_cache_map, shared_from_this(), 0 ) );
-    auto end_it = make_iter<EdgePoint>( EdgePoint(cell_side, elm_cache_map, shared_from_this(), points_per_side ) );
+    auto bgn_it = make_iter<EdgePoint>( EdgePoint(cell_side, elm_cache_map, this, 0 ) );
+    auto end_it = make_iter<EdgePoint>( EdgePoint(cell_side, elm_cache_map, this, points_per_side ) );
     return Range<EdgePoint>(bgn_it, end_it);
 }
 
@@ -103,8 +103,8 @@ Range< CouplingPoint > CouplingIntegral::points(const DHCellSide &cell_side, con
     unsigned int begin_idx = eval_points_->subset_begin(dim_, get_subset_high_idx());
     unsigned int end_idx = eval_points_->subset_end(dim_, get_subset_high_idx());
     unsigned int points_per_side = (end_idx - begin_idx) / edge_integral_->n_sides();
-    auto bgn_it = make_iter<CouplingPoint>( CouplingPoint(cell_side, elm_cache_map, shared_from_this(), 0 ) );
-    auto end_it = make_iter<CouplingPoint>( CouplingPoint(cell_side, elm_cache_map, shared_from_this(), points_per_side ) );
+    auto bgn_it = make_iter<CouplingPoint>( CouplingPoint(cell_side, elm_cache_map, this, 0 ) );
+    auto end_it = make_iter<CouplingPoint>( CouplingPoint(cell_side, elm_cache_map, this, points_per_side ) );
     return Range<CouplingPoint>(bgn_it, end_it);
 }
 
@@ -127,8 +127,8 @@ Range< BoundaryPoint > BoundaryIntegral::points(const DHCellSide &cell_side, con
     unsigned int begin_idx = eval_points_->subset_begin(dim_, get_subset_high_idx());
     unsigned int end_idx = eval_points_->subset_end(dim_, get_subset_high_idx());
     unsigned int points_per_side = (end_idx - begin_idx) / edge_integral_->n_sides();
-    auto bgn_it = make_iter<BoundaryPoint>( BoundaryPoint(cell_side, elm_cache_map, shared_from_this(), 0 ) );
-    auto end_it = make_iter<BoundaryPoint>( BoundaryPoint(cell_side, elm_cache_map, shared_from_this(), points_per_side ) );
+    auto bgn_it = make_iter<BoundaryPoint>( BoundaryPoint(cell_side, elm_cache_map, this, 0 ) );
+    auto end_it = make_iter<BoundaryPoint>( BoundaryPoint(cell_side, elm_cache_map, this, points_per_side ) );
     return Range<BoundaryPoint>(bgn_it, end_it);
 }
 
@@ -152,7 +152,7 @@ EdgePoint EdgePoint::point_on(DHCellSide edg_side) const {
  */
 
 BulkPoint CouplingPoint::lower_dim(DHCellAccessor cell_lower) const {
-    return BulkPoint(cell_lower, elm_cache_map_, integral_->bulk_integral_,
+    return BulkPoint(cell_lower, elm_cache_map_, integral_->bulk_integral_.get(),
             this->eval_points()->subset_begin(cell_lower.dim(), integral_->get_subset_low_idx())+local_point_idx_);
 }
 
@@ -162,7 +162,7 @@ BulkPoint CouplingPoint::lower_dim(DHCellAccessor cell_lower) const {
  */
 
 BulkBdrPoint BoundaryPoint::point_bdr(ElementAccessor<3> bdr_elm) const {
-    return BulkBdrPoint(bdr_elm, elm_cache_map_, integral_->bulk_integral_,
+    return BulkBdrPoint(bdr_elm, elm_cache_map_, integral_->bulk_integral_.get(),
             this->eval_points()->subset_begin(bdr_elm.dim(), integral_->get_subset_low_idx())+local_point_idx_);
 }
 
