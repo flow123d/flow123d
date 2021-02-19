@@ -37,8 +37,7 @@ BulkIntegral::~BulkIntegral()
 {}
 
 Range< BulkPoint > BulkIntegral::points(const DHCellAccessor &cell, const ElementCacheMap *elm_cache_map) const {
-    if (cell.element_cache_index() == ElementCacheMap::undef_elem_idx)
-        THROW( ExcElementNotInCache() << EI_ElementIdx(cell.elm_idx()) );
+    ASSERT_DBG(cell.element_cache_index() != ElementCacheMap::undef_elem_idx)(cell.elm_idx()).error("Undefined element cache index!\n");
 
     auto bgn_it = make_iter<BulkPoint>( BulkPoint(cell, elm_cache_map, shared_from_this(), eval_points_->subset_begin(dim_, subset_index_)) );
     auto end_it = make_iter<BulkPoint>( BulkPoint(cell, elm_cache_map, shared_from_this(), eval_points_->subset_end(dim_, subset_index_)) );
@@ -73,8 +72,7 @@ EdgeIntegral::~EdgeIntegral() {
 }
 
 Range< EdgePoint > EdgeIntegral::points(const DHCellSide &cell_side, const ElementCacheMap *elm_cache_map) const {
-    if (cell_side.cell().element_cache_index() == ElementCacheMap::undef_elem_idx)
-        THROW( ExcElementNotInCache() << EI_ElementIdx(cell_side.cell().elm_idx()) );
+    ASSERT_DBG(cell_side.cell().element_cache_index() != ElementCacheMap::undef_elem_idx)(cell_side.cell().elm_idx()).error("Undefined element cache index!\n");
 
     unsigned int begin_idx = eval_points_->subset_begin(dim_, subset_index_);
     unsigned int end_idx = eval_points_->subset_end(dim_, subset_index_);
@@ -100,8 +98,7 @@ CouplingIntegral::~CouplingIntegral() {
 }
 
 Range< CouplingPoint > CouplingIntegral::points(const DHCellSide &cell_side, const ElementCacheMap *elm_cache_map) const {
-    if (cell_side.cell().element_cache_index() == ElementCacheMap::undef_elem_idx)
-        THROW( ExcElementNotInCache() << EI_ElementIdx(cell_side.cell().elm_idx()) );
+    ASSERT_DBG(cell_side.cell().element_cache_index() != ElementCacheMap::undef_elem_idx)(cell_side.cell().elm_idx()).error("Undefined element cache index!\n");
 
     unsigned int begin_idx = eval_points_->subset_begin(dim_, get_subset_high_idx());
     unsigned int end_idx = eval_points_->subset_end(dim_, get_subset_high_idx());
@@ -125,8 +122,7 @@ BoundaryIntegral::~BoundaryIntegral() {
 }
 
 Range< BoundaryPoint > BoundaryIntegral::points(const DHCellSide &cell_side, const ElementCacheMap *elm_cache_map) const {
-    if (cell_side.cell().element_cache_index() == ElementCacheMap::undef_elem_idx)
-        THROW( ExcElementNotInCache() << EI_ElementIdx(cell_side.cell().elm_idx()) );
+    ASSERT_DBG(cell_side.cell().element_cache_index() != ElementCacheMap::undef_elem_idx)(cell_side.cell().elm_idx()).error("Undefined element cache index!\n");
 
     unsigned int begin_idx = eval_points_->subset_begin(dim_, get_subset_high_idx());
     unsigned int end_idx = eval_points_->subset_end(dim_, get_subset_high_idx());
