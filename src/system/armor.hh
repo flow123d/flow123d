@@ -832,7 +832,7 @@ public:
     {
         ASSERT_DBG( (1 == n_rows_) && (1 == n_cols_) )(n_rows_)(n_cols_);
         ASSERT_LT_DBG(mat_index, size());
-        return ArmaMat<Type,1,1>( data_ + mat_index )(0);
+        return data_[mat_index];
     }
 
     inline ArrayMatSet set(uint index) {
