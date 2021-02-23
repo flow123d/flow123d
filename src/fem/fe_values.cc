@@ -265,24 +265,6 @@ std::shared_ptr<typename FEValues<spacedim>::FEInternalData> FEValues<spacedim>:
 }
 
 
-template<unsigned int spacedim>
-double FEValues<spacedim>::shape_value(const unsigned int function_no, const unsigned int point_no)
-{
-  ASSERT_LT_DBG(function_no, n_dofs_);
-  ASSERT_LT_DBG(point_no, n_points_);
-  return shape_values[point_no][function_no];
-}
-
-
-template<unsigned int spacedim>
-arma::vec::fixed<spacedim> FEValues<spacedim>::shape_grad(const unsigned int function_no, const unsigned int point_no)
-{
-  ASSERT_LT_DBG(function_no, n_dofs_);
-  ASSERT_LT_DBG(point_no, n_points_);
-  return shape_gradients[point_no][function_no];
-}
-
-
 /*template<unsigned int spacedim>
 double FEValues<spacedim>::shape_value_component(const unsigned int function_no, 
                                     const unsigned int point_no, 
@@ -543,7 +525,7 @@ void FEValues<spacedim>::fill_data(const ElementValues<spacedim> &elm_values, co
 
 template<unsigned int spacedim>
 template<class MapType>
-void FEValues<spacedim>::fill_data_specialized(const ElementValues<spacedim> &elm_values, const typename FEValues<spacedim>::FEInternalData &fe_data) {
+inline void FEValues<spacedim>::fill_data_specialized(const ElementValues<spacedim> &elm_values, const typename FEValues<spacedim>::FEInternalData &fe_data) {
 	MapType map_type;
 	map_type.fill_values_vec(*this, elm_values, fe_data);
     if (update_flags & update_values)
