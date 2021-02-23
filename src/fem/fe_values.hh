@@ -146,7 +146,12 @@ public:
      * @param function_no Number of the shape function.
      * @param point_no Number of the quadrature point.
      */
-    double shape_value(const unsigned int function_no, const unsigned int point_no);
+    inline double shape_value(const unsigned int function_no, const unsigned int point_no) const
+    {
+        ASSERT_LT_DBG(function_no, n_dofs_);
+        ASSERT_LT_DBG(point_no, n_points_);
+        return shape_values[point_no][function_no];
+    }
 
 
     /**
@@ -156,7 +161,12 @@ public:
      * @param function_no Number of the shape function.
      * @param point_no Number of the quadrature point.
      */
-    arma::vec::fixed<spacedim> shape_grad(const unsigned int function_no, const unsigned int point_no);
+    inline arma::vec::fixed<spacedim> shape_grad(const unsigned int function_no, const unsigned int point_no) const
+	{
+        ASSERT_LT_DBG(function_no, n_dofs_);
+        ASSERT_LT_DBG(point_no, n_points_);
+        return shape_gradients[point_no][function_no];
+    }
 
     /**
      * @brief Return the value of the @p function_no-th shape function at
