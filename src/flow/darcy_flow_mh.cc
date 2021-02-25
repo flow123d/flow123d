@@ -483,6 +483,7 @@ void DarcyMH::initialize() {
 
     // allocate time term vectors
     VecDuplicate(schur0->get_solution(), &previous_solution);
+    VecDuplicate(schur0_Newton->get_solution(), &previous_solution);
     VecCreateMPI(PETSC_COMM_WORLD, data_->dh_->distr()->lsize(),PETSC_DETERMINE,&(steady_diagonal));
     VecDuplicate(steady_diagonal,& new_diagonal);
     VecZeroEntries(new_diagonal);
@@ -601,7 +602,7 @@ bool DarcyMH::zero_time_term(bool time_global) {
     }
 }
 
-void DarcyMH::compute_full_residual_vec(Vec residual_)
+void DarcyMH::compute_full_residual_vec(Vec residual_) //vector residual must be alocated
 {
     MatMult(*schur0->get_matrix(), schur0->get_solution(), residual_);
     VecAXPY(residual_,-1.0, *schur0->get_rhs());
@@ -660,10 +661,22 @@ void DarcyMH::solve_nonlinear()
         if (! is_linear_common){
             if (ns_type == EqData::nonlinear_solver::Newton){
                 data_changed_=true;
+                Vec solution_update;
+                VecDuplicate(schur0->get_solution(), &solution_update);
+                if ( nonlinear_iteration_ > 0){
+                    assembly_linear_system();
+                    VecDuplicate(schur0->get_solution(), &residual_);
+                    compute_full_residual_vec(residual_);
+                }
                 assembly_linear_system_Newton(residual_);
                 VecCopy( schur0_Newton->get_solution(), save_solution);
                 si = schur0_Newton->solve();
-                VecAXPY(schur0->get_solution(),-1.0, schur0_Newton->get_solution());
+                double residual_newt;
+                VecNorm(schur0_Newton->get_solution(), NORM_2, &residual_newt);
+                printf("%f \n", residual_newt);
+                VecWAXPY(solution_update,1.0,schur0_Newton->get_solution(),schur0->get_solution());
+                VecCopy(solution_update,schur0->get_solution());
+                //data_changed_=true;
             }else{
             VecCopy( schur0->get_solution(), save_solution);
             si = schur0->solve();
@@ -689,6 +702,7 @@ void DarcyMH::solve_nonlinear()
         //OLD_ASSERT( si.converged_reason >= 0, "Linear solver failed to converge. Convergence reason %d \n", si.converged_reason );
         assembly_linear_system();
 
+        VecDuplicate(schur0->get_solution(), &residual_);
         compute_full_residual_vec(residual_);
         VecNorm(residual_, NORM_2, &residual_norm);
         MessageOut().fmt("[nonlinear solver] it: {} lin. it: {}, reason: {}, residual: {}\n",
@@ -919,42 +933,22 @@ void DarcyMH::assembly_source_term()
 
     std::vector<LongIdx> global_dofs(data_->dh_->max_elem_dofs());
 
-    if (ns_type == EqData::nonlinear_solver::Newton) {    
-   	    for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
-            ElementAccessor<3> ele = dh_cell.elm();
+  	for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
+        ElementAccessor<3> ele = dh_cell.elm();
 
-            const uint ndofs = dh_cell.n_dofs();
-            global_dofs.resize(ndofs);
-            dh_cell.get_dof_indices(global_dofs);
+        const uint ndofs = dh_cell.n_dofs();
+        global_dofs.resize(ndofs);
+        dh_cell.get_dof_indices(global_dofs);
         
-            double cs = data_->cross_section.value(ele.centre(), ele);
+        double cs = data_->cross_section.value(ele.centre(), ele);
 
-            // set sources
-            double source = ele.measure() * cs *
+        // set sources
+        double source = ele.measure() * cs *
                 data_->water_source_density.value(ele.centre(), ele);
-            // TODO: replace with DHCell getter when available for FESystem component
-            schur0_Newton->rhs_set_value(global_dofs[ndofs/2], -1.0 * source );
+        // TODO: replace with DHCell getter when available for FESystem component
+        schur0->rhs_set_value(global_dofs[ndofs/2], -1.0 * source );
 
-            balance_->add_source_values(data_->water_balance_idx, ele.region().bulk_idx(),
-                                    {dh_cell.get_loc_dof_indices()[ndofs/2]}, {0}, {source});
-        }
-    }else{
-  	    for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
-            ElementAccessor<3> ele = dh_cell.elm();
-
-            const uint ndofs = dh_cell.n_dofs();
-            global_dofs.resize(ndofs);
-            dh_cell.get_dof_indices(global_dofs);
-        
-            double cs = data_->cross_section.value(ele.centre(), ele);
-
-            // set sources
-            double source = ele.measure() * cs *
-                data_->water_source_density.value(ele.centre(), ele);
-            // TODO: replace with DHCell getter when available for FESystem component
-            schur0->rhs_set_value(global_dofs[ndofs/2], -1.0 * source );
-
-            balance_->add_source_values(data_->water_balance_idx, ele.region().bulk_idx(),
+        balance_->add_source_values(data_->water_balance_idx, ele.region().bulk_idx(),
                                     {dh_cell.get_loc_dof_indices()[ndofs/2]}, {0}, {source});
 
     }
@@ -1151,12 +1145,12 @@ void DarcyMH::assembly_linear_system_Newton(Vec &residual_) {
         schur0_Newton->mat_zero_entries();
         schur0_Newton->rhs_zero_entries();
 
-        assembly_source_term();
-        
-
-	    assembly_mh_matrix( data_->multidim_assembler_Newton ); // fill matrix
 
         schur0_Newton->set_rhs(residual_);
+        PetscViewer    viewer;
+        VecView( *const_cast<Vec*>(schur0_Newton->get_rhs()), viewer);
+
+	    assembly_mh_matrix( data_->multidim_assembler_Newton ); // fill matrix
 
 	    schur0_Newton->finish_assembly();
 //         print_matlab_matrix("matrix");
