@@ -75,18 +75,11 @@ public:
         return eval_point_idx_;
     }
 
-    /// Return index of element in data cache.
-    inline unsigned int element_cache_index() const {
-        return element_cache_index_;
-    }
-
 protected:
     /// Index of the local point in the integral object.
     unsigned int local_point_idx_;
     /// Pointer ElementCacheMap needed for point evaluation.
     const ElementCacheMap* elm_cache_map_;
-    /// Index of element in data cache
-    unsigned int element_cache_index_;
     /// Index of the local point in the EvalPoints object.
     unsigned int eval_point_idx_;
 };
@@ -104,7 +97,6 @@ public:
     /// Constructor
 	BulkPoint(DHCellAccessor dh_cell, const ElementCacheMap *elm_cache_map, const BulkIntegral *bulk_integral, unsigned int local_point_idx)
     : PointBase(elm_cache_map, local_point_idx), dh_cell_(dh_cell), integral_(bulk_integral) {
-	    this->element_cache_index_ = dh_cell_.element_cache_index();
 	    this->eval_point_idx_ = local_point_idx_;
 	}
 
@@ -147,7 +139,6 @@ public:
     /// Constructor
 	BulkBdrPoint(ElementAccessor<3> elm_acc, const ElementCacheMap *elm_cache_map, const BulkIntegral *bulk_integral, unsigned int local_point_idx)
     : PointBase(elm_cache_map, local_point_idx), elm_acc_(elm_acc), integral_(bulk_integral) {
-	    this->element_cache_index_ = this->elm_cache_map_->position_in_cache(elm_acc_.mesh_idx());
 	    this->eval_point_idx_ = local_point_idx_;
 	}
 
@@ -189,9 +180,7 @@ public:
     /// Constructor
 	SidePoint(DHCellSide cell_side, const ElementCacheMap *elm_cache_map, unsigned int local_point_idx)
     : PointBase(elm_cache_map, local_point_idx), cell_side_(cell_side),
-	  permutation_idx_( cell_side.element()->permutation_idx( cell_side_.side_idx() ) ) {
-	    this->element_cache_index_ = cell_side_.cell().element_cache_index();
-	}
+	  permutation_idx_( cell_side.element()->permutation_idx( cell_side_.side_idx() ) ) {}
 
     /// Return DH cell accessor.
     inline DHCellSide dh_cell_side() const {
