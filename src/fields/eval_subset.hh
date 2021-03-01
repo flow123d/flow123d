@@ -61,27 +61,25 @@ public:
         return elm_cache_map_;
     }
 
-    /// Local coordinates within element
-    template<unsigned int dim>
-    inline arma::vec::fixed<dim> loc_coords() const {
-        return this->eval_points()->local_point<dim>( this->eval_point_idx() );
+    /// Iterates to next point.
+    void inc() {
+    	this->local_point_idx_++;
     }
+
+    /// Local coordinates within element
+    //template<unsigned int dim>
+    //inline arma::vec::fixed<dim> loc_coords() const {
+    //    return this->eval_points()->local_point<dim>( this->eval_point_idx() );
+    //}
 
     // Global coordinates within element
     //arma::vec3 coords() const;
-
-    /// Return index in EvalPoints object
-    inline unsigned int eval_point_idx() const {
-        return eval_point_idx_;
-    }
 
 protected:
     /// Index of the local point in the integral object.
     unsigned int local_point_idx_;
     /// Pointer ElementCacheMap needed for point evaluation.
     const ElementCacheMap* elm_cache_map_;
-    /// Index of the local point in the EvalPoints object.
-    unsigned int eval_point_idx_;
 };
 
 
@@ -96,24 +94,21 @@ public:
 
     /// Constructor
 	BulkPoint(DHCellAccessor dh_cell, const ElementCacheMap *elm_cache_map, const BulkIntegral *bulk_integral, unsigned int local_point_idx)
-    : PointBase(elm_cache_map, local_point_idx), dh_cell_(dh_cell), integral_(bulk_integral) {
-	    this->eval_point_idx_ = local_point_idx_;
-	}
+    : PointBase(elm_cache_map, local_point_idx), dh_cell_(dh_cell), integral_(bulk_integral) {}
 
     /// Return DH cell accessor.
     inline DHCellAccessor dh_cell() const {
         return dh_cell_;
     }
 
-    /// Iterates to next point.
-    void inc() {
-    	this->local_point_idx_++;
-    	this->eval_point_idx_ = this->local_point_idx_;
-    }
-
     /// Comparison of accessors.
     bool operator==(const BulkPoint& other) {
     	return (dh_cell_ == other.dh_cell_) && (local_point_idx_ == other.local_point_idx_);
+    }
+
+    /// Return index in EvalPoints object
+    inline unsigned int eval_point_idx() const {
+        return local_point_idx_;
     }
 
 private:
@@ -137,25 +132,22 @@ public:
     : PointBase() {}
 
     /// Constructor
-	BulkBdrPoint(ElementAccessor<3> elm_acc, const ElementCacheMap *elm_cache_map, const BulkIntegral *bulk_integral, unsigned int local_point_idx)
-    : PointBase(elm_cache_map, local_point_idx), elm_acc_(elm_acc), integral_(bulk_integral) {
-	    this->eval_point_idx_ = local_point_idx_;
-	}
+    BulkBdrPoint(ElementAccessor<3> elm_acc, const ElementCacheMap *elm_cache_map, const BulkIntegral *bulk_integral, unsigned int local_point_idx)
+    : PointBase(elm_cache_map, local_point_idx), elm_acc_(elm_acc), integral_(bulk_integral) {}
 
     /// Return ElementAccessor.
     inline ElementAccessor<3> elm_accessor() const {
         return elm_acc_;
     }
 
-    /// Iterates to next point.
-    void inc() {
-    	this->local_point_idx_++;
-    	this->eval_point_idx_ = this->local_point_idx_;
-    }
-
     /// Comparison of accessors.
     bool operator==(const BulkBdrPoint& other) {
     	return (elm_acc_ == other.elm_acc_) && (local_point_idx_ == other.local_point_idx_);
+    }
+
+    /// Return index in EvalPoints object
+    inline unsigned int eval_point_idx() const {
+        return local_point_idx_;
     }
 
 private:
@@ -192,6 +184,9 @@ public:
         return permutation_idx_;
     }
 
+    /// TODO: need better solution
+    virtual unsigned int eval_point_idx() const =0;
+
 protected:
     /// DOF handler accessor of element side.
     DHCellSide cell_side_;
@@ -210,18 +205,19 @@ public:
     : SidePoint() {}
 
     /// Constructor
-    EdgePoint(DHCellSide cell_side, const ElementCacheMap *elm_cache_map, const EdgeIntegral *edge_integral, unsigned int local_point_idx);
+    EdgePoint(DHCellSide cell_side, const ElementCacheMap *elm_cache_map, const EdgeIntegral *edge_integral, unsigned int local_point_idx)
+    : SidePoint(cell_side, elm_cache_map, local_point_idx), integral_(edge_integral) {}
 
     /// Return corresponds EdgePoint of neighbour side of same dimension (computing of side integrals).
     EdgePoint point_on(DHCellSide edg_side) const;
-
-    /// Iterates to next point.
-    void inc();
 
     /// Comparison of accessors.
     bool operator==(const EdgePoint& other) {
     	return (cell_side_ == other.cell_side_) && (local_point_idx_ == other.local_point_idx_);
     }
+
+    /// Return index in EvalPoints object
+    unsigned int eval_point_idx() const override;
 
 private:
     /// Pointer to edge point integral
@@ -239,13 +235,14 @@ public:
     : SidePoint() {}
 
     /// Constructor
-    CouplingPoint(DHCellSide cell_side, const ElementCacheMap *elm_cache_map, const CouplingIntegral *coupling_integral, unsigned int local_point_idx);
+    CouplingPoint(DHCellSide cell_side, const ElementCacheMap *elm_cache_map, const CouplingIntegral *coupling_integral, unsigned int local_point_idx)
+    : SidePoint(cell_side, elm_cache_map, local_point_idx), integral_(coupling_integral) {}
 
     /// Return corresponds EdgePoint of neighbour side of same dimension (computing of side integrals).
     BulkPoint lower_dim(DHCellAccessor cell_lower) const;
 
-    /// Iterates to next point.
-    void inc();
+    /// Return index in EvalPoints object
+    unsigned int eval_point_idx() const override;
 
     /// Comparison of accessors.
     bool operator==(const CouplingPoint& other) {
@@ -267,13 +264,14 @@ public:
     : SidePoint() {}
 
     /// Constructor
-    BoundaryPoint(DHCellSide cell_side, const ElementCacheMap *elm_cache_map, const BoundaryIntegral *bdr_integral, unsigned int local_point_idx);
+    BoundaryPoint(DHCellSide cell_side, const ElementCacheMap *elm_cache_map, const BoundaryIntegral *bdr_integral, unsigned int local_point_idx)
+    : SidePoint(cell_side, elm_cache_map, local_point_idx), integral_(bdr_integral) {}
 
     /// Return corresponds BulkPoint of boundary element.
     BulkBdrPoint point_bdr(ElementAccessor<3> bdr_elm) const;
 
-    /// Iterates to next point.
-    void inc();
+    /// Return index in EvalPoints object
+    unsigned int eval_point_idx() const override;
 
     /// Comparison of accessors.
     bool operator==(const BoundaryPoint& other) {

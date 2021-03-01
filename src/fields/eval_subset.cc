@@ -101,18 +101,12 @@ BoundaryIntegral::~BoundaryIntegral() {
  * Implementation of EdgePoint methods
  */
 
-EdgePoint::EdgePoint(DHCellSide cell_side, const ElementCacheMap *elm_cache_map, const EdgeIntegral *edge_integral, unsigned int local_point_idx)
-: SidePoint(cell_side, elm_cache_map, local_point_idx), integral_(edge_integral) {
-    this->eval_point_idx_ = integral_->perm_idx_ptr(cell_side_.side_idx(), permutation_idx_, local_point_idx_);
-}
-
 EdgePoint EdgePoint::point_on(DHCellSide edg_side) const {
     return EdgePoint(edg_side, elm_cache_map_, this->integral_, this->local_point_idx_);
 }
 
-void EdgePoint::inc() {
-	this->local_point_idx_++;
-	this->eval_point_idx_ = integral_->perm_idx_ptr(cell_side_.side_idx(), permutation_idx_, local_point_idx_);
+unsigned int EdgePoint::eval_point_idx() const {
+    return integral_->perm_idx_ptr(cell_side_.side_idx(), permutation_idx_, local_point_idx_);
 }
 
 
@@ -120,19 +114,13 @@ void EdgePoint::inc() {
  * Implementation of CouplingPoint methods
  */
 
-CouplingPoint::CouplingPoint(DHCellSide cell_side, const ElementCacheMap *elm_cache_map, const CouplingIntegral *coupling_integral, unsigned int local_point_idx)
-: SidePoint(cell_side, elm_cache_map, local_point_idx), integral_(coupling_integral) {
-    this->eval_point_idx_ = integral_->edge_integral_->perm_idx_ptr(cell_side_.side_idx(), permutation_idx_, local_point_idx_);
-}
-
 BulkPoint CouplingPoint::lower_dim(DHCellAccessor cell_lower) const {
     return BulkPoint(cell_lower, elm_cache_map_, integral_->bulk_integral_.get(),
             this->eval_points()->subset_begin(cell_lower.dim(), integral_->get_subset_low_idx())+local_point_idx_);
 }
 
-void CouplingPoint::inc() {
-	this->local_point_idx_++;
-	this->eval_point_idx_ = integral_->edge_integral_->perm_idx_ptr(cell_side_.side_idx(), permutation_idx_, local_point_idx_);
+unsigned int CouplingPoint::eval_point_idx() const {
+    return integral_->edge_integral_->perm_idx_ptr(cell_side_.side_idx(), permutation_idx_, local_point_idx_);
 }
 
 
@@ -140,17 +128,11 @@ void CouplingPoint::inc() {
  * Implementation of BoundaryPoint methods
  */
 
-BoundaryPoint::BoundaryPoint(DHCellSide cell_side, const ElementCacheMap *elm_cache_map, const BoundaryIntegral *bdr_integral, unsigned int local_point_idx)
-: SidePoint(cell_side, elm_cache_map, local_point_idx), integral_(bdr_integral) {
-    this->eval_point_idx_ = integral_->edge_integral_->perm_idx_ptr(cell_side_.side_idx(), permutation_idx_, local_point_idx_);
-}
-
 BulkBdrPoint BoundaryPoint::point_bdr(ElementAccessor<3> bdr_elm) const {
     return BulkBdrPoint(bdr_elm, elm_cache_map_, integral_->bulk_integral_.get(),
             this->eval_points()->subset_begin(bdr_elm.dim(), integral_->get_subset_low_idx())+local_point_idx_);
 }
 
-void BoundaryPoint::inc() {
-	this->local_point_idx_++;
-	this->eval_point_idx_ = integral_->edge_integral_->perm_idx_ptr(cell_side_.side_idx(), permutation_idx_, local_point_idx_);
+unsigned int BoundaryPoint::eval_point_idx() const {
+    return integral_->edge_integral_->perm_idx_ptr(cell_side_.side_idx(), permutation_idx_, local_point_idx_);
 }
