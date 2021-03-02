@@ -244,19 +244,10 @@ public:
      * inline unsigned int region_to_elem_end(unsigned int region_idx) const; ??
      */
 
-    /// Return value of evaluation point given by DHCell and local point idx in EvalPoints from cache.
+    /// Return value of evaluation point given by idx of element in patch and local point idx in EvalPoints from cache.
     template<class Value>
     typename Value::return_type get_value(const FieldValueCache<typename Value::element_type> &field_cache,
-            const DHCellAccessor &dh_cell, unsigned int eval_points_idx) const;
-
-    /**
-     * Return value of evaluation point given by ElementAccessor and local point idx in EvalPoints from cache.
-     *
-     * Temporary overload of previous method used on boundary elements.
-     */
-    template<class Value>
-    typename Value::return_type get_value(const FieldValueCache<typename Value::element_type> &field_cache,
-            const ElementAccessor<3> elm, unsigned int eval_points_idx) const;
+            unsigned int elem_patch_idx, unsigned int eval_points_idx) const;
 
     /// Set index of cell in ElementCacheMap (or undef value if cell is not stored in cache).
     DHCellAccessor & cache_map_index(DHCellAccessor &dh_cell) const;

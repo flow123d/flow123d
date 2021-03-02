@@ -106,7 +106,7 @@ EdgePoint EdgePoint::point_on(DHCellSide edg_side) const {
 }
 
 unsigned int EdgePoint::eval_point_idx() const {
-    return integral_->perm_idx_ptr(cell_side_.side_idx(), permutation_idx_, local_point_idx_);
+    return integral_->perm_idx_ptr(side_idx_, permutation_idx_, local_point_idx_);
 }
 
 
@@ -120,7 +120,7 @@ BulkPoint CouplingPoint::lower_dim(DHCellAccessor cell_lower) const {
 }
 
 unsigned int CouplingPoint::eval_point_idx() const {
-    return integral_->edge_integral_->perm_idx_ptr(cell_side_.side_idx(), permutation_idx_, local_point_idx_);
+    return integral_->edge_integral_->perm_idx_ptr(side_idx_, permutation_idx_, local_point_idx_);
 }
 
 
@@ -134,5 +134,5 @@ BulkBdrPoint BoundaryPoint::point_bdr(ElementAccessor<3> bdr_elm) const {
 }
 
 unsigned int BoundaryPoint::eval_point_idx() const {
-    return integral_->edge_integral_->perm_idx_ptr(cell_side_.side_idx(), permutation_idx_, local_point_idx_);
+    return integral_->edge_integral_->perm_idx_ptr(side_idx_, permutation_idx_, local_point_idx_);
 }
