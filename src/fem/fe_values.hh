@@ -308,6 +308,18 @@ public:
     inline unsigned int dim() const
     { return dim_; }
     
+    inline std::shared_ptr<ElementValues<spacedim> > elem_values() const {
+    	return elm_values;
+    }
+
+    inline UpdateFlags flags() const {
+        return update_flags;
+    }
+
+    inline const std::vector<std::vector<arma::vec> > &ref_shape_vals() const {
+        return fe_data->ref_shape_values;
+    }
+
 
 protected:
 
