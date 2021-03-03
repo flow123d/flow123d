@@ -105,43 +105,15 @@ public:
 	    this->elem_patch_idx_ = elm_cache_map->position_in_cache(dh_cell.elm().mesh_idx());
 	}
 
-    /// Comparison of accessors.
-    bool operator==(const BulkPoint& other) {
-        return (elem_patch_idx_ == other.elem_patch_idx_) && (local_point_idx_ == other.local_point_idx_);
-    }
-
-    /// Return index in EvalPoints object
-    inline unsigned int eval_point_idx() const {
-        return local_point_idx_;
-    }
-
-private:
-    /// Pointer to bulk integral.
-    const BulkIntegral *integral_;
-};
-
-
-/**
- * @brief Point accessor allow iterate over bulk quadrature points defined in local element coordinates.
- *
- * Temporary class, we can't construct DHCellAccessor from boundary element, this class uses ElementAccessor.
- * Will be merged with BulkPoint in future.
- */
-class BulkBdrPoint : public PointBase {
-public:
-    /// Default constructor
-	BulkBdrPoint()
-    : PointBase() {}
-
-    /// Constructor
-    BulkBdrPoint(ElementAccessor<3> elm_acc, const ElementCacheMap *elm_cache_map, const BulkIntegral *bulk_integral, unsigned int local_point_idx)
+    /// Constructor passing ElementAccessor argument, alternative of previous.
+    BulkPoint(ElementAccessor<3> elm_acc, const ElementCacheMap *elm_cache_map, const BulkIntegral *bulk_integral, unsigned int local_point_idx)
     : PointBase(elm_cache_map, local_point_idx), integral_(bulk_integral) {
         this->elem_patch_idx_ = this->elm_cache_map_->position_in_cache(elm_acc.mesh_idx());
     }
 
     /// Comparison of accessors.
-    bool operator==(const BulkBdrPoint& other) {
-    	return (elem_patch_idx_ == other.elem_patch_idx_) && (local_point_idx_ == other.local_point_idx_);
+    bool operator==(const BulkPoint& other) {
+        return (elem_patch_idx_ == other.elem_patch_idx_) && (local_point_idx_ == other.local_point_idx_);
     }
 
     /// Return index in EvalPoints object
@@ -261,8 +233,8 @@ public:
     BoundaryPoint(DHCellSide cell_side, const ElementCacheMap *elm_cache_map, const BoundaryIntegral *bdr_integral, unsigned int local_point_idx)
     : SidePoint(cell_side, elm_cache_map, local_point_idx), integral_(bdr_integral) {}
 
-    /// Return corresponds BulkPoint of boundary element.
-    BulkBdrPoint point_bdr(ElementAccessor<3> bdr_elm) const;
+    /// Return corresponds BulkPoint on boundary element.
+    BulkPoint point_bdr(ElementAccessor<3> bdr_elm) const;
 
     /// Return index in EvalPoints object
     unsigned int eval_point_idx() const override;
