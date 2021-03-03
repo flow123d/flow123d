@@ -150,9 +150,6 @@ public:
         return permutation_idx_;
     }
 
-    /// TODO: need better solution
-    virtual unsigned int eval_point_idx() const =0;
-
 protected:
     /// Index of side in element
     unsigned int side_idx_;
@@ -183,7 +180,7 @@ public:
     }
 
     /// Return index in EvalPoints object
-    unsigned int eval_point_idx() const override;
+    unsigned int eval_point_idx() const;
 
 private:
     /// Pointer to edge point integral
@@ -208,7 +205,7 @@ public:
     BulkPoint lower_dim(DHCellAccessor cell_lower) const;
 
     /// Return index in EvalPoints object
-    unsigned int eval_point_idx() const override;
+    unsigned int eval_point_idx() const;
 
     /// Comparison of accessors.
     bool operator==(const CouplingPoint& other) {
@@ -237,7 +234,7 @@ public:
     BulkPoint point_bdr(ElementAccessor<3> bdr_elm) const;
 
     /// Return index in EvalPoints object
-    unsigned int eval_point_idx() const override;
+    unsigned int eval_point_idx() const;
 
     /// Comparison of accessors.
     bool operator==(const BoundaryPoint& other) {
