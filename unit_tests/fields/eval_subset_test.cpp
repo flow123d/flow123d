@@ -24,6 +24,12 @@
 #include "system/sys_profiler.hh"
 
 
+template<unsigned int dim>
+arma::vec::fixed<dim> loc_coords(std::shared_ptr<EvalPoints> eval_points, unsigned int eval_point_idx) {
+    return eval_points->local_point<dim>( eval_point_idx );
+}
+
+
 TEST(EvalPointsTest, all) {
 	std::shared_ptr<EvalPoints> eval_points = std::make_shared<EvalPoints>();
 	EXPECT_EQ(eval_points->size(3), 0);
@@ -74,7 +80,7 @@ TEST(IntegralTest, integrals_3d) {
 												 {0.585410196624968515, 0.138196601125010504, 0.138196601125010504}};
     	unsigned int i=0; // iter trought expected_vals
     	for (auto p : bulk_integral->points(dh_cell, &elm_cache_map)) {
-            EXPECT_ARMA_EQ(p.loc_coords<3>(), expected_vals[i]);
+            EXPECT_ARMA_EQ(loc_coords<3>(eval_points, p.eval_point_idx()), expected_vals[i]);
 			++i;
         }
     }
@@ -97,7 +103,7 @@ TEST(IntegralTest, integrals_3d) {
         for (auto side_acc : dh_cell.side_range()) {
             i_point=0;
             for ( auto p : edge_integral->points(side_acc, &elm_cache_map) ) {
-            	EXPECT_ARMA_EQ(p.loc_coords<3>(), expected_vals[i_side][i_point]);
+            	EXPECT_ARMA_EQ(loc_coords<3>(eval_points, p.eval_point_idx()), expected_vals[i_side][i_point]);
                 ++i_point;
             }
             ++i_side;
@@ -122,9 +128,9 @@ TEST(IntegralTest, integrals_3d) {
                 continue;
             i_point=0;
             for ( auto p : boundary_integral->points(side_acc, &elm_cache_map) ) {
-                EXPECT_ARMA_EQ(p.loc_coords<3>(), expected_vals[i_side][i_point]);
+                EXPECT_ARMA_EQ(loc_coords<3>(eval_points, p.eval_point_idx()), expected_vals[i_side][i_point]);
                 auto p_bdr = p.point_bdr( side_acc.cond().element_accessor() );
-                EXPECT_ARMA_EQ(p_bdr.loc_coords<2>(), expected_vals[2][i_point]);
+                EXPECT_ARMA_EQ(loc_coords<2>(eval_points, p_bdr.eval_point_idx()), expected_vals[2][i_point]);
                 ++i_point;
             }
             ++i_side;
@@ -149,8 +155,8 @@ TEST(IntegralTest, integrals_3d) {
             i_point=0;
             for ( auto p_side : coupling_integral->points(ngh_side_acc, &elm_cache_map) ) {
             	auto p_cell = p_side.lower_dim(dh_ngh_cell);
-                EXPECT_ARMA_EQ(p_cell.loc_coords<2>(), expected_vals[0][i_point]);
-                EXPECT_ARMA_EQ(p_side.loc_coords<3>(), expected_vals[i_side][i_point]);
+                EXPECT_ARMA_EQ(loc_coords<2>(eval_points, p_cell.eval_point_idx()), expected_vals[0][i_point]);
+                EXPECT_ARMA_EQ(loc_coords<3>(eval_points, p_side.eval_point_idx()), expected_vals[i_side][i_point]);
                 ++i_point;
             }
             ++i_side;
