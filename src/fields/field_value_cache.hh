@@ -233,21 +233,17 @@ public:
     inline const EvalPointData &eval_point_data(unsigned int point_idx) const {
         return eval_point_data_[point_idx];
     }
-    /*
-     * We need new methods:
-     *
-     * inline unsigned int element_chunk_begin(unsigned int elm_idx) const; - done
-     * inline unsigned int element_chunk_end(unsigned int elm_idx) const; - done
-     * inline unsigned int region_chunk_begin(unsigned int region_idx) const; - done
-     * inline unsigned int region_chunk_end(unsigned int region_idx) const; - done
-     * inline unsigned int region_to_elem_begin(unsigned int region_idx) const; ??
-     * inline unsigned int region_to_elem_end(unsigned int region_idx) const; ??
-     */
 
     /// Return value of evaluation point given by idx of element in patch and local point idx in EvalPoints from cache.
     template<class Value>
-    typename Value::return_type get_value(const FieldValueCache<typename Value::element_type> &field_cache,
-            unsigned int elem_patch_idx, unsigned int eval_points_idx) const;
+    inline typename Value::return_type get_value(const FieldValueCache<typename Value::element_type> &field_cache,
+            unsigned int elem_patch_idx, unsigned int eval_points_idx) const {
+        ASSERT_EQ_DBG(Value::NRows_, field_cache.n_rows());
+        ASSERT_EQ_DBG(Value::NCols_, field_cache.n_cols());
+        unsigned int value_cache_idx = this->element_eval_point(elem_patch_idx, eval_points_idx);
+        ASSERT_DBG(value_cache_idx != ElementCacheMap::undef_elem_idx);
+        return Value::get_from_array(field_cache, value_cache_idx);
+    }
 
     /// Set index of cell in ElementCacheMap (or undef value if cell is not stored in cache).
     DHCellAccessor & cache_map_index(DHCellAccessor &dh_cell) const;
