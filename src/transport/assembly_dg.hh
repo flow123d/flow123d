@@ -493,7 +493,7 @@ public:
 
                                         local_matrix_[index] += (
                                             // flux due to transport (applied on interior edges) (average times jump)
-                                            transport_flux*jumps[n][k*fe_->n_dofs()+i]*averages[m][k*fe_->n_dofs()+j]
+                                            transport_flux*jumps[n][k*fe_->n_dofs()+i]*averages[sd[m]][k*fe_->n_dofs()+j]
 
                                             // penalty enforcing continuity across edges (applied on interior and Dirichlet edges) (jump times jump)
                                             + gamma_l*jumps[n][k*fe_->n_dofs()+i]*jumps[m][k*fe_->n_dofs()+j]
