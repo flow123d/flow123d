@@ -169,7 +169,11 @@ public:
     }
 
     /// Destructor.
-    ~StiffnessAssemblyDG() {}
+    ~StiffnessAssemblyDG() {
+        for (auto a : averages) if (a != nullptr) delete[] a;
+        for (auto a : waverages) if (a != nullptr) delete[] a;
+        for (auto a : jumps) if (a != nullptr) delete[] a;
+    }
 
     /// Initialize auxiliary vectors and other data members
     void initialize(FMT_UNUSED std::shared_ptr<Balance> balance) {
@@ -199,6 +203,17 @@ public:
         fv_sb_.resize(2);
         fv_sb_[0] = &fe_values_vb_;
         fv_sb_[1] = &fe_values_side_;
+
+        averages.resize(data_->max_edg_sides);
+        for (unsigned int s=0; s<data_->max_edg_sides; s++)
+            averages[s] = new double[qsize_lower_dim_*fe_->n_dofs()];
+        waverages.resize(2);
+        jumps.resize(2);
+        for (unsigned int s=0; s<2; s++)
+        {
+            waverages[s] = new double[qsize_lower_dim_*fe_->n_dofs()];
+            jumps[s] = new double[qsize_lower_dim_*fe_->n_dofs()];
+        }
     }
 
 
@@ -368,6 +383,21 @@ public:
                 ++sid;
             }
 
+            // precompute averages of shape functions over pairs of sides
+            s1=0;
+            for (DHCellSide edge_side : edge_side_range)
+            {
+                (void)edge_side;
+                for (unsigned int k=0; k<qsize_lower_dim_; k++)
+                {
+                    for (unsigned int i=0; i<fe_->n_dofs(); i++)
+                        averages[s1][k*fe_->n_dofs()+i] = fe_values_vec_[s1].shape_value(i,k)*0.5;
+                }
+                s1++;
+            }
+
+
+
             s1=0;
             for( DHCellSide edge_side1 : edge_side_range )
             {
@@ -423,8 +453,21 @@ public:
                     sd[0] = s1; is_side_own[0] = edge_side1.cell().is_own();
                     sd[1] = s2; is_side_own[1] = edge_side2.cell().is_own();
 
-#define AVERAGE(i,k,side_id)  (fe_values_vec_[sd[side_id]].shape_value(i,k)*0.5)
-#define JUMP(i,k,side_id)     ((side_id==0?1:-1)*fe_values_vec_[sd[side_id]].shape_value(i,k))
+                    // precompute jumps and weighted averages of shape functions over the pair of sides (s1,s2)
+                    k=0;
+                    for (auto p1 : data_->stiffness_assembly_->edge_points(edge_side1) )
+                    {
+                        auto p2 = p1.point_on(edge_side2);
+                        for (unsigned int i=0; i<fe_->n_dofs(); i++)
+                        {
+                            for (int n=0; n<2; n++)
+                            {
+                                jumps[n][k*fe_->n_dofs()+i] = (n==0)*fe_values_vec_[s1].shape_value(i,k) - (n==1)*fe_values_vec_[s2].shape_value(i,k);
+                                waverages[n][k*fe_->n_dofs()+i] = arma::dot(data_->diffusion_coef[sbi]( (n==0 ? p1 : p2) )*fe_values_vec_[sd[n]].shape_grad(i,k),nv)*omega[n];
+                            }
+                        }
+                        k++;
+                    }
 
                     // For selected pair of elements:
                     for (int n=0; n<2; n++)
@@ -441,31 +484,24 @@ public:
                             for (auto p1 : data_->stiffness_assembly_->edge_points(edge_side1) )
                             {
                                 auto p2 = p1.point_on(edge_side2);
-                                double flux_times_JxW = transport_flux*fe_values_vec_[0].JxW(k);
-                                double gamma_times_JxW = gamma_l*fe_values_vec_[0].JxW(k);
 
                                 for (unsigned int i=0; i<fe_values_vec_[sd[n]].n_dofs(); i++)
                                 {
-                                    double flux_JxW_jump_i = flux_times_JxW*JUMP(i,k,n);
-                                    double gamma_JxW_jump_i = gamma_times_JxW*JUMP(i,k,n);
-                                    double JxW_jump_i = fe_values_vec_[0].JxW(k)*JUMP(i,k,n);
-                                    double JxW_var_wavg_i = fe_values_vec_[0].JxW(k) *
-                                            arma::dot(data_->diffusion_coef[sbi]( (n==0 ? p1 : p2) )*fe_values_vec_[sd[n]].shape_grad(i,k),nv) *
-                                            omega[n] * data_->dg_variant;
-
                                     for (unsigned int j=0; j<fe_values_vec_[sd[m]].n_dofs(); j++)
                                     {
                                         int index = i*fe_values_vec_[sd[m]].n_dofs()+j;
 
-                                        // flux due to transport (applied on interior edges) (average times jump)
-                                        local_matrix_[index] += flux_JxW_jump_i*AVERAGE(j,k,m);
+                                        local_matrix_[index] += (
+                                            // flux due to transport (applied on interior edges) (average times jump)
+                                            transport_flux*jumps[n][k*fe_->n_dofs()+i]*averages[sd[m]][k*fe_->n_dofs()+j]
 
-                                        // penalty enforcing continuity across edges (applied on interior and Dirichlet edges) (jump times jump)
-                                        local_matrix_[index] += gamma_JxW_jump_i*JUMP(j,k,m);
+                                            // penalty enforcing continuity across edges (applied on interior and Dirichlet edges) (jump times jump)
+                                            + gamma_l*jumps[n][k*fe_->n_dofs()+i]*jumps[m][k*fe_->n_dofs()+j]
 
                                         // terms due to diffusion
-                                        local_matrix_[index] -= arma::dot(data_->diffusion_coef[sbi]( (m==0 ? p1 : p2) )*fe_values_vec_[sd[m]].shape_grad(j,k),nv) * omega[m] * JxW_jump_i;
-                                        local_matrix_[index] -= JUMP(j,k,m)*JxW_var_wavg_i;
+                                            - jumps[n][k*fe_->n_dofs()+i]*waverages[m][k*fe_->n_dofs()+j]
+                                            - data_->dg_variant*waverages[n][k*fe_->n_dofs()+i]*jumps[m][k*fe_->n_dofs()+j]
+                                            )*fe_values_vec_[0].JxW(k);
                                     }
                                 }
                                 k++;
@@ -473,8 +509,6 @@ public:
                             data_->ls[sbi]->mat_set_values(fe_values_vec_[sd[n]].n_dofs(), &(side_dof_indices_[sd[n]][0]), fe_values_vec_[sd[m]].n_dofs(), &(side_dof_indices_[sd[m]][0]), &(local_matrix_[0]));
                         }
                     }
-#undef AVERAGE
-#undef JUMP
                 }
             s1++;
             }
@@ -583,6 +617,10 @@ private:
     vector< vector<LongIdx> > side_dof_indices_;              ///< Vector of vectors of side DOF indices
     vector<LongIdx> side_dof_indices_vb_;                     ///< Vector of side DOF indices (assemble element-side fluxex)
     vector<PetscScalar> local_matrix_;                        ///< Auxiliary vector for assemble methods
+
+    vector<double*> averages;                                 ///< Auxiliary storage for averages of shape functions.
+    vector<double*> waverages;                                ///< Auxiliary storage for weighted averages of shape functions.
+    vector<double*> jumps;                                    ///< Auxiliary storage for jumps of shape functions.
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
