@@ -483,7 +483,7 @@ void DarcyMH::initialize() {
 
     // allocate time term vectors
     VecDuplicate(schur0->get_solution(), &previous_solution);
-    VecDuplicate(schur0_Newton->get_solution(), &previous_solution);
+    //VecDuplicate(schur0_Newton->get_solution(), &previous_solution);
     VecCreateMPI(PETSC_COMM_WORLD, data_->dh_->distr()->lsize(),PETSC_DETERMINE,&(steady_diagonal));
     VecDuplicate(steady_diagonal,& new_diagonal);
     VecZeroEntries(new_diagonal);
@@ -605,7 +605,8 @@ bool DarcyMH::zero_time_term(bool time_global) {
 void DarcyMH::compute_full_residual_vec(Vec residual_) //vector residual must be alocated
 {
     MatMult(*schur0->get_matrix(), schur0->get_solution(), residual_);
-    VecAXPY(residual_,-1.0, *schur0->get_rhs());
+    VecAXPBY(residual_,1.0,-1.0,*schur0->get_rhs());
+    //VecAXPY(residual_,1.0, *schur0->get_rhs());
 }
 
 void DarcyMH::solve_nonlinear()
@@ -665,16 +666,20 @@ void DarcyMH::solve_nonlinear()
                 VecDuplicate(schur0->get_solution(), &solution_update);
                 if ( nonlinear_iteration_ > 0){
                     assembly_linear_system();
+                    data_changed_ = true;
                     VecDuplicate(schur0->get_solution(), &residual_);
                     compute_full_residual_vec(residual_);
                 }
                 assembly_linear_system_Newton(residual_);
                 VecCopy( schur0_Newton->get_solution(), save_solution);
+                double residual_rhs;
+                VecNorm(*schur0_Newton->get_rhs(), NORM_2, &residual_rhs);
+                printf("%f \n", residual_rhs);
                 si = schur0_Newton->solve();
                 double residual_newt;
                 VecNorm(schur0_Newton->get_solution(), NORM_2, &residual_newt);
                 printf("%f \n", residual_newt);
-                VecWAXPY(solution_update,1.0,schur0_Newton->get_solution(),schur0->get_solution());
+                VecWAXPY(solution_update,-1.0,schur0_Newton->get_solution(),schur0->get_solution());
                 VecCopy(solution_update,schur0->get_solution());
                 //data_changed_=true;
             }else{
@@ -1145,12 +1150,14 @@ void DarcyMH::assembly_linear_system_Newton(Vec &residual_) {
         schur0_Newton->mat_zero_entries();
         schur0_Newton->rhs_zero_entries();
 
-
-        schur0_Newton->set_rhs(residual_);
-        PetscViewer    viewer;
-        VecView( *const_cast<Vec*>(schur0_Newton->get_rhs()), viewer);
+        //PetscViewer    viewer;
+        //VecView( *const_cast<Vec*>(schur0_Newton->get_rhs()), viewer);
 
 	    assembly_mh_matrix( data_->multidim_assembler_Newton ); // fill matrix
+        //VecView( *const_cast<Vec*>(schur0_Newton->get_rhs()), viewer);
+
+        schur0_Newton->set_rhs(residual_);
+        //VecView( *const_cast<Vec*>(schur0_Newton->get_rhs()), viewer);
 
 	    schur0_Newton->finish_assembly();
 //         print_matlab_matrix("matrix");

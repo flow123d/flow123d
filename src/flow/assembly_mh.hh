@@ -782,11 +782,13 @@ protected:
 	    double bet =  ad_->beta.value(ele.centre(), ele);
 	    auto w = ad_->field_ele_velocity.value(ele.centre(), ele);
         auto an = ad_->anisotropy.value(ele.centre(), ele );
-        const arma::mat33 scale1 = 1 / cs /conduct * an.i();
         const double eps = 1e-6;
-        const arma::mat33 scale3 = arma::norm(w)*arma::eye(3,3)  / cs;
-        const arma::mat33 scale2 =  (arma::kron(w,w.t()) / (sqrt(arma::norm(w)*arma::norm(w)+eps)));
-        const arma::mat33 scale = scale1 + bet*scale2 + bet*scale3;
+        const arma::mat33 scale = an.i() / cs /conduct  + bet*((arma::kron(w,w.t() ) / (sqrt(arma::norm(w)*arma::norm(w)+eps))) + arma::norm(w)*arma::eye(3,3) ) / cs;
+        
+        //const arma::mat33 scale1 = 1 / cs /conduct * an.i();
+        //const arma::mat33 scale3 = arma::norm(w)*arma::eye(3,3)  / cs;
+        //const arma::mat33 scale2 =  (arma::kron(w,w.t()) / (sqrt(arma::norm(w)*arma::norm(w)+eps)));
+        //const arma::mat33 scale = scale1 + bet*scale2 + bet*scale3;
         assemble_sides_scale(dh_cell, scale);
     }
     
