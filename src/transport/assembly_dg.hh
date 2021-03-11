@@ -483,8 +483,6 @@ public:
                             k=0;
                             for (auto p1 : data_->stiffness_assembly_->edge_points(edge_side1) )
                             {
-                                auto p2 = p1.point_on(edge_side2);
-
                                 for (unsigned int i=0; i<fe_values_vec_[sd[n]].n_dofs(); i++)
                                 {
                                     for (unsigned int j=0; j<fe_values_vec_[sd[m]].n_dofs(); j++)
