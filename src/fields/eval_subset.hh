@@ -29,10 +29,223 @@
 
 
 class Side;
-class BulkPoint;
-class EdgePoint;
-class CouplingPoint;
-class BoundaryPoint;
+class BulkIntegral;
+class EdgeIntegral;
+class CouplingIntegral;
+class BoundaryIntegral;
+
+
+/**
+ * @brief Base point accessor class.
+ *
+ * TODO: remove virtual methods from Points classes, need changes also in Field::operator().
+ */
+class PointBase {
+public:
+    /// Default constructor
+	PointBase()
+    : local_point_idx_(0), elm_cache_map_(nullptr) {}
+
+    /// Constructor
+	PointBase(const ElementCacheMap *elm_cache_map, unsigned int loc_point_idx)
+    : local_point_idx_(loc_point_idx), elm_cache_map_(elm_cache_map) {}
+
+    /// Getter of EvalPoints object.
+	inline std::shared_ptr<EvalPoints> eval_points() const {
+        ASSERT_PTR(elm_cache_map_).error("Invalid point.\n");
+        return elm_cache_map_->eval_points();
+    }
+
+	// Getter of ElementCacheMap object.
+    inline const ElementCacheMap *elm_cache_map() const {
+        return elm_cache_map_;
+    }
+
+	// Getter of element patch index.
+    inline unsigned int elem_patch_idx() const {
+        return elem_patch_idx_;
+    }
+
+    /// Iterates to next point.
+    void inc() {
+    	this->local_point_idx_++;
+    }
+
+    /// Local coordinates within element
+    //template<unsigned int dim>
+    //inline arma::vec::fixed<dim> loc_coords() const {
+    //    return this->eval_points()->local_point<dim>( this->eval_point_idx() );
+    //}
+
+    // Global coordinates within element
+    //arma::vec3 coords() const;
+
+protected:
+    /// Index of the local point in the integral object.
+    unsigned int local_point_idx_;
+    /// Index of element in the patch.
+    unsigned int elem_patch_idx_;
+    /// Pointer ElementCacheMap needed for point evaluation.
+    const ElementCacheMap* elm_cache_map_;
+};
+
+
+/**
+ * @brief Point accessor allow iterate over bulk quadrature points defined in local element coordinates.
+ */
+class BulkPoint : public PointBase {
+public:
+    /// Default constructor
+	BulkPoint()
+    : PointBase() {}
+
+    /// Constructor
+	BulkPoint(DHCellAccessor dh_cell, const ElementCacheMap *elm_cache_map, const BulkIntegral *bulk_integral, unsigned int local_point_idx)
+    : PointBase(elm_cache_map, local_point_idx), integral_(bulk_integral) {
+	    this->elem_patch_idx_ = elm_cache_map->position_in_cache(dh_cell.elm().mesh_idx());
+	}
+
+    /// Constructor passing ElementAccessor argument, alternative of previous.
+    BulkPoint(ElementAccessor<3> elm_acc, const ElementCacheMap *elm_cache_map, const BulkIntegral *bulk_integral, unsigned int local_point_idx)
+    : PointBase(elm_cache_map, local_point_idx), integral_(bulk_integral) {
+        this->elem_patch_idx_ = this->elm_cache_map_->position_in_cache(elm_acc.mesh_idx());
+    }
+
+    /// Comparison of accessors.
+    bool operator==(const BulkPoint& other) {
+        return (elem_patch_idx_ == other.elem_patch_idx_) && (local_point_idx_ == other.local_point_idx_);
+    }
+
+    /// Return index in EvalPoints object
+    inline unsigned int eval_point_idx() const {
+        return local_point_idx_;
+    }
+
+private:
+    /// Pointer to bulk integral.
+    const BulkIntegral *integral_;
+};
+
+
+/**
+ * @brief General point accessor allow iterate over quadrature points of given side defined in local element coordinates.
+ *
+ * Common ancestor of all side points classes (Edge-, Coupling-, BoundaryPoint)
+ */
+class SidePoint : public PointBase {
+public:
+    /// Default constructor
+	SidePoint()
+    : PointBase() {}
+
+    /// Constructor
+	SidePoint(DHCellSide cell_side, const ElementCacheMap *elm_cache_map, unsigned int local_point_idx)
+    : PointBase(elm_cache_map, local_point_idx), side_idx_(cell_side.side_idx()),
+	  permutation_idx_( cell_side.element()->permutation_idx( side_idx_ ) ) {
+	    this->elem_patch_idx_ = this->elm_cache_map_->position_in_cache(cell_side.element().mesh_idx());
+	}
+
+    // Index of permutation
+    inline unsigned int permutation_idx() const {
+        return permutation_idx_;
+    }
+
+protected:
+    /// Index of side in element
+    unsigned int side_idx_;
+    /// Permutation index corresponding with DHCellSide
+    unsigned int permutation_idx_;
+};
+
+
+/**
+ * @brief Point accessor allow iterate over quadrature points of given side defined in local element coordinates.
+ */
+class EdgePoint : public SidePoint {
+public:
+    /// Default constructor
+    EdgePoint()
+    : SidePoint() {}
+
+    /// Constructor
+    EdgePoint(DHCellSide cell_side, const ElementCacheMap *elm_cache_map, const EdgeIntegral *edge_integral, unsigned int local_point_idx)
+    : SidePoint(cell_side, elm_cache_map, local_point_idx), integral_(edge_integral) {}
+
+    /// Return corresponds EdgePoint of neighbour side of same dimension (computing of side integrals).
+    EdgePoint point_on(DHCellSide edg_side) const;
+
+    /// Comparison of accessors.
+    bool operator==(const EdgePoint& other) {
+        return (elem_patch_idx_ == other.elem_patch_idx_) && (local_point_idx_ == other.local_point_idx_);
+    }
+
+    /// Return index in EvalPoints object
+    unsigned int eval_point_idx() const;
+
+private:
+    /// Pointer to edge point integral
+    const EdgeIntegral *integral_;
+};
+
+
+/**
+ * @brief Point accessor allow iterate over quadrature points of given side defined in local element coordinates.
+ */
+class CouplingPoint : public SidePoint {
+public:
+    /// Default constructor
+    CouplingPoint()
+    : SidePoint() {}
+
+    /// Constructor
+    CouplingPoint(DHCellSide cell_side, const ElementCacheMap *elm_cache_map, const CouplingIntegral *coupling_integral, unsigned int local_point_idx)
+    : SidePoint(cell_side, elm_cache_map, local_point_idx), integral_(coupling_integral) {}
+
+    /// Return corresponds EdgePoint of neighbour side of same dimension (computing of side integrals).
+    BulkPoint lower_dim(DHCellAccessor cell_lower) const;
+
+    /// Return index in EvalPoints object
+    unsigned int eval_point_idx() const;
+
+    /// Comparison of accessors.
+    bool operator==(const CouplingPoint& other) {
+        return (elem_patch_idx_ == other.elem_patch_idx_) && (local_point_idx_ == other.local_point_idx_);
+    }
+
+private:
+    /// Pointer to edge point set
+    const CouplingIntegral *integral_;
+};
+
+/**
+ * @brief Point accessor allow iterate over quadrature points of given side defined in local element coordinates.
+ */
+class BoundaryPoint : public SidePoint {
+public:
+    /// Default constructor
+    BoundaryPoint()
+    : SidePoint() {}
+
+    /// Constructor
+    BoundaryPoint(DHCellSide cell_side, const ElementCacheMap *elm_cache_map, const BoundaryIntegral *bdr_integral, unsigned int local_point_idx)
+    : SidePoint(cell_side, elm_cache_map, local_point_idx), integral_(bdr_integral) {}
+
+    /// Return corresponds BulkPoint on boundary element.
+    BulkPoint point_bdr(ElementAccessor<3> bdr_elm) const;
+
+    /// Return index in EvalPoints object
+    unsigned int eval_point_idx() const;
+
+    /// Comparison of accessors.
+    bool operator==(const BoundaryPoint& other) {
+        return (elem_patch_idx_ == other.elem_patch_idx_) && (local_point_idx_ == other.local_point_idx_);
+    }
+
+private:
+    /// Pointer to edge point set
+    const BoundaryIntegral *integral_;
+};
+
 
 
 /**
@@ -40,11 +253,6 @@ class BoundaryPoint;
  */
 class BaseIntegral {
 public:
-	TYPEDEF_ERR_INFO(EI_ElementIdx, unsigned int);
-	DECLARE_EXCEPTION(ExcElementNotInCache,
-	        << "Element of Idx: " << EI_ElementIdx::val << " is not stored in 'Field value data cache'.\n"
-			   << "Value can't be computed.\n");
-
     /// Default constructor
 	BaseIntegral() : eval_points_(nullptr), dim_(0) {}
 
@@ -92,7 +300,14 @@ public:
     }
 
     /// Returns range of bulk local points for appropriate cell accessor
-    Range< BulkPoint > points(const DHCellAccessor &cell, const ElementCacheMap *elm_cache_map) const;
+    inline Range< BulkPoint > points(const DHCellAccessor &cell, const ElementCacheMap *elm_cache_map) const {
+        ASSERT_DBG(cell.element_cache_index() != ElementCacheMap::undef_elem_idx)(cell.elm_idx())
+                .error("Undefined element cache index!\n");
+
+        auto bgn_it = make_iter<BulkPoint>( BulkPoint(cell, elm_cache_map, this, eval_points_->subset_begin(dim_, subset_index_)) );
+        auto end_it = make_iter<BulkPoint>( BulkPoint(cell, elm_cache_map, this, eval_points_->subset_end(dim_, subset_index_)) );
+        return Range<BulkPoint>(bgn_it, end_it);
+    }
 
 private:
     /// Index of data block according to subset in EvalPoints object.
@@ -124,7 +339,17 @@ public:
     }
 
     /// Returns range of side local points for appropriate cell side accessor
-    Range< EdgePoint > points(const DHCellSide &cell_side, const ElementCacheMap *elm_cache_map) const;
+    inline Range< EdgePoint > points(const DHCellSide &cell_side, const ElementCacheMap *elm_cache_map) const {
+        ASSERT_DBG(cell_side.cell().element_cache_index() != ElementCacheMap::undef_elem_idx)(cell_side.cell().elm_idx())
+                .error("Undefined element cache index!\n");
+
+        unsigned int begin_idx = eval_points_->subset_begin(dim_, subset_index_);
+        unsigned int end_idx = eval_points_->subset_end(dim_, subset_index_);
+        unsigned int points_per_side = (end_idx - begin_idx) / this->n_sides();
+        auto bgn_it = make_iter<EdgePoint>( EdgePoint(cell_side, elm_cache_map, this, 0 ) );
+        auto end_it = make_iter<EdgePoint>( EdgePoint(cell_side, elm_cache_map, this, points_per_side ) );
+        return Range<EdgePoint>(bgn_it, end_it);
+    }
 
     /// Returns structure of permutation indices.
     int perm_idx_ptr(uint i_side, uint i_perm, uint i_point) const {
@@ -172,7 +397,18 @@ public:
     }
 
     /// Returns range of side local points for appropriate cell side accessor
-    Range< CouplingPoint > points(const DHCellSide &cell_side, const ElementCacheMap *elm_cache_map) const;
+    inline Range< CouplingPoint > points(const DHCellSide &cell_side, const ElementCacheMap *elm_cache_map) const {
+        ASSERT_DBG(cell_side.cell().element_cache_index() != ElementCacheMap::undef_elem_idx)(cell_side.cell().elm_idx())
+                .error("Undefined element cache index!\n");
+
+        unsigned int begin_idx = eval_points_->subset_begin(dim_, get_subset_high_idx());
+        unsigned int end_idx = eval_points_->subset_end(dim_, get_subset_high_idx());
+        unsigned int points_per_side = (end_idx - begin_idx) / edge_integral_->n_sides();
+        auto bgn_it = make_iter<CouplingPoint>( CouplingPoint(cell_side, elm_cache_map, this, 0 ) );
+        auto end_it = make_iter<CouplingPoint>( CouplingPoint(cell_side, elm_cache_map, this, points_per_side ) );
+        return Range<CouplingPoint>(bgn_it, end_it);
+    }
+
 private:
     /// Integral according to side subset part (element of higher dim) in EvalPoints object.
     std::shared_ptr<EdgeIntegral> edge_integral_;
@@ -207,7 +443,17 @@ public:
     }
 
     /// Returns range of bulk local points for appropriate cell accessor
-    Range< BoundaryPoint > points(const DHCellSide &cell_side, const ElementCacheMap *elm_cache_map) const;
+    inline Range< BoundaryPoint > points(const DHCellSide &cell_side, const ElementCacheMap *elm_cache_map) const {
+        ASSERT_DBG(cell_side.cell().element_cache_index() != ElementCacheMap::undef_elem_idx)(cell_side.cell().elm_idx())
+                .error("Undefined element cache index!\n");
+
+        unsigned int begin_idx = eval_points_->subset_begin(dim_, get_subset_high_idx());
+        unsigned int end_idx = eval_points_->subset_end(dim_, get_subset_high_idx());
+        unsigned int points_per_side = (end_idx - begin_idx) / edge_integral_->n_sides();
+        auto bgn_it = make_iter<BoundaryPoint>( BoundaryPoint(cell_side, elm_cache_map, this, 0 ) );
+        auto end_it = make_iter<BoundaryPoint>( BoundaryPoint(cell_side, elm_cache_map, this, points_per_side ) );
+        return Range<BoundaryPoint>(bgn_it, end_it);
+    }
 
 private:
     /// Integral according to higher dim (bulk) element subset part in EvalPoints object.
@@ -218,310 +464,5 @@ private:
     friend class BoundaryPoint;
 };
 
-
-
-/**
- * @brief Base point accessor class.
- *
- * TODO: remove virtual methods from Points classes, need changes also in Field::operator().
- */
-class PointBase {
-public:
-    /// Default constructor
-	PointBase()
-    : local_point_idx_(0), elm_cache_map_(nullptr) {}
-
-    /// Constructor
-	PointBase(const ElementCacheMap *elm_cache_map, unsigned int loc_point_idx)
-    : local_point_idx_(loc_point_idx), elm_cache_map_(elm_cache_map) {}
-
-    /// Getter of EvalPoints object.
-	inline std::shared_ptr<EvalPoints> eval_points() const {
-        ASSERT_PTR(elm_cache_map_).error("Invalid point.\n");
-        return elm_cache_map_->eval_points();
-    }
-
-	// Getter of ElementCacheMap object.
-    inline const ElementCacheMap *elm_cache_map() const {
-        return elm_cache_map_;
-    }
-
-    /// Local coordinates within element
-    template<unsigned int dim>
-    inline arma::vec::fixed<dim> loc_coords() const {
-        return this->eval_points()->local_point<dim>( this->eval_point_idx() );
-    }
-
-    // Global coordinates within element
-    //arma::vec3 coords() const;
-
-    /// Return index in EvalPoints object
-    inline unsigned int eval_point_idx() const {
-        return eval_point_idx_;
-    }
-
-    /// Return index of element in data cache.
-    inline unsigned int element_cache_index() const {
-        return element_cache_index_;
-    }
-
-protected:
-    /// Index of the local point in the integral object.
-    unsigned int local_point_idx_;
-    /// Pointer ElementCacheMap needed for point evaluation.
-    const ElementCacheMap* elm_cache_map_;
-    /// Index of element in data cache
-    unsigned int element_cache_index_;
-    /// Index of the local point in the EvalPoints object.
-    unsigned int eval_point_idx_;
-};
-
-
-/**
- * @brief Point accessor allow iterate over bulk quadrature points defined in local element coordinates.
- */
-class BulkPoint : public PointBase {
-public:
-    /// Default constructor
-	BulkPoint()
-    : PointBase() {}
-
-    /// Constructor
-	BulkPoint(DHCellAccessor dh_cell, const ElementCacheMap *elm_cache_map, std::shared_ptr<const BulkIntegral> bulk_integral, unsigned int local_point_idx)
-    : PointBase(elm_cache_map, local_point_idx), dh_cell_(dh_cell), integral_(bulk_integral) {
-	    this->element_cache_index_ = dh_cell_.element_cache_index();
-	    this->eval_point_idx_ = local_point_idx_;
-	}
-
-    /// Getter of BulkIntegral
-    inline std::shared_ptr<const BulkIntegral> integral() const {
-        return integral_;
-    }
-
-    /// Return DH cell accessor.
-    inline DHCellAccessor dh_cell() const {
-        return dh_cell_;
-    }
-
-    /// Iterates to next point.
-    void inc() {
-    	this->local_point_idx_++;
-    	this->eval_point_idx_ = this->local_point_idx_;
-    }
-
-    /// Comparison of accessors.
-    bool operator==(const BulkPoint& other) {
-    	return (dh_cell_ == other.dh_cell_) && (local_point_idx_ == other.local_point_idx_);
-    }
-
-private:
-    /// DOF handler accessor of element.
-    DHCellAccessor dh_cell_;
-    /// Pointer to bulk integral.
-    std::shared_ptr<const BulkIntegral> integral_;
-};
-
-
-/**
- * @brief Point accessor allow iterate over bulk quadrature points defined in local element coordinates.
- *
- * Temporary class, we can't construct DHCellAccessor from boundary element, this class uses ElementAccessor.
- * Will be merged with BulkPoint in future.
- */
-class BulkBdrPoint : public PointBase {
-public:
-    /// Default constructor
-	BulkBdrPoint()
-    : PointBase() {}
-
-    /// Constructor
-	BulkBdrPoint(ElementAccessor<3> elm_acc, const ElementCacheMap *elm_cache_map, std::shared_ptr<const BulkIntegral> bulk_integral, unsigned int local_point_idx)
-    : PointBase(elm_cache_map, local_point_idx), elm_acc_(elm_acc), integral_(bulk_integral) {
-	    this->element_cache_index_ = this->elm_cache_map_->position_in_cache(elm_acc_.mesh_idx());
-	    this->eval_point_idx_ = local_point_idx_;
-	}
-
-    /// Getter of BulkIntegral
-    inline std::shared_ptr<const BulkIntegral> integral() const {
-        return integral_;
-    }
-
-    /// Return ElementAccessor.
-    inline ElementAccessor<3> elm_accessor() const {
-        return elm_acc_;
-    }
-
-    /// Iterates to next point.
-    void inc() {
-    	this->local_point_idx_++;
-    	this->eval_point_idx_ = this->local_point_idx_;
-    }
-
-    /// Comparison of accessors.
-    bool operator==(const BulkBdrPoint& other) {
-    	return (elm_acc_ == other.elm_acc_) && (local_point_idx_ == other.local_point_idx_);
-    }
-
-private:
-    /// Appropriate ElementAccessor.
-    ElementAccessor<3> elm_acc_;
-    /// Pointer to bulk integral.
-    std::shared_ptr<const BulkIntegral> integral_;
-};
-
-
-/**
- * @brief General point accessor allow iterate over quadrature points of given side defined in local element coordinates.
- *
- * Common ancestor of all side points classes (Edge-, Coupling-, BoundaryPoint)
- */
-class SidePoint : public PointBase {
-public:
-    /// Default constructor
-	SidePoint()
-    : PointBase() {}
-
-    /// Constructor
-	SidePoint(DHCellSide cell_side, const ElementCacheMap *elm_cache_map, unsigned int local_point_idx)
-    : PointBase(elm_cache_map, local_point_idx), cell_side_(cell_side),
-	  permutation_idx_( cell_side.element()->permutation_idx( cell_side_.side_idx() ) ) {
-	    this->element_cache_index_ = cell_side_.cell().element_cache_index();
-	}
-
-    /// Return DH cell accessor.
-    inline DHCellSide dh_cell_side() const {
-        return cell_side_;
-    }
-
-    // Index of permutation
-    inline unsigned int permutation_idx() const {
-        return permutation_idx_;
-    }
-
-protected:
-    /// DOF handler accessor of element side.
-    DHCellSide cell_side_;
-    /// Permutation index corresponding with DHCellSide
-    unsigned int permutation_idx_;
-};
-
-
-/**
- * @brief Point accessor allow iterate over quadrature points of given side defined in local element coordinates.
- */
-class EdgePoint : public SidePoint {
-public:
-    /// Default constructor
-    EdgePoint()
-    : SidePoint() {}
-
-    /// Constructor
-    EdgePoint(DHCellSide cell_side, const ElementCacheMap *elm_cache_map, std::shared_ptr<const EdgeIntegral> edge_integral, unsigned int local_point_idx)
-    : SidePoint(cell_side, elm_cache_map, local_point_idx), integral_(edge_integral) {
-        this->eval_point_idx_ = integral_->perm_idx_ptr(cell_side_.side_idx(), permutation_idx_, local_point_idx_);
-    }
-
-    /// Getter of EdgeIntegral
-    inline std::shared_ptr<const EdgeIntegral> integral() const {
-        return integral_;
-    }
-
-    /// Return corresponds EdgePoint of neighbour side of same dimension (computing of side integrals).
-    EdgePoint point_on(DHCellSide edg_side) const;
-
-    /// Iterates to next point.
-    void inc() {
-    	this->local_point_idx_++;
-    	this->eval_point_idx_ = integral_->perm_idx_ptr(cell_side_.side_idx(), permutation_idx_, local_point_idx_);
-    }
-
-    /// Comparison of accessors.
-    bool operator==(const EdgePoint& other) {
-    	return (cell_side_ == other.cell_side_) && (local_point_idx_ == other.local_point_idx_);
-    }
-
-private:
-    /// Pointer to edge point integral
-    std::shared_ptr<const EdgeIntegral> integral_;
-};
-
-
-/**
- * @brief Point accessor allow iterate over quadrature points of given side defined in local element coordinates.
- */
-class CouplingPoint : public SidePoint {
-public:
-    /// Default constructor
-    CouplingPoint()
-    : SidePoint() {}
-
-    /// Constructor
-    CouplingPoint(DHCellSide cell_side, const ElementCacheMap *elm_cache_map, std::shared_ptr<const CouplingIntegral> coupling_integral, unsigned int local_point_idx)
-    : SidePoint(cell_side, elm_cache_map, local_point_idx), integral_(coupling_integral) {
-        this->eval_point_idx_ = integral_->edge_integral_->perm_idx_ptr(cell_side_.side_idx(), permutation_idx_, local_point_idx_);
-    }
-
-    /// Getter of EdgeIntegral
-    inline std::shared_ptr<const CouplingIntegral> integral() const {
-        return integral_;
-    }
-
-    /// Return corresponds EdgePoint of neighbour side of same dimension (computing of side integrals).
-    BulkPoint lower_dim(DHCellAccessor cell_lower) const;
-
-    /// Iterates to next point.
-    void inc() {
-    	this->local_point_idx_++;
-    	this->eval_point_idx_ = integral_->edge_integral_->perm_idx_ptr(cell_side_.side_idx(), permutation_idx_, local_point_idx_);
-    }
-
-    /// Comparison of accessors.
-    bool operator==(const CouplingPoint& other) {
-    	return (cell_side_ == other.cell_side_) && (local_point_idx_ == other.local_point_idx_);
-    }
-
-private:
-    /// Pointer to edge point set
-    std::shared_ptr<const CouplingIntegral> integral_;
-};
-
-/**
- * @brief Point accessor allow iterate over quadrature points of given side defined in local element coordinates.
- */
-class BoundaryPoint : public SidePoint {
-public:
-    /// Default constructor
-    BoundaryPoint()
-    : SidePoint() {}
-
-    /// Constructor
-    BoundaryPoint(DHCellSide cell_side, const ElementCacheMap *elm_cache_map, std::shared_ptr<const BoundaryIntegral> bdr_integral, unsigned int local_point_idx)
-    : SidePoint(cell_side, elm_cache_map, local_point_idx), integral_(bdr_integral) {
-        this->eval_point_idx_ = integral_->edge_integral_->perm_idx_ptr(cell_side_.side_idx(), permutation_idx_, local_point_idx_);
-    }
-
-    /// Getter of EdgeIntegral
-    inline std::shared_ptr<const BoundaryIntegral> integral() const {
-        return integral_;
-    }
-
-    /// Return corresponds BulkPoint of boundary element.
-    BulkBdrPoint point_bdr(ElementAccessor<3> bdr_elm) const;
-
-    /// Iterates to next point.
-    void inc() {
-    	this->local_point_idx_++;
-    	this->eval_point_idx_ = integral_->edge_integral_->perm_idx_ptr(cell_side_.side_idx(), permutation_idx_, local_point_idx_);
-    }
-
-    /// Comparison of accessors.
-    bool operator==(const BoundaryPoint& other) {
-    	return (cell_side_ == other.cell_side_) && (local_point_idx_ == other.local_point_idx_);
-    }
-
-private:
-    /// Pointer to edge point set
-    std::shared_ptr<const BoundaryIntegral> integral_;
-};
 
 #endif /* EVAL_SUBSET_HH_ */

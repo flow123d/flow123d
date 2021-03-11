@@ -54,8 +54,9 @@ class Mesh;
 class Observe;
 class EvalPoints;
 class BulkPoint;
-class BulkBdrPoint;
-class SidePoint;
+class EdgePoint;
+class CouplingPoint;
+class BoundaryPoint;
 class FieldSet;
 template <int spacedim> class ElementAccessor;
 template <int spacedim, class Value> class FieldFE;
@@ -175,12 +176,16 @@ public:
     typename Value::return_type operator() (BulkPoint &p);
 
 
-    /// Return appropriate value to BulkBdrPoint in FieldValueCache
-    typename Value::return_type operator() (BulkBdrPoint &p);
+    /// Return appropriate value to EdgePoint in FieldValueCache
+    typename Value::return_type operator() (EdgePoint &p);
 
 
-    /// Return appropriate value to SidePoint in FieldValueCache
-    typename Value::return_type operator() (SidePoint &p);
+    /// Return appropriate value to CouplingPoint in FieldValueCache
+    typename Value::return_type operator() (CouplingPoint &p);
+
+
+    /// Return appropriate value to BoundaryPoint in FieldValueCache
+    typename Value::return_type operator() (BoundaryPoint &p);
 
 
     /**

@@ -24,7 +24,6 @@
 #include "fields/eval_subset.hh"
 #include "fields/eval_points.hh"
 #include "fields/field_value_cache.hh"
-#include "fields/field_value_cache.impl.hh"
 #include "fields/field_set.hh"
 #include "mesh/region.hh"
 #include "input/reader_to_storage.hh"
@@ -154,21 +153,28 @@ Field<spacedim,Value> &Field<spacedim,Value>::operator=(const Field<spacedim,Val
 
 template<int spacedim, class Value>
 typename Value::return_type Field<spacedim,Value>::operator() (BulkPoint &p) {
-    return p.elm_cache_map()->get_value<Value>(value_cache_, p.dh_cell(), p.eval_point_idx());
+    return p.elm_cache_map()->get_value<Value>(value_cache_, p.elem_patch_idx(), p.eval_point_idx());
 }
 
 
 
 template<int spacedim, class Value>
-typename Value::return_type Field<spacedim,Value>::operator() (BulkBdrPoint &p) {
-    return p.elm_cache_map()->get_value<Value>(value_cache_, p.elm_accessor(), p.eval_point_idx());
+typename Value::return_type Field<spacedim,Value>::operator() (EdgePoint &p) {
+    return p.elm_cache_map()->get_value<Value>(value_cache_, p.elem_patch_idx(), p.eval_point_idx());
 }
 
 
 
 template<int spacedim, class Value>
-typename Value::return_type Field<spacedim,Value>::operator() (SidePoint &p) {
-    return p.elm_cache_map()->get_value<Value>(value_cache_, p.dh_cell_side().cell(), p.eval_point_idx());
+typename Value::return_type Field<spacedim,Value>::operator() (CouplingPoint &p) {
+    return p.elm_cache_map()->get_value<Value>(value_cache_, p.elem_patch_idx(), p.eval_point_idx());
+}
+
+
+
+template<int spacedim, class Value>
+typename Value::return_type Field<spacedim,Value>::operator() (BoundaryPoint &p) {
+    return p.elm_cache_map()->get_value<Value>(value_cache_, p.elem_patch_idx(), p.eval_point_idx());
 }
 
 

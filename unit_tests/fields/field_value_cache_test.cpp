@@ -65,8 +65,8 @@ public:
             this->eval_point_data_.push_back(epd);
 
         	auto p_ghost = p.point_on(cell_side); // point on neghbouring side on one edge
-        	unsigned int ghost_reg = p_ghost.dh_cell_side().element().region_idx().idx();
-        	EvalPointData epd_ghost(ghost_reg, p_ghost.dh_cell_side().elem_idx(), p_ghost.eval_point_idx());
+        	unsigned int ghost_reg = cell_side.element().region_idx().idx();
+        	EvalPointData epd_ghost(ghost_reg, cell_side.elem_idx(), p_ghost.eval_point_idx());
         	this->eval_point_data_.push_back(epd_ghost);
         }
         elm_to_patch_.insert(cell_side.elem_idx());
@@ -126,15 +126,16 @@ TEST_F(FieldValueCacheTest, field_value_cache) {
     // check value
     dh_cell = this->cache_map_index(dh_cell);
     for(BulkPoint q_point: bulk_eval->points(dh_cell, this)) {
-        auto point_val = this->get_value<ScalarValue>(value_cache, dh_cell, q_point.eval_point_idx());
+        unsigned int elem_patch_idx = this->position_in_cache(dh_cell.elm().mesh_idx());
+        auto point_val = this->get_value<ScalarValue>(value_cache, elem_patch_idx, q_point.eval_point_idx());
     	EXPECT_DOUBLE_EQ( point_val, const_val(0) );
     }
     for ( DHCellSide cell_side : dh_cell.side_range() )
       if ( cell_side.n_edge_sides() >= 2 )
         for( DHCellSide edge_side : cell_side.edge_sides() )
             for ( EdgePoint q_point : edge_eval->points(edge_side, this) ) {
-                auto edge_cell = this->cache_map_index(edge_side.cell());
-                auto point_val = this->get_value<ScalarValue>(value_cache, edge_cell, q_point.eval_point_idx());
+                unsigned int elem_patch_idx = this->position_in_cache(edge_side.element().mesh_idx());
+                auto point_val = this->get_value<ScalarValue>(value_cache, elem_patch_idx, q_point.eval_point_idx());
                 EXPECT_DOUBLE_EQ( point_val, const_val(0) );
             }
 }

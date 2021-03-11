@@ -408,8 +408,8 @@ private:
             element_cache_map_.eval_point_data_.push_back(epd);
 
         	auto p_bdr = p.point_bdr(bdr_side.cond().element_accessor()); // equivalent point on boundary element
-        	unsigned int bdr_reg = p_bdr.elm_accessor().region_idx().idx();
-        	EvalPointData epd_bdr(bdr_reg, p_bdr.elm_accessor().mesh_idx(), p_bdr.eval_point_idx());
+        	unsigned int bdr_reg = bdr_side.cond().element_accessor().region_idx().idx();
+        	EvalPointData epd_bdr(bdr_reg, bdr_side.cond().bc_ele_idx(), p_bdr.eval_point_idx());
         	element_cache_map_.eval_point_data_.push_back(epd_bdr);
         }
         elm_idx_.insert(bdr_side.elem_idx());
