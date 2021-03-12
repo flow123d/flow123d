@@ -480,8 +480,7 @@ public:
                                 for (unsigned int j=0; j<fe_values_vec_[sd[m]].n_dofs(); j++)
                                     local_matrix_[i*fe_values_vec_[sd[m]].n_dofs()+j] = 0;
 
-                            k=0;
-                            for (auto p1 : data_->stiffness_assembly_->edge_points(edge_side1) )
+                            for (k=0; k<this->quad_low_->size(); ++k)
                             {
                                 for (unsigned int i=0; i<fe_values_vec_[sd[n]].n_dofs(); i++)
                                 {
@@ -502,7 +501,6 @@ public:
                                             )*fe_values_vec_[0].JxW(k);
                                     }
                                 }
-                                k++;
                             }
                             data_->ls[sbi]->mat_set_values(fe_values_vec_[sd[n]].n_dofs(), &(side_dof_indices_[sd[n]][0]), fe_values_vec_[sd[m]].n_dofs(), &(side_dof_indices_[sd[m]][0]), &(local_matrix_[0]));
                         }
