@@ -141,7 +141,9 @@ public:
 	 * object of each cells over space dimension.
 	 */
     void assemble(std::shared_ptr<DOFHandlerMultiDim> dh) {
+        START_TIMER("reallocate_cache");
         multidim_assembly_[1_d]->reallocate_cache(element_cache_map_);
+        END_TIMER("reallocate_cache");
         multidim_assembly_[1_d]->begin();
 
         bool add_into_patch = false; // control variable
@@ -158,20 +160,24 @@ public:
             END_TIMER("add_integrals_to_patch");
 
             if (element_cache_map_.eval_point_data_.temporary_size() > CacheMapElementNumber::get()) {
+                START_TIMER("revert_temporary");
                 bulk_integral_data_.revert_temporary();
                 edge_integral_data_.revert_temporary();
                 coupling_integral_data_.revert_temporary();
                 boundary_integral_data_.revert_temporary();
                 element_cache_map_.eval_point_data_.revert_temporary();
+                END_TIMER("revert_temporary");
                 this->assemble_integrals();
                 elm_idx_.clear();
                 add_into_patch = false;
             } else {
+                START_TIMER("make_permanent");
                 bulk_integral_data_.make_permanent();
                 edge_integral_data_.make_permanent();
                 coupling_integral_data_.make_permanent();
                 boundary_integral_data_.make_permanent();
                 element_cache_map_.eval_point_data_.make_permanent();
+                END_TIMER("make_permanent");
                 if (element_cache_map_.eval_point_data_.temporary_size() == CacheMapElementNumber::get()) {
                     this->assemble_integrals();
                     elm_idx_.clear();
@@ -296,11 +302,13 @@ private:
             END_TIMER("assemble_fluxes_elem_side");
         }
         // clean integral data
+        START_TIMER("clear_data");
         bulk_integral_data_.reset();
         edge_integral_data_.reset();
         coupling_integral_data_.reset();
         boundary_integral_data_.reset();
         element_cache_map_.clear_element_eval_points_map();
+        END_TIMER("clear_data");
     }
 
     /**
