@@ -109,15 +109,6 @@ void ElementCacheMap::create_patch() {
 }
 
 
-void ElementCacheMap::start_elements_update() {
-	ready_to_reading_ = false;
-}
-
-void ElementCacheMap::finish_elements_update() {
-	ready_to_reading_ = true;
-}
-
-
 DHCellAccessor & ElementCacheMap::cache_map_index(DHCellAccessor &dh_cell) const {
 	ASSERT_DBG(ready_to_reading_);
 	unsigned int elm_idx = dh_cell.elm_idx();

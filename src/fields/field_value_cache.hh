@@ -151,10 +151,14 @@ public:
     }
 
     /// Start update of cache.
-    void start_elements_update();
+    inline void start_elements_update() {
+    	ready_to_reading_ = false;
+    }
 
     /// Finish update after reading data to cache.
-    void finish_elements_update();
+    inline void finish_elements_update() {
+    	ready_to_reading_ = true;
+    }
 
     /// Getter of eval_points object.
     inline std::shared_ptr<EvalPoints> eval_points() const {

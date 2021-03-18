@@ -115,7 +115,7 @@ unsigned int EdgePoint::eval_point_idx() const {
  */
 
 BulkPoint CouplingPoint::lower_dim(DHCellAccessor cell_lower) const {
-    return BulkPoint(cell_lower, elm_cache_map_, integral_->bulk_integral_.get(),
+    return BulkPoint(cell_lower, elm_cache_map_,
             this->eval_points()->subset_begin(cell_lower.dim(), integral_->get_subset_low_idx())+local_point_idx_);
 }
 
@@ -129,7 +129,7 @@ unsigned int CouplingPoint::eval_point_idx() const {
  */
 
 BulkPoint BoundaryPoint::point_bdr(ElementAccessor<3> bdr_elm) const {
-    return BulkPoint(bdr_elm, elm_cache_map_, integral_->bulk_integral_.get(),
+    return BulkPoint(bdr_elm, elm_cache_map_,
             this->eval_points()->subset_begin(bdr_elm.dim(), integral_->get_subset_low_idx())+local_point_idx_);
 }
 

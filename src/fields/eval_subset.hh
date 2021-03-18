@@ -100,14 +100,14 @@ public:
     : PointBase() {}
 
     /// Constructor
-	BulkPoint(DHCellAccessor dh_cell, const ElementCacheMap *elm_cache_map, const BulkIntegral *bulk_integral, unsigned int local_point_idx)
-    : PointBase(elm_cache_map, local_point_idx), integral_(bulk_integral) {
+	BulkPoint(DHCellAccessor dh_cell, const ElementCacheMap *elm_cache_map, unsigned int local_point_idx)
+    : PointBase(elm_cache_map, local_point_idx) {
 	    this->elem_patch_idx_ = elm_cache_map->position_in_cache(dh_cell.elm().mesh_idx());
 	}
 
     /// Constructor passing ElementAccessor argument, alternative of previous.
-    BulkPoint(ElementAccessor<3> elm_acc, const ElementCacheMap *elm_cache_map, const BulkIntegral *bulk_integral, unsigned int local_point_idx)
-    : PointBase(elm_cache_map, local_point_idx), integral_(bulk_integral) {
+    BulkPoint(ElementAccessor<3> elm_acc, const ElementCacheMap *elm_cache_map, unsigned int local_point_idx)
+    : PointBase(elm_cache_map, local_point_idx) {
         this->elem_patch_idx_ = this->elm_cache_map_->position_in_cache(elm_acc.mesh_idx());
     }
 
@@ -121,9 +121,6 @@ public:
         return local_point_idx_;
     }
 
-private:
-    /// Pointer to bulk integral.
-    const BulkIntegral *integral_;
 };
 
 
@@ -295,7 +292,7 @@ public:
     ~BulkIntegral();
 
     /// Return index of data block according to subset in EvalPoints object
-    int get_subset_idx() const {
+    inline int get_subset_idx() const {
         return subset_index_;
     }
 
@@ -304,8 +301,8 @@ public:
         ASSERT_DBG(cell.element_cache_index() != ElementCacheMap::undef_elem_idx)(cell.elm_idx())
                 .error("Undefined element cache index!\n");
 
-        auto bgn_it = make_iter<BulkPoint>( BulkPoint(cell, elm_cache_map, this, eval_points_->subset_begin(dim_, subset_index_)) );
-        auto end_it = make_iter<BulkPoint>( BulkPoint(cell, elm_cache_map, this, eval_points_->subset_end(dim_, subset_index_)) );
+        auto bgn_it = make_iter<BulkPoint>( BulkPoint(cell, elm_cache_map, eval_points_->subset_begin(dim_, subset_index_)) );
+        auto end_it = make_iter<BulkPoint>( BulkPoint(cell, elm_cache_map, eval_points_->subset_end(dim_, subset_index_)) );
         return Range<BulkPoint>(bgn_it, end_it);
     }
 
