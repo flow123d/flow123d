@@ -164,7 +164,6 @@ public:
                 boundary_integral_data_.revert_temporary();
                 element_cache_map_.eval_point_data_.revert_temporary();
                 this->assemble_integrals();
-                elm_idx_.clear();
                 add_into_patch = false;
             } else {
                 bulk_integral_data_.make_permanent();
@@ -174,7 +173,6 @@ public:
                 element_cache_map_.eval_point_data_.make_permanent();
                 if (element_cache_map_.eval_point_data_.temporary_size() == CacheMapElementNumber::get()) {
                     this->assemble_integrals();
-                    elm_idx_.clear();
                     add_into_patch = false;
                 }
                 ++cell_it;
@@ -182,7 +180,6 @@ public:
         }
         if (add_into_patch) {
             this->assemble_integrals();
-            elm_idx_.clear();
         }
 
         multidim_assembly_[1_d]->end();
@@ -349,7 +346,6 @@ private:
             EvalPointData epd(reg_idx, cell.elm_idx(), p.eval_point_idx());
             element_cache_map_.eval_point_data_.push_back(epd);
         }
-        elm_idx_.insert(cell.elm_idx());
     }
 
     /// Add data of edge integral to appropriate data structure.
@@ -365,7 +361,6 @@ private:
                 EvalPointData epd(reg_idx, edge_side.elem_idx(), p.eval_point_idx());
                 element_cache_map_.eval_point_data_.push_back(epd);
             }
-            elm_idx_.insert(edge_side.elem_idx());
         }
     }
 
@@ -390,8 +385,6 @@ private:
                 element_cache_map_.eval_point_data_.push_back(epd_low);
         	}
         }
-        elm_idx_.insert(cell.elm_idx());
-        elm_idx_.insert(ngh_side.elem_idx());
     }
 
     /// Add data of boundary integral to appropriate data structure.
@@ -412,9 +405,6 @@ private:
         	EvalPointData epd_bdr(bdr_reg, bdr_side.cond().bc_ele_idx(), p_bdr.eval_point_idx());
         	element_cache_map_.eval_point_data_.push_back(epd_bdr);
         }
-        elm_idx_.insert(bdr_side.elem_idx());
-        auto bdr_elm_acc = bdr_side.cond().element_accessor();
-        elm_idx_.insert(bdr_elm_acc.mesh_idx());
     }
 
 
@@ -434,9 +424,6 @@ private:
     RevertableList<EdgeIntegralData>       edge_integral_data_;      ///< Holds data for computing edge integrals.
     RevertableList<CouplingIntegralData>   coupling_integral_data_;  ///< Holds data for computing couplings integrals.
     RevertableList<BoundaryIntegralData>   boundary_integral_data_;  ///< Holds data for computing boundary integrals.
-
-    /// Set of element idx used in patch, temporary data member, TODO it will be replaced
-    std::set<unsigned int> elm_idx_;
 };
 
 
