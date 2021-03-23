@@ -476,14 +476,13 @@ void DarcyMH::initialize() {
 
     // auxiliary set_time call  since allocation assembly evaluates fields as well
     data_changed_ = data_->set_time(time_->step(), LimitSide::right) || data_changed_;
-    create_linear_system(rec, schur0);
+    create_linear_system(rec, schur0, true);
     if (ns_type == EqData::nonlinear_solver::Newton){
-        create_linear_system(rec, schur0_Newton);
+        create_linear_system(rec, schur0_Newton, false);
     }
 
     // allocate time term vectors
     VecDuplicate(schur0->get_solution(), &previous_solution);
-    //VecDuplicate(schur0_Newton->get_solution(), &previous_solution);
     VecCreateMPI(PETSC_COMM_WORLD, data_->dh_->distr()->lsize(),PETSC_DETERMINE,&(steady_diagonal));
     VecDuplicate(steady_diagonal,& new_diagonal);
     VecZeroEntries(new_diagonal);
@@ -672,15 +671,16 @@ void DarcyMH::solve_nonlinear()
                 }
                 assembly_linear_system_Newton(residual_);
                 VecCopy( schur0_Newton->get_solution(), save_solution);
-                double residual_rhs;
-                VecNorm(*schur0_Newton->get_rhs(), NORM_2, &residual_rhs);
-                printf("%f \n", residual_rhs);
+                //double residual_rhs;
+                //VecNorm(*schur0_Newton->get_rhs(), NORM_2, &residual_rhs);
+                //printf("%f \n", residual_rhs);
                 si = schur0_Newton->solve();
                 double residual_newt;
                 VecNorm(schur0_Newton->get_solution(), NORM_2, &residual_newt);
                 printf("%f \n", residual_newt);
-                VecWAXPY(solution_update,-1.0,schur0_Newton->get_solution(),schur0->get_solution());
+                VecWAXPY(solution_update,1.0,schur0_Newton->get_solution(),schur0->get_solution());
                 VecCopy(solution_update,schur0->get_solution());
+               
                 //data_changed_=true;
             }else{
             VecCopy( schur0->get_solution(), save_solution);
@@ -968,7 +968,7 @@ void DarcyMH::assembly_source_term()
  * COMPOSE WATER MH MATRIX WITHOUT SCHUR COMPLEMENT
  ******************************************************************************/
 
-void DarcyMH::create_linear_system(Input::AbstractRecord in_rec, LinSys *&linsys) {
+void DarcyMH::create_linear_system(Input::AbstractRecord in_rec, LinSys *&linsys, bool set_solution) {
   
     START_TIMER("preallocation");
 
@@ -981,7 +981,9 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec, LinSys *&linsys
             LinSys_BDDC *ls = new LinSys_BDDC(&(*data_->dh_->distr()),
                     true); // swap signs of matrix and rhs to make the matrix SPD
             ls->set_from_input(in_rec);
-            ls->set_solution( ele_flux_ptr->get_data_vec().petsc_vec() );
+            if (set_solution == true){
+                    ls->set_solution( ele_flux_ptr->get_data_vec().petsc_vec() );
+                }
             // possible initialization particular to BDDC
             START_TIMER("BDDC set mesh data");
             set_mesh_data_for_bddc(ls);
@@ -1010,8 +1012,9 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec, LinSys *&linsys
                 else {
                     ls->LinSys::set_from_input(in_rec); // get only common options
                 }
-
-                ls->set_solution( ele_flux_ptr->get_data_vec().petsc_vec() );
+                if (set_solution == true){
+                    ls->set_solution( ele_flux_ptr->get_data_vec().petsc_vec() );
+                }
                 linsys=ls;
             } else {
                 IS is;
@@ -1056,7 +1059,11 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec, LinSys *&linsys
                 }
                 ls->set_complement( schur1 );
                 ls->set_from_input(in_rec);
-                ls->set_solution( ele_flux_ptr->get_data_vec().petsc_vec() );
+                if (set_solution == true){
+                    ls->set_solution( ele_flux_ptr->get_data_vec().petsc_vec() );
+                }else{
+                    ls->set_solution();
+                }
                 linsys=ls;
             }
 
@@ -1065,8 +1072,7 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec, LinSys *&linsys
             linsys->start_allocation();
 
             allocate_mh_matrix(linsys);
-            
-    	    VecZeroEntries(linsys->get_solution());
+            VecZeroEntries(linsys->get_solution());
             END_TIMER("PETSC PREALLOCATION");
         }
         else {
@@ -1154,7 +1160,6 @@ void DarcyMH::assembly_linear_system_Newton(Vec &residual_) {
         //VecView( *const_cast<Vec*>(schur0_Newton->get_rhs()), viewer);
 
 	    assembly_mh_matrix( data_->multidim_assembler_Newton ); // fill matrix
-        //VecView( *const_cast<Vec*>(schur0_Newton->get_rhs()), viewer);
 
         schur0_Newton->set_rhs(residual_);
         //VecView( *const_cast<Vec*>(schur0_Newton->get_rhs()), viewer);

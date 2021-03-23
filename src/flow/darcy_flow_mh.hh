@@ -284,7 +284,7 @@ protected:
     /**
      * Create and preallocate MH linear system (including matrix, rhs and solution vectors)
      */
-    void create_linear_system(Input::AbstractRecord rec, LinSys *&linsys);
+    void create_linear_system(Input::AbstractRecord rec, LinSys *&linsys, bool set_solution);
 
     /**
      * Read initial condition into solution vector.
@@ -321,7 +321,7 @@ protected:
      * - add support for Robin type sources
      * - support for nonlinear solvers - assembly either residual vector, matrix, or both (using FADBAD++)
      */
-    void assembly_mh_matrix(MultidimAssembly& assembler);
+    void assembly_mh_matrix(MultidimAssembly& time);
 
     /// Source term is implemented differently in LMH version.
     virtual void assembly_source_term();
