@@ -50,7 +50,7 @@ public:
 
     void add_bulk_points(DHCellAccessor cell) {
         unsigned int reg_idx = cell.elm().region_idx().idx();
-        for (auto p : bulk_eval->points(cell, this) ) {
+        for (auto p : bulk_eval->points(this->position_in_cache(cell.elm_idx()), this) ) {
             EvalPointData epd(reg_idx, cell.elm_idx(), p.eval_point_idx());
             this->eval_point_data_.push_back(epd);
         }
@@ -94,7 +94,7 @@ TEST_F(FieldValueCacheTest, field_value_cache) {
     DHCellAccessor dh_cell(dh_.get(), 2);
 
     unsigned int reg_idx = dh_cell.elm().region_idx().idx();
-    for (auto p : bulk_eval->points(dh_cell, this) ) {
+    for (auto p : bulk_eval->points(this->position_in_cache(dh_cell.elm_idx()), this) ) {
         EvalPointData epd(reg_idx, dh_cell.elm_idx(), p.eval_point_idx());
         this->eval_point_data_.push_back(epd);
     }
@@ -125,7 +125,7 @@ TEST_F(FieldValueCacheTest, field_value_cache) {
 
     // check value
     dh_cell = this->cache_map_index(dh_cell);
-    for(BulkPoint q_point: bulk_eval->points(dh_cell, this)) {
+    for(BulkPoint q_point: bulk_eval->points(this->position_in_cache(dh_cell.elm_idx()), this)) {
         unsigned int elem_patch_idx = this->position_in_cache(dh_cell.elm().mesh_idx());
         auto point_val = this->get_value<ScalarValue>(value_cache, elem_patch_idx, q_point.eval_point_idx());
     	EXPECT_DOUBLE_EQ( point_val, const_val(0) );

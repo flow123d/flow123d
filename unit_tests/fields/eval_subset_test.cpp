@@ -79,7 +79,7 @@ TEST(IntegralTest, integrals_3d) {
 												 {0.138196601125010504, 0.585410196624968515, 0.138196601125010504},
 												 {0.585410196624968515, 0.138196601125010504, 0.138196601125010504}};
     	unsigned int i=0; // iter trought expected_vals
-    	for (auto p : bulk_integral->points(dh_cell, &elm_cache_map)) {
+    	for (auto p : bulk_integral->points(elm_cache_map.position_in_cache(dh_cell.elm_idx()), &elm_cache_map)) {
             EXPECT_ARMA_EQ(loc_coords<3>(eval_points, p.eval_point_idx()), expected_vals[i]);
 			++i;
         }

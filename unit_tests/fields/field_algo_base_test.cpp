@@ -949,7 +949,7 @@ public:
 
     void add_cell_eval_points(DHCellAccessor cell, std::shared_ptr<BulkIntegral> bulk_int) {
         unsigned int reg_idx = cell.elm().region_idx().idx();
-        for (auto p : bulk_int->points(cell, this) ) {
+        for (auto p : bulk_int->points(this->position_in_cache(cell.elm_idx()), this) ) {
             EvalPointData epd(reg_idx, cell.elm_idx(), p.eval_point_idx());
             this->eval_point_data_.push_back(epd);
         }
@@ -1064,7 +1064,7 @@ TEST(Field, field_values) {
     tensor_field.cache_update(elm_cache_map, reg_idx);
     elm_cache_map.finish_elements_update();
 
-    for(BulkPoint q_point: mass_eval->points(dh_cell, &elm_cache_map)) {
+    for(BulkPoint q_point: mass_eval->points(elm_cache_map.position_in_cache(dh_cell.elm_idx()), &elm_cache_map)) {
         EXPECT_EQ( 1, color_field(q_point) );
         EXPECT_EQ( -1, int_field(q_point) );
         EXPECT_DOUBLE_EQ( 1.5, scalar_field(q_point) );

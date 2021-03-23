@@ -71,7 +71,7 @@ public:
 
         void register_eval_points() {
             unsigned int reg_idx = computed_dh_cell_.elm().region_idx().idx();
-            for (auto p : mass_eval->points(computed_dh_cell_, this) ) {
+            for (auto p : mass_eval->points(this->position_in_cache(computed_dh_cell_.elm_idx()), this) ) {
                 EvalPointData epd(reg_idx, computed_dh_cell_.elm_idx(), p.eval_point_idx());
                 this->eval_point_data_.push_back(epd);
             }
@@ -189,7 +189,7 @@ TEST_F(FieldEvalConstantTest, evaluate) {
         data_->update_cache();
 
         // Bulk integral, no sides, no permutations.
-        for( BulkPoint q_point: data_->mass_eval->points(data_->computed_dh_cell_, data_.get()) ) {
+        for( BulkPoint q_point: data_->mass_eval->points(data_->position_in_cache(data_->computed_dh_cell_.elm_idx()), data_.get()) ) {
             EXPECT_EQ(expected_scalar[data_->computed_dh_cell_.elm_idx()], data_->scalar_field(q_point));
             EXPECT_ARMA_EQ(expected_vector[i], data_->vector_field(q_point));
             EXPECT_ARMA_EQ(expected_tensor[i], data_->tensor_field(q_point));
