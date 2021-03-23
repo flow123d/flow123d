@@ -63,7 +63,7 @@ public:
 
 
     /// Assemble integral over element
-    inline void cell_integral(DHCellAccessor cell)
+    inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
         ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
         ElementAccessor<3> elm = cell.elm();
@@ -81,7 +81,7 @@ public:
                 {
                     local_matrix_[i*ndofs_+j] = 0;
                     k=0;
-                    for (auto p : data_->mass_assembly_->bulk_points(cell) )
+                    for (auto p : data_->mass_assembly_->bulk_points(element_patch_idx, cell.dim()) )
                     {
                         local_matrix_[i*ndofs_+j] += (data_->mass_matrix_coef(p)+data_->retardation_coef[sbi](p)) *
                                 fe_values_.shape_value(j,k)*fe_values_.shape_value(i,k)*fe_values_.JxW(k);
@@ -95,7 +95,7 @@ public:
                 local_mass_balance_vector_[i] = 0;
                 local_retardation_balance_vector_[i] = 0;
                 k=0;
-                for (auto p : data_->mass_assembly_->bulk_points(cell) )
+                for (auto p : data_->mass_assembly_->bulk_points(element_patch_idx, cell.dim()) )
                 {
                     local_mass_balance_vector_[i] += data_->mass_matrix_coef(p)*fe_values_.shape_value(i,k)*fe_values_.JxW(k);
                     local_retardation_balance_vector_[i] -= data_->retardation_coef[sbi](p)*fe_values_.shape_value(i,k)*fe_values_.JxW(k);
@@ -218,7 +218,7 @@ public:
 
 
     /// Assembles the cell (volume) integral into the stiffness matrix.
-    inline void cell_integral(DHCellAccessor cell)
+    inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
         ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
         if (!cell.is_own()) return;
@@ -237,7 +237,7 @@ public:
                     local_matrix_[i*ndofs_+j] = 0;
 
             k=0;
-            for (auto p : data_->stiffness_assembly_->bulk_points(cell) )
+            for (auto p : data_->stiffness_assembly_->bulk_points(element_patch_idx, cell.dim()) )
             {
                 for (unsigned int i=0; i<ndofs_; i++)
                 {
@@ -657,7 +657,7 @@ public:
 
 
     /// Assemble integral over element
-    inline void cell_integral(DHCellAccessor cell)
+    inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
     	ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
 
@@ -676,7 +676,7 @@ public:
             local_source_balance_rhs_.assign(ndofs_, 0);
 
             k=0;
-            for (auto p : data_->sources_assembly_->bulk_points(cell) )
+            for (auto p : data_->sources_assembly_->bulk_points(element_patch_idx, cell.dim()) )
             {
                 source = (data_->sources_density_out[sbi](p) + data_->sources_conc_out[sbi](p)*data_->sources_sigma_out[sbi](p))*fe_values_.JxW(k);
 
@@ -689,7 +689,7 @@ public:
             for (unsigned int i=0; i<ndofs_; i++)
             {
                 k=0;
-                for (auto p : data_->sources_assembly_->bulk_points(cell) )
+                for (auto p : data_->sources_assembly_->bulk_points(element_patch_idx, cell.dim()) )
                 {
                     local_source_balance_vector_[i] -= data_->sources_sigma_out[sbi](p)*fe_values_.shape_value(i,k)*fe_values_.JxW(k);
                     k++;
@@ -989,7 +989,7 @@ public:
 
 
     /// Assemble integral over element
-    inline void cell_integral(DHCellAccessor cell)
+    inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
         ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
 
@@ -1008,7 +1008,7 @@ public:
             }
 
             k=0;
-            for (auto p : data_->init_cond_assembly_->bulk_points(cell) )
+            for (auto p : data_->init_cond_assembly_->bulk_points(element_patch_idx, cell.dim()) )
             {
                 double rhs_term = data_->init_condition[sbi](p)*fe_values_.JxW(k);
 

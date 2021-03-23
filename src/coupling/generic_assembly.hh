@@ -191,25 +191,25 @@ public:
     }
 
     /// Return BulkPoint range of appropriate dimension
-    Range< BulkPoint > bulk_points(const DHCellAccessor &cell) const {
-        ASSERT_DBG( cell.dim() > 0 ).error("Invalid cell dimension, must be 1, 2 or 3!\n");
-        return integrals_.bulk_[cell.dim()-1]->points(cell, &(element_cache_map_));
+    inline Range< BulkPoint > bulk_points(unsigned int element_patch_idx, unsigned int dim) const {
+        ASSERT_DBG( dim > 0 ).error("Invalid cell dimension, must be 1, 2 or 3!\n");
+        return integrals_.bulk_[dim-1]->points(element_patch_idx, &(element_cache_map_));
     }
 
     /// Return EdgePoint range of appropriate dimension
-    Range< EdgePoint > edge_points(const DHCellSide &cell_side) const {
+    inline Range< EdgePoint > edge_points(const DHCellSide &cell_side) const {
         ASSERT_DBG( cell_side.dim() > 0 ).error("Invalid cell dimension, must be 1, 2 or 3!\n");
 	    return integrals_.edge_[cell_side.dim()-1]->points(cell_side, &(element_cache_map_));
     }
 
     /// Return CouplingPoint range of appropriate dimension
-    Range< CouplingPoint > coupling_points(const DHCellSide &cell_side) const {
+    inline Range< CouplingPoint > coupling_points(const DHCellSide &cell_side) const {
         ASSERT_DBG( cell_side.dim() > 1 ).error("Invalid cell dimension, must be 2 or 3!\n");
 	    return integrals_.coupling_[cell_side.dim()-2]->points(cell_side, &(element_cache_map_));
     }
 
     /// Return BoundaryPoint range of appropriate dimension
-    Range< BoundaryPoint > boundary_points(const DHCellSide &cell_side) const {
+    inline Range< BoundaryPoint > boundary_points(const DHCellSide &cell_side) const {
         ASSERT_DBG( cell_side.dim() > 0 ).error("Invalid cell dimension, must be 1, 2 or 3!\n");
 	    return integrals_.boundary_[cell_side.dim()-1]->points(cell_side, &(element_cache_map_));
     }
@@ -220,7 +220,7 @@ private:
     inline void assemble_cell_integrals() {
         for (unsigned int i=0; i<bulk_integral_data_.permanent_size(); ++i) {
             if (bulk_integral_data_[i].cell.dim() != dim) continue;
-            multidim_assembly_[Dim<dim>{}]->cell_integral(bulk_integral_data_[i].cell);
+            multidim_assembly_[Dim<dim>{}]->cell_integral(bulk_integral_data_[i].cell, element_cache_map_.position_in_cache(bulk_integral_data_[i].cell.elm().mesh_idx()));
         }
     }
 
@@ -342,7 +342,7 @@ private:
         bulk_integral_data_.push_back(data);
 
         unsigned int reg_idx = cell.elm().region_idx().idx();
-        for (auto p : integrals_.bulk_[cell.dim()-1]->points(cell, &element_cache_map_) ) {
+        for (auto p : integrals_.bulk_[cell.dim()-1]->points(element_cache_map_.position_in_cache(cell.elm().mesh_idx()), &element_cache_map_) ) {
             EvalPointData epd(reg_idx, cell.elm_idx(), p.eval_point_idx());
             element_cache_map_.eval_point_data_.push_back(epd);
         }

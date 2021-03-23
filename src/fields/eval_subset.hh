@@ -100,16 +100,10 @@ public:
     : PointBase() {}
 
     /// Constructor
-	BulkPoint(DHCellAccessor dh_cell, const ElementCacheMap *elm_cache_map, const BulkIntegral *bulk_integral, unsigned int local_point_idx)
-    : PointBase(elm_cache_map, local_point_idx), integral_(bulk_integral) {
-	    this->elem_patch_idx_ = elm_cache_map->position_in_cache(dh_cell.elm().mesh_idx());
+	BulkPoint(const ElementCacheMap *elm_cache_map, const BulkIntegral *bulk_integral, CachePositionHandler cache_pos)
+    : PointBase(elm_cache_map, cache_pos.i_ep_), integral_(bulk_integral) {
+	    this->elem_patch_idx_ = cache_pos.i_elm_;
 	}
-
-    /// Constructor passing ElementAccessor argument, alternative of previous.
-    BulkPoint(ElementAccessor<3> elm_acc, const ElementCacheMap *elm_cache_map, const BulkIntegral *bulk_integral, unsigned int local_point_idx)
-    : PointBase(elm_cache_map, local_point_idx), integral_(bulk_integral) {
-        this->elem_patch_idx_ = this->elm_cache_map_->position_in_cache(elm_acc.mesh_idx());
-    }
 
     /// Comparison of accessors.
     bool operator==(const BulkPoint& other) {
@@ -300,12 +294,12 @@ public:
     }
 
     /// Returns range of bulk local points for appropriate cell accessor
-    inline Range< BulkPoint > points(const DHCellAccessor &cell, const ElementCacheMap *elm_cache_map) const {
-        ASSERT_DBG(cell.element_cache_index() != ElementCacheMap::undef_elem_idx)(cell.elm_idx())
-                .error("Undefined element cache index!\n");
+    inline Range< BulkPoint > points(unsigned int element_patch_idx, const ElementCacheMap *elm_cache_map) const {
+        //ASSERT_DBG(cell.element_cache_index() != ElementCacheMap::undef_elem_idx)(cell.elm_idx())
+        //        .error("Undefined element cache index!\n");
 
-        auto bgn_it = make_iter<BulkPoint>( BulkPoint(cell, elm_cache_map, this, eval_points_->subset_begin(dim_, subset_index_)) );
-        auto end_it = make_iter<BulkPoint>( BulkPoint(cell, elm_cache_map, this, eval_points_->subset_end(dim_, subset_index_)) );
+        auto bgn_it = make_iter<BulkPoint>( BulkPoint(elm_cache_map, this, CachePositionHandler(element_patch_idx, eval_points_->subset_begin(dim_, subset_index_)) ));
+        auto end_it = make_iter<BulkPoint>( BulkPoint(elm_cache_map, this, CachePositionHandler(element_patch_idx, eval_points_->subset_end(dim_, subset_index_)) ));
         return Range<BulkPoint>(bgn_it, end_it);
     }
 

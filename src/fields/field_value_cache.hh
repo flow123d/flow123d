@@ -71,6 +71,18 @@ struct EvalPointData {
 };
 
 
+/// Holds pair of positions of point in cache (element and eval point)
+struct CachePositionHandler {
+	CachePositionHandler() {}   ///< Default constructor
+    /// Constructor sets all data members
+	CachePositionHandler(unsigned int i_elm, unsigned int i_ep)
+    : i_elm_(i_elm), i_ep_(i_ep) {}
+
+    unsigned int i_elm_;        ///< index of element in patch
+    unsigned int i_ep_;         ///< index of eval point in patch
+};
+
+
 /**
  * @brief Auxiliary data class holds number of elements in cache and allow to set this value
  * explicitly (e.g. as input parameter).

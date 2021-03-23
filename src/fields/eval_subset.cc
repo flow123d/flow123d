@@ -115,8 +115,9 @@ unsigned int EdgePoint::eval_point_idx() const {
  */
 
 BulkPoint CouplingPoint::lower_dim(DHCellAccessor cell_lower) const {
-    return BulkPoint(cell_lower, elm_cache_map_, integral_->bulk_integral_.get(),
-            this->eval_points()->subset_begin(cell_lower.dim(), integral_->get_subset_low_idx())+local_point_idx_);
+	CachePositionHandler c_pos(elm_cache_map_->position_in_cache(cell_lower.elm().mesh_idx()),
+	        this->eval_points()->subset_begin(cell_lower.dim(), integral_->get_subset_low_idx())+local_point_idx_);
+    return BulkPoint(elm_cache_map_, integral_->bulk_integral_.get(), c_pos);
 }
 
 unsigned int CouplingPoint::eval_point_idx() const {
@@ -129,8 +130,9 @@ unsigned int CouplingPoint::eval_point_idx() const {
  */
 
 BulkPoint BoundaryPoint::point_bdr(ElementAccessor<3> bdr_elm) const {
-    return BulkPoint(bdr_elm, elm_cache_map_, integral_->bulk_integral_.get(),
-            this->eval_points()->subset_begin(bdr_elm.dim(), integral_->get_subset_low_idx())+local_point_idx_);
+	CachePositionHandler c_pos(elm_cache_map_->position_in_cache(bdr_elm.mesh_idx()),
+			this->eval_points()->subset_begin(bdr_elm.dim(), integral_->get_subset_low_idx())+local_point_idx_);
+    return BulkPoint(elm_cache_map_, integral_->bulk_integral_.get(), c_pos);
 }
 
 unsigned int BoundaryPoint::eval_point_idx() const {
