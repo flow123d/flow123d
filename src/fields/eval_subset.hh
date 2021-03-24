@@ -285,7 +285,7 @@ public:
     ~BulkIntegral();
 
     /// Return index of data block according to subset in EvalPoints object
-    int get_subset_idx() const {
+    inline int get_subset_idx() const {
         return subset_index_;
     }
 
@@ -319,12 +319,12 @@ public:
     ~EdgeIntegral();
 
     /// Getter of n_sides
-    unsigned int n_sides() const {
+    inline unsigned int n_sides() const {
         return n_sides_;
     }
 
     /// Return index of data block according to subset in EvalPoints object
-    int get_subset_idx() const {
+    inline int get_subset_idx() const {
         return subset_index_;
     }
 
@@ -342,7 +342,7 @@ public:
     }
 
     /// Returns structure of permutation indices.
-    int perm_idx_ptr(uint i_side, uint i_perm, uint i_point) const {
+    inline int perm_idx_ptr(uint i_side, uint i_perm, uint i_point) const {
     	return perm_indices_[i_side][i_perm][i_point];
     }
 
@@ -377,12 +377,12 @@ public:
     ~CouplingIntegral();
 
     /// Return index of data block according to subset of higher dim in EvalPoints object
-    int get_subset_high_idx() const {
+    inline int get_subset_high_idx() const {
         return edge_integral_->get_subset_idx();
     }
 
     /// Return index of data block according to subset of lower dim in EvalPoints object
-    int get_subset_low_idx() const {
+    inline int get_subset_low_idx() const {
         return bulk_integral_->get_subset_idx();
     }
 
@@ -423,12 +423,12 @@ public:
     ~BoundaryIntegral();
 
     /// Return index of data block according to subset of higher dim in EvalPoints object
-    int get_subset_high_idx() const {
+    inline int get_subset_high_idx() const {
         return edge_integral_->get_subset_idx();
     }
 
     /// Return index of data block according to subset of lower dim (boundary) in EvalPoints object
-    int get_subset_low_idx() const {
+    inline int get_subset_low_idx() const {
         return bulk_integral_->get_subset_idx();
     }
 
