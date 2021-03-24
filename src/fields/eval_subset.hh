@@ -100,8 +100,8 @@ public:
     : PointBase() {}
 
     /// Constructor
-	BulkPoint(const ElementCacheMap *elm_cache_map, const BulkIntegral *bulk_integral, CachePositionHandler cache_pos)
-    : PointBase(elm_cache_map, cache_pos.i_ep_), integral_(bulk_integral) {
+	BulkPoint(const ElementCacheMap *elm_cache_map, CachePositionHandler cache_pos)
+    : PointBase(elm_cache_map, cache_pos.i_ep_) {
 	    this->elem_patch_idx_ = cache_pos.i_elm_;
 	}
 
@@ -114,10 +114,6 @@ public:
     inline unsigned int eval_point_idx() const {
         return local_point_idx_;
     }
-
-private:
-    /// Pointer to bulk integral.
-    const BulkIntegral *integral_;
 };
 
 
@@ -298,8 +294,8 @@ public:
         //ASSERT_DBG(cell.element_cache_index() != ElementCacheMap::undef_elem_idx)(cell.elm_idx())
         //        .error("Undefined element cache index!\n");
 
-        auto bgn_it = make_iter<BulkPoint>( BulkPoint(elm_cache_map, this, CachePositionHandler(element_patch_idx, eval_points_->subset_begin(dim_, subset_index_)) ));
-        auto end_it = make_iter<BulkPoint>( BulkPoint(elm_cache_map, this, CachePositionHandler(element_patch_idx, eval_points_->subset_end(dim_, subset_index_)) ));
+        auto bgn_it = make_iter<BulkPoint>( BulkPoint(elm_cache_map, CachePositionHandler(element_patch_idx, eval_points_->subset_begin(dim_, subset_index_)) ));
+        auto end_it = make_iter<BulkPoint>( BulkPoint(elm_cache_map, CachePositionHandler(element_patch_idx, eval_points_->subset_end(dim_, subset_index_)) ));
         return Range<BulkPoint>(bgn_it, end_it);
     }
 
