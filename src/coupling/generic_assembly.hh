@@ -342,8 +342,9 @@ private:
         bulk_integral_data_.push_back(data);
 
         unsigned int reg_idx = cell.elm().region_idx().idx();
-        for (auto p : integrals_.bulk_[cell.dim()-1]->points(element_cache_map_.position_in_cache(cell.elm().mesh_idx()), &element_cache_map_) ) {
-            EvalPointData epd(reg_idx, cell.elm_idx(), p.eval_point_idx());
+        for (uint i=uint( eval_points_->subset_begin(cell.dim(), integrals_.bulk_[cell.dim()-1]->get_subset_idx()) );
+                  i<uint( eval_points_->subset_end(cell.dim(), integrals_.bulk_[cell.dim()-1]->get_subset_idx()) ); ++i) {
+            EvalPointData epd(reg_idx, cell.elm_idx(), i);
             element_cache_map_.eval_point_data_.push_back(epd);
         }
     }
