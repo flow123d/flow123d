@@ -20,7 +20,7 @@
 #define GENERAL_ITERATOR_HH_
 
 /** @brief General iterator template.
- * Provides iterator over objects of type ObjectIn in some container.
+ * Provides iterator over objects of type Object in some container.
  *
  * Operators '*' and '->' returns objects of type ObjectOut
  * 
@@ -28,18 +28,44 @@
  * - comparison operator==()
  * - increment operator++()
  */
+template<class Object>
+class Iter
+{
+public:
+//     IterConvert();
+
+	Iter(const Object& object);
+
+    /// equal operator
+    bool operator==(const Iter& other);
+    /// non-equal operator
+    bool operator!=(const Iter& other);
+
+    ///  * dereference operator
+    const Object& operator*() const;
+
+    /// -> dereference operator
+    const Object* operator->() const;
+
+    /// prefix increment
+    Iter& operator++();
+
+protected:
+    Object object_;
+};
+
+
+/** @brief General iterator template.
+ * Provides iterator over objects of type ObjectIn in some container.
+ * Same as previous but allows conversion of output to type ObjectOut.
+ */
 template<class ObjectIn, class ObjectOut>
-class IterConvert
+class IterConvert : public Iter<ObjectIn>
 {
 public:
 //     IterConvert();
 
 	IterConvert(const ObjectIn& object);
-
-    /// equal operator
-    bool operator==(const IterConvert& other);
-    /// non-equal operator
-    bool operator!=(const IterConvert& other);
 
     ///  * dereference operator
     const ObjectOut& operator*() const;
@@ -47,23 +73,9 @@ public:
     /// -> dereference operator
     const ObjectOut* operator->() const;
 
-    /// prefix increment
-    IterConvert& operator++();
-
 private:
-    /// Output element of the output mesh.
-    ObjectIn object_;
     mutable ObjectOut out_;
 };
-
-
-/**
- * @brief General iterator template.
- *
- * Same as previous but doesn't provide specialization of operators '*' and '->'.
- */
-template<class Object>
-using Iter = IterConvert<Object, Object>;
 
 
 /**
@@ -87,42 +99,59 @@ IterConvert<ObjectIn, ObjectOut> make_iter(ObjectIn obj) {
 // inline IterConvert::IterConvert()
 // {}
 
-template<class ObjectIn, class ObjectOut>
-inline IterConvert<ObjectIn, ObjectOut>::IterConvert(const ObjectIn& object)
+template<class Object>
+inline Iter<Object>::Iter(const Object& object)
 : object_(object)
 {}
 
-template<class ObjectIn, class ObjectOut>
-inline bool IterConvert<ObjectIn, ObjectOut>::operator==(const IterConvert& other)
+template<class Object>
+inline bool Iter<Object>::operator==(const Iter& other)
 {
     return (object_ == other.object_);
 }
 
-template<class ObjectIn, class ObjectOut>
-inline bool IterConvert<ObjectIn, ObjectOut>::operator!=(const IterConvert& other)
+template<class Object>
+inline bool Iter<Object>::operator!=(const Iter& other)
 {
     return !( *this == other);
 }
 
+template<class Object>
+inline const Object& Iter<Object>::operator*() const
+{
+    return object_;
+}
+
+template<class Object>
+inline const Object* Iter<Object>::operator->() const
+{
+    return &object_;
+}
+
+template<class Object>
+inline Iter<Object>& Iter<Object>::operator++()
+{
+    object_.inc();
+    return (*this);
+}
+
+template<class ObjectIn, class ObjectOut>
+inline IterConvert<ObjectIn, ObjectOut>::IterConvert(const ObjectIn& object)
+: Iter<ObjectIn>(object)
+{}
+
 template<class ObjectIn, class ObjectOut>
 inline const ObjectOut& IterConvert<ObjectIn, ObjectOut>::operator*() const
 {
-    out_ = (ObjectOut)object_;
+    out_ = (ObjectOut)this->object_;
     return out_;
 }
 
 template<class ObjectIn, class ObjectOut>
 inline const ObjectOut* IterConvert<ObjectIn, ObjectOut>::operator->() const
 {
-    out_ = (ObjectOut)object_;
+    out_ = (ObjectOut)this->object_;
     return &out_;
-}
-
-template<class ObjectIn, class ObjectOut>
-inline IterConvert<ObjectIn, ObjectOut>& IterConvert<ObjectIn, ObjectOut>::operator++()
-{
-    object_.inc();
-    return (*this);
 }
 
 #endif // GENERAL_ITERATOR_HH_
