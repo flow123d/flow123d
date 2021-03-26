@@ -264,6 +264,12 @@ private:
     
     /** @brief Penalty to enforce boundary value in weak sense. */
     double dirichlet_penalty(SideIter side);
+
+
+	void assemble_constraint_matrix();
+
+	template<unsigned int dim>
+	void assemble_constraint_matrix();
     
     
 
@@ -295,6 +301,8 @@ private:
 
 	/// The stiffness matrix.
 	Mat stiffness_matrix;
+
+	Mat constraint_matrix;
 
 	/// Linear algebra system for the transport equation.
 	LinSys *ls;
