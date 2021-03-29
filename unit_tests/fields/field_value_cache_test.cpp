@@ -124,7 +124,6 @@ TEST_F(FieldValueCacheTest, field_value_cache) {
     this->finish_elements_update();
 
     // check value
-    dh_cell = this->cache_map_index(dh_cell);
     for(BulkPoint q_point: bulk_eval->points(this->position_in_cache(dh_cell.elm_idx()), this)) {
         unsigned int elem_patch_idx = this->position_in_cache(dh_cell.elm().mesh_idx());
         auto point_val = this->get_value<ScalarValue>(value_cache, elem_patch_idx, q_point.eval_point_idx());
@@ -159,9 +158,6 @@ TEST_F(FieldValueCacheTest, element_cache_map) {
     this->finish_elements_update();
     this->eval_point_data_.reset();
     elm_to_patch_.clear();
-
-    dh_cell1 = this->cache_map_index(dh_cell1);
-    EXPECT_EQ(dh_cell1.element_cache_index(), 0);
     this->clear_element_eval_points_map();
 
     // Test of edge connectivity
@@ -193,8 +189,6 @@ TEST_F(FieldValueCacheTest, element_cache_map) {
     this->finish_elements_update();
     this->eval_point_data_.reset();
     elm_to_patch_.clear();
-    dh_cell2 = this->cache_map_index(dh_cell2);
-    EXPECT_EQ(dh_cell2.element_cache_index(), 1);
     this->clear_element_eval_points_map();
 
     // Test of 3 elements on 2 different regions
@@ -221,7 +215,5 @@ TEST_F(FieldValueCacheTest, element_cache_map) {
     this->finish_elements_update();
     this->eval_point_data_.reset();
     elm_to_patch_.clear();
-    dh_cell3 = this->cache_map_index(dh_cell3);
-    EXPECT_EQ(dh_cell3.element_cache_index(), 1);
     this->clear_element_eval_points_map();
 }

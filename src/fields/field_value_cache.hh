@@ -256,9 +256,6 @@ public:
         ASSERT_DBG(value_cache_idx != ElementCacheMap::undef_elem_idx);
         return Value::get_from_array(field_cache, value_cache_idx);
     }
-
-    /// Set index of cell in ElementCacheMap (or undef value if cell is not stored in cache).
-    DHCellAccessor & cache_map_index(DHCellAccessor &dh_cell) const;
 protected:
 
     /// Special constant (@see element_eval_points_map_).

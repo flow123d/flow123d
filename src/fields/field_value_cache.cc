@@ -117,13 +117,3 @@ void ElementCacheMap::finish_elements_update() {
 	ready_to_reading_ = true;
 }
 
-
-DHCellAccessor & ElementCacheMap::cache_map_index(DHCellAccessor &dh_cell) const {
-	ASSERT_DBG(ready_to_reading_);
-	unsigned int elm_idx = dh_cell.elm_idx();
-	std::map<unsigned int, unsigned int>::const_iterator it = element_to_map_.find(elm_idx);
-	if ( it != element_to_map_.end() ) dh_cell.set_element_cache_index( it->second );
-	else dh_cell.set_element_cache_index( ElementCacheMap::undef_elem_idx );
-    return dh_cell;
-}
-
