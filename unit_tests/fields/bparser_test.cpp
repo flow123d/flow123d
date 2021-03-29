@@ -13,7 +13,6 @@
 #include <string>
 #include "include/assert.hh"
 #include "include/parser.hh"
-#include "./bparser_test_tools.hh"
 
 
 TEST(BParser, all) {
