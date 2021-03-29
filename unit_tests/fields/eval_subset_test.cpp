@@ -288,6 +288,15 @@ TEST_F(RangesSpeedTest, point_ranges) {
     this->create_patch();
     this->finish_elements_update();
 
+    START_TIMER("TEST_cpp_loop");
+    counter = 0;
+    for (uint i=0; i<profiler_loops; ++i)
+        for (uint j=0; j<dh_cell.dim()+1; ++j) {
+            ++counter;
+        }
+    END_TIMER("TEST_cpp_loop");
+    EXPECT_EQ(counter, (dh_cell.dim()+1)*profiler_loops);
+
     START_TIMER("TEST_bulk_points");
     unsigned int elm_patch_idx = this->position_in_cache(dh_cell.elm_idx());
     counter = 0;
