@@ -340,7 +340,7 @@ public:
     void cache_reallocate(const ElementCacheMap &cache_map) override;
 
     /// Implements FieldCommon::cache_update
-    void cache_update(ElementCacheMap &cache_map, unsigned int i_reg) const override;
+    void cache_update(ElementCacheMap &cache_map, unsigned int region_idx, unsigned int region_patch_idx) const override;
 
     /// Implements FieldCommon::value_cache
     FieldValueCache<double> * value_cache() override;

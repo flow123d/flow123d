@@ -381,7 +381,7 @@ bool MultiField<spacedim, Value>::MultiFieldFactory::is_active_field_descriptor(
 
 template<int spacedim, class Value>
 std::vector<const FieldCommon *> MultiField<spacedim, Value>::set_dependency(FMT_UNUSED FieldSet &field_set, FMT_UNUSED unsigned int i_reg) {
-	ASSERT(false).error("Set dependency of MultiField should be performed by individual components!\n");
+    ASSERT(false).error("Set dependency of MultiField should be performed by individual components!\n");
     return std::vector<const FieldCommon *>();
 }
 
@@ -394,8 +394,9 @@ void MultiField<spacedim, Value>::cache_reallocate(const ElementCacheMap &cache_
 
 
 template<int spacedim, class Value>
-void MultiField<spacedim, Value>::cache_update(FMT_UNUSED ElementCacheMap &cache_map, FMT_UNUSED unsigned int i_reg) const {
-   ASSERT(false).error("Cache update of MultiField should be performed by individual components!\n");
+void MultiField<spacedim, Value>::cache_update(FMT_UNUSED ElementCacheMap &cache_map, FMT_UNUSED unsigned int region_idx,
+        FMT_UNUSED unsigned int region_patch_idx) const {
+    ASSERT(false).error("Cache update of MultiField should be performed by individual components!\n");
 }
 
 

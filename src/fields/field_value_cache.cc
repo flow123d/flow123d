@@ -69,7 +69,6 @@ void ElementCacheMap::create_patch() {
     // Erase element data of previous step
     regions_starts_.reset();
     element_starts_.reset();
-    regions_to_map_.clear();
     element_to_map_.clear();
     std::fill(elm_idx_.begin(), elm_idx_.end(), ElementCacheMap::undef_elem_idx);
 
@@ -82,7 +81,6 @@ void ElementCacheMap::create_patch() {
                     i_pos++;
                 }
 
-                regions_to_map_[it->i_reg_] = regions_starts_.temporary_size();
                 regions_starts_.push_back( element_starts_.temporary_size() );
                 last_region_idx = it->i_reg_;
             }

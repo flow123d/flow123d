@@ -222,17 +222,15 @@ public:
     }
 
     /// Return begin position of region chunk in FieldValueCache
-    inline unsigned int region_chunk_begin(unsigned int region_idx) const {
-        std::map<unsigned int, unsigned int>::const_iterator it = regions_to_map_.find(region_idx);
-        if ( it != regions_to_map_.end() ) return element_starts_[ regions_starts_[it->second] ];
-        else return ElementCacheMap::undef_elem_idx;
+    inline unsigned int region_chunk_begin(unsigned int region_patch_idx) const {
+        ASSERT_LT_DBG(region_patch_idx, n_regions());
+        return element_starts_[ regions_starts_[region_patch_idx] ];
     }
 
     /// Return end position of region chunk in FieldValueCache
-    inline unsigned int region_chunk_end(unsigned int region_idx) const {
-        std::map<unsigned int, unsigned int>::const_iterator it = regions_to_map_.find(region_idx);
-        if ( it != regions_to_map_.end() ) return element_starts_[ regions_starts_[it->second+1] ];
-        else return ElementCacheMap::undef_elem_idx;
+    inline unsigned int region_chunk_end(unsigned int region_patch_idx) const {
+        ASSERT_LT_DBG(region_patch_idx, n_regions());
+        return element_starts_[ regions_starts_[region_patch_idx+1] ];
     }
 
     /// Return begin position of region chunk specified by position in map
@@ -312,8 +310,7 @@ protected:
 
     RevertableList<unsigned int> regions_starts_;         ///< Start positions of elements in regions (size = n_regions+1, last value is end of last region)
     RevertableList<unsigned int> element_starts_;         ///< Start positions of elements in eval_point_data_ (size = n_elements+1)
-    std::map<unsigned int, unsigned int> regions_to_map_; ///< Maps region_idx to index in map
-    std::map<unsigned int, unsigned int> element_to_map_; ///< Maps element_idx to index in map
+    std::map<unsigned int, unsigned int> element_to_map_; ///< Maps element_idx to element index in patch - TODO remove
 
     // @}
 
