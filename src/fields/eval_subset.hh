@@ -71,6 +71,14 @@ public:
     	this->local_point_idx_++;
     }
 
+    /// Return DHCellAccessor appropriate to eval point.
+    inline DHCellAccessor dh_cell() const {
+        unsigned int patch_idx = elm_cache_map_->element_eval_point(elem_patch_idx_, local_point_idx_);
+		unsigned int loc_idx = elm_cache_map_->eval_point_data(patch_idx).dh_loc_idx_;
+		ASSERT_DBG((int)(loc_idx) != -1).error("DHCellAccessor of boundary element s not supported!\n");
+    	return DHCellAccessor(elm_cache_map_->dh(), loc_idx);
+    }
+
     /// Local coordinates within element
     //template<unsigned int dim>
     //inline arma::vec::fixed<dim> loc_coords() const {
