@@ -183,7 +183,7 @@ TEST_F(FieldValueCacheTest, element_cache_map) {
     EXPECT_EQ(this->n_regions(), 1);
     EXPECT_EQ(this->n_elements(), 3);
     EXPECT_EQ(element_starts_[0], 0);
-    EXPECT_EQ(element_starts_[element_to_map_.size()], 24);
+    EXPECT_EQ(element_starts_[3], 24);
     EXPECT_EQ(regions_starts_[0], 0);
     EXPECT_EQ(regions_starts_[1], 3);
     this->finish_elements_update();
@@ -204,13 +204,12 @@ TEST_F(FieldValueCacheTest, element_cache_map) {
     EXPECT_EQ(this->n_elements(), 3);
     EXPECT_EQ(this->n_regions(), 2);
     EXPECT_TRUE(element_to_map_.find(1)!=element_to_map_.end());
-    EXPECT_TRUE(element_to_map_.find(2)==element_to_map_.end()); // NOT in patch
+    EXPECT_TRUE(element_to_map_.find(2)==element_to_map_.end());
     EXPECT_TRUE(element_to_map_.find(3)!=element_to_map_.end());
-    EXPECT_EQ(this->region_chunk_begin(1), 0);
-    EXPECT_EQ(this->region_chunk_end(1), 8);
-    EXPECT_EQ(this->region_chunk_begin(2), ElementCacheMap::undef_elem_idx);
-    EXPECT_EQ(this->region_chunk_begin(3), 8);
-    EXPECT_EQ(this->region_chunk_end(3), 12);
+    EXPECT_EQ(this->region_chunk_begin(0), 0);
+    EXPECT_EQ(this->region_chunk_end(0), 8);
+    EXPECT_EQ(this->region_chunk_begin(1), 8);
+    EXPECT_EQ(this->region_chunk_end(1), 12);
 
     this->finish_elements_update();
     this->eval_point_data_.reset();
