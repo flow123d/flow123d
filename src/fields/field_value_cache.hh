@@ -28,6 +28,7 @@
 #include "mesh/accessors.hh"
 #include "tools/mixed.hh"
 #include "tools/revertable_list.hh"
+#include "fem/dofhandler.hh"
 
 class EvalPoints;
 class ElementCacheMap;
@@ -149,7 +150,7 @@ public:
     ~ElementCacheMap();
 
     /// Init cache
-    void init(std::shared_ptr<EvalPoints> eval_points);
+    void init(std::shared_ptr<EvalPoints> eval_points, const DOFHandlerMultiDim * dh);
 
     /// Create patch of cached elements before reading data to cache.
     void create_patch();
@@ -250,6 +251,10 @@ public:
         return eval_point_data_[point_idx];
     }
 
+    inline const DOFHandlerMultiDim * dh() const {
+        return this->dh_;
+    }
+
     /// Return value of evaluation point given by idx of element in patch and local point idx in EvalPoints from cache.
     template<class Value>
     inline typename Value::return_type get_value(const FieldValueCache<typename Value::element_type> &field_cache,
@@ -319,6 +324,9 @@ protected:
     std::map<unsigned int, unsigned int> element_to_map_; ///< Maps element_idx to element index in patch - TODO remove
 
     // @}
+
+    /// Pointer to DOF handler
+    const DOFHandlerMultiDim * dh_;
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
