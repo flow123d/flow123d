@@ -185,7 +185,7 @@ TEST_F(FieldValueCacheTest, element_cache_map) {
     EXPECT_EQ(element_starts_[0], 0);
     EXPECT_EQ(element_starts_[element_to_map_.size()], 24);
     EXPECT_EQ(regions_starts_[0], 0);
-    EXPECT_EQ(regions_starts_[regions_to_map_.size()], 3);
+    EXPECT_EQ(regions_starts_[1], 3);
     this->finish_elements_update();
     this->eval_point_data_.reset();
     elm_to_patch_.clear();
