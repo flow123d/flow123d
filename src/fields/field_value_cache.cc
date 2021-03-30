@@ -84,13 +84,13 @@ void ElementCacheMap::create_patch() {
                 regions_starts_.push_back( element_starts_.temporary_size() );
                 last_region_idx = it->i_reg_;
             }
-			elm_idx_[element_to_map_.size()] = it->i_element_;
+			elm_idx_[element_starts_.temporary_size()] = it->i_element_;
             element_to_map_[it->i_element_] = element_starts_.temporary_size();
             element_starts_.push_back(i_pos);
             last_element_idx = it->i_element_;
         }
         eval_point_data_.push_back( *it );
-        set_element_eval_point(element_to_map_.find(it->i_element_)->second, it->i_eval_point_, i_pos);
+        set_element_eval_point(element_starts_.temporary_size()-1, it->i_eval_point_, i_pos);
         i_pos++;
     }
     unsigned int last_eval_point = i_pos-1; // set size of block of last region by SIMD size

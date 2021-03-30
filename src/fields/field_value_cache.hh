@@ -156,9 +156,14 @@ public:
     /// Reset all items of elements_eval_points_map
     inline void clear_element_eval_points_map() {
         ASSERT_PTR_DBG(element_eval_points_map_);
-        for (unsigned int i=0; i<eval_point_data_.permanent_size(); ++i)
-            set_element_eval_point(element_to_map_.find(eval_point_data_[i].i_element_)->second,
-                    eval_point_data_[i].i_eval_point_, ElementCacheMap::unused_point);
+        unsigned int last_element_idx = -1, i_elem_row = -1;
+        for (unsigned int i=0; i<eval_point_data_.permanent_size(); ++i) {
+            if (eval_point_data_[i].i_element_ != last_element_idx) { // new element
+                i_elem_row++;
+            	last_element_idx =eval_point_data_[i].i_element_;
+            }
+        	set_element_eval_point(i_elem_row, eval_point_data_[i].i_eval_point_, ElementCacheMap::unused_point);
+        }
         eval_point_data_.reset();
     }
 
