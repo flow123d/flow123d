@@ -83,7 +83,7 @@ public:
     	this->element_starts_.push_back(n_items);
     	this->element_starts_.make_permanent();
     	for (unsigned int i=0; i<n_items; ++i) {
-    	    EvalPointData epd(1, 1, i);
+    	    EvalPointData epd(1, 1, i, 0);
     	    this->eval_point_data_.push_back(epd);
     	}
     	this->eval_point_data_.make_permanent();

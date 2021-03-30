@@ -71,7 +71,7 @@ public:
         void register_eval_points() {
             unsigned int reg_idx = computed_dh_cell_.elm().region_idx().idx();
             for (auto p : mass_eval->points(this->position_in_cache(computed_dh_cell_.elm_idx()), this) ) {
-                EvalPointData epd(reg_idx, computed_dh_cell_.elm_idx(), p.eval_point_idx());
+                EvalPointData epd(reg_idx, computed_dh_cell_.elm_idx(), p.eval_point_idx(), computed_dh_cell_.local_idx());
                 this->eval_point_data_.push_back(epd);
             }
 
@@ -79,7 +79,7 @@ public:
             	for( DHCellSide edge_side : cell_side.edge_sides() ) {
                     unsigned int reg_idx = edge_side.element().region_idx().idx();
                     for (auto p : side_eval->points(edge_side, this) ) {
-                        EvalPointData epd(reg_idx, edge_side.elem_idx(), p.eval_point_idx());
+                        EvalPointData epd(reg_idx, edge_side.elem_idx(), p.eval_point_idx(), edge_side.cell().local_idx());
                         this->eval_point_data_.push_back(epd);
                     }
                 }

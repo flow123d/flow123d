@@ -950,7 +950,7 @@ public:
     void add_cell_eval_points(DHCellAccessor cell, std::shared_ptr<BulkIntegral> bulk_int) {
         unsigned int reg_idx = cell.elm().region_idx().idx();
         for (auto p : bulk_int->points(this->position_in_cache(cell.elm_idx()), this) ) {
-            EvalPointData epd(reg_idx, cell.elm_idx(), p.eval_point_idx());
+            EvalPointData epd(reg_idx, cell.elm_idx(), p.eval_point_idx(), cell.local_idx());
             this->eval_point_data_.push_back(epd);
         }
         this->eval_point_data_.make_permanent();

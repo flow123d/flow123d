@@ -52,8 +52,8 @@ template<class elm_type> using FieldValueCache = Armor::Array<elm_type>;
 struct EvalPointData {
     EvalPointData() {}              ///< Default constructor
     /// Constructor sets all data members
-    EvalPointData(unsigned int i_reg, unsigned int i_ele, unsigned int i_ep)
-    : i_reg_(i_reg), i_element_(i_ele), i_eval_point_(i_ep) {}
+    EvalPointData(unsigned int i_reg, unsigned int i_ele, unsigned int i_ep, unsigned int dh_loc_idx)
+    : i_reg_(i_reg), i_element_(i_ele), i_eval_point_(i_ep), dh_loc_idx_(dh_loc_idx) {}
 
     bool operator < (const EvalPointData &other) {
         if (i_reg_ == other.i_reg_) {
@@ -68,6 +68,7 @@ struct EvalPointData {
     unsigned int i_reg_;            ///< region_idx of element
     unsigned int i_element_;        ///< mesh_idx of ElementAccessor appropriate to element
     unsigned int i_eval_point_;     ///< index of point in EvalPoint object
+    unsigned int dh_loc_idx_;       ///< local index of cell in DOF handler
 };
 
 
