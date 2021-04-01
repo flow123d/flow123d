@@ -1145,7 +1145,8 @@ void Elasticity::assemble_boundary_conditions()
               for (unsigned int k=0; k<qsize; k++)
               {
                 for (unsigned int i=0; i<ndofs; i++)
-                  local_rhs[i] += csection[k]*arma::dot(vec.value(i,k),bc_stress[k]*fe_values_side.normal_vector(k) + bc_potential[k]*fe_values_side.normal_vector(k))*fe_values_side.JxW(k);
+                  // stress is multiplied by inward normal to obtain traction
+                  local_rhs[i] += csection[k]*arma::dot(vec.value(i,k),-bc_stress[k]*fe_values_side.normal_vector(k) + bc_potential[k]*fe_values_side.normal_vector(k))*fe_values_side.JxW(k);
               }
             }
             ls->rhs_set_values(ndofs, side_dof_indices.data(), local_rhs);
