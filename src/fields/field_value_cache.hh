@@ -228,6 +228,18 @@ public:
         else return ElementCacheMap::undef_elem_idx;
     }
 
+    /// Return begin position of element chunk in FieldValueCache
+    inline unsigned int element_chunk_begin_new(unsigned int elm_patch_idx) const {
+        ASSERT_LT_DBG(elm_patch_idx, n_elements());
+        return element_starts_[elm_patch_idx];
+    }
+
+    /// Return end position of element chunk in FieldValueCache
+    inline unsigned int element_chunk_end_new(unsigned int elm_patch_idx) const {
+        ASSERT_LT_DBG(elm_patch_idx, n_elements());
+        return element_starts_[elm_patch_idx+1];
+    }
+
     /// Return begin position of region chunk in FieldValueCache
     inline unsigned int region_chunk_begin(unsigned int region_patch_idx) const {
         ASSERT_LT_DBG(region_patch_idx, n_regions());

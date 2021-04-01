@@ -218,9 +218,15 @@ private:
     /// Assembles the cell integrals for the given dimension.
     template<unsigned int dim>
     inline void assemble_cell_integrals() {
-        for (unsigned int i=0; i<bulk_integral_data_.permanent_size(); ++i) {
+        /*for (unsigned int i=0; i<bulk_integral_data_.permanent_size(); ++i) {
             if (bulk_integral_data_[i].cell.dim() != dim) continue;
             multidim_assembly_[Dim<dim>{}]->cell_integral(bulk_integral_data_[i].cell, element_cache_map_.position_in_cache(bulk_integral_data_[i].cell.elm().mesh_idx()));
+        }*/
+        for (unsigned int i=0; i<element_cache_map_.n_elements(); ++i) {
+            unsigned int elm_start = element_cache_map_.element_chunk_begin_new(i);
+            //std::cout << "Elem start: " << i << " " << element_cache_map_.eval_point_data(elm_start).dh_loc_idx_ << std::endl;
+            if (element_cache_map_.eval_point_data(elm_start).i_eval_point_ != 0) continue;
+            multidim_assembly_[Dim<dim>{}]->cell_integral(i, element_cache_map_.eval_point_data(elm_start).dh_loc_idx_);
         }
     }
 

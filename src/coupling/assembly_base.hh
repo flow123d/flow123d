@@ -46,7 +46,7 @@ public:
     }
 
     /// Assembles the volume integrals on cell.
-    inline void cell_integral(FMT_UNUSED DHCellAccessor cell, FMT_UNUSED unsigned int element_patch_idx) {}
+    inline void cell_integral(FMT_UNUSED unsigned int element_patch_idx, FMT_UNUSED unsigned int dh_local_idx) {}
 
     /// Assembles the fluxes on the boundary.
     inline void boundary_side_integral(FMT_UNUSED DHCellSide cell_side) {}
