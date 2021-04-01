@@ -123,7 +123,7 @@ public:
         multidim_assembly_[1_d]->initialize(balance);
         multidim_assembly_[2_d]->initialize(balance);
         multidim_assembly_[3_d]->initialize(balance);
-        active_integrals_ = multidim_assembly_[1_d]->active_integrals_;
+        active_integrals_ = multidim_assembly_[1_d]->active_integrals();
     }
 
     inline MixedPtr<DimAssembly, 1> multidim_assembly() const {

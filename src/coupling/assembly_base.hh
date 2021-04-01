@@ -66,6 +66,11 @@ public:
     /// Reallocate data caches of fields in equation.
     virtual void reallocate_cache(const ElementCacheMap &cache_map) =0;
 
+    /// Getter of active_integrals.
+    inline int active_integrals() const {
+        return active_integrals_;
+    }
+
     /// Create integrals according to dim of assembly object
     void create_integrals(std::shared_ptr<EvalPoints> eval_points, AssemblyIntegrals &integrals) {
     	if (active_integrals_ & ActiveIntegrals::bulk)
