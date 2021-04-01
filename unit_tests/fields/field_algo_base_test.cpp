@@ -1044,7 +1044,7 @@ TEST(Field, field_values) {
     std::shared_ptr<BulkIntegral> mass_eval = eval_points->add_bulk<3>(*q_bulk );
     std::shared_ptr<EdgeIntegral> side_eval = eval_points->add_edge<3>(*q_side );
     ElementCacheMapTest elm_cache_map;
-    elm_cache_map.init(eval_points);
+    elm_cache_map.init(eval_points, dh.get());
     color_field.cache_reallocate(elm_cache_map);
     int_field.cache_reallocate(elm_cache_map);
     scalar_field.cache_reallocate(elm_cache_map);
