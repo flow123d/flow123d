@@ -1,6 +1,7 @@
 #include <flow_gtest.hh>
 #include "arma_expect.hh"
 #include "system/armor.hh"
+#include "system/armor_vectorized.hh"
 #include "system/logger.hh"
 #include <armadillo>
 
