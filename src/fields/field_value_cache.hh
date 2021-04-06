@@ -199,7 +199,7 @@ public:
 
     /// Return position of element stored in ElementCacheMap
     inline unsigned int position_in_cache(unsigned mesh_elm_idx) const {
-        std::map<unsigned int, unsigned int>::const_iterator it = element_to_map_.find(mesh_elm_idx);
+        std::unordered_map<unsigned int, unsigned int>::const_iterator it = element_to_map_.find(mesh_elm_idx);
         if ( it != element_to_map_.end() ) return it->second;
         else return ElementCacheMap::undef_elem_idx;
     }
@@ -216,14 +216,14 @@ public:
 
     /// Return begin position of element chunk in FieldValueCache
     inline unsigned int element_chunk_begin(unsigned int mesh_elm_idx) const {
-        std::map<unsigned int, unsigned int>::const_iterator it = element_to_map_.find(mesh_elm_idx);
+        std::unordered_map<unsigned int, unsigned int>::const_iterator it = element_to_map_.find(mesh_elm_idx);
         if ( it != element_to_map_.end() ) return element_starts_[it->second];
         else return ElementCacheMap::undef_elem_idx;
     }
 
     /// Return end position of element chunk in FieldValueCache
     inline unsigned int element_chunk_end(unsigned int mesh_elm_idx) const {
-        std::map<unsigned int, unsigned int>::const_iterator it = element_to_map_.find(mesh_elm_idx);
+        std::unordered_map<unsigned int, unsigned int>::const_iterator it = element_to_map_.find(mesh_elm_idx);
         if ( it != element_to_map_.end() ) return element_starts_[it->second+1];
         else return ElementCacheMap::undef_elem_idx;
     }
@@ -333,7 +333,7 @@ protected:
 
     RevertableList<unsigned int> regions_starts_;         ///< Start positions of elements in regions (size = n_regions+1, last value is end of last region)
     RevertableList<unsigned int> element_starts_;         ///< Start positions of elements in eval_point_data_ (size = n_elements+1)
-    std::map<unsigned int, unsigned int> element_to_map_; ///< Maps element_idx to element index in patch - TODO remove
+    std::unordered_map<unsigned int, unsigned int> element_to_map_; ///< Maps element_idx to element index in patch - TODO remove
 
     // @}
 
