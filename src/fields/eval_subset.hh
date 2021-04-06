@@ -178,7 +178,7 @@ public:
     }
 
     /// Return index in EvalPoints object
-    unsigned int eval_point_idx() const;
+    inline unsigned int eval_point_idx() const;
 
 private:
     /// Pointer to edge point integral
@@ -203,7 +203,7 @@ public:
     BulkPoint lower_dim(DHCellAccessor cell_lower) const;
 
     /// Return index in EvalPoints object
-    unsigned int eval_point_idx() const;
+    inline unsigned int eval_point_idx() const;
 
     /// Comparison of accessors.
     bool operator==(const CouplingPoint& other) {
@@ -232,7 +232,7 @@ public:
     BulkPoint point_bdr(ElementAccessor<3> bdr_elm) const;
 
     /// Return index in EvalPoints object
-    unsigned int eval_point_idx() const;
+    inline unsigned int eval_point_idx() const;
 
     /// Comparison of accessors.
     bool operator==(const BoundaryPoint& other) {
@@ -450,5 +450,23 @@ private:
     friend class BoundaryPoint;
 };
 
+
+/******************************************************************************
+ * Implementation of inlined methods
+ */
+
+inline unsigned int EdgePoint::eval_point_idx() const {
+    return integral_->perm_idx_ptr(side_idx_, permutation_idx_, local_point_idx_);
+}
+
+
+inline unsigned int CouplingPoint::eval_point_idx() const {
+    return integral_->edge_integral_->perm_idx_ptr(side_idx_, permutation_idx_, local_point_idx_);
+}
+
+
+inline unsigned int BoundaryPoint::eval_point_idx() const {
+    return integral_->edge_integral_->perm_idx_ptr(side_idx_, permutation_idx_, local_point_idx_);
+}
 
 #endif /* EVAL_SUBSET_HH_ */

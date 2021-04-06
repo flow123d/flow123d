@@ -218,13 +218,8 @@ private:
     /// Assembles the cell integrals for the given dimension.
     template<unsigned int dim>
     inline void assemble_cell_integrals() {
-        /*for (unsigned int i=0; i<bulk_integral_data_.permanent_size(); ++i) {
-            if (bulk_integral_data_[i].cell.dim() != dim) continue;
-            multidim_assembly_[Dim<dim>{}]->cell_integral(bulk_integral_data_[i].cell, element_cache_map_.position_in_cache(bulk_integral_data_[i].cell.elm().mesh_idx()));
-        }*/
         for (unsigned int i=0; i<element_cache_map_.n_elements(); ++i) {
             unsigned int elm_start = element_cache_map_.element_chunk_begin_new(i);
-            //std::cout << "Elem start: " << i << " " << element_cache_map_.eval_point_data(elm_start).dh_loc_idx_ << std::endl;
             if (element_cache_map_.eval_point_data(elm_start).i_eval_point_ != 0) continue;
             multidim_assembly_[Dim<dim>{}]->cell_integral(i, element_cache_map_.eval_point_data(elm_start).dh_loc_idx_);
         }
@@ -341,22 +336,23 @@ private:
     }
 
     /// Add data of volume integral to appropriate data structure.
-    void add_volume_integral(const DHCellAccessor &cell) {
+    inline void add_volume_integral(const DHCellAccessor &cell) {
+        uint subset_idx = integrals_.bulk_[cell.dim()-1]->get_subset_idx();
         BulkIntegralData data;
         data.cell = cell;
-        data.subset_index = integrals_.bulk_[cell.dim()-1]->get_subset_idx();
-        bulk_integral_data_.push_back(data);
+        data.subset_index = subset_idx;
+        bulk_integral_data_.push_back(data); // emplace_back
 
         unsigned int reg_idx = cell.elm().region_idx().idx();
-        for (uint i=uint( eval_points_->subset_begin(cell.dim(), integrals_.bulk_[cell.dim()-1]->get_subset_idx()) );
-                  i<uint( eval_points_->subset_end(cell.dim(), integrals_.bulk_[cell.dim()-1]->get_subset_idx()) ); ++i) {
+        for (uint i=uint( eval_points_->subset_begin(cell.dim(), subset_idx) );
+                  i<uint( eval_points_->subset_end(cell.dim(), subset_idx) ); ++i) {
             EvalPointData epd(reg_idx, cell.elm_idx(), i, cell.local_idx());
             element_cache_map_.eval_point_data_.push_back(epd);
         }
     }
 
     /// Add data of edge integral to appropriate data structure.
-    void add_edge_integral(const DHCellSide &cell_side) {
+    inline void add_edge_integral(const DHCellSide &cell_side) {
         EdgeIntegralData data;
         data.edge_side_range = cell_side.edge_sides();
         data.subset_index = integrals_.edge_[data.edge_side_range.begin()->dim()-1]->get_subset_idx();
@@ -372,7 +368,7 @@ private:
     }
 
     /// Add data of coupling integral to appropriate data structure.
-    void add_coupling_integral(const DHCellAccessor &cell, const DHCellSide &ngh_side, bool add_low) {
+    inline void add_coupling_integral(const DHCellAccessor &cell, const DHCellSide &ngh_side, bool add_low) {
         CouplingIntegralData data;
         data.cell = cell;
         data.side = ngh_side;
@@ -395,7 +391,7 @@ private:
     }
 
     /// Add data of boundary integral to appropriate data structure.
-    void add_boundary_integral(const DHCellSide &bdr_side) {
+    inline void add_boundary_integral(const DHCellSide &bdr_side) {
         BoundaryIntegralData data;
         data.side = bdr_side;
         data.bdr_subset_index = integrals_.boundary_[bdr_side.dim()-1]->get_subset_low_idx();
