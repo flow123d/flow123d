@@ -872,7 +872,7 @@ public:
 
     Type * data_;
 
-private:
+protected:
     inline uint space_() { return n_rows_ * n_cols_ * reserved_; }
     uint n_rows_;
     uint n_cols_;
