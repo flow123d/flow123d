@@ -65,7 +65,7 @@ public:
     /// Assemble integral over element
     inline void cell_integral(unsigned int element_patch_idx, unsigned int dh_local_idx)
     {
-        if (dh_local_idx == -1) return;
+        if ((int)dh_local_idx == -1) return;
         DHCellAccessor cell(data_->dh_.get(), dh_local_idx);
         if (cell.dim() != dim) return;
 
@@ -223,7 +223,7 @@ public:
     /// Assembles the cell (volume) integral into the stiffness matrix.
     inline void cell_integral(unsigned int element_patch_idx, unsigned int dh_local_idx)
     {
-        if (dh_local_idx == -1) return;
+        if ((int)dh_local_idx == -1) return;
         DHCellAccessor cell(data_->dh_.get(), dh_local_idx);
         if (cell.dim() != dim) return;
         if (!cell.is_own()) return;
@@ -664,7 +664,7 @@ public:
     /// Assemble integral over element
     inline void cell_integral(unsigned int element_patch_idx, unsigned int dh_local_idx)
     {
-        if (dh_local_idx == -1) return;
+        if ((int)dh_local_idx == -1) return;
         DHCellAccessor cell(data_->dh_.get(), dh_local_idx);
         if (cell.dim() != dim) return;
 
