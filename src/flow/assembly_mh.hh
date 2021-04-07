@@ -1,7 +1,7 @@
 /*
- * darcy_flow_assembly.hh
+ * adarcy_flow_assembly.hh
  *
- *  Created on: Apr 21, 2016
+ *  Createad on: Apr 21, 2016
  *      Author: jb
  */
 
@@ -161,10 +161,10 @@ public:
         loc_system_.reset();
     
         set_dofs_and_bc(dh_cell);
-        
+
         assemble_sides(dh_cell);
         assemble_element(dh_cell);
-        
+
         loc_system_.eliminate_solution();
         ad_->lin_sys->set_local_system(loc_system_);
 
@@ -351,7 +351,7 @@ protected:
         }
     }
         
-     void assemble_sides(const DHCellAccessor& dh_cell)
+    void assemble_sides(const DHCellAccessor& dh_cell)
     {
         const ElementAccessor<3> ele = dh_cell.elm();
         double cs = ad_->cross_section.value(ele.centre(), ele);
@@ -359,10 +359,17 @@ protected:
 	    double bet =  ad_->beta.value(ele.centre(), ele);
 	    auto w = ad_->field_ele_velocity.value(ele.centre(), ele);
         auto an = ad_->anisotropy.value(ele.centre(), ele );
-        const arma::mat33 scale = an.i() / cs / conduct + bet * arma::norm(w) * arma::eye(3,3) / cs; //inverze an
-        assemble_sides_scale(dh_cell, scale);
+        if (ad_-> ns_type == DarcyMH::EqData::nonlinear_solver::Lscheme) {
+            double L =  ad_->L.value(ele.centre(), ele);
+            const arma::mat33 scale = an.i() / cs / conduct + L * arma::eye(3,3) / cs ;
+            assemble_sides_scale(dh_cell, scale);
+        } else{  
+            const arma::mat33 scale = an.i() / cs / conduct + bet * arma::norm(w) * arma::eye(3,3) / cs; //inverze an
+            assemble_sides_scale(dh_cell, scale);
+        }
+        
     }
-    
+
     void assemble_sides_scale(const DHCellAccessor& dh_cell, const arma::mat33& scale)
     {
         arma::vec3 &gravity_vec = ad_->gravity_vec_;
@@ -372,13 +379,23 @@ protected:
         unsigned int ndofs = fe_values_.n_dofs();
         unsigned int qsize = fe_values_.n_points();
         auto velocity = fe_values_.vector_view(0);
-
+        double bet =  ad_->beta.value(ele.centre(), ele);
+        auto w = ad_->field_ele_velocity.value(ele.centre(), ele);
+        double L =  ad_->L.value(ele.centre(), ele);
+        
         for (unsigned int k=0; k<qsize; k++)
             for (unsigned int i=0; i<ndofs; i++){
-                double rhs_val =
+                if (ad_-> ns_type == DarcyMH::EqData::nonlinear_solver::Lscheme) {
+                    double rhs_val =
+                        (arma::dot(gravity_vec,velocity.value(i,k))
+                         - arma::dot(bet*arma::norm(w)*w,velocity.value(i,k)) + arma::dot(L*w,velocity.value(i,k))) * fe_values_.JxW(k);
+                    loc_system_.add_value(i, rhs_val);
+                } else{
+                    double rhs_val =
                         arma::dot(gravity_vec,velocity.value(i,k))
                         * fe_values_.JxW(k);
-                loc_system_.add_value(i, rhs_val);
+                    loc_system_.add_value(i, rhs_val);
+                }
                 
                 for (unsigned int j=0; j<ndofs; j++){
                     double mat_val = 
@@ -413,7 +430,6 @@ protected:
         }
     }
     
-    
     void assemble_element(const DHCellAccessor& dh_cell){
         // set block B, B': element-side, side-element
         for(unsigned int side = 0; side < loc_side_dofs.size(); side++){
@@ -421,13 +437,12 @@ protected:
             loc_system_.add_value(loc_side_dofs[side], loc_ele_dof, -1.0);
         }
         
-        if ( typeid(*ad_->lin_sys) == typeid(LinSys_BDDC) ) {
+        if ( typeid(*ad_->lin_sys_Newton) == typeid(LinSys_BDDC) ) {
             double val_ele =  1.;
-            static_cast<LinSys_BDDC*>(ad_->lin_sys)->
+            static_cast<LinSys_BDDC*>(ad_->lin_sys_Newton)->
                             diagonal_weights_set_value( loc_system_.row_dofs[loc_ele_dof], val_ele );
 		}
     }
-    
 
     void assembly_dim_connections(const DHCellAccessor& dh_cell){
         //D, E',E block: compatible connections: element-edge

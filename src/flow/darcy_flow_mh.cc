@@ -136,6 +136,8 @@ const it::Selection & DarcyMH::EqData::nonlinear_solver_type() {
             "Solving nonlinear term by using Picard's iterations.")
         .add_value(Newton, "Newton",
             "Solving nonlinear term by using Newton's method.")
+        .add_value(Lscheme, "Lscheme",
+            "Solving nonlinear term by using L-scheme method.")
         .close();
 } 
 
@@ -295,6 +297,11 @@ DarcyMH::EqData::EqData()
             .description("Forchheimer coefficient")
             .input_default("0.0")
             .units( UnitSI::dimensionless() );
+    
+    *this += L.name("L")
+            .description("L-scheme coefficient")
+            .input_default("0.0")
+            .units( UnitSI::dimensionless() );
 
     //time_term_fields = this->subset({"storativity"});
     //main_matrix_fields = this->subset({"anisotropy", "conductivity", "cross_section", "sigma", "bc_type", "bc_robin_sigma"});
@@ -338,6 +345,8 @@ DarcyMH::DarcyMH(Mesh &mesh_in, const Input::Record in_rec)
 
     data_ = make_shared<EqData>();
     EquationBase::eq_data_ = data_.get();
+
+    data_->ns_type = input_record_.val<Input::Record>("nonlinear_solver").val<EqData::nonlinear_solver>("solver_type");
     
     data_->is_linear=true;
 
@@ -428,9 +437,9 @@ void DarcyMH::initialize() {
     }
 
     init_eq_data();
-    int ns_type = input_record_.val<Input::Record>("nonlinear_solver").val<EqData::nonlinear_solver>("solver_type");
+    //int ns_type = input_record_.val<Input::Record>("nonlinear_solver").val<EqData::nonlinear_solver>("solver_type");
     this->data_->multidim_assembler =  AssemblyBase::create< AssemblyMH >(data_);
-    if (ns_type == EqData::nonlinear_solver::Newton) {
+    if (data_->ns_type == EqData::nonlinear_solver::Newton) {
         this->data_->multidim_assembler_Newton =  AssemblyBase::create< AssemblyMH_Newton >(data_);
     }
     output_object = new DarcyFlowMHOutput(this, input_record_);
@@ -477,7 +486,7 @@ void DarcyMH::initialize() {
     // auxiliary set_time call  since allocation assembly evaluates fields as well
     data_changed_ = data_->set_time(time_->step(), LimitSide::right) || data_changed_;
     create_linear_system(rec, schur0, true);
-    if (ns_type == EqData::nonlinear_solver::Newton){
+    if (data_->ns_type == EqData::nonlinear_solver::Newton){
         create_linear_system(rec, schur0_Newton, false);
     }
 
@@ -617,7 +626,8 @@ void DarcyMH::solve_nonlinear()
     compute_full_residual_vec(residual_);
     VecNorm(residual_, NORM_2, &residual_norm);
     nonlinear_iteration_ = 0;
-    int ns_type = input_record_.val<Input::Record>("nonlinear_solver").val<EqData::nonlinear_solver>("solver_type");
+    //int ns_type = input_record_.val<Input::Record>("nonlinear_solver").val<EqData::nonlinear_solver>("solver_type");
+
     MessageOut().fmt("[nonlinear solver] norm of initial residual: {}\n", residual_norm);
 
     // Reduce is_linear flag.
@@ -659,7 +669,7 @@ void DarcyMH::solve_nonlinear()
         }
         auto si = LinSys::SolveInfo(0,0);
         if (! is_linear_common){
-            if (ns_type == EqData::nonlinear_solver::Newton){
+            if (data_->ns_type == EqData::nonlinear_solver::Newton){
                 data_changed_=true;
                 Vec solution_update;
                 VecDuplicate(schur0->get_solution(), &solution_update);

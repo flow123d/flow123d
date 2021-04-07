@@ -163,7 +163,8 @@ public:
         
         enum nonlinear_solver {
             Picard = 0,
-            Newton = 1
+            Newton = 1,
+            Lscheme = 2
         }; 
 
         /// Return a Selection corresponding to enum BC_Type.
@@ -180,6 +181,7 @@ public:
         Field<3, FieldValue<3>::Scalar > water_source_density;
         Field<3, FieldValue<3>::Scalar > sigma;
 	    Field<3, FieldValue<3>::Scalar > beta;
+        Field<3, FieldValue<3>::Scalar > L;
         
         BCField<3, FieldValue<3>::Enum > bc_type; // Discrete need Selection for initialization
         BCField<3, FieldValue<3>::Scalar > bc_pressure; 
@@ -228,6 +230,7 @@ public:
         MultidimAssembly multidim_assembler;
         MultidimAssembly multidim_assembler_Newton;
 
+        int ns_type;                //non-linear solver type
     };
 
     /// Selection for enum MortarMethod.
@@ -321,7 +324,7 @@ protected:
      * - add support for Robin type sources
      * - support for nonlinear solvers - assembly either residual vector, matrix, or both (using FADBAD++)
      */
-    void assembly_mh_matrix(MultidimAssembly& time);
+    void assembly_mh_matrix(MultidimAssembly& assembler);
 
     /// Source term is implemented differently in LMH version.
     virtual void assembly_source_term();
