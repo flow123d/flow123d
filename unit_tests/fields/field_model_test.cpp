@@ -76,15 +76,14 @@ public:
     }
 
     void fill_cache_data() {
-    	this->regions_starts_.push_back(0);
-    	this->regions_starts_.push_back(1);
+    	this->regions_starts_.emplace_back(0);
+    	this->regions_starts_.emplace_back(1);
     	this->regions_starts_.make_permanent();
-    	this->element_starts_.push_back(0);
-    	this->element_starts_.push_back(n_items);
+    	this->element_starts_.emplace_back(0);
+    	this->element_starts_.emplace_back(n_items);
     	this->element_starts_.make_permanent();
     	for (unsigned int i=0; i<n_items; ++i) {
-    	    EvalPointData epd(1, 1, i, 0);
-    	    this->eval_point_data_.push_back(epd);
+    	    this->eval_point_data_.emplace_back(1, 1, i, 0);
     	}
     	this->eval_point_data_.make_permanent();
     }

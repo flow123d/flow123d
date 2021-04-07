@@ -346,8 +346,7 @@ private:
         unsigned int reg_idx = cell.elm().region_idx().idx();
         for (uint i=uint( eval_points_->subset_begin(cell.dim(), subset_idx) );
                   i<uint( eval_points_->subset_end(cell.dim(), subset_idx) ); ++i) {
-            EvalPointData epd(reg_idx, cell.elm_idx(), i, cell.local_idx());
-            element_cache_map_.eval_point_data_.push_back(epd);
+            element_cache_map_.eval_point_data_.emplace_back(reg_idx, cell.elm_idx(), i, cell.local_idx());
         }
     }
 
@@ -361,8 +360,7 @@ private:
         for( DHCellSide edge_side : data.edge_side_range ) {
             unsigned int reg_idx = edge_side.element().region_idx().idx();
             for (auto p : integrals_.edge_[data.edge_side_range.begin()->dim()-1]->points(edge_side, &element_cache_map_) ) {
-                EvalPointData epd(reg_idx, edge_side.elem_idx(), p.eval_point_idx(), edge_side.cell().local_idx());
-                element_cache_map_.eval_point_data_.push_back(epd);
+                element_cache_map_.eval_point_data_.emplace_back(reg_idx, edge_side.elem_idx(), p.eval_point_idx(), edge_side.cell().local_idx());
             }
         }
     }
@@ -379,13 +377,11 @@ private:
         unsigned int reg_idx_low = cell.elm().region_idx().idx();
         unsigned int reg_idx_high = ngh_side.element().region_idx().idx();
         for (auto p : integrals_.coupling_[cell.dim()-1]->points(ngh_side, &element_cache_map_) ) {
-            EvalPointData epd(reg_idx_high, ngh_side.elem_idx(), p.eval_point_idx(), ngh_side.cell().local_idx());
-            element_cache_map_.eval_point_data_.push_back(epd);
+            element_cache_map_.eval_point_data_.emplace_back(reg_idx_high, ngh_side.elem_idx(), p.eval_point_idx(), ngh_side.cell().local_idx());
 
         	if (add_low) {
                 auto p_low = p.lower_dim(cell); // equivalent point on low dim cell
-               	EvalPointData epd_low(reg_idx_low, cell.elm_idx(), p_low.eval_point_idx(), cell.local_idx());
-                element_cache_map_.eval_point_data_.push_back(epd_low);
+                element_cache_map_.eval_point_data_.emplace_back(reg_idx_low, cell.elm_idx(), p_low.eval_point_idx(), cell.local_idx());
         	}
         }
     }
@@ -400,14 +396,12 @@ private:
 
         unsigned int reg_idx = bdr_side.element().region_idx().idx();
         for (auto p : integrals_.boundary_[bdr_side.dim()-1]->points(bdr_side, &element_cache_map_) ) {
-            EvalPointData epd(reg_idx, bdr_side.elem_idx(), p.eval_point_idx(), bdr_side.cell().local_idx());
-            element_cache_map_.eval_point_data_.push_back(epd);
+            element_cache_map_.eval_point_data_.emplace_back(reg_idx, bdr_side.elem_idx(), p.eval_point_idx(), bdr_side.cell().local_idx());
 
         	auto p_bdr = p.point_bdr(bdr_side.cond().element_accessor()); // equivalent point on boundary element
         	unsigned int bdr_reg = bdr_side.cond().element_accessor().region_idx().idx();
         	// invalid local_idx value, DHCellAccessor of boundary element doesn't exist
-        	EvalPointData epd_bdr(bdr_reg, bdr_side.cond().bc_ele_idx(), p_bdr.eval_point_idx(), -1);
-        	element_cache_map_.eval_point_data_.push_back(epd_bdr);
+        	element_cache_map_.eval_point_data_.emplace_back(bdr_reg, bdr_side.cond().bc_ele_idx(), p_bdr.eval_point_idx(), -1);
         }
     }
 

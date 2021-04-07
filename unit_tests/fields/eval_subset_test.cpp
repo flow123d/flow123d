@@ -187,7 +187,7 @@ public:
         //std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh_, fe_rt0);
         dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
         //dh_->distribute_dofs(ds);
-        this->init(eval_points_);
+        this->init(eval_points_, dh_.get());
 
     }
 
@@ -206,8 +206,7 @@ public:
         unsigned int elm_idx = cell.elm_idx();
         for (uint i=uint(eval_points_->subset_begin(cell.dim(), bulk_integral_->get_subset_idx()));
                   i<uint(eval_points_->subset_end(cell.dim(), bulk_integral_->get_subset_idx())); ++i) {
-            EvalPointData epd(reg_idx, elm_idx, i, cell.local_idx());
-            this->eval_point_data_.push_back(epd);
+            this->eval_point_data_.emplace_back(reg_idx, elm_idx, i, cell.local_idx());
         }
         this->eval_point_data_.make_permanent();
     }
@@ -216,8 +215,7 @@ public:
         for( DHCellSide edge_side : cell_side.edge_sides() ) {
             unsigned int reg_idx = edge_side.element().region_idx().idx();
             for (auto p : edge_integral_->points(edge_side, this) ) {
-                EvalPointData epd(reg_idx, edge_side.elem_idx(), p.eval_point_idx(), edge_side.cell().local_idx());
-                this->eval_point_data_.push_back(epd);
+                this->eval_point_data_.emplace_back(reg_idx, edge_side.elem_idx(), p.eval_point_idx(), edge_side.cell().local_idx());
             }
         }
         this->eval_point_data_.make_permanent();
@@ -227,25 +225,21 @@ public:
         unsigned int reg_idx_low = cell.elm().region_idx().idx();
         unsigned int reg_idx_high = ngh_side.element().region_idx().idx();
         for (auto p : coupling_integral_->points(ngh_side, this) ) {
-            EvalPointData epd(reg_idx_high, ngh_side.elem_idx(), p.eval_point_idx(), ngh_side.cell().local_idx());
-            this->eval_point_data_.push_back(epd);
+            this->eval_point_data_.emplace_back(reg_idx_high, ngh_side.elem_idx(), p.eval_point_idx(), ngh_side.cell().local_idx());
 
             auto p_low = p.lower_dim(cell); // equivalent point on low dim cell
-           	EvalPointData epd_low(reg_idx_low, cell.elm_idx(), p_low.eval_point_idx(), cell.local_idx());
-           	this->eval_point_data_.push_back(epd_low);
+           	this->eval_point_data_.emplace_back(reg_idx_low, cell.elm_idx(), p_low.eval_point_idx(), cell.local_idx());
        	}
     }
 
     void add_boundary_integral(const DHCellSide &bdr_side) {
         unsigned int reg_idx = bdr_side.element().region_idx().idx();
         for (auto p : boundary_integral_->points(bdr_side, this) ) {
-            EvalPointData epd(reg_idx, bdr_side.elem_idx(), p.eval_point_idx(), bdr_side.cell().local_idx());
-            this->eval_point_data_.push_back(epd);
+            this->eval_point_data_.emplace_back(reg_idx, bdr_side.elem_idx(), p.eval_point_idx(), bdr_side.cell().local_idx());
 
         	auto p_bdr = p.point_bdr(bdr_side.cond().element_accessor()); // equivalent point on boundary element
         	unsigned int bdr_reg = bdr_side.cond().element_accessor().region_idx().idx();
-        	EvalPointData epd_bdr(bdr_reg, bdr_side.cond().bc_ele_idx(), p_bdr.eval_point_idx(), -1);
-        	this->eval_point_data_.push_back(epd_bdr);
+        	this->eval_point_data_.emplace_back(bdr_reg, bdr_side.cond().bc_ele_idx(), p_bdr.eval_point_idx(), -1);
         }
     }
 

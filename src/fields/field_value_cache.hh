@@ -55,6 +55,10 @@ struct EvalPointData {
     /// Constructor sets all data members
     EvalPointData(unsigned int i_reg, unsigned int i_ele, unsigned int i_ep, unsigned int dh_loc_idx)
     : i_reg_(i_reg), i_element_(i_ele), i_eval_point_(i_ep), dh_loc_idx_(dh_loc_idx) {}
+    /// Copy constructor
+    EvalPointData(const EvalPointData &other)
+    : i_reg_(other.i_reg_), i_element_(other.i_element_), i_eval_point_(other.i_eval_point_), dh_loc_idx_(other.dh_loc_idx_) {}
+
 
     bool operator < (const EvalPointData &other) {
         if (i_reg_ == other.i_reg_) {

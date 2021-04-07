@@ -79,30 +79,30 @@ void ElementCacheMap::create_patch() {
             if (it->i_reg_ != last_region_idx) { // new region
                 unsigned int last_eval_point = i_pos-1; // set size of block by SIMD size
                 while (i_pos % ElementCacheMap::simd_size_double > 0) {
-                	eval_point_data_.push_back( eval_point_data_[last_eval_point] );
+                	eval_point_data_.emplace_back( eval_point_data_[last_eval_point] );
                     i_pos++;
                 }
 
-                regions_starts_.push_back( element_starts_.temporary_size() );
+                regions_starts_.emplace_back( element_starts_.temporary_size() );
                 last_region_idx = it->i_reg_;
             }
 			elm_idx_[element_starts_.temporary_size()] = it->i_element_;
             element_to_map_[it->i_element_] = element_starts_.temporary_size();
-            element_starts_.push_back(i_pos);
+            element_starts_.emplace_back(i_pos);
             last_element_idx = it->i_element_;
         }
-        eval_point_data_.push_back( *it );
+        eval_point_data_.emplace_back( *it );
         set_element_eval_point(element_starts_.temporary_size()-1, it->i_eval_point_, i_pos);
         i_pos++;
     }
     unsigned int last_eval_point = i_pos-1; // set size of block of last region by SIMD size
     while (i_pos % ElementCacheMap::simd_size_double > 0) {
-        eval_point_data_.push_back( eval_point_data_[last_eval_point] );
+        eval_point_data_.emplace_back( eval_point_data_[last_eval_point] );
         i_pos++;
     }
 
-    regions_starts_.push_back( element_starts_.temporary_size() );
-    element_starts_.push_back(i_pos);
+    regions_starts_.emplace_back( element_starts_.temporary_size() );
+    element_starts_.emplace_back(i_pos);
     regions_starts_.make_permanent();
     element_starts_.make_permanent();
     eval_point_data_.make_permanent();

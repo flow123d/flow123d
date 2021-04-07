@@ -51,8 +51,7 @@ public:
     void add_bulk_points(DHCellAccessor cell) {
         unsigned int reg_idx = cell.elm().region_idx().idx();
         for (auto p : bulk_eval->points(this->position_in_cache(cell.elm_idx()), this) ) {
-            EvalPointData epd(reg_idx, cell.elm_idx(), p.eval_point_idx(), cell.local_idx());
-            this->eval_point_data_.push_back(epd);
+            this->eval_point_data_.emplace_back(reg_idx, cell.elm_idx(), p.eval_point_idx(), cell.local_idx());
         }
         this->eval_point_data_.make_permanent();
         elm_to_patch_.insert(cell.elm_idx());
@@ -61,13 +60,11 @@ public:
     void add_side_points(DHCellSide cell_side) {
         unsigned int reg_idx = cell_side.element().region_idx().idx();
         for (auto p : edge_eval->points(cell_side, this) ) {
-            EvalPointData epd(reg_idx, cell_side.elem_idx(), p.eval_point_idx(), cell_side.cell().local_idx());
-            this->eval_point_data_.push_back(epd);
+            this->eval_point_data_.emplace_back(reg_idx, cell_side.elem_idx(), p.eval_point_idx(), cell_side.cell().local_idx());
 
         	auto p_ghost = p.point_on(cell_side); // point on neghbouring side on one edge
         	unsigned int ghost_reg = cell_side.element().region_idx().idx();
-        	EvalPointData epd_ghost(ghost_reg, cell_side.elem_idx(), p_ghost.eval_point_idx(), cell_side.cell().local_idx());
-        	this->eval_point_data_.push_back(epd_ghost);
+        	this->eval_point_data_.emplace_back(ghost_reg, cell_side.elem_idx(), p_ghost.eval_point_idx(), cell_side.cell().local_idx());
         }
         elm_to_patch_.insert(cell_side.elem_idx());
     }
@@ -95,8 +92,7 @@ TEST_F(FieldValueCacheTest, field_value_cache) {
 
     unsigned int reg_idx = dh_cell.elm().region_idx().idx();
     for (auto p : bulk_eval->points(this->position_in_cache(dh_cell.elm_idx()), this) ) {
-        EvalPointData epd(reg_idx, dh_cell.elm_idx(), p.eval_point_idx(), dh_cell.local_idx());
-        this->eval_point_data_.push_back(epd);
+        this->eval_point_data_.emplace_back(reg_idx, dh_cell.elm_idx(), p.eval_point_idx(), dh_cell.local_idx());
     }
     elm_to_patch_.insert(dh_cell.elm_idx());
 
@@ -105,8 +101,7 @@ TEST_F(FieldValueCacheTest, field_value_cache) {
             for( DHCellSide edge_side : cell_side.edge_sides() ) {
                 unsigned int reg_idx = edge_side.element().region_idx().idx();
                 for (auto p : edge_eval->points(edge_side, this) ) {
-                    EvalPointData epd(reg_idx, edge_side.elem_idx(), p.eval_point_idx(), edge_side.cell().local_idx());
-                    this->eval_point_data_.push_back(epd);
+                    this->eval_point_data_.emplace_back(reg_idx, edge_side.elem_idx(), p.eval_point_idx(), edge_side.cell().local_idx());
                 }
                 elm_to_patch_.insert(edge_side.elem_idx());
             }
@@ -175,8 +170,7 @@ TEST_F(FieldValueCacheTest, element_cache_map) {
             for( DHCellSide edge_side : cell_side.edge_sides() ) {
                 unsigned int reg_idx = edge_side.element().region_idx().idx();
                 for (auto p : edge_eval->points(edge_side, this) ) {
-                    EvalPointData epd(reg_idx, edge_side.elem_idx(), p.eval_point_idx(), edge_side.cell().local_idx());
-                    this->eval_point_data_.push_back(epd);
+                    this->eval_point_data_.emplace_back(reg_idx, edge_side.elem_idx(), p.eval_point_idx(), edge_side.cell().local_idx());
                 }
                 elm_to_patch_.insert(edge_side.elem_idx());
             }
