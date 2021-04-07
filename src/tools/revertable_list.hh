@@ -83,15 +83,39 @@ public:
         return data_.size();
     }
 
-    /// Add new item to list.
+    /**
+     * Add new item of list.
+     *
+     * New item is added to end of list and temporary size value is incremented.
+     * Method is equivalent with std::vector::push_back().
+     * This method needs to create copy of passed Type.
+     */
     inline std::size_t push_back(const Type &t)
     {
-        if (enlardeg_by_ == 0) { // list with fixed size
-            ASSERT_LT_DBG(temporary_size_, reserved_size()).error("Data array overflowed!\n");
-        } else if (temporary_size_ == reserved_size()) { // enlarge reserved size
+        ASSERT_DBG((enlardeg_by_ > 0) || (temporary_size_ < reserved_size())).error("Data array overflowed!\n");
+        if (temporary_size_ == reserved_size()) { // enlarge reserved size
         	this->resize( this->reserved_size() + enlardeg_by_ );
         }
         data_[temporary_size_] = t;
+        temporary_size_++;
+        return temporary_size_;
+    }
+
+    /**
+     * Create new item in list.
+     *
+     * New item is created at the end of list and temporary size value is incremented.
+     * Method is equivalent with std::vector::emplace_back().
+     * Method passes argumets of Type constructor.
+     */
+    template<class... Args>
+    inline std::size_t emplace_back(Args&&... args)
+    {
+        ASSERT_DBG((enlardeg_by_ > 0) || (temporary_size_ < reserved_size())).error("Data array overflowed!\n");
+        if (temporary_size_ == reserved_size()) { // enlarge reserved size
+        	this->resize( this->reserved_size() + enlardeg_by_ );
+        }
+        data_[temporary_size_] = Type( std::forward<Args>(args)... );
         temporary_size_++;
         return temporary_size_;
     }
