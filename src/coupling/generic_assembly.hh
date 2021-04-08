@@ -60,22 +60,49 @@ class GenericAssembly
 {
 private:
     struct BulkIntegralData {
+    	/// Default constructor
         BulkIntegralData() {}
+
+        /// Constructor with data mebers initialization
+        BulkIntegralData(DHCellAccessor dhcell, unsigned int subset_idx)
+        : cell(dhcell), subset_index(subset_idx) {}
+
+        /// Copy constructor
+        BulkIntegralData(const BulkIntegralData &other)
+        : cell(other.cell), subset_index(other.subset_index) {}
 
         DHCellAccessor cell;
         unsigned int subset_index;
     };
 
     struct EdgeIntegralData {
+    	/// Default constructor
     	EdgeIntegralData()
     	: edge_side_range(make_iter<DHEdgeSide, DHCellSide>( DHEdgeSide() ), make_iter<DHEdgeSide, DHCellSide>( DHEdgeSide() )) {}
+
+        /// Constructor with data mebers initialization
+    	EdgeIntegralData(const EdgeIntegralData &other)
+        : edge_side_range(other.edge_side_range), subset_index(other.subset_index) {}
+
+        /// Copy constructor
+    	EdgeIntegralData(RangeConvert<DHEdgeSide, DHCellSide> range, unsigned int subset_idx)
+        : edge_side_range(range), subset_index(subset_idx) {}
 
     	RangeConvert<DHEdgeSide, DHCellSide> edge_side_range;
         unsigned int subset_index;
 	};
 
     struct CouplingIntegralData {
+    	/// Default constructor
        	CouplingIntegralData() {}
+
+        /// Constructor with data mebers initialization
+       	CouplingIntegralData(DHCellAccessor dhcell, unsigned int bulk_idx, DHCellSide dhside, unsigned int side_idx)
+        : cell(dhcell), bulk_subset_index(bulk_idx), side(dhside), side_subset_index(side_idx) {}
+
+        /// Copy constructor
+       	CouplingIntegralData(const CouplingIntegralData &other)
+        : cell(other.cell), bulk_subset_index(other.bulk_subset_index), side(other.side), side_subset_index(other.side_subset_index) {}
 
         DHCellAccessor cell;
 	    unsigned int bulk_subset_index;
@@ -84,25 +111,22 @@ private:
     };
 
     struct BoundaryIntegralData {
+    	/// Default constructor
     	BoundaryIntegralData() {}
+
+        /// Constructor with data mebers initialization
+    	BoundaryIntegralData(unsigned int bdr_idx, DHCellSide dhside, unsigned int side_idx)
+        : bdr_subset_index(bdr_idx), side(dhside), side_subset_index(side_idx) {}
+
+        /// Copy constructor
+    	BoundaryIntegralData(const BoundaryIntegralData &other)
+        : bdr_subset_index(other.bdr_subset_index), side(other.side), side_subset_index(other.side_subset_index) {}
 
     	// We don't need hold ElementAccessor of boundary element, side.cond().element_accessor() provides it.
 	    unsigned int bdr_subset_index; // index of subset on boundary element
 	    DHCellSide side;
 	    unsigned int side_subset_index;
 	};
-
-    /**
-     * Temporary struct holds data od boundary element.
-     *
-     * It will be merged to BulkIntegralData after making implementation of DHCellAccessor on boundary elements.
-     */
-    struct BdrElementIntegralData {
-    	BdrElementIntegralData() {}
-
-        ElementAccessor<3> elm;
-        unsigned int subset_index;
-    };
 
 public:
 
@@ -338,10 +362,7 @@ private:
     /// Add data of volume integral to appropriate data structure.
     inline void add_volume_integral(const DHCellAccessor &cell) {
         uint subset_idx = integrals_.bulk_[cell.dim()-1]->get_subset_idx();
-        BulkIntegralData data;
-        data.cell = cell;
-        data.subset_index = subset_idx;
-        bulk_integral_data_.push_back(data); // emplace_back
+        bulk_integral_data_.emplace_back(cell, subset_idx);
 
         unsigned int reg_idx = cell.elm().region_idx().idx();
         for (uint i=uint( eval_points_->subset_begin(cell.dim(), subset_idx) );
@@ -352,14 +373,12 @@ private:
 
     /// Add data of edge integral to appropriate data structure.
     inline void add_edge_integral(const DHCellSide &cell_side) {
-        EdgeIntegralData data;
-        data.edge_side_range = cell_side.edge_sides();
-        data.subset_index = integrals_.edge_[data.edge_side_range.begin()->dim()-1]->get_subset_idx();
-        edge_integral_data_.push_back(data);
+        auto range = cell_side.edge_sides();
+        edge_integral_data_.emplace_back(range, integrals_.edge_[range.begin()->dim()-1]->get_subset_idx());
 
-        for( DHCellSide edge_side : data.edge_side_range ) {
+        for( DHCellSide edge_side : range ) {
             unsigned int reg_idx = edge_side.element().region_idx().idx();
-            for (auto p : integrals_.edge_[data.edge_side_range.begin()->dim()-1]->points(edge_side, &element_cache_map_) ) {
+            for (auto p : integrals_.edge_[range.begin()->dim()-1]->points(edge_side, &element_cache_map_) ) {
                 element_cache_map_.eval_point_data_.emplace_back(reg_idx, edge_side.elem_idx(), p.eval_point_idx(), edge_side.cell().local_idx());
             }
         }
@@ -367,12 +386,8 @@ private:
 
     /// Add data of coupling integral to appropriate data structure.
     inline void add_coupling_integral(const DHCellAccessor &cell, const DHCellSide &ngh_side, bool add_low) {
-        CouplingIntegralData data;
-        data.cell = cell;
-        data.side = ngh_side;
-        data.bulk_subset_index = integrals_.coupling_[cell.dim()-1]->get_subset_low_idx();
-        data.side_subset_index = integrals_.coupling_[cell.dim()-1]->get_subset_high_idx();
-        coupling_integral_data_.push_back(data);
+        coupling_integral_data_.emplace_back(cell, integrals_.coupling_[cell.dim()-1]->get_subset_low_idx(), ngh_side,
+                integrals_.coupling_[cell.dim()-1]->get_subset_high_idx());
 
         unsigned int reg_idx_low = cell.elm().region_idx().idx();
         unsigned int reg_idx_high = ngh_side.element().region_idx().idx();
@@ -388,11 +403,8 @@ private:
 
     /// Add data of boundary integral to appropriate data structure.
     inline void add_boundary_integral(const DHCellSide &bdr_side) {
-        BoundaryIntegralData data;
-        data.side = bdr_side;
-        data.bdr_subset_index = integrals_.boundary_[bdr_side.dim()-1]->get_subset_low_idx();
-        data.side_subset_index = integrals_.boundary_[bdr_side.dim()-1]->get_subset_high_idx();
-        boundary_integral_data_.push_back(data);
+        boundary_integral_data_.emplace_back(integrals_.boundary_[bdr_side.dim()-1]->get_subset_low_idx(), bdr_side,
+                integrals_.boundary_[bdr_side.dim()-1]->get_subset_high_idx());
 
         unsigned int reg_idx = bdr_side.element().region_idx().idx();
         for (auto p : integrals_.boundary_[bdr_side.dim()-1]->points(bdr_side, &element_cache_map_) ) {
