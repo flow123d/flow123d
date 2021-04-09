@@ -32,6 +32,7 @@
 
 #include "fields/multi_field.hh"
 #include "fields/generic_field.hh"
+#include "fields/field_model.hh"
 #include "input/factory.hh"
 
 
@@ -135,6 +136,20 @@ double lame_lambda(double young, double poisson)
 {
     return young*poisson/((poisson+1.)*(1.-2.*poisson));
 }
+
+// Functor computing lame_mu
+struct fn_lame_mu {
+	inline double operator() (double young, double poisson) {
+        return young * 0.5 / (poisson+1.);
+    }
+};
+
+// Functor computing lame_lambda
+struct fn_lame_lambda {
+	inline double operator() (double young, double poisson) {
+        return young * poisson / ((poisson+1.)*(1.-2.*poisson));
+    }
+};
 
 
 
@@ -250,6 +265,16 @@ Elasticity::EqData::EqData()
             .units( UnitSI().dimensionless() )
             .flags(equation_result);
 
+    *this += lame_mu.name("lame_mu")
+            .description("Field lame_mu.")
+            .input_default("0.0")
+            .units( UnitSI().Pa() );
+
+    *this += lame_lambda.name("lame_lambda")
+            .description("Field lame_lambda.")
+            .input_default("0.0")
+            .units( UnitSI().Pa() );
+
     // add all input fields to the output list
     output_fields += *this;
 
@@ -286,6 +311,7 @@ Elasticity::Elasticity(Mesh & init_mesh, const Input::Record in_rec, TimeGoverno
     
     // create finite element structures and distribute DOFs
     feo = new Mechanics::FEObjects(mesh_, 1);
+    data_.dh_ = feo->dh(); // TODO move initialization of dh_ to EqData constructor after remove feo.
     DebugOut().fmt("Mechanics: solution size {}\n", feo->dh()->n_global_dofs());
     
 }
@@ -333,14 +359,18 @@ void Elasticity::initialize()
     // set time marks for writing the output
     data_.output_fields.initialize(output_stream_, mesh_, input_rec.val<Input::Record>("output"), this->time());
 
+    // set instances of FieldModel
+    data_.lame_mu.set(Model<3, FieldValue<3>::Scalar>::create(fn_lame_mu(), data_.young_modulus, data_.poisson_ratio), 0.0);
+    data_.lame_lambda.set(Model<3, FieldValue<3>::Scalar>::create(fn_lame_lambda(), data_.young_modulus, data_.poisson_ratio), 0.0);
+
     // equation default PETSc solver options
     std::string petsc_default_opts;
     petsc_default_opts = "-ksp_type cg -pc_type hypre -pc_hypre_type boomeramg";
     
     // allocate matrix and vector structures
-    ls = new LinSys_PETSC(feo->dh()->distr().get(), petsc_default_opts);
-    ( (LinSys_PETSC *)ls )->set_from_input( input_rec.val<Input::Record>("solver") );
-    ls->set_solution(data_.output_field_ptr->vec().petsc_vec());
+    data_.ls = new LinSys_PETSC(feo->dh()->distr().get(), petsc_default_opts);
+    ( (LinSys_PETSC *)data_.ls )->set_from_input( input_rec.val<Input::Record>("solver") );
+    data_.ls->set_solution(data_.output_field_ptr->vec().petsc_vec());
 
     // initialization of balance object
 //     balance_->allocate(feo->dh()->distr()->lsize(),
@@ -355,7 +385,7 @@ Elasticity::~Elasticity()
 
     MatDestroy(&stiffness_matrix);
     VecDestroy(&rhs);
-    delete ls;
+    delete data_.ls;
     delete feo;
 
 }
@@ -400,7 +430,7 @@ void Elasticity::zero_time_step()
 		WarningOut() << ss.str();
 	}
 
-    ( (LinSys_PETSC *)ls )->set_initial_guess_nonzero();
+    ( (LinSys_PETSC *)data_.ls )->set_initial_guess_nonzero();
 
     // check first time assembly - needs preallocation
     if (!allocation_done) preallocate();
@@ -408,17 +438,17 @@ void Elasticity::zero_time_step()
 
     // after preallocation we assemble the matrices and vectors required for balance of forces
 //     for (auto subst_idx : data_.balance_idx_)
-//         balance_->calculate_instant(subst_idx, ls->get_solution());
+//         balance_->calculate_instant(subst_idx, data_.ls->get_solution());
     
 //     update_solution();
-    ls->start_add_assembly();
-    MatSetOption(*ls->get_matrix(), MAT_KEEP_NONZERO_PATTERN, PETSC_TRUE);
-    ls->mat_zero_entries();
-    ls->rhs_zero_entries();
+    data_.ls->start_add_assembly();
+    MatSetOption(*data_.ls->get_matrix(), MAT_KEEP_NONZERO_PATTERN, PETSC_TRUE);
+    data_.ls->mat_zero_entries();
+    data_.ls->rhs_zero_entries();
     assemble_stiffness_matrix();
     assemble_rhs();
-    ls->finish_assembly();
-    ls->solve();
+    data_.ls->finish_assembly();
+    data_.ls->solve();
     output_data();
 }
 
@@ -427,7 +457,7 @@ void Elasticity::zero_time_step()
 void Elasticity::preallocate()
 {
     // preallocate system matrix
-    ls->start_allocation();
+	data_.ls->start_allocation();
     stiffness_matrix = NULL;
     rhs = NULL;
 
@@ -474,15 +504,15 @@ void Elasticity::solve_linear_system()
         || data_.subset(FieldFlag::in_main_matrix).changed())
     {
         DebugOut() << "Mechanics: Assembling matrix.\n";
-        ls->start_add_assembly();
-        ls->mat_zero_entries();
+        data_.ls->start_add_assembly();
+        data_.ls->mat_zero_entries();
         assemble_stiffness_matrix();
-        ls->finish_assembly();
+        data_.ls->finish_assembly();
 
         if (stiffness_matrix == NULL)
-            MatConvert(*( ls->get_matrix() ), MATSAME, MAT_INITIAL_MATRIX, &stiffness_matrix);
+            MatConvert(*( data_.ls->get_matrix() ), MATSAME, MAT_INITIAL_MATRIX, &stiffness_matrix);
         else
-            MatCopy(*( ls->get_matrix() ), stiffness_matrix, DIFFERENT_NONZERO_PATTERN);
+            MatCopy(*( data_.ls->get_matrix() ), stiffness_matrix, DIFFERENT_NONZERO_PATTERN);
     }
 
     // assemble right hand side (due to sources and boundary conditions)
@@ -490,17 +520,17 @@ void Elasticity::solve_linear_system()
         || data_.subset(FieldFlag::in_rhs).changed())
     {
         DebugOut() << "Mechanics: Assembling right hand side.\n";
-        ls->start_add_assembly();
-        ls->rhs_zero_entries();
+        data_.ls->start_add_assembly();
+        data_.ls->rhs_zero_entries();
     	assemble_rhs();
-        ls->finish_assembly();
+    	data_.ls->finish_assembly();
 
-        if (rhs == nullptr) VecDuplicate(*( ls->get_rhs() ), &rhs);
-        VecCopy(*( ls->get_rhs() ), rhs);
+        if (rhs == nullptr) VecDuplicate(*( data_.ls->get_rhs() ), &rhs);
+        VecCopy(*( data_.ls->get_rhs() ), rhs);
     }
 
     START_TIMER("solve");
-    ls->solve();
+    data_.ls->solve();
     END_TIMER("solve");
 }
 
@@ -520,7 +550,7 @@ void Elasticity::output_data()
     data_.output_fields.output(this->time().step());
 
 //     START_TIMER("MECH-balance");
-//     balance_->calculate_instant(subst_idx, ls->get_solution());
+//     balance_->calculate_instant(subst_idx, data_.ls->get_solution());
 //     balance_->output();
 //     END_TIMER("MECH-balance");
 
@@ -630,7 +660,7 @@ void Elasticity::calculate_cumulative_balance()
 {
 //     if (balance_->cumulative())
 //     {
-//         balance_->calculate_cumulative(subst_idx, ls->get_solution());
+//         balance_->calculate_cumulative(subst_idx, data_.ls->get_solution());
 //     }
 }
 
@@ -709,7 +739,7 @@ void Elasticity::assemble_volume_integrals()
                                                )*fe_values.JxW(k);
             }
         }
-        ls->mat_set_values(ndofs, dof_indices.data(), ndofs, dof_indices.data(), local_matrix);
+        data_.ls->mat_set_values(ndofs, dof_indices.data(), ndofs, dof_indices.data(), local_matrix);
     }
 }
 
@@ -775,7 +805,7 @@ void Elasticity::assemble_sources()
                                  -potential[k]*vec.divergence(i,k)
                                 )*csection[k]*fe_values.JxW(k);
         }
-        ls->rhs_set_values(ndofs, dof_indices.data(), local_rhs);
+        data_.ls->rhs_set_values(ndofs, dof_indices.data(), local_rhs);
 
 //         for (unsigned int i=0; i<ndofs; i++)
 //         {
@@ -847,7 +877,7 @@ void Elasticity::assemble_fluxes_boundary()
                         local_matrix[i*ndofs+j] += dirichlet_penalty(side)*arma::dot(vec.value(i,k),fe_values_side.normal_vector(k))*arma::dot(vec.value(j,k),fe_values_side.normal_vector(k))*fe_values_side.JxW(k);
         }
         
-        ls->mat_set_values(ndofs, side_dof_indices.data(), ndofs, side_dof_indices.data(), local_matrix);
+        data_.ls->mat_set_values(ndofs, side_dof_indices.data(), ndofs, side_dof_indices.data(), local_matrix);
     }
 }
 
@@ -960,7 +990,7 @@ void Elasticity::assemble_matrix_element_side()
         
         for (unsigned int n=0; n<2; ++n)
             for (unsigned int m=0; m<2; ++m)
-                ls->mat_set_values(n_dofs[n], side_dof_indices[n].data(), n_dofs[m], side_dof_indices[m].data(), local_matrix[n][m]);
+                data_.ls->mat_set_values(n_dofs[n], side_dof_indices[n].data(), n_dofs[m], side_dof_indices[m].data(), local_matrix[n][m]);
     }
 }
 
@@ -1037,7 +1067,7 @@ void Elasticity::assemble_rhs_element_side()
         }
         
         for (unsigned int n=0; n<2; ++n)
-            ls->rhs_set_values(n_dofs[n], side_dof_indices[n].data(), local_rhs[n]);
+            data_.ls->rhs_set_values(n_dofs[n], side_dof_indices[n].data(), local_rhs[n]);
     }
 }
 
@@ -1118,7 +1148,7 @@ void Elasticity::assemble_boundary_conditions()
                   local_rhs[i] += csection[k]*arma::dot(vec.value(i,k),bc_traction[k] + bc_potential[k]*fe_values_side.normal_vector(k))*fe_values_side.JxW(k);
               }
             }
-            ls->rhs_set_values(ndofs, side_dof_indices.data(), local_rhs);
+            data_.ls->rhs_set_values(ndofs, side_dof_indices.data(), local_rhs);
 
 
             

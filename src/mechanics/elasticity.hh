@@ -128,6 +128,14 @@ public:
         Field<3, FieldValue<3>::Scalar> output_cross_section;
         Field<3, FieldValue<3>::Scalar> output_divergence;
         
+		/// @name Instances of FieldModel used in assembly methods
+		// @{
+
+        Field<3, FieldValue<3>::Scalar > lame_mu;
+        Field<3, FieldValue<3>::Scalar > lame_lambda;
+
+    	// @}
+
         std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed> > output_field_ptr;
         std::shared_ptr<FieldFE<3, FieldValue<3>::TensorFixed> > output_stress_ptr;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_von_mises_stress_ptr;
@@ -135,6 +143,17 @@ public:
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_div_ptr;
 
         EquationOutput output_fields;
+
+        /// Object for distribution of dofs.
+        std::shared_ptr<DOFHandlerMultiDim> dh_;
+
+    	/// @name Solution of algebraic system
+    	// @{
+
+    	/// Linear algebra system for the transport equation.
+    	LinSys *ls;
+
+    	// @}
 
 	};
 
@@ -193,7 +212,7 @@ public:
     void calculate_cumulative_balance();
 
 	const Vec &get_solution()
-	{ return ls->get_solution(); }
+	{ return data_.ls->get_solution(); }
 
     inline EqData &data() { return data_; }
     
@@ -295,9 +314,6 @@ private:
 
 	/// The stiffness matrix.
 	Mat stiffness_matrix;
-
-	/// Linear algebra system for the transport equation.
-	LinSys *ls;
 
 	// @}
 
