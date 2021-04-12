@@ -394,10 +394,10 @@ public:
 template <unsigned int dim>
 class AssemblyDimTest : public AssemblyBase<dim> {
 public:
-    typedef typename FieldFESpeedTest::EqData EqDataDG;
+    typedef typename FieldFESpeedTest::EqData EqData;
 
     /// Constructor.
-    AssemblyDimTest(EqDataDG *data)
+    AssemblyDimTest(EqData *data)
     : AssemblyBase<dim>(data->order), data_(data) {}
 
     void initialize(FMT_UNUSED std::shared_ptr<Balance> balance) {
@@ -409,7 +409,7 @@ public:
     }
 
     /// Data object shared with Test class
-    EqDataDG *data_;
+    EqData *data_;
 };
 
 string eq_data_input_speed = R"YAML(
