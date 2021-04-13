@@ -42,6 +42,9 @@ public:
     MassAssemblyDG(EqData *data)
     : AssemblyBase<dim>(data->dg_order), data_(data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
+        std::vector<std::string> sub_names = {"X", "d", "mass_matrix_coef", "retardation_coef", "cross_section", "water_content",
+                "porosity", "rock_density", "sorption_coefficient"};
+        this->used_fields_ = data_->subset(sub_names);
     }
 
     /// Destructor.
@@ -129,7 +132,8 @@ public:
     /// Implements @p AssemblyBase::reallocate_cache.
     void reallocate_cache(const ElementCacheMap &cache_map) override
     {
-        data_->cache_reallocate(cache_map);
+        used_fields_.set_dependency();
+        used_fields_.cache_reallocate(cache_map);
     }
 
 
@@ -141,6 +145,9 @@ public:
 
         /// Data object shared with TransportDG
         EqData *data_;
+
+        /// Sub field set contains fields used in calculation.
+        FieldSet used_fields_;
 
         unsigned int ndofs_;                                      ///< Number of dofs
         FEValues<3> fe_values_;                                   ///< FEValues of object (of P disc finite element type)
@@ -169,6 +176,8 @@ public:
     StiffnessAssemblyDG(EqData *data)
     : AssemblyBase<dim>(data->dg_order), data_(data) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::edge | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
+        this->used_fields_.set_mesh( *data_->mesh() );
+        this->used_fields_ += *data_;
     }
 
     /// Destructor.
@@ -595,7 +604,8 @@ public:
     /// Implements @p AssemblyBase::reallocate_cache.
     void reallocate_cache(const ElementCacheMap &cache_map) override
     {
-        data_->cache_reallocate(cache_map);
+        used_fields_.set_dependency();
+        used_fields_.cache_reallocate(cache_map);
     }
 
 
@@ -605,6 +615,9 @@ private:
 
     /// Data object shared with TransportDG
     EqData *data_;
+
+    /// Sub field set contains fields used in calculation.
+    FieldSet used_fields_;
 
     unsigned int ndofs_;                                      ///< Number of dofs
     unsigned int qsize_lower_dim_;                            ///< Size of quadrature of dim-1
@@ -642,6 +655,8 @@ public:
     SourcesAssemblyDG(EqData *data)
     : AssemblyBase<dim>(data->dg_order), data_(data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
+        this->used_fields_.set_mesh( *data_->mesh() );
+        this->used_fields_ += *data_;
     }
 
     /// Destructor.
@@ -725,7 +740,8 @@ public:
     /// Implements @p AssemblyBase::reallocate_cache.
     void reallocate_cache(const ElementCacheMap &cache_map) override
     {
-        data_->cache_reallocate(cache_map);
+        used_fields_.set_dependency();
+        used_fields_.cache_reallocate(cache_map);
     }
 
 
@@ -737,6 +753,9 @@ public:
 
         /// Data object shared with TransportDG
         EqData *data_;
+
+        /// Sub field set contains fields used in calculation.
+        FieldSet used_fields_;
 
         unsigned int ndofs_;                                      ///< Number of dofs
         FEValues<3> fe_values_;                                   ///< FEValues of object (of P disc finite element type)
@@ -765,6 +784,8 @@ public:
     BdrConditionAssemblyDG(EqData *data)
     : AssemblyBase<dim>(data->dg_order), data_(data) {
         this->active_integrals_ = ActiveIntegrals::boundary;
+        this->used_fields_.set_mesh( *data_->mesh() );
+        this->used_fields_ += *data_;
     }
 
     /// Destructor.
@@ -939,7 +960,8 @@ public:
     /// Implements @p AssemblyBase::reallocate_cache.
     void reallocate_cache(const ElementCacheMap &cache_map) override
     {
-        data_->cache_reallocate(cache_map);
+        used_fields_.set_dependency();
+        used_fields_.cache_reallocate(cache_map);
     }
 
 
@@ -951,6 +973,9 @@ public:
 
         /// Data object shared with TransportDG
         EqData *data_;
+
+        /// Sub field set contains fields used in calculation.
+        FieldSet used_fields_;
 
         unsigned int ndofs_;                                      ///< Number of dofs
         FEValues<3> fe_values_side_;                              ///< FEValues of object (of P disc finite element type)
@@ -979,6 +1004,8 @@ public:
     InitConditionAssemblyDG(EqData *data)
     : AssemblyBase<dim>(data->dg_order), data_(data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
+        this->used_fields_.set_mesh( *data_->mesh() );
+        this->used_fields_ += *data_;
     }
 
     /// Destructor.
@@ -1037,7 +1064,8 @@ public:
     /// Implements @p AssemblyBase::reallocate_cache.
     void reallocate_cache(const ElementCacheMap &cache_map) override
     {
-        data_->cache_reallocate(cache_map);
+        used_fields_.set_dependency();
+        used_fields_.cache_reallocate(cache_map);
     }
 
 
@@ -1046,6 +1074,9 @@ public:
 
         /// Data object shared with TransportDG
         EqData *data_;
+
+        /// Sub field set contains fields used in calculation.
+        FieldSet used_fields_;
 
         unsigned int ndofs_;                                      ///< Number of dofs
         FEValues<3> fe_values_;                                   ///< FEValues of object (of P disc finite element type)
