@@ -42,9 +42,7 @@ public:
     MassAssemblyDG(EqData *data)
     : AssemblyBase<dim>(data->dg_order), data_(data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
-        std::vector<std::string> sub_names = {"X", "d", "mass_matrix_coef", "retardation_coef", "cross_section", "water_content",
-                "porosity", "rock_density", "sorption_coefficient"};
-        this->used_fields_ = data_->subset(sub_names);
+        this->used_fields_ = data_->subset( data_->mass_assembly_subset() );
     }
 
     /// Destructor.
@@ -176,8 +174,7 @@ public:
     StiffnessAssemblyDG(EqData *data)
     : AssemblyBase<dim>(data->dg_order), data_(data) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::edge | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
-        this->used_fields_.set_mesh( *data_->mesh() );
-        this->used_fields_ += *data_;
+        this->used_fields_ = data_->subset( data_->stiffness_assembly_subset() );
     }
 
     /// Destructor.
@@ -655,8 +652,7 @@ public:
     SourcesAssemblyDG(EqData *data)
     : AssemblyBase<dim>(data->dg_order), data_(data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
-        this->used_fields_.set_mesh( *data_->mesh() );
-        this->used_fields_ += *data_;
+        this->used_fields_ = data_->subset( data_->source_assembly_subset() );
     }
 
     /// Destructor.
@@ -784,8 +780,7 @@ public:
     BdrConditionAssemblyDG(EqData *data)
     : AssemblyBase<dim>(data->dg_order), data_(data) {
         this->active_integrals_ = ActiveIntegrals::boundary;
-        this->used_fields_.set_mesh( *data_->mesh() );
-        this->used_fields_ += *data_;
+        this->used_fields_ = data_->subset( data_->bdr_assembly_subset() );
     }
 
     /// Destructor.
@@ -1004,8 +999,7 @@ public:
     InitConditionAssemblyDG(EqData *data)
     : AssemblyBase<dim>(data->dg_order), data_(data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
-        this->used_fields_.set_mesh( *data_->mesh() );
-        this->used_fields_ += *data_;
+        this->used_fields_ = data_->subset( data_->init_assembly_subset() );
     }
 
     /// Destructor.
