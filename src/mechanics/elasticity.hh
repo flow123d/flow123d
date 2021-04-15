@@ -36,6 +36,8 @@ class OutputTime;
 class DOFHandlerMultiDim;
 template<unsigned int dim> class FiniteElement;
 class Elasticity;
+template<unsigned int dim> class StiffnessAssemblyElasticity;
+template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
 
 namespace Mechanics {
@@ -133,6 +135,7 @@ public:
 
         Field<3, FieldValue<3>::Scalar > lame_mu;
         Field<3, FieldValue<3>::Scalar > lame_lambda;
+        Field<3, FieldValue<3>::Scalar > dirichlet_penalty;
 
     	// @}
 
@@ -154,6 +157,9 @@ public:
     	LinSys *ls;
 
     	// @}
+
+        /// general assembly objects, hold assembly objects of appropriate dimension
+        GenericAssembly< StiffnessAssemblyElasticity > * stiffness_assembly_;
 
 	};
 

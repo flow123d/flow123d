@@ -18,6 +18,7 @@
 
 #include "system/sys_profiler.hh"
 #include "mechanics/elasticity.hh"
+#include "mechanics/assembly_elasticity.hh"
 
 #include "io/output_time.hh"
 #include "quadrature/quadrature_lib.hh"
@@ -29,6 +30,7 @@
 #include "la/linsys_PETSC.hh"
 #include "coupling/balance.hh"
 #include "mesh/neighbours.h"
+#include "coupling/generic_assembly.hh"
 
 #include "fields/multi_field.hh"
 #include "fields/generic_field.hh"
@@ -148,6 +150,13 @@ struct fn_lame_mu {
 struct fn_lame_lambda {
 	inline double operator() (double young, double poisson) {
         return young * poisson / ((poisson+1.)*(1.-2.*poisson));
+    }
+};
+
+// Functor computing dirichlet_penalty
+struct fn_dirichlet_penalty {
+	inline double operator() (double lame_mu, double lame_lambda) {
+        return 1e3 * (2 * lame_mu + lame_lambda);
     }
 };
 
@@ -275,6 +284,11 @@ Elasticity::EqData::EqData()
             .input_default("0.0")
             .units( UnitSI().Pa() );
 
+    *this += dirichlet_penalty.name("dirichlet_penalty")
+            .description("Field dirichlet_penalty.")
+            .input_default("0.0")
+            .units( UnitSI().Pa() );
+
     // add all input fields to the output list
     output_fields += *this;
 
@@ -362,6 +376,7 @@ void Elasticity::initialize()
     // set instances of FieldModel
     data_.lame_mu.set(Model<3, FieldValue<3>::Scalar>::create(fn_lame_mu(), data_.young_modulus, data_.poisson_ratio), 0.0);
     data_.lame_lambda.set(Model<3, FieldValue<3>::Scalar>::create(fn_lame_lambda(), data_.young_modulus, data_.poisson_ratio), 0.0);
+    data_.dirichlet_penalty.set(Model<3, FieldValue<3>::Scalar>::create(fn_dirichlet_penalty(), data_.lame_mu, data_.lame_lambda), 0.0);
 
     // equation default PETSc solver options
     std::string petsc_default_opts;
@@ -371,6 +386,9 @@ void Elasticity::initialize()
     data_.ls = new LinSys_PETSC(feo->dh()->distr().get(), petsc_default_opts);
     ( (LinSys_PETSC *)data_.ls )->set_from_input( input_rec.val<Input::Record>("solver") );
     data_.ls->set_solution(data_.output_field_ptr->vec().petsc_vec());
+
+    std::shared_ptr<Balance> balance; // temporary solution
+    data_.stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyElasticity >(&data(), balance, data_.dh_.get());
 
     // initialization of balance object
 //     balance_->allocate(feo->dh()->distr()->lsize(),
@@ -388,6 +406,7 @@ Elasticity::~Elasticity()
     delete data_.ls;
     delete feo;
 
+    delete data_.stiffness_assembly_;
 }
 
 
