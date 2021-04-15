@@ -21,6 +21,11 @@
 #include "coupling/generic_assembly.hh"
 #include "coupling/assembly_base.hh"
 #include "mechanics/elasticity.hh"
+#include "fem/fe_p.hh"
+#include "fem/fe_values.hh"
+#include "quadrature/quadrature_lib.hh"
+#include "coupling/balance.hh"
+#include "fields/field_value_cache.hh"
 
 
 /**
@@ -30,10 +35,10 @@ template <unsigned int dim>
 class StiffnessAssemblyElasticity : public AssemblyBase<dim>
 {
 public:
-    typedef typename Elasticity::EqData EqDataElasticity;
+    typedef typename Elasticity::EqData EqDataDG;
 
     /// Constructor.
-    StiffnessAssemblyElasticity(EqDataElasticity *data)
+    StiffnessAssemblyElasticity(EqDataDG *data)
     : AssemblyBase<dim>(1), data_(data) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
     }
@@ -60,21 +65,16 @@ public:
         n_dofs_sub_ = fe_low_->n_dofs();
         qsize_ = this->quad_->size();
         qsize_low_ = this->quad_low_->size();
-        dof_indices_.resize(ndofs_);
-        local_matrix_.resize(4*ndofs_*ndofs_);
+        dof_indices_.resize(n_dofs_);
+        local_matrix_.resize(n_dofs_*n_dofs_);
         vec_view_ = &fe_values_.vector_view(0);
-
+        vec_view_side_ = &fe_values_side_.vector_view(0);
     }
 
 
     /// Assemble integral over element
     inline void cell_integral(unsigned int element_patch_idx, unsigned int dh_local_idx)
     {
-    	/* Used DATA members:
-    	 * qsize_, dof_indices_, local_matrix_
-         * replaced with field caches: vector<double> young(qsize), poisson(qsize), csection(qsize)
-    	*/
-
         if ((int)dh_local_idx == -1) return;
         DHCellAccessor cell(data_->dh_.get(), dh_local_idx);
         if (cell.dim() != dim) return;
@@ -87,7 +87,7 @@ public:
         // assemble the local stiffness matrix
         for (unsigned int i=0; i<n_dofs_; i++)
             for (unsigned int j=0; j<n_dofs_; j++)
-                local_matrix[i*n_dofs_+j] = 0;
+                local_matrix_[i*n_dofs_+j] = 0;
 
         unsigned int k=0;
         for (auto p : data_->stiffness_assembly_->bulk_points(element_patch_idx, cell.dim()) )
@@ -95,38 +95,60 @@ public:
             for (unsigned int i=0; i<n_dofs_; i++)
             {
                 for (unsigned int j=0; j<n_dofs_; j++)
-                    local_matrix_[i*ndofs+j] += data_->cross_section(p)*(
-                                                2*data_->lame_mu(p)*arma::dot(vec_view_->sym_grad(j,k), vec_view_->.sym_grad(i,k))
+                    local_matrix_[i*n_dofs_+j] += data_->cross_section(p)*(
+                                                2*data_->lame_mu(p)*arma::dot(vec_view_->sym_grad(j,k), vec_view_->sym_grad(i,k))
                                                 + data_->lame_lambda(p)*vec_view_->divergence(j,k)*vec_view_->divergence(i,k)
                                                )*fe_values_.JxW(k);
             }
             k++;
         }
-        data_->ls->mat_set_values(n_dofs_, dof_indices_.data(), n_dofs_, dof_indices_.data(), local_matrix_);
+        data_->ls->mat_set_values(n_dofs_, dof_indices_.data(), n_dofs_, dof_indices_.data(), &(local_matrix_[0]));
     }
 
-    /// Assembles the fluxes on the boundary.
+    /// Assembles boundary integral.
     inline void boundary_side_integral(DHCellSide cell_side)
     {
-        // MOVE Elasticity::assemble_fluxes_boundary code
-
-        /* Used data members:
-         * fe_values_side_, n_dofs_, qsize_low_
-        vector<int> side_dof_indices(ndofs);
-        auto vec = fe_values_side.vector_view(0);
-    	*/
-
-    	/*ASSERT_EQ_DBG(cell_side.dim(), dim).error("Dimension of element mismatch!");
+    	ASSERT_EQ_DBG(cell_side.dim(), dim).error("Dimension of element mismatch!");
         if (!cell_side.cell().is_own()) return;
 
         Side side = cell_side.side();
-        const DHCellAccessor &cell = cell_side.cell();
-
-        cell.get_dof_indices(dof_indices_);
+        const DHCellAccessor &dh_cell = cell_side.cell();
+        dh_cell.get_dof_indices(dof_indices_);
         fe_values_side_.reinit(side);
-        unsigned int k;
-        double gamma_l;
-        */
+
+        for (unsigned int i=0; i<n_dofs_; i++)
+            for (unsigned int j=0; j<n_dofs_; j++)
+                local_matrix_[i*n_dofs_+j] = 0;
+
+        auto p_side = *( data_->stiffness_assembly_->boundary_points(cell_side).begin() );
+        auto p_bdr = p_side.point_bdr( side.cond().element_accessor() );
+        unsigned int bc_type = data_->bc_type(p_bdr);
+        double side_measure = cell_side.measure();
+        if (bc_type == EqDataDG::bc_type_displacement)
+        {
+            unsigned int k=0;
+            for (auto p : data_->stiffness_assembly_->boundary_points(cell_side) ) {
+                for (unsigned int i=0; i<n_dofs_; i++)
+                    for (unsigned int j=0; j<n_dofs_; j++)
+                        local_matrix_[i*n_dofs_+j] += data_->dirichlet_penalty(p) * side_measure *
+                                arma::dot(vec_view_side_->value(i,k),vec_view_side_->value(j,k)) * fe_values_side_.JxW(k);
+                k++;
+            }
+        }
+        else if (bc_type == EqDataDG::bc_type_displacement_normal)
+        {
+            unsigned int k=0;
+            for (auto p : data_->stiffness_assembly_->boundary_points(cell_side) ) {
+                for (unsigned int i=0; i<n_dofs_; i++)
+                    for (unsigned int j=0; j<n_dofs_; j++)
+                        local_matrix_[i*n_dofs_+j] += data_->dirichlet_penalty(p) * side_measure *
+                                arma::dot(vec_view_side_->value(i,k), fe_values_side_.normal_vector(k)) *
+                                arma::dot(vec_view_side_->value(j,k), fe_values_side_.normal_vector(k)) * fe_values_side_.JxW(k);
+                k++;
+            }
+        }
+
+        data_->ls->mat_set_values(n_dofs_, dof_indices_.data(), n_dofs_, dof_indices_.data(), &(local_matrix_[0]));
     }
 
 
@@ -181,8 +203,8 @@ public:
         shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
         shared_ptr<FiniteElement<dim-1>> fe_low_;   ///< Finite element for the solution of the advection-diffusion equation (dim-1).
 
-        /// Data object shared with EqDataElasticity
-        EqDataElasticity *data_;
+        /// Data object shared with EqDataDG
+        EqDataDG *data_;
 
         unsigned int n_dofs_;                                     ///< Number of dofs
         unsigned int n_dofs_sub_;                                 ///< Number of dofs (on lower dim element)
@@ -194,7 +216,8 @@ public:
 
         vector<LongIdx> dof_indices_;                             ///< Vector of global DOF indices
         vector<PetscScalar> local_matrix_;                        ///< Auxiliary vector for assemble methods
-        FEValuesViews::Vector<3> * vec_view_;                     ///< Vector view in volume integral calculation.
+        const FEValuesViews::Vector<3> * vec_view_;               ///< Vector view in cell integral calculation.
+        const FEValuesViews::Vector<3> * vec_view_side_;          ///< Vector view in boundary side integral calculation.
 
         template < template<IntDim...> class DimAssembly>
         friend class GenericAssembly;
