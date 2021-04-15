@@ -210,6 +210,49 @@ public:
         { return substances_; }
 
 
+        /// @name Set of methods returning vectors of field names using in different assemblations.
+        // @{
+
+        /// Returns vector of field names of Mass assembly.
+        inline std::vector<string> mass_assembly_subset() const {
+            std::vector<string> sub_names = {"X", "d", "mass_matrix_coef", "retardation_coef", "cross_section", "porosity",
+                    "fluid_density", "fluid_heat_capacity", "solid_density", "solid_heat_capacity"};
+            return sub_names;
+        }
+
+        /// Returns vector of field names of Stiffness assembly.
+        inline std::vector<string> stiffness_assembly_subset() const {
+            std::vector<string> sub_names = {"X", "d", "diffusion_coef", "advection_coef", "sources_sigma_out", "bc_type",
+                    "dg_penalty", "cross_section", "bc_robin_sigma", "fracture_sigma", "flow_flux", "v_norm", "fluid_density",
+					"fluid_heat_conductivity", "fluid_heat_capacity", "fluid_heat_exchange_rate", "solid_heat_conductivity",
+					"solid_density", "solid_heat_capacity", "solid_heat_exchange_rate", "disp_l", "disp_t", "porosity"};
+            return sub_names;
+        }
+
+        /// Returns vector of field names of Sources assembly.
+        inline std::vector<string> source_assembly_subset() const {
+            std::vector<string> sub_names = {"X", "d", "sources_density_out", "sources_conc_out", "sources_sigma_out", "cross_section",
+                    "porosity", "fluid_thermal_source", "solid_thermal_source", "fluid_density", "fluid_heat_capacity", "fluid_heat_exchange_rate",
+					"fluid_ref_temperature", "solid_density", "solid_heat_capacity", "solid_heat_exchange_rate", "solid_ref_temperature"};
+            return sub_names;
+        }
+
+        /// Returns vector of field names of BdrCondition assembly.
+        inline std::vector<string> bdr_assembly_subset() const {
+            std::vector<string> sub_names = {"X", "d", "advection_coef", "diffusion_coef", "bc_type", "bc_temperature", "cross_section",
+                    "bc_robin_sigma", "bc_flux", "flow_flux", "v_norm", "fluid_density", "fluid_heat_capacity", "disp_l", "disp_t",
+					"fluid_heat_conductivity", "solid_heat_conductivity", "porosity"};
+            return sub_names;
+        }
+
+        /// Returns vector of field names of InitCondition assembly.
+        inline std::vector<string> init_assembly_subset() const {
+            std::vector<string> sub_names = {"X", "d", "init_temperature"};
+            return sub_names;
+        }
+
+       	// @}
+
 		/// @name Data of substances
 		// @{
 

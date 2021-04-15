@@ -131,7 +131,7 @@ private:
 public:
 
     /// Constructor
-    GenericAssembly( typename DimAssembly<1>::EqDataDG *eq_data, std::shared_ptr<Balance> balance, const DOFHandlerMultiDim * dh)
+    GenericAssembly( typename DimAssembly<1>::EqData *eq_data, std::shared_ptr<Balance> balance, const DOFHandlerMultiDim * dh)
     : multidim_assembly_(eq_data),
 	  bulk_integral_data_(20, 10),
 	  edge_integral_data_(12, 6),
@@ -283,7 +283,7 @@ private:
         element_cache_map_.create_patch();
         END_TIMER("create_patch");
         START_TIMER("cache_update");
-        multidim_assembly_[1_d]->data_->cache_update(element_cache_map_);
+        multidim_assembly_[1_d]->used_fields_.cache_update(element_cache_map_); // TODO replace with sub FieldSet
         END_TIMER("cache_update");
         element_cache_map_.finish_elements_update();
 

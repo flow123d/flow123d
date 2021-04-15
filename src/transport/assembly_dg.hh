@@ -36,12 +36,13 @@ template <unsigned int dim, class Model>
 class MassAssemblyDG : public AssemblyBase<dim>
 {
 public:
-    typedef typename TransportDG<Model>::EqData EqDataDG;
+    typedef typename TransportDG<Model>::EqData EqData;
 
     /// Constructor.
-    MassAssemblyDG(EqDataDG *data)
+    MassAssemblyDG(EqData *data)
     : AssemblyBase<dim>(data->dg_order), data_(data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
+        this->used_fields_ = data_->subset( data_->mass_assembly_subset() );
     }
 
     /// Destructor.
@@ -129,7 +130,8 @@ public:
     /// Implements @p AssemblyBase::reallocate_cache.
     void reallocate_cache(const ElementCacheMap &cache_map) override
     {
-        data_->cache_reallocate(cache_map);
+        used_fields_.set_dependency();
+        used_fields_.cache_reallocate(cache_map);
     }
 
 
@@ -140,7 +142,10 @@ public:
         std::shared_ptr<Balance> balance_;
 
         /// Data object shared with TransportDG
-        EqDataDG *data_;
+        EqData *data_;
+
+        /// Sub field set contains fields used in calculation.
+        FieldSet used_fields_;
 
         unsigned int ndofs_;                                      ///< Number of dofs
         FEValues<3> fe_values_;                                   ///< FEValues of object (of P disc finite element type)
@@ -163,12 +168,13 @@ template <unsigned int dim, class Model>
 class StiffnessAssemblyDG : public AssemblyBase<dim>
 {
 public:
-    typedef typename TransportDG<Model>::EqData EqDataDG;
+    typedef typename TransportDG<Model>::EqData EqData;
 
     /// Constructor.
-    StiffnessAssemblyDG(EqDataDG *data)
+    StiffnessAssemblyDG(EqData *data)
     : AssemblyBase<dim>(data->dg_order), data_(data) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::edge | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
+        this->used_fields_ = data_->subset( data_->stiffness_assembly_subset() );
     }
 
     /// Destructor.
@@ -595,7 +601,8 @@ public:
     /// Implements @p AssemblyBase::reallocate_cache.
     void reallocate_cache(const ElementCacheMap &cache_map) override
     {
-        data_->cache_reallocate(cache_map);
+        used_fields_.set_dependency();
+        used_fields_.cache_reallocate(cache_map);
     }
 
 
@@ -604,7 +611,10 @@ private:
     shared_ptr<FiniteElement<dim-1>> fe_low_;   ///< Finite element for the solution of the advection-diffusion equation (dim-1).
 
     /// Data object shared with TransportDG
-    EqDataDG *data_;
+    EqData *data_;
+
+    /// Sub field set contains fields used in calculation.
+    FieldSet used_fields_;
 
     unsigned int ndofs_;                                      ///< Number of dofs
     unsigned int qsize_lower_dim_;                            ///< Size of quadrature of dim-1
@@ -636,12 +646,13 @@ template <unsigned int dim, class Model>
 class SourcesAssemblyDG : public AssemblyBase<dim>
 {
 public:
-    typedef typename TransportDG<Model>::EqData EqDataDG;
+    typedef typename TransportDG<Model>::EqData EqData;
 
     /// Constructor.
-    SourcesAssemblyDG(EqDataDG *data)
+    SourcesAssemblyDG(EqData *data)
     : AssemblyBase<dim>(data->dg_order), data_(data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
+        this->used_fields_ = data_->subset( data_->source_assembly_subset() );
     }
 
     /// Destructor.
@@ -725,7 +736,8 @@ public:
     /// Implements @p AssemblyBase::reallocate_cache.
     void reallocate_cache(const ElementCacheMap &cache_map) override
     {
-        data_->cache_reallocate(cache_map);
+        used_fields_.set_dependency();
+        used_fields_.cache_reallocate(cache_map);
     }
 
 
@@ -736,7 +748,10 @@ public:
         std::shared_ptr<Balance> balance_;
 
         /// Data object shared with TransportDG
-        EqDataDG *data_;
+        EqData *data_;
+
+        /// Sub field set contains fields used in calculation.
+        FieldSet used_fields_;
 
         unsigned int ndofs_;                                      ///< Number of dofs
         FEValues<3> fe_values_;                                   ///< FEValues of object (of P disc finite element type)
@@ -759,12 +774,13 @@ template <unsigned int dim, class Model>
 class BdrConditionAssemblyDG : public AssemblyBase<dim>
 {
 public:
-    typedef typename TransportDG<Model>::EqData EqDataDG;
+    typedef typename TransportDG<Model>::EqData EqData;
 
     /// Constructor.
-    BdrConditionAssemblyDG(EqDataDG *data)
+    BdrConditionAssemblyDG(EqData *data)
     : AssemblyBase<dim>(data->dg_order), data_(data) {
         this->active_integrals_ = ActiveIntegrals::boundary;
+        this->used_fields_ = data_->subset( data_->bdr_assembly_subset() );
     }
 
     /// Destructor.
@@ -939,7 +955,8 @@ public:
     /// Implements @p AssemblyBase::reallocate_cache.
     void reallocate_cache(const ElementCacheMap &cache_map) override
     {
-        data_->cache_reallocate(cache_map);
+        used_fields_.set_dependency();
+        used_fields_.cache_reallocate(cache_map);
     }
 
 
@@ -950,7 +967,10 @@ public:
         std::shared_ptr<Balance> balance_;
 
         /// Data object shared with TransportDG
-        EqDataDG *data_;
+        EqData *data_;
+
+        /// Sub field set contains fields used in calculation.
+        FieldSet used_fields_;
 
         unsigned int ndofs_;                                      ///< Number of dofs
         FEValues<3> fe_values_side_;                              ///< FEValues of object (of P disc finite element type)
@@ -973,12 +993,13 @@ template <unsigned int dim, class Model>
 class InitConditionAssemblyDG : public AssemblyBase<dim>
 {
 public:
-    typedef typename TransportDG<Model>::EqData EqDataDG;
+    typedef typename TransportDG<Model>::EqData EqData;
 
     /// Constructor.
-    InitConditionAssemblyDG(EqDataDG *data)
+    InitConditionAssemblyDG(EqData *data)
     : AssemblyBase<dim>(data->dg_order), data_(data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
+        this->used_fields_ = data_->subset( data_->init_assembly_subset() );
     }
 
     /// Destructor.
@@ -1037,7 +1058,8 @@ public:
     /// Implements @p AssemblyBase::reallocate_cache.
     void reallocate_cache(const ElementCacheMap &cache_map) override
     {
-        data_->cache_reallocate(cache_map);
+        used_fields_.set_dependency();
+        used_fields_.cache_reallocate(cache_map);
     }
 
 
@@ -1045,7 +1067,10 @@ public:
         shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
 
         /// Data object shared with TransportDG
-        EqDataDG *data_;
+        EqData *data_;
+
+        /// Sub field set contains fields used in calculation.
+        FieldSet used_fields_;
 
         unsigned int ndofs_;                                      ///< Number of dofs
         FEValues<3> fe_values_;                                   ///< FEValues of object (of P disc finite element type)

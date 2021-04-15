@@ -50,6 +50,7 @@ FieldSet &FieldSet::operator +=(const FieldSet &other) {
 
 FieldSet FieldSet::subset(std::vector<std::string> names) const {
     FieldSet set;
+    set.set_mesh( *this->mesh_ );
     for(auto name : names) set += (*this)[name];
     return set;
 }
