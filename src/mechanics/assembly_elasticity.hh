@@ -35,12 +35,15 @@ template <unsigned int dim>
 class StiffnessAssemblyElasticity : public AssemblyBase<dim>
 {
 public:
-    typedef typename Elasticity::EqData EqDataDG;
+    typedef typename Elasticity::EqData EqData;
 
     /// Constructor.
-    StiffnessAssemblyElasticity(EqDataDG *data)
+    StiffnessAssemblyElasticity(EqData *data)
     : AssemblyBase<dim>(1), data_(data) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
+        std::vector<string> sub_names = {"X", "d", "lame_mu", "lame_lambda", "dirichlet_penalty", "young_modulus",
+                            "poisson_ratio", "cross_section", "bc_type"};
+        this->used_fields_ = data_->subset( sub_names );
     }
 
     /// Destructor.
@@ -124,7 +127,7 @@ public:
         auto p_bdr = p_side.point_bdr( side.cond().element_accessor() );
         unsigned int bc_type = data_->bc_type(p_bdr);
         double side_measure = cell_side.measure();
-        if (bc_type == EqDataDG::bc_type_displacement)
+        if (bc_type == EqData::bc_type_displacement)
         {
             unsigned int k=0;
             for (auto p : data_->stiffness_assembly_->boundary_points(cell_side) ) {
@@ -135,7 +138,7 @@ public:
                 k++;
             }
         }
-        else if (bc_type == EqDataDG::bc_type_displacement_normal)
+        else if (bc_type == EqData::bc_type_displacement_normal)
         {
             unsigned int k=0;
             for (auto p : data_->stiffness_assembly_->boundary_points(cell_side) ) {
@@ -195,7 +198,8 @@ public:
     /// Implements @p AssemblyBase::reallocate_cache.
     void reallocate_cache(const ElementCacheMap &cache_map) override
     {
-        data_->cache_reallocate(cache_map);
+        used_fields_.set_dependency();
+        used_fields_.cache_reallocate(cache_map);
     }
 
 
@@ -203,8 +207,11 @@ public:
         shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
         shared_ptr<FiniteElement<dim-1>> fe_low_;   ///< Finite element for the solution of the advection-diffusion equation (dim-1).
 
-        /// Data object shared with EqDataDG
-        EqDataDG *data_;
+        /// Data object shared with EqData
+        EqData *data_;
+
+        /// Sub field set contains fields used in calculation.
+        FieldSet used_fields_;
 
         unsigned int n_dofs_;                                     ///< Number of dofs
         unsigned int n_dofs_sub_;                                 ///< Number of dofs (on lower dim element)
