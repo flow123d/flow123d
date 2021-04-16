@@ -42,7 +42,7 @@ public:
     : AssemblyBase<dim>(1), data_(data) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         std::vector<string> sub_names = {"X", "d", "lame_mu", "lame_lambda", "dirichlet_penalty", "young_modulus",
-                            "poisson_ratio", "cross_section", "bc_type"};
+                            "poisson_ratio", "cross_section", "bc_type", "fracture_sigma"};
         this->used_fields_ = data_->subset( sub_names );
     }
 
@@ -66,12 +66,23 @@ public:
 
         n_dofs_ = fe_->n_dofs();
         n_dofs_sub_ = fe_low_->n_dofs();
+        n_dofs_ngh_ = { n_dofs_sub_, n_dofs_ };
         qsize_ = this->quad_->size();
         qsize_low_ = this->quad_low_->size();
         dof_indices_.resize(n_dofs_);
+        side_dof_indices_.resize(2);
+        side_dof_indices_[0].resize(n_dofs_sub_);  // index 0 = element with lower dimension,
+        side_dof_indices_[1].resize(n_dofs_);      // index 1 = side of element with higher dimension
         local_matrix_.resize(n_dofs_*n_dofs_);
+        local_matrix_ngh_.resize(2);
+        for (uint m=0; m<2; ++m) {
+            local_matrix_ngh_[m].resize(2);
+            for (uint n=0; n<2; ++n)
+                local_matrix_ngh_[m][n].resize(n_dofs_*n_dofs_);
+        }
         vec_view_ = &fe_values_.vector_view(0);
         vec_view_side_ = &fe_values_side_.vector_view(0);
+        if (dim>1) vec_view_sub_ = &fe_values_sub_.vector_view(0);
     }
 
 
@@ -155,43 +166,73 @@ public:
     }
 
 
-    /// Assembles the fluxes between elements of different dimensions.
+    /// Assembles between elements of different dimensions.
     inline void neigbour_integral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
-        // MOVE Elasticity::assemble_matrix_element_side code
-
-    	/* Used data members:
-    	 * fe_values_side_, fe_values_sub_, n_dofs_ (replace ndofs_side), n_dofs_sub_, qsize_low_
-        vector<vector<int> > side_dof_indices(2);
-        vector<unsigned int> n_dofs = { ndofs_sub, ndofs_side };
-    	vector<double> frac_sigma(qsize);
-    	vector<double> csection_lower(qsize), csection_higher(qsize), young(qsize), poisson(qsize), alpha(qsize);
-        PetscScalar local_matrix[2][2][(ndofs_side)*(ndofs_side)];
-    	*/
-
-    	/*if (dim == 1) return;
+    	if (dim == 1) return;
         ASSERT_EQ_DBG(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
 
-        // Note: use data members csection_ and velocity_ for appropriate quantities of lower dim element
+		cell_lower_dim.get_dof_indices(side_dof_indices_[0]);
+		ElementAccessor<3> cell_sub = cell_lower_dim.elm();
+		fe_values_sub_.reinit(cell_sub);
 
-        double comm_flux[2][2];
-        unsigned int n_dofs[2];
-        ElementAccessor<3> elm_lower_dim = cell_lower_dim.elm();
-        unsigned int n_indices = cell_lower_dim.get_dof_indices(dof_indices_);
-        for(unsigned int i=0; i<n_indices; ++i) {
-            side_dof_indices_vb_[i] = dof_indices_[i];
+		DHCellAccessor cell_higher_dim = data_->dh_->cell_accessor_from_element( neighb_side.element().idx() );
+		cell_higher_dim.get_dof_indices(side_dof_indices_[1]);
+		fe_values_side_.reinit(neighb_side.side());
+
+		// Element id's for testing if they belong to local partition.
+		bool own_element_id[2];
+		own_element_id[0] = cell_lower_dim.is_own();
+		own_element_id[1] = cell_higher_dim.is_own();
+
+        for (unsigned int n=0; n<2; ++n)
+            for (unsigned int i=0; i<n_dofs_; i++)
+                for (unsigned int m=0; m<2; ++m)
+                    for (unsigned int j=0; j<n_dofs_; j++)
+                        local_matrix_ngh_[n][m][i*(n_dofs_)+j] = 0;
+
+        // set transmission conditions
+        unsigned int k;
+        for (auto p_high : data_->stiffness_assembly_->coupling_points(neighb_side) )
+        {
+            auto p_low = p_high.lower_dim(cell_lower_dim);
+            arma::vec3 nv = fe_values_side_.normal_vector(k);
+
+            for (int n=0; n<2; n++)
+            {
+                if (!own_element_id[n]) continue;
+
+                for (unsigned int i=0; i<n_dofs_ngh_[n]; i++)
+                {
+                    arma::vec3 vi = (n==0) ? arma::zeros(3) : vec_view_side_->value(i,k);
+                    arma::vec3 vf = (n==1) ? arma::zeros(3) : vec_view_sub_->value(i,k);
+                    arma::mat33 gvft = (n==0) ? vec_view_sub_->grad(i,k) : arma::zeros(3,3);
+
+                    for (int m=0; m<2; m++)
+                        for (unsigned int j=0; j<n_dofs_ngh_[m]; j++) {
+                            arma::vec3 ui = (m==0) ? arma::zeros(3) : vec_view_side_->value(j,k);
+                            arma::vec3 uf = (m==1) ? arma::zeros(3) : vec_view_sub_->value(j,k);
+                            arma::mat33 guit = (m==1) ? mat_t(vec_view_side_->grad(j,k),nv) : arma::zeros(3,3);
+                            double divuit = (m==1) ? arma::trace(guit) : 0;
+
+                            local_matrix_ngh_[n][m][i*n_dofs_ngh_[m] + j] +=
+                                    data_->fracture_sigma(p_low)*(
+                                     arma::dot(vf-vi,
+                                      2/data_->cross_section(p_low)*(data_->lame_mu(p_low)*(uf-ui)+(data_->lame_mu(p_low)+data_->lame_lambda(p_low))*(arma::dot(uf-ui,nv)*nv))
+                                      + data_->lame_mu(p_low)*arma::trans(guit)*nv
+                                      + data_->lame_lambda(p_low)*divuit*nv
+                                     )
+                                     - arma::dot(gvft, data_->lame_mu(p_low)*arma::kron(nv,ui.t()) + data_->lame_lambda(p_low)*arma::dot(ui,nv)*arma::eye(3,3))
+                                    )*fe_values_sub_.JxW(k);
+                        }
+
+                }
+            }
+        	k++;
         }
-        fe_values_vb_.reinit(elm_lower_dim);
-        n_dofs[0] = fv_sb_[0]->n_dofs();
 
-        DHCellAccessor cell_higher_dim = data_->dh_->cell_accessor_from_element( neighb_side.element().idx() );
-        n_indices = cell_higher_dim.get_dof_indices(dof_indices_);
-        for(unsigned int i=0; i<n_indices; ++i) {
-            side_dof_indices_vb_[i+n_dofs[0]] = dof_indices_[i];
-        }
-        fe_values_side_.reinit(neighb_side.side());
-        n_dofs[1] = fv_sb_[1]->n_dofs();
-
-        */
+        for (unsigned int n=0; n<2; ++n)
+            for (unsigned int m=0; m<2; ++m)
+                data_->ls->mat_set_values(n_dofs_ngh_[n], side_dof_indices_[n].data(), n_dofs_ngh_[m], side_dof_indices_[m].data(), &(local_matrix_ngh_[n][m][0]));
     }
 
 
@@ -203,31 +244,43 @@ public:
     }
 
 
-    private:
-        shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
-        shared_ptr<FiniteElement<dim-1>> fe_low_;   ///< Finite element for the solution of the advection-diffusion equation (dim-1).
+private:
+    inline arma::mat33 mat_t(const arma::mat33 &m, const arma::vec3 &n)
+    {
+      arma::mat33 mt = m - m*arma::kron(n,n.t());
+      return mt;
+    }
 
-        /// Data object shared with EqData
-        EqData *data_;
 
-        /// Sub field set contains fields used in calculation.
-        FieldSet used_fields_;
 
-        unsigned int n_dofs_;                                     ///< Number of dofs
-        unsigned int n_dofs_sub_;                                 ///< Number of dofs (on lower dim element)
-        unsigned int qsize_;                                      ///< Size of quadrature
-        unsigned int qsize_low_;                                  ///< Size of quadrature of dim-1
-        FEValues<3> fe_values_;                                   ///< FEValues of cell object (FESystem of P disc finite element type)
-        FEValues<3> fe_values_side_;                              ///< FEValues of side object
-        FEValues<3> fe_values_sub_;                               ///< FEValues of lower dimension cell object
+    shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
+    shared_ptr<FiniteElement<dim-1>> fe_low_;   ///< Finite element for the solution of the advection-diffusion equation (dim-1).
 
-        vector<LongIdx> dof_indices_;                             ///< Vector of global DOF indices
-        vector<PetscScalar> local_matrix_;                        ///< Auxiliary vector for assemble methods
-        const FEValuesViews::Vector<3> * vec_view_;               ///< Vector view in cell integral calculation.
-        const FEValuesViews::Vector<3> * vec_view_side_;          ///< Vector view in boundary side integral calculation.
+    /// Data object shared with EqData
+    EqData *data_;
 
-        template < template<IntDim...> class DimAssembly>
-        friend class GenericAssembly;
+    /// Sub field set contains fields used in calculation.
+    FieldSet used_fields_;
+
+    unsigned int n_dofs_;                                     ///< Number of dofs
+    unsigned int n_dofs_sub_;                                 ///< Number of dofs (on lower dim element)
+    std::vector<unsigned int> n_dofs_ngh_;                    ///< Number of dofs on lower and higher dimension element (vector of 2 items)
+    unsigned int qsize_;                                      ///< Size of quadrature
+    unsigned int qsize_low_;                                  ///< Size of quadrature of dim-1
+    FEValues<3> fe_values_;                                   ///< FEValues of cell object (FESystem of P disc finite element type)
+    FEValues<3> fe_values_side_;                              ///< FEValues of side object
+    FEValues<3> fe_values_sub_;                               ///< FEValues of lower dimension cell object
+
+    vector<LongIdx> dof_indices_;                             ///< Vector of global DOF indices
+    vector<vector<LongIdx> > side_dof_indices_;               ///< 2 items vector of DOF indices in neighbour calculation.
+    vector<PetscScalar> local_matrix_;                        ///< Auxiliary vector for assemble methods
+    vector<vector<vector<PetscScalar>>> local_matrix_ngh_;    ///< Auxiliary vectors for assemble ngh integral
+    const FEValuesViews::Vector<3> * vec_view_;               ///< Vector view in cell integral calculation.
+    const FEValuesViews::Vector<3> * vec_view_side_;          ///< Vector view in boundary / neighbour calculation.
+    const FEValuesViews::Vector<3> * vec_view_sub_;           ///< Vector view of low dim element in neighbour calculation.
+
+    template < template<IntDim...> class DimAssembly>
+    friend class GenericAssembly;
 
 };
 
