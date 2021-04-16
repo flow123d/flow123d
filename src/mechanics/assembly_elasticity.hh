@@ -191,7 +191,7 @@ public:
                         local_matrix_ngh_[n][m][i*(n_dofs_)+j] = 0;
 
         // set transmission conditions
-        unsigned int k;
+        unsigned int k=0;
         for (auto p_high : data_->stiffness_assembly_->coupling_points(neighb_side) )
         {
             auto p_low = p_high.lower_dim(cell_lower_dim);

@@ -465,7 +465,10 @@ void Elasticity::zero_time_step()
     MatSetOption(*data_.ls->get_matrix(), MAT_KEEP_NONZERO_PATTERN, PETSC_TRUE);
     data_.ls->mat_zero_entries();
     data_.ls->rhs_zero_entries();
-    assemble_stiffness_matrix();
+    //assemble_stiffness_matrix();
+    START_TIMER("assemble_stiffness");
+    data_.stiffness_assembly_->assemble(data_.dh_);
+    END_TIMER("assemble_stiffness");
     assemble_rhs();
     data_.ls->finish_assembly();
     data_.ls->solve();
@@ -481,7 +484,10 @@ void Elasticity::preallocate()
     stiffness_matrix = NULL;
     rhs = NULL;
 
-	assemble_stiffness_matrix();
+	//assemble_stiffness_matrix();
+    START_TIMER("assemble_stiffness");
+    data_.stiffness_assembly_->assemble(data_.dh_);
+    END_TIMER("assemble_stiffness");
     assemble_rhs();
 
 	allocation_done = true;
