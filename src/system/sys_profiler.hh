@@ -860,6 +860,8 @@ public:
     {}
     void output(MPI_Comm comm)
     {}
+    void output()
+    {}
     void transform_profiler_data(const string &output_file_suffix, const string &formatter)
     {}
     double get_resolution () const

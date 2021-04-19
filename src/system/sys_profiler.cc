@@ -37,7 +37,6 @@
 #include <boost/unordered_map.hpp>
 
 #include "system/file_path.hh"
-#include "system/python_loader.hh"
 #include "mpi.h"
 #include "time_point.hh"
 
@@ -961,16 +960,7 @@ void Profiler::initialize() {
     }
 }
 
-void Profiler::uninitialize() {
-    if (_instance) {
-        ASSERT(_instance->actual_node==0)(_instance->timers_[_instance->actual_node].tag())
-    			.error("Forbidden to uninitialize the Profiler when actual timer is not zero.");
-        // set_memory_monitoring(false, false);
-        _instance->stop_timer(0);
-        delete _instance;
-        _instance = NULL;
-    }
-}
+void Profiler::uninitialize() {}
 
 
 #endif // def FLOW123D_DEBUG_PROFILER

@@ -570,7 +570,7 @@ TEST(Profiler, test_calls_only) {
     Profiler::initialize();
     START_TIMER("sub1");
     END_TIMER("sub1");
-    PI->output(MPI_COMM_WORLD, cout);
+    Profiler::instance()->output(MPI_COMM_WORLD, cout);
     Profiler::uninitialize();
 
 }
