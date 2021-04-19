@@ -20,7 +20,6 @@
 #include "system/logger_options.hh"
 #include "system/global_defs.h"
 #include "system/file_path.hh"
-#include "config.h"
 
 #include <iomanip>
 

@@ -850,7 +850,13 @@ public:
     {}
     void output(MPI_Comm, ostream &)
     {}
+    void output(MPI_Comm, string)
+    {}
+    void output(string)
+    {}
     void output(MPI_Comm)
+    {}
+    void output()
     {}
     void transform_profiler_data(const string &, const string &)
     {}
