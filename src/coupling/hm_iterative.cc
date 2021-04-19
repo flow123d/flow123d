@@ -67,16 +67,19 @@ const int HM_Iterative::registrar = Input::register_class< HM_Iterative, Mesh &,
 HM_Iterative::EqData::EqData()
 {
     *this += alpha.name("biot_alpha")
+                     .description("Biot poroelastic coefficient.")
                      .units(UnitSI().dimensionless())
                      .input_default("0.0")
                      .flags_add(FieldFlag::in_rhs);
     
     *this += density.name("fluid_density")
+                     .description("Volumetric mass density of the fluid.")
                      .units(UnitSI().kg().m(-3))
                      .input_default("0.0")
                      .flags_add(FieldFlag::in_rhs);
     
     *this += gravity.name("gravity")
+                     .description("Gravitational acceleration constant.")
                      .units(UnitSI().m().s(-2))
                      .input_default("9.81")
                      .flags_add(FieldFlag::in_rhs);
