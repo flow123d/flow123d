@@ -45,6 +45,13 @@ However, external tools may use this information to provide conversion of the in
 	{{{Record with data for a general sequential coupling.}% 
 }}
 		\RecKey
+			{Coupling-Sequential::time}
+			{time}
+			{{record: }\TypeLink{IT::TimeGovernor}{TimeGovernor}}{}
+			{ \ValueDefault{{\{}{\}}}}
+			{{{Time governor setting.}% 
+}}
+		\RecKey
 			{Coupling-Sequential::description}
 			{description}
 			{{String}}{}
@@ -58,13 +65,6 @@ Is displayed in the main log, and possibly in other text output files.}%
 			{{record: }\TypeLink{IT::Mesh}{Mesh}}{}
 			{ \it{Obligatory}}
 			{{{Computational mesh common to all equations.}% 
-}}
-		\RecKey
-			{Coupling-Sequential::time}
-			{time}
-			{{record: }\TypeLink{IT::TimeGovernor}{TimeGovernor}}{}
-			{ \it{Optional}}
-			{{{Simulation time frame and time step.}% 
 }}
 		\RecKey
 			{Coupling-Sequential::flow-equation}
@@ -88,6 +88,186 @@ Is displayed in the main log, and possibly in other text output files.}%
 			{{{Heat transfer, depends on the velocity field from a Flow equation.}% 
 }}
 \end{RecordType}
+\begin{RecordType}
+	{IT::TimeGovernor}
+	{TimeGovernor}
+	{}% implements
+	{\TypeLink{TimeGovernor::max-dt}{max{\_}dt}}% reducible to key
+	{{{Time axis settings of the simulation.}\\{
+The settings is specific to a particular equation.}\\{
+TimeGovernor allows to:}\\{
+ - define start time and end time of simulation}\\{
+ - define lower and upper limits of time steps}\\{
+ - direct fixed time marks of whole simulation}\\{
+ - set global time unit of equation (see 'common{\_}time{\_}unit' key)}\\{
+Limits of time steps are defined by keys 'min{\_}dt', 'max{\_}dt', 'init{\_}dt' and 'dt{\_}limits'. Key 'init{\_}dt' has the highest priority and allows set fix size of time steps.
+Pair of keys 'min{\_}dt' and 'max{\_}dt' define interval of time steps.
+Both previous cases ('init{\_}dt' or pair 'min{\_}dt' and 'max{\_}dt') set global limits of whole simulation.
+In contrasts, 'dt{\_}limits' allow set time-dependent function of min{\_}dt/max{\_}dt.
+Used time steps of simulation can be printed to YAML output file (see 'write{\_}used{\_}timesteps'.}\\{
+Fixed time marks define exact values of time steps.
+They are defined in:}\\{
+ - start time and end time of simulation}\\{
+ - output times printed to output mesh file}\\{
+ - times defined in 'dt{\_}limits' table (optional, see 'add{\_}dt{\_}limits{\_}time{\_}marks' key)}% 
+}}
+		\RecKey
+			{TimeGovernor::start-time}
+			{start{\_}time}
+			{{tuple: }\TypeLink{IT::TimeValue}{TimeValue}}{}
+			{ \ValueDefault{0.0}}
+			{{{Start time of the simulation.}% 
+}}
+		\RecKey
+			{TimeGovernor::end-time}
+			{end{\_}time}
+			{{tuple: }\TypeLink{IT::TimeValue}{TimeValue}}{}
+			{ \ValueDefault{5e+17}}
+			{{{End time of the simulation.}\\{
+The default value is higher than the age of the Universe (given in seconds).}% 
+}}
+		\RecKey
+			{TimeGovernor::init-dt}
+			{init{\_}dt}
+			{{tuple: }\TypeLink{IT::TimeValue-2}{TimeValue}}{}
+			{ \ValueDefault{0.0}}
+			{{{Initial guess for the time step.}\\{
+It applies to equations that use an adaptive time stepping.
+If set to 0.0, the time step is determined in fully autonomous way, assuming the equation supports it.}% 
+}}
+		\RecKey
+			{TimeGovernor::min-dt}
+			{min{\_}dt}
+			{{tuple: }\TypeLink{IT::TimeValue-2}{TimeValue}}{}
+			{implicit value: "{Machine precision.}"}
+			{{{Soft lower limit for the time step.}\\{
+Equation using an adaptive time stepping cannot suggest smaller time step.
+The actual time step can only decrease below the limit in order to match the prescribed input or output times.}% 
+}}
+		\RecKey
+			{TimeGovernor::max-dt}
+			{max{\_}dt}
+			{{tuple: }\TypeLink{IT::TimeValue-2}{TimeValue}}{}
+			{implicit value: "{Whole time of the simulation if specified, infinity else.}"}
+			{{{Hard upper limit for the time step.}\\{
+The actual time step can only increase above the limit in order to match the prescribed input or output times.}% 
+}}
+		\RecKey
+			{TimeGovernor::dt-limits}
+			{dt{\_}limits}
+			{{array [0, UINT] of }{tuple: }\TypeLink{IT::DtLimits}{DtLimits}}{}
+			{ \it{Optional}}
+			{{{Allow to set a time dependent changes in }\begin{ttfamily}min{\_}dt\end{ttfamily}{ and }\begin{ttfamily}max{\_}dt\end{ttfamily}{ limits.
+This list is processed at individual times overwriting previous values of }\begin{ttfamily}min{\_}dt\end{ttfamily}{/}\begin{ttfamily}max{\_}dt\end{ttfamily}{. Limits equal to 0 are ignored and replaced with }\begin{ttfamily}min{\_}dt\end{ttfamily}{/}\begin{ttfamily}max{\_}dt\end{ttfamily}{ values.}% 
+}}
+		\RecKey
+			{TimeGovernor::add-dt-limits-time-marks}
+			{add{\_}dt{\_}limits{\_}time{\_}marks}
+			{{Bool}}{}
+			{ \ValueDefault{false}}
+			{{{Add all times defined in }\begin{ttfamily}dt{\_}limits\end{ttfamily}{ table to the list of fixed TimeMarks.}% 
+}}
+		\RecKey
+			{TimeGovernor::write-used-timesteps}
+			{write{\_}used{\_}timesteps}
+			{{Filename}}{}
+			{ \it{Optional}}
+			{{{Write used time steps to the given file in YAML format corresponding with the format of }\begin{ttfamily}dt{\_}limits\end{ttfamily}{.}% 
+}}
+		\RecKey
+			{TimeGovernor::common-time-unit}
+			{common{\_}time{\_}unit}
+			{{String}}{}
+			{ \ValueDefault{"s"}}
+			{{{Common time unit of the equation.}\\{
+This unit will be used for all time inputs and outputs within the equation.
+Individually, the common time unit can be overwritten for every declared time.}\\{
+Time units are used in the following cases:}\\{
+1) Time units of time value keys in: TimeGovernor, FieldDescriptors.}\\{
+   The common time unit can be overwritten for every declared time.}\\{
+2) Time units in: }\\{
+   a) input fields: FieldFE and FieldTimeFunction}\\{
+   b) time steps definition of OutputTimeSet}\\{
+   Common time unit can be overwritten by one unit value for every whole mesh data file or time function.}\\{
+3) Time units in output files: observation times, balance times, frame times of VTK and GMSH}\\{
+   Common time unit cannot be overwritten in these cases.}% 
+}}
+\end{RecordType}
+\begin{TupleType}
+	{IT::TimeValue}
+	{TimeValue}
+	{}% implements
+	{\TypeLink{TimeValue::time}{time}}% reducible to key
+	{{{A time with optional unit specification.}% 
+}}
+		\RecKey
+			{TimeValue::time}
+			{time}
+			{{Double (-inf, +inf)}}{}
+			{ \it{Obligatory}}
+			{{{The time value.}% 
+}}
+		\RecKey
+			{TimeValue::unit}
+			{unit}
+			{{String}}{}
+			{implicit value: "{Common time unit of the equation's Time Governor.}"}
+			{{{The time unit.
+Possible values: 's' seconds, 'min' minutes, 'h' hours, 'd' days, 'y' years.}% 
+}}
+\end{TupleType}
+\begin{TupleType}
+	{IT::TimeValue-2}
+	{TimeValue}
+	{}% implements
+	{\TypeLink{TimeValue-2::time}{time}}% reducible to key
+	{{{A time with optional unit specification.}% 
+}}
+		\RecKey
+			{TimeValue-2::time}
+			{time}
+			{{Double [0, +inf)}}{}
+			{ \it{Obligatory}}
+			{{{The time value.}% 
+}}
+		\RecKey
+			{TimeValue-2::unit}
+			{unit}
+			{{String}}{}
+			{implicit value: "{Common time unit of the equation's Time Governor.}"}
+			{{{The time unit.
+Possible values: 's' seconds, 'min' minutes, 'h' hours, 'd' days, 'y' years.}% 
+}}
+\end{TupleType}
+\begin{TupleType}
+	{IT::DtLimits}
+	{DtLimits}
+	{}% implements
+	{\TypeLink{DtLimits::time}{time}}% reducible to key
+	{{{Time dependent changes in min{\_}dt and max{\_}dt limits.}% 
+}}
+		\RecKey
+			{DtLimits::time}
+			{time}
+			{{tuple: }\TypeLink{IT::TimeValue}{TimeValue}}{}
+			{ \it{Obligatory}}
+			{{{The start time of dt step set.}% 
+}}
+		\RecKey
+			{DtLimits::min-dt}
+			{min{\_}dt}
+			{{tuple: }\TypeLink{IT::TimeValue}{TimeValue}}{}
+			{implicit value: "{'min{\_}dt' value of TimeGovernor.}"}
+			{{{Soft lower limit for the time step.}% 
+}}
+		\RecKey
+			{DtLimits::max-dt}
+			{max{\_}dt}
+			{{tuple: }\TypeLink{IT::TimeValue}{TimeValue}}{}
+			{implicit value: "{'max{\_}dt' value of TimeGovernor.}"}
+			{{{Whole time of the simulation if specified, infinity else.}% 
+}}
+\end{TupleType}
 \begin{RecordType}
 	{IT::Mesh}
 	{Mesh}
@@ -221,6 +401,13 @@ It has to be unique per single mesh.}%
 			{{String}}{}
 			{ \it{Obligatory}}
 			{{{The original region name in the input file, e.g. a physical volume name in the GMSH format.}% 
+}}
+		\RecKey
+			{From-Label::allow-empty}
+			{allow{\_}empty}
+			{{Bool}}{}
+			{ \ValueDefault{false}}
+			{{{If true it allows to the region set to be empty (no elements).}% 
 }}
 \end{RecordType}
 \begin{RecordType}
@@ -416,184 +603,6 @@ neighboring of elements of different dimension.}%
 			{{{Use bounding boxes for finding initial candidates, then continue by prolongation.}% 
 }}
 \end{SelectionType}
-\begin{RecordType}
-	{IT::TimeGovernor}
-	{TimeGovernor}
-	{}% implements
-	{\TypeLink{TimeGovernor::max-dt}{max{\_}dt}}% reducible to key
-	{{{Time axis settings of the simulation.}\\{
-The settings is specific to a particular equation.}\\{
-TimeGovernor allows to:}\\{
- - define start time and end time of simulation}\\{
- - define lower and upper limits of time steps}\\{
- - direct fixed time marks of whole simulation}\\{
- - set global time unit of equation (see 'common{\_}time{\_}unit' key)}\\{
-Limits of time steps are defined by keys 'min{\_}dt', 'max{\_}dt', 'init{\_}dt' and 'dt{\_}limits'. Key 'init{\_}dt' has the highest priority and allows set fix size of time steps.
-Pair of keys 'min{\_}dt' and 'max{\_}dt' define interval of time steps.
-Both previous cases ('init{\_}dt' or pair 'min{\_}dt' and 'max{\_}dt') set global limits of whole simulation.
-In contrasts, 'dt{\_}limits' allow set time-dependent function of min{\_}dt/max{\_}dt.
-Used time steps of simulation can be printed to YAML output file (see 'write{\_}used{\_}timesteps'.}\\{
-Fixed time marks define exact values of time steps.
-They are defined in:}\\{
- - start time and end time of simulation}\\{
- - output times printed to output mesh file}\\{
- - times defined in 'dt{\_}limits' table (optional, see 'add{\_}dt{\_}limits{\_}time{\_}marks' key)}% 
-}}
-		\RecKey
-			{TimeGovernor::start-time}
-			{start{\_}time}
-			{{tuple: }\TypeLink{IT::TimeValue}{TimeValue}}{}
-			{ \ValueDefault{0.0}}
-			{{{Start time of the simulation.}% 
-}}
-		\RecKey
-			{TimeGovernor::end-time}
-			{end{\_}time}
-			{{tuple: }\TypeLink{IT::TimeValue}{TimeValue}}{}
-			{ \ValueDefault{5e+17}}
-			{{{End time of the simulation.}\\{
-The default value is higher than the age of the Universe (given in seconds).}% 
-}}
-		\RecKey
-			{TimeGovernor::init-dt}
-			{init{\_}dt}
-			{{tuple: }\TypeLink{IT::TimeValue-2}{TimeValue}}{}
-			{ \ValueDefault{0.0}}
-			{{{Initial guess for the time step.}\\{
-It applies to equations that use an adaptive time stepping.
-If set to 0.0, the time step is determined in fully autonomous way, assuming the equation supports it.}% 
-}}
-		\RecKey
-			{TimeGovernor::min-dt}
-			{min{\_}dt}
-			{{tuple: }\TypeLink{IT::TimeValue-2}{TimeValue}}{}
-			{implicit value: "{Machine precision.}"}
-			{{{Soft lower limit for the time step.}\\{
-Equation using an adaptive time stepping cannot suggest smaller time step.
-The actual time step can only decrease below the limit in order to match the prescribed input or output times.}% 
-}}
-		\RecKey
-			{TimeGovernor::max-dt}
-			{max{\_}dt}
-			{{tuple: }\TypeLink{IT::TimeValue-2}{TimeValue}}{}
-			{implicit value: "{Whole time of the simulation if specified, infinity else.}"}
-			{{{Hard upper limit for the time step.}\\{
-The actual time step can only increase above the limit in order to match the prescribed input or output times.}% 
-}}
-		\RecKey
-			{TimeGovernor::dt-limits}
-			{dt{\_}limits}
-			{{array [0, UINT] of }{tuple: }\TypeLink{IT::DtLimits}{DtLimits}}{}
-			{ \it{Optional}}
-			{{{Allow to set a time dependent changes in }\begin{ttfamily}min{\_}dt\end{ttfamily}{ and }\begin{ttfamily}max{\_}dt\end{ttfamily}{ limits.
-This list is processed at individual times overwriting previous values of }\begin{ttfamily}min{\_}dt\end{ttfamily}{/}\begin{ttfamily}max{\_}dt\end{ttfamily}{. Limits equal to 0 are ignored and replaced with }\begin{ttfamily}min{\_}dt\end{ttfamily}{/}\begin{ttfamily}max{\_}dt\end{ttfamily}{ values.}% 
-}}
-		\RecKey
-			{TimeGovernor::add-dt-limits-time-marks}
-			{add{\_}dt{\_}limits{\_}time{\_}marks}
-			{{Bool}}{}
-			{ \ValueDefault{false}}
-			{{{Add all times defined in }\begin{ttfamily}dt{\_}limits\end{ttfamily}{ table to the list of fixed TimeMarks.}% 
-}}
-		\RecKey
-			{TimeGovernor::write-used-timesteps}
-			{write{\_}used{\_}timesteps}
-			{{Filename}}{}
-			{ \it{Optional}}
-			{{{Write used time steps to the given file in YAML format corresponding with the format of }\begin{ttfamily}dt{\_}limits\end{ttfamily}{.}% 
-}}
-		\RecKey
-			{TimeGovernor::common-time-unit}
-			{common{\_}time{\_}unit}
-			{{String}}{}
-			{ \ValueDefault{"s"}}
-			{{{Common time unit of the equation.}\\{
-This unit will be used for all time inputs and outputs within the equation.
-Individually, the common time unit can be overwritten for every declared time.}\\{
-Time units are used in the following cases:}\\{
-1) Time units of time value keys in: TimeGovernor, FieldDescriptors.}\\{
-   The common time unit can be overwritten for every declared time.}\\{
-2) Time units in: }\\{
-   a) input fields: FieldFE and FieldTimeFunction}\\{
-   b) time steps definition of OutputTimeSet}\\{
-   Common time unit can be overwritten by one unit value for every whole mesh data file or time function.}\\{
-3) Time units in output files: observation times, balance times, frame times of VTK and GMSH}\\{
-   Common time unit cannot be overwritten in these cases.}% 
-}}
-\end{RecordType}
-\begin{TupleType}
-	{IT::TimeValue}
-	{TimeValue}
-	{}% implements
-	{\TypeLink{TimeValue::time}{time}}% reducible to key
-	{{{A time with unit specification.}% 
-}}
-		\RecKey
-			{TimeValue::time}
-			{time}
-			{{Double (-inf, +inf)}}{}
-			{ \it{Obligatory}}
-			{{{Numeric value of time.}% 
-}}
-		\RecKey
-			{TimeValue::unit}
-			{unit}
-			{{String}}{}
-			{implicit value: "{Common time unit of equation defined in Time Governor}"}
-			{{{Specify unit of an input time value.}% 
-}}
-\end{TupleType}
-\begin{TupleType}
-	{IT::TimeValue-2}
-	{TimeValue}
-	{}% implements
-	{\TypeLink{TimeValue-2::time}{time}}% reducible to key
-	{{{A time with unit specification.}% 
-}}
-		\RecKey
-			{TimeValue-2::time}
-			{time}
-			{{Double [0, +inf)}}{}
-			{ \it{Obligatory}}
-			{{{Numeric value of time.}% 
-}}
-		\RecKey
-			{TimeValue-2::unit}
-			{unit}
-			{{String}}{}
-			{implicit value: "{Common time unit of equation defined in Time Governor}"}
-			{{{Specify unit of an input time value.}% 
-}}
-\end{TupleType}
-\begin{TupleType}
-	{IT::DtLimits}
-	{DtLimits}
-	{}% implements
-	{\TypeLink{DtLimits::time}{time}}% reducible to key
-	{{{Time dependent changes in min{\_}dt and max{\_}dt limits.}% 
-}}
-		\RecKey
-			{DtLimits::time}
-			{time}
-			{{tuple: }\TypeLink{IT::TimeValue}{TimeValue}}{}
-			{ \it{Obligatory}}
-			{{{The start time of dt step set.}% 
-}}
-		\RecKey
-			{DtLimits::min-dt}
-			{min{\_}dt}
-			{{tuple: }\TypeLink{IT::TimeValue}{TimeValue}}{}
-			{implicit value: "{'min{\_}dt' value of TimeGovernor.}"}
-			{{{Soft lower limit for the time step.}% 
-}}
-		\RecKey
-			{DtLimits::max-dt}
-			{max{\_}dt}
-			{{tuple: }\TypeLink{IT::TimeValue}{TimeValue}}{}
-			{implicit value: "{'max{\_}dt' value of TimeGovernor.}"}
-			{{{Whole time of the simulation if specified, infinity else.}% 
-}}
-\end{TupleType}
 \begin{AbstractType}
 	{IT::DarcyFlow}
 	{DarcyFlow}
@@ -601,19 +610,27 @@ Time units are used in the following cases:}\\{
 	{{{Darcy flow model.
 Abstraction of various porous media flow models.}% 
 }}
-		\Descendant{\TypeLink{IT::Flow-Darcy-MH}{Flow{\_}Darcy{\_}MH}}% 
+		\Descendant{\TypeLink{IT::Flow-Darcy-LMH}{Flow{\_}Darcy{\_}LMH}}% 
 		\Descendant{\TypeLink{IT::Flow-Richards-LMH}{Flow{\_}Richards{\_}LMH}}% 
 		\Descendant{\TypeLink{IT::Coupling-Iterative}{Coupling{\_}Iterative}}% 
+		\Descendant{\TypeLink{IT::Flow-Darcy-MH}{Flow{\_}Darcy{\_}MH}}% 
 \end{AbstractType}
 \begin{RecordType}
-	{IT::Flow-Darcy-MH}
-	{Flow{\_}Darcy{\_}MH}
+	{IT::Flow-Darcy-LMH}
+	{Flow{\_}Darcy{\_}LMH}
 	{\TypeLink{IT::DarcyFlow}{DarcyFlow}}% implements
 	{}% reducible to key
-	{{{Mixed-Hybrid  solver for saturated Darcy flow.}% 
+	{{{Lumped Mixed-Hybrid solver for saturated Darcy flow.}% 
 }}
 		\RecKey
-			{Flow-Darcy-MH::gravity}
+			{Flow-Darcy-LMH::time}
+			{time}
+			{{record: }\TypeLink{IT::TimeGovernor}{TimeGovernor}}{}
+			{ \ValueDefault{{\{}{\}}}}
+			{{{Time governor setting.}% 
+}}
+		\RecKey
+			{Flow-Darcy-LMH::gravity}
 			{gravity}
 			{{array [3, 3] of }{Double (-inf, +inf)}}{}
 			{ \ValueDefault{[0, 0, -1]}}
@@ -621,21 +638,21 @@ Abstraction of various porous media flow models.}%
 Dimensionless.}% 
 }}
 		\RecKey
-			{Flow-Darcy-MH::input-fields}
+			{Flow-Darcy-LMH::input-fields}
 			{input{\_}fields}
-			{{array [0, UINT] of }{record: }\TypeLink{IT::Flow-Darcy-MH-Data}{Flow{\_}Darcy{\_}MH{\_}Data}}{}
+			{{array [0, UINT] of }{record: }\TypeLink{IT::Flow-Darcy-LMH-Data}{Flow{\_}Darcy{\_}LMH{\_}Data}}{}
 			{ \it{Obligatory}}
 			{{{Input data for Darcy flow model.}% 
 }}
 		\RecKey
-			{Flow-Darcy-MH::nonlinear-solver}
+			{Flow-Darcy-LMH::nonlinear-solver}
 			{nonlinear{\_}solver}
 			{{record: }\TypeLink{IT::NonlinearSolver}{NonlinearSolver}}{}
 			{ \ValueDefault{{\{}{\}}}}
 			{{{Non-linear solver for MH problem.}% 
 }}
 		\RecKey
-			{Flow-Darcy-MH::output-stream}
+			{Flow-Darcy-LMH::output-stream}
 			{output{\_}stream}
 			{{record: }\TypeLink{IT::OutputStream}{OutputStream}}{}
 			{ \ValueDefault{{\{}{\}}}}
@@ -643,14 +660,14 @@ Dimensionless.}%
  Specify file format, precision etc.}% 
 }}
 		\RecKey
-			{Flow-Darcy-MH::output}
+			{Flow-Darcy-LMH::output}
 			{output}
-			{{gen. record: }\TypeLink{IT::EquationOutput}{EquationOutput}}{{output{\_}field{\_}selection}{ = }\TypeLink{IT::Flow-Darcy-MH-OutputFields}{Flow{\_}Darcy{\_}MH:OutputFields}}
+			{{gen. record: }\TypeLink{IT::EquationOutput}{EquationOutput}}{{output{\_}field{\_}selection}{ = }\TypeLink{IT::Flow-Darcy-LMH-OutputFields}{Flow{\_}Darcy{\_}LMH:OutputFields}}
 			{ \ValueDefault{{\{}"fields": ["pressure{\_}p0", "velocity{\_}p0"]{\}}}}
 			{{{Specification of output fields and output times.}% 
 }}
 		\RecKey
-			{Flow-Darcy-MH::output-specific}
+			{Flow-Darcy-LMH::output-specific}
 			{output{\_}specific}
 			{{gen. record: }\TypeLink{IT::Output-DarcyMHSpecific}{Output{\_}DarcyMHSpecific}}{{output{\_}field{\_}selection}{ = }\TypeLink{IT::Flow-Darcy-MH-specific-OutputFields}{Flow{\_}Darcy{\_}MH{\_}specific:OutputFields}}
 			{ \it{Optional}}
@@ -658,28 +675,14 @@ Dimensionless.}%
 Includes raw output and some experimental functionality.}% 
 }}
 		\RecKey
-			{Flow-Darcy-MH::balance}
+			{Flow-Darcy-LMH::balance}
 			{balance}
 			{{record: }\TypeLink{IT::Balance}{Balance}}{}
 			{ \ValueDefault{{\{}{\}}}}
 			{{{Settings for computing mass balance.}% 
 }}
 		\RecKey
-			{Flow-Darcy-MH::time}
-			{time}
-			{{record: }\TypeLink{IT::TimeGovernor}{TimeGovernor}}{}
-			{ \ValueDefault{{\{}{\}}}}
-			{{{Time governor settings for the unsteady Darcy flow model.}% 
-}}
-		\RecKey
-			{Flow-Darcy-MH::n-schurs}
-			{n{\_}schurs}
-			{{Integer [0, 2]}}{}
-			{ \ValueDefault{2}}
-			{{{Number of Schur complements to perform when solving MH system.}% 
-}}
-		\RecKey
-			{Flow-Darcy-MH::mortar-method}
+			{Flow-Darcy-LMH::mortar-method}
 			{mortar{\_}method}
 			{{selection: }\TypeLink{IT::MH-MortarMethod}{MH{\_}MortarMethod}}{}
 			{ \ValueDefault{"None"}}
@@ -687,31 +690,31 @@ Includes raw output and some experimental functionality.}%
 }}
 \end{RecordType}
 \begin{RecordType}
-	{IT::Flow-Darcy-MH-Data}
-	{Flow{\_}Darcy{\_}MH{\_}Data}
+	{IT::Flow-Darcy-LMH-Data}
+	{Flow{\_}Darcy{\_}LMH{\_}Data}
 	{}% implements
 	{}% reducible to key
 	{{{Record to set fields of the equation.}\\{
 The fields are set only on the domain specified by one of the keys: 'region', 'rid'}\\{
 and after the time given by the key 'time'. The field setting can be overridden by}\\{
- any Flow{\_}Darcy{\_}MH{\_}Data record that comes later in the boundary data array.}% 
+ any Flow{\_}Darcy{\_}LMH{\_}Data record that comes later in the boundary data array.}% 
 }}
 		\RecKey
-			{Flow-Darcy-MH-Data::region}
+			{Flow-Darcy-LMH-Data::region}
 			{region}
 			{{array [1, UINT] of }{String}}{}
 			{ \it{Optional}}
 			{{{Labels of the regions where to set fields. }% 
 }}
 		\RecKey
-			{Flow-Darcy-MH-Data::rid}
+			{Flow-Darcy-LMH-Data::rid}
 			{rid}
 			{{Integer [0, INT]}}{}
 			{ \it{Optional}}
 			{{{ID of the region where to set fields.}% 
 }}
 		\RecKey
-			{Flow-Darcy-MH-Data::time}
+			{Flow-Darcy-LMH-Data::time}
 			{time}
 			{{tuple: }\TypeLink{IT::TimeValue-2}{TimeValue}}{}
 			{ \ValueDefault{0.0}}
@@ -719,49 +722,49 @@ and after the time given by the key 'time'. The field setting can be overridden 
 These times have to form an increasing sequence.}% 
 }}
 		\RecKey
-			{Flow-Darcy-MH-Data::anisotropy}
+			{Flow-Darcy-LMH-Data::anisotropy}
 			{anisotropy}
 			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-3-}{Field{\_}R3{\_}to{\_}R[3,3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Anisotropy of the conductivity tensor. }{$[-]$}% 
 }}
 		\RecKey
-			{Flow-Darcy-MH-Data::cross-section}
+			{Flow-Darcy-LMH-Data::cross-section}
 			{cross{\_}section}
 			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Complement dimension parameter (cross section for 1D, thickness for 2D). }{$[m^{3-d}]$}% 
 }}
 		\RecKey
-			{Flow-Darcy-MH-Data::conductivity}
+			{Flow-Darcy-LMH-Data::conductivity}
 			{conductivity}
 			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Isotropic conductivity scalar. }{$[ms^{-1}]$}% 
 }}
 		\RecKey
-			{Flow-Darcy-MH-Data::sigma}
+			{Flow-Darcy-LMH-Data::sigma}
 			{sigma}
 			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Transition coefficient between dimensions. }{$[-]$}% 
 }}
 		\RecKey
-			{Flow-Darcy-MH-Data::water-source-density}
+			{Flow-Darcy-LMH-Data::water-source-density}
 			{water{\_}source{\_}density}
 			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Water source density. }{$[s^{-1}]$}% 
 }}
 		\RecKey
-			{Flow-Darcy-MH-Data::bc-type}
+			{Flow-Darcy-LMH-Data::bc-type}
 			{bc{\_}type}
 			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Flow-Darcy-BC-Type}{Flow{\_}Darcy{\_}BC{\_}Type}}
 			{ \it{Optional}}
 			{{{Boundary condition type. }{$[-]$}% 
 }}
 		\RecKey
-			{Flow-Darcy-MH-Data::bc-pressure}
+			{Flow-Darcy-LMH-Data::bc-pressure}
 			{bc{\_}pressure}
 			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
@@ -769,7 +772,7 @@ These times have to form an increasing sequence.}%
 Used for all values of }\begin{ttfamily}bc{\_}type\end{ttfamily}{ except }\begin{ttfamily}none\end{ttfamily}{ and }\begin{ttfamily}seepage\end{ttfamily}{. See documentation of }\begin{ttfamily}bc{\_}type\end{ttfamily}{ for exact meaning of }\begin{ttfamily}bc{\_}pressure\end{ttfamily}{ in individual boundary condition types. }{$[m]$}% 
 }}
 		\RecKey
-			{Flow-Darcy-MH-Data::bc-flux}
+			{Flow-Darcy-LMH-Data::bc-flux}
 			{bc{\_}flux}
 			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
@@ -777,49 +780,49 @@ Used for all values of }\begin{ttfamily}bc{\_}type\end{ttfamily}{ except }\begin
 Used for bc{\_}types : }\begin{ttfamily}total{\_}flux\end{ttfamily}{, }\begin{ttfamily}seepage\end{ttfamily}{, }\begin{ttfamily}river\end{ttfamily}{. }{$[ms^{-1}]$}% 
 }}
 		\RecKey
-			{Flow-Darcy-MH-Data::bc-robin-sigma}
+			{Flow-Darcy-LMH-Data::bc-robin-sigma}
 			{bc{\_}robin{\_}sigma}
 			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Conductivity coefficient in the }\begin{ttfamily}total{\_}flux\end{ttfamily}{ or the }\begin{ttfamily}river\end{ttfamily}{ boundary condition type. }{$[s^{-1}]$}% 
 }}
 		\RecKey
-			{Flow-Darcy-MH-Data::bc-switch-pressure}
+			{Flow-Darcy-LMH-Data::bc-switch-pressure}
 			{bc{\_}switch{\_}pressure}
 			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Critical switch pressure for }\begin{ttfamily}seepage\end{ttfamily}{ and }\begin{ttfamily}river\end{ttfamily}{ boundary conditions. }{$[m]$}% 
 }}
 		\RecKey
-			{Flow-Darcy-MH-Data::init-pressure}
+			{Flow-Darcy-LMH-Data::init-pressure}
 			{init{\_}pressure}
 			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Initial condition for pressure in time dependent problems. }{$[m]$}% 
 }}
 		\RecKey
-			{Flow-Darcy-MH-Data::storativity}
+			{Flow-Darcy-LMH-Data::storativity}
 			{storativity}
 			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Storativity (in time dependent problems). }{$[m^{-1}]$}% 
 }}
 		\RecKey
-			{Flow-Darcy-MH-Data::bc-piezo-head}
+			{Flow-Darcy-LMH-Data::bc-piezo-head}
 			{bc{\_}piezo{\_}head}
 			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Boundary piezometric head for BC types: dirichlet, robin, and river.}% 
 }}
 		\RecKey
-			{Flow-Darcy-MH-Data::bc-switch-piezo-head}
+			{Flow-Darcy-LMH-Data::bc-switch-piezo-head}
 			{bc{\_}switch{\_}piezo{\_}head}
 			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Boundary switch piezometric head for BC types: seepage, river.}% 
 }}
 		\RecKey
-			{Flow-Darcy-MH-Data::init-piezo-head}
+			{Flow-Darcy-LMH-Data::init-piezo-head}
 			{init{\_}piezo{\_}head}
 			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
@@ -998,13 +1001,6 @@ You have to set surface region if you want to use formula variable }\begin{ttfam
 			{ \it{Obligatory}}
 			{{{Values of time series initialization of Field.}% 
 }}
-		\RecKey
-			{FieldTimeFunction::time-unit}
-			{time{\_}unit}
-			{{String}}{}
-			{implicit value: "{Common unit of TimeGovernor.}"}
-			{{{Definition of unit of all times defined in FieldTimeFunction.}% 
-}}
 \end{RecordType}
 \begin{RecordType}
 	{IT::TableFunction}
@@ -1026,14 +1022,14 @@ You have to set surface region if you want to use formula variable }\begin{ttfam
 	{IndependentValue}
 	{}% implements
 	{}% reducible to key
-	{{{Value of Field for independent variable.}% 
+	{{{Value of Field for time variable.}% 
 }}
 		\RecKey
 			{IndependentValue::t}
 			{t}
-			{{Double [0, +inf)}}{}
+			{{tuple: }\TypeLink{IT::TimeValue-2}{TimeValue}}{}
 			{ \it{Obligatory}}
-			{{{Independent variable of stamp.}% 
+			{{{Time stamp.}% 
 }}
 		\RecKey
 			{IndependentValue::value}
@@ -1320,13 +1316,6 @@ You have to set surface region if you want to use formula variable }\begin{ttfam
 			{ \it{Obligatory}}
 			{{{Values of time series initialization of Field.}% 
 }}
-		\RecKey
-			{FieldTimeFunction-2::time-unit}
-			{time{\_}unit}
-			{{String}}{}
-			{implicit value: "{Common unit of TimeGovernor.}"}
-			{{{Definition of unit of all times defined in FieldTimeFunction.}% 
-}}
 \end{RecordType}
 \begin{RecordType}
 	{IT::TableFunction-2}
@@ -1348,14 +1337,14 @@ You have to set surface region if you want to use formula variable }\begin{ttfam
 	{IndependentValue}
 	{}% implements
 	{}% reducible to key
-	{{{Value of Field for independent variable.}% 
+	{{{Value of Field for time variable.}% 
 }}
 		\RecKey
 			{IndependentValue-2::t}
 			{t}
-			{{Double [0, +inf)}}{}
+			{{tuple: }\TypeLink{IT::TimeValue-2}{TimeValue}}{}
 			{ \it{Obligatory}}
-			{{{Independent variable of stamp.}% 
+			{{{Time stamp.}% 
 }}
 		\RecKey
 			{IndependentValue-2::value}
@@ -1754,14 +1743,14 @@ Compressed with ZLib.}%
 		\RecKey
 			{TimeGrid::begin}
 			{begin}
-			{{Double [0, +inf)}}{}
+			{{tuple: }\TypeLink{IT::TimeValue-2}{TimeValue}}{}
 			{implicit value: "{The initial time of the associated equation.}"}
 			{{{The start time of the grid.}% 
 }}
 		\RecKey
 			{TimeGrid::step}
 			{step}
-			{{Double [0, +inf)}}{}
+			{{tuple: }\TypeLink{IT::TimeValue-2}{TimeValue}}{}
 			{ \it{Optional}}
 			{{{The step of the grid.
 If not specified, the grid consists of the single time given by the }\begin{ttfamily}begin\end{ttfamily}{ key.}% 
@@ -1769,16 +1758,9 @@ If not specified, the grid consists of the single time given by the }\begin{ttfa
 		\RecKey
 			{TimeGrid::end}
 			{end}
-			{{Double [0, +inf)}}{}
+			{{tuple: }\TypeLink{IT::TimeValue-2}{TimeValue}}{}
 			{implicit value: "{The end time of the simulation.}"}
 			{{{The time greater or equal to the last time in the grid.}% 
-}}
-		\RecKey
-			{TimeGrid::time-unit}
-			{time{\_}unit}
-			{{String}}{}
-			{implicit value: "{Common unit of TimeGovernor.}"}
-			{{{Definition of unit of all defined times (begin, step and end time).}% 
 }}
 \end{RecordType}
 \begin{RecordType}
@@ -1979,72 +1961,72 @@ Determines type of output data (element, node, native etc).}%
 }}
 \end{SelectionType}
 \begin{SelectionType}
-	{IT::Flow-Darcy-MH-OutputFields}
-	{Flow{\_}Darcy{\_}MH:OutputFields}
-	{{{Selection of output fields for the Flow{\_}Darcy{\_}MH model.}% 
+	{IT::Flow-Darcy-LMH-OutputFields}
+	{Flow{\_}Darcy{\_}LMH:OutputFields}
+	{{{Selection of output fields for the Flow{\_}Darcy{\_}LMH model.}% 
 }}
 		\SelectionItem
-			{Flow-Darcy-MH-OutputFields::pressure-p0}
-			{pressure{\_}p0}
-			{{{}{$[m]$}{ Pressure solution - P0 interpolation.}% 
-}}
-		\SelectionItem
-			{Flow-Darcy-MH-OutputFields::pressure-p1}
-			{pressure{\_}p1}
-			{{{}{$[m]$}{ Pressure solution - P1 interpolation.}% 
-}}
-		\SelectionItem
-			{Flow-Darcy-MH-OutputFields::piezo-head-p0}
-			{piezo{\_}head{\_}p0}
-			{{{}{$[m]$}{ Piezo head solution - P0 interpolation.}% 
-}}
-		\SelectionItem
-			{Flow-Darcy-MH-OutputFields::velocity-p0}
-			{velocity{\_}p0}
-			{{{}{$[ms^{-1}]$}{ Velocity solution - P0 interpolation.}% 
-}}
-		\SelectionItem
-			{Flow-Darcy-MH-OutputFields::subdomain}
+			{Flow-Darcy-LMH-OutputFields::subdomain}
 			{subdomain}
 			{{{}{$[-]$}{ Input field: Subdomain ids of the domain decomposition.}% 
 }}
 		\SelectionItem
-			{Flow-Darcy-MH-OutputFields::region-id}
+			{Flow-Darcy-LMH-OutputFields::region-id}
 			{region{\_}id}
 			{{{}{$[-]$}{ Input field: Region ids.}% 
 }}
 		\SelectionItem
-			{Flow-Darcy-MH-OutputFields::anisotropy}
+			{Flow-Darcy-LMH-OutputFields::pressure-p0}
+			{pressure{\_}p0}
+			{{{}{$[m]$}{ Pressure solution - P0 interpolation.}% 
+}}
+		\SelectionItem
+			{Flow-Darcy-LMH-OutputFields::piezo-head-p0}
+			{piezo{\_}head{\_}p0}
+			{{{}{$[m]$}{ Piezo head solution - P0 interpolation.}% 
+}}
+		\SelectionItem
+			{Flow-Darcy-LMH-OutputFields::velocity-p0}
+			{velocity{\_}p0}
+			{{{}{$[ms^{-1}]$}{ Velocity solution - P0 interpolation.}% 
+}}
+		\SelectionItem
+			{Flow-Darcy-LMH-OutputFields::flux}
+			{flux}
+			{{{}{$[ms^{-1}]$}{ Darcy flow flux.}% 
+}}
+		\SelectionItem
+			{Flow-Darcy-LMH-OutputFields::anisotropy}
 			{anisotropy}
 			{{{}{$[-]$}{ Input field: Anisotropy of the conductivity tensor.}% 
 }}
 		\SelectionItem
-			{Flow-Darcy-MH-OutputFields::cross-section}
+			{Flow-Darcy-LMH-OutputFields::cross-section}
 			{cross{\_}section}
 			{{{}{$[m^{3-d}]$}{ Input field: Complement dimension parameter (cross section for 1D, thickness for 2D).}% 
 }}
 		\SelectionItem
-			{Flow-Darcy-MH-OutputFields::conductivity}
+			{Flow-Darcy-LMH-OutputFields::conductivity}
 			{conductivity}
 			{{{}{$[ms^{-1}]$}{ Input field: Isotropic conductivity scalar.}% 
 }}
 		\SelectionItem
-			{Flow-Darcy-MH-OutputFields::sigma}
+			{Flow-Darcy-LMH-OutputFields::sigma}
 			{sigma}
 			{{{}{$[-]$}{ Input field: Transition coefficient between dimensions.}% 
 }}
 		\SelectionItem
-			{Flow-Darcy-MH-OutputFields::water-source-density}
+			{Flow-Darcy-LMH-OutputFields::water-source-density}
 			{water{\_}source{\_}density}
 			{{{}{$[s^{-1}]$}{ Input field: Water source density.}% 
 }}
 		\SelectionItem
-			{Flow-Darcy-MH-OutputFields::init-pressure}
+			{Flow-Darcy-LMH-OutputFields::init-pressure}
 			{init{\_}pressure}
 			{{{}{$[m]$}{ Input field: Initial condition for pressure in time dependent problems.}% 
 }}
 		\SelectionItem
-			{Flow-Darcy-MH-OutputFields::storativity}
+			{Flow-Darcy-LMH-OutputFields::storativity}
 			{storativity}
 			{{{}{$[m^{-1}]$}{ Input field: Storativity (in time dependent problems).}% 
 }}
@@ -2213,6 +2195,13 @@ If true, then balance is calculated at each computational time step, which can s
 	{{{Lumped Mixed-Hybrid solver for unsteady unsaturated Darcy flow.}% 
 }}
 		\RecKey
+			{Flow-Richards-LMH::time}
+			{time}
+			{{record: }\TypeLink{IT::TimeGovernor}{TimeGovernor}}{}
+			{ \ValueDefault{{\{}{\}}}}
+			{{{Time governor setting.}% 
+}}
+		\RecKey
 			{Flow-Richards-LMH::gravity}
 			{gravity}
 			{{array [3, 3] of }{Double (-inf, +inf)}}{}
@@ -2245,7 +2234,7 @@ Dimensionless.}%
 		\RecKey
 			{Flow-Richards-LMH::output}
 			{output}
-			{{gen. record: }\TypeLink{IT::EquationOutput}{EquationOutput}}{{output{\_}field{\_}selection}{ = }\TypeLink{IT::Flow-Darcy-MH-OutputFields}{Flow{\_}Darcy{\_}MH:OutputFields}}
+			{{gen. record: }\TypeLink{IT::EquationOutput}{EquationOutput}}{{output{\_}field{\_}selection}{ = }\TypeLink{IT::Flow-Richards-LMH-OutputFields}{Flow{\_}Richards{\_}LMH:OutputFields}}
 			{ \ValueDefault{{\{}"fields": ["pressure{\_}p0", "velocity{\_}p0"]{\}}}}
 			{{{Specification of output fields and output times.}% 
 }}
@@ -2263,20 +2252,6 @@ Includes raw output and some experimental functionality.}%
 			{{record: }\TypeLink{IT::Balance}{Balance}}{}
 			{ \ValueDefault{{\{}{\}}}}
 			{{{Settings for computing mass balance.}% 
-}}
-		\RecKey
-			{Flow-Richards-LMH::time}
-			{time}
-			{{record: }\TypeLink{IT::TimeGovernor}{TimeGovernor}}{}
-			{ \ValueDefault{{\{}{\}}}}
-			{{{Time governor settings for the unsteady Darcy flow model.}% 
-}}
-		\RecKey
-			{Flow-Richards-LMH::n-schurs}
-			{n{\_}schurs}
-			{{Integer [0, 2]}}{}
-			{ \ValueDefault{2}}
-			{{{Number of Schur complements to perform when solving MH system.}% 
 }}
 		\RecKey
 			{Flow-Richards-LMH::mortar-method}
@@ -2465,6 +2440,112 @@ Used for bc{\_}types : }\begin{ttfamily}total{\_}flux\end{ttfamily}{, }\begin{tt
 			{{{Initial condition for the pressure given as the piezometric head.}% 
 }}
 \end{RecordType}
+\begin{SelectionType}
+	{IT::Flow-Richards-LMH-OutputFields}
+	{Flow{\_}Richards{\_}LMH:OutputFields}
+	{{{Selection of output fields for the Flow{\_}Richards{\_}LMH model.}% 
+}}
+		\SelectionItem
+			{Flow-Richards-LMH-OutputFields::subdomain}
+			{subdomain}
+			{{{}{$[-]$}{ Input field: Subdomain ids of the domain decomposition.}% 
+}}
+		\SelectionItem
+			{Flow-Richards-LMH-OutputFields::region-id}
+			{region{\_}id}
+			{{{}{$[-]$}{ Input field: Region ids.}% 
+}}
+		\SelectionItem
+			{Flow-Richards-LMH-OutputFields::pressure-p0}
+			{pressure{\_}p0}
+			{{{}{$[m]$}{ Pressure solution - P0 interpolation.}% 
+}}
+		\SelectionItem
+			{Flow-Richards-LMH-OutputFields::piezo-head-p0}
+			{piezo{\_}head{\_}p0}
+			{{{}{$[m]$}{ Piezo head solution - P0 interpolation.}% 
+}}
+		\SelectionItem
+			{Flow-Richards-LMH-OutputFields::velocity-p0}
+			{velocity{\_}p0}
+			{{{}{$[ms^{-1}]$}{ Velocity solution - P0 interpolation.}% 
+}}
+		\SelectionItem
+			{Flow-Richards-LMH-OutputFields::flux}
+			{flux}
+			{{{}{$[ms^{-1}]$}{ Darcy flow flux.}% 
+}}
+		\SelectionItem
+			{Flow-Richards-LMH-OutputFields::anisotropy}
+			{anisotropy}
+			{{{}{$[-]$}{ Input field: Anisotropy of the conductivity tensor.}% 
+}}
+		\SelectionItem
+			{Flow-Richards-LMH-OutputFields::cross-section}
+			{cross{\_}section}
+			{{{}{$[m^{3-d}]$}{ Input field: Complement dimension parameter (cross section for 1D, thickness for 2D).}% 
+}}
+		\SelectionItem
+			{Flow-Richards-LMH-OutputFields::conductivity}
+			{conductivity}
+			{{{}{$[ms^{-1}]$}{ Input field: Isotropic conductivity scalar.}% 
+}}
+		\SelectionItem
+			{Flow-Richards-LMH-OutputFields::sigma}
+			{sigma}
+			{{{}{$[-]$}{ Input field: Transition coefficient between dimensions.}% 
+}}
+		\SelectionItem
+			{Flow-Richards-LMH-OutputFields::water-source-density}
+			{water{\_}source{\_}density}
+			{{{}{$[s^{-1}]$}{ Input field: Water source density.}% 
+}}
+		\SelectionItem
+			{Flow-Richards-LMH-OutputFields::init-pressure}
+			{init{\_}pressure}
+			{{{}{$[m]$}{ Input field: Initial condition for pressure in time dependent problems.}% 
+}}
+		\SelectionItem
+			{Flow-Richards-LMH-OutputFields::storativity}
+			{storativity}
+			{{{}{$[m^{-1}]$}{ Input field: Storativity (in time dependent problems).}% 
+}}
+		\SelectionItem
+			{Flow-Richards-LMH-OutputFields::water-content}
+			{water{\_}content}
+			{{{}{$[-]$}{ Water content.}\\{
+                It is a fraction of water volume to the whole volume.}% 
+}}
+		\SelectionItem
+			{Flow-Richards-LMH-OutputFields::conductivity-richards}
+			{conductivity{\_}richards}
+			{{{}{$[ms^{-1}]$}{ Computed isotropic scalar conductivity by the soil model.}% 
+}}
+		\SelectionItem
+			{Flow-Richards-LMH-OutputFields::water-content-saturated}
+			{water{\_}content{\_}saturated}
+			{{{}{$[-]$}{ Input field: Saturated water content }{$ \theta_s $}{.}\\{
+                Relative volume of water in a reference volume of a saturated porous media.}% 
+}}
+		\SelectionItem
+			{Flow-Richards-LMH-OutputFields::water-content-residual}
+			{water{\_}content{\_}residual}
+			{{{}{$[-]$}{ Input field: Residual water content }{$ \theta_r $}{.}\\{
+                Relative volume of water in a reference volume of an ideally dry porous media.}% 
+}}
+		\SelectionItem
+			{Flow-Richards-LMH-OutputFields::genuchten-p-head-scale}
+			{genuchten{\_}p{\_}head{\_}scale}
+			{{{}{$[m^{-1}]$}{ Input field: The van Genuchten pressure head scaling parameter }{$ \alpha $}{.}\\{
+                It is related to the inverse of the air entry pressure, i.e. the pressure}\\{
+                where the relative water content starts to decrease below 1.}% 
+}}
+		\SelectionItem
+			{Flow-Richards-LMH-OutputFields::genuchten-n-exponent}
+			{genuchten{\_}n{\_}exponent}
+			{{{}{$[-]$}{ Input field: The van Genuchten exponent parameter }{$ n $}{.}% 
+}}
+\end{SelectionType}
 \begin{RecordType}
 	{IT::SoilModel}
 	{SoilModel}
@@ -2513,6 +2594,41 @@ Suitable for bentonite.}%
 	{{{Record with data for iterative coupling of flow and mechanics.}% 
 }}
 		\RecKey
+			{Coupling-Iterative::max-it}
+			{max{\_}it}
+			{{Integer [0, INT]}}{}
+			{ \ValueDefault{100}}
+			{{{Maximal count of HM iterations.}% 
+}}
+		\RecKey
+			{Coupling-Iterative::min-it}
+			{min{\_}it}
+			{{Integer [0, INT]}}{}
+			{ \ValueDefault{1}}
+			{{{Minimal count of HM iterations.}% 
+}}
+		\RecKey
+			{Coupling-Iterative::a-tol}
+			{a{\_}tol}
+			{{Double [0, +inf)}}{}
+			{ \ValueDefault{0}}
+			{{{Absolute tolerance for difference in HM iteration.}% 
+}}
+		\RecKey
+			{Coupling-Iterative::r-tol}
+			{r{\_}tol}
+			{{Double [0, +inf)}}{}
+			{ \ValueDefault{1e-07}}
+			{{{Relative tolerance for difference in HM iteration.}% 
+}}
+		\RecKey
+			{Coupling-Iterative::time}
+			{time}
+			{{record: }\TypeLink{IT::TimeGovernor}{TimeGovernor}}{}
+			{ \ValueDefault{{\{}{\}}}}
+			{{{Time governor setting.}% 
+}}
+		\RecKey
 			{Coupling-Iterative::flow-equation}
 			{flow{\_}equation}
 			{{record: }\TypeLink{IT::Flow-Richards-LMH}{Flow{\_}Richards{\_}LMH}}{}
@@ -2541,34 +2657,6 @@ Suitable for bentonite.}%
 			{{{Tuning parameter for iterative splitting.
 Its default valuecorresponds to a theoretically optimal value with fastest convergence.}% 
 }}
-		\RecKey
-			{Coupling-Iterative::max-it}
-			{max{\_}it}
-			{{Integer [0, INT]}}{}
-			{ \ValueDefault{100}}
-			{{{Maximal count of HM iterations.}% 
-}}
-		\RecKey
-			{Coupling-Iterative::min-it}
-			{min{\_}it}
-			{{Integer [0, INT]}}{}
-			{ \ValueDefault{1}}
-			{{{Minimal count of HM iterations.}% 
-}}
-		\RecKey
-			{Coupling-Iterative::a-tol}
-			{a{\_}tol}
-			{{Double [0, +inf)}}{}
-			{ \ValueDefault{1e-07}}
-			{{{Absolute tolerance for difference in HM iteration.}% 
-}}
-		\RecKey
-			{Coupling-Iterative::r-tol}
-			{r{\_}tol}
-			{{Double [0, +inf)}}{}
-			{ \ValueDefault{1e-07}}
-			{{{Relative tolerance for difference in HM iteration.}% 
-}}
 \end{RecordType}
 \begin{RecordType}
 	{IT::Mechanics-LinearElasticity-FE}
@@ -2581,8 +2669,8 @@ Its default valuecorresponds to a theoretically optimal value with fastest conve
 			{Mechanics-LinearElasticity-FE::time}
 			{time}
 			{{record: }\TypeLink{IT::TimeGovernor}{TimeGovernor}}{}
-			{ \it{Obligatory}}
-			{{{Time governor setting for the secondary equation.}% 
+			{ \ValueDefault{{\{}{\}}}}
+			{{{Time governor setting.}% 
 }}
 		\RecKey
 			{Mechanics-LinearElasticity-FE::balance}
@@ -2611,13 +2699,6 @@ Its default valuecorresponds to a theoretically optimal value with fastest conve
 			{{array [0, UINT] of }{record: }\TypeLink{IT::Mechanics-LinearElasticity-FE-Data}{Mechanics{\_}LinearElasticity{\_}FE:Data}}{}
 			{ \it{Obligatory}}
 			{{{Input fields of the equation.}% 
-}}
-		\RecKey
-			{Mechanics-LinearElasticity-FE::contact}
-			{contact}
-			{{Bool}}{}
-			{ \ValueDefault{false}}
-			{{{If true, displacement will be corrected at contact zones.}% 
 }}
 		\RecKey
 			{Mechanics-LinearElasticity-FE::output}
@@ -2671,48 +2752,48 @@ These times have to form an increasing sequence.}%
 			{bc{\_}displacement}
 			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
-			{{{Prescribed displacement. }{$[m]$}% 
+			{{{Prescribed displacement on boundary. }{$[m]$}% 
 }}
 		\RecKey
 			{Mechanics-LinearElasticity-FE-Data::bc-traction}
 			{bc{\_}traction}
 			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
-			{{{Prescribed traction. }{$[m^{-1}kgs^{-2}]$}% 
+			{{{Prescribed traction on boundary. }{$[m^{-1}kgs^{-2}]$}% 
 }}
 		\RecKey
 			{Mechanics-LinearElasticity-FE-Data::load}
 			{load}
 			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
-			{{{Prescribed load. }{$[m^{-3}kgs^{-2}]$}% 
+			{{{Prescribed bulk load. }{$[m^{-3}kgs^{-2}]$}% 
 }}
 		\RecKey
 			{Mechanics-LinearElasticity-FE-Data::young-modulus}
 			{young{\_}modulus}
 			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
-			{{{Young modulus. }{$[m^{-1}kgs^{-2}]$}% 
+			{{{Young's modulus. }{$[m^{-1}kgs^{-2}]$}% 
 }}
 		\RecKey
 			{Mechanics-LinearElasticity-FE-Data::poisson-ratio}
 			{poisson{\_}ratio}
 			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
-			{{{Poisson ratio. }{$[-]$}% 
+			{{{Poisson's ratio. }{$[-]$}% 
 }}
 		\RecKey
 			{Mechanics-LinearElasticity-FE-Data::fracture-sigma}
 			{fracture{\_}sigma}
 			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
-			{{{Coefficient of diffusive transfer through fractures (for each substance). }{$[-]$}% 
+			{{{Coefficient of transfer of forces through fractures. }{$[-]$}% 
 }}
 \end{RecordType}
 \begin{SelectionType}
 	{IT::Elasticity-BC-Type}
 	{Elasticity{\_}BC{\_}Type}
-	{{{Types of boundary conditions for heat transfer model.}% 
+	{{{Types of boundary conditions for mechanics.}% 
 }}
 		\SelectionItem
 			{Elasticity-BC-Type::displacement}
@@ -2877,13 +2958,6 @@ You have to set surface region if you want to use formula variable }\begin{ttfam
 			{ \it{Obligatory}}
 			{{{Values of time series initialization of Field.}% 
 }}
-		\RecKey
-			{FieldTimeFunction-3::time-unit}
-			{time{\_}unit}
-			{{String}}{}
-			{implicit value: "{Common unit of TimeGovernor.}"}
-			{{{Definition of unit of all times defined in FieldTimeFunction.}% 
-}}
 \end{RecordType}
 \begin{RecordType}
 	{IT::TableFunction-3}
@@ -2905,14 +2979,14 @@ You have to set surface region if you want to use formula variable }\begin{ttfam
 	{IndependentValue}
 	{}% implements
 	{}% reducible to key
-	{{{Value of Field for independent variable.}% 
+	{{{Value of Field for time variable.}% 
 }}
 		\RecKey
 			{IndependentValue-3::t}
 			{t}
-			{{Double [0, +inf)}}{}
+			{{tuple: }\TypeLink{IT::TimeValue-2}{TimeValue}}{}
 			{ \it{Obligatory}}
-			{{{Independent variable of stamp.}% 
+			{{{Time stamp.}% 
 }}
 		\RecKey
 			{IndependentValue-3::value}
@@ -3001,22 +3075,22 @@ Alternatively, in case of different input mesh, several interpolation algorithms
 		\SelectionItem
 			{Mechanics-LinearElasticity-FE-OutputFields::load}
 			{load}
-			{{{}{$[m^{-3}kgs^{-2}]$}{ Input field: Prescribed load.}% 
+			{{{}{$[m^{-3}kgs^{-2}]$}{ Input field: Prescribed bulk load.}% 
 }}
 		\SelectionItem
 			{Mechanics-LinearElasticity-FE-OutputFields::young-modulus}
 			{young{\_}modulus}
-			{{{}{$[m^{-1}kgs^{-2}]$}{ Input field: Young modulus.}% 
+			{{{}{$[m^{-1}kgs^{-2}]$}{ Input field: Young's modulus.}% 
 }}
 		\SelectionItem
 			{Mechanics-LinearElasticity-FE-OutputFields::poisson-ratio}
 			{poisson{\_}ratio}
-			{{{}{$[-]$}{ Input field: Poisson ratio.}% 
+			{{{}{$[-]$}{ Input field: Poisson's ratio.}% 
 }}
 		\SelectionItem
 			{Mechanics-LinearElasticity-FE-OutputFields::fracture-sigma}
 			{fracture{\_}sigma}
-			{{{}{$[-]$}{ Input field: Coefficient of diffusive transfer through fractures (for each substance).}% 
+			{{{}{$[-]$}{ Input field: Coefficient of transfer of forces through fractures.}% 
 }}
 		\SelectionItem
 			{Mechanics-LinearElasticity-FE-OutputFields::region-id}
@@ -3031,12 +3105,27 @@ Alternatively, in case of different input mesh, several interpolation algorithms
 		\SelectionItem
 			{Mechanics-LinearElasticity-FE-OutputFields::displacement}
 			{displacement}
-			{{{}{$[m]$}{ }% 
+			{{{}{$[m]$}{ Displacement vector field output.}% 
 }}
 		\SelectionItem
 			{Mechanics-LinearElasticity-FE-OutputFields::stress}
 			{stress}
-			{{{}{$[m^{-1}kgs^{-2}]$}{ }% 
+			{{{}{$[m^{-1}kgs^{-2}]$}{ Stress tensor output.}% 
+}}
+		\SelectionItem
+			{Mechanics-LinearElasticity-FE-OutputFields::von-mises-stress}
+			{von{\_}mises{\_}stress}
+			{{{}{$[m^{-1}kgs^{-2}]$}{ von Mises stress output.}% 
+}}
+		\SelectionItem
+			{Mechanics-LinearElasticity-FE-OutputFields::cross-section-updated}
+			{cross{\_}section{\_}updated}
+			{{{}{$[m]$}{ Cross-section after deformation - output.}% 
+}}
+		\SelectionItem
+			{Mechanics-LinearElasticity-FE-OutputFields::displacement-divergence}
+			{displacement{\_}divergence}
+			{{{}{$[-]$}{ Displacement divergence output.}% 
 }}
 \end{SelectionType}
 \begin{RecordType}
@@ -3078,7 +3167,313 @@ These times have to form an increasing sequence.}%
 			{ \it{Optional}}
 			{{{}{$[-]$}% 
 }}
+		\RecKey
+			{Coupling-Iterative-Data::fluid-density}
+			{fluid{\_}density}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{}{$[m^{-3}kg]$}% 
+}}
+		\RecKey
+			{Coupling-Iterative-Data::gravity}
+			{gravity}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{}{$[ms^{-2}]$}% 
+}}
 \end{RecordType}
+\begin{RecordType}
+	{IT::Flow-Darcy-MH}
+	{Flow{\_}Darcy{\_}MH}
+	{\TypeLink{IT::DarcyFlow}{DarcyFlow}}% implements
+	{}% reducible to key
+	{{{Mixed-Hybrid  solver for saturated Darcy flow.}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH::time}
+			{time}
+			{{record: }\TypeLink{IT::TimeGovernor}{TimeGovernor}}{}
+			{ \ValueDefault{{\{}{\}}}}
+			{{{Time governor setting.}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH::gravity}
+			{gravity}
+			{{array [3, 3] of }{Double (-inf, +inf)}}{}
+			{ \ValueDefault{[0, 0, -1]}}
+			{{{Vector of the gravity force.
+Dimensionless.}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH::input-fields}
+			{input{\_}fields}
+			{{array [0, UINT] of }{record: }\TypeLink{IT::Flow-Darcy-MH-Data}{Flow{\_}Darcy{\_}MH{\_}Data}}{}
+			{ \it{Obligatory}}
+			{{{Input data for Darcy flow model.}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH::nonlinear-solver}
+			{nonlinear{\_}solver}
+			{{record: }\TypeLink{IT::NonlinearSolver}{NonlinearSolver}}{}
+			{ \ValueDefault{{\{}{\}}}}
+			{{{Non-linear solver for MH problem.}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH::output-stream}
+			{output{\_}stream}
+			{{record: }\TypeLink{IT::OutputStream}{OutputStream}}{}
+			{ \ValueDefault{{\{}{\}}}}
+			{{{Output stream settings.}\\{
+ Specify file format, precision etc.}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH::output}
+			{output}
+			{{gen. record: }\TypeLink{IT::EquationOutput}{EquationOutput}}{{output{\_}field{\_}selection}{ = }\TypeLink{IT::Flow-Darcy-MH-OutputFields}{Flow{\_}Darcy{\_}MH:OutputFields}}
+			{ \ValueDefault{{\{}"fields": ["pressure{\_}p0", "velocity{\_}p0"]{\}}}}
+			{{{Specification of output fields and output times.}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH::output-specific}
+			{output{\_}specific}
+			{{gen. record: }\TypeLink{IT::Output-DarcyMHSpecific}{Output{\_}DarcyMHSpecific}}{{output{\_}field{\_}selection}{ = }\TypeLink{IT::Flow-Darcy-MH-specific-OutputFields}{Flow{\_}Darcy{\_}MH{\_}specific:OutputFields}}
+			{ \it{Optional}}
+			{{{Output settings specific to Darcy flow model.}\\{
+Includes raw output and some experimental functionality.}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH::balance}
+			{balance}
+			{{record: }\TypeLink{IT::Balance}{Balance}}{}
+			{ \ValueDefault{{\{}{\}}}}
+			{{{Settings for computing mass balance.}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH::n-schurs}
+			{n{\_}schurs}
+			{{Integer [0, 2]}}{}
+			{ \ValueDefault{2}}
+			{{{Number of Schur complements to perform when solving MH system.}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH::mortar-method}
+			{mortar{\_}method}
+			{{selection: }\TypeLink{IT::MH-MortarMethod}{MH{\_}MortarMethod}}{}
+			{ \ValueDefault{"None"}}
+			{{{Method for coupling Darcy flow between dimensions on incompatible meshes. [Experimental]}% 
+}}
+\end{RecordType}
+\begin{RecordType}
+	{IT::Flow-Darcy-MH-Data}
+	{Flow{\_}Darcy{\_}MH{\_}Data}
+	{}% implements
+	{}% reducible to key
+	{{{Record to set fields of the equation.}\\{
+The fields are set only on the domain specified by one of the keys: 'region', 'rid'}\\{
+and after the time given by the key 'time'. The field setting can be overridden by}\\{
+ any Flow{\_}Darcy{\_}MH{\_}Data record that comes later in the boundary data array.}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::region}
+			{region}
+			{{array [1, UINT] of }{String}}{}
+			{ \it{Optional}}
+			{{{Labels of the regions where to set fields. }% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::rid}
+			{rid}
+			{{Integer [0, INT]}}{}
+			{ \it{Optional}}
+			{{{ID of the region where to set fields.}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::time}
+			{time}
+			{{tuple: }\TypeLink{IT::TimeValue-2}{TimeValue}}{}
+			{ \ValueDefault{0.0}}
+			{{{Apply field setting in this record after this time.}\\{
+These times have to form an increasing sequence.}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::anisotropy}
+			{anisotropy}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-3-}{Field{\_}R3{\_}to{\_}R[3,3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Anisotropy of the conductivity tensor. }{$[-]$}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::cross-section}
+			{cross{\_}section}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Complement dimension parameter (cross section for 1D, thickness for 2D). }{$[m^{3-d}]$}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::conductivity}
+			{conductivity}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Isotropic conductivity scalar. }{$[ms^{-1}]$}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::sigma}
+			{sigma}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Transition coefficient between dimensions. }{$[-]$}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::water-source-density}
+			{water{\_}source{\_}density}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Water source density. }{$[s^{-1}]$}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::bc-type}
+			{bc{\_}type}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Flow-Darcy-BC-Type}{Flow{\_}Darcy{\_}BC{\_}Type}}
+			{ \it{Optional}}
+			{{{Boundary condition type. }{$[-]$}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::bc-pressure}
+			{bc{\_}pressure}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Prescribed pressure value on the boundary.
+Used for all values of }\begin{ttfamily}bc{\_}type\end{ttfamily}{ except }\begin{ttfamily}none\end{ttfamily}{ and }\begin{ttfamily}seepage\end{ttfamily}{. See documentation of }\begin{ttfamily}bc{\_}type\end{ttfamily}{ for exact meaning of }\begin{ttfamily}bc{\_}pressure\end{ttfamily}{ in individual boundary condition types. }{$[m]$}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::bc-flux}
+			{bc{\_}flux}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Incoming water boundary flux.
+Used for bc{\_}types : }\begin{ttfamily}total{\_}flux\end{ttfamily}{, }\begin{ttfamily}seepage\end{ttfamily}{, }\begin{ttfamily}river\end{ttfamily}{. }{$[ms^{-1}]$}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::bc-robin-sigma}
+			{bc{\_}robin{\_}sigma}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Conductivity coefficient in the }\begin{ttfamily}total{\_}flux\end{ttfamily}{ or the }\begin{ttfamily}river\end{ttfamily}{ boundary condition type. }{$[s^{-1}]$}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::bc-switch-pressure}
+			{bc{\_}switch{\_}pressure}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Critical switch pressure for }\begin{ttfamily}seepage\end{ttfamily}{ and }\begin{ttfamily}river\end{ttfamily}{ boundary conditions. }{$[m]$}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::init-pressure}
+			{init{\_}pressure}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Initial condition for pressure in time dependent problems. }{$[m]$}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::storativity}
+			{storativity}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Storativity (in time dependent problems). }{$[m^{-1}]$}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::bc-piezo-head}
+			{bc{\_}piezo{\_}head}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Boundary piezometric head for BC types: dirichlet, robin, and river.}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::bc-switch-piezo-head}
+			{bc{\_}switch{\_}piezo{\_}head}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Boundary switch piezometric head for BC types: seepage, river.}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::init-piezo-head}
+			{init{\_}piezo{\_}head}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Initial condition for the pressure given as the piezometric head.}% 
+}}
+\end{RecordType}
+\begin{SelectionType}
+	{IT::Flow-Darcy-MH-OutputFields}
+	{Flow{\_}Darcy{\_}MH:OutputFields}
+	{{{Selection of output fields for the Flow{\_}Darcy{\_}MH model.}% 
+}}
+		\SelectionItem
+			{Flow-Darcy-MH-OutputFields::subdomain}
+			{subdomain}
+			{{{}{$[-]$}{ Input field: Subdomain ids of the domain decomposition.}% 
+}}
+		\SelectionItem
+			{Flow-Darcy-MH-OutputFields::region-id}
+			{region{\_}id}
+			{{{}{$[-]$}{ Input field: Region ids.}% 
+}}
+		\SelectionItem
+			{Flow-Darcy-MH-OutputFields::pressure-p0}
+			{pressure{\_}p0}
+			{{{}{$[m]$}{ Pressure solution - P0 interpolation.}% 
+}}
+		\SelectionItem
+			{Flow-Darcy-MH-OutputFields::piezo-head-p0}
+			{piezo{\_}head{\_}p0}
+			{{{}{$[m]$}{ Piezo head solution - P0 interpolation.}% 
+}}
+		\SelectionItem
+			{Flow-Darcy-MH-OutputFields::velocity-p0}
+			{velocity{\_}p0}
+			{{{}{$[ms^{-1}]$}{ Velocity solution - P0 interpolation.}% 
+}}
+		\SelectionItem
+			{Flow-Darcy-MH-OutputFields::flux}
+			{flux}
+			{{{}{$[ms^{-1}]$}{ Darcy flow flux.}% 
+}}
+		\SelectionItem
+			{Flow-Darcy-MH-OutputFields::anisotropy}
+			{anisotropy}
+			{{{}{$[-]$}{ Input field: Anisotropy of the conductivity tensor.}% 
+}}
+		\SelectionItem
+			{Flow-Darcy-MH-OutputFields::cross-section}
+			{cross{\_}section}
+			{{{}{$[m^{3-d}]$}{ Input field: Complement dimension parameter (cross section for 1D, thickness for 2D).}% 
+}}
+		\SelectionItem
+			{Flow-Darcy-MH-OutputFields::conductivity}
+			{conductivity}
+			{{{}{$[ms^{-1}]$}{ Input field: Isotropic conductivity scalar.}% 
+}}
+		\SelectionItem
+			{Flow-Darcy-MH-OutputFields::sigma}
+			{sigma}
+			{{{}{$[-]$}{ Input field: Transition coefficient between dimensions.}% 
+}}
+		\SelectionItem
+			{Flow-Darcy-MH-OutputFields::water-source-density}
+			{water{\_}source{\_}density}
+			{{{}{$[s^{-1}]$}{ Input field: Water source density.}% 
+}}
+		\SelectionItem
+			{Flow-Darcy-MH-OutputFields::init-pressure}
+			{init{\_}pressure}
+			{{{}{$[m]$}{ Input field: Initial condition for pressure in time dependent problems.}% 
+}}
+		\SelectionItem
+			{Flow-Darcy-MH-OutputFields::storativity}
+			{storativity}
+			{{{}{$[m^{-1}]$}{ Input field: Storativity (in time dependent problems).}% 
+}}
+\end{SelectionType}
 \begin{AbstractType}
 	{IT::AdvectionProcess}
 	{AdvectionProcess}
@@ -3102,8 +3497,8 @@ coupled with reaction and adsorption model (ODE per element)}\\{
 			{Coupling-OperatorSplitting::time}
 			{time}
 			{{record: }\TypeLink{IT::TimeGovernor}{TimeGovernor}}{}
-			{ \it{Obligatory}}
-			{{{Time governor settings for the transport equation.}% 
+			{ \ValueDefault{{\{}{\}}}}
+			{{{Time governor setting.}% 
 }}
 		\RecKey
 			{Coupling-OperatorSplitting::balance}
@@ -3668,7 +4063,7 @@ Higher value diminishes the inter-element jumps.}%
 \begin{RecordType}
 	{IT::FirstOrderReaction}
 	{FirstOrderReaction}
-	{\TypeLink{IT::GenericReaction}{GenericReaction}{, }\TypeLink{IT::ReactionTermMobile}{ReactionTermMobile}{, }\TypeLink{IT::ReactionTermImmobile}{ReactionTermImmobile}{, }\TypeLink{IT::ReactionTerm}{ReactionTerm}}% implements
+	{\TypeLink{IT::ReactionTermImmobile}{ReactionTermImmobile}{, }\TypeLink{IT::ReactionTerm}{ReactionTerm}{, }\TypeLink{IT::ReactionTermMobile}{ReactionTermMobile}{, }\TypeLink{IT::GenericReaction}{GenericReaction}}% implements
 	{}% reducible to key
 	{{{A model of first order chemical reactions (decompositions of a reactant into products).}% 
 }}
@@ -3753,7 +4148,7 @@ The default value 1.0, should only be used in the case of single product.}%
 \begin{RecordType}
 	{IT::RadioactiveDecay}
 	{RadioactiveDecay}
-	{\TypeLink{IT::GenericReaction}{GenericReaction}{, }\TypeLink{IT::ReactionTermMobile}{ReactionTermMobile}{, }\TypeLink{IT::ReactionTermImmobile}{ReactionTermImmobile}{, }\TypeLink{IT::ReactionTerm}{ReactionTerm}}% implements
+	{\TypeLink{IT::ReactionTermImmobile}{ReactionTermImmobile}{, }\TypeLink{IT::ReactionTerm}{ReactionTerm}{, }\TypeLink{IT::ReactionTermMobile}{ReactionTermMobile}{, }\TypeLink{IT::GenericReaction}{GenericReaction}}% implements
 	{}% reducible to key
 	{{{A model of a radioactive decay and possibly of a decay chain.}% 
 }}
@@ -4416,8 +4811,8 @@ It is a vector: one value for every substance.}%
 			{Heat-AdvectionDiffusion-DG::time}
 			{time}
 			{{record: }\TypeLink{IT::TimeGovernor}{TimeGovernor}}{}
-			{ \it{Obligatory}}
-			{{{Time governor setting for the secondary equation.}% 
+			{ \ValueDefault{{\{}{\}}}}
+			{{{Time governor setting.}% 
 }}
 		\RecKey
 			{Heat-AdvectionDiffusion-DG::balance}
