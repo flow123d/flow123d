@@ -35,7 +35,6 @@
 #include <boost/format.hpp>
 
 #include "system/file_path.hh"
-#include "system/python_loader.hh"
 #include "mpi.h"
 #include "time_point.hh"
 
@@ -952,16 +951,7 @@ Profiler * Profiler::instance(bool clear) {
 //     }
 // }
 
-void Profiler::uninitialize() {
-    if (Profiler::instance()) {
-        ASSERT(Profiler::instance()->actual_node==0)(Profiler::instance()->timers_[Profiler::instance()->actual_node].tag())
-    			.error("Forbidden to uninitialize the Profiler when actual timer is not zero.");
-        set_memory_monitoring(false, false);
-        Profiler::instance()->stop_timer(0);
-        // delete _instance;
-        // _instance = NULL;
-    }
-}
+void Profiler::uninitialize() {}
 
 
 #endif // def FLOW123D_DEBUG_PROFILER

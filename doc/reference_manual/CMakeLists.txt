@@ -30,6 +30,7 @@ cmake_minimum_required(VERSION 2.8)
        input_reference.tex
        JSON_input.tex
        lumped_mh.tex
+       mechanics.tex
        numerical.tex
        output.tex
        reaction_term_numerical.tex

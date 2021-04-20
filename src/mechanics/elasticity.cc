@@ -166,7 +166,7 @@ struct fn_dirichlet_penalty {
 
 
 const Selection & Elasticity::EqData::get_bc_type_selection() {
-    return Selection("Elasticity_BC_Type", "Types of boundary conditions for heat transfer model.")
+    return Selection("Elasticity_BC_Type", "Types of boundary conditions for mechanics.")
             .add_value(bc_type_displacement, "displacement",
                   "Prescribed displacement.")
             .add_value(bc_type_displacement_normal, "displacement_n",
@@ -190,35 +190,35 @@ Elasticity::EqData::EqData()
         
     *this+=bc_displacement
         .name("bc_displacement")
-        .description("Prescribed displacement.")
+        .description("Prescribed displacement on boundary.")
         .units( UnitSI().m() )
         .input_default("0.0")
         .flags_add(in_rhs);
         
     *this+=bc_traction
         .name("bc_traction")
-        .description("Prescribed traction.")
+        .description("Prescribed traction on boundary.")
         .units( UnitSI().Pa() )
         .input_default("0.0")
         .flags_add(in_rhs);
         
     *this+=load
         .name("load")
-        .description("Prescribed load.")
+        .description("Prescribed bulk load.")
         .units( UnitSI().N().m(-3) )
         .input_default("0.0")
         .flags_add(in_rhs);
     
     *this+=young_modulus
         .name("young_modulus")
-        .description("Young modulus.")
+        .description("Young's modulus.")
         .units( UnitSI().Pa() )
          .input_default("0.0")
         .flags_add(in_main_matrix & in_rhs);
     
     *this+=poisson_ratio
         .name("poisson_ratio")
-        .description("Poisson ratio.")
+        .description("Poisson's ratio.")
         .units( UnitSI().dimensionless() )
          .input_default("0.0")
         .flags_add(in_main_matrix & in_rhs);
@@ -226,7 +226,7 @@ Elasticity::EqData::EqData()
     *this+=fracture_sigma
             .name("fracture_sigma")
             .description(
-            "Coefficient of diffusive transfer through fractures (for each substance).")
+            "Coefficient of transfer of forces through fractures.")
             .units( UnitSI::dimensionless() )
             .input_default("1.0")
             .flags_add(in_main_matrix & in_rhs);
@@ -251,26 +251,31 @@ Elasticity::EqData::EqData()
 
     *this+=output_field
             .name("displacement")
+            .description("Displacement vector field output.")
             .units( UnitSI().m() )
             .flags(equation_result);
     
     *this += output_stress
             .name("stress")
+            .description("Stress tensor output.")
             .units( UnitSI().Pa() )
             .flags(equation_result);
     
     *this += output_von_mises_stress
             .name("von_mises_stress")
+            .description("von Mises stress output.")
             .units( UnitSI().Pa() )
             .flags(equation_result);
     
     *this += output_cross_section
             .name("cross_section_updated")
+            .description("Cross-section after deformation - output.")
             .units( UnitSI().m() )
             .flags(equation_result);
             
     *this += output_divergence
             .name("displacement_divergence")
+            .description("Displacement divergence output.")
             .units( UnitSI().dimensionless() )
             .flags(equation_result);
 
@@ -471,7 +476,9 @@ void Elasticity::zero_time_step()
     END_TIMER("assemble_stiffness");
     assemble_rhs();
     data_.ls->finish_assembly();
-    data_.ls->solve();
+    LinSys::SolveInfo si = data_.ls->solve();
+    MessageOut().fmt("[mech solver] lin. it: {}, reason: {}, residual: {}\n",
+        		si.n_iterations, si.converged_reason, data_.ls->compute_residual());
     output_data();
 }
 
@@ -556,7 +563,9 @@ void Elasticity::solve_linear_system()
     }
 
     START_TIMER("solve");
-    data_.ls->solve();
+    LinSys::SolveInfo si = data_.ls->solve();
+    MessageOut().fmt("[mech solver] lin. it: {}, reason: {}, residual: {}\n",
+        		si.n_iterations, si.converged_reason, data_.ls->compute_residual());
     END_TIMER("solve");
 }
 
@@ -1000,9 +1009,9 @@ void Elasticity::assemble_matrix_element_side()
                             double divuit = (m==1)?arma::trace(guit):0;
                             
                             local_matrix[n][m][i*n_dofs[m] + j] +=
-                                    frac_sigma[k]*(
+                                    frac_sigma[k]*csection_higher[k]*(
                                      arma::dot(vf-vi,
-                                      2/csection_lower[k]*(mu*(uf-ui)+(mu+lambda)*(arma::dot(uf-ui,nv)*nv))
+                                      2*csection_higher[k]/csection_lower[k]*(mu*(uf-ui)+(mu+lambda)*(arma::dot(uf-ui,nv)*nv))
                                       + mu*arma::trans(guit)*nv
                                       + lambda*divuit*nv
                                      )
@@ -1036,7 +1045,7 @@ void Elasticity::assemble_rhs_element_side()
     const unsigned int qsize = feo->q<dim-1>()->size();     // number of quadrature points
     vector<vector<int> > side_dof_indices(2);
     vector<unsigned int> n_dofs = { ndofs_sub, ndofs_side };
-	vector<double> frac_sigma(qsize), potential(qsize);
+	vector<double> frac_sigma(qsize), potential(qsize), csection_higher(qsize);
     PetscScalar local_rhs[2][ndofs_side];
     auto vec_side = fe_values_side.vector_view(0);
     auto vec_sub = fe_values_sub.vector_view(0);
@@ -1068,6 +1077,7 @@ void Elasticity::assemble_rhs_element_side()
         
  		data_.fracture_sigma.value_list(fe_values_sub.point_list(), cell_sub, frac_sigma);
         data_.potential_load.value_list(fe_values_sub.point_list(), cell, potential);
+        data_.cross_section.value_list(fe_values_sub.point_list(), cell, csection_higher);
         
         for (unsigned int n=0; n<2; ++n)
             for (unsigned int i=0; i<ndofs_side; i++)
@@ -1087,7 +1097,7 @@ void Elasticity::assemble_rhs_element_side()
                     arma::vec3 vi = (n==0)?arma::zeros(3):vec_side.value(i,k);
                     arma::vec3 vf = (n==1)?arma::zeros(3):vec_sub.value(i,k);
                     
-                    local_rhs[n][i] -= frac_sigma[k]*arma::dot(vf-vi,potential[k]*nv)*fe_values_sub.JxW(k);
+                    local_rhs[n][i] -= frac_sigma[k]*csection_higher[k]*arma::dot(vf-vi,potential[k]*nv)*fe_values_sub.JxW(k);
                 }
             }
         }
