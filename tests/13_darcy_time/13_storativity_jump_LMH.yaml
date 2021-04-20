@@ -7,8 +7,7 @@ flow123d_version: 3.1.0
 problem: !Coupling_Sequential
   description: Unsteady flow in 2D by the means of time dependent boundary condition, Lumped Mixed Hybrid method.
   mesh:
-    #mesh_file: ../00_mesh/square_1x1_xy.msh
-    mesh_file: square_1x1_xy.msh
+    mesh_file: ../00_mesh/square_1x1_xy_28el.msh
   flow_equation: !Flow_Darcy_LMH
     nonlinear_solver:
       linear_solver: !Petsc
