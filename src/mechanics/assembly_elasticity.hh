@@ -293,6 +293,144 @@ private:
 };
 
 
+template <unsigned int dim>
+class RhsAssemblyElasticity : public AssemblyBase<dim>
+{
+public:
+    typedef typename Elasticity::EqData EqData;
+
+    /// Constructor.
+    RhsAssemblyElasticity(EqData *data)
+    : AssemblyBase<dim>(1), data_(data) {
+        this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
+        std::vector<string> sub_names = {"X", "d", "lame_mu", "lame_lambda", "dirichlet_penalty", "young_modulus",
+                            "poisson_ratio", "cross_section", "bc_type", "fracture_sigma"};
+        this->used_fields_ = data_->subset( sub_names );
+    }
+
+    /// Destructor.
+    ~RhsAssemblyElasticity() {}
+
+    /// Initialize auxiliary vectors and other data members
+    void initialize(/*FMT_UNUSED*/ std::shared_ptr<Balance> balance) {
+        //this->balance_ = balance;
+
+        shared_ptr<FE_P<dim>> fe_p = std::make_shared< FE_P<dim> >(1);
+        shared_ptr<FE_P<dim-1>> fe_p_low = std::make_shared< FE_P<dim-1> >(1);
+        fe_ = std::make_shared<FESystem<dim>>(fe_p, FEVector, 3);
+        fe_low_ = std::make_shared<FESystem<dim-1>>(fe_p_low, FEVector, 3);
+        fe_values_.initialize(*this->quad_, *fe_,
+                update_values | update_gradients | update_JxW_values | update_quadrature_points);
+        fe_values_bdr_side_.initialize(*this->quad_low_, *fe_,
+                update_values | update_normal_vectors | update_side_JxW_values | update_quadrature_points);
+        fe_values_side_.initialize(*this->quad_low_, *fe_,
+                update_values | update_quadrature_points);
+        fe_values_sub_.initialize(*this->quad_low_, *fe_low_,
+                update_values | update_JxW_values | update_quadrature_points);
+        n_dofs_ = fe_->n_dofs();
+        n_dofs_sub_ = fe_low_->n_dofs();
+        n_dofs_ngh_ = { n_dofs_sub_, n_dofs_ };
+        qsize_ = this->quad_->size();
+        qsize_low_ = this->quad_low_->size();
+        dof_indices_.resize(n_dofs_);
+        side_dof_indices_.resize(2);
+        side_dof_indices_[0].resize(n_dofs_sub_);  // index 0 = element with lower dimension,
+        side_dof_indices_[1].resize(n_dofs_);      // index 1 = side of element with higher dimension
+        local_rhs_.resize(n_dofs_);
+        local_rhs_ngh_.resize(2);
+        for (uint n=0; n<2; ++n) local_rhs_ngh_[n].resize(n_dofs_);
+        vec_view_ = &fe_values_.vector_view(0);
+        vec_view_bdr_ = &fe_values_bdr_side_.vector_view(0);
+        vec_view_side_ = &fe_values_side_.vector_view(0);
+        vec_view_sub_ = &fe_values_sub_.vector_view(0);
+    }
+
+
+    /// Assemble integral over element
+    inline void cell_integral(unsigned int element_patch_idx, unsigned int dh_local_idx)
+    {
+        /*
+         * fe_values_, n_dofs_, qsize_, dof_indices_, local_rhs_, vec_view_ (replace vec)
+         */
+        //vector<arma::vec3> load(qsize); -- field
+        //vector<double> csection(qsize), potential(qsize); -- fields
+        //vector<PetscScalar> local_source_balance_vector(ndofs), local_source_balance_rhs(ndofs); -- comment in code
+
+    	// replace Elasticity::assemble_sources
+    }
+
+    /// Assembles boundary integral.
+    inline void boundary_side_integral(DHCellSide cell_side)
+    {
+        /*
+         * fe_values_bdr_side_ (replace fe_values_side), n_dofs_, qsize_low_, dof_indices_, local_rhs_, vec_view_bdr_ (replace vec)
+         */
+        //vector<PetscScalar> local_flux_balance_vector(ndofs); -- comment in code
+        //vector<arma::vec3> bc_values(qsize), bc_traction(qsize); -- fields
+        //vector<double> csection(qsize), bc_potential(qsize); -- fields
+
+        // replace Elasticity::assemble_boundary_conditions
+    }
+
+
+    /// Assembles between elements of different dimensions.
+    inline void neigbour_integral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
+    	if (dim == 1) return;
+        ASSERT_EQ_DBG(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
+
+        /* fe_values_sub_, fe_values_side_, n_dofs_ (replace ndofs_side), n_dofs_sub_, n_dofs_ngh_ (replace n_dofs),
+         * qsize_low_ (replace qsize), side_dof_indices_, local_rhs_ngh_ (replace local_rhs)
+         * vec_view_side_ (replace vec_side), vec_view_sub_ (replace vec_sub)
+         */
+    	//vector<double> frac_sigma(qsize), potential(qsize), csection_higher(qsize); -- fields
+
+        // replace Elasticity::assemble_rhs_element_side
+    }
+
+
+    /// Implements @p AssemblyBase::reallocate_cache.
+    void reallocate_cache(const ElementCacheMap &cache_map) override
+    {
+        used_fields_.set_dependency();
+        used_fields_.cache_reallocate(cache_map);
+    }
+
+
+private:
+    shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
+    shared_ptr<FiniteElement<dim-1>> fe_low_;   ///< Finite element for the solution of the advection-diffusion equation (dim-1).
+
+    /// Data object shared with EqData
+    EqData *data_;
+
+    /// Sub field set contains fields used in calculation.
+    FieldSet used_fields_;
+
+    unsigned int n_dofs_;                                     ///< Number of dofs
+    unsigned int n_dofs_sub_;                                 ///< Number of dofs (on lower dim element)
+    std::vector<unsigned int> n_dofs_ngh_;                    ///< Number of dofs on lower and higher dimension element (vector of 2 items)
+    unsigned int qsize_;                                      ///< Size of quadrature
+    unsigned int qsize_low_;                                  ///< Size of quadrature of dim-1
+    FEValues<3> fe_values_;                                   ///< FEValues of cell object (FESystem of P disc finite element type)
+    FEValues<3> fe_values_bdr_side_;                          ///< FEValues of side (boundary integral) object
+    FEValues<3> fe_values_side_;                              ///< FEValues of side (neighbour integral) object
+    FEValues<3> fe_values_sub_;                               ///< FEValues of lower dimension cell object
+
+    vector<LongIdx> dof_indices_;                             ///< Vector of global DOF indices
+    vector<vector<LongIdx> > side_dof_indices_;               ///< 2 items vector of DOF indices in neighbour calculation.
+    vector<PetscScalar> local_rhs_;                           ///< Auxiliary vector for assemble methods
+    vector<vector<PetscScalar>> local_rhs_ngh_;               ///< Auxiliary vectors for assemble ngh integral
+    const FEValuesViews::Vector<3> * vec_view_;               ///< Vector view in cell integral calculation.
+    const FEValuesViews::Vector<3> * vec_view_bdr_;           ///< Vector view in boundary calculation.
+    const FEValuesViews::Vector<3> * vec_view_side_;          ///< Vector view in neighbour calculation.
+    const FEValuesViews::Vector<3> * vec_view_sub_;           ///< Vector view of low dim element in neighbour calculation.
+
+
+    template < template<IntDim...> class DimAssembly>
+    friend class GenericAssembly;
+
+};
+
 
 #endif /* ASSEMBLY_ELASTICITY_HH_ */
 
