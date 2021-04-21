@@ -3,6 +3,7 @@
 # Source for reference:
 #   analytical solution available: Arnold Verruijt (2014)
 #   sofar qualitative check - PROBLEM - increase of pressure in the first time step
+#   PROBLEM: not same results in parallel run (2p - different zero time output)
 #   checked in Paraview
 
 flow123d_version: 3.1.0
