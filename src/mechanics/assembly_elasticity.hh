@@ -119,6 +119,14 @@ public:
         data_->ls->mat_set_values(n_dofs_, dof_indices_.data(), n_dofs_, dof_indices_.data(), &(local_matrix_[0]));
     }
 
+    // Temporary method
+    inline double dirichlet_penalty(DHCellSide cell_side)
+    {
+        double young = data_->young_modulus.value(cell_side.centre(), cell_side.element());
+        double poisson = data_->poisson_ratio.value(cell_side.centre(), cell_side.element());
+        return 1e3*(2*lame_mu(young, poisson) + lame_lambda(young, poisson)) / cell_side.measure();
+    }
+
     /// Assembles boundary integral.
     inline void boundary_side_integral(DHCellSide cell_side)
     {
@@ -137,14 +145,14 @@ public:
         auto p_side = *( data_->stiffness_assembly_->boundary_points(cell_side).begin() );
         auto p_bdr = p_side.point_bdr( side.cond().element_accessor() );
         unsigned int bc_type = data_->bc_type(p_bdr);
-        double side_measure = cell_side.measure();
+        //double side_measure = cell_side.measure();
         if (bc_type == EqData::bc_type_displacement)
         {
             unsigned int k=0;
             for (auto p : data_->stiffness_assembly_->boundary_points(cell_side) ) {
                 for (unsigned int i=0; i<n_dofs_; i++)
                     for (unsigned int j=0; j<n_dofs_; j++)
-                        local_matrix_[i*n_dofs_+j] += data_->dirichlet_penalty(p) * side_measure *
+                        local_matrix_[i*n_dofs_+j] += dirichlet_penalty(cell_side) * //data_->dirichlet_penalty(p) * side_measure *
                                 arma::dot(vec_view_side_->value(i,k),vec_view_side_->value(j,k)) * fe_values_side_.JxW(k);
                 k++;
             }
@@ -155,7 +163,7 @@ public:
             for (auto p : data_->stiffness_assembly_->boundary_points(cell_side) ) {
                 for (unsigned int i=0; i<n_dofs_; i++)
                     for (unsigned int j=0; j<n_dofs_; j++)
-                        local_matrix_[i*n_dofs_+j] += data_->dirichlet_penalty(p) * side_measure *
+                        local_matrix_[i*n_dofs_+j] += dirichlet_penalty(cell_side) * //data_->dirichlet_penalty(p) * side_measure *
                                 arma::dot(vec_view_side_->value(i,k), fe_values_side_.normal_vector(k)) *
                                 arma::dot(vec_view_side_->value(j,k), fe_values_side_.normal_vector(k)) * fe_values_side_.JxW(k);
                 k++;

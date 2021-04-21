@@ -470,10 +470,10 @@ void Elasticity::zero_time_step()
     MatSetOption(*data_.ls->get_matrix(), MAT_KEEP_NONZERO_PATTERN, PETSC_TRUE);
     data_.ls->mat_zero_entries();
     data_.ls->rhs_zero_entries();
-    //assemble_stiffness_matrix();
     START_TIMER("assemble_stiffness");
     data_.stiffness_assembly_->assemble(data_.dh_);
     END_TIMER("assemble_stiffness");
+    //assemble_stiffness_matrix();
     assemble_rhs();
     data_.ls->finish_assembly();
     LinSys::SolveInfo si = data_.ls->solve();
@@ -491,10 +491,10 @@ void Elasticity::preallocate()
     stiffness_matrix = NULL;
     rhs = NULL;
 
-	//assemble_stiffness_matrix();
     START_TIMER("assemble_stiffness");
     data_.stiffness_assembly_->assemble(data_.dh_);
     END_TIMER("assemble_stiffness");
+	//assemble_stiffness_matrix();
     assemble_rhs();
 
 	allocation_done = true;
@@ -539,7 +539,10 @@ void Elasticity::solve_linear_system()
         DebugOut() << "Mechanics: Assembling matrix.\n";
         data_.ls->start_add_assembly();
         data_.ls->mat_zero_entries();
-        assemble_stiffness_matrix();
+        START_TIMER("assemble_stiffness");
+        data_.stiffness_assembly_->assemble(data_.dh_);
+        END_TIMER("assemble_stiffness");
+        //assemble_stiffness_matrix();
         data_.ls->finish_assembly();
 
         if (stiffness_matrix == NULL)
@@ -715,7 +718,7 @@ void Elasticity::assemble_stiffness_matrix()
     assemble_volume_integrals<3>();
    END_TIMER("assemble_volume_integrals");
    
-  START_TIMER("assemble_fluxes_boundary");
+   START_TIMER("assemble_fluxes_boundary");
     assemble_fluxes_boundary<1>();
     assemble_fluxes_boundary<2>();
     assemble_fluxes_boundary<3>();
