@@ -10,7 +10,7 @@ flow123d_version: 3.1.0
 problem: !Coupling_Sequential
   description: Mandel's rectangular problem.
   mesh:
-    mesh_file: ../00_mesh/square_1x1_xy.msh
+    mesh_file: ../00_mesh/square_1x1_xy_28el.msh
   flow_equation: !Coupling_Iterative
     input_fields:
       - region: BULK
