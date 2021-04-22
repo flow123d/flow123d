@@ -303,8 +303,9 @@ public:
     RhsAssemblyElasticity(EqData *data)
     : AssemblyBase<dim>(1), data_(data) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
-        std::vector<string> sub_names = {"X", "d", "lame_mu", "lame_lambda", "dirichlet_penalty", "young_modulus",
-                            "poisson_ratio", "cross_section", "bc_type", "fracture_sigma"};
+        std::vector<string> sub_names = {"X", "d", "load", "potential_load", "cross_section", "dirichlet_penalty",
+                            "lame_mu", "lame_lambda", "young_modulus", "poisson_ratio", "bc_type", "bc_displacement",
+		                    "bc_traction", "fracture_sigma"};
         this->used_fields_ = data_->subset( sub_names );
     }
 
