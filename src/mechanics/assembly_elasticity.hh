@@ -388,18 +388,75 @@ public:
 //         balance_->add_source_vec_values(subst_idx, elm_acc.region().bulk_idx(), dof_indices_, local_source_balance_rhs);
     }
 
+    // Temporary method
+    inline double dirichlet_penalty(DHCellSide cell_side)
+    {
+        double young = data_->young_modulus.value(cell_side.centre(), cell_side.element());
+        double poisson = data_->poisson_ratio.value(cell_side.centre(), cell_side.element());
+        return 1e3*(2*lame_mu(young, poisson) + lame_lambda(young, poisson)) / cell_side.measure();
+    }
+
     /// Assembles boundary integral.
     inline void boundary_side_integral(DHCellSide cell_side)
     {
-        /*
-         * fe_values_bdr_side_ (replace fe_values_side), n_dofs_, qsize_low_, dof_indices_, local_rhs_, vec_view_bdr_ (replace vec)
-         */
-        //vector<PetscScalar> local_flux_balance_vector(ndofs); -- comment in code
-        //vector<arma::vec3> bc_values(qsize), bc_traction(qsize); -- fields
-        //vector<double> csection(qsize), bc_potential(qsize); -- fields
+    	ASSERT_EQ_DBG(cell_side.dim(), dim).error("Dimension of element mismatch!");
+        if (!cell_side.cell().is_own()) return;
 
-        // replace Elasticity::assemble_boundary_conditions
-    }
+        Side side = cell_side.side();
+        const DHCellAccessor &dh_cell = cell_side.cell();
+        dh_cell.get_dof_indices(dof_indices_);
+        fe_values_bdr_side_.reinit(side);
+
+        auto p_side = *( data_->rhs_assembly_->boundary_points(cell_side).begin() );
+        auto p_bdr = p_side.point_bdr( side.cond().element_accessor() );
+        unsigned int bc_type = data_->bc_type(p_bdr);
+
+        fill_n(local_rhs_, n_dofs_, 0);
+        // local_flux_balance_vector.assign(n_dofs_, 0);
+        // local_flux_balance_rhs = 0;
+
+        unsigned int k=0;
+        if (bc_type == EqData::bc_type_displacement)
+        {
+            for (auto p : data_->rhs_assembly_->boundary_points(cell_side) )
+            {
+                for (unsigned int i=0; i<n_dofs_; i++)
+                    local_rhs_[i] += dirichlet_penalty(side) * //data_->dirichlet_penalty(p) * side_measure *
+					        arma::dot(data_->bc_displacement(p), vec_view_bdr_->value(i,k)) *
+					        fe_values_bdr_side_.JxW(k);
+                ++k;
+            }
+        }
+        else if (bc_type == EqData::bc_type_displacement_normal)
+        {
+            for (auto p : data_->rhs_assembly_->boundary_points(cell_side) )
+            {
+                for (unsigned int i=0; i<n_dofs_; i++)
+                    local_rhs_[i] += dirichlet_penalty(side) * //data_->dirichlet_penalty(p) * side_measure *
+                            arma::dot(data_->bc_displacement(p), fe_values_bdr_side_.normal_vector(k)) *
+                            arma::dot(vec_view_bdr_->value(i,k), fe_values_bdr_side_.normal_vector(k)) *
+                            fe_values_bdr_side_.JxW(k);
+                ++k;
+            }
+        }
+        else if (bc_type == EqData::bc_type_traction)
+        {
+            for (auto p : data_->rhs_assembly_->boundary_points(cell_side) )
+            {
+                for (unsigned int i=0; i<n_dofs_; i++)
+                    local_rhs_[i] += data_->cross_section(p) *
+                            arma::dot(vec_view_bdr_->value(i,k), data_->bc_traction(p) + data_->potential_load(p) * fe_values_bdr_side_.normal_vector(k)) *
+                            fe_values_bdr_side_.JxW(k);
+                ++k;
+            }
+        }
+        data_->ls->rhs_set_values(n_dofs_, dof_indices_.data(), &(local_rhs_[0]));
+
+
+//             balance_->add_flux_matrix_values(subst_idx, loc_b, side_dof_indices, local_flux_balance_vector);
+//             balance_->add_flux_vec_value(subst_idx, loc_b, local_flux_balance_rhs);
+		// ++loc_b;
+}
 
 
     /// Assembles between elements of different dimensions.
