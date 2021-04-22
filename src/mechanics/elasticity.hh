@@ -37,6 +37,7 @@ class DOFHandlerMultiDim;
 template<unsigned int dim> class FiniteElement;
 class Elasticity;
 template<unsigned int dim> class StiffnessAssemblyElasticity;
+template<unsigned int dim> class RhsAssemblyElasticity;
 template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
 
@@ -160,6 +161,7 @@ public:
 
         /// general assembly objects, hold assembly objects of appropriate dimension
         GenericAssembly< StiffnessAssemblyElasticity > * stiffness_assembly_;
+        GenericAssembly< RhsAssemblyElasticity > * rhs_assembly_;
 
 	};
 

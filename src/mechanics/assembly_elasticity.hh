@@ -312,7 +312,7 @@ public:
     ~RhsAssemblyElasticity() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(/*FMT_UNUSED*/ std::shared_ptr<Balance> balance) {
+    void initialize(FMT_UNUSED std::shared_ptr<Balance> balance) {
         //this->balance_ = balance;
 
         shared_ptr<FE_P<dim>> fe_p = std::make_shared< FE_P<dim> >(1);
@@ -342,21 +342,50 @@ public:
         vec_view_ = &fe_values_.vector_view(0);
         vec_view_bdr_ = &fe_values_bdr_side_.vector_view(0);
         vec_view_side_ = &fe_values_side_.vector_view(0);
-        vec_view_sub_ = &fe_values_sub_.vector_view(0);
+        if (dim>1) vec_view_sub_ = &fe_values_sub_.vector_view(0);
     }
 
 
     /// Assemble integral over element
     inline void cell_integral(unsigned int element_patch_idx, unsigned int dh_local_idx)
     {
-        /*
-         * fe_values_, n_dofs_, qsize_, dof_indices_, local_rhs_, vec_view_ (replace vec)
-         */
-        //vector<arma::vec3> load(qsize); -- field
-        //vector<double> csection(qsize), potential(qsize); -- fields
-        //vector<PetscScalar> local_source_balance_vector(ndofs), local_source_balance_rhs(ndofs); -- comment in code
+        if ((int)dh_local_idx == -1) return;
+        DHCellAccessor cell(data_->dh_.get(), dh_local_idx);
+        if (cell.dim() != dim) return;
+        if (!cell.is_own()) return;
 
-    	// replace Elasticity::assemble_sources
+        ElementAccessor<3> elm_acc = cell.elm();
+
+        fe_values_.reinit(elm_acc);
+        cell.get_dof_indices(dof_indices_);
+
+        // assemble the local stiffness matrix
+        fill_n(local_rhs_, n_dofs_, 0);
+        //local_source_balance_vector.assign(n_dofs_, 0);
+        //local_source_balance_rhs.assign(n_dofs_, 0);
+
+        // compute sources
+        unsigned int k=0;
+        for (auto p : data_->rhs_assembly_->bulk_points(element_patch_idx, cell.dim()) )
+        {
+            for (unsigned int i=0; i<n_dofs_; i++)
+                local_rhs_[i] += (
+                                 arma::dot(data_->load(p), vec_view_->value(i,k))
+                                 -data_->potential_load(p)*vec_view_->divergence(i,k)
+                                )*data_->cross_section(p)*fe_values_.JxW(k);
+            ++k;
+        }
+        data_->ls->rhs_set_values(n_dofs_, dof_indices_.data(), &(local_rhs_[0]));
+
+//         for (unsigned int i=0; i<n_dofs_; i++)
+//         {
+//             for (unsigned int k=0; k<qsize_; k++) // point range
+//                 local_source_balance_vector[i] -= 0;//sources_sigma[k]*fe_values_[vec_view_].value(i,k)*fe_values_.JxW(k);
+//
+//             local_source_balance_rhs[i] += local_rhs_[i];
+//         }
+//         balance_->add_source_matrix_values(subst_idx, elm_acc.region().bulk_idx(), dof_indices_, local_source_balance_vector);
+//         balance_->add_source_vec_values(subst_idx, elm_acc.region().bulk_idx(), dof_indices_, local_source_balance_rhs);
     }
 
     /// Assembles boundary integral.
