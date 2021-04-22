@@ -464,13 +464,48 @@ public:
     	if (dim == 1) return;
         ASSERT_EQ_DBG(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
 
-        /* fe_values_sub_, fe_values_side_, n_dofs_ (replace ndofs_side), n_dofs_sub_, n_dofs_ngh_ (replace n_dofs),
-         * qsize_low_ (replace qsize), side_dof_indices_, local_rhs_ngh_ (replace local_rhs)
-         * vec_view_side_ (replace vec_side), vec_view_sub_ (replace vec_sub)
-         */
-    	//vector<double> frac_sigma(qsize), potential(qsize), csection_higher(qsize); -- fields
+		cell_lower_dim.get_dof_indices(side_dof_indices_[0]);
+		ElementAccessor<3> cell_sub = cell_lower_dim.elm();
+		fe_values_sub_.reinit(cell_sub);
 
-        // replace Elasticity::assemble_rhs_element_side
+		DHCellAccessor cell_higher_dim = data_->dh_->cell_accessor_from_element( neighb_side.element().idx() );
+		cell_higher_dim.get_dof_indices(side_dof_indices_[1]);
+		fe_values_side_.reinit(neighb_side.side());
+
+		// Element id's for testing if they belong to local partition.
+		bool own_element_id[2];
+		own_element_id[0] = cell_lower_dim.is_own();
+		own_element_id[1] = cell_higher_dim.is_own();
+
+        for (unsigned int n=0; n<2; ++n)
+            for (unsigned int i=0; i<n_dofs_; i++)
+                local_rhs_ngh_[n][i] = 0;
+
+        // set transmission conditions
+        unsigned int k=0;
+        for (auto p_high : data_->rhs_assembly_->coupling_points(neighb_side) )
+        {
+            auto p_low = p_high.lower_dim(cell_lower_dim);
+            arma::vec3 nv = fe_values_side_.normal_vector(k);
+
+            for (int n=0; n<2; n++)
+            {
+                if (!own_element_id[n]) continue;
+
+                for (unsigned int i=0; i<n_dofs_ngh_[n]; i++)
+                {
+                    arma::vec3 vi = (n==0) ? arma::zeros(3) : vec_view_side_->value(i,k);
+                    arma::vec3 vf = (n==1) ? arma::zeros(3) : vec_view_sub_->value(i,k);
+
+                    local_rhs_ngh_[n][i] -= data_->fracture_sigma(p_low) * data_->cross_section(p_high) *
+                            arma::dot(vf-vi, data_->potential_load(p_high) * nv) * fe_values_sub_.JxW(k);
+                }
+            }
+            ++k;
+        }
+
+        for (unsigned int n=0; n<2; ++n)
+            data_->ls->rhs_set_values(n_dofs_ngh_[n], side_dof_indices_[n].data(), &(local_rhs_ngh_[n][0]));
     }
 
 
