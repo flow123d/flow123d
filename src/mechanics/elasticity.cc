@@ -395,6 +395,7 @@ void Elasticity::initialize()
 
     std::shared_ptr<Balance> balance; // temporary solution
     data_.stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyElasticity >(&data(), balance, data_.dh_.get());
+    data_.rhs_assembly_ = new GenericAssembly< RhsAssemblyElasticity >(&data(), balance, data_.dh_.get());
 
     // initialization of balance object
 //     balance_->allocate(feo->dh()->distr()->lsize(),
@@ -413,6 +414,7 @@ Elasticity::~Elasticity()
     delete feo;
 
     delete data_.stiffness_assembly_;
+    delete data_.rhs_assembly_;
 }
 
 
@@ -473,8 +475,11 @@ void Elasticity::zero_time_step()
     START_TIMER("assemble_stiffness");
     data_.stiffness_assembly_->assemble(data_.dh_);
     END_TIMER("assemble_stiffness");
+    START_TIMER("assemble_rhs");
+    data_.rhs_assembly_->assemble(data_.dh_);
+    END_TIMER("assemble_rhs");
     //assemble_stiffness_matrix();
-    assemble_rhs();
+    //assemble_rhs();
     data_.ls->finish_assembly();
     LinSys::SolveInfo si = data_.ls->solve();
     MessageOut().fmt("[mech solver] lin. it: {}, reason: {}, residual: {}\n",
@@ -494,8 +499,11 @@ void Elasticity::preallocate()
     START_TIMER("assemble_stiffness");
     data_.stiffness_assembly_->assemble(data_.dh_);
     END_TIMER("assemble_stiffness");
+    START_TIMER("assemble_rhs");
+    data_.rhs_assembly_->assemble(data_.dh_);
+    END_TIMER("assemble_rhs");
 	//assemble_stiffness_matrix();
-    assemble_rhs();
+    //assemble_rhs();
 
 	allocation_done = true;
 }
@@ -558,7 +566,10 @@ void Elasticity::solve_linear_system()
         DebugOut() << "Mechanics: Assembling right hand side.\n";
         data_.ls->start_add_assembly();
         data_.ls->rhs_zero_entries();
-    	assemble_rhs();
+    	//assemble_rhs();
+        START_TIMER("assemble_rhs");
+        data_.rhs_assembly_->assemble(data_.dh_);
+        END_TIMER("assemble_rhs");
     	data_.ls->finish_assembly();
 
         if (rhs == nullptr) VecDuplicate(*( data_.ls->get_rhs() ), &rhs);
