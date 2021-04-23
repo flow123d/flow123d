@@ -317,7 +317,7 @@ public:
         fe_values_bdr_side_.initialize(*this->quad_low_, *fe_,
                 update_values | update_normal_vectors | update_side_JxW_values | update_quadrature_points);
         fe_values_side_.initialize(*this->quad_low_, *fe_,
-                update_values | update_quadrature_points);
+                update_values | update_normal_vectors);
         fe_values_sub_.initialize(*this->quad_low_, *fe_low_,
                 update_values | update_JxW_values | update_quadrature_points);
         n_dofs_ = fe_->n_dofs();
@@ -353,7 +353,7 @@ public:
         cell.get_dof_indices(dof_indices_);
 
         // assemble the local stiffness matrix
-        fill_n(local_rhs_, n_dofs_, 0);
+        fill_n(&(local_rhs_[0]), n_dofs_, 0);
         //local_source_balance_vector.assign(n_dofs_, 0);
         //local_source_balance_rhs.assign(n_dofs_, 0);
 
@@ -396,7 +396,7 @@ public:
         auto p_bdr = p_side.point_bdr( side.cond().element_accessor() );
         unsigned int bc_type = data_->bc_type(p_bdr);
 
-        fill_n(local_rhs_, n_dofs_, 0);
+        fill_n(&(local_rhs_[0]), n_dofs_, 0);
         // local_flux_balance_vector.assign(n_dofs_, 0);
         // local_flux_balance_rhs = 0;
 
@@ -443,7 +443,7 @@ public:
 //             balance_->add_flux_matrix_values(subst_idx, loc_b, side_dof_indices, local_flux_balance_vector);
 //             balance_->add_flux_vec_value(subst_idx, loc_b, local_flux_balance_rhs);
 		// ++loc_b;
-}
+    }
 
 
     /// Assembles between elements of different dimensions.
