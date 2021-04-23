@@ -246,51 +246,51 @@ private:
 	 * assemble_fluxes_element_element() and assemble_fluxes_element_side() for each
 	 * space dimension.
 	 */
-	void assemble_stiffness_matrix();
+	//void assemble_stiffness_matrix();
 
 	/**
 	 * @brief Assembles the volume integrals into the stiffness matrix.
 	*/
-	template<unsigned int dim>
-	void assemble_volume_integrals();
+	//template<unsigned int dim>
+	//void assemble_volume_integrals();
 
 	/**
 	 * @brief Assembles the right hand side (forces, boundary conditions, tractions).
 	 */
-	void assemble_rhs();
+	//void assemble_rhs();
 
 	/**
 	 * @brief Assembles the right hand side vector due to volume sources.
 	 */
-	template<unsigned int dim>
-	void assemble_sources();
+	//template<unsigned int dim>
+	//void assemble_sources();
     
     /**
      * @brief Assembles the fluxes on the boundary.
      */
-    template<unsigned int dim>
-    void assemble_fluxes_boundary();
+    //template<unsigned int dim>
+    //void assemble_fluxes_boundary();
 
 	/**
 	 * @brief Assembles the fluxes between elements of different dimensions depending on displacement.
 	 */
-	template<unsigned int dim>
-	void assemble_matrix_element_side();
+	//template<unsigned int dim>
+	//void assemble_matrix_element_side();
     
     /** @brief Assemble fluxes between different dimensions that are independent of displacement. */
-    template<unsigned int dim>
-    void assemble_rhs_element_side();
+    //template<unsigned int dim>
+    //void assemble_rhs_element_side();
 
 
 	/**
 	 * @brief Assembles the r.h.s. components corresponding to the Dirichlet boundary conditions
 	 * for a given space dimension.
 	 */
-	template<unsigned int dim>
-	void assemble_boundary_conditions();
+	//template<unsigned int dim>
+	//void assemble_boundary_conditions();
     
     /** @brief Penalty to enforce boundary value in weak sense. */
-    double dirichlet_penalty(SideIter side);
+    //double dirichlet_penalty(SideIter side);
     
     
 

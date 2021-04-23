@@ -720,7 +720,7 @@ void Elasticity::calculate_cumulative_balance()
 
 
 
-void Elasticity::assemble_stiffness_matrix()
+/*void Elasticity::assemble_stiffness_matrix()
 {
   START_TIMER("assemble_stiffness");
    START_TIMER("assemble_volume_integrals");
@@ -741,11 +741,11 @@ void Elasticity::assemble_stiffness_matrix()
     assemble_matrix_element_side<3>();
    END_TIMER("assemble_matrix_elem_side");
   END_TIMER("assemble_stiffness");
-}
+}*/
 
 
 
-template<unsigned int dim>
+/*template<unsigned int dim>
 void Elasticity::assemble_volume_integrals()
 {
     FEValues<3> fe_values(*feo->q<dim>(), *feo->fe<dim>(),
@@ -790,11 +790,11 @@ void Elasticity::assemble_volume_integrals()
         }
         data_.ls->mat_set_values(ndofs, dof_indices.data(), ndofs, dof_indices.data(), local_matrix);
     }
-}
+}*/
 
 
 
-void Elasticity::assemble_rhs()
+/*void Elasticity::assemble_rhs()
 {
   START_TIMER("assemble_rhs");
 //     balance_->start_source_assembly(subst_idx);
@@ -811,10 +811,10 @@ void Elasticity::assemble_rhs()
 // 	balance_->finish_flux_assembly(subst_idx);
 // 	balance_->finish_source_assembly(subst_idx);
   END_TIMER("assemble_rhs");
-}
+}*/
 
 
-template<unsigned int dim>
+/*template<unsigned int dim>
 void Elasticity::assemble_sources()
 {
     FEValues<3> fe_values(*feo->q<dim>(), *feo->fe<dim>(),
@@ -866,20 +866,20 @@ void Elasticity::assemble_sources()
 //         balance_->add_source_matrix_values(subst_idx, elm_acc.region().bulk_idx(), dof_indices, local_source_balance_vector);
 //         balance_->add_source_vec_values(subst_idx, elm_acc.region().bulk_idx(), dof_indices, local_source_balance_rhs);
     }
-}
+}*/
 
 
 
-double Elasticity::dirichlet_penalty(SideIter side)
+/*double Elasticity::dirichlet_penalty(SideIter side)
 {
     double young = data_.young_modulus.value(side->centre(), side->element());
     double poisson = data_.poisson_ratio.value(side->centre(), side->element());
     return 1e3*(2*lame_mu(young, poisson) + lame_lambda(young, poisson)) / side->measure();
-}
+}*/
 
 
 
-template<unsigned int dim>
+/*template<unsigned int dim>
 void Elasticity::assemble_fluxes_boundary()
 {
     FEValues<3> fe_values_side(*feo->q<dim-1>(), *feo->fe<dim>(),
@@ -928,17 +928,17 @@ void Elasticity::assemble_fluxes_boundary()
         
         data_.ls->mat_set_values(ndofs, side_dof_indices.data(), ndofs, side_dof_indices.data(), local_matrix);
     }
-}
+}*/
 
 
-arma::mat33 mat_t(const arma::mat33 &m, const arma::vec3 &n)
+/*arma::mat33 mat_t(const arma::mat33 &m, const arma::vec3 &n)
 {
   arma::mat33 mt = m - m*arma::kron(n,n.t());
   return mt;
-}
+}*/
 
 
-template<unsigned int dim>
+/*template<unsigned int dim>
 void Elasticity::assemble_matrix_element_side()
 {
 	if (dim == 1) return;
@@ -1041,11 +1041,11 @@ void Elasticity::assemble_matrix_element_side()
             for (unsigned int m=0; m<2; ++m)
                 data_.ls->mat_set_values(n_dofs[n], side_dof_indices[n].data(), n_dofs[m], side_dof_indices[m].data(), local_matrix[n][m]);
     }
-}
+}*/
 
 
 
-template<unsigned int dim>
+/*template<unsigned int dim>
 void Elasticity::assemble_rhs_element_side()
 {
 	if (dim == 1) return;
@@ -1119,13 +1119,13 @@ void Elasticity::assemble_rhs_element_side()
         for (unsigned int n=0; n<2; ++n)
             data_.ls->rhs_set_values(n_dofs[n], side_dof_indices[n].data(), local_rhs[n]);
     }
-}
+}*/
 
 
 
 
 
-template<unsigned int dim>
+/*template<unsigned int dim>
 void Elasticity::assemble_boundary_conditions()
 {
     FEValues<3> fe_values_side(*feo->q<dim-1>(), *feo->fe<dim>(),
@@ -1207,7 +1207,7 @@ void Elasticity::assemble_boundary_conditions()
 			// ++loc_b;
         }
     }
-}
+}*/
 
 
 
