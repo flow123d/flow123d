@@ -67,8 +67,6 @@ public:
         n_dofs_ = fe_->n_dofs();
         n_dofs_sub_ = fe_low_->n_dofs();
         n_dofs_ngh_ = { n_dofs_sub_, n_dofs_ };
-        qsize_ = this->quad_->size();
-        qsize_low_ = this->quad_low_->size();
         dof_indices_.resize(n_dofs_);
         side_dof_indices_.resize(2);
         side_dof_indices_[0].resize(n_dofs_sub_);  // index 0 = element with lower dimension,
@@ -265,8 +263,6 @@ private:
     unsigned int n_dofs_;                                     ///< Number of dofs
     unsigned int n_dofs_sub_;                                 ///< Number of dofs (on lower dim element)
     std::vector<unsigned int> n_dofs_ngh_;                    ///< Number of dofs on lower and higher dimension element (vector of 2 items)
-    unsigned int qsize_;                                      ///< Size of quadrature
-    unsigned int qsize_low_;                                  ///< Size of quadrature of dim-1
     FEValues<3> fe_values_;                                   ///< FEValues of cell object (FESystem of P disc finite element type)
     FEValues<3> fe_values_side_;                              ///< FEValues of side object
     FEValues<3> fe_values_sub_;                               ///< FEValues of lower dimension cell object
@@ -323,8 +319,6 @@ public:
         n_dofs_ = fe_->n_dofs();
         n_dofs_sub_ = fe_low_->n_dofs();
         n_dofs_ngh_ = { n_dofs_sub_, n_dofs_ };
-        qsize_ = this->quad_->size();
-        qsize_low_ = this->quad_low_->size();
         dof_indices_.resize(n_dofs_);
         side_dof_indices_.resize(2);
         side_dof_indices_[0].resize(n_dofs_sub_);  // index 0 = element with lower dimension,
@@ -517,8 +511,6 @@ private:
     unsigned int n_dofs_;                                     ///< Number of dofs
     unsigned int n_dofs_sub_;                                 ///< Number of dofs (on lower dim element)
     std::vector<unsigned int> n_dofs_ngh_;                    ///< Number of dofs on lower and higher dimension element (vector of 2 items)
-    unsigned int qsize_;                                      ///< Size of quadrature
-    unsigned int qsize_low_;                                  ///< Size of quadrature of dim-1
     FEValues<3> fe_values_;                                   ///< FEValues of cell object (FESystem of P disc finite element type)
     FEValues<3> fe_values_bdr_side_;                          ///< FEValues of side (boundary integral) object
     FEValues<3> fe_values_side_;                              ///< FEValues of side (neighbour integral) object
