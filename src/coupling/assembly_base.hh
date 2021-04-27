@@ -92,26 +92,26 @@ public:
     }
 
     /// Return BulkPoint range of appropriate dimension
-    inline Range< BulkPoint > bulk_points(unsigned int element_patch_idx, const ElementCacheMap *element_cache_map) const {
-        return integrals_.bulk_->points(element_patch_idx, element_cache_map);
+    inline Range< BulkPoint > bulk_points(unsigned int element_patch_idx) const {
+        return integrals_.bulk_->points(element_patch_idx, element_cache_map_);
     }
 
     /// Return EdgePoint range of appropriate dimension
-    inline Range< EdgePoint > edge_points(const DHCellSide &cell_side, const ElementCacheMap *element_cache_map) const {
+    inline Range< EdgePoint > edge_points(const DHCellSide &cell_side) const {
         ASSERT_DBG( cell_side.dim() > 0 ).error("Invalid cell dimension, must be 1, 2 or 3!\n");
-	    return integrals_.edge_->points(cell_side, element_cache_map);
+	    return integrals_.edge_->points(cell_side, element_cache_map_);
     }
 
     /// Return CouplingPoint range of appropriate dimension
-    inline Range< CouplingPoint > coupling_points(const DHCellSide &cell_side, const ElementCacheMap *element_cache_map) const {
+    inline Range< CouplingPoint > coupling_points(const DHCellSide &cell_side) const {
         ASSERT_DBG( cell_side.dim() > 1 ).error("Invalid cell dimension, must be 2 or 3!\n");
-	    return integrals_.coupling_->points(cell_side, element_cache_map);
+	    return integrals_.coupling_->points(cell_side, element_cache_map_);
     }
 
     /// Return BoundaryPoint range of appropriate dimension
-    inline Range< BoundaryPoint > boundary_points(const DHCellSide &cell_side, const ElementCacheMap *element_cache_map) const {
+    inline Range< BoundaryPoint > boundary_points(const DHCellSide &cell_side) const {
         ASSERT_DBG( cell_side.dim() > 0 ).error("Invalid cell dimension, must be 1, 2 or 3!\n");
-	    return integrals_.boundary_->points(cell_side, element_cache_map);
+	    return integrals_.boundary_->points(cell_side, element_cache_map_);
     }
 
 protected:
@@ -127,6 +127,7 @@ protected:
     Quadrature *quad_low_;                                 ///< Quadrature used in assembling methods (dim-1).
     int active_integrals_;                                 ///< Holds mask of active integrals.
     DimIntegrals integrals_;                               ///< Set of used integrals.
+    ElementCacheMap *element_cache_map_;                   ///< ElementCacheMap shared with GenericAssembly object.
 };
 
 

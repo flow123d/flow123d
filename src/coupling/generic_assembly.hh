@@ -144,9 +144,9 @@ public:
         multidim_assembly_[2_d]->create_integrals(eval_points_, integrals_);
         multidim_assembly_[3_d]->create_integrals(eval_points_, integrals_);
         element_cache_map_.init(eval_points_, dh);
-        multidim_assembly_[1_d]->initialize(balance);
-        multidim_assembly_[2_d]->initialize(balance);
-        multidim_assembly_[3_d]->initialize(balance);
+        multidim_assembly_[1_d]->initialize(balance, &element_cache_map_);
+        multidim_assembly_[2_d]->initialize(balance, &element_cache_map_);
+        multidim_assembly_[3_d]->initialize(balance, &element_cache_map_);
         active_integrals_ = multidim_assembly_[1_d]->active_integrals();
     }
 
