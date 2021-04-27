@@ -224,13 +224,6 @@ public:
         /// Object for distribution of dofs.
         std::shared_ptr<DOFHandlerMultiDim> dh_;
 
-        /// general assembly objects, hold assembly objects of appropriate dimension
-        GenericAssembly< MassAssemblyDim > * mass_assembly_;
-        GenericAssembly< StiffnessAssemblyDim > * stiffness_assembly_;
-        GenericAssembly< SourcesAssemblyDim > * sources_assembly_;
-        GenericAssembly< BdrConditionAssemblyDim > * bdr_cond_assembly_;
-        GenericAssembly< InitConditionAssemblyDim > * init_cond_assembly_;
-
 		FieldFEScalarVec conc_fe;
 		std::shared_ptr<DOFHandlerMultiDim> dh_p0;
 		TimeGovernor *time_;
@@ -412,6 +405,13 @@ private:
     bool allocation_done;
 
     // @}
+
+    /// general assembly objects, hold assembly objects of appropriate dimension
+    GenericAssembly< MassAssemblyDim > * mass_assembly_;
+    GenericAssembly< StiffnessAssemblyDim > * stiffness_assembly_;
+    GenericAssembly< SourcesAssemblyDim > * sources_assembly_;
+    GenericAssembly< BdrConditionAssemblyDim > * bdr_cond_assembly_;
+    GenericAssembly< InitConditionAssemblyDim > * init_cond_assembly_;
 
 };
 
