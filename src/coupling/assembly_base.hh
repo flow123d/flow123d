@@ -64,7 +64,7 @@ public:
     virtual void end() {}
 
     /// Reallocate data caches of fields in equation.
-    virtual void reallocate_cache(const ElementCacheMap &cache_map) =0;
+    virtual void reallocate_cache() =0;
 
     /// Getter of active_integrals.
     inline int active_integrals() const {

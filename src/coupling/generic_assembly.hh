@@ -165,7 +165,7 @@ public:
 	 * object of each cells over space dimension.
 	 */
     void assemble(std::shared_ptr<DOFHandlerMultiDim> dh) {
-        multidim_assembly_[1_d]->reallocate_cache(element_cache_map_);
+        multidim_assembly_[1_d]->reallocate_cache();
         multidim_assembly_[1_d]->begin();
 
         bool add_into_patch = false; // control variable

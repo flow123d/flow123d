@@ -129,10 +129,10 @@ public:
     }
 
     /// Implements @p AssemblyBase::reallocate_cache.
-    void reallocate_cache(const ElementCacheMap &cache_map) override
+    void reallocate_cache() override
     {
         used_fields_.set_dependency();
-        used_fields_.cache_reallocate(cache_map);
+        used_fields_.cache_reallocate(*this->element_cache_map_);
     }
 
 
@@ -602,10 +602,10 @@ public:
     }
 
     /// Implements @p AssemblyBase::reallocate_cache.
-    void reallocate_cache(const ElementCacheMap &cache_map) override
+    void reallocate_cache() override
     {
         used_fields_.set_dependency();
-        used_fields_.cache_reallocate(cache_map);
+        used_fields_.cache_reallocate(*this->element_cache_map_);
     }
 
 
@@ -738,10 +738,10 @@ public:
     }
 
     /// Implements @p AssemblyBase::reallocate_cache.
-    void reallocate_cache(const ElementCacheMap &cache_map) override
+    void reallocate_cache() override
     {
         used_fields_.set_dependency();
-        used_fields_.cache_reallocate(cache_map);
+        used_fields_.cache_reallocate(*this->element_cache_map_);
     }
 
 
@@ -958,10 +958,10 @@ public:
     }
 
     /// Implements @p AssemblyBase::reallocate_cache.
-    void reallocate_cache(const ElementCacheMap &cache_map) override
+    void reallocate_cache() override
     {
         used_fields_.set_dependency();
-        used_fields_.cache_reallocate(cache_map);
+        used_fields_.cache_reallocate(*this->element_cache_map_);
     }
 
 
@@ -1063,10 +1063,10 @@ public:
     }
 
     /// Implements @p AssemblyBase::reallocate_cache.
-    void reallocate_cache(const ElementCacheMap &cache_map) override
+    void reallocate_cache() override
     {
         used_fields_.set_dependency();
-        used_fields_.cache_reallocate(cache_map);
+        used_fields_.cache_reallocate(*this->element_cache_map_);
     }
 
 
