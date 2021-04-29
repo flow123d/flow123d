@@ -13,13 +13,12 @@ TEST(VecMPI, vec_data) {
 
 	unsigned int data_size = 5;
 	VectorMPI v(data_size);
-	typename VectorMPI::VectorDataPtr data_ptr = v.data_ptr();
 
-	EXPECT_EQ(data_size, data_ptr->size());
-	EXPECT_DOUBLE_EQ(0.0, v[0]);
+	EXPECT_EQ(data_size, v.size());
+	EXPECT_DOUBLE_EQ(0.0, v.get(0));
 	v[0] = 2.5;
-	EXPECT_DOUBLE_EQ(2.5, v[0]);
-	EXPECT_DOUBLE_EQ((*data_ptr)[0], v[0]);
+	EXPECT_DOUBLE_EQ(2.5, v.get(0));
+	EXPECT_DOUBLE_EQ(v.get(0), v[0]);
 
 	Vec petscVec = v.petsc_vec();
 	unsigned int indices[5] = { 0,1,2,3,4 };
@@ -45,7 +44,7 @@ TEST(VecMPI, ghost_values) {
     unsigned int data_size = 1;
     vector<LongIdx> ghost_idx = { ((rank+1)%nproc) };
     VectorMPI v(data_size, ghost_idx);
-    EXPECT_EQ( data_size+ghost_idx.size(), v.data_ptr()->size() );
+    EXPECT_EQ( data_size+ghost_idx.size(), v.size() );
     
     v[0] = 1;
     v.local_to_ghost_begin();

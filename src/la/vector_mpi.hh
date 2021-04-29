@@ -101,6 +101,18 @@ public:
 		return data_ptr_->size();
 	}
 
+    /// Return value on given position
+    double get(unsigned int pos) const {
+        ASSERT_PTR_DBG(data_ptr_).error("Uninitialized data vector.\n");
+        return (*data_ptr_)[pos];
+    }
+
+    /// Set value on given position
+    void set(unsigned int pos, double val) {
+    	ASSERT_PTR_DBG(data_ptr_).error("Uninitialized data vector.\n");
+        (*data_ptr_)[pos] = val;
+    }
+
 
     /// For the current vector, it creates the same parallel structure as the @p other vector has.
     /**
