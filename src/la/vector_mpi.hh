@@ -72,8 +72,8 @@ public:
     void resize(unsigned int local_size, std::vector<LongIdx> &ghost_idx);
 
     /// Getter for shared pointer of output data.
-    VectorDataPtr data_ptr()
-    {   return data_ptr_;}
+    ///VectorDataPtr data_ptr()
+    //{   return data_ptr_;}
 
     /// Getter for PETSC vector of output data (e.g. can be used by scatters).
     Vec &petsc_vec()
@@ -82,17 +82,17 @@ public:
     void zero_entries()
     {   chkerr(VecZeroEntries( data_petsc_ ));}
 
-    VectorData &data()
-    {
-        ASSERT_DBG(data_ptr_);
-        return *data_ptr_;
-    }
+    //VectorData &data()
+    //{
+    //    ASSERT_DBG(data_ptr_);
+    //    return *data_ptr_;
+    //}
     
-    const VectorData &data() const
-    {
-        ASSERT_DBG(data_ptr_);
-        return *data_ptr_;
-    }
+    //const VectorData &data() const
+    //{
+    //    ASSERT_DBG(data_ptr_);
+    //    return *data_ptr_;
+    //}
 
     /// Return size of output data.
 	unsigned int size() const

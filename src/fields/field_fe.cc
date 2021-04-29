@@ -700,8 +700,6 @@ void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>
 
 		// computes weighted average, store it to data vector
 		if (total_measure > epsilon) {
-			VectorMPI::VectorDataPtr data_vector = data_vec_.data_ptr();
-
 			LocDofVec loc_dofs;
 			if (this->boundary_domain_) loc_dofs = value_handler1_.get_loc_dof_indices(elm.idx());
 			else{
@@ -711,7 +709,7 @@ void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>
 
 			ASSERT_LE_DBG(loc_dofs.n_elem, value.size());
 			for (unsigned int i=0; i < value.size(); i++) {
-				(*data_vector)[ loc_dofs[i] ] = value[i] / total_measure;
+				data_vec_.set(loc_dofs[i], value[i] / total_measure);
 			}
 		} else {
 			WarningOut().fmt("Processed element with idx {} is out of source mesh!\n", elm.idx());
@@ -729,7 +727,6 @@ void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>:
 	unsigned int dof_size, data_vec_i;
 	std::vector<unsigned int> count_vector(data_vec_.size(), 0);
 	data_vec_.zero_entries();
-	VectorMPI::VectorDataPtr data_vector = data_vec_.data_ptr();
 	std::vector<LongIdx> global_dof_indices(dh_->max_elem_dofs());
 	std::vector<LongIdx> &source_target_vec = *(source_target_mesh_elm_map_.get());
 
@@ -740,14 +737,14 @@ void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>:
 		data_vec_i = source_target_vec[cell.elm_idx()] * dof_size;
 		ASSERT_EQ_DBG(dof_size, loc_dofs.n_elem);
 		for (unsigned int i=0; i<dof_size; ++i, ++data_vec_i) {
-			(*data_vector)[ loc_dofs[i] ] += (*data_cache)[ data_vec_i ];
-			++count_vector[ loc_dofs[i] ];
+		    data_vec_[ loc_dofs[i] ] += (*data_cache)[ data_vec_i ];
+		    ++count_vector[ loc_dofs[i] ];
 		}
 	}
 
 	// compute averages of values
 	for (unsigned int i=0; i<data_vec_.size(); ++i) {
-		if (count_vector[i]>0) (*data_vector)[i] /= count_vector[i];
+		if (count_vector[i]>0) data_vec_[i] /= count_vector[i];
 	}
 }
 
@@ -865,10 +862,9 @@ void FieldFE<spacedim, Value>::native_data_to_cache(ElementDataCache<double> &ou
 	double loc_values[output_data_cache.n_comp()];
 	unsigned int i;
 
-	VectorMPI::VectorDataPtr data_vec = data_vec_.data_ptr();
 	for (auto dh_cell : dh_->own_range()) {
 		LocDofVec loc_dofs = dh_cell.get_loc_dof_indices();
-		for (i=0; i<loc_dofs.n_elem; ++i) loc_values[i] = (*data_vec)[ loc_dofs[i] ];
+		for (i=0; i<loc_dofs.n_elem; ++i) loc_values[i] = data_vec_.get( loc_dofs[i] );
 		for ( ; i<output_data_cache.n_comp(); ++i) loc_values[i] = numeric_limits<double>::signaling_NaN();
 		output_data_cache.store_value( dh_cell.local_idx(), loc_values );
 	}
