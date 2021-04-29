@@ -131,8 +131,9 @@ private:
 public:
 
     /// Constructor
-    GenericAssembly( typename DimAssembly<1>::EqData *eq_data, std::shared_ptr<Balance> balance, const DOFHandlerMultiDim * dh)
-    : multidim_assembly_(eq_data),
+    GenericAssembly( typename DimAssembly<1>::EqFields *eq_fields, typename DimAssembly<1>::EqData *eq_data,
+            std::shared_ptr<Balance> balance, const DOFHandlerMultiDim * dh)
+    : multidim_assembly_(eq_fields, eq_data),
 	  bulk_integral_data_(20, 10),
 	  edge_integral_data_(12, 6),
 	  coupling_integral_data_(12, 6),

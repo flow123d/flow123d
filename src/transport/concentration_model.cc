@@ -131,38 +131,8 @@ struct fn_conc_diff_coef {
 
 
 
-const Selection & ConcentrationTransportModel::ModelEqData::get_bc_type_selection() {
-	return Selection("Solute_AdvectionDiffusion_BC_Type", "Types of boundary conditions for advection-diffusion solute transport model.")
-              .add_value(bc_inflow, "inflow",
-            		  "Default transport boundary condition.\n"
-            		  "On water inflow (($(q_w \\le 0)$)), total flux is given by the reference concentration 'bc_conc'. "
-            		  "On water outflow we prescribe zero diffusive flux, "
-            		  "i.e. the mass flows out only due to advection.")
-              .add_value(bc_dirichlet, "dirichlet",
-            		  "Dirichlet boundary condition (($ c = c_D $)).\n"
-            		  "The prescribed concentration (($c_D$)) is specified by the field 'bc_conc'.")
-              .add_value(bc_total_flux, "total_flux",
-            		  "Total mass flux boundary condition.\n"
-            		  "The prescribed total incoming flux can have the general form (($\\delta(f_N+\\sigma_R(c_R-c) )$)), "
-            		  "where the absolute flux (($f_N$)) is specified by the field 'bc_flux', "
-            		  "the transition parameter (($\\sigma_R$)) by 'bc_robin_sigma', "
-            		  "and the reference concentration (($c_R$)) by 'bc_conc'.")
-              .add_value(bc_diffusive_flux, "diffusive_flux",
-            		  "Diffusive flux boundary condition.\n"
-            		  "The prescribed incoming mass flux due to diffusion can have the general form (($\\delta(f_N+\\sigma_R(c_R-c) )$)), "
-            		  "where the absolute flux (($f_N$)) is specified by the field 'bc_flux', "
-            		  "the transition parameter (($\\sigma_R$)) by 'bc_robin_sigma', "
-            		  "and the reference concentration (($c_R$)) by 'bc_conc'.")
-			  .close();
-}
-
-
-
-
-
-
-ConcentrationTransportModel::ModelEqData::ModelEqData()
-: TransportEqData()
+ConcentrationTransportModel::ModelEqFields::ModelEqFields()
+: TransportEqFields()
 {
     *this+=bc_type
             .name("bc_type")
@@ -278,28 +248,7 @@ ConcentrationTransportModel::ModelEqData::ModelEqData()
 }
 
 
-
-IT::Record ConcentrationTransportModel::get_input_type(const string &implementation, const string &description)
-{
-	return IT::Record(
-				std::string(ModelEqData::name()) + "_" + implementation,
-				description + " for solute transport.")
-			.derive_from(ConcentrationTransportBase::get_input_type())
-			.declare_key("solvent_density", IT::Double(0), IT::Default("1.0"),
-					"Density of the solvent [ (($kg.m^{-3}$)) ].");
-}
-
-IT::Selection ConcentrationTransportModel::ModelEqData::get_output_selection()
-{
-    // Return empty selection just to provide model specific selection name and description.
-    // The fields are added by TransportDG using an auxiliary selection.
-	return IT::Selection(
-				std::string(ModelEqData::name()) + "_DG_output_fields",
-				"Selection of output fields for Diffusive Solute Transport DG model.");
-}
-
-
-void ConcentrationTransportModel::ModelEqData::initialize()
+void ConcentrationTransportModel::ModelEqFields::initialize()
 {
     // initialize multifield components
 	sorption_coefficient.setup_components();
@@ -321,7 +270,7 @@ void ConcentrationTransportModel::ModelEqData::initialize()
     sources_sigma_out.set(Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_sources_sigma(), cross_section, sources_sigma), 0.0);
     sources_conc_out.set(Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_sources_conc(), sources_conc), 0.0);
     std::vector<typename Field<3, FieldValue<3>::VectorFixed>::FieldBasePtr> ad_coef_ptr_vec;
-    for (unsigned int sbi=0; sbi<substances_.names().size(); sbi++)
+    for (unsigned int sbi=0; sbi<sorption_coefficient.size(); sbi++)
         ad_coef_ptr_vec.push_back( Model<3, FieldValue<3>::VectorFixed>::create(fn_conc_ad_coef(), flow_flux) );
     advection_coef.set(ad_coef_ptr_vec, 0.0);
     diffusion_coef.set(
@@ -330,6 +279,56 @@ void ConcentrationTransportModel::ModelEqData::initialize()
         ),
         0.0
     );
+}
+
+
+
+const Selection & ConcentrationTransportModel::ModelEqFields::get_bc_type_selection() {
+	return Selection("Solute_AdvectionDiffusion_BC_Type", "Types of boundary conditions for advection-diffusion solute transport model.")
+              .add_value(bc_inflow, "inflow",
+            		  "Default transport boundary condition.\n"
+            		  "On water inflow (($(q_w \\le 0)$)), total flux is given by the reference concentration 'bc_conc'. "
+            		  "On water outflow we prescribe zero diffusive flux, "
+            		  "i.e. the mass flows out only due to advection.")
+              .add_value(bc_dirichlet, "dirichlet",
+            		  "Dirichlet boundary condition (($ c = c_D $)).\n"
+            		  "The prescribed concentration (($c_D$)) is specified by the field 'bc_conc'.")
+              .add_value(bc_total_flux, "total_flux",
+            		  "Total mass flux boundary condition.\n"
+            		  "The prescribed total incoming flux can have the general form (($\\delta(f_N+\\sigma_R(c_R-c) )$)), "
+            		  "where the absolute flux (($f_N$)) is specified by the field 'bc_flux', "
+            		  "the transition parameter (($\\sigma_R$)) by 'bc_robin_sigma', "
+            		  "and the reference concentration (($c_R$)) by 'bc_conc'.")
+              .add_value(bc_diffusive_flux, "diffusive_flux",
+            		  "Diffusive flux boundary condition.\n"
+            		  "The prescribed incoming mass flux due to diffusion can have the general form (($\\delta(f_N+\\sigma_R(c_R-c) )$)), "
+            		  "where the absolute flux (($f_N$)) is specified by the field 'bc_flux', "
+            		  "the transition parameter (($\\sigma_R$)) by 'bc_robin_sigma', "
+            		  "and the reference concentration (($c_R$)) by 'bc_conc'.")
+			  .close();
+}
+
+
+
+
+IT::Selection ConcentrationTransportModel::ModelEqData::get_output_selection()
+{
+    // Return empty selection just to provide model specific selection name and description.
+    // The fields are added by TransportDG using an auxiliary selection.
+	return IT::Selection(
+				std::string(ModelEqData::name()) + "_DG_output_fields",
+				"Selection of output fields for Diffusive Solute Transport DG model.");
+}
+
+
+IT::Record ConcentrationTransportModel::get_input_type(const string &implementation, const string &description)
+{
+	return IT::Record(
+				std::string(ModelEqData::name()) + "_" + implementation,
+				description + " for solute transport.")
+			.derive_from(ConcentrationTransportBase::get_input_type())
+			.declare_key("solvent_density", IT::Double(0), IT::Default("1.0"),
+					"Density of the solvent [ (($kg.m^{-3}$)) ].");
 }
 
 
@@ -351,7 +350,7 @@ ConcentrationTransportModel::~ConcentrationTransportModel()
 void ConcentrationTransportModel::set_balance_object(std::shared_ptr<Balance> balance)
 {
 	balance_ = balance;
-	data().subst_idx_ = balance_->add_quantities(data().substances_.names());
+	eq_data().subst_idx_ = balance_->add_quantities(eq_data().substances_.names());
 }
 
 
