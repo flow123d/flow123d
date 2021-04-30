@@ -567,11 +567,14 @@ bool ConvectionTransport::evaluate_time_constraint(double& time_constraint)
     
     // if DATA changed ---------------------> recompute concentration sources (rhs and matrix diagonal)
     if( data_.sources_density.changed() || data_.sources_conc.changed() || data_.sources_sigma.changed()
-       || data_.cross_section.changed())
+       || data_.cross_section.changed() || data_.flow_flux.changed() || data_.porosity.changed()
+       || data_.water_content.changed() || data_.bc_conc.changed() )
     {
         compute_concentration_sources();
+        set_boundary_conditions();
         is_src_term_scaled = false;
         cfl_changed = true;
+        is_bc_term_scaled = false;
         DebugOut() << "CFL changed - source.\n";
     }
     
@@ -588,16 +591,6 @@ bool ConvectionTransport::evaluate_time_constraint(double& time_constraint)
         DebugOut().fmt("CFL constraint (transport): {}\n", cfl_max_step);
     }
     
-    // although it does not influence CFL, compute BC so the full system is assembled
-    if ( data_.flow_flux.changed()
-        || data_.porosity.changed()
-        || data_.water_content.changed()
-        || data_.bc_conc.changed() )
-    {
-        set_boundary_conditions();
-        is_bc_term_scaled = false;
-    }
-
     END_TIMER("data reinit");
     
     // return time constraint
