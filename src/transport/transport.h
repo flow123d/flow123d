@@ -44,6 +44,7 @@
 #include "transport/substance.hh"                     // for SubstanceList
 #include "transport/transport_operator_splitting.hh"
 #include "quadrature/quadrature_lib.hh"
+#include "la/vector_mpi.hh"
 
 class OutputTime;
 class Mesh;
@@ -313,6 +314,7 @@ private:
     
     double **sources_corr;
     Vec *v_sources_corr;
+    vector<VectorMPI> corr_vec;
     
 
     TimeMark::Type target_mark_type;    ///< TimeMark type for time marks denoting end of every time interval where transport matrix remains constant.

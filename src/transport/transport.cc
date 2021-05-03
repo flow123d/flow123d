@@ -158,7 +158,7 @@ Quadrature &FETransportObjects::q(unsigned int dim) { return q_[dim]; }
 ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record in_rec)
 : ConcentrationTransportBase(init_mesh, in_rec),
   is_mass_diag_changed(false),
-  sources_corr(nullptr),
+  tm_diag(nullptr),
   input_rec(in_rec)
 {
 	START_TIMER("ConvectionTransport");
@@ -257,7 +257,7 @@ ConvectionTransport::~ConvectionTransport()
 {
     unsigned int sbi;
 
-    if (sources_corr) {
+    if (tm_diag) {
         //Destroy mpi vectors at first
         chkerr(MatDestroy(&tm));
         chkerr(VecDestroy(&mass_diag));
@@ -355,6 +355,7 @@ void ConvectionTransport::alloc_transport_structs_mpi() {
     vcumulative_corr = new Vec[n_subst];
     v_tm_diag = new Vec[n_subst];
     v_sources_corr = new Vec[n_subst];
+    //corr_vec.resize(n_subst, el_ds->lsize());
     
 
     for (sbi = 0; sbi < n_subst; sbi++) {
@@ -370,6 +371,7 @@ void ConvectionTransport::alloc_transport_structs_mpi() {
         
         VecCreateMPIWithArray(PETSC_COMM_WORLD,1, el_ds->lsize(), mesh_->n_elements(),
                 sources_corr[sbi],&v_sources_corr[sbi]);
+        corr_vec.emplace_back(el_ds->lsize(), PETSC_COMM_SELF);
         
         VecCreateMPIWithArray(PETSC_COMM_WORLD,1, el_ds->lsize(), mesh_->n_elements(),
                 tm_diag[sbi],&v_tm_diag[sbi]);
@@ -490,6 +492,7 @@ void ConvectionTransport::compute_concentration_sources() {
                          + src_sigma * data_.sources_conc[sbi].value(center, elm));
                 // addition to RHS
                 sources_corr[sbi][local_p0_dof] = source;
+                corr_vec[sbi][local_p0_dof] = source;
                 // addition to diagonal of the transport matrix
                 diag = src_sigma * csection;
                 tm_diag[sbi][local_p0_dof] = - diag;
@@ -632,6 +635,7 @@ void ConvectionTransport::update_solution() {
         for (unsigned int sbi=0; sbi<n_substances(); sbi++)
         {
             VecScale(v_sources_corr[sbi], dt);
+            VecScale(corr_vec[sbi].petsc_vec(), dt);
             VecScale(v_tm_diag[sbi], dt);
         }
         is_src_term_scaled = true;
@@ -675,7 +679,8 @@ void ConvectionTransport::update_solution() {
       
       // Then we add boundary terms ans other source terms into RHS.
       // RHS = 1.0 * bcvcorr + 1.0 * v_sources_corr + 1.0 * rhs
-      VecAXPBYPCZ(vcumulative_corr[sbi], 1.0, 1.0, 1.0, bcvcorr[sbi], v_sources_corr[sbi]);   //z = ax + by + cz
+      //VecAXPBYPCZ(vcumulative_corr[sbi], 1.0, 1.0, 1.0, bcvcorr[sbi], v_sources_corr[sbi]);   //z = ax + by + cz
+      VecAXPBYPCZ(vcumulative_corr[sbi], 1.0, 1.0, 1.0, bcvcorr[sbi], corr_vec[sbi].petsc_vec());   //z = ax + by + cz
       
       // Then we set the new previous concentration.
       VecCopy(vconc, vpconc[sbi]); // pconc = conc
