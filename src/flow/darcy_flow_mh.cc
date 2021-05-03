@@ -298,7 +298,7 @@ DarcyMH::EqData::EqData()
             .input_default("0.0")
             .units( UnitSI::dimensionless() );
     
-    *this += L.name("L")
+    *this += L.name("l_param")
             .description("L-scheme coefficient")
             .input_default("0.0")
             .units( UnitSI::dimensionless() );
