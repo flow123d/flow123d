@@ -52,11 +52,13 @@
 
 #include <mpi.h>
 #include <ostream>
+#include <unordered_map>
+
 namespace boost { template <class T> struct hash; }
 #include <boost/functional/hash/hash.hpp>      // for hash
 #include <boost/ref.hpp>
 #include <boost/tuple/detail/tuple_basic.hpp>  // for get
-#include <boost/unordered/unordered_map.hpp>   // for unordered_map
+
 #include <nlohmann/json.hpp>
 
 #include "time_point.hh"
@@ -517,16 +519,11 @@ struct translator_between<std::basic_string< Ch, Traits, Alloc >, int> {
  */
 class Profiler {
 public:
-
-    /**
-     * Initializes the Profiler with specific MPI communicator object
-     */
-    //static void initialize(MPI_Comm communicator = MPI_COMM_WORLD);
-    static void initialize();
     /**
      * Returns unique Profiler object.
+     * if clear flag is set, will delete profiiler isntance
      */
-    static Profiler* instance();
+    static Profiler* instance(bool clear = false);
     /**
      * Sets task specific information. The string @p description with textual description of the task and the
      * number of elements of the mesh (parameter @p size). This is used for weak scaling graphs so it should
@@ -648,6 +645,8 @@ public:
      * functions are called by delete-expressions.
      */
     static void operator delete (void* p);
+    /// Sized deallocator, doesthe same as operator delete (void* p)
+    static void operator delete (void* p, std::size_t);
     
     /**
      * Public setter to turn on/off memory monitoring
@@ -724,12 +723,6 @@ protected:
      * actual time and date. Returns a pointer to the stream of the output file.
      */
     std::shared_ptr<std::ostream> get_default_output_stream();
-
-    /// Default code point.
-    static CodePoint null_code_point;
-
-    /// Pointer to the unique instance of singleton Profiler class.
-    static Profiler* _instance;
 
     /// Vector of all timers. Whole tree is stored in this array.
     vector<Timer, internal::SimpleAllocator<Timer>> timers_;
@@ -825,7 +818,7 @@ public:
 // gcc version 4.9 and lower has following bug: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=59751
 // fix in version 4.9: https://gcc.gnu.org/gcc-4.9/changes.html#cxx
 // typedef unordered_map<long, int, hash<long>, equal_to<long>, internal::SimpleAllocator<pair<const long, int>>> unordered_map_with_alloc;
-typedef boost::unordered_map<long, int, boost::hash<long>, equal_to<long>, internal::SimpleAllocator<std::pair<const long, int>>> unordered_map_with_alloc;
+typedef std::unordered_map<long, int, boost::hash<long>, equal_to<long>, internal::SimpleAllocator<std::pair<const long, int>>> unordered_map_with_alloc;
 class MemoryAlloc {
 public:
     /**
@@ -845,22 +838,27 @@ public:
 // dummy declaration of Profiler class
 class Profiler {
 public:
-    static void initialize();
-    static Profiler* instance();
+    static Profiler* instance(bool clear = false);
 
-    void set_task_info(string description, int size)
+    void set_task_info(string, int)
     {}
-    void set_program_info(string program_name, string program_version, string branch, string revision, string build)
+    void set_program_info(string, string, string, string, string)
     {}
-    void notify_malloc(const size_t size )
+    void notify_malloc(const size_t )
     {}
-    void notify_free(const size_t size )
+    void notify_free(const size_t )
     {}
-    void output(MPI_Comm comm, ostream &os)
+    void output(MPI_Comm, ostream &)
     {}
-    void output(MPI_Comm comm)
+    void output(MPI_Comm, string)
     {}
-    void transform_profiler_data(const string &output_file_suffix, const string &formatter)
+    void output(string)
+    {}
+    void output(MPI_Comm)
+    {}
+    void output()
+    {}
+    void transform_profiler_data(const string &, const string &)
     {}
     double get_resolution () const
     { return 0.0; }
@@ -872,7 +870,6 @@ public:
     { return 0.0; }
     static void uninitialize();
 private:
-    static Profiler* _instance;
     Profiler() {}
 };
 
