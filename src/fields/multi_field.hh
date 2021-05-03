@@ -216,7 +216,7 @@ public:
      */
     inline SubFieldType &operator[](unsigned int idx)
     {
-    	ASSERT_LT(idx, sub_fields_.size())(this->input_name()).error("Index of subfield in MultiField is out of range.\n");
+    	ASSERT_LT_DBG(idx, sub_fields_.size())(this->input_name()).error("Index of subfield in MultiField is out of range.\n");
     	return sub_fields_[idx];
     }
     
@@ -225,7 +225,7 @@ public:
      */
     inline const SubFieldType &operator[](unsigned int idx) const
     {
-    	ASSERT_LT(idx, sub_fields_.size())(this->input_name()).error("Index of subfield in MultiField is out of range.\n");
+    	ASSERT_LT_DBG(idx, sub_fields_.size())(this->input_name()).error("Index of subfield in MultiField is out of range.\n");
         return sub_fields_[idx];
     }
     
@@ -234,7 +234,7 @@ public:
      */
     FieldCommon *get_component(unsigned int idx) override
     {
-    	ASSERT_LT(idx, sub_fields_.size())(this->input_name()).error("Index of subfield in MultiField is out of range.\n");
+    	ASSERT_LT_DBG(idx, sub_fields_.size())(this->input_name()).error("Index of subfield in MultiField is out of range.\n");
     	return &(sub_fields_[idx]);
     }
 
