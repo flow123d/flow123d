@@ -1,5 +1,5 @@
 /*
- * adarcy_flow_assembly.hh
+ * darcy_flow_assembly.hh
  *
  *  Createad on: Apr 21, 2016
  *      Author: jb
@@ -361,13 +361,12 @@ protected:
         auto an = ad_->anisotropy.value(ele.centre(), ele );
         if (ad_-> ns_type == DarcyMH::EqData::nonlinear_solver::Lscheme) {
             double L =  ad_->L.value(ele.centre(), ele);
-            const arma::mat33 scale = an.i() / cs / conduct + L * arma::eye(3,3) / cs ;
+            const arma::mat33 scale = an.i() / cs / conduct + L * arma::eye(3,3)/cs;
             assemble_sides_scale(dh_cell, scale);
         } else{  
-            const arma::mat33 scale = an.i() / cs / conduct + bet * arma::norm(w) * arma::eye(3,3) / cs; //inverze an
+            const arma::mat33 scale = an.i() / cs / conduct + bet * arma::norm(w) * arma::eye(3,3) / cs ; //inverze an
             assemble_sides_scale(dh_cell, scale);
         }
-        
     }
 
     void assemble_sides_scale(const DHCellAccessor& dh_cell, const arma::mat33& scale)
@@ -380,23 +379,24 @@ protected:
         unsigned int qsize = fe_values_.n_points();
         auto velocity = fe_values_.vector_view(0);
         double bet =  ad_->beta.value(ele.centre(), ele);
+        double cs = ad_->cross_section.value(ele.centre(), ele);
         auto w = ad_->field_ele_velocity.value(ele.centre(), ele);
         double L =  ad_->L.value(ele.centre(), ele);
         
         for (unsigned int k=0; k<qsize; k++)
             for (unsigned int i=0; i<ndofs; i++){
+                double rhs_val;
                 if (ad_-> ns_type == DarcyMH::EqData::nonlinear_solver::Lscheme) {
-                    double rhs_val =
+                    rhs_val =
                         (arma::dot(gravity_vec,velocity.value(i,k))
-                         - arma::dot(bet*arma::norm(w)*w,velocity.value(i,k)) + arma::dot(L*w,velocity.value(i,k))) * fe_values_.JxW(k);
-                    loc_system_.add_value(i, rhs_val);
+                         - arma::dot(bet*arma::norm(w)*w,velocity.value(i,k))  + arma::dot(L*w,velocity.value(i,k))) * fe_values_.JxW(k);
                 } else{
-                    double rhs_val =
+                    rhs_val =
                         arma::dot(gravity_vec,velocity.value(i,k))
                         * fe_values_.JxW(k);
-                    loc_system_.add_value(i, rhs_val);
                 }
-                
+                loc_system_.add_value(i, rhs_val);
+
                 for (unsigned int j=0; j<ndofs; j++){
                     double mat_val = 
                         arma::dot(velocity.value(i,k), 
@@ -437,9 +437,9 @@ protected:
             loc_system_.add_value(loc_side_dofs[side], loc_ele_dof, -1.0);
         }
         
-        if ( typeid(*ad_->lin_sys_Newton) == typeid(LinSys_BDDC) ) {
+        if ( typeid(*ad_->lin_sys) == typeid(LinSys_BDDC) ) {
             double val_ele =  1.;
-            static_cast<LinSys_BDDC*>(ad_->lin_sys_Newton)->
+            static_cast<LinSys_BDDC*>(ad_->lin_sys)->
                             diagonal_weights_set_value( loc_system_.row_dofs[loc_ele_dof], val_ele );
 		}
     }
@@ -798,12 +798,7 @@ protected:
 	    auto w = ad_->field_ele_velocity.value(ele.centre(), ele);
         auto an = ad_->anisotropy.value(ele.centre(), ele );
         const double eps = 1e-6;
-        const arma::mat33 scale = an.i() / cs /conduct  + bet*((arma::kron(w,w.t() ) / (sqrt(arma::norm(w)*arma::norm(w)+eps))) + arma::norm(w)*arma::eye(3,3) ) / cs;
-        
-        //const arma::mat33 scale1 = 1 / cs /conduct * an.i();
-        //const arma::mat33 scale3 = arma::norm(w)*arma::eye(3,3)  / cs;
-        //const arma::mat33 scale2 =  (arma::kron(w,w.t()) / (sqrt(arma::norm(w)*arma::norm(w)+eps)));
-        //const arma::mat33 scale = scale1 + bet*scale2 + bet*scale3;
+        const arma::mat33 scale = an.i() / cs /conduct  + bet*((arma::kron(w,w.t() ) / (sqrt(arma::norm(w)*arma::norm(w)+eps))) + arma::norm(w)*arma::eye(3,3) ) / cs ;
         assemble_sides_scale(dh_cell, scale);
     }
     
