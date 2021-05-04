@@ -394,7 +394,7 @@ void MultiField<spacedim, Value>::cache_reallocate(const ElementCacheMap &cache_
 
 
 template<int spacedim, class Value>
-void MultiField<spacedim, Value>::cache_update(FMT_UNUSED ElementCacheMap &cache_map, FMT_UNUSED unsigned int region_idx,
+void MultiField<spacedim, Value>::cache_update(FMT_UNUSED ElementCacheMap &cache_map,
         FMT_UNUSED unsigned int region_patch_idx) const {
     ASSERT(false).error("Cache update of MultiField should be performed by individual components!\n");
 }

@@ -59,6 +59,11 @@ template < template<IntDim...> class DimAssembly>
 class GenericAssembly
 {
 private:
+	/**
+	 * Helper structzre holds data of cell (bulk) integral
+	 *
+	 * Data is specified by cell and subset index in EvalPoint object
+	 */
     struct BulkIntegralData {
     	/// Default constructor
         BulkIntegralData() {}
@@ -71,10 +76,15 @@ private:
         BulkIntegralData(const BulkIntegralData &other)
         : cell(other.cell), subset_index(other.subset_index) {}
 
-        DHCellAccessor cell;
-        unsigned int subset_index;
+        DHCellAccessor cell;          ///< Specified cell (element)
+        unsigned int subset_index;    ///< Index (order) of subset in EvalPoints object
     };
 
+	/**
+	 * Helper structzre holds data of edge integral
+	 *
+	 * Data is specified by side and subset index in EvalPoint object
+	 */
     struct EdgeIntegralData {
     	/// Default constructor
     	EdgeIntegralData()
@@ -88,10 +98,15 @@ private:
     	EdgeIntegralData(RangeConvert<DHEdgeSide, DHCellSide> range, unsigned int subset_idx)
         : edge_side_range(range), subset_index(subset_idx) {}
 
-    	RangeConvert<DHEdgeSide, DHCellSide> edge_side_range;
-        unsigned int subset_index;
+    	RangeConvert<DHEdgeSide, DHCellSide> edge_side_range;   ///< Specified cell side (element)
+        unsigned int subset_index;                              ///< Index (order) of subset in EvalPoints object
 	};
 
+	/**
+	 * Helper structzre holds data of neighbour (coupling) integral
+	 *
+	 * Data is specified by cell, side and their subset indices in EvalPoint object
+	 */
     struct CouplingIntegralData {
     	/// Default constructor
        	CouplingIntegralData() {}
@@ -105,11 +120,16 @@ private:
         : cell(other.cell), bulk_subset_index(other.bulk_subset_index), side(other.side), side_subset_index(other.side_subset_index) {}
 
         DHCellAccessor cell;
-	    unsigned int bulk_subset_index;
-        DHCellSide side;
-	    unsigned int side_subset_index;
+	    unsigned int bulk_subset_index;    ///< Index (order) of lower dim subset in EvalPoints object
+        DHCellSide side;                   ///< Specified cell side (higher dim element)
+	    unsigned int side_subset_index;    ///< Index (order) of higher dim subset in EvalPoints object
     };
 
+	/**
+	 * Helper structzre holds data of boundary integral
+	 *
+	 * Data is specified by side and subset indices of side and appropriate boundary element in EvalPoint object
+	 */
     struct BoundaryIntegralData {
     	/// Default constructor
     	BoundaryIntegralData() {}
@@ -123,16 +143,16 @@ private:
         : bdr_subset_index(other.bdr_subset_index), side(other.side), side_subset_index(other.side_subset_index) {}
 
     	// We don't need hold ElementAccessor of boundary element, side.cond().element_accessor() provides it.
-	    unsigned int bdr_subset_index; // index of subset on boundary element
-	    DHCellSide side;
-	    unsigned int side_subset_index;
+	    unsigned int bdr_subset_index;     ///< Index (order) of subset on boundary element in EvalPoints object
+	    DHCellSide side;                   ///< Specified cell side (bulk element)
+	    unsigned int side_subset_index;    ///< Index (order) of subset on side of bulk element in EvalPoints object
 	};
 
 public:
 
     /// Constructor
     GenericAssembly( typename DimAssembly<1>::EqFields *eq_fields, typename DimAssembly<1>::EqData *eq_data,
-            std::shared_ptr<Balance> balance, const DOFHandlerMultiDim * dh)
+            std::shared_ptr<Balance> balance)
     : multidim_assembly_(eq_fields, eq_data),
 	  bulk_integral_data_(20, 10),
 	  edge_integral_data_(12, 6),
@@ -144,17 +164,19 @@ public:
         multidim_assembly_[1_d]->create_integrals(eval_points_, integrals_);
         multidim_assembly_[2_d]->create_integrals(eval_points_, integrals_);
         multidim_assembly_[3_d]->create_integrals(eval_points_, integrals_);
-        element_cache_map_.init(eval_points_, dh);
+        element_cache_map_.init(eval_points_);
         multidim_assembly_[1_d]->initialize(balance, &element_cache_map_);
         multidim_assembly_[2_d]->initialize(balance, &element_cache_map_);
         multidim_assembly_[3_d]->initialize(balance, &element_cache_map_);
-        active_integrals_ = multidim_assembly_[1_d]->active_integrals();
+        active_integrals_ = multidim_assembly_[1_d]->n_active_integrals();
     }
 
+    /// Getter to set of assembly objects
     inline MixedPtr<DimAssembly, 1> multidim_assembly() const {
         return multidim_assembly_;
     }
 
+    /// Geter to EvalPoints object
     inline std::shared_ptr<EvalPoints> eval_points() const {
         return eval_points_;
     }
@@ -219,11 +241,16 @@ private:
     /// Assembles the cell integrals for the given dimension.
     template<unsigned int dim>
     inline void assemble_cell_integrals() {
-        for (unsigned int i=0; i<element_cache_map_.n_elements(); ++i) {
-            unsigned int elm_start = element_cache_map_.element_chunk_begin_new(i);
+    	for (unsigned int i=0; i<bulk_integral_data_.permanent_size(); ++i) {
+            if (bulk_integral_data_[i].cell.dim() != dim) continue;
+            multidim_assembly_[Dim<dim>{}]->cell_integral(bulk_integral_data_[i].cell, element_cache_map_.position_in_cache(bulk_integral_data_[i].cell.elm().mesh_idx()));
+    	}
+    	// Possibly optimization but not so fast as we would assume (needs change interface of cell_integral)
+        /*for (unsigned int i=0; i<element_cache_map_.n_elements(); ++i) {
+            unsigned int elm_start = element_cache_map_.element_chunk_begin(i);
             if (element_cache_map_.eval_point_data(elm_start).i_eval_point_ != 0) continue;
             multidim_assembly_[Dim<dim>{}]->cell_integral(i, element_cache_map_.eval_point_data(elm_start).dh_loc_idx_);
-        }
+        }*/
     }
 
     /// Assembles the boundary side integrals for the given dimension.
@@ -342,6 +369,8 @@ private:
         bulk_integral_data_.emplace_back(cell, subset_idx);
 
         unsigned int reg_idx = cell.elm().region_idx().idx();
+        // Different access than in other integrals: We can't use range method CellIntegral::points
+        // because it passes element_patch_idx as argument that is not known during patch construction.
         for (uint i=uint( eval_points_->subset_begin(cell.dim(), subset_idx) );
                   i<uint( eval_points_->subset_end(cell.dim(), subset_idx) ); ++i) {
             element_cache_map_.eval_point_data_.emplace_back(reg_idx, cell.elm_idx(), i, cell.local_idx());

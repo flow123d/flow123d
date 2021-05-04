@@ -43,7 +43,7 @@ public:
         Quadrature *q_side = new QGauss(2, 2);
         bulk_eval = eval_points->add_bulk<3>(*q_bulk );
         edge_eval = eval_points->add_edge<3>(*q_side );
-        this->init(eval_points, dh_.get());
+        this->init(eval_points);
     }
 
     ~FieldValueCacheTest() {}

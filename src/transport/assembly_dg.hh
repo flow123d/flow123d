@@ -66,11 +66,9 @@ public:
 
 
     /// Assemble integral over element
-    inline void cell_integral(unsigned int element_patch_idx, unsigned int dh_local_idx)
+    inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
-        if ((int)dh_local_idx == -1) return;
-        DHCellAccessor cell(eq_data_->dh_.get(), dh_local_idx);
-        if (cell.dim() != dim) return;
+        ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
 
         ElementAccessor<3> elm = cell.elm();
         unsigned int k;
@@ -233,11 +231,9 @@ public:
 
 
     /// Assembles the cell (volume) integral into the stiffness matrix.
-    inline void cell_integral(unsigned int element_patch_idx, unsigned int dh_local_idx)
+    inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
-        if ((int)dh_local_idx == -1) return;
-        DHCellAccessor cell(eq_data_->dh_.get(), dh_local_idx);
-        if (cell.dim() != dim) return;
+        ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
         if (!cell.is_own()) return;
 
         ElementAccessor<3> elm = cell.elm();
@@ -682,11 +678,9 @@ public:
 
 
     /// Assemble integral over element
-    inline void cell_integral(unsigned int element_patch_idx, unsigned int dh_local_idx)
+    inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
-        if ((int)dh_local_idx == -1) return;
-        DHCellAccessor cell(eq_data_->dh_.get(), dh_local_idx);
-        if (cell.dim() != dim) return;
+        ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
 
         ElementAccessor<3> elm = cell.elm();
         unsigned int k;
@@ -1033,11 +1027,9 @@ public:
 
 
     /// Assemble integral over element
-    inline void cell_integral(unsigned int element_patch_idx, unsigned int dh_local_idx)
+    inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
-        if ((int)dh_local_idx == -1) return;
-        DHCellAccessor cell(eq_data_->dh_.get(), dh_local_idx);
-        if (cell.dim() != dim) return;
+        ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
 
         unsigned int k;
         ElementAccessor<3> elem = cell.elm();
