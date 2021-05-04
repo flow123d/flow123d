@@ -268,7 +268,7 @@ private:
     	// We can't use this solution for other integrals because it does not allow access to equivalent points
     	// throught edge, neigbour and boundary objects.
         for (unsigned int i=0; i<element_cache_map_.n_elements(); ++i) {
-            unsigned int elm_start = element_cache_map_.element_chunk_begin_new(i);
+            unsigned int elm_start = element_cache_map_.element_chunk_begin(i);
             if (element_cache_map_.eval_point_data(elm_start).i_eval_point_ != 0) continue;
             multidim_assembly_[Dim<dim>{}]->cell_integral(i, element_cache_map_.eval_point_data(elm_start).dh_loc_idx_);
         }
