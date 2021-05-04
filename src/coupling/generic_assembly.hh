@@ -264,14 +264,16 @@ private:
     /// Assembles the cell integrals for the given dimension.
     template<unsigned int dim>
     inline void assemble_cell_integrals() {
-        // There is special solution of cell integrals solving that is faster than solution of other integrals.
-    	// We can't use this solution for other integrals because it does not allow access to equivalent points
-    	// throught edge, neigbour and boundary objects.
-        for (unsigned int i=0; i<element_cache_map_.n_elements(); ++i) {
+    	for (unsigned int i=0; i<bulk_integral_data_.permanent_size(); ++i) {
+            if (bulk_integral_data_[i].cell.dim() != dim) continue;
+            multidim_assembly_[Dim<dim>{}]->cell_integral(bulk_integral_data_[i].cell, element_cache_map_.position_in_cache(bulk_integral_data_[i].cell.elm().mesh_idx()));
+    	}
+    	// Possibly optimization but not so fast as we would assume (needs change interface of cell_integral)
+        /*for (unsigned int i=0; i<element_cache_map_.n_elements(); ++i) {
             unsigned int elm_start = element_cache_map_.element_chunk_begin(i);
             if (element_cache_map_.eval_point_data(elm_start).i_eval_point_ != 0) continue;
             multidim_assembly_[Dim<dim>{}]->cell_integral(i, element_cache_map_.eval_point_data(elm_start).dh_loc_idx_);
-        }
+        }*/
     }
 
     /// Assembles the boundary side integrals for the given dimension.
