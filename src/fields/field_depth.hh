@@ -102,7 +102,7 @@ public:
     {}
 
     /// Implements FieldCommon::cache_update
-    void cache_update(ElementCacheMap &cache_map, FMT_UNUSED unsigned int region_idx, unsigned int region_patch_idx) const override {
+    void cache_update(ElementCacheMap &cache_map, unsigned int region_patch_idx) const override {
     	if (surface_depth_ == nullptr) return;
 
     	std::shared_ptr<EvalPoints> eval_points = cache_map.eval_points();

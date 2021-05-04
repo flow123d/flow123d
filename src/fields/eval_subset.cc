@@ -111,7 +111,7 @@ EdgePoint EdgePoint::point_on(DHCellSide edg_side) const {
  */
 
 BulkPoint CouplingPoint::lower_dim(DHCellAccessor cell_lower) const {
-	CachePositionHandler c_pos(elm_cache_map_->position_in_cache(cell_lower.elm().mesh_idx()),
+	PatchCacheLoc c_pos(elm_cache_map_->position_in_cache(cell_lower.elm().mesh_idx()),
 	        this->eval_points()->subset_begin(cell_lower.dim(), integral_->get_subset_low_idx())+local_point_idx_);
     return BulkPoint(elm_cache_map_, c_pos);
 }
@@ -122,7 +122,7 @@ BulkPoint CouplingPoint::lower_dim(DHCellAccessor cell_lower) const {
  */
 
 BulkPoint BoundaryPoint::point_bdr(ElementAccessor<3> bdr_elm) const {
-	CachePositionHandler c_pos(elm_cache_map_->position_in_cache(bdr_elm.mesh_idx()),
+	PatchCacheLoc c_pos(elm_cache_map_->position_in_cache(bdr_elm.mesh_idx()),
 			this->eval_points()->subset_begin(bdr_elm.dim(), integral_->get_subset_low_idx())+local_point_idx_);
     return BulkPoint(elm_cache_map_, c_pos);
 }

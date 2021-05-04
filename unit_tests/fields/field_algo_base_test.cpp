@@ -1044,7 +1044,7 @@ TEST(Field, field_values) {
     std::shared_ptr<BulkIntegral> mass_eval = eval_points->add_bulk<3>(*q_bulk );
     std::shared_ptr<EdgeIntegral> side_eval = eval_points->add_edge<3>(*q_side );
     ElementCacheMapTest elm_cache_map;
-    elm_cache_map.init(eval_points, dh.get());
+    elm_cache_map.init(eval_points);
     color_field.cache_reallocate(elm_cache_map);
     int_field.cache_reallocate(elm_cache_map);
     scalar_field.cache_reallocate(elm_cache_map);
@@ -1056,12 +1056,11 @@ TEST(Field, field_values) {
     elm_cache_map.start_elements_update();
     elm_cache_map.add_cell_eval_points(dh_cell, mass_eval);
     elm_cache_map.create_patch();
-    unsigned int reg_idx = dh_cell.elm().region_idx().idx();
-    color_field.cache_update(elm_cache_map, reg_idx, 0);
-    int_field.cache_update(elm_cache_map, reg_idx, 0);
-    scalar_field.cache_update(elm_cache_map, reg_idx, 0);
-    vector_field.cache_update(elm_cache_map, reg_idx, 0);
-    tensor_field.cache_update(elm_cache_map, reg_idx, 0);
+    color_field.cache_update(elm_cache_map, 0);
+    int_field.cache_update(elm_cache_map, 0);
+    scalar_field.cache_update(elm_cache_map, 0);
+    vector_field.cache_update(elm_cache_map, 0);
+    tensor_field.cache_update(elm_cache_map, 0);
     elm_cache_map.finish_elements_update();
 
     for(BulkPoint q_point: mass_eval->points(elm_cache_map.position_in_cache(dh_cell.elm_idx()), &elm_cache_map)) {

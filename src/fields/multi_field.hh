@@ -265,7 +265,7 @@ public:
     void cache_reallocate(const ElementCacheMap &cache_map) override;
 
     /// Implements FieldCommon::cache_update
-    void cache_update(ElementCacheMap &cache_map, unsigned int region_idx, unsigned int region_patch_idx) const override;
+    void cache_update(ElementCacheMap &cache_map, unsigned int region_patch_idx) const override;
 
     /**
      * Assigns fields from @p field_vec to individual components and all regions in region sets given by @p region_set_names.

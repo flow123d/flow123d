@@ -70,7 +70,7 @@ TEST(IntegralTest, integrals_3d) {
     std::shared_ptr<DOFHandlerMultiDim> dh = std::make_shared<DOFHandlerMultiDim>(*mesh);
     DHCellAccessor dh_cell(dh.get(), 3);
     ElementCacheMap elm_cache_map;
-    elm_cache_map.init(eval_points, dh.get());
+    elm_cache_map.init(eval_points);
 
     {
         // Test of bulk local points
@@ -187,7 +187,7 @@ public:
         //std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh_, fe_rt0);
         dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
         //dh_->distribute_dofs(ds);
-        this->init(eval_points_, dh_.get());
+        this->init(eval_points_);
 
     }
 

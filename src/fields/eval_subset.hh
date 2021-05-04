@@ -71,14 +71,6 @@ public:
     	this->local_point_idx_++;
     }
 
-    /// Return DHCellAccessor appropriate to eval point.
-    inline DHCellAccessor dh_cell() const {
-        unsigned int patch_idx = elm_cache_map_->element_eval_point(elem_patch_idx_, local_point_idx_);
-		unsigned int loc_idx = elm_cache_map_->eval_point_data(patch_idx).dh_loc_idx_;
-		ASSERT_DBG((int)(loc_idx) != -1).error("DHCellAccessor of boundary element s not supported!\n");
-    	return DHCellAccessor(elm_cache_map_->dh(), loc_idx);
-    }
-
     /// Local coordinates within element
     //template<unsigned int dim>
     //inline arma::vec::fixed<dim> loc_coords() const {
@@ -108,7 +100,7 @@ public:
     : PointBase() {}
 
     /// Constructor
-	BulkPoint(const ElementCacheMap *elm_cache_map, CachePositionHandler cache_pos)
+	BulkPoint(const ElementCacheMap *elm_cache_map, PatchCacheLoc cache_pos)
     : PointBase(elm_cache_map, cache_pos.i_ep_) {
 	    this->elem_patch_idx_ = cache_pos.i_elm_;
 	}
@@ -299,8 +291,8 @@ public:
 
     /// Returns range of bulk local points for appropriate cell accessor
     inline Range< BulkPoint > points(unsigned int element_patch_idx, const ElementCacheMap *elm_cache_map) const {
-        auto bgn_it = make_iter<BulkPoint>( BulkPoint(elm_cache_map, CachePositionHandler(element_patch_idx, eval_points_->subset_begin(dim_, subset_index_)) ));
-        auto end_it = make_iter<BulkPoint>( BulkPoint(elm_cache_map, CachePositionHandler(element_patch_idx, eval_points_->subset_end(dim_, subset_index_)) ));
+        auto bgn_it = make_iter<BulkPoint>( BulkPoint(elm_cache_map, PatchCacheLoc(element_patch_idx, eval_points_->subset_begin(dim_, subset_index_)) ));
+        auto end_it = make_iter<BulkPoint>( BulkPoint(elm_cache_map, PatchCacheLoc(element_patch_idx, eval_points_->subset_end(dim_, subset_index_)) ));
         return Range<BulkPoint>(bgn_it, end_it);
     }
 

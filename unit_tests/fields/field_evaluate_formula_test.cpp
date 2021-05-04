@@ -66,7 +66,7 @@ public:
             mass_eval = eval_points_->add_bulk<3>(*q_bulk );
             side_eval = eval_points_->add_edge<3>(*q_side );
             // ngh_side_eval = ...
-            this->init(eval_points_, nullptr);
+            this->init(eval_points_);
             this->cache_reallocate(*this);
         }
 
