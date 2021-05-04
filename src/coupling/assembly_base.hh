@@ -67,7 +67,7 @@ public:
     virtual void reallocate_cache(const ElementCacheMap &cache_map) =0;
 
     /// Getter of active_integrals.
-    inline int active_integrals() const {
+    inline int n_active_integrals() const {
         return active_integrals_;
     }
 

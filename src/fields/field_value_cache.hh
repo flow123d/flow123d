@@ -78,10 +78,10 @@ struct EvalPointData {
 
 
 /// Holds pair of positions of point in cache (element and eval point)
-struct CachePositionHandler {
-	CachePositionHandler() {}   ///< Default constructor
+struct PatchCacheLoc {
+    PatchCacheLoc() {}   ///< Default constructor
     /// Constructor sets all data members
-	CachePositionHandler(unsigned int i_elm, unsigned int i_ep)
+	PatchCacheLoc(unsigned int i_elm, unsigned int i_ep)
     : i_elm_(i_elm), i_ep_(i_ep) {}
 
     unsigned int i_elm_;        ///< index of element in patch
