@@ -151,7 +151,7 @@ private:
 public:
 
     /// Constructor
-    GenericAssembly( typename DimAssembly<1>::EqData *eq_data, std::shared_ptr<Balance> balance, const DOFHandlerMultiDim * dh)
+    GenericAssembly( typename DimAssembly<1>::EqData *eq_data, std::shared_ptr<Balance> balance)
     : multidim_assembly_(eq_data),
 	  bulk_integral_data_(20, 10),
 	  edge_integral_data_(12, 6),
@@ -163,7 +163,7 @@ public:
         multidim_assembly_[1_d]->create_integrals(eval_points_, integrals_);
         multidim_assembly_[2_d]->create_integrals(eval_points_, integrals_);
         multidim_assembly_[3_d]->create_integrals(eval_points_, integrals_);
-        element_cache_map_.init(eval_points_, dh);
+        element_cache_map_.init(eval_points_);
         multidim_assembly_[1_d]->initialize(balance);
         multidim_assembly_[2_d]->initialize(balance);
         multidim_assembly_[3_d]->initialize(balance);

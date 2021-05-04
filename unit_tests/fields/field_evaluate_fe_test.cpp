@@ -435,13 +435,13 @@ TEST_F(FieldFESpeedTest, read_from_input_test) {
 	this->read_input(eq_data_input_speed);
 
 	std::shared_ptr<Balance> balance;
-	GenericAssembly< AssemblyDimTest > ga_bulk(data_.get(), balance, this->dh_.get());
+	GenericAssembly< AssemblyDimTest > ga_bulk(data_.get(), balance);
 	START_TIMER("assemble_bulk");
 	for (unsigned int i=0; i<profiler_loop; ++i)
 		ga_bulk.assemble(this->dh_);
 	END_TIMER("assemble_bulk");
 
-	GenericAssembly< AssemblyDimTest > ga_all(data_.get(), balance, this->dh_.get());
+	GenericAssembly< AssemblyDimTest > ga_all(data_.get(), balance);
 	START_TIMER("assemble_all_integrals");
 	for (unsigned int i=0; i<profiler_loop; ++i)
 		ga_all.assemble(this->dh_);
@@ -454,13 +454,13 @@ TEST_F(FieldFESpeedTest, rt_field_fe_test) {
 	this->read_input(eq_data_input_speed);
 
 	std::shared_ptr<Balance> balance;
-	GenericAssembly< AssemblyDimTest > ga_bulk(data_.get(), balance, this->dh_.get());
+	GenericAssembly< AssemblyDimTest > ga_bulk(data_.get(), balance);
 	START_TIMER("assemble_bulk");
 	for (unsigned int i=0; i<profiler_loop; ++i)
 		ga_bulk.assemble(this->dh_, this->tg_.step());
 	END_TIMER("assemble_bulk");
 
-	GenericAssembly< AssemblyDimTest > ga_all(data_.get(), balance, this->dh_.get());
+	GenericAssembly< AssemblyDimTest > ga_all(data_.get(), balance);
 	START_TIMER("assemble_all_integrals");
 	for (unsigned int i=0; i<profiler_loop; ++i)
 		ga_all.assemble(this->dh_, this->tg_.step());

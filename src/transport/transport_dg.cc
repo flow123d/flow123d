@@ -307,11 +307,11 @@ void TransportDG<Model>::initialize()
 
 
     // create assemblation object, finite element structures and distribute DOFs
-	data_->mass_assembly_ = new GenericAssembly< MassAssemblyDim >(data_.get(), this->balance(), data_->dh_.get());
-	data_->stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyDim >(data_.get(), this->balance(), data_->dh_.get());
-	data_->sources_assembly_ = new GenericAssembly< SourcesAssemblyDim >(data_.get(), this->balance(), data_->dh_.get());
-	data_->bdr_cond_assembly_ = new GenericAssembly< BdrConditionAssemblyDim >(data_.get(), this->balance(), data_->dh_.get());
-	data_->init_cond_assembly_ = new GenericAssembly< InitConditionAssemblyDim >(data_.get(), this->balance(), data_->dh_.get());
+	data_->mass_assembly_ = new GenericAssembly< MassAssemblyDim >(data_.get(), this->balance());
+	data_->stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyDim >(data_.get(), this->balance());
+	data_->sources_assembly_ = new GenericAssembly< SourcesAssemblyDim >(data_.get(), this->balance());
+	data_->bdr_cond_assembly_ = new GenericAssembly< BdrConditionAssemblyDim >(data_.get(), this->balance());
+	data_->init_cond_assembly_ = new GenericAssembly< InitConditionAssemblyDim >(data_.get(), this->balance());
 
     // initialization of balance object
     Model::balance_->allocate(data_->dh_->distr()->lsize(), data_->mass_assembly_->eval_points()->max_size());
