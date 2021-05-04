@@ -212,6 +212,7 @@ public:
 
         /// @name Set of methods returning vectors of field names using in different assemblations.
         // @{
+        // TODO assembly subsets should be independent of the model and the dependency should be handled automatically.
 
         /// Returns vector of field names of Mass assembly.
         inline std::vector<string> mass_assembly_subset() const {
