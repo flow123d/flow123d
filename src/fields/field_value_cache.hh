@@ -262,6 +262,11 @@ public:
         else return ElementCacheMap::undef_elem_idx;
     }
 
+    /// Return begin position of region chunk specified by position in map
+    inline unsigned int region_idx_from_chunk_position(unsigned int chunk_pos) const {
+    	return eval_point_data_[ this->region_chunk_by_map_index(chunk_pos) ].i_reg_;
+    }
+
     /// Return item of eval_point_data_ specified by its position
     inline const EvalPointData &eval_point_data(unsigned int point_idx) const {
         return eval_point_data_[point_idx];

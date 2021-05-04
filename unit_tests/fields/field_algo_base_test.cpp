@@ -1057,11 +1057,11 @@ TEST(Field, field_values) {
     elm_cache_map.add_cell_eval_points(dh_cell, mass_eval);
     elm_cache_map.create_patch();
     unsigned int reg_idx = dh_cell.elm().region_idx().idx();
-    color_field.cache_update(elm_cache_map, reg_idx, 0);
-    int_field.cache_update(elm_cache_map, reg_idx, 0);
-    scalar_field.cache_update(elm_cache_map, reg_idx, 0);
-    vector_field.cache_update(elm_cache_map, reg_idx, 0);
-    tensor_field.cache_update(elm_cache_map, reg_idx, 0);
+    color_field.cache_update(elm_cache_map, 0);
+    int_field.cache_update(elm_cache_map, 0);
+    scalar_field.cache_update(elm_cache_map, 0);
+    vector_field.cache_update(elm_cache_map, 0);
+    tensor_field.cache_update(elm_cache_map, 0);
     elm_cache_map.finish_elements_update();
 
     for(BulkPoint q_point: mass_eval->points(elm_cache_map.position_in_cache(dh_cell.elm_idx()), &elm_cache_map)) {
