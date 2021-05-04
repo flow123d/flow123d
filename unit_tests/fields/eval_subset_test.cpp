@@ -187,7 +187,7 @@ public:
         //std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh_, fe_rt0);
         dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
         //dh_->distribute_dofs(ds);
-        this->init(eval_points_, dh_.get());
+        this->init(eval_points_);
 
     }
 

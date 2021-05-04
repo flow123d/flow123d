@@ -72,7 +72,7 @@ public:
         q_side = new QGauss(2, 2);
         eval_points->add_bulk<3>(*q_bulk );
         eval_points->add_edge<3>(*q_side );
-        this->init(eval_points, nullptr);
+        this->init(eval_points);
     }
 
     void fill_cache_data() {
