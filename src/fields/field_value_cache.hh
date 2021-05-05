@@ -187,13 +187,13 @@ public:
     /*
      * Access to item of \p element_eval_points_map_ like to two-dimensional array.
      *
-     * @param i_elem_in_cache  idx of ElementAccessor in ElementCacheMap
+     * @param elem_cache_begin begin position of ElementAccessor in ElementCacheMap
      * @param i_eval_point     index of local point in EvalPoints
      * @return                 index of point in FieldValueCache.
      */
-    inline int element_eval_point(unsigned int i_elem_in_cache, unsigned int i_eval_point) const {
+    inline int element_eval_point(unsigned int elem_cache_begin, unsigned int i_eval_point) const {
         ASSERT_PTR_DBG(element_eval_points_map_);
-        return element_eval_points_map_[i_elem_in_cache*eval_points_->max_size()+i_eval_point];
+        return element_eval_points_map_[elem_cache_begin+i_eval_point];
     }
 
     /// Return mesh_idx of element stored at given position of ElementCacheMap
@@ -261,10 +261,10 @@ public:
     /// Return value of evaluation point given by idx of element in patch and local point idx in EvalPoints from cache.
     template<class Value>
     inline typename Value::return_type get_value(const FieldValueCache<typename Value::element_type> &field_cache,
-            unsigned int elem_patch_idx, unsigned int eval_points_idx) const {
+            unsigned int elem_patch_begin, unsigned int eval_points_idx) const {
         ASSERT_EQ_DBG(Value::NRows_, field_cache.n_rows());
         ASSERT_EQ_DBG(Value::NCols_, field_cache.n_cols());
-        unsigned int value_cache_idx = this->element_eval_point(elem_patch_idx, eval_points_idx);
+        unsigned int value_cache_idx = this->element_eval_point(elem_patch_begin, eval_points_idx);
         ASSERT_DBG(value_cache_idx != ElementCacheMap::undef_elem_idx);
         return Value::get_from_array(field_cache, value_cache_idx);
     }
