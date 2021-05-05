@@ -61,11 +61,6 @@ public:
         return elm_cache_map_;
     }
 
-	// Getter of element patch index.
-    inline unsigned int elem_patch_idx() const {
-        return elem_patch_idx_;
-    }
-
 	/// Getter of element patch begin.
     inline unsigned int elem_patch_begin() const {
         return elem_patch_begin_;
@@ -89,7 +84,7 @@ protected:
     /// Index of the local point in the integral object.
     unsigned int local_point_idx_;
     /// Index of element in the patch.
-    unsigned int elem_patch_idx_;
+    //unsigned int elem_patch_idx_;
     /// Index of begin of element in the patch table.
     unsigned int elem_patch_begin_;
     /// Pointer ElementCacheMap needed for point evaluation.
@@ -109,13 +104,13 @@ public:
     /// Constructor
 	BulkPoint(const ElementCacheMap *elm_cache_map, PatchCacheLoc cache_pos)
     : PointBase(elm_cache_map, cache_pos.i_ep_) {
-	    this->elem_patch_idx_ = cache_pos.i_elm_;
-	    this->elem_patch_begin_ = this->elem_patch_idx_ * elm_cache_map->eval_points()->max_size();
+	    //this->elem_patch_idx_ = cache_pos.i_elm_;
+	    this->elem_patch_begin_ = cache_pos.i_elm_ * elm_cache_map->eval_points()->max_size();
 	}
 
     /// Comparison of accessors.
     bool operator==(const BulkPoint& other) {
-        return (elem_patch_idx_ == other.elem_patch_idx_) && (local_point_idx_ == other.local_point_idx_);
+        return (elem_patch_begin_ == other.elem_patch_begin_) && (local_point_idx_ == other.local_point_idx_);
     }
 
     /// Return index in EvalPoints object
@@ -140,8 +135,8 @@ public:
 	SidePoint(DHCellSide cell_side, const ElementCacheMap *elm_cache_map, unsigned int local_point_idx)
     : PointBase(elm_cache_map, local_point_idx), side_idx_(cell_side.side_idx()),
 	  permutation_idx_( cell_side.element()->permutation_idx( side_idx_ ) ) {
-	    this->elem_patch_idx_ = this->elm_cache_map_->position_in_cache(cell_side.element().mesh_idx());
-	    this->elem_patch_begin_ = this->elem_patch_idx_ * elm_cache_map->eval_points()->max_size();
+	    //this->elem_patch_idx_ = this->elm_cache_map_->position_in_cache(cell_side.element().mesh_idx());
+	    this->elem_patch_begin_ = this->elm_cache_map_->position_in_cache(cell_side.element().mesh_idx()) * elm_cache_map->eval_points()->max_size();
 	}
 
     // Index of permutation
@@ -175,7 +170,7 @@ public:
 
     /// Comparison of accessors.
     bool operator==(const EdgePoint& other) {
-        return (elem_patch_idx_ == other.elem_patch_idx_) && (local_point_idx_ == other.local_point_idx_);
+        return (elem_patch_begin_ == other.elem_patch_begin_) && (local_point_idx_ == other.local_point_idx_);
     }
 
     /// Return index in EvalPoints object
@@ -208,7 +203,7 @@ public:
 
     /// Comparison of accessors.
     bool operator==(const CouplingPoint& other) {
-        return (elem_patch_idx_ == other.elem_patch_idx_) && (local_point_idx_ == other.local_point_idx_);
+        return (elem_patch_begin_ == other.elem_patch_begin_) && (local_point_idx_ == other.local_point_idx_);
     }
 
 private:
@@ -237,7 +232,7 @@ public:
 
     /// Comparison of accessors.
     bool operator==(const BoundaryPoint& other) {
-        return (elem_patch_idx_ == other.elem_patch_idx_) && (local_point_idx_ == other.local_point_idx_);
+        return (elem_patch_begin_ == other.elem_patch_begin_) && (local_point_idx_ == other.local_point_idx_);
     }
 
 private:
