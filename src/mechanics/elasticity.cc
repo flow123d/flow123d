@@ -331,7 +331,9 @@ Elasticity::Elasticity(Mesh & init_mesh, const Input::Record in_rec, TimeGoverno
     
     // create finite element structures and distribute DOFs
     feo = new Mechanics::FEObjects(mesh_, 1);
-    data_.dh_ = feo->dh(); // TODO move initialization of dh_ to EqData constructor after remove feo.
+    data_.dh_ = feo->dh(); // TODO move initialization of dh_ to EqData constructor after remove feo, same in next two lines.
+    data_.dh_scalar_ = feo->dh_scalar();
+    data_.dh_tensor_ = feo->dh_tensor();
     DebugOut().fmt("Mechanics: solution size {}\n", feo->dh()->n_global_dofs());
     
 }
@@ -396,6 +398,7 @@ void Elasticity::initialize()
     std::shared_ptr<Balance> balance; // temporary solution
     data_.stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyElasticity >(&data(), balance, data_.dh_.get());
     data_.rhs_assembly_ = new GenericAssembly< RhsAssemblyElasticity >(&data(), balance, data_.dh_.get());
+    data_.outout_fields_assembly_ = new GenericAssembly< OutpuFieldsAssemblyElasticity >(&data(), balance, data_.dh_.get());
 
     // initialization of balance object
 //     balance_->allocate(feo->dh()->distr()->lsize(),
@@ -415,6 +418,7 @@ Elasticity::~Elasticity()
 
     delete data_.stiffness_assembly_;
     delete data_.rhs_assembly_;
+    delete data_.outout_fields_assembly_;
 }
 
 

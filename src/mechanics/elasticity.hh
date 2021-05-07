@@ -38,6 +38,7 @@ template<unsigned int dim> class FiniteElement;
 class Elasticity;
 template<unsigned int dim> class StiffnessAssemblyElasticity;
 template<unsigned int dim> class RhsAssemblyElasticity;
+template<unsigned int dim> class OutpuFieldsAssemblyElasticity;
 template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
 
@@ -148,8 +149,10 @@ public:
 
         EquationOutput output_fields;
 
-        /// Object for distribution of dofs.
+        /// Objects for distribution of dofs.
         std::shared_ptr<DOFHandlerMultiDim> dh_;
+        std::shared_ptr<DOFHandlerMultiDim> dh_scalar_;
+        std::shared_ptr<DOFHandlerMultiDim> dh_tensor_;
 
     	/// @name Solution of algebraic system
     	// @{
@@ -162,6 +165,7 @@ public:
         /// general assembly objects, hold assembly objects of appropriate dimension
         GenericAssembly< StiffnessAssemblyElasticity > * stiffness_assembly_;
         GenericAssembly< RhsAssemblyElasticity > * rhs_assembly_;
+        GenericAssembly< OutpuFieldsAssemblyElasticity > * outout_fields_assembly_;
 
 	};
 
