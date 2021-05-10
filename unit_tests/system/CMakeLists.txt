@@ -45,7 +45,7 @@ add_test_directory("${libs}")
     define_test(tokenizer)
     define_test(armor)
     define_test(tokenizer_speed)
-    define_test(armor_speed)
+    # define_test(armor_speed)
 
 
 
