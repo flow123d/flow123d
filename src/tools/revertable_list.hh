@@ -46,13 +46,15 @@ public:
 	RevertableList(std::size_t reserved_size, std::size_t enlarged_by = 0)
     : temporary_size_(0), permanent_size_(0), enlardeg_by_(enlarged_by)
     {
-        data_.resize(reserved_size);
+        data_.reserve(reserved_size);
     }
 
     /// Copy constructor
 	RevertableList(const RevertableList& other)
     : data_(other.data_), temporary_size_(other.temporary_size_), permanent_size_(other.permanent_size_), enlardeg_by_(other.enlardeg_by_)
-    {}
+    {
+		data_.reserve( other.data_.capacity() );
+    }
 
     /**
      * Resize to new reserved size.
@@ -62,7 +64,7 @@ public:
     void resize(std::size_t new_size)
     {
     	ASSERT_GT(new_size, reserved_size());
-    	data_.resize(new_size);
+    	data_.reserve(new_size);
     }
 
     /// Return permanent size of list.
@@ -80,18 +82,42 @@ public:
     /// Return reserved (maximal) size.
     inline std::size_t reserved_size() const
     {
-        return data_.size();
+        return data_.capacity();
     }
 
-    /// Add new item to list.
+    /**
+     * Add new item of list.
+     *
+     * New item is added to end of list and temporary size value is incremented.
+     * Method is equivalent with std::vector::push_back().
+     * This method needs to create copy of passed Type and it's beter to use emplace_back method.
+     */
     inline std::size_t push_back(const Type &t)
     {
-        if (enlardeg_by_ == 0) { // list with fixed size
-            ASSERT_LT_DBG(temporary_size_, reserved_size()).error("Data array overflowed!\n");
-        } else if (temporary_size_ == reserved_size()) { // enlarge reserved size
+        ASSERT_DBG((enlardeg_by_ > 0) || (temporary_size_ < reserved_size())).error("Data array overflowed!\n");
+        if (temporary_size_ == reserved_size()) { // enlarge reserved size
         	this->resize( this->reserved_size() + enlardeg_by_ );
         }
-        data_[temporary_size_] = t;
+        data_.push_back(t);
+        temporary_size_++;
+        return temporary_size_;
+    }
+
+    /**
+     * Create new item in list.
+     *
+     * New item is created at the end of list and temporary size value is incremented.
+     * Method is equivalent with std::vector::emplace_back().
+     * Method passes argumets of Type constructor.
+     */
+    template<class... Args>
+    inline std::size_t emplace_back(Args&&... args)
+    {
+        ASSERT_DBG((enlardeg_by_ > 0) || (temporary_size_ < reserved_size())).error("Data array overflowed!\n");
+        if (temporary_size_ == reserved_size()) { // enlarge reserved size
+        	this->resize( this->reserved_size() + enlardeg_by_ );
+        }
+        data_.emplace_back( std::forward<Args>(args)... );
         temporary_size_++;
         return temporary_size_;
     }
@@ -107,6 +133,7 @@ public:
     inline std::size_t revert_temporary()
     {
     	temporary_size_ = permanent_size_;
+    	data_.resize(permanent_size_);
         return temporary_size_;
     }
 
@@ -115,6 +142,7 @@ public:
     {
     	temporary_size_ = 0;
     	permanent_size_ = 0;
+    	data_.resize(0);
     }
 
     inline typename std::vector<Type>::iterator begin()

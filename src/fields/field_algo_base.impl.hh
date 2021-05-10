@@ -163,7 +163,7 @@ template<int spacedim, class Value>
 void FieldAlgorithmBase<spacedim, Value>::cache_update(
             FMT_UNUSED FieldValueCache<typename Value::element_type> &data_cache,
 			FMT_UNUSED ElementCacheMap &cache_map,
-			FMT_UNUSED unsigned int region_idx)
+			FMT_UNUSED unsigned int region_patch_idx)
 {
 	   //ASSERT(false).error("Must be implemented in descendants!\n");
 }

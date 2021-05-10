@@ -133,6 +133,47 @@ public:
         { return substances_; }
 
 
+        /// @name Set of methods returning vectors of field names using in different assemblations.
+        // @{
+        // TODO assembly subsets should be independent of the model and the dependency should be handled automatically.
+
+        /// Returns vector of field names of Mass assembly.
+        inline std::vector<string> mass_assembly_subset() const {
+            std::vector<string> sub_names = {"X", "d", "mass_matrix_coef", "retardation_coef", "cross_section", "water_content",
+                    "porosity", "rock_density", "sorption_coefficient"};
+            return sub_names;
+        }
+
+        /// Returns vector of field names of Stiffness assembly.
+        inline std::vector<string> stiffness_assembly_subset() const {
+            std::vector<string> sub_names = {"X", "d", "diffusion_coef", "advection_coef", "sources_sigma_out", "bc_type",
+                    "dg_penalty", "cross_section", "bc_robin_sigma", "fracture_sigma", "sources_sigma", "diff_m", "flow_flux",
+					"v_norm", "disp_l", "disp_t", "water_content", "porosity"};
+            return sub_names;
+        }
+
+        /// Returns vector of field names of Sources assembly.
+        inline std::vector<string> source_assembly_subset() const {
+            std::vector<string> sub_names = {"X", "d", "sources_density_out", "sources_conc_out", "sources_sigma_out", "cross_section",
+                    "sources_density", "sources_sigma", "sources_conc"};
+            return sub_names;
+        }
+
+        /// Returns vector of field names of BdrCondition assembly.
+        inline std::vector<string> bdr_assembly_subset() const {
+            std::vector<string> sub_names = {"X", "d", "advection_coef", "diffusion_coef", "bc_type", "bc_conc", "cross_section",
+                    "bc_robin_sigma", "bc_flux", "diff_m", "flow_flux", "v_norm", "disp_l", "disp_t", "water_content", "porosity"};
+            return sub_names;
+        }
+
+        /// Returns vector of field names of InitCondition assembly.
+        inline std::vector<string> init_assembly_subset() const {
+            std::vector<string> sub_names = {"X", "d", "init_conc"};
+            return sub_names;
+        }
+
+       	// @}
+
 		/// @name Data of substances
 		// @{
 

@@ -100,10 +100,10 @@ public:
     {}
 
     /// Implements FieldCommon::cache_update
-    void cache_update(ElementCacheMap &cache_map, unsigned int i_reg) const override {
+    void cache_update(ElementCacheMap &cache_map, unsigned int region_patch_idx) const override {
     	std::shared_ptr<EvalPoints> eval_points = cache_map.eval_points();
-        unsigned int reg_chunk_begin = cache_map.region_chunk_begin(i_reg);
-        unsigned int reg_chunk_end = cache_map.region_chunk_end(i_reg);
+        unsigned int reg_chunk_begin = cache_map.region_chunk_begin(region_patch_idx);
+        unsigned int reg_chunk_end = cache_map.region_chunk_end(region_patch_idx);
         unsigned int last_element_idx = -1;
         ElementAccessor<3> elm;
     	arma::vec3 coords;

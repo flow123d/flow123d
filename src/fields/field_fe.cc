@@ -255,13 +255,13 @@ void FieldFE<spacedim, Value>::value_list (const Armor::array &point_list, const
 
 template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::element_type> &data_cache,
-		ElementCacheMap &cache_map, unsigned int region_idx)
+		ElementCacheMap &cache_map, unsigned int region_patch_idx)
 {
     ASSERT( !boundary_dofs_ ).error("boundary field NOT supported!!\n");
     Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> mat_value;
 
-    unsigned int reg_chunk_begin = cache_map.region_chunk_begin(region_idx);
-    unsigned int reg_chunk_end = cache_map.region_chunk_end(region_idx);
+    unsigned int reg_chunk_begin = cache_map.region_chunk_begin(region_patch_idx);
+    unsigned int reg_chunk_end = cache_map.region_chunk_end(region_patch_idx);
     unsigned int last_element_idx = -1;
     DHCellAccessor cell;
     LocDofVec loc_dofs;

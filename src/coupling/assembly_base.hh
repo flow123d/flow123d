@@ -46,7 +46,7 @@ public:
     }
 
     /// Assembles the volume integrals on cell.
-    inline void cell_integral(FMT_UNUSED DHCellAccessor cell) {}
+    inline void cell_integral(FMT_UNUSED DHCellAccessor cell, FMT_UNUSED unsigned int element_patch_idx) {}
 
     /// Assembles the fluxes on the boundary.
     inline void boundary_side_integral(FMT_UNUSED DHCellSide cell_side) {}
@@ -65,6 +65,11 @@ public:
 
     /// Reallocate data caches of fields in equation.
     virtual void reallocate_cache(const ElementCacheMap &cache_map) =0;
+
+    /// Getter of active_integrals.
+    inline int n_active_integrals() const {
+        return active_integrals_;
+    }
 
     /// Create integrals according to dim of assembly object
     void create_integrals(std::shared_ptr<EvalPoints> eval_points, AssemblyIntegrals &integrals) {
