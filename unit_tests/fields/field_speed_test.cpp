@@ -13,7 +13,7 @@
 #include "system/global_defs.h"
 
 
-#ifdef FLOW123D_RUN_UNIT_BENCHMARKS
+//#ifdef FLOW123D_RUN_UNIT_BENCHMARKS
 
 #include <mesh_constructor.hh>
 #include "fields/field_constant.hh"
@@ -446,7 +446,8 @@ TEST(FieldValue_, speed_test_interface) {
    typedef FieldValue_<1,1, double> T;
    double r_val;
 
-
+    
+   START_TIMER("performance_interface");
    for(int step=0;step < STEPS; step++) {
        T val(r_val);
 
@@ -454,6 +455,9 @@ TEST(FieldValue_, speed_test_interface) {
            for(unsigned int col=0;col< val.n_rows(); ++col)
                val(row,col)+=step;
    }
+
+   END_TIMER("performance_interface");
+   ASSERT_TIMER_LE("performance_interface", 0.2);
    cout << r_val << endl;
 }
 
@@ -461,11 +465,14 @@ TEST(FieldValue_, speed_test_direct) {
 
    double val;
 
+   START_TIMER("performance_direct");
    for(int step=0;step < STEPS; step++) {
        val+=step;
    }
+   END_TIMER("performance_direct");
+   ASSERT_TIMER_LE("performance_direct", 0.2);
    cout << val << endl;
 }
 
-#endif // FLOW123D_RUN_UNIT_BENCHMARKS
+//#endif // FLOW123D_RUN_UNIT_BENCHMARKS
 

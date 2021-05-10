@@ -40,6 +40,7 @@ class ProfilerTest: public testing::Test {
         void test_petsc_memory_monitor();
         void test_multiple_instances();
         void test_propagate_values();
+        void test_calibrate();
         // void test_inconsistent_tree();
 };
 
@@ -81,18 +82,18 @@ int alloc_and_dealloc(int size){
 }
 
 // wait given amount of time (in ms) and return it in ms
-double wait( double time) {
-//    cout << "wait function\n" <<endl;
-    clock_t t1,t2;
-    clock_t int_time = time /1000.0 * CLOCKS_PER_SEC;
-    t2=t1=clock();
-    
-    while (t1 + int_time > t2) { t2=clock();}
-    double time_in_ms = 1000.0 * (t2-t1) / CLOCKS_PER_SEC;
-    cout << "time to wait: " << time << " actual: " << time_in_ms  << endl;
-    
-    return time_in_ms;
-}
+//double wait( double time) {
+////    cout << "wait function\n" <<endl;
+//    clock_t t1,t2;
+//    clock_t int_time = time /1000.0 * CLOCKS_PER_SEC;
+//    t2=t1=clock();
+//
+//    while (t1 + int_time > t2) { t2=clock();}
+//    double time_in_ms = 1000.0 * (t2-t1) / CLOCKS_PER_SEC;
+//    cout << "time to wait: " << time << " actual: " << time_in_ms  << endl;
+//
+//    return time_in_ms;
+//}
 
 // wait given amount of time (in sec) and return it in sec
 double wait_sec( double time) {
@@ -489,7 +490,6 @@ void ProfilerTest::test_multiple_instances() {
         Profiler::uninitialize();
         Profiler::instance();
         EXPECT_EQ(MALLOC, 0);
-
         {
             EXPECT_EQ(
                 (MALLOC),
@@ -521,6 +521,22 @@ void ProfilerTest::test_propagate_values() {
     }
     PI->output(MPI_COMM_WORLD, cout);
     Profiler::uninitialize();
+}
+
+
+TEST_F(ProfilerTest, test_calibrate) {test_calibrate();}
+void ProfilerTest::test_calibrate() {
+    Profiler * prof = Profiler::instance();
+    double resolution = prof->get_resolution();
+    prof->calibrate();
+    EXPECT_LE(prof->calibration_time, 0.11);
+    EXPECT_GE(prof->calibration_time, resolution * 100);
+
+    START_TIMER("perf");
+    wait_sec(1);
+    END_TIMER("perf");
+    ASSERT_GE(CUMUL_TIMER("perf"), 0.9);
+    ASSERT_LE(CUMUL_TIMER("perf"), 1.1);
 }
 
 // optional test only for testing merging of inconsistent profiler trees
