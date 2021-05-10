@@ -39,10 +39,10 @@ Next, we employ the continuity equation for saturated porous medium and the dime
 (with $w=u:=H$, $\vc j:=\vc w$, $\tn A:=\tn K$ and $\vc b:=\vc 0$), which yields:
 \begin{equation}
     \label{eq:continuity}
-    \prtl_t (\delta S\, h) + \div \vc q = F \qquad \text{in }\Omega_d,\ \text{for $d=1,2,3$},
+    \prtl_t (\delta S\, h) + \div \vc q = F + F_M\qquad \text{in }\Omega_d,\ \text{for $d=1,2,3$},
 \end{equation}
 where  $S_d$ \units{}{-1}{} is the \hyperA{Flow-Darcy-MH-Data::storativity}{storativity} and $F_d$ \units{}{3-d}{-1} is 
-the source term. In our setting the principal unknowns of the system 
+the source term. The extra source term $F_M$ \units{}{3-d}{-1} due to mechanics is described in \eqref{eq:fluid_source_div_u}. In our setting the principal unknowns of the system 
 (\ref{eq:darcy_flux}, \ref{eq:continuity}) are the pressure head $h_d$ and the flux $\vc q_d$.
 
 

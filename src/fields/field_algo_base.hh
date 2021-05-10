@@ -240,7 +240,7 @@ public:
        virtual void cache_reinit(const ElementCacheMap &cache_map);
 
        virtual void cache_update(FieldValueCache<typename Value::element_type> &data_cache,
-				   ElementCacheMap &cache_map, unsigned int region_idx);
+				   ElementCacheMap &cache_map, unsigned int region_patch_idx);
 
        /**
         * Postponed setter of Dof handler for FieldFE. For other types of fields has no effect.

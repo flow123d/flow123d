@@ -110,7 +110,7 @@ public:
      * Overload @p FieldAlgorithmBase::cache_update
      */
     void cache_update(FieldValueCache<typename Value::element_type> &data_cache,
-			ElementCacheMap &cache_map, unsigned int region_idx) override;
+			ElementCacheMap &cache_map, unsigned int region_patch_idx) override;
 
     /**
      * Overload @p FieldAlgorithmBase::cache_reinit

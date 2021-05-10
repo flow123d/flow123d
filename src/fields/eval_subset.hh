@@ -100,16 +100,10 @@ public:
     : PointBase() {}
 
     /// Constructor
-	BulkPoint(DHCellAccessor dh_cell, const ElementCacheMap *elm_cache_map, const BulkIntegral *bulk_integral, unsigned int local_point_idx)
-    : PointBase(elm_cache_map, local_point_idx), integral_(bulk_integral) {
-	    this->elem_patch_idx_ = elm_cache_map->position_in_cache(dh_cell.elm().mesh_idx());
+	BulkPoint(const ElementCacheMap *elm_cache_map, PatchCacheLoc cache_pos)
+    : PointBase(elm_cache_map, cache_pos.i_ep_) {
+	    this->elem_patch_idx_ = cache_pos.i_elm_;
 	}
-
-    /// Constructor passing ElementAccessor argument, alternative of previous.
-    BulkPoint(ElementAccessor<3> elm_acc, const ElementCacheMap *elm_cache_map, const BulkIntegral *bulk_integral, unsigned int local_point_idx)
-    : PointBase(elm_cache_map, local_point_idx), integral_(bulk_integral) {
-        this->elem_patch_idx_ = this->elm_cache_map_->position_in_cache(elm_acc.mesh_idx());
-    }
 
     /// Comparison of accessors.
     bool operator==(const BulkPoint& other) {
@@ -120,10 +114,6 @@ public:
     inline unsigned int eval_point_idx() const {
         return local_point_idx_;
     }
-
-private:
-    /// Pointer to bulk integral.
-    const BulkIntegral *integral_;
 };
 
 
@@ -180,7 +170,7 @@ public:
     }
 
     /// Return index in EvalPoints object
-    unsigned int eval_point_idx() const;
+    inline unsigned int eval_point_idx() const;
 
 private:
     /// Pointer to edge point integral
@@ -205,7 +195,7 @@ public:
     BulkPoint lower_dim(DHCellAccessor cell_lower) const;
 
     /// Return index in EvalPoints object
-    unsigned int eval_point_idx() const;
+    inline unsigned int eval_point_idx() const;
 
     /// Comparison of accessors.
     bool operator==(const CouplingPoint& other) {
@@ -234,7 +224,7 @@ public:
     BulkPoint point_bdr(ElementAccessor<3> bdr_elm) const;
 
     /// Return index in EvalPoints object
-    unsigned int eval_point_idx() const;
+    inline unsigned int eval_point_idx() const;
 
     /// Comparison of accessors.
     bool operator==(const BoundaryPoint& other) {
@@ -295,17 +285,14 @@ public:
     ~BulkIntegral();
 
     /// Return index of data block according to subset in EvalPoints object
-    int get_subset_idx() const {
+    inline int get_subset_idx() const {
         return subset_index_;
     }
 
     /// Returns range of bulk local points for appropriate cell accessor
-    inline Range< BulkPoint > points(const DHCellAccessor &cell, const ElementCacheMap *elm_cache_map) const {
-        ASSERT_DBG(cell.element_cache_index() != ElementCacheMap::undef_elem_idx)(cell.elm_idx())
-                .error("Undefined element cache index!\n");
-
-        auto bgn_it = make_iter<BulkPoint>( BulkPoint(cell, elm_cache_map, this, eval_points_->subset_begin(dim_, subset_index_)) );
-        auto end_it = make_iter<BulkPoint>( BulkPoint(cell, elm_cache_map, this, eval_points_->subset_end(dim_, subset_index_)) );
+    inline Range< BulkPoint > points(unsigned int element_patch_idx, const ElementCacheMap *elm_cache_map) const {
+        auto bgn_it = make_iter<BulkPoint>( BulkPoint(elm_cache_map, PatchCacheLoc(element_patch_idx, eval_points_->subset_begin(dim_, subset_index_)) ));
+        auto end_it = make_iter<BulkPoint>( BulkPoint(elm_cache_map, PatchCacheLoc(element_patch_idx, eval_points_->subset_end(dim_, subset_index_)) ));
         return Range<BulkPoint>(bgn_it, end_it);
     }
 
@@ -329,20 +316,17 @@ public:
     ~EdgeIntegral();
 
     /// Getter of n_sides
-    unsigned int n_sides() const {
+    inline unsigned int n_sides() const {
         return n_sides_;
     }
 
     /// Return index of data block according to subset in EvalPoints object
-    int get_subset_idx() const {
+    inline int get_subset_idx() const {
         return subset_index_;
     }
 
     /// Returns range of side local points for appropriate cell side accessor
     inline Range< EdgePoint > points(const DHCellSide &cell_side, const ElementCacheMap *elm_cache_map) const {
-        ASSERT_DBG(cell_side.cell().element_cache_index() != ElementCacheMap::undef_elem_idx)(cell_side.cell().elm_idx())
-                .error("Undefined element cache index!\n");
-
         unsigned int begin_idx = eval_points_->subset_begin(dim_, subset_index_);
         unsigned int end_idx = eval_points_->subset_end(dim_, subset_index_);
         unsigned int points_per_side = (end_idx - begin_idx) / this->n_sides();
@@ -352,7 +336,7 @@ public:
     }
 
     /// Returns structure of permutation indices.
-    int perm_idx_ptr(uint i_side, uint i_perm, uint i_point) const {
+    inline int perm_idx_ptr(uint i_side, uint i_perm, uint i_point) const {
     	return perm_indices_[i_side][i_perm][i_point];
     }
 
@@ -387,20 +371,17 @@ public:
     ~CouplingIntegral();
 
     /// Return index of data block according to subset of higher dim in EvalPoints object
-    int get_subset_high_idx() const {
+    inline int get_subset_high_idx() const {
         return edge_integral_->get_subset_idx();
     }
 
     /// Return index of data block according to subset of lower dim in EvalPoints object
-    int get_subset_low_idx() const {
+    inline int get_subset_low_idx() const {
         return bulk_integral_->get_subset_idx();
     }
 
     /// Returns range of side local points for appropriate cell side accessor
     inline Range< CouplingPoint > points(const DHCellSide &cell_side, const ElementCacheMap *elm_cache_map) const {
-        ASSERT_DBG(cell_side.cell().element_cache_index() != ElementCacheMap::undef_elem_idx)(cell_side.cell().elm_idx())
-                .error("Undefined element cache index!\n");
-
         unsigned int begin_idx = eval_points_->subset_begin(dim_, get_subset_high_idx());
         unsigned int end_idx = eval_points_->subset_end(dim_, get_subset_high_idx());
         unsigned int points_per_side = (end_idx - begin_idx) / edge_integral_->n_sides();
@@ -433,20 +414,17 @@ public:
     ~BoundaryIntegral();
 
     /// Return index of data block according to subset of higher dim in EvalPoints object
-    int get_subset_high_idx() const {
+    inline int get_subset_high_idx() const {
         return edge_integral_->get_subset_idx();
     }
 
     /// Return index of data block according to subset of lower dim (boundary) in EvalPoints object
-    int get_subset_low_idx() const {
+    inline int get_subset_low_idx() const {
         return bulk_integral_->get_subset_idx();
     }
 
     /// Returns range of bulk local points for appropriate cell accessor
     inline Range< BoundaryPoint > points(const DHCellSide &cell_side, const ElementCacheMap *elm_cache_map) const {
-        ASSERT_DBG(cell_side.cell().element_cache_index() != ElementCacheMap::undef_elem_idx)(cell_side.cell().elm_idx())
-                .error("Undefined element cache index!\n");
-
         unsigned int begin_idx = eval_points_->subset_begin(dim_, get_subset_high_idx());
         unsigned int end_idx = eval_points_->subset_end(dim_, get_subset_high_idx());
         unsigned int points_per_side = (end_idx - begin_idx) / edge_integral_->n_sides();
@@ -464,5 +442,23 @@ private:
     friend class BoundaryPoint;
 };
 
+
+/******************************************************************************
+ * Implementation of inlined methods
+ */
+
+inline unsigned int EdgePoint::eval_point_idx() const {
+    return integral_->perm_idx_ptr(side_idx_, permutation_idx_, local_point_idx_);
+}
+
+
+inline unsigned int CouplingPoint::eval_point_idx() const {
+    return integral_->edge_integral_->perm_idx_ptr(side_idx_, permutation_idx_, local_point_idx_);
+}
+
+
+inline unsigned int BoundaryPoint::eval_point_idx() const {
+    return integral_->edge_integral_->perm_idx_ptr(side_idx_, permutation_idx_, local_point_idx_);
+}
 
 #endif /* EVAL_SUBSET_HH_ */

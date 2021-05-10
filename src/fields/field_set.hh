@@ -359,6 +359,11 @@ public:
     /// Returns range of Fields held in field_list
     Range<FieldListAccessor> fields_range() const;
 
+    /// Returns pointer to mesh.
+    inline const Mesh *mesh() const {
+        return mesh_;
+    }
+
 protected:
     /// List of all fields.
     std::vector<FieldCommon *> field_list;

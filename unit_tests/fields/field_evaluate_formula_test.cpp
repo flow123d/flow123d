@@ -72,17 +72,15 @@ public:
 
         void register_eval_points() {
             unsigned int reg_idx = computed_dh_cell_.elm().region_idx().idx();
-            for (auto p : mass_eval->points(computed_dh_cell_, this) ) {
-                EvalPointData epd(reg_idx, computed_dh_cell_.elm_idx(), p.eval_point_idx());
-                this->eval_point_data_.push_back(epd);
+            for (auto p : mass_eval->points(this->position_in_cache(computed_dh_cell_.elm_idx()), this) ) {
+                this->eval_point_data_.emplace_back(reg_idx, computed_dh_cell_.elm_idx(), p.eval_point_idx(), computed_dh_cell_.local_idx());
             }
 
             for (DHCellSide cell_side : computed_dh_cell_.side_range()) {
             	for( DHCellSide edge_side : cell_side.edge_sides() ) {
                     unsigned int reg_idx = edge_side.element().region_idx().idx();
                     for (auto p : side_eval->points(edge_side, this) ) {
-                        EvalPointData epd(reg_idx, edge_side.elem_idx(), p.eval_point_idx());
-                        this->eval_point_data_.push_back(epd);
+                        this->eval_point_data_.emplace_back(reg_idx, edge_side.elem_idx(), p.eval_point_idx(), edge_side.cell().local_idx());
                     }
                 }
             }
@@ -206,7 +204,7 @@ TEST_F(FieldEvalFormulaTest, evaluate) {
         data_->update_cache();
 
         // Bulk integral, no sides, no permutations.
-        for( BulkPoint q_point: data_->mass_eval->points(data_->computed_dh_cell_, data_.get()) ) {
+        for( BulkPoint q_point: data_->mass_eval->points(data_->position_in_cache(data_->computed_dh_cell_.elm_idx()), data_.get()) ) {
             EXPECT_DOUBLE_EQ( dbl_scalar[ expected_scalar[i][test_point] ], data_->scalar_field(q_point));
             arma::vec3 expected_vector;
             expected_vector(0) = dbl_scalar[ expected_scalar[i][test_point] ];
@@ -294,7 +292,7 @@ TEST_F(FieldEvalFormulaTest, field_dependency) {
         expected_vector(2) = 0.5;
 
         // Bulk integral, no sides, no permutations.
-        for( BulkPoint q_point: data_->mass_eval->points(data_->computed_dh_cell_, data_.get()) ) {
+        for( BulkPoint q_point: data_->mass_eval->points(data_->position_in_cache(data_->computed_dh_cell_.elm_idx()), data_.get()) ) {
             EXPECT_DOUBLE_EQ( expected_val, data_->scalar_field(q_point));
             EXPECT_ARMA_EQ(expected_vector, data_->vector_field(q_point));
         }

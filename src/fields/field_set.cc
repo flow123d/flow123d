@@ -50,6 +50,7 @@ FieldSet &FieldSet::operator +=(const FieldSet &other) {
 
 FieldSet FieldSet::subset(std::vector<std::string> names) const {
     FieldSet set;
+    set.set_mesh( *this->mesh_ );
     for(auto name : names) set += (*this)[name];
     return set;
 }
@@ -193,9 +194,9 @@ bool FieldSet::is_jump_time() const {
 
 void FieldSet::cache_update(ElementCacheMap &cache_map) {
     ASSERT_GT_DBG(region_field_update_order_.size(), 0).error("Variable 'region_dependency_list' is empty. Did you call 'set_dependency' method?\n");
-    for (unsigned int i_reg=0; i_reg<cache_map.n_regions(); ++i_reg) {
-        unsigned int region_idx = cache_map.eval_point_data( cache_map.region_chunk_by_map_index(i_reg) ).i_reg_;
-        for (const FieldCommon *field : region_field_update_order_[region_idx]) field->cache_update(cache_map, region_idx);
+    for (unsigned int i_reg_patch=0; i_reg_patch<cache_map.n_regions(); ++i_reg_patch) {
+        for (const FieldCommon *field : region_field_update_order_[cache_map.region_idx_from_chunk_position(i_reg_patch)])
+            field->cache_update(cache_map, i_reg_patch);
     }
 }
 

@@ -28,6 +28,7 @@
 #include "mesh/accessors.hh"
 #include "tools/mixed.hh"
 #include "tools/revertable_list.hh"
+#include "fem/dofhandler.hh"
 
 class EvalPoints;
 class ElementCacheMap;
@@ -52,8 +53,12 @@ template<class elm_type> using FieldValueCache = Armor::Array<elm_type>;
 struct EvalPointData {
     EvalPointData() {}              ///< Default constructor
     /// Constructor sets all data members
-    EvalPointData(unsigned int i_reg, unsigned int i_ele, unsigned int i_ep)
-    : i_reg_(i_reg), i_element_(i_ele), i_eval_point_(i_ep) {}
+    EvalPointData(unsigned int i_reg, unsigned int i_ele, unsigned int i_ep, unsigned int dh_loc_idx)
+    : i_reg_(i_reg), i_element_(i_ele), i_eval_point_(i_ep), dh_loc_idx_(dh_loc_idx) {}
+    /// Copy constructor
+    EvalPointData(const EvalPointData &other)
+    : i_reg_(other.i_reg_), i_element_(other.i_element_), i_eval_point_(other.i_eval_point_), dh_loc_idx_(other.dh_loc_idx_) {}
+
 
     bool operator < (const EvalPointData &other) {
         if (i_reg_ == other.i_reg_) {
@@ -68,6 +73,19 @@ struct EvalPointData {
     unsigned int i_reg_;            ///< region_idx of element
     unsigned int i_element_;        ///< mesh_idx of ElementAccessor appropriate to element
     unsigned int i_eval_point_;     ///< index of point in EvalPoint object
+    unsigned int dh_loc_idx_;       ///< local index of cell in DOF handler
+};
+
+
+/// Holds pair of positions of point in cache (element and eval point)
+struct PatchCacheLoc {
+    PatchCacheLoc() {}   ///< Default constructor
+    /// Constructor sets all data members
+	PatchCacheLoc(unsigned int i_elm, unsigned int i_ep)
+    : i_elm_(i_elm), i_ep_(i_ep) {}
+
+    unsigned int i_elm_;        ///< index of element in patch
+    unsigned int i_ep_;         ///< index of eval point in patch
 };
 
 
@@ -144,9 +162,14 @@ public:
     /// Reset all items of elements_eval_points_map
     inline void clear_element_eval_points_map() {
         ASSERT_PTR_DBG(element_eval_points_map_);
-        for (unsigned int i=0; i<eval_point_data_.permanent_size(); ++i)
-            set_element_eval_point(element_to_map_.find(eval_point_data_[i].i_element_)->second,
-                    eval_point_data_[i].i_eval_point_, ElementCacheMap::unused_point);
+        unsigned int last_element_idx = -1, i_elem_row = -1;
+        for (unsigned int i=0; i<eval_point_data_.permanent_size(); ++i) {
+            if (eval_point_data_[i].i_element_ != last_element_idx) { // new element
+                i_elem_row++;
+            	last_element_idx =eval_point_data_[i].i_element_;
+            }
+        	set_element_eval_point(i_elem_row, eval_point_data_[i].i_eval_point_, ElementCacheMap::unused_point);
+        }
         eval_point_data_.reset();
     }
 
@@ -180,7 +203,7 @@ public:
 
     /// Return position of element stored in ElementCacheMap
     inline unsigned int position_in_cache(unsigned mesh_elm_idx) const {
-        std::map<unsigned int, unsigned int>::const_iterator it = element_to_map_.find(mesh_elm_idx);
+        std::unordered_map<unsigned int, unsigned int>::const_iterator it = element_to_map_.find(mesh_elm_idx);
         if ( it != element_to_map_.end() ) return it->second;
         else return ElementCacheMap::undef_elem_idx;
     }
@@ -196,37 +219,38 @@ public:
     }
 
     /// Return begin position of element chunk in FieldValueCache
-    inline unsigned int element_chunk_begin(unsigned int mesh_elm_idx) const {
-        std::map<unsigned int, unsigned int>::const_iterator it = element_to_map_.find(mesh_elm_idx);
-        if ( it != element_to_map_.end() ) return element_starts_[it->second];
-        else return ElementCacheMap::undef_elem_idx;
+    inline unsigned int element_chunk_begin(unsigned int elm_patch_idx) const {
+        ASSERT_LT_DBG(elm_patch_idx, n_elements());
+        return element_starts_[elm_patch_idx];
     }
 
     /// Return end position of element chunk in FieldValueCache
-    inline unsigned int element_chunk_end(unsigned int mesh_elm_idx) const {
-        std::map<unsigned int, unsigned int>::const_iterator it = element_to_map_.find(mesh_elm_idx);
-        if ( it != element_to_map_.end() ) return element_starts_[it->second+1];
-        else return ElementCacheMap::undef_elem_idx;
+    inline unsigned int element_chunk_end(unsigned int elm_patch_idx) const {
+        ASSERT_LT_DBG(elm_patch_idx, n_elements());
+        return element_starts_[elm_patch_idx+1];
     }
 
     /// Return begin position of region chunk in FieldValueCache
-    inline unsigned int region_chunk_begin(unsigned int region_idx) const {
-        std::map<unsigned int, unsigned int>::const_iterator it = regions_to_map_.find(region_idx);
-        if ( it != regions_to_map_.end() ) return element_starts_[ regions_starts_[it->second] ];
-        else return ElementCacheMap::undef_elem_idx;
+    inline unsigned int region_chunk_begin(unsigned int region_patch_idx) const {
+        ASSERT_LT_DBG(region_patch_idx, n_regions());
+        return element_starts_[ regions_starts_[region_patch_idx] ];
     }
 
     /// Return end position of region chunk in FieldValueCache
-    inline unsigned int region_chunk_end(unsigned int region_idx) const {
-        std::map<unsigned int, unsigned int>::const_iterator it = regions_to_map_.find(region_idx);
-        if ( it != regions_to_map_.end() ) return element_starts_[ regions_starts_[it->second+1] ];
-        else return ElementCacheMap::undef_elem_idx;
+    inline unsigned int region_chunk_end(unsigned int region_patch_idx) const {
+        ASSERT_LT_DBG(region_patch_idx, n_regions());
+        return element_starts_[ regions_starts_[region_patch_idx+1] ];
     }
 
     /// Return begin position of region chunk specified by position in map
     inline unsigned int region_chunk_by_map_index(unsigned int r_idx) const {
         if (r_idx <= n_regions()) return element_starts_[ regions_starts_[r_idx] ];
         else return ElementCacheMap::undef_elem_idx;
+    }
+
+    /// Return begin position of region chunk specified by position in map
+    inline unsigned int region_idx_from_chunk_position(unsigned int chunk_pos) const {
+    	return eval_point_data_[ this->region_chunk_by_map_index(chunk_pos) ].i_reg_;
     }
 
     /// Return item of eval_point_data_ specified by its position
@@ -244,9 +268,6 @@ public:
         ASSERT_DBG(value_cache_idx != ElementCacheMap::undef_elem_idx);
         return Value::get_from_array(field_cache, value_cache_idx);
     }
-
-    /// Set index of cell in ElementCacheMap (or undef value if cell is not stored in cache).
-    DHCellAccessor & cache_map_index(DHCellAccessor &dh_cell) const;
 protected:
 
     /// Special constant (@see element_eval_points_map_).
@@ -303,8 +324,7 @@ protected:
 
     RevertableList<unsigned int> regions_starts_;         ///< Start positions of elements in regions (size = n_regions+1, last value is end of last region)
     RevertableList<unsigned int> element_starts_;         ///< Start positions of elements in eval_point_data_ (size = n_elements+1)
-    std::map<unsigned int, unsigned int> regions_to_map_; ///< Maps region_idx to index in map
-    std::map<unsigned int, unsigned int> element_to_map_; ///< Maps element_idx to index in map
+    std::unordered_map<unsigned int, unsigned int> element_to_map_; ///< Maps element_idx to element index in patch - TODO remove
 
     // @}
 

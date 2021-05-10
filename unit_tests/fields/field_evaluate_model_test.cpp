@@ -207,10 +207,10 @@ public:
 template <unsigned int dim>
 class AssemblyDimTest : public AssemblyBase<dim> {
 public:
-    typedef typename FieldModelSpeedTest::EqData EqDataDG;
+    typedef typename FieldModelSpeedTest::EqData EqData;
 
     /// Constructor.
-    AssemblyDimTest(EqDataDG *data)
+    AssemblyDimTest(EqData *data)
     : AssemblyBase<dim>(data->order), data_(data) {}
 
     void initialize(FMT_UNUSED std::shared_ptr<Balance> balance) {
@@ -222,7 +222,7 @@ public:
     }
 
     /// Data object shared with Test class
-    EqDataDG *data_;
+    EqData *data_;
 };
 
 string eq_data_input_speed = R"YAML(
@@ -240,14 +240,13 @@ TEST_F(FieldModelSpeedTest, speed_test) {
 	this->read_input(eq_data_input_speed);
 
 	std::shared_ptr<Balance> balance;
-	GenericAssembly< AssemblyDimTest > ga_bulk(data_.get(), balance, ActiveIntegrals::bulk);
+	GenericAssembly< AssemblyDimTest > ga_bulk(data_.get(), balance);
 	START_TIMER("assemble_bulk");
 	for (unsigned int i=0; i<profiler_loop; ++i)
 		ga_bulk.assemble(this->dh_, this->tg_.step());
 	END_TIMER("assemble_bulk");
 
-	GenericAssembly< AssemblyDimTest > ga_all(data_.get(), balance,
-	        (ActiveIntegrals::bulk | ActiveIntegrals::edge | ActiveIntegrals::coupling | ActiveIntegrals::boundary) );
+	GenericAssembly< AssemblyDimTest > ga_all(data_.get(), balance);
 	START_TIMER("assemble_all_integrals");
 	for (unsigned int i=0; i<profiler_loop; ++i)
 		ga_all.assemble(this->dh_, this->tg_.step());
