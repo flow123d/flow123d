@@ -144,13 +144,14 @@ elseif(FLOW_BUILD_TYPE STREQUAL "release")
   # armadillo is configured using this definition
   add_definitions(-DARMA_NO_DEBUG)    # no bound checks in armadillo 
   flow_define(DEBUG_PROFILER)
-  flow_define(RUN_UNIT_BENCHMARKS)    # build benchmark unit tests
+  flow_define(BENCHMARK_ASSERTS)    # check time for benchmark unit tests
 elseif(FLOW_BUILD_TYPE STREQUAL "release_with_debug")
   # Release mode with debug info 
-  set(CMAKE_CXX_FLAGS "-O3")
-  set(CMAKE_C_FLAGS "-O3")
+  set(CMAKE_CXX_FLAGS "-O3 -g")
+  set(CMAKE_C_FLAGS "-O3 -g")
   set(CMAKE_BUILD_TYPE Debug)
   flow_define(DEBUG)
+  flow_define(BENCHMARK_ASSERTS)
 elseif(FLOW_BUILD_TYPE STREQUAL "coverage")
   # Coverage mode creates instrumented binary
   SET(CMAKE_CXX_FLAGS "-g -O0 --coverage")

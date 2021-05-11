@@ -46,8 +46,8 @@ FLOW123D_FORCE_LINK_IN_PARENT(field_fe)
 using namespace std;
 
 
-static const int loop_call_count = 100000;
-static const int list_size = 10;
+static const uint default_n_loop  = 20000;
+static const uint list_size = 20;
 
 
 string field_input = R"JSON(
@@ -127,6 +127,8 @@ public:
 	    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
 	    mesh_ = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
+	    // 13 elements total
+	    // 1x1d, 2x2d, 6x3d; 4x 2d boundary
 	}
 
 	void TearDown() {
@@ -135,39 +137,46 @@ public:
 		//delete mesh_;
 	}
 
-	ReturnType call_test() {
-
-		START_TIMER("single_value");
-		for (int i=0; i<list_size*loop_call_count; i++)
-			for (auto elm : this->mesh_->elements_range()) {
-				test_result_sum_ += field_.value( this->point_, elm);
+	void test_single() {
+		START_TIMER("single");
+		for (uint i=0; i<list_size*current_n_loop; i++)
+		        for (auto elm : this->mesh_->elements_range()) {
+		            test_result_sum_ += field_.value( this->point_, elm);
 			}
-		END_TIMER("single_value");
-
-		START_TIMER("all_values");
-		for (int i=0; i<loop_call_count; i++)
-			for (int j=0; j<list_size; j++)
-				for (auto elm : this->mesh_->elements_range()) {
-					test_result_sum_ += field_.value( this->point_list_.template vec<3>(j), elm);
-				}
-		END_TIMER("all_values");
-
-		START_TIMER("value_list");
-		for (int i=0; i<loop_call_count; i++)
-			for (auto elm : this->mesh_->elements_range()) {
-				field_.value_list( this->point_list_, elm, value_list);
-				test_result_sum_ += value_list[0];
-			}
-		END_TIMER("value_list");
-		return test_result_sum_;
+		END_TIMER("single");
 	}
 
-	void set_values(std::string point_coords = "1 2 3") {
+
+    void test_many() {
+        START_TIMER("many");
+        for (uint i=0; i<current_n_loop; i++)
+            for (uint j=0; j<list_size; j++)
+                for (auto elm : this->mesh_->elements_range()) {
+                    test_result_sum_ += field_.value( this->point_list_.template vec<3>(j), elm);
+                }
+        END_TIMER("many");
+    }
+
+
+    void test_list() {
+        START_TIMER("list");
+        for (uint i=0; i<current_n_loop; i++)
+            for (auto elm : this->mesh_->elements_range()) {
+                field_.value_list( this->point_list_, elm, value_list);
+                test_result_sum_ += value_list[0];
+            }
+        END_TIMER("list");
+    }
+
+	void set_values(uint n_loop=default_n_loop, std::string point_coords = "1 2 3") {
+	    std::cout << typeid(this).name() << std::endl;
+
+	    current_n_loop = n_loop;
         n_comp_ = 3;
         component_names_ = { "component_0", "component_1", "component_2" };
 
         point_ = Point(point_coords);
-        for (int i=0; i<list_size; i++)
+        for (uint i=0; i<list_size; i++)
 			point_list_.set(i) = Armor::vec<3>(point_coords);
 
     	fce_ = new FceType[mesh_->region_db().size()];
@@ -224,12 +233,12 @@ public:
 	}
 
 	void test_result(FieldValue<3>::Scalar::return_type expected, double multiplicator) {
-		EXPECT_DOUBLE_EQ( this->test_result_sum_, multiplicator * expected * loop_call_count );
+		EXPECT_DOUBLE_EQ( test_result_sum_, multiplicator * expected * current_n_loop );
 	}
 
 	void test_result(FieldValue<3>::VectorFixed::return_type expected, double multiplicator) {
 		for (int i=0; i<3; i++) {
-			EXPECT_DOUBLE_EQ( this->test_result_sum_[i], multiplicator * expected[i] * loop_call_count );
+			EXPECT_DOUBLE_EQ( test_result_sum_[i], multiplicator * expected[i] * current_n_loop);
 		}
 	}
 
@@ -259,10 +268,14 @@ public:
 
 
     FceType *fce_;
+    ReturnType current_expected_value;
+    double current_multiplicator;
+    uint current_n_loop;
+    ReturnType test_result_sum_;
+
     ReturnType *data_;
     ReturnType data1_;
     ReturnType data2_;
-    ReturnType test_result_sum_;
     ReturnType expect_const_val_;
     ReturnType expect_formula_simple_val_;
     ReturnType expect_formula_full_val_;
@@ -290,42 +303,53 @@ typedef ::testing::Types< FieldValue<3>::Scalar, FieldValue<3>::VectorFixed > Te
 TYPED_TEST_CASE(FieldSpeed, TestedTypes);
 
 TYPED_TEST(FieldSpeed, array) {
-	this->set_values();
+	this->set_values(default_n_loop);
+
     START_TIMER("array");
 	START_TIMER("single_value");
-	for (int i=0; i<list_size*loop_call_count; i++)
+	for (uint i=0; i < list_size * default_n_loop; i++)
 		for (auto elm : this->mesh_->elements_range()) {
-			this->test_result_sum_ += this->data_[elm.region_idx().idx()];
+		    this->test_result_sum_ += this->data_[elm.region_idx().idx()];
 		}
 	END_TIMER("single_value");
+	EXPECT_TIMER_LE("single_value", 0.045);
 	END_TIMER("array");
+	this->test_result(this->expect_const_val_, list_size);
 
-	this->test_result(this->expect_const_val_, 10);
 	this->profiler_output();
 }
 
 
+
 TYPED_TEST(FieldSpeed, virtual_function) {
-	this->set_values();
+	this->set_values(default_n_loop);
 	START_TIMER("virtual_function");
-	START_TIMER("single_value");
-	for (int i=0; i<list_size*loop_call_count; i++)
-		for (auto elm : this->mesh_->elements_range()) {
-			this->test_result_sum_ += this->value( this->point_, elm);
-		}
-	END_TIMER("single_value");
+	{
+        START_TIMER("single_value");
+        for (uint i=0; i<list_size*default_n_loop; i++)
+            for (auto elm : this->mesh_->elements_range()) {
+                this->test_result_sum_ += this->value( this->point_, elm);
+            }
+        END_TIMER("single_value");
+        EXPECT_TIMER_LE("single_value", 0.1);
 
-	START_TIMER("all_values");
-	for (int i=0; i<loop_call_count; i++)
-		for (int j=0; j<list_size; j++)
-			for (auto elm : this->mesh_->elements_range()) {
-				Space<3>::Point p = this->point_list_.template vec<3>(j);
-				this->test_result_sum_ += this->value( p, elm);
-			}
-	END_TIMER("all_values");
+	}
+	{
+
+        START_TIMER("all_values");
+        for (uint i=0; i<default_n_loop; i++)
+            for (uint j=0; j<list_size; j++)
+                for (auto elm : this->mesh_->elements_range()) {
+                    Space<3>::Point p = this->point_list_.template vec<3>(j);
+                    this->test_result_sum_ += this->value( p, elm);
+                }
+        END_TIMER("all_values");
+        EXPECT_TIMER_LE("all_values", 0.1);
+
+	}
 	END_TIMER("virtual_function");
+	this->test_result(this->expect_const_val_, 2*list_size);
 
-	this->test_result(this->expect_const_val_, 20);
 	this->profiler_output();
 }
 
@@ -337,10 +361,15 @@ TYPED_TEST(FieldSpeed, field_constant) {
 	this->read_input(key_name);
 
 	START_TIMER("field_constant");
-	this->call_test();
-	END_TIMER("field_constant");
+	this->test_single();
+    EXPECT_TIMER_LE("single", 0.1);
+	this->test_many();
+	EXPECT_TIMER_LE("many", 0.105);
+	this->test_list();
+	EXPECT_TIMER_LE("list", 0.0075);
 
-	this->test_result( this->expect_const_val_, 21 );
+	END_TIMER("field_constant");
+	this->test_result(this->expect_const_val_,2*list_size + 1); // test_list add just first value of the list
 	this->profiler_output();
 }
 
@@ -351,10 +380,16 @@ TYPED_TEST(FieldSpeed, field_formula_const) {
 	this->read_input(key_name);
 
 	START_TIMER("field_formula_const");
-	this->call_test();
-	END_TIMER("field_formula_const");
+    this->test_single();
+    EXPECT_TIMER_LE("single", 0.3);
+    this->test_many();
+    EXPECT_TIMER_LE("many", 0.3);
+    this->test_list();
+    EXPECT_TIMER_LE("list", 0.3);
 
-	this->test_result( this->expect_const_val_, 21 );
+    END_TIMER("field_formula_const");
+
+	this->test_result( this->expect_const_val_, 2*list_size + 1 );
 	this->profiler_output();
 }
 
@@ -365,10 +400,16 @@ TYPED_TEST(FieldSpeed, field_formula_simple) {
 	this->read_input(key_name);
 
 	START_TIMER("field_formula_simple_expr");
-	this->call_test();
-	END_TIMER("field_formula_simple_expr");
+    this->test_single();
+    EXPECT_TIMER_LE("single", 0.45);
+    this->test_many();
+    EXPECT_TIMER_LE("many", 0.6);
+    this->test_list();
+    EXPECT_TIMER_LE("list", 0.45);
 
-	this->test_result( this->expect_formula_simple_val_, 21 );
+    END_TIMER("field_formula_simple_expr");
+
+	this->test_result( this->expect_formula_simple_val_, 2*list_size + 1 );
 	this->profiler_output();
 }
 
@@ -379,24 +420,34 @@ TYPED_TEST(FieldSpeed, field_formula_full) {
 	this->read_input(key_name);
 
 	START_TIMER("field_formula_full_expr");
-	this->call_test();
+    this->test_single();
+    EXPECT_TIMER_LE("single", 1.5);
+    this->test_many();
+    EXPECT_TIMER_LE("many", 1.5);
+    this->test_list();
+    EXPECT_TIMER_LE("list", 1.5);
 	END_TIMER("field_formula_full_expr");
 
-	this->test_result( this->expect_formula_full_val_, 21 );
+	this->test_result( this->expect_formula_full_val_, 2*list_size + 1 );
 	this->profiler_output();
 }
 
 
 TYPED_TEST(FieldSpeed, field_formula_depth) {
-	this->set_values("0 0 0");
+	this->set_values(default_n_loop, "0 0 0");
 	string key_name = "formula_depth_" + this->input_type_name_;
 	this->read_input(key_name);
 
 	START_TIMER("field_formula_depth_expr");
-	this->call_test();
+    this->test_single();
+    EXPECT_TIMER_LE("single", 1.5);
+    this->test_many();
+    EXPECT_TIMER_LE("many", 1.5);
+    this->test_list();
+    EXPECT_TIMER_LE("list", 1.5);
 	END_TIMER("field_formula_depth_expr");
 
-	this->test_result( this->expect_formula_depth_val_, 21 );
+	this->test_result( this->expect_formula_depth_val_, 2*list_size + 1 );
 	this->profiler_output();
 }
 
@@ -408,7 +459,12 @@ TYPED_TEST(FieldSpeed, field_python) {
 	this->read_input(key_name);
 
 	START_TIMER("field_python");
-	this->call_test();
+    this->test_single();
+    EXPECT_TIMER_LE("single", 0.001);
+    this->test_many();
+    EXPECT_TIMER_LE("many", 0.001);
+    this->test_list();
+    EXPECT_TIMER_LE("list", 0.001);
 	END_TIMER("field_python");
 
 	this->test_result( this->expect_const_val_, 21 );
@@ -419,18 +475,18 @@ TYPED_TEST(FieldSpeed, field_python) {
 // PE:
 // - it takes way too long  (>5 min)
 
-TYPED_TEST(FieldSpeed, field_fe) {
-	this->set_values();
-	string key_name = "fe_" + this->input_type_name_;
-	this->read_input(key_name);
-
-    START_TIMER("field_fe");
-	this->call_test();
-	END_TIMER("field_fe");
-
-	this->test_result( this->expect_fe_val_, 21 );
-	this->profiler_output();
-}
+//TYPED_TEST(FieldSpeed, field_fe) {
+//	this->set_values();
+//	string key_name = "fe_" + this->input_type_name_;
+//	this->read_input(key_name);
+//
+//    START_TIMER("field_fe");
+//	this->call_test();
+//	END_TIMER("field_fe");
+//
+//	this->test_result( this->expect_fe_val_, 21 );
+//	this->profiler_output();
+//}
 
 
 
@@ -445,7 +501,7 @@ TYPED_TEST(FieldSpeed, field_fe) {
  * direct   : 121ms
  */
 
-#define STEPS (100*1000*1000)
+#define STEPS (10*1000*1000)
 
 TEST(FieldValue_, speed_test_interface) {
 
@@ -463,7 +519,7 @@ TEST(FieldValue_, speed_test_interface) {
    }
 
    END_TIMER("performance_interface");
-   ASSERT_TIMER_LE("performance_interface", 0.2);
+   EXPECT_TIMER_LE("performance_interface", 0.03);
    cout << r_val << endl;
 }
 
@@ -476,7 +532,7 @@ TEST(FieldValue_, speed_test_direct) {
        val+=step;
    }
    END_TIMER("performance_direct");
-   ASSERT_TIMER_LE("performance_direct", 0.2);
+   EXPECT_TIMER_LE("performance_direct", 0.03);
    cout << val << endl;
 }
 
