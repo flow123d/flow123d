@@ -309,7 +309,7 @@ Profiler::Profiler()
   start_time( time(NULL) ),
   json_filepath(""),
   none_timer_(CODE_POINT("NONE TIMER"), 0),
-  calibration_time(-1)
+  calibration_time_(-1)
 
 {
     static CONSTEXPR_ CodePoint main_cp = CODE_POINT("Whole Program");
@@ -323,6 +323,7 @@ Profiler::Profiler()
 
 
 void Profiler::calibrate() {
+
     uint SIZE = 64 * 1024;
     uint HALF = SIZE / 2;
     START_TIMER("UNIT_PAYLOAD");
@@ -337,12 +338,18 @@ void Profiler::calibrate() {
         delete block;
         count++;
     }
-    std::cout << "CCC" << count << std::endl;
+
+
+
     END_TIMER("UNIT_PAYLOAD");
-    calibration_time = timer.cumul_time * 603 / count;
-    // reference value 603 is average of 5 measurements on payload free laptop:
+
+    const double reference_count = 7730;
+    // reference count is average of 5 measurements on payload free laptop:
     // DELL Latitude E5570, Intel(R) Core(TM) i7-6820HQ CPU @ 2.70GHz
     // new/delete makes about 3% of time
+    calibration_time_ = 10 * timer.cumul_time * reference_count / count;
+    LogOut() << "Profiler calibration count: " << count << std::endl;
+    LogOut() << "Profiler calibration time: " << calibration_time_ << std::endl;
 
 }
 
@@ -820,6 +827,9 @@ void Profiler::output_header (nlohmann::json &root, int mpi_size) {
     char end_time_string[BUFSIZ] = {0};
     strftime(end_time_string, sizeof (end_time_string) - 1, format, localtime(&end_time));
 
+    if (timers_[0].cumul_time > 60) {
+        calibrate();
+    }
     // generate current run details
     root["program-name"] =        flow_name_;
     root["program-version"] =     flow_version_;
@@ -827,6 +837,7 @@ void Profiler::output_header (nlohmann::json &root, int mpi_size) {
     root["program-revision"] =    flow_revision_;
     root["program-build"] =       flow_build_;
     root["timer-resolution"] =    Profiler::get_resolution();
+    root["timer-calibration"] =    calibration_time_;
 
     // print some information about the task at the beginning
     root["task-description"] =    task_description_;

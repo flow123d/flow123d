@@ -528,15 +528,16 @@ TEST_F(ProfilerTest, test_calibrate) {test_calibrate();}
 void ProfilerTest::test_calibrate() {
     Profiler * prof = Profiler::instance();
     double resolution = prof->get_resolution();
+    START_TIMER("calibrate");
     prof->calibrate();
-    EXPECT_LE(prof->calibration_time, 0.11);
-    EXPECT_GE(prof->calibration_time, resolution * 100);
+    END_TIMER("calibrate");
+    // Just test that we change it from default value -1.
+    EXPECT_GT(prof->calibration_time(), 0);
+    // Calibration should by design take about 0.1 s.
+    EXPECT_LT(CUMUL_TIMER("calibrate"), 1.1);
 
-    START_TIMER("perf");
-    wait_sec(1);
-    END_TIMER("perf");
-    ASSERT_GE(CUMUL_TIMER("perf"), 0.9);
-    ASSERT_LE(CUMUL_TIMER("perf"), 1.1);
+    EXPECT_GT(Profiler::instance()->calibration_time(), 0);
+
 }
 
 // optional test only for testing merging of inconsistent profiler trees

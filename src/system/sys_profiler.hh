@@ -686,6 +686,13 @@ public:
     void calibrate();
 
     /**
+     * Time of a unit payload, result of a single measurement. Can be used for raw calibration.
+     */
+    double calibration_time() {
+        if (calibration_time_ < 0) calibrate();
+        return calibration_time_;
+    }
+    /**
      * if under unit testing, specify friend so protected members can be tested
      */
     #ifdef __UNIT_TEST__
@@ -785,9 +792,8 @@ protected:
 
     Timer none_timer_;
 
-public:
     /// Time of a unit payload, result of single measurement. Can be used for raw calibration.
-    double calibration_time;
+    double calibration_time_;
 
 protected:
     /**
@@ -897,6 +903,9 @@ public:
     { return 0.0; }
     static void uninitialize();
     void calibrate();
+    double calibration_time() {
+        return -2;
+    }
 private:
     Profiler() {}
 };
@@ -908,3 +917,4 @@ private:
 
 
 #endif
+
