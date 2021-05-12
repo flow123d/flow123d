@@ -66,11 +66,6 @@ public:
         return elem_patch_idx_;
     }
 
-	/// Getter of element patch begin.
-    inline unsigned int elem_patch_begin() const {
-        return elem_patch_begin_;
-    }
-
     /// Iterates to next point.
     void inc() {
     	this->local_point_idx_++;
@@ -90,8 +85,6 @@ protected:
     unsigned int local_point_idx_;
     /// Index of element in the patch.
     unsigned int elem_patch_idx_;
-    /// Index of begin of element in the patch table.
-    unsigned int elem_patch_begin_;
     /// Pointer ElementCacheMap needed for point evaluation.
     const ElementCacheMap* elm_cache_map_;
 };
@@ -110,7 +103,6 @@ public:
 	BulkPoint(const ElementCacheMap *elm_cache_map, PatchCacheLoc cache_pos)
     : PointBase(elm_cache_map, cache_pos.i_ep_) {
 	    this->elem_patch_idx_ = cache_pos.i_elm_;
-	    this->elem_patch_begin_ = this->elem_patch_idx_ * elm_cache_map->eval_points()->max_size();
 	}
 
     /// Comparison of accessors.
@@ -141,7 +133,6 @@ public:
     : PointBase(elm_cache_map, local_point_idx), side_idx_(cell_side.side_idx()),
 	  permutation_idx_( cell_side.element()->permutation_idx( side_idx_ ) ) {
 	    this->elem_patch_idx_ = this->elm_cache_map_->position_in_cache(cell_side.element().mesh_idx());
-	    this->elem_patch_begin_ = this->elem_patch_idx_ * elm_cache_map->eval_points()->max_size();
 	}
 
     // Index of permutation
