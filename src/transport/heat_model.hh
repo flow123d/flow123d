@@ -96,15 +96,8 @@ public:
 class HeatTransferModel : public AdvectionDiffusionModel, public AdvectionProcessBase {
 public:
 
-	class ModelEqData : public FieldSet {
+	class ModelEqFields : public FieldSet {
 	public:
-
-		enum Heat_bc_types {
-			bc_inflow,
-			bc_dirichlet,
-			bc_total_flux,
-			bc_diffusive_flux
-		};
 
 		/// Type of boundary condition (see also BC_Type)
 		BCMultiField<3, FieldValue<3>::Enum > bc_type;
@@ -180,22 +173,37 @@ public:
 
     	// @}
 
+		enum Heat_bc_types {
+			bc_inflow,
+			bc_dirichlet,
+			bc_total_flux,
+			bc_diffusive_flux
+		};
 
-
-		ModelEqData();
-
-		static  constexpr const char *  name() { return "Heat_AdvectionDiffusion"; }
-
-		static string default_output_field() { return "\"temperature\""; }
+		ModelEqFields();
 
         static const Input::Type::Selection & get_bc_type_selection();
-
-		static IT::Selection get_output_selection();
 
 		/**
 		 * Initialize FieldModel instances.
 		 */
 		void initialize();
+
+	};
+
+
+	class ModelEqData {
+	public:
+
+		ModelEqData() {
+            substances_.initialize({""});
+		}
+
+		static  constexpr const char *  name() { return "Heat_AdvectionDiffusion"; }
+
+		static string default_output_field() { return "\"temperature\""; }
+
+		static IT::Selection get_output_selection();
 
         /// Returns number of transported substances.
         inline unsigned int n_substances()
@@ -275,8 +283,11 @@ public:
 
 	~HeatTransferModel() override;
 
+	/// Derived class should implement getter for ModelEqFields instance.
+	virtual ModelEqFields &eq_fields() = 0;
+
 	/// Derived class should implement getter for ModelEqData instance.
-	virtual ModelEqData &data() = 0;
+	virtual ModelEqData &eq_data() = 0;
 
 protected:
 	

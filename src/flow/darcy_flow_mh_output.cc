@@ -177,7 +177,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowInterface *flow, Input::Record mai
 void DarcyFlowMHOutput::prepare_output(Input::Record in_rec)
 {
   	// we need to add data from the flow equation at this point, not in constructor of OutputFields
-	output_fields += darcy_flow->data();
+	output_fields += darcy_flow->eq_fieldset();
 	output_fields.set_mesh(*mesh_);
 
 	output_fields.subdomain = GenericField<3>::subdomain(*mesh_);

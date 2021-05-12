@@ -403,9 +403,9 @@ public:
     void initialize(FMT_UNUSED std::shared_ptr<Balance> balance) {
     }
 
-    void reallocate_cache(const ElementCacheMap &cache_map) override
+    void reallocate_cache() override
     {
-        data_->cache_reallocate(cache_map);
+        data_->cache_reallocate(this->element_cache_map_);
     }
 
     /// Data object shared with Test class

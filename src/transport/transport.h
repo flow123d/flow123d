@@ -117,7 +117,7 @@ private:
  */
 class ConvectionTransport : public ConcentrationTransportBase {
 public:
-    class EqData : public TransportEqData {
+    class EqData : public TransportEqFields {
     public:
 
         EqData();
@@ -295,7 +295,7 @@ private:
     static const int registrar;
 
     /**
-     *  Parameters of the equation, some are shared with other implementations since EqData is derived from TransportBase::TransportEqData
+     *  Parameters of the equation, some are shared with other implementations since EqData is derived from TransportBase::TransportEqFields
      */
     EqData data_;
 

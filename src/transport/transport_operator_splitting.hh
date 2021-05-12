@@ -140,11 +140,11 @@ public:
 /**
  * Class with fields that are common to all transport models.
  */
-class TransportEqData : public FieldSet {
+class TransportEqFields : public FieldSet {
 public:
 
-	TransportEqData();
-	inline virtual ~TransportEqData() {};
+	TransportEqFields();
+	inline virtual ~TransportEqFields() {};
 
 	/// Mobile porosity - usually saturated water content in the case of unsaturated flow model
 	Field<3, FieldValue<3>::Scalar> porosity;

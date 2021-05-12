@@ -151,8 +151,9 @@ private:
 public:
 
     /// Constructor
-    GenericAssembly( typename DimAssembly<1>::EqData *eq_data, std::shared_ptr<Balance> balance)
-    : multidim_assembly_(eq_data),
+    GenericAssembly( typename DimAssembly<1>::EqFields *eq_fields, typename DimAssembly<1>::EqData *eq_data,
+            std::shared_ptr<Balance> balance)
+    : multidim_assembly_(eq_fields, eq_data),
 	  bulk_integral_data_(20, 10),
 	  edge_integral_data_(12, 6),
 	  coupling_integral_data_(12, 6),
@@ -164,9 +165,9 @@ public:
         multidim_assembly_[2_d]->create_integrals(eval_points_, integrals_);
         multidim_assembly_[3_d]->create_integrals(eval_points_, integrals_);
         element_cache_map_.init(eval_points_);
-        multidim_assembly_[1_d]->initialize(balance);
-        multidim_assembly_[2_d]->initialize(balance);
-        multidim_assembly_[3_d]->initialize(balance);
+        multidim_assembly_[1_d]->initialize(balance, &element_cache_map_);
+        multidim_assembly_[2_d]->initialize(balance, &element_cache_map_);
+        multidim_assembly_[3_d]->initialize(balance, &element_cache_map_);
         active_integrals_ = multidim_assembly_[1_d]->n_active_integrals();
     }
 
@@ -187,7 +188,7 @@ public:
 	 * object of each cells over space dimension.
 	 */
     void assemble(std::shared_ptr<DOFHandlerMultiDim> dh) {
-        multidim_assembly_[1_d]->reallocate_cache(element_cache_map_);
+        multidim_assembly_[1_d]->reallocate_cache();
         multidim_assembly_[1_d]->begin();
 
         bool add_into_patch = false; // control variable
@@ -234,30 +235,6 @@ public:
     /// Return ElementCacheMap
     inline const ElementCacheMap &cache_map() const {
         return element_cache_map_;
-    }
-
-    /// Return BulkPoint range of appropriate dimension
-    inline Range< BulkPoint > bulk_points(unsigned int element_patch_idx, unsigned int dim) const {
-        ASSERT_DBG( dim > 0 ).error("Invalid cell dimension, must be 1, 2 or 3!\n");
-        return integrals_.bulk_[dim-1]->points(element_patch_idx, &(element_cache_map_));
-    }
-
-    /// Return EdgePoint range of appropriate dimension
-    inline Range< EdgePoint > edge_points(const DHCellSide &cell_side) const {
-        ASSERT_DBG( cell_side.dim() > 0 ).error("Invalid cell dimension, must be 1, 2 or 3!\n");
-	    return integrals_.edge_[cell_side.dim()-1]->points(cell_side, &(element_cache_map_));
-    }
-
-    /// Return CouplingPoint range of appropriate dimension
-    inline Range< CouplingPoint > coupling_points(const DHCellSide &cell_side) const {
-        ASSERT_DBG( cell_side.dim() > 1 ).error("Invalid cell dimension, must be 2 or 3!\n");
-	    return integrals_.coupling_[cell_side.dim()-2]->points(cell_side, &(element_cache_map_));
-    }
-
-    /// Return BoundaryPoint range of appropriate dimension
-    inline Range< BoundaryPoint > boundary_points(const DHCellSide &cell_side) const {
-        ASSERT_DBG( cell_side.dim() > 0 ).error("Invalid cell dimension, must be 1, 2 or 3!\n");
-	    return integrals_.boundary_[cell_side.dim()-1]->points(cell_side, &(element_cache_map_));
     }
 
 private:

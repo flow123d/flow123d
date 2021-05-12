@@ -103,7 +103,7 @@ const int TransportOperatorSplitting::registrar =
 
 
 
-TransportEqData::TransportEqData()
+TransportEqFields::TransportEqFields()
 {
     *this += porosity.name("porosity")
             .description("Porosity of the mobile phase.")
@@ -194,7 +194,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 
 	time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), convection->mark_type());
 
-    this->eq_data_ = &(convection->data());
+    this->eq_fieldset_ = &(convection->eq_fieldset());
 
     convection->get_par_info(el_4_loc, el_distribution);
     Input::Iterator<Input::AbstractRecord> reactions_it = in_rec.find<Input::AbstractRecord>("reaction_term");
@@ -238,7 +238,7 @@ void TransportOperatorSplitting::initialize()
           typeid(*reaction) == typeid(DualPorosity)
         )
   {
-    reaction->data().set_field("porosity", convection->data()["porosity"]);
+    reaction->eq_fieldset().set_field("porosity", convection->eq_fieldset()["porosity"]);
   }
 }
 
