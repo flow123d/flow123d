@@ -612,19 +612,40 @@ public:
 
 
     /// Assembles between elements of different dimensions.
-    inline void neigbour_integral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
+    /*inline void neigbour_integral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
         if (dim == 1) return;
         ASSERT_EQ_DBG(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
 
-//        cell_lower_dim.get_dof_indices(side_dof_indices_[0]);
-//        ElementAccessor<3> cell_sub = cell_lower_dim.elm();
-//        fe_values_sub_.reinit(cell_sub);
+        normal_displacement_ = 0;
+        normal_stress_.zeros();
 
-//        DHCellAccessor cell_higher_dim = data_->dh_->cell_accessor_from_element( neighb_side.element().idx() );
-//        cell_higher_dim.get_dof_indices(side_dof_indices_[1]);
-//        fe_values_side_.reinit(neighb_side.side());
+        DHCellAccessor cell_higher_dim = neighb_side.cell();
+        DHCellAccessor cell_tensor = cell_higher_dim.cell_with_other_dh(data_->dh_tensor_.get());
+        DHCellAccessor cell_scalar = cell_higher_dim.cell_with_other_dh(data_->dh_scalar_.get());
+        fsv_.reinit(neighb_side.side());
 
-    }
+        dof_indices_ = cell_higher_dim.get_loc_dof_indices();
+        auto p_high = *( data_->outout_fields_assembly_->coupling_points(neighb_side).begin() );
+        auto p_low = p_high.lower_dim(cell_lower_dim);
+
+        for (unsigned int i=0; i<n_dofs_; i++)
+        {
+            normal_displacement_ -= arma::dot(vec_view_side_->value(i,0)*output_vec_[dof_indices_[i]], fsv_.normal_vector(0));
+            arma::mat33 grad = -arma::kron(vec_view_side_->value(i,0)*output_vec_[dof_indices_[i]], fsv_.normal_vector(0).t()) / data_->cross_section(p_low);
+            normal_stress_ += data_->lame_mu(p_low)*(grad+grad.t()) + data_->lame_lambda(p_low)*arma::trace(grad)*arma::eye(3,3);
+//           	if (cell_lower_dim.elm_idx()>1000)
+//           	    std::cout << "Element: " << cell_lower_dim.elm_idx() << " - dof: " << i <<
+//                    " - " << output_vec_[dof_indices_[i]] << std::endl;
+        }
+
+        LocDofVec dof_indices_scalar_ = cell_scalar.get_loc_dof_indices();
+        LocDofVec dof_indices_tensor_ = cell_tensor.get_loc_dof_indices();
+        for (unsigned int i=0; i<3; i++)
+            for (unsigned int j=0; j<3; j++)
+                output_stress_vec_[dof_indices_tensor_[i*3+j]] += normal_stress_(i,j);
+        output_cross_sec_vec_[dof_indices_scalar_[0]] += normal_displacement_;
+        output_div_vec_[dof_indices_scalar_[0]] += normal_displacement_ / data_->cross_section(p_low);
+    } // */
 
 
     /// Implements @p AssemblyBase::reallocate_cache.
@@ -653,6 +674,9 @@ private:
     LocDofVec dof_indices_tensor_;                            ///< Vector of local DOF indices of tensor fields
     const FEValuesViews::Vector<3> * vec_view_;               ///< Vector view in cell integral calculation.
     const FEValuesViews::Vector<3> * vec_view_side_;          ///< Vector view in neighbour calculation.
+
+    double normal_displacement_;                              ///< Holds constributions of normal displacement.
+    arma::mat33 normal_stress_;                               ///< Holds constributions of normal stress.
 
     /// Data vectors of output fields (FieldFE).
     VectorMPI output_vec_;

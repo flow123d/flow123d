@@ -433,9 +433,12 @@ void Elasticity::update_output_fields()
     data_.output_stress_ptr->vec().zero_entries();
     data_.output_cross_section_ptr->vec().zero_entries();
     data_.output_div_ptr->vec().zero_entries();
+    START_TIMER("assemble_fields_output");
+    data_.outout_fields_assembly_->assemble(data_.dh_);
     compute_output_fields<1>();
     compute_output_fields<2>();
     compute_output_fields<3>();
+    END_TIMER("assemble_fields_output");
 
     // update ghost values of computed fields
     data_.output_stress_ptr->vec().local_to_ghost_begin();
@@ -620,7 +623,7 @@ void Elasticity::compute_output_fields()
     FEValues<3> fsv(q_sub, *feo->fe<dim>(),
     		update_values | update_normal_vectors | update_quadrature_points);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs();
-    auto vec = fv.vector_view(0);
+//    auto vec = fv.vector_view(0);
     auto vec_side = fsv.vector_view(0);
     VectorMPI output_vec = data_.output_field_ptr->vec();
     VectorMPI output_stress_vec = data_.output_stress_ptr->vec();
@@ -634,7 +637,7 @@ void Elasticity::compute_output_fields()
     {
         if (cell.dim() == dim)
         {
-            auto elm = cell.elm();
+            /*auto elm = cell.elm();
             
             double poisson = data_.poisson_ratio.value(elm.centre(), elm);
             double young = data_.young_modulus.value(elm.centre(), elm);
@@ -663,12 +666,13 @@ void Elasticity::compute_output_fields()
                     output_stress_vec[dof_indices_tensor[i*3+j]] += stress(i,j);
             output_von_mises_stress_vec[dof_indices_scalar[0]] = von_mises_stress;
             
-            output_cross_sec_vec[dof_indices_scalar[0]] += data_.cross_section.value(fv.point(0), elm);
+            output_cross_sec_vec[dof_indices_scalar[0]] += data_.cross_section.value(fv.point(0), elm);*/
         } 
         else if (cell.dim() == dim-1)
         {
             auto elm = cell.elm();
             double normal_displacement = 0;
+
             double csection = data_.cross_section.value(fsv.point(0), elm);
             arma::mat33 normal_stress = arma::zeros(3,3);
 
@@ -690,6 +694,10 @@ void Elasticity::compute_output_fields()
                     normal_displacement -= arma::dot(vec_side.value(i,0)*output_vec[side_dof_indices[i]], fsv.normal_vector(0));
                     arma::mat33 grad = -arma::kron(vec_side.value(i,0)*output_vec[side_dof_indices[i]], fsv.normal_vector(0).t()) / csection;
                     normal_stress += mu*(grad+grad.t()) + lambda*arma::trace(grad)*arma::eye(3,3);
+//                    if ((elm->n_neighs_vb() > 0) && (elm.idx()>1000)) {
+//                    	std::cout << "Element: " << elm.idx() << " - dof: " << i <<
+//                    			" - " << output_vec[side_dof_indices[i]] << std::endl;
+//                    }
                 }
             }
             LocDofVec dof_indices_scalar = cell_scalar.get_loc_dof_indices();
