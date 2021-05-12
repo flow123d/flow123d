@@ -90,11 +90,11 @@ private:
     	EdgeIntegralData()
     	: edge_side_range(make_iter<DHEdgeSide, DHCellSide>( DHEdgeSide() ), make_iter<DHEdgeSide, DHCellSide>( DHEdgeSide() )) {}
 
-        /// Constructor with data mebers initialization
+        /// Copy constructor
     	EdgeIntegralData(const EdgeIntegralData &other)
         : edge_side_range(other.edge_side_range), subset_index(other.subset_index) {}
 
-        /// Copy constructor
+        /// Constructor with data mebers initialization
     	EdgeIntegralData(RangeConvert<DHEdgeSide, DHCellSide> range, unsigned int subset_idx)
         : edge_side_range(range), subset_index(subset_idx) {}
 
