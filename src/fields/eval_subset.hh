@@ -162,7 +162,7 @@ public:
     : SidePoint(cell_side, elm_cache_map, local_point_idx), integral_(edge_integral) {}
 
     /// Return corresponds EdgePoint of neighbour side of same dimension (computing of side integrals).
-    EdgePoint point_on(DHCellSide edg_side) const;
+    inline EdgePoint point_on(DHCellSide edg_side) const;
 
     /// Comparison of accessors.
     bool operator==(const EdgePoint& other) {
@@ -192,7 +192,7 @@ public:
     : SidePoint(cell_side, elm_cache_map, local_point_idx), integral_(coupling_integral) {}
 
     /// Return corresponds EdgePoint of neighbour side of same dimension (computing of side integrals).
-    BulkPoint lower_dim(DHCellAccessor cell_lower) const;
+    inline BulkPoint lower_dim(DHCellAccessor cell_lower) const;
 
     /// Return index in EvalPoints object
     inline unsigned int eval_point_idx() const;
@@ -221,7 +221,7 @@ public:
     : SidePoint(cell_side, elm_cache_map, local_point_idx), integral_(bdr_integral) {}
 
     /// Return corresponds BulkPoint on boundary element.
-    BulkPoint point_bdr(ElementAccessor<3> bdr_elm) const;
+    inline BulkPoint point_bdr(ElementAccessor<3> bdr_elm) const;
 
     /// Return index in EvalPoints object
     inline unsigned int eval_point_idx() const;
@@ -451,14 +451,30 @@ inline unsigned int EdgePoint::eval_point_idx() const {
     return integral_->perm_idx_ptr(side_idx_, permutation_idx_, local_point_idx_);
 }
 
+inline EdgePoint EdgePoint::point_on(DHCellSide edg_side) const {
+    return EdgePoint(edg_side, elm_cache_map_, this->integral_, this->local_point_idx_);
+}
+
 
 inline unsigned int CouplingPoint::eval_point_idx() const {
     return integral_->edge_integral_->perm_idx_ptr(side_idx_, permutation_idx_, local_point_idx_);
 }
 
+inline BulkPoint CouplingPoint::lower_dim(DHCellAccessor cell_lower) const {
+	PatchCacheLoc c_pos(elm_cache_map_->position_in_cache(cell_lower.elm().mesh_idx()),
+	        this->eval_points()->subset_begin(cell_lower.dim(), integral_->get_subset_low_idx())+local_point_idx_);
+    return BulkPoint(elm_cache_map_, c_pos);
+}
+
 
 inline unsigned int BoundaryPoint::eval_point_idx() const {
     return integral_->edge_integral_->perm_idx_ptr(side_idx_, permutation_idx_, local_point_idx_);
+}
+
+inline BulkPoint BoundaryPoint::point_bdr(ElementAccessor<3> bdr_elm) const {
+	PatchCacheLoc c_pos(elm_cache_map_->position_in_cache(bdr_elm.mesh_idx()),
+			this->eval_points()->subset_begin(bdr_elm.dim(), integral_->get_subset_low_idx())+local_point_idx_);
+    return BulkPoint(elm_cache_map_, c_pos);
 }
 
 #endif /* EVAL_SUBSET_HH_ */
