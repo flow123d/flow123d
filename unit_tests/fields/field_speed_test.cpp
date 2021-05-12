@@ -460,14 +460,14 @@ TYPED_TEST(FieldSpeed, field_python) {
 
 	START_TIMER("field_python");
     this->test_single();
-    EXPECT_TIMER_LE("single", 0.001);
+    EXPECT_TIMER_LE("single", 1.4);
     this->test_many();
-    EXPECT_TIMER_LE("many", 0.001);
+    EXPECT_TIMER_LE("many", 1.4);
     this->test_list();
-    EXPECT_TIMER_LE("list", 0.001);
+    EXPECT_TIMER_LE("list", 1.2);
 	END_TIMER("field_python");
 
-	this->test_result( this->expect_const_val_, 21 );
+	this->test_result( this->expect_const_val_, 2*list_size + 1 );
 	this->profiler_output();
 }
 #endif // FLOW123D_HAVE_PYTHON
