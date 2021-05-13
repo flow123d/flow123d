@@ -130,8 +130,7 @@ public:
     /// Implements @p AssemblyBase::reallocate_cache.
     void reallocate_cache() override
     {
-        used_fields_.set_dependency();
-        used_fields_.cache_reallocate(*this->element_cache_map_);
+        eq_fields_->cache_reallocate(*this->element_cache_map_, used_fields_);
     }
 
 
@@ -603,8 +602,7 @@ public:
     /// Implements @p AssemblyBase::reallocate_cache.
     void reallocate_cache() override
     {
-        used_fields_.set_dependency();
-        used_fields_.cache_reallocate(*this->element_cache_map_);
+        eq_fields_->cache_reallocate(*this->element_cache_map_, used_fields_);
     }
 
 
@@ -739,8 +737,7 @@ public:
     /// Implements @p AssemblyBase::reallocate_cache.
     void reallocate_cache() override
     {
-        used_fields_.set_dependency();
-        used_fields_.cache_reallocate(*this->element_cache_map_);
+        eq_fields_->cache_reallocate(*this->element_cache_map_, used_fields_);
     }
 
 
@@ -961,8 +958,7 @@ public:
     /// Implements @p AssemblyBase::reallocate_cache.
     void reallocate_cache() override
     {
-        used_fields_.set_dependency();
-        used_fields_.cache_reallocate(*this->element_cache_map_);
+        eq_fields_->cache_reallocate(*this->element_cache_map_, used_fields_);
     }
 
 
@@ -1066,8 +1062,7 @@ public:
     /// Implements @p AssemblyBase::reallocate_cache.
     void reallocate_cache() override
     {
-        used_fields_.set_dependency();
-        used_fields_.cache_reallocate(*this->element_cache_map_);
+        eq_fields_->cache_reallocate(*this->element_cache_map_, used_fields_);
     }
 
 

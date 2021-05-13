@@ -294,7 +294,7 @@ public:
     /**
      * Collective interface to @p FieldCommonBase::set_mesh().
      */
-    bool set_time(const TimeStep &time, LimitSide limit_side, bool set_dependency = false);
+    bool set_time(const TimeStep &time, LimitSide limit_side);
 
     /**
      * Collective interface to @p FieldCommonBase::output_type().
@@ -329,7 +329,8 @@ public:
     /**
      * Collective interface to @p FieldCommon::recache_allocate().
      */
-    void cache_reallocate(const ElementCacheMap &cache_map) {
+    void cache_reallocate(const ElementCacheMap &cache_map, FieldSet &used_fieldset) {
+    	this->set_dependency(used_fieldset);
         for(auto field : field_list) field->cache_reallocate(cache_map);
     }
 
@@ -341,7 +342,7 @@ public:
     /**
      * Set reference of FieldSet to all instances of FieldFormula.
      */
-    void set_dependency();
+    void set_dependency(FieldSet &used_fieldset);
 
     /**
      * Add coords field (X_) and depth field to field_list.

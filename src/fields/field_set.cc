@@ -23,6 +23,7 @@
 #include "tools/bidirectional_map.hh"
 #include "fields/dfs_topo_sort.hh"
 #include <boost/algorithm/string/replace.hpp>
+#include <queue>
 
 
 FieldSet::FieldSet()
@@ -161,10 +162,9 @@ FieldCommon &FieldSet::operator[](const std::string &field_name) const {
 }
 
 
-bool FieldSet::set_time(const TimeStep &time, LimitSide limit_side, bool set_dependency) {
+bool FieldSet::set_time(const TimeStep &time, LimitSide limit_side) {
     bool changed_all=false;
     for(auto field : field_list) changed_all = field->set_time(time, limit_side) || changed_all;
-    if (set_dependency) this->set_dependency();
     return changed_all;
 }
 
@@ -201,27 +201,47 @@ void FieldSet::cache_update(ElementCacheMap &cache_map) {
 }
 
 
-void FieldSet::set_dependency() {
-    BidirectionalMap<const FieldCommon *> field_indices_map;
+void FieldSet::set_dependency(FieldSet &used_fieldset) {
+    BidirectionalMap<const FieldCommon *> field_indices_map; // position of field / multifield component in FieldSet
     for (FieldListAccessor f_acc : this->fields_range())
         field_indices_map.add_item( f_acc.field() );
     region_field_update_order_.clear();
+    std::vector<bool> used_fields(field_indices_map.size()); // marks used fields (positions correspond to field_indices_map)
+    std::queue<const FieldCommon *> q;
 
     unordered_map<std::string, unsigned int>::iterator it;
     for (unsigned int i_reg=0; i_reg<mesh_->region_db().size(); ++i_reg) {
         DfsTopoSort dfs(field_indices_map.size());
-        for (FieldListAccessor f_acc : this->fields_range()) {
-            int field_idx = field_indices_map.get_position( f_acc.field() );
+        std::fill(used_fields.begin(), used_fields.end(), false);
+        uint n_used_fields = 0; // number of all used fields (size of used_fieldset + fields depending on FieldFormula and FieldModel)
+        for (FieldListAccessor f_acc : used_fieldset.fields_range()) {
+            q.push(f_acc.field());
+            n_used_fields++;
+            used_fields[ field_indices_map.get_position( f_acc.field() ) ] = true;
+        }
+        while (q.size() > 0) {
+            auto field = q.front();
+            int field_idx = field_indices_map.get_position( field );
             ASSERT_GE_DBG(field_idx, 0);
-        	auto dep_vec = f_acc->set_dependency(*this, i_reg); // vector of dependent fields
-        	for (auto f : dep_vec) {
-        	    dfs.add_edge( uint(field_idx), uint(field_indices_map.get_position(f)) );
-        	}
+            auto dep_vec = field->set_dependency(*this, i_reg); // vector of dependent fields
+            for (auto f : dep_vec) {
+                uint field_pos = field_indices_map.get_position(f);
+                dfs.add_edge( uint(field_idx), field_pos );
+                if (!used_fields[ field_pos ]) {
+                    q.push(f);
+                    n_used_fields++;
+                    used_fields[ field_pos ] = true;
+                }
+            }
+            q.pop();
         }
         auto sort_vec = dfs.topological_sort();
-        region_field_update_order_[i_reg] = std::vector<const FieldCommon *>(sort_vec.size());
-        for (unsigned int i_field=0; i_field<sort_vec.size(); ++i_field)
-            region_field_update_order_[i_reg][i_field] = field_indices_map[ sort_vec[i_field] ];
+        region_field_update_order_[i_reg] = std::vector<const FieldCommon *>(n_used_fields);
+        for (unsigned int i_field=0, i_order=0; i_field<sort_vec.size(); ++i_field) {
+            if ( !used_fields[sort_vec[i_field]] ) continue;
+        	region_field_update_order_[i_reg][i_order] = field_indices_map[ sort_vec[i_field] ];
+        	i_order++;
+        }
     }
 }
 
