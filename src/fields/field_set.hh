@@ -331,7 +331,13 @@ public:
      */
     void cache_reallocate(const ElementCacheMap &cache_map, FieldSet &used_fieldset) {
     	this->set_dependency(used_fieldset);
-        for(auto field : field_list) field->cache_reallocate(cache_map);
+    	for (auto reg_it : region_field_update_order_) {
+    	    unsigned int region_idx = reg_it.first;
+    	    for (auto f_it : reg_it.second) {
+    	        f_it->cache_reallocate(cache_map, region_idx);
+    	    }
+    	}
+        //for(auto field : field_list) field->cache_reallocate(cache_map);
     }
 
     /**

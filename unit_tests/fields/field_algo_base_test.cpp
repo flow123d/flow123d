@@ -1045,11 +1045,6 @@ TEST(Field, field_values) {
     std::shared_ptr<EdgeIntegral> side_eval = eval_points->add_edge<3>(*q_side );
     ElementCacheMapTest elm_cache_map;
     elm_cache_map.init(eval_points);
-    color_field.cache_reallocate(elm_cache_map);
-    int_field.cache_reallocate(elm_cache_map);
-    scalar_field.cache_reallocate(elm_cache_map);
-    vector_field.cache_reallocate(elm_cache_map);
-    tensor_field.cache_reallocate(elm_cache_map);
 
     // fill FieldValueCaches
     DHCellAccessor dh_cell(dh.get(), 4);

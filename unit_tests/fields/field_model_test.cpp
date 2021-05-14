@@ -117,22 +117,18 @@ TEST_F(FieldModelTest, create) {
 
     // initialize field caches
     this->init_field_caches();
-    f_scal.cache_reallocate(*this);
-    f_vec.cache_reallocate(*this);
 
     // Create FieldModel (descendant of FieladAlgoBase) set to Field
     auto f_product_ptr = Model<3, FieldValue<3>::VectorFixed>::create(fn_product, f_scal, f_vec);
     Field<3, FieldValue<3>::VectorFixed > f_product;
     f_product.set_mesh( *mesh );
     f_product.set(f_product_ptr, 0.0);
-    f_product.cache_reallocate(*this);
     f_product.set_time(tg.step(), LimitSide::right);
     // Same as previous but with other functor
     auto f_other_ptr = Model<3, FieldValue<3>::VectorFixed>::create(fn_other, f_vec, f_scal, f_vec);
     Field<3, FieldValue<3>::VectorFixed > f_other;
     f_other.set_mesh( *mesh );
     f_other.set(f_other_ptr, 0.0);
-    f_other.cache_reallocate(*this);
     f_other.set_time(tg.step(), LimitSide::right);
 
     // fill field caches
@@ -197,7 +193,6 @@ TEST_F(FieldModelTest, create_multi_scalar) {
     // initialize field caches
     this->init_field_caches();
     f_scal.name("field_scalar");
-    f_scal.cache_reallocate(*this);
     f_multi.name("field_multi");
     f_multi.set_components(component_names);
     f_multi.set_mesh( *mesh );
@@ -206,7 +201,6 @@ TEST_F(FieldModelTest, create_multi_scalar) {
         field_vec.push_back( std::make_shared< FieldConstant<3, FieldValue<3>::Scalar> >() );
     }
     f_multi.set(field_vec, 0.0);
-    f_multi.cache_reallocate(*this); // cache_allocate must be called after set_fields!!
 
     // Create FieldModel (descendant of FieladAlgoBase) set to Field
     auto f_product_ptr = Model<3, FieldValue<3>::Scalar>::create_multi(multi_product, f_scal, f_multi);
@@ -214,7 +208,6 @@ TEST_F(FieldModelTest, create_multi_scalar) {
     f_product.set_components(component_names);
     f_product.set_mesh( *mesh );
     f_product.set(f_product_ptr, 0.0);
-    f_product.cache_reallocate(*this);
     f_product.set_time(tg.step(), LimitSide::right);
     // Same as previous but with other functor
     auto f_other_ptr = Model<3, FieldValue<3>::Scalar>::create_multi(multi_other, f_multi, f_scal, f_multi);
@@ -222,7 +215,6 @@ TEST_F(FieldModelTest, create_multi_scalar) {
     f_other.set_components(component_names);
     f_other.set_mesh( *mesh );
     f_other.set(f_other_ptr, 0.0);
-    f_other.cache_reallocate(*this);
     f_other.set_time(tg.step(), LimitSide::right);
 
     // fill field caches
@@ -278,7 +270,6 @@ TEST_F(FieldModelTest, create_multi_vector) {
     // initialize field caches
     this->init_field_caches();
     f_scal.name("field_scalar");
-    f_scal.cache_reallocate(*this);
     f_multi.name("field_multi");
     f_multi.set_components(component_names);
     f_multi.set_mesh( *mesh );
@@ -287,7 +278,6 @@ TEST_F(FieldModelTest, create_multi_vector) {
         field_vec.push_back( std::make_shared< FieldConstant<3, FieldValue<3>::VectorFixed> >() );
     }
     f_multi.set(field_vec, 0.0);
-    f_multi.cache_reallocate(*this); // cache_allocate must be called after set_fields!!
 
     // Create FieldModel (descendant of FieladAlgoBase) set to Field
     auto f_product_ptr = Model<3, FieldValue<3>::VectorFixed>::create_multi(fn_product, f_scal, f_multi);
@@ -295,7 +285,6 @@ TEST_F(FieldModelTest, create_multi_vector) {
     f_product.set_components(component_names);
     f_product.set_mesh( *mesh );
     f_product.set(f_product_ptr, 0.0);
-    f_product.cache_reallocate(*this);
     f_product.set_time(tg.step(), LimitSide::right);
     // Same as previous but with other functor
     auto f_other_ptr = Model<3, FieldValue<3>::VectorFixed>::create_multi(fn_other, f_multi, f_scal, f_multi);
@@ -303,7 +292,6 @@ TEST_F(FieldModelTest, create_multi_vector) {
     f_other.set_components(component_names);
     f_other.set_mesh( *mesh );
     f_other.set(f_other_ptr, 0.0);
-    f_other.cache_reallocate(*this);
     f_other.set_time(tg.step(), LimitSide::right);
 
     // fill field caches

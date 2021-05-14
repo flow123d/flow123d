@@ -388,8 +388,9 @@ std::vector<const FieldCommon *> MultiField<spacedim, Value>::set_dependency(FMT
 
 
 template<int spacedim, class Value>
-void MultiField<spacedim, Value>::cache_reallocate(const ElementCacheMap &cache_map) {
-    for(auto &field : sub_fields_) field.cache_reallocate(cache_map);
+void MultiField<spacedim, Value>::cache_reallocate(FMT_UNUSED const ElementCacheMap &cache_map, FMT_UNUSED unsigned int region_idx) const {
+    //for(auto &field : sub_fields_) field.cache_reallocate(cache_map);
+	ASSERT(false).error("Cache reallocate of MultiField should be performed by individual components!\n");
 }
 
 
