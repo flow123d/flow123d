@@ -92,8 +92,8 @@ public:
             this->finish_elements_update();
         }
 
-        void realocate_cache() {
-            this->cache_reallocate(*this);
+        void reallocate_cache() {
+            this->cache_reallocate(*this, *this);
         }
 
 
@@ -150,8 +150,7 @@ public:
         data_->set_mesh(*mesh_);
         data_->set_input_list( inputs[input_last], tg );
         data_->set_time(tg.step(), LimitSide::right);
-        data_->set_dependency();
-        data_->realocate_cache();
+        data_->reallocate_cache();
     }
 
 
@@ -347,7 +346,6 @@ public:
         data_->set_input_list( inputs[input_last], tg_ );
 
         data_->set_time(tg_.step(), LimitSide::right);
-        data_->set_dependency();
     }
 
     void create_fe_fields() {
@@ -405,7 +403,7 @@ public:
 
     void reallocate_cache() override
     {
-        data_->cache_reallocate(this->element_cache_map_);
+        data_->cache_reallocate(this->element_cache_map_, *data_);
     }
 
     /// Data object shared with Test class

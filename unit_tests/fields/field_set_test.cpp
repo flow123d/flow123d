@@ -428,7 +428,7 @@ public:
         data_->initialize();
         data_->set_input_list( inputs[input_last], tg );
         data_->set_time(tg.step(), LimitSide::right);
-        data_->set_dependency();
+        data_->set_dependency( *(data_.get()) );
     }
 
     static Input::Type::Record & get_input_type() {

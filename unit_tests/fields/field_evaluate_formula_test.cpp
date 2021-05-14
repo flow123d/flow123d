@@ -67,7 +67,6 @@ public:
             side_eval = eval_points_->add_edge<3>(*q_side );
             // ngh_side_eval = ...
             this->init(eval_points_);
-            this->cache_reallocate(*this);
         }
 
         void register_eval_points() {
@@ -95,7 +94,7 @@ public:
         }
 
         void reallocate_cache() {
-            this->cache_reallocate(*this);
+            this->cache_reallocate(*this, *this);
         }
 
 
@@ -154,7 +153,6 @@ public:
         data_->set_mesh(*mesh_);
         data_->set_input_list( inputs[input_last], tg );
         data_->set_time(tg.step(), LimitSide::right);
-        data_->set_dependency();
         data_->reallocate_cache();
     }
 
