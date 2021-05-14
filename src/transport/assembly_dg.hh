@@ -43,7 +43,8 @@ public:
     MassAssemblyDG(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
-        this->used_fields_ = eq_fields_->subset( eq_data_->mass_assembly_subset() );
+        this->used_fields_ += eq_fields_->mass_matrix_coef;
+        this->used_fields_ += eq_fields_->retardation_coef;
     }
 
     /// Destructor.
@@ -175,7 +176,14 @@ public:
     StiffnessAssemblyDG(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::edge | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
-        this->used_fields_ = eq_fields_->subset( eq_data_->stiffness_assembly_subset() );
+        this->used_fields_ += eq_fields_->advection_coef;
+        this->used_fields_ += eq_fields_->diffusion_coef;
+        this->used_fields_ += eq_fields_->cross_section;
+        this->used_fields_ += eq_fields_->dg_penalty;
+        this->used_fields_ += eq_fields_->sources_sigma_out;
+        this->used_fields_ += eq_fields_->fracture_sigma;
+        this->used_fields_ += eq_fields_->bc_type;
+        this->used_fields_ += eq_fields_->bc_robin_sigma;
     }
 
     /// Destructor.
@@ -654,7 +662,9 @@ public:
     SourcesAssemblyDG(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
-        this->used_fields_ = eq_fields_->subset( eq_data_->source_assembly_subset() );
+        this->used_fields_ += eq_fields_->sources_density_out;
+        this->used_fields_ += eq_fields_->sources_conc_out;
+        this->used_fields_ += eq_fields_->sources_sigma_out;
     }
 
     /// Destructor.
@@ -782,7 +792,13 @@ public:
     BdrConditionAssemblyDG(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::boundary;
-        this->used_fields_ = eq_fields_->subset( eq_data_->bdr_assembly_subset() );
+        this->used_fields_ += eq_fields_->advection_coef;
+        this->used_fields_ += eq_fields_->diffusion_coef;
+        this->used_fields_ += eq_fields_->cross_section;
+        this->used_fields_ += eq_fields_->bc_type;
+        this->used_fields_ += eq_fields_->bc_dirichlet_value;
+        this->used_fields_ += eq_fields_->bc_robin_sigma;
+        this->used_fields_ += eq_fields_->bc_flux;
     }
 
     /// Destructor.
@@ -1003,7 +1019,7 @@ public:
     InitConditionAssemblyDG(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
-        this->used_fields_ = eq_fields_->subset( eq_data_->init_assembly_subset() );
+        this->used_fields_ += eq_fields_->init_condition;
     }
 
     /// Destructor.
