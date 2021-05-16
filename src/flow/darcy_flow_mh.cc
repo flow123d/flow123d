@@ -685,9 +685,9 @@ void DarcyMH::solve_nonlinear()
                 //VecNorm(*schur0_Newton->get_rhs(), NORM_2, &residual_rhs);
                 //printf("%f \n", residual_rhs);
                 si = schur0_Newton->solve();
-                double residual_newt;
-                VecNorm(schur0_Newton->get_solution(), NORM_2, &residual_newt);
-                printf("%f \n", residual_newt);
+                //double residual_newt;
+                //VecNorm(schur0_Newton->get_solution(), NORM_2, &residual_newt);
+                //printf("%f \n", residual_newt);
                 VecWAXPY(solution_update,1.0,schur0_Newton->get_solution(),schur0->get_solution());
                 VecCopy(solution_update,schur0->get_solution());
                
@@ -702,6 +702,7 @@ void DarcyMH::solve_nonlinear()
         // hack to make BDDC work with empty compute_residual
         if (is_linear_common){
             // we want to print this info in linear (and steady) case
+            si = schur0->solve();
             compute_full_residual_vec(residual_);
             VecNorm(residual_, NORM_2, &residual_norm);
             MessageOut().fmt("[nonlinear solver] lin. it: {}, reason: {}, residual: {}\n",
