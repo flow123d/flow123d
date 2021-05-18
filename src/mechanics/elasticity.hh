@@ -49,7 +49,7 @@ namespace Mechanics {
  * Its purpose is to provide templated access to these objects, applicable in
  * the assembling methods.
  */
-class FEObjects {
+/*class FEObjects {
 public:
 
 	FEObjects(Mesh *mesh_, unsigned int fe_order);
@@ -79,7 +79,7 @@ private:
 	std::shared_ptr<DOFHandlerMultiDim> dh_;
     std::shared_ptr<DOFHandlerMultiDim> dh_scalar_;
     std::shared_ptr<DOFHandlerMultiDim> dh_tensor_;
-};
+};*/
 
 
 } // namespace Mechanics
@@ -313,7 +313,7 @@ private:
 	// @{
 
 	/// Finite element objects
-	Mechanics::FEObjects *feo;
+	//Mechanics::FEObjects *feo;
     
 	// @}
 

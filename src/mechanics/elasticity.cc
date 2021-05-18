@@ -73,7 +73,7 @@ const int Elasticity::registrar =
 
 
 
-namespace Mechanics {
+/*namespace Mechanics {
 
 FEObjects::FEObjects(Mesh *mesh_, unsigned int fe_order)
 : q_(QGauss::make_array(2))
@@ -125,7 +125,7 @@ std::shared_ptr<DOFHandlerMultiDim> FEObjects::dh_tensor() { return dh_tensor_; 
 
 
 
-} // namespace Mechanics
+} // namespace Mechanics */
 
 
 double lame_mu(double young, double poisson)
