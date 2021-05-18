@@ -238,8 +238,8 @@ private:
     /// Registrar of class to factory
     static const int registrar;
 
-    template<unsigned int dim>
-    void compute_output_fields();
+    //template<unsigned int dim>
+    //void compute_output_fields();
 
 	void preallocate();
 

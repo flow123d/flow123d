@@ -614,7 +614,7 @@ void Elasticity::output_data()
 }
 
 
-template<unsigned int dim>
+/*template<unsigned int dim>
 void Elasticity::compute_output_fields()
 {
     QGauss q(dim, 0), q_sub(dim-1, 0);
@@ -637,7 +637,7 @@ void Elasticity::compute_output_fields()
     {
         if (cell.dim() == dim)
         {
-            /*auto elm = cell.elm();
+            auto elm = cell.elm();
             
             double poisson = data_.poisson_ratio.value(elm.centre(), elm);
             double young = data_.young_modulus.value(elm.centre(), elm);
@@ -666,7 +666,7 @@ void Elasticity::compute_output_fields()
                     output_stress_vec[dof_indices_tensor[i*3+j]] += stress(i,j);
             output_von_mises_stress_vec[dof_indices_scalar[0]] = von_mises_stress;
             
-            output_cross_sec_vec[dof_indices_scalar[0]] += data_.cross_section.value(fv.point(0), elm);*/
+            output_cross_sec_vec[dof_indices_scalar[0]] += data_.cross_section.value(fv.point(0), elm);
         } 
         else if (cell.dim() == dim-1)
         {
@@ -707,7 +707,7 @@ void Elasticity::compute_output_fields()
         cell_scalar.inc();
         cell_tensor.inc();
     }
-}
+}*/
 
 
 
