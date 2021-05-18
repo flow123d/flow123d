@@ -299,6 +299,31 @@ Elasticity::EqData::EqData()
 
 }
 
+void Elasticity::EqData::create_dh(Mesh * mesh, unsigned int fe_order)
+{
+	ASSERT_EQ_DBG(fe_order, 1)(fe_order).error("Unsupported polynomial order for finite elements in Elasticity");
+    MixedPtr<FE_P> fe_p(1);
+    MixedPtr<FiniteElement> fe = mixed_fe_system(fe_p, FEVector, 3);
+
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, fe);
+	dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh);
+
+	dh_->distribute_dofs(ds);
+
+
+    MixedPtr<FE_P_disc> fe_p_disc(0);
+    dh_scalar_ = make_shared<DOFHandlerMultiDim>(*mesh);
+	std::shared_ptr<DiscreteSpace> ds_scalar = std::make_shared<EqualOrderDiscreteSpace>( mesh, fe_p_disc);
+	dh_scalar_->distribute_dofs(ds_scalar);
+
+
+    MixedPtr<FiniteElement> fe_t = mixed_fe_system(MixedPtr<FE_P_disc>(0), FEType::FETensor, 9);
+    dh_tensor_ = make_shared<DOFHandlerMultiDim>(*mesh);
+	std::shared_ptr<DiscreteSpace> dst = std::make_shared<EqualOrderDiscreteSpace>( mesh, fe_t);
+	dh_tensor_->distribute_dofs(dst);
+}
+
+
 Elasticity::Elasticity(Mesh & init_mesh, const Input::Record in_rec, TimeGovernor *tm)
         : EquationBase(init_mesh, in_rec),
 		  input_rec(in_rec),
@@ -330,11 +355,8 @@ Elasticity::Elasticity(Mesh & init_mesh, const Input::Record in_rec, TimeGoverno
     data_.subdomain = GenericField<3>::subdomain(*mesh_);
     
     // create finite element structures and distribute DOFs
-    feo = new Mechanics::FEObjects(mesh_, 1);
-    data_.dh_ = feo->dh(); // TODO move initialization of dh_ to EqData constructor after remove feo, same in next two lines.
-    data_.dh_scalar_ = feo->dh_scalar();
-    data_.dh_tensor_ = feo->dh_tensor();
-    DebugOut().fmt("Mechanics: solution size {}\n", feo->dh()->n_global_dofs());
+    data_.create_dh(mesh_, 1);
+    DebugOut().fmt("Mechanics: solution size {}\n", data_.dh_->n_global_dofs());
     
 }
 
@@ -357,23 +379,23 @@ void Elasticity::initialize()
 //     balance_->units(UnitSI().kg().m().s(-2));
 
     // create shared pointer to a FieldFE, pass FE data and push this FieldFE to output_field on all regions
-    data_.output_field_ptr = create_field_fe<3, FieldValue<3>::VectorFixed>(feo->dh());
+    data_.output_field_ptr = create_field_fe<3, FieldValue<3>::VectorFixed>(data_.dh_);
     data_.output_field.set(data_.output_field_ptr, 0.);
     
     // setup output stress
-    data_.output_stress_ptr = create_field_fe<3, FieldValue<3>::TensorFixed>(feo->dh_tensor());
+    data_.output_stress_ptr = create_field_fe<3, FieldValue<3>::TensorFixed>(data_.dh_tensor_);
     data_.output_stress.set(data_.output_stress_ptr, 0.);
     
     // setup output von Mises stress
-    data_.output_von_mises_stress_ptr = create_field_fe<3, FieldValue<3>::Scalar>(feo->dh_scalar());
+    data_.output_von_mises_stress_ptr = create_field_fe<3, FieldValue<3>::Scalar>(data_.dh_scalar_);
     data_.output_von_mises_stress.set(data_.output_von_mises_stress_ptr, 0.);
     
     // setup output cross-section
-    data_.output_cross_section_ptr = create_field_fe<3, FieldValue<3>::Scalar>(feo->dh_scalar());
+    data_.output_cross_section_ptr = create_field_fe<3, FieldValue<3>::Scalar>(data_.dh_scalar_);
     data_.output_cross_section.set(data_.output_cross_section_ptr, 0.);
     
     // setup output divergence
-    data_.output_div_ptr = create_field_fe<3, FieldValue<3>::Scalar>(feo->dh_scalar());
+    data_.output_div_ptr = create_field_fe<3, FieldValue<3>::Scalar>(data_.dh_scalar_);
     data_.output_divergence.set(data_.output_div_ptr, 0.);
     
     data_.output_field.output_type(OutputTime::CORNER_DATA);
@@ -391,7 +413,7 @@ void Elasticity::initialize()
     petsc_default_opts = "-ksp_type cg -pc_type hypre -pc_hypre_type boomeramg";
     
     // allocate matrix and vector structures
-    data_.ls = new LinSys_PETSC(feo->dh()->distr().get(), petsc_default_opts);
+    data_.ls = new LinSys_PETSC(data_.dh_->distr().get(), petsc_default_opts);
     ( (LinSys_PETSC *)data_.ls )->set_from_input( input_rec.val<Input::Record>("solver") );
     data_.ls->set_solution(data_.output_field_ptr->vec().petsc_vec());
 
@@ -401,7 +423,7 @@ void Elasticity::initialize()
     data_.outout_fields_assembly_ = new GenericAssembly< OutpuFieldsAssemblyElasticity >(&data(), balance, data_.dh_.get());
 
     // initialization of balance object
-//     balance_->allocate(feo->dh()->distr()->lsize(),
+//     balance_->allocate(data_.dh_->distr()->lsize(),
 //             max(feo->fe<1>()->n_dofs(), max(feo->fe<2>()->n_dofs(), feo->fe<3>()->n_dofs())));
 
 }
@@ -414,7 +436,6 @@ Elasticity::~Elasticity()
     MatDestroy(&stiffness_matrix);
     VecDestroy(&rhs);
     delete data_.ls;
-    delete feo;
 
     delete data_.stiffness_assembly_;
     delete data_.rhs_assembly_;

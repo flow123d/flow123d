@@ -111,6 +111,7 @@ public:
 
         static IT::Selection get_output_selection();
         
+        void create_dh(Mesh * mesh, unsigned int fe_order);
         
         BCField<3, FieldValue<3>::Enum > bc_type;
         BCField<3, FieldValue<3>::VectorFixed> bc_displacement;
