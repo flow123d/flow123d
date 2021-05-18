@@ -612,7 +612,7 @@ public:
 
 
     /// Assembles between elements of different dimensions.
-    /*inline void neigbour_integral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
+    inline void neigbour_integral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
         if (dim == 1) return;
         ASSERT_EQ_DBG(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
 
@@ -620,8 +620,8 @@ public:
         normal_stress_.zeros();
 
         DHCellAccessor cell_higher_dim = neighb_side.cell();
-        DHCellAccessor cell_tensor = cell_higher_dim.cell_with_other_dh(data_->dh_tensor_.get());
-        DHCellAccessor cell_scalar = cell_higher_dim.cell_with_other_dh(data_->dh_scalar_.get());
+        DHCellAccessor cell_tensor = cell_lower_dim.cell_with_other_dh(data_->dh_tensor_.get());
+        DHCellAccessor cell_scalar = cell_lower_dim.cell_with_other_dh(data_->dh_scalar_.get());
         fsv_.reinit(neighb_side.side());
 
         dof_indices_ = cell_higher_dim.get_loc_dof_indices();
@@ -633,9 +633,6 @@ public:
             normal_displacement_ -= arma::dot(vec_view_side_->value(i,0)*output_vec_[dof_indices_[i]], fsv_.normal_vector(0));
             arma::mat33 grad = -arma::kron(vec_view_side_->value(i,0)*output_vec_[dof_indices_[i]], fsv_.normal_vector(0).t()) / data_->cross_section(p_low);
             normal_stress_ += data_->lame_mu(p_low)*(grad+grad.t()) + data_->lame_lambda(p_low)*arma::trace(grad)*arma::eye(3,3);
-//           	if (cell_lower_dim.elm_idx()>1000)
-//           	    std::cout << "Element: " << cell_lower_dim.elm_idx() << " - dof: " << i <<
-//                    " - " << output_vec_[dof_indices_[i]] << std::endl;
         }
 
         LocDofVec dof_indices_scalar_ = cell_scalar.get_loc_dof_indices();
@@ -645,7 +642,7 @@ public:
                 output_stress_vec_[dof_indices_tensor_[i*3+j]] += normal_stress_(i,j);
         output_cross_sec_vec_[dof_indices_scalar_[0]] += normal_displacement_;
         output_div_vec_[dof_indices_scalar_[0]] += normal_displacement_ / data_->cross_section(p_low);
-    } // */
+    }
 
 
     /// Implements @p AssemblyBase::reallocate_cache.

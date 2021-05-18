@@ -435,9 +435,9 @@ void Elasticity::update_output_fields()
     data_.output_div_ptr->vec().zero_entries();
     START_TIMER("assemble_fields_output");
     data_.outout_fields_assembly_->assemble(data_.dh_);
-    compute_output_fields<1>();
-    compute_output_fields<2>();
-    compute_output_fields<3>();
+    //compute_output_fields<1>();
+    //compute_output_fields<2>();
+    //compute_output_fields<3>();
     END_TIMER("assemble_fields_output");
 
     // update ghost values of computed fields
@@ -694,10 +694,6 @@ void Elasticity::compute_output_fields()
                     normal_displacement -= arma::dot(vec_side.value(i,0)*output_vec[side_dof_indices[i]], fsv.normal_vector(0));
                     arma::mat33 grad = -arma::kron(vec_side.value(i,0)*output_vec[side_dof_indices[i]], fsv.normal_vector(0).t()) / csection;
                     normal_stress += mu*(grad+grad.t()) + lambda*arma::trace(grad)*arma::eye(3,3);
-//                    if ((elm->n_neighs_vb() > 0) && (elm.idx()>1000)) {
-//                    	std::cout << "Element: " << elm.idx() << " - dof: " << i <<
-//                    			" - " << output_vec[side_dof_indices[i]] << std::endl;
-//                    }
                 }
             }
             LocDofVec dof_indices_scalar = cell_scalar.get_loc_dof_indices();
