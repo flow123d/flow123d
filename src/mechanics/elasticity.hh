@@ -92,7 +92,7 @@ class Elasticity : public EquationBase
 {
 public:
 
-	class EqData : public FieldSet {
+	class EqFields : public FieldSet {
 	public:
       
         enum Bc_types {
@@ -101,18 +101,10 @@ public:
           bc_type_traction
         };
 
-		EqData();
+        EqFields();
         
-        static  constexpr const char *  name() { return "Mechanics_LinearElasticity"; }
-
-        static string default_output_field() { return "\"displacement\""; }
-
         static const Input::Type::Selection & get_bc_type_selection();
 
-        static IT::Selection get_output_selection();
-        
-        void create_dh(Mesh * mesh, unsigned int fe_order);
-        
         BCField<3, FieldValue<3>::Enum > bc_type;
         BCField<3, FieldValue<3>::VectorFixed> bc_displacement;
         BCField<3, FieldValue<3>::VectorFixed> bc_traction;
@@ -150,6 +142,23 @@ public:
 
         EquationOutput output_fields;
 
+	};
+
+	class EqData {
+	public:
+
+        static  constexpr const char *  name() { return "Mechanics_LinearElasticity"; }
+
+        static string default_output_field() { return "\"displacement\""; }
+
+        static IT::Selection get_output_selection();
+
+		EqData()
+        {}
+
+		/// Create DOF handler objects
+        void create_dh(Mesh * mesh, unsigned int fe_order);
+
         /// Objects for distribution of dofs.
         std::shared_ptr<DOFHandlerMultiDim> dh_;
         std::shared_ptr<DOFHandlerMultiDim> dh_scalar_;
@@ -163,13 +172,7 @@ public:
 
     	// @}
 
-        /// general assembly objects, hold assembly objects of appropriate dimension
-        GenericAssembly< StiffnessAssemblyElasticity > * stiffness_assembly_;
-        GenericAssembly< RhsAssemblyElasticity > * rhs_assembly_;
-        GenericAssembly< OutpuFieldsAssemblyElasticity > * outout_fields_assembly_;
-
 	};
-
 
 
     /**
@@ -220,14 +223,17 @@ public:
 	void update_output_fields();
     
     void set_potential_load(const Field<3, FieldValue<3>::Scalar> &potential)
-    { data_.potential_load = potential; }
+    { eq_fields_->potential_load = potential; }
 
     void calculate_cumulative_balance();
 
 	const Vec &get_solution()
-	{ return data_.ls->get_solution(); }
+	{ return eq_data_->ls->get_solution(); }
 
-    inline EqData &data() { return data_; }
+	inline EqFields &eq_fields() { return *eq_fields_; }
+
+	inline EqData &eq_data() { return *eq_data_; }
+
     
     
     typedef Elasticity FactoryBaseType;
@@ -303,8 +309,12 @@ private:
 	/// @name Physical parameters
 	// @{
 
-	/// Field data for model parameters.
-	EqData data_;
+	/// Fields for model parameters.
+	std::shared_ptr<EqFields> eq_fields_;
+
+	/// Data for model parameters.
+	std::shared_ptr<EqData> eq_data_;
+
     
 	// @}
 
@@ -352,6 +362,12 @@ private:
     bool allocation_done;
     
     // @}
+
+    /// general assembly objects, hold assembly objects of appropriate dimension
+    GenericAssembly< StiffnessAssemblyElasticity > * stiffness_assembly_;
+    GenericAssembly< RhsAssemblyElasticity > * rhs_assembly_;
+    GenericAssembly< OutpuFieldsAssemblyElasticity > * output_fields_assembly_;
+
 };
 
 

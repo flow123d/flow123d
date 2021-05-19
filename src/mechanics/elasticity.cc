@@ -56,12 +56,12 @@ const Record & Elasticity::get_input_type() {
            .declare_key("solver", LinSys_PETSC::get_input_type(), Default::obligatory(),
 				"Linear solver for elasticity.")
 		   .declare_key("input_fields", Array(
-		        Elasticity::EqData()
+		        Elasticity::EqFields()
 		            .make_field_descriptor_type(equation_name)),
 		        IT::Default::obligatory(),
 		        "Input fields of the equation.")
            .declare_key("output",
-                EqData().output_fields.make_output_type(equation_name, ""),
+                EqFields().output_fields.make_output_type(equation_name, ""),
                 IT::Default("{ \"fields\": [ "+Elasticity::EqData::default_output_field()+" ] }"),
                 "Setting of the field output.")
 		   .close();
@@ -165,7 +165,7 @@ struct fn_dirichlet_penalty {
 
 
 
-const Selection & Elasticity::EqData::get_bc_type_selection() {
+const Selection & Elasticity::EqFields::get_bc_type_selection() {
     return Selection("Elasticity_BC_Type", "Types of boundary conditions for mechanics.")
             .add_value(bc_type_displacement, "displacement",
                   "Prescribed displacement.")
@@ -177,7 +177,7 @@ const Selection & Elasticity::EqData::get_bc_type_selection() {
 }
 
 
-Elasticity::EqData::EqData()
+Elasticity::EqFields::EqFields()
 {
     *this+=bc_type
         .name("bc_type")
@@ -333,8 +333,10 @@ Elasticity::Elasticity(Mesh & init_mesh, const Input::Record in_rec, TimeGoverno
 	// due to constexpr optimization.
 	START_TIMER(EqData::name());
 
-	this->eq_fieldset_ = &data_;
-    data_.add_coords_field();
+    eq_data_ = std::make_shared<EqData>();
+    eq_fields_ = std::make_shared<EqFields>();
+    eq_fields_->add_coords_field();
+    this->eq_fieldset_ = eq_fields_.get();
     
     auto time_rec = in_rec.val<Input::Record>("time");
     if (tm == nullptr)
@@ -350,13 +352,13 @@ Elasticity::Elasticity(Mesh & init_mesh, const Input::Record in_rec, TimeGoverno
 
 
     // Set up physical parameters.
-    data_.set_mesh(init_mesh);
-    data_.region_id = GenericField<3>::region_id(*mesh_);
-    data_.subdomain = GenericField<3>::subdomain(*mesh_);
+    eq_fields_->set_mesh(init_mesh);
+    eq_fields_->region_id = GenericField<3>::region_id(*mesh_);
+    eq_fields_->subdomain = GenericField<3>::subdomain(*mesh_);
     
     // create finite element structures and distribute DOFs
-    data_.create_dh(mesh_, 1);
-    DebugOut().fmt("Mechanics: solution size {}\n", data_.dh_->n_global_dofs());
+    eq_data_->create_dh(mesh_, 1);
+    DebugOut().fmt("Mechanics: solution size {}\n", eq_data_->dh_->n_global_dofs());
     
 }
 
@@ -365,13 +367,13 @@ void Elasticity::initialize()
 {
     output_stream_ = OutputTime::create_output_stream("mechanics", input_rec.val<Input::Record>("output_stream"), time().get_unit_string());
     
-    data_.set_components({"displacement"});
-    data_.set_input_list( input_rec.val<Input::Array>("input_fields"), time() );
+    eq_fields_->set_components({"displacement"});
+    eq_fields_->set_input_list( input_rec.val<Input::Array>("input_fields"), time() );
     
 //     balance_ = std::make_shared<Balance>("mechanics", mesh_);
 //     balance_->init_from_input(input_rec.val<Input::Record>("balance"), *time_);
     // initialization of balance object
-//     data_.balance_idx_ = {
+//     eq_data_->balance_idx_ = {
 //         balance_->add_quantity("force_x"),
 //         balance_->add_quantity("force_y"),
 //         balance_->add_quantity("force_z")
@@ -379,51 +381,51 @@ void Elasticity::initialize()
 //     balance_->units(UnitSI().kg().m().s(-2));
 
     // create shared pointer to a FieldFE, pass FE data and push this FieldFE to output_field on all regions
-    data_.output_field_ptr = create_field_fe<3, FieldValue<3>::VectorFixed>(data_.dh_);
-    data_.output_field.set(data_.output_field_ptr, 0.);
+    eq_fields_->output_field_ptr = create_field_fe<3, FieldValue<3>::VectorFixed>(eq_data_->dh_);
+    eq_fields_->output_field.set(eq_fields_->output_field_ptr, 0.);
     
     // setup output stress
-    data_.output_stress_ptr = create_field_fe<3, FieldValue<3>::TensorFixed>(data_.dh_tensor_);
-    data_.output_stress.set(data_.output_stress_ptr, 0.);
+    eq_fields_->output_stress_ptr = create_field_fe<3, FieldValue<3>::TensorFixed>(eq_data_->dh_tensor_);
+    eq_fields_->output_stress.set(eq_fields_->output_stress_ptr, 0.);
     
     // setup output von Mises stress
-    data_.output_von_mises_stress_ptr = create_field_fe<3, FieldValue<3>::Scalar>(data_.dh_scalar_);
-    data_.output_von_mises_stress.set(data_.output_von_mises_stress_ptr, 0.);
+    eq_fields_->output_von_mises_stress_ptr = create_field_fe<3, FieldValue<3>::Scalar>(eq_data_->dh_scalar_);
+    eq_fields_->output_von_mises_stress.set(eq_fields_->output_von_mises_stress_ptr, 0.);
     
     // setup output cross-section
-    data_.output_cross_section_ptr = create_field_fe<3, FieldValue<3>::Scalar>(data_.dh_scalar_);
-    data_.output_cross_section.set(data_.output_cross_section_ptr, 0.);
+    eq_fields_->output_cross_section_ptr = create_field_fe<3, FieldValue<3>::Scalar>(eq_data_->dh_scalar_);
+    eq_fields_->output_cross_section.set(eq_fields_->output_cross_section_ptr, 0.);
     
     // setup output divergence
-    data_.output_div_ptr = create_field_fe<3, FieldValue<3>::Scalar>(data_.dh_scalar_);
-    data_.output_divergence.set(data_.output_div_ptr, 0.);
+    eq_fields_->output_div_ptr = create_field_fe<3, FieldValue<3>::Scalar>(eq_data_->dh_scalar_);
+    eq_fields_->output_divergence.set(eq_fields_->output_div_ptr, 0.);
     
-    data_.output_field.output_type(OutputTime::CORNER_DATA);
+    eq_fields_->output_field.output_type(OutputTime::CORNER_DATA);
 
     // set time marks for writing the output
-    data_.output_fields.initialize(output_stream_, mesh_, input_rec.val<Input::Record>("output"), this->time());
+    eq_fields_->output_fields.initialize(output_stream_, mesh_, input_rec.val<Input::Record>("output"), this->time());
 
     // set instances of FieldModel
-    data_.lame_mu.set(Model<3, FieldValue<3>::Scalar>::create(fn_lame_mu(), data_.young_modulus, data_.poisson_ratio), 0.0);
-    data_.lame_lambda.set(Model<3, FieldValue<3>::Scalar>::create(fn_lame_lambda(), data_.young_modulus, data_.poisson_ratio), 0.0);
-    data_.dirichlet_penalty.set(Model<3, FieldValue<3>::Scalar>::create(fn_dirichlet_penalty(), data_.lame_mu, data_.lame_lambda), 0.0);
+    eq_fields_->lame_mu.set(Model<3, FieldValue<3>::Scalar>::create(fn_lame_mu(), eq_fields_->young_modulus, eq_fields_->poisson_ratio), 0.0);
+    eq_fields_->lame_lambda.set(Model<3, FieldValue<3>::Scalar>::create(fn_lame_lambda(), eq_fields_->young_modulus, eq_fields_->poisson_ratio), 0.0);
+    eq_fields_->dirichlet_penalty.set(Model<3, FieldValue<3>::Scalar>::create(fn_dirichlet_penalty(), eq_fields_->lame_mu, eq_fields_->lame_lambda), 0.0);
 
     // equation default PETSc solver options
     std::string petsc_default_opts;
     petsc_default_opts = "-ksp_type cg -pc_type hypre -pc_hypre_type boomeramg";
     
     // allocate matrix and vector structures
-    data_.ls = new LinSys_PETSC(data_.dh_->distr().get(), petsc_default_opts);
-    ( (LinSys_PETSC *)data_.ls )->set_from_input( input_rec.val<Input::Record>("solver") );
-    data_.ls->set_solution(data_.output_field_ptr->vec().petsc_vec());
+    eq_data_->ls = new LinSys_PETSC(eq_data_->dh_->distr().get(), petsc_default_opts);
+    ( (LinSys_PETSC *)eq_data_->ls )->set_from_input( input_rec.val<Input::Record>("solver") );
+    eq_data_->ls->set_solution(eq_fields_->output_field_ptr->vec().petsc_vec());
 
     std::shared_ptr<Balance> balance; // temporary solution
-    data_.stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyElasticity >(&data(), balance, data_.dh_.get());
-    data_.rhs_assembly_ = new GenericAssembly< RhsAssemblyElasticity >(&data(), balance, data_.dh_.get());
-    data_.outout_fields_assembly_ = new GenericAssembly< OutpuFieldsAssemblyElasticity >(&data(), balance, data_.dh_.get());
+    stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyElasticity >(eq_fields_.get(), eq_data_.get(), balance);
+    rhs_assembly_ = new GenericAssembly< RhsAssemblyElasticity >(eq_fields_.get(), eq_data_.get(), balance);
+    output_fields_assembly_ = new GenericAssembly< OutpuFieldsAssemblyElasticity >(eq_fields_.get(), eq_data_.get(), balance);
 
     // initialization of balance object
-//     balance_->allocate(data_.dh_->distr()->lsize(),
+//     balance_->allocate(eq_data_->dh_->distr()->lsize(),
 //             max(feo->fe<1>()->n_dofs(), max(feo->fe<2>()->n_dofs(), feo->fe<3>()->n_dofs())));
 
 }
@@ -435,11 +437,11 @@ Elasticity::~Elasticity()
 
     MatDestroy(&stiffness_matrix);
     VecDestroy(&rhs);
-    delete data_.ls;
+    delete eq_data_->ls;
 
-    delete data_.stiffness_assembly_;
-    delete data_.rhs_assembly_;
-    delete data_.outout_fields_assembly_;
+    delete stiffness_assembly_;
+    delete rhs_assembly_;
+    delete output_fields_assembly_;
 }
 
 
@@ -447,29 +449,29 @@ Elasticity::~Elasticity()
 void Elasticity::update_output_fields()
 {
     // update ghost values of solution vector
-    data_.output_field_ptr->vec().local_to_ghost_begin();
-    data_.output_field_ptr->vec().local_to_ghost_end();
+	eq_fields_->output_field_ptr->vec().local_to_ghost_begin();
+	eq_fields_->output_field_ptr->vec().local_to_ghost_end();
 
     // compute new output fields depending on solution (stress, divergence etc.)
-    data_.output_stress_ptr->vec().zero_entries();
-    data_.output_cross_section_ptr->vec().zero_entries();
-    data_.output_div_ptr->vec().zero_entries();
+	eq_fields_->output_stress_ptr->vec().zero_entries();
+	eq_fields_->output_cross_section_ptr->vec().zero_entries();
+	eq_fields_->output_div_ptr->vec().zero_entries();
     START_TIMER("assemble_fields_output");
-    data_.outout_fields_assembly_->assemble(data_.dh_);
+    output_fields_assembly_->assemble(eq_data_->dh_);
     //compute_output_fields<1>();
     //compute_output_fields<2>();
     //compute_output_fields<3>();
     END_TIMER("assemble_fields_output");
 
     // update ghost values of computed fields
-    data_.output_stress_ptr->vec().local_to_ghost_begin();
-    data_.output_stress_ptr->vec().local_to_ghost_end();
-    data_.output_von_mises_stress_ptr->vec().local_to_ghost_begin();
-    data_.output_von_mises_stress_ptr->vec().local_to_ghost_end();
-    data_.output_cross_section_ptr->vec().local_to_ghost_begin();
-    data_.output_cross_section_ptr->vec().local_to_ghost_end();
-    data_.output_div_ptr->vec().local_to_ghost_begin();
-    data_.output_div_ptr->vec().local_to_ghost_end();
+    eq_fields_->output_stress_ptr->vec().local_to_ghost_begin();
+    eq_fields_->output_stress_ptr->vec().local_to_ghost_end();
+    eq_fields_->output_von_mises_stress_ptr->vec().local_to_ghost_begin();
+    eq_fields_->output_von_mises_stress_ptr->vec().local_to_ghost_end();
+    eq_fields_->output_cross_section_ptr->vec().local_to_ghost_begin();
+    eq_fields_->output_cross_section_ptr->vec().local_to_ghost_end();
+    eq_fields_->output_div_ptr->vec().local_to_ghost_begin();
+    eq_fields_->output_div_ptr->vec().local_to_ghost_end();
 }
 
 
@@ -478,40 +480,40 @@ void Elasticity::update_output_fields()
 void Elasticity::zero_time_step()
 {
 	START_TIMER(EqData::name());
-	data_.mark_input_times( *time_ );
-	data_.set_time(time_->step(), LimitSide::right);
+	eq_fields_->mark_input_times( *time_ );
+	eq_fields_->set_time(time_->step(), LimitSide::right);
 	std::stringstream ss; // print warning message with table of uninitialized fields
 	if ( FieldCommon::print_message_table(ss, "mechanics") ) {
 		WarningOut() << ss.str();
 	}
 
-    ( (LinSys_PETSC *)data_.ls )->set_initial_guess_nonzero();
+    ( (LinSys_PETSC *)eq_data_->ls )->set_initial_guess_nonzero();
 
     // check first time assembly - needs preallocation
     if (!allocation_done) preallocate();
     
 
     // after preallocation we assemble the matrices and vectors required for balance of forces
-//     for (auto subst_idx : data_.balance_idx_)
-//         balance_->calculate_instant(subst_idx, data_.ls->get_solution());
+//     for (auto subst_idx : eq_data_->balance_idx_)
+//         balance_->calculate_instant(subst_idx, eq_data_->ls->get_solution());
     
 //     update_solution();
-    data_.ls->start_add_assembly();
-    MatSetOption(*data_.ls->get_matrix(), MAT_KEEP_NONZERO_PATTERN, PETSC_TRUE);
-    data_.ls->mat_zero_entries();
-    data_.ls->rhs_zero_entries();
+    eq_data_->ls->start_add_assembly();
+    MatSetOption(*eq_data_->ls->get_matrix(), MAT_KEEP_NONZERO_PATTERN, PETSC_TRUE);
+    eq_data_->ls->mat_zero_entries();
+    eq_data_->ls->rhs_zero_entries();
     START_TIMER("assemble_stiffness");
-    data_.stiffness_assembly_->assemble(data_.dh_);
+    stiffness_assembly_->assemble(eq_data_->dh_);
     END_TIMER("assemble_stiffness");
     START_TIMER("assemble_rhs");
-    data_.rhs_assembly_->assemble(data_.dh_);
+    rhs_assembly_->assemble(eq_data_->dh_);
     END_TIMER("assemble_rhs");
     //assemble_stiffness_matrix();
     //assemble_rhs();
-    data_.ls->finish_assembly();
-    LinSys::SolveInfo si = data_.ls->solve();
+    eq_data_->ls->finish_assembly();
+    LinSys::SolveInfo si = eq_data_->ls->solve();
     MessageOut().fmt("[mech solver] lin. it: {}, reason: {}, residual: {}\n",
-        		si.n_iterations, si.converged_reason, data_.ls->compute_residual());
+        		si.n_iterations, si.converged_reason, eq_data_->ls->compute_residual());
     output_data();
 }
 
@@ -520,15 +522,15 @@ void Elasticity::zero_time_step()
 void Elasticity::preallocate()
 {
     // preallocate system matrix
-	data_.ls->start_allocation();
+	eq_data_->ls->start_allocation();
     stiffness_matrix = NULL;
     rhs = NULL;
 
     START_TIMER("assemble_stiffness");
-    data_.stiffness_assembly_->assemble(data_.dh_);
+    stiffness_assembly_->assemble(eq_data_->dh_);
     END_TIMER("assemble_stiffness");
     START_TIMER("assemble_rhs");
-    data_.rhs_assembly_->assemble(data_.dh_);
+    rhs_assembly_->assemble(eq_data_->dh_);
     END_TIMER("assemble_rhs");
 	//assemble_stiffness_matrix();
     //assemble_rhs();
@@ -565,49 +567,49 @@ void Elasticity::next_time()
 void Elasticity::solve_linear_system()
 {
     START_TIMER("data reinit");
-    data_.set_time(time_->step(), LimitSide::right);
+    eq_fields_->set_time(time_->step(), LimitSide::right);
     END_TIMER("data reinit");
     
     // assemble stiffness matrix
     if (stiffness_matrix == NULL
-        || data_.subset(FieldFlag::in_main_matrix).changed())
+        || eq_fields_->subset(FieldFlag::in_main_matrix).changed())
     {
         DebugOut() << "Mechanics: Assembling matrix.\n";
-        data_.ls->start_add_assembly();
-        data_.ls->mat_zero_entries();
+        eq_data_->ls->start_add_assembly();
+        eq_data_->ls->mat_zero_entries();
         START_TIMER("assemble_stiffness");
-        data_.stiffness_assembly_->assemble(data_.dh_);
+        stiffness_assembly_->assemble(eq_data_->dh_);
         END_TIMER("assemble_stiffness");
         //assemble_stiffness_matrix();
-        data_.ls->finish_assembly();
+        eq_data_->ls->finish_assembly();
 
         if (stiffness_matrix == NULL)
-            MatConvert(*( data_.ls->get_matrix() ), MATSAME, MAT_INITIAL_MATRIX, &stiffness_matrix);
+            MatConvert(*( eq_data_->ls->get_matrix() ), MATSAME, MAT_INITIAL_MATRIX, &stiffness_matrix);
         else
-            MatCopy(*( data_.ls->get_matrix() ), stiffness_matrix, DIFFERENT_NONZERO_PATTERN);
+            MatCopy(*( eq_data_->ls->get_matrix() ), stiffness_matrix, DIFFERENT_NONZERO_PATTERN);
     }
 
     // assemble right hand side (due to sources and boundary conditions)
     if (rhs == NULL
-        || data_.subset(FieldFlag::in_rhs).changed())
+        || eq_fields_->subset(FieldFlag::in_rhs).changed())
     {
         DebugOut() << "Mechanics: Assembling right hand side.\n";
-        data_.ls->start_add_assembly();
-        data_.ls->rhs_zero_entries();
+        eq_data_->ls->start_add_assembly();
+        eq_data_->ls->rhs_zero_entries();
     	//assemble_rhs();
         START_TIMER("assemble_rhs");
-        data_.rhs_assembly_->assemble(data_.dh_);
+        rhs_assembly_->assemble(eq_data_->dh_);
         END_TIMER("assemble_rhs");
-    	data_.ls->finish_assembly();
+        eq_data_->ls->finish_assembly();
 
-        if (rhs == nullptr) VecDuplicate(*( data_.ls->get_rhs() ), &rhs);
-        VecCopy(*( data_.ls->get_rhs() ), rhs);
+        if (rhs == nullptr) VecDuplicate(*( eq_data_->ls->get_rhs() ), &rhs);
+        VecCopy(*( eq_data_->ls->get_rhs() ), rhs);
     }
 
     START_TIMER("solve");
-    LinSys::SolveInfo si = data_.ls->solve();
+    LinSys::SolveInfo si = eq_data_->ls->solve();
     MessageOut().fmt("[mech solver] lin. it: {}, reason: {}, residual: {}\n",
-        		si.n_iterations, si.converged_reason, data_.ls->compute_residual());
+        		si.n_iterations, si.converged_reason, eq_data_->ls->compute_residual());
     END_TIMER("solve");
 }
 
@@ -621,13 +623,13 @@ void Elasticity::output_data()
     START_TIMER("MECH-OUTPUT");
 
     // gather the solution from all processors
-    data_.output_fields.set_time( this->time().step(), LimitSide::left);
-    //if (data_.output_fields.is_field_output_time(data_.output_field, this->time().step()) )
+    eq_fields_->output_fields.set_time( this->time().step(), LimitSide::left);
+    //if (eq_fields_->output_fields.is_field_output_time(eq_fields_->output_field, this->time().step()) )
     update_output_fields();
-    data_.output_fields.output(this->time().step());
+    eq_fields_->output_fields.output(this->time().step());
 
 //     START_TIMER("MECH-balance");
-//     balance_->calculate_instant(subst_idx, data_.ls->get_solution());
+//     balance_->calculate_instant(subst_idx, eq_data_->ls->get_solution());
 //     balance_->output();
 //     END_TIMER("MECH-balance");
 
@@ -738,7 +740,7 @@ void Elasticity::calculate_cumulative_balance()
 {
 //     if (balance_->cumulative())
 //     {
-//         balance_->calculate_cumulative(subst_idx, data_.ls->get_solution());
+//         balance_->calculate_cumulative(subst_idx, eq_data_->ls->get_solution());
 //     }
 }
 
