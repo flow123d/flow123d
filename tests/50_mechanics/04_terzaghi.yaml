@@ -1,0 +1,87 @@
+# Test goal: 1D poroelasticity model - Terzaghi's problem.
+# Author: Pavel Exner
+# Source for reference:
+#   - analogical model to 02 test
+#   - analytical solution available: Arnold Verruijt (2014)
+#   - data according to https://www.researchgate.net/publication/222660034_A_fully_coupled_3-D_mixed_finite_element_model_of_Biot_consolidation
+#   - pvpython filter with analytic solution "04_pv_filter.py"
+#     it also prints out precomputed input parameters for Flow123d and possibly plots graph
+
+#   - the Flow123d results (especially pressure) are far from analytical, I could not determine any reason (PE)
+#   - lower storativity causes divergence of nonlinear solver (precision of linear solver is not an issue)
+#   - tried different time steps with no improvement
+
+flow123d_version: 3.1.0
+problem: !Coupling_Sequential
+  description: Terzaghi's 1D problem.
+  mesh:
+    mesh_file: ../00_mesh/line_z_15.msh
+  flow_equation: !Coupling_Iterative
+    input_fields:
+      - region: BULK
+        biot_alpha: 1
+        fluid_density: 1000
+    time:
+      end_time: 1e6
+    iteration_parameter: 1 # affects convergence of HM coupling (defaults to 1, lower value sometimes helps)
+    a_tol: 0
+    r_tol: 1e-10
+    flow_equation: !Flow_Richards_LMH
+        # switch off gravity
+        gravity: [0,0,0]
+        nonlinear_solver:
+          linear_solver: !Petsc
+            a_tol: 1e-10
+            r_tol: 1e-14
+          #options: -ksp_type preonly -pc_type lu
+        input_fields:
+          - region: BULK
+            conductivity: 1e-5
+            # https://en.wikipedia.org/wiki/Specific_storage
+            storativity: !FieldFormula
+              value: 0.375 * 4.4e-4 # *1e-6 # for lower storativity not converging
+            init_pressure: 5.148063187945336e-05
+
+          - region: .bc_top
+            bc_type: dirichlet
+            bc_pressure: 0
+
+          # homogenous Neumann
+          #- region: .bc_bottom
+
+        output:
+          times: &output_times [1e3, 1e4, 1e5, 1e6, 1e7]
+          fields:
+            - piezo_head_p0
+            - pressure_p0
+            - velocity_p0
+        #balance:
+          #cumulative: true
+        output_stream:
+          file: flow.pvd
+          format: !vtk
+    mechanics_equation:
+        output_stream:
+          file: mechanics.pvd
+          format: !vtk
+        output:
+          times: *output_times
+          fields:
+            - displacement
+            - stress
+        solver: !Petsc
+          a_tol: 1e-10
+          r_tol: 1e-14
+          #options: -ksp_type preonly -pc_type lu
+        input_fields:
+          - region: BULK
+            young_modulus: 1e8
+            poisson_ratio: 0.25
+
+          - region: .bc_top
+            bc_type: traction
+            bc_traction: [0,0,-1e4]
+
+          - region: .bc_bottom
+            bc_type: displacement
+            bc_displacement: 0

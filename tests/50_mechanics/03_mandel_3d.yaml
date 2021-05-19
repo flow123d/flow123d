@@ -11,8 +11,7 @@ flow123d_version: 3.1.0
 problem: !Coupling_Sequential
   description: Mandel's rectangular problem.
   mesh:
-    mesh_file: ../00_mesh/square_1x1_xy_28el.msh
-    #mesh_file: ../00_mesh/square_1x1_xy.msh
+    mesh_file: ../00_mesh/cube_2x2x2.msh
   flow_equation: !Coupling_Iterative
     input_fields:
       - region: BULK
@@ -26,6 +25,7 @@ problem: !Coupling_Sequential
     a_tol: 0
     r_tol: 1e-8
     flow_equation: !Flow_Richards_LMH
+        gravity: [0,0,0]
         nonlinear_solver:
           linear_solver: !Petsc
             a_tol: 1e-10
@@ -34,8 +34,8 @@ problem: !Coupling_Sequential
           - region: BULK
             conductivity: 6e-15
             # https://en.wikipedia.org/wiki/Specific_storage
-            storativity: 2E-8
-            init_pressure: 2.35227910676059
+            storativity: 2e-8
+            init_pressure: 10
             #init_pressure: !FieldFormula
               #value: 0.2*3/13*1e-10 / (2e-8 + 0.2*0.2*3/13*1e-10) * 1e7 / (1000*9.81)
 
@@ -44,7 +44,7 @@ problem: !Coupling_Sequential
             bc_pressure: 0
 
           # homogenous Neumann
-          #- region: .bc_bottom
+          #- region: [.top_z, .bottom_z, .front_y, .back_y]
 
         output:
           times:
@@ -76,10 +76,15 @@ problem: !Coupling_Sequential
             young_modulus: 27e9
             poisson_ratio: 0.35
 
-          - region: .top_y
+          #- region: .top_z
+            #time: 0
+            #bc_type: traction
+            #bc_traction: [0,0,0]
+          - region: .top_z
+            #time: 1
             bc_type: traction
-            bc_traction: [0,-1e8,0]
+            bc_traction: [0,0,-1e8]
 
-          - region: .bottom_y
-            bc_type: displacement
+          - region: [.bottom_z, .front_y, .back_y]
+            bc_type: displacement_n
             bc_displament: 0

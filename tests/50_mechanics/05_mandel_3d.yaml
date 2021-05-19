@@ -9,46 +9,45 @@
 
 flow123d_version: 3.1.0
 problem: !Coupling_Sequential
-  description: Mandel's rectangular problem.
+  description: Mandel's rectangular problem in 3D.
   mesh:
-    mesh_file: ../00_mesh/square_1x1_xy_28el.msh
-    #mesh_file: ../00_mesh/square_1x1_xy.msh
+    mesh_file: block_2x2x2.msh
   flow_equation: !Coupling_Iterative
     input_fields:
       - region: BULK
-        biot_alpha: 0.2
+        biot_alpha: 1
         fluid_density: 1000
     time:
-      end_time: 10
+      end_time: 100
       # common time unit cannot be used in field formulas
-      common_time_unit: d
+#      common_time_unit: s
     iteration_parameter: 1 # affects convergence of HM coupling (defaults to 1, lower value sometimes helps)
     a_tol: 0
     r_tol: 1e-8
     flow_equation: !Flow_Richards_LMH
+        gravity: [0,0,0]
         nonlinear_solver:
           linear_solver: !Petsc
-            a_tol: 1e-10
-            r_tol: 1e-10
+            a_tol: 1e-14
+            r_tol: 1e-14
         input_fields:
           - region: BULK
-            conductivity: 6e-15
+            conductivity: 1e-9
             # https://en.wikipedia.org/wiki/Specific_storage
-            storativity: 2E-8
-            init_pressure: 2.35227910676059
-            #init_pressure: !FieldFormula
-              #value: 0.2*3/13*1e-10 / (2e-8 + 0.2*0.2*3/13*1e-10) * 1e7 / (1000*9.81)
+            storativity: !FieldFormula
+              value: 0.375 * 4.4e-4
+            init_pressure: 0.9995763795303549
 
           - region: [.right_x, .left_x]
             bc_type: dirichlet
             bc_pressure: 0
 
           # homogenous Neumann
-          #- region: .bc_bottom
+          #- region: [.top_z, .bottom_z, .front_y, .back_y]
 
         output:
-          times:
-            - step: 1
+#          times: &output_times [0.05, 0.5, 2.5, 5, 10, 100] # [0.05, 0.5, 5, 10, 100, 1e3, 1e4, 1e5]
+          times: &output_times [10, 100, 1e3, 1e4, 1e5]
           fields:
             - piezo_head_p0
             - pressure_p0
@@ -63,23 +62,37 @@ problem: !Coupling_Sequential
           file: mechanics.pvd
           format: !vtk
         output:
-          times:
-            - step: 1
+          times: *output_times
           fields:
             - displacement
             - stress
         solver: !Petsc
-          a_tol: 1e-10
-          r_tol: 1e-10
+          a_tol: 1e-14
+          r_tol: 1e-14
+          options: -ksp_type preonly -pc_type lu
         input_fields:
           - region: BULK
-            young_modulus: 27e9
-            poisson_ratio: 0.35
+            young_modulus: 1e8
+            poisson_ratio: 0.25
 
-          - region: .top_y
+          # this is not converging well
+          - region: .top_z
+            #time: 1
             bc_type: traction
-            bc_traction: [0,-1e8,0]
+            bc_traction: [0,0,-1e4]
+          - region: .bottom_z
+            #time: 1
+            bc_type: traction
+            bc_traction: [0,0,1e4]
 
-          - region: .bottom_y
-            bc_type: displacement
-            bc_displament: 0
+#          # this converges
+#          - region: .top_z
+#            bc_type: traction
+#            bc_traction: [0,0,-2e4]
+#          - region: .bottom_z
+#            bc_type: displacement
+#            bc_displacement: 0
+
+          - region: [.front_y, .back_y]
+            bc_type: displacement_n
+            bc_displacement: 0
