@@ -78,10 +78,10 @@ struct EvalPointData {
 
 
 /// Holds pair of positions of point in cache (element and eval point)
-struct CachePositionHandler {
-	CachePositionHandler() {}   ///< Default constructor
+struct PatchCacheLoc {
+    PatchCacheLoc() {}   ///< Default constructor
     /// Constructor sets all data members
-	CachePositionHandler(unsigned int i_elm, unsigned int i_ep)
+	PatchCacheLoc(unsigned int i_elm, unsigned int i_ep)
     : i_elm_(i_elm), i_ep_(i_ep) {}
 
     unsigned int i_elm_;        ///< index of element in patch
@@ -154,7 +154,7 @@ public:
     ~ElementCacheMap();
 
     /// Init cache
-    void init(std::shared_ptr<EvalPoints> eval_points, const DOFHandlerMultiDim * dh);
+    void init(std::shared_ptr<EvalPoints> eval_points);
 
     /// Create patch of cached elements before reading data to cache.
     void create_patch();
@@ -219,27 +219,13 @@ public:
     }
 
     /// Return begin position of element chunk in FieldValueCache
-    inline unsigned int element_chunk_begin(unsigned int mesh_elm_idx) const {
-        std::unordered_map<unsigned int, unsigned int>::const_iterator it = element_to_map_.find(mesh_elm_idx);
-        if ( it != element_to_map_.end() ) return element_starts_[it->second];
-        else return ElementCacheMap::undef_elem_idx;
-    }
-
-    /// Return end position of element chunk in FieldValueCache
-    inline unsigned int element_chunk_end(unsigned int mesh_elm_idx) const {
-        std::unordered_map<unsigned int, unsigned int>::const_iterator it = element_to_map_.find(mesh_elm_idx);
-        if ( it != element_to_map_.end() ) return element_starts_[it->second+1];
-        else return ElementCacheMap::undef_elem_idx;
-    }
-
-    /// Return begin position of element chunk in FieldValueCache
-    inline unsigned int element_chunk_begin_new(unsigned int elm_patch_idx) const {
+    inline unsigned int element_chunk_begin(unsigned int elm_patch_idx) const {
         ASSERT_LT_DBG(elm_patch_idx, n_elements());
         return element_starts_[elm_patch_idx];
     }
 
     /// Return end position of element chunk in FieldValueCache
-    inline unsigned int element_chunk_end_new(unsigned int elm_patch_idx) const {
+    inline unsigned int element_chunk_end(unsigned int elm_patch_idx) const {
         ASSERT_LT_DBG(elm_patch_idx, n_elements());
         return element_starts_[elm_patch_idx+1];
     }
@@ -262,13 +248,14 @@ public:
         else return ElementCacheMap::undef_elem_idx;
     }
 
+    /// Return begin position of region chunk specified by position in map
+    inline unsigned int region_idx_from_chunk_position(unsigned int chunk_pos) const {
+    	return eval_point_data_[ this->region_chunk_by_map_index(chunk_pos) ].i_reg_;
+    }
+
     /// Return item of eval_point_data_ specified by its position
     inline const EvalPointData &eval_point_data(unsigned int point_idx) const {
         return eval_point_data_[point_idx];
-    }
-
-    inline const DOFHandlerMultiDim * dh() const {
-        return this->dh_;
     }
 
     /// Return value of evaluation point given by idx of element in patch and local point idx in EvalPoints from cache.
@@ -340,9 +327,6 @@ protected:
     std::unordered_map<unsigned int, unsigned int> element_to_map_; ///< Maps element_idx to element index in patch - TODO remove
 
     // @}
-
-    /// Pointer to DOF handler
-    const DOFHandlerMultiDim * dh_;
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;

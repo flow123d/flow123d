@@ -107,7 +107,7 @@ public:
 
     /// Return maximal size of evaluation points objects.
     inline unsigned int max_size() const {
-        return std::max( std::max( size(0), size(1) ), std::max( size(2), size(3) ) );
+        return max_size_;
     }
 
 private:
@@ -170,8 +170,15 @@ private:
         unsigned int dim_;                                            ///< Dimension of local points
     };
 
+    inline void set_max_size() {
+        max_size_ = std::max( std::max( size(0), size(1) ), std::max( size(2), size(3) ) );
+    }
+
     /// Sub objects of dimensions 0,1,2,3
     std::array<DimEvalPoints, 4> dim_eval_points_;
+
+    /// Maximal number of used EvalPoints.
+    unsigned int max_size_;
 
 };
 

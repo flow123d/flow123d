@@ -28,6 +28,7 @@
 #include "input/reader_to_storage.hh"
 
 #include "system/sys_profiler.hh"
+#include "system/armor.hh"
 
 #include "mesh/mesh.h"
 #include "mesh/accessors.hh"
@@ -112,11 +113,11 @@ public:
 	typedef typename T::return_type ReturnType;
     typedef ReturnType(FieldSpeed::*FceType)(Point&, ElementAccessor<3>&);
 
-    ReturnType fce1(Point &p, ElementAccessor<3> &elm) {
+    ReturnType fce1(Point &, ElementAccessor<3> &) {
     	return data1_;
     }
 
-    ReturnType fce2(Point &p, ElementAccessor<3> &elm) {
+    ReturnType fce2(Point &, ElementAccessor<3> &) {
     	return data2_;
     }
 
@@ -147,7 +148,7 @@ public:
 		for (int i=0; i<loop_call_count; i++)
 			for (int j=0; j<list_size; j++)
 				for (auto elm : this->mesh_->elements_range()) {
-					test_result_sum_ += field_.value( this->point_list_[j], elm);
+					test_result_sum_ += field_.value( this->point_list_.template vec<3>(j), elm);
 				}
 		END_TIMER("all_values");
 
@@ -166,8 +167,8 @@ public:
         component_names_ = { "component_0", "component_1", "component_2" };
 
         point_ = Point(point_coords);
-        point_list_.reserve(list_size);
-        for (int i=0; i<list_size; i++) point_list_.push_back( point_coords );
+        for (int i=0; i<list_size; i++)
+			point_list_.set(i) = Armor::vec<3>(point_coords);
 
     	fce_ = new FceType[mesh_->region_db().size()];
     	data_ = new ReturnType[mesh_->region_db().size()];
@@ -196,7 +197,7 @@ public:
     	( const_cast<RegionDB&>(mesh_->region_db()) ).add_set(set_2_name, set_2);
 	}
 
-	void set_data(FieldValue<3>::Scalar::return_type val) {
+	void set_data(FieldValue<3>::Scalar::return_type) {
         data1_ = 1.75;
     	data2_ = 1.25;
     	expect_const_val_ = 13.75;
@@ -209,7 +210,7 @@ public:
     	value_list= std::vector<ReturnType>(list_size);
 	}
 
-	void set_data(FieldValue<3>::VectorFixed::return_type val) {
+	void set_data(FieldValue<3>::VectorFixed::return_type) {
 		data1_ = arma::vec3("1.75 3.75 5.75");
 		data2_ = arma::vec3("1.25 3.25 5.25");
 		expect_const_val_ = arma::vec3("13.75 31.75 49.75");
@@ -253,6 +254,7 @@ public:
 	    field_.set_mesh(*(this->mesh_));
 	    field_.set_components(component_names_);
 	    set_of_field_.set_time(tg.step(), LimitSide::right);
+
 	}
 
 
@@ -271,7 +273,8 @@ public:
     Field<3, T> field_;
 	Mesh *mesh_;
 	Point point_;
-	std::vector< Point > point_list_;
+	Armor::array point_list_ = Armor::array(3, 1, list_size);
+
 	string input_type_name_;
 	std::vector< string > component_names_;
 	unsigned int n_comp_;
@@ -316,7 +319,8 @@ TYPED_TEST(FieldSpeed, virtual_function) {
 	for (int i=0; i<loop_call_count; i++)
 		for (int j=0; j<list_size; j++)
 			for (auto elm : this->mesh_->elements_range()) {
-				this->test_result_sum_ += this->value( this->point_list_[j], elm);
+				Space<3>::Point p = this->point_list_.template vec<3>(j);
+				this->test_result_sum_ += this->value( p, elm);
 			}
 	END_TIMER("all_values");
 	END_TIMER("virtual_function");
@@ -412,6 +416,8 @@ TYPED_TEST(FieldSpeed, field_python) {
 }
 #endif // FLOW123D_HAVE_PYTHON
 
+// PE:
+// - it takes way too long  (>5 min)
 
 TYPED_TEST(FieldSpeed, field_fe) {
 	this->set_values();
@@ -444,7 +450,7 @@ TYPED_TEST(FieldSpeed, field_fe) {
 TEST(FieldValue_, speed_test_interface) {
 
    typedef FieldValue_<1,1, double> T;
-   double r_val;
+   double r_val = 0;
 
 
    for(int step=0;step < STEPS; step++) {
@@ -459,7 +465,7 @@ TEST(FieldValue_, speed_test_interface) {
 
 TEST(FieldValue_, speed_test_direct) {
 
-   double val;
+   double val = 0;
 
    for(int step=0;step < STEPS; step++) {
        val+=step;
