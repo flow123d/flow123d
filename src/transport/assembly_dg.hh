@@ -56,7 +56,10 @@ public:
         this->element_cache_map_ = element_cache_map;
 
         fe_ = std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order);
-        fe_values_.initialize(*this->quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
+        UpdateFlags u = update_values | update_gradients | update_JxW_values | update_quadrature_points;
+        fe_values_.initialize(*this->quad_, *fe_, u);
+        if (dim==1) // print to log only one time
+            DebugOut() << "List of MassAssembly FEValues updates flags: " << this->print_update_flags(u);
         ndofs_ = fe_->n_dofs();
         dof_indices_.resize(ndofs_);
         local_matrix_.resize(4*ndofs_*ndofs_);
@@ -200,11 +203,17 @@ public:
 
         fe_ = std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order);
         fe_low_ = std::make_shared< FE_P_disc<dim-1> >(eq_data_->dg_order);
-        fe_values_.initialize(*this->quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
+        UpdateFlags u = update_values | update_gradients | update_JxW_values | update_quadrature_points;
+        UpdateFlags u_side = update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points;
+        fe_values_.initialize(*this->quad_, *fe_, u);
         if (dim>1) {
-            fe_values_vb_.initialize(*this->quad_low_, *fe_low_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
+            fe_values_vb_.initialize(*this->quad_low_, *fe_low_, u);
         }
-        fe_values_side_.initialize(*this->quad_low_, *fe_, update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
+        fe_values_side_.initialize(*this->quad_low_, *fe_, u_side);
+        if (dim==1) { // print to log only one time
+            DebugOut() << "List of StiffnessAssemblyDG FEValues (cell) updates flags: " << this->print_update_flags(u);
+            DebugOut() << "List of StiffnessAssemblyDG FEValues (side) updates flags: " << this->print_update_flags(u_side);
+        }
         ndofs_ = fe_->n_dofs();
         qsize_lower_dim_ = this->quad_low_->size();
         dof_indices_.resize(ndofs_);
@@ -678,7 +687,10 @@ public:
         this->element_cache_map_ = element_cache_map;
 
         fe_ = std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order);
-        fe_values_.initialize(*this->quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
+        UpdateFlags u = update_values | update_gradients | update_JxW_values | update_quadrature_points;
+        fe_values_.initialize(*this->quad_, *fe_, u);
+        if (dim==1) // print to log only one time
+            DebugOut() << "List of SourcesAssemblyDG FEValues updates flags: " << this->print_update_flags(u);
         ndofs_ = fe_->n_dofs();
         dof_indices_.resize(ndofs_);
         local_rhs_.resize(ndofs_);
@@ -813,7 +825,10 @@ public:
         this->element_cache_map_ = element_cache_map;
 
         fe_ = std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order);
-        fe_values_side_.initialize(*this->quad_low_, *fe_, update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
+        UpdateFlags u = update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points;
+        fe_values_side_.initialize(*this->quad_low_, *fe_, u);
+        if (dim==1) // print to log only one time
+            DebugOut() << "List of BdrConditionAssemblyDG FEValues updates flags: " << this->print_update_flags(u);
         ndofs_ = fe_->n_dofs();
         dof_indices_.resize(ndofs_);
         local_rhs_.resize(ndofs_);
@@ -1034,7 +1049,10 @@ public:
         this->element_cache_map_ = element_cache_map;
 
         fe_ = std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order);
-        fe_values_.initialize(*this->quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
+        UpdateFlags u = update_values | update_gradients | update_JxW_values | update_quadrature_points;
+        fe_values_.initialize(*this->quad_, *fe_, u);
+        if (dim==1) // print to log only one time
+            DebugOut() << "List of InitConditionAssemblyDG FEValues updates flags: " << this->print_update_flags(u);
         ndofs_ = fe_->n_dofs();
         dof_indices_.resize(ndofs_);
         local_matrix_.resize(4*ndofs_*ndofs_);

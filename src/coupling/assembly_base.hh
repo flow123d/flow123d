@@ -23,6 +23,7 @@
 #include "quadrature/quadrature_lib.hh"
 #include "fields/eval_points.hh"
 #include "fields/field_value_cache.hh"
+#include "fem/update_flags.hh"
 
 
 
@@ -122,6 +123,13 @@ protected:
         std::shared_ptr<CouplingIntegral> coupling_;       ///< Coupling integrals between elements of dimensions dim and dim-1
         std::shared_ptr<BoundaryIntegral> boundary_;       ///< Boundary integrals betwwen side and boundary element of dim-1
     };
+
+    /// Print update flags to string format.
+    std::string print_update_flags(UpdateFlags u) const {
+        std::stringstream s;
+        s << u;
+        return s.str();
+    }
 
     Quadrature *quad_;                                     ///< Quadrature used in assembling methods.
     Quadrature *quad_low_;                                 ///< Quadrature used in assembling methods (dim-1).
