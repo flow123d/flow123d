@@ -371,6 +371,9 @@ public:
         return mesh_;
     }
 
+    /// Return order of evaluated fields by dependency and region_idx.
+    std::string print_dependency() const;
+
 protected:
     /// List of all fields.
     std::vector<FieldCommon *> field_list;

@@ -132,6 +132,7 @@ public:
     void reallocate_cache() override
     {
         eq_fields_->cache_reallocate(*this->element_cache_map_, used_fields_);
+        DebugOut() << "Order of evaluated fields (MassAssemblyDG):" << eq_fields_->print_dependency();
     }
 
 
@@ -611,6 +612,7 @@ public:
     void reallocate_cache() override
     {
         eq_fields_->cache_reallocate(*this->element_cache_map_, used_fields_);
+        DebugOut() << "Order of evaluated fields (StiffnessAssemblyDG):" << eq_fields_->print_dependency();
     }
 
 
@@ -748,6 +750,7 @@ public:
     void reallocate_cache() override
     {
         eq_fields_->cache_reallocate(*this->element_cache_map_, used_fields_);
+        DebugOut() << "Order of evaluated fields (SourcesAssemblyDG):" << eq_fields_->print_dependency();
     }
 
 
@@ -975,6 +978,7 @@ public:
     void reallocate_cache() override
     {
         eq_fields_->cache_reallocate(*this->element_cache_map_, used_fields_);
+        DebugOut() << "Order of evaluated fields (BdrConditionAssemblyDG):" << eq_fields_->print_dependency();
     }
 
 
@@ -1079,6 +1083,7 @@ public:
     void reallocate_cache() override
     {
         eq_fields_->cache_reallocate(*this->element_cache_map_, used_fields_);
+        DebugOut() << "Order of evaluated fields (InitConditionAssemblyDG):" << eq_fields_->print_dependency();
     }
 
 

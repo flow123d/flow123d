@@ -270,6 +270,19 @@ Range<FieldListAccessor> FieldSet::fields_range() const {
 }
 
 
+std::string FieldSet::print_dependency() const {
+    ASSERT_GT_DBG(region_field_update_order_.size(), 0).error("Variable 'region_dependency_list' is empty. Did you call 'set_dependency' method?\n");
+    std::stringstream s;
+    for (auto reg_it : region_field_update_order_) {
+        s << "\nregion_idx " << reg_it.first << ": ";
+        for (auto f_it : reg_it.second) {
+            s << f_it->name() << ", ";
+        }
+    }
+    return s.str();
+}
+
+
 std::ostream &operator<<(std::ostream &stream, const FieldSet &set) {
     for(FieldCommon * field : set.field_list) {
         stream << *field
