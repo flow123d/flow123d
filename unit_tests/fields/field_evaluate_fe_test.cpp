@@ -365,7 +365,7 @@ public:
         auto scalar_ptr = create_field_fe<3, FieldValue<3>::Scalar>(dh_, scalar_vec);
         data_->scalar_field.set(scalar_ptr, 0.0);
     	for (unsigned int i=0; i<scalar_vec->size(); ++i) {
-    	    scalar_vec[i] = 1 + i % 9;
+    	    scalar_vec.set( i, (1 + i % 9) );
     	}
 
     	VectorMPI * tensor_vec = new VectorMPI(dh_->distr()->lsize() * 9);
