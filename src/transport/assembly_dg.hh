@@ -55,7 +55,7 @@ public:
         this->element_cache_map_ = element_cache_map;
 
         fe_ = std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order);
-        fe_values_.initialize(*this->quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
+        fe_values_.initialize(*this->quad_, *fe_, update_values | update_JxW_values | update_quadrature_points);
         ndofs_ = fe_->n_dofs();
         dof_indices_.resize(ndofs_);
         local_matrix_.resize(4*ndofs_*ndofs_);
@@ -668,7 +668,7 @@ public:
         this->element_cache_map_ = element_cache_map;
 
         fe_ = std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order);
-        fe_values_.initialize(*this->quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
+        fe_values_.initialize(*this->quad_, *fe_, update_values | update_JxW_values | update_quadrature_points);
         ndofs_ = fe_->n_dofs();
         dof_indices_.resize(ndofs_);
         local_rhs_.resize(ndofs_);
