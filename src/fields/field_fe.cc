@@ -283,7 +283,7 @@ void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::elem
         //DHCellAccessor cache_cell = cache_map(cell);
         mat_value.fill(0.0);
         for (unsigned int i_dof=range_bgn, i_cdof=0; i_dof<range_end; i_dof++, i_cdof++) {
-            mat_value += data_vec_[loc_dofs[i_dof]] * this->handle_fe_shape(cell.dim(), i_cdof, i_ep);
+            mat_value += data_vec_.get(loc_dofs[i_dof]) * this->handle_fe_shape(cell.dim(), i_cdof, i_ep);
         }
         data_cache.set(i_data) = mat_value;
     }
@@ -605,7 +605,7 @@ void FieldFE<spacedim, Value>::interpolate_gauss(ElementDataCache<double>::Compo
 		ASSERT_LE_DBG(loc_dofs.n_elem, elem_value.size());
 		for (unsigned int i=0; i < elem_value.size(); i++) {
 			ASSERT_LT_DBG( loc_dofs[i], (int)data_vec_.size());
-			data_vec_[loc_dofs[i]] = elem_value[i] * this->unit_conversion_coefficient_;
+			data_vec_.set( loc_dofs[i], elem_value[i] * this->unit_conversion_coefficient_ );
 		}
 	}
 }
@@ -737,14 +737,14 @@ void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>:
 		data_vec_i = source_target_vec[cell.elm_idx()] * dof_size;
 		ASSERT_EQ_DBG(dof_size, loc_dofs.n_elem);
 		for (unsigned int i=0; i<dof_size; ++i, ++data_vec_i) {
-		    data_vec_[ loc_dofs[i] ] += (*data_cache)[ data_vec_i ];
+		    data_vec_.add( loc_dofs[i], (*data_cache)[ data_vec_i ] );
 		    ++count_vector[ loc_dofs[i] ];
 		}
 	}
 
 	// compute averages of values
 	for (unsigned int i=0; i<data_vec_.size(); ++i) {
-		if (count_vector[i]>0) data_vec_[i] /= count_vector[i];
+		if (count_vector[i]>0) data_vec_.normalize(i, count_vector[i]);
 	}
 }
 
@@ -766,7 +766,7 @@ void FieldFE<spacedim, Value>::calculate_identic_values(ElementDataCache<double>
 			data_vec_i = i_elm * dh_->max_elem_dofs();
 			for (unsigned int i=0; i<loc_dofs.n_elem; ++i, ++data_vec_i) {
 				ASSERT_LT_DBG(loc_dofs[i], (LongIdx)data_vec_.size());
-				data_vec_[ loc_dofs[i] ] += (*data_cache)[data_vec_i];
+				data_vec_.add( loc_dofs[i], (*data_cache)[data_vec_i] );
 				++count_vector[ loc_dofs[i] ];
 			}
 			i_elm++;
@@ -780,7 +780,7 @@ void FieldFE<spacedim, Value>::calculate_identic_values(ElementDataCache<double>
 			data_vec_i = i_elm * dh_->max_elem_dofs();
 			for (unsigned int i=0; i<loc_dofs.n_elem; ++i, ++data_vec_i) {
 				ASSERT_LT_DBG(loc_dofs[i], (LongIdx)data_vec_.size());
-				data_vec_[ loc_dofs[i] ] += (*data_cache)[data_vec_i];
+				data_vec_.add( loc_dofs[i], (*data_cache)[data_vec_i] );
 				++count_vector[ loc_dofs[i] ];
 			}
 			i_elm++;
@@ -789,7 +789,7 @@ void FieldFE<spacedim, Value>::calculate_identic_values(ElementDataCache<double>
 
 	// compute averages of values
 	for (unsigned int i=0; i<data_vec_.size(); ++i) {
-		if (count_vector[i]>0) data_vec_[i] /= count_vector[i];
+		if (count_vector[i]>0) data_vec_.normalize(i, count_vector[i]);
 	}
 }
 
@@ -813,14 +813,14 @@ void FieldFE<spacedim, Value>::calculate_equivalent_values(ElementDataCache<doub
 					THROW( ExcUndefElementValue() << EI_Field(field_name_) );
 				for (unsigned int i=0; i<loc_dofs.n_elem; ++i) {
 					ASSERT_LT_DBG(loc_dofs[i], (LongIdx)data_vec_.size());
-					data_vec_[ loc_dofs[i] ] += default_value_ * this->unit_conversion_coefficient_;
+					data_vec_.add( loc_dofs[i], default_value_ * this->unit_conversion_coefficient_ );
 					++count_vector[ loc_dofs[i] ];
 				}
 			} else {
 				data_vec_i = source_target_vec[ele.mesh_idx()] * dh_->max_elem_dofs();
 				for (unsigned int i=0; i<loc_dofs.n_elem; ++i, ++data_vec_i) {
 					ASSERT_LT_DBG(loc_dofs[i], (LongIdx)data_vec_.size());
-					data_vec_[ loc_dofs[i] ] += (*data_cache)[data_vec_i];
+					data_vec_.add( loc_dofs[i], (*data_cache)[data_vec_i] );
 					++count_vector[ loc_dofs[i] ];
 				}
 			}
@@ -835,14 +835,14 @@ void FieldFE<spacedim, Value>::calculate_equivalent_values(ElementDataCache<doub
 					THROW( ExcUndefElementValue() << EI_Field(field_name_) );
 				for (unsigned int i=0; i<loc_dofs.n_elem; ++i) {
 					ASSERT_LT_DBG(loc_dofs[i], (LongIdx)data_vec_.size());
-					data_vec_[ loc_dofs[i] ] += default_value_ * this->unit_conversion_coefficient_;
+					data_vec_.add( loc_dofs[i], default_value_ * this->unit_conversion_coefficient_ );
 					++count_vector[ loc_dofs[i] ];
 				}
 			} else {
 				data_vec_i = source_target_vec[cell.elm_idx()] * dh_->max_elem_dofs();
 				for (unsigned int i=0; i<loc_dofs.n_elem; ++i, ++data_vec_i) {
 					ASSERT_LT_DBG(loc_dofs[i], (LongIdx)data_vec_.size());
-					data_vec_[ loc_dofs[i] ] += (*data_cache)[data_vec_i];
+					data_vec_.add( loc_dofs[i], (*data_cache)[data_vec_i] );
 					++count_vector[ loc_dofs[i] ];
 				}
 			}
@@ -851,7 +851,7 @@ void FieldFE<spacedim, Value>::calculate_equivalent_values(ElementDataCache<doub
 
 	// compute averages of values
 	for (unsigned int i=0; i<data_vec_.size(); ++i) {
-		if (count_vector[i]>0) data_vec_[i] /= count_vector[i];
+		if (count_vector[i]>0) data_vec_.normalize(i, count_vector[i]);
 	}
 }
 

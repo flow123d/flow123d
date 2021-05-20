@@ -102,15 +102,27 @@ public:
 	}
 
     /// Return value on given position
-    double get(unsigned int pos) const {
+    inline double get(unsigned int pos) const {
         ASSERT_PTR_DBG(data_ptr_).error("Uninitialized data vector.\n");
         return (*data_ptr_)[pos];
     }
 
     /// Set value on given position
-    void set(unsigned int pos, double val) {
+    inline void set(unsigned int pos, double val) {
     	ASSERT_PTR_DBG(data_ptr_).error("Uninitialized data vector.\n");
         (*data_ptr_)[pos] = val;
+    }
+
+    /// Normalize value on given position
+    inline void normalize(unsigned int pos, double divisor) {
+    	ASSERT_PTR_DBG(data_ptr_).error("Uninitialized data vector.\n");
+        (*data_ptr_)[pos] /= divisor;
+    }
+
+    /// Add value to item on given position
+    inline void add(unsigned int pos, double val) {
+    	ASSERT_PTR_DBG(data_ptr_).error("Uninitialized data vector.\n");
+        (*data_ptr_)[pos] += val;
     }
 
 
@@ -153,22 +165,22 @@ public:
     /**
      * Access to the vector element on local index @p idx.
      */
-    inline double &operator[](unsigned int idx)
-    {
-        ASSERT_DBG(data_ptr_);
-        ASSERT_DBG(idx < data_ptr_->size()) (idx) (data_ptr_->size());
-        return (*data_ptr_)[idx];
-    }
+//    inline double &operator[](unsigned int idx)
+//    {
+//        ASSERT_DBG(data_ptr_);
+//        ASSERT_DBG(idx < data_ptr_->size()) (idx) (data_ptr_->size());
+//        return (*data_ptr_)[idx];
+//    }
     
     /**
      * Access to the vector element on local index @p idx (const version).
      */
-    inline double &operator[](unsigned int idx) const
-    {
-        ASSERT_DBG(data_ptr_);
-        ASSERT_DBG(idx < data_ptr_->size()) (idx) (data_ptr_->size());
-        return (*data_ptr_)[idx];
-    }
+//    inline double &operator[](unsigned int idx) const
+//    {
+//        ASSERT_DBG(data_ptr_);
+//        ASSERT_DBG(idx < data_ptr_->size()) (idx) (data_ptr_->size());
+//        return (*data_ptr_)[idx];
+//    }
 
     /**
      * Access to the vector elements on local indices @p idx.

@@ -407,14 +407,14 @@ void DarcyLMH::read_initial_condition()
 		// set initial condition
         double init_value = data_->init_pressure.value(ele.centre(),ele);
         unsigned int p_idx = data_->dh_p_->parent_indices()[p_indices[0]];
-        data_->full_solution[p_idx] = init_value;
+        data_->full_solution.set(p_idx, init_value);
         
         for (unsigned int i=0; i<ele->n_sides(); i++) {
              uint n_sides_of_edge =  ele.side(i)->edge().n_sides();
              unsigned int l_idx = data_->dh_cr_->parent_indices()[l_indices[i]];
-             data_->full_solution[l_idx] += init_value/n_sides_of_edge;
+             data_->full_solution.add(l_idx, init_value/n_sides_of_edge);
 
-             data_->p_edge_solution[l_indices[i]] += init_value/n_sides_of_edge;
+             data_->p_edge_solution.add(l_indices[i], init_value/n_sides_of_edge);
          }
 	}
     

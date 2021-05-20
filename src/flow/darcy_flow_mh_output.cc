@@ -311,7 +311,7 @@ void DarcyFlowMHOutput::output_internal_flow_data()
         LocDofVec indices = dh_cell.get_loc_dof_indices();
 
         // pressure
-        raw_output_file << fmt::format("{} {} ", dh_cell.elm().index(), data->full_solution[indices[ele->n_sides()]]);
+        raw_output_file << fmt::format("{} {} ", dh_cell.elm().index(), data->full_solution.get(indices[ele->n_sides()]));
         
         // velocity at element center
         flux_in_center = data->field_ele_velocity.value(ele.centre(), ele);
@@ -324,11 +324,11 @@ void DarcyFlowMHOutput::output_internal_flow_data()
         // pressure on edges
         unsigned int lid = ele->n_sides() + 1;
         for (unsigned int i = 0; i < ele->n_sides(); i++, lid++) {
-            raw_output_file << data->full_solution[indices[lid]] << " ";
+            raw_output_file << data->full_solution.get(indices[lid]) << " ";
         }
         // fluxes on sides
         for (unsigned int i = 0; i < ele->n_sides(); i++) {
-            raw_output_file << data->full_solution[indices[i]] << " ";
+            raw_output_file << data->full_solution.get(indices[i]) << " ";
         }
         
         raw_output_file << endl;
@@ -373,12 +373,12 @@ void DarcyFlowMHOutput::l2_diff_local(DHCellAccessor dh_cell,
 //     vector<double> pressure_traces(dim+1);
 
     for (unsigned int li = 0; li < ele->n_sides(); li++) {
-        fluxes[li] = diff_data.data_->full_solution[ dh_cell.get_loc_dof_indices()[li] ];
+        fluxes[li] = diff_data.data_->full_solution.get( dh_cell.get_loc_dof_indices()[li] );
 //         pressure_traces[li] = result.dh->side_scalar( *(ele->side( li ) ) );
     }
     const uint ndofs = dh_cell.n_dofs();
     // TODO: replace with DHCell getter when available for FESystem component
-    double pressure_mean = diff_data.data_->full_solution[ dh_cell.get_loc_dof_indices()[ndofs/2] ];
+    double pressure_mean = diff_data.data_->full_solution.get( dh_cell.get_loc_dof_indices()[ndofs/2] );
 
     arma::vec analytical(5);
     arma::vec3 flux_in_q_point;
@@ -451,18 +451,18 @@ void DarcyFlowMHOutput::l2_diff_local(DHCellAccessor dh_cell,
     IntIdx idx = sub_dh_cell.get_loc_dof_indices()[0];
 
     auto velocity_data = result.vel_diff_ptr->vec();
-    velocity_data[ idx ] = sqrt(velocity_diff);
+    velocity_data.set( idx, sqrt(velocity_diff) );
     result.velocity_error[dim-1] += velocity_diff;
     if (dim == 2 && result.velocity_mask.size() != 0 ) {
     	result.mask_vel_error += (result.velocity_mask[ ele.idx() ])? 0 : velocity_diff;
     }
 
     auto pressure_data = result.pressure_diff_ptr->vec();
-    pressure_data[ idx ] = sqrt(pressure_diff);
+    pressure_data.set( idx, sqrt(pressure_diff) );
     result.pressure_error[dim-1] += pressure_diff;
 
     auto div_data = result.div_diff_ptr->vec();
-    div_data[ idx ] = sqrt(divergence_diff);
+    div_data.set( idx, sqrt(divergence_diff) );
     result.div_error[dim-1] += divergence_diff;
 
 }

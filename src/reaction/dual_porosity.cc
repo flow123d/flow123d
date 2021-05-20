@@ -252,7 +252,7 @@ void DualPorosity::set_initial_condition()
         //setting initial solid concentration for substances involved in adsorption
         for (unsigned int sbi = 0; sbi < substances_.size(); sbi++)
         {
-            data_.conc_immobile_fe[sbi]->vec()[dof_p0] = data_.init_conc_immobile[sbi].value(ele.centre(), ele);
+            data_.conc_immobile_fe[sbi]->vec().set( dof_p0, data_.init_conc_immobile[sbi].value(ele.centre(), ele) );
         }
     }
 }
@@ -302,8 +302,8 @@ void DualPorosity::compute_reaction(const DHCellAccessor& dh_cell)
     {
         exponent = diff_vec[sbi] * temp_exponent;
         //previous values
-        previous_conc_mob = conc_mobile_fe[sbi]->vec()[dof_p0];
-        previous_conc_immob = data_.conc_immobile_fe[sbi]->vec()[dof_p0];
+        previous_conc_mob = conc_mobile_fe[sbi]->vec().get(dof_p0);
+        previous_conc_immob = data_.conc_immobile_fe[sbi]->vec().get(dof_p0);
         
         // ---compute average concentration------------------------------------------
         conc_average = ((por_mob * previous_conc_mob) + (por_immob * previous_conc_immob)) 
@@ -334,8 +334,8 @@ void DualPorosity::compute_reaction(const DHCellAccessor& dh_cell)
             conc_immob = (previous_conc_immob - conc_average) * temp + conc_average;
         }
         
-        conc_mobile_fe[sbi]->vec()[dof_p0] = conc_mob;
-        data_.conc_immobile_fe[sbi]->vec()[dof_p0] = conc_immob;
+        conc_mobile_fe[sbi]->vec().set(dof_p0, conc_mob);
+        data_.conc_immobile_fe[sbi]->vec().set(dof_p0, conc_immob);
     }
 }
 

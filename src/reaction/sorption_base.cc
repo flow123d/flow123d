@@ -371,7 +371,7 @@ void SorptionBase::set_initial_condition()
         for (unsigned int sbi = 0; sbi < n_substances_; sbi++)
         {
             int subst_id = substance_global_idx_[sbi];
-            data_->conc_solid_fe[subst_id]->vec()[dof_p0] = data_->init_conc_solid[sbi].value(ele.centre(), ele);
+            data_->conc_solid_fe[subst_id]->vec().set( dof_p0, data_->init_conc_solid[sbi].value(ele.centre(), ele) );
         }
     }
 }
@@ -457,7 +457,7 @@ void SorptionBase::update_max_conc()
         reg_idx = dh_cell.elm().region().bulk_idx();
         for(i_subst = 0; i_subst < n_substances_; i_subst++){
             subst_id = substance_global_idx_[i_subst];
-            max_conc[reg_idx][i_subst] = std::max(max_conc[reg_idx][i_subst], conc_mobile_fe[subst_id]->vec()[dof_p0]);
+            max_conc[reg_idx][i_subst] = std::max(max_conc[reg_idx][i_subst], conc_mobile_fe[subst_id]->vec().get(dof_p0));
       }
     }
 }
@@ -543,8 +543,11 @@ void SorptionBase::compute_reaction(const DHCellAccessor& dh_cell)
             Isotherm & isotherm = isotherms[reg_idx][i_subst];
             if (isotherm.is_precomputed()){
 //                 DebugOut().fmt("isotherms precomputed - interpolate, subst[{}]\n", i_subst);
-                isotherm.interpolate(conc_mobile_fe[subst_id]->vec()[dof_p0],
-                                     data_->conc_solid_fe[subst_id]->vec()[dof_p0]);
+                double c_aqua = conc_mobile_fe[subst_id]->vec().get(dof_p0);
+				double c_sorbed = data_->conc_solid_fe[subst_id]->vec().get(dof_p0);
+                isotherm.interpolate(c_aqua, c_sorbed);
+                conc_mobile_fe[subst_id]->vec().set(dof_p0, c_aqua);
+                data_->conc_solid_fe[subst_id]->vec().set(dof_p0, c_sorbed);
             }
             else{
 //                 DebugOut().fmt("isotherms reinit - compute , subst[{}]\n", i_subst);
@@ -554,14 +557,17 @@ void SorptionBase::compute_reaction(const DHCellAccessor& dh_cell)
                 }
                 
                 isotherm_reinit(i_subst, ele);
-                isotherm.compute(conc_mobile_fe[subst_id]->vec()[dof_p0],
-                                 data_->conc_solid_fe[subst_id]->vec()[dof_p0]);
+                double c_aqua = conc_mobile_fe[subst_id]->vec().get(dof_p0);
+				double c_sorbed = data_->conc_solid_fe[subst_id]->vec().get(dof_p0);
+                isotherm.compute(c_aqua, c_sorbed);
+                conc_mobile_fe[subst_id]->vec().set(dof_p0, c_aqua);
+                data_->conc_solid_fe[subst_id]->vec().set(dof_p0, c_sorbed);
             }
             
             // update maximal concentration per region (optimization for interpolation)
             if(table_limit_[i_subst] < 0)
                 max_conc[reg_idx][i_subst] = std::max(max_conc[reg_idx][i_subst],
-                                                      conc_mobile_fe[subst_id]->vec()[dof_p0]);
+                                                      conc_mobile_fe[subst_id]->vec().get(dof_p0));
         }
     }
     catch(ExceptionBase const &e)
