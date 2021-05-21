@@ -190,6 +190,7 @@ void HM_Iterative::zero_time_step()
     
     copy_field(*flow_->data().field("pressure_p0"), *data_.old_pressure_ptr_);
     copy_field(*flow_->data().field("pressure_p0"), *data_.old_iter_pressure_ptr_);
+    copy_field(mechanics_->data().output_divergence, *data_.old_div_u_ptr_);
     copy_field(mechanics_->data().output_divergence, *data_.div_u_ptr_);
 }
 
