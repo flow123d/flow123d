@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<VTKFile type="Collection" version="0.1" byte_order="LittleEndian">
+<Collection>
+<DataSet timestep="0" group="" part="0" file="mechanics/mechanics-000000.vtu"/>
+<DataSet timestep="1" group="" part="0" file="mechanics/mechanics-000001.vtu"/>
+<DataSet timestep="2" group="" part="0" file="mechanics/mechanics-000002.vtu"/>
+<DataSet timestep="3" group="" part="0" file="mechanics/mechanics-000003.vtu"/>
+<DataSet timestep="4" group="" part="0" file="mechanics/mechanics-000004.vtu"/>
+<DataSet timestep="5" group="" part="0" file="mechanics/mechanics-000005.vtu"/>
+<DataSet timestep="6" group="" part="0" file="mechanics/mechanics-000006.vtu"/>
+<DataSet timestep="7" group="" part="0" file="mechanics/mechanics-000007.vtu"/>
+<DataSet timestep="8" group="" part="0" file="mechanics/mechanics-000008.vtu"/>
+<DataSet timestep="9" group="" part="0" file="mechanics/mechanics-000009.vtu"/>
+<DataSet timestep="10" group="" part="0" file="mechanics/mechanics-000010.vtu"/>
+</Collection>
+</VTKFile>

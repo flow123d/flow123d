@@ -94,7 +94,8 @@ public:
         enum Bc_types {
           bc_type_displacement,
           bc_type_displacement_normal,
-          bc_type_traction
+          bc_type_traction,
+		  bc_type_stress,
         };
 
 		EqData();
@@ -111,6 +112,7 @@ public:
         BCField<3, FieldValue<3>::Enum > bc_type;
         BCField<3, FieldValue<3>::VectorFixed> bc_displacement;
         BCField<3, FieldValue<3>::VectorFixed> bc_traction;
+		BCField<3, FieldValue<3>::TensorFixed> bc_stress;
         Field<3, FieldValue<3>::VectorFixed> load;
         Field<3, FieldValue<3>::Scalar> young_modulus;
         Field<3, FieldValue<3>::Scalar> poisson_ratio;

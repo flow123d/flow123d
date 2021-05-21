@@ -67,16 +67,19 @@ const int HM_Iterative::registrar = Input::register_class< HM_Iterative, Mesh &,
 HM_Iterative::EqData::EqData()
 {
     *this += alpha.name("biot_alpha")
+                     .description("Biot poroelastic coefficient.")
                      .units(UnitSI().dimensionless())
                      .input_default("0.0")
                      .flags_add(FieldFlag::in_rhs);
     
     *this += density.name("fluid_density")
+                     .description("Volumetric mass density of the fluid.")
                      .units(UnitSI().kg().m(-3))
                      .input_default("0.0")
                      .flags_add(FieldFlag::in_rhs);
     
     *this += gravity.name("gravity")
+                     .description("Gravitational acceleration constant.")
                      .units(UnitSI().m().s(-2))
                      .input_default("9.81")
                      .flags_add(FieldFlag::in_rhs);
@@ -187,6 +190,7 @@ void HM_Iterative::zero_time_step()
     
     copy_field(*flow_->data().field("pressure_p0"), *data_.old_pressure_ptr_);
     copy_field(*flow_->data().field("pressure_p0"), *data_.old_iter_pressure_ptr_);
+    copy_field(mechanics_->data().output_divergence, *data_.old_div_u_ptr_);
     copy_field(mechanics_->data().output_divergence, *data_.div_u_ptr_);
 }
 

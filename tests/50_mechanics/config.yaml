@@ -1,9 +1,13 @@
 common_config:
   proc: [1, 2]
   memory_limit: 1000
-  time_limit: 100
 
 test_cases:
 - files:
   - 01_inject.yaml
+- files:
+  - 02_terzaghi.yaml
+  - 03_mandel.yaml
+  proc: [1]
+  time_limit: 200
 
