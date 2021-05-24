@@ -42,50 +42,6 @@ template<unsigned int dim> class OutpuFieldsAssemblyElasticity;
 template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
 
-namespace Mechanics {
-
-/**
- * Auxiliary container class for Finite element and related objects of all dimensions.
- * Its purpose is to provide templated access to these objects, applicable in
- * the assembling methods.
- */
-/*class FEObjects {
-public:
-
-	FEObjects(Mesh *mesh_, unsigned int fe_order);
-	~FEObjects();
-
-	template<unsigned int dim>
-	inline std::shared_ptr<FiniteElement<dim>> fe();
-
-	template<unsigned int dim>
-	inline Quadrature *q() { return &(q_[dim]); }
-
-	inline std::shared_ptr<DOFHandlerMultiDim> dh();
-    inline std::shared_ptr<DOFHandlerMultiDim> dh_scalar();
-    inline std::shared_ptr<DOFHandlerMultiDim> dh_tensor();
-    
-//     const FEValuesViews::Vector<dim,3> vec;
-
-private:
-
-        MixedPtr<FiniteElement> fe_;  ///< Finite elements for the solution of the mechanics equation.
-	QGauss::array q_;
-
-
-    std::shared_ptr<DiscreteSpace> ds_;
-    
-	/// Object for distribution of dofs.
-	std::shared_ptr<DOFHandlerMultiDim> dh_;
-    std::shared_ptr<DOFHandlerMultiDim> dh_scalar_;
-    std::shared_ptr<DOFHandlerMultiDim> dh_tensor_;
-};*/
-
-
-} // namespace Mechanics
-
-
-
 
 
 class Elasticity : public EquationBase
@@ -245,64 +201,8 @@ private:
     /// Registrar of class to factory
     static const int registrar;
 
-    //template<unsigned int dim>
-    //void compute_output_fields();
-
 	void preallocate();
 
-	/**
-	 * @brief Assembles the stiffness matrix.
-	 *
-	 * This routine just calls assemble_volume_integrals(), assemble_fluxes_boundary(),
-	 * assemble_fluxes_element_element() and assemble_fluxes_element_side() for each
-	 * space dimension.
-	 */
-	//void assemble_stiffness_matrix();
-
-	/**
-	 * @brief Assembles the volume integrals into the stiffness matrix.
-	*/
-	//template<unsigned int dim>
-	//void assemble_volume_integrals();
-
-	/**
-	 * @brief Assembles the right hand side (forces, boundary conditions, tractions).
-	 */
-	//void assemble_rhs();
-
-	/**
-	 * @brief Assembles the right hand side vector due to volume sources.
-	 */
-	//template<unsigned int dim>
-	//void assemble_sources();
-    
-    /**
-     * @brief Assembles the fluxes on the boundary.
-     */
-    //template<unsigned int dim>
-    //void assemble_fluxes_boundary();
-
-	/**
-	 * @brief Assembles the fluxes between elements of different dimensions depending on displacement.
-	 */
-	//template<unsigned int dim>
-	//void assemble_matrix_element_side();
-    
-    /** @brief Assemble fluxes between different dimensions that are independent of displacement. */
-    //template<unsigned int dim>
-    //void assemble_rhs_element_side();
-
-
-	/**
-	 * @brief Assembles the r.h.s. components corresponding to the Dirichlet boundary conditions
-	 * for a given space dimension.
-	 */
-	//template<unsigned int dim>
-	//void assemble_boundary_conditions();
-    
-    /** @brief Penalty to enforce boundary value in weak sense. */
-    //double dirichlet_penalty(SideIter side);
-    
     
 
 
@@ -317,16 +217,6 @@ private:
 
     
 	// @}
-
-
-	/// @name Parameters of the numerical method
-	// @{
-
-	/// Finite element objects
-	//Mechanics::FEObjects *feo;
-    
-	// @}
-
 
 
 	/// @name Solution of algebraic system
@@ -371,7 +261,9 @@ private:
 };
 
 
-
+/*
+ * TODO Remove these two methods after implementation new assembly algorithm in HM_Iterative class.
+ */
 double lame_mu(double young, double poisson);
 double lame_lambda(double young, double poisson);
 
