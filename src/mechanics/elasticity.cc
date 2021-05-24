@@ -246,7 +246,7 @@ Elasticity::EqFields::EqFields()
 
 void Elasticity::EqData::create_dh(Mesh * mesh, unsigned int fe_order)
 {
-	ASSERT_EQ_DBG(fe_order, 1)(fe_order).error("Unsupported polynomial order for finite elements in Elasticity");
+	ASSERT_EQ(fe_order, 1)(fe_order).error("Unsupported polynomial order for finite elements in Elasticity");
     MixedPtr<FE_P> fe_p(1);
     MixedPtr<FiniteElement> fe = mixed_fe_system(fe_p, FEVector, 3);
 
