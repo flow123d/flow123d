@@ -169,7 +169,7 @@ void copy_field(const FieldCommon &from_field_common, FieldFE<dim, Value> &to_fi
     from_field.copy_from(from_field_common);
     
     for ( auto cell : dh->own_range() )
-        vec[cell.local_idx()] = from_field.value(cell.elm().centre(), cell.elm());
+        vec.set( cell.local_idx(), from_field.value(cell.elm().centre(), cell.elm()) );
 }
 
 
@@ -250,7 +250,7 @@ void HM_Iterative::update_potential()
             double pressure = field_edge_pressure.value(side.centre(), elm);
             double potential = -alpha*density*gravity*pressure;
         
-            potential_vec_[dof_indices[side.side_idx()]] = potential;
+            potential_vec_.set( dof_indices[side.side_idx()], potential );
         }
     }
     
@@ -281,8 +281,8 @@ void HM_Iterative::update_flow_fields()
         double old_div_u = data_.old_div_u_ptr_->value(elm.centre(), elm);
         double src = (beta*(p-old_p) + alpha*(old_div_u - div_u)) / time_->dt();
         
-        beta_vec[ele.local_idx()] = beta;
-        src_vec[ele.local_idx()] = src;
+        beta_vec.set(ele.local_idx(), beta);
+        src_vec.set(ele.local_idx(), src);
     }
     
     data_.beta.set_time_result_changed();

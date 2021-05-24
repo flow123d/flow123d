@@ -81,7 +81,7 @@ protected:
         if (genuchten_on) {
             for (unsigned int i=0; i<ele->n_sides(); i++)
             {
-                double phead = ad_->p_edge_solution[ this->loc_schur_.row_dofs[i] ];
+                double phead = ad_->p_edge_solution.get( this->loc_schur_.row_dofs[i] );
                 conductivity += ad_->soil_model_->conductivity(phead);
             }
             conductivity /= ele->n_sides();
@@ -107,7 +107,7 @@ protected:
         for (unsigned int i=0; i<ele->n_sides(); i++) {
             double capacity = 0;
             double water_content = 0;
-            double phead = ad_->p_edge_solution[ edge_indices_[i] ];
+            double phead = ad_->p_edge_solution.get( edge_indices_[i] );
             if (genuchten_on) {
 
                   fadbad::B<double> x_phead(phead);
@@ -116,8 +116,8 @@ protected:
                   water_content = evaluated.val();
                   capacity = x_phead.d(0);
             }
-            ad_->capacity[ cr_disc_dofs[i] ] = capacity + storativity;
-            water_content_vec[ cr_disc_dofs[i] ] = water_content + storativity * phead;
+            ad_->capacity.set( cr_disc_dofs[i], capacity + storativity );
+            water_content_vec.set( cr_disc_dofs[i], water_content + storativity * phead);
         }
     }
 
@@ -155,8 +155,8 @@ protected:
             const int local_side = cr_disc_dofs[i];
             if (this->dirichlet_edge[i] == 0) {
 
-                double capacity = ad_->capacity[local_side];
-                double water_content_diff = -water_content_vec[local_side] + ad_->water_content_previous_time[local_side];
+                double capacity = ad_->capacity.get(local_side);
+                double water_content_diff = -water_content_vec.get(local_side) + ad_->water_content_previous_time.get(local_side);
                 double mass_diagonal = diagonal_coef * capacity;
 
                 /*
@@ -171,7 +171,7 @@ protected:
                 */
 
 
-                double mass_rhs = mass_diagonal * ad_->p_edge_solution[ this->loc_schur_.row_dofs[i] ] / ad_->time_step_
+                double mass_rhs = mass_diagonal * ad_->p_edge_solution.get( this->loc_schur_.row_dofs[i] ) / ad_->time_step_
                                   + diagonal_coef * water_content_diff / ad_->time_step_;
 
 //                 DBGCOUT(<< "source [" << loc_system_.row_dofs[this->loc_edge_dofs[i]] << ", " << loc_system_.row_dofs[this->loc_edge_dofs[i]]
@@ -184,7 +184,7 @@ protected:
             }
 
             ad_->balance->add_mass_values(ad_->water_balance_idx, dh_cell, {local_side},
-                                          {0.0}, diagonal_coef*water_content_vec[local_side]);
+                                          {0.0}, diagonal_coef*water_content_vec.get(local_side));
             ad_->balance->add_source_values(ad_->water_balance_idx, ele.region().bulk_idx(),
                                             {this->loc_system_.row_dofs[this->loc_edge_dofs[i]]},
                                             {0},{source_diagonal});
@@ -211,15 +211,15 @@ protected:
         
         for (unsigned int i=0; i<ele->n_sides(); i++) {
             
-            double water_content = water_content_vec[ cr_disc_dofs[i] ];
-            double water_content_previous_time = ad_->water_content_previous_time[ cr_disc_dofs[i] ];
+            double water_content = water_content_vec.get( cr_disc_dofs[i] );
+            double water_content_previous_time = ad_->water_content_previous_time.get( cr_disc_dofs[i] );
             
             solution[this->loc_side_dofs[i]]
                 += edge_source_term - edge_scale * (water_content - water_content_previous_time) / ad_->time_step_;
         }
          
         IntIdx p_dof = dh_cell.cell_with_other_dh(ad_->dh_p_.get()).get_loc_dof_indices()(0);
-        ad_->conductivity_ptr->vec()[p_dof] = compute_conductivity(ele);
+        ad_->conductivity_ptr->vec().set( p_dof, compute_conductivity(ele) );
     }
 
     AssemblyDataPtrRichards ad_;

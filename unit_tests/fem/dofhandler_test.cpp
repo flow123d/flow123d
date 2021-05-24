@@ -200,7 +200,7 @@ TEST(DOFHandler, test_sub_handler)
     // init vec and update subvec
     for (auto cell : dh->own_range())
         for (unsigned int i=0; i<dh->ds()->n_elem_dofs(cell.elm()); i++)
-            vec[loc_indices[cell.elm_idx()][i]] = cell.elm_idx()*dh->max_elem_dofs()+i;
+            vec.set( loc_indices[cell.elm_idx()][i], cell.elm_idx()*dh->max_elem_dofs()+i );
     vec.local_to_ghost_begin();
     vec.local_to_ghost_end();
     sub_dh->update_subvector(vec, subvec);
@@ -214,7 +214,7 @@ TEST(DOFHandler, test_sub_handler)
             // local indices
             EXPECT_EQ( sub_dh->parent_indices()[loc_sub_indices[i]], loc_indices[cell.elm_idx()][i] );
             // values in mpi vectors
-            EXPECT_EQ( vec[loc_indices[cell.elm_idx()][i]], subvec[loc_sub_indices[i]] );
+            EXPECT_EQ( vec.get(loc_indices[cell.elm_idx()][i]), subvec.get(loc_sub_indices[i]) );
         }
     }
 
@@ -223,7 +223,7 @@ TEST(DOFHandler, test_sub_handler)
     {
         loc_sub_indices = cell.get_loc_dof_indices();
         for (unsigned int i=0; i<sub_dh->ds()->n_elem_dofs(cell.elm()); i++)
-            subvec[loc_sub_indices[i]] = -(cell.elm_idx()*dh->max_elem_dofs()+i);
+            subvec.set(loc_sub_indices[i], -(cell.elm_idx()*dh->max_elem_dofs()+i) );
     }
     subvec.local_to_ghost_begin();
     subvec.local_to_ghost_end();
@@ -233,7 +233,7 @@ TEST(DOFHandler, test_sub_handler)
     {
         loc_sub_indices = cell.get_loc_dof_indices();
         for (unsigned int i=0; i<cell.n_dofs(); i++)
-            EXPECT_EQ( vec[loc_indices[cell.elm_idx()][i]], subvec[loc_sub_indices[i]] );
+            EXPECT_EQ( vec.get(loc_indices[cell.elm_idx()][i]), subvec.get(loc_sub_indices[i]) );
     }
     
     delete mesh;

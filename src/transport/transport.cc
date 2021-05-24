@@ -312,7 +312,7 @@ void ConvectionTransport::set_initial_condition()
 		ElementAccessor<3> ele_acc = mesh_->element_accessor( dh_cell.elm_idx() );
         
 		for (unsigned int sbi=0; sbi<n_substances(); sbi++) { // Optimize: SWAP LOOPS
-			vecs[sbi][index] = data_.init_conc[sbi].value(ele_acc.centre(), ele_acc);
+			vecs[sbi].set( index, data_.init_conc[sbi].value(ele_acc.centre(), ele_acc) );
         }
 	}
 }
