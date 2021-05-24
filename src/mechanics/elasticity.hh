@@ -110,7 +110,11 @@ public:
         static IT::Selection get_output_selection();
 
 		EqData()
-        {}
+        : ls(nullptr) {}
+
+		~EqData() {
+		    if (ls!=nullptr) delete ls;
+		}
 
 		/// Create DOF handler objects
         void create_dh(Mesh * mesh, unsigned int fe_order);

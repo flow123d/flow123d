@@ -271,8 +271,13 @@ void Elasticity::EqData::create_dh(Mesh * mesh, unsigned int fe_order)
 
 Elasticity::Elasticity(Mesh & init_mesh, const Input::Record in_rec, TimeGovernor *tm)
         : EquationBase(init_mesh, in_rec),
+		  rhs(nullptr),
+		  stiffness_matrix(nullptr),
 		  input_rec(in_rec),
-		  allocation_done(false)
+		  allocation_done(false),
+		  stiffness_assembly_(nullptr),
+		  rhs_assembly_(nullptr),
+		  output_fields_assembly_(nullptr)
 {
 	// Can not use name() + "constructor" here, since START_TIMER only accepts const char *
 	// due to constexpr optimization.
@@ -361,9 +366,11 @@ void Elasticity::initialize()
     petsc_default_opts = "-ksp_type cg -pc_type hypre -pc_hypre_type boomeramg";
     
     // allocate matrix and vector structures
-    eq_data_->ls = new LinSys_PETSC(eq_data_->dh_->distr().get(), petsc_default_opts);
-    ( (LinSys_PETSC *)eq_data_->ls )->set_from_input( input_rec.val<Input::Record>("solver") );
-    eq_data_->ls->set_solution(eq_fields_->output_field_ptr->vec().petsc_vec());
+    LinSys_PETSC *ls = new LinSys_PETSC(eq_data_->dh_->distr().get(), petsc_default_opts);
+    ls->set_from_input( input_rec.val<Input::Record>("solver") );
+    ls->set_solution(eq_fields_->output_field_ptr->vec().petsc_vec());
+    ls->set_initial_guess_nonzero();
+    eq_data_->ls = ls;
 
     stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyElasticity >(eq_fields_.get(), eq_data_.get());
     rhs_assembly_ = new GenericAssembly< RhsAssemblyElasticity >(eq_fields_.get(), eq_data_.get());
@@ -380,13 +387,15 @@ Elasticity::~Elasticity()
 {
 //     delete time_;
 
-    MatDestroy(&stiffness_matrix);
-    VecDestroy(&rhs);
-    delete eq_data_->ls;
+    if (stiffness_matrix!=nullptr) MatDestroy(&stiffness_matrix);
+    if (rhs!=nullptr) VecDestroy(&rhs);
 
-    delete stiffness_assembly_;
-    delete rhs_assembly_;
-    delete output_fields_assembly_;
+    if (stiffness_assembly_!=nullptr) delete stiffness_assembly_;
+    if (rhs_assembly_!=nullptr) delete rhs_assembly_;
+    if (output_fields_assembly_!=nullptr) delete output_fields_assembly_;
+
+    eq_data_.reset();
+    eq_fields_.reset();
 }
 
 
@@ -428,8 +437,6 @@ void Elasticity::zero_time_step()
 	if ( FieldCommon::print_message_table(ss, "mechanics") ) {
 		WarningOut() << ss.str();
 	}
-
-    ( (LinSys_PETSC *)eq_data_->ls )->set_initial_guess_nonzero();
 
     // check first time assembly - needs preallocation
     if (!allocation_done) preallocate();
