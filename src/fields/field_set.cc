@@ -211,6 +211,14 @@ void FieldSet::set_dependency(FieldSet &used_fieldset) {
 
     unordered_map<std::string, unsigned int>::iterator it;
     for (unsigned int i_reg=0; i_reg<mesh_->region_db().size(); ++i_reg) {
+        // TODO:
+        // - move the loop body into separate method
+        // - Remove explicit creation of the graph.
+        // - Just move topological_sort_util to FieldSet and iterate over requested fields
+        //   directly. Pushback the closed fields directly into region_field_update_order_[i_reg] call std::reverse after
+        //   DFS for a single region.
+        // - Use an unordered_set to mark visited fields instead of BidirectionalMap + used_fields.
+
         DfsTopoSort dfs(field_indices_map.size());
         std::fill(used_fields.begin(), used_fields.end(), false);
         uint n_used_fields = 0; // number of all used fields (size of used_fieldset + fields depending on FieldFormula and FieldModel)

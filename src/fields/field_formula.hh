@@ -55,6 +55,7 @@ using namespace std;
  * TODO:
  * correct support for discrete functions (use integer parser), actually we just convert double to int
  *
+ * TODO: Update this comment.
  */
 template <int spacedim, class Value>
 class FieldFormula : public FieldAlgorithmBase<spacedim, Value>
@@ -65,11 +66,12 @@ public:
 
     TYPEDEF_ERR_INFO(EI_Field, std::string);
     DECLARE_INPUT_EXCEPTION(ExcUnknownField,
-            << "Field " << EI_Field::qval << " doesn't exist in equation.\n"
-    		   << "Please use field of correct name.\n");
+            << "Unknown field " << EI_Field::qval << " in the formula: \n");
+    // TODO report formula address in the input file.
+
     DECLARE_INPUT_EXCEPTION(ExcNotDoubleField,
-            << "Field " << EI_Field::qval << " is not field of floating point element type.\n"
-    		   << "Please use fields of element type double.\n");
+            << "Can not use integer valued field " << EI_Field::qval << " in the formula: \n");
+    // TODO report formula address in the input file.
 
     FieldFormula(unsigned int n_comp=0);
 
@@ -141,6 +143,7 @@ private:
     bool first_time_set_;
 
     /// Holds FieldSet, allows evaluate values of Fields in formula expressions.
+    // TODO: can be removed?
     FieldSet *field_set_;
 
     /// Arena object providing data arrays
@@ -154,6 +157,8 @@ private:
 	double *res_;     ///< Result vector of BParser
 	uint *subsets_;   ///< Subsets indices in range 0 ... n-1
 	std::vector<const FieldCommon * > dependency_field_vec_;
+	// TODO: Rename to required_fields_.
+
 	/**
 	 * Data of fields evaluated in expressions.
 	 *

@@ -165,7 +165,7 @@ void FieldAlgorithmBase<spacedim, Value>::cache_update(
 			FMT_UNUSED ElementCacheMap &cache_map,
 			FMT_UNUSED unsigned int region_patch_idx)
 {
-	   //ASSERT(false).error("Must be implemented in descendants!\n");
+    ASSERT_DBG(false).error("Must be implemented in descendants!\n");
 }
 
 

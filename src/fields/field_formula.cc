@@ -311,6 +311,12 @@ uint n_shape(std::vector<uint> shape) {
 
 template <int spacedim, class Value>
 std::vector<const FieldCommon * > FieldFormula<spacedim, Value>::set_dependency(FieldSet &field_set) {
+    // TODO:
+    // Move arena creation and compilation part to the cache_reinit method,
+    // requisit fields must be cached before if we want to have common arena and avoid cache copies.
+
+
+
     field_set_ = &field_set;
     dependency_field_vec_.clear(); // returned value
 
@@ -359,7 +365,10 @@ std::vector<const FieldCommon * > FieldFormula<spacedim, Value>::set_dependency(
             auto field_ptr = field_set.field(var);
             if (field_ptr != nullptr) dependency_field_vec_.push_back( field_ptr );
             else THROW( ExcUnknownField() << EI_Field(var) );
+            // TODO: Test the exception, report input line of the formula.
             if (field_ptr->value_cache() == nullptr) THROW( ExcNotDoubleField() << EI_Field(var) );
+            // TODO: Test the exception, report input line of the formula.
+
             sum_shape_sizes += n_shape( field_ptr->shape_ );
             if (var == "d") {
                 field_set_->set_surface_depth(this->surface_depth_);
