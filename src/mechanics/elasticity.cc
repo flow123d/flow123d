@@ -300,6 +300,7 @@ Elasticity::Elasticity(Mesh & init_mesh, const Input::Record in_rec, TimeGoverno
     eq_fields_->set_mesh(init_mesh);
     eq_fields_->region_id = GenericField<3>::region_id(*mesh_);
     eq_fields_->subdomain = GenericField<3>::subdomain(*mesh_);
+    eq_data_->balance_ = this->balance();
     
     // create finite element structures and distribute DOFs
     eq_data_->create_dh(mesh_, 1);
@@ -364,10 +365,9 @@ void Elasticity::initialize()
     ( (LinSys_PETSC *)eq_data_->ls )->set_from_input( input_rec.val<Input::Record>("solver") );
     eq_data_->ls->set_solution(eq_fields_->output_field_ptr->vec().petsc_vec());
 
-    std::shared_ptr<Balance> balance; // temporary solution
-    stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyElasticity >(eq_fields_.get(), eq_data_.get(), balance);
-    rhs_assembly_ = new GenericAssembly< RhsAssemblyElasticity >(eq_fields_.get(), eq_data_.get(), balance);
-    output_fields_assembly_ = new GenericAssembly< OutpuFieldsAssemblyElasticity >(eq_fields_.get(), eq_data_.get(), balance);
+    stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyElasticity >(eq_fields_.get(), eq_data_.get());
+    rhs_assembly_ = new GenericAssembly< RhsAssemblyElasticity >(eq_fields_.get(), eq_data_.get());
+    output_fields_assembly_ = new GenericAssembly< OutpuFieldsAssemblyElasticity >(eq_fields_.get(), eq_data_.get());
 
     // initialization of balance object
 //     balance_->allocate(eq_data_->dh_->distr()->lsize(),

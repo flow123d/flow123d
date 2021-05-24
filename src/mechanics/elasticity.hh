@@ -128,6 +128,9 @@ public:
 
     	// @}
 
+    	/// Shared Balance object
+    	std::shared_ptr<Balance> balance_;
+
 	};
 
 

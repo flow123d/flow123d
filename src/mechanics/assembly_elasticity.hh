@@ -51,8 +51,8 @@ public:
     ~StiffnessAssemblyElasticity() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(FMT_UNUSED std::shared_ptr<Balance> balance, ElementCacheMap *element_cache_map) {
-        //this->balance_ = balance;
+    void initialize(ElementCacheMap *element_cache_map) {
+        //this->balance_ = eq_data_->balance_;
         this->element_cache_map_ = element_cache_map;
 
         shared_ptr<FE_P<dim>> fe_p = std::make_shared< FE_P<dim> >(1);
@@ -303,8 +303,8 @@ public:
     ~RhsAssemblyElasticity() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(FMT_UNUSED std::shared_ptr<Balance> balance, ElementCacheMap *element_cache_map) {
-        //this->balance_ = balance;
+    void initialize(ElementCacheMap *element_cache_map) {
+        //this->balance_ = eq_data_->balance_;
         this->element_cache_map_ = element_cache_map;
 
         shared_ptr<FE_P<dim>> fe_p = std::make_shared< FE_P<dim> >(1);
@@ -552,8 +552,8 @@ public:
     ~OutpuFieldsAssemblyElasticity() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(FMT_UNUSED std::shared_ptr<Balance> balance, ElementCacheMap *element_cache_map) {
-        //this->balance_ = balance;
+    void initialize(ElementCacheMap *element_cache_map) {
+        //this->balance_ = eq_data_->balance_;
         this->element_cache_map_ = element_cache_map;
 
         shared_ptr<FE_P<dim>> fe_p = std::make_shared< FE_P<dim> >(1);

@@ -250,14 +250,13 @@ data:
 TEST_F(FieldModelSpeedTest, speed_test) {
 	this->read_input(eq_data_input_speed);
 
-	std::shared_ptr<Balance> balance;
-	GenericAssembly< AssemblyDimTest > ga_bulk(data_.get(), data_.get(), balance);
+	GenericAssembly< AssemblyDimTest > ga_bulk(data_.get(), data_.get());
 	START_TIMER("assemble_bulk");
 	for (unsigned int i=0; i<profiler_loop; ++i)
 		ga_bulk.assemble(this->dh_);
 	END_TIMER("assemble_bulk");
 
-	GenericAssembly< AssemblyDimTest > ga_all(data_.get(), data_.get(), balance);
+	GenericAssembly< AssemblyDimTest > ga_all(data_.get(), data_.get());
 	START_TIMER("assemble_all_integrals");
 	for (unsigned int i=0; i<profiler_loop; ++i)
 		ga_all.assemble(this->dh_);
