@@ -591,12 +591,12 @@ void TransportDG<Model>::compute_p0_interpolation()
 
         for (unsigned int sbi=0; sbi<eq_data_->n_substances(); ++sbi)
         {
-            eq_data_->conc_fe[sbi]->vec()[dof_p0] = 0;
+            eq_data_->conc_fe[sbi]->vec().set(dof_p0, 0);
 
             for (unsigned int j=0; j<n_dofs; ++j)
-                eq_data_->conc_fe[sbi]->vec()[dof_p0] += eq_data_->ls[sbi]->get_solution_array()[loc_dof_indices[j]];
+                eq_data_->conc_fe[sbi]->vec().add( dof_p0, eq_data_->ls[sbi]->get_solution_array()[loc_dof_indices[j]] );
 
-            eq_data_->conc_fe[sbi]->vec()[dof_p0] = max(eq_data_->conc_fe[sbi]->vec()[dof_p0]/n_dofs, 0.);
+            eq_data_->conc_fe[sbi]->vec().set( dof_p0, max(eq_data_->conc_fe[sbi]->vec().get(dof_p0)/n_dofs, 0.) );
         }
     }
 }
@@ -701,7 +701,7 @@ void TransportDG<Model>::update_after_reactions(bool solution_changed)
 
                 for (unsigned int j=0; j<n_dofs; ++j)
                     eq_data_->ls[sbi]->get_solution_array()[loc_dof_indices[j]]
-                        += eq_data_->conc_fe[sbi]->vec()[dof_p0] - old_average;
+                        += eq_data_->conc_fe[sbi]->vec().get(dof_p0) - old_average;
             }
         }
     }

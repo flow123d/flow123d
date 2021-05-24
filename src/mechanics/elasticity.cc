@@ -676,20 +676,20 @@ void Elasticity::compute_output_fields()
             double div = 0;
             for (unsigned int i=0; i<ndofs; i++)
             {
-                stress += (2*mu*vec.sym_grad(i,0) + lambda*vec.divergence(i,0)*arma::eye(3,3))*output_vec[dof_indices[i]];
-                div += vec.divergence(i,0)*output_vec[dof_indices[i]];
+                stress += (2*mu*vec.sym_grad(i,0) + lambda*vec.divergence(i,0)*arma::eye(3,3))*output_vec.get(dof_indices[i]);
+                div += vec.divergence(i,0)*output_vec.get(dof_indices[i]);
             }
             
             arma::mat33 stress_dev = stress - arma::trace(stress)/3*arma::eye(3,3);
             double von_mises_stress = sqrt(1.5*arma::dot(stress_dev, stress_dev));
-            output_div_vec[dof_indices_scalar[0]] += div;
+            output_div_vec.add(dof_indices_scalar[0], div);
             
             for (unsigned int i=0; i<3; i++)
                 for (unsigned int j=0; j<3; j++)
-                    output_stress_vec[dof_indices_tensor[i*3+j]] += stress(i,j);
-            output_von_mises_stress_vec[dof_indices_scalar[0]] = von_mises_stress;
+                    output_stress_vec.add(dof_indices_tensor[i*3+j], stress(i,j));
+            output_von_mises_stress_vec.set(dof_indices_scalar[0], von_mises_stress);
             
-            output_cross_sec_vec[dof_indices_scalar[0]] += data_.cross_section.value(fv.point(0), elm);
+            output_cross_sec_vec.add(dof_indices_scalar[0], data_.cross_section.value(fv.point(0), elm));
         } 
         else if (cell.dim() == dim-1)
         {
@@ -714,8 +714,8 @@ void Elasticity::compute_output_fields()
                 
                 for (unsigned int i=0; i<ndofs; i++)
                 {
-                    normal_displacement -= arma::dot(vec_side.value(i,0)*output_vec[side_dof_indices[i]], fsv.normal_vector(0));
-                    arma::mat33 grad = -arma::kron(vec_side.value(i,0)*output_vec[side_dof_indices[i]], fsv.normal_vector(0).t()) / csection;
+                    normal_displacement -= arma::dot(vec_side.value(i,0)*output_vec.get(side_dof_indices[i]), fsv.normal_vector(0));
+                    arma::mat33 grad = -arma::kron(vec_side.value(i,0)*output_vec.get(side_dof_indices[i]), fsv.normal_vector(0).t()) / csection;
                     normal_stress += mu*(grad+grad.t()) + lambda*arma::trace(grad)*arma::eye(3,3);
                 }
             }
@@ -723,9 +723,9 @@ void Elasticity::compute_output_fields()
             LocDofVec dof_indices_tensor = cell_tensor.get_loc_dof_indices();
             for (unsigned int i=0; i<3; i++)
                 for (unsigned int j=0; j<3; j++)
-                    output_stress_vec[dof_indices_tensor[i*3+j]] += normal_stress(i,j);
-            output_cross_sec_vec[dof_indices_scalar[0]] += normal_displacement;
-            output_div_vec[dof_indices_scalar[0]] += normal_displacement / csection;
+                    output_stress_vec.add( dof_indices_tensor[i*3+j], normal_stress(i,j) );
+            output_cross_sec_vec.add( dof_indices_scalar[0], normal_displacement );
+            output_div_vec.add( dof_indices_scalar[0], normal_displacement/csection );
         }
         cell_scalar.inc();
         cell_tensor.inc();
