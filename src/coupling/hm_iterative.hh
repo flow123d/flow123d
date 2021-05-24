@@ -134,7 +134,9 @@ public:
         Field<3, FieldValue<3>::Scalar> density; ///< Density of fluid.
         Field<3, FieldValue<3>::Scalar> gravity; ///< Standard gravity.
         Field<3, FieldValue<3>::Scalar> beta;
-        
+        Field<3, FieldValue<3>::Scalar> conductivity_model; /// < Define cubic law K = f(k_o, (a/delta)^2)
+        Field<3, FieldValue<3>::Scalar> aperture_model; /// < Define a = delta_min + max([u].n + delta - delt_amin, 0)
+
         /// Potential -alpha*pressure whose gradient is passed to mechanics as additional load.
         Field<3, FieldValue<3>::Scalar> pressure_potential;
         Field<3, FieldValue<3>::Scalar> flow_source;
@@ -147,6 +149,12 @@ public:
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > old_iter_pressure_ptr_;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > div_u_ptr_;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > old_div_u_ptr_;
+        
+        /// Create a conductivity model pointer
+        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > conductivity_model_ptr_; 
+        /// FieldFE for aparture a = (delata_min + max{[u].n + delta - delta_min, 0.0})
+        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > aperture_model_ptr_;
+
     };
     
     /// Define input record.

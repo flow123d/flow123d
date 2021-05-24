@@ -92,8 +92,30 @@ HM_Iterative::EqData::EqData()
     *this += flow_source.name("extra_flow_source")
                      .units(UnitSI().s(-1))
                      .flags(FieldFlag::equation_result);
+
+    *this += conductivity_model.name("fracture_induced_conductivity")
+                     .description("fracture_induced_conductivity.")
+                     .input_default("1.0")
+                     .units( UnitSI().m(2) )
+                     .flags(FieldFlag::in_rhs);
+    *this += aperture_model.name("fracture_induced_aperture")
+                     .description("fracture_induced_opening_closing.")
+                     .input_default("1.0")
+                     .units( UnitSI().m(2) )
+                     .flags(FieldFlag::in_rhs);
 }
 
+/// How to get these fileds in the functor below??
+struct fn_K_mechanics {
+	inline double operator() (double csection, double aparture, double k_o) {
+        return k_o*pow((aparture/csection),2);
+    }
+};
+struct fn_aperture_mechanics {
+	inline double operator() (double csection, double delta_min, double delta) {
+        return delta_min + max(csection + delta-delta_min, 0);
+    }
+};
 
 void HM_Iterative::EqData::initialize(Mesh &mesh)
 {
@@ -113,6 +135,15 @@ void HM_Iterative::EqData::initialize(Mesh &mesh)
     old_iter_pressure_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(beta_ptr_->get_dofhandler());
     div_u_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(beta_ptr_->get_dofhandler());
     old_div_u_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(beta_ptr_->get_dofhandler());
+
+
+
+    aperture_model_ptr_ = create(fn_aperture_mechanics(), mechanics_->data().cross_section, delta_min, k_o); 
+    aperture_model.set_field(mesh.region_db().get_region_set("ALL"), aperture_model_ptr_);
+
+    /// Initialize conducitvity ptr
+    conductivity_model_ptr_ = create(fn_K_mechanics(), mechanics_->data().cross_section, aperture_model_ptr_, k_o); 
+    conductivity_model.set_field(mesh.region_db().get_region_set("ALL"), conductivity_model_ptr_);
 }
 
                                     
