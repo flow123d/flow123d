@@ -26,7 +26,7 @@
 const unsigned int EvalPoints::undefined_dim = 10;
 
 EvalPoints::EvalPoints()
-: dim_eval_points_({DimEvalPoints(0), DimEvalPoints(1), DimEvalPoints(2), DimEvalPoints(3)})
+: dim_eval_points_({DimEvalPoints(0), DimEvalPoints(1), DimEvalPoints(2), DimEvalPoints(3)}), max_size_(0)
 {}
 
 template <unsigned int dim>
@@ -36,6 +36,7 @@ std::shared_ptr<BulkIntegral> EvalPoints::add_bulk(const Quadrature &quad)
     std::shared_ptr<BulkIntegral> bulk_integral = std::make_shared<BulkIntegral>(shared_from_this(), dim);
     dim_eval_points_[dim].add_local_points<dim>( quad.get_points() );
     dim_eval_points_[dim].add_subset();
+    this->set_max_size();
     return bulk_integral;
 }
 
@@ -45,6 +46,7 @@ std::shared_ptr<BulkIntegral> EvalPoints::add_bulk<0>(const Quadrature &quad)
     ASSERT_EQ(0, quad.dim());
     std::shared_ptr<BulkIntegral> bulk_integral = std::make_shared<BulkIntegral>(shared_from_this(), 0);
     dim_eval_points_[0].add_subset();
+    this->set_max_size();
     return bulk_integral;
 }
 
@@ -85,6 +87,7 @@ std::shared_ptr<EdgeIntegral> EvalPoints::add_edge(const Quadrature &quad)
         }
     }
 
+    this->set_max_size();
     return edge_integral;
 }
 

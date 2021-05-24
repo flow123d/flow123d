@@ -110,7 +110,7 @@ DualPorosity::DualPorosity(Mesh &init_mesh, Input::Record in_rec)
 	: ReactionTerm(init_mesh, in_rec)
 {
   //set pointer to equation data fieldset
-  this->eq_data_ = &data_;
+  this->eq_fieldset_ = &data_;
   
   //reads input and creates possibly other reaction terms
   make_reactions();
@@ -216,14 +216,14 @@ void DualPorosity::zero_time_step()
   if(reaction_mobile)
   if (typeid(*reaction_mobile) == typeid(SorptionMob))
   {
-	  reaction_mobile->data().set_field("porosity", data_["porosity"]);
-	  reaction_mobile->data().set_field("porosity_immobile", data_["porosity_immobile"]);
+	  reaction_mobile->eq_fieldset().set_field("porosity", data_["porosity"]);
+	  reaction_mobile->eq_fieldset().set_field("porosity_immobile", data_["porosity_immobile"]);
   }
   if(reaction_immobile)
   if (typeid(*reaction_immobile) == typeid(SorptionImmob))
   {
-	  reaction_immobile->data().set_field("porosity", data_["porosity"]);
-	  reaction_immobile->data().set_field("porosity_immobile", data_["porosity_immobile"]);
+	  reaction_immobile->eq_fieldset().set_field("porosity", data_["porosity"]);
+	  reaction_immobile->eq_fieldset().set_field("porosity_immobile", data_["porosity_immobile"]);
   }
   
   data_.set_time(time_->step(0), LimitSide::right);

@@ -131,36 +131,8 @@ struct fn_heat_diff_coef {
 
 
 
-const Selection & HeatTransferModel::ModelEqData::get_bc_type_selection() {
-	return Selection("Heat_BC_Type", "Types of boundary conditions for heat transfer model.")
-            .add_value(bc_inflow, "inflow",
-          		  "Default heat transfer boundary condition.\n"
-          		  "On water inflow (($(q_w \\le 0)$)), total energy flux is given by the reference temperature 'bc_temperature'. "
-          		  "On water outflow we prescribe zero diffusive flux, "
-          		  "i.e. the energy flows out only due to advection.")
-            .add_value(bc_dirichlet, "dirichlet",
-          		  "Dirichlet boundary condition (($T = T_D $)).\n"
-          		  "The prescribed temperature (($T_D$)) is specified by the field 'bc_temperature'.")
-            .add_value(bc_total_flux, "total_flux",
-          		  "Total energy flux boundary condition.\n"
-          		  "The prescribed incoming total flux can have the general form (($\\delta(f_N+\\sigma_R(T_R-T) )$)), "
-          		  "where the absolute flux (($f_N$)) is specified by the field 'bc_flux', "
-          		  "the transition parameter (($\\sigma_R$)) by 'bc_robin_sigma', "
-          		  "and the reference temperature (($T_R$)) by 'bc_temperature'.")
-            .add_value(bc_diffusive_flux, "diffusive_flux",
-          		  "Diffusive flux boundary condition.\n"
-          		  "The prescribed incoming energy flux due to diffusion can have the general form (($\\delta(f_N+\\sigma_R(T_R-T) )$)), "
-          		  "where the absolute flux (($f_N$)) is specified by the field 'bc_flux', "
-          		  "the transition parameter (($\\sigma_R$)) by 'bc_robin_sigma', "
-          		  "and the reference temperature (($T_R$)) by 'bc_temperature'.")
-			  .close();
-}
-
-
-HeatTransferModel::ModelEqData::ModelEqData()
+HeatTransferModel::ModelEqFields::ModelEqFields()
 {
-	substances_.initialize({""});
-
 	*this+=bc_type
             .name("bc_type")
             .description(
@@ -365,32 +337,7 @@ HeatTransferModel::ModelEqData::ModelEqData()
 }
 
 
-
-IT::Record HeatTransferModel::get_input_type(const string &implementation, const string &description)
-{
-	return IT::Record(
-				std::string(ModelEqData::name()) + "_" + implementation,
-				description + " for heat transfer.")
-			.derive_from(AdvectionProcessBase::get_input_type())
-			.copy_keys(EquationBase::record_template())
-			.declare_key("balance", Balance::get_input_type(), Default("{}"),
-					"Settings for computing balance.")
-			.declare_key("output_stream", OutputTime::get_input_type(), Default("{}"),
-					"Parameters of output stream.");
-}
-
-
-IT::Selection HeatTransferModel::ModelEqData::get_output_selection()
-{
-    // Return empty selection just to provide model specific selection name and description.
-    // The fields are added by TransportDG using an auxiliary selection.
-	return IT::Selection(
-				std::string(ModelEqData::name()) + "_DG_output_fields",
-				"Selection of output fields for Heat Transfer DG model.");
-}
-
-
-void HeatTransferModel::ModelEqData::initialize()
+void HeatTransferModel::ModelEqFields::initialize()
 {
     // create FieldModels
     v_norm.set(Model<3, FieldValue<3>::Scalar>::create(fn_heat_v_norm(), flow_flux), 0.0);
@@ -429,6 +376,57 @@ void HeatTransferModel::ModelEqData::initialize()
 }
 
 
+const Selection & HeatTransferModel::ModelEqFields::get_bc_type_selection() {
+	return Selection("Heat_BC_Type", "Types of boundary conditions for heat transfer model.")
+            .add_value(bc_inflow, "inflow",
+          		  "Default heat transfer boundary condition.\n"
+          		  "On water inflow (($(q_w \\le 0)$)), total energy flux is given by the reference temperature 'bc_temperature'. "
+          		  "On water outflow we prescribe zero diffusive flux, "
+          		  "i.e. the energy flows out only due to advection.")
+            .add_value(bc_dirichlet, "dirichlet",
+          		  "Dirichlet boundary condition (($T = T_D $)).\n"
+          		  "The prescribed temperature (($T_D$)) is specified by the field 'bc_temperature'.")
+            .add_value(bc_total_flux, "total_flux",
+          		  "Total energy flux boundary condition.\n"
+          		  "The prescribed incoming total flux can have the general form (($\\delta(f_N+\\sigma_R(T_R-T) )$)), "
+          		  "where the absolute flux (($f_N$)) is specified by the field 'bc_flux', "
+          		  "the transition parameter (($\\sigma_R$)) by 'bc_robin_sigma', "
+          		  "and the reference temperature (($T_R$)) by 'bc_temperature'.")
+            .add_value(bc_diffusive_flux, "diffusive_flux",
+          		  "Diffusive flux boundary condition.\n"
+          		  "The prescribed incoming energy flux due to diffusion can have the general form (($\\delta(f_N+\\sigma_R(T_R-T) )$)), "
+          		  "where the absolute flux (($f_N$)) is specified by the field 'bc_flux', "
+          		  "the transition parameter (($\\sigma_R$)) by 'bc_robin_sigma', "
+          		  "and the reference temperature (($T_R$)) by 'bc_temperature'.")
+			  .close();
+}
+
+
+IT::Selection HeatTransferModel::ModelEqData::get_output_selection()
+{
+    // Return empty selection just to provide model specific selection name and description.
+    // The fields are added by TransportDG using an auxiliary selection.
+	return IT::Selection(
+				std::string(ModelEqData::name()) + "_DG_output_fields",
+				"Selection of output fields for Heat Transfer DG model.");
+}
+
+
+
+IT::Record HeatTransferModel::get_input_type(const string &implementation, const string &description)
+{
+	return IT::Record(
+				std::string(ModelEqData::name()) + "_" + implementation,
+				description + " for heat transfer.")
+			.derive_from(AdvectionProcessBase::get_input_type())
+			.copy_keys(EquationBase::record_template())
+			.declare_key("balance", Balance::get_input_type(), Default("{}"),
+					"Settings for computing balance.")
+			.declare_key("output_stream", OutputTime::get_input_type(), Default("{}"),
+					"Parameters of output stream.");
+}
+
+
 HeatTransferModel::HeatTransferModel(Mesh &mesh, const Input::Record in_rec) :
 		AdvectionProcessBase(mesh, in_rec)
 {
@@ -445,7 +443,7 @@ void HeatTransferModel::init_balance(const Input::Record &in_rec)
     balance_ = std::make_shared<Balance>("energy", mesh_);
     balance_->init_from_input(in_rec.val<Input::Record>("balance"), *time_);
     // initialization of balance object
-    data().subst_idx_ = {balance_->add_quantity("energy")};
+    eq_data().subst_idx_ = {balance_->add_quantity("energy")};
     balance_->units(UnitSI().m(2).kg().s(-2));
 }
 

@@ -269,7 +269,7 @@ Elasticity::Elasticity(Mesh & init_mesh, const Input::Record in_rec, TimeGoverno
 	// due to constexpr optimization.
 	START_TIMER(EqData::name());
 
-	this->eq_data_ = &data_;
+	this->eq_fieldset_ = &data_;
     
     auto time_rec = in_rec.val<Input::Record>("time");
     if (tm == nullptr)

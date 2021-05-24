@@ -7,7 +7,7 @@ porous media. Novelty of this software is support of computations on complex
 meshes consisting of simplicial elements of different dimensions. Therefore
 we can combine continuum models and discrete fracture network models.
 For more information see the project pages:
-[flow123d.github.com](http://flow123d.github.com).
+[flow123d.github.io](http://flow123d.github.io).
 
 ## Getting started
 Please refer to a **User Guide and Input Reference manual** available

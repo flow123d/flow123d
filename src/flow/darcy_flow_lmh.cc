@@ -199,7 +199,7 @@ DarcyLMH::DarcyLMH(Mesh &mesh_in, const Input::Record in_rec, TimeGovernor *tm)
     }
 
     data_ = make_shared<EqData>();
-    EquationBase::eq_data_ = data_.get();
+    EquationBase::eq_fieldset_ = data_.get();
     
     data_->is_linear=true;
 

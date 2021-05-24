@@ -241,10 +241,10 @@ void FieldFormula<spacedim, Value>::value_list (const Armor::array &point_list, 
 
 template <int spacedim, class Value>
 void FieldFormula<spacedim, Value>::cache_update(FieldValueCache<typename Value::element_type> &data_cache,
-        ElementCacheMap &cache_map, unsigned int region_idx)
+        ElementCacheMap &cache_map, unsigned int region_patch_idx)
 {
-    unsigned int reg_chunk_begin = cache_map.region_chunk_begin(region_idx);
-    unsigned int reg_chunk_end = cache_map.region_chunk_end(region_idx);
+    unsigned int reg_chunk_begin = cache_map.region_chunk_begin(region_patch_idx);
+    unsigned int reg_chunk_end = cache_map.region_chunk_end(region_patch_idx);
 
     for (unsigned int i=reg_chunk_begin; i<reg_chunk_end; ++i) {
         res_[i] = 0.0;

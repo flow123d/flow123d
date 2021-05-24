@@ -48,15 +48,8 @@ template <int spacedim> class ElementAccessor;
 class ConcentrationTransportModel : public AdvectionDiffusionModel, public ConcentrationTransportBase {
 public:
 
-	class ModelEqData : public TransportEqData {
+	class ModelEqFields : public TransportEqFields {
 	public:
-
-		enum Concentration_bc_types {
-			bc_inflow,
-			bc_dirichlet,
-			bc_total_flux,
-			bc_diffusive_flux
-		};
 
 		/// Type of boundary condition (see also BC_Type)
         BCMultiField<3, FieldValue<3>::Enum > bc_type;
@@ -104,21 +97,34 @@ public:
 
     	// @}
 
+		enum Concentration_bc_types {
+			bc_inflow,
+			bc_dirichlet,
+			bc_total_flux,
+			bc_diffusive_flux
+		};
 
-		ModelEqData();
-
-		static constexpr const char * name() { return "Solute_AdvectionDiffusion"; }
-
-		static string default_output_field() { return "\"conc\""; }
+		ModelEqFields();
 
         static const Input::Type::Selection & get_bc_type_selection();
-
-		static IT::Selection get_output_selection();
 
 		/**
 		 * Initialize FieldModel instances.
 		 */
 		void initialize();
+
+	};
+
+   	class ModelEqData {
+   	public:
+
+		ModelEqData() {}
+
+		static constexpr const char * name() { return "Solute_AdvectionDiffusion"; }
+
+		static string default_output_field() { return "\"conc\""; }
+
+		static IT::Selection get_output_selection();
 
         /// Returns number of transported substances.
         inline unsigned int n_substances()
@@ -132,6 +138,47 @@ public:
         inline SubstanceList &substances()
         { return substances_; }
 
+
+        /// @name Set of methods returning vectors of field names using in different assemblations.
+        // @{
+        // TODO assembly subsets should be independent of the model and the dependency should be handled automatically.
+
+        /// Returns vector of field names of Mass assembly.
+        inline std::vector<string> mass_assembly_subset() const {
+            std::vector<string> sub_names = {"X", "d", "mass_matrix_coef", "retardation_coef", "cross_section", "water_content",
+                    "porosity", "rock_density", "sorption_coefficient"};
+            return sub_names;
+        }
+
+        /// Returns vector of field names of Stiffness assembly.
+        inline std::vector<string> stiffness_assembly_subset() const {
+            std::vector<string> sub_names = {"X", "d", "diffusion_coef", "advection_coef", "sources_sigma_out", "bc_type",
+                    "dg_penalty", "cross_section", "bc_robin_sigma", "fracture_sigma", "sources_sigma", "diff_m", "flow_flux",
+					"v_norm", "disp_l", "disp_t", "water_content", "porosity"};
+            return sub_names;
+        }
+
+        /// Returns vector of field names of Sources assembly.
+        inline std::vector<string> source_assembly_subset() const {
+            std::vector<string> sub_names = {"X", "d", "sources_density_out", "sources_conc_out", "sources_sigma_out", "cross_section",
+                    "sources_density", "sources_sigma", "sources_conc"};
+            return sub_names;
+        }
+
+        /// Returns vector of field names of BdrCondition assembly.
+        inline std::vector<string> bdr_assembly_subset() const {
+            std::vector<string> sub_names = {"X", "d", "advection_coef", "diffusion_coef", "bc_type", "bc_conc", "cross_section",
+                    "bc_robin_sigma", "bc_flux", "diff_m", "flow_flux", "v_norm", "disp_l", "disp_t", "water_content", "porosity"};
+            return sub_names;
+        }
+
+        /// Returns vector of field names of InitCondition assembly.
+        inline std::vector<string> init_assembly_subset() const {
+            std::vector<string> sub_names = {"X", "d", "init_conc"};
+            return sub_names;
+        }
+
+       	// @}
 
 		/// @name Data of substances
 		// @{
@@ -158,11 +205,11 @@ public:
 
     /// Returns number of transported substances.
     inline unsigned int n_substances() override
-    { return data().n_substances(); }
+    { return eq_data().n_substances(); }
 
     /// Returns reference to the vector of substance names.
     inline SubstanceList &substances() override
-    { return data().substances(); }
+    { return eq_data().substances(); }
 
 
     // Methods inherited from ConcentrationTransportBase:
@@ -173,14 +220,17 @@ public:
 	void set_balance_object(std::shared_ptr<Balance> balance) override;
 
     const vector<unsigned int> &get_subst_idx() override
-	{ return data().subst_idx(); }
+	{ return eq_data().subst_idx(); }
 
     void set_output_stream(std::shared_ptr<OutputTime> stream)
     { output_stream_ = stream; }
 
 
+	/// Derived class should implement getter for ModelEqFields instance.
+	virtual ModelEqFields &eq_fields() = 0;
+
 	/// Derived class should implement getter for ModelEqData instance.
-	virtual ModelEqData &data() = 0;
+	virtual ModelEqData &eq_data() = 0;
 
 protected:
 

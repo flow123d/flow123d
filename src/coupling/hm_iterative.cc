@@ -145,7 +145,7 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
     // read parameters controlling the iteration
     beta_ = in_record.val<double>("iteration_parameter");
 
-    this->eq_data_ = &data_;
+    this->eq_fieldset_ = &data_;
     
     // setup input fields
     data_.set_input_list( in_record.val<Input::Array>("input_fields"), time() );

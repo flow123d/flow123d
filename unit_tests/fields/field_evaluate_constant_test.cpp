@@ -71,17 +71,15 @@ public:
 
         void register_eval_points() {
             unsigned int reg_idx = computed_dh_cell_.elm().region_idx().idx();
-            for (auto p : mass_eval->points(computed_dh_cell_, this) ) {
-                EvalPointData epd(reg_idx, computed_dh_cell_.elm_idx(), p.eval_point_idx());
-                this->eval_point_data_.push_back(epd);
+            for (auto p : mass_eval->points(this->position_in_cache(computed_dh_cell_.elm_idx()), this) ) {
+                this->eval_point_data_.emplace_back(reg_idx, computed_dh_cell_.elm_idx(), p.eval_point_idx(), computed_dh_cell_.local_idx());
             }
 
             for (DHCellSide cell_side : computed_dh_cell_.side_range()) {
             	for( DHCellSide edge_side : cell_side.edge_sides() ) {
                     unsigned int reg_idx = edge_side.element().region_idx().idx();
                     for (auto p : side_eval->points(edge_side, this) ) {
-                        EvalPointData epd(reg_idx, edge_side.elem_idx(), p.eval_point_idx());
-                        this->eval_point_data_.push_back(epd);
+                        this->eval_point_data_.emplace_back(reg_idx, edge_side.elem_idx(), p.eval_point_idx(), edge_side.cell().local_idx());
                     }
                 }
             }
@@ -189,7 +187,7 @@ TEST_F(FieldEvalConstantTest, evaluate) {
         data_->update_cache();
 
         // Bulk integral, no sides, no permutations.
-        for( BulkPoint q_point: data_->mass_eval->points(data_->computed_dh_cell_, data_.get()) ) {
+        for( BulkPoint q_point: data_->mass_eval->points(data_->position_in_cache(data_->computed_dh_cell_.elm_idx()), data_.get()) ) {
             EXPECT_EQ(expected_scalar[data_->computed_dh_cell_.elm_idx()], data_->scalar_field(q_point));
             EXPECT_ARMA_EQ(expected_vector[i], data_->vector_field(q_point));
             EXPECT_ARMA_EQ(expected_tensor[i], data_->tensor_field(q_point));
@@ -347,22 +345,33 @@ public:
 template <unsigned int dim>
 class AssemblyDimTest : public AssemblyBase<dim> {
 public:
-    typedef typename FieldConstantSpeedTest::EqData EqDataDG;
+    typedef typename FieldConstantSpeedTest::EqData EqFields;
+    typedef typename FieldConstantSpeedTest::EqData EqData;
 
     /// Constructor.
-    AssemblyDimTest(EqDataDG *data)
-    : AssemblyBase<dim>(data->order), data_(data) {}
-
-    void initialize(FMT_UNUSED std::shared_ptr<Balance> balance) {
+    AssemblyDimTest(EqFields *eq_fields, EqData *eq_data)
+    : AssemblyBase<dim>(eq_data->order), eq_fields_(eq_fields), eq_data_(eq_data) {
+        this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::edge | ActiveIntegrals::coupling);
+        this->used_fields_.set_mesh( *eq_fields_->mesh() );
+        this->used_fields_ += *eq_fields_;
     }
 
-    void reallocate_cache(const ElementCacheMap &cache_map) override
+    void initialize(FMT_UNUSED std::shared_ptr<Balance> balance, ElementCacheMap *element_cache_map) {
+        this->element_cache_map_ = element_cache_map;
+    }
+
+    void reallocate_cache() override
     {
-        data_->cache_reallocate(cache_map);
+    	used_fields_.set_dependency(); // fix used_fields_
+    	used_fields_.cache_reallocate(*this->element_cache_map_);
     }
 
     /// Data object shared with Test class
-    EqDataDG *data_;
+    EqFields *eq_fields_;
+    EqData *eq_data_;
+
+    /// Sub field set contains fields used in calculation.
+    FieldSet used_fields_;
 };
 
 string eq_data_input_speed = R"YAML(
@@ -380,17 +389,16 @@ TEST_F(FieldConstantSpeedTest, speed_test) {
 	this->read_input(eq_data_input_speed);
 
 	std::shared_ptr<Balance> balance;
-	GenericAssembly< AssemblyDimTest > ga_bulk(data_.get(), balance, ActiveIntegrals::bulk);
+	GenericAssembly< AssemblyDimTest > ga_bulk(data_.get(), data_.get(), balance);
 	START_TIMER("assemble_bulk");
 	for (unsigned int i=0; i<profiler_loop; ++i)
-		ga_bulk.assemble(this->dh_, this->tg_.step());
+		ga_bulk.assemble(this->dh_);
 	END_TIMER("assemble_bulk");
 
-	GenericAssembly< AssemblyDimTest > ga_all(data_.get(), balance,
-	        (ActiveIntegrals::bulk | ActiveIntegrals::edge | ActiveIntegrals::coupling | ActiveIntegrals::boundary) );
+	GenericAssembly< AssemblyDimTest > ga_all(data_.get(), data_.get(), balance);
 	START_TIMER("assemble_all_integrals");
 	for (unsigned int i=0; i<profiler_loop; ++i)
-		ga_all.assemble(this->dh_, this->tg_.step());
+		ga_all.assemble(this->dh_);
 	END_TIMER("assemble_all_integrals");
 
 	this->profiler_output();

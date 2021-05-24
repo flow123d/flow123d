@@ -86,7 +86,7 @@ const IT::Record &ConvectionTransport::get_input_type()
 }
 
 
-ConvectionTransport::EqData::EqData() : TransportEqData()
+ConvectionTransport::EqData::EqData() : TransportEqFields()
 {
     *this += bc_conc.name("bc_conc")
             .description("Boundary condition for concentration of substances.")
@@ -162,7 +162,7 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record in
   input_rec(in_rec)
 {
 	START_TIMER("ConvectionTransport");
-	this->eq_data_ = &data_;
+	this->eq_fieldset_ = &data_;
 
     transport_matrix_time = -1.0; // or -infty
     transport_bc_time = -1.0;

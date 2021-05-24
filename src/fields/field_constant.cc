@@ -145,10 +145,10 @@ void FieldConstant<spacedim, Value>::value_list (const Armor::array &point_list,
 
 template <int spacedim, class Value>
 void FieldConstant<spacedim, Value>::cache_update(FieldValueCache<typename Value::element_type> &data_cache,
-		ElementCacheMap &cache_map, unsigned int region_idx)
+		ElementCacheMap &cache_map, unsigned int region_patch_idx)
 {
-    unsigned int reg_chunk_begin = cache_map.region_chunk_begin(region_idx);
-    unsigned int reg_chunk_end = cache_map.region_chunk_end(region_idx);
+    unsigned int reg_chunk_begin = cache_map.region_chunk_begin(region_patch_idx);
+    unsigned int reg_chunk_end = cache_map.region_chunk_end(region_patch_idx);
     Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> mat_value( const_cast<typename Value::element_type*>(this->value_.mem_ptr()) );
     for (unsigned int i_cache = reg_chunk_begin; i_cache < reg_chunk_end; ++i_cache)
         data_cache.set(i_cache) = mat_value;

@@ -69,7 +69,6 @@ void ElementCacheMap::create_patch() {
     // Erase element data of previous step
     regions_starts_.reset();
     element_starts_.reset();
-    regions_to_map_.clear();
     element_to_map_.clear();
     std::fill(elm_idx_.begin(), elm_idx_.end(), ElementCacheMap::undef_elem_idx);
 
@@ -78,31 +77,30 @@ void ElementCacheMap::create_patch() {
             if (it->i_reg_ != last_region_idx) { // new region
                 unsigned int last_eval_point = i_pos-1; // set size of block by SIMD size
                 while (i_pos % ElementCacheMap::simd_size_double > 0) {
-                	eval_point_data_.push_back( eval_point_data_[last_eval_point] );
+                	eval_point_data_.emplace_back( eval_point_data_[last_eval_point] );
                     i_pos++;
                 }
 
-                regions_to_map_[it->i_reg_] = regions_starts_.temporary_size();
-                regions_starts_.push_back( element_starts_.temporary_size() );
+                regions_starts_.emplace_back( element_starts_.temporary_size() );
                 last_region_idx = it->i_reg_;
             }
-			elm_idx_[element_to_map_.size()] = it->i_element_;
+			elm_idx_[element_starts_.temporary_size()] = it->i_element_;
             element_to_map_[it->i_element_] = element_starts_.temporary_size();
-            element_starts_.push_back(i_pos);
+            element_starts_.emplace_back(i_pos);
             last_element_idx = it->i_element_;
         }
-        eval_point_data_.push_back( *it );
-        set_element_eval_point(element_to_map_.find(it->i_element_)->second, it->i_eval_point_, i_pos);
+        eval_point_data_.emplace_back( *it );
+        set_element_eval_point(element_starts_.temporary_size()-1, it->i_eval_point_, i_pos);
         i_pos++;
     }
     unsigned int last_eval_point = i_pos-1; // set size of block of last region by SIMD size
     while (i_pos % ElementCacheMap::simd_size_double > 0) {
-        eval_point_data_.push_back( eval_point_data_[last_eval_point] );
+        eval_point_data_.emplace_back( eval_point_data_[last_eval_point] );
         i_pos++;
     }
 
-    regions_starts_.push_back( element_starts_.temporary_size() );
-    element_starts_.push_back(i_pos);
+    regions_starts_.emplace_back( element_starts_.temporary_size() );
+    element_starts_.emplace_back(i_pos);
     regions_starts_.make_permanent();
     element_starts_.make_permanent();
     eval_point_data_.make_permanent();
@@ -115,15 +113,5 @@ void ElementCacheMap::start_elements_update() {
 
 void ElementCacheMap::finish_elements_update() {
 	ready_to_reading_ = true;
-}
-
-
-DHCellAccessor & ElementCacheMap::cache_map_index(DHCellAccessor &dh_cell) const {
-	ASSERT_DBG(ready_to_reading_);
-	unsigned int elm_idx = dh_cell.elm_idx();
-	std::map<unsigned int, unsigned int>::const_iterator it = element_to_map_.find(elm_idx);
-	if ( it != element_to_map_.end() ) dh_cell.set_element_cache_index( it->second );
-	else dh_cell.set_element_cache_index( ElementCacheMap::undef_elem_idx );
-    return dh_cell;
 }
 
