@@ -93,29 +93,27 @@ HM_Iterative::EqData::EqData()
                      .units(UnitSI().s(-1))
                      .flags(FieldFlag::equation_result);
 
+    *this += conductivity_k0.name("conductivity_k0")
+            .description("Initial conductivity for cubic law in fracture and same as other.")
+            .input_default("1.0")
+            .units( UnitSI().m().s(-1) )
+            .set_limits(0.0); /// Needs to set some non-zero value
+
     *this += conductivity_model.name("fracture_induced_conductivity")
                      .description("fracture_induced_conductivity.")
                      .input_default("1.0")
-                     .units( UnitSI().m(2) )
-                     .flags(FieldFlag::in_rhs);
-    *this += aperture_model.name("fracture_induced_aperture")
-                     .description("fracture_induced_opening_closing.")
-                     .input_default("1.0")
-                     .units( UnitSI().m(2) )
-                     .flags(FieldFlag::in_rhs);
+                     .units( UnitSI().m().s(-1) )
+                     
+
 }
 
 /// How to get these fileds in the functor below??
 struct fn_K_mechanics {
-	inline double operator() (double csection, double aparture, double k_o) {
-        return k_o*pow((aparture/csection),2);
+	inline double operator() (double csection, double conductivity_k0, double delta, double delta_min) {
+        return k_o*pow(((delta_min + max(csection + delta - delta_min, 0) )/csection),2);
     }
 };
-struct fn_aperture_mechanics {
-	inline double operator() (double csection, double delta_min, double delta) {
-        return delta_min + max(csection + delta-delta_min, 0);
-    }
-};
+
 
 void HM_Iterative::EqData::initialize(Mesh &mesh)
 {
@@ -137,12 +135,9 @@ void HM_Iterative::EqData::initialize(Mesh &mesh)
     old_div_u_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(beta_ptr_->get_dofhandler());
 
 
-
-    aperture_model_ptr_ = create(fn_aperture_mechanics(), mechanics_->data().cross_section, delta_min, k_o); 
-    aperture_model.set_field(mesh.region_db().get_region_set("ALL"), aperture_model_ptr_);
-
     /// Initialize conducitvity ptr
-    conductivity_model_ptr_ = create(fn_K_mechanics(), mechanics_->data().cross_section, aperture_model_ptr_, k_o); 
+
+    conductivity_model_ptr_ = create(fn_K_mechanics(), mechanics_->data().cross_section, mechanics_->data().conductivity_k0, deta_.delta, data_.delta_min); 
     conductivity_model.set_field(mesh.region_db().get_region_set("ALL"), conductivity_model_ptr_);
 }
 
@@ -171,6 +166,7 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
     Record mech_rec = in_record.val<Record>("mechanics_equation");
     mechanics_ = std::make_shared<Elasticity>(*mesh_, mech_rec, this->time_);
     mechanics_->data()["cross_section"].copy_from(flow_->data()["cross_section"]);
+    mechanics_->data()["conductivity_k0"].copy_form(flow_->data()["conductivity"];
     mechanics_->initialize();
     
     // read parameters controlling the iteration
