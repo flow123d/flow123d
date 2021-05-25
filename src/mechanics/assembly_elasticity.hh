@@ -38,6 +38,8 @@ public:
     typedef typename Elasticity::EqFields EqFields;
     typedef typename Elasticity::EqData EqData;
 
+    static constexpr const char * name() { return "StiffnessAssemblyElasticity"; }
+
     /// Constructor.
     StiffnessAssemblyElasticity(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(1), eq_fields_(eq_fields), eq_data_(eq_data) {
@@ -289,6 +291,8 @@ public:
     typedef typename Elasticity::EqFields EqFields;
     typedef typename Elasticity::EqData EqData;
 
+    static constexpr const char * name() { return "RhsAssemblyElasticity"; }
+
     /// Constructor.
     RhsAssemblyElasticity(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(1), eq_fields_(eq_fields), eq_data_(eq_data) {
@@ -539,6 +543,8 @@ class OutpuFieldsAssemblyElasticity : public AssemblyBase<dim>
 public:
     typedef typename Elasticity::EqFields EqFields;
     typedef typename Elasticity::EqData EqData;
+
+    static constexpr const char * name() { return "OutpuFieldsAssemblyElasticity"; }
 
     /// Constructor.
     OutpuFieldsAssemblyElasticity(EqFields *eq_fields, EqData *eq_data)

@@ -186,6 +186,7 @@ public:
 	 * object of each cells over space dimension.
 	 */
     void assemble(std::shared_ptr<DOFHandlerMultiDim> dh) {
+        START_TIMER( DimAssembly<1>::name() );
         multidim_assembly_[1_d]->reallocate_cache();
         multidim_assembly_[1_d]->begin();
 
@@ -198,9 +199,9 @@ public:
         	    add_into_patch = true;
             }
 
-            START_TIMER("add_integrals_to_patch");
+            //START_TIMER("add_integrals_to_patch");
             this->add_integrals_of_computing_step(*cell_it);
-            END_TIMER("add_integrals_to_patch");
+            //END_TIMER("add_integrals_to_patch");
 
             if (element_cache_map_.eval_point_data_.temporary_size() > CacheMapElementNumber::get()) {
                 bulk_integral_data_.revert_temporary();
@@ -228,6 +229,7 @@ public:
         }
 
         multidim_assembly_[1_d]->end();
+        END_TIMER( DimAssembly<1>::name() );
     }
 
     /// Return ElementCacheMap

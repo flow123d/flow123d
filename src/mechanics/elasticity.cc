@@ -410,9 +410,7 @@ void Elasticity::update_output_fields()
 	eq_fields_->output_stress_ptr->vec().zero_entries();
 	eq_fields_->output_cross_section_ptr->vec().zero_entries();
 	eq_fields_->output_div_ptr->vec().zero_entries();
-    START_TIMER("assemble_fields_output");
     output_fields_assembly_->assemble(eq_data_->dh_);
-    END_TIMER("assemble_fields_output");
 
     // update ghost values of computed fields
     eq_fields_->output_stress_ptr->vec().local_to_ghost_begin();
@@ -451,12 +449,8 @@ void Elasticity::zero_time_step()
     MatSetOption(*eq_data_->ls->get_matrix(), MAT_KEEP_NONZERO_PATTERN, PETSC_TRUE);
     eq_data_->ls->mat_zero_entries();
     eq_data_->ls->rhs_zero_entries();
-    START_TIMER("assemble_stiffness");
     stiffness_assembly_->assemble(eq_data_->dh_);
-    END_TIMER("assemble_stiffness");
-    START_TIMER("assemble_rhs");
     rhs_assembly_->assemble(eq_data_->dh_);
-    END_TIMER("assemble_rhs");
     eq_data_->ls->finish_assembly();
     LinSys::SolveInfo si = eq_data_->ls->solve();
     MessageOut().fmt("[mech solver] lin. it: {}, reason: {}, residual: {}\n",
@@ -473,12 +467,8 @@ void Elasticity::preallocate()
     stiffness_matrix = NULL;
     rhs = NULL;
 
-    START_TIMER("assemble_stiffness");
     stiffness_assembly_->assemble(eq_data_->dh_);
-    END_TIMER("assemble_stiffness");
-    START_TIMER("assemble_rhs");
     rhs_assembly_->assemble(eq_data_->dh_);
-    END_TIMER("assemble_rhs");
 
 	allocation_done = true;
 }
@@ -522,9 +512,7 @@ void Elasticity::solve_linear_system()
         DebugOut() << "Mechanics: Assembling matrix.\n";
         eq_data_->ls->start_add_assembly();
         eq_data_->ls->mat_zero_entries();
-        START_TIMER("assemble_stiffness");
         stiffness_assembly_->assemble(eq_data_->dh_);
-        END_TIMER("assemble_stiffness");
         eq_data_->ls->finish_assembly();
 
         if (stiffness_matrix == NULL)
@@ -540,9 +528,7 @@ void Elasticity::solve_linear_system()
         DebugOut() << "Mechanics: Assembling right hand side.\n";
         eq_data_->ls->start_add_assembly();
         eq_data_->ls->rhs_zero_entries();
-        START_TIMER("assemble_rhs");
         rhs_assembly_->assemble(eq_data_->dh_);
-        END_TIMER("assemble_rhs");
         eq_data_->ls->finish_assembly();
 
         if (rhs == nullptr) VecDuplicate(*( eq_data_->ls->get_rhs() ), &rhs);

@@ -39,6 +39,8 @@ public:
     typedef typename TransportDG<Model>::EqFields EqFields;
     typedef typename TransportDG<Model>::EqData EqData;
 
+    static constexpr const char * name() { return "MassAssemblyDG"; }
+
     /// Constructor.
     MassAssemblyDG(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data) {
@@ -167,6 +169,8 @@ class StiffnessAssemblyDG : public AssemblyBase<dim>
 public:
     typedef typename TransportDG<Model>::EqFields EqFields;
     typedef typename TransportDG<Model>::EqData EqData;
+
+    static constexpr const char * name() { return "StiffnessAssemblyDG"; }
 
     /// Constructor.
     StiffnessAssemblyDG(EqFields *eq_fields, EqData *eq_data)
@@ -648,6 +652,8 @@ public:
     typedef typename TransportDG<Model>::EqFields EqFields;
     typedef typename TransportDG<Model>::EqData EqData;
 
+    static constexpr const char * name() { return "SourcesAssemblyDG"; }
+
     /// Constructor.
     SourcesAssemblyDG(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data) {
@@ -772,6 +778,8 @@ class BdrConditionAssemblyDG : public AssemblyBase<dim>
 public:
     typedef typename TransportDG<Model>::EqFields EqFields;
     typedef typename TransportDG<Model>::EqData EqData;
+
+    static constexpr const char * name() { return "BdrConditionAssemblyDG"; }
 
     /// Constructor.
     BdrConditionAssemblyDG(EqFields *eq_fields, EqData *eq_data)
@@ -990,6 +998,8 @@ class InitConditionAssemblyDG : public AssemblyBase<dim>
 public:
     typedef typename TransportDG<Model>::EqFields EqFields;
     typedef typename TransportDG<Model>::EqData EqData;
+
+    static constexpr const char * name() { return "InitConditionAssemblyDG"; }
 
     /// Constructor.
     InitConditionAssemblyDG(EqFields *eq_fields, EqData *eq_data)

@@ -418,18 +418,10 @@ void TransportDG<Model>::preallocate()
         mass_matrix[i] = NULL;
         VecZeroEntries(eq_data_->ret_vec[i]);
     }
-    START_TIMER("assemble_stiffness");
     stiffness_assembly_->assemble(eq_data_->dh_);
-    END_TIMER("assemble_stiffness");
-    START_TIMER("assemble_mass");
     mass_assembly_->assemble(eq_data_->dh_);
-    END_TIMER("assemble_mass");
-    START_TIMER("assemble_sources");
     sources_assembly_->assemble(eq_data_->dh_);
-    END_TIMER("assemble_sources");
-    START_TIMER("assemble_bc");
     bdr_cond_assembly_->assemble(eq_data_->dh_);
-    END_TIMER("assemble_bc");
     for (unsigned int i=0; i<eq_data_->n_substances(); i++)
     {
       VecAssemblyBegin(eq_data_->ret_vec[i]);
@@ -462,9 +454,7 @@ void TransportDG<Model>::update_solution()
         	eq_data_->ls_dt[i]->mat_zero_entries();
             VecZeroEntries(eq_data_->ret_vec[i]);
         }
-        START_TIMER("assemble_mass");
         mass_assembly_->assemble(eq_data_->dh_);
-        END_TIMER("assemble_mass");
         for (unsigned int i=0; i<eq_data_->n_substances(); i++)
         {
         	eq_data_->ls_dt[i]->finish_assembly();
@@ -494,9 +484,7 @@ void TransportDG<Model>::update_solution()
             eq_data_->ls[i]->start_add_assembly();
             eq_data_->ls[i]->mat_zero_entries();
         }
-        START_TIMER("assemble_stiffness");
         stiffness_assembly_->assemble(eq_data_->dh_);
-        END_TIMER("assemble_stiffness");
         for (unsigned int i=0; i<eq_data_->n_substances(); i++)
         {
         	eq_data_->ls[i]->finish_assembly();
@@ -518,12 +506,8 @@ void TransportDG<Model>::update_solution()
             eq_data_->ls[i]->start_add_assembly();
             eq_data_->ls[i]->rhs_zero_entries();
         }
-        START_TIMER("assemble_sources");
         sources_assembly_->assemble(eq_data_->dh_);
-        END_TIMER("assemble_sources");
-        START_TIMER("assemble_bc");
         bdr_cond_assembly_->assemble(eq_data_->dh_);
-        END_TIMER("assemble_bc");
         for (unsigned int i=0; i<eq_data_->n_substances(); i++)
         {
             eq_data_->ls[i]->finish_assembly();
@@ -654,7 +638,6 @@ void TransportDG<Model>::calculate_cumulative_balance()
 template<class Model>
 void TransportDG<Model>::set_initial_condition()
 {
-    START_TIMER("set_init_cond");
     for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)
         eq_data_->ls[sbi]->start_allocation();
     init_cond_assembly_->assemble(eq_data_->dh_);
@@ -668,7 +651,6 @@ void TransportDG<Model>::set_initial_condition()
         eq_data_->ls[sbi]->finish_assembly();
         eq_data_->ls[sbi]->solve();
     }
-    END_TIMER("set_init_cond");
 }
 
 
