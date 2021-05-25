@@ -220,7 +220,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
     eq_fields_->subdomain = GenericField<3>::subdomain(*Model::mesh_);
 
 
-    // DG variant and order
+    // DG data parameters
     eq_data_->dg_variant = in_rec.val<DGVariant>("dg_variant");
     eq_data_->dg_order = in_rec.val<unsigned int>("dg_order");
     
@@ -241,6 +241,7 @@ void TransportDG<Model>::initialize()
     eq_fields_->set_components(eq_data_->substances_.names());
     eq_fields_->set_input_list( input_rec.val<Input::Array>("input_fields"), *(Model::time_) );
     eq_data_->set_time_governor(Model::time_);
+    eq_data_->balance_ = this->balance();
     eq_fields_->initialize();
 
     // DG stabilization parameters on boundary edges
@@ -308,11 +309,11 @@ void TransportDG<Model>::initialize()
 
 
     // create assemblation object, finite element structures and distribute DOFs
-	mass_assembly_ = new GenericAssembly< MassAssemblyDim >(eq_fields_.get(), eq_data_.get(), this->balance());
-	stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyDim >(eq_fields_.get(), eq_data_.get(), this->balance());
-	sources_assembly_ = new GenericAssembly< SourcesAssemblyDim >(eq_fields_.get(), eq_data_.get(), this->balance());
-	bdr_cond_assembly_ = new GenericAssembly< BdrConditionAssemblyDim >(eq_fields_.get(), eq_data_.get(), this->balance());
-	init_cond_assembly_ = new GenericAssembly< InitConditionAssemblyDim >(eq_fields_.get(), eq_data_.get(), this->balance());
+	mass_assembly_ = new GenericAssembly< MassAssemblyDim >(eq_fields_.get(), eq_data_.get());
+	stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyDim >(eq_fields_.get(), eq_data_.get());
+	sources_assembly_ = new GenericAssembly< SourcesAssemblyDim >(eq_fields_.get(), eq_data_.get());
+	bdr_cond_assembly_ = new GenericAssembly< BdrConditionAssemblyDim >(eq_fields_.get(), eq_data_.get());
+	init_cond_assembly_ = new GenericAssembly< InitConditionAssemblyDim >(eq_fields_.get(), eq_data_.get());
 
     // initialization of balance object
     Model::balance_->allocate(eq_data_->dh_->distr()->lsize(), mass_assembly_->eval_points()->max_size());

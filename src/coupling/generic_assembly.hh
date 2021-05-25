@@ -22,7 +22,6 @@
 #include "fields/eval_subset.hh"
 #include "fields/eval_points.hh"
 #include "fields/field_value_cache.hh"
-#include "coupling/balance.hh"
 #include "tools/revertable_list.hh"
 
 
@@ -151,8 +150,7 @@ private:
 public:
 
     /// Constructor
-    GenericAssembly( typename DimAssembly<1>::EqFields *eq_fields, typename DimAssembly<1>::EqData *eq_data,
-            std::shared_ptr<Balance> balance)
+    GenericAssembly( typename DimAssembly<1>::EqFields *eq_fields, typename DimAssembly<1>::EqData *eq_data)
     : multidim_assembly_(eq_fields, eq_data),
 	  bulk_integral_data_(20, 10),
 	  edge_integral_data_(12, 6),
@@ -165,9 +163,9 @@ public:
         multidim_assembly_[2_d]->create_integrals(eval_points_, integrals_);
         multidim_assembly_[3_d]->create_integrals(eval_points_, integrals_);
         element_cache_map_.init(eval_points_);
-        multidim_assembly_[1_d]->initialize(balance, &element_cache_map_);
-        multidim_assembly_[2_d]->initialize(balance, &element_cache_map_);
-        multidim_assembly_[3_d]->initialize(balance, &element_cache_map_);
+        multidim_assembly_[1_d]->initialize(&element_cache_map_);
+        multidim_assembly_[2_d]->initialize(&element_cache_map_);
+        multidim_assembly_[3_d]->initialize(&element_cache_map_);
         active_integrals_ = multidim_assembly_[1_d]->n_active_integrals();
     }
 
