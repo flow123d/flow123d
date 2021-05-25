@@ -91,6 +91,7 @@ void ElementDataCache<T>::read_ascii_data(Tokenizer &tok, unsigned int n_compone
 		idx = i_row * n_components;
 		std::vector<T> &vec = *( data_[i_vec].get() );
 		for (unsigned int i_col=0; i_col < n_components; ++i_col, ++idx) {
+            ASSERT_DBG(idx < vec.size());
 			vec[idx] = boost::lexical_cast<T>(*tok);
 			++tok;
 		}

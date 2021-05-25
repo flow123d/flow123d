@@ -125,7 +125,7 @@ public:
 		dh->distribute_dofs(ds);
 
 		VectorMPI v(size);
-        for (unsigned int i=0; i<size; ++i) v[i] = step*i;
+        for (unsigned int i=0; i<size; ++i) v.set(i, step*i);
 
 		auto native_data_ptr = make_shared< FieldFE<3, FieldVal> >();
 		native_data_ptr->set_fe_data(dh, v);

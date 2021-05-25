@@ -39,6 +39,8 @@ public:
     typedef typename TransportDG<Model>::EqFields EqFields;
     typedef typename TransportDG<Model>::EqData EqData;
 
+    static constexpr const char * name() { return "MassAssemblyDG"; }
+
     /// Constructor.
     MassAssemblyDG(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data) {
@@ -51,12 +53,11 @@ public:
     ~MassAssemblyDG() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(std::shared_ptr<Balance> balance, ElementCacheMap *element_cache_map) {
-        this->balance_ = balance;
+    void initialize(ElementCacheMap *element_cache_map) {
         this->element_cache_map_ = element_cache_map;
 
         fe_ = std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order);
-        UpdateFlags u = update_values | update_gradients | update_JxW_values | update_quadrature_points;
+        UpdateFlags u = update_values | update_JxW_values | update_quadrature_points;
         fe_values_.initialize(*this->quad_, *fe_, u);
         if (dim==1) // print to log only one time
             DebugOut() << "List of MassAssembly FEValues updates flags: " << this->print_update_flags(u);
@@ -111,7 +112,7 @@ public:
                 }
             }
 
-            balance_->add_mass_values(eq_data_->subst_idx()[sbi], cell, cell.get_loc_dof_indices(),
+            eq_data_->balance_->add_mass_values(eq_data_->subst_idx()[sbi], cell, cell.get_loc_dof_indices(),
                                                local_mass_balance_vector_, 0);
 
             eq_data_->ls_dt[sbi]->mat_set_values(ndofs_, &(dof_indices_[0]), ndofs_, &(dof_indices_[0]), &(local_matrix_[0]));
@@ -122,13 +123,13 @@ public:
     /// Implements @p AssemblyBase::begin.
     void begin() override
     {
-        balance_->start_mass_assembly( eq_data_->subst_idx() );
+        eq_data_->balance_->start_mass_assembly( eq_data_->subst_idx() );
     }
 
     /// Implements @p AssemblyBase::end.
     void end() override
     {
-        balance_->finish_mass_assembly( eq_data_->subst_idx() );
+        eq_data_->balance_->finish_mass_assembly( eq_data_->subst_idx() );
     }
 
     /// Implements @p AssemblyBase::reallocate_cache.
@@ -141,9 +142,6 @@ public:
 
     private:
         shared_ptr<FiniteElement<dim>> fe_;                    ///< Finite element for the solution of the advection-diffusion equation.
-
-        /// Pointer to balance object
-        std::shared_ptr<Balance> balance_;
 
         /// Data objects shared with TransportDG
         EqFields *eq_fields_;
@@ -176,6 +174,8 @@ public:
     typedef typename TransportDG<Model>::EqFields EqFields;
     typedef typename TransportDG<Model>::EqData EqData;
 
+    static constexpr const char * name() { return "StiffnessAssemblyDG"; }
+
     /// Constructor.
     StiffnessAssemblyDG(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data) {
@@ -198,7 +198,7 @@ public:
     }
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(FMT_UNUSED std::shared_ptr<Balance> balance, ElementCacheMap *element_cache_map) {
+    void initialize(ElementCacheMap *element_cache_map) {
         this->element_cache_map_ = element_cache_map;
 
         fe_ = std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order);
@@ -669,6 +669,8 @@ public:
     typedef typename TransportDG<Model>::EqFields EqFields;
     typedef typename TransportDG<Model>::EqData EqData;
 
+    static constexpr const char * name() { return "SourcesAssemblyDG"; }
+
     /// Constructor.
     SourcesAssemblyDG(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data) {
@@ -682,12 +684,11 @@ public:
     ~SourcesAssemblyDG() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(std::shared_ptr<Balance> balance, ElementCacheMap *element_cache_map) {
-        this->balance_ = balance;
+    void initialize(ElementCacheMap *element_cache_map) {
         this->element_cache_map_ = element_cache_map;
 
         fe_ = std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order);
-        UpdateFlags u = update_values | update_gradients | update_JxW_values | update_quadrature_points;
+        UpdateFlags u = update_values | update_JxW_values | update_quadrature_points;
         fe_values_.initialize(*this->quad_, *fe_, u);
         if (dim==1) // print to log only one time
             DebugOut() << "List of SourcesAssemblyDG FEValues updates flags: " << this->print_update_flags(u);
@@ -740,7 +741,7 @@ public:
 
                 local_source_balance_rhs_[i] += local_rhs_[i];
             }
-            balance_->add_source_values(eq_data_->subst_idx()[sbi], elm.region().bulk_idx(),
+            eq_data_->balance_->add_source_values(eq_data_->subst_idx()[sbi], elm.region().bulk_idx(),
                                                  cell.get_loc_dof_indices(),
                                                  local_source_balance_vector_, local_source_balance_rhs_);
         }
@@ -749,13 +750,13 @@ public:
     /// Implements @p AssemblyBase::begin.
     void begin() override
     {
-        balance_->start_source_assembly( eq_data_->subst_idx() );
+        eq_data_->balance_->start_source_assembly( eq_data_->subst_idx() );
     }
 
     /// Implements @p AssemblyBase::end.
     void end() override
     {
-        balance_->finish_source_assembly( eq_data_->subst_idx() );
+        eq_data_->balance_->finish_source_assembly( eq_data_->subst_idx() );
     }
 
     /// Implements @p AssemblyBase::reallocate_cache.
@@ -768,9 +769,6 @@ public:
 
     private:
         shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
-
-        /// Pointer to balance object
-        std::shared_ptr<Balance> balance_;
 
         /// Data objects shared with TransportDG
         EqFields *eq_fields_;
@@ -803,6 +801,8 @@ public:
     typedef typename TransportDG<Model>::EqFields EqFields;
     typedef typename TransportDG<Model>::EqData EqData;
 
+    static constexpr const char * name() { return "BdrConditionAssemblyDG"; }
+
     /// Constructor.
     BdrConditionAssemblyDG(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data) {
@@ -820,8 +820,7 @@ public:
     ~BdrConditionAssemblyDG() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(std::shared_ptr<Balance> balance, ElementCacheMap *element_cache_map) {
-        this->balance_ = balance;
+    void initialize(ElementCacheMap *element_cache_map) {
         this->element_cache_map_ = element_cache_map;
 
         fe_ = std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order);
@@ -971,7 +970,7 @@ public:
             }
             eq_data_->ls[sbi]->rhs_set_values(ndofs_, &(dof_indices_[0]), &(local_rhs_[0]));
 
-            balance_->add_flux_values(eq_data_->subst_idx()[sbi], cell_side,
+            eq_data_->balance_->add_flux_values(eq_data_->subst_idx()[sbi], cell_side,
                                           cell.get_loc_dof_indices(),
                                           local_flux_balance_vector_, local_flux_balance_rhs_);
         }
@@ -980,13 +979,13 @@ public:
     /// Implements @p AssemblyBase::begin.
     void begin() override
     {
-        balance_->start_flux_assembly( eq_data_->subst_idx() );
+        eq_data_->balance_->start_flux_assembly( eq_data_->subst_idx() );
     }
 
     /// Implements @p AssemblyBase::end.
     void end() override
     {
-        balance_->finish_flux_assembly( eq_data_->subst_idx() );
+        eq_data_->balance_->finish_flux_assembly( eq_data_->subst_idx() );
     }
 
     /// Implements @p AssemblyBase::reallocate_cache.
@@ -999,9 +998,6 @@ public:
 
     private:
         shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
-
-        /// Pointer to balance object
-        std::shared_ptr<Balance> balance_;
 
         /// Data objects shared with TransportDG
         EqFields *eq_fields_;
@@ -1034,6 +1030,8 @@ public:
     typedef typename TransportDG<Model>::EqFields EqFields;
     typedef typename TransportDG<Model>::EqData EqData;
 
+    static constexpr const char * name() { return "InitConditionAssemblyDG"; }
+
     /// Constructor.
     InitConditionAssemblyDG(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data) {
@@ -1045,7 +1043,7 @@ public:
     ~InitConditionAssemblyDG() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(FMT_UNUSED std::shared_ptr<Balance> balance, ElementCacheMap *element_cache_map) {
+    void initialize(ElementCacheMap *element_cache_map) {
         this->element_cache_map_ = element_cache_map;
 
         fe_ = std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order);

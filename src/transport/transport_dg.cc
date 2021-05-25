@@ -220,7 +220,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
     eq_fields_->subdomain = GenericField<3>::subdomain(*Model::mesh_);
 
 
-    // DG variant and order
+    // DG data parameters
     eq_data_->dg_variant = in_rec.val<DGVariant>("dg_variant");
     eq_data_->dg_order = in_rec.val<unsigned int>("dg_order");
     
@@ -241,6 +241,7 @@ void TransportDG<Model>::initialize()
     eq_fields_->set_components(eq_data_->substances_.names());
     eq_fields_->set_input_list( input_rec.val<Input::Array>("input_fields"), *(Model::time_) );
     eq_data_->set_time_governor(Model::time_);
+    eq_data_->balance_ = this->balance();
     eq_fields_->initialize();
 
     // DG stabilization parameters on boundary edges
@@ -308,11 +309,11 @@ void TransportDG<Model>::initialize()
 
 
     // create assemblation object, finite element structures and distribute DOFs
-	mass_assembly_ = new GenericAssembly< MassAssemblyDim >(eq_fields_.get(), eq_data_.get(), this->balance());
-	stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyDim >(eq_fields_.get(), eq_data_.get(), this->balance());
-	sources_assembly_ = new GenericAssembly< SourcesAssemblyDim >(eq_fields_.get(), eq_data_.get(), this->balance());
-	bdr_cond_assembly_ = new GenericAssembly< BdrConditionAssemblyDim >(eq_fields_.get(), eq_data_.get(), this->balance());
-	init_cond_assembly_ = new GenericAssembly< InitConditionAssemblyDim >(eq_fields_.get(), eq_data_.get(), this->balance());
+	mass_assembly_ = new GenericAssembly< MassAssemblyDim >(eq_fields_.get(), eq_data_.get());
+	stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyDim >(eq_fields_.get(), eq_data_.get());
+	sources_assembly_ = new GenericAssembly< SourcesAssemblyDim >(eq_fields_.get(), eq_data_.get());
+	bdr_cond_assembly_ = new GenericAssembly< BdrConditionAssemblyDim >(eq_fields_.get(), eq_data_.get());
+	init_cond_assembly_ = new GenericAssembly< InitConditionAssemblyDim >(eq_fields_.get(), eq_data_.get());
 
     // initialization of balance object
     Model::balance_->allocate(eq_data_->dh_->distr()->lsize(), mass_assembly_->eval_points()->max_size());
@@ -417,18 +418,10 @@ void TransportDG<Model>::preallocate()
         mass_matrix[i] = NULL;
         VecZeroEntries(eq_data_->ret_vec[i]);
     }
-    START_TIMER("assemble_stiffness");
     stiffness_assembly_->assemble(eq_data_->dh_);
-    END_TIMER("assemble_stiffness");
-    START_TIMER("assemble_mass");
     mass_assembly_->assemble(eq_data_->dh_);
-    END_TIMER("assemble_mass");
-    START_TIMER("assemble_sources");
     sources_assembly_->assemble(eq_data_->dh_);
-    END_TIMER("assemble_sources");
-    START_TIMER("assemble_bc");
     bdr_cond_assembly_->assemble(eq_data_->dh_);
-    END_TIMER("assemble_bc");
     for (unsigned int i=0; i<eq_data_->n_substances(); i++)
     {
       VecAssemblyBegin(eq_data_->ret_vec[i]);
@@ -461,9 +454,7 @@ void TransportDG<Model>::update_solution()
         	eq_data_->ls_dt[i]->mat_zero_entries();
             VecZeroEntries(eq_data_->ret_vec[i]);
         }
-        START_TIMER("assemble_mass");
         mass_assembly_->assemble(eq_data_->dh_);
-        END_TIMER("assemble_mass");
         for (unsigned int i=0; i<eq_data_->n_substances(); i++)
         {
         	eq_data_->ls_dt[i]->finish_assembly();
@@ -493,9 +484,7 @@ void TransportDG<Model>::update_solution()
             eq_data_->ls[i]->start_add_assembly();
             eq_data_->ls[i]->mat_zero_entries();
         }
-        START_TIMER("assemble_stiffness");
         stiffness_assembly_->assemble(eq_data_->dh_);
-        END_TIMER("assemble_stiffness");
         for (unsigned int i=0; i<eq_data_->n_substances(); i++)
         {
         	eq_data_->ls[i]->finish_assembly();
@@ -517,12 +506,8 @@ void TransportDG<Model>::update_solution()
             eq_data_->ls[i]->start_add_assembly();
             eq_data_->ls[i]->rhs_zero_entries();
         }
-        START_TIMER("assemble_sources");
         sources_assembly_->assemble(eq_data_->dh_);
-        END_TIMER("assemble_sources");
-        START_TIMER("assemble_bc");
         bdr_cond_assembly_->assemble(eq_data_->dh_);
-        END_TIMER("assemble_bc");
         for (unsigned int i=0; i<eq_data_->n_substances(); i++)
         {
             eq_data_->ls[i]->finish_assembly();
@@ -591,12 +576,12 @@ void TransportDG<Model>::compute_p0_interpolation()
 
         for (unsigned int sbi=0; sbi<eq_data_->n_substances(); ++sbi)
         {
-            eq_data_->conc_fe[sbi]->vec()[dof_p0] = 0;
+            eq_data_->conc_fe[sbi]->vec().set(dof_p0, 0);
 
             for (unsigned int j=0; j<n_dofs; ++j)
-                eq_data_->conc_fe[sbi]->vec()[dof_p0] += eq_data_->ls[sbi]->get_solution_array()[loc_dof_indices[j]];
+                eq_data_->conc_fe[sbi]->vec().add( dof_p0, eq_data_->ls[sbi]->get_solution_array()[loc_dof_indices[j]] );
 
-            eq_data_->conc_fe[sbi]->vec()[dof_p0] = max(eq_data_->conc_fe[sbi]->vec()[dof_p0]/n_dofs, 0.);
+            eq_data_->conc_fe[sbi]->vec().set( dof_p0, max(eq_data_->conc_fe[sbi]->vec().get(dof_p0)/n_dofs, 0.) );
         }
     }
 }
@@ -653,7 +638,6 @@ void TransportDG<Model>::calculate_cumulative_balance()
 template<class Model>
 void TransportDG<Model>::set_initial_condition()
 {
-    START_TIMER("set_init_cond");
     for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)
         eq_data_->ls[sbi]->start_allocation();
     init_cond_assembly_->assemble(eq_data_->dh_);
@@ -667,7 +651,6 @@ void TransportDG<Model>::set_initial_condition()
         eq_data_->ls[sbi]->finish_assembly();
         eq_data_->ls[sbi]->solve();
     }
-    END_TIMER("set_init_cond");
 }
 
 
@@ -701,7 +684,7 @@ void TransportDG<Model>::update_after_reactions(bool solution_changed)
 
                 for (unsigned int j=0; j<n_dofs; ++j)
                     eq_data_->ls[sbi]->get_solution_array()[loc_dof_indices[j]]
-                        += eq_data_->conc_fe[sbi]->vec()[dof_p0] - old_average;
+                        += eq_data_->conc_fe[sbi]->vec().get(dof_p0) - old_average;
             }
         }
     }

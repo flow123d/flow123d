@@ -139,7 +139,7 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
     // setup mechanics
     Record mech_rec = in_record.val<Record>("mechanics_equation");
     mechanics_ = std::make_shared<Elasticity>(*mesh_, mech_rec, this->time_);
-    mechanics_->data()["cross_section"].copy_from(flow_->data()["cross_section"]);
+    mechanics_->eq_fields()["cross_section"].copy_from(flow_->data()["cross_section"]);
     mechanics_->initialize();
     
     // read parameters controlling the iteration
@@ -169,7 +169,7 @@ void copy_field(const FieldCommon &from_field_common, FieldFE<dim, Value> &to_fi
     from_field.copy_from(from_field_common);
     
     for ( auto cell : dh->own_range() )
-        vec[cell.local_idx()] = from_field.value(cell.elm().centre(), cell.elm());
+        vec.set( cell.local_idx(), from_field.value(cell.elm().centre(), cell.elm()) );
 }
 
 
@@ -187,7 +187,7 @@ void HM_Iterative::zero_time_step()
     
     copy_field(*flow_->data().field("pressure_p0"), *data_.old_pressure_ptr_);
     copy_field(*flow_->data().field("pressure_p0"), *data_.old_iter_pressure_ptr_);
-    copy_field(mechanics_->data().output_divergence, *data_.div_u_ptr_);
+    copy_field(mechanics_->eq_fields().output_divergence, *data_.div_u_ptr_);
 }
 
 
@@ -216,7 +216,7 @@ void HM_Iterative::solve_iteration()
 void HM_Iterative::update_after_iteration()
 {
     mechanics_->update_output_fields();
-    copy_field(mechanics_->data().output_divergence, *data_.div_u_ptr_);
+    copy_field(mechanics_->eq_fields().output_divergence, *data_.div_u_ptr_);
     copy_field(*flow_->data().field("pressure_p0"), *data_.old_iter_pressure_ptr_);
 }
 
@@ -228,7 +228,7 @@ void HM_Iterative::update_after_converged()
     mechanics_->output_data();
     
     copy_field(*flow_->data().field("pressure_p0"), *data_.old_pressure_ptr_);
-    copy_field(mechanics_->data().output_divergence, *data_.old_div_u_ptr_);
+    copy_field(mechanics_->eq_fields().output_divergence, *data_.old_div_u_ptr_);
 }
 
 
@@ -250,7 +250,7 @@ void HM_Iterative::update_potential()
             double pressure = field_edge_pressure.value(side.centre(), elm);
             double potential = -alpha*density*gravity*pressure;
         
-            potential_vec_[dof_indices[side.side_idx()]] = potential;
+            potential_vec_.set( dof_indices[side.side_idx()], potential );
         }
     }
     
@@ -271,8 +271,8 @@ void HM_Iterative::update_flow_fields()
         auto elm = ele.elm();
         
         double alpha = data_.alpha.value(elm.centre(), elm);
-        double young = mechanics_->data().young_modulus.value(elm.centre(), elm);
-        double poisson = mechanics_->data().poisson_ratio.value(elm.centre(), elm);
+        double young = mechanics_->eq_fields().young_modulus.value(elm.centre(), elm);
+        double poisson = mechanics_->eq_fields().poisson_ratio.value(elm.centre(), elm);
         double beta = beta_ * 0.5*alpha*alpha/(2*lame_mu(young, poisson)/elm.dim() + lame_lambda(young, poisson));
         
         double old_p = data_.old_pressure_ptr_->value(elm.centre(), elm);
@@ -281,8 +281,8 @@ void HM_Iterative::update_flow_fields()
         double old_div_u = data_.old_div_u_ptr_->value(elm.centre(), elm);
         double src = (beta*(p-old_p) + alpha*(old_div_u - div_u)) / time_->dt();
         
-        beta_vec[ele.local_idx()] = beta;
-        src_vec[ele.local_idx()] = src;
+        beta_vec.set(ele.local_idx(), beta);
+        src_vec.set(ele.local_idx(), src);
     }
     
     data_.beta.set_time_result_changed();

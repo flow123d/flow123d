@@ -343,22 +343,32 @@ public:
 template <unsigned int dim>
 class AssemblyDimTest : public AssemblyBase<dim> {
 public:
+    typedef typename FieldConstantSpeedTest::EqData EqFields;
     typedef typename FieldConstantSpeedTest::EqData EqData;
 
     /// Constructor.
-    AssemblyDimTest(EqData *data)
-    : AssemblyBase<dim>(data->order), data_(data) {}
+    AssemblyDimTest(EqFields *eq_fields, EqData *eq_data)
+    : AssemblyBase<dim>(eq_data->order), eq_fields_(eq_fields), eq_data_(eq_data) {
+        this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::edge | ActiveIntegrals::coupling);
+        this->used_fields_.set_mesh( *eq_fields_->mesh() );
+        this->used_fields_ += *eq_fields_;
+    }
 
-    void initialize(FMT_UNUSED std::shared_ptr<Balance> balance) {
+    void initialize(FMT_UNUSED std::shared_ptr<Balance> balance, ElementCacheMap *element_cache_map) {
+        this->element_cache_map_ = element_cache_map;
     }
 
     void reallocate_cache() override
     {
-        data_->cache_reallocate(this->element_cache_map_, *data_);
+        eq_fields_->cache_reallocate(*this->element_cache_map_, used_fields_);
     }
 
     /// Data object shared with Test class
-    EqData *data_;
+    EqFields *eq_fields_;
+    EqData *eq_data_;
+
+    /// Sub field set contains fields used in calculation.
+    FieldSet used_fields_;
 };
 
 string eq_data_input_speed = R"YAML(
@@ -375,14 +385,13 @@ data:
 TEST_F(FieldConstantSpeedTest, speed_test) {
 	this->read_input(eq_data_input_speed);
 
-	std::shared_ptr<Balance> balance;
-	GenericAssembly< AssemblyDimTest > ga_bulk(data_.get(), balance);
+	GenericAssembly< AssemblyDimTest > ga_bulk(data_.get(), data_.get());
 	START_TIMER("assemble_bulk");
 	for (unsigned int i=0; i<profiler_loop; ++i)
 		ga_bulk.assemble(this->dh_);
 	END_TIMER("assemble_bulk");
 
-	GenericAssembly< AssemblyDimTest > ga_all(data_.get(), balance);
+	GenericAssembly< AssemblyDimTest > ga_all(data_.get(), data_.get());
 	START_TIMER("assemble_all_integrals");
 	for (unsigned int i=0; i<profiler_loop; ++i)
 		ga_all.assemble(this->dh_);
