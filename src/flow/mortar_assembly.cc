@@ -247,10 +247,10 @@ void P0_CouplingAssembler::fix_velocity_local(const IsecData &row_ele, const Ise
     arma::vec pressure(n_cols);
     arma::vec add_velocity(n_rows);
     
-    for(uint icol=0; icol < n_cols; icol++ ) pressure[icol] = data_->full_solution[col_ele.dofs[icol]];
+    for(uint icol=0; icol < n_cols; icol++ ) pressure[icol] = data_->full_solution.get(col_ele.dofs[icol]);
     add_velocity =  loc_system_.get_matrix() * pressure - loc_system_.get_rhs();
     //DebugOut() << "fix_velocity\n" << pressure << add_velocity;
-    for(uint irow=0; irow < n_rows; irow++ ) data_->full_solution[row_ele.vel_dofs[irow]] += add_velocity[irow] ;
+    for(uint irow=0; irow < n_rows; irow++ ) data_->full_solution.add( row_ele.vel_dofs[irow], add_velocity[irow] );
 }
 
 void P1_CouplingAssembler::add_sides(const DHCellAccessor& dh_cell, unsigned int shift, vector<int> &dofs, vector<double> &dirichlet)

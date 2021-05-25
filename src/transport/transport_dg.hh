@@ -232,6 +232,7 @@ public:
 		FieldFEScalarVec conc_fe;
 		std::shared_ptr<DOFHandlerMultiDim> dh_p0;
 		TimeGovernor *time_;
+		std::shared_ptr<Balance> balance_;
 	};
 
 	enum DGVariant {

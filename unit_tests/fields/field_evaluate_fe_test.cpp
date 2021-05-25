@@ -363,7 +363,7 @@ public:
         auto scalar_ptr = create_field_fe<3, FieldValue<3>::Scalar>(dh_, scalar_vec);
         data_->scalar_field.set(scalar_ptr, 0.0);
     	for (unsigned int i=0; i<scalar_vec->size(); ++i) {
-    	    scalar_vec[i] = 1 + i % 9;
+    	    scalar_vec.set( i, (1 + i % 9) );
     	}
 
     	VectorMPI * tensor_vec = new VectorMPI(dh_->distr()->lsize() * 9);
@@ -394,22 +394,33 @@ public:
 template <unsigned int dim>
 class AssemblyDimTest : public AssemblyBase<dim> {
 public:
+    typedef typename FieldFESpeedTest::EqData EqFields;
     typedef typename FieldFESpeedTest::EqData EqData;
 
     /// Constructor.
-    AssemblyDimTest(EqData *data)
-    : AssemblyBase<dim>(data->order), data_(data) {}
+    AssemblyDimTest(EqFields *eq_fields, EqData *eq_data)
+    : AssemblyBase<dim>(eq_data->order), eq_fields_(eq_fields), eq_data_(eq_data) {
+        this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::edge | ActiveIntegrals::coupling);
+        this->used_fields_.set_mesh( *eq_fields_->mesh() );
+        this->used_fields_ += *eq_fields_;
+    }
 
-    void initialize(FMT_UNUSED std::shared_ptr<Balance> balance) {
+    void initialize(FMT_UNUSED std::shared_ptr<Balance> balance, ElementCacheMap *element_cache_map) {
+        this->element_cache_map_ = element_cache_map;
     }
 
     void reallocate_cache() override
     {
-        data_->cache_reallocate(this->element_cache_map_);
+        used_fields_.set_dependency(); // fix used_fields_
+        used_fields_.cache_reallocate(*this->element_cache_map_);
     }
 
     /// Data object shared with Test class
-    EqData *data_;
+    EqFields *eq_fields_;
+    EqData *eq_data_;
+
+    /// Sub field set contains fields used in calculation.
+    FieldSet used_fields_;
 };
 
 string eq_data_input_speed = R"YAML(
@@ -434,14 +445,13 @@ data:
 TEST_F(FieldFESpeedTest, read_from_input_test) {
 	this->read_input(eq_data_input_speed);
 
-	std::shared_ptr<Balance> balance;
-	GenericAssembly< AssemblyDimTest > ga_bulk(data_.get(), balance);
+	GenericAssembly< AssemblyDimTest > ga_bulk(data_.get(), data_.get());
 	START_TIMER("assemble_bulk");
 	for (unsigned int i=0; i<profiler_loop; ++i)
 		ga_bulk.assemble(this->dh_);
 	END_TIMER("assemble_bulk");
 
-	GenericAssembly< AssemblyDimTest > ga_all(data_.get(), balance);
+	GenericAssembly< AssemblyDimTest > ga_all(data_.get(), data_.get());
 	START_TIMER("assemble_all_integrals");
 	for (unsigned int i=0; i<profiler_loop; ++i)
 		ga_all.assemble(this->dh_);
@@ -453,17 +463,16 @@ TEST_F(FieldFESpeedTest, read_from_input_test) {
 TEST_F(FieldFESpeedTest, rt_field_fe_test) {
 	this->read_input(eq_data_input_speed);
 
-	std::shared_ptr<Balance> balance;
-	GenericAssembly< AssemblyDimTest > ga_bulk(data_.get(), balance);
+	GenericAssembly< AssemblyDimTest > ga_bulk(data_.get(), data_.get());
 	START_TIMER("assemble_bulk");
 	for (unsigned int i=0; i<profiler_loop; ++i)
-		ga_bulk.assemble(this->dh_, this->tg_.step());
+		ga_bulk.assemble(this->dh_);
 	END_TIMER("assemble_bulk");
 
-	GenericAssembly< AssemblyDimTest > ga_all(data_.get(), balance);
+	GenericAssembly< AssemblyDimTest > ga_all(data_.get(), data_.get());
 	START_TIMER("assemble_all_integrals");
 	for (unsigned int i=0; i<profiler_loop; ++i)
-		ga_all.assemble(this->dh_, this->tg_.step());
+		ga_all.assemble(this->dh_);
 	END_TIMER("assemble_all_integrals");
 
 	this->profiler_output("rt");

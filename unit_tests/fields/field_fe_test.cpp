@@ -63,9 +63,9 @@ public:
     void create_dof_handler(double val1, double val2, double val3) {
         dh = std::make_shared<DOFHandlerMultiDim>(*mesh);
         v.resize(3);
-        v[0] = val1;
-        v[1] = val2;
-        v[2] = val3;
+        v.set(0, val1);
+        v.set(1, val2);
+        v.set(2, val3);
         dof_values[0] = val1;
         dof_values[1] = val2;
         dof_values[2] = val3;
