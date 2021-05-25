@@ -111,6 +111,13 @@ public:
      */
     std::vector<const FieldCommon *> set_dependency(FieldSet &field_set) override;
 
+    /**
+     * Overload @p FieldAlgorithmBase::cache_reinit
+     *
+     * Reinit arena data member.
+     */
+    void cache_reinit(const ElementCacheMap &cache_map) override;
+
     virtual ~FieldFormula();
 
 private:
@@ -139,12 +146,14 @@ private:
     /// Flag indicates if depth variable 'd' is used in formula - obsolete parameter of FParser
     bool has_depth_var_;
 
+    /// Flag indicates if time variable 't' is used in formula - parameter of BParser
+    bool has_time_;
+
+    /// Helper variable for construct of arena, holds sum of sizes (over shape) of all dependent fields.
+    uint sum_shape_sizes_;
+
     /// Flag indicates first call of set_time method, when FunctionParsers in parser_matrix_ must be initialized
     bool first_time_set_;
-
-    /// Holds FieldSet, allows evaluate values of Fields in formula expressions.
-    // TODO: can be removed?
-    FieldSet *field_set_;
 
     /// Arena object providing data arrays
     bparser::ArenaAlloc * arena_alloc_;
@@ -156,8 +165,7 @@ private:
 	double *d_;       ///< Surface depth variable, used optionally if 'd' variable is set
 	double *res_;     ///< Result vector of BParser
 	uint *subsets_;   ///< Subsets indices in range 0 ... n-1
-	std::vector<const FieldCommon * > dependency_field_vec_;
-	// TODO: Rename to required_fields_.
+	std::vector<const FieldCommon * > required_fields_;
 
 	/**
 	 * Data of fields evaluated in expressions.
