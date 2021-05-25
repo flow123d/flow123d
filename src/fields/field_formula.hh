@@ -49,13 +49,17 @@ using namespace std;
 /**
  * Class representing fields given by runtime parsed formulas.
  *
- * Using library:
- * http://warp.povusers.org/FunctionParser/
+ * Using libraries:
+ * https://github.com/flow123d/bparser/
+ * http://warp.povusers.org/FunctionParser/ (gradually replaced by BParser)
+ *
+ * Allows parsing:
+ * - base variables: coordinates (x,y,z), time (t), surface depth (d); constants: e, pi
+ * - standard functions: trigonometric functions, min and max function, exponential function, ternary operator etc.
+ * - expressions dependendent on other fields
  *
  * TODO:
  * correct support for discrete functions (use integer parser), actually we just convert double to int
- *
- * TODO: Update this comment.
  */
 template <int spacedim, class Value>
 class FieldFormula : public FieldAlgorithmBase<spacedim, Value>
