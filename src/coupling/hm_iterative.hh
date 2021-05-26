@@ -134,7 +134,8 @@ public:
         Field<3, FieldValue<3>::Scalar> density; ///< Density of fluid.
         Field<3, FieldValue<3>::Scalar> gravity; ///< Standard gravity.
         Field<3, FieldValue<3>::Scalar> beta;
-        Field<3, FieldValue<3>::Scalar> conductivity_k0; /// copy from flow conductivity 
+        Field<3, FieldValue<3>::Scalar> conductivity_k0; ///< copy from flow conductivity 
+        Field<3, FieldValue<3>::Scalar> delta_min;      ///< Minimum thresold value for deformed cross-section
         Field<3, FieldValue<3>::Scalar> conductivity_model; /// < Define cubic law K = f(k_o, (a/delta)^2)
         
         /// Potential -alpha*pressure whose gradient is passed to mechanics as additional load.
@@ -150,8 +151,6 @@ public:
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > div_u_ptr_;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > old_div_u_ptr_;
         
-        /// Create a conductivity model pointer
-        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > conductivity_model_ptr_; 
     };
     
     /// Define input record.
