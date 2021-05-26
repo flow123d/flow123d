@@ -21,7 +21,10 @@
 #endif
 
 #ifdef FLOW123D_BENCHMARK_ASSERTS
-#define EXPECT_TIMER_LE(tag, time) EXPECT_LE(CUMUL_TIMER((tag))/Profiler::instance()->calibration_time(), time)
+#define EXPECT_TIMER_LE(tag, time) \
+    LogOut() << "EXPECT_TIMER: [" << tag << "] measured: " \
+        << CUMUL_TIMER((tag))/Profiler::instance()->calibration_time() << " expected: " << time; \
+    EXPECT_LE(CUMUL_TIMER((tag))/Profiler::instance()->calibration_time(), time)
 #else
 #define EXPECT_TIMER_LE(tag, time)
 #endif

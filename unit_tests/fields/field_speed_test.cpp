@@ -472,21 +472,32 @@ TYPED_TEST(FieldSpeed, field_python) {
 }
 #endif // FLOW123D_HAVE_PYTHON
 
+
 // PE:
 // - it takes way too long  (>5 min)
+// TODO: uncomment "many" and "list" after optimizing
 
-//TYPED_TEST(FieldSpeed, field_fe) {
-//	this->set_values();
-//	string key_name = "fe_" + this->input_type_name_;
-//	this->read_input(key_name);
-//
-//    START_TIMER("field_fe");
-//	this->call_test();
-//	END_TIMER("field_fe");
-//
-//	this->test_result( this->expect_fe_val_, 21 );
-//	this->profiler_output();
-//}
+TYPED_TEST(FieldSpeed, field_fe) {
+	this->set_values();
+	string key_name = "fe_" + this->input_type_name_;
+	this->read_input(key_name);
+
+    START_TIMER("field_fe");
+	this->test_single();	// result list_size
+	this->test_result( this->expect_fe_val_, list_size);
+    EXPECT_TIMER_LE("single", 45);
+
+    // this->test_many();		// result list_size
+    // EXPECT_TIMER_LE("many", 45);
+
+    // this->test_list();		// result 1
+	// EXPECT_TIMER_LE("list", 25);
+	END_TIMER("field_fe");
+
+	// this->test_result( this->expect_fe_val_, 2*list_size+1 );
+	
+	this->profiler_output();
+}
 
 
 
