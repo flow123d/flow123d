@@ -239,13 +239,6 @@ public:
     }
 
 
-    /// Implements @p AssemblyBase::reallocate_cache.
-    void reallocate_cache() override
-    {
-        eq_fields_->cache_reallocate(*this->element_cache_map_, used_fields_);
-        DebugOut() << "Order of evaluated fields (StiffnessAssemblyElasticity):" << eq_fields_->print_dependency();
-    }
-
 
 private:
     inline arma::mat33 mat_t(const arma::mat33 &m, const arma::vec3 &n)
@@ -502,13 +495,6 @@ public:
     }
 
 
-    /// Implements @p AssemblyBase::reallocate_cache.
-    void reallocate_cache() override
-    {
-        eq_fields_->cache_reallocate(*this->element_cache_map_, used_fields_);
-        DebugOut() << "Order of evaluated fields (RhsAssemblyElasticity):" << eq_fields_->print_dependency();
-    }
-
 
 private:
     shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
@@ -661,13 +647,6 @@ public:
         output_div_vec_.add( dof_indices_scalar_[0], normal_displacement_ / eq_fields_->cross_section(p_low) );
     }
 
-
-    /// Implements @p AssemblyBase::reallocate_cache.
-    void reallocate_cache() override
-    {
-        eq_fields_->cache_reallocate(*this->element_cache_map_, used_fields_);
-        DebugOut() << "Order of evaluated fields (OutpuFieldsAssemblyElasticity):" << eq_fields_->print_dependency();
-    }
 
 
 private:

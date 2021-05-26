@@ -132,14 +132,6 @@ public:
         eq_data_->balance_->finish_mass_assembly( eq_data_->subst_idx() );
     }
 
-    /// Implements @p AssemblyBase::reallocate_cache.
-    void reallocate_cache() override
-    {
-        eq_fields_->cache_reallocate(*this->element_cache_map_, used_fields_);
-        DebugOut() << "Order of evaluated fields (MassAssemblyDG):" << eq_fields_->print_dependency();
-    }
-
-
     private:
         shared_ptr<FiniteElement<dim>> fe_;                    ///< Finite element for the solution of the advection-diffusion equation.
 
@@ -617,13 +609,6 @@ public:
         }
     }
 
-    /// Implements @p AssemblyBase::reallocate_cache.
-    void reallocate_cache() override
-    {
-        eq_fields_->cache_reallocate(*this->element_cache_map_, used_fields_);
-        DebugOut() << "Order of evaluated fields (StiffnessAssemblyDG):" << eq_fields_->print_dependency();
-    }
-
 
 private:
     shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
@@ -757,13 +742,6 @@ public:
     void end() override
     {
         eq_data_->balance_->finish_source_assembly( eq_data_->subst_idx() );
-    }
-
-    /// Implements @p AssemblyBase::reallocate_cache.
-    void reallocate_cache() override
-    {
-        eq_fields_->cache_reallocate(*this->element_cache_map_, used_fields_);
-        DebugOut() << "Order of evaluated fields (SourcesAssemblyDG):" << eq_fields_->print_dependency();
     }
 
 
@@ -988,13 +966,6 @@ public:
         eq_data_->balance_->finish_flux_assembly( eq_data_->subst_idx() );
     }
 
-    /// Implements @p AssemblyBase::reallocate_cache.
-    void reallocate_cache() override
-    {
-        eq_fields_->cache_reallocate(*this->element_cache_map_, used_fields_);
-        DebugOut() << "Order of evaluated fields (BdrConditionAssemblyDG):" << eq_fields_->print_dependency();
-    }
-
 
     private:
         shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
@@ -1093,13 +1064,6 @@ public:
             }
             eq_data_->ls[sbi]->set_values(ndofs_, &(dof_indices_[0]), ndofs_, &(dof_indices_[0]), &(local_matrix_[0]), &(local_rhs_[0]));
         }
-    }
-
-    /// Implements @p AssemblyBase::reallocate_cache.
-    void reallocate_cache() override
-    {
-        eq_fields_->cache_reallocate(*this->element_cache_map_, used_fields_);
-        DebugOut() << "Order of evaluated fields (InitConditionAssemblyDG):" << eq_fields_->print_dependency();
     }
 
 

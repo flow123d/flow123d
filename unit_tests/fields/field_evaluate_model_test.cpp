@@ -210,6 +210,8 @@ public:
     typedef typename FieldModelSpeedTest::EqData EqFields;
     typedef typename FieldModelSpeedTest::EqData EqData;
 
+    static constexpr const char * name() { return "AssemblyModelTest"; }
+
     /// Constructor.
     AssemblyDimTest(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(eq_data->order), eq_fields_(eq_fields), eq_data_(eq_data) {
@@ -218,14 +220,8 @@ public:
         this->used_fields_ += *eq_fields_;
     }
 
-    void initialize(FMT_UNUSED std::shared_ptr<Balance> balance, ElementCacheMap *element_cache_map) {
+    void initialize(ElementCacheMap *element_cache_map) {
         this->element_cache_map_ = element_cache_map;
-    }
-
-    void reallocate_cache() override
-    {
-        used_fields_.set_dependency(); // fix used_fields_
-        used_fields_.cache_reallocate(*this->element_cache_map_);
     }
 
     /// Data object shared with Test class

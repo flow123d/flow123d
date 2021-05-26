@@ -353,7 +353,7 @@ public:
     	auto vector_ptr = create_field_fe<3, FieldValue<3>::VectorFixed>(dh_, vector_vec);
         data_->vector_field.set(vector_ptr, 0.0);
     	for (unsigned int i=0; i<vector_vec->size(); ++i) {
-    		vector_vec->data()[i] = i % 10 + 0.5;
+    		vector_vec->set( i, (i % 10 + 0.5) );
     	}
 
 #ifdef ALL_FIELDS
@@ -361,14 +361,14 @@ public:
         auto scalar_ptr = create_field_fe<3, FieldValue<3>::Scalar>(dh_, scalar_vec);
         data_->scalar_field.set(scalar_ptr, 0.0);
     	for (unsigned int i=0; i<scalar_vec->size(); ++i) {
-    	    scalar_vec.set( i, (1 + i % 9) );
+    	    scalar_vec->set( i, (1 + i % 9) );
     	}
 
     	VectorMPI * tensor_vec = new VectorMPI(dh_->distr()->lsize() * 9);
         auto tensor_ptr = create_field_fe<3, FieldValue<3>::TensorFixed>(dh_, tensor_vec);
         data_->tensor_field.set(tensor_ptr, 0.0);
     	for (unsigned int i=0; i<tensor_vec->size(); ++i) {
-    		tensor_vec->data()[i] = (1 + i % 98) * 0.1;
+    		tensor_vec->set( i, (1 + i % 98) * 0.1 );
     	}
 #endif // ALL_FIELDS
 
@@ -395,6 +395,8 @@ public:
     typedef typename FieldFESpeedTest::EqData EqFields;
     typedef typename FieldFESpeedTest::EqData EqData;
 
+    static constexpr const char * name() { return "AssemblyFETest"; }
+
     /// Constructor.
     AssemblyDimTest(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(eq_data->order), eq_fields_(eq_fields), eq_data_(eq_data) {
@@ -403,13 +405,8 @@ public:
         this->used_fields_ += *eq_fields_;
     }
 
-    void initialize(FMT_UNUSED std::shared_ptr<Balance> balance, ElementCacheMap *element_cache_map) {
+    void initialize(ElementCacheMap *element_cache_map) {
         this->element_cache_map_ = element_cache_map;
-    }
-
-    void reallocate_cache() override
-    {
-        eq_fields_->cache_reallocate(*this->element_cache_map_, used_fields_);
     }
 
     /// Data object shared with Test class

@@ -187,7 +187,7 @@ public:
 	 */
     void assemble(std::shared_ptr<DOFHandlerMultiDim> dh) {
         START_TIMER( DimAssembly<1>::name() );
-        multidim_assembly_[1_d]->reallocate_cache();
+        this->reallocate_cache();
         multidim_assembly_[1_d]->begin();
 
         bool add_into_patch = false; // control variable
@@ -421,6 +421,12 @@ private:
         	// invalid local_idx value, DHCellAccessor of boundary element doesn't exist
         	element_cache_map_.eval_point_data_.emplace_back(bdr_reg, bdr_side.cond().bc_ele_idx(), p_bdr.eval_point_idx(), -1);
         }
+    }
+
+    /// Calls cache_reallocate method on
+    inline void reallocate_cache() {
+        multidim_assembly_[1_d]->eq_fields_->cache_reallocate(this->element_cache_map_, multidim_assembly_[1_d]->used_fields_);
+        DebugOut() << "Order of evaluated fields (" << DimAssembly<1>::name() << "):" << multidim_assembly_[1_d]->eq_fields_->print_dependency();
     }
 
 

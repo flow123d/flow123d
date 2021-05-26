@@ -64,9 +64,6 @@ public:
     /// Method finishes object after assemblation (e.g. balance, ...).
     virtual void end() {}
 
-    /// Reallocate data caches of fields in equation.
-    virtual void reallocate_cache() =0;
-
     /// Getter of active_integrals.
     inline int n_active_integrals() const {
         return active_integrals_;
