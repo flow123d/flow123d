@@ -12,7 +12,7 @@
 #include "system/global_defs.h"
 
 
-#ifdef FLOW123D_RUN_UNIT_BENCHMARKS
+// #ifdef FLOW123D_RUN_UNIT_BENCHMARKS
 
 #include <fstream>
 
@@ -66,6 +66,7 @@ TEST(TokenizerPosition, compare_speed) {
 			EXPECT_EQ(position_data[index].line_counter_, val);
 	    }
 	    END_TIMER("tokenizer");
+		EXPECT_TIMER_LE("tokenizer", 2);
 
 	    // test of reading after reaching the EOF
 	    tok.set_position( position_data[file_line_count-1] );
@@ -90,6 +91,7 @@ TEST(TokenizerPosition, compare_speed) {
 			EXPECT_EQ(position_data[index].line_counter_, val);
 		}
 		END_TIMER("binary_file");
+		EXPECT_TIMER_LE("binary_file", 1.5);
 
 		binary_file.close();
 	}
@@ -98,4 +100,4 @@ TEST(TokenizerPosition, compare_speed) {
 	Profiler::uninitialize();
 }
 
-#endif // FLOW123D_RUN_UNIT_BENCHMARKS
+// #endif // FLOW123D_RUN_UNIT_BENCHMARKS
