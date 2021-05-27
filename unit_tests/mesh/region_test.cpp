@@ -408,7 +408,7 @@ void init_map(std::map<unsigned int, Item> &map,unsigned int size) {
  * O3       100     add_region_consistancy_check  825
  * O3       100     add_region_consistancy_check && using iterators  446
  */
-// #ifdef FLOW123D_RUN_UNIT_BENCHMARKS
+
 #define STEPS (100*1000*1000)
 
 // RegionDB add_item(id, dim) overhead.
@@ -458,4 +458,3 @@ TEST(RegionDB, speed_map) {
    END_TIMER("speed_map");
    EXPECT_TIMER_LE("speed_map", 1.5);
 }
-// #endif // FLOW123D_RUN_UNIT_BENCHMARKS

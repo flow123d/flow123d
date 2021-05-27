@@ -14,8 +14,6 @@
 #include "mpi.h"
 
 
-// #ifdef FLOW123D_RUN_UNIT_BENCHMARKS
-
 const int 
     m = 9,
     n_cols = 2,
@@ -213,4 +211,3 @@ TEST(PETSC_mat, mat_set_values_mm) {
     static ofstream os( FilePath("set_values_profiler.log", FilePath::output_file) );
     Profiler::instance()->output(MPI_COMM_WORLD, os);
 }
-// #endif // FLOW123D_RUN_UNIT_BENCHMARKS

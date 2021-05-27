@@ -8,8 +8,6 @@
 #include <flow_gtest_mpi.hh>
 #include "system/global_defs.h"
 
-// #ifdef FLOW123D_RUN_UNIT_BENCHMARKS
-
 #include <armadillo>
 
 #include "system/system.hh"
@@ -331,6 +329,3 @@ TEST(speed_simple_13, all) {
 TEST(speed_simple_23, all) {
     test<2,3>(90);
 }
-
-
-// #endif // FLOW123D_RUN_UNIT_BENCHMARKS

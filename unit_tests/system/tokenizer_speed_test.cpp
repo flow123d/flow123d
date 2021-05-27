@@ -11,9 +11,6 @@
 
 #include "system/global_defs.h"
 
-
-// #ifdef FLOW123D_RUN_UNIT_BENCHMARKS
-
 #include <fstream>
 
 #include "system/tokenizer.hh"
@@ -99,5 +96,3 @@ TEST(TokenizerPosition, compare_speed) {
 	Profiler::instance()->output(cout);
 	Profiler::uninitialize();
 }
-
-// #endif // FLOW123D_RUN_UNIT_BENCHMARKS

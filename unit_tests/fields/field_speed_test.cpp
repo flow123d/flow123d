@@ -13,8 +13,6 @@
 #include "system/global_defs.h"
 
 
-//#ifdef FLOW123D_RUN_UNIT_BENCHMARKS
-
 #include <mesh_constructor.hh>
 #include "fields/field_constant.hh"
 #include "fields/field_formula.hh"
@@ -546,6 +544,4 @@ TEST(FieldValue_, speed_test_direct) {
    EXPECT_TIMER_LE("performance_direct", 0.03);
    cout << val << endl;
 }
-
-//#endif // FLOW123D_RUN_UNIT_BENCHMARKS
 
