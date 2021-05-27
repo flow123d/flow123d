@@ -371,7 +371,7 @@ void ConvectionTransport::alloc_transport_structs_mpi() {
         
         VecCreateMPIWithArray(PETSC_COMM_WORLD,1, el_ds->lsize(), mesh_->n_elements(),
                 sources_corr[sbi],&v_sources_corr[sbi]);
-        corr_vec.emplace_back(el_ds->lsize(), PETSC_COMM_SELF);
+        corr_vec.emplace_back(el_ds->lsize(), PETSC_COMM_WORLD);
         
         VecCreateMPIWithArray(PETSC_COMM_WORLD,1, el_ds->lsize(), mesh_->n_elements(),
                 tm_diag[sbi],&v_tm_diag[sbi]);
