@@ -311,8 +311,6 @@ private:
 	bool is_mass_diag_changed;
     //@}
     
-    double **sources_corr;
-    Vec *v_sources_corr;
     vector<VectorMPI> corr_vec;
     
 

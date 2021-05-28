@@ -273,12 +273,10 @@ ConvectionTransport::~ConvectionTransport()
         	chkerr(VecDestroy(&bcvcorr[sbi]));
         	chkerr(VecDestroy(&vcumulative_corr[sbi]));
         	chkerr(VecDestroy(&v_tm_diag[sbi]));
-        	chkerr(VecDestroy(&v_sources_corr[sbi]));
 
             // arrays of arrays
             delete cumulative_corr[sbi];
             delete tm_diag[sbi];
-            delete sources_corr[sbi];
         }
 
         // arrays of mpi vectors
@@ -286,12 +284,10 @@ ConvectionTransport::~ConvectionTransport()
         delete bcvcorr;
         delete vcumulative_corr;
         delete v_tm_diag;
-        delete v_sources_corr;
         
         // arrays of arrays
         delete cumulative_corr;
         delete tm_diag;
-        delete sources_corr;
     }
 }
 
@@ -325,12 +321,10 @@ void ConvectionTransport::alloc_transport_vectors() {
     unsigned int sbi, n_subst;
     n_subst = n_substances();
     
-    sources_corr = new double*[n_subst];
     tm_diag = new double*[n_subst];
     cumulative_corr = new double*[n_subst];
     for (sbi = 0; sbi < n_subst; sbi++) {
       cumulative_corr[sbi] = new double[el_ds->lsize()];
-      sources_corr[sbi] = new double[el_ds->lsize()];
       tm_diag[sbi] = new double[el_ds->lsize()];
     }
 
@@ -354,8 +348,6 @@ void ConvectionTransport::alloc_transport_structs_mpi() {
     bcvcorr = new Vec[n_subst];
     vcumulative_corr = new Vec[n_subst];
     v_tm_diag = new Vec[n_subst];
-    v_sources_corr = new Vec[n_subst];
-    //corr_vec.resize(n_subst, el_ds->lsize());
     
 
     for (sbi = 0; sbi < n_subst; sbi++) {
@@ -369,8 +361,6 @@ void ConvectionTransport::alloc_transport_structs_mpi() {
         VecCreateMPIWithArray(PETSC_COMM_WORLD,1, el_ds->lsize(), mesh_->n_elements(),
         		cumulative_corr[sbi],&vcumulative_corr[sbi]);
         
-        VecCreateMPIWithArray(PETSC_COMM_WORLD,1, el_ds->lsize(), mesh_->n_elements(),
-                sources_corr[sbi],&v_sources_corr[sbi]);
         corr_vec.emplace_back(el_ds->lsize(), PETSC_COMM_WORLD);
         
         VecCreateMPIWithArray(PETSC_COMM_WORLD,1, el_ds->lsize(), mesh_->n_elements(),
@@ -431,7 +421,6 @@ void ConvectionTransport::conc_sources_bdr_conditions() {
                 source = csection * (data_.sources_density[sbi].value(center, elm)
                          + src_sigma * data_.sources_conc[sbi].value(center, elm));
                 // addition to RHS
-                sources_corr[sbi][local_p0_dof] = source;
                 corr_vec[sbi][local_p0_dof] = source;
                 // addition to diagonal of the transport matrix
                 diag = src_sigma * csection;
@@ -633,7 +622,6 @@ void ConvectionTransport::update_solution() {
         double dt = (!is_src_term_scaled) ? dt_new : dt_scaled;
         for (unsigned int sbi=0; sbi<n_substances(); sbi++)
         {
-            VecScale(v_sources_corr[sbi], dt);
             VecScale(corr_vec[sbi].petsc_vec(), dt);
             VecScale(v_tm_diag[sbi], dt);
         }
@@ -677,8 +665,7 @@ void ConvectionTransport::update_solution() {
       VecPointwiseMult(vcumulative_corr[sbi], v_tm_diag[sbi], vconc); //w = x.*y
       
       // Then we add boundary terms ans other source terms into RHS.
-      // RHS = 1.0 * bcvcorr + 1.0 * v_sources_corr + 1.0 * rhs
-      //VecAXPBYPCZ(vcumulative_corr[sbi], 1.0, 1.0, 1.0, bcvcorr[sbi], v_sources_corr[sbi]);   //z = ax + by + cz
+      // RHS = 1.0 * bcvcorr + 1.0 * corr_vec + 1.0 * rhs
       VecAXPBYPCZ(vcumulative_corr[sbi], 1.0, 1.0, 1.0, bcvcorr[sbi], corr_vec[sbi].petsc_vec());   //z = ax + by + cz
       
       // Then we set the new previous concentration.
