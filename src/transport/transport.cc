@@ -575,9 +575,13 @@ bool ConvectionTransport::evaluate_time_constraint(double& time_constraint)
     {
         compute_concentration_sources();
         set_boundary_conditions();
-        is_src_term_scaled = false;
-        cfl_changed = true;
-        is_bc_term_scaled = false;
+        if( data_.sources_density.changed() || data_.sources_conc.changed() || data_.sources_sigma.changed()
+               || data_.cross_section.changed() ) {
+            is_src_term_scaled = false;
+            cfl_changed = true;
+        }
+        if (data_.flow_flux.changed() || data_.porosity.changed()
+        	       || data_.water_content.changed() || data_.bc_conc.changed() ) is_bc_term_scaled = false;
         DebugOut() << "CFL changed - source.\n";
     }
     
