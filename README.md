@@ -26,6 +26,23 @@ For detailed instructions, see the [installation guide](doc/INSTALL.md).
 
 
 ## Developers
+
+## Build
+Two step build:
+
+1. `bin/fterm      # start the docker developing container`
+2. `make all       # produce "build_tree/bin/flow123d"`
+3. `bin/flow123d   # lunch the simulator using a simple wrapper script`
+
+That would start the debug docker image and build the debug version of the simulator.
+For the release (optimized) version run:
+
+1. `bin/fterm rel`
+2. `make all`
+
+For details see [installation guide](doc/INSTALL.md) or the manual.
+
+
 ### Troubleshooting
 
   * When problem occurs during the compilation process it may be due to a leftover files in a build folder.
@@ -36,6 +53,8 @@ For detailed instructions, see the [installation guide](doc/INSTALL.md).
   **Running `rm -rf` can quite easily cause a lot of damage, double check that you're
   in a correct folder.**
 
+  * The build tools may fail if the root path contains folders with spaces.
+  
   * During an installation under Windows, some scenarios can cause problems. Please refer to
   [an installation guide](https://docs.docker.com/toolbox/toolbox_install_windows/) for a
   Docker Toolbox. You can also check out
