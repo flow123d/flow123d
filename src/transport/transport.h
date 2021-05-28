@@ -264,12 +264,11 @@ private:
     void make_transport_partitioning(); //
 	void set_initial_condition();
 	void read_concentration_sources();
-	void set_boundary_conditions();
   
-    /** @brief Assembles concentration sources for each substance.
+    /** @brief Assembles concentration sources for each substance and set boundary conditions.
      * note: the source of concentration is multiplied by time interval (gives the mass, not the flow like before)
      */
-    void compute_concentration_sources();
+    void conc_sources_bdr_conditions();
     
 	/**
 	 * Finish explicit transport matrix (time step scaling)

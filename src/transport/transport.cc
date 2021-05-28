@@ -393,70 +393,10 @@ void ConvectionTransport::alloc_transport_structs_mpi() {
 }
 
 
-void ConvectionTransport::set_boundary_conditions()
-{
-    START_TIMER ("set_boundary_conditions");
-
-    unsigned int sbi;
-    
-    // Assembly bcvcorr vector
-    for(sbi=0; sbi < n_substances(); sbi++) VecZeroEntries(bcvcorr[sbi]);
-
-   	balance_->start_flux_assembly(subst_idx);
-
-    for ( DHCellAccessor dh_cell : dh_->own_range() )
-    {
-        ElementAccessor<3> elm = dh_cell.elm();
-        // we have currently zero order P_Disc FE
-        ASSERT_DBG(dh_cell.get_loc_dof_indices().size() == 1);
-        IntIdx local_p0_dof = dh_cell.get_loc_dof_indices()[0];
-        LongIdx glob_p0_dof = dh_->get_local_to_global_map()[local_p0_dof];
-
-        for(DHCellSide dh_side: dh_cell.side_range()) {
-            if (dh_side.side().is_boundary()) {
-                ElementAccessor<3> bc_elm = dh_side.cond().element_accessor();
-                double flux = this->side_flux(dh_side);
-                if (flux < 0.0) {
-                    double aij = -(flux / elm.measure() );
-
-                    for (sbi=0; sbi<n_substances(); sbi++)
-                    {
-                        double value = data_.bc_conc[sbi].value( bc_elm.centre(), bc_elm );
-                        
-                        VecSetValue(bcvcorr[sbi], glob_p0_dof, value * aij, ADD_VALUES);
-
-                        // CAUTION: It seems that PETSc possibly optimize allocated space during assembly.
-                        // So we have to add also values that may be non-zero in future due to changing velocity field.
-                        balance_->add_flux_values(subst_idx[sbi], dh_side,
-                                                  {local_p0_dof}, {0.0}, flux*value);
-                    }
-                } else {
-                    for (sbi=0; sbi<n_substances(); sbi++)
-                        VecSetValue(bcvcorr[sbi], glob_p0_dof, 0, ADD_VALUES);
-                    
-                    for (unsigned int sbi=0; sbi<n_substances(); sbi++)
-                        balance_->add_flux_values(subst_idx[sbi], dh_side,
-                                                  {local_p0_dof}, {flux}, 0.0);
-                }
-            }
-        }
-    }
-
-    balance_->finish_flux_assembly(subst_idx);
-
-    for (sbi=0; sbi<n_substances(); sbi++)  	VecAssemblyBegin(bcvcorr[sbi]);
-    for (sbi=0; sbi<n_substances(); sbi++)   	VecAssemblyEnd(bcvcorr[sbi]);
-
-    // we are calling set_boundary_conditions() after next_time() and
-    // we are using data from t() before, so we need to set corresponding bc time
-    transport_bc_time = time_->last_t();
-}
-
-
 //=============================================================================
-// COMPUTE SOURCES
+// COMPUTE SOURCES, SET BOUNDARY CONDITIONS
 //=============================================================================
-void ConvectionTransport::compute_concentration_sources() {
+void ConvectionTransport::conc_sources_bdr_conditions() {
 
   //temporary variables
   double csection, source, diag;
@@ -512,6 +452,63 @@ void ConvectionTransport::compute_concentration_sources() {
         
         END_TIMER("sources_reinit");
     }
+
+
+    START_TIMER ("set_boundary_conditions");
+
+    unsigned int sbi;
+
+    // Assembly bcvcorr vector
+    for(sbi=0; sbi < n_substances(); sbi++) VecZeroEntries(bcvcorr[sbi]);
+
+   	balance_->start_flux_assembly(subst_idx);
+
+    for ( DHCellAccessor dh_cell : dh_->own_range() )
+    {
+        ElementAccessor<3> elm = dh_cell.elm();
+        // we have currently zero order P_Disc FE
+        ASSERT_DBG(dh_cell.get_loc_dof_indices().size() == 1);
+        IntIdx local_p0_dof = dh_cell.get_loc_dof_indices()[0];
+        LongIdx glob_p0_dof = dh_->get_local_to_global_map()[local_p0_dof];
+
+        for(DHCellSide dh_side: dh_cell.side_range()) {
+            if (dh_side.side().is_boundary()) {
+                ElementAccessor<3> bc_elm = dh_side.cond().element_accessor();
+                double flux = this->side_flux(dh_side);
+                if (flux < 0.0) {
+                    double aij = -(flux / elm.measure() );
+
+                    for (sbi=0; sbi<n_substances(); sbi++)
+                    {
+                        double value = data_.bc_conc[sbi].value( bc_elm.centre(), bc_elm );
+
+                        VecSetValue(bcvcorr[sbi], glob_p0_dof, value * aij, ADD_VALUES);
+
+                        // CAUTION: It seems that PETSc possibly optimize allocated space during assembly.
+                        // So we have to add also values that may be non-zero in future due to changing velocity field.
+                        balance_->add_flux_values(subst_idx[sbi], dh_side,
+                                                  {local_p0_dof}, {0.0}, flux*value);
+                    }
+                } else {
+                    for (sbi=0; sbi<n_substances(); sbi++)
+                        VecSetValue(bcvcorr[sbi], glob_p0_dof, 0, ADD_VALUES);
+
+                    for (unsigned int sbi=0; sbi<n_substances(); sbi++)
+                        balance_->add_flux_values(subst_idx[sbi], dh_side,
+                                                  {local_p0_dof}, {flux}, 0.0);
+                }
+            }
+        }
+    }
+
+    balance_->finish_flux_assembly(subst_idx);
+
+    for (sbi=0; sbi<n_substances(); sbi++)  	VecAssemblyBegin(bcvcorr[sbi]);
+    for (sbi=0; sbi<n_substances(); sbi++)   	VecAssemblyEnd(bcvcorr[sbi]);
+
+    // we are calling set_boundary_conditions() after next_time() and
+    // we are using data from t() before, so we need to set corresponding bc time
+    transport_bc_time = time_->last_t();
 }
 
 
@@ -533,8 +530,7 @@ void ConvectionTransport::zero_time_step()
     START_TIMER("Convection balance zero time step");
 
     create_transport_matrix_mpi();
-    compute_concentration_sources();
-    set_boundary_conditions();
+    conc_sources_bdr_conditions();
 
     // write initial condition
 	output_data();
@@ -573,8 +569,7 @@ bool ConvectionTransport::evaluate_time_constraint(double& time_constraint)
        || data_.cross_section.changed() || data_.flow_flux.changed() || data_.porosity.changed()
        || data_.water_content.changed() || data_.bc_conc.changed() )
     {
-        compute_concentration_sources();
-        set_boundary_conditions();
+        conc_sources_bdr_conditions();
         if( data_.sources_density.changed() || data_.sources_conc.changed() || data_.sources_sigma.changed()
                || data_.cross_section.changed() ) {
             is_src_term_scaled = false;
