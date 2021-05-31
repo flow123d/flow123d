@@ -329,7 +329,7 @@ TYPED_TEST(FieldSpeed, virtual_function) {
                 this->test_result_sum_ += this->value( this->point_, elm);
             }
         END_TIMER("single_value");
-        EXPECT_TIMER_LE("single_value", 0.1);
+        EXPECT_TIMER_LE("single_value", 0.15);
 
 	}
 	{
