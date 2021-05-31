@@ -364,7 +364,7 @@ TYPED_TEST(FieldSpeed, field_constant) {
 	this->test_many();
 	EXPECT_TIMER_LE("many", 0.105);
 	this->test_list();
-	EXPECT_TIMER_LE("list", 0.0075);
+	EXPECT_TIMER_LE("list", 0.0085);
 
 	END_TIMER("field_constant");
 	this->test_result(this->expect_const_val_,2*list_size + 1); // test_list add just first value of the list
@@ -528,7 +528,7 @@ TEST(FieldValue_, speed_test_interface) {
    }
 
    END_TIMER("performance_interface");
-   EXPECT_TIMER_LE("performance_interface", 0.03);
+   EXPECT_TIMER_LE("performance_interface", 0.035);
    cout << r_val << endl;
 }
 
@@ -541,7 +541,7 @@ TEST(FieldValue_, speed_test_direct) {
        val+=step;
    }
    END_TIMER("performance_direct");
-   EXPECT_TIMER_LE("performance_direct", 0.03);
+   EXPECT_TIMER_LE("performance_direct", 0.035);
    cout << val << endl;
 }
 

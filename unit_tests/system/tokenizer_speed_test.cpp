@@ -63,7 +63,7 @@ TEST(TokenizerPosition, compare_speed) {
 			EXPECT_EQ(position_data[index].line_counter_, val);
 	    }
 	    END_TIMER("tokenizer");
-		EXPECT_TIMER_LE("tokenizer", 2);
+		EXPECT_TIMER_LE("tokenizer", 3.5);
 
 	    // test of reading after reaching the EOF
 	    tok.set_position( position_data[file_line_count-1] );
@@ -88,7 +88,7 @@ TEST(TokenizerPosition, compare_speed) {
 			EXPECT_EQ(position_data[index].line_counter_, val);
 		}
 		END_TIMER("binary_file");
-		EXPECT_TIMER_LE("binary_file", 1.5);
+		EXPECT_TIMER_LE("binary_file", 3.5);
 
 		binary_file.close();
 	}
