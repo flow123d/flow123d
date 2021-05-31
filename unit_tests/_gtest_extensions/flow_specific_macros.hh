@@ -4,6 +4,7 @@
  *  Created on: Dec 16, 2013
  *      Author: jb
  */
+#include "config.h"
 
 #ifndef FLOW_SPECIFIC_MACROS_HH_
 #define FLOW_SPECIFIC_MACROS_HH_
@@ -17,6 +18,15 @@
 #define	EXPECT_ASSERT_DEATH(statement, pattern) EXPECT_THROW_WHAT(statement,ExcAssertMsg, pattern)
 #else
 #define	EXPECT_ASSERT_DEATH(statement, pattern)
+#endif
+
+#ifdef FLOW123D_BENCHMARK_ASSERTS
+#define EXPECT_TIMER_LE(tag, time) \
+    LogOut() << "EXPECT_TIMER: [" << tag << "] measured: " \
+        << CUMUL_TIMER((tag))/Profiler::instance()->calibration_time() << " expected: " << time; \
+    EXPECT_LE(CUMUL_TIMER((tag))/Profiler::instance()->calibration_time(), time)
+#else
+#define EXPECT_TIMER_LE(tag, time)
 #endif
 
 /**
@@ -43,6 +53,9 @@
 #undef ASSERT_DEATH
 #define ASSERT_DEATH(statement, pattern)
 #endif
+
+
+
 
 /**
  * Macro to inform later code and prevent macro clash with ASSERT_* macros in global_defs.h

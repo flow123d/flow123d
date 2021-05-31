@@ -187,7 +187,11 @@ using namespace std;
 #endif
 
 
-
+#ifdef FLOW123D_DEBUG_PROFILER
+#define CUMUL_TIMER(tag) Profiler::instance()->find_timer(tag).cumulative_time()
+#else
+#define CUMUL_TIMER(tag)
+#endif
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 #ifdef FLOW123D_DEBUG_PROFILER
@@ -584,6 +588,14 @@ public:
      */
     static double get_resolution ();
 
+    /**
+     * Find a first timer matching the tag.
+     * O(n) complexity.
+     */
+    Timer find_timer(string tag);
+
+
+
 
 #ifdef FLOW123D_HAVE_MPI
     /**
@@ -666,13 +678,27 @@ public:
      * @return memory monitoring status
      */
     bool static get_petsc_memory_monitoring();
-    
+
+    /**
+     * Run calibration frame "UNIT PAYLOAD".
+     * That should be about 100x timer resolution.
+     */
+    void calibrate();
+
+    /**
+     * Time of a unit payload, result of a single measurement. Can be used for raw calibration.
+     */
+    double calibration_time() {
+        if (calibration_time_ < 0) calibrate();
+        return calibration_time_;
+    }
     /**
      * if under unit testing, specify friend so protected members can be tested
      */
     #ifdef __UNIT_TEST__
         friend ProfilerTest;
     #endif /* __UNIT_TEST__ */
+
 
 protected:
     
@@ -694,6 +720,7 @@ protected:
      */
     static const long malloc_map_reserve;
     
+
     /**
      * Method will propagate values from children timers to its parents
      */
@@ -763,7 +790,12 @@ protected:
     /// Variable which stores last json log filepath
     string json_filepath;
 
+    Timer none_timer_;
 
+    /// Time of a unit payload, result of single measurement. Can be used for raw calibration.
+    double calibration_time_;
+
+protected:
     /**
      * Use DFS to pass through the tree and collect information about all timers reduced from the processes in the communicator.
      * For every timer the information strings are stored in the struct TimerInfo in order to pad fields correctly
@@ -776,6 +808,7 @@ protected:
     Profiler(); // private constructor
     Profiler(Profiler const&); // copy constructor is private
     Profiler & operator=(Profiler const&); // assignment operator is private
+
 };
 
 
@@ -869,6 +902,10 @@ public:
     inline double actual_cumulative_time() const
     { return 0.0; }
     static void uninitialize();
+    void calibrate();
+    double calibration_time() {
+        return -2;
+    }
 private:
     Profiler() {}
 };
@@ -880,3 +917,4 @@ private:
 
 
 #endif
+
