@@ -71,11 +71,9 @@ public:
     TYPEDEF_ERR_INFO(EI_Field, std::string);
     DECLARE_INPUT_EXCEPTION(ExcUnknownField,
             << "Unknown field " << EI_Field::qval << " in the formula: \n");
-    // TODO report formula address in the input file.
 
     DECLARE_INPUT_EXCEPTION(ExcNotDoubleField,
             << "Can not use integer valued field " << EI_Field::qval << " in the formula: \n");
-    // TODO report formula address in the input file.
 
     FieldFormula(unsigned int n_comp=0);
 
