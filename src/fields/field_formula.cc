@@ -158,7 +158,7 @@ bool FieldFormula<spacedim, Value>::set_time(const TimeStep &time) {
 
     if (has_depth_var_)
         vars += string(",d");
-    vars += string(",const_scalar,scalar_field,unknown_scalar,integer_scalar"); // Temporary solution only for testing field dependency in BParser
+    vars += string(",cross_section,const_scalar,scalar_field,unknown_scalar,integer_scalar"); // Temporary solution only for testing field dependency in BParser
 
 	// update parsers
 	for(unsigned int row=0; row < this->value_.n_rows(); row++)
