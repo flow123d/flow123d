@@ -35,6 +35,7 @@
 #include "input/accessors_impl.hh"      // for Record::val
 #include "input/storage.hh"             // for ExcStorageTypeMismatch
 #include "input/type_record.hh"         // for Record::ExcRecordKeyNotFound
+#include "input/input_exception.hh"     // for ExcAssertMsg::~ExcAssertMsg
 #include "system/exceptions.hh"         // for ExcAssertMsg::~ExcAssertMsg
 #include "tools/time_governor.hh"       // for TimeStep
 #include "include/assert.hh"            // bparser
@@ -74,6 +75,10 @@ public:
 
     DECLARE_INPUT_EXCEPTION(ExcNotDoubleField,
             << "Can not use integer valued field " << EI_Field::qval << " in the formula: \n");
+
+    TYPEDEF_ERR_INFO(EI_BParserMsg, std::string);
+    DECLARE_INPUT_EXCEPTION(ExcParserError,
+            << "Parsing in " << EI_BParserMsg::val << " in the formula: \n");
 
     FieldFormula(unsigned int n_comp=0);
 

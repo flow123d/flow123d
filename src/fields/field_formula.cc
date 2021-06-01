@@ -158,7 +158,7 @@ bool FieldFormula<spacedim, Value>::set_time(const TimeStep &time) {
 
     if (has_depth_var_)
         vars += string(",d");
-    vars += string(",const_scalar,scalar_field"); // Temporary solution only for testing field dependency in BParser
+    vars += string(",const_scalar,scalar_field,unknown_scalar,integer_scalar"); // Temporary solution only for testing field dependency in BParser
 
 	// update parsers
 	for(unsigned int row=0; row < this->value_.n_rows(); row++)
@@ -340,7 +340,12 @@ std::vector<const FieldCommon * > FieldFormula<spacedim, Value>::set_dependency(
                     expr = "(" + if_case + " if " + cond + " else " + else_case +")";
                 }
             }
-            b_parser_[i_p].parse( expr );
+            try {
+                b_parser_[i_p].parse( expr );
+            } catch (std::exception const& e) {
+                if (typeid(e) == typeid(bparser::Exception)) THROW( ExcParserError() << EI_BParserMsg(e.what()) );
+                else throw;
+            }
             variables.insert(variables.end(), b_parser_[i_p].variables().begin(), b_parser_[i_p].variables().end());
         }
 
