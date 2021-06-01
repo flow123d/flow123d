@@ -35,6 +35,7 @@
 #include "input/accessors_impl.hh"      // for Record::val
 #include "input/storage.hh"             // for ExcStorageTypeMismatch
 #include "input/type_record.hh"         // for Record::ExcRecordKeyNotFound
+#include "input/input_exception.hh"     // for ExcAssertMsg::~ExcAssertMsg
 #include "system/exceptions.hh"         // for ExcAssertMsg::~ExcAssertMsg
 #include "tools/time_governor.hh"       // for TimeStep
 #include "include/assert.hh"            // bparser
@@ -49,12 +50,17 @@ using namespace std;
 /**
  * Class representing fields given by runtime parsed formulas.
  *
- * Using library:
- * http://warp.povusers.org/FunctionParser/
+ * Using libraries:
+ * https://github.com/flow123d/bparser/
+ * http://warp.povusers.org/FunctionParser/ (gradually replaced by BParser)
+ *
+ * Allows parsing:
+ * - base variables: coordinates (x,y,z), time (t), surface depth (d); constants: e, pi
+ * - standard functions: trigonometric functions, min and max function, exponential function, ternary operator etc.
+ * - expressions dependendent on other fields
  *
  * TODO:
  * correct support for discrete functions (use integer parser), actually we just convert double to int
- *
  */
 template <int spacedim, class Value>
 class FieldFormula : public FieldAlgorithmBase<spacedim, Value>
@@ -65,11 +71,14 @@ public:
 
     TYPEDEF_ERR_INFO(EI_Field, std::string);
     DECLARE_INPUT_EXCEPTION(ExcUnknownField,
-            << "Field " << EI_Field::qval << " doesn't exist in equation.\n"
-    		   << "Please use field of correct name.\n");
+            << "Unknown field " << EI_Field::qval << " in the formula: \n");
+
     DECLARE_INPUT_EXCEPTION(ExcNotDoubleField,
-            << "Field " << EI_Field::qval << " is not field of floating point element type.\n"
-    		   << "Please use fields of element type double.\n");
+            << "Can not use integer valued field " << EI_Field::qval << " in the formula: \n");
+
+    TYPEDEF_ERR_INFO(EI_BParserMsg, std::string);
+    DECLARE_INPUT_EXCEPTION(ExcParserError,
+            << "Parsing in " << EI_BParserMsg::val << " in the formula: \n");
 
     FieldFormula(unsigned int n_comp=0);
 
@@ -109,6 +118,13 @@ public:
      */
     std::vector<const FieldCommon *> set_dependency(FieldSet &field_set) override;
 
+    /**
+     * Overload @p FieldAlgorithmBase::cache_reinit
+     *
+     * Reinit arena data member.
+     */
+    void cache_reinit(const ElementCacheMap &cache_map) override;
+
     virtual ~FieldFormula();
 
 private:
@@ -137,11 +153,14 @@ private:
     /// Flag indicates if depth variable 'd' is used in formula - obsolete parameter of FParser
     bool has_depth_var_;
 
+    /// Flag indicates if time variable 't' is used in formula - parameter of BParser
+    bool has_time_;
+
+    /// Helper variable for construct of arena, holds sum of sizes (over shape) of all dependent fields.
+    uint sum_shape_sizes_;
+
     /// Flag indicates first call of set_time method, when FunctionParsers in parser_matrix_ must be initialized
     bool first_time_set_;
-
-    /// Holds FieldSet, allows evaluate values of Fields in formula expressions.
-    FieldSet *field_set_;
 
     /// Arena object providing data arrays
     bparser::ArenaAlloc * arena_alloc_;
@@ -153,7 +172,8 @@ private:
 	double *d_;       ///< Surface depth variable, used optionally if 'd' variable is set
 	double *res_;     ///< Result vector of BParser
 	uint *subsets_;   ///< Subsets indices in range 0 ... n-1
-	std::vector<const FieldCommon * > dependency_field_vec_;
+	std::vector<const FieldCommon * > required_fields_;
+
 	/**
 	 * Data of fields evaluated in expressions.
 	 *

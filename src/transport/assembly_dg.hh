@@ -45,7 +45,8 @@ public:
     MassAssemblyDG(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
-        this->used_fields_ = eq_fields_->subset( eq_data_->mass_assembly_subset() );
+        this->used_fields_ += eq_fields_->mass_matrix_coef;
+        this->used_fields_ += eq_fields_->retardation_coef;
     }
 
     /// Destructor.
@@ -56,7 +57,10 @@ public:
         this->element_cache_map_ = element_cache_map;
 
         fe_ = std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order);
-        fe_values_.initialize(*this->quad_, *fe_, update_values | update_JxW_values | update_quadrature_points);
+        UpdateFlags u = update_values | update_JxW_values | update_quadrature_points;
+        fe_values_.initialize(*this->quad_, *fe_, u);
+        if (dim==1) // print to log only one time
+            DebugOut() << "List of MassAssembly FEValues updates flags: " << this->print_update_flags(u);
         ndofs_ = fe_->n_dofs();
         dof_indices_.resize(ndofs_);
         local_matrix_.resize(4*ndofs_*ndofs_);
@@ -128,14 +132,6 @@ public:
         eq_data_->balance_->finish_mass_assembly( eq_data_->subst_idx() );
     }
 
-    /// Implements @p AssemblyBase::reallocate_cache.
-    void reallocate_cache() override
-    {
-        used_fields_.set_dependency();
-        used_fields_.cache_reallocate(*this->element_cache_map_);
-    }
-
-
     private:
         shared_ptr<FiniteElement<dim>> fe_;                    ///< Finite element for the solution of the advection-diffusion equation.
 
@@ -176,7 +172,14 @@ public:
     StiffnessAssemblyDG(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::edge | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
-        this->used_fields_ = eq_fields_->subset( eq_data_->stiffness_assembly_subset() );
+        this->used_fields_ += eq_fields_->advection_coef;
+        this->used_fields_ += eq_fields_->diffusion_coef;
+        this->used_fields_ += eq_fields_->cross_section;
+        this->used_fields_ += eq_fields_->dg_penalty;
+        this->used_fields_ += eq_fields_->sources_sigma_out;
+        this->used_fields_ += eq_fields_->fracture_sigma;
+        this->used_fields_ += eq_fields_->bc_type;
+        this->used_fields_ += eq_fields_->bc_robin_sigma;
     }
 
     /// Destructor.
@@ -192,11 +195,17 @@ public:
 
         fe_ = std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order);
         fe_low_ = std::make_shared< FE_P_disc<dim-1> >(eq_data_->dg_order);
-        fe_values_.initialize(*this->quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
+        UpdateFlags u = update_values | update_gradients | update_JxW_values | update_quadrature_points;
+        UpdateFlags u_side = update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points;
+        fe_values_.initialize(*this->quad_, *fe_, u);
         if (dim>1) {
-            fe_values_vb_.initialize(*this->quad_low_, *fe_low_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
+            fe_values_vb_.initialize(*this->quad_low_, *fe_low_, u);
         }
-        fe_values_side_.initialize(*this->quad_low_, *fe_, update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
+        fe_values_side_.initialize(*this->quad_low_, *fe_, u_side);
+        if (dim==1) { // print to log only one time
+            DebugOut() << "List of StiffnessAssemblyDG FEValues (cell) updates flags: " << this->print_update_flags(u);
+            DebugOut() << "List of StiffnessAssemblyDG FEValues (side) updates flags: " << this->print_update_flags(u_side);
+        }
         ndofs_ = fe_->n_dofs();
         qsize_lower_dim_ = this->quad_low_->size();
         dof_indices_.resize(ndofs_);
@@ -600,13 +609,6 @@ public:
         }
     }
 
-    /// Implements @p AssemblyBase::reallocate_cache.
-    void reallocate_cache() override
-    {
-        used_fields_.set_dependency();
-        used_fields_.cache_reallocate(*this->element_cache_map_);
-    }
-
 
 private:
     shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
@@ -658,7 +660,9 @@ public:
     SourcesAssemblyDG(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
-        this->used_fields_ = eq_fields_->subset( eq_data_->source_assembly_subset() );
+        this->used_fields_ += eq_fields_->sources_density_out;
+        this->used_fields_ += eq_fields_->sources_conc_out;
+        this->used_fields_ += eq_fields_->sources_sigma_out;
     }
 
     /// Destructor.
@@ -669,7 +673,10 @@ public:
         this->element_cache_map_ = element_cache_map;
 
         fe_ = std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order);
-        fe_values_.initialize(*this->quad_, *fe_, update_values | update_JxW_values | update_quadrature_points);
+        UpdateFlags u = update_values | update_JxW_values | update_quadrature_points;
+        fe_values_.initialize(*this->quad_, *fe_, u);
+        if (dim==1) // print to log only one time
+            DebugOut() << "List of SourcesAssemblyDG FEValues updates flags: " << this->print_update_flags(u);
         ndofs_ = fe_->n_dofs();
         dof_indices_.resize(ndofs_);
         local_rhs_.resize(ndofs_);
@@ -737,13 +744,6 @@ public:
         eq_data_->balance_->finish_source_assembly( eq_data_->subst_idx() );
     }
 
-    /// Implements @p AssemblyBase::reallocate_cache.
-    void reallocate_cache() override
-    {
-        used_fields_.set_dependency();
-        used_fields_.cache_reallocate(*this->element_cache_map_);
-    }
-
 
     private:
         shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
@@ -785,7 +785,13 @@ public:
     BdrConditionAssemblyDG(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::boundary;
-        this->used_fields_ = eq_fields_->subset( eq_data_->bdr_assembly_subset() );
+        this->used_fields_ += eq_fields_->advection_coef;
+        this->used_fields_ += eq_fields_->diffusion_coef;
+        this->used_fields_ += eq_fields_->cross_section;
+        this->used_fields_ += eq_fields_->bc_type;
+        this->used_fields_ += eq_fields_->bc_dirichlet_value;
+        this->used_fields_ += eq_fields_->bc_robin_sigma;
+        this->used_fields_ += eq_fields_->bc_flux;
     }
 
     /// Destructor.
@@ -796,7 +802,10 @@ public:
         this->element_cache_map_ = element_cache_map;
 
         fe_ = std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order);
-        fe_values_side_.initialize(*this->quad_low_, *fe_, update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
+        UpdateFlags u = update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points;
+        fe_values_side_.initialize(*this->quad_low_, *fe_, u);
+        if (dim==1) // print to log only one time
+            DebugOut() << "List of BdrConditionAssemblyDG FEValues updates flags: " << this->print_update_flags(u);
         ndofs_ = fe_->n_dofs();
         dof_indices_.resize(ndofs_);
         local_rhs_.resize(ndofs_);
@@ -957,13 +966,6 @@ public:
         eq_data_->balance_->finish_flux_assembly( eq_data_->subst_idx() );
     }
 
-    /// Implements @p AssemblyBase::reallocate_cache.
-    void reallocate_cache() override
-    {
-        used_fields_.set_dependency();
-        used_fields_.cache_reallocate(*this->element_cache_map_);
-    }
-
 
     private:
         shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
@@ -1005,7 +1007,7 @@ public:
     InitConditionAssemblyDG(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
-        this->used_fields_ = eq_fields_->subset( eq_data_->init_assembly_subset() );
+        this->used_fields_ += eq_fields_->init_condition;
     }
 
     /// Destructor.
@@ -1016,7 +1018,10 @@ public:
         this->element_cache_map_ = element_cache_map;
 
         fe_ = std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order);
-        fe_values_.initialize(*this->quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
+        UpdateFlags u = update_values | update_gradients | update_JxW_values | update_quadrature_points;
+        fe_values_.initialize(*this->quad_, *fe_, u);
+        if (dim==1) // print to log only one time
+            DebugOut() << "List of InitConditionAssemblyDG FEValues updates flags: " << this->print_update_flags(u);
         ndofs_ = fe_->n_dofs();
         dof_indices_.resize(ndofs_);
         local_matrix_.resize(4*ndofs_*ndofs_);
@@ -1059,13 +1064,6 @@ public:
             }
             eq_data_->ls[sbi]->set_values(ndofs_, &(dof_indices_[0]), ndofs_, &(dof_indices_[0]), &(local_matrix_[0]), &(local_rhs_[0]));
         }
-    }
-
-    /// Implements @p AssemblyBase::reallocate_cache.
-    void reallocate_cache() override
-    {
-        used_fields_.set_dependency();
-        used_fields_.cache_reallocate(*this->element_cache_map_);
     }
 
 

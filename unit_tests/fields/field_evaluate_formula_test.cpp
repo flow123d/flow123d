@@ -58,6 +58,11 @@ public:
                         .input_default("0.0")
                         .description("")
                         .units( UnitSI::dimensionless() );
+            *this += integer_scalar
+                        .name("integer_scalar")
+                        .input_default("0")
+                        .description("")
+                        .units( UnitSI::dimensionless() );
 
             // Asumme following types:
             eval_points_ = std::make_shared<EvalPoints>();
@@ -67,7 +72,6 @@ public:
             side_eval = eval_points_->add_edge<3>(*q_side );
             // ngh_side_eval = ...
             this->init(eval_points_);
-            this->cache_reallocate(*this);
         }
 
         void register_eval_points() {
@@ -95,7 +99,7 @@ public:
         }
 
         void reallocate_cache() {
-            this->cache_reallocate(*this);
+            this->cache_reallocate(*this, *this);
         }
 
 
@@ -104,6 +108,7 @@ public:
         Field<3, FieldValue<3>::VectorFixed > vector_field;
         Field<3, FieldValue<3>::TensorFixed > tensor_field;
         Field<3, FieldValue<3>::Scalar > const_scalar;
+        Field<3, FieldValue<0>::Integer > integer_scalar;
         std::shared_ptr<EvalPoints> eval_points_;
         std::shared_ptr<BulkIntegral> mass_eval;
         std::shared_ptr<EdgeIntegral> side_eval;
@@ -133,6 +138,7 @@ public:
                         .declare_key("vector_field", FieldAlgorithmBase< 3, FieldValue<3>::VectorFixed >::get_input_type_instance(), "" )
                         .declare_key("tensor_field", FieldAlgorithmBase< 3, FieldValue<3>::TensorFixed >::get_input_type_instance(), "" )
                         .declare_key("const_scalar", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "" )
+                        .declare_key("integer_scalar", FieldAlgorithmBase< 3, FieldValue<0>::Integer >::get_input_type_instance(), "" )
                         .close()
                         ), IT::Default::obligatory(), ""  )
                 .close();
@@ -154,8 +160,6 @@ public:
         data_->set_mesh(*mesh_);
         data_->set_input_list( inputs[input_last], tg );
         data_->set_time(tg.step(), LimitSide::right);
-        data_->set_dependency();
-        data_->reallocate_cache();
     }
 
 
@@ -176,6 +180,7 @@ TEST_F(FieldEvalFormulaTest, evaluate) {
           value: [x, 2*x, 0.5]
         tensor_field: !FieldFormula
           value: [x, 0.2, 0.3, 0.4, 0.5, 0.6]
+        integer_scalar: 1
       - region: 3D right
         time: 0.0
         scalar_field: !FieldFormula
@@ -184,8 +189,10 @@ TEST_F(FieldEvalFormulaTest, evaluate) {
           value: [y, 2*y, 0.5]
         tensor_field: !FieldFormula
           value: [y, 2.2, 2.3, 2.4, 2.5, 2.6]
+        integer_scalar: 1
     )YAML";
 	this->read_input(eq_data_input);
+    data_->reallocate_cache();
 
     std::vector<unsigned int> cell_idx = {3, 4, 5, 9};
     std::vector<double> dbl_scalar = { -1.447213595499958094, -0.552786404500041906, -0.276393202250021008, -1.170820393249937030, -0.723606797749979047,
@@ -265,6 +272,7 @@ TEST_F(FieldEvalFormulaTest, field_dependency) {
           value: [scalar_field, 2*scalar_field, 0.5]
         tensor_field: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
         const_scalar: 0.5
+        integer_scalar: 1
       - region: 3D right
         time: 0.0
         scalar_field: !FieldFormula
@@ -273,8 +281,10 @@ TEST_F(FieldEvalFormulaTest, field_dependency) {
           value: [scalar_field, 2*scalar_field, 0.5]
         tensor_field: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
         const_scalar: 1.5
+        integer_scalar: 1
     )YAML";
 	this->read_input(eq_data_input);
+    data_->reallocate_cache();
 
     std::vector<unsigned int> cell_idx = {3, 4, 5, 9};
     std::vector<double> dbl_scalar = { 0.25, 0.25, 0.25, 0.75 };
@@ -316,3 +326,71 @@ TEST_F(FieldEvalFormulaTest, field_dependency) {
     }
 
 }
+
+
+TEST_F(FieldEvalFormulaTest, dependency_unknown_field_exc) {
+    string eq_data_input = R"YAML(
+    data:
+      - region: BULK
+        time: 0.0
+        scalar_field: !FieldFormula
+          value: 2 * unknown_scalar
+        vector_field: [0.1, 0.2, 0.3]
+        tensor_field: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
+        const_scalar: 0.5
+        integer_scalar: 1
+    )YAML";
+    this->read_input(eq_data_input);
+    try {
+        data_->reallocate_cache();
+    } catch (Input::Exception &e) {
+        std::string s( e.what() );
+        int pos = (int)s.find("Unknown field 'unknown_scalar' in the formula");
+        EXPECT_GE(pos, 0); // substring "Unknown field ..." found
+    }
+}
+
+TEST_F(FieldEvalFormulaTest, dependency_notdouble_field_exc) {
+    string eq_data_input = R"YAML(
+    data:
+      - region: BULK
+        time: 0.0
+        scalar_field: !FieldFormula
+          value: 2 * integer_scalar
+        vector_field: [0.1, 0.2, 0.3]
+        tensor_field: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
+        const_scalar: 0.5
+        integer_scalar: 1
+    )YAML";
+    this->read_input(eq_data_input);
+    try {
+        data_->reallocate_cache();
+    } catch (Input::Exception &e) {
+        std::string s( e.what() );
+        int pos = (int)s.find("Can not use integer valued field 'integer_scalar' in the formula");
+        EXPECT_GE(pos, 0); // substring "Can not use ..." found
+    }
+}
+
+//TODO Prepared test of BParser::Exception - uncomment after removing of FParser
+//TEST_F(FieldEvalFormulaTest, formula_invalid_expr) {
+//    string eq_data_input = R"YAML(
+//    data:
+//      - region: BULK
+//        time: 0.0
+//        scalar_field: !FieldFormula
+//          value: 2 * max(3, 5
+//        vector_field: [0.1, 0.2, 0.3]
+//        tensor_field: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
+//        const_scalar: 0.5
+//        integer_scalar: 1
+//    )YAML";
+//    this->read_input(eq_data_input);
+//    try {
+//        data_->reallocate_cache();
+//    } catch (Input::Exception &e) {
+//        std::string s( e.what() );
+//        int pos = (int)s.find("Error: Expected \")\" at");
+//        EXPECT_GE(pos, 0); // substring "Error: Expected ..." found
+//    }
+//}

@@ -428,7 +428,7 @@ public:
     /**
      * Set reference of FieldSet to all instances of FieldFormula.
      */
-    virtual std::vector<const FieldCommon *> set_dependency(FieldSet &field_set, unsigned int i_reg) =0;
+    virtual std::vector<const FieldCommon *> set_dependency(FieldSet &field_set, unsigned int i_reg) const =0;
 
     /**
      * Sets @p component_index_
@@ -448,9 +448,9 @@ public:
     }
 
     /**
-     * Reallocate field value cache of Field or all SubFields of MultiField.
+     * Reallocate field value cache of Field on given region.
      */
-    virtual void cache_reallocate(const ElementCacheMap &cache_map) = 0;
+    virtual void cache_reallocate(const ElementCacheMap &cache_map, unsigned int region_idx) const = 0;
 
     /**
      * Read data to cache for appropriate elements given by ElementCacheMap object.

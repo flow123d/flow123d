@@ -44,9 +44,12 @@ public:
     StiffnessAssemblyElasticity(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(1), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
-        std::vector<string> sub_names = {"X", "d", "lame_mu", "lame_lambda", "dirichlet_penalty", "young_modulus",
-                            "poisson_ratio", "cross_section", "bc_type", "fracture_sigma"};
-        this->used_fields_ = eq_fields_->subset( sub_names );
+        this->used_fields_ += eq_fields_->cross_section;
+        this->used_fields_ += eq_fields_->lame_mu;
+        this->used_fields_ += eq_fields_->lame_lambda;
+        this->used_fields_ += eq_fields_->dirichlet_penalty;
+        this->used_fields_ += eq_fields_->bc_type;
+        this->used_fields_ += eq_fields_->fracture_sigma;
     }
 
     /// Destructor.
@@ -236,13 +239,6 @@ public:
     }
 
 
-    /// Implements @p AssemblyBase::reallocate_cache.
-    void reallocate_cache() override
-    {
-        used_fields_.set_dependency();
-        used_fields_.cache_reallocate(*this->element_cache_map_);
-    }
-
 
 private:
     inline arma::mat33 mat_t(const arma::mat33 &m, const arma::vec3 &n)
@@ -297,10 +293,14 @@ public:
     RhsAssemblyElasticity(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(1), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
-        std::vector<string> sub_names = {"X", "d", "load", "potential_load", "cross_section", "dirichlet_penalty",
-                            "lame_mu", "lame_lambda", "young_modulus", "poisson_ratio", "bc_type", "bc_displacement",
-		                    "bc_traction", "fracture_sigma"};
-        this->used_fields_ = eq_fields_->subset( sub_names );
+        this->used_fields_ += eq_fields_->cross_section;
+        this->used_fields_ += eq_fields_->load;
+        this->used_fields_ += eq_fields_->potential_load;
+        this->used_fields_ += eq_fields_->fracture_sigma;
+        this->used_fields_ += eq_fields_->dirichlet_penalty;
+        this->used_fields_ += eq_fields_->bc_type;
+        this->used_fields_ += eq_fields_->bc_displacement;
+        this->used_fields_ += eq_fields_->bc_traction;
     }
 
     /// Destructor.
@@ -495,13 +495,6 @@ public:
     }
 
 
-    /// Implements @p AssemblyBase::reallocate_cache.
-    void reallocate_cache() override
-    {
-        used_fields_.set_dependency();
-        used_fields_.cache_reallocate(*this->element_cache_map_);
-    }
-
 
 private:
     shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
@@ -550,8 +543,9 @@ public:
     OutpuFieldsAssemblyElasticity(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling);
-        std::vector<string> sub_names = {"X", "d", "cross_section", "lame_mu", "lame_lambda", "young_modulus", "poisson_ratio"};
-        this->used_fields_ = eq_fields_->subset( sub_names );
+        this->used_fields_ += eq_fields_->cross_section;
+        this->used_fields_ += eq_fields_->lame_mu;
+        this->used_fields_ += eq_fields_->lame_lambda;
     }
 
     /// Destructor.
@@ -653,13 +647,6 @@ public:
         output_div_vec_.add( dof_indices_scalar_[0], normal_displacement_ / eq_fields_->cross_section(p_low) );
     }
 
-
-    /// Implements @p AssemblyBase::reallocate_cache.
-    void reallocate_cache() override
-    {
-        used_fields_.set_dependency();
-        used_fields_.cache_reallocate(*this->element_cache_map_);
-    }
 
 
 private:

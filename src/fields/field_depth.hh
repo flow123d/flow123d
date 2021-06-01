@@ -98,7 +98,7 @@ public:
     {}
 
     /// Implements FieldCommon::cache_allocate
-    void cache_reallocate(FMT_UNUSED const ElementCacheMap &cache_map) override
+    void cache_reallocate(FMT_UNUSED const ElementCacheMap &cache_map, FMT_UNUSED unsigned int region_idx) const override
     {}
 
     /// Implements FieldCommon::cache_update
@@ -128,7 +128,7 @@ public:
     }
 
     /// Implements FieldCommon::set_dependency().
-    std::vector<const FieldCommon *> set_dependency(FMT_UNUSED FieldSet &field_set, FMT_UNUSED unsigned int i_reg) override {
+    std::vector<const FieldCommon *> set_dependency(FMT_UNUSED FieldSet &field_set, FMT_UNUSED unsigned int i_reg) const override {
     	std::vector<const FieldCommon *> res;
     	res.push_back(field_coords_);
         return res;

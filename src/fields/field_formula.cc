@@ -73,7 +73,7 @@ template <int spacedim, class Value>
 FieldFormula<spacedim, Value>::FieldFormula( unsigned int n_comp)
 : FieldAlgorithmBase<spacedim, Value>(n_comp),
   formula_matrix_(this->value_.n_rows(), this->value_.n_cols()),
-  first_time_set_(true), field_set_(nullptr), arena_alloc_(nullptr)
+  first_time_set_(true), arena_alloc_(nullptr)
 {
 	this->is_constant_in_space_ = false;
     parser_matrix_.resize(this->value_.n_rows());
@@ -158,7 +158,7 @@ bool FieldFormula<spacedim, Value>::set_time(const TimeStep &time) {
 
     if (has_depth_var_)
         vars += string(",d");
-    vars += string(",const_scalar,scalar_field"); // Temporary solution only for testing field dependency in BParser
+    vars += string(",cross_section,const_scalar,scalar_field,unknown_scalar,integer_scalar"); // Temporary solution only for testing field dependency in BParser
 
 	// update parsers
 	for(unsigned int row=0; row < this->value_.n_rows(); row++)
@@ -311,8 +311,7 @@ uint n_shape(std::vector<uint> shape) {
 
 template <int spacedim, class Value>
 std::vector<const FieldCommon * > FieldFormula<spacedim, Value>::set_dependency(FieldSet &field_set) {
-    field_set_ = &field_set;
-    dependency_field_vec_.clear(); // returned value
+    required_fields_.clear(); // returned value
 
 	std::vector<std::string> variables;
     for(unsigned int row=0; row < this->value_.n_rows(); row++)
@@ -341,32 +340,47 @@ std::vector<const FieldCommon * > FieldFormula<spacedim, Value>::set_dependency(
                     expr = "(" + if_case + " if " + cond + " else " + else_case +")";
                 }
             }
-            b_parser_[i_p].parse( expr );
+            try {
+                b_parser_[i_p].parse( expr );
+            } catch (std::exception const& e) {
+                if (typeid(e) == typeid(bparser::Exception)) THROW( ExcParserError() << EI_BParserMsg(e.what()) );
+                else throw;
+            }
             variables.insert(variables.end(), b_parser_[i_p].variables().begin(), b_parser_[i_p].variables().end());
         }
 
     std::sort( variables.begin(), variables.end() );
     variables.erase( std::unique( variables.begin(), variables.end() ), variables.end() );
-    bool has_time=false;
-    uint sum_shape_sizes=0; // scecifies size of arena
+    has_time_=false;
+    sum_shape_sizes_=0; // scecifies size of arena
     for (auto var : variables) {
         if (var == "x" || var == "y" || var == "z") {
-            dependency_field_vec_.push_back( field_set.field("X") );
-            sum_shape_sizes += spacedim;
+            required_fields_.push_back( field_set.field("X") );
+            sum_shape_sizes_ += spacedim;
         }
-        else if (var == "t") has_time = true;
+        else if (var == "t") has_time_ = true;
         else {
             auto field_ptr = field_set.field(var);
-            if (field_ptr != nullptr) dependency_field_vec_.push_back( field_ptr );
+            if (field_ptr != nullptr) required_fields_.push_back( field_ptr );
             else THROW( ExcUnknownField() << EI_Field(var) );
+            // TODO: Test the exception, report input line of the formula.
             if (field_ptr->value_cache() == nullptr) THROW( ExcNotDoubleField() << EI_Field(var) );
-            sum_shape_sizes += n_shape( field_ptr->shape_ );
+            // TODO: Test the exception, report input line of the formula.
+
+            sum_shape_sizes_ += n_shape( field_ptr->shape_ );
             if (var == "d") {
-                field_set_->set_surface_depth(this->surface_depth_);
+                field_set.set_surface_depth(this->surface_depth_);
             }
         }
     }
 
+    return required_fields_;
+}
+
+
+template <int spacedim, class Value>
+void FieldFormula<spacedim, Value>::cache_reinit(FMT_UNUSED const ElementCacheMap &cache_map)
+{
     if (arena_alloc_!=nullptr) {
         delete arena_alloc_;
     }
@@ -375,10 +389,10 @@ std::vector<const FieldCommon * > FieldFormula<spacedim, Value>::set_dependency(
     while (vec_size%ElementCacheMap::simd_size_double > 0) vec_size++; // alignment of block size
     // number of subset alignment to block size
     uint n_subsets = (vec_size+ElementCacheMap::simd_size_double-1) / ElementCacheMap::simd_size_double;
-    uint n_vectors = sum_shape_sizes + 1; // needs add space of result vector
+    uint n_vectors = sum_shape_sizes_ + 1; // needs add space of result vector
     arena_alloc_ = new bparser::ArenaAlloc(ElementCacheMap::simd_size_double, n_vectors * vec_size * sizeof(double) + n_subsets * sizeof(uint));
     res_ = arena_alloc_->create_array<double>(vec_size);
-    for (auto field : dependency_field_vec_) {
+    for (auto field : required_fields_) {
         std::string field_name = field->name();
         eval_field_data_[field] = arena_alloc_->create_array<double>(n_shape( field->shape_ ) * vec_size);
         if (field_name == "X") {
@@ -393,10 +407,10 @@ std::vector<const FieldCommon * > FieldFormula<spacedim, Value>::set_dependency(
         for(unsigned int col=0; col < this->value_.n_cols(); col++) {
             // set expression and data to BParser
             unsigned int i_p = row*this->value_.n_cols()+col;
-            if (has_time) {
+            if (has_time_) {
                 b_parser_[i_p].set_constant("t",  {}, {this->time_.end()});
             }
-            for (auto field : dependency_field_vec_) {
+            for (auto field : required_fields_) {
                 std::string field_name = field->name();
                 if (field_name == "X") {
                     b_parser_[i_p].set_variable("x",  {}, x_);
@@ -410,8 +424,6 @@ std::vector<const FieldCommon * > FieldFormula<spacedim, Value>::set_dependency(
         }
     for (uint i=0; i<n_subsets; ++i)
         subsets_[i] = i;
-
-    return dependency_field_vec_;
 }
 
 

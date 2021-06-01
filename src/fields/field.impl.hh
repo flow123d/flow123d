@@ -762,11 +762,10 @@ std::shared_ptr< FieldFE<spacedim, Value> > Field<spacedim,Value>::get_field_fe(
 
 
 template<int spacedim, class Value>
-void Field<spacedim, Value>::cache_reallocate(const ElementCacheMap &cache_map) {
-    // Call cache_reinit of FieldAlgoBase descendants
-    for (auto reg_field : region_fields_) {
-    	if (reg_field) reg_field->cache_reinit(cache_map);
-    }
+void Field<spacedim, Value>::cache_reallocate(const ElementCacheMap &cache_map, unsigned int region_idx) const {
+    // Call cache_reinit of FieldAlgoBase descendant on appropriate region
+	if (region_fields_[region_idx] != nullptr)
+	    region_fields_[region_idx]->cache_reinit(cache_map);
 }
 
 
@@ -779,7 +778,7 @@ void Field<spacedim, Value>::cache_update(ElementCacheMap &cache_map, unsigned i
 
 
 template<int spacedim, class Value>
-std::vector<const FieldCommon *> Field<spacedim, Value>::set_dependency(FieldSet &field_set, unsigned int i_reg) {
+std::vector<const FieldCommon *> Field<spacedim, Value>::set_dependency(FieldSet &field_set, unsigned int i_reg) const {
    	if (region_fields_[i_reg] != nullptr) return region_fields_[i_reg]->set_dependency(field_set);
    	else return std::vector<const FieldCommon *>();
 }
