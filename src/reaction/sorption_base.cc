@@ -418,7 +418,7 @@ void SorptionBase::isotherm_reinit(unsigned int i_subst, const ElementAccessor<3
     }
     
     if ( common_ele_data.scale_sorbed <= 0.0)
-        xprintf(UsrErr, "Scaling parameter in sorption is not positive. Check the input for rock density and molar mass of %d. substance.",i_subst);
+        THROW( ExcNotPositiveScaling() << EI_Subst(i_subst) );
     
     isotherm.reinit(Isotherm::SorptionType(data_->sorption_type[i_subst].value(elem.centre(),elem)),
                     limited_solubility_on, solvent_density_,

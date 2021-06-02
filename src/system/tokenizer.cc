@@ -109,7 +109,7 @@ bool Tokenizer::next_line(bool assert_for_remaining_tokens) {
 
 const std::string & Tokenizer::operator *() const
 {
-    if ( eol() ) xprintf(UsrErr, "Missing token, file: '%s', line: '%d', position: '%d'.\n", f_name_.c_str(), line_num(), position_.line_position_);
+    if ( eol() ) THROW( ExcMissingToken() << EI_File(f_name_) << EI_Line(line_num()) << EI_Pos(position_.line_position_) );
     return *tok_;
 }
 

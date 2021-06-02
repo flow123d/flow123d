@@ -42,6 +42,7 @@
 #include "input/type_base.hh"                          // for Array
 #include "input/type_generic.hh"                       // for Instance
 #include "input/type_record.hh"                        // for Record::ExcRec...
+#include "input/input_exception.hh"                    // for Input::Exception
 #include "io/output_time.hh"                           // for OutputTime
 #include "mesh/elements.h"                             // for Element::dim
 #include "mesh/region.hh"                              // for RegionDB::ExcU...
@@ -98,6 +99,15 @@ public:
     typedef Value ValueType;
 
     static const unsigned int space_dim = spacedim;
+
+
+    TYPEDEF_ERR_INFO( EI_FieldInputName, std::string);
+    TYPEDEF_ERR_INFO( EI_FieldName, std::string);
+    TYPEDEF_ERR_INFO( EI_RegId, unsigned int);
+    TYPEDEF_ERR_INFO( EI_RegLabel, std::string);
+    DECLARE_INPUT_EXCEPTION(ExcMissingFieldValue,
+            << "Missing value of the input field " << EI_FieldInputName::qval << " (" << EI_FieldName::qval
+            << ") on region ID: " << EI_RegId::val << " label: " << EI_RegLabel::qval << ".\n");
 
 
     /**

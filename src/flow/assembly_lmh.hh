@@ -362,7 +362,7 @@ protected:
             }
         } 
         else {
-            xprintf(UsrErr, "BC type not supported.\n");
+            THROW( ExcBCNotSupported() );
         }
     }
 

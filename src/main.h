@@ -37,6 +37,7 @@ public:
     DECLARE_EXCEPTION( ExcVersionFormat,
             << "Wrong format of the version specification: "
             << EI_InputVersionStr::qval);
+    DECLARE_EXCEPTION( ExcUnknownProblem, << "Problem type not implemented.\n" );
 
 
     /// Root of the Input::Type tree. Description of whole input structure.

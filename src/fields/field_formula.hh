@@ -56,6 +56,15 @@ public:
     typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
     typedef FieldAlgorithmBase<spacedim, Value> FactoryBaseType;
 
+    // Temporary exception of FParser. TODO remove at the same time as FParser
+    TYPEDEF_ERR_INFO(EI_FParserMsg, std::string);
+    TYPEDEF_ERR_INFO(EI_Row, unsigned int);
+    TYPEDEF_ERR_INFO(EI_Col, unsigned int);
+    TYPEDEF_ERR_INFO(EI_Formula, std::string);
+    DECLARE_INPUT_EXCEPTION(ExcFParserError,
+            << "ParserError: " << EI_FParserMsg::val << "\n in the FieldFormula[" << EI_Row::val
+			<< "][" << EI_Row::val << "] == " << EI_Formula::qval << " \n");
+
     FieldFormula(unsigned int n_comp=0);
 
 

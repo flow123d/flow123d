@@ -20,6 +20,7 @@
 
 #include <boost/tokenizer.hpp>
 #include <istream>
+#include "system/exceptions.hh"
 
 
 class FilePath;
@@ -59,6 +60,11 @@ public:
      */
     typedef boost::escaped_list_separator<char> Separator;
     typedef boost::tokenizer<Separator> BT;
+
+    TYPEDEF_ERR_INFO( EI_File, std::string);
+    TYPEDEF_ERR_INFO( EI_Line, unsigned int);
+    TYPEDEF_ERR_INFO( EI_Pos, unsigned int);
+    DECLARE_EXCEPTION( ExcMissingToken, << "Missing token, file: " << EI_File::qval << ", line: " << EI_Line::qval << ", position: " << EI_Pos::qval << ".\n" );
 
     /**
      * Struct represents actual position of Tokenizer in file.
