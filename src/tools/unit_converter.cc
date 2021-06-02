@@ -17,6 +17,7 @@
 
 
 #include "tools/unit_converter_template.hh"
+#include "input/type_record.hh"
 
 
 /*******************************************************************
@@ -84,6 +85,34 @@ BasicFactors::BasicFactors() {
 /*******************************************************************
  * implementation of UnitConverter
  */
+
+const Input::Type::Record & UnitConverter::get_input_type() {
+    auto unit_record = Input::Type::Record("Unit",
+           "Specify the unit of an input value. "
+           "Evaluation of the unit formula results into a coeficient and a "
+           "unit in terms of powers of base SI units. The unit must match the"
+           "expected SI unit of the value, while the value provided on the input "
+           "is multiplied by the coefficient before further processing. "
+           "The unit formula have a form:\n"
+           "```\n"
+           "<UnitExpr>;<Variable>=<Number>*<UnitExpr>;...,\n"
+           "```\n"
+           "where ```<Variable>``` is a variable name and ```<UnitExpr>``` is a units expression "
+           "which consists of products and divisions of terms.\n\n"
+           "A term has a form: "
+           "```<Base>^<N>```, where ```<N>``` is an integer exponent and ```<Base>``` "
+           "is either a base SI unit, a derived unit, or a variable defined in the same unit formula. "
+           "Example, unit for the pressure head:\n\n"
+           "```MPa/rho/g_; rho = 990*kg*m^-3; g_ = 9.8*m*s^-2```"
+            )
+        .allow_auto_conversion("unit_formula")
+        .declare_key("unit_formula", Input::Type::String(), Input::Type::Default::obligatory(),
+                                   "Definition of unit." )
+        .close();
+
+    return unit_record;
+}
+
 
 UnitConverter::UnitConverter()
 : coef_(1.0) {}

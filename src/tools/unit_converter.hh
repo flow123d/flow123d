@@ -28,6 +28,12 @@
 #include "system/asserts.hh"         // for Assert, ASSERT
 #include "system/exceptions.hh"      // for operator<<, ExcStream, EI, TYPED...
 
+namespace Input {
+	namespace Type {
+		class Record;
+	}
+}
+
 // Declaration of exceptions
 TYPEDEF_ERR_INFO(EI_UnitDefinition, std::string);
 TYPEDEF_ERR_INFO(EI_ExpectedUnit, std::string);
@@ -91,6 +97,8 @@ public:
 
 	/// Constructor
 	UnitConverter();
+
+	static const Input::Type::Record & get_input_type();
 
 	/// Convert string to coeficient and UnitSI representation, return coeficient
 	double convert(std::string actual_unit);

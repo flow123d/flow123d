@@ -22,6 +22,7 @@
 #include "time_governor.hh"
 #include "time_marks.hh"
 #include "unit_si.hh"
+#include "unit_converter.hh"
 
 /*******************************************************************
  * implementation of TimeGovernor static values and methods
@@ -48,8 +49,9 @@ const Tuple & TimeGovernor::get_input_time_type(double lower_bound, double upper
     return Tuple("TimeValue", "A time with optional unit specification.")
         .declare_key("time", Double(lower_bound, upper_bound), Default::obligatory(),
                                     "The time value." )
-		.declare_key("unit", String(), Default::read_time("Common time unit of the equation's Time Governor."),
-				"The time unit. Possible values: 's' seconds, 'min' minutes, 'h' hours, 'd' days, 'y' years.")
+		.declare_key("unit", UnitConverter::get_input_type(),
+                Default::read_time("The time unit."),
+				"User can benefit from the Unit Convertor funcionality, e.g. creating own time units.")
 		.close();
 }
 
