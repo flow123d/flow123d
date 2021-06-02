@@ -87,7 +87,7 @@ BasicFactors::BasicFactors() {
  */
 
 const Input::Type::Record & UnitConverter::get_input_type() {
-    auto unit_record = Input::Type::Record("Unit",
+    return Input::Type::Record("Unit",
            "Specify the unit of an input value. "
            "Evaluation of the unit formula results into a coeficient and a "
            "unit in terms of powers of base SI units. The unit must match the"
@@ -109,8 +109,6 @@ const Input::Type::Record & UnitConverter::get_input_type() {
         .declare_key("unit_formula", Input::Type::String(), Input::Type::Default::obligatory(),
                                    "Definition of unit." )
         .close();
-
-    return unit_record;
 }
 
 
