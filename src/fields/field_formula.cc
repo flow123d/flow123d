@@ -171,10 +171,8 @@ bool FieldFormula<spacedim, Value>::set_time(const TimeStep &time) {
                 parser_matrix_[row][col].Parse(formula_matrix_.at(row,col), vars);
 
                 if ( parser_matrix_[row][col].GetParseErrorType() != FunctionParser::FP_NO_ERROR ) {
-                    xprintf(UsrErr, "ParserError: %s\n in the FieldFormula[%d][%d] == '%s'\n at the input address:\n %s \n",
-                        parser_matrix_[row][col].ErrorMsg(),
-                        row,col,formula_matrix_.at(row,col).c_str(),
-                        value_input_address.c_str());
+                    THROW( ExcFParserError() << EI_FParserMsg(parser_matrix_[row][col].ErrorMsg()) << EI_Row(row)
+                        << EI_Col(col) << EI_Formula(formula_matrix_.at(row,col)) );
                 }
 
                 parser_matrix_[row][col].Optimize();

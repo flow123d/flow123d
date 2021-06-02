@@ -58,9 +58,6 @@ using namespace std;
  * - base variables: coordinates (x,y,z), time (t), surface depth (d); constants: e, pi
  * - standard functions: trigonometric functions, min and max function, exponential function, ternary operator etc.
  * - expressions dependendent on other fields
- *
- * TODO:
- * correct support for discrete functions (use integer parser), actually we just convert double to int
  */
 template <int spacedim, class Value>
 class FieldFormula : public FieldAlgorithmBase<spacedim, Value>
@@ -79,6 +76,15 @@ public:
     TYPEDEF_ERR_INFO(EI_BParserMsg, std::string);
     DECLARE_INPUT_EXCEPTION(ExcParserError,
             << "Parsing in " << EI_BParserMsg::val << " in the formula: \n");
+
+    // Temporary exception of FParser. TODO remove at the same time as FParser
+    TYPEDEF_ERR_INFO(EI_FParserMsg, std::string);
+    TYPEDEF_ERR_INFO(EI_Row, unsigned int);
+    TYPEDEF_ERR_INFO(EI_Col, unsigned int);
+    TYPEDEF_ERR_INFO(EI_Formula, std::string);
+    DECLARE_INPUT_EXCEPTION(ExcFParserError,
+            << "ParserError: " << EI_FParserMsg::val << "\n in the FieldFormula[" << EI_Row::val
+			<< "][" << EI_Row::val << "] == " << EI_Formula::qval << " \n");
 
     FieldFormula(unsigned int n_comp=0);
 
