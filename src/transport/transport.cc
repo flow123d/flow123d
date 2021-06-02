@@ -391,11 +391,15 @@ void ConvectionTransport::conc_sources_bdr_conditions() {
     //temporary variables
     double csection, source, diag;
     unsigned int sbi;
+    bool sources_changed = ( (data_.sources_density.changed() )
+            || (data_.sources_conc.changed() )
+            || (data_.sources_sigma.changed() )
+            || (data_.cross_section.changed()));
     
     //TODO: would it be possible to check the change in data for chosen substance? (may be in multifields?)
   
 	START_TIMER("sources_reinit_set_bc");
-	balance_->start_source_assembly(subst_idx);
+	if (sources_changed) balance_->start_source_assembly(subst_idx);
     // Assembly bcvcorr vector
     for(sbi=0; sbi < n_substances(); sbi++) VecZeroEntries(bcvcorr[sbi]);
 
@@ -412,31 +416,35 @@ void ConvectionTransport::conc_sources_bdr_conditions() {
 		arma::vec3 center = elm.centre();
 		csection = data_.cross_section.value(center, elm);
 
-		// read for all substances
-		double max_cfl=0;
-		for (sbi = 0; sbi < n_substances(); sbi++)
-		{
-			double src_sigma = data_.sources_sigma[sbi].value(center, elm);
+		// SET SOURCES
 
-			source = csection * (data_.sources_density[sbi].value(center, elm)
-					 + src_sigma * data_.sources_conc[sbi].value(center, elm));
-			// addition to RHS
-			corr_vec[sbi][local_p0_dof] = source;
-			// addition to diagonal of the transport matrix
-			diag = src_sigma * csection;
-			tm_diag[sbi][local_p0_dof] = - diag;
+		if (sources_changed) {
+            // read for all substances
+            double max_cfl=0;
+            for (sbi = 0; sbi < n_substances(); sbi++)
+            {
+                double src_sigma = data_.sources_sigma[sbi].value(center, elm);
 
-			// compute maximal cfl condition over all substances
-			max_cfl = std::max(max_cfl, fabs(diag));
+                source = csection * (data_.sources_density[sbi].value(center, elm)
+                     + src_sigma * data_.sources_conc[sbi].value(center, elm));
+                // addition to RHS
+                corr_vec[sbi][local_p0_dof] = source;
+                // addition to diagonal of the transport matrix
+                diag = src_sigma * csection;
+                tm_diag[sbi][local_p0_dof] = - diag;
 
-			balance_->add_source_values(sbi, elm.region().bulk_idx(), {local_p0_dof},
-											{- src_sigma * elm.measure() * csection},
-											{source * elm.measure()});
+                // compute maximal cfl condition over all substances
+                max_cfl = std::max(max_cfl, fabs(diag));
+
+                balance_->add_source_values(sbi, elm.region().bulk_idx(), {local_p0_dof},
+                                            {- src_sigma * elm.measure() * csection},
+                                            {source * elm.measure()});
+            }
+
+            cfl_source_[local_p0_dof] = max_cfl;
 		}
 
-		cfl_source_[local_p0_dof] = max_cfl;
-
-		/** SECOND PART **/
+		// BOUNDARY CONDITIONS
 
         for(DHCellSide dh_side: dh_cell.side_range()) {
             if (dh_side.side().is_boundary()) {
@@ -469,7 +477,7 @@ void ConvectionTransport::conc_sources_bdr_conditions() {
     }
 
     balance_->finish_flux_assembly(subst_idx);
-	balance_->finish_source_assembly(subst_idx);
+    if (sources_changed) balance_->finish_source_assembly(subst_idx);
 
     for (sbi=0; sbi<n_substances(); sbi++)  	VecAssemblyBegin(bcvcorr[sbi]);
     for (sbi=0; sbi<n_substances(); sbi++)   	VecAssemblyEnd(bcvcorr[sbi]);
