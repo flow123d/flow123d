@@ -14,8 +14,6 @@
 #include "mpi.h"
 
 
-#ifdef FLOW123D_RUN_UNIT_BENCHMARKS
-
 const int 
     m = 9,
     n_cols = 2,
@@ -60,6 +58,7 @@ TEST(LinSys_PETSC, mat_set_value) {
                 ls->mat_set_value(i, j, 1.0);
     
     END_TIMER("LinSys_PETSC_mat_set_value_mm");
+    EXPECT_TIMER_LE("LinSys_PETSC_mat_set_value_mm", 22);
     
     ls->finish_assembly();
 //     print_matrix("ls_matrix", ls->get_matrix());
@@ -93,6 +92,7 @@ TEST(LinSys_PETSC, mat_set_values_mm) {
         ls->mat_set_values(m, rows, m, cols, vals);
     
     END_TIMER("LinSys_PETSC_mat_set_values_mm");
+    EXPECT_TIMER_LE("LinSys_PETSC_mat_set_values_mm", 4.5);
     
     ls->finish_assembly();
 //     print_matrix("ls_matrix", ls->get_matrix());
@@ -125,6 +125,7 @@ TEST(LinSys_PETSC, mat_set_values_mcols) {
         ls->mat_set_values(m, rows, n_cols, cols, vals);
     
     END_TIMER("LinSys_PETSC_mat_set_values_mcols");
+    EXPECT_TIMER_LE("LinSys_PETSC_mat_set_values_mcols", 1.5);
     
     ls->finish_assembly();
 //     print_matrix("ls_matrix", ls->get_matrix());
@@ -159,6 +160,7 @@ TEST(LinSys_PETSC, set_local_system_mm) {
         ls->set_local_system(loc);
     
     END_TIMER("LinSys_PETSC_set_local_system_mm");
+    EXPECT_TIMER_LE("LinSys_PETSC_set_local_system_mm", 6);
     
     ls->finish_assembly();
 //     print_matrix("ls_matrix", ls->get_matrix());
@@ -199,6 +201,7 @@ TEST(PETSC_mat, mat_set_values_mm) {
         ierr = MatSetValues(mat, m, rows, m, cols, vals, ADD_VALUES); CHKERRV( ierr );
     
     END_TIMER("PETSC_mat_petsc_mat_set_values");
+    EXPECT_TIMER_LE("PETSC_mat_petsc_mat_set_values", 4.5);
     
     ierr = MatAssemblyEnd(mat, MAT_FINAL_ASSEMBLY); CHKERRV( ierr );
 //     print_matrix("petsc_matrix", &mat);
@@ -208,4 +211,3 @@ TEST(PETSC_mat, mat_set_values_mm) {
     static ofstream os( FilePath("set_values_profiler.log", FilePath::output_file) );
     Profiler::instance()->output(MPI_COMM_WORLD, os);
 }
-#endif // FLOW123D_RUN_UNIT_BENCHMARKS

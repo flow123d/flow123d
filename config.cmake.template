@@ -155,24 +155,27 @@
 #    EXTERNAL_LIBS_Fortran_FLAGS
 # if these variables are not set, global flags such will be used
 
-set(FLOW_BUILD_TYPE debug)
+set(FLOW_BUILD_TYPE release )
 
 # you can override these settings through variable FLOW_CC_FLAGS
 #
 # Flow recognize  following definitions:
-# FLOW123D_NODEBUG					- all debug options off
-# FLOW123D_DEBUG					- all debug options on
-# FLOW123D_DEBUG_MESSAGES
-# FLOW123D_DEBUG_ASSERTS
-# FLOW123D_DEBUG_PROFILER
-# FLOW123D_RUN_UNIT_BENCHMARKS      - build benchmark unit tests
+# FLOW123D_NODEBUG					turn off ASSERTS, ASSERT_PERMAMENT preserved, 
+                                    turn off debug messages (in Logger), active for 'release'
+# FLOW123D_DEBUG					(deprecated)
+# FLOW123D_DEBUG_MESSAGES           (deprecated)
+# FLOW123D_DEBUG_ASSERTS            (deprecated)
+# FLOW123D_DEBUG_PROFILER           (deprecated)
+# FLOW123D_RUN_UNIT_BENCHMARKS      (deprecated)
+# FLOW123D_PROFILER                 keep profiler frames, active for both 'debug' and 'release' 
+# FLOW123D_BENCHMARK_ASSERTS        - check performance limits in benchmark unit tests, active for 'release'
 #
 # example:
 #set(FLOW_CC_FLAGS "-O3 -DFLOW123D_NODEBUG -pg")
 
 # Developers are supposed to use -Werror (warnings as errors).
-set(FLOW_CC_FLAGS "-g -O0 -Werror")       # for debug build
-#set(FLOW_CC_FLAGS "-O3 -DNDEBUG -Werror") # for release build
+#set(FLOW_CC_FLAGS "-g -O0 -Werror")       # for debug build
+set(FLOW_CC_FLAGS "-O3 -DFLOW123D_DEBUG_PROFILER -DARMA_NO_DEBUG -DNDEBUG -g -fno-omit-frame-pointer") # for release build
 
 ### Install package platform ###
 # This string is used as part of package name to distinguish 
