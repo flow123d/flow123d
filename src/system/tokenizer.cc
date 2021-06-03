@@ -92,7 +92,7 @@ bool Tokenizer::next_line(bool assert_for_remaining_tokens) {
         std::getline( *in_, line_);
         position_.line_counter_++;
         // check failure bits
-        if (in_->bad()) xprintf(Err, "Can not read from stream, file: '%s', line: '%d'\n", f_name_.c_str(), line_num());
+        if (in_->bad()) THROW( ExcCannotRead() << EI_File(f_name_) << EI_Line(line_num()) );
         boost::trim( line_ );
         // if pattern is set and beginning of line match it
         if (comment_pattern_.size() && 0==line_.compare(0, comment_pattern_.size(), comment_pattern_) ) line_="";

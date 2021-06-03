@@ -63,6 +63,9 @@ public:
 		interp_p0       //!< P0 interpolation (with the use of calculation of intersections)
 	};
 
+    TYPEDEF_ERR_INFO( EI_ElemIdx, unsigned int);
+    DECLARE_EXCEPTION( ExcInvalidElemeDim, << "Dimension of element in target mesh must be 0, 1 or 2! elm.idx() = " << EI_ElemIdx::val << ".\n" );
+
     /**
      * Default constructor, optionally we need number of components @p n_comp in the case of Vector valued fields.
      */

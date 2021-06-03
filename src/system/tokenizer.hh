@@ -65,6 +65,7 @@ public:
     TYPEDEF_ERR_INFO( EI_Line, unsigned int);
     TYPEDEF_ERR_INFO( EI_Pos, unsigned int);
     DECLARE_EXCEPTION( ExcMissingToken, << "Missing token, file: " << EI_File::qval << ", line: " << EI_Line::qval << ", position: " << EI_Pos::qval << ".\n" );
+    DECLARE_EXCEPTION( ExcCannotRead, << "Can not read from stream, file: " << EI_File::qval << ", line: " << EI_Line::qval << ".\n" );
 
     /**
      * Struct represents actual position of Tokenizer in file.

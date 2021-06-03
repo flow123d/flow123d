@@ -202,7 +202,7 @@ void *xmalloc( size_t size )
 
 	if (size == 0 ) size++;
 	rc = malloc( size );
-	if ( rc == NULL ) xprintf(Err ,"Not enough memory for allocating %u bytes\n", size );
+	ASSERT_PTR( rc )(size).error("Not enough memory for allocating %u bytes\n" );
 
 	return(rc);
 }*/
@@ -236,7 +236,7 @@ void * xrealloc( void * ptr, size_t size )
     void * rc;
 
     rc = realloc( ptr, size );
-    if ( rc == NULL ) xprintf(Err ,"Not enough memory for allocating %u bytes\n", size );
+    ASSERT_PTR( rc )(size).error("Not enough memory for allocating %u bytes\n" );
 
     return(rc);
 }*/
