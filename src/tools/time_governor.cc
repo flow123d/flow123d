@@ -120,7 +120,7 @@ const Record & TimeGovernor::get_input_type() {
 			    "table to the list of fixed TimeMarks.")
 		.declare_key("write_used_timesteps", FileName::output(), Default::optional(),
 				"Write used time steps to the given file in YAML format corresponding with the format of ``dt_limits``.")
-		.declare_key("common_time_unit", String(), Default("\"s\""),
+        .declare_key("common_time_unit", UnitConverter::get_input_type(), Default("\"s\""),
 				"Common time unit of the equation.\nThis unit will be used for all time inputs and outputs "
 				"within the equation. Individually, the common time unit can be overwritten for every declared time.\n"
 				"Time units are used in the following cases:\n"
@@ -165,10 +165,10 @@ double TimeUnitConversion::read_time(Input::Iterator<Input::Tuple> time_it, doub
             try {
                 return ( time * UnitSI().s().convert_unit_from(unit_str) );
             } catch (ExcInvalidUnit &e) {
-                e << time_it->ei_address();
+                e << unit_record.ei_address();
                 throw;
             } catch (ExcNoncorrespondingUnit &e) {
-                e << time_it->ei_address();
+                e << unit_record.ei_address();
                 throw;
             }
         }
@@ -290,8 +290,20 @@ TimeGovernor::TimeGovernor(const Input::Record &input, TimeMark::Type eq_mark_ty
 
     try {
 
-        string common_unit_string=input.val<string>("common_time_unit");
-        time_unit_conversion_ = std::make_shared<TimeUnitConversion>(common_unit_string);
+        {
+            Input::Record common_unit_record = input.val<Input::Record>("common_time_unit");
+            std::string common_unit_string = common_unit_record.val<std::string>("unit_formula");
+            try {
+                time_unit_conversion_ = std::make_shared<TimeUnitConversion>(common_unit_string);
+            } catch (ExcInvalidUnit &e) {
+                e << common_unit_record.ei_address();
+                throw;
+            } catch (ExcNoncorrespondingUnit &e) {
+                e << common_unit_record.ei_address();
+                throw;
+            }
+        }
+
         limits_time_marks_ = input.val<bool>("add_dt_limits_time_marks");
 
         // Get rid of rounding errors.
