@@ -307,7 +307,9 @@ Profiler::Profiler()
 : actual_node(0),
   task_size_(1),
   start_time( time(NULL) ),
-  json_filepath("")
+  json_filepath(""),
+  none_timer_(CODE_POINT("NONE TIMER"), 0),
+  calibration_time_(-1)
 
 {
     static CONSTEXPR_ CodePoint main_cp = CODE_POINT("Whole Program");
@@ -317,6 +319,38 @@ Profiler::Profiler()
     timers_.push_back( Timer(main_cp, 0) );
     timers_[0].start();
 #endif
+}
+
+
+void Profiler::calibrate() {
+
+    uint SIZE = 64 * 1024;
+    uint HALF = SIZE / 2;
+    START_TIMER("UNIT_PAYLOAD");
+    Timer &timer = timers_[actual_node];
+
+    uint count = 0;
+    while(TimePoint() - timer.start_time < 0.1) {
+        double * block = new double[SIZE];
+        for(uint i=0; i<HALF; i++) {
+            block[HALF+i] = block[i]*block[i] + i;
+        }
+        delete block;
+        count++;
+    }
+
+
+
+    END_TIMER("UNIT_PAYLOAD");
+
+    const double reference_count = 7730;
+    // reference count is average of 5 measurements on payload free laptop:
+    // DELL Latitude E5570, Intel(R) Core(TM) i7-6820HQ CPU @ 2.70GHz
+    // new/delete makes about 3% of time
+    calibration_time_ = 10 * timer.cumul_time * reference_count / count;
+    LogOut() << "Profiler calibration count: " << count << std::endl;
+    LogOut() << "Profiler calibration time: " << calibration_time_ << std::endl;
+
 }
 
 
@@ -506,6 +540,14 @@ double Profiler::get_resolution () {
     }
 
     return (result / measurements) * 1000; // ticks to seconds to microseconds conversion
+}
+
+
+Timer Profiler::find_timer(string tag) {
+    for(auto t : timers_) {
+        if (t.tag() == tag) return t;
+    }
+    return none_timer_;
 }
 
 
@@ -785,6 +827,9 @@ void Profiler::output_header (nlohmann::json &root, int mpi_size) {
     char end_time_string[BUFSIZ] = {0};
     strftime(end_time_string, sizeof (end_time_string) - 1, format, localtime(&end_time));
 
+    if (timers_[0].cumul_time > 60) {
+        calibrate();
+    }
     // generate current run details
     root["program-name"] =        flow_name_;
     root["program-version"] =     flow_version_;
@@ -792,6 +837,7 @@ void Profiler::output_header (nlohmann::json &root, int mpi_size) {
     root["program-revision"] =    flow_revision_;
     root["program-build"] =       flow_build_;
     root["timer-resolution"] =    Profiler::get_resolution();
+    root["timer-calibration"] =    calibration_time_;
 
     // print some information about the task at the beginning
     root["task-description"] =    task_description_;
