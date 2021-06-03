@@ -50,8 +50,13 @@ const Tuple & TimeGovernor::get_input_time_type(double lower_bound, double upper
         .declare_key("time", Double(lower_bound, upper_bound), Default::obligatory(),
                                     "The time value." )
 		.declare_key("unit", UnitConverter::get_input_type(),
-                Default::read_time("The time unit."),
-				"User can benefit from the Unit Convertor funcionality, e.g. creating own time units.")
+                Default::read_time("Common time unit of the equation's Time Governor."),
+				"Predefined units include: `s` seconds, `min` minutes, `h` hours, `d` days, `y` years.\n"
+                "The default time unit is set from the equation's time governor, see the key `common_time_unit`"
+                "in the equation's time record.\n\n"
+                "User can benefit from the Unit Convertor funcionality and create different time units.\n"
+                "Year length example considering leap years (Gregorian calendar): `year; year = 365.2425*d`.\n"
+                "Miliseconds example : `milisec; milisec = 0.001*s`.")
 		.close();
 }
 
@@ -153,12 +158,23 @@ TimeUnitConversion::TimeUnitConversion()
 double TimeUnitConversion::read_time(Input::Iterator<Input::Tuple> time_it, double default_time) const {
 	if (time_it) {
 	    double time = time_it->val<double>("time");
-	    string time_unit;
-		if (time_it->opt_val<string>("unit", time_unit)) {
-			return ( time * UnitSI().s().convert_unit_from(time_unit) );
-		} else {
+
+        Input::Record unit_record;
+        if ( time_it->opt_val("unit", unit_record) ) {
+            std::string unit_str = unit_record.val<std::string>("unit_formula");
+            try {
+                return ( time * UnitSI().s().convert_unit_from(unit_str) );
+            } catch (ExcInvalidUnit &e) {
+                e << time_it->ei_address();
+                throw;
+            } catch (ExcNoncorrespondingUnit &e) {
+                e << time_it->ei_address();
+                throw;
+            }
+        }
+        else {
 			return ( time * coef_ );
-		}
+        }
 	} else {
 		ASSERT(default_time!=std::numeric_limits<double>::quiet_NaN()).error("Undefined default time!");
 		return default_time;
