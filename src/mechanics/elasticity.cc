@@ -83,7 +83,7 @@ FEObjects::FEObjects(Mesh *mesh_, unsigned int fe_order)
 		break;
     }
 	default:
-		xprintf(PrgErr, "Unsupported polynomial order %d for finite elements in Elasticity", fe_order);
+		ASSERT(false)(fe_order).error("Unsupported polynomial order for finite elements in Elasticity");
 		break;
 	}
 

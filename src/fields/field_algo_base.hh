@@ -115,6 +115,9 @@ public:
        static constexpr bool is_enum_valued = std::is_same<typename Value::element_type, FieldEnum>::value;
 
 
+       TYPEDEF_ERR_INFO( EI_Field, std::string);
+       DECLARE_EXCEPTION( ExcInputInitUnsupported, << "The field " << EI_Field::qval << " do not support initialization from input.\n" );
+
        /**
         * Kind of default constructor , with possible setting of the initial time.
         * Fields that returns variable size vectors accepts number of components @p n_comp.

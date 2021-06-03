@@ -136,8 +136,7 @@ FieldAlgorithmBase<spacedim, Value>::function_factory(const Input::AbstractRecor
 
 template <int spacedim, class Value>
 void FieldAlgorithmBase<spacedim, Value>::init_from_input(const Input::Record &, const struct FieldAlgoBaseInitData&) {
-    xprintf(PrgErr, "The field '%s' do not support initialization from input.\n",
-            typeid(this).name());
+    THROW( ExcInputInitUnsupported() << EI_Field(typeid(this).name()) );
 }
 
 

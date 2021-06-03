@@ -1107,7 +1107,8 @@ void DarcyMH::assembly_linear_system() {
 		if (! is_steady) {
 			modify_system();
 		} else {
-			//xprintf(PrgErr, "Planned computation time for steady solver, but data are not changed.\n");
+		    //Should be replaced with exception if error will be switched on.
+		    //ASSERT(false).error("Planned computation time for steady solver, but data are not changed.\n");
 		}
 		END_TIMER("modiffy system");
 	}
