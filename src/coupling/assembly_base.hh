@@ -56,7 +56,7 @@ public:
     inline void edge_integral(FMT_UNUSED RangeConvert<DHEdgeSide, DHCellSide> edge_side_range) {}
 
     /// Assembles the fluxes between elements of different dimensions.
-    inline void neigbour_integral(FMT_UNUSED DHCellAccessor cell_lower_dim, FMT_UNUSED DHCellSide neighb_side) {}
+    inline void dimjoin_intergral(FMT_UNUSED DHCellAccessor cell_lower_dim, FMT_UNUSED DHCellSide neighb_side) {}
 
     /// Method prepares object before assemblation (e.g. balance, ...).
     virtual void begin() {}

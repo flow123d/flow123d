@@ -170,7 +170,7 @@ public:
 
 
     /// Assembles between elements of different dimensions.
-    inline void neigbour_integral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
+    inline void dimjoin_intergral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
     	if (dim == 1) return;
         ASSERT_EQ_DBG(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
 
@@ -446,7 +446,7 @@ public:
 
 
     /// Assembles between elements of different dimensions.
-    inline void neigbour_integral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
+    inline void dimjoin_intergral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
     	if (dim == 1) return;
         ASSERT_EQ_DBG(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
 
@@ -615,7 +615,7 @@ public:
 
 
     /// Assembles between elements of different dimensions.
-    inline void neigbour_integral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
+    inline void dimjoin_intergral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
         if (dim == 1) return;
         ASSERT_EQ_DBG(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
 

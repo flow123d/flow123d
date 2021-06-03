@@ -277,7 +277,7 @@ private:
     inline void assemble_neighbour_integrals() {
         for (unsigned int i=0; i<coupling_integral_data_.permanent_size(); ++i) {
             if (coupling_integral_data_[i].side.dim() != dim) continue;
-            multidim_assembly_[Dim<dim>{}]->neigbour_integral(coupling_integral_data_[i].cell, coupling_integral_data_[i].side);
+            multidim_assembly_[Dim<dim>{}]->dimjoin_intergral(coupling_integral_data_[i].cell, coupling_integral_data_[i].side);
         }
     }
 
