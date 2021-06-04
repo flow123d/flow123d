@@ -8,8 +8,6 @@
 #include <flow_gtest_mpi.hh>
 #include "system/global_defs.h"
 
-#ifdef FLOW123D_RUN_UNIT_BENCHMARKS
-
 #include <armadillo>
 
 #include "system/system.hh"
@@ -269,168 +267,65 @@ void compute_intersection(Mesh* mesh)
 }
 
 
-// ***************************************************************************************************   1D-2D
+template<unsigned int dimA, unsigned int dimB>
+void test(double expected_time_factor)
+{
+    Profiler::instance();
+    std::ostringstream stringStream;
+    stringStream << "Speed test for" << dimA << "d-" << dimB << "d ComputeIntersection class.";
+    Profiler::instance()->set_task_info(stringStream.str(),2);
+    
+    reset_statistics();
+    
+    // create n random meshes triangle-tetrahedron in unit cube
+    const unsigned int n = n_meshes;
+    
+    //seed_rand();
+    vector<Mesh*> meshes;
+    generate_meshes<dimA,dimB>(n,meshes);
+    
+    { START_TIMER("Speed test");
+    // for each mesh, compute intersection area and compare with old NGH
+    MessageOut() << "======== START ========\n";
+    for(unsigned int i=0; i<n; i++)
+    {       
+            //MessageOut() << "================================================ %d\n",i);
+            for(unsigned int loop = 0; loop < profiler_loop; loop++)
+            {
+                compute_intersection<dimA,dimB>(meshes[i]);
+            }
+            //MessageOut() << "================================================\n";
+    }
+    MessageOut() << "======== FINISH ========\n";
+    END_TIMER("Speed test"); }
+    
+    print_statistics();
+    
+    EXPECT_TIMER_LE("Speed test", expected_time_factor);
+
+    stringStream.clear();
+    stringStream << "speed_simple_profiler_" << dimA << dimB << ".log";
+    std::string profiler_file = stringStream.str();
+    
+    std::fstream fs;
+    fs.open(profiler_file.c_str(), std::fstream::out);
+    Profiler::instance()->output(PETSC_COMM_WORLD, fs);
+    Profiler::uninitialize();
+}
+
 
 TEST(speed_simple_12, all) {
-    Profiler::instance();
-    Profiler::instance()->set_task_info("Speed test for 1d-2d ComputeIntersection class.",2);
-    
-    reset_statistics();
-    
-    // create n random meshes triangle-tetrahedron in unit cube
-    const unsigned int n = n_meshes;
-    
-    //seed_rand();
-    vector<Mesh*> meshes;
-    generate_meshes<1,2>(n,meshes);
-    
-    { START_TIMER("Speed test");
-    // for each mesh, compute intersection area and compare with old NGH
-    MessageOut() << "======== START ========\n";
-    for(unsigned int i=0; i<n; i++)
-    {       
-            //MessageOut() << "================================================ %d\n",i);
-            for(unsigned int loop = 0; loop < profiler_loop; loop++)
-            {
-                compute_intersection<1,2>(meshes[i]);
-            }
-            //MessageOut() << "================================================\n";
-    }
-    MessageOut() << "======== FINISH ========\n";
-    END_TIMER("Speed test"); }
-    
-    print_statistics();
-    
-    std::string profiler_file = "speed_simple_profiler_12.log";
-    
-    std::fstream fs;
-    fs.open(profiler_file.c_str(), std::fstream::out);
-    Profiler::instance()->output(PETSC_COMM_WORLD, fs);
-    Profiler::uninitialize();
+    test<1,2>(45);
 }
-
-// ***************************************************************************************************   2D-2D
 
 TEST(speed_simple_22, all) {
-    Profiler::instance();
-    Profiler::instance()->set_task_info("Speed test for 2d-2d ComputeIntersection class.",2);
-    
-    reset_statistics();
-    
-    // create n random meshes triangle-tetrahedron in unit cube
-    const unsigned int n = n_meshes;
-    
-    //seed_rand();
-    vector<Mesh*> meshes;
-    generate_meshes<2,2>(n,meshes);
-    
-    { START_TIMER("Speed test");
-    // for each mesh, compute intersection area and compare with old NGH
-    MessageOut() << "======== START ========\n";
-    for(unsigned int i=0; i<n; i++)
-    {       
-            //MessageOut() << "================================================ %d\n",i);
-            for(unsigned int loop = 0; loop < profiler_loop; loop++)
-            {
-                compute_intersection<2,2>(meshes[i]);
-            }
-            //MessageOut() << "================================================\n";
-    }
-    MessageOut() << "======== FINISH ========\n";
-    END_TIMER("Speed test"); }
-    
-    print_statistics();
-    
-    std::string profiler_file = "speed_simple_profiler_22.log";
-    
-    std::fstream fs;
-    fs.open(profiler_file.c_str(), std::fstream::out);
-    Profiler::instance()->output(PETSC_COMM_WORLD, fs);
-    Profiler::uninitialize();
+    test<2,2>(60);
 }
-
-
-
-// ***************************************************************************************************   1D-3D
 
 TEST(speed_simple_13, all) {
-    Profiler::instance();
-    Profiler::instance()->set_task_info("Speed test for 1d-3d ComputeIntersection class.",2);
-    
-    reset_statistics();
-    
-    const unsigned int n = n_meshes;
-    
-    //seed_rand();
-    vector<Mesh*> meshes;
-    generate_meshes<1,3>(n,meshes);
-    
-    { START_TIMER("Speed test");
-    // for each mesh, compute intersection area and compare with old NGH
-    MessageOut() << "======== START ========\n";
-    for(unsigned int i=0; i<n; i++)
-    {       
-            //MessageOut() << "================================================ %d\n",i);
-            for(unsigned int loop = 0; loop < profiler_loop; loop++)
-            {
-                compute_intersection<1,3>(meshes[i]);
-            }
-            //MessageOut() << "================================================\n";
-    }
-    MessageOut() << "======== FINISH ========\n";
-    END_TIMER("Speed test"); }
-    
-    print_statistics();
-    
-    std::string profiler_file = "speed_simple_profiler_13.log";
-    
-    std::fstream fs;
-    fs.open(profiler_file.c_str(), std::fstream::out);
-    Profiler::instance()->output(PETSC_COMM_WORLD, fs);
-    Profiler::uninitialize();
+    test<1,3>(60);
 }
-
-
-
-// ***************************************************************************************************   2D-3D
 
 TEST(speed_simple_23, all) {
-    Profiler::instance();
-    Profiler::instance()->set_task_info("Speed test for 2d-3d ComputeIntersection class.",2);
-    
-    reset_statistics();
-    
-    // create n random meshes triangle-tetrahedron in unit cube
-    const unsigned int n = n_meshes;
-    
-    //seed_rand();
-    vector<Mesh*> meshes;
-    generate_meshes<2,3>(n,meshes);
-    
-    { START_TIMER("Speed test");
-    // for each mesh, compute intersection area and compare with old NGH
-    MessageOut() << "======== START ========\n";
-    for(unsigned int i=0; i<n; i++)
-    {       
-            //MessageOut() << "================================================ %d\n",i);
-            for(unsigned int loop = 0; loop < profiler_loop; loop++)
-            {
-                compute_intersection<2,3>(meshes[i]);
-            }
-            //MessageOut() << "================================================\n";
-    }
-    MessageOut() << "======== FINISH ========\n";
-    END_TIMER("Speed test"); }
-    
-    print_statistics();
-    
-    std::string profiler_file = "speed_simple_profiler_23.log";
-    
-    std::fstream fs;
-    fs.open(profiler_file.c_str(), std::fstream::out);
-    Profiler::instance()->output(PETSC_COMM_WORLD, fs);
-    Profiler::uninitialize();
+    test<2,3>(90);
 }
-
-
-#endif // FLOW123D_RUN_UNIT_BENCHMARKS

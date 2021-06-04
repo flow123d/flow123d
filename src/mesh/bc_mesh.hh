@@ -46,7 +46,7 @@ public:
     Range<ElementAccessor<3>> elements_range() const override;
 
     /// Returns count of boundary elements of parent mesh
-    unsigned int n_elements(bool boundary=false) const override;
+    unsigned int n_elements() const override;
 
     /// Overwrite Mesh::get_part()
     Partitioning *get_part() override;

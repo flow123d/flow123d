@@ -30,6 +30,7 @@
 #include "fields/fe_value_handler.hh"
 #include "la/linsys_PETSC.hh"
 #include "coupling/balance.hh"
+#include "coupling/generic_assembly.hh"
 #include "transport/advection_diffusion_model.hh"
 #include "transport/concentration_model.hh"
 #include "transport/heat_model.hh"
@@ -81,7 +82,7 @@ const Record & TransportDG<Model>::get_input_type() {
         .declare_key("solver", LinSys_PETSC::get_input_type(), Default("{}"),
                 "Solver for the linear system.")
         .declare_key("input_fields", Array(
-                TransportDG<Model>::EqData()
+                TransportDG<Model>::EqFields()
                     .make_field_descriptor_type(equation_name)),
                 IT::Default::obligatory(),
                 "Input fields of the equation.")
@@ -90,7 +91,7 @@ const Record & TransportDG<Model>::get_input_type() {
         .declare_key("dg_order", Integer(0,3), Default("1"),
                 "Polynomial order for the finite element in DG method (order 0 is suitable if there is no diffusion/dispersion).")
         .declare_key("output",
-                EqData().output_fields.make_output_type(equation_name, ""),
+                EqFields().output_fields.make_output_type(equation_name, ""),
                 IT::Default("{ \"fields\": [ " + Model::ModelEqData::default_output_field() + "] }"),
                 "Specification of output fields and output times.")
         .close();
@@ -104,7 +105,7 @@ const int TransportDG<Model>::registrar =
 
 
 template<class Model>
-TransportDG<Model>::EqData::EqData() : Model::ModelEqData()
+TransportDG<Model>::EqFields::EqFields() : Model::ModelEqFields()
 {
     *this+=fracture_sigma
             .name("fracture_sigma")
@@ -206,35 +207,30 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
     // Check that Model is derived from AdvectionDiffusionModel.
     static_assert(std::is_base_of<AdvectionDiffusionModel, Model>::value, "");
 
-    data_ = make_shared<EqData>();
-    this->eq_data_ = data_.get();
+    eq_data_ = make_shared<EqData>();
+    eq_fields_ = make_shared<EqFields>();
+    eq_fields_->add_coords_field();
+    this->eq_fieldset_ = eq_fields_.get();
+    Model::init_balance(in_rec);
 
 
     // Set up physical parameters.
-    data_->set_mesh(init_mesh);
-    data_->region_id = GenericField<3>::region_id(*Model::mesh_);
-    data_->subdomain = GenericField<3>::subdomain(*Model::mesh_);
+    eq_fields_->set_mesh(init_mesh);
+    eq_fields_->region_id = GenericField<3>::region_id(*Model::mesh_);
+    eq_fields_->subdomain = GenericField<3>::subdomain(*Model::mesh_);
 
 
-    // DG variant and order
-    data_->dg_variant = in_rec.val<DGVariant>("dg_variant");
-    data_->dg_order = in_rec.val<unsigned int>("dg_order");
+    // DG data parameters
+    eq_data_->dg_variant = in_rec.val<DGVariant>("dg_variant");
+    eq_data_->dg_order = in_rec.val<unsigned int>("dg_order");
     
     Model::init_from_input(in_rec);
 
-    // create assemblation object, finite element structures and distribute DOFs
-	data_->mass_assembly_ = new GenericAssembly< MassAssemblyDim >(data_.get(), ActiveIntegrals::bulk);
-	data_->stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyDim >(data_.get(),
-	        (ActiveIntegrals::bulk | ActiveIntegrals::edge | ActiveIntegrals::coupling | ActiveIntegrals::boundary) );
-	data_->sources_assembly_ = new GenericAssembly< SourcesAssemblyDim >(data_.get(), ActiveIntegrals::bulk);
-	data_->bdr_cond_assembly_ = new GenericAssembly< BdrConditionAssemblyDim >(data_.get(), ActiveIntegrals::bulk);
-	data_->init_cond_assembly_ = new GenericAssembly< InitConditionAssemblyDim >(data_.get(), ActiveIntegrals::bulk);
-
-	MixedPtr<FE_P_disc> fe(data_->dg_order);
+	MixedPtr<FE_P_disc> fe(eq_data_->dg_order);
 	shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>(Model::mesh_, fe);
-	data_->dh_ = make_shared<DOFHandlerMultiDim>(*Model::mesh_);
-	data_->dh_->distribute_dofs(ds);
-    //DebugOut().fmt("TDG: solution size {}\n", data_->dh_->n_global_dofs());
+	eq_data_->dh_ = make_shared<DOFHandlerMultiDim>(*Model::mesh_);
+	eq_data_->dh_->distribute_dofs(ds);
+    //DebugOut().fmt("TDG: solution size {}\n", eq_data_->dh_->n_global_dofs());
 
 }
 
@@ -242,113 +238,92 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
 template<class Model>
 void TransportDG<Model>::initialize()
 {
-    data_->set_components(Model::substances_.names());
-    data_->set_input_list( input_rec.val<Input::Array>("input_fields"), *(Model::time_) );
+    eq_fields_->set_components(eq_data_->substances_.names());
+    eq_fields_->set_input_list( input_rec.val<Input::Array>("input_fields"), *(Model::time_) );
+    eq_data_->set_time_governor(Model::time_);
+    eq_data_->balance_ = this->balance();
+    eq_fields_->initialize();
 
     // DG stabilization parameters on boundary edges
-    data_->gamma.resize(Model::n_substances());
-    for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
-    	data_->gamma[sbi].resize(Model::mesh_->boundary_.size());
+    eq_data_->gamma.resize(eq_data_->n_substances());
+    for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)
+        eq_data_->gamma[sbi].resize(Model::mesh_->boundary_.size());
 
     // Resize coefficient arrays
-    int qsize = data_->mass_assembly_->eval_points()->max_size();
-    int max_edg_sides = max(Model::mesh_->max_edge_sides(1), max(Model::mesh_->max_edge_sides(2), Model::mesh_->max_edge_sides(3)));
-    ret_sources.resize(Model::n_substances());
-    ret_sources_prev.resize(Model::n_substances());
-    data_->ad_coef.resize(Model::n_substances());
-    data_->dif_coef.resize(Model::n_substances());
-    for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
-    {
-        data_->ad_coef[sbi].resize(qsize);
-        data_->dif_coef[sbi].resize(qsize);
-    }
-    data_->ad_coef_edg.resize(max_edg_sides);
-    data_->dif_coef_edg.resize(max_edg_sides);
-    for (int sd=0; sd<max_edg_sides; sd++)
-    {
-        data_->ad_coef_edg[sd].resize(Model::n_substances());
-        data_->dif_coef_edg[sd].resize(Model::n_substances());
-        for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
-        {
-            data_->ad_coef_edg[sd][sbi].resize(qsize);
-            data_->dif_coef_edg[sd][sbi].resize(qsize);
-        }
-    }
+    eq_data_->max_edg_sides = max(Model::mesh_->max_edge_sides(1), max(Model::mesh_->max_edge_sides(2), Model::mesh_->max_edge_sides(3)));
+    ret_sources.resize(eq_data_->n_substances());
+    ret_sources_prev.resize(eq_data_->n_substances());
 
-    output_vec.resize(Model::n_substances());
-    data_->output_field.set_components(Model::substances_.names());
-    data_->output_field.set_mesh(*Model::mesh_);
-    data_->output_type(OutputTime::CORNER_DATA);
+    output_vec.resize(eq_data_->n_substances());
+    eq_fields_->output_field.set_components(eq_data_->substances_.names());
+    eq_fields_->output_field.set_mesh(*Model::mesh_);
+    eq_fields_->output_type(OutputTime::CORNER_DATA);
 
-    data_->output_field.setup_components();
-    for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
+    eq_fields_->output_field.setup_components();
+    for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)
     {
         // create shared pointer to a FieldFE, pass FE data and push this FieldFE to output_field on all regions
-        auto output_field_ptr = create_field_fe< 3, FieldValue<3>::Scalar >(data_->dh_);
-        data_->output_field[sbi].set_field(Model::mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
+        auto output_field_ptr = create_field_fe< 3, FieldValue<3>::Scalar >(eq_data_->dh_);
+        eq_fields_->output_field[sbi].set(output_field_ptr, 0);
         output_vec[sbi] = output_field_ptr->vec();
     }
 
     // set time marks for writing the output
-    data_->output_fields.initialize(Model::output_stream_, Model::mesh_, input_rec.val<Input::Record>("output"), this->time());
+    eq_fields_->output_fields.initialize(Model::output_stream_, Model::mesh_, input_rec.val<Input::Record>("output"), this->time());
 
     // equation default PETSc solver options
     std::string petsc_default_opts;
-    if (data_->dh_->distr()->np() == 1)
+    if (eq_data_->dh_->distr()->np() == 1)
       petsc_default_opts = "-ksp_type bcgs -pc_type ilu -pc_factor_levels 2 -ksp_diagonal_scale_fix -pc_factor_fill 6.0";
     else
       petsc_default_opts = "-ksp_type bcgs -ksp_diagonal_scale_fix -pc_type asm -pc_asm_overlap 4 -sub_pc_type ilu -sub_pc_factor_levels 3 -sub_pc_factor_fill 6.0";
     
     // allocate matrix and vector structures
-    data_->ls    = new LinSys*[Model::n_substances()];
-    data_->ls_dt = new LinSys*[Model::n_substances()];
-    data_->conc_fe.resize(Model::n_substances());
+    eq_data_->ls    = new LinSys*[eq_data_->n_substances()];
+    eq_data_->ls_dt = new LinSys*[eq_data_->n_substances()];
+    eq_data_->conc_fe.resize(eq_data_->n_substances());
     
     MixedPtr<FE_P_disc> fe(0);
     shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>(Model::mesh_, fe);
-    data_->dh_p0 = make_shared<DOFHandlerMultiDim>(*Model::mesh_);
-    data_->dh_p0->distribute_dofs(ds);    
+    eq_data_->dh_p0 = make_shared<DOFHandlerMultiDim>(*Model::mesh_);
+    eq_data_->dh_p0->distribute_dofs(ds);
 
+    stiffness_matrix.resize(eq_data_->n_substances(), nullptr);
+    mass_matrix.resize(eq_data_->n_substances(), nullptr);
+    rhs.resize(eq_data_->n_substances(), nullptr);
+    mass_vec.resize(eq_data_->n_substances(), nullptr);
+    eq_data_->ret_vec.resize(eq_data_->n_substances(), nullptr);
 
-    stiffness_matrix.resize(Model::n_substances(), nullptr);
-    mass_matrix.resize(Model::n_substances(), nullptr);
-    rhs.resize(Model::n_substances(), nullptr);
-    mass_vec.resize(Model::n_substances(), nullptr);
-    data_->ret_vec.resize(Model::n_substances(), nullptr);
+    for (unsigned int sbi = 0; sbi < eq_data_->n_substances(); sbi++) {
+        eq_data_->ls[sbi] = new LinSys_PETSC(eq_data_->dh_->distr().get(), petsc_default_opts);
+        ( (LinSys_PETSC *)eq_data_->ls[sbi] )->set_from_input( input_rec.val<Input::Record>("solver") );
+        eq_data_->ls[sbi]->set_solution(output_vec[sbi].petsc_vec());
 
-    for (unsigned int sbi = 0; sbi < Model::n_substances(); sbi++) {
-    	data_->ls[sbi] = new LinSys_PETSC(data_->dh_->distr().get(), petsc_default_opts);
-        ( (LinSys_PETSC *)data_->ls[sbi] )->set_from_input( input_rec.val<Input::Record>("solver") );
-        data_->ls[sbi]->set_solution(output_vec[sbi].petsc_vec());
-
-        data_->ls_dt[sbi] = new LinSys_PETSC(data_->dh_->distr().get(), petsc_default_opts);
-        ( (LinSys_PETSC *)data_->ls_dt[sbi] )->set_from_input( input_rec.val<Input::Record>("solver") );
+        eq_data_->ls_dt[sbi] = new LinSys_PETSC(eq_data_->dh_->distr().get(), petsc_default_opts);
+        ( (LinSys_PETSC *)eq_data_->ls_dt[sbi] )->set_from_input( input_rec.val<Input::Record>("solver") );
         
-        data_->conc_fe[sbi] = create_field_fe< 3, FieldValue<3>::Scalar >(data_->dh_p0);
+        eq_data_->conc_fe[sbi] = create_field_fe< 3, FieldValue<3>::Scalar >(eq_data_->dh_p0);
         
-        VecDuplicate(data_->ls[sbi]->get_solution(), &data_->ret_vec[sbi]);
+        VecDuplicate(eq_data_->ls[sbi]->get_solution(), &eq_data_->ret_vec[sbi]);
     }
 
 
-    // initialization of balance object
-    Model::balance_->allocate(data_->dh_->distr()->lsize(), data_->mass_assembly_->eval_points()->max_size());
+    // create assemblation object, finite element structures and distribute DOFs
+	mass_assembly_ = new GenericAssembly< MassAssemblyDim >(eq_fields_.get(), eq_data_.get());
+	stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyDim >(eq_fields_.get(), eq_data_.get());
+	sources_assembly_ = new GenericAssembly< SourcesAssemblyDim >(eq_fields_.get(), eq_data_.get());
+	bdr_cond_assembly_ = new GenericAssembly< BdrConditionAssemblyDim >(eq_fields_.get(), eq_data_.get());
+	init_cond_assembly_ = new GenericAssembly< InitConditionAssemblyDim >(eq_fields_.get(), eq_data_.get());
 
-    // initialization of assembly object
-    data_->mass_assembly_->multidim_assembly()[1_d]->initialize(*this);
-    data_->mass_assembly_->multidim_assembly()[2_d]->initialize(*this);
-    data_->mass_assembly_->multidim_assembly()[3_d]->initialize(*this);
-    data_->stiffness_assembly_->multidim_assembly()[1_d]->initialize(*this);
-    data_->stiffness_assembly_->multidim_assembly()[2_d]->initialize(*this);
-    data_->stiffness_assembly_->multidim_assembly()[3_d]->initialize(*this);
-    data_->sources_assembly_->multidim_assembly()[1_d]->initialize(*this);
-    data_->sources_assembly_->multidim_assembly()[2_d]->initialize(*this);
-    data_->sources_assembly_->multidim_assembly()[3_d]->initialize(*this);
-    data_->bdr_cond_assembly_->multidim_assembly()[1_d]->initialize(*this);
-    data_->bdr_cond_assembly_->multidim_assembly()[2_d]->initialize(*this);
-    data_->bdr_cond_assembly_->multidim_assembly()[3_d]->initialize(*this);
-    data_->init_cond_assembly_->multidim_assembly()[1_d]->initialize(*this);
-    data_->init_cond_assembly_->multidim_assembly()[2_d]->initialize(*this);
-    data_->init_cond_assembly_->multidim_assembly()[3_d]->initialize(*this);
+    // initialization of balance object
+    Model::balance_->allocate(eq_data_->dh_->distr()->lsize(), mass_assembly_->eval_points()->max_size());
+
+    int qsize = mass_assembly_->eval_points()->max_size();
+    eq_data_->dif_coef.resize(eq_data_->n_substances());
+    for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)
+    {
+        eq_data_->dif_coef[sbi].resize(qsize);
+    }
 }
 
 
@@ -357,13 +332,13 @@ TransportDG<Model>::~TransportDG()
 {
     delete Model::time_;
 
-    if (data_->gamma.size() > 0) {
+    if (eq_data_->gamma.size() > 0) {
         // initialize called
 
-        for (unsigned int i=0; i<Model::n_substances(); i++)
+        for (unsigned int i=0; i<eq_data_->n_substances(); i++)
         {
-            delete data_->ls[i];
-            delete data_->ls_dt[i];
+            delete eq_data_->ls[i];
+            delete eq_data_->ls_dt[i];
 
             if (stiffness_matrix[i])
                 chkerr(MatDestroy(&stiffness_matrix[i]));
@@ -373,22 +348,22 @@ TransportDG<Model>::~TransportDG()
             	chkerr(VecDestroy(&rhs[i]));
             if (mass_vec[i])
             	chkerr(VecDestroy(&mass_vec[i]));
-            if (data_->ret_vec[i])
-            	chkerr(VecDestroy(&data_->ret_vec[i]));
+            if (eq_data_->ret_vec[i])
+            	chkerr(VecDestroy(&eq_data_->ret_vec[i]));
         }
-        delete[] data_->ls;
-        delete[] data_->ls_dt;
+        delete[] eq_data_->ls;
+        delete[] eq_data_->ls_dt;
         //delete[] stiffness_matrix;
         //delete[] mass_matrix;
         //delete[] rhs;
         //delete[] mass_vec;
         //delete[] ret_vec;
 
-        delete data_->mass_assembly_;
-        delete data_->stiffness_assembly_;
-        delete data_->sources_assembly_;
-        delete data_->bdr_cond_assembly_;
-        delete data_->init_cond_assembly_;
+        delete mass_assembly_;
+        delete stiffness_assembly_;
+        delete sources_assembly_;
+        delete bdr_cond_assembly_;
+        delete init_cond_assembly_;
     }
 
 }
@@ -398,8 +373,8 @@ template<class Model>
 void TransportDG<Model>::zero_time_step()
 {
     START_TIMER(Model::ModelEqData::name());
-    data_->mark_input_times( *(Model::time_) );
-    data_->set_time(Model::time_->step(), LimitSide::left);
+    eq_fields_->mark_input_times( *(Model::time_) );
+    eq_fields_->set_time(Model::time_->step(), LimitSide::left);
     std::stringstream ss; // print warning message with table of uninitialized fields
     if ( FieldCommon::print_message_table(ss, "transport DG") ) {
         WarningOut() << ss.str();
@@ -408,16 +383,16 @@ void TransportDG<Model>::zero_time_step()
 
     // set initial conditions
     set_initial_condition();
-    for (unsigned int sbi = 0; sbi < Model::n_substances(); sbi++)
-        ( (LinSys_PETSC *)data_->ls[sbi] )->set_initial_guess_nonzero();
+    for (unsigned int sbi = 0; sbi < eq_data_->n_substances(); sbi++)
+        ( (LinSys_PETSC *)eq_data_->ls[sbi] )->set_initial_guess_nonzero();
 
     // check first time assembly - needs preallocation
     if (!allocation_done) preallocate();
 
     // after preallocation we assemble the matrices and vectors required for mass balance
-    for (unsigned int sbi=0; sbi<Model::n_substances(); ++sbi)
+    for (unsigned int sbi=0; sbi<eq_data_->n_substances(); ++sbi)
     {
-        Model::balance_->calculate_instant(Model::subst_idx[sbi], data_->ls[sbi]->get_solution());
+        Model::balance_->calculate_instant(eq_data_->subst_idx_[sbi], eq_data_->ls[sbi]->get_solution());
 
         // add sources due to sorption
         ret_sources_prev[sbi] = 0;
@@ -431,34 +406,26 @@ template<class Model>
 void TransportDG<Model>::preallocate()
 {
     // preallocate system matrix
-    for (unsigned int i=0; i<Model::n_substances(); i++)
+    for (unsigned int i=0; i<eq_data_->n_substances(); i++)
     {
         // preallocate system matrix
-    	data_->ls[i]->start_allocation();
+    	eq_data_->ls[i]->start_allocation();
         stiffness_matrix[i] = NULL;
         rhs[i] = NULL;
 
         // preallocate mass matrix
-        data_->ls_dt[i]->start_allocation();
+        eq_data_->ls_dt[i]->start_allocation();
         mass_matrix[i] = NULL;
-        VecZeroEntries(data_->ret_vec[i]);
+        VecZeroEntries(eq_data_->ret_vec[i]);
     }
-    START_TIMER("assemble_stiffness");
-    data_->stiffness_assembly_->assemble(data_->dh_);
-    END_TIMER("assemble_stiffness");
-    START_TIMER("assemble_mass");
-    data_->mass_assembly_->assemble(data_->dh_);
-    END_TIMER("assemble_mass");
-    START_TIMER("assemble_sources");
-    data_->sources_assembly_->assemble(data_->dh_);
-    END_TIMER("assemble_sources");
-    START_TIMER("assemble_bc");
-    data_->bdr_cond_assembly_->assemble(data_->dh_);
-    END_TIMER("assemble_bc");
-    for (unsigned int i=0; i<Model::n_substances(); i++)
+    stiffness_assembly_->assemble(eq_data_->dh_);
+    mass_assembly_->assemble(eq_data_->dh_);
+    sources_assembly_->assemble(eq_data_->dh_);
+    bdr_cond_assembly_->assemble(eq_data_->dh_);
+    for (unsigned int i=0; i<eq_data_->n_substances(); i++)
     {
-      VecAssemblyBegin(data_->ret_vec[i]);
-      VecAssemblyEnd(data_->ret_vec[i]);
+      VecAssemblyBegin(eq_data_->ret_vec[i]);
+      VecAssemblyEnd(eq_data_->ret_vec[i]);
     }
 
     allocation_done = true;
@@ -475,86 +442,78 @@ void TransportDG<Model>::update_solution()
     Model::time_->view("TDG");
     
     START_TIMER("data reinit");
-    data_->set_time(Model::time_->step(), LimitSide::left);
+    eq_fields_->set_time(Model::time_->step(), LimitSide::left);
     END_TIMER("data reinit");
-    
+
     // assemble mass matrix
-    if (mass_matrix[0] == NULL || data_->subset(FieldFlag::in_time_term).changed() )
+    if (mass_matrix[0] == NULL || eq_fields_->subset(FieldFlag::in_time_term).changed() )
     {
-        for (unsigned int i=0; i<Model::n_substances(); i++)
+        for (unsigned int i=0; i<eq_data_->n_substances(); i++)
         {
-        	data_->ls_dt[i]->start_add_assembly();
-        	data_->ls_dt[i]->mat_zero_entries();
-            VecZeroEntries(data_->ret_vec[i]);
+        	eq_data_->ls_dt[i]->start_add_assembly();
+        	eq_data_->ls_dt[i]->mat_zero_entries();
+            VecZeroEntries(eq_data_->ret_vec[i]);
         }
-        START_TIMER("assemble_mass");
-        data_->mass_assembly_->assemble(data_->dh_);
-        END_TIMER("assemble_mass");
-        for (unsigned int i=0; i<Model::n_substances(); i++)
+        mass_assembly_->assemble(eq_data_->dh_);
+        for (unsigned int i=0; i<eq_data_->n_substances(); i++)
         {
-        	data_->ls_dt[i]->finish_assembly();
-            VecAssemblyBegin(data_->ret_vec[i]);
-            VecAssemblyEnd(data_->ret_vec[i]);
+        	eq_data_->ls_dt[i]->finish_assembly();
+            VecAssemblyBegin(eq_data_->ret_vec[i]);
+            VecAssemblyEnd(eq_data_->ret_vec[i]);
             // construct mass_vec for initial time
             if (mass_matrix[i] == NULL)
             {
-                VecDuplicate(data_->ls[i]->get_solution(), &mass_vec[i]);
-                MatMult(*(data_->ls_dt[i]->get_matrix()), data_->ls[i]->get_solution(), mass_vec[i]);
-                MatConvert(*( data_->ls_dt[i]->get_matrix() ), MATSAME, MAT_INITIAL_MATRIX, &mass_matrix[i]);
+                VecDuplicate(eq_data_->ls[i]->get_solution(), &mass_vec[i]);
+                MatMult(*(eq_data_->ls_dt[i]->get_matrix()), eq_data_->ls[i]->get_solution(), mass_vec[i]);
+                MatConvert(*( eq_data_->ls_dt[i]->get_matrix() ), MATSAME, MAT_INITIAL_MATRIX, &mass_matrix[i]);
             }
             else
-                MatCopy(*( data_->ls_dt[i]->get_matrix() ), mass_matrix[i], DIFFERENT_NONZERO_PATTERN);
+                MatCopy(*( eq_data_->ls_dt[i]->get_matrix() ), mass_matrix[i], DIFFERENT_NONZERO_PATTERN);
         }
     }
 
     // assemble stiffness matrix
     if (stiffness_matrix[0] == NULL
-            || data_->subset(FieldFlag::in_main_matrix).changed()
-            || data_->flow_flux.changed())
+            || eq_fields_->subset(FieldFlag::in_main_matrix).changed()
+            || eq_fields_->flow_flux.changed())
     {
         // new fluxes can change the location of Neumann boundary,
         // thus stiffness matrix must be reassembled
-        for (unsigned int i=0; i<Model::n_substances(); i++)
+        for (unsigned int i=0; i<eq_data_->n_substances(); i++)
         {
-            data_->ls[i]->start_add_assembly();
-            data_->ls[i]->mat_zero_entries();
+            eq_data_->ls[i]->start_add_assembly();
+            eq_data_->ls[i]->mat_zero_entries();
         }
-        START_TIMER("assemble_stiffness");
-        data_->stiffness_assembly_->assemble(data_->dh_);
-        END_TIMER("assemble_stiffness");
-        for (unsigned int i=0; i<Model::n_substances(); i++)
+        stiffness_assembly_->assemble(eq_data_->dh_);
+        for (unsigned int i=0; i<eq_data_->n_substances(); i++)
         {
-        	data_->ls[i]->finish_assembly();
+        	eq_data_->ls[i]->finish_assembly();
 
             if (stiffness_matrix[i] == NULL)
-                MatConvert(*( data_->ls[i]->get_matrix() ), MATSAME, MAT_INITIAL_MATRIX, &stiffness_matrix[i]);
+                MatConvert(*( eq_data_->ls[i]->get_matrix() ), MATSAME, MAT_INITIAL_MATRIX, &stiffness_matrix[i]);
             else
-                MatCopy(*( data_->ls[i]->get_matrix() ), stiffness_matrix[i], DIFFERENT_NONZERO_PATTERN);
+                MatCopy(*( eq_data_->ls[i]->get_matrix() ), stiffness_matrix[i], DIFFERENT_NONZERO_PATTERN);
         }
     }
 
     // assemble right hand side (due to sources and boundary conditions)
     if (rhs[0] == NULL
-            || data_->subset(FieldFlag::in_rhs).changed()
-            || data_->flow_flux.changed())
+            || eq_fields_->subset(FieldFlag::in_rhs).changed()
+            || eq_fields_->flow_flux.changed())
     {
-        for (unsigned int i=0; i<Model::n_substances(); i++)
+        for (unsigned int i=0; i<eq_data_->n_substances(); i++)
         {
-            data_->ls[i]->start_add_assembly();
-            data_->ls[i]->rhs_zero_entries();
+            eq_data_->ls[i]->start_add_assembly();
+            eq_data_->ls[i]->rhs_zero_entries();
         }
-        START_TIMER("assemble_sources");
-        data_->sources_assembly_->assemble(data_->dh_);
-        END_TIMER("assemble_sources");
-        START_TIMER("assemble_bc");
-        data_->bdr_cond_assembly_->assemble(data_->dh_);
-        END_TIMER("assemble_bc");
-        for (unsigned int i=0; i<Model::n_substances(); i++)
+        sources_assembly_->assemble(eq_data_->dh_);
+        bdr_cond_assembly_->assemble(eq_data_->dh_);
+        for (unsigned int i=0; i<eq_data_->n_substances(); i++)
         {
-            data_->ls[i]->finish_assembly();
+            eq_data_->ls[i]->finish_assembly();
 
-            if (rhs[i] == nullptr) VecDuplicate(*( data_->ls[i]->get_rhs() ), &rhs[i]);
-            VecCopy(*( data_->ls[i]->get_rhs() ), rhs[i]);
+            if (rhs[i] == nullptr) VecDuplicate(*( eq_data_->ls[i]->get_rhs() ), &rhs[i]);
+            VecCopy(*( eq_data_->ls[i]->get_rhs() ), rhs[i]);
         }
     }
 
@@ -577,23 +536,23 @@ void TransportDG<Model>::update_solution()
     */
     Mat m;
     START_TIMER("solve");
-    for (unsigned int i=0; i<Model::n_substances(); i++)
+    for (unsigned int i=0; i<eq_data_->n_substances(); i++)
     {
         MatConvert(stiffness_matrix[i], MATSAME, MAT_INITIAL_MATRIX, &m);
         MatAXPY(m, 1./Model::time_->dt(), mass_matrix[i], SUBSET_NONZERO_PATTERN);
-        data_->ls[i]->set_matrix(m, DIFFERENT_NONZERO_PATTERN);
+        eq_data_->ls[i]->set_matrix(m, DIFFERENT_NONZERO_PATTERN);
         Vec w;
         VecDuplicate(rhs[i], &w);
         VecWAXPY(w, 1./Model::time_->dt(), mass_vec[i], rhs[i]);
-        data_->ls[i]->set_rhs(w);
+        eq_data_->ls[i]->set_rhs(w);
 
         VecDestroy(&w);
         chkerr(MatDestroy(&m));
 
-        data_->ls[i]->solve();
+        eq_data_->ls[i]->solve();
 
         // update mass_vec due to possible changes in mass matrix
-        MatMult(*(data_->ls_dt[i]->get_matrix()), data_->ls[i]->get_solution(), mass_vec[i]);
+        MatMult(*(eq_data_->ls_dt[i]->get_matrix()), eq_data_->ls[i]->get_solution(), mass_vec[i]);
     }
     END_TIMER("solve");
 
@@ -607,22 +566,22 @@ template<class Model>
 void TransportDG<Model>::compute_p0_interpolation()
 {
     // calculate element averages of solution
-	for (auto cell : data_->dh_->own_range() )
+	for (auto cell : eq_data_->dh_->own_range() )
     {
 		LocDofVec loc_dof_indices = cell.get_loc_dof_indices();
 		unsigned int n_dofs=loc_dof_indices.n_rows;
 
-        DHCellAccessor dh_p0_cell = data_->dh_p0->cell_accessor_from_element(cell.elm_idx());
+        DHCellAccessor dh_p0_cell = eq_data_->dh_p0->cell_accessor_from_element(cell.elm_idx());
         IntIdx dof_p0 = dh_p0_cell.get_loc_dof_indices()[0];
 
-        for (unsigned int sbi=0; sbi<Model::n_substances(); ++sbi)
+        for (unsigned int sbi=0; sbi<eq_data_->n_substances(); ++sbi)
         {
-            data_->conc_fe[sbi]->vec()[dof_p0] = 0;
+            eq_data_->conc_fe[sbi]->vec().set(dof_p0, 0);
 
             for (unsigned int j=0; j<n_dofs; ++j)
-                data_->conc_fe[sbi]->vec()[dof_p0] += data_->ls[sbi]->get_solution_array()[loc_dof_indices[j]];
+                eq_data_->conc_fe[sbi]->vec().add( dof_p0, eq_data_->ls[sbi]->get_solution_array()[loc_dof_indices[j]] );
 
-            data_->conc_fe[sbi]->vec()[dof_p0] = max(data_->conc_fe[sbi]->vec()[dof_p0]/n_dofs, 0.);
+            eq_data_->conc_fe[sbi]->vec().set( dof_p0, max(eq_data_->conc_fe[sbi]->vec().get(dof_p0)/n_dofs, 0.) );
         }
     }
 }
@@ -639,15 +598,15 @@ void TransportDG<Model>::output_data()
     START_TIMER("DG-OUTPUT");
 
     // gather the solution from all processors
-    data_->output_fields.set_time( this->time().step(), LimitSide::left);
-    //if (data_->output_fields.is_field_output_time(data_->output_field, this->time().step()) )
-    data_->output_fields.output(this->time().step());
+    eq_fields_->output_fields.set_time( this->time().step(), LimitSide::left);
+    //if (eq_fields_->output_fields.is_field_output_time(eq_fields_->output_field, this->time().step()) )
+    eq_fields_->output_fields.output(this->time().step());
 
     Model::output_data();
     
     START_TIMER("TOS-balance");
-    for (unsigned int sbi=0; sbi<Model::n_substances(); ++sbi)
-      Model::balance_->calculate_instant(Model::subst_idx[sbi], data_->ls[sbi]->get_solution());
+    for (unsigned int sbi=0; sbi<eq_data_->n_substances(); ++sbi)
+      Model::balance_->calculate_instant(eq_data_->subst_idx_[sbi], eq_data_->ls[sbi]->get_solution());
     Model::balance_->output();
     END_TIMER("TOS-balance");
 
@@ -660,14 +619,14 @@ void TransportDG<Model>::calculate_cumulative_balance()
 {
     if (Model::balance_->cumulative())
     {
-        for (unsigned int sbi=0; sbi<Model::n_substances(); ++sbi)
+        for (unsigned int sbi=0; sbi<eq_data_->n_substances(); ++sbi)
         {
-            Model::balance_->calculate_cumulative(Model::subst_idx[sbi], data_->ls[sbi]->get_solution());
+            Model::balance_->calculate_cumulative(eq_data_->subst_idx_[sbi], eq_data_->ls[sbi]->get_solution());
 
             // update source increment due to retardation
-            VecDot(data_->ret_vec[sbi], data_->ls[sbi]->get_solution(), &ret_sources[sbi]);
+            VecDot(eq_data_->ret_vec[sbi], eq_data_->ls[sbi]->get_solution(), &ret_sources[sbi]);
 
-            Model::balance_->add_cumulative_source(Model::subst_idx[sbi], (ret_sources[sbi]-ret_sources_prev[sbi])/Model::time_->dt());
+            Model::balance_->add_cumulative_source(eq_data_->subst_idx_[sbi], (ret_sources[sbi]-ret_sources_prev[sbi])/Model::time_->dt());
             ret_sources_prev[sbi] = ret_sources[sbi];
         }
     }
@@ -679,21 +638,19 @@ void TransportDG<Model>::calculate_cumulative_balance()
 template<class Model>
 void TransportDG<Model>::set_initial_condition()
 {
-    START_TIMER("set_init_cond");
-    for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
-        data_->ls[sbi]->start_allocation();
-    data_->init_cond_assembly_->assemble(data_->dh_);
+    for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)
+        eq_data_->ls[sbi]->start_allocation();
+    init_cond_assembly_->assemble(eq_data_->dh_);
 
-    for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
-        data_->ls[sbi]->start_add_assembly();
-    data_->init_cond_assembly_->assemble(data_->dh_);
+    for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)
+        eq_data_->ls[sbi]->start_add_assembly();
+    init_cond_assembly_->assemble(eq_data_->dh_);
 
-    for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
+    for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)
     {
-        data_->ls[sbi]->finish_assembly();
-        data_->ls[sbi]->solve();
+        eq_data_->ls[sbi]->finish_assembly();
+        eq_data_->ls[sbi]->solve();
     }
-    END_TIMER("set_init_cond");
 }
 
 
@@ -710,30 +667,30 @@ void TransportDG<Model>::update_after_reactions(bool solution_changed)
 {
     if (solution_changed)
     {
-    	for (auto cell : data_->dh_->own_range() )
+    	for (auto cell : eq_data_->dh_->own_range() )
         {
     	    LocDofVec loc_dof_indices = cell.get_loc_dof_indices();
             unsigned int n_dofs=loc_dof_indices.n_rows;
             
-            DHCellAccessor dh_p0_cell = data_->dh_p0->cell_accessor_from_element(cell.elm_idx());
+            DHCellAccessor dh_p0_cell = eq_data_->dh_p0->cell_accessor_from_element(cell.elm_idx());
             IntIdx dof_p0 = dh_p0_cell.get_loc_dof_indices()[0];
 
-            for (unsigned int sbi=0; sbi<Model::n_substances(); ++sbi)
+            for (unsigned int sbi=0; sbi<eq_data_->n_substances(); ++sbi)
             {
                 double old_average = 0;
                 for (unsigned int j=0; j<n_dofs; ++j)
-                    old_average += data_->ls[sbi]->get_solution_array()[loc_dof_indices[j]];
+                    old_average += eq_data_->ls[sbi]->get_solution_array()[loc_dof_indices[j]];
                 old_average /= n_dofs;
 
                 for (unsigned int j=0; j<n_dofs; ++j)
-                    data_->ls[sbi]->get_solution_array()[loc_dof_indices[j]]
-                        += data_->conc_fe[sbi]->vec()[dof_p0] - old_average;
+                    eq_data_->ls[sbi]->get_solution_array()[loc_dof_indices[j]]
+                        += eq_data_->conc_fe[sbi]->vec().get(dof_p0) - old_average;
             }
         }
     }
     // update mass_vec for the case that mass matrix changes in next time step
-    for (unsigned int sbi=0; sbi<Model::n_substances(); ++sbi)
-        MatMult(*(data_->ls_dt[sbi]->get_matrix()), data_->ls[sbi]->get_solution(), mass_vec[sbi]);
+    for (unsigned int sbi=0; sbi<eq_data_->n_substances(); ++sbi)
+        MatMult(*(eq_data_->ls_dt[sbi]->get_matrix()), eq_data_->ls[sbi]->get_solution(), mass_vec[sbi]);
 }
 
 template<class Model>

@@ -37,30 +37,41 @@ BasicFactors::BasicFactors() {
 			{ "*J",  { 1,           UnitSI().m(2).kg().s(-2) } },
 			{ "*W",  { 1,           UnitSI().m(2).kg().s(-3) } },
 			{ "*Pa", { 1,           UnitSI().m(-1).kg().s(-2) } },
+			{ "*C", { 1,           UnitSI().A(1).s(1) } },
+			{ "*D", { 9.869233E-13,   UnitSI().m(2) } },    // Darcy
+			{ "*l", { 1e-3,   UnitSI().m(3) } },            // litr
 
-			{ "cm",  { 0.01,        UnitSI().m() } },
-			{ "dm",  { 0.1,         UnitSI().m() } },
+			//{ "cm",  { 0.01,        UnitSI().m() } },
+			//{ "dm",  { 0.1,         UnitSI().m() } },
 			{ "t",   { 1000,        UnitSI().kg() } },
 			{ "min", { 60,          UnitSI().s() } },
 			{ "h",   { 3600,        UnitSI().s() } },
 			{ "d",   { 24*3600,     UnitSI().s() } },
-			{ "y",   { 365*24*3600, UnitSI().s() } },
-			{ "hPa", { 100,         UnitSI().m(-1).kg().s(-2) } },
+			{ "y",   { 365.2425*24*3600, UnitSI().s() } },
+			//{ "hPa", { 100,         UnitSI().m(-1).kg().s(-2) } },
 
 			{ "rad", { 1,           UnitSI().m(0) } }
 	};
 
 	// map of prefixes and multiplicative constants
 	std::map<std::string, double> prefix_map = {
-			{ "p", 1e-12 },
+	        { "a", 1e-18 },
+	        { "f", 1e-15 },
+	        { "p", 1e-12 },
 			{ "n", 1e-9 },
 			{ "u", 1e-6 },
 			{ "m", 1e-3 },
+			{ "d", 1e-2 },
+			{ "c", 1e-1 },
 			{ "",  1 },
+			{ "h", 1e+2 }, // deka is missing as it is a two letter prefix
 			{ "k", 1e+3 },
 			{ "M", 1e+6 },
 			{ "G", 1e+9 },
-			{ "T", 1e+12 }
+			{ "T", 1e+12 },
+			{ "P", 1e+15 },
+			{ "E", 1e+18 }
+
 	};
 
 	// add derived units

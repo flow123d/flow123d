@@ -501,8 +501,13 @@ Each of these abstract records have the same set of descendants which implement 
  \item[FieldConstant] --- field that is constant both in space and time
  \item[TimeFunction] --- field that is constant in space and continuous in time. Values are interpolated (currently only linear interpolation) from 
  the sequence of time-value pairs provided on input.
- \item[FieldFormula] --- field that is given by runtime parsed formula using $x,y,z,t$ coordinates. The \href{http://warp.povusers.org/FunctionParser/}{Function Parser} library is used
- with syntax rules described \href{http://warp.povusers.org/FunctionParser/fparser.html#literals}{here}.
+ %
+ \item[FieldFormula] --- field that is given by a runtime parsed formula with a simplified Python and Numpy syntax. Since version 3.1.0 we use our own library \href{https://github.com/flow123d/bparser}{BParser} which supports vector and tensor valued expressions and use SIMD operations to achieve nearly peak CPU performance. 
+ For the sake of backward compatibility the vector and tensor fields given by a single formula expression will be supported since version 4.0.0.
+ 
+ The formula can contain following literals: constants {\tt E} and {\tt Pi}, names of other fields of the same equation, and coordinates: {\tt t}, {\tt x}, {\tt y}, {\tt z}, {\tt d}. First is the 
+ simulation time, the coordinate $d$ is a spefial field that evaluates to the depth from the surface. This is defined as a distance to the intersection of the vertical (Z axis) line with the outer boundary that has smallest Z coordinate greater then the evaluation point.
+
  \item[FieldPython] --- field can be implemented by Python script either specified by string (key \hyperA{FieldPython::script-string}{{\tt script\_string}}) 
  or in external file (key \hyperA{FieldPython::script-file}{{\tt script\_file}}. 
  \item[FieldElementwise] --- discrete field, currently only piecewise constant field on elements is supported, the field can given by 
@@ -541,21 +546,37 @@ input fields:
 \subsubsection{Field Units}
 Every field (e.g. conductivity or storativity) have specified unit in terms of powers of the base SI units. 
 The user, however, may set input in different units specified by the key \verb'unit' 
-supported by every field algorithm. The key have type \verb'Unit' record with a~single auto convertible key 
-\verb'unit_formula'. The unit formula is evaluated  into a~coefficient and an SI unit. The resulting SI unit 
+supported by every field algorithm. The key have type \hyperA{IT::Unit}{\tt Unit} record, auto convertible from its only key 
+\verb'unit_formula' of the string type. Effectively the \hyperA{IT::Unit}{\tt Unit} is a string with particular syntax. 
+The unit formula is evaluated  into a~coefficient and an SI unit. The resulting SI unit 
 must match expected SI unit of the field, while the input value 
 of the field (including values from external files or returned by Python functions)  
 is multiplied by the coefficient before further processing.
 
-The unit formula have form: {\tt <UnitExpr>;<Variable>=<Number>*<UnitExpr>;...,}
+The syntax of unit formula is: {\tt <UnitExpr>;<Variable>=<Number>*<UnitExpr>;...,}
 where {\tt <Variable>} is a~variable name and {\tt <UnitExpr>} is a~units expression
 which consists of products and divisions of terms, where a~term has form \verb'<Base>^<N>', 
 where {\tt <N>} is an integer exponent and {\tt <Base>} is either a~base SI unit, 
 a derived unit, or a~variable defined in the same unit formula.
 Example, unit for the pressure head: 
 \begin{verbatim}
-   MPa/rho/g_; rho = 990*kg*m^-3; g_ = 9.8*m*s^-2
+   pressure_head: !FieldConstant      # [m] expected
+     value: 100                       # [MPa] 
+     unit:  MPa/rho/g_; rho = 990*kg*m^-3; g_ = 9.8*m*s^-2     
 \end{verbatim}
+
+Standard single letter prefixes: a,f,p,n,u,m,d,c,h,k,M,G,T,P,E\\
+are supported for the basic SI units: m,g,s,A,K,cd,mol\\
+and for the derived SI units: N, J, W, Pa, C, D, l.
+
+Moreover several specific units are supported: 
+t = 1000 kg
+min = 60 s 
+h = 60 min
+d = 24 h
+y = 365.2425 d
+
+
 
 
 \subsection{Output Records}

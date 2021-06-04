@@ -199,10 +199,10 @@ public:
      * Return reference to the equation data object containing all fields
      * that the equation needs or produce.
      */
-    FieldSet &data()
+    FieldSet &eq_fieldset()
     {
-    	OLD_ASSERT(eq_data_, "The equation %s did not set eq_data_ pointer.\n", input_record_.address_string().c_str());
-    	return *eq_data_;
+    	OLD_ASSERT(eq_fieldset_, "The equation %s did not set eq_fieldset_ pointer.\n", input_record_.address_string().c_str());
+    	return *eq_fieldset_;
     }
 
     /**
@@ -224,7 +224,7 @@ protected:
      * to set the pointer in its constructor. This is used by the general method
      * EqData::data(). This approach is simpler than making EqData::data() a virtual method.
      */
-    FieldSet *eq_data_;
+    FieldSet *eq_fieldset_;
     
     /// object for calculation and writing the mass balance to file.
     std::shared_ptr<Balance> balance_;

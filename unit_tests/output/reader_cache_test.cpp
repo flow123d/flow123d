@@ -16,6 +16,7 @@
 #include "system/sys_profiler.hh"
 
 #include "mesh/mesh.h"
+#include "mesh/bc_mesh.hh"
 #include "io/msh_gmshreader.h"
 #include "io/reader_cache.hh"
 
@@ -40,7 +41,7 @@ TEST(ReaderCache, get_bulk_element_) {
     // has to introduce some flag for passing absolute path to 'test_units' in source tree
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-    Input::Record i_rec = get_input_record("{mesh_file=\"fields/simplest_cube_data.msh\"}");
+    Input::Record i_rec = get_input_record("{ mesh_file=\"fields/simplest_cube_data.msh\", optimize_mesh=false }");
     FilePath file_name = i_rec.val<FilePath>("mesh_file");
     Mesh * mesh = new Mesh(i_rec);
     auto reader = ReaderCache::get_reader(file_name);
@@ -84,7 +85,7 @@ TEST(ReaderCache, get_boundary_element_) {
     // has to introduce some flag for passing absolute path to 'test_units' in source tree
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-    Input::Record i_rec = get_input_record("{mesh_file=\"fields/simplest_cube_data.msh\"}");
+    Input::Record i_rec = get_input_record("{ mesh_file=\"fields/simplest_cube_data.msh\", optimize_mesh=false }");
     FilePath file_name = i_rec.val<FilePath>("mesh_file");
     Mesh * mesh = new Mesh(i_rec);
     auto reader = ReaderCache::get_reader(file_name);
@@ -126,7 +127,7 @@ TEST(ReaderCache, find_header) {
 
     // has to introduce some flag for passing absolute path to 'test_units' in source tree
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-    Input::Record i_rec = get_input_record("{mesh_file=\"fields/simplest_cube_data.msh\"}");
+    Input::Record i_rec = get_input_record("{ mesh_file=\"fields/simplest_cube_data.msh\", optimize_mesh=false }");
     FilePath file_name = i_rec.val<FilePath>("mesh_file");
 
     Mesh * mesh = new Mesh(i_rec);
