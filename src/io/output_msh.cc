@@ -21,7 +21,7 @@
 #include "mesh/mesh.h"
 #include "element_data_cache_base.hh"
 #include "input/factory.hh"
-#include "tools/unit_si.hh"
+#include "tools/time_governor.hh"
 
 
 FLOW123D_FORCE_LINK_IN_CHILD(gmsh)
@@ -148,7 +148,7 @@ void OutputMSH::write_node_data(OutputDataPtr output_data)
 {
     ofstream &file = this->_base_file;
     double time_fixed = isfinite(this->time)?this->time:0;
-    time_fixed /= UnitSI().s().convert_unit_from(this->unit_string_);
+    time_fixed /= this->time_unit_converter->get_coef();
 
     file << "$NodeData" << endl;
 

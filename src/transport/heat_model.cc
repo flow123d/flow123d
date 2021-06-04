@@ -258,7 +258,7 @@ HeatTransferModel::HeatTransferModel(Mesh &mesh, const Input::Record in_rec) :
 	ASSERT( time_->is_default() == false ).error("Missing key 'time' in Heat_AdvectionDiffusion_DG.");
 	substances_.initialize({""});
 
-    output_stream_ = OutputTime::create_output_stream("heat", in_rec.val<Input::Record>("output_stream"), time().get_unit_string());
+    output_stream_ = OutputTime::create_output_stream("heat", in_rec.val<Input::Record>("output_stream"), time().get_unit_conversion());
     //output_stream_->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"));
 
     balance_ = std::make_shared<Balance>("energy", mesh_);

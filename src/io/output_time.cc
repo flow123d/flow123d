@@ -26,6 +26,7 @@
 #include "output_mesh.hh"
 #include "io/output_time_set.hh"
 #include "io/observe.hh"
+#include "tools/time_governor.hh"
 
 
 FLOW123D_FORCE_LINK_IN_PARENT(vtk)
@@ -80,12 +81,14 @@ OutputTime::OutputTime()
 
 
 
-void OutputTime::init_from_input(const std::string &equation_name, const Input::Record &in_rec, std::string unit_str)
+void OutputTime::init_from_input(const std::string &equation_name,
+                                 const Input::Record &in_rec,
+                                 const std::shared_ptr<TimeUnitConversion>& time_unit_conv)
 {
 
     input_record_ = in_rec;
     equation_name_ = equation_name;
-    unit_string_ = unit_str;
+    time_unit_converter = time_unit_conv;
 
     // Read output base file name
     // TODO: remove dummy ".xyz" extension after merge with DF
@@ -181,12 +184,14 @@ void OutputTime::destroy_all(void)
     */
 
 
-std::shared_ptr<OutputTime> OutputTime::create_output_stream(const std::string &equation_name, const Input::Record &in_rec, std::string unit_str)
+std::shared_ptr<OutputTime> OutputTime::create_output_stream(const std::string &equation_name,
+                                                             const Input::Record &in_rec,
+                                                             const std::shared_ptr<TimeUnitConversion>& time_unit_conv)
 {
 
     Input::AbstractRecord format = Input::Record(in_rec).val<Input::AbstractRecord>("format");
     std::shared_ptr<OutputTime> output_time = format.factory< OutputTime >();
-    output_time->init_from_input(equation_name, in_rec, unit_str);
+    output_time->init_from_input(equation_name, in_rec, time_unit_conv);
 
     return output_time;
 }
@@ -232,7 +237,10 @@ std::shared_ptr<Observe> OutputTime::observe(Mesh *mesh)
     if (! observe_) {
         auto observe_points = input_record_.val<Input::Array>("observe_points");
         unsigned int precision = input_record_.val<unsigned int>("precision");
-        observe_ = std::make_shared<Observe>(this->equation_name_, *mesh, observe_points, precision, this->unit_string_);
+        observe_ = std::make_shared<Observe>(this->equation_name_,
+                                             *mesh,
+                                             observe_points, precision,
+                                             this->time_unit_converter->get_unit_string());
     }
     return observe_;
 }

@@ -134,7 +134,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowInterface *flow, Input::Record mai
     
     output_stream = OutputTime::create_output_stream("flow",
                                                      main_mh_in_rec.val<Input::Record>("output_stream"),
-                                                     darcy_flow->time().get_unit_string());
+                                                     darcy_flow->time().get_unit_conversion());
     prepare_output(in_rec_output);
 
     auto in_rec_specific = main_mh_in_rec.find<Input::Record>("output_specific");

@@ -275,6 +275,11 @@ double TimeStep::get_coef() const {
 
 
 
+std::shared_ptr<TimeUnitConversion> TimeStep::get_unit_conversion() const
+{
+    return time_unit_conversion_;
+}
+
 ostream& operator<<(ostream& out, const TimeStep& t_step) {
     out << "time: " << t_step.end() << "step: " << t_step.length() << endl;
     return out;
@@ -800,12 +805,10 @@ double TimeGovernor::get_coef() const {
 }
 
 
-
-string TimeGovernor::get_unit_string() const {
-	return time_unit_conversion_->get_unit_string();
+std::shared_ptr<TimeUnitConversion> TimeGovernor::get_unit_conversion() const
+{
+    return time_unit_conversion_;
 }
-
-
 
 
 ostream& operator<<(ostream& out, const TimeGovernor& tg)

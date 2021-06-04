@@ -192,19 +192,25 @@ public:
      * Read and return time value multiplied by coefficient of given unit or global coefficient of equation
      * stored in time_unit_conversion_. If time Tuple is not defined (e. g. Tuple is optional key) return
      * default_time value.
+     * Shortcut for time_unit_conversion_ function.
      */
     double read_time(Input::Iterator<Input::Tuple> time_it, double default_time=std::numeric_limits<double>::quiet_NaN()) const;
 
     /**
      * Read and return time unit coefficient given in unit_it or global coefficient of equation stored
      * in time_unit_conversion_, if iterator is not defined.
+     * Shortcut for time_unit_conversion_ function.
      */
 	double read_coef(Input::Iterator<Input::Record> unit_it) const;
 
     /**
-     * Return global time unit coefficient of equation stored in coeff_.
+     * Return global time unit coefficient of equation.
+     * Shortcut for time_unit_conversion_ function.
      */
 	double get_coef() const;
+
+    /// Getter for time unit conversion object.
+    std::shared_ptr<TimeUnitConversion> get_unit_conversion() const;
 
     /**
      * Returns true if two time steps are exactly the same.
@@ -599,24 +605,25 @@ public:
      * Read and return time value multiplied by coefficient of given unit or global coefficient of equation
      * stored in time_unit_conversion_. If time Tuple is not defined (e. g. Tuple is optional key) return
      * default_time value.
+     * Shortcut for time_unit_conversion_ function.
      */
     double read_time(Input::Iterator<Input::Tuple> time_it, double default_time=std::numeric_limits<double>::quiet_NaN()) const;
 
     /**
      * Read and return time unit coefficient given in unit_it or global coefficient of equation stored
      * in time_unit_conversion_, if iterator is not defined.
+     * Shortcut for time_unit_conversion_ function.
      */
 	double read_coef(Input::Iterator<Input::Record> unit_it) const;
 
     /**
-     * Return global time unit coefficient of equation stored in coeff_.
+     * Return global time unit coefficient of equation.
+     * Shortcut for time_unit_conversion_ function.
      */
 	double get_coef() const;
 
-    /**
-     * Return string representation of global time unit.
-     */
-	std::string get_unit_string() const;
+    /// Getter for time unit conversion object.
+    std::shared_ptr<TimeUnitConversion> get_unit_conversion() const;
 
 	// Maximal tiem of simulation. More then age of the universe in seconds.
     static const double max_end_time;
