@@ -240,7 +240,7 @@ std::shared_ptr<Observe> OutputTime::observe(Mesh *mesh)
         observe_ = std::make_shared<Observe>(this->equation_name_,
                                              *mesh,
                                              observe_points, precision,
-                                             this->time_unit_converter->get_unit_string());
+                                             this->time_unit_converter);
     }
     return observe_;
 }
