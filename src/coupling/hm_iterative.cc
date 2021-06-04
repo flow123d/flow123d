@@ -21,6 +21,7 @@
 #include "input/input_type.hh"
 #include "flow/richards_lmh.hh"
 #include "fields/field_fe.hh"         // for create_field_fe()
+#include "fields/field_model.hh"
 
 
 FLOW123D_FORCE_LINK_IN_CHILD(coupling_iterative)
@@ -98,24 +99,24 @@ HM_Iterative::EqData::EqData()
                      .input_default("1.0")
                      .units( UnitSI().m().s(-1) );
                                           
-    // *this += delta_min.name("delta_min")
-    //                  .description("Minimum non-zero thresold value for deformed cross-section.")
-    //                  .units( UnitSI().m(3).md() );
+    *this += delta_min.name("delta_min")
+                     .description("Minimum non-zero thresold value for deformed cross-section.")
+                     .units( UnitSI().m(3).md() );
                      
-    // *this += conductivity_model.name("conductivity_model")
-    //                  .description("fracture_induced_conductivity.")
-    //                  .input_default("1.0")
-    //                  .units( UnitSI().m().s(-1) );
+    *this += conductivity_model.name("conductivity_model")
+                     .description("fracture_induced_conductivity.")
+                     .input_default("1.0")
+                     .units( UnitSI().m().s(-1) );
                      
 
 }
 
 /// Define conductivity model functor using cubic law
-// struct fn_K_mechanics {
-// 	inline double operator() (double updated_cs, double initial_cs, double min_cs_bound, double flow_conductivity) {
-//         return flow_conductivity*pow(((min_cs_bound + max(updated_cs - min_cs_bound, 0) )/initial_cs),2);
-//     }
-// };
+struct fn_K_mechanics {
+	inline double operator() (double updated_cs, double initial_cs, double min_cs_bound, double flow_conductivity) {
+        return flow_conductivity*pow(((min_cs_bound + std::max(updated_cs - min_cs_bound, 0.0) )/initial_cs),2);
+    }
+};
 
 
 void HM_Iterative::EqData::initialize(Mesh &mesh)
@@ -137,12 +138,17 @@ void HM_Iterative::EqData::initialize(Mesh &mesh)
     div_u_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(beta_ptr_->get_dofhandler());
     old_div_u_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(beta_ptr_->get_dofhandler());
 
-    conductivity_k0 = create_field_fe<3, FieldValue<3>::Scalar>(mesh, MixedPtr<FE_P_disc>(0));
+    // // setup mechanics
+    // Record mech_rec = in_record.val<Record>("mechanics_equation");
+    // mechanics_ = std::make_shared<Elasticity>(*mesh_, mech_rec, this->time_);
+
+    // conductivity_k0 = create_field_fe<3, FieldValue<3>::Scalar>(mesh, MixedPtr<FE_P_disc>(0));
     /// Initialize conducitvity ptr
-    // conductivity_model.set_field(Model<3, FieldValue<3>::Scalar>::create(fn_K_mechanics(), mechanics_->data().output_cross_section, mechanics_->data().cross_section, data_.delta_min, data_.conductivity_k0),0.0);
+    auto fn = fn_K_mechanics();
+    conductivity_model.set_field(mesh.region_db().get_region_set("ALL"), Model<3, FieldValue<3>::Scalar>::create(&fn, output_cross_section, cross_section, delta_min, conductivity_k0));
 }
 
-                                    
+      
 
 HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
 : DarcyFlowInterface(mesh, in_record),
@@ -177,12 +183,15 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
     
     // Setup coupling conductivity K_o)
     // copy_filed(flow_->data().field("conductivity"), data_.conductivity_k0);
-    // data_.conductivity_k0.copy_form(*flow_->data().field("conductivity"));
+    data_.conductivity_k0.copy_from(*flow_->data().field("conductivity"));
+    data_.cross_section.copy_from(*mechanics_->data().field("cross_section"));
+    data_.output_cross_section.copy_from(*mechanics_->data().field("output_cross_section"));
 
     // setup input fields
     data_.set_input_list( in_record.val<Input::Array>("input_fields"), time() );
 
     data_.initialize(*mesh_);
+    
     mechanics_->set_potential_load(data_.pressure_potential);
 }
 
@@ -221,7 +230,7 @@ void HM_Iterative::zero_time_step()
     update_potential();
     mechanics_->zero_time_step();
     
-    copy_filed(*flow_->data().field("conductivity"), *data_.conductivity_k0);
+    // copy_filed(*flow_->data().field("conductivity"), *data_.conductivity_k0);
     // copy_filed(*flow_->data().field("conductivity"), *data_.conductivity_k0);
     copy_field(*flow_->data().field("pressure_p0"), *data_.old_pressure_ptr_);
     copy_field(*flow_->data().field("pressure_p0"), *data_.old_iter_pressure_ptr_);

@@ -33,6 +33,7 @@
 #include "fields/field_value_cache.hh"
 #include "fields/field.hh"
 #include "fields/multi_field.hh"
+#include "system/fmt/posix.h" 
 
 template <int spacedim> class ElementAccessor;
 
@@ -79,7 +80,7 @@ namespace detail
         static auto eval(int i_cache, CALLABLE f, FIELD_TUPLE fields, Vs&&... args) -> decltype(auto)
         {
             return f(std::forward<Vs>(args)...);
-        };
+        }
     };
 
     /**
@@ -254,14 +255,14 @@ public:
     }
 
     /// Implementation of virtual method
-    typename Value::return_type const &value(const Point &p, const ElementAccessor<spacedim> &elm) override {
+    typename Value::return_type const &value(FMT_UNUSED const Point &p, FMT_UNUSED const ElementAccessor<spacedim> &elm) override {
         ASSERT(false).error("Forbidden method!\n");
         return this->r_value_;
     }
 
     /// Implementation of virtual method
-    void value_list(const Armor::array &point_list, const ElementAccessor<spacedim> &elm,
-                std::vector<typename Value::return_type>  &value_list) override {
+    void value_list(FMT_UNUSED const Armor::array &point_list, FMT_UNUSED const ElementAccessor<spacedim> &elm,
+                FMT_UNUSED std::vector<typename Value::return_type>  &value_list) override {
         ASSERT(false).error("Forbidden method!\n");
     }
 

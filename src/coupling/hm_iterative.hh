@@ -28,6 +28,8 @@
 #include "flow/darcy_flow_interface.hh"
 #include "mechanics/elasticity.hh"
 
+using namespace std;
+
 class Mesh;
 class FieldCommon;
 class RichardsLMH;
@@ -135,6 +137,8 @@ public:
         Field<3, FieldValue<3>::Scalar> gravity; ///< Standard gravity.
         Field<3, FieldValue<3>::Scalar> beta;
         Field<3, FieldValue<3>::Scalar> conductivity_k0; ///< copy from flow conductivity 
+        Field<3, FieldValue<3>::Scalar> cross_section;
+        Field<3, FieldValue<3>::Scalar> output_cross_section;
         Field<3, FieldValue<3>::Scalar> delta_min;      ///< Minimum thresold value for deformed cross-section
         Field<3, FieldValue<3>::Scalar> conductivity_model; /// < Define cubic law K = f(k_o, (a/delta)^2)
         
