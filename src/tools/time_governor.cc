@@ -187,9 +187,9 @@ double TimeUnitConversion::read_time(Input::Iterator<Input::Tuple> time_it, doub
 
 
 
-double TimeUnitConversion::read_coef(Input::Iterator<string> unit_it) const {
+double TimeUnitConversion::read_coef(Input::Iterator<Input::Record> unit_it) const {
 	if (unit_it) {
-		return UnitSI().s().convert_unit_from(*unit_it);
+		return read_unit_coef_from_input(*unit_it);
 	} else {
 		return coef_;
 	}
@@ -263,7 +263,7 @@ double TimeStep::read_time(Input::Iterator<Input::Tuple> time_it, double default
 
 
 
-double TimeStep::read_coef(Input::Iterator<string> unit_it) const {
+double TimeStep::read_coef(Input::Iterator<Input::Record> unit_it) const {
 	return time_unit_conversion_->read_coef(unit_it);
 }
 
@@ -789,7 +789,7 @@ double TimeGovernor::read_time(Input::Iterator<Input::Tuple> time_it, double def
 
 
 
-double TimeGovernor::read_coef(Input::Iterator<string> unit_it) const {
+double TimeGovernor::read_coef(Input::Iterator<Input::Record> unit_it) const {
 	return time_unit_conversion_->read_coef(unit_it);
 }
 

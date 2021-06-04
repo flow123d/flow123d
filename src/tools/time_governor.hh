@@ -73,7 +73,7 @@ public:
      * Read and return time unit coefficient given in unit_it or global coefficient of equation stored
      * in coeff_, if iterator is not defined.
      */
-	double read_coef(Input::Iterator<std::string> unit_it) const;
+	double read_coef(Input::Iterator<Input::Record> unit_it) const;
 
     /**
      * Return global time unit coefficient of equation stored in coeff_.
@@ -199,7 +199,7 @@ public:
      * Read and return time unit coefficient given in unit_it or global coefficient of equation stored
      * in time_unit_conversion_, if iterator is not defined.
      */
-	double read_coef(Input::Iterator<std::string> unit_it) const;
+	double read_coef(Input::Iterator<Input::Record> unit_it) const;
 
     /**
      * Return global time unit coefficient of equation stored in coeff_.
@@ -606,7 +606,7 @@ public:
      * Read and return time unit coefficient given in unit_it or global coefficient of equation stored
      * in time_unit_conversion_, if iterator is not defined.
      */
-	double read_coef(Input::Iterator<std::string> unit_it) const;
+	double read_coef(Input::Iterator<Input::Record> unit_it) const;
 
     /**
      * Return global time unit coefficient of equation stored in coeff_.
