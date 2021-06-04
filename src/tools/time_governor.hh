@@ -57,11 +57,11 @@ namespace Input {
  */
 class TimeUnitConversion {
 public:
-	// Constructor set coef_ from user defined unit
-	TimeUnitConversion(std::string user_defined_unit);
-
 	// Default constructor
 	TimeUnitConversion();
+
+    // Constructor from the Unit input record
+    TimeUnitConversion(const Input::Record &input);
 
     /**
      * Read and return time value multiplied by coefficient of given unit or global coefficient of equation
@@ -90,6 +90,10 @@ public:
 	}
 
 protected:
+    
+    /// Reads the Unit record and computes the coef
+	double read_unit_coef_from_input(const Input::Record &input) const;
+
     /// Conversion coefficient of all time values within the equation.
 	double coef_;
 

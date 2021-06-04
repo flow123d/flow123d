@@ -142,16 +142,28 @@ const Record & TimeGovernor::get_input_type() {
  * implementation of TimeUnitConversion
  */
 
-TimeUnitConversion::TimeUnitConversion(std::string user_defined_unit)
-: unit_string_(user_defined_unit)
-{
-    coef_ = UnitSI().s().convert_unit_from(user_defined_unit);
-}
-
-
-
 TimeUnitConversion::TimeUnitConversion()
 : coef_(1.0), unit_string_("s") {}
+
+TimeUnitConversion::TimeUnitConversion(const Input::Record &input)
+{
+    unit_string_ = input.val<std::string>("unit_formula");
+    coef_ = read_unit_coef_from_input(input);
+}
+
+double TimeUnitConversion::read_unit_coef_from_input(const Input::Record &input) const
+{
+    std::string unit_str = input.val<std::string>("unit_formula");
+    try {
+        return UnitSI().s().convert_unit_from(unit_str);
+    } catch (ExcInvalidUnit &e) {
+        e << input.ei_address();
+        throw;
+    } catch (ExcNoncorrespondingUnit &e) {
+        e << input.ei_address();
+        throw;
+    }
+}
 
 
 
@@ -161,16 +173,8 @@ double TimeUnitConversion::read_time(Input::Iterator<Input::Tuple> time_it, doub
 
         Input::Record unit_record;
         if ( time_it->opt_val("unit", unit_record) ) {
-            std::string unit_str = unit_record.val<std::string>("unit_formula");
-            try {
-                return ( time * UnitSI().s().convert_unit_from(unit_str) );
-            } catch (ExcInvalidUnit &e) {
-                e << unit_record.ei_address();
-                throw;
-            } catch (ExcNoncorrespondingUnit &e) {
-                e << unit_record.ei_address();
-                throw;
-            }
+            double unit_coef = read_unit_coef_from_input(unit_record);
+            return ( time * unit_coef );
         }
         else {
 			return ( time * coef_ );
@@ -290,19 +294,8 @@ TimeGovernor::TimeGovernor(const Input::Record &input, TimeMark::Type eq_mark_ty
 
     try {
 
-        {
-            Input::Record common_unit_record = input.val<Input::Record>("common_time_unit");
-            std::string common_unit_string = common_unit_record.val<std::string>("unit_formula");
-            try {
-                time_unit_conversion_ = std::make_shared<TimeUnitConversion>(common_unit_string);
-            } catch (ExcInvalidUnit &e) {
-                e << common_unit_record.ei_address();
-                throw;
-            } catch (ExcNoncorrespondingUnit &e) {
-                e << common_unit_record.ei_address();
-                throw;
-            }
-        }
+        Input::Record common_unit_record = input.val<Input::Record>("common_time_unit");
+        time_unit_conversion_ = std::make_shared<TimeUnitConversion>(common_unit_record);
 
         limits_time_marks_ = input.val<bool>("add_dt_limits_time_marks");
 
