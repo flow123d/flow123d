@@ -38,7 +38,6 @@
 #include "system/index_types.hh"             // for LongIdx
 #include "system/exceptions.hh"              // for operator<<, ExcStream, EI
 #include "system/file_path.hh"               // for FilePath
-#include "system/sys_vector.hh"              // for FullIterator, VectorId<>...
 #include "system/armor.hh"
 
 
