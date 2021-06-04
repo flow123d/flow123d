@@ -70,7 +70,7 @@ TEST(intersection_prolongation_23d, all) {
 
         MessageOut() << "Computing intersection on mesh: " << file_name << "\n";
         
-        string in_mesh_string = "{mesh_file=\"" + dir_name + file_name + "\"}";
+        string in_mesh_string = "{ mesh_file=\"" + dir_name + file_name + "\", optimize_mesh=false }";
         Mesh *mesh = mesh_full_constructor(in_mesh_string);
         
         compute_intersection(mesh, case_result);

@@ -214,7 +214,7 @@ TEST(intersection_prolongation_13d, all) {
         */
 
         MessageOut() << "Computing intersection on mesh: " << filenames[s] << "\n";
-        string in_mesh_string = "{mesh_file=\"" + dir_name + filenames[s] + "\"}";
+        string in_mesh_string = "{ mesh_file=\"" + dir_name + filenames[s] + "\", optimize_mesh=false }";
         
         Mesh *mesh = mesh_constructor(in_mesh_string);
         // read mesh with gmshreader

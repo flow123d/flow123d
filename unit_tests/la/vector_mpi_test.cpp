@@ -13,13 +13,11 @@ TEST(VecMPI, vec_data) {
 
 	unsigned int data_size = 5;
 	VectorMPI v(data_size);
-	typename VectorMPI::VectorDataPtr data_ptr = v.data_ptr();
 
-	EXPECT_EQ(data_size, data_ptr->size());
-	EXPECT_DOUBLE_EQ(0.0, v[0]);
-	v[0] = 2.5;
-	EXPECT_DOUBLE_EQ(2.5, v[0]);
-	EXPECT_DOUBLE_EQ((*data_ptr)[0], v[0]);
+	EXPECT_EQ(data_size, v.size());
+	EXPECT_DOUBLE_EQ(0.0, v.get(0));
+	v.set(0, 2.5);
+	EXPECT_DOUBLE_EQ(2.5, v.get(0));
 
 	Vec petscVec = v.petsc_vec();
 	unsigned int indices[5] = { 0,1,2,3,4 };
@@ -29,7 +27,7 @@ TEST(VecMPI, vec_data) {
 	EXPECT_DOUBLE_EQ(0.0, vals[1]);
 
 	v.zero_entries();
-	EXPECT_DOUBLE_EQ(0.0, v[0]);
+	EXPECT_DOUBLE_EQ(0.0, v.get(0));
 }
 
 
@@ -45,15 +43,15 @@ TEST(VecMPI, ghost_values) {
     unsigned int data_size = 1;
     vector<LongIdx> ghost_idx = { ((rank+1)%nproc) };
     VectorMPI v(data_size, ghost_idx);
-    EXPECT_EQ( data_size+ghost_idx.size(), v.data_ptr()->size() );
+    EXPECT_EQ( data_size+ghost_idx.size(), v.size() );
     
-    v[0] = 1;
+    v.set(0, 1);
     v.local_to_ghost_begin();
     v.local_to_ghost_end();
-    EXPECT_DOUBLE_EQ( 1, v[data_size] ); // ghost value should be equal to the local value from proc. rank+1
+    EXPECT_DOUBLE_EQ( 1, v.get(data_size) ); // ghost value should be equal to the local value from proc. rank+1
     
-    v[data_size] = 2;
+    v.set(data_size, 2);
     v.ghost_to_local_begin();
     v.ghost_to_local_end();
-    EXPECT_DOUBLE_EQ( 3, v[0] ); // ghost values are added to the local value
+    EXPECT_DOUBLE_EQ( 3, v.get(0) ); // ghost values are added to the local value
 }

@@ -79,6 +79,9 @@ OutputVTK::OutputVTK()
 
 OutputVTK::~OutputVTK()
 {
+	// Perform output of last time step
+	this->write_time_frame();
+
     this->write_tail();
 }
 
@@ -158,7 +161,7 @@ int OutputVTK::write_data(void)
     	//int current_step = this->get_parallel_current_step();
 
         /* Write dataset lines to the PVD file. */
-        double corrected_time = (isfinite(this->time)?this->time:0);
+        double corrected_time = (isfinite(this->registered_time_)?this->registered_time_:0);
         corrected_time /= this->time_unit_converter->get_coef();
         if (parallel_) {
         	for (int i_rank=0; i_rank<n_proc_; ++i_rank) {
@@ -241,28 +244,15 @@ void OutputVTK::write_vtk_vtu_head(void)
 std::shared_ptr<ElementDataCache<unsigned int>> OutputVTK::fill_element_types_data()
 {    
     auto &offsets = *( this->offsets_->get_component_data(0).get() );
-    unsigned int n_elements = offsets.size();
+    unsigned int n_elements = offsets.size()-1;
     
     auto types = std::make_shared<ElementDataCache<unsigned int>>("types", (unsigned int)ElementDataCacheBase::N_SCALAR, n_elements);
     std::vector< unsigned int >& data = *( types->get_component_data(0).get() );
     int n_nodes;
     
-    n_nodes = offsets[0];
-    switch(n_nodes) {
-        case 2:
-            data[0] = (unsigned int)VTK_LINE;
-            break;
-        case 3:
-            data[0] = (unsigned int)VTK_TRIANGLE;
-            break;
-        case 4:
-            data[0] = (unsigned int)VTK_TETRA;
-            break;
-        }
-    
-    for(unsigned int i=1; i < n_elements; i++)
+    for(unsigned int i=0; i < n_elements; i++)
     {
-        n_nodes = offsets[i]-offsets[i-1];
+        n_nodes = offsets[i+1]-offsets[i];
         switch(n_nodes) {
         case 2:
             data[i] = (unsigned int)VTK_LINE;
@@ -281,7 +271,7 @@ std::shared_ptr<ElementDataCache<unsigned int>> OutputVTK::fill_element_types_da
 
 
 
-void OutputVTK::write_vtk_data(OutputTime::OutputDataPtr output_data)
+void OutputVTK::write_vtk_data(OutputTime::OutputDataPtr output_data, unsigned int start)
 {
     // names of types in DataArray section
 	static const std::vector<std::string> types = {
@@ -305,7 +295,7 @@ void OutputVTK::write_vtk_data(OutputTime::OutputDataPtr output_data)
     	// ascii output
     	file << ">" << endl;
     	//file << std::fixed << std::setprecision(10); // Set precision to max
-    	output_data->print_ascii_all(file);
+    	output_data->print_ascii_all(file, start);
     	file << "\n</DataArray>" << endl;
     } else {
     	// binary output is stored to appended_data_ stream
@@ -314,10 +304,10 @@ void OutputVTK::write_vtk_data(OutputTime::OutputDataPtr output_data)
     	file    << " offset=\"" << appended_data_.tellp() << "\" ";
     	file    << "RangeMin=\"" << range_min << "\" RangeMax=\"" << range_max << "\"/>" << endl;
     	if ( this->variant_type_ == VTKVariant::VARIANT_BINARY_UNCOMPRESSED ) {
-    		output_data->print_binary_all( appended_data_ );
+    		output_data->print_binary_all( appended_data_, true, start );
     	} else { // ZLib compression
     		stringstream uncompressed_data, compressed_data;
-    		output_data->print_binary_all( uncompressed_data, false );
+    		output_data->print_binary_all( uncompressed_data, false, start );
     		this->compress_data(uncompressed_data, compressed_data);
     		appended_data_ << compressed_data.str();
     	}
@@ -550,7 +540,7 @@ void OutputVTK::write_vtk_vtu(void)
 
     /* Write Piece begin */
     file << "<Piece NumberOfPoints=\"" << this->nodes_->n_values()
-              << "\" NumberOfCells=\"" << this->offsets_->n_values() <<"\">" << endl;
+              << "\" NumberOfCells=\"" << this->offsets_->n_values()-1 <<"\">" << endl;
 
     /* Write VTK Geometry */
     file << "<Points>" << endl;
@@ -560,7 +550,7 @@ void OutputVTK::write_vtk_vtu(void)
     /* Write VTK Topology */
     file << "<Cells>" << endl;
         write_vtk_data(this->connectivity_);
-        write_vtk_data(this->offsets_);
+        write_vtk_data(this->offsets_, 1);
         auto types = fill_element_types_data();
        	write_vtk_data( types );
     file << "</Cells>" << endl;

@@ -124,7 +124,7 @@ public:
 
 	    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-	    mesh_ = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
+	    mesh_ = mesh_full_constructor("{ mesh_file=\"mesh/simplest_cube.msh\", optimize_mesh=false }");
 	    // 13 elements total
 	    // 1x1d, 2x2d, 6x3d; 4x 2d boundary
 	}

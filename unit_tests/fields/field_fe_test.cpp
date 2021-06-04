@@ -57,15 +57,15 @@ public:
     }
 
     void create_mesh(std::string mesh_file_str) {
-        mesh = mesh_full_constructor("{mesh_file=\"" + mesh_file_str + "\"}");
+        mesh = mesh_full_constructor("{ mesh_file=\"" + mesh_file_str + "\", optimize_mesh=false }");
     }
 
     void create_dof_handler(double val1, double val2, double val3) {
         dh = std::make_shared<DOFHandlerMultiDim>(*mesh);
         v.resize(3);
-        v[0] = val1;
-        v[1] = val2;
-        v[2] = val3;
+        v.set(0, val1);
+        v.set(1, val2);
+        v.set(2, val3);
         dof_values[0] = val1;
         dof_values[1] = val2;
         dof_values[2] = val3;
@@ -101,7 +101,7 @@ TEST_F(FieldFETest, scalar) {
     ScalarField field;
 
     dh->distribute_dofs(ds);
-    field.set_fe_data(dh, 0, v);
+    field.set_fe_data(dh, v);
     field.set_time(0.0);
 
     Armor::array pts(3, 1);
@@ -131,7 +131,7 @@ TEST_F(FieldFETest, vector) {
     VecField field;
 
     dh->distribute_dofs(ds);
-    field.set_fe_data(dh, 0, v);
+    field.set_fe_data(dh, v);
     field.set_time(0.0);
 
     // The Raviart-Thomas function given by the following dofs
@@ -295,7 +295,7 @@ public:
 
         Profiler::instance();
 
-        mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
+        mesh = mesh_full_constructor("{ mesh_file=\"mesh/simplest_cube.msh\", optimize_mesh=false }");
 
         Input::Type::Record rec_type = Input::Type::Record("Test","")
             .declare_key("scalar", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )

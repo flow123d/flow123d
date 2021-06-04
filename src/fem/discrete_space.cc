@@ -20,7 +20,7 @@
 #include "fem/finite_element.hh"
 #include "mesh/accessors.hh"
 
-MixedPtr<FiniteElement> EqualOrderDiscreteSpace::fe(FMT_UNUSED const ElementAccessor<3> &cell) const { return fe_; }
+MixedPtr<FiniteElement> EqualOrderDiscreteSpace::fe() const { return fe_; }
 
 
 

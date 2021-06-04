@@ -287,7 +287,7 @@ TEST(area_intersections, all) {
         string file_name=test_case.first+"_triangle_tetrahedron.msh";
         TestCaseIPs &case_ips=test_case.second;
 
-        string in_mesh_string = "{mesh_file=\"" + dir_name + file_name + "\"}";
+        string in_mesh_string = "{ mesh_file=\"" + dir_name + file_name + "\", optimize_mesh=false }";
         
         const unsigned int np = 1;//permutations_triangle.size();
         for(unsigned int p=0; p<np; p++){

@@ -24,9 +24,6 @@
 using namespace std;
 
 #include "fields/field_algo_base.hh"
-#include "fields/field_python.hh"
-#include "fields/field_constant.hh"
-#include "fields/field_formula.hh"
 
 #include "fields/field_values.hh"
 
@@ -143,10 +140,15 @@ template<int spacedim, class Value>
 void FieldAlgorithmBase<spacedim, Value>::cache_update(
             FMT_UNUSED FieldValueCache<typename Value::element_type> &data_cache,
 			FMT_UNUSED ElementCacheMap &cache_map,
-			FMT_UNUSED unsigned int region_idx)
+			FMT_UNUSED unsigned int region_patch_idx)
 {
-	   //ASSERT(false).error("Must be implemented in descendants!\n");
+    ASSERT_DBG(false).error("Must be implemented in descendants!\n");
 }
+
+
+template<int spacedim, class Value>
+void FieldAlgorithmBase<spacedim, Value>::cache_reinit(FMT_UNUSED const ElementCacheMap &cache_map)
+{}
 
 
 template<int spacedim, class Value>
