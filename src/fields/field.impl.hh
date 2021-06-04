@@ -24,7 +24,7 @@
 #include "fields/eval_subset.hh"
 #include "fields/eval_points.hh"
 #include "fields/field_value_cache.hh"
-#include "fields/field_value_cache.impl.hh"
+#include "fields/field_set.hh"
 #include "mesh/region.hh"
 #include "input/reader_to_storage.hh"
 #include "input/accessors.hh"
@@ -47,7 +47,12 @@ Field<spacedim,Value>::Field()
 	shared_->n_comp_ = (Value::NRows_ ? 0 : 1);
 	this->add_factory( std::make_shared<FactoryBase>() );
 
+	unsigned int cache_size = 1.1 * CacheMapElementNumber::get();
+	value_cache_.reinit(cache_size);
+	value_cache_.resize(cache_size);
+
 	this->multifield_ = false;
+	this->set_shape( Value::NRows_, Value::NCols_ );
 }
 
 
@@ -62,7 +67,12 @@ Field<spacedim,Value>::Field(const string &name, bool bc)
 		shared_->bc_=bc;
 		this->name( name );
 		this->add_factory( std::make_shared<FactoryBase>() );
+		unsigned int cache_size = 1.1 * CacheMapElementNumber::get();
+		value_cache_.reinit(cache_size);
+		value_cache_.resize(cache_size);
+
 		this->multifield_ = false;
+		this->set_shape( Value::NRows_, Value::NCols_ );
 }
 
 
@@ -80,7 +90,12 @@ Field<spacedim,Value>::Field(unsigned int component_index, string input_name, st
 	this->shared_->input_name_ = input_name;
     shared_->bc_ = bc;
 
+	unsigned int cache_size = 1.1 * CacheMapElementNumber::get();
+	value_cache_.reinit(cache_size);
+	value_cache_.resize(cache_size);
+
 	this->multifield_ = false;
+	this->set_shape( Value::NRows_, Value::NCols_ );
 }
 
 
@@ -96,6 +111,7 @@ Field<spacedim,Value>::Field(const Field &other)
 		no_check_control_field_ =  make_shared<ControlField>(*other.no_check_control_field_);
 
 	this->multifield_ = false;
+	this->set_shape( Value::NRows_, Value::NCols_ );
 }
 
 
@@ -124,6 +140,7 @@ Field<spacedim,Value> &Field<spacedim,Value>::operator=(const Field<spacedim,Val
 	factories_ = other.factories_;
 	region_fields_ = other.region_fields_;
 	value_cache_ = other.value_cache_;
+	this->shape_ = other.shape_;
 
 	if (other.no_check_control_field_) {
 		no_check_control_field_ =  make_shared<ControlField>(*other.no_check_control_field_);
@@ -136,23 +153,37 @@ Field<spacedim,Value> &Field<spacedim,Value>::operator=(const Field<spacedim,Val
 
 template<int spacedim, class Value>
 typename Value::return_type Field<spacedim,Value>::operator() (BulkPoint &p) {
-    return value_cache_.template get_value<Value>(*p.elm_cache_map(), p.dh_cell(), p.eval_point_idx());
+    return p.elm_cache_map()->get_value<Value>(value_cache_, p.elem_patch_idx(), p.eval_point_idx());
 }
 
 
 
 template<int spacedim, class Value>
 typename Value::return_type Field<spacedim,Value>::operator() (EdgePoint &p) {
-    return value_cache_.template get_value<Value>(*p.elm_cache_map(), p.dh_cell_side().cell(), p.eval_point_idx());
+    return p.elm_cache_map()->get_value<Value>(value_cache_, p.elem_patch_idx(), p.eval_point_idx());
 }
 
 
 
 template<int spacedim, class Value>
-typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_>
+typename Value::return_type Field<spacedim,Value>::operator() (CouplingPoint &p) {
+    return p.elm_cache_map()->get_value<Value>(value_cache_, p.elem_patch_idx(), p.eval_point_idx());
+}
+
+
+
+template<int spacedim, class Value>
+typename Value::return_type Field<spacedim,Value>::operator() (BoundaryPoint &p) {
+    return p.elm_cache_map()->get_value<Value>(value_cache_, p.elem_patch_idx(), p.eval_point_idx());
+}
+
+
+
+template<int spacedim, class Value>
+typename Value::return_type
 Field<spacedim,Value>::operator[] (unsigned int i_cache_point) const
 {
-	return this->value_cache().data().template mat<Value::NRows_, Value::NCols_>(i_cache_point);
+	return Value::get_from_array( this->value_cache_, i_cache_point );
 }
 
 
@@ -224,42 +255,44 @@ bool Field<spacedim, Value>::is_constant(Region reg) {
 
 
 template<int spacedim, class Value>
-void Field<spacedim, Value>::set_field(
-		const RegionSet &domain,
+void Field<spacedim, Value>::set(
 		FieldBasePtr field,
-		double time)
+		double time,
+		std::vector<std::string> region_set_names)
 {
 	ASSERT_PTR(field).error("Null field pointer.\n");
 
-	ASSERT_PTR( mesh() ).error("Null mesh pointer, set_mesh() has to be called before set_field().\n");
-    if (domain.size() == 0) return;
-
+	ASSERT_PTR( mesh() ).error("Null mesh pointer, set_mesh() has to be called before set().\n");
     ASSERT_EQ( field->n_comp() , shared_->n_comp_);
     field->set_mesh( mesh() , is_bc() );
 
-    HistoryPoint hp = HistoryPoint(time, field);
-    for(const Region &reg: domain) {
-    	RegionHistory &region_history = data_->region_history_[reg.idx()];
-    	// insert hp into descending time sequence
-    	ASSERT( region_history.size() == 0 || region_history[0].first < hp.first)(hp.first)(region_history[0].first)
-    			.error("Can not insert smaller time then last time in field's history.\n");
-    	region_history.push_front(hp);
-    }
+	for (auto set_name : region_set_names) {
+		RegionSet domain = mesh()->region_db().get_region_set(set_name);
+        if (domain.size() == 0) continue;
+
+        HistoryPoint hp = HistoryPoint(time, field);
+        for(const Region &reg: domain) {
+    	    RegionHistory &region_history = data_->region_history_[reg.idx()];
+    	    // insert hp into descending time sequence
+    	    ASSERT( region_history.size() == 0 || region_history[0].first < hp.first)(hp.first)(region_history[0].first)
+    		        .error("Can not insert smaller time then last time in field's history.\n");
+    	    region_history.push_front(hp);
+        }
+	}
     set_history_changed();
 }
 
 
 
 template<int spacedim, class Value>
-void Field<spacedim, Value>::set_field(
-		const RegionSet &domain,
-		const Input::AbstractRecord &a_rec,
-		double time)
+void Field<spacedim, Value>::set(
+        const Input::AbstractRecord &a_rec,
+        double time,
+		std::vector<std::string> region_set_names)
 {
 	FieldAlgoBaseInitData init_data(input_name(), n_comp(), units(), limits(), flags());
-	set_field(domain, FieldBaseType::function_factory(a_rec, init_data), time);
+	set(FieldBaseType::function_factory(a_rec, init_data), time, region_set_names);
 }
-
 
 
 
@@ -729,22 +762,60 @@ std::shared_ptr< FieldFE<spacedim, Value> > Field<spacedim,Value>::get_field_fe(
 
 
 template<int spacedim, class Value>
-void Field<spacedim, Value>::cache_allocate(std::shared_ptr<EvalPoints> eval_points) {
-    value_cache_.init(eval_points, ElementCacheMap::n_cached_elements);
+void Field<spacedim, Value>::cache_reallocate(const ElementCacheMap &cache_map, unsigned int region_idx) const {
+    // Call cache_reinit of FieldAlgoBase descendant on appropriate region
+	if (region_fields_[region_idx] != nullptr)
+	    region_fields_[region_idx]->cache_reinit(cache_map);
 }
 
 
 template<int spacedim, class Value>
-void Field<spacedim, Value>::cache_update(ElementCacheMap &cache_map) {
-    auto update_cache_data = cache_map.update_cache_data();
-
-    // Call cache_update of FieldAlgoBase descendants
-    std::unordered_map<unsigned int, unsigned int>::iterator reg_elm_it;
-    for (reg_elm_it=update_cache_data.region_cache_indices_range_.begin(); reg_elm_it!=update_cache_data.region_cache_indices_range_.end(); ++reg_elm_it) {
-        region_fields_[reg_elm_it->first]->cache_update(value_cache_, cache_map, reg_elm_it->first);
-    }
+void Field<spacedim, Value>::cache_update(ElementCacheMap &cache_map, unsigned int region_patch_idx) const {
+    unsigned int region_idx = cache_map.region_idx_from_chunk_position(region_patch_idx);
+    if (region_fields_[region_idx] != nullptr) // skips bounadry regions for bulk fields and vice versa
+        region_fields_[region_idx]->cache_update(value_cache_, cache_map, region_patch_idx);
 }
 
+
+template<int spacedim, class Value>
+std::vector<const FieldCommon *> Field<spacedim, Value>::set_dependency(FieldSet &field_set, unsigned int i_reg) const {
+   	if (region_fields_[i_reg] != nullptr) return region_fields_[i_reg]->set_dependency(field_set);
+   	else return std::vector<const FieldCommon *>();
+}
+
+
+template<int spacedim, class Value>
+FieldValueCache<double> * Field<spacedim, Value>::value_cache() {
+    return &value_cache_;
+}
+
+
+template<>
+FieldValueCache<double> * Field<3, FieldValue<0>::Enum>::value_cache() {
+    return nullptr;
+}
+
+template<>
+FieldValueCache<double> * Field<3, FieldValue<0>::Integer>::value_cache() {
+    return nullptr;
+}
+
+
+template<int spacedim, class Value>
+const FieldValueCache<double> * Field<spacedim, Value>::value_cache() const {
+    return &value_cache_;
+}
+
+
+template<>
+const FieldValueCache<double> * Field<3, FieldValue<0>::Enum>::value_cache() const {
+    return nullptr;
+}
+
+template<>
+const FieldValueCache<double> * Field<3, FieldValue<0>::Integer>::value_cache() const {
+    return nullptr;
+}
 
 
 

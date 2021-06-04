@@ -70,7 +70,7 @@ IT::Abstract & OutputTime::get_input_format_type() {
 
 OutputTime::OutputTime()
 : current_step(0),
-  time(-1.0),
+  registered_time_(-1.0),
   write_time(-1.0),
   parallel_(false)
 {
@@ -141,8 +141,8 @@ std::shared_ptr<OutputMeshBase> OutputTime::get_output_mesh_ptr() {
 
 
 void OutputTime::update_time(double field_time) {
-	if (this->time < field_time) {
-		this->time = field_time;
+	if (this->registered_time_ < field_time) {
+		this->registered_time_ = field_time;
 	}
 }
 
@@ -199,18 +199,18 @@ void OutputTime::write_time_frame()
 {
 	START_TIMER("OutputTime::write_time_frame");
     if (observe_)
-        observe_->output_time_frame( write_time < time );
+        observe_->output_time_frame( write_time < registered_time_ );
 
     // Write data to output stream, when data registered to this output
     // streams were changed
-    if(write_time < time) {
+    if(write_time < registered_time_) {
 
     	if (this->rank_ == 0 || this->parallel_) // for serial output write log only one (same output file on all processes)
-    	    LogOut() << "Write output to output stream: " << this->_base_filename << " for time: " << time;
+    	    LogOut() << "Write output to output stream: " << this->_base_filename << " for time: " << registered_time_;
     	gather_output_data();
         write_data();
         // Remember the last time of writing to output stream
-        write_time = time;
+        write_time = registered_time_;
         current_step++;
             
         // invalidate output data caches after the time frame written
@@ -221,7 +221,7 @@ void OutputTime::write_time_frame()
         this->offsets_.reset();*/
     } else {
     	if (this->rank_ == 0 || this->parallel_) // for serial output write log only one (same output file on all processes)
-    	    LogOut() << "Skipping output stream: " << this->_base_filename << " in time: " << time;
+    	    LogOut() << "Skipping output stream: " << this->_base_filename << " in time: " << registered_time_;
     }
     clear_data();
 }

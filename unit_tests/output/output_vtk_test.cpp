@@ -55,9 +55,11 @@ public:
         LoggerOptions::get_instance().set_log_file("");
 
         FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/fields/simplest_cube_3d.msh", FilePath::input_file);
-        this->_mesh = mesh_full_constructor("{mesh_file=\"" + (string)mesh_file + "\"}");
+        this->_mesh = mesh_full_constructor("{ mesh_file=\"" + (string)mesh_file + "\", optimize_mesh=false }");
 
         component_names = { "comp_0", "comp_1", "comp_2" };
+
+        this->write_time = 0.0; // hack: unset condition in OutputTime::write_time_frame and output is not performed
     }
 
     ~TestOutputVTK()
@@ -123,12 +125,12 @@ public:
 		dh->distribute_dofs(ds);
 
 		VectorMPI v(size);
-        for (unsigned int i=0; i<size; ++i) v[i] = step*i;
+        for (unsigned int i=0; i<size; ++i) v.set(i, step*i);
 
 		auto native_data_ptr = make_shared< FieldFE<3, FieldVal> >();
-		native_data_ptr->set_fe_data(dh, 0, v);
+		native_data_ptr->set_fe_data(dh, v);
 
-		field.set_field(_mesh->region_db().get_region_set("ALL"), native_data_ptr);
+		field.set(native_data_ptr, 0.0);
 		field.output_type(OutputTime::NATIVE_DATA);
 		field.set_time(TimeGovernor(0.0, 1.0).step(), LimitSide::left);
 

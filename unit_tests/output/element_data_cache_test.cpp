@@ -116,7 +116,7 @@ TEST(ElementDataCache, value_operations)
 
 TEST(ElementDataCache, cache_size_operations)
 {
-	std::vector<unsigned int> offset_vec{ 2, 5, 8, 12 };
+	std::vector<unsigned int> offset_vec{ 0, 2, 5, 8, 12 };
 	std::vector<unsigned int> opt_size_vec{ 0, 1, 0, 1, 2, 0, 1, 3, 0, 1, 2, 3 };
 	std::vector<unsigned int> fix_size_vec{ 0, 1, 0, 0, 0, 1, 2, 0, 0, 1, 3, 0, 0, 1, 2, 3 };
 	std::vector<double> avrg_vec{ 3.75, 4.75, 7, 9 };

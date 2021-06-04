@@ -85,7 +85,7 @@ public:
      *
      * @param indices Array of dof indices on the cell.
      */
-    LocDofVec get_loc_dof_indices() const
+    inline LocDofVec get_loc_dof_indices() const
     { return dof_handler_->get_loc_dof_indices(loc_ele_idx_); }
 
     /// Return number of dofs on given cell.
@@ -112,23 +112,12 @@ public:
      */
     template<unsigned int dim>
     FEPtr<dim> fe() const {
-        ElementAccessor<3> elm_acc = this->elm();
-        return dof_handler_->ds_->fe(elm_acc)[Dim<dim>{}];
+        return dof_handler_->ds_->fe()[Dim<dim>{}];
     }
 
     /// Check validity of accessor (see default constructor)
     inline bool is_valid() const {
         return dof_handler_ != NULL;
-    }
-
-    /// Getter of elm_cache_index_.
-    inline unsigned int element_cache_index() const {
-        return elm_cache_index_;
-    }
-
-    /// Setter of elm_cache_index_.
-    inline void set_element_cache_index(unsigned int idx) const {
-        elm_cache_index_ = idx;
     }
 
     /// Returns range of cell sides
@@ -170,9 +159,6 @@ private:
     const DOFHandlerMultiDim * dof_handler_;
     /// Index into DOFHandler::el_4_loc array.
     unsigned int loc_ele_idx_;
-
-    /// Optional member used in field evaluation, holds index of cell in field data cache.
-    mutable unsigned int elm_cache_index_;
 
     friend class DHCellSide;
     friend class DHEdgeSide;

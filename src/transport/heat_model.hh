@@ -96,26 +96,19 @@ public:
 class HeatTransferModel : public AdvectionDiffusionModel, public AdvectionProcessBase {
 public:
 
-	class ModelEqData : public FieldSet {
+	class ModelEqFields : public FieldSet {
 	public:
 
-		enum Heat_bc_types {
-			bc_inflow,
-			bc_dirichlet,
-			bc_total_flux,
-			bc_diffusive_flux
-		};
-
 		/// Type of boundary condition (see also BC_Type)
-        BCField<3, FieldValue<3>::Enum > bc_type;
+		BCMultiField<3, FieldValue<3>::Enum > bc_type;
 		/// Dirichlet boundary condition for temperature.
 		BCMultiField<3, FieldValue<3>::Scalar> bc_dirichlet_value;
 		/// Flux value in total/diffusive flux b.c.
-		BCField<3, FieldValue<3>::Scalar > bc_flux;
+		BCMultiField<3, FieldValue<3>::Scalar > bc_flux;
 		/// Transition coefficient in total/diffusive flux b.c.
-		BCField<3, FieldValue<3>::Scalar > bc_robin_sigma;
+		BCMultiField<3, FieldValue<3>::Scalar > bc_robin_sigma;
 		/// Initial temperature.
-		Field<3, FieldValue<3>::Scalar> init_temperature;
+		MultiField<3, FieldValue<3>::Scalar> init_condition;
 		/// Porosity of solid.
 		Field<3, FieldValue<3>::Scalar> porosity;
 		/// Water content passed from Darcy flow model
@@ -158,16 +151,83 @@ public:
 		MultiField<3, FieldValue<3>::Scalar> output_field;
 
 
+		/// @name Instances of FieldModel used in assembly methods
+		// @{
 
-		ModelEqData();
+		/// Velocity norm field.
+        Field<3, FieldValue<3>::Scalar > v_norm;
+		/// Field represents coefficients of mass matrix.
+        Field<3, FieldValue<3>::Scalar > mass_matrix_coef;
+		/// Field represents retardation coefficients due to sorption.
+        MultiField<3, FieldValue<3>::Scalar> retardation_coef;
+    	/// Concentration sources - density output
+    	MultiField<3, FieldValue<3>::Scalar> sources_density_out;
+    	/// Concentration sources - sigma output
+    	MultiField<3, FieldValue<3>::Scalar> sources_sigma_out;
+    	/// Concentration sources - concentration output
+    	MultiField<3, FieldValue<3>::Scalar> sources_conc_out;
+		/// Advection coefficients.
+		MultiField<3, FieldValue<3>::VectorFixed> advection_coef;
+		/// Diffusion coefficients.
+		MultiField<3, FieldValue<3>::TensorFixed> diffusion_coef;
+
+    	// @}
+
+		enum Heat_bc_types {
+			bc_inflow,
+			bc_dirichlet,
+			bc_total_flux,
+			bc_diffusive_flux
+		};
+
+		ModelEqFields();
+
+        static const Input::Type::Selection & get_bc_type_selection();
+
+		/**
+		 * Initialize FieldModel instances.
+		 */
+		void initialize();
+
+	};
+
+
+	class ModelEqData {
+	public:
+
+		ModelEqData() {
+            substances_.initialize({""});
+		}
 
 		static  constexpr const char *  name() { return "Heat_AdvectionDiffusion"; }
 
 		static string default_output_field() { return "\"temperature\""; }
 
-        static const Input::Type::Selection & get_bc_type_selection();
-
 		static IT::Selection get_output_selection();
+
+        /// Returns number of transported substances.
+        inline unsigned int n_substances()
+        { return 1; }
+
+        /// Returns reference to the vector of substance indices.
+        const vector<unsigned int> &subst_idx()
+    	{ return subst_idx_; }
+
+        /// Returns reference to the vector of substance names.
+        inline SubstanceList &substances()
+        { return substances_; }
+
+
+		/// @name Data of substances
+		// @{
+
+	    /// Transported substances.
+	    SubstanceList substances_;
+
+		/// List of indices used to call balance methods for a set of quantities.
+		vector<unsigned int> subst_idx_;
+
+    	// @}
 	};
 
 	typedef AdvectionProcessBase FactoryBaseType;
@@ -177,65 +237,13 @@ public:
 
 	void init_from_input(const Input::Record &) override {};
 
-	void compute_mass_matrix_coefficient(const Armor::array &point_list,
-			const ElementAccessor<3> &ele_acc,
-			std::vector<double> &mm_coef) override;
-
-	void compute_retardation_coefficient(const Armor::array &,
-			const ElementAccessor<3> &,
-			std::vector<std::vector<double> > &) override {};
-
-	void compute_advection_diffusion_coefficients(const Armor::array &point_list,
-			const std::vector<arma::vec3> &velocity,
-			const ElementAccessor<3> &ele_acc,
-			std::vector<std::vector<arma::vec3> > &ad_coef,
-			std::vector<std::vector<arma::mat33> > &dif_coef) override;
-
-	void compute_init_cond(const Armor::array &point_list,
-			const ElementAccessor<3> &ele_acc,
-			std::vector<std::vector<double> > &init_values) override;
-
-	void get_bc_type(const ElementAccessor<3> &ele_acc,
-				arma::uvec &bc_types) override;
-
-	void get_flux_bc_data(unsigned int index,
-            const Armor::array &point_list,
-			const ElementAccessor<3> &ele_acc,
-			std::vector< double > &bc_flux,
-			std::vector< double > &bc_sigma,
-			std::vector< double > &bc_ref_value) override;
-
-	void get_flux_bc_sigma(unsigned int index,
-            const Armor::array &point_list,
-			const ElementAccessor<3> &ele_acc,
-			std::vector< double > &bc_sigma) override;
-
-	void compute_source_coefficients(const Armor::array &point_list,
-				const ElementAccessor<3> &ele_acc,
-				std::vector<std::vector<double> > &sources_conc,
-				std::vector<std::vector<double> > &sources_density,
-				std::vector<std::vector<double> > &sources_sigma) override;
-
-	void compute_sources_sigma(const Armor::array &point_list,
-				const ElementAccessor<3> &ele_acc,
-				std::vector<std::vector<double> > &sources_sigma) override;
-
 	~HeatTransferModel() override;
 
-    /// Returns number of transported substances.
-    inline unsigned int n_substances()
-    { return 1; }
-
-    /// Returns reference to the vector of substance names.
-    inline SubstanceList &substances()
-    { return substances_; }
-
-    const vector<unsigned int> &get_subst_idx()
-	{ return subst_idx; }
-
+	/// Derived class should implement getter for ModelEqFields instance.
+	virtual ModelEqFields &eq_fields() = 0;
 
 	/// Derived class should implement getter for ModelEqData instance.
-	virtual ModelEqData &data() = 0;
+	virtual ModelEqData &eq_data() = 0;
 
 protected:
 	
@@ -247,18 +255,12 @@ protected:
 	 */
 	static IT::Record get_input_type(const string &implementation, const string &description);
 
-	void output_data() override;
-
-	std::shared_ptr<OutputTime> &output_stream()
-	{ return output_stream_; }
-
 	virtual void calculate_cumulative_balance() = 0;
 
-    /// Transported substances.
-    SubstanceList substances_;
-
-	/// List of indices used to call balance methods for a set of quantities.
-	vector<unsigned int> subst_idx;
+	/**
+	 * Temporary method, sets balance object after construction of EqData object.
+	 */
+	void init_balance(const Input::Record &in_rec);
 
 	std::shared_ptr<OutputTime> output_stream_;
 };

@@ -26,7 +26,7 @@
 const unsigned int EvalPoints::undefined_dim = 10;
 
 EvalPoints::EvalPoints()
-: dim_eval_points_({DimEvalPoints(1), DimEvalPoints(2), DimEvalPoints(3)})
+: dim_eval_points_({DimEvalPoints(0), DimEvalPoints(1), DimEvalPoints(2), DimEvalPoints(3)}), max_size_(0)
 {}
 
 template <unsigned int dim>
@@ -34,8 +34,19 @@ std::shared_ptr<BulkIntegral> EvalPoints::add_bulk(const Quadrature &quad)
 {
     ASSERT_EQ(dim, quad.dim());
     std::shared_ptr<BulkIntegral> bulk_integral = std::make_shared<BulkIntegral>(shared_from_this(), dim);
-    dim_eval_points_[dim-1].add_local_points<dim>( quad.get_points() );
-    dim_eval_points_[dim-1].add_subset();
+    dim_eval_points_[dim].add_local_points<dim>( quad.get_points() );
+    dim_eval_points_[dim].add_subset();
+    this->set_max_size();
+    return bulk_integral;
+}
+
+template <>
+std::shared_ptr<BulkIntegral> EvalPoints::add_bulk<0>(const Quadrature &quad)
+{
+    ASSERT_EQ(0, quad.dim());
+    std::shared_ptr<BulkIntegral> bulk_integral = std::make_shared<BulkIntegral>(shared_from_this(), 0);
+    dim_eval_points_[0].add_subset();
+    this->set_max_size();
     return bulk_integral;
 }
 
@@ -53,9 +64,9 @@ std::shared_ptr<EdgeIntegral> EvalPoints::add_edge(const Quadrature &quad)
     // permutation 0
     for (unsigned int i=0; i<dim+1; ++i) {  // sides
         Quadrature high_dim_q = quad.make_from_side<dim>(i, 0);
-        dim_eval_points_[dim-1].add_local_points<dim>( high_dim_q.get_points() );
+        dim_eval_points_[dim].add_local_points<dim>( high_dim_q.get_points() );
     }
-    dim_eval_points_[dim-1].add_subset();
+    dim_eval_points_[dim].add_subset();
     new_data_size = this->size(dim);
     unsigned int i_data=old_data_size;
     for (unsigned int i_side=0; i_side<dim+1; ++i_side) {
@@ -71,11 +82,12 @@ std::shared_ptr<EdgeIntegral> EvalPoints::add_edge(const Quadrature &quad)
             Quadrature high_dim_q = quad.make_from_side<dim>(i_side, i_perm);
             const Armor::Array<double> & quad_points = high_dim_q.get_points();
             for (unsigned int i_point=0; i_point<quad_points.size(); ++i_point) {
-                perm_indices[i_side][i_perm][i_point] = dim_eval_points_[dim-1].find_permute_point<dim>( quad_points.vec<dim>(i_point), old_data_size, new_data_size );
+                perm_indices[i_side][i_perm][i_point] = dim_eval_points_[dim].find_permute_point<dim>( quad_points.vec<dim>(i_point), old_data_size, new_data_size );
             }
         }
     }
 
+    this->set_max_size();
     return edge_integral;
 }
 
@@ -91,18 +103,21 @@ std::shared_ptr<CouplingIntegral> EvalPoints::add_coupling(const Quadrature &qua
 template <unsigned int dim>
 std::shared_ptr<BoundaryIntegral> EvalPoints::add_boundary(const Quadrature &quad) {
     ASSERT_EQ(dim, quad.dim()+1);
-    return std::make_shared<BoundaryIntegral>(this->add_edge<dim>(quad));
+    std::shared_ptr<BulkIntegral> bulk_integral = this->add_bulk<dim-1>(quad);
+    std::shared_ptr<EdgeIntegral> edge_integral = this->add_edge<dim>(quad);
+    return std::make_shared<BoundaryIntegral>(edge_integral, bulk_integral);
 }
 
 EvalPoints::DimEvalPoints::DimEvalPoints(unsigned int dim)
 : local_points_(dim), n_subsets_(0), dim_(dim)
 {
 	subset_starts_[0] = 0;
-	local_points_.reinit(EvalPoints::max_subsets*EvalPoints::max_subset_points);
+	if (dim>0) local_points_.reinit(EvalPoints::max_subsets*EvalPoints::max_subset_points);
 }
 
 template <unsigned int dim>
 void EvalPoints::DimEvalPoints::add_local_points(const Armor::Array<double> & quad_points) {
+    ASSERT_GT(dim, 0).error("Dimension 0 not supported!\n");
     unsigned int local_points_old_size = local_points_.size();
     local_points_.resize(quad_points.size() + local_points_old_size);
     for (unsigned int i=0; i<quad_points.size(); ++i) {
@@ -112,6 +127,7 @@ void EvalPoints::DimEvalPoints::add_local_points(const Armor::Array<double> & qu
 
 template <unsigned int dim>
 unsigned int EvalPoints::DimEvalPoints::find_permute_point(arma::vec coords, unsigned int data_begin, unsigned int data_end) {
+    ASSERT_GT(dim, 0).error("Dimension 0 not supported!\n");
 	for (unsigned int loc_idx=data_begin; loc_idx<data_end; ++loc_idx) {
 	    // Check if point exists in local points vector.
         if ( arma::norm(coords-local_points_.vec<dim>(loc_idx), 2) < 4*std::numeric_limits<double>::epsilon() ) return loc_idx;
@@ -129,6 +145,7 @@ void EvalPoints::DimEvalPoints::add_subset() {
 }
 
 
+template std::shared_ptr<BulkIntegral> EvalPoints::add_bulk<0>(const Quadrature &);
 template std::shared_ptr<BulkIntegral> EvalPoints::add_bulk<1>(const Quadrature &);
 template std::shared_ptr<BulkIntegral> EvalPoints::add_bulk<2>(const Quadrature &);
 template std::shared_ptr<BulkIntegral> EvalPoints::add_bulk<3>(const Quadrature &);

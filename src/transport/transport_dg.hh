@@ -141,10 +141,24 @@ public:
 
 	typedef std::vector<std::shared_ptr<FieldFE< 3, FieldValue<3>::Scalar>>> FieldFEScalarVec;
 
-	class EqData : public Model::ModelEqData {
+	class EqFields : public Model::ModelEqFields {
 	public:
 
-		EqData();
+		EqFields();
+
+		MultiField<3, FieldValue<3>::Scalar> fracture_sigma;    ///< Transition parameter for diffusive transfer on fractures (for each substance).
+		MultiField<3, FieldValue<3>::Scalar> dg_penalty;        ///< Penalty enforcing inter-element continuity of solution (for each substance).
+        Field<3, FieldValue<3>::Scalar> region_id;
+        Field<3, FieldValue<3>::Scalar> subdomain;
+
+        EquationOutput output_fields;
+	};
+
+
+   	class EqData : public Model::ModelEqData {
+   	public:
+
+        EqData() {}
 
 		/**
 		 * @brief Sets up parameters of the DG method on a given boundary edge.
@@ -168,17 +182,14 @@ public:
 		            double &gamma);
 
 
+		inline void set_time_governor(TimeGovernor *time) {
+		    ASSERT_PTR_DBG(time);
+		    this->time_ = time;
+		}
+
+
 		/// Compute and return anisotropy of given element
 		double elem_anisotropy(ElementAccessor<3> e) const;
-
-
-
-		MultiField<3, FieldValue<3>::Scalar> fracture_sigma;    ///< Transition parameter for diffusive transfer on fractures (for each substance).
-		MultiField<3, FieldValue<3>::Scalar> dg_penalty;        ///< Penalty enforcing inter-element continuity of solution (for each substance).
-        Field<3, FieldValue<3>::Scalar> region_id;
-        Field<3, FieldValue<3>::Scalar> subdomain;
-
-        EquationOutput output_fields;
 
 
     	/// @name Parameters of the numerical method
@@ -208,29 +219,20 @@ public:
     	/// @name Auxiliary fields used during assembly
     	// @{
 
-    	/// Advection coefficients.
-    	vector<vector<arma::vec3> > ad_coef;
     	/// Diffusion coefficients.
     	vector<vector<arma::mat33> > dif_coef;
-    	/// Advection coefficients on edges.
-    	vector<vector<vector<arma::vec3> > > ad_coef_edg;
-    	/// Diffusion coefficients on edges.
-    	vector<vector<vector<arma::mat33> > > dif_coef_edg;
+    	/// Maximal number of edge sides (evaluate from dim 1,2,3)
+    	unsigned int max_edg_sides;
 
     	// @}
 
         /// Object for distribution of dofs.
         std::shared_ptr<DOFHandlerMultiDim> dh_;
 
-        /// general assembly objects, hold assembly objects of appropriate dimension
-        GenericAssembly< MassAssemblyDim > * mass_assembly_;
-        GenericAssembly< StiffnessAssemblyDim > * stiffness_assembly_;
-        GenericAssembly< SourcesAssemblyDim > * sources_assembly_;
-        GenericAssembly< BdrConditionAssemblyDim > * bdr_cond_assembly_;
-        GenericAssembly< InitConditionAssemblyDim > * init_cond_assembly_;
-
 		FieldFEScalarVec conc_fe;
 		std::shared_ptr<DOFHandlerMultiDim> dh_p0;
+		TimeGovernor *time_;
+		std::shared_ptr<Balance> balance_;
 	};
 
 	enum DGVariant {
@@ -290,11 +292,11 @@ public:
 
 	/// Return PETSc vector with solution for sbi-th component.
 	Vec get_component_vec(unsigned int sbi)
-	{ return data_->ls[sbi]->get_solution(); }
+	{ return eq_data_->ls[sbi]->get_solution(); }
 
 	/// Getter for P0 interpolation by FieldFE.
 	FieldFEScalarVec& get_p0_interpolation()
-	{ return data_->conc_fe;}
+	{ return eq_data_->conc_fe;}
 
 	/// Compute P0 interpolation of the solution (used in reaction term).
 	void compute_p0_interpolation();
@@ -310,13 +312,9 @@ public:
         return Model::balance_;
     }
 
-    /// Return vector of substances indices
-    inline const vector<unsigned int> subst_idx() const {
-        return Model::subst_idx;
-    }
+	inline typename Model::ModelEqFields &eq_fields() { return *eq_fields_; }
 
-
-	inline typename Model::ModelEqData &data() { return *data_; }
+	inline typename Model::ModelEqData &eq_data() { return *eq_data_; }
 
 private:
     /// Registrar of class to factory
@@ -355,8 +353,11 @@ private:
 	/// @name Physical parameters
 	// @{
 
-	/// Field data for model parameters.
-	std::shared_ptr<EqData> data_;
+	/// Fields for model parameters.
+	std::shared_ptr<EqFields> eq_fields_;
+
+	/// Data for model parameters.
+	std::shared_ptr<EqData> eq_data_;
 
 	// @}
 
@@ -415,6 +416,13 @@ private:
     bool allocation_done;
 
     // @}
+
+    /// general assembly objects, hold assembly objects of appropriate dimension
+    GenericAssembly< MassAssemblyDim > * mass_assembly_;
+    GenericAssembly< StiffnessAssemblyDim > * stiffness_assembly_;
+    GenericAssembly< SourcesAssemblyDim > * sources_assembly_;
+    GenericAssembly< BdrConditionAssemblyDim > * bdr_cond_assembly_;
+    GenericAssembly< InitConditionAssemblyDim > * init_cond_assembly_;
 
 };
 
