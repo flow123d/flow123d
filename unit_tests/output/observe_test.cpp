@@ -24,6 +24,7 @@
 #include "fields/field.hh"
 #include "armadillo"
 #include "system/armadillo_tools.hh"
+#include "tools/time_governor.hh"
 #include "../arma_expect.hh"
 #include <fstream>
 
@@ -109,7 +110,7 @@ public:
 class TestObserve : public Observe {
 public:
     TestObserve(Mesh &mesh, Input::Array in_array)
-    : Observe("test_eq", mesh, in_array, 6, "s")
+    : Observe("test_eq", mesh, in_array, 6, std::make_shared<TimeUnitConversion>())
     {
         for(auto &point: this->points_) my_points.push_back(TestObservePoint(point));
     }

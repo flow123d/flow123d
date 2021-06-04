@@ -223,7 +223,7 @@ public:
 	    auto in_rec =
 	            Input::ReaderToStorage(test_output_time_input, const_cast<Input::Type::Record &>(OutputTime::get_input_type()), Input::FileFormat::format_JSON)
                 .get_root_interface<Input::Record>();
-	    this->init_from_input("dummy_equation", in_rec, "s");
+	    this->init_from_input("dummy_equation", in_rec, std::make_shared<TimeUnitConversion>());
 
 	    component_names = { "comp_0", "comp_1", "comp_2" };
 
