@@ -103,7 +103,7 @@ const int TransportOperatorSplitting::registrar =
 
 
 
-TransportEqData::TransportEqData()
+TransportEqFields::TransportEqFields()
 {
     *this += porosity.name("porosity")
             .description("Porosity of the mobile phase.")
@@ -175,7 +175,8 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 	convection->substances().initialize(in_rec.val<Input::Array>("substances"));
 
 	// Initialize output stream.
-    convection->set_output_stream(OutputTime::create_output_stream("solute", in_rec.val<Input::Record>("output_stream"), time().get_unit_string()));
+	std::shared_ptr<OutputTime> stream = OutputTime::create_output_stream("solute", in_rec.val<Input::Record>("output_stream"), time().get_unit_string());
+    convection->set_output_stream(stream);
 
 
     // initialization of balance object
@@ -193,7 +194,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 
 	time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), convection->mark_type());
 
-    this->eq_data_ = &(convection->data());
+    this->eq_fieldset_ = &(convection->eq_fieldset());
 
     convection->get_par_info(el_4_loc, el_distribution);
     Input::Iterator<Input::AbstractRecord> reactions_it = in_rec.find<Input::AbstractRecord>("reaction_term");
@@ -210,7 +211,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 
         reaction->substances(convection->substances())
           .concentration_fields(convection->get_p0_interpolation())
-				  .output_stream(convection->output_stream())
+				  .output_stream(stream)
 				  .set_time_governor((TimeGovernor &)convection->time());
 
 		reaction->initialize();
@@ -237,7 +238,7 @@ void TransportOperatorSplitting::initialize()
           typeid(*reaction) == typeid(DualPorosity)
         )
   {
-    reaction->data().set_field("porosity", convection->data()["porosity"]);
+    reaction->eq_fieldset().set_field("porosity", convection->eq_fieldset()["porosity"]);
   }
 }
 
@@ -252,7 +253,6 @@ void TransportOperatorSplitting::output_data(){
 
         convection->output_data();
         if(reaction) reaction->output_data(); // do not perform write_time_frame
-        convection->output_stream()->write_time_frame();
 
         END_TIMER("TOS-output data");
 }
@@ -268,7 +268,6 @@ void TransportOperatorSplitting::zero_time_step()
       reaction->zero_time_step();
       reaction->output_data(); // do not perform write_time_frame
     }
-    convection->output_stream()->write_time_frame();
 
 }
 

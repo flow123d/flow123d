@@ -2,7 +2,6 @@
 
 *Transport Processes in Fractured Media*
 
-
 Flow123d is a simulator of underground water flow and transport processes in fractured
 porous media. Novelty of this software is support of computations on complex
 meshes consisting of simplicial elements of different dimensions. Therefore
@@ -29,16 +28,18 @@ For detailed instructions, see the [installation guide](doc/INSTALL.md).
 
 ## Build
 Two step build:
-
-1. `bin/fterm      # start the docker developing container`
-2. `make all       # produce "build_tree/bin/flow123d"`
-3. `bin/flow123d   # lunch the simulator using a simple wrapper script`
+```
+     host> bin/fterm     # start the docker developing container
+container> make all      # produce "build_tree/bin/flow123d"
+container> bin/flow123d  # lunch the simulator using a simple wrapper script
+```
 
 That would start the debug docker image and build the debug version of the simulator.
 For the release (optimized) version run:
-
-1. `bin/fterm rel`
-2. `make all`
+```
+bin/fterm rel
+make all
+```
 
 For details see [installation guide](doc/INSTALL.md) or the manual.
 

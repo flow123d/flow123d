@@ -24,6 +24,7 @@
 #include "fem/finite_element.hh"
 #include "fem/fe_values.hh"
 #include "fem/fe_system.hh"
+#include "fem/fe_values_map.hh"
 
 
 
@@ -264,25 +265,7 @@ std::shared_ptr<typename FEValues<spacedim>::FEInternalData> FEValues<spacedim>:
 }
 
 
-template<unsigned int spacedim>
-double FEValues<spacedim>::shape_value(const unsigned int function_no, const unsigned int point_no)
-{
-  ASSERT_LT_DBG(function_no, n_dofs_);
-  ASSERT_LT_DBG(point_no, n_points_);
-  return shape_values[point_no][function_no];
-}
-
-
-template<unsigned int spacedim>
-arma::vec::fixed<spacedim> FEValues<spacedim>::shape_grad(const unsigned int function_no, const unsigned int point_no)
-{
-  ASSERT_LT_DBG(function_no, n_dofs_);
-  ASSERT_LT_DBG(point_no, n_points_);
-  return shape_gradients[point_no][function_no];
-}
-
-
-template<unsigned int spacedim>
+/*template<unsigned int spacedim>
 double FEValues<spacedim>::shape_value_component(const unsigned int function_no, 
                                     const unsigned int point_no, 
                                     const unsigned int comp) const
@@ -291,7 +274,7 @@ double FEValues<spacedim>::shape_value_component(const unsigned int function_no,
   ASSERT_LT_DBG(point_no, n_points_);
   ASSERT_LT_DBG(comp, n_components_);
   return shape_values[point_no][function_no*n_components_+comp];
-}
+}*/
 
 
 template<unsigned int spacedim>
@@ -306,7 +289,7 @@ arma::vec::fixed<spacedim> FEValues<spacedim>::shape_grad_component(const unsign
 }
 
 
-template<unsigned int spacedim>
+/*template<unsigned int spacedim>
 void FEValues<spacedim>::fill_scalar_data(const ElementValues<spacedim> &elm_values, const FEInternalData &fe_data)
 {
     ASSERT_DBG(fe_type_ == FEScalar);
@@ -465,7 +448,7 @@ void FEValues<spacedim>::fill_system_data(const ElementValues<spacedim> &elm_val
     {
         // fill fe_values for base FE
         FEInternalData vec_fe_data(fe_data, fe_sys_dofs_[f], comp_offset, fe_sys_n_components_[f]);
-        fe_values_vec[f].fill_data(elm_values, vec_fe_data);
+        fe_values_vec[f].fill_data(elm_values, vec_fe_data); // fe_values.fe_values_vec
         
         comp_offset += fe_sys_n_components_[f];
     }
@@ -508,7 +491,7 @@ void FEValues<spacedim>::fill_system_data(const ElementValues<spacedim> &elm_val
         }
     }
     
-}
+}*/
 
 
 template<unsigned int spacedim>
@@ -516,22 +499,22 @@ void FEValues<spacedim>::fill_data(const ElementValues<spacedim> &elm_values, co
 {
     switch (fe_type_) {
         case FEScalar:
-            fill_scalar_data(elm_values, fe_data);
+            this->fill_data_specialized<MapScalar<spacedim>>(elm_values, fe_data);
             break;
         case FEVector:
-            fill_vec_data(elm_values, fe_data);
+            this->fill_data_specialized<MapVector<spacedim>>(elm_values, fe_data);
             break;
         case FEVectorContravariant:
-            fill_vec_contravariant_data(elm_values, fe_data);
+            this->fill_data_specialized<MapContravariant<spacedim>>(elm_values, fe_data);
             break;
         case FEVectorPiola:
-            fill_vec_piola_data(elm_values, fe_data);
+            this->fill_data_specialized<MapPiola<spacedim>>(elm_values, fe_data);
             break;
         case FETensor:
-            fill_tensor_data(elm_values, fe_data);
+            this->fill_data_specialized<MapTensor<spacedim>>(elm_values, fe_data);
             break;
         case FEMixedSystem:
-            fill_system_data(elm_values, fe_data);
+            this->fill_data_specialized<MapSystem<spacedim>>(elm_values, fe_data);
             break;
         default:
             ASSERT(false).error("Not implemented.");
@@ -540,6 +523,16 @@ void FEValues<spacedim>::fill_data(const ElementValues<spacedim> &elm_values, co
 
 
 
+template<unsigned int spacedim>
+template<class MapType>
+inline void FEValues<spacedim>::fill_data_specialized(const ElementValues<spacedim> &elm_values, const typename FEValues<spacedim>::FEInternalData &fe_data) {
+	MapType map_type;
+	map_type.fill_values_vec(*this, elm_values, fe_data);
+    if (update_flags & update_values)
+    	map_type.update_values(*this, elm_values, fe_data);
+    if (update_flags & update_gradients)
+    	map_type.update_gradients(*this, elm_values, fe_data);
+}
 
 
 
@@ -599,6 +592,12 @@ template void FEValues<3>::initialize<0>(Quadrature&, FiniteElement<0>&, UpdateF
 template void FEValues<3>::initialize<1>(Quadrature&, FiniteElement<1>&, UpdateFlags);
 template void FEValues<3>::initialize<2>(Quadrature&, FiniteElement<2>&, UpdateFlags);
 template void FEValues<3>::initialize<3>(Quadrature&, FiniteElement<3>&, UpdateFlags);
+template void FEValues<3>::fill_data_specialized<MapScalar<3>>(const ElementValues<3> &, const typename FEValues<3>::FEInternalData &);
+template void FEValues<3>::fill_data_specialized<MapPiola<3>>(const ElementValues<3> &, const typename FEValues<3>::FEInternalData &);
+template void FEValues<3>::fill_data_specialized<MapContravariant<3>>(const ElementValues<3> &, const typename FEValues<3>::FEInternalData &);
+template void FEValues<3>::fill_data_specialized<MapVector<3>>(const ElementValues<3> &, const typename FEValues<3>::FEInternalData &);
+template void FEValues<3>::fill_data_specialized<MapTensor<3>>(const ElementValues<3> &, const typename FEValues<3>::FEInternalData &);
+template void FEValues<3>::fill_data_specialized<MapSystem<3>>(const ElementValues<3> &, const typename FEValues<3>::FEInternalData &);
 
 
 

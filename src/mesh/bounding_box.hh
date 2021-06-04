@@ -295,6 +295,13 @@ public:
         return projected_point;
     }
 
+    /**
+     * Return size of the axis in which the box has longest projection.
+     */
+    inline double longest_size() const {
+        return size( longest_axis() );
+    }
+
 
 private:
     /// minimal coordinates of bounding box

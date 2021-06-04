@@ -158,7 +158,7 @@ TEST(VtkReaderTest, read_binary_vtu) {
     FilePath mesh_file("output/test_output_vtk_binary_ref.vtu", FilePath::input_file);
 
     {
-    	std::string mesh_in_string = "{mesh_file=\"fields/simplest_cube_3d.msh\"}";
+    	std::string mesh_in_string = "{ mesh_file=\"fields/simplest_cube_3d.msh\", optimize_mesh=false }";
     	auto gmsh_reader = reader_constructor( mesh_in_string );
     	Mesh * source_mesh = mesh_constructor( mesh_in_string );
     	gmsh_reader->read_physical_names(source_mesh);
@@ -252,7 +252,7 @@ TEST(VtkReaderTest, read_compressed_vtu) {
 
 TEST(VtkReaderTest, read_mesh) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-    std::string mesh_in_string = "{mesh_file=\"output/test_output_vtk_ascii_ref.vtu\"}";
+    std::string mesh_in_string = "{ mesh_file=\"output/test_output_vtk_ascii_ref.vtu\", optimize_mesh=false }";
     auto reader = reader_constructor(mesh_in_string);
     Mesh * mesh = mesh_constructor(mesh_in_string);
     reader->read_raw_mesh(mesh);

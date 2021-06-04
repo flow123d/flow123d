@@ -117,7 +117,7 @@ private:
  */
 class ConvectionTransport : public ConcentrationTransportBase {
 public:
-    class EqData : public TransportEqData {
+    class EqData : public TransportEqFields {
     public:
 
         EqData();
@@ -225,8 +225,6 @@ public:
 	/**
 	 * Getters.
 	 */
-	inline std::shared_ptr<OutputTime> output_stream() override
-	{ return output_stream_; }
 
     /// Getter for P0 interpolation by FieldFE.
 	FieldFEScalarVec& get_p0_interpolation() override;
@@ -297,7 +295,7 @@ private:
     static const int registrar;
 
     /**
-     *  Parameters of the equation, some are shared with other implementations since EqData is derived from TransportBase::TransportEqData
+     *  Parameters of the equation, some are shared with other implementations since EqData is derived from TransportBase::TransportEqFields
      */
     EqData data_;
 

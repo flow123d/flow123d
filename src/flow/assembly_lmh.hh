@@ -50,8 +50,9 @@ public:
         velocity_interpolation_fv_.initialize(velocity_interpolation_quad_, fe_rt_, update_values | update_quadrature_points);
         // local numbering of dofs for MH system
         // note: this shortcut supposes that the fe_system is the same on all elements
-        // the function DiscreteSpace.fe(ElementAccessor) does not in fact depend on the element accessor
-        auto fe = ad_->dh_->ds()->fe(ad_->dh_->own_range().begin()->elm())[Dim<dim>{}];
+        // TODO the function should be DiscreteSpace.fe(ElementAccessor)
+        // and correct form fe(ad_->dh_->own_range().begin()->elm()) (see documentation of DiscreteSpace::fe)
+        auto fe = ad_->dh_->ds()->fe()[Dim<dim>{}];
         FESystem<dim>* fe_system = dynamic_cast<FESystem<dim>*>(fe.get());
         loc_side_dofs = fe_system->fe_dofs(0);
         loc_ele_dof = fe_system->fe_dofs(1)[0];
@@ -314,7 +315,7 @@ protected:
                 // flux inequality leading may be accepted, while the error
                 // in pressure inequality is always satisfied.
 
-                double solution_head = ad_->p_edge_solution[loc_schur_.row_dofs[sidx]];
+                double solution_head = ad_->p_edge_solution.get(loc_schur_.row_dofs[sidx]);
 
                 if ( solution_head > bc_pressure) {
                     //DebugOut().fmt("x: {}, to dirich, p: {} -> p: {} f: {}\n",b_ele.centre()[0], solution_head, bc_pressure, bc_flux);
@@ -344,7 +345,7 @@ protected:
             double bc_flux = -ad_->bc_flux.value(b_ele.centre(), b_ele);
             double bc_sigma = ad_->bc_robin_sigma.value(b_ele.centre(), b_ele);
 
-            double solution_head = ad_->p_edge_solution[loc_schur_.row_dofs[sidx]];
+            double solution_head = ad_->p_edge_solution.get(loc_schur_.row_dofs[sidx]);
 
             // Force Robin type during the first iteration of the unsteady case.
             if (solution_head > bc_switch_pressure  || ad_->force_no_neumann_bc) {
@@ -473,7 +474,7 @@ protected:
             if(! ad_->use_steady_assembly_)
             {
                 time_term_diag = time_term / ad_->time_step_;
-                time_term_rhs = time_term_diag * ad_->p_edge_solution_previous_time[loc_schur_.row_dofs[i]];
+                time_term_rhs = time_term_diag * ad_->p_edge_solution_previous_time.get(loc_schur_.row_dofs[i]);
 
                 ad_->balance->add_mass_values(ad_->water_balance_idx, dh_cell,
                                               {loc_system_.row_dofs[loc_edge_dofs[i]]}, {time_term}, 0);
@@ -560,8 +561,8 @@ protected:
             
             if( ! ad_->use_steady_assembly_)
             {
-                new_pressure = ad_->p_edge_solution[loc_schur_.row_dofs[i]];
-                old_pressure = ad_->p_edge_solution_previous_time[loc_schur_.row_dofs[i]];
+                new_pressure = ad_->p_edge_solution.get(loc_schur_.row_dofs[i]);
+                old_pressure = ad_->p_edge_solution_previous_time.get(loc_schur_.row_dofs[i]);
                 time_term = edge_scale * storativity / ad_->time_step_ * (new_pressure - old_pressure);
             }
             solution[loc_side_dofs[i]] += edge_source_term - time_term;

@@ -50,8 +50,8 @@ Range<ElementAccessor<3>> BCMesh::elements_range() const
 }
 
 
-unsigned int BCMesh::n_elements(FMT_UNUSED bool boundary) const {
-	return parent_mesh_->element_ids_.size()-parent_mesh_->bulk_size_;
+unsigned int BCMesh::n_elements() const {
+	return parent_mesh_->element_vec_.size()-parent_mesh_->bulk_size_;
 }
 
 

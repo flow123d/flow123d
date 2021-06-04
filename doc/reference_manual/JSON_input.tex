@@ -501,8 +501,13 @@ Each of these abstract records have the same set of descendants which implement 
  \item[FieldConstant] --- field that is constant both in space and time
  \item[TimeFunction] --- field that is constant in space and continuous in time. Values are interpolated (currently only linear interpolation) from 
  the sequence of time-value pairs provided on input.
- \item[FieldFormula] --- field that is given by runtime parsed formula using $x,y,z,t$ coordinates. The \href{http://warp.povusers.org/FunctionParser/}{Function Parser} library is used
- with syntax rules described \href{http://warp.povusers.org/FunctionParser/fparser.html#literals}{here}.
+ %
+ \item[FieldFormula] --- field that is given by a runtime parsed formula with a simplified Python and Numpy syntax. Since version 3.1.0 we use our own library \href{https://github.com/flow123d/bparser}{BParser} which supports vector and tensor valued expressions and use SIMD operations to achieve nearly peak CPU performance. 
+ For the sake of backward compatibility the vector and tensor fields given by a single formula expression will be supported since version 4.0.0.
+ 
+ The formula can contain following literals: constants {\tt E} and {\tt Pi}, names of other fields of the same equation, and coordinates: {\tt t}, {\tt x}, {\tt y}, {\tt z}, {\tt d}. First is the 
+ simulation time, the coordinate $d$ is a spefial field that evaluates to the depth from the surface. This is defined as a distance to the intersection of the vertical (Z axis) line with the outer boundary that has smallest Z coordinate greater then the evaluation point.
+
  \item[FieldPython] --- field can be implemented by Python script either specified by string (key \hyperA{FieldPython::script-string}{{\tt script\_string}}) 
  or in external file (key \hyperA{FieldPython::script-file}{{\tt script\_file}}. 
  \item[FieldElementwise] --- discrete field, currently only piecewise constant field on elements is supported, the field can given by 
