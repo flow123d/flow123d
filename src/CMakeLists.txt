@@ -321,17 +321,6 @@ target_link_libraries(coupling_lib
 
 
 
-# make separate library for Semchem (God save us!)
-#add_library(semchem 
-#    semchem/che_semchem.cc
-#    semchem/che_read.cc
-#)
-#set_target_properties(semchem 
-#    PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
-#)
-
-
-
 set(sources_lib_non_system
 )
 # all remaining sources 
@@ -352,7 +341,6 @@ add_library(flow123d_lib
     reaction/dual_porosity.cc
     reaction/isotherm.cc
     reaction/linear_ode_solver.cc
-    #semchem/semchem_interface.cc
 
     transport/concentration_model.cc
     transport/heat_model.cc
