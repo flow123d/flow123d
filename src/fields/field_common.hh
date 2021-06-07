@@ -75,12 +75,19 @@ class FieldCommon {
 public:
     TYPEDEF_ERR_INFO(EI_Time, double);
     TYPEDEF_ERR_INFO(EI_Field, std::string);
+    TYPEDEF_ERR_INFO( EI_FieldInputName, std::string);
+    TYPEDEF_ERR_INFO( EI_FieldName, std::string);
+    TYPEDEF_ERR_INFO( EI_RegId, unsigned int);
+    TYPEDEF_ERR_INFO( EI_RegLabel, std::string);
     DECLARE_INPUT_EXCEPTION(ExcNonascendingTime,
             << "Non-ascending time: " << EI_Time::val << " for field " << EI_Field::qval << ".\n");
     DECLARE_INPUT_EXCEPTION(ExcMissingDomain,
             << "Missing domain specification (region or r_id) in the field descriptor:");
     DECLARE_EXCEPTION(ExcFieldMeshDifference,
             << "Two copies of the field " << EI_Field::qval << "call set_mesh with different arguments.\n");
+    DECLARE_INPUT_EXCEPTION(ExcMissingFieldValue,
+            << "Missing value of the input field " << EI_FieldInputName::qval << " (" << EI_FieldName::qval
+            << ") on region ID: " << EI_RegId::val << " label: " << EI_RegLabel::qval << ".\n");
 
 
 

@@ -101,15 +101,6 @@ public:
     static const unsigned int space_dim = spacedim;
 
 
-    TYPEDEF_ERR_INFO( EI_FieldInputName, std::string);
-    TYPEDEF_ERR_INFO( EI_FieldName, std::string);
-    TYPEDEF_ERR_INFO( EI_RegId, unsigned int);
-    TYPEDEF_ERR_INFO( EI_RegLabel, std::string);
-    DECLARE_INPUT_EXCEPTION(ExcMissingFieldValue,
-            << "Missing value of the input field " << EI_FieldInputName::qval << " (" << EI_FieldName::qval
-            << ") on region ID: " << EI_RegId::val << " label: " << EI_RegLabel::qval << ".\n");
-
-
     /**
      * Factory class that creates an instance of FieldBase for field
      * with name @p field_name based on data in field descriptor @p rec.
