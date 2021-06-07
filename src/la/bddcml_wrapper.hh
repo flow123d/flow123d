@@ -28,7 +28,7 @@
 #include <la/matrix_coo.hpp>
 
 #include <system/global_defs.h>
-#include <system/xio.h>
+#include <system/system.hh>
 #include "system/sys_profiler.hh"
 
 extern "C" { 
