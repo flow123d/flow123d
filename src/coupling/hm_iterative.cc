@@ -224,11 +224,10 @@ void HM_Iterative::zero_time_step()
     update_potential();
     mechanics_->zero_time_step();
     
-    // copy_filed(*flow_->data().field("conductivity"), *data_.conductivity_k0);
-    // copy_filed(*flow_->data().field("conductivity"), *data_.conductivity_k0);
     copy_field(*flow_->data().field("pressure_p0"), *data_.old_pressure_ptr_);
     copy_field(*flow_->data().field("pressure_p0"), *data_.old_iter_pressure_ptr_);
     copy_field(mechanics_->eq_fields().output_divergence, *data_.div_u_ptr_);
+
 }
 
 
@@ -259,6 +258,7 @@ void HM_Iterative::update_after_iteration()
     mechanics_->update_output_fields();
     copy_field(mechanics_->eq_fields().output_divergence, *data_.div_u_ptr_);
     copy_field(*flow_->data().field("pressure_p0"), *data_.old_iter_pressure_ptr_);
+    // copy_field(*data_.conductivity_model, *flow_->data().field("conductivity"));
 }
 
 
