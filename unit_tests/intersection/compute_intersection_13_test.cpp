@@ -133,7 +133,7 @@ TEST(intersections_13d, all) {
         for(unsigned int p=0; p<np; p++)
         {
             MessageOut().fmt("Computing intersection on mesh #{} permutation #{} :  {}\n", s, p,  filenames[s]);
-            string in_mesh_string = "{mesh_file=\"" + dir_name + filenames[s] + "\"}";
+            string in_mesh_string = "{ mesh_file=\"" + dir_name + filenames[s] + "\", optimize_mesh=false }";
             
             Mesh *mesh = mesh_constructor(in_mesh_string);
             // read mesh with gmshreader

@@ -57,7 +57,7 @@ TEST(PVDReader, get_element_data) {
     FilePath mesh_file("mesh/pvd-test.pvd", FilePath::input_file);
 
     {
-        std::string mesh_in_string = "{mesh_file=\"fields/simplest_cube_3d.msh\"}";
+        std::string mesh_in_string = "{ mesh_file=\"fields/simplest_cube_3d.msh\", optimize_mesh=false }";
         auto gmsh_reader = reader_constructor( mesh_in_string );
         Mesh * source_mesh = mesh_constructor( mesh_in_string );
         gmsh_reader->read_physical_names(source_mesh);

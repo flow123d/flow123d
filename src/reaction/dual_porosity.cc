@@ -110,7 +110,7 @@ DualPorosity::DualPorosity(Mesh &init_mesh, Input::Record in_rec)
 	: ReactionTerm(init_mesh, in_rec)
 {
   //set pointer to equation data fieldset
-  this->eq_data_ = &data_;
+  this->eq_fieldset_ = &data_;
   
   //reads input and creates possibly other reaction terms
   make_reactions();
@@ -197,8 +197,9 @@ void DualPorosity::initialize_fields()
   data_.conc_immobile_fe.resize(substances_.size());
   for (unsigned int sbi = 0; sbi < substances_.size(); sbi++)
   {
+      // create shared pointer to a FieldFE and push this Field to output_field on all regions
       data_.conc_immobile_fe[sbi] = create_field_fe< 3, FieldValue<3>::Scalar >(dof_handler_);
-      data_.conc_immobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), data_.conc_immobile_fe[sbi], 0);
+      data_.conc_immobile[sbi].set(data_.conc_immobile_fe[sbi], 0);
   }
 
   data_.output_fields.initialize(output_stream_, mesh_, input_record_.val<Input::Record>("output"),time());
@@ -215,14 +216,14 @@ void DualPorosity::zero_time_step()
   if(reaction_mobile)
   if (typeid(*reaction_mobile) == typeid(SorptionMob))
   {
-	  reaction_mobile->data().set_field("porosity", data_["porosity"]);
-	  reaction_mobile->data().set_field("porosity_immobile", data_["porosity_immobile"]);
+	  reaction_mobile->eq_fieldset().set_field("porosity", data_["porosity"]);
+	  reaction_mobile->eq_fieldset().set_field("porosity_immobile", data_["porosity_immobile"]);
   }
   if(reaction_immobile)
   if (typeid(*reaction_immobile) == typeid(SorptionImmob))
   {
-	  reaction_immobile->data().set_field("porosity", data_["porosity"]);
-	  reaction_immobile->data().set_field("porosity_immobile", data_["porosity_immobile"]);
+	  reaction_immobile->eq_fieldset().set_field("porosity", data_["porosity"]);
+	  reaction_immobile->eq_fieldset().set_field("porosity_immobile", data_["porosity_immobile"]);
   }
   
   data_.set_time(time_->step(0), LimitSide::right);
@@ -251,7 +252,7 @@ void DualPorosity::set_initial_condition()
         //setting initial solid concentration for substances involved in adsorption
         for (unsigned int sbi = 0; sbi < substances_.size(); sbi++)
         {
-            data_.conc_immobile_fe[sbi]->vec()[dof_p0] = data_.init_conc_immobile[sbi].value(ele.centre(), ele);
+            data_.conc_immobile_fe[sbi]->vec().set( dof_p0, data_.init_conc_immobile[sbi].value(ele.centre(), ele) );
         }
     }
 }
@@ -301,8 +302,8 @@ void DualPorosity::compute_reaction(const DHCellAccessor& dh_cell)
     {
         exponent = diff_vec[sbi] * temp_exponent;
         //previous values
-        previous_conc_mob = conc_mobile_fe[sbi]->vec()[dof_p0];
-        previous_conc_immob = data_.conc_immobile_fe[sbi]->vec()[dof_p0];
+        previous_conc_mob = conc_mobile_fe[sbi]->vec().get(dof_p0);
+        previous_conc_immob = data_.conc_immobile_fe[sbi]->vec().get(dof_p0);
         
         // ---compute average concentration------------------------------------------
         conc_average = ((por_mob * previous_conc_mob) + (por_immob * previous_conc_immob)) 
@@ -333,8 +334,8 @@ void DualPorosity::compute_reaction(const DHCellAccessor& dh_cell)
             conc_immob = (previous_conc_immob - conc_average) * temp + conc_average;
         }
         
-        conc_mobile_fe[sbi]->vec()[dof_p0] = conc_mob;
-        data_.conc_immobile_fe[sbi]->vec()[dof_p0] = conc_immob;
+        conc_mobile_fe[sbi]->vec().set(dof_p0, conc_mob);
+        data_.conc_immobile_fe[sbi]->vec().set(dof_p0, conc_immob);
     }
 }
 

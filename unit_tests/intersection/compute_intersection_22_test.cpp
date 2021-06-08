@@ -138,7 +138,7 @@ TEST(intersections_22d, all) {
         for(unsigned int p=0; p<np; p++)
         {
             MessageOut() << "Computing intersection on mesh: " << filenames[s] << "\n";
-            string in_mesh_string = "{mesh_file=\"" + dir_name + filenames[s] + "\"}";
+            string in_mesh_string = "{ mesh_file=\"" + dir_name + filenames[s] + "\", optimize_mesh=false }";
             
             Mesh *mesh = mesh_constructor(in_mesh_string);
             // read mesh with gmshreader

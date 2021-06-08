@@ -45,7 +45,7 @@ problem: !Coupling_Sequential
         - rid: 7
           init_conc: 0
           porosity: 1
-        - rid: 100
+        - rid: 100  
           sources_density: !FieldFormula
             value: max(4-t,0)
         - rid: 200

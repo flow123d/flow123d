@@ -60,7 +60,7 @@ public:
 	    Profiler::instance();
 	    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-	    my_mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
+	    my_mesh = mesh_full_constructor("{ mesh_file=\"mesh/simplest_cube.msh\", optimize_mesh=false }");
 
 
 	    field_.name("test_field");
@@ -78,6 +78,7 @@ public:
 		test_input_list->finish();
 
 		my_domain = my_mesh->region_db().get_region_set("BULK");
+		my_domain_names = {"BULK"};
 
 		string field_input = "[{a=314}]";
 		if (this->is_enum_valued) field_input = "[{a=\"white\"}]";
@@ -149,6 +150,9 @@ public:
 
 	// BULK domain
 	RegionSet my_domain;
+
+	// Vector of names of BULK domain
+	std::vector<std::string> my_domain_names;
 
 	// FieldConstant with value 314 (numeric return value) or "white" (enum return value)
 	std::shared_ptr<typename FieldType::FieldBaseType> my_field_algo_base;
@@ -276,7 +280,7 @@ TYPED_TEST(FieldFix, mark_input_times) {
 
 
 TYPED_TEST(FieldFix, set_mesh) {
-	EXPECT_ASSERT_DEATH( {this->set_field(this->my_domain, this->my_field_algo_base);}, "Null; mesh pointer");
+	EXPECT_ASSERT_DEATH( {this->set(this->my_field_algo_base, 0.0, this->my_domain_names);}, "Null; mesh pointer");
 
 	EXPECT_EQ(nullptr, this->shared_->mesh_);
 	this->set_mesh(*(this->my_mesh));
@@ -292,7 +296,7 @@ TYPED_TEST(FieldFix, set_mesh) {
 
 TYPED_TEST(FieldFix, set_field) {
 	this->set_mesh(*(this->my_mesh));
-	this->set_field(this->my_domain, this->my_field_algo_base);
+	this->set(this->my_field_algo_base, 0.0, this->my_domain_names);
 
 	Region reg = this->my_domain[0];
 	auto const &history = this->data_->region_history_[reg.idx()];
@@ -301,20 +305,20 @@ TYPED_TEST(FieldFix, set_field) {
 	EXPECT_EQ(0.0, history[0].first);
 	EXPECT_TRUE( bool(history[0].second) );
 
-	this->set_field(this->my_domain, this->my_field_algo_base, 3.0);
+	this->set(this->my_field_algo_base, 3.0, this->my_domain_names);
 	EXPECT_EQ(2, history.size());
 	EXPECT_EQ(3.0, history[0].first);
 	EXPECT_EQ(0.0, history[1].first);
 
-	EXPECT_ASSERT_DEATH( {this->set_field(this->my_domain, this->my_field_algo_base, 1.0);}, "" );
+	EXPECT_ASSERT_DEATH( {this->set(this->my_field_algo_base, 1.0, this->my_domain_names);}, "" );
 
-	this->set_field(this->my_domain, this->my_field_algo_base, 6.0);
+	this->set(this->my_field_algo_base, 6.0, this->my_domain_names);
 	EXPECT_EQ(3, history.size());
 	EXPECT_EQ(6.0, history[0].first);
 	EXPECT_EQ(3.0, history[1].first);
 	EXPECT_EQ(0.0, history[2].first);
 
-	this->set_field(this->my_domain, this->my_field_algo_base, 7.0);
+	this->set(this->my_field_algo_base, 7.0, this->my_domain_names);
 	EXPECT_EQ(3, history.size());
 	EXPECT_EQ(7.0, history[0].first);
 	EXPECT_EQ(6.0, history[1].first);
@@ -598,7 +602,7 @@ TEST(Field, init_from_input) {
 	Profiler::instance();
 	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-	Mesh * mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
+	Mesh * mesh = mesh_full_constructor("{ mesh_file=\"mesh/simplest_cube.msh\", optimize_mesh=false }");
 
     Field<3, FieldValue<3>::Enum > sorption_type;
     Field<3, FieldValue<3>::VectorFixed > init_conc;
@@ -635,12 +639,12 @@ TEST(Field, init_from_input) {
     conductivity.units( UnitSI().m() );
     conductivity_3d.units( UnitSI().m() );
 
-    auto region_set = mesh->region_db().get_region_set("BULK");
+    std::vector<std::string> region_set_names = {"BULK"};
 
-    sorption_type.set_field(region_set, in_rec.val<Input::AbstractRecord>("sorption_type"));
-    init_conc.set_field(region_set, in_rec.val<Input::AbstractRecord>("init_conc"));
-    conductivity.set_field(region_set, in_rec.val<Input::AbstractRecord>("conductivity"));
-    conductivity_3d.set_field(region_set, in_rec.val<Input::AbstractRecord>("conductivity_3d"));
+    sorption_type.set(in_rec.val<Input::AbstractRecord>("sorption_type"), 0.0, region_set_names);
+    init_conc.set(in_rec.val<Input::AbstractRecord>("init_conc"), 0.0, region_set_names);
+    conductivity.set(in_rec.val<Input::AbstractRecord>("conductivity"), 0.0, region_set_names);
+    conductivity_3d.set(in_rec.val<Input::AbstractRecord>("conductivity_3d"), 0.0, region_set_names);
 
 
 
@@ -742,7 +746,7 @@ TEST(Field, field_result) {
 
     TimeGovernor tg(0.0, 1.0);
 
-    Mesh * mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
+    Mesh * mesh = mesh_full_constructor("{ mesh_file=\"mesh/simplest_cube.msh\", optimize_mesh=false }");
 
     it::Array main_array =IT::Array(
             TestFieldSet().make_field_descriptor_type("TestFieldSet")
@@ -762,8 +766,8 @@ TEST(Field, field_result) {
     Region diagonal_2d = mesh->region_db().find_label("2D XY diagonal");
     Region front_3d = mesh->region_db().find_label("3D front");
     Region back_3d = mesh->region_db().find_label("3D back");
-    Region top_side = mesh->region_db().find_label(".top side");
-    Region bottom_side = mesh->region_db().find_label(".bottom side");
+    //Region top_side = mesh->region_db().find_label(".top side");
+    //Region bottom_side = mesh->region_db().find_label(".bottom side");
 
     EXPECT_EQ( result_none, data.scalar.field_result({diagonal_1d}) );
     EXPECT_EQ( result_none, data.scalar.field_result({diagonal_2d}) );
@@ -817,7 +821,7 @@ TEST(Field, init_from_default) {
 
     Profiler::instance();
     
-    Mesh * mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
+    Mesh * mesh = mesh_full_constructor("{ mesh_file=\"mesh/simplest_cube.msh\", optimize_mesh=false }");
 
     Space<3>::Point p("1 2 3");
 
@@ -888,7 +892,7 @@ TEST(Field, disable_where) {
 
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-    Mesh * mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
+    Mesh * mesh = mesh_full_constructor("{ mesh_file=\"mesh/simplest_cube.msh\", optimize_mesh=false }");
 
     bc_type.set_mesh(*mesh);
     bc_flux.set_mesh(*mesh);
@@ -914,15 +918,15 @@ TEST(Field, disable_where) {
     auto one = std::make_shared<SConst>();
     one->set_value(1.0);
 
-    bc_type.set_field(RegionSet(1, mesh->region_db().find_id(101)), neumann_type );
-    bc_flux.set_field(RegionSet(1, mesh->region_db().find_id(101)), one );
+    bc_type.set(neumann_type, 0.0, {".top side"} );
+    bc_flux.set(one, 0.0, {".top side"} );
 
-    bc_type.set_field(RegionSet(1, mesh->region_db().find_id(102)), robin_type );
-    bc_value.set_field(RegionSet(1, mesh->region_db().find_id(102)), one );
-    bc_sigma.set_field(RegionSet(1, mesh->region_db().find_id(102)), one );
+    bc_type.set(robin_type, 0.0, {".bottom side"} );
+    bc_value.set(one, 0.0, {".bottom side"} );
+    bc_sigma.set(one, 0.0, {".bottom side"} );
 
-    bc_type.set_field(RegionSet(1, mesh->region_db().find_id(-3)), neumann_type );
-    bc_flux.set_field(RegionSet(1, mesh->region_db().find_id(-3)), one );
+    bc_type.set(neumann_type, 0.0, {".IMPLICIT_BOUNDARY"}  );
+    bc_flux.set(one, 0.0, {".IMPLICIT_BOUNDARY"}  );
 
 
 
@@ -937,6 +941,23 @@ TEST(Field, disable_where) {
     delete mesh;
 }
 
+
+
+// Inherited class that allows to set EvalPointData
+class ElementCacheMapTest : public ElementCacheMap {
+public:
+    ElementCacheMapTest(): ElementCacheMap() {}
+
+    void add_cell_eval_points(DHCellAccessor cell, std::shared_ptr<BulkIntegral> bulk_int) {
+        unsigned int reg_idx = cell.elm().region_idx().idx();
+        for (auto p : bulk_int->points(this->position_in_cache(cell.elm_idx()), this) ) {
+            EvalPointData epd(reg_idx, cell.elm_idx(), p.eval_point_idx(), cell.local_idx());
+            this->eval_point_data_.push_back(epd);
+        }
+        this->eval_point_data_.make_permanent();
+    }
+
+};
 
 
 string field_value_input = R"INPUT(
@@ -962,7 +983,7 @@ TEST(Field, field_values) {
 	Profiler::instance();
 	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-	Mesh * mesh = mesh_full_constructor("{mesh_file=\"mesh/cube_2x1.msh\"}");
+	Mesh * mesh = mesh_full_constructor("{ mesh_file=\"mesh/cube_2x1.msh\", optimize_mesh=false }");
 	std::shared_ptr<DOFHandlerMultiDim> dh = std::make_shared<DOFHandlerMultiDim>(*mesh);
 
     Field<3, FieldValue<0>::Enum > color_field;
@@ -1003,12 +1024,13 @@ TEST(Field, field_values) {
     tensor_field.units( UnitSI().m() );
 
     auto region_set = mesh->region_db().get_region_set("BULK");
+    std::vector<std::string> region_set_names = {"BULK"};
 
-    color_field.set_field(region_set, in_rec.val<Input::AbstractRecord>("color"));
-    int_field.set_field(region_set, in_rec.val<Input::AbstractRecord>("integer"));
-    scalar_field.set_field(region_set, in_rec.val<Input::AbstractRecord>("scalar"));
-    vector_field.set_field(region_set, in_rec.val<Input::AbstractRecord>("vector"));
-    tensor_field.set_field(region_set, in_rec.val<Input::AbstractRecord>("tensor"));
+    color_field.set(in_rec.val<Input::AbstractRecord>("color"), 0.0, region_set_names);
+    int_field.set(in_rec.val<Input::AbstractRecord>("integer"), 0.0, region_set_names);
+    scalar_field.set(in_rec.val<Input::AbstractRecord>("scalar"), 0.0, region_set_names);
+    vector_field.set(in_rec.val<Input::AbstractRecord>("vector"), 0.0, region_set_names);
+    tensor_field.set(in_rec.val<Input::AbstractRecord>("tensor"), 0.0, region_set_names);
 
     color_field.set_time(TimeGovernor().step(), LimitSide::right);
     int_field.set_time(TimeGovernor().step(), LimitSide::right);
@@ -1022,30 +1044,22 @@ TEST(Field, field_values) {
     Quadrature *q_side = new QGauss(2, 2);
     std::shared_ptr<BulkIntegral> mass_eval = eval_points->add_bulk<3>(*q_bulk );
     std::shared_ptr<EdgeIntegral> side_eval = eval_points->add_edge<3>(*q_side );
-    ElementCacheMap elm_cache_map;
+    ElementCacheMapTest elm_cache_map;
     elm_cache_map.init(eval_points);
-    color_field.cache_allocate(eval_points);
-    int_field.cache_allocate(eval_points);
-    scalar_field.cache_allocate(eval_points);
-    vector_field.cache_allocate(eval_points);
-    tensor_field.cache_allocate(eval_points);
 
     // fill FieldValueCaches
     DHCellAccessor dh_cell(dh.get(), 4);
     elm_cache_map.start_elements_update();
-    elm_cache_map.add(dh_cell);
-    elm_cache_map.prepare_elements_to_update();
-    elm_cache_map.mark_used_eval_points( dh_cell, mass_eval->get_subset_idx(), eval_points->subset_size(dh_cell.dim(), mass_eval->get_subset_idx()) );
-    elm_cache_map.create_elements_points_map();
-    color_field.cache_update(elm_cache_map);
-    int_field.cache_update(elm_cache_map);
-    scalar_field.cache_update(elm_cache_map);
-    vector_field.cache_update(elm_cache_map);
-    tensor_field.cache_update(elm_cache_map);
+    elm_cache_map.add_cell_eval_points(dh_cell, mass_eval);
+    elm_cache_map.create_patch();
+    color_field.cache_update(elm_cache_map, 0);
+    int_field.cache_update(elm_cache_map, 0);
+    scalar_field.cache_update(elm_cache_map, 0);
+    vector_field.cache_update(elm_cache_map, 0);
+    tensor_field.cache_update(elm_cache_map, 0);
     elm_cache_map.finish_elements_update();
 
-    DHCellAccessor cache_cell = elm_cache_map(dh_cell);
-    for(BulkPoint q_point: mass_eval->points(cache_cell, &elm_cache_map)) {
+    for(BulkPoint q_point: mass_eval->points(elm_cache_map.position_in_cache(dh_cell.elm_idx()), &elm_cache_map)) {
         EXPECT_EQ( 1, color_field(q_point) );
         EXPECT_EQ( -1, int_field(q_point) );
         EXPECT_DOUBLE_EQ( 1.5, scalar_field(q_point) );

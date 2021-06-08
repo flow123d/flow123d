@@ -90,7 +90,7 @@ OutputTime::OutputDataPtr OutputTime::prepare_compute_data(std::string field_nam
         }
         case ELEM_DATA:
         case NATIVE_DATA:
-            size = output_mesh_->offsets_->n_values();
+            size = output_mesh_->offsets_->n_values()-1;
             break;
         default:
             ASSERT(false).error("Should not happen.");

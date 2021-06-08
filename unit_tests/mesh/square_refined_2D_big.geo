@@ -1,0 +1,14 @@
+fine_step = 5e-7;
+mesh = 0.00455;
+Point(1) = {0, 0, 0, fine_step};
+Point(2) = {1, 0, 0, mesh};
+Point(3) = {1, 1, 0, fine_step};
+Point(4) = {0, 1, 0, mesh};
+Line(1) = {1, 2};
+Line(2) = {2, 3};
+Line(3) = {3, 4};
+Line(4) = {4, 1};
+Line Loop(7) = {4, 1, 2, 3};
+Plane Surface(7) = {7};
+Physical Line(".boundary") = {1, 2, 3, 4};
+Physical Surface("plane") = {7};

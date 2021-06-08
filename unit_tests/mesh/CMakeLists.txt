@@ -23,7 +23,7 @@
 
 #set(super_test_libs fast_intersection_lib field_lib mesh_lib system_lib)
 
-set(libs mesh_lib system_lib io_lib)
+set(libs mesh_lib system_lib io_lib tools_lib)
 add_test_directory("${libs}")
     
     define_test(ref_element)
@@ -41,8 +41,5 @@ add_test_directory("${libs}")
     define_mpi_test(mesh 1)
     define_mpi_test(mesh 2)
     define_test(range)
-
-
-
-
+    define_mpi_test(mesh_optimization 1)
 

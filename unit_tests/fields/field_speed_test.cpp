@@ -43,8 +43,12 @@ FLOW123D_FORCE_LINK_IN_PARENT(field_fe)
 
 using namespace std;
 
-
+// Use less number of loops in debug (slow) mode
+#ifdef FLOW123D_DEBUG
+static const uint default_n_loop  = 5000;
+#else
 static const uint default_n_loop  = 20000;
+#endif
 static const uint list_size = 20;
 
 
@@ -124,7 +128,7 @@ public:
 
 	    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-	    mesh_ = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
+	    mesh_ = mesh_full_constructor("{ mesh_file=\"mesh/simplest_cube.msh\", optimize_mesh=false }");
 	    // 13 elements total
 	    // 1x1d, 2x2d, 6x3d; 4x 2d boundary
 	}

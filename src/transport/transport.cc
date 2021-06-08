@@ -86,7 +86,7 @@ const IT::Record &ConvectionTransport::get_input_type()
 }
 
 
-ConvectionTransport::EqData::EqData() : TransportEqData()
+ConvectionTransport::EqData::EqData() : TransportEqFields()
 {
     *this += bc_conc.name("bc_conc")
             .description("Boundary condition for concentration of substances.")
@@ -162,7 +162,7 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record in
   input_rec(in_rec)
 {
 	START_TIMER("ConvectionTransport");
-	this->eq_data_ = &data_;
+	this->eq_fieldset_ = &data_;
 
     transport_matrix_time = -1.0; // or -infty
     transport_bc_time = -1.0;
@@ -202,8 +202,8 @@ void ConvectionTransport::initialize()
 	for (unsigned int sbi=0; sbi<n_substances(); sbi++)
 	{
 		// create shared pointer to a FieldFE and push this Field to output_field on all regions
-        data_.conc_mobile_fe[sbi] = create_field_fe< 3, FieldValue<3>::Scalar >(dh_);
-		data_.conc_mobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), data_.conc_mobile_fe[sbi], 0);
+		data_.conc_mobile_fe[sbi] = create_field_fe< 3, FieldValue<3>::Scalar >(dh_);
+		data_.conc_mobile[sbi].set(data_.conc_mobile_fe[sbi], 0);
 	}
 	//output_stream_->add_admissible_field_names(input_rec.val<Input::Array>("output_fields"));
     //output_stream_->mark_output_times(*time_);
@@ -312,7 +312,7 @@ void ConvectionTransport::set_initial_condition()
 		ElementAccessor<3> ele_acc = mesh_->element_accessor( dh_cell.elm_idx() );
         
 		for (unsigned int sbi=0; sbi<n_substances(); sbi++) { // Optimize: SWAP LOOPS
-			vecs[sbi][index] = data_.init_conc[sbi].value(ele_acc.centre(), ele_acc);
+			vecs[sbi].set( index, data_.init_conc[sbi].value(ele_acc.centre(), ele_acc) );
         }
 	}
 }

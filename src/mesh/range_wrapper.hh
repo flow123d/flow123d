@@ -62,7 +62,27 @@ private:
  * Same as previous but doesn't provide specialization of operators '*' and '->'.
  */
 template<class Object>
-using Range = RangeConvert<Object, Object>;
+class Range
+{
+public:
+	/// Constructor.
+	Range(Iter<Object> begin, Iter<Object> end)
+	: begin_(begin), end_(end) {}
+
+	/// Iterator to begin item of range.
+	Iter<Object> begin() {
+		return begin_;
+	}
+
+	/// Iterator to end item of range.
+	Iter<Object> end() {
+		return end_;
+	}
+
+private:
+	Iter<Object> begin_;
+	Iter<Object> end_;
+};
 
 
 #endif // RANGE_WRAPPER_HH_

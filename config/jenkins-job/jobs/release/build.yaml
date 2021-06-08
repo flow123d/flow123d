@@ -10,7 +10,7 @@ builders:
   - shell: |
       # start image
       docker rm -f cont{build-type} || echo "container not running"
-      flow123d/bin/fterm -v rel -- \
+      flow123d/bin/fterm rel -- \
           --privileged -di \
           --name cont{build-type} \
           --volume /home/builder/git-cache/flow123d.git:/home/builder/git-cache/flow123d.git \

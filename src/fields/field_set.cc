@@ -18,9 +18,16 @@
 #include "fields/field_set.hh"
 #include "system/sys_profiler.hh"
 #include "input/flow_attribute_lib.hh"
+#include "fem/mapping_p1.hh"
+#include "mesh/ref_element.hh"
+#include "tools/bidirectional_map.hh"
+#include "fields/dfs_topo_sort.hh"
 #include <boost/algorithm/string/replace.hpp>
+#include <queue>
 
 
+FieldSet::FieldSet()
+{}
 
 FieldSet &FieldSet::operator +=(FieldCommon &add_field) {
     FieldCommon *found_field = field(add_field.name());
@@ -44,6 +51,7 @@ FieldSet &FieldSet::operator +=(const FieldSet &other) {
 
 FieldSet FieldSet::subset(std::vector<std::string> names) const {
     FieldSet set;
+    set.set_mesh( *this->mesh_ );
     for(auto name : names) set += (*this)[name];
     return set;
 }
@@ -181,6 +189,105 @@ bool FieldSet::is_jump_time() const {
     bool is_jump = false;
     for(auto field : field_list) is_jump = is_jump || field->is_jump_time();
     return is_jump;
+}
+
+
+void FieldSet::cache_update(ElementCacheMap &cache_map) {
+    ASSERT_GT_DBG(region_field_update_order_.size(), 0).error("Variable 'region_dependency_list' is empty. Did you call 'set_dependency' method?\n");
+    for (unsigned int i_reg_patch=0; i_reg_patch<cache_map.n_regions(); ++i_reg_patch) {
+        for (const FieldCommon *field : region_field_update_order_[cache_map.region_idx_from_chunk_position(i_reg_patch)])
+            field->cache_update(cache_map, i_reg_patch);
+    }
+}
+
+
+void FieldSet::set_dependency(FieldSet &used_fieldset) {
+    BidirectionalMap<const FieldCommon *> field_indices_map; // position of field / multifield component in FieldSet
+    for (FieldListAccessor f_acc : this->fields_range())
+        field_indices_map.add_item( f_acc.field() );
+    region_field_update_order_.clear();
+    std::vector<bool> used_fields(field_indices_map.size()); // marks used fields (positions correspond to field_indices_map)
+    std::queue<const FieldCommon *> q;
+
+    unordered_map<std::string, unsigned int>::iterator it;
+    for (unsigned int i_reg=0; i_reg<mesh_->region_db().size(); ++i_reg) {
+        // TODO:
+        // - move the loop body into separate method
+        // - Remove explicit creation of the graph.
+        // - Just move topological_sort_util to FieldSet and iterate over requested fields
+        //   directly. Pushback the closed fields directly into region_field_update_order_[i_reg] call std::reverse after
+        //   DFS for a single region.
+        // - Use an unordered_set to mark visited fields instead of BidirectionalMap + used_fields.
+
+        DfsTopoSort dfs(field_indices_map.size());
+        std::fill(used_fields.begin(), used_fields.end(), false);
+        uint n_used_fields = 0; // number of all used fields (size of used_fieldset + fields depending on FieldFormula and FieldModel)
+        for (FieldListAccessor f_acc : used_fieldset.fields_range()) {
+            q.push(f_acc.field());
+            n_used_fields++;
+            used_fields[ field_indices_map.get_position( f_acc.field() ) ] = true;
+        }
+        while (q.size() > 0) {
+            auto field = q.front();
+            int field_idx = field_indices_map.get_position( field );
+            ASSERT_GE_DBG(field_idx, 0);
+            auto dep_vec = field->set_dependency(*this, i_reg); // vector of dependent fields
+            for (auto f : dep_vec) {
+                uint field_pos = field_indices_map.get_position(f);
+                dfs.add_edge( uint(field_idx), field_pos );
+                if (!used_fields[ field_pos ]) {
+                    q.push(f);
+                    n_used_fields++;
+                    used_fields[ field_pos ] = true;
+                }
+            }
+            q.pop();
+        }
+        auto sort_vec = dfs.topological_sort();
+        region_field_update_order_[i_reg] = std::vector<const FieldCommon *>(n_used_fields);
+        for (unsigned int i_field=0, i_order=0; i_field<sort_vec.size(); ++i_field) {
+            if ( !used_fields[sort_vec[i_field]] ) continue;
+        	region_field_update_order_[i_reg][i_order] = field_indices_map[ sort_vec[i_field] ];
+        	i_order++;
+        }
+    }
+}
+
+
+void FieldSet::add_coords_field() {
+    *this += X_.name("X")
+               .units(UnitSI().m())
+               .input_default("0.0")
+               .flags( FieldFlag::input_copy )
+               .description("Coordinates field.");
+
+    *this += depth_.name("d")
+               .units(UnitSI().m())
+               .input_default("0.0")
+               .flags( FieldFlag::input_copy )
+               .description("Depth field.");
+
+    depth_.set_field_coords(&X_);
+}
+
+
+Range<FieldListAccessor> FieldSet::fields_range() const {
+    auto bgn_it = make_iter<FieldListAccessor>( FieldListAccessor(field_list, 0) );
+    auto end_it = make_iter<FieldListAccessor>( FieldListAccessor(field_list, field_list.size()) );
+    return Range<FieldListAccessor>(bgn_it, end_it);
+}
+
+
+std::string FieldSet::print_dependency() const {
+    ASSERT_GT_DBG(region_field_update_order_.size(), 0).error("Variable 'region_dependency_list' is empty. Did you call 'set_dependency' method?\n");
+    std::stringstream s;
+    for (auto reg_it : region_field_update_order_) {
+        s << "\nregion_idx " << reg_it.first << ": ";
+        for (auto f_it : reg_it.second) {
+            s << f_it->name() << ", ";
+        }
+    }
+    return s.str();
 }
 
 
