@@ -61,8 +61,8 @@ BasicFactors::BasicFactors() {
 			{ "n", 1e-9 },
 			{ "u", 1e-6 },
 			{ "m", 1e-3 },
-			{ "d", 1e-2 },
-			{ "c", 1e-1 },
+			{ "c", 1e-2 },
+			{ "d", 1e-1 },
 			{ "",  1 },
 			{ "h", 1e+2 }, // deka is missing as it is a two letter prefix
 			{ "k", 1e+3 },
