@@ -112,6 +112,13 @@ HM_Iterative::EqData::EqData()
 }
 
 /// Define conductivity model functor using cubic law
+/// hm_conductivity = k_o * (a^2)/delta
+/// where  k_o = flow_conductivity ; This is the same conductivity in Darcy model (by user)
+/// delta = initial_cs ; which is the initial fracture cross-ection to start with (by user)
+/// a = delta_min + max([u].n + delta-delta_min, 0.0) ; fracture aperture
+/// delta_min = positive lower limit due to fracture closing (by user)
+/// [u].n + delta-delta_min = updated_cs ; This will be a updated from elasticity model
+
 struct fn_K_mechanics {
 	inline double operator() (double updated_cs, double initial_cs, double min_cs_bound, double flow_conductivity) {
         return flow_conductivity*pow(((min_cs_bound + std::max(updated_cs - min_cs_bound, 0.0) )/initial_cs),2);
@@ -138,14 +145,9 @@ void HM_Iterative::EqData::initialize(Mesh &mesh)
     div_u_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(beta_ptr_->get_dofhandler());
     old_div_u_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(beta_ptr_->get_dofhandler());
 
-    // // setup mechanics
-    // Record mech_rec = in_record.val<Record>("mechanics_equation");
-    // mechanics_ = std::make_shared<Elasticity>(*mesh_, mech_rec, this->time_);
+    /// Updacted conductivity due to fracture closing and opening
+    conductivity_model.set(Model<3, FieldValue<3>::Scalar>::create(fn_K_mechanics(), output_cross_section, cross_section, delta_min, conductivity_k0), 0.0);
 
-    // conductivity_k0 = create_field_fe<3, FieldValue<3>::Scalar>(mesh, MixedPtr<FE_P_disc>(0));
-    /// Initialize conducitvity ptr
-    auto fn = fn_K_mechanics();
-    conductivity_model.set_field(mesh.region_db().get_region_set("ALL"), Model<3, FieldValue<3>::Scalar>::create(&fn, output_cross_section, cross_section, delta_min, conductivity_k0));
 }
 
       
@@ -183,8 +185,8 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
     // Setup coupling conductivity K_o)
     // copy_filed(flow_->data().field("conductivity"), data_.conductivity_k0);
     data_.conductivity_k0.copy_from(*flow_->data().field("conductivity"));
-    data_.cross_section.copy_from(*mechanics_->data().field("cross_section"));
-    data_.output_cross_section.copy_from(*mechanics_->data().field("output_cross_section"));
+    data_.cross_section.copy_from(*mechanics_->eq_fields().field("cross_section"));
+    data_.output_cross_section.copy_from(*mechanics_->eq_fields().field("output_cross_section"));
 
     // setup input fields
     data_.set_input_list( in_record.val<Input::Array>("input_fields"), time() );
