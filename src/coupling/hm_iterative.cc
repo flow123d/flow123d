@@ -93,28 +93,22 @@ HM_Iterative::EqData::EqData()
     *this += flow_source.name("extra_flow_source")
                      .units(UnitSI().s(-1))
                      .flags(FieldFlag::equation_result);
-
-    *this += conductivity_k0.name("conductivity_k0")
-                     .description("Initial conductivity for cubic law in fracture and same as other.")
-                     .input_default("1.0")
-                     .units( UnitSI().m().s(-1) );
-                                          
+                                         
     *this += delta_min.name("delta_min")
                      .description("Minimum non-zero thresold value for deformed cross-section.")
                      .units( UnitSI().m(3).md() );
                      
     *this += conductivity_model.name("conductivity_model")
                      .description("fracture_induced_conductivity.")
-                     .input_default("1.0")
                      .units( UnitSI().m().s(-1) );
                      
 
 }
 
-/// Define conductivity model functor using cubic law
+/// Define conductivity model functor using CUBIC LAW
 /// hm_conductivity = k_o * (a^2)/delta
-/// where  k_o = flow_conductivity ; This is the same conductivity in Darcy model (by user)
-/// delta = initial_cs ; which is the initial fracture cross-ection to start with (by user)
+/// where  k_o = flow_conductivity ; This is the same conductivity in Darcy model (copied from Darcy model)
+/// delta = initial_cs ; which is the initial fracture cross-ection to start with (initialized from mechanics)
 /// a = delta_min + max([u].n + delta-delta_min, 0.0) ; fracture aperture
 /// delta_min = positive lower limit due to fracture closing (by user)
 /// [u].n + delta-delta_min = updated_cs ; This will be a updated from elasticity model
@@ -182,8 +176,7 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
 
     this->eq_fieldset_ = &data_;
     
-    // Setup coupling conductivity K_o)
-    // copy_filed(flow_->data().field("conductivity"), data_.conductivity_k0);
+    // new filed has been created for HM_iterative
     data_.conductivity_k0.copy_from(*flow_->data().field("conductivity"));
     data_.cross_section.copy_from(*mechanics_->eq_fields().field("cross_section"));
     data_.output_cross_section.copy_from(*mechanics_->eq_fields().field("output_cross_section"));
