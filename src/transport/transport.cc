@@ -428,7 +428,7 @@ void ConvectionTransport::conc_sources_bdr_conditions() {
                 source = csection * (data_.sources_density[sbi].value(center, elm)
                      + src_sigma * data_.sources_conc[sbi].value(center, elm));
                 // addition to RHS
-                corr_vec[sbi][local_p0_dof] = source;
+                corr_vec[sbi].set(local_p0_dof, source);
                 // addition to diagonal of the transport matrix
                 diag = src_sigma * csection;
                 tm_diag[sbi][local_p0_dof] = - diag;
