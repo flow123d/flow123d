@@ -41,38 +41,6 @@
 SystemInfo sys_info;
 
 
-/// @brief INTERNAL DEFINITIONS FOR XPRINTF
-/// @{
-
-struct MsgFmt {
-	int  num;           ///< format number
-	bool log;		    ///< log the message - YES/NO
-	bool mpi;           ///< treat as global message (invoke MPI_Barrier() when printing)
-	int screen;	        ///< print to stdout,stderr,NULL
-    bool stop;          ///< terminate the program
-	const char * head;	///< message formating string
-};
-
-#define SCR_NONE	0
-#define SCR_STDOUT	1
-#define SCR_STDERR	2
-
-/// configuration table for individual message types defined in system.h
-/// Msg type    Log    mpi      screen      Stop    message header
-#define	NUM_OF_FMTS		8
-static struct MsgFmt msg_fmt[] = {
-	{Msg, 		true,  false,   SCR_STDOUT,	false,	NULL},
-	{MsgDbg,    true,  false,   SCR_STDOUT, false,  "    DBG ({}, {}(), {:d}):"},
-	{MsgLog,	true,  false,   SCR_NONE,	false,	NULL},
-	{MsgVerb,	false, false,   SCR_STDOUT,	false,	NULL},
-	{Warn,		true,  false,   SCR_STDERR,	false,	"\nWarning ({}, {}(), {:d}):\n"},
-	{UsrErr,	true,  false,   SCR_NONE,	true,	"\nUser Error ({}, {}(), {:d}):\n"},
-	{Err,		true,  false,   SCR_NONE,	true,	"\nError ({}, {}(), {:d}):\n"},
-	{PrgErr,	true,  false,   SCR_NONE,	true,	"\nInternal Error ({}, {}(), {:d}):\n"}
-};
-
-/// @}
-
 /*!
  * @brief Memory allocation with checking.
  *
