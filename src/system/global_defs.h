@@ -28,28 +28,6 @@
 #include "mpi.h"
 #include "logger.hh"
 
-/*! @brief Debugging macros.
- *
- *  The macro OLD_ASSERT has to be used for assertion tests. An error occures if
- *  given condition is violated.  Macro accepts additional variables to print.
- *
- *  Example:
- *  @verbatim
- *  OLD_ASSERT( i<size , "Array X overflow: index %d >= alocated size %d.\n",i,size);
- *  @endverbatim
- *
- *  The macro INPUT_CHECK should be used for assertions about user input. So
- *  they produce User Error instead of Program error.
- *
- *  The macro DBGCOUT should be used for debugging messages,
- *  so they can be removed in production version.
- *
- *  OLD_WARN_ASSERT - can be used for consistency tests in debugging version.
- *
- *  @{
- */
- #define INPUT_CHECK(i,...)   do { if (!(i))   xprintf(UsrErr,__VA_ARGS__); } while (0)
-
 /**
  * Actually there are following debugging switches
  * FLOW123D_DEBUG_MESSAGES  - use various debugging messages introduced by DBGCOUT
