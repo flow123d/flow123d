@@ -58,7 +58,7 @@ builders:
   # ---------- START IMAGE ----------------------------------------------- #
   - multijob:
       name: "Build flow123d Phase"
-      condition: COMPLETED
+      condition: SUCCESSFUL
       projects:
         - name: "Flow123d-{platform}-release-build"
           current-parameters: true
