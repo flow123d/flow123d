@@ -177,7 +177,7 @@ This list is processed at individual times overwriting previous values of }\begi
 		\RecKey
 			{TimeGovernor::common-time-unit}
 			{common{\_}time{\_}unit}
-			{{String}}{}
+			{{record: }\TypeLink{IT::Unit}{Unit}}{}
 			{ \ValueDefault{"s"}}
 			{{{Common time unit of the equation.}\\{
 This unit will be used for all time inputs and outputs within the equation.
@@ -211,9 +211,15 @@ Time units are used in the following cases:}\\{
 			{TimeValue::unit}
 			{unit}
 			{{record: }\TypeLink{IT::Unit}{Unit}}{}
-			{implicit value: "{The time unit.}"}
-			{{{User can benefit from the Unit Convertor funcionality, e.g. creating own time units.}% 
-}}
+			{implicit value: "{Common time unit of the equation's Time Governor.
+See the key 'common{\_}time{\_}unit'.}"}
+			{{{{Predefined units include: }\begin{ttfamily}s\end{ttfamily}{ seconds, }\begin{ttfamily}min\end{ttfamily}{ minutes, }\begin{ttfamily}h\end{ttfamily}{ hours, }\begin{ttfamily}d\end{ttfamily}{ days, }\begin{ttfamily}y\end{ttfamily}{ years.}\\{
+The default time unit is set from the equation's time governor, see the key }\begin{ttfamily}common{\_}time{\_}unit\end{ttfamily}{in the equation's time record.}
+% 
+}{{User can benefit from the Unit Convertor funcionality and create different time units.}\\{
+Year length example considering leap years (Gregorian calendar): }\begin{ttfamily}year; year = 365.2425*d\end{ttfamily}{.}\\{
+Miliseconds example : }\begin{ttfamily}milisec; milisec = 0.001*s\end{ttfamily}{.}% 
+}}}
 \end{TupleType}
 \begin{RecordType}
 	{IT::Unit}
@@ -258,9 +264,15 @@ Example, unit for the pressure head:}
 			{TimeValue-2::unit}
 			{unit}
 			{{record: }\TypeLink{IT::Unit}{Unit}}{}
-			{implicit value: "{The time unit.}"}
-			{{{User can benefit from the Unit Convertor funcionality, e.g. creating own time units.}% 
-}}
+			{implicit value: "{Common time unit of the equation's Time Governor.
+See the key 'common{\_}time{\_}unit'.}"}
+			{{{{Predefined units include: }\begin{ttfamily}s\end{ttfamily}{ seconds, }\begin{ttfamily}min\end{ttfamily}{ minutes, }\begin{ttfamily}h\end{ttfamily}{ hours, }\begin{ttfamily}d\end{ttfamily}{ days, }\begin{ttfamily}y\end{ttfamily}{ years.}\\{
+The default time unit is set from the equation's time governor, see the key }\begin{ttfamily}common{\_}time{\_}unit\end{ttfamily}{in the equation's time record.}
+% 
+}{{User can benefit from the Unit Convertor funcionality and create different time units.}\\{
+Year length example considering leap years (Gregorian calendar): }\begin{ttfamily}year; year = 365.2425*d\end{ttfamily}{.}\\{
+Miliseconds example : }\begin{ttfamily}milisec; milisec = 0.001*s\end{ttfamily}{.}% 
+}}}
 \end{TupleType}
 \begin{TupleType}
 	{IT::DtLimits}
@@ -355,6 +367,14 @@ In particular, it is used to find the closest mesh element of an observe point; 
 			{{Filename}}{}
 			{ \it{Optional}}
 			{{{Output file with neighboring data from mesh.}% 
+}}
+		\RecKey
+			{Mesh::optimize-mesh}
+			{optimize{\_}mesh}
+			{{Bool}}{}
+			{ \ValueDefault{true}}
+			{{{If true, make optimization of nodes and elements order.
+This will speed up the calculations in assembations.}% 
 }}
 \end{RecordType}
 \begin{AbstractType}
@@ -739,7 +759,7 @@ and after the time given by the key 'time'. The field setting can be overridden 
 		\RecKey
 			{Flow-Darcy-LMH-Data::time}
 			{time}
-			{{tuple: }\TypeLink{IT::TimeValue-2}{TimeValue}}{}
+			{{tuple: }\TypeLink{IT::TimeValue}{TimeValue}}{}
 			{ \ValueDefault{0.0}}
 			{{{Apply field setting in this record after this time.}\\{
 These times have to form an increasing sequence.}% 
@@ -1085,8 +1105,9 @@ If not given by a user, we try to find the field in all sections, but we report 
 		\RecKey
 			{FieldFE::time-unit}
 			{time{\_}unit}
-			{{String}}{}
-			{implicit value: "{Common unit of TimeGovernor.}"}
+			{{record: }\TypeLink{IT::Unit}{Unit}}{}
+			{implicit value: "{Common time unit of the equation's Time Governor.
+See the key 'common{\_}time{\_}unit'.}"}
 			{{{Definition of the unit of all times defined in the mesh data file.}% 
 }}
 		\RecKey
@@ -1400,8 +1421,9 @@ If not given by a user, we try to find the field in all sections, but we report 
 		\RecKey
 			{FieldFE-2::time-unit}
 			{time{\_}unit}
-			{{String}}{}
-			{implicit value: "{Common unit of TimeGovernor.}"}
+			{{record: }\TypeLink{IT::Unit}{Unit}}{}
+			{implicit value: "{Common time unit of the equation's Time Governor.
+See the key 'common{\_}time{\_}unit'.}"}
 			{{{Definition of the unit of all times defined in the mesh data file.}% 
 }}
 		\RecKey
@@ -1741,7 +1763,7 @@ Compressed with ZLib.}%
 		\RecKey
 			{TimeGrid::begin}
 			{begin}
-			{{tuple: }\TypeLink{IT::TimeValue-2}{TimeValue}}{}
+			{{tuple: }\TypeLink{IT::TimeValue}{TimeValue}}{}
 			{implicit value: "{The initial time of the associated equation.}"}
 			{{{The start time of the grid.}% 
 }}
@@ -1756,7 +1778,7 @@ If not specified, the grid consists of the single time given by the }\begin{ttfa
 		\RecKey
 			{TimeGrid::end}
 			{end}
-			{{tuple: }\TypeLink{IT::TimeValue-2}{TimeValue}}{}
+			{{tuple: }\TypeLink{IT::TimeValue}{TimeValue}}{}
 			{implicit value: "{The end time of the simulation.}"}
 			{{{The time greater or equal to the last time in the grid.}% 
 }}
@@ -2293,7 +2315,7 @@ and after the time given by the key 'time'. The field setting can be overridden 
 		\RecKey
 			{RichardsLMH-Data::time}
 			{time}
-			{{tuple: }\TypeLink{IT::TimeValue-2}{TimeValue}}{}
+			{{tuple: }\TypeLink{IT::TimeValue}{TimeValue}}{}
 			{ \ValueDefault{0.0}}
 			{{{Apply field setting in this record after this time.}\\{
 These times have to form an increasing sequence.}% 
@@ -2733,7 +2755,7 @@ and after the time given by the key 'time'. The field setting can be overridden 
 		\RecKey
 			{Mechanics-LinearElasticity-FE-Data::time}
 			{time}
-			{{tuple: }\TypeLink{IT::TimeValue-2}{TimeValue}}{}
+			{{tuple: }\TypeLink{IT::TimeValue}{TimeValue}}{}
 			{ \ValueDefault{0.0}}
 			{{{Apply field setting in this record after this time.}\\{
 These times have to form an increasing sequence.}% 
@@ -2786,6 +2808,27 @@ These times have to form an increasing sequence.}%
 			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Coefficient of transfer of forces through fractures. }{$[-]$}% 
+}}
+		\RecKey
+			{Mechanics-LinearElasticity-FE-Data::lame-mu}
+			{lame{\_}mu}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Field lame{\_}mu. }{$[m^{-1}kgs^{-2}]$}% 
+}}
+		\RecKey
+			{Mechanics-LinearElasticity-FE-Data::lame-lambda}
+			{lame{\_}lambda}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Field lame{\_}lambda. }{$[m^{-1}kgs^{-2}]$}% 
+}}
+		\RecKey
+			{Mechanics-LinearElasticity-FE-Data::dirichlet-penalty}
+			{dirichlet{\_}penalty}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Field dirichlet{\_}penalty. }{$[m^{-1}kgs^{-2}]$}% 
 }}
 \end{RecordType}
 \begin{SelectionType}
@@ -3042,8 +3085,9 @@ If not given by a user, we try to find the field in all sections, but we report 
 		\RecKey
 			{FieldFE-3::time-unit}
 			{time{\_}unit}
-			{{String}}{}
-			{implicit value: "{Common unit of TimeGovernor.}"}
+			{{record: }\TypeLink{IT::Unit}{Unit}}{}
+			{implicit value: "{Common time unit of the equation's Time Governor.
+See the key 'common{\_}time{\_}unit'.}"}
 			{{{Definition of the unit of all times defined in the mesh data file.}% 
 }}
 		\RecKey
@@ -3125,6 +3169,21 @@ Alternatively, in case of different input mesh, several interpolation algorithms
 			{displacement{\_}divergence}
 			{{{}{$[-]$}{ Displacement divergence output.}% 
 }}
+		\SelectionItem
+			{Mechanics-LinearElasticity-FE-OutputFields::lame-mu}
+			{lame{\_}mu}
+			{{{}{$[m^{-1}kgs^{-2}]$}{ Input field: Field lame{\_}mu.}% 
+}}
+		\SelectionItem
+			{Mechanics-LinearElasticity-FE-OutputFields::lame-lambda}
+			{lame{\_}lambda}
+			{{{}{$[m^{-1}kgs^{-2}]$}{ Input field: Field lame{\_}lambda.}% 
+}}
+		\SelectionItem
+			{Mechanics-LinearElasticity-FE-OutputFields::dirichlet-penalty}
+			{dirichlet{\_}penalty}
+			{{{}{$[m^{-1}kgs^{-2}]$}{ Input field: Field dirichlet{\_}penalty.}% 
+}}
 \end{SelectionType}
 \begin{RecordType}
 	{IT::Coupling-Iterative-Data}
@@ -3153,7 +3212,7 @@ and after the time given by the key 'time'. The field setting can be overridden 
 		\RecKey
 			{Coupling-Iterative-Data::time}
 			{time}
-			{{tuple: }\TypeLink{IT::TimeValue-2}{TimeValue}}{}
+			{{tuple: }\TypeLink{IT::TimeValue}{TimeValue}}{}
 			{ \ValueDefault{0.0}}
 			{{{Apply field setting in this record after this time.}\\{
 These times have to form an increasing sequence.}% 
@@ -3288,7 +3347,7 @@ and after the time given by the key 'time'. The field setting can be overridden 
 		\RecKey
 			{Flow-Darcy-MH-Data::time}
 			{time}
-			{{tuple: }\TypeLink{IT::TimeValue-2}{TimeValue}}{}
+			{{tuple: }\TypeLink{IT::TimeValue}{TimeValue}}{}
 			{ \ValueDefault{0.0}}
 			{{{Apply field setting in this record after this time.}\\{
 These times have to form an increasing sequence.}% 
@@ -3614,7 +3673,7 @@ and after the time given by the key 'time'. The field setting can be overridden 
 		\RecKey
 			{Solute-Advection-FV-Data::time}
 			{time}
-			{{tuple: }\TypeLink{IT::TimeValue-2}{TimeValue}}{}
+			{{tuple: }\TypeLink{IT::TimeValue}{TimeValue}}{}
 			{ \ValueDefault{0.0}}
 			{{{Apply field setting in this record after this time.}\\{
 These times have to form an increasing sequence.}% 
@@ -3790,7 +3849,7 @@ and after the time given by the key 'time'. The field setting can be overridden 
 		\RecKey
 			{Solute-AdvectionDiffusion-DG-Data::time}
 			{time}
-			{{tuple: }\TypeLink{IT::TimeValue-2}{TimeValue}}{}
+			{{tuple: }\TypeLink{IT::TimeValue}{TimeValue}}{}
 			{ \ValueDefault{0.0}}
 			{{{Apply field setting in this record after this time.}\\{
 These times have to form an increasing sequence.}% 
@@ -3892,6 +3951,62 @@ These times have to form an increasing sequence.}%
 			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Coefficient of linear sorption. }{$[m^{3}kg^{-1}]$}% 
+}}
+		\RecKey
+			{Solute-AdvectionDiffusion-DG-Data::v-norm}
+			{v{\_}norm}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Velocity norm field. }{$[ms^{-1}]$}% 
+}}
+		\RecKey
+			{Solute-AdvectionDiffusion-DG-Data::mass-matrix-coef}
+			{mass{\_}matrix{\_}coef}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Matrix coefficients computed by model in mass assemblation. }{$[m^{3-d}]$}% 
+}}
+		\RecKey
+			{Solute-AdvectionDiffusion-DG-Data::retardation-coef}
+			{retardation{\_}coef}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Retardation coefficients computed by model in mass assemblation. }{$[m^{3-d}]$}% 
+}}
+		\RecKey
+			{Solute-AdvectionDiffusion-DG-Data::sources-density-out}
+			{sources{\_}density{\_}out}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Concentration sources output - density of substance source, only positive part is used.. }{$[m^{-d}kgs^{-1}]$}% 
+}}
+		\RecKey
+			{Solute-AdvectionDiffusion-DG-Data::sources-sigma-out}
+			{sources{\_}sigma{\_}out}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Concentration sources - Robin type, in{\_}flux = sources{\_}sigma * (sources{\_}conc - mobile{\_}conc). }{$[m^{3-d}s^{-1}]$}% 
+}}
+		\RecKey
+			{Solute-AdvectionDiffusion-DG-Data::sources-conc-out}
+			{sources{\_}conc{\_}out}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Concentration sources output. }{$[m^{-3}kg]$}% 
+}}
+		\RecKey
+			{Solute-AdvectionDiffusion-DG-Data::advection-coef}
+			{advection{\_}coef}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Advection coefficients model. }{$[ms^{-1}]$}% 
+}}
+		\RecKey
+			{Solute-AdvectionDiffusion-DG-Data::diffusion-coef}
+			{diffusion{\_}coef}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-3-}{Field{\_}R3{\_}to{\_}R[3,3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Diffusion coefficients model. }{$[m^{2}s^{-1}]$}% 
 }}
 		\RecKey
 			{Solute-AdvectionDiffusion-DG-Data::fracture-sigma}
@@ -4026,6 +4141,46 @@ The prescribed incoming mass flux due to diffusion can have the general form }{$
 			{{{}{$[m^{-3}kg]$}{ Concentration solution.}% 
 }}
 		\SelectionItem
+			{Solute-AdvectionDiffusion-DG-OutputFields::v-norm}
+			{v{\_}norm}
+			{{{}{$[ms^{-1}]$}{ Input field: Velocity norm field.}% 
+}}
+		\SelectionItem
+			{Solute-AdvectionDiffusion-DG-OutputFields::mass-matrix-coef}
+			{mass{\_}matrix{\_}coef}
+			{{{}{$[m^{3-d}]$}{ Input field: Matrix coefficients computed by model in mass assemblation.}% 
+}}
+		\SelectionItem
+			{Solute-AdvectionDiffusion-DG-OutputFields::retardation-coef}
+			{retardation{\_}coef}
+			{{{}{$[m^{3-d}]$}{ Input field: Retardation coefficients computed by model in mass assemblation.}% 
+}}
+		\SelectionItem
+			{Solute-AdvectionDiffusion-DG-OutputFields::sources-density-out}
+			{sources{\_}density{\_}out}
+			{{{}{$[m^{-d}kgs^{-1}]$}{ Input field: Concentration sources output - density of substance source, only positive part is used..}% 
+}}
+		\SelectionItem
+			{Solute-AdvectionDiffusion-DG-OutputFields::sources-sigma-out}
+			{sources{\_}sigma{\_}out}
+			{{{}{$[m^{3-d}s^{-1}]$}{ Input field: Concentration sources - Robin type, in{\_}flux = sources{\_}sigma * (sources{\_}conc - mobile{\_}conc).}% 
+}}
+		\SelectionItem
+			{Solute-AdvectionDiffusion-DG-OutputFields::sources-conc-out}
+			{sources{\_}conc{\_}out}
+			{{{}{$[m^{-3}kg]$}{ Input field: Concentration sources output.}% 
+}}
+		\SelectionItem
+			{Solute-AdvectionDiffusion-DG-OutputFields::advection-coef}
+			{advection{\_}coef}
+			{{{}{$[ms^{-1}]$}{ Input field: Advection coefficients model.}% 
+}}
+		\SelectionItem
+			{Solute-AdvectionDiffusion-DG-OutputFields::diffusion-coef}
+			{diffusion{\_}coef}
+			{{{}{$[m^{2}s^{-1}]$}{ Input field: Diffusion coefficients model.}% 
+}}
+		\SelectionItem
 			{Solute-AdvectionDiffusion-DG-OutputFields::fracture-sigma}
 			{fracture{\_}sigma}
 			{{{}{$[-]$}{ Input field: Coefficient of diffusive transfer through fractures (for each substance).}% 
@@ -4061,7 +4216,7 @@ Higher value diminishes the inter-element jumps.}%
 \begin{RecordType}
 	{IT::FirstOrderReaction}
 	{FirstOrderReaction}
-	{\TypeLink{IT::ReactionTermMobile}{ReactionTermMobile}{, }\TypeLink{IT::ReactionTermImmobile}{ReactionTermImmobile}{, }\TypeLink{IT::GenericReaction}{GenericReaction}{, }\TypeLink{IT::ReactionTerm}{ReactionTerm}}% implements
+	{\TypeLink{IT::ReactionTermMobile}{ReactionTermMobile}{, }\TypeLink{IT::ReactionTerm}{ReactionTerm}{, }\TypeLink{IT::ReactionTermImmobile}{ReactionTermImmobile}{, }\TypeLink{IT::GenericReaction}{GenericReaction}}% implements
 	{}% reducible to key
 	{{{A model of first order chemical reactions (decompositions of a reactant into products).}% 
 }}
@@ -4146,7 +4301,7 @@ The default value 1.0, should only be used in the case of single product.}%
 \begin{RecordType}
 	{IT::RadioactiveDecay}
 	{RadioactiveDecay}
-	{\TypeLink{IT::ReactionTermMobile}{ReactionTermMobile}{, }\TypeLink{IT::ReactionTermImmobile}{ReactionTermImmobile}{, }\TypeLink{IT::GenericReaction}{GenericReaction}{, }\TypeLink{IT::ReactionTerm}{ReactionTerm}}% implements
+	{\TypeLink{IT::ReactionTermMobile}{ReactionTermMobile}{, }\TypeLink{IT::ReactionTerm}{ReactionTerm}{, }\TypeLink{IT::ReactionTermImmobile}{ReactionTermImmobile}{, }\TypeLink{IT::GenericReaction}{GenericReaction}}% implements
 	{}% reducible to key
 	{{{A model of a radioactive decay and possibly of a decay chain.}% 
 }}
@@ -4318,7 +4473,7 @@ and after the time given by the key 'time'. The field setting can be overridden 
 		\RecKey
 			{Sorption-Data::time}
 			{time}
-			{{tuple: }\TypeLink{IT::TimeValue-2}{TimeValue}}{}
+			{{tuple: }\TypeLink{IT::TimeValue}{TimeValue}}{}
 			{ \ValueDefault{0.0}}
 			{{{Apply field setting in this record after this time.}\\{
 These times have to form an increasing sequence.}% 
@@ -4505,7 +4660,7 @@ and after the time given by the key 'time'. The field setting can be overridden 
 		\RecKey
 			{DualPorosity-Data::time}
 			{time}
-			{{tuple: }\TypeLink{IT::TimeValue-2}{TimeValue}}{}
+			{{tuple: }\TypeLink{IT::TimeValue}{TimeValue}}{}
 			{ \ValueDefault{0.0}}
 			{{{Apply field setting in this record after this time.}\\{
 These times have to form an increasing sequence.}% 
@@ -4889,7 +5044,7 @@ and after the time given by the key 'time'. The field setting can be overridden 
 		\RecKey
 			{Heat-AdvectionDiffusion-DG-Data::time}
 			{time}
-			{{tuple: }\TypeLink{IT::TimeValue-2}{TimeValue}}{}
+			{{tuple: }\TypeLink{IT::TimeValue}{TimeValue}}{}
 			{ \ValueDefault{0.0}}
 			{{{Apply field setting in this record after this time.}\\{
 These times have to form an increasing sequence.}% 
@@ -4897,7 +5052,7 @@ These times have to form an increasing sequence.}%
 		\RecKey
 			{Heat-AdvectionDiffusion-DG-Data::bc-type}
 			{bc{\_}type}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Heat-BC-Type}{Heat{\_}BC{\_}Type}}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Heat-BC-Type}{Heat{\_}BC{\_}Type}}
 			{ \it{Optional}}
 			{{{Type of boundary condition. }{$[-]$}% 
 }}
@@ -4911,21 +5066,21 @@ These times have to form an increasing sequence.}%
 		\RecKey
 			{Heat-AdvectionDiffusion-DG-Data::bc-flux}
 			{bc{\_}flux}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Flux in Neumann boundary condition. }{$[m^{1-d}kgs^{-1}]$}% 
 }}
 		\RecKey
 			{Heat-AdvectionDiffusion-DG-Data::bc-robin-sigma}
 			{bc{\_}robin{\_}sigma}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Conductivity coefficient in Robin boundary condition. }{$[m^{4-d}s^{-1}]$}% 
 }}
 		\RecKey
 			{Heat-AdvectionDiffusion-DG-Data::init-temperature}
 			{init{\_}temperature}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Initial temperature. }{$[K]$}% 
 }}
@@ -5033,6 +5188,62 @@ These times have to form an increasing sequence.}%
 			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Reference temperature in solid. }{$[K]$}% 
+}}
+		\RecKey
+			{Heat-AdvectionDiffusion-DG-Data::v-norm}
+			{v{\_}norm}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Velocity norm field. }{$[ms^{-1}]$}% 
+}}
+		\RecKey
+			{Heat-AdvectionDiffusion-DG-Data::mass-matrix-coef}
+			{mass{\_}matrix{\_}coef}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Matrix coefficients computed by model in mass assemblation. }{$[m^{3-d}]$}% 
+}}
+		\RecKey
+			{Heat-AdvectionDiffusion-DG-Data::retardation-coef}
+			{retardation{\_}coef}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Retardation coefficients computed by model in mass assemblation. }{$[m^{3-d}]$}% 
+}}
+		\RecKey
+			{Heat-AdvectionDiffusion-DG-Data::sources-conc-out}
+			{sources{\_}conc{\_}out}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Concentration sources output. }{$[m^{-3}kg]$}% 
+}}
+		\RecKey
+			{Heat-AdvectionDiffusion-DG-Data::sources-density-out}
+			{sources{\_}density{\_}out}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Concentration sources output - density of substance source, only positive part is used.. }{$[m^{-d}kgs^{-1}]$}% 
+}}
+		\RecKey
+			{Heat-AdvectionDiffusion-DG-Data::sources-sigma-out}
+			{sources{\_}sigma{\_}out}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Concentration sources - Robin type, in{\_}flux = sources{\_}sigma * (sources{\_}conc - mobile{\_}conc). }{$[m^{3-d}s^{-1}]$}% 
+}}
+		\RecKey
+			{Heat-AdvectionDiffusion-DG-Data::advection-coef}
+			{advection{\_}coef}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Advection coefficients model. }{$[ms^{-1}]$}% 
+}}
+		\RecKey
+			{Heat-AdvectionDiffusion-DG-Data::diffusion-coef}
+			{diffusion{\_}coef}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-3-}{Field{\_}R3{\_}to{\_}R[3,3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Diffusion coefficients model. }{$[m^{2}s^{-1}]$}% 
 }}
 		\RecKey
 			{Heat-AdvectionDiffusion-DG-Data::fracture-sigma}
@@ -5174,6 +5385,46 @@ The prescribed incoming energy flux due to diffusion can have the general form }
 			{Heat-AdvectionDiffusion-DG-OutputFields::temperature}
 			{temperature}
 			{{{}{$[K]$}{ Temperature solution.}% 
+}}
+		\SelectionItem
+			{Heat-AdvectionDiffusion-DG-OutputFields::v-norm}
+			{v{\_}norm}
+			{{{}{$[ms^{-1}]$}{ Input field: Velocity norm field.}% 
+}}
+		\SelectionItem
+			{Heat-AdvectionDiffusion-DG-OutputFields::mass-matrix-coef}
+			{mass{\_}matrix{\_}coef}
+			{{{}{$[m^{3-d}]$}{ Input field: Matrix coefficients computed by model in mass assemblation.}% 
+}}
+		\SelectionItem
+			{Heat-AdvectionDiffusion-DG-OutputFields::retardation-coef}
+			{retardation{\_}coef}
+			{{{}{$[m^{3-d}]$}{ Input field: Retardation coefficients computed by model in mass assemblation.}% 
+}}
+		\SelectionItem
+			{Heat-AdvectionDiffusion-DG-OutputFields::sources-conc-out}
+			{sources{\_}conc{\_}out}
+			{{{}{$[m^{-3}kg]$}{ Input field: Concentration sources output.}% 
+}}
+		\SelectionItem
+			{Heat-AdvectionDiffusion-DG-OutputFields::sources-density-out}
+			{sources{\_}density{\_}out}
+			{{{}{$[m^{-d}kgs^{-1}]$}{ Input field: Concentration sources output - density of substance source, only positive part is used..}% 
+}}
+		\SelectionItem
+			{Heat-AdvectionDiffusion-DG-OutputFields::sources-sigma-out}
+			{sources{\_}sigma{\_}out}
+			{{{}{$[m^{3-d}s^{-1}]$}{ Input field: Concentration sources - Robin type, in{\_}flux = sources{\_}sigma * (sources{\_}conc - mobile{\_}conc).}% 
+}}
+		\SelectionItem
+			{Heat-AdvectionDiffusion-DG-OutputFields::advection-coef}
+			{advection{\_}coef}
+			{{{}{$[ms^{-1}]$}{ Input field: Advection coefficients model.}% 
+}}
+		\SelectionItem
+			{Heat-AdvectionDiffusion-DG-OutputFields::diffusion-coef}
+			{diffusion{\_}coef}
+			{{{}{$[m^{2}s^{-1}]$}{ Input field: Diffusion coefficients model.}% 
 }}
 		\SelectionItem
 			{Heat-AdvectionDiffusion-DG-OutputFields::fracture-sigma}

@@ -594,19 +594,20 @@ void Profiler::add_timer_info(ReduceFunctor reduce, nlohmann::json* holder, int 
 
     // write times children timers using secured child_timers array
     nlohmann::json children;
-    bool has_children = false;
+
+    // sort childs by its index in Profiler::timers_ in order to preserve call order
+    std::vector<int> child_timers_values;
     for (unsigned int i = 0; i < Timer::max_n_childs; i++) {
-        if (timer.child_timers[i] != timer_no_child) {
-            add_timer_info (reduce, &children, timer.child_timers[i], cumul_time_sum);
-        /*
-		if (child_timers[i] != timer_no_child) {
-			add_timer_info (reduce, &children, child_timers[i], cumul_time_sum); */
-			has_children = true;
-		}
+            if (timer.child_timers[i] != timer_no_child)
+                child_timers_values.push_back(timer.child_timers[i]);
     }
+    std::sort(child_timers_values.begin(), child_timers_values.end());
+
+    for(int idx : child_timers_values)
+            add_timer_info(reduce, &children, idx, cumul_time_sum);
 
     // add children tag and other info if present
-    if (has_children) {
+    if (child_timers_values.size() > 0) {
     	node["children"] = children;
     }
 
