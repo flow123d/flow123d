@@ -100,7 +100,15 @@ public:
 
 	static const Input::Type::Record & get_input_type();
 
-	/// Convert string to coeficient and UnitSI representation, return coeficient
+	/* Compute a multiplicative constant to convert from 'actual_unit' to the SI unit.
+	 *
+	 * The 'actual_unit' string convains a unit expression the is parsed and converted to the 'coef_' and 'unit_si_' so that
+	 * 'actual unit' == coef_ * unit_si_
+	 *
+	 * The coefficient coef_ is returned.
+	 *
+	 * TODO: pass the actual_unit to the constructor so that we avoid object modifications.
+	 */
 	double convert(std::string actual_unit);
 
 	/// Return @p unit_si_
