@@ -118,14 +118,11 @@ private:
  */
 class ConvectionTransport : public ConcentrationTransportBase {
 public:
-    class EqData : public TransportEqFields {
+    class EqFields : public TransportEqFields {
     public:
 
-        EqData();
-        virtual ~EqData() {};
-
-        /// Override generic method in order to allow specification of the boundary conditions through the old bcd files.
-        RegionSet read_boundary_list_item(Input::Record rec);
+    	EqFields();
+        virtual ~EqFields() {};
 
 		/**
 		 * Boundary conditions (Dirichlet) for concentrations.
@@ -144,6 +141,32 @@ public:
 
         /// Fields indended for output, i.e. all input fields plus those representing solution.
         EquationOutput output_fields;
+    };
+
+
+    class EqData {
+    public:
+
+        EqData() : is_mass_diag_changed(false) {};
+        virtual ~EqData() {};
+
+        /**
+         * Temporary solution how to pass velocity field form the flow model.
+         * TODO: introduce FieldDiscrete -containing true DOFHandler and data vector and pass such object together with other
+         * data. Possibly make more general set_data method, allowing setting data given by name. needs support from EqDataBase.
+         */
+        std::shared_ptr<DOFHandlerMultiDim> dh_;
+
+        /// object for calculation and writing the mass balance to file, shared with EquationBase.
+        std::shared_ptr<Balance> balance_;
+
+        /// Flag indicates that porosity or cross_section changed during last time.
+    	bool is_mass_diag_changed;
+
+    	/// List of indices used to call balance methods for a set of quantities.
+    	vector<unsigned int> subst_idx;
+
+    	Vec mass_diag;  // diagonal entries in pass matrix (cross_section * porosity)
     };
 
 
@@ -212,7 +235,7 @@ public:
     void set_balance_object(std::shared_ptr<Balance> balance) override;
 
     const vector<unsigned int> &get_subst_idx() override
-	{ return subst_idx; }
+	{ return eq_data_->subst_idx; }
 
     /**
      * @brief Write computed fields.
@@ -295,9 +318,10 @@ private:
     static const int registrar;
 
     /**
-     *  Parameters of the equation, some are shared with other implementations since EqData is derived from TransportBase::TransportEqFields
+     *  Parameters of the equation, some are shared with other implementations since EqFields is derived from TransportBase::TransportEqFields
      */
-    EqData data_;
+    std::shared_ptr<EqFields> eq_fields_;
+    std::shared_ptr<EqData> eq_data_;
 
     //@{
     /**
@@ -307,8 +331,6 @@ private:
      */
 	bool is_convection_matrix_scaled, is_src_term_scaled, is_bc_term_scaled;
 	
-	/// Flag indicates that porosity or cross_section changed during last time.
-	bool is_mass_diag_changed;
     //@}
     
     vector<VectorMPI> corr_vec;
@@ -324,7 +346,6 @@ private:
 
     VecScatter vconc_out_scatter;
     Mat tm; // PETSc transport matrix
-    Vec mass_diag;  // diagonal entries in pass matrix (cross_section * porosity)
     Vec vpmass_diag;  // diagonal entries in mass matrix from last time (cross_section * porosity)
     Vec *v_tm_diag; // additions to PETSC transport matrix on the diagonal - from sources (for each substance)
     double **tm_diag;
@@ -353,16 +374,6 @@ private:
 
     /// Transported substances.
     SubstanceList substances_;
-
-    /**
-     * Temporary solution how to pass velocity field form the flow model.
-     * TODO: introduce FieldDiscrete -containing true DOFHandler and data vector and pass such object together with other
-     * data. Possibly make more general set_data method, allowing setting data given by name. needs support from EqDataBase.
-     */
-    std::shared_ptr<DOFHandlerMultiDim> dh_;
-
-	/// List of indices used to call balance methods for a set of quantities.
-	vector<unsigned int> subst_idx;
 
 	/// Finite element objects
 	FETransportObjects feo_;
