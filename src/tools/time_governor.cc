@@ -49,8 +49,7 @@ const Tuple & TimeGovernor::get_input_time_type(double lower_bound, double upper
     return Tuple("TimeValue", "A time with optional unit specification.")
         .declare_key("time", Double(lower_bound, upper_bound), Default::obligatory(),
                                     "The time value." )
-		.declare_key("unit", UnitConverter::get_input_type(),
-                Default::read_time("Common time unit of the equation's Time Governor."),
+		.declare_key("unit", UnitConverter::get_input_type(), TimeUnitConversion::get_input_default(),
 				"Predefined units include: `s` seconds, `min` minutes, `h` hours, `d` days, `y` years.\n"
                 "The default time unit is set from the equation's time governor, see the key `common_time_unit`"
                 "in the equation's time record.\n\n"

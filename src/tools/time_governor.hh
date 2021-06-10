@@ -33,6 +33,7 @@
 #include "system/file_path.hh"
 #include "input/accessors_forward.hh"
 #include "input/input_exception.hh"
+#include "input/type_record.hh"
 #include "system/exc_common.hh"
 #include "system/exceptions.hh"
 #include "tools/time_marks.hh"
@@ -42,7 +43,6 @@ namespace Input {
     class Tuple;
     template<class T> class Iterator;
     namespace Type {
-        class Record;
         class Tuple;
     }
 }
@@ -62,6 +62,12 @@ public:
 
     // Constructor from the Unit input record
     TimeUnitConversion(const Input::Record &input);
+
+    static Input::Type::Default get_input_default()
+    {
+        return Input::Type::Default::read_time("Common time unit of the equation's Time Governor.\n"
+                                               "See the key 'common_time_unit'.");
+    }
 
     /**
      * Read and return time value multiplied by coefficient of given unit or global coefficient of equation

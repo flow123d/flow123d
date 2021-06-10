@@ -74,7 +74,7 @@ const Input::Type::Record & FieldFE<spacedim, Value>::get_input_type()
                 "The values of the Field are read from the ```$ElementData``` section with field name given by this key.")
         .declare_key("default_value", IT::Double(), IT::Default::optional(),
                 "Default value is set on elements which values have not been listed in the mesh data file.")
-        .declare_key("time_unit", UnitConverter::get_input_type(), IT::Default::read_time("Common time unit of the equation's Time Governor."),
+        .declare_key("time_unit", UnitConverter::get_input_type(), TimeUnitConversion::get_input_default(),
                 "Definition of the unit of all times defined in the mesh data file.")
         .declare_key("read_time_shift", TimeGovernor::get_input_time_type(), IT::Default("0.0"),
                 "This key allows reading field data from the mesh data file shifted in time. Considering the time 't', field descriptor with time 'T', "
