@@ -180,6 +180,7 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
     data_.conductivity_k0.copy_from(*flow_->data().field("conductivity"));
     data_.cross_section.copy_from(*mechanics_->eq_fields().field("cross_section"));
     data_.output_cross_section.copy_from(*mechanics_->eq_fields().field("output_cross_section"));
+    flow_->data()["conductivity"].copy_from(data_.conductivity_model);
 
     // setup input fields
     data_.set_input_list( in_record.val<Input::Array>("input_fields"), time() );
@@ -192,10 +193,7 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
 
 void HM_Iterative::initialize()
 {
-    /// Retrun the upated conductivity to flow model before solve flow equaiton
-    // flow_->data()["conductivity"].copy_form(*data_.conductivity_model);
-    // copy_field(*data_.conductivity_model, *flow_->data().field("conductivity"));
-    // copy_filed(*data_.conductivity_model, *flow_->data().conductivity);
+
 }
 
 
@@ -227,7 +225,7 @@ void HM_Iterative::zero_time_step()
     copy_field(*flow_->data().field("pressure_p0"), *data_.old_pressure_ptr_);
     copy_field(*flow_->data().field("pressure_p0"), *data_.old_iter_pressure_ptr_);
     copy_field(mechanics_->eq_fields().output_divergence, *data_.div_u_ptr_);
-
+    
 }
 
 
@@ -258,7 +256,6 @@ void HM_Iterative::update_after_iteration()
     mechanics_->update_output_fields();
     copy_field(mechanics_->eq_fields().output_divergence, *data_.div_u_ptr_);
     copy_field(*flow_->data().field("pressure_p0"), *data_.old_iter_pressure_ptr_);
-    // copy_field(*data_.conductivity_model, *flow_->data().field("conductivity"));
 }
 
 
