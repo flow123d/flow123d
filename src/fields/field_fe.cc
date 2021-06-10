@@ -264,7 +264,7 @@ void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::elem
     unsigned int reg_chunk_begin = cache_map.region_chunk_begin(region_patch_idx);
     unsigned int reg_chunk_end = cache_map.region_chunk_end(region_patch_idx);
     unsigned int last_element_idx = -1;
-    DHCellAccessor cell;
+    DHCellAccessor cell = *( dh_->local_range().begin() ); //needs set variable for correct compiling
     LocDofVec loc_dofs;
     unsigned int range_bgn=0, range_end=0;
 

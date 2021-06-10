@@ -44,6 +44,7 @@
 #include "transport/substance.hh"                     // for SubstanceList
 #include "transport/transport_operator_splitting.hh"
 #include "quadrature/quadrature_lib.hh"
+#include "la/vector_mpi.hh"
 
 class OutputTime;
 class Mesh;
@@ -263,12 +264,11 @@ private:
     void make_transport_partitioning(); //
 	void set_initial_condition();
 	void read_concentration_sources();
-	void set_boundary_conditions();
   
-    /** @brief Assembles concentration sources for each substance.
+    /** @brief Assembles concentration sources for each substance and set boundary conditions.
      * note: the source of concentration is multiplied by time interval (gives the mass, not the flow like before)
      */
-    void compute_concentration_sources();
+    void conc_sources_bdr_conditions();
     
 	/**
 	 * Finish explicit transport matrix (time step scaling)
@@ -311,8 +311,7 @@ private:
 	bool is_mass_diag_changed;
     //@}
     
-    double **sources_corr;
-    Vec *v_sources_corr;
+    vector<VectorMPI> corr_vec;
     
 
     TimeMark::Type target_mark_type;    ///< TimeMark type for time marks denoting end of every time interval where transport matrix remains constant.
