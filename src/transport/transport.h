@@ -56,6 +56,8 @@ namespace Input {
 		class Selection;
 	}
 }
+template<unsigned int dim> class MassAssemblyConvection;
+template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
 
 //=============================================================================
@@ -150,6 +152,10 @@ public:
         EqData() : is_mass_diag_changed(false) {};
         virtual ~EqData() {};
 
+        /// Returns number of transported substances.
+        inline unsigned int n_substances()
+        { return substances_.size(); }
+
         /**
          * Temporary solution how to pass velocity field form the flow model.
          * TODO: introduce FieldDiscrete -containing true DOFHandler and data vector and pass such object together with other
@@ -162,6 +168,9 @@ public:
 
         /// Flag indicates that porosity or cross_section changed during last time.
     	bool is_mass_diag_changed;
+
+        /// Transported substances.
+        SubstanceList substances_;
 
     	/// List of indices used to call balance methods for a set of quantities.
     	vector<unsigned int> subst_idx;
@@ -261,11 +270,11 @@ public:
 
     /// Returns number of transported substances.
     inline unsigned int n_substances() override
-    { return substances_.size(); }
+    { return eq_data_->substances_.size(); }
 
     /// Returns reference to the vector of substance names.
     inline SubstanceList &substances() override
-    { return substances_; }
+    { return eq_data_->substances_; }
 
 private:
 
@@ -282,7 +291,7 @@ private:
      * Updates CFL time step constrain.
      */
     void create_transport_matrix_mpi();
-    void create_mass_matrix();
+//    void create_mass_matrix();
 
     void make_transport_partitioning(); //
 	void set_initial_condition();
@@ -372,11 +381,11 @@ private:
 	LongIdx *el_4_loc;
 	Distribution *el_ds;
 
-    /// Transported substances.
-    SubstanceList substances_;
-
 	/// Finite element objects
 	FETransportObjects feo_;
+
+    /// general assembly objects, hold assembly objects of appropriate dimension
+    GenericAssembly< MassAssemblyConvection > * mass_assembly_;
 
     friend class TransportOperatorSplitting;
 };

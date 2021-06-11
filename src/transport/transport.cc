@@ -28,6 +28,7 @@
 #include "mesh/range_wrapper.hh"
 #include "mesh/neighbours.h"
 #include "transport/transport.h"
+#include "transport/assembly_convection.hh"
 
 #include "la/distribution.hh"
 
@@ -185,7 +186,7 @@ void ConvectionTransport::initialize()
 
     cfl_max_step = time_->end_time();
 
-    eq_fields_->set_components(substances_.names());
+    eq_fields_->set_components(eq_data_->substances_.names());
     eq_fields_->set_input_list( input_rec.val<Input::Array>("input_fields"), *time_ );
     eq_fields_->set_mesh(*mesh_);
 
@@ -194,7 +195,7 @@ void ConvectionTransport::initialize()
     alloc_transport_structs_mpi();
 
 	// register output vectors
-    eq_fields_->output_fields.set_components(substances_.names());
+    eq_fields_->output_fields.set_components(eq_data_->substances_.names());
     eq_fields_->output_fields.set_mesh(*mesh_);
     eq_fields_->output_fields.output_type(OutputTime::ELEM_DATA);
     eq_fields_->conc_mobile.setup_components();
@@ -215,6 +216,7 @@ void ConvectionTransport::initialize()
 
     balance_->allocate(el_ds->lsize(), 1);
 
+    mass_assembly_ = new GenericAssembly< MassAssemblyConvection >(eq_fields_.get(), eq_data_.get());
 }
 
 
@@ -289,6 +291,9 @@ ConvectionTransport::~ConvectionTransport()
         // arrays of arrays
         delete cumulative_corr;
         delete tm_diag;
+
+        // assembly objects
+        delete mass_assembly_;
     }
 }
 
@@ -503,7 +508,8 @@ void ConvectionTransport::zero_time_step()
 	}
 
     set_initial_condition();
-    create_mass_matrix();
+    //create_mass_matrix();
+    mass_assembly_->assemble(eq_data_->dh_);
     
     START_TIMER("Convection balance zero time step");
 
@@ -537,7 +543,8 @@ bool ConvectionTransport::evaluate_time_constraint(double& time_constraint)
     
     if (eq_data_->is_mass_diag_changed)
     {
-        create_mass_matrix();
+        //create_mass_matrix();
+        mass_assembly_->assemble(eq_data_->dh_);
         cfl_changed = true;
         DebugOut() << "CFL changed - mass matrix.\n";
     }
@@ -634,7 +641,8 @@ void ConvectionTransport::update_solution() {
     if (eq_fields_->cross_section.changed() || eq_fields_->water_content.changed() || eq_fields_->porosity.changed())
     {
         VecCopy(eq_data_->mass_diag, vpmass_diag);
-        create_mass_matrix();
+        //create_mass_matrix();
+        mass_assembly_->assemble(eq_data_->dh_);
     } else eq_data_->is_mass_diag_changed = false;
     
 
@@ -704,35 +712,35 @@ void ConvectionTransport::set_target_time(double target_time)
 }
 
 
-void ConvectionTransport::create_mass_matrix()
-{
-    VecZeroEntries(eq_data_->mass_diag);
-    
-    eq_data_->balance_->start_mass_assembly(eq_data_->subst_idx);
-
-    for ( DHCellAccessor dh_cell : eq_data_->dh_->own_range() ) {
-        ElementAccessor<3> elm = dh_cell.elm();
-        // we have currently zero order P_Disc FE
-        ASSERT_DBG(dh_cell.get_loc_dof_indices().size() == 1);
-        IntIdx local_p0_dof = dh_cell.get_loc_dof_indices()[0];
-
-        double csection = eq_fields_->cross_section.value(elm.centre(), elm);
-        //double por_m = eq_fields_->porosity.value(elm.centre(), elm->element_accessor());
-        double por_m = eq_fields_->water_content.value(elm.centre(), elm);
-
-        for (unsigned int sbi=0; sbi<n_substances(); ++sbi)
-            eq_data_->balance_->add_mass_values(eq_data_->subst_idx[sbi], dh_cell, {local_p0_dof}, {csection*por_m*elm.measure()}, 0);
-        
-        VecSetValue(eq_data_->mass_diag, eq_data_->dh_->get_local_to_global_map()[local_p0_dof], csection*por_m, INSERT_VALUES);
-    }
-    
-    eq_data_->balance_->finish_mass_assembly(eq_data_->subst_idx);
-    
-    VecAssemblyBegin(eq_data_->mass_diag);
-    VecAssemblyEnd(eq_data_->mass_diag);
-    
-    eq_data_->is_mass_diag_changed = true;
-}
+//void ConvectionTransport::create_mass_matrix()
+//{
+//    VecZeroEntries(eq_data_->mass_diag);
+//
+//    eq_data_->balance_->start_mass_assembly(eq_data_->subst_idx);
+//
+//    for ( DHCellAccessor dh_cell : eq_data_->dh_->own_range() ) {
+//        ElementAccessor<3> elm = dh_cell.elm();
+//        // we have currently zero order P_Disc FE
+//        ASSERT_DBG(dh_cell.get_loc_dof_indices().size() == 1);
+//        IntIdx local_p0_dof = dh_cell.get_loc_dof_indices()[0];
+//
+//        double csection = eq_fields_->cross_section.value(elm.centre(), elm);
+//        //double por_m = eq_fields_->porosity.value(elm.centre(), elm->element_accessor());
+//        double por_m = eq_fields_->water_content.value(elm.centre(), elm);
+//
+//        for (unsigned int sbi=0; sbi<n_substances(); ++sbi)
+//            eq_data_->balance_->add_mass_values(eq_data_->subst_idx[sbi], dh_cell, {local_p0_dof}, {csection*por_m*elm.measure()}, 0);
+//
+//        VecSetValue(eq_data_->mass_diag, eq_data_->dh_->get_local_to_global_map()[local_p0_dof], csection*por_m, INSERT_VALUES);
+//    }
+//
+//    eq_data_->balance_->finish_mass_assembly(eq_data_->subst_idx);
+//
+//    VecAssemblyBegin(eq_data_->mass_diag);
+//    VecAssemblyEnd(eq_data_->mass_diag);
+//
+//    eq_data_->is_mass_diag_changed = true;
+//}
 
 
 //=============================================================================
@@ -856,7 +864,7 @@ void ConvectionTransport::output_data() {
 void ConvectionTransport::set_balance_object(std::shared_ptr<Balance> balance)
 {
 	balance_ = balance;
-	eq_data_->subst_idx = balance_->add_quantities(substances_.names());
+	eq_data_->subst_idx = balance_->add_quantities(eq_data_->substances_.names());
     eq_data_->balance_ = this->balance();
 }
 
