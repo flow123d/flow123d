@@ -1137,7 +1137,7 @@ void Elasticity::assemble_boundary_conditions()
               for (unsigned int k=0; k<qsize; k++)
               {
                 for (unsigned int i=0; i<ndofs; i++)
-                  local_rhs[i] += csection[k]*arma::dot(vec.value(i,k),bc_traction[k] + bc_potential[k]*fe_values_side.normal_vector(k))*fe_values_side.JxW(k);
+                  local_rhs[i] += csection[k]*arma::dot(vec.value(i,k),bc_traction[k])*fe_values_side.JxW(k);
               }
             }
             else if (bc_type == EqData::bc_type_stress)
