@@ -594,7 +594,6 @@ void Profiler::add_timer_info(ReduceFunctor reduce, nlohmann::json* holder, int 
 
     // write times children timers using secured child_timers array
     nlohmann::json children;
-    bool has_children = false;
 
     // sort childs by its index in Profiler::timers_ in order to preserve call order
     std::vector<int> child_timers_values;

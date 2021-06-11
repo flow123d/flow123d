@@ -32,7 +32,12 @@
 
 using namespace std;
 
+// Use less number of loops in debug (slow) mode
+#ifdef FLOW123D_DEBUG
+static const unsigned int profiler_loop = 50;
+#else
 static const unsigned int profiler_loop = 100;
+#endif
 static const unsigned int n_meshes = 10000;
 
 // results - number of cases with number of ips 0-7
