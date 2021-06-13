@@ -33,6 +33,7 @@ class ExtendedThread(threading.Thread):
 
         self.state = ProcessState.NOT_STARTED
         self._returncode = RC_NONE
+        self.exception = None
 
         self.start_time = None
         self.end_time = None
@@ -42,10 +43,15 @@ class ExtendedThread(threading.Thread):
         self.on_complete = Event()
         self.on_update = Event()
 
+
     def _run(self):
         if self.target:
-            self.target()
-            self.returncode = RC_OK
+            self.exception = None
+            try:
+                self.target()
+                self.returncode = RC_OK
+            except BaseException as e:
+                self.exception = e
 
     @property
     def returncode(self):
@@ -161,7 +167,7 @@ class MultiThreads(ExtendedThread):
                 printf.sep()
             self.counter.next(locals())
 
-        self.threads[self.index - 1].start()
+        self.current_thread.start()
         return True
 
     def add(self, thread):

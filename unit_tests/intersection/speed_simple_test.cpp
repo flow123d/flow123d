@@ -34,7 +34,7 @@ using namespace std;
 
 // Use less number of loops in debug (slow) mode
 #ifdef FLOW123D_DEBUG
-static const unsigned int profiler_loop = 50;
+static const unsigned int profiler_loop = 25;
 #else
 static const unsigned int profiler_loop = 100;
 #endif
