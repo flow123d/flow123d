@@ -156,6 +156,11 @@ public:
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > old_iter_pressure_ptr_;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > div_u_ptr_;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > old_div_u_ptr_;
+
+        EquationOutput output_fields;
+
+        static  constexpr const char *  name() { return "Hydro_Mechanics_LinearElasticity"; }
+        static string default_output_field() { return "\"delta_min\""; }
         
     };
     
@@ -194,6 +199,11 @@ private:
 
     /// Tuning parameter for iterative splitting.
     double beta_;
+
+    /**
+	 * @brief Postprocesses the solution and writes to output file.
+	 */
+	void output_data();
     
 };
 
