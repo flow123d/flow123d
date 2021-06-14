@@ -36,7 +36,8 @@ using namespace std;
 #ifdef FLOW123D_DEBUG
 static const unsigned int profiler_loop = 25;
 #else
-static const unsigned int profiler_loop = 100;
+static const unsigned int profiler_loop = 50;
+// Original value reduced from 100 to 50 due to time limit of unit test on jenkins
 #endif
 static const unsigned int n_meshes = 10000;
 
