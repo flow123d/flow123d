@@ -316,7 +316,7 @@ Elasticity::Elasticity(Mesh & init_mesh, const Input::Record in_rec, TimeGoverno
 
 void Elasticity::initialize()
 {
-    output_stream_ = OutputTime::create_output_stream("mechanics", input_rec.val<Input::Record>("output_stream"), time().get_unit_string());
+    output_stream_ = OutputTime::create_output_stream("mechanics", input_rec.val<Input::Record>("output_stream"), time().get_unit_conversion());
     
     eq_fields_->set_components({"displacement"});
     eq_fields_->set_input_list( input_rec.val<Input::Array>("input_fields"), time() );

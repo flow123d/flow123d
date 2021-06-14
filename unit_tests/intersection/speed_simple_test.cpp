@@ -321,7 +321,7 @@ void test(double expected_time_factor)
 
 
 TEST(speed_simple_12, all) {
-    test<1,2>(45);
+    test<1,2>(50);
 }
 
 TEST(speed_simple_22, all) {
