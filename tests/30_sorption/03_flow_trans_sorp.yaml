@@ -1,3 +1,10 @@
+# Test goal: Sorption type comparison with simple 2D transport.
+# Author: Pavel Exner
+# Source for reference:
+#   - qualitative, check in Paraview
+#   - simple convective transport from right to left
+#   - compare different sorption types as they slow down the convection of liquid phase
+
 flow123d_version: 3.1.0
 problem: !Coupling_Sequential
   description: Adsorption all
@@ -43,7 +50,7 @@ problem: !Coupling_Sequential
       format: !vtk
         variant: ascii
       times:
-        - step: 0.5
+        - step: 1.5
     time:
       end_time: 15.0
     reaction_term: !Sorption
