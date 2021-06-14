@@ -33,6 +33,7 @@ using namespace std;
 class Mesh;
 class FieldCommon;
 class RichardsLMH;
+class OutputTime;
 
 namespace it = Input::Type;
 
@@ -199,6 +200,11 @@ private:
 
     /// Tuning parameter for iterative splitting.
     double beta_;
+
+	/// @name Output to file
+	// @{
+
+    std::shared_ptr<OutputTime> output_stream_;
 
     /**
 	 * @brief Postprocesses the solution and writes to output file.

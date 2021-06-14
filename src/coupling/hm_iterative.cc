@@ -58,6 +58,8 @@ const it::Record & HM_Iterative::get_input_type() {
                 "Absolute tolerance for difference in HM iteration." )
         .declare_key( "r_tol", it::Double(0), it::Default("1e-7"),
                 "Relative tolerance for difference in HM iteration." )
+        .declare_key("output_stream", OutputTime::get_input_type(), Default::obligatory(),
+                    "Parameters of output stream.")
         .declare_key("output",
                 EqData().output_fields.make_output_type(equation_name, ""),
                 IT::Default("{ \"fields\": [ "+HM_Iterative::EqData::default_output_field()+" ] }"),
@@ -129,6 +131,7 @@ struct fn_K_mechanics {
 
 void HM_Iterative::EqData::initialize(Mesh &mesh)
 {
+    // output_stream_ = OutputTime::create_output_stream("hydro_mechanics", input_rec.val<Input::Record>("output_stream"), time().get_unit_string());
     // initialize coupling fields with FieldFE
     set_mesh(mesh);
     
@@ -148,6 +151,10 @@ void HM_Iterative::EqData::initialize(Mesh &mesh)
 
     /// Updacted conductivity due to fracture closing and opening
     conductivity_model.set(Model<3, FieldValue<3>::Scalar>::create(fn_K_mechanics(), output_cross_section, cross_section, delta_min, conductivity_k0), 0.0);
+
+    // // set time marks for writing the output
+    // output_fields.initialize(output_stream_, mesh_, input_rec.val<Input::Record>("output"), this->time());
+
 
 }
 
@@ -380,7 +387,6 @@ void HM_Iterative::output_data()
     START_TIMER("HYDRO-MECH-OUTPUT");
 
     // gather the solution from all processors
-    // time_->step(), LimitSide::right)
     data_.output_fields.set_time(time_->step(), LimitSide::left);
     //if (eq_fields_->output_fields.is_field_output_time(eq_fields_->output_field, this->time().step()) )
     // update_output_fields();
