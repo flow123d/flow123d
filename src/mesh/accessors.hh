@@ -205,7 +205,7 @@ public:
     }
 
     bool operator==(const ElementAccessor<spacedim>& other) const {
-    	return (element_idx_ == other.element_idx_) && (boundary_ == other.boundary_);
+    	return (mesh_ == other.mesh_) && (element_idx_ == other.element_idx_) && (boundary_ == other.boundary_);
     }
 
     inline bool operator!=(const ElementAccessor<spacedim>& other) const {
