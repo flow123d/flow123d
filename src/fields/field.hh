@@ -191,7 +191,7 @@ public:
     /**
      * Returns reference to input type of particular field instance, this is static member @p input_type of the corresponding FieldBase class
      * (i.e. with same template parameters). However, for fields returning "Enum" we have to create whole unique Input::Type hierarchy using following method
-     * @p meka_input_tree.
+     * @p make_input_tree.
      * every instance since every such field use different Selection for initialization, even if all returns just unsigned int.
      */
     IT::Instance get_input_type() override;

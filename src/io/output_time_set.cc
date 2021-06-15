@@ -19,12 +19,12 @@ const IT::Array OutputTimeSet::get_input_type()
     static const IT::Record &time_grid =
         IT::Record("TimeGrid", "Equally spaced grid of time points.")
             .allow_auto_conversion("begin")
-            .declare_key("begin", TimeGovernor::get_input_time_type(0.0),
+            .declare_key("begin", TimeGovernor::get_input_time_type(),
             		IT::Default::read_time("The initial time of the associated equation."),
                     "The start time of the grid.")
             .declare_key("step", TimeGovernor::get_input_time_type(0.0), IT::Default::optional(),
                     "The step of the grid. If not specified, the grid consists of the single time given by the `begin` key.")
-            .declare_key("end", TimeGovernor::get_input_time_type(0.0),
+            .declare_key("end", TimeGovernor::get_input_time_type(),
             		IT::Default::read_time("The end time of the simulation."),
                     "The time greater or equal to the last time in the grid.")
             .close();

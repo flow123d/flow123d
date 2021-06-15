@@ -31,6 +31,7 @@ class Observe;
 class OutputMesh;
 class OutputMeshBase;
 class OutputMeshDiscontinuous;
+class TimeUnitConversion;
 namespace Input {
 	namespace Type {
 		class Abstract;
@@ -58,9 +59,12 @@ public:
      * \brief Constructor of OutputTime object. It opens base file for writing.
      *
      * \param[in] equation_name The name of equation, used for forming output file name.
-     * \param[in] in_rec The reference on the input record
+     * \param[in] in_rec The reference on the input record.
+     * \param[in] time_unit_conv Time unit convertor (converts time unit of the output data).
      */
-    virtual void init_from_input(const std::string &equation_name, const Input::Record &in_rec, std::string unit_str);
+    virtual void init_from_input(const std::string &equation_name,
+                                 const Input::Record &in_rec,
+                                 const std::shared_ptr<TimeUnitConversion>& time_unit_conv);
 
     /**
      * Common method to set scientific format and precision for output of floating point values to ASCII streams.
@@ -136,7 +140,9 @@ public:
      * \brief This method tries to create new instance of OutputTime according
      * record in configuration file.
      */
-    static std::shared_ptr<OutputTime> create_output_stream(const std::string &equation_name, const Input::Record &in_rec, std::string unit_str);
+    static std::shared_ptr<OutputTime> create_output_stream(const std::string &equation_name,
+                                                            const Input::Record &in_rec,
+                                                            const std::shared_ptr<TimeUnitConversion>& time_unit_conv);
     
     /**
      * Write all data registered as a new time frame.
@@ -321,8 +327,8 @@ protected:
     /// Parallel or serial version of file format (parallel has effect only for VTK)
     bool parallel_;
 
-    /// String representation of time unit.
-	string unit_string_;
+    /// Time unit conversion object from the equation time governor.
+    std::shared_ptr<TimeUnitConversion> time_unit_converter;
 
 	/// Vector of node coordinates. [spacedim x n_nodes]
     std::shared_ptr<ElementDataCache<double>> nodes_;
