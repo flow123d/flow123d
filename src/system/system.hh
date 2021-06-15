@@ -90,9 +90,6 @@ char * 	get_log_file( void );
 void	resume_log_file( void );
 */
 
-//void *	xmalloc(size_t size);
-//void * xrealloc( void * ptr, size_t size );
-
 // TODO: implement as a templated function
 /*
 #ifndef xfree

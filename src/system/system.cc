@@ -41,60 +41,6 @@
 SystemInfo sys_info;
 
 
-/*!
- * @brief Memory allocation with checking.
- *
- * Allocates memory block with checking of correct size and successful allocation.
- *
- * @param[in] size  New size for the memory block, in bytes.
- * @return          same as ISO C realloc()
- *//*
-void *xmalloc( size_t size )
-{
-	void *rc;
-
-
-	if (size == 0 ) size++;
-	rc = malloc( size );
-	ASSERT_PTR( rc )(size).error("Not enough memory for allocating %u bytes\n" );
-
-	return(rc);
-}*/
-
-/*!
- * @brief Reallocation of memory block with checking.
- *
- * Reallocates memory block with checking of successful reallocation.
- * The size of the memory block pointed to by the ptr parameter is changed to the size bytes,
- * expanding or reducing the amount of memory available in the block.
- *
- * The function may move the memory block to a new location, in which case the new location
- * is returned. The content of the memory block is preserved up to the lesser of
- * the new and old sizes, even if the block is moved. If the new size is larger, the value
- * of the newly allocated portion is indeterminate.
- *
- * In case that ptr is NULL, the function behaves exactly as malloc,
- * assigning a new block of size bytes and returning a pointer to the beginning of it.
- *
- * In case that the size is 0, the memory previously allocated in ptr is deallocated
- * as if a call to free was made, and a NULL pointer is returned.
- *
- * @param[in] ptr   Pointer to a memory block previously allocated
- * @param[in] size  New size for the memory block, in bytes.
- * @return          same as ISO C realloc()
- */
-
-/*
-void * xrealloc( void * ptr, size_t size )
-{
-    void * rc;
-
-    rc = realloc( ptr, size );
-    ASSERT_PTR( rc )(size).error("Not enough memory for allocating %u bytes\n" );
-
-    return(rc);
-}*/
-
 /*
 void *operator new (std::size_t size, const my_new_t &) throw() {
     return xmalloc(size);
