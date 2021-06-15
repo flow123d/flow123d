@@ -19,6 +19,7 @@
 #include "input/input_type_forward.hh"
 #include "input/accessors.hh"
 #include "input/type_output.hh"
+#include "input/input_exception.hh"
 #include "system/application_base.hh"
 #include "system/exceptions.hh"
 class HC_ExplicitSequential;
@@ -37,7 +38,7 @@ public:
     DECLARE_EXCEPTION( ExcVersionFormat,
             << "Wrong format of the version specification: "
             << EI_InputVersionStr::qval);
-    DECLARE_EXCEPTION( ExcUnknownProblem, << "Problem type not implemented.\n" );
+    DECLARE_INPUT_EXCEPTION( ExcUnknownProblem, << "Problem type not implemented.\n" );
 
 
     /// Root of the Input::Type tree. Description of whole input structure.

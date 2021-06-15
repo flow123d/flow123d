@@ -32,7 +32,7 @@ MixedMeshIntersections::~MixedMeshIntersections()
 
 unsigned int MixedMeshIntersections::number_of_components(unsigned int dim)
 {
-    ASSERT_EQ(dim, 2).error("Not implemented for given dim.\n");
+    ASSERT_EQ_DBG(dim, 2).error("Not implemented for given dim.\n");
 //     if(dim == 1) return algorithm13_.component_counter_;
     return algorithm22_.component_counter_; // if(dim == 2) return ...
 }

@@ -99,7 +99,7 @@ public:
             << "Thrown due to: dim " << EI_Dim::val << " neq dim " << EI_DimOther::val << " (ele id " << EI_ElemId::val << ").\n"
             << "Split elements by dim, create separate regions and then possibly use Union.\n" );
     DECLARE_EXCEPTION(ExcTooMatchingIds,
-            << "Too matching elements id: " << EI_ElemId::val << " and id: " << EI_ElemIdOther::val << " in the same mesh.\n" );
+            << "Mesh: Duplicate dim-join lower dim elements: " << EI_ElemId::val << ", " << EI_ElemIdOther::val << ".\n" );
     DECLARE_EXCEPTION(ExcBdrElemMatchRegular,
             << "Boundary element (id: " << EI_ElemId::val << ") match a regular element (id: " << EI_ElemIdOther::val << ") of lower dimension.\n" );
 
