@@ -64,7 +64,7 @@ IT::Record FieldCommon::field_descriptor_record(const string& record_name) {
                              { {IT::Attribute::obsolete(),
                                      "\"Specification of the region by its ID is obsolete, will be removed in release 3.0.\\n"
                                      "Use region label declared in the Mesh record or default label 'region_<ID>'.\""} })
-                     .declare_key("time", TimeGovernor::get_input_time_type(0.0), IT::Default("0.0"),
+                     .declare_key("time", TimeGovernor::get_input_time_type(), IT::Default("0.0"),
                              "Apply field setting in this record after this time.\n"
                              "These times have to form an increasing sequence.")
 					 .close();

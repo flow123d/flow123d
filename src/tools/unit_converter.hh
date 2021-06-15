@@ -28,6 +28,12 @@
 #include "system/asserts.hh"         // for Assert, ASSERT
 #include "system/exceptions.hh"      // for operator<<, ExcStream, EI, TYPED...
 
+namespace Input {
+	namespace Type {
+		class Record;
+	}
+}
+
 // Declaration of exceptions
 TYPEDEF_ERR_INFO(EI_UnitDefinition, std::string);
 TYPEDEF_ERR_INFO(EI_ExpectedUnit, std::string);
@@ -92,7 +98,17 @@ public:
 	/// Constructor
 	UnitConverter();
 
-	/// Convert string to coeficient and UnitSI representation, return coeficient
+	static const Input::Type::Record & get_input_type();
+
+	/* Compute a multiplicative constant to convert from 'actual_unit' to the SI unit.
+	 *
+	 * The 'actual_unit' string convains a unit expression the is parsed and converted to the 'coef_' and 'unit_si_' so that
+	 * 'actual unit' == coef_ * unit_si_
+	 *
+	 * The coefficient coef_ is returned.
+	 *
+	 * TODO: pass the actual_unit to the constructor so that we avoid object modifications.
+	 */
 	double convert(std::string actual_unit);
 
 	/// Return @p unit_si_
