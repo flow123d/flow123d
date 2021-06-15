@@ -112,7 +112,7 @@ public:
     { return element_ids_[pos]; }
     
     virtual const std::vector<unsigned int> &get_side_nodes(unsigned int dim, unsigned int side) const = 0;
-    virtual BCMesh *get_bc_mesh() const = 0;
+    virtual BCMesh *bc_mesh() const = 0;
     virtual const RegionDB &region_db() const = 0;
     virtual const DuplicateNodes *duplicate_nodes() const = 0;
 
@@ -445,7 +445,7 @@ public:
     void permute_triangle(unsigned int elm_idx, std::vector<unsigned int> permutation_vec);
 
     /// Create boundary mesh if doesn't exist and return it.
-    BCMesh *get_bc_mesh() const override;
+    BCMesh *bc_mesh() const override;
 
     const std::vector<unsigned int> &get_side_nodes(unsigned int dim, unsigned int side) const override
     { return side_nodes[dim][side]; }

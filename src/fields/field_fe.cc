@@ -349,7 +349,7 @@ template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::fill_boundary_dofs() {
 	ASSERT(this->boundary_domain_);
 
-	auto bc_mesh = dh_->mesh()->get_bc_mesh();
+	auto bc_mesh = dh_->mesh()->bc_mesh();
 	unsigned int n_comp = this->value_.n_rows() * this->value_.n_cols();
 	boundary_dofs_ = std::make_shared< std::vector<IntIdx> >( n_comp * bc_mesh->n_elements() );
 	std::vector<IntIdx> &in_vec = *( boundary_dofs_.get() );
@@ -577,7 +577,7 @@ void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>
 	double measure = 0;
 
 	MeshBase *mesh;
-	if (this->boundary_domain_) mesh = dh_->mesh()->get_bc_mesh();
+	if (this->boundary_domain_) mesh = dh_->mesh()->bc_mesh();
 	else mesh = dh_->mesh();
 	for (auto elm : mesh->elements_range()) {
 		if (elm.dim() == 3) {
@@ -717,7 +717,7 @@ void FieldFE<spacedim, Value>::calculate_elementwise_values(ElementDataCache<dou
 
 	// iterate through elements, assembly global vector and count number of writes
 	if (this->boundary_domain_) {
-		BCMesh *mesh = dh_->mesh()->get_bc_mesh();
+		BCMesh *mesh = dh_->mesh()->bc_mesh();
 		for (auto ele : mesh->elements_range()) { // remove special case for rank == 0 - necessary for correct output
 			LocDofVec loc_dofs = value_handler1_.get_loc_dof_indices(ele.idx());
 			data_vec_i = ele.idx() * dh_->max_elem_dofs();

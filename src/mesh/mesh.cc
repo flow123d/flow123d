@@ -523,7 +523,7 @@ void Mesh::make_neighbours_and_edges()
 	vector<unsigned int> side_nodes;
 	vector<unsigned int> intersection_list; // list of elements in intersection of node element lists
 
-	for( unsigned int i=0; i<get_bc_mesh()->n_elements(); ++i) {
+	for( unsigned int i=0; i<bc_mesh()->n_elements(); ++i) {
 
 		ElementAccessor<3> bc_ele = bc_mesh_->element_accessor(i);
 		ASSERT(bc_ele.region().is_boundary());
@@ -645,7 +645,7 @@ void Mesh::make_neighbours_and_edges()
 
                     // fill Boundary object
                     bdr.edge_idx_ = last_edge_idx;
-                    bdr.bc_ele_idx_ = get_bc_mesh()->elem_index(-bdr_idx);
+                    bdr.bc_ele_idx_ = bc_mesh()->elem_index(-bdr_idx);
                     bdr.mesh_=this;
 
                     continue; // next side of element e
@@ -962,7 +962,7 @@ bool Mesh::check_compatible_mesh( Mesh & mesh, vector<LongIdx> & bulk_elements_i
         // iterates over boundary elements of \p this object
         // elements in both meshes must be in ratio 1:1
         // store orders (mapping between both mesh files) into boundary_elements_id vector
-    	auto bc_mesh = this->get_bc_mesh();
+    	auto bc_mesh = this->bc_mesh();
         boundary_elements_id.clear();
         boundary_elements_id.resize(bc_mesh->n_elements());
         // iterate trough boundary part of element vector, to each element in source mesh must exist only one element in target mesh
@@ -972,9 +972,9 @@ bool Mesh::check_compatible_mesh( Mesh & mesh, vector<LongIdx> & bulk_elements_i
             for (unsigned int j=0; j<elm->n_nodes(); j++) { // iterate trough all nodes of any element
                 node_list.push_back( node_ids[ elm->node_idx(j) ] );
             }
-            mesh.get_bc_mesh()->intersect_element_lists(node_list, candidate_list);
+            mesh.bc_mesh()->intersect_element_lists(node_list, candidate_list);
             for (auto i_elm : candidate_list) {
-            	if ( mesh.get_bc_mesh()->element_accessor(i_elm)->dim() == elm.dim() ) result_list.push_back( elm.index() );
+            	if ( mesh.bc_mesh()->element_accessor(i_elm)->dim() == elm.dim() ) result_list.push_back( elm.index() );
             }
             if (result_list.size() != 1) {
             	// intersect_element_lists must produce one element
@@ -1120,7 +1120,7 @@ void MeshBase::init_node_vector(unsigned int size) {
 Element * MeshBase::add_element_to_vector(int id, bool is_boundary) {
     Element * elem;
     if (is_boundary) {
-        elem = get_bc_mesh()->add_element_to_vector(id, false);
+        elem = bc_mesh()->add_element_to_vector(id, false);
     } else {
         element_vec_.push_back( Element() );
         elem = &element_vec_.back(); //[element_vec_.size()-1];
@@ -1272,7 +1272,7 @@ void Mesh::permute_triangle(unsigned int elm_idx, std::vector<unsigned int> perm
 }
 
 
-BCMesh *Mesh::get_bc_mesh() const {
+BCMesh *Mesh::bc_mesh() const {
 	// if (bc_mesh_ == nullptr) bc_mesh_ = new BCMesh(this);
 	return bc_mesh_;
 }

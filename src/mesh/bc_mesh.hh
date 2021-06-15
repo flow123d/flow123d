@@ -78,7 +78,7 @@ private:
     Range<Edge> edge_range() const override;
     void check_element_size(unsigned int) const override;
     const std::vector<unsigned int> &get_side_nodes(unsigned int dim, unsigned int side) const override;
-    BCMesh *get_bc_mesh() const override NOT_IMPLEMENTED;
+    BCMesh *bc_mesh() const override NOT_IMPLEMENTED;
     const RegionDB &region_db() const override;
     const DuplicateNodes *duplicate_nodes() const override NOT_IMPLEMENTED;
 

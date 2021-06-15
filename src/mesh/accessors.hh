@@ -159,7 +159,7 @@ public:
         { return dim_; }
 
     inline const Element * element() const {
-        return boundary_ ? &(mesh_->get_bc_mesh()->element(element_idx_)) : &(mesh_->element(element_idx_));
+        return boundary_ ? &(mesh_->bc_mesh()->element(element_idx_)) : &(mesh_->element(element_idx_));
     }
     
 
@@ -184,7 +184,7 @@ public:
     }
 
     unsigned int index() const {
-    	return (unsigned int)(boundary_ ? mesh_->get_bc_mesh()->find_elem_id(element_idx_) : mesh_->find_elem_id(element_idx_) );
+    	return (unsigned int)(boundary_ ? mesh_->bc_mesh()->find_elem_id(element_idx_) : mesh_->find_elem_id(element_idx_) );
     }
     
     unsigned int proc() const {
