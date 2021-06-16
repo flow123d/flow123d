@@ -58,7 +58,7 @@ const it::Record & HM_Iterative::get_input_type() {
                 "Absolute tolerance for difference in HM iteration." )
         .declare_key( "r_tol", it::Double(0), it::Default("1e-7"),
                 "Relative tolerance for difference in HM iteration." )
-        .declare_key("output_stream", OutputTime::get_input_type(), Default::obligatory(),
+        .declare_key("output_stream", OutputTime::get_input_type(), IT::Default::obligatory(),
                     "Parameters of output stream.")
         .declare_key("output",
                 EqData().output_fields.make_output_type(equation_name, ""),
@@ -124,14 +124,14 @@ HM_Iterative::EqData::EqData()
 
 struct fn_K_mechanics {
 	inline double operator() (double updated_cs, double initial_cs, double min_cs_bound, double flow_conductivity) {
-        return flow_conductivity*pow(((min_cs_bound + std::max(updated_cs - min_cs_bound, 0.0) )/initial_cs),2);
+        return std::max(2.0, flow_conductivity*pow(((min_cs_bound + std::max(updated_cs - min_cs_bound, 0.0) )/initial_cs),2));
     }
 };
 
 
 void HM_Iterative::EqData::initialize(Mesh &mesh)
 {
-    // output_stream_ = OutputTime::create_output_stream("hydro_mechanics", input_rec.val<Input::Record>("output_stream"), time().get_unit_string());
+    output_stream_ = OutputTime::create_output_stream("hydro_mechanics", input_record_.val<Input::Record>("output_stream"), time().get_unit_string());
     // initialize coupling fields with FieldFE
     set_mesh(mesh);
     
@@ -194,7 +194,7 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
     data_.conductivity_k0.copy_from(*flow_->data().field("conductivity"));
     data_.cross_section.copy_from(*mechanics_->eq_fields().field("cross_section"));
     data_.output_cross_section.copy_from(*mechanics_->eq_fields().field("cross_section_updated"));
-    // flow_->data()["conductivity"].copy_from(data_.conductivity_model);
+    flow_->data()["conductivity"].copy_from(data_.conductivity_model);
 
     // setup input fields
     data_.set_input_list( in_record.val<Input::Array>("input_fields"), time() );
@@ -240,7 +240,7 @@ void HM_Iterative::zero_time_step()
     copy_field(*flow_->data().field("pressure_p0"), *data_.old_iter_pressure_ptr_);
     copy_field(mechanics_->eq_fields().output_divergence, *data_.div_u_ptr_);
     
-    output_data();
+    // output_data();
 }
 
 
@@ -252,7 +252,7 @@ void HM_Iterative::update_solution()
 
     solve_step();
 
-    output_data();
+    // output_data();
 }
 
 void HM_Iterative::solve_iteration()
@@ -390,7 +390,7 @@ void HM_Iterative::output_data()
     data_.output_fields.set_time(time_->step(), LimitSide::left);
     //if (eq_fields_->output_fields.is_field_output_time(eq_fields_->output_field, this->time().step()) )
     // update_output_fields();
-    data_.output_fields.output(time_->step());
+    // data_.output_fields.output(time_->step());
 
 //     START_TIMER("MECH-balance");
 //     balance_->calculate_instant(subst_idx, eq_data_->ls->get_solution());
