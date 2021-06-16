@@ -42,7 +42,7 @@ public:
     typedef std::shared_ptr<DarcyLMH::EqData> AssemblyDataPtrLMH;
     
     AssemblyLMH<dim>(AssemblyDataPtrLMH data)
-    : quad_(dim, 2),
+    : quad_(dim, 3),
       velocity_interpolation_quad_(dim, 0), // veloctiy values in barycenter
       ad_(data)
     {
