@@ -131,8 +131,7 @@ struct fn_K_mechanics {
 
 void HM_Iterative::EqData::initialize(Mesh &mesh)
 {
-    output_stream_ = OutputTime::create_output_stream("hydro_mechanics", input_record_.val<Input::Record>("output_stream"), time().get_unit_string());
-    // initialize coupling fields with FieldFE
+   // initialize coupling fields with FieldFE
     set_mesh(mesh);
     
     potential_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(mesh, MixedPtr<FE_CR>());
@@ -152,10 +151,6 @@ void HM_Iterative::EqData::initialize(Mesh &mesh)
     /// Updacted conductivity due to fracture closing and opening
     conductivity_model.set(Model<3, FieldValue<3>::Scalar>::create(fn_K_mechanics(), output_cross_section, cross_section, delta_min, conductivity_k0), 0.0);
 
-    // // set time marks for writing the output
-    // output_fields.initialize(output_stream_, mesh_, input_rec.val<Input::Record>("output"), this->time());
-
-
 }
 
       
@@ -166,6 +161,9 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
 {
 	START_TIMER("HM constructor");
     using namespace Input;
+
+    eq_fields_ = std::make_shared<EqData>();
+    eq_fields_->add_coords_field();
 
     time_ = new TimeGovernor(in_record.val<Record>("time"));
     ASSERT( time_->is_default() == false ).error("Missing key 'time' in Coupling_Iterative.");
@@ -207,6 +205,10 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
 
 void HM_Iterative::initialize()
 {
+    output_stream_ = OutputTime::create_output_stream("hydro_mechanics", input_record_.val<Input::Record>("output_stream"), time().get_unit_string());
+
+    // set time marks for writing the output
+    eq_fields_->output_fields.initialize(output_stream_, mesh_, input_record_.val<Input::Record>("output"), this->time());
 
 }
 
@@ -240,7 +242,7 @@ void HM_Iterative::zero_time_step()
     copy_field(*flow_->data().field("pressure_p0"), *data_.old_iter_pressure_ptr_);
     copy_field(mechanics_->eq_fields().output_divergence, *data_.div_u_ptr_);
     
-    // output_data();
+    output_data();
 }
 
 
@@ -252,7 +254,7 @@ void HM_Iterative::update_solution()
 
     solve_step();
 
-    // output_data();
+    output_data();
 }
 
 void HM_Iterative::solve_iteration()
@@ -390,7 +392,7 @@ void HM_Iterative::output_data()
     data_.output_fields.set_time(time_->step(), LimitSide::left);
     //if (eq_fields_->output_fields.is_field_output_time(eq_fields_->output_field, this->time().step()) )
     // update_output_fields();
-    // data_.output_fields.output(time_->step());
+    data_.output_fields.output(time_->step());
 
 //     START_TIMER("MECH-balance");
 //     balance_->calculate_instant(subst_idx, eq_data_->ls->get_solution());

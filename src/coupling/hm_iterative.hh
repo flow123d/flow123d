@@ -206,6 +206,9 @@ private:
 
     std::shared_ptr<OutputTime> output_stream_;
 
+    /// Fields for model parameters.
+	std::shared_ptr<EqData> eq_fields_;
+
     /**
 	 * @brief Postprocesses the solution and writes to output file.
 	 */
