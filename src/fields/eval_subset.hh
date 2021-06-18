@@ -130,21 +130,15 @@ public:
 
     /// Constructor
 	SidePoint(DHCellSide cell_side, const ElementCacheMap *elm_cache_map, unsigned int local_point_idx)
-    : PointBase(elm_cache_map, local_point_idx), side_idx_(cell_side.side_idx()),
-	  permutation_idx_( cell_side.element()->permutation_idx( side_idx_ ) ) {
+    : PointBase(elm_cache_map, local_point_idx), side_idx_(cell_side.side_idx())
+	{
 	    this->elem_patch_idx_ = this->elm_cache_map_->position_in_cache(cell_side.element().mesh_idx());
 	}
 
-    // Index of permutation
-    inline unsigned int permutation_idx() const {
-        return permutation_idx_;
-    }
 
 protected:
     /// Index of side in element
     unsigned int side_idx_;
-    /// Permutation index corresponding with DHCellSide
-    unsigned int permutation_idx_;
 };
 
 
@@ -307,10 +301,10 @@ private:
 class EdgeIntegral : public BaseIntegral, public std::enable_shared_from_this<EdgeIntegral> {
 public:
     /// Default constructor
-	EdgeIntegral() : BaseIntegral(), perm_indices_(nullptr), n_permutations_(0) {}
+	EdgeIntegral() : BaseIntegral(), perm_indices_(nullptr) {}
 
     /// Constructor of edge integral
-	EdgeIntegral(std::shared_ptr<EvalPoints> eval_points, unsigned int dim, unsigned int n_permutations, unsigned int points_per_side);
+	EdgeIntegral(std::shared_ptr<EvalPoints> eval_points, unsigned int dim, unsigned int points_per_side);
 
     /// Destructor
     ~EdgeIntegral();
@@ -336,19 +330,17 @@ public:
     }
 
     /// Returns structure of permutation indices.
-    inline int perm_idx_ptr(uint i_side, uint i_perm, uint i_point) const {
-    	return perm_indices_[i_side][i_perm][i_point];
+    inline int perm_idx_ptr(uint i_side,  uint i_point) const {
+        return i_side * i_point;
     }
 
 private:
     /// Index of data block according to subset in EvalPoints object.
     unsigned int subset_index_;
     /// Indices to EvalPoints for different sides and permutations reflecting order of points.
-    unsigned int*** perm_indices_;
+    unsigned int** perm_indices_;
     /// Number of sides (value 0 indicates bulk set)
     unsigned int n_sides_;
-    /// Number of permutations (value 0 indicates bulk set)
-    unsigned int n_permutations_;
 
     friend class EvalPoints;
     friend class EdgePoint;
@@ -448,7 +440,7 @@ private:
  */
 
 inline unsigned int EdgePoint::eval_point_idx() const {
-    return integral_->perm_idx_ptr(side_idx_, permutation_idx_, local_point_idx_);
+    return integral_->perm_idx_ptr(side_idx_, local_point_idx_);
 }
 
 inline EdgePoint EdgePoint::point_on(DHCellSide edg_side) const {
@@ -457,7 +449,7 @@ inline EdgePoint EdgePoint::point_on(DHCellSide edg_side) const {
 
 
 inline unsigned int CouplingPoint::eval_point_idx() const {
-    return integral_->edge_integral_->perm_idx_ptr(side_idx_, permutation_idx_, local_point_idx_);
+    return integral_->edge_integral_->perm_idx_ptr(side_idx_, local_point_idx_);
 }
 
 inline BulkPoint CouplingPoint::lower_dim(DHCellAccessor cell_lower) const {
@@ -469,7 +461,7 @@ inline BulkPoint CouplingPoint::lower_dim(DHCellAccessor cell_lower) const {
 
 
 inline unsigned int BoundaryPoint::eval_point_idx() const {
-    return integral_->edge_integral_->perm_idx_ptr(side_idx_, permutation_idx_, local_point_idx_);
+    return integral_->edge_integral_->perm_idx_ptr(side_idx_, local_point_idx_);
 }
 
 inline BulkPoint BoundaryPoint::point_bdr(ElementAccessor<3> bdr_elm) const {

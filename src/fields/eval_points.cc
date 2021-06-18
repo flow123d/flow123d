@@ -55,15 +55,14 @@ std::shared_ptr<EdgeIntegral> EvalPoints::add_edge(const Quadrature &quad)
 {
     ASSERT_EQ(dim, quad.dim()+1);
 	unsigned int old_data_size=this->size(dim), new_data_size; // interval of side subset data
-	unsigned int points_per_side = quad.make_from_side<dim>(0, 0).get_points().size();
-	unsigned int n_side_permutations = RefElement<dim>::n_side_permutations;
+	unsigned int points_per_side = quad.make_from_side<dim>(0).get_points().size();
 
-	std::shared_ptr<EdgeIntegral> edge_integral = std::make_shared<EdgeIntegral>(shared_from_this(), dim, n_side_permutations, points_per_side);
-	unsigned int*** perm_indices = edge_integral->perm_indices_;
+	std::shared_ptr<EdgeIntegral> edge_integral = std::make_shared<EdgeIntegral>(shared_from_this(), dim, points_per_side);
+	unsigned int** perm_indices = edge_integral->perm_indices_;
 
     // permutation 0
     for (unsigned int i=0; i<dim+1; ++i) {  // sides
-        Quadrature high_dim_q = quad.make_from_side<dim>(i, 0);
+        Quadrature high_dim_q = quad.make_from_side<dim>(i);
         dim_eval_points_[dim].add_local_points<dim>( high_dim_q.get_points() );
     }
     dim_eval_points_[dim].add_subset();
@@ -71,19 +70,8 @@ std::shared_ptr<EdgeIntegral> EvalPoints::add_edge(const Quadrature &quad)
     unsigned int i_data=old_data_size;
     for (unsigned int i_side=0; i_side<dim+1; ++i_side) {
         for (unsigned int i_point=0; i_point<points_per_side; ++i_point) {
-        	perm_indices[i_side][0][i_point] = i_data;
+        	perm_indices[i_side][i_point] = i_data;
         	++i_data;
-        }
-    }
-
-    // permutation 1...N
-    for (unsigned int i_perm=1; i_perm<n_side_permutations; ++i_perm) {
-        for (unsigned int i_side=0; i_side<dim+1; ++i_side) {
-            Quadrature high_dim_q = quad.make_from_side<dim>(i_side, i_perm);
-            const Armor::Array<double> & quad_points = high_dim_q.get_points();
-            for (unsigned int i_point=0; i_point<quad_points.size(); ++i_point) {
-                perm_indices[i_side][i_perm][i_point] = dim_eval_points_[dim].find_permute_point<dim>( quad_points.vec<dim>(i_point), old_data_size, new_data_size );
-            }
         }
     }
 

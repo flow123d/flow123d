@@ -761,7 +761,6 @@ void Mesh::make_neighbours_and_edges()
 template <int Dim>
 void set_perm(ElementAccessor<3> &ele, uint i_side, uint *permutation)  {
     uint iperm = RefElement<Dim>::permutation_index(permutation);
-    ele->permutation_idx_[i_side] = iperm;
     ASSERT_EQ(0, iperm);
 }
 
@@ -778,7 +777,6 @@ void Mesh::make_edge_permutations()
         unsigned int n_side_nodes = edg.side(0)->n_nodes();
 		// side 0 is reference, so its permutation is 0
         auto ele = edg.side(0)->element();
-		ele->permutation_idx_[edg.side(0)->side_idx()] = 0;
 
 		if (edg.n_sides() > 1)
 		{

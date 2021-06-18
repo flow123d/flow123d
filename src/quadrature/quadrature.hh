@@ -122,10 +122,10 @@ public:
      * Create bulk quadrature from side quadrature.
      * 
      * Consider *this as quadrature on a side of an element and create
-     * higher dimensional quadrature considering side and permutation index.
+     * higher dimensional quadrature considering side  index.
      */
     template<unsigned int bulk_dim>
-    Quadrature make_from_side(unsigned int sid, unsigned int pid) const;
+    Quadrature make_from_side(unsigned int sid) const;
     
 
 protected:

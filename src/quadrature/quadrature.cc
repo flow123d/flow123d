@@ -44,7 +44,7 @@ Quadrature::Quadrature(const Quadrature &q) :
 
 
 template<unsigned int bulk_dim>
-Quadrature Quadrature::make_from_side(unsigned int sid, unsigned int pid) const
+Quadrature Quadrature::make_from_side(unsigned int sid) const
 {
     ASSERT_DBG( bulk_dim == dim_ + 1 );
     
@@ -63,7 +63,7 @@ Quadrature Quadrature::make_from_side(unsigned int sid, unsigned int pid) const
         
         //permute
         for (unsigned int i=0; i<RefElement<bulk_dim>::n_nodes_per_side; i++) {
-            pp(RefElement<bulk_dim>::side_permutations[pid][i]) = p(i);
+            pp(RefElement<bulk_dim>::side_permutations[0][i]) = p(i);
         }
         
         el_bar_coords = RefElement<bulk_dim>::template interpolate<bulk_dim-1>(pp, sid);
@@ -77,7 +77,7 @@ Quadrature Quadrature::make_from_side(unsigned int sid, unsigned int pid) const
 }
 
 // Specialized subquadrature consructor for dim=1.
-template<> Quadrature Quadrature::make_from_side<1>(unsigned int sid, unsigned int) const
+template<> Quadrature Quadrature::make_from_side<1>(unsigned int sid) const
 {
     ASSERT_EQ_DBG(size(), 1);
     Quadrature q(1, 1);
@@ -87,7 +87,7 @@ template<> Quadrature Quadrature::make_from_side<1>(unsigned int sid, unsigned i
     return q;
 }
 
-template Quadrature Quadrature::make_from_side<2>(unsigned int sid, unsigned int pid) const;
-template Quadrature Quadrature::make_from_side<3>(unsigned int sid, unsigned int pid) const;
+template Quadrature Quadrature::make_from_side<2>(unsigned int sid) const;
+template Quadrature Quadrature::make_from_side<3>(unsigned int sid) const;
 
 

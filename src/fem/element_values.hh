@@ -297,7 +297,7 @@ protected:
     RefElementData *ref_data;
 
     /// Data on reference element (for each side and its permutation).
-    std::vector<std::vector<RefElementData*>> side_ref_data;
+    std::vector<RefElementData*> side_ref_data;
 
     /// Data computed by the mapping.
     ElementData<spacedim> data;
