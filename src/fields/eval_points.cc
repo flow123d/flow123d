@@ -58,7 +58,6 @@ std::shared_ptr<EdgeIntegral> EvalPoints::add_edge(const Quadrature &quad)
 	unsigned int points_per_side = quad.make_from_side<dim>(0).get_points().size();
 
 	std::shared_ptr<EdgeIntegral> edge_integral = std::make_shared<EdgeIntegral>(shared_from_this(), dim, points_per_side);
-	unsigned int** perm_indices = edge_integral->perm_indices_;
 
     // permutation 0
     for (unsigned int i=0; i<dim+1; ++i) {  // sides
@@ -68,12 +67,6 @@ std::shared_ptr<EdgeIntegral> EvalPoints::add_edge(const Quadrature &quad)
     dim_eval_points_[dim].add_subset();
     new_data_size = this->size(dim);
     unsigned int i_data=old_data_size;
-    for (unsigned int i_side=0; i_side<dim+1; ++i_side) {
-        for (unsigned int i_point=0; i_point<points_per_side; ++i_point) {
-        	perm_indices[i_side][i_point] = i_data;
-        	++i_data;
-        }
-    }
 
     this->set_max_size();
     return edge_integral;
