@@ -54,11 +54,9 @@ template <unsigned int dim>
 std::shared_ptr<EdgeIntegral> EvalPoints::add_edge(const Quadrature &quad)
 {
     ASSERT_EQ(dim, quad.dim()+1);
-	unsigned int points_per_side = quad.make_from_side<dim>(0).get_points().size();
 
-	std::shared_ptr<EdgeIntegral> edge_integral = std::make_shared<EdgeIntegral>(shared_from_this(), dim, points_per_side);
+	std::shared_ptr<EdgeIntegral> edge_integral = std::make_shared<EdgeIntegral>(shared_from_this(), dim);
 
-    // permutation 0
     for (unsigned int i=0; i<dim+1; ++i) {  // sides
         Quadrature high_dim_q = quad.make_from_side<dim>(i);
         dim_eval_points_[dim].add_local_points<dim>( high_dim_q.get_points() );
@@ -103,17 +101,6 @@ void EvalPoints::DimEvalPoints::add_local_points(const Armor::Array<double> & qu
 	}
 }
 
-template <unsigned int dim>
-unsigned int EvalPoints::DimEvalPoints::find_permute_point(arma::vec coords, unsigned int data_begin, unsigned int data_end) {
-    ASSERT_GT(dim, 0).error("Dimension 0 not supported!\n");
-	for (unsigned int loc_idx=data_begin; loc_idx<data_end; ++loc_idx) {
-	    // Check if point exists in local points vector.
-        if ( arma::norm(coords-local_points_.vec<dim>(loc_idx), 2) < 4*std::numeric_limits<double>::epsilon() ) return loc_idx;
-    }
-
-	ASSERT(false);
-    return 0;
-}
 
 void EvalPoints::DimEvalPoints::add_subset() {
     ASSERT_LT_DBG(n_subsets_, EvalPoints::max_subsets).error("Maximal number of subsets exceeded!\n");
@@ -138,6 +125,3 @@ template std::shared_ptr<BoundaryIntegral> EvalPoints::add_boundary<3>(const Qua
 template void EvalPoints::DimEvalPoints::add_local_points<1>(const Armor::Array<double> &);
 template void EvalPoints::DimEvalPoints::add_local_points<2>(const Armor::Array<double> &);
 template void EvalPoints::DimEvalPoints::add_local_points<3>(const Armor::Array<double> &);
-template unsigned int EvalPoints::DimEvalPoints::find_permute_point<1>(arma::vec, unsigned int, unsigned int);
-template unsigned int EvalPoints::DimEvalPoints::find_permute_point<2>(arma::vec, unsigned int, unsigned int);
-template unsigned int EvalPoints::DimEvalPoints::find_permute_point<3>(arma::vec, unsigned int, unsigned int);

@@ -41,20 +41,12 @@ BulkIntegral::~BulkIntegral()
  * Implementation of EdgeIntegral methods
  */
 
-EdgeIntegral::EdgeIntegral(std::shared_ptr<EvalPoints> eval_points, unsigned int dim, unsigned int points_per_side)
+EdgeIntegral::EdgeIntegral(std::shared_ptr<EvalPoints> eval_points, unsigned int dim)
 :  BaseIntegral(eval_points, dim), subset_index_(eval_points_->n_subsets(dim)) {
     n_sides_ = dim_+1;
-    perm_indices_ = new unsigned int* [n_sides_];
-    for (unsigned int i_side=0; i_side<n_sides_; ++i_side) {
-        perm_indices_[i_side] = new unsigned int [points_per_side];
-    }
 }
 
 EdgeIntegral::~EdgeIntegral() {
-    for (unsigned int i_side=0; i_side<n_sides_; ++i_side) {
-        delete perm_indices_[i_side];
-    }
-    delete perm_indices_;
 }
 
 

@@ -60,7 +60,6 @@ public:
     /** @brief Constructor from quadrature of lower dimension (e.g. for side integration).
      * @param sub_quadrature lower dimensional (dim-1) quadrature
      * @param sid local index of side
-     * @param pid index of permutation of nodes on given side
      */
 //     template<unsigned int quad_dim>
 //     explicit Quadrature(const Quadrature &sub_quadrature, unsigned int sid, unsigned int pid);

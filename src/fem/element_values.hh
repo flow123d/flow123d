@@ -293,7 +293,7 @@ protected:
     /// Data on reference element.
     RefElementData *ref_data;
 
-    /// Data on reference element (for each side and its permutation).
+    /// Data on reference element (for each side ).
     std::vector<RefElementData*> side_ref_data;
 
     /// Data computed by the mapping.

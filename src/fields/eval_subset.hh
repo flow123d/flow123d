@@ -230,7 +230,7 @@ public:
     /// Default constructor
 	BaseIntegral() : eval_points_(nullptr), dim_(0) {}
 
-    /// Constructor of bulk (n_permutations==0) or side subset
+    /// Constructor of bulk or side subset
 	BaseIntegral(std::shared_ptr<EvalPoints> eval_points, unsigned int dim)
 	 : eval_points_(eval_points), dim_(dim) {}
 
@@ -291,10 +291,10 @@ private:
 class EdgeIntegral : public BaseIntegral, public std::enable_shared_from_this<EdgeIntegral> {
 public:
     /// Default constructor
-	EdgeIntegral() : BaseIntegral(), perm_indices_(nullptr) {}
+	EdgeIntegral() : BaseIntegral() {}
 
     /// Constructor of edge integral
-	EdgeIntegral(std::shared_ptr<EvalPoints> eval_points, unsigned int dim, unsigned int points_per_side);
+	EdgeIntegral(std::shared_ptr<EvalPoints> eval_points, unsigned int dim);
 
     /// Destructor
     ~EdgeIntegral();
@@ -323,8 +323,6 @@ public:
 private:
     /// Index of data block according to subset in EvalPoints object.
     unsigned int subset_index_;
-    /// Indices to EvalPoints for different sides and permutations reflecting order of points.
-    unsigned int** perm_indices_;
     /// Number of sides (value 0 indicates bulk set)
     unsigned int n_sides_;
 
