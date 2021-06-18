@@ -84,14 +84,6 @@ public:
     Neighbour **neigh_vb; // List og neighbours, V-B type (comp.)
         // TODO remove direct access in DarcyFlow, MhDofHandler, Mesh? Partitioning and Trabsport
 
-
-protected:
-    int pid_;                            ///< Id # of mesh partition
-    std::vector<unsigned int> edge_idx_; ///< Edges on sides
-    mutable unsigned int n_neighs_vb_;   ///< # of neighbours, V-B type (comp.)
-                                         // only ngh from this element to higher dimension edge
-                                         // TODO fix and remove mutable directive
-
     /**
     * Indices of permutations of nodes on sides.
     * It determines, in which order to take the nodes of the side so as to obtain
@@ -102,6 +94,15 @@ protected:
     * TODO fix and remove mutable directive
     */
     mutable std::vector<unsigned int> permutation_idx_;
+
+protected:
+    int pid_;                            ///< Id # of mesh partition
+    std::vector<unsigned int> edge_idx_; ///< Edges on sides
+    mutable unsigned int n_neighs_vb_;   ///< # of neighbours, V-B type (comp.)
+                                         // only ngh from this element to higher dimension edge
+                                         // TODO fix and remove mutable directive
+
+
 
     // Data readed from mesh file
     RegionIdx  region_idx_;

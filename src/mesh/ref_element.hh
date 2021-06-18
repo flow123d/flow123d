@@ -48,6 +48,7 @@
  *               E3: V1 -> V2
  *               E4: V1 -> V3
  *               E5: V2 -> V3
+
  *
  * - functions from DEAL.ii:
  *   bool is_inside_unit_cell( point )
@@ -123,6 +124,151 @@
  * 1        [0,1]              1        [0,1,0]            1        [0,1,0,0]
  *                             2        [0,0,1]            2        [0,0,1,0]
  *                                                         3        [0,0,0,1]
+ *
+ *
+ *
+ *  Element node permutation for matching sides
+ *
+ *  1. 2D case: Can add mesh elements in "layers" so that at most toe edges are prescribed and one is free.
+ *     possible cases, two edges A and B considered counter clockwise around a node:
+ *     A out, B out : vertex 0 to node, regular orientation (normal up)
+ *     A out, B in  : vertex 1 to node, regular orientation
+ *     A in , B out : vertex 1 to node, inverted orientation (normal down)
+ *     A in , B in  : vertex 2 to node regular orientation
+ *
+ *     Result: can be matched using two element orientations, element inversion in 1/3 of cases
+ *
+ *  2. 3d elements around an oriented edge
+ *     a. possible face configurations
+ *        U: side 0 attached to the edge, positive; face vertices: 0 (edge 0), 1 (edge 1), 2
+ *        V: side 1 attached to the edge, negative; face vertices: 0 (edge 0), 2 (edge 1), 1
+ *        W: side 2 attached to the edge, positive; face vertices: 1 (edge 0), 2 (edge 1), 0
+ *
+ *     b. faces of the element edges, configuration of faces attached to the element edge; edge pointing up, looking from outside position, face A on right, face B on left
+ *        E0: A (side 0) in  U, B (side 1) in U
+ *        E1: A (side 2) in  U, B (side 0) in V
+ *        E2: A (side 1) in  V, B (side 2) in V
+ *        E3. A (side 0) in  W, B (side 3) in U
+ *        E4: A (side 3) in  V, B (side 1) in W
+ *        E5: A (side 2) in  W, B (side 3) in W
+ *        not presented combination:
+ *        A in U, B in W   =  E3 inverted
+ *        A in V, B in U   =  E1 inverted
+ *        A in W, b in V   =  E4 inverted
+ *
+ *        Result can permute element veritices to arrange elements around an edge, possibly element inversion in 1/3 of cases
+ *
+ *  3. 3d elements around a node, up to 3 given faces, one free face
+ *     denote V0, V1, V2 vertices of the free face, V3 common vertex of given faces
+ *     Denote edges of this element ABCDEF with +- orientation
+ *     a. orientation of edges of the vertices
+ *     V0: E0+ >V1, E1+ >V2, E2+ >V3    +++
+ *     V1: E0- >V0, E3+ >V2, E4+ >V3    -++
+ *     V2: E1- >V0, E3- >V1, E5+ >V3    --+
+ *     V3: E2- >V0, E4- >V1, E5- >V2    ---
+ *
+*                   vertices   edges       normal (out = +)
+ *   3D - sides: S0: 0 1 2      E0 E1 E3    -
+ *               S1: 0 1 3      E0 E2 E4    +
+ *               S2: 0 2 3      E1 E2 E5    -
+ *               S3: 1 2 3      E3 E4 E5    -
+ *
+ *        edges: A E0: V0 -> V1  x direction
+ *               B E1: V0 -> V2  y direction
+ *               C E2: V0 -> V3  z direction
+ *               D E3: V1 -> V2
+ *               E E4: V1 -> V3
+ *               F E5: V2 -> V3
+
+                 CE -> A
+                 EF -> D
+                 FC -> B
+ *
+ *   with edges  DEF, other three edges ABC
+ *     configuration given by orientation of edges ABC and possibly by orientation of edges DEF
+ *     ABC orientation + down, - up; DEF orientation positive if match side 0, i.e. D (AB), E (AC), F (BC)
+ *     faces denoted fD,fE,fF, their configurations considered with respect to the edges DEF respectively
+ *     front face denoted: ff
+ *     vertices V0, V1, V2 top vertices with edges D (V0V1) E (V0V2) F (V1V2); V3 bottom
+ *     invalid = corner case, can not continue must either modify one of the faces, or introduce unmatching face
+ *     impossible = combination of edges that can not happen
+ *     edge cases arranged for the vertex 3
+ *
+ *     CEF ABD  face config: fD   fE  fF  ff
+ *     +++ +++               U    U   U
+ *     +++ ++-               U    U   U-
+ *     +++ +-+ invalid
+ *     +++ +--               U    U   U
+ *     +++ -++               U    U   U
+ *     +++ -+- invalid              U    U   U-
+ *     +++ --+
+ *     +++ ---               U    U   U
+ *
+ *     ++- +++ impossible              U    U   U
+ *     ++- ++- impossible              U    U   U-
+ *     ++- +-+ impossible
+ *     ++- +--               U    U   U
+ *     ++- -++ impossible              U    U   U
+ *     ++- -+- impossible             U    U   U-
+ *     ++- --+ impossible
+ *     ++- ---               U    U   U
+
+ *     +-+ +++ impossible              U    U   U
+ *     +-+ ++- impossible              U    U   U-
+ *     +-+ +-+ impossible
+ *     +-+ +--               U    U   U
+ *     +-+ -++ impossible              U    U   U
+ *     +-+ -+- impossible             U    U   U-
+ *     +-+ --+ impossible
+ *     +-+ ---               U    U   U
+
+ *     +-- +++ impossible              U    U   U
+ *     +-- ++- impossible              U    U   U-
+ *     +-- +-+ impossible
+ *     +-- +--               U    U   U
+ *     +-- -++ impossible              U    U   U
+ *     +-- -+- impossible             U    U   U-
+ *     +-- --+ impossible
+ *     +-- ---               U    U   U
+
+ *     -++ +++ impossible              U    U   U
+ *     -++ ++- impossible              U    U   U-
+ *     -++ +-+ impossible
+ *     -++ +--               U    U   U
+ *     -++ -++ impossible              U    U   U
+ *     -++ -+- impossible             U    U   U-
+ *     -++ --+ impossible
+ *     -++ ---               U    U   U
+
+ *     -+- +++ impossible              U    U   U
+ *     -+- ++- impossible              U    U   U-
+ *     -+- +-+ impossible
+ *     -+- +--               U    U   U
+ *     -+- -++ impossible              U    U   U
+ *     -+- -+- impossible             U    U   U-
+ *     -+- --+ impossible
+ *     -+- ---               U    U   U
+
+ *     --+ +++ impossible              U    U   U
+ *     --+ ++- impossible              U    U   U-
+ *     --+ +-+ impossible
+ *     --+ +--               U    U   U
+ *     --+ -++ impossible              U    U   U
+ *     --+ -+- impossible             U    U   U-
+ *     --+ --+ impossible
+ *     --+ ---               U    U   U
+
+ *     --- +++               U    U   U
+ *     --- ++-               U    U   U-
+ *     --- +-+ invalid
+ *     --- +--               U    U   U
+ *     --- -++               U    U   U
+ *     --- -+- invalid             U    U   U-
+ *     --- --+
+ *     --- ---               U    U   U
+ *
+ *
+ *
  */
 
 /** Auxilliary class representing vector of indices (unsigned int).

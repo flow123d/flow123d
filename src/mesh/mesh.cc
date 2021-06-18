@@ -271,6 +271,15 @@ const LongIdx *Mesh::get_local_part() {
 
 
 
+/**
+ * - remove unconnected nodes
+ * - permute element nodes
+ * - check element quality
+ */
+//void Mesh::check_and_normalize() {
+
+//}
+
 
 
 
@@ -366,6 +375,24 @@ void Mesh::check_mesh_on_read() {
     }
 }
 
+
+//void Mesh::array_sort(std::array<uint, 4> &nodes) {
+//    // TODO: use templated insert sort with recursion over length of array so that compiler can
+//    // optimize for the small array size.
+//
+//    std::sort(nodes.begin(), nodes.end());
+//}
+
+void Mesh::canonical_faces() {
+    for (uint i_el=0; i_el < bulk_size_; i_el++) {
+        Element &ele = element_vec_[i_el];
+        std::sort(ele.nodes_.begin(), ele.nodes_.end());
+        // mark inverted elements
+
+    }
+
+}
+
 void Mesh::setup_topology() {
     if ( in_record_.val<bool>("optimize_mesh") ) {
         START_TIMER("MESH - optimizer");
@@ -375,7 +402,11 @@ void Mesh::setup_topology() {
 
     START_TIMER("MESH - setup topology");
 
+    //check_and_normalize();
+
+
     check_mesh_on_read();
+    canonical_faces();
 
     make_neighbours_and_edges();
     element_to_neigh_vb();
@@ -727,10 +758,17 @@ void Mesh::make_neighbours_and_edges()
 	MessageOut().fmt( "Created {} edges and {} neighbours.\n", edges.size(), vb_neighbours_.size() );
 }
 
-
+template <int Dim>
+void set_perm(ElementAccessor<3> &ele, uint i_side, uint *permutation)  {
+    uint iperm = RefElement<Dim>::permutation_index(permutation);
+    ele->permutation_idx_[i_side] = iperm;
+    ASSERT_EQ(0, iperm);
+}
 
 void Mesh::make_edge_permutations()
 {
+    // TODO just check that permutations are OK.
+
     // node numbers is the local index of the node on the last side
     // this maps the side nodes to the nodes of the reference side(0)
     std::unordered_map<unsigned int,unsigned int> node_numbers;
@@ -763,13 +801,13 @@ void Mesh::make_edge_permutations()
 				switch (edg.side(0)->dim())
 				{
 				case 0:
-					ele->permutation_idx_[side->side_idx()] = RefElement<1>::permutation_index(permutation);
+					set_perm<1>(ele, side->side_idx(), permutation);
 					break;
 				case 1:
-					ele->permutation_idx_[side->side_idx()] = RefElement<2>::permutation_index(permutation);
+				    set_perm<2>(ele, side->side_idx(), permutation);
 					break;
 				case 2:
-					ele->permutation_idx_[side->side_idx()] = RefElement<3>::permutation_index(permutation);
+				    set_perm<3>(ele, side->side_idx(), permutation);
 					break;
 				}
 			}
@@ -798,13 +836,13 @@ void Mesh::make_edge_permutations()
 		switch (nb->side()->dim())
 		{
 		case 0:
-			s_ele->permutation_idx_[side->side_idx()] = RefElement<1>::permutation_index(permutation);
+			set_perm<0>(s_ele, side->side_idx(), permutation);
 			break;
 		case 1:
-		    s_ele->permutation_idx_[side->side_idx()] = RefElement<2>::permutation_index(permutation);
+		    set_perm<1>(s_ele, side->side_idx(), permutation);
 			break;
 		case 2:
-		    s_ele->permutation_idx_[side->side_idx()] = RefElement<3>::permutation_index(permutation);
+		    set_perm<2>(s_ele, side->side_idx(), permutation);
 			break;
 		}
 	}
@@ -839,13 +877,13 @@ void Mesh::make_edge_permutations()
             switch (bdr_elm.dim())
             {
             case 0:
-                ele->permutation_idx_[side->side_idx()] = RefElement<1>::permutation_index(permutation);
+                set_perm<0>(ele, side->side_idx(), permutation);
                 break;
             case 1:
-                ele->permutation_idx_[side->side_idx()] = RefElement<2>::permutation_index(permutation);
+                set_perm<1>(ele, side->side_idx(), permutation);
                 break;
             case 2:
-                ele->permutation_idx_[side->side_idx()] = RefElement<3>::permutation_index(permutation);
+                set_perm<2>(ele, side->side_idx(), permutation);
                 break;
             }
         }
