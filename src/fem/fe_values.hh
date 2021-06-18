@@ -421,7 +421,7 @@ protected:
     std::shared_ptr<FEInternalData> fe_data;
 
     /// Precomputed FE data (shape functions on reference element) for all sides and permuted quadrature points.
-    std::vector<std::vector<shared_ptr<FEInternalData> > > side_fe_data;
+    std::vector<shared_ptr<FEInternalData> > side_fe_data;
 
     friend class MapScalar<spacedim>;
     friend class MapPiola<spacedim>;

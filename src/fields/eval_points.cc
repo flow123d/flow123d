@@ -54,7 +54,6 @@ template <unsigned int dim>
 std::shared_ptr<EdgeIntegral> EvalPoints::add_edge(const Quadrature &quad)
 {
     ASSERT_EQ(dim, quad.dim()+1);
-	unsigned int old_data_size=this->size(dim), new_data_size; // interval of side subset data
 	unsigned int points_per_side = quad.make_from_side<dim>(0).get_points().size();
 
 	std::shared_ptr<EdgeIntegral> edge_integral = std::make_shared<EdgeIntegral>(shared_from_this(), dim, points_per_side);
@@ -65,8 +64,6 @@ std::shared_ptr<EdgeIntegral> EvalPoints::add_edge(const Quadrature &quad)
         dim_eval_points_[dim].add_local_points<dim>( high_dim_q.get_points() );
     }
     dim_eval_points_[dim].add_subset();
-    new_data_size = this->size(dim);
-    unsigned int i_data=old_data_size;
 
     this->set_max_size();
     return edge_integral;

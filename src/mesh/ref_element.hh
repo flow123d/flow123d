@@ -401,27 +401,6 @@ public:
 
     static const std::vector< std::vector< std::vector<unsigned int> > > nodes_of_subelements;
 
-	/**
-	 * Number of permutations of nodes on sides.
-	 * dim   value
-	 * -----------
-	 * 1     1
-	 * 2     2
-	 * 3     6
-	 */
-	static constexpr unsigned int n_side_permutations = (dim+1)*(2*dim*dim-5*dim+6)/6;
-
-	/**
-	 * Permutations of nodes on sides.
-     * [n_side_permutations][n_nodes_per_side]
-	 */
-	static const std::vector< std::vector<unsigned int> > side_permutations;
-
-	/**
-	 * For a given permutation @p p of nodes finds its index within @p side_permutations.
-	 * @param p Permutation of nodes.
-	 */
-	static unsigned int permutation_index(unsigned int p[n_nodes_per_side]);
 
     /** @brief Converts from local to barycentric coordinates.
      * @param lp point in local coordinates (x,y)
@@ -579,11 +558,6 @@ template<> const std::vector<IdxVector<3>> RefElement<3>::node_sides_;
 template<> const std::vector<IdxVector<2>> RefElement<3>::line_sides_;
 template<> const std::vector<IdxVector<3>> RefElement<3>::side_lines_;
 
-
-template<> const std::vector< std::vector<unsigned int> > RefElement<0>::side_permutations;
-template<> const std::vector< std::vector<unsigned int> > RefElement<1>::side_permutations;
-template<> const std::vector< std::vector<unsigned int> > RefElement<2>::side_permutations;
-template<> const std::vector< std::vector<unsigned int> > RefElement<3>::side_permutations;
 
 template<> const IdxVector<1> RefElement<0>::topology_zeros_[];
 template<> const IdxVector<2> RefElement<1>::topology_zeros_[];

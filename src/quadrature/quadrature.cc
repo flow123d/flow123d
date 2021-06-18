@@ -47,9 +47,6 @@ template<unsigned int bulk_dim>
 Quadrature Quadrature::make_from_side(unsigned int sid) const
 {
     ASSERT_DBG( bulk_dim == dim_ + 1 );
-    
-    // Below we permute point coordinates according to permutation
-    // of nodes on side. We just check that these numbers equal.
     ASSERT_DBG( RefElement<bulk_dim>::n_nodes_per_side == bulk_dim );
     
     Quadrature q(dim_+1, size());
@@ -59,14 +56,8 @@ Quadrature Quadrature::make_from_side(unsigned int sid) const
     {
         //compute barycentric coordinates on element
         Armor::ArmaVec<double, bulk_dim> p = RefElement<bulk_dim-1>::local_to_bary(point<bulk_dim-1>(k));
-        Armor::ArmaVec<double, bulk_dim> pp;
-        
-        //permute
-        for (unsigned int i=0; i<RefElement<bulk_dim>::n_nodes_per_side; i++) {
-            pp(RefElement<bulk_dim>::side_permutations[0][i]) = p(i);
-        }
-        
-        el_bar_coords = RefElement<bulk_dim>::template interpolate<bulk_dim-1>(pp, sid);
+
+        el_bar_coords = RefElement<bulk_dim>::template interpolate<bulk_dim-1>(p, sid);
         
         //get local coordinates and set
         q.quadrature_points.set(k) = RefElement<bulk_dim>::bary_to_local(el_bar_coords);

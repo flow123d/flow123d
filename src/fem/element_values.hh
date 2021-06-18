@@ -290,9 +290,6 @@ protected:
     /// Number of sides in reference cell.
     const unsigned int n_sides_;
 
-    /// Number of permutations of points on side of reference cell.
-    const unsigned int n_side_permutations_;
-
     /// Data on reference element.
     RefElementData *ref_data;
 

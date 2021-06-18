@@ -165,8 +165,7 @@ void FEValues<spacedim>::initialize(
         side_fe_data.resize(RefElement<DIM>::n_sides);
         for (unsigned int sid = 0; sid < RefElement<DIM>::n_sides; sid++)
         {
-            side_fe_data[sid].resize(RefElement<DIM>::n_side_permutations);
-            side_fe_data[sid][0] = init_fe_data(_fe, q.make_from_side<DIM>(sid));
+            side_fe_data[sid] = init_fe_data(_fe, q.make_from_side<DIM>(sid));
         }
     }
     else
@@ -562,7 +561,7 @@ void FEValues<spacedim>::reinit(const Side &cell_side)
     const LongIdx sid = cell_side.side_idx();
     
     // calculation of finite element data
-    fill_data(*elm_values, *side_fe_data[sid][0]);
+    fill_data(*elm_values, *(side_fe_data[sid]) );
 }
 
 

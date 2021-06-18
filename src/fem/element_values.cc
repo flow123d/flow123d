@@ -159,7 +159,6 @@ ElementValues<spacedim>::ElementValues(
 : dim_(dim),
   n_points_(_quadrature.size()),
   n_sides_(_quadrature.dim() == dim ? 0 : dim+1),
-  n_side_permutations_(_quadrature.dim() +1 == dim ? (dim+1)*(2*dim*dim-5*dim+6)/6 : 0),
   ref_data(nullptr),
   side_ref_data(n_sides_),
   data(n_points_, update_each(_flags), dim)
