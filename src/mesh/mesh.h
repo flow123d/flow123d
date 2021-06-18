@@ -269,9 +269,6 @@ public:
     int n_exsides; // # of external sides
     mutable int n_sides_; // total number of sides (should be easy to count when we have separated dimensions
 
-    int n_lines; // Number of line elements
-    int n_triangles; // Number of triangle elements
-    int n_tetrahedras; // Number of tetrahedra elements
 
     // Temporary solution for numbering of nodes on sides.
     // The data are defined in RefElement<dim>::side_nodes,
