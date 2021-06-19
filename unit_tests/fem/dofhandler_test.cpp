@@ -139,10 +139,10 @@ TEST(DOFHandler, test_all) {
     if (own_elem[4] & own_elem[3]) EXPECT_NE( indices[4][0], indices[3][0] );
     
     // dof at node 2 is shared by elements 4, 6
-    if (own_elem[3] & own_elem[5]) EXPECT_EQ( indices[3][1], indices[5][1] );
+    if (own_elem[3] & own_elem[5]) EXPECT_EQ( indices[3][1], indices[5][0] );
     
     // dof at node 3 is shared by elements 4, 6, 8
-    if (own_elem[3] & own_elem[5]) EXPECT_EQ( indices[3][2], indices[5][0] );
+    if (own_elem[3] & own_elem[5]) EXPECT_EQ( indices[3][2], indices[5][1] );
     if (own_elem[3] & own_elem[7]) EXPECT_EQ( indices[3][2], indices[7][0] );
     
     // dof at node 3 is shared by elements 1, 2, 3
@@ -291,7 +291,7 @@ TEST(DOFHandler, test_rt)
     if (own_elem[3] & own_elem[5]) EXPECT_EQ( indices[3][2], indices[5][0] );
     
     // dof at el. 6 side 1 equals dof at el. 8 side 0
-    if (own_elem[5] & own_elem[7]) EXPECT_EQ( indices[5][1], indices[7][0] );
+    if (own_elem[5] & own_elem[7]) EXPECT_EQ( indices[5][2], indices[7][0] );
 
     delete mesh;
 
