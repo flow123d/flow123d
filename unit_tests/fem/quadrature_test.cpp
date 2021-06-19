@@ -127,6 +127,7 @@ void test_side_projection(Quadrature &subq)
                 arma::vec3 sub_pts = coords_subq*bary_subq[i];
                 arma::vec3 pts = coords_q*bary_q[i];
                 EXPECT_ARMA_EQ( sub_pts, pts );
+            }
 
     }
 }

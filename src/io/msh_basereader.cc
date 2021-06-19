@@ -56,7 +56,9 @@ Mesh * BaseMeshReader::mesh_factory(const Input::Record &input_mesh_rec) {
 	Mesh * mesh = new Mesh( input_mesh_rec );
 
 	try {
-		std::shared_ptr< BaseMeshReader > reader = BaseMeshReader::reader_factory(input_mesh_rec.val<FilePath>("mesh_file"));
+	    auto file = input_mesh_rec.val<FilePath>("mesh_file");
+	    DebugOut() << "Reading test mesh file: " << file;
+		std::shared_ptr< BaseMeshReader > reader = BaseMeshReader::reader_factory(file);
 		reader->read_physical_names(mesh);
 		if (input_mesh_rec.opt_val("regions", region_list)) {
 			mesh->read_regions_from_input(region_list);

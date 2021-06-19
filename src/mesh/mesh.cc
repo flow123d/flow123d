@@ -532,6 +532,9 @@ bool Mesh::find_lower_dim_element( vector<unsigned int> &element_list, unsigned 
 
     vector<unsigned int>::iterator e_dest=element_list.begin();
     for( vector<unsigned int>::iterator ele = element_list.begin(); ele!=element_list.end(); ++ele) {
+        //DebugOut() << "Eid: " << this->elem_index(*ele)
+        //        << format(element_vec_[*ele].nodes_);
+
         if (element_vec_[*ele].dim() == dim) { // keep only indexes of elements of same dimension
             *e_dest=*ele;
             ++e_dest;
@@ -1079,8 +1082,12 @@ void Mesh::init_element(Element *ele, unsigned int elm_id, unsigned int dim, Reg
 	ele->init(dim, region_idx);
 	ele->pid_ = partition_id;
 
-	for (unsigned int ni=0; ni<ele->n_nodes(); ni++) {
+	unsigned int ni;
+	for (ni=0; ni<ele->n_nodes(); ni++) {
 		ele->nodes_[ni] = this->node_index(node_ids[ni]);
+	}
+	for(;ni<4;ni++) {
+	    ele->nodes_[ni] = undef_idx;
 	}
 
     // check that tetrahedron element is numbered correctly and is not degenerated
