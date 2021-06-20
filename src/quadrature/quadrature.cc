@@ -44,12 +44,9 @@ Quadrature::Quadrature(const Quadrature &q) :
 
 
 template<unsigned int bulk_dim>
-Quadrature Quadrature::make_from_side(unsigned int sid, unsigned int pid) const
+Quadrature Quadrature::make_from_side(unsigned int sid) const
 {
     ASSERT_DBG( bulk_dim == dim_ + 1 );
-    
-    // Below we permute point coordinates according to permutation
-    // of nodes on side. We just check that these numbers equal.
     ASSERT_DBG( RefElement<bulk_dim>::n_nodes_per_side == bulk_dim );
     
     Quadrature q(dim_+1, size());
@@ -59,14 +56,8 @@ Quadrature Quadrature::make_from_side(unsigned int sid, unsigned int pid) const
     {
         //compute barycentric coordinates on element
         Armor::ArmaVec<double, bulk_dim> p = RefElement<bulk_dim-1>::local_to_bary(point<bulk_dim-1>(k));
-        Armor::ArmaVec<double, bulk_dim> pp;
-        
-        //permute
-        for (unsigned int i=0; i<RefElement<bulk_dim>::n_nodes_per_side; i++) {
-            pp(RefElement<bulk_dim>::side_permutations[pid][i]) = p(i);
-        }
-        
-        el_bar_coords = RefElement<bulk_dim>::template interpolate<bulk_dim-1>(pp, sid);
+
+        el_bar_coords = RefElement<bulk_dim>::template interpolate<bulk_dim-1>(p, sid);
         
         //get local coordinates and set
         q.quadrature_points.set(k) = RefElement<bulk_dim>::bary_to_local(el_bar_coords);
@@ -77,7 +68,7 @@ Quadrature Quadrature::make_from_side(unsigned int sid, unsigned int pid) const
 }
 
 // Specialized subquadrature consructor for dim=1.
-template<> Quadrature Quadrature::make_from_side<1>(unsigned int sid, unsigned int) const
+template<> Quadrature Quadrature::make_from_side<1>(unsigned int sid) const
 {
     ASSERT_EQ_DBG(size(), 1);
     Quadrature q(1, 1);
@@ -87,7 +78,7 @@ template<> Quadrature Quadrature::make_from_side<1>(unsigned int sid, unsigned i
     return q;
 }
 
-template Quadrature Quadrature::make_from_side<2>(unsigned int sid, unsigned int pid) const;
-template Quadrature Quadrature::make_from_side<3>(unsigned int sid, unsigned int pid) const;
+template Quadrature Quadrature::make_from_side<2>(unsigned int sid) const;
+template Quadrature Quadrature::make_from_side<3>(unsigned int sid) const;
 
 

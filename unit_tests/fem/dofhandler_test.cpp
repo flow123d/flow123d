@@ -22,17 +22,28 @@ TEST(DOFHandler, test_all) {
   // except for the dofs lying on line 1
   // without the center point 3.
   {
-    // simple mesh consisting of 4 triangles and 1 line element
-    //
-    //  4---------------5
-    //  | \           / |
-    //  |   \   5   1   |
-    //  |     \   /     |
-    //  |  3    3    4  |
-    //  |     /   \     |
-    //  |   /   2   \   |
-    //  | /           \ |
-    //  1---------------2
+/*
+ *     -
+     simple mesh consisting of 4 triangles and 1 line element
+
+      4---------------5
+      | \           / |
+      |   \   5   1   |
+      |     \   /     |
+      |  3    3    4  |
+      |     /   \     |
+      |   /   2   \   |
+      | /           \ |
+      1---------------2
+
+    permuted elements:
+    1: 35
+    2: 123
+    3: 134
+    4: 235
+    5: 345
+ *
+ */
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     Mesh * mesh = mesh_full_constructor("{ mesh_file=\"fem/small_mesh.msh\", optimize_mesh=false }");
     
@@ -59,22 +70,22 @@ TEST(DOFHandler, test_all) {
     if (own_elem[1] & own_elem[2]) EXPECT_EQ( indices[1][0], indices[2][0] );
     
     // dof at node 2 is shared by elements 2, 4
-    if (own_elem[1] & own_elem[3]) EXPECT_EQ( indices[1][1], indices[3][1] );
+    if (own_elem[1] & own_elem[3]) EXPECT_EQ( indices[1][1], indices[3][0] );
     
     // dof at node 3 is shared by elements 2, 3, 4, 5
     if (own_elem[4] & own_elem[2]) EXPECT_EQ( indices[4][0], indices[2][1] );
     if (own_elem[2] & own_elem[1]) EXPECT_EQ( indices[2][1], indices[1][2] );
-    if (own_elem[1] & own_elem[3]) EXPECT_EQ( indices[1][2], indices[3][0] );
+    if (own_elem[1] & own_elem[3]) EXPECT_EQ( indices[1][2], indices[3][1] );
     
     // dof at node 3 is NOT shared by elements 1 and 5
     if (own_elem[0] & own_elem[4]) EXPECT_NE( indices[0][0], indices[4][0] );
     
     // dof at node 4 is shared by elements 3, 5
-    if (own_elem[2] & own_elem[4]) EXPECT_EQ( indices[2][2], indices[4][2] );
+    if (own_elem[2] & own_elem[4]) EXPECT_EQ( indices[2][2], indices[4][1] );
     
     // dof at node 5 is NOT shared by elements 1, 4 and 5
-    if (own_elem[4] & own_elem[0]) EXPECT_NE( indices[4][1], indices[0][1] );
-    if (own_elem[4] & own_elem[3]) EXPECT_NE( indices[4][1], indices[3][2] );
+    if (own_elem[4] & own_elem[0]) EXPECT_NE( indices[4][2], indices[0][1] );
+    if (own_elem[4] & own_elem[3]) EXPECT_NE( indices[4][2], indices[3][2] );
     
     delete mesh;
 
@@ -128,10 +139,10 @@ TEST(DOFHandler, test_all) {
     if (own_elem[4] & own_elem[3]) EXPECT_NE( indices[4][0], indices[3][0] );
     
     // dof at node 2 is shared by elements 4, 6
-    if (own_elem[3] & own_elem[5]) EXPECT_EQ( indices[3][1], indices[5][1] );
+    if (own_elem[3] & own_elem[5]) EXPECT_EQ( indices[3][1], indices[5][0] );
     
     // dof at node 3 is shared by elements 4, 6, 8
-    if (own_elem[3] & own_elem[5]) EXPECT_EQ( indices[3][2], indices[5][0] );
+    if (own_elem[3] & own_elem[5]) EXPECT_EQ( indices[3][2], indices[5][1] );
     if (own_elem[3] & own_elem[7]) EXPECT_EQ( indices[3][2], indices[7][0] );
     
     // dof at node 3 is shared by elements 1, 2, 3
@@ -280,7 +291,7 @@ TEST(DOFHandler, test_rt)
     if (own_elem[3] & own_elem[5]) EXPECT_EQ( indices[3][2], indices[5][0] );
     
     // dof at el. 6 side 1 equals dof at el. 8 side 0
-    if (own_elem[5] & own_elem[7]) EXPECT_EQ( indices[5][1], indices[7][0] );
+    if (own_elem[5] & own_elem[7]) EXPECT_EQ( indices[5][2], indices[7][0] );
 
     delete mesh;
 

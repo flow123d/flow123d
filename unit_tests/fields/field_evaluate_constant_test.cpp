@@ -185,7 +185,7 @@ TEST_F(FieldEvalConstantTest, evaluate) {
     	data_->computed_dh_cell_ = DHCellAccessor(dh_.get(), cell_idx[i]);  // element ids stored to cache: (3 -> 2,3,4), (4 -> 3,4,5,10), (5 -> 0,4,5,11), (10 -> 8,9,10)
         data_->update_cache();
 
-        // Bulk integral, no sides, no permutations.
+        // Bulk integral, no sides.
         for( BulkPoint q_point: data_->mass_eval->points(data_->position_in_cache(data_->computed_dh_cell_.elm_idx()), data_.get()) ) {
             EXPECT_EQ(expected_scalar[data_->computed_dh_cell_.elm_idx()], data_->scalar_field(q_point));
             EXPECT_ARMA_EQ(expected_vector[i], data_->vector_field(q_point));
@@ -203,7 +203,7 @@ TEST_F(FieldEvalConstantTest, evaluate) {
         // FieldFE<..> conc;
         for (DHCellSide side : data_->computed_dh_cell_.side_range()) {
         	for(DHCellSide el_ngh_side : side.edge_sides()) {
-           	    // vector of local side quadrature points in the correct side permutation
+           	    // vector of local side quadrature points
         	    Range<EdgePoint> side_points = data_->side_eval->points(side, data_.get());
         	    for (EdgePoint side_p : side_points) {
                     EXPECT_EQ(expected_scalar[data_->computed_dh_cell_.elm_idx()], data_->scalar_field(side_p));

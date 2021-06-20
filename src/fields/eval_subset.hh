@@ -130,21 +130,18 @@ public:
 
     /// Constructor
 	SidePoint(DHCellSide cell_side, const ElementCacheMap *elm_cache_map, unsigned int local_point_idx)
-    : PointBase(elm_cache_map, local_point_idx), side_idx_(cell_side.side_idx()),
-	  permutation_idx_( cell_side.element()->permutation_idx( side_idx_ ) ) {
+    : PointBase(elm_cache_map, local_point_idx), side_idx_(cell_side.side_idx())
+	{
 	    this->elem_patch_idx_ = this->elm_cache_map_->position_in_cache(cell_side.element().mesh_idx());
 	}
 
-    // Index of permutation
-    inline unsigned int permutation_idx() const {
-        return permutation_idx_;
-    }
+	inline unsigned int eval_point_idx() const {
+	    return side_idx_ * local_point_idx_;
+	}
 
 protected:
     /// Index of side in element
     unsigned int side_idx_;
-    /// Permutation index corresponding with DHCellSide
-    unsigned int permutation_idx_;
 };
 
 
@@ -158,8 +155,8 @@ public:
     : SidePoint() {}
 
     /// Constructor
-    EdgePoint(DHCellSide cell_side, const ElementCacheMap *elm_cache_map, const EdgeIntegral *edge_integral, unsigned int local_point_idx)
-    : SidePoint(cell_side, elm_cache_map, local_point_idx), integral_(edge_integral) {}
+    EdgePoint(DHCellSide cell_side, const ElementCacheMap *elm_cache_map, unsigned int local_point_idx)
+    : SidePoint(cell_side, elm_cache_map, local_point_idx) {}
 
     /// Return corresponds EdgePoint of neighbour side of same dimension (computing of side integrals).
     inline EdgePoint point_on(DHCellSide edg_side) const;
@@ -168,13 +165,6 @@ public:
     bool operator==(const EdgePoint& other) {
         return (elem_patch_idx_ == other.elem_patch_idx_) && (local_point_idx_ == other.local_point_idx_);
     }
-
-    /// Return index in EvalPoints object
-    inline unsigned int eval_point_idx() const;
-
-private:
-    /// Pointer to edge point integral
-    const EdgeIntegral *integral_;
 };
 
 
@@ -193,9 +183,6 @@ public:
 
     /// Return corresponds EdgePoint of neighbour side of same dimension (computing of side integrals).
     inline BulkPoint lower_dim(DHCellAccessor cell_lower) const;
-
-    /// Return index in EvalPoints object
-    inline unsigned int eval_point_idx() const;
 
     /// Comparison of accessors.
     bool operator==(const CouplingPoint& other) {
@@ -223,9 +210,6 @@ public:
     /// Return corresponds BulkPoint on boundary element.
     inline BulkPoint point_bdr(ElementAccessor<3> bdr_elm) const;
 
-    /// Return index in EvalPoints object
-    inline unsigned int eval_point_idx() const;
-
     /// Comparison of accessors.
     bool operator==(const BoundaryPoint& other) {
         return (elem_patch_idx_ == other.elem_patch_idx_) && (local_point_idx_ == other.local_point_idx_);
@@ -246,7 +230,7 @@ public:
     /// Default constructor
 	BaseIntegral() : eval_points_(nullptr), dim_(0) {}
 
-    /// Constructor of bulk (n_permutations==0) or side subset
+    /// Constructor of bulk or side subset
 	BaseIntegral(std::shared_ptr<EvalPoints> eval_points, unsigned int dim)
 	 : eval_points_(eval_points), dim_(dim) {}
 
@@ -307,10 +291,10 @@ private:
 class EdgeIntegral : public BaseIntegral, public std::enable_shared_from_this<EdgeIntegral> {
 public:
     /// Default constructor
-	EdgeIntegral() : BaseIntegral(), perm_indices_(nullptr), n_permutations_(0) {}
+	EdgeIntegral() : BaseIntegral() {}
 
     /// Constructor of edge integral
-	EdgeIntegral(std::shared_ptr<EvalPoints> eval_points, unsigned int dim, unsigned int n_permutations, unsigned int points_per_side);
+	EdgeIntegral(std::shared_ptr<EvalPoints> eval_points, unsigned int dim);
 
     /// Destructor
     ~EdgeIntegral();
@@ -330,25 +314,17 @@ public:
         unsigned int begin_idx = eval_points_->subset_begin(dim_, subset_index_);
         unsigned int end_idx = eval_points_->subset_end(dim_, subset_index_);
         unsigned int points_per_side = (end_idx - begin_idx) / this->n_sides();
-        auto bgn_it = make_iter<EdgePoint>( EdgePoint(cell_side, elm_cache_map, this, 0 ) );
-        auto end_it = make_iter<EdgePoint>( EdgePoint(cell_side, elm_cache_map, this, points_per_side ) );
+        auto bgn_it = make_iter<EdgePoint>( EdgePoint(cell_side, elm_cache_map, 0 ) );
+        auto end_it = make_iter<EdgePoint>( EdgePoint(cell_side, elm_cache_map, points_per_side ) );
         return Range<EdgePoint>(bgn_it, end_it);
     }
 
-    /// Returns structure of permutation indices.
-    inline int perm_idx_ptr(uint i_side, uint i_perm, uint i_point) const {
-    	return perm_indices_[i_side][i_perm][i_point];
-    }
 
 private:
     /// Index of data block according to subset in EvalPoints object.
     unsigned int subset_index_;
-    /// Indices to EvalPoints for different sides and permutations reflecting order of points.
-    unsigned int*** perm_indices_;
     /// Number of sides (value 0 indicates bulk set)
     unsigned int n_sides_;
-    /// Number of permutations (value 0 indicates bulk set)
-    unsigned int n_permutations_;
 
     friend class EvalPoints;
     friend class EdgePoint;
@@ -447,18 +423,11 @@ private:
  * Implementation of inlined methods
  */
 
-inline unsigned int EdgePoint::eval_point_idx() const {
-    return integral_->perm_idx_ptr(side_idx_, permutation_idx_, local_point_idx_);
-}
 
 inline EdgePoint EdgePoint::point_on(DHCellSide edg_side) const {
-    return EdgePoint(edg_side, elm_cache_map_, this->integral_, this->local_point_idx_);
+    return EdgePoint(edg_side, elm_cache_map_, this->local_point_idx_);
 }
 
-
-inline unsigned int CouplingPoint::eval_point_idx() const {
-    return integral_->edge_integral_->perm_idx_ptr(side_idx_, permutation_idx_, local_point_idx_);
-}
 
 inline BulkPoint CouplingPoint::lower_dim(DHCellAccessor cell_lower) const {
     unsigned int i_elm = elm_cache_map_->position_in_cache(cell_lower.elm().mesh_idx());
@@ -468,9 +437,6 @@ inline BulkPoint CouplingPoint::lower_dim(DHCellAccessor cell_lower) const {
 }
 
 
-inline unsigned int BoundaryPoint::eval_point_idx() const {
-    return integral_->edge_integral_->perm_idx_ptr(side_idx_, permutation_idx_, local_point_idx_);
-}
 
 inline BulkPoint BoundaryPoint::point_bdr(ElementAccessor<3> bdr_elm) const {
     unsigned int i_elm = elm_cache_map_->position_in_cache(bdr_elm.mesh_idx());
