@@ -556,7 +556,7 @@ unsigned int RefElement<dim>::permutation_index(unsigned int p[n_nodes_per_side]
 		if (equal(p, p + n_nodes_per_side, side_permutations[index].data()))
 			return index;
 
-	xprintf(PrgErr, "Side permutation not found.\n");
+	THROW( ExcInvalidPermutation() );
 
 	// The following line is present in order to suppress compilers warning
 	// about missing return value.

@@ -563,8 +563,8 @@ void Field<spacedim,Value>::check_initialized_region_fields_() {
                 if (shared_->input_default_ != "") {    // try to use default
                     regions_to_init.push_back( reg );
                 } else {
-                	xprintf(UsrErr, "Missing value of the input field '%s' ('%s') on region ID: %d label: %s.\n",
-                			input_name().c_str(), name().c_str(), reg.id(), reg.label().c_str() );
+                	THROW( ExcMissingFieldValue() << EI_FieldInputName(input_name()) << EI_FieldName(name())
+                	        << EI_RegId(reg.id()) << EI_RegLabel(reg.label()) );
                 }
             }
         }

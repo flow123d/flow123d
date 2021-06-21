@@ -38,11 +38,18 @@ public:
 	TYPEDEF_ERR_INFO(EI_Section, std::string);
 	TYPEDEF_ERR_INFO(EI_ElementId, int);
 	TYPEDEF_ERR_INFO(EI_ElementType, int);
+	TYPEDEF_ERR_INFO(EI_Position, std::string);
 	DECLARE_EXCEPTION(ExcMissingSection,
 			<< "Missing section " << EI_Section::qval << " in the GMSH input file: " << EI_GMSHFile::qval);
 	DECLARE_EXCEPTION(ExcUnsupportedType,
 			<< "Element " << EI_ElementId::val << "in the GMSH input file " << EI_GMSHFile::qval
 			<< " is of the unsupported type " << EI_ElementType::val );
+	DECLARE_EXCEPTION(ExcZeroNodes,
+			<< "Zero number of nodes, " << EI_Position::val << ".\n");
+	DECLARE_EXCEPTION(ExcZeroElements,
+			<< "Zero number of elements, " << EI_Position::val << ".\n");
+	DECLARE_EXCEPTION(ExcTooManyElementTags,
+			<< "At least two element tags have to be defined for element with id=" << EI_ElementId::val << ", " << EI_Position::val << ".\n");
 
     /**
      * Construct the GMSH format reader from given FilePath.

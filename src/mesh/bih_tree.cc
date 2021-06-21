@@ -126,7 +126,7 @@ void BIHTree::split_node(const BoundingBox &node_box, unsigned int node_idx) {
 
 	nodes_[node_idx].set_non_leaf(nodes_.size()-2, nodes_.size()-1, axis);
     
-//     xprintf(Msg, "%d %f %f %f %f %d %d\n", node_idx, node_box.min(axis), left_bound, right_bound, node_box.max(axis),
+//    DebugOut().fmt("{} {} {} {} {} {} {}\n", node_idx, node_box.min(axis), left_bound, right_bound, node_box.max(axis),
 //         left_end - left_begin, right_end - left_end );
 }
 
@@ -152,7 +152,7 @@ uint BIHTree::make_node(const BoundingBox &box, unsigned int node_idx) {
 				height = max(height, ht);
 		}
 // 		else{
-//             xprintf(Msg,"%d %d %f %f\n",node_idx, child.leaf_size(),
+//             DebugOut().fmt("{} {} {} {}\n", node_idx, child.leaf_size(),
 //                                            node_box.size(node_box.longest_axis()),
 //                                            box.size(node.axis()));
 //         }
@@ -173,7 +173,7 @@ uint BIHTree::make_node(const BoundingBox &box, unsigned int node_idx) {
 				height = max(height, ht);
 		}
 // 		else{
-// 		            xprintf(Msg,"%d %d %f %f\n",node_idx, child.leaf_size(),
+//             DebugOut().fmt("{} {} {} {}\n", node_idx, child.leaf_size(),
 //                                            node_box.size(node_box.longest_axis()),
 //                                            box.size(node.axis()));
 //         }
@@ -272,7 +272,7 @@ void BIHTree::find_bounding_box(const BoundingBox &box, std::vector<unsigned int
 	//node_stack_.pop_back();
 	//cout << "stack size: " << node_stack_.size();
 
-// 	xprintf(Msg,"leaves: %d\n",counter);
+//    DebugOut().fmt("leaves: {}\n", counter);
 
 //#ifdef FLOW123D_DEBUG_ASSERTS
 //	// check uniqueness of element indexes

@@ -80,10 +80,28 @@ public:
     TYPEDEF_ERR_INFO( EI_ElemNew, int);
     TYPEDEF_ERR_INFO( EI_RegLast, std::string);
     TYPEDEF_ERR_INFO( EI_RegNew, std::string);
+    TYPEDEF_ERR_INFO( EI_ElemId, int);
+    TYPEDEF_ERR_INFO( EI_ElemIdOther, int);
+    TYPEDEF_ERR_INFO( EI_Region, std::string);
+    TYPEDEF_ERR_INFO( EI_RegIdx, unsigned int);
+    TYPEDEF_ERR_INFO( EI_Dim, unsigned int);
+    TYPEDEF_ERR_INFO( EI_DimOther, unsigned int);
+
     DECLARE_EXCEPTION(ExcDuplicateBoundary,
             << "Duplicate boundary elements! \n"
             << "Element id: " << EI_ElemLast::val << " on region name: " << EI_RegLast::val << "\n"
             << "Element id: " << EI_ElemNew::val << " on region name: " << EI_RegNew::val << "\n");
+    DECLARE_EXCEPTION(ExcElmWrongOrder,
+            << "Element IDs in non-increasing order, ID: " << EI_ElemId::val << "\n");
+    DECLARE_EXCEPTION(ExcRegionElmDiffDim,
+    		<< "User defined region " << EI_Region::qval << " (id " << EI_RegIdx::val
+            << ") by 'From_Elements' cannot have elements of different dimensions.\n"
+            << "Thrown due to: dim " << EI_Dim::val << " neq dim " << EI_DimOther::val << " (ele id " << EI_ElemId::val << ").\n"
+            << "Split elements by dim, create separate regions and then possibly use Union.\n" );
+    DECLARE_EXCEPTION(ExcTooMatchingIds,
+            << "Mesh: Duplicate dim-join lower dim elements: " << EI_ElemId::val << ", " << EI_ElemIdOther::val << ".\n" );
+    DECLARE_EXCEPTION(ExcBdrElemMatchRegular,
+            << "Boundary element (id: " << EI_ElemId::val << ") match a regular element (id: " << EI_ElemIdOther::val << ") of lower dimension.\n" );
 
 
     /**

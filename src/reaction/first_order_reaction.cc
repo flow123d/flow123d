@@ -134,7 +134,7 @@ void FirstOrderReaction::initialize_from_input()
         bifurcation_[i_reaction].resize(product_array.size());
 
         if(reactant_array.size() != 1)
-            xprintf(UsrErr, "More than one reactant is not available at the moment.");
+            THROW( ExcTooManyReactants() );
         
         //take only one reactant
         Input::Iterator<Input::Record> reactant_it = reactant_array.begin<Input::Record>();

@@ -311,10 +311,8 @@ void Mesh::modify_element_ids(const RegionDB::MapElementIDToRegionID &map) {
 		Element &ele = element_vec_[ elem_index(elem_to_region.first) ];
         
         if( ele.dim() != dim_to_check){
-            xprintf(UsrErr, "User defined region '%s' (id %d) by 'From_Elements' cannot have elements of different dimensions.\n"
-                            "Thrown due to: dim %d neq dim %d (ele id %d).\n"
-                            "Split elements by dim, create separate regions and then possibly use Union.\n",
-                    reg_name.c_str(), elem_to_region.second, dim_to_check, ele.dim(), elem_to_region.first);
+            THROW(ExcRegionElmDiffDim() << EI_Region(reg_name) << EI_RegIdx(elem_to_region.second) << EI_Dim(dim_to_check)
+                    << EI_DimOther(ele.dim()) << EI_ElemId(elem_to_region.first) );
         }
 
 		ele.region_idx_ = region_db_.get_region( elem_to_region.second, ele.dim() );
@@ -529,8 +527,7 @@ bool Mesh::find_lower_dim_element( vector<unsigned int> &element_list, unsigned 
             *e_dest=*ele;
             ++e_dest;
         } else if (element_vec_[*ele].dim() == dim-1) { // get only first element of lower dimension
-            if (is_neighbour) xprintf(UsrErr, "Too matching elements id: %d and id: %d in the same mesh.\n",
-            		this->elem_index(*ele), this->elem_index(element_idx) );
+            if (is_neighbour) THROW(ExcTooMatchingIds() << EI_ElemId(this->elem_index(*ele)) << EI_ElemIdOther(this->elem_index(element_idx)) );
 
             is_neighbour = true;
             element_idx = *ele;
@@ -588,8 +585,7 @@ void Mesh::make_neighbours_and_edges()
         intersect_element_lists(side_nodes, intersection_list);
         bool is_neighbour = find_lower_dim_element(intersection_list, bc_ele->dim() +1, ngh_element_idx);
         if (is_neighbour) {
-            xprintf(UsrErr, "Boundary element (id: %d) match a regular element (id: %d) of lower dimension.\n",
-                    bc_ele.idx(), this->elem_index(ngh_element_idx));
+            THROW( ExcBdrElemMatchRegular() << EI_ElemId(bc_ele.idx()) << EI_ElemIdOther(this->elem_index(ngh_element_idx)) );
         } else {
             if (intersection_list.size() == 0) {
                 // no matching dim+1 element found
@@ -959,7 +955,7 @@ void Mesh::elements_id_maps( vector<LongIdx> & bulk_elements_id, vector<LongIdx>
             // and thus report error for any remaining data lines
             if (id < 0) last_id=*map_it=-1;
             else {
-                if (last_id >= id) xprintf(UsrErr, "Element IDs in non-increasing order, ID: %d\n", id);
+                if (last_id >= id) THROW( ExcElmWrongOrder() << EI_ElemId(id) );
                 last_id=*map_it = id;
             }
         }
