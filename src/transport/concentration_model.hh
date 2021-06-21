@@ -19,7 +19,7 @@
 #ifndef CONC_TRANS_MODEL_HH_
 #define CONC_TRANS_MODEL_HH_
 
-#include <boost/exception/info.hpp>                   // for operator<<, err...
+
 #include <memory>                                     // for shared_ptr
 #include <string>                                     // for string
 #include <vector>                                     // for vector
@@ -48,15 +48,8 @@ template <int spacedim> class ElementAccessor;
 class ConcentrationTransportModel : public AdvectionDiffusionModel, public ConcentrationTransportBase {
 public:
 
-	class ModelEqData : public TransportEqData {
+	class ModelEqFields : public TransportEqFields {
 	public:
-
-		enum Concentration_bc_types {
-			bc_inflow,
-			bc_dirichlet,
-			bc_total_flux,
-			bc_diffusive_flux
-		};
 
 		/// Type of boundary condition (see also BC_Type)
         BCMultiField<3, FieldValue<3>::Enum > bc_type;
@@ -67,7 +60,7 @@ public:
 		/// Transition coefficient in total/diffusive flux b.c.
 		BCMultiField<3, FieldValue<3>::Scalar > bc_robin_sigma;
 		/// Initial concentrations.
-		MultiField<3, FieldValue<3>::Scalar> init_conc;
+		MultiField<3, FieldValue<3>::Scalar> init_condition;
 		/// Longitudal dispersivity (for each substance).
 		MultiField<3, FieldValue<3>::Scalar> disp_l;
 		/// Transversal dispersivity (for each substance).
@@ -82,17 +75,80 @@ public:
 		MultiField<3, FieldValue<3>::Scalar> output_field;
 
 
+		/// @name Instances of FieldModel used in assembly methods
+		// @{
 
-		ModelEqData();
+		/// Field represents coefficients of mass matrix.
+        Field<3, FieldValue<3>::Scalar > mass_matrix_coef;
+		/// Field represents retardation coefficients due to sorption.
+        MultiField<3, FieldValue<3>::Scalar> retardation_coef;
+    	/// Concentration sources - density output
+    	MultiField<3, FieldValue<3>::Scalar> sources_density_out;
+    	/// Concentration sources - sigma output
+    	MultiField<3, FieldValue<3>::Scalar> sources_sigma_out;
+    	/// Concentration sources - concentration output
+    	MultiField<3, FieldValue<3>::Scalar> sources_conc_out;
+		/// Advection coefficients.
+		MultiField<3, FieldValue<3>::VectorFixed> advection_coef;
+		/// Diffusion coefficients.
+		MultiField<3, FieldValue<3>::TensorFixed> diffusion_coef;
+		/// Velocity norm field.
+        Field<3, FieldValue<3>::Scalar > v_norm;
+
+    	// @}
+
+		enum Concentration_bc_types {
+			bc_inflow,
+			bc_dirichlet,
+			bc_total_flux,
+			bc_diffusive_flux
+		};
+
+		ModelEqFields();
+
+        static const Input::Type::Selection & get_bc_type_selection();
+
+		/**
+		 * Initialize FieldModel instances.
+		 */
+		void initialize();
+
+	};
+
+   	class ModelEqData {
+   	public:
+
+		ModelEqData() {}
 
 		static constexpr const char * name() { return "Solute_AdvectionDiffusion"; }
 
 		static string default_output_field() { return "\"conc\""; }
 
-        static const Input::Type::Selection & get_bc_type_selection();
-
 		static IT::Selection get_output_selection();
 
+        /// Returns number of transported substances.
+        inline unsigned int n_substances()
+        { return substances_.size(); }
+
+        /// Returns reference to the vector of substance indices.
+        const vector<unsigned int> &subst_idx()
+    	{ return subst_idx_; }
+
+        /// Returns reference to the vector of substance names.
+        inline SubstanceList &substances()
+        { return substances_; }
+
+
+		/// @name Data of substances
+		// @{
+
+	    /// Transported substances.
+	    SubstanceList substances_;
+
+		/// List of indices used to call balance methods for a set of quantities.
+		vector<unsigned int> subst_idx_;
+
+    	// @}
 	};
 
 
@@ -103,60 +159,16 @@ public:
 
         void init_from_input(const Input::Record &in_rec) override;
 
-	void compute_mass_matrix_coefficient(const Armor::array &point_list,
-			const ElementAccessor<3> &ele_acc,
-			std::vector<double> &mm_coef) override;
-
-	void compute_retardation_coefficient(const Armor::array &point_list,
-			const ElementAccessor<3> &ele_acc,
-			std::vector<std::vector<double> > &ret_coef) override;
-
-
-
-	void compute_advection_diffusion_coefficients(const Armor::array &point_list,
-			const std::vector<arma::vec3> &velocity,
-			const ElementAccessor<3> &ele_acc,
-			std::vector<std::vector<arma::vec3> > &ad_coef,
-			std::vector<std::vector<arma::mat33> > &dif_coef) override;
-
-	void compute_init_cond(const Armor::array &point_list,
-			const ElementAccessor<3> &ele_acc,
-			std::vector<std::vector<double> > &init_values) override;
-
-	void get_bc_type(const ElementAccessor<3> &ele_acc,
-				arma::uvec &bc_types) override;
-
-	void get_flux_bc_data(unsigned int index,
-            const Armor::array &point_list,
-			const ElementAccessor<3> &ele_acc,
-			std::vector< double > &bc_flux,
-			std::vector< double > &bc_sigma,
-			std::vector< double > &bc_ref_value) override;
-
-	void get_flux_bc_sigma(unsigned int index,
-            const Armor::array &point_list,
-			const ElementAccessor<3> &ele_acc,
-			std::vector< double > &bc_sigma) override;
-
-	void compute_source_coefficients(const Armor::array &point_list,
-				const ElementAccessor<3> &ele_acc,
-				std::vector<std::vector<double> > &sources_conc,
-				std::vector<std::vector<double> > &sources_density,
-				std::vector<std::vector<double> > &sources_sigma) override;
-
-	void compute_sources_sigma(const Armor::array &point_list,
-				const ElementAccessor<3> &ele_acc,
-				std::vector<std::vector<double> > &sources_sigma) override;
 
 	~ConcentrationTransportModel() override;
 
     /// Returns number of transported substances.
     inline unsigned int n_substances() override
-    { return substances_.size(); }
+    { return eq_data().n_substances(); }
 
     /// Returns reference to the vector of substance names.
     inline SubstanceList &substances() override
-    { return substances_; }
+    { return eq_data().substances(); }
 
 
     // Methods inherited from ConcentrationTransportBase:
@@ -166,18 +178,18 @@ public:
 
 	void set_balance_object(std::shared_ptr<Balance> balance) override;
 
-    const vector<unsigned int> &get_subst_idx()
-	{ return subst_idx; }
+    const vector<unsigned int> &get_subst_idx() override
+	{ return eq_data().subst_idx(); }
 
     void set_output_stream(std::shared_ptr<OutputTime> stream)
     { output_stream_ = stream; }
 
-	std::shared_ptr<OutputTime> output_stream() override
-	{ return output_stream_; }
 
+	/// Derived class should implement getter for ModelEqFields instance.
+	virtual ModelEqFields &eq_fields() = 0;
 
 	/// Derived class should implement getter for ModelEqData instance.
-	virtual ModelEqData &data() = 0;
+	virtual ModelEqData &eq_data() = 0;
 
 protected:
 
@@ -190,29 +202,9 @@ protected:
 	static IT::Record get_input_type(const string &implementation, const string &description);
 
 	/**
-	 * Formula to calculate the dispersivity tensor.
-	 * @param velocity  Fluid velocity.
-	 * @param Dm        Molecular diffusivity.
-	 * @param alphaL    Longitudal dispersivity.
-	 * @param alphaT    Transversal dispersivity.
-	 * @param porosity  Porosity.
-	 * @param cross_cut Cross-section.
-	 * @param K         Dispersivity tensor (output).
+	 * Empty temporary method (must be implemented for continuity with HeatTransferModel)
 	 */
-	void calculate_dispersivity_tensor(const arma::vec3 &velocity,
-			const arma::mat33 &Dm,
-			double alphaL,
-			double alphaT,
-			double water_content,
-			double porosity,
-			double cross_cut,
-			arma::mat33 &K);
-
-    /// Transported substances.
-    SubstanceList substances_;
-
-	/// List of indices used to call balance methods for a set of quantities.
-	vector<unsigned int> subst_idx;
+	void init_balance(const Input::Record &in_rec);
 
 	/// Density of liquid (a global constant).
 	double solvent_density_;

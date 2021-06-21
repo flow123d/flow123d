@@ -123,7 +123,7 @@ RichardsLMH::RichardsLMH(Mesh &mesh_in, const  Input::Record in_rec, TimeGoverno
 {
     data_ = make_shared<EqData>();
     DarcyLMH::data_ = data_;
-    EquationBase::eq_data_ = data_.get();
+    EquationBase::eq_fieldset_ = data_.get();
     //data_->edge_new_local_4_mesh_idx_ = &(this->edge_new_local_4_mesh_idx_);
 }
 
@@ -149,10 +149,10 @@ void RichardsLMH::initialize_specific() {
     data_->set_mesh(*mesh_);
 
     data_->water_content_ptr = create_field_fe< 3, FieldValue<3>::Scalar >(data_->dh_cr_disc_);
-    data_->water_content.set_field(mesh_->region_db().get_region_set("ALL"), data_->water_content_ptr);
+    data_->water_content.set(data_->water_content_ptr, 0.0);
     
     data_->conductivity_ptr = create_field_fe< 3, FieldValue<3>::Scalar >(data_->dh_p_);
-    data_->conductivity_richards.set_field(mesh_->region_db().get_region_set("ALL"), data_->conductivity_ptr);
+    data_->conductivity_richards.set(data_->conductivity_ptr, 0.0);
 
 
     data_->multidim_assembler = AssemblyBase::create< AssemblyRichards >(data_);
@@ -173,7 +173,7 @@ void RichardsLMH::initial_condition_postprocess()
 void RichardsLMH::accept_time_step()
 {
     data_->p_edge_solution_previous_time.copy_from(data_->p_edge_solution);
-    VectorMPI water_content_vec = data_->water_content_ptr->get_data_vec();
+    VectorMPI water_content_vec = data_->water_content_ptr->vec();
     data_->water_content_previous_time.copy_from(water_content_vec);
 
     data_->p_edge_solution_previous_time.local_to_ghost_begin();

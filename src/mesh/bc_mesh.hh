@@ -54,14 +54,13 @@ public:
     const LongIdx *get_local_part() override;
 
     /// Overwrite Mesh::check_compatible_mesh()
-    bool check_compatible_mesh( Mesh & mesh, vector<LongIdx> & bulk_elements_id, vector<LongIdx> & boundary_elements_id ) override;
+    std::shared_ptr<std::vector<LongIdx>> check_compatible_mesh( Mesh & input_mesh) override;
 
     /// Overwrite Mesh::n_nodes()
     unsigned int n_nodes() const override;
 
     /// Overwrite Mesh::element_accessor()
     ElementAccessor<3> element_accessor(unsigned int idx) const override;
-
 
 private:
 
@@ -89,6 +88,9 @@ private:
 
 	/// Distribution of boundary elements to processors
 	LongIdx *local_part_;
+
+
+    friend class Mesh;
 
 };
 

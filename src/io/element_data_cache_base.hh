@@ -86,12 +86,12 @@ public:
     /**
      * Print all data in ascii format at once stored in database
      */
-    virtual void print_ascii_all(ostream &out_stream) = 0;
+    virtual void print_ascii_all(ostream &out_stream, unsigned int start=0) = 0;
 
     /**
      * Print all data in binary format at once stored in database
      */
-    virtual void print_binary_all(ostream &out_stream, bool print_data_size = true) = 0;
+    virtual void print_binary_all(ostream &out_stream, bool print_data_size = true, unsigned int start = 0) = 0;
 
     /**
      * Print stored values in the YAML format (using JSON like arrays).
@@ -282,12 +282,12 @@ public:
         for(unsigned int i=0; i< n_comp_;i++) out_stream << 0 << " ";
     }
 
-    void print_ascii_all(ostream &out_stream) override
+    void print_ascii_all(ostream &out_stream, unsigned int start=0) override
     {
-        for(unsigned int i=0; i< n_comp_;i++) out_stream << 0 << " ";
+        for(unsigned int i=start; i< n_comp_;i++) out_stream << 0 << " ";
     }
 
-    void print_binary_all(ostream &, bool) override
+    void print_binary_all(ostream &, bool, unsigned int) override
     {
         ASSERT(false).error("Not implemented.");
     }

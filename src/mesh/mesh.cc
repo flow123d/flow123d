@@ -44,6 +44,7 @@
 
 #include "mesh/bih_tree.hh"
 #include "mesh/duplicate_nodes.h"
+#include "mesh/mesh_optimizer.hh"
 
 #include "intersection/mixed_mesh_intersections.hh"
 
@@ -92,12 +93,12 @@ const IT::Record & Mesh::get_input_type() {
                      "element in plan view (Z projection).")
         .declare_key("raw_ngh_output", IT::FileName::output(), IT::Default::optional(),
                      "Output file with neighboring data from mesh.")
-		.close();
+        .declare_key("optimize_mesh", IT::Bool(), IT::Default("true"), "If true, make optimization of nodes and elements order. "
+        		     "This will speed up the calculations in assembations.")
+        .close();
 }
 
 const unsigned int Mesh::undef_idx;
-
-
 
 Mesh::Mesh()
 : row_4_el(nullptr),
@@ -319,7 +320,7 @@ void Mesh::check_mesh_on_read() {
     // check element quality and flag used nodes
     for (auto ele : this->elements_range()) {
         // element quality
-    	double quality = ele.quality_measure_smooth(ele.side(0));
+    	double quality = ele.quality_measure_smooth();
         if ( quality< 0.001)
             WarningOut().fmt("Bad quality (<0.001) of the element {}.\n", ele.idx());
 
@@ -379,8 +380,14 @@ void Mesh::check_mesh_on_read() {
 }
 
 void Mesh::setup_topology() {
+    if ( in_record_.val<bool>("optimize_mesh") ) {
+        START_TIMER("MESH - optimizer");
+        this->optimize();
+        END_TIMER("MESH - optimizer");
+    }
+
     START_TIMER("MESH - setup topology");
-    
+
     count_element_types();
     check_mesh_on_read();
 
@@ -405,6 +412,47 @@ void Mesh::setup_topology() {
     this->distribute_nodes();
 
     output_internal_ngh_data();
+}
+
+
+void Mesh::optimize() {
+    MeshOptimizer<3> mo(this);
+    mo.calculate_sizes();
+    mo.calculate_node_curve_values_as_hilbert();
+    mo.calculate_element_curve_values_as_hilbert_of_centers();
+
+    this->sort_permuted_nodes_elements( mo.sort_nodes(this->node_permutation_), mo.sort_elements(this->elem_permutation_) );
+}
+
+
+void Mesh::sort_permuted_nodes_elements(std::vector<int> new_node_ids, std::vector<int> new_elem_ids) {
+    BidirectionalMap<int> node_ids_backup = this->node_ids_;
+    this->node_ids_.clear();
+    this->node_ids_.reserve(this->n_nodes());
+    Armor::Array<double> nodes_backup = this->nodes_;
+    for (uint i = 0; i < this->element_vec_.size(); ++i) {
+        for (uint j = 0; j < this->element_vec_[i].dim() + 1; ++j) {
+            this->element_vec_[i].nodes_[j] = this->node_permutation_[this->element_vec_[i].nodes_[j]];
+        }
+    }
+    for (uint i = 0; i < bc_mesh_->n_elements(); ++i) {
+        for (uint j = 0; j < bc_mesh_->element(i).dim() + 1; ++j) {
+            bc_mesh_->element_vec_[i].nodes_[j] = this->node_permutation_[bc_mesh_->element_vec_[i].nodes_[j]];
+        }
+    }
+    for (uint i = 0; i < this->n_nodes(); ++i) {
+    	this->nodes_.set(node_permutation_[i]) = nodes_backup.vec<3>(i);
+    	this->node_ids_.add_item( node_ids_backup[new_node_ids[i]] );
+    }
+
+    BidirectionalMap<int> elem_ids_backup = this->element_ids_;
+    this->element_ids_.clear();
+    this->element_ids_.reserve(element_vec_.size());
+    std::vector<Element> elements_backup = this->element_vec_;
+    for (uint i = 0; i < element_vec_.size(); ++i) {
+        this->element_vec_[elem_permutation_[i]] = elements_backup[i];
+    	this->element_ids_.add_item( elem_ids_backup[new_elem_ids[i]] );
+    }
 }
 
 
@@ -592,6 +640,7 @@ void Mesh::make_neighbours_and_edges()
 
 	}
 	// Now we go through all element sides and create edges and neighbours
+    unsigned int new_bc_elem_idx = bc_mesh_->n_elements();  //Mesh_idx of new boundary element generated in following block
 	for (auto e : this->elements_range()) {
 		for (unsigned int s=0; s<e->n_sides(); s++)
 		{
@@ -645,8 +694,9 @@ void Mesh::make_neighbours_and_edges()
 
                     // fill Boundary object
                     bdr.edge_idx_ = last_edge_idx;
-                    bdr.bc_ele_idx_ = bc_mesh()->elem_index(-bdr_idx);
+                    bdr.bc_ele_idx_ = new_bc_elem_idx; //bc_mesh()->elem_index(-bdr_idx);
                     bdr.mesh_=this;
+                    new_bc_elem_idx++;
 
                     continue; // next side of element e
                 }
@@ -767,6 +817,45 @@ void Mesh::make_edge_permutations()
 			break;
 		}
 	}
+
+	for (vector<BoundaryData>::iterator bdr=boundary_.begin(); bdr!=boundary_.end(); bdr++)
+	{
+        if (bdr->bc_ele_idx_ >= element_vec_.size()) continue; // skip invalid boundary item
+        Edge edg = this->edge(bdr->edge_idx_);
+        ElementAccessor<3> bdr_elm = bc_mesh_->element_accessor(bdr->bc_ele_idx_);
+
+        // node numbers is the local index of the node on the last side
+        // this maps the side nodes to the nodes of the side(0)
+        unsigned int n_side_nodes = bdr_elm->n_nodes();
+        unsigned int permutation[n_side_nodes];
+        node_numbers.clear();
+
+        // boundary element (lower dim) is reference, so
+        // we calculate permutation for the adjacent side
+        for (unsigned int i=0; i<n_side_nodes; i++) {
+            node_numbers[bdr_elm.node(i).idx()] = i;
+        }
+
+        for (uint sid=0; sid<edg.n_sides(); sid++)
+        {
+            for (uint i=0; i<n_side_nodes; i++) {
+                permutation[node_numbers[edg.side(sid)->node(i).idx()]] = i;
+            }
+
+            switch (bdr_elm.dim())
+            {
+            case 0:
+                edg.side(sid)->element()->permutation_idx_[edg.side(sid)->side_idx()] = RefElement<1>::permutation_index(permutation);
+                break;
+            case 1:
+                edg.side(sid)->element()->permutation_idx_[edg.side(sid)->side_idx()] = RefElement<2>::permutation_index(permutation);
+                break;
+            case 2:
+                edg.side(sid)->element()->permutation_idx_[edg.side(sid)->side_idx()] = RefElement<3>::permutation_index(permutation);
+                break;
+            }
+        }
+    }
 }
 
 
@@ -852,6 +941,7 @@ void Mesh::elements_id_maps( vector<LongIdx> & bulk_elements_id, vector<LongIdx>
             if (last_id >= id) xprintf(UsrErr, "Element IDs in non-increasing order, ID: %d\n", id);
             last_id=*map_it = id;
         }
+        std::sort(bulk_elements_id.begin(), bulk_elements_id.end());
 
         boundary_elements_id.resize(bc_mesh_->n_elements());
         map_it = boundary_elements_id.begin();
@@ -879,13 +969,15 @@ bool compare_points(const arma::vec3 &p1, const arma::vec3 &p2) {
 }
 
 
-bool Mesh::check_compatible_mesh( Mesh & mesh, vector<LongIdx> & bulk_elements_id, vector<LongIdx> & boundary_elements_id )
+std::shared_ptr<std::vector<LongIdx>> Mesh::check_compatible_mesh( Mesh & input_mesh)
 {
 	std::vector<unsigned int> node_ids; // allow mapping ids of nodes from source mesh to target mesh
 	std::vector<unsigned int> node_list;
 	std::vector<unsigned int> candidate_list; // returned by intersect_element_lists
 	std::vector<unsigned int> result_list; // list of elements with same dimension as vtk element
 	unsigned int i; // counter over vectors
+	std::shared_ptr<std::vector<LongIdx>> map_ptr = std::make_shared<std::vector<LongIdx>>(element_vec_.size() + bc_mesh_->n_elements());
+	std::vector<LongIdx> &element_ids_map = *(map_ptr.get());
 
     {
         // iterates over node vector of \p this object
@@ -893,17 +985,17 @@ bool Mesh::check_compatible_mesh( Mesh & mesh, vector<LongIdx> & bulk_elements_i
         // store orders (mapping between source and target meshes) into node_ids vector
         std::vector<unsigned int> searched_elements; // for BIH tree
         unsigned int i_node, i_elm_node;
-        const BIHTree &bih_tree=mesh.get_bih_tree();
+        const BIHTree &bih_tree=this->get_bih_tree();
 
     	// create nodes of mesh
-        node_ids.resize( this->n_nodes() );
+        node_ids.resize( this->n_nodes(), Mesh::undef_idx );
         i=0;
-        for (auto nod : this->node_range()) {
+        for (auto nod : input_mesh.node_range()) {
             uint found_i_node = Mesh::undef_idx;
             bih_tree.find_point(*nod, searched_elements);
 
             for (std::vector<unsigned int>::iterator it = searched_elements.begin(); it!=searched_elements.end(); it++) {
-                ElementAccessor<3> ele = mesh.element_accessor( *it );
+                ElementAccessor<3> ele = this->element_accessor( *it );
                 for (i_node=0; i_node<ele->n_nodes(); i_node++)
                 {
                     static const double point_tolerance = 1E-10;
@@ -911,50 +1003,51 @@ bool Mesh::check_compatible_mesh( Mesh & mesh, vector<LongIdx> & bulk_elements_i
                         i_elm_node = ele.node(i_node).idx();
                         if (found_i_node == Mesh::undef_idx) found_i_node = i_elm_node;
                         else if (found_i_node != i_elm_node) {
-                            // duplicate nodes in target mesh
-                        	this->elements_id_maps(bulk_elements_id, boundary_elements_id);
-                            return false;
+                            // duplicate nodes in target mesh - not compatible
+                            return std::make_shared<std::vector<LongIdx>>(0);
                         }
                     }
                 }
             }
-            if (found_i_node == Mesh::undef_idx) {
-                // no node found in target mesh
-            	this->elements_id_maps(bulk_elements_id, boundary_elements_id);
-            	return false;
-            }
-            node_ids[i] = found_i_node;
+            if (found_i_node!=Mesh::undef_idx) node_ids[found_i_node] = i;
             searched_elements.clear();
             i++;
         }
     }
-
     {
         // iterates over bulk elements of \p this object
         // elements in both meshes must be in ratio 1:1
         // store orders (mapping between both mesh files) into bulk_elements_id vector
-        bulk_elements_id.clear();
-        bulk_elements_id.resize(this->n_elements());
         // iterate trough bulk part of element vector, to each element in source mesh must exist only one element in target mesh
-        // fill bulk_elements_id vector
         i=0;
+        unsigned int n_found=0; // number of found equivalent elements
+        bool valid_nodes;
         for (auto elm : this->elements_range()) {
+            valid_nodes = true;
             for (unsigned int j=0; j<elm->n_nodes(); j++) { // iterate trough all nodes of any element
-                node_list.push_back( node_ids[ elm->node_idx(j) ] );
+            	if (node_ids[ elm->node_idx(j) ] == Mesh::undef_idx) valid_nodes = false;
+            	node_list.push_back( node_ids[ elm->node_idx(j) ] );
             }
-            mesh.intersect_element_lists(node_list, candidate_list);
-            for (auto i_elm : candidate_list) {
-            	if ( mesh.element_accessor(i_elm)->dim() == elm.dim() ) result_list.push_back( elm.index() );
+            if (valid_nodes) {
+            	input_mesh.intersect_element_lists(node_list, candidate_list);
+                for (auto i_elm : candidate_list) {
+                    if ( input_mesh.element_accessor(i_elm)->dim() == elm.dim() ) result_list.push_back(i_elm);
+                }
             }
-            if (result_list.size() != 1) {
-            	// intersect_element_lists must produce one element
-            	this->elements_id_maps(bulk_elements_id, boundary_elements_id);
-            	return false;
+            if (result_list.size() == 1) {
+                element_ids_map[i] = (LongIdx)result_list[0];
+                n_found++;
+            } else {
+                element_ids_map[i] = (LongIdx)Mesh::undef_idx;
             }
-            bulk_elements_id[i] = (LongIdx)result_list[0];
             node_list.clear();
             result_list.clear();
         	i++;
+        }
+
+        if (n_found==0) {
+        	// no equivalent bulk element found - mesh is not compatible
+            return std::make_shared<std::vector<LongIdx>>(0);
         }
     }
 
@@ -963,32 +1056,35 @@ bool Mesh::check_compatible_mesh( Mesh & mesh, vector<LongIdx> & bulk_elements_i
         // elements in both meshes must be in ratio 1:1
         // store orders (mapping between both mesh files) into boundary_elements_id vector
     	auto bc_mesh = this->bc_mesh();
-        boundary_elements_id.clear();
-        boundary_elements_id.resize(bc_mesh->n_elements());
+    	auto input_bc_mesh = input_mesh.bc_mesh();
         // iterate trough boundary part of element vector, to each element in source mesh must exist only one element in target mesh
         // fill boundary_elements_id vector
-        i=0;
+        bool valid_nodes;
+        i=this->n_elements();
         for (auto elm : bc_mesh->elements_range()) {
+            valid_nodes = true;
             for (unsigned int j=0; j<elm->n_nodes(); j++) { // iterate trough all nodes of any element
+            	if (node_ids[ elm->node_idx(j) ] == Mesh::undef_idx) valid_nodes = false;
                 node_list.push_back( node_ids[ elm->node_idx(j) ] );
             }
-            mesh.bc_mesh()->intersect_element_lists(node_list, candidate_list);
-            for (auto i_elm : candidate_list) {
-            	if ( mesh.bc_mesh()->element_accessor(i_elm)->dim() == elm.dim() ) result_list.push_back( elm.index() );
+            if (valid_nodes) {
+                input_bc_mesh->intersect_element_lists(node_list, candidate_list);
+                for (auto i_elm : candidate_list) {
+                	if ( input_bc_mesh->element_accessor(i_elm)->dim() == elm.dim() ) result_list.push_back(i_elm);
+                }
             }
-            if (result_list.size() != 1) {
-            	// intersect_element_lists must produce one element
-            	this->elements_id_maps(bulk_elements_id, boundary_elements_id);
-            	return false;
+            if (result_list.size() == 1) {
+                element_ids_map[i] = (LongIdx)result_list[0];
+            } else {
+                element_ids_map[i] = (LongIdx)Mesh::undef_idx;
             }
-            boundary_elements_id[i] = (LongIdx)result_list[0];
             node_list.clear();
             result_list.clear();
         	i++;
         }
     }
 
-    return true;
+    return map_ptr;
 }
 
 void Mesh::read_regions_from_input(Input::Array region_list)
@@ -1053,6 +1149,7 @@ void Mesh::add_node(unsigned int node_id, arma::vec3 coords) {
 
     nodes_.append(coords);
     node_ids_.add_item(node_id);
+    node_permutation_.push_back(node_permutation_.size());
 }
 
 
@@ -1066,7 +1163,7 @@ void Mesh::add_element(unsigned int elm_id, unsigned int dim, unsigned int regio
 
 	if (!region_idx.is_boundary() && dim == 0) {
         WarningOut().fmt("Bulk elements of zero size(dim=0) are not supported. Element ID: {}.\n", elm_id);
-    } else {
+	} else {
         Element *ele = add_element_to_vector(elm_id, region_idx.is_boundary());
         this->init_element(ele, elm_id, dim, region_idx, partition_id, node_ids);
 	}
@@ -1105,8 +1202,10 @@ vector<vector<unsigned int> > const & Mesh::node_elements() {
 void MeshBase::init_element_vector(unsigned int size) {
 	element_vec_.clear();
     element_ids_.clear();
+    elem_permutation_.clear();
 	element_vec_.reserve(size);
     element_ids_.reserve(size);
+    elem_permutation_.reserve(size);
 }
 
 
@@ -1114,6 +1213,8 @@ void MeshBase::init_node_vector(unsigned int size) {
 	nodes_.reinit(size);
 	node_ids_.clear();
 	node_ids_.reserve(size);
+	node_permutation_.clear();
+	node_permutation_.reserve(size);
 }
 
 
@@ -1125,6 +1226,7 @@ Element * MeshBase::add_element_to_vector(int id, bool is_boundary) {
         element_vec_.push_back( Element() );
         elem = &element_vec_.back(); //[element_vec_.size()-1];
         element_ids_.add_item((unsigned int)(id));
+        elem_permutation_.push_back(elem_permutation_.size());
     }
 	return elem;
 }

@@ -19,7 +19,6 @@
 #define FIELD_TIME_FUNCTION_HH_
 
 #include <string.h>                        // for memcpy
-#include <boost/exception/info.hpp>        // for error_info::error_info<Tag...
 #include <new>                             // for operator new[]
 #include <ostream>                         // for operator<<
 #include <string>                          // for operator<<, string

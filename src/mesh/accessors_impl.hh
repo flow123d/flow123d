@@ -124,11 +124,11 @@ arma::vec::fixed<spacedim> ElementAccessor<spacedim>::centre() const {
 
 
 template <int spacedim> inline
-double ElementAccessor<spacedim>::quality_measure_smooth(SideIter side) const {
+double ElementAccessor<spacedim>::quality_measure_smooth() const {
     if (dim_==3) {
         double sum_faces=0;
         double face[4];
-        for(unsigned int i=0; i<4; i++, ++side) sum_faces+=( face[i]=side->measure());
+        for(unsigned int i=0; i<4; i++) sum_faces+=( face[i]=side(i)->measure());
 
         double sum_pairs=0;
         for(unsigned int i=0;i<3;i++)

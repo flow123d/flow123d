@@ -76,8 +76,8 @@ it::Record & Application::get_input_type() {
 }
 
 
-
-Application::Application(const std::string &python_path)
+// Note: python_path might be unused if compiling without python support
+Application::Application(FMT_UNUSED const std::string &python_path)
 : ApplicationBase(),
   problem_(nullptr),
   main_input_filename_(""),

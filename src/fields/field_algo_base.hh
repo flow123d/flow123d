@@ -26,7 +26,7 @@
 #define field_algo_base_HH_
 
 #include <string.h>                        // for memcpy
-#include <boost/type_traits/is_same.hpp>   // for is_same
+#include <type_traits>   // for is_same
 #include <limits>                          // for numeric_limits
 #include <memory>                          // for shared_ptr
 #include <ostream>                         // for operator<<
@@ -46,6 +46,8 @@
 class Mesh;
 class UnitSI;
 class DOFHandlerMultiDim;
+class FieldSet;
+class FieldCommon;
 namespace Input {
 	class AbstractRecord;
 	class Record;
@@ -112,7 +114,7 @@ public:
        // expose template parameters
        typedef typename Space<spacedim>::Point Point;
        static const unsigned int spacedim_=spacedim;
-       static constexpr bool is_enum_valued = boost::is_same<typename Value::element_type, FieldEnum>::value;
+       static constexpr bool is_enum_valued = std::is_same<typename Value::element_type, FieldEnum>::value;
 
 
        /**
@@ -234,8 +236,11 @@ public:
        virtual void value_list(const Armor::array &point_list, const ElementAccessor<spacedim> &elm,
                           std::vector<typename Value::return_type>  &value_list)=0;
 
+       /// Allows reinit data members or structures in descendants during reinit of FieldValueCache of 'parental' Field<>
+       virtual void cache_reinit(const ElementCacheMap &cache_map);
+
        virtual void cache_update(FieldValueCache<typename Value::element_type> &data_cache,
-				   ElementCacheMap &cache_map, unsigned int region_idx);
+				   ElementCacheMap &cache_map, unsigned int region_patch_idx);
 
        /**
         * Postponed setter of Dof handler for FieldFE. For other types of fields has no effect.
@@ -248,6 +253,13 @@ public:
         */
        inline bool is_constant_in_space() const {
     	   return is_constant_in_space_;
+       }
+
+       /**
+        * Set reference of FieldSet to FieldFormula instance.
+        */
+       virtual std::vector<const FieldCommon *> set_dependency(FMT_UNUSED FieldSet &field_set) {
+           return std::vector<const FieldCommon *>();
        }
 
        /**

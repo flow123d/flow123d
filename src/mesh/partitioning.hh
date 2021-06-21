@@ -18,7 +18,7 @@
 #ifndef PARTITIONING_HH_
 #define PARTITIONING_HH_
 
-#include <boost/exception/info.hpp>  // for error_info::~error_info<Tag, T>
+
 #include <memory>                    // for shared_ptr
 #include <string>                    // for string
 #include <vector>                    // for vector

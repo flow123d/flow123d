@@ -134,7 +134,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowInterface *flow, Input::Record mai
     
     output_stream = OutputTime::create_output_stream("flow",
                                                      main_mh_in_rec.val<Input::Record>("output_stream"),
-                                                     darcy_flow->time().get_unit_string());
+                                                     darcy_flow->time().get_unit_conversion());
     prepare_output(in_rec_output);
 
     auto in_rec_specific = main_mh_in_rec.find<Input::Record>("output_specific");
@@ -177,7 +177,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowInterface *flow, Input::Record mai
 void DarcyFlowMHOutput::prepare_output(Input::Record in_rec)
 {
   	// we need to add data from the flow equation at this point, not in constructor of OutputFields
-	output_fields += darcy_flow->data();
+	output_fields += darcy_flow->eq_fieldset();
 	output_fields.set_mesh(*mesh_);
 
 	output_fields.subdomain = GenericField<3>::subdomain(*mesh_);
@@ -217,11 +217,11 @@ void DarcyFlowMHOutput::prepare_specific_output(Input::Record in_rec)
     output_specific_fields.set_mesh(*mesh_);
 
     diff_data.vel_diff_ptr = create_field_fe<3, FieldValue<3>::Scalar>(diff_data.dh_);
-    output_specific_fields.velocity_diff.set_field(mesh_->region_db().get_region_set("ALL"), diff_data.vel_diff_ptr, 0);
+    output_specific_fields.velocity_diff.set(diff_data.vel_diff_ptr, 0);
     diff_data.pressure_diff_ptr = create_field_fe<3, FieldValue<3>::Scalar>(diff_data.dh_);
-    output_specific_fields.pressure_diff.set_field(mesh_->region_db().get_region_set("ALL"), diff_data.pressure_diff_ptr, 0);
+    output_specific_fields.pressure_diff.set(diff_data.pressure_diff_ptr, 0);
     diff_data.div_diff_ptr = create_field_fe<3, FieldValue<3>::Scalar>(diff_data.dh_);
-    output_specific_fields.div_diff.set_field(mesh_->region_db().get_region_set("ALL"), diff_data.div_diff_ptr, 0);
+    output_specific_fields.div_diff.set(diff_data.div_diff_ptr, 0);
 
     output_specific_fields.set_time(darcy_flow->time().step(), LimitSide::right);
     output_specific_fields.initialize(output_stream, mesh_, in_rec, darcy_flow->time() );
@@ -270,11 +270,6 @@ void DarcyFlowMHOutput::output()
         output_specific_fields.output(darcy_flow->time().step());
     }
 
-    {
-        START_TIMER("write time frame");
-        output_stream->write_time_frame();
-    }
-
     
 }
 
@@ -309,13 +304,14 @@ void DarcyFlowMHOutput::output_internal_flow_data()
     
     arma::vec3 flux_in_center;
     
-    int cit = 0;
-    for ( DHCellAccessor dh_cell : data->dh_->own_range() ) {
-        ElementAccessor<3> ele = dh_cell.elm();
+    auto permutation_vec = data->dh_->mesh()->element_permutations();
+    for (unsigned int i_elem=0; i_elem<data->dh_->own_size(); ++i_elem) {
+        ElementAccessor<3> ele(data->dh_->mesh(), permutation_vec[i_elem]);
+        DHCellAccessor dh_cell = data->dh_->cell_accessor_from_element( ele.idx() );
         LocDofVec indices = dh_cell.get_loc_dof_indices();
 
         // pressure
-        raw_output_file << fmt::format("{} {} ", dh_cell.elm().index(), data->full_solution[indices[ele->n_sides()]]);
+        raw_output_file << fmt::format("{} {} ", dh_cell.elm().index(), data->full_solution.get(indices[ele->n_sides()]));
         
         // velocity at element center
         flux_in_center = data->field_ele_velocity.value(ele.centre(), ele);
@@ -328,15 +324,14 @@ void DarcyFlowMHOutput::output_internal_flow_data()
         // pressure on edges
         unsigned int lid = ele->n_sides() + 1;
         for (unsigned int i = 0; i < ele->n_sides(); i++, lid++) {
-            raw_output_file << data->full_solution[indices[lid]] << " ";
+            raw_output_file << data->full_solution.get(indices[lid]) << " ";
         }
         // fluxes on sides
         for (unsigned int i = 0; i < ele->n_sides(); i++) {
-            raw_output_file << data->full_solution[indices[i]] << " ";
+            raw_output_file << data->full_solution.get(indices[i]) << " ";
         }
         
         raw_output_file << endl;
-        cit ++;
     }    
     
     raw_output_file << "$EndFlowField\n" << endl;
@@ -378,12 +373,12 @@ void DarcyFlowMHOutput::l2_diff_local(DHCellAccessor dh_cell,
 //     vector<double> pressure_traces(dim+1);
 
     for (unsigned int li = 0; li < ele->n_sides(); li++) {
-        fluxes[li] = diff_data.data_->full_solution[ dh_cell.get_loc_dof_indices()[li] ];
+        fluxes[li] = diff_data.data_->full_solution.get( dh_cell.get_loc_dof_indices()[li] );
 //         pressure_traces[li] = result.dh->side_scalar( *(ele->side( li ) ) );
     }
     const uint ndofs = dh_cell.n_dofs();
     // TODO: replace with DHCell getter when available for FESystem component
-    double pressure_mean = diff_data.data_->full_solution[ dh_cell.get_loc_dof_indices()[ndofs/2] ];
+    double pressure_mean = diff_data.data_->full_solution.get( dh_cell.get_loc_dof_indices()[ndofs/2] );
 
     arma::vec analytical(5);
     arma::vec3 flux_in_q_point;
@@ -455,19 +450,19 @@ void DarcyFlowMHOutput::l2_diff_local(DHCellAccessor dh_cell,
     DHCellAccessor sub_dh_cell = dh_cell.cell_with_other_dh(result.dh_.get());
     IntIdx idx = sub_dh_cell.get_loc_dof_indices()[0];
 
-    auto velocity_data = result.vel_diff_ptr->get_data_vec();
-    velocity_data[ idx ] = sqrt(velocity_diff);
+    auto velocity_data = result.vel_diff_ptr->vec();
+    velocity_data.set( idx, sqrt(velocity_diff) );
     result.velocity_error[dim-1] += velocity_diff;
     if (dim == 2 && result.velocity_mask.size() != 0 ) {
     	result.mask_vel_error += (result.velocity_mask[ ele.idx() ])? 0 : velocity_diff;
     }
 
-    auto pressure_data = result.pressure_diff_ptr->get_data_vec();
-    pressure_data[ idx ] = sqrt(pressure_diff);
+    auto pressure_data = result.pressure_diff_ptr->vec();
+    pressure_data.set( idx, sqrt(pressure_diff) );
     result.pressure_error[dim-1] += pressure_diff;
 
-    auto div_data = result.div_diff_ptr->get_data_vec();
-    div_data[ idx ] = sqrt(divergence_diff);
+    auto div_data = result.div_diff_ptr->vec();
+    div_data.set( idx, sqrt(divergence_diff) );
     result.div_error[dim-1] += divergence_diff;
 
 }

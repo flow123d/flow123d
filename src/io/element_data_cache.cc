@@ -91,6 +91,7 @@ void ElementDataCache<T>::read_ascii_data(Tokenizer &tok, unsigned int n_compone
 		idx = i_row * n_components;
 		std::vector<T> &vec = *( data_[i_vec].get() );
 		for (unsigned int i_col=0; i_col < n_components; ++i_col, ++idx) {
+            ASSERT_DBG(idx < vec.size());
 			vec[idx] = boost::lexical_cast<T>(*tok);
 			++tok;
 		}
@@ -134,11 +135,11 @@ void ElementDataCache<T>::print_ascii(ostream &out_stream, unsigned int idx)
  *       Class OutputData stores always in raw-first order.
  */
 template <typename T>
-void ElementDataCache<T>::print_ascii_all(ostream &out_stream)
+void ElementDataCache<T>::print_ascii_all(ostream &out_stream, unsigned int start)
 {
     std::vector<T> &vec = *( this->data_[0].get() );
-	for(unsigned int idx = 0; idx < this->n_values_; idx++) {
-    	for(unsigned int i = n_comp_*idx; i < n_comp_*(idx+1); ++i )
+	for(unsigned int idx = start; idx < this->n_values_; idx++) {
+	    for(unsigned int i = n_comp_*idx; i < n_comp_*(idx+1); ++i )
     		out_stream << vec[i] << " ";
     }
 }
@@ -146,7 +147,7 @@ void ElementDataCache<T>::print_ascii_all(ostream &out_stream)
 
 /// Prints the whole data vector into stream.
 template <typename T>
-void ElementDataCache<T>::print_binary_all(ostream &out_stream, bool print_data_size)
+void ElementDataCache<T>::print_binary_all(ostream &out_stream, bool print_data_size, unsigned int start)
 {
 	if (print_data_size) {
 		// write size of data
@@ -155,7 +156,7 @@ void ElementDataCache<T>::print_binary_all(ostream &out_stream, bool print_data_
 	}
     // write data
 	std::vector<T> &vec = *( this->data_[0].get() );
-    for(unsigned int idx = 0; idx < this->n_values_; idx++) {
+    for(unsigned int idx = start; idx < this->n_values_; idx++) {
     	for(unsigned int i = n_comp_*idx; i < n_comp_*(idx+1); ++i )
     		out_stream.write(reinterpret_cast<const char*>(&(vec[i])), sizeof(T));
     }
@@ -356,15 +357,15 @@ std::shared_ptr< ElementDataCacheBase > ElementDataCache<T>::gather(Distribution
 
 template <typename T>
 std::shared_ptr< ElementDataCacheBase > ElementDataCache<T>::element_node_cache_fixed_size(std::vector<unsigned int> &offset_vec) {
-    unsigned int n_elem = offset_vec.size();
+    unsigned int n_elem = offset_vec.size()-1;
     std::shared_ptr< ElementDataCache<T> > elem_node_cache = std::make_shared<ElementDataCache<T>>(this->field_input_name_, 4*this->n_comp(), n_elem);
     auto &data_out_vec = *( elem_node_cache->get_component_data(0).get() );
     std::fill( data_out_vec.begin(), data_out_vec.end(), (T)0 );
     auto &data_in_vec = *( this->get_component_data(0).get() );
 
     unsigned int i_node, i_old, i_new;
-    for (unsigned int i_el=0, i_conn=0; i_el<offset_vec.size(); i_el++) {
-        for(i_node=4*i_el; i_conn<offset_vec[i_el]; i_conn++, i_node++) {
+    for (unsigned int i_el=0, i_conn=0; i_el<offset_vec.size()-1; i_el++) {
+        for(i_node=4*i_el; i_conn<offset_vec[i_el+1]; i_conn++, i_node++) {
         	i_old = i_conn*this->n_comp_;
         	i_new = i_node*this->n_comp_;
             for(unsigned int i = 0; i < this->n_comp_; i++) {
@@ -387,8 +388,8 @@ std::shared_ptr< ElementDataCacheBase > ElementDataCache<T>::element_node_cache_
     auto &data_in_vec = *( this->get_component_data(0).get() );
 
     unsigned int i_node, i_old, i_new;
-    for (unsigned int i_el=0, i_conn=0; i_el<offset_vec.size(); i_el++) {
-        for(i_node=4*i_el; i_conn<offset_vec[i_el]; i_conn++, i_node++) {
+    for (unsigned int i_el=0, i_conn=0; i_el<offset_vec.size()-1; i_el++) {
+        for(i_node=4*i_el; i_conn<offset_vec[i_el+1]; i_conn++, i_node++) {
         	i_old = i_node*elem_node_cache->n_comp_;
         	i_new = i_conn*elem_node_cache->n_comp_;
             for(unsigned int i = 0; i < elem_node_cache->n_comp_; i++) {

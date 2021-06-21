@@ -19,7 +19,7 @@
 #define MAKE_MESH_H
 
 #include <mpi.h>                             // for MPI_Comm, MPI_COMM_WORLD
-#include <boost/exception/info.hpp>          // for error_info::~error_info<...
+
 //#include <boost/range.hpp>
 #include <memory>                            // for shared_ptr
 #include <string>                            // for string
@@ -38,7 +38,6 @@
 #include "system/index_types.hh"             // for LongIdx
 #include "system/exceptions.hh"              // for operator<<, ExcStream, EI
 #include "system/file_path.hh"               // for FilePath
-#include "system/sys_vector.hh"              // for FullIterator, VectorId<>...
 #include "system/armor.hh"
 
 
@@ -126,7 +125,7 @@ public:
     /*
      * Check if nodes and elements are compatible with \p mesh.
      */
-    virtual bool check_compatible_mesh( Mesh & mesh, vector<LongIdx> & bulk_elements_id, vector<LongIdx> & boundary_elements_id ) = 0;
+    virtual std::shared_ptr<std::vector<LongIdx>> check_compatible_mesh( Mesh & input_mesh ) = 0;
 
     /**
      * Find intersection of element lists given by Mesh::node_elements_ for elements givne by @p nodes_list parameter.
@@ -143,6 +142,18 @@ public:
 
     /// Initialize node_vec_, set size
     void init_node_vector(unsigned int size);
+
+    /// Return permutation vector of nodes
+    inline const std::vector<unsigned int> &node_permutations() const
+    {
+        return node_permutation_;
+    }
+
+    /// Return permutation vector of elements
+    inline const std::vector<unsigned int> &element_permutations() const
+    {
+        return elem_permutation_;
+    }
 
 
     /// For each node the vector contains a list of elements that use this node
@@ -175,6 +186,12 @@ protected:
 
     /// Maps node ids to indexes into vector node_vec_
     BidirectionalMap<int> node_ids_;
+
+    /// Vector of node permutations of optimized mesh (see class MeshOptimizer)
+    std::vector<unsigned int> node_permutation_;
+
+    /// Vector of element permutations of optimized mesh (see class MeshOptimizer)
+    std::vector<unsigned int> elem_permutation_;
 
 };
 
@@ -316,7 +333,17 @@ public:
      */
     void elements_id_maps( vector<LongIdx> & bulk_elements_id, vector<LongIdx> & boundary_elements_id) const;
 
-    bool check_compatible_mesh( Mesh & mesh, vector<LongIdx> & bulk_elements_id, vector<LongIdx> & boundary_elements_id ) override;
+    /*
+     * Check if nodes and elements are compatible with \p input_mesh.
+     *
+     * Call this method on computational mesh.
+     * @param input_mesh data mesh of input fields
+     * @return vector that holds mapping between eleemnts of data and computational meshes
+     *             for every element in computational mesh hold idx of equivalent element in input mesh.
+     *             If element doesn't exist in input mesh value is set to Mesh::undef_idx.
+     *             If meshes are not compatible returns empty vector.
+     */
+    std::shared_ptr<std::vector<LongIdx>> check_compatible_mesh( Mesh & input_mesh);
 
     /// Create and return ElementAccessor to element of given idx
     ElementAccessor<3> element_accessor(unsigned int idx) const override;
@@ -354,7 +381,6 @@ public:
      * This is necessary for true mortar.
      */
     vector<vector<unsigned int> >  master_elements;
-    
     
 
     /**
@@ -462,6 +488,23 @@ protected:
     void init();
 
     /**
+     * Allow store boundary element data to temporary structure.
+     *
+     * We need this structure to preserve correct order of boundary elements.
+     */
+    struct ElementTmpData {
+    	/// Constructor
+    	ElementTmpData(unsigned int e_id, unsigned int dm, RegionIdx reg_idx, unsigned int part_id, std::vector<unsigned int> nodes)
+    	: elm_id(e_id), dim(dm), region_idx(reg_idx), partition_id(part_id), node_ids(nodes) {}
+
+        unsigned int elm_id;
+        unsigned int dim;
+        RegionIdx region_idx;
+        unsigned int partition_id;
+        std::vector<unsigned int> node_ids;
+    };
+
+    /**
      *  This replaces read_neighbours() in order to avoid using NGH preprocessor.
      *
      *  TODO:
@@ -525,6 +568,16 @@ protected:
     /// Output of neighboring data into raw output.
     void output_internal_ngh_data();
     
+    /**
+     * Apply functionality of MeshOptimizer to sort nodes and elements.
+     *
+     * Use Hilbert curve, need call sort_permuted_nodes_elements method.
+     */
+    void optimize();
+
+    /// Sort elements and nodes by order stored in permutation vectors.
+    void sort_permuted_nodes_elements(std::vector<int> new_node_ids, std::vector<int> new_elem_ids);
+
     /**
      * Database of regions (both bulk and boundary) of the mesh. Regions are logical parts of the
      * domain that allows setting of different data and boundary conditions on them.

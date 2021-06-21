@@ -27,9 +27,11 @@
 The {\tt TransportOperatorSplitting} method supports the reaction term $F_R(c^1,\ldots,c^s)$ on the right hand side of the equation (\ref{e:ADE}).
 It can represent several models of chemical or physical nature. 
 Figure \ref{fig:reaction_term} shows all possible reactional models that we support in combination with the transport process. The Operator Splitting method enables 
-us to deal with the convection part and reaction term side by side. The convected quantities do not influence each other in the convectional
+us to deal with the convection part and reaction term independently.
+Transport of the substances is computed independently using either are convected quantities do not influence each other in the convectional
 process and are balanced over the elements. On the other hand the reaction term relates the convected quantities and can be computed 
 separately on each element.
+
 
 We move now to the description of the reaction models which can be seen again in Figure \ref{fig:reaction_term}. 
 The convected quantity is considered to be the concentration of substances. 

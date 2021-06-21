@@ -144,13 +144,14 @@ elseif(FLOW_BUILD_TYPE STREQUAL "release")
   # armadillo is configured using this definition
   add_definitions(-DARMA_NO_DEBUG)    # no bound checks in armadillo 
   flow_define(DEBUG_PROFILER)
-  flow_define(RUN_UNIT_BENCHMARKS)    # build benchmark unit tests
+  flow_define(BENCHMARK_ASSERTS)    # check time for benchmark unit tests
 elseif(FLOW_BUILD_TYPE STREQUAL "release_with_debug")
   # Release mode with debug info 
-  set(CMAKE_CXX_FLAGS "-O3")
-  set(CMAKE_C_FLAGS "-O3")
+  set(CMAKE_CXX_FLAGS "-O3 -g")
+  set(CMAKE_C_FLAGS "-O3 -g")
   set(CMAKE_BUILD_TYPE Debug)
   flow_define(DEBUG)
+  flow_define(BENCHMARK_ASSERTS)
 elseif(FLOW_BUILD_TYPE STREQUAL "coverage")
   # Coverage mode creates instrumented binary
   SET(CMAKE_CXX_FLAGS "-g -O0 --coverage")
@@ -186,6 +187,7 @@ set(CMAKE_FORTRAN_FLAGS_${CMAKE_BUILD_TYPE} "")
 # Compiler-specific C++14 activation.
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
       # -Wvla - variable length arrays
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Wall -Wextra -Wno-vla -Wno-unused-local-typedefs -Wno-deprecated-declarations")
@@ -410,6 +412,7 @@ endif()
 
 message(STATUS "-------------------------------------------------------")
 message(STATUS "Boost_FOUND = ${Boost_FOUND}")
+message(STATUS "BOOST_VERSION = ${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION}.${Boost_SUBMINOR_VERSION}")
 message(STATUS "BOOST_ROOT = ${BOOST_ROOT}")
 message(STATUS "Boost_LIBRARIES = ${Boost_LIBRARIES}")
 message(STATUS "Boost_LIBRARY_DIRS = ${Boost_LIBRARY_DIRS}")
@@ -653,6 +656,7 @@ include_directories(
     ${CONFIG_FILE_INCLUDES_DIRECTORY}
     #${CMAKE_SOURCE_DIR}/third_party/metis-include
     ${CMAKE_SOURCE_DIR}/third_party/fparser-4.5.1
+    ${CMAKE_SOURCE_DIR}/third_party/bparser
     ${CMAKE_SOURCE_DIR}/third_party/FADBAD++
     ${PETSC_INCLUDES}
     ${PYTHON_INCLUDE_DIRS}
@@ -814,6 +818,10 @@ make_link_in_source(unit_tests/Makefile)
 # add fparser sources
 message(STATUS "add subdir FParser")
 add_subdirectory(third_party/fparser-4.5.1)
+
+# add bparser sources
+message(STATUS "add subdir BParser")
+add_subdirectory(third_party/bparser)
 
 # add tbb sources
 #message(STATUS "add subdir TBB")

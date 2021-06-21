@@ -27,6 +27,7 @@
 #include "fields/field_fe.hh"
 #include "la/vector_mpi.hh"
 #include "fields/fe_value_handler.hh"
+#include "fields/field_constant.hh"
 
 #include "fem/mapping_p1.hh"
 #include "fem/fe_p.hh"
@@ -45,10 +46,10 @@ auto GenericField<spacedim>::region_id(Mesh &mesh) -> IndexField {
 	for(Region reg : all_regions) {
 		auto field_algo=std::make_shared<FieldConstant<spacedim, DoubleScalar>>();
 		field_algo->set_value(reg.id());
-		region_id.set_field(
-				{reg} ,
+		region_id.set(
 				field_algo,
-				0.0); // time=0.0
+				0.0,              // time=0.0
+				{ reg.label() }); // set to region by its name
 	}
 	return region_id;
 }
@@ -66,21 +67,21 @@ auto GenericField<spacedim>::subdomain(Mesh &mesh) -> IndexField {
 	ASSERT_EQ(dh->max_elem_dofs(), 1);
 	unsigned int i_ele=0;
 	for (auto cell : dh->own_range()) {
-		data_vec[ cell.get_loc_dof_indices()(0) ] = (*field_subdomain_data)[i_ele];
+		data_vec.set( cell.get_loc_dof_indices()(0), (*field_subdomain_data)[i_ele] );
 		++i_ele;
 	}
     std::shared_ptr< FieldFE<spacedim, DoubleScalar> > field_ptr = std::make_shared< FieldFE<spacedim, DoubleScalar> >();
-    field_ptr->set_fe_data(dh, 0, data_vec);
+    field_ptr->set_fe_data(dh, data_vec);
 
 	IndexField subdomain;
 	subdomain.name("subdomain");
 	subdomain.units( UnitSI::dimensionless() );
 	subdomain.set_mesh(mesh);
 
-    subdomain.set_field(
-		mesh.region_db().get_region_set("ALL"),
+    subdomain.set(
 		field_ptr,
-		0.0); // time=0.0
+		0.0,        // time=0.0
+		{ "ALL" }); // ALL regions
 
 	return subdomain;
 }

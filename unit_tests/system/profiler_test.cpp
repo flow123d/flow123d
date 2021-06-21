@@ -40,6 +40,7 @@ class ProfilerTest: public testing::Test {
         void test_petsc_memory_monitor();
         void test_multiple_instances();
         void test_propagate_values();
+        void test_calibrate();
         // void test_inconsistent_tree();
 };
 
@@ -81,18 +82,18 @@ int alloc_and_dealloc(int size){
 }
 
 // wait given amount of time (in ms) and return it in ms
-double wait( double time) {
-//    cout << "wait function\n" <<endl;
-    clock_t t1,t2;
-    clock_t int_time = time /1000.0 * CLOCKS_PER_SEC;
-    t2=t1=clock();
-    
-    while (t1 + int_time > t2) { t2=clock();}
-    double time_in_ms = 1000.0 * (t2-t1) / CLOCKS_PER_SEC;
-    cout << "time to wait: " << time << " actual: " << time_in_ms  << endl;
-    
-    return time_in_ms;
-}
+//double wait( double time) {
+////    cout << "wait function\n" <<endl;
+//    clock_t t1,t2;
+//    clock_t int_time = time /1000.0 * CLOCKS_PER_SEC;
+//    t2=t1=clock();
+//
+//    while (t1 + int_time > t2) { t2=clock();}
+//    double time_in_ms = 1000.0 * (t2-t1) / CLOCKS_PER_SEC;
+//    cout << "time to wait: " << time << " actual: " << time_in_ms  << endl;
+//
+//    return time_in_ms;
+//}
 
 // wait given amount of time (in sec) and return it in sec
 double wait_sec( double time) {
@@ -489,7 +490,6 @@ void ProfilerTest::test_multiple_instances() {
         Profiler::uninitialize();
         Profiler::instance();
         EXPECT_EQ(MALLOC, 0);
-
         {
             EXPECT_EQ(
                 (MALLOC),
@@ -521,6 +521,23 @@ void ProfilerTest::test_propagate_values() {
     }
     PI->output(MPI_COMM_WORLD, cout);
     Profiler::uninitialize();
+}
+
+
+TEST_F(ProfilerTest, test_calibrate) {test_calibrate();}
+void ProfilerTest::test_calibrate() {
+    Profiler * prof = Profiler::instance();
+    double resolution = prof->get_resolution();
+    START_TIMER("calibrate");
+    prof->calibrate();
+    END_TIMER("calibrate");
+    // Just test that we change it from default value -1.
+    EXPECT_GT(prof->calibration_time(), 0);
+    // Calibration should by design take about 0.1 s.
+    EXPECT_LT(CUMUL_TIMER("calibrate"), 1.1);
+
+    EXPECT_GT(Profiler::instance()->calibration_time(), 0);
+
 }
 
 // optional test only for testing merging of inconsistent profiler trees
@@ -578,7 +595,7 @@ TEST(Profiler, test_calls_only) {
     Profiler::instance();
     START_TIMER("sub1");
     END_TIMER("sub1");
-    PI->output(MPI_COMM_WORLD, cout);
+    Profiler::instance()->output(MPI_COMM_WORLD, cout);
     Profiler::uninitialize();
 
 }

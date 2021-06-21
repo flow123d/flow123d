@@ -134,7 +134,19 @@ private:
  */
 class Logger : public std::ostream {
 public:
-	/// Enum of types of Logger messages.
+
+    /**
+     * @brief Enum of types of Logger messages.
+     *
+     * Rules:
+     * 1. Warning and Error are the only messages that goes to CERR.
+     * 2. All messages goes to the log file unless it is suppressed by the _no_log option
+     * if the user provides empty log file name.
+     * 3. If the log file was not initialized YET all LOG output goes to COUT unless it already goes to CERR.
+     * 4. 'message' goes to the COUT if LOG is suppressed.
+     * 5.  'debug' goes to both COUT and LOG, but are suppresed by FLOW123D_DEBUG.
+     *
+     */
 	enum MsgType {
 		warning = 0,
 		message = 1,

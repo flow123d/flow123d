@@ -18,7 +18,7 @@
 #ifndef ELEMENT_DATA_CACHE_HH_
 #define ELEMENT_DATA_CACHE_HH_
 
-#include <boost/exception/info.hpp>           // for error_info::~error_info...
+
 #include <memory>                             // for shared_ptr
 #include <sstream>                            // for basic_ostream::write
 #include <string>                             // for string, operator<<
@@ -112,12 +112,12 @@ public:
      *       and possibly implement transposition. Set such property for individual file formats.
      *       Class OutputData stores always in raw-first order.
      */
-    void print_ascii_all(ostream &out_stream) override;
+    void print_ascii_all(ostream &out_stream, unsigned int start=0) override;
 
     /**
      * \brief Print all data stored in output data to appended binary format
      */
-    void print_binary_all(ostream &out_stream, bool print_data_size = true) override;
+    void print_binary_all(ostream &out_stream, bool print_data_size = true, unsigned int start = 0) override;
 
     void print_yaml_subarray(ostream &out_stream, unsigned int precision, unsigned int begin, unsigned int end) override;
 

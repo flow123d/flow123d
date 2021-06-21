@@ -27,7 +27,7 @@
 #ifndef SORPTION_H
 #define SORPTION_H
 
-#include <boost/exception/info.hpp>   // for operator<<, error_info::error_i...
+
 #include <string>                     // for string
 #include <vector>                     // for vector
 #include "fields/field.hh"            // for Field

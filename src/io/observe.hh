@@ -8,7 +8,7 @@
 #ifndef SRC_IO_OBSERVE_HH_
 #define SRC_IO_OBSERVE_HH_
 
-#include <boost/exception/info.hpp>          // for error_info::~error_info<...
+
 #include <iosfwd>                            // for ofstream, ostream
 #include <map>                               // for map, map<>::value_compare
 #include <memory>                            // for shared_ptr
@@ -27,6 +27,7 @@
 
 class ElementDataCacheBase;
 class Mesh;
+class TimeUnitConversion;
 namespace Input { namespace Type { class Record; } }
 template <typename T> class ElementDataCache;
 
@@ -207,7 +208,8 @@ public:
      * mesh - the mesh used for search for the observe points
      * in_array - the array of observe points
      */
-    Observe(string observe_name, Mesh &mesh, Input::Array in_array, unsigned int precision, std::string unit_str);
+    Observe(string observe_name, Mesh &mesh, Input::Array in_array,
+            unsigned int precision, const std::shared_ptr<TimeUnitConversion>& time_unit_conv);
 
     /// Destructor, must close the file.
     ~Observe();
@@ -292,12 +294,10 @@ protected:
     /// Output file stream.
     std::ofstream observe_file_;
 
-    /// String representation of the time unit.
-    std::string time_unit_str_;
-    /// Time unit in seconds.
-    double time_unit_seconds_;
     /// Precision of float output
     unsigned int precision_;
+    /// Time unit conversion object.
+    std::shared_ptr<TimeUnitConversion> time_unit_conversion_;
     
     // Warn for no observe fields only once.
     bool no_fields_warning=false;

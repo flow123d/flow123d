@@ -20,7 +20,6 @@
 
 #include <stdio.h>                            // for sprintf
 #include <string.h>                           // for memcpy
-#include <boost/exception/info.hpp>           // for operator<<, error_info:...
 #include <new>                                // for operator new[]
 #include <string>                             // for operator<<
 #include <vector>                             // for vector
@@ -83,7 +82,7 @@ public:
                        std::vector<typename Value::return_type>  &value_list) override;
 
     void cache_update(FieldValueCache<typename Value::element_type> &data_cache,
-			ElementCacheMap &cache_map, unsigned int region_idx) override;
+			ElementCacheMap &cache_map, unsigned int region_patch_idx) override;
 
 
     virtual ~FieldConstant();

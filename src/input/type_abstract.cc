@@ -25,8 +25,8 @@
 
 #include <stddef.h>                                    // for NULL
 #include <algorithm>                                   // for find
-#include <boost/exception/detail/error_info_impl.hpp>  // for error_info
-#include <boost/exception/info.hpp>                    // for operator<<
+//
+
 #include <boost/functional/hash/hash.hpp>              // for hash_combine
 #include <map>                                         // for _Rb_tree_iterator
 #include <memory>                                      // for shared_ptr

@@ -19,7 +19,7 @@
 #ifndef _GMSHMESHREADER_H
 #define	_GMSHMESHREADER_H
 
-#include <boost/exception/info.hpp>  // for error_info::~error_info<Tag, T>
+
 #include <map>                       // for map, map<>::value_compare
 #include <string>                    // for string
 #include <vector>                    // for vector
@@ -62,15 +62,6 @@ public:
      * assign regions to the boundary and are not used in actual FEM computations.
      */
     void read_physical_names(Mesh * mesh) override;
-
-    /**
-     * Empty method for GMSH reader now.
-     *
-     * Implements @p BaseMeshReader::check_compatible_mesh.
-     *
-     * OBSOLETE method - will be replace with Mesh::check_compatible_mesh after merge fields!
-     */
-    void check_compatible_mesh(Mesh &mesh) override;
 
     /**
      * Finds GMSH data header for ElementData given by time and field_name and stores it as \p actual_header_.

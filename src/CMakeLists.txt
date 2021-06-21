@@ -300,8 +300,6 @@ add_library(coupling_lib
     fields/generic_field.cc
     fields/field_constant.cc
     fields/field_formula.cc
-    # fields/field_elementwise.cc
-    # fields/field_interpolated_p0.cc
     fields/table_function.cc
     fields/field_time_function.cc
     fields/field_divide.cc
@@ -317,7 +315,8 @@ add_library(coupling_lib
 )
 target_link_libraries(coupling_lib
     system_lib input_lib mesh_lib tools_lib fem_lib io_lib
-    fparser     
+    fparser   
+    bparser  
     armadillo
     ${Boost_LIBRARIES})
 
@@ -374,6 +373,7 @@ target_link_libraries(flow123d_lib
     fem_lib mesh_lib la_lib input_lib io_lib
     system_lib tools_lib coupling_lib
     fparser  
+    bparser
     armadillo 
 #    ${TBB_LIBRARIES}
 #    ${DEAL_II_LIBRARY_NAME}

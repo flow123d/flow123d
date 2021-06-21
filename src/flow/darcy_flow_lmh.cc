@@ -199,7 +199,7 @@ DarcyLMH::DarcyLMH(Mesh &mesh_in, const Input::Record in_rec, TimeGovernor *tm)
     }
 
     data_ = make_shared<EqData>();
-    EquationBase::eq_data_ = data_.get();
+    EquationBase::eq_fieldset_ = data_.get();
     
     data_->is_linear=true;
 
@@ -290,24 +290,24 @@ void DarcyLMH::initialize() {
 
     { // construct pressure, velocity and piezo head fields
 		uint rt_component = 0;
-        auto ele_flux_ptr = create_field_fe<3, FieldValue<3>::VectorFixed>(data_->dh_, rt_component);
-        data_->full_solution = ele_flux_ptr->get_data_vec();
-        data_->flux.set_field(mesh_->region_db().get_region_set("ALL"), ele_flux_ptr);
+        data_->full_solution = data_->dh_->create_vector();
+        auto ele_flux_ptr = create_field_fe<3, FieldValue<3>::VectorFixed>(data_->dh_, &data_->full_solution, rt_component);
+        data_->flux.set(ele_flux_ptr, 0.0);
 
 		auto ele_velocity_ptr = std::make_shared< FieldDivide<3, FieldValue<3>::VectorFixed> >(ele_flux_ptr, data_->cross_section);
-		data_->field_ele_velocity.set_field(mesh_->region_db().get_region_set("ALL"), ele_velocity_ptr);
+		data_->field_ele_velocity.set(ele_velocity_ptr, 0.0);
 
-		uint p_ele_component = 0;
-        auto ele_pressure_ptr = create_field_fe<3, FieldValue<3>::Scalar>(data_->dh_, p_ele_component, &data_->full_solution);
-		data_->field_ele_pressure.set_field(mesh_->region_db().get_region_set("ALL"), ele_pressure_ptr);
+		uint p_ele_component = 1;
+        auto ele_pressure_ptr = create_field_fe<3, FieldValue<3>::Scalar>(data_->dh_, &data_->full_solution, p_ele_component);
+		data_->field_ele_pressure.set(ele_pressure_ptr, 0.0);
 
-        uint p_edge_component = 1;
-        auto edge_pressure_ptr = create_field_fe<3, FieldValue<3>::Scalar>(data_->dh_, p_edge_component, &data_->full_solution);
-		data_->field_edge_pressure.set_field(mesh_->region_db().get_region_set("ALL"), edge_pressure_ptr);
+        uint p_edge_component = 2;
+        auto edge_pressure_ptr = create_field_fe<3, FieldValue<3>::Scalar>(data_->dh_, &data_->full_solution, p_edge_component);
+		data_->field_edge_pressure.set(edge_pressure_ptr, 0.0);
 
 		arma::vec4 gravity = (-1) * data_->gravity_;
 		auto ele_piezo_head_ptr = std::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar> >(gravity, ele_pressure_ptr);
-		data_->field_ele_piezo_head.set_field(mesh_->region_db().get_region_set("ALL"), ele_piezo_head_ptr);
+		data_->field_ele_piezo_head.set(ele_piezo_head_ptr, 0.0);
     }
 
     { // init DOF handlers represents element pressure DOFs
@@ -407,14 +407,14 @@ void DarcyLMH::read_initial_condition()
 		// set initial condition
         double init_value = data_->init_pressure.value(ele.centre(),ele);
         unsigned int p_idx = data_->dh_p_->parent_indices()[p_indices[0]];
-        data_->full_solution[p_idx] = init_value;
+        data_->full_solution.set(p_idx, init_value);
         
         for (unsigned int i=0; i<ele->n_sides(); i++) {
              uint n_sides_of_edge =  ele.side(i)->edge().n_sides();
              unsigned int l_idx = data_->dh_cr_->parent_indices()[l_indices[i]];
-             data_->full_solution[l_idx] += init_value/n_sides_of_edge;
+             data_->full_solution.add(l_idx, init_value/n_sides_of_edge);
 
-             data_->p_edge_solution[l_indices[i]] += init_value/n_sides_of_edge;
+             data_->p_edge_solution.add(l_indices[i], init_value/n_sides_of_edge);
          }
 	}
     

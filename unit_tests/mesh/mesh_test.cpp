@@ -69,15 +69,15 @@ TEST(MeshTopology, make_neighbours_and_edges) {
     Mesh * mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
 
     EXPECT_EQ(9, mesh->n_elements());
-    EXPECT_EQ(18, mesh->get_bc_mesh()->n_elements());
+    EXPECT_EQ(18, mesh->bc_mesh()->n_elements());
 
     // check boundary elements
-    EXPECT_EQ(101 , mesh->get_bc_mesh()->element_accessor(0).region().id() );
-    EXPECT_EQ(101 , mesh->get_bc_mesh()->element_accessor(1).region().id() );
-    EXPECT_EQ(102 , mesh->get_bc_mesh()->element_accessor(2).region().id() );
-    EXPECT_EQ(102 , mesh->get_bc_mesh()->element_accessor(3).region().id() );
-    EXPECT_EQ( -3 , int( mesh->get_bc_mesh()->element_accessor(4).region().id() ) );
-    EXPECT_EQ( -3 , int( mesh->get_bc_mesh()->element_accessor(17).region().id() ) );
+    EXPECT_EQ(101 , mesh->bc_mesh()->element_accessor(0).region().id() );
+    EXPECT_EQ(101 , mesh->bc_mesh()->element_accessor(1).region().id() );
+    EXPECT_EQ(102 , mesh->bc_mesh()->element_accessor(2).region().id() );
+    EXPECT_EQ(102 , mesh->bc_mesh()->element_accessor(3).region().id() );
+    EXPECT_EQ( -3 , int( mesh->bc_mesh()->element_accessor(4).region().id() ) );
+    EXPECT_EQ( -3 , int( mesh->bc_mesh()->element_accessor(17).region().id() ) );
 
     //check edges
     EXPECT_EQ(28,mesh->n_edges());
@@ -106,6 +106,7 @@ regions:
    region_ids:
     - 39
     - 40
+optimize_mesh: false
 )YAML";
 
 TEST(Mesh, init_from_input) {
@@ -156,8 +157,6 @@ TEST(Mesh, decompose_problem) {
 TEST(Mesh, check_compatible_mesh) {
 	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-	vector<LongIdx> bulk_elms_id, boundary_elms_id;
-
     std::string mesh_string = "{mesh_file=\"mesh/simplest_cube.msh\"}";
     Mesh * target_mesh = mesh_constructor(mesh_string);
     auto target_reader = reader_constructor(mesh_string);
@@ -172,7 +171,7 @@ TEST(Mesh, check_compatible_mesh) {
         //reader->read_physical_names(mesh); // not implemented
         reader->read_raw_mesh(mesh);
 
-        EXPECT_TRUE( mesh->check_compatible_mesh(*target_mesh, bulk_elms_id, boundary_elms_id) );
+        EXPECT_TRUE( mesh->check_compatible_mesh(*target_mesh)->size() > 0 );
 
         delete mesh;
     }
@@ -184,7 +183,7 @@ TEST(Mesh, check_compatible_mesh) {
         // reader->read_physical_names(mesh); // not implemented
         reader->read_raw_mesh(mesh);
 
-        EXPECT_FALSE( mesh->check_compatible_mesh(*target_mesh, bulk_elms_id, boundary_elms_id) );
+        EXPECT_EQ( mesh->check_compatible_mesh(*target_mesh)->size(), 0 );
 
         delete mesh;
     }
@@ -202,7 +201,7 @@ TEST(BCMesh, element_ranges) {
     reader->read_physical_names(mesh);
     reader->read_raw_mesh(mesh);
 
-    BCMesh *bc_mesh = mesh->get_bc_mesh();
+    BCMesh *bc_mesh = mesh->bc_mesh();
     unsigned int expected_val = 0;
 
     for (auto elm : mesh->elements_range()) {

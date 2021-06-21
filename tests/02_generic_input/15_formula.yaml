@@ -1,11 +1,11 @@
 #################
-# Test goal: Test surface depth input parameter.
+# Test goal: Test surface depth input parameter and field dependency in formula.
 # Author: David Flanderka
 # Source for reference: qualitative
 
 flow123d_version: 3.1.0
 problem: !Coupling_Sequential
-  description: Tests correct calculation of surface depth of FieldFormula. 
+  description: Tests correct calculation of surface depth and field dependency. 
   mesh:
     mesh_file: ../00_mesh/big_cube_nc.msh
   # steady velocity field, with velocity v:0.1
@@ -33,6 +33,35 @@ problem: !Coupling_Sequential
       file: ./test15.pvd
       format: !vtk
         variant: ascii
+  solute_equation: !Coupling_OperatorSplitting
+    transport: !Solute_AdvectionDiffusion_DG
+      input_fields:
+        - region: .BOUNDARY
+          bc_conc: 0.5
+        - region: BULK
+          init_conc: 0.5
+          cross_section: 0.5 * x + y
+          porosity: !FieldFormula
+            #value: x + 2 * y
+            value: 2 * cross_section
+          dg_penalty: 10
+      solver: !Petsc
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
+      dg_variant: symmetric
+    output_stream:
+      file: ./transport15.pvd
+      format: !vtk
+        variant: ascii
+      times:
+        - step: 0.5
+    substances:
+      - A
+    time:
+      end_time: 2.0
+      init_dt: 0.5
+    balance:
+      cumulative: true
 
 ################################################################################ 
 # Benchmark test of surface depth on mesh file: 00_mesh/big_cube_nc23_mid.msh (60k elements)

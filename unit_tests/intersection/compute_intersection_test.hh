@@ -5,7 +5,6 @@
 
 #include "system/file_path.hh"
 #include "system/system.hh"
-#include "mesh/nodes.hh"
 #include "mesh/elements.h"
 #include "mesh/accessors.hh"
 

@@ -63,6 +63,7 @@ Mesh * BaseMeshReader::mesh_factory(const Input::Record &input_mesh_rec) {
 		}
 		reader->read_raw_mesh(mesh);
     } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, input_mesh_rec)
+
     mesh->setup_topology();
     mesh->check_and_finish();
     return mesh;

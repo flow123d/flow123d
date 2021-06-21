@@ -1,15 +1,65 @@
 List of all changes in user interface and major internal changes.
 
 ***********************************************
+# Flow123d version 3.1.0
+(2020-12-17)
 
-#Flow123d version 3.1.0
+### New features
+* poroelasticity model
+
+### Bug fixes
+* ignore unused nodes if these are present in mesh
+
+### Internals:
+* remove old mixed-hybrid dofhandler
+* apply field_fe in equations, mainly passing darcian velocity to transport model, field_fe in reaction term etc.
+* improvements in FE classes (FEValues)
+* some optimizations, value cache
+
+<!--
+Probably even more changes - mirrors current master branch.
+-->
+
+# Flow123d version 3.0.4
+(2020-06-16)
+
+
+### Bug fixes
+* incorrect values when exporting only pressure_p1 in Darcy Flow model
+* check and do not allow duplicit input record keys
+* no output of observe data when no equation output fields selected
+* when creating region from element ids, check the same dimension of elements
+* bug in output when applying DummyDataCache (ended with bad_cast)
+* give only warning when mesh contains unused nodes (not belonging to any elements)
+
+
+# Flow123d version 3.0.3
+(2019-09-02)
+
+### New features
+* observe data output when running parallel
+* removed maximal number of regions limit
+
+### Bug fixes
+* fixed several memory leaks (mesh and la)
+
+
+# Flow123d version 3.0.2
+(2019-09-02)
+
+### Bug fixes
+* fixed boundary edges indexing in balance to fix fluxes in balance
+
+<!--
+# Flow123d version 3.0.1
+TODO: do not know what was actually released...
+
+### User interface
 * Rename placeholder '${INPUT}' to '$INPUT_DIR$'.
 * Improved YAML converter
 * FieldElementwise replaced by FieldFE
 
-#Flow123d version 3.0.9
-(2019-04-02)
-
+### Install
 * `[windows]` switch from `Docker Toolbox` (using VirtualBox) to `Docker for Windows` (native virtualization)
 * `[windows]` update installer, now using native windows installer via NSIS
 * `[ linux ]` update installer, can now be installed from console via curl
@@ -18,14 +68,30 @@ List of all changes in user interface and major internal changes.
 * docker image hosting is now preferable way to deliver Flow123d
 
 
-#Flow123d version 3.0.0
+# Flow123d version 3.1.0
+* Rename placeholder '${INPUT}' to '$INPUT_DIR$'.
+* Improved YAML converter
+* FieldElementwise replaced by FieldFE
+
+# Flow123d version 3.0.9
+(2019-04-02)
+
+* `[windows]` switch from `Docker Toolbox` (using VirtualBox) to `Docker for Windows` (native virtualization)
+* `[windows]` update installer, now using native windows installer via NSIS
+* `[ linux ]` update installer, can now be installed from console via curl
+* update install manual (remove old docs)
+* update runtest, better logging support, (verbosity level support)
+* docker image hosting is now preferable way to deliver Flow123d
+-->
+
+# Flow123d version 3.0.0
 (2017-12-30)
 
 * YAML converter
 
 ***********************************************
 
-#Flow123d version 2.2.0
+# Flow123d version 2.2.0
 (2017-11-17)
 
 ## User interface
@@ -54,7 +120,7 @@ List of all changes in user interface and major internal changes.
 
 ***********************************************
 
-#Flow123d version 2.1.2
+# Flow123d version 2.1.2
 (2017-02-21)
 
 ## User interface
@@ -77,7 +143,7 @@ List of all changes in user interface and major internal changes.
 
 ***********************************************
 
-#Flow123d version 2.1.0
+# Flow123d version 2.1.0
 (2016-12-16)
 
 ## User interface
@@ -117,7 +183,7 @@ List of all changes in user interface and major internal changes.
 
 ***********************************************
 
-#Flow123d version 2.0.0
+# Flow123d version 2.0.0
 (2016-08-31)
 
 ### User interface
@@ -176,10 +242,10 @@ List of all changes in user interface and major internal changes.
 
 
     * Rename couplings to: 'Coupling_OperatorSplitting', 'Coupling_Sequential'
-
+    
     * 'Coupling_Sequantial' have keys 'flow_equation', 'solute_equation', 'heat_equation' instead of
     'primary_equation' and 'secondary_equation'.
-
+    
     * Rename equations to: 'Flow_Darcy_MH', 'Flow_Richards_LMH', Solute_AdvectionDiffusion_DG', 'Solute_Advection_FV', 'Heat_AdvectionDiffusion_DG',
 
 
@@ -193,22 +259,22 @@ List of all changes in user interface and major internal changes.
        from the mesh (named physical group in GMSH), further regions may be created by operations in the
        list: /problem/mesh/regions; which now support operations from both previous lists:
            /problem/mesh/regions and /problem/mesh/sets     
-
+    
      * Remove the key 'r_set' from the field descriptors. Use the key 'region' instead. Moreover,
        list of region labels may be used.
-
+    
      * Flow_Darcy_MH dynamicaly switch between steady and unsteady behavior according to the value of the
      'storativity' field. Zero value (default) force the steady model. Similarly for the Flow_Richards_LMH
      however both fields 'storativity' and 'water_content_saturated' must be zero (default).
-
+    
      * Rename the key 'solver' of the flow equations to 'linear_solver'  and move it under the
       new key 'nonlinear_solver'.
-
+    
      * Separation of output_stream (only for main equations) with specification of resulting format and setting common to
        equation outputs usign the stream. The equation outputs specify "what to output", namely 'output_fields' and 'observe_fields'.
-
+    
      * Rename 'BOUNDARY' and 'IMPLICIT BOUNDARY' region sets to '.BOUNDARY' and '.IMPLICIT_BOUNDARY' respectively.
-
+    
      * Add HTML format of the generated documentation to the structure of the input file.
 
 
@@ -257,7 +323,7 @@ List of all changes in user interface and major internal changes.
 
 ************************************************
 
-#Flow123d version 1.8.2
+# Flow123d version 1.8.2
 (2015-03-15)
 
 ### User interface
@@ -319,7 +385,7 @@ List of all changes in user interface and major internal changes.
 
 ***********************************************
 
-#Flow123d version 1.8.1
+# Flow123d version 1.8.1
 (2014-05-14)
 
 ### Bug fixes
@@ -343,7 +409,7 @@ List of all changes in user interface and major internal changes.
 
 ************************************************
 
-#Flow123d version 1.8.0
+# Flow123d version 1.8.0
 (2014-03-31)
 
 ### User interface:

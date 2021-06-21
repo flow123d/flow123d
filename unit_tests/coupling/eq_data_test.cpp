@@ -25,7 +25,6 @@
 #include <mesh_constructor.hh>
 
 #include <vector>
-#include <boost/foreach.hpp>
 
 #include "system/sys_profiler.hh"
 
@@ -42,6 +41,7 @@
 #include "coupling/equation.hh"
 
 #include "mesh/mesh.h"
+#include "mesh/bc_mesh.hh"
 #include "io/msh_gmshreader.h"
 #include "mesh/region.hh"
 #include <armadillo>
@@ -171,7 +171,7 @@ protected:
         //data.gravity_=arma::vec4("3.0 2.0 1.0 -5.0");
         FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-        mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
+        mesh = mesh_full_constructor("{ mesh_file=\"mesh/simplest_cube.msh\", optimize_mesh=false }");
         component_names = { "comp_0", "comp_1", "comp_2" };
 
     }
@@ -292,7 +292,7 @@ TEST_F(SomeEquation, values) {
     Space<3>::Point p;
     p(0)=1.0; p(1)= 2.0; p(2)=3.0;
 
-    DebugOut().fmt("elements size: {} {}\n", mesh->n_elements(), mesh->get_bc_mesh()->n_elements());
+    DebugOut().fmt("elements size: {} {}\n", mesh->n_elements(), mesh->bc_mesh()->n_elements());
 
     // check element accessors
     ElementAccessor<3> el_1d=mesh->element_accessor(0); // region 37 "1D diagonal"
@@ -301,9 +301,9 @@ TEST_F(SomeEquation, values) {
     EXPECT_EQ(38, el_2d.region().id());
     ElementAccessor<3> el_3d=mesh->element_accessor(3); // region 39 "3D back"
     EXPECT_EQ(39, el_3d.region().id());
-    ElementAccessor<3> el_bc_top=mesh->get_bc_mesh()->element_accessor(1); // region 101 ".top side"
+    ElementAccessor<3> el_bc_top=mesh->bc_mesh()->element_accessor(1); // region 101 ".top side"
     EXPECT_EQ(101, el_bc_top.region().id());
-    ElementAccessor<3> el_bc_bottom=mesh->get_bc_mesh()->element_accessor(3); // region 102 ".top side"
+    ElementAccessor<3> el_bc_bottom=mesh->bc_mesh()->element_accessor(3); // region 102 ".top side"
     EXPECT_EQ(102, el_bc_bottom.region().id());
 
     // bulk fields

@@ -87,9 +87,11 @@ formula_field_base: !FieldFormula
 fe_field: !FieldFE
   mesh_data_file: fields/simplest_cube_data.msh
   field_name: vector_fixed
+  default_value: 0.0
 interpolated_p0_field: !FieldFE
   mesh_data_file: fields/simplest_cube_3d.msh
   field_name: scalar
+  default_value: 0.0
   interpolation: P0_intersection
 )YAML";
 
@@ -106,8 +108,8 @@ protected:
 
     	point(0)=1.0; point(1)=2.0; point(2)=3.0;
 
-        auto mesh_reader = reader_constructor("{mesh_file=\"fields/simplest_cube_data.msh\"}");
-        mesh = mesh_constructor("{mesh_file=\"fields/simplest_cube_data.msh\"}");
+        auto mesh_reader = reader_constructor("{ mesh_file=\"fields/simplest_cube_data.msh\", optimize_mesh=false }");
+        mesh = mesh_constructor("{ mesh_file=\"fields/simplest_cube_data.msh\", optimize_mesh=false }");
         mesh_reader->read_raw_mesh(mesh);
         mesh->setup_topology();
 

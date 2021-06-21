@@ -19,8 +19,6 @@
 #define FIELD_COMMON_HH_
 
 #include <algorithm>                                   // for sort, unique
-#include <boost/exception/detail/error_info_impl.hpp>  // for error_info
-#include <boost/exception/info.hpp>                    // for operator<<
 #include <limits>                                      // for numeric_limits
 #include <memory>                                      // for shared_ptr
 #include <ostream>                                     // for operator<<
@@ -49,6 +47,7 @@ class Mesh;
 class Observe;
 class EvalPoints;
 class ElementCacheMap;
+class FieldSet;
 
 
 using namespace std;
@@ -426,6 +425,10 @@ public:
      */
     virtual void observe_output(std::shared_ptr<Observe> observe) =0;
 
+    /**
+     * Set reference of FieldSet to all instances of FieldFormula.
+     */
+    virtual std::vector<const FieldCommon *> set_dependency(FieldSet &field_set, unsigned int i_reg) const =0;
 
     /**
      * Sets @p component_index_
@@ -445,14 +448,34 @@ public:
     }
 
     /**
-     * Allocate data cache of dimension appropriate to subset object.
+     * Reallocate field value cache of Field on given region.
      */
-    virtual void cache_allocate(std::shared_ptr<EvalPoints> eval_points) = 0;
+    virtual void cache_reallocate(const ElementCacheMap &cache_map, unsigned int region_idx) const = 0;
 
     /**
      * Read data to cache for appropriate elements given by ElementCacheMap object.
      */
-    virtual void cache_update(ElementCacheMap &cache_map) = 0;
+    virtual void cache_update(ElementCacheMap &cache_map, unsigned int region_patch_idx) const = 0;
+
+
+    /**
+     *  Returns pointer to this (Field) or the sub-field component (MultiField).
+     */
+    virtual FieldCommon *get_component(FMT_UNUSED unsigned int idx) {
+        return this;
+    }
+
+
+    /**
+     *  Returns FieldValueCache if element_type of field is double or nullptr for other element_types.
+     */
+    virtual FieldValueCache<double> * value_cache() =0;
+
+
+    /**
+     * Same as previous but return const pointer
+     */
+    virtual const FieldValueCache<double> * value_cache() const =0;
 
 
     /**
@@ -466,6 +489,13 @@ public:
      * Virtual destructor.
      */
     virtual ~FieldCommon();
+
+    /**
+     * Hold shape of Field.
+     *
+     * Value is set in constructor of descendant class.
+     */
+    std::vector<uint> shape_;
 
 
 protected:
@@ -488,6 +518,11 @@ protected:
     void set_history_changed()
     {
         last_time_ = -numeric_limits<double>::infinity();
+    }
+
+    void set_shape(uint n_rows, uint n_cols) {
+        if (n_cols==1) this->shape_ = { n_rows };
+        else this->shape_ = { n_rows, n_cols };
     }
 
     /**
