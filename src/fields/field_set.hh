@@ -375,6 +375,10 @@ public:
     std::string print_dependency() const;
 
 protected:
+
+    /// Helper method sort used fields by dependency
+    void topological_sort(const FieldCommon *f, unsigned int i_reg, std::unordered_set<const FieldCommon *> &used_fields);
+
     /// List of all fields.
     std::vector<FieldCommon *> field_list;
 
