@@ -723,7 +723,7 @@ void Field<spacedim,Value>::fill_data_cache(OutputTime::DiscreteSpace space_type
 
             if (field_fe_ptr) {
                 auto native_output_data_base = stream->prepare_compute_data<double>(this->name(), space_type,
-                        (unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
+                        field_fe_ptr->get_dofhandler()->max_elem_dofs(), 1);
                 // try casting actual ElementDataCache
                 auto native_output_data = std::dynamic_pointer_cast<ElementDataCache<double>>(native_output_data_base);
                 field_fe_ptr->native_data_to_cache(*native_output_data);
