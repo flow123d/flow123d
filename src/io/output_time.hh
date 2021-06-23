@@ -200,9 +200,10 @@ public:
      * @param n_rows     Count of rows of data cache (used only if new cache is created)
      * @param n_cols     Count of columns of data cache (used only if new cache is created)
      * @param size       Size of data cache (used only if new cache is created and only for native data)
+     * @param fe_type    Finite element type (used only for native data)
      */
     template <typename T>
-    OutputDataPtr prepare_compute_data(std::string field_name, DiscreteSpace space_type, unsigned int n_rows, unsigned int n_cols);
+    OutputDataPtr prepare_compute_data(std::string field_name, DiscreteSpace space_type, unsigned int n_rows, unsigned int n_cols, std::string fe_type = "");
 
     /**
      * Return if output is serial or parallel

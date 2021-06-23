@@ -723,7 +723,9 @@ void Field<spacedim,Value>::fill_data_cache(OutputTime::DiscreteSpace space_type
 
             if (field_fe_ptr) {
                 auto native_output_data_base = stream->prepare_compute_data<double>(this->name(), space_type,
-                        field_fe_ptr->get_dofhandler()->max_elem_dofs(), 1);
+                        field_fe_ptr->get_dofhandler()->max_elem_dofs(), 1,
+                        typeid(field_fe_ptr->get_dofhandler()->ds()->fe()[0_d].get()).name() ); // should be used better solution of fe_type setting
+                                                                                                // e.g. method 'name()' of FiniteElement and descendants
                 // try casting actual ElementDataCache
                 auto native_output_data = std::dynamic_pointer_cast<ElementDataCache<double>>(native_output_data_base);
                 field_fe_ptr->native_data_to_cache(*native_output_data);

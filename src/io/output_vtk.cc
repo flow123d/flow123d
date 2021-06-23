@@ -486,6 +486,7 @@ void OutputVTK::write_vtk_native_data(void)
         file  << "format=\"" << formats[this->variant_type_] << "\" ";
         file  << "dof_handler_hash=\"" << output_data->dof_handler_hash() << "\" ";
         file  << "n_dofs_per_element=\"" << output_data->n_comp() << "\"";
+        //file  << " fe_type=\"" << output_data->fe_type() << "\"";
 
         if ( this->variant_type_ == VTKVariant::VARIANT_ASCII ) {
         	// ascii output

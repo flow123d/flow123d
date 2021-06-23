@@ -75,8 +75,9 @@ public:
      * @param field_name Field name is written as parameter to output stream
      * @param n_comp     Given from shape of field
      * @param size       Count of rows of data cache
+     * @param fe_type    FiniteElement type (used only for native data)
      */
-	ElementDataCache(std::string field_name, unsigned int n_comp, unsigned int size);
+	ElementDataCache(std::string field_name, unsigned int n_comp, unsigned int size, std::string fe_type = "");
 
     /**
      * \brief Destructor of ElementDataCache

@@ -319,7 +319,7 @@ void OutputTime::gather_output_data(void)
 // explicit instantiation of template methods
 #define OUTPUT_PREPARE_COMPUTE_DATA(TYPE) \
 template OutputTime::OutputDataPtr OutputTime::prepare_compute_data<TYPE>(std::string field_name, DiscreteSpace space_type, \
-		unsigned int n_rows, unsigned int n_cols)
+        unsigned int n_rows, unsigned int n_cols, std::string fe_type)
 
 OUTPUT_PREPARE_COMPUTE_DATA(int);
 OUTPUT_PREPARE_COMPUTE_DATA(unsigned int);

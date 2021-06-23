@@ -166,6 +166,13 @@ public:
     }
 
     /**
+     * Get fe_type_ value.
+     */
+    inline std::string fe_type() const {
+    	return this->fe_type_;
+    }
+
+    /**
      * Method for gathering parallel data to serial cache.
      *
      * Gather data of individual processes to serial cache that is created only on zero process.
@@ -250,6 +257,11 @@ protected:
 
     /// Hash of DOF handler (attribute of native VTK data)
     std::size_t dof_handler_hash_;
+
+    /**
+     * FiniteElement type (attribute of native VTK data)
+     */
+    std::string fe_type_;
 
     /// Is true for DummyElementDataCache
     bool is_dummy_;

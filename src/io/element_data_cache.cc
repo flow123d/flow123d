@@ -45,7 +45,7 @@ ElementDataCache<T>::ElementDataCache(std::string field_name, double time, unsig
 
 
 template <typename T>
-ElementDataCache<T>::ElementDataCache(std::string field_name, unsigned int n_comp, unsigned int size)
+ElementDataCache<T>::ElementDataCache(std::string field_name, unsigned int n_comp, unsigned int size, std::string fe_type)
 : check_scale_data_(CheckScaleData::none)
 {
 	this->set_vtk_type<T>();
@@ -55,6 +55,7 @@ ElementDataCache<T>::ElementDataCache(std::string field_name, unsigned int n_com
     this->n_values_ = size;
     ASSERT_GT(n_comp, 0)(field_name).error("Output field returning variable size vectors. Try convert to MultiField.");
     this->n_comp_ = n_comp;
+    this->fe_type_ = fe_type;
 
     this->data_ = ElementDataCache<T>::create_data_cache(1, this->n_values_ * this->n_comp_);
 }
@@ -336,7 +337,7 @@ std::shared_ptr< ElementDataCacheBase > ElementDataCache<T>::gather(Distribution
 
     // create and fill serial cache
     if (rank==0) {
-        gather_cache = std::make_shared<ElementDataCache<T>>(this->field_input_name_, (unsigned int)this->n_comp(), n_global_data);
+        gather_cache = std::make_shared<ElementDataCache<T>>(this->field_input_name_, (unsigned int)this->n_comp(), n_global_data, this->fe_type_);
         auto &gather_vec = *( gather_cache->get_component_data(0).get() );
         unsigned int i_global_coord; // counter over serial_mesh->nodes_ cache
         for (unsigned int i=0; i<n_global_data; ++i) {
@@ -358,7 +359,7 @@ std::shared_ptr< ElementDataCacheBase > ElementDataCache<T>::gather(Distribution
 template <typename T>
 std::shared_ptr< ElementDataCacheBase > ElementDataCache<T>::element_node_cache_fixed_size(std::vector<unsigned int> &offset_vec) {
     unsigned int n_elem = offset_vec.size()-1;
-    std::shared_ptr< ElementDataCache<T> > elem_node_cache = std::make_shared<ElementDataCache<T>>(this->field_input_name_, 4*this->n_comp(), n_elem);
+    std::shared_ptr< ElementDataCache<T> > elem_node_cache = std::make_shared<ElementDataCache<T>>(this->field_input_name_, 4*this->n_comp(), n_elem, this->fe_type_);
     auto &data_out_vec = *( elem_node_cache->get_component_data(0).get() );
     std::fill( data_out_vec.begin(), data_out_vec.end(), (T)0 );
     auto &data_in_vec = *( this->get_component_data(0).get() );
@@ -383,7 +384,7 @@ std::shared_ptr< ElementDataCacheBase > ElementDataCache<T>::element_node_cache_
 template <typename T>
 std::shared_ptr< ElementDataCacheBase > ElementDataCache<T>::element_node_cache_optimize_size(std::vector<unsigned int> &offset_vec) {
     std::shared_ptr< ElementDataCache<T> > elem_node_cache = std::make_shared<ElementDataCache<T>>(this->field_input_name_,
-            this->n_comp()/4, offset_vec[offset_vec.size()-1]);
+            this->n_comp()/4, offset_vec[offset_vec.size()-1], this->fe_type_);
     auto &data_out_vec = *( elem_node_cache->get_component_data(0).get() );
     auto &data_in_vec = *( this->get_component_data(0).get() );
 
@@ -409,7 +410,7 @@ std::shared_ptr< ElementDataCacheBase > ElementDataCache<T>::compute_node_data(s
     unsigned int idx;
 
     // set output data to zero
-    std::shared_ptr< ElementDataCache<T> > node_cache = std::make_shared<ElementDataCache<T>>(this->field_input_name_, this->n_comp(), data_size);
+    std::shared_ptr< ElementDataCache<T> > node_cache = std::make_shared<ElementDataCache<T>>(this->field_input_name_, this->n_comp(), data_size, this->fe_type_);
     std::vector<unsigned int> count(data_size, 0);
     for (idx=0; idx < node_cache->n_values(); idx++)
         node_cache->zero(idx);
