@@ -1,0 +1,30 @@
+02_terzaghi - test to fix output for DF
+
+03_mandel
+- 2D Mandel test
+- problem with bottom BC - fixed zero Dir. => no analytic solution
+- the weird thing is, that the block is deformed at first time step and later it only expands..
+- data similar to Endorse tunnel test case
+- works the same on both coarse and finer mesh
+
+03_mandel_3d
+- ohromny narust tlaku v prvnim kroce
+- podivna deformace jako v 03_mandel (jina distribuce)
+
+04_terzaghi
+- according to Verruijt 2014 and Ferronato 2010 (data)
+- lower storativity (*1e-6) causes divergence of nonlinear solver (precision of linear solver is not an issue)
+- tried also different time scale and steps with no improvement | with higher storativity
+- the Flow123d results (especially pressure) are far from analytical, I could not determine any reason
+- solver divergence is also sensitive to Biot coefficient (higher B.c., worse divergence)
+
+05_mandel_3d
+- problem with BC and convergence
+    - opposite forces on top and bottom => not converging (displacement unconstrained)
+    - fixing bottom is OK
+
+- 02, 03 - parallel tests return different results
+
+
+
+
