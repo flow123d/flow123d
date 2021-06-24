@@ -23,6 +23,7 @@
 #include "system/index_types.hh"
 #include "fields/field_algo_base.hh"
 #include "fields/fe_value_handler.hh"
+#include "fields/field.hh"
 #include "la/vector_mpi.hh"
 #include "mesh/mesh.h"
 #include "mesh/point.hh"
@@ -51,6 +52,7 @@ class FieldFE : public FieldAlgorithmBase<spacedim, Value>
 public:
     typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
     typedef FieldAlgorithmBase<spacedim, Value> FactoryBaseType;
+	typedef typename Field<spacedim, Value>::FactoryBase FieldFactoryBaseType;
 
 	/**
 	 * Possible interpolations of input data.
@@ -87,6 +89,34 @@ public:
      * Return Input selection that allow to set interpolation of input data.
      */
     static const Input::Type::Selection & get_interp_selection_input_type();
+
+    /**
+     * Factory class (descendant of @p Field<...>::FactoryBase) that is necessary
+     * for setting pressure values are piezometric head values.
+     */
+    class NativeFactory : public FieldFactoryBaseType {
+    public:
+    	/// Constructor.
+    	NativeFactory(std::shared_ptr<DOFHandlerMultiDim> conc_dof_handler, VectorMPI dof_vector = VectorMPI::sequential(0))
+    	: conc_dof_handler_(conc_dof_handler),
+		  dof_vector_(dof_vector)
+    	{}
+
+    	typename Field<spacedim,Value>::FieldBasePtr create_field(Input::Record rec, const FieldCommon &field) override {
+       		Input::AbstractRecord field_a_rec;
+        	if (rec.opt_val(field.input_name(), field_a_rec)) {
+        	    std::shared_ptr< FieldFE<spacedim, Value> > field_fe = std::make_shared< FieldFE<spacedim, Value> >(field.n_comp());
+        	    field_fe->set_fe_data(conc_dof_handler_, dof_vector_);
+        	    return field_fe;
+        	} else {
+        		return typename Field<spacedim,Value>::FieldBasePtr();
+        	}
+    	}
+
+    	std::shared_ptr<DOFHandlerMultiDim> conc_dof_handler_;
+    	VectorMPI dof_vector_;
+    };
+
 
     /**
      * Setter for the finite element data.
