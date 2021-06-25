@@ -96,25 +96,18 @@ public:
      */
     class NativeFactory : public FieldFactoryBaseType {
     public:
-    	/// Constructor.
-    	NativeFactory(std::shared_ptr<DOFHandlerMultiDim> conc_dof_handler, VectorMPI dof_vector = VectorMPI::sequential(0))
-    	: conc_dof_handler_(conc_dof_handler),
-		  dof_vector_(dof_vector)
-    	{}
+        /// Constructor.
+        NativeFactory(unsigned int index, std::shared_ptr<DOFHandlerMultiDim> conc_dof_handler, VectorMPI dof_vector = VectorMPI::sequential(0))
+        : index_(index),
+          conc_dof_handler_(conc_dof_handler),
+          dof_vector_(dof_vector)
+        {}
 
-    	typename Field<spacedim,Value>::FieldBasePtr create_field(Input::Record rec, const FieldCommon &field) override {
-       		Input::AbstractRecord field_a_rec;
-        	if (rec.opt_val(field.input_name(), field_a_rec)) {
-        	    std::shared_ptr< FieldFE<spacedim, Value> > field_fe = std::make_shared< FieldFE<spacedim, Value> >(field.n_comp());
-        	    field_fe->set_fe_data(conc_dof_handler_, dof_vector_);
-        	    return field_fe;
-        	} else {
-        		return typename Field<spacedim,Value>::FieldBasePtr();
-        	}
-    	}
+    	typename Field<spacedim,Value>::FieldBasePtr create_field(Input::Record rec, const FieldCommon &field) override;
 
-    	std::shared_ptr<DOFHandlerMultiDim> conc_dof_handler_;
-    	VectorMPI dof_vector_;
+        unsigned int index_;
+        std::shared_ptr<DOFHandlerMultiDim> conc_dof_handler_;
+        VectorMPI dof_vector_;
     };
 
 

@@ -138,6 +138,35 @@ FieldFE<spacedim, Value>::FieldFE( unsigned int n_comp)
 }
 
 
+template<int spacedim, class Value>
+typename Field<spacedim,Value>::FieldBasePtr FieldFE<spacedim, Value>::NativeFactory::create_field(Input::Record rec, const FieldCommon &field) {
+	Input::Array multifield_arr;
+	if (rec.opt_val(field.input_name(), multifield_arr))
+	{
+		unsigned int position = 0;
+		auto it = multifield_arr.begin<Input::AbstractRecord>();
+		if (multifield_arr.size() > 1)
+			while (index_ != position) {
+				++it; ++position;
+			}
+
+        Input::Record field_rec = (Input::Record)(*it);
+        if (field_rec.val<std::string>("TYPE") == "FieldFE") {
+            OutputTime::DiscreteSpace discretization;
+            if (field_rec.opt_val<OutputTime::DiscreteSpace>("input_discretization", discretization)) {
+                if (discretization == OutputTime::DiscreteSpace::NATIVE_DATA) {
+                    std::shared_ptr< FieldFE<spacedim, Value> > field_fe = std::make_shared< FieldFE<spacedim, Value> >(field.n_comp());
+                    field_fe->set_fe_data(conc_dof_handler_, dof_vector_);
+                    return field_fe;
+                }
+            }
+        }
+	}
+
+	return NULL;
+}
+
+
 template <int spacedim, class Value>
 VectorMPI FieldFE<spacedim, Value>::set_fe_data(std::shared_ptr<DOFHandlerMultiDim> dh, VectorMPI dof_values, unsigned int block_index)
 {

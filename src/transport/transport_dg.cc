@@ -324,6 +324,12 @@ void TransportDG<Model>::initialize()
     {
         eq_data_->dif_coef[sbi].resize(qsize);
     }
+
+    eq_fields_->init_condition.setup_components();
+    for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)
+    {
+    	eq_fields_->init_condition[sbi].add_factory( std::make_shared<FieldFE<3, FieldValue<3>::Scalar>::NativeFactory>(sbi, eq_data_->dh_));
+    }
 }
 
 
