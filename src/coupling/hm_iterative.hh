@@ -144,7 +144,9 @@ public:
         Field<3, FieldValue<3>::Scalar> output_cross_section;
         Field<3, FieldValue<3>::Scalar> delta_min;      ///< Minimum thresold value for fracture opening and closing 
         Field<3, FieldValue<3>::Scalar> conductivity_model; /// < Define cubic law K = f(k_o, (a/delta)^2)
-        
+        // Field<3, FieldValue<3>::Scalar> output_test;
+
+
         /// Potential -alpha*pressure whose gradient is passed to mechanics as additional load.
         Field<3, FieldValue<3>::Scalar> pressure_potential;
         Field<3, FieldValue<3>::Scalar> flow_source;

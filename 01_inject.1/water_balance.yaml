@@ -1,0 +1,242 @@
+column_names: [ flux,  flux_in,  flux_out,  mass,  source,  source_in,  source_out,  flux_increment,  source_increment,  flux_cumulative,  source_cumulative,  error ]
+data:
+  - time: 0
+    region: fracture_lower
+    quantity: water_volume
+    data: [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 0
+    region: fracture_upper
+    quantity: water_volume
+    data: [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 0
+    region: rock
+    quantity: water_volume
+    data: [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 0
+    region: .right_fl
+    quantity: water_volume
+    data: [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 0
+    region: .right_fu
+    quantity: water_volume
+    data: [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 0
+    region: .bottom
+    quantity: water_volume
+    data: [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 0
+    region: .top
+    quantity: water_volume
+    data: [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 0
+    region: .left
+    quantity: water_volume
+    data: [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 0
+    region: .right
+    quantity: water_volume
+    data: [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 0
+    region: .IMPLICIT_BOUNDARY
+    quantity: water_volume
+    data: [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 2
+    region: fracture_lower
+    quantity: water_volume
+    data: [ 0, 0, 0, 3.16368e-05, -3.07835e-06, 0, -3.07835e-06, 0, 0, 0, 0, 0 ]
+  - time: 2
+    region: fracture_upper
+    quantity: water_volume
+    data: [ 0, 0, 0, 0.000123382, -1.03319e-05, 2.2695e-07, -1.05588e-05, 0, 0, 0, 0, 0 ]
+  - time: 2
+    region: rock
+    quantity: water_volume
+    data: [ 0, 0, 0, 0.00585057, 5.77375e-06, 7.33147e-06, -1.55772e-06, 0, 0, 0, 0, 0 ]
+  - time: 2
+    region: .right_fl
+    quantity: water_volume
+    data: [ 0.00100274, 0.00100274, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 2
+    region: .right_fu
+    quantity: water_volume
+    data: [ 0.00200812, 0.00200812, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 2
+    region: .bottom
+    quantity: water_volume
+    data: [ 2.78717e-12, 2.78972e-12, -2.55498e-15, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 2
+    region: .top
+    quantity: water_volume
+    data: [ 8.96286e-13, 3.94856e-12, -3.05228e-12, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 2
+    region: .left
+    quantity: water_volume
+    data: [ -4.31271e-07, 0, -4.31271e-07, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 2
+    region: .right
+    quantity: water_volume
+    data: [ 5.38424e-12, 7.51887e-12, -2.13463e-12, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 2
+    region: .IMPLICIT_BOUNDARY
+    quantity: water_volume
+    data: [ 7.3242e-15, 7.3538e-15, -2.96006e-17, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 4
+    region: fracture_lower
+    quantity: water_volume
+    data: [ 0, 0, 0, 4.71136e-05, -1.01969e-06, 2.84552e-08, -1.04815e-06, 0, 0, 0, 0, 0 ]
+  - time: 4
+    region: fracture_upper
+    quantity: water_volume
+    data: [ 0, 0, 0, 0.000184474, -3.18224e-06, 4.76756e-07, -3.659e-06, 0, 0, 0, 0, 0 ]
+  - time: 4
+    region: rock
+    quantity: water_volume
+    data: [ 0, 0, 0, 0.01178, 4.70804e-06, 5.10205e-06, -3.94005e-07, 0, 0, 0, 0, 0 ]
+  - time: 4
+    region: .right_fl
+    quantity: water_volume
+    data: [ 0.00100071, 0.00100071, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 4
+    region: .right_fu
+    quantity: water_volume
+    data: [ 0.00200235, 0.00200235, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 4
+    region: .bottom
+    quantity: water_volume
+    data: [ 2.40066e-12, 2.41504e-12, -1.43793e-14, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 4
+    region: .top
+    quantity: water_volume
+    data: [ -3.26235e-13, 5.37231e-12, -5.69854e-12, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 4
+    region: .left
+    quantity: water_volume
+    data: [ -5.72635e-07, 0, -5.72635e-07, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 4
+    region: .right
+    quantity: water_volume
+    data: [ 8.51606e-12, 1.19506e-11, -3.4345e-12, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 4
+    region: .IMPLICIT_BOUNDARY
+    quantity: water_volume
+    data: [ 4.48076e-14, 4.48076e-14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 6
+    region: fracture_lower
+    quantity: water_volume
+    data: [ 0, 0, 0, 5.85942e-05, -5.48109e-07, 5.17845e-08, -5.99894e-07, 0, 0, 0, 0, 0 ]
+  - time: 6
+    region: fracture_upper
+    quantity: water_volume
+    data: [ 0, 0, 0, 0.00022934, -1.75685e-06, 5.05247e-07, -2.2621e-06, 0, 0, 0, 0, 0 ]
+  - time: 6
+    region: rock
+    quantity: water_volume
+    data: [ 0, 0, 0, 0.0177298, 4.0367e-06, 4.26884e-06, -2.32141e-07, 0, 0, 0, 0, 0 ]
+  - time: 6
+    region: .right_fl
+    quantity: water_volume
+    data: [ 0.00100045, 0.00100045, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 6
+    region: .right_fu
+    quantity: water_volume
+    data: [ 0.00200156, 0.00200156, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 6
+    region: .bottom
+    quantity: water_volume
+    data: [ 1.54542e-12, 1.62647e-12, -8.1055e-14, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 6
+    region: .top
+    quantity: water_volume
+    data: [ -7.33409e-13, 6.13868e-12, -6.87209e-12, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 6
+    region: .left
+    quantity: water_volume
+    data: [ -6.75971e-07, 0, -6.75971e-07, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 6
+    region: .right
+    quantity: water_volume
+    data: [ 9.62986e-12, 1.47196e-11, -5.08974e-12, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 6
+    region: .IMPLICIT_BOUNDARY
+    quantity: water_volume
+    data: [ 9.79628e-14, 9.79628e-14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 8
+    region: fracture_lower
+    quantity: water_volume
+    data: [ 0, 0, 0, 6.81561e-05, -2.82665e-07, 6.15981e-08, -3.44263e-07, 0, 0, 0, 0, 0 ]
+  - time: 8
+    region: fracture_upper
+    quantity: water_volume
+    data: [ 0, 0, 0, 0.00026621, -9.85222e-07, 4.98199e-07, -1.48342e-06, 0, 0, 0, 0, 0 ]
+  - time: 8
+    region: rock
+    quantity: water_volume
+    data: [ 0, 0, 0, 0.0236898, 3.72316e-06, 3.87902e-06, -1.55861e-07, 0, 0, 0, 0, 0 ]
+  - time: 8
+    region: .right_fl
+    quantity: water_volume
+    data: [ 0.00100034, 0.00100034, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 8
+    region: .right_fu
+    quantity: water_volume
+    data: [ 0.00200122, 0.00200122, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 8
+    region: .bottom
+    quantity: water_volume
+    data: [ 4.82335e-13, 9.16843e-13, -4.34508e-13, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 8
+    region: .top
+    quantity: water_volume
+    data: [ -4.27364e-13, 6.71462e-12, -7.14198e-12, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 8
+    region: .left
+    quantity: water_volume
+    data: [ -8.13819e-07, 0, -8.13819e-07, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 8
+    region: .right
+    quantity: water_volume
+    data: [ 9.51538e-12, 1.69138e-11, -7.39839e-12, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 8
+    region: .IMPLICIT_BOUNDARY
+    quantity: water_volume
+    data: [ 1.50983e-13, 1.50983e-13, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 10
+    region: fracture_lower
+    quantity: water_volume
+    data: [ 0, 0, 0, 7.65742e-05, -8.54916e-08, 7.64308e-08, -1.61922e-07, 0, 0, 0, 0, 0 ]
+  - time: 10
+    region: fracture_upper
+    quantity: water_volume
+    data: [ 0, 0, 0, 0.000298116, -4.09841e-07, 5.25096e-07, -9.34937e-07, 0, 0, 0, 0, 0 ]
+  - time: 10
+    region: rock
+    quantity: water_volume
+    data: [ 0, 0, 0, 0.0296561, 3.57208e-06, 3.67877e-06, -1.06689e-07, 0, 0, 0, 0, 0 ]
+  - time: 10
+    region: .right_fl
+    quantity: water_volume
+    data: [ 0.00100028, 0.00100028, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 10
+    region: .right_fu
+    quantity: water_volume
+    data: [ 0.002001, 0.002001, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 10
+    region: .bottom
+    quantity: water_volume
+    data: [ -8.15893e-13, 5.31467e-13, -1.34736e-12, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 10
+    region: .top
+    quantity: water_volume
+    data: [ 2.24228e-13, 7.26291e-12, -7.03868e-12, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 10
+    region: .left
+    quantity: water_volume
+    data: [ -1.04053e-06, 0, -1.04053e-06, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 10
+    region: .right
+    quantity: water_volume
+    data: [ 8.64156e-12, 1.84053e-11, -9.7637e-12, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 10
+    region: .IMPLICIT_BOUNDARY
+    quantity: water_volume
+    data: [ 1.97328e-13, 1.97328e-13, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]

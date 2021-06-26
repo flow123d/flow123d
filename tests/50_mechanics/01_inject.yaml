@@ -11,6 +11,21 @@ problem: !Coupling_Sequential
         biot_alpha: 1
         fluid_density: 1
         gravity: 1
+      - region: [ fracture_lower, fracture_upper ]
+        delta_min: 3e-4   
+    output_stream:
+      file: iterative.msh
+      format: !gmsh
+        variant: ascii
+    output:
+      times:
+        - step: 2
+      fields:
+        - delta_min
+        - pressure_potential
+        # - output_test
+        # - conductivity_model
+        # - conductivity
     flow_equation: !Flow_Richards_LMH
         input_fields:
           - region: rock
@@ -40,9 +55,10 @@ problem: !Coupling_Sequential
             - pressure_p0
             - velocity_p0
             - region_id
+            - conductivity
         balance: {}
         output_stream: 
-          format: !vtk
+          format: !gmsh
             variant: ascii
     mechanics_equation:
         input_fields:
@@ -57,8 +73,8 @@ problem: !Coupling_Sequential
             bc_displacement: 0
         solver: !Petsc
         output_stream:
-          file: mechanics.pvd
-          format: !vtk
+          file: mechanics.msh
+          format: !gmsh
             variant: ascii
         output:
           times:

@@ -61,7 +61,7 @@ const it::Record & HM_Iterative::get_input_type() {
         .declare_key("output_stream", OutputTime::get_input_type(), IT::Default::obligatory(),
                     "Parameters of output stream.")
         .declare_key("output",
-                EqData().output_fields.make_output_type(equation_name, ""),
+                HM_Iterative::EqData().output_fields.make_output_type(equation_name, ""),
                 IT::Default("{ \"fields\": [ "+HM_Iterative::EqData::default_output_field()+" ] }"),
                 "Setting of the field output.")
 		.close();
@@ -104,10 +104,10 @@ HM_Iterative::EqData::EqData()
     *this += delta_min.name("delta_min")
                      .description("Minimum non-zero thresold value for deformed cross-section.")
                      .units( UnitSI().m(3).md() )
-                     .input_default("0.0");
-                     
+                     .input_default("11.0");
     *this += conductivity_model.name("conductivity_model")
                      .description("fracture_induced_conductivity.")
+                     .input_default("0.0")
                      .units( UnitSI().m().s(-1) );
                      
     // add all input fields to the output list
@@ -123,8 +123,8 @@ HM_Iterative::EqData::EqData()
 /// [u].n + delta-delta_min = updated_cs ; This will be a updated from elasticity model
 
 struct fn_K_mechanics {
-	inline double operator() (double updated_cs, double initial_cs, double min_cs_bound, double flow_conductivity) {
-        return std::max(2.0, flow_conductivity*pow(((min_cs_bound + std::max(updated_cs - min_cs_bound, 0.0) )/initial_cs),2));
+	inline double operator() (double flow_conductivity) {
+        return 2.0*flow_conductivity; //std::max(2.0, flow_conductivity*pow(((min_cs_bound + std::max(updated_cs - min_cs_bound, 0.0) )/initial_cs),2));
     }
 };
 
@@ -148,9 +148,7 @@ void HM_Iterative::EqData::initialize(Mesh &mesh)
     div_u_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(beta_ptr_->get_dofhandler());
     old_div_u_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(beta_ptr_->get_dofhandler());
 
-    /// Updacted conductivity due to fracture closing and opening
-    conductivity_model.set(Model<3, FieldValue<3>::Scalar>::create(fn_K_mechanics(), output_cross_section, cross_section, delta_min, conductivity_k0), 0.0);
-
+    // output_test.set(create_field_fe<3, FieldValue<3>::Scalar>(mesh, MixedPtr<FE_CR>()), 0.0);
 }
 
       
@@ -160,10 +158,9 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
   IterativeCoupling(in_record)
 {
 	START_TIMER("HM constructor");
+    
     using namespace Input;
-
-    eq_fields_ = std::make_shared<EqData>();
-    eq_fields_->add_coords_field();
+    // set_mesh(mesh);
 
     time_ = new TimeGovernor(in_record.val<Record>("time"));
     ASSERT( time_->is_default() == false ).error("Missing key 'time' in Coupling_Iterative.");
@@ -192,14 +189,19 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
     data_.conductivity_k0.copy_from(*flow_->data().field("conductivity"));
     data_.cross_section.copy_from(*mechanics_->eq_fields().field("cross_section"));
     data_.output_cross_section.copy_from(*mechanics_->eq_fields().field("cross_section_updated"));
-    flow_->data()["conductivity"].copy_from(data_.conductivity_model);
+    // flow_->data()["conductivity"].copy_from(data_.conductivity_model);
+
+    /// This is created just to observe the any filed e.g. output_test
+    // data_.output_test.copy_from(*flow_->data().field("conductivity"));
 
     // setup input fields
     data_.set_input_list( in_record.val<Input::Array>("input_fields"), time() );
 
     data_.initialize(*mesh_);
     
+        
     mechanics_->set_potential_load(data_.pressure_potential);
+
 }
 
 
@@ -207,8 +209,20 @@ void HM_Iterative::initialize()
 {
     output_stream_ = OutputTime::create_output_stream("hydro_mechanics", input_record_.val<Input::Record>("output_stream"), time().get_unit_string());
 
+    data_.set_input_list( input_record_.val<Input::Array>("input_fields"), time() );
     // set time marks for writing the output
-    eq_fields_->output_fields.initialize(output_stream_, mesh_, input_record_.val<Input::Record>("output"), this->time());
+    data_.output_fields.initialize(output_stream_, mesh_, input_record_.val<Input::Record>("output"), this->time());
+
+    ASSERT_PTR(mesh_);
+    data_.set_mesh(*mesh_);
+
+    /// Updacted conductivity due to fracture closing and opening
+    data_.conductivity_model.set(Model<3, FieldValue<3>::Scalar>::create(fn_K_mechanics(), data_.conductivity_k0), 0.0);
+
+/// How add any filed to outfields list ???
+    // data_.output_fields += data_.output_test.name("output_test")
+    //                  .description("Test output vlaue.")
+    //                  .units( UnitSI().m().s(-1) );
 
 }
 
@@ -229,6 +243,8 @@ void copy_field(const FieldCommon &from_field_common, FieldFE<dim, Value> &to_fi
 
 void HM_Iterative::zero_time_step()
 {
+    START_TIMER(EqData::name());
+    data_.mark_input_times( *time_ );
     data_.set_time(time_->step(), LimitSide::right);
     std::stringstream ss;
     if ( FieldCommon::print_message_table(ss, "coupling_iterative") )
@@ -390,10 +406,12 @@ void HM_Iterative::output_data()
 
     // gather the solution from all processors
     data_.output_fields.set_time(time_->step(), LimitSide::left);
-    //if (eq_fields_->output_fields.is_field_output_time(eq_fields_->output_field, this->time().step()) )
+    
+    // if (data_.output_fields.is_field_output_time(data_.output_test, time_->step()) )
+    
     // update_output_fields();
     data_.output_fields.output(time_->step());
-
+        
 //     START_TIMER("MECH-balance");
 //     balance_->calculate_instant(subst_idx, eq_data_->ls->get_solution());
 //     balance_->output();
