@@ -1,9 +1,13 @@
-# Test goal: 1D poroelasticity model - Mandel's problem.
+# Test goal: 2D poroelasticity model - Mandel's problem.
 # Author: Pavel Exner
-# Source for reference:
-#   analytical solution available: Arnold Verruijt (2014)
-#   sofar qualitative check - PROBLEM - cannot prescribe zero normal displacement at the bottom
-#       we must fix the bottom even in x axis which we do not want
+# Description and analytical solution: see 03_pv_filter.py
+# Limitations and issues:
+# - Slight deviation from original Mandel's problem - while originally
+#   the force is applied in integral form (piston) here we prescribe
+#   pointwise traction.
+# - When prescribing only normal displacements in 2D domain, displacement
+#   is nonunique in the 3rd direction. Works only with iterative linear solvers.
+#
 #   PROBLEM: not same results in parallel run (2p - different zero time output)
 #   checked in Paraview
 
@@ -12,39 +16,32 @@ problem: !Coupling_Sequential
   description: Mandel's rectangular problem.
   mesh:
     mesh_file: ../00_mesh/square_1x1_xy_28el.msh
-    #mesh_file: ../00_mesh/square_1x1_xy.msh
   flow_equation: !Coupling_Iterative
     input_fields:
       - region: BULK
-        biot_alpha: 0.2
-        fluid_density: 1000
+        biot_alpha: 1
+        fluid_density: 1
+        gravity: 1
     time:
       end_time: 10
-      # common time unit cannot be used in field formulas
-      common_time_unit: d
     iteration_parameter: 1 # affects convergence of HM coupling (defaults to 1, lower value sometimes helps)
-    a_tol: 0
-    r_tol: 1e-8
+    a_tol: 1e-15
+    r_tol: 1e-12
     flow_equation: !Flow_Richards_LMH
         nonlinear_solver:
           linear_solver: !Petsc
-            a_tol: 1e-10
-            r_tol: 1e-10
+            options: -ksp_type preonly -pc_type lu
+            a_tol: 1e-15
+            r_tol: 1e-15
         input_fields:
           - region: BULK
-            conductivity: 6e-15
-            # https://en.wikipedia.org/wiki/Specific_storage
-            storativity: 2E-8
-            init_pressure: 2.35227910676059
-            #init_pressure: !FieldFormula
-              #value: 0.2*3/13*1e-10 / (2e-8 + 0.2*0.2*3/13*1e-10) * 1e7 / (1000*9.81)
+            conductivity: 1e-0
+            storativity: 1e-0
+            init_pressure: 0.295
 
-          - region: [.right_x, .left_x]
+          - region: [.right_x ]
             bc_type: dirichlet
             bc_pressure: 0
-
-          # homogenous Neumann
-          #- region: .bc_bottom
 
         output:
           times:
@@ -53,8 +50,6 @@ problem: !Coupling_Sequential
             - piezo_head_p0
             - pressure_p0
             - velocity_p0
-        #balance:
-          #cumulative: true
         output_stream:
           file: flow.pvd
           format: !vtk
@@ -68,18 +63,23 @@ problem: !Coupling_Sequential
           fields:
             - displacement
             - stress
+            - displacement_divergence
         solver: !Petsc
-          a_tol: 1e-10
-          r_tol: 1e-10
+          a_tol: 1e-20
+          r_tol: 1e-15
         input_fields:
           - region: BULK
-            young_modulus: 27e9
-            poisson_ratio: 0.35
+            young_modulus: 1e0
+            poisson_ratio: 0.2
+
+          - region: .bottom_y
+            bc_type: displacement_n
+            bc_displacement: 0
+
+          - region: .left_x
+            bc_type: displacement_n
+            bc_displacement: 0
 
           - region: .top_y
             bc_type: traction
-            bc_traction: [0,-1e8,0]
-
-          - region: .bottom_y
-            bc_type: displacement
-            bc_displament: 0
+            bc_traction: [0,-1,0]

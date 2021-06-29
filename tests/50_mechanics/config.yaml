@@ -5,6 +5,7 @@ common_config:
 test_cases:
 - files:
   - 01_inject.yaml
+  time_limit: 200
 - files:
   - 02_terzaghi.yaml
   - 03_mandel.yaml
