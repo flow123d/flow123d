@@ -258,6 +258,8 @@ void HM_Iterative::update_potential()
         }
     }
     
+    potential_vec_.local_to_ghost_begin();
+    potential_vec_.local_to_ghost_end();
     data_.pressure_potential.set_time_result_changed();
     mechanics_->set_potential_load(data_.pressure_potential);
 }
@@ -289,6 +291,10 @@ void HM_Iterative::update_flow_fields()
         src_vec[ele.local_idx()] = src;
     }
     
+    beta_vec.local_to_ghost_begin();
+    src_vec.local_to_ghost_begin();
+    beta_vec.local_to_ghost_end();
+    src_vec.local_to_ghost_end();
     data_.beta.set_time_result_changed();
     data_.flow_source.set_time_result_changed();
     flow_->set_extra_storativity(data_.beta);
