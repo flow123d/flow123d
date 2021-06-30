@@ -429,9 +429,10 @@ public:
         {
             for (auto p : this->boundary_points(cell_side) )
             {
+                auto p_bdr = p.point_bdr( side.cond().element_accessor() );
                 for (unsigned int i=0; i<n_dofs_; i++)
                     local_rhs_[i] += eq_fields_->cross_section(p) *
-                            arma::dot(vec_view_bdr_->value(i,k), eq_fields_->bc_traction(p) + eq_fields_->potential_load(p) * fe_values_bdr_side_.normal_vector(k)) *
+                            arma::dot(vec_view_bdr_->value(i,k), eq_fields_->bc_traction(p_bdr) + eq_fields_->potential_load(p) * fe_values_bdr_side_.normal_vector(k)) *
                             fe_values_bdr_side_.JxW(k);
                 ++k;
             }
