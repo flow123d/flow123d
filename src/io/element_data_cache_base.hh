@@ -146,6 +146,13 @@ public:
     	return this->n_comp_;
     }
 
+    /**
+     * Get number of DOFs per element.
+     */
+    inline unsigned int n_dofs_per_element() const {
+        return this->n_dofs_per_element_;
+    }
+
     /// Get type of stored data
     inline VTKValueType vtk_type() const {
     	return this->vtk_type_;
@@ -262,6 +269,11 @@ protected:
      * FiniteElement type (attribute of native VTK data)
      */
     std::string fe_type_;
+
+    /**
+     * Number of DOFs per element (attribute of native VTK data)
+     */
+    unsigned int n_dofs_per_element_;
 
     /// Is true for DummyElementDataCache
     bool is_dummy_;

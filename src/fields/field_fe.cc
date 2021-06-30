@@ -894,13 +894,14 @@ void FieldFE<spacedim, Value>::calculate_equivalent_values(ElementDataCache<doub
 template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::native_data_to_cache(ElementDataCache<double> &output_data_cache) {
 	//ASSERT_EQ(output_data_cache.n_values() * output_data_cache.n_comp(), dh_->distr()->lsize()).error();
-	double loc_values[output_data_cache.n_comp()];
+	unsigned int n_vals = output_data_cache.n_comp() * output_data_cache.n_dofs_per_element();
+	double loc_values[n_vals];
 	unsigned int i;
 
 	for (auto dh_cell : dh_->own_range()) {
 		LocDofVec loc_dofs = dh_cell.get_loc_dof_indices();
 		for (i=0; i<loc_dofs.n_elem; ++i) loc_values[i] = data_vec_.get( loc_dofs[i] );
-		for ( ; i<output_data_cache.n_comp(); ++i) loc_values[i] = numeric_limits<double>::signaling_NaN();
+		for ( ; i<n_vals; ++i) loc_values[i] = numeric_limits<double>::signaling_NaN();
 		output_data_cache.store_value( dh_cell.local_idx(), loc_values );
 	}
 
