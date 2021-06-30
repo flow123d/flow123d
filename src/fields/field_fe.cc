@@ -132,7 +132,7 @@ const int FieldFE<spacedim, Value>::registrar =
 template <int spacedim, class Value>
 FieldFE<spacedim, Value>::FieldFE( unsigned int n_comp)
 : FieldAlgorithmBase<spacedim, Value>(n_comp),
-  field_name_(""), fe_values_(4)
+  dh_(nullptr), field_name_(""), fe_values_(4)
 {
 	this->is_constant_in_space_ = false;
 }
@@ -156,6 +156,8 @@ typename Field<spacedim,Value>::FieldBasePtr FieldFE<spacedim, Value>::NativeFac
             if (field_rec.opt_val<OutputTime::DiscreteSpace>("input_discretization", discretization)) {
                 if (discretization == OutputTime::DiscreteSpace::NATIVE_DATA) {
                     std::shared_ptr< FieldFE<spacedim, Value> > field_fe = std::make_shared< FieldFE<spacedim, Value> >(field.n_comp());
+                    FieldAlgoBaseInitData init_data(field.input_name(), field.n_comp(), field.units(), field.limits(), field.get_flags());
+                    field_fe->init_from_input( *it, init_data );
                     field_fe->set_fe_data(conc_dof_handler_, dof_vector_);
                     return field_fe;
                 }
@@ -392,7 +394,7 @@ void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) 
                 }
             }
         }
-        this->make_dof_handler(mesh);
+        if (dh_ == nullptr) this->make_dof_handler(mesh);
 	}
 }
 
@@ -513,7 +515,10 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 		} else {
 			boundary = false;
 		}
-		if (this->interpolation_==DataInterpolation::identic_msh) {
+		if (is_native) {
+		    n_entities = boundary ? dh_->mesh()->get_bc_mesh()->n_elements() : dh_->mesh()->n_elements();
+		    n_components *= dh_->max_elem_dofs();
+		} else if (this->interpolation_==DataInterpolation::identic_msh) {
 			n_entities = boundary ? dh_->mesh()->get_bc_mesh()->n_elements() : dh_->mesh()->n_elements();
 		} else {
 			n_entities = boundary ? ReaderCache::get_mesh(reader_file_)->get_bc_mesh()->n_elements() : ReaderCache::get_mesh(reader_file_)->n_elements();
@@ -524,7 +529,7 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 				this->unit_conversion_coefficient_, default_value_);
 
 
-	    if (checked_data == CheckResult::not_a_number) {
+	    if ( !is_native && (checked_data == CheckResult::not_a_number) ) {
 	        THROW( ExcUndefElementValue() << EI_Field(field_name_) );
 	    }
 
