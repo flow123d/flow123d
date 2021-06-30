@@ -101,14 +101,14 @@ HM_Iterative::EqData::EqData()
                      .units(UnitSI().s(-1))
                      .flags(FieldFlag::equation_result);
                                          
-    *this += delta_min.name("delta_min")
-                     .description("Minimum non-zero thresold value for deformed cross-section.")
-                     .units( UnitSI().m(3).md() )
-                     .input_default("11.0");
-    *this += conductivity_model.name("conductivity_model")
-                     .description("fracture_induced_conductivity.")
-                     .input_default("0.0")
-                     .units( UnitSI().m().s(-1) );
+    // *this += delta_min.name("delta_min")
+    //                  .description("Minimum non-zero thresold value for deformed cross-section.")
+    //                  .units( UnitSI().m(3).md() )
+    //                  .input_default("11.0");
+    // *this += conductivity_model.name("conductivity_model")
+    //                  .description("fracture_induced_conductivity.")
+    //                  .input_default("0.0")
+    //                  .units( UnitSI().m().s(-1) );
                      
     // add all input fields to the output list
     output_fields += *this;
@@ -122,11 +122,11 @@ HM_Iterative::EqData::EqData()
 /// delta_min = positive lower limit due to fracture closing (by user)
 /// [u].n + delta-delta_min = updated_cs ; This will be a updated from elasticity model
 
-struct fn_K_mechanics {
-	inline double operator() (double flow_conductivity) {
-        return 2.0*flow_conductivity; //std::max(2.0, flow_conductivity*pow(((min_cs_bound + std::max(updated_cs - min_cs_bound, 0.0) )/initial_cs),2));
-    }
-};
+// struct fn_K_mechanics {
+// 	inline double operator() (double flow_conductivity) {
+//         return 2.0*flow_conductivity; //std::max(2.0, flow_conductivity*pow(((min_cs_bound + std::max(updated_cs - min_cs_bound, 0.0) )/initial_cs),2));
+//     }
+// };
 
 
 void HM_Iterative::EqData::initialize(Mesh &mesh)
@@ -189,6 +189,8 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
     data_.conductivity_k0.copy_from(*flow_->data().field("conductivity"));
     data_.cross_section.copy_from(*mechanics_->eq_fields().field("cross_section"));
     data_.output_cross_section.copy_from(*mechanics_->eq_fields().field("cross_section_updated"));
+    flow_->data()["updated_cross_section"].copy_from(mechanics_->eq_fields()["cross_section_updated"]);
+    
     // flow_->data()["conductivity"].copy_from(data_.conductivity_model);
 
     /// This is created just to observe the any filed e.g. output_test
@@ -213,11 +215,11 @@ void HM_Iterative::initialize()
     // set time marks for writing the output
     data_.output_fields.initialize(output_stream_, mesh_, input_record_.val<Input::Record>("output"), this->time());
 
-    ASSERT_PTR(mesh_);
-    data_.set_mesh(*mesh_);
+    // ASSERT_PTR(mesh_);
+    // data_.set_mesh(*mesh_);
 
-    /// Updacted conductivity due to fracture closing and opening
-    data_.conductivity_model.set(Model<3, FieldValue<3>::Scalar>::create(fn_K_mechanics(), data_.conductivity_k0), 0.0);
+    // /// Updacted conductivity due to fracture closing and opening
+    // data_.conductivity_model.set(Model<3, FieldValue<3>::Scalar>::create(fn_K_mechanics(), data_.conductivity_k0), 0.0);
 
 /// How add any filed to outfields list ???
     // data_.output_fields += data_.output_test.name("output_test")

@@ -142,7 +142,7 @@ public:
         Field<3, FieldValue<3>::Scalar> conductivity_k0; ///< copied from flow conductivity 
         Field<3, FieldValue<3>::Scalar> cross_section;   
         Field<3, FieldValue<3>::Scalar> output_cross_section;
-        Field<3, FieldValue<3>::Scalar> delta_min;      ///< Minimum thresold value for fracture opening and closing 
+        // Field<3, FieldValue<3>::Scalar> delta_min;      ///< Minimum thresold value for fracture opening and closing 
         Field<3, FieldValue<3>::Scalar> conductivity_model; /// < Define cubic law K = f(k_o, (a/delta)^2)
         // Field<3, FieldValue<3>::Scalar> output_test;
 
@@ -163,7 +163,7 @@ public:
         EquationOutput output_fields;
 
         static  constexpr const char *  name() { return "Hydro_Mechanics_LinearElasticity"; }
-        static string default_output_field() { return "\"delta_min\""; }
+        static string default_output_field() { return "\"pressure_potential\""; }
         
     };
     

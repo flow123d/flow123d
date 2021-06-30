@@ -21,7 +21,7 @@ problem: !Coupling_Sequential
       times:
         - step: 2
       fields:
-        - delta_min
+        # - delta_min
         - pressure_potential
         # - output_test
         # - conductivity_model
@@ -31,14 +31,17 @@ problem: !Coupling_Sequential
           - region: rock
             conductivity: 1e-3
             storativity: 1
+            updated_cross_section: 2e-4
           - region: fracture_lower
             conductivity: 1
             storativity: 1
             cross_section: 1e-3
+            updated_cross_section: 2e-4
           - region: fracture_upper
             conductivity: 1
             storativity: 1
             cross_section: 2e-3
+            updated_cross_section: 2e-4
           - region: [ .right_fl, .right_fu ]
             bc_type: total_flux
             bc_flux: 1
@@ -56,6 +59,9 @@ problem: !Coupling_Sequential
             - velocity_p0
             - region_id
             - conductivity
+            - sigma
+            - delta_0
+            # - updated_cross_section_flow
         balance: {}
         output_stream: 
           format: !gmsh
