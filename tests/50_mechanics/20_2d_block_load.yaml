@@ -1,7 +1,7 @@
 # Test goal: 2D linear elastic simple loading problem.
 # Author: Pavel Exner
 # Source for reference:
-# - same as 30_3d_block_load.yaml
+# - same as 30_3d_block_load.yaml, reduced to 2D
 # - the 2D block is however half the size,
 #   so we double the force to get equal deformation
 
@@ -18,29 +18,20 @@ problem: !Coupling_Sequential
         gravity: 0
     time:
       end_time: 1
-    iteration_parameter: 1 # affects convergence of HM coupling (defaults to 1, lower value sometimes helps)
     a_tol: 1e-15
     r_tol: 1e-12
+
     flow_equation: !Flow_Richards_LMH
-        nonlinear_solver:
-          linear_solver: !Petsc
-            a_tol: 1e-15
-            r_tol: 1e-15
         input_fields:
           - region: BULK
             conductivity: 1
             init_pressure: 0
-
-          - region: [.BOUNDARY ]
+          - region: [.BOUNDARY]
             bc_type: dirichlet
             bc_pressure: 0
-
         output:
-          fields:
-            - pressure_p0
-        output_stream:
-          file: flow.pvd
-          format: !vtk
+          fields: []
+
     mechanics_equation:
         output_stream:
           file: mechanics.pvd
@@ -65,7 +56,6 @@ problem: !Coupling_Sequential
           - region: [.bottom_y]
             bc_type: displacement
             bc_displacement: 0
-
 
           - region: .top_y
             bc_type: traction

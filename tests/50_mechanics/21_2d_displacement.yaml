@@ -1,23 +1,13 @@
-# Test goal: 3D linear elastic simple loading problem.
+# Test goal: 2D linear elastic Dirichlet BC problem.
 # Author: Pavel Exner
 # Source for reference:
-# Hook's law:
-# exx = 1/E(sxx - nu(syy + szz))
-# eyy = 1/E(syy - nu(sxx + szz))
-# ezz = 1/E(szz - nu(sxx + syy))
-#
-# for this case:
-# eyy = exx = 0   =>   sxx = syy = nu/(1-nu)*szz = -2.5
-#
-# sxx = syy = -2.5
-# ezz = -0.1125
-# uz = -0.225
+# Check prescribed displacement in Paraview.
 
 flow123d_version: 3.1.0
 problem: !Coupling_Sequential
-  description: 3D linear elastic simple loading problem.
+  description: 2D linear elastic Dirichlet BC problem.
   mesh:
-    mesh_file: ../00_mesh/cube_2x2x2.msh
+    mesh_file: ../00_mesh/square_1x1_xy_28el.msh
   flow_equation: !Coupling_Iterative
     input_fields:
       - region: BULK
@@ -30,12 +20,11 @@ problem: !Coupling_Sequential
     r_tol: 1e-12
 
     flow_equation: !Flow_Richards_LMH
-        gravity: [0,0,0]
         input_fields:
           - region: BULK
             conductivity: 1
             init_pressure: 0
-          - region: [.BOUNDARY ]
+          - region: [.BOUNDARY]
             bc_type: dirichlet
             bc_pressure: 0
         output:
@@ -58,14 +47,7 @@ problem: !Coupling_Sequential
             young_modulus: 80
             poisson_ratio: 0.2
 
-          - region: [.left_x, .right_x, .front_y, .back_y]
-            bc_type: displacement_n
-            bc_displacement: 0
-
-          - region: [.bottom_z]
+          - region: [.BOUNDARY]
             bc_type: displacement
-            bc_displacement: 0
-
-          - region: .top_z
-            bc_type: traction
-            bc_traction: [0,0,-10]
+            bc_displacement: !FieldFormula
+              value: [-0.03*x*y, -0.17*x*y, 0]
