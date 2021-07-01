@@ -405,9 +405,10 @@ public:
             double side_measure = cell_side.measure();
             for (auto p : this->boundary_points(cell_side) )
             {
+                auto p_bdr = p.point_bdr( side.cond().element_accessor() );
                 for (unsigned int i=0; i<n_dofs_; i++)
                     local_rhs_[i] += (eq_fields_->dirichlet_penalty(p) / side_measure) *
-					        arma::dot(eq_fields_->bc_displacement(p), vec_view_bdr_->value(i,k)) *
+					        arma::dot(eq_fields_->bc_displacement(p_bdr), vec_view_bdr_->value(i,k)) *
 					        fe_values_bdr_side_.JxW(k);
                 ++k;
             }
@@ -417,9 +418,10 @@ public:
             double side_measure = cell_side.measure();
             for (auto p : this->boundary_points(cell_side) )
             {
+                auto p_bdr = p.point_bdr( side.cond().element_accessor() );
                 for (unsigned int i=0; i<n_dofs_; i++)
                     local_rhs_[i] += (eq_fields_->dirichlet_penalty(p) / side_measure) *
-                            arma::dot(eq_fields_->bc_displacement(p), fe_values_bdr_side_.normal_vector(k)) *
+                            arma::dot(eq_fields_->bc_displacement(p_bdr), fe_values_bdr_side_.normal_vector(k)) *
                             arma::dot(vec_view_bdr_->value(i,k), fe_values_bdr_side_.normal_vector(k)) *
                             fe_values_bdr_side_.JxW(k);
                 ++k;
