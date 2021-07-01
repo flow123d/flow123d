@@ -1,11 +1,13 @@
-# Test goal: 2D poroelasticity model - Mandel's problem.
+# Test goal: 2D linear elastic simple loading problem.
 # Author: Pavel Exner
 # Source for reference:
-
+# - same as 30_3d_block_load.yaml
+# - the 2D block is however half the size,
+#   so we double the force to get equal deformation
 
 flow123d_version: 3.1.0
 problem: !Coupling_Sequential
-  description: Mandel's rectangular problem.
+  description: 2D linear elastic simple loading problem.
   mesh:
     mesh_file: ../00_mesh/square_1x1_xy_28el.msh
   flow_equation: !Coupling_Iterative
@@ -22,7 +24,6 @@ problem: !Coupling_Sequential
     flow_equation: !Flow_Richards_LMH
         nonlinear_solver:
           linear_solver: !Petsc
-            options: -ksp_type preonly -pc_type lu
             a_tol: 1e-15
             r_tol: 1e-15
         input_fields:
@@ -54,7 +55,7 @@ problem: !Coupling_Sequential
           r_tol: 1e-15
         input_fields:
           - region: BULK
-            young_modulus: 1
+            young_modulus: 80
             poisson_ratio: 0.2
 
           - region: [.left_x, .right_x]
@@ -68,4 +69,4 @@ problem: !Coupling_Sequential
 
           - region: .top_y
             bc_type: traction
-            bc_traction: [0,-10,0]
+            bc_traction: [0,-20,0]

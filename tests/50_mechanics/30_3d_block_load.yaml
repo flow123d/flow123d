@@ -1,7 +1,17 @@
 # Test goal: 3D linear elastic simple loading problem.
 # Author: Pavel Exner
 # Source for reference:
-# 
+# Hook's law:
+# exx = 1/E(sxx - nu(syy + szz))
+# eyy = 1/E(syy - nu(sxx + szz))
+# ezz = 1/E(szz - nu(sxx + syy))
+#
+# for this case:
+# eyy = exx = 0   =>   sxx = syy = nu/(1-nu)*szz = -2.5
+#
+# sxx = syy = -2.5
+# ezz = -0.1125
+# uz = -0.225
 
 flow123d_version: 3.1.0
 problem: !Coupling_Sequential
@@ -55,10 +65,9 @@ problem: !Coupling_Sequential
           options: -ksp_type preonly -pc_type lu
         input_fields:
           - region: BULK
-            young_modulus: 1
+            young_modulus: 80
             poisson_ratio: 0.2
 
-          #- region: [.bottom_z, .left_x, .right_x, .front_y, .back_y]
           - region: [.left_x, .right_x, .front_y, .back_y]
             bc_type: displacement_n
             bc_displacement: 0
