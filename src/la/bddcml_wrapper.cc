@@ -3,6 +3,8 @@
 
 #include "la/bddcml_wrapper.hh"
 
+#ifdef FLOW123D_HAVE_BDDCML
+
 //------------------------------------------------------------------------------
 /** Constructor for the BDDCML solver object
  */
@@ -622,3 +624,4 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
     return;
 }
 
+#endif

@@ -31,9 +31,11 @@
 #include <system/xio.h>
 #include "system/sys_profiler.hh"
 
-extern "C" { 
-    #include <bddcml_interface_c.h>
-}
+#ifdef FLOW123D_HAVE_BDDCML
+// extern "C" { 
+//     #include <bddcml_interface_c.h>
+// }
+#endif
 
 //------------------------------------------------------------------------------
 namespace la{
