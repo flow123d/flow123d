@@ -63,7 +63,7 @@ problem: !Coupling_Sequential
       output:
         fields:
           - { field: conc, interpolation: Native }
-          #- conc
+          #- { field: conc, interpolation: D1_value }
     output_stream:
       file: ./solute.pvd
       format: !vtk

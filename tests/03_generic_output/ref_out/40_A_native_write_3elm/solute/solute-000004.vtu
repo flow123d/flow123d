@@ -18,7 +18,7 @@
 5 10 10 
 </DataArray>
 </Cells>
-<Flow123dData Scalars="" Vectors="" Tensors="">
+<Flow123dData Scalars="A_conc," Vectors="" Tensors="">
 <DataArray type="Float64" Name="A_conc" format="ascii" dof_handler_hash="11" n_dofs_per_element="4">
 0.9999997695 0.9999997695 0.9999995832 nan 1.0000000211 0.9999998196 0.9999998196 0.9999995329 0.5782387629 0.5782387629 0.9948241935 0.5858324883 
 </DataArray>
