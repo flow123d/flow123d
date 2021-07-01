@@ -132,7 +132,7 @@ const int FieldFE<spacedim, Value>::registrar =
 template <int spacedim, class Value>
 FieldFE<spacedim, Value>::FieldFE( unsigned int n_comp)
 : FieldAlgorithmBase<spacedim, Value>(n_comp),
-  dh_(nullptr), field_name_(""), fe_values_(4)
+  dh_(nullptr), field_name_(""), discretization_(OutputTime::DiscreteSpace::UNDEFINED), fe_values_(4)
 {
 	this->is_constant_in_space_ = false;
 }
@@ -223,8 +223,7 @@ VectorMPI FieldFE<spacedim, Value>::set_fe_data(std::shared_ptr<DOFHandlerMultiD
 	init_data.range_end = this->fe_item_[3].range_end_;
 	value_handler3_.initialize(init_data);
 
-	// set discretization
-	discretization_ = OutputTime::DiscreteSpace::UNDEFINED;
+	// set interpolation
 	interpolation_ = DataInterpolation::equivalent_msh;
 
 	return data_vec_;
@@ -380,7 +379,8 @@ void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) 
             auto source_mesh = ReaderCache::get_mesh(reader_file_);
             ReaderCache::get_element_ids(reader_file_, *(source_mesh.get()));
             if (this->interpolation_ == DataInterpolation::equivalent_msh) {
-                source_target_mesh_elm_map_ = ReaderCache::get_target_mesh_element_map(reader_file_, const_cast<Mesh *>(mesh));
+                bool is_native = discretization_ == OutputTime::DiscreteSpace::NATIVE_DATA;
+                source_target_mesh_elm_map_ = ReaderCache::get_target_mesh_element_map(reader_file_, const_cast<Mesh *>(mesh), is_native);
                 if (source_target_mesh_elm_map_->size() == 0) { // incompatible meshes
                     this->interpolation_ = DataInterpolation::gauss_p0;
                     WarningOut().fmt("Source mesh of FieldFE '{}' is not compatible with target mesh.\nInterpolation of input data will be changed to 'P0_gauss'.\n",
