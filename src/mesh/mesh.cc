@@ -1125,7 +1125,7 @@ std::shared_ptr<std::vector<LongIdx>> Mesh::check_compatible_discont_mesh( Mesh 
         for (auto elm : this->elements_range()) {
             bih_tree.find_bounding_box(elm.bounding_box(), searched_elements);
             for (auto s : searched_elements) {
-                auto acc = input_mesh.element_accessor(searched_elements[s]);
+                auto acc = input_mesh.element_accessor(s);
                 if ( equal_elm(elm, acc) ) result_list.push_back(s);
             }
 
@@ -1158,7 +1158,7 @@ std::shared_ptr<std::vector<LongIdx>> Mesh::check_compatible_discont_mesh( Mesh 
         for (auto elm : bc_mesh->elements_range()) {
             bih_tree.find_bounding_box(elm.bounding_box(), searched_elements);
             for (auto s : searched_elements) {
-                auto acc = input_mesh.element_accessor(searched_elements[s]);
+                auto acc = input_mesh.element_accessor(s);
                 if ( equal_elm(elm, acc) ) result_list.push_back(s);
             }
             if (result_list.size() == 1) {
