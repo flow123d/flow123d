@@ -32,9 +32,9 @@
 #include "system/sys_profiler.hh"
 
 #ifdef FLOW123D_HAVE_BDDCML
-// extern "C" { 
-//     #include <bddcml_interface_c.h>
-// }
+ extern "C" { 
+     #include <bddcml_interface_c.h>
+ }
 #endif
 
 //------------------------------------------------------------------------------
