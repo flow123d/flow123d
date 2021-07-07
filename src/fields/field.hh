@@ -335,7 +335,7 @@ public:
      * Interpolate given field into output discrete @p space_type and store the values
      * into storage of output time @p stream for postponed output.
      */
-    void compute_field_data(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream);
+    void compute_field_data(OutputTimeSet::DisceteSpaceFlags space_type, std::shared_ptr<OutputTime> stream);
 
     /// Implements FieldCommon::cache_allocate
     void cache_reallocate(const ElementCacheMap &cache_map, unsigned int region_idx) const override;

@@ -131,7 +131,9 @@ public:
 		native_data_ptr->set_fe_data(dh, v);
 
 		field.set(native_data_ptr, 0.0);
-		field.output_type(OutputTime::NATIVE_DATA);
+	    auto output_types = OutputTimeSet::empty_discrete_flags();
+	    output_types[OutputTime::NATIVE_DATA] = true;
+		field.output_type(output_types);
 		field.set_time(TimeGovernor(0.0, 1.0).step(), LimitSide::left);
 
 		field.compute_field_data(NATIVE_DATA, shared_from_this());

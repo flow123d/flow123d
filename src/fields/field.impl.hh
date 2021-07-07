@@ -396,10 +396,10 @@ void Field<spacedim, Value>::field_output(std::shared_ptr<OutputTime> stream)
 {
 	// currently we cannot output boundary fields
 	if (!is_bc()) {
-		const OutputTime::DiscreteSpace type = this->get_output_type();
+	    OutputTimeSet::DisceteSpaceFlags type = this->get_output_type();
 
-		ASSERT_LT(type, OutputTime::N_DISCRETE_SPACES).error();
-		this->compute_field_data( type, stream);
+	    ASSERT( OutputTimeSet::discrete_flags_defined(type) ).error();
+	    this->compute_field_data( type, stream);
 	}
 }
 
@@ -651,17 +651,20 @@ void Field<spacedim,Value>::set_input_list(const Input::Array &list, const TimeG
 
 
 template<int spacedim, class Value>
-void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream) {
+void Field<spacedim,Value>::compute_field_data(OutputTimeSet::DisceteSpaceFlags space_type, std::shared_ptr<OutputTime> stream) {
 	typedef typename Value::element_type ElemType;
+	OutputTime::DiscreteSpace type; // TODO temporary solution, use new assemblation and allow output of more than one type
+    for (uint i=0; i<OutputTime::N_DISCRETE_SPACES; ++i)
+	    if (space_type[i]) type = OutputTime::DiscreteSpace(i);
 
-    OutputTime::OutputDataPtr output_data_base = stream->prepare_compute_data<ElemType>(this->name(), space_type,
+    OutputTime::OutputDataPtr output_data_base = stream->prepare_compute_data<ElemType>(this->name(), type,
     		(unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
 
     try{
         // try casting actual ElementDataCache
         if( ! output_data_base->is_dummy()){
             auto output_data = std::dynamic_pointer_cast<ElementDataCache<ElemType>>(output_data_base);
-            fill_data_cache(space_type, stream, output_data);
+            fill_data_cache(type, stream, output_data);
         }
 
     } catch(const std::bad_cast& e){
