@@ -69,11 +69,11 @@ class PrintFormat(object):
                 dict(sink=logfile),
             ],
             levels=[
-                dict(name=LogLevels.NORMAL, no=60, color=''),
+                dict(name=LogLevels.NORMAL, no=60,  color=''),
                 dict(name=LogLevels.IMPORTANT, no=60, color='<b>'),
-                dict(name=LogLevels.SUCCESS, no=60, color='<b,g,>'),
-                dict(name=LogLevels.FAILED, no=60, color='<b,r,>'),
-                dict(name=LogLevels.WARN, no=60, color='<b,y,>'),
+                dict(name=LogLevels.SUCCESS, color='<b><g>'),
+                dict(name=LogLevels.FAILED, no=60, color='<b><r>'),
+                dict(name=LogLevels.WARN, no=60, color='<b><y>'),
             ]
         )
         cls.logger = _logger.bind(timer=GlobalTimer(), prefix=prefix)

@@ -23,11 +23,11 @@ find_package_multipass (BDDCML bddcml_config_current
 
 message(STATUS "BDDCML_ROOT: ${BDDCML_ROOT}")
 
-find_path (BDDCML_INCLUDES bddcml_interface_c.h  HINTS ${BDDCML_ROOT}/src )
+find_path (BDDCML_INCLUDES bddcml_interface_c.h  HINTS ${BDDCML_ROOT}/include )
 find_library (BDDCML_LIBRARY NAMES bddcml  HINTS ${BDDCML_ROOT}/lib )
 
 if (BDDCML_INCLUDES AND BDDCML_LIBRARY)
-  message(STATUS "found: ${BDDCML_INCLUDES}, ${BDDCML_LIBRARY} ")
+  message(STATUS "found1, include: ${BDDCML_INCLUDES}, lib: ${BDDCML_LIBRARY} ")
   set(BDDCML_LAST_ROOT ${BDDCML_ROOT} CACHE FILEPATH "_Clearad_") 
   #string(REPLACE REGEX "/src$" "" BDDCML_ROOT ${BDDCML_INCLUDES})
   find_program (MAKE_EXECUTABLE NAMES make gmake)
@@ -55,12 +55,12 @@ show :
     endmacro (BDDCML_GET_VARIABLE)
 
     bddcml_get_variable("BDDCML_LINK_SEQUENCE" BDDCML_LINK_SEQ)
-    bddcml_get_variable("BDDCML_CDEFS" BDDCML_CDEFS)
-    bddcml_get_variable("BDDCML_INC" BDDCML_INC)
-    STRING(REGEX REPLACE "( |^)-I" ";"  BDDCML_INC_DIRS ${BDDCML_INC})
+    #bddcml_get_variable("BDDCML_MPCFLAGS" BDDCML_CDEFS)
+    #bddcml_get_variable("BDDCML_INC" BDDCML_INC)
+    #STRING(REGEX REPLACE "( |^)-I" ";"  BDDCML_INC_DIRS ${BDDCML_INC})
     #message(STATUS ${BDDCML_INC_DIRS})
     #STRING(REGEX REPLACE " *" ";"  BDDCML_INC_LIST ${BDDCML_INC_DIRS}) 
-    set(BDDCML_INCLUDES ${BDDCML_INCLUDES} ${BDDCML_INC_DIRS})
+    #set(BDDCML_INCLUDES ${BDDCML_INCLUDES} ${BDDCML_INC_DIRS})
     
   
     #message(STATUS "BDDCML_LIBS: ${BDDCML_LINK_SEQ}")
@@ -77,18 +77,19 @@ endif()
 
 include (ResolveCompilerPaths)
 # Extract include paths and libraries from compile command line
-resolve_LIBRARIES(BDDCML_LIBS "${BDDCML_LINK_SEQ}")
+resolve_LIBRARIES(BDDCML_LIBRARIES "${BDDCML_LINK_SEQ}")
+#message(STATUS "B SEQ:" ${BDDCML_LINK_SEQ})
 # Extract BLOPEX object files 
-STRING(REGEX MATCHALL "[^ ]*\\.o" BLOPEX_OBJS "${BDDCML_LINK_SEQ}")
-message(STATUS "BOBJ: ${BLOPEX_OBJS}")
+#STRING(REGEX MATCHALL "[^ ]*\\.o" BLOPEX_OBJS "${BDDCML_LINK_SEQ}")
+#message(STATUS "BOBJ: ${BLOPEX_OBJS}")
 #STRING(REGEX REPLACE <regular_expression>  <replace_expression> <output variable>  <input> [<input>...])
 # ATTENTION: input has to be quoted otherwise it interprets contens of variable, in particular run REGEX on every item in ; separated list
-STRING(REGEX REPLACE "([^;]*BLOPEX\\.a)" "${BLOPEX_OBJS};\\1" BDDCML_LIBRARIES "${BDDCML_LIBS}" )
+#STRING(REGEX REPLACE "([^;]*BLOPEX\\.a)" "${BLOPEX_OBJS};\\1" BDDCML_LIBRARIES "${BDDCML_LIBS}" )
 #STRING(REGEX MATCH "[^;]*BLOPEX\\.a"  BDDCML_BLOPEX_LIB "${BDDCML_LIBS}" )
 #STRING(REGEX MATCH "[^;]"  BDDCML_BEGIN_LIB ${BDDCML_LIBS} )
-message(STATUS "out: ${BDDCML_LIBRARIES}")
+#message(STATUS "out: ${BDDCML_LIBRARIES}")
 #message(STATUS "out: ${BDDCML_BLOPEX_LIB}")
-message(STATUS "in: ${BDDCML_LIBS}")
+#message(STATUS "in: ${BDDCML_LIBS}")
 
 
 message(STATUS "found: ${BDDCML_INCLUDES}, ${BDDCML_LIBRARIES}")
