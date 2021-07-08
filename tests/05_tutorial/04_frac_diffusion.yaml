@@ -261,6 +261,6 @@ problem: !Coupling_Sequential
           end: 5000
         - begin: 5000
           step: 5000
-      file: transport.pvd
-      format: !vtk
+      file: transport.msh
+      format: !gmsh
         variant: ascii

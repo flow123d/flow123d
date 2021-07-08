@@ -28,9 +28,12 @@
 #include "flow/darcy_flow_interface.hh"
 #include "mechanics/elasticity.hh"
 
+using namespace std;
+
 class Mesh;
 class FieldCommon;
 class RichardsLMH;
+class OutputTime;
 
 namespace it = Input::Type;
 
@@ -136,7 +139,14 @@ public:
         Field<3, FieldValue<3>::Scalar> density; ///< Density of fluid.
         Field<3, FieldValue<3>::Scalar> gravity; ///< Standard gravity.
         Field<3, FieldValue<3>::Scalar> beta;
-        
+        // Field<3, FieldValue<3>::Scalar> conductivity_k0; ///< copied from flow conductivity 
+        Field<3, FieldValue<3>::Scalar> cross_section;   
+        // Field<3, FieldValue<3>::Scalar> output_cross_section;
+        // Field<3, FieldValue<3>::Scalar> delta_min;      ///< Minimum thresold value for fracture opening and closing 
+        // Field<3, FieldValue<3>::Scalar> conductivity_model; /// < Define cubic law K = f(k_o, (a/delta)^2)
+        // Field<3, FieldValue<3>::Scalar> output_test;
+
+
         /// Potential -alpha*pressure whose gradient is passed to mechanics as additional load.
         Field<3, FieldValue<3>::Scalar> pressure_potential;
         Field<3, FieldValue<3>::Scalar> flow_source;
@@ -149,6 +159,12 @@ public:
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > old_iter_pressure_ptr_;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > div_u_ptr_;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > old_div_u_ptr_;
+
+        EquationOutput output_fields;
+
+        static  constexpr const char *  name() { return "Hydro_Mechanics_LinearElasticity"; }
+        static string default_output_field() { return "\"pressure_potential\""; }
+        
     };
     
     /// Define input record.
@@ -186,6 +202,19 @@ private:
 
     /// Tuning parameter for iterative splitting.
     double beta_;
+
+	/// @name Output to file
+	// @{
+
+    std::shared_ptr<OutputTime> output_stream_;
+
+    /// Fields for model parameters.
+	std::shared_ptr<EqData> eq_fields_;
+
+    /**
+	 * @brief Postprocesses the solution and writes to output file.
+	 */
+	void output_data();
     
 };
 
