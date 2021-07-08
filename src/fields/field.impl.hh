@@ -653,23 +653,24 @@ void Field<spacedim,Value>::set_input_list(const Input::Array &list, const TimeG
 template<int spacedim, class Value>
 void Field<spacedim,Value>::compute_field_data(OutputTimeSet::DisceteSpaceFlags space_type, std::shared_ptr<OutputTime> stream) {
 	typedef typename Value::element_type ElemType;
-	OutputTime::DiscreteSpace type; // TODO temporary solution, use new assemblation and allow output of more than one type
     for (uint i=0; i<OutputTime::N_DISCRETE_SPACES; ++i)
-	    if (space_type[i]) type = OutputTime::DiscreteSpace(i);
+        if (space_type[i]) {
+	    	OutputTime::DiscreteSpace type = OutputTime::DiscreteSpace(i);
 
-    OutputTime::OutputDataPtr output_data_base = stream->prepare_compute_data<ElemType>(this->name(), type,
-    		(unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
+            OutputTime::OutputDataPtr output_data_base = stream->prepare_compute_data<ElemType>(this->name(), type,
+            		(unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
 
-    try{
-        // try casting actual ElementDataCache
-        if( ! output_data_base->is_dummy()){
-            auto output_data = std::dynamic_pointer_cast<ElementDataCache<ElemType>>(output_data_base);
-            fill_data_cache(type, stream, output_data);
+            try{
+                // try casting actual ElementDataCache
+                if( ! output_data_base->is_dummy()){
+                    auto output_data = std::dynamic_pointer_cast<ElementDataCache<ElemType>>(output_data_base);
+                    fill_data_cache(type, stream, output_data);
+                }
+
+            } catch(const std::bad_cast& e){
+                // skip
+            }
         }
-
-    } catch(const std::bad_cast& e){
-        // skip
-    }
 
     /* Set the last time */
     stream->update_time(this->time());
