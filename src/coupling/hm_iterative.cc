@@ -186,16 +186,13 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
     this->eq_fieldset_ = &data_;
     
     // new filed has been created for HM_iterative
-    data_.conductivity_k0.copy_from(*flow_->data().field("conductivity"));
     data_.cross_section.copy_from(*mechanics_->eq_fields().field("cross_section"));
-    data_.output_cross_section.copy_from(*mechanics_->eq_fields().field("cross_section_updated"));
     flow_->data()["updated_cross_section"].copy_from(mechanics_->eq_fields()["cross_section_updated"]);
-    
+    // data_.conductivity_k0.copy_from(*flow_->data().field("conductivity"));
+    // data_.output_cross_section.copy_from(*mechanics_->eq_fields().field("cross_section_updated"));
     // flow_->data()["conductivity"].copy_from(data_.conductivity_model);
-
-    /// This is created just to observe the any filed e.g. output_test
-    // data_.output_test.copy_from(*flow_->data().field("conductivity"));
-
+  
+    
     // setup input fields
     data_.set_input_list( in_record.val<Input::Array>("input_fields"), time() );
 
@@ -220,12 +217,7 @@ void HM_Iterative::initialize()
 
     // /// Updacted conductivity due to fracture closing and opening
     // data_.conductivity_model.set(Model<3, FieldValue<3>::Scalar>::create(fn_K_mechanics(), data_.conductivity_k0), 0.0);
-
-/// How add any filed to outfields list ???
-    // data_.output_fields += data_.output_test.name("output_test")
-    //                  .description("Test output vlaue.")
-    //                  .units( UnitSI().m().s(-1) );
-
+    
 }
 
 
@@ -259,7 +251,6 @@ void HM_Iterative::zero_time_step()
     copy_field(*flow_->data().field("pressure_p0"), *data_.old_pressure_ptr_);
     copy_field(*flow_->data().field("pressure_p0"), *data_.old_iter_pressure_ptr_);
     copy_field(mechanics_->eq_fields().output_divergence, *data_.div_u_ptr_);
-    
     output_data();
 }
 

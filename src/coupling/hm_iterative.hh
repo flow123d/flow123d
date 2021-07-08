@@ -139,11 +139,11 @@ public:
         Field<3, FieldValue<3>::Scalar> density; ///< Density of fluid.
         Field<3, FieldValue<3>::Scalar> gravity; ///< Standard gravity.
         Field<3, FieldValue<3>::Scalar> beta;
-        Field<3, FieldValue<3>::Scalar> conductivity_k0; ///< copied from flow conductivity 
+        // Field<3, FieldValue<3>::Scalar> conductivity_k0; ///< copied from flow conductivity 
         Field<3, FieldValue<3>::Scalar> cross_section;   
-        Field<3, FieldValue<3>::Scalar> output_cross_section;
+        // Field<3, FieldValue<3>::Scalar> output_cross_section;
         // Field<3, FieldValue<3>::Scalar> delta_min;      ///< Minimum thresold value for fracture opening and closing 
-        Field<3, FieldValue<3>::Scalar> conductivity_model; /// < Define cubic law K = f(k_o, (a/delta)^2)
+        // Field<3, FieldValue<3>::Scalar> conductivity_model; /// < Define cubic law K = f(k_o, (a/delta)^2)
         // Field<3, FieldValue<3>::Scalar> output_test;
 
 

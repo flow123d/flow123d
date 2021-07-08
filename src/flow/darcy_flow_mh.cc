@@ -300,15 +300,14 @@ DarcyMH::EqData::EqData()
     *this += delta_0.name("delta_0")
              .description("Minimum non-zero thresold value for deformed cross-section.")
              .units( UnitSI().m(3).md() )
-             .input_default("11.0");
+             .input_default("0.0");
 
     *this += updated_cross_section
             .name("updated_cross_section")
             .description("Cross-section after deformation - output.")
             .units( UnitSI().m() )
-            .flags(equation_result);
-
-
+            .input_default("0.0");
+    
     //time_term_fields = this->subset({"storativity"});
     //main_matrix_fields = this->subset({"anisotropy", "conductivity", "cross_section", "sigma", "bc_type", "bc_robin_sigma"});
     //rhs_fields = this->subset({"water_source_density", "bc_pressure", "bc_flux"});
@@ -457,8 +456,6 @@ void DarcyMH::initialize() {
         data_->full_solution = data_->dh_->create_vector();
         auto ele_flux_ptr = create_field_fe<3, FieldValue<3>::VectorFixed>(data_->dh_, &data_->full_solution, rt_component);
         data_->flux.set(ele_flux_ptr, 0.0);
-
-        data_->updated_cross_section.set(create_field_fe<3, FieldValue<3>::VectorFixed>(data_->dh_, &data_->full_solution, rt_component), 0.0);
 
 		auto ele_velocity_ptr = std::make_shared< FieldDivide<3, FieldValue<3>::VectorFixed> >(ele_flux_ptr, data_->cross_section);
 		data_->field_ele_velocity.set(ele_velocity_ptr, 0.0);
