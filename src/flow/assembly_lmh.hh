@@ -46,7 +46,7 @@ public:
       velocity_interpolation_quad_(dim, 0), // veloctiy values in barycenter
       ad_(data)
     {
-        fe_values_.initialize(quad_, fe_rt_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
+        fe_values_.initialize(quad_, fe_rt_, update_values | update_JxW_values | update_quadrature_points);
         velocity_interpolation_fv_.initialize(velocity_interpolation_quad_, fe_rt_, update_values | update_quadrature_points);
         // local numbering of dofs for MH system
         // note: this shortcut supposes that the fe_system is the same on all elements
@@ -363,7 +363,7 @@ protected:
             }
         } 
         else {
-            xprintf(UsrErr, "BC type not supported.\n");
+            THROW( ExcBCNotSupported() );
         }
     }
 

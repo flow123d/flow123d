@@ -172,6 +172,8 @@ public:
      */
     typedef Armor::ArmaVec<double, dim+1> BaryPoint;
     typedef Armor::ArmaVec<double, dim> FaceBaryPoint;
+
+    DECLARE_EXCEPTION( ExcInvalidPermutation, << "Side permutation not found.\n" );
         
 	/**
 	 * Return coordinates of given node.

@@ -12,7 +12,7 @@ public:
 	ApplicationBaseTest() : testing::Test(), ApplicationBase() {}
 protected:
 	void run() {
-		xprintf(Err, "testing error...\n");
+		ASSERT(false).error("testing error...\n");
 	}
 
     void parse_cmd_line(const int, char **) override 
@@ -33,6 +33,6 @@ protected:
 
 
 TEST_F(ApplicationBaseTest, Exceptions) {
-	EXPECT_THROW_WHAT( {run();}, ExcXprintfMsg, "testing error...");
+	EXPECT_THROW_WHAT( {run();}, feal::Exc_assert, "testing error...");
     EXPECT_THROW_WHAT( {seg_fault();}, ExcSignal, "Signal 11" );
 }
