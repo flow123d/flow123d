@@ -615,8 +615,7 @@ private:
     unsigned int n_local_nodes_;
 	/// Boundary mesh, object is created only if it's necessary
 	BCMesh *bc_mesh_;
-        
-    ofstream raw_ngh_output_file;
+
 };
 
 #endif

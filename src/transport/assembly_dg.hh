@@ -520,7 +520,7 @@ public:
                                         // terms due to diffusion
                                             - jumps[n][k*fe_->n_dofs()+i]*waverages[m][k*fe_->n_dofs()+j]
                                             - eq_data_->dg_variant*waverages[n][k*fe_->n_dofs()+i]*jumps[m][k*fe_->n_dofs()+j]
-                                            )*fe_values_vec_[0].JxW(k);
+                                            )*fe_values_vec_[0].JxW(k) + LocalSystem::almost_zero;
                                     }
                                 }
                             }
@@ -601,7 +601,7 @@ public:
                         for (int m=0; m<2; m++)
                             for (unsigned int j=0; j<n_dofs[m]; j++)
                                 local_matrix_[(i+n*n_dofs[0])*(n_dofs[0]+n_dofs[1]) + m*n_dofs[0] + j] +=
-                                        comm_flux[m][n]*fv_sb_[m]->shape_value(j,k)*fv_sb_[n]->shape_value(i,k);
+                                        comm_flux[m][n]*fv_sb_[m]->shape_value(j,k)*fv_sb_[n]->shape_value(i,k) + LocalSystem::almost_zero;
                 }
                 k++;
             }

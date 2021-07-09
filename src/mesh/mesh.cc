@@ -138,19 +138,6 @@ Mesh::Mesh(Input::Record in_record, MPI_Comm com)
 	    in_record_ = reader.get_root_interface<Input::Record>();
 	}
 
-        int rank;
-        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-        if (rank == 0) {
-            // optionally open raw output file
-            FilePath raw_output_file_path;
-            if (in_record_.opt_val("raw_ngh_output", raw_output_file_path)) {
-            	MessageOut() << "Opening raw ngh output: " << raw_output_file_path << "\n";
-            	try {
-            		raw_output_file_path.open_stream(raw_ngh_output_file);
-            	} INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, (in_record_))
-            }
-
-        }
 	init();
 }
 
@@ -1267,6 +1254,19 @@ inline void Mesh::check_element_size(unsigned int elem_idx) const
 void Mesh::output_internal_ngh_data()
 {
     START_TIMER("Mesh::output_internal_ngh_data");
+
+    FilePath raw_output_file_path;
+    if (! in_record_.opt_val("raw_ngh_output", raw_output_file_path)) return;
+
+    ofstream raw_ngh_output_file;
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    if (rank == 0) {
+        MessageOut() << "Opening raw ngh output: " << raw_output_file_path << "\n";
+        try {
+            raw_output_file_path.open_stream(raw_ngh_output_file);
+        } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, (in_record_))
+    }
 
     if (! raw_ngh_output_file.is_open()) return;
     
