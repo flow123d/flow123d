@@ -46,7 +46,7 @@ DOFHandlerBase::~DOFHandlerBase()
 
 
 
-DOFHandlerMultiDim::DOFHandlerMultiDim(Mesh& _mesh, bool make_elem_part)
+DOFHandlerMultiDim::DOFHandlerMultiDim(MeshBase& _mesh, bool make_elem_part)
 	: DOFHandlerBase(_mesh),
 	  ds_(nullptr),
 	  is_parallel_(true),
@@ -95,7 +95,7 @@ void DOFHandlerMultiDim::init_dof_starts(
     // may be discontinuous on nodes shared by different
     // dimensions.
     unsigned int n_node_dofs = 0;
-    for (unsigned int nid=0; nid<mesh_->tree->n_nodes(); nid++)
+    for (unsigned int nid=0; nid<mesh_->duplicate_nodes()->n_nodes(); nid++)
     {
       node_dof_starts.push_back(n_node_dofs);
       n_node_dofs += ds_->n_node_dofs(nid);
@@ -121,7 +121,7 @@ void DOFHandlerMultiDim::init_status(
     {
       for (unsigned int n=0; n<cell.dim()+1; n++)
       {
-        unsigned int nid = mesh_->tree->objects(cell.dim())[mesh_->tree->obj_4_el()[cell.elm_idx()]].nodes[n];
+        unsigned int nid = mesh_->duplicate_nodes()->objects(cell.dim())[mesh_->duplicate_nodes()->obj_4_el()[cell.elm_idx()]].nodes[n];
         node_status[nid] = VALID_NFACE;
       }
     }
@@ -133,7 +133,7 @@ void DOFHandlerMultiDim::init_status(
       {
         for (unsigned int n=0; n<cell.dim()+1; n++)
         {
-          unsigned int nid = mesh_->tree->objects(cell.dim())[mesh_->tree->obj_4_el()[cell.elm_idx()]].nodes[n];
+          unsigned int nid = mesh_->duplicate_nodes()->objects(cell.dim())[mesh_->duplicate_nodes()->obj_4_el()[cell.elm_idx()]].nodes[n];
           node_status[nid] = INVALID_NFACE;
         }
       }
@@ -231,7 +231,7 @@ void DOFHandlerMultiDim::update_local_dofs(unsigned int proc,
             if (dh_cell.cell_dof(idof).dim == 0)
             {   // update nodal dof
                 unsigned int dof_nface_idx = dh_cell.cell_dof(idof).n_face_idx;
-                unsigned int nid = mesh_->tree->objects(dh_cell.dim())[mesh_->tree->obj_4_el()[dh_cell.elm_idx()]].nodes[dof_nface_idx];
+                unsigned int nid = mesh_->duplicate_nodes()->objects(dh_cell.dim())[mesh_->duplicate_nodes()->obj_4_el()[dh_cell.elm_idx()]].nodes[dof_nface_idx];
                 unsigned int node_dof_idx = node_dof_starts[nid]+loc_node_dof_count[dof_nface_idx];
                     
                 if (node_dofs[node_dof_idx] == INVALID_DOF)
@@ -282,7 +282,7 @@ void DOFHandlerMultiDim::update_local_dofs(unsigned int proc,
             {
                 if (dof_indices[cell_starts[cell.local_idx()]+idof] == INVALID_DOF)
                 {   // update nodal dof
-                    unsigned int nid = mesh_->tree->objects(cell.dim())[mesh_->tree->obj_4_el()[cell.elm_idx()]].nodes[dof_nface_idx];
+                    unsigned int nid = mesh_->duplicate_nodes()->objects(cell.dim())[mesh_->duplicate_nodes()->obj_4_el()[cell.elm_idx()]].nodes[dof_nface_idx];
                     dof_indices[cell_starts[cell.local_idx()]+idof] = node_dofs[node_dof_starts[nid]+loc_node_dof_count[dof_nface_idx]];
                 }
                 loc_node_dof_count[dof_nface_idx]++;
@@ -308,7 +308,7 @@ void DOFHandlerMultiDim::distribute_dofs(std::shared_ptr<DiscreteSpace> ds)
     ds_ = ds;
 
     std::vector<LongIdx> node_dofs, node_dof_starts, edge_dofs, edge_dof_starts;
-    std::vector<short int> node_status(mesh_->tree->n_nodes(), INVALID_NFACE),
+    std::vector<short int> node_status(mesh_->duplicate_nodes()->n_nodes(), INVALID_NFACE),
                            edge_status(mesh_->n_edges(), INVALID_NFACE);
     std::vector<bool> update_cells(el_ds_->lsize(), false);
     unsigned int next_free_dof = 0;
@@ -335,7 +335,7 @@ void DOFHandlerMultiDim::distribute_dofs(std::shared_ptr<DiscreteSpace> ds)
         
         if (dof_dim == 0)
         {   // add dofs shared by nodes
-            unsigned int nid = mesh_->tree->objects(cell.dim())[mesh_->tree->obj_4_el()[cell.elm_idx()]].nodes[dof_nface_idx];
+            unsigned int nid = mesh_->duplicate_nodes()->objects(cell.dim())[mesh_->duplicate_nodes()->obj_4_el()[cell.elm_idx()]].nodes[dof_nface_idx];
             unsigned int node_dof_idx = node_dof_starts[nid]+loc_node_dof_count[dof_nface_idx];
                 
             switch (node_status[nid])
@@ -580,7 +580,7 @@ void DOFHandlerMultiDim::make_elem_partitioning()
     // create local array of neighbours
 	for (unsigned int inb=0; inb<mesh_->n_vb_neighbours(); inb++)
 	{
-		Neighbour *nb = &mesh_->vb_neighbours_[inb];
+		const Neighbour *nb = &mesh_->vb_neighbour(inb);
 		if ( el_is_local(nb->element().idx())
 				|| el_is_local(nb->side()->element().idx()) )
 			nb_4_loc.push_back(inb);
@@ -591,12 +591,12 @@ void DOFHandlerMultiDim::make_elem_partitioning()
         global_to_local_el_idx_[mesh_->get_el_4_loc()[iel]] = iel;
 	
 	// create array of local nodes
-	std::vector<bool> node_is_local(mesh_->tree->n_nodes(), false);
+	std::vector<bool> node_is_local(mesh_->duplicate_nodes()->n_nodes(), false);
 	for (auto cell : this->own_range())
     {
-      unsigned int obj_idx = mesh_->tree->obj_4_el()[cell.elm_idx()];
+      unsigned int obj_idx = mesh_->duplicate_nodes()->obj_4_el()[cell.elm_idx()];
       for (unsigned int nid=0; nid<cell.elm()->n_nodes(); nid++)
-        node_is_local[mesh_->tree->objects(cell.dim())[obj_idx].nodes[nid]] = true;
+        node_is_local[mesh_->duplicate_nodes()->objects(cell.dim())[obj_idx].nodes[nid]] = true;
     }
     
     // create array of local ghost cells
@@ -605,9 +605,9 @@ void DOFHandlerMultiDim::make_elem_partitioning()
       if (cell.proc() != el_ds_->myp())
       {
         bool has_local_node = false;
-        unsigned int obj_idx = mesh_->tree->obj_4_el()[cell.idx()];
+        unsigned int obj_idx = mesh_->duplicate_nodes()->obj_4_el()[cell.idx()];
         for (unsigned int nid=0; nid<cell->n_nodes(); nid++)
-          if (node_is_local[mesh_->tree->objects(cell->dim())[obj_idx].nodes[nid]])
+          if (node_is_local[mesh_->duplicate_nodes()->objects(cell->dim())[obj_idx].nodes[nid]])
           {
             has_local_node = true;
             break;
@@ -623,7 +623,7 @@ void DOFHandlerMultiDim::make_elem_partitioning()
     }
     for (auto nb : nb_4_loc)
     {
-        auto cell = mesh_->vb_neighbours_[nb].element();
+        auto cell = mesh_->vb_neighbour(nb).element();
         if (!el_is_local(cell.idx()) && find(ghost_4_loc.begin(), ghost_4_loc.end(), cell.idx()) == ghost_4_loc.end())
         {
             ghost_4_loc.push_back(cell.idx());
@@ -631,7 +631,7 @@ void DOFHandlerMultiDim::make_elem_partitioning()
             ghost_proc_el[cell.proc()].push_back(cell.idx());
             global_to_local_el_idx_[cell.idx()] = el_ds_->lsize() - 1 + ghost_4_loc.size();
         }
-        cell = mesh_->vb_neighbours_[nb].side()->element();
+        cell = mesh_->vb_neighbour(nb).side()->element();
         if (!el_is_local(cell.idx()) && find(ghost_4_loc.begin(), ghost_4_loc.end(), cell.idx()) == ghost_4_loc.end())
         {
             ghost_4_loc.push_back(cell.idx());

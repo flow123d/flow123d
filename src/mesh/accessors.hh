@@ -22,6 +22,7 @@
 #include "mesh/region.hh"
 #include "mesh/elements.h"
 #include "mesh/mesh.h"
+#include "mesh/bc_mesh.hh"
 #include "mesh/node_accessor.hh"
 #include "mesh/ref_element.hh"
 #include "la/distribution.hh"
@@ -102,10 +103,10 @@ public:
     ElementAccessor();
 
     /// Regional accessor.
-    ElementAccessor(const Mesh *mesh, RegionIdx r_idx);
+    ElementAccessor(const MeshBase *mesh, RegionIdx r_idx);
 
     /// Element accessor.
-    ElementAccessor(const Mesh *mesh, unsigned int idx);
+    ElementAccessor(const MeshBase *mesh, unsigned int idx, bool is_boundary = false);
 
     /// Incremental function of the Element iterator.
     void inc();
@@ -157,8 +158,8 @@ public:
     unsigned int dim() const
         { return dim_; }
 
-    const Element * element() const {
-        return &(mesh_->element_vec_[element_idx_]);
+    inline const Element * element() const {
+        return boundary_ ? &(mesh_->bc_mesh()->element(element_idx_)) : &(mesh_->element(element_idx_));
     }
     
 
@@ -179,17 +180,11 @@ public:
 
     /// Return local idx of element in boundary / bulk part of element vector
     unsigned int idx() const {
-        if (boundary_) return ( element_idx_ - mesh_->bulk_size_ );
-        else return element_idx_;
-    }
-
-    /// Return global idx of element in full element vector
-    unsigned int mesh_idx() const {
         return element_idx_;
     }
 
     unsigned int index() const {
-    	return (unsigned int)mesh_->find_elem_id(element_idx_);
+    	return (unsigned int)(boundary_ ? mesh_->bc_mesh()->find_elem_id(element_idx_) : mesh_->find_elem_id(element_idx_) );
     }
     
     unsigned int proc() const {
@@ -210,11 +205,11 @@ public:
     }
 
     bool operator==(const ElementAccessor<spacedim>& other) const {
-    	return (element_idx_ == other.element_idx_);
+    	return (mesh_ == other.mesh_) && (element_idx_ == other.element_idx_) && (boundary_ == other.boundary_);
     }
 
     inline bool operator!=(const ElementAccessor<spacedim>& other) const {
-    	return (element_idx_ != other.element_idx_);
+    	return (element_idx_ != other.element_idx_) || (boundary_ != other.boundary_);
     }
 
     /**
@@ -228,8 +223,8 @@ public:
      centre = elm_ac->node_idx(0);            // short format with dereference operator
  @endcode
      */
-    const Element * operator ->() const {
-    	return &(mesh_->element_vec_[element_idx_]);
+    inline const Element * operator ->() const {
+    	return element();
     }
     
 
@@ -244,7 +239,7 @@ private:
     unsigned int dim_;
 
     /// Pointer to the mesh owning the element.
-    const Mesh *mesh_;
+    const MeshBase *mesh_;
     /// True if the element is boundary
     bool boundary_;
 
@@ -326,7 +321,7 @@ public:
     Edge edge();
     ElementAccessor<3> element_accessor();
     Region region();
-    Element * element();
+    const Element * element();
 
     bool is_valid() const {
         return boundary_data_ != nullptr;
@@ -364,7 +359,7 @@ public:
     Side();
 
     /// Valid edge accessor constructor.
-    Side(const Mesh * mesh, unsigned int elem_idx, unsigned int set_lnum);
+    Side(const MeshBase * mesh, unsigned int elem_idx, unsigned int set_lnum);
 
     double measure() const;    ///< Calculate metrics of the side
     arma::vec3 centre() const; ///< Centre of side
@@ -408,7 +403,7 @@ public:
     { return dim()+1; }
 
     /// Returns pointer to the mesh.
-    const Mesh * mesh() const
+    const MeshBase * mesh() const
     { return this->mesh_; }
 
     /// Returns local index of the side on the element.
@@ -448,7 +443,7 @@ private:
 
     // Topology of the mesh
 
-    const Mesh * mesh_;     ///< Pointer to Mesh to which belonged
+    const MeshBase * mesh_;     ///< Pointer to Mesh to which belonged
     unsigned int elem_idx_; ///< Index of element in Mesh::element_vec_
     unsigned int side_idx_; ///< Local # of side in element  (to remove it, we heve to remove calc_side_rhs)
 

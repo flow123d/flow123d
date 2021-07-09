@@ -120,7 +120,7 @@ TEST_F(FieldValueCacheTest, field_value_cache) {
 
     // check value
     for(BulkPoint q_point: bulk_eval->points(this->position_in_cache(dh_cell.elm_idx()), this)) {
-        unsigned int elem_patch_idx = this->position_in_cache(dh_cell.elm().mesh_idx());
+        unsigned int elem_patch_idx = this->position_in_cache(dh_cell.elm().idx());
         auto point_val = this->get_value<ScalarValue>(value_cache, elem_patch_idx, q_point.eval_point_idx());
     	EXPECT_DOUBLE_EQ( point_val, const_val(0) );
     }
@@ -128,7 +128,7 @@ TEST_F(FieldValueCacheTest, field_value_cache) {
       if ( cell_side.n_edge_sides() >= 2 )
         for( DHCellSide edge_side : cell_side.edge_sides() )
             for ( EdgePoint q_point : edge_eval->points(edge_side, this) ) {
-                unsigned int elem_patch_idx = this->position_in_cache(edge_side.element().mesh_idx());
+                unsigned int elem_patch_idx = this->position_in_cache(edge_side.element().idx());
                 auto point_val = this->get_value<ScalarValue>(value_cache, elem_patch_idx, q_point.eval_point_idx());
                 EXPECT_DOUBLE_EQ( point_val, const_val(0) );
             }

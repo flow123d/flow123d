@@ -373,7 +373,7 @@ template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::fill_boundary_dofs() {
 	ASSERT(this->boundary_domain_);
 
-	auto bc_mesh = dh_->mesh()->get_bc_mesh();
+	auto bc_mesh = dh_->mesh()->bc_mesh();
 	unsigned int n_comp = this->value_.n_rows() * this->value_.n_cols();
 	boundary_dofs_ = std::make_shared< std::vector<IntIdx> >( n_comp * bc_mesh->n_elements() );
 	std::vector<IntIdx> &in_vec = *( boundary_dofs_.get() );
@@ -485,9 +485,9 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 			boundary = false;
 		}
 		if (this->interpolation_==DataInterpolation::identic_msh) {
-			n_entities = boundary ? dh_->mesh()->get_bc_mesh()->n_elements() : dh_->mesh()->n_elements();
+			n_entities = boundary ? dh_->mesh()->bc_mesh()->n_elements() : dh_->mesh()->n_elements();
 		} else {
-			n_entities = boundary ? ReaderCache::get_mesh(reader_file_)->get_bc_mesh()->n_elements() : ReaderCache::get_mesh(reader_file_)->n_elements();
+			n_entities = boundary ? ReaderCache::get_mesh(reader_file_)->bc_mesh()->n_elements() : ReaderCache::get_mesh(reader_file_)->n_elements();
 		}
 		auto input_data_cache = ReaderCache::get_reader(reader_file_)->template get_element_data<double>(n_entities, n_components,
 				boundary, this->component_idx_);
@@ -621,8 +621,8 @@ void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>
 	double total_measure;
 	double measure = 0;
 
-	Mesh *mesh;
-	if (this->boundary_domain_) mesh = dh_->mesh()->get_bc_mesh();
+	MeshBase *mesh;
+	if (this->boundary_domain_) mesh = dh_->mesh()->bc_mesh();
 	else mesh = dh_->mesh();
 	for (auto elm : mesh->elements_range()) {
 		if (elm.dim() == 3) {
@@ -760,7 +760,7 @@ void FieldFE<spacedim, Value>::calculate_identic_values(ElementDataCache<double>
 
 	if (this->boundary_domain_) {
 		// iterate through elements, assembly global vector and count number of writes
-		Mesh *mesh = dh_->mesh()->get_bc_mesh();
+		BCMesh *mesh = dh_->mesh()->bc_mesh();
 		i_elm=0;
 		for (auto ele : mesh->elements_range()) {
 			LocDofVec loc_dofs = value_handler1_.get_loc_dof_indices(ele.idx());
@@ -806,10 +806,10 @@ void FieldFE<spacedim, Value>::calculate_equivalent_values(ElementDataCache<doub
 
 	// iterate through elements, assembly global vector and count number of writes
 	if (this->boundary_domain_) {
-		Mesh *mesh = dh_->mesh()->get_bc_mesh();
+		MeshBase *mesh = dh_->mesh()->bc_mesh();
 		for (auto ele : mesh->elements_range()) {
 			LocDofVec loc_dofs = value_handler1_.get_loc_dof_indices(ele.idx());
-			if (source_target_vec[ele.mesh_idx()] == (int)(Mesh::undef_idx)) { // undefined value in input data mesh
+			if (source_target_vec[ele.idx()] == (int)(Mesh::undef_idx)) { // undefined value in input data mesh
 				if ( std::isnan(default_value_) )
 					THROW( ExcUndefElementValue() << EI_Field(field_name_) );
 				for (unsigned int i=0; i<loc_dofs.n_elem; ++i) {
@@ -818,7 +818,7 @@ void FieldFE<spacedim, Value>::calculate_equivalent_values(ElementDataCache<doub
 					++count_vector[ loc_dofs[i] ];
 				}
 			} else {
-				data_vec_i = source_target_vec[ele.mesh_idx()] * dh_->max_elem_dofs();
+				data_vec_i = source_target_vec[ele.idx()] * dh_->max_elem_dofs();
 				for (unsigned int i=0; i<loc_dofs.n_elem; ++i, ++data_vec_i) {
 					ASSERT_LT_DBG(loc_dofs[i], (LongIdx)data_vec_.size());
 					data_vec_.add( loc_dofs[i], (*data_cache)[data_vec_i] );

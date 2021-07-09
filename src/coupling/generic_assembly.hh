@@ -243,7 +243,7 @@ private:
     inline void assemble_cell_integrals() {
     	for (unsigned int i=0; i<bulk_integral_data_.permanent_size(); ++i) {
             if (bulk_integral_data_[i].cell.dim() != dim) continue;
-            multidim_assembly_[Dim<dim>{}]->cell_integral(bulk_integral_data_[i].cell, element_cache_map_.position_in_cache(bulk_integral_data_[i].cell.elm().mesh_idx()));
+            multidim_assembly_[Dim<dim>{}]->cell_integral(bulk_integral_data_[i].cell, element_cache_map_.position_in_cache(bulk_integral_data_[i].cell.elm().idx()));
     	}
     	// Possibly optimization but not so fast as we would assume (needs change interface of cell_integral)
         /*for (unsigned int i=0; i<element_cache_map_.n_elements(); ++i) {

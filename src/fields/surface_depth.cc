@@ -75,7 +75,7 @@ void SurfaceDepth::construct_bih_tree(Mesh *mesh, std::string surface_region)
     unsigned int i=0;
     unsigned int i_node;
     arma::vec3 project_node("0 0 0");
-    for( auto ele : mesh->get_bc_mesh()->elements_range() ) {
+    for( auto ele : mesh->bc_mesh()->elements_range() ) {
         if (ele.region().is_in_region_set(region_set)) {
         	ASSERT_EQ(ele->n_nodes(), 3);
 

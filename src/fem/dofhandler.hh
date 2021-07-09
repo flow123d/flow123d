@@ -51,7 +51,7 @@ public:
      * @brief Constructor.
      * @param _mesh The mesh.
      */
-    DOFHandlerBase(Mesh &_mesh)
+    DOFHandlerBase(MeshBase &_mesh)
     : n_global_dofs_(0), lsize_(0), loffset_(0), max_elem_dofs_(0), mesh_(&_mesh), dof_ds_(0) {}
 
     /**
@@ -75,7 +75,7 @@ public:
     /**
      * @brief Returns the mesh.
      */
-    Mesh *mesh() const { return mesh_; }
+    MeshBase *mesh() const { return mesh_; }
 
     /**
      * @brief Compute hash value of DOF handler.
@@ -123,7 +123,7 @@ protected:
     /**
      * @brief Pointer to the mesh to which the dof handler is associated.
      */
-    Mesh *mesh_;
+    MeshBase *mesh_;
 
     /**
      * @brief Distribution of dofs associated to local process.
@@ -156,7 +156,7 @@ public:
      * @param _mesh The mesh.
      * @param make_elem_part Allow switch off make_element_partitioning, necessary for boundary DOF handler.
      */
-    DOFHandlerMultiDim(Mesh &_mesh, bool make_elem_part = true);
+    DOFHandlerMultiDim(MeshBase &_mesh, bool make_elem_part = true);
 
 
     /**

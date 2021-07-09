@@ -132,7 +132,7 @@ public:
 	SidePoint(DHCellSide cell_side, const ElementCacheMap *elm_cache_map, unsigned int local_point_idx)
     : PointBase(elm_cache_map, local_point_idx), side_idx_(cell_side.side_idx()),
 	  permutation_idx_( cell_side.element()->permutation_idx( side_idx_ ) ) {
-	    this->elem_patch_idx_ = this->elm_cache_map_->position_in_cache(cell_side.element().mesh_idx());
+	    this->elem_patch_idx_ = this->elm_cache_map_->position_in_cache(cell_side.element().idx());
 	}
 
     // Index of permutation
@@ -461,7 +461,7 @@ inline unsigned int CouplingPoint::eval_point_idx() const {
 }
 
 inline BulkPoint CouplingPoint::lower_dim(DHCellAccessor cell_lower) const {
-    unsigned int i_elm = elm_cache_map_->position_in_cache(cell_lower.elm().mesh_idx());
+    unsigned int i_elm = elm_cache_map_->position_in_cache(cell_lower.elm().idx());
     unsigned int i_ep = this->eval_points()->subset_begin(cell_lower.dim(), integral_->get_subset_low_idx()) + local_point_idx_;
     PatchCacheLoc c_pos(i_elm, i_ep);
     return BulkPoint(elm_cache_map_, c_pos);
@@ -473,7 +473,7 @@ inline unsigned int BoundaryPoint::eval_point_idx() const {
 }
 
 inline BulkPoint BoundaryPoint::point_bdr(ElementAccessor<3> bdr_elm) const {
-    unsigned int i_elm = elm_cache_map_->position_in_cache(bdr_elm.mesh_idx());
+    unsigned int i_elm = elm_cache_map_->position_in_cache(bdr_elm.idx());
     unsigned int i_ep = this->eval_points()->subset_begin(bdr_elm.dim(), integral_->get_subset_low_idx()) + local_point_idx_;
     PatchCacheLoc c_pos(i_elm, i_ep);
     return BulkPoint(elm_cache_map_, c_pos);
