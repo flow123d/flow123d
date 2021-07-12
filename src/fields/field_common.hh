@@ -36,6 +36,7 @@
 #include "input/type_record.hh"                        // for Record
 #include "input/type_selection.hh"                     // for Selection
 #include "io/output_time.hh"                           // for OutputTime
+#include "io/output_time_set.hh"                       // for OutputTimeSet
 #include "mesh/region.hh"                              // for Region (ptr only)
 #include "system/asserts.hh"                           // for Assert, ASSERT
 #include "system/exc_common.hh"                        // for EI_Message
@@ -179,8 +180,8 @@ public:
      *
      * If not set explicitly by this method, the default value is OutputTime::ELEM_DATA
      */
-    FieldCommon & output_type(OutputTime::DiscreteSpace rt)
-    { if (rt!=OutputTime::UNDEFINED) type_of_output_data_ = rt; return *this; }
+    FieldCommon & output_type(OutputTimeSet::DisceteSpaceFlags rt)
+    { if (OutputTimeSet::discrete_flags_defined(rt)) type_of_output_data_ = rt; return *this; }
 
     /**
      * Set given mask to the field flags, ignoring default setting.
@@ -260,7 +261,7 @@ public:
         return shared_->limits_;
     }
 
-    OutputTime::DiscreteSpace get_output_type() const
+    OutputTimeSet::DisceteSpaceFlags get_output_type() const
     { return type_of_output_data_; }
 
     bool is_bc() const
@@ -661,7 +662,7 @@ protected:
     /**
      * Output data type used in the output() method. Can be different for different field copies.
      */
-    OutputTime::DiscreteSpace type_of_output_data_ = OutputTime::ELEM_DATA;
+    OutputTimeSet::DisceteSpaceFlags type_of_output_data_;
 
     /**
      * Specify if the field is part of a MultiField and which component it is

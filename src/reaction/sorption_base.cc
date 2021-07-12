@@ -319,7 +319,9 @@ void SorptionBase::initialize_fields()
   //output_array = input_record_.val<Input::Array>("output_fields");
   data_->conc_solid.set_components(substances_.names());
   data_->output_fields.set_mesh(*mesh_);
-  data_->output_fields.output_type(OutputTime::ELEM_DATA);
+  auto output_types = OutputTimeSet::empty_discrete_flags();
+  output_types[OutputTime::ELEM_DATA] = true;
+  data_->output_fields.output_type(output_types);
   data_->conc_solid.setup_components();
 
   //creating field fe and output multifield for sorbed concentrations

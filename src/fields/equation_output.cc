@@ -36,7 +36,7 @@ IT::Record &EquationOutput::get_input_type() {
                     "The field name (from selection).")
             .declare_key("times", OutputTimeSet::get_input_type(), IT::Default::optional(),
                     "Output times specific to particular field.")
-            .declare_key("interpolation", interpolation_sel, IT::Default::read_time("Interpolation type of output data."),
+            .declare_key("interpolation", IT::Array( interpolation_sel ), IT::Default::read_time("Interpolation type of output data."),
 					"Optional value. Implicit value is given by field and can be changed.")
             .close();
 
@@ -148,7 +148,15 @@ void EquationOutput::read_from_input(Input::Record in_rec, const TimeGovernor & 
     for(auto it = fields_array.begin<Input::Record>(); it != fields_array.end(); ++it) {
         string field_name = it -> val< Input::FullEnum >("field");
         FieldCommon *found_field = field(field_name);
-        OutputTime::DiscreteSpace interpolation = it->val<OutputTime::DiscreteSpace>("interpolation", OutputTime::UNDEFINED);
+
+        Input::Array interpolations;
+        OutputTimeSet::DisceteSpaceFlags interpolation = OutputTimeSet::empty_discrete_flags();
+        if (it->opt_val("interpolation", interpolations)) {
+            // process interpolations
+            for(auto it_interp = interpolations.begin<OutputTime::DiscreteSpace>(); it_interp != interpolations.end(); ++it_interp) {
+                interpolation[ *it_interp ] = true;
+            }
+        }
         found_field->output_type(interpolation);
         Input::Array field_times_array;
         if (it->opt_val("times", field_times_array)) {
@@ -168,7 +176,9 @@ void EquationOutput::read_from_input(Input::Record in_rec, const TimeGovernor & 
 
     // register interpolation type of fields to OutputStream
     for(FieldCommon * field : this->field_list) {
-    	used_interpolations_.insert( field->get_output_type() );
+        auto output_types = field->get_output_type();
+        for (uint i=0; i<OutputTime::N_DISCRETE_SPACES; ++i)
+    	    if (output_types[i]) used_interpolations_.insert( OutputTime::DiscreteSpace(i) );
     }
 }
 

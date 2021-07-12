@@ -32,6 +32,25 @@ public:
      *
      */
     static const Input::Type::Array get_input_type();
+
+    /**
+     * Holds flags if different output types are switched on / switched off.
+     *
+     * Output types are in order: NODE_DATA=0, CORNER_DATA=1, ELEM_DATA=2, NATIVE_DATA=3
+     */
+    typedef std::array<bool,4> DisceteSpaceFlags;
+
+    /// Check if at least one of discrete space flag is set to true.
+    static bool discrete_flags_defined(DisceteSpaceFlags dsf) {
+        return dsf[0] | dsf[1] | dsf[2] | dsf[3];
+    }
+
+    /// Check if at least one of discrete space flag is set to true.
+    static DisceteSpaceFlags empty_discrete_flags() {
+    	DisceteSpaceFlags dsf = { {false, false, false, false} };
+        return dsf;
+    }
+
     /**
      *
      */

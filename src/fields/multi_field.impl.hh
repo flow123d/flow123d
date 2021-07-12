@@ -199,9 +199,9 @@ void MultiField<spacedim, Value>::field_output(std::shared_ptr<OutputTime> strea
 {
 	// currently we cannot output boundary fields
 	if (!is_bc()) {
-		const OutputTime::DiscreteSpace type = this->get_output_type();
+	    OutputTimeSet::DisceteSpaceFlags type = this->get_output_type();
 
-		ASSERT_LT_DBG(type, OutputTime::N_DISCRETE_SPACES).error();
+	    ASSERT( OutputTimeSet::discrete_flags_defined(type) ).error();
 
 	    for (unsigned long index=0; index < this->size(); index++) {
             sub_fields_[index].compute_field_data( type, stream );

@@ -189,7 +189,9 @@ void DualPorosity::initialize_fields()
   //initialization of output
   data_.output_fields.set_components(substances_.names());
   data_.output_fields.set_mesh(*mesh_);
-  data_.output_fields.output_type(OutputTime::ELEM_DATA);
+  auto output_types = OutputTimeSet::empty_discrete_flags();
+  output_types[OutputTime::ELEM_DATA] = true;
+  data_.output_fields.output_type(output_types);
   data_.conc_immobile.setup_components();
 
 
