@@ -1,0 +1,78 @@
+#################
+# Test goal: Native output of DG transport concentration
+# Author: Pavel Exner
+# Source for reference: qualitative
+
+flow123d_version: 3.1.0
+problem: !Coupling_Sequential
+  description: Mesh with 3 elements 3D - 2D - 3D, test of native output data 
+  mesh:
+    mesh_file: ../00_mesh/test_3_elem.msh
+    #mesh_file: ../00_mesh/square_4x_1x1_1080.msh
+  flow_equation: !Flow_Darcy_MH
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
+    input_fields:
+      - region: left
+        conductivity: 1
+      - region: right
+        conductivity: 1e-6
+      - region: diag
+        conductivity: 1
+      - region: .BOUNDARY
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: 1
+    output:
+      fields:
+        - pressure_p0
+        - velocity_p0
+    output_stream:
+      file: ./flow.pvd
+      format: !vtk
+        variant: ascii
+        
+  solute_equation: !Coupling_OperatorSplitting
+    transport: !Solute_AdvectionDiffusion_DG
+    #transport: !Solute_Advection_FV
+      input_fields:
+        - region: BULK
+          porosity: 1
+          #dg_penalty: 10.0
+          #diff_m: 1e-5
+          #disp_l: 0
+          #disp_t: 0
+        - region: left
+          init_conc: 0.1
+        - region: right
+          init_conc: 0.2
+        - region: diag
+          init_conc: 0.3
+        - region: .BOUNDARY
+          bc_type: dirichlet
+          bc_conc: 1
+          #time: 0
+
+      #dg_variant: symmetric
+      solver: !Petsc
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
+
+      output:
+        fields:
+          - { field: conc, interpolation: Native }
+          #- { field: conc, interpolation: D1_value }
+    output_stream:
+      file: ./solute.pvd
+      format: !vtk
+        variant: ascii
+      times:
+        - step: 50000
+    substances:
+      - A
+    time:
+      end_time: 200000
+    balance:
+      cumulative: true

@@ -392,14 +392,12 @@ void Field<spacedim, Value>::copy_from(const FieldCommon & other) {
 
 
 template<int spacedim, class Value>
-void Field<spacedim, Value>::field_output(std::shared_ptr<OutputTime> stream)
+void Field<spacedim, Value>::field_output(std::shared_ptr<OutputTime> stream, OutputTime::DiscreteSpaceFlags type)
 {
 	// currently we cannot output boundary fields
 	if (!is_bc()) {
-		const OutputTime::DiscreteSpace type = this->get_output_type();
-
-		ASSERT_LT(type, OutputTime::N_DISCRETE_SPACES).error();
-		this->compute_field_data( type, stream);
+	    ASSERT( OutputTime::discrete_flags_defined(type) ).error();
+	    this->compute_field_data( type, stream);
 	}
 }
 
@@ -651,22 +649,26 @@ void Field<spacedim,Value>::set_input_list(const Input::Array &list, const TimeG
 
 
 template<int spacedim, class Value>
-void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream) {
+void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpaceFlags space_type, std::shared_ptr<OutputTime> stream) {
 	typedef typename Value::element_type ElemType;
+    for (uint i=0; i<OutputTime::N_DISCRETE_SPACES; ++i)
+        if (space_type[i]) {
+	    	OutputTime::DiscreteSpace type = OutputTime::DiscreteSpace(i);
 
-    OutputTime::OutputDataPtr output_data_base = stream->prepare_compute_data<ElemType>(this->name(), space_type,
-    		(unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
+            OutputTime::OutputDataPtr output_data_base = stream->prepare_compute_data<ElemType>(this->name(), type,
+            		(unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
 
-    try{
-        // try casting actual ElementDataCache
-        if( ! output_data_base->is_dummy()){
-            auto output_data = std::dynamic_pointer_cast<ElementDataCache<ElemType>>(output_data_base);
-            fill_data_cache(space_type, stream, output_data);
+            try{
+                // try casting actual ElementDataCache
+                if( ! output_data_base->is_dummy()){
+                    auto output_data = std::dynamic_pointer_cast<ElementDataCache<ElemType>>(output_data_base);
+                    fill_data_cache(type, stream, output_data);
+                }
+
+            } catch(const std::bad_cast& e){
+                // skip
+            }
         }
-
-    } catch(const std::bad_cast& e){
-        // skip
-    }
 
     /* Set the last time */
     stream->update_time(this->time());
@@ -723,7 +725,10 @@ void Field<spacedim,Value>::fill_data_cache(OutputTime::DiscreteSpace space_type
 
             if (field_fe_ptr) {
                 auto native_output_data_base = stream->prepare_compute_data<double>(this->name(), space_type,
-                        (unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
+                        (unsigned int)Value::NRows_, (unsigned int)Value::NCols_,
+                        typeid(field_fe_ptr->get_dofhandler()->ds()->fe()[0_d].get()).name(),  // should be used better solution of fe_type setting
+                                                                                               // e.g. method 'name()' of FiniteElement and descendants
+				        field_fe_ptr->get_dofhandler()->max_elem_dofs());
                 // try casting actual ElementDataCache
                 auto native_output_data = std::dynamic_pointer_cast<ElementDataCache<double>>(native_output_data_base);
                 field_fe_ptr->native_data_to_cache(*native_output_data);

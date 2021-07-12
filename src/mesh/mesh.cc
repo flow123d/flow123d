@@ -1076,6 +1076,93 @@ std::shared_ptr<std::vector<LongIdx>> Mesh::check_compatible_mesh( Mesh & input_
     return map_ptr;
 }
 
+
+bool equal_elm(ElementAccessor<3> elm1, ElementAccessor<3> elm2) {
+    static const double point_tolerance = 1E-10;
+    if (elm1.dim() != elm2.dim()) return false;
+    bool equal_node;
+    for (unsigned int i=0; i<elm1->n_nodes(); i++) { // iterate trough all nodes of elm1
+        equal_node = false;
+        for (unsigned int j=0; j<elm2->n_nodes(); j++) { // iterate trough all nodes of elm2
+        	if ( arma::norm(*elm1.node(i) - *elm2.node(j), 1) < point_tolerance)
+        	    equal_node = true; // equal node exists
+        }
+        if (!equal_node) return false;
+    }
+    return true;
+}
+
+
+std::shared_ptr<std::vector<LongIdx>> Mesh::check_compatible_discont_mesh( Mesh & input_mesh)
+{
+    std::vector<unsigned int> result_list; // list of elements with same dimension as vtk element
+    unsigned int i; // counter over vectors
+    std::shared_ptr<std::vector<LongIdx>> map_ptr = std::make_shared<std::vector<LongIdx>>(element_vec_.size());
+    std::vector<LongIdx> &element_ids_map = *(map_ptr.get());
+    std::vector<unsigned int> searched_elements; // for BIH tree
+	const BIHTree &bih_tree=input_mesh.get_bih_tree();
+
+    {
+        // iterates over bulk elements of \p this object
+        // elements in both meshes must be in ratio 1:1
+        // store orders (mapping between both mesh files) into bulk_elements_id vector
+        // iterate trough bulk part of element vector, to each element in source mesh must exist only one element in target mesh
+        i=0;
+        unsigned int n_found=0; // number of found equivalent elements
+        for (auto elm : this->elements_range()) {
+            bih_tree.find_bounding_box(elm.bounding_box(), searched_elements);
+            for (auto s : searched_elements) {
+                auto acc = input_mesh.element_accessor(s);
+                if ( equal_elm(elm, acc) ) result_list.push_back(s);
+            }
+
+            if (result_list.size() == 1) {
+                element_ids_map[i] = (LongIdx)result_list[0];
+                n_found++;
+            } else {
+                element_ids_map[i] = (LongIdx)Mesh::undef_idx;
+            }
+            result_list.clear();
+           	searched_elements.clear();
+        	i++;
+        }
+
+        if (n_found==0) {
+        	// no equivalent bulk element found - mesh is not compatible
+            return std::make_shared<std::vector<LongIdx>>(0);
+        }
+    }
+
+    {
+        // iterates over boundary elements of \p this object
+        // elements in both meshes must be in ratio 1:1
+        // store orders (mapping between both mesh files) into boundary_elements_id vector
+        auto bc_mesh = this->get_bc_mesh();
+//        auto input_bc_mesh = input_mesh.get_bc_mesh();
+        // iterate trough boundary part of element vector, to each element in source mesh must exist only one element in target mesh
+        // fill boundary_elements_id vector
+        i=this->n_elements();
+        for (auto elm : bc_mesh->elements_range()) {
+            bih_tree.find_bounding_box(elm.bounding_box(), searched_elements);
+            for (auto s : searched_elements) {
+                auto acc = input_mesh.element_accessor(s);
+                if ( equal_elm(elm, acc) ) result_list.push_back(s);
+            }
+            if (result_list.size() == 1) {
+                element_ids_map[i] = (LongIdx)result_list[0];
+            } else {
+                element_ids_map[i] = (LongIdx)Mesh::undef_idx;
+            }
+            result_list.clear();
+           	searched_elements.clear();
+            i++;
+        }
+    }
+
+    return map_ptr;
+}
+
+
 void Mesh::read_regions_from_input(Input::Array region_list)
 {
 	for (Input::Iterator<Input::AbstractRecord> it = region_list.begin<Input::AbstractRecord>();

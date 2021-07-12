@@ -257,7 +257,9 @@ void TransportDG<Model>::initialize()
     output_vec.resize(eq_data_->n_substances());
     eq_fields_->output_field.set_components(eq_data_->substances_.names());
     eq_fields_->output_field.set_mesh(*Model::mesh_);
-    eq_fields_->output_type(OutputTime::CORNER_DATA);
+    auto output_types = OutputTime::empty_discrete_flags();
+    output_types[OutputTime::CORNER_DATA] = true;
+    eq_fields_->output_type(output_types);
 
     eq_fields_->output_field.setup_components();
     for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)
@@ -323,6 +325,12 @@ void TransportDG<Model>::initialize()
     for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)
     {
         eq_data_->dif_coef[sbi].resize(qsize);
+    }
+
+    eq_fields_->init_condition.setup_components();
+    for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)
+    {
+    	eq_fields_->init_condition[sbi].add_factory( std::make_shared<FieldFE<3, FieldValue<3>::Scalar>::NativeFactory>(sbi, eq_data_->dh_));
     }
 }
 

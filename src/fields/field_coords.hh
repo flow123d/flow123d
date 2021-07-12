@@ -75,7 +75,7 @@ public:
         ASSERT(false).error("Forbidden method for FieldCoords!");
     }
 
-    void field_output(FMT_UNUSED std::shared_ptr<OutputTime> stream) override {
+    void field_output(FMT_UNUSED std::shared_ptr<OutputTime> stream, FMT_UNUSED OutputTime::DiscreteSpaceFlags type) override {
         ASSERT(false).error("Forbidden method for FieldCoords!");
     }
 

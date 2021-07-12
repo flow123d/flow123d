@@ -238,10 +238,12 @@ TEST_F(SomeEquation, collective_interface) {
     EXPECT_EQ( matrix, data["velocity"].flags() );
     EXPECT_EQ( matrix, data["reaction_type"].flags() );
 
-    data.output_type(OutputTime::CORNER_DATA);
-    EXPECT_EQ( OutputTime::CORNER_DATA, data["init_pressure"].get_output_type() );
-    EXPECT_EQ( OutputTime::CORNER_DATA, data["velocity"].get_output_type() );
-    EXPECT_EQ( OutputTime::CORNER_DATA, data["reaction_type"].get_output_type() );
+    auto output_types = OutputTimeSet::empty_discrete_flags();
+    output_types[OutputTime::CORNER_DATA] = true;
+    data.output_type(output_types);
+    EXPECT_TRUE( data["init_pressure"].get_output_type()[OutputTime::CORNER_DATA] );
+    EXPECT_TRUE( data["velocity"].get_output_type()[OutputTime::CORNER_DATA] );
+    EXPECT_TRUE( data["reaction_type"].get_output_type()[OutputTime::CORNER_DATA] );
 }
 
 TEST_F(SomeEquation, input_related) {
