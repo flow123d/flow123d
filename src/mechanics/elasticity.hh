@@ -121,6 +121,7 @@ public:
 		/// Pointer to DarcyFlow field cross_section
         Field<3, FieldValue<3>::Scalar > cross_section;
         Field<3, FieldValue<3>::Scalar > potential_load;   ///< Potential of an additional (external) load.
+        Field<3, FieldValue<3>::Scalar > ref_potential_load; ///< Potential of reference external load on boundary. TODO: Switch to BCField when possible.
         Field<3, FieldValue<3>::Scalar> region_id;
         Field<3, FieldValue<3>::Scalar> subdomain;
         
@@ -189,8 +190,12 @@ public:
 	// Recompute fields for output (stress, divergence etc.)
 	void update_output_fields();
     
-    void set_potential_load(const Field<3, FieldValue<3>::Scalar> &potential)
-    { data_.potential_load = potential; }
+    void set_potential_load(const Field<3, FieldValue<3>::Scalar> &potential,
+                            const Field<3, FieldValue<3>::Scalar> &ref_potential)
+    {
+        data_.potential_load = potential;
+        data_.ref_potential_load = ref_potential;
+    }
 
     void calculate_cumulative_balance();
 

@@ -91,6 +91,10 @@ HM_Iterative::EqData::EqData()
     *this += pressure_potential.name("pressure_potential")
                      .units(UnitSI().m())
                      .flags(FieldFlag::equation_result);
+
+    *this += ref_pressure_potential.name("ref_pressure_potential")
+                     .units(UnitSI().m())
+                     .flags(FieldFlag::equation_result);
     
     *this += flow_source.name("extra_flow_source")
                      .units(UnitSI().s(-1))
@@ -105,6 +109,9 @@ void HM_Iterative::EqData::initialize(Mesh &mesh)
     
     potential_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(mesh, MixedPtr<FE_CR>());
     pressure_potential.set_field(mesh.region_db().get_region_set("ALL"), potential_ptr_);
+
+    ref_potential_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(mesh, MixedPtr<FE_CR>());
+    ref_pressure_potential.set_field(mesh.region_db().get_region_set("ALL"), ref_potential_ptr_);
     
     beta_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(mesh, MixedPtr<FE_P_disc>(0));
     beta.set_field(mesh.region_db().get_region_set("ALL"), beta_ptr_);
@@ -154,7 +161,7 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
     data_.set_input_list( in_record.val<Input::Array>("input_fields"), time() );
 
     data_.initialize(*mesh_);
-    mechanics_->set_potential_load(data_.pressure_potential);
+    mechanics_->set_potential_load(data_.pressure_potential, data_.ref_pressure_potential);
 }
 
 
@@ -239,9 +246,11 @@ void HM_Iterative::update_after_converged()
 void HM_Iterative::update_potential()
 {
     auto potential_vec_ = data_.potential_ptr_->vec();
+    auto ref_potential_vec_ = data_.ref_potential_ptr_->vec();
     auto dh = data_.potential_ptr_->get_dofhandler();
     Field<3, FieldValue<3>::Scalar> field_edge_pressure;
     field_edge_pressure.copy_from(*flow_->data().field("pressure_edge"));
+
     for ( auto ele : dh->local_range() )
     {
         auto elm = ele.elm();
@@ -255,13 +264,29 @@ void HM_Iterative::update_potential()
             double potential = -alpha*density*gravity*pressure;
         
             potential_vec_[dof_indices[side.side_idx()]] = potential;
+
+            // The reference potential is applied only on dirichlet and total_flux b.c.,
+            // i.e. where only mechanical traction is prescribed.
+            if (side.side().is_boundary() &&
+                    (flow_->data().bc_type.value(side.centre(), side.cond().element_accessor()) == DarcyMH::EqData::dirichlet ||
+                    flow_->data().bc_type.value(side.centre(), side.cond().element_accessor()) == DarcyMH::EqData::total_flux)
+                )
+            {
+                double bc_pressure = flow_->data().bc_pressure.value(side.centre(), side.cond().element_accessor());
+                ref_potential_vec_[dof_indices[side.side_idx()]] = -alpha*density*gravity*bc_pressure;
+            }
+            else
+                ref_potential_vec_[dof_indices[side.side_idx()]] = 0;
         }
     }
     
     potential_vec_.local_to_ghost_begin();
     potential_vec_.local_to_ghost_end();
+    ref_potential_vec_.local_to_ghost_begin();
+    ref_potential_vec_.local_to_ghost_end();
     data_.pressure_potential.set_time_result_changed();
-    mechanics_->set_potential_load(data_.pressure_potential);
+    data_.ref_pressure_potential.set_time_result_changed();
+    mechanics_->set_potential_load(data_.pressure_potential, data_.ref_pressure_potential);
 }
 
 

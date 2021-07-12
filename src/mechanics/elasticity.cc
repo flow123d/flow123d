@@ -1078,7 +1078,7 @@ void Elasticity::assemble_boundary_conditions()
     // PetscScalar local_flux_balance_rhs;
     vector<arma::vec3> bc_values(qsize), bc_traction(qsize);
     vector<arma::mat33> bc_stress(qsize);
-    vector<double> csection(qsize), bc_potential(qsize);
+    vector<double> csection(qsize);
     auto vec = fe_values_side.vector_view(0);
 
     for (DHCellAccessor cell : feo->dh()->own_range())
@@ -1107,12 +1107,10 @@ void Elasticity::assemble_boundary_conditions()
 			fe_values_side.reinit(side);
 
 			data_.cross_section.value_list(fe_values_side.point_list(), elm, csection);
-			// The b.c. data are fetched for all possible b.c. types since we allow
-			// different bc_type for each substance.
 			data_.bc_displacement.value_list(fe_values_side.point_list(), bc_cell, bc_values);
             data_.bc_traction.value_list(fe_values_side.point_list(), bc_cell, bc_traction);
             data_.bc_stress.value_list(fe_values_side.point_list(), bc_cell, bc_stress);
-            data_.potential_load.value_list(fe_values_side.point_list(), elm, bc_potential);
+            double ref_potential = data_.ref_potential_load.value(side.centre(), elm);
 
 			cell.get_dof_indices(side_dof_indices);
 
@@ -1137,7 +1135,9 @@ void Elasticity::assemble_boundary_conditions()
               for (unsigned int k=0; k<qsize; k++)
               {
                 for (unsigned int i=0; i<ndofs; i++)
-                  local_rhs[i] += csection[k]*arma::dot(vec.value(i,k),bc_traction[k])*fe_values_side.JxW(k);
+                  // We prescribe (sigma_mech + (potential-ref_potential)*I)*n = bc_traction,
+                  // i.e. (sigma_mech + potential*I)*n = bc_traction + ref_potential*n.
+                  local_rhs[i] += csection[k]*arma::dot(vec.value(i,k),bc_traction[k] + ref_potential*fe_values_side.normal_vector(k))*fe_values_side.JxW(k);
               }
             }
             else if (bc_type == EqData::bc_type_stress)
@@ -1146,7 +1146,7 @@ void Elasticity::assemble_boundary_conditions()
               {
                 for (unsigned int i=0; i<ndofs; i++)
                   // stress is multiplied by inward normal to obtain traction
-                  local_rhs[i] += csection[k]*arma::dot(vec.value(i,k),-bc_stress[k]*fe_values_side.normal_vector(k) + bc_potential[k]*fe_values_side.normal_vector(k))*fe_values_side.JxW(k);
+                  local_rhs[i] += csection[k]*arma::dot(vec.value(i,k),-bc_stress[k]*fe_values_side.normal_vector(k) + ref_potential*fe_values_side.normal_vector(k))*fe_values_side.JxW(k);
               }
             }
             ls->rhs_set_values(ndofs, side_dof_indices.data(), local_rhs);

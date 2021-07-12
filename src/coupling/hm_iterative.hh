@@ -137,10 +137,12 @@ public:
         
         /// Potential -alpha*pressure whose gradient is passed to mechanics as additional load.
         Field<3, FieldValue<3>::Scalar> pressure_potential;
+        Field<3, FieldValue<3>::Scalar> ref_pressure_potential; ///< Potential of reference (prescribed) pressure from flow b.c. TODO: Swith to BCField when possible.
         Field<3, FieldValue<3>::Scalar> flow_source;
         
         /// FieldFE for pressure_potential field.
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > potential_ptr_;
+        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > ref_potential_ptr_;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > beta_ptr_;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > flow_source_ptr_;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > old_pressure_ptr_;
