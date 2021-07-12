@@ -195,13 +195,11 @@ void MultiField<spacedim, Value>::copy_from(const FieldCommon & other) {
 
 
 template<int spacedim, class Value>
-void MultiField<spacedim, Value>::field_output(std::shared_ptr<OutputTime> stream)
+void MultiField<spacedim, Value>::field_output(std::shared_ptr<OutputTime> stream, OutputTime::DiscreteSpaceFlags type)
 {
 	// currently we cannot output boundary fields
 	if (!is_bc()) {
-	    OutputTimeSet::DisceteSpaceFlags type = this->get_output_type();
-
-	    ASSERT( OutputTimeSet::discrete_flags_defined(type) ).error();
+	    ASSERT( OutputTime::discrete_flags_defined(type) ).error();
 
 	    for (unsigned long index=0; index < this->size(); index++) {
             sub_fields_[index].compute_field_data( type, stream );

@@ -351,7 +351,7 @@ void Elasticity::initialize()
     eq_fields_->output_div_ptr = create_field_fe<3, FieldValue<3>::Scalar>(eq_data_->dh_scalar_);
     eq_fields_->output_divergence.set(eq_fields_->output_div_ptr, 0.);
     
-    auto output_types = OutputTimeSet::empty_discrete_flags();
+    auto output_types = OutputTime::empty_discrete_flags();
     output_types[OutputTime::CORNER_DATA] = true;
     eq_fields_->output_field.output_type(output_types);
 

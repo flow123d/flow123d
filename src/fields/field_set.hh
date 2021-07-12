@@ -300,7 +300,7 @@ public:
      * Collective interface to @p FieldCommonBase::output_type().
      * @param rt   Discrete function space (element, node or corner data).
      */
-    void output_type(OutputTimeSet::DisceteSpaceFlags rt) {
+    void output_type(OutputTime::DiscreteSpaceFlags rt) {
         for(FieldCommon *field : field_list) field->output_type(rt);
     }
 

@@ -150,7 +150,7 @@ void EquationOutput::read_from_input(Input::Record in_rec, const TimeGovernor & 
         FieldCommon *found_field = field(field_name);
 
         Input::Array interpolations;
-        OutputTimeSet::DisceteSpaceFlags interpolation = OutputTimeSet::empty_discrete_flags();
+        OutputTime::DiscreteSpaceFlags interpolation = OutputTime::empty_discrete_flags();
         if (it->opt_val("interpolation", interpolations)) {
             // process interpolations
             for(auto it_interp = interpolations.begin<OutputTime::DiscreteSpace>(); it_interp != interpolations.end(); ++it_interp) {
@@ -162,12 +162,13 @@ void EquationOutput::read_from_input(Input::Record in_rec, const TimeGovernor & 
         if (it->opt_val("times", field_times_array)) {
             OutputTimeSet field_times;
             field_times.read_from_input(field_times_array, tg);
-            field_output_times_[field_name] = field_times;
+            field_output_times_[field_name].output_set_ = field_times;
         } else {
-            field_output_times_[field_name] = common_output_times_;
+            field_output_times_[field_name].output_set_ = common_output_times_;
         }
+        field_output_times_[field_name].space_flags_ = found_field->get_output_type();
         // Add init time as the output time for every output field.
-        field_output_times_[field_name].add(tg.init_time(), equation_fixed_type_);
+        field_output_times_[field_name].output_set_.add(tg.init_time(), equation_fixed_type_);
     }
     auto observe_fields_array = in_rec.val<Input::Array>("observe_fields");
     for(auto it = observe_fields_array.begin<Input::FullEnum>(); it != observe_fields_array.end(); ++it) {
@@ -190,7 +191,7 @@ bool EquationOutput::is_field_output_time(const FieldCommon &field, TimeStep ste
     ASSERT( step.eq(field.time()) )(step.end())(field.time())(field.name()).error("Field is not set to the output time.");
     auto current_mark_it = marks.current(step, equation_type_ | marks.type_output() );
     if (current_mark_it == marks.end(equation_type_ | marks.type_output()) ) return false;
-    return (field_times_it->second.contains(*current_mark_it) );
+    return (field_times_it->second.output_set_.contains(*current_mark_it) );
 }
 
 
@@ -212,7 +213,7 @@ void EquationOutput::output(TimeStep step)
 
         if ( field->flags().match( FieldFlag::allow_output) ) {
             if (is_field_output_time(*field, step)) {
-                field->field_output(stream_);
+                field->field_output(stream_, field_output_times_[field->name()].space_flags_);
             }
             // observe output
             if (observe_fields_.find(field->name()) != observe_fields_.end()) {

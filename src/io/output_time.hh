@@ -115,10 +115,28 @@ public:
     };
 
     /**
-     * Maps names of output fields required by user to their indices in
-     * output_data_vec_.
+     * Holds flags if different output types are switched on / switched off.
+     *
+     * Output types are in order: NODE_DATA=0, CORNER_DATA=1, ELEM_DATA=2, NATIVE_DATA=3
      */
-    typedef unsigned int DiscreteSpaceFlags;
+    typedef std::array<bool,4> DiscreteSpaceFlags;
+
+    /// Check if at least one of discrete space flag is set to true.
+    static bool discrete_flags_defined(DiscreteSpaceFlags dsf) {
+        return dsf[0] | dsf[1] | dsf[2] | dsf[3];
+    }
+
+    /// Check if at least one of discrete space flag is set to true.
+    static DiscreteSpaceFlags empty_discrete_flags() {
+    	DiscreteSpaceFlags dsf = { {false, false, false, false} };
+        return dsf;
+    }
+
+    static void set_discrete_flag(DiscreteSpaceFlags dsf, DiscreteSpace d_space) {
+        ASSERT_LT_DBG(d_space, N_DISCRETE_SPACES).error("Invalid discrete space.");
+        dsf[d_space] = true;
+    }
+
 
     /**
      * Map field name to its OutputData object.

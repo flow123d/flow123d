@@ -257,7 +257,7 @@ void TransportDG<Model>::initialize()
     output_vec.resize(eq_data_->n_substances());
     eq_fields_->output_field.set_components(eq_data_->substances_.names());
     eq_fields_->output_field.set_mesh(*Model::mesh_);
-    auto output_types = OutputTimeSet::empty_discrete_flags();
+    auto output_types = OutputTime::empty_discrete_flags();
     output_types[OutputTime::CORNER_DATA] = true;
     eq_fields_->output_type(output_types);
 
