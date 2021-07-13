@@ -156,8 +156,9 @@ void EquationOutput::read_from_input(Input::Record in_rec, const TimeGovernor & 
             for(auto it_interp = interpolations.begin<OutputTime::DiscreteSpace>(); it_interp != interpolations.end(); ++it_interp) {
                 interpolation[ *it_interp ] = true;
             }
+        } else {
+            OutputTime::set_discrete_flag(interpolation, found_field->get_output_type());
         }
-        found_field->output_type(interpolation);
         Input::Array field_times_array;
         if (it->opt_val("times", field_times_array)) {
             OutputTimeSet field_times;
@@ -166,7 +167,7 @@ void EquationOutput::read_from_input(Input::Record in_rec, const TimeGovernor & 
         } else {
             field_output_times_[field_name].output_set_ = common_output_times_;
         }
-        field_output_times_[field_name].space_flags_ = found_field->get_output_type();
+        field_output_times_[field_name].space_flags_ = interpolation;
         // Add init time as the output time for every output field.
         field_output_times_[field_name].output_set_.add(tg.init_time(), equation_fixed_type_);
     }
@@ -177,7 +178,7 @@ void EquationOutput::read_from_input(Input::Record in_rec, const TimeGovernor & 
 
     // register interpolation type of fields to OutputStream
     for(FieldCommon * field : this->field_list) {
-        auto output_types = field->get_output_type();
+        auto output_types = field_output_times_[field->name()].space_flags_;
         for (uint i=0; i<OutputTime::N_DISCRETE_SPACES; ++i)
     	    if (output_types[i]) used_interpolations_.insert( OutputTime::DiscreteSpace(i) );
     }

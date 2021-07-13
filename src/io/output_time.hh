@@ -122,7 +122,7 @@ public:
     typedef std::array<bool,4> DiscreteSpaceFlags;
 
     /// Check if at least one of discrete space flag is set to true.
-    static bool discrete_flags_defined(DiscreteSpaceFlags dsf) {
+    static bool discrete_flags_defined(DiscreteSpaceFlags &dsf) {
         return dsf[0] | dsf[1] | dsf[2] | dsf[3];
     }
 
@@ -132,7 +132,7 @@ public:
         return dsf;
     }
 
-    static void set_discrete_flag(DiscreteSpaceFlags dsf, DiscreteSpace d_space) {
+    static void set_discrete_flag(DiscreteSpaceFlags &dsf, DiscreteSpace d_space) {
         ASSERT_LT_DBG(d_space, N_DISCRETE_SPACES).error("Invalid discrete space.");
         dsf[d_space] = true;
     }
