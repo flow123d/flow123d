@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
 
-import cgi
+import html
 import re
 
 import markdown
@@ -95,7 +95,7 @@ class ExpressionPlaceholder(object):
 
     def _match_finish(self, m):
         index = int(m.group(1))
-        latex = cgi.escape(self.latex[index])
+        latex = html.escape(self.latex[index])
         return self.placeholder_result.format(latex)
 
     def prepare(self, html):

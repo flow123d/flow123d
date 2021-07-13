@@ -311,7 +311,7 @@ void HM_Iterative::compute_iteration_error(double& abs_error, double& rel_error)
     double recv_data[2];
     MPI_Allreduce(&send_data, &recv_data, 2, MPI_DOUBLE, MPI_SUM, PETSC_COMM_WORLD);
     abs_error = sqrt(recv_data[0]);
-    rel_error = abs_error / sqrt(recv_data[1]);
+    rel_error = abs_error / (sqrt(recv_data[1]) + std::numeric_limits<double>::min());
     
     MessageOut().fmt("HM Iteration {} abs. difference: {}  rel. difference: {}\n"
                          "--------------------------------------------------------",

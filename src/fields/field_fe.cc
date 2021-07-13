@@ -35,6 +35,7 @@
 #include "quadrature/quadrature_lib.hh"
 
 #include "system/sys_profiler.hh"
+#include "tools/unit_converter.hh"
 #include "intersection/intersection_aux.hh"
 #include "intersection/intersection_local.hh"
 #include "intersection/compute_intersection.hh"
@@ -73,7 +74,7 @@ const Input::Type::Record & FieldFE<spacedim, Value>::get_input_type()
                 "The values of the Field are read from the ```$ElementData``` section with field name given by this key.")
         .declare_key("default_value", IT::Double(), IT::Default::optional(),
                 "Default value is set on elements which values have not been listed in the mesh data file.")
-        .declare_key("time_unit", IT::String(), IT::Default::read_time("Common unit of TimeGovernor."),
+        .declare_key("time_unit", UnitConverter::get_input_type(), TimeUnitConversion::get_input_default(),
                 "Definition of the unit of all times defined in the mesh data file.")
         .declare_key("read_time_shift", TimeGovernor::get_input_time_type(), IT::Default("0.0"),
                 "This key allows reading field data from the mesh data file shifted in time. Considering the time 't', field descriptor with time 'T', "
@@ -468,7 +469,7 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 		if ( reader_file_ == FilePath() ) return false;
 
 		unsigned int n_components = this->value_.n_rows() * this->value_.n_cols();
-		double time_unit_coef = time.read_coef(in_rec_.find<string>("time_unit"));
+		double time_unit_coef = time.read_coef(in_rec_.find<Input::Record>("time_unit"));
 		double time_shift = time.read_time( in_rec_.find<Input::Tuple>("read_time_shift") );
 		double read_time = (time.end()+time_shift) / time_unit_coef;
 		BaseMeshReader::HeaderQuery header_query(field_name_, read_time, this->discretization_, dh_->hash());
@@ -625,7 +626,7 @@ void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>
 	else mesh = dh_->mesh();
 	for (auto elm : mesh->elements_range()) {
 		if (elm.dim() == 3) {
-			xprintf(Err, "Dimension of element in target mesh must be 0, 1 or 2! elm.idx() = %d\n", elm.idx());
+			THROW( ExcInvalidElemeDim() << EI_ElemIdx(elm.idx()) );
 		}
 
 		double epsilon = 4* numeric_limits<double>::epsilon() * elm.measure();

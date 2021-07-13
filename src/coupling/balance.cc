@@ -868,7 +868,8 @@ void Balance::output_legacy(double time)
 	output_ << "# " << setw((w*c+wl-14)/2) << setfill('-') << "--"
 			<< " MASS BALANCE "
 	     	<< setw((w*c+wl-14)/2) << setfill('-') << "" << endl
-			<< "# Time: " << (time / time_->get_coef()) << "[" << time_->get_unit_string() << "]\n\n\n";
+			<< "# Time: " << (time / time_->get_coef())
+			<< "[" << time_->get_unit_conversion()->get_unit_string() << "]\n\n\n";
 
 	// header for table of boundary fluxes
 	output_ << "# Mass flux through boundary [M/T]:\n# "
@@ -1088,9 +1089,10 @@ void Balance::format_csv_output_header(char delimiter, const std::string& commen
 {
 	std::stringstream ss;
 	if (delimiter == ' ') {
-		ss << setw(output_column_width-comment_string.size()) << "\"time [" << time_->get_unit_string() << "]\"";
+		ss << setw(output_column_width-comment_string.size())
+		   << "\"time [" << time_->get_unit_conversion()->get_unit_string() << "]\"";
 	} else {
-		ss << "\"time [" << time_->get_unit_string() << "]\"";
+		ss << "\"time [" << time_->get_unit_conversion()->get_unit_string() << "]\"";
 	}
 
 	output_ << comment_string << ss.str()

@@ -134,7 +134,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowInterface *flow, Input::Record mai
     
     output_stream = OutputTime::create_output_stream("flow",
                                                      main_mh_in_rec.val<Input::Record>("output_stream"),
-                                                     darcy_flow->time().get_unit_string());
+                                                     darcy_flow->time().get_unit_conversion());
     prepare_output(in_rec_output);
 
     auto in_rec_specific = main_mh_in_rec.find<Input::Record>("output_specific");
@@ -305,7 +305,7 @@ void DarcyFlowMHOutput::output_internal_flow_data()
     arma::vec3 flux_in_center;
     
     auto permutation_vec = data->dh_->mesh()->element_permutations();
-    for (unsigned int i_elem=0; i_elem<data->dh_->own_size(); ++i_elem) {
+    for (unsigned int i_elem=0; i_elem<data->dh_->n_own_cells(); ++i_elem) {
         ElementAccessor<3> ele(data->dh_->mesh(), permutation_vec[i_elem]);
         DHCellAccessor dh_cell = data->dh_->cell_accessor_from_element( ele.idx() );
         LocDofVec indices = dh_cell.get_loc_dof_indices();

@@ -60,8 +60,11 @@ class SorptionBase:  public ReactionTerm
 {
 public:
     TYPEDEF_ERR_INFO( EI_ArrayName, std::string);
+    TYPEDEF_ERR_INFO( EI_Subst, unsigned int);
     DECLARE_INPUT_EXCEPTION( ExcSubstanceCountMatch, << "The size of the input array " << EI_ArrayName::qval 
                                                      << " does not match the number of substances.");
+    DECLARE_EXCEPTION( ExcNotPositiveScaling,
+            << "Scaling parameter in sorption is not positive. Check the input for rock density and molar mass of " << EI_Subst::val << ". substance.\n" );
     
   /**
    *   Static variable for new input data types input
