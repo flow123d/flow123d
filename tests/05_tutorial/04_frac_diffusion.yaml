@@ -214,13 +214,9 @@ problem: !Coupling_Sequential
         - piezo_head_p0
         - pressure_p0
         - velocity_p0
-    solver: !Petsc
-      r_tol: 1.0e-10
-      a_tol: 1.0e-10
     output_stream:
       file: flow.msh
       format: !gmsh
-        variant: ascii
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_AdvectionDiffusion_DG
       input_fields:

@@ -204,8 +204,12 @@ void Balance::lazy_initialize()
     if (allocation_done_) return;
 
     auto &marks = TimeGovernor::marks();
-    if (add_output_times_)
+    if (add_output_times_){
         marks.add_to_type_all(output_mark_type_, balance_output_type_);
+		// add balance output time mark to init time
+		// due to balance output when there are no output fields
+		marks.add( TimeMark(time_->init_time(), balance_output_type_) );
+	}
     // if there are no balance marks turn balance off
     if (marks.begin(balance_output_type_) == marks.end(balance_output_type_) )
     {
