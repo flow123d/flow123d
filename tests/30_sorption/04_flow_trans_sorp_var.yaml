@@ -1,12 +1,12 @@
-# Test goal: Sorption type comparison with simple 2D transport.
+# Test goal: Test variable sorption parameters with simple 2D transport.
 # Author: Pavel Exner
 # Source for reference:
 #   - qualitative, check in Paraview
 #   - simple convective transport from right to left
-#   - compare different sorption types as they slow down the convection of liquid phase
+#   - same as test 03, but the sorption process is postponed to the time 5
 flow123d_version: 3.1.0
 problem: !Coupling_Sequential
-  description: Sorption type comparison with simple 2D transport.
+  description: Test variable sorption parameters with simple 2D transport.
   mesh:
     mesh_file: ../00_mesh/rectangle_5x1.msh
   flow_equation: !Flow_Darcy_MH
@@ -67,21 +67,25 @@ problem: !Coupling_Sequential
       input_fields:
         - region: ALL
           rock_density: 1.0
-          sorption_type:
-            - none
-            - linear
-            - langmuir
-            - freundlich
-          distribution_coefficient:
-            - 0
-            - 0.6
-            - 0.4
-            - 0.6
-          isotherm_other:
-            - 0
-            - 0
-            - 0.6
-            - 0.4
+          sorption_type: !FieldFormula
+            value:
+              # using selection type integers in FieldFormula
+              - 0           # 0-none
+              - if(t>5,1,0) # 1-linear
+              - if(t>5,2,0) # 1-langmuir
+              - if(t>5,3,0) # 1-freundlich
+          distribution_coefficient: !FieldFormula
+            value:
+              - 0
+              - if(t>5,0.6,0.0)
+              - if(t>5,0.4,0.0)
+              - if(t>5,0.6,0.0)
+          isotherm_other: !FieldFormula
+            value:
+              - 0
+              - 0
+              - if(t>5,0.6,0.0)
+              - if(t>5,0.4,0.0)
       output:
         fields: []
     balance:
