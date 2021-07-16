@@ -27,6 +27,12 @@
 #include "fields/eval_subset.hh"   // for EvalSubset
 #include "fields/eval_points.hh"   // for EvalPoints
 #include "fields/field_value_cache.hh"
+#include "fields/field.hh"
+#include "fields/field_coords.hh"  // for FieldCoords
+#include "fields/field_depth.hh"   // for FieldDepth
+#include "fields/surface_depth.hh" // for SurfaceDepth
+#include "mesh/range_wrapper.hh"
+#include "tools/general_iterator.hh"
 #include "input/accessors.hh"      // for Array
 #include "input/type_record.hh"    // for Record
 #include "io/output_time.hh"       // for OutputTime, OutputTime::DiscreteSpace
@@ -35,7 +41,86 @@
 #include "tools/time_governor.hh"  // for TimeGovernor (ptr only), TimeStep
 class Mesh;
 class Region;
+template <int spacedim, class Value> class FieldFormula;
 
+
+
+/**
+ * Accessor to vector of Fields holds in FieldSet.
+ *
+ * Class holds position to vector and allows iterate through all instances of Field class
+ * and all components (SubFields) of MultiFields.
+ *
+ * Base methods:
+ * - inc() - increment to next Field instance:
+ *     Field - iterates to next item in field list
+ *     MultiFields - iterates to next component of MultiField or if actual position is last component
+ *                   jumps to next item in field list
+ * - operator ->() - returns pointer to actual Field.
+ */
+class FieldListAccessor {
+public:
+    /// Default constructor
+    FieldListAccessor()
+    : field_idx_(0), field_component_idx_(0) {}
+
+    /// Constructor
+    FieldListAccessor(std::vector<FieldCommon *> field_list, unsigned int field_idx)
+    : field_list_(field_list), field_idx_(field_idx), field_component_idx_(0) {}
+
+    /// Iterates to next Field.
+    inline void inc() {
+        if (field_list_[field_idx_]->is_multifield()) {
+            field_component_idx_++;
+            if (field_component_idx_ == field_list_[field_idx_]->n_comp()) {
+                field_idx_++;
+                field_component_idx_ = 0;
+            }
+        } else {
+        	field_idx_++;
+        }
+    }
+
+    /// Getter for field_idx_
+    inline unsigned int field_idx() const {
+        return field_idx_;
+    }
+
+    /// Getter for field_component_idx_
+    inline unsigned int field_component_idx() const {
+        return field_component_idx_;
+    }
+
+	/// Returns pointer to actual field held by accessor
+    FieldCommon * field() const {
+        if (field_list_[field_idx_]->is_multifield())
+            return field_list_[field_idx_]->get_component(field_component_idx_);
+        else
+            return field_list_[field_idx_];
+    }
+
+    /// Comparison of accessors.
+	inline bool operator ==(const FieldListAccessor &other) {
+		return this->field_idx_ == other.field_idx_ && field_component_idx_ == other.field_component_idx_;
+	}
+
+	inline bool operator !=(const FieldListAccessor &other) const {
+		return this->field_idx_ != other.field_idx_ || field_component_idx_ != other.field_component_idx_;
+	}
+
+	/// Dereference operator simplify access to actual field held by accessor
+    FieldCommon * operator ->() const {
+        if (field_list_[field_idx_]->is_multifield())
+            return field_list_[field_idx_]->get_component(field_component_idx_);
+        else
+            return field_list_[field_idx_];
+    }
+
+private:
+    std::vector<FieldCommon *> field_list_;  ///< List of FieldCommon objects (combine Fields and MultiFields
+    unsigned int field_idx_;                 ///< Index of actual Field in field_list
+    unsigned int field_component_idx_;       ///< Index of subfield in MultiField (fo fields hold only value 0 that is not used)
+};
 
 
 /**
@@ -74,6 +159,9 @@ class Region;
 class FieldSet : public FieldFlag {
 public:
 	DECLARE_EXCEPTION(ExcUnknownField, << "Field set has no field with name: " << FieldCommon::EI_Field::qval);
+
+	/// Default constructor.
+	FieldSet();
 
 	/**
 	 * Add an existing Field to the list. It stores just pointer to the field.
@@ -184,6 +272,7 @@ public:
      * Collective interface to @p FieldCommonBase::set_mesh().
      */
     void set_mesh(const Mesh &mesh) {
+    	this->mesh_ = &mesh;
         for(FieldCommon *field : field_list) field->set_mesh(mesh);
     }
 
@@ -238,28 +327,85 @@ public:
     bool is_jump_time() const;
 
     /**
-     * Collective interface to @p FieldCommon::cache_allocate().
+     * Collective interface to @p FieldCommon::recache_allocate().
      */
-    void cache_allocate(std::shared_ptr<EvalPoints> eval_points) {
-        for(auto field : field_list) field->cache_allocate(eval_points);
+    void cache_reallocate(const ElementCacheMap &cache_map, FieldSet &used_fieldset) {
+    	this->set_dependency(used_fieldset);
+    	for (auto reg_it : region_field_update_order_) {
+    	    unsigned int region_idx = reg_it.first;
+    	    for (auto f_it : reg_it.second) {
+    	        f_it->cache_reallocate(cache_map, region_idx);
+    	    }
+    	}
+        //for(auto field : field_list) field->cache_reallocate(cache_map);
     }
 
     /**
      * Collective interface to @p FieldCommon::cache_update().
      */
-    void cache_update(ElementCacheMap &cache_map) {
-	    for(auto field : field_list) field->cache_update(cache_map);
+    void cache_update(ElementCacheMap &cache_map);
+
+    /**
+     * Set reference of FieldSet to all instances of FieldFormula.
+     */
+    void set_dependency(FieldSet &used_fieldset);
+
+    /**
+     * Add coords field (X_) and depth field to field_list.
+     *
+     * We can't add this field automatically in constructor, because there is problem
+     * in equation where we add one FieldSet to other.
+     */
+    void add_coords_field();
+
+    /// Set surface depth object  to "d" field.
+    inline void set_surface_depth(std::shared_ptr<SurfaceDepth> surface_depth) {
+        depth_.set_surface_depth( surface_depth );
     }
+
+    /// Returns range of Fields held in field_list
+    Range<FieldListAccessor> fields_range() const;
+
+    /// Returns pointer to mesh.
+    inline const Mesh *mesh() const {
+        return mesh_;
+    }
+
+    /// Return order of evaluated fields by dependency and region_idx.
+    std::string print_dependency() const;
 
 protected:
 
+    /// Helper method sort used fields by dependency
+    void topological_sort(const FieldCommon *f, unsigned int i_reg, std::unordered_set<const FieldCommon *> &used_fields);
+
     /// List of all fields.
     std::vector<FieldCommon *> field_list;
+
+    /// Pointer to the mesh.
+    const Mesh *mesh_;
+
+    /**
+     * Holds vector of indices of fields in field_list sorted by dependency for every region.
+     *
+     * - first: index of region
+     * - second: vector of indices of fields (corresponding to position in field_list vector)
+     */
+    std::map<unsigned int, std::vector<const FieldCommon *>> region_field_update_order_;
+
+    /// Field holds coordinates for computing of FieldFormulas
+    FieldCoords X_;
+
+    /// Field holds surface depth for computing of FieldFormulas
+    FieldDepth depth_;
 
     /**
      * Stream output operator
      */
     friend std::ostream &operator<<(std::ostream &stream, const FieldSet &set);
+
+    template<int dim, class Val>
+    friend class FieldFormula;
 };
 
 

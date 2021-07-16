@@ -38,7 +38,6 @@
 #include "system/index_types.hh"             // for LongIdx
 #include "system/exceptions.hh"              // for operator<<, ExcStream, EI
 #include "system/file_path.hh"               // for FilePath
-#include "system/sys_vector.hh"              // for FullIterator, VectorId<>...
 #include "system/armor.hh"
 
 
@@ -81,10 +80,28 @@ public:
     TYPEDEF_ERR_INFO( EI_ElemNew, int);
     TYPEDEF_ERR_INFO( EI_RegLast, std::string);
     TYPEDEF_ERR_INFO( EI_RegNew, std::string);
+    TYPEDEF_ERR_INFO( EI_ElemId, int);
+    TYPEDEF_ERR_INFO( EI_ElemIdOther, int);
+    TYPEDEF_ERR_INFO( EI_Region, std::string);
+    TYPEDEF_ERR_INFO( EI_RegIdx, unsigned int);
+    TYPEDEF_ERR_INFO( EI_Dim, unsigned int);
+    TYPEDEF_ERR_INFO( EI_DimOther, unsigned int);
+
     DECLARE_EXCEPTION(ExcDuplicateBoundary,
             << "Duplicate boundary elements! \n"
             << "Element id: " << EI_ElemLast::val << " on region name: " << EI_RegLast::val << "\n"
             << "Element id: " << EI_ElemNew::val << " on region name: " << EI_RegNew::val << "\n");
+    DECLARE_EXCEPTION(ExcElmWrongOrder,
+            << "Element IDs in non-increasing order, ID: " << EI_ElemId::val << "\n");
+    DECLARE_EXCEPTION(ExcRegionElmDiffDim,
+    		<< "User defined region " << EI_Region::qval << " (id " << EI_RegIdx::val
+            << ") by 'From_Elements' cannot have elements of different dimensions.\n"
+            << "Thrown due to: dim " << EI_Dim::val << " neq dim " << EI_DimOther::val << " (ele id " << EI_ElemId::val << ").\n"
+            << "Split elements by dim, create separate regions and then possibly use Union.\n" );
+    DECLARE_EXCEPTION(ExcTooMatchingIds,
+            << "Mesh: Duplicate dim-join lower dim elements: " << EI_ElemId::val << ", " << EI_ElemIdOther::val << ".\n" );
+    DECLARE_EXCEPTION(ExcBdrElemMatchRegular,
+            << "Boundary element (id: " << EI_ElemId::val << ") match a regular element (id: " << EI_ElemIdOther::val << ") of lower dimension.\n" );
 
 
     /**
@@ -341,9 +358,8 @@ public:
     Range<Edge> edge_range() const;
 
     /// Returns count of boundary or bulk elements
-    virtual unsigned int n_elements(bool boundary=false) const {
-    	if (boundary) return element_ids_.size()-bulk_size_;
-    	else return bulk_size_;
+    virtual unsigned int n_elements() const {
+    	return bulk_size_;
     }
 
     /// For each node the vector contains a list of elements that use this node
@@ -361,6 +377,12 @@ public:
         return element_ids_[pos];
     }
 
+    /// Return permutation vector of elements
+    inline const std::vector<unsigned int> &element_permutations() const
+    {
+        return elem_permutation_;
+    }
+
     /// For node of given node_id returns index in element_vec_ or (-1) if node doesn't exist.
     inline int node_index(int node_id) const
     {
@@ -373,11 +395,17 @@ public:
         return node_ids_[pos];
     }
 
+    /// Return permutation vector of nodes
+    inline const std::vector<unsigned int> &node_permutations() const
+    {
+        return node_permutation_;
+    }
+
     /// Check if given index is in element_vec_
     void check_element_size(unsigned int elem_idx) const;
 
-    /// Create boundary elements from data of temporary structure, this method MUST be call after read mesh from
-    void create_boundary_elements();
+    /// Create boundary elements from data of temporary structure, this method MUST be call after read mesh from file, return number of read boundary elements
+    unsigned int create_boundary_elements();
 
     /// Permute nodes of 3D elements of given elm_idx
     void permute_tetrahedron(unsigned int elm_idx, std::vector<unsigned int> permutation_vec);
@@ -484,6 +512,16 @@ protected:
     void output_internal_ngh_data();
     
     /**
+     * Apply functionality of MeshOptimizer to sort nodes and elements.
+     *
+     * Use Hilbert curve, need call sort_permuted_nodes_elements method.
+     */
+    void optimize();
+
+    /// Sort elements and nodes by order stored in permutation vectors.
+    void sort_permuted_nodes_elements(std::vector<int> new_node_ids, std::vector<int> new_elem_ids);
+
+    /**
      * Database of regions (both bulk and boundary) of the mesh. Regions are logical parts of the
      * domain that allows setting of different data and boundary conditions on them.
      */
@@ -539,6 +577,12 @@ protected:
     /// Vector of MH edges, this should not be part of the geometrical mesh
     std::vector<EdgeData> edges;
 
+    /// Vector of node permutations of optimized mesh (see class MeshOptimizer)
+    std::vector<unsigned int> node_permutation_;
+
+    /// Vector of element permutations of optimized mesh (see class MeshOptimizer)
+    std::vector<unsigned int> elem_permutation_;
+
 
     friend class Edge;
     friend class Side;
@@ -571,8 +615,7 @@ private:
     unsigned int n_local_nodes_;
 	/// Boundary mesh, object is created only if it's necessary
 	BCMesh *bc_mesh_;
-        
-    ofstream raw_ngh_output_file;
+
 };
 
 #endif

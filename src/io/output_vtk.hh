@@ -25,6 +25,7 @@
 #include <zlib.h>
 
 class Mesh;
+class TimeUnitConversion;
 namespace Input {
 	class Record;
 	namespace Type {
@@ -87,7 +88,9 @@ public:
     int write_tail(void);
 
     /// Override @p OutputTime::init_from_input.
-    void init_from_input(const std::string &equation_name, const Input::Record &in_rec, std::string unit_str) override;
+    void init_from_input(const std::string &equation_name,
+                         const Input::Record &in_rec,
+                         const std::shared_ptr<TimeUnitConversion>& time_unit_conv) override;
 
 protected:
 
@@ -159,7 +162,7 @@ protected:
     /**
      * Write output data stored in OutputData vector to output stream
      */
-    void write_vtk_data(OutputDataPtr output_data);
+    void write_vtk_data(OutputDataPtr output_data, unsigned int start = 0);
     
     /**
      * \brief Write names of data sets in @p output_data vector that have value type equal to @p type.

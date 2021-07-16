@@ -44,7 +44,7 @@ class Regex(InPlaceComparison):
         :param reference_filepath:
         :param other_filepath:
         :param kwargs:
-        :return:
+        :return: 1 - failed, 0 - success
         """
 
         regex = kwargs.get('regex', None)
@@ -65,6 +65,8 @@ class Regex(InPlaceComparison):
         content = IO.read(
             Paths.abspath(other_filepath)
         )
+        if content is None:
+            return 1
 
         # substr find
         if substr:

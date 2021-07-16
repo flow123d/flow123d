@@ -32,6 +32,8 @@ class Mesh;
 class FieldCommon;
 class RichardsLMH;
 
+namespace it = Input::Type;
+
 
 class IterativeCoupling {
 public:

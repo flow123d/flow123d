@@ -5,6 +5,9 @@ common_config:
 test_cases:
 - files:
   - 01_inject.yaml
+  - 20_2d_block_load.yaml
+  - 21_2d_displacement.yaml
+  - 30_3d_block_load.yaml
   time_limit: 200
 - files:
   - 02_terzaghi.yaml

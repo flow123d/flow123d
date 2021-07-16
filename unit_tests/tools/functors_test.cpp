@@ -20,7 +20,6 @@
 
 using namespace std;
 
-//#define EQUAL(a,b) INPUT_CHECK( (a) == (b), #a": %f and "#b":%f differs\n",a,b);
 
 //*********************************** FUNCTOR EXAMPLES *********************************
 

@@ -315,20 +315,10 @@ add_library(coupling_lib
 )
 target_link_libraries(coupling_lib
     system_lib input_lib mesh_lib tools_lib fem_lib io_lib
-    fparser     
+    fparser   
+    bparser  
     armadillo
     ${Boost_LIBRARIES})
-
-
-
-# make separate library for Semchem (God save us!)
-#add_library(semchem 
-#    semchem/che_semchem.cc
-#    semchem/che_read.cc
-#)
-#set_target_properties(semchem 
-#    PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
-#)
 
 
 
@@ -352,7 +342,6 @@ add_library(flow123d_lib
     reaction/dual_porosity.cc
     reaction/isotherm.cc
     reaction/linear_ode_solver.cc
-    #semchem/semchem_interface.cc
 
     transport/concentration_model.cc
     transport/heat_model.cc
@@ -372,6 +361,7 @@ target_link_libraries(flow123d_lib
     fem_lib mesh_lib la_lib input_lib io_lib
     system_lib tools_lib coupling_lib
     fparser  
+    bparser
     armadillo 
 #    ${TBB_LIBRARIES}
 #    ${DEAL_II_LIBRARY_NAME}

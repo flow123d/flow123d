@@ -3,6 +3,8 @@
 
 #include "la/bddcml_wrapper.hh"
 
+#ifdef FLOW123D_HAVE_BDDCML
+
 //------------------------------------------------------------------------------
 /** Constructor for the BDDCML solver object
  */
@@ -516,6 +518,8 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
     // yes, BDDCML will handle them as independent subdomains for selection of coarse 
     // degrees of freedom
     int find_components_int = 1;
+    int use_dual_mesh_graph_int = 0;
+    int neighbouring = 0; // How many common nodes between elements forms and edge of dual graph, only available for use_dual_mesh_graph_int == 1.
 
     // upload local data to the solver
     bddcml_upload_subdomain_data_c( &numElem_, &numNodes_, &numDofsInt, &nDim_, &meshDim_, 
@@ -530,7 +534,7 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
                                   &(userConstraints[0]),&lUserConstraints1,&lUserConstraints2,
                                   &(element_data_[0]),&lelement_data1,&lelement_data2,
                                   &(sub_diagonal[0]), &lsub_diagonal,
-                                  &find_components_int);
+                                  &find_components_int, &use_dual_mesh_graph_int, &neighbouring );
     i_sparse.clear();
     j_sparse.clear();
     a_sparse.clear();
@@ -622,3 +626,4 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
     return;
 }
 
+#endif
