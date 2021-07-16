@@ -313,8 +313,6 @@ void TransportDG<Model>::initialize()
 
     init_projection = input_rec.val<bool>("init_projection");
 
-    DebugOut() << "init_projection: " << init_projection << "\n";
-
     // create assemblation object, finite element structures and distribute DOFs
 	mass_assembly_ = new GenericAssembly< MassAssemblyDim >(eq_fields_.get(), eq_data_.get());
 	stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyDim >(eq_fields_.get(), eq_data_.get());
