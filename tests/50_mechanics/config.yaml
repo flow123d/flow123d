@@ -8,5 +8,6 @@ test_cases:
   - 01_inject.yaml
   - 20_2d_block_load.yaml
   - 21_2d_displacement.yaml
+  - 23_square_frac_chopped.yaml
+  - 24_square_barrier_chopped.yaml
   - 30_3d_block_load.yaml
-
