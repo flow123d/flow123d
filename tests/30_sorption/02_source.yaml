@@ -1,18 +1,17 @@
+# Test goal: Sorption with sources - no flow, no transport, only source term and sorptions.
+# Author: Pavel Exner
+# Source for reference:
+#   - qualitative and mass balance check.
+#   - reference substance A - check sorption none (with source, init_conc_solid)"
 flow123d_version: 3.1.0
 problem: !Coupling_Sequential
-  description: "Sorption with sources - no flow, no transport, only source term and sorptions. \nQualitative and mass balance\
-    \ check.\n- A - check sorption none (with source, init_conc_solid)"
+  description: Sorption with sources - no flow, no transport, only source term and sorptions.
   mesh:
     mesh_file: ../00_mesh/prism_11el.msh
     regions:
       - !Union
         name: .boundary
-        regions:
-          - .back
-          - .front
-          - .left
-          - .up
-          - .down
+        regions: [.back, .front, .left, .up, .down]
   flow_equation: !Flow_Darcy_MH
     nonlinear_solver:
       linear_solver: !Petsc
@@ -111,8 +110,5 @@ problem: !Coupling_Sequential
       format: !vtk
         variant: ascii
       precision: 15
-  # secondary_equation
-# problem
-# root
       times:
         - step: 0.2
