@@ -263,7 +263,12 @@ void EquationOutput::make_output_mesh(bool parallel)
     }
 
     // create output mesh identical with the computational one
-	bool discont = need_refinment | (used_interpolations_.find(OutputTime::CORNER_DATA) != used_interpolations_.end());
+	bool discont = need_refinment |
+                (used_interpolations_.find(OutputTime::CORNER_DATA) != used_interpolations_.end()) |
+    // TODO: this is just temporary fix for the DG native output
+    // In future we have to solve that native data might
+    //   use both continuous (e.g. in mechanics) and discontinous mesh (DG).
+                (used_interpolations_.find(OutputTime::NATIVE_DATA) != used_interpolations_.end());
 	//discont |= parallel;
 	if (discont) {
 		output_mesh_ = std::make_shared<OutputMeshDiscontinuous>(*mesh_);
