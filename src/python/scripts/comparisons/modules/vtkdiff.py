@@ -45,6 +45,7 @@ class VTKDiff(InPlaceComparison):
             vtu_ref.Update()
             vtu_test.Update()
             vtu_ref, vtu_test = self.interpolate_filter(vtu_ref, vtu_test)
+
         vtu_ref.Update()
         vtu_test.Update()
         #print(vtu_ref.GetOutput())
@@ -59,25 +60,37 @@ class VTKDiff(InPlaceComparison):
         reader.SetFileName(fname)
         return reader
 
+    def clean_grid(self, vtk_data):
+        point_data = vtk.vtkCellDataToPointData()
+        point_data.SetInputData(vtk_data.GetOutput())
+        point_data.Update()
+
+        clean_grid = vtk.vtkExtractUnstructuredGrid()
+        clean_grid.SetInputData(point_data.GetOutput())
+        clean_grid.ExtentClippingOff()
+        clean_grid.CellClippingOff()
+        clean_grid.PointClippingOff()
+        clean_grid.MergingOn()
+        clean_grid.Update()
+
+        return clean_grid
+
+
     def interpolate_filter(self, ref, test):
-        ref_point_data = vtk.vtkCellDataToPointData()
-        ref_point_data.SetInputData(ref.GetOutput())
-        ref_point_data.Update()
+        ref_clean = self.clean_grid(ref)
+        test_clean = self.clean_grid(test)
+
         #print(ref.GetOutput().GetNumberOfPoints())
         #print(ref_point_data.GetOutput().GetNumberOfPoints())
         #print(ref_point_data.GetValidPoints().GetNumberOfTuples());
 
-        test_point_data = vtk.vtkCellDataToPointData()
-        test_point_data.SetInputData(test.GetOutput())
-        test_point_data.Update()
-
         test_on_ref = vtk.vtkProbeFilter()
-        test_on_ref.SetInputData(ref_point_data.GetOutput()) # points
-        test_on_ref.SetSourceData(test_point_data.GetOutput()) # data
+        test_on_ref.SetInputData(ref_clean.GetOutput()) # points
+        test_on_ref.SetSourceData(test_clean.GetOutput()) # data
         test_on_ref.Update();
         #print(test_on_ref.GetOutput().GetNumberOfPoints())
         #print(test_on_ref.GetValidPoints().GetNumberOfTuples());
-        return ref_point_data, test_on_ref
+        return ref_clean, test_on_ref
 
     def compare_data(self, ref_data, test_data):
         ref_names = self.get_array_names(ref_data)
