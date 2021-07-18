@@ -234,17 +234,17 @@ public:
     Range<DHCellAccessor> ghost_range() const;
 
     /// Return size of own range (number of own cells)
-    inline unsigned int own_size() const {
+    inline unsigned int n_own_cells() const {
         return el_ds_->lsize();
     }
 
     /// Return size of local range (number of local cells)
-    inline unsigned int local_size() const {
+    inline unsigned int n_local_cells() const {
         return el_ds_->lsize()+ghost_4_loc.size();
     }
 
     /// Return size of ghost range (number of ghost cells)
-    inline unsigned int ghost_size() const {
+    inline unsigned int n_ghost_cells() const {
         return ghost_4_loc.size();
     }
 

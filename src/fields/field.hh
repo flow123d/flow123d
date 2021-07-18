@@ -41,6 +41,7 @@
 #include "input/type_base.hh"                          // for Array
 #include "input/type_generic.hh"                       // for Instance
 #include "input/type_record.hh"                        // for Record::ExcRec...
+#include "input/input_exception.hh"                    // for Input::Exception
 #include "io/output_time.hh"                           // for OutputTime
 #include "mesh/elements.h"                             // for Element::dim
 #include "mesh/region.hh"                              // for RegionDB::ExcU...

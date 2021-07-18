@@ -241,7 +241,13 @@ void LinSys_PETSC::preallocate_matrix()
 
     if (symmetric_) MatSetOption(matrix_, MAT_SYMMETRIC, PETSC_TRUE);
     MatSetOption(matrix_, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE);
+
+    // This option is used in order to assembly larger local matrices with own non-zero structure.
+    // Zero entries are ignored so we must prevent adding exact zeroes.
+    // Add LocalSystem::almost_zero for entries that should not be eliminated.
     MatSetOption(matrix_, MAT_IGNORE_ZERO_ENTRIES, PETSC_TRUE);
+
+
 
     delete[] on_nz;
     delete[] off_nz;

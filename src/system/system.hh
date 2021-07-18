@@ -90,12 +90,6 @@ char * 	get_log_file( void );
 void	resume_log_file( void );
 */
 
-#define xprintf(...) _xprintf(__FILE__, __func__, __LINE__, __VA_ARGS__)
-
-int     _xprintf(const char * const xprintf_file, const char * const xprintf_func, const int xprintf_line, MessageType type, const char * const fmt, ... );
-//void *	xmalloc(size_t size);
-//void * xrealloc( void * ptr, size_t size );
-
 // TODO: implement as a templated function
 /*
 #ifndef xfree

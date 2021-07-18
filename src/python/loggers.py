@@ -4,6 +4,7 @@ import enum
 import sys
 import os
 import time
+import re
 from loguru import logger as _logger
 
 __flow__ = os.path.abspath(
@@ -69,9 +70,9 @@ class PrintFormat(object):
                 dict(sink=logfile),
             ],
             levels=[
-                dict(name=LogLevels.NORMAL, no=60, color=''),
+                dict(name=LogLevels.NORMAL, no=60,  color=''),
                 dict(name=LogLevels.IMPORTANT, no=60, color='<b>'),
-                dict(name=LogLevels.SUCCESS, no=60, color='<b><g>'),
+                dict(name=LogLevels.SUCCESS, color='<b><g>'),
                 dict(name=LogLevels.FAILED, no=60, color='<b><r>'),
                 dict(name=LogLevels.WARN, no=60, color='<b><y>'),
             ]
@@ -124,16 +125,21 @@ class PrintFormat(object):
         return self._write(self.SEP, self.default)
 
     def _write(self, msg, lvl, *args, **kwargs):
+        indent_msg = self._get_msg(msg, *args, **kwargs)
         if self.ansi:
-            self.logger.opt(ansi=self.ansi).log(lvl, self._get_msg(msg, *args, **kwargs))
+            self.logger.opt(ansi=self.ansi).log(lvl, indent_msg)
         else:
-            self.logger.log(lvl, self._get_msg(msg, *args, **kwargs))
+            self.logger.log(lvl, indent_msg)
         return self
 
     def _get_msg(self, msg, *args, **kwargs):
-        if self.raw:
-            return '' + self.indent_str() + str(msg)
-        return '' + self.indent_str() + str(msg).format(*args, **kwargs)
+        fmt_msg = str(msg)
+        if not self.raw:
+            fmt_msg = fmt_msg.format(*args, **kwargs)
+        fmt_msg = '' + self.indent_str() + fmt_msg
+        # escape brackets as loguru tries to use them for formatting.
+        fmt_msg = re.sub(r"(\\?</?((?:[fb]g\s)?[^<>\s]*)>)", r"\\\1", fmt_msg)
+        return fmt_msg
 
     def __enter__(self):
         self.level += 1

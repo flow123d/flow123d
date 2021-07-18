@@ -379,7 +379,8 @@ LinSys_MATIS::LinSys_MATIS(std::shared_ptr<LocalToGlobalMap> global_row_4_sub_ro
 
     // vytvorit mapping v PETSc z global_row_4_sub_row
     // check possible index range of lg_map to fit into signed int type
-    if (lg_map->get_distr()->size() > numeric_limits<PetscInt>::max()) xprintf(Err,"Index range doesn't fit into signed int!");
+    // ASSERT should be replaced with exception
+    ASSERT_LE(lg_map->get_distr()->size(), numeric_limits<PetscInt>::max()).error("Index range doesn't fit into signed int!");
     err = ISLocalToGlobalMappingCreate(PETSC_COMM_WORLD,
             lg_map->size(),
             (const PetscInt*)(&(lg_map->get_map_vector()[0])),

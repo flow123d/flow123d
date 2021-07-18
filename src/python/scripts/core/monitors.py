@@ -177,9 +177,8 @@ class MainMonitor(ThreadMonitor):
             elif printf.verbosity() is printf.OutputVerbosity.SMART and pypy.with_error():
                 printf.sep()
                 printf.out('Last 50 lines from file {self.pypy.full_output}'.format(**locals()))
-                printf.opt(raw=True).stream(
-                    format_n_lines(self.content, success=False, n_lines=-50)
-                )
+                msg = format_n_lines(self.content, success=False, n_lines=-50)
+                printf.opt(raw=True).stream(msg)
             elif printf.verbosity() is printf.OutputVerbosity.MINIMAL and pypy.with_error():
                 printf.sep()
                 printf.out('Last 50 lines from file {self.pypy.full_output}'.format(**locals()))
