@@ -54,9 +54,8 @@
  *      which bounds the time step to very small values. Advection module can also compute sorption and dual porosity model (substance exchange between mobile and
  *      immobile pores.
  *
- * <b> Reactions. </b> There are two modules for simulation of chemical reactions. SEMCHEM module can solve nonlinear differential equations rising form
- *      general multicompoent reactiong systems. On the other side this is very costly and is suitable only for small meshes. The second chemical module
- *      is fast but can cope only with linear reactions, i.e. decays.
+ * <b> Reactions. </b> There is fast chemical module but can cope only with linear reactions. It allows to compute with different types of reactions: Radioactive decay,
+ *      Sorption, First order reaction and Dual porosity. 
  *
  * <b> Paralellism. </b> Both the water flow solver and transport solver can run in parallel on distributed memory systems. We use essentially PETSc and MPI libraries.
  *
