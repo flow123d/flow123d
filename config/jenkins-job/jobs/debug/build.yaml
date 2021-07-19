@@ -10,6 +10,7 @@ builders:
   - shell: |
       # start image
       docker rm -f cont{build-type} || echo "container not running"
+      flow123d/bin/fterm update
       flow123d/bin/fterm dbg -- \
           --privileged -di \
           --name cont{build-type} \
