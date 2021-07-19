@@ -27,15 +27,13 @@ test_cases:
    - 06_bulk_interpolated.yaml
    - 07_bulk_interpolation_cube.yaml
    - 15_formula_surface_depth.yaml
+   - 21_fields_FE_native.yaml
    - 22_elementwise_fields.yaml
+#   - 23_elementwise_bc.yaml
+#   - 24_elementwise_integer_field.yaml
   proc: [1, 2]
 
-# Temporary turn off native output test in flow
-# (we support native data just for DG init conc)
-# Temporary turn off elementwise BC data
+# Temporary turn off native input/output tests  
 - files:
-    - 21_fields_FE_native.yaml
-    - 23_elementwise_bc.yaml
-    - 24_elementwise_integer_field.yaml
     - 25_elementwise_anisotropy.yaml
   proc: []  
