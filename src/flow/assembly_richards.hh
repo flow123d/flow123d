@@ -87,7 +87,8 @@ protected:
             conductivity /= ele->n_sides();
         }
         else {
-            conductivity = this->ad_->conductivity.value(ele.centre(), ele);
+            // conductivity = this->ad_->conductivity.value(ele.centre(), ele);
+            conductivity = this->K_mechanics(ele);
         }
         return conductivity;
     }

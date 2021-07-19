@@ -139,9 +139,9 @@ protected:
     /// delta_min = positive lower limit due to fracture closing (by user)
     /// [u].n + delta-delta_min = updated_cs ; This will be a updated from elasticity model
 
-    double K_mechanics(const DHCellAccessor& dh_cell) 
+    double K_mechanics(ElementAccessor<3> ele)
     {
-        const ElementAccessor<3> ele = dh_cell.elm();
+        // const ElementAccessor<3> ele = dh_cell.elm();
         double initial_cs = ad_->cross_section.value(ele.centre(), ele);
         double flow_conductivity = ad_->conductivity.value(ele.centre(), ele);
         double min_cs_bound = ad_->delta_0.value(ele.centre(), ele);
@@ -394,14 +394,7 @@ protected:
         
         const ElementAccessor<3> ele = dh_cell.elm();
         double cs = ad_->cross_section.value(ele.centre(), ele);
-
-        // // Use for HM upated conductivity using coupling law
-        double conduct = K_mechanics(dh_cell);
-        
-        // ad_->conductivity.value(ele.centre(), ele) = conduct;
-        // Use only for flow conductivity
-        // double conduct = ad_->conductivity.value(ele.centre(), ele);
-
+        double conduct = K_mechanics(ele);
         double scale = 1 / cs / conduct;
         
         assemble_sides_scale(dh_cell, scale);
@@ -537,13 +530,8 @@ protected:
             ElementAccessor<3> ele_higher = neighb_side.cell().elm();
             ngh_values_.fe_side_values_.reinit(neighb_side.side());
             nv = ngh_values_.fe_side_values_.normal_vector(0);
-           
-            // Use for HM upated conductivity using coupling law
-            double conduct = K_mechanics(dh_cell);
-            // ad_->conductivity.value(ele.centre(), ele) = conduct;
-            // Use only for flow conductivity
-            // double conduct = ad_->conductivity.value(ele.centre(), ele);
-            
+
+            double conduct = K_mechanics(ele);     
             double value = ad_->sigma.value( ele.centre(), ele) *
                             2*conduct*
                             arma::dot(ad_->anisotropy.value( ele.centre(), ele)*nv, nv) *
