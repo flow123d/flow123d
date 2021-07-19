@@ -319,12 +319,10 @@ void TransportDG<Model>::initialize()
 	sources_assembly_ = new GenericAssembly< SourcesAssemblyDim >(eq_fields_.get(), eq_data_.get());
 	bdr_cond_assembly_ = new GenericAssembly< BdrConditionAssemblyDim >(eq_fields_.get(), eq_data_.get());
     
-    init_proj_assembly_ = nullptr;
-    init_cond_assembly_ = nullptr;
     if(init_projection)
-	    init_proj_assembly_ = new GenericAssembly< InitProjectionAssemblyDim >(eq_fields_.get(), eq_data_.get());
+	    init_assembly_ = new GenericAssembly< InitProjectionAssemblyDim >(eq_fields_.get(), eq_data_.get());
     else
-        init_cond_assembly_ = new GenericAssembly< InitConditionAssemblyDim >(eq_fields_.get(), eq_data_.get());
+        init_assembly_ = new GenericAssembly< InitConditionAssemblyDim >(eq_fields_.get(), eq_data_.get());
 
     // initialization of balance object
     Model::balance_->allocate(eq_data_->dh_->distr()->lsize(), mass_assembly_->eval_points()->max_size());
@@ -380,10 +378,7 @@ TransportDG<Model>::~TransportDG()
         delete stiffness_assembly_;
         delete sources_assembly_;
         delete bdr_cond_assembly_;
-        if(init_proj_assembly_ != nullptr)
-            delete init_proj_assembly_;
-        if(init_cond_assembly_ != nullptr)
-            delete init_cond_assembly_;
+        delete init_assembly_;
     }
 
 }
@@ -669,12 +664,12 @@ void TransportDG<Model>::set_initial_condition()
         for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)
             eq_data_->ls[sbi]->start_allocation();
         
-        init_proj_assembly_->assemble(eq_data_->dh_);
+        init_assembly_->assemble(eq_data_->dh_);
 
         for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)
             eq_data_->ls[sbi]->start_add_assembly();
 
-        init_proj_assembly_->assemble(eq_data_->dh_);
+        init_assembly_->assemble(eq_data_->dh_);
 
         for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)
         {
@@ -683,7 +678,7 @@ void TransportDG<Model>::set_initial_condition()
         }
     }
     else
-        init_cond_assembly_->assemble(eq_data_->dh_);
+        init_assembly_->assemble(eq_data_->dh_);
 }
 
 

@@ -46,6 +46,18 @@ struct AssemblyIntegrals {
 
 
 /**
+ * Common interface class for all Assembly classes.
+ */
+class GenericAssemblyBase
+{
+public:
+    GenericAssemblyBase(){}
+    virtual ~GenericAssemblyBase(){}
+    virtual void assemble(std::shared_ptr<DOFHandlerMultiDim> dh) = 0;
+};
+
+
+/**
  * @brief Generic class of assemblation.
  *
  * Class
@@ -55,7 +67,7 @@ struct AssemblyIntegrals {
  *  - provides methods that allow construction of element patches
  */
 template < template<IntDim...> class DimAssembly>
-class GenericAssembly
+class GenericAssembly : public GenericAssemblyBase
 {
 private:
 	/**
@@ -185,7 +197,7 @@ public:
 	 * Loops through local cells and calls assemble methods of assembly
 	 * object of each cells over space dimension.
 	 */
-    void assemble(std::shared_ptr<DOFHandlerMultiDim> dh) {
+    void assemble(std::shared_ptr<DOFHandlerMultiDim> dh) override {
         START_TIMER( DimAssembly<1>::name() );
         this->reallocate_cache();
         multidim_assembly_[1_d]->begin();

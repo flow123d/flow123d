@@ -54,6 +54,7 @@ class DiscreteSpace;
 class Distribution;
 class OutputTime;
 class DOFHandlerMultiDim;
+class GenericAssemblyBase;
 template<unsigned int dim, class Model> class AssemblyDG;
 template<unsigned int dim, class Model> class MassAssemblyDG;
 template<unsigned int dim, class Model> class StiffnessAssemblyDG;
@@ -425,8 +426,7 @@ private:
     GenericAssembly< StiffnessAssemblyDim > * stiffness_assembly_;
     GenericAssembly< SourcesAssemblyDim > * sources_assembly_;
     GenericAssembly< BdrConditionAssemblyDim > * bdr_cond_assembly_;
-	GenericAssembly< InitConditionAssemblyDim > * init_cond_assembly_;
-    GenericAssembly< InitProjectionAssemblyDim > * init_proj_assembly_;
+	GenericAssemblyBase * init_assembly_;
 };
 
 
