@@ -1,5 +1,5 @@
 # Test goal: 2D poroelasticity model - Mandel's problem.
-# Author: Pavel Exner
+# Author: Pavel Exner, Jan Stebel
 # Description and analytical solution: see 03_pv_filter.py
 # Limitations and issues:
 # - Slight deviation from original Mandel's problem - while originally
@@ -8,12 +8,10 @@
 # - When prescribing only normal displacements in 2D domain, displacement
 #   is nonunique in the 3rd direction. Works only with iterative linear solvers.
 #
-#   PROBLEM: not same results in parallel run (2p - different zero time output)
-#   checked in Paraview
 
 flow123d_version: 3.1.0
 problem: !Coupling_Sequential
-  description: Mandel's rectangular problem.
+  description: Mandel's rectangular problem (upper right subdomain).
   mesh:
     mesh_file: ../00_mesh/square_1x1_xy_28el.msh
   flow_equation: !Coupling_Iterative
@@ -35,8 +33,8 @@ problem: !Coupling_Sequential
             r_tol: 1e-15
         input_fields:
           - region: BULK
-            conductivity: 1e-0
-            storativity: 1e-0
+            conductivity: 1
+            storativity: 1
             init_pressure: 0.295
 
           - region: [.right_x ]
@@ -69,7 +67,7 @@ problem: !Coupling_Sequential
           r_tol: 1e-15
         input_fields:
           - region: BULK
-            young_modulus: 1e0
+            young_modulus: 1
             poisson_ratio: 0.2
 
           - region: .bottom_y
