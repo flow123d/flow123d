@@ -139,9 +139,15 @@ protected:
     /// delta_min = positive lower limit due to fracture closing (by user)
     /// [u].n + delta-delta_min = updated_cs ; This will be a updated from elasticity model
 
-    double K_mechanics(double flow_conductivity, double min_cs_bound, double updated_cs, double initial_cs) 
+    double K_mechanics(const DHCellAccessor& dh_cell) 
     {
-        return std::max(2.0, flow_conductivity*pow(((min_cs_bound + std::max(updated_cs - min_cs_bound, 0.0) )/initial_cs),2));
+        const ElementAccessor<3> ele = dh_cell.elm();
+        double initial_cs = ad_->cross_section.value(ele.centre(), ele);
+        double flow_conductivity = ad_->conductivity.value(ele.centre(), ele);
+        double min_cs_bound = ad_->delta_0.value(ele.centre(), ele);
+        double updated_cs = ad_->updated_cross_section.value(ele.centre(),ele);
+        return flow_conductivity*pow(((min_cs_bound + std::max(updated_cs - min_cs_bound, 0.0) )/initial_cs),2);
+        // return flow_conductivity;
     }
 
     static unsigned int size()
@@ -386,20 +392,17 @@ protected:
     virtual void assemble_sides(const DHCellAccessor& dh_cell)
     {
         
-        // ad_->conductivity =  2.0 * ad_->conductivity; 
         const ElementAccessor<3> ele = dh_cell.elm();
         double cs = ad_->cross_section.value(ele.centre(), ele);
-        double fconduct = ad_->conductivity.value(ele.centre(), ele);
-        double mcs = ad_->delta_0.value(ele.centre(), ele);
-        double ucs = ad_->updated_cross_section.value(ele.centre(),ele);
-        
-        // Use for HM upated conductivity using coupling law
-        double conduct = K_mechanics(fconduct, mcs, ucs, cs);
 
+        // // Use for HM upated conductivity using coupling law
+        double conduct = K_mechanics(dh_cell);
+        
+        // ad_->conductivity.value(ele.centre(), ele) = conduct;
         // Use only for flow conductivity
         // double conduct = ad_->conductivity.value(ele.centre(), ele);
 
-        double scale = 1 / cs /conduct;
+        double scale = 1 / cs / conduct;
         
         assemble_sides_scale(dh_cell, scale);
     }
@@ -534,20 +537,15 @@ protected:
             ElementAccessor<3> ele_higher = neighb_side.cell().elm();
             ngh_values_.fe_side_values_.reinit(neighb_side.side());
             nv = ngh_values_.fe_side_values_.normal_vector(0);
-
-            double cs = ad_->cross_section.value(ele.centre(), ele);
-            double fconduct = ad_->conductivity.value(ele.centre(), ele);
-            double mcs = ad_->delta_0.value(ele.centre(), ele);
-            double ucs = ad_->updated_cross_section.value(ele.centre(),ele);
-            
+           
             // Use for HM upated conductivity using coupling law
-            double conduct = K_mechanics(fconduct, mcs, ucs, cs);
-
+            double conduct = K_mechanics(dh_cell);
+            // ad_->conductivity.value(ele.centre(), ele) = conduct;
             // Use only for flow conductivity
             // double conduct = ad_->conductivity.value(ele.centre(), ele);
             
             double value = ad_->sigma.value( ele.centre(), ele) *
-                            2*conduct *
+                            2*conduct*
                             arma::dot(ad_->anisotropy.value( ele.centre(), ele)*nv, nv) *
                             ad_->cross_section.value( neighb_side.centre(), ele_higher ) * // cross-section of higher dim. (2d)
                             ad_->cross_section.value( neighb_side.centre(), ele_higher ) /

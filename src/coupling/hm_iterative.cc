@@ -124,7 +124,7 @@ HM_Iterative::EqData::EqData()
 
 // struct fn_K_mechanics {
 // 	inline double operator() (double flow_conductivity) {
-//         return 2.0*flow_conductivity; //std::max(2.0, flow_conductivity*pow(((min_cs_bound + std::max(updated_cs - min_cs_bound, 0.0) )/initial_cs),2));
+//         return 2.0; //std::max(2.0, flow_conductivity*pow(((min_cs_bound + std::max(updated_cs - min_cs_bound, 0.0) )/initial_cs),2));
 //     }
 // };
 
