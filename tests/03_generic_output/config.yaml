@@ -64,5 +64,5 @@ test_cases:
 
 # test of generic fields subdomain and region_id
 - files:
-    - 13_generic_fields
+    - 13_generic_fields.yaml
   proc: [2]
