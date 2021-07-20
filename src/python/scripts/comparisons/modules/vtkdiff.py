@@ -65,6 +65,8 @@ class VTKDiff(InPlaceComparison):
         point_data.SetInputData(vtk_data.GetOutput())
         point_data.Update()
 
+        # Unfortunately this filter is able to compute average of merged points
+        # This cause spurious differences for permuted meshes.
         clean_grid = vtk.vtkExtractUnstructuredGrid()
         clean_grid.SetInputData(point_data.GetOutput())
         clean_grid.ExtentClippingOff()
