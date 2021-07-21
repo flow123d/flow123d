@@ -12,11 +12,6 @@ test_cases:
   - 01_simple.yaml
   - 02_source.yaml
   - 03_flow_trans_sorp.yaml
-  - 04_langmuir.yaml
-  - 05_freundlich.yaml
-  - 06_linear.yaml
-  - 07_langmuir_var.yaml
-  - 08_freundlich_var.yaml
-  - 09_linear_var.yaml
+  - 04_flow_trans_sorp_var.yaml
   - 10_linear_dg.yaml
   - 11_direct_vs_interpolation.yaml
