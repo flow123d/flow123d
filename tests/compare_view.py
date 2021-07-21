@@ -3,6 +3,8 @@
 # For given file path finds both reference and the test file and starts two instances of corresponding vizualization tool GMSH or Paraview.
 # file can be either the reference path, e.g. 02_dirichlet/transport/transport-000001.vtu
 # or test path with number of processors, e.g. 02_dirichlet.2/transport/transport-000001.vtu
+#
+# After one viewer is closed the script automaticaly kills the other one.
 
 
 import subprocess
@@ -34,7 +36,7 @@ class ProcessThread:
     def cmd_call(self, command, **kwargs):
         self.sub_process = subprocess.Popen(command, **kwargs)
         self.sub_process.wait()
-        print(f"END CMD CALL: {command}")
+        #print(f"END CMD CALL: {command}")
         return 
     
     def result(self):
@@ -45,7 +47,7 @@ class ProcessThread:
     
     def finished(self):
         res = self.result()
-        print(f"{res} ... for {self.command}")
+        #print(f"{res} ... for {self.command}")
         return res != ProcessThread.none_result
         
           

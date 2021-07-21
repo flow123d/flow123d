@@ -370,11 +370,10 @@ void Mesh::check_mesh_on_read() {
 //}
 
 void Mesh::canonical_faces() {
-    for (uint i_el=0; i_el < bulk_size_; i_el++) {
+    // element_vec_ still contains both bulk and boundary elements
+    for (uint i_el=0; i_el < element_vec_.size(); i_el++) {
         Element &ele = element_vec_[i_el];
         std::sort(ele.nodes_.begin(), ele.nodes_.end());
-        // mark inverted elements
-
     }
 
 }
