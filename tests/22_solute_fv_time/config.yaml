@@ -23,5 +23,5 @@ test_cases:
   time_limit: 120
   check_rules:
     - ndiff:
-        files: ["*.vtu", "*.pvd", "*_balance.txt"]
+        files: ["*.pvd", "*_balance.txt"]
       
