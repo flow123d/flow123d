@@ -626,7 +626,7 @@ void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>
 	else mesh = dh_->mesh();
 	for (auto elm : mesh->elements_range()) {
 		if (elm.dim() == 3) {
-			xprintf(Err, "Dimension of element in target mesh must be 0, 1 or 2! elm.idx() = %d\n", elm.idx());
+			THROW( ExcInvalidElemeDim() << EI_ElemIdx(elm.idx()) );
 		}
 
 		double epsilon = 4* numeric_limits<double>::epsilon() * elm.measure();

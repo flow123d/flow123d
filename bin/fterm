@@ -41,14 +41,13 @@ CFG="$REL_FLOW_DIR/config"
 # default version of the image used when **running** docker image
 image_version=dbg
 
-# default tag of the image when **running** images
-# can be changed in the following manner:
-#     ./fterm @2.2.0 build
-#     ./fterm @3.0.0 update
-#     ./fterm @latest
+# default tag of the used docker image: flow123d/flow-libs-dev-${image_version}:${image_tag}
+# can be specified explicitely from input:
+# e.g. ./fterm @2.2.0 build
 image_tag=latest
 
-# if docker_version file exists, we change docker_version
+# In order to link the flow123d commit with particular image tag 
+# see the file: config/docker/image_tag
 DOCKER_TAG="$CFG/docker/image_tag"
 if [[ -f "$DOCKER_TAG" ]]; then
   image_tag=$(cat "$DOCKER_TAG")
