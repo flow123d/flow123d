@@ -1,6 +1,6 @@
 flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
-  description: Tutorial 4 - Fractures - diffusion, no blind fractures (auxiliary)
+  description: Example 6 - Fractures - flow through dead-end fractures (auxiliary)
   mesh:
     mesh_file: 04_mesh.msh
     regions:
@@ -10,10 +10,10 @@ problem: !Coupling_Sequential
           - flow_fracture1
           - flow_fracture2
       - !Union
-        name: blind_fractures
+        name: deadend_fractures
         regions:
-          - blind_fracture1
-          - blind_fracture2
+          - deadend_fracture1
+          - deadend_fracture2
       - !Union
         name: BC_right
         regions:
@@ -33,11 +33,12 @@ problem: !Coupling_Sequential
     input_fields:
       - region: rock
         conductivity: 0.000315
+        cross_section: 1
       - region: flow_fractures
         conductivity: 31.5
         cross_section: 0.01
-      - region: blind_fractures
-        conductivity: 3.15e-4     # variant without blind-fractures conductivity: 0.000315
+      - region: deadend_fractures
+        conductivity: 31.5
         cross_section: 0.01
       - region: BC_left
         bc_type: dirichlet
@@ -60,45 +61,32 @@ problem: !Coupling_Sequential
       format: !gmsh
         variant: ascii
   solute_equation: !Coupling_OperatorSplitting
-    transport: !Solute_AdvectionDiffusion_DG
+    transport: !Solute_Advection_FV
       input_fields:
         - region: rock
           init_conc: 0
           porosity: 0.005
-          diff_m: 0.0369
-          disp_l: 5
-          disp_t: 0.5
         - region: flow_fractures
           init_conc: 0
           porosity: 0.1
-          diff_m: 0.0369
-          disp_l: 5
-          disp_t: 0.5
-        - region: blind_fractures
+        - region: deadend_fractures
           init_conc: 0
-          porosity: 0.1
-          diff_m: 0.0369
-          disp_l: 5
-          disp_t: 0.5
-        - region: .left_points
+          porosity: 0.005
+        - region: BC_left
           bc_type: dirichlet
-          bc_conc: !FieldFormula
-            value: 2.84959e-5*exp(-0.5*((t-2000)/700)^2)
+          bc_conc: 1.0e-05
       solver: !Petsc
         a_tol: 1.0e-12
         r_tol: 1.0e-12
     substances:
       - I
     time:
-      end_time: 50000
+      end_time: 1000
     balance:
       cumulative: true
     output_stream:
-      times:
-        - step: 500
-          end: 5000
-        - begin: 5000
-          step: 5000
       file: transport.pvd
-      format: !vtk
+      format: !gmsh
         variant: ascii
+      times:
+        - step: 20

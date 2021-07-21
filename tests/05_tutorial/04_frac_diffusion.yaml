@@ -73,8 +73,7 @@
 ##      conductivity: 31.5
 ##      cross_section: 0.01
 ##    - region: deadend_fractures
-##      conductivity: 3.15
-##      # variant without dead-end fractures conductivity: 0.000315
+##      conductivity: 3.15       # variant without dead-end fractures conductivity: 0.000315
 ##      cross_section: 0.01
 ##
 ##To eliminate the dead-end fractures from the model, one can set their conductivity identical to the rock. Other possibility is to use the same conductivity as in the flow-fractures.
