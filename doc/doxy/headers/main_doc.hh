@@ -59,6 +59,8 @@
  *
  * <b> Paralellism. </b> Both the water flow solver and transport solver can run in parallel on distributed memory systems. We use essentially PETSc and MPI libraries.
  *
+ * <b> @ref assembly_process "Assembly Process" </b> All equations use effective assembly process. Detail description of individual steps and used classes.
+ *
  * <h2> Main program modules </h2>
  *
  * <b> @ref input_mod "Input" </b> module defines possible formats and structures of input files and their readers.
