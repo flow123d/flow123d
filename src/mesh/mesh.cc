@@ -16,6 +16,7 @@
  * @brief   Mesh construction
  */
 
+
 #include <unistd.h>
 #include <set>
 #include <unordered_map>
@@ -93,8 +94,8 @@ const IT::Record & Mesh::get_input_type() {
                      "element in plan view (Z projection).")
         .declare_key("raw_ngh_output", IT::FileName::output(), IT::Default::optional(),
                      "Output file with neighboring data from mesh.")
-        .declare_key("optimize_mesh", IT::Bool(), IT::Default("true"), "If true, make optimization of nodes and elements order. "
-        		     "This will speed up the calculations in assembations.")
+        .declare_key("optimize_mesh", IT::Bool(), IT::Default("true"), "If true, permute nodes and elements in order to increase cache locality. "
+        		     "This will speed up the calculations. GMSH output preserves original ordering but is slower. All variants of VTK output use the permuted.")
         .close();
 }
 
@@ -369,11 +370,10 @@ void Mesh::check_mesh_on_read() {
 //}
 
 void Mesh::canonical_faces() {
+    // element_vec_ still contains both bulk and boundary elements
     for (uint i_el=0; i_el < element_vec_.size(); i_el++) {
         Element &ele = element_vec_[i_el];
         std::sort(ele.nodes_.begin(), ele.nodes_.end());
-        // mark inverted elements
-
     }
 
 }
@@ -518,6 +518,9 @@ bool Mesh::find_lower_dim_element( vector<unsigned int> &element_list, unsigned 
 
     vector<unsigned int>::iterator e_dest=element_list.begin();
     for( vector<unsigned int>::iterator ele = element_list.begin(); ele!=element_list.end(); ++ele) {
+        //DebugOut() << "Eid: " << this->elem_index(*ele)
+        //        << format(element_vec_[*ele].nodes_);
+
         if (element_vec_[*ele].dim() == dim) { // keep only indexes of elements of same dimension
             *e_dest=*ele;
             ++e_dest;
