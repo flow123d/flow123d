@@ -349,7 +349,7 @@ void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) 
             auto source_mesh = ReaderCache::get_mesh(reader_file_);
             ReaderCache::get_element_ids(reader_file_, *(source_mesh.get()));
             if (this->interpolation_ == DataInterpolation::equivalent_msh) {
-                source_target_mesh_elm_map_ = ReaderCache::get_target_mesh_element_map(reader_file_, const_cast<Mesh *>(mesh));
+                source_target_mesh_elm_map_ = ReaderCache::get_target_mesh_element_map(reader_file_, const_cast<Mesh *>(mesh), boundary_domain);
                 if (source_target_mesh_elm_map_->size() == 0) { // incompatible meshes
                     this->interpolation_ = DataInterpolation::gauss_p0;
                     WarningOut().fmt("Source mesh of FieldFE '{}' is not compatible with target mesh.\nInterpolation of input data will be changed to 'P0_gauss'.\n",

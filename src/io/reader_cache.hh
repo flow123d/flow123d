@@ -67,7 +67,9 @@ public:
 	 * Reader and appropriate input data mesh are given by FilePath.
 	 * If map is not created method check_compatible_mesh of \p computational_mesh is called.
 	 */
-	static std::shared_ptr<std::vector<LongIdx>> get_target_mesh_element_map(const FilePath &file_path, Mesh *computational_mesh);
+    static std::shared_ptr<std::vector<LongIdx>> get_target_mesh_element_map(const FilePath &file_path,
+                                                                             Mesh *computational_mesh,
+                                                                             bool boundary_domain);
 
 private:
 	/// Returns singleton instance

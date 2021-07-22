@@ -55,7 +55,7 @@ public:
     const LongIdx *get_local_part() override;
 
     /// Overwrite Mesh::check_compatible_mesh()
-    std::shared_ptr<std::vector<LongIdx>> check_compatible_mesh( Mesh & input_mesh) override;
+    std::shared_ptr<std::vector<LongIdx>> check_compatible_mesh( Mesh & input_mesh, bool boundary_domain) override;
 
     /// Overwrite Mesh::n_nodes()
     unsigned int n_nodes() const override;

@@ -237,7 +237,7 @@ public:
      *             If element doesn't exist in input mesh value is set to Mesh::undef_idx.
      *             If meshes are not compatible returns empty vector.
      */
-    virtual std::shared_ptr<std::vector<LongIdx>> check_compatible_mesh( Mesh & input_mesh);
+    virtual std::shared_ptr<std::vector<LongIdx>> check_compatible_mesh(Mesh & input_mesh, bool boundary_domain);
 
     /// Create and return ElementAccessor to element of given idx
     virtual ElementAccessor<3> element_accessor(unsigned int idx) const;
