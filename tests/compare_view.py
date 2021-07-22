@@ -106,7 +106,7 @@ def find_test_path(ref_path):
   
 def view(path):
     _, ext = os.path.splitext(path)
-    if ext == "msh":
+    if ext == ".msh":
         return ProcessThread([gmsh, path])
     else:
         return ProcessThread([paraview, path])
