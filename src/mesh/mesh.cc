@@ -369,7 +369,7 @@ void Mesh::check_mesh_on_read() {
 //}
 
 void Mesh::canonical_faces() {
-    for (uint i_el=0; i_el < bulk_size_; i_el++) {
+    for (uint i_el=0; i_el < element_vec_.size(); i_el++) {
         Element &ele = element_vec_[i_el];
         std::sort(ele.nodes_.begin(), ele.nodes_.end());
         // mark inverted elements
@@ -391,7 +391,7 @@ void Mesh::setup_topology() {
 
 
     check_mesh_on_read();
-    //canonical_faces();
+    canonical_faces();
 
     make_neighbours_and_edges();
     element_to_neigh_vb();
@@ -745,7 +745,7 @@ template <int Dim>
 void set_perm(ElementAccessor<3> &ele, uint i_side, uint *permutation)  {
     uint iperm = RefElement<Dim>::permutation_index(permutation);
     ele->permutation_idx_[i_side] = iperm;
-    //ASSERT_EQ(0, iperm);
+    ASSERT_EQ(0, iperm);
 }
 
 void Mesh::make_edge_permutations()
