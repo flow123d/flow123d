@@ -1,0 +1,70 @@
+flow123d_version: 3.1.0
+problem: !Coupling_Sequential
+  description: Test of different porosity in fractures for solute and heat transport
+  mesh:
+    mesh_file: ../00_mesh/square_2frac.msh
+  flow_equation: !Flow_Darcy_MH
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1e-20
+        r_tol: 1e-20
+    input_fields:
+      - region: rock
+        conductivity: 1e-2
+
+      - region: [fracture_upper, fracture_lower]
+        conductivity: 1e-1
+        cross_section: 0.02
+      #- region: 
+        #conductivity: 1e-1
+        #cross_section: 0.02
+
+      - region: .left
+        bc_type: dirichlet
+        bc_pressure: 0
+      - region: .right
+        bc_type: dirichlet
+        bc_pressure: 1
+    output_stream:
+      file: flow.pvd
+      format: !vtk
+        variant: ascii
+    output:
+      fields:
+        - piezo_head_p0
+        - pressure_p0
+        - velocity_p0
+        - region_id
+  solute_equation: !Coupling_OperatorSplitting
+    balance:
+      cumulative: true
+    output_stream:
+      file: solute.pvd
+      format: !vtk
+        variant: ascii
+      times:
+        - step: 1
+    time:
+      end_time: 10
+    substances: tracer
+    transport: !Solute_AdvectionDiffusion_DG
+      input_fields:
+        - region: rock
+          porosity: 0.1
+
+        - region: fracture_upper
+          porosity: 0.5
+        - region: fracture_lower
+          porosity: 0.01
+
+#          diff_m: 1e-2
+        - region: [.right, .right_fu, .right_fl]
+          bc_type: dirichlet
+          bc_conc: 1
+      output:
+        fields:
+          - conc
+          - region_id
+      solver: !Petsc
+        a_tol: 1.0e-14
+        r_tol: 1.0e-14

@@ -391,7 +391,7 @@ void Mesh::setup_topology() {
 
 
     check_mesh_on_read();
-    canonical_faces();
+    //canonical_faces();
 
     make_neighbours_and_edges();
     element_to_neigh_vb();
@@ -745,7 +745,7 @@ template <int Dim>
 void set_perm(ElementAccessor<3> &ele, uint i_side, uint *permutation)  {
     uint iperm = RefElement<Dim>::permutation_index(permutation);
     ele->permutation_idx_[i_side] = iperm;
-    ASSERT_EQ(0, iperm);
+    //ASSERT_EQ(0, iperm);
 }
 
 void Mesh::make_edge_permutations()
@@ -763,6 +763,9 @@ void Mesh::make_edge_permutations()
         auto ele = edg.side(0)->element();
 		ele->permutation_idx_[edg.side(0)->side_idx()] = 0;
 
+		//DebugOut() <<  "ele: " << ele.idx() << " s: 0" << "\n";
+        //DebugOut() <<  "side dim:" << edg.side(0)->dim() << "\n";
+
 		if (edg.n_sides() > 1)
 		{
 		    // For every node on the reference side(0) give its local idx on the current side.
@@ -770,16 +773,24 @@ void Mesh::make_edge_permutations()
 
 
 		    node_numbers.clear();
-			for (uint i=0; i<n_side_nodes; i++)
+			for (uint i=0; i<n_side_nodes; i++)	{
+			    //DebugOut() << "node nums: " << edg.side(0)->node(i).idx() << " " << i << "\n";
 				node_numbers[edg.side(0)->node(i).idx()] = i;
+			}
+
 
 			for (uint sid=1; sid<edg.n_sides(); sid++)
 			{
 			    auto side = edg.side(sid);
 			    auto ele = side->element();
 
-			    for (uint i=0; i<n_side_nodes; i++)
+		        //DebugOut() <<  "ele: " << ele.idx() << " s: " << sid << "\n";
+		        //DebugOut() <<  "side dim:" << edg.side(0)->dim() << "\n";
+
+			    for (uint i=0; i<n_side_nodes; i++) {
+			        //DebugOut() << "perm: " << side->node(i).idx() << " " << i <<"\n";
 					permutation[node_numbers[side->node(i).idx()]] = i;
+			    }
 
 				switch (edg.side(0)->dim())
 				{
@@ -810,22 +821,28 @@ void Mesh::make_edge_permutations()
 
 		// element of lower dimension is reference, so
 		// we calculate permutation for the adjacent side
-		for (unsigned int i=0; i<n_side_nodes; i++)
+		for (unsigned int i=0; i<n_side_nodes; i++) {
+
+		    //DebugOut() << "Nnode nums: " << nb->element().node(i).idx() << " " << i << "\n";
 			node_numbers[nb->element().node(i).idx()] = i;
+		}
 
-		for (unsigned int i=0; i<n_side_nodes; i++)
-			permutation[node_numbers[nb->side()->node(i).idx()]] = i;
+		for (unsigned int i=0; i<n_side_nodes; i++) {
 
-		switch (nb->side()->dim())
+            //DebugOut() << "perm: " << side->node(i).idx() << " " << i <<"\n";
+			permutation[node_numbers[side->node(i).idx()]] = i;
+		}
+
+		switch (side->dim())
 		{
 		case 0:
-			set_perm<0>(s_ele, side->side_idx(), permutation);
+			set_perm<1>(s_ele, side->side_idx(), permutation);
 			break;
 		case 1:
-		    set_perm<1>(s_ele, side->side_idx(), permutation);
+		    set_perm<2>(s_ele, side->side_idx(), permutation);
 			break;
 		case 2:
-		    set_perm<2>(s_ele, side->side_idx(), permutation);
+		    set_perm<3>(s_ele, side->side_idx(), permutation);
 			break;
 		}
 	}
@@ -845,6 +862,7 @@ void Mesh::make_edge_permutations()
         // boundary element (lower dim) is reference, so
         // we calculate permutation for the adjacent side
         for (unsigned int i=0; i<n_side_nodes; i++) {
+            //DebugOut() << "Bnode nums: " << bdr_elm.node(i).idx() << " " << i << "\n";
             node_numbers[bdr_elm.node(i).idx()] = i;
         }
 
@@ -854,19 +872,20 @@ void Mesh::make_edge_permutations()
             auto ele = side->element();
 
             for (uint i=0; i<n_side_nodes; i++) {
-                permutation[node_numbers[edg.side(sid)->node(i).idx()]] = i;
+                //DebugOut() << "perm: " << side->node(i).idx() << " " << i <<"\n";
+                permutation[node_numbers[side->node(i).idx()]] = i;
             }
 
             switch (bdr_elm.dim())
             {
             case 0:
-                set_perm<0>(ele, side->side_idx(), permutation);
-                break;
-            case 1:
                 set_perm<1>(ele, side->side_idx(), permutation);
                 break;
-            case 2:
+            case 1:
                 set_perm<2>(ele, side->side_idx(), permutation);
+                break;
+            case 2:
+                set_perm<3>(ele, side->side_idx(), permutation);
                 break;
             }
         }

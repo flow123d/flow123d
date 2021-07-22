@@ -552,10 +552,10 @@ template<unsigned int dim>
 unsigned int RefElement<dim>::permutation_index(unsigned int p[n_nodes_per_side])
 {
 	unsigned int index;
+	//DebugOut() << "dim: " << dim << " "  << std::vector<unsigned int>(p, p+n_nodes_per_side);
 	for (index = 0; index < n_side_permutations; index++)
 		if (equal(p, p + n_nodes_per_side, side_permutations[index].data()))
 			return index;
-
 	THROW( ExcInvalidPermutation() );
 
 	// The following line is present in order to suppress compilers warning
