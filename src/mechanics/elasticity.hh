@@ -127,7 +127,7 @@ public:
     	/// @name Solution of algebraic system
     	// @{
 
-    	/// Linear algebra system for the transport equation.
+    	/// Linear algebraic system.
     	LinSys *ls;
 
     	// @}

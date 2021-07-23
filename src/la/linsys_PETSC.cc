@@ -414,30 +414,40 @@ LinSys::SolveInfo LinSys_PETSC::solve()
 
 }
 
-void LinSys_PETSC::view( )
+void LinSys_PETSC::view(string text )
 {
-    std::string matFileName = "flow123d_matrix.m";
-    std::string rhsFileName = "flow123d_rhs.m";
-    std::string solFileName = "flow123d_sol.m";
+    FilePath matFileName(text + "_flow123d_matrix.m",FilePath::FileType::output_file);
+    FilePath rhsFileName(text + "_flow123d_rhs.m",FilePath::FileType::output_file);
+    FilePath solFileName(text + "_flow123d_sol.m",FilePath::FileType::output_file);
 
     PetscViewer myViewer;
 
-    PetscViewerASCIIOpen(comm_,matFileName.c_str(),&myViewer);
-    PetscViewerSetFormat(myViewer,PETSC_VIEWER_ASCII_MATLAB);
-    MatView( matrix_, myViewer );
-    PetscViewerDestroy(&myViewer);
+    if ( matrix_ != NULL ) {
+        PetscViewerASCIIOpen(comm_,((string)matFileName).c_str(),&myViewer);
+        PetscViewerSetFormat(myViewer,PETSC_VIEWER_ASCII_MATLAB);
+        MatView( matrix_, myViewer );
+        PetscViewerDestroy(&myViewer);
+    }
+    else
+        WarningOut() << "PetscViewer: the matrix of LinSys is not set.\n";
 
-    PetscViewerASCIIOpen(comm_,rhsFileName.c_str(),&myViewer);
-    PetscViewerSetFormat(myViewer,PETSC_VIEWER_ASCII_MATLAB);
-    VecView( rhs_, myViewer );
-    PetscViewerDestroy(&myViewer);
+    if ( rhs_ != NULL ) {
+        PetscViewerASCIIOpen(comm_,((string)rhsFileName).c_str(),&myViewer);
+        PetscViewerSetFormat(myViewer,PETSC_VIEWER_ASCII_MATLAB);
+        VecView( rhs_, myViewer );
+        PetscViewerDestroy(&myViewer);
+    }
+    else
+        WarningOut() << "PetscViewer: the rhs of LinSys is not set.\n";
 
     if ( solution_ != NULL ) {
-        PetscViewerASCIIOpen(comm_,solFileName.c_str(),&myViewer);
+        PetscViewerASCIIOpen(comm_,((string)solFileName).c_str(),&myViewer);
         PetscViewerSetFormat(myViewer,PETSC_VIEWER_ASCII_MATLAB);
         VecView( solution_, myViewer );
         PetscViewerDestroy(&myViewer);
     }
+    else
+        WarningOut() << "PetscViewer: the solution of LinSys is not set.\n";
 }
 
 LinSys_PETSC::~LinSys_PETSC( )
