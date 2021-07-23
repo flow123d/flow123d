@@ -32,6 +32,7 @@ public:
      *
      */
     static const Input::Type::Array get_input_type();
+
     /**
      *
      */

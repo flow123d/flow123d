@@ -54,12 +54,14 @@ class DiscreteSpace;
 class Distribution;
 class OutputTime;
 class DOFHandlerMultiDim;
+class GenericAssemblyBase;
 template<unsigned int dim, class Model> class AssemblyDG;
 template<unsigned int dim, class Model> class MassAssemblyDG;
 template<unsigned int dim, class Model> class StiffnessAssemblyDG;
 template<unsigned int dim, class Model> class SourcesAssemblyDG;
 template<unsigned int dim, class Model> class BdrConditionAssemblyDG;
 template<unsigned int dim, class Model> class InitConditionAssemblyDG;
+template<unsigned int dim, class Model> class InitProjectionAssemblyDG;
 template< template<IntDim...> class DimAssembly> class GenericAssembly;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim> class FiniteElement;
@@ -137,7 +139,8 @@ public:
     template<unsigned int dim> using StiffnessAssemblyDim = StiffnessAssemblyDG<dim, Model>;
     template<unsigned int dim> using SourcesAssemblyDim = SourcesAssemblyDG<dim, Model>;
     template<unsigned int dim> using BdrConditionAssemblyDim = BdrConditionAssemblyDG<dim, Model>;
-    template<unsigned int dim> using InitConditionAssemblyDim = InitConditionAssemblyDG<dim, Model>;
+	template<unsigned int dim> using InitConditionAssemblyDim = InitConditionAssemblyDG<dim, Model>;
+    template<unsigned int dim> using InitProjectionAssemblyDim = InitProjectionAssemblyDG<dim, Model>;
 
 	typedef std::vector<std::shared_ptr<FieldFE< 3, FieldValue<3>::Scalar>>> FieldFEScalarVec;
 
@@ -228,6 +231,9 @@ public:
 
         /// Object for distribution of dofs.
         std::shared_ptr<DOFHandlerMultiDim> dh_;
+
+		/// Vector of solution data.
+		std::vector<VectorMPI> output_vec;
 
 		FieldFEScalarVec conc_fe;
 		std::shared_ptr<DOFHandlerMultiDim> dh_p0;
@@ -386,9 +392,6 @@ private:
 	/// Array for storing the output solution data.
 	//vector<double*> output_solution;
 
-	/// Vector of solution data.
-	vector<VectorMPI> output_vec;
-
 	/// Record with input specification.
 	Input::Record input_rec;
     
@@ -415,6 +418,7 @@ private:
     /// Indicates whether matrices have been preallocated.
     bool allocation_done;
 
+	bool init_projection;
     // @}
 
     /// general assembly objects, hold assembly objects of appropriate dimension
@@ -422,8 +426,7 @@ private:
     GenericAssembly< StiffnessAssemblyDim > * stiffness_assembly_;
     GenericAssembly< SourcesAssemblyDim > * sources_assembly_;
     GenericAssembly< BdrConditionAssemblyDim > * bdr_cond_assembly_;
-    GenericAssembly< InitConditionAssemblyDim > * init_cond_assembly_;
-
+	GenericAssemblyBase * init_assembly_;
 };
 
 
