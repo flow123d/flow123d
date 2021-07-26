@@ -958,7 +958,7 @@ bool compare_points(const arma::vec3 &p1, const arma::vec3 &p2) {
 }
 
 
-std::shared_ptr<std::vector<LongIdx>> Mesh::check_compatible_mesh(Mesh & input_mesh, bool boundary_domain)
+std::shared_ptr<EquivalentMeshMap> Mesh::check_compatible_mesh(Mesh & input_mesh)
 {
     // TODO: what to do about BC mesh?
     // - have indepedent ele numbering
@@ -972,10 +972,9 @@ std::shared_ptr<std::vector<LongIdx>> Mesh::check_compatible_mesh(Mesh & input_m
 
 	std::vector<unsigned int> node_ids; // indices map: nodes from source mesh to nodes of target mesh
 	std::vector<unsigned int> result_list; // list of elements with same dimension as vtk element
-	std::shared_ptr<std::vector<LongIdx>> map_ptr =
-        std::make_shared<std::vector<LongIdx>>(element_vec_.size(), (LongIdx)Mesh::undef_idx);
+	std::shared_ptr<EquivalentMeshMap> map_ptr = 
+        std::make_shared<EquivalentMeshMap>(n_elements(), get_bc_mesh()->n_elements(), (LongIdx)Mesh::undef_idx);
     // indices map: nodes from source mesh to nodes of target mesh
-	std::vector<LongIdx> &element_ids_map = *(map_ptr.get());
 
     std::vector<unsigned int> node_list; // auxiliary vector of node indices of a single element
     std::vector<unsigned int> candidate_list; // auxiliary output vector for intersect_element_lists function
@@ -1007,7 +1006,7 @@ std::shared_ptr<std::vector<LongIdx>> Mesh::check_compatible_mesh(Mesh & input_m
                             found_i_node = i_elm_node;
                         else if (found_i_node != i_elm_node) {
                             // duplicate nodes in target mesh - not compatible
-                            return std::make_shared<std::vector<LongIdx>>(0);
+                            return std::make_shared<EquivalentMeshMap>();
                         }
                     }
                 }
@@ -1020,13 +1019,13 @@ std::shared_ptr<std::vector<LongIdx>> Mesh::check_compatible_mesh(Mesh & input_m
         }
     }
 
-    if(!boundary_domain)
+    unsigned int n_found = 0; // number of found equivalent elements
     {
         // create map `element_ids_map` from ele indices of source mesh to ele indices of target mesh
         // - iterate over elements of source mesh
         // - get adjacent nodes of target mesh using `node_ids` map
         // - find adjacent element of target mesh using the found nodes
-        unsigned int n_found = 0; // number of found equivalent elements
+        std::vector<LongIdx> &element_ids_map = map_ptr->bulk;
         bool valid_nodes;
         for (auto elm : input_mesh.elements_range()) {
             valid_nodes = true;
@@ -1052,17 +1051,12 @@ std::shared_ptr<std::vector<LongIdx>> Mesh::check_compatible_mesh(Mesh & input_m
             node_list.clear();
             result_list.clear();
         }
-
-        // no equivalent bulk element found => mesh is not compatible
-        if (n_found==0)
-            return std::make_shared<std::vector<LongIdx>>(0);
     }
-    else
     {
         // same as above for bulk but for boundary meshes
+        std::vector<LongIdx> &element_ids_map = map_ptr->boundary;
     	auto bc_mesh = this->get_bc_mesh();
     	auto input_bc_mesh = input_mesh.get_bc_mesh();
-        unsigned int n_found = 0; // number of found equivalent elements
         bool valid_nodes;
         for (auto elm : input_bc_mesh->elements_range()) {
             valid_nodes = true;
@@ -1076,8 +1070,7 @@ std::shared_ptr<std::vector<LongIdx>> Mesh::check_compatible_mesh(Mesh & input_m
                 bc_mesh->intersect_element_lists(node_list, candidate_list);
                 for (auto i_elm : candidate_list) {
                 	if ( bc_mesh->element_accessor(i_elm)->dim() == elm.dim() )
-                        // TODO: this line is a blocker to use the same code as above for bulk
-                        result_list.push_back(bc_mesh->element_accessor(i_elm).mesh_idx());
+                        result_list.push_back(i_elm);
                 }
             }
 
@@ -1089,13 +1082,13 @@ std::shared_ptr<std::vector<LongIdx>> Mesh::check_compatible_mesh(Mesh & input_m
             node_list.clear();
             result_list.clear();
         }
-
-        // no equivalent boundary element found => mesh is not compatible
-        if (n_found==0)
-            return std::make_shared<std::vector<LongIdx>>(0);
     }
 
-    return map_ptr;
+    // no equivalent element found => mesh is not compatible
+    if (n_found==0)
+        return std::make_shared<EquivalentMeshMap>();
+    else
+        return map_ptr;
 }
 
 void Mesh::read_regions_from_input(Input::Array region_list)

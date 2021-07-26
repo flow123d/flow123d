@@ -287,7 +287,7 @@ private:
     std::vector<FEValues<spacedim>> fe_values_;
 
     /// Maps element indices between source (data) and target (computational) mesh if data interpolation is set to equivalent_msh
-    std::shared_ptr<std::vector<LongIdx>> source_target_mesh_elm_map_;
+    std::shared_ptr<EquivalentMeshMap> source_target_mesh_elm_map_;
 
     /// Holds specific data of field evaluation over all dimensions.
     std::array<FEItem, 4> fe_item_;

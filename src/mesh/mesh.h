@@ -70,6 +70,23 @@ public:
     static Input::Type::Record input_type;
 };
 
+class EquivalentMeshMap{
+public:
+    std::vector<LongIdx> bulk;
+    std::vector<LongIdx> boundary;
+
+    EquivalentMeshMap(){}
+    
+    EquivalentMeshMap(unsigned int bulk_size, unsigned int boundary_size, LongIdx def_val)
+    : bulk(bulk_size, def_val),
+      boundary(boundary_size, def_val)
+    {}
+
+    bool empty()
+    { return bulk.empty() && boundary.empty(); }
+};
+
+
 //=============================================================================
 // STRUCTURE OF THE MESH
 //=============================================================================
@@ -237,7 +254,7 @@ public:
      *             If element doesn't exist in input mesh value is set to Mesh::undef_idx.
      *             If meshes are not compatible returns empty vector.
      */
-    virtual std::shared_ptr<std::vector<LongIdx>> check_compatible_mesh(Mesh & input_mesh, bool boundary_domain);
+    virtual std::shared_ptr<EquivalentMeshMap> check_compatible_mesh(Mesh & input_mesh);
 
     /// Create and return ElementAccessor to element of given idx
     virtual ElementAccessor<3> element_accessor(unsigned int idx) const;
