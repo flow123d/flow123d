@@ -960,24 +960,15 @@ bool compare_points(const arma::vec3 &p1, const arma::vec3 &p2) {
 
 std::shared_ptr<EquivalentMeshMap> Mesh::check_compatible_mesh(Mesh & input_mesh)
 {
-    // TODO: what to do about BC mesh?
-    // - have indepedent ele numbering
-    // - have proper dofhandler (evaluation in FieldFE through auxiliary ValueHandler)
-    // - then change the saved ele indices for boundary mesh below and merge with the bulk code
-
     // Assumptions:
     // - target (computational) mesh is continous
     // - source mesh can be both continous (unique nodes) and discontinous (duplicit nodes)
     // - at least one compatible element must be found (each mesh can be only subdomain of the other one)
 
 	std::vector<unsigned int> node_ids; // indices map: nodes from source mesh to nodes of target mesh
-	std::vector<unsigned int> result_list; // list of elements with same dimension as vtk element
 	std::shared_ptr<EquivalentMeshMap> map_ptr = 
         std::make_shared<EquivalentMeshMap>(n_elements(), get_bc_mesh()->n_elements(), (LongIdx)Mesh::undef_idx);
     // indices map: nodes from source mesh to nodes of target mesh
-
-    std::vector<unsigned int> node_list; // auxiliary vector of node indices of a single element
-    std::vector<unsigned int> candidate_list; // auxiliary output vector for intersect_element_lists function
 
     {
         // create map `node_ids` from node indices of source mesh to node indices of target mesh
@@ -1020,75 +1011,59 @@ std::shared_ptr<EquivalentMeshMap> Mesh::check_compatible_mesh(Mesh & input_mesh
     }
 
     unsigned int n_found = 0; // number of found equivalent elements
-    {
-        // create map `element_ids_map` from ele indices of source mesh to ele indices of target mesh
-        // - iterate over elements of source mesh
-        // - get adjacent nodes of target mesh using `node_ids` map
-        // - find adjacent element of target mesh using the found nodes
-        std::vector<LongIdx> &element_ids_map = map_ptr->bulk;
-        bool valid_nodes;
-        for (auto elm : input_mesh.elements_range()) {
-            valid_nodes = true;
-            for (unsigned int j=0; j<elm->n_nodes(); j++) { // iterate trough all nodes of an element
-            	if (node_ids[ elm->node_idx(j) ] == Mesh::undef_idx)
-                    valid_nodes = false;
-            	node_list.push_back( node_ids[ elm->node_idx(j) ] );
-            }
-
-            if (valid_nodes) {
-            	this->intersect_element_lists(node_list, candidate_list);
-                for (auto i_elm : candidate_list) {
-                    if ( this->element_accessor(i_elm)->dim() == elm.dim() )
-                        result_list.push_back(i_elm);
-                }
-            }
-
-            if (result_list.size() == 1){
-                element_ids_map[result_list[0]] = elm.idx();
-                n_found++;
-            }
-            
-            node_list.clear();
-            result_list.clear();
-        }
-    }
-    {
-        // same as above for bulk but for boundary meshes
-        std::vector<LongIdx> &element_ids_map = map_ptr->boundary;
-    	auto bc_mesh = this->get_bc_mesh();
-    	auto input_bc_mesh = input_mesh.get_bc_mesh();
-        bool valid_nodes;
-        for (auto elm : input_bc_mesh->elements_range()) {
-            valid_nodes = true;
-            for (unsigned int j=0; j<elm->n_nodes(); j++) { // iterate trough all nodes of any element
-            	if (node_ids[ elm->node_idx(j) ] == Mesh::undef_idx)
-                    valid_nodes = false;
-                node_list.push_back( node_ids[ elm->node_idx(j) ] );
-            }
-
-            if (valid_nodes) {
-                bc_mesh->intersect_element_lists(node_list, candidate_list);
-                for (auto i_elm : candidate_list) {
-                	if ( bc_mesh->element_accessor(i_elm)->dim() == elm.dim() )
-                        result_list.push_back(i_elm);
-                }
-            }
-
-            if (result_list.size() == 1) {
-                element_ids_map[result_list[0]] = elm.idx();
-                n_found++;
-            }
-
-            node_list.clear();
-            result_list.clear();
-        }
-    }
+    // create map for bulk elements
+    n_found += check_compatible_elements(&input_mesh, this, node_ids, map_ptr->bulk);
+    // create map for boundary elements
+    n_found += check_compatible_elements(input_mesh.get_bc_mesh(), this->get_bc_mesh(), node_ids, map_ptr->boundary);
 
     // no equivalent element found => mesh is not compatible
     if (n_found==0)
         return std::make_shared<EquivalentMeshMap>();
     else
         return map_ptr;
+}
+
+unsigned int Mesh::check_compatible_elements(Mesh* source_mesh, Mesh* target_mesh,
+                                             const std::vector<unsigned int>& node_ids,
+                                             std::vector<LongIdx>& map)
+{
+    // create map `element_ids_map` from ele indices of source mesh to ele indices of target mesh
+    // - iterate over elements of source mesh
+    // - get adjacent nodes of target mesh using `node_ids` map
+    // - find adjacent element of target mesh using the found nodes
+
+    std::vector<unsigned int> result_list; // list of elements with same dimension as vtk element
+    std::vector<unsigned int> node_list; // auxiliary vector of node indices of a single element
+    std::vector<unsigned int> candidate_list; // auxiliary output vector for intersect_element_lists function
+    bool valid_nodes;
+
+    unsigned int n_found = 0; // number of found equivalent elements
+    
+    for (auto elm : source_mesh->elements_range()) {
+        valid_nodes = true;
+        for (unsigned int j=0; j<elm->n_nodes(); j++) { // iterate trough all nodes of any element
+            if (node_ids[ elm->node_idx(j) ] == Mesh::undef_idx)
+                valid_nodes = false;
+            node_list.push_back( node_ids[ elm->node_idx(j) ] );
+        }
+
+        if (valid_nodes) {
+            target_mesh->intersect_element_lists(node_list, candidate_list);
+            for (auto i_elm : candidate_list) {
+                if ( target_mesh->element_accessor(i_elm)->dim() == elm.dim() )
+                    result_list.push_back(i_elm);
+            }
+        }
+
+        if (result_list.size() == 1) {
+            map[result_list[0]] = elm.idx();
+            n_found++;
+        }
+
+        node_list.clear();
+        result_list.clear();
+    }
+    return n_found;
 }
 
 void Mesh::read_regions_from_input(Input::Array region_list)

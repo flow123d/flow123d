@@ -539,6 +539,17 @@ protected:
     void sort_permuted_nodes_elements(std::vector<int> new_node_ids, std::vector<int> new_elem_ids);
 
     /**
+     * Looks for the same (compatible) elements between the @p source_mesh and @p target_mesh.
+     * Auxiliary function for check_compatible_mesh().
+     * Uses the nodal mapping @p node_ids.
+     * Fills the element mapping @p map.
+     * Returns the number of compatible elements.
+     */
+    unsigned int check_compatible_elements(Mesh* source_mesh, Mesh* target_mesh,
+                                           const std::vector<unsigned int>& node_ids,
+                                           std::vector<LongIdx>& map);
+
+    /**
      * Database of regions (both bulk and boundary) of the mesh. Regions are logical parts of the
      * domain that allows setting of different data and boundary conditions on them.
      */
