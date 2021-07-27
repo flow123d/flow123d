@@ -302,11 +302,9 @@ void HM_Iterative::update_flow_fields()
         auto elm = ele.elm();
         
         double alpha = data_.alpha.value(elm.centre(), elm);
-        double density = data_.density.value(elm.centre(), elm);
-        double gravity = data_.gravity.value(elm.centre(), elm);
         double young = mechanics_->eq_fields().young_modulus.value(elm.centre(), elm);
         double poisson = mechanics_->eq_fields().poisson_ratio.value(elm.centre(), elm);
-        double beta = beta_ * gravity*density*0.5*alpha*alpha/(2*lame_mu(young, poisson)/elm.dim() + lame_lambda(young, poisson));
+        double beta = beta_*0.5*alpha*alpha/(2*lame_mu(young, poisson)/elm.dim() + lame_lambda(young, poisson));
         
         double old_p = data_.old_pressure_ptr_->value(elm.centre(), elm);
         double p = field_ele_pressure.value(elm.centre(), elm);
