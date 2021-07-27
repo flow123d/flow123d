@@ -155,9 +155,6 @@ public:
      * @brief Initialize solution in the zero time.
      */
 	void zero_time_step() override;
-	
-    bool evaluate_time_constraint(double &)
-    { return false; }
 
     /**
      * @brief Computes the solution in one time instant.
