@@ -176,9 +176,6 @@ void InspectElementsAlgorithm<dim>::compute_intersections(const BIHTree& bih)
                     (last_slave_for_3D_elements[bulk_ele_idx] != component_ele_idx &&
                      !intersection_exists(component_ele_idx,bulk_ele_idx) )
                 ) {
-                    // check that tetrahedron element is numbered correctly and is not degenerated
-                    ASSERT_DBG(ele_3D.tetrahedron_jacobian() > 0).add_value(ele_3D.index(),"element index").error(
-                           "Tetrahedron element (%d) has wrong numbering or is degenerated (negative Jacobian).");
                     
                         // - find first intersection
                         // - if found, prolongate and possibly fill both prolongation queues
@@ -296,9 +293,6 @@ void InspectElementsAlgorithm<dim>::compute_intersections_BIHtree(const BIHTree&
                 
                 if (ele_3D.dim() == 3
                 ) {
-                    // check that tetrahedron element is numbered correctly and is not degenerated
-                    ASSERT_DBG(ele_3D.tetrahedron_jacobian() > 0).add_value(ele_3D.idx(),"element index").error(
-                           "Tetrahedron element (%d) has wrong numbering or is degenerated (negative Jacobian).");
                     
                     IntersectionAux<dim,3> is(component_ele_idx, bulk_ele_idx);
                     START_TIMER("Compute intersection");
@@ -358,8 +352,6 @@ void InspectElementsAlgorithm<dim>::compute_intersections_BB()
                      !intersection_exists(component_ele_idx,bulk_ele_idx) )
                 ){
                     // check that tetrahedron element is numbered correctly and is not degenerated
-                    ASSERT_DBG(ele_3D.tetrahedron_jacobian() > 0).add_value(ele_3D.index(),"element index").error(
-                           "Tetrahedron element (%d) has wrong numbering or is degenerated (negative Jacobian).");
                     
                         // - find first intersection
                         // - if found, prolongate and possibly fill both prolongation queues

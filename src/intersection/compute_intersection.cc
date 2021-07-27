@@ -766,6 +766,9 @@ ComputeIntersection<1,3>::ComputeIntersection(ElementAccessor<3> abscissa,
 {
     ASSERT_DBG(abscissa->dim() == 1);
     ASSERT_DBG(tetrahedron->dim() == 3);
+    ASSERT_DBG(tetrahedron.sign() * tetrahedron.jacobian_S3() > 0).add_value(tetrahedron.index(),"element index").error(
+           "Tetrahedron element (%d) has wrong numbering or is degenerated (negative Jacobian).");
+
     
     plucker_coordinates_abscissa_ = new Plucker(*abscissa.node(0), *abscissa.node(1));
     plucker_coordinates_tetrahedron.resize(6);
@@ -1000,6 +1003,9 @@ ComputeIntersection<2,3>::ComputeIntersection(ElementAccessor<3> triangle,
                                               Mesh *mesh)
 : ComputeIntersection()
 {
+    ASSERT_DBG(tetrahedron.sign() * tetrahedron.jacobian_S3() > 0).add_value(tetrahedron.index(),"element index").error(
+           "Tetrahedron element (%d) has wrong numbering or is degenerated (negative Jacobian).");
+
     mesh_ = mesh;
     plucker_coordinates_triangle_.resize(3);
     plucker_coordinates_tetrahedron.resize(6);
@@ -1138,6 +1144,10 @@ void ComputeIntersection<2,3>::compute(IntersectionAux< 2 , 3  >& intersection)
 	// TODO:
 	// better mechanism for detecting vertex duplicities, do no depend on cyclic order of sides
 	// still need cyclic orientation
+
+	/**
+	 * Compute triangle side - tetrahedron intersections
+	 */
 	for(unsigned int _i_side = 0; _i_side < RefElement<2>::n_lines; _i_side++) {    // go through triangle lines
 	    unsigned int i_side = cycle_sides[_i_side];
 	    IP13s.clear();
@@ -1196,9 +1206,8 @@ void ComputeIntersection<2,3>::compute(IntersectionAux< 2 , 3  >& intersection)
                 }
             }
 
-            IP23_list.push_back(IP23);
+            unsigned int ip_idx = add_ip(IP23);
 
-            unsigned int ip_idx = IP23_list.size()-1;
             //DebugOut().fmt("before: {} after: {} ip: {}\n", object_before_ip, object_after_ip, ip_idx);
             ASSERT_EQ_DBG(IP23_list.size(),  IP_next.size()+1);
             set_links(object_before_ip, ip_idx, object_after_ip);
@@ -1247,6 +1256,7 @@ void ComputeIntersection<2,3>::compute(IntersectionAux< 2 , 3  >& intersection)
             const uint i_edge = IP23.idx_B();
 	        ASSERT_LT_DBG(edge_dim, 2);
 
+	        unsigned int ip_idx = add_ip(IP23);
             if ( edge_dim == 0) {
                 face_pair = vertex_faces(i_edge);
                 // mark edges coincident with the vertex
@@ -1258,8 +1268,6 @@ void ComputeIntersection<2,3>::compute(IntersectionAux< 2 , 3  >& intersection)
                 
             //DebugOut() << print_var(face_pair[0])<< print_var(face_pair[1]);
 
-            IP23_list.push_back(IP23);
-            unsigned int ip_idx = IP23_list.size()-1;
 
             unsigned int s3_object = s3_dim_starts[edge_dim] + i_edge;
 
@@ -1361,7 +1369,7 @@ auto ComputeIntersection<2,3>::edge_faces(uint i_edge)-> FacePair
 
 auto ComputeIntersection<2,3>::vertex_faces(uint i_vertex)-> FacePair
 {
-    // vertex edges clockwise
+    // vertex edges clockwise when looking from outside of tetrahedron
     const IdxVector<3> &vtx_edges = RefElement<3>::interact(Interaction<1,0>(i_vertex));
     std::array<unsigned int, 3> n_ori, sum_idx;
     n_ori.fill(0);
@@ -1397,11 +1405,12 @@ auto ComputeIntersection<2,3>::vertex_faces(uint i_vertex)-> FacePair
     } else if (n_degen == 1) {
         // One edge in S2 plane.
         unsigned int i_edge = sum_degen;
-        ASSERT( n_positive + n_negative == 2);
+        ASSERT_DBG( n_positive + n_negative == 2);
         if ( n_positive == 1) {
             // opposite signs, S2 plane cuts S3
 
             FacePair pair = edge_faces(vtx_edges[(i_edge+1)%3]);
+            // Get the face opposite to the degenerated edge.
             unsigned int face = RefElement<3>::interact(Interaction<2,0>(i_vertex))[i_edge];
             // assign edges to faces
             //DebugOut().fmt("vtx: {} edg: {} face: {}", i_vertex, i_edge, face);
@@ -1413,14 +1422,14 @@ auto ComputeIntersection<2,3>::vertex_faces(uint i_vertex)-> FacePair
             // same signs; S2 plane touch S3 vertex and a single edge
             //DebugOut() << "Touch in edge.";
             // same signs S2 plane touchs S3
-            ASSERT(n_positive == 0 || n_positive== 2);
+            ASSERT_DBG(n_positive == 0 || n_positive== 2);
             return { s3_dim_starts[0]+i_vertex, s3_dim_starts[1] + vtx_edges[i_edge]};
         }
 
 
     } else {
-        ASSERT(n_degen == 0);
-        ASSERT( n_positive + n_negative == 3);
+        ASSERT_DBG(n_degen == 0);
+        ASSERT_DBG( n_positive + n_negative == 3);
 
         if (n_positive == 1) {
             unsigned int i_edge = sum_idx[ int(IntersectionResult::positive) ];
@@ -1430,7 +1439,7 @@ auto ComputeIntersection<2,3>::vertex_faces(uint i_vertex)-> FacePair
             return edge_faces(vtx_edges[i_edge]);
         } else {
             // S2 touch vertex of S3 in
-            ASSERT( n_positive == 0 ||  n_positive == 3);
+            ASSERT_DBG( n_positive == 0 ||  n_positive == 3);
             return { s3_dim_starts[0]+i_vertex, s3_dim_starts[0]+i_vertex};
         }
     }

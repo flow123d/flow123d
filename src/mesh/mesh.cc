@@ -303,8 +303,14 @@ void Mesh::check_mesh_on_read() {
     for (auto ele : this->elements_range()) {
         // element quality
     	double quality = ele.quality_measure_smooth();
+    	if (quality < 0) {
+    	    element_vec_[ele.mesh_idx()].inverted = true;
+    	    quality = -quality;
+    	}
+    	if (quality < 4*std::numeric_limits<double>::epsilon())
+    	    THROW( ExcBadElement() << EI_Quality(quality) << EI_ElemId(ele.idx()) );
         if ( quality< 0.001)
-            WarningOut().fmt("Bad quality (<0.001) of the element {}.\n", ele.idx());
+            WarningOut().fmt("Bad quality element ID={}, ({}<0.001).\n", ele.idx(), quality);
 
         // flag used nodes
         for (uint ele_node=0; ele_node<ele->n_nodes(); ele_node++) {
@@ -389,9 +395,9 @@ void Mesh::setup_topology() {
 
     //check_and_normalize();
 
-
-    check_mesh_on_read();
     canonical_faces();
+    check_mesh_on_read();
+
 
     make_neighbours_and_edges();
     element_to_neigh_vb();
@@ -1225,7 +1231,7 @@ void Mesh::init_element(Element *ele, unsigned int elm_id, unsigned int dim, Reg
     if(ele->dim() == 3)
     {
         ElementAccessor<3> ea = this->element_accessor( this->elem_index(elm_id) );
-        double jac = ea.tetrahedron_jacobian();
+        double jac = ea.jacobian_S3();
         if( ! (jac > 0) ) {
             WarningOut().fmt("Tetrahedron element with id {} has wrong numbering or is degenerated (Jacobian = {}).",elm_id, jac);
         }

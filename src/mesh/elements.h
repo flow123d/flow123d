@@ -95,6 +95,9 @@ public:
     */
     mutable std::vector<unsigned int> permutation_idx_;
 
+    /// Inverted permutation of element nodes, negative Jacobian.
+    bool inverted;
+
 protected:
     int pid_;                            ///< Id # of mesh partition
     std::vector<unsigned int> edge_idx_; ///< Edges on sides

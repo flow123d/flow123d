@@ -541,8 +541,23 @@ private:
     auto edge_faces(uint i_edge) -> FacePair;
     auto vertex_faces(uint i_vtx) -> FacePair;
 
-
+    /**
+     * Returns true if: i_obj -> IP -> i_obj
+     * Returns false if i_obj -> no_idx OR i_obj -> IP -> j_obj != i_obj
+     *
+     * Backlink marks: end of the created chain
+     */
     inline bool have_backlink(uint i_obj);
+
+    /**
+     * Add raw intersection point.
+     */
+    inline unsigned int add_ip(const IPAux23 &ip) {
+        DebugOut() << "IP[" << IP23_list.size() << "]:" << ip;
+        IP23_list.push_back(ip);
+        return IP23_list.size() - 1;
+    }
+
     /**
      * Set links: obj_before -> IP -> obj_after
      * if obj_after have null successor, set obj_after -> IP (backlink)

@@ -116,13 +116,44 @@ public:
     /// Computes the measure of the element.
     double measure() const;
 
-    /** Computes the Jacobian of the element.
-     * J = det ( 1  1  1  1 )
-     *           x1 x2 x3 x4
-     *           y1 y2 y3 y4
-     *           z1 z2 z3 z4
+    inline bool inverted() const {
+        return element()->inverted;
+    }
+
+    inline double sign() const {
+        return inverted() ? -1 : 1;
+    }
+
+    /**
+     * Returns Jacobian of 3D element.
+     * Used by measure and in intersections.
      */
-    double tetrahedron_jacobian() const;
+    inline double jacobian_S3() const {
+        ASSERT_DBG(dim() == 3)(dim()).error("Dimension mismatch.");
+        return arma::dot( arma::cross(*( node(1) ) - *( node(0) ),
+                                        *( node(2) ) - *( node(0) )),
+                        *( node(3) ) - *( node(0) )
+                        );
+    }
+
+    /**
+     * Returns Jacobian of 2D element.
+     */
+    inline double jacobian_S2() const {
+        ASSERT_DBG(dim() == 2)(dim()).error("Dimension mismatch.");
+        return arma::norm(
+            arma::cross(*( node(1) ) - *( node(0) ), *( node(2) ) - *( node(0) )),
+            2
+        );
+    }
+
+    /**
+     * Returns Jacobian of 1D element.
+     */
+    inline double jacobian_S1() const {
+        ASSERT_DBG(dim() == 1)(dim()).error("Dimension mismatch.");
+        return arma::norm(*( node(1) ) - *( node(0) ) , 2);
+    }
 
     /// Computes the barycenter.
     arma::vec::fixed<spacedim> centre() const;
@@ -133,6 +164,8 @@ public:
      *
      * We scale the measure so that is gives value 1 for regular elements. Line 1d elements
      * have always quality 1.
+     *
+     * We return signed value in order to detect inverted elements.
      */
     double quality_measure_smooth() const;
 

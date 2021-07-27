@@ -65,19 +65,11 @@ vector<arma::vec3> ElementAccessor<spacedim>::vertex_list() const {
     return vertices;
 }
 
-template <int spacedim> inline
-double ElementAccessor<spacedim>::tetrahedron_jacobian() const
-{
-    ASSERT(dim() == 3)(dim()).error("Cannot provide Jacobian for dimension other than 3.");
-    return arma::dot( arma::cross(*( node(1) ) - *( node(0) ),
-                                    *( node(2) ) - *( node(0) )),
-                    *( node(3) ) - *( node(0) )
-                    );
-}
 
 /**
  * SET THE "METRICS" FIELD IN STRUCT ELEMENT
  */
+
 template <int spacedim> inline
 double ElementAccessor<spacedim>::measure() const {
     switch (dim()) {
@@ -85,21 +77,13 @@ double ElementAccessor<spacedim>::measure() const {
             return 1.0;
             break;
         case 1:
-            return arma::norm(*( node(1) ) - *( node(0) ) , 2);
+            return jacobian_S1();
             break;
         case 2:
-            return
-                arma::norm(
-                    arma::cross(*( node(1) ) - *( node(0) ), *( node(2) ) - *( node(0) )),
-                    2
-                ) / 2.0 ;
+            return jacobian_S2() / 2.0;
             break;
         case 3:
-            return fabs(
-                arma::dot(
-                    arma::cross(*( node(1) ) - *( node(0) ), *( node(2) ) - *( node(0) )),
-                    *( node(3) ) - *( node(0) ) )
-                ) / 6.0;
+            return fabs( jacobian_S3() ) / 6.0;
             break;
     }
     return 1.0;
@@ -139,19 +123,19 @@ double ElementAccessor<spacedim>::quality_measure_smooth() const {
                 sum_pairs += face[i]*face[j]*arma::dot(line, line);
             }
         double regular = (2.0*sqrt(2.0/3.0)/9.0); // regular tetrahedron
-        return fabs( measure()
-                * pow( sum_faces/sum_pairs, 3.0/4.0))/ regular;
+        double sign_measure = jacobian_S3() / 6;
+        return sign_measure * pow( sum_faces/sum_pairs, 3.0/4.0) / regular;
 
     }
     if (dim_==2) {
-        return fabs(
-                measure()/
-                pow(
-                         arma::norm(*node(1) - *node(0), 2)
-                        *arma::norm(*node(2) - *node(1), 2)
-                        *arma::norm(*node(0) - *node(2), 2)
-                        , 2.0/3.0)
-               ) / ( sqrt(3.0) / 4.0 ); // regular triangle
+        return
+                jacobian_S2() / 2
+                / pow(
+                      arma::norm(*node(1) - *node(0), 2)
+                      *arma::norm(*node(2) - *node(1), 2)
+                      *arma::norm(*node(0) - *node(2), 2)
+                      , 2.0/3.0)
+               / ( sqrt(3.0) / 4.0 ); // regular triangle
     }
     return 1.0;
 }
