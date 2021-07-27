@@ -559,7 +559,7 @@ private:
      * Add raw intersection point.
      */
     inline unsigned int add_ip(const IPAux23 &ip) {
-        DebugOut() << "IP[" << IP23_list.size() << "]:" << ip;
+        //DebugOut() << "IP[" << IP23_list.size() << "]:" << ip;
         IP23_list.push_back(ip);
         return IP23_list.size() - 1;
     }

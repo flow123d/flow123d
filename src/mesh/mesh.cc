@@ -304,6 +304,7 @@ void Mesh::check_mesh_on_read() {
         // element quality
     	double quality = ele.quality_measure_smooth();
     	if (quality < 0) {
+    	    ASSERT_LT_DBG(ele.jacobian_S3(), 0);
     	    element_vec_[ele.mesh_idx()].inverted = true;
     	    quality = -quality;
     	}

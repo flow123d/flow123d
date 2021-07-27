@@ -813,6 +813,7 @@ void ComputeIntersection<1,3>::clear_all()
 
 void ComputeIntersection<1,3>::init(){
 
+
 	for(unsigned int side = 0; side <  RefElement<3>::n_sides; side++){
 		for(unsigned int line = 0; line < RefElement<3>::n_lines_per_side; line++){
 			CI12[side].set_pc_triangle(plucker_coordinates_tetrahedron[
@@ -1006,7 +1007,8 @@ ComputeIntersection<2,3>::ComputeIntersection(ElementAccessor<3> triangle,
                                               Mesh *mesh)
 : ComputeIntersection()
 {
-    ASSERT_DBG(tetrahedron.sign() * tetrahedron.jacobian_S3() > 0).add_value(tetrahedron.index(),"element index").error(
+    ASSERT_DBG(tetrahedron.sign() * tetrahedron.jacobian_S3() > 0)
+            (tetrahedron.sign())(tetrahedron.jacobian_S3()).add_value(tetrahedron.index(),"element index").error(
            "Tetrahedron element (%d) has wrong numbering or is degenerated (negative Jacobian).");
 
     mesh_ = mesh;
@@ -1107,11 +1109,18 @@ void ComputeIntersection<2,3>::set_links(uint obj_before_ip, uint ip_idx, uint o
         // target object is already target of other IP, so it must be source object
         std::swap(obj_before_ip, obj_after_ip);
     }
-    //DebugOut().fmt("before: {} ip: {} after: {}\n", obj_before_ip, ip_idx, obj_after_ip );
+
+    unsigned int ip = object_next[obj_after_ip];
     ASSERT_DBG( ! have_backlink(obj_after_ip) )
         (mesh_->element_accessor(intersection_->component_ele_idx()).idx())
         (mesh_->element_accessor(intersection_->bulk_ele_idx()).idx())
-        (obj_before_ip)(ip_idx)(obj_after_ip); // at least one could be target object
+        (obj_before_ip)
+        (ip_idx)
+        (obj_after_ip)
+        (IP_next[ip])
+        (object_next[obj_after_ip]); // at least one could be target object
+
+    //DebugOut().fmt("SET LINK: {} -> ip: {} -> {}\n", obj_before_ip, ip_idx, obj_after_ip );
     object_next[obj_before_ip] = ip_idx;
     IP_next.push_back( obj_after_ip);
     if (object_next[obj_after_ip] == no_idx) {
@@ -1214,7 +1223,7 @@ void ComputeIntersection<2,3>::compute(IntersectionAux< 2 , 3  >& intersection)
 
             unsigned int ip_idx = add_ip(IP23);
 
-            //DebugOut().fmt("before: {} after: {} ip: {}\n", object_before_ip, object_after_ip, ip_idx);
+//            DebugOut().fmt("before: {} after: {} ip: {}\n", object_before_ip, object_after_ip, ip_idx);
             ASSERT_EQ_DBG(IP23_list.size(),  IP_next.size()+1);
             set_links(object_before_ip, ip_idx, object_after_ip);
         }
@@ -1263,6 +1272,8 @@ void ComputeIntersection<2,3>::compute(IntersectionAux< 2 , 3  >& intersection)
 	        ASSERT_LT_DBG(edge_dim, 2);
 
 	        unsigned int ip_idx = add_ip(IP23);
+//	        DebugOut() << print_var(edge_dim);
+
             if ( edge_dim == 0) {
                 face_pair = vertex_faces(i_edge);
                 // mark edges coincident with the vertex
@@ -1272,12 +1283,13 @@ void ComputeIntersection<2,3>::compute(IntersectionAux< 2 , 3  >& intersection)
             else
                 face_pair = edge_faces(i_edge);
                 
-            //DebugOut() << print_var(face_pair[0])<< print_var(face_pair[1]);
+//            DebugOut() << print_var(face_pair[0])<< print_var(face_pair[1]);
+
 
 
             unsigned int s3_object = s3_dim_starts[edge_dim] + i_edge;
 
-            //DebugOut() << print_var(edge_touch[i_edge]) << print_var(have_backlink(s3_object));
+//            DebugOut() << print_var(edge_touch[i_edge]) << print_var(have_backlink(s3_object));
 	        if (IP23.dim_A() < 2
 	                && (! edge_touch[i_edge])
 	                && object_next[s3_object] != no_idx) { // boundary of S2, these ICs are duplicate
@@ -1289,7 +1301,7 @@ void ComputeIntersection<2,3>::compute(IntersectionAux< 2 , 3  >& intersection)
 	            }
 
 	        } else { // interior of S2, just use the face pair
-	                //DebugOut() << print_var(face_pair[0])<< print_var(face_pair[1]);
+//	                DebugOut() << print_var(face_pair[0])<< print_var(face_pair[1]);
 	                set_links(face_pair[0], ip_idx, face_pair[1]);
 
 	                if ( have_backlink(s3_object) ) {
@@ -1367,6 +1379,7 @@ auto ComputeIntersection<2,3>::edge_faces(uint i_edge)-> FacePair
     auto &line_faces=RefElement<3>::interact(Interaction<2,1>(i_edge), S3_inverted);
     unsigned int ip_ori = (unsigned int)(IP12s_[i_edge].result());
     ASSERT_DBG(ip_ori < 2); // no degenerate case
+    //ip_ori ^= (int)(mesh_->element_accessor(intersection_->bulk_ele_idx).inverted());
 
     // RefElement returns edge faces in clockwise order (edge pointing to us)
     // negative ip sign (ori 0) = faces counter-clockwise
@@ -1395,7 +1408,7 @@ auto ComputeIntersection<2,3>::vertex_faces(uint i_vertex)-> FacePair
     unsigned int sum_degen = sum_idx[ int(IntersectionResult::degenerate) ];
     unsigned int n_positive = n_ori[ int(IntersectionResult::positive) ];
     unsigned int n_negative= n_ori[ int(IntersectionResult::negative) ];
-    //DebugOut().fmt("nd: {} sd: {} np: {} nn: {}", n_degen, sum_degen, n_positive, n_negative);
+//    DebugOut().fmt("nd: {} sd: {} np: {} nn: {}", n_degen, sum_degen, n_positive, n_negative);
     if ( n_degen == 2 ) {
         // S2 plane match a face of S3, we treat degenerated edges as the faces
         // incident with the single regualr edge.
