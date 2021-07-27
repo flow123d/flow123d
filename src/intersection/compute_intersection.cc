@@ -834,7 +834,10 @@ unsigned int ComputeIntersection<1,3>::compute(IntersectionAux< 1, 3 >& intersec
 
 unsigned int ComputeIntersection<1,3>::compute(std::vector<IPAux> &IP13s){
 	ASSERT_EQ_DBG(0, IP13s.size());
-    std::vector<int> sign;
+
+	// Topological position of abscissa -2, -1, 0, 1, 2; see 'check_abscissa_topology' method
+    std::vector<int> position_on_abscissa;
+
 
    // loop over faces of tetrahedron
 	for(unsigned int face = 0; face < RefElement<3>::n_sides && IP13s.size() < 2; face++){
@@ -847,7 +850,7 @@ unsigned int ComputeIntersection<1,3>::compute(std::vector<IPAux> &IP13s){
 
 		if (int(result) < int(IntersectionResult::degenerate) ) {
             // fix topology of A (abscissa) in IP12 and save sign
-            sign.push_back(CI12[face].check_abscissa_topology(IP12));
+            position_on_abscissa.push_back(CI12[face].check_abscissa_topology(IP12));
             
             IPAux IP13(IP12, face);
             //DebugOut() << IP13;
@@ -871,7 +874,7 @@ unsigned int ComputeIntersection<1,3>::compute(std::vector<IPAux> &IP13s){
 
 	// in the case, that line goes through vertex, but outside tetrahedron (touching vertex)
 	if(IP13s.size() == 1){
-        if(std::abs(sign[0]) > 1) IP13s.pop_back(); // outside abscissa
+        if(std::abs(position_on_abscissa[0]) > 1) IP13s.pop_back(); // outside abscissa
         return IP13s.size();
 	}
     
@@ -879,7 +882,7 @@ unsigned int ComputeIntersection<1,3>::compute(std::vector<IPAux> &IP13s){
     ASSERT_EQ_DBG(2, IP13s.size());
     
     // intersection outside of abscissa => NO intersection
-    if (sign[0] == sign[1] && std::abs(sign[0]) > 1) {
+    if (position_on_abscissa[0] == position_on_abscissa[1] && std::abs(position_on_abscissa[0]) > 1) {
         IP13s.clear();
         return 0;
     }
@@ -887,15 +890,15 @@ unsigned int ComputeIntersection<1,3>::compute(std::vector<IPAux> &IP13s){
     // order IPs according to the abscissa parameter
     if(IP13s[0].local_bcoords_A()[1] > IP13s[1].local_bcoords_A()[1]){
         std::swap(IP13s[0], IP13s[1]);
-        std::swap(sign[0], sign[1]);
+        std::swap(position_on_abscissa[0], position_on_abscissa[1]);
     }
     
     // possibly cut IPs to abscissa ends and interpolate tetrahedron bcoords
     const int ip_sign[] = {-2, +2}; // states to cut
     for( unsigned int ip=0; ip<2; ip++) {
         // cut every IP to its end of the abscissa
-        if (sign[ip] == ip_sign[ip]) {
-            sign[ip] /=2; // -2 to -1; +2 to +1
+        if (position_on_abscissa[ip] == ip_sign[ip]) {
+            position_on_abscissa[ip] /=2; // -2 to -1; +2 to +1
             correct_tetrahedron_ip_topology(double(ip), ip, IP13s);
             IP13s[ip].set_topology_A(ip, 0);
         }
@@ -1120,6 +1123,7 @@ void ComputeIntersection<2,3>::set_links(uint obj_before_ip, uint ip_idx, uint o
 
 void ComputeIntersection<2,3>::compute(IntersectionAux< 2 , 3  >& intersection)
 {
+    S3_inverted = mesh_->element_accessor(intersection.bulk_ele_idx()).inverted();
     intersection_= &intersection;
     //DebugOut().fmt("2d ele: {} 3d ele: {}\n",
     //        intersection.component_ele_idx(),
@@ -1147,6 +1151,8 @@ void ComputeIntersection<2,3>::compute(IntersectionAux< 2 , 3  >& intersection)
 
 	/**
 	 * Compute triangle side - tetrahedron intersections
+	 * IPs order is given by orientation of triangle sides, sign of IP results influenced by S3 inversion
+	 * is irrelevant.
 	 */
 	for(unsigned int _i_side = 0; _i_side < RefElement<2>::n_lines; _i_side++) {    // go through triangle lines
 	    unsigned int i_side = cycle_sides[_i_side];
@@ -1181,7 +1187,7 @@ void ComputeIntersection<2,3>::compute(IntersectionAux< 2 , 3  >& intersection)
             {
                 // we are on line of the triangle, and IP.idx_A contains local node of the line
                 // E-E, we know vertex index
-                object_before_ip = s2_dim_starts[0]+IP23.idx_A();
+                object_before_ip = s2_dim_starts[0] + IP23.idx_A();
             }// else current_triangle_vertex=3+IP23_list.size(); // no vertex, and unique
 
             // side of triangle touching  S3, in vertex or in edge
@@ -1260,7 +1266,7 @@ void ComputeIntersection<2,3>::compute(IntersectionAux< 2 , 3  >& intersection)
             if ( edge_dim == 0) {
                 face_pair = vertex_faces(i_edge);
                 // mark edges coincident with the vertex
-                for( uint ie : RefElement<3>::interact(Interaction<1,0>(i_edge)) )
+                for( uint ie : RefElement<3>::interact(Interaction<1,0>(i_edge), S3_inverted) )
                     processed_edge[ie] = 1;
             }
             else
@@ -1311,6 +1317,7 @@ void ComputeIntersection<2,3>::compute(IntersectionAux< 2 , 3  >& intersection)
     unsigned int ip_init=0;
     for(unsigned int i=0; i< IP23_list.size(); i++) if (! have_predecessor[i]) ip_init=i;
 
+    // count number of IPs on the S3 faces.
     arma::uvec::fixed<RefElement<3>::n_sides> ips_face_counter; 
     ips_face_counter.zeros();
     
@@ -1357,7 +1364,7 @@ void ComputeIntersection<2,3>::compute(IntersectionAux< 2 , 3  >& intersection)
 
 auto ComputeIntersection<2,3>::edge_faces(uint i_edge)-> FacePair
 {
-    auto &line_faces=RefElement<3>::interact(Interaction<2,1>(i_edge));
+    auto &line_faces=RefElement<3>::interact(Interaction<2,1>(i_edge), S3_inverted);
     unsigned int ip_ori = (unsigned int)(IP12s_[i_edge].result());
     ASSERT_DBG(ip_ori < 2); // no degenerate case
 
@@ -1370,7 +1377,7 @@ auto ComputeIntersection<2,3>::edge_faces(uint i_edge)-> FacePair
 auto ComputeIntersection<2,3>::vertex_faces(uint i_vertex)-> FacePair
 {
     // vertex edges clockwise when looking from outside of tetrahedron
-    const IdxVector<3> &vtx_edges = RefElement<3>::interact(Interaction<1,0>(i_vertex));
+    const IdxVector<3> &vtx_edges = RefElement<3>::interact(Interaction<1,0>(i_vertex), S3_inverted);
     std::array<unsigned int, 3> n_ori, sum_idx;
     n_ori.fill(0);
     sum_idx.fill(0);
@@ -1395,7 +1402,7 @@ auto ComputeIntersection<2,3>::vertex_faces(uint i_vertex)-> FacePair
 
         unsigned int i_edge = 3 - sum_degen; // regular edge index
         FacePair pair = edge_faces(vtx_edges[i_edge]);
-        auto &vtx_faces = RefElement<3>::interact(Interaction<2,0>(i_vertex));
+        auto &vtx_faces = RefElement<3>::interact(Interaction<2,0>(i_vertex), S3_inverted);
         // replace faces by edges
         if (pair[0] == s3_dim_starts[2] + vtx_faces[(i_edge+1)%3])
             return { s3_dim_starts[1] + (i_edge+2)%3,  s3_dim_starts[1] + (i_edge+1)%3 };
@@ -1411,7 +1418,7 @@ auto ComputeIntersection<2,3>::vertex_faces(uint i_vertex)-> FacePair
 
             FacePair pair = edge_faces(vtx_edges[(i_edge+1)%3]);
             // Get the face opposite to the degenerated edge.
-            unsigned int face = RefElement<3>::interact(Interaction<2,0>(i_vertex))[i_edge];
+            unsigned int face = RefElement<3>::interact(Interaction<2,0>(i_vertex), S3_inverted)[i_edge];
             // assign edges to faces
             //DebugOut().fmt("vtx: {} edg: {} face: {}", i_vertex, i_edge, face);
             if (pair[0] == s3_dim_starts[2] + face)
@@ -1454,18 +1461,23 @@ std::vector<std::vector<arma::uvec>> ComputeIntersection<2,3>::_on_faces()
     arma::uvec::fixed<RefElement<3>::n_sides> v; v.zeros();
     
     on_faces[0].resize(RefElement<3>::n_nodes, v);
-    for(uint i=0; i<RefElement<3>::n_nodes; i++)
+    for(uint i=0; i<RefElement<3>::n_nodes; i++) {
+        auto faces = RefElement<3>::interact(Interaction<2,0>(i), false); // order doesn't matter
         for(uint j=0; j<RefElement<3>::n_sides_per_node; j++)
-            on_faces[0][i](RefElement<3>::interact(Interaction<2,0>(i))[j]) = 1;
+            on_faces[0][i](faces[j]) = 1;
+    }
         
     on_faces[1].resize(RefElement<3>::n_lines, v);
-    for(uint i=0; i<RefElement<3>::n_lines; i++)
+    for(uint i=0; i<RefElement<3>::n_lines; i++) {
+        auto faces = RefElement<3>::interact(Interaction<2,1>(i), false); // order doesn't matter
         for(uint j=0; j<RefElement<3>::n_sides_per_line; j++)
-            on_faces[1][i](RefElement<3>::interact(Interaction<2,1>(i))[j]) = 1;
+            on_faces[1][i](faces[j]) = 1;
+    }
     
     on_faces[2].resize(RefElement<3>::n_sides, v);
-    for(uint i=0; i<RefElement<3>::n_sides; i++)
+    for(uint i=0; i<RefElement<3>::n_sides; i++) {
         on_faces[2][i](i) = 1;
+    }
             
 //     DBGCOUT("Print on_faces:\n");
 //     for(uint d=0; d<on_faces.size(); d++)
