@@ -1,0 +1,84 @@
+# Test goal: Input/Output fields and their interpolations in DG, VTK format.
+# Author: Pavel Exner
+# Source for reference: qualitative
+#   Test 44 writes different input fields and uses different interpolations.
+#   Test 45 then reads them accordingly and writes them again.
+#   No computation is of interest.
+#   VTK format considered.
+#   The written output of 44 and 45 must equal (checked by kdiff3 - binary equal).
+#
+#   See Test 44 for other details.
+
+flow123d_version: 3.1.0
+problem: !Coupling_Sequential
+  description: Anisotropic molecular diffusion
+  mesh:
+    mesh_file: ../00_mesh/square_1x1_xy_28el.msh
+    #mesh_file: ../00_mesh/square_1x1_xy.msh
+  flow_equation: !Flow_Darcy_MH
+    input_fields:
+      - region: .BOUNDARY
+        bc_type: dirichlet
+        bc_pressure: 0
+      - region: BULK
+        conductivity: !FieldFE
+            mesh_data_file: output/flow_fields/flow_fields-000000.vtu
+            field_name: conductivity
+            input_discretization: element_data
+        anisotropy: !FieldFE
+            mesh_data_file: output/flow_fields/flow_fields-000000.vtu
+            field_name: anisotropy
+            input_discretization: element_data
+        cross_section: !FieldFE
+            mesh_data_file: output/flow_fields/flow_fields-000000.vtu
+            field_name: conductivity
+            input_discretization: node_data
+    output:
+      fields:
+        - {field: conductivity, interpolation: P0_value}
+        - {field: anisotropy, interpolation: P0_value}
+  solute_equation: !Coupling_OperatorSplitting
+    transport: !Solute_AdvectionDiffusion_DG
+      input_fields:
+        - region: .BOUNDARY
+          bc_type: diffusive_flux
+        - region: BULK
+          porosity: !FieldFE
+            mesh_data_file: output/solute_fields/solute_fields-000000.vtu
+            field_name: porosity
+            input_discretization: element_data
+
+          init_conc:
+            - !FieldFE
+              mesh_data_file: output/solute_fields/solute_fields-000000.vtu
+              field_name: 1_init_conc
+              input_discretization: element_data
+              #interpolation: identic_mesh
+            - !FieldFE
+              mesh_data_file: output/solute_fields/solute_fields-000000.vtu
+              field_name: 2_init_conc
+              input_discretization: element_data
+              #interpolation: identic_mesh
+
+          diff_m:
+            - !FieldFE
+              mesh_data_file: output/solute_fields/solute_fields-000000.vtu
+              field_name: 1_diff_m
+              input_discretization: element_data
+              interpolation: identic_mesh
+            - !FieldFE
+              mesh_data_file: output/solute_fields/solute_fields-000000.vtu
+              field_name: 2_diff_m
+              input_discretization: element_data
+              #interpolation: identic_mesh
+      output:
+        fields:
+        - {field: init_conc, interpolation: P0_value}
+        - {field: diff_m, interpolation: P0_value}
+        - {field: porosity, interpolation: P0_value}
+    output_stream: 
+      format: !vtk
+        variant: ascii
+    substances: [ 1, 2 ]
+    time:
+      end_time: 1

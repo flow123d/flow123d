@@ -256,6 +256,13 @@ protected:
     /// Header of actual loaded data.
     MeshDataHeader actual_header_;
 
+    /** True if the reader can create cache with multiple components (multifield-wise).
+     * GMSH reader - true
+     * VTK reader - false
+     * TODO: find better solution to determine correct component_idx in get_element_data() - GMSH x VTK
+     */
+    bool can_have_components_;
+
     friend class ReaderCache;
 };
 

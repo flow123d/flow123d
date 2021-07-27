@@ -19,6 +19,8 @@ test_cases:
     - 31_serial_vtk_node_interp.yaml
     - 32_serial_vtk_elem_interp.yaml
     - 33_serial_vtk_corn_interp.yaml
+    - 44_P0_data_DG_write.yaml
+    - 45_P0_data_DG_read.yaml
 
 - files: 11_time_marks_mixed_times.yaml
   memory_limit: 1300

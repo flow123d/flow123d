@@ -70,6 +70,7 @@ VtkMeshReader::VtkMeshReader(const FilePath &file_name)
 {
     data_section_name_ = "DataArray";
     has_compatible_mesh_ = false;
+    can_have_components_ = false;
 	make_header_table();
 }
 
@@ -81,6 +82,7 @@ VtkMeshReader::VtkMeshReader(const FilePath &file_name, std::shared_ptr<ElementD
 {
 	data_section_name_ = "DataArray";
     has_compatible_mesh_ = false;
+    can_have_components_ = false;
 	make_header_table();
 }
 
