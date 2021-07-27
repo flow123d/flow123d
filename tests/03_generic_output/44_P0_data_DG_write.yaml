@@ -7,10 +7,8 @@
 #   VTK format considered.
 #   The written output of 44 and 45 must equal (checked by kdiff3 - binary equal).
 #
-#   TODO: Investigate and fix the tensor permuation problem mentioned below.
-#   TODO: After fixing, create similar test for D1_value/P1_value interpolations.
-#         (Other input fields can be used, but only 'diff_m' and 'anisotropy' can be tensor.)
-#         (Keep the tests such that ref out of 44 and 45 are binary equal for easier check)
+#   Note: only the symmetric tensors are supported
+#         (non-symmetric tensors are permuted on output)
 
 flow123d_version: 3.1.0
 problem: !Coupling_Sequential
@@ -26,13 +24,8 @@ problem: !Coupling_Sequential
       - region: BULK
         conductivity: !FieldFormula
           value: 1-x*y + 1e-10
-        anisotropy: !FieldConstant
-          value: 3
-        # TODO: Investigate - gives somehow permuted tensor after reading in test 45
-        #anisotropy: !FieldConstant
-          #value: [ [ 0.1, 0.2, 1 ], [ 0.3, 0.1, 2 ], [ 0, 0, 3 ] ]
-        #anisotropy: !FieldFormula
-          #value: [ [ 0.1*x, 0.2*y, 1 ], [ 0.3*x, 0.1*y, 2 ], [ 0, 0, 3 ] ]
+        anisotropy: !FieldFormula
+          value: [ [ 0.1*x, 0.2*x, 1 ], [ 0.2*x, 0.3*y, 2 ], [ 1, 2, 3 ] ]
     output:
       fields:
         - {field: conductivity, interpolation: P0_value}
@@ -60,16 +53,9 @@ problem: !Coupling_Sequential
             # tensor field (constant)
             - !FieldConstant
               value: [ [ 0.04, 0.02, 0 ], [ 0.02, 0.01, 0 ], [ 0, 0, 0 ] ]
-            # tensor field (constant)
-            - !FieldFormula
-              value: 3
             # tensor field (variable)
-            # TODO: Investigate - gives somehow permuted tensor after reading in test 45
-            # after fixing, replace ref out for substance 2
-            #- !FieldFormula
-              #value: [ [ 0.01, 0.2, 1 ], [ 0.02, 0.04, 2 ], [ 0, 0, 3 ] ]
-            #- !FieldFormula
-              #value: [ [ 0.01*x, 0.2*y, 0 ], [ 0.02*x, 0.04*y, 0 ], [ 0, 0, 0 ] ]
+            - !FieldFormula
+              value: [ [ 0.01*x, 0.2*y, 1 ], [ 0.2*y, 0.01*x, 2 ], [ 1, 2, 3 ] ]
 
       output:
         fields:

@@ -53,7 +53,7 @@ problem: !Coupling_Sequential
               mesh_data_file: ref_out/44_P0_data_DG_write/solute_fields/solute_fields-000000.vtu
               field_name: 1_init_conc
               input_discretization: element_data
-              #interpolation: identic_mesh
+              interpolation: identic_mesh
             - !FieldFE
               mesh_data_file: ref_out/44_P0_data_DG_write/solute_fields/solute_fields-000000.vtu
               field_name: 2_init_conc
