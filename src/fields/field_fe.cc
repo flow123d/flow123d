@@ -132,9 +132,40 @@ const int FieldFE<spacedim, Value>::registrar =
 template <int spacedim, class Value>
 FieldFE<spacedim, Value>::FieldFE( unsigned int n_comp)
 : FieldAlgorithmBase<spacedim, Value>(n_comp),
-  field_name_(""), fe_values_(4)
+  dh_(nullptr), field_name_(""), discretization_(OutputTime::DiscreteSpace::UNDEFINED), fe_values_(4)
 {
 	this->is_constant_in_space_ = false;
+}
+
+
+template<int spacedim, class Value>
+typename Field<spacedim,Value>::FieldBasePtr FieldFE<spacedim, Value>::NativeFactory::create_field(Input::Record rec, const FieldCommon &field) {
+	Input::Array multifield_arr;
+	if (rec.opt_val(field.input_name(), multifield_arr))
+	{
+		unsigned int position = 0;
+		auto it = multifield_arr.begin<Input::AbstractRecord>();
+		if (multifield_arr.size() > 1)
+			while (index_ != position) {
+				++it; ++position;
+			}
+
+        Input::Record field_rec = (Input::Record)(*it);
+        if (field_rec.val<std::string>("TYPE") == "FieldFE") {
+            OutputTime::DiscreteSpace discretization;
+            if (field_rec.opt_val<OutputTime::DiscreteSpace>("input_discretization", discretization)) {
+                if (discretization == OutputTime::DiscreteSpace::NATIVE_DATA) {
+                    std::shared_ptr< FieldFE<spacedim, Value> > field_fe = std::make_shared< FieldFE<spacedim, Value> >(field.n_comp());
+                    FieldAlgoBaseInitData init_data(field.input_name(), field.n_comp(), field.units(), field.limits(), field.get_flags());
+                    field_fe->init_from_input( *it, init_data );
+                    field_fe->set_fe_data(conc_dof_handler_, dof_vector_);
+                    return field_fe;
+                }
+            }
+        }
+	}
+
+	return NULL;
 }
 
 
@@ -192,8 +223,7 @@ VectorMPI FieldFE<spacedim, Value>::set_fe_data(std::shared_ptr<DOFHandlerMultiD
 	init_data.range_end = this->fe_item_[3].range_end_;
 	value_handler3_.initialize(init_data);
 
-	// set discretization
-	discretization_ = OutputTime::DiscreteSpace::UNDEFINED;
+	// set interpolation
 	interpolation_ = DataInterpolation::equivalent_msh;
 
 	return data_vec_;
@@ -363,7 +393,7 @@ void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) 
                 }
             }
         }
-        this->make_dof_handler(mesh);
+        if (dh_ == nullptr) this->make_dof_handler(mesh);
 	}
 }
 
@@ -484,7 +514,10 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 		} else {
 			boundary = false;
 		}
-		if (this->interpolation_==DataInterpolation::identic_msh) {
+		if (is_native) {
+		    n_entities = boundary ? dh_->mesh()->get_bc_mesh()->n_elements() : dh_->mesh()->n_elements();
+		    n_components *= dh_->max_elem_dofs();
+		} else if (this->interpolation_==DataInterpolation::identic_msh) {
 			n_entities = boundary ? dh_->mesh()->get_bc_mesh()->n_elements() : dh_->mesh()->n_elements();
 		} else {
 			n_entities = boundary ? ReaderCache::get_mesh(reader_file_)->get_bc_mesh()->n_elements() : ReaderCache::get_mesh(reader_file_)->n_elements();
@@ -495,7 +528,7 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 				this->unit_conversion_coefficient_, default_value_);
 
 
-	    if (checked_data == CheckResult::not_a_number) {
+	    if ( !is_native && (checked_data == CheckResult::not_a_number) ) {
 	        THROW( ExcUndefElementValue() << EI_Field(field_name_) );
 	    }
 
@@ -860,14 +893,15 @@ void FieldFE<spacedim, Value>::calculate_equivalent_values(ElementDataCache<doub
 
 template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::native_data_to_cache(ElementDataCache<double> &output_data_cache) {
-	ASSERT_EQ(output_data_cache.n_values() * output_data_cache.n_comp(), dh_->distr()->lsize()).error();
-	double loc_values[output_data_cache.n_comp()];
+	//ASSERT_EQ(output_data_cache.n_values() * output_data_cache.n_comp(), dh_->distr()->lsize()).error();
+	unsigned int n_vals = output_data_cache.n_comp() * output_data_cache.n_dofs_per_element();
+	double loc_values[n_vals];
 	unsigned int i;
 
 	for (auto dh_cell : dh_->own_range()) {
 		LocDofVec loc_dofs = dh_cell.get_loc_dof_indices();
 		for (i=0; i<loc_dofs.n_elem; ++i) loc_values[i] = data_vec_.get( loc_dofs[i] );
-		for ( ; i<output_data_cache.n_comp(); ++i) loc_values[i] = numeric_limits<double>::signaling_NaN();
+		for ( ; i<n_vals; ++i) loc_values[i] = numeric_limits<double>::signaling_NaN();
 		output_data_cache.store_value( dh_cell.local_idx(), loc_values );
 	}
 

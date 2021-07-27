@@ -22,15 +22,15 @@ problem: !Coupling_Sequential
         bc_pressure: 0
       - region: BULK
         conductivity: !FieldFE
-            mesh_data_file: output/flow_fields/flow_fields-000000.vtu
+            mesh_data_file: ref_out/44_P0_data_DG_write/flow_fields/flow_fields-000000.vtu
             field_name: conductivity
             input_discretization: element_data
         anisotropy: !FieldFE
-            mesh_data_file: output/flow_fields/flow_fields-000000.vtu
+            mesh_data_file: ref_out/44_P0_data_DG_write/flow_fields/flow_fields-000000.vtu
             field_name: anisotropy
             input_discretization: element_data
         cross_section: !FieldFE
-            mesh_data_file: output/flow_fields/flow_fields-000000.vtu
+            mesh_data_file: ref_out/44_P0_data_DG_write/flow_fields/flow_fields-000000.vtu
             field_name: conductivity
             input_discretization: node_data
     output:
@@ -44,30 +44,30 @@ problem: !Coupling_Sequential
           bc_type: diffusive_flux
         - region: BULK
           porosity: !FieldFE
-            mesh_data_file: output/solute_fields/solute_fields-000000.vtu
+            mesh_data_file: ref_out/44_P0_data_DG_write/solute_fields/solute_fields-000000.vtu
             field_name: porosity
             input_discretization: element_data
 
           init_conc:
             - !FieldFE
-              mesh_data_file: output/solute_fields/solute_fields-000000.vtu
+              mesh_data_file: ref_out/44_P0_data_DG_write/solute_fields/solute_fields-000000.vtu
               field_name: 1_init_conc
               input_discretization: element_data
               #interpolation: identic_mesh
             - !FieldFE
-              mesh_data_file: output/solute_fields/solute_fields-000000.vtu
+              mesh_data_file: ref_out/44_P0_data_DG_write/solute_fields/solute_fields-000000.vtu
               field_name: 2_init_conc
               input_discretization: element_data
               #interpolation: identic_mesh
 
           diff_m:
             - !FieldFE
-              mesh_data_file: output/solute_fields/solute_fields-000000.vtu
+              mesh_data_file: ref_out/44_P0_data_DG_write/solute_fields/solute_fields-000000.vtu
               field_name: 1_diff_m
               input_discretization: element_data
               interpolation: identic_mesh
             - !FieldFE
-              mesh_data_file: output/solute_fields/solute_fields-000000.vtu
+              mesh_data_file: ref_out/44_P0_data_DG_write/solute_fields/solute_fields-000000.vtu
               field_name: 2_diff_m
               input_discretization: element_data
               #interpolation: identic_mesh

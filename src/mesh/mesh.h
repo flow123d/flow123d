@@ -245,7 +245,7 @@ public:
     void elements_id_maps( vector<LongIdx> & bulk_elements_id, vector<LongIdx> & boundary_elements_id) const;
 
     /*
-     * Check if nodes and elements are compatible with \p input_mesh.
+     * Check if nodes and elements are compatible with continuous \p input_mesh.
      *
      * Call this method on computational mesh.
      * @param input_mesh data mesh of input fields

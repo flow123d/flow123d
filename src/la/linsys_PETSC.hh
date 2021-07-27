@@ -132,7 +132,7 @@ public:
        return a_tol_;
     };
 
-    void view( ) override;
+    void view(string text="") override;
 
     /**
      * Sets specific parameters of LinSys_PETSC defined by user in input file and used to calculate
