@@ -107,6 +107,7 @@ void VtkMeshReader::read_base_vtk_attributes(pugi::xml_node vtk_node, unsigned i
 	if (header_type_ == DataType::undefined) {
 		data_format_ = DataFormat::ascii;
 	} else {
+        can_have_components_ = true;
 		if (header_type_!=DataType::uint64 && header_type_!=DataType::uint32) {
 			// Allowable values of header type are only 'UInt64' or 'UInt32'
 			THROW( ExcWrongType() << EI_ErrMessage("Forbidden") << EI_SectionTypeName("base parameter header_type")
