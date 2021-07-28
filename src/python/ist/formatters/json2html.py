@@ -2,7 +2,9 @@
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
 
+
 import cgi
+import html
 from ist.utils.htmltree import htmltree
 from ist.base import InputType, NotImplementedException
 from utils.logger import Logger
@@ -296,7 +298,7 @@ class HTMLRecord(HTMLItemFormatter):
                             self.info(' Array')
                             if str(reference.range):
                                 self.info(' ')
-                                self.span(cgi.escape(str(reference.range)))
+                                self.span(html.escape(str(reference.range)))
 
                     with self.open('li'):
                         if not subtype.input_type == InputType.MAIN_TYPE:

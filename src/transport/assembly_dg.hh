@@ -520,7 +520,7 @@ public:
                                         // terms due to diffusion
                                             - jumps[n][k*fe_->n_dofs()+i]*waverages[m][k*fe_->n_dofs()+j]
                                             - eq_data_->dg_variant*waverages[n][k*fe_->n_dofs()+i]*jumps[m][k*fe_->n_dofs()+j]
-                                            )*fe_values_vec_[0].JxW(k);
+                                            )*fe_values_vec_[0].JxW(k) + LocalSystem::almost_zero;
                                     }
                                 }
                             }
@@ -601,7 +601,7 @@ public:
                         for (int m=0; m<2; m++)
                             for (unsigned int j=0; j<n_dofs[m]; j++)
                                 local_matrix_[(i+n*n_dofs[0])*(n_dofs[0]+n_dofs[1]) + m*n_dofs[0] + j] +=
-                                        comm_flux[m][n]*fv_sb_[m]->shape_value(j,k)*fv_sb_[n]->shape_value(i,k);
+                                        comm_flux[m][n]*fv_sb_[m]->shape_value(j,k)*fv_sb_[n]->shape_value(i,k) + LocalSystem::almost_zero;
                 }
                 k++;
             }
@@ -995,23 +995,23 @@ public:
  * Auxiliary container class sets the initial condition.
  */
 template <unsigned int dim, class Model>
-class InitConditionAssemblyDG : public AssemblyBase<dim>
+class InitProjectionAssemblyDG : public AssemblyBase<dim>
 {
 public:
     typedef typename TransportDG<Model>::EqFields EqFields;
     typedef typename TransportDG<Model>::EqData EqData;
 
-    static constexpr const char * name() { return "InitConditionAssemblyDG"; }
+    static constexpr const char * name() { return "InitProjectionAssemblyDG"; }
 
     /// Constructor.
-    InitConditionAssemblyDG(EqFields *eq_fields, EqData *eq_data)
+    InitProjectionAssemblyDG(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->init_condition;
     }
 
     /// Destructor.
-    ~InitConditionAssemblyDG() {}
+    ~InitProjectionAssemblyDG() {}
 
     /// Initialize auxiliary vectors and other data members
     void initialize(ElementCacheMap *element_cache_map) {
@@ -1020,8 +1020,8 @@ public:
         fe_ = std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order);
         UpdateFlags u = update_values | update_gradients | update_JxW_values | update_quadrature_points;
         fe_values_.initialize(*this->quad_, *fe_, u);
-        if (dim==1) // print to log only one time
-            DebugOut() << "List of InitConditionAssemblyDG FEValues updates flags: " << this->print_update_flags(u);
+        // if (dim==1) // print to log only one time
+            // DebugOut() << "List of InitProjectionAssemblyDG FEValues updates flags: " << this->print_update_flags(u);
         ndofs_ = fe_->n_dofs();
         dof_indices_.resize(ndofs_);
         local_matrix_.resize(4*ndofs_*ndofs_);
@@ -1090,6 +1090,74 @@ public:
 };
 
 
+/**
+ * Auxiliary container class sets the initial condition.
+ */
+template <unsigned int dim, class Model>
+class InitConditionAssemblyDG : public AssemblyBase<dim>
+{
+public:
+    typedef typename TransportDG<Model>::EqFields EqFields;
+    typedef typename TransportDG<Model>::EqData EqData;
+
+    static constexpr const char * name() { return "InitConditionAssemblyDG"; }
+
+    /// Constructor.
+    InitConditionAssemblyDG(EqFields *eq_fields, EqData *eq_data)
+    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data) {
+        this->active_integrals_ = ActiveIntegrals::bulk;
+        this->used_fields_ += eq_fields_->init_condition;
+
+        this->quad_ = new Quadrature(dim, RefElement<dim>::n_nodes);
+        for(unsigned int i = 0; i<RefElement<dim>::n_nodes; i++)
+        {
+            this->quad_->weight(i) = 1.0;
+            this->quad_->set(i) = RefElement<dim>::node_coords(i);
+        }
+    }
+
+    /// Destructor.
+    ~InitConditionAssemblyDG() {}
+
+    /// Initialize auxiliary vectors and other data members
+    void initialize(ElementCacheMap *element_cache_map) {
+        this->element_cache_map_ = element_cache_map;
+    }
+
+
+    /// Assemble integral over element
+    inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
+    {
+        ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
+
+        unsigned int k;
+
+        for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)
+        {
+            k=0;
+            for (auto p : this->bulk_points(element_patch_idx) )
+            {
+                double val = eq_fields_->init_condition[sbi](p);
+
+                eq_data_->output_vec[sbi].set(cell.get_loc_dof_indices()[k], val);
+                k++;
+            }
+        }
+    }
+
+
+    private:
+        /// Data objects shared with TransportDG
+        EqFields *eq_fields_;
+        EqData *eq_data_;
+
+        /// Sub field set contains fields used in calculation.
+        FieldSet used_fields_;
+
+        template < template<IntDim...> class DimAssembly>
+        friend class GenericAssembly;
+
+};
 
 #endif /* ASSEMBLY_DG_HH_ */
 

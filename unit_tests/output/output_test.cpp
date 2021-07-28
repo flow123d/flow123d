@@ -261,7 +261,7 @@ public:
         //this->output_mesh_discont_->make_serial_master_mesh();
         
 		{
-    	    auto output_types = OutputTimeSet::empty_discrete_flags();
+    	    auto output_types = OutputTime::empty_discrete_flags();
     	    output_types[OutputTime::ELEM_DATA] = true;
         	field.compute_field_data(output_types, shared_from_this());
         	this->gather_output_data();
@@ -276,7 +276,7 @@ public:
 		}
 
 		{
-		    auto output_types = OutputTimeSet::empty_discrete_flags();
+		    auto output_types = OutputTime::empty_discrete_flags();
 		    output_types[OutputTime::NODE_DATA] = true;
 			field.compute_field_data(output_types, shared_from_this());
 			this->gather_output_data();
@@ -292,7 +292,7 @@ public:
 
 		{
 			// TODO need fix to discontinuous output data
-            /*auto output_types = OutputTimeSet::empty_discrete_flags();
+            /*auto output_types = OutputTime::empty_discrete_flags();
             output_types[OutputTime::CORNER_DATA] = true;
 			field.compute_field_data(output_types, shared_from_this());
 			this->gather_output_data();
@@ -314,13 +314,13 @@ public:
 
 		/*
 
-	    auto output_types = OutputTimeSet::empty_discrete_flags();
+	    auto output_types = OutputTime::empty_discrete_flags();
 	    output_types[OutputTime::NODE_DATA] = true;
 		compute_field_data(output_types, field);
 		EXPECT_EQ(1, node_data.size());
 		check_node_data( node_data[0], result);
 
-	    auto output_types2 = OutputTimeSet::empty_discrete_flags();
+	    auto output_types2 = OutputTime::empty_discrete_flags();
 	    output_types2[OutputTime::CORNER_DATA] = true;
 		compute_field_data(output_types2, field);
 		EXPECT_EQ(1, elem_data.size());

@@ -90,6 +90,9 @@ const Record & TransportDG<Model>::get_input_type() {
                 "Variant of the interior penalty discontinuous Galerkin method.")
         .declare_key("dg_order", Integer(0,3), Default("1"),
                 "Polynomial order for the finite element in DG method (order 0 is suitable if there is no diffusion/dispersion).")
+        .declare_key("init_projection", Bool(), Default("true"),
+                "If true, use DG projection of the initial condition field."
+                "Otherwise, evaluate initial condition field directly (well suited for reading native data).")
         .declare_key("output",
                 EqFields().output_fields.make_output_type(equation_name, ""),
                 IT::Default("{ \"fields\": [ " + Model::ModelEqData::default_output_field() + "] }"),
@@ -254,12 +257,10 @@ void TransportDG<Model>::initialize()
     ret_sources.resize(eq_data_->n_substances());
     ret_sources_prev.resize(eq_data_->n_substances());
 
-    output_vec.resize(eq_data_->n_substances());
+    eq_data_->output_vec.resize(eq_data_->n_substances());
     eq_fields_->output_field.set_components(eq_data_->substances_.names());
     eq_fields_->output_field.set_mesh(*Model::mesh_);
-    auto output_types = OutputTimeSet::empty_discrete_flags();
-    output_types[OutputTime::CORNER_DATA] = true;
-    eq_fields_->output_type(output_types);
+    eq_fields_->output_type(OutputTime::CORNER_DATA);
 
     eq_fields_->output_field.setup_components();
     for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)
@@ -267,7 +268,7 @@ void TransportDG<Model>::initialize()
         // create shared pointer to a FieldFE, pass FE data and push this FieldFE to output_field on all regions
         auto output_field_ptr = create_field_fe< 3, FieldValue<3>::Scalar >(eq_data_->dh_);
         eq_fields_->output_field[sbi].set(output_field_ptr, 0);
-        output_vec[sbi] = output_field_ptr->vec();
+        eq_data_->output_vec[sbi] = output_field_ptr->vec();
     }
 
     // set time marks for writing the output
@@ -299,7 +300,7 @@ void TransportDG<Model>::initialize()
     for (unsigned int sbi = 0; sbi < eq_data_->n_substances(); sbi++) {
         eq_data_->ls[sbi] = new LinSys_PETSC(eq_data_->dh_->distr().get(), petsc_default_opts);
         ( (LinSys_PETSC *)eq_data_->ls[sbi] )->set_from_input( input_rec.val<Input::Record>("solver") );
-        eq_data_->ls[sbi]->set_solution(output_vec[sbi].petsc_vec());
+        eq_data_->ls[sbi]->set_solution(eq_data_->output_vec[sbi].petsc_vec());
 
         eq_data_->ls_dt[sbi] = new LinSys_PETSC(eq_data_->dh_->distr().get(), petsc_default_opts);
         ( (LinSys_PETSC *)eq_data_->ls_dt[sbi] )->set_from_input( input_rec.val<Input::Record>("solver") );
@@ -310,12 +311,18 @@ void TransportDG<Model>::initialize()
     }
 
 
+    init_projection = input_rec.val<bool>("init_projection");
+
     // create assemblation object, finite element structures and distribute DOFs
 	mass_assembly_ = new GenericAssembly< MassAssemblyDim >(eq_fields_.get(), eq_data_.get());
 	stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyDim >(eq_fields_.get(), eq_data_.get());
 	sources_assembly_ = new GenericAssembly< SourcesAssemblyDim >(eq_fields_.get(), eq_data_.get());
 	bdr_cond_assembly_ = new GenericAssembly< BdrConditionAssemblyDim >(eq_fields_.get(), eq_data_.get());
-	init_cond_assembly_ = new GenericAssembly< InitConditionAssemblyDim >(eq_fields_.get(), eq_data_.get());
+    
+    if(init_projection)
+	    init_assembly_ = new GenericAssembly< InitProjectionAssemblyDim >(eq_fields_.get(), eq_data_.get());
+    else
+        init_assembly_ = new GenericAssembly< InitConditionAssemblyDim >(eq_fields_.get(), eq_data_.get());
 
     // initialization of balance object
     Model::balance_->allocate(eq_data_->dh_->distr()->lsize(), mass_assembly_->eval_points()->max_size());
@@ -371,7 +378,7 @@ TransportDG<Model>::~TransportDG()
         delete stiffness_assembly_;
         delete sources_assembly_;
         delete bdr_cond_assembly_;
-        delete init_cond_assembly_;
+        delete init_assembly_;
     }
 
 }
@@ -525,7 +532,6 @@ void TransportDG<Model>::update_solution()
         }
     }
 
-
     /* Apply backward Euler time integration.
     *
     * Denoting A the stiffness matrix and M the mass matrix, the algebraic system at the k-th time level reads
@@ -563,6 +569,13 @@ void TransportDG<Model>::update_solution()
         MatMult(*(eq_data_->ls_dt[i]->get_matrix()), eq_data_->ls[i]->get_solution(), mass_vec[i]);
     }
     END_TIMER("solve");
+
+    // Possibly output matrices for debug reasons.
+    // for (unsigned int i=0; i<eq_data_->n_substances(); i++){
+    //     string conc_name = eq_data_->substances().names()[i] + "_" + std::to_string(eq_data_->time_->step().index());
+    //     eq_data_->ls[i]->view("stiff_" + conc_name);
+    //     eq_data_->ls_dt[i]->view("mass_" + conc_name);
+    // }
 
     calculate_cumulative_balance();
 
@@ -646,19 +659,26 @@ void TransportDG<Model>::calculate_cumulative_balance()
 template<class Model>
 void TransportDG<Model>::set_initial_condition()
 {
-    for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)
-        eq_data_->ls[sbi]->start_allocation();
-    init_cond_assembly_->assemble(eq_data_->dh_);
-
-    for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)
-        eq_data_->ls[sbi]->start_add_assembly();
-    init_cond_assembly_->assemble(eq_data_->dh_);
-
-    for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)
+    if(init_projection)
     {
-        eq_data_->ls[sbi]->finish_assembly();
-        eq_data_->ls[sbi]->solve();
+        for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)
+            eq_data_->ls[sbi]->start_allocation();
+        
+        init_assembly_->assemble(eq_data_->dh_);
+
+        for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)
+            eq_data_->ls[sbi]->start_add_assembly();
+
+        init_assembly_->assemble(eq_data_->dh_);
+
+        for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)
+        {
+            eq_data_->ls[sbi]->finish_assembly();
+            eq_data_->ls[sbi]->solve();
+        }
     }
+    else
+        init_assembly_->assemble(eq_data_->dh_);
 }
 
 

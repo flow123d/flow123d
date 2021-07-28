@@ -90,7 +90,7 @@ public:
     typedef std::shared_ptr<DarcyMH::EqData>  AssemblyDataPtrMH;
     
     AssemblyMH<dim>(AssemblyDataPtrMH data)
-    : quad_(dim, 3),
+    : quad_(dim, 2),
       velocity_interpolation_quad_(dim, 0), // veloctiy values in barycenter
       ad_(data),
       loc_system_(size(), size()),

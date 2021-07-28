@@ -39,8 +39,6 @@ FieldCommon::FieldCommon()
     shared_->n_comp_ = 0;
     shared_->mesh_ = nullptr;
     shared_->is_fully_initialized_=false;
-    type_of_output_data_ = OutputTimeSet::empty_discrete_flags();
-    type_of_output_data_[OutputTime::ELEM_DATA] = true;
 }
 
 
@@ -55,8 +53,6 @@ FieldCommon::FieldCommon(const FieldCommon & other)
   component_index_(other.component_index_)
 {
      flags_.add( FieldFlag::input_copy );
-     type_of_output_data_ = OutputTimeSet::empty_discrete_flags();
-     type_of_output_data_[OutputTime::ELEM_DATA] = true;
 }
 
 

@@ -195,9 +195,7 @@ void ConvectionTransport::initialize()
 	// register output vectors
 	data_.output_fields.set_components(substances_.names());
 	data_.output_fields.set_mesh(*mesh_);
-    auto output_types = OutputTimeSet::empty_discrete_flags();
-    output_types[OutputTime::ELEM_DATA] = true;
-	data_.output_fields.output_type(output_types);
+	data_.output_fields.output_type(OutputTime::ELEM_DATA);
 	data_.conc_mobile.setup_components();
 	data_.region_id = GenericField<3>::region_id(*mesh_);
     data_.subdomain = GenericField<3>::subdomain(*mesh_);

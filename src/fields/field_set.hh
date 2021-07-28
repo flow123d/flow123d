@@ -300,7 +300,7 @@ public:
      * Collective interface to @p FieldCommonBase::output_type().
      * @param rt   Discrete function space (element, node or corner data).
      */
-    void output_type(OutputTimeSet::DisceteSpaceFlags rt) {
+    void output_type(OutputTime::DiscreteSpace rt) {
         for(FieldCommon *field : field_list) field->output_type(rt);
     }
 
@@ -375,6 +375,10 @@ public:
     std::string print_dependency() const;
 
 protected:
+
+    /// Helper method sort used fields by dependency
+    void topological_sort(const FieldCommon *f, unsigned int i_reg, std::unordered_set<const FieldCommon *> &used_fields);
+
     /// List of all fields.
     std::vector<FieldCommon *> field_list;
 

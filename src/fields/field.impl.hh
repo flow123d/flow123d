@@ -392,13 +392,11 @@ void Field<spacedim, Value>::copy_from(const FieldCommon & other) {
 
 
 template<int spacedim, class Value>
-void Field<spacedim, Value>::field_output(std::shared_ptr<OutputTime> stream)
+void Field<spacedim, Value>::field_output(std::shared_ptr<OutputTime> stream, OutputTime::DiscreteSpaceFlags type)
 {
 	// currently we cannot output boundary fields
 	if (!is_bc()) {
-	    OutputTimeSet::DisceteSpaceFlags type = this->get_output_type();
-
-	    ASSERT( OutputTimeSet::discrete_flags_defined(type) ).error();
+	    ASSERT( OutputTime::discrete_flags_defined(type) ).error();
 	    this->compute_field_data( type, stream);
 	}
 }
@@ -651,7 +649,7 @@ void Field<spacedim,Value>::set_input_list(const Input::Array &list, const TimeG
 
 
 template<int spacedim, class Value>
-void Field<spacedim,Value>::compute_field_data(OutputTimeSet::DisceteSpaceFlags space_type, std::shared_ptr<OutputTime> stream) {
+void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpaceFlags space_type, std::shared_ptr<OutputTime> stream) {
 	typedef typename Value::element_type ElemType;
     for (uint i=0; i<OutputTime::N_DISCRETE_SPACES; ++i)
         if (space_type[i]) {
