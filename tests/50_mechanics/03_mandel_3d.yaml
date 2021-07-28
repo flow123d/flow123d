@@ -1,26 +1,22 @@
-# Test goal: 1D poroelasticity model - Mandel's problem.
+# Test goal: 3D poroelasticity model - Mandel's problem.
 # Author: Pavel Exner
 # Source for reference:
 #   analytical solution available: Arnold Verruijt (2014)
-#   sofar qualitative check - PROBLEM - cannot prescribe zero normal displacement at the bottom
-#       we must fix the bottom even in x axis which we do not want
-#   PROBLEM: not same results in parallel run (2p - different zero time output)
 #   checked in Paraview
 
 flow123d_version: 3.1.0
 problem: !Coupling_Sequential
-  description: Mandel's rectangular problem.
+  description: Mandel's rectangular problem in 3D.
   mesh:
-    mesh_file: ../00_mesh/cube_2x2x2.msh
+    mesh_file: cube_1x1x1.msh
   flow_equation: !Coupling_Iterative
     input_fields:
       - region: BULK
-        biot_alpha: 0.2
-        fluid_density: 1000
+        biot_alpha: 1
+        fluid_density: 1
+        gravity: 1
     time:
       end_time: 10
-      # common time unit cannot be used in field formulas
-      common_time_unit: d
     iteration_parameter: 1 # affects convergence of HM coupling (defaults to 1, lower value sometimes helps)
     a_tol: 0
     r_tol: 1e-8
@@ -32,19 +28,13 @@ problem: !Coupling_Sequential
             r_tol: 1e-10
         input_fields:
           - region: BULK
-            conductivity: 6e-15
-            # https://en.wikipedia.org/wiki/Specific_storage
-            storativity: 2e-8
-            init_pressure: 10
-            #init_pressure: !FieldFormula
-              #value: 0.2*3/13*1e-10 / (2e-8 + 0.2*0.2*3/13*1e-10) * 1e7 / (1000*9.81)
+            conductivity: 1
+            storativity: 1
+            init_pressure: 0.295
 
-          - region: [.right_x, .left_x]
+          - region: .right_x
             bc_type: dirichlet
             bc_pressure: 0
-
-          # homogenous Neumann
-          #- region: [.top_z, .bottom_z, .front_y, .back_y]
 
         output:
           times:
@@ -53,8 +43,6 @@ problem: !Coupling_Sequential
             - piezo_head_p0
             - pressure_p0
             - velocity_p0
-        #balance:
-          #cumulative: true
         output_stream:
           file: flow.pvd
           format: !vtk
@@ -73,18 +61,13 @@ problem: !Coupling_Sequential
           r_tol: 1e-10
         input_fields:
           - region: BULK
-            young_modulus: 27e9
-            poisson_ratio: 0.35
+            young_modulus: 1
+            poisson_ratio: 0.2
 
-          #- region: .top_z
-            #time: 0
-            #bc_type: traction
-            #bc_traction: [0,0,0]
           - region: .top_z
-            #time: 1
             bc_type: traction
-            bc_traction: [0,0,-1e8]
+            bc_traction: [0,0,-1]
 
-          - region: [.bottom_z, .front_y, .back_y]
+          - region: [.left_x, .bottom_z, .front_y, .back_y]
             bc_type: displacement_n
-            bc_displament: 0
+            bc_displacement: 0
