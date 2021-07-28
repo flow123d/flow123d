@@ -238,9 +238,7 @@ TEST_F(SomeEquation, collective_interface) {
     EXPECT_EQ( matrix, data["velocity"].flags() );
     EXPECT_EQ( matrix, data["reaction_type"].flags() );
 
-    auto output_types = OutputTimeSet::empty_discrete_flags();
-    output_types[OutputTime::CORNER_DATA] = true;
-    data.output_type(output_types);
+    data.output_type(OutputTime::CORNER_DATA);
     EXPECT_TRUE( data["init_pressure"].get_output_type()[OutputTime::CORNER_DATA] );
     EXPECT_TRUE( data["velocity"].get_output_type()[OutputTime::CORNER_DATA] );
     EXPECT_TRUE( data["reaction_type"].get_output_type()[OutputTime::CORNER_DATA] );
