@@ -63,13 +63,13 @@ S = 1e-0
 
 
 # Liu - nu_u (undrained Poisson's ratio)
-poiss_u = (alpha**2*rho*gravity * (1+poiss) + 3*poiss*S*K) / (2*alpha**2*rho*gravity*(1+poiss) + 3*S*K)
+poiss_u = (alpha**2 * (1+poiss) + 3*poiss*S*K) / (2*alpha**2*(1+poiss) + 3*S*K)
 
 # Liu - Skempton pore pressure coefficient (in Liu use the relation (4.1) for alpha, because (4.2) is wrong)
 B = 3 * (poiss_u-poiss)/ ((1-2*poiss)*(1+poiss_u)*alpha)
 
 # consolidation coefficient (Verruit) for Mandel's problem
-cv = hcond / (rho * gravity) * (K+4/3*G) / (alpha**2*rho*gravity + S*(K+4/3*G))
+cv = hcond / (rho * gravity) * (K+4/3*G) / (alpha**2 + S*(K+4/3*G))
 
 
 
@@ -84,7 +84,7 @@ print("E: {:e}, poiss: {}, poiss_u: {}".format(E,poiss,poiss_u))
 print("lamb: {:e}, mu: {:e}".format(lamb,G))
 print("force: {}".format(force))
 print("k: {}".format(hcond))
-print("S: {}".format(S))
+print("S: {} Pa^(-1) ~ {} m^(-1)".format(S, S*rho*gravity))
 print("B: {}".format(B))
 print("cv: {}".format(cv))
 print("p0: {}".format(p0))

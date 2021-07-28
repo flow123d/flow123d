@@ -239,9 +239,8 @@ for i in range(ncells):
     ttz = (z1+z2)/3
     
     ttz = ttz + L
-    h, u = analytic_sol(ttz, time * tunit)
-    pressureArray[i] = h
-    displacementArray[i] = u
+    pressureArray[i] = analytic_sol_pressure(ttz, time * tunit)
+    displacementArray[i] = analytic_sol_displacement(ttz, time * tunit)
 
 output.CellData.append(pressureArray, "exact_pressure_head")
 output.CellData.append(displacementArray, "exact_displacement")

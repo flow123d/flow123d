@@ -39,7 +39,7 @@ h0 = p0 / (rho*g)
 u0 = p0*S/alpha
 
 print("k: {}".format(k))
-print("S: {}".format(S))
+print("S: {} Pa^(-1) ~ {} m^(-1)".format(S, S*rho*g))
 print("mv: {}".format(mv))
 print("cv: {}".format(cv))
 print("p0: {}".format(p0))
