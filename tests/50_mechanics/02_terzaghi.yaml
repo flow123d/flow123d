@@ -2,9 +2,6 @@
 # Author: Pavel Exner
 # Source for reference:
 #   analytical solution available: Arnold Verruijt (2014)
-#   sofar qualitative check - PROBLEM - increase of pressure in the first time step
-#   PROBLEM: not same results in parallel run (2p - different zero time output)
-#   checked in Paraview
 
 flow123d_version: 3.1.0
 problem: !Coupling_Sequential
@@ -14,12 +11,10 @@ problem: !Coupling_Sequential
   flow_equation: !Coupling_Iterative
     input_fields:
       - region: BULK
-        biot_alpha: 0.2
+        biot_alpha: 1
         fluid_density: 1000
     time:
-      end_time: 10
-      # common time unit cannot be used in field formulas
-      common_time_unit: h
+      end_time: 100
     iteration_parameter: 1 # affects convergence of HM coupling (defaults to 1, lower value sometimes helps)
     a_tol: 0
     r_tol: 1e-8
@@ -28,31 +23,23 @@ problem: !Coupling_Sequential
           linear_solver: !Petsc
             a_tol: 1e-10
             r_tol: 1e-10
+        gravity: [0, 0, 0]
         input_fields:
           - region: BULK
-            conductivity: 6e-15
-            # https://en.wikipedia.org/wiki/Specific_storage
-            storativity: 2E-8
-            init_pressure: 2.35227910676059
-            #init_pressure: !FieldFormula
-              #value: 0.2*3/13*1e-10 / (2e-8 + 0.2*0.2*3/13*1e-10) * 1e7 / (1000*9.81)
+            conductivity: 1e-5
+            storativity: 1.61865 # 1.65e-4 * rho * g
+            init_pressure: 5.148e-5
 
           - region: .bc_top
             bc_type: dirichlet
             bc_pressure: 0
 
-          # homogenous Neumann
-          #- region: .bc_bottom
-
         output:
-          times:
-            - step: 1
+          times: [ 1, 2, 5, 10, 100 ]
           fields:
             - piezo_head_p0
             - pressure_p0
             - velocity_p0
-        #balance:
-          #cumulative: true
         output_stream:
           file: flow.pvd
           format: !vtk
@@ -61,8 +48,6 @@ problem: !Coupling_Sequential
           file: mechanics.pvd
           format: !vtk
         output:
-          times:
-            - step: 1
           fields:
             - displacement
             - stress
@@ -71,13 +56,13 @@ problem: !Coupling_Sequential
           r_tol: 1e-10
         input_fields:
           - region: BULK
-            young_modulus: 27e9
-            poisson_ratio: 0.35
+            young_modulus: 1e8
+            poisson_ratio: 0.25
 
           - region: .bc_top
             bc_type: traction
-            bc_traction: [0,0,-1e8]
+            bc_traction: [0,0,-1e4]
 
           - region: .bc_bottom
             bc_type: displacement
-            bc_displament: 0
+            bc_displacement: 0
