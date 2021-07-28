@@ -106,7 +106,9 @@ public:
         //this->output_mesh_discont_->create_sub_mesh();
         //this->output_mesh_discont_->make_serial_master_mesh();
 
-		field.compute_field_data(ELEM_DATA, shared_from_this());
+	    auto output_types = OutputTime::empty_discrete_flags();
+	    output_types[OutputTime::ELEM_DATA] = true;
+		field.compute_field_data(output_types, shared_from_this());
 	}
 
 	template <class FieldVal>
@@ -127,15 +129,17 @@ public:
 		VectorMPI v(size);
         for (unsigned int i=0; i<size; ++i) v.set(i, step*i);
 
-		auto native_data_ptr = make_shared< FieldFE<3, FieldVal> >();
-		native_data_ptr->set_fe_data(dh, v);
+        auto native_data_ptr = make_shared< FieldFE<3, FieldVal> >();
+        native_data_ptr->set_fe_data(dh, v);
 
-		field.set(native_data_ptr, 0.0);
-		field.output_type(OutputTime::NATIVE_DATA);
-		field.set_time(TimeGovernor(0.0, 1.0).step(), LimitSide::left);
+        field.set(native_data_ptr, 0.0);
+        field.output_type(OutputTime::NATIVE_DATA);
+        field.set_time(TimeGovernor(0.0, 1.0).step(), LimitSide::left);
 
-		field.compute_field_data(NATIVE_DATA, shared_from_this());
-	}
+        auto output_types = OutputTime::empty_discrete_flags();
+        output_types[OutputTime::NATIVE_DATA] = true;
+        field.compute_field_data(output_types, shared_from_this());
+    }
 
 	// check result
 	void check_result_file(std::string result_file, std::string ref_file)

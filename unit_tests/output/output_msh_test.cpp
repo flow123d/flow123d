@@ -90,7 +90,9 @@ public:
         //this->output_mesh_discont_->create_sub_mesh();
         //this->output_mesh_discont_->make_serial_master_mesh();
 
-		field.compute_field_data(ELEM_DATA, shared_from_this());
+	    auto output_types = OutputTime::empty_discrete_flags();
+	    output_types[OutputTime::ELEM_DATA] = true;
+		field.compute_field_data(output_types, shared_from_this());
 	}
 
 	// check result

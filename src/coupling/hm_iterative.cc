@@ -351,6 +351,9 @@ void HM_Iterative::compute_iteration_error(double& abs_error, double& rel_error)
     MessageOut().fmt("HM Iteration {} abs. difference: {}  rel. difference: {}\n"
                          "--------------------------------------------------------",
                          iteration(), abs_error, rel_error);
+
+    if(iteration() >= max_it_ && (abs_error > a_tol_ || rel_error > r_tol_))
+        MessageOut().fmt("HM solver did not converge in {} iterations.\n", iteration());
 }
 
 
