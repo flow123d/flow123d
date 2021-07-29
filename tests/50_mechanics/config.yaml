@@ -9,7 +9,6 @@ test_cases:
   - 02_terzaghi.yaml
   - 03_mandel.yaml
   - 04_terzaghi.yaml
-  - 05_mandel.yaml
   - 20_2d_block_load.yaml
   - 21_2d_displacement.yaml
   - 23_square_frac_chopped.yaml
@@ -17,4 +16,5 @@ test_cases:
   - 30_3d_block_load.yaml
 - files:
   - 03_mandel_3d.yaml
-  time_limit: 200
+  - 05_mandel_3d.yaml
+  time_limit: 300
