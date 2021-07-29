@@ -18,32 +18,29 @@ problem: !Coupling_Sequential
     input_fields:
       - region: BULK
         biot_alpha: 1
-        fluid_density: 1
-        gravity: 1
+        fluid_density: 1000
     time:
-      end_time: 10
+      end_time: 1e5
     iteration_parameter: 1 # affects convergence of HM coupling (defaults to 1, lower value sometimes helps)
-    a_tol: 1e-15
+    a_tol: 0
     r_tol: 1e-12
     flow_equation: !Flow_Richards_LMH
         nonlinear_solver:
           linear_solver: !Petsc
-            options: -ksp_type preonly -pc_type lu
-            a_tol: 1e-15
-            r_tol: 1e-15
+            a_tol: 0
+            r_tol: 1e-12
         input_fields:
           - region: BULK
-            conductivity: 1
-            storativity: 1
-            init_pressure: 0.295
+            conductivity: 1e-5
+            storativity: 1.61865
+            init_pressure: 3.860949897148156e-05
 
-          - region: [.right_x ]
+          - region: .right_x
             bc_type: dirichlet
             bc_pressure: 0
 
         output:
-          times:
-            - step: 1
+          times: &output_times [1e2, 1e3, 1e4, 1e5]
           fields:
             - piezo_head_p0
             - pressure_p0
@@ -56,28 +53,23 @@ problem: !Coupling_Sequential
           file: mechanics.pvd
           format: !vtk
         output:
-          times:
-            - step: 1
+          times: *output_times
           fields:
             - displacement
             - stress
             - displacement_divergence
         solver: !Petsc
-          a_tol: 1e-20
-          r_tol: 1e-15
+          a_tol: 0
+          r_tol: 1e-12
         input_fields:
           - region: BULK
-            young_modulus: 1
-            poisson_ratio: 0.2
-
-          - region: .bottom_y
-            bc_type: displacement_n
-            bc_displacement: 0
-
-          - region: .left_x
-            bc_type: displacement_n
-            bc_displacement: 0
+            young_modulus: 1e8
+            poisson_ratio: 0.25
 
           - region: .top_y
             bc_type: traction
-            bc_traction: [0,-1,0]
+            bc_traction: [0, -1e4, 0]
+
+          - region: [ .left_x, .bottom_y ]
+            bc_type: displacement_n
+            bc_displacement: 0

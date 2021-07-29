@@ -1,5 +1,5 @@
 # Test goal: 3D poroelasticity model - Mandel's problem.
-# Author: Pavel Exner
+# Author: Pavel Exner, Jan Stebel
 # Source for reference:
 #   analytical solution available: Arnold Verruijt (2014)
 #   checked in Paraview

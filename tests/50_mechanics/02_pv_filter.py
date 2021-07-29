@@ -157,7 +157,7 @@ def plot_presure_head():
 
     fig.tight_layout()  # otherwise the right y-label is slightly clipped
     # plt.show()
-    plt.savefig("04_pressure_head.pdf")
+    plt.savefig("02_pressure_head.pdf")
 
 
 def plot_displacement():
@@ -187,7 +187,7 @@ def plot_displacement():
 
     fig.tight_layout()  # otherwise the right y-label is slightly clipped
     # plt.show()
-    plt.savefig("04_displacement.pdf")
+    plt.savefig("02_displacement.pdf")
 
 
 plot_presure_head()

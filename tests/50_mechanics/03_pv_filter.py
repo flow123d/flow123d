@@ -19,44 +19,43 @@ lengthA = 1
 
 ### elasticity parameters ###
 # input lamb, G:
-#lamb = 4e7
-#G = 4e7
-#K = lamb + 2/3*G
-#E = 9*K*G / (3*K+G)
-#poiss = (3*K - 2*G) / (2*(3*K+G))
+lamb = 4e7
+G = 4e7
+K = lamb + 2/3*G
+E = 9*K*G / (3*K+G)
+poiss = (3*K - 2*G) / (2*(3*K+G))
 #
 #input E,poiss:
-E = 1e0
-poiss = 0.2
-lamb = E*poiss/(1+poiss)/(1-2*poiss)
-G = E / (2*(1+poiss))
-K = E / (3*(1-2*poiss))
+#E = 1e0
+#poiss = 0.2
+#lamb = E*poiss/(1+poiss)/(1-2*poiss)
+#G = E / (2*(1+poiss))
+#K = E / (3*(1-2*poiss))
 ### end elasticity parameters ###
 
 # hydraulic conductivity
-hcond = 1e-0
+hcond = 1e-5
 
 # parameters for conversion of pressure to pressure head
 # fluid density
-rho = 1
+rho = 1000
 # gravitational acceleration
-gravity = 1
+gravity = 9.81
 
 # external load on the top surface
-force = 1e0
+force = 1e4
 
 # Biot coefficient
 alpha = 1
 
 # storativity - can be calculated from compressibilities or set directly
 # compressibilities (fluid, bulk)
-#beta_f = 4.4e-4 #* 1e-6 # for lower storativity not converging in Flow123d
-#beta_b = 0
+beta_f = 4.4e-4 #* 1e-6 # for lower storativity not converging in Flow123d
+beta_b = 0
 # porosity
-#por = 0.375
+por = 0.375
 # storativity
-#S = (por*beta_f + (alpha-por)*beta_b)
-S = 1e-0
+S = (por*beta_f + (alpha-por)*beta_b)
 
 
 
@@ -94,7 +93,7 @@ print("h0: {}".format(h0))
 def singular_points_func(idx, param):
     """Newton method for i-th solution of equation 'tan(x) - 2*param*x = 0'."""
     
-    xk = np.pi * (idx - 1) + np.pi / 2.00001
+    xk = np.pi * (idx - 1) + np.pi / 2.0000001
     xkk = xk
     maxit = 1000
     tol = 1e-12
@@ -144,9 +143,9 @@ def analytic_sol(x, z, t):
 def plot_presure_head():
     import matplotlib.pyplot as plt
     fig, axs = plt.subplots(2)
-    axs[0].set_ylabel('pressure [Pa]')
+    axs[0].set_ylabel('pressure head [m]')
     axs[0].set_xlabel('x [m]')
-    axs[1].set_ylabel('pressure [Pa]')
+    axs[1].set_ylabel('pressure head [m]')
     axs[1].set_xlabel('t [s]')
 
     xax = np.arange(-lengthA, lengthA+0.05, 0.05)
@@ -204,7 +203,7 @@ def plot_displacement():
     plt.savefig("03_displacement.pdf")
 
 
-times = np.arange(0, 10, 1)
+times = np.array([ 0, 100, 1000, 1e4, 1e5 ])
 plot_presure_head()
 plot_displacement()
 
