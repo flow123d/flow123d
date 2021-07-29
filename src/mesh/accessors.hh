@@ -175,31 +175,39 @@ public:
 
 
 
-    bool is_regional() const {
-        return dim_ == undefined_dim_;
+    inline bool is_regional() const {
+        return r_idx_.is_valid();
     }
 
-    bool is_elemental() const {
+    inline bool is_elemental() const {
         return ( is_valid() && ! is_regional() );
     }
 
-    bool is_valid() const {
+    inline bool is_valid() const {
         return mesh_ != NULL;
     }
 
-    unsigned int dim() const
-        { return dim_; }
+    inline unsigned int dim() const {
+        ASSERT_DBG(! is_regional());
+        return element()->dim();
+    }
 
-    const Element * element() const {
+    inline const Element * element() const {
+        ASSERT_DBG(is_elemental());
         return &(mesh_->element_vec_[element_idx_]);
     }
     
 
-    Region region() const
-        { return Region( r_idx_, mesh_->region_db()); }
+    inline Region region() const
+        { return Region( region_idx(), mesh_->region_db()); }
 
-    RegionIdx region_idx() const
-        { return r_idx_; }
+    inline RegionIdx region_idx() const {
+        if (r_idx_.is_valid()) {
+            return r_idx_;
+        } else {
+            return element()->region_idx();
+        }
+    }
 
     /// We need this method after replacing Region by RegionIdx, and movinf RegionDB instance into particular mesh
     //unsigned int region_id() const {
@@ -207,17 +215,20 @@ public:
     //}
 
     bool is_boundary() const {
-        return boundary_;
+        ASSERT_DBG(is_elemental());
+        return (element_idx_>=mesh_->n_elements());
     }
 
     /// Return local idx of element in boundary / bulk part of element vector
     unsigned int idx() const {
-        if (boundary_) return ( element_idx_ - mesh_->bulk_size_ );
+        ASSERT_DBG(is_elemental());
+        if (is_boundary()) return ( element_idx_ - mesh_->bulk_size_ );
         else return element_idx_;
     }
 
     /// Return global idx of element in full element vector
     unsigned int mesh_idx() const {
+        ASSERT_DBG(is_elemental());
         return element_idx_;
     }
 
@@ -226,6 +237,7 @@ public:
     }
     
     unsigned int proc() const {
+        ASSERT_DBG(is_elemental());
         return mesh_->get_el_ds()->get_proc(mesh_->get_row_4_el()[element_idx_]);
     }
 
@@ -262,6 +274,7 @@ public:
  @endcode
      */
     const Element * operator ->() const {
+        ASSERT_DBG(is_elemental());
     	return &(mesh_->element_vec_[element_idx_]);
     }
     
@@ -273,19 +286,16 @@ private:
      */
     static const unsigned int undefined_dim_ = 100;
 
-    /// Dimension of reference element.
-    unsigned int dim_;
-
     /// Pointer to the mesh owning the element.
     const Mesh *mesh_;
-    /// True if the element is boundary
-    bool boundary_;
 
     /// Index into Mesh::element_vec_ array.
     unsigned int element_idx_;
 
-    /// Region index.
+    // Hack for sorption tables. TODO: remove
+    // undefined for regular elements
     RegionIdx r_idx_;
+
 };
 
 

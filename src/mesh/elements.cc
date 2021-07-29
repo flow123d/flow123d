@@ -51,6 +51,7 @@ Element::Element(unsigned int dim, RegionIdx reg)
 
 
 void Element::init(unsigned int dim, RegionIdx reg) {
+    inverted = false;
     pid_=0;
     n_neighs_vb_=0;
     neigh_vb=NULL;

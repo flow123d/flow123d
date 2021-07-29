@@ -31,8 +31,8 @@ ElementAccessor<spacedim>::ElementAccessor()
  */
 template <int spacedim> inline
 ElementAccessor<spacedim>::ElementAccessor(const Mesh *mesh, RegionIdx r_idx)
-: dim_(undefined_dim_),
-  mesh_(mesh),
+: mesh_(mesh),
+  element_idx_(undef_idx),
   r_idx_(r_idx)
 {}
 
@@ -42,20 +42,13 @@ ElementAccessor<spacedim>::ElementAccessor(const Mesh *mesh, RegionIdx r_idx)
 template <int spacedim> inline
 ElementAccessor<spacedim>::ElementAccessor(const Mesh *mesh, unsigned int idx)
 : mesh_(mesh),
-  boundary_(idx>=mesh->n_elements()),
-  element_idx_(idx),
-  r_idx_(element()->region_idx())
-{
-    dim_=element()->dim();
-}
+  element_idx_(idx)
+{}
 
 template <int spacedim> inline
 void ElementAccessor<spacedim>::inc() {
     ASSERT(!is_regional()).error("Do not call inc() for regional accessor!");
     element_idx_++;
-    r_idx_ = element()->region_idx();
-    dim_=element()->dim();
-    boundary_ = (element_idx_>=mesh_->n_elements());
 }
 
 template <int spacedim> inline
@@ -110,7 +103,19 @@ arma::vec::fixed<spacedim> ElementAccessor<spacedim>::centre() const {
 
 template <int spacedim> inline
 double ElementAccessor<spacedim>::quality_measure_smooth() const {
-    if (dim_==3) {
+    switch (dim()) {
+    case 1:
+        return 1.0;
+    case 2:
+        return
+            jacobian_S2() / 2
+            / pow(
+                  arma::norm(*node(1) - *node(0), 2)
+                  *arma::norm(*node(2) - *node(1), 2)
+                  *arma::norm(*node(0) - *node(2), 2)
+                  , 2.0/3.0)
+           / ( sqrt(3.0) / 4.0 ); // regular triangle
+    case 3:
         double sum_faces=0;
         double face[4];
         for(unsigned int i=0; i<4; i++) sum_faces+=( face[i]=side(i)->measure());
@@ -126,16 +131,6 @@ double ElementAccessor<spacedim>::quality_measure_smooth() const {
         double sign_measure = jacobian_S3() / 6;
         return sign_measure * pow( sum_faces/sum_pairs, 3.0/4.0) / regular;
 
-    }
-    if (dim_==2) {
-        return
-                jacobian_S2() / 2
-                / pow(
-                      arma::norm(*node(1) - *node(0), 2)
-                      *arma::norm(*node(2) - *node(1), 2)
-                      *arma::norm(*node(0) - *node(2), 2)
-                      , 2.0/3.0)
-               / ( sqrt(3.0) / 4.0 ); // regular triangle
     }
     return 1.0;
 }
