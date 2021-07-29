@@ -99,7 +99,7 @@ const IT::Record & Mesh::get_input_type() {
         .close();
 }
 
-const unsigned int Mesh::undef_idx;
+//const unsigned int Mesh::undef_idx;
 
 Mesh::Mesh()
 : tree(nullptr),
@@ -297,7 +297,7 @@ void Mesh::modify_element_ids(const RegionDB::MapElementIDToRegionID &map) {
 
 
 void Mesh::check_mesh_on_read() {
-    std::vector<uint> nodes_new_idx( this->n_nodes(), Mesh::undef_idx );
+    std::vector<uint> nodes_new_idx( this->n_nodes(), undef_idx );
 
     // check element quality and flag used nodes
     for (auto ele : this->elements_range()) {
@@ -327,7 +327,7 @@ void Mesh::check_mesh_on_read() {
     // remove unused nodes from the mesh
     uint inode_new = 0;
     for(uint inode = 0; inode < nodes_new_idx.size(); inode++) {
-        if(nodes_new_idx[inode] == Mesh::undef_idx){
+        if(nodes_new_idx[inode] == undef_idx){
             WarningOut().fmt("A node {} does not belong to any element "
                          " and will be removed.",
                          find_node_id(inode));
@@ -361,7 +361,7 @@ void Mesh::check_mesh_on_read() {
             for (uint ele_node=0; ele_node<ele->n_nodes(); ele_node++) {
                 uint inode_orig = ele->node_idx(ele_node);
                 uint inode = nodes_new_idx[inode_orig];
-                ASSERT_DBG(inode != Mesh::undef_idx);
+                ASSERT_DBG(inode != undef_idx);
                 const_cast<Element*>(ele.element())->nodes_[ele_node] = inode;
             }
         }
@@ -567,7 +567,7 @@ void Mesh::make_neighbours_and_edges()
     Neighbour neighbour;
     EdgeData *edg = nullptr;
     unsigned int ngh_element_idx;
-    unsigned int last_edge_idx = Mesh::undef_idx;
+    unsigned int last_edge_idx = undef_idx;
 
     neighbour.mesh_ = this;
 
@@ -619,7 +619,7 @@ void Mesh::make_neighbours_and_edges()
                 for (unsigned int ecs=0; ecs<elem->n_sides(); ecs++) {
                     SideIter si = elem.side(ecs);
                     if ( same_sides( si, side_nodes) ) {
-                        if (elem->edge_idx(ecs) != Mesh::undef_idx) {
+                        if (elem->edge_idx(ecs) != undef_idx) {
                         	OLD_ASSERT(elem->boundary_idx_!=nullptr, "Null boundary idx array.\n");
                             int last_bc_ele_idx=this->boundary_[elem->boundary_idx_[ecs]].bc_ele_idx_;
                             int new_bc_ele_idx=i;
@@ -636,7 +636,7 @@ void Mesh::make_neighbours_and_edges()
                         if (elem->boundary_idx_ == NULL) {
                         	Element *el = &(element_vec_[*isect]);
                         	el->boundary_idx_ = new unsigned int [ el->n_sides() ];
-                            std::fill( el->boundary_idx_, el->boundary_idx_ + el->n_sides(), Mesh::undef_idx);
+                            std::fill( el->boundary_idx_, el->boundary_idx_ + el->n_sides(), undef_idx);
                         }
                         elem->boundary_idx_[ecs] = bdr_idx;
                         break; // next element in intersection list
@@ -653,7 +653,7 @@ void Mesh::make_neighbours_and_edges()
 		for (unsigned int s=0; s<e->n_sides(); s++)
 		{
 			// skip sides that were already found
-			if (e->edge_idx(s) != Mesh::undef_idx) continue;
+			if (e->edge_idx(s) != undef_idx) continue;
 
 
 			// Find all elements that share this side.
@@ -685,7 +685,7 @@ void Mesh::make_neighbours_and_edges()
 
                     if (e->boundary_idx_ == NULL) {
                     	elm.boundary_idx_ = new unsigned int [ e->n_sides() ];
-                        std::fill( elm.boundary_idx_, elm.boundary_idx_ + e->n_sides(), Mesh::undef_idx);
+                        std::fill( elm.boundary_idx_, elm.boundary_idx_ + e->n_sides(), undef_idx);
                     }
 
                     unsigned int bdr_idx=boundary_.size()+1; // need for VTK mesh that has no boundary elements
@@ -715,7 +715,7 @@ void Mesh::make_neighbours_and_edges()
             for( vector<unsigned int>::iterator isect = intersection_list.begin(); isect!=intersection_list.end(); ++isect) {
             	ElementAccessor<3> elem = this->element_accessor(*isect);
                 for (unsigned int ecs=0; ecs<elem->n_sides(); ecs++) {
-                    if (elem->edge_idx(ecs) != Mesh::undef_idx) continue; // ??? This should not happen.
+                    if (elem->edge_idx(ecs) != undef_idx) continue; // ??? This should not happen.
                     SideIter si = elem.side(ecs);
                     if ( same_sides( si, side_nodes) ) {
                         if (is_neighbour) {
@@ -735,7 +735,7 @@ void Mesh::make_neighbours_and_edges()
                             // connect the side to the edge, and side to the edge
                             ASSERT_PTR_DBG(edg);
                             edg->side_[ edg->n_sides++ ] = si;
-                            ASSERT_DBG(last_edge_idx != Mesh::undef_idx);
+                            ASSERT_DBG(last_edge_idx != undef_idx);
                             element_vec_[elem.idx()].edge_idx_[ecs] = last_edge_idx;
                         }
                         break; // next element from intersection list
@@ -1031,10 +1031,10 @@ std::shared_ptr<std::vector<LongIdx>> Mesh::check_compatible_mesh( Mesh & input_
         const BIHTree &bih_tree=this->get_bih_tree();
 
     	// create nodes of mesh
-        node_ids.resize( this->n_nodes(), Mesh::undef_idx );
+        node_ids.resize( this->n_nodes(), undef_idx );
         i=0;
         for (auto nod : input_mesh.node_range()) {
-            uint found_i_node = Mesh::undef_idx;
+            uint found_i_node = undef_idx;
             bih_tree.find_point(*nod, searched_elements);
 
             for (std::vector<unsigned int>::iterator it = searched_elements.begin(); it!=searched_elements.end(); it++) {
@@ -1044,7 +1044,7 @@ std::shared_ptr<std::vector<LongIdx>> Mesh::check_compatible_mesh( Mesh & input_
                     static const double point_tolerance = 1E-10;
                     if ( arma::norm(*ele.node(i_node) - *nod, 1) < point_tolerance) {
                         i_elm_node = ele.node(i_node).idx();
-                        if (found_i_node == Mesh::undef_idx) found_i_node = i_elm_node;
+                        if (found_i_node == undef_idx) found_i_node = i_elm_node;
                         else if (found_i_node != i_elm_node) {
                             // duplicate nodes in target mesh - not compatible
                             return std::make_shared<std::vector<LongIdx>>(0);
@@ -1052,7 +1052,7 @@ std::shared_ptr<std::vector<LongIdx>> Mesh::check_compatible_mesh( Mesh & input_
                     }
                 }
             }
-            if (found_i_node!=Mesh::undef_idx) node_ids[found_i_node] = i;
+            if (found_i_node!=undef_idx) node_ids[found_i_node] = i;
             searched_elements.clear();
             i++;
         }
@@ -1068,7 +1068,7 @@ std::shared_ptr<std::vector<LongIdx>> Mesh::check_compatible_mesh( Mesh & input_
         for (auto elm : this->elements_range()) {
             valid_nodes = true;
             for (unsigned int j=0; j<elm->n_nodes(); j++) { // iterate trough all nodes of any element
-            	if (node_ids[ elm->node_idx(j) ] == Mesh::undef_idx) valid_nodes = false;
+            	if (node_ids[ elm->node_idx(j) ] == undef_idx) valid_nodes = false;
             	node_list.push_back( node_ids[ elm->node_idx(j) ] );
             }
             if (valid_nodes) {
@@ -1081,7 +1081,7 @@ std::shared_ptr<std::vector<LongIdx>> Mesh::check_compatible_mesh( Mesh & input_
                 element_ids_map[i] = (LongIdx)result_list[0];
                 n_found++;
             } else {
-                element_ids_map[i] = (LongIdx)Mesh::undef_idx;
+                element_ids_map[i] = (LongIdx)undef_idx;
             }
             node_list.clear();
             result_list.clear();
@@ -1107,7 +1107,7 @@ std::shared_ptr<std::vector<LongIdx>> Mesh::check_compatible_mesh( Mesh & input_
         for (auto elm : bc_mesh->elements_range()) {
             valid_nodes = true;
             for (unsigned int j=0; j<elm->n_nodes(); j++) { // iterate trough all nodes of any element
-            	if (node_ids[ elm->node_idx(j) ] == Mesh::undef_idx) valid_nodes = false;
+            	if (node_ids[ elm->node_idx(j) ] == undef_idx) valid_nodes = false;
                 node_list.push_back( node_ids[ elm->node_idx(j) ] );
             }
             if (valid_nodes) {
@@ -1119,7 +1119,7 @@ std::shared_ptr<std::vector<LongIdx>> Mesh::check_compatible_mesh( Mesh & input_
             if (result_list.size() == 1) {
                 element_ids_map[i] = (LongIdx)result_list[0];
             } else {
-                element_ids_map[i] = (LongIdx)Mesh::undef_idx;
+                element_ids_map[i] = (LongIdx)undef_idx;
             }
             node_list.clear();
             result_list.clear();
@@ -1224,9 +1224,11 @@ void Mesh::init_element(Element *ele, unsigned int elm_id, unsigned int dim, Reg
 	ele->init(dim, region_idx);
 	ele->pid_ = partition_id;
 
-	for (unsigned int ni=0; ni<ele->n_nodes(); ni++) {
+	unsigned int ni=0;
+	for (; ni<ele->n_nodes(); ni++) {
 		ele->nodes_[ni] = this->node_index(node_ids[ni]);
 	}
+	for( ;ni < 4; ni++) ele->nodes_[ni] = undef_idx;
 
     // check that tetrahedron element is numbered correctly and is not degenerated
     if(ele->dim() == 3)

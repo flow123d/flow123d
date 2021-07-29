@@ -62,8 +62,8 @@ void Element::init(unsigned int dim, RegionIdx reg) {
     boundary_idx_ = NULL;
 
     for (unsigned int si=0; si<this->n_sides(); si++) {
-        edge_idx_[ si ]=Mesh::undef_idx;
-        permutation_idx_[si] = Mesh::undef_idx;
+        edge_idx_[ si ]=undef_idx;
+        permutation_idx_[si] = undef_idx;
     }
 }
 

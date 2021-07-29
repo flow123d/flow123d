@@ -246,6 +246,14 @@ Logger &operator<<(Logger & log, const std::vector<T> & vec)
 	return log;
 }
 
+template <class T, long unsigned int N>
+Logger &operator<<(Logger & log, const std::array<T, N> & vec)
+{
+    for (T const& c : vec)
+        log << c << " ";
+    return log;
+}
+
 
 template <class T>
 Logger &operator<<(Logger & log, const T & x)

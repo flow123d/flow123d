@@ -158,7 +158,7 @@ const SideIter ElementAccessor<spacedim>::side(const unsigned int loc_index) con
 
 inline Edge::Edge()
 : mesh_(nullptr),
-  edge_idx_(Mesh::undef_idx)
+  edge_idx_(undef_idx)
 {}
 
 inline Edge::Edge(const Mesh *mesh, unsigned int edge_idx)
@@ -205,7 +205,7 @@ inline bool Side::is_external() const {
 
 // returns true for all sides either on boundary or connected to vb neigboring
 inline bool Side::is_boundary() const {
-    return is_external() && cond_idx() != Mesh::undef_idx;
+    return is_external() && cond_idx() != undef_idx;
 }
 
 inline NodeAccessor<3> Side::node(unsigned int i) const {
@@ -232,7 +232,7 @@ inline Boundary Side::cond() const {
 }
 
 inline unsigned int Side::cond_idx() const {
-        if (element()->boundary_idx_ == nullptr) return Mesh::undef_idx;
+        if (element()->boundary_idx_ == nullptr) return undef_idx;
         else return element()->boundary_idx_[side_idx_];
 }
 

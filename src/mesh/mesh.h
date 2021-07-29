@@ -122,7 +122,7 @@ public:
      */
     static const Input::Type::Selection & get_input_intersection_variant();
     
-    static const unsigned int undef_idx=-1;
+
     static const Input::Type::Record & get_input_type();
 
 
