@@ -473,7 +473,7 @@ inline unsigned int BoundaryPoint::eval_point_idx() const {
 }
 
 inline BulkPoint BoundaryPoint::point_bdr(ElementAccessor<3> bdr_elm) const {
-    unsigned int i_elm = elm_cache_map_->position_in_cache(bdr_elm.idx());
+    unsigned int i_elm = elm_cache_map_->position_in_cache(bdr_elm.idx(), true);
     unsigned int i_ep = this->eval_points()->subset_begin(bdr_elm.dim(), integral_->get_subset_low_idx()) + local_point_idx_;
     PatchCacheLoc c_pos(i_elm, i_ep);
     return BulkPoint(elm_cache_map_, c_pos);

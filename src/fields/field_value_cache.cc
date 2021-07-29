@@ -70,6 +70,7 @@ void ElementCacheMap::create_patch() {
     regions_starts_.reset();
     element_starts_.reset();
     element_to_map_.clear();
+    element_to_map_bdr_.clear();
     std::fill(elm_idx_.begin(), elm_idx_.end(), ElementCacheMap::undef_elem_idx);
 
     for (auto it=eval_point_data_tmp.begin(); it!=eval_point_data_tmp.end(); ++it) {
@@ -85,7 +86,10 @@ void ElementCacheMap::create_patch() {
                 last_region_idx = it->i_reg_;
             }
 			elm_idx_[element_starts_.temporary_size()] = it->i_element_;
-            element_to_map_[it->i_element_] = element_starts_.temporary_size();
+            if (it->i_reg_ % 2 == 1) // bulk region > to element_to_map_ (bulk)
+			    element_to_map_[it->i_element_] = element_starts_.temporary_size();
+            else // boundary region to element_to_map_bdr_ (boundary)
+                element_to_map_bdr_[it->i_element_] = element_starts_.temporary_size();
             element_starts_.emplace_back(i_pos);
             last_element_idx = it->i_element_;
         }

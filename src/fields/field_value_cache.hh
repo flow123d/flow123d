@@ -202,10 +202,17 @@ public:
     }
 
     /// Return position of element stored in ElementCacheMap
-    inline unsigned int position_in_cache(unsigned mesh_elm_idx) const {
-        std::unordered_map<unsigned int, unsigned int>::const_iterator it = element_to_map_.find(mesh_elm_idx);
-        if ( it != element_to_map_.end() ) return it->second;
-        else return ElementCacheMap::undef_elem_idx;
+    inline unsigned int position_in_cache(unsigned mesh_elm_idx, bool bdr=false) const {
+        std::unordered_map<unsigned int, unsigned int>::const_iterator it;
+        if (bdr) {
+            it = element_to_map_bdr_.find(mesh_elm_idx);
+            if ( it != element_to_map_bdr_.end() ) return it->second;
+            else return ElementCacheMap::undef_elem_idx;
+        } else {
+            it = element_to_map_.find(mesh_elm_idx);
+            if ( it != element_to_map_.end() ) return it->second;
+            else return ElementCacheMap::undef_elem_idx;
+        }
     }
 
     /// Return number of stored regions.
@@ -324,7 +331,8 @@ protected:
 
     RevertableList<unsigned int> regions_starts_;         ///< Start positions of elements in regions (size = n_regions+1, last value is end of last region)
     RevertableList<unsigned int> element_starts_;         ///< Start positions of elements in eval_point_data_ (size = n_elements+1)
-    std::unordered_map<unsigned int, unsigned int> element_to_map_; ///< Maps element_idx to element index in patch - TODO remove
+    std::unordered_map<unsigned int, unsigned int> element_to_map_;     ///< Maps bulk element_idx to element index in patch - TODO remove
+    std::unordered_map<unsigned int, unsigned int> element_to_map_bdr_; ///< Maps boundary element_idx to element index in patch - TODO remove
 
     // @}
 
