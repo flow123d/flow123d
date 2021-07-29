@@ -14,5 +14,6 @@ test_cases:
   - 24_square_barrier_chopped.yaml
   - 30_3d_block_load.yaml
 - files:
+  - 04_terzaghi_3d.yaml
   - 05_mandel_3d.yaml
-  time_limit: 300
+  time_limit: 200
