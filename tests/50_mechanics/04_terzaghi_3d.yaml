@@ -27,8 +27,8 @@ problem: !Coupling_Sequential
         gravity: [0,0,0]
         nonlinear_solver:
           linear_solver: !Petsc
-            a_tol: 1e-10
-            r_tol: 1e-14
+            a_tol: 0
+            r_tol: 1e-12
         input_fields:
           - region: BULK
             conductivity: 1e-5
@@ -60,8 +60,8 @@ problem: !Coupling_Sequential
             - displacement
             - stress
         solver: !Petsc
-          a_tol: 1e-10
-          r_tol: 1e-14
+          a_tol: 0
+          r_tol: 1e-12
         input_fields:
           - region: BULK
             young_modulus: 1e8

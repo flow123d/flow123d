@@ -1,0 +1,25 @@
+"time [s]"	"region"	"quantity [m(3)]"	"flux"	"flux_in"	"flux_out"	"mass"	"source"	"source_in"	"source_out"	"flux_increment"	"source_increment"	"flux_cumulative"	"source_cumulative"	"error"
+0	"cylinder"	"water_volume"	0	0	0	0.0937453	0	0	0	0	0	0	0	0
+0	".top"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
+0	".bottom"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
+0	".side"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
+10000	"cylinder"	"water_volume"	0	0	0	0.091825	9.70582e-12	1.00761e-11	-3.70272e-13	0	0	0	0	0
+10000	".top"	"water_volume"	-1.92039e-07	0	-1.92039e-07	0	0	0	0	0	0	0	0	0
+10000	".bottom"	"water_volume"	-8.58861e-17	1.28963e-15	-1.37551e-15	0	0	0	0	0	0	0	0	0
+10000	".side"	"water_volume"	5.17153e-15	1.21079e-14	-6.93634e-15	0	0	0	0	0	0	0	0	0
+100000	"cylinder"	"water_volume"	0	0	0	0.0892335	1.30959e-12	1.31411e-12	-4.5151e-15	0	0	0	0	0
+100000	".top"	"water_volume"	-2.59151e-08	0	-2.59151e-08	0	0	0	0	0	0	0	0	0
+100000	".bottom"	"water_volume"	-1.52828e-14	7.50049e-14	-9.02877e-14	0	0	0	0	0	0	0	0	0
+100000	".side"	"water_volume"	3.74703e-13	1.05215e-12	-6.77446e-13	0	0	0	0	0	0	0	0	0
+1e+06	"cylinder"	"water_volume"	0	0	0	0.0771051	4.93582e-13	4.93582e-13	0	0	0	0	0	0
+1e+06	".top"	"water_volume"	-9.76735e-09	0	-9.76735e-09	0	0	0	0	0	0	0	0	0
+1e+06	".bottom"	"water_volume"	-3.44031e-15	1.81247e-15	-5.25278e-15	0	0	0	0	0	0	0	0	0
+1e+06	".side"	"water_volume"	-2.29629e-16	3.06312e-14	-3.08608e-14	0	0	0	0	0	0	0	0	0
+1e+07	"cylinder"	"water_volume"	0	0	0	0.0400348	1.3958e-13	1.3958e-13	0	0	0	0	0	0
+1e+07	".top"	"water_volume"	-2.76217e-09	0	-2.76217e-09	0	0	0	0	0	0	0	0	0
+1e+07	".bottom"	"water_volume"	2.26689e-14	3.17209e-14	-9.05203e-15	0	0	0	0	0	0	0	0	0
+1e+07	".side"	"water_volume"	-8.57991e-14	5.97126e-14	-1.45512e-13	0	0	0	0	0	0	0	0	0
+5e+07	"cylinder"	"water_volume"	0	0	0	0.00446081	1.52315e-14	1.52315e-14	0	0	0	0	0	0
+5e+07	".top"	"water_volume"	-3.01446e-10	0	-3.01446e-10	0	0	0	0	0	0	0	0	0
+5e+07	".bottom"	"water_volume"	1.16577e-14	1.79379e-14	-6.28013e-15	0	0	0	0	0	0	0	0	0
+5e+07	".side"	"water_volume"	-5.22252e-14	3.63536e-14	-8.85788e-14	0	0	0	0	0	0	0	0	0
