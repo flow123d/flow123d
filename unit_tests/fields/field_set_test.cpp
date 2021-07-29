@@ -239,9 +239,9 @@ TEST_F(SomeEquation, collective_interface) {
     EXPECT_EQ( matrix, data["reaction_type"].flags() );
 
     data.output_type(OutputTime::CORNER_DATA);
-    EXPECT_TRUE( data["init_pressure"].get_output_type()[OutputTime::CORNER_DATA] );
-    EXPECT_TRUE( data["velocity"].get_output_type()[OutputTime::CORNER_DATA] );
-    EXPECT_TRUE( data["reaction_type"].get_output_type()[OutputTime::CORNER_DATA] );
+    EXPECT_EQ( OutputTime::CORNER_DATA, data["init_pressure"].get_output_type() );
+    EXPECT_EQ( OutputTime::CORNER_DATA, data["velocity"].get_output_type() );
+    EXPECT_EQ( OutputTime::CORNER_DATA, data["reaction_type"].get_output_type() );
 }
 
 TEST_F(SomeEquation, input_related) {
