@@ -1,4 +1,4 @@
-\section{Fractures and diffusion}
+\#Fractures and diffusion
 
 File: \texttt{04\_frac\_diffusion.yaml}
 
@@ -27,7 +27,7 @@ The user will learn how to:
 
 \subsection{Input}
 
-\subsubsection{Geometry and mesh generation}
+\#\#\#Geometry and mesh generation
 
 The simulation area \(100 \times 100\) m is cut by two flow fractures
 from which two blind fractures separate (see Figure \ref{fig:mesh}). The
@@ -47,10 +47,12 @@ triangles, we use additional GMSH command in the file
 This ensures that the 2D mesh will adapt so that elements do not cross
 the fracture lines (see Figure \ref{fig:mesh}).
 
-\begin{figure}[htbp]
+\begin{figure}
+\hypertarget{fig:mesh}{%
 \centering
-\includegraphics[width=1.00000\textwidth]{tutor_figures/04_geomesh.pdf}
-\caption{Geometry and mesh of simulation area.\label{fig:mesh}}
+\includegraphics[width=1\textwidth,height=\textheight]{tutor_figures/04_geomesh.pdf}
+\caption{Geometry and mesh of simulation area.}\label{fig:mesh}
+}
 \end{figure}
 
 In the YAML file one can define regions in addition to those from MSH
@@ -167,7 +169,7 @@ fractures than in the rock (Table \ref{tbl:coefDiff}):
     disp_t: 0.5
 \end{verbatim}
 
-\begin{longtable}[c]{@{}lrr@{}}
+\begin{longtable}[]{@{}lrr@{}}
 \caption{Coefficient of molecular diffusion prescribed in Flow123d.
 \label{tbl:coefDiff}}\tabularnewline
 \toprule
@@ -229,10 +231,12 @@ The result of model with and without blind fractures (file
 more contaminated at the outflow from the rock. The influence on flow
 fractures is negligible.
 
-\begin{figure}[htbp]
+\begin{figure}
+\hypertarget{fig:diff_res}{%
 \centering
 \includegraphics{tutor_figures/04_mass_flux.pdf}
 \caption{Outgoing mass flux through the right part of the boundary.
 Comparison of results with and without blind
-fractures.\label{fig:diff_res}}
+fractures.}\label{fig:diff_res}
+}
 \end{figure}

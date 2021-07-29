@@ -27,6 +27,10 @@ Conversely, the deformation affects the flow via the additional term
 on the right hand side of \eqref{eq:continuity}.
 The expression $\widetilde\div\uu$ is defined as follows:
 \eq{ \widetilde\div\uu_d = \div\uu_d + \begin{cases}\frac{\delta_{d+1}}{\delta_d}\sum_{i=1}^n\uu^i_{d+1}\cdot\nn^i_{d+1} & \mbox{ if }d\in\{1,2\},\\0 & \mbox{ else. }\end{cases} }
+The numerical solution of coupled hydro-mechanical problems is solved by an iterative splitting, where in order to achieve convergence the flow equation is modified as follows:
+\eq{ \partial_t(\delta(S+S_{extra})h) + \div\vc q = F + F_M + \partial_t(\delta S_{extra} h_{old}). }
+Here $h_{old}$ is the previous value of piezometric head in the iteration process and $S_{extra}$ is an extra storativity coefficient whose value affects the rate of convergence.
+It can be manually tuned using the \hyperA{Coupling-Iterative::iteration-parameter}{iteration parameter}.
 
 
 \paragraph{Boundary conditions.}

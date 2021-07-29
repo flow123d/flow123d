@@ -46,7 +46,7 @@ const it::Record & HM_Iterative::get_input_type() {
 		        IT::Default::obligatory(),
 		        "Input fields of the HM coupling.")
         .declare_key( "iteration_parameter", it::Double(), it::Default("1"),
-                "Tuning parameter for iterative splitting. Its default value"
+                "Tuning parameter for iterative splitting. Its default value "
                 "corresponds to a theoretically optimal value with fastest convergence." )
         .declare_key( "max_it", it::Integer(0), it::Default("100"),
                 "Maximal count of HM iterations." )
@@ -85,18 +85,22 @@ HM_Iterative::EqData::EqData()
                      .flags_add(FieldFlag::in_rhs);
     
     *this += beta.name("relaxation_beta")
+                     .description("Parameter of numerical method for iterative solution of hydro-mechanical coupling.")
                      .units(UnitSI().dimensionless())
                      .flags(FieldFlag::equation_external_output);
     
     *this += pressure_potential.name("pressure_potential")
+                     .description("Coupling term entering the mechanics equation.")
                      .units(UnitSI().m())
                      .flags(FieldFlag::equation_result);
 
     *this += ref_pressure_potential.name("ref_pressure_potential")
+                     .description("Pressure potential on boundary (taking into account the flow boundary condition.")
                      .units(UnitSI().m())
                      .flags(FieldFlag::equation_result);
     
     *this += flow_source.name("extra_flow_source")
+                     .description("Coupling term entering the flow equation.")
                      .units(UnitSI().s(-1))
                      .flags(FieldFlag::equation_result);
 }

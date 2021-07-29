@@ -1,4 +1,4 @@
-\section{1D column}
+\#1D column
 
 File: \texttt{01\_column.yaml}
 
@@ -24,11 +24,13 @@ A pseudo one-dimensional model is considered in the range 10 \(\times\)
 23 m with the atmospheric pressure on the surface and on the bottom, and
 no flow boundary condition on the edges (Figure \ref{fig:column_geom}).
 
-\begin{figure}[htbp]
+\begin{figure}
+\hypertarget{fig:column_geom}{%
 \centering
-\includegraphics[width=1.00000\textwidth]{tutor_figures/01_mesh_bc_flux.pdf}
+\includegraphics[width=1\textwidth,height=\textheight]{tutor_figures/01_mesh_bc_flux.pdf}
 \caption{a) the mesh; b) the boundary conditions; c) computed
-piezometric head and flux.\label{fig:column_geom}}
+piezometric head and flux.}\label{fig:column_geom}
+}
 \end{figure}
 
 \subsection{Input}
@@ -167,7 +169,7 @@ the input flux on the surface is \(1 \times 10^{-7}\) and the output
 flux on the tunnel is \(-1 \times 10^{-7}\) (Table
 \ref{tbl:tunnel_water_balance}).
 
-\begin{longtable}[c]{@{}lllrrr@{}}
+\begin{longtable}[]{@{}lllrrr@{}}
 \caption{Results in \texttt{water\_balanced.txt} (edited table, extract
 from the file). \label{tbl:tunnel_water_balance}}\tabularnewline
 \toprule
