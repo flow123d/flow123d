@@ -274,7 +274,6 @@ Elasticity::Elasticity(Mesh & init_mesh, const Input::Record in_rec, TimeGoverno
 		  rhs(nullptr),
 		  stiffness_matrix(nullptr),
 		  input_rec(in_rec),
-		  allocation_done(false),
 		  stiffness_assembly_(nullptr),
 		  rhs_assembly_(nullptr),
 		  output_fields_assembly_(nullptr)
@@ -436,8 +435,7 @@ void Elasticity::zero_time_step()
 		WarningOut() << ss.str();
 	}
 
-    // check first time assembly - needs preallocation
-    if (!allocation_done) preallocate();
+    preallocate();
     
 
     // after preallocation we assemble the matrices and vectors required for balance of forces
@@ -469,8 +467,6 @@ void Elasticity::preallocate()
 
     stiffness_assembly_->assemble(eq_data_->dh_);
     rhs_assembly_->assemble(eq_data_->dh_);
-
-	allocation_done = true;
 }
 
 

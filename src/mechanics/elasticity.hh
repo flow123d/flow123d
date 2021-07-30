@@ -252,14 +252,6 @@ private:
 
 
 
-	/// @name Other
-	// @{
-
-    /// Indicates whether matrices have been preallocated.
-    bool allocation_done;
-    
-    // @}
-
     /// general assembly objects, hold assembly objects of appropriate dimension
     GenericAssembly< StiffnessAssemblyElasticity > * stiffness_assembly_;
     GenericAssembly< RhsAssemblyElasticity > * rhs_assembly_;
