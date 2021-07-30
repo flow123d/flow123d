@@ -103,12 +103,6 @@ public:
 	class EqData {
 	public:
 
-        static  constexpr const char *  name() { return "Mechanics_LinearElasticity"; }
-
-        static string default_output_field() { return "\"displacement\""; }
-
-        static IT::Selection get_output_selection();
-
 		EqData()
         : ls(nullptr) {}
 
@@ -226,18 +220,6 @@ private:
 	// @}
 
 
-	/// @name Solution of algebraic system
-	// @{
-
-	/// Vector of right hand side.
-	Vec rhs;
-
-	/// The stiffness matrix.
-	Mat stiffness_matrix;
-
-	// @}
-
-
 	/// @name Output to file
 	// @{
 
@@ -250,6 +232,7 @@ private:
 	// @}
 
 
+    static constexpr const char *  name_ = "Mechanics_LinearElasticity";
 
 
     /// general assembly objects, hold assembly objects of appropriate dimension
