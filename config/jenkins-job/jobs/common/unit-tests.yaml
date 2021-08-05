@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------- #
 # ---------- UNIT-TESTS ------------------------------------------------------ #
 # ---------------------------------------------------------------------------- #
-name: "Flow123d-{platform}-{build-type}-unit-test-{unit-dir}"
+name: "Flow123d-{platform}-{build-type}-unit-test-{unit-dir}" 
 display-name: "{build-type} / Flow123d unit-test {unit-dir}"
 defaults: flow123d-build
 builders:
