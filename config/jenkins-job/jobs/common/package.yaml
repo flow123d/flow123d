@@ -11,18 +11,18 @@ builders:
       destination=$(pwd)/publish
 
       rm -rf publish && mkdir -p publish
-      rm -rf flow123d-package
-      git clone https://github.com/flow123d/flow123d-package.git
+      rm -rf docker-config
+      git clone https://github.com/flow123d/docker-config.git
 
-      make -C flow123d-package \
+      make -C docker-config/package \
               destination=$destination \
               all
 
-      make -C flow123d-package \
+      make -C docker-config/package \
               destination=$destination \
               remove-unwanted
 
-      make -C flow123d-package \
+      make -C docker-config/package \
               push-to-hub
 
       ls -la $destination
