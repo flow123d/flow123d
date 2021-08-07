@@ -142,6 +142,25 @@ Mesh::Mesh(Input::Record in_record, MPI_Comm com)
 	init();
 }
 
+
+Mesh::Mesh(Mesh &other)
+  : tree(nullptr),
+  in_record_(other.in_record_),
+  comm_(other.comm_),
+  bulk_size_(0),
+  nodes_(3, 1, 0),
+  row_4_el(nullptr),
+  el_4_loc(nullptr),
+  el_ds(nullptr),
+  node_4_loc_(nullptr),
+  node_ds_(nullptr),
+  bc_mesh_(nullptr)
+{
+    init();
+}
+
+
+
 Mesh::IntersectionSearch Mesh::get_intersection_search()
 {
     return in_record_.val<Mesh::IntersectionSearch>("intersection_search");

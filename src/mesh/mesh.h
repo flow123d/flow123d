@@ -141,6 +141,8 @@ public:
      */
     Mesh(Input::Record in_record, MPI_Comm com = MPI_COMM_WORLD);
 
+    Mesh(Mesh &other);
+
     /// Destructor.
     virtual ~Mesh();
 

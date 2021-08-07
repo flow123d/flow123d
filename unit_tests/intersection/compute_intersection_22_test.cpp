@@ -120,6 +120,7 @@ void compute_intersection_22d(Mesh *mesh, const IntersectionLocal<2,2> &il)
 }
 
 
+
 TEST(intersections_22d, all) {   
     // directory with testing meshes
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
@@ -141,19 +142,20 @@ TEST(intersections_22d, all) {
             string in_mesh_string = "{ mesh_file=\"" + dir_name + filenames[s] + "\", optimize_mesh=false }";
             
             Mesh *mesh = mesh_constructor(in_mesh_string);
+
+
             // read mesh with gmshreader
             auto reader = reader_constructor(in_mesh_string);
             reader->read_raw_mesh(mesh);
+            auto tmesh = TestingMesh(mesh, permutations_triangle[p], {});
         
-            // permute nodes of one triangle:
-            mesh->permute_triangle(0, permutations_triangle[p]);
             
-            mesh->setup_topology();
+            tmesh->setup_topology();
             
 //             auto il = solution[s];
             auto il = permute_coords(solution[s], permutations_triangle[p]);
             std::sort(il.points().begin(), il.points().end(),compare_ip22);
-            compute_intersection_22d(mesh, il);
+            compute_intersection_22d(tmesh, il);
         }
     }
 }

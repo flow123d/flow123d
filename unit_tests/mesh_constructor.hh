@@ -14,7 +14,8 @@
 #include "input/type_record.hh"
 #include "io/msh_basereader.hh"
 #include "mesh/mesh.h"
-
+#include "mesh/node_accessor.hh"
+#include "mesh/accessors.hh"
 
 namespace IT = Input::Type;
 
@@ -51,5 +52,39 @@ Mesh * mesh_constructor(const std::string &input_str,
     return mesh;
 }
 
+class TestingMesh : public Mesh {
+public:
+    TestingMesh(Mesh *mesh, std::vector<unsigned int> permutation_2d, std::vector<unsigned int> permutation_3d)
+    : Mesh(*mesh)
+    {
+
+        this->init_node_vector(mesh->n_nodes());
+        for(auto node : mesh->node_range()) {
+            this->add_node(node.idx(), *node);
+        }
+
+        this->init_element_vector(mesh->n_elements());
+        std::vector<unsigned int> permutation_1d = {0, 1};
+        std::vector<std::vector<unsigned int>> perm_vec = {permutation_1d, permutation_2d, permutation_3d};
+        std::vector<unsigned int>  nodes(4, 0);
+        for(auto &ele : mesh->elements_range()) {
+            nodes.resize(ele.dim() + 1);
+            auto & perm = perm_vec[ele.dim()-1];
+            //DebugOut() << "ele: " << ele.idx() << " perm: " << perm << " dim: " << ele.dim();
+            for(unsigned int i=0; i<=ele.dim(); ++i) {
+
+
+                nodes[i] = ele.node(perm[i]).idx();
+                //DebugOut() << "i: " << i << " node: " << nodes[i] ;
+                ASSERT(nodes[i] < n_nodes())(i)(nodes[i]);
+            }
+            this->add_element(ele.index(), ele.dim(), ele.region_idx().idx(), 0, nodes);
+        }
+
+    }
+
+
+
+};
 
 #endif /* UNIT_TESTS_MESH_CONSTRUCTOR_HH_ */
