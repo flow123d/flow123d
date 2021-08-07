@@ -105,6 +105,7 @@ std::vector<IntersectionPoint<1,2>> permute_coords(TestCaseIPs ips,
 
 void compute_intersection_12d(Mesh *mesh, const TestCaseIPs &ips, bool degenerate)
 {
+    // Compute intersection with a "reference element".
     IntersectionAux<1,2> is(1, 0);
     ComputeIntersection<1,2> CI(mesh->element_accessor(1), mesh->element_accessor(0), mesh);
     if(degenerate)
@@ -174,7 +175,10 @@ TEST(intersections_12d, all) {
 //                if(ele->dim() == 2)
 //                	mesh->permute_triangle(ele.idx(), permutations_triangle[p]);
 //            }
-            tmesh->setup_topology();
+
+            // Bypass the permuation of element nodes for the Intersection test against
+            // "reference element" in compute_intersection_12.
+            //tmesh->setup_topology();
             
 //                 compare_with_ngh(mesh);
             // compute both ways

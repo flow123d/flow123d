@@ -91,7 +91,7 @@ IntersectionLocal<1,3> permute_coords(IntersectionLocal<1,3> il,
 void compute_intersection_13d(Mesh *mesh, const IntersectionLocal<1,3> &il)
 {
     // compute intersection
-    IntersectionAux<1,3> is;
+    IntersectionAux<1,3> is(1,0);
     ComputeIntersection<1,3> CI(mesh->element_accessor(1), mesh->element_accessor(0), mesh);
     CI.init();
     CI.compute(is);
@@ -139,16 +139,17 @@ TEST(intersections_13d, all) {
             // read mesh with gmshreader
             auto reader = reader_constructor(in_mesh_string);
             reader->read_raw_mesh(mesh);
+            TestingMesh *tmesh = new TestingMesh(mesh, permutations_triangle[0], permutations_tetrahedron[p]);
         
-            // permute nodes:
-            for (auto ele : mesh->elements_range()) {
-                if(ele->dim() == 3)
-                    mesh->permute_tetrahedron(ele.idx(), permutations_tetrahedron[p]);
-            }
+//            // permute nodes:
+//            for (auto ele : mesh->elements_range()) {
+//                if(ele->dim() == 3)
+//                    mesh->permute_tetrahedron(ele.idx(), permutations_tetrahedron[p]);
+//            }
+//
+            //mesh->setup_topology();
             
-            mesh->setup_topology();
-            
-            compute_intersection_13d(mesh, permute_coords(solution[s], permutations_tetrahedron[p]));
+            compute_intersection_13d(tmesh, permute_coords(solution[s], permutations_tetrahedron[p]));
         }
     }
 }
