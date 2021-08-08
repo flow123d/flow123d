@@ -36,7 +36,7 @@ void fill_solution(std::vector< TestCaseResult> &c)
 
     // 1 IP, A node, T node
     c.push_back({ "01_d", {IntersectionPoint<1,2>({0}, {0, 0})}});
-    /*
+
     c.push_back({ "02_d", {IntersectionPoint<1,2>({1}, {0, 0})}});
     c.push_back({ "03_d", {IntersectionPoint<1,2>({1}, {0, 0})}});
     
@@ -75,7 +75,6 @@ void fill_solution(std::vector< TestCaseResult> &c)
     // regular cases
     c.push_back({ "50_r", {}});
     c.push_back({ "51_r", {IntersectionPoint<1,2>({0.5}, {0.25, 0.25})}});
-    */
 }
 
 

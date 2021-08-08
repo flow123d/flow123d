@@ -94,7 +94,7 @@ IntersectionLocal<2,2> permute_coords(IntersectionLocal<2,2> il,
 
 void compute_intersection_22d(Mesh *mesh, const IntersectionLocal<2,2> &il)
 {
-    IntersectionAux<2,2> is;
+    IntersectionAux<2,2> is(0, 1);
     ComputeIntersection<2,2> CI(mesh->element_accessor(0), mesh->element_accessor(1), mesh);
     CI.init();
     CI.compute(is);
@@ -147,10 +147,10 @@ TEST(intersections_22d, all) {
             // read mesh with gmshreader
             auto reader = reader_constructor(in_mesh_string);
             reader->read_raw_mesh(mesh);
-            auto tmesh = TestingMesh(mesh, permutations_triangle[p], {});
+            auto tmesh = new TestingMesh(mesh, permutations_triangle[p], permutations_tetrahedron[0]);
         
             
-            tmesh->setup_topology();
+            //tmesh->setup_topology();
             
 //             auto il = solution[s];
             auto il = permute_coords(solution[s], permutations_triangle[p]);
