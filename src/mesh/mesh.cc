@@ -931,31 +931,25 @@ void Mesh::elements_id_maps( vector<LongIdx> & bulk_elements_id, vector<LongIdx>
 {
     if (bulk_elements_id.size() ==0) {
         std::vector<LongIdx>::iterator map_it;
-        LongIdx last_id;
 
         bulk_elements_id.resize(n_elements());
         map_it = bulk_elements_id.begin();
-        last_id = -1;
         for(unsigned int idx=0; idx < n_elements(); idx++, ++map_it) {
         	LongIdx id = this->find_elem_id(idx);
-            if (last_id >= id) xprintf(UsrErr, "Element IDs in non-increasing order, ID: %d\n", id);
-            last_id=*map_it = id;
+            //if (last_id >= id) xprintf(UsrErr, "Element IDs in non-increasing order, ID: %d\n", id);
+            *map_it = id;
         }
         std::sort(bulk_elements_id.begin(), bulk_elements_id.end());
 
         boundary_elements_id.resize(bc_mesh_->n_elements());
         map_it = boundary_elements_id.begin();
-        last_id = -1;
         for(unsigned int idx=0; idx<bc_mesh_->n_elements(); idx++, ++map_it) {
         	LongIdx id = bc_mesh_->find_elem_id(idx);
             // We set ID for boundary elements created by the mesh itself to "-1"
             // this force gmsh reader to skip all remaining entries in boundary_elements_id
             // and thus report error for any remaining data lines
-            if (id < 0) last_id=*map_it=-1;
-            else {
-                if (last_id >= id) xprintf(UsrErr, "Element IDs in non-increasing order, ID: %d\n", id);
-                last_id=*map_it = id;
-            }
+            if (id < 0) *map_it=-1;
+            else *map_it = id;
         }
     }
 }
