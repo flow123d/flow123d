@@ -54,36 +54,48 @@ Mesh * mesh_constructor(const std::string &input_str,
 
 class TestingMesh : public Mesh {
 public:
-    TestingMesh(Mesh *mesh, std::vector<unsigned int> permutation_2d, std::vector<unsigned int> permutation_3d)
-    : Mesh(*mesh)
+    Mesh * source_mesh;
+
+    TestingMesh(Mesh *mesh)
+    : Mesh(*mesh), source_mesh(mesh)
     {
 
-        this->init_node_vector(mesh->n_nodes());
-        for(auto node : mesh->node_range()) {
+        this->init_node_vector(source_mesh->n_nodes());
+        for(auto node : source_mesh->node_range()) {
             this->add_node(node.idx(), *node);
         }
 
-        this->init_element_vector(mesh->n_elements());
-        std::vector<unsigned int> permutation_1d = {0, 1};
-        std::vector<std::vector<unsigned int>> perm_vec = {permutation_1d, permutation_2d, permutation_3d};
-        std::vector<unsigned int>  nodes(4, 0);
-        for(auto &ele : mesh->elements_range()) {
-            nodes.resize(ele.dim() + 1);
-            auto & perm = perm_vec[ele.dim()-1];
-            //DebugOut() << "ele: " << ele.idx() << " perm: " << perm << " dim: " << ele.dim();
-            for(unsigned int i=0; i<=ele.dim(); ++i) {
-
-
-                nodes[i] = ele.node(perm[i]).idx();
-                //DebugOut() << "i: " << i << " node: " << nodes[i] ;
-                ASSERT(nodes[i] < n_nodes())(i)(nodes[i]);
-            }
-            this->add_element(ele.index(), ele.dim(), ele.region_idx().idx(), 0, nodes);
-        }
+        this->init_element_vector(source_mesh->n_elements());
 
     }
 
+    void add_permute_dim( std::vector<unsigned int> permutation, uint dim)
+    {
+        std::vector<unsigned int>  nodes(4, 0);
+        for(auto &ele : source_mesh->elements_range())
+            if (ele.dim() == dim) {
+                nodes.resize(dim + 1);
+                for(unsigned int i=0; i<=dim; ++i) {
+                    nodes[i] = ele.node(permutation[i]).idx();
+                    //DebugOut() << "i: " << i << " node: " << nodes[i] ;
+                    ASSERT(nodes[i] < n_nodes())(i)(nodes[i]);
+                }
+                this->add_element(ele.index(), dim, ele.region_idx().idx(), 0, nodes);
+            }
+    }
 
+    void add_permute_idx(std::vector<unsigned int> permutation, uint idx)
+    {
+        std::vector<unsigned int>  nodes(4, 0);
+        auto ele = source_mesh->element_accessor(idx);
+        nodes.resize(ele.dim() + 1);
+        for(unsigned int i=0; i<=ele.dim(); ++i) {
+            nodes[i] = ele.node(permutation[i]).idx();
+            //DebugOut() << "i: " << i << " node: " << nodes[i] ;
+            ASSERT(nodes[i] < n_nodes())(i)(nodes[i]);
+        }
+        this->add_element(ele.index(), ele.dim(), ele.region_idx().idx(), 0, nodes);
+    }
 
 };
 

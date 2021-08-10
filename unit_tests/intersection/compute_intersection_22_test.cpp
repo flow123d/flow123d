@@ -147,7 +147,9 @@ TEST(intersections_22d, all) {
             // read mesh with gmshreader
             auto reader = reader_constructor(in_mesh_string);
             reader->read_raw_mesh(mesh);
-            auto tmesh = new TestingMesh(mesh, permutations_triangle[p], permutations_tetrahedron[0]);
+            TestingMesh *tmesh = new TestingMesh(mesh);
+            tmesh->add_permute_idx(permutations_triangle[p], 0);
+            tmesh->add_permute_idx(permutations_triangle[0], 1);
         
             
             //tmesh->setup_topology();

@@ -105,8 +105,8 @@ std::vector<IntersectionPoint<1,2>> permute_coords(TestCaseIPs ips,
 void compute_intersection_12d(Mesh *mesh, const TestCaseIPs &ips, bool degenerate)
 {
     // Compute intersection with a "reference element".
-    IntersectionAux<1,2> is(1, 0);
-    ComputeIntersection<1,2> CI(mesh->element_accessor(1), mesh->element_accessor(0), mesh);
+    IntersectionAux<1,2> is(0, 1);
+    ComputeIntersection<1,2> CI(mesh->element_accessor(0), mesh->element_accessor(1), mesh);
     if(degenerate)
         CI.compute_final_in_plane(is.points());
     else
@@ -167,8 +167,11 @@ TEST(intersections_12d, all) {
             // read mesh with gmshreader
             auto reader = reader_constructor(in_mesh_string);
             reader->read_raw_mesh(mesh);
-            TestingMesh *tmesh = new TestingMesh(mesh, permutations_triangle[p], permutations_tetrahedron[0]);
-            
+            TestingMesh *tmesh = new TestingMesh(mesh);
+            tmesh->add_permute_dim(permutation_line, 1);
+            tmesh->add_permute_dim(permutations_triangle[p], 2);
+            tmesh->add_permute_dim(permutations_tetrahedron[0], 3);
+
 //            // permute nodes:
 //            for (auto ele : mesh->elements_range()) {
 //                if(ele->dim() == 2)

@@ -302,7 +302,10 @@ TEST(area_intersections, all) {
                 // read mesh with gmshreader
                 auto reader = reader_constructor(in_mesh_string);
                 reader->read_raw_mesh(mesh);
-                TestingMesh *tmesh = new TestingMesh(mesh, permutations_triangle[p], permutations_tetrahedron[pt]);
+                TestingMesh *tmesh = new TestingMesh(mesh);
+                tmesh->add_permute_dim(permutation_line, 1);
+                tmesh->add_permute_dim(permutations_triangle[0], 2);
+                tmesh->add_permute_dim(permutations_tetrahedron[p], 3);
 //                // permute nodes:
 //                for (auto ele : mesh->elements_range()) {
 //                    if(ele->dim() == 2)
