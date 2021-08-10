@@ -23,6 +23,8 @@ test_cases:
     - 43_square4x_DG_native_read.yaml
     - 44_P0_data_DG_write.yaml
     - 45_P0_data_DG_read.yaml
+    - 46_P0_data_DG_write_msh.yaml
+    - 47_P0_data_DG_read_msh.yaml
 
 - files: 11_time_marks_mixed_times.yaml
   memory_limit: 1300
