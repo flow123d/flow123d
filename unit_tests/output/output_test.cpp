@@ -261,9 +261,7 @@ public:
         //this->output_mesh_discont_->make_serial_master_mesh();
         
 		{
-    	    auto output_types = OutputTime::empty_discrete_flags();
-    	    output_types[OutputTime::ELEM_DATA] = true;
-        	field.compute_field_data(output_types, shared_from_this());
+        	field.compute_field_data(OutputTime::ELEM_DATA, shared_from_this());
         	this->gather_output_data();
 			EXPECT_EQ(1, output_data_vec_[ELEM_DATA].size());
 			OutputDataPtr data =  output_data_vec_[ELEM_DATA][0];
@@ -276,9 +274,7 @@ public:
 		}
 
 		{
-		    auto output_types = OutputTime::empty_discrete_flags();
-		    output_types[OutputTime::NODE_DATA] = true;
-			field.compute_field_data(output_types, shared_from_this());
+			field.compute_field_data(OutputTime::NODE_DATA, shared_from_this());
 			this->gather_output_data();
 			EXPECT_EQ(1, output_data_vec_[NODE_DATA].size());
 			OutputDataPtr data =  output_data_vec_[NODE_DATA][0];
@@ -292,9 +288,7 @@ public:
 
 		{
 			// TODO need fix to discontinuous output data
-            /*auto output_types = OutputTime::empty_discrete_flags();
-            output_types[OutputTime::CORNER_DATA] = true;
-			field.compute_field_data(output_types, shared_from_this());
+            /*field.compute_field_data(OutputTime::CORNER_DATA, shared_from_this());
 			this->gather_output_data();
 			EXPECT_EQ(1, output_data_vec_[CORNER_DATA].size());
 			OutputDataPtr data =  output_data_vec_[CORNER_DATA][0];
@@ -314,15 +308,11 @@ public:
 
 		/*
 
-	    auto output_types = OutputTime::empty_discrete_flags();
-	    output_types[OutputTime::NODE_DATA] = true;
-		compute_field_data(output_types, field);
+		compute_field_data(OutputTime::NODE_DATA, field);
 		EXPECT_EQ(1, node_data.size());
 		check_node_data( node_data[0], result);
 
-	    auto output_types2 = OutputTime::empty_discrete_flags();
-	    output_types2[OutputTime::CORNER_DATA] = true;
-		compute_field_data(output_types2, field);
+		compute_field_data(OutputTime::CORNER_DATA, field);
 		EXPECT_EQ(1, elem_data.size());
 		check_elem_data( elem_data[0], result);
 */

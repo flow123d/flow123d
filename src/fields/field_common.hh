@@ -424,7 +424,7 @@ public:
      * The parameter @p output_fields is checked for value named by the field name. If the key exists,
      * then the output of the field is performed. If the key do not appear in the input, no output is done.
      */
-    virtual void field_output(std::shared_ptr<OutputTime> stream, OutputTime::DiscreteSpaceFlags type) =0;
+    virtual void field_output(std::shared_ptr<OutputTime> stream, OutputTime::DiscreteSpace type) =0;
 
     /**
      * Perform the observe output of the field.

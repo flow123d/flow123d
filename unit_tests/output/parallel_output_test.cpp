@@ -198,10 +198,8 @@ TEST_F(TestParallelOutput, discontinuous_mesh)
     make_output_mesh();
 
     /* Simulate field output */
-    auto output_types = OutputTime::empty_discrete_flags();
-    output_types[OutputTime::ELEM_DATA] = true;
-    data.init_scalar.field_output(stream, output_types);
-    data.init_vector.field_output(stream, output_types);
+    data.init_scalar.field_output(stream, OutputTime::ELEM_DATA);
+    data.init_vector.field_output(stream, OutputTime::ELEM_DATA);
     stream->gather_data(my_mesh);
 
     /* Tests of output data */

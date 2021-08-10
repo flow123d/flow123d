@@ -210,12 +210,40 @@ void EquationOutput::output(TimeStep step)
 
     this->make_output_mesh( stream_->is_parallel() );
 
+    // NODE_DATA
     for(FieldCommon * field : this->field_list) {
-
         if ( field->flags().match( FieldFlag::allow_output) ) {
-            if (is_field_output_time(*field, step)) {
-                field->field_output(stream_, field_output_times_[field->name()].space_flags_);
+            if (is_field_output_time(*field, step) && field_output_times_[field->name()].space_flags_[OutputTime::NODE_DATA]) {
+                field->field_output(stream_, OutputTime::NODE_DATA);
             }
+        }
+    }
+
+    // CORNER_DATA
+    for(FieldCommon * field : this->field_list) {
+        if ( field->flags().match( FieldFlag::allow_output) ) {
+            if (is_field_output_time(*field, step) && field_output_times_[field->name()].space_flags_[OutputTime::CORNER_DATA]) {
+                field->field_output(stream_, OutputTime::CORNER_DATA);
+            }
+        }
+    }
+
+    // ELEM_DATA
+    for(FieldCommon * field : this->field_list) {
+        if ( field->flags().match( FieldFlag::allow_output) ) {
+            if (is_field_output_time(*field, step) && field_output_times_[field->name()].space_flags_[OutputTime::ELEM_DATA]) {
+                field->field_output(stream_, OutputTime::ELEM_DATA);
+            }
+        }
+    }
+
+    // NATIVE_DATA and observe output
+    for(FieldCommon * field : this->field_list) {
+        if ( field->flags().match( FieldFlag::allow_output) ) {
+            if (is_field_output_time(*field, step) && field_output_times_[field->name()].space_flags_[OutputTime::NATIVE_DATA]) {
+                field->field_output(stream_, OutputTime::NATIVE_DATA);
+            }
+
             // observe output
             if (observe_fields_.find(field->name()) != observe_fields_.end()) {
                 field->observe_output( observe_ptr );
