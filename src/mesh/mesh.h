@@ -70,8 +70,12 @@ public:
     static Input::Type::Record input_type;
 };
 
-class EquivalentMeshMap{
-public:
+/** Auxiliary structure that keeps the separate
+ * element maps (bulk and boundary) for reading mesh and elementwise data.
+ * The mapping is considered from the source mesh (reading) to the target mesh (computation).
+ * Used by @p check_compatible_mesh().
+ */
+struct EquivalentMeshMap{
     std::vector<LongIdx> bulk;
     std::vector<LongIdx> boundary;
 
