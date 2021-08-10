@@ -186,7 +186,7 @@ public:
 	 */
     template<typename T>
     typename ElementDataCache<T>::ComponentDataPtr get_element_data( unsigned int n_entities, unsigned int n_components,
-    		bool boundary_domain, unsigned int component_idx);
+    		bool boundary_domain);
 
     /**
      * Returns vector of boundary or bulk element ids by parameter boundary_domain
@@ -255,13 +255,6 @@ protected:
 
     /// Header of actual loaded data.
     MeshDataHeader actual_header_;
-
-    /** True if the reader can create cache with multiple components (multifield-wise).
-     * GMSH reader - true
-     * VTK reader - false
-     * TODO: find better solution to determine correct component_idx in get_element_data() - GMSH x VTK
-     */
-    bool can_have_components_;
 
     friend class ReaderCache;
 };

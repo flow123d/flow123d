@@ -523,7 +523,7 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 			n_entities = boundary ? ReaderCache::get_mesh(reader_file_)->get_bc_mesh()->n_elements() : ReaderCache::get_mesh(reader_file_)->n_elements();
 		}
 		auto input_data_cache = ReaderCache::get_reader(reader_file_)->template get_element_data<double>(n_entities, n_components,
-				boundary, this->component_idx_);
+				boundary);
 		CheckResult checked_data = ReaderCache::get_reader(reader_file_)->scale_and_check_limits(field_name_,
 				this->unit_conversion_coefficient_, default_value_);
 
