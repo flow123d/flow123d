@@ -100,29 +100,20 @@ typename ElementDataCache<T>::ComponentDataPtr BaseMeshReader::get_element_data(
     }
 
     if ( !it->second->is_actual(actual_header_.time, field_name) ) {
-    	unsigned int size_of_cache; // count of vectors stored in cache
+    	unsigned int size_of_cache = 1; // count of vectors stored in cache
 
-	    // check that the header is valid, try to correct
+	    // check that the header is valid - n_entities
 	    if (actual_header_.n_entities != n_entities) {
-	    	WarningOut().fmt("In file '{}', '{}' section for field '{}', time: {}.\nWrong number of entities: {}, using {} instead.\n",
+	    	WarningOut().fmt("In file '{}', '{}' section for field '{}', time: {}.\nDifferent number of entities: {}, computation needs {}.\n",
 	                tok_.f_name(), data_section_name_, field_name, actual_header_.time, actual_header_.n_entities, n_entities);
-	        // actual_header.n_entities=n_entities;
+	        // actual_header_.n_entities = n_entities;
 	    }
-
-	    if (n_components == 1) {
-	    	// read for MultiField to 'n_comp' vectors
-	    	// or for Field if ElementData contains only one value
-	    	size_of_cache = actual_header_.n_components;
-	    }
-	    else {
-	    	// read for Field if more values is stored to one vector
-	    	size_of_cache = 1;
-	    	if (actual_header_.n_components != n_components) {
-	    		WarningOut().fmt("In file '{}', '{}' section for field '{}', time: {}.\nWrong number of components: {}, using {} instead.\n",
-		                tok_.f_name(), data_section_name_, field_name, actual_header_.time, actual_header_.n_components, n_components);
-	    		actual_header_.n_components=n_components;
-	    	}
-	    }
+        // check that the header is valid, try to correct n_components
+        if (actual_header_.n_components != n_components) {
+            WarningOut().fmt("In file '{}', '{}' section for field '{}', time: {}.\nWrong number of components: {}, using {} instead.\n",
+                    tok_.f_name(), data_section_name_, field_name, actual_header_.time, actual_header_.n_components, n_components);
+            actual_header_.n_components = n_components;
+        }
 
     	(*element_data_values_)[field_name]
 					= std::make_shared< ElementDataCache<T> >(field_name, actual_header_.time, size_of_cache, n_components*n_entities);
