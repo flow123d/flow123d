@@ -282,7 +282,7 @@ BaseMeshReader::MeshDataHeader & VtkMeshReader::find_header(BaseMeshReader::Head
 			if (header_query.dof_handler_hash != table_it->second.dof_handler_hash) {
 				THROW(ExcInvalidDofHandler() << EI_FieldName(header_query.field_name) << EI_VTKFile(tok_.f_name()) );
 			}
-		actual_header_ = table_it->second;
+		return table_it->second;
 	} else {
 		/*HeaderTable::iterator table_it;
 		for (table_it=header_table_.equal_range(header_query.field_name).first; table_it!=header_table_.equal_range(header_query.field_name).second; ++table_it) {
@@ -293,8 +293,6 @@ BaseMeshReader::MeshDataHeader & VtkMeshReader::find_header(BaseMeshReader::Head
 		}*/
 		THROW( ExcMissingFieldDiscretization() << EI_FieldName(header_query.field_name) << EI_Time(header_query.time) << EI_MeshFile(tok_.f_name()));
 	}
-
-	return actual_header_;
 }
 
 
@@ -336,24 +334,24 @@ unsigned int VtkMeshReader::type_value_size(DataType data_type)
 
 
 
-void VtkMeshReader::read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader actual_header, unsigned int n_components,
+void VtkMeshReader::read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader header,
 		bool boundary_domain) {
 
 	ASSERT(!boundary_domain).error("Reading VTK data of boundary elements is not supported yet!\n");
 
     switch (data_format_) {
 		case DataFormat::ascii: {
-			parse_ascii_data( data_cache, n_components, actual_header.n_entities, actual_header.position );
+			parse_ascii_data( data_cache, header.n_components, header.n_entities, header.position );
 			break;
 		}
 		case DataFormat::binary_uncompressed: {
 			ASSERT_PTR(data_stream_).error();
-			parse_binary_data( data_cache, n_components, actual_header.n_entities, actual_header.position);
+			parse_binary_data( data_cache, header.n_components, header.n_entities, header.position);
 			break;
 		}
 		case DataFormat::binary_zlib: {
 			ASSERT_PTR(data_stream_).error();
-			parse_compressed_data( data_cache, n_components, actual_header.n_entities, actual_header.position);
+			parse_compressed_data( data_cache, header.n_components, header.n_entities, header.position);
 			break;
 		}
 		default: {
@@ -363,7 +361,7 @@ void VtkMeshReader::read_element_data(ElementDataCacheBase &data_cache, MeshData
 	}
 
     LogOut().fmt("time: {}; {} entities of field {} read.\n",
-    		actual_header.time, n_read_, actual_header.field_name);
+    		header.time, n_read_, header.field_name);
 }
 
 
@@ -531,20 +529,20 @@ void VtkMeshReader::create_node_element_caches() {
 	auto point_header = this->find_header(header_params);
 	bulk_elements_id_.resize(point_header.n_entities);
 	for (unsigned int i=0; i<bulk_elements_id_.size(); ++i) bulk_elements_id_[i]=i;
-	this->get_element_data<double>(point_header.n_entities, point_header.n_components, false);
+	this->get_element_data<double>(point_header, point_header.n_entities, point_header.n_components, false);
 
 	// read offset data section
 	HeaderQuery offsets_params("offsets", 0.0, OutputTime::DiscreteSpace::MESH_DEFINITION);
     auto offset_header = this->find_header(offsets_params);
     for (unsigned int i=bulk_elements_id_.size(); i<offset_header.n_entities; ++i) bulk_elements_id_.push_back(i);
-    std::vector<unsigned int> &offsets_vec = *( this->get_element_data<unsigned int>(offset_header.n_entities, offset_header.n_components, false) );
+    std::vector<unsigned int> &offsets_vec = *( this->get_element_data<unsigned int>(offset_header, offset_header.n_entities, offset_header.n_components, false) );
 
     // read connectivity data section
     HeaderQuery con_params("connectivity", 0.0, OutputTime::DiscreteSpace::MESH_DEFINITION);
-    auto & con_header = this->find_header(con_params);
+    auto con_header = this->find_header(con_params);
     con_header.n_entities = offsets_vec[offsets_vec.size()-1];
     for (unsigned int i=bulk_elements_id_.size(); i<con_header.n_entities; ++i) bulk_elements_id_.push_back(i);
-    this->get_element_data<unsigned int>(con_header.n_entities, con_header.n_components, false);
+    this->get_element_data<unsigned int>(con_header, con_header.n_entities, con_header.n_components, false);
 
     has_compatible_mesh_ = false;
 	bulk_elements_id_.clear();

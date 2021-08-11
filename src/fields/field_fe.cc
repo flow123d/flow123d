@@ -502,12 +502,9 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 		double time_unit_coef = time.read_coef(in_rec_.find<Input::Record>("time_unit"));
 		double time_shift = time.read_time( in_rec_.find<Input::Tuple>("read_time_shift") );
 		double read_time = (time.end()+time_shift) / time_unit_coef;
-		BaseMeshReader::HeaderQuery header_query(field_name_, read_time, this->discretization_, dh_->hash());
-		ReaderCache::get_reader(reader_file_)->find_header(header_query);
-		// TODO: use default and check NaN values in data_vec
 
 		unsigned int n_entities;
-		bool is_native = (header_query.discretization == OutputTime::DiscreteSpace::NATIVE_DATA);
+		bool is_native = (this->discretization_ == OutputTime::DiscreteSpace::NATIVE_DATA);
 		bool boundary;
 		if (is_native || this->interpolation_==DataInterpolation::identic_msh || this->interpolation_==DataInterpolation::equivalent_msh) {
 			boundary = this->boundary_domain_;
@@ -520,11 +517,16 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 		} else if (this->interpolation_==DataInterpolation::identic_msh) {
 			n_entities = boundary ? dh_->mesh()->get_bc_mesh()->n_elements() : dh_->mesh()->n_elements();
 		} else {
-			n_entities = boundary ? ReaderCache::get_mesh(reader_file_)->get_bc_mesh()->n_elements() : ReaderCache::get_mesh(reader_file_)->n_elements();
+            auto reader_mesh = ReaderCache::get_mesh(reader_file_);
+			n_entities = boundary ? reader_mesh->get_bc_mesh()->n_elements() : reader_mesh->n_elements();
 		}
-		auto input_data_cache = ReaderCache::get_reader(reader_file_)->template get_element_data<double>(n_entities, n_components,
-				boundary);
-		CheckResult checked_data = ReaderCache::get_reader(reader_file_)->scale_and_check_limits(field_name_,
+
+        BaseMeshReader::HeaderQuery header_query(field_name_, read_time, this->discretization_, dh_->hash());
+        auto reader = ReaderCache::get_reader(reader_file_);
+        auto header = reader->find_header(header_query);
+		auto input_data_cache = reader->template get_element_data<double>(
+            header, n_entities, n_components, boundary);
+		CheckResult checked_data = reader->scale_and_check_limits(field_name_,
 				this->unit_conversion_coefficient_, default_value_);
 
 

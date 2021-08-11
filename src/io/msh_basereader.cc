@@ -85,13 +85,13 @@ std::vector<int> const & BaseMeshReader::get_element_vector(bool boundary_domain
 
 
 template<typename T>
-typename ElementDataCache<T>::ComponentDataPtr BaseMeshReader::get_element_data( unsigned int n_entities, unsigned int n_components,
-		bool boundary_domain) {
+typename ElementDataCache<T>::ComponentDataPtr BaseMeshReader::get_element_data(
+        MeshDataHeader header, unsigned int expected_n_entities,
+        unsigned int expected_n_components, bool boundary_domain) {
 	ASSERT(has_compatible_mesh_)
 			.error("Vector of mapping VTK to GMSH element is not initialized. Did you call check_compatible_mesh?");
-	ASSERT(actual_header_.field_name != "").error("Unset MeshDataHeader. Did you call find_header?\n");
 
-    std::string field_name = actual_header_.field_name;
+    std::string field_name = header.field_name;
 
 	ElementDataFieldMap::iterator it=element_data_values_->find(field_name);
     if (it == element_data_values_->end()) {
@@ -99,28 +99,27 @@ typename ElementDataCache<T>::ComponentDataPtr BaseMeshReader::get_element_data(
         it=element_data_values_->find(field_name);
     }
 
-    if ( !it->second->is_actual(actual_header_.time, field_name) ) {
+    if ( !it->second->is_actual(header.time, field_name) ) {
     	unsigned int size_of_cache = 1; // count of vectors stored in cache
 
-	    // check that the header is valid - n_entities
-	    if (actual_header_.n_entities != n_entities) {
+	    // check that the header is valid - expected_n_entities
+	    if (header.n_entities != expected_n_entities) {
 	    	WarningOut().fmt("In file '{}', '{}' section for field '{}', time: {}.\nDifferent number of entities: {}, computation needs {}.\n",
-	                tok_.f_name(), data_section_name_, field_name, actual_header_.time, actual_header_.n_entities, n_entities);
-	        // actual_header_.n_entities = n_entities;
+	                tok_.f_name(), data_section_name_, field_name, header.time, header.n_entities, expected_n_entities);
+	        // header.n_entities = expected_n_entities;
 	    }
         // check that the header is valid, try to correct n_components
-        if (actual_header_.n_components != n_components) {
+        if (header.n_components != expected_n_components) {
             WarningOut().fmt("In file '{}', '{}' section for field '{}', time: {}.\nWrong number of components: {}, using {} instead.\n",
-                    tok_.f_name(), data_section_name_, field_name, actual_header_.time, actual_header_.n_components, n_components);
-            actual_header_.n_components = n_components;
+                    tok_.f_name(), data_section_name_, field_name, header.time, header.n_components, expected_n_components);
+            header.n_components = expected_n_components;
         }
 
-    	(*element_data_values_)[field_name]
-					= std::make_shared< ElementDataCache<T> >(field_name, actual_header_.time, size_of_cache, n_components*n_entities);
-    	this->read_element_data(*(it->second), actual_header_, n_components, boundary_domain );
+    	(*element_data_values_)[field_name] = std::make_shared< ElementDataCache<T> >(
+                field_name, header.time, size_of_cache,
+                expected_n_components*expected_n_entities);
+    	this->read_element_data(*(it->second), header, boundary_domain );
 	}
-
-    actual_header_.reset();
 
     ElementDataCache<T> &current_cache = dynamic_cast<ElementDataCache<T> &>(*(it->second));
 	return current_cache.get_component_data(0);
@@ -143,8 +142,9 @@ CheckResult BaseMeshReader::scale_and_check_limits(string field_name, double coe
 
 // explicit instantiation of template methods
 #define MESH_READER_GET_ELEMENT_DATA(TYPE) \
-template typename ElementDataCache<TYPE>::ComponentDataPtr BaseMeshReader::get_element_data<TYPE>(unsigned int n_entities, \
-		unsigned int n_components, bool boundary_domain);
+template typename ElementDataCache<TYPE>::ComponentDataPtr BaseMeshReader::get_element_data<TYPE>( \
+        MeshDataHeader header, unsigned int n_entities, \
+	    unsigned int n_components, bool boundary_domain);
 
 MESH_READER_GET_ELEMENT_DATA(int)
 MESH_READER_GET_ELEMENT_DATA(unsigned int)

@@ -249,7 +249,7 @@ void GmshMeshReader::read_data_header(MeshDataHeader &head) {
 
 
 
-void GmshMeshReader::read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader actual_header, unsigned int n_components,
+void GmshMeshReader::read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader header,
 		bool boundary_domain) {
     unsigned int id, i_row;
     unsigned int n_read = 0;
@@ -258,10 +258,10 @@ void GmshMeshReader::read_element_data(ElementDataCacheBase &data_cache, MeshDat
 
     // read @p data buffer as we have correct header with already passed time
     // we assume that @p data buffer is big enough
-    tok_.set_position(actual_header.position);
+    tok_.set_position(header.position);
 
     // read data
-    for (i_row = 0; i_row < actual_header.n_entities; ++i_row)
+    for (i_row = 0; i_row < header.n_entities; ++i_row)
         try {
             tok_.next_line();
             id = boost::lexical_cast<unsigned int>(*tok_); ++tok_;
@@ -271,12 +271,12 @@ void GmshMeshReader::read_element_data(ElementDataCacheBase &data_cache, MeshDat
             }
             if (id_iter == el_ids.end()) {
             	WarningOut().fmt("In file '{}', '$ElementData' section for field '{}', time: {}.\nData ID {} not found or is not in order. Skipping rest of data.\n",
-                        tok_.f_name(), actual_header.field_name, actual_header.time, id);
+                        tok_.f_name(), header.field_name, header.time, id);
                 break;
             }
             // save data from the line if ID was found
             if (*id_iter == (int)id) {
-            	data_cache.read_ascii_data(tok_, n_components, (id_iter - el_ids.begin()) );
+            	data_cache.read_ascii_data(tok_, header.n_components, (id_iter - el_ids.begin()) );
                 n_read++;
             }
             // skip the line if ID on the line  < actual ID in the map el_ids
@@ -285,10 +285,10 @@ void GmshMeshReader::read_element_data(ElementDataCacheBase &data_cache, MeshDat
         			<< EI_MeshFile(tok_.f_name()) );
         }
     // possibly skip remaining lines after break
-    while (i_row < actual_header.n_entities) tok_.next_line(false), ++i_row;
+    while (i_row < header.n_entities) tok_.next_line(false), ++i_row;
 
     LogOut().fmt("time: {}; {} entities of field {} read.\n",
-    		actual_header.time, n_read, actual_header.field_name);
+    		header.time, n_read, header.field_name);
 }
 
 
@@ -354,6 +354,5 @@ BaseMeshReader::MeshDataHeader & GmshMeshReader::find_header(BaseMeshReader::Hea
 	}
 
 	--headers_it;
-	actual_header_ = *headers_it;
-	return actual_header_;
+	return *headers_it;
 }
