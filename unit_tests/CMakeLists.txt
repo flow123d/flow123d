@@ -2,7 +2,7 @@
 enable_testing()
 
 # Set timeout for one unit test
-set(TEST_TIMEOUT 300) # 30 s
+set(TEST_TIMEOUT 10) # 10 s, even for benchmarks this should be enough.
 # Set timeout for one unit test running under valgrind
 set(VALGRIND_TIMEOUT 300000000) # 5 min
 
