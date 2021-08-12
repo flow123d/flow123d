@@ -102,6 +102,7 @@ const unsigned int Mesh::undef_idx;
 
 Mesh::Mesh()
 : tree(nullptr),
+  optimize_memory_locality(true),
   bulk_size_(0),
   nodes_(3, 1, 0),
   row_4_el(nullptr),
@@ -111,12 +112,13 @@ Mesh::Mesh()
   node_ds_(nullptr),  
   bc_mesh_(nullptr)
   
-{}
+{init();}
 
 
 
 Mesh::Mesh(Input::Record in_record, MPI_Comm com)
 : tree(nullptr),
+  optimize_memory_locality(true),
   in_record_(in_record),
   comm_(com),
   bulk_size_(0),
@@ -128,15 +130,6 @@ Mesh::Mesh(Input::Record in_record, MPI_Comm com)
   node_ds_(nullptr),
   bc_mesh_(nullptr)
 {
-	// set in_record_, if input accessor is empty
-	if (in_record_.is_empty()) {
-		istringstream is("{mesh_file=\"\"}");
-	    Input::ReaderToStorage reader;
-	    IT::Record &in_rec = const_cast<IT::Record &>(Mesh::get_input_type());
-	    in_rec.finish();
-	    reader.read_stream(is, in_rec, Input::FileFormat::format_JSON);
-	    in_record_ = reader.get_root_interface<Input::Record>();
-	}
 
 	init();
 }
@@ -149,6 +142,17 @@ Mesh::IntersectionSearch Mesh::get_intersection_search()
 
 void Mesh::init()
 {
+    // set in_record_, if input accessor is empty
+    if (in_record_.is_empty()) {
+        istringstream is("{mesh_file=\"\"}");
+        Input::ReaderToStorage reader;
+        IT::Record &in_rec = const_cast<IT::Record &>(Mesh::get_input_type());
+        in_rec.finish();
+        reader.read_stream(is, in_rec, Input::FileFormat::format_JSON);
+        in_record_ = reader.get_root_interface<Input::Record>();
+    }
+
+    optimize_memory_locality = in_record_.val<bool>("optimize_mesh");
 
     n_insides = NDEF;
     n_exsides = NDEF;
@@ -314,6 +318,10 @@ void Mesh::check_mesh_on_read() {
     // check element quality and flag used nodes
     for (auto ele : this->elements_range()) {
         // element quality
+        DebugOut() <<  ele.idx();
+        for(uint i=0; i < ele.dim() + 1; i++) {
+            DebugOut() <<  "  " << ele.node(i).idx();
+        }
     	double quality = ele.quality_measure_smooth();
         if ( quality< 0.001)
             WarningOut().fmt("Bad quality (<0.001) of the element {}.\n", ele.idx());
@@ -374,7 +382,7 @@ void Mesh::check_mesh_on_read() {
 }
 
 void Mesh::setup_topology() {
-    if ( in_record_.val<bool>("optimize_mesh") ) {
+    if (optimize_memory_locality) {
         START_TIMER("MESH - optimizer");
         this->optimize();
         END_TIMER("MESH - optimizer");

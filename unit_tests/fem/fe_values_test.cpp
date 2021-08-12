@@ -55,7 +55,7 @@ double integrate(ElementAccessor<3> &ele) {
 }
 
 
-TEST(FeValues, test_all) {
+TEST(FeValues, test_basic) {
   // integrate a polynomial defined on the ref. element over an arbitrary element
     {
         // 1d case interval (1,3)   det(jac) = 2
@@ -99,6 +99,27 @@ TEST(FeValues, test_all) {
     }
 
 }
+
+
+TEST(FeValues, test_normals) {
+    // 2 tetrahedra, one reference and one inverted, mirroring by XY plane
+    //
+    Mesh mesh;
+    mesh.init_node_vector(5);
+    mesh.add_node(0, arma::vec3("0 0 0"));
+    mesh.add_node(1, arma::vec3("1 0 0"));
+    mesh.add_node(2, arma::vec3("0 1 0"));
+    mesh.add_node(3, arma::vec3("0 0 1"));
+    mesh.add_node(4, arma::vec3("0 0 -1"));
+    mesh.init_element_vector(4);
+    mesh.add_element(0, 3, 1, 0, {0, 1, 2, 3});
+    mesh.add_element(1, 3, 1, 0, {0, 1, 2, 4});
+    //mesh.setup_topology();
+
+    //EXPECT_EQ( false, mesh.element_accessor(0).inverted());
+    //EXPECT_EQ( true, mesh.element_accessor(0).inverted());
+}
+
 
 
 class TestElementMapping {
