@@ -34,12 +34,12 @@ using namespace std;
 
 // Use less number of loops in debug (slow) mode
 #ifdef FLOW123D_DEBUG
-static const unsigned int profiler_loop = 25;
+static const unsigned int profiler_loop = 1;
 #else
-static const unsigned int profiler_loop = 50;
+static const unsigned int profiler_loop = 5;
 // Original value reduced from 100 to 50 due to time limit of unit test on jenkins
 #endif
-static const unsigned int n_meshes = 10000;
+static const unsigned int n_meshes = 2000;
 
 // results - number of cases with number of ips 0-7
 static unsigned int n_intersection[8] = {0, 0, 0, 0, 0, 0, 0, 0};
@@ -321,17 +321,17 @@ void test(double expected_time_factor)
 
 
 TEST(speed_simple_12, all) {
-    test<1,2>(50);
+    test<1,2>(1.5);
 }
 
 TEST(speed_simple_22, all) {
-    test<2,2>(60);
+    test<2,2>(1.7);
 }
 
 TEST(speed_simple_13, all) {
-    test<1,3>(60);
+    test<1,3>(1.7);
 }
 
 TEST(speed_simple_23, all) {
-    test<2,3>(90);
+    test<2,3>(2);
 }
