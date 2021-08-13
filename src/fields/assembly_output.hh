@@ -79,7 +79,6 @@ public:
             typename OutputTime::OutputDataPtr output_data_base = used_caches_[f_acc->name()];
             f_acc->fill_data_value(p, cell.elm_idx(), stream_, output_data_base);
         }
-        ++f;
     }
 
 private:

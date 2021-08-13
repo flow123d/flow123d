@@ -73,7 +73,6 @@ namespace Input {
 typedef std::vector<std::shared_ptr<AssemblyBase> > MultidimAssembly;
 
 template<int spacedim, class Value> class FieldAddPotential;
-template<int spacedim, class Value> class FieldDivide;
 
 /**
  * @brief Mixed-hybrid model of linear Darcy flow, possibly unsteady.
