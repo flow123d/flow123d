@@ -2,9 +2,9 @@
 enable_testing()
 
 # Set timeout for one unit test
-set(TEST_TIMEOUT 10) # 10 s, even for benchmarks this should be enough.
+set(TEST_TIMEOUT 15) # [s] Hard limit for Jenkins. Unit tests should run under 10 s.
 # Set timeout for one unit test running under valgrind
-set(VALGRIND_TIMEOUT 300000000) # 5 min
+set(VALGRIND_TIMEOUT 15000) # 1000x
 
 # build gtest itself
 set(GTEST_SOURCE_DIR "${CMAKE_SOURCE_DIR}/third_party/gtest-1.10.0")
