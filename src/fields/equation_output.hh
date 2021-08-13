@@ -23,6 +23,7 @@
 class OutputTime;
 class TimeGovernor;
 class TimeStep;
+class DOFHandlerMultiDim;
 namespace Input {
 	class Record;
 	namespace Type {
@@ -31,6 +32,8 @@ namespace Input {
                 class Selection;
 	}
 }
+template<unsigned int dim> class AssemblyOutputElemData;
+template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
 
 /**
@@ -54,6 +57,12 @@ public:
      */
     static Input::Type::Record &get_input_type();
     
+    /// Default constructor
+    EquationOutput();
+
+    /// Destructor
+    ~EquationOutput();
+
     /**
      * Make Input::Type for the output record. Particular selection of output fields is created
      * from the contents of *this FieldSet using provided equation name and additional description.
@@ -140,6 +149,12 @@ private:
 
     /// Output mesh.
     std::shared_ptr<OutputMeshBase> output_mesh_;
+
+    /// Objects for distribution of dofs.
+    std::shared_ptr<DOFHandlerMultiDim> dh_;
+
+    /// general assembly objects, hold assembly objects of appropriate dimension
+    GenericAssembly< AssemblyOutputElemData > * output_elem_data_assembly_;
 
 };
 

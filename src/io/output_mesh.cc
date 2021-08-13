@@ -176,7 +176,10 @@ void OutputMeshBase::create_sub_mesh()
     auto &offset_vec = *( offsets_->get_component_data(0).get() );
 
     offset_vec[0] = 0;
+    loc_4_el_ = new LongIdx [ el_ds_->size() ];
+    for (unsigned int loc_el = 0; loc_el < el_ds_->size(); loc_el++) loc_4_el_[loc_el] = -1;
     for (unsigned int loc_el = 0; loc_el < n_local_elements; loc_el++) {
+    	loc_4_el_[ el_4_loc_[loc_el] ] = loc_el;
         elm = orig_mesh_->element_accessor( el_4_loc_[loc_el] );
         // increase offset by number of nodes of the simplicial element
         offset += elm->dim() + 1;

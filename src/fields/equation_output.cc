@@ -10,8 +10,12 @@
 #include "input/accessors.hh"
 #include "fields/equation_output.hh"
 #include "fields/field.hh"
+#include "fields/assembly_output.hh"
 #include "io/output_time_set.hh"
 #include "input/flow_attribute_lib.hh"
+#include "fem/dofhandler.hh"
+#include "fem/discrete_space.hh"
+#include "fem/fe_p.hh"
 #include <memory>
 
 
@@ -59,6 +63,15 @@ IT::Record &EquationOutput::get_input_type() {
         .declare_key("observe_fields", IT::Array( IT::Parameter("output_field_selection")), IT::Default("[]"),
                 "Array of the fields evaluated in the observe points of the associated output stream.")
         .close();
+}
+
+
+
+EquationOutput::EquationOutput()
+: FieldSet(), output_elem_data_assembly_(nullptr) {}
+
+EquationOutput::~EquationOutput() {
+    if (output_elem_data_assembly_ != nullptr) delete output_elem_data_assembly_;
 }
 
 
@@ -113,6 +126,13 @@ void EquationOutput::initialize(std::shared_ptr<OutputTime> stream, Mesh *mesh, 
     equation_type_ = tg.equation_mark_type();
     equation_fixed_type_ = tg.equation_fixed_mark_type();
     read_from_input(in_rec, tg);
+
+    MixedPtr<FE_P_disc> fe_p_disc(0);
+    dh_ = make_shared<DOFHandlerMultiDim>(*mesh_);
+	std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh_, fe_p_disc);
+	dh_->distribute_dofs(ds);
+
+	output_elem_data_assembly_ = new GenericAssembly< AssemblyOutputElemData >(this, this);
 }
 
 
@@ -229,12 +249,21 @@ void EquationOutput::output(TimeStep step)
     }
 
     // ELEM_DATA
-    for(FieldCommon * field : this->field_list) {
-        if ( field->flags().match( FieldFlag::allow_output) ) {
-            if (is_field_output_time(*field, step) && field_output_times_[field->name()].space_flags_[OutputTime::ELEM_DATA]) {
-                field->field_output(stream_, OutputTime::ELEM_DATA);
+    {
+        UsedElementDataCaches caches_map_elem_data;
+        FieldSet used_fields;
+        for (FieldListAccessor f_acc : this->fields_range()) {
+            if ( f_acc->flags().match( FieldFlag::allow_output) ) {
+                if (is_field_output_time( *(f_acc.field()), step) && field_output_times_[f_acc->name()].space_flags_[OutputTime::ELEM_DATA]) {
+                    caches_map_elem_data[f_acc->name()] = f_acc->output_data_cache(OutputTime::ELEM_DATA, stream_);
+                    used_fields += *(f_acc.field());
+                }
             }
         }
+        output_elem_data_assembly_->multidim_assembly()[1_d]->set_output_data(used_fields, caches_map_elem_data, stream_);
+        output_elem_data_assembly_->multidim_assembly()[2_d]->set_output_data(used_fields, caches_map_elem_data, stream_);
+        output_elem_data_assembly_->multidim_assembly()[3_d]->set_output_data(used_fields, caches_map_elem_data, stream_);
+        output_elem_data_assembly_->assemble(this->dh_);
     }
 
     // NATIVE_DATA and observe output

@@ -332,6 +332,12 @@ public:
     void set_input_list(const Input::Array &list, const TimeGovernor &tg) override;
 
     /**
+     * Create and return shared_ptr to ElementDataCache appropriate to Field. Data cache is given by discrete @p space_type
+     * and is stored into data structures of output time @p stream for postponed output too.
+     */
+    OutputTime::OutputDataPtr output_data_cache(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream) const override;
+
+    /**
      * Interpolate given field into output discrete @p space_type and store the values
      * into storage of output time @p stream for postponed output.
      */
@@ -353,6 +359,10 @@ public:
      * Implementation of FieldCommon::set_dependency().
      */
     std::vector<const FieldCommon *> set_dependency(FieldSet &field_set, unsigned int i_reg) const override;
+
+    /// Implements FieldCommon::fill_data_value
+    void fill_data_value(BulkPoint &p, unsigned int elm_idx, std::shared_ptr<OutputTime> stream,
+            std::shared_ptr<ElementDataCacheBase> output_data_base) override;
 
 protected:
 

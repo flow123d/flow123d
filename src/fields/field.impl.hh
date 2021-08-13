@@ -649,6 +649,15 @@ void Field<spacedim,Value>::set_input_list(const Input::Array &list, const TimeG
 
 
 template<int spacedim, class Value>
+OutputTime::OutputDataPtr Field<spacedim,Value>::output_data_cache(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream) const {
+    typedef typename Value::element_type ElemType;
+
+    return stream->prepare_compute_data<ElemType>(this->name(), space_type,
+            (unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
+}
+
+
+template<int spacedim, class Value>
 void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream) {
     typedef typename Value::element_type ElemType;
 
@@ -670,6 +679,35 @@ void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_t
     stream->update_time(this->time());
 
 }
+
+
+template<int spacedim, class Value>
+void Field<spacedim,Value>::fill_data_value(BulkPoint &p, unsigned int elm_idx,
+                                            std::shared_ptr<OutputTime> stream,
+                                            std::shared_ptr<ElementDataCacheBase> output_data_base)
+{
+    typedef typename Value::element_type ElemType;
+
+    static uint c=0;
+    try {
+        // try casting actual ElementDataCache
+        if( ! output_data_base->is_dummy()){
+            auto data_cache = std::dynamic_pointer_cast<ElementDataCache<ElemType>>(output_data_base);
+            unsigned int ele_index = stream->get_output_mesh_ptr()->get_loc_elem_idx(elm_idx);
+            auto ret_value = this->operator()(p);
+            const Value &ele_value = Value( ret_value );
+            ASSERT_EQ(data_cache->n_comp(), ele_value.n_rows()*ele_value.n_cols()).error();
+            data_cache->store_value(ele_index, ele_value.mem_ptr() );
+        }
+
+    } catch(const std::bad_cast& e){
+        // skip
+    }
+    c++;
+
+    stream->update_time(this->time());
+}
+
 
 template<int spacedim, class Value>
 void Field<spacedim,Value>::fill_data_cache(OutputTime::DiscreteSpace space_type,

@@ -144,6 +144,19 @@ public:
     	field_coords_ = field_coords;
     }
 
+    /// Forbidden method in this class.
+    OutputTime::OutputDataPtr output_data_cache(FMT_UNUSED OutputTime::DiscreteSpace space_type, FMT_UNUSED std::shared_ptr<OutputTime> stream) const override {
+    	ASSERT(false);
+    	return nullptr;
+    }
+
+    /// Forbidden method in this class.
+    void fill_data_value(FMT_UNUSED BulkPoint &p, FMT_UNUSED unsigned int elm_idx, FMT_UNUSED std::shared_ptr<OutputTime> stream,
+                         FMT_UNUSED std::shared_ptr<ElementDataCacheBase> output_data_base) override
+    {
+    	ASSERT(false);
+    }
+
 private:
     /**
      * Field value data cache
