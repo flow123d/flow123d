@@ -318,10 +318,6 @@ void Mesh::check_mesh_on_read() {
     // check element quality and flag used nodes
     for (auto ele : this->elements_range()) {
         // element quality
-        DebugOut() <<  ele.idx();
-        for(uint i=0; i < ele.dim() + 1; i++) {
-            DebugOut() <<  "  " << ele.node(i).idx();
-        }
     	double quality = ele.quality_measure_smooth();
         if ( quality< 0.001)
             WarningOut().fmt("Bad quality (<0.001) of the element {}.\n", ele.idx());
