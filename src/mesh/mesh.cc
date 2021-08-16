@@ -103,6 +103,7 @@ const unsigned int Mesh::undef_idx;
 Mesh::Mesh()
 : tree(nullptr),
   optimize_memory_locality(true),
+  comm_(MPI_COMM_WORLD),
   bulk_size_(0),
   nodes_(3, 1, 0),
   row_4_el(nullptr),

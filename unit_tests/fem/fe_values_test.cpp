@@ -7,7 +7,8 @@
 
 #define FEAL_OVERRIDE_ASSERTS
 
-#include <flow_gtest.hh>
+#define TEST_USE_PETSC
+#include <flow_gtest_mpi.hh>
 #include <cmath>
 #include "arma_expect.hh"
 #include "armadillo"
@@ -42,7 +43,7 @@ template <int dim>
 double integrate(ElementAccessor<3> &ele) {
     FE_P_disc<dim> fe(0);
     QGauss quad( dim, 2 );
-    MappingP1<dim,3> map;
+    //MappingP1<dim,3> map;
     FEValues<3> fe_values(quad, fe, update_JxW_values | update_quadrature_points);
     
     fe_values.reinit( ele );
@@ -118,9 +119,52 @@ TEST(FeValues, test_normals) {
 
     //EXPECT_EQ( false, mesh.element_accessor(0).inverted());
     //EXPECT_EQ( true, mesh.element_accessor(0).inverted());
+
+    mesh.setup_topology();
+
+    {
+       // Element 0 = reference el.
+        std::vector<arma::vec3>   expected_normals = {
+            {0, 0, -1}, {0, -1, 0}, {-1, 0, 0}, {1/sqrt(3), 1/sqrt(3), 1/sqrt(3)}};
+        const uint dim = 3;
+        FE_P_disc<dim> fe(0);
+        QGauss quad( dim-1, 1);
+        //MappingP1<dim,3> map;
+
+        FEValues<3> fe_values(quad, fe, update_normal_vectors);
+
+        for(uint iside=0; iside <= mesh.element_accessor(1).dim();iside++) {
+            //DebugOut() << "side: " << iside;
+            fe_values.reinit(*mesh.element_accessor(1).side(iside));
+            for(uint q=0; q<quad.size(); q++) {
+                //DebugOut() << fe_values.normal_vector(q);
+                EXPECT_ARMA_EQ(expected_normals[iside], fe_values.normal_vector(q));
+            }
+        }
+    }
+
+    {
+       // Element 1 = reference el.
+        std::vector<arma::vec3>   expected_normals = {
+            {0, 0, 1}, {0, -1, 0}, {-1, 0, 0}, {1/sqrt(3), 1/sqrt(3), -1/sqrt(3)}};
+        const uint dim = 3;
+        FE_P_disc<dim> fe(0);
+        QGauss quad( dim-1, 1);
+        //MappingP1<dim,3> map;
+
+        FEValues<3> fe_values(quad, fe, update_normal_vectors);
+
+        for(uint iside=0; iside <= mesh.element_accessor(0).dim();iside++) {
+            //DebugOut() << "side: " << iside;
+            fe_values.reinit(*mesh.element_accessor(0).side(iside));
+            for(uint q=0; q<quad.size(); q++) {
+                //DebugOut() << fe_values.normal_vector(q);
+                EXPECT_ARMA_EQ(expected_normals[iside], fe_values.normal_vector(q));
+            }
+        }
+    }
+
 }
-
-
 
 class TestElementMapping {
 public:
