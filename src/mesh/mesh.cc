@@ -1456,12 +1456,6 @@ void Mesh::permute_triangle(unsigned int elm_idx, std::vector<unsigned int> perm
 }
 
 
-BCMesh *Mesh::bc_mesh() const {
-	// if (bc_mesh_ == nullptr) bc_mesh_ = new BCMesh(this);
-	return bc_mesh_;
-}
-
-
 void Mesh::distribute_nodes() {
     ASSERT_PTR(el_4_loc).error("Array 'el_4_loc' is not initialized. Did you call Partitioning::id_maps?\n");
 

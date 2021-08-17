@@ -505,8 +505,10 @@ public:
     /// Permute nodes of 2D elements of given elm_idx
     void permute_triangle(unsigned int elm_idx, std::vector<unsigned int> permutation_vec);
 
-    /// Create boundary mesh if doesn't exist and return it.
-    BCMesh *bc_mesh() const override;
+    /// Implement MeshBase::bc_mesh(), getter of boundary mesh
+    BCMesh *bc_mesh() const override {
+        return bc_mesh_;
+    }
 
     const std::vector<unsigned int> &get_side_nodes(unsigned int dim, unsigned int side) const override
     { return side_nodes[dim][side]; }

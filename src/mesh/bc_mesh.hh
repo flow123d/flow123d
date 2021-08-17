@@ -65,6 +65,11 @@ public:
     /// Overwrite Mesh::element_accessor()
     ElementAccessor<3> element_accessor(unsigned int idx) const override;
 
+    /// Implement MeshBase::bc_mesh()
+    BCMesh *bc_mesh() const override {
+        return nullptr;
+    }
+
 private:
 
     // unused methods (should not be used)
@@ -80,7 +85,6 @@ private:
     Range<Edge> edge_range() const override;
     void check_element_size(unsigned int) const override;
     const std::vector<unsigned int> &get_side_nodes(unsigned int dim, unsigned int side) const override;
-    BCMesh *bc_mesh() const override NOT_IMPLEMENTED;
     const RegionDB &region_db() const override;
     const DuplicateNodes *duplicate_nodes() const override NOT_IMPLEMENTED;
 
