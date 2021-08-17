@@ -103,6 +103,8 @@ const IT::Record & Mesh::get_input_type() {
 
 Mesh::Mesh()
 : tree(nullptr),
+  optimize_memory_locality(true),
+  comm_(MPI_COMM_WORLD),
   bulk_size_(0),
   nodes_(3, 1, 0),
   row_4_el(nullptr),
@@ -112,12 +114,13 @@ Mesh::Mesh()
   node_ds_(nullptr),  
   bc_mesh_(nullptr)
   
-{}
+{init();}
 
 
 
 Mesh::Mesh(Input::Record in_record, MPI_Comm com)
 : tree(nullptr),
+  optimize_memory_locality(true),
   in_record_(in_record),
   comm_(com),
   bulk_size_(0),
@@ -129,15 +132,6 @@ Mesh::Mesh(Input::Record in_record, MPI_Comm com)
   node_ds_(nullptr),
   bc_mesh_(nullptr)
 {
-	// set in_record_, if input accessor is empty
-	if (in_record_.is_empty()) {
-		istringstream is("{mesh_file=\"\"}");
-	    Input::ReaderToStorage reader;
-	    IT::Record &in_rec = const_cast<IT::Record &>(Mesh::get_input_type());
-	    in_rec.finish();
-	    reader.read_stream(is, in_rec, Input::FileFormat::format_JSON);
-	    in_record_ = reader.get_root_interface<Input::Record>();
-	}
 
 	init();
 }
@@ -169,6 +163,17 @@ Mesh::IntersectionSearch Mesh::get_intersection_search()
 
 void Mesh::init()
 {
+    // set in_record_, if input accessor is empty
+    if (in_record_.is_empty()) {
+        istringstream is("{mesh_file=\"\"}");
+        Input::ReaderToStorage reader;
+        IT::Record &in_rec = const_cast<IT::Record &>(Mesh::get_input_type());
+        in_rec.finish();
+        reader.read_stream(is, in_rec, Input::FileFormat::format_JSON);
+        in_record_ = reader.get_root_interface<Input::Record>();
+    }
+
+    optimize_memory_locality = in_record_.val<bool>("optimize_mesh");
 
     n_insides = NDEF;
     n_exsides = NDEF;
@@ -405,7 +410,7 @@ void Mesh::canonical_faces() {
 }
 
 void Mesh::setup_topology() {
-    if ( in_record_.val<bool>("optimize_mesh") ) {
+    if (optimize_memory_locality) {
         START_TIMER("MESH - optimizer");
         this->optimize();
         END_TIMER("MESH - optimizer");
@@ -1148,6 +1153,93 @@ std::shared_ptr<std::vector<LongIdx>> Mesh::check_compatible_mesh( Mesh & input_
 
     return map_ptr;
 }
+
+
+bool equal_elm(ElementAccessor<3> elm1, ElementAccessor<3> elm2) {
+    static const double point_tolerance = 1E-10;
+    if (elm1.dim() != elm2.dim()) return false;
+    bool equal_node;
+    for (unsigned int i=0; i<elm1->n_nodes(); i++) { // iterate trough all nodes of elm1
+        equal_node = false;
+        for (unsigned int j=0; j<elm2->n_nodes(); j++) { // iterate trough all nodes of elm2
+        	if ( arma::norm(*elm1.node(i) - *elm2.node(j), 1) < point_tolerance)
+        	    equal_node = true; // equal node exists
+        }
+        if (!equal_node) return false;
+    }
+    return true;
+}
+
+
+std::shared_ptr<std::vector<LongIdx>> Mesh::check_compatible_discont_mesh( Mesh & input_mesh)
+{
+    std::vector<unsigned int> result_list; // list of elements with same dimension as vtk element
+    unsigned int i; // counter over vectors
+    std::shared_ptr<std::vector<LongIdx>> map_ptr = std::make_shared<std::vector<LongIdx>>(element_vec_.size());
+    std::vector<LongIdx> &element_ids_map = *(map_ptr.get());
+    std::vector<unsigned int> searched_elements; // for BIH tree
+	const BIHTree &bih_tree=input_mesh.get_bih_tree();
+
+    {
+        // iterates over bulk elements of \p this object
+        // elements in both meshes must be in ratio 1:1
+        // store orders (mapping between both mesh files) into bulk_elements_id vector
+        // iterate trough bulk part of element vector, to each element in source mesh must exist only one element in target mesh
+        i=0;
+        unsigned int n_found=0; // number of found equivalent elements
+        for (auto elm : this->elements_range()) {
+            bih_tree.find_bounding_box(elm.bounding_box(), searched_elements);
+            for (auto s : searched_elements) {
+                auto acc = input_mesh.element_accessor(s);
+                if ( equal_elm(elm, acc) ) result_list.push_back(s);
+            }
+
+            if (result_list.size() == 1) {
+                element_ids_map[i] = (LongIdx)result_list[0];
+                n_found++;
+            } else {
+                element_ids_map[i] = (LongIdx)Mesh::undef_idx;
+            }
+            result_list.clear();
+           	searched_elements.clear();
+        	i++;
+        }
+
+        if (n_found==0) {
+        	// no equivalent bulk element found - mesh is not compatible
+            return std::make_shared<std::vector<LongIdx>>(0);
+        }
+    }
+
+    {
+        // iterates over boundary elements of \p this object
+        // elements in both meshes must be in ratio 1:1
+        // store orders (mapping between both mesh files) into boundary_elements_id vector
+        auto bc_mesh = this->get_bc_mesh();
+//        auto input_bc_mesh = input_mesh.get_bc_mesh();
+        // iterate trough boundary part of element vector, to each element in source mesh must exist only one element in target mesh
+        // fill boundary_elements_id vector
+        i=this->n_elements();
+        for (auto elm : bc_mesh->elements_range()) {
+            bih_tree.find_bounding_box(elm.bounding_box(), searched_elements);
+            for (auto s : searched_elements) {
+                auto acc = input_mesh.element_accessor(s);
+                if ( equal_elm(elm, acc) ) result_list.push_back(s);
+            }
+            if (result_list.size() == 1) {
+                element_ids_map[i] = (LongIdx)result_list[0];
+            } else {
+                element_ids_map[i] = (LongIdx)Mesh::undef_idx;
+            }
+            result_list.clear();
+           	searched_elements.clear();
+            i++;
+        }
+    }
+
+    return map_ptr;
+}
+
 
 void Mesh::read_regions_from_input(Input::Array region_list)
 {

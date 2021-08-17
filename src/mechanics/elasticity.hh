@@ -103,12 +103,6 @@ public:
 	class EqData {
 	public:
 
-        static  constexpr const char *  name() { return "Mechanics_LinearElasticity"; }
-
-        static string default_output_field() { return "\"displacement\""; }
-
-        static IT::Selection get_output_selection();
-
 		EqData()
         : ls(nullptr) {}
 
@@ -127,7 +121,7 @@ public:
     	/// @name Solution of algebraic system
     	// @{
 
-    	/// Linear algebra system for the transport equation.
+    	/// Linear algebraic system.
     	LinSys *ls;
 
     	// @}
@@ -226,18 +220,6 @@ private:
 	// @}
 
 
-	/// @name Solution of algebraic system
-	// @{
-
-	/// Vector of right hand side.
-	Vec rhs;
-
-	/// The stiffness matrix.
-	Mat stiffness_matrix;
-
-	// @}
-
-
 	/// @name Output to file
 	// @{
 
@@ -250,15 +232,8 @@ private:
 	// @}
 
 
+    static constexpr const char *  name_ = "Mechanics_LinearElasticity";
 
-
-	/// @name Other
-	// @{
-
-    /// Indicates whether matrices have been preallocated.
-    bool allocation_done;
-    
-    // @}
 
     /// general assembly objects, hold assembly objects of appropriate dimension
     GenericAssembly< StiffnessAssemblyElasticity > * stiffness_assembly_;

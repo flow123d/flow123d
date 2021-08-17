@@ -5,43 +5,26 @@
 
 flow123d_version: 3.1.0
 problem: !Coupling_Sequential
-  description: Benchmark - 2D DG transport on square with 4 regions with highly different conductivity
+  description: Mesh with 3 elements 3D - 2D - 3D, test of native output data 
   mesh:
-    mesh_file: ../00_mesh/square_4x_1x1_1080.msh
-    #mesh_file: ../00_mesh/square_4x_1x1_2784.msh
-    regions:
-      - !Union
-        name: .bc_west
-        regions:
-          - .bc_west1
-          - .bc_west2
-      - !Union
-        name: .bc_east
-        regions:
-          - .bc_east1
-          - .bc_east2
+    mesh_file: ../00_mesh/test_3_elem.msh
+    #mesh_file: ../00_mesh/square_4x_1x1_1080.msh
   flow_equation: !Flow_Darcy_MH
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-12
         r_tol: 1.0e-12
     input_fields:
-      - region: square_sw
+      - region: left
         conductivity: 1
-      - region: square_nw
+      - region: right
         conductivity: 1e-6
-      - region: square_ne
+      - region: diag
         conductivity: 1
-      - region: square_se
-        conductivity: 1e-6
-      - region: .bc_west
+      - region: .BOUNDARY
         bc_type: dirichlet
         bc_pressure: !FieldFormula
           value: 1
-      - region: .bc_east
-        bc_type: dirichlet
-        bc_pressure: !FieldFormula
-          value: 0
     output:
       fields:
         - pressure_p0
@@ -56,19 +39,21 @@ problem: !Coupling_Sequential
     #transport: !Solute_Advection_FV
       input_fields:
         - region: BULK
-          init_conc: 0
           porosity: 1
           #dg_penalty: 10.0
           #diff_m: 1e-5
           #disp_l: 0
           #disp_t: 0
-        - region: .bc_west
+        - region: left
+          init_conc: 0.1
+        - region: right
+          init_conc: 0.2
+        - region: diag
+          init_conc: 0.3
+        - region: .BOUNDARY
           bc_type: dirichlet
           bc_conc: 1
           #time: 0
-        - region: .bc_west
-          bc_conc: 0
-          time: 1000000
 
       #dg_variant: symmetric
       solver: !Petsc
@@ -77,8 +62,8 @@ problem: !Coupling_Sequential
 
       output:
         fields:
-          #- { field: conc, interpolation: Native }
-          - conc
+          - { field: conc, interpolation: Native }
+          #- { field: conc, interpolation: D1_value }
     output_stream:
       file: ./solute.pvd
       format: !vtk
@@ -88,6 +73,6 @@ problem: !Coupling_Sequential
     substances:
       - A
     time:
-      end_time: 2000000
+      end_time: 200000
     balance:
       cumulative: true

@@ -245,7 +245,7 @@ public:
     void elements_id_maps( vector<LongIdx> & bulk_elements_id, vector<LongIdx> & boundary_elements_id) const;
 
     /*
-     * Check if nodes and elements are compatible with \p input_mesh.
+     * Check if nodes and elements are compatible with continuous \p input_mesh.
      *
      * Call this method on computational mesh.
      * @param input_mesh data mesh of input fields
@@ -255,6 +255,18 @@ public:
      *             If meshes are not compatible returns empty vector.
      */
     virtual std::shared_ptr<std::vector<LongIdx>> check_compatible_mesh( Mesh & input_mesh);
+
+    /*
+     * Check if nodes and elements are compatible with discontinuous \p input_mesh.
+     *
+     * Call this method on computational mesh.
+     * @param input_mesh data mesh of input fields
+     * @return vector that holds mapping between eleemnts of data and computational meshes
+     *             for every element in computational mesh hold idx of equivalent element in input mesh.
+     *             If element doesn't exist in input mesh value is set to Mesh::undef_idx.
+     *             If meshes are not compatible returns empty vector.
+     */
+    virtual std::shared_ptr<std::vector<LongIdx>> check_compatible_discont_mesh( Mesh & input_mesh);
 
     /// Create and return ElementAccessor to element of given idx
     virtual ElementAccessor<3> element_accessor(unsigned int idx) const;
@@ -530,6 +542,12 @@ protected:
 
     /// Sort elements and nodes by order stored in permutation vectors.
     void sort_permuted_nodes_elements(std::vector<int> new_node_ids, std::vector<int> new_elem_ids);
+
+    /**
+     * Flag for optimization perfomed at the beginning of setup_topology.
+     * Default true, can be set to flase by the optimize_mesh key of the input recoed.
+     */
+    bool optimize_memory_locality;
 
     /**
      * Database of regions (both bulk and boundary) of the mesh. Regions are logical parts of the
