@@ -394,7 +394,10 @@ void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) 
                 }
             }
         }
-        if (dh_ == nullptr) this->make_dof_handler(mesh);
+        if (dh_ == nullptr) {
+            if (boundary_domain) this->make_dof_handler( mesh->bc_mesh() );
+            else this->make_dof_handler( mesh );
+        }
 	}
 }
 
@@ -428,7 +431,7 @@ void FieldFE<spacedim, Value>::fill_boundary_dofs() {
 
 
 template <int spacedim, class Value>
-void FieldFE<spacedim, Value>::make_dof_handler(const Mesh *mesh) {
+void FieldFE<spacedim, Value>::make_dof_handler(const MeshBase *mesh) {
 
 	// temporary solution - these objects will be set through FieldCommon
 	MixedPtr<FiniteElement> fe;
@@ -451,8 +454,8 @@ void FieldFE<spacedim, Value>::make_dof_handler(const Mesh *mesh) {
 			ASSERT(false).error("Should not happen!\n");
 	}
 
-	std::shared_ptr<DOFHandlerMultiDim> dh_par = std::make_shared<DOFHandlerMultiDim>( const_cast<Mesh &>(*mesh) );
-    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( &const_cast<Mesh &>(*mesh), fe);
+	std::shared_ptr<DOFHandlerMultiDim> dh_par = std::make_shared<DOFHandlerMultiDim>( const_cast<MeshBase &>(*mesh) );
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( &const_cast<MeshBase &>(*mesh), fe);
 	dh_par->distribute_dofs(ds);
 	dh_ = dh_par;
     unsigned int ndofs = dh_->max_elem_dofs();

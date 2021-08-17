@@ -203,7 +203,7 @@ private:
     };
 
 	/// Create DofHandler object
-	void make_dof_handler(const Mesh *mesh);
+	void make_dof_handler(const MeshBase *mesh);
 
 	/// Interpolate data (use Gaussian distribution) over all elements of target mesh.
 	void interpolate_gauss(ElementDataCache<double>::ComponentDataPtr data_vec);
