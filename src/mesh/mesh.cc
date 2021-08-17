@@ -103,7 +103,6 @@ const IT::Record & Mesh::get_input_type() {
 
 Mesh::Mesh()
 : tree(nullptr),
-  optimize_memory_locality(true),
   comm_(MPI_COMM_WORLD),
   bulk_size_(0),
   nodes_(3, 1, 0),
@@ -139,6 +138,7 @@ Mesh::Mesh(Input::Record in_record, MPI_Comm com)
 
 Mesh::Mesh(Mesh &other)
   : tree(nullptr),
+  optimize_memory_locality(other.optimize_memory_locality),
   in_record_(other.in_record_),
   comm_(other.comm_),
   bulk_size_(0),
@@ -165,7 +165,7 @@ void Mesh::init()
 {
     // set in_record_, if input accessor is empty
     if (in_record_.is_empty()) {
-        istringstream is("{mesh_file=\"\"}");
+        istringstream is("{mesh_file=\"\", optimize_mesh=false}");
         Input::ReaderToStorage reader;
         IT::Record &in_rec = const_cast<IT::Record &>(Mesh::get_input_type());
         in_rec.finish();
@@ -1198,7 +1198,7 @@ std::shared_ptr<std::vector<LongIdx>> Mesh::check_compatible_discont_mesh( Mesh 
                 element_ids_map[i] = (LongIdx)result_list[0];
                 n_found++;
             } else {
-                element_ids_map[i] = (LongIdx)Mesh::undef_idx;
+                element_ids_map[i] = (LongIdx)undef_idx;
             }
             result_list.clear();
            	searched_elements.clear();
@@ -1229,7 +1229,7 @@ std::shared_ptr<std::vector<LongIdx>> Mesh::check_compatible_discont_mesh( Mesh 
             if (result_list.size() == 1) {
                 element_ids_map[i] = (LongIdx)result_list[0];
             } else {
-                element_ids_map[i] = (LongIdx)Mesh::undef_idx;
+                element_ids_map[i] = (LongIdx)undef_idx;
             }
             result_list.clear();
            	searched_elements.clear();

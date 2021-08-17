@@ -119,7 +119,6 @@ TEST(FeValues, test_normals) {
 
     //EXPECT_EQ( false, mesh.element_accessor(0).inverted());
     //EXPECT_EQ( true, mesh.element_accessor(0).inverted());
-
     mesh.setup_topology();
 
     {
@@ -133,9 +132,10 @@ TEST(FeValues, test_normals) {
 
         FEValues<3> fe_values(quad, fe, update_normal_vectors);
 
-        for(uint iside=0; iside <= mesh.element_accessor(1).dim();iside++) {
-            //DebugOut() << "side: " << iside;
-            fe_values.reinit(*mesh.element_accessor(1).side(iside));
+        auto ele = mesh.element_accessor(0);
+        for(uint iside=0; iside <= ele.dim();iside++) {
+            DebugOut() << "ele ID: " << ele.index() << "side: " << iside;
+            fe_values.reinit(*ele.side(iside));
             for(uint q=0; q<quad.size(); q++) {
                 //DebugOut() << fe_values.normal_vector(q);
                 EXPECT_ARMA_EQ(expected_normals[iside], fe_values.normal_vector(q));
@@ -154,9 +154,10 @@ TEST(FeValues, test_normals) {
 
         FEValues<3> fe_values(quad, fe, update_normal_vectors);
 
-        for(uint iside=0; iside <= mesh.element_accessor(0).dim();iside++) {
-            //DebugOut() << "side: " << iside;
-            fe_values.reinit(*mesh.element_accessor(0).side(iside));
+        auto ele = mesh.element_accessor(1);
+        for(uint iside=0; iside <= ele.dim();iside++) {
+            DebugOut() << "ele ID: " << ele.index() << "side: " << iside;
+            fe_values.reinit(*ele.side(iside));
             for(uint q=0; q<quad.size(); q++) {
                 //DebugOut() << fe_values.normal_vector(q);
                 EXPECT_ARMA_EQ(expected_normals[iside], fe_values.normal_vector(q));
