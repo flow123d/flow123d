@@ -127,6 +127,11 @@ public:
      */
     virtual std::shared_ptr<std::vector<LongIdx>> check_compatible_mesh( Mesh & input_mesh ) = 0;
 
+    /*
+     * Check if nodes and elements are compatible with \p mesh.
+     */
+    virtual std::shared_ptr<std::vector<LongIdx>> check_compatible_discont_mesh( Mesh & input_mesh ) = 0;
+
     /**
      * Find intersection of element lists given by Mesh::node_elements_ for elements givne by @p nodes_list parameter.
      * The result is placed into vector @p intersection_element_list. If the @p node_list is empty, and empty intersection is
@@ -205,10 +210,28 @@ public:
     TYPEDEF_ERR_INFO( EI_ElemNew, int);
     TYPEDEF_ERR_INFO( EI_RegLast, std::string);
     TYPEDEF_ERR_INFO( EI_RegNew, std::string);
+    TYPEDEF_ERR_INFO( EI_ElemId, int);
+    TYPEDEF_ERR_INFO( EI_ElemIdOther, int);
+    TYPEDEF_ERR_INFO( EI_Region, std::string);
+    TYPEDEF_ERR_INFO( EI_RegIdx, unsigned int);
+    TYPEDEF_ERR_INFO( EI_Dim, unsigned int);
+    TYPEDEF_ERR_INFO( EI_DimOther, unsigned int);
+
     DECLARE_EXCEPTION(ExcDuplicateBoundary,
             << "Duplicate boundary elements! \n"
             << "Element id: " << EI_ElemLast::val << " on region name: " << EI_RegLast::val << "\n"
             << "Element id: " << EI_ElemNew::val << " on region name: " << EI_RegNew::val << "\n");
+    DECLARE_EXCEPTION(ExcElmWrongOrder,
+            << "Element IDs in non-increasing order, ID: " << EI_ElemId::val << "\n");
+    DECLARE_EXCEPTION(ExcRegionElmDiffDim,
+    		<< "User defined region " << EI_Region::qval << " (id " << EI_RegIdx::val
+            << ") by 'From_Elements' cannot have elements of different dimensions.\n"
+            << "Thrown due to: dim " << EI_Dim::val << " neq dim " << EI_DimOther::val << " (ele id " << EI_ElemId::val << ").\n"
+            << "Split elements by dim, create separate regions and then possibly use Union.\n" );
+    DECLARE_EXCEPTION(ExcTooMatchingIds,
+            << "Mesh: Duplicate dim-join lower dim elements: " << EI_ElemId::val << ", " << EI_ElemIdOther::val << ".\n" );
+    DECLARE_EXCEPTION(ExcBdrElemMatchRegular,
+            << "Boundary element (id: " << EI_ElemId::val << ") match a regular element (id: " << EI_ElemIdOther::val << ") of lower dimension.\n" );
 
 
     /**
@@ -334,7 +357,7 @@ public:
     void elements_id_maps( vector<LongIdx> & bulk_elements_id, vector<LongIdx> & boundary_elements_id) const;
 
     /*
-     * Check if nodes and elements are compatible with \p input_mesh.
+     * Check if nodes and elements are compatible with continuous \p input_mesh.
      *
      * Call this method on computational mesh.
      * @param input_mesh data mesh of input fields
@@ -344,6 +367,18 @@ public:
      *             If meshes are not compatible returns empty vector.
      */
     std::shared_ptr<std::vector<LongIdx>> check_compatible_mesh( Mesh & input_mesh);
+
+    /*
+     * Check if nodes and elements are compatible with discontinuous \p input_mesh.
+     *
+     * Call this method on computational mesh.
+     * @param input_mesh data mesh of input fields
+     * @return vector that holds mapping between eleemnts of data and computational meshes
+     *             for every element in computational mesh hold idx of equivalent element in input mesh.
+     *             If element doesn't exist in input mesh value is set to Mesh::undef_idx.
+     *             If meshes are not compatible returns empty vector.
+     */
+    virtual std::shared_ptr<std::vector<LongIdx>> check_compatible_discont_mesh( Mesh & input_mesh);
 
     /// Create and return ElementAccessor to element of given idx
     ElementAccessor<3> element_accessor(unsigned int idx) const override;
@@ -579,6 +614,12 @@ protected:
     void sort_permuted_nodes_elements(std::vector<int> new_node_ids, std::vector<int> new_elem_ids);
 
     /**
+     * Flag for optimization perfomed at the beginning of setup_topology.
+     * Default true, can be set to flase by the optimize_mesh key of the input recoed.
+     */
+    bool optimize_memory_locality;
+
+    /**
      * Database of regions (both bulk and boundary) of the mesh. Regions are logical parts of the
      * domain that allows setting of different data and boundary conditions on them.
      */
@@ -640,8 +681,6 @@ private:
 	/// Boundary mesh, object is created only if it's necessary
 	BCMesh *bc_mesh_;
         
-    ofstream raw_ngh_output_file;
-
     DuplicateNodes *duplicate_nodes_;
 };
 

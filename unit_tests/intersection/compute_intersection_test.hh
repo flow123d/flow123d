@@ -60,7 +60,7 @@ void read_files_from_dir(const string &dir_name,
             if(fname.size() >= 4)
             {
                 string ext = fname.substr(fname.size()-3);
-//                 xprintf(Msg,"%s\n",ext.c_str());
+//                 DebugOut().fmt("{}\n", ext);
                 if(ext == extension){
                     filenames.push_back(ent->d_name);
                     MessageOut() << ent->d_name << "\n";

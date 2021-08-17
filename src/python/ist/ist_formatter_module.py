@@ -55,6 +55,7 @@ class ISTFormatter(object):
             return html_pretty
         except Exception as e:
             print(e)
+            print("Turning off html prettify through BeautifulSoup library.")
             pass
 
         return html_string

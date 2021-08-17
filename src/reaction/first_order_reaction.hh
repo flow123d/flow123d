@@ -41,6 +41,8 @@ class FirstOrderReaction: public FirstOrderReactionBase
 public:
 	typedef ReactionTerm FactoryBaseType;
 
+    DECLARE_EXCEPTION( ExcTooManyReactants, << "More than one reactant is not available at the moment.\n" );
+
     static const Input::Type::Record & get_input_type();                 ///< Input record for class FirstOrderReaction.
     static const Input::Type::Record & get_input_type_single_reaction(); ///< Input record which defines particular reaction.
     static const Input::Type::Record & get_input_type_reactant();        ///< Input record for a reactant of a reaction.

@@ -7,9 +7,9 @@ test_cases:
   - files:
       - 01_column.yaml
       - 02_column_transport.yaml
-      - 03_tunnel
-      - 04_frac_diffusion
-      - 06_frac_dualpor
+      - 03_tunnel.yaml
+      - 04_frac_diffusion.yaml
+      - 06_frac_dualpor.yaml
   - files: 05_frac_sorption.yaml
     time_limit: 65
 

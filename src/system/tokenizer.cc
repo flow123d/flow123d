@@ -92,7 +92,7 @@ bool Tokenizer::next_line(bool assert_for_remaining_tokens) {
         std::getline( *in_, line_);
         position_.line_counter_++;
         // check failure bits
-        if (in_->bad()) xprintf(Err, "Can not read from stream, file: '%s', line: '%d'\n", f_name_.c_str(), line_num());
+        if (in_->bad()) THROW( ExcCannotRead() << EI_File(f_name_) << EI_Line(line_num()) );
         boost::trim( line_ );
         // if pattern is set and beginning of line match it
         if (comment_pattern_.size() && 0==line_.compare(0, comment_pattern_.size(), comment_pattern_) ) line_="";
@@ -109,7 +109,7 @@ bool Tokenizer::next_line(bool assert_for_remaining_tokens) {
 
 const std::string & Tokenizer::operator *() const
 {
-    if ( eol() ) xprintf(UsrErr, "Missing token, file: '%s', line: '%d', position: '%d'.\n", f_name_.c_str(), line_num(), position_.line_position_);
+    if ( eol() ) THROW( ExcMissingToken() << EI_File(f_name_) << EI_Line(line_num()) << EI_Pos(position_.line_position_) );
     return *tok_;
 }
 

@@ -352,7 +352,7 @@ void Application::run() {
             // run simulation
             problem_->run_simulation();
         } else {
-            xprintf(UsrErr,"Problem type not implemented.");
+            THROW( ExcUnknownProblem() );
         }
 
     }

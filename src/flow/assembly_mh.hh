@@ -37,7 +37,9 @@
 class AssemblyBase
 {
 public:
-    virtual void fix_velocity(const DHCellAccessor& dh_cell) = 0;
+    DECLARE_EXCEPTION( ExcBCNotSupported, << "BC type not supported.\n" );
+
+	virtual void fix_velocity(const DHCellAccessor& dh_cell) = 0;
     virtual void assemble(const DHCellAccessor& dh_cell) = 0;
     virtual void assemble_reconstruct(const DHCellAccessor& dh_cell) = 0;
 
@@ -343,7 +345,7 @@ protected:
                     }
                 } 
                 else {
-                    xprintf(UsrErr, "BC type not supported.\n");
+                    THROW( ExcBCNotSupported() );
                 }
             }
             loc_system_.add_value(side_row, edge_row, 1.0);

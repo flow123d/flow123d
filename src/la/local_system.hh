@@ -173,6 +173,17 @@ public:
      */
     void reconstruct_solution_schur(uint offset, const arma::vec &schur_solution, arma::vec& reconstructed_solution) const;
 
+    /// Due to petsc options: MatSetOption(matrix_, MAT_IGNORE_ZERO_ENTRIES, PETSC_TRUE)
+    /// all zeros will be thrown away from the system.
+    /// If we do not want some zero entries in the system matrix to be thrown away,
+    /// we can set these entries with this almost zero value.
+    ///
+    /// This is done for example when BC values are eliminated and later the BC changes to different type (e.g. seepage).
+    /// Another case is keeping the structure of matrix unchanged for the schur complements -
+    /// for that we fill the whole diagonal (escpecially block C in darcy flow) with artificial zeros.
+    static constexpr double almost_zero = std::numeric_limits<double>::min();
+
+
 protected:
     void set_size(uint nrows, uint ncols);
 
@@ -189,15 +200,6 @@ protected:
     arma::vec solution_cols;    /// Values of the known solution (for col dofs).
     arma::vec diag_rows;        /// Prefered values on the diagonal after elimination.
 
-    /// Due to petsc options: MatSetOption(matrix_, MAT_IGNORE_ZERO_ENTRIES, PETSC_TRUE)
-    /// all zeros will be thrown away from the system.
-    /// If we do not want some zero entries in the system matrix to be thrown away,
-    /// we can set these entries with this almost zero value.
-    ///
-    /// This is done for example when BC values are eliminated and later the BC changes to different type (e.g. seepage).
-    /// Another case is keeping the structure of matrix unchanged for the schur complements -
-    /// for that we fill the whole diagonal (escpecially block C in darcy flow) with artificial zeros.
-    static constexpr double almost_zero = std::numeric_limits<double>::min();
 
 
     friend class LinSys;

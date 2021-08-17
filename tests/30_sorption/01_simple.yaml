@@ -1,3 +1,14 @@
+# Test goal: Simple sorption test - no flow, no transport, analytic values.
+# Author: Pavel Exner
+# Source for reference:
+# mass balance sorption equation: por * rhol * cl + (1-por) * rhos * Ms * cs:total
+# - none: compute total from init conc : 0.25*1*1 + 0:0.25
+# - linear: derive cl with cs:f(cl):
+#           cl:0.25/(0.25 + 0.75*0.6):0.357142857
+# - langmuir: compute cl from quadratic eqn. with cs:f(cl):
+#           cl:0.25*cl + 0.6*0.75*0.4*cl/(1+0.4*cl):0.25, cl:0.635278976
+# - freundlich: compute cl with newton with cs:f(cl):
+#           cl:0.25*cl + 0.6*0.75*cl^0.4:0.25, cl:0.152233290
 flow123d_version: 3.1.0
 problem: !Coupling_Sequential
   description: Simple sorption test - no flow, no transport, known values of sorbed substances.
@@ -6,12 +17,7 @@ problem: !Coupling_Sequential
     regions:
       - !Union
         name: .boundary
-        regions:
-          - .back
-          - .front
-          - .left
-          - .up
-          - .down
+        regions: [.back, .front, .left, .up, .down]
   flow_equation: !Flow_Darcy_MH
     nonlinear_solver:
       linear_solver: !Petsc
@@ -25,7 +31,6 @@ problem: !Coupling_Sequential
     output:
       fields:
         - pressure_p0
-        #- pressure_p2_disc
         - velocity_p0
     output_stream:
       file: test_20.pvd
@@ -60,16 +65,11 @@ problem: !Coupling_Sequential
         - region: volume
           init_conc_solid: 0.0
           rock_density: 1.0
-          # mass balance sorption equation: por * rhol * cl + (1-por) * rhos * Ms * cs:total
           sorption_type:
             - none
-            # compute total from init conc : 0.25*1*1 + 0:0.25
             - linear
-            # derive cl with cs:f(cl): cl:0.25/(0.25 + 0.75*0.6):0.357142857
             - langmuir
-            # compute cl from quadratic eqn. with cs:f(cl): cl:0.25*cl + 0.6*0.75*0.4*cl/(1+0.4*cl):0.25, cl:0.635278976
             - freundlich
-          # compute cl with newton with cs:f(cl): cl:0.25*cl + 0.6*0.75*cl^0.4:0.25, cl:0.152233290
           distribution_coefficient: 0.6
           isotherm_other: 0.4
     time:
@@ -80,8 +80,5 @@ problem: !Coupling_Sequential
       file: transport_test_20.pvd
       format: !vtk
         variant: ascii
-  # secondary_equation
-# problem
-# root
       times:
         - step: 0.2

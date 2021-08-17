@@ -29,6 +29,7 @@
 #include "la/linsys.hh"
 #include "la/linsys_BDDC.hh"
 #include "system/sys_profiler.hh"
+#include "input/input_exception.hh" 
 
 
 
@@ -70,7 +71,7 @@ LinSys_BDDC::LinSys_BDDC(  const Distribution * rows_ds,
     // from the point of view of assembly, BDDC linsys is in the ADD state
     status_ = LinSys::ADD;
 #else
-    throw ExcInputMessage << EI_Message("Unsupported solver BDDC. Compiled without support for the BDDCML solver.")''
+    throw Input::ExcInputMessage() << EI_Message("Unsupported solver BDDC. Compiled without support for the BDDCML solver.");
 #endif // FLOW123D_HAVE_BDDCML
 }
 
