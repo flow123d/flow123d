@@ -41,17 +41,6 @@ std::vector< std::vector<unsigned int> > _array_to_vec( const std::vector<IdxVec
 }
 
 
-// template<unsigned int n>
-// std::vector< std::vector<unsigned int> > _array_to_vec( const unsigned int array[][n], unsigned int m) {
-//     std::vector< std::vector<unsigned int> > vec(m);
-//     for(unsigned int i=0; i<m; i++)
-//         for(unsigned int j=0;j<n; j++)
-//             vec[i].push_back(array[i][j]);
-//     return vec;
-// }
-
-
-
 
 template<> const std::vector<IdxVector<2>> RefElement<1>::line_nodes_
     = { {0,1} };
@@ -112,41 +101,6 @@ template<> const std::vector<IdxVector<3>> RefElement<3>::side_lines_
         {3,4,5}};
 
 
-template<> const std::vector< std::vector<unsigned int> >
-    RefElement<0>::side_permutations = { { } };
-
-template<> const std::vector< std::vector<unsigned int> >
-    RefElement<1>::side_permutations = { { 0 } };
-
-template<> const std::vector< std::vector<unsigned int> >
-    RefElement<2>::side_permutations = { { 0, 1 }, { 1, 0 } };
-
-template<> const std::vector< std::vector<unsigned int> >
-    RefElement<3>::side_permutations = {
-        { 0, 1, 2 },
-        { 0, 2, 1 },
-        { 1, 0, 2 },
-        { 1, 2, 0 },
-        { 2, 0, 1 },
-        { 2, 1, 0 }
-    };
-
-// template<> const unsigned int RefElement<0>::side_permutations[][n_nodes_per_side] = { };
-
-// template<> const unsigned int RefElement<1>::side_permutations[][n_nodes_per_side] = { { 0 } };
-
-// template<> const unsigned int RefElement<2>::side_permutations[][n_nodes_per_side] = { { 0, 1 }, { 1, 0 } };
-
-// template<> const unsigned int RefElement<3>::side_permutations[][n_nodes_per_side] = {
-//         { 0, 1, 2 },
-//         { 0, 2, 1 },
-//         { 1, 0, 2 },
-//         { 1, 2, 0 },
-//         { 2, 0, 1 },
-//         { 2, 1, 0 }
-// };
-
-
 template<> const IdxVector<1> RefElement<0>::topology_zeros_[] = {
    {(1 << 1)}  //node 0
 };
@@ -200,77 +154,6 @@ template<> const IdxVector<6> RefElement<3>::topology_zeros_[] = {
 };
 
     
-    
-
-// template<> const unsigned int RefElement<1>::side_nodes[][1] = {
-// 		{ 0 },
-// 		{ 1 }
-// };
-// 
-// template<> const unsigned int RefElement<2>::side_nodes[][2] = {
-// 		{ 0, 1 },
-// 		{ 0, 2 },
-// 		{ 1, 2 }
-// };
-// 
-// template<> const unsigned int RefElement<3>::side_nodes[][3] = {
-// 		{ 0, 1, 2 },
-// 		{ 0, 1, 3 },
-// 		{ 0, 2, 3 },
-// 		{ 1, 2, 3 }
-// };
-// 
-// 
-// 
-// template<> const unsigned int RefElement<3>::side_lines[][3] = {
-//         {0,1,2},
-//         {0,3,4},
-//         {1,3,5},
-//         {2,4,5}
-// };
-// 
-// 
-// template<> const unsigned int RefElement<1>::line_nodes[][2] = {
-//         {0,1}
-// };
-// 
-// template<> const unsigned int RefElement<2>::line_nodes[][2] = {
-//         {0,1},
-//         {0,2},
-//         {1,2}
-// };
-// 
-// template<> const unsigned int RefElement<3>::line_nodes[][2] = {
-//         {0,1},
-//         {0,2},
-//         {1,2},
-//         {0,3},
-//         {1,3},
-//         {2,3}
-// };
-// 
-// 
-// /**
-//  * Indexes of sides for each line - with right orientation
-//  */
-// 
-// template<> const unsigned int RefElement<3>::line_sides[][2] = {
-//      {0,1},
-//      {2,0},
-//      {0,3},
-//      {1,2},
-//      {3,1},
-//      {2,3}
-// };
-// 
-// /**
-//  * Indexes of sides for each line - for Simplex<2>, with right orientation
-//  */
-// template<> const unsigned int RefElement<2>::line_sides[][2] = {
-//      {1,0},
-//      {0,2},
-//      {2,1}
-// };
 
 
 // 0: nodes of nodes
@@ -544,22 +427,6 @@ unsigned int RefElement<3>::line_between_faces(unsigned int f1, unsigned int f2)
         if (side_lines_[f1][i] < side_lines_[f2][j]) i++;
         else j++;
     return side_lines_[f1][i];
-}
-
-
-template<unsigned int dim>
-unsigned int RefElement<dim>::permutation_index(unsigned int p[n_nodes_per_side])
-{
-	unsigned int index;
-	//DebugOut() << "dim: " << dim << " "  << std::vector<unsigned int>(p, p+n_nodes_per_side);
-	for (index = 0; index < n_side_permutations; index++)
-		if (equal(p, p + n_nodes_per_side, side_permutations[index].data()))
-			return index;
-	THROW( ExcInvalidPermutation() );
-
-	// The following line is present in order to suppress compilers warning
-	// about missing return value.
-	return 0;
 }
 
 

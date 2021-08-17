@@ -271,23 +271,6 @@
  *
  */
 
-/** Auxilliary class representing vector of indices (unsigned int).
- * @tparam Size is the fixed size of the vector.
- */
-/*
-template<unsigned int Size>
-class IdxVector{
-    unsigned int data_[Size];   ///< Array with indices.
-    
-    public:
-        /// Constructor taking in array of indices.
-        IdxVector(std::array<unsigned int,Size> data_in);
-        /// Constructor enabling creating object with initializer list {...}.
-        IdxVector(std::initializer_list<unsigned int> data_in);
-        /// Getter for index @p idx.
-        unsigned int operator[](unsigned int idx) const;
-};
-*/
 
 template<std::size_t Size>
 using IdxVector = std::array<unsigned int, Size>;
@@ -426,51 +409,9 @@ public:
 	/// Number of lines, i.e. @p object of dimension @p dim-2 on the boundary of the reference element.
 	static const unsigned int n_lines = (unsigned int)((dim * (dim + 1)) / 2); //( dim == 3 ? 6 : dim == 2 ? 3 : dim == 1 ? 1 : 0); součet posloupnosti
 
-    
-// 	/**
-// 	 * Node numbers for each side.
-// 	 */
-// 	static const unsigned int side_nodes[n_sides][n_nodes_per_side];
-// 
-// 	/**
-// 	 * Indices of 1D lines of the 2D sides of an tetrahedron. Nonempty only for @p dim==3.
-// 	 */
-// 	static const unsigned int side_lines[n_sides][n_lines_per_side];
-// 
-// 	/**
-// 	 * Nodes of 1D lines of the tetrahedron.
-// 	 */
-//     static const unsigned int line_nodes[n_lines][2];
-//     
-//     /**
-//      * Indices of sides for each line. Nonempty only for @p dim==3 and @p dim==2.
-//      */
-//     static const unsigned int line_sides[n_lines][2];
-
 
     static const std::vector< std::vector< std::vector<unsigned int> > > nodes_of_subelements;
 
-	/**
-	 * Number of permutations of nodes on sides.
-	 * dim   value
-	 * -----------
-	 * 1     1
-	 * 2     2
-	 * 3     6
-	 */
-	static constexpr unsigned int n_side_permutations = (dim+1)*(2*dim*dim-5*dim+6)/6;
-
-	/**
-	 * Permutations of nodes on sides.
-     * [n_side_permutations][n_nodes_per_side]
-	 */
-	static const std::vector< std::vector<unsigned int> > side_permutations;
-
-	/**
-	 * For a given permutation @p p of nodes finds its index within @p side_permutations.
-	 * @param p Permutation of nodes.
-	 */
-	static unsigned int permutation_index(unsigned int p[n_nodes_per_side]);
 
     /** @brief Converts from local to barycentric coordinates.
      * @param lp point in local coordinates (x,y)
@@ -629,11 +570,6 @@ template<> const std::vector<IdxVector<2>> RefElement<3>::line_sides_;
 template<> const std::vector<IdxVector<3>> RefElement<3>::side_lines_;
 
 
-template<> const std::vector< std::vector<unsigned int> > RefElement<0>::side_permutations;
-template<> const std::vector< std::vector<unsigned int> > RefElement<1>::side_permutations;
-template<> const std::vector< std::vector<unsigned int> > RefElement<2>::side_permutations;
-template<> const std::vector< std::vector<unsigned int> > RefElement<3>::side_permutations;
-
 template<> const IdxVector<1> RefElement<0>::topology_zeros_[];
 template<> const IdxVector<2> RefElement<1>::topology_zeros_[];
 template<> const IdxVector<3> RefElement<2>::topology_zeros_[];
@@ -700,24 +636,7 @@ auto RefElement<dim>::interpolate(arma::vec::fixed<subdim+1> coord, int sub_simp
 {
     return RefElement<dim>::bary_coords<subdim>(sub_simplex_idx)*coord;
 }
-/*
-template <unsigned int Size>
-IdxVector<Size>::IdxVector(std::array<unsigned int,Size> data_in)
-: data_(data_in){}
 
-template <unsigned int Size>
-IdxVector<Size>::IdxVector(std::initializer_list<unsigned int> data_in)
-{
-    ASSERT_EQ_DBG(data_in.size(), Size).error("Incorrect data size.");
-    std::copy(data_in.begin(), data_in.end(), data_);
-}
-
-template <unsigned int Size>
-inline unsigned int IdxVector<Size>::operator[](unsigned int idx) const
-{   ASSERT_LT_DBG(idx, Size).error("Index out of bounds.");
-    return data_[idx]; }
-    
-*/
 
 template<> template<> inline unsigned int RefElement<3>::count<0>()
 { return n_nodes; }

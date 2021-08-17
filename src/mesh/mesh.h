@@ -478,11 +478,6 @@ protected:
     void make_neighbours_and_edges();
 
     /**
-     * On edges sharing sides of many elements it may happen that each side has its nodes ordered in a different way.
-     * This method finds the permutation for each side so as to obtain the ordering of side 0.
-     */
-    void make_edge_permutations();
-    /**
      * Create element lists for nodes in Mesh::nodes_elements.
      */
     void create_node_element_lists();
