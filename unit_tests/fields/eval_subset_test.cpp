@@ -83,7 +83,7 @@ TEST(IntegralTest, integrals_3d) {
           
     	unsigned int i=0; // iter trought expected_vals
     	for (auto p : bulk_integral->points(elm_cache_map.position_in_cache(dh_cell.elm_idx()), &elm_cache_map)) {
-    	    DebugOut() << "i: " << i;
+    	    DebugOut() << "BULK i: " << i << "eval_point_idx: " << p.eval_point_idx();
             EXPECT_ARMA_EQ(expected_vals[i], loc_coords<3>(eval_points, p.eval_point_idx()));
 			++i;
         }
@@ -107,8 +107,8 @@ TEST(IntegralTest, integrals_3d) {
         unsigned int i_side=0, i_point; // iter trought expected_vals
         for (auto side_acc : dh_cell.side_range()) {
             i_point=0;
-            for ( auto p : edge_integral->points(side_acc, &elm_cache_map) ) {
-                DebugOut() << "side: " << i_side << " ip: " << i_point;
+            for ( EdgePoint p : edge_integral->points(side_acc, &elm_cache_map) ) {
+                DebugOut() << "side: " << i_side << " ip: " << i_point << "eval point idx: " << p.eval_point_idx();
             	EXPECT_ARMA_EQ(expected_vals[i_side][i_point], loc_coords<3>(eval_points, p.eval_point_idx()));
                 ++i_point;
             }
@@ -138,7 +138,9 @@ TEST(IntegralTest, integrals_3d) {
                 DebugOut() << "side: " << i_side << " ip: " << i_point;
                 EXPECT_ARMA_EQ(expected_vals[i_side][i_point], loc_coords<3>(eval_points, p.eval_point_idx()));
 
+
                 auto p_bdr = p.point_bdr( side_acc.cond().element_accessor() );
+                DebugOut() << "side: " << i_side << " ip: " << i_point << "eval point idx: " << p_bdr.eval_point_idx();
                 EXPECT_ARMA_EQ(expected_vals[2][i_point], loc_coords<2>(eval_points, p_bdr.eval_point_idx()));
                 ++i_point;
             }

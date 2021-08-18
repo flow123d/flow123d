@@ -33,9 +33,10 @@ template <unsigned int dim>
 std::shared_ptr<BulkIntegral> EvalPoints::add_bulk(const Quadrature &quad)
 {
     ASSERT_EQ(dim, quad.dim());
-    std::shared_ptr<BulkIntegral> bulk_integral = std::make_shared<BulkIntegral>(shared_from_this(), dim);
+
     dim_eval_points_[dim].add_local_points<dim>( quad.get_points() );
-    dim_eval_points_[dim].add_subset();
+    uint i_subset = dim_eval_points_[dim].add_subset();
+    std::shared_ptr<BulkIntegral> bulk_integral = std::make_shared<BulkIntegral>(shared_from_this(), dim, i_subset);
     this->set_max_size();
     return bulk_integral;
 }
@@ -44,8 +45,8 @@ template <>
 std::shared_ptr<BulkIntegral> EvalPoints::add_bulk<0>(const Quadrature &quad)
 {
     ASSERT_EQ(0, quad.dim());
-    std::shared_ptr<BulkIntegral> bulk_integral = std::make_shared<BulkIntegral>(shared_from_this(), 0);
-    dim_eval_points_[0].add_subset();
+    uint i_subset = dim_eval_points_[0].add_subset();
+    std::shared_ptr<BulkIntegral> bulk_integral = std::make_shared<BulkIntegral>(shared_from_this(), 0, i_subset);
     this->set_max_size();
     return bulk_integral;
 }
@@ -55,13 +56,12 @@ std::shared_ptr<EdgeIntegral> EvalPoints::add_edge(const Quadrature &quad)
 {
     ASSERT_EQ(dim, quad.dim()+1);
 
-	std::shared_ptr<EdgeIntegral> edge_integral = std::make_shared<EdgeIntegral>(shared_from_this(), dim);
-
     for (unsigned int i=0; i<dim+1; ++i) {  // sides
         Quadrature high_dim_q = quad.make_from_side<dim>(i);
         dim_eval_points_[dim].add_local_points<dim>( high_dim_q.get_points() );
     }
-    dim_eval_points_[dim].add_subset();
+    uint i_subset = dim_eval_points_[dim].add_subset();
+    std::shared_ptr<EdgeIntegral> edge_integral = std::make_shared<EdgeIntegral>(shared_from_this(), dim, i_subset);
 
     this->set_max_size();
     return edge_integral;
@@ -72,15 +72,21 @@ std::shared_ptr<CouplingIntegral> EvalPoints::add_coupling(const Quadrature &qua
     ASSERT_EQ(dim, quad.dim()+1);
 
     std::shared_ptr<BulkIntegral> bulk_integral = this->add_bulk<dim-1>(quad);
+    DebugOut() << "coupling bulk subset" << bulk_integral->get_subset_idx();
     std::shared_ptr<EdgeIntegral> edge_integral = this->add_edge<dim>(quad);
+    DebugOut() << "coupling edge subset" << edge_integral->get_subset_idx();
     return std::make_shared<CouplingIntegral>(edge_integral, bulk_integral);
 }
 
 template <unsigned int dim>
 std::shared_ptr<BoundaryIntegral> EvalPoints::add_boundary(const Quadrature &quad) {
     ASSERT_EQ(dim, quad.dim()+1);
+
     std::shared_ptr<BulkIntegral> bulk_integral = this->add_bulk<dim-1>(quad);
+    DebugOut() << "boundary bulk subset: " << bulk_integral->get_subset_idx()
+            << "begin: " << subset_begin(dim-1, bulk_integral->get_subset_idx());
     std::shared_ptr<EdgeIntegral> edge_integral = this->add_edge<dim>(quad);
+    DebugOut() << "boundary edge subset" << edge_integral->get_subset_idx();
     return std::make_shared<BoundaryIntegral>(edge_integral, bulk_integral);
 }
 
@@ -97,16 +103,19 @@ void EvalPoints::DimEvalPoints::add_local_points(const Armor::Array<double> & qu
     unsigned int local_points_old_size = local_points_.size();
     local_points_.resize(quad_points.size() + local_points_old_size);
     for (unsigned int i=0; i<quad_points.size(); ++i) {
+        //DebugOut() << "add i: " << i << " : " <<  quad_points.vec<dim>(i);
+
         local_points_.set(i+local_points_old_size) = quad_points.vec<dim>(i);
 	}
 }
 
 
-void EvalPoints::DimEvalPoints::add_subset() {
+uint EvalPoints::DimEvalPoints::add_subset() {
     ASSERT_LT_DBG(n_subsets_, EvalPoints::max_subsets).error("Maximal number of subsets exceeded!\n");
 
     n_subsets_++;
     subset_starts_[n_subsets_] = this->size();
+    return n_subsets_ - 1;
 }
 
 
