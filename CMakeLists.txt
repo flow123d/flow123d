@@ -194,6 +194,11 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Wall -Wextra -Werror \
 -Wno-catch-value -Wno-deprecated-copy -Wno-misleading-indentation -Wno-implicit-fallthrough \
 -Wno-vla -Wno-unused-local-typedefs -Wno-deprecated-declarations")
 
+# intel compiler
+if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -diag-disable=186,1011,177,473,68,9,175,488")
+endif()
+
 ## Compiler-specific C++11 activation.
 ## It was replaced in commit a66193035 with C++14 specification.
 ## Needs special definition of trigonometric functions held in the comment below:
