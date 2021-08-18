@@ -389,6 +389,7 @@ double LinSys_BDDC::get_solution_precision()
 
 void LinSys_BDDC::print_matrix(std::ostream& out)
 {
+#ifdef FLOW123D_HAVE_BDDCML
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     
@@ -400,4 +401,5 @@ void LinSys_BDDC::print_matrix(std::ostream& out)
             << "zzz(:,1:2) = zzz(:,1:2) + ones(size(zzz),2);\n" // fix matlab indices (+1)
             << "matrix_bddc = spconvert(zzz);\n";
     }
+#endif // FLOW123D_HAVE_BDDCML
 }

@@ -21,7 +21,8 @@
 #include "input/reader_internal_base.hh"
 #include "attribute_lib.hh"
 
-#include <boost/typeof/typeof.hpp>
+#include <type_traits>
+//boost/typeof/typeof.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/functional/hash.hpp>
 
@@ -514,7 +515,7 @@ Record &Record::declare_key(const string &key, const KeyType &type,
 // this accept only lvalues - we assume that these are not local variables
 {
     // ASSERT MESSAGE: The type of declared keys has to be a class derived from TypeBase.
-    BOOST_STATIC_ASSERT( (boost::is_base_of<TypeBase, KeyType>::value) );
+    BOOST_STATIC_ASSERT( (std::is_base_of<TypeBase, KeyType>::value) );
 	std::shared_ptr<TypeBase> type_copy = std::make_shared<KeyType>(type);
 	return declare_key(key, type_copy, default_value, description, key_attributes);
 }
