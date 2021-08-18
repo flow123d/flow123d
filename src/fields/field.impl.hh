@@ -688,7 +688,6 @@ void Field<spacedim,Value>::fill_data_value(BulkPoint &p, unsigned int elm_idx,
 {
     typedef typename Value::element_type ElemType;
 
-    static uint c=0;
     try {
         // try casting actual ElementDataCache
         if( ! output_data_base->is_dummy()){
@@ -703,9 +702,6 @@ void Field<spacedim,Value>::fill_data_value(BulkPoint &p, unsigned int elm_idx,
     } catch(const std::bad_cast& e){
         // skip
     }
-    c++;
-
-    stream->update_time(this->time());
 }
 
 

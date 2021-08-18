@@ -81,6 +81,14 @@ public:
         }
     }
 
+    /// Implements @p AssemblyBase::end.
+    void end() override
+    {
+        for (FieldListAccessor f_acc : used_fields_.fields_range()) {
+            stream_->update_time(f_acc->time());
+        }
+    }
+
 private:
     /// Data objects shared with EquationOutput
     EqFields *eq_fields_;
