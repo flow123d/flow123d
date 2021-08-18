@@ -207,7 +207,7 @@ void EquationOutput::read_from_input(Input::Record in_rec, const TimeGovernor & 
 bool EquationOutput::is_field_output_time(const FieldCommon &field, TimeStep step) const
 {
     auto &marks = TimeGovernor::marks();
-    auto field_times_it = field_output_times_.find(field.name());
+    auto field_times_it = field_output_times_.find(field.input_name());
     if (field_times_it == field_output_times_.end()) return false;
     ASSERT( step.eq(field.time()) )(step.end())(field.time())(field.name()).error("Field is not set to the output time.");
     auto current_mark_it = marks.current(step, equation_type_ | marks.type_output() );
@@ -254,7 +254,7 @@ void EquationOutput::output(TimeStep step)
         FieldSet used_fields;
         for (FieldListAccessor f_acc : this->fields_range()) {
             if ( f_acc->flags().match( FieldFlag::allow_output) ) {
-                if (is_field_output_time( *(f_acc.field()), step) && field_output_times_[f_acc->name()].space_flags_[OutputTime::ELEM_DATA]) {
+                if (is_field_output_time( *(f_acc.field()), step) && field_output_times_[f_acc->input_name()].space_flags_[OutputTime::ELEM_DATA]) {
                     caches_map_elem_data[f_acc->name()] = f_acc->output_data_cache(OutputTime::ELEM_DATA, stream_);
                     used_fields += *(f_acc.field());
                 }
