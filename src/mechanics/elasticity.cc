@@ -349,6 +349,7 @@ void Elasticity::initialize()
     eq_fields_->output_div_ptr = create_field_fe<3, FieldValue<3>::Scalar>(eq_data_->dh_scalar_);
     eq_fields_->output_divergence.set(eq_fields_->output_div_ptr, 0.);
     
+    eq_fields_->output_fields.set_mesh(*mesh_);
     eq_fields_->output_field.output_type(OutputTime::CORNER_DATA);
 
     // set time marks for writing the output
