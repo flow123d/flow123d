@@ -530,8 +530,13 @@ unsigned int InspectElementsAlgorithm<dim>::create_prolongation(unsigned int bul
 template<unsigned int dim>
 void InspectElementsAlgorithm<dim>::prolongation_decide(const ElementAccessor<3>& comp_ele,
                                                         const ElementAccessor<3>& bulk_ele,
-                                                        IntersectionAux<dim,3>& is)
+                                                        IntersectionAux<dim,3> is)
+// Can not pass is by reference as that reference points into reallocating vector.
+// 'create_prolongation' push_back into 'intersection_list_[component_ele_idx]'
 {
+
+
+
     //DebugOut() << "DECIDE\n";
     // number of IPs that are at vertices of component element (counter used for closing element)
     unsigned int n_ip_vertices = 0;
