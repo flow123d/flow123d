@@ -1,0 +1,47 @@
+error #186: pointless comparison of unsigned integer with zero
+-----------
+/flow123d/third_party/json-3.7.1/single_include/nlohmann/json.hpp(14370): error #186: pointless comparison of unsigned integer with zero
+          const bool is_negative = std::is_same<NumberType, number_integer_t>::value and not(x >= 0); // see issue #755
+                                                                                               ^
+
+error #1011: missing return statement at end of non-void function
+/flow123d/src/system/logger.hh(183): error #1011: missing return statement at end of non-void function "Logger::fmt(T &&...)"
+  	}
+  	^
+
+error #177: function "<unnamed>::Needs::operator=" was declared but never referenced
+/flow123d/third_party/fparser-4.5.1/fpoptimizer.cc(7394): error #177: function "<unnamed>::Needs::operator=" was declared but never referenced
+  Needs&eM1=iS1
+        ^
+
+error #473: returning reference to local temporary
+/flow123d/src/input/storage.cc(54): error #473: returning reference to local temporary
+      return 0;   // Return reference to temporary, but we throw anyway.
+             ^
+
+error #68: integer conversion resulted in a change of sign
+/flow123d/src/la/distribution.cc(139): error #68: integer conversion resulted in a change of sign
+      return (-1);
+             ^
+
+error #9: nested comment is not allowed
+In file included from /flow123d/src/tools/interpolant.cc(20):
+/flow123d/src/tools/interpolant_impl.hh(153): error #9: nested comment is not allowed
+    else  //*/
+           ^
+
+error #175: subscript out of range
+/flow123d/src/mesh/ref_element.hh(567): error #175: subscript out of range
+          if(zeros_positions == topology_zeros_[subdim][i]) return i;
+                                               ^
+          detected during:
+            instantiation of "unsigned int RefElement<dim>::topology_idx<subdim>(unsigned int) [with dim=1U, subdim=3U]" at line 185 of "/flow123d/src/fem/fe_p.cc"
+            instantiation of "void FE_P<dim>::init_dofs() [with dim=1U]" at line 203 of "/flow123d/src/fem/fe_p.cc"
+
+error #488: constant "<unnamed>" is not used in declaring the parameter types of function template "Mixed<T, lower_dim>::operator Mixed<TParent, 0>"
+In file included from /flow123d/src/fem/discrete_space.hh(23),
+                 from /flow123d/src/fem/dofhandler.hh(29),
+                 from /flow123d/src/fem/dofhandler.cc(20):
+/flow123d/src/tools/mixed.hh(134): error #488: constant "<unnamed>" is not used in declaring the parameter types of function template "Mixed<T, lower_dim>::operator Mixed<TParent, 0>"
+      template< template<IntDim...> class TParent, typename std::enable_if<std::is_convertible<TParent<0>, T<0>>::value, T<0> >::type >
+                                                                                                                                      ^
