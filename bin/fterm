@@ -41,7 +41,7 @@ CFG="$REL_FLOW_DIR/config"
 # default version of the image used when **running** docker image
 image_version=dbg
 
-# default tag of the used docker image: flow123d/flow-libs-dev-${image_version}:${image_tag}
+# default tag of the used docker image: flow123d/flow-dev-gnu-${image_version}:${image_tag}
 # can be specified explicitely from input:
 # e.g. ./fterm @2.2.0 build
 image_tag=latest
@@ -66,7 +66,7 @@ dbg   image with the debug build of the libraries (default)
 rel   image with optimized build of the libraries
    
 tag     version of the development image, e.g. @2.2.0, @3.0.0, @latest
-        Images automatically downloaded from docker hub, see:  ${bblue} https://hub.docker.com/r/flow123d/flow-libs-dev-dbg/tags ${reset}
+        Images automatically downloaded from docker hub, see:  ${bblue} https://hub.docker.com/r/flow123d/flow-dev-gnu-dbg/tags ${reset}
         for avalilable tags. Default tag is taken form: ${bblue} config/docker/image_tag ${reset}
     
 ${bold}Options:${reset}
@@ -108,7 +108,7 @@ ${bold}Examples:${reset}
   Run flow123d --help command under the realease environment at default version.
 EOF
 #  ${bblue}bin/fterm dbg --detach dbg_run$reset
-#      docker run <opts> ... flow123d/flow-libs-dev-dbg:2.2.0 
+#      docker run <opts> ... flow123d/flow-dev-gnu-dbg:2.2.0
 
 }
 
@@ -251,7 +251,7 @@ uid=$(id -u)
 uname=flow
 autopull=${autopull:-1}
 theme=${theme:-light}
-flow123d_images="flow-libs-dev-dbg flow-libs-dev-rel"
+flow123d_images="flow-dev-gnu-dbg flow-dev-gnu-rel"
 
 # source config, that way we know what to mount, etc.
 DCFG="$CFG/docker.cfg"
@@ -342,7 +342,7 @@ done
 
 
 # determine image names
-base_image=flow123d/flow-libs-dev-$image_version:$image_tag
+base_image=flow123d/flow-dev-gnu-$image_version:$image_tag
 
 
 dbg "base_image     = $base_image"
