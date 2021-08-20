@@ -199,7 +199,8 @@ void EquationOutput::read_from_input(Input::Record in_rec, const TimeGovernor & 
         // Set output configuration to field_output_times_
         if (found_field->is_multifield()) {
             for (uint i_comp=0; i_comp<found_field->n_comp(); ++i_comp) {
-                std::string comp_name = found_field->comp_name(i_comp) + "_" + found_field->name();
+                std::string comp_name = found_field->comp_name(i_comp).empty() ? found_field->name()
+                        : (found_field->comp_name(i_comp) + "_" + found_field->name());
                 field_output_times_[comp_name] = field_config;
             }
         } else {
