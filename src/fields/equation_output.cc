@@ -182,34 +182,41 @@ void EquationOutput::read_from_input(Input::Record in_rec, const TimeGovernor & 
             OutputTime::set_discrete_flag(interpolation, found_field->get_output_type());
         }
         Input::Array field_times_array;
+        FieldOutputConfig field_config;
         if (it->opt_val("times", field_times_array)) {
             OutputTimeSet field_times;
             field_times.read_from_input(field_times_array, tg);
-            field_output_times_[field_name].output_set_ = field_times;
+            field_config.output_set_ = field_times;
         } else {
-            field_output_times_[field_name].output_set_ = common_output_times_;
+            field_config.output_set_ = common_output_times_;
         }
-        field_output_times_[field_name].space_flags_ = interpolation;
+        field_config.space_flags_ = interpolation;
         // Add init time as the output time for every output field.
-        field_output_times_[field_name].output_set_.add(tg.init_time(), equation_fixed_type_);
+        field_config.output_set_.add(tg.init_time(), equation_fixed_type_);
+        // register interpolation types of fields to OutputStream
+        for (uint i=0; i<OutputTime::N_DISCRETE_SPACES; ++i)
+    	    if (interpolation[i]) used_interpolations_.insert( OutputTime::DiscreteSpace(i) );
+        // Set output configuration to field_output_times_
+        if (found_field->is_multifield()) {
+            for (uint i_comp=0; i_comp<found_field->n_comp(); ++i_comp) {
+                std::string comp_name = found_field->comp_name(i_comp) + "_" + found_field->name();
+                field_output_times_[comp_name] = field_config;
+            }
+        } else {
+            field_output_times_[field_name] = field_config;
+        }
     }
     auto observe_fields_array = in_rec.val<Input::Array>("observe_fields");
     for(auto it = observe_fields_array.begin<Input::FullEnum>(); it != observe_fields_array.end(); ++it) {
         observe_fields_.insert(string(*it));
     }
 
-    // register interpolation type of fields to OutputStream
-    for(FieldCommon * field : this->field_list) {
-        auto output_types = field_output_times_[field->name()].space_flags_;
-        for (uint i=0; i<OutputTime::N_DISCRETE_SPACES; ++i)
-    	    if (output_types[i]) used_interpolations_.insert( OutputTime::DiscreteSpace(i) );
-    }
 }
 
 bool EquationOutput::is_field_output_time(const FieldCommon &field, TimeStep step) const
 {
     auto &marks = TimeGovernor::marks();
-    auto field_times_it = field_output_times_.find(field.input_name());
+    auto field_times_it = field_output_times_.find(field.name());
     if (field_times_it == field_output_times_.end()) return false;
     ASSERT( step.eq(field.time()) )(step.end())(field.time())(field.name()).error("Field is not set to the output time.");
     auto current_mark_it = marks.current(step, equation_type_ | marks.type_output() );
@@ -233,19 +240,19 @@ void EquationOutput::output(TimeStep step)
     this->make_output_mesh( stream_->is_parallel() );
 
     // NODE_DATA
-    for(FieldCommon * field : this->field_list) {
-        if ( field->flags().match( FieldFlag::allow_output) ) {
-            if (is_field_output_time(*field, step) && field_output_times_[field->name()].space_flags_[OutputTime::NODE_DATA]) {
-                field->field_output(stream_, OutputTime::NODE_DATA);
+    for(FieldListAccessor f_acc : this->fields_range()) {
+        if ( f_acc->flags().match( FieldFlag::allow_output) ) {
+            if (is_field_output_time( *(f_acc.field()), step) && field_output_times_[f_acc->name()].space_flags_[OutputTime::NODE_DATA]) {
+                f_acc->field_output(stream_, OutputTime::NODE_DATA);
             }
         }
     }
 
     // CORNER_DATA
-    for(FieldCommon * field : this->field_list) {
-        if ( field->flags().match( FieldFlag::allow_output) ) {
-            if (is_field_output_time(*field, step) && field_output_times_[field->name()].space_flags_[OutputTime::CORNER_DATA]) {
-                field->field_output(stream_, OutputTime::CORNER_DATA);
+    for(FieldListAccessor f_acc : this->fields_range()) {
+        if ( f_acc->flags().match( FieldFlag::allow_output) ) {
+            if (is_field_output_time( *(f_acc.field()), step) && field_output_times_[f_acc->name()].space_flags_[OutputTime::CORNER_DATA]) {
+                f_acc->field_output(stream_, OutputTime::CORNER_DATA);
             }
         }
     }
@@ -256,7 +263,7 @@ void EquationOutput::output(TimeStep step)
         FieldSet used_fields;
         for (FieldListAccessor f_acc : this->fields_range()) {
             if ( f_acc->flags().match( FieldFlag::allow_output) ) {
-                if (is_field_output_time( *(f_acc.field()), step) && field_output_times_[f_acc->input_name()].space_flags_[OutputTime::ELEM_DATA]) {
+                if (is_field_output_time( *(f_acc.field()), step) && field_output_times_[f_acc->name()].space_flags_[OutputTime::ELEM_DATA]) {
                     caches_map_elem_data[f_acc->name()] = f_acc->output_data_cache(OutputTime::ELEM_DATA, stream_);
                     used_fields += *(f_acc.field());
                 }
@@ -268,15 +275,19 @@ void EquationOutput::output(TimeStep step)
         output_elem_data_assembly_->assemble(this->dh_);
     }
 
-    // NATIVE_DATA and observe output
+    // NATIVE_DATA
+    for(FieldListAccessor f_acc : this->fields_range()) {
+        if ( f_acc->flags().match( FieldFlag::allow_output) ) {
+            if (is_field_output_time( *(f_acc.field()), step) && field_output_times_[f_acc->name()].space_flags_[OutputTime::NATIVE_DATA]) {
+                f_acc->field_output(stream_, OutputTime::NATIVE_DATA);
+            }
+        }
+    }
+
+    // observe output
     for(FieldCommon * field : this->field_list) {
         if ( field->flags().match( FieldFlag::allow_output) ) {
-            if (is_field_output_time(*field, step) && field_output_times_[field->name()].space_flags_[OutputTime::NATIVE_DATA]) {
-                field->field_output(stream_, OutputTime::NATIVE_DATA);
-            }
-
-            // observe output
-            if (observe_fields_.find(field->name()) != observe_fields_.end()) {
+            if (observe_fields_.find(field->input_name()) != observe_fields_.end()) {
                 field->observe_output( observe_ptr );
             }
         }

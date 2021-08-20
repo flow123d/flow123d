@@ -271,6 +271,12 @@ public:
     unsigned int n_comp() const
     { return shared_->comp_names_.size();}
 
+    inline std::string comp_name(unsigned int i_comp) const
+    {
+        ASSERT_LT_DBG(i_comp, shared_->comp_names_.size());
+        return shared_->comp_names_[i_comp];
+    }
+
     const Mesh * mesh() const
     { return shared_->mesh_;}
 
