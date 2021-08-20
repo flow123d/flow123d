@@ -68,7 +68,9 @@ IT::Record &EquationOutput::get_input_type() {
 
 
 EquationOutput::EquationOutput()
-: FieldSet(), output_elem_data_assembly_(nullptr) {}
+: FieldSet(), output_elem_data_assembly_(nullptr) {
+    this->add_coords_field();
+}
 
 EquationOutput::~EquationOutput() {
     if (output_elem_data_assembly_ != nullptr) delete output_elem_data_assembly_;
