@@ -53,8 +53,8 @@
           whoami
           cd docker-config/dockerfiles
           ls -lad
-          docker build --tag flow123d/base                  base
-          docker build --tag flow123d/base-build            base-build
+          docker build --tag flow123d/base-gnu                  base-gnu
+          docker build --tag flow123d/base-build-gnu            base-build-gnu
 
 # ---------------------------------------------------------------------------- #
 # ---------- START IMAGE ----------------------------------------------------- #
@@ -66,8 +66,8 @@
     builders:
       - shell: |
           rm -f /tmp/docker_test.cid
-          docker run --privileged -di --cidfile /tmp/docker_test.cid  -v /packages:/packages flow123d/base-build bash
-          #docker run --privileged -ti -v /packages:/packages flow123d/base-build bash
+          docker run --privileged -di --cidfile /tmp/docker_test.cid  -v /packages:/packages flow123d/base-build-gnu bash
+          #docker run --privileged -ti -v /packages:/packages flow123d/base-build-gnu bash
           docker_pid=`cat /tmp/docker_test.cid`
           echo "DOCKER_PID=${{docker_pid}}" >> prop.file
           # clone git

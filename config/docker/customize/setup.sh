@@ -2,8 +2,8 @@
 # author: Jan Hybs
 #
 # this is template file for following docker images
-#  - flow-libs-dev-dbg
-#  - flow-libs-dev-rel
+#  - flow-dev-gnu-dbg
+#  - flow-dev-gnu-rel
 #
 # purpose of this file is to create more easy to use
 # environment in docker images
