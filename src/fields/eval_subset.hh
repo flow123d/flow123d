@@ -437,9 +437,9 @@ public:
     }
 
     inline uint bulk_begin() const {
-        DebugOut().fmt("edge_begin: {} bdr_begin: {}",
-                eval_points_->subset_begin(dim_, edge_integral_->get_subset_idx()),
-                eval_points_->subset_begin(dim_-1, bulk_integral_->get_subset_idx()));
+      //  DebugOut().fmt("edge_begin: {} bdr_begin: {}",
+      //          eval_points_->subset_begin(dim_, edge_integral_->get_subset_idx()),
+      //          eval_points_->subset_begin(dim_-1, bulk_integral_->get_subset_idx()));
         return eval_points_->subset_begin(dim_-1, bulk_integral_->get_subset_idx());
     }
 
@@ -508,7 +508,7 @@ BoundaryPoint::BoundaryPoint(BulkPoint bulk, const BoundaryIntegral *bdr_integra
 inline BulkPoint BoundaryPoint::point_bdr(ElementAccessor<3> bdr_elm) const {
     unsigned int i_elm = elm_cache_map_->position_in_cache(bdr_elm.mesh_idx());
     unsigned int i_ep = integral_->bulk_begin() + local_point_idx_;
-    DebugOut() << "begin:" << integral_->bulk_begin() << "iloc " << local_point_idx_;
+    //DebugOut() << "begin:" << integral_->bulk_begin() << "iloc " << local_point_idx_;
     return BulkPoint(elm_cache_map_, i_elm, i_ep);
 }
 
