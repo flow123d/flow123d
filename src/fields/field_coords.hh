@@ -23,6 +23,9 @@
 #include "fields/eval_points.hh"                       // for EvalPoints
 #include "fem/mapping_p1.hh"
 #include "mesh/ref_element.hh"
+#include "mesh/point.hh"                               // for Point
+
+template <int spacedim> class ElementAccessor;
 
 namespace IT=Input::Type;
 
@@ -32,6 +35,7 @@ namespace IT=Input::Type;
  */
 class FieldCoords : public FieldCommon {
 public:
+	typedef typename Space<3>::Point Point;
 
     /// Constructor
     FieldCoords()
@@ -167,6 +171,22 @@ public:
                          FMT_UNUSED std::shared_ptr<ElementDataCacheBase> output_data_base) override
     {
     	ASSERT(false);
+    }
+
+    /// Returns one value of coordinates in one given point @p.
+    inline arma::vec3 const & value(const Point &p, FMT_UNUSED const ElementAccessor<3> &elm) const
+    {
+        return p;
+    }
+
+    inline void value_list(const Armor::array &point_list, const ElementAccessor<3> &elm,
+                       std::vector<arma::vec3> &value_list) const
+    {
+        ASSERT_DBG(point_list.n_rows() == 3 && point_list.n_cols() == 1).error("Invalid point size.\n");
+        ASSERT_EQ_DBG(point_list.size(), value_list.size()).error("Different size of point list and value list.\n");
+
+        for (uint i=0; i<point_list.size(); ++i)
+            value_list[i] = this->value(point_list.template vec<3>(i), elm);
     }
 
     /// Return item of @p value_cache_ given by i_cache_point.
