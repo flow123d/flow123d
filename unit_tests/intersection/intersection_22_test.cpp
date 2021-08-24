@@ -27,13 +27,16 @@ typedef std::pair<std::string, TestCaseResult>   TestCase;
 void fill_solution(std::vector< TestCase> &c)
 {
     c.clear();
+    
+    // TODO: seems that intersection coumputing is terribly slow
+    // This test for all meshes (up to about 1000 elements) runs nearly 20s.
 
     c.push_back({"cube_2f_comp_coarse", {1,0}});
     c.push_back({"cube_2f_comp_fine", {1,0}});
-    c.push_back({"cube_2f_incomp", {2,1}});
+    //c.push_back({"cube_2f_incomp", {2,1}});
     c.push_back({"cube_2f_incomp_SurfaceComp", {2,1}});
-    c.push_back({"cube_mult_compXincomp", {3,2}});
-    c.push_back({"cube_mult_compXincomp_triangle", {4,6.840032688952172}});
+    //c.push_back({"cube_mult_compXincomp", {3,2}});
+    //c.push_back({"cube_mult_compXincomp_triangle", {4,6.840032688952172}});
     c.push_back({"cube_mult_compXincomp_2triangles", {5,10.988973338817276}});
 }
 
@@ -54,7 +57,8 @@ void compute_intersection(Mesh *mesh, TestCaseResult result)
 
 
 TEST(intersection_prolongation_23d, all) {
-    
+    DebugOut() << "start";    
+  
     // directory with testing meshes
     FilePath::set_dirs(UNIT_TESTS_SRC_DIR,"",".");
     string dir_name = "intersection/2d-2d/";

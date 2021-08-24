@@ -409,7 +409,7 @@ void init_map(std::map<unsigned int, Item> &map,unsigned int size) {
  * O3       100     add_region_consistancy_check && using iterators  446
  */
 
-#define STEPS (100*1000*1000)
+#define STEPS (10*1000*1000)
 
 // RegionDB add_item(id, dim) overhead.
 TEST(RegionDB, speed_get_region_id) {

@@ -51,7 +51,7 @@ double IntersectionAux<2,3>::compute_measure()
     
     if(i_points_.size() > 2)
     for(unsigned int j = 2; j < i_points_.size();j++){
-        //xprintf(Msg, "volani %d %d\n",j, i_points_.size());
+        //DebugOut().fmt("volani {} {}\n", j, i_points_.size());
         subtotal += fabs(i_points_[0].local_bcoords_A()(1)*(i_points_[j-1].local_bcoords_A()(2) - i_points_[j].local_bcoords_A()(2)) +
                  i_points_[j-1].local_bcoords_A()(1)*(i_points_[j].local_bcoords_A()(2) - i_points_[0].local_bcoords_A()(2)) +
                  i_points_[j].local_bcoords_A()(1)*(i_points_[0].local_bcoords_A()(2) - i_points_[j-1].local_bcoords_A()(2)));

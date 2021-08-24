@@ -35,6 +35,5 @@ problem: !Coupling_Sequential
       file: ./test21.pvd
       format: !vtk
         variant: ascii
-      name: flow_output_stream
 #      times:
 #        - step: 0.25

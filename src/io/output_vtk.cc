@@ -25,7 +25,7 @@
 #include "input/factory.hh"
 #include "input/accessors_forward.hh"
 #include "system/file_path.hh"
-#include "tools/unit_si.hh"
+#include "tools/time_governor.hh"
 #include "la/distribution.hh"
 
 #include "config.h"
@@ -87,9 +87,11 @@ OutputVTK::~OutputVTK()
 
 
 
-void OutputVTK::init_from_input(const std::string &equation_name, const Input::Record &in_rec, std::string unit_str)
+void OutputVTK::init_from_input(const std::string &equation_name,
+                                const Input::Record &in_rec,
+                                const std::shared_ptr<TimeUnitConversion>& time_unit_conv)
 {
-	OutputTime::init_from_input(equation_name, in_rec, unit_str);
+	OutputTime::init_from_input(equation_name, in_rec, time_unit_conv);
 
     auto format_rec = (Input::Record)(input_record_.val<Input::AbstractRecord>("format"));
     variant_type_ = format_rec.val<VTKVariant>("variant");
@@ -160,7 +162,7 @@ int OutputVTK::write_data(void)
 
         /* Write dataset lines to the PVD file. */
         double corrected_time = (isfinite(this->registered_time_)?this->registered_time_:0);
-        corrected_time /= UnitSI().s().convert_unit_from(this->unit_string_);
+        corrected_time /= this->time_unit_converter->get_coef();
         if (parallel_) {
         	for (int i_rank=0; i_rank<n_proc_; ++i_rank) {
                 string file = this->form_vtu_filename_(main_output_basename_, current_step, i_rank);
@@ -483,12 +485,13 @@ void OutputVTK::write_vtk_native_data(void)
         file  << "Name=\"" << output_data->field_input_name() <<"\" ";
         file  << "format=\"" << formats[this->variant_type_] << "\" ";
         file  << "dof_handler_hash=\"" << output_data->dof_handler_hash() << "\" ";
-        file  << "n_dofs_per_element=\"" << output_data->n_comp() << "\"";
+        file  << "n_dofs_per_element=\"" << output_data->n_dofs_per_element() << "\"";
+        //file  << " fe_type=\"" << output_data->fe_type() << "\"";
 
         if ( this->variant_type_ == VTKVariant::VARIANT_ASCII ) {
         	// ascii output
         	file << ">" << endl;
-        	file << std::fixed << std::setprecision(10); // Set precision to max
+        	//file << std::fixed << std::setprecision(10); // Set precision to max
         	output_data->print_ascii_all(file);
         	file << "\n</DataArray>" << endl;
         } else {

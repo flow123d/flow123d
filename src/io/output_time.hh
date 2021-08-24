@@ -31,6 +31,7 @@ class Observe;
 class OutputMesh;
 class OutputMeshBase;
 class OutputMeshDiscontinuous;
+class TimeUnitConversion;
 namespace Input {
 	namespace Type {
 		class Abstract;
@@ -58,9 +59,12 @@ public:
      * \brief Constructor of OutputTime object. It opens base file for writing.
      *
      * \param[in] equation_name The name of equation, used for forming output file name.
-     * \param[in] in_rec The reference on the input record
+     * \param[in] in_rec The reference on the input record.
+     * \param[in] time_unit_conv Time unit convertor (converts time unit of the output data).
      */
-    virtual void init_from_input(const std::string &equation_name, const Input::Record &in_rec, std::string unit_str);
+    virtual void init_from_input(const std::string &equation_name,
+                                 const Input::Record &in_rec,
+                                 const std::shared_ptr<TimeUnitConversion>& time_unit_conv);
 
     /**
      * Common method to set scientific format and precision for output of floating point values to ASCII streams.
@@ -111,10 +115,28 @@ public:
     };
 
     /**
-     * Maps names of output fields required by user to their indices in
-     * output_data_vec_.
+     * Holds flags if different output types are switched on / switched off.
+     *
+     * Output types are in order: NODE_DATA=0, CORNER_DATA=1, ELEM_DATA=2, NATIVE_DATA=3
      */
-    typedef unsigned int DiscreteSpaceFlags;
+    typedef std::array<bool,4> DiscreteSpaceFlags;
+
+    /// Check if at least one of discrete space flag is set to true.
+    static bool discrete_flags_defined(DiscreteSpaceFlags &dsf) {
+        return dsf[0] | dsf[1] | dsf[2] | dsf[3];
+    }
+
+    /// Check if at least one of discrete space flag is set to true.
+    static DiscreteSpaceFlags empty_discrete_flags() {
+    	DiscreteSpaceFlags dsf = { {false, false, false, false} };
+        return dsf;
+    }
+
+    static void set_discrete_flag(DiscreteSpaceFlags &dsf, DiscreteSpace d_space) {
+        ASSERT_LT_DBG(d_space, N_DISCRETE_SPACES).error("Invalid discrete space.");
+        dsf[d_space] = true;
+    }
+
 
     /**
      * Map field name to its OutputData object.
@@ -136,7 +158,9 @@ public:
      * \brief This method tries to create new instance of OutputTime according
      * record in configuration file.
      */
-    static std::shared_ptr<OutputTime> create_output_stream(const std::string &equation_name, const Input::Record &in_rec, std::string unit_str);
+    static std::shared_ptr<OutputTime> create_output_stream(const std::string &equation_name,
+                                                            const Input::Record &in_rec,
+                                                            const std::shared_ptr<TimeUnitConversion>& time_unit_conv);
     
     /**
      * Write all data registered as a new time frame.
@@ -189,14 +213,17 @@ public:
      *  - compute discontinuous mesh if CORNER_DATA is calculated
      *  - find and return ElementDataCache of given field_name, create its if doesn't exist
      *
-     * @param field_name Quantity name of founding ElementDataCache
-     * @param space_type Output discrete space
-     * @param n_rows     Count of rows of data cache (used only if new cache is created)
-     * @param n_cols     Count of columns of data cache (used only if new cache is created)
-     * @param size       Size of data cache (used only if new cache is created and only for native data)
+     * @param field_name         Quantity name of founding ElementDataCache
+     * @param space_type         Output discrete space
+     * @param n_rows             Count of rows of data cache (used only if new cache is created)
+     * @param n_cols             Count of columns of data cache (used only if new cache is created)
+     * @param size               Size of data cache (used only if new cache is created and only for native data)
+     * @param fe_type            Finite element type (used only for native data)
+     * @param n_dofs_per_element Number of DOFs per element  (used only for native data)
      */
     template <typename T>
-    OutputDataPtr prepare_compute_data(std::string field_name, DiscreteSpace space_type, unsigned int n_rows, unsigned int n_cols);
+    OutputDataPtr prepare_compute_data(std::string field_name, DiscreteSpace space_type, unsigned int n_rows, unsigned int n_cols,
+            std::string fe_type = "", unsigned int n_dofs_per_element = 1);
 
     /**
      * Return if output is serial or parallel
@@ -321,8 +348,8 @@ protected:
     /// Parallel or serial version of file format (parallel has effect only for VTK)
     bool parallel_;
 
-    /// String representation of time unit.
-	string unit_string_;
+    /// Time unit conversion object from the equation time governor.
+    std::shared_ptr<TimeUnitConversion> time_unit_converter;
 
 	/// Vector of node coordinates. [spacedim x n_nodes]
     std::shared_ptr<ElementDataCache<double>> nodes_;

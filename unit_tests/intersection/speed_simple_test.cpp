@@ -32,8 +32,15 @@
 
 using namespace std;
 
-static const unsigned int profiler_loop = 100;
-static const unsigned int n_meshes = 10000;
+
+#ifdef FLOW123D_DEBUG
+// Use smaller number of meshes  in debug (slow) mode
+static const unsigned int n_meshes = 500;
+#else
+static const unsigned int n_meshes = 5000;
+
+#endif
+
 
 // results - number of cases with number of ips 0-7
 static unsigned int n_intersection[8] = {0, 0, 0, 0, 0, 0, 0, 0};
@@ -69,10 +76,12 @@ double unif(double a, double b){
     return (b-a)*unif() + a;
 }
 
-/// set initial seed for rand using time
-/// breaks the repeatibility of the test
+/// Set truly random intitial seed, but report it in order to reproduce.
 void seed_rand(){
     std::srand(std::time(0));
+    int seed = std::rand();
+    MessageOut() << " Random seed: " << seed;
+    std::srand(seed);
 }
 
 // print testing mesh and save it to file of given name
@@ -280,7 +289,7 @@ void test(double expected_time_factor)
     // create n random meshes triangle-tetrahedron in unit cube
     const unsigned int n = n_meshes;
     
-    //seed_rand();
+    seed_rand();
     vector<Mesh*> meshes;
     generate_meshes<dimA,dimB>(n,meshes);
     
@@ -290,10 +299,10 @@ void test(double expected_time_factor)
     for(unsigned int i=0; i<n; i++)
     {       
             //MessageOut() << "================================================ %d\n",i);
-            for(unsigned int loop = 0; loop < profiler_loop; loop++)
-            {
-                compute_intersection<dimA,dimB>(meshes[i]);
-            }
+
+
+            compute_intersection<dimA,dimB>(meshes[i]);
+
             //MessageOut() << "================================================\n";
     }
     MessageOut() << "======== FINISH ========\n";
@@ -315,17 +324,17 @@ void test(double expected_time_factor)
 
 
 TEST(speed_simple_12, all) {
-    test<1,2>(45);
+    test<1,2>(1.5);
 }
 
 TEST(speed_simple_22, all) {
-    test<2,2>(60);
+    test<2,2>(1.7);
 }
 
 TEST(speed_simple_13, all) {
-    test<1,3>(60);
+    test<1,3>(1.7);
 }
 
 TEST(speed_simple_23, all) {
-    test<2,3>(90);
+    test<2,3>(2);
 }

@@ -43,8 +43,14 @@ FLOW123D_FORCE_LINK_IN_PARENT(field_fe)
 
 using namespace std;
 
-
-static const uint default_n_loop  = 20000;
+// Use less number of loops in debug (slow) mode
+#ifdef FLOW123D_DEBUG
+// Just to check that it works.
+static const uint default_n_loop  = 50;
+#else
+// Tests run with unprecise measurement, about 25ms fastest reference case.
+static const uint default_n_loop  = 500;
+#endif
 static const uint list_size = 20;
 
 

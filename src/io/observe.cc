@@ -24,7 +24,7 @@
 #include "io/observe.hh"
 #include "io/element_data_cache.hh"
 #include "fem/mapping_p1.hh"
-#include "tools/unit_si.hh"
+#include "tools/time_governor.hh"
 
 
 namespace IT = Input::Type;
@@ -337,9 +337,11 @@ ObservePointData ObservePoint::point_projection(unsigned int i_elm, ElementAcces
 const unsigned int Observe::max_observe_value_time = 1000;
 
 
-Observe::Observe(string observe_name, Mesh &mesh, Input::Array in_array, unsigned int precision, std::string unit_str)
+Observe::Observe(string observe_name, Mesh &mesh, Input::Array in_array,
+                 unsigned int precision, const std::shared_ptr<TimeUnitConversion>& time_unit_conv)
 : observe_name_(observe_name),
   precision_(precision),
+  time_unit_conversion_(time_unit_conv),
   point_ds_(nullptr),
   observe_time_idx_(0)
 {
@@ -370,9 +372,6 @@ Observe::Observe(string observe_name, Mesh &mesh, Input::Array in_array, unsigne
     auto last = std::unique(observed_element_indices_.begin(), observed_element_indices_.end());
     observed_element_indices_.erase(last, observed_element_indices_.end());
 
-    time_unit_str_ = unit_str;
-    time_unit_seconds_ = UnitSI().s().convert_unit_from(unit_str);
-
     if (points_.size() == 0) return;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank_);
     if (rank_==0) {
@@ -400,10 +399,11 @@ template <typename T>
 ElementDataCache<T> & Observe::prepare_compute_data(std::string field_name, double field_time, unsigned int n_rows,
 		unsigned int n_cols)
 {
+    double time_unit_seconds = time_unit_conversion_->get_coef();
     if ( std::isnan(observe_values_time_[observe_time_idx_]) )
-        observe_values_time_[observe_time_idx_] = field_time / time_unit_seconds_;
+        observe_values_time_[observe_time_idx_] = field_time / time_unit_seconds;
     else
-        ASSERT(fabs(field_time / time_unit_seconds_ - observe_values_time_[observe_time_idx_]) < 2*numeric_limits<double>::epsilon())
+        ASSERT(fabs(field_time / time_unit_seconds - observe_values_time_[observe_time_idx_]) < 2*numeric_limits<double>::epsilon())
               (field_time)(observe_values_time_[observe_time_idx_]);
 
     OutputDataFieldMap::iterator it=observe_field_values_.find(field_name);
@@ -428,8 +428,8 @@ OBSERVE_PREPARE_COMPUTE_DATA(double);
 void Observe::output_header() {
     unsigned int indent = 2;
     observe_file_ << "# Observation file: " << observe_name_ << endl;
-    observe_file_ << "time_unit: " << time_unit_str_ << endl;
-    observe_file_ << "time_unit_in_seconds: " << time_unit_seconds_ << endl;
+    observe_file_ << "time_unit: " << time_unit_conversion_->get_unit_string() << endl;
+    observe_file_ << "time_unit_in_seconds: " << time_unit_conversion_->get_coef() << endl;
     observe_file_ << "points:" << endl;
     for(auto &point : points_)
         point.output(observe_file_, indent, precision_);

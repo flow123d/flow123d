@@ -1,3 +1,9 @@
+# Test goal: Sorption interpolation comparison.
+# Author: -
+# Source for reference:
+#   - sorption with sources - no flow, no transport, only source term and sorptions.
+#   - comparison between direct sorption computation (substance As*) and interpolation (substances Bs*)
+#   - both give the same results.
 flow123d_version: 3.1.0
 problem: !Coupling_Sequential
   description: "Sorption with sources - no flow, no transport, only source term and sorptions. \n\
@@ -8,12 +14,7 @@ problem: !Coupling_Sequential
     regions:
       - !Union
         name: .boundary
-        regions:
-          - .back
-          - .front
-          - .left
-          - .up
-          - .down
+        regions: [.back, .front, .left, .up, .down]
   flow_equation: !Flow_Darcy_MH
     nonlinear_solver:
       linear_solver: !Petsc

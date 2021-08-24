@@ -41,6 +41,7 @@
 #include "input/type_base.hh"                          // for Array
 #include "input/type_generic.hh"                       // for Instance
 #include "input/type_record.hh"                        // for Record::ExcRec...
+#include "input/input_exception.hh"                    // for Input::Exception
 #include "io/output_time.hh"                           // for OutputTime
 #include "mesh/elements.h"                             // for Element::dim
 #include "mesh/region.hh"                              // for RegionDB::ExcU...
@@ -191,7 +192,7 @@ public:
     /**
      * Returns reference to input type of particular field instance, this is static member @p input_type of the corresponding FieldBase class
      * (i.e. with same template parameters). However, for fields returning "Enum" we have to create whole unique Input::Type hierarchy using following method
-     * @p meka_input_tree.
+     * @p make_input_tree.
      * every instance since every such field use different Selection for initialization, even if all returns just unsigned int.
      */
     IT::Instance get_input_type() override;
@@ -260,7 +261,7 @@ public:
     /**
      * Implementation of FieldCommonBase::output().
      */
-    void field_output(std::shared_ptr<OutputTime> stream) override;
+    void field_output(std::shared_ptr<OutputTime> stream, OutputTime::DiscreteSpaceFlags type) override;
 
     /**
      * Implementation of FieldCommonBase::observe_output().
@@ -334,7 +335,7 @@ public:
      * Interpolate given field into output discrete @p space_type and store the values
      * into storage of output time @p stream for postponed output.
      */
-    void compute_field_data(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream);
+    void compute_field_data(OutputTime::DiscreteSpaceFlags space_type, std::shared_ptr<OutputTime> stream);
 
     /// Implements FieldCommon::cache_allocate
     void cache_reallocate(const ElementCacheMap &cache_map, unsigned int region_idx) const override;

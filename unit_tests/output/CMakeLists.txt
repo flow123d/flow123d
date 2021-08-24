@@ -24,6 +24,7 @@ define_mpi_test( reader_cache 1 )
 
 define_mpi_test( output 1 )
 define_mpi_test( output_vtk 1)
+define_mpi_test( output_msh 1)
 define_mpi_test( output_mesh 1)
 define_mpi_test( observe 1)
 define_mpi_test( observe 2)

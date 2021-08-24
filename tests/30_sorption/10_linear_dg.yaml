@@ -1,6 +1,12 @@
+# Test goal: TOS combining DG and sorption.
+# Author: Jan Stebel / Pavel Exner
+# Source for reference:
+#   - qualitative, check in Paraview
+#   - simple convective transport from right to left
+#   - same as test 03, but using DG instead of FV
 flow123d_version: 3.1.0
 problem: !Coupling_Sequential
-  description: Adsorption all
+  description: TOS combining DG and sorption.
   mesh:
     mesh_file: ../00_mesh/rectangle_5x1.msh
   flow_equation: !Flow_Darcy_MH
@@ -53,7 +59,7 @@ problem: !Coupling_Sequential
           rock_density: 1.0
           sorption_type: linear
           distribution_coefficient: 0.6
-          isotherm_other: 0.4
+          isotherm_other: 0
       output:
         fields: []
     balance:

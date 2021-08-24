@@ -20,6 +20,11 @@
 #define	EXPECT_ASSERT_DEATH(statement, pattern)
 #endif
 
+/**
+ * Macro to test that a profiler frame takes les then 'time' seconds.
+ * - use profiler calibration to get roughly comparable results on machines of different performance.
+ * - ASSERT only active for benchmark tests
+ */
 #ifdef FLOW123D_BENCHMARK_ASSERTS
 #define EXPECT_TIMER_LE(tag, time) \
     LogOut() << "EXPECT_TIMER: [" << tag << "] measured: " \

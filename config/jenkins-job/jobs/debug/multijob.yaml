@@ -77,7 +77,7 @@ builders:
   # ---------- STOP IMAGE ------------------------------------------------ #
   - multijob:
       name: "Stop image"
-      condition: SUCCESSFUL
+      condition: COMPLETED
       projects:
         - name: "Flow123d-{platform}-debug-stop-image"
           current-parameters: true
