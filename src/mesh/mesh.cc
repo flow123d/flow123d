@@ -61,6 +61,15 @@
 
 namespace IT = Input::Type;
 
+
+MeshBase::~MeshBase()
+{
+    if (row_4_el != nullptr) delete[] row_4_el;
+    if (el_4_loc != nullptr) delete[] el_4_loc;
+    if (el_ds != nullptr) delete el_ds;
+}
+
+
 const Input::Type::Selection & Mesh::get_input_intersection_variant() {
     return Input::Type::Selection("Types of search algorithm for finding intersection candidates.")
         .add_value(Mesh::BIHsearch, "BIHsearch",
@@ -104,9 +113,6 @@ Mesh::Mesh()
 : optimize_memory_locality(true),
   comm_(MPI_COMM_WORLD),
   //nodes_(3, 1, 0),
-  row_4_el(nullptr),
-  el_4_loc(nullptr),
-  el_ds(nullptr),
   node_4_loc_(nullptr),
   node_ds_(nullptr),  
   bc_mesh_(nullptr),
@@ -120,9 +126,6 @@ Mesh::Mesh(Input::Record in_record, MPI_Comm com)
 : optimize_memory_locality(true),
   in_record_(in_record),
   comm_(com),
-  row_4_el(nullptr),
-  el_4_loc(nullptr),
-  el_ds(nullptr),
   node_4_loc_(nullptr),
   node_ds_(nullptr),
   bc_mesh_(new BCMesh(this)),
@@ -204,9 +207,6 @@ Mesh::~Mesh() {
         if (ele->neigh_vb) delete[] ele->neigh_vb;
     }
 
-    if (row_4_el != nullptr) delete[] row_4_el;
-    if (el_4_loc != nullptr) delete[] el_4_loc;
-    if (el_ds != nullptr) delete el_ds;
     if (node_4_loc_ != nullptr) delete[] node_4_loc_;
     if (node_ds_ != nullptr) delete node_ds_;
     if (bc_mesh_ != nullptr) delete bc_mesh_;
@@ -397,6 +397,7 @@ void Mesh::setup_topology() {
     for (auto ele : this->elements_range())
         id_4_old[i++] = ele.idx();
     part_->id_maps(n_elements(), id_4_old, el_ds, el_4_loc, row_4_el);
+    bc_mesh_->init_distribution();
 
     delete[] id_4_old;
     

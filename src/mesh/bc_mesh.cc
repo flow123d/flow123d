@@ -41,6 +41,28 @@ BCMesh::~BCMesh()
 	if (local_part_!=nullptr) delete local_part_;
 }
 
+void BCMesh::init_distribution()
+{
+	vector<LongIdx> loc_el_ids;
+
+	// loop local parent elements and their sides to find boundary elements
+	for (unsigned int iel = 0; iel<parent_mesh_->get_el_ds()->lsize(); iel++)
+	{
+		auto parent_el = parent_mesh_->element_accessor(parent_mesh_->get_el_4_loc()[iel]);
+		for (unsigned int sid=0; sid<parent_el->n_sides(); sid++)
+		{
+			if (parent_el.side(sid)->is_boundary())
+			{
+				loc_el_ids.push_back(parent_el.side(sid)->cond().element_accessor().idx());
+			}
+		}
+	}
+	this->el_ds = new Distribution(loc_el_ids.size(), PETSC_COMM_WORLD);
+
+	this->el_4_loc = new LongIdx[loc_el_ids.size()];
+	for (unsigned int i=0; i<loc_el_ids.size(); i++) this->el_4_loc[i] = loc_el_ids[i];
+}
+
 
 Range<ElementAccessor<3>> BCMesh::elements_range() const
 {

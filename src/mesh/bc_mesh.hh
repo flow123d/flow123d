@@ -72,12 +72,13 @@ public:
 
 private:
 
+    /// setup distribution of elements and related vectors
+    void init_distribution();
+
     // unused methods (should not be used)
     unsigned int n_edges() const override NOT_IMPLEMENTED;
     unsigned int n_vb_neighbours() const override NOT_IMPLEMENTED;
-    LongIdx *get_el_4_loc() const override NOT_IMPLEMENTED;
     LongIdx *get_row_4_el() const override NOT_IMPLEMENTED;
-    Distribution *get_el_ds() const override NOT_IMPLEMENTED;
     NodeAccessor<3> node(unsigned int) const override;
     Edge edge(unsigned int) const override;
     Boundary boundary(unsigned int) const override;

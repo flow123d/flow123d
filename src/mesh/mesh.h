@@ -76,10 +76,13 @@ class MeshBase {
 public:
 
     MeshBase()
-    :  nodes_(3, 1, 0)
+    :  nodes_(3, 1, 0),
+      row_4_el(nullptr),
+      el_4_loc(nullptr),
+      el_ds(nullptr)
     {}
 
-    virtual ~MeshBase() {};
+    virtual ~MeshBase();
 
     virtual unsigned int n_edges() const = 0;
     
@@ -89,12 +92,17 @@ public:
     virtual unsigned int n_nodes() const = 0;
     virtual unsigned int n_vb_neighbours() const = 0;
 
-    virtual LongIdx *get_el_4_loc() const = 0;
-    virtual LongIdx *get_row_4_el() const = 0;
-    virtual Distribution *get_el_ds() const = 0;
+
+    inline Distribution *get_el_ds() const
+    { return el_ds; }
+
+    inline LongIdx *get_el_4_loc() const
+    { return el_4_loc; }
 
     const Element &element(unsigned idx) const
     { return element_vec_[idx]; }
+
+    virtual LongIdx *get_row_4_el() const = 0;
 
     virtual NodeAccessor<3> node(unsigned int idx) const = 0;
     virtual Edge edge(uint edge_idx) const = 0;
@@ -198,6 +206,14 @@ protected:
     /// Vector of element permutations of optimized mesh (see class MeshOptimizer)
     std::vector<unsigned int> elem_permutation_;
 
+
+    /// Index set assigning to global element index the local index used in parallel vectors.
+    LongIdx *row_4_el;
+	/// Index set assigning to local element index its global index.
+    LongIdx *el_4_loc;
+	/// Parallel distribution of elements.
+	Distribution *el_ds;
+
 };
 
 //=============================================================================
@@ -295,14 +311,8 @@ public:
 
     const LongIdx *get_local_part() override;
 
-    Distribution *get_el_ds() const override
-    { return el_ds; }
-
     LongIdx *get_row_4_el() const override
     { return row_4_el; }
-
-    LongIdx *get_el_4_loc() const override
-    { return el_4_loc; }
 
     Distribution *get_node_ds() const
     { return node_ds_; }
@@ -668,12 +678,6 @@ private:
     /// Fill array node_4_loc_ and create object node_ds_ according to element distribution.
     void distribute_nodes();
 
-    /// Index set assigning to global element index the local index used in parallel vectors.
-    LongIdx *row_4_el;
-	/// Index set assigning to local element index its global index.
-    LongIdx *el_4_loc;
-	/// Parallel distribution of elements.
-	Distribution *el_ds;
 	/// Index set assigning to local node index its global index.
     LongIdx *node_4_loc_;
     /// Parallel distribution of nodes. Depends on elements distribution.
