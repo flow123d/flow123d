@@ -62,7 +62,7 @@ public:
     }
 
     void set_mesh(const Mesh &mesh) override {
-        this->mesh_ = &mesh;
+        shared_->mesh_ = &mesh;
     }
 
     bool is_constant(FMT_UNUSED Region reg) override {
@@ -168,7 +168,6 @@ private:
     /// Surface depth object calculate distance from surface.
     std::shared_ptr<SurfaceDepth> surface_depth_;
 
-    const Mesh *mesh_;                  ///< Pointer to the mesh.
     FieldCoords * field_coords_;        ///< Pointer to coordinates field.
 };
 

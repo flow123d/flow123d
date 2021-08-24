@@ -60,7 +60,7 @@ public:
     }
 
     void set_mesh(const Mesh &mesh) override {
-        this->mesh_ = &mesh;
+        shared_->mesh_ = &mesh;
     }
 
     bool is_constant(FMT_UNUSED Region reg) override {
@@ -112,7 +112,7 @@ public:
         for (unsigned int i_data = reg_chunk_begin; i_data < reg_chunk_end; ++i_data) { // i_eval_point_data
             unsigned int elm_idx = cache_map.eval_point_data(i_data).i_element_;
             if (elm_idx != last_element_idx) {
-                elm = mesh_->element_accessor( elm_idx );
+                elm = shared_->mesh_->element_accessor( elm_idx );
                 dim = elm.dim();
                 last_element_idx = elm_idx;
             }
@@ -169,6 +169,12 @@ public:
     	ASSERT(false);
     }
 
+    /// Return item of @p value_cache_ given by i_cache_point.
+    arma::vec3 operator[] (unsigned int i_cache_point) const
+    {
+        return this->value_cache_.template vec<3>(i_cache_point);
+    }
+
 private:
     /**
      * Field value data cache
@@ -176,8 +182,6 @@ private:
      * See implementation of Field<spacedim, Value>::value_cache_
      */
     mutable FieldValueCache<double> value_cache_;
-
-    const Mesh *mesh_;                 ///< Pointer to the mesh.
 };
 
 #endif /* FIELD_COORDS_HH_ */
