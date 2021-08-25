@@ -283,17 +283,6 @@ const LongIdx *Mesh::get_local_part() {
 
 
 
-/**
- * - remove unconnected nodes
- * - permute element nodes
- * - check element quality
- */
-//void Mesh::check_and_normalize() {
-
-//}
-
-
-
 
 void Mesh::modify_element_ids(const RegionDB::MapElementIDToRegionID &map) {
 
@@ -418,15 +407,12 @@ void Mesh::setup_topology() {
 
     START_TIMER("MESH - setup topology");
 
-    //check_and_normalize();
-
     canonical_faces();
     check_mesh_on_read();
 
 
     make_neighbours_and_edges();
     element_to_neigh_vb();
-    //make_edge_permutations();
     count_side_types();
     
     tree = new DuplicateNodes(this);
