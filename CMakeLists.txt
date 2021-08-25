@@ -202,6 +202,7 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
     #
 else ()
     message(STATUS "Your C++ compiler does not support C++11. Some features may be disabled.")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wno-uninitialized -Wno-inconsistent-missing-override") 
 endif()
 
 # set encoding of VTU output files to Little Endian, VTU files can be encoded in Little Endian or Big Endian format  
