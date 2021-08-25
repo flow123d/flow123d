@@ -148,10 +148,16 @@ def get_attributes_chain (obj, attrs):
 def merge (root, list1, list2, attr, merge_function):
 	""" Groups given lists based on group attributes. Process of merging items with same key is handled by
 		passed merge_function. Returns list1. """
+	
+	item1_attr_chain_lookup = {}
+	for item1 in list1:
+		item1_attr_chain_lookup[item1] = get_attributes_chain(item1, attr)
+	
 	for item2 in list2:
 		found = False
+		item2_attr_chain = get_attributes_chain(item2, attr)
 		for item1 in list1:
-			if get_attributes_chain(item1, attr) == get_attributes_chain(item2, attr):
+			if item1_attr_chain_lookup[item1] == item2_attr_chain:
 				item1 = merge_function (item1, item2)
 				found = True
 				break
