@@ -288,7 +288,7 @@ void EquationOutput::output(TimeStep step)
     // observe output
     for(FieldCommon * field : this->field_list) {
         if ( field->flags().match( FieldFlag::allow_output) ) {
-            if (observe_fields_.find(field->input_name()) != observe_fields_.end()) {
+            if (observe_fields_.find(field->name()) != observe_fields_.end()) {
                 field->observe_output( observe_ptr );
             }
         }
