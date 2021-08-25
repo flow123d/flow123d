@@ -496,8 +496,7 @@ public:
     virtual OutputTime::OutputDataPtr output_data_cache(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream) const =0;
 
     /// Fill value to ElementDataCache on given BulkPoint.
-    virtual void fill_data_value(BulkPoint &p, unsigned int elm_idx, std::shared_ptr<OutputTime> stream,
-            std::shared_ptr<ElementDataCacheBase> output_data_base) =0;
+    virtual void fill_data_value(BulkPoint &p, unsigned int value_idx, std::shared_ptr<ElementDataCacheBase> output_data_base) =0;
 
 
     /**

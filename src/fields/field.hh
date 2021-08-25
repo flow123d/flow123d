@@ -361,8 +361,7 @@ public:
     std::vector<const FieldCommon *> set_dependency(FieldSet &field_set, unsigned int i_reg) const override;
 
     /// Implements FieldCommon::fill_data_value
-    void fill_data_value(BulkPoint &p, unsigned int elm_idx, std::shared_ptr<OutputTime> stream,
-            std::shared_ptr<ElementDataCacheBase> output_data_base) override;
+    void fill_data_value(BulkPoint &p, unsigned int value_idx, std::shared_ptr<ElementDataCacheBase> output_data_base) override;
 
 protected:
 

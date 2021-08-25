@@ -75,9 +75,10 @@ public:
         ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
 
         auto p = *( this->bulk_points(element_patch_idx).begin() ); // evaluation point (in element center)
+        unsigned int val_idx = stream_->get_output_mesh_ptr()->get_loc_elem_idx(cell.elm_idx());
         for (FieldListAccessor f_acc : used_fields_.fields_range()) {
             typename OutputTime::OutputDataPtr output_data_base = used_caches_[f_acc->name()];
-            f_acc->fill_data_value(p, cell.elm_idx(), stream_, output_data_base);
+            f_acc->fill_data_value(p, val_idx, output_data_base);
         }
     }
 

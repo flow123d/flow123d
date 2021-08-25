@@ -151,7 +151,7 @@ public:
     }
 
     /// Forbidden method in this class.
-    void fill_data_value(FMT_UNUSED BulkPoint &p, FMT_UNUSED unsigned int elm_idx, FMT_UNUSED std::shared_ptr<OutputTime> stream,
+    void fill_data_value(FMT_UNUSED BulkPoint &p, FMT_UNUSED unsigned int value_idx,
                          FMT_UNUSED std::shared_ptr<ElementDataCacheBase> output_data_base) override
     {
     	ASSERT(false);
