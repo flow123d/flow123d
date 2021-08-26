@@ -33,6 +33,7 @@ namespace Input {
 	}
 }
 template<unsigned int dim> class AssemblyOutputElemData;
+template<unsigned int dim> class AssemblyOutputNodeData;
 template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
 
@@ -152,9 +153,12 @@ private:
 
     /// Objects for distribution of dofs.
     std::shared_ptr<DOFHandlerMultiDim> dh_;
+    std::shared_ptr<DOFHandlerMultiDim> dh_node_;
 
     /// general assembly objects, hold assembly objects of appropriate dimension
     GenericAssembly< AssemblyOutputElemData > * output_elem_data_assembly_;
+    GenericAssembly< AssemblyOutputNodeData > * output_node_data_assembly_;
+    GenericAssembly< AssemblyOutputNodeData > * output_corner_data_assembly_;
 
 };
 

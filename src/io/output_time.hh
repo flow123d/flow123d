@@ -251,6 +251,11 @@ public:
     	return registered_time_;
     }
 
+    /// Getter to offsets cache
+    inline std::shared_ptr<ElementDataCache<unsigned int>> offsets() const {
+        return offsets_;
+    }
+
 
 protected:
     

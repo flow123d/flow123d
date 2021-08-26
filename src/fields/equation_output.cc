@@ -68,12 +68,14 @@ IT::Record &EquationOutput::get_input_type() {
 
 
 EquationOutput::EquationOutput()
-: FieldSet(), output_elem_data_assembly_(nullptr) {
+: FieldSet(), output_elem_data_assembly_(nullptr), output_node_data_assembly_(nullptr), output_corner_data_assembly_(nullptr) {
     this->add_coords_field();
 }
 
 EquationOutput::~EquationOutput() {
     if (output_elem_data_assembly_ != nullptr) delete output_elem_data_assembly_;
+    if (output_node_data_assembly_ != nullptr) delete output_node_data_assembly_;
+    if (output_corner_data_assembly_ != nullptr) delete output_corner_data_assembly_;
 }
 
 
@@ -129,12 +131,23 @@ void EquationOutput::initialize(std::shared_ptr<OutputTime> stream, Mesh *mesh, 
     equation_fixed_type_ = tg.equation_fixed_mark_type();
     read_from_input(in_rec, tg);
 
-    MixedPtr<FE_P_disc> fe_p_disc(0);
-    dh_ = make_shared<DOFHandlerMultiDim>(*mesh_);
-	std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh_, fe_p_disc);
-	dh_->distribute_dofs(ds);
+    { // DOF handler of element data output
+        MixedPtr<FE_P_disc> fe_p_disc(0);
+        dh_ = make_shared<DOFHandlerMultiDim>(*mesh_);
+	    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh_, fe_p_disc);
+	    dh_->distribute_dofs(ds);
+    }
+
+    { // DOF handler of node / corner data output
+        MixedPtr<FE_P_disc> fe_p_disc(1);
+        dh_node_ = make_shared<DOFHandlerMultiDim>(*mesh_);
+	    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh_, fe_p_disc);
+	    dh_node_->distribute_dofs(ds);
+    }
 
 	output_elem_data_assembly_ = new GenericAssembly< AssemblyOutputElemData >(this, this);
+	output_node_data_assembly_ = new GenericAssembly< AssemblyOutputNodeData >(this, this);
+	output_corner_data_assembly_ = new GenericAssembly< AssemblyOutputNodeData >(this, this);
 }
 
 
