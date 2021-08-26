@@ -118,30 +118,10 @@ NodeAccessor<3> BCMesh::node(unsigned int) const
 	return NodeAccessor<3>();
 }
 
-Edge BCMesh::edge(unsigned int) const
-{
-	ASSERT( false );
-	return Edge();
-}
-
 Boundary BCMesh::boundary(unsigned int) const
 {
 	ASSERT( false );
 	return Boundary();
-}
-
-const Neighbour &BCMesh::vb_neighbour(unsigned int) const
-{
-	ASSERT( false );
-	static Neighbour n;
-	return n;
-}
-
-Range<Edge> BCMesh::edge_range() const
-{
-	ASSERT( false );
-	auto it = make_iter<Edge>( Edge(nullptr, 0) );
-	return Range<Edge>(it, it);
 }
 
 void BCMesh::check_element_size(unsigned int) const

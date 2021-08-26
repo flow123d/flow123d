@@ -61,12 +61,37 @@
 
 namespace IT = Input::Type;
 
+const unsigned int MeshBase::undef_idx;
+
+MeshBase::MeshBase()
+:  nodes_(3, 1, 0),
+    row_4_el(nullptr),
+    el_4_loc(nullptr),
+    el_ds(nullptr)
+{}
 
 MeshBase::~MeshBase()
 {
     if (row_4_el != nullptr) delete[] row_4_el;
     if (el_4_loc != nullptr) delete[] el_4_loc;
     if (el_ds != nullptr) delete el_ds;
+}
+
+Range<Edge> MeshBase::edge_range() const {
+	auto bgn_it = make_iter<Edge>( Edge(this, 0) );
+	auto end_it = make_iter<Edge>( Edge(this, edges.size()) );
+    return Range<Edge>(bgn_it, end_it);
+}
+
+Edge MeshBase::edge(uint edge_idx) const
+{
+    ASSERT_LT_DBG(edge_idx, edges.size());
+    return Edge(this, edge_idx);
+}
+
+unsigned int MeshBase::n_vb_neighbours() const
+{ 
+    return vb_neighbours_.size();
 }
 
 
@@ -106,8 +131,6 @@ const IT::Record & Mesh::get_input_type() {
         		     "This will speed up the calculations in assembations.")
         .close();
 }
-
-const unsigned int Mesh::undef_idx;
 
 Mesh::Mesh()
 : optimize_memory_locality(true),
@@ -223,10 +246,6 @@ unsigned int Mesh::n_sides() const
     return n_sides_;
 }
 
-unsigned int Mesh::n_vb_neighbours() const {
-     return vb_neighbours_.size();
- }
-
 
 unsigned int Mesh::n_corners() {
     unsigned int li, count = 0;
@@ -236,12 +255,6 @@ unsigned int Mesh::n_corners() {
         }
     }
     return count;
-}
-
-Edge Mesh::edge(uint edge_idx) const
-{
-    ASSERT_LT_DBG(edge_idx, edges.size());
-    return Edge(this, edge_idx);
 }
 
 Boundary Mesh::boundary(uint bc_idx) const
@@ -1313,12 +1326,6 @@ Range<NodeAccessor<3>> Mesh::node_range() const {
     return Range<NodeAccessor<3>>(bgn_it, end_it);
 }
 
-Range<Edge> Mesh::edge_range() const {
-	auto bgn_it = make_iter<Edge>( Edge(this, 0) );
-	auto end_it = make_iter<Edge>( Edge(this, edges.size()) );
-    return Range<Edge>(bgn_it, end_it);
-}
-
 inline void Mesh::check_element_size(unsigned int elem_idx) const
 {
     ASSERT(elem_idx < element_vec_.size())(elem_idx)(element_vec_.size()).error("Index of element is out of bound of element vector!");
@@ -1515,8 +1522,9 @@ inline int MeshBase::elem_index(int elem_id) const
 }
 
 
-const Neighbour &Mesh::vb_neighbour(unsigned int nb) const
+const Neighbour &MeshBase::vb_neighbour(unsigned int nb) const
 { 
+    // ASSERT(nb < vb_neighbours_.size());
     return vb_neighbours_[nb];
 }
 

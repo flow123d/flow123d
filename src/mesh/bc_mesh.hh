@@ -76,14 +76,9 @@ private:
     void init_distribution();
 
     // unused methods (should not be used)
-    unsigned int n_edges() const override NOT_IMPLEMENTED;
-    unsigned int n_vb_neighbours() const override NOT_IMPLEMENTED;
     LongIdx *get_row_4_el() const override NOT_IMPLEMENTED;
     NodeAccessor<3> node(unsigned int) const override;
-    Edge edge(unsigned int) const override;
     Boundary boundary(unsigned int) const override;
-    const Neighbour &vb_neighbour(unsigned int) const override;
-    Range<Edge> edge_range() const override;
     void check_element_size(unsigned int) const override;
     const std::vector<unsigned int> &get_side_nodes(unsigned int dim, unsigned int side) const override;
     const RegionDB &region_db() const override;

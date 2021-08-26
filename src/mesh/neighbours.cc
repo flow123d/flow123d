@@ -27,7 +27,7 @@ Neighbour::Neighbour()
 : edge_idx_(-1)
 {}
 
-void Neighbour::reinit(Mesh *mesh, unsigned int elem_idx, unsigned int edge_idx)
+void Neighbour::reinit(MeshBase *mesh, unsigned int elem_idx, unsigned int edge_idx)
 {
 	mesh_=mesh;
 	elem_idx_=elem_idx;

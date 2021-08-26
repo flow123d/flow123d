@@ -119,7 +119,7 @@ class Neighbour
 public:
     Neighbour();
 
-    void reinit(Mesh *mesh, unsigned int elem_idx, unsigned int edge_idx);
+    void reinit(MeshBase *mesh, unsigned int elem_idx, unsigned int edge_idx);
 
     // side of the edge in higher dim. mesh
     inline SideIter side() const;
@@ -133,10 +133,11 @@ public:
     inline ElementAccessor<3> element() const;
 
 private:
-    Mesh * mesh_;            ///< Pointer to Mesh to which belonged
+    MeshBase * mesh_;            ///< Pointer to Mesh to which belonged
     unsigned int elem_idx_;  ///< Index of element in Mesh::element_vec_
     unsigned int edge_idx_;  ///< Index of Edge in Mesh
 
+    friend class MeshBase;
     friend class Mesh;
 };
 

@@ -173,10 +173,10 @@ const SideIter ElementAccessor<spacedim>::side(const unsigned int loc_index) con
 
 inline Edge::Edge()
 : mesh_(nullptr),
-  edge_idx_(Mesh::undef_idx)
+  edge_idx_(MeshBase::undef_idx)
 {}
 
-inline Edge::Edge(const Mesh *mesh, unsigned int edge_idx)
+inline Edge::Edge(const MeshBase *mesh, unsigned int edge_idx)
 : mesh_(mesh),
   edge_idx_(edge_idx)
 {}

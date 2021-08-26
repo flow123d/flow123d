@@ -75,23 +75,19 @@ public:
 class MeshBase {
 public:
 
-    MeshBase()
-    :  nodes_(3, 1, 0),
-      row_4_el(nullptr),
-      el_4_loc(nullptr),
-      el_ds(nullptr)
-    {}
+    static const unsigned int undef_idx=-1;
+
+    MeshBase();
 
     virtual ~MeshBase();
 
-    virtual unsigned int n_edges() const = 0;
-    
-    unsigned int n_elements() const
+    inline unsigned int n_elements() const
     { return element_vec_.size(); }
 
-    virtual unsigned int n_nodes() const = 0;
-    virtual unsigned int n_vb_neighbours() const = 0;
+    inline unsigned int n_edges() const
+    { return edges.size(); }
 
+    unsigned int n_vb_neighbours() const;
 
     inline Distribution *get_el_ds() const
     { return el_ds; }
@@ -102,21 +98,30 @@ public:
     const Element &element(unsigned idx) const
     { return element_vec_[idx]; }
 
-    virtual LongIdx *get_row_4_el() const = 0;
+    /// Return edge with given index.
+    Edge edge(uint edge_idx) const;
 
-    virtual NodeAccessor<3> node(unsigned int idx) const = 0;
-    virtual Edge edge(uint edge_idx) const = 0;
-    virtual Boundary boundary(uint edge_idx) const = 0;
-    virtual const Neighbour &vb_neighbour(unsigned int nb) const = 0;
-    virtual ElementAccessor<3> element_accessor(unsigned int idx) const = 0;
-    virtual Range<Edge> edge_range() const = 0;
-    virtual Range<ElementAccessor<3>> elements_range() const = 0;
+    /// Return range of edges.
+    Range<Edge> edge_range() const;
 
-    virtual void check_element_size(unsigned int elem_idx) const = 0;
-    
+    /// Return neighbour with given index.
+    const Neighbour &vb_neighbour(unsigned int nb) const;
+
     /// Return element id (in GMSH file) of element of given position in element vector.
     int find_elem_id(unsigned int pos) const
     { return element_ids_[pos]; }
+
+    virtual unsigned int n_nodes() const = 0;
+
+    virtual LongIdx *get_row_4_el() const = 0;
+
+    virtual NodeAccessor<3> node(unsigned int idx) const = 0;
+    virtual Boundary boundary(uint edge_idx) const = 0;
+    virtual ElementAccessor<3> element_accessor(unsigned int idx) const = 0;
+    
+    virtual Range<ElementAccessor<3>> elements_range() const = 0;
+
+    virtual void check_element_size(unsigned int elem_idx) const = 0;
     
     virtual const std::vector<unsigned int> &get_side_nodes(unsigned int dim, unsigned int side) const = 0;
     virtual BCMesh *bc_mesh() const = 0;
@@ -158,15 +163,11 @@ public:
 
     /// Return permutation vector of nodes
     inline const std::vector<unsigned int> &node_permutations() const
-    {
-        return node_permutation_;
-    }
+    { return node_permutation_; }
 
     /// Return permutation vector of elements
     inline const std::vector<unsigned int> &element_permutations() const
-    {
-        return elem_permutation_;
-    }
+    { return elem_permutation_; }
 
 
     /// For each node the vector contains a list of elements that use this node
@@ -192,6 +193,12 @@ protected:
     /// Maps element ids to indexes into vector element_vec_
     BidirectionalMap<int> element_ids_;
 
+    /// Vector of MH edges, this should not be part of the geometrical mesh
+    std::vector<EdgeData> edges;
+
+    /// Vector of compatible neighbourings.
+    vector<Neighbour> vb_neighbours_;
+
     /**
      * Vector of nodes of the mesh.
      */
@@ -213,6 +220,17 @@ protected:
     LongIdx *el_4_loc;
 	/// Parallel distribution of elements.
 	Distribution *el_ds;
+
+
+    friend class Edge;
+    // friend class Side;
+    // friend class RegionSetBase;
+    friend class Element;
+    // friend class BIHTree;
+    // friend class Boundary;
+    // friend class BCMesh;
+    // template <int spacedim> friend class ElementAccessor;
+    // template <int spacedim> friend class NodeAccessor;
 
 };
 
@@ -264,7 +282,6 @@ public:
      */
     static const Input::Type::Selection & get_input_intersection_variant();
     
-    static const unsigned int undef_idx=-1;
     static const Input::Type::Record & get_input_type();
 
 
@@ -294,11 +311,6 @@ public:
         return boundary_.size();
     }
 
-    inline unsigned int n_edges() const override {
-        return edges.size();
-    }
-
-    Edge edge(uint edge_idx) const override;
     Boundary boundary(uint edge_idx) const override;
 
     unsigned int n_corners();
@@ -332,10 +344,6 @@ public:
     MixedMeshIntersections &mixed_intersections();
 
     unsigned int n_sides() const;
-
-    unsigned int n_vb_neighbours() const override;
-
-    const Neighbour &vb_neighbour(unsigned int nb) const override;
 
     /**
      * Returns maximal number of sides of one edge, which connects elements of dimension @p dim.
@@ -428,11 +436,6 @@ public:
     vector<vector<unsigned int> >  master_elements;
     
 
-    /**
-     * Vector of compatible neighbourings.
-     */
-    vector<Neighbour> vb_neighbours_;
-
     int n_insides; // # of internal sides
     int n_exsides; // # of external sides
     mutable int n_sides_; // total number of sides (should be easy to count when we have separated dimensions
@@ -490,9 +493,6 @@ public:
 
     /// Returns range of nodes
     Range<NodeAccessor<3>> node_range() const;
-
-    /// Returns range of edges
-    Range<Edge> edge_range() const override;
 
     /// For node of given node_id returns index in element_vec_ or (-1) if node doesn't exist.
     inline int node_index(int node_id) const
@@ -656,9 +656,6 @@ protected:
      * MPI communicator used for partitioning and ...
      */
     MPI_Comm comm_;
-
-    /// Vector of MH edges, this should not be part of the geometrical mesh
-    std::vector<EdgeData> edges;
 
 
     friend class Edge;

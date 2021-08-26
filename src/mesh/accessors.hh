@@ -264,7 +264,7 @@ public:
     Edge();
 
     /// Valid edge accessor constructor.
-    Edge(const Mesh *mesh, unsigned int edge_idx);
+    Edge(const MeshBase *mesh, unsigned int edge_idx);
 
     /// Gets side iterator of the @p i -th side.
     SideIter side(const unsigned int i) const;
@@ -288,7 +288,7 @@ public:
 
     /// Comparison operator of the iterator.
     bool operator==(const Edge& other) const{
-    	return (edge_idx_ == other.edge_idx_);
+    	return (mesh_ == other.mesh_ && edge_idx_ == other.edge_idx_);
     }
 
     /// Returns number of sides aligned with the edge.
@@ -297,7 +297,7 @@ public:
 
 private:
     /// Pointer to the mesh owning the node.
-    const Mesh *mesh_;
+    const MeshBase *mesh_;
     /// Index into Mesh::edges vector.
     unsigned int edge_idx_;
 
