@@ -254,20 +254,48 @@ void EquationOutput::output(TimeStep step)
     this->make_output_mesh( stream_->is_parallel() );
 
     // NODE_DATA
-    for(FieldListAccessor f_acc : this->fields_range()) {
-        if ( f_acc->flags().match( FieldFlag::allow_output) ) {
-            if (is_field_output_time( *(f_acc.field()), step) && field_output_times_[f_acc->name()].space_flags_[OutputTime::NODE_DATA]) {
-                f_acc->field_output(stream_, OutputTime::NODE_DATA);
+    {
+        UsedElementDataCaches caches_map_node_data;
+        FieldSet used_fields;
+        for(FieldListAccessor f_acc : this->fields_range()) {
+//            if ( f_acc->flags().match( FieldFlag::allow_output) ) {
+//                if (is_field_output_time( *(f_acc.field()), step) && field_output_times_[f_acc->name()].space_flags_[OutputTime::NODE_DATA]) {
+//                    f_acc->field_output(stream_, OutputTime::NODE_DATA);
+//                }
+//            }
+            if ( f_acc->flags().match( FieldFlag::allow_output) ) {
+                if (is_field_output_time( *(f_acc.field()), step) && field_output_times_[f_acc->name()].space_flags_[OutputTime::NODE_DATA]) {
+                	caches_map_node_data[f_acc->name()] = f_acc->output_data_cache(OutputTime::NODE_DATA, stream_);
+                    used_fields += *(f_acc.field());
+                }
             }
+            output_node_data_assembly_->multidim_assembly()[1_d]->set_output_data(used_fields, caches_map_node_data, stream_);
+            output_node_data_assembly_->multidim_assembly()[2_d]->set_output_data(used_fields, caches_map_node_data, stream_);
+            output_node_data_assembly_->multidim_assembly()[3_d]->set_output_data(used_fields, caches_map_node_data, stream_);
+            output_node_data_assembly_->assemble(this->dh_node_);
         }
     }
 
     // CORNER_DATA
-    for(FieldListAccessor f_acc : this->fields_range()) {
-        if ( f_acc->flags().match( FieldFlag::allow_output) ) {
-            if (is_field_output_time( *(f_acc.field()), step) && field_output_times_[f_acc->name()].space_flags_[OutputTime::CORNER_DATA]) {
-                f_acc->field_output(stream_, OutputTime::CORNER_DATA);
+    {
+//        UsedElementDataCaches caches_map_corner_data;
+//        FieldSet used_fields;
+        for(FieldListAccessor f_acc : this->fields_range()) {
+            if ( f_acc->flags().match( FieldFlag::allow_output) ) {
+                if (is_field_output_time( *(f_acc.field()), step) && field_output_times_[f_acc->name()].space_flags_[OutputTime::CORNER_DATA]) {
+                    f_acc->field_output(stream_, OutputTime::CORNER_DATA);
+                }
             }
+//            if ( f_acc->flags().match( FieldFlag::allow_output) ) {
+//                if (is_field_output_time( *(f_acc.field()), step) && field_output_times_[f_acc->name()].space_flags_[OutputTime::CORNER_DATA]) {
+//                	caches_map_corner_data[f_acc->name()] = f_acc->output_data_cache(OutputTime::CORNER_DATA, stream_);
+//                    used_fields += *(f_acc.field());
+//                }
+//            }
+//            output_corner_data_assembly_->multidim_assembly()[1_d]->set_output_data(used_fields, caches_map_corner_data, stream_);
+//            output_corner_data_assembly_->multidim_assembly()[2_d]->set_output_data(used_fields, caches_map_corner_data, stream_);
+//            output_corner_data_assembly_->multidim_assembly()[3_d]->set_output_data(used_fields, caches_map_corner_data, stream_);
+//            output_corner_data_assembly_->assemble(this->dh_node_);
         }
     }
 
