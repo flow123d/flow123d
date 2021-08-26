@@ -142,12 +142,12 @@ protected:
     double K_mechanics(ElementAccessor<3> ele)
     {
         // const ElementAccessor<3> ele = dh_cell.elm();
-        double initial_cs = ad_->cross_section.value(ele.centre(), ele);
         double flow_conductivity = ad_->conductivity.value(ele.centre(), ele);
-        double min_cs_bound = ad_->delta_0.value(ele.centre(), ele);
-        double updated_cs = ad_->updated_cross_section.value(ele.centre(),ele);
-        return flow_conductivity*pow(((min_cs_bound + std::max(updated_cs - min_cs_bound, 0.0) )/initial_cs),2);
-        // return flow_conductivity;
+        // double initial_cs = ad_->cross_section.value(ele.centre(), ele);
+        // double min_cs_bound = ad_->delta_0.value(ele.centre(), ele);
+        // double updated_cs = ad_->updated_cross_section.value(ele.centre(),ele);
+        // return flow_conductivity*pow(((min_cs_bound + std::max(updated_cs - min_cs_bound, 0.0) )/initial_cs),2);
+        return flow_conductivity;
     }
 
     static unsigned int size()

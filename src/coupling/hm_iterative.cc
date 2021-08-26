@@ -206,7 +206,7 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
 
 void HM_Iterative::initialize()
 {
-    output_stream_ = OutputTime::create_output_stream("hydro_mechanics", input_record_.val<Input::Record>("output_stream"), time().get_unit_string());
+    output_stream_ = OutputTime::create_output_stream("hydro_mechanics", input_record_.val<Input::Record>("output_stream"), time().get_unit_conversion());
 
     data_.set_input_list( input_record_.val<Input::Array>("input_fields"), time() );
     // set time marks for writing the output
