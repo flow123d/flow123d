@@ -31,6 +31,7 @@ BCMesh::BCMesh(Mesh* parent_mesh)
 : parent_mesh_(parent_mesh),
   local_part_(nullptr)
 {
+	this->nodes_ = parent_mesh_->nodes_;
 	this->init_element_vector(1);
 	this->init_node_vector(0);
 }
@@ -106,11 +107,6 @@ std::shared_ptr<std::vector<LongIdx>> BCMesh::check_compatible_mesh( Mesh & inpu
 
 std::shared_ptr<std::vector<LongIdx>> BCMesh::check_compatible_discont_mesh( Mesh & input_mesh) {
 	return parent_mesh_->check_compatible_discont_mesh(input_mesh);
-}
-
-
-unsigned int BCMesh::n_nodes() const {
-    return parent_mesh_->nodes_.size();
 }
 
 

@@ -59,9 +59,6 @@ public:
     /// Overwrite Mesh::check_compatible_discont_mesh()
     std::shared_ptr<std::vector<LongIdx>> check_compatible_discont_mesh( Mesh & input_mesh) override;
 
-    /// Overwrite Mesh::n_nodes()
-    unsigned int n_nodes() const override;
-
     /// Overwrite Mesh::element_accessor()
     ElementAccessor<3> element_accessor(unsigned int idx) const override;
 
@@ -79,7 +76,6 @@ private:
     NodeAccessor<3> node(unsigned int) const override;
     Boundary boundary(unsigned int) const override;
     void check_element_size(unsigned int) const override;
-    const std::vector<unsigned int> &get_side_nodes(unsigned int dim, unsigned int side) const override;
     const RegionDB &region_db() const override;
     const DuplicateNodes *duplicate_nodes() const override NOT_IMPLEMENTED;
 

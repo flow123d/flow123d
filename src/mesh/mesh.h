@@ -126,7 +126,28 @@ public:
      */
     unsigned int max_edge_sides(unsigned int dim) const { return max_edge_sides_[dim-1]; }
 
-    virtual unsigned int n_nodes() const = 0;
+    /**
+     * Returns nodes_elements vector, if doesn't exist creates its.
+     */
+    vector<vector<unsigned int> > const & node_elements();
+
+    /// Returns range of nodes
+    Range<NodeAccessor<3>> node_range() const;
+
+    /// Return node id (in GMSH file) of node of given position in node vector.
+    inline int find_node_id(unsigned int pos) const
+    {
+        return node_ids_[pos];
+    }
+
+    const std::vector<unsigned int> &get_side_nodes(unsigned int dim, unsigned int side) const
+    { return side_nodes[dim][side]; }
+
+    inline unsigned int n_nodes() const {
+        return nodes_->size();
+    }
+
+
 
     virtual NodeAccessor<3> node(unsigned int idx) const = 0;
     virtual Boundary boundary(uint edge_idx) const = 0;
@@ -135,8 +156,6 @@ public:
     virtual Range<ElementAccessor<3>> elements_range() const = 0;
 
     virtual void check_element_size(unsigned int elem_idx) const = 0;
-    
-    virtual const std::vector<unsigned int> &get_side_nodes(unsigned int dim, unsigned int side) const = 0;
     virtual BCMesh *bc_mesh() const = 0;
     virtual const RegionDB &region_db() const = 0;
     virtual const DuplicateNodes *duplicate_nodes() const = 0;
@@ -186,6 +205,18 @@ public:
     /// For each node the vector contains a list of elements that use this node
     vector<vector<unsigned int> > node_elements_;
 
+    // Temporary solution for numbering of nodes on sides.
+    // The data are defined in RefElement<dim>::side_nodes,
+    // Mesh::side_nodes can be removed as soon as Element
+    // is templated by dimension.
+    //
+    // side_nodes[dim][elm_side_idx][side_node_idx]
+    // for every side dimension D = 0 .. 2
+    // for every element side 0 .. D+1
+    // for every side node 0 .. D
+    // index into element node array
+    vector< vector< vector<unsigned int> > > side_nodes;
+
 protected:
 
     /**
@@ -230,7 +261,7 @@ protected:
     /**
      * Vector of nodes of the mesh.
      */
-    Armor::Array<double> nodes_;
+    shared_ptr<Armor::Array<double>> nodes_;
 
     /// Maps node ids to indexes into vector node_vec_
     BidirectionalMap<int> node_ids_;
@@ -258,7 +289,7 @@ protected:
     // friend class Boundary;
     // friend class BCMesh;
     // template <int spacedim> friend class ElementAccessor;
-    // template <int spacedim> friend class NodeAccessor;
+    template <int spacedim> friend class NodeAccessor;
 
 };
 
@@ -326,10 +357,6 @@ public:
 
     /// Destructor.
     ~Mesh() override;
-
-    inline unsigned int n_nodes() const override {
-        return nodes_.size();
-    }
 
     inline unsigned int n_boundaries() const {
         return boundary_.size();
@@ -427,10 +454,6 @@ public:
      */
     void read_regions_from_input(Input::Array region_list);
 
-    /**
-     * Returns nodes_elements vector, if doesn't exist creates its.
-     */
-    vector<vector<unsigned int> > const & node_elements();
 
     /// Vector of boundary sides where is prescribed boundary condition.
     /// TODO: apply all boundary conditions in the main assembling cycle over elements and remove this Vector.
@@ -458,18 +481,6 @@ public:
     int n_lines; // Number of line elements
     int n_triangles; // Number of triangle elements
     int n_tetrahedras; // Number of tetrahedra elements
-
-    // Temporary solution for numbering of nodes on sides.
-    // The data are defined in RefElement<dim>::side_nodes,
-    // Mesh::side_nodes can be removed as soon as Element
-    // is templated by dimension.
-    //
-    // side_nodes[dim][elm_side_idx][side_node_idx]
-    // for every side dimension D = 0 .. 2
-    // for every element side 0 .. D+1
-    // for every side node 0 .. D
-    // index into element node array
-    vector< vector< vector<unsigned int> > > side_nodes;
 
     /**
      * Check usage of regions, set regions to elements defined by user, close RegionDB
@@ -506,19 +517,10 @@ public:
     /// Returns range of bulk elements
     Range<ElementAccessor<3>> elements_range() const override;
 
-    /// Returns range of nodes
-    Range<NodeAccessor<3>> node_range() const;
-
     /// For node of given node_id returns index in element_vec_ or (-1) if node doesn't exist.
     inline int node_index(int node_id) const
     {
         return node_ids_.get_position(node_id);
-    }
-
-    /// Return node id (in GMSH file) of node of given position in node vector.
-    inline int find_node_id(unsigned int pos) const
-    {
-        return node_ids_[pos];
     }
 
     /// Check if given index is in element_vec_
@@ -534,9 +536,6 @@ public:
     BCMesh *bc_mesh() const override {
         return bc_mesh_;
     }
-
-    const std::vector<unsigned int> &get_side_nodes(unsigned int dim, unsigned int side) const override
-    { return side_nodes[dim][side]; }
 
     const DuplicateNodes *duplicate_nodes() const override
     { return duplicate_nodes_; }

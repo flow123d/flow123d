@@ -64,11 +64,40 @@ namespace IT = Input::Type;
 const unsigned int MeshBase::undef_idx;
 
 MeshBase::MeshBase()
-:  nodes_(3, 1, 0),
+:   nodes_(make_shared<Armor::Array<double>>(3, 1, 0)),
     row_4_el(nullptr),
     el_4_loc(nullptr),
     el_ds(nullptr)
-{}
+{
+        // Initialize numbering of nodes on sides.
+    // This is temporary solution, until class Element is templated
+    // by dimension. Then we can replace Mesh::side_nodes by
+    // RefElement<dim>::side_nodes.
+
+    // indices of side nodes in element node array
+    // Currently this is made ad libitum
+    // with some ordering here we can get sides with correct orientation.
+    // This speedup normal calculation.
+
+    side_nodes.resize(3); // three side dimensions
+    for(int dim=0; dim < 3; dim++) {
+        side_nodes[dim].resize(dim+2); // number of sides
+        for(int i_side=0; i_side < dim+2; i_side++)
+            side_nodes[dim][i_side].resize(dim+1);
+    }
+
+    for (unsigned int sid=0; sid<RefElement<1>::n_sides; sid++)
+    	for (unsigned int nid=0; nid<RefElement<1>::n_nodes_per_side; nid++)
+            side_nodes[0][sid][nid] = RefElement<1>::interact(Interaction<0,0>(sid))[nid];
+
+    for (unsigned int sid=0; sid<RefElement<2>::n_sides; sid++)
+        	for (unsigned int nid=0; nid<RefElement<2>::n_nodes_per_side; nid++)
+                side_nodes[1][sid][nid] = RefElement<2>::interact(Interaction<0,1>(sid))[nid];
+
+    for (unsigned int sid=0; sid<RefElement<3>::n_sides; sid++)
+        	for (unsigned int nid=0; nid<RefElement<3>::n_nodes_per_side; nid++)
+        		side_nodes[2][sid][nid] = RefElement<3>::interact(Interaction<0,2>(sid))[nid];
+}
 
 MeshBase::~MeshBase()
 {
@@ -188,35 +217,6 @@ void Mesh::init()
     n_tetrahedras = 0;
 
     for (int d=0; d<3; d++) max_edge_sides_[d] = 0;
-
-    // Initialize numbering of nodes on sides.
-    // This is temporary solution, until class Element is templated
-    // by dimension. Then we can replace Mesh::side_nodes by
-    // RefElement<dim>::side_nodes.
-
-    // indices of side nodes in element node array
-    // Currently this is made ad libitum
-    // with some ordering here we can get sides with correct orientation.
-    // This speedup normal calculation.
-
-    side_nodes.resize(3); // three side dimensions
-    for(int dim=0; dim < 3; dim++) {
-        side_nodes[dim].resize(dim+2); // number of sides
-        for(int i_side=0; i_side < dim+2; i_side++)
-            side_nodes[dim][i_side].resize(dim+1);
-    }
-
-    for (unsigned int sid=0; sid<RefElement<1>::n_sides; sid++)
-    	for (unsigned int nid=0; nid<RefElement<1>::n_nodes_per_side; nid++)
-            side_nodes[0][sid][nid] = RefElement<1>::interact(Interaction<0,0>(sid))[nid];
-
-    for (unsigned int sid=0; sid<RefElement<2>::n_sides; sid++)
-        	for (unsigned int nid=0; nid<RefElement<2>::n_nodes_per_side; nid++)
-                side_nodes[1][sid][nid] = RefElement<2>::interact(Interaction<0,1>(sid))[nid];
-
-    for (unsigned int sid=0; sid<RefElement<3>::n_sides; sid++)
-        	for (unsigned int nid=0; nid<RefElement<3>::n_nodes_per_side; nid++)
-        		side_nodes[2][sid][nid] = RefElement<3>::interact(Interaction<0,2>(sid))[nid];
 }
 
 
@@ -352,7 +352,7 @@ void Mesh::check_mesh_on_read() {
             nodes_new_idx[inode] = inode_new;
             
             // possibly move the nodes
-            nodes_.vec<3>(inode_new) = nodes_.vec<3>(inode);
+            nodes_->vec<3>(inode_new) = nodes_->vec<3>(inode);
             new_node_ids_.add_item(node_ids_[inode]);
 
             inode_new++;
@@ -368,7 +368,7 @@ void Mesh::check_mesh_on_read() {
             << print_var(n_nodes_new) << print_var(nodes_new_idx.size()) << "\n";
 
         // throw away unused nodes
-        nodes_.resize(n_nodes_new);
+        nodes_->resize(n_nodes_new);
         node_ids_ = new_node_ids_;
 
         // update node-element numbering
@@ -434,7 +434,7 @@ void Mesh::sort_permuted_nodes_elements(std::vector<int> new_node_ids, std::vect
     BidirectionalMap<int> node_ids_backup = this->node_ids_;
     this->node_ids_.clear();
     this->node_ids_.reserve(this->n_nodes());
-    Armor::Array<double> nodes_backup = this->nodes_;
+    Armor::Array<double> nodes_backup = *this->nodes_;
     for (uint i = 0; i < this->element_vec_.size(); ++i) {
         for (uint j = 0; j < this->element_vec_[i].dim() + 1; ++j) {
             this->element_vec_[i].nodes_[j] = this->node_permutation_[this->element_vec_[i].nodes_[j]];
@@ -446,7 +446,7 @@ void Mesh::sort_permuted_nodes_elements(std::vector<int> new_node_ids, std::vect
         }
     }
     for (uint i = 0; i < this->n_nodes(); ++i) {
-    	this->nodes_.set(node_permutation_[i]) = nodes_backup.vec<3>(i);
+    	this->nodes_->set(node_permutation_[i]) = nodes_backup.vec<3>(i);
     	this->node_ids_.add_item( node_ids_backup[new_node_ids[i]] );
     }
 
@@ -1231,7 +1231,7 @@ void Mesh::add_physical_name(unsigned int dim, unsigned int id, std::string name
 
 void Mesh::add_node(unsigned int node_id, arma::vec3 coords) {
 
-    nodes_.append(coords);
+    nodes_->append(coords);
     node_ids_.add_item(node_id);
     node_permutation_.push_back(node_permutation_.size());
 }
@@ -1275,7 +1275,7 @@ void Mesh::init_element(Element *ele, unsigned int elm_id, unsigned int dim, Reg
 }
 
 
-vector<vector<unsigned int> > const & Mesh::node_elements() {
+vector<vector<unsigned int> > const & MeshBase::node_elements() {
 	if (node_elements_.size() == 0) {
 		this->create_node_element_lists();
 	}
@@ -1294,7 +1294,7 @@ void MeshBase::init_element_vector(unsigned int size) {
 
 
 void MeshBase::init_node_vector(unsigned int size) {
-	nodes_.reinit(size);
+	nodes_->reinit(size);
 	node_ids_.clear();
 	node_ids_.reserve(size);
 	node_permutation_.clear();
@@ -1321,7 +1321,7 @@ Range<ElementAccessor<3>> Mesh::elements_range() const {
 	return Range<ElementAccessor<3>>(bgn_it, end_it);
 }
 
-Range<NodeAccessor<3>> Mesh::node_range() const {
+Range<NodeAccessor<3>> MeshBase::node_range() const {
 	auto bgn_it = make_iter<NodeAccessor<3>>( NodeAccessor<3>(this, 0) );
 	auto end_it = make_iter<NodeAccessor<3>>( NodeAccessor<3>(this, n_nodes()) );
     return Range<NodeAccessor<3>>(bgn_it, end_it);
