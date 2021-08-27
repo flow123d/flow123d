@@ -75,6 +75,12 @@ public:
 class MeshBase {
 public:
 
+    TYPEDEF_ERR_INFO( EI_ElemId, int);
+    TYPEDEF_ERR_INFO( EI_ElemIdOther, int);
+
+    DECLARE_EXCEPTION(ExcTooMatchingIds,
+            << "Mesh: Duplicate dim-join lower dim elements: " << EI_ElemId::val << ", " << EI_ElemIdOther::val << ".\n" );
+
     static const unsigned int undef_idx=-1;
 
     MeshBase();
@@ -114,8 +120,13 @@ public:
     int find_elem_id(unsigned int pos) const
     { return element_ids_[pos]; }
 
-    virtual unsigned int n_nodes() const = 0;
+    /**
+     * Returns maximal number of sides of one edge, which connects elements of dimension @p dim.
+     * @param dim Dimension of elements sharing the edge.
+     */
+    unsigned int max_edge_sides(unsigned int dim) const { return max_edge_sides_[dim-1]; }
 
+    virtual unsigned int n_nodes() const = 0;
 
     virtual NodeAccessor<3> node(unsigned int idx) const = 0;
     virtual Boundary boundary(uint edge_idx) const = 0;
@@ -186,6 +197,18 @@ protected:
     Element * add_element_to_vector(int id, bool is_boundary = false);
 
     /**
+     * Remove elements with dimension not equal to @p dim from @p element_list. Index of the first element of dimension @p dim-1,
+     * is returned in @p element_idx. If no such element is found the method returns false, if one such element is found the method returns true,
+     * if more elements are found we report an user input error.
+     */
+    bool find_lower_dim_element(vector<unsigned int> &element_list, unsigned int dim, unsigned int &element_idx);
+
+    /**
+     * Returns true if side @p si has same nodes as in the list @p side_nodes.
+     */
+    bool same_sides(const SideIter &si, vector<unsigned int> &side_nodes);
+
+    /**
      * Vector of elements of the mesh.
      *
      * Store all elements of the mesh in order bulk elements - boundary elements
@@ -200,6 +223,9 @@ protected:
 
     /// Vector of compatible neighbourings.
     vector<Neighbour> vb_neighbours_;
+
+    /// Maximal number of sides per one edge in the actual mesh (set in make_neighbours_and_edges()).
+    unsigned int max_edge_sides_[3];
 
     /**
      * Vector of nodes of the mesh.
@@ -246,8 +272,6 @@ public:
     TYPEDEF_ERR_INFO( EI_ElemNew, int);
     TYPEDEF_ERR_INFO( EI_RegLast, std::string);
     TYPEDEF_ERR_INFO( EI_RegNew, std::string);
-    TYPEDEF_ERR_INFO( EI_ElemId, int);
-    TYPEDEF_ERR_INFO( EI_ElemIdOther, int);
     TYPEDEF_ERR_INFO( EI_Region, std::string);
     TYPEDEF_ERR_INFO( EI_RegIdx, unsigned int);
     TYPEDEF_ERR_INFO( EI_Dim, unsigned int);
@@ -264,8 +288,6 @@ public:
             << ") by 'From_Elements' cannot have elements of different dimensions.\n"
             << "Thrown due to: dim " << EI_Dim::val << " neq dim " << EI_DimOther::val << " (ele id " << EI_ElemId::val << ").\n"
             << "Split elements by dim, create separate regions and then possibly use Union.\n" );
-    DECLARE_EXCEPTION(ExcTooMatchingIds,
-            << "Mesh: Duplicate dim-join lower dim elements: " << EI_ElemId::val << ", " << EI_ElemIdOther::val << ".\n" );
     DECLARE_EXCEPTION(ExcBdrElemMatchRegular,
             << "Boundary element (id: " << EI_ElemId::val << ") match a regular element (id: " << EI_ElemIdOther::val << ") of lower dimension.\n" );
 
@@ -343,12 +365,6 @@ public:
     MixedMeshIntersections &mixed_intersections();
 
     unsigned int n_sides() const;
-
-    /**
-     * Returns maximal number of sides of one edge, which connects elements of dimension @p dim.
-     * @param dim Dimension of elements sharing the edge.
-     */
-    unsigned int max_edge_sides(unsigned int dim) const { return max_edge_sides_[dim-1]; }
 
     /**
      * Reads mesh from stream.
@@ -570,18 +586,6 @@ protected:
      */
     void make_edge_permutations();
 
-    /**
-     * Remove elements with dimension not equal to @p dim from @p element_list. Index of the first element of dimension @p dim-1,
-     * is returned in @p element_idx. If no such element is found the method returns false, if one such element is found the method returns true,
-     * if more elements are found we report an user input error.
-     */
-    bool find_lower_dim_element(vector<unsigned int> &element_list, unsigned int dim, unsigned int &element_idx);
-
-    /**
-     * Returns true if side @p si has same nodes as in the list @p side_nodes.
-     */
-    bool same_sides(const SideIter &si, vector<unsigned int> &side_nodes);
-
 
     void element_to_neigh_vb();
 
@@ -607,9 +611,6 @@ protected:
     		std::vector<unsigned int> node_ids);
 
     unsigned int n_bb_neigh, n_vb_neigh;
-
-    /// Maximal number of sides per one edge in the actual mesh (set in make_neighbours_and_edges()).
-    unsigned int max_edge_sides_[3];
 
     /// Output of neighboring data into raw output.
     void output_internal_ngh_data();

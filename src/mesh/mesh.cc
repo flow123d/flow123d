@@ -521,7 +521,7 @@ void MeshBase::intersect_element_lists(vector<unsigned int> const &nodes_list, v
 }
 
 
-bool Mesh::find_lower_dim_element( vector<unsigned int> &element_list, unsigned int dim, unsigned int &element_idx) {
+bool MeshBase::find_lower_dim_element( vector<unsigned int> &element_list, unsigned int dim, unsigned int &element_idx) {
     bool is_neighbour = false;
 
     vector<unsigned int>::iterator e_dest=element_list.begin();
@@ -540,7 +540,7 @@ bool Mesh::find_lower_dim_element( vector<unsigned int> &element_list, unsigned 
     return is_neighbour;
 }
 
-bool Mesh::same_sides(const SideIter &si, vector<unsigned int> &side_nodes) {
+bool MeshBase::same_sides(const SideIter &si, vector<unsigned int> &side_nodes) {
     // check if nodes lists match (this is slow and will be faster only when we convert whole mesh into hierarchical design like in deal.ii)
     unsigned int ni=0;
     while ( ni < si->n_nodes()
@@ -638,6 +638,7 @@ void Mesh::make_neighbours_and_edges()
                     }
                 }
             }
+            bc_mesh_->edges.push_back(*edg);
 
         }
 

@@ -111,6 +111,7 @@ protected:
     std::array<unsigned int, 4> nodes_;
 
     friend class Mesh;
+    friend class BCMesh;
 
     template<int spacedim, class Value>
     friend class Field;

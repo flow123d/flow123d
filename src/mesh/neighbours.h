@@ -139,6 +139,7 @@ private:
 
     friend class MeshBase;
     friend class Mesh;
+    friend class BCMesh;
 };
 
 
