@@ -95,6 +95,9 @@ public:
     inline LongIdx *get_el_4_loc() const
     { return el_4_loc; }
 
+    inline LongIdx *get_row_4_el() const
+    { return row_4_el; }
+
     const Element &element(unsigned idx) const
     { return element_vec_[idx]; }
 
@@ -113,7 +116,6 @@ public:
 
     virtual unsigned int n_nodes() const = 0;
 
-    virtual LongIdx *get_row_4_el() const = 0;
 
     virtual NodeAccessor<3> node(unsigned int idx) const = 0;
     virtual Boundary boundary(uint edge_idx) const = 0;
@@ -322,9 +324,6 @@ public:
     Partitioning *get_part() override;
 
     const LongIdx *get_local_part() override;
-
-    LongIdx *get_row_4_el() const override
-    { return row_4_el; }
 
     Distribution *get_node_ds() const
     { return node_ds_; }

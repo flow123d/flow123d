@@ -76,7 +76,6 @@ private:
     void init_distribution();
 
     // unused methods (should not be used)
-    LongIdx *get_row_4_el() const override NOT_IMPLEMENTED;
     NodeAccessor<3> node(unsigned int) const override;
     Boundary boundary(unsigned int) const override;
     void check_element_size(unsigned int) const override;

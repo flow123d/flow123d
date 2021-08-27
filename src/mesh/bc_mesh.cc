@@ -61,6 +61,13 @@ void BCMesh::init_distribution()
 
 	this->el_4_loc = new LongIdx[loc_el_ids.size()];
 	for (unsigned int i=0; i<loc_el_ids.size(); i++) this->el_4_loc[i] = loc_el_ids[i];
+
+	this->row_4_el = new LongIdx[n_elements()];
+	vector<LongIdx> row_4_loc_el(n_elements(), 0);
+	for (unsigned int i=0; i<loc_el_ids.size(); i++)
+		row_4_loc_el[loc_el_ids[i]] = i + this->el_ds->begin();
+	MPI_Allreduce(row_4_loc_el.data(), this->row_4_el, n_elements(), MPI_LONG_IDX, MPI_MAX, PETSC_COMM_WORLD);
+
 }
 
 
