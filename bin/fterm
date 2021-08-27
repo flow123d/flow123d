@@ -306,7 +306,7 @@ while [[ $# -gt 0 ]]
       rest="$@"
       break
     ;;
-    dbg|rel)
+    dbg|rel|dbg_gnu|rel_gnu|dbg_intel|rel_intel)
       image_version=$1
       shift
     ;;
@@ -341,13 +341,22 @@ while [[ $# -gt 0 ]]
 done
 
 
+image_kind=${image_version%%_*}
+image_env=${image_version#*_}
+
+if [ $image_kind = $image_env ]
+then
+  image_env="gnu"
+fi
+
 # determine image names
-base_image=flow123d/flow-dev-gnu-$image_version:$image_tag
+base_image=flow123d/flow-dev-$image_env-$image_kind:$image_tag
 
 
 dbg "base_image     = $base_image"
 dbg "image_tag      = $image_tag"
-dbg "image_version  = $image_version"
+dbg "image_kind     = $image_kind"
+dbg "image_env      = $image_env"
 dbg "action         = $action"
 dbg "mount dirs     - $work"
 dbg "               - $OLD_PWD"
