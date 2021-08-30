@@ -126,6 +126,9 @@ public:
      */
     unsigned int max_edge_sides(unsigned int dim) const { return max_edge_sides_[dim-1]; }
 
+    const DuplicateNodes *duplicate_nodes() const
+    { return duplicate_nodes_; }
+
     /**
      * Returns nodes_elements vector, if doesn't exist creates its.
      */
@@ -160,7 +163,6 @@ public:
 
     virtual BCMesh *bc_mesh() const = 0;
     virtual const RegionDB &region_db() const = 0;
-    virtual const DuplicateNodes *duplicate_nodes() const = 0;
 
 
     /**
@@ -281,6 +283,9 @@ protected:
     LongIdx *el_4_loc;
 	/// Parallel distribution of elements.
 	Distribution *el_ds;
+
+
+    DuplicateNodes *duplicate_nodes_;
 
 
     friend class Edge;
@@ -536,8 +541,6 @@ public:
         return bc_mesh_;
     }
 
-    const DuplicateNodes *duplicate_nodes() const override
-    { return duplicate_nodes_; }
 
 protected:
 
@@ -682,7 +685,6 @@ private:
 	/// Boundary mesh, object is created only if it's necessary
 	BCMesh *bc_mesh_;
         
-    DuplicateNodes *duplicate_nodes_;
 };
 
 #endif

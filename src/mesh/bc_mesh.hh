@@ -76,7 +76,6 @@ private:
     NodeAccessor<3> node(unsigned int) const override;
     Boundary boundary(unsigned int) const override;
     const RegionDB &region_db() const override;
-    const DuplicateNodes *duplicate_nodes() const override NOT_IMPLEMENTED;
 
 
 

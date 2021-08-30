@@ -67,7 +67,8 @@ MeshBase::MeshBase()
 :   nodes_(make_shared<Armor::Array<double>>(3, 1, 0)),
     row_4_el(nullptr),
     el_4_loc(nullptr),
-    el_ds(nullptr)
+    el_ds(nullptr),
+    duplicate_nodes_(nullptr)
 {
         // Initialize numbering of nodes on sides.
     // This is temporary solution, until class Element is templated
@@ -104,6 +105,7 @@ MeshBase::~MeshBase()
     if (row_4_el != nullptr) delete[] row_4_el;
     if (el_4_loc != nullptr) delete[] el_4_loc;
     if (el_ds != nullptr) delete el_ds;
+    if (duplicate_nodes_ != nullptr) delete duplicate_nodes_;
 }
 
 Range<Edge> MeshBase::edge_range() const {
@@ -167,8 +169,7 @@ Mesh::Mesh()
   //nodes_(3, 1, 0),
   node_4_loc_(nullptr),
   node_ds_(nullptr),  
-  bc_mesh_(nullptr),
-  duplicate_nodes_(nullptr)
+  bc_mesh_(nullptr)
   
 {init();}
 
@@ -180,8 +181,7 @@ Mesh::Mesh(Input::Record in_record, MPI_Comm com)
   comm_(com),
   node_4_loc_(nullptr),
   node_ds_(nullptr),
-  bc_mesh_(new BCMesh(this)),
-  duplicate_nodes_(nullptr)
+  bc_mesh_(new BCMesh(this))
 {
 
 	init();
@@ -233,7 +233,6 @@ Mesh::~Mesh() {
     if (node_4_loc_ != nullptr) delete[] node_4_loc_;
     if (node_ds_ != nullptr) delete node_ds_;
     if (bc_mesh_ != nullptr) delete bc_mesh_;
-    if (duplicate_nodes_ != nullptr) delete duplicate_nodes_;
 }
 
 
@@ -400,7 +399,7 @@ void Mesh::setup_topology() {
     make_edge_permutations();
     count_side_types();
     
-    duplicate_nodes_ = new DuplicateNodes(this);
+    this->duplicate_nodes_ = new DuplicateNodes(this);
 
     part_ = std::make_shared<Partitioning>(this, in_record_.val<Input::Record>("partitioning") );
 
@@ -411,6 +410,7 @@ void Mesh::setup_topology() {
         id_4_old[i++] = ele.idx();
     part_->id_maps(n_elements(), id_4_old, el_ds, el_4_loc, row_4_el);
     bc_mesh_->init_distribution();
+    bc_mesh_->duplicate_nodes_ = new DuplicateNodes(bc_mesh_);
 
     delete[] id_4_old;
     
