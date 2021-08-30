@@ -127,15 +127,6 @@ Boundary BCMesh::boundary(unsigned int) const
 	return Boundary();
 }
 
-
-const std::vector<unsigned int> &BCMesh::get_side_nodes(unsigned int dim, unsigned int side) const
-{
-	ASSERT( false );
-	(void)dim; (void)side;
-	static std::vector<unsigned int> sn;
-	return sn;
-}
-
 const RegionDB &BCMesh::region_db() const
 {
 	ASSERT( false );
