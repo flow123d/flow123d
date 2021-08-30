@@ -29,6 +29,7 @@
 #include "fields/field_value_cache.hh"
 #include "io/output_time.hh"
 #include "io/element_data_cache.hh"
+#include "mesh/ref_element.hh"
 
 
 
@@ -120,8 +121,15 @@ public:
 
     /// Constructor.
     AssemblyOutputNodeData(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(1), eq_fields_(eq_fields), eq_data_(eq_data) {
+    : AssemblyBase<dim>(), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
+
+        this->quad_ = new Quadrature(dim, RefElement<dim>::n_nodes);
+        for(unsigned int i = 0; i<RefElement<dim>::n_nodes; i++)
+        {
+            this->quad_->weight(i) = 1.0;
+            this->quad_->set(i) = RefElement<dim>::node_coords(i);
+        }
     }
 
     /// Destructor.
