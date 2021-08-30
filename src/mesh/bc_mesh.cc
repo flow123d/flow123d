@@ -127,10 +127,6 @@ Boundary BCMesh::boundary(unsigned int) const
 	return Boundary();
 }
 
-void BCMesh::check_element_size(unsigned int) const
-{
-	ASSERT( false );
-}
 
 const std::vector<unsigned int> &BCMesh::get_side_nodes(unsigned int dim, unsigned int side) const
 {

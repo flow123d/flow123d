@@ -140,6 +140,9 @@ public:
         return node_ids_[pos];
     }
 
+    /// Check if given index is in element_vec_
+    void check_element_size(unsigned int elem_idx) const;
+
     const std::vector<unsigned int> &get_side_nodes(unsigned int dim, unsigned int side) const
     { return side_nodes[dim][side]; }
 
@@ -155,7 +158,6 @@ public:
     
     virtual Range<ElementAccessor<3>> elements_range() const = 0;
 
-    virtual void check_element_size(unsigned int elem_idx) const = 0;
     virtual BCMesh *bc_mesh() const = 0;
     virtual const RegionDB &region_db() const = 0;
     virtual const DuplicateNodes *duplicate_nodes() const = 0;
@@ -522,9 +524,6 @@ public:
     {
         return node_ids_.get_position(node_id);
     }
-
-    /// Check if given index is in element_vec_
-    void check_element_size(unsigned int elem_idx) const override;
 
     /// Permute nodes of 3D elements of given elm_idx
     void permute_tetrahedron(unsigned int elm_idx, std::vector<unsigned int> permutation_vec);
