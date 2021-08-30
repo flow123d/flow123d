@@ -1,4 +1,4 @@
-\section{1D column transport}
+\#1D column transport
 
 File: \texttt{02\_column\_transport.yaml}
 
@@ -97,14 +97,16 @@ depicts results from the file \texttt{mass\_balance.txt} for mass
 transported through the boundaries ``.surface'' and ``.tunnel'' and in
 the volume of ``rock''.
 
-\begin{figure}[htbp]
+\begin{figure}
+\hypertarget{fig:transport}{%
 \centering
-\includegraphics[width=1.00000\textwidth]{tutor_figures/02_transport.pdf}
+\includegraphics[width=1\textwidth,height=\textheight]{tutor_figures/02_transport.pdf}
 \caption{Tracer concentration after 5, 10, 15 and 20 time
-steps.\label{fig:transport}}
+steps.}\label{fig:transport}
+}
 \end{figure}
 
-\begin{longtable}[c]{@{}rllrrrrr@{}}
+\begin{longtable}[]{@{}rllrrrrr@{}}
 \caption{Illustration of the results in \texttt{mass\_balance.txt} --
 selected columns in two time steps.
 \label{tbl:mass_balance}}\tabularnewline
@@ -138,9 +140,11 @@ error\tabularnewline
 \bottomrule
 \end{longtable}
 
-\begin{figure}[htbp]
+\begin{figure}
+\hypertarget{fig:mass_plot}{%
 \centering
 \includegraphics{tutor_figures/02_mass_plot.pdf}
 \caption{Results of evolution of mass in the volume and flux through
-boundaries.\label{fig:mass_plot}}
+boundaries.}\label{fig:mass_plot}
+}
 \end{figure}

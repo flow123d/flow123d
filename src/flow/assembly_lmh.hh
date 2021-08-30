@@ -501,6 +501,13 @@ protected:
                 ad_->balance->add_mass_values(ad_->water_balance_idx, dh_cell,
                                               {loc_system_.row_dofs[loc_edge_dofs[i]]}, {time_term}, 0);
             }
+            else
+            {
+                // Add zeros explicitely to keep the sparsity pattern.
+                // Otherwise Petsc would compress out the zeros in FinishAssembly.
+                ad_->balance->add_mass_values(ad_->water_balance_idx, dh_cell,
+                                              {loc_system_.row_dofs[loc_edge_dofs[i]]}, {0}, 0);
+            }
 
             this->loc_system_.add_value(loc_edge_dofs[i], loc_edge_dofs[i],
                                         -time_term_diag,
