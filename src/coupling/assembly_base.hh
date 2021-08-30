@@ -40,7 +40,7 @@ public:
         quad_low_ = new QGauss(dim-1, 2*quad_order);
 	}
 
-	// Destructor
+	/// Destructor
     virtual ~AssemblyBase() {
         delete quad_;
         delete quad_low_;
@@ -72,18 +72,24 @@ public:
     /// Create integrals according to dim of assembly object
     void create_integrals(std::shared_ptr<EvalPoints> eval_points, AssemblyIntegrals &integrals) {
     	if (active_integrals_ & ActiveIntegrals::bulk) {
+    	    ASSERT_PTR(quad_).error("Data member 'quad_' must be initialized if you use bulk integral!\n");
     	    integrals_.bulk_ = eval_points->add_bulk<dim>(*quad_);
     		integrals.bulk_[dim-1] = integrals_.bulk_;
     	}
     	if (active_integrals_ & ActiveIntegrals::edge) {
+    	    ASSERT_PTR(quad_low_).error("Data member 'quad_low_' must be initialized if you use edge integral!\n");
     	    integrals_.edge_ = eval_points->add_edge<dim>(*quad_low_);
     	    integrals.edge_[dim-1] = integrals_.edge_;
     	}
        	if ((dim>1) && (active_integrals_ & ActiveIntegrals::coupling)) {
+    	    ASSERT_PTR(quad_).error("Data member 'quad_' must be initialized if you use coupling integral!\n");
+    	    ASSERT_PTR(quad_low_).error("Data member 'quad_low_' must be initialized if you use coupling integral!\n");
     	    integrals_.coupling_ = eval_points->add_coupling<dim>(*quad_low_);
        	    integrals.coupling_[dim-2] = integrals_.coupling_;
        	}
        	if (active_integrals_ & ActiveIntegrals::boundary) {
+    	    ASSERT_PTR(quad_).error("Data member 'quad_' must be initialized if you use boundary integral!\n");
+    	    ASSERT_PTR(quad_low_).error("Data member 'quad_low_' must be initialized if you use boundary integral!\n");
     	    integrals_.boundary_ = eval_points->add_boundary<dim>(*quad_low_);
        	    integrals.boundary_[dim-1] = integrals_.boundary_;
        	}
@@ -120,6 +126,14 @@ protected:
         std::shared_ptr<CouplingIntegral> coupling_;       ///< Coupling integrals between elements of dimensions dim and dim-1
         std::shared_ptr<BoundaryIntegral> boundary_;       ///< Boundary integrals betwwen side and boundary element of dim-1
     };
+
+	/**
+	 * Default constructor.
+	 *
+	 * Be aware if you use this constructor. Quadrature objects must be initialized manually in descendant.
+	 */
+	AssemblyBase()
+	: quad_(nullptr), quad_low_(nullptr) {}
 
     /// Print update flags to string format.
     std::string print_update_flags(UpdateFlags u) const {
