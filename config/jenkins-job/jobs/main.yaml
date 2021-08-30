@@ -32,8 +32,10 @@
 - job-template: !include: common/int-tests.yaml
 # --------------------------------------------------------------- MAKE DOC
 - job-template: !include: common/make-doc.yaml
-# --------------------------------------------------------------- PACKAGE
-- job-template: !include: common/package.yaml
+# --------------------------------------------------------------- PACKAGE GNU
+- job-template: !include: common/package_gnu.yaml
+# --------------------------------------------------------------- PACKAGE Intel
+- job-template: !include: common/package_intel.yaml
 # --------------------------------------------------------------- STOP IMAGE
 - job-template: !include: common/stop-image.yaml
 
