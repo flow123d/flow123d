@@ -1,7 +1,7 @@
 # Variant of the 06_frac_dualpor.  Used for creating a figure in Tutorial 6 for the comparison.
 flow123d_version: 3.1.0
 problem: !Coupling_Sequential
-  description: Example 6 - Fractures - flow through blind fractures (auxiliary)
+  description: Example 6 - Fractures - flow through dead-end fractures (auxiliary)
   mesh:
     mesh_file: 04_mesh.msh
     regions:
@@ -11,10 +11,10 @@ problem: !Coupling_Sequential
           - flow_fracture1
           - flow_fracture2
       - !Union
-        name: blind_fractures
+        name: deadend_fractures
         regions:
-          - blind_fracture1
-          - blind_fracture2
+          - deadend_fracture1
+          - deadend_fracture2
       - !Union
         name: BC_right
         regions:
@@ -37,7 +37,7 @@ problem: !Coupling_Sequential
       - region: flow_fractures
         conductivity: 31.5
         cross_section: 0.01
-      - region: blind_fractures
+      - region: deadend_fractures
         conductivity: 31.5
         cross_section: 0.01
       - region: BC_left
@@ -68,7 +68,7 @@ problem: !Coupling_Sequential
         - region: flow_fractures
           init_conc: 0
           porosity: 0.1
-        - region: blind_fractures
+        - region: deadend_fractures
           init_conc: 0
           porosity: 0.005
         - region: BC_left

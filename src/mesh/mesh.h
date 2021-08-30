@@ -554,6 +554,12 @@ protected:
                                            std::vector<LongIdx>& map);
 
     /**
+     * Flag for optimization perfomed at the beginning of setup_topology.
+     * Default true, can be set to flase by the optimize_mesh key of the input recoed.
+     */
+    bool optimize_memory_locality;
+
+    /**
      * Database of regions (both bulk and boundary) of the mesh. Regions are logical parts of the
      * domain that allows setting of different data and boundary conditions on them.
      */
