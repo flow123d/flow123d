@@ -21,7 +21,7 @@
 
 
 
-class Mesh;
+class MeshBase;
 
 /**
  * Class representing an n-face (node, line, triangle or tetrahedron) in the mesh.
@@ -96,10 +96,10 @@ public:
 class DuplicateNodes {
 public:
   
-  DuplicateNodes(Mesh *mesh);
+  DuplicateNodes(MeshBase *mesh);
 
   // Getters (see private section for explanation).  
-  Mesh *mesh() const { return mesh_; }
+  MeshBase *mesh() const { return mesh_; }
   
   unsigned int n_nodes() const { return n_duplicated_nodes_; }
   const std::vector<unsigned int> &node_dim() const { return node_dim_; }
@@ -127,7 +127,7 @@ private:
   
   
   /// The mesh object.
-  Mesh *mesh_;
+  MeshBase *mesh_;
   
   /// Number of nodes (including duplicated ones).
   unsigned int n_duplicated_nodes_;

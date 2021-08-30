@@ -131,7 +131,7 @@ inline unsigned int Element::n_nodes() const {
 
 
 inline unsigned int Element::n_sides() const {
-    return dim()+1;
+    return dim() == 0 ? 0 : dim()+1;
 }
 
 inline unsigned int Element::edge_idx(unsigned int edg_idx) const {

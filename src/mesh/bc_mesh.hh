@@ -72,6 +72,8 @@ private:
     /// setup distribution of elements and related vectors
     void init_distribution();
 
+    void make_neighbours_and_edges();
+
     // unused methods (should not be used)
     NodeAccessor<3> node(unsigned int) const override;
     Boundary boundary(unsigned int) const override;

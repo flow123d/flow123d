@@ -638,8 +638,6 @@ void Mesh::make_neighbours_and_edges()
                     }
                 }
             }
-            bc_mesh_->edges.push_back(*edg);
-
         }
 
 	}

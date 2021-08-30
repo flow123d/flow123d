@@ -36,7 +36,7 @@ MeshObject::MeshObject(unsigned int dim)
 }
 
 
-DuplicateNodes::DuplicateNodes(Mesh* mesh)
+DuplicateNodes::DuplicateNodes(MeshBase* mesh)
 : mesh_(mesh),
   n_duplicated_nodes_(0)
 {
@@ -78,8 +78,9 @@ void DuplicateNodes::init_from_elements()
     MeshObject l(ele->dim());
     for (unsigned int i=0; i<ele->dim()+1; i++)
       l.nodes[i] = ele->node_idx(i);
-    for (unsigned int i=0; i<ele->dim()+1; i++)
-      l.faces[i] = &objects_[ele->dim()-1][obj_4_edg_[ele->edge_idx(i)]];
+    if (ele->dim() > 0)
+      for (unsigned int i=0; i<ele->dim()+1; i++)
+        l.faces[i] = &objects_[ele->dim()-1][obj_4_edg_[ele->edge_idx(i)]];
     obj_4_el_.push_back(objects_[ele->dim()].size());
     objects_[ele->dim()].push_back(l);
   }

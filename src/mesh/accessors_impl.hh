@@ -157,12 +157,12 @@ double ElementAccessor<spacedim>::quality_measure_smooth() const {
 
 template <int spacedim> inline
 SideIter ElementAccessor<spacedim>::side(const unsigned int loc_index) {
-    return SideIter( Side(mesh_, element_idx_, loc_index) );
+    return boundary_ ? SideIter( Side(mesh_->bc_mesh(), element_idx_, loc_index) ) : SideIter( Side(mesh_, element_idx_, loc_index) );
 }
 
 template <int spacedim> inline
 const SideIter ElementAccessor<spacedim>::side(const unsigned int loc_index) const {
-    return SideIter( Side(mesh_, element_idx_, loc_index) );
+    return boundary_ ? SideIter( Side(mesh_->bc_mesh(), element_idx_, loc_index) ) : SideIter( Side(mesh_, element_idx_, loc_index) );
 }
 
 
