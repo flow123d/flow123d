@@ -51,6 +51,7 @@
 #include "flow/assembly_mh.hh"
 #include "flow/darcy_flow_mh.hh"
 #include "flow/darcy_flow_mh_output.hh"
+#include "flow/assembly_models.hh"
 
 #include "tools/time_governor.hh"
 #include "fields/field_algo_base.hh"
@@ -73,27 +74,6 @@ FLOW123D_FORCE_LINK_IN_CHILD(darcy_flow_mh)
 
 
 
-
-/*******************************************************************************
- * Functors of FieldModels
- */
-using Sclr = double;
-using Vect = arma::vec3;
-
-// Functor computing velocity (flux / cross_section)
-struct fn_mh_velocity {
-	inline Vect operator() (Vect flux, Sclr csec) {
-        return flux / csec;
-    }
-};
-
-
-// Functor computing piezo_head_p0
-struct fn_mh_piezohead {
-	inline Sclr operator() (Vect gravity, Vect coords, Sclr pressure) {
-        return arma::dot((-1*gravity), coords) + pressure;
-    }
-};
 
 
 

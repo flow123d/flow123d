@@ -51,6 +51,7 @@
 #include "flow/assembly_lmh.hh"
 #include "flow/darcy_flow_lmh.hh"
 #include "flow/darcy_flow_mh_output.hh"
+#include "flow/assembly_models.hh"
 
 #include "tools/time_governor.hh"
 #include "fields/field_algo_base.hh"
@@ -72,28 +73,6 @@
 FLOW123D_FORCE_LINK_IN_CHILD(darcy_flow_lmh)
 
 
-
-
-/*******************************************************************************
- * Functors of FieldModels
- */
-using Sclr = double;
-using Vect = arma::vec3;
-
-// Functor computing velocity (flux / cross_section)
-struct fn_lmh_velocity {
-	inline Vect operator() (Vect flux, Sclr csec) {
-        return flux / csec;
-    }
-};
-
-
-// Functor computing piezo_head_p0
-struct fn_lmh_piezohead {
-	inline Sclr operator() (Vect gravity, Vect coords, Sclr pressure) {
-        return arma::dot((-1*gravity), coords) + pressure;
-    }
-};
 
 
 namespace it = Input::Type;
@@ -324,7 +303,7 @@ void DarcyLMH::initialize() {
         auto ele_flux_ptr = create_field_fe<3, FieldValue<3>::VectorFixed>(data_->dh_, &data_->full_solution, rt_component);
         data_->flux.set(ele_flux_ptr, 0.0);
 
-		data_->field_ele_velocity.set(Model<3, FieldValue<3>::VectorFixed>::create(fn_lmh_velocity(), data_->flux, data_->cross_section), 0.0);
+		data_->field_ele_velocity.set(Model<3, FieldValue<3>::VectorFixed>::create(fn_mh_velocity(), data_->flux, data_->cross_section), 0.0);
 
 		uint p_ele_component = 1;
         auto ele_pressure_ptr = create_field_fe<3, FieldValue<3>::Scalar>(data_->dh_, &data_->full_solution, p_ele_component);
@@ -335,7 +314,7 @@ void DarcyLMH::initialize() {
 		data_->field_edge_pressure.set(edge_pressure_ptr, 0.0);
 
 		data_->field_ele_piezo_head.set(
-		        Model<3, FieldValue<3>::Scalar>::create(fn_lmh_piezohead(), data_->gravity_field, data_->X(), data_->field_ele_pressure),
+		        Model<3, FieldValue<3>::Scalar>::create(fn_mh_piezohead(), data_->gravity_field, data_->X(), data_->field_ele_pressure),
 		        0.0
 		);
     }
