@@ -29,7 +29,7 @@
 ##
 ##: Geometrical parameters. {#tbl:water_balance}
 ##
-##![Geometry, boundary conditions and computational mesh.](tutor_figures/07_bcmesh.pdf){#fig:BCD width=100%}
+##![Geometry, boundary conditions and computational mesh.](tutor_figures/07_bcmesh.pdf){#fig:BCD width=600px height=300px}
 ##
 ##
 ##
@@ -126,9 +126,9 @@
 ##
 ##![The power of heat exchanger system in 30 years.](tutor_figures/07_power.pdf){#fig:tempr}
 ##
-##![The flux field with piezometric head.](tutor_figures/07_flow.pdf){#fig:flux width=80%}
+##![The flux field with piezometric head.](tutor_figures/07_flow.pdf){#fig:flux width=600px height=600px}
 ##
-##![The temperature of exchanger after 30 years.](tutor_figures/07_transport.pdf){#fig:tempr_grad width=80%}
+##![The temperature of exchanger after 30 years.](tutor_figures/07_transport.pdf){#fig:tempr_grad width=600px height=600px}
 ##
 flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential

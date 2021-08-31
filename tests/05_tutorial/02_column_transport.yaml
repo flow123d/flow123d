@@ -58,7 +58,7 @@
 ##On ".tunnel", the mass flux is zero at the beginning and then it changes within around 100 years to the opposite value of inflow -6 × 10${}^{-6}$ kg/s.
 ##Figure @fig:mass_plot depicts results from the file ```mass_balance.txt``` for mass transported through the boundaries ".surface" and ".tunnel" and in the volume of "rock".
 ##
-##![Tracer concentration after 5, 10, 15 and 20 time steps.](tutor_figures/02_transport.pdf){#fig:transport width=100%}
+##![Tracer concentration after 5, 10, 15 and 20 time steps.](tutor_figures/02_transport.pdf){#fig:transport width=600px height=300px}
 ##
 ##time|    region    |quantity [kg]|    flux|    flux_in|    flux_out|    mass|    error
 ##----:|-----------|-------------|-----:|----------:|------------:|-------:|--------:
