@@ -379,9 +379,8 @@ void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) 
             auto source_mesh = ReaderCache::get_mesh(reader_file_);
             ReaderCache::get_element_ids(reader_file_, *(source_mesh.get()));
             if (this->interpolation_ == DataInterpolation::equivalent_msh) {
-                bool is_native = discretization_ == OutputTime::DiscreteSpace::NATIVE_DATA;
-                source_target_mesh_elm_map_ = ReaderCache::get_target_mesh_element_map(reader_file_, const_cast<Mesh *>(mesh), is_native);
-                if (source_target_mesh_elm_map_->size() == 0) { // incompatible meshes
+                source_target_mesh_elm_map_ = ReaderCache::get_target_mesh_element_map(reader_file_, const_cast<Mesh *>(mesh));
+                if (source_target_mesh_elm_map_->empty()) { // incompatible meshes
                     this->interpolation_ = DataInterpolation::gauss_p0;
                     WarningOut().fmt("Source mesh of FieldFE '{}' is not compatible with target mesh.\nInterpolation of input data will be changed to 'P0_gauss'.\n",
                             field_name_);
@@ -757,7 +756,7 @@ void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>:
 	std::vector<unsigned int> count_vector(data_vec_.size(), 0);
 	data_vec_.zero_entries();
 	std::vector<LongIdx> global_dof_indices(dh_->max_elem_dofs());
-	std::vector<LongIdx> &source_target_vec = *(source_target_mesh_elm_map_.get());
+	std::vector<LongIdx> &source_target_vec = this->boundary_domain_ ? source_target_mesh_elm_map_->boundary : source_target_mesh_elm_map_->bulk;
 
 	// iterate through cells, assembly MPIVector
 	for (auto cell : dh_->own_range()) {
@@ -813,7 +812,7 @@ void FieldFE<spacedim, Value>::calculate_equivalent_values(ElementDataCache<doub
 	unsigned int data_vec_i;
 	std::vector<unsigned int> count_vector(data_vec_.size(), 0);
 	data_vec_.zero_entries();
-	std::vector<LongIdx> &source_target_vec = *(source_target_mesh_elm_map_.get());
+	std::vector<LongIdx> &source_target_vec = this->boundary_domain_ ? source_target_mesh_elm_map_->boundary : source_target_mesh_elm_map_->bulk;
 
 	// iterate through elements, assembly global vector and count number of writes
 	for (auto cell : dh_->own_range()) {

@@ -101,18 +101,13 @@ const LongIdx *BCMesh::get_local_part() {
 }
 
 
-std::shared_ptr<std::vector<LongIdx>> BCMesh::check_compatible_mesh( Mesh & input_mesh ) {
+std::shared_ptr<EquivalentMeshMap> BCMesh::check_compatible_mesh( Mesh & input_mesh) {
 	return parent_mesh_->check_compatible_mesh(input_mesh);
 }
 
 
-std::shared_ptr<std::vector<LongIdx>> BCMesh::check_compatible_discont_mesh( Mesh & input_mesh) {
-	return parent_mesh_->check_compatible_discont_mesh(input_mesh);
-}
-
-
 ElementAccessor<3> BCMesh::element_accessor(unsigned int idx) const {
-    return ElementAccessor<3>(parent_mesh_, idx, true);
+	return ElementAccessor<3>(parent_mesh_, idx, true);
 }
 
 

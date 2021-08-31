@@ -71,6 +71,27 @@ public:
 };
 
 
+/** Auxiliary structure that keeps the separate
+ * element maps (bulk and boundary) for reading mesh and elementwise data.
+ * The mapping is considered from the source mesh (reading) to the target mesh (computation).
+ * Used by @p check_compatible_mesh().
+ */
+struct EquivalentMeshMap{
+    std::vector<LongIdx> bulk;
+    std::vector<LongIdx> boundary;
+
+    EquivalentMeshMap(){}
+    
+    EquivalentMeshMap(unsigned int bulk_size, unsigned int boundary_size, LongIdx def_val)
+    : bulk(bulk_size, def_val),
+      boundary(boundary_size, def_val)
+    {}
+
+    bool empty()
+    { return bulk.empty() && boundary.empty(); }
+};
+
+
 /// Base class for Mesh and BCMesh.
 class MeshBase {
 public:
@@ -174,12 +195,7 @@ public:
     /*
      * Check if nodes and elements are compatible with \p mesh.
      */
-    virtual std::shared_ptr<std::vector<LongIdx>> check_compatible_mesh( Mesh & input_mesh ) = 0;
-
-    /*
-     * Check if nodes and elements are compatible with \p mesh.
-     */
-    virtual std::shared_ptr<std::vector<LongIdx>> check_compatible_discont_mesh( Mesh & input_mesh ) = 0;
+    virtual std::shared_ptr<EquivalentMeshMap> check_compatible_mesh( Mesh & input_mesh ) = 0;
 
     /**
      * Find intersection of element lists given by Mesh::node_elements_ for elements givne by @p nodes_list parameter.
@@ -433,19 +449,7 @@ public:
      *             If element doesn't exist in input mesh value is set to Mesh::undef_idx.
      *             If meshes are not compatible returns empty vector.
      */
-    std::shared_ptr<std::vector<LongIdx>> check_compatible_mesh( Mesh & input_mesh);
-
-    /*
-     * Check if nodes and elements are compatible with discontinuous \p input_mesh.
-     *
-     * Call this method on computational mesh.
-     * @param input_mesh data mesh of input fields
-     * @return vector that holds mapping between eleemnts of data and computational meshes
-     *             for every element in computational mesh hold idx of equivalent element in input mesh.
-     *             If element doesn't exist in input mesh value is set to Mesh::undef_idx.
-     *             If meshes are not compatible returns empty vector.
-     */
-    virtual std::shared_ptr<std::vector<LongIdx>> check_compatible_discont_mesh( Mesh & input_mesh);
+    virtual std::shared_ptr<EquivalentMeshMap> check_compatible_mesh(Mesh & input_mesh);
 
     /// Create and return ElementAccessor to element of given idx
     ElementAccessor<3> element_accessor(unsigned int idx) const override;
@@ -625,6 +629,17 @@ protected:
 
     /// Sort elements and nodes by order stored in permutation vectors.
     void sort_permuted_nodes_elements(std::vector<int> new_node_ids, std::vector<int> new_elem_ids);
+
+    /**
+     * Looks for the same (compatible) elements between the @p source_mesh and @p target_mesh.
+     * Auxiliary function for check_compatible_mesh().
+     * Uses the nodal mapping @p node_ids.
+     * Fills the element mapping @p map.
+     * Returns the number of compatible elements.
+     */
+    unsigned int check_compatible_elements(MeshBase* source_mesh, MeshBase* target_mesh,
+                                           const std::vector<unsigned int>& node_ids,
+                                           std::vector<LongIdx>& map);
 
     /**
      * Flag for optimization perfomed at the beginning of setup_topology.

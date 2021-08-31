@@ -30,6 +30,7 @@
 #include "system/sys_profiler.hh"
 
 #include "mesh/mesh.h"
+#include "mesh/bc_mesh.hh"
 #include "io/msh_gmshreader.h"
 #include "io/reader_cache.hh"
 #include "tools/mixed.hh"
@@ -294,6 +295,7 @@ public:
         FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
         Profiler::instance();
+        PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
 
         mesh = mesh_full_constructor("{ mesh_file=\"mesh/simplest_cube.msh\", optimize_mesh=false }");
 
@@ -360,15 +362,18 @@ TEST_F(FieldFENewTest, scalar) {
 TEST_F(FieldFENewTest, bc_scalar) {
     ScalarField field;
     field.init_from_input(rec.val<Input::Record>("scalar"), init_data("scalar"));
+    BCMesh *bc_mesh = mesh->bc_mesh();
     field.set_mesh(mesh,true);
+
     for (unsigned int j=0; j<2; j++) {
     	field.set_time(test_time[j]);
 
-        for(unsigned int i=9; i < 15; i++) {
-            EXPECT_DOUBLE_EQ( 1.0+j*0.1+(i-8)*0.1 , field.value(point,mesh->bc_mesh()->element_accessor(i-9)) );
+        // only 4 BC elements are compatible with the comp mesh
+        for(unsigned int i=0; i < 4; i++) {
+            auto ele = bc_mesh->element_accessor(i);
+            EXPECT_DOUBLE_EQ( j*0.1 + (ele.index()+1)*0.1 , field.value(point,ele) );
         }
     }
-
 }
 
 
@@ -393,8 +398,12 @@ TEST_F(FieldFENewTest, bc_scalar_unit_conv) {
     field.set_mesh(mesh,true);
     for (unsigned int j=0; j<3; j++) {
     	field.set_time(test_time[j]);
-        for(unsigned int i=9; i < 13; i++) {
-            EXPECT_DOUBLE_EQ( 110.0+j*10.0+(i-9)*10.0 , field.value(point,mesh->bc_mesh()->element_accessor(i-9)) );
+
+        BCMesh *bc_mesh = mesh->bc_mesh();
+        // only 4 BC elements are compatible with the comp mesh
+        for(unsigned int i=0; i < 4; i++) {
+            auto ele = bc_mesh->element_accessor(i);
+            EXPECT_DOUBLE_EQ(j*10.0+(ele.index()+1)*10.0 , field.value(point,ele) );
         }
     }
 
@@ -436,8 +445,11 @@ TEST_F(FieldFENewTest, bc_vector_fixed) {
     field.set_mesh(mesh,true);
      for (unsigned int j=0; j<2; j++) {
     	field.set_time(test_time[j]);
-     	for(unsigned int i=0; i < 6; i++) {
-            EXPECT_TRUE( arma::min(arma::vec3(expected_vals[j]) == field.value(point,mesh->bc_mesh()->element_accessor(i))) );
+     	BCMesh *bc_mesh = mesh->bc_mesh();
+        // only 4 BC elements are compatible with the comp mesh
+        for(unsigned int i=0; i < 6; i++) {
+            auto ele = bc_mesh->element_accessor(i);
+            EXPECT_TRUE( arma::min(arma::vec3(expected_vals[j]) == field.value(point,ele)) );
         }
     }
 }
@@ -465,8 +477,11 @@ TEST_F(FieldFENewTest, bc_tensor_fixed) {
     field.set_mesh(mesh, true);
      for (unsigned int j=0; j<2; j++) {
     	field.set_time(test_time[j]);
-         for(unsigned int i=0; i < 6; i++) {
-            arma::umat match = ( arma::mat33(expected_vals[j]) == field.value(point,mesh->bc_mesh()->element_accessor(i)) );
+        BCMesh *bc_mesh = mesh->bc_mesh();
+        // only 6 BC elements are compatible with the comp mesh
+        for(unsigned int i=0; i < 6; i++) {
+            auto ele = bc_mesh->element_accessor(i);
+            arma::umat match = ( arma::mat33(expected_vals[j]) == field.value(point,ele) );
             EXPECT_TRUE( match.min() );
         }
     }

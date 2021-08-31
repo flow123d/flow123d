@@ -21,6 +21,8 @@ test_cases:
     - 33_serial_vtk_corn_interp.yaml
     - 42_square4x_DG_native_write.yaml
     - 43_square4x_DG_native_read.yaml
+    - 44_P0_data_DG_write.yaml
+    - 45_P0_data_DG_read.yaml
 
 - files: 11_time_marks_mixed_times.yaml
   memory_limit: 1300

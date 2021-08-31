@@ -54,10 +54,7 @@ public:
     const LongIdx *get_local_part() override;
 
     /// Overwrite Mesh::check_compatible_mesh()
-    std::shared_ptr<std::vector<LongIdx>> check_compatible_mesh( Mesh & input_mesh) override;
-
-    /// Overwrite Mesh::check_compatible_discont_mesh()
-    std::shared_ptr<std::vector<LongIdx>> check_compatible_discont_mesh( Mesh & input_mesh) override;
+    std::shared_ptr<EquivalentMeshMap> check_compatible_mesh( Mesh & input_mesh) override;
 
     /// Overwrite Mesh::element_accessor()
     ElementAccessor<3> element_accessor(unsigned int idx) const override;
