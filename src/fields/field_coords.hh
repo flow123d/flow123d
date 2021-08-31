@@ -160,19 +160,6 @@ public:
         return std::vector<const FieldCommon *>();
     }
 
-    /// Forbidden method in this class.
-    OutputTime::OutputDataPtr output_data_cache(FMT_UNUSED OutputTime::DiscreteSpace space_type, FMT_UNUSED std::shared_ptr<OutputTime> stream) const override {
-    	ASSERT(false);
-    	return nullptr;
-    }
-
-    /// Forbidden method in this class.
-    void fill_data_value(FMT_UNUSED BulkPoint &p, FMT_UNUSED unsigned int value_idx,
-                         FMT_UNUSED std::shared_ptr<ElementDataCacheBase> output_data_base) override
-    {
-    	ASSERT(false);
-    }
-
     /// Returns one value of coordinates in one given point @p.
     inline arma::vec3 const & value(const Point &p, FMT_UNUSED const ElementAccessor<3> &elm) const
     {

@@ -271,10 +271,16 @@ public:
     unsigned int n_comp() const
     { return shared_->comp_names_.size();}
 
-    inline std::string comp_name(unsigned int i_comp) const
+    /**
+     * Returns full name of subfield on \p i_comp position created from component name and field name.
+     *
+     * If component name is empty returns only field name.
+     */
+    inline std::string full_comp_name(unsigned int i_comp) const
     {
         ASSERT_LT_DBG(i_comp, shared_->comp_names_.size());
-        return shared_->comp_names_[i_comp];
+        return shared_->comp_names_[i_comp].empty() ? this->name()
+                : shared_->comp_names_[i_comp] + "_" + this->name();
     }
 
     const Mesh * mesh() const
@@ -493,10 +499,18 @@ public:
     virtual const FieldValueCache<double> * value_cache() const =0;
 
     /// Create and return shared_ptr to ElementDataCache. Used only in descendant Field<>.
-    virtual OutputTime::OutputDataPtr output_data_cache(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream) const =0;
+    virtual OutputTime::OutputDataPtr output_data_cache(FMT_UNUSED OutputTime::DiscreteSpace space_type, FMT_UNUSED std::shared_ptr<OutputTime> stream) const
+    {
+        ASSERT(false);
+        return nullptr;
+    }
 
     /// Fill value to ElementDataCache on given BulkPoint.
-    virtual void fill_data_value(BulkPoint &p, unsigned int value_idx, std::shared_ptr<ElementDataCacheBase> output_data_base) =0;
+    virtual void fill_data_value(FMT_UNUSED BulkPoint &p, FMT_UNUSED unsigned int value_idx,
+            FMT_UNUSED std::shared_ptr<ElementDataCacheBase> output_data_base)
+    {
+        ASSERT(false);
+    }
 
 
     /**
