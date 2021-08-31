@@ -188,7 +188,7 @@ public:
     }
     
     unsigned int proc() const {
-        return mesh_->get_el_ds()->get_proc(mesh_->get_row_4_el()[element_idx_]);
+        return boundary_ ? mesh_->bc_mesh()->get_el_ds()->get_proc(mesh_->bc_mesh()->get_row_4_el()[element_idx_]) : mesh_->get_el_ds()->get_proc(mesh_->get_row_4_el()[element_idx_]);
     }
 
 
