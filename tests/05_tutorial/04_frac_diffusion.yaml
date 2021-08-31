@@ -29,7 +29,7 @@
 ##
 ##This ensures that the 2D mesh will adapt so that elements do not cross the fracture lines (see Figure {@fig:mesh}).
 ##
-##![Geometry and mesh of simulation area.](tutor_figures/04_geomesh.pdf){#fig:mesh width=100%}
+##![Geometry and mesh of simulation area.](tutor_figures/04_geomesh.pdf){#fig:mesh width=600px height=300px}
 ## 
 ##
 ##
