@@ -6,7 +6,7 @@
 ##
 ##This is a variant of ```04_frac_diffusion.yaml```. Instead of diffusion we consider advective transport with equilibrial sorption.
 ##
-###Input
+### Input
 ##
 ##Flow123d provides several types of sorption (linear, Langmuir and Freundlich isotherm). Each substance can be assigned its own sorption type.
 ##In this test, the transport of three substances is computed: Iodium without sorption, Radium with liner sorption and Selenium with Langmuir isotherm. The solvent density and solubility was set to 1. Initial condition of solid was set to zero; rock density to 1 and parameter of liner and Langmuir isotherm was set to 0.6.

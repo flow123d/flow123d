@@ -5,7 +5,7 @@
 ##This is a variant of ```01_column.yaml```.
 ##The user will learn how to:
 ##
-##* Use flux boundary conditions;
+##* Use flux boundary conditions.
 ##* Set up the advective transport model.
 ##
 ##For the fluid flow model we change the atmospheric pressure on the surface to the more realistic infiltration 200 mm/yr (= $6.34\times 10^{-9}$ m/s):
