@@ -155,7 +155,7 @@ public:
         ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
 
         unsigned int output_elm_idx = stream_->get_output_mesh_ptr()->get_loc_elem_idx(cell.elm_idx());
-        auto &offset_vec = *( stream_->offsets()->get_component_data(0).get() );
+        auto &offset_vec = *( stream_->get_output_mesh_ptr()->offsets()->get_component_data(0).get() );
         unsigned int offset = offset_vec[output_elm_idx];
         for (auto p : this->bulk_points(element_patch_idx) ) {
             for (FieldListAccessor f_acc : used_fields_.fields_range()) {

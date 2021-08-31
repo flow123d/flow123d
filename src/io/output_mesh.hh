@@ -139,6 +139,11 @@ public:
 	    return loc_4_el_[global_idx];
 	}
 
+    /// Getter to offsets data
+    inline std::shared_ptr<ElementDataCache<unsigned int>> offsets() const {
+        return offsets_;
+    }
+
 protected:
 	/**
 	 * Possible types of OutputMesh.
