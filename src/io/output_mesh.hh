@@ -132,7 +132,11 @@ public:
 		else return shared_from_this();
 	};
 
-	/// Return local element index to its global index.
+	/**
+	 * Return local element index to its global index.
+	 *
+	 * Temporary method. Used only in output assembly classes. DO NOT USE in other code!
+	 */
 	inline LongIdx get_loc_elem_idx(LongIdx global_idx) {
 	    ASSERT_LT_DBG(global_idx, (int)el_ds_->size()).error("Index of element is out of mesh.\n");
 	    ASSERT_DBG(loc_4_el_[global_idx] != -1)(global_idx).error("Element is not local.\n");

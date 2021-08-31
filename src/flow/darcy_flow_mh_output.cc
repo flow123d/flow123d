@@ -314,7 +314,7 @@ void DarcyFlowMHOutput::output_internal_flow_data()
         raw_output_file << fmt::format("{} {} ", dh_cell.elm().index(), data->full_solution.get(indices[ele->n_sides()]));
         
         // velocity at element center
-        flux_in_center = data->flux.value(ele.centre(), ele) / data->cross_section.value(ele.centre(), ele); // TODO use new assembly
+        flux_in_center = data->field_ele_velocity.value(ele.centre(), ele);
         for (unsigned int i = 0; i < 3; i++)
         	raw_output_file << flux_in_center[i] << " ";
 

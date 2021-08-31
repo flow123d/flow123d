@@ -262,9 +262,10 @@ void EquationOutput::output(TimeStep step)
                     used_fields += *(f_acc.field());
                 }
             }
-            output_node_data_assembly_->multidim_assembly()[1_d]->set_output_data(used_fields, caches_map_node_data, stream_);
-            output_node_data_assembly_->multidim_assembly()[2_d]->set_output_data(used_fields, caches_map_node_data, stream_);
-            output_node_data_assembly_->multidim_assembly()[3_d]->set_output_data(used_fields, caches_map_node_data, stream_);
+            auto mixed_assmbly = output_node_data_assembly_->multidim_assembly();
+            mixed_assmbly[1_d]->set_output_data(used_fields, caches_map_node_data, stream_);
+            mixed_assmbly[2_d]->set_output_data(used_fields, caches_map_node_data, stream_);
+            mixed_assmbly[3_d]->set_output_data(used_fields, caches_map_node_data, stream_);
             output_node_data_assembly_->assemble(this->dh_node_);
         }
     }
@@ -280,9 +281,10 @@ void EquationOutput::output(TimeStep step)
                     used_fields += *(f_acc.field());
                 }
             }
-            output_corner_data_assembly_->multidim_assembly()[1_d]->set_output_data(used_fields, caches_map_corner_data, stream_);
-            output_corner_data_assembly_->multidim_assembly()[2_d]->set_output_data(used_fields, caches_map_corner_data, stream_);
-            output_corner_data_assembly_->multidim_assembly()[3_d]->set_output_data(used_fields, caches_map_corner_data, stream_);
+            auto mixed_assmbly = output_corner_data_assembly_->multidim_assembly();
+            mixed_assmbly[1_d]->set_output_data(used_fields, caches_map_corner_data, stream_);
+            mixed_assmbly[2_d]->set_output_data(used_fields, caches_map_corner_data, stream_);
+            mixed_assmbly[3_d]->set_output_data(used_fields, caches_map_corner_data, stream_);
             output_corner_data_assembly_->assemble(this->dh_node_);
         }
     }
@@ -299,9 +301,10 @@ void EquationOutput::output(TimeStep step)
                 }
             }
         }
-        output_elem_data_assembly_->multidim_assembly()[1_d]->set_output_data(used_fields, caches_map_elem_data, stream_);
-        output_elem_data_assembly_->multidim_assembly()[2_d]->set_output_data(used_fields, caches_map_elem_data, stream_);
-        output_elem_data_assembly_->multidim_assembly()[3_d]->set_output_data(used_fields, caches_map_elem_data, stream_);
+        auto mixed_assmbly = output_elem_data_assembly_->multidim_assembly();
+        mixed_assmbly[1_d]->set_output_data(used_fields, caches_map_elem_data, stream_);
+        mixed_assmbly[2_d]->set_output_data(used_fields, caches_map_elem_data, stream_);
+        mixed_assmbly[3_d]->set_output_data(used_fields, caches_map_elem_data, stream_);
         output_elem_data_assembly_->assemble(this->dh_);
     }
 
