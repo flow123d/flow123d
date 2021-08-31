@@ -28,9 +28,9 @@
 ##The mesh file can be generated using the software [GMSH](http://www.gmsh.info).
 ##It has to contain:
 ##
-##* point coordinates;
-##* simplicial elements (lines, triangles, tetrahedra). Elements of lower dimensions represent fractures or channels;
-##* physical regions (groups of elements, labeled either by numerical id or string caption). Names of regions defining boundary have to start by a dot;
+##* Nodes. Point coordinates.
+##* Simplicial elements (lines, triangles, tetrahedra). Also elements of lower dimensions represent fractures or channels.
+##* Physical domains (groups of elements, labeled either by a numerical id or a string caption). Names of regions defining boundary have to start by a dot.
 ##
 ##The mesh file is specified by the following lines:
 ##
@@ -40,14 +40,14 @@
 ##
 #### Setting the model and physical parameters
 ##In this example we use the Darcy flow model, which is set by:
-##    
+##
 ##      flow_equation: !Flow_Darcy_MH
 ##
-##Note:
-##The equation name consists of three parts: physical process (flow), mathematical model (Darcy) and numerical method (MH = mixed hybrid finite element method).
+##*Note:
+##The equation name consists of three parts: physical process (Flow), mathematical model (Darcy) and numerical method (MH = mixed hybrid finite element method).*
 ##
 ##The bulk parameters and boundary conditions are defined in the section ```input_fields```.
-##For the rock massif (```- region: rock```) we prescribe the hydraulic conductivity $K = 10^{-8}$ m/s (typical value for the granite rock massif):
+##For the rock massif (```region: rock```) we prescribe the hydraulic conductivity $K = 10^{-8}$ m/s (typical value for the granite rock massif):
 ##
 ##      input_fields:
 ##        - region: rock
@@ -89,13 +89,12 @@
 ##        fields:
 ##          - piezo_head_p0
 ##          - pressure_p0
-##          - pressure_p2_disc
 ##          - velocity_p0
 ##
 ##The above code can be alternatively written in a more compact form, namely
 ##
 ##      output:
-##        fields: [piezo_head_p0, pressure_p0, pressure_p2_disc, velocity_p0]
+##        fields: [piezo_head_p0, pressure_p0, velocity_p0]
 ##
 ##In addition to the output of solution, Flow123d provides computation of balance of fluid volume, flux through boundaries and volume sources.
 ##This is turned on by
@@ -145,6 +144,5 @@ problem: !Coupling_Sequential
       fields:
         - piezo_head_p0
         - pressure_p0
-        #- pressure_p2_disc
         - velocity_p0
     balance: {}
