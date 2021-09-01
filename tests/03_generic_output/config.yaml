@@ -49,20 +49,20 @@ test_cases:
         a_tol: 1e-10
 
 # serial refined tests
-- files:
-    #- 23_gmsh_refined_serial_output.yaml
-    - 51_darcy_fv_output_mesh_1d_serial.yaml
-    - 53_darcy_fv_output_mesh_2d_serial.yaml
-    - 55_darcy_fv_output_mesh_3d_serial.yaml
-  proc: [1]
+#- files:
+#    #- 23_gmsh_refined_serial_output.yaml
+#    - 51_darcy_fv_output_mesh_1d_serial.yaml
+#    - 53_darcy_fv_output_mesh_2d_serial.yaml
+#    - 55_darcy_fv_output_mesh_3d_serial.yaml
+#  proc: [1]
 
 # parallel refined tests
-- files:
-    #- 24_gmsh_refined_parallel_output.yaml
-    - 52_darcy_fv_output_mesh_1d_parallel.yaml
-    - 54_darcy_fv_output_mesh_2d_parallel.yaml
-    - 56_darcy_fv_output_mesh_3d_parallel.yaml
-  proc: [2]
+#- files:
+#    #- 24_gmsh_refined_parallel_output.yaml
+#    - 52_darcy_fv_output_mesh_1d_parallel.yaml
+#    - 54_darcy_fv_output_mesh_2d_parallel.yaml
+#    - 56_darcy_fv_output_mesh_3d_parallel.yaml
+#  proc: [2]
 
 # test of generic fields subdomain and region_id
 - files:
