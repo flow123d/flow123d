@@ -33,9 +33,6 @@
 
 
 
-typedef typename std::unordered_map<std::string, OutputTime::OutputDataPtr> UsedElementDataCaches;
-
-
 /**
  * Common ancestor of AssemblyOutputElemData and AssemblyOutputNodeData class.
  */
@@ -64,10 +61,9 @@ public:
     }
 
     /// Sets output data members.
-    void set_output_data(const FieldSet &used, UsedElementDataCaches used_caches, std::shared_ptr<OutputTime> stream) {
+    void set_output_data(const FieldSet &used, std::shared_ptr<OutputTime> stream) {
     	used_fields_ = FieldSet();
     	used_fields_ += used;
-    	used_caches_ = used_caches;
     	stream_ = stream;
     }
 
@@ -86,7 +82,6 @@ protected:
     EqData *eq_data_;
 
     FieldSet used_fields_;                                    ///< Sub field set contains fields performed to output
-    UsedElementDataCaches used_caches_;                       ///< Map of ElementDataCaches assigned to items of used_fields_
     std::shared_ptr<OutputTime> stream_;                      ///< Output stream.
 };
 
@@ -118,8 +113,7 @@ public:
         auto p = *( this->bulk_points(element_patch_idx).begin() ); // evaluation point (in element center)
         unsigned int val_idx = this->stream_->get_output_mesh_ptr()->get_loc_elem_idx(cell.elm_idx());
         for (FieldListAccessor f_acc : this->used_fields_.fields_range()) {
-            typename OutputTime::OutputDataPtr output_data_base = this->used_caches_[f_acc->name()];
-            f_acc->fill_data_value(p, val_idx, output_data_base);
+            f_acc->fill_data_value(p, val_idx);
         }
     }
 
@@ -155,8 +149,8 @@ public:
     ~AssemblyOutputNodeData() {}
 
     /// Sets output data members.
-    void set_output_data(const FieldSet &used, UsedElementDataCaches used_caches, std::shared_ptr<OutputTime> stream) {
-    	AssemblyOutputBase<dim>::set_output_data(used, used_caches, stream);
+    void set_output_data(const FieldSet &used, std::shared_ptr<OutputTime> stream) {
+    	AssemblyOutputBase<dim>::set_output_data(used, stream);
     	offset_vec_ = this->stream_->get_output_mesh_ptr()->offsets()->get_component_data(0);
     }
 
@@ -172,8 +166,7 @@ public:
         for (FieldListAccessor f_acc : this->used_fields_.fields_range()) {
             unsigned int i_point=0;
         	for (auto p : this->bulk_points(element_patch_idx) ) {
-                typename OutputTime::OutputDataPtr output_data_base = this->used_caches_[f_acc->name()];
-                f_acc->fill_data_value(p, offset+i_point, output_data_base);
+                f_acc->fill_data_value(p, offset+i_point);
                 ++i_point;
             }
         }

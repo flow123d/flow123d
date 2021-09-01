@@ -649,11 +649,12 @@ void Field<spacedim,Value>::set_input_list(const Input::Array &list, const TimeG
 
 
 template<int spacedim, class Value>
-OutputTime::OutputDataPtr Field<spacedim,Value>::output_data_cache(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream) const {
+void Field<spacedim,Value>::set_output_data_cache(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream) {
     typedef typename Value::element_type ElemType;
 
-    return stream->prepare_compute_data<ElemType>(this->name(), space_type,
+    auto output_cache_base = stream->prepare_compute_data<ElemType>(this->name(), space_type,
             (unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
+    output_data_cache_ = std::dynamic_pointer_cast<ElementDataCache<ElemType>>(output_cache_base);
 }
 
 
@@ -682,20 +683,16 @@ void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_t
 
 
 template<int spacedim, class Value>
-void Field<spacedim,Value>::fill_data_value(BulkPoint &p, unsigned int value_idx,
-                                            std::shared_ptr<ElementDataCacheBase> output_data_base)
+void Field<spacedim,Value>::fill_data_value(BulkPoint &p, unsigned int value_idx)
 {
     typedef typename Value::element_type ElemType;
 
     try {
         // try casting actual ElementDataCache
-        if( ! output_data_base->is_dummy()){
-            auto data_cache = std::dynamic_pointer_cast<ElementDataCache<ElemType>>(output_data_base);
-
+        if( ! output_data_cache_->is_dummy()){
             auto ret_value = this->operator()(p);
             const Value &ele_value = Value( ret_value );
-            ASSERT_EQ(data_cache->n_comp(), ele_value.n_rows()*ele_value.n_cols()).error();
-            data_cache->store_value(value_idx, ele_value.mem_ptr() );
+            output_data_cache_->store_value(value_idx, ele_value.mem_ptr() );
         }
 
     } catch(const std::bad_cast& e){

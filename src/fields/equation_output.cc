@@ -258,52 +258,49 @@ void EquationOutput::output(TimeStep step)
 
     // NODE_DATA
     {
-        UsedElementDataCaches caches_map_node_data;
         FieldSet used_fields;
         for(FieldListAccessor f_acc : this->fields_range()) {
             if (is_field_output_time( *(f_acc.field()), step) && field_output_times_[f_acc->name()].space_flags_[OutputTime::NODE_DATA]) {
-                caches_map_node_data[f_acc->name()] = f_acc->output_data_cache(OutputTime::NODE_DATA, stream_);
+                f_acc->set_output_data_cache(OutputTime::NODE_DATA, stream_);
                 used_fields += *(f_acc.field());
             }
             auto mixed_assmbly = output_node_data_assembly_->multidim_assembly();
-            mixed_assmbly[1_d]->set_output_data(used_fields, caches_map_node_data, stream_);
-            mixed_assmbly[2_d]->set_output_data(used_fields, caches_map_node_data, stream_);
-            mixed_assmbly[3_d]->set_output_data(used_fields, caches_map_node_data, stream_);
+            mixed_assmbly[1_d]->set_output_data(used_fields, stream_);
+            mixed_assmbly[2_d]->set_output_data(used_fields, stream_);
+            mixed_assmbly[3_d]->set_output_data(used_fields, stream_);
             output_node_data_assembly_->assemble(this->dh_node_);
         }
     }
 
     // CORNER_DATA
     {
-        UsedElementDataCaches caches_map_corner_data;
         FieldSet used_fields;
         for(FieldListAccessor f_acc : this->fields_range()) {
             if (is_field_output_time( *(f_acc.field()), step) && field_output_times_[f_acc->name()].space_flags_[OutputTime::CORNER_DATA]) {
-                caches_map_corner_data[f_acc->name()] = f_acc->output_data_cache(OutputTime::CORNER_DATA, stream_);
+                f_acc->set_output_data_cache(OutputTime::CORNER_DATA, stream_);
                 used_fields += *(f_acc.field());
             }
             auto mixed_assmbly = output_corner_data_assembly_->multidim_assembly();
-            mixed_assmbly[1_d]->set_output_data(used_fields, caches_map_corner_data, stream_);
-            mixed_assmbly[2_d]->set_output_data(used_fields, caches_map_corner_data, stream_);
-            mixed_assmbly[3_d]->set_output_data(used_fields, caches_map_corner_data, stream_);
+            mixed_assmbly[1_d]->set_output_data(used_fields, stream_);
+            mixed_assmbly[2_d]->set_output_data(used_fields, stream_);
+            mixed_assmbly[3_d]->set_output_data(used_fields, stream_);
             output_corner_data_assembly_->assemble(this->dh_node_);
         }
     }
 
     // ELEM_DATA
     {
-        UsedElementDataCaches caches_map_elem_data;
         FieldSet used_fields;
         for (FieldListAccessor f_acc : this->fields_range()) {
             if (is_field_output_time( *(f_acc.field()), step) && field_output_times_[f_acc->name()].space_flags_[OutputTime::ELEM_DATA]) {
-                caches_map_elem_data[f_acc->name()] = f_acc->output_data_cache(OutputTime::ELEM_DATA, stream_);
+                f_acc->set_output_data_cache(OutputTime::ELEM_DATA, stream_);
                 used_fields += *(f_acc.field());
             }
         }
         auto mixed_assmbly = output_elem_data_assembly_->multidim_assembly();
-        mixed_assmbly[1_d]->set_output_data(used_fields, caches_map_elem_data, stream_);
-        mixed_assmbly[2_d]->set_output_data(used_fields, caches_map_elem_data, stream_);
-        mixed_assmbly[3_d]->set_output_data(used_fields, caches_map_elem_data, stream_);
+        mixed_assmbly[1_d]->set_output_data(used_fields, stream_);
+        mixed_assmbly[2_d]->set_output_data(used_fields, stream_);
+        mixed_assmbly[3_d]->set_output_data(used_fields, stream_);
         output_elem_data_assembly_->assemble(this->dh_);
     }
 

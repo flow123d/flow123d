@@ -498,16 +498,14 @@ public:
      */
     virtual const FieldValueCache<double> * value_cache() const =0;
 
-    /// Create and return shared_ptr to ElementDataCache. Used only in descendant Field<>.
-    virtual OutputTime::OutputDataPtr output_data_cache(FMT_UNUSED OutputTime::DiscreteSpace space_type, FMT_UNUSED std::shared_ptr<OutputTime> stream) const
+    /// Create and set shared_ptr to ElementDataCache. Used only in descendant Field<>.
+    virtual void set_output_data_cache(FMT_UNUSED OutputTime::DiscreteSpace space_type, FMT_UNUSED std::shared_ptr<OutputTime> stream)
     {
         ASSERT(false);
-        return nullptr;
     }
 
     /// Fill value to ElementDataCache on given BulkPoint.
-    virtual void fill_data_value(FMT_UNUSED BulkPoint &p, FMT_UNUSED unsigned int value_idx,
-            FMT_UNUSED std::shared_ptr<ElementDataCacheBase> output_data_base)
+    virtual void fill_data_value(FMT_UNUSED BulkPoint &p, FMT_UNUSED unsigned int value_idx)
     {
         ASSERT(false);
     }

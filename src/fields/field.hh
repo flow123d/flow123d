@@ -335,7 +335,7 @@ public:
      * Create and return shared_ptr to ElementDataCache appropriate to Field. Data cache is given by discrete @p space_type
      * and is stored into data structures of output time @p stream for postponed output too.
      */
-    OutputTime::OutputDataPtr output_data_cache(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream) const override;
+    void set_output_data_cache(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream) override;
 
     /**
      * Interpolate given field into output discrete @p space_type and store the values
@@ -361,7 +361,7 @@ public:
     std::vector<const FieldCommon *> set_dependency(FieldSet &field_set, unsigned int i_reg) const override;
 
     /// Implements FieldCommon::fill_data_value
-    void fill_data_value(BulkPoint &p, unsigned int value_idx, std::shared_ptr<ElementDataCacheBase> output_data_base) override;
+    void fill_data_value(BulkPoint &p, unsigned int value_idx) override;
 
 protected:
 
@@ -436,6 +436,9 @@ protected:
      * Order of subsets is same as in eval_points.
      */
     mutable FieldValueCache<typename Value::element_type> value_cache_;
+
+    /// ElementDataCache used during field output, object is shared with OutputTime
+    std::shared_ptr<ElementDataCache<typename Value::element_type>> output_data_cache_;
 
 
 
