@@ -37,25 +37,26 @@ typedef typename std::unordered_map<std::string, OutputTime::OutputDataPtr> Used
 
 
 /**
- * Auxiliary container class for Finite element and related objects of given dimension.
+ * Common ancestor of AssemblyOutputElemData and AssemblyOutputNodeData class.
  */
 template <unsigned int dim>
-class AssemblyOutputElemData : public AssemblyBase<dim>
+class AssemblyOutputBase : public AssemblyBase<dim>
 {
 public:
     typedef EquationOutput EqFields;
     typedef EquationOutput EqData;
 
-    static constexpr const char * name() { return "AssemblyOutputElemData"; }
-
     /// Constructor.
-    AssemblyOutputElemData(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data) {
+    AssemblyOutputBase(unsigned int quad_order, EqFields *eq_fields, EqData *eq_data)
+    : AssemblyBase<dim>(quad_order), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
     }
 
-    /// Destructor.
-    ~AssemblyOutputElemData() {}
+    /// Constructor.
+    AssemblyOutputBase(EqFields *eq_fields, EqData *eq_data)
+    : AssemblyBase<dim>(), eq_fields_(eq_fields), eq_data_(eq_data) {
+        this->active_integrals_ = ActiveIntegrals::bulk;
+    }
 
     /// Initialize auxiliary vectors and other data members
     void initialize(ElementCacheMap *element_cache_map) {
@@ -70,20 +71,6 @@ public:
     	stream_ = stream;
     }
 
-
-    /// Assemble integral over element
-    inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
-    {
-        ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
-
-        auto p = *( this->bulk_points(element_patch_idx).begin() ); // evaluation point (in element center)
-        unsigned int val_idx = stream_->get_output_mesh_ptr()->get_loc_elem_idx(cell.elm_idx());
-        for (FieldListAccessor f_acc : used_fields_.fields_range()) {
-            typename OutputTime::OutputDataPtr output_data_base = used_caches_[f_acc->name()];
-            f_acc->fill_data_value(p, val_idx, output_data_base);
-        }
-    }
-
     /// Implements @p AssemblyBase::end.
     void end() override
     {
@@ -92,7 +79,8 @@ public:
         }
     }
 
-private:
+
+protected:
     /// Data objects shared with EquationOutput
     EqFields *eq_fields_;
     EqData *eq_data_;
@@ -100,10 +88,6 @@ private:
     FieldSet used_fields_;                                    ///< Sub field set contains fields performed to output
     UsedElementDataCaches used_caches_;                       ///< Map of ElementDataCaches assigned to items of used_fields_
     std::shared_ptr<OutputTime> stream_;                      ///< Output stream.
-
-    template < template<IntDim...> class DimAssembly>
-    friend class GenericAssembly;
-
 };
 
 
@@ -111,7 +95,44 @@ private:
  * Auxiliary container class for Finite element and related objects of given dimension.
  */
 template <unsigned int dim>
-class AssemblyOutputNodeData : public AssemblyBase<dim>
+class AssemblyOutputElemData : public AssemblyOutputBase<dim>
+{
+public:
+    typedef EquationOutput EqFields;
+    typedef EquationOutput EqData;
+
+    static constexpr const char * name() { return "AssemblyOutputElemData"; }
+
+    /// Constructor.
+    AssemblyOutputElemData(EqFields *eq_fields, EqData *eq_data)
+    : AssemblyOutputBase<dim>(0, eq_fields, eq_data) {}
+
+    /// Destructor.
+    ~AssemblyOutputElemData() {}
+
+    /// Assemble integral over element
+    inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
+    {
+        ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
+
+        auto p = *( this->bulk_points(element_patch_idx).begin() ); // evaluation point (in element center)
+        unsigned int val_idx = this->stream_->get_output_mesh_ptr()->get_loc_elem_idx(cell.elm_idx());
+        for (FieldListAccessor f_acc : this->used_fields_.fields_range()) {
+            typename OutputTime::OutputDataPtr output_data_base = this->used_caches_[f_acc->name()];
+            f_acc->fill_data_value(p, val_idx, output_data_base);
+        }
+    }
+
+    template < template<IntDim...> class DimAssembly>
+    friend class GenericAssembly;
+};
+
+
+/**
+ * Auxiliary container class for Finite element and related objects of given dimension.
+ */
+template <unsigned int dim>
+class AssemblyOutputNodeData : public AssemblyOutputBase<dim>
 {
 public:
     typedef EquationOutput EqFields;
@@ -121,9 +142,7 @@ public:
 
     /// Constructor.
     AssemblyOutputNodeData(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(), eq_fields_(eq_fields), eq_data_(eq_data) {
-        this->active_integrals_ = ActiveIntegrals::bulk;
-
+    : AssemblyOutputBase<dim>(eq_fields, eq_data) {
         this->quad_ = new Quadrature(dim, RefElement<dim>::n_nodes);
         for(unsigned int i = 0; i<RefElement<dim>::n_nodes; i++)
         {
@@ -135,17 +154,10 @@ public:
     /// Destructor.
     ~AssemblyOutputNodeData() {}
 
-    /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
-        this->element_cache_map_ = element_cache_map;
-    }
-
     /// Sets output data members.
     void set_output_data(const FieldSet &used, UsedElementDataCaches used_caches, std::shared_ptr<OutputTime> stream) {
-    	used_fields_ = FieldSet();
-    	used_fields_ += used;
-    	used_caches_ = used_caches;
-    	stream_ = stream;
+    	AssemblyOutputBase<dim>::set_output_data(used, used_caches, stream);
+    	offset_vec_ = this->stream_->get_output_mesh_ptr()->offsets()->get_component_data(0);
     }
 
 
@@ -154,34 +166,21 @@ public:
     {
         ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
 
-        unsigned int output_elm_idx = stream_->get_output_mesh_ptr()->get_loc_elem_idx(cell.elm_idx());
-        auto &offset_vec = *( stream_->get_output_mesh_ptr()->offsets()->get_component_data(0).get() );
-        unsigned int offset = offset_vec[output_elm_idx];
-        for (auto p : this->bulk_points(element_patch_idx) ) {
-            for (FieldListAccessor f_acc : used_fields_.fields_range()) {
-                typename OutputTime::OutputDataPtr output_data_base = used_caches_[f_acc->name()];
-                f_acc->fill_data_value(p, offset, output_data_base);
-            }
-            ++offset;
-        }
-    }
+        unsigned int output_elm_idx = this->stream_->get_output_mesh_ptr()->get_loc_elem_idx(cell.elm_idx());
+        unsigned int offset = (*offset_vec_)[output_elm_idx];
 
-    /// Implements @p AssemblyBase::end.
-    void end() override
-    {
-        for (FieldListAccessor f_acc : used_fields_.fields_range()) {
-            stream_->update_time(f_acc->time());
+        for (FieldListAccessor f_acc : this->used_fields_.fields_range()) {
+            unsigned int i_point=0;
+        	for (auto p : this->bulk_points(element_patch_idx) ) {
+                typename OutputTime::OutputDataPtr output_data_base = this->used_caches_[f_acc->name()];
+                f_acc->fill_data_value(p, offset+i_point, output_data_base);
+                ++i_point;
+            }
         }
     }
 
 private:
-    /// Data objects shared with EquationOutput
-    EqFields *eq_fields_;
-    EqData *eq_data_;
-
-    FieldSet used_fields_;                                    ///< Sub field set contains fields performed to output
-    UsedElementDataCaches used_caches_;                       ///< Map of ElementDataCaches assigned to items of used_fields_
-    std::shared_ptr<OutputTime> stream_;                      ///< Output stream.
+    std::shared_ptr< std::vector<unsigned int> > offset_vec_;   ///< Holds offsets of individual local elements
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
