@@ -75,8 +75,8 @@ void BCMesh::init_distribution()
 
 Range<ElementAccessor<3>> BCMesh::elements_range() const
 {
-	auto bgn_it = make_iter<ElementAccessor<3>>( ElementAccessor<3>(parent_mesh_, 0, true) );
-	auto end_it = make_iter<ElementAccessor<3>>( ElementAccessor<3>(parent_mesh_, element_vec_.size(), true) );
+	auto bgn_it = make_iter<ElementAccessor<3>>( ElementAccessor<3>(this, 0) );
+	auto end_it = make_iter<ElementAccessor<3>>( ElementAccessor<3>(this, element_vec_.size()) );
     return Range<ElementAccessor<3>>(bgn_it, end_it);
 }
 
@@ -107,7 +107,7 @@ std::shared_ptr<EquivalentMeshMap> BCMesh::check_compatible_mesh( Mesh & input_m
 
 
 ElementAccessor<3> BCMesh::element_accessor(unsigned int idx) const {
-	return ElementAccessor<3>(parent_mesh_, idx, true);
+	return ElementAccessor<3>(this, idx);
 }
 
 

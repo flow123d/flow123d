@@ -106,7 +106,7 @@ public:
     ElementAccessor(const MeshBase *mesh, RegionIdx r_idx);
 
     /// Element accessor.
-    ElementAccessor(const MeshBase *mesh, unsigned int idx, bool is_boundary = false);
+    ElementAccessor(const MeshBase *mesh, unsigned int idx);
 
     /// Incremental function of the Element iterator.
     void inc();
@@ -159,7 +159,7 @@ public:
         { return dim_; }
 
     inline const Element * element() const {
-        return boundary_ ? &(mesh_->bc_mesh()->element(element_idx_)) : &(mesh_->element(element_idx_));
+        return &(mesh_->element(element_idx_));
     }
     
 
@@ -174,21 +174,17 @@ public:
     //    return region().id();
     //}
 
-    bool is_boundary() const {
-        return boundary_;
-    }
-
     /// Return local idx of element in boundary / bulk part of element vector
     unsigned int idx() const {
         return element_idx_;
     }
 
     unsigned int index() const {
-    	return (unsigned int)(boundary_ ? mesh_->bc_mesh()->find_elem_id(element_idx_) : mesh_->find_elem_id(element_idx_) );
+    	return (unsigned int)(mesh_->find_elem_id(element_idx_) );
     }
     
     unsigned int proc() const {
-        return boundary_ ? mesh_->bc_mesh()->get_el_ds()->get_proc(mesh_->bc_mesh()->get_row_4_el()[element_idx_]) : mesh_->get_el_ds()->get_proc(mesh_->get_row_4_el()[element_idx_]);
+        return mesh_->get_el_ds()->get_proc(mesh_->get_row_4_el()[element_idx_]);
     }
 
 
@@ -205,11 +201,11 @@ public:
     }
 
     bool operator==(const ElementAccessor<spacedim>& other) const {
-    	return (mesh_ == other.mesh_) && (element_idx_ == other.element_idx_) && (boundary_ == other.boundary_);
+    	return (mesh_ == other.mesh_) && (element_idx_ == other.element_idx_);
     }
 
     inline bool operator!=(const ElementAccessor<spacedim>& other) const {
-    	return (element_idx_ != other.element_idx_) || (boundary_ != other.boundary_);
+    	return (element_idx_ != other.element_idx_) || (mesh_ != other.mesh_);
     }
 
     /**
@@ -240,8 +236,6 @@ private:
 
     /// Pointer to the mesh owning the element.
     const MeshBase *mesh_;
-    /// True if the element is boundary
-    bool boundary_;
 
     /// Index into Mesh::element_vec_ array.
     unsigned int element_idx_;

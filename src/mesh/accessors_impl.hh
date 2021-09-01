@@ -40,9 +40,8 @@ ElementAccessor<spacedim>::ElementAccessor(const MeshBase *mesh, RegionIdx r_idx
  * Element accessor.
  */
 template <int spacedim> inline
-ElementAccessor<spacedim>::ElementAccessor(const MeshBase *mesh, unsigned int idx, bool is_boundary)
+ElementAccessor<spacedim>::ElementAccessor(const MeshBase *mesh, unsigned int idx)
 : mesh_(mesh),
-  boundary_(is_boundary),
   element_idx_(idx),
   r_idx_(element()->region_idx())
 {
@@ -157,12 +156,12 @@ double ElementAccessor<spacedim>::quality_measure_smooth() const {
 
 template <int spacedim> inline
 SideIter ElementAccessor<spacedim>::side(const unsigned int loc_index) {
-    return boundary_ ? SideIter( Side(mesh_->bc_mesh(), element_idx_, loc_index) ) : SideIter( Side(mesh_, element_idx_, loc_index) );
+    return SideIter( Side(mesh_, element_idx_, loc_index) );
 }
 
 template <int spacedim> inline
 const SideIter ElementAccessor<spacedim>::side(const unsigned int loc_index) const {
-    return boundary_ ? SideIter( Side(mesh_->bc_mesh(), element_idx_, loc_index) ) : SideIter( Side(mesh_, element_idx_, loc_index) );
+    return SideIter( Side(mesh_, element_idx_, loc_index) );
 }
 
 
