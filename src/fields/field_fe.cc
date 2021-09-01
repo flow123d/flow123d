@@ -517,10 +517,10 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 			boundary = false;
 		}
 		if (is_native) {
-		    n_entities = boundary ? dh_->mesh()->bc_mesh()->n_elements() : dh_->mesh()->n_elements();
+		    n_entities = dh_->mesh()->n_elements();
 		    n_components *= dh_->max_elem_dofs();
 		} else if (this->interpolation_==DataInterpolation::identic_msh) {
-			n_entities = boundary ? dh_->mesh()->bc_mesh()->n_elements() : dh_->mesh()->n_elements();
+			n_entities = dh_->mesh()->n_elements();
 		} else {
 			n_entities = boundary ? ReaderCache::get_mesh(reader_file_)->bc_mesh()->n_elements() : ReaderCache::get_mesh(reader_file_)->n_elements();
 		}
