@@ -231,6 +231,7 @@ void EquationOutput::init_field_item(Input::Iterator<Input::Record> it, const Ti
 
 bool EquationOutput::is_field_output_time(const FieldCommon &field, TimeStep step) const
 {
+    if ( !field.get_flags().match(FieldFlag::allow_output) ) return false;
     auto &marks = TimeGovernor::marks();
     auto field_times_it = field_output_times_.find(field.name());
     if (field_times_it == field_output_times_.end()) return false;
@@ -260,11 +261,9 @@ void EquationOutput::output(TimeStep step)
         UsedElementDataCaches caches_map_node_data;
         FieldSet used_fields;
         for(FieldListAccessor f_acc : this->fields_range()) {
-            if ( f_acc->flags().match( FieldFlag::allow_output) ) {
-                if (is_field_output_time( *(f_acc.field()), step) && field_output_times_[f_acc->name()].space_flags_[OutputTime::NODE_DATA]) {
-                	caches_map_node_data[f_acc->name()] = f_acc->output_data_cache(OutputTime::NODE_DATA, stream_);
-                    used_fields += *(f_acc.field());
-                }
+            if (is_field_output_time( *(f_acc.field()), step) && field_output_times_[f_acc->name()].space_flags_[OutputTime::NODE_DATA]) {
+                caches_map_node_data[f_acc->name()] = f_acc->output_data_cache(OutputTime::NODE_DATA, stream_);
+                used_fields += *(f_acc.field());
             }
             auto mixed_assmbly = output_node_data_assembly_->multidim_assembly();
             mixed_assmbly[1_d]->set_output_data(used_fields, caches_map_node_data, stream_);
@@ -279,11 +278,9 @@ void EquationOutput::output(TimeStep step)
         UsedElementDataCaches caches_map_corner_data;
         FieldSet used_fields;
         for(FieldListAccessor f_acc : this->fields_range()) {
-            if ( f_acc->flags().match( FieldFlag::allow_output) ) {
-                if (is_field_output_time( *(f_acc.field()), step) && field_output_times_[f_acc->name()].space_flags_[OutputTime::CORNER_DATA]) {
-                	caches_map_corner_data[f_acc->name()] = f_acc->output_data_cache(OutputTime::CORNER_DATA, stream_);
-                    used_fields += *(f_acc.field());
-                }
+            if (is_field_output_time( *(f_acc.field()), step) && field_output_times_[f_acc->name()].space_flags_[OutputTime::CORNER_DATA]) {
+                caches_map_corner_data[f_acc->name()] = f_acc->output_data_cache(OutputTime::CORNER_DATA, stream_);
+                used_fields += *(f_acc.field());
             }
             auto mixed_assmbly = output_corner_data_assembly_->multidim_assembly();
             mixed_assmbly[1_d]->set_output_data(used_fields, caches_map_corner_data, stream_);
@@ -298,11 +295,9 @@ void EquationOutput::output(TimeStep step)
         UsedElementDataCaches caches_map_elem_data;
         FieldSet used_fields;
         for (FieldListAccessor f_acc : this->fields_range()) {
-            if ( f_acc->flags().match( FieldFlag::allow_output) ) {
-                if (is_field_output_time( *(f_acc.field()), step) && field_output_times_[f_acc->name()].space_flags_[OutputTime::ELEM_DATA]) {
-                    caches_map_elem_data[f_acc->name()] = f_acc->output_data_cache(OutputTime::ELEM_DATA, stream_);
-                    used_fields += *(f_acc.field());
-                }
+            if (is_field_output_time( *(f_acc.field()), step) && field_output_times_[f_acc->name()].space_flags_[OutputTime::ELEM_DATA]) {
+                caches_map_elem_data[f_acc->name()] = f_acc->output_data_cache(OutputTime::ELEM_DATA, stream_);
+                used_fields += *(f_acc.field());
             }
         }
         auto mixed_assmbly = output_elem_data_assembly_->multidim_assembly();
@@ -314,10 +309,8 @@ void EquationOutput::output(TimeStep step)
 
     // NATIVE_DATA
     for(FieldListAccessor f_acc : this->fields_range()) {
-        if ( f_acc->flags().match( FieldFlag::allow_output) ) {
-            if (is_field_output_time( *(f_acc.field()), step) && field_output_times_[f_acc->name()].space_flags_[OutputTime::NATIVE_DATA]) {
-                f_acc->field_output(stream_, OutputTime::NATIVE_DATA);
-            }
+        if (is_field_output_time( *(f_acc.field()), step) && field_output_times_[f_acc->name()].space_flags_[OutputTime::NATIVE_DATA]) {
+            f_acc->field_output(stream_, OutputTime::NATIVE_DATA);
         }
     }
 
