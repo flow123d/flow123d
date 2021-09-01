@@ -181,48 +181,52 @@ void EquationOutput::read_from_input(Input::Record in_rec, const TimeGovernor & 
     }
     auto fields_array = in_rec.val<Input::Array>("fields");
     for(auto it = fields_array.begin<Input::Record>(); it != fields_array.end(); ++it) {
-        string field_name = it -> val< Input::FullEnum >("field");
-        FieldCommon *found_field = field(field_name);
-
-        Input::Array interpolations;
-        OutputTime::DiscreteSpaceFlags interpolation = OutputTime::empty_discrete_flags();
-        if (it->opt_val("interpolation", interpolations)) {
-            // process interpolations
-            for(auto it_interp = interpolations.begin<OutputTime::DiscreteSpace>(); it_interp != interpolations.end(); ++it_interp) {
-                interpolation[ *it_interp ] = true;
-            }
-        } else {
-            OutputTime::set_discrete_flag(interpolation, found_field->get_output_type());
-        }
-        Input::Array field_times_array;
-        FieldOutputConfig field_config;
-        if (it->opt_val("times", field_times_array)) {
-            OutputTimeSet field_times;
-            field_times.read_from_input(field_times_array, tg);
-            field_config.output_set_ = field_times;
-        } else {
-            field_config.output_set_ = common_output_times_;
-        }
-        field_config.space_flags_ = interpolation;
-        // Add init time as the output time for every output field.
-        field_config.output_set_.add(tg.init_time(), equation_fixed_type_);
-        // register interpolation types of fields to OutputStream
-        for (uint i=0; i<OutputTime::N_DISCRETE_SPACES; ++i)
-    	    if (interpolation[i]) used_interpolations_.insert( OutputTime::DiscreteSpace(i) );
-        // Set output configuration to field_output_times_
-        if (found_field->is_multifield()) {
-            for (uint i_comp=0; i_comp<found_field->n_comp(); ++i_comp) {
-                field_output_times_[ found_field->full_comp_name(i_comp) ] = field_config;
-            }
-        } else {
-            field_output_times_[field_name] = field_config;
-        }
+        this->init_field_item(it, tg);
     }
     auto observe_fields_array = in_rec.val<Input::Array>("observe_fields");
     for(auto it = observe_fields_array.begin<Input::FullEnum>(); it != observe_fields_array.end(); ++it) {
         observe_fields_.insert(string(*it));
     }
 
+}
+
+void EquationOutput::init_field_item(Input::Iterator<Input::Record> it, const TimeGovernor & tg) {
+    string field_name = it -> val< Input::FullEnum >("field");
+    FieldCommon *found_field = field(field_name);
+
+    Input::Array interpolations;
+    OutputTime::DiscreteSpaceFlags interpolation = OutputTime::empty_discrete_flags();
+    if (it->opt_val("interpolation", interpolations)) {
+        // process interpolations
+        for(auto it_interp = interpolations.begin<OutputTime::DiscreteSpace>(); it_interp != interpolations.end(); ++it_interp) {
+            interpolation[ *it_interp ] = true;
+        }
+    } else {
+        OutputTime::set_discrete_flag(interpolation, found_field->get_output_type());
+    }
+    Input::Array field_times_array;
+    FieldOutputConfig field_config;
+    if (it->opt_val("times", field_times_array)) {
+        OutputTimeSet field_times;
+        field_times.read_from_input(field_times_array, tg);
+        field_config.output_set_ = field_times;
+    } else {
+        field_config.output_set_ = common_output_times_;
+    }
+    field_config.space_flags_ = interpolation;
+    // Add init time as the output time for every output field.
+    field_config.output_set_.add(tg.init_time(), equation_fixed_type_);
+    // register interpolation types of fields to OutputStream
+    for (uint i=0; i<OutputTime::N_DISCRETE_SPACES; ++i)
+	    if (interpolation[i]) used_interpolations_.insert( OutputTime::DiscreteSpace(i) );
+    // Set output configuration to field_output_times_
+    if (found_field->is_multifield()) {
+        for (uint i_comp=0; i_comp<found_field->n_comp(); ++i_comp) {
+            field_output_times_[ found_field->full_comp_name(i_comp) ] = field_config;
+        }
+    } else {
+        field_output_times_[field_name] = field_config;
+    }
 }
 
 bool EquationOutput::is_field_output_time(const FieldCommon &field, TimeStep step) const

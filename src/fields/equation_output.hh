@@ -121,6 +121,9 @@ private:
      */
     void make_output_mesh(bool parallel);
 
+    /// Initialize data of Field given by passed Input::Record
+    void init_field_item(Input::Iterator<Input::Record> it, const TimeGovernor & tg);
+
     /// output stream (may be shared by more equation)
     std::shared_ptr<OutputTime> stream_;
     /// The time mark type of the equation.
