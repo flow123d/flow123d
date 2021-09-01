@@ -123,13 +123,6 @@ Boundary BCMesh::boundary(unsigned int) const
 	return Boundary();
 }
 
-const RegionDB &BCMesh::region_db() const
-{
-	ASSERT( false );
-	static RegionDB r;
-	return r;
-}
-
 
 void BCMesh::make_neighbours_and_edges()
 {

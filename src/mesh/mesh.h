@@ -174,6 +174,10 @@ public:
         return nodes_->size();
     }
 
+    inline const RegionDB &region_db() const {
+        return region_db_;
+    }
+
 
 
     virtual NodeAccessor<3> node(unsigned int idx) const = 0;
@@ -183,7 +187,6 @@ public:
     virtual Range<ElementAccessor<3>> elements_range() const = 0;
 
     virtual BCMesh *bc_mesh() const = 0;
-    virtual const RegionDB &region_db() const = 0;
 
 
     /**
@@ -303,6 +306,12 @@ protected:
 
     DuplicateNodes *duplicate_nodes_;
 
+    /**
+     * Database of regions (both bulk and boundary) of the mesh. Regions are logical parts of the
+     * domain that allows setting of different data and boundary conditions on them.
+     */
+    RegionDB region_db_;
+
 
     friend class Edge;
     // friend class Side;
@@ -388,10 +397,6 @@ public:
     Boundary boundary(uint edge_idx) const override;
 
     unsigned int n_corners();
-
-    inline const RegionDB &region_db() const override {
-        return region_db_;
-    }
 
     Partitioning *get_part() override;
 
@@ -647,11 +652,6 @@ protected:
      */
     bool optimize_memory_locality;
 
-    /**
-     * Database of regions (both bulk and boundary) of the mesh. Regions are logical parts of the
-     * domain that allows setting of different data and boundary conditions on them.
-     */
-    RegionDB region_db_;
     /**
      * Mesh partitioning. Created in setup_topology.
      */
