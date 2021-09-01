@@ -443,10 +443,10 @@ TEST_F(FieldFENewTest, bc_vector_fixed) {
     VecFixField field;
     field.init_from_input(rec.val<Input::Record>("vector_fixed"), init_data("vector_fixed"));
     field.set_mesh(mesh,true);
+    BCMesh *bc_mesh = mesh->bc_mesh();
      for (unsigned int j=0; j<2; j++) {
     	field.set_time(test_time[j]);
-     	BCMesh *bc_mesh = mesh->bc_mesh();
-        // only 4 BC elements are compatible with the comp mesh
+        // only 6 BC elements are compatible with the comp mesh
         for(unsigned int i=0; i < 6; i++) {
             auto ele = bc_mesh->element_accessor(i);
             EXPECT_TRUE( arma::min(arma::vec3(expected_vals[j]) == field.value(point,ele)) );
