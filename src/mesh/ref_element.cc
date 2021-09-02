@@ -25,6 +25,12 @@
 using namespace arma;
 using namespace std;
 
+constexpr IdxVector<3> _AuxInteract::S3_node_sides [2][4];
+constexpr IdxVector<2> _AuxInteract::S3_line_sides [2][6];
+constexpr IdxVector<3> _AuxInteract::S3_node_lines [2][4];
+
+
+
 template<std::size_t n>
 std::vector< std::vector<unsigned int> > _array_to_vec( const std::vector<IdxVector<n>> array_vec) {
     std::vector< std::vector<unsigned int> > vec(array_vec.size());
@@ -33,17 +39,6 @@ std::vector< std::vector<unsigned int> > _array_to_vec( const std::vector<IdxVec
             vec[i].push_back(array_vec[i][j]);
     return vec;
 }
-
-
-// template<unsigned int n>
-// std::vector< std::vector<unsigned int> > _array_to_vec( const unsigned int array[][n], unsigned int m) {
-//     std::vector< std::vector<unsigned int> > vec(m);
-//     for(unsigned int i=0; i<m; i++)
-//         for(unsigned int j=0;j<n; j++)
-//             vec[i].push_back(array[i][j]);
-//     return vec;
-// }
-
 
 
 
@@ -73,12 +68,7 @@ template<> const std::vector<IdxVector<2>> RefElement<2>::node_lines_
         {0,2},
         {2,1}};
 
-// Order clockwise looking over the vertex to center; smallest index first
-template<> const std::vector<IdxVector<3>> RefElement<3>::node_lines_
-    = { {0,1,2},
-        {0,4,3},
-        {1,3,5},
-        {2,5,4}};
+
 
 
 
@@ -89,23 +79,21 @@ template<> const std::vector<IdxVector<3>> RefElement<3>::side_nodes_
         { 0, 2, 3 },
         { 1, 2, 3 }};
 
-// Order clockwise, faces opposite to the lines from node_lines.
-template<> const std::vector<IdxVector<3>> RefElement<3>::node_sides_
-    = { { 2, 1, 0 },
-        { 3, 0, 1 },
-        { 3, 2, 0 },
-        { 3, 1, 2 }};
-
-// faces ordered clock wise with respect to edge shifted to center of tetrahedron
-template<> const std::vector<IdxVector<2>> RefElement<3>::line_sides_
-    = { {0,1},
-        {2,0},
-        {1,2},
-        {0,3},
-        {3,1},
-        {2,3}};
+//// Order clockwise, faces opposite to the lines from node_lines.
+//// !! dependes on S3 inversion
+//template<> const std::vector<IdxVector<3>> RefElement<3>::node_sides_
+//    = { { { 2, 1, 0 },
+//          { 3, 0, 1 },
+//          { 3, 2, 0 },
+//          { 3, 1, 2 }},
+//        { { 2, 0, 1 },
+//          { 3, 1, 0 },
+//          { 3, 0, 2 },
+//          { 3, 2, 1 }};
 
 
+
+// lexicographic order
 template<> const std::vector<IdxVector<3>> RefElement<3>::side_lines_
     = { {0,1,3},
         {0,2,4},
@@ -146,8 +134,6 @@ template<> const std::vector< std::vector<unsigned int> >
 //         { 2, 0, 1 },
 //         { 2, 1, 0 }
 // };
-
-
 template<> const IdxVector<1> RefElement<0>::topology_zeros_[] = {
    {(1 << 1)}  //node 0
 };
@@ -201,77 +187,6 @@ template<> const IdxVector<6> RefElement<3>::topology_zeros_[] = {
 };
 
     
-    
-
-// template<> const unsigned int RefElement<1>::side_nodes[][1] = {
-// 		{ 0 },
-// 		{ 1 }
-// };
-// 
-// template<> const unsigned int RefElement<2>::side_nodes[][2] = {
-// 		{ 0, 1 },
-// 		{ 0, 2 },
-// 		{ 1, 2 }
-// };
-// 
-// template<> const unsigned int RefElement<3>::side_nodes[][3] = {
-// 		{ 0, 1, 2 },
-// 		{ 0, 1, 3 },
-// 		{ 0, 2, 3 },
-// 		{ 1, 2, 3 }
-// };
-// 
-// 
-// 
-// template<> const unsigned int RefElement<3>::side_lines[][3] = {
-//         {0,1,2},
-//         {0,3,4},
-//         {1,3,5},
-//         {2,4,5}
-// };
-// 
-// 
-// template<> const unsigned int RefElement<1>::line_nodes[][2] = {
-//         {0,1}
-// };
-// 
-// template<> const unsigned int RefElement<2>::line_nodes[][2] = {
-//         {0,1},
-//         {0,2},
-//         {1,2}
-// };
-// 
-// template<> const unsigned int RefElement<3>::line_nodes[][2] = {
-//         {0,1},
-//         {0,2},
-//         {1,2},
-//         {0,3},
-//         {1,3},
-//         {2,3}
-// };
-// 
-// 
-// /**
-//  * Indexes of sides for each line - with right orientation
-//  */
-// 
-// template<> const unsigned int RefElement<3>::line_sides[][2] = {
-//      {0,1},
-//      {2,0},
-//      {0,3},
-//      {1,2},
-//      {3,1},
-//      {2,3}
-// };
-// 
-// /**
-//  * Indexes of sides for each line - for Simplex<2>, with right orientation
-//  */
-// template<> const unsigned int RefElement<2>::line_sides[][2] = {
-//      {1,0},
-//      {0,2},
-//      {2,1}
-// };
 
 
 // 0: nodes of nodes
@@ -562,8 +477,6 @@ unsigned int RefElement<dim>::permutation_index(unsigned int p[n_nodes_per_side]
 	// about missing return value.
 	return 0;
 }
-
-
 /**
      * Basic line interpolation
      */

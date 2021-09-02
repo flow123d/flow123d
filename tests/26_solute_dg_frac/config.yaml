@@ -9,3 +9,4 @@ test_cases:
   - 03_dg_dp_sorp_small.yaml
   - 04_y_branch.yaml
   - 05_diffusion_fracture.yaml
+  - 06_single_fracture.yaml

@@ -86,6 +86,8 @@ public:
     TYPEDEF_ERR_INFO( EI_RegIdx, unsigned int);
     TYPEDEF_ERR_INFO( EI_Dim, unsigned int);
     TYPEDEF_ERR_INFO( EI_DimOther, unsigned int);
+    TYPEDEF_ERR_INFO( EI_Quality, double);
+
 
     DECLARE_EXCEPTION(ExcDuplicateBoundary,
             << "Duplicate boundary elements! \n"
@@ -98,6 +100,8 @@ public:
             << ") by 'From_Elements' cannot have elements of different dimensions.\n"
             << "Thrown due to: dim " << EI_Dim::val << " neq dim " << EI_DimOther::val << " (ele id " << EI_ElemId::val << ").\n"
             << "Split elements by dim, create separate regions and then possibly use Union.\n" );
+    DECLARE_EXCEPTION(ExcBadElement,
+            << "Extremely bad quality element ID=" << EI_ElemId::val << ",(" << EI_Quality::val << "<4*epsilon).\n");
     DECLARE_EXCEPTION(ExcTooMatchingIds,
             << "Mesh: Duplicate dim-join lower dim elements: " << EI_ElemId::val << ", " << EI_ElemIdOther::val << ".\n" );
     DECLARE_EXCEPTION(ExcBdrElemMatchRegular,
@@ -118,7 +122,7 @@ public:
      */
     static const Input::Type::Selection & get_input_intersection_variant();
     
-    static const unsigned int undef_idx=-1;
+
     static const Input::Type::Record & get_input_type();
 
 
@@ -136,6 +140,8 @@ public:
      * Do not process input record. That is done in init_from_input.
      */
     Mesh(Input::Record in_record, MPI_Comm com = MPI_COMM_WORLD);
+
+    Mesh(Mesh &other);
 
     /// Destructor.
     virtual ~Mesh();

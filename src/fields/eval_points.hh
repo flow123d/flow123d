@@ -162,7 +162,7 @@ private:
         unsigned int find_permute_point(arma::vec coords, unsigned int data_begin, unsigned int data_end);
 
         /// Adds new subset and its end size to subset_starts_ array.
-        void add_subset();
+        uint add_subset();
     private:
         Armor::Array<double> local_points_;                           ///< Local coords of points vector
         std::array<int, EvalPoints::max_subsets+1> subset_starts_;    ///< Indices of subsets data in local_points_ vector, used size is n_subsets_ + 1

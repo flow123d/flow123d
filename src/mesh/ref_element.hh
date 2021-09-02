@@ -125,23 +125,6 @@
  *                                                         3        [0,0,0,1]
  */
 
-/** Auxilliary class representing vector of indices (unsigned int).
- * @tparam Size is the fixed size of the vector.
- */
-/*
-template<unsigned int Size>
-class IdxVector{
-    unsigned int data_[Size];   ///< Array with indices.
-    
-    public:
-        /// Constructor taking in array of indices.
-        IdxVector(std::array<unsigned int,Size> data_in);
-        /// Constructor enabling creating object with initializer list {...}.
-        IdxVector(std::initializer_list<unsigned int> data_in);
-        /// Getter for index @p idx.
-        unsigned int operator[](unsigned int idx) const;
-};
-*/
 
 template<std::size_t Size>
 using IdxVector = std::array<unsigned int, Size>;
@@ -158,6 +141,53 @@ struct Interaction {
     Interaction(unsigned int i) : i_(i) {}
     unsigned int i_;
 };
+
+
+
+class _AuxInteract {
+public:
+    // Order clockwise, faces opposite to the lines from node_lines.
+    // !! dependes on S3 inversion
+    static constexpr IdxVector<3> S3_node_sides [2][4]
+            = { { { 2, 1, 0 },
+                  { 3, 0, 1 },
+                  { 3, 2, 0 },
+                  { 3, 1, 2 }},
+                { { 2, 0, 1 },
+                  { 3, 1, 0 },
+                  { 3, 0, 2 },
+                  { 3, 2, 1 }}};
+
+    // faces adjecent to given edge, first is the right face when looking form outside with the edge pointing up.
+    // !! dependes on S3 inversion
+    static constexpr IdxVector<2> S3_line_sides [2][6]
+        = { { {0,1},
+              {2,0},
+              {1,2},
+              {0,3},
+              {3,1},
+              {2,3}},
+            { {1,0},
+              {0,2},
+              {2,1},
+              {3,0},
+              {1,3},
+              {3,2}}};
+
+    // Order clockwise looking over the vertex to center; smallest index first
+    // !! dependes on S3 inversion
+    static constexpr IdxVector<3> S3_node_lines [2][4]
+        = { { {0,1,2},
+              {0,4,3},
+              {1,3,5},
+              {2,5,4}},
+            { {0,2,1},
+              {0,3,4},
+              {1,5,3},
+              {2,4,5}}};
+
+};
+
 
 template<unsigned int dim>
 class RefElement
@@ -232,27 +262,6 @@ public:
 
 	/// Number of lines, i.e. @p object of dimension @p dim-2 on the boundary of the reference element.
 	static const unsigned int n_lines = (unsigned int)((dim * (dim + 1)) / 2); //( dim == 3 ? 6 : dim == 2 ? 3 : dim == 1 ? 1 : 0); součet posloupnosti
-
-    
-// 	/**
-// 	 * Node numbers for each side.
-// 	 */
-// 	static const unsigned int side_nodes[n_sides][n_nodes_per_side];
-// 
-// 	/**
-// 	 * Indices of 1D lines of the 2D sides of an tetrahedron. Nonempty only for @p dim==3.
-// 	 */
-// 	static const unsigned int side_lines[n_sides][n_lines_per_side];
-// 
-// 	/**
-// 	 * Nodes of 1D lines of the tetrahedron.
-// 	 */
-//     static const unsigned int line_nodes[n_lines][2];
-//     
-//     /**
-//      * Indices of sides for each line. Nonempty only for @p dim==3 and @p dim==2.
-//      */
-//     static const unsigned int line_sides[n_lines][2];
 
 
     static const std::vector< std::vector< std::vector<unsigned int> > > nodes_of_subelements;
@@ -388,13 +397,13 @@ public:
      * 
      */
     template < template <unsigned int OutDim, unsigned int InDim> class TInteraction, unsigned int OutDim, unsigned int InDim>
-    static const IdxVector< (InDim>OutDim ? InDim+1 : dim-InDim) > interact( TInteraction<OutDim,InDim> interaction );
+    static const IdxVector< (InDim>OutDim ? InDim+1 : dim-InDim) > interact( TInteraction<OutDim,InDim> interaction, bool inv = false );
 
 
 private:
     /// Internal part of the interact function.
     template<unsigned int OutDim, unsigned int InDim> 
-    static const IdxVector< (InDim>OutDim ? InDim+1 : dim-InDim) > interact_(unsigned int index);
+    static const IdxVector< (InDim>OutDim ? InDim+1 : dim-InDim) > interact_(unsigned int index, bool inv = false);
     
     static const std::vector<IdxVector<n_nodes_per_line>> line_nodes_; ///< [n_lines] For given line, returns its nodes indices.
     static const std::vector<IdxVector<n_lines_per_node>> node_lines_; ///< [n_nodes] For given node, returns lines indices.
@@ -507,24 +516,7 @@ auto RefElement<dim>::interpolate(arma::vec::fixed<subdim+1> coord, int sub_simp
 {
     return RefElement<dim>::bary_coords<subdim>(sub_simplex_idx)*coord;
 }
-/*
-template <unsigned int Size>
-IdxVector<Size>::IdxVector(std::array<unsigned int,Size> data_in)
-: data_(data_in){}
 
-template <unsigned int Size>
-IdxVector<Size>::IdxVector(std::initializer_list<unsigned int> data_in)
-{
-    ASSERT_EQ_DBG(data_in.size(), Size).error("Incorrect data size.");
-    std::copy(data_in.begin(), data_in.end(), data_);
-}
-
-template <unsigned int Size>
-inline unsigned int IdxVector<Size>::operator[](unsigned int idx) const
-{   ASSERT_LT_DBG(idx, Size).error("Index out of bounds.");
-    return data_[idx]; }
-    
-*/
 
 template<> template<> inline unsigned int RefElement<3>::count<0>()
 { return n_nodes; }
@@ -572,64 +564,64 @@ unsigned int RefElement<dim>::topology_idx(unsigned int zeros_positions)
 
 
 /// This function is for "side_nodes" - for given side, give me nodes (0->0, 1->1).
-template<> template<> inline const IdxVector<1> RefElement<1>::interact_<0,0>(unsigned int i)
-{   ASSERT_LT_DBG(i, RefElement<1>::n_nodes).error("Index out of bounds.");
+template<> template<> inline const IdxVector<1> RefElement<1>::interact_<0,0>(unsigned int i, bool inv)
+{   ASSERT_LT_DBG(i, RefElement<1>::n_nodes)(inv).error("Index out of bounds.");
     return IdxVector<1>({i});}
 
 /// For line i {0}, give me indices of its nodes.
-template<> template<> inline const IdxVector<2> RefElement<1>::interact_<0,1>(unsigned int i)
-{   ASSERT_LT_DBG(i, RefElement<1>::n_lines).error("Index out of bounds.");
+template<> template<> inline const IdxVector<2> RefElement<1>::interact_<0,1>(unsigned int i, bool inv)
+{   ASSERT_LT_DBG(i, RefElement<1>::n_lines)(inv).error("Index out of bounds.");
     return line_nodes_[i];}
 
 /// For line i {0,1,2}, give me indices of its nodes.
-template<> template<> inline const IdxVector<2> RefElement<2>::interact_<0,1>(unsigned int i)
-{   ASSERT_LT_DBG(i, RefElement<2>::n_lines).error("Index out of bounds.");
+template<> template<> inline const IdxVector<2> RefElement<2>::interact_<0,1>(unsigned int i, bool inv)
+{   ASSERT_LT_DBG(i, RefElement<2>::n_lines)(inv).error("Index out of bounds.");
     return line_nodes_[i];}
 
 /// For line i {0,1,2,3,4,5}, give me indices of its nodes.
-template<> template<> inline const IdxVector<2> RefElement<3>::interact_<0,1>(unsigned int i)
-{   ASSERT_LT_DBG(i, RefElement<3>::n_lines).error("Index out of bounds.");
+template<> template<> inline const IdxVector<2> RefElement<3>::interact_<0,1>(unsigned int i, bool inv)
+{   ASSERT_LT_DBG(i, RefElement<3>::n_lines)(inv).error("Index out of bounds.");
     return line_nodes_[i];}
 
 /// For node i {0,1}, give me indices of lines.
-template<> template<> inline const IdxVector<1> RefElement<1>::interact_<1,0>(unsigned int i)
-{   ASSERT_LT_DBG(i, RefElement<1>::n_nodes).error("Index out of bounds.");
+template<> template<> inline const IdxVector<1> RefElement<1>::interact_<1,0>(unsigned int i, bool inv)
+{   ASSERT_LT_DBG(i, RefElement<1>::n_nodes)(inv).error("Index out of bounds.");
     return node_lines_[i];}
 
 /// For node i {0,1,2}, give me indices of lines.
-template<> template<> inline const IdxVector<2> RefElement<2>::interact_<1,0>(unsigned int i)
-{   ASSERT_LT_DBG(i, RefElement<2>::n_nodes).error("Index out of bounds.");
+template<> template<> inline const IdxVector<2> RefElement<2>::interact_<1,0>(unsigned int i, bool inv)
+{   ASSERT_LT_DBG(i, RefElement<2>::n_nodes)(inv).error("Index out of bounds.");
     return node_lines_[i];}
 
 /// For node i {0,1,2,3}, give me indices of lines.
-template<> template<> inline const IdxVector<3> RefElement<3>::interact_<1,0>(unsigned int i)
+template<> template<> inline const IdxVector<3> RefElement<3>::interact_<1,0>(unsigned int i, bool inv)
 {   ASSERT_LT_DBG(i, RefElement<3>::n_nodes).error("Index out of bounds.");
-    return node_lines_[i];}
+    return _AuxInteract::S3_node_lines[inv][i];}
     
 /// For side i {0,1,2}, give me indices of its nodes.
-template<> template<> inline const IdxVector<3> RefElement<3>::interact_<0,2>(unsigned int i)
-{   ASSERT_LT_DBG(i, RefElement<3>::n_sides).error("Index out of bounds.");
+template<> template<> inline const IdxVector<3> RefElement<3>::interact_<0,2>(unsigned int i, bool inv)
+{   ASSERT_LT_DBG(i, RefElement<3>::n_sides)(inv).error("Index out of bounds.");
     return side_nodes_[i];}
 
 /// For node i {0,1,2,3}, give me indices of sides.
-template<> template<> inline const IdxVector<3> RefElement<3>::interact_<2,0>(unsigned int i)
+template<> template<> inline const IdxVector<3> RefElement<3>::interact_<2,0>(unsigned int i, bool inv)
 {   ASSERT_LT_DBG(i, RefElement<3>::n_sides).error("Index out of bounds.");
-    return node_sides_[i];}
+    return _AuxInteract::S3_node_sides[inv][i];}
     
 /// For line i {0,1,2,3}, give me indices of sides.
-template<> template<> inline const IdxVector<2> RefElement<3>::interact_<2,1>(unsigned int i)
+template<> template<> inline const IdxVector<2> RefElement<3>::interact_<2,1>(unsigned int i, bool inv)
 {   ASSERT_LT_DBG(i, RefElement<3>::n_lines).error("Index out of bounds.");
-    return line_sides_[i];}
+    return _AuxInteract::S3_line_sides[inv][i];}
 
 /// For side i {0,1,2}, give me indices of its lines.
-template<> template<> inline const IdxVector<3> RefElement<3>::interact_<1,2>(unsigned int i)
-{   ASSERT_LT_DBG(i, RefElement<3>::n_sides).error("Index out of bounds.");
+template<> template<> inline const IdxVector<3> RefElement<3>::interact_<1,2>(unsigned int i, bool inv)
+{   ASSERT_LT_DBG(i, RefElement<3>::n_sides)(inv).error("Index out of bounds.");
     return side_lines_[i];}
     
 template<unsigned int dim> template<unsigned int OutDim, unsigned int InDim> 
-inline const IdxVector< (InDim>OutDim ? InDim+1 : dim-InDim) > RefElement<dim>::interact_(unsigned int i)
+inline const IdxVector< (InDim>OutDim ? InDim+1 : dim-InDim) > RefElement<dim>::interact_(unsigned int i, bool inv)
 {
-    ASSERT(false)(dim)(OutDim)(InDim)(i).error("Not implemented.");
+    ASSERT(false)(dim)(OutDim)(InDim)(i)(inv).error("Not implemented.");
     //ASSERT_LT_DBG(OutDim, dim);
     //ASSERT_LT_DBG(InDim, dim);
     return IdxVector< (InDim>OutDim ? InDim+1 : dim-InDim) >();  // just to avoid warning for missing return
@@ -638,9 +630,9 @@ inline const IdxVector< (InDim>OutDim ? InDim+1 : dim-InDim) > RefElement<dim>::
 
 template<unsigned int dim>
 template < template <unsigned int OutDim, unsigned int InDim> class TInteraction, unsigned int OutDim, unsigned int InDim>
-inline  const IdxVector< (InDim>OutDim ? InDim+1 : dim-InDim) > RefElement<dim>::interact( TInteraction<OutDim,InDim> interaction )
+inline  const IdxVector< (InDim>OutDim ? InDim+1 : dim-InDim) > RefElement<dim>::interact( TInteraction<OutDim,InDim> interaction , bool inv)
 {
-    return interact_<OutDim,InDim>(interaction.i_);
+    return interact_<OutDim,InDim>(interaction.i_, inv);
 }
     
 #endif /* REF_ELEMENT_HH_ */
