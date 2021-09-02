@@ -264,6 +264,8 @@ void EquationOutput::output(TimeStep step)
                 f_acc->set_output_data_cache(OutputTime::NODE_DATA, stream_);
                 used_fields += *(f_acc.field());
             }
+        }
+        if (used_fields.size()>0) {
             auto mixed_assmbly = output_node_data_assembly_->multidim_assembly();
             mixed_assmbly[1_d]->set_output_data(used_fields, stream_);
             mixed_assmbly[2_d]->set_output_data(used_fields, stream_);
@@ -280,6 +282,8 @@ void EquationOutput::output(TimeStep step)
                 f_acc->set_output_data_cache(OutputTime::CORNER_DATA, stream_);
                 used_fields += *(f_acc.field());
             }
+        }
+        if (used_fields.size()>0) {
             auto mixed_assmbly = output_corner_data_assembly_->multidim_assembly();
             mixed_assmbly[1_d]->set_output_data(used_fields, stream_);
             mixed_assmbly[2_d]->set_output_data(used_fields, stream_);
@@ -297,11 +301,13 @@ void EquationOutput::output(TimeStep step)
                 used_fields += *(f_acc.field());
             }
         }
-        auto mixed_assmbly = output_elem_data_assembly_->multidim_assembly();
-        mixed_assmbly[1_d]->set_output_data(used_fields, stream_);
-        mixed_assmbly[2_d]->set_output_data(used_fields, stream_);
-        mixed_assmbly[3_d]->set_output_data(used_fields, stream_);
-        output_elem_data_assembly_->assemble(this->dh_);
+        if (used_fields.size()>0) {
+            auto mixed_assmbly = output_elem_data_assembly_->multidim_assembly();
+            mixed_assmbly[1_d]->set_output_data(used_fields, stream_);
+            mixed_assmbly[2_d]->set_output_data(used_fields, stream_);
+            mixed_assmbly[3_d]->set_output_data(used_fields, stream_);
+            output_elem_data_assembly_->assemble(this->dh_);
+        }
     }
 
     // NATIVE_DATA
