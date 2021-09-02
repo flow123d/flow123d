@@ -68,7 +68,8 @@ MeshBase::MeshBase()
     row_4_el(nullptr),
     el_4_loc(nullptr),
     el_ds(nullptr),
-    duplicate_nodes_(nullptr)
+    duplicate_nodes_(nullptr),
+    region_db_(make_shared<RegionDB>())
 {
         // Initialize numbering of nodes on sides.
     // This is temporary solution, until class Element is templated
@@ -300,7 +301,7 @@ void Mesh::modify_element_ids(const RegionDB::MapElementIDToRegionID &map) {
     if(map.size() > 0){
         Element &ele = element_vec_[ elem_index(map.begin()->first) ];
         dim_to_check = ele.dim();
-        reg_name = region_db_.find_id(map.begin()->second).label();
+        reg_name = region_db_->find_id(map.begin()->second).label();
     }
 
 	for (auto elem_to_region : map) {
@@ -311,8 +312,8 @@ void Mesh::modify_element_ids(const RegionDB::MapElementIDToRegionID &map) {
                     << EI_DimOther(ele.dim()) << EI_ElemId(elem_to_region.first) );
         }
 
-		ele.region_idx_ = region_db_.get_region( elem_to_region.second, ele.dim() );
-		region_db_.mark_used_region(ele.region_idx_.idx());
+		ele.region_idx_ = region_db_->get_region( elem_to_region.second, ele.dim() );
+		region_db_->mark_used_region(ele.region_idx_.idx());
 	}
 }
 
@@ -690,8 +691,8 @@ void Mesh::make_neighbours_and_edges()
 
                     // fill boundary element
                     Element * bc_ele = add_element_to_vector(-bdr_idx, true);
-                    bc_ele->init(e->dim()-1, region_db_.implicit_boundary_region() );
-                    region_db_.mark_used_region( bc_ele->region_idx_.idx() );
+                    bc_ele->init(e->dim()-1, region_db_->implicit_boundary_region() );
+                    region_db_->mark_used_region( bc_ele->region_idx_.idx() );
                     for(unsigned int ni = 0; ni< side_nodes.size(); ni++) bc_ele->nodes_[ni] = side_nodes[ni];
 
                     // fill Boundary object
@@ -1085,14 +1086,14 @@ void Mesh::read_regions_from_input(Input::Array region_list)
 
 void Mesh::check_and_finish()
 {
-	modify_element_ids(region_db_.el_to_reg_map_);
-	region_db_.el_to_reg_map_.clear();
-	region_db_.close();
-	region_db_.check_regions();
+	modify_element_ids(region_db_->el_to_reg_map_);
+	region_db_->el_to_reg_map_.clear();
+	region_db_->close();
+	region_db_->check_regions();
 
 	if ( in_record_.val<bool>("print_regions") ) {
 		stringstream ss;
-		region_db_.print_region_table(ss);
+		region_db_->print_region_table(ss);
 		MessageOut() << ss.str();
 	}
 }
@@ -1127,7 +1128,7 @@ double Mesh::global_snap_radius() const {
 }
 
 void Mesh::add_physical_name(unsigned int dim, unsigned int id, std::string name) {
-	region_db_.add_region(id, name, dim, "$PhysicalNames");
+	region_db_->add_region(id, name, dim, "$PhysicalNames");
 }
 
 
@@ -1141,11 +1142,11 @@ void Mesh::add_node(unsigned int node_id, arma::vec3 coords) {
 
 void Mesh::add_element(unsigned int elm_id, unsigned int dim, unsigned int region_id, unsigned int partition_id,
 		std::vector<unsigned int> node_ids) {
-	RegionIdx region_idx = region_db_.get_region( region_id, dim );
+	RegionIdx region_idx = region_db_->get_region( region_id, dim );
 	if ( !region_idx.is_valid() ) {
-		region_idx = region_db_.add_region( region_id, region_db_.create_label_from_id(region_id), dim, "$Element" );
+		region_idx = region_db_->add_region( region_id, region_db_->create_label_from_id(region_id), dim, "$Element" );
 	}
-	region_db_.mark_used_region(region_idx.idx());
+	region_db_->mark_used_region(region_idx.idx());
 
 	if (!region_idx.is_boundary() && dim == 0) {
         WarningOut().fmt("Bulk elements of zero size(dim=0) are not supported. Element ID: {}.\n", elm_id);

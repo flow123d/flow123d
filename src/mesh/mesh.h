@@ -175,7 +175,7 @@ public:
     }
 
     inline const RegionDB &region_db() const {
-        return region_db_;
+        return *region_db_;
     }
 
     /// Create and return NodeAccessor to node of given idx
@@ -314,7 +314,7 @@ protected:
      * Database of regions (both bulk and boundary) of the mesh. Regions are logical parts of the
      * domain that allows setting of different data and boundary conditions on them.
      */
-    RegionDB region_db_;
+    std::shared_ptr<RegionDB> region_db_;
 
 
     friend class Edge;
