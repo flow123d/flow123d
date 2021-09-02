@@ -9,7 +9,6 @@ common_config:
   check_rules:
     - vtkdiff:
         files: ["*.vtu"]
-        interpolate: True
         
         
 test_cases:

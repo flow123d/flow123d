@@ -4,8 +4,7 @@ common_config:
   check_rules:
     - vtkdiff:
         files: ["*.vtu"]
-        interpolate: True
-        
+        interpolate: False        
 test_cases:
   - files:
       - 02_vtk.yaml
