@@ -31,10 +31,10 @@ BCMesh::BCMesh(Mesh* parent_mesh)
 : parent_mesh_(parent_mesh),
   local_part_(nullptr)
 {
-	this->nodes_ = parent_mesh_->nodes_;
 	this->region_db_ = parent_mesh_->region_db_;
 	this->init_element_vector(1);
 	this->init_node_vector(0);
+	this->nodes_ = parent_mesh_->nodes_;
 }
 
 
