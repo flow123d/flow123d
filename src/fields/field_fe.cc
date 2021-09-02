@@ -685,13 +685,13 @@ void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>
 
         for (std::vector<unsigned int>::iterator it = searched_elements.begin(); it!=searched_elements.end(); it++)
         {
-            ElementAccessor<3> ele = source_mesh->element_accessor(*it);
-            if (ele->dim() == 3) {
+            ElementAccessor<3> source_elm = source_mesh->element_accessor(*it);
+            if (source_elm->dim() == 3) {
                 // get intersection (set measure = 0 if intersection doesn't exist)
                 switch (elm.dim()) {
                     case 0: {
                         arma::vec::fixed<3> real_point = *elm.node(0);
-                        arma::mat::fixed<3, 4> elm_map = MappingP1<3,3>::element_map(ele);
+                        arma::mat::fixed<3, 4> elm_map = MappingP1<3,3>::element_map(source_elm);
                         arma::vec::fixed<4> unit_point = MappingP1<3,3>::project_real_to_unit(real_point, elm_map);
 
                         measure = (std::fabs(arma::sum( unit_point )-1) <= 1e-14
@@ -700,8 +700,8 @@ void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>
                         break;
                     }
                     case 1: {
-                        IntersectionAux<1,3> is;
-                        ComputeIntersection<1,3> CI(elm, ele, source_mesh.get());
+                        IntersectionAux<1,3> is(elm.mesh_idx(), source_elm.mesh_idx());
+                        ComputeIntersection<1,3> CI(elm, source_elm, source_mesh.get());
                         CI.init();
                         CI.compute(is);
 
@@ -710,8 +710,8 @@ void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>
                         break;
                     }
                     case 2: {
-                        IntersectionAux<2,3> is;
-                        ComputeIntersection<2,3> CI(elm, ele, source_mesh.get());
+                        IntersectionAux<2,3> is(elm.mesh_idx(), source_elm.mesh_idx());
+                        ComputeIntersection<2,3> CI(elm, source_elm, source_mesh.get());
                         CI.init();
                         CI.compute(is);
 
@@ -843,7 +843,7 @@ void FieldFE<spacedim, Value>::calculate_equivalent_values(ElementDataCache<doub
 		Mesh *mesh = dh_->mesh()->get_bc_mesh();
 		for (auto ele : mesh->elements_range()) {
 			LocDofVec loc_dofs = value_handler1_.get_loc_dof_indices(ele.idx());
-			if (source_target_vec[ele.mesh_idx()] == (int)(Mesh::undef_idx)) { // undefined value in input data mesh
+			if (source_target_vec[ele.mesh_idx()] == (int)(undef_idx)) { // undefined value in input data mesh
 				if ( std::isnan(default_value_) )
 					THROW( ExcUndefElementValue() << EI_Field(field_name_) );
 				for (unsigned int i=0; i<loc_dofs.n_elem; ++i) {
@@ -865,7 +865,7 @@ void FieldFE<spacedim, Value>::calculate_equivalent_values(ElementDataCache<doub
 		// iterate through cells, assembly global vector and count number of writes - prepared solution for further development
 		for (auto cell : dh_->own_range()) {
 			LocDofVec loc_dofs = cell.get_loc_dof_indices();
-			if (source_target_vec[cell.elm_idx()] == (int)(Mesh::undef_idx)) { // undefined value in input data mesh
+			if (source_target_vec[cell.elm_idx()] == (int)(undef_idx)) { // undefined value in input data mesh
 				if ( std::isnan(default_value_) )
 					THROW( ExcUndefElementValue() << EI_Field(field_name_) );
 				for (unsigned int i=0; i<loc_dofs.n_elem; ++i) {
