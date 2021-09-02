@@ -917,7 +917,7 @@ MixedMeshIntersections & Mesh::mixed_intersections() {
 
 
 
-ElementAccessor<3> Mesh::element_accessor(unsigned int idx) const {
+ElementAccessor<3> MeshBase::element_accessor(unsigned int idx) const {
     return ElementAccessor<3>(this, idx);
 }
 

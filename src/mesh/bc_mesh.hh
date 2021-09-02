@@ -56,9 +56,6 @@ public:
     /// Overwrite Mesh::check_compatible_mesh()
     std::shared_ptr<EquivalentMeshMap> check_compatible_mesh( Mesh & input_mesh) override;
 
-    /// Overwrite Mesh::element_accessor()
-    ElementAccessor<3> element_accessor(unsigned int idx) const override;
-
     /// Implement MeshBase::bc_mesh()
     BCMesh *bc_mesh() const override {
         return nullptr;

@@ -181,11 +181,12 @@ public:
     /// Create and return NodeAccessor to node of given idx
     NodeAccessor<3> node(unsigned int idx) const;
 
+    /// Create and return ElementAccessor to element of given idx
+    ElementAccessor<3> element_accessor(unsigned int idx) const;
+
 
 
     virtual Boundary boundary(uint edge_idx) const = 0;
-    virtual ElementAccessor<3> element_accessor(unsigned int idx) const = 0;
-    
     virtual Range<ElementAccessor<3>> elements_range() const = 0;
 
     virtual BCMesh *bc_mesh() const = 0;
@@ -457,9 +458,6 @@ public:
      *             If meshes are not compatible returns empty vector.
      */
     virtual std::shared_ptr<EquivalentMeshMap> check_compatible_mesh(Mesh & input_mesh);
-
-    /// Create and return ElementAccessor to element of given idx
-    ElementAccessor<3> element_accessor(unsigned int idx) const override;
 
     /**
      * Reads elements and their affiliation to regions and region sets defined by user in input file

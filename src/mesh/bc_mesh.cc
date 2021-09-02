@@ -106,11 +106,6 @@ std::shared_ptr<EquivalentMeshMap> BCMesh::check_compatible_mesh( Mesh & input_m
 }
 
 
-ElementAccessor<3> BCMesh::element_accessor(unsigned int idx) const {
-	return ElementAccessor<3>(this, idx);
-}
-
-
 Boundary BCMesh::boundary(unsigned int) const
 {
 	ASSERT( false );
