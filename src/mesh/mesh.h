@@ -184,11 +184,12 @@ public:
     /// Create and return ElementAccessor to element of given idx
     ElementAccessor<3> element_accessor(unsigned int idx) const;
 
+    /// Returns range of mesh elements
+    Range<ElementAccessor<3>> elements_range() const;
+
 
 
     virtual Boundary boundary(uint edge_idx) const = 0;
-    virtual Range<ElementAccessor<3>> elements_range() const = 0;
-
     virtual BCMesh *bc_mesh() const = 0;
 
 
@@ -526,9 +527,6 @@ public:
 
     /// Maximal distance of observe point from Mesh relative to its size
     double global_snap_radius() const;
-
-    /// Returns range of bulk elements
-    Range<ElementAccessor<3>> elements_range() const override;
 
     /// For node of given node_id returns index in element_vec_ or (-1) if node doesn't exist.
     inline int node_index(int node_id) const

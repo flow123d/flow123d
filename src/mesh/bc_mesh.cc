@@ -73,14 +73,6 @@ void BCMesh::init_distribution()
 }
 
 
-Range<ElementAccessor<3>> BCMesh::elements_range() const
-{
-	auto bgn_it = make_iter<ElementAccessor<3>>( ElementAccessor<3>(this, 0) );
-	auto end_it = make_iter<ElementAccessor<3>>( ElementAccessor<3>(this, element_vec_.size()) );
-    return Range<ElementAccessor<3>>(bgn_it, end_it);
-}
-
-
 Partitioning *BCMesh::get_part() {
     return parent_mesh_->get_part();
 }

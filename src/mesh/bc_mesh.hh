@@ -44,9 +44,6 @@ public:
 	/// Destructor
 	~BCMesh() override;
 
-    /// Returns range of boundary elements of parent mesh
-    Range<ElementAccessor<3>> elements_range() const override;
-
     /// Overwrite Mesh::get_part()
     Partitioning *get_part() override;
 
