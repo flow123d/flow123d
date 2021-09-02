@@ -7,11 +7,13 @@ File: \texttt{06\_frac\_dualpor.yaml}
 This is a variant of \texttt{04\_frac\_diffusion.yaml}. Instead of
 diffusion we consider advective transport with dual porosity.
 
-\#\#Input Dual porosity substitutes blind fractures in this task. The
+\subsection{Input}
+
+Dual porosity substitutes dead-end fractures in this task. The
 dual-porosity parameter \texttt{diffusion\_rate\_immobile} was
 calibrated to the value 5.64742e-06 for identical results with the model
-with the blind fractures. Other settings of transport are identical to
-the diffusion model.
+with the dead-end fractures. Other settings of transport are identical
+to the diffusion model.
 
 The dual porosity model is set by the following lines:
 
@@ -24,14 +26,14 @@ reaction_term: !DualPorosity
       diffusion_rate_immobile: 5.64742e-06
       porosity_immobile: 0.01
       init_conc_immobile: 0
-    - region: blind_fractures
+    - region: deadend_fractures
       init_conc_immobile: 0
 \end{verbatim}
 
-\#\#Results and comparison Results of calibration of the model with dual
-porosity and model with flow in blind fractures (file
-\texttt{06\_frac\_nodualpor.yaml}) is depicted in Figure
-\ref{fig:calib}.
+\subsection{Results and comparison}
+
+Results of calibration of the model with dual porosity and model with
+flow in dead-end fractures (file \texttt{06\_frac\_nodualpor.yaml}) is
 
 \begin{figure}
 \hypertarget{fig:calib}{%

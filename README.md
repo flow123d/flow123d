@@ -71,3 +71,33 @@ make ref-doc
 ```
 To copy out reference manual from docker use command
 [`docker cp`](https://docs.docker.com/engine/reference/commandline/cp/).
+
+
+## Singularity
+
+Singularity allows run simulator in various HPC environments.
+
+For large images may be necessary set temp directory.
+```sh
+export SINGULARITY_TMPDIR="/some_absolute_path/tmp"
+```
+
+### Run simulator
+```sh
+singularity exec docker://flow123d/3.1.0 flow123d simulation.yaml
+```
+
+### Parallel run
+```sh
+module add mpich-3.0.2-gcc
+mpiexec -host host1,host2 -np 4 singularity exec docker://flow123d/3.1.0 flow123d simulation.yaml
+```
+
+### Build
+```sh
+     host> git clone https://github.com/flow123d/flow123d.git # clone flow123d repository
+     host> singularity shell -B flow123d/:/flow123d docker://flow123d/flow-dev-gnu-rel:3.1.0 # starts developing container
+container> cd /flow123d
+container> make all # produce "build_tree/bin/flow123d"
+container> bin/flow123d  # lunch the simulator
+```
