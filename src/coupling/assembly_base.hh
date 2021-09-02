@@ -34,6 +34,11 @@ template <unsigned int dim>
 class AssemblyBase
 {
 public:
+    typedef typename GenericAssemblyBase::BulkIntegralData BulkIntegralData;
+    typedef typename GenericAssemblyBase::EdgeIntegralData EdgeIntegralData;
+    typedef typename GenericAssemblyBase::CouplingIntegralData CouplingIntegralData;
+    typedef typename GenericAssemblyBase::BoundaryIntegralData BoundaryIntegralData;
+
 	/// Constructor
 	AssemblyBase(unsigned int quad_order) {
         quad_ = new QGauss(dim, 2*quad_order);
@@ -47,16 +52,16 @@ public:
     }
 
     /// Assembles the volume integrals on cell.
-    inline void cell_integral(FMT_UNUSED DHCellAccessor cell, FMT_UNUSED unsigned int element_patch_idx) {}
+    virtual inline void cell_integral(FMT_UNUSED DHCellAccessor cell, FMT_UNUSED unsigned int element_patch_idx) {}
 
     /// Assembles the fluxes on the boundary.
-    inline void boundary_side_integral(FMT_UNUSED DHCellSide cell_side) {}
+    virtual inline void boundary_side_integral(FMT_UNUSED DHCellSide cell_side) {}
 
     /// Assembles the fluxes between sides on the edge.
-    inline void edge_integral(FMT_UNUSED RangeConvert<DHEdgeSide, DHCellSide> edge_side_range) {}
+    virtual inline void edge_integral(FMT_UNUSED RangeConvert<DHEdgeSide, DHCellSide> edge_side_range) {}
 
     /// Assembles the fluxes between elements of different dimensions.
-    inline void dimjoin_intergral(FMT_UNUSED DHCellAccessor cell_lower_dim, FMT_UNUSED DHCellSide neighb_side) {}
+    virtual inline void dimjoin_intergral(FMT_UNUSED DHCellAccessor cell_lower_dim, FMT_UNUSED DHCellSide neighb_side) {}
 
     /// Method prepares object before assemblation (e.g. balance, ...).
     virtual void begin() {}
@@ -116,6 +121,45 @@ public:
     inline Range< BoundaryPoint > boundary_points(const DHCellSide &cell_side) const {
         ASSERT_DBG( cell_side.dim() > 0 ).error("Invalid cell dimension, must be 1, 2 or 3!\n");
 	    return integrals_.boundary_->points(cell_side, element_cache_map_);
+    }
+
+    /// Assembles the cell integrals for the given dimension.
+    inline void assemble_cell_integrals(const RevertableList<BulkIntegralData> &bulk_integral_data) {
+    	for (unsigned int i=0; i<bulk_integral_data.permanent_size(); ++i) {
+            if (bulk_integral_data[i].cell.dim() != dim) continue;
+            this->cell_integral(bulk_integral_data[i].cell, element_cache_map_->position_in_cache(bulk_integral_data[i].cell.elm().mesh_idx()));
+    	}
+    	// Possibly optimization but not so fast as we would assume (needs change interface of cell_integral)
+        /*for (unsigned int i=0; i<element_cache_map_->n_elements(); ++i) {
+            unsigned int elm_start = element_cache_map_->element_chunk_begin(i);
+            if (element_cache_map_->eval_point_data(elm_start).i_eval_point_ != 0) continue;
+            this->cell_integral(i, element_cache_map_->eval_point_data(elm_start).dh_loc_idx_);
+        }*/
+    }
+
+    /// Assembles the boundary side integrals for the given dimension.
+    inline void assemble_boundary_side_integrals(const RevertableList<BoundaryIntegralData> &boundary_integral_data) {
+        for (unsigned int i=0; i<boundary_integral_data.permanent_size(); ++i) {
+            if (boundary_integral_data[i].side.dim() != dim) continue;
+            this->boundary_side_integral(boundary_integral_data[i].side);
+        }
+    }
+
+    /// Assembles the edge integrals for the given dimension.
+    inline void assemble_edge_integrals(const RevertableList<EdgeIntegralData> &edge_integral_data) {
+        for (unsigned int i=0; i<edge_integral_data.permanent_size(); ++i) {
+        	auto range = edge_integral_data[i].edge_side_range;
+            if (range.begin()->dim() != dim) continue;
+            this->edge_integral(edge_integral_data[i].edge_side_range);
+        }
+    }
+
+    /// Assembles the neighbours integrals for the given dimension.
+    inline void assemble_neighbour_integrals(const RevertableList<CouplingIntegralData> &coupling_integral_data) {
+        for (unsigned int i=0; i<coupling_integral_data.permanent_size(); ++i) {
+            if (coupling_integral_data[i].side.dim() != dim) continue;
+            this->dimjoin_intergral(coupling_integral_data[i].cell, coupling_integral_data[i].side);
+        }
     }
 
 protected:
