@@ -215,6 +215,17 @@ public:
      */
     void init_from_input();
 
+    /**
+     * Permute nodes of individual elements so that all elements have same edge orientations and aligned sides have same order of their nodes
+     * Canonical edge orientation in elements and faces is from nodes of lower local index to higher local index.
+     *
+     * Algorithm detals:
+     * 1. Orient all edges from lowe global node id to higher node id, fictional step. (substantial is orientation of yet non-oriented edges of a node in direction out of the node.
+     *    Can be proven (!?) that this prevents edge cycles of the length 3 (faces with cyclic edges).
+     * 2. Having all faces non-cyclic there exists a permutation of any element to the reference element.
+     *    Pass through the elements. Sort nodes by global ID.
+     */
+    void canonical_faces();
 
     /**
      * Initialize all mesh structures from raw information about nodes and elements (including boundary elements).
@@ -299,9 +310,6 @@ public:
     int n_exsides; // # of external sides
     mutable int n_sides_; // total number of sides (should be easy to count when we have separated dimensions
 
-    int n_lines; // Number of line elements
-    int n_triangles; // Number of triangle elements
-    int n_tetrahedras; // Number of tetrahedra elements
 
     // Temporary solution for numbering of nodes on sides.
     // The data are defined in RefElement<dim>::side_nodes,
@@ -359,6 +367,8 @@ public:
 
     /// Initialize node_vec_, set size
     void init_node_vector(unsigned int size);
+
+    // TODO: have also private non-const accessors and ranges
 
     /// Returns range of bulk elements
     virtual Range<ElementAccessor<3>> elements_range() const;
@@ -419,12 +429,6 @@ public:
     /// Create boundary elements from data of temporary structure, this method MUST be call after read mesh from file, return number of read boundary elements
     unsigned int create_boundary_elements();
 
-    /// Permute nodes of 3D elements of given elm_idx
-    void permute_tetrahedron(unsigned int elm_idx, std::vector<unsigned int> permutation_vec);
-
-    /// Permute nodes of 2D elements of given elm_idx
-    void permute_triangle(unsigned int elm_idx, std::vector<unsigned int> permutation_vec);
-
     /// Create boundary mesh if doesn't exist and return it.
     BCMesh *get_bc_mesh();
 
@@ -467,11 +471,6 @@ protected:
      */
     void make_neighbours_and_edges();
 
-    /**
-     * On edges sharing sides of many elements it may happen that each side has its nodes ordered in a different way.
-     * This method finds the permutation for each side so as to obtain the ordering of side 0.
-     */
-    void make_edge_permutations();
     /**
      * Create element lists for nodes in Mesh::nodes_elements.
      */

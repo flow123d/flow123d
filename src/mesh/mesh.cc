@@ -16,6 +16,7 @@
  * @brief   Mesh construction
  */
 
+
 #include <unistd.h>
 #include <set>
 #include <unordered_map>
@@ -93,8 +94,8 @@ const IT::Record & Mesh::get_input_type() {
                      "element in plan view (Z projection).")
         .declare_key("raw_ngh_output", IT::FileName::output(), IT::Default::optional(),
                      "Output file with neighboring data from mesh.")
-        .declare_key("optimize_mesh", IT::Bool(), IT::Default("true"), "If true, make optimization of nodes and elements order. "
-        		     "This will speed up the calculations in assembations.")
+        .declare_key("optimize_mesh", IT::Bool(), IT::Default("true"), "If true, permute nodes and elements in order to increase cache locality. "
+        		     "This will speed up the calculations. GMSH output preserves original ordering but is slower. All variants of VTK output use the permuted.")
         .close();
 }
 
@@ -158,11 +159,6 @@ void Mesh::init()
     n_insides = NDEF;
     n_exsides = NDEF;
     n_sides_ = NDEF;
-
-    // number of element of particular dimension
-    n_lines = 0;
-    n_triangles = 0;
-    n_tetrahedras = 0;
 
     for (int d=0; d<3; d++) max_edge_sides_[d] = 0;
 
@@ -267,24 +263,16 @@ const LongIdx *Mesh::get_local_part() {
 }
 
 
-//=============================================================================
-// COUNT ELEMENT TYPES
-//=============================================================================
 
-void Mesh::count_element_types() {
-	for (auto elm : this->elements_range())
-    switch (elm->dim()) {
-        case 1:
-            n_lines++;
-            break;
-        case 2:
-            n_triangles++;
-            break;
-        case 3:
-            n_tetrahedras++;
-            break;
-        }
-}
+/**
+ * - remove unconnected nodes
+ * - permute element nodes
+ * - check element quality
+ */
+//void Mesh::check_and_normalize() {
+
+//}
+
 
 
 
@@ -378,6 +366,24 @@ void Mesh::check_mesh_on_read() {
     }
 }
 
+
+//void Mesh::array_sort(std::array<uint, 4> &nodes) {
+//    // TODO: use templated insert sort with recursion over length of array so that compiler can
+//    // optimize for the small array size.
+//
+//    std::sort(nodes.begin(), nodes.end());
+//}
+
+void Mesh::canonical_faces() {
+    for (uint i_el=0; i_el < bulk_size_; i_el++) {
+        Element &ele = element_vec_[i_el];
+        std::sort(ele.nodes_.begin(), ele.nodes_.end());
+        // mark inverted elements
+
+    }
+
+}
+
 void Mesh::setup_topology() {
     if (optimize_memory_locality) {
         START_TIMER("MESH - optimizer");
@@ -387,12 +393,14 @@ void Mesh::setup_topology() {
 
     START_TIMER("MESH - setup topology");
 
-    count_element_types();
+    //check_and_normalize();
+
+
     check_mesh_on_read();
+    canonical_faces();
 
     make_neighbours_and_edges();
     element_to_neigh_vb();
-    make_edge_permutations();
     count_side_types();
     
     tree = new DuplicateNodes(this);
@@ -515,6 +523,9 @@ bool Mesh::find_lower_dim_element( vector<unsigned int> &element_list, unsigned 
 
     vector<unsigned int>::iterator e_dest=element_list.begin();
     for( vector<unsigned int>::iterator ele = element_list.begin(); ele!=element_list.end(); ++ele) {
+        //DebugOut() << "Eid: " << this->elem_index(*ele)
+        //        << format(element_vec_[*ele].nodes_);
+
         if (element_vec_[*ele].dim() == dim) { // keep only indexes of elements of same dimension
             *e_dest=*ele;
             ++e_dest;
@@ -736,121 +747,6 @@ void Mesh::make_neighbours_and_edges()
 	}   // for elements
 
 	MessageOut().fmt( "Created {} edges and {} neighbours.\n", edges.size(), vb_neighbours_.size() );
-}
-
-
-
-void Mesh::make_edge_permutations()
-{
-    // node numbers is the local index of the node on the last side
-    // this maps the side nodes to the nodes of the reference side(0)
-    std::unordered_map<unsigned int,unsigned int> node_numbers;
-
-    for (auto edg : edge_range())
-	{
-        unsigned int n_side_nodes = edg.side(0)->n_nodes();
-		// side 0 is reference, so its permutation is 0
-		edg.side(0)->element()->permutation_idx_[edg.side(0)->side_idx()] = 0;
-
-		if (edg.n_sides() > 1)
-		{
-		    // For every node on the reference side(0) give its local idx on the current side.
-		    unsigned int permutation[n_side_nodes];
-
-
-		    node_numbers.clear();
-			for (uint i=0; i<n_side_nodes; i++)
-				node_numbers[edg.side(0)->node(i).idx()] = i;
-
-			for (uint sid=1; sid<edg.n_sides(); sid++)
-			{
-				for (uint i=0; i<n_side_nodes; i++)
-					permutation[node_numbers[edg.side(sid)->node(i).idx()]] = i;
-
-				switch (edg.side(0)->dim())
-				{
-				case 0:
-					edg.side(sid)->element()->permutation_idx_[edg.side(sid)->side_idx()] = RefElement<1>::permutation_index(permutation);
-					break;
-				case 1:
-					edg.side(sid)->element()->permutation_idx_[edg.side(sid)->side_idx()] = RefElement<2>::permutation_index(permutation);
-					break;
-				case 2:
-					edg.side(sid)->element()->permutation_idx_[edg.side(sid)->side_idx()] = RefElement<3>::permutation_index(permutation);
-					break;
-				}
-			}
-		}
-	}
-
-	for (vector<Neighbour>::iterator nb=vb_neighbours_.begin(); nb!=vb_neighbours_.end(); nb++)
-	{
-        // node numbers is the local index of the node on the last side
-        // this maps the side nodes to the nodes of the side(0)
-	    unsigned int n_side_nodes = nb->element()->n_nodes();
-	    unsigned int permutation[n_side_nodes];
-        node_numbers.clear();
-
-		// element of lower dimension is reference, so
-		// we calculate permutation for the adjacent side
-		for (unsigned int i=0; i<n_side_nodes; i++)
-			node_numbers[nb->element().node(i).idx()] = i;
-
-		for (unsigned int i=0; i<n_side_nodes; i++)
-			permutation[node_numbers[nb->side()->node(i).idx()]] = i;
-
-		switch (nb->side()->dim())
-		{
-		case 0:
-			nb->side()->element()->permutation_idx_[nb->side()->side_idx()] = RefElement<1>::permutation_index(permutation);
-			break;
-		case 1:
-			nb->side()->element()->permutation_idx_[nb->side()->side_idx()] = RefElement<2>::permutation_index(permutation);
-			break;
-		case 2:
-			nb->side()->element()->permutation_idx_[nb->side()->side_idx()] = RefElement<3>::permutation_index(permutation);
-			break;
-		}
-	}
-
-	for (vector<BoundaryData>::iterator bdr=boundary_.begin(); bdr!=boundary_.end(); bdr++)
-	{
-        if (bdr->bc_ele_idx_ >= element_vec_.size()) continue; // skip invalid boundary item
-        Edge edg = this->edge(bdr->edge_idx_);
-        ElementAccessor<3> bdr_elm = this->element_accessor(bdr->bc_ele_idx_);
-
-        // node numbers is the local index of the node on the last side
-        // this maps the side nodes to the nodes of the side(0)
-        unsigned int n_side_nodes = bdr_elm->n_nodes();
-        unsigned int permutation[n_side_nodes];
-        node_numbers.clear();
-
-        // boundary element (lower dim) is reference, so
-        // we calculate permutation for the adjacent side
-        for (unsigned int i=0; i<n_side_nodes; i++) {
-            node_numbers[bdr_elm.node(i).idx()] = i;
-        }
-
-        for (uint sid=0; sid<edg.n_sides(); sid++)
-        {
-            for (uint i=0; i<n_side_nodes; i++) {
-                permutation[node_numbers[edg.side(sid)->node(i).idx()]] = i;
-            }
-
-            switch (bdr_elm.dim())
-            {
-            case 0:
-                edg.side(sid)->element()->permutation_idx_[edg.side(sid)->side_idx()] = RefElement<1>::permutation_index(permutation);
-                break;
-            case 1:
-                edg.side(sid)->element()->permutation_idx_[edg.side(sid)->side_idx()] = RefElement<2>::permutation_index(permutation);
-                break;
-            case 2:
-                edg.side(sid)->element()->permutation_idx_[edg.side(sid)->side_idx()] = RefElement<3>::permutation_index(permutation);
-                break;
-            }
-        }
-    }
 }
 
 
@@ -1262,8 +1158,12 @@ void Mesh::init_element(Element *ele, unsigned int elm_id, unsigned int dim, Reg
 	ele->init(dim, region_idx);
 	ele->pid_ = partition_id;
 
-	for (unsigned int ni=0; ni<ele->n_nodes(); ni++) {
+	unsigned int ni;
+	for (ni=0; ni<ele->n_nodes(); ni++) {
 		ele->nodes_[ni] = this->node_index(node_ids[ni]);
+	}
+	for(;ni<4;ni++) {
+	    ele->nodes_[ni] = undef_idx;
 	}
 
     // check that tetrahedron element is numbered correctly and is not degenerated
@@ -1449,40 +1349,6 @@ unsigned int Mesh::create_boundary_elements() {
 	unsigned int bdr_size = bc_element_tmp_.size();
 	vector<ElementTmpData>().swap(bc_element_tmp_);
 	return bdr_size;
-}
-
-
-void Mesh::permute_tetrahedron(unsigned int elm_idx, std::vector<unsigned int> permutation_vec)
-{
-	ASSERT_LT_DBG(elm_idx, element_vec_.size());
-    ASSERT_EQ_DBG(permutation_vec.size(), 4);
-
-    std::array<unsigned int, 4> tmp_nodes;
-    Element &elem = element_vec_[elm_idx];
-    ASSERT_EQ_DBG(elem.dim(), 3);
-
-    for(unsigned int i=0; i<elem.n_nodes(); i++)
-    {
-       	tmp_nodes[i] = elem.nodes_[permutation_vec[i]];
-    }
-    elem.nodes_ = tmp_nodes;
-}
-
-
-void Mesh::permute_triangle(unsigned int elm_idx, std::vector<unsigned int> permutation_vec)
-{
-	ASSERT_LT_DBG(elm_idx, element_vec_.size());
-	ASSERT_EQ_DBG(permutation_vec.size(), 3);
-
-    std::array<unsigned int, 4> tmp_nodes;
-    Element &elem = element_vec_[elm_idx];
-    ASSERT_EQ_DBG(elem.dim(), 2);
-
-    for(unsigned int i=0; i<elem.n_nodes(); i++)
-    {
-       	tmp_nodes[i] = elem.nodes_[permutation_vec[i]];
-    }
-    elem.nodes_ = tmp_nodes;
 }
 
 

@@ -113,39 +113,6 @@ template<> const std::vector<IdxVector<3>> RefElement<3>::side_lines_
         {3,4,5}};
 
 
-template<> const std::vector< std::vector<unsigned int> >
-    RefElement<0>::side_permutations = { { } };
-
-template<> const std::vector< std::vector<unsigned int> >
-    RefElement<1>::side_permutations = { { 0 } };
-
-template<> const std::vector< std::vector<unsigned int> >
-    RefElement<2>::side_permutations = { { 0, 1 }, { 1, 0 } };
-
-template<> const std::vector< std::vector<unsigned int> >
-    RefElement<3>::side_permutations = {
-        { 0, 1, 2 },
-        { 0, 2, 1 },
-        { 1, 0, 2 },
-        { 1, 2, 0 },
-        { 2, 0, 1 },
-        { 2, 1, 0 }
-    };
-
-// template<> const unsigned int RefElement<0>::side_permutations[][n_nodes_per_side] = { };
-
-// template<> const unsigned int RefElement<1>::side_permutations[][n_nodes_per_side] = { { 0 } };
-
-// template<> const unsigned int RefElement<2>::side_permutations[][n_nodes_per_side] = { { 0, 1 }, { 1, 0 } };
-
-// template<> const unsigned int RefElement<3>::side_permutations[][n_nodes_per_side] = {
-//         { 0, 1, 2 },
-//         { 0, 2, 1 },
-//         { 1, 0, 2 },
-//         { 1, 2, 0 },
-//         { 2, 0, 1 },
-//         { 2, 1, 0 }
-// };
 
 
 template<> const IdxVector<1> RefElement<0>::topology_zeros_[] = {
@@ -548,20 +515,6 @@ unsigned int RefElement<3>::line_between_faces(unsigned int f1, unsigned int f2)
 }
 
 
-template<unsigned int dim>
-unsigned int RefElement<dim>::permutation_index(unsigned int p[n_nodes_per_side])
-{
-	unsigned int index;
-	for (index = 0; index < n_side_permutations; index++)
-		if (equal(p, p + n_nodes_per_side, side_permutations[index].data()))
-			return index;
-
-	THROW( ExcInvalidPermutation() );
-
-	// The following line is present in order to suppress compilers warning
-	// about missing return value.
-	return 0;
-}
 
 
 /**

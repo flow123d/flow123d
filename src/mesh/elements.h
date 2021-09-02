@@ -55,9 +55,6 @@ public:
     /// Return edge_idx of given index
     inline unsigned int edge_idx(unsigned int edg_idx) const;
 
-    /// Return permutation_idx of given index
-    inline unsigned int permutation_idx(unsigned int prm_idx) const;
-
     /// Return Id of mesh partition
     inline int pid() const {
     	return pid_;
@@ -84,7 +81,6 @@ public:
     Neighbour **neigh_vb; // List og neighbours, V-B type (comp.)
         // TODO remove direct access in DarcyFlow, MhDofHandler, Mesh? Partitioning and Trabsport
 
-
 protected:
     int pid_;                            ///< Id # of mesh partition
     std::vector<unsigned int> edge_idx_; ///< Edges on sides
@@ -92,16 +88,7 @@ protected:
                                          // only ngh from this element to higher dimension edge
                                          // TODO fix and remove mutable directive
 
-    /**
-    * Indices of permutations of nodes on sides.
-    * It determines, in which order to take the nodes of the side so as to obtain
-    * the same order as on the reference side (side 0 on the particular edge).
-    *
-    * Permutations are defined in RefElement::side_permutations.
-    *
-    * TODO fix and remove mutable directive
-    */
-    mutable std::vector<unsigned int> permutation_idx_;
+
 
     // Data readed from mesh file
     RegionIdx  region_idx_;
@@ -138,10 +125,6 @@ inline unsigned int Element::edge_idx(unsigned int edg_idx) const {
 	return edge_idx_[edg_idx];
 }
 
-inline unsigned int Element::permutation_idx(unsigned int prm_idx) const {
-	ASSERT(prm_idx<permutation_idx_.size())(prm_idx)(permutation_idx_.size()).error("Index of permutation is out of bound!");
-	return permutation_idx_[prm_idx];
-}
 
 #endif
 //-----------------------------------------------------------------------------
