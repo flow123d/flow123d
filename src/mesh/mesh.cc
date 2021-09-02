@@ -102,6 +102,15 @@ MeshBase::MeshBase()
 
 MeshBase::~MeshBase()
 {
+    for(EdgeData &edg : this->edges)
+        if (edg.side_) delete[] edg.side_;
+
+    for (unsigned int idx=0; idx < element_vec_.size(); idx++) {
+    	Element *ele=&(element_vec_[idx]);
+        if (ele->boundary_idx_) delete[] ele->boundary_idx_;
+        if (ele->neigh_vb) delete[] ele->neigh_vb;
+    }
+
     if (row_4_el != nullptr) delete[] row_4_el;
     if (el_4_loc != nullptr) delete[] el_4_loc;
     if (el_ds != nullptr) delete el_ds;
@@ -221,15 +230,6 @@ void Mesh::init()
 
 
 Mesh::~Mesh() {
-    for(EdgeData &edg : this->edges)
-        if (edg.side_) delete[] edg.side_;
-
-    for (unsigned int idx=0; idx < element_vec_.size(); idx++) {
-    	Element *ele=&(element_vec_[idx]);
-        if (ele->boundary_idx_) delete[] ele->boundary_idx_;
-        if (ele->neigh_vb) delete[] ele->neigh_vb;
-    }
-
     if (node_4_loc_ != nullptr) delete[] node_4_loc_;
     if (node_ds_ != nullptr) delete node_ds_;
     if (bc_mesh_ != nullptr) delete bc_mesh_;
