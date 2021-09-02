@@ -923,7 +923,7 @@ ElementAccessor<3> Mesh::element_accessor(unsigned int idx) const {
 
 
 
-NodeAccessor<3> Mesh::node(unsigned int idx) const {
+NodeAccessor<3> MeshBase::node(unsigned int idx) const {
     return NodeAccessor<3>(this, idx);
 }
 

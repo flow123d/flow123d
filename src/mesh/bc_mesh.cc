@@ -111,12 +111,6 @@ ElementAccessor<3> BCMesh::element_accessor(unsigned int idx) const {
 }
 
 
-NodeAccessor<3> BCMesh::node(unsigned int) const
-{
-	ASSERT(	false );
-	return NodeAccessor<3>();
-}
-
 Boundary BCMesh::boundary(unsigned int) const
 {
 	ASSERT( false );

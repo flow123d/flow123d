@@ -178,9 +178,11 @@ public:
         return region_db_;
     }
 
+    /// Create and return NodeAccessor to node of given idx
+    NodeAccessor<3> node(unsigned int idx) const;
 
 
-    virtual NodeAccessor<3> node(unsigned int idx) const = 0;
+
     virtual Boundary boundary(uint edge_idx) const = 0;
     virtual ElementAccessor<3> element_accessor(unsigned int idx) const = 0;
     
@@ -458,9 +460,6 @@ public:
 
     /// Create and return ElementAccessor to element of given idx
     ElementAccessor<3> element_accessor(unsigned int idx) const override;
-
-    /// Create and return NodeAccessor to node of given idx
-    NodeAccessor<3> node(unsigned int idx) const override;
 
     /**
      * Reads elements and their affiliation to regions and region sets defined by user in input file
