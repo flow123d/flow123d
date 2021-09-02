@@ -210,7 +210,7 @@ TEST_F(FieldEvalFormulaTest, evaluate) {
     	data_->computed_dh_cell_ = DHCellAccessor(dh_.get(), cell_idx[i]);  // element ids stored to cache: (3 -> 2,3,4), (4 -> 3,4,5,10), (5 -> 0,4,5,11), (10 -> 8,9,10)
         data_->update_cache();
 
-        // Bulk integral, no sides.
+        // Bulk integral, no sides, no permutations.
         for( BulkPoint q_point: data_->mass_eval->points(data_->position_in_cache(data_->computed_dh_cell_.elm_idx()), data_.get()) ) {
             EXPECT_DOUBLE_EQ( dbl_scalar[ expected_scalar[i][test_point] ], data_->scalar_field(q_point));
             arma::vec3 expected_vector;
@@ -235,7 +235,7 @@ TEST_F(FieldEvalFormulaTest, evaluate) {
         // FieldFE<..> conc;
         for (DHCellSide side : data_->computed_dh_cell_.side_range()) {
         	for(DHCellSide el_ngh_side : side.edge_sides()) {
-           	    // vector of local side quadrature points
+           	    // vector of local side quadrature points in the correct side permutation
         	    Range<EdgePoint> side_points = data_->side_eval->points(side, data_.get());
         	    for (EdgePoint side_p : side_points) {
                     EXPECT_DOUBLE_EQ( dbl_scalar[ expected_scalar[i][test_point] ], data_->scalar_field(side_p));
@@ -301,7 +301,7 @@ TEST_F(FieldEvalFormulaTest, field_dependency) {
         expected_vector(1) = 2*expected_val;
         expected_vector(2) = 0.5;
 
-        // Bulk integral, no sides.
+        // Bulk integral, no sides, no permutations.
         for( BulkPoint q_point: data_->mass_eval->points(data_->position_in_cache(data_->computed_dh_cell_.elm_idx()), data_.get()) ) {
             EXPECT_DOUBLE_EQ( expected_val, data_->scalar_field(q_point));
             EXPECT_ARMA_EQ(expected_vector, data_->vector_field(q_point));
@@ -311,7 +311,7 @@ TEST_F(FieldEvalFormulaTest, field_dependency) {
         // FieldFE<..> conc;
         for (DHCellSide side : data_->computed_dh_cell_.side_range()) {
             for(DHCellSide el_ngh_side : side.edge_sides()) {
-                // vector of local side quadrature points
+                // vector of local side quadrature points in the correct side permutation
            	    Range<EdgePoint> side_points = data_->side_eval->points(side, data_.get());
            	    double expected_ngh_val = dbl_scalar[ expected_ngh[test_point] ];
         	    for (EdgePoint side_p : side_points) {

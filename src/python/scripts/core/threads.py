@@ -52,8 +52,6 @@ class ExtendedThread(threading.Thread):
                 self.returncode = RC_OK
             except BaseException as e:
                 self.exception = e
-                self.returncode = RC_BROKEN
-
 
     @property
     def returncode(self):

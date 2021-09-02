@@ -54,14 +54,38 @@ template <unsigned int dim>
 std::shared_ptr<EdgeIntegral> EvalPoints::add_edge(const Quadrature &quad)
 {
     ASSERT_EQ(dim, quad.dim()+1);
+	unsigned int old_data_size=this->size(dim), new_data_size; // interval of side subset data
+	unsigned int points_per_side = quad.make_from_side<dim>(0, 0).get_points().size();
+	unsigned int n_side_permutations = RefElement<dim>::n_side_permutations;
 
-	std::shared_ptr<EdgeIntegral> edge_integral = std::make_shared<EdgeIntegral>(shared_from_this(), dim);
+	std::shared_ptr<EdgeIntegral> edge_integral = std::make_shared<EdgeIntegral>(shared_from_this(), dim, n_side_permutations, points_per_side);
+	unsigned int*** perm_indices = edge_integral->perm_indices_;
 
+    // permutation 0
     for (unsigned int i=0; i<dim+1; ++i) {  // sides
-        Quadrature high_dim_q = quad.make_from_side<dim>(i);
+        Quadrature high_dim_q = quad.make_from_side<dim>(i, 0);
         dim_eval_points_[dim].add_local_points<dim>( high_dim_q.get_points() );
     }
     dim_eval_points_[dim].add_subset();
+    new_data_size = this->size(dim);
+    unsigned int i_data=old_data_size;
+    for (unsigned int i_side=0; i_side<dim+1; ++i_side) {
+        for (unsigned int i_point=0; i_point<points_per_side; ++i_point) {
+        	perm_indices[i_side][0][i_point] = i_data;
+        	++i_data;
+        }
+    }
+
+    // permutation 1...N
+    for (unsigned int i_perm=1; i_perm<n_side_permutations; ++i_perm) {
+        for (unsigned int i_side=0; i_side<dim+1; ++i_side) {
+            Quadrature high_dim_q = quad.make_from_side<dim>(i_side, i_perm);
+            const Armor::Array<double> & quad_points = high_dim_q.get_points();
+            for (unsigned int i_point=0; i_point<quad_points.size(); ++i_point) {
+                perm_indices[i_side][i_perm][i_point] = dim_eval_points_[dim].find_permute_point<dim>( quad_points.vec<dim>(i_point), old_data_size, new_data_size );
+            }
+        }
+    }
 
     this->set_max_size();
     return edge_integral;
@@ -101,6 +125,17 @@ void EvalPoints::DimEvalPoints::add_local_points(const Armor::Array<double> & qu
 	}
 }
 
+template <unsigned int dim>
+unsigned int EvalPoints::DimEvalPoints::find_permute_point(arma::vec coords, unsigned int data_begin, unsigned int data_end) {
+    ASSERT_GT(dim, 0).error("Dimension 0 not supported!\n");
+	for (unsigned int loc_idx=data_begin; loc_idx<data_end; ++loc_idx) {
+	    // Check if point exists in local points vector.
+        if ( arma::norm(coords-local_points_.vec<dim>(loc_idx), 2) < 4*std::numeric_limits<double>::epsilon() ) return loc_idx;
+    }
+
+	ASSERT(false);
+    return 0;
+}
 
 void EvalPoints::DimEvalPoints::add_subset() {
     ASSERT_LT_DBG(n_subsets_, EvalPoints::max_subsets).error("Maximal number of subsets exceeded!\n");
@@ -125,3 +160,6 @@ template std::shared_ptr<BoundaryIntegral> EvalPoints::add_boundary<3>(const Qua
 template void EvalPoints::DimEvalPoints::add_local_points<1>(const Armor::Array<double> &);
 template void EvalPoints::DimEvalPoints::add_local_points<2>(const Armor::Array<double> &);
 template void EvalPoints::DimEvalPoints::add_local_points<3>(const Armor::Array<double> &);
+template unsigned int EvalPoints::DimEvalPoints::find_permute_point<1>(arma::vec, unsigned int, unsigned int);
+template unsigned int EvalPoints::DimEvalPoints::find_permute_point<2>(arma::vec, unsigned int, unsigned int);
+template unsigned int EvalPoints::DimEvalPoints::find_permute_point<3>(arma::vec, unsigned int, unsigned int);

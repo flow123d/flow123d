@@ -65,12 +65,9 @@ class LocalRun(AbstractRun):
         :rtype: scripts.comparisons.modules.ExecComparison | scripts.comparisons.modules.InPlaceComparison
         """
         try:
-            module_path = f'{cls.module_path}.{compare_method}'
-            package = importlib.import_module(module_path)
+            package = importlib.import_module('{}.{}'.format(cls.module_path, compare_method))
             return getattr(package, compare_method)()
-        except Exception as e:
-            print("comparison module: ", module_path)
-            print(e)
+        except:
             return None
 
     def create_pypy(self, arg_rest):

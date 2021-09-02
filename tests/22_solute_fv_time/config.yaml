@@ -1,10 +1,6 @@
 common_config:
   proc: [1, 2]
   memory_limit: 1000
-  check_rules:
-    - vtkdiff:
-        files: ["*.vtu"]
-        interpolate: True
 
 test_cases:
 - files:
@@ -23,5 +19,5 @@ test_cases:
   time_limit: 120
   check_rules:
     - ndiff:
-        files: ["*.pvd", "*_balance.txt"]
+        files: ["*.vtu", "*.pvd", "*_balance.txt"]
       

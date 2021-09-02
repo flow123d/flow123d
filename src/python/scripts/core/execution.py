@@ -10,7 +10,6 @@ import tempfile
 from scripts import psutils
 from scripts.core.base import IO, Paths, Command
 from scripts.core.threads import ExtendedThread, BrokenProcess
-from scripts.core.returncode import RC, RC_NONE, RC_OK, RC_BROKEN
 from utils.globals import ensure_iterable
 # ----------------------------------------------
 
@@ -165,12 +164,12 @@ class BinExecutor(ExtendedThread):
             self.output.close()
             # broken process
             process = BrokenProcess(e)
-
-            self.returncode = RC_NONE
+            self.returncode = process.returncode
             self.broken = True
             self.process = process
             self.exception = str(e)
             return
+
         # process successfully started to wait for result
         # call wait on Popen process
         self.broken = False

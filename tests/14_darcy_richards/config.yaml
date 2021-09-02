@@ -6,12 +6,7 @@ common_config:
     #- ndiff:
         # do not check observe output
         #files: ["flow/*.vtu", "flow.pvd", "water_balance.txt"]
-  check_rules:
-    - vtkdiff:
-        files: ["*.vtu"]
-        interpolate: True
-        
-        
+
 test_cases:
   - files:
       - 01_1d.yaml

@@ -284,39 +284,7 @@ Logger &operator<<(Logger & log, const T & x)
 #define print_var(var) \
     std::string(#var) << "=" << (var) << ", "
 
-#include <iostream>
-#include <vector>
 
-/**
- * Manipulator template to print containers.
- */
-namespace manipulators
-{
-    template <typename Cont, typename Delim=const char*>
-    struct Array {
-        Array(Cont const& v, Delim d = ", ") : _v(v), _d(std::move(d)) { }
-
-        Cont const& _v;
-        Delim _d;
-
-        friend std::ostream& operator<<(std::ostream& os, Array const& manip) {
-            using namespace std;
-            auto f = begin(manip._v), l(end(manip._v));
-
-            os << "{ ";
-            while (f != l)
-                if ((os << *f) && (++f != l))
-                    os << manip._d;
-            return os << " }";
-        }
-    };
-
-}
-
-template <typename T, typename Delim=const char*>
-manipulators::Array<T, Delim> format(T const& deduce, Delim delim = ", ") {
-    return { deduce, std::move(delim) };
-}
 
 
 #endif /* LOGGER_HH_ */

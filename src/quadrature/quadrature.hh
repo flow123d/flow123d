@@ -60,6 +60,7 @@ public:
     /** @brief Constructor from quadrature of lower dimension (e.g. for side integration).
      * @param sub_quadrature lower dimensional (dim-1) quadrature
      * @param sid local index of side
+     * @param pid index of permutation of nodes on given side
      */
 //     template<unsigned int quad_dim>
 //     explicit Quadrature(const Quadrature &sub_quadrature, unsigned int sid, unsigned int pid);
@@ -121,10 +122,10 @@ public:
      * Create bulk quadrature from side quadrature.
      * 
      * Consider *this as quadrature on a side of an element and create
-     * higher dimensional quadrature considering side  index.
+     * higher dimensional quadrature considering side and permutation index.
      */
     template<unsigned int bulk_dim>
-    Quadrature make_from_side(unsigned int sid) const;
+    Quadrature make_from_side(unsigned int sid, unsigned int pid) const;
     
 
 protected:

@@ -7,7 +7,6 @@ EXECUTABLE="${SCRIPT_DIR}/../build_tree/bin/flow123d"
 if [ ! -x "${EXECUTABLE}" ]
 then
     echo "Can not find executable: ${EXECUTABLE} "
-    exit 1
 else    
     "${EXECUTABLE}" "$@"
 fi

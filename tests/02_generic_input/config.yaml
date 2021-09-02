@@ -1,9 +1,3 @@
-common_config:
-  check_rules:
-    - vtkdiff:
-        files: ["*.vtu"]
-        interpolate: True
-
 test_cases:
 - files:
   - 01_user_defined_units.yaml

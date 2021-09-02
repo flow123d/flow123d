@@ -5,9 +5,6 @@
 from scripts.core.threads import ExtendedThread, BrokenProcess
 # ----------------------------------------------
 
-"""
-Comparicon modules are imported and called dynamically from LocalRun get_module and create_comparisons, respectively.
-"""
 
 class ExecComparison(object):
     """
@@ -75,12 +72,8 @@ class InPlaceComparison(ExtendedThread):
 
     def _run(self):
         self.process = BrokenProcess()
-        try:
-            self.returncode = self.compare(
-                self.reference_filepath,
-                self.other_filepath,
-                **self.kwargs
-            )
-        except Exception as e:
-            self.returncode = 1
-            print(e)
+        self.returncode = self.compare(
+            self.reference_filepath,
+            self.other_filepath,
+            **self.kwargs
+        )
