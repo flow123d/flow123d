@@ -29,4 +29,6 @@ typedef arma::Col<IntIdx> LocDofVec;
 
 #define MPI_LONG_IDX MPI_INT
 
+const unsigned int undef_idx=-1;
+
 #endif // INDEX_TYPES_HH

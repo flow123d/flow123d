@@ -28,7 +28,7 @@ problem: !Coupling_Sequential
       fields:
         - pressure_p0
         - velocity_p0
-        - field: sigma
+        - sigma
     output_stream:
       file: ./test15.pvd
       format: !vtk

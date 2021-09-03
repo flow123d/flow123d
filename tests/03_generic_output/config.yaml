@@ -1,6 +1,10 @@
 common_config:
   proc: [1, 2]
   memory_limit: 1000
+  check_rules:
+    - vtkdiff:
+        files: ["*.vtu"]
+        interpolate: False
 
 test_cases:
 - files:
@@ -19,7 +23,6 @@ test_cases:
     - 31_serial_vtk_node_interp.yaml
     - 32_serial_vtk_elem_interp.yaml
     - 33_serial_vtk_corn_interp.yaml
-    - 42_square4x_DG_native_write.yaml
     - 43_square4x_DG_native_read.yaml
 
 - files: 11_time_marks_mixed_times.yaml
@@ -35,12 +38,9 @@ test_cases:
     - 36_parallel_vtk_corn_interp.yaml
   proc: [3]
 
-# binary VTKtest
-- files:
-    - 37_serial_vtk_binary.yaml
-  proc: [1]
   
-- files: 20_gmsh_precision.yaml
+- files: 
+  - 20_gmsh_precision.yaml
   proc: [1, 2]
   check_rules:
     - ndiff:
@@ -48,23 +48,32 @@ test_cases:
         r_tol: 1e-10
         a_tol: 1e-10
 
+- files: 
+  - 42_square4x_DG_native_write.yaml
+  proc: [1]
+  check_rules:
+    - ndiff:
+        files: ["flow/*.vtu", "solute/*.vtu"]
+        r_tol: 1e-10
+        a_tol: 1e-10
+
 # serial refined tests
-#- files:
-#    #- 23_gmsh_refined_serial_output.yaml
-#    - 51_darcy_fv_output_mesh_1d_serial.yaml
-#    - 53_darcy_fv_output_mesh_2d_serial.yaml
-#    - 55_darcy_fv_output_mesh_3d_serial.yaml
-#  proc: [1]
+- files:
+    #- 23_gmsh_refined_serial_output.yaml
+    
+    # binary VTKtest
+    - 37_serial_vtk_binary.yaml
+    #- 51_darcy_fv_output_mesh_1d_serial.yaml
+    #- 53_darcy_fv_output_mesh_2d_serial.yaml
+    #- 55_darcy_fv_output_mesh_3d_serial.yaml
+  proc: [1]
 
 # parallel refined tests
-#- files:
-#    #- 24_gmsh_refined_parallel_output.yaml
-#    - 52_darcy_fv_output_mesh_1d_parallel.yaml
-#    - 54_darcy_fv_output_mesh_2d_parallel.yaml
-#    - 56_darcy_fv_output_mesh_3d_parallel.yaml
-#  proc: [2]
-
-# test of generic fields subdomain and region_id
 - files:
+    #- 24_gmsh_refined_parallel_output.yaml
+    #- 52_darcy_fv_output_mesh_1d_parallel.yaml
+    #- 54_darcy_fv_output_mesh_2d_parallel.yaml
+    #- 56_darcy_fv_output_mesh_3d_parallel.yaml
+    # test of generic fields subdomain and region_id
     - 13_generic_fields.yaml
   proc: [2]
