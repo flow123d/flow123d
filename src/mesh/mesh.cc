@@ -99,8 +99,6 @@ const IT::Record & Mesh::get_input_type() {
         .close();
 }
 
-//const unsigned int Mesh::undef_idx;
-
 Mesh::Mesh()
 : tree(nullptr),
   comm_(MPI_COMM_WORLD),
@@ -878,7 +876,7 @@ std::shared_ptr<EquivalentMeshMap> Mesh::check_compatible_mesh(Mesh & input_mesh
 
 	std::vector<unsigned int> node_ids; // indices map: nodes from source mesh to nodes of target mesh
 	std::shared_ptr<EquivalentMeshMap> map_ptr = 
-        std::make_shared<EquivalentMeshMap>(n_elements(), get_bc_mesh()->n_elements(), (LongIdx)Mesh::undef_idx);
+        std::make_shared<EquivalentMeshMap>(n_elements(), get_bc_mesh()->n_elements(), (LongIdx)undef_idx);
     // indices map: nodes from source mesh to nodes of target mesh
 
     {

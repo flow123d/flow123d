@@ -272,7 +272,7 @@ public:
      * @param input_mesh data mesh of input fields
      * @return vector that holds mapping between eleemnts of data and computational meshes
      *             for every element in computational mesh hold idx of equivalent element in input mesh.
-     *             If element doesn't exist in input mesh value is set to Mesh::undef_idx.
+     *             If element doesn't exist in input mesh value is set to undef_idx.
      *             If meshes are not compatible returns empty vector.
      */
     virtual std::shared_ptr<EquivalentMeshMap> check_compatible_mesh(Mesh & input_mesh);
