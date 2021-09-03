@@ -54,6 +54,7 @@ public:
     AssemblyOutputBase(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
+        offsets_.resize(1.1 * CacheMapElementNumber::get());
     }
 
     /// Initialize auxiliary vectors and other data members
@@ -143,6 +144,7 @@ class AssemblyOutputNodeData : public AssemblyOutputBase<dim>
 public:
     typedef EquationOutput EqFields;
     typedef EquationOutput EqData;
+    typedef typename GenericAssemblyBase::BulkIntegralData BulkIntegralData;
 
     static constexpr const char * name() { return "AssemblyOutputNodeData"; }
 
@@ -167,20 +169,22 @@ public:
     }
 
 
-    /// Assemble integral over element
-    inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
-    {
-        ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
-
-        unsigned int output_elm_idx = this->stream_->get_output_mesh_ptr()->get_loc_elem_idx(cell.elm_idx());
-        unsigned int offset = (*offset_vec_)[output_elm_idx];
-
-        for (FieldListAccessor f_acc : this->used_fields_.fields_range()) {
-            unsigned int i_point=0;
-        	for (auto p : this->bulk_points(element_patch_idx) ) {
-                f_acc->fill_data_value(p, offset+i_point);
-                ++i_point;
+    /// Assembles the cell integrals for the given dimension.
+    inline void assemble_cell_integrals(const RevertableList<BulkIntegralData> &bulk_integral_data) {
+    	if (dim!=1) return;  // Perform full output in one loop
+    	unsigned int element_patch_idx, field_value_cache_position, val_idx;
+    	this->reset_offsets();
+    	for (unsigned int i=0; i<bulk_integral_data.permanent_size(); ++i) {
+            element_patch_idx = this->element_cache_map_->position_in_cache(bulk_integral_data[i].cell.elm().mesh_idx());
+            val_idx = (*offset_vec_)[ this->stream_->get_output_mesh_ptr()->get_loc_elem_idx(bulk_integral_data[i].cell.elm_idx()) ];
+            auto p = *( this->bulk_points(element_patch_idx).begin() );
+            field_value_cache_position = this->element_cache_map_->element_eval_point(element_patch_idx, p.eval_point_idx());
+            for (uint j=0; j<bulk_integral_data[i].cell.dim()+1; ++j) {
+                this->offsets_[field_value_cache_position+j] = val_idx+j;
             }
+    	}
+        for (FieldListAccessor f_acc : this->used_fields_.fields_range()) {
+            f_acc->fill_data_value(this->offsets_);
         }
     }
 
