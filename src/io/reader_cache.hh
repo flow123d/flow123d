@@ -27,6 +27,7 @@
 
 class BaseMeshReader;
 class Mesh;
+class EquivalentMeshMap;
 
 
 
@@ -41,7 +42,7 @@ public:
 
 		std::shared_ptr<BaseMeshReader> reader_;
 		std::shared_ptr<Mesh> mesh_;
-		std::shared_ptr<std::vector<LongIdx>> target_mesh_element_map_;
+		std::shared_ptr<EquivalentMeshMap> target_mesh_element_map_;
 	};
 
 	typedef std::map< string, ReaderData > ReaderTable;
@@ -67,7 +68,8 @@ public:
 	 * Reader and appropriate input data mesh are given by FilePath.
 	 * If map is not created method check_compatible_mesh of \p computational_mesh is called.
 	 */
-	static std::shared_ptr<std::vector<LongIdx>> get_target_mesh_element_map(const FilePath &file_path, Mesh *computational_mesh, bool is_native);
+    static std::shared_ptr<EquivalentMeshMap> get_target_mesh_element_map(const FilePath &file_path,
+                                                                          Mesh *computational_mesh);
 
 private:
 	/// Returns singleton instance

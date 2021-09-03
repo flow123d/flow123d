@@ -1,13 +1,11 @@
-\section{2D tunnel}
+\#2D tunnel
 
 File: \texttt{03\_tunnel.yaml}
 
-\subsection{Description}
-
-The tutorial models the seepage site 23 m under the surface of the water
-treatment plant tunnel Bedřichov in the granite rock massif. This
-seepage site has fast reaction to the precipitation and measurements of
-various chemical values are available.
+\#\#Description The tutorial models the seepage site 23 m under the
+surface of the water treatment plant tunnel Bedřichov in the granite
+rock massif. This seepage site has fast reaction to the precipitation
+and measurements of various chemical values are available.
 
 The user will learn how to:
 
@@ -64,22 +62,26 @@ input_fields:
     bc_flux: 2.33E-03
 \end{verbatim}
 
-\begin{figure}[htbp]
+\begin{figure}
+\hypertarget{fig:tunnel_geom}{%
 \centering
 \includegraphics{tutor_figures/03_bc.pdf}
 \caption{Geometry and boundary condition of
-model.\label{fig:tunnel_geom}}
+model.}\label{fig:tunnel_geom}
+}
 \end{figure}
 
 The results are shown in Figure \ref{fig:flow}, where the flux field and
 the pressure is shown. In the unsaturated layer the piezometric head is
 depicted.
 
-\begin{figure}[htbp]
+\begin{figure}
+\hypertarget{fig:flow}{%
 \centering
-\includegraphics[width=1.00000\textwidth]{tutor_figures/03_flow.pdf}
+\includegraphics[width=6.17708in,height=4.41667in]{tutor_figures/03_flow.pdf}
 \caption{Pressure, boundary of water level and piezometric head in
-unsaturated zone and flux field.\label{fig:flow}}
+unsaturated zone and flux field.}\label{fig:flow}
+}
 \end{figure}
 
 \subsection{Transport of real isotopes}
@@ -129,16 +131,20 @@ In Figure \ref{fig:conc_graph}, the computed mass flux through tunnel is
 compared to the measured data. The evolution of the transported
 substance is depicted in Figure \ref{fig:mass_real}.
 
-\begin{figure}[htbp]
+\begin{figure}
+\hypertarget{fig:conc_graph}{%
 \centering
 \includegraphics{tutor_figures/03_mass_flux.pdf}
 \caption{Concentration of O-18 on the seepage site 23m under the
-surface.\label{fig:conc_graph}}
+surface.}\label{fig:conc_graph}
+}
 \end{figure}
 
-\begin{figure}[htbp]
+\begin{figure}
+\hypertarget{fig:mass_real}{%
 \centering
-\includegraphics[width=1.00000\textwidth]{tutor_figures/03_transport.pdf}
+\includegraphics[width=6.17708in,height=4.41667in]{tutor_figures/03_transport.pdf}
 \caption{Transport of isotopes in two-dimensional
-model.\label{fig:mass_real}}
+model.}\label{fig:mass_real}
+}
 \end{figure}
