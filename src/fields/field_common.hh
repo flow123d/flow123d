@@ -349,7 +349,8 @@ public:
     bool changed() const
     {
     	ASSERT( set_time_result_ != TimeStatus::unknown ).error("Invalid time status.");
-        return ( (set_time_result_ == TimeStatus::changed) );
+        return ( (set_time_result_ == TimeStatus::changed) ||
+                 (set_time_result_ == TimeStatus::changed_forced) );
     }
 
     /**
@@ -635,6 +636,7 @@ protected:
     enum class TimeStatus {
         changed,    //<  Field changed during last set time call.
         constant,   //<  Field doesn't change.
+        changed_forced, //< Field changed manually (reset during set_time() to changed).
         unknown     //<  Before first call of set_time.
     };
 
@@ -704,7 +706,7 @@ public:
     
     /// Manually mark flag that the field has been changed.
     void set_time_result_changed()
-    { set_time_result_ = TimeStatus::changed; }
+    { set_time_result_ = TimeStatus::changed_forced; }
 };
 
 

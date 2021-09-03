@@ -318,8 +318,11 @@ bool Field<spacedim, Value>::set_time(const TimeStep &time_step, LimitSide limit
     if (no_check_control_field_) {
             no_check_control_field_->set_time(time_step, limit_side);
     }
-        
-    set_time_result_ = TimeStatus::constant;
+    
+    if(set_time_result_ == TimeStatus::changed_forced)
+        set_time_result_ = TimeStatus::changed;
+    else
+        set_time_result_ = TimeStatus::constant;
     
     // read all descriptors satisfying time.ge(input_time)
     update_history(time_step);
