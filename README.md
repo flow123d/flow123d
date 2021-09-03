@@ -9,6 +9,7 @@ we can combine continuum models and discrete fracture network models.
 For more information see the project pages:
 [flow123d.github.io](http://flow123d.github.io). 
 
+
 ## Getting started
 Please refer to a **User Guide and Input Reference manual** available
 at our [official website](http://flow123d.github.io/) where there is a entire section dedicated
