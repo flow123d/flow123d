@@ -504,13 +504,6 @@ public:
         ASSERT(false);
     }
 
-    /// Fill value to ElementDataCache on given BulkPoint.
-    virtual void fill_data_value(FMT_UNUSED BulkPoint &p, FMT_UNUSED unsigned int value_idx)
-    {
-        ASSERT(false);
-    }
-
-
     /// Fill data to ElementDataCache on given patch.
     virtual void fill_data_value(FMT_UNUSED const std::vector<int> &offsets)
     {

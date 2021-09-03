@@ -683,23 +683,6 @@ void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_t
 
 
 template<int spacedim, class Value>
-void Field<spacedim,Value>::fill_data_value(BulkPoint &p, unsigned int value_idx)
-{
-    try {
-        // try casting actual ElementDataCache
-        if( ! output_data_cache_->is_dummy()){
-            auto ret_value = this->operator()(p);
-            const Value &ele_value = Value( ret_value );
-            output_data_cache_->store_value(value_idx, ele_value.mem_ptr() );
-        }
-
-    } catch(const std::bad_cast& e){
-        // skip
-    }
-}
-
-
-template<int spacedim, class Value>
 void Field<spacedim,Value>::fill_data_value(const std::vector<int> &offsets)
 {
     for (unsigned int i=0; i<offsets.size(); ++i) {
