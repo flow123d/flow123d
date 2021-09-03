@@ -363,6 +363,9 @@ public:
     /// Implements FieldCommon::fill_data_value
     void fill_data_value(BulkPoint &p, unsigned int value_idx) override;
 
+    /// Implements FieldCommon::fill_data_value
+    void fill_data_value(const std::vector<int> &offsets) override;
+
 protected:
 
     /// Return item of @p value_cache_ given by i_cache_point.

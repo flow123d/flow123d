@@ -47,6 +47,7 @@ public:
     AssemblyOutputBase(unsigned int quad_order, EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(quad_order), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
+        offsets_.resize(1.1 * CacheMapElementNumber::get());
     }
 
     /// Constructor.
@@ -77,12 +78,17 @@ public:
 
 
 protected:
+    void reset_offsets() {
+        std::fill(offsets_.begin(), offsets_.end(), -1);
+    }
+
     /// Data objects shared with EquationOutput
     EqFields *eq_fields_;
     EqData *eq_data_;
 
     FieldSet used_fields_;                                    ///< Sub field set contains fields performed to output
     std::shared_ptr<OutputTime> stream_;                      ///< Output stream.
+    std::vector<int> offsets_;                                ///< Holds indices (offsets) of cached data to output data vector
 };
 
 
@@ -95,6 +101,7 @@ class AssemblyOutputElemData : public AssemblyOutputBase<dim>
 public:
     typedef EquationOutput EqFields;
     typedef EquationOutput EqData;
+    typedef typename GenericAssemblyBase::BulkIntegralData BulkIntegralData;
 
     static constexpr const char * name() { return "AssemblyOutputElemData"; }
 
@@ -105,15 +112,20 @@ public:
     /// Destructor.
     ~AssemblyOutputElemData() {}
 
-    /// Assemble integral over element
-    inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
-    {
-        ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
-
-        auto p = *( this->bulk_points(element_patch_idx).begin() ); // evaluation point (in element center)
-        unsigned int val_idx = this->stream_->get_output_mesh_ptr()->get_loc_elem_idx(cell.elm_idx());
+    /// Assembles the cell integrals for the given dimension.
+    inline void assemble_cell_integrals(const RevertableList<BulkIntegralData> &bulk_integral_data) {
+    	if (dim!=1) return;  // Perform full output in one loop
+    	unsigned int element_patch_idx, field_value_cache_position, val_idx;
+    	this->reset_offsets();
+    	for (unsigned int i=0; i<bulk_integral_data.permanent_size(); ++i) {
+            element_patch_idx = this->element_cache_map_->position_in_cache(bulk_integral_data[i].cell.elm().mesh_idx());
+            auto p = *( this->bulk_points(element_patch_idx).begin() ); // evaluation point (in element center)
+            field_value_cache_position = this->element_cache_map_->element_eval_point(element_patch_idx, p.eval_point_idx());
+            val_idx = this->stream_->get_output_mesh_ptr()->get_loc_elem_idx(bulk_integral_data[i].cell.elm_idx());
+            this->offsets_[field_value_cache_position] = val_idx;
+    	}
         for (FieldListAccessor f_acc : this->used_fields_.fields_range()) {
-            f_acc->fill_data_value(p, val_idx);
+            f_acc->fill_data_value(this->offsets_);
         }
     }
 
