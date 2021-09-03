@@ -35,6 +35,7 @@ BCMesh::BCMesh(Mesh* parent_mesh)
 	this->init_element_vector(1);
 	this->init_node_vector(0);
 	this->nodes_ = parent_mesh_->nodes_;
+	this->node_ids_ = parent_mesh_->node_ids_;
 }
 
 

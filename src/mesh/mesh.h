@@ -161,7 +161,7 @@ public:
     /// Return node id (in GMSH file) of node of given position in node vector.
     inline int find_node_id(unsigned int pos) const
     {
-        return node_ids_[pos];
+        return (*node_ids_)[pos];
     }
 
     /// Check if given index is in element_vec_
@@ -291,7 +291,7 @@ protected:
     shared_ptr<Armor::Array<double>> nodes_;
 
     /// Maps node ids to indexes into vector node_vec_
-    BidirectionalMap<int> node_ids_;
+    shared_ptr<BidirectionalMap<int>> node_ids_;
 
     /// Vector of node permutations of optimized mesh (see class MeshOptimizer)
     std::vector<unsigned int> node_permutation_;
@@ -531,7 +531,7 @@ public:
     /// For node of given node_id returns index in element_vec_ or (-1) if node doesn't exist.
     inline int node_index(int node_id) const
     {
-        return node_ids_.get_position(node_id);
+        return node_ids_->get_position(node_id);
     }
 
     /// Permute nodes of 3D elements of given elm_idx
