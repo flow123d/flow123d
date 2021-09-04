@@ -353,25 +353,3 @@ void DualPorosity::output_data(void )
         if (reaction_immobile) reaction_immobile->output_data();
     }
 }
-
-
-bool DualPorosity::evaluate_time_constraint(double &time_constraint)
-{
-    bool cfl_changed = false;
-    if (reaction_mobile)
-    {
-        if (reaction_mobile->evaluate_time_constraint(time_constraint))
-            cfl_changed = true;
-    }
-    if (reaction_immobile)
-    {
-        double cfl_immobile;
-        if (reaction_immobile->evaluate_time_constraint(cfl_immobile))
-        {
-            time_constraint = std::min(time_constraint, cfl_immobile);
-            cfl_changed = true;
-        }
-    }
-    
-    return cfl_changed;
-}
