@@ -1,6 +1,10 @@
 common_config:
   proc: [1, 2]
   memory_limit: 1100
+  check_rules:
+    - vtkdiff:
+        files: ["*.vtu"]
+        interpolate: False
 
 test_cases:
   - files:
@@ -16,6 +20,7 @@ test_cases:
     - 05_unsteady_LMH_exact.yaml
     - 06_unsteady_MH_exact.yaml
     time_limit: 120
+
   - files:
     - 12_gravity_LMH.yaml
     - 13_anisotropic_2d_x_LMH.yaml

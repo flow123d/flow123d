@@ -1,4 +1,4 @@
-\#1D column
+\section{1D column}
 
 File: \texttt{01\_column.yaml}
 
@@ -27,7 +27,7 @@ no flow boundary condition on the edges (Figure \ref{fig:column_geom}).
 \begin{figure}
 \hypertarget{fig:column_geom}{%
 \centering
-\includegraphics[width=1\textwidth,height=\textheight]{tutor_figures/01_mesh_bc_flux.pdf}
+\includegraphics[width=6.25in,height=3.125in]{tutor_figures/01_mesh_bc_flux.pdf}
 \caption{a) the mesh; b) the boundary conditions; c) computed
 piezometric head and flux.}\label{fig:column_geom}
 }
@@ -48,14 +48,14 @@ The mesh file can be generated using the software
 \begin{itemize}
 \tightlist
 \item
-  point coordinates;
+  Nodes. Point coordinates.
 \item
-  simplicial elements (lines, triangles, tetrahedra). Elements of lower
-  dimensions represent fractures or channels;
+  Simplicial elements (lines, triangles, tetrahedra). Also elements of
+  lower dimensions represent fractures or channels.
 \item
-  physical regions (groups of elements, labeled either by numerical id
-  or string caption). Names of regions defining boundary have to start
-  by a dot;
+  Physical domains (groups of elements, labeled either by a numerical id
+  or a string caption). Names of regions defining boundary have to start
+  by a dot.
 \end{itemize}
 
 The mesh file is specified by the following lines:
@@ -73,14 +73,14 @@ In this example we use the Darcy flow model, which is set by:
   flow_equation: !Flow_Darcy_MH
 \end{verbatim}
 
-Note: The equation name consists of three parts: physical process
-(flow), mathematical model (Darcy) and numerical method (MH = mixed
-hybrid finite element method).
+\emph{Note: The equation name consists of three parts: physical process
+(Flow), mathematical model (Darcy) and numerical method (MH = mixed
+hybrid finite element method).}
 
 The bulk parameters and boundary conditions are defined in the section
-\texttt{input\_fields}. For the rock massif (\texttt{-\ region:\ rock})
-we prescribe the hydraulic conductivity \(K = 10^{-8}\) m/s (typical
-value for the granite rock massif):
+\texttt{input\_fields}. For the rock massif (\texttt{region:\ rock}) we
+prescribe the hydraulic conductivity \(K = 10^{-8}\) m/s (typical value
+for the granite rock massif):
 
 \begin{verbatim}
   input_fields:
@@ -141,7 +141,6 @@ is specified by:
     fields:
       - piezo_head_p0
       - pressure_p0
-      - pressure_p2_disc
       - velocity_p0
 \end{verbatim}
 
@@ -150,7 +149,7 @@ namely
 
 \begin{verbatim}
   output:
-    fields: [piezo_head_p0, pressure_p0, pressure_p2_disc, velocity_p0]
+    fields: [piezo_head_p0, pressure_p0, velocity_p0]
 \end{verbatim}
 
 In addition to the output of solution, Flow123d provides computation of

@@ -56,7 +56,8 @@ Mesh * BaseMeshReader::mesh_factory(const Input::Record &input_mesh_rec) {
 	Mesh * mesh = new Mesh( input_mesh_rec );
 
 	try {
-		std::shared_ptr< BaseMeshReader > reader = BaseMeshReader::reader_factory(input_mesh_rec.val<FilePath>("mesh_file"));
+	    auto file = input_mesh_rec.val<FilePath>("mesh_file");
+		std::shared_ptr< BaseMeshReader > reader = BaseMeshReader::reader_factory(file);
 		reader->read_physical_names(mesh);
 		if (input_mesh_rec.opt_val("regions", region_list)) {
 			mesh->read_regions_from_input(region_list);
@@ -131,7 +132,9 @@ typename ElementDataCache<T>::ComponentDataPtr BaseMeshReader::get_element_data(
 
     actual_header_.reset();
 
-    if (component_idx == std::numeric_limits<unsigned int>::max()) component_idx = 0;
+    if (component_idx == std::numeric_limits<unsigned int>::max() ||
+        ! can_have_components_)
+        component_idx = 0;
     ElementDataCache<T> &current_cache = dynamic_cast<ElementDataCache<T> &>(*(it->second));
 	return current_cache.get_component_data(component_idx);
 }

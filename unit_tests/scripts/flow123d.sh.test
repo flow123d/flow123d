@@ -42,8 +42,11 @@ function TEST {
 # test time_limit.sh
 
 TEST "killing serial program"
-OUT=`./time_limit.sh -t 2 ./flow123d -t 6 | tail -n 1`
-expect_le "${OUT##*: }" "2"
+start=`date +%s`
+./time_limit.sh -t 2 ./flow123d -t 6
+end=`date +%s`
+runtime=$((end-start))
+expect_le "${runtime}" "3"
 
 
 TEST "do not wait when program finish"
@@ -51,11 +54,14 @@ MILISEC=`{ time ./time_limit.sh -t 10 ./flow123d -t 2 ; } 2>&1 | grep "real" | s
 expect_le "${MILISEC}" 3000
 
 TEST "killing parallel program"
-OUT="`./time_limit.sh -t 2 ./mpiexec -np 2 ./flow123d -t 6 -p`"
-LAST_TIME=`echo "${OUT}" | grep "wall time" | tail -n 1 | sed 's/.*\[s\]: //'`
-PIDS=`echo "${OUT}" | grep "PID:" | sed 's/PID://'`
+start=`date +%s`
+OUT=`./time_limit.sh -t 2 ./mpiexec -np 2 ./flow123d -t 6 -p`
+end=`date +%s`
+runtime=$((end-start))
+expect_le "${runtime}" "3"
 
-expect_le "${LAST_TIME}" "2"
+PIDS=`echo "${OUT}" | grep "PID:" | sed 's/PID://'`
+sleep 1
 
 for PID in ${PIDS}
 do

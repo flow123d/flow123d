@@ -75,9 +75,9 @@ set ylabel 'flux in rock [kg/year]'
 set y2label 'flux in fractures [kg/year]'
 set ytics nomirror
 set y2tics
-plot '< grep \\\".right\\\" 04_diff_noblind_mass_balance.txt' u 1:4 w l axes x1y1 t 'rock (no blind fractures)',\\
+plot '< grep \\\".right\\\" 04_diff_nodeadend_mass_balance.txt' u 1:4 w l axes x1y1 t 'rock (no dead-end fractures)',\\
      '< grep \\\".right\\\" ../ref_out/04_frac_diffusion/mass_balance.txt' u 1:4 w l axes x1y1 t 'rock',\\
-     '< grep \\\".right_points\\\" 04_diff_noblind_mass_balance.txt' u 1:4 w l axes x1y2 t 'fractures (no blind)',\\
+     '< grep \\\".right_points\\\" 04_diff_nodeadend_mass_balance.txt' u 1:4 w l axes x1y2 t 'fractures (no dead-end)',\\
      '< grep \\\".right_points\\\" ../ref_out/04_frac_diffusion/mass_balance.txt' u 1:4 w l axes x1y2 t 'fractures'
 " | gnuplot
 
@@ -104,7 +104,7 @@ set output '06_mass_flux.pdf'
 set xlabel 'time [years]'
 set ylabel 'flux in fracture [kg/year]'
 plot '< grep \\\".right_points\\\" ../ref_out/06_frac_dualpor/mass_balance.txt' u 1:4 w l t 'dual porosity',\\
-     '< grep \\\".right_points\\\" 06_frac_nodualpor_mass_balance.txt' u 1:4 w l t 'flow in blind fractures'
+     '< grep \\\".right_points\\\" 06_frac_nodualpor_mass_balance.txt' u 1:4 w l t 'flow in dead-end fractures'
 " | gnuplot
 
 

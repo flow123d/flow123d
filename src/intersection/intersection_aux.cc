@@ -19,7 +19,9 @@ IntersectionAux<dimA,dimB>::IntersectionAux(unsigned int component_element_idx,
 
 template<unsigned int dimA, unsigned int dimB>
 IntersectionAux<dimA,dimB>::IntersectionAux()
-{}
+{
+    ASSERT_DBG(false);
+}
 
 template<unsigned int dimA, unsigned int dimB>
 IntersectionAux<dimA,dimB>::~IntersectionAux()

@@ -17,9 +17,9 @@
 ##
 ##
 ### Input
-####Geometry and mesh generation
+#### Geometry and mesh generation
 ##
-##The simulation area $100 \times 100$ m is cut by two flow fractures from which two blind fractures separate (see Figure {@fig:mesh}).
+##The simulation area $100 \times 100$ m is cut by two flow fractures from which two dead-end fractures separate (see Figure {@fig:mesh}).
 ##The cross-section of the fractures is 0.01 m.
 ##
 ##Instead of defining a geometry with thin 2D fractures (which would yield too large mesh), in Flow123d one can treat fractures as lines with intrinsic cross-section area (or surfaces with intrinsic width).
@@ -29,7 +29,7 @@
 ##
 ##This ensures that the 2D mesh will adapt so that elements do not cross the fracture lines (see Figure {@fig:mesh}).
 ##
-##![Geometry and mesh of simulation area.](tutor_figures/04_geomesh.pdf){#fig:mesh width=100%}
+##![Geometry and mesh of simulation area.](tutor_figures/04_geomesh.pdf){#fig:mesh width=600px height=300px}
 ## 
 ##
 ##
@@ -45,10 +45,10 @@
 ##            - flow_fracture1
 ##            - flow_fracture2
 ##        - !Union
-##          name: blind_fractures
+##          name: deadend_fractures
 ##          regions:
-##            - blind_fracture1
-##            - blind_fracture2
+##            - deadend_fracture1
+##            - deadend_fracture2
 ##        - !Union
 ##          name: BC_right
 ##          regions:
@@ -64,7 +64,7 @@
 #### Hydraulic model
 ##
 ##We are interested in simulation for 50000 years, hence we use year as the time units in the definition of model parameters.
-##Hydraulic conductivity $k = 10^{-11}$ m/s (0.000315 m/yr) was considered for rock massif. For the flow fractures and for the blind fractures we considered $k = 10^{-6}$ (31.5 m/yr) and $k = 10^{-7}$ (3.15 m/yr), respectively. These values are in accordance with typical values of conductivity of a massif considered for deep repository. The thickness of model was set to 0.01 m for fractures: 
+##Hydraulic conductivity $k = 10^{-11}$ m/s (0.000315 m/yr) was considered for rock massif. For the flow fractures and for the dead-end fractures we considered $k = 10^{-6}$ (31.5 m/yr) and $k = 10^{-7}$ (3.15 m/yr), respectively. These values are in accordance with typical values of conductivity of a massif considered for deep repository. The thickness of model was set to 0.01 m for fractures: 
 ##
 ##    input_fields:
 ##    - region: rock
@@ -72,11 +72,12 @@
 ##    - region: flow_fractures
 ##      conductivity: 31.5
 ##      cross_section: 0.01
-##    - region: blind_fractures
-##      conductivity: 3.15       # variant without blind-fractures conductivity: 0.000315
+##    - region: deadend_fractures
+##      conductivity: 3.15
+##      # variant without dead-end fractures conductivity: 0.000315
 ##      cross_section: 0.01
 ##
-##To eliminate the blind fractures from the model, one can set their conductivity identical to the rock. Other possibility is to use the same conductivity as in the flow-fractures.
+##To eliminate the dead-end fractures from the model, one can set their conductivity identical to the rock. Other possibility is to use the same conductivity as in the flow-fractures.
 ##    
 ##Two dirichlet boundary conditions were defined for the flux: piezometric head 0.1 m on the left side and 0 m on the right side:
 ##
@@ -112,7 +113,7 @@
 ##        diff_m: 0.0369
 ##        disp_l: 5
 ##        disp_t: 0.5
-##      - region: blind_fractures
+##      - region: deadend_fractures
 ##        init_conc: 0
 ##        porosity: 0.1
 ##        diff_m: 0.0369
@@ -155,11 +156,11 @@
 ##
 ### Results
 ##
-##The result of model with and without blind fractures (file ```04_frac_diffusion_noblind.yaml```) is depicted in Figure {@fig:diff_res}. We can see that with blind fractures, the water is more contaminated at the outflow from the rock. The influence on flow fractures is negligible.
+##The result of model with and without dead-end fractures (file ```04_frac_diffusion_nodeadend.yaml```) is depicted in Figure {@fig:diff_res}. We can see that with dead-end fractures, the water is more contaminated at the outflow from the rock. The influence on flow fractures is negligible.
 ##
 ##
 ##
-##![Outgoing mass flux through the right part of the boundary. Comparison of results with and without blind fractures.](tutor_figures/04_mass_flux.pdf){#fig:diff_res} 
+##![Outgoing mass flux through the right part of the boundary. Comparison of results with and without dead-end fractures.](tutor_figures/04_mass_flux.pdf){#fig:diff_res} 
 ##
 ##
 flow123d_version: 3.1.0
@@ -174,10 +175,10 @@ problem: !Coupling_Sequential
           - flow_fracture1
           - flow_fracture2
       - !Union
-        name: blind_fractures
+        name: deadend_fractures
         regions:
-          - blind_fracture1
-          - blind_fracture2
+          - deadend_fracture1
+          - deadend_fracture2
       - !Union
         name: BC_right
         regions:
@@ -199,8 +200,8 @@ problem: !Coupling_Sequential
       - region: flow_fractures
         conductivity: 31.5
         cross_section: 0.01
-      - region: blind_fractures
-        conductivity: 3.15     # variant without blind-fractures conductivity: 0.000315
+      - region: deadend_fractures
+        conductivity: 3.15     # variant without dead-end fractures conductivity: 0.000315
         cross_section: 0.01
       - region: BC_left
         bc_type: dirichlet
@@ -232,7 +233,7 @@ problem: !Coupling_Sequential
           diff_m: 0.0369
           disp_l: 5
           disp_t: 0.5
-        - region: blind_fractures
+        - region: deadend_fractures
           init_conc: 0
           porosity: 0.1
           diff_m: 0.0369
