@@ -366,8 +366,8 @@ dbg "autopull       = $autopull"
 dbg "privileged     = $privileged"
 
 # env variables which will be passed as well
-envarg="-euid=$uid -egid=$gid -etheme=$theme -ewho=$uname -ehome=/mnt/$HOME -v $HOME:/mnt/$HOME"
-mountargs="-w "$OLD_PWD" -v "$OLD_PWD":"$OLD_PWD" -v "$work":"$work""
+envarg="-euid=$uid -egid=$gid -etheme=$theme -ewho=$uname -ehome=/mnt/$HOME -v /$HOME:/mnt/$HOME"
+mountargs="-w /${OLD_PWD} -v /${OLD_PWD}:/${OLD_PWD} -v /${work}:/${work}"
 if [[ $privileged == "1" ]]; then
   priv_true="--privileged=true"
 fi

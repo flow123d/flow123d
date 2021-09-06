@@ -73,6 +73,7 @@ else
 fi
 for ONE_PID in ${CPIDS}
 do
+  echo "Error: Terminating process ${ONE_PID} over the time limit: ${TIME} [s]."
   kill -s SIGTERM ${ONE_PID}
   wait_for_pid 5 ${ONE_PID} &
 done
@@ -82,6 +83,7 @@ for ONE_PID in ${CPIDS}
 do
   if [ -e /proc/${ONE_PID} ]
   then
+    echo "Error: Killing process ${ONE_PID} substantialy over the time limit: ${TIME} [s]."
     kill -9 ${ONE_PID}
   fi
 done  

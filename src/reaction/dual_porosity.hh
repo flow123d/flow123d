@@ -106,8 +106,6 @@ public:
   /// Main output routine.
   void output_data(void) override;
   
-  bool evaluate_time_constraint(double &time_constraint) override;
-  
 protected:
   /**
    * This method disables to use constructor without parameters.

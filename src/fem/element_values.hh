@@ -290,14 +290,11 @@ protected:
     /// Number of sides in reference cell.
     const unsigned int n_sides_;
 
-    /// Number of permutations of points on side of reference cell.
-    const unsigned int n_side_permutations_;
-
     /// Data on reference element.
     RefElementData *ref_data;
 
-    /// Data on reference element (for each side and its permutation).
-    std::vector<std::vector<RefElementData*>> side_ref_data;
+    /// Data on reference element (for each side ).
+    std::vector<RefElementData*> side_ref_data;
 
     /// Data computed by the mapping.
     ElementData<spacedim> data;

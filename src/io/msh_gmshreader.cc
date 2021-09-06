@@ -41,6 +41,7 @@ GmshMeshReader::GmshMeshReader(const FilePath &file_name)
     tok_.set_comment_pattern( "#");
     data_section_name_ = "$ElementData";
     has_compatible_mesh_ = false;
+    can_have_components_ = true;
     make_header_table();
 }
 

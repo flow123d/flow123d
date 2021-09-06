@@ -160,9 +160,10 @@ class MainMonitor(ThreadMonitor):
 
         # print regular color messages based on result
         for fmt in ensure_iterable(self.color_complete_format):
-            if self.pypy.returncode() == 0:
+            rc = self.pypy.returncode()
+            if rc == 0:
                 printf.success(fmt, monitor=self)
-            elif self.pypy.returncode() is None:
+            elif rc is None:
                 printf.warning(fmt, monitor=self)
             else:
                 printf.error(fmt, monitor=self)

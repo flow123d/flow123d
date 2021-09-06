@@ -171,7 +171,7 @@ TEST(Mesh, check_compatible_mesh) {
         //reader->read_physical_names(mesh); // not implemented
         reader->read_raw_mesh(mesh);
 
-        EXPECT_TRUE( mesh->check_compatible_mesh(*target_mesh)->size() > 0 );
+        EXPECT_FALSE( mesh->check_compatible_mesh(*target_mesh)->empty() );
 
         delete mesh;
     }
@@ -183,7 +183,7 @@ TEST(Mesh, check_compatible_mesh) {
         // reader->read_physical_names(mesh); // not implemented
         reader->read_raw_mesh(mesh);
 
-        EXPECT_EQ( mesh->check_compatible_mesh(*target_mesh)->size(), 0 );
+        EXPECT_TRUE( mesh->check_compatible_mesh(*target_mesh)->empty() );
 
         delete mesh;
     }
