@@ -447,7 +447,7 @@ TEST_F(FieldFENewTest, bc_vector_fixed) {
      for (unsigned int j=0; j<2; j++) {
     	field.set_time(test_time[j]);
         // only 6 BC elements are compatible with the comp mesh
-        for(unsigned int i=0; i < 6; i++) {
+        for(unsigned int i=0; i < 4; i++) {
             auto ele = bc_mesh->element_accessor(i);
             EXPECT_TRUE( arma::min(arma::vec3(expected_vals[j]) == field.value(point,ele)) );
         }
@@ -475,11 +475,11 @@ TEST_F(FieldFENewTest, bc_tensor_fixed) {
     TensorField field;
     field.init_from_input(rec.val<Input::Record>("tensor_fixed"), init_data("tensor_fixed"));
     field.set_mesh(mesh, true);
+    BCMesh *bc_mesh = mesh->bc_mesh();
      for (unsigned int j=0; j<2; j++) {
     	field.set_time(test_time[j]);
-        BCMesh *bc_mesh = mesh->bc_mesh();
-        // only 6 BC elements are compatible with the comp mesh
-        for(unsigned int i=0; i < 6; i++) {
+        // only 4 BC elements are compatible with the comp mesh
+        for(unsigned int i=0; i < 4; i++) {
             auto ele = bc_mesh->element_accessor(i);
             arma::umat match = ( arma::mat33(expected_vals[j]) == field.value(point,ele) );
             EXPECT_TRUE( match.min() );
