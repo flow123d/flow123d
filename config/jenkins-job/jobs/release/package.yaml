@@ -1,0 +1,35 @@
+# ---------------------------------------------------------------------------- #
+# ---------- GNU PACKAGE ----------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
+name: "Flow123d-{environment}-release-package"
+display-name: "{build-type} / Flow123d package"
+defaults: flow123d-build
+builders:
+  - inject:
+      properties-file: prop.file
+  - shell: |
+      destination=$(pwd)/publish
+
+      rm -rf publish && mkdir -p publish
+      rm -rf docker-config
+      git clone https://github.com/flow123d/docker-config.git
+
+      make -C docker-config/package/{environment} \
+              destination=$destination \
+              all
+
+      make -C docker-config/package/{environment} \
+              destination=$destination \
+              remove-unwanted
+
+      make -C docker-config/package/{environment} \
+              push-to-hub
+
+      ls -la $destination
+
+publishers:
+  - cifs:
+      site: 'flow123d.at.public'
+      target: '/docker-images/${{DOCKER_IMAGE_NAME}}_{environment}/'
+      source: publish/**/*
+      remove-prefix: publish/
