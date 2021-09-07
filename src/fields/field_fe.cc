@@ -756,7 +756,7 @@ void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>:
 	std::vector<unsigned int> count_vector(data_vec_.size(), 0);
 	data_vec_.zero_entries();
 	std::vector<LongIdx> global_dof_indices(dh_->max_elem_dofs());
-	std::vector<LongIdx> &source_target_vec = this->boundary_domain_ ? source_target_mesh_elm_map_->boundary : source_target_mesh_elm_map_->bulk;
+	std::vector<LongIdx> &source_target_vec = (dynamic_cast<BCMesh*>(dh_->mesh()) != nullptr) ? source_target_mesh_elm_map_->boundary : source_target_mesh_elm_map_->bulk;
 
 	// iterate through cells, assembly MPIVector
 	for (auto cell : dh_->own_range()) {
@@ -781,21 +781,19 @@ template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::calculate_identic_values(ElementDataCache<double>::ComponentDataPtr data_cache)
 {
 	// Same algorithm as in output of Node_data. Possibly code reuse.
-	unsigned int data_vec_i, i_elm;
+	unsigned int data_vec_i;
 	std::vector<unsigned int> count_vector(data_vec_.size(), 0);
 	data_vec_.zero_entries();
 
 	// iterate through cells, assembly global vector and count number of writes - prepared solution for further development
-	i_elm=0;
 	for (auto cell : dh_->own_range()) {
 		LocDofVec loc_dofs = cell.get_loc_dof_indices();
-		data_vec_i = i_elm * dh_->max_elem_dofs();
+		data_vec_i = cell.elm_idx() * dh_->max_elem_dofs();
 		for (unsigned int i=0; i<loc_dofs.n_elem; ++i, ++data_vec_i) {
 			ASSERT_LT_DBG(loc_dofs[i], (LongIdx)data_vec_.size());
 			data_vec_.add( loc_dofs[i], (*data_cache)[data_vec_i] );
 			++count_vector[ loc_dofs[i] ];
 		}
-		i_elm++;
 	}
 
 	// compute averages of values
@@ -812,7 +810,7 @@ void FieldFE<spacedim, Value>::calculate_equivalent_values(ElementDataCache<doub
 	unsigned int data_vec_i;
 	std::vector<unsigned int> count_vector(data_vec_.size(), 0);
 	data_vec_.zero_entries();
-	std::vector<LongIdx> &source_target_vec = this->boundary_domain_ ? source_target_mesh_elm_map_->boundary : source_target_mesh_elm_map_->bulk;
+	std::vector<LongIdx> &source_target_vec = (dynamic_cast<BCMesh*>(dh_->mesh()) != nullptr) ? source_target_mesh_elm_map_->boundary : source_target_mesh_elm_map_->bulk;
 
 	// iterate through elements, assembly global vector and count number of writes
 	for (auto cell : dh_->own_range()) {
