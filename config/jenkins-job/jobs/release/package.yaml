@@ -9,13 +9,16 @@ builders:
       properties-file: prop.file
   - shell: |
       destination=$(pwd)/publish_{environment}
-
+      
+      imagesversion=$(cat flow123d/config/docker/image_tag)
+      
       rm -rf $destination && mkdir -p $destination
       rm -rf docker-config
       git clone https://github.com/flow123d/docker-config.git
 
       make -C docker-config/package/{environment} \
               container_name=cont{environment}{build-type} \
+              install_image="install-{environment}:$imagesversion" \
               target_image=flow123d-{environment} \
               destination=$destination \
               all
