@@ -16,20 +16,20 @@ builders:
       rm -rf docker-config
       git clone https://github.com/flow123d/docker-config.git
 
-      make -C docker-config/package/{environment} \
+      make -C docker-config/package \
               container_name=cont{environment}{build-type} \
               install_image="install-{environment}:$imagesversion" \
               target_image=flow123d-{environment} \
               destination=$destination \
               all
 
-      make -C docker-config/package/{environment} \
+      make -C docker-config/package \
               container_name=cont{environment}{build-type} \
               target_image=flow123d-{environment} \
               destination=$destination \              
               remove-unwanted
 
-      make -C docker-config/package/{environment} \
+      make -C docker-config/package \
               container_name=cont{environment}{build-type} \
               target_image=flow123d-{environment} \
               push-to-hub
