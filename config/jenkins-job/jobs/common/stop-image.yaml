@@ -1,9 +1,9 @@
 # ---------------------------------------------------------------------------- #
 # ---------- STOP IMAGE ------------------------------------------------------ #
 # ---------------------------------------------------------------------------- #
-name: "Flow123d-{platform}-{build-type}-stop-image"
+name: "Flow123d-{environment}-{build-type}-stop-image"
 display-name: "{build-type} / Flow123d stop image"
 defaults: flow123d-build
 builders:
   - shell: |
-      docker stop cont{build-type}
+      docker stop cont{environment}{build-type}

@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------- #
 # ---------- UNIT-TESTS ------------------------------------------------------ #
 # ---------------------------------------------------------------------------- #
-name: "Flow123d-{platform}-{build-type}-unit-test-{unit-dir}"
+name: "Flow123d-{environment}-{build-type}-unit-test-{unit-dir}" 
 display-name: "{build-type} / Flow123d unit-test {unit-dir}"
 defaults: flow123d-build
 builders:
@@ -15,7 +15,7 @@ builders:
           exit 42
         fi
 
-        docker exec cont{build-type} make -C ${{FLOW}}/build_tree/unit_tests/{unit-dir} -k all-test
+        docker exec cont{environment}{build-type} make -C ${{FLOW}}/build_tree/unit_tests/{unit-dir} -k all-test
 
 publishers:
   - archive:

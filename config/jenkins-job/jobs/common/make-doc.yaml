@@ -1,11 +1,11 @@
 # ---------------------------------------------------------------------------- #
 # ---------- MAKE DOC -------------------------------------------------------- #
 # ---------------------------------------------------------------------------- #
-name: "Flow123d-{platform}-{build-type}-make-doc"
+name: "Flow123d-{environment}-{build-type}-make-doc"
 display-name: "{build-type} / Flow123d make doc"
 defaults: flow123d-build
 builders:
   - shell: |
-      docker exec cont{build-type} make -C ${{FLOW}} FORCE_DOC_UPDATE=1 ref-doc
-      docker exec cont{build-type} make -C ${{FLOW}} html-doc
-      docker exec cont{build-type} make -C ${{FLOW}} doxy-doc
+      docker exec cont{environment}{build-type} make -C ${{FLOW}} FORCE_DOC_UPDATE=1 ref-doc
+      docker exec cont{environment}{build-type} make -C ${{FLOW}} html-doc
+      docker exec cont{environment}{build-type} make -C ${{FLOW}} doxy-doc
