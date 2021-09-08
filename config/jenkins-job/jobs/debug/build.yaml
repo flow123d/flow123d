@@ -13,7 +13,7 @@ builders:
       flow123d/bin/fterm update
       flow123d/bin/fterm dbg -- \
           --privileged -di \
-          --name cont{build-type} \
+          --name cont{environment}{build-type} \
           --volume /home/builder/git-cache/flow123d.git:/home/builder/git-cache/flow123d.git \
           --volume ${{WORKSPACE}}/docker:${{FLOW}}
 

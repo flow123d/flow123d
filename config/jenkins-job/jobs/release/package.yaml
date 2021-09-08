@@ -8,21 +8,27 @@ builders:
   - inject:
       properties-file: prop.file
   - shell: |
-      destination=$(pwd)/publish
+      destination=$(pwd)/publish_{environment}
 
-      rm -rf publish && mkdir -p publish
+      rm -rf $destination && mkdir -p $destination
       rm -rf docker-config
       git clone https://github.com/flow123d/docker-config.git
 
       make -C docker-config/package/{environment} \
+              container_name=cont{environment}{build-type} \
+              target_image=flow123d-{environment} \
               destination=$destination \
               all
 
       make -C docker-config/package/{environment} \
-              destination=$destination \
+              container_name=cont{environment}{build-type} \
+              target_image=flow123d-{environment} \
+              destination=$destination \              
               remove-unwanted
 
       make -C docker-config/package/{environment} \
+              container_name=cont{environment}{build-type} \
+              target_image=flow123d-{environment} \
               push-to-hub
 
       ls -la $destination
@@ -31,5 +37,5 @@ publishers:
   - cifs:
       site: 'flow123d.at.public'
       target: '/docker-images/${{DOCKER_IMAGE_NAME}}_{environment}/'
-      source: publish/**/*
-      remove-prefix: publish/
+      source: publish_{environment}/**/*
+      remove-prefix: publish_{environment}/
