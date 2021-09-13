@@ -1,0 +1,46 @@
+# Test goal: Time dependent boundary condition in darcy LMH flow.
+# Author:
+# Source for reference: pressure is linear in x-axis in each time step, values correspond to Dirichlet b.c. set.
+#   results between MH and LMH are the same, passed ndiff with 0
+
+flow123d_version: 3.1.0
+problem: !Coupling_Sequential
+  description: Unsteady flow in 2D by the means of time dependent boundary condition, Lumped Mixed Hybrid method.
+  mesh:
+    mesh_file: ../00_mesh/square_1x1_xy_28el.msh
+  flow_equation: !Flow_Darcy_LMH
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 0
+        r_tol: 1.0e-10
+    time:
+      end_time: 5
+    balance:
+      cumulative: false
+    input_fields:
+      - region: bulk
+        time: 0
+        storativity: 0
+      - region: bulk
+        time: 3
+        storativity: 2e-8
+        #water_source_density: !FieldFormula
+          #value: (1-x^2)+(1-y^2)
+
+      - region: bulk
+        conductivity: 6e-15
+      - region: .BOUNDARY
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: 2*x
+    output:
+      times:
+        - step: 1
+      fields:
+        - pressure_p0
+        - velocity_p0
+
+    output_stream:
+      file: ./flow.pvd
+      format: !vtk
+        variant: ascii
