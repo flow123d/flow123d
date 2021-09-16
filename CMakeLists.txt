@@ -458,6 +458,22 @@ message(STATUS "PETSC_LIBS = ${PETSC_LIBRARIES}")
 message(STATUS "PETSC_EXTERNAL_LIB = ${PETSC_EXTERNAL_LIB}")
 message(STATUS "=======================================================\n\n")
 
+################################################################################
+#  PERMON_FOUND - set to true if the library is found
+message(STATUS "=======================================================")
+message(STATUS "====== PERMON =========================================")
+message(STATUS "=======================================================")
+message(STATUS "PERMON_ROOT = ${PERMON_ROOT}")
+
+find_package(PERMON)
+if (PERMON_FOUND)
+    flow_define(HAVE_PERMON)
+    message(STATUS "-------------------------------------------------------")
+    message(STATUS "PERMON_FOUND = ${PERMON_FOUND}")
+    message(STATUS "PERMON_INCLUDES = ${PERMON_INCLUDES}")
+    message(STATUS "PERMON_LIBRARY = ${PERMON_LIBRARY}")
+    message(STATUS "=======================================================\n\n") 
+endif()
 
 ################################################################################
 #  BDDCML_FOUND - set to true if the library is found
@@ -660,6 +676,7 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/third_party/fparser-4.5.1
     ${CMAKE_SOURCE_DIR}/third_party/bparser
     ${CMAKE_SOURCE_DIR}/third_party/FADBAD++
+    ${PERMON_INCLUDES}
     ${PETSC_INCLUDES}
     ${PYTHON_INCLUDE_DIRS}
     

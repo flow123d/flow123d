@@ -109,6 +109,7 @@ add_library(system_lib
     system/fmt/posix.cc
 )
 target_link_libraries(system_lib 
+    ${PERMON_LIBRARY}
     ${PETSC_LIBRARIES}  
     ${PETSC_EXTERNAL_LIB} 
     ${Boost_LIBRARIES} 
@@ -161,6 +162,7 @@ add_library(la_lib
 target_link_libraries(la_lib 
     input_lib system_lib
     armadillo 
+    ${PERMON_LIBRARY}
     ${PETSC_LIBRARIES}  
     ${BDDCML_LIBRARIES} 
     ${PETSC_EXTERNAL_LIB}  
@@ -365,6 +367,7 @@ target_link_libraries(flow123d_lib
     armadillo 
 #    ${TBB_LIBRARIES}
 #    ${DEAL_II_LIBRARY_NAME}
+    ${PERMON_LIBRARY}
     ${PETSC_LIBRARIES} 
     ${BDDCML_LIBRARIES} 
     ${PETSC_EXTERNAL_LIB} 
