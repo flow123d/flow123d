@@ -39,7 +39,7 @@ string input = R"INPUT(
    },
    conductivity_3d={ // 3x3 tensor
        TYPE="FieldFormula",
-       value=["sin(x)+cos(y)","exp(x)+y^2", "base:=(x+y); base+base^2"]
+       value=["sin(x)+cos(y)","exp(x)+y^2", "(x+y)+(x+y)^2"] // replace last item with: "base:=(x+y); base+base^2"
    },
    formula_with_depth={
        TYPE="FieldFormula",

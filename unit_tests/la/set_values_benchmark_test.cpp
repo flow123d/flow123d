@@ -14,12 +14,10 @@
 #include "mpi.h"
 
 
-#ifdef FLOW123D_RUN_UNIT_BENCHMARKS
-
 const int 
     m = 9,
     n_cols = 2,
-    n_loops = 5e6,
+    n_loops = 100000,
     ls_size = 100,
     offset = 20;
 
@@ -41,6 +39,7 @@ void print_matrix(std::string matlab_file, const Mat* mat){
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Test AIJ matrix assembly of an m x m continuous matrix, one by one.
 TEST(LinSys_PETSC, mat_set_value) {
     // setup FilePath directories
     FilePath::set_io_dirs(".",string(UNIT_TESTS_SRC_DIR)+"/la/","",".");
@@ -60,6 +59,7 @@ TEST(LinSys_PETSC, mat_set_value) {
                 ls->mat_set_value(i, j, 1.0);
     
     END_TIMER("LinSys_PETSC_mat_set_value_mm");
+    EXPECT_TIMER_LE("LinSys_PETSC_mat_set_value_mm", 22);
     
     ls->finish_assembly();
 //     print_matrix("ls_matrix", ls->get_matrix());
@@ -69,6 +69,7 @@ TEST(LinSys_PETSC, mat_set_value) {
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Test AIJ matrix assembly of an m x m continuous matrix, whole block at once.
 TEST(LinSys_PETSC, mat_set_values_mm) {
     // setup FilePath directories
     FilePath::set_io_dirs(".",string(UNIT_TESTS_SRC_DIR)+"/la/","",".");
@@ -93,6 +94,7 @@ TEST(LinSys_PETSC, mat_set_values_mm) {
         ls->mat_set_values(m, rows, m, cols, vals);
     
     END_TIMER("LinSys_PETSC_mat_set_values_mm");
+    EXPECT_TIMER_LE("LinSys_PETSC_mat_set_values_mm", 4.5);
     
     ls->finish_assembly();
 //     print_matrix("ls_matrix", ls->get_matrix());
@@ -102,6 +104,7 @@ TEST(LinSys_PETSC, mat_set_values_mm) {
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Test AIJ matrix assembly of an m x n_cols continuous matrix, whole block at once.
 TEST(LinSys_PETSC, mat_set_values_mcols) {
     // setup FilePath directories
     FilePath::set_io_dirs(".",string(UNIT_TESTS_SRC_DIR)+"/la/","",".");
@@ -125,6 +128,7 @@ TEST(LinSys_PETSC, mat_set_values_mcols) {
         ls->mat_set_values(m, rows, n_cols, cols, vals);
     
     END_TIMER("LinSys_PETSC_mat_set_values_mcols");
+    EXPECT_TIMER_LE("LinSys_PETSC_mat_set_values_mcols", 1.5);
     
     ls->finish_assembly();
 //     print_matrix("ls_matrix", ls->get_matrix());
@@ -136,6 +140,7 @@ TEST(LinSys_PETSC, mat_set_values_mcols) {
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Test AIJ matrix assembly of an m x n_cols continuous matrix, using LocalSystem (whole block at once).
 TEST(LinSys_PETSC, set_local_system_mm) {
     // setup FilePath directories
     FilePath::set_io_dirs(".",string(UNIT_TESTS_SRC_DIR)+"/la/","",".");
@@ -159,6 +164,7 @@ TEST(LinSys_PETSC, set_local_system_mm) {
         ls->set_local_system(loc);
     
     END_TIMER("LinSys_PETSC_set_local_system_mm");
+    EXPECT_TIMER_LE("LinSys_PETSC_set_local_system_mm", 6);
     
     ls->finish_assembly();
 //     print_matrix("ls_matrix", ls->get_matrix());
@@ -170,6 +176,7 @@ TEST(LinSys_PETSC, set_local_system_mm) {
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Test AIJ matrix direct PETSC assembly of an m x m continuous matrix, whole block at once.
 TEST(PETSC_mat, mat_set_values_mm) {
     // setup FilePath directories
     FilePath::set_io_dirs(".",string(UNIT_TESTS_SRC_DIR)+"/la/","",".");
@@ -199,6 +206,7 @@ TEST(PETSC_mat, mat_set_values_mm) {
         ierr = MatSetValues(mat, m, rows, m, cols, vals, ADD_VALUES); CHKERRV( ierr );
     
     END_TIMER("PETSC_mat_petsc_mat_set_values");
+    EXPECT_TIMER_LE("PETSC_mat_petsc_mat_set_values", 4.5);
     
     ierr = MatAssemblyEnd(mat, MAT_FINAL_ASSEMBLY); CHKERRV( ierr );
 //     print_matrix("petsc_matrix", &mat);
@@ -208,4 +216,3 @@ TEST(PETSC_mat, mat_set_values_mm) {
     static ofstream os( FilePath("set_values_profiler.log", FilePath::output_file) );
     Profiler::instance()->output(MPI_COMM_WORLD, os);
 }
-#endif // FLOW123D_RUN_UNIT_BENCHMARKS

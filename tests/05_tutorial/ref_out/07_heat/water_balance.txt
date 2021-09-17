@@ -9,9 +9,9 @@
 0	"exchanger"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
 0	"deep"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
 0	".well1_surface"	"water_volume"	0.06	0.06	0	0	0	0	0	0	0	0	0	0
-0	".well2_surface"	"water_volume"	-0.0599968	0	-0.0599968	0	0	0	0	0	0	0	0	0
+0	".well2_surface"	"water_volume"	-0.059981	0	-0.059981	0	0	0	0	0	0	0	0	0
 0	".well1_exchanger"	"water_volume"	-2.26485e-14	0	-2.26485e-14	0	0	0	0	0	0	0	0	0
 0	".well2_exchanger"	"water_volume"	9.10383e-14	9.10383e-14	0	0	0	0	0	0	0	0	0	0
-0	".surface"	"water_volume"	-6.83251e-21	4.56538e-20	-5.24863e-20	0	0	0	0	0	0	0	0	0
-0	".deep"	"water_volume"	2.91647e-19	5.37158e-19	-2.45511e-19	0	0	0	0	0	0	0	0	0
-0	".sides"	"water_volume"	2.85328e-14	1.13909e-13	-8.53766e-14	0	0	0	0	0	0	0	0	0
+0	".surface"	"water_volume"	2.81241e-23	4.78342e-20	-4.78061e-20	0	0	0	0	0	0	0	0	0
+0	".deep"	"water_volume"	4.50416e-20	4.69018e-19	-4.23976e-19	0	0	0	0	0	0	0	0	0
+0	".sides"	"water_volume"	7.09987e-14	7.09991e-14	-4.39785e-19	0	0	0	0	0	0	0	0	0

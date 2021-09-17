@@ -79,7 +79,7 @@ void VectorMPI::resize(unsigned int local_size, std::vector<LongIdx> &ghost_idx)
 
 void VectorMPI::duplicate_from(VectorMPI other) {
     ASSERT_EQ(this->communicator_, other.communicator_);
-    this->resize(other.data().size());
+    this->resize(other.size());
 }
 
 

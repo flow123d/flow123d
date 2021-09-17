@@ -26,6 +26,7 @@
 #include "output_mesh.hh"
 #include "io/output_time_set.hh"
 #include "io/observe.hh"
+#include "tools/time_governor.hh"
 
 
 FLOW123D_FORCE_LINK_IN_PARENT(vtk)
@@ -70,7 +71,7 @@ IT::Abstract & OutputTime::get_input_format_type() {
 
 OutputTime::OutputTime()
 : current_step(0),
-  time(-1.0),
+  registered_time_(-1.0),
   write_time(-1.0),
   parallel_(false)
 {
@@ -80,12 +81,14 @@ OutputTime::OutputTime()
 
 
 
-void OutputTime::init_from_input(const std::string &equation_name, const Input::Record &in_rec, std::string unit_str)
+void OutputTime::init_from_input(const std::string &equation_name,
+                                 const Input::Record &in_rec,
+                                 const std::shared_ptr<TimeUnitConversion>& time_unit_conv)
 {
 
     input_record_ = in_rec;
     equation_name_ = equation_name;
-    unit_string_ = unit_str;
+    time_unit_converter = time_unit_conv;
 
     // Read output base file name
     // TODO: remove dummy ".xyz" extension after merge with DF
@@ -141,8 +144,8 @@ std::shared_ptr<OutputMeshBase> OutputTime::get_output_mesh_ptr() {
 
 
 void OutputTime::update_time(double field_time) {
-	if (this->time < field_time) {
-		this->time = field_time;
+	if (this->registered_time_ < field_time) {
+		this->registered_time_ = field_time;
 	}
 }
 
@@ -181,12 +184,14 @@ void OutputTime::destroy_all(void)
     */
 
 
-std::shared_ptr<OutputTime> OutputTime::create_output_stream(const std::string &equation_name, const Input::Record &in_rec, std::string unit_str)
+std::shared_ptr<OutputTime> OutputTime::create_output_stream(const std::string &equation_name,
+                                                             const Input::Record &in_rec,
+                                                             const std::shared_ptr<TimeUnitConversion>& time_unit_conv)
 {
 
     Input::AbstractRecord format = Input::Record(in_rec).val<Input::AbstractRecord>("format");
     std::shared_ptr<OutputTime> output_time = format.factory< OutputTime >();
-    output_time->init_from_input(equation_name, in_rec, unit_str);
+    output_time->init_from_input(equation_name, in_rec, time_unit_conv);
 
     return output_time;
 }
@@ -199,18 +204,18 @@ void OutputTime::write_time_frame()
 {
 	START_TIMER("OutputTime::write_time_frame");
     if (observe_)
-        observe_->output_time_frame( write_time < time );
+        observe_->output_time_frame( write_time < registered_time_ );
 
     // Write data to output stream, when data registered to this output
     // streams were changed
-    if(write_time < time) {
+    if(write_time < registered_time_) {
 
     	if (this->rank_ == 0 || this->parallel_) // for serial output write log only one (same output file on all processes)
-    	    LogOut() << "Write output to output stream: " << this->_base_filename << " for time: " << time;
+    	    LogOut() << "Write output to output stream: " << this->_base_filename << " for time: " << registered_time_;
     	gather_output_data();
         write_data();
         // Remember the last time of writing to output stream
-        write_time = time;
+        write_time = registered_time_;
         current_step++;
             
         // invalidate output data caches after the time frame written
@@ -221,7 +226,7 @@ void OutputTime::write_time_frame()
         this->offsets_.reset();*/
     } else {
     	if (this->rank_ == 0 || this->parallel_) // for serial output write log only one (same output file on all processes)
-    	    LogOut() << "Skipping output stream: " << this->_base_filename << " in time: " << time;
+    	    LogOut() << "Skipping output stream: " << this->_base_filename << " in time: " << registered_time_;
     }
     clear_data();
 }
@@ -232,7 +237,10 @@ std::shared_ptr<Observe> OutputTime::observe(Mesh *mesh)
     if (! observe_) {
         auto observe_points = input_record_.val<Input::Array>("observe_points");
         unsigned int precision = input_record_.val<unsigned int>("precision");
-        observe_ = std::make_shared<Observe>(this->equation_name_, *mesh, observe_points, precision, this->unit_string_);
+        observe_ = std::make_shared<Observe>(this->equation_name_,
+                                             *mesh,
+                                             observe_points, precision,
+                                             this->time_unit_converter);
     }
     return observe_;
 }
@@ -311,7 +319,7 @@ void OutputTime::gather_output_data(void)
 // explicit instantiation of template methods
 #define OUTPUT_PREPARE_COMPUTE_DATA(TYPE) \
 template OutputTime::OutputDataPtr OutputTime::prepare_compute_data<TYPE>(std::string field_name, DiscreteSpace space_type, \
-		unsigned int n_rows, unsigned int n_cols)
+        unsigned int n_rows, unsigned int n_cols, std::string fe_type, unsigned int n_dofs_per_element)
 
 OUTPUT_PREPARE_COMPUTE_DATA(int);
 OUTPUT_PREPARE_COMPUTE_DATA(unsigned int);

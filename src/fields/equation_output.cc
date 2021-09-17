@@ -36,7 +36,7 @@ IT::Record &EquationOutput::get_input_type() {
                     "The field name (from selection).")
             .declare_key("times", OutputTimeSet::get_input_type(), IT::Default::optional(),
                     "Output times specific to particular field.")
-            .declare_key("interpolation", interpolation_sel, IT::Default::read_time("Interpolation type of output data."),
+            .declare_key("interpolation", IT::Array( interpolation_sel ), IT::Default::read_time("Interpolation type of output data."),
 					"Optional value. Implicit value is given by field and can be changed.")
             .close();
 
@@ -148,18 +148,28 @@ void EquationOutput::read_from_input(Input::Record in_rec, const TimeGovernor & 
     for(auto it = fields_array.begin<Input::Record>(); it != fields_array.end(); ++it) {
         string field_name = it -> val< Input::FullEnum >("field");
         FieldCommon *found_field = field(field_name);
-        OutputTime::DiscreteSpace interpolation = it->val<OutputTime::DiscreteSpace>("interpolation", OutputTime::UNDEFINED);
-        found_field->output_type(interpolation);
+
+        Input::Array interpolations;
+        OutputTime::DiscreteSpaceFlags interpolation = OutputTime::empty_discrete_flags();
+        if (it->opt_val("interpolation", interpolations)) {
+            // process interpolations
+            for(auto it_interp = interpolations.begin<OutputTime::DiscreteSpace>(); it_interp != interpolations.end(); ++it_interp) {
+                interpolation[ *it_interp ] = true;
+            }
+        } else {
+            OutputTime::set_discrete_flag(interpolation, found_field->get_output_type());
+        }
         Input::Array field_times_array;
         if (it->opt_val("times", field_times_array)) {
             OutputTimeSet field_times;
             field_times.read_from_input(field_times_array, tg);
-            field_output_times_[field_name] = field_times;
+            field_output_times_[field_name].output_set_ = field_times;
         } else {
-            field_output_times_[field_name] = common_output_times_;
+            field_output_times_[field_name].output_set_ = common_output_times_;
         }
+        field_output_times_[field_name].space_flags_ = interpolation;
         // Add init time as the output time for every output field.
-        field_output_times_[field_name].add(tg.init_time(), equation_fixed_type_);
+        field_output_times_[field_name].output_set_.add(tg.init_time(), equation_fixed_type_);
     }
     auto observe_fields_array = in_rec.val<Input::Array>("observe_fields");
     for(auto it = observe_fields_array.begin<Input::FullEnum>(); it != observe_fields_array.end(); ++it) {
@@ -168,7 +178,9 @@ void EquationOutput::read_from_input(Input::Record in_rec, const TimeGovernor & 
 
     // register interpolation type of fields to OutputStream
     for(FieldCommon * field : this->field_list) {
-    	used_interpolations_.insert( field->get_output_type() );
+        auto output_types = field_output_times_[field->name()].space_flags_;
+        for (uint i=0; i<OutputTime::N_DISCRETE_SPACES; ++i)
+    	    if (output_types[i]) used_interpolations_.insert( OutputTime::DiscreteSpace(i) );
     }
 }
 
@@ -180,13 +192,18 @@ bool EquationOutput::is_field_output_time(const FieldCommon &field, TimeStep ste
     ASSERT( step.eq(field.time()) )(step.end())(field.time())(field.name()).error("Field is not set to the output time.");
     auto current_mark_it = marks.current(step, equation_type_ | marks.type_output() );
     if (current_mark_it == marks.end(equation_type_ | marks.type_output()) ) return false;
-    return (field_times_it->second.contains(*current_mark_it) );
+    return (field_times_it->second.output_set_.contains(*current_mark_it) );
 }
 
 
 void EquationOutput::output(TimeStep step)
 {
     ASSERT_PTR(mesh_).error();
+
+    // automatically call of stream_->write_time_frame if the time in the TimeStep is higher then in output stream
+    if (step.end() > stream_->registered_time()) {
+        stream_->write_time_frame();
+    }
 
     // make observe points if not already done
 	auto observe_ptr = stream_->observe(mesh_);
@@ -197,7 +214,7 @@ void EquationOutput::output(TimeStep step)
 
         if ( field->flags().match( FieldFlag::allow_output) ) {
             if (is_field_output_time(*field, step)) {
-                field->field_output(stream_);
+                field->field_output(stream_, field_output_times_[field->name()].space_flags_);
             }
             // observe output
             if (observe_fields_.find(field->name()) != observe_fields_.end()) {

@@ -87,7 +87,7 @@ For detailed description see Section \ref{sec:CONformat}.
 
 Having the computational mesh from the previous step, we can create the main input file with the description of our problem. 
 \begin{Verbatim}[numbers=left]
-flow123d_version: 2.0.0
+flow123d_version: 3.1.0
 problem: !CouplingSequential
   description: Tutorial problem: Transport 1D-2D (convection, dual
                porosity, sorption, sources).
@@ -140,14 +140,14 @@ Read Section \ref{sec:darcy_flow} for more details.
     output:\label{vrb:tutorial_output_start}
       fields:
         - pressure_p0
-        - pressure_p1
         - velocity_p0\label{vrb:tutorial_output_end}
     output_stream:
       file: flow.pvd
       format: !vtk
         variant: ascii
-    balance:
 \end{Verbatim}
+% Tutorial also has output of pressure_p1 is it still supported?
+%
 On line \ref{vrb:tutorial_floweq}, we specify particular implementation (numerical method) of the flow solver, in this case the Mixed-Hybrid
 solver for steady problems. On lines \ref{vrb:tutorial_flow_input_start} -- \ref{vrb:tutorial_flow_input_end} in the array \hyperA{IT::Flow-Darcy-MH-Data}{\tt input\_fields}, 
 we set both mathematical fields that live on the computational domain 
@@ -159,7 +159,7 @@ Next, we specify the type of the linear solver and its tolerances.
 On lines \ref{vrb:tutorial_output_start} -- \ref{vrb:tutorial_output_end}, we specify which output fields should be written to the output stream
 (that means particular output file, with given format). See Section \ref{section_output} for the list of available output \Alink{IT::Flow-Darcy-MH-OutputFields}{\tt fields}.
 Currently, we support only one \Alink{IT::OutputStream}{\tt output\_stream} per equation. We specify the filename and the format of the output stream (the used ASCII VTK format is the default).
-All the keys in record \Alink{IT::Balance}{\tt balance} are left with default values.
+
 
 
 \subsection{Transport Setting}
@@ -252,7 +252,7 @@ of the dual porosity model are set on lines \ref{vrb:tutorial_dp_input_start} --
               - freundlich
             distribution_coefficient:
               - 0
-              - 0.68
+              - 1.598e-4
             isotherm_other:
               - 0
               - 1.0\label{vrb:tutorial_sorp_mob_input_end}
@@ -297,12 +297,11 @@ The \Alink{Sorption-Data::sorption-type}{\tt sorption\_type} represents the empi
 type and can have one of four possible values: \{{\tt"none"}, {\tt"linear"}, {\tt"freundlich"}, {\tt"langmuir"}\}. 
 Linear isotherm needs just one parameter given whereas Freundlich and Langmuir isotherms require two parameters. 
 We will use Freundlich isotherm for demonstration but we will set the other parameter (exponent) $\alpha=1$ 
-which means it will be the same as the linear type. 
-
-Let us suppose we would like to use a~sorption coefficient for uranium $K_d=1.6\cdot10^{-4}$ \unitss{-1}{3}{} (www.skb.se, report R-10-48 by James Crawford, 2010).
-At first, we need to convert it to dimensionless value of \Alink{Sorption-Data::distribution-coefficient}{\tt distribution\_coefficient}
-in the following way: $k_l = K_dM_s^{-1}\rho_l = K_d\frac{1000}{0.235}\approx0.68$. For further details, see 
-mathematical description in Section \ref{sec:sorp_math}. 
+which means it will be the same as the linear type. We use value 
+$K_d=1.598\cdot10^{-4}$ \unitss{-1}{3}{} for the 
+\Alink{Sorption-Data::distribution-coefficient}{\tt distribution\_coefficient} 
+according to (www.skb.se, report R-10-48 by James Crawford, 2010).
+ 
 
 On line \ref{vrb:tutorial_sorp_immob_input}, notice the reference pointing to the definition of input fields on lines \ref{vrb:tutorial_sorp_mob_input_start} -- \ref{vrb:tutorial_sorp_mob_input_end}. Only entire records 
 can be referenced which is why we have to repeat parts of the input such as solvent density and solubility 

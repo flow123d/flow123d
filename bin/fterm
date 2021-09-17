@@ -1,34 +1,22 @@
 #!/bin/bash
-# This script can download flow123d images (adding user/group, adding keys, setting up git is made on thy fly)
-#
-# to further tweak the behaviour of the fterm, take a look at the config/docker.template.cfg file
-# you can for example change to different theme:
 # 
-#   theme=dark bin/fterm
+# Start docker environment for development.
 #
-# usage ./fterm [options] [dbg|rel] [action] [arguments]
-#   options:
-#     -v|--verbose    turn on debug mode
-#     --set-x         turn on debug mode (set -x)
+# Usage:
 #
-#   actions:
-#     remove-old     - will prompt to remove old docker images and containers
-#                      (those with no name)
+#     fterm [options] [dbg|rel] [action] [arguments]
 #
-#     update         - will update all flow123d images (will download new images
-#                      from the hub.docker.com/u/flow123d if necessary)
+# For documentation run:
 #
-#     shell          - (default action) will start a docker image
-#                      directory specified in config/docker.cfg file
-#                      currently directory '$work' will be mounted
+#     fterm --help
 #
-#   arguments: additional arguments passed to binary (only for action )
+# For further tweaks see config/docker.template.cfg
 #
-# The script can be configure with system variables:
-#    FLOW123D_WORK      - the folder, which will be mounted
-#    FLOW123D_NUMCPUS   - number of cpus, which will be used when called with pmake
-
-
+# This is development fterm, simpler variants are available in the installation packages.
+# See: https://github.com/flow123d/flow123d-package/tree/master/project/src/linux
+#
+#
+#
 # function will try to find proper dir to be mounted
 # it will return $FLOW123D_WORK is set
 # otherwise will return dir in $HOME, in which is flow123d located (can be even more nested)
@@ -40,125 +28,92 @@
 
 # get CWD as realtive path to current directory, which enables to build image on Windows
 OLD_PWD="$(pwd)"
-ABS_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/.. && pwd )"
-ABS_BIN="$ABS_ROOT/bin"
-ROOT=$(realpath --relative-to=$(pwd) $ABS_ROOT)
-REL_BIN=$(realpath --relative-to=$(pwd) $ROOT/bin)
+ABS_FLOW_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/.. && pwd )"
+REL_FLOW_DIR=$(realpath --relative-to=$(pwd) $ABS_FLOW_DIR)
 
-# define paths
-BIN=$ROOT/bin
-CFG=$ROOT/config
-TMP=$ROOT/config/docker/.tmp
-DKR=$ROOT/config/docker
+# define relative paths
+#BIN="$REL_FLOW_DIR/bin"
+CFG="$REL_FLOW_DIR/config"
+#TMP="$REL_FLOW_DIR/config/docker/.tmp"
+#DKR="$REL_FLOW_DIR/config/docker"
 
 
 # default version of the image used when **running** docker image
 image_version=dbg
 
-# default tag of the image when **running** images
-# can be changed in the following manner:
-#     ./fterm @2.2.0 build
-#     ./fterm @3.0.0 update
-#     ./fterm @latest
+# default tag of the used docker image: flow123d/flow-dev-gnu-${image_version}:${image_tag}
+# can be specified explicitely from input:
+# e.g. ./fterm @2.2.0 build
 image_tag=latest
 
-# if docker_version file exists, we change docker_version
-if [[ -f "$CFG/docker/image_tag" ]]; then
-  image_tag=$(cat $CFG/docker/image_tag)
+# In order to link the flow123d commit with particular image tag 
+# see the file: config/docker/image_tag
+DOCKER_TAG="$CFG/docker/image_tag"
+if [[ -f "$DOCKER_TAG" ]]; then
+  image_tag=$(cat "$DOCKER_TAG")
 fi
 
 
-# prints usage
-function usage() {
+
+function print_usage() {
   cat << EOF
-usage:
-  $bold./fterm [options] [dbg|rel] [action] [arguments]$reset
   
-  $bold Note:$reset The images are automatically downloaded from docker hub
-  $bold Note:$reset To turn off terminal colors, set system variable nocolor=1
-           $> nocolor=1 bin/fterm ...
-         (color output is disabled by default in a non tty environment)
+Usage:  $bold fterm [dbg|rel] [tag] [options] [action] [arguments]$reset
   
-     To use different docker image libraries, use @<tag> syntax, such as:
-      $bblue
-        $REL_BIN/fterm @2.2.0 exec make -j2
-        $REL_BIN/fterm @3.0.0 update
-        $REL_BIN/fterm @latest
-      $reset
-     You can also use file 'config/docker/image_tag' where you can change
-     default <tag> value. Currently, the <tag> value is set to '$image_tag'.
+Start docker container for Flow123d developing.
+   
+dbg       image with the debug build of the libraries (default), GNU environment by default
+rel       image with optimized build of the libraries, GNU environment by default
+dbg_gnu   image with the debug build of the libraries, GNU environment
+rel_gnu   image with optimized build of the libraries, GNU environment
+dbg_intel image with the debug build of the libraries, Intel environment
+rel_intel image with optimized build of the libraries, Intel environment
+   
+tag     version of the development image, e.g. @2.2.0, @3.0.0, @latest
+        Images automatically downloaded from docker hub, see:  ${bblue} https://hub.docker.com/r/flow123d/flow-dev-gnu-dbg/tags ${reset}
+        for avalilable tags. Default tag is taken form: ${bblue} config/docker/image_tag ${reset}
+    
+${bold}Options:${reset}
+  ${bold}-h|--help ${reset}       fterm documentation
+  ${bold}-V|--no-verbose ${reset} turn off configuration summary when starting container
+  ${bold}-x|--set-x ${reset}      turn on script debuging mode (set -x)
+  ${bold}-p|--privileged ${reset} add --privileged=true when starting docker container. SECURITY RISK
+                   May be necessary on hosts with SELinux (mounting issues) or for using 
+                   'gdb' within docker to turn off address space layout randomization. 
+                   
+  ${bold}-T|--no-term ${reset}    Turn off terminal for 'run' and 'exec' actions. Necessary when called from another process.
 
-  ${bold}options:${reset}
-    ${bold}-v|--verbose ${reset}
-      turn on debug mode
-    ${bold}-x|--set-x ${reset}
-      turn on debug mode (set -x)
-    ${bold}-p|--privileged ${reset}
-      will add --privileged=true when starting docker container,
-      this options carries a security risk but should deal with SELinux mounting
-      issues
+${bold}Actions:${reset}
+  ${bold}shell${reset}            start interactive shell (default action)
+  ${bold}exec${reset}             execute a linux command given by 'arguments' in the container
+  ${bold}run${reset}              run flow123d binary with 'arguments'
+    
+                   These actions mount PWD and a work directory given by FLOW123D_WORK
+                   or as a subdirectory of HOME containing the Flow123d root directory.
+                   We prevent mounting full HOME as clashs with container's HOME.
+    
+  ${bold}--${reset}               execute 'docker run' with given image pass remaining arguments
+  ${bold}update${reset}           update all flow123d images (download form docker hub)
+  ${bold}clean${reset}            promptto remove unnamed images and containers
 
-  ${bold}actions:${reset}
-    ${bold} @<tag> ${reset}
-      where <tag> value changes the tag value of the docker image
-      which is used for running
-                     
-    ${bold}--${reset}
-      will execute docker run and predetermined image and will
-      pass remaining arguments to the [options] section 
-      of the docker run command
-      docker run [options] <predefined-image>
-      
-    ${bold}--no-term${reset}
-      For 'run' and 'exec' command omit the terminal. Necessary for call from another process.
-                     
-    ${bold}--detach <name> [<opts> ...]${reset}
-      will execute docker as a deamon in the background.
-      Value <name> refers to a name of the container which will
-      be assigned to a new container. <opts> are passed to the 
-      docker run. e.g.:
-      docker run <opts> ... flow123d/flow-libs-dev-dbg:2.2.0 
-      
-      ** This operation will delete any container which has **
-              ** the same name as the name provided **
-      
-    ${bold}remove-old ${reset}or ${bold}clean ${reset}
-      will prompt to remove old docker images and containers
-      (those with no name)
-
-    ${bold}update${reset}
-      will update all flow123d images (will download new images
-
-    ${bold}shell${reset}
-      (default action) will start a docker image and enters
-      interactive terminal session
-      directory specified in config/docker.cfg file will be mounted, if not set
-      directories '$work' and 'pwd' will be mounted
-      $bblue$REL_BIN/fterm shell$reset
-      or simply
-      $bblue$REL_BIN/fterm$reset
-
-    ${bold}exec${reset}
-      will execute given command (everything after the work 'exec')
-      Example: to print Docker image Python version:
-      $bblue$REL_BIN/fterm exec python3 -V$reset
-      
-    ${bold}run${reset}
-      will run flow123d binary and pass all given arguments
-      specified after this value.
-      Example: to print flow123d binary version:
-      $bblue$REL_BIN/fterm run --version$reset
-
-  arguments: additional arguments passed to binary
-             (for actions raw and detach exec and run)
-
-  To compile flow under docker, you can do the following:
-    $bblue$REL_BIN/fterm exec make -C $ROOT all$reset
-
-  To run flow123d --help command under docker, you can do the following:
-    $bblue$REL_BIN/fterm run --help$reset
+  ${bold}--detach <name> [<opts> ...]${reset}
+                   start a new container <name> at background. 
+                   ** Overwrites an container of the same name! **
+    
+${bold}Evironment variables:${reset}
+  ${bold}nocolor${reset}          turn off terminal colors.
+  ${bold}FLOW123D_WORK${reset}    explicit working directory to mount
   
+${bold}Examples:${reset}
+  ${bblue}bin/fterm dbg @2.2.0 exec make -C . all$reset  
+  Start make of the Flow123d using the debug environment at version 2.2.0.
+    
+  ${bblue}bin/fterm rel run --help$reset
+  Run flow123d --help command under the realease environment at default version.
 EOF
+#  ${bblue}bin/fterm dbg --detach dbg_run$reset
+#      docker run <opts> ... flow123d/flow-dev-gnu-dbg:2.2.0
+
 }
 
 function dbg() {
@@ -300,19 +255,18 @@ uid=$(id -u)
 uname=flow
 autopull=${autopull:-1}
 theme=${theme:-light}
-flow123d_images="flow-libs-dev-dbg flow-libs-dev-rel"
 
 # source config, that way we know what to mount, etc.
-if [[ -f "$CFG/docker.cfg" ]]; then
-  source $CFG/docker.cfg
+DCFG="$CFG/docker.cfg"
+if [[ -f "$DCFG" ]]; then
+  source "$DCFG"
 fi
 
 # default settings
 privileged=0
 verbose=1
 action=shell
-work=$(get_mount_dir $ABS_ROOT)
-numcpus=${FLOW123D_NUMCPUS:-1}
+work=$(get_mount_dir $ABS_FLOW_DIR)
 contname=""
 docker_terminal="-it"
 
@@ -322,10 +276,6 @@ while [[ $# -gt 0 ]]
   case $key in
     -x|--set-x)
       set -x
-      shift
-    ;;
-    -v|--verbose)
-      verbose=1
       shift
     ;;
     -p|--privileged)
@@ -349,17 +299,17 @@ while [[ $# -gt 0 ]]
       rest="$@"
       break
     ;;
-    --no-term)
+    -T|--no-term)
       docker_terminal=""
       shift
     ;;
-    clean|remove-old|shell|run|exec|update)
+    clean|shell|run|exec|update)
       action=$1
       shift
       rest="$@"
       break
     ;;
-    dbg|rel)
+    dbg|rel|dbg_gnu|rel_gnu|dbg_intel|rel_intel)
       image_version=$1
       shift
     ;;
@@ -375,9 +325,8 @@ while [[ $# -gt 0 ]]
       echo "./fterm @2.2.0 build"
       exit 1
     ;;
-    -h|--help|help)
-      echo "Help for the fterm:"
-      usage
+    -h|--help)
+      print_usage
       exit 1
     ;;
     -i|--images)
@@ -387,21 +336,36 @@ while [[ $# -gt 0 ]]
     ;;
     *)
       echo -e "${bred}ERROR:$reset ${red} Invalid argument '$1'!$reset"
-      usage
+      print_usage
       echo -e "${bred}ERROR:$reset ${red} Invalid argument '$1'!$reset"
       exit 1
     ;;
   esac
 done
 
+image_kind=${image_version%%_*}
+image_env=${image_version#*_}
+
+if [ $image_kind = $image_env ]
+then
+  image_env="gnu"
+fi
+
+# set flow123d_images if empty
+if [ -z "$flow123d_images" ]
+then
+flow123d_images="flow-dev-${image_env}-dbg flow-dev-${image_env}-rel"
+fi
+
 
 # determine image names
-base_image=flow123d/flow-libs-dev-$image_version:$image_tag
+base_image=flow123d/flow-dev-$image_env-$image_kind:$image_tag
 
 
 dbg "base_image     = $base_image"
 dbg "image_tag      = $image_tag"
-dbg "image_version  = $image_version"
+dbg "image_kind     = $image_kind"
+dbg "image_env      = $image_env"
 dbg "action         = $action"
 dbg "mount dirs     - $work"
 dbg "               - $OLD_PWD"
@@ -411,8 +375,8 @@ dbg "autopull       = $autopull"
 dbg "privileged     = $privileged"
 
 # env variables which will be passed as well
-envarg="-euid=$uid -egid=$gid -etheme=$theme -ewho=$uname -ehome=/mnt/$HOME -v $HOME:/mnt/$HOME"
-mountargs="-w "$OLD_PWD" -v "$OLD_PWD":"$OLD_PWD" -v "$work":"$work""
+envarg="-euid=$uid -egid=$gid -etheme=$theme -ewho=$uname -ehome=/mnt/$HOME -v /$HOME:/mnt/$HOME"
+mountargs="-w /${OLD_PWD} -v /${OLD_PWD}:/${OLD_PWD} -v /${work}:/${work}"
 if [[ $privileged == "1" ]]; then
   priv_true="--privileged=true"
 fi
@@ -434,7 +398,7 @@ case $action in
       update_images
     fi
     dbg2 "Executing flow123d with args $rest"
-    dbgc docker run --rm ${docker_terminal} $envarg $mountargs $priv_true $base_image $ROOT/bin/flow123d "$rest"
+    dbgc docker run --rm ${docker_terminal} $envarg $mountargs $priv_true $base_image "$REL_FLOW_DIR/bin/flow123d" "$rest"
   ;;
   exec)
     if [[ $autopull == "1" ]]; then
@@ -453,7 +417,7 @@ case $action in
   update)
     update_images
   ;;
-  remove-old|clean)
+  clean)
     remove_old
   ;;
 esac

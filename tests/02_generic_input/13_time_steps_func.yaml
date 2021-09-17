@@ -26,7 +26,6 @@ problem: !Coupling_Sequential
     output_stream:
       file: flow.msh
       format: !gmsh
-        variant: ascii
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_Advection_FV
       input_fields:

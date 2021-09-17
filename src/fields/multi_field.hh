@@ -33,7 +33,6 @@ using namespace std;
 #include <vector>                                      // for vector
 #include "fields/field.hh"                             // for Field<>::Field...
 #include "fields/field_algo_base.hh"                   // for FieldAlgorithm...
-#include "fields/field_algo_base.impl.hh"              // for FieldAlgorithm...
 #include "fields/field_common.hh"                      // for FieldCommon
 #include "fields/field_values.hh"                      // for FieldValue<>::...
 #include "input/accessors.hh"                          // for ExcTypeMismatch
@@ -55,6 +54,7 @@ class Observe;
 class OutputTime;
 class EvalPoints;
 class ElementCacheMap;
+class FieldSet;
 
 
 namespace IT=Input::Type;
@@ -171,7 +171,7 @@ public:
     /**
      * Implementation of @p FieldCommonBase::output().
      */
-    void field_output(std::shared_ptr<OutputTime> stream) override;
+    void field_output(std::shared_ptr<OutputTime> stream, OutputTime::DiscreteSpaceFlags type) override;
 
     /**
      * Implementation of FieldCommonBase::observe_output().
@@ -207,11 +207,16 @@ public:
     { return sub_fields_.size(); }
 
     /**
+     * Implementation of FieldCommon::set_dependency().
+     */
+    std::vector<const FieldCommon *> set_dependency(FieldSet &field_set, unsigned int i_reg) const override;
+
+    /**
      * Returns reference to the sub-field (component) of given index @p idx.
      */
     inline SubFieldType &operator[](unsigned int idx)
     {
-    	ASSERT_LT(idx, sub_fields_.size())(this->input_name()).error("Index of subfield in MultiField is out of range.\n");
+    	ASSERT_LT_DBG(idx, sub_fields_.size())(this->input_name()).error("Index of subfield in MultiField is out of range.\n");
     	return sub_fields_[idx];
     }
     
@@ -220,10 +225,19 @@ public:
      */
     inline const SubFieldType &operator[](unsigned int idx) const
     {
-    	ASSERT_LT(idx, sub_fields_.size())(this->input_name()).error("Index of subfield in MultiField is out of range.\n");
+    	ASSERT_LT_DBG(idx, sub_fields_.size())(this->input_name()).error("Index of subfield in MultiField is out of range.\n");
         return sub_fields_[idx];
     }
     
+    /**
+     * Returns pointer to the sub-field (component, as FieldCommon) of given index @p idx.
+     */
+    FieldCommon *get_component(unsigned int idx) override
+    {
+    	ASSERT_LT_DBG(idx, sub_fields_.size())(this->input_name()).error("Index of subfield in MultiField is out of range.\n");
+    	return &(sub_fields_[idx]);
+    }
+
     /**
      * Initialize components of MultiField.
      *
@@ -247,15 +261,40 @@ public:
 
     void set_input_list(const Input::Array &list, const TimeGovernor &tg) override;
 
-    /// Implements FieldCommon::cache_allocate
-    void cache_allocate(std::shared_ptr<EvalPoints> eval_points) override;
+    /// Implements FieldCommon::cache_reallocate
+    void cache_reallocate(const ElementCacheMap &cache_map, unsigned int region_idx) const override;
 
     /// Implements FieldCommon::cache_update
-    void cache_update(ElementCacheMap &cache_map) override;
+    void cache_update(ElementCacheMap &cache_map, unsigned int region_patch_idx) const override;
 
-    void set_fields(const RegionSet &domain,
-            std::vector<typename Field<spacedim, Value>::FieldBasePtr> field_vec,
-            double time = 0.0);
+    /**
+     * Assigns fields from @p field_vec to individual components and all regions in region sets given by @p region_set_names.
+     * Field is added to the history with given time and possibly used in the next call of the set_time method.
+     * Caller is responsible for correct construction of given field.
+     *
+     * Use this method only if necessary.
+     */
+    void set(std::vector<typename Field<spacedim, Value>::FieldBasePtr> field_vec,
+            double time,
+            std::vector<std::string> region_set_names = {"ALL"});
+
+    /**
+     * Same as previous but only for one-component MultiField (simplification for HeatModel).
+     */
+    void set(typename Field<spacedim, Value>::FieldBasePtr field,
+            double time,
+            std::vector<std::string> region_set_names = {"ALL"});
+
+    /// Implements FieldCommon::value_cache
+    FieldValueCache<double> * value_cache() override {
+        return nullptr;
+    }
+
+    /// Implements FieldCommon::value_cache
+    const FieldValueCache<double> * value_cache() const override {
+        return nullptr;
+    }
+
 
 private:
     /// Subfields (items) of MultiField

@@ -153,6 +153,7 @@ public:
     /**
      * This static method gets accessor to record with function input,
      * dispatch to correct constructor and initialize appropriate function object from the input.
+     * Allow to make optimization of elements and nodes order if flag optimize_mesh is set
      * Returns pointer to Mesh.
      */
     static Mesh * mesh_factory(const Input::Record &input_mesh_rec);
@@ -181,7 +182,7 @@ public:
      *  @param n_entities count of entities (elements)
      *  @param n_components count of components (size of returned data is given by n_entities*n_components)
      *  @param boundary_domain flag determines that data is read for boundary or bulk elements
-     *  @param component_idx component index of MultiField
+     *  @param component_idx component index of MultiField; 0 for single component fields.
 	 */
     template<typename T>
     typename ElementDataCache<T>::ComponentDataPtr get_element_data( unsigned int n_entities, unsigned int n_components,
@@ -254,6 +255,13 @@ protected:
 
     /// Header of actual loaded data.
     MeshDataHeader actual_header_;
+
+    /** True if the reader can create cache with multiple components (multifield-wise).
+     * GMSH reader - true
+     * VTK reader - false
+     * TODO: find better solution to determine correct component_idx in get_element_data() - GMSH x VTK
+     */
+    bool can_have_components_;
 
     friend class ReaderCache;
 };

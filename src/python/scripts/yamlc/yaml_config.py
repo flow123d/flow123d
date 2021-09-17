@@ -167,6 +167,10 @@ class ConfigBase(object):
         result = list()
         for case in self.cases:
             for f in case[yamlc.TAG_FILES]:
+                dir_path = Paths.dirname(yaml_case_file)
+                full_path_f = Paths.join(dir_path,f)
+                if not Paths.is_file(full_path_f):
+                    raise Exception("File name '{}' does not exist.\nCheck config '{}'".format(f, Paths.dirname(yaml_case_file)))
                 if Paths.basename(f) == Paths.basename(yaml_case_file):
                     dummy_case = deepcopy(case)
                     dummy_case[yamlc.TAG_FILES] = [yaml_case_file]

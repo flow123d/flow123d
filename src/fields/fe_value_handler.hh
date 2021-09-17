@@ -25,6 +25,7 @@
 #include "la/vector_mpi.hh"
 #include <armadillo>
 #include "system/armor.hh"
+#include "tools/mixed.hh"
 
 class DOFHandlerMultiDim;
 template <int spacedim> class ElementAccessor;
@@ -41,8 +42,12 @@ struct FEValueInitData
     unsigned int ndofs;
     /// number of components
     unsigned int n_comp;
-    /// index of component (of vector_value/tensor_value)
-    unsigned int comp_index;
+    /// Holds begin of component range of evaluation.
+    unsigned int range_begin;
+    /// Holds end of component range of evaluation.
+    unsigned int range_end;
+    /// FiniteElement objects of all dimensions.
+    MixedPtr<FiniteElement> mixed_fe;
 };
 
 /**
@@ -93,8 +98,12 @@ private:
     /// Last value, prevents passing large values (vectors) by value.
     Value value_;
     typename Value::return_type r_value_;
-    /// Index of component (of vector_value/tensor_value)
-    unsigned int comp_index_;
+    /// Begin of dof range of actual component
+    unsigned int range_begin_;
+    /// End of dof range of actual component
+    unsigned int range_end_;
+    /// Pointer to FiniteElement object used to computing values
+    std::shared_ptr<FiniteElement<elemdim>> fe_;
 
     /**
      * Hold dofs of boundary elements.
@@ -161,6 +170,10 @@ private:
     /// Last value, prevents passing large values (vectors) by value.
     Value value_;
     typename Value::return_type r_value_;
+    /// Begin of dof range of actual component
+    unsigned int range_begin_;
+    /// End of dof range of actual component
+    unsigned int range_end_;
 
     /**
      * Hold dofs of boundary elements.

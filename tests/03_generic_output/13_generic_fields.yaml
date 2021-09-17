@@ -1,7 +1,10 @@
 #################
 # Test goal: Test of generic fields.
 # Author: David Flanderka
-# Source for reference: qualitative
+# Source for reference:
+#   - check fields 'region_id' and 'subdomain' in Paraview
+#   - depends only on mesh: two regions (id=1: "1d"), (id=4: "2d")
+#   - 'subdomain' - decomposition when running parallel (-> running on 2p)
 
 flow123d_version: 3.1.0
 problem: !Coupling_Sequential
@@ -9,24 +12,15 @@ problem: !Coupling_Sequential
   mesh:
     mesh_file: ../00_mesh/rectangle_12.8x8_frac.msh
   flow_equation: !Flow_Darcy_MH
-    nonlinear_solver:
-      linear_solver: !Petsc
-        a_tol: 1.0e-07
     input_fields:
       - region: .BOUNDARY
         bc_type: dirichlet
-        bc_piezo_head: !FieldFormula
-          value: x+y
+        bc_piezo_head: 0
       - region: BULK
-        init_pressure: !FieldFormula
-          value: 0.5*x+y
-        conductivity: 0.5
-    n_schurs: 2
+        conductivity: 1
     output:
       fields:
         - region_id
         - subdomain
     output_stream:
       file: ./test13.pvd
-      format: !vtk
-        variant: ascii

@@ -69,7 +69,7 @@ TEST(MeshTopology, make_neighbours_and_edges) {
     Mesh * mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
 
     EXPECT_EQ(9, mesh->n_elements());
-    EXPECT_EQ(18, mesh->n_elements(true));
+    EXPECT_EQ(18, mesh->get_bc_mesh()->n_elements());
 
     // check boundary elements
     EXPECT_EQ(101 , mesh->element_accessor(9).region().id() );
@@ -106,6 +106,7 @@ regions:
    region_ids:
     - 39
     - 40
+optimize_mesh: false
 )YAML";
 
 TEST(Mesh, init_from_input) {
@@ -170,7 +171,7 @@ TEST(Mesh, check_compatible_mesh) {
         //reader->read_physical_names(mesh); // not implemented
         reader->read_raw_mesh(mesh);
 
-        EXPECT_TRUE( mesh->check_compatible_mesh(*target_mesh)->size() > 0 );
+        EXPECT_FALSE( mesh->check_compatible_mesh(*target_mesh)->empty() );
 
         delete mesh;
     }
@@ -182,7 +183,7 @@ TEST(Mesh, check_compatible_mesh) {
         // reader->read_physical_names(mesh); // not implemented
         reader->read_raw_mesh(mesh);
 
-        EXPECT_EQ( mesh->check_compatible_mesh(*target_mesh)->size(), 0 );
+        EXPECT_TRUE( mesh->check_compatible_mesh(*target_mesh)->empty() );
 
         delete mesh;
     }

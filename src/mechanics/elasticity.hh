@@ -36,50 +36,10 @@ class OutputTime;
 class DOFHandlerMultiDim;
 template<unsigned int dim> class FiniteElement;
 class Elasticity;
-
-
-namespace Mechanics {
-
-/**
- * Auxiliary container class for Finite element and related objects of all dimensions.
- * Its purpose is to provide templated access to these objects, applicable in
- * the assembling methods.
- */
-class FEObjects {
-public:
-
-	FEObjects(Mesh *mesh_, unsigned int fe_order);
-	~FEObjects();
-
-	template<unsigned int dim>
-	inline std::shared_ptr<FiniteElement<dim>> fe();
-
-	template<unsigned int dim>
-	inline Quadrature *q() { return &(q_[dim]); }
-
-	inline std::shared_ptr<DOFHandlerMultiDim> dh();
-    inline std::shared_ptr<DOFHandlerMultiDim> dh_scalar();
-    inline std::shared_ptr<DOFHandlerMultiDim> dh_tensor();
-    
-//     const FEValuesViews::Vector<dim,3> vec;
-
-private:
-
-        MixedPtr<FiniteElement> fe_;  ///< Finite elements for the solution of the mechanics equation.
-	QGauss::array q_;
-
-
-    std::shared_ptr<DiscreteSpace> ds_;
-    
-	/// Object for distribution of dofs.
-	std::shared_ptr<DOFHandlerMultiDim> dh_;
-    std::shared_ptr<DOFHandlerMultiDim> dh_scalar_;
-    std::shared_ptr<DOFHandlerMultiDim> dh_tensor_;
-};
-
-
-} // namespace Mechanics
-
+template<unsigned int dim> class StiffnessAssemblyElasticity;
+template<unsigned int dim> class RhsAssemblyElasticity;
+template<unsigned int dim> class OutpuFieldsAssemblyElasticity;
+template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
 
 
@@ -88,29 +48,24 @@ class Elasticity : public EquationBase
 {
 public:
 
-	class EqData : public FieldSet {
+	class EqFields : public FieldSet {
 	public:
       
         enum Bc_types {
           bc_type_displacement,
           bc_type_displacement_normal,
-          bc_type_traction
+          bc_type_traction,
+		  bc_type_stress,
         };
 
-		EqData();
+        EqFields();
         
-        static  constexpr const char *  name() { return "Mechanics_LinearElasticity"; }
-
-        static string default_output_field() { return "\"displacement\""; }
-
         static const Input::Type::Selection & get_bc_type_selection();
 
-        static IT::Selection get_output_selection();
-        
-        
         BCField<3, FieldValue<3>::Enum > bc_type;
         BCField<3, FieldValue<3>::VectorFixed> bc_displacement;
         BCField<3, FieldValue<3>::VectorFixed> bc_traction;
+		BCField<3, FieldValue<3>::TensorFixed> bc_stress;
         Field<3, FieldValue<3>::VectorFixed> load;
         Field<3, FieldValue<3>::Scalar> young_modulus;
         Field<3, FieldValue<3>::Scalar> poisson_ratio;
@@ -119,6 +74,7 @@ public:
 		/// Pointer to DarcyFlow field cross_section
         Field<3, FieldValue<3>::Scalar > cross_section;
         Field<3, FieldValue<3>::Scalar > potential_load;   ///< Potential of an additional (external) load.
+        Field<3, FieldValue<3>::Scalar > ref_potential_load; ///< Potential of reference external load on boundary. TODO: Switch to BCField when possible.
         Field<3, FieldValue<3>::Scalar> region_id;
         Field<3, FieldValue<3>::Scalar> subdomain;
         
@@ -128,6 +84,15 @@ public:
         Field<3, FieldValue<3>::Scalar> output_cross_section;
         Field<3, FieldValue<3>::Scalar> output_divergence;
         
+		/// @name Instances of FieldModel used in assembly methods
+		// @{
+
+        Field<3, FieldValue<3>::Scalar > lame_mu;
+        Field<3, FieldValue<3>::Scalar > lame_lambda;
+        Field<3, FieldValue<3>::Scalar > dirichlet_penalty;
+
+    	// @}
+
         std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed> > output_field_ptr;
         std::shared_ptr<FieldFE<3, FieldValue<3>::TensorFixed> > output_stress_ptr;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_von_mises_stress_ptr;
@@ -138,6 +103,36 @@ public:
 
 	};
 
+	class EqData {
+	public:
+
+		EqData()
+        : ls(nullptr) {}
+
+		~EqData() {
+		    if (ls!=nullptr) delete ls;
+		}
+
+		/// Create DOF handler objects
+        void create_dh(Mesh * mesh, unsigned int fe_order);
+
+        /// Objects for distribution of dofs.
+        std::shared_ptr<DOFHandlerMultiDim> dh_;
+        std::shared_ptr<DOFHandlerMultiDim> dh_scalar_;
+        std::shared_ptr<DOFHandlerMultiDim> dh_tensor_;
+
+    	/// @name Solution of algebraic system
+    	// @{
+
+    	/// Linear algebraic system.
+    	LinSys *ls;
+
+    	// @}
+
+    	/// Shared Balance object
+    	std::shared_ptr<Balance> balance_;
+
+	};
 
 
     /**
@@ -157,9 +152,6 @@ public:
      * @brief Initialize solution in the zero time.
      */
 	void zero_time_step() override;
-	
-    bool evaluate_time_constraint(double &)
-    { return false; }
 
     /**
      * @brief Computes the solution in one time instant.
@@ -187,15 +179,22 @@ public:
 	// Recompute fields for output (stress, divergence etc.)
 	void update_output_fields();
     
-    void set_potential_load(const Field<3, FieldValue<3>::Scalar> &potential)
-    { data_.potential_load = potential; }
+    void set_potential_load(const Field<3, FieldValue<3>::Scalar> &potential,
+                            const Field<3, FieldValue<3>::Scalar> &ref_potential)
+    {
+        eq_fields_->potential_load = potential;
+        eq_fields_->ref_potential_load = ref_potential;
+    }
 
     void calculate_cumulative_balance();
 
 	const Vec &get_solution()
-	{ return ls->get_solution(); }
+	{ return eq_data_->ls->get_solution(); }
 
-    inline EqData &data() { return data_; }
+	inline EqFields &eq_fields() { return *eq_fields_; }
+
+	inline EqData &eq_data() { return *eq_data_; }
+
     
     
     typedef Elasticity FactoryBaseType;
@@ -207,110 +206,32 @@ private:
     /// Registrar of class to factory
     static const int registrar;
 
-    template<unsigned int dim>
-    void compute_output_fields();
-
 	void preallocate();
 
-	/**
-	 * @brief Assembles the stiffness matrix.
-	 *
-	 * This routine just calls assemble_volume_integrals(), assemble_fluxes_boundary(),
-	 * assemble_fluxes_element_element() and assemble_fluxes_element_side() for each
-	 * space dimension.
-	 */
-	void assemble_stiffness_matrix();
-
-	/**
-	 * @brief Assembles the volume integrals into the stiffness matrix.
-	*/
-	template<unsigned int dim>
-	void assemble_volume_integrals();
-
-	/**
-	 * @brief Assembles the right hand side (forces, boundary conditions, tractions).
-	 */
-	void assemble_rhs();
-
-	/**
-	 * @brief Assembles the right hand side vector due to volume sources.
-	 */
-	template<unsigned int dim>
-	void assemble_sources();
-    
-    /**
-     * @brief Assembles the fluxes on the boundary.
-     */
-    template<unsigned int dim>
-    void assemble_fluxes_boundary();
-
-	/**
-	 * @brief Assembles the fluxes between elements of different dimensions depending on displacement.
-	 */
-	template<unsigned int dim>
-	void assemble_matrix_element_side();
-    
-    /** @brief Assemble fluxes between different dimensions that are independent of displacement. */
-    template<unsigned int dim>
-    void assemble_rhs_element_side();
-
-
-	/**
-	 * @brief Assembles the r.h.s. components corresponding to the Dirichlet boundary conditions
-	 * for a given space dimension.
-	 */
-	template<unsigned int dim>
-	void assemble_boundary_conditions();
-    
-    /** @brief Penalty to enforce boundary value in weak sense. */
-    double dirichlet_penalty(SideIter side);
-
 
 	void assemble_constraint_matrix();
 
 	template<unsigned int dim>
-	void assemble_constraint_matrix();
-    
-    
+	void assemble_constraint_matrix();    
 
 
 	/// @name Physical parameters
 	// @{
 
-	/// Field data for model parameters.
-	EqData data_;
+	/// Fields for model parameters.
+	std::shared_ptr<EqFields> eq_fields_;
+
+	/// Data for model parameters.
+	std::shared_ptr<EqData> eq_data_;
+
     
 	// @}
 
 
-	/// @name Parameters of the numerical method
-	// @{
+	
+    Mat constraint_matrix;
 
-	/// Finite element objects
-	Mechanics::FEObjects *feo;
-    
-	// @}
-
-
-
-	/// @name Solution of algebraic system
-	// @{
-
-	/// Vector of right hand side.
-	Vec rhs;
-
-	/// The stiffness matrix.
-	Mat stiffness_matrix;
-
-	Mat constraint_matrix;
-
-	/// Linear algebra system for the transport equation.
-	LinSys *ls;
-
-	// @}
-
-
-	/// @name Output to file
+    /// @name Output to file
 	// @{
 
     std::shared_ptr<OutputTime> output_stream_;
@@ -322,19 +243,20 @@ private:
 	// @}
 
 
+    static constexpr const char *  name_ = "Mechanics_LinearElasticity";
 
 
-	/// @name Other
-	// @{
+    /// general assembly objects, hold assembly objects of appropriate dimension
+    GenericAssembly< StiffnessAssemblyElasticity > * stiffness_assembly_;
+    GenericAssembly< RhsAssemblyElasticity > * rhs_assembly_;
+    GenericAssembly< OutpuFieldsAssemblyElasticity > * output_fields_assembly_;
 
-    /// Indicates whether matrices have been preallocated.
-    bool allocation_done;
-    
-    // @}
 };
 
 
-
+/*
+ * TODO Remove these two methods after implementation new assembly algorithm in HM_Iterative class.
+ */
 double lame_mu(double young, double poisson);
 double lame_lambda(double young, double poisson);
 

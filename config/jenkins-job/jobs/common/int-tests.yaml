@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------- #
 # ---------- INT-TESTS ------------------------------------------------------- #
 # ---------------------------------------------------------------------------- #
-name: "Flow123d-{platform}-{build-type}-test-{test-dir}"
+name: "Flow123d-{environment}-{build-type}-test-{test-dir}"
 display-name: "{build-type} / Flow123d int-test {test-dir}"
 defaults: flow123d-build
 builders:
@@ -29,7 +29,7 @@ builders:
         # Following is a hack how to run just serial tests in a branch which contains file 'tests/run_serial_only'.
         if [[ "$RUN_SERIAL_ONLY" = true ]] || [[ -f ${{FLOW}}/tests/run_serial_only ]]; then
           echo "Running serial tests only"
-          docker exec cont{build-type} ${{FLOW}}/tests/runtest ${{FLOW}}/tests/{test-dir} -n 1 --keep-going --batch $FLAGS
+          docker exec cont{environment}{build-type} ${{FLOW}}/tests/runtest ${{FLOW}}/tests/{test-dir} -n 1 --keep-going --batch $FLAGS
         else
-          docker exec cont{build-type} ${{FLOW}}/tests/runtest ${{FLOW}}/tests/{test-dir} --keep-going --batch $FLAGS
+          docker exec cont{environment}{build-type} ${{FLOW}}/tests/runtest ${{FLOW}}/tests/{test-dir} --keep-going --batch $FLAGS
         fi

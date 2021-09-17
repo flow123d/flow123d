@@ -46,7 +46,7 @@ public:
     Range<ElementAccessor<3>> elements_range() const override;
 
     /// Returns count of boundary elements of parent mesh
-    unsigned int n_elements(bool boundary=false) const override;
+    unsigned int n_elements() const override;
 
     /// Overwrite Mesh::get_part()
     Partitioning *get_part() override;
@@ -55,7 +55,7 @@ public:
     const LongIdx *get_local_part() override;
 
     /// Overwrite Mesh::check_compatible_mesh()
-    std::shared_ptr<std::vector<LongIdx>> check_compatible_mesh( Mesh & input_mesh) override;
+    std::shared_ptr<EquivalentMeshMap> check_compatible_mesh( Mesh & input_mesh) override;
 
     /// Overwrite Mesh::n_nodes()
     unsigned int n_nodes() const override;

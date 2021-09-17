@@ -1,3 +1,8 @@
+common_config:
+  check_rules:
+    - vtkdiff:
+        files: ["*.vtu"]
+
 test_cases:
 - files:
   - 01_user_defined_units.yaml
@@ -13,6 +18,7 @@ test_cases:
   - 23_elementwise_bc.yaml
   - 24_elementwise_integer_field.yaml
   - 27_FE_equivalent_mesh.yaml
+  - 28_FE_identic_mesh.yaml
   proc: [1]
   
   
@@ -25,7 +31,7 @@ test_cases:
    - 03_field_descriptors.yaml   
    - 06_bulk_interpolated.yaml
    - 07_bulk_interpolation_cube.yaml
-   - 15_formula_surface_depth.yaml
+   - 15_formula.yaml
    - 21_fields_FE_native.yaml
    - 22_elementwise_fields.yaml
 #   - 23_elementwise_bc.yaml

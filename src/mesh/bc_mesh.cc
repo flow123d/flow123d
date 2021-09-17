@@ -50,8 +50,8 @@ Range<ElementAccessor<3>> BCMesh::elements_range() const
 }
 
 
-unsigned int BCMesh::n_elements(FMT_UNUSED bool boundary) const {
-	return parent_mesh_->element_ids_.size()-parent_mesh_->bulk_size_;
+unsigned int BCMesh::n_elements() const {
+	return parent_mesh_->element_vec_.size()-parent_mesh_->bulk_size_;
 }
 
 
@@ -75,7 +75,7 @@ const LongIdx *BCMesh::get_local_part() {
 }
 
 
-std::shared_ptr<std::vector<LongIdx>> BCMesh::check_compatible_mesh( Mesh & input_mesh) {
+std::shared_ptr<EquivalentMeshMap> BCMesh::check_compatible_mesh( Mesh & input_mesh) {
 	return parent_mesh_->check_compatible_mesh(input_mesh);
 }
 
