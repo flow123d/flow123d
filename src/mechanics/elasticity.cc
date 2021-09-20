@@ -284,6 +284,7 @@ Elasticity::Elasticity(Mesh & init_mesh, const Input::Record in_rec, TimeGoverno
 		  input_rec(in_rec),
 		  stiffness_assembly_(nullptr),
 		  rhs_assembly_(nullptr),
+          constraint_assembly_(nullptr),
 		  output_fields_assembly_(nullptr)
 {
 	// Can not use name() + "constructor" here, since START_TIMER only accepts const char *
@@ -379,8 +380,24 @@ void Elasticity::initialize()
     ls->set_initial_guess_nonzero();
     eq_data_->ls = ls;
 
+    // allocate constraint matrix
+    unsigned int n_own_constraints = 0; // count locally owned cells with neighbours
+    for (auto cell : eq_data_->dh_->own_range())
+        if (cell.elm()->n_neighs_vb() > 0)
+            n_own_constraints++;
+    unsigned int n_constraints = 0; // count all cells with neighbours
+    for (auto elm : mesh_->elements_range())
+        if (elm->n_neighs_vb() > 0)
+            eq_data_->constraint_idx[elm.idx()] = n_constraints++;
+    unsigned int nnz = eq_data_->dh_->ds()->fe()[1_d]->n_dofs()*mesh_->max_edge_sides(1) +
+                       eq_data_->dh_->ds()->fe()[2_d]->n_dofs()*mesh_->max_edge_sides(2) +
+                       eq_data_->dh_->ds()->fe()[3_d]->n_dofs()*mesh_->max_edge_sides(3);
+    MatCreateAIJ(PETSC_COMM_WORLD, n_own_constraints, eq_data_->dh_->lsize(), PETSC_DECIDE, PETSC_DECIDE, nnz, 0, nnz, 0, &eq_data_->constraint_matrix);
+    VecCreateMPI(PETSC_COMM_WORLD, n_own_constraints, PETSC_DECIDE, &eq_data_->constraint_vec);
+
     stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyElasticity >(eq_fields_.get(), eq_data_.get());
     rhs_assembly_ = new GenericAssembly< RhsAssemblyElasticity >(eq_fields_.get(), eq_data_.get());
+    constraint_assembly_ = new GenericAssembly< ConstraintAssemblyElasticity >(eq_fields_.get(), eq_data_.get());
     output_fields_assembly_ = new GenericAssembly< OutpuFieldsAssemblyElasticity >(eq_fields_.get(), eq_data_.get());
 
     // initialization of balance object
@@ -396,6 +413,7 @@ Elasticity::~Elasticity()
 
     if (stiffness_assembly_!=nullptr) delete stiffness_assembly_;
     if (rhs_assembly_!=nullptr) delete rhs_assembly_;
+    if (constraint_assembly_ != nullptr) delete constraint_assembly_;
     if (output_fields_assembly_!=nullptr) delete output_fields_assembly_;
 
     eq_data_.reset();
@@ -469,6 +487,8 @@ void Elasticity::preallocate()
 	eq_data_->ls->start_allocation();
     stiffness_assembly_->assemble(eq_data_->dh_);
     rhs_assembly_->assemble(eq_data_->dh_);
+
+    assemble_constraint_matrix();
 }
 
 
@@ -569,49 +589,13 @@ void Elasticity::calculate_cumulative_balance()
 
 void Elasticity::assemble_constraint_matrix()
 {
-    unsigned int nnz = feo->fe<1>()->n_dofs()*mesh_->max_edge_sides(1) +
-                       feo->fe<2>()->n_dofs()*mesh_->max_edge_sides(2) +
-                       feo->fe<3>()->n_dofs()*mesh_->max_edge_sides(3);
-
-    MatCreateAIJ(PETSC_COMM_WORLD, feo->dh()->own_size(), feo->dh()->lsize(), PETSC_DECIDE, PETSC_DECIDE, nnz, 0, nnz, 0, &constraint_matrix);
-    assemble_constraint_matrix<1>();
-    assemble_constraint_matrix<2>();
-    assemble_constraint_matrix<3>();
-    MatAssemblyBegin(constraint_matrix, MAT_FINAL_ASSEMBLY);
-    MatAssemblyEnd(constraint_matrix, MAT_FINAL_ASSEMBLY);
+    MatZeroEntries(eq_data_->constraint_matrix);
+    VecZeroEntries(eq_data_->constraint_vec);
+    constraint_assembly_->assemble(eq_data_->dh_);
+    MatAssemblyBegin(eq_data_->constraint_matrix, MAT_FINAL_ASSEMBLY);
+    MatAssemblyEnd(eq_data_->constraint_matrix, MAT_FINAL_ASSEMBLY);
+    VecAssemblyBegin(eq_data_->constraint_vec);
+    VecAssemblyEnd(eq_data_->constraint_vec);
 }
 
 
-template<unsigned int dim>
-void Elasticity::assemble_constraint_matrix()
-{
-    QGauss q_sub(dim-1, 0);
-    FEValues<3> fsv(q_sub, *feo->fe<dim>(),
-    		update_values | update_normal_vectors | update_quadrature_points);
-    const unsigned int ndofs = feo->fe<dim>()->n_dofs();
-    auto vec_side = fsv.vector_view(0);
-    double local_mat[ndofs];
-    
-    for (auto cell : feo->dh()->own_range())
-    {
-        if (cell.dim() != dim) continue;
-        auto elm = cell.elm();
-        for (unsigned int inb=0; inb<elm->n_neighs_vb(); inb++)
-        {
-            for (unsigned int i=0; i<ndofs; i++)
-                local_mat[i] = 0;
-                
-            auto side = elm->neigh_vb[inb]->side();
-            auto cell_side = side->element();
-            fsv.reinit(*side);
-            LocDofVec side_dof_indices =
-                feo->dh()->cell_accessor_from_element(cell_side.idx()).get_loc_dof_indices();
-            
-            for (unsigned int i=0; i<ndofs; i++)
-                local_mat[i] -= arma::dot(vec_side.value(i,0), fsv.normal_vector(0));
-
-            int arow[1] = { (int)cell.elm_idx() };
-            MatSetValues(constraint_matrix, 1, arow, ndofs, side_dof_indices.memptr(), local_mat, ADD_VALUES);
-        }
-    }
-}

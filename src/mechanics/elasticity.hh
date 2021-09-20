@@ -38,6 +38,7 @@ template<unsigned int dim> class FiniteElement;
 class Elasticity;
 template<unsigned int dim> class StiffnessAssemblyElasticity;
 template<unsigned int dim> class RhsAssemblyElasticity;
+template<unsigned int dim> class ConstraintAssemblyElasticity;
 template<unsigned int dim> class OutpuFieldsAssemblyElasticity;
 template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
@@ -107,10 +108,12 @@ public:
 	public:
 
 		EqData()
-        : ls(nullptr) {}
+        : ls(nullptr), constraint_matrix(nullptr), constraint_vec(nullptr) {}
 
 		~EqData() {
 		    if (ls!=nullptr) delete ls;
+            if (constraint_matrix!=nullptr) MatDestroy(&constraint_matrix);
+            if (constraint_vec!=nullptr) VecDestroy(&constraint_vec);
 		}
 
 		/// Create DOF handler objects
@@ -126,6 +129,12 @@ public:
 
     	/// Linear algebraic system.
     	LinSys *ls;
+
+        Mat constraint_matrix;
+        Vec constraint_vec;
+
+        // map local element -> constraint index
+        std::map<LongIdx,LongIdx> constraint_idx;
 
     	// @}
 
@@ -211,9 +220,6 @@ private:
 
 	void assemble_constraint_matrix();
 
-	template<unsigned int dim>
-	void assemble_constraint_matrix();    
-
 
 	/// @name Physical parameters
 	// @{
@@ -229,8 +235,6 @@ private:
 
 
 	
-    Mat constraint_matrix;
-
     /// @name Output to file
 	// @{
 
@@ -249,6 +253,7 @@ private:
     /// general assembly objects, hold assembly objects of appropriate dimension
     GenericAssembly< StiffnessAssemblyElasticity > * stiffness_assembly_;
     GenericAssembly< RhsAssemblyElasticity > * rhs_assembly_;
+    GenericAssembly< ConstraintAssemblyElasticity > * constraint_assembly_;
     GenericAssembly< OutpuFieldsAssemblyElasticity > * output_fields_assembly_;
 
 };
