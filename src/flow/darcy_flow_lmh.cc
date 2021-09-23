@@ -366,64 +366,29 @@ void DarcyLMH::initialize_specific()
     data_->multidim_assembler = AssemblyBase::create< AssemblyLMH >(data_);
 }
 
-// void DarcyLMH::read_initial_condition()
-// {
-// 	DebugOut().fmt("Read initial condition\n");
-    
-//     std::vector<LongIdx> l_indices(data_->dh_cr_->max_elem_dofs());
-    
-// 	for ( DHCellAccessor dh_cell : data_->dh_cr_->own_range() ) {
-        
-//         dh_cell.get_loc_dof_indices(l_indices);
-//         ElementAccessor<3> ele = dh_cell.elm();
-        
-// 		// set initial condition
-//         double init_value = data_->init_pressure.value(ele.centre(),ele);
-        
-//         for (unsigned int i=0; i<ele->n_sides(); i++) {
-//              uint n_sides_of_edge =  ele.side(i)->edge()->n_sides;
-//              data_->p_edge_solution[l_indices[i]] += init_value/n_sides_of_edge;
-//          }
-// 	}
-    
-//     data_->p_edge_solution.ghost_to_local_begin();
-//     data_->p_edge_solution.ghost_to_local_end();
-//     data_->p_edge_solution_previous_time.copy_from(data_->p_edge_solution);
-
-//     initial_condition_postprocess();
-// }
-
 void DarcyLMH::read_initial_condition()
 {
 	DebugOut().fmt("Read initial condition\n");
     
-	for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
+	for ( DHCellAccessor dh_cell : data_->dh_cr_->own_range() ) {
         
-        LocDofVec p_indices = dh_cell.cell_with_other_dh(data_->dh_p_.get()).get_loc_dof_indices();
-        ASSERT_DBG(p_indices.n_elem == 1);
-        LocDofVec l_indices = dh_cell.cell_with_other_dh(data_->dh_cr_.get()).get_loc_dof_indices();
+        LocDofVec l_indices = dh_cell.get_loc_dof_indices();
         ElementAccessor<3> ele = dh_cell.elm();
         
 		// set initial condition
         double init_value = data_->init_pressure.value(ele.centre(),ele);
-        unsigned int p_idx = data_->dh_p_->parent_indices()[p_indices[0]];
-        data_->full_solution.set(p_idx, init_value);
         
+        ASSERT_DBG(l_indices.n_elem == ele->n_sides());
         for (unsigned int i=0; i<ele->n_sides(); i++) {
              uint n_sides_of_edge =  ele.side(i)->edge().n_sides();
-             unsigned int l_idx = data_->dh_cr_->parent_indices()[l_indices[i]];
-             data_->full_solution.add(l_idx, init_value/n_sides_of_edge);
-
              data_->p_edge_solution.add(l_indices[i], init_value/n_sides_of_edge);
          }
 	}
-    
-    data_->full_solution.ghost_to_local_begin();
-    data_->full_solution.ghost_to_local_end();
-    
+
     data_->p_edge_solution.ghost_to_local_begin();
     data_->p_edge_solution.ghost_to_local_end();
-    data_->p_edge_solution_previous_time.copy_from(data_->p_edge_solution);
+    data_->p_edge_solution.local_to_ghost_begin();
+    data_->p_edge_solution.local_to_ghost_end();
 
     initial_condition_postprocess();
 }
@@ -451,25 +416,15 @@ void DarcyLMH::zero_time_step()
         //read_initial_condition(); // Possible solution guess for steady case.
         solve_nonlinear(); // with right limit data
     } else {
+        data_->time_step_ = time_->dt();
         read_initial_condition();
+        accept_time_step(); // accept zero time step, i.e. initial condition
         
         // we reconstruct the initial solution here
-
         // during the reconstruction assembly:
         // - the balance objects are actually allocated
         // - the full solution vector is computed
-        // - to not changing the ref data in the tests at the moment, we need zero velocities,
-        //   so we keep only the pressure in the full solution (reason for the temp vector)
-        // Once we want to change the ref data including nonzero velocities,
-        // we can remove the temp vector and also remove the settings of full_solution vector
-        // in the read_initial_condition(). (use the commented out version read_initial_condition() above)
-        VectorMPI temp = data_->dh_->create_vector();
-        temp.copy_from(data_->full_solution);
         reconstruct_solution_from_schur(data_->multidim_assembler);
-        data_->full_solution.copy_from(temp);
-
-        // print_matlab_matrix("matrix_zero");
-        accept_time_step(); // accept zero time step, i.e. initial condition
     }
     //solution_output(T,right_limit); // data for time T in any case
     output_data();
