@@ -295,18 +295,12 @@ private:
 
     void make_transport_partitioning(); //
 	void set_initial_condition();
-	void read_concentration_sources();
   
     /** @brief Assembles concentration sources for each substance and set boundary conditions.
      * note: the source of concentration is multiplied by time interval (gives the mass, not the flow like before)
      */
     void conc_sources_bdr_conditions();
     
-	/**
-	 * Finish explicit transport matrix (time step scaling)
-	 */
-	void transport_matrix_step_mpi(double time_step); //
-
     void alloc_transport_vectors();
     void alloc_transport_structs_mpi();
 
