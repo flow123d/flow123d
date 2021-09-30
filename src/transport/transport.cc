@@ -400,7 +400,7 @@ void ConvectionTransport::conc_sources_bdr_conditions() {
     //temporary variables
     double csection, source, diag;
     unsigned int sbi;
-    bool sources_changed = ( (eq_fields_->sources_density.changed() )
+    eq_data_->sources_changed_ = ( (eq_fields_->sources_density.changed() )
             || (eq_fields_->sources_conc.changed() )
             || (eq_fields_->sources_sigma.changed() )
             || (eq_fields_->cross_section.changed()));
@@ -408,7 +408,7 @@ void ConvectionTransport::conc_sources_bdr_conditions() {
     //TODO: would it be possible to check the change in data for chosen substance? (may be in multifields?)
   
 	START_TIMER("sources_reinit_set_bc");
-	if (sources_changed) balance_->start_source_assembly(eq_data_->subst_idx);
+	if (eq_data_->sources_changed_) balance_->start_source_assembly(eq_data_->subst_idx);
     // Assembly bcvcorr vector
     for(sbi=0; sbi < n_substances(); sbi++) VecZeroEntries(bcvcorr[sbi]);
 
@@ -427,7 +427,7 @@ void ConvectionTransport::conc_sources_bdr_conditions() {
 
 		// SET SOURCES
 
-		if (sources_changed) {
+		if (eq_data_->sources_changed_) {
             // read for all substances
             double max_cfl=0;
             for (sbi = 0; sbi < n_substances(); sbi++)
@@ -486,7 +486,7 @@ void ConvectionTransport::conc_sources_bdr_conditions() {
     }
 
     balance_->finish_flux_assembly(eq_data_->subst_idx);
-    if (sources_changed) balance_->finish_source_assembly(eq_data_->subst_idx);
+    if (eq_data_->sources_changed_) balance_->finish_source_assembly(eq_data_->subst_idx);
 
     for (sbi=0; sbi<n_substances(); sbi++)  	VecAssemblyBegin(bcvcorr[sbi]);
     for (sbi=0; sbi<n_substances(); sbi++)   	VecAssemblyEnd(bcvcorr[sbi]);
@@ -559,8 +559,7 @@ bool ConvectionTransport::evaluate_time_constraint(double& time_constraint)
        || eq_fields_->water_content.changed() || eq_fields_->bc_conc.changed() )
     {
         conc_sources_bdr_conditions();
-        if( eq_fields_->sources_density.changed() || eq_fields_->sources_conc.changed() || eq_fields_->sources_sigma.changed()
-               || eq_fields_->cross_section.changed() ) {
+        if( eq_data_->sources_changed_ ) {
             is_src_term_scaled = false;
             cfl_changed = true;
         }

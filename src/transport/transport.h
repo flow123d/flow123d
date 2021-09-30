@@ -177,6 +177,9 @@ public:
     	vector<unsigned int> subst_idx;
 
     	Vec mass_diag;  // diagonal entries in pass matrix (cross_section * porosity)
+
+    	/// Flag indicates that sources part of equation was changed during last time.
+    	bool sources_changed_;
     };
 
 
