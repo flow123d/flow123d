@@ -110,4 +110,67 @@ public:
 };
 
 
+
+/**
+ * Auxiliary container class for Finite element and related objects of given dimension.
+ */
+template <unsigned int dim>
+class InitCondAssemblyConvection : public AssemblyBase<dim>
+{
+public:
+    typedef typename ConvectionTransport::EqFields EqFields;
+    typedef typename ConvectionTransport::EqData EqData;
+
+    static constexpr const char * name() { return "InitCondAssemblyConvection"; }
+
+    /// Constructor.
+    InitCondAssemblyConvection(EqFields *eq_fields, EqData *eq_data)
+    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data) {
+        this->active_integrals_ = ActiveIntegrals::bulk;
+        this->used_fields_ += eq_fields_->init_conc;
+    }
+
+    /// Destructor.
+    ~InitCondAssemblyConvection() {}
+
+    /// Initialize auxiliary vectors and other data members
+    void initialize(ElementCacheMap *element_cache_map) {
+        this->element_cache_map_ = element_cache_map;
+        for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++) {
+            vecs_.push_back(eq_fields_->conc_mobile_fe[sbi]->vec());
+        }
+    }
+
+
+    /// Assemble integral over element
+    inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
+    {
+        ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
+
+		LongIdx index = cell.local_idx();
+		auto p = *( this->bulk_points(element_patch_idx).begin() );
+
+		for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++) {
+			vecs_[sbi].set( index, eq_fields_->init_conc[sbi](p) );
+		}
+    }
+
+private:
+    shared_ptr<FiniteElement<dim>> fe_;                    ///< Finite element for the solution of the advection-diffusion equation.
+
+    /// Data objects shared with TransportDG
+    EqFields *eq_fields_;
+    EqData *eq_data_;
+
+    std::vector<VectorMPI> vecs_;                          ///< Set of data vectors of conc_mobile_fe objects.
+
+    /// Sub field set contains fields used in calculation.
+    FieldSet used_fields_;
+
+    template < template<IntDim...> class DimAssembly>
+    friend class GenericAssembly;
+
+};
+
+
 #endif /* ASSEMBLY_CONVECTION_HH_ */

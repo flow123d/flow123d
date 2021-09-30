@@ -57,6 +57,7 @@ namespace Input {
 	}
 }
 template<unsigned int dim> class MassAssemblyConvection;
+template<unsigned int dim> class InitCondAssemblyConvection;
 template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
 
@@ -294,7 +295,7 @@ private:
 //    void create_mass_matrix();
 
     void make_transport_partitioning(); //
-	void set_initial_condition();
+//	void set_initial_condition();
   
     /** @brief Assembles concentration sources for each substance and set boundary conditions.
      * note: the source of concentration is multiplied by time interval (gives the mass, not the flow like before)
@@ -380,6 +381,7 @@ private:
 
     /// general assembly objects, hold assembly objects of appropriate dimension
     GenericAssembly< MassAssemblyConvection > * mass_assembly_;
+    GenericAssembly< InitCondAssemblyConvection > * init_cond_assembly_;
 
     friend class TransportOperatorSplitting;
 };

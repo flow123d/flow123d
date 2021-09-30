@@ -218,6 +218,7 @@ void ConvectionTransport::initialize()
     balance_->allocate(el_ds->lsize(), 1);
 
     mass_assembly_ = new GenericAssembly< MassAssemblyConvection >(eq_fields_.get(), eq_data_.get());
+    init_cond_assembly_ = new GenericAssembly< InitCondAssemblyConvection >(eq_fields_.get(), eq_data_.get());
 }
 
 
@@ -295,6 +296,7 @@ ConvectionTransport::~ConvectionTransport()
 
         // assembly objects
         delete mass_assembly_;
+        delete init_cond_assembly_;
     }
 }
 
@@ -302,23 +304,23 @@ ConvectionTransport::~ConvectionTransport()
 
 
 
-void ConvectionTransport::set_initial_condition()
-{
-    DebugOut() << "ConvectionTransport::set_initial_condition()\n";
-    // get vecs
-    std::vector<VectorMPI> vecs;
-    for (unsigned int sbi=0; sbi<n_substances(); sbi++)
-        vecs.push_back(eq_fields_->conc_mobile_fe[sbi]->vec());
-
-	for ( DHCellAccessor dh_cell : eq_data_->dh_->own_range() ) {
-		LongIdx index = dh_cell.local_idx();
-		ElementAccessor<3> ele_acc = mesh_->element_accessor( dh_cell.elm_idx() );
-        
-		for (unsigned int sbi=0; sbi<n_substances(); sbi++) { // Optimize: SWAP LOOPS
-			vecs[sbi].set( index, eq_fields_->init_conc[sbi].value(ele_acc.centre(), ele_acc) );
-        }
-	}
-}
+//void ConvectionTransport::set_initial_condition()
+//{
+//    DebugOut() << "ConvectionTransport::set_initial_condition()\n";
+//    // get vecs
+//    std::vector<VectorMPI> vecs;
+//    for (unsigned int sbi=0; sbi<n_substances(); sbi++)
+//        vecs.push_back(eq_fields_->conc_mobile_fe[sbi]->vec());
+//
+//	for ( DHCellAccessor dh_cell : eq_data_->dh_->own_range() ) {
+//		LongIdx index = dh_cell.local_idx();
+//		ElementAccessor<3> ele_acc = mesh_->element_accessor( dh_cell.elm_idx() );
+//
+//		for (unsigned int sbi=0; sbi<n_substances(); sbi++) { // Optimize: SWAP LOOPS
+//			vecs[sbi].set( index, eq_fields_->init_conc[sbi].value(ele_acc.centre(), ele_acc) );
+//        }
+//	}
+//}
 
 //=============================================================================
 //	ALLOCATE OF TRANSPORT VARIABLES (ELEMENT & NODES)
@@ -508,7 +510,8 @@ void ConvectionTransport::zero_time_step()
 		WarningOut() << ss.str();
 	}
 
-    set_initial_condition();
+    //set_initial_condition();
+    init_cond_assembly_->assemble(eq_data_->dh_);
     //create_mass_matrix();
     mass_assembly_->assemble(eq_data_->dh_);
     
