@@ -88,7 +88,7 @@ export SINGULARITY_TMPDIR="/some_absolute_path/tmp"
 singularity exec docker://flow123d/3.1.0 flow123d simulation.yaml
 ```
 
-### Parallel run
+### Parallel run, mpiexec out of the image
 ```sh
 module add mpich-3.0.2-gcc
 mpiexec -host host1,host2 -np 4 singularity exec docker://flow123d/3.1.0 flow123d simulation.yaml
