@@ -76,14 +76,14 @@ To copy out reference manual from docker use command
 
 ## Singularity
 
-Singularity allows run simulator in various HPC environments.
+[Singularity](https://singularity.hpcng.org/) is a container system targeting HPC applications. Singularity containers can be created from the docker images and in contrast to the docker one is not allowed to modify system of running containers. 
 
 For large images may be necessary set temp directory.
 ```sh
 export SINGULARITY_TMPDIR="/some_absolute_path/tmp"
 ```
 
-### Run simulator
+### Run simulator in singularity container
 ```sh
 singularity exec docker://flow123d/3.1.0 flow123d simulation.yaml
 ```
