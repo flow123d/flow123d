@@ -1,8 +1,8 @@
 # Flow123d &middot; [![Jenkins release](http://ciflow.nti.tul.cz/status/release/Flow123d-ci2runner-release-multijob/4)](http://ciflow.nti.tul.cz:8080/view/multijob-list/job/Flow123d-ci2runner-release-multijob/) [![Jenkins debug](http://ciflow.nti.tul.cz/status/debug/Flow123d-ci2runner-debug-multijob/4)](http://ciflow.nti.tul.cz:8080/view/multijob-list/job/Flow123d-ci2runner-debug-multijob/) [![Coveralls master](https://img.shields.io/coveralls/github/flow123d/flow123d.svg?style=flat-square&label=coverage)](https://coveralls.io/github/flow123d/flow123d) [![Docker hub](https://img.shields.io/badge/docker-hub-blue.svg?colorA=2271b8&colorB=dc750d&logo=docker&style=flat-square&logoColor=FFF)](https://hub.docker.com/u/flow123d/) [![CI-HPC](https://img.shields.io/badge/ci--hpc-performace-green.svg?style=flat-square)](http://hybs.nti.tul.cz/ci-hpc/)
 
-*Transport Processes in Fractured Media*
+*Processes in Fractured Media*
 
-Flow123d is a simulator of underground water flow and transport processes in fractured
+Flow123d is a simulator of underground water flow, transport, and mechanical processes in fractured
 porous media. Novelty of this software is support of computations on complex
 meshes consisting of simplicial elements of different dimensions. Therefore
 we can combine continuum models and discrete fracture network models.
@@ -20,7 +20,7 @@ and more. Below you can see a result from the tutorial problem.
 
 ## Installation
 You have several options when it comes to installation. You can use
-our prebuilt Docker images or build Flow123d from the source (requires moderate to high experience with Linux OS).
+our prebuilt Docker images or build Flow123d from the source (requires a moderate experience with Linux OS).
 
 For detailed instructions, see the [installation guide](doc/INSTALL.md).
 
