@@ -21,9 +21,9 @@
 #include "coupling/generic_assembly.hh"
 #include "coupling/assembly_base.hh"
 #include "transport/transport.h"
-//#include "fem/fe_p.hh"
-//#include "fem/fe_values.hh"
-//#include "quadrature/quadrature_lib.hh"
+#include "fem/fe_p.hh"
+#include "fem/fe_values.hh"
+#include "quadrature/quadrature_lib.hh"
 #include "coupling/balance.hh"
 #include "fields/field_value_cache.hh"
 
@@ -169,6 +169,169 @@ private:
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
+
+};
+
+
+/**
+ * Auxiliary container class for Finite element and related objects of given dimension.
+ */
+template <unsigned int dim>
+class ConcSourcesBdrAssemblyConvection : public AssemblyBase<dim>
+{
+public:
+    typedef typename ConvectionTransport::EqFields EqFields;
+    typedef typename ConvectionTransport::EqData EqData;
+
+    static constexpr const char * name() { return "ConcSourcesBdrAssemblyConvection"; }
+
+    /// Constructor.
+    ConcSourcesBdrAssemblyConvection(EqFields *eq_fields, EqData *eq_data)
+    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data) {
+        this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::boundary);
+        this->used_fields_ += eq_fields_->cross_section;
+        this->used_fields_ += eq_fields_->sources_sigma;
+        this->used_fields_ += eq_fields_->sources_density;
+        this->used_fields_ += eq_fields_->sources_conc;
+        this->used_fields_ += eq_fields_->flow_flux;
+        this->used_fields_ += eq_fields_->bc_conc;
+    }
+
+    /// Destructor.
+    ~ConcSourcesBdrAssemblyConvection() {}
+
+    /// Initialize auxiliary vectors and other data members
+    void initialize(ElementCacheMap *element_cache_map) {
+        this->element_cache_map_ = element_cache_map;
+
+        fe_ = std::make_shared< FE_P_disc<dim> >(0);
+        UpdateFlags u = update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points;
+        fe_values_side_.initialize(*this->quad_low_, *fe_, u);
+    }
+
+
+    /// Assemble integral over element
+    inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
+    {
+        ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
+        if (!eq_data_->sources_changed_) return;
+
+        // read for all substances
+        double max_cfl=0;
+        double source, diag;
+		ElementAccessor<3> elm = cell.elm();
+		// we have currently zero order P_Disc FE
+		ASSERT_DBG(cell.get_loc_dof_indices().size() == 1);
+		IntIdx local_p0_dof = cell.get_loc_dof_indices()[0];
+
+		auto p = *( this->bulk_points(element_patch_idx).begin() );
+        for (unsigned int sbi = 0; sbi < eq_data_->n_substances(); sbi++)
+        {
+            source = eq_fields_->cross_section(p) * (eq_fields_->sources_density[sbi](p)
+                 + eq_fields_->sources_sigma[sbi](p) * eq_fields_->sources_conc[sbi](p));
+            // addition to RHS
+            eq_data_->corr_vec[sbi].set(local_p0_dof, source);
+            // addition to diagonal of the transport matrix
+            diag = eq_fields_->sources_sigma[sbi](p) * eq_fields_->cross_section(p);
+            eq_data_->tm_diag[sbi][local_p0_dof] = - diag;
+
+            // compute maximal cfl condition over all substances
+            max_cfl = std::max(max_cfl, fabs(diag));
+
+            eq_data_->balance_->add_source_values(sbi, elm.region().bulk_idx(), {local_p0_dof},
+                                        {- eq_fields_->sources_sigma[sbi](p) * elm.measure() * eq_fields_->cross_section(p)},
+                                        {source * elm.measure()});
+        }
+
+        eq_data_->cfl_source_[local_p0_dof] = max_cfl;
+    }
+
+    /// Assembles the fluxes on the boundary.
+    inline void boundary_side_integral(DHCellSide cell_side)
+    {
+        ASSERT_EQ_DBG(cell_side.dim(), dim).error("Dimension of element mismatch!");
+        if (!cell_side.cell().is_own()) return;
+
+		// we have currently zero order P_Disc FE
+		ASSERT_DBG(cell_side.cell().get_loc_dof_indices().size() == 1);
+		IntIdx local_p0_dof = cell_side.cell().get_loc_dof_indices()[0];
+        LongIdx glob_p0_dof = eq_data_->dh_->get_local_to_global_map()[local_p0_dof];
+
+        fe_values_side_.reinit(cell_side.side());
+
+        unsigned int sbi;
+        auto p_side = *( this->boundary_points(cell_side).begin() );
+        auto p_bdr = p_side.point_bdr(cell_side.cond().element_accessor() );
+        double flux = arma::dot(eq_fields_->flow_flux(p_side), fe_values_side_.normal_vector(0)) * fe_values_side_.JxW(0);
+        if (flux < 0.0) {
+            double aij = -(flux / cell_side.element().measure() );
+
+            for (sbi=0; sbi<eq_data_->n_substances(); sbi++)
+            {
+                double value = eq_fields_->bc_conc[sbi](p_bdr);
+
+                VecSetValue(eq_data_->bcvcorr[sbi], glob_p0_dof, value * aij, ADD_VALUES);
+
+                // CAUTION: It seems that PETSc possibly optimize allocated space during assembly.
+                // So we have to add also values that may be non-zero in future due to changing velocity field.
+                eq_data_->balance_->add_flux_values(eq_data_->subst_idx[sbi], cell_side,
+                                          {local_p0_dof}, {0.0}, flux*value);
+            }
+        } else {
+            for (sbi=0; sbi<eq_data_->n_substances(); sbi++)
+                VecSetValue(eq_data_->bcvcorr[sbi], glob_p0_dof, 0, ADD_VALUES);
+
+            for (sbi=0; sbi<eq_data_->n_substances(); sbi++)
+                eq_data_->balance_->add_flux_values(eq_data_->subst_idx[sbi], cell_side,
+                                          {local_p0_dof}, {flux}, 0.0);
+        }
+    }
+
+    /// Implements @p AssemblyBase::begin.
+    void begin() override
+    {
+        eq_data_->sources_changed_ = ( (eq_fields_->sources_density.changed() )
+                || (eq_fields_->sources_conc.changed() )
+                || (eq_fields_->sources_sigma.changed() )
+                || (eq_fields_->cross_section.changed()));
+
+        //TODO: would it be possible to check the change in data for chosen substance? (may be in multifields?)
+
+    	if (eq_data_->sources_changed_) eq_data_->balance_->start_source_assembly(eq_data_->subst_idx);
+        // Assembly bcvcorr vector
+        for(unsigned int sbi=0; sbi < eq_data_->n_substances(); sbi++) VecZeroEntries(eq_data_->bcvcorr[sbi]);
+
+        eq_data_->balance_->start_flux_assembly(eq_data_->subst_idx);
+    }
+
+    /// Implements @p AssemblyBase::end.
+    void end() override
+    {
+        eq_data_->balance_->finish_flux_assembly(eq_data_->subst_idx);
+        if (eq_data_->sources_changed_) eq_data_->balance_->finish_source_assembly(eq_data_->subst_idx);
+
+        for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)  	VecAssemblyBegin(eq_data_->bcvcorr[sbi]);
+        for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)   VecAssemblyEnd(eq_data_->bcvcorr[sbi]);
+
+        // we are calling set_boundary_conditions() after next_time() and
+        // we are using data from t() before, so we need to set corresponding bc time
+        eq_data_->transport_bc_time = eq_data_->time_->last_t();
+    }
+
+    private:
+        shared_ptr<FiniteElement<dim>> fe_;                    ///< Finite element for the solution of the advection-diffusion equation.
+
+        /// Data objects shared with ConvectionTransport
+        EqFields *eq_fields_;
+        EqData *eq_data_;
+
+        /// Sub field set contains fields used in calculation.
+        FieldSet used_fields_;
+
+        FEValues<3> fe_values_side_;                           ///< FEValues of object (of P disc finite element type)
+
+        template < template<IntDim...> class DimAssembly>
+        friend class GenericAssembly;
 
 };
 
