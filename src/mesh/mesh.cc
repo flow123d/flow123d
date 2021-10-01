@@ -1180,8 +1180,11 @@ void Mesh::output_internal_ngh_data()
     
     // map from higher dim elements to its lower dim neighbors, using gmsh IDs: ele->id()
     unsigned int undefined_ele_id = -1;
+    std::vector<std::pair<uint, uint>> gmsh_id_map; // <gmsh element id, ele_idx> to be sorted
+    gmsh_id_map.reserve(this->n_elements());
     std::map<unsigned int, std::vector<unsigned int>> neigh_vb_map;
     for (auto ele : this->elements_range()) {
+        gmsh_id_map.push_back(std::make_pair(ele.index(), ele.idx()));
         if(ele->n_neighs_vb() > 0){
             for (unsigned int i = 0; i < ele->n_neighs_vb(); i++){
                 ElementAccessor<3> higher_ele = ele->neigh_vb[i]->side()->element();
@@ -1200,10 +1203,15 @@ void Mesh::output_internal_ngh_data()
             }
         }
     }
-    
-    for (auto ele : this->elements_range()) {
-        raw_ngh_output_file << ele.idx() << " ";
-        raw_ngh_output_file << ele->n_sides() << " ";
+
+    std::sort(gmsh_id_map.begin(), gmsh_id_map.end());
+
+    for (auto item : gmsh_id_map)
+    {
+        auto ele = element_accessor(item.second);
+        std::stringstream ss;
+        ss << ele.index() << " ";
+        ss << ele->n_sides() << " ";
         
         auto search_neigh = neigh_vb_map.end();
         for (unsigned int i = 0; i < ele->n_sides(); i++) {
@@ -1218,7 +1226,7 @@ void Mesh::output_internal_ngh_data()
                     if(search_neigh->second[i] != undefined_ele_id)
                         n_side_neighs = 1;
             }
-            raw_ngh_output_file << n_side_neighs << " ";
+            ss << n_side_neighs << " ";
         }
         
         for (unsigned int i = 0; i < ele->n_sides(); i++) {
@@ -1226,22 +1234,25 @@ void Mesh::output_internal_ngh_data()
             if(edge.n_sides() > 1){
                 for (uint j = 0; j < edge.n_sides(); j++) {
                     if(edge.side(j) != ele.side(i))
-                        raw_ngh_output_file << edge.side(j)->element().idx() << " ";
+                        ss << edge.side(j)->element().index() << " ";
                 }
             }
             //check vb neighbour
             else if(search_neigh != neigh_vb_map.end()
                     && search_neigh->second[i] != undefined_ele_id){
-                raw_ngh_output_file << search_neigh->second[i] << " ";
+                auto neigh_ele = element_accessor(search_neigh->second[i]);
+                ss << neigh_ele.index() << " ";
             }
         }
         
         // list higher dim neighbours
-        raw_ngh_output_file << ele->n_neighs_vb() << " ";
+        ss << ele->n_neighs_vb() << " ";
         for (unsigned int i = 0; i < ele->n_neighs_vb(); i++)
-            raw_ngh_output_file << ele->neigh_vb[i]->side()->element().idx() << " ";
+            ss << ele->neigh_vb[i]->side()->element().index() << " ";
         
-        raw_ngh_output_file << endl;
+        // remove last white space
+        string line = ss.str();
+        raw_ngh_output_file << line.substr(0, line.size()-1) << endl;
         cit ++;
     }
     raw_ngh_output_file << "$EndFlowField\n" << endl;
