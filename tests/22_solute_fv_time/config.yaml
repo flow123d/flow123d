@@ -5,6 +5,9 @@ common_config:
     - vtkdiff:
         files: ["*.vtu"]
         interpolate: True
+    - ndiff:
+        files: ["*.pvd", "*.txt", "*.yaml"]
+        #files: ["/^[^.]+$|\.(?!(vtu)$)([^.]+$)/"]
 
 test_cases:
 - files:
@@ -21,7 +24,7 @@ test_cases:
 - files: 04_unsteady_flow.yaml
   proc: [2]
   time_limit: 120
-  check_rules:
-    - ndiff:
-        files: ["*.pvd", "*_balance.txt"]
+  #check_rules:
+    #- ndiff:
+        #files: ["*.pvd", "*_balance.txt"]
       

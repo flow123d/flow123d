@@ -6,6 +6,8 @@ common_config:
     - vtkdiff:
         files: ["*.vtu"]
         interpolate: True
+    - ndiff:
+        files: ["*.pvd", "*.txt", "*.yaml"]
 
 test_cases:
   - files:
