@@ -157,6 +157,11 @@ public:
         inline unsigned int n_substances()
         { return substances_.size(); }
 
+		inline void set_time_governor(TimeGovernor *time) {
+		    ASSERT_PTR_DBG(time);
+		    this->time_ = time;
+		}
+
         /**
          * Temporary solution how to pass velocity field form the flow model.
          * TODO: introduce FieldDiscrete -containing true DOFHandler and data vector and pass such object together with other
@@ -180,6 +185,14 @@ public:
 
     	/// Flag indicates that sources part of equation was changed during last time.
     	bool sources_changed_;
+
+        vector<VectorMPI> corr_vec;
+        double *cfl_source_;
+        double **tm_diag;
+        Vec *bcvcorr; // boundary condition correction vector
+        double transport_bc_time;   ///< Time of the last update of the boundary condition terms.
+		TimeGovernor *time_;
+
     };
 
 
@@ -339,33 +352,27 @@ private:
 	bool is_convection_matrix_scaled, is_src_term_scaled, is_bc_term_scaled;
 	
     //@}
-    
-    vector<VectorMPI> corr_vec;
-    
 
     TimeMark::Type target_mark_type;    ///< TimeMark type for time marks denoting end of every time interval where transport matrix remains constant.
     double cfl_max_step;    ///< Time step constraint coming from CFL condition.
     
     Vec vcfl_flow_,     ///< Parallel vector for flow contribution to CFL condition.
         vcfl_source_;   ///< Parallel vector for source term contribution to CFL condition.
-    double *cfl_flow_, *cfl_source_;
+    double *cfl_flow_;
 
 
     VecScatter vconc_out_scatter;
     Mat tm; // PETSc transport matrix
     Vec vpmass_diag;  // diagonal entries in mass matrix from last time (cross_section * porosity)
     Vec *v_tm_diag; // additions to PETSC transport matrix on the diagonal - from sources (for each substance)
-    double **tm_diag;
 
     /// Time when the transport matrix was created.
     /// TODO: when we have our own classes for LA objects, we can use lazy dependence to check
     /// necessity for matrix update
     double transport_matrix_time;
-    double transport_bc_time;   ///< Time of the last update of the boundary condition terms.
 
     ///
     Vec *vpconc; // previous concentration vector
-    Vec *bcvcorr; // boundary condition correction vector
     Vec *vcumulative_corr;
     double **cumulative_corr;
 
