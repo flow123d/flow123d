@@ -1,0 +1,89 @@
+flow123d_version: 3.1.0
+problem: !Coupling_Sequential
+  description: poroelastic test of Wijesinghe (1985)
+  mesh:
+    mesh_file: channel.msh
+  flow_equation: !Coupling_Iterative
+    time:
+      end_time: 2000
+    input_fields:
+      - region: BULK
+        biot_alpha: 1
+        fluid_density: 1000 # water
+        gravity: 9.81
+    output_stream:
+      file: iterative.msh
+      format: !gmsh
+        variant: ascii
+    output:
+      times: 
+        - step: 500
+      fields:
+        # - delta_min
+        - pressure_potential
+    flow_equation: !Flow_Richards_LMH
+        input_fields:
+          - region: rock
+            conductivity: !FieldFormula
+              value: 1e-21 * 1e3*9.81/1e-3  # permeability * density * gravity / viscosity
+            storativity: 4.4e-5             # porosity * compressibility of fluid
+            init_pressure: !FieldFormula
+              value: 11e6 / 1e3 / 9.81      # pressure [Pa] / ( density * gravity )
+          - region: fracture
+            conductivity: !FieldFormula
+              value: 1e-5^2 * 1e3 * 9.81 / (12*1e-3)  # cubic law: cross_section^2 * density * gravity / (12 * viscosity)
+            storativity: 4.4e-5             # porosity * compressibility of fluid
+            cross_section: 1e-5
+            init_pressure: !FieldFormula
+              value: 11e6 / 1e3 / 9.81      # pressure [Pa] / ( density * gravity )
+          - region: .fracture_left
+            bc_type: dirichlet
+            bc_pressure: !FieldFormula
+              value: 11.9e6 / 1e3 / 9.81    # pressure [Pa] / ( density * gravity )
+          - region: .fracture_right
+            bc_type: dirichlet
+            bc_pressure: !FieldFormula
+              value: 11e6 / 1e3 / 9.81      # pressure [Pa] / ( density * gravity )
+        nonlinear_solver:
+          max_it: 1
+          linear_solver: !Petsc
+        output:
+          times: #&output_times
+            - step: 500
+          fields:
+            - pressure_p0
+            - velocity_p0
+            - region_id
+        balance: {}
+        output_stream:
+          file: flow_field.pvd 
+          format: !vtk
+            variant: ascii
+    mechanics_equation:
+        input_fields:
+          - region: rock
+            young_modulus: 60e9
+            poisson_ratio: 0
+          - region: fracture
+            young_modulus: 1e6
+            poisson_ratio: 0
+          - region: .top
+            bc_type: traction
+            bc_traction: [ 0, -50e6, 0 ]
+          - region: .bottom
+            bc_type: displacement
+            bc_displacement: 0
+        solver: !Petsc
+        output_stream:
+          file: mechanics.pvd
+          format: !vtk
+            variant: ascii
+        output:
+          times: #*output_times
+            - step: 500
+          fields:
+            - displacement
+            - stress
+            - cross_section_updated
+            - displacement_divergence
+            - region_id

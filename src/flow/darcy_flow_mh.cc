@@ -297,6 +297,17 @@ DarcyMH::EqData::EqData()
             .units( UnitSI().s(-1) )
             .flags( input_copy );
 
+    *this += delta_0.name("delta_0")
+             .description("Minimum non-zero thresold value for deformed cross-section.")
+             .units( UnitSI().m(3).md() )
+             .input_default("0.0");
+
+    *this += updated_cross_section
+            .name("updated_cross_section")
+            .description("Cross-section after deformation - output.")
+            .units( UnitSI().m() )
+            .input_default("0.0");
+    
     //time_term_fields = this->subset({"storativity"});
     //main_matrix_fields = this->subset({"anisotropy", "conductivity", "cross_section", "sigma", "bc_type", "bc_robin_sigma"});
     //rhs_fields = this->subset({"water_source_density", "bc_pressure", "bc_flux"});

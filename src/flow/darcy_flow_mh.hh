@@ -187,6 +187,9 @@ public:
         Field<3, FieldValue<3>::VectorFixed > flux;
         Field<3, FieldValue<3>::Scalar> field_edge_pressure;
 
+        Field<3, FieldValue<3>::Scalar> delta_0;
+        Field<3, FieldValue<3>::Scalar> updated_cross_section;
+
         /**
          * Gravity vector and constant shift of pressure potential. Used to convert piezometric head
          * to pressure head and vice versa.

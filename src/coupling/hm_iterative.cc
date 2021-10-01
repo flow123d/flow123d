@@ -21,6 +21,7 @@
 #include "input/input_type.hh"
 #include "flow/richards_lmh.hh"
 #include "fields/field_fe.hh"         // for create_field_fe()
+#include "fields/field_model.hh"
 
 
 FLOW123D_FORCE_LINK_IN_CHILD(coupling_iterative)
@@ -30,6 +31,7 @@ namespace it = Input::Type;
 
 
 const it::Record & HM_Iterative::get_input_type() {
+    std::string equation_name = std::string( HM_Iterative::EqData::name()) + "_FE";
     return it::Record("Coupling_Iterative",
             "Record with data for iterative coupling of flow and mechanics.\n")
         .derive_from( DarcyFlowInterface::get_input_type() )
@@ -56,6 +58,12 @@ const it::Record & HM_Iterative::get_input_type() {
                 "Absolute tolerance for difference in HM iteration." )
         .declare_key( "r_tol", it::Double(0), it::Default("1e-7"),
                 "Relative tolerance for difference in HM iteration." )
+        .declare_key("output_stream", OutputTime::get_input_type(), IT::Default::obligatory(),
+                    "Parameters of output stream.")
+        .declare_key("output",
+                HM_Iterative::EqData().output_fields.make_output_type(equation_name, ""),
+                IT::Default("{ \"fields\": [ "+HM_Iterative::EqData::default_output_field()+" ] }"),
+                "Setting of the field output.")
 		.close();
 }
 
@@ -92,12 +100,38 @@ HM_Iterative::EqData::EqData()
     *this += flow_source.name("extra_flow_source")
                      .units(UnitSI().s(-1))
                      .flags(FieldFlag::equation_result);
+                                         
+    // *this += delta_min.name("delta_min")
+    //                  .description("Minimum non-zero thresold value for deformed cross-section.")
+    //                  .units( UnitSI().m(3).md() )
+    //                  .input_default("11.0");
+    // *this += conductivity_model.name("conductivity_model")
+    //                  .description("fracture_induced_conductivity.")
+    //                  .input_default("0.0")
+    //                  .units( UnitSI().m().s(-1) );
+                     
+    // add all input fields to the output list
+    output_fields += *this;
 }
+
+/// Define conductivity model functor using CUBIC LAW
+/// hm_conductivity = k_o * (a^2)/delta
+/// where  k_o = flow_conductivity ; This is the same conductivity in Darcy model (copied from Darcy model)
+/// delta = initial_cs ; which is the initial fracture cross-ection to start with (initialized from mechanics)
+/// a = delta_min + max([u].n + delta-delta_min, 0.0) ; fracture aperture
+/// delta_min = positive lower limit due to fracture closing (by user)
+/// [u].n + delta-delta_min = updated_cs ; This will be a updated from elasticity model
+
+// struct fn_K_mechanics {
+// 	inline double operator() (double flow_conductivity) {
+//         return 2.0; //std::max(2.0, flow_conductivity*pow(((min_cs_bound + std::max(updated_cs - min_cs_bound, 0.0) )/initial_cs),2));
+//     }
+// };
 
 
 void HM_Iterative::EqData::initialize(Mesh &mesh)
 {
-    // initialize coupling fields with FieldFE
+   // initialize coupling fields with FieldFE
     set_mesh(mesh);
     
     potential_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(mesh, MixedPtr<FE_CR>());
@@ -113,16 +147,20 @@ void HM_Iterative::EqData::initialize(Mesh &mesh)
     old_iter_pressure_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(beta_ptr_->get_dofhandler());
     div_u_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(beta_ptr_->get_dofhandler());
     old_div_u_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(beta_ptr_->get_dofhandler());
+
+    // output_test.set(create_field_fe<3, FieldValue<3>::Scalar>(mesh, MixedPtr<FE_CR>()), 0.0);
 }
 
-                                    
+      
 
 HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
 : DarcyFlowInterface(mesh, in_record),
   IterativeCoupling(in_record)
 {
 	START_TIMER("HM constructor");
+    
     using namespace Input;
+    // set_mesh(mesh);
 
     time_ = new TimeGovernor(in_record.val<Record>("time"));
     ASSERT( time_->is_default() == false ).error("Missing key 'time' in Coupling_Iterative.");
@@ -147,16 +185,39 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
 
     this->eq_fieldset_ = &data_;
     
+    // new filed has been created for HM_iterative
+    data_.cross_section.copy_from(*mechanics_->eq_fields().field("cross_section"));
+    flow_->data()["updated_cross_section"].copy_from(mechanics_->eq_fields()["cross_section_updated"]);
+    // data_.conductivity_k0.copy_from(*flow_->data().field("conductivity"));
+    // data_.output_cross_section.copy_from(*mechanics_->eq_fields().field("cross_section_updated"));
+    // flow_->data()["conductivity"].copy_from(data_.conductivity_model);
+  
+    
     // setup input fields
     data_.set_input_list( in_record.val<Input::Array>("input_fields"), time() );
 
     data_.initialize(*mesh_);
+    
+        
     mechanics_->set_potential_load(data_.pressure_potential);
+
 }
 
 
 void HM_Iterative::initialize()
 {
+    output_stream_ = OutputTime::create_output_stream("hydro_mechanics", input_record_.val<Input::Record>("output_stream"), time().get_unit_conversion());
+
+    data_.set_input_list( input_record_.val<Input::Array>("input_fields"), time() );
+    // set time marks for writing the output
+    data_.output_fields.initialize(output_stream_, mesh_, input_record_.val<Input::Record>("output"), this->time());
+
+    // ASSERT_PTR(mesh_);
+    // data_.set_mesh(*mesh_);
+
+    // /// Updacted conductivity due to fracture closing and opening
+    // data_.conductivity_model.set(Model<3, FieldValue<3>::Scalar>::create(fn_K_mechanics(), data_.conductivity_k0), 0.0);
+    
 }
 
 
@@ -176,6 +237,8 @@ void copy_field(const FieldCommon &from_field_common, FieldFE<dim, Value> &to_fi
 
 void HM_Iterative::zero_time_step()
 {
+    START_TIMER(EqData::name());
+    data_.mark_input_times( *time_ );
     data_.set_time(time_->step(), LimitSide::right);
     std::stringstream ss;
     if ( FieldCommon::print_message_table(ss, "coupling_iterative") )
@@ -188,6 +251,7 @@ void HM_Iterative::zero_time_step()
     copy_field(*flow_->data().field("pressure_p0"), *data_.old_pressure_ptr_);
     copy_field(*flow_->data().field("pressure_p0"), *data_.old_iter_pressure_ptr_);
     copy_field(mechanics_->eq_fields().output_divergence, *data_.div_u_ptr_);
+    output_data();
 }
 
 
@@ -198,6 +262,8 @@ void HM_Iterative::update_solution()
     data_.set_time(time_->step(), LimitSide::right);
 
     solve_step();
+
+    output_data();
 }
 
 void HM_Iterative::solve_iteration()
@@ -330,3 +396,22 @@ HM_Iterative::~HM_Iterative() {
 
 
 
+void HM_Iterative::output_data()
+{
+    START_TIMER("HYDRO-MECH-OUTPUT");
+
+    // gather the solution from all processors
+    data_.output_fields.set_time(time_->step(), LimitSide::left);
+    
+    // if (data_.output_fields.is_field_output_time(data_.output_test, time_->step()) )
+    
+    // update_output_fields();
+    data_.output_fields.output(time_->step());
+        
+//     START_TIMER("MECH-balance");
+//     balance_->calculate_instant(subst_idx, eq_data_->ls->get_solution());
+//     balance_->output();
+//     END_TIMER("MECH-balance");
+
+    END_TIMER("HYDRO-MECH-OUTPUT");
+}
