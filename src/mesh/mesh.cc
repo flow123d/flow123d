@@ -1180,11 +1180,8 @@ void Mesh::output_internal_ngh_data()
     
     // map from higher dim elements to its lower dim neighbors, using gmsh IDs: ele->id()
     unsigned int undefined_ele_id = -1;
-    std::vector<std::pair<uint, uint>> gmsh_id_map; // <gmsh element id, ele_idx> to be sorted
-    gmsh_id_map.reserve(this->n_elements());
     std::map<unsigned int, std::vector<unsigned int>> neigh_vb_map;
     for (auto ele : this->elements_range()) {
-        gmsh_id_map.push_back(std::make_pair(ele.index(), ele.idx()));
         if(ele->n_neighs_vb() > 0){
             for (unsigned int i = 0; i < ele->n_neighs_vb(); i++){
                 ElementAccessor<3> higher_ele = ele->neigh_vb[i]->side()->element();
@@ -1204,11 +1201,9 @@ void Mesh::output_internal_ngh_data()
         }
     }
 
-    std::sort(gmsh_id_map.begin(), gmsh_id_map.end());
-
-    for (auto item : gmsh_id_map)
+    for (unsigned int i_elem=0; i_elem<n_elements(); ++i_elem)
     {
-        auto ele = element_accessor(item.second);
+        auto ele = element_accessor(elem_permutation_[i_elem]);
         std::stringstream ss;
         ss << ele.index() << " ";
         ss << ele->n_sides() << " ";
