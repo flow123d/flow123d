@@ -519,7 +519,9 @@ void ConvectionTransport::zero_time_step()
     
     START_TIMER("Convection balance zero time step");
 
+    START_TIMER("convection_matrix_assembly");
     create_transport_matrix_mpi();
+    END_TIMER("convection_matrix_assembly");
 	START_TIMER("sources_reinit_set_bc");
     //conc_sources_bdr_conditions();
     conc_sources_bdr_assembly_->assemble(eq_data_->dh_);
@@ -544,7 +546,9 @@ bool ConvectionTransport::evaluate_time_constraint(double& time_constraint)
     // if FLOW or DATA changed ---------------------> recompute transport matrix
     if (changed_flux)
     {
+        START_TIMER("convection_matrix_assembly");
         create_transport_matrix_mpi();
+        END_TIMER("convection_matrix_assembly");
         is_convection_matrix_scaled=false;
         cfl_changed = true;
         DebugOut() << "CFL changed - flow.\n";
@@ -759,10 +763,7 @@ void ConvectionTransport::set_target_time(double target_time)
 //=============================================================================
 void ConvectionTransport::create_transport_matrix_mpi() {
 
-    START_TIMER("convection_matrix_assembly");
 
-    ElementAccessor<3> el2;
-    ElementAccessor<3> elm;
     int j;
     LongIdx new_j, new_i;
     double aij, aii;
@@ -776,13 +777,11 @@ void ConvectionTransport::create_transport_matrix_mpi() {
     unsigned int loc_el = 0;
     for ( DHCellAccessor dh_cell : eq_data_->dh_->own_range() ) {
         new_i = row_4_el[ dh_cell.elm_idx() ];
-        elm = dh_cell.elm();
         for( DHCellSide cell_side : dh_cell.side_range() ) {
             flux = this->side_flux(cell_side);
             if (! cell_side.side().is_boundary()) {
                 edg_flux = 0;
                 for( DHCellSide edge_side : cell_side.edge_sides() ) {
-                    el2 = edge_side.element();
                     flux2 = this->side_flux(edge_side);
                     if ( flux2 > 0)  edg_flux+= flux2;
                 }
@@ -791,7 +790,6 @@ void ConvectionTransport::create_transport_matrix_mpi() {
                         j = edge_side.element().idx();
                         new_j = row_4_el[j];
 
-                        el2 = edge_side.element();
                         flux2 = this->side_flux(edge_side);
                         if ( flux2 > 0.0 && flux <0.0)
                             aij = -(flux * flux2 / ( edg_flux * dh_cell.elm().measure() ) );
@@ -807,7 +805,6 @@ void ConvectionTransport::create_transport_matrix_mpi() {
         {
             ASSERT( neighb_side.elem_idx() != dh_cell.elm_idx() ).error("Elm. same\n");
             new_j = row_4_el[ neighb_side.elem_idx() ];
-            el2 = neighb_side.element();
             flux = this->side_flux(neighb_side);
 
             // volume source - out-flow from higher dimension
@@ -824,17 +821,16 @@ void ConvectionTransport::create_transport_matrix_mpi() {
             MatSetValue(tm, new_j, new_i, aij, INSERT_VALUES);
         }
 
-    MatSetValue(tm, new_i, new_i, aii, INSERT_VALUES);
+        MatSetValue(tm, new_i, new_i, aii, INSERT_VALUES);
 
-    cfl_flow_[loc_el++] = fabs(aii);
-    aii = 0.0;
+        cfl_flow_[loc_el++] = fabs(aii);
+        aii = 0.0;
     }
 
     MatAssemblyBegin(tm, MAT_FINAL_ASSEMBLY);
     MatAssemblyEnd(tm, MAT_FINAL_ASSEMBLY);
 
     is_convection_matrix_scaled = false;
-    END_TIMER("convection_matrix_assembly");
 
     transport_matrix_time = time_->t();
 }
