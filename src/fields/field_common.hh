@@ -76,12 +76,19 @@ class FieldCommon {
 public:
     TYPEDEF_ERR_INFO(EI_Time, double);
     TYPEDEF_ERR_INFO(EI_Field, std::string);
+    TYPEDEF_ERR_INFO( EI_FieldInputName, std::string);
+    TYPEDEF_ERR_INFO( EI_FieldName, std::string);
+    TYPEDEF_ERR_INFO( EI_RegId, unsigned int);
+    TYPEDEF_ERR_INFO( EI_RegLabel, std::string);
     DECLARE_INPUT_EXCEPTION(ExcNonascendingTime,
             << "Non-ascending time: " << EI_Time::val << " for field " << EI_Field::qval << ".\n");
     DECLARE_INPUT_EXCEPTION(ExcMissingDomain,
             << "Missing domain specification (region or r_id) in the field descriptor:");
     DECLARE_EXCEPTION(ExcFieldMeshDifference,
             << "Two copies of the field " << EI_Field::qval << "call set_mesh with different arguments.\n");
+    DECLARE_INPUT_EXCEPTION(ExcMissingFieldValue,
+            << "Missing value of the input field " << EI_FieldInputName::qval << " (" << EI_FieldName::qval
+            << ") on region ID: " << EI_RegId::val << " label: " << EI_RegLabel::qval << ".\n");
 
 
 
@@ -173,7 +180,7 @@ public:
      * If not set explicitly by this method, the default value is OutputTime::ELEM_DATA
      */
     FieldCommon & output_type(OutputTime::DiscreteSpace rt)
-    { if (rt!=OutputTime::UNDEFINED) type_of_output_data_ = rt; return *this; }
+    { if (rt!=OutputTime::UNDEFINED) default_output_data_ = rt; return *this; }
 
     /**
      * Set given mask to the field flags, ignoring default setting.
@@ -254,7 +261,7 @@ public:
     }
 
     OutputTime::DiscreteSpace get_output_type() const
-    { return type_of_output_data_; }
+    { return default_output_data_; }
 
     bool is_bc() const
     { return shared_->bc_;}
@@ -416,7 +423,7 @@ public:
      * The parameter @p output_fields is checked for value named by the field name. If the key exists,
      * then the output of the field is performed. If the key do not appear in the input, no output is done.
      */
-    virtual void field_output(std::shared_ptr<OutputTime> stream) =0;
+    virtual void field_output(std::shared_ptr<OutputTime> stream, OutputTime::DiscreteSpaceFlags type) =0;
 
     /**
      * Perform the observe output of the field.
@@ -652,9 +659,9 @@ protected:
     bool is_jump_time_;
 
     /**
-     * Output data type used in the output() method. Can be different for different field copies.
+     * Default output data type used in the output() method. Can be different for different field copies.
      */
-    OutputTime::DiscreteSpace type_of_output_data_ = OutputTime::ELEM_DATA;
+    OutputTime::DiscreteSpace default_output_data_ = OutputTime::ELEM_DATA;
 
     /**
      * Specify if the field is part of a MultiField and which component it is

@@ -155,9 +155,7 @@ TransportEqFields::TransportEqFields()
 
 TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const Input::Record in_rec)
 : AdvectionProcessBase(init_mesh, in_rec),
-//  Semchem_reactions(NULL),
-  cfl_convection(numeric_limits<double>::max()),
-  cfl_reaction(numeric_limits<double>::max())
+  cfl_convection(numeric_limits<double>::max())
 {
 	START_TIMER("TransportOperatorSpliting");
 
@@ -175,7 +173,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 	convection->substances().initialize(in_rec.val<Input::Array>("substances"));
 
 	// Initialize output stream.
-	std::shared_ptr<OutputTime> stream = OutputTime::create_output_stream("solute", in_rec.val<Input::Record>("output_stream"), time().get_unit_string());
+	std::shared_ptr<OutputTime> stream = OutputTime::create_output_stream("solute", in_rec.val<Input::Record>("output_stream"), time().get_unit_conversion());
     convection->set_output_stream(stream);
 
 
@@ -288,16 +286,11 @@ void TransportOperatorSplitting::update_solution() {
     {
         steps++;
 	    // one internal step
-        // we call evaluate_time_constraint() of convection and reaction separately to
-        // make sure that both routines are executed.
-        bool cfl_convection_changed =  convection->evaluate_time_constraint(cfl_convection);
-        bool cfl_reaction_changed = (reaction?reaction->evaluate_time_constraint(cfl_reaction):0);
-        bool cfl_changed = cfl_convection_changed || cfl_reaction_changed;
+        bool cfl_changed =  convection->evaluate_time_constraint(cfl_convection);
         
         if (steps == 1 || cfl_changed)
         {
             convection->time().set_upper_constraint(cfl_convection, "Time step constrained by transport CFL condition (including both flow and sources).");
-            convection->time().set_upper_constraint(cfl_reaction, "Time step constrained by reaction CFL condition.");
             
             // fix step with new constraint
             convection->time().fix_dt_until_mark();

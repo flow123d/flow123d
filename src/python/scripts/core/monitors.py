@@ -160,9 +160,10 @@ class MainMonitor(ThreadMonitor):
 
         # print regular color messages based on result
         for fmt in ensure_iterable(self.color_complete_format):
-            if self.pypy.returncode() == 0:
+            rc = self.pypy.returncode()
+            if rc == 0:
                 printf.success(fmt, monitor=self)
-            elif self.pypy.returncode() is None:
+            elif rc is None:
                 printf.warning(fmt, monitor=self)
             else:
                 printf.error(fmt, monitor=self)
@@ -177,9 +178,8 @@ class MainMonitor(ThreadMonitor):
             elif printf.verbosity() is printf.OutputVerbosity.SMART and pypy.with_error():
                 printf.sep()
                 printf.out('Last 50 lines from file {self.pypy.full_output}'.format(**locals()))
-                printf.opt(raw=True).stream(
-                    format_n_lines(self.content, success=False, n_lines=-50)
-                )
+                msg = format_n_lines(self.content, success=False, n_lines=-50)
+                printf.opt(raw=True).stream(msg)
             elif printf.verbosity() is printf.OutputVerbosity.MINIMAL and pypy.with_error():
                 printf.sep()
                 printf.out('Last 50 lines from file {self.pypy.full_output}'.format(**locals()))

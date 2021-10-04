@@ -72,38 +72,44 @@ TEST(IntegralTest, integrals_3d) {
     ElementCacheMap elm_cache_map;
     elm_cache_map.init(eval_points);
 
+
     {
         // Test of bulk local points
-    	std::vector<arma::vec3> expected_vals = {{0.138196601125010504, 0.138196601125010504, 0.138196601125010504},
-    			                                 {0.138196601125010504, 0.138196601125010504, 0.585410196624968515},
-												 {0.138196601125010504, 0.585410196624968515, 0.138196601125010504},
-												 {0.585410196624968515, 0.138196601125010504, 0.138196601125010504}};
+    	std::vector<arma::vec3> expected_vals = {
+          {0.138196601125010504, 0.138196601125010504, 0.138196601125010504},
+          {0.138196601125010504, 0.138196601125010504, 0.585410196624968515},
+          {0.138196601125010504, 0.585410196624968515, 0.138196601125010504},
+          {0.585410196624968515, 0.138196601125010504, 0.138196601125010504}};
+          
     	unsigned int i=0; // iter trought expected_vals
     	for (auto p : bulk_integral->points(elm_cache_map.position_in_cache(dh_cell.elm_idx()), &elm_cache_map)) {
-            EXPECT_ARMA_EQ(loc_coords<3>(eval_points, p.eval_point_idx()), expected_vals[i]);
+    	    DebugOut() << "BULK i: " << i << "eval_point_idx: " << p.eval_point_idx();
+            EXPECT_ARMA_EQ(expected_vals[i], loc_coords<3>(eval_points, p.eval_point_idx()));
 			++i;
         }
     }
     {
         // Test of side local points
+        // results corresponds to reference element, permutation zero
         std::vector< std::vector<arma::vec3> > expected_vals(4);
-        expected_vals[0] = { {0.166666666666666657, 0.166666666666666657, 0.0},
-                             {0.666666666666666741, 0.166666666666666657, 0.0},
-                             {0.166666666666666657, 0.666666666666666741, 0.0} };
-        expected_vals[1] = { {0.166666666666666657, 0.0, 0.166666666666666657},
-                             {0.166666666666666657, 0.0, 0.666666666666666741},
-                             {0.666666666666666741, 0.0, 0.166666666666666657} };
-        expected_vals[2] = { {0.0, 0.666666666666666657, 0.166666666666666657},
-	                         {0.0, 0.166666666666666657, 0.166666666666666741},
-                             {0.0, 0.166666666666666741, 0.666666666666666657} };
-        expected_vals[3] = { {0.666666666666666741, 0.166666666666666657, 0.166666666666666657},
-                             {0.166666666666666657, 0.166666666666666657, 0.666666666666666741},
-                             {0.166666666666666657, 0.666666666666666741, 0.166666666666666657} };
+        expected_vals[0] = { {1.0/6, 1.0/6, 0.0},
+                             {1.0/6, 2.0/3, 0.0},
+                             {2.0/3, 1.0/6, 0.0}};
+        expected_vals[1] = { {1.0/6, 0.0, 1.0/6},
+                             {1.0/6, 0.0, 2.0/3},
+                             {2.0/3, 0.0, 1.0/6} };
+        expected_vals[2] = { {0.0, 1.0/6, 1.0/6},
+                             {0.0, 1.0/6, 2.0/3},
+                             {0.0, 2.0/3, 1.0/6}};
+        expected_vals[3] = { {2.0/3, 1.0/6, 1.0/6},
+                             {1.0/6, 1.0/6, 2.0/3},
+                             {1.0/6, 2.0/3, 1.0/6} };
         unsigned int i_side=0, i_point; // iter trought expected_vals
         for (auto side_acc : dh_cell.side_range()) {
             i_point=0;
-            for ( auto p : edge_integral->points(side_acc, &elm_cache_map) ) {
-            	EXPECT_ARMA_EQ(loc_coords<3>(eval_points, p.eval_point_idx()), expected_vals[i_side][i_point]);
+            for ( EdgePoint p : edge_integral->points(side_acc, &elm_cache_map) ) {
+                DebugOut() << "side: " << i_side << " ip: " << i_point << "eval point idx: " << p.eval_point_idx();
+            	EXPECT_ARMA_EQ(expected_vals[i_side][i_point], loc_coords<3>(eval_points, p.eval_point_idx()));
                 ++i_point;
             }
             ++i_side;
@@ -113,24 +119,29 @@ TEST(IntegralTest, integrals_3d) {
     {
         // Test of boundary
         std::vector< std::vector<arma::vec> > expected_vals(3);
-        expected_vals[0] = { {0.0, 0.666666666666666657, 0.166666666666666657},
-	                         {0.0, 0.166666666666666657, 0.166666666666666741},
-                             {0.0, 0.166666666666666741, 0.666666666666666657} };
-        expected_vals[1] = { {0.666666666666666741, 0.166666666666666657, 0.166666666666666657},
-                             {0.166666666666666657, 0.166666666666666657, 0.666666666666666741},
-                             {0.166666666666666657, 0.666666666666666741, 0.166666666666666657} };
-        expected_vals[2] = { {0.166666666666666657, 0.166666666666666657},
-                             {0.166666666666666657, 0.666666666666666741},
-                             {0.666666666666666741, 0.166666666666666657} };
+        expected_vals[0] = { {1.0/6, 1.0/6, 0.0},
+                             {1.0/6, 2.0/3, 0.0},
+                             {2.0/3, 1.0/6, 0.0}};
+        expected_vals[1] = { {1.0/6, 0.0, 1.0/6},
+                             {1.0/6, 0.0, 2.0/3},
+                             {2.0/3, 0.0, 1.0/6} };
+
+        expected_vals[2] = { {1.0/6, 1.0/6},
+                             {1.0/6, 2.0/3},
+                             {2.0/3, 1.0/6} };
         unsigned int i_side=0, i_point; // iter trought expected_vals
         for (auto side_acc : dh_cell.side_range()) {
             if (! side_acc.side().is_boundary())
                 continue;
             i_point=0;
             for ( auto p : boundary_integral->points(side_acc, &elm_cache_map) ) {
-                EXPECT_ARMA_EQ(loc_coords<3>(eval_points, p.eval_point_idx()), expected_vals[i_side][i_point]);
+                DebugOut() << "side: " << i_side << " ip: " << i_point;
+                EXPECT_ARMA_EQ(expected_vals[i_side][i_point], loc_coords<3>(eval_points, p.eval_point_idx()));
+
+
                 auto p_bdr = p.point_bdr( side_acc.cond().element_accessor() );
-                EXPECT_ARMA_EQ(loc_coords<2>(eval_points, p_bdr.eval_point_idx()), expected_vals[2][i_point]);
+                DebugOut() << "side: " << i_side << " ip: " << i_point << "eval point idx: " << p_bdr.eval_point_idx();
+                EXPECT_ARMA_EQ(expected_vals[2][i_point], loc_coords<2>(eval_points, p_bdr.eval_point_idx()));
                 ++i_point;
             }
             ++i_side;
@@ -141,22 +152,25 @@ TEST(IntegralTest, integrals_3d) {
         // Test of neighbours (3D - 2D - 3D elements)
         DHCellAccessor dh_ngh_cell(dh.get(), 1);
         std::vector< std::vector<arma::vec> > expected_vals(3);
-        expected_vals[0] = { {0.166666666666666657, 0.166666666666666657},         // local points on cell (element of lower dim)
-                             {0.166666666666666657, 0.666666666666666741},
-                             {0.666666666666666741, 0.166666666666666657} };
-        expected_vals[1] = { {0.166666666666666657, 0.0, 0.666666666666666741},    // local points on side (first element of higher dim)
-                             {0.666666666666666741, 0.0, 0.166666666666666657},
-                             {0.166666666666666657, 0.0, 0.166666666666666657} };
-        expected_vals[2] = { {0.166666666666666657, 0.666666666666666741, 0.0},    // local points on side (second element of higher dim)
-                             {0.666666666666666741, 0.166666666666666657, 0.0},
-                             {0.166666666666666657, 0.166666666666666657, 0.0} };
+        expected_vals[0] = { {1.0/6, 1.0/6},         // local points on cell (element of lower dim)
+                             {1.0/6, 2.0/3},
+                             {2.0/3, 1.0/6} };
+        expected_vals[1] = { {1.0/6, 1.0/6, 0.0},   // local points on side 0 of a 3d element
+                             {1.0/6, 2.0/3, 0.0},
+                             {2.0/3, 1.0/6, 0.0}};
+        expected_vals[2] = { {0.0, 1.0/6, 1.0/6},   // local points on side 2 of a 3d element
+                             {0.0, 1.0/6, 2.0/3},
+                             {0.0, 2.0/3, 1.0/6}};
+
         unsigned int i_side=1, i_point; // iterates trought expected_vals
         for (auto ngh_side_acc : dh_ngh_cell.neighb_sides()) {
             i_point=0;
             for ( auto p_side : coupling_integral->points(ngh_side_acc, &elm_cache_map) ) {
             	auto p_cell = p_side.lower_dim(dh_ngh_cell);
-                EXPECT_ARMA_EQ(loc_coords<2>(eval_points, p_cell.eval_point_idx()), expected_vals[0][i_point]);
-                EXPECT_ARMA_EQ(loc_coords<3>(eval_points, p_side.eval_point_idx()), expected_vals[i_side][i_point]);
+            	DebugOut() << "ele side: " << ngh_side_acc.side_idx() << " ip: " << i_point;
+                EXPECT_ARMA_EQ(expected_vals[0][i_point], loc_coords<2>(eval_points, p_cell.eval_point_idx()));
+
+                EXPECT_ARMA_EQ(expected_vals[i_side][i_point], loc_coords<3>(eval_points, p_side.eval_point_idx()));
                 ++i_point;
             }
             ++i_side;

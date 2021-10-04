@@ -2,14 +2,18 @@ flow123d_version: 3.1.0
 common_config:
   proc: [1, 2]
   memory_limit: 1300
+  check_rules:
+    - vtkdiff:
+        files: ["*.vtu"]
+        interpolate: True
 
 test_cases:
   - files:
       - 01_column.yaml
       - 02_column_transport.yaml
-      - 03_tunnel
-      - 04_frac_diffusion
-      - 06_frac_dualpor
+      - 03_tunnel.yaml
+      - 04_frac_diffusion.yaml
+      - 06_frac_dualpor.yaml
   - files: 05_frac_sorption.yaml
     time_limit: 65
 

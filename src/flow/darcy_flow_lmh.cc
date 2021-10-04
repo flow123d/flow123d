@@ -901,7 +901,7 @@ void DarcyLMH::create_linear_system(Input::AbstractRecord in_rec) {
 //             END_TIMER("BDDC set mesh data");
 // #else
 //             Exception
-//             xprintf(Err, "Flow123d was not build with BDDCML support.\n");
+//             THROW( ExcBddcmlNotSupported() );
 // #endif // FLOW123D_HAVE_BDDCML
 //         } 
 //         else
@@ -986,7 +986,7 @@ void DarcyLMH::create_linear_system(Input::AbstractRecord in_rec) {
             END_TIMER("PETSC PREALLOCATION");
         }
         else {
-            xprintf(Err, "Unknown solver type. Internal error.\n");
+            THROW( ExcUnknownSolver() );
         }
 
         END_TIMER("preallocation");

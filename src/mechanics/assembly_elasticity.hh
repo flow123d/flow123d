@@ -296,6 +296,7 @@ public:
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->load;
         this->used_fields_ += eq_fields_->potential_load;
+        this->used_fields_ += eq_fields_->ref_potential_load;
         this->used_fields_ += eq_fields_->fracture_sigma;
         this->used_fields_ += eq_fields_->dirichlet_penalty;
         this->used_fields_ += eq_fields_->bc_type;
@@ -405,9 +406,10 @@ public:
             double side_measure = cell_side.measure();
             for (auto p : this->boundary_points(cell_side) )
             {
+                auto p_bdr = p.point_bdr( side.cond().element_accessor() );
                 for (unsigned int i=0; i<n_dofs_; i++)
                     local_rhs_[i] += (eq_fields_->dirichlet_penalty(p) / side_measure) *
-					        arma::dot(eq_fields_->bc_displacement(p), vec_view_bdr_->value(i,k)) *
+					        arma::dot(eq_fields_->bc_displacement(p_bdr), vec_view_bdr_->value(i,k)) *
 					        fe_values_bdr_side_.JxW(k);
                 ++k;
             }
@@ -417,9 +419,10 @@ public:
             double side_measure = cell_side.measure();
             for (auto p : this->boundary_points(cell_side) )
             {
+                auto p_bdr = p.point_bdr( side.cond().element_accessor() );
                 for (unsigned int i=0; i<n_dofs_; i++)
                     local_rhs_[i] += (eq_fields_->dirichlet_penalty(p) / side_measure) *
-                            arma::dot(eq_fields_->bc_displacement(p), fe_values_bdr_side_.normal_vector(k)) *
+                            arma::dot(eq_fields_->bc_displacement(p_bdr), fe_values_bdr_side_.normal_vector(k)) *
                             arma::dot(vec_view_bdr_->value(i,k), fe_values_bdr_side_.normal_vector(k)) *
                             fe_values_bdr_side_.JxW(k);
                 ++k;
@@ -429,10 +432,25 @@ public:
         {
             for (auto p : this->boundary_points(cell_side) )
             {
+                auto p_bdr = p.point_bdr( side.cond().element_accessor() );
                 for (unsigned int i=0; i<n_dofs_; i++)
                     local_rhs_[i] += eq_fields_->cross_section(p) *
-                            arma::dot(vec_view_bdr_->value(i,k), eq_fields_->bc_traction(p) + eq_fields_->potential_load(p) * fe_values_bdr_side_.normal_vector(k)) *
+                            arma::dot(vec_view_bdr_->value(i,k), eq_fields_->bc_traction(p_bdr) + eq_fields_->ref_potential_load(p) * fe_values_bdr_side_.normal_vector(k)) *
                             fe_values_bdr_side_.JxW(k);
+                ++k;
+            }
+        }
+        else if (bc_type == EqFields::bc_type_stress)
+        {
+            for (auto p : this->boundary_points(cell_side) )
+            {
+                auto p_bdr = p.point_bdr( side.cond().element_accessor() );
+                for (unsigned int i=0; i<n_dofs_; i++)
+                    // stress is multiplied by inward normal to obtain traction
+                    local_rhs_[i] += eq_fields_->cross_section(p) *
+                            arma::dot(vec_view_bdr_->value(i,k), -eq_fields_->bc_stress(p_bdr)*fe_values_bdr_side_.normal_vector(k)
+                            + eq_fields_->ref_potential_load(p) * fe_values_bdr_side_.normal_vector(k))
+                            * fe_values_bdr_side_.JxW(k);
                 ++k;
             }
         }

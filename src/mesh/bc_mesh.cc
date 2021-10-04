@@ -75,7 +75,7 @@ const LongIdx *BCMesh::get_local_part() {
 }
 
 
-std::shared_ptr<std::vector<LongIdx>> BCMesh::check_compatible_mesh( Mesh & input_mesh) {
+std::shared_ptr<EquivalentMeshMap> BCMesh::check_compatible_mesh( Mesh & input_mesh) {
 	return parent_mesh_->check_compatible_mesh(input_mesh);
 }
 

@@ -68,7 +68,7 @@ FieldPython<spacedim, Value>::FieldPython(unsigned int n_comp)
     p_args_=NULL;
     p_value_=NULL;
 #else
-    xprintf(UsrErr, "Flow123d compiled without support for Python, FieldPython can not be used.\n");
+    THROW( ExcNoPythonSupport() );
 #endif // FLOW123D_HAVE_PYTHON
 }
 
@@ -96,7 +96,7 @@ void FieldPython<spacedim, Value>::init_from_input(const Input::Record &rec, con
         set_python_field_from_string( *it, rec.val<string>("function") );
     } else {
         Input::Iterator<FilePath> it = rec.find<FilePath>("script_file");
-        if (! it) xprintf(UsrErr, "Either 'script_string' or 'script_file' has to be specified in PythonField initialization.");
+        if (! it) THROW( ExcNoPythonInit() );
         try {
             set_python_field_from_file( *it, rec.val<string>("function") );
         } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, rec)
@@ -143,8 +143,7 @@ void FieldPython<spacedim, Value>::set_func(FMT_UNUSED const string &func_name)
 
     unsigned int value_size=this->value_.n_rows() * this->value_.n_cols();
     if ( size !=  value_size) {
-        xprintf(UsrErr, "Field '%s' from the python module: %s returns %d components but should return %d components.\n"
-                ,func_name.c_str(), PyModule_GetName(p_module_), size, value_size);
+        THROW( ExcInvalidCompNumber() << EI_FuncName(func_name) << EI_PModule(PyModule_GetName(p_module_)) << EI_Size(size) << EI_ValueSize(value_size) );
     }
 
 #endif // FLOW123D_HAVE_PYTHON

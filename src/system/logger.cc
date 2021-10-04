@@ -84,7 +84,7 @@ Logger::~Logger()
 
 const std::string Logger::msg_type_string(MsgType msg_type, bool full_format)
 {
-	static std::vector<std::string> type_names = {"WARNING.", "MESSAGE.", "LOG.", "DEBUG.", "ERROR",
+	static std::vector<std::string> type_names = {"WARNING.", "MESSAGE.", "LOG.", "DEBUG.", "ERROR.",
 			                                      "Wrn", "Msg", "Log", "Dbg", "Err"};
 	int type_idx = msg_type;
 

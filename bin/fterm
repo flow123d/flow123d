@@ -41,14 +41,13 @@ CFG="$REL_FLOW_DIR/config"
 # default version of the image used when **running** docker image
 image_version=dbg
 
-# default tag of the image when **running** images
-# can be changed in the following manner:
-#     ./fterm @2.2.0 build
-#     ./fterm @3.0.0 update
-#     ./fterm @latest
+# default tag of the used docker image: flow123d/flow-dev-gnu-${image_version}:${image_tag}
+# can be specified explicitely from input:
+# e.g. ./fterm @2.2.0 build
 image_tag=latest
 
-# if docker_version file exists, we change docker_version
+# In order to link the flow123d commit with particular image tag 
+# see the file: config/docker/image_tag
 DOCKER_TAG="$CFG/docker/image_tag"
 if [[ -f "$DOCKER_TAG" ]]; then
   image_tag=$(cat "$DOCKER_TAG")
@@ -63,11 +62,15 @@ Usage:  $bold fterm [dbg|rel] [tag] [options] [action] [arguments]$reset
   
 Start docker container for Flow123d developing.
    
-dbg   image with the debug build of the libraries (default)
-rel   image with optimized build of the libraries
+dbg       image with the debug build of the libraries (default), GNU environment by default
+rel       image with optimized build of the libraries, GNU environment by default
+dbg_gnu   image with the debug build of the libraries, GNU environment
+rel_gnu   image with optimized build of the libraries, GNU environment
+dbg_intel image with the debug build of the libraries, Intel environment
+rel_intel image with optimized build of the libraries, Intel environment
    
 tag     version of the development image, e.g. @2.2.0, @3.0.0, @latest
-        Images automatically downloaded from docker hub, see:  ${bblue} https://hub.docker.com/r/flow123d/flow-libs-dev-dbg/tags ${reset}
+        Images automatically downloaded from docker hub, see:  ${bblue} https://hub.docker.com/r/flow123d/flow-dev-gnu-dbg/tags ${reset}
         for avalilable tags. Default tag is taken form: ${bblue} config/docker/image_tag ${reset}
     
 ${bold}Options:${reset}
@@ -109,7 +112,7 @@ ${bold}Examples:${reset}
   Run flow123d --help command under the realease environment at default version.
 EOF
 #  ${bblue}bin/fterm dbg --detach dbg_run$reset
-#      docker run <opts> ... flow123d/flow-libs-dev-dbg:2.2.0 
+#      docker run <opts> ... flow123d/flow-dev-gnu-dbg:2.2.0
 
 }
 
@@ -252,7 +255,6 @@ uid=$(id -u)
 uname=flow
 autopull=${autopull:-1}
 theme=${theme:-light}
-flow123d_images="flow-libs-dev-dbg flow-libs-dev-rel"
 
 # source config, that way we know what to mount, etc.
 DCFG="$CFG/docker.cfg"
@@ -307,7 +309,7 @@ while [[ $# -gt 0 ]]
       rest="$@"
       break
     ;;
-    dbg|rel)
+    dbg|rel|dbg_gnu|rel_gnu|dbg_intel|rel_intel)
       image_version=$1
       shift
     ;;
@@ -341,14 +343,29 @@ while [[ $# -gt 0 ]]
   esac
 done
 
+image_kind=${image_version%%_*}
+image_env=${image_version#*_}
+
+if [ $image_kind = $image_env ]
+then
+  image_env="gnu"
+fi
+
+# set flow123d_images if empty
+if [ -z "$flow123d_images" ]
+then
+flow123d_images="flow-dev-${image_env}-dbg flow-dev-${image_env}-rel"
+fi
+
 
 # determine image names
-base_image=flow123d/flow-libs-dev-$image_version:$image_tag
+base_image=flow123d/flow-dev-$image_env-$image_kind:$image_tag
 
 
 dbg "base_image     = $base_image"
 dbg "image_tag      = $image_tag"
-dbg "image_version  = $image_version"
+dbg "image_kind     = $image_kind"
+dbg "image_env      = $image_env"
 dbg "action         = $action"
 dbg "mount dirs     - $work"
 dbg "               - $OLD_PWD"
@@ -358,8 +375,8 @@ dbg "autopull       = $autopull"
 dbg "privileged     = $privileged"
 
 # env variables which will be passed as well
-envarg="-euid=$uid -egid=$gid -etheme=$theme -ewho=$uname -ehome=/mnt/$HOME -v $HOME:/mnt/$HOME"
-mountargs="-w "$OLD_PWD" -v "$OLD_PWD":"$OLD_PWD" -v "$work":"$work""
+envarg="-euid=$uid -egid=$gid -etheme=$theme -ewho=$uname -ehome=/mnt/$HOME -v /$HOME:/mnt/$HOME"
+mountargs="-w /${OLD_PWD} -v /${OLD_PWD}:/${OLD_PWD} -v /${work}:/${work}"
 if [[ $privileged == "1" ]]; then
   priv_true="--privileged=true"
 fi

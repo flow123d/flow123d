@@ -152,10 +152,24 @@ public:
     /// Returns barycentric coordinates in the Simplex<M>.
     const arma::vec::fixed<M+1> &local_bcoords_B() const;
 
+    /**
+     * The dimension of the X-face the IP lies on within the A Simplex<N>. E.g. IP on and edge of tetrahedra (N=3)
+     * have dim_A = 1.
+     */
     unsigned int dim_A() const;     ///< Returns dimension of object A.
+    /**
+     * Same for the B Simplex<M>.
+     */
     unsigned int dim_B() const;     ///< Returns dimension of object B.
+    /**
+     * Index of the X-face of the simplex A.
+     */
     unsigned int idx_A() const;     ///<  Returns the index of Simplex<N>.
+    /**
+     * Index of the X-face of the simplex B.
+     */
     unsigned int idx_B() const;     ///<  Returns the index of Simplex<M>.
+
     /// Result: 0 - negative sign, 1 - positive sign, 2 - degenerate (zero for all sides), 3 - none
     IntersectionResult result() const;   ///<  Returns the orientation.
     //@}
