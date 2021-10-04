@@ -2782,6 +2782,13 @@ These times have to form an increasing sequence.}%
 			{{{Prescribed traction on boundary. }{$[m^{-1}kgs^{-2}]$}% 
 }}
 		\RecKey
+			{Mechanics-LinearElasticity-FE-Data::bc-stress}
+			{bc{\_}stress}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-3-}{Field{\_}R3{\_}to{\_}R[3,3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Prescribed stress on boundary. }{$[m^{-1}kgs^{-2}]$}% 
+}}
+		\RecKey
 			{Mechanics-LinearElasticity-FE-Data::load}
 			{load}
 			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
@@ -2850,6 +2857,11 @@ These times have to form an increasing sequence.}%
 			{Elasticity-BC-Type::traction}
 			{traction}
 			{{{Prescribed traction.}% 
+}}
+		\SelectionItem
+			{Elasticity-BC-Type::stress}
+			{stress}
+			{{{Prescribed stress tensor.}% 
 }}
 \end{SelectionType}
 \begin{AbstractType}
@@ -3222,21 +3234,21 @@ These times have to form an increasing sequence.}%
 			{biot{\_}alpha}
 			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
-			{{{}{$[-]$}% 
+			{{{Biot poroelastic coefficient. }{$[-]$}% 
 }}
 		\RecKey
 			{Coupling-Iterative-Data::fluid-density}
 			{fluid{\_}density}
 			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
-			{{{}{$[m^{-3}kg]$}% 
+			{{{Volumetric mass density of the fluid. }{$[m^{-3}kg]$}% 
 }}
 		\RecKey
 			{Coupling-Iterative-Data::gravity}
 			{gravity}
 			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
-			{{{}{$[ms^{-2}]$}% 
+			{{{Gravitational acceleration constant. }{$[ms^{-2}]$}% 
 }}
 \end{RecordType}
 \begin{RecordType}

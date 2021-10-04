@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------- #
 # ---------- MULTIJOB -------------------------------------------------------- #
 # ---------------------------------------------------------------------------- #
-name: "Flow123d-{platform}-debug-multijob"
+name: "Flow123d-{environment}-debug-multijob"
 display-name: "debug / Flow123d multijob"
 project-type: multijob
 defaults: flow123d-build
@@ -53,31 +53,31 @@ builders:
       name: "Build flow123d Phase"
       condition: SUCCESSFUL
       projects:
-        - name: "Flow123d-{platform}-debug-build"
+        - name: "Flow123d-{environment}-debug-build"
           current-parameters: true
 
   - multijob:
       name: "Unit tests"
       condition: COMPLETED
       projects:
-        - {name: "Flow123d-{platform}-debug-unit-test-$PLACEHOLDER_unit_list$", current-parameters: true}
+        - {name: "Flow123d-{environment}-debug-unit-test-$PLACEHOLDER_unit_list$", current-parameters: true}
 
   - multijob:
       name: "Integration tests"
       condition: COMPLETED
       projects:
-        - {name: "Flow123d-{platform}-debug-test-$PLACEHOLDER_test_list$", current-parameters: true}
+        - {name: "Flow123d-{environment}-debug-test-$PLACEHOLDER_test_list$", current-parameters: true}
 
   - multijob:
       name: "Make doc"
       condition: COMPLETED
       projects:
-        - name: "Flow123d-{platform}-debug-make-doc"
+        - name: "Flow123d-{environment}-debug-make-doc"
           current-parameters: true
   # ---------- STOP IMAGE ------------------------------------------------ #
   - multijob:
       name: "Stop image"
       condition: COMPLETED
       projects:
-        - name: "Flow123d-{platform}-debug-stop-image"
+        - name: "Flow123d-{environment}-debug-stop-image"
           current-parameters: true
