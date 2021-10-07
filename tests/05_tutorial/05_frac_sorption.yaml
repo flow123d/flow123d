@@ -6,7 +6,7 @@
 ##
 ##This is a variant of ```04_frac_diffusion.yaml```. Instead of diffusion we consider advective transport with equilibrial sorption.
 ##
-###Input
+### Input
 ##
 ##Flow123d provides several types of sorption (linear, Langmuir and Freundlich isotherm). Each substance can be assigned its own sorption type.
 ##In this test, the transport of three substances is computed: Iodium without sorption, Radium with liner sorption and Selenium with Langmuir isotherm. The solvent density and solubility was set to 1. Initial condition of solid was set to zero; rock density to 1 and parameter of linear and Langmuir isotherm was set to 1.0.
@@ -50,10 +50,10 @@ problem: !Coupling_Sequential
           - flow_fracture1
           - flow_fracture2
       - !Union
-        name: blind_fractures
+        name: deadend_fractures
         regions:
-          - blind_fracture1
-          - blind_fracture2
+          - deadend_fracture1
+          - deadend_fracture2
       - !Union
         name: BC_right
         regions:
@@ -77,7 +77,7 @@ problem: !Coupling_Sequential
       - region: flow_fractures
         conductivity: 31.5
         cross_section: 0.01
-      - region: blind_fractures
+      - region: deadend_fractures
         conductivity: 3.15
         cross_section: 0.01
       - region: BC_left
@@ -103,7 +103,7 @@ problem: !Coupling_Sequential
           porosity: 0.005
         - region: flow_fractures
           porosity: 0.1
-        - region: blind_fractures
+        - region: deadend_fractures
           porosity: 0.1
         - region: .left_points
           bc_conc: !FieldFormula

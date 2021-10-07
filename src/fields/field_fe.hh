@@ -23,6 +23,7 @@
 #include "system/index_types.hh"
 #include "fields/field_algo_base.hh"
 #include "fields/fe_value_handler.hh"
+#include "fields/field.hh"
 #include "la/vector_mpi.hh"
 #include "mesh/mesh.h"
 #include "mesh/point.hh"
@@ -51,6 +52,7 @@ class FieldFE : public FieldAlgorithmBase<spacedim, Value>
 public:
     typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
     typedef FieldAlgorithmBase<spacedim, Value> FactoryBaseType;
+	typedef typename Field<spacedim, Value>::FactoryBase FieldFactoryBaseType;
 
 	/**
 	 * Possible interpolations of input data.
@@ -87,6 +89,27 @@ public:
      * Return Input selection that allow to set interpolation of input data.
      */
     static const Input::Type::Selection & get_interp_selection_input_type();
+
+    /**
+     * Factory class (descendant of @p Field<...>::FactoryBase) that is necessary
+     * for setting pressure values are piezometric head values.
+     */
+    class NativeFactory : public FieldFactoryBaseType {
+    public:
+        /// Constructor.
+        NativeFactory(unsigned int index, std::shared_ptr<DOFHandlerMultiDim> conc_dof_handler, VectorMPI dof_vector = VectorMPI::sequential(0))
+        : index_(index),
+          conc_dof_handler_(conc_dof_handler),
+          dof_vector_(dof_vector)
+        {}
+
+    	typename Field<spacedim,Value>::FieldBasePtr create_field(Input::Record rec, const FieldCommon &field) override;
+
+        unsigned int index_;
+        std::shared_ptr<DOFHandlerMultiDim> conc_dof_handler_;
+        VectorMPI dof_vector_;
+    };
+
 
     /**
      * Setter for the finite element data.
@@ -287,7 +310,7 @@ private:
     std::vector<FEValues<spacedim>> fe_values_;
 
     /// Maps element indices between source (data) and target (computational) mesh if data interpolation is set to equivalent_msh
-    std::shared_ptr<std::vector<LongIdx>> source_target_mesh_elm_map_;
+    std::shared_ptr<EquivalentMeshMap> source_target_mesh_elm_map_;
 
     /// Holds specific data of field evaluation over all dimensions.
     std::array<FEItem, 4> fe_item_;

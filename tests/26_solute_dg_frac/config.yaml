@@ -1,6 +1,10 @@
 common_config:
   proc: [1, 2]
   memory_limit: 1000
+  check_rules:
+    - vtkdiff:
+        files: ["*.vtu"]
+        interpolate: True
 
 test_cases:
 - files:
@@ -9,3 +13,4 @@ test_cases:
   - 03_dg_dp_sorp_small.yaml
   - 04_y_branch.yaml
   - 05_diffusion_fracture.yaml
+  - 06_single_fracture.yaml

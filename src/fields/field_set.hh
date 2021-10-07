@@ -374,6 +374,7 @@ public:
     /// Return order of evaluated fields by dependency and region_idx.
     std::string print_dependency() const;
 
+
 protected:
 
     /// Helper method sort used fields by dependency
@@ -392,6 +393,9 @@ protected:
      * - second: vector of indices of fields (corresponding to position in field_list vector)
      */
     std::map<unsigned int, std::vector<const FieldCommon *>> region_field_update_order_;
+
+    // Default fields.
+    // TODO derive from Field<>, make public, rename
 
     /// Field holds coordinates for computing of FieldFormulas
     FieldCoords X_;
