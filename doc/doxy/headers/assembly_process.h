@@ -1,6 +1,8 @@
 /**
  * @defgroup assembly_process  Assembly Process 
  *
+ * \section classes Overview of assembly process
+ *
  * Evaluation of Fields is performed during assemblies at different evaluation points. Assembly process allows summary 
  * evaluation of elements on one patch. The calculation is performed subsequently on all these elements.
  * 
