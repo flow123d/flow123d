@@ -164,6 +164,7 @@ public:
     /// Constructor
     GenericAssembly( typename DimAssembly<1>::EqFields *eq_fields, typename DimAssembly<1>::EqData *eq_data)
     : multidim_assembly_(eq_fields, eq_data),
+	  min_edge_sides_(2),
 	  bulk_integral_data_(20, 10),
 	  edge_integral_data_(12, 6),
 	  coupling_integral_data_(12, 6),
@@ -189,6 +190,10 @@ public:
     /// Geter to EvalPoints object
     inline std::shared_ptr<EvalPoints> eval_points() const {
         return eval_points_;
+    }
+
+    void set_min_edge_sides(unsigned int val) {
+        min_edge_sides_ = val;
     }
 
 	/**
@@ -360,7 +365,7 @@ private:
                         continue;
                     }
             if (active_integrals_ & ActiveIntegrals::edge)
-                if ( (cell_side.n_edge_sides() >= 2) && (cell_side.edge_sides().begin()->element().idx() == cell.elm_idx())) {
+                if ( (cell_side.n_edge_sides() >= min_edge_sides_) && (cell_side.edge_sides().begin()->element().idx() == cell.elm_idx())) {
                     this->add_edge_integral(cell_side);
                 }
         }
@@ -451,6 +456,14 @@ private:
     AssemblyIntegrals integrals_;                                 ///< Holds integral objects.
     std::shared_ptr<EvalPoints> eval_points_;                     ///< EvalPoints object shared by all integrals
     ElementCacheMap element_cache_map_;                           ///< ElementCacheMap according to EvalPoints
+
+    /**
+     * Minimal number of sides on edge.
+     *
+     * Edge integral is created and calculated if number of sides is greater or equal than this value. Default value
+     * is 2 and can be changed
+     */
+    unsigned int min_edge_sides_;
 
     // Following variables hold data of all integrals depending of actual computed element.
     // TODO sizes of arrays should be set dynamically, depend on number of elements in ElementCacheMap,

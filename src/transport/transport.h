@@ -59,6 +59,7 @@ namespace Input {
 template<unsigned int dim> class MassAssemblyConvection;
 template<unsigned int dim> class InitCondAssemblyConvection;
 template<unsigned int dim> class ConcSourcesBdrAssemblyConvection;
+template<unsigned int dim> class MatrixMpiAssemblyConvection;
 template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
 
@@ -189,10 +190,26 @@ public:
 
         vector<VectorMPI> corr_vec;
         double *cfl_source_;
+        double *cfl_flow_;
+        Mat tm; // PETSc transport matrix
         double **tm_diag;
         Vec *bcvcorr; // boundary condition correction vector
         double transport_bc_time;   ///< Time of the last update of the boundary condition terms.
 		TimeGovernor *time_;
+
+	    /// Time when the transport matrix was created.
+	    /// TODO: when we have our own classes for LA objects, we can use lazy dependence to check
+	    /// necessity for matrix update
+	    double transport_matrix_time;
+
+		bool is_convection_matrix_scaled;   ///< Flag indicates the state of object
+
+		LongIdx *row_4_el;
+		LongIdx *el_4_loc;
+		Distribution *el_ds;
+
+		/// Maximal number of edge sides (evaluate from dim 1,2,3)
+		unsigned int max_edg_sides;
 
     };
 
@@ -308,7 +325,7 @@ private:
      *
      * Updates CFL time step constrain.
      */
-    void create_transport_matrix_mpi();
+//    void create_transport_matrix_mpi();
 //    void create_mass_matrix();
 
     void make_transport_partitioning(); //
@@ -350,7 +367,7 @@ private:
      * If false, the object is freshly assembled and not rescaled.
      * If true, the object is scaled (not necessarily with the current time step).
      */
-	bool is_convection_matrix_scaled, is_src_term_scaled, is_bc_term_scaled;
+	bool is_src_term_scaled, is_bc_term_scaled;
 	
     //@}
 
@@ -359,18 +376,11 @@ private:
     
     Vec vcfl_flow_,     ///< Parallel vector for flow contribution to CFL condition.
         vcfl_source_;   ///< Parallel vector for source term contribution to CFL condition.
-    double *cfl_flow_;
 
 
     VecScatter vconc_out_scatter;
-    Mat tm; // PETSc transport matrix
     Vec vpmass_diag;  // diagonal entries in mass matrix from last time (cross_section * porosity)
     Vec *v_tm_diag; // additions to PETSC transport matrix on the diagonal - from sources (for each substance)
-
-    /// Time when the transport matrix was created.
-    /// TODO: when we have our own classes for LA objects, we can use lazy dependence to check
-    /// necessity for matrix update
-    double transport_matrix_time;
 
     ///
     Vec *vpconc; // previous concentration vector
@@ -383,10 +393,6 @@ private:
 	std::shared_ptr<OutputTime> output_stream_;
 
 
-	LongIdx *row_4_el;
-	LongIdx *el_4_loc;
-	Distribution *el_ds;
-
 	/// Finite element objects
 	FETransportObjects feo_;
 
@@ -394,6 +400,7 @@ private:
     GenericAssembly< MassAssemblyConvection > * mass_assembly_;
     GenericAssembly< InitCondAssemblyConvection > * init_cond_assembly_;
     GenericAssembly< ConcSourcesBdrAssemblyConvection > * conc_sources_bdr_assembly_;
+    GenericAssembly< MatrixMpiAssemblyConvection > * matrix_mpi_assembly_;
 
     friend class TransportOperatorSplitting;
 };

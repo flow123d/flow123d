@@ -336,4 +336,160 @@ public:
 };
 
 
+/**
+ * Auxiliary container class for Finite element and related objects of given dimension.
+ */
+template <unsigned int dim>
+class MatrixMpiAssemblyConvection : public AssemblyBase<dim>
+{
+public:
+    typedef typename ConvectionTransport::EqFields EqFields;
+    typedef typename ConvectionTransport::EqData EqData;
+
+    static constexpr const char * name() { return "MatrixMpiAssemblyConvection"; }
+
+    /// Constructor.
+    MatrixMpiAssemblyConvection(EqFields *eq_fields, EqData *eq_data)
+    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data) {
+        this->active_integrals_ = ActiveIntegrals::edge | ActiveIntegrals::coupling;
+        this->used_fields_ += eq_fields_->flow_flux;
+    }
+
+    /// Destructor.
+    ~MatrixMpiAssemblyConvection() {}
+
+    /// Initialize auxiliary vectors and other data members
+    void initialize(ElementCacheMap *element_cache_map) {
+        this->element_cache_map_ = element_cache_map;
+
+        fe_ = std::make_shared< FE_P_disc<dim> >(0);
+        UpdateFlags u = update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points;
+        fe_values_side_.initialize(*this->quad_low_, *fe_, u);
+        fe_values_vec_.resize(eq_data_->max_edg_sides);
+        for (unsigned int sid=0; sid<eq_data_->max_edg_sides; sid++)
+        {
+            fe_values_vec_[sid].initialize(*this->quad_low_, *fe_, u);
+        }
+
+    }
+
+    /// Assembles the fluxes between sides of elements of the same dimension.
+    inline void edge_integral(RangeConvert<DHEdgeSide, DHCellSide> edge_side_range) {
+        ASSERT_EQ_DBG(edge_side_range.begin()->element().dim(), dim).error("Dimension of element mismatch!");
+
+        int sid=0, s1, s2;
+        edg_flux = 0.0;
+        for( DHCellSide edge_side : edge_side_range )
+        {
+            fe_values_vec_[sid].reinit(edge_side.side());
+            auto p = *( this->edge_points(edge_side).begin() );
+            flux = arma::dot(eq_fields_->flow_flux(p), fe_values_vec_[sid].normal_vector(0)) * fe_values_vec_[sid].JxW(0);
+            if (flux > 0.0) {
+                eq_data_->cfl_flow_[edge_side.cell().local_idx()] -= (flux / edge_side.element().measure() );
+                edg_flux += flux;
+            }
+            ++sid;
+        }
+
+        s1=0;
+        for( DHCellSide edge_side1 : edge_side_range )
+        {
+            s2=-1; // need increment at begin of loop (see conditionally 'continue' directions)
+            auto p1 = *( this->edge_points(edge_side1).begin() );
+            flux = arma::dot(eq_fields_->flow_flux(p1), fe_values_vec_[s1].normal_vector(0)) * fe_values_vec_[s1].JxW(0);
+            for( DHCellSide edge_side2 : edge_side_range )
+            {
+                s2++;
+                if (s2==s1) continue;
+
+                auto p2 = *( this->edge_points(edge_side2).begin() );
+                flux2 = arma::dot(eq_fields_->flow_flux(p2), fe_values_vec_[s2].normal_vector(0)) * fe_values_vec_[s2].JxW(0);
+                new_i = eq_data_->row_4_el[edge_side1.element().idx()];
+                new_j = eq_data_->row_4_el[edge_side2.element().idx()];
+                if ( flux2 > 0.0 && flux <0.0)
+                    aij = -(flux * flux2 / ( edg_flux * edge_side1.element().measure() ) );
+                else aij =0;
+                MatSetValue(eq_data_->tm, new_i, new_j, aij, INSERT_VALUES);
+            }
+            s1++;
+        }
+    }
+
+
+    /// Assembles the fluxes between elements of different dimensions.
+    inline void dimjoin_intergral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
+        if (dim == 1) return;
+        ASSERT_EQ_DBG(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
+
+        auto p_high = *( this->coupling_points(neighb_side).begin() );
+        fe_values_side_.reinit(neighb_side.side());
+
+        new_i = eq_data_->row_4_el[ cell_lower_dim.elm_idx() ];
+        new_j = eq_data_->row_4_el[ neighb_side.elem_idx() ];
+        flux = arma::dot(eq_fields_->flow_flux(p_high), fe_values_side_.normal_vector(0)) * fe_values_side_.JxW(0);
+
+        // volume source - out-flow from higher dimension
+        if (flux > 0.0)  aij = flux / cell_lower_dim.elm().measure();
+        else aij=0;
+        MatSetValue(eq_data_->tm, new_i, new_j, aij, INSERT_VALUES);
+        // out flow from higher dim. already accounted
+
+        // volume drain - in-flow to higher dimension
+        if (flux < 0.0) {
+            eq_data_->cfl_flow_[cell_lower_dim.local_idx()] -= (-flux) / cell_lower_dim.elm().measure();                           // diagonal drain
+            aij = (-flux) / neighb_side.element().measure();
+        } else aij=0;
+        MatSetValue(eq_data_->tm, new_j, new_i, aij, INSERT_VALUES);
+    }
+
+
+    /// Implements @p AssemblyBase::begin.
+    void begin() override
+    {
+        MatZeroEntries(eq_data_->tm);
+
+        for (uint i=0; i<eq_data_->el_ds->lsize(); ++i)
+            eq_data_->cfl_flow_[i] = 0.0;
+    }
+
+    /// Implements @p AssemblyBase::end.
+    void end() override
+    {
+        LongIdx new_i;
+        for ( DHCellAccessor dh_cell : eq_data_->dh_->own_range() ) {
+            new_i = eq_data_->row_4_el[ dh_cell.elm_idx() ];
+            MatSetValue(eq_data_->tm, new_i, new_i, eq_data_->cfl_flow_[dh_cell.local_idx()], INSERT_VALUES);
+
+            eq_data_->cfl_flow_[dh_cell.local_idx()] = fabs(eq_data_->cfl_flow_[dh_cell.local_idx()]);
+        }
+
+        MatAssemblyBegin(eq_data_->tm, MAT_FINAL_ASSEMBLY);
+        MatAssemblyEnd(eq_data_->tm, MAT_FINAL_ASSEMBLY);
+
+        eq_data_->is_convection_matrix_scaled = false;
+        eq_data_->transport_matrix_time = eq_data_->time_->t();
+    }
+
+private:
+    shared_ptr<FiniteElement<dim>> fe_;                    ///< Finite element for the solution of the advection-diffusion equation.
+
+    /// Data objects shared with ConvectionTransport
+    EqFields *eq_fields_;
+    EqData *eq_data_;
+
+    /// Sub field set contains fields used in calculation.
+    FieldSet used_fields_;
+
+    FEValues<3> fe_values_side_;                           ///< FEValues of object (of P disc finite element type)
+    vector<FEValues<3>> fe_values_vec_;                    ///< Vector of FEValues of object (of P disc finite element types)
+    LongIdx new_i, new_j;
+    double aij;
+    double edg_flux, flux, flux2;
+
+    template < template<IntDim...> class DimAssembly>
+    friend class GenericAssembly;
+
+};
+
+
 #endif /* ASSEMBLY_CONVECTION_HH_ */
