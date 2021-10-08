@@ -74,7 +74,7 @@ void ElementCacheMap::create_patch() {
     std::fill(elm_idx_.begin(), elm_idx_.end(), ElementCacheMap::undef_elem_idx);
 
     for (auto it=eval_point_data_tmp.begin(); it!=eval_point_data_tmp.end(); ++it) {
-        if (it->i_element_ != last_element_idx) { // new element
+        if ( (it->i_element_ != last_element_idx) || (it->i_reg_ != last_region_idx)) { // new element
             if (it->i_reg_ != last_region_idx) { // new region
                 unsigned int last_eval_point = i_pos-1; // set size of block by SIMD size
                 while (i_pos % ElementCacheMap::simd_size_double > 0) {
