@@ -1063,6 +1063,15 @@ void Balance::output_csv(double time, char delimiter, const std::string& comment
 			if (repeat && (output_line_counter_%repeat == 0)) format_csv_output_header(delimiter, comment_string);
 
 			double error = sum_masses_[qi] - (initial_mass_[qi] + integrated_sources_[qi] + integrated_fluxes_[qi]);
+
+            // error makes trouble due to cancellation - difference of two similar numbers
+            // at least, w can make it relative, since masses are >> 1 most of the time
+            // careful with zero division
+            if(std::abs(sum_masses_[qi])*std::numeric_limits<double>::epsilon() > 0)
+                error = error / sum_masses_[qi];
+            // DebugOut().fmt("error_[qi]={:.10e} sum_masses_[qi]={:.10e}, initial_mass_[qi]={:.10e}, integrated_sources_[qi]={:.10e}, integrated_fluxes_[qi]={:.10e}",
+            //     error, sum_masses_[qi], initial_mass_[qi], integrated_sources_[qi], integrated_fluxes_[qi]);
+
 			output_ << format_csv_val(time / time_->get_coef(), delimiter, true)
 					<< format_csv_val("ALL", delimiter)
 					<< format_csv_val(quantities_[qi].name_, delimiter)
