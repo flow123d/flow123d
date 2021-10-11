@@ -155,6 +155,7 @@ add_library(la_lib
     la/bddcml_wrapper.cc
     la/linsys_BDDC.cc
     la/linsys_PETSC.cc
+    la/linsys_PERMON.cc
     la/sparse_graph.cc
     la/local_system.cc
     la/vector_mpi.cc
