@@ -28,6 +28,7 @@
 #include "fem/fe_system.hh"
 #include "fields/field_fe.hh"
 #include "la/linsys_PETSC.hh"
+#include "la/linsys_PERMON.hh"
 #include "coupling/balance.hh"
 #include "mesh/neighbours.h"
 #include "coupling/generic_assembly.hh"
@@ -374,10 +375,22 @@ void Elasticity::initialize()
     petsc_default_opts = "-ksp_type cg -pc_type hypre -pc_hypre_type boomeramg";
     
     // allocate matrix and vector structures
-    LinSys_PETSC *ls = new LinSys_PETSC(eq_data_->dh_->distr().get(), petsc_default_opts);
+    bool gotContact = true;
+    if (gotContact) {
+#ifndef FLOW123D_HAVE_PERMON
+      gotContact = false;
+      // TODO warning
+#endif //FLOW123D_HAVE_PERMON
+    }
+    LinSys *ls;
+    if (gotContact) {
+      ls = new LinSys_PERMON(eq_data_->dh_->distr().get(), petsc_default_opts);
+    } else {
+      ls = new LinSys_PETSC(eq_data_->dh_->distr().get(), petsc_default_opts);
+      ((LinSys_PETSC*)ls)->set_initial_guess_nonzero();
+    }
     ls->set_from_input( input_rec.val<Input::Record>("solver") );
     ls->set_solution(eq_fields_->output_field_ptr->vec().petsc_vec());
-    ls->set_initial_guess_nonzero();
     eq_data_->ls = ls;
 
     // allocate constraint matrix
@@ -394,6 +407,9 @@ void Elasticity::initialize()
                        eq_data_->dh_->ds()->fe()[3_d]->n_dofs()*mesh_->max_edge_sides(3);
     MatCreateAIJ(PETSC_COMM_WORLD, n_own_constraints, eq_data_->dh_->lsize(), PETSC_DECIDE, PETSC_DECIDE, nnz, 0, nnz, 0, &eq_data_->constraint_matrix);
     VecCreateMPI(PETSC_COMM_WORLD, n_own_constraints, PETSC_DECIDE, &eq_data_->constraint_vec);
+    if (gotContact) {
+      ((LinSys_PERMON*)ls)->set_inequality(eq_data_->constraint_matrix,eq_data_->constraint_vec);
+    }
 
     stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyElasticity >(eq_fields_.get(), eq_data_.get());
     rhs_assembly_ = new GenericAssembly< RhsAssemblyElasticity >(eq_fields_.get(), eq_data_.get());

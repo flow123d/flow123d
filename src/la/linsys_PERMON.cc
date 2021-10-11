@@ -73,6 +73,8 @@ LinSys_PERMON::LinSys_PERMON( const Distribution * rows_ds, const std::string &p
     VecDuplicate(rhs_, &residual_);
 
     matrix_ = NULL;
+    matrix_ineq_ = NULL;
+    ineq_ = NULL;
     solution_precision_ = std::numeric_limits<double>::infinity();
     matrix_changed_ = true;
     rhs_changed_ = true;
@@ -333,6 +335,11 @@ void LinSys_PERMON::set_initial_guess_nonzero(bool set_nonzero)
 	init_guess_nonzero = set_nonzero;
 }
 
+void LinSys_PERMON::set_inequality(Mat matrix_ineq, Vec ineq)
+{
+  matrix_ineq_ = matrix_ineq;
+  ineq_ = ineq;
+}
 
 LinSys::SolveInfo LinSys_PERMON::solve()
 {
@@ -376,49 +383,47 @@ LinSys::SolveInfo LinSys_PERMON::solve()
     
     MatSetOption( matrix_, MAT_USE_INODES, PETSC_FALSE );
     
-    chkerr(KSPCreate( comm_, &system ));
-    QP system2;
-    chkerr(QPCreate( comm_, &system2 ));
-    chkerr(QPView( system2,NULL ));
-    LogOut().fmt("created QP\n");
-    chkerr(KSPSetOperators(system, matrix_, matrix_));
-
+    chkerr(QPCreate(comm_, &system));
+    chkerr(QPSetOperator(system, matrix_));
+    chkerr(QPSetRhs(system, rhs_));
+    chkerr(QPSetInitialVector(system, solution_));
+    if (ineq_) {
+      chkerr(QPSetIneq(system, matrix_ineq_, ineq_));
+      chkerr(QPTDualize(system, MAT_INV_MONOLITHIC, MAT_REG_NONE));
+    }
+    // Set runtime options, e.g -qp_chain_view_kkt
+    chkerr(QPSetFromOptions(system));
+      
+    
+    chkerr(QPSCreate(comm_, &solver));
+    chkerr(QPSSetQP(solver, system));
 
     // TODO take care of tolerances - shall we support both input file and command line petsc setting
-    chkerr(KSPSetTolerances(system, r_tol_, a_tol_, PETSC_DEFAULT,PETSC_DEFAULT));
-    chkerr(KSPSetTolerances(system, r_tol_, a_tol_, PETSC_DEFAULT,  max_it_));
-    KSPSetFromOptions(system);
-    // We set the KSP flag set_initial_guess_nonzero
-    // unless KSP type is preonly.
-    // In such case PETSc fails (version 3.4.1)
-    if (init_guess_nonzero)
-    {
-    	KSPType type;
-    	KSPGetType(system, &type);
-    	if (strcmp(type, KSPPREONLY) != 0)
-    		KSPSetInitialGuessNonzero(system, PETSC_TRUE);
-    }
+    chkerr(QPSSetTolerances(solver, r_tol_, a_tol_, PETSC_DEFAULT,PETSC_DEFAULT));
+    chkerr(QPSSetTolerances(solver, r_tol_, a_tol_, PETSC_DEFAULT,  max_it_));
+    chkerr(QPSSetFromOptions(solver));
 
     {
 		START_TIMER("PERMON linear solver");
 		START_TIMER("PERMON linear iteration");
-		chkerr(KSPSolve(system, rhs_, solution_ ));
-		KSPGetConvergedReason(system,&reason);
-		KSPGetIterationNumber(system,&nits);
+		chkerr(QPSSolve(solver));
+		QPSGetConvergedReason(solver,&reason);
+		QPSGetIterationNumber(solver,&nits);
 		ADD_CALLS(nits);
     }
     // substitute by PETSc call for residual
-    VecNorm(rhs_, NORM_2, &residual_norm_);
+    //VecNorm(rhs_, NORM_2, &residual_norm_);
     
     LogOut().fmt("convergence reason {}, number of iterations is {}\n", reason, nits);
 
     // get residual norm
-    KSPGetResidualNorm(system, &solution_precision_);
+    //KSPGetResidualNorm(system, &solution_precision_);
 
     // TODO: I do not understand this 
     //Profiler::instance()->set_timer_subframes("SOLVING MH SYSTEM", nits);
 
-    chkerr(KSPDestroy(&system));
+    chkerr(QPSDestroy(&solver));
+    chkerr(QPDestroy(&system));
 
     return LinSys::SolveInfo(static_cast<int>(reason), static_cast<int>(nits));
 

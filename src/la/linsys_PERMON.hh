@@ -1,16 +1,16 @@
 /*!
  *
 ﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License version 3 as published by the
  * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
- * 
+ *
  * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
- * 
+ *
  * @file    linsys_PERMON.hh
  * @brief   PERMON QP solvers and FETI
  * @author  Jakub Kruzik
@@ -98,6 +98,8 @@ public:
 
     void set_initial_guess_nonzero(bool set_nonzero = true);
 
+    void set_inequality(Mat matrix_ineq, Vec ineq);
+
     LinSys::SolveInfo solve() override;
 
     /**
@@ -125,7 +127,7 @@ private:
     static const int registrar;
 
     // make a pointer to the data array out of a std::vector
-    template<typename T> 
+    template<typename T>
     T *  makePetscPointer_( std::vector<T> & array )
     {
         if ( array.size() ) return &(array[0]);
@@ -150,6 +152,9 @@ protected:
     Mat     matrix_;             //!< Petsc matrix of the problem.
     Vec     rhs_;                //!< PETSc vector constructed with vx array.
     Vec     residual_;
+
+    Mat     matrix_ineq_;        //!< Petsc matrix of inequality constraint.
+    Vec     ineq_;               //!< PETSc vector of inequality constraint.
 
     double  *v_rhs_;             //!< local RHS array pointing to Vec rhs_
 
