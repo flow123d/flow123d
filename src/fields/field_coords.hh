@@ -104,15 +104,20 @@ public:
     	std::shared_ptr<EvalPoints> eval_points = cache_map.eval_points();
         unsigned int reg_chunk_begin = cache_map.region_chunk_begin(region_patch_idx);
         unsigned int reg_chunk_end = cache_map.region_chunk_end(region_patch_idx);
+        unsigned int region_idx = cache_map.eval_point_data(reg_chunk_begin).i_reg_;
         unsigned int last_element_idx = -1;
         ElementAccessor<3> elm;
     	arma::vec3 coords;
         unsigned int dim = 0;
 
+        const MeshBase *mesh; // Holds bulk or boundary mesh by region_idx
+        if (region_idx%2 == 1) mesh = mesh_;
+        else mesh = mesh_->bc_mesh();
+
         for (unsigned int i_data = reg_chunk_begin; i_data < reg_chunk_end; ++i_data) { // i_eval_point_data
             unsigned int elm_idx = cache_map.eval_point_data(i_data).i_element_;
             if (elm_idx != last_element_idx) {
-                elm = mesh_->element_accessor( elm_idx );
+                elm = mesh->element_accessor( elm_idx );
                 dim = elm.dim();
                 last_element_idx = elm_idx;
             }
