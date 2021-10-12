@@ -65,6 +65,7 @@ void ElementCacheMap::create_patch() {
     unsigned int last_region_idx = -1;
     unsigned int last_element_idx = -1;
     unsigned int i_pos=0; // position in eval_point_data_
+    bool is_new_reg, is_new_elm;
 
     // Erase element data of previous step
     regions_starts_.reset();
@@ -74,8 +75,10 @@ void ElementCacheMap::create_patch() {
     std::fill(elm_idx_.begin(), elm_idx_.end(), ElementCacheMap::undef_elem_idx);
 
     for (auto it=eval_point_data_tmp.begin(); it!=eval_point_data_tmp.end(); ++it) {
-        if ( (it->i_element_ != last_element_idx) || (it->i_reg_ != last_region_idx)) { // new element
-            if (it->i_reg_ != last_region_idx) { // new region
+        is_new_reg = (it->i_reg_ != last_region_idx);
+        is_new_elm = is_new_reg || (it->i_element_ != last_element_idx);
+        if (is_new_elm) {
+            if (is_new_reg) {
                 unsigned int last_eval_point = i_pos-1; // set size of block by SIMD size
                 while (i_pos % ElementCacheMap::simd_size_double > 0) {
                 	eval_point_data_.emplace_back( eval_point_data_[last_eval_point] );
