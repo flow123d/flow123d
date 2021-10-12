@@ -4,10 +4,9 @@ common_config:
   check_rules:
     - vtkdiff:
         files: ["*.vtu"]
-        interpolate: True
+        interpolate: False
     - ndiff:
         files: ["*.pvd", "*.txt", "*.yaml", "*.msh"]
-
 test_cases:
 - files:
   - 01.yaml
