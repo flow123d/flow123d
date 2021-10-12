@@ -474,8 +474,30 @@ if (BDDCML_FOUND)
     message(STATUS "BDDCML_INCLUDES = ${BDDCML_INCLUDES}")
     message(STATUS "BDDCML_LIBRARY = ${BDDCML_LIBRARY}")
     message(STATUS "=======================================================\n\n") 
+    
+    include_directories(${BDDCML_INCLUDES})
 endif()
 
+
+
+################################################################################
+#  PERMON_FOUND - set to true if the library is found
+message(STATUS "=======================================================")
+message(STATUS "====== PERMON =========================================")
+message(STATUS "=======================================================")
+message(STATUS "PERMON_ROOT = ${PERMON_ROOT}")
+
+find_package(PERMON)
+if (PERMON_FOUND)
+    flow_define(HAVE_PERMON)
+    message(STATUS "-------------------------------------------------------")
+    message(STATUS "PERMON_FOUND = ${PERMON_FOUND}")
+    message(STATUS "PERMON_INCLUDES = ${PERMON_INCLUDES}")
+    message(STATUS "PERMON_LIBRARY = ${PERMON_LIBRARY}")
+    message(STATUS "=======================================================\n\n") 
+    
+    include_directories(${PERMON_INCLUDES})
+endif()
 
 
 #################################################################################
@@ -674,10 +696,6 @@ include_directories(
 #    ${CMAKE_SOURCE_DIR}/third_party/tbb43_20150316oss/include
 )
 
-if (BDDCML_FOUND)
-    include_directories(${BDDCML_INCLUDES})
-endif()    
-    
 ######################################################################################################################
 # custom targets
 
@@ -906,6 +924,7 @@ message(STATUS "Boost:      ${Boost_LIBRARIES}")
 message(STATUS "Petsc:      ${PETSC_LIBRARIES}")
 message(STATUS "   + :      ${PETSC_ADDITIONAL_LIBS}")
 message(STATUS "BDDCML:     ${BDDCML_LIBRARIES}")
+message(STATUS "PERMON:     ${PERMON_LIBRARIES}")
 message(STATUS "Armadillo:  ${ARMADILLO_LIBRARIES}")
 message(STATUS "Python:     ${PYTHON_INCLUDE_DIRS}")
 message(STATUS "YamlCpp:    ${YamlCpp_LIBRARY}")

@@ -2,9 +2,6 @@
 	path = src/dealii
 	url = git@github.com:flow123d/dealii.git
 	branch = fork_v8.2.1
-[submodule "bin/docker"]
-	path = bin/docker
-	url = git@github.com:flow123d/docker-config.git
 [submodule "bin/yaml_converter"]
 	path = bin/yaml_converter
 	url = git@github.com:flow123d/yaml_converter.git
