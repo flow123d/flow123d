@@ -370,48 +370,42 @@ public:
         {
             fe_values_vec_[sid].initialize(*this->quad_low_, *fe_, u);
         }
-
+        side_dofs_.resize(eq_data_->max_edg_sides);
+        side_flux_.resize(eq_data_->max_edg_sides);
+        elm_meassures_.resize(eq_data_->max_edg_sides);
     }
 
     /// Assembles the fluxes between sides of elements of the same dimension.
     inline void edge_integral(RangeConvert<DHEdgeSide, DHCellSide> edge_side_range) {
         ASSERT_EQ_DBG(edge_side_range.begin()->element().dim(), dim).error("Dimension of element mismatch!");
 
-        int sid=0, s1, s2;
+        unsigned int sid=0, s1, s2;
         edg_flux = 0.0;
         for( DHCellSide edge_side : edge_side_range )
         {
             fe_values_vec_[sid].reinit(edge_side.side());
             auto p = *( this->edge_points(edge_side).begin() );
-            flux = eq_fields_->side_flux(p, fe_values_vec_[sid]);
-            if (flux > 0.0) {
-                eq_data_->cfl_flow_[edge_side.cell().local_idx()] -= (flux / edge_side.element().measure() );
-                edg_flux += flux;
+            side_flux_[sid] = eq_fields_->side_flux(p, fe_values_vec_[sid]);
+            if (side_flux_[sid] > 0.0) {
+                eq_data_->cfl_flow_[edge_side.cell().local_idx()] -= (side_flux_[sid] / edge_side.element().measure() );
+                edg_flux += side_flux_[sid];
             }
+            side_dofs_[sid] = edge_side.cell().get_loc_dof_indices()[0];
+            elm_meassures_[sid] = edge_side.element().measure();
             ++sid;
         }
 
-        s1=0;
-        for( DHCellSide edge_side1 : edge_side_range )
+        for( s1=0; s1<edge_side_range.begin()->n_edge_sides(); s1++ )
         {
-            s2=-1; // need increment at begin of loop (see conditionally 'continue' directions)
-            auto p1 = *( this->edge_points(edge_side1).begin() );
-            flux = eq_fields_->side_flux(p1, fe_values_vec_[s1]);
-            for( DHCellSide edge_side2 : edge_side_range )
+            for( s2=0; s2<edge_side_range.begin()->n_edge_sides(); s2++ )
             {
-                s2++;
                 if (s2==s1) continue;
 
-                auto p2 = *( this->edge_points(edge_side2).begin() );
-                flux2 = eq_fields_->side_flux(p2, fe_values_vec_[s2]);
-                new_i = eq_data_->row_4_el[edge_side1.element().idx()];
-                new_j = eq_data_->row_4_el[edge_side2.element().idx()];
-                if ( flux2 > 0.0 && flux <0.0)
-                    aij = -(flux * flux2 / ( edg_flux * edge_side1.element().measure() ) );
+                if (side_flux_[s2] > 0.0 && side_flux_[s1] < 0.0)
+                    aij = -(side_flux_[s1] * side_flux_[s2] / ( edg_flux * elm_meassures_[s1] ) );
                 else aij =0;
-                MatSetValue(eq_data_->tm, new_i, new_j, aij, INSERT_VALUES);
+                MatSetValue(eq_data_->tm, side_dofs_[s1], side_dofs_[s2], aij, INSERT_VALUES);
             }
-            s1++;
         }
     }
 
@@ -424,8 +418,8 @@ public:
         auto p_high = *( this->coupling_points(neighb_side).begin() );
         fe_values_side_.reinit(neighb_side.side());
 
-        new_i = eq_data_->row_4_el[ cell_lower_dim.elm_idx() ];
-        new_j = eq_data_->row_4_el[ neighb_side.elem_idx() ];
+        new_i = cell_lower_dim.get_loc_dof_indices()[0];
+        new_j = neighb_side.cell().get_loc_dof_indices()[0];
         flux = eq_fields_->side_flux(p_high, fe_values_side_);
 
         // volume source - out-flow from higher dimension
@@ -483,8 +477,11 @@ private:
     FEValues<3> fe_values_side_;                           ///< FEValues of object (of P disc finite element type)
     vector<FEValues<3>> fe_values_vec_;                    ///< Vector of FEValues of object (of P disc finite element types)
     LongIdx new_i, new_j;
+    std::vector<LongIdx> side_dofs_;
+    std::vector<double> side_flux_;
+    std::vector<double> elm_meassures_;
     double aij;
-    double edg_flux, flux, flux2;
+    double edg_flux, flux;
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
