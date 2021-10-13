@@ -373,13 +373,15 @@ public:
         side_dofs_.resize(eq_data_->max_edg_sides);
         side_flux_.resize(eq_data_->max_edg_sides);
         elm_meassures_.resize(eq_data_->max_edg_sides);
+        all_elem_dofs_.resize(eq_data_->max_edg_sides-1);
+        row_values_.resize(eq_data_->max_edg_sides-1);
     }
 
     /// Assembles the fluxes between sides of elements of the same dimension.
     inline void edge_integral(RangeConvert<DHEdgeSide, DHCellSide> edge_side_range) {
         ASSERT_EQ_DBG(edge_side_range.begin()->element().dim(), dim).error("Dimension of element mismatch!");
 
-        unsigned int sid=0, s1, s2;
+        unsigned int sid=0, s1, s2, i_col;
         edg_flux = 0.0;
         for( DHCellSide edge_side : edge_side_range )
         {
@@ -395,17 +397,20 @@ public:
             ++sid;
         }
 
-        for( s1=0; s1<edge_side_range.begin()->n_edge_sides(); s1++ )
+        unsigned int n_edge_sides = edge_side_range.begin()->n_edge_sides();
+        if (n_edge_sides<2) return;  // following loop has no effect if edge contains only 1 side
+        for( s1=0; s1<n_edge_sides; s1++ )
         {
-            for( s2=0; s2<edge_side_range.begin()->n_edge_sides(); s2++ )
+            for( s2=0, i_col=0; s2<n_edge_sides; s2++ )
             {
                 if (s2==s1) continue;
 
                 if (side_flux_[s2] > 0.0 && side_flux_[s1] < 0.0)
-                    aij = -(side_flux_[s1] * side_flux_[s2] / ( edg_flux * elm_meassures_[s1] ) );
-                else aij =0;
-                MatSetValue(eq_data_->tm, side_dofs_[s1], side_dofs_[s2], aij, INSERT_VALUES);
+                    row_values_[i_col] = -(side_flux_[s1] * side_flux_[s2] / ( edg_flux * elm_meassures_[s1] ) );
+                else row_values_[i_col] = 0;
+                all_elem_dofs_[i_col++] = side_dofs_[s2];
             }
+            MatSetValues(eq_data_->tm, 1, &(side_dofs_[s1]), n_edge_sides-1, &(all_elem_dofs_[0]), &(row_values_[0]), INSERT_VALUES);
         }
     }
 
@@ -480,6 +485,8 @@ private:
     std::vector<LongIdx> side_dofs_;
     std::vector<double> side_flux_;
     std::vector<double> elm_meassures_;
+    std::vector<LongIdx> all_elem_dofs_;
+    std::vector<double> row_values_;
     double aij;
     double edg_flux, flux;
 
