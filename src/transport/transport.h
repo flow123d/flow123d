@@ -129,6 +129,11 @@ public:
     	EqFields();
         virtual ~EqFields() {};
 
+        /// Calculate flux on given side point.
+        inline double side_flux(SidePoint &side_p, FEValues<3> &fe_side_values) {
+            return arma::dot(this->flow_flux(side_p), fe_side_values.normal_vector(0)) * fe_side_values.JxW(0);
+        }
+
 		/**
 		 * Boundary conditions (Dirichlet) for concentrations.
 		 * They are applied only on water inflow part of the boundary.

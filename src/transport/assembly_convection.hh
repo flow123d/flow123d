@@ -262,7 +262,7 @@ public:
         unsigned int sbi;
         auto p_side = *( this->boundary_points(cell_side).begin() );
         auto p_bdr = p_side.point_bdr(cell_side.cond().element_accessor() );
-        double flux = arma::dot(eq_fields_->flow_flux(p_side), fe_values_side_.normal_vector(0)) * fe_values_side_.JxW(0);
+        double flux = eq_fields_->side_flux(p_side, fe_values_side_);
         if (flux < 0.0) {
             double aij = -(flux / cell_side.element().measure() );
 
@@ -383,7 +383,7 @@ public:
         {
             fe_values_vec_[sid].reinit(edge_side.side());
             auto p = *( this->edge_points(edge_side).begin() );
-            flux = arma::dot(eq_fields_->flow_flux(p), fe_values_vec_[sid].normal_vector(0)) * fe_values_vec_[sid].JxW(0);
+            flux = eq_fields_->side_flux(p, fe_values_vec_[sid]);
             if (flux > 0.0) {
                 eq_data_->cfl_flow_[edge_side.cell().local_idx()] -= (flux / edge_side.element().measure() );
                 edg_flux += flux;
@@ -396,14 +396,14 @@ public:
         {
             s2=-1; // need increment at begin of loop (see conditionally 'continue' directions)
             auto p1 = *( this->edge_points(edge_side1).begin() );
-            flux = arma::dot(eq_fields_->flow_flux(p1), fe_values_vec_[s1].normal_vector(0)) * fe_values_vec_[s1].JxW(0);
+            flux = eq_fields_->side_flux(p1, fe_values_vec_[s1]);
             for( DHCellSide edge_side2 : edge_side_range )
             {
                 s2++;
                 if (s2==s1) continue;
 
                 auto p2 = *( this->edge_points(edge_side2).begin() );
-                flux2 = arma::dot(eq_fields_->flow_flux(p2), fe_values_vec_[s2].normal_vector(0)) * fe_values_vec_[s2].JxW(0);
+                flux2 = eq_fields_->side_flux(p2, fe_values_vec_[s2]);
                 new_i = eq_data_->row_4_el[edge_side1.element().idx()];
                 new_j = eq_data_->row_4_el[edge_side2.element().idx()];
                 if ( flux2 > 0.0 && flux <0.0)
@@ -426,7 +426,7 @@ public:
 
         new_i = eq_data_->row_4_el[ cell_lower_dim.elm_idx() ];
         new_j = eq_data_->row_4_el[ neighb_side.elem_idx() ];
-        flux = arma::dot(eq_fields_->flow_flux(p_high), fe_values_side_.normal_vector(0)) * fe_values_side_.JxW(0);
+        flux = eq_fields_->side_flux(p_high, fe_values_side_);
 
         // volume source - out-flow from higher dimension
         if (flux > 0.0)  aij = flux / cell_lower_dim.elm().measure();
