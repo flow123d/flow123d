@@ -209,10 +209,6 @@ public:
 
 		bool is_convection_matrix_scaled;   ///< Flag indicates the state of object
 
-		LongIdx *row_4_el;
-		LongIdx *el_4_loc;
-		Distribution *el_ds;
-
 		/// Maximal number of edge sides (evaluate from dim 1,2,3)
 		unsigned int max_edg_sides;
 
@@ -397,6 +393,10 @@ private:
 
 	std::shared_ptr<OutputTime> output_stream_;
 
+
+	LongIdx *row_4_el;
+	LongIdx *el_4_loc;
+	Distribution *el_ds;
 
 	/// Finite element objects
 	FETransportObjects feo_;

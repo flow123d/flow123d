@@ -215,7 +215,7 @@ void ConvectionTransport::initialize()
 	//cout << "Transport." << endl;
 	//cout << time().marks();
 
-    balance_->allocate(eq_data_->el_ds->lsize(), 1);
+    balance_->allocate(el_ds->lsize(), 1);
     eq_data_->balance_ = this->balance();
     eq_data_->set_time_governor(this->time_);
     eq_data_->max_edg_sides = max(this->mesh_->max_edge_sides(1), max(this->mesh_->max_edge_sides(2), this->mesh_->max_edge_sides(3)));
@@ -242,11 +242,11 @@ void ConvectionTransport::make_transport_partitioning() {
 //    int * id_4_old = new int[mesh_->n_elements()];
 //    int i = 0;
 //    for (auto ele : mesh_->elements_range()) id_4_old[i++] = ele.index();
-//    mesh_->get_part()->id_maps(mesh_->n_elements(), id_4_old, eq_data_->el_ds, eq_data_->el_4_loc, eq_data_->row_4_el);
+//    mesh_->get_part()->id_maps(mesh_->n_elements(), id_4_old, el_ds, el_4_loc, row_4_el);
 //    delete[] id_4_old;
-	eq_data_->el_ds = mesh_->get_el_ds();
-	eq_data_->el_4_loc = mesh_->get_el_4_loc();
-	eq_data_->row_4_el = mesh_->get_row_4_el();
+	el_ds = mesh_->get_el_ds();
+	el_4_loc = mesh_->get_el_4_loc();
+	row_4_el = mesh_->get_row_4_el();
 
     // TODO: make output of partitioning is usefull but makes outputs different
     // on different number of processors, which breaks tests.
@@ -257,7 +257,7 @@ void ConvectionTransport::make_transport_partitioning() {
     // - or do not test such kind of output
     //
     //for (auto ele : mesh_->elements_range()) {
-    //    ele->pid()=eq_data_->el_ds->get_proc(eq_data_->row_4_el[ele.index()]);
+    //    ele->pid()=el_ds->get_proc(row_4_el[ele.index()]);
     //}
 
 }
@@ -341,14 +341,14 @@ void ConvectionTransport::alloc_transport_vectors() {
     eq_data_->tm_diag = new double*[n_subst];
     cumulative_corr = new double*[n_subst];
     for (sbi = 0; sbi < n_subst; sbi++) {
-      cumulative_corr[sbi] = new double[eq_data_->el_ds->lsize()];
-      eq_data_->tm_diag[sbi] = new double[eq_data_->el_ds->lsize()];
+      cumulative_corr[sbi] = new double[el_ds->lsize()];
+      eq_data_->tm_diag[sbi] = new double[el_ds->lsize()];
     }
 
     eq_fields_->conc_mobile_fe.resize(n_subst);
     
-    eq_data_->cfl_flow_ = new double[eq_data_->el_ds->lsize()];
-    eq_data_->cfl_source_ = new double[eq_data_->el_ds->lsize()];
+    eq_data_->cfl_flow_ = new double[el_ds->lsize()];
+    eq_data_->cfl_source_ = new double[el_ds->lsize()];
 }
 
 //=============================================================================
@@ -368,34 +368,34 @@ void ConvectionTransport::alloc_transport_structs_mpi() {
     
 
     for (sbi = 0; sbi < n_subst; sbi++) {
-        VecCreateMPI(PETSC_COMM_WORLD, eq_data_->el_ds->lsize(), mesh_->n_elements(), &eq_data_->bcvcorr[sbi]);
+        VecCreateMPI(PETSC_COMM_WORLD, el_ds->lsize(), mesh_->n_elements(), &eq_data_->bcvcorr[sbi]);
         VecZeroEntries(eq_data_->bcvcorr[sbi]);
 
-        VecCreateMPI(PETSC_COMM_WORLD, eq_data_->el_ds->lsize(), mesh_->n_elements(), &vpconc[sbi]);
+        VecCreateMPI(PETSC_COMM_WORLD, el_ds->lsize(), mesh_->n_elements(), &vpconc[sbi]);
         VecZeroEntries(vpconc[sbi]);
 
         // SOURCES
-        VecCreateMPIWithArray(PETSC_COMM_WORLD,1, eq_data_->el_ds->lsize(), mesh_->n_elements(),
+        VecCreateMPIWithArray(PETSC_COMM_WORLD,1, el_ds->lsize(), mesh_->n_elements(),
         		cumulative_corr[sbi],&vcumulative_corr[sbi]);
         
-        eq_data_->corr_vec.emplace_back(eq_data_->el_ds->lsize(), PETSC_COMM_WORLD);
+        eq_data_->corr_vec.emplace_back(el_ds->lsize(), PETSC_COMM_WORLD);
         
-        VecCreateMPIWithArray(PETSC_COMM_WORLD,1, eq_data_->el_ds->lsize(), mesh_->n_elements(),
+        VecCreateMPIWithArray(PETSC_COMM_WORLD,1, el_ds->lsize(), mesh_->n_elements(),
                 eq_data_->tm_diag[sbi], &v_tm_diag[sbi]);
 
         VecZeroEntries(vcumulative_corr[sbi]);
     }
 
 
-    MatCreateAIJ(PETSC_COMM_WORLD, eq_data_->el_ds->lsize(), eq_data_->el_ds->lsize(), mesh_->n_elements(),
+    MatCreateAIJ(PETSC_COMM_WORLD, el_ds->lsize(), el_ds->lsize(), mesh_->n_elements(),
             mesh_->n_elements(), 16, PETSC_NULL, 4, PETSC_NULL, &eq_data_->tm);
     
-    VecCreateMPI(PETSC_COMM_WORLD, eq_data_->el_ds->lsize(), mesh_->n_elements(), &eq_data_->mass_diag);
-    VecCreateMPI(PETSC_COMM_WORLD, eq_data_->el_ds->lsize(), mesh_->n_elements(), &vpmass_diag);
+    VecCreateMPI(PETSC_COMM_WORLD, el_ds->lsize(), mesh_->n_elements(), &eq_data_->mass_diag);
+    VecCreateMPI(PETSC_COMM_WORLD, el_ds->lsize(), mesh_->n_elements(), &vpmass_diag);
 
-    VecCreateMPIWithArray(PETSC_COMM_WORLD,1, eq_data_->el_ds->lsize(), mesh_->n_elements(),
+    VecCreateMPIWithArray(PETSC_COMM_WORLD,1, el_ds->lsize(), mesh_->n_elements(),
             eq_data_->cfl_flow_, &vcfl_flow_);
-    VecCreateMPIWithArray(PETSC_COMM_WORLD,1, eq_data_->el_ds->lsize(), mesh_->n_elements(),
+    VecCreateMPIWithArray(PETSC_COMM_WORLD,1, el_ds->lsize(), mesh_->n_elements(),
             eq_data_->cfl_source_, &vcfl_source_);
 }
 
@@ -591,7 +591,7 @@ bool ConvectionTransport::evaluate_time_constraint(double& time_constraint)
     {
         // find maximum of sum of contribution from flow and sources: MAX(vcfl_flow_ + vcfl_source_)
         Vec cfl;
-        VecCreateMPI(PETSC_COMM_WORLD, eq_data_->el_ds->lsize(), PETSC_DETERMINE, &cfl);
+        VecCreateMPI(PETSC_COMM_WORLD, el_ds->lsize(), PETSC_DETERMINE, &cfl);
         VecWAXPY(cfl, 1.0, vcfl_flow_, vcfl_source_);
         VecMaxPointwiseDivide(cfl, eq_data_->mass_diag, &cfl_max_step);
         // get a reciprocal value as a time constraint
@@ -776,11 +776,11 @@ void ConvectionTransport::set_target_time(double target_time)
 //
 //    double flux, flux2, edg_flux;
 //
-//    for (uint i=0; i<eq_data_->el_ds->lsize(); ++i)
+//    for (uint i=0; i<el_ds->lsize(); ++i)
 //        eq_data_->cfl_flow_[i] = 0.0;
 //
 //    for ( DHCellAccessor dh_cell : eq_data_->dh_->own_range() ) {
-//        new_i = eq_data_->row_4_el[ dh_cell.elm_idx() ];
+//        new_i = row_4_el[ dh_cell.elm_idx() ];
 //        for( DHCellSide cell_side : dh_cell.side_range() ) {
 //            flux = this->side_flux(cell_side);
 //            if (flux > 0.0) {
@@ -794,7 +794,7 @@ void ConvectionTransport::set_target_time(double target_time)
 //                }
 //                for( DHCellSide edge_side : cell_side.edge_sides() )
 //                    if (edge_side != cell_side) {
-//                        new_j = eq_data_->row_4_el[edge_side.element().idx()];
+//                        new_j = row_4_el[edge_side.element().idx()];
 //
 //                        flux2 = this->side_flux(edge_side);
 //                        if ( flux2 > 0.0 && flux <0.0)
@@ -808,7 +808,7 @@ void ConvectionTransport::set_target_time(double target_time)
 //        for( DHCellSide neighb_side : dh_cell.neighb_sides() ) // dh_cell lower dim
 //        {
 //            ASSERT( neighb_side.elem_idx() != dh_cell.elm_idx() ).error("Elm. same\n");
-//            new_j = eq_data_->row_4_el[ neighb_side.elem_idx() ];
+//            new_j = row_4_el[ neighb_side.elem_idx() ];
 //            flux = this->side_flux(neighb_side);
 //
 //            // volume source - out-flow from higher dimension
@@ -827,7 +827,7 @@ void ConvectionTransport::set_target_time(double target_time)
 //    }
 //
 //    for ( DHCellAccessor dh_cell : eq_data_->dh_->own_range() ) {
-//        new_i = eq_data_->row_4_el[ dh_cell.elm_idx() ];
+//        new_i = row_4_el[ dh_cell.elm_idx() ];
 //        MatSetValue(eq_data_->tm, new_i, new_i, eq_data_->cfl_flow_[dh_cell.local_idx()], INSERT_VALUES);
 //
 //        eq_data_->cfl_flow_[dh_cell.local_idx()] = fabs(eq_data_->cfl_flow_[dh_cell.local_idx()]);
@@ -847,17 +847,17 @@ ConvectionTransport::FieldFEScalarVec& ConvectionTransport::get_p0_interpolation
 }
 
 void ConvectionTransport::get_par_info(LongIdx * &el_4_loc_out, Distribution * &el_distribution_out){
-	el_4_loc_out = this->eq_data_->el_4_loc;
-	el_distribution_out = this->eq_data_->el_ds;
+	el_4_loc_out = this->el_4_loc;
+	el_distribution_out = this->el_ds;
 	return;
 }
 
 //int *ConvectionTransport::get_el_4_loc(){
-//	return eq_data_->el_4_loc;
+//	return el_4_loc;
 //}
 
 LongIdx *ConvectionTransport::get_row_4_el(){
-	return eq_data_->row_4_el;
+	return row_4_el;
 }
 
 

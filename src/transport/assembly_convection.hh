@@ -442,7 +442,7 @@ public:
     {
         MatZeroEntries(eq_data_->tm);
 
-        for (uint i=0; i<eq_data_->el_ds->lsize(); ++i)
+        for (uint i=0; i<eq_data_->dh_->lsize(); ++i)
             eq_data_->cfl_flow_[i] = 0.0;
     }
 
@@ -451,7 +451,7 @@ public:
     {
         LongIdx new_i;
         for ( DHCellAccessor dh_cell : eq_data_->dh_->own_range() ) {
-            new_i = eq_data_->row_4_el[ dh_cell.elm_idx() ];
+            new_i = dh_cell.get_loc_dof_indices()[0];
             MatSetValue(eq_data_->tm, new_i, new_i, eq_data_->cfl_flow_[dh_cell.local_idx()], INSERT_VALUES);
 
             eq_data_->cfl_flow_[dh_cell.local_idx()] = fabs(eq_data_->cfl_flow_[dh_cell.local_idx()]);
