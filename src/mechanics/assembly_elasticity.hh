@@ -755,7 +755,9 @@ public:
         for (unsigned int i=0; i<n_dofs_; i++)
             local_matrix_[i] = 0;
 
-        // set contact conditions
+        // Assemble matrix and vector for contact conditions in the form B*x <= c,
+        // where B*x is the average jump of normal displacements and c is the average cross-section on element.
+        // Positive value means that the fracture closes.
         unsigned int k=0;
         double local_vector = 0;
         for (auto p_high : this->coupling_points(neighb_side) )
@@ -764,11 +766,11 @@ public:
             arma::vec3 nv = fe_values_side_.normal_vector(k);
 
             if (cell_lower_dim.is_own())
-                local_vector -= eq_fields_->cross_section(p_low)*fe_values_side_.JxW(k) / cell_lower_dim.elm().measure() / cell_lower_dim.elm()->n_neighs_vb();
+                local_vector += eq_fields_->cross_section(p_low)*fe_values_side_.JxW(k) / cell_lower_dim.elm().measure() / cell_lower_dim.elm()->n_neighs_vb();
 
             for (unsigned int i=0; i<n_dofs_; i++)
             {
-                local_matrix_[i] -= arma::dot(vec_view_side_->value(i,k), nv)*fe_values_side_.JxW(k);
+                local_matrix_[i] += arma::dot(vec_view_side_->value(i,k), nv)*fe_values_side_.JxW(k) / cell_lower_dim.elm().measure();
             }
         	k++;
         }
