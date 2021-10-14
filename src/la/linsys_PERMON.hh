@@ -51,56 +51,9 @@ public:
      */
     LinSys_PERMON( LinSys_PERMON &other );
 
-    PetscErrorCode set_matrix(Mat &matrix, MatStructure str) override
-    {
-        matrix_changed_ = true;
-    	return MatCopy(matrix, matrix_, str);
-    }
-
-    PetscErrorCode set_rhs(Vec &rhs) override
-    {
-        rhs_changed_ = true;
-    	return VecCopy(rhs, rhs_);
-    }
-
-    PetscErrorCode mat_zero_entries() override
-    {
-        matrix_changed_ = true;
-        constraints_.clear();
-    	return MatZeroEntries(matrix_);
-    }
-
-    PetscErrorCode rhs_zero_entries() override
-    {
-        rhs_changed_ = true;
-    	return VecSet(rhs_, 0);
-    }
-
-    void start_allocation() override;
-
-    void start_add_assembly() override;
-
-    void start_insert_assembly() override;
-
-    void mat_set_values( int nrow, int *rows, int ncol, int *cols, double *vals ) override;
-
-    void rhs_set_values( int nrow, int *rows, double *vals ) override;
-
-    void preallocate_values(int nrow,int *rows,int ncol,int *cols);
-
-    void preallocate_matrix();
-
-    void finish_assembly() override;
-
-    void finish_assembly( MatAssemblyType assembly_type );
-
-    void apply_constrains( double scalar = 1. ) override;
-
-    void set_initial_guess_nonzero(bool set_nonzero = true);
-
     void set_inequality(Mat matrix_ineq, Vec ineq);
 
-    LinSys::SolveInfo solve() override;
+    LinSys_PETSC::SolveInfo solve() override;
 
     /**
      * Returns information on absolute solver accuracy
@@ -147,27 +100,11 @@ protected:
 
     std::string params_;		 //!< command-line-like options for the PETSc solver
 
-    bool    init_guess_nonzero;  //!< flag for starting from nonzero guess
-
-    Mat     matrix_;             //!< Petsc matrix of the problem.
-    Vec     rhs_;                //!< PETSc vector constructed with vx array.
-    Vec     residual_;
-
-    Mat     matrix_ineq_;        //!< Petsc matrix of inequality constraint.
+    Mat     matrix_ineq_;        //!< PETSc matrix of inequality constraint.
     Vec     ineq_;               //!< PETSc vector of inequality constraint.
-
-    double  *v_rhs_;             //!< local RHS array pointing to Vec rhs_
-
-    Vec     on_vec_;             //!< Vectors for counting non-zero entries in diagonal block.
-    Vec     off_vec_;            //!< Vectors for counting non-zero entries in off-diagonal block.
-
-
-    double  solution_precision_; // precision of KSP system solver
 
     QP                 system;
     QPS                solver;
-    KSPConvergedReason reason;
-
 };
 
 #endif /* LA_LINSYS_PERMON_HH_ */

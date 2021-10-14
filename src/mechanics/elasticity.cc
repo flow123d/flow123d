@@ -376,6 +376,7 @@ void Elasticity::initialize()
     
     // allocate matrix and vector structures
     bool gotContact = true;
+    //gotContact = false;
     if (gotContact) {
 #ifndef FLOW123D_HAVE_PERMON
       gotContact = false;
