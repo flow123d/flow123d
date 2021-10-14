@@ -118,39 +118,39 @@ ConvectionTransport::EqFields::EqFields() : TransportEqFields()
 /********************************************************************************
  * Helper class FETransportObjects
  */
-FETransportObjects::FETransportObjects()
-: q_(QGauss::make_array(0))
-{
-    fe0_ = new FE_P_disc<0>(0);
-    fe1_ = new FE_P_disc<1>(0);
-    fe2_ = new FE_P_disc<2>(0);
-    fe3_ = new FE_P_disc<3>(0);
-
-
-    fe_values_[0].initialize(q(0), *fe1_,
-            update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
-    fe_values_[1].initialize(q(1), *fe2_,
-            update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
-    fe_values_[2].initialize(q(2), *fe3_,
-            update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
-}
-
-
-FETransportObjects::~FETransportObjects()
-{
-    delete fe0_;
-    delete fe1_;
-    delete fe2_;
-    delete fe3_;
-}
-
-template<> FiniteElement<0> *FETransportObjects::fe<0>() { return fe0_; }
-template<> FiniteElement<1> *FETransportObjects::fe<1>() { return fe1_; }
-template<> FiniteElement<2> *FETransportObjects::fe<2>() { return fe2_; }
-template<> FiniteElement<3> *FETransportObjects::fe<3>() { return fe3_; }
-
-Quadrature &FETransportObjects::q(unsigned int dim) { return q_[dim]; }
-
+//FETransportObjects::FETransportObjects()
+//: q_(QGauss::make_array(0))
+//{
+//    fe0_ = new FE_P_disc<0>(0);
+//    fe1_ = new FE_P_disc<1>(0);
+//    fe2_ = new FE_P_disc<2>(0);
+//    fe3_ = new FE_P_disc<3>(0);
+//
+//
+//    fe_values_[0].initialize(q(0), *fe1_,
+//            update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
+//    fe_values_[1].initialize(q(1), *fe2_,
+//            update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
+//    fe_values_[2].initialize(q(2), *fe3_,
+//            update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
+//}
+//
+//
+//FETransportObjects::~FETransportObjects()
+//{
+//    delete fe0_;
+//    delete fe1_;
+//    delete fe2_;
+//    delete fe3_;
+//}
+//
+//template<> FiniteElement<0> *FETransportObjects::fe<0>() { return fe0_; }
+//template<> FiniteElement<1> *FETransportObjects::fe<1>() { return fe1_; }
+//template<> FiniteElement<2> *FETransportObjects::fe<2>() { return fe2_; }
+//template<> FiniteElement<3> *FETransportObjects::fe<3>() { return fe3_; }
+//
+//Quadrature &FETransportObjects::q(unsigned int dim) { return q_[dim]; }
+//
 
 
 /********************************************************************************
@@ -881,20 +881,20 @@ void ConvectionTransport::set_balance_object(std::shared_ptr<Balance> balance)
     eq_data_->balance_ = this->balance();
 }
 
-double ConvectionTransport::side_flux(const DHCellSide &cell_side)
-{
-    if (cell_side.dim()==3) return calculate_side_flux<3>(cell_side);
-    else if (cell_side.dim()==2) return calculate_side_flux<2>(cell_side);
-    else return calculate_side_flux<1>(cell_side);
-}
-
-template<unsigned int dim>
-double ConvectionTransport::calculate_side_flux(const DHCellSide &cell_side)
-{
-    ASSERT_EQ(cell_side.dim(), dim).error("Element dimension mismatch!");
-
-    feo_.fe_values(dim).reinit(cell_side.side());
-    auto vel = eq_fields_->flow_flux.value(cell_side.centre(), cell_side.element());
-    double side_flux = arma::dot(vel, feo_.fe_values(dim).normal_vector(0)) * feo_.fe_values(dim).JxW(0);
-    return side_flux;
-}
+//double ConvectionTransport::side_flux(const DHCellSide &cell_side)
+//{
+//    if (cell_side.dim()==3) return calculate_side_flux<3>(cell_side);
+//    else if (cell_side.dim()==2) return calculate_side_flux<2>(cell_side);
+//    else return calculate_side_flux<1>(cell_side);
+//}
+//
+//template<unsigned int dim>
+//double ConvectionTransport::calculate_side_flux(const DHCellSide &cell_side)
+//{
+//    ASSERT_EQ(cell_side.dim(), dim).error("Element dimension mismatch!");
+//
+//    feo_.fe_values(dim).reinit(cell_side.side());
+//    auto vel = eq_fields_->flow_flux.value(cell_side.centre(), cell_side.element());
+//    double side_flux = arma::dot(vel, feo_.fe_values(dim).normal_vector(0)) * feo_.fe_values(dim).JxW(0);
+//    return side_flux;
+//}

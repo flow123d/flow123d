@@ -84,37 +84,37 @@ template< template<IntDim...> class DimAssembly> class GenericAssembly;
  * Its purpose is to provide templated access to these objects, applicable in
  * the assembling methods.
  */
-class FETransportObjects {
-public:
-
-	FETransportObjects();
-	~FETransportObjects();
-
-	template<unsigned int dim>
-	inline FiniteElement<dim> *fe();
-
-	inline Quadrature &q(unsigned int dim);
-
-	inline FEValues<3> &fe_values(unsigned int dim)
-    { 
-        ASSERT_DBG( dim >= 1 && dim <= 3 );
-        return fe_values_[dim-1];
-    }
-
-private:
-
-	/// Finite elements for the solution of the advection-diffusion equation.
-	FiniteElement<0> *fe0_;
-	FiniteElement<1> *fe1_;
-	FiniteElement<2> *fe2_;
-	FiniteElement<3> *fe3_;
-
-	/// Quadratures used in assembling methods.
-	QGauss::array q_;
-
-    /// FESideValues objects for side flux calculating.
-	FEValues<3> fe_values_[3];
-};
+//class FETransportObjects {
+//public:
+//
+//	FETransportObjects();
+//	~FETransportObjects();
+//
+//	template<unsigned int dim>
+//	inline FiniteElement<dim> *fe();
+//
+//	inline Quadrature &q(unsigned int dim);
+//
+//	inline FEValues<3> &fe_values(unsigned int dim)
+//    {
+//        ASSERT_DBG( dim >= 1 && dim <= 3 );
+//        return fe_values_[dim-1];
+//    }
+//
+//private:
+//
+//	/// Finite elements for the solution of the advection-diffusion equation.
+//	FiniteElement<0> *fe0_;
+//	FiniteElement<1> *fe1_;
+//	FiniteElement<2> *fe2_;
+//	FiniteElement<3> *fe3_;
+//
+//	/// Quadratures used in assembling methods.
+//	QGauss::array q_;
+//
+//    /// FESideValues objects for side flux calculating.
+//	FEValues<3> fe_values_[3];
+//};
 
 
 /**
@@ -343,13 +343,13 @@ private:
 	/**
 	 * @brief Wrapper of following method, call side_flux with correct template parameter.
 	 */
-	double side_flux(const DHCellSide &cell_side);
+//	double side_flux(const DHCellSide &cell_side);
 
 	/**
 	 * @brief Calculate flux on side of given element specified by dimension.
 	 */
-	template<unsigned int dim>
-	double calculate_side_flux(const DHCellSide &cell);
+//	template<unsigned int dim>
+//	double calculate_side_flux(const DHCellSide &cell);
 
 
 
@@ -399,7 +399,7 @@ private:
 	Distribution *el_ds;
 
 	/// Finite element objects
-	FETransportObjects feo_;
+//	FETransportObjects feo_;
 
     /// general assembly objects, hold assembly objects of appropriate dimension
     GenericAssembly< MassAssemblyConvection > * mass_assembly_;
