@@ -74,6 +74,7 @@ public:
 		
 		/// Pointer to DarcyFlow field cross_section
         Field<3, FieldValue<3>::Scalar > cross_section;
+        Field<3, FieldValue<3>::Scalar > cross_section_min;
         Field<3, FieldValue<3>::Scalar > potential_load;   ///< Potential of an additional (external) load.
         Field<3, FieldValue<3>::Scalar > ref_potential_load; ///< Potential of reference external load on boundary. TODO: Switch to BCField when possible.
         Field<3, FieldValue<3>::Scalar> region_id;

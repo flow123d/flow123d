@@ -53,6 +53,7 @@ problem: !Coupling_Sequential
           - region: fracture
             young_modulus: 1e-6
             poisson_ratio: 0.25
+            cross_section_min: 0.01
 
           - region: .left_x
             bc_type: displacement

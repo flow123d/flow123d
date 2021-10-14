@@ -199,6 +199,11 @@ Elasticity::EqFields::EqFields()
       .name("cross_section")
       .units( UnitSI().m(3).md() )
       .flags(input_copy & in_time_term & in_main_matrix & in_rhs);
+    
+    *this+=cross_section_min
+      .name("cross_section_min")
+      .units( UnitSI().m(3).md() )
+      .input_default("0.0");
       
     *this+=potential_load
       .name("potential_load")

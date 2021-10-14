@@ -721,6 +721,7 @@ public:
     : AssemblyBase<dim>(1), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::coupling;
         this->used_fields_ += eq_fields_->cross_section;
+        this->used_fields_ += eq_fields_->cross_section_min;
     }
 
     /// Destructor.
@@ -766,7 +767,7 @@ public:
             arma::vec3 nv = fe_values_side_.normal_vector(k);
 
             if (cell_lower_dim.is_own())
-                local_vector += eq_fields_->cross_section(p_low)*fe_values_side_.JxW(k) / cell_lower_dim.elm().measure() / cell_lower_dim.elm()->n_neighs_vb();
+                local_vector += (eq_fields_->cross_section(p_low) - eq_fields_->cross_section_min(p_low))*fe_values_side_.JxW(k) / cell_lower_dim.elm().measure() / cell_lower_dim.elm()->n_neighs_vb();
 
             for (unsigned int i=0; i<n_dofs_; i++)
             {
