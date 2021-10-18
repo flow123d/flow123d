@@ -375,6 +375,8 @@ public:
         elm_meassures_.resize(eq_data_->max_edg_sides);
         all_elem_dofs_.resize(eq_data_->max_edg_sides-1);
         row_values_.resize(eq_data_->max_edg_sides-1);
+        dof_indices_i_.resize(1);
+        dof_indices_j_.resize(1);
     }
 
     /// Assembles the fluxes between sides of elements of the same dimension.
@@ -392,7 +394,8 @@ public:
                 eq_data_->cfl_flow_[edge_side.cell().local_idx()] -= (side_flux_[sid] / edge_side.element().measure() );
                 edg_flux += side_flux_[sid];
             }
-            side_dofs_[sid] = edge_side.cell().get_loc_dof_indices()[0];
+            edge_side.cell().get_dof_indices(dof_indices_i_);
+            side_dofs_[sid] = dof_indices_i_[0];
             elm_meassures_[sid] = edge_side.element().measure();
             ++sid;
         }
@@ -423,14 +426,14 @@ public:
         auto p_high = *( this->coupling_points(neighb_side).begin() );
         fe_values_side_.reinit(neighb_side.side());
 
-        new_i = cell_lower_dim.get_loc_dof_indices()[0];
-        new_j = neighb_side.cell().get_loc_dof_indices()[0];
+        cell_lower_dim.get_dof_indices(dof_indices_i_);
+        neighb_side.cell().get_dof_indices(dof_indices_j_);
         flux = eq_fields_->side_flux(p_high, fe_values_side_);
 
         // volume source - out-flow from higher dimension
         if (flux > 0.0)  aij = flux / cell_lower_dim.elm().measure();
         else aij=0;
-        MatSetValue(eq_data_->tm, new_i, new_j, aij, INSERT_VALUES);
+        MatSetValue(eq_data_->tm, dof_indices_i_[0], dof_indices_j_[0], aij, INSERT_VALUES);
         // out flow from higher dim. already accounted
 
         // volume drain - in-flow to higher dimension
@@ -438,7 +441,7 @@ public:
             eq_data_->cfl_flow_[cell_lower_dim.local_idx()] -= (-flux) / cell_lower_dim.elm().measure();                           // diagonal drain
             aij = (-flux) / neighb_side.element().measure();
         } else aij=0;
-        MatSetValue(eq_data_->tm, new_j, new_i, aij, INSERT_VALUES);
+        MatSetValue(eq_data_->tm, dof_indices_j_[0], dof_indices_i_[0], aij, INSERT_VALUES);
     }
 
 
@@ -454,10 +457,9 @@ public:
     /// Implements @p AssemblyBase::end.
     void end() override
     {
-        LongIdx new_i;
         for ( DHCellAccessor dh_cell : eq_data_->dh_->own_range() ) {
-            new_i = dh_cell.get_loc_dof_indices()[0];
-            MatSetValue(eq_data_->tm, new_i, new_i, eq_data_->cfl_flow_[dh_cell.local_idx()], INSERT_VALUES);
+            dh_cell.get_dof_indices(dof_indices_i_);
+            MatSetValue(eq_data_->tm, dof_indices_i_[0], dof_indices_i_[0], eq_data_->cfl_flow_[dh_cell.local_idx()], INSERT_VALUES);
 
             eq_data_->cfl_flow_[dh_cell.local_idx()] = fabs(eq_data_->cfl_flow_[dh_cell.local_idx()]);
         }
@@ -481,7 +483,8 @@ private:
 
     FEValues<3> fe_values_side_;                           ///< FEValues of object (of P disc finite element type)
     vector<FEValues<3>> fe_values_vec_;                    ///< Vector of FEValues of object (of P disc finite element types)
-    LongIdx new_i, new_j;
+    vector<LongIdx> dof_indices_i_, dof_indices_j_;        ///< Global DOF indices.
+
     std::vector<LongIdx> side_dofs_;
     std::vector<double> side_flux_;
     std::vector<double> elm_meassures_;
