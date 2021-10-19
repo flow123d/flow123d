@@ -157,7 +157,7 @@ public:
     class EqData {
     public:
 
-        EqData() : is_mass_diag_changed(false) {};
+        EqData() : is_mass_diag_changed(false), cfl_source_(PETSC_COMM_WORLD), cfl_flow_(PETSC_COMM_WORLD) {}
         virtual ~EqData() {};
 
         /// Returns number of transported substances.
@@ -167,6 +167,11 @@ public:
 		inline void set_time_governor(TimeGovernor *time) {
 		    ASSERT_PTR_DBG(time);
 		    this->time_ = time;
+		}
+
+		void alloc_transport_structs_mpi(unsigned int lsize) {
+		    this->cfl_flow_.resize(lsize);
+		    this->cfl_source_.resize(lsize);
 		}
 
         /**
@@ -194,11 +199,11 @@ public:
     	bool sources_changed_;
 
         vector<VectorMPI> corr_vec;
-        double *cfl_source_;
-        double *cfl_flow_;
-        Mat tm; // PETSc transport matrix
-        double **tm_diag;
-        Vec *bcvcorr; // boundary condition correction vector
+        VectorMPI cfl_source_;      ///< Parallel vector for source term contribution to CFL condition.
+        VectorMPI cfl_flow_;        ///< Parallel vector for flow contribution to CFL condition.
+        Mat tm;                     ///< PETSc transport matrix
+        double **tm_diag;      //<<<< change destructor
+        Vec *bcvcorr;               ///< Boundary condition correction vector
         double transport_bc_time;   ///< Time of the last update of the boundary condition terms.
 		TimeGovernor *time_;
 
@@ -375,9 +380,6 @@ private:
     TimeMark::Type target_mark_type;    ///< TimeMark type for time marks denoting end of every time interval where transport matrix remains constant.
     double cfl_max_step;    ///< Time step constraint coming from CFL condition.
     
-    Vec vcfl_flow_,     ///< Parallel vector for flow contribution to CFL condition.
-        vcfl_source_;   ///< Parallel vector for source term contribution to CFL condition.
-
 
     VecScatter vconc_out_scatter;
     Vec vpmass_diag;  // diagonal entries in mass matrix from last time (cross_section * porosity)

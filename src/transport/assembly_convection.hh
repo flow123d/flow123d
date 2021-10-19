@@ -243,7 +243,7 @@ public:
                                         {source * elm.measure()});
         }
 
-        eq_data_->cfl_source_[local_p0_dof] = max_cfl;
+        eq_data_->cfl_source_.set(local_p0_dof, max_cfl);
     }
 
     /// Assembles the fluxes on the boundary.
@@ -391,7 +391,7 @@ public:
             auto p = *( this->edge_points(edge_side).begin() );
             side_flux_[sid] = eq_fields_->side_flux(p, fe_values_vec_[sid]);
             if (side_flux_[sid] > 0.0) {
-                eq_data_->cfl_flow_[edge_side.cell().local_idx()] -= (side_flux_[sid] / edge_side.element().measure() );
+                eq_data_->cfl_flow_.add(edge_side.cell().local_idx(), -(side_flux_[sid] / edge_side.element().measure()) );
                 edg_flux += side_flux_[sid];
             }
             edge_side.cell().get_dof_indices(dof_indices_i_);
@@ -438,7 +438,7 @@ public:
 
         // volume drain - in-flow to higher dimension
         if (flux < 0.0) {
-            eq_data_->cfl_flow_[cell_lower_dim.local_idx()] -= (-flux) / cell_lower_dim.elm().measure();                           // diagonal drain
+            eq_data_->cfl_flow_.add( cell_lower_dim.local_idx(), (flux / cell_lower_dim.elm().measure()) );                           // diagonal drain
             aij = (-flux) / neighb_side.element().measure();
         } else aij=0;
         MatSetValue(eq_data_->tm, dof_indices_j_[0], dof_indices_i_[0], aij, INSERT_VALUES);
@@ -449,9 +449,7 @@ public:
     void begin() override
     {
         MatZeroEntries(eq_data_->tm);
-
-        for (uint i=0; i<eq_data_->dh_->lsize(); ++i)
-            eq_data_->cfl_flow_[i] = 0.0;
+        eq_data_->cfl_flow_.zero_entries();
     }
 
     /// Implements @p AssemblyBase::end.
@@ -459,9 +457,9 @@ public:
     {
         for ( DHCellAccessor dh_cell : eq_data_->dh_->own_range() ) {
             dh_cell.get_dof_indices(dof_indices_i_);
-            MatSetValue(eq_data_->tm, dof_indices_i_[0], dof_indices_i_[0], eq_data_->cfl_flow_[dh_cell.local_idx()], INSERT_VALUES);
+            MatSetValue(eq_data_->tm, dof_indices_i_[0], dof_indices_i_[0], eq_data_->cfl_flow_.get(dh_cell.local_idx()), INSERT_VALUES);
 
-            eq_data_->cfl_flow_[dh_cell.local_idx()] = fabs(eq_data_->cfl_flow_[dh_cell.local_idx()]);
+            eq_data_->cfl_flow_.set(dh_cell.local_idx(), fabs(eq_data_->cfl_flow_.get(dh_cell.local_idx())) );
         }
 
         MatAssemblyBegin(eq_data_->tm, MAT_FINAL_ASSEMBLY);

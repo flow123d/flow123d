@@ -273,10 +273,6 @@ ConvectionTransport::~ConvectionTransport()
         chkerr(MatDestroy(&eq_data_->tm));
         chkerr(VecDestroy(&eq_data_->mass_diag));
         chkerr(VecDestroy(&vpmass_diag));
-        chkerr(VecDestroy(&vcfl_flow_));
-        chkerr(VecDestroy(&vcfl_source_));
-        //delete eq_data_->cfl_flow_;
-        //delete eq_data_->cfl_source_;
 
         for (sbi = 0; sbi < n_substances(); sbi++) {
             // mpi vectors
@@ -346,9 +342,6 @@ void ConvectionTransport::alloc_transport_vectors() {
     }
 
     eq_fields_->conc_mobile_fe.resize(n_subst);
-    
-    eq_data_->cfl_flow_ = new double[el_ds->lsize()];
-    eq_data_->cfl_source_ = new double[el_ds->lsize()];
 }
 
 //=============================================================================
@@ -393,10 +386,7 @@ void ConvectionTransport::alloc_transport_structs_mpi() {
     VecCreateMPI(PETSC_COMM_WORLD, el_ds->lsize(), mesh_->n_elements(), &eq_data_->mass_diag);
     VecCreateMPI(PETSC_COMM_WORLD, el_ds->lsize(), mesh_->n_elements(), &vpmass_diag);
 
-    VecCreateMPIWithArray(PETSC_COMM_WORLD,1, el_ds->lsize(), mesh_->n_elements(),
-            eq_data_->cfl_flow_, &vcfl_flow_);
-    VecCreateMPIWithArray(PETSC_COMM_WORLD,1, el_ds->lsize(), mesh_->n_elements(),
-            eq_data_->cfl_source_, &vcfl_source_);
+    eq_data_->alloc_transport_structs_mpi(el_ds->lsize());
 }
 
 
@@ -592,7 +582,7 @@ bool ConvectionTransport::evaluate_time_constraint(double& time_constraint)
         // find maximum of sum of contribution from flow and sources: MAX(vcfl_flow_ + vcfl_source_)
         Vec cfl;
         VecCreateMPI(PETSC_COMM_WORLD, el_ds->lsize(), PETSC_DETERMINE, &cfl);
-        VecWAXPY(cfl, 1.0, vcfl_flow_, vcfl_source_);
+        VecWAXPY(cfl, 1.0, eq_data_->cfl_flow_.petsc_vec(), eq_data_->cfl_source_.petsc_vec());
         VecMaxPointwiseDivide(cfl, eq_data_->mass_diag, &cfl_max_step);
         // get a reciprocal value as a time constraint
         cfl_max_step = 1 / cfl_max_step;
