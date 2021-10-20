@@ -26,8 +26,8 @@
 
 #include "flow/darcy_flow_mh.hh"
 #include "flow/darcy_flow_lmh.hh"
-#include "flow/assembly_mh.hh"
-#include "flow/assembly_lmh.hh"
+#include "flow/assembly_mh_old.hh"
+#include "flow/assembly_lmh_old.hh"
 #include "flow/darcy_flow_mh_output.hh"
 
 #include "io/output_time.hh"

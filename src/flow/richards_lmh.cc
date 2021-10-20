@@ -16,7 +16,7 @@
 #include "input/factory.hh"
 #include "flow/richards_lmh.hh"
 #include "flow/soil_models.hh"
-#include "flow/assembly_richards.hh"
+#include "flow/assembly_richards_old.hh"
 #include "flow/darcy_flow_mh_output.hh"
 #include "tools/time_governor.hh"
 

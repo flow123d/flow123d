@@ -1,12 +1,12 @@
 /*
- * assembly_lmh.hh
+ * assembly_lmh_old.hh
  *
  *  Created on: Apr 21, 2016
  *      Author: jb
  */
 
-#ifndef SRC_ASSEMBLY_LMH_HH_
-#define SRC_ASSEMBLY_LMH_HH_
+#ifndef SRC_ASSEMBLY_LMH_OLD_HH_
+#define SRC_ASSEMBLY_LMH_OLD_HH_
 
 #include "system/index_types.hh"
 #include "system/fmt/posix.h"
@@ -27,7 +27,7 @@
 #include "la/local_system.hh"
 
 #include "coupling/balance.hh"
-#include "flow/assembly_mh.hh"
+#include "flow/assembly_mh_old.hh"
 #include "flow/darcy_flow_lmh.hh"
 #include "flow/mortar_assembly.hh"
 
@@ -619,4 +619,4 @@ protected:
 };
 
 
-#endif /* SRC_ASSEMBLY_LMH_HH_ */
+#endif /* SRC_ASSEMBLY_LMH_OLD_HH_ */

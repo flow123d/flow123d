@@ -48,7 +48,7 @@
 #include "la/local_to_global_map.hh"
 #include "la/vector_mpi.hh"
 
-#include "flow/assembly_mh.hh"
+#include "flow/assembly_mh_old.hh"
 #include "flow/darcy_flow_mh.hh"
 #include "flow/darcy_flow_mh_output.hh"
 

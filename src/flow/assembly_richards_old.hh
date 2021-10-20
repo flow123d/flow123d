@@ -1,5 +1,5 @@
 /*
- * assembly_lmh.hh
+ * assembly_richards_old.hh
  *
  *  Created on: Apr 30, 2016
  *      Author: jb
@@ -9,7 +9,7 @@
 #define SRC_FLOW_ASSEMBLY_LMH_HH_
 
 #include "system/index_types.hh"
-#include "flow/assembly_lmh.hh"
+#include "flow/assembly_lmh_old.hh"
 #include "soil_models.hh"
 #include "coupling/balance.hh"
 
