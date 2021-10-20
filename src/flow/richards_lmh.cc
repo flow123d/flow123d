@@ -155,7 +155,7 @@ void RichardsLMH::initialize_specific() {
     data_->conductivity_richards.set(data_->conductivity_ptr, 0.0);
 
 
-    data_->multidim_assembler = AssemblyBase::create< AssemblyRichards >(data_);
+    data_->multidim_assembler = AssemblyFlowBase::create< AssemblyRichards >(data_);
 }
 
 

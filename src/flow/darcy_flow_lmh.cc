@@ -363,7 +363,7 @@ void DarcyLMH::initialize() {
 
 void DarcyLMH::initialize_specific()
 {
-    data_->multidim_assembler = AssemblyBase::create< AssemblyLMH >(data_);
+    data_->multidim_assembler = AssemblyFlowBase::create< AssemblyLMH >(data_);
 }
 
 // void DarcyLMH::read_initial_condition()

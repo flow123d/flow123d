@@ -34,7 +34,7 @@
  * Is implemented in DarcyMH, DarcyLMH and RichardsLMH assembly classes,
  * which are independent of each other.
  */
-class AssemblyBase
+class AssemblyFlowBase
 {
 public:
     DECLARE_EXCEPTION( ExcBCNotSupported, << "BC type not supported.\n" );
@@ -57,7 +57,7 @@ public:
             std::make_shared<Impl<3> >(data) };
     }
 
-    virtual ~AssemblyBase() {}
+    virtual ~AssemblyFlowBase() {}
 };
 
 
@@ -84,7 +84,7 @@ public:
  * the LMH version is stable and optimized.
  */
 template<int dim>
-class AssemblyMH : public AssemblyBase
+class AssemblyMH : public AssemblyFlowBase
 {
 public:
     typedef std::shared_ptr<DarcyMH::EqData>  AssemblyDataPtrMH;

@@ -36,7 +36,7 @@
  * Used also for Richards.
  */
 template <int dim>
-class AssemblyLMH : public AssemblyBase
+class AssemblyLMH : public AssemblyFlowBase
 {
 public:
     typedef std::shared_ptr<DarcyLMH::EqData> AssemblyDataPtrLMH;

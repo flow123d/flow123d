@@ -55,7 +55,7 @@
 #include "system/exceptions.hh"                 // for ExcStream, operator<<
 #include "tools/time_governor.hh"               // for TimeGovernor
 
-class AssemblyBase;
+class AssemblyFlowBase;
 class Balance;
 class DarcyFlowMHOutput;
 class Element;
@@ -70,7 +70,7 @@ namespace Input {
 		class Selection;
 	}
 }
-typedef std::vector<std::shared_ptr<AssemblyBase> > MultidimAssembly;
+typedef std::vector<std::shared_ptr<AssemblyFlowBase> > MultidimAssembly;
 
 template<int spacedim, class Value> class FieldAddPotential;
 template<int spacedim, class Value> class FieldDivide;

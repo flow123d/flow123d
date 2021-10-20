@@ -437,7 +437,7 @@ void DarcyMH::initialize() {
     }
 
     init_eq_data();
-    this->data_->multidim_assembler =  AssemblyBase::create< AssemblyMH >(data_);
+    this->data_->multidim_assembler =  AssemblyFlowBase::create< AssemblyMH >(data_);
     output_object = new DarcyFlowMHOutput(this, input_record_);
 
     { // construct pressure, velocity and piezo head fields
@@ -718,7 +718,7 @@ void DarcyMH::postprocess()
 
     //fix velocity when mortar method is used
     if(data_->mortar_method_ != MortarMethod::NoMortar){
-        auto multidim_assembler =  AssemblyBase::create< AssemblyMH >(data_);
+        auto multidim_assembler =  AssemblyFlowBase::create< AssemblyMH >(data_);
         for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
             unsigned int dim = dh_cell.dim();
             multidim_assembler[dim-1]->fix_velocity(dh_cell);
