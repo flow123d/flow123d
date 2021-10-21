@@ -84,7 +84,7 @@ const it::Selection & DarcyMH::get_mh_mortar_selection() {
 }
 
 
-const it::Selection & DarcyMH::EqData::get_bc_type_selection() {
+const it::Selection & DarcyMH::EqFields::get_bc_type_selection() {
 	return it::Selection("Flow_Darcy_BC_Type")
         .add_value(none, "none",
             "Homogeneous Neumann boundary condition\n(zero normal flux over the boundary).")
@@ -117,7 +117,7 @@ const it::Record & DarcyMH::type_field_descriptor() {
 
         const it::Record &field_descriptor =
         it::Record("Flow_Darcy_MH_Data",FieldCommon::field_descriptor_record_description("Flow_Darcy_MH_Data") )
-        .copy_keys( DarcyMH::EqData().make_field_descriptor_type("Flow_Darcy_MH_Data_aux") )
+        .copy_keys( DarcyMH::EqFields().make_field_descriptor_type("Flow_Darcy_MH_Data_aux") )
             .declare_key("bc_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(),
                     "Boundary piezometric head for BC types: dirichlet, robin, and river." )
             .declare_key("bc_switch_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(),
@@ -147,7 +147,7 @@ const it::Record & DarcyMH::get_input_type() {
             "ends with convergence success on stagnation, but it reports warning about it.")
         .close();
 
-    DarcyMH::EqData eq_data;
+    DarcyMH::EqFields eq_fields;
     
     return it::Record("Flow_Darcy_MH", "Mixed-Hybrid  solver for saturated Darcy flow.")
 		.derive_from(DarcyFlowInterface::get_input_type())
@@ -161,7 +161,7 @@ const it::Record & DarcyMH::get_input_type() {
         .declare_key("output_stream", OutputTime::get_input_type(), it::Default("{}"),
                 "Output stream settings.\n Specify file format, precision etc.")
 
-        .declare_key("output", DarcyFlowMHOutput::get_input_type(eq_data, "Flow_Darcy_MH"),
+        .declare_key("output", DarcyFlowMHOutput::get_input_type(eq_fields, "Flow_Darcy_MH"),
                 IT::Default("{ \"fields\": [ \"pressure_p0\", \"velocity_p0\" ] }"),
                 "Specification of output fields and output times.")
         .declare_key("output_specific", DarcyFlowMHOutput::get_input_type_specific(), it::Default::optional(),
@@ -183,10 +183,8 @@ const int DarcyMH::registrar =
 
 
 
-DarcyMH::EqData::EqData()
+DarcyMH::EqFields::EqFields()
 {
-    mortar_method_=NoMortar;
-
     *this += field_ele_pressure.name("pressure_p0")
              .units(UnitSI().m())
              .flags(FieldFlag::equation_result)
@@ -302,6 +300,12 @@ DarcyMH::EqData::EqData()
     //rhs_fields = this->subset({"water_source_density", "bc_pressure", "bc_flux"});
 }
 
+DarcyMH::EqData::EqData()
+{
+    mortar_method_=NoMortar;
+}
+
+
 
 
 //=============================================================================
@@ -346,15 +350,16 @@ DarcyMH::DarcyMH(Mesh &mesh_in, const Input::Record in_rec, TimeGovernor *tm)
         }
     }
 
-    data_ = make_shared<EqData>();
-    EquationBase::eq_fieldset_ = data_.get();
+    eq_fields_ = make_shared<EqFields>();
+    eq_data_ = make_shared<EqData>();
+    this->eq_fieldset_ = eq_fields_.get();
     
-    data_->is_linear=true;
+    eq_data_->is_linear=true;
 
     size = mesh_->n_elements() + mesh_->n_sides() + mesh_->n_edges();
     n_schur_compls = in_rec.val<int>("n_schurs");
-    data_->mortar_method_= in_rec.val<MortarMethod>("mortar_method");
-    if (data_->mortar_method_ != NoMortar) {
+    eq_data_->mortar_method_= in_rec.val<MortarMethod>("mortar_method");
+    if (eq_data_->mortar_method_ != NoMortar) {
         mesh_->mixed_intersections();
     }
     
@@ -374,28 +379,28 @@ void DarcyMH::init_eq_data()
 {
 
     START_TIMER("data init");
-    data_->mesh = mesh_;
-    data_->set_mesh(*mesh_);
+    eq_data_->mesh = mesh_;
+    eq_fields_->set_mesh(*mesh_);
 
     auto gravity_array = input_record_.val<Input::Array>("gravity");
     std::vector<double> gvec;
     gravity_array.copy_to(gvec);
     gvec.push_back(0.0); // zero pressure shift
-    data_->gravity_ =  arma::vec(gvec);
-    data_->gravity_vec_ = data_->gravity_.subvec(0,2);
+    eq_data_->gravity_ =  arma::vec(gvec);
+    eq_data_->gravity_vec_ = eq_data_->gravity_.subvec(0,2);
 
-    data_->bc_pressure.add_factory(
+    eq_fields_->bc_pressure.add_factory(
         std::make_shared<FieldAddPotential<3, FieldValue<3>::Scalar>::FieldFactory>
-        (data_->gravity_, "bc_piezo_head") );
-    data_->bc_switch_pressure.add_factory(
+        (eq_data_->gravity_, "bc_piezo_head") );
+    eq_fields_->bc_switch_pressure.add_factory(
             std::make_shared<FieldAddPotential<3, FieldValue<3>::Scalar>::FieldFactory>
-            (data_->gravity_, "bc_switch_piezo_head") );
-    data_->init_pressure.add_factory(
+            (eq_data_->gravity_, "bc_switch_piezo_head") );
+    eq_fields_->init_pressure.add_factory(
             std::make_shared<FieldAddPotential<3, FieldValue<3>::Scalar>::FieldFactory>
-            (data_->gravity_, "init_piezo_head") );
+            (eq_data_->gravity_, "init_piezo_head") );
 
 
-    data_->set_input_list( this->input_record_.val<Input::Array>("input_fields"), *time_ );
+    eq_fields_->set_input_list( this->input_record_.val<Input::Array>("input_fields"), *time_ );
     // Check that the time step was set for the transient simulation.
     if (! zero_time_term(true) && time_->is_default() ) {
         //THROW(ExcAssertMsg());
@@ -404,7 +409,7 @@ void DarcyMH::init_eq_data()
         ASSERT(false);
     }
 
-    data_->mark_input_times(*time_);
+    eq_fields_->mark_input_times(*time_);
 }
 
 
@@ -432,50 +437,50 @@ void DarcyMH::initialize() {
 	    MixedPtr<FESystem> fe_sys( std::make_shared<FESystem<0>>(fe0_sys), std::make_shared<FESystem<1>>(fe1_sys),
 	                                    std::make_shared<FESystem<2>>(fe2_sys), std::make_shared<FESystem<3>>(fe3_sys) );
 		std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh_, fe_sys);
-		data_->dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
-		data_->dh_->distribute_dofs(ds);
+		eq_data_->dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
+		eq_data_->dh_->distribute_dofs(ds);
     }
 
     init_eq_data();
-    this->data_->multidim_assembler =  AssemblyFlowBase::create< AssemblyMH >(data_);
+    this->eq_data_->multidim_assembler =  AssemblyFlowBase::create< AssemblyMH >(eq_fields_, eq_data_);
     output_object = new DarcyFlowMHOutput(this, input_record_);
 
     { // construct pressure, velocity and piezo head fields
 		uint rt_component = 0;
-        data_->full_solution = data_->dh_->create_vector();
-        auto ele_flux_ptr = create_field_fe<3, FieldValue<3>::VectorFixed>(data_->dh_, &data_->full_solution, rt_component);
-        data_->flux.set(ele_flux_ptr, 0.0);
+        eq_data_->full_solution = eq_data_->dh_->create_vector();
+        auto ele_flux_ptr = create_field_fe<3, FieldValue<3>::VectorFixed>(eq_data_->dh_, &eq_data_->full_solution, rt_component);
+        eq_fields_->flux.set(ele_flux_ptr, 0.0);
 
-		auto ele_velocity_ptr = std::make_shared< FieldDivide<3, FieldValue<3>::VectorFixed> >(ele_flux_ptr, data_->cross_section);
-		data_->field_ele_velocity.set(ele_velocity_ptr, 0.0);
+		auto ele_velocity_ptr = std::make_shared< FieldDivide<3, FieldValue<3>::VectorFixed> >(ele_flux_ptr, eq_fields_->cross_section);
+		eq_fields_->field_ele_velocity.set(ele_velocity_ptr, 0.0);
 
 		uint p_ele_component = 1;
-        auto ele_pressure_ptr = create_field_fe<3, FieldValue<3>::Scalar>(data_->dh_, &data_->full_solution, p_ele_component);
-		data_->field_ele_pressure.set(ele_pressure_ptr, 0.0);
+        auto ele_pressure_ptr = create_field_fe<3, FieldValue<3>::Scalar>(eq_data_->dh_, &eq_data_->full_solution, p_ele_component);
+        eq_fields_->field_ele_pressure.set(ele_pressure_ptr, 0.0);
 
         uint p_edge_component = 2;
-        auto edge_pressure_ptr = create_field_fe<3, FieldValue<3>::Scalar>(data_->dh_, &data_->full_solution, p_edge_component);
-		data_->field_edge_pressure.set(edge_pressure_ptr, 0.0);
+        auto edge_pressure_ptr = create_field_fe<3, FieldValue<3>::Scalar>(eq_data_->dh_, &eq_data_->full_solution, p_edge_component);
+        eq_fields_->field_edge_pressure.set(edge_pressure_ptr, 0.0);
 
-		arma::vec4 gravity = (-1) * data_->gravity_;
+		arma::vec4 gravity = (-1) * eq_data_->gravity_;
 		auto ele_piezo_head_ptr = std::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar> >(gravity, ele_pressure_ptr);
-		data_->field_ele_piezo_head.set(ele_piezo_head_ptr, 0.0);
+		eq_fields_->field_ele_piezo_head.set(ele_piezo_head_ptr, 0.0);
     }
 
     { // init DOF handlers represents edge DOFs
         uint p_edge_component = 2;
-        data_->dh_cr_ = std::make_shared<SubDOFHandlerMultiDim>(data_->dh_,p_edge_component);
+        eq_data_->dh_cr_ = std::make_shared<SubDOFHandlerMultiDim>(eq_data_->dh_,p_edge_component);
     }
 
     { // init DOF handlers represents side DOFs
 		MixedPtr<FE_CR_disc> fe_cr_disc;
 		std::shared_ptr<DiscreteSpace> ds_cr_disc = std::make_shared<EqualOrderDiscreteSpace>( mesh_, fe_cr_disc);
-		data_->dh_cr_disc_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
-		data_->dh_cr_disc_->distribute_dofs(ds_cr_disc);
+		eq_data_->dh_cr_disc_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
+		eq_data_->dh_cr_disc_->distribute_dofs(ds_cr_disc);
     }
 
     // Initialize bc_switch_dirichlet to size of global boundary.
-    data_->bc_switch_dirichlet.resize(mesh_->n_elements()+mesh_->get_bc_mesh()->n_elements(), 1);
+    eq_data_->bc_switch_dirichlet.resize(mesh_->n_elements()+mesh_->get_bc_mesh()->n_elements(), 1);
 
 
     nonlinear_iteration_=0;
@@ -484,14 +489,14 @@ void DarcyMH::initialize() {
             .val<Input::AbstractRecord>("linear_solver");
 
     // auxiliary set_time call  since allocation assembly evaluates fields as well
-    data_changed_ = data_->set_time(time_->step(), LimitSide::right) || data_changed_;
+    data_changed_ = eq_fields_->set_time(time_->step(), LimitSide::right) || data_changed_;
     create_linear_system(rec);
 
 
 
     // allocate time term vectors
     VecDuplicate(schur0->get_solution(), &previous_solution);
-    VecCreateMPI(PETSC_COMM_WORLD, data_->dh_->distr()->lsize(),PETSC_DETERMINE,&(steady_diagonal));
+    VecCreateMPI(PETSC_COMM_WORLD, eq_data_->dh_->distr()->lsize(),PETSC_DETERMINE,&(steady_diagonal));
     VecDuplicate(steady_diagonal,& new_diagonal);
     VecZeroEntries(new_diagonal);
     VecDuplicate(steady_diagonal, &steady_rhs);
@@ -500,13 +505,13 @@ void DarcyMH::initialize() {
     // initialization of balance object
     balance_ = std::make_shared<Balance>("water", mesh_);
     balance_->init_from_input(input_record_.val<Input::Record>("balance"), time());
-    data_->water_balance_idx = balance_->add_quantity("water_volume");
-    balance_->allocate(data_->dh_->distr()->lsize(), 1);
+    eq_data_->water_balance_idx = balance_->add_quantity("water_volume");
+    balance_->allocate(eq_data_->dh_->distr()->lsize(), 1);
     balance_->units(UnitSI().m(3));
 
 
-    data_->balance = balance_;
-    data_->lin_sys = schur0;
+    eq_data_->balance = balance_;
+    eq_data_->lin_sys = schur0;
 
 
     initialize_specific();
@@ -524,7 +529,7 @@ void DarcyMH::zero_time_step()
      *   Solver should be able to switch from and to steady case depending on the zero time term.
      */
 
-    data_changed_ = data_->set_time(time_->step(), LimitSide::right) || data_changed_;
+    data_changed_ = eq_fields_->set_time(time_->step(), LimitSide::right) || data_changed_;
 
     // zero_time_term means steady case
     bool zero_time_term_from_right = zero_time_term();
@@ -561,18 +566,18 @@ void DarcyMH::update_solution()
 
     solve_time_step();
 
-    data_->full_solution.local_to_ghost_begin();
-    data_->full_solution.local_to_ghost_end();
+    eq_data_->full_solution.local_to_ghost_begin();
+    eq_data_->full_solution.local_to_ghost_end();
 }
 
 
 void DarcyMH::solve_time_step(bool output)
 {
-    data_changed_ = data_->set_time(time_->step(), LimitSide::left) || data_changed_;
+    data_changed_ = eq_fields_->set_time(time_->step(), LimitSide::left) || data_changed_;
     
     bool zero_time_term_from_left=zero_time_term();
 
-    bool jump_time = data_->storativity.is_jump_time();
+    bool jump_time = eq_fields_->storativity.is_jump_time();
     if (! zero_time_term_from_left) {
         // time term not treated as zero
         // Unsteady solution up to the T.
@@ -596,7 +601,7 @@ void DarcyMH::solve_time_step(bool output)
         return;
     }
 
-    data_changed_ = data_->set_time(time_->step(), LimitSide::right) || data_changed_;
+    data_changed_ = eq_fields_->set_time(time_->step(), LimitSide::right) || data_changed_;
     bool zero_time_term_from_right=zero_time_term();
     if (zero_time_term_from_right) {
         // this flag is necesssary for switching BC to avoid setting zero neumann on the whole boundary in the steady case
@@ -616,9 +621,9 @@ void DarcyMH::solve_time_step(bool output)
 
 bool DarcyMH::zero_time_term(bool time_global) {
     if (time_global) {
-        return (data_->storativity.input_list_size() == 0);
+        return (eq_fields_->storativity.input_list_size() == 0);
     } else {
-        return data_->storativity.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
+        return eq_fields_->storativity.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
     }
 }
 
@@ -633,7 +638,7 @@ void DarcyMH::solve_nonlinear()
 
     // Reduce is_linear flag.
     int is_linear_common;
-    MPI_Allreduce(&(data_->is_linear), &is_linear_common,1, MPI_INT ,MPI_MIN,PETSC_COMM_WORLD);
+    MPI_Allreduce(&(eq_data_->is_linear), &is_linear_common,1, MPI_INT ,MPI_MIN,PETSC_COMM_WORLD);
 
     Input::Record nl_solver_rec = input_record_.val<Input::Record>("nonlinear_solver");
     this->tolerance_ = nl_solver_rec.val<double>("tolerance");
@@ -717,9 +722,9 @@ void DarcyMH::postprocess()
     START_TIMER("postprocess");
 
     //fix velocity when mortar method is used
-    if(data_->mortar_method_ != MortarMethod::NoMortar){
-        auto multidim_assembler =  AssemblyFlowBase::create< AssemblyMH >(data_);
-        for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
+    if(eq_data_->mortar_method_ != MortarMethod::NoMortar){
+        auto multidim_assembler =  AssemblyFlowBase::create< AssemblyMH >(eq_fields_, eq_data_);
+        for ( DHCellAccessor dh_cell : eq_data_->dh_->own_range() ) {
             unsigned int dim = dh_cell.dim();
             multidim_assembler[dim-1]->fix_velocity(dh_cell);
         }
@@ -756,8 +761,8 @@ void DarcyMH::output_data() {
 
 
     START_TIMER("Darcy balance output");
-    balance_->calculate_cumulative(data_->water_balance_idx, schur0->get_solution());
-    balance_->calculate_instant(data_->water_balance_idx, schur0->get_solution());
+    balance_->calculate_cumulative(eq_data_->water_balance_idx, schur0->get_solution());
+    balance_->calculate_instant(eq_data_->water_balance_idx, schur0->get_solution());
     balance_->output();
 }
 
@@ -779,21 +784,21 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembly& assembler)
     START_TIMER("DarcyFlowMHy::assembly_mh_matrix");
 
     // set auxiliary flag for switchting Dirichlet like BC
-    data_->force_no_neumann_bc = use_steady_assembly_ && (nonlinear_iteration_ == 0);
-    data_->n_schur_compls = n_schur_compls;
+    eq_data_->force_no_neumann_bc = use_steady_assembly_ && (nonlinear_iteration_ == 0);
+    eq_data_->n_schur_compls = n_schur_compls;
     
 
-    balance_->start_flux_assembly(data_->water_balance_idx);
+    balance_->start_flux_assembly(eq_data_->water_balance_idx);
 
     // TODO: try to move this into balance, or have it in the generic assembler class, that should perform the cell loop
     // including various pre- and post-actions
-    for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
+    for ( DHCellAccessor dh_cell : eq_data_->dh_->own_range() ) {
         unsigned int dim = dh_cell.dim();
         assembler[dim-1]->assemble(dh_cell);
     }    
     
 
-    balance_->finish_flux_assembly(data_->water_balance_idx);
+    balance_->finish_flux_assembly(eq_data_->water_balance_idx);
 
 }
 
@@ -803,7 +808,7 @@ void DarcyMH::allocate_mh_matrix()
     START_TIMER("DarcyFlowMH::allocate_mh_matrix");
 
     // set auxiliary flag for switchting Dirichlet like BC
-    data_->n_schur_compls = n_schur_compls;
+    eq_data_->n_schur_compls = n_schur_compls;
     LinSys *ls = schur0;
 
     // to make space for second schur complement, max. 10 neighbour edges of one el.
@@ -814,10 +819,10 @@ void DarcyMH::allocate_mh_matrix()
     tmp_rows.reserve(200);
 
     std::vector<LongIdx> dofs, dofs_ngh;
-    dofs.reserve(data_->dh_->max_elem_dofs());
-    dofs_ngh.reserve(data_->dh_->max_elem_dofs());
+    dofs.reserve(eq_data_->dh_->max_elem_dofs());
+    dofs_ngh.reserve(eq_data_->dh_->max_elem_dofs());
 
-    for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
+    for ( DHCellAccessor dh_cell : eq_data_->dh_->own_range() ) {
         ElementAccessor<3> ele = dh_cell.elm();
         
         const uint ndofs = dh_cell.n_dofs();
@@ -859,11 +864,11 @@ void DarcyMH::allocate_mh_matrix()
 
         tmp_rows.clear();
 
-        if (data_->mortar_method_ != NoMortar) {
+        if (eq_data_->mortar_method_ != NoMortar) {
             auto &isec_list = mesh_->mixed_intersections().element_intersections_[ele.idx()];
             for(auto &isec : isec_list ) {
                 IntersectionLocalBase *local = isec.second;
-                DHCellAccessor dh_cell_slave = data_->dh_->cell_accessor_from_element(local->bulk_ele_idx());
+                DHCellAccessor dh_cell_slave = eq_data_->dh_->cell_accessor_from_element(local->bulk_ele_idx());
 
                 const uint ndofs_slave = dh_cell_slave.n_dofs();
                 dofs_ngh.resize(ndofs_slave);
@@ -914,31 +919,31 @@ void DarcyMH::allocate_mh_matrix()
 void DarcyMH::assembly_source_term()
 {
     START_TIMER("assembly source term");
-   	balance_->start_source_assembly(data_->water_balance_idx);
+   	balance_->start_source_assembly(eq_data_->water_balance_idx);
 
-    std::vector<LongIdx> global_dofs(data_->dh_->max_elem_dofs());
+    std::vector<LongIdx> global_dofs(eq_data_->dh_->max_elem_dofs());
 
-   	for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
+   	for ( DHCellAccessor dh_cell : eq_data_->dh_->own_range() ) {
         ElementAccessor<3> ele = dh_cell.elm();
 
         const uint ndofs = dh_cell.n_dofs();
         global_dofs.resize(ndofs);
         dh_cell.get_dof_indices(global_dofs);
         
-        double cs = data_->cross_section.value(ele.centre(), ele);
+        double cs = eq_fields_->cross_section.value(ele.centre(), ele);
 
         // set sources
         double source = ele.measure() * cs *
-                (data_->water_source_density.value(ele.centre(), ele)
-                +data_->extra_source.value(ele.centre(), ele));
+                (eq_fields_->water_source_density.value(ele.centre(), ele)
+                +eq_fields_->extra_source.value(ele.centre(), ele));
         // TODO: replace with DHCell getter when available for FESystem component
         schur0->rhs_set_value(global_dofs[ndofs/2], -1.0 * source );
 
-        balance_->add_source_values(data_->water_balance_idx, ele.region().bulk_idx(),
+        balance_->add_source_values(eq_data_->water_balance_idx, ele.region().bulk_idx(),
                                     {dh_cell.get_loc_dof_indices()[ndofs/2]}, {0}, {source});
     }
 
-    balance_->finish_source_assembly(data_->water_balance_idx);
+    balance_->finish_source_assembly(eq_data_->water_balance_idx);
 }
 
 
@@ -958,10 +963,10 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
 #ifdef FLOW123D_HAVE_BDDCML
     		WarningOut() << "For BDDC no Schur complements are used.";
             n_schur_compls = 0;
-            LinSys_BDDC *ls = new LinSys_BDDC(&(*data_->dh_->distr()),
+            LinSys_BDDC *ls = new LinSys_BDDC(&(*eq_data_->dh_->distr()),
                     true); // swap signs of matrix and rhs to make the matrix SPD
             ls->set_from_input(in_rec);
-            ls->set_solution( data_->full_solution.petsc_vec() );
+            ls->set_solution( eq_data_->full_solution.petsc_vec() );
             // possible initialization particular to BDDC
             START_TIMER("BDDC set mesh data");
             set_mesh_data_for_bddc(ls);
@@ -982,7 +987,7 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
             LinSys_PETSC *schur1, *schur2;
 
             if (n_schur_compls == 0) {
-                LinSys_PETSC *ls = new LinSys_PETSC( &(*data_->dh_->distr()) );
+                LinSys_PETSC *ls = new LinSys_PETSC( &(*eq_data_->dh_->distr()) );
 
                 // temporary solution; we have to set precision also for sequantial case of BDDC
                 // final solution should be probably call of direct solver for oneproc case
@@ -991,7 +996,7 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
                     ls->LinSys::set_from_input(in_rec); // get only common options
                 }
 
-                ls->set_solution( data_->full_solution.petsc_vec() );
+                ls->set_solution( eq_data_->full_solution.petsc_vec() );
                 schur0=ls;
             } else {
                 IS is;
@@ -1001,7 +1006,7 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
                 //ISView(is, PETSC_VIEWER_STDOUT_SELF);
                 //OLD_ASSERT(err == 0,"Error in ISCreateStride.");
 
-                SchurComplement *ls = new SchurComplement(&(*data_->dh_->distr()), is);
+                SchurComplement *ls = new SchurComplement(&(*eq_data_->dh_->distr()), is);
 
                 // make schur1
                 Distribution *ds = ls->make_complement_distribution();
@@ -1036,7 +1041,7 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
                 }
                 ls->set_complement( schur1 );
                 ls->set_from_input(in_rec);
-                ls->set_solution( data_->full_solution.petsc_vec() );
+                ls->set_solution( eq_data_->full_solution.petsc_vec() );
                 schur0=ls;
             }
 
@@ -1064,7 +1069,7 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
 void DarcyMH::assembly_linear_system() {
     START_TIMER("DarcyFlowMH_Steady::assembly_linear_system");
 
-    data_->is_linear=true;
+    eq_data_->is_linear=true;
     bool is_steady = zero_time_term();
 	//DebugOut() << "Assembly linear system\n";
 	if (data_changed_) {
@@ -1082,7 +1087,7 @@ void DarcyMH::assembly_linear_system() {
         assembly_source_term();
         
 
-	    assembly_mh_matrix( data_->multidim_assembler ); // fill matrix
+	    assembly_mh_matrix( eq_data_->multidim_assembler ); // fill matrix
 
 	    schur0->finish_assembly();
 //         print_matlab_matrix("matrix");
@@ -1099,8 +1104,8 @@ void DarcyMH::assembly_linear_system() {
 	    }
 	    else
 	    {
-	    	balance_->start_mass_assembly(data_->water_balance_idx);
-	    	balance_->finish_mass_assembly(data_->water_balance_idx);
+	    	balance_->start_mass_assembly(eq_data_->water_balance_idx);
+	    	balance_->finish_mass_assembly(eq_data_->water_balance_idx);
 	    }
 	    END_TIMER("full assembly");
 	} else {
@@ -1169,9 +1174,9 @@ void DarcyMH::print_matlab_matrix(std::string matlab_file)
     
     FILE * file;
     file = fopen(output_file.c_str(),"a");
-    fprintf(file, "nA = %d;\n", data_->dh_cr_disc_->distr()->size());
-    fprintf(file, "nB = %d;\n", data_->dh_->mesh()->get_el_ds()->size());
-    fprintf(file, "nBF = %d;\n", data_->dh_cr_->distr()->size());
+    fprintf(file, "nA = %d;\n", eq_data_->dh_cr_disc_->distr()->size());
+    fprintf(file, "nB = %d;\n", eq_data_->dh_->mesh()->get_el_ds()->size());
+    fprintf(file, "nBF = %d;\n", eq_data_->dh_cr_->distr()->size());
     fprintf(file, "h1 = %e;\nh2 = %e;\nh3 = %e;\n", h1, h2, h3);
     fprintf(file, "he2 = %e;\nhe3 = %e;\n", he2, he3);
     fclose(file);
@@ -1216,7 +1221,7 @@ void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
 
 
 
-    for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
+    for ( DHCellAccessor dh_cell : eq_data_->dh_->own_range() ) {
         // for each element, create local numbering of dofs as fluxes (sides), pressure (element centre), Lagrange multipliers (edges), compatible connections
 
         dh_cell.get_dof_indices(cell_dofs_global);
@@ -1261,8 +1266,8 @@ void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
 
         // version for rho scaling
         // trace computation
-        double conduct = data_->conductivity.value( elm_centre , dh_cell.elm() );
-        auto aniso = data_->anisotropy.value( elm_centre , dh_cell.elm() );
+        double conduct = eq_fields_->conductivity.value( elm_centre , dh_cell.elm() );
+        auto aniso = eq_fields_->anisotropy.value( elm_centre , dh_cell.elm() );
 
         // compute mean on the diagonal
         double coef = 0.;
@@ -1284,7 +1289,7 @@ void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
 //        }
 //    }
 
-    auto distr = data_->dh_->distr();
+    auto distr = eq_data_->dh_->distr();
 //    for(auto pair : localDofMap) {
 //        DebugOut().every_proc() << "r: " << distr->myp() << " gi: " << pair.first << "xyz: " << pair.second[0];
 //
@@ -1294,7 +1299,7 @@ void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
     //convert set of dofs to vectors
     // number of nodes (= dofs) on the subdomain
     int numNodeSub = localDofMap.size();
-    //ASSERT_EQ( (unsigned int)numNodeSub, data_->dh_->lsize() );
+    //ASSERT_EQ( (unsigned int)numNodeSub, eq:data_->dh_->lsize() );
     // Indices of Subdomain Nodes in Global Numbering - for local nodes, their global indices
     std::vector<int> isngn( numNodeSub );
     // pseudo-coordinates of local nodes (i.e. dofs)
@@ -1431,12 +1436,12 @@ void DarcyMH::read_initial_condition()
 	// cycle over local element rows
 
 	DebugOut().fmt("Setup with dt: {}\n", time_->dt());
-	for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
+	for ( DHCellAccessor dh_cell : eq_data_->dh_->own_range() ) {
 	    ElementAccessor<3> ele = dh_cell.elm();
 	    // set initial condition
         // TODO: replace with DHCell getter when available for FESystem component
         const IntIdx p_ele_dof = dh_cell.get_loc_dof_indices()[dh_cell.n_dofs()/2];
-	    local_sol[p_ele_dof] = data_->init_pressure.value(ele.centre(),ele);
+	    local_sol[p_ele_dof] = eq_fields_->init_pressure.value(ele.centre(),ele);
 	}
 }
 
@@ -1452,12 +1457,12 @@ void DarcyMH::setup_time_term() {
 
     DebugOut().fmt("Setup with dt: {}\n", time_->dt());
 
-   	balance_->start_mass_assembly(data_->water_balance_idx);
+   	balance_->start_mass_assembly(eq_data_->water_balance_idx);
 
    	std::vector<LongIdx> dofs;
-    dofs.reserve(data_->dh_->max_elem_dofs());
+    dofs.reserve(eq_data_->dh_->max_elem_dofs());
 
-   	for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
+   	for ( DHCellAccessor dh_cell : eq_data_->dh_->own_range() ) {
         ElementAccessor<3> ele = dh_cell.elm();
         dofs.resize(dh_cell.n_dofs());
         dh_cell.get_dof_indices(dofs);
@@ -1465,13 +1470,13 @@ void DarcyMH::setup_time_term() {
         // TODO: replace with DHCell getter when available for FESystem component
         const uint p_ele_dof = dh_cell.n_dofs() / 2;
         // set new diagonal
-        double diagonal_coeff = data_->cross_section.value(ele.centre(), ele)
-            * ( data_->storativity.value(ele.centre(), ele)
-               +data_->extra_storativity.value(ele.centre(), ele))
+        double diagonal_coeff = eq_fields_->cross_section.value(ele.centre(), ele)
+            * ( eq_fields_->storativity.value(ele.centre(), ele)
+               +eq_fields_->extra_storativity.value(ele.centre(), ele))
             * ele.measure();
         local_diagonal[dh_cell.get_loc_dof_indices()[p_ele_dof]]= - diagonal_coeff / time_->dt();
 
-        balance_->add_mass_values(data_->water_balance_idx, dh_cell,
+        balance_->add_mass_values(eq_data_->water_balance_idx, dh_cell,
                                   {dh_cell.get_loc_dof_indices()[p_ele_dof]},
                                   {diagonal_coeff}, 0.0);
     }
@@ -1480,7 +1485,7 @@ void DarcyMH::setup_time_term() {
 
     schur0->set_matrix_changed();
 
-    balance_->finish_mass_assembly(data_->water_balance_idx);
+    balance_->finish_mass_assembly(eq_data_->water_balance_idx);
 }
 
 void DarcyMH::modify_system() {
@@ -1526,8 +1531,8 @@ std::vector<int> DarcyMH::get_component_indices_vec(unsigned int component) cons
 	ASSERT_LT_DBG(component, 3).error("Invalid component!");
 	unsigned int i, n_dofs, min, max;
     std::vector<int> dof_vec;
-    std::vector<LongIdx> dof_indices(data_->dh_->max_elem_dofs());
-	for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
+    std::vector<LongIdx> dof_indices(eq_data_->dh_->max_elem_dofs());
+	for ( DHCellAccessor dh_cell : eq_data_->dh_->own_range() ) {
         n_dofs = dh_cell.get_dof_indices(dof_indices);
         dofs_range(n_dofs, min, max, component);
         for (i=min; i<max; ++i) dof_vec.push_back(dof_indices[i]);

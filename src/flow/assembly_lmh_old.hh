@@ -39,12 +39,14 @@ template <int dim>
 class AssemblyLMH : public AssemblyFlowBase
 {
 public:
+    typedef std::shared_ptr<DarcyLMH::EqFields> AssemblyFieldsPtrLMH;
     typedef std::shared_ptr<DarcyLMH::EqData> AssemblyDataPtrLMH;
     
-    AssemblyLMH<dim>(AssemblyDataPtrLMH data)
+    AssemblyLMH<dim>(AssemblyFieldsPtrLMH eq_fields, AssemblyDataPtrLMH eq_data)
     : quad_(dim, 2),
       velocity_interpolation_quad_(dim, 0), // veloctiy values in barycenter
-      ad_(data)
+      af_(eq_fields),
+      ad_(eq_data)
     {
         fe_values_.initialize(quad_, fe_rt_, update_values | update_JxW_values | update_quadrature_points);
         velocity_interpolation_fv_.initialize(velocity_interpolation_quad_, fe_rt_, update_values | update_quadrature_points);
@@ -239,7 +241,7 @@ protected:
 
             // assemble BC
             if (dh_side.side().is_boundary()) {
-                double cross_section = ad_->cross_section.value(ele.centre(), ele);
+                double cross_section = af_->cross_section.value(ele.centre(), ele);
                 assemble_side_bc(dh_side, cross_section, use_dirichlet_switch);
 
                 ad_->balance->add_flux_values(ad_->water_balance_idx, dh_side,
@@ -261,32 +263,32 @@ protected:
         const unsigned int edge_row = loc_edge_dofs[sidx];    //local
 
         ElementAccessor<3> b_ele = side.cond().element_accessor();
-        DarcyMH::EqData::BC_Type type = (DarcyMH::EqData::BC_Type)ad_->bc_type.value(b_ele.centre(), b_ele);
+        DarcyMH::EqFields::BC_Type type = (DarcyMH::EqFields::BC_Type)af_->bc_type.value(b_ele.centre(), b_ele);
 
-        if ( type == DarcyMH::EqData::none) {
+        if ( type == DarcyMH::EqFields::none) {
             // homogeneous neumann
-        } else if ( type == DarcyMH::EqData::dirichlet ) {
-            double bc_pressure = ad_->bc_pressure.value(b_ele.centre(), b_ele);
+        } else if ( type == DarcyMH::EqFields::dirichlet ) {
+            double bc_pressure = af_->bc_pressure.value(b_ele.centre(), b_ele);
             loc_schur_.set_solution(sidx, bc_pressure);
             dirichlet_edge[sidx] = 1;
             
-        } else if ( type == DarcyMH::EqData::total_flux) {
+        } else if ( type == DarcyMH::EqFields::total_flux) {
             // internally we work with outward flux
-            double bc_flux = -ad_->bc_flux.value(b_ele.centre(), b_ele);
-            double bc_pressure = ad_->bc_pressure.value(b_ele.centre(), b_ele);
-            double bc_sigma = ad_->bc_robin_sigma.value(b_ele.centre(), b_ele);
+            double bc_flux = -af_->bc_flux.value(b_ele.centre(), b_ele);
+            double bc_pressure = af_->bc_pressure.value(b_ele.centre(), b_ele);
+            double bc_sigma = af_->bc_robin_sigma.value(b_ele.centre(), b_ele);
             
             dirichlet_edge[sidx] = 2;  // to be skipped in LMH source assembly
             loc_system_.add_value(edge_row, edge_row,
                                     -b_ele.measure() * bc_sigma * cross_section,
                                     (bc_flux - bc_sigma * bc_pressure) * b_ele.measure() * cross_section);
         }
-        else if (type==DarcyMH::EqData::seepage) {
+        else if (type==DarcyMH::EqFields::seepage) {
             ad_->is_linear=false;
 
             char & switch_dirichlet = ad_->bc_switch_dirichlet[b_ele.idx()];
-            double bc_pressure = ad_->bc_switch_pressure.value(b_ele.centre(), b_ele);
-            double bc_flux = -ad_->bc_flux.value(b_ele.centre(), b_ele);
+            double bc_pressure = af_->bc_switch_pressure.value(b_ele.centre(), b_ele);
+            double bc_flux = -af_->bc_flux.value(b_ele.centre(), b_ele);
             double side_flux = bc_flux * b_ele.measure() * cross_section;
 
             // ** Update BC type. **
@@ -337,13 +339,13 @@ protected:
                 loc_system_.add_value(edge_row, side_flux);
             }
 
-        } else if (type==DarcyMH::EqData::river) {
+        } else if (type==DarcyMH::EqFields::river) {
             ad_->is_linear=false;
 
-            double bc_pressure = ad_->bc_pressure.value(b_ele.centre(), b_ele);
-            double bc_switch_pressure = ad_->bc_switch_pressure.value(b_ele.centre(), b_ele);
-            double bc_flux = -ad_->bc_flux.value(b_ele.centre(), b_ele);
-            double bc_sigma = ad_->bc_robin_sigma.value(b_ele.centre(), b_ele);
+            double bc_pressure = af_->bc_pressure.value(b_ele.centre(), b_ele);
+            double bc_switch_pressure = af_->bc_switch_pressure.value(b_ele.centre(), b_ele);
+            double bc_flux = -af_->bc_flux.value(b_ele.centre(), b_ele);
+            double bc_sigma = af_->bc_robin_sigma.value(b_ele.centre(), b_ele);
 
             double solution_head = ad_->p_edge_solution.get(loc_schur_.row_dofs[sidx]);
 
@@ -371,8 +373,8 @@ protected:
     virtual void assemble_sides(const DHCellAccessor& dh_cell)
     {
         const ElementAccessor<3> ele = dh_cell.elm();
-        double cs = ad_->cross_section.value(ele.centre(), ele);
-        double conduct =  ad_->conductivity.value(ele.centre(), ele);
+        double cs = af_->cross_section.value(ele.centre(), ele);
+        double conduct =  af_->conductivity.value(ele.centre(), ele);
         double scale = 1 / cs /conduct;
         
         assemble_sides_scale(dh_cell, scale);
@@ -398,7 +400,7 @@ protected:
                 for (unsigned int j=0; j<ndofs; j++){
                     double mat_val = 
                         arma::dot(velocity.value(i,k), //TODO: compute anisotropy before
-                                    (ad_->anisotropy.value(ele.centre(), ele)).i()
+                                    (af_->anisotropy.value(ele.centre(), ele)).i()
                                         * velocity.value(j,k))
                         * scale * fe_values_.JxW(k);
                     
@@ -451,11 +453,11 @@ protected:
         
         // compute lumped source
         double alpha = 1.0 / ele->n_sides();
-        double cross_section = ad_->cross_section.value(ele.centre(), ele);
+        double cross_section = af_->cross_section.value(ele.centre(), ele);
         double coef = alpha * ele.measure() * cross_section;
         
-        double source = ad_->water_source_density.value(ele.centre(), ele)
-                        + ad_->extra_source.value(ele.centre(), ele);
+        double source = af_->water_source_density.value(ele.centre(), ele)
+                        + af_->extra_source.value(ele.centre(), ele);
         double source_term = coef * source;
         
         // in unsteady, compute time term
@@ -464,8 +466,8 @@ protected:
         
         if(! ad_->use_steady_assembly_)
         {
-            storativity = ad_->storativity.value(ele.centre(), ele)
-                          + ad_->extra_storativity.value(ele.centre(), ele);
+            storativity = af_->storativity.value(ele.centre(), ele)
+                          + af_->extra_storativity.value(ele.centre(), ele);
             time_term = coef * storativity;
         }
         
@@ -516,12 +518,12 @@ protected:
             ngh_values_.fe_side_values_.reinit(neighb_side.side());
             nv = ngh_values_.fe_side_values_.normal_vector(0);
 
-            double value = ad_->sigma.value( ele.centre(), ele) *
-                            2*ad_->conductivity.value( ele.centre(), ele) *
-                            arma::dot(ad_->anisotropy.value( ele.centre(), ele)*nv, nv) *
-                            ad_->cross_section.value( neighb_side.centre(), ele_higher ) * // cross-section of higher dim. (2d)
-                            ad_->cross_section.value( neighb_side.centre(), ele_higher ) /
-                            ad_->cross_section.value( ele.centre(), ele ) *      // crossection of lower dim.
+            double value = af_->sigma.value( ele.centre(), ele) *
+                            2*af_->conductivity.value( ele.centre(), ele) *
+                            arma::dot(af_->anisotropy.value( ele.centre(), ele)*nv, nv) *
+							af_->cross_section.value( neighb_side.centre(), ele_higher ) * // cross-section of higher dim. (2d)
+							af_->cross_section.value( neighb_side.centre(), ele_higher ) /
+							af_->cross_section.value( ele.centre(), ele ) *      // crossection of lower dim.
                             neighb_side.measure();
 
             loc_system_.add_value(loc_ele_dof, loc_ele_dof, -value);
@@ -545,12 +547,12 @@ protected:
         const ElementAccessor<3> ele = dh_cell.elm();
         
         double edge_scale = ele.measure()
-                              * ad_->cross_section.value(ele.centre(), ele)
+                              * af_->cross_section.value(ele.centre(), ele)
                               / ele->n_sides();
         
         double edge_source_term = edge_scale * 
-                ( ad_->water_source_density.value(ele.centre(), ele)
-                + ad_->extra_source.value(ele.centre(), ele));
+                ( af_->water_source_density.value(ele.centre(), ele)
+                + af_->extra_source.value(ele.centre(), ele));
       
         postprocess_velocity_specific(dh_cell, solution, edge_scale, edge_source_term);
     }
@@ -560,8 +562,8 @@ protected:
     {
         const ElementAccessor<3> ele = dh_cell.elm();
         
-        double storativity = ad_->storativity.value(ele.centre(), ele)
-                             + ad_->extra_storativity.value(ele.centre(), ele);
+        double storativity = af_->storativity.value(ele.centre(), ele)
+                             + af_->extra_storativity.value(ele.centre(), ele);
         double new_pressure, old_pressure, time_term = 0.0;
         
         for (unsigned int i=0; i<ele->n_sides(); i++) {
@@ -588,6 +590,7 @@ protected:
     FEValues<3> velocity_interpolation_fv_;
 
     // data shared by assemblers of different dimension
+    AssemblyFieldsPtrLMH af_;
     AssemblyDataPtrLMH ad_;
     
     /** TODO: Investigate why the hell do we need this flag.

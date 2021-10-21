@@ -190,24 +190,27 @@ void DarcyFlowMHOutput::prepare_output(Input::Record in_rec)
 
 void DarcyFlowMHOutput::prepare_specific_output(Input::Record in_rec)
 {
-    diff_data.data_ = nullptr;
+    diff_data.eq_fields_ = nullptr;
+    diff_data.eq_data_ = nullptr;
     if(DarcyMH* d = dynamic_cast<DarcyMH*>(darcy_flow))
     {
-        diff_data.data_ = d->data_.get();
+        diff_data.eq_fields_ = d->eq_fields_.get();
+        diff_data.eq_data_ = d->eq_data_.get();
     }
     else if(DarcyLMH* d = dynamic_cast<DarcyLMH*>(darcy_flow))
     {
-        diff_data.data_ = d->data_.get();
+        diff_data.eq_fields_ = d->eq_fields_.get();
+        diff_data.eq_data_ = d->eq_data_.get();
     }
-    ASSERT_PTR(diff_data.data_);
+    ASSERT_PTR(diff_data.eq_data_);
 
     { // init DOF handlers represents element DOFs
         uint p_elem_component = 1;
-        diff_data.dh_ = std::make_shared<SubDOFHandlerMultiDim>(diff_data.data_->dh_, p_elem_component);
+        diff_data.dh_ = std::make_shared<SubDOFHandlerMultiDim>(diff_data.eq_data_->dh_, p_elem_component);
     }
 
     // mask 2d elements crossing 1d
-    if (diff_data.data_->mortar_method_ != DarcyMH::NoMortar) {
+    if (diff_data.eq_data_->mortar_method_ != DarcyMH::NoMortar) {
         diff_data.velocity_mask.resize(mesh_->n_elements(),0);
         for(IntersectionLocal<1,2> & isec : mesh_->mixed_intersections().intersection_storage12_) {
             diff_data.velocity_mask[ isec.bulk_ele_idx() ]++;
@@ -291,30 +294,33 @@ void DarcyFlowMHOutput::output_internal_flow_data()
     raw_output_file <<  fmt::format("{}\n" , mesh_->n_elements() );
 
     
-    DarcyMH::EqData* data = nullptr;
+    DarcyMH::EqFields* eq_fields = nullptr;
+    DarcyMH::EqData* eq_data = nullptr;
     if(DarcyMH* d = dynamic_cast<DarcyMH*>(darcy_flow))
     {
-        data = d->data_.get();
+        eq_fields = d->eq_fields_.get();
+        eq_data = d->eq_data_.get();
     }
     else if(DarcyLMH* d = dynamic_cast<DarcyLMH*>(darcy_flow))
     {
-        data = d->data_.get();
+        eq_fields = d->eq_fields_.get();
+        eq_data = d->eq_data_.get();
     }
-    ASSERT_PTR(data);
+    ASSERT_PTR(eq_data);
     
     arma::vec3 flux_in_center;
     
-    auto permutation_vec = data->dh_->mesh()->element_permutations();
-    for (unsigned int i_elem=0; i_elem<data->dh_->n_own_cells(); ++i_elem) {
-        ElementAccessor<3> ele(data->dh_->mesh(), permutation_vec[i_elem]);
-        DHCellAccessor dh_cell = data->dh_->cell_accessor_from_element( ele.idx() );
+    auto permutation_vec = eq_data->dh_->mesh()->element_permutations();
+    for (unsigned int i_elem=0; i_elem<eq_data->dh_->n_own_cells(); ++i_elem) {
+        ElementAccessor<3> ele(eq_data->dh_->mesh(), permutation_vec[i_elem]);
+        DHCellAccessor dh_cell = eq_data->dh_->cell_accessor_from_element( ele.idx() );
         LocDofVec indices = dh_cell.get_loc_dof_indices();
 
         // pressure
-        raw_output_file << fmt::format("{} {} ", dh_cell.elm().index(), data->full_solution.get(indices[ele->n_sides()]));
+        raw_output_file << fmt::format("{} {} ", dh_cell.elm().index(), eq_data->full_solution.get(indices[ele->n_sides()]));
         
         // velocity at element center
-        flux_in_center = data->field_ele_velocity.value(ele.centre(), ele);
+        flux_in_center = eq_fields->field_ele_velocity.value(ele.centre(), ele);
         for (unsigned int i = 0; i < 3; i++)
         	raw_output_file << flux_in_center[i] << " ";
 
@@ -324,11 +330,11 @@ void DarcyFlowMHOutput::output_internal_flow_data()
         // pressure on edges
         unsigned int lid = ele->n_sides() + 1;
         for (unsigned int i = 0; i < ele->n_sides(); i++, lid++) {
-            raw_output_file << data->full_solution.get(indices[lid]) << " ";
+            raw_output_file << eq_data->full_solution.get(indices[lid]) << " ";
         }
         // fluxes on sides
         for (unsigned int i = 0; i < ele->n_sides(); i++) {
-            raw_output_file << data->full_solution.get(indices[i]) << " ";
+            raw_output_file << eq_data->full_solution.get(indices[i]) << " ";
         }
         
         raw_output_file << endl;
@@ -364,8 +370,8 @@ void DarcyFlowMHOutput::l2_diff_local(DHCellAccessor dh_cell,
     fv_rt.reinit(ele);
     fe_values.reinit(ele);
     
-    double conductivity = result.data_->conductivity.value(ele.centre(), ele );
-    double cross = result.data_->cross_section.value(ele.centre(), ele );
+    double conductivity = result.eq_fields_->conductivity.value(ele.centre(), ele );
+    double cross = result.eq_fields_->cross_section.value(ele.centre(), ele );
 
 
     // get coefficients on the current element
@@ -373,12 +379,12 @@ void DarcyFlowMHOutput::l2_diff_local(DHCellAccessor dh_cell,
 //     vector<double> pressure_traces(dim+1);
 
     for (unsigned int li = 0; li < ele->n_sides(); li++) {
-        fluxes[li] = diff_data.data_->full_solution.get( dh_cell.get_loc_dof_indices()[li] );
+        fluxes[li] = diff_data.eq_data_->full_solution.get( dh_cell.get_loc_dof_indices()[li] );
 //         pressure_traces[li] = result.dh->side_scalar( *(ele->side( li ) ) );
     }
     const uint ndofs = dh_cell.n_dofs();
     // TODO: replace with DHCell getter when available for FESystem component
-    double pressure_mean = diff_data.data_->full_solution.get( dh_cell.get_loc_dof_indices()[ndofs/2] );
+    double pressure_mean = diff_data.eq_data_->full_solution.get( dh_cell.get_loc_dof_indices()[ndofs/2] );
 
     arma::vec analytical(5);
     arma::vec3 flux_in_q_point;
@@ -502,7 +508,7 @@ void DarcyFlowMHOutput::compute_l2_difference() {
 
     //diff_data.ele_flux = &( ele_flux );
 
-    for (DHCellAccessor dh_cell : diff_data.data_->dh_->own_range()) {
+    for (DHCellAccessor dh_cell : diff_data.eq_data_->dh_->own_range()) {
 
     	switch (dh_cell.dim()) {
         case 1:

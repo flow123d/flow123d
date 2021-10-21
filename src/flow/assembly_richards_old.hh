@@ -48,10 +48,12 @@ template<int dim>
 class AssemblyRichards : public AssemblyLMH<dim> {
 public:
 
+    typedef std::shared_ptr<RichardsLMH::EqFields> AssemblyFieldsPtrRichards;
     typedef std::shared_ptr<RichardsLMH::EqData> AssemblyDataPtrRichards;
 
-    AssemblyRichards(AssemblyDataPtrRichards data)
-    : AssemblyLMH<dim>(data),
+    AssemblyRichards(AssemblyFieldsPtrRichards fields, AssemblyDataPtrRichards data)
+    : AssemblyLMH<dim>(fields, data),
+      af_(fields),
       ad_(data),
       genuchten_on(false),
       cross_section(1.0),
@@ -61,14 +63,14 @@ public:
 protected:
     void reset_soil_model(const DHCellAccessor& dh_cell) {
         ElementAccessor<3> ele = dh_cell.elm();
-        genuchten_on = (ad_->genuchten_p_head_scale.field_result({ele.region()}) != result_zeros);
+        genuchten_on = (af_->genuchten_p_head_scale.field_result({ele.region()}) != result_zeros);
         if (genuchten_on) {
             SoilData soil_data;
-            soil_data.n =  ad_->genuchten_n_exponent.value(ele.centre(), ele);
-            soil_data.alpha = ad_->genuchten_p_head_scale.value(ele.centre(), ele);
-            soil_data.Qr = ad_->water_content_residual.value(ele.centre(), ele);
-            soil_data.Qs = ad_->water_content_saturated.value(ele.centre(), ele);
-            soil_data.Ks = ad_->conductivity.value(ele.centre(), ele);
+            soil_data.n =  af_->genuchten_n_exponent.value(ele.centre(), ele);
+            soil_data.alpha = af_->genuchten_p_head_scale.value(ele.centre(), ele);
+            soil_data.Qr = af_->water_content_residual.value(ele.centre(), ele);
+            soil_data.Qs = af_->water_content_saturated.value(ele.centre(), ele);
+            soil_data.Ks = af_->conductivity.value(ele.centre(), ele);
             //soil_data.cut_fraction = 0.99; // set by model
 
             ad_->soil_model_->reset(soil_data);
@@ -87,7 +89,7 @@ protected:
             conductivity /= ele->n_sides();
         }
         else {
-            conductivity = this->ad_->conductivity.value(ele.centre(), ele);
+            conductivity = this->af_->conductivity.value(ele.centre(), ele);
         }
         return conductivity;
     }
@@ -100,9 +102,9 @@ protected:
 
         reset_soil_model(dh_cell);
         const ElementAccessor<3> ele = dh_cell.elm();
-        double storativity = ad_->storativity.value(ele.centre(), ele)
-                             + ad_->extra_storativity.value(ele.centre(), ele);
-        VectorMPI water_content_vec = ad_->water_content_ptr->vec();
+        double storativity = af_->storativity.value(ele.centre(), ele)
+                             + af_->extra_storativity.value(ele.centre(), ele);
+        VectorMPI water_content_vec = af_->water_content_ptr->vec();
 
         for (unsigned int i=0; i<ele->n_sides(); i++) {
             double capacity = 0;
@@ -125,7 +127,7 @@ protected:
     {
         reset_soil_model(dh_cell);
         const ElementAccessor<3> ele = dh_cell.elm();
-        cross_section = ad_->cross_section.value(ele.centre(), ele);
+        cross_section = af_->cross_section.value(ele.centre(), ele);
 
         double conductivity = compute_conductivity(ele);
         double scale = 1 / cross_section / conductivity;
@@ -144,10 +146,10 @@ protected:
         // set lumped source
         double diagonal_coef = ele.measure() * cross_section / ele->n_sides();
         double source_diagonal = diagonal_coef * 
-                        ( ad_->water_source_density.value(ele.centre(), ele)
-                        + ad_->extra_source.value(ele.centre(), ele));
+                        ( af_->water_source_density.value(ele.centre(), ele)
+                        + af_->extra_source.value(ele.centre(), ele));
 
-        VectorMPI water_content_vec = ad_->water_content_ptr->vec();
+        VectorMPI water_content_vec = af_->water_content_ptr->vec();
 
         for (unsigned int i=0; i<ele->n_sides(); i++)
         {
@@ -207,7 +209,7 @@ protected:
         
         const ElementAccessor<3> ele = dh_cell.elm();
 
-        VectorMPI water_content_vec = ad_->water_content_ptr->vec();
+        VectorMPI water_content_vec = af_->water_content_ptr->vec();
         
         for (unsigned int i=0; i<ele->n_sides(); i++) {
             
@@ -219,9 +221,10 @@ protected:
         }
          
         IntIdx p_dof = dh_cell.cell_with_other_dh(ad_->dh_p_.get()).get_loc_dof_indices()(0);
-        ad_->conductivity_ptr->vec().set( p_dof, compute_conductivity(ele) );
+        af_->conductivity_ptr->vec().set( p_dof, compute_conductivity(ele) );
     }
 
+    AssemblyFieldsPtrRichards af_;
     AssemblyDataPtrRichards ad_;
 
     bool genuchten_on;

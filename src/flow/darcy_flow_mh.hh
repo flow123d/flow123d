@@ -143,7 +143,7 @@ public:
     * especially due to the common output class DarcyFlowMHOutput.
     * This is the only dependence between DarcyMH and DarcyLMH classes.
     */
-    class EqData : public FieldSet {
+    class EqFields : public FieldSet {
     public:
 
         /**
@@ -161,7 +161,7 @@ public:
         static const Input::Type::Selection & get_bc_type_selection();
 
         /// Creation of all fields.
-        EqData();
+        EqFields();
 
 
         Field<3, FieldValue<3>::TensorFixed > anisotropy;
@@ -186,6 +186,17 @@ public:
         Field<3, FieldValue<3>::VectorFixed > field_ele_velocity;
         Field<3, FieldValue<3>::VectorFixed > flux;
         Field<3, FieldValue<3>::Scalar> field_edge_pressure;
+    };
+
+    /**
+     * Class with all data used in the equation DarcyFlow.
+     * This is common to all implementations since this provides interface
+     * to this equation for possible coupling.
+     */
+    class EqData {
+    public:
+        /// Constructor.
+        EqData();
 
         /**
          * Gravity vector and constant shift of pressure potential. Used to convert piezometric head
@@ -244,13 +255,14 @@ public:
     virtual void postprocess();
     virtual void output_data() override;
 
-    EqData &data() { return *data_; }
+    inline EqFields &eq_fields() { return *eq_fields_; }
+    inline EqData &eq_data() { return *eq_data_; }
     
     void set_extra_storativity(const Field<3, FieldValue<3>::Scalar> &extra_stor)
-    { data_->extra_storativity = extra_stor; }
+    { eq_fields_->extra_storativity = extra_stor; }
     
     void set_extra_source(const Field<3, FieldValue<3>::Scalar> &extra_src)
-    { data_->extra_source = extra_src; }
+    { eq_fields_->extra_source = extra_src; }
 
     virtual ~DarcyMH() override;
 
@@ -364,7 +376,8 @@ protected:
     Vec new_diagonal;
     Vec previous_solution;
 
-	std::shared_ptr<EqData> data_;
+	std::shared_ptr<EqFields> eq_fields_;
+	std::shared_ptr<EqData> eq_data_;
 
     friend class DarcyFlowMHOutput;
     //friend class P0_CouplingAssembler;
