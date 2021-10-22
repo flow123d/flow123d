@@ -73,9 +73,11 @@ namespace Input {
 		class Selection;
 	}
 }
-
 template<int spacedim, class Value> class FieldAddPotential;
 template<int spacedim, class Value> class FieldDivide;
+template<unsigned int dim> class ReadInitCondAssemblyLMH;
+template< template<IntDim...> class DimAssembly> class GenericAssembly;
+
 
 /**
  * @brief Mixed-hybrid model of linear Darcy flow, possibly unsteady.
@@ -291,6 +293,12 @@ protected:
     LinSys& lin_sys_schur()
     { return *(eq_data_->lin_sys_schur); }
 
+    /// Create and initialize assembly objects
+    virtual void initialize_asm();
+
+    /// Call assemble of read_init_cond_assembly_
+    virtual void read_init_cond_asm();
+
     std::shared_ptr<Balance> balance_;
 
     DarcyFlowMHOutput *output_object;
@@ -308,13 +316,17 @@ protected:
 	std::shared_ptr<EqFields> eq_fields_;
 	std::shared_ptr<EqData> eq_data_;
 
+
     friend class DarcyFlowMHOutput;
     //friend class P0_CouplingAssembler;
     //friend class P1_CouplingAssembler;
 
 private:
-  /// Registrar of class to factory
-  static const int registrar;
+    /// general assembly objects, hold assembly objects of appropriate dimension
+    GenericAssembly< ReadInitCondAssemblyLMH > * read_init_cond_assembly_;
+
+    /// Registrar of class to factory
+    static const int registrar;
 };
 
 #endif  //DARCY_FLOW_LMH_HH

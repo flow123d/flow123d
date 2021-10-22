@@ -18,6 +18,7 @@
 #include "flow/soil_models.hh"
 #include "flow/assembly_richards_old.hh"
 #include "flow/darcy_flow_mh_output.hh"
+#include "flow/assembly_richards.hh"
 #include "tools/time_governor.hh"
 
 #include "petscmat.h"
@@ -34,8 +35,6 @@
 
 FLOW123D_FORCE_LINK_IN_CHILD(richards_lmh)
 
-
-namespace it=Input::Type;
 
 
 RichardsLMH::EqFields::EqFields()
@@ -80,8 +79,10 @@ RichardsLMH::EqData::EqData()
 : DarcyLMH::EqData::EqData() {}
 
 
-const it::Record & RichardsLMH::get_input_type() {
-    it::Record field_descriptor = it::Record("RichardsLMH_Data",FieldCommon::field_descriptor_record_description("RichardsLMH_Data"))
+const Input::Type::Record & RichardsLMH::get_input_type() {
+	namespace it=Input::Type;
+
+	it::Record field_descriptor = it::Record("RichardsLMH_Data",FieldCommon::field_descriptor_record_description("RichardsLMH_Data"))
     .copy_keys( DarcyLMH::type_field_descriptor() )
     .copy_keys( RichardsLMH::EqFields().make_field_descriptor_type("RichardsLMH_Data_aux") )
     .close();
@@ -227,4 +228,22 @@ void RichardsLMH::assembly_linear_system()
 
         lin_sys_schur().finish_assembly();
         lin_sys_schur().set_matrix_changed();
+}
+
+
+void RichardsLMH::initialize_asm() {
+	read_init_cond_assembly_richards_ = new GenericAssembly< ReadInitCondAssemblyRichards >(this->eq_fields_.get(), this->eq_data_.get());
+}
+
+
+void RichardsLMH::read_init_cond_asm() {
+    this->read_init_cond_assembly_richards_->assemble(eq_data_->dh_);
+}
+
+
+RichardsLMH::~RichardsLMH() {
+    if (read_init_cond_assembly_richards_!=nullptr) {
+        delete read_init_cond_assembly_richards_;
+        read_init_cond_assembly_richards_ = nullptr;
+    }
 }

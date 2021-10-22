@@ -51,6 +51,7 @@
 #include "flow/assembly_lmh_old.hh"
 #include "flow/darcy_flow_lmh.hh"
 #include "flow/darcy_flow_mh_output.hh"
+#include "flow/assembly_lmh.hh"
 
 #include "tools/time_governor.hh"
 #include "fields/field_algo_base.hh"
@@ -183,7 +184,8 @@ DarcyLMH::EqData::EqData()
 DarcyLMH::DarcyLMH(Mesh &mesh_in, const Input::Record in_rec, TimeGovernor *tm)
 : DarcyFlowInterface(mesh_in, in_rec),
     output_object(nullptr),
-    data_changed_(false)
+    data_changed_(false),
+	read_init_cond_assembly_(nullptr)
 {
 
     START_TIMER("Darcy constructor");
@@ -367,6 +369,8 @@ void DarcyLMH::initialize() {
     balance_->units(UnitSI().m(3));
 
     eq_data_->balance = balance_;
+
+    this->initialize_asm();
 }
 
 void DarcyLMH::initialize_specific()
@@ -425,6 +429,8 @@ void DarcyLMH::read_initial_condition()
              eq_data_->p_edge_solution.add(l_indices[i], init_value/n_sides_of_edge);
          }
 	}
+
+    initial_condition_postprocess();
     
 	eq_data_->full_solution.ghost_to_local_begin();
 	eq_data_->full_solution.ghost_to_local_end();
@@ -432,8 +438,6 @@ void DarcyLMH::read_initial_condition()
 	eq_data_->p_edge_solution.ghost_to_local_begin();
     eq_data_->p_edge_solution.ghost_to_local_end();
     eq_data_->p_edge_solution_previous_time.copy_from(eq_data_->p_edge_solution);
-
-    initial_condition_postprocess();
 }
 
 void DarcyLMH::initial_condition_postprocess()
@@ -459,7 +463,8 @@ void DarcyLMH::zero_time_step()
         //read_initial_condition(); // Possible solution guess for steady case.
         solve_nonlinear(); // with right limit data
     } else {
-        read_initial_condition();
+        //read_initial_condition();
+    	this->read_init_cond_asm();
         
         // we reconstruct the initial solution here
 
@@ -1312,6 +1317,11 @@ DarcyLMH::~DarcyLMH() {
     if(time_ != nullptr)
         delete time_;
     
+    if (read_init_cond_assembly_!=nullptr) {
+        delete read_init_cond_assembly_;
+        read_init_cond_assembly_ = nullptr;
+    }
+
 }
 
 
@@ -1326,6 +1336,16 @@ std::vector<int> DarcyLMH::get_component_indices_vec(unsigned int component) con
         for (i=min; i<max; ++i) dof_vec.push_back(dof_indices[i]);
     }
 	return dof_vec;
+}
+
+
+void DarcyLMH::initialize_asm() {
+    this->read_init_cond_assembly_ = new GenericAssembly< ReadInitCondAssemblyLMH >(eq_fields_.get(), eq_data_.get());
+}
+
+
+void DarcyLMH::read_init_cond_asm() {
+    this->read_init_cond_assembly_->assemble(eq_data_->dh_);
 }
 
 

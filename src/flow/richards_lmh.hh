@@ -27,6 +27,8 @@ namespace Input {
 		class Record;
 	}
 }
+template<unsigned int dim> class ReadInitCondAssemblyRichards;
+template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
 /**
  * @brief Edge lumped mixed-hybrid solution of unsteady Darcy flow.
@@ -104,6 +106,8 @@ public:
     
     void accept_time_step() override;
     
+    virtual ~RichardsLMH() override;
+
 protected:
     /// Registrar of class to factory
     static const int registrar;
@@ -114,10 +118,21 @@ protected:
 
     void initial_condition_postprocess() override;
     void assembly_linear_system() override;
+
+    /// Create and initialize assembly objects
+    void initialize_asm() override;
+
+    /// Call assemble of read_init_cond_assembly_richards_
+    void read_init_cond_asm() override;
+
 private:
 
     std::shared_ptr<EqFields> eq_fields_;
     std::shared_ptr<EqData> eq_data_;
+
+    /// general assembly objects, hold assembly objects of appropriate dimension
+    GenericAssembly< ReadInitCondAssemblyRichards > * read_init_cond_assembly_richards_;
+
 };
 
 
