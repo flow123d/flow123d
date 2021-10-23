@@ -387,10 +387,49 @@ void Mesh::check_mesh_on_read() {
 //    std::sort(nodes.begin(), nodes.end());
 //}
 
+std::array<std::pair<uint,uint>, 6> _comparisons = { {{0,1},{0,2},{0,3},{1,2},{1,3},{2,3}} };
+
+
 void Mesh::canonical_faces() {
+	// Fill mappings from canonical element nodes to original
+	// for individual permitations.
+	// Permutations are numbered by the bifield of all six _comparisons.
+	element_nodes_original_[0] = {0,1,2,3};
+	element_nodes_original_[1] = {0,1,3,2};
+	element_nodes_original_[4] = {0,2,1,3};
+	element_nodes_original_[6] = {0,2,3,1};
+	element_nodes_original_[3] = {0,3,1,2};
+	element_nodes_original_[7] = {0,3,2,1};
+	element_nodes_original_[32] = {1,0,2,3};
+	element_nodes_original_[33] = {1,0,3,2};
+	element_nodes_original_[48] = {1,2,0,3};
+	element_nodes_original_[56] = {1,2,3,0};
+	element_nodes_original_[41] = {1,3,0,2};
+	element_nodes_original_[57] = {1,3,2,0};
+	element_nodes_original_[20] = {2,0,1,3};
+	element_nodes_original_[22] = {2,0,3,1};
+	element_nodes_original_[52] = {2,1,0,3};
+	element_nodes_original_[60] = {2,1,3,0};
+	element_nodes_original_[30] = {2,3,0,1};
+	element_nodes_original_[62] = {2,3,1,0};
+	element_nodes_original_[11] = {3,0,1,2};
+	element_nodes_original_[15] = {3,0,2,1};
+	element_nodes_original_[43] = {3,1,0,2};
+	element_nodes_original_[59] = {3,1,2,0};
+	element_nodes_original_[31] = {3,2,0,1};
+	element_nodes_original_[63] = {3,2,1,0};
+
+
     // element_vec_ still contains both bulk and boundary elements
     for (uint i_el=0; i_el < element_vec_.size(); i_el++) {
         Element &ele = element_vec_[i_el];
+    	uint cmp_bits = 0;
+        for(uint i=0; i<6; i++) {
+    		cmp_bits <<=1;
+    		cmp_bits += (ele.nodes_[_comparisons[i].first] > ele.nodes_[_comparisons[i].second]);
+    	}
+        DebugOut() << "bits: " << cmp_bits;
+        ele.permutation_ = cmp_bits;
         std::sort(ele.nodes_.begin(), ele.nodes_.end());
     }
 
@@ -474,11 +513,13 @@ void Mesh::count_side_types()
 
     n_insides = 0;
     n_exsides = 0;
-	for (auto ele : this->elements_range())
+	for (auto ele : this->elements_range()) {
+		DebugOut() << ele.idx() << "\n";
         for(SideIter sde = ele.side(0); sde->side_idx() < ele->n_sides(); ++sde) {
             if (sde->is_external()) n_exsides++;
             else n_insides++;
         }
+	}
 }
 
 
