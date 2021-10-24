@@ -428,7 +428,6 @@ void Mesh::canonical_faces() {
     		cmp_bits <<=1;
     		cmp_bits += (ele.nodes_[_comparisons[i].first] > ele.nodes_[_comparisons[i].second]);
     	}
-        DebugOut() << "bits: " << cmp_bits;
         ele.permutation_ = cmp_bits;
         std::sort(ele.nodes_.begin(), ele.nodes_.end());
     }
@@ -514,7 +513,6 @@ void Mesh::count_side_types()
     n_insides = 0;
     n_exsides = 0;
 	for (auto ele : this->elements_range()) {
-		DebugOut() << ele.idx() << "\n";
         for(SideIter sde = ele.side(0); sde->side_idx() < ele->n_sides(); ++sde) {
             if (sde->is_external()) n_exsides++;
             else n_insides++;
