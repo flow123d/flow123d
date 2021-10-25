@@ -58,7 +58,7 @@
 #include "fields/field_values.hh"
 #include "fields/field_add_potential.hh"
 #include "fields/field_fe.hh"
-#include "fields/field_divide.hh"
+#include "fields/field_model.hh"
 
 #include "coupling/balance.hh"
 
@@ -70,6 +70,21 @@
 
 FLOW123D_FORCE_LINK_IN_CHILD(darcy_flow_mh)
 
+
+
+
+/*******************************************************************************
+ * Functors of FieldModels
+ */
+using Sclr = double;
+using Vect = arma::vec3;
+
+// Functor computing velocity (flux / cross_section)
+struct fn_mh_velocity {
+	inline Vect operator() (Vect flux, Sclr csec) {
+        return flux / csec;
+    }
+};
 
 
 
@@ -451,8 +466,7 @@ void DarcyMH::initialize() {
         auto ele_flux_ptr = create_field_fe<3, FieldValue<3>::VectorFixed>(eq_data_->dh_, &eq_data_->full_solution, rt_component);
         eq_fields_->flux.set(ele_flux_ptr, 0.0);
 
-		auto ele_velocity_ptr = std::make_shared< FieldDivide<3, FieldValue<3>::VectorFixed> >(ele_flux_ptr, eq_fields_->cross_section);
-		eq_fields_->field_ele_velocity.set(ele_velocity_ptr, 0.0);
+		eq_fields_->field_ele_velocity.set(Model<3, FieldValue<3>::VectorFixed>::create(fn_mh_velocity(), eq_fields_->flux, eq_fields_->cross_section), 0.0);
 
 		uint p_ele_component = 1;
         auto ele_pressure_ptr = create_field_fe<3, FieldValue<3>::Scalar>(eq_data_->dh_, &eq_data_->full_solution, p_ele_component);

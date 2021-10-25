@@ -74,7 +74,6 @@ namespace Input {
 	}
 }
 template<int spacedim, class Value> class FieldAddPotential;
-template<int spacedim, class Value> class FieldDivide;
 template<unsigned int dim> class ReadInitCondAssemblyLMH;
 template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
