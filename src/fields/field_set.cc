@@ -26,7 +26,7 @@
 
 
 FieldSet::FieldSet()
-{}
+: mesh_(nullptr) {}
 
 FieldSet &FieldSet::operator +=(FieldCommon &add_field) {
     FieldCommon *found_field = field(add_field.name());
@@ -237,6 +237,11 @@ void FieldSet::add_coords_field() {
                .input_default("0.0")
                .flags( FieldFlag::input_copy )
                .description("Depth field.");
+
+    if (this->mesh_ != nullptr) {
+        X_.set_mesh(*this->mesh_);
+        depth_.set_mesh(*this->mesh_);
+    }
 
     depth_.set_field_coords(&X_);
 }

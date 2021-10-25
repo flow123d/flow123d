@@ -162,6 +162,11 @@ public:
         /// Creation of all fields.
         EqFields();
 
+        /// Return coords field
+        FieldCoords &X() {
+            return this->X_;
+        }
+
 
         Field<3, FieldValue<3>::TensorFixed > anisotropy;
         Field<3, FieldValue<3>::Scalar > conductivity;
@@ -196,6 +201,8 @@ public:
     public:
         /// Constructor.
         EqData();
+
+        Field<3, FieldValue<3>::VectorFixed > gravity_field; /// Holds gravity vector acceptable in FieldModel
 
         /**
          * Gravity vector and constant shift of pressure potential. Used to convert piezometric head

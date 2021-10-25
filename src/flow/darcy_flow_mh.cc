@@ -59,6 +59,7 @@
 #include "fields/field_add_potential.hh"
 #include "fields/field_fe.hh"
 #include "fields/field_model.hh"
+#include "fields/field_constant.hh"
 
 #include "coupling/balance.hh"
 
@@ -83,6 +84,14 @@ using Vect = arma::vec3;
 struct fn_mh_velocity {
 	inline Vect operator() (Vect flux, Sclr csec) {
         return flux / csec;
+    }
+};
+
+
+// Functor computing piezo_head_p0
+struct fn_mh_piezohead {
+	inline Sclr operator() (Vect gravity, Vect coords, Sclr pressure) {
+        return arma::dot((-1*gravity), coords) + pressure;
     }
 };
 
@@ -310,6 +319,11 @@ DarcyMH::EqFields::EqFields()
             .units( UnitSI().s(-1) )
             .flags( input_copy );
 
+    *this += gravity_field.name("gravity")
+            .description("Gravity vector.")
+            .input_default("0.0")
+            .units( UnitSI::dimensionless() );
+
     //time_term_fields = this->subset({"storativity"});
     //main_matrix_fields = this->subset({"anisotropy", "conductivity", "cross_section", "sigma", "bc_type", "bc_robin_sigma"});
     //rhs_fields = this->subset({"water_source_density", "bc_pressure", "bc_flux"});
@@ -404,6 +418,11 @@ void DarcyMH::init_eq_data()
     eq_data_->gravity_ =  arma::vec(gvec);
     eq_data_->gravity_vec_ = eq_data_->gravity_.subvec(0,2);
 
+    FieldValue<3>::VectorFixed gvalue(eq_data_->gravity_vec_);
+    auto field_algo=std::make_shared<FieldConstant<3, FieldValue<3>::VectorFixed>>();
+    field_algo->set_value(gvalue);
+    eq_fields_->gravity_field.set(field_algo, 0.0);
+
     eq_fields_->bc_pressure.add_factory(
         std::make_shared<FieldAddPotential<3, FieldValue<3>::Scalar>::FieldFactory>
         (eq_data_->gravity_, "bc_piezo_head") );
@@ -460,6 +479,8 @@ void DarcyMH::initialize() {
     this->eq_data_->multidim_assembler =  AssemblyFlowBase::create< AssemblyMH >(eq_fields_, eq_data_);
     output_object = new DarcyFlowMHOutput(this, input_record_);
 
+    eq_fields_->add_coords_field();
+
     { // construct pressure, velocity and piezo head fields
 		uint rt_component = 0;
         eq_data_->full_solution = eq_data_->dh_->create_vector();
@@ -476,9 +497,10 @@ void DarcyMH::initialize() {
         auto edge_pressure_ptr = create_field_fe<3, FieldValue<3>::Scalar>(eq_data_->dh_, &eq_data_->full_solution, p_edge_component);
         eq_fields_->field_edge_pressure.set(edge_pressure_ptr, 0.0);
 
-		arma::vec4 gravity = (-1) * eq_data_->gravity_;
-		auto ele_piezo_head_ptr = std::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar> >(gravity, ele_pressure_ptr);
-		eq_fields_->field_ele_piezo_head.set(ele_piezo_head_ptr, 0.0);
+		eq_fields_->field_ele_piezo_head.set(
+		        Model<3, FieldValue<3>::Scalar>::create(fn_mh_piezohead(), eq_fields_->gravity_field, eq_fields_->X(), eq_fields_->field_ele_pressure),
+		        0.0
+		);
     }
 
     { // init DOF handlers represents edge DOFs
