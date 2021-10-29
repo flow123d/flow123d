@@ -188,6 +188,22 @@ DarcyLMH::EqData::EqData()
 }
 
 
+void DarcyLMH::EqData::init()
+{
+    save_local_system_.resize(this->mesh->get_el_ds()->lsize());
+    bc_fluxes_reconstruted.resize(this->mesh->get_el_ds()->lsize());
+    loc_system_.resize(this->mesh->get_el_ds()->lsize());
+    loc_schur_.resize(this->mesh->get_el_ds()->lsize());
+}
+
+
+void DarcyLMH::EqData::reset()
+{
+    std::fill(save_local_system_.begin(), save_local_system_.end(), false);
+    std::fill(bc_fluxes_reconstruted.begin(), bc_fluxes_reconstruted.end(), false);
+}
+
+
 
 
 
@@ -208,7 +224,8 @@ DarcyLMH::DarcyLMH(Mesh &mesh_in, const Input::Record in_rec, TimeGovernor *tm)
 : DarcyFlowInterface(mesh_in, in_rec),
     output_object(nullptr),
     data_changed_(false),
-	read_init_cond_assembly_(nullptr)
+	read_init_cond_assembly_(nullptr),
+	mh_matrix_assembly_(nullptr)
 {
 
     START_TIMER("Darcy constructor");
@@ -243,6 +260,7 @@ DarcyLMH::DarcyLMH(Mesh &mesh_in, const Input::Record in_rec, TimeGovernor *tm)
         mesh_->mixed_intersections();
     }
     
+    eq_data_->balance_ = this->balance();
 
 
     //side_ds->view( std::cout );
@@ -260,6 +278,7 @@ void DarcyLMH::init_eq_data()
 
     START_TIMER("data init");
     eq_data_->mesh = mesh_;
+    eq_data_->init();
     eq_fields_->set_mesh(*mesh_);
 
     auto gravity_array = input_record_.val<Input::Array>("gravity");
@@ -380,7 +399,7 @@ void DarcyLMH::initialize() {
     eq_data_->bc_switch_dirichlet.resize(mesh_->n_elements()+mesh_->get_bc_mesh()->n_elements(), 1);
 
 
-    nonlinear_iteration_=0;
+    eq_data_->nonlinear_iteration_=0;
     Input::AbstractRecord rec = this->input_record_
             .val<Input::Record>("nonlinear_solver")
             .val<Input::AbstractRecord>("linear_solver");
@@ -600,7 +619,7 @@ void DarcyLMH::solve_nonlinear()
 
     assembly_linear_system();
     double residual_norm = lin_sys_schur().compute_residual();
-    nonlinear_iteration_ = 0;
+    eq_data_->nonlinear_iteration_ = 0;
     MessageOut().fmt("[nonlinear solver] norm of initial residual: {}\n", residual_norm);
 
     // Reduce is_linear flag.
@@ -619,9 +638,9 @@ void DarcyLMH::solve_nonlinear()
     }
     vector<double> convergence_history;
 
-    while (nonlinear_iteration_ < this->min_n_it_ ||
-           (residual_norm > this->tolerance_ &&  nonlinear_iteration_ < this->max_n_it_ )) {
-    	OLD_ASSERT_EQUAL( convergence_history.size(), nonlinear_iteration_ );
+    while (eq_data_->nonlinear_iteration_ < this->min_n_it_ ||
+           (residual_norm > this->tolerance_ &&  eq_data_->nonlinear_iteration_ < this->max_n_it_ )) {
+    	OLD_ASSERT_EQUAL( convergence_history.size(), eq_data_->nonlinear_iteration_ );
         convergence_history.push_back(residual_norm);
 
         // print_matlab_matrix("matrix_" + std::to_string(time_->step().index()) + "_it_" + std::to_string(nonlinear_iteration_));
@@ -631,7 +650,7 @@ void DarcyLMH::solve_nonlinear()
             convergence_history[ convergence_history.size() - 1]/convergence_history[ convergence_history.size() - 5] > 0.8) {
             // stagnation
             if (input_record_.val<Input::Record>("nonlinear_solver").val<bool>("converge_on_stagnation")) {
-            	WarningOut().fmt("Accept solution on stagnation. Its: {} Residual: {}\n", nonlinear_iteration_, residual_norm);
+            	WarningOut().fmt("Accept solution on stagnation. Its: {} Residual: {}\n", eq_data_->nonlinear_iteration_, residual_norm);
                 break;
             } else {
                 THROW(ExcSolverDiverge() << EI_Reason("Stagnation."));
@@ -648,7 +667,7 @@ void DarcyLMH::solve_nonlinear()
         MessageOut().fmt("[schur solver] lin. it: {}, reason: {}, residual: {}\n",
         		si.n_iterations, si.converged_reason, lin_sys_schur().compute_residual());
         
-        nonlinear_iteration_++;
+        eq_data_->nonlinear_iteration_++;
 
         // hack to make BDDC work with empty compute_residual
         if (is_linear_common){
@@ -669,7 +688,7 @@ void DarcyLMH::solve_nonlinear()
 
         residual_norm = lin_sys_schur().compute_residual();
         MessageOut().fmt("[nonlinear solver] it: {} lin. it: {}, reason: {}, residual: {}\n",
-        		nonlinear_iteration_, si.n_iterations, si.converged_reason, residual_norm);
+                eq_data_->nonlinear_iteration_, si.n_iterations, si.converged_reason, residual_norm);
     }
     
     reconstruct_solution_from_schur(eq_data_->multidim_assembler);
@@ -677,8 +696,8 @@ void DarcyLMH::solve_nonlinear()
     // adapt timestep
     if (! this->zero_time_term()) {
         double mult = 1.0;
-        if (nonlinear_iteration_ < 3) mult = 1.6;
-        if (nonlinear_iteration_ > 7) mult = 0.7;
+        if (eq_data_->nonlinear_iteration_ < 3) mult = 1.6;
+        if (eq_data_->nonlinear_iteration_ > 7) mult = 0.7;
         time_->set_upper_constraint(time_->dt() * mult, "Darcy adaptivity.");
         // int result = time_->set_upper_constraint(time_->dt() * mult, "Darcy adaptivity.");
         //DebugOut().fmt("time adaptivity, res: {} it: {} m: {} dt: {} edt: {}\n", result, nonlinear_iteration_, mult, time_->dt(), time_->estimate_dt());
@@ -728,7 +747,7 @@ void DarcyLMH::assembly_mh_matrix(MultidimAssembly& assembler)
 
     // DebugOut() << "assembly_mh_matrix \n";
     // set auxiliary flag for switchting Dirichlet like BC
-    eq_data_->force_no_neumann_bc = eq_data_->use_steady_assembly_ && (nonlinear_iteration_ == 0);
+    eq_data_->force_no_neumann_bc = eq_data_->use_steady_assembly_ && (eq_data_->nonlinear_iteration_ == 0);
 
     balance_->start_flux_assembly(eq_data_->water_balance_idx);
     balance_->start_source_assembly(eq_data_->water_balance_idx);
@@ -1352,6 +1371,10 @@ DarcyLMH::~DarcyLMH() {
         delete read_init_cond_assembly_;
         read_init_cond_assembly_ = nullptr;
     }
+    if (mh_matrix_assembly_!=nullptr) {
+        delete mh_matrix_assembly_;
+        mh_matrix_assembly_ = nullptr;
+    }
 
 }
 
@@ -1372,6 +1395,7 @@ std::vector<int> DarcyLMH::get_component_indices_vec(unsigned int component) con
 
 void DarcyLMH::initialize_asm() {
     this->read_init_cond_assembly_ = new GenericAssembly< ReadInitCondAssemblyLMH >(eq_fields_.get(), eq_data_.get());
+    this->mh_matrix_assembly_ = new GenericAssembly< MHMatrixAssemblyLMH >(eq_fields_.get(), eq_data_.get());
 }
 
 

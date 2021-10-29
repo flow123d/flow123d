@@ -75,6 +75,7 @@ namespace Input {
 }
 template<int spacedim, class Value> class FieldAddPotential;
 template<unsigned int dim> class ReadInitCondAssemblyLMH;
+template<unsigned int dim> class MHMatrixAssemblyLMH;
 template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
 
@@ -158,6 +159,9 @@ public:
         
         EqData();
         
+        void init();     ///< Initialize vectors, ...
+        void reset();    ///< Reset data members
+
         std::shared_ptr<SubDOFHandlerMultiDim> dh_p_;    ///< DOF handler represents DOFs of element pressure
         
         // Propagate test for the time term to the assembly.
@@ -173,6 +177,36 @@ public:
         VectorMPI p_edge_solution_previous_time; //< 2. Schur complement previous solution (time)
 
         std::map<LongIdx, LocalSystem> seepage_bc_systems;
+
+        /// Shared Balance object
+    	std::shared_ptr<Balance> balance_;
+
+    	unsigned int nonlinear_iteration_; //< Actual number of completed nonlinear iterations, need to pass this information into assembly.
+
+    	/// Following data members are stored in vectors, one item for every cell.
+//        /** TODO: Investigate why the hell do we need this flag.
+//        *  If removed, it does not break any of the integration tests,
+//        * however it must influence the Dirichlet rows in matrix.
+//        */
+//        std::vector<unsigned int> dirichlet_edge;
+
+        std::vector<LocalSystem> loc_system_;
+        std::vector<LocalSystem> loc_schur_;
+        std::array<std::vector<unsigned int>, 3> loc_side_dofs;
+        std::array<std::vector<unsigned int>, 3> loc_edge_dofs;
+        std::array<unsigned int, 3> loc_ele_dof;
+
+//        // std::shared_ptr<MortarAssemblyBase> mortar_assembly;
+//
+//        /// Index offset in the local system for the Schur complement.
+//        unsigned int schur_offset_;
+//
+//        /// Vector for reconstruted solution (velocity and pressure on element) from Schur complement.
+//        arma::vec reconstructed_solution_;
+
+        std::vector<bool> save_local_system_;       ///< Flag for saving the local system. Currently used only in case of seepage BC.
+        std::vector<bool> bc_fluxes_reconstruted;   ///< Flag indicating whether the fluxes for seepage BC has been reconstructed already.
+        std::array<unsigned int, 3> schur_offset_;  ///< Index offset in the local system for the Schur complement (of dim = 1,2,3).
     };
 
     /// Selection for enum MortarMethod.
@@ -310,7 +344,6 @@ protected:
 	double tolerance_;
 	unsigned int min_n_it_;
 	unsigned int max_n_it_;
-	unsigned int nonlinear_iteration_; //< Actual number of completed nonlinear iterations, need to pass this information into assembly.
 
 	std::shared_ptr<EqFields> eq_fields_;
 	std::shared_ptr<EqData> eq_data_;
@@ -323,6 +356,7 @@ protected:
 private:
     /// general assembly objects, hold assembly objects of appropriate dimension
     GenericAssembly< ReadInitCondAssemblyLMH > * read_init_cond_assembly_;
+    GenericAssembly< MHMatrixAssemblyLMH > * mh_matrix_assembly_;
 
     /// Registrar of class to factory
     static const int registrar;
