@@ -358,6 +358,7 @@ void ConvectionTransport::alloc_transport_structs_mpi() {
     eq_data_->bcvcorr = new Vec[n_subst];
     vcumulative_corr = new Vec[n_subst];
     v_tm_diag = new Vec[n_subst];
+    eq_data_->corr_vec.reserve(eq_data_->n_substances());
     
 
     for (sbi = 0; sbi < n_subst; sbi++) {
