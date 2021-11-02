@@ -300,8 +300,11 @@ void DarcyLMH::init_eq_data()
             std::make_shared<FieldAddPotential<3, FieldValue<3>::Scalar>::FieldFactory>
             (eq_data_->gravity_, "bc_switch_piezo_head") );
     eq_fields_->init_pressure.add_factory(
-            std::make_shared<FieldAddPotential<3, FieldValue<3>::Scalar>::FieldFactory>
-            (eq_data_->gravity_, "init_piezo_head") );
+            std::make_shared<AddPotentialFactory<3, FieldValue<3>::Scalar> >
+            (eq_fields_->gravity_field, eq_fields_->X(), eq_fields_->init_piezo_head) );
+//    eq_fields_->init_pressure.add_factory(
+//            std::make_shared<FieldAddPotential<3, FieldValue<3>::Scalar>::FieldFactory>
+//            (eq_data_->gravity_, "init_piezo_head") );
 
 
     eq_fields_->set_input_list( this->input_record_.val<Input::Array>("input_fields"), *time_ );
