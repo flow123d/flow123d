@@ -985,7 +985,7 @@ void operator delete[]( void *p, std::size_t) throw() {
 
 #else // def FLOW123D_DEBUG_PROFILER
 
-Profiler * Profiler::instance(bool clear) { 
+Profiler * Profiler::instance(bool) { 
     static Profiler * _instance = new Profiler();
     return _instance;
 } 
