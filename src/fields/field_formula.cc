@@ -341,7 +341,8 @@ std::vector<const FieldCommon * > FieldFormula<spacedim, Value>::set_dependency(
             try {
                 b_parser_[i_p].parse( expr );
             } catch (std::exception const& e) {
-                if (typeid(e) == typeid(bparser::Exception)) THROW( ExcParserError() << EI_BParserMsg(e.what()) );
+                if (typeid(e) == typeid(bparser::Exception))
+                    THROW( ExcParserError() << EI_BParserMsg(e.what()) << EI_Formula(expr) << Input::EI_Address( in_rec_.address_string() ) );
                 else throw;
             }
             variables.insert(variables.end(), b_parser_[i_p].variables().begin(), b_parser_[i_p].variables().end());
@@ -360,9 +361,9 @@ std::vector<const FieldCommon * > FieldFormula<spacedim, Value>::set_dependency(
         else {
             auto field_ptr = field_set.field(var);
             if (field_ptr != nullptr) required_fields_.push_back( field_ptr );
-            else THROW( ExcUnknownField() << EI_Field(var) );
+            else THROW( ExcUnknownField() << EI_Field(var) << Input::EI_Address( in_rec_.address_string() ) );
             // TODO: Test the exception, report input line of the formula.
-            if (field_ptr->value_cache() == nullptr) THROW( ExcNotDoubleField() << EI_Field(var) );
+            if (field_ptr->value_cache() == nullptr) THROW( ExcNotDoubleField() << EI_Field(var) << Input::EI_Address( in_rec_.address_string() ) );
             // TODO: Test the exception, report input line of the formula.
 
             sum_shape_sizes_ += n_shape( field_ptr->shape_ );
