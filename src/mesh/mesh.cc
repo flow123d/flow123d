@@ -180,7 +180,7 @@ Mesh::Mesh()
   //nodes_(3, 1, 0),
   node_4_loc_(nullptr),
   node_ds_(nullptr),  
-  bc_mesh_(nullptr)
+  bc_mesh_(new BCMesh(this))
   
 {init();}
 
