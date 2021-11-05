@@ -40,6 +40,9 @@ using namespace Input::Type;
 bool Balance::do_yaml_output_ = true;
 
 const Selection & Balance::get_format_selection_input_type() {
+	// TODO: keep just YAML and txt, adapt tests (version 4.0)
+	// TODO: keep just YAML output, move conversions to Python postprocessing
+
 	return Selection("Balance_output_format", "Format of output file for balance.")
 		.add_value(Balance::legacy, "legacy", "Legacy format used by previous program versions.")
 		.add_value(Balance::txt, "txt", "Excel format with tab delimiter.")

@@ -6,7 +6,7 @@ common_config:
         files: ["*.vtu"]
         interpolate: False        
     - ndiff:
-        files: ["*.pvd", "*.txt", "*.yaml", "*.msh"]
+        files: ["*.pvd", "*.txt", "*.yaml", "*.msh", "solution_error"]
 
 test_cases:
   - files:

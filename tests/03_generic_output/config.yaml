@@ -58,9 +58,9 @@ test_cases:
   check_rules:
     - ndiff:
         #files: ["flow/*.vtu", "solute/*.vtu"]
-        files: ["*.vtu"]
-        r_tol: 1e-10
-        a_tol: 1e-10
+        files: ["*.vtu", "*.pvd", "*.txt", "*.yaml"]
+        r_tol: 1e-4
+        a_tol: 1e-6
 
 # serial refined tests
 - files:
