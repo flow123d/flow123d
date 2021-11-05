@@ -743,7 +743,7 @@ double DarcyLMH::solution_precision() const
 //   are in fact pointers to allocating or filling functions - this is governed by Linsystem roitunes
 //
 // =======================================================================================
-void DarcyLMH::assembly_mh_matrix(MultidimAssembly& assembler)
+void DarcyLMH::assembly_mh_matrix(FMT_UNUSED MultidimAssembly& assembler)
 {
     START_TIMER("DarcyLMH::assembly_steady_mh_matrix");
 
@@ -757,10 +757,11 @@ void DarcyLMH::assembly_mh_matrix(MultidimAssembly& assembler)
 
     // TODO: try to move this into balance, or have it in the generic assembler class, that should perform the cell loop
     // including various pre- and post-actions
-    for ( DHCellAccessor dh_cell : eq_data_->dh_->own_range() ) {
-        unsigned int dim = dh_cell.dim();
-        assembler[dim-1]->assemble(dh_cell);
-    }    
+//    for ( DHCellAccessor dh_cell : eq_data_->dh_->own_range() ) {
+//        unsigned int dim = dh_cell.dim();
+//        assembler[dim-1]->assemble(dh_cell);
+//    }
+    mh_matrix_assembly_->assemble(eq_data_->dh_);
     
 
     balance_->finish_mass_assembly(eq_data_->water_balance_idx);
