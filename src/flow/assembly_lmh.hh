@@ -152,14 +152,14 @@ public:
         //this->balance_ = eq_data_->balance_;
         this->element_cache_map_ = element_cache_map;
 
-        ndofs_ = fe_values_.n_dofs();
-        qsize_ = fe_values_.n_points();
-        this->use_dirichlet_switch_ = true;
-
         fe_ = std::make_shared< FE_P_disc<dim> >(0);
         fe_values_side_.initialize(*this->quad_low_, *fe_, update_normal_vectors);
 
         fe_values_.initialize(quad_rt_, fe_rt_, update_values | update_JxW_values | update_quadrature_points);
+
+        ndofs_ = fe_values_.n_dofs();
+        qsize_ = fe_values_.n_points();
+        this->use_dirichlet_switch_ = true;
 
         // local numbering of dofs for MH system
         // note: this shortcut supposes that the fe_system is the same on all elements
@@ -273,22 +273,22 @@ public:
                     time_term_rhs_ = time_term_diag_ * eq_data_->p_edge_solution_previous_time.get(eq_data_->loc_schur_[bulk_local_idx_].row_dofs[i]);
 
                     eq_data_->balance->add_mass_values(eq_data_->water_balance_idx, cell,
-                                      {eq_data_->loc_system_[bulk_local_idx_].row_dofs[eq_data_->loc_edge_dofs[bulk_local_idx_][i]]}, {time_term_}, 0);
+                                      {eq_data_->loc_system_[bulk_local_idx_].row_dofs[eq_data_->loc_edge_dofs[dim-1][i]]}, {time_term_}, 0);
                 }
                 else
                 {
                     // Add zeros explicitely to keep the sparsity pattern.
                     // Otherwise Petsc would compress out the zeros in FinishAssembly.
                     eq_data_->balance->add_mass_values(eq_data_->water_balance_idx, cell,
-                                      {eq_data_->loc_system_[bulk_local_idx_].row_dofs[eq_data_->loc_edge_dofs[bulk_local_idx_][i]]}, {0}, 0);
+                                      {eq_data_->loc_system_[bulk_local_idx_].row_dofs[eq_data_->loc_edge_dofs[dim-1][i]]}, {0}, 0);
                 }
 
-                eq_data_->loc_system_[bulk_local_idx_].add_value(eq_data_->loc_edge_dofs[bulk_local_idx_][i], eq_data_->loc_edge_dofs[bulk_local_idx_][i],
+                eq_data_->loc_system_[bulk_local_idx_].add_value(eq_data_->loc_edge_dofs[dim-1][i], eq_data_->loc_edge_dofs[dim-1][i],
                                 -time_term_diag_,
                                 -source_term_ - time_term_rhs_);
 
                 eq_data_->balance->add_source_values(eq_data_->water_balance_idx, cell.elm().region().bulk_idx(),
-                                {eq_data_->loc_system_[bulk_local_idx_].row_dofs[eq_data_->loc_edge_dofs[bulk_local_idx_][i]]}, {0}, {source_term_});
+                                {eq_data_->loc_system_[bulk_local_idx_].row_dofs[eq_data_->loc_edge_dofs[dim-1][i]]}, {0}, {source_term_});
             }
         }
     }
@@ -417,9 +417,8 @@ public:
         if (dim == 1) return;
         ASSERT_EQ_DBG(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
 
-        const ElementAccessor<3> ele = cell_lower_dim.elm();
-        unsigned int neigh_idx = ngh_idx(neighb_side.cell(), neighb_side.side_idx()); // TODO use better evaluation of neighbour_idx
-        unsigned int loc_dof_higher = (2*ele.dim() + 1) + neigh_idx; // loc dof of higher ele edge
+        unsigned int neigh_idx = ngh_idx(cell_lower_dim, neighb_side); // TODO use better evaluation of neighbour_idx
+        unsigned int loc_dof_higher = (2*(cell_lower_dim.dim()+1) + 1) + neigh_idx; // loc dof of higher ele edge
         bulk_local_idx_ = cell_lower_dim.local_idx();
 
         // Evaluation points
@@ -437,9 +436,9 @@ public:
 						eq_fields_->cross_section(p_low) *      // crossection of lower dim.
                         neighb_side.measure();
 
-        eq_data_->loc_system_[bulk_local_idx_].add_value(eq_data_->loc_ele_dof[dim-1], eq_data_->loc_ele_dof[dim-1], -ngh_value_);
-        eq_data_->loc_system_[bulk_local_idx_].add_value(eq_data_->loc_ele_dof[dim-1], loc_dof_higher,                ngh_value_);
-        eq_data_->loc_system_[bulk_local_idx_].add_value(loc_dof_higher,               eq_data_->loc_ele_dof[dim-1],  ngh_value_);
+        eq_data_->loc_system_[bulk_local_idx_].add_value(eq_data_->loc_ele_dof[dim-2], eq_data_->loc_ele_dof[dim-2], -ngh_value_);
+        eq_data_->loc_system_[bulk_local_idx_].add_value(eq_data_->loc_ele_dof[dim-2], loc_dof_higher,                ngh_value_);
+        eq_data_->loc_system_[bulk_local_idx_].add_value(loc_dof_higher,               eq_data_->loc_ele_dof[dim-2],  ngh_value_);
         eq_data_->loc_system_[bulk_local_idx_].add_value(loc_dof_higher,               loc_dof_higher,               -ngh_value_);
 
 //             // update matrix for weights in BDDCML
@@ -480,12 +479,13 @@ public:
 private:
     // Common method with Schur reconstruct assembly
     void set_dofs() {
-        unsigned int size, loc_size, loc_size_schur;
+        unsigned int size, loc_size, loc_size_schur, elm_dim;;
         for ( DHCellAccessor dh_cell : eq_data_->dh_->own_range() ) {
             const ElementAccessor<3> ele = dh_cell.elm();
             const DHCellAccessor dh_cr_cell = dh_cell.cell_with_other_dh(eq_data_->dh_cr_.get());
 
-            size = ele.dim() + 1 + ele.dim();
+            elm_dim = ele.dim();
+            size = (elm_dim+1) + 1 + (elm_dim+1); // = n_sides + 1 + n_sides
             loc_size = size + ele->n_neighs_vb();
             loc_size_schur = ele->n_sides() + ele->n_neighs_vb();
             LocDofVec dofs(loc_size);
@@ -530,8 +530,8 @@ private:
             for (DHCellSide dh_side : dh_cell.side_range()) {
                 unsigned int sidx = dh_side.side_idx();
                 // side-edge (flux-lambda) terms
-                eq_data_->loc_system_[dh_cell.local_idx()].add_value(eq_data_->loc_side_dofs[dim-1][sidx], eq_data_->loc_edge_dofs[dim-1][sidx], 1.0);
-                eq_data_->loc_system_[dh_cell.local_idx()].add_value(eq_data_->loc_edge_dofs[dim-1][sidx], eq_data_->loc_side_dofs[dim-1][sidx], 1.0);
+                eq_data_->loc_system_[dh_cell.local_idx()].add_value(eq_data_->loc_side_dofs[elm_dim-1][sidx], eq_data_->loc_edge_dofs[elm_dim-1][sidx], 1.0);
+                eq_data_->loc_system_[dh_cell.local_idx()].add_value(eq_data_->loc_edge_dofs[elm_dim-1][sidx], eq_data_->loc_side_dofs[elm_dim-1][sidx], 1.0);
             }
         }
     }
@@ -557,12 +557,12 @@ private:
     }
 
     /// Temporary method find neighbour index in higher-dim cell
-    inline unsigned int ngh_idx(DHCellAccessor &dh_cell, unsigned int side_idx) {
+    inline unsigned int ngh_idx(DHCellAccessor &dh_cell, DHCellSide &neighb_side) {
         for (uint n_i=0; n_i<dh_cell.elm()->n_neighs_vb(); ++n_i) {
             auto side = dh_cell.elm()->neigh_vb[n_i]->side();
-            if (side->side_idx() == side_idx) return n_i;
+            if ( (side->elem_idx() == neighb_side.elem_idx()) && (side->side_idx() == neighb_side.side_idx()) ) return n_i;
         }
-        ASSERT(false)(dh_cell.elm_idx())(side_idx).error("Side is not a part of neighbour!\n");
+        ASSERT(false)(dh_cell.elm_idx())(neighb_side.side_idx()).error("Side is not a part of neighbour!\n");
         return 0;
     }
 

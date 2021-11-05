@@ -260,8 +260,6 @@ DarcyLMH::DarcyLMH(Mesh &mesh_in, const Input::Record in_rec, TimeGovernor *tm)
         mesh_->mixed_intersections();
     }
     
-    eq_data_->balance_ = this->balance();
-
 
     //side_ds->view( std::cout );
     //el_ds->view( std::cout );
@@ -421,7 +419,8 @@ void DarcyLMH::initialize() {
     balance_->allocate(eq_data_->dh_, 1);
     balance_->units(UnitSI().m(3));
 
-    eq_data_->balance = balance_;
+    eq_data_->balance = this->balance_; // eq_data_->balance is obsolete inherited from DarcyMH::EqData, will be remove
+    eq_data_->balance_ = this->balance_;
 
     this->initialize_asm();
 }
