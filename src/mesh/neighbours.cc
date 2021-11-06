@@ -16,7 +16,6 @@
  * @brief   Initialize neighbouring
  */
 
-#include "mesh/side_impl.hh"
 #include "system/system.hh"
 #include "neighbours.h"
 #include "mesh/mesh.h"
@@ -24,11 +23,6 @@
 //=============================================================================
 // READ DATA OF ALL NEIGHBOURS
 //=============================================================================
-void read_neighbour_list(Mesh* mesh)
-{
-
-}
-
 Neighbour::Neighbour()
 : edge_idx_(-1)
 {}

@@ -103,10 +103,10 @@ void DOFHandlerMultiDim::init_dof_starts(
     node_dof_starts.push_back(n_node_dofs);
     
     unsigned int n_edge_dofs = 0;
-    for (unsigned int i=0; i<mesh_->n_edges(); i++)
+    for (auto edge : mesh_->edge_range())
     {
         edge_dof_starts.push_back(n_edge_dofs);
-        n_edge_dofs += ds_->n_edge_dofs(mesh_->edges[i]);
+        n_edge_dofs += ds_->n_edge_dofs(edge);
     }
     edge_dof_starts.push_back(n_edge_dofs);
 }
@@ -564,18 +564,17 @@ void DOFHandlerMultiDim::make_elem_partitioning()
     el_ds_ = mesh_->get_el_ds();
 
     // create local array of edges
-    for (unsigned int iedg=0; iedg<mesh_->n_edges(); iedg++)
+    for (auto edge : mesh_->edge_range())
     {
         bool is_edge_local = false;
-        Edge *edg = &mesh_->edges[iedg];
-        for (int sid=0; sid<edg->n_sides; sid++)
-        	if ( el_is_local(edg->side(sid)->element().idx()) )
+        for (uint sid=0; sid<edge.n_sides(); sid++)
+        	if ( el_is_local(edge.side(sid)->element().idx()) )
         	{
         		is_edge_local = true;
         		break;
         	}
         if (is_edge_local)
-        	edg_4_loc.push_back(iedg);
+        	edg_4_loc.push_back(edge.idx());
     }
 
     // create local array of neighbours
@@ -735,11 +734,10 @@ SubDOFHandlerMultiDim::SubDOFHandlerMultiDim(std::shared_ptr<DOFHandlerMultiDim>
     // create discrete space, we assume equal type of FE on each cell.
     ASSERT_DBG( dynamic_cast<EqualOrderDiscreteSpace *>(dh->ds().get()) != nullptr )
                 .error("sub_handler can be used only with dof handler using EqualOrderDiscreteSpace!");
-    ElementAccessor<3> acc;
-    FESystem<0> *fe_sys0 = dynamic_cast<FESystem<0>*>( dh->ds()->fe(acc).get<0>().get() );
-    FESystem<1> *fe_sys1 = dynamic_cast<FESystem<1>*>( dh->ds()->fe(acc).get<1>().get() );
-    FESystem<2> *fe_sys2 = dynamic_cast<FESystem<2>*>( dh->ds()->fe(acc).get<2>().get() );
-    FESystem<3> *fe_sys3 = dynamic_cast<FESystem<3>*>( dh->ds()->fe(acc).get<3>().get() );
+    FESystem<0> *fe_sys0 = dynamic_cast<FESystem<0>*>( dh->ds()->fe()[0_d].get() );
+    FESystem<1> *fe_sys1 = dynamic_cast<FESystem<1>*>( dh->ds()->fe()[1_d].get() );
+    FESystem<2> *fe_sys2 = dynamic_cast<FESystem<2>*>( dh->ds()->fe()[2_d].get() );
+    FESystem<3> *fe_sys3 = dynamic_cast<FESystem<3>*>( dh->ds()->fe()[3_d].get() );
     ASSERT_DBG( fe_sys0 != nullptr ).error("sub_handler assumes that dof handler uses FESystem<0>!");
     ASSERT_DBG( fe_sys1 != nullptr ).error("sub_handler assumes that dof handler uses FESystem<1>!");
     ASSERT_DBG( fe_sys2 != nullptr ).error("sub_handler assumes that dof handler uses FESystem<2>!");
@@ -781,7 +779,7 @@ SubDOFHandlerMultiDim::SubDOFHandlerMultiDim(std::shared_ptr<DOFHandlerMultiDim>
         LocDofVec cell_dof_indices = cell.get_loc_dof_indices();
         for (auto sub_dof : sub_fe_dofs[cell.dim()])
         {
-            if (cell_dof_indices[sub_dof] < dh->lsize_ &&
+            if (cell_dof_indices[sub_dof] < static_cast<int>(dh->lsize_) &&
                 sub_local_indices[cell_dof_indices[sub_dof]] == INVALID_DOF)
             {
                 sub_local_indices[cell_dof_indices[sub_dof]] = local_to_global_dof_idx_.size();
@@ -886,7 +884,7 @@ void SubDOFHandlerMultiDim::update_subvector(const VectorMPI &vec, VectorMPI &su
     ASSERT_DBG( subvec.size() == local_to_global_dof_idx_.size() ).error("Incompatible subvector in update_subvector()!");
     
     for (unsigned int i=0; i<parent_dof_idx_.size(); i++)
-        subvec[i] = vec[parent_dof_idx_[i]];
+        subvec.set( i, vec.get(parent_dof_idx_[i]) );
 }
 
 
@@ -896,7 +894,7 @@ void SubDOFHandlerMultiDim::update_parent_vector(VectorMPI &vec, const VectorMPI
     ASSERT_DBG( subvec.size() == local_to_global_dof_idx_.size() ).error("Incompatible subvector in update_subvector()!");
     
     for (unsigned int i=0; i<parent_dof_idx_.size(); i++)
-        vec[parent_dof_idx_[i]] = subvec[i];
+        vec.set( parent_dof_idx_[i], subvec.get(i) );
 }
 
 

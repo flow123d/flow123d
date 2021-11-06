@@ -25,10 +25,11 @@
 #include "system/global_defs.h"
 #include "system/exc_common.hh"
 #include <stdio.h>                                     // for FILE
-#include <boost/exception/detail/error_info_impl.hpp>  // for error_info
-#include <boost/exception/info.hpp>                    // for operator<<
+
+
 #include <string>                                      // for string
 #include "system/exceptions.hh"                        // for ExcChkErr::~Ex...
+#include "system/fmt/posix.h"                          // for FMT_UNUSED 
 
 
 #ifndef _BSD_SOURCE
@@ -88,12 +89,6 @@ char * 	get_log_fname( void );
 char * 	get_log_file( void );
 void	resume_log_file( void );
 */
-
-#define xprintf(...) _xprintf(__FILE__, __func__, __LINE__, __VA_ARGS__)
-
-int     _xprintf(const char * const xprintf_file, const char * const xprintf_func, const int xprintf_line, MessageType type, const char * const fmt, ... );
-//void *	xmalloc(size_t size);
-//void * xrealloc( void * ptr, size_t size );
 
 // TODO: implement as a templated function
 /*
@@ -158,6 +153,8 @@ inline void chkerr(unsigned int ierr) {
 inline void chkerr_assert(unsigned int ierr) {
 #ifdef FLOW123D_DEBUG_ASSERTS
     chkerr(ierr);
+#else
+    (void)ierr; // not used
 #endif
 }
 

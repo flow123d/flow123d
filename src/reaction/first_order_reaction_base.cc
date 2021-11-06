@@ -45,9 +45,8 @@ FirstOrderReactionBase::~FirstOrderReactionBase()
 
 void FirstOrderReactionBase::initialize()
 {
-	OLD_ASSERT(distribution_ != nullptr, "Distribution has not been set yet.\n");
-	OLD_ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
-	OLD_ASSERT_LESS(0, substances_.size());
+	ASSERT(time_ != nullptr).error("Time governor has not been set yet.\n");
+	ASSERT_LT(0, substances_.size()).error("No substances for rection term.\n");
     
     n_substances_ = substances_.size();
     initialize_from_input();
@@ -71,9 +70,8 @@ void FirstOrderReactionBase::initialize()
 
 void FirstOrderReactionBase::zero_time_step()
 {
-	OLD_ASSERT(distribution_ != nullptr, "Distribution has not been set yet.\n");
-	OLD_ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
-	OLD_ASSERT_LESS(0, substances_.size());
+    ASSERT(time_ != nullptr).error("Time governor has not been set yet.\n");
+	ASSERT_LT(0, substances_.size()).error("No substances for rection term.\n");
 
     assemble_ode_matrix();
     // make scaling that takes into account different molar masses of substances
@@ -83,23 +81,23 @@ void FirstOrderReactionBase::zero_time_step()
 }
 
 
-double **FirstOrderReactionBase::compute_reaction(double **concentrations, int loc_el) //multiplication of concentrations array by reaction matrix
+void FirstOrderReactionBase::compute_reaction(const DHCellAccessor& dh_cell)
 {      
-    unsigned int rows;  // row in the concentration matrix, regards the substance index
+    unsigned int sbi;  // row in the concentration matrix, regards the substance index
     arma::vec new_conc;
     
+    IntIdx dof_p0 = dh_cell.get_loc_dof_indices()[0];
+
     // save previous concentrations to column vector
-    for(rows = 0; rows < n_substances_; rows++)
-        prev_conc_(rows) = concentrations[rows][loc_el];
+    for(sbi = 0; sbi < n_substances_; sbi++)
+        prev_conc_(sbi) = conc_mobile_fe[sbi]->vec().get(dof_p0);
     
     // compute new concetrations R*c
     linear_ode_solver_->update_solution(prev_conc_, new_conc);
     
     // save new concentrations to the concentration matrix
-    for(rows = 0; rows < n_substances_; rows++)
-        concentrations[rows][loc_el] = new_conc(rows);
- 
-    return concentrations;
+    for(sbi = 0; sbi < n_substances_; sbi++)
+        conc_mobile_fe[sbi]->vec().set( dof_p0, new_conc(sbi) );
 }
 
 void FirstOrderReactionBase::update_solution(void)
@@ -112,9 +110,10 @@ void FirstOrderReactionBase::update_solution(void)
 
     START_TIMER("linear reaction step");
 
-    for (unsigned int loc_el = 0; loc_el < distribution_->lsize(); loc_el++)
-        this->compute_reaction(concentration_matrix_, loc_el);
-    
+    for ( DHCellAccessor dh_cell : dof_handler_->own_range() )
+    {
+        compute_reaction(dh_cell);
+    }
     END_TIMER("linear reaction step");
 }
 
@@ -126,14 +125,4 @@ unsigned int FirstOrderReactionBase::find_subst_name(const string &name)
                 if (name == substances_[k].name()) return k;
 
         return k;
-}
-
-
-bool FirstOrderReactionBase::evaluate_time_constraint(double &time_constraint)
-{
-    if (!linear_ode_solver_->evaluate_time_constraint(time_constraint)) return false;
-    
-    DebugOut().fmt("CFL constraint(first order reaction): {}.\n", time_constraint);
-    
-    return true;
 }

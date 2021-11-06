@@ -11,7 +11,6 @@
 
 #include "system/global_defs.h"
 #include "system/file_path.hh"
-#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "mesh/range_wrapper.hh"
 #include "io/msh_gmshreader.h"
@@ -235,7 +234,7 @@ void compute_intersection_23d(Mesh *mesh, const std::vector<arma::vec3> &il){
     unsigned int triangle_ele_idx = 0,
                  tetra_ele_idx = 1;
     
-    IntersectionAux<2,3> is;
+    IntersectionAux<2,3> is(triangle_ele_idx, tetra_ele_idx);
     ComputeIntersection<2,3> CI(mesh->element_accessor(triangle_ele_idx),
                                 mesh->element_accessor(tetra_ele_idx),
                                 mesh);
@@ -265,11 +264,10 @@ void compute_intersection_23d(Mesh *mesh, const std::vector<arma::vec3> &il){
     {
         std::cout << "---------- check IP[" << i << "] ----------\n";
         
-        ok=EXPECT_ARMA_EQ(il[i], coords[i]);
+        EXPECT_ARMA_EQ(il[i], coords[i]);
 //         EXPECT_ARMA_EQ(il[i].comp_coords(), ilc[i].comp_coords());
 //         EXPECT_ARMA_EQ(il[i].bulk_coords(), ilc[i].bulk_coords());
     }
-    ASSERT(ok);
 }
 
 
@@ -288,7 +286,7 @@ TEST(area_intersections, all) {
         string file_name=test_case.first+"_triangle_tetrahedron.msh";
         TestCaseIPs &case_ips=test_case.second;
 
-        string in_mesh_string = "{mesh_file=\"" + dir_name + file_name + "\"}";
+        string in_mesh_string = "{ mesh_file=\"" + dir_name + file_name + "\", optimize_mesh=false }";
         
         const unsigned int np = 1;//permutations_triangle.size();
         for(unsigned int p=0; p<np; p++){
@@ -304,15 +302,18 @@ TEST(area_intersections, all) {
                 // read mesh with gmshreader
                 auto reader = reader_constructor(in_mesh_string);
                 reader->read_raw_mesh(mesh);
-                
-                // permute nodes:
-                for (auto ele : mesh->elements_range()) {
-                    if(ele->dim() == 2)
-                        mesh->permute_triangle(ele.idx(), permutations_triangle[p]);
-                    if(ele->dim() == 3)
-                    	mesh->permute_tetrahedron(ele.idx(), permutations_tetrahedron[pt]);
-                }
-                mesh->setup_topology();
+                TestingMesh *tmesh = new TestingMesh(mesh);
+                tmesh->add_permute_dim(permutation_line, 1);
+                tmesh->add_permute_dim(permutations_triangle[0], 2);
+                tmesh->add_permute_dim(permutations_tetrahedron[p], 3);
+//                // permute nodes:
+//                for (auto ele : mesh->elements_range()) {
+//                    if(ele->dim() == 2)
+//                        mesh->permute_triangle(ele.idx(), permutations_triangle[p]);
+//                    if(ele->dim() == 3)
+//                    	mesh->permute_tetrahedron(ele.idx(), permutations_tetrahedron[pt]);
+//                }
+                //mesh->setup_topology();
                 
                 compute_intersection_23d(mesh, case_ips);
             }

@@ -10,7 +10,6 @@
 #include <flow_gtest_mpi.hh>
 #include <mesh_constructor.hh>
 
-#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "mesh/bc_mesh.hh"
 #include "io/msh_gmshreader.h"
@@ -65,12 +64,12 @@ TEST(MeshTopology, make_neighbours_and_edges) {
 	// has to introduce some flag for passing absolute path to 'test_units' in source tree
 	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-    Profiler::initialize();
+    Profiler::instance();
     
     Mesh * mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
 
     EXPECT_EQ(9, mesh->n_elements());
-    EXPECT_EQ(18, mesh->n_elements(true));
+    EXPECT_EQ(18, mesh->get_bc_mesh()->n_elements());
 
     // check boundary elements
     EXPECT_EQ(101 , mesh->element_accessor(9).region().id() );
@@ -107,6 +106,7 @@ regions:
    region_ids:
     - 39
     - 40
+optimize_mesh: false
 )YAML";
 
 TEST(Mesh, init_from_input) {
@@ -157,8 +157,6 @@ TEST(Mesh, decompose_problem) {
 TEST(Mesh, check_compatible_mesh) {
 	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-	vector<LongIdx> bulk_elms_id, boundary_elms_id;
-
     std::string mesh_string = "{mesh_file=\"mesh/simplest_cube.msh\"}";
     Mesh * target_mesh = mesh_constructor(mesh_string);
     auto target_reader = reader_constructor(mesh_string);
@@ -170,10 +168,10 @@ TEST(Mesh, check_compatible_mesh) {
         std::string mesh_in_string = "{mesh_file=\"mesh/pvd-test/pvd-test-000000.vtu\"}";
         Mesh * mesh = mesh_constructor(mesh_in_string);
         auto reader = reader_constructor(mesh_in_string);
-        reader->read_physical_names(mesh);
+        //reader->read_physical_names(mesh); // not implemented
         reader->read_raw_mesh(mesh);
 
-        EXPECT_TRUE( mesh->check_compatible_mesh(*target_mesh, bulk_elms_id, boundary_elms_id) );
+        EXPECT_FALSE( mesh->check_compatible_mesh(*target_mesh)->empty() );
 
         delete mesh;
     }
@@ -182,10 +180,10 @@ TEST(Mesh, check_compatible_mesh) {
         std::string mesh_in_string = "{mesh_file=\"mesh/test_108_elem.msh\"}";
         Mesh * mesh = mesh_constructor(mesh_in_string);
         auto reader = reader_constructor(mesh_in_string);
-        reader->read_physical_names(mesh);
+        // reader->read_physical_names(mesh); // not implemented
         reader->read_raw_mesh(mesh);
 
-        EXPECT_FALSE( mesh->check_compatible_mesh(*target_mesh, bulk_elms_id, boundary_elms_id) );
+        EXPECT_TRUE( mesh->check_compatible_mesh(*target_mesh)->empty() );
 
         delete mesh;
     }

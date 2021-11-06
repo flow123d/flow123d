@@ -36,17 +36,17 @@ public:
     
     RT0_space(unsigned int dim);
     
-    const double basis_value(unsigned int basis_index,
-                             const arma::vec &point,
-                             unsigned int comp_index
-                            ) const override;
+    double basis_value(unsigned int basis_index,
+                       const arma::vec &point,
+                       unsigned int comp_index
+                       ) const override;
     
     const arma::vec basis_grad(unsigned int basis_index,
                                const arma::vec &point,
                                unsigned int comp_index
                               ) const override;
 
-    const unsigned int dim() const override { return this->space_dim_+1; }
+    unsigned int dim() const override { return this->space_dim_+1; }
 };
 
 

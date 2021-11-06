@@ -8,13 +8,14 @@
 #ifndef SRC_FLOW_RICHARDS_LMH_HH_
 #define SRC_FLOW_RICHARDS_LMH_HH_
 
-#include <boost/exception/info.hpp>  // for operator<<, error_info::error_in...
+
 #include <memory>                    // for shared_ptr
 #include "fields/field.hh"           // for Field
 #include "fields/field_fe.hh"           // for FieldFE
 #include "fields/field_values.hh"    // for FieldValue<>::Scalar, FieldValue
 #include "la/vector_mpi.hh"          // for VectorMPI
 #include "flow/darcy_flow_lmh.hh"    // for DarcyLMH, DarcyLMH::EqData
+#include "flow/darcy_flow_mh_output.hh" // for DarcyFlowMHOutput
 #include "input/type_base.hh"        // for Array
 #include "input/type_generic.hh"     // for Instance
 
@@ -91,9 +92,12 @@ public:
         std::shared_ptr<SoilModelBase> soil_model_;
     };
 
-    RichardsLMH(Mesh &mesh, const Input::Record in_rec);
+    RichardsLMH(Mesh &mesh, const Input::Record in_rec, TimeGovernor *tm = nullptr);
 
     static const Input::Type::Record & get_input_type();
+    
+    void accept_time_step() override;
+    
 protected:
     /// Registrar of class to factory
     static const int registrar;
@@ -104,7 +108,6 @@ protected:
 
     void initial_condition_postprocess() override;
     void assembly_linear_system() override;
-    void accept_time_step() override;
 private:
 
     std::shared_ptr<EqData> data_;

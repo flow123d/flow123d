@@ -37,15 +37,15 @@
 #include "input/accessors.hh"
 
 
-FLOW123D_FORCE_LINK_IN_PARENT(transportOperatorSplitting);
-FLOW123D_FORCE_LINK_IN_PARENT(concentrationTransportModel);
-FLOW123D_FORCE_LINK_IN_PARENT(convectionTransport);
-FLOW123D_FORCE_LINK_IN_PARENT(heatModel);
+FLOW123D_FORCE_LINK_IN_PARENT(transportOperatorSplitting)
+FLOW123D_FORCE_LINK_IN_PARENT(concentrationTransportModel)
+FLOW123D_FORCE_LINK_IN_PARENT(convectionTransport)
+FLOW123D_FORCE_LINK_IN_PARENT(heatModel)
 
-// FLOW123D_FORCE_LINK_IN_PARENT(darcy_flow_mh);
-// FLOW123D_FORCE_LINK_IN_PARENT(darcy_flow_lmh);
-// FLOW123D_FORCE_LINK_IN_PARENT(richards_lmh);
-FLOW123D_FORCE_LINK_IN_PARENT(coupling_iterative);
+FLOW123D_FORCE_LINK_IN_PARENT(darcy_flow_mh)
+FLOW123D_FORCE_LINK_IN_PARENT(darcy_flow_lmh)
+FLOW123D_FORCE_LINK_IN_PARENT(richards_lmh)
+FLOW123D_FORCE_LINK_IN_PARENT(coupling_iterative)
 
 
 namespace it = Input::Type;
@@ -60,13 +60,12 @@ const it::Record & HC_ExplicitSequential::get_input_type() {
     return it::Record("Coupling_Sequential",
             "Record with data for a general sequential coupling.\n")
 		.derive_from( CouplingBase::get_input_type() )
+        .copy_keys(EquationBase::record_template())
 		.declare_key("description",it::String(),
 				"Short description of the solved problem.\n"
 				"Is displayed in the main log, and possibly in other text output files.")
 		.declare_key("mesh", Mesh::get_input_type(), it::Default::obligatory(),
 				"Computational mesh common to all equations.")
-		.declare_key("time", TimeGovernor::get_input_type(), it::Default::optional(),
-				"Simulation time frame and time step.")
 		.declare_key("flow_equation", DarcyFlowInterface::get_input_type(),
 		        it::Default::obligatory(),
 				"Flow equation, provides the velocity field as a result.")
@@ -92,8 +91,8 @@ std::shared_ptr<AdvectionProcessBase> HC_ExplicitSequential::make_advection_proc
         auto process = (*it).factory< AdvectionProcessBase, Mesh &, const Input::Record >(*mesh, *it);
 
         // setup fields
-        process->data()["cross_section"]
-                .copy_from(water->data()["cross_section"]);
+        process->eq_fieldset()["cross_section"]
+                .copy_from(water->eq_fieldset()["cross_section"]);
         /*
         if (water_content_saturated_) // only for unsteady Richards water model
             process->data()["porosity"].copy_from(*water_content_saturated_);
@@ -104,8 +103,8 @@ std::shared_ptr<AdvectionProcessBase> HC_ExplicitSequential::make_advection_proc
 
         }*/
 
-        FieldCommon *porosity = process->data().field("porosity");
-        process->data()["water_content"].copy_from( *porosity );
+        FieldCommon *porosity = process->eq_fieldset().field("porosity");
+        process->eq_fieldset()["water_content"].copy_from( *porosity );
 
 
         process->initialize();
@@ -151,11 +150,11 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
     }
 
     RegionSet bulk_set = mesh->region_db().get_region_set("BULK");
-    water_content_saturated_ = water->data().field("water_content_saturated");
+    water_content_saturated_ = water->eq_fieldset().field("water_content_saturated");
     if (water_content_saturated_ && water_content_saturated_->field_result( bulk_set ) == result_zeros )
         water_content_saturated_ = nullptr;
 
-    water_content_p0_ = water->data().field("water_content_p0");
+    water_content_p0_ = water->eq_fieldset().field("water_content_p0");
     if (water_content_p0_ && water_content_p0_->field_result( bulk_set ) == result_zeros )
         water_content_p0_ = nullptr;
 
@@ -176,12 +175,9 @@ void HC_ExplicitSequential::advection_process_step(AdvectionData &pdata)
         // for simplicity we use only last velocity field
         if (pdata.velocity_changed) {
             //DBGMSG("velocity update\n");
-//             std::dynamic_pointer_cast<DarcyMH>(water)->get_velocity_field()->local_to_ghost_data_scatter_begin();
-//             std::dynamic_pointer_cast<DarcyMH>(water)->get_velocity_field()->local_to_ghost_data_scatter_end();
-//             pdata.process->set_velocity_field( std::dynamic_pointer_cast<DarcyMH>(water)->get_velocity_field() );
-            water->get_velocity_field()->local_to_ghost_data_scatter_begin();
-            water->get_velocity_field()->local_to_ghost_data_scatter_end();
-            pdata.process->set_velocity_field( water->get_velocity_field() );
+            auto& flux = pdata.process->eq_fieldset()["flow_flux"];
+            flux.copy_from(water->eq_fieldset()["flux"]);
+            flux.set_time_result_changed();
             pdata.velocity_changed = false;
         }
         if (pdata.process->time().tlevel() == 0) pdata.process->zero_time_step();
@@ -245,9 +241,11 @@ void HC_ExplicitSequential::run_simulation()
         // in time 3*w_dt we can reconsider value of t_dt to better capture changing velocity.
         min_velocity_time = TimeGovernor::inf_time;
         for(auto &pdata : processes_) {
-            pdata.process->set_time_upper_constraint(water_dt, "Flow time step");
-            pdata.velocity_time = theta * pdata.process->planned_time() + (1-theta) * pdata.process->solved_time();
-            min_velocity_time = min(min_velocity_time, pdata.velocity_time);
+            if(! pdata.process->time().is_end()){
+                pdata.process->set_time_upper_constraint(water_dt, "Flow time step");
+                pdata.velocity_time = theta * pdata.process->planned_time() + (1-theta) * pdata.process->solved_time();
+                min_velocity_time = min(min_velocity_time, pdata.velocity_time);
+            }
         }
 
         // printing water and transport times every step

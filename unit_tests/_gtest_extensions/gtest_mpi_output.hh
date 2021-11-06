@@ -61,7 +61,7 @@ enum GTestColor {
 };
 
 void ColoredPrintf(GTestColor color, const char* fmt, ...);
-void PrintFullTestCommentIfPresent(const TestInfo& test_info);
+//void PrintFullTestCommentIfPresent(const TestInfo& test_info);
 
 // This class implements the TestEventListener interface.
 //

@@ -58,8 +58,8 @@
 #include <mpi.h>                                       // for MPI_Comm, MPI_...
 #include <stdlib.h>                                    // for NULL, abs
 #include <string.h>                                    // for memcpy
-#include <boost/exception/detail/error_info_impl.hpp>  // for error_info
-#include <boost/exception/info.hpp>                    // for operator<<
+//
+
 #include <cmath>                                       // for abs, fabs
 #include <new>                                         // for operator new[]
 #include <string>                                      // for basic_string
@@ -243,7 +243,7 @@ public:
     /**
      * Sets PETSC matrix (only for PETSC solvers)
      */
-    virtual PetscErrorCode set_matrix(Mat &matrix, MatStructure str)
+    virtual PetscErrorCode set_matrix(Mat&, MatStructure)
     {
     	OLD_ASSERT( false, "Function set_matrix is not implemented for linsys type %s \n.", typeid(*this).name() );
         return 0;
@@ -252,7 +252,7 @@ public:
     /**
      * Sets RHS vector  (only for PETSC solvers)
      */
-    virtual PetscErrorCode set_rhs(Vec &rhs)
+    virtual PetscErrorCode set_rhs(Vec&)
     {
     	OLD_ASSERT( false, "Function set_rhs is not implemented for linsys type %s \n.", typeid(*this).name() );
         return 0;
@@ -630,7 +630,7 @@ public:
      *  Output the system in the Matlab format possibly with given ordering.
      *  Rather we shoud provide output operator <<, since it is more flexible.
      */
-    virtual void view()
+    virtual void view(string)
     {
     	OLD_ASSERT( false, "Function view is not implemented for linsys type %s \n.", typeid(*this).name() );
     }

@@ -10,7 +10,6 @@
 #include "arma_expect.hh"
 
 #include "system/file_path.hh"
-#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "mesh/range_wrapper.hh"
 #include "io/msh_gmshreader.h"
@@ -37,6 +36,7 @@ void fill_solution(std::vector< TestCaseResult> &c)
 
     // 1 IP, A node, T node
     c.push_back({ "01_d", {IntersectionPoint<1,2>({0}, {0, 0})}});
+
     c.push_back({ "02_d", {IntersectionPoint<1,2>({1}, {0, 0})}});
     c.push_back({ "03_d", {IntersectionPoint<1,2>({1}, {0, 0})}});
     
@@ -104,8 +104,9 @@ std::vector<IntersectionPoint<1,2>> permute_coords(TestCaseIPs ips,
 
 void compute_intersection_12d(Mesh *mesh, const TestCaseIPs &ips, bool degenerate)
 {
-    IntersectionAux<1,2> is(1, 0);
-    ComputeIntersection<1,2> CI(mesh->element_accessor(1), mesh->element_accessor(0), mesh);
+    // Compute intersection with a "reference element".
+    IntersectionAux<1,2> is(0, 1);
+    ComputeIntersection<1,2> CI(mesh->element_accessor(0), mesh->element_accessor(1), mesh);
     if(degenerate)
         CI.compute_final_in_plane(is.points());
     else
@@ -153,7 +154,7 @@ TEST(intersections_12d, all) {
         FilePath mesh_file(dir_name + file_name, FilePath::input_file);
         ASSERT(mesh_file.exists())(dir_name+file_name);
         
-        string in_mesh_string = "{mesh_file=\"" + (string)mesh_file + "\"}";
+        string in_mesh_string = "{ mesh_file=\"" + (string)mesh_file + "\", optimize_mesh=false }";
         
         const unsigned int np = permutations_triangle.size();
 //         const unsigned int np = 1;
@@ -162,23 +163,31 @@ TEST(intersections_12d, all) {
                                 i_file,  file_name, p);
             
             Mesh *mesh = mesh_constructor(in_mesh_string);
+
             // read mesh with gmshreader
             auto reader = reader_constructor(in_mesh_string);
             reader->read_raw_mesh(mesh);
-            
-            // permute nodes:
-            for (auto ele : mesh->elements_range()) {
-                if(ele->dim() == 2)
-                	mesh->permute_triangle(ele.idx(), permutations_triangle[p]);
-            }
-            mesh->setup_topology();
+            TestingMesh *tmesh = new TestingMesh(mesh);
+            tmesh->add_permute_dim(permutation_line, 1);
+            tmesh->add_permute_dim(permutations_triangle[p], 2);
+            tmesh->add_permute_dim(permutations_tetrahedron[0], 3);
+
+//            // permute nodes:
+//            for (auto ele : mesh->elements_range()) {
+//                if(ele->dim() == 2)
+//                	mesh->permute_triangle(ele.idx(), permutations_triangle[p]);
+//            }
+
+            // Bypass the permuation of element nodes for the Intersection test against
+            // "reference element" in compute_intersection_12.
+            //tmesh->setup_topology();
             
 //                 compare_with_ngh(mesh);
             // compute both ways
             if(degenerate)
-                compute_intersection_12d(mesh, permute_coords(case_ips, permutations_triangle[p]), false);
+                compute_intersection_12d(tmesh, permute_coords(case_ips, permutations_triangle[p]), false);
             
-            compute_intersection_12d(mesh, permute_coords(case_ips, permutations_triangle[p]), degenerate);
+            compute_intersection_12d(tmesh, permute_coords(case_ips, permutations_triangle[p]), degenerate);
         }
         i_file++;
     }

@@ -1,0 +1,26 @@
+"time [s]"	"region"	"quantity [m(3)]"	"flux"	"flux_in"	"flux_out"	"mass"	"source"	"source_in"	"source_out"	"flux_increment"	"source_increment"	"flux_cumulative"	"source_cumulative"	"error"
+0	"bulk"	"water_volume"	0	0	0	6.24953e-05	0	0	0	0	0	0	0	0
+0	".bottom_y"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
+0	".right_x"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
+0	".top_y"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
+0	".left_x"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
+100	"bulk"	"water_volume"	0	0	0	5.9559e-05	2.2243e-12	2.34125e-12	-1.16945e-13	0	0	0	0	0
+100	".bottom_y"	"water_volume"	-3.19723e-23	0	-3.19723e-23	0	0	0	0	0	0	0	0	0
+100	".right_x"	"water_volume"	-2.93645e-08	0	-2.93645e-08	0	0	0	0	0	0	0	0	0
+100	".top_y"	"water_volume"	6.90067e-23	1.04032e-22	-3.50256e-23	0	0	0	0	0	0	0	0	0
+100	".left_x"	"water_volume"	-6.15979e-23	0	-6.15979e-23	0	0	0	0	0	0	0	0	0
+1000	"bulk"	"water_volume"	0	0	0	5.72296e-05	1.77997e-13	1.82409e-13	-4.41195e-15	0	0	0	0	0
+1000	".bottom_y"	"water_volume"	-2.28996e-24	1.80946e-25	-2.4709e-24	0	0	0	0	0	0	0	0	0
+1000	".right_x"	"water_volume"	-2.34986e-09	0	-2.34986e-09	0	0	0	0	0	0	0	0	0
+1000	".top_y"	"water_volume"	8.36959e-24	9.70524e-24	-1.33564e-24	0	0	0	0	0	0	0	0	0
+1000	".left_x"	"water_volume"	-3.22672e-24	0	-3.22672e-24	0	0	0	0	0	0	0	0	0
+10000	"bulk"	"water_volume"	0	0	0	4.56013e-05	7.27754e-14	7.27754e-14	0	0	0	0	0	0
+10000	".bottom_y"	"water_volume"	1.09363e-22	1.09363e-22	0	0	0	0	0	0	0	0	0	0
+10000	".right_x"	"water_volume"	-9.60758e-10	0	-9.60758e-10	0	0	0	0	0	0	0	0	0
+10000	".top_y"	"water_volume"	1.46623e-22	1.83101e-22	-3.64783e-23	0	0	0	0	0	0	0	0	0
+10000	".left_x"	"water_volume"	2.78257e-22	2.78257e-22	0	0	0	0	0	0	0	0	0	0
+100000	"bulk"	"water_volume"	0	0	0	1.28007e-05	1.47235e-14	1.47235e-14	0	0	0	0	0	0
+100000	".bottom_y"	"water_volume"	-4.82818e-24	0	-4.82818e-24	0	0	0	0	0	0	0	0	0
+100000	".right_x"	"water_volume"	-1.94375e-10	0	-1.94375e-10	0	0	0	0	0	0	0	0	0
+100000	".top_y"	"water_volume"	1.64943e-23	1.92344e-23	-2.74004e-24	0	0	0	0	0	0	0	0	0
+100000	".left_x"	"water_volume"	-1.88943e-24	3.36042e-24	-5.24985e-24	0	0	0	0	0	0	0	0	0

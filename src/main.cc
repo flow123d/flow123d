@@ -76,8 +76,8 @@ it::Record & Application::get_input_type() {
 }
 
 
-
-Application::Application(const std::string &python_path)
+// Note: python_path might be unused if compiling without python support
+Application::Application(FMT_UNUSED const std::string &python_path)
 : ApplicationBase(),
   problem_(nullptr),
   main_input_filename_(""),
@@ -135,14 +135,10 @@ Input::Record Application::read_input() {
 
     // read main input file
     FilePath fpath(main_input_filename_, FilePath::FileType::input_file);
-    try {
-    	Input::ReaderToStorage json_reader(fpath, get_input_type() );
-        root_record = json_reader.get_root_interface<Input::Record>();
-    } catch (Input::ReaderInternalBase::ExcInputError &e ) {
-      e << Input::ReaderInternalBase::EI_File(fpath); throw;
-    } catch (Input::ReaderInternalBase::ExcNotJSONFormat &e) {
-      e << Input::ReaderInternalBase::EI_File(fpath); throw;
-    }  
+    
+    Input::ReaderToStorage json_reader(fpath, get_input_type() );
+    root_record = json_reader.get_root_interface<Input::Record>();
+    
     return root_record;
 }
 
@@ -356,7 +352,7 @@ void Application::run() {
             // run simulation
             problem_->run_simulation();
         } else {
-            xprintf(UsrErr,"Problem type not implemented.");
+            THROW( ExcUnknownProblem() );
         }
 
     }

@@ -115,7 +115,7 @@ void FieldConstant<spacedim, Value>::init_from_input(const Input::Record &rec, c
  * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
  */
 template <int spacedim, class Value>
-typename Value::return_type const & FieldConstant<spacedim, Value>::value(const Point &p, const ElementAccessor<spacedim> &elm)
+typename Value::return_type const & FieldConstant<spacedim, Value>::value(const Point &, const ElementAccessor<spacedim> &)
 {
     return this->r_value_;
 }
@@ -126,7 +126,7 @@ typename Value::return_type const & FieldConstant<spacedim, Value>::value(const 
  * Returns std::vector of scalar values in several points at once.
  */
 template <int spacedim, class Value>
-void FieldConstant<spacedim, Value>::value_list (const Armor::array &point_list, const ElementAccessor<spacedim> &elm,
+void FieldConstant<spacedim, Value>::value_list (const Armor::array &point_list, FMT_UNUSED const ElementAccessor<spacedim> &elm,
                    std::vector<typename Value::return_type>  &value_list)
 {
 	OLD_ASSERT_EQUAL( point_list.size(), value_list.size() );
@@ -145,12 +145,13 @@ void FieldConstant<spacedim, Value>::value_list (const Armor::array &point_list,
 
 template <int spacedim, class Value>
 void FieldConstant<spacedim, Value>::cache_update(FieldValueCache<typename Value::element_type> &data_cache,
-        unsigned int i_cache_el_begin, unsigned int i_cache_el_end,
-        const std::vector< ElementAccessor<spacedim> > &element_set)
+		ElementCacheMap &cache_map, unsigned int region_patch_idx)
 {
+    unsigned int reg_chunk_begin = cache_map.region_chunk_begin(region_patch_idx);
+    unsigned int reg_chunk_end = cache_map.region_chunk_end(region_patch_idx);
     Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> mat_value( const_cast<typename Value::element_type*>(this->value_.mem_ptr()) );
-    for (unsigned int i_cache = i_cache_el_begin; i_cache < i_cache_el_end; ++i_cache)
-        data_cache.data().set(i_cache) = mat_value;
+    for (unsigned int i_cache = reg_chunk_begin; i_cache < reg_chunk_end; ++i_cache)
+        data_cache.set(i_cache) = mat_value;
 }
 
 

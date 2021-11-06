@@ -215,15 +215,15 @@ public:
 	: OutputTime()
 
 	{
-	    Profiler::initialize();
+	    Profiler::instance();
 		// read simple mesh
 	    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
-	    my_mesh = mesh_full_constructor("{mesh_file=\"" + (string)mesh_file + "\"}");
+	    my_mesh = mesh_full_constructor("{ mesh_file=\"" + (string)mesh_file + "\", optimize_mesh=false }");
 
 	    auto in_rec =
 	            Input::ReaderToStorage(test_output_time_input, const_cast<Input::Type::Record &>(OutputTime::get_input_type()), Input::FileFormat::format_JSON)
                 .get_root_interface<Input::Record>();
-	    this->init_from_input("dummy_equation", in_rec, "s");
+	    this->init_from_input("dummy_equation", in_rec, std::make_shared<TimeUnitConversion>());
 
 	    component_names = { "comp_0", "comp_1", "comp_2" };
 
@@ -261,7 +261,9 @@ public:
         //this->output_mesh_discont_->make_serial_master_mesh();
         
 		{
-        	field.compute_field_data(ELEM_DATA, shared_from_this());
+    	    auto output_types = OutputTime::empty_discrete_flags();
+    	    output_types[OutputTime::ELEM_DATA] = true;
+        	field.compute_field_data(output_types, shared_from_this());
         	this->gather_output_data();
 			EXPECT_EQ(1, output_data_vec_[ELEM_DATA].size());
 			OutputDataPtr data =  output_data_vec_[ELEM_DATA][0];
@@ -274,7 +276,9 @@ public:
 		}
 
 		{
-			field.compute_field_data(NODE_DATA, shared_from_this());
+		    auto output_types = OutputTime::empty_discrete_flags();
+		    output_types[OutputTime::NODE_DATA] = true;
+			field.compute_field_data(output_types, shared_from_this());
 			this->gather_output_data();
 			EXPECT_EQ(1, output_data_vec_[NODE_DATA].size());
 			OutputDataPtr data =  output_data_vec_[NODE_DATA][0];
@@ -288,7 +292,9 @@ public:
 
 		{
 			// TODO need fix to discontinuous output data
-			/*field.compute_field_data(CORNER_DATA, shared_from_this());
+            /*auto output_types = OutputTime::empty_discrete_flags();
+            output_types[OutputTime::CORNER_DATA] = true;
+			field.compute_field_data(output_types, shared_from_this());
 			this->gather_output_data();
 			EXPECT_EQ(1, output_data_vec_[CORNER_DATA].size());
 			OutputDataPtr data =  output_data_vec_[CORNER_DATA][0];
@@ -302,17 +308,21 @@ public:
 
 
 		this->clear_data();
-		EXPECT_EQ(0, output_data_vec_[NODE_DATA].size());
-		EXPECT_EQ(0, output_data_vec_[ELEM_DATA].size());
-		EXPECT_EQ(0, output_data_vec_[CORNER_DATA].size());
+		EXPECT_EQ(1, output_data_vec_[NODE_DATA].size());   // filled with DummyElementDataCache
+		EXPECT_EQ(1, output_data_vec_[ELEM_DATA].size());   // filled with DummyElementDataCache
+		EXPECT_EQ(0, output_data_vec_[CORNER_DATA].size()); // no date at all
 
 		/*
 
-		compute_field_data(NODE_DATA, field);
+	    auto output_types = OutputTime::empty_discrete_flags();
+	    output_types[OutputTime::NODE_DATA] = true;
+		compute_field_data(output_types, field);
 		EXPECT_EQ(1, node_data.size());
 		check_node_data( node_data[0], result);
 
-		compute_field_data(CORNER_DATA, field);
+	    auto output_types2 = OutputTime::empty_discrete_flags();
+	    output_types2[OutputTime::CORNER_DATA] = true;
+		compute_field_data(output_types2, field);
 		EXPECT_EQ(1, elem_data.size());
 		check_elem_data( elem_data[0], result);
 */
@@ -392,7 +402,7 @@ TEST_F( OutputTest, test_register_elem_fields_data ) {
 
     TimeGovernor tg(0.0, 1.0);
 
-    Profiler::initialize();
+    Profiler::instance();
 
     FilePath::set_io_dirs(".", UNIT_TESTS_SRC_DIR, "", ".");
 
@@ -470,7 +480,7 @@ TEST_F( OutputTest, test_register_corner_fields_data ) {
     Input::ReaderToStorage reader_output(foo_output, Foo::input_type, Input::FileFormat::format_JSON);
     TimeGovernor tg(0.0, 1.0);
 
-    Profiler::initialize();
+    Profiler::instance();
 
     FilePath::set_io_dirs(".", UNIT_TESTS_SRC_DIR, "", ".");
 
@@ -564,7 +574,7 @@ TEST_F( OutputTest, test_register_node_fields_data ) {
     Input::ReaderToStorage reader_output(foo_output, Foo::input_type, Input::FileFormat::format_JSON);
     TimeGovernor tg(0.0, 1.0);
 
-    Profiler::initialize();
+    Profiler::instance();
 
     FilePath::set_io_dirs(".", UNIT_TESTS_SRC_DIR, "", ".");
 

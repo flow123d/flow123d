@@ -64,8 +64,6 @@ public:
      */
     void update_solution(void) override;
     
-    bool evaluate_time_constraint(double &time_constraint) override;
-    
 protected:
     /// Assembles the matrix of the ODEs.
     /**
@@ -82,7 +80,7 @@ protected:
     virtual void assemble_ode_matrix(void) = 0;
     
     /// Computes the reaction on a specified element.
-    virtual double **compute_reaction(double **concentrations, int loc_el) override;
+    virtual void compute_reaction(const DHCellAccessor& dh_cell) override;
             
     /// Initializes private members of sorption from the input record.
     virtual void initialize_from_input() = 0;

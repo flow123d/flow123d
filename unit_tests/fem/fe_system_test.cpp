@@ -14,7 +14,6 @@
 #include "system/armadillo_tools.hh"
 #include "system/sys_profiler.hh"
 #include "quadrature/quadrature_lib.hh"
-#include "mesh/side_impl.hh"
 #include "fem/fe_p.hh"
 #include "fem/fe_rt.hh"
 #include "fem/fe_values.hh"

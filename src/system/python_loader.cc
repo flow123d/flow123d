@@ -64,7 +64,7 @@ PyObject * PythonLoader::load_module_from_file(const std::string& fname) {
     buffer << file_stream.rdbuf();
 
     string module_name;
-    unsigned int pos = fname.rfind("/");
+    std::size_t pos = fname.rfind("/");
     if (pos != string::npos)
         module_name = fname.substr(pos+1);
     else
@@ -207,7 +207,9 @@ PythonRunning::PythonRunning(const std::string& program_name)
         static wstring our_py_home(full_flow_prefix + ":" +default_py_prefix);
         Py_SetPythonHome( &(our_py_home[0]) );
 
-#endif //FLOW123D_PYTHON_PREFIX
+#else
+    (void)program_name; // not used
+#endif //FLOW123D_PYTHON_PREFIX 
 
     // initialize the Python interpreter.
     Py_Initialize();

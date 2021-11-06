@@ -24,7 +24,7 @@
 
 #include "system/file_path.hh"
 #include <sys/types.h>                 // for int64_t
-#include <boost/exception/info.hpp>    // for error_info::~error_info<Tag, T>
+
 #include <memory>                      // for shared_ptr
 #include <string>                      // for string
 #include "system/exceptions.hh"        // for operator<<, ExcStream, EI, TYP...

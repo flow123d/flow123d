@@ -91,7 +91,7 @@ public:
 
 
 TEST(schur, complement) {
-    Profiler::initialize();
+    Profiler::instance();
    
 
 	IS set;

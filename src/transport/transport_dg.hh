@@ -22,13 +22,14 @@
 #include <math.h>                              // for fabs
 #include <string.h>                            // for memcpy
 #include <algorithm>                           // for max
-#include <boost/exception/info.hpp>            // for operator<<, error_info...
+
 #include <string>                              // for operator<<
 #include <vector>                              // for vector
 #include <armadillo>
 #include "fem/update_flags.hh"                 // for operator|
 #include "fields/field_values.hh"              // for FieldValue<>::Scalar
 #include "fields/field.hh"
+#include "fields/field_fe.hh"
 #include "fields/multi_field.hh"
 #include "la/vector_mpi.hh"
 #include "fields/equation_output.hh"
@@ -40,11 +41,9 @@
 #include "input/type_generic.hh"               // for Instance
 #include "input/type_record.hh"                // for Record::ExcRecordKeyNo...
 #include "system/index_types.hh"               // for LongIdx
-#include "mesh/accessors.hh"                   // for ElementAccessor
+#include "mesh/accessors.hh"                   // for ElementAccessor, SIdeIter
 #include "mesh/elements.h"                     // for Element::dim, Element:...
 #include "mesh/neighbours.h"                   // for Neighbour::element
-
-//#include "mesh/sides.h"                        // for SideIter
 #include "mpi.h"                               // for MPI_Comm_rank
 #include "petscmat.h"                          // for Mat, MatDestroy
 #include "petscvec.h"                          // for Vec, VecDestroy, VecSc...
@@ -55,13 +54,15 @@ class DiscreteSpace;
 class Distribution;
 class OutputTime;
 class DOFHandlerMultiDim;
+class GenericAssemblyBase;
 template<unsigned int dim, class Model> class AssemblyDG;
 template<unsigned int dim, class Model> class MassAssemblyDG;
 template<unsigned int dim, class Model> class StiffnessAssemblyDG;
 template<unsigned int dim, class Model> class SourcesAssemblyDG;
 template<unsigned int dim, class Model> class BdrConditionAssemblyDG;
 template<unsigned int dim, class Model> class InitConditionAssemblyDG;
-template< template<Dim...> class DimAssembly> class GenericAssembly;
+template<unsigned int dim, class Model> class InitProjectionAssemblyDG;
+template< template<IntDim...> class DimAssembly> class GenericAssembly;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim> class FiniteElement;
 template<unsigned int dim, unsigned int spacedim> class Mapping;
@@ -138,12 +139,29 @@ public:
     template<unsigned int dim> using StiffnessAssemblyDim = StiffnessAssemblyDG<dim, Model>;
     template<unsigned int dim> using SourcesAssemblyDim = SourcesAssemblyDG<dim, Model>;
     template<unsigned int dim> using BdrConditionAssemblyDim = BdrConditionAssemblyDG<dim, Model>;
-    template<unsigned int dim> using InitConditionAssemblyDim = InitConditionAssemblyDG<dim, Model>;
+	template<unsigned int dim> using InitConditionAssemblyDim = InitConditionAssemblyDG<dim, Model>;
+    template<unsigned int dim> using InitProjectionAssemblyDim = InitProjectionAssemblyDG<dim, Model>;
 
-	class EqData : public Model::ModelEqData {
+	typedef std::vector<std::shared_ptr<FieldFE< 3, FieldValue<3>::Scalar>>> FieldFEScalarVec;
+
+	class EqFields : public Model::ModelEqFields {
 	public:
 
-		EqData();
+		EqFields();
+
+		MultiField<3, FieldValue<3>::Scalar> fracture_sigma;    ///< Transition parameter for diffusive transfer on fractures (for each substance).
+		MultiField<3, FieldValue<3>::Scalar> dg_penalty;        ///< Penalty enforcing inter-element continuity of solution (for each substance).
+        Field<3, FieldValue<3>::Scalar> region_id;
+        Field<3, FieldValue<3>::Scalar> subdomain;
+
+        EquationOutput output_fields;
+	};
+
+
+   	class EqData : public Model::ModelEqData {
+   	public:
+
+        EqData() {}
 
 		/**
 		 * @brief Sets up parameters of the DG method on a given boundary edge.
@@ -167,17 +185,14 @@ public:
 		            double &gamma);
 
 
+		inline void set_time_governor(TimeGovernor *time) {
+		    ASSERT_PTR_DBG(time);
+		    this->time_ = time;
+		}
+
+
 		/// Compute and return anisotropy of given element
 		double elem_anisotropy(ElementAccessor<3> e) const;
-
-
-
-		MultiField<3, FieldValue<3>::Scalar> fracture_sigma;    ///< Transition parameter for diffusive transfer on fractures (for each substance).
-		MultiField<3, FieldValue<3>::Scalar> dg_penalty;        ///< Penalty enforcing inter-element continuity of solution (for each substance).
-        Field<3, FieldValue<3>::Scalar> region_id;
-        Field<3, FieldValue<3>::Scalar> subdomain;
-
-        EquationOutput output_fields;
 
 
     	/// @name Parameters of the numerical method
@@ -207,29 +222,24 @@ public:
     	/// @name Auxiliary fields used during assembly
     	// @{
 
-    	/// Advection coefficients.
-    	vector<vector<arma::vec3> > ad_coef;
     	/// Diffusion coefficients.
     	vector<vector<arma::mat33> > dif_coef;
-    	/// Advection coefficients on edges.
-    	vector<vector<vector<arma::vec3> > > ad_coef_edg;
-    	/// Diffusion coefficients on edges.
-    	vector<vector<vector<arma::mat33> > > dif_coef_edg;
+    	/// Maximal number of edge sides (evaluate from dim 1,2,3)
+    	unsigned int max_edg_sides;
 
     	// @}
 
         /// Object for distribution of dofs.
         std::shared_ptr<DOFHandlerMultiDim> dh_;
 
-        /// general assembly objects, hold assembly objects of appropriate dimension
-        GenericAssembly< MassAssemblyDim > * mass_assembly_;
-        GenericAssembly< StiffnessAssemblyDim > * stiffness_assembly_;
-        GenericAssembly< SourcesAssemblyDim > * sources_assembly_;
-        GenericAssembly< BdrConditionAssemblyDim > * bdr_cond_assembly_;
-        GenericAssembly< InitConditionAssemblyDim > * init_cond_assembly_;
+		/// Vector of solution data.
+		std::vector<VectorMPI> output_vec;
+
+		FieldFEScalarVec conc_fe;
+		std::shared_ptr<DOFHandlerMultiDim> dh_p0;
+		TimeGovernor *time_;
+		std::shared_ptr<Balance> balance_;
 	};
-
-
 
 	enum DGVariant {
 		// Non-symmetric weighted interior penalty DG
@@ -264,7 +274,7 @@ public:
      */
 	void zero_time_step() override;
 	
-    bool evaluate_time_constraint(double &time_constraint)
+    bool evaluate_time_constraint(double &)
     { return false; }
 
     /**
@@ -280,19 +290,22 @@ public:
 	/**
 	 * @brief Destructor.
 	 */
-	~TransportDG();
+	~TransportDG() override;
 
 	void initialize() override;
 
     void calculate_cumulative_balance();
 
-	const Vec &get_solution(unsigned int sbi)
-	{ return data_->ls[sbi]->get_solution(); }
+	/// Return PETSc vector with solution for sbi-th component.
+	Vec get_component_vec(unsigned int sbi)
+	{ return eq_data_->ls[sbi]->get_solution(); }
 
-	double **get_concentration_matrix()
-	{ return solution_elem_; }
+	/// Getter for P0 interpolation by FieldFE.
+	FieldFEScalarVec& get_p0_interpolation()
+	{ return eq_data_->conc_fe;}
 
-	void calculate_concentration_matrix();
+	/// Compute P0 interpolation of the solution (used in reaction term).
+	void compute_p0_interpolation();
 
 	void update_after_reactions(bool solution_changed);
 
@@ -305,19 +318,13 @@ public:
         return Model::balance_;
     }
 
-    /// Return vector of substances indices
-    inline const vector<unsigned int> subst_idx() const {
-        return Model::subst_idx;
-    }
+	inline typename Model::ModelEqFields &eq_fields() { return *eq_fields_; }
 
-
-
+	inline typename Model::ModelEqData &eq_data() { return *eq_data_; }
 
 private:
     /// Registrar of class to factory
     static const int registrar;
-
-	inline typename Model::ModelEqData &data() { return *data_; }
 
 	void preallocate();
 
@@ -343,12 +350,20 @@ private:
 	 */
 	void set_initial_condition();
 
+    
+    
+    void output_region_statistics();
+
+
 
 	/// @name Physical parameters
 	// @{
 
-	/// Field data for model parameters.
-	std::shared_ptr<EqData> data_;
+	/// Fields for model parameters.
+	std::shared_ptr<EqFields> eq_fields_;
+
+	/// Data for model parameters.
+	std::shared_ptr<EqData> eq_data_;
 
 	// @}
 
@@ -368,10 +383,6 @@ private:
 	
 	/// Mass from previous time instant (necessary when coefficients of mass matrix change in time).
 	std::vector<Vec> mass_vec;
-    
-	/// Element averages of solution (the array is passed to reactions in operator splitting).
-	double **solution_elem_;
-
 	// @}
 
 
@@ -381,11 +392,10 @@ private:
 	/// Array for storing the output solution data.
 	//vector<double*> output_solution;
 
-	/// Vector of solution data.
-	vector<VectorMPI> output_vec;
-
 	/// Record with input specification.
 	Input::Record input_rec;
+    
+    ofstream reg_stat_stream;
 
 
 	// @}
@@ -408,8 +418,15 @@ private:
     /// Indicates whether matrices have been preallocated.
     bool allocation_done;
 
+	bool init_projection;
     // @}
 
+    /// general assembly objects, hold assembly objects of appropriate dimension
+    GenericAssembly< MassAssemblyDim > * mass_assembly_;
+    GenericAssembly< StiffnessAssemblyDim > * stiffness_assembly_;
+    GenericAssembly< SourcesAssemblyDim > * sources_assembly_;
+    GenericAssembly< BdrConditionAssemblyDim > * bdr_cond_assembly_;
+	GenericAssemblyBase * init_assembly_;
 };
 
 

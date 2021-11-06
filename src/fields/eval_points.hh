@@ -56,33 +56,34 @@ public:
 
     /// Return size of evaluation points object (number of points).
     inline unsigned int size(unsigned int dim) const {
-        return dim_eval_points_[dim-1].size();
+        return dim_eval_points_[dim].size();
     }
 
     /// Return local coordinates of given local point and appropriate dim.
     template<unsigned int dim>
-    inline arma::vec local_point(unsigned int local_point_idx) const {
-        return dim_eval_points_[dim-1].local_point<dim>(local_point_idx);
+    inline arma::vec::fixed<dim> local_point(unsigned int local_point_idx) const {
+    	ASSERT_GT(dim, 0).error("Dimension 0 not supported!\n");
+        return dim_eval_points_[dim].local_point<dim>(local_point_idx);
     }
 
     /// Return begin index of appropriate subset data.
     inline int subset_begin(unsigned int dim, unsigned int idx) const {
-        return dim_eval_points_[dim-1].subset_begin(idx);
+        return dim_eval_points_[dim].subset_begin(idx);
     }
 
     /// Return end index of appropriate subset data.
     inline int subset_end(unsigned int dim, unsigned int idx) const {
-        return dim_eval_points_[dim-1].subset_end(idx);
+        return dim_eval_points_[dim].subset_end(idx);
     }
 
     /// Return number of local points corresponding to subset.
     inline int subset_size(unsigned int dim, unsigned int idx) const {
-        return dim_eval_points_[dim-1].subset_size(idx);
+        return dim_eval_points_[dim].subset_size(idx);
     }
 
     /// Return number of subsets.
     inline unsigned int n_subsets(unsigned int dim) const {
-        return dim_eval_points_[dim-1].n_subsets();
+        return dim_eval_points_[dim].n_subsets();
     }
 
     /**
@@ -104,12 +105,13 @@ public:
     template <unsigned int dim>
     std::shared_ptr<BoundaryIntegral> add_boundary(const Quadrature &);
 
-    /// Return maximal size of evaluation points objects .
+    /// Return maximal size of evaluation points objects.
     inline unsigned int max_size() const {
-        return std::max( size(1), std::max( size(2), size(3) ) );
+        return max_size_;
     }
 
 private:
+    /// Subobject holds evaluation points data of one dimension (0,1,2,3)
     class DimEvalPoints {
     public:
         /// Constructor
@@ -117,12 +119,13 @@ private:
 
         /// Return size of evaluation points object (number of points).
         inline unsigned int size() const {
-            return local_points_.size();
+            if (dim_==0) return n_subsets_;
+        	else return local_points_.size();
         }
 
         /// Return local coordinates of given local point.
         template<unsigned int dim>
-        inline arma::vec local_point(unsigned int local_point_idx) const {
+        inline arma::vec::fixed<dim> local_point(unsigned int local_point_idx) const {
             ASSERT_LT_DBG(local_point_idx, this->size());
             return local_points_.vec<dim>(local_point_idx);
         }
@@ -150,16 +153,12 @@ private:
             return n_subsets_;
         }
 
-        /// Adds set of local point to local_points_ (bulk or side of given permutation).
+        /// Adds set of local point to local_points_ (bulk or side).
     	template <unsigned int dim>
         void add_local_points(const Armor::Array<double> & quad_points);
 
-        /// Find position of local point (coords) in subvector of local points given by limits <data_begin,  ... data_end)
-    	template <unsigned int dim>
-        unsigned int find_permute_point(arma::vec coords, unsigned int data_begin, unsigned int data_end);
-
         /// Adds new subset and its end size to subset_starts_ array.
-        void add_subset();
+        uint add_subset();
     private:
         Armor::Array<double> local_points_;                           ///< Local coords of points vector
         std::array<int, EvalPoints::max_subsets+1> subset_starts_;    ///< Indices of subsets data in local_points_ vector, used size is n_subsets_ + 1
@@ -167,10 +166,16 @@ private:
         unsigned int dim_;                                            ///< Dimension of local points
     };
 
-    /// Sub objects of dimensions 1,2,3
-    std::array<DimEvalPoints, 3> dim_eval_points_;
+    inline void set_max_size() {
+        max_size_ = std::max( std::max( size(0), size(1) ), std::max( size(2), size(3) ) );
+    }
 
-    friend class EvalSubSet;
+    /// Sub objects of dimensions 0,1,2,3
+    std::array<DimEvalPoints, 4> dim_eval_points_;
+
+    /// Maximal number of used EvalPoints.
+    unsigned int max_size_;
+
 };
 
 

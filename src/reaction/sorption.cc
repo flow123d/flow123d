@@ -21,6 +21,7 @@
 #include "reaction/isotherm.hh"
 #include "reaction/sorption.hh"
 #include "system/sys_profiler.hh"
+#include "system/asserts.hh"
 #include "mesh/accessors.hh"
 #include "input/factory.hh"
 
@@ -47,7 +48,7 @@ SorptionSimple::SorptionSimple(Mesh &init_mesh, Input::Record in_rec)
   : SorptionBase(init_mesh, in_rec)
 {
 	data_ = new EqData("conc_solid", "Concentration solution in the solid phase.");
-    this->eq_data_ = data_;
+    this->eq_fieldset_ = data_;
 }
 
 const int SorptionSimple::registrar =
@@ -82,7 +83,7 @@ SorptionDual::SorptionDual(Mesh &init_mesh, Input::Record in_rec,
         .flags_add(FieldFlag::input_copy)
         .name("porosity_immobile")
 		.set_limits(0.0);
-    this->eq_data_ = data_;
+    this->eq_fieldset_ = data_;
 }
 
 SorptionDual::~SorptionDual(void)

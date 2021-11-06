@@ -26,7 +26,7 @@
 #define field_algo_base_HH_
 
 #include <string.h>                        // for memcpy
-#include <boost/type_traits/is_same.hpp>   // for is_same
+#include <type_traits>   // for is_same
 #include <limits>                          // for numeric_limits
 #include <memory>                          // for shared_ptr
 #include <ostream>                         // for operator<<
@@ -39,7 +39,6 @@
 #include "fields/field_value_cache.hh"
 #include "input/type_selection.hh"         // for Selection
 #include "mesh/point.hh"                   // for Space
-#include "mesh/side_impl.hh"
 #include "mesh/accessors.hh"
 #include "system/asserts.hh"               // for Assert, ASSERT
 #include "tools/time_governor.hh"          // for TimeStep
@@ -47,6 +46,8 @@
 class Mesh;
 class UnitSI;
 class DOFHandlerMultiDim;
+class FieldSet;
+class FieldCommon;
 namespace Input {
 	class AbstractRecord;
 	class Record;
@@ -113,8 +114,11 @@ public:
        // expose template parameters
        typedef typename Space<spacedim>::Point Point;
        static const unsigned int spacedim_=spacedim;
-       static constexpr bool is_enum_valued = boost::is_same<typename Value::element_type, FieldEnum>::value;
+       static constexpr bool is_enum_valued = std::is_same<typename Value::element_type, FieldEnum>::value;
 
+
+       TYPEDEF_ERR_INFO( EI_Field, std::string);
+       DECLARE_EXCEPTION( ExcInputInitUnsupported, << "The field " << EI_Field::qval << " do not support initialization from input.\n" );
 
        /**
         * Kind of default constructor , with possible setting of the initial time.
@@ -235,16 +239,16 @@ public:
        virtual void value_list(const Armor::array &point_list, const ElementAccessor<spacedim> &elm,
                           std::vector<typename Value::return_type>  &value_list)=0;
 
+       /// Allows reinit data members or structures in descendants during reinit of FieldValueCache of 'parental' Field<>
+       virtual void cache_reinit(const ElementCacheMap &cache_map);
+
        virtual void cache_update(FieldValueCache<typename Value::element_type> &data_cache,
-                   unsigned int i_cache_el_begin, unsigned int i_cache_el_end,
-   	               const std::vector< ElementAccessor<spacedim> > &element_set) {
-    	   //ASSERT(false).error("Must be implemented in descendants!\n");
-       }
+				   ElementCacheMap &cache_map, unsigned int region_patch_idx);
 
        /**
         * Postponed setter of Dof handler for FieldFE. For other types of fields has no effect.
         */
-       virtual void set_native_dh(std::shared_ptr<DOFHandlerMultiDim> dh)
+       virtual void set_native_dh(std::shared_ptr<DOFHandlerMultiDim>)
        {}
 
        /**
@@ -252,6 +256,13 @@ public:
         */
        inline bool is_constant_in_space() const {
     	   return is_constant_in_space_;
+       }
+
+       /**
+        * Set reference of FieldSet to FieldFormula instance.
+        */
+       virtual std::vector<const FieldCommon *> set_dependency(FMT_UNUSED FieldSet &field_set) {
+           return std::vector<const FieldCommon *>();
        }
 
        /**

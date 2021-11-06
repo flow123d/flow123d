@@ -37,6 +37,13 @@
 class Quadrature;
 template<unsigned int dim> class FiniteElement;
 
+template<unsigned int dim> class MapScalar;
+template<unsigned int dim> class MapPiola;
+template<unsigned int dim> class MapContravariant;
+template<unsigned int dim> class MapVector;
+template<unsigned int dim> class MapTensor;
+template<unsigned int dim> class MapSystem;
+
 
 
 
@@ -139,7 +146,12 @@ public:
      * @param function_no Number of the shape function.
      * @param point_no Number of the quadrature point.
      */
-    double shape_value(const unsigned int function_no, const unsigned int point_no);
+    inline double shape_value(const unsigned int function_no, const unsigned int point_no) const
+    {
+        ASSERT_LT_DBG(function_no, n_dofs_);
+        ASSERT_LT_DBG(point_no, n_points_);
+        return shape_values[point_no][function_no];
+    }
 
 
     /**
@@ -149,7 +161,12 @@ public:
      * @param function_no Number of the shape function.
      * @param point_no Number of the quadrature point.
      */
-    arma::vec::fixed<spacedim> shape_grad(const unsigned int function_no, const unsigned int point_no);
+    inline arma::vec::fixed<spacedim> shape_grad(const unsigned int function_no, const unsigned int point_no) const
+	{
+        ASSERT_LT_DBG(function_no, n_dofs_);
+        ASSERT_LT_DBG(point_no, n_points_);
+        return shape_gradients[point_no][function_no];
+    }
 
     /**
      * @brief Return the value of the @p function_no-th shape function at
@@ -160,9 +177,15 @@ public:
      * @param function_no Number of the shape function.
      * @param point_no Number of the quadrature point.
      */
-    double shape_value_component(const unsigned int function_no, 
+    inline double shape_value_component(const unsigned int function_no,
                                         const unsigned int point_no, 
-                                        const unsigned int comp) const;
+                                        const unsigned int comp) const
+    {
+        ASSERT_LT_DBG(function_no, n_dofs_);
+        ASSERT_LT_DBG(point_no, n_points_);
+        ASSERT_LT_DBG(comp, n_components_);
+        return shape_values[point_no][function_no*n_components_+comp];
+    }
 
     /**
      * @brief Return the gradient of the @p function_no-th shape function at
@@ -332,7 +355,7 @@ protected:
     
     /// Precompute finite element data on reference element.
     template<unsigned int DIM>
-    FEInternalData *init_fe_data(const FiniteElement<DIM> &fe, const Quadrature &q);
+    std::shared_ptr<FEInternalData> init_fe_data(const FiniteElement<DIM> &fe, const Quadrature &q);
     
     /**
      * @brief Computes the shape function values and gradients on the actual cell
@@ -342,27 +365,17 @@ protected:
      */
     void fill_data(const ElementValues<spacedim> &elm_values, const FEInternalData &fe_data);
     
-    /// Compute shape functions and gradients on the actual cell for scalar FE.
-    void fill_scalar_data(const ElementValues<spacedim> &elm_values, const FEInternalData &fe_data);
-    
-    /// Compute shape functions and gradients on the actual cell for vectorial FE.
-    void fill_vec_data(const ElementValues<spacedim> &elm_values, const FEInternalData &fe_data);
-    
-    /// Compute shape functions and gradients on the actual cell for vectorial FE.
-    void fill_vec_contravariant_data(const ElementValues<spacedim> &elm_values, const FEInternalData &fe_data);
-    
-    /// Compute shape functions and gradients on the actual cell for Raviart-Thomas FE.
-    void fill_vec_piola_data(const ElementValues<spacedim> &elm_values, const FEInternalData &fe_data);
-    
-    /// Compute shape functions and gradients on the actual cell for tensorial FE.
-    void fill_tensor_data(const ElementValues<spacedim> &elm_values, const FEInternalData &fe_data);
-    
-    /// Compute shape functions and gradients on the actual cell for mixed system of FE.
-    void fill_system_data(const ElementValues<spacedim> &elm_values, const FEInternalData &fe_data);
-    
+    /**
+     * @brief Computes the shape function values and gradients on the actual cell
+     * and fills the FEValues structure. Specialized variant of previous method for
+     * different FETypes given by template parameter.
+     */
+    template<class MapType>
+    void fill_data_specialized(const ElementValues<spacedim> &elm_values, const FEInternalData &fe_data);
+
 
     /// Dimension of reference space.
-    int dim_;
+    unsigned int dim_;
 
     /// Number of integration points.
     unsigned int n_points_;
@@ -393,7 +406,7 @@ protected:
     UpdateFlags update_flags;
 
     /// Auxiliary object for calculation of element-dependent data.
-    ElementValues<spacedim> *elm_values;
+    std::shared_ptr<ElementValues<spacedim> > elm_values;
     
     /// Vector of FEValues for sub-elements of FESystem.
     std::vector<FEValues<spacedim>> fe_values_vec;
@@ -405,10 +418,17 @@ protected:
     ViewsCache views_cache_;
 
     /// Precomputed finite element data.
-    typename FEValues<spacedim>::FEInternalData *fe_data;
+    std::shared_ptr<FEInternalData> fe_data;
 
-    /// Precomputed FE data (shape functions on reference element) for all sides and permuted quadrature points.
-    std::vector<std::vector<typename FEValues<spacedim>::FEInternalData*>> side_fe_data;
+    /// Precomputed FE data (shape functions on reference element) for all side quadrature points.
+    std::vector<shared_ptr<FEInternalData> > side_fe_data;
+
+    friend class MapScalar<spacedim>;
+    friend class MapPiola<spacedim>;
+    friend class MapContravariant<spacedim>;
+    friend class MapVector<spacedim>;
+    friend class MapTensor<spacedim>;
+    friend class MapSystem<spacedim>;
 };
 
 

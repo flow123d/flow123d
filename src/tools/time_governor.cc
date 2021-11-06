@@ -22,6 +22,7 @@
 #include "time_governor.hh"
 #include "time_marks.hh"
 #include "unit_si.hh"
+#include "unit_converter.hh"
 
 /*******************************************************************
  * implementation of TimeGovernor static values and methods
@@ -45,11 +46,16 @@ using namespace Input::Type;
 
 const Tuple & TimeGovernor::get_input_time_type(double lower_bound, double upper_bound)
 {
-    return Tuple("TimeValue", "A time with unit specification.")
+    return Tuple("TimeValue", "A time with optional unit specification.")
         .declare_key("time", Double(lower_bound, upper_bound), Default::obligatory(),
-                                    "Numeric value of time." )
-		.declare_key("unit", String(), Default::read_time("Common time unit of equation defined in Time Governor"),
-									"Specify unit of an input time value.")
+                                    "The time value." )
+		.declare_key("unit", UnitConverter::get_input_type(), TimeUnitConversion::get_input_default(),
+				"Predefined units include: `s` seconds, `min` minutes, `h` hours, `d` days, `y` years.\n"
+                "The default time unit is set from the equation's time governor, see the key `common_time_unit`"
+                "in the equation's time record.\n\n"
+                "User can benefit from the Unit Convertor funcionality and create different time units.\n"
+                "Year length example considering leap years (Gregorian calendar): `year; year = 365.2425*d`.\n"
+                "Miliseconds example : `milisec; milisec = 0.001*s`.")
 		.close();
 }
 
@@ -113,7 +119,7 @@ const Record & TimeGovernor::get_input_type() {
 			    "table to the list of fixed TimeMarks.")
 		.declare_key("write_used_timesteps", FileName::output(), Default::optional(),
 				"Write used time steps to the given file in YAML format corresponding with the format of ``dt_limits``.")
-		.declare_key("common_time_unit", String(), Default("\"s\""),
+        .declare_key("common_time_unit", UnitConverter::get_input_type(), Default("\"s\""),
 				"Common time unit of the equation.\nThis unit will be used for all time inputs and outputs "
 				"within the equation. Individually, the common time unit can be overwritten for every declared time.\n"
 				"Time units are used in the following cases:\n"
@@ -135,28 +141,43 @@ const Record & TimeGovernor::get_input_type() {
  * implementation of TimeUnitConversion
  */
 
-TimeUnitConversion::TimeUnitConversion(std::string user_defined_unit)
-: unit_string_(user_defined_unit)
-{
-    coef_ = UnitSI().s().convert_unit_from(user_defined_unit);
-}
-
-
-
 TimeUnitConversion::TimeUnitConversion()
 : coef_(1.0), unit_string_("s") {}
+
+TimeUnitConversion::TimeUnitConversion(const Input::Record &input)
+{
+    unit_string_ = input.val<std::string>("unit_formula");
+    coef_ = read_unit_coef_from_input(input);
+}
+
+double TimeUnitConversion::read_unit_coef_from_input(const Input::Record &input) const
+{
+    std::string unit_str = input.val<std::string>("unit_formula");
+    try {
+        return UnitSI().s().convert_unit_from(unit_str);
+    } catch (ExcInvalidUnit &e) {
+        e << input.ei_address();
+        throw;
+    } catch (ExcNoncorrespondingUnit &e) {
+        e << input.ei_address();
+        throw;
+    }
+}
 
 
 
 double TimeUnitConversion::read_time(Input::Iterator<Input::Tuple> time_it, double default_time) const {
 	if (time_it) {
 	    double time = time_it->val<double>("time");
-	    string time_unit;
-		if (time_it->opt_val<string>("unit", time_unit)) {
-			return ( time * UnitSI().s().convert_unit_from(time_unit) );
-		} else {
+
+        Input::Record unit_record;
+        if ( time_it->opt_val("unit", unit_record) ) {
+            double unit_coef = read_unit_coef_from_input(unit_record);
+            return ( time * unit_coef );
+        }
+        else {
 			return ( time * coef_ );
-		}
+        }
 	} else {
 		ASSERT(default_time!=std::numeric_limits<double>::quiet_NaN()).error("Undefined default time!");
 		return default_time;
@@ -165,9 +186,9 @@ double TimeUnitConversion::read_time(Input::Iterator<Input::Tuple> time_it, doub
 
 
 
-double TimeUnitConversion::read_coef(Input::Iterator<string> unit_it) const {
+double TimeUnitConversion::read_coef(Input::Iterator<Input::Record> unit_it) const {
 	if (unit_it) {
-		return UnitSI().s().convert_unit_from(*unit_it);
+		return read_unit_coef_from_input(*unit_it);
 	} else {
 		return coef_;
 	}
@@ -241,7 +262,7 @@ double TimeStep::read_time(Input::Iterator<Input::Tuple> time_it, double default
 
 
 
-double TimeStep::read_coef(Input::Iterator<string> unit_it) const {
+double TimeStep::read_coef(Input::Iterator<Input::Record> unit_it) const {
 	return time_unit_conversion_->read_coef(unit_it);
 }
 
@@ -252,6 +273,11 @@ double TimeStep::get_coef() const {
 }
 
 
+
+std::shared_ptr<TimeUnitConversion> TimeStep::get_unit_conversion() const
+{
+    return time_unit_conversion_;
+}
 
 ostream& operator<<(ostream& out, const TimeStep& t_step) {
     out << "time: " << t_step.end() << "step: " << t_step.length() << endl;
@@ -272,8 +298,9 @@ TimeGovernor::TimeGovernor(const Input::Record &input, TimeMark::Type eq_mark_ty
 
     try {
 
-        string common_unit_string=input.val<string>("common_time_unit");
-        time_unit_conversion_ = std::make_shared<TimeUnitConversion>(common_unit_string);
+        Input::Record common_unit_record = input.val<Input::Record>("common_time_unit");
+        time_unit_conversion_ = std::make_shared<TimeUnitConversion>(common_unit_record);
+
         limits_time_marks_ = input.val<bool>("add_dt_limits_time_marks");
 
         // Get rid of rounding errors.
@@ -741,7 +768,6 @@ const TimeStep &TimeGovernor::step(int index) const {
 
 void TimeGovernor::view(const char *name) const
 {
-	static char buffer[1024];
 #ifdef FLOW123D_DEBUG_MESSAGES
     MessageOut().fmt(
             "TG[{}]:{:06d}    t:{:10.4f}    dt:{:10.6f}    dt_int<{:10.6f},{:10.6f}>    "
@@ -756,9 +782,6 @@ void TimeGovernor::view(const char *name) const
     MessageOut().fmt(
             "TG[{}]:{:06d}    t:{:10.4f}    dt:{:10.6f}    dt_int<{:10.6f},{:10.6f}>\n",
             name, tlevel(), t(), dt(), lower_constraint_, upper_constraint_);
-
-	//sprintf(buffer, "TG[%s]:%06d    t:%10.4f    dt:%10.6f    dt_int<%10.6f,%10.6f>\n",
-	//            name, tlevel(), t(), dt(), lower_constraint_, upper_constraint_ );
 #endif
 }
 
@@ -770,7 +793,7 @@ double TimeGovernor::read_time(Input::Iterator<Input::Tuple> time_it, double def
 
 
 
-double TimeGovernor::read_coef(Input::Iterator<string> unit_it) const {
+double TimeGovernor::read_coef(Input::Iterator<Input::Record> unit_it) const {
 	return time_unit_conversion_->read_coef(unit_it);
 }
 
@@ -781,12 +804,10 @@ double TimeGovernor::get_coef() const {
 }
 
 
-
-string TimeGovernor::get_unit_string() const {
-	return time_unit_conversion_->get_unit_string();
+std::shared_ptr<TimeUnitConversion> TimeGovernor::get_unit_conversion() const
+{
+    return time_unit_conversion_;
 }
-
-
 
 
 ostream& operator<<(ostream& out, const TimeGovernor& tg)

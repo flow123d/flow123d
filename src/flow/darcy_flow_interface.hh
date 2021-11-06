@@ -12,12 +12,13 @@
 #include "coupling/equation.hh"
 #include "fields/field_values.hh"
 
-template <int spacedim, class Value> class FieldFE;
-
 class DarcyFlowInterface : public EquationBase {
 public:
     /// Typedef for usage of Input::Factory in child classes.
     typedef DarcyFlowInterface FactoryBaseType;
+
+    DECLARE_EXCEPTION( ExcBddcmlNotSupported, << "Flow123d was not build with BDDCML support.\n" );
+    DECLARE_EXCEPTION( ExcUnknownSolver, << "Unknown solver type. Internal error.\n" );
 
     static Input::Type::Abstract & get_input_type() {
         return Input::Type::Abstract("DarcyFlow",
@@ -35,13 +36,6 @@ public:
     DarcyFlowInterface(Mesh &mesh, const Input::Record in_rec)
     : EquationBase(mesh, in_rec)
     {}
-
-    /// Return last time of TimeGovernor.
-    virtual double last_t() =0;
-
-    // TODO: remove! Due to MH and LMH Darcy flow versions.
-    virtual std::shared_ptr< FieldFE<3, FieldValue<3>::VectorFixed> > get_velocity_field()
-    { return nullptr; }
     
     virtual ~DarcyFlowInterface()
     {}

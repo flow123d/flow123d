@@ -53,32 +53,32 @@ TEST(Mixed, mixed) {
     {
         // (int, vector<int>) constructor
         Mixed<FE> mixed_fe_a = Mixed<FE>( 3, vec);
-        EXPECT_EQ(13, mixed_fe_a.get<0>()._a);
-        EXPECT_EQ(14, mixed_fe_a.get<1>()._a);
-        EXPECT_EQ(15, mixed_fe_a.get<2>()._a);
-        EXPECT_EQ(16, mixed_fe_a.get<3>()._a);
+        EXPECT_EQ(13, mixed_fe_a[Dim<0>{}]._a);
+        EXPECT_EQ(14, mixed_fe_a[Dim<1>{}]._a);
+        EXPECT_EQ(15, mixed_fe_a[2_d]._a);
+        EXPECT_EQ(16, mixed_fe_a[3_d]._a);
     }
     {
         // (int) constructor
         Mixed<FE> mixed_fe_a = Mixed<FE>( 1 + 2);
-        EXPECT_EQ(0, mixed_fe_a.get<0>()._a);
-        EXPECT_EQ(30, mixed_fe_a.get<1>()._a);
-        EXPECT_EQ(60, mixed_fe_a.get<2>()._a);
-        EXPECT_EQ(90, mixed_fe_a.get<3>()._a);
+        EXPECT_EQ(0, mixed_fe_a[Dim<0>{}]._a);
+        EXPECT_EQ(30, mixed_fe_a[Dim<1>{}]._a);
+        EXPECT_EQ(60, mixed_fe_a[2_d]._a);
+        EXPECT_EQ(90, mixed_fe_a[3_d]._a);
     }
 
 
     {
         Mixed<FE_XY>  mixed_fe_xy( 3, vec);
         Mixed<FE> mixed_fe = mixed_fe_xy;
-        EXPECT_EQ(13, mixed_fe.get<0>()._a);
-        EXPECT_EQ(14, mixed_fe.get<1>()._a);
-        EXPECT_EQ(15, mixed_fe.get<2>()._a);
-        EXPECT_EQ(16, mixed_fe.get<3>()._a);
-        EXPECT_EQ(26, mixed_fe.get<0>()._b);
-        EXPECT_EQ(28, mixed_fe.get<1>()._b);
-        EXPECT_EQ(30, mixed_fe.get<2>()._b);
-        EXPECT_EQ(32, mixed_fe.get<3>()._b);
+        EXPECT_EQ(13, mixed_fe[Dim<0>{}]._a);
+        EXPECT_EQ(14, mixed_fe[Dim<1>{}]._a);
+        EXPECT_EQ(15, mixed_fe[2_d]._a);
+        EXPECT_EQ(16, mixed_fe[3_d]._a);
+        EXPECT_EQ(26, mixed_fe[Dim<0>{}]._b);
+        EXPECT_EQ(28, mixed_fe[Dim<1>{}]._b);
+        EXPECT_EQ(30, mixed_fe[2_d]._b);
+        EXPECT_EQ(32, mixed_fe[3_d]._b);
     }
 
 // Compilation must failed on static assert (Non-convertible types!)
@@ -94,40 +94,40 @@ TEST(Mixed, mixed) {
         FE<2> fe2(2);
         FE<3> fe3(3);
         Mixed<FE> mixed_fe_a = Mixed<FE>(fe0, fe1, fe2, fe3);
-        EXPECT_EQ( 0, mixed_fe_a.get<0>()._a);
-        EXPECT_EQ(10, mixed_fe_a.get<1>()._a);
-        EXPECT_EQ(40, mixed_fe_a.get<2>()._a);
-        EXPECT_EQ(90, mixed_fe_a.get<3>()._a);
+        EXPECT_EQ( 0, mixed_fe_a[Dim<0>{}]._a);
+        EXPECT_EQ(10, mixed_fe_a[Dim<1>{}]._a);
+        EXPECT_EQ(40, mixed_fe_a[2_d]._a);
+        EXPECT_EQ(90, mixed_fe_a[3_d]._a);
     }
 
     // dim and spacedim templates
     {
         Mixed<Mapping> mixed_fe_a( 3, vec);
-        EXPECT_EQ(6, mixed_fe_a.get<0>()._a);
-        EXPECT_EQ(7, mixed_fe_a.get<1>()._a);
-        EXPECT_EQ(8, mixed_fe_a.get<2>()._a);
-        EXPECT_EQ(9, mixed_fe_a.get<3>()._a);
+        EXPECT_EQ(6, mixed_fe_a[Dim<0>{}]._a);
+        EXPECT_EQ(7, mixed_fe_a[Dim<1>{}]._a);
+        EXPECT_EQ(8, mixed_fe_a[2_d]._a);
+        EXPECT_EQ(9, mixed_fe_a[3_d]._a);
     }
     {
         Mixed<Mapping> mixed_fe_a( 3);
-        EXPECT_EQ(0, mixed_fe_a.get<0>()._a);
-        EXPECT_EQ(9, mixed_fe_a.get<1>()._a);
-        EXPECT_EQ(18, mixed_fe_a.get<2>()._a);
-        EXPECT_EQ(27, mixed_fe_a.get<3>()._a);
+        EXPECT_EQ(0, mixed_fe_a[Dim<0>{}]._a);
+        EXPECT_EQ(9, mixed_fe_a[Dim<1>{}]._a);
+        EXPECT_EQ(18, mixed_fe_a[2_d]._a);
+        EXPECT_EQ(27, mixed_fe_a[3_d]._a);
     }
 //    {
 //        MixedSpaceDim<Mapping> mixed_fe_a( 3, vec);
-//        EXPECT_EQ(6, mixed_fe_a.get<0>()._a);
-//        EXPECT_EQ(7, mixed_fe_a.get<1>()._a);
-//        EXPECT_EQ(8, mixed_fe_a.get<2>()._a);
-//        EXPECT_EQ(9, mixed_fe_a.get<3>()._a);
+//        EXPECT_EQ(6, mixed_fe_a[Dim<0>{}]._a);
+//        EXPECT_EQ(7, mixed_fe_a[Dim<1>{}]._a);
+//        EXPECT_EQ(8, mixed_fe_a[2_d]._a);
+//        EXPECT_EQ(9, mixed_fe_a[3_d]._a);
 //    }
 //    {
 //        MixedSpaceDim<Mapping> mixed_fe_a( 3);
-//        EXPECT_EQ(0, mixed_fe_a.get<0>()._a);
-//        EXPECT_EQ(9, mixed_fe_a.get<1>()._a);
-//        EXPECT_EQ(18, mixed_fe_a.get<2>()._a);
-//        EXPECT_EQ(27, mixed_fe_a.get<3>()._a);
+//        EXPECT_EQ(0, mixed_fe_a[Dim<0>{}]._a);
+//        EXPECT_EQ(9, mixed_fe_a[Dim<1>{}]._a);
+//        EXPECT_EQ(18, mixed_fe_a[2_d]._a);
+//        EXPECT_EQ(27, mixed_fe_a[3_d]._a);
 //    }
 
 }
@@ -138,29 +138,29 @@ TEST(Mixed, mixed_dim_1_3) {
     std::vector<int> vec = {1, 2};
     {
         // (int, vector<int>) constructor
-        Mixed<FE, 1> mixed_fe_a = Mixed<FE, 1>( 3, vec);
-        EXPECT_EQ(14, mixed_fe_a.get<1>()._a);
-        EXPECT_EQ(15, mixed_fe_a.get<2>()._a);
-        EXPECT_EQ(16, mixed_fe_a.get<3>()._a);
+        Mixed<FE, 1> mixed_fe_a = Mixed<FE, 1>(3, vec);
+        EXPECT_EQ(14, mixed_fe_a[Dim<1>{}]._a);
+        EXPECT_EQ(15, mixed_fe_a[2_d]._a);
+        EXPECT_EQ(16, mixed_fe_a[3_d]._a);
     }
     {
         // (int) constructor
         Mixed<FE, 1> mixed_fe_a = Mixed<FE, 1>( 1 + 2);
-        EXPECT_EQ(30, mixed_fe_a.get<1>()._a);
-        EXPECT_EQ(60, mixed_fe_a.get<2>()._a);
-        EXPECT_EQ(90, mixed_fe_a.get<3>()._a);
+        EXPECT_EQ(30, mixed_fe_a[Dim<1>{}]._a);
+        EXPECT_EQ(60, mixed_fe_a[2_d]._a);
+        EXPECT_EQ(90, mixed_fe_a[3_d]._a);
     }
 
 
     {
         Mixed<FE_XY, 1>  mixed_fe_xy( 3, vec);
         Mixed<FE, 1> mixed_fe = mixed_fe_xy;
-        EXPECT_EQ(14, mixed_fe.get<1>()._a);
-        EXPECT_EQ(15, mixed_fe.get<2>()._a);
-        EXPECT_EQ(16, mixed_fe.get<3>()._a);
-        EXPECT_EQ(28, mixed_fe.get<1>()._b);
-        EXPECT_EQ(30, mixed_fe.get<2>()._b);
-        EXPECT_EQ(32, mixed_fe.get<3>()._b);
+        EXPECT_EQ(14, mixed_fe[Dim<1>{}]._a);
+        EXPECT_EQ(15, mixed_fe[2_d]._a);
+        EXPECT_EQ(16, mixed_fe[3_d]._a);
+        EXPECT_EQ(28, mixed_fe[Dim<1>{}]._b);
+        EXPECT_EQ(30, mixed_fe[2_d]._b);
+        EXPECT_EQ(32, mixed_fe[3_d]._b);
     }// */
 
 // Compilation must failed on static assert (Non-convertible types!)
@@ -175,23 +175,23 @@ TEST(Mixed, mixed_dim_1_3) {
         FE<2> fe2(2);
         FE<3> fe3(3);
         Mixed<FE, 1> mixed_fe_a = Mixed<FE, 1>(fe1, fe2, fe3);
-        EXPECT_EQ(10, mixed_fe_a.get<1>()._a);
-        EXPECT_EQ(40, mixed_fe_a.get<2>()._a);
-        EXPECT_EQ(90, mixed_fe_a.get<3>()._a);
+        EXPECT_EQ(10, mixed_fe_a[Dim<1>{}]._a);
+        EXPECT_EQ(40, mixed_fe_a[2_d]._a);
+        EXPECT_EQ(90, mixed_fe_a[3_d]._a);
     }
 
     // dim and spacedim templates
     {
         Mixed<Mapping, 1> mixed_fe_a( 3, vec);
-        EXPECT_EQ(7, mixed_fe_a.get<1>()._a);
-        EXPECT_EQ(8, mixed_fe_a.get<2>()._a);
-        EXPECT_EQ(9, mixed_fe_a.get<3>()._a);
+        EXPECT_EQ(7, mixed_fe_a[Dim<1>{}]._a);
+        EXPECT_EQ(8, mixed_fe_a[2_d]._a);
+        EXPECT_EQ(9, mixed_fe_a[3_d]._a);
     }
     {
         Mixed<Mapping, 1> mixed_fe_a( 3);
-        EXPECT_EQ(9, mixed_fe_a.get<1>()._a);
-        EXPECT_EQ(18, mixed_fe_a.get<2>()._a);
-        EXPECT_EQ(27, mixed_fe_a.get<3>()._a);
+        EXPECT_EQ(9, mixed_fe_a[Dim<1>{}]._a);
+        EXPECT_EQ(18, mixed_fe_a[2_d]._a);
+        EXPECT_EQ(27, mixed_fe_a[3_d]._a);
     }
 
 }
@@ -221,27 +221,27 @@ TEST(MixedPtr, mixed_ptr) {
     std::vector<int> vec = {1, 2};
     {
         MixedPtr<FE> mixed_fe = MixedPtr<FE>( 3, vec);
-        EXPECT_EQ(13, mixed_fe.get<0>()->_a);
-        EXPECT_EQ(14, mixed_fe.get<1>()->_a);
-        EXPECT_EQ(15, mixed_fe.get<2>()->_a);
-        EXPECT_EQ(16, mixed_fe.get<3>()->_a);
+        EXPECT_EQ(13, mixed_fe[Dim<0>{}]->_a);
+        EXPECT_EQ(14, mixed_fe[Dim<1>{}]->_a);
+        EXPECT_EQ(15, mixed_fe[2_d]->_a);
+        EXPECT_EQ(16, mixed_fe[3_d]->_a);
     }
 
 
     // dim and spacedim templates
     {
         MixedPtr<Mapping> mixed_fe( 3, vec);
-        EXPECT_EQ(6, mixed_fe.get<0>()->_a);
-        EXPECT_EQ(7, mixed_fe.get<1>()->_a);
-        EXPECT_EQ(8, mixed_fe.get<2>()->_a);
-        EXPECT_EQ(9, mixed_fe.get<3>()->_a);
+        EXPECT_EQ(6, mixed_fe[Dim<0>{}]->_a);
+        EXPECT_EQ(7, mixed_fe[Dim<1>{}]->_a);
+        EXPECT_EQ(8, mixed_fe[2_d]->_a);
+        EXPECT_EQ(9, mixed_fe[3_d]->_a);
     }
 //    {
 //        MixedSpaceDimPtr<Mapping> mixed_fe( 3, vec);
-//        EXPECT_EQ(6, mixed_fe.get<0>()->_a);
-//        EXPECT_EQ(7, mixed_fe.get<1>()->_a);
-//        EXPECT_EQ(8, mixed_fe.get<2>()->_a);
-//        EXPECT_EQ(9, mixed_fe.get<3>()->_a);
+//        EXPECT_EQ(6, mixed_fe[Dim<0>{}]->_a);
+//        EXPECT_EQ(7, mixed_fe[Dim<1>{}]->_a);
+//        EXPECT_EQ(8, mixed_fe[2_d]->_a);
+//        EXPECT_EQ(9, mixed_fe[3_d]->_a);
 //    }
 
     // assign to base
@@ -250,10 +250,10 @@ TEST(MixedPtr, mixed_ptr) {
 //        foo(fe_xy);
 //        foo(3);
         auto mixed_fe = MixedPtr<FE>(fe_xy);
-        EXPECT_EQ(13, mixed_fe.get<0>()->_a);
-        EXPECT_EQ(14, mixed_fe.get<1>()->_a);
-        EXPECT_EQ(15, mixed_fe.get<2>()->_a);
-        EXPECT_EQ(16, mixed_fe.get<3>()->_a);
+        EXPECT_EQ(13, mixed_fe[Dim<0>{}]->_a);
+        EXPECT_EQ(14, mixed_fe[Dim<1>{}]->_a);
+        EXPECT_EQ(15, mixed_fe[2_d]->_a);
+        EXPECT_EQ(16, mixed_fe[3_d]->_a);
     }
 
     {
@@ -263,10 +263,10 @@ TEST(MixedPtr, mixed_ptr) {
         std::shared_ptr< FE<2> > fe2 = std::make_shared< FE<2> >(2);
         std::shared_ptr< FE<3> > fe3 = std::make_shared< FE<3> >(3);
         MixedPtr<FE> mixed_fe = MixedPtr<FE>(fe0, fe1, fe2, fe3);
-        EXPECT_EQ( 0, mixed_fe.get<0>()->_a);
-        EXPECT_EQ(10, mixed_fe.get<1>()->_a);
-        EXPECT_EQ(40, mixed_fe.get<2>()->_a);
-        EXPECT_EQ(90, mixed_fe.get<3>()->_a);
+        EXPECT_EQ( 0, mixed_fe[Dim<0>{}]->_a);
+        EXPECT_EQ(10, mixed_fe[Dim<1>{}]->_a);
+        EXPECT_EQ(40, mixed_fe[2_d]->_a);
+        EXPECT_EQ(90, mixed_fe[3_d]->_a);
     }
 
 }
@@ -278,25 +278,25 @@ TEST(MixedPtr, mixed_ptr_dim_1_3) {
     std::vector<int> vec = {1, 2};
     {
         MixedPtr<FE, 1> mixed_fe = MixedPtr<FE, 1>( 3, vec);
-        EXPECT_EQ(14, mixed_fe.get<1>()->_a);
-        EXPECT_EQ(15, mixed_fe.get<2>()->_a);
-        EXPECT_EQ(16, mixed_fe.get<3>()->_a);
+        EXPECT_EQ(14, mixed_fe[Dim<1>{}]->_a);
+        EXPECT_EQ(15, mixed_fe[2_d]->_a);
+        EXPECT_EQ(16, mixed_fe[3_d]->_a);
     }
 
 
     // dim and spacedim templates
     {
         MixedPtr<Mapping, 1> mixed_fe( 3, vec);
-        EXPECT_EQ(7, mixed_fe.get<1>()->_a);
-        EXPECT_EQ(8, mixed_fe.get<2>()->_a);
-        EXPECT_EQ(9, mixed_fe.get<3>()->_a);
+        EXPECT_EQ(7, mixed_fe[Dim<1>{}]->_a);
+        EXPECT_EQ(8, mixed_fe[2_d]->_a);
+        EXPECT_EQ(9, mixed_fe[3_d]->_a);
     }
 //    {
 //        MixedSpaceDimPtr<Mapping> mixed_fe( 3, vec);
-//        EXPECT_EQ(6, mixed_fe.get<0>()->_a);
-//        EXPECT_EQ(7, mixed_fe.get<1>()->_a);
-//        EXPECT_EQ(8, mixed_fe.get<2>()->_a);
-//        EXPECT_EQ(9, mixed_fe.get<3>()->_a);
+//        EXPECT_EQ(6, mixed_fe[Dim<0>{}]->_a);
+//        EXPECT_EQ(7, mixed_fe[Dim<1>{}]->_a);
+//        EXPECT_EQ(8, mixed_fe[2_d]->_a);
+//        EXPECT_EQ(9, mixed_fe[3_d]->_a);
 //    }
 
     // assign to base
@@ -305,9 +305,9 @@ TEST(MixedPtr, mixed_ptr_dim_1_3) {
 //        foo(fe_xy);
 //        foo(3);
         auto mixed_fe = MixedPtr<FE, 1>(fe_xy);
-        EXPECT_EQ(14, mixed_fe.get<1>()->_a);
-        EXPECT_EQ(15, mixed_fe.get<2>()->_a);
-        EXPECT_EQ(16, mixed_fe.get<3>()->_a);
+        EXPECT_EQ(14, mixed_fe[Dim<1>{}]->_a);
+        EXPECT_EQ(15, mixed_fe[2_d]->_a);
+        EXPECT_EQ(16, mixed_fe[3_d]->_a);
     }
 
     {
@@ -316,9 +316,9 @@ TEST(MixedPtr, mixed_ptr_dim_1_3) {
         std::shared_ptr< FE<2> > fe2 = std::make_shared< FE<2> >(2);
         std::shared_ptr< FE<3> > fe3 = std::make_shared< FE<3> >(3);
         MixedPtr<FE, 1> mixed_fe = MixedPtr<FE, 1>(fe1, fe2, fe3);
-        EXPECT_EQ(10, mixed_fe.get<1>()->_a);
-        EXPECT_EQ(40, mixed_fe.get<2>()->_a);
-        EXPECT_EQ(90, mixed_fe.get<3>()->_a);
+        EXPECT_EQ(10, mixed_fe[Dim<1>{}]->_a);
+        EXPECT_EQ(40, mixed_fe[2_d]->_a);
+        EXPECT_EQ(90, mixed_fe[3_d]->_a);
     }
 
 }

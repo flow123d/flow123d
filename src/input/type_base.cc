@@ -24,7 +24,7 @@
 
 #include "system/system.hh"
 
-#include <boost/type_traits.hpp>
+#include <type_traits>
 #include <boost/tokenizer.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/functional/hash.hpp>
@@ -39,11 +39,10 @@
 
 #include <stdint.h>                                          // for int64_t
 #include <boost/algorithm/string.hpp>
-#include <boost/exception/detail/error_info_impl.hpp>        // for error_info
-#include <boost/exception/info.hpp>                          // for operator<<
+//
+
 #include <boost/functional/hash/hash.hpp>                    // for hash_com...
-#include <boost/static_assert.hpp>                           // for BOOST_ST...
-#include <boost/type_traits/is_base_of.hpp>                  // for is_base_of
+
 #include <memory>                                            // for shared_ptr
 #include <ostream>                                           // for operator<<
 #include <typeinfo>                                          // for type_info
@@ -371,8 +370,7 @@ template <class ValueType>
 Array::Array(const ValueType &type, unsigned int min_size, unsigned int max_size)
 : Array(std::static_pointer_cast<TypeBase>( std::make_shared<ValueType>(type) ), min_size, max_size)
 {
-    // ASSERT MESSAGE: The type of declared keys has to be a class derived from TypeBase.
-    BOOST_STATIC_ASSERT( (boost::is_base_of<TypeBase, ValueType >::value) );
+    static_assert(std::is_base_of<TypeBase, ValueType >::value, "The type of declared keys has to be a class derived from TypeBase.");
 }
 
 // explicit instantiation
@@ -421,7 +419,7 @@ string Bool::class_name() const {
 }
 
 
-TypeBase::MakeInstanceReturnType Bool::make_instance(std::vector<ParameterPair> vec)  {
+TypeBase::MakeInstanceReturnType Bool::make_instance(FMT_UNUSED std::vector<ParameterPair> vec)  {
 	return std::make_pair( std::make_shared<Bool>(*this), ParameterMap() );
 }
 
@@ -462,7 +460,7 @@ string Integer::class_name() const {
 }
 
 
-TypeBase::MakeInstanceReturnType Integer::make_instance(std::vector<ParameterPair> vec) {
+TypeBase::MakeInstanceReturnType Integer::make_instance(FMT_UNUSED std::vector<ParameterPair> vec) {
 	return std::make_pair( std::make_shared<Integer>(*this), ParameterMap() );
 }
 
@@ -504,7 +502,7 @@ string Double::class_name() const {
 }
 
 
-TypeBase::MakeInstanceReturnType Double::make_instance(std::vector<ParameterPair> vec) {
+TypeBase::MakeInstanceReturnType Double::make_instance(FMT_UNUSED std::vector<ParameterPair> vec) {
 	return std::make_pair( std::make_shared<Double>(*this), ParameterMap() );
 }
 
@@ -573,7 +571,7 @@ bool FileName::match(const string &str) const {
 
 
 
-TypeBase::MakeInstanceReturnType FileName::make_instance(std::vector<ParameterPair> vec)  {
+TypeBase::MakeInstanceReturnType FileName::make_instance(FMT_UNUSED std::vector<ParameterPair> vec)  {
 	return std::make_pair( std::make_shared<FileName>(*this), ParameterMap() );
 }
 
@@ -619,13 +617,13 @@ string String::class_name() const {
 
 
 
-bool String::match(const string &str) const {
+bool String::match(FMT_UNUSED const string &str) const {
     return true;
 }
 
 
 
-TypeBase::MakeInstanceReturnType String::make_instance(std::vector<ParameterPair> vec) {
+TypeBase::MakeInstanceReturnType String::make_instance(FMT_UNUSED std::vector<ParameterPair> vec) {
 	return std::make_pair( std::make_shared<String>(*this), ParameterMap() );
 }
 

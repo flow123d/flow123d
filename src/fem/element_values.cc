@@ -21,7 +21,6 @@
 #include "fem/mapping_p1.hh"
 #include "quadrature/quadrature.hh"
 #include "fem/element_values.hh"
-#include "mesh/side_impl.hh"
 
 
 
@@ -62,11 +61,11 @@ ElementData<spacedim>::ElementData(unsigned int size,
 template<unsigned int spacedim>
 void ElementData<spacedim>::print()
 {
-    if (cell.is_valid() || side.valid())
+    if (cell.is_valid() || side.is_valid())
     {
         if (cell.is_valid())
             printf("cell %d dim %d ", cell.elm_idx(), cell.dim());
-        else if (side.valid())
+        else if (side.is_valid())
             printf("cell %d dim %d side %d ", side.elem_idx(), side.dim(), side.side_idx());
         
         printf(" det[");
@@ -160,9 +159,8 @@ ElementValues<spacedim>::ElementValues(
 : dim_(dim),
   n_points_(_quadrature.size()),
   n_sides_(_quadrature.dim() == dim ? 0 : dim+1),
-  n_side_permutations_(_quadrature.dim() +1 == dim ? (dim+1)*(2*dim*dim-5*dim+6)/6 : 0),
   ref_data(nullptr),
-  side_ref_data(n_sides_, std::vector<RefElementData*>(n_side_permutations_)),
+  side_ref_data(n_sides_),
   data(n_points_, update_each(_flags), dim)
 {
     if (dim == 0) return; // avoid unnecessary allocation of dummy 0 dimensional objects
@@ -176,27 +174,24 @@ ElementValues<spacedim>::ElementValues(
         // precompute side data
         for (unsigned int sid = 0; sid < n_sides_; sid++)
         {
-            for (unsigned int pid = 0; pid < n_side_permutations_; pid++)
-            {
                 Quadrature side_quad(dim);
                 // transform the side quadrature points to the cell quadrature points
                 switch (dim)
                 {
                     case 1:
-                        side_quad = _quadrature.make_from_side<1>(sid, pid);
+                        side_quad = _quadrature.make_from_side<1>(sid);
                         break;
                     case 2:
-                        side_quad = _quadrature.make_from_side<2>(sid, pid);
+                        side_quad = _quadrature.make_from_side<2>(sid);
                         break;
                     case 3:
-                        side_quad = _quadrature.make_from_side<3>(sid, pid);
+                        side_quad = _quadrature.make_from_side<3>(sid);
                         break;
                     default:
                         ASSERT(false)(dim).error("Unsupported dimension.\n");
                         break;
                 }
-                side_ref_data[sid][pid] = init_ref_data(side_quad);
-            }
+                side_ref_data[sid] = init_ref_data(side_quad);
         }
     }
 }
@@ -208,8 +203,7 @@ ElementValues<spacedim>::~ElementValues()
     if (ref_data) delete ref_data;
 
     for (unsigned int sid=0; sid<n_sides_; sid++)
-        for (unsigned int pid=0; pid<n_side_permutations_; pid++)
-            delete side_ref_data[sid][pid];
+        delete side_ref_data[sid];
 }
 
 
@@ -300,7 +294,8 @@ void ElementValues<spacedim>::fill_data()
                 data.jacobians.set(i) = Armor::mat<spacedim,dim>( jac );
 
         // calculation of determinant dependent data
-        if (data.update_flags & update_volume_elements | update_JxW_values)
+        if ((data.update_flags & update_volume_elements) |
+            (data.update_flags & update_JxW_values))
         {
             double det = fabs(::determinant(jac));
 
@@ -346,7 +341,6 @@ template<unsigned int dim>
 void ElementValues<spacedim>::fill_side_data()
 {
     const unsigned int side_idx = side().side_idx();
-    const unsigned int perm_idx = side().element()->permutation_idx(side_idx);
 
     // calculation of normal vectors to the side
     if (data.update_flags & update_normal_vectors)
@@ -364,7 +358,7 @@ void ElementValues<spacedim>::fill_side_data()
     {
         typename MappingP1<dim,spacedim>::ElementMap coords = MappingP1<dim,spacedim>::element_map(side().element());
         for (unsigned int i=0; i<n_points_; i++)
-            data.points.set(i) = Armor::vec<spacedim>( coords*side_ref_data[side_idx][perm_idx]->bar_coords[i] );
+            data.points.set(i) = Armor::vec<spacedim>( coords*side_ref_data[side_idx]->bar_coords[i] );
     }
 
     if (data.update_flags & update_side_JxW_values)
@@ -389,7 +383,7 @@ void ElementValues<spacedim>::fill_side_data()
             side_det = fabs(::determinant(side_jac));
         }
         for (unsigned int i=0; i<n_points_; i++)
-            data.side_JxW_values[i] = side_det*side_ref_data[side_idx][perm_idx]->weights[i];
+            data.side_JxW_values[i] = side_det*side_ref_data[side_idx]->weights[i];
     }
 }
 

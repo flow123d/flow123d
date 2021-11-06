@@ -73,6 +73,8 @@ public:
     DECLARE_INPUT_EXCEPTION( ExcAutomaticConversionError, << "Error during automatic conversion of "
     		<< EI_RecordName::val << " record.\n " << EI_InputErrorMessage::val << "\n" );
     DECLARE_INPUT_EXCEPTION( ExcForbiddenTag, << "Tag " << EI_Tag::qval << " " << EI_Specification::val << "\n" );
+    DECLARE_INPUT_EXCEPTION( ExcDuplicitTag, << "Error in input file: " << EI_File::qval << " at address: " << EI_ErrorAddress::qval << "\n"
+                                              << "Duplicit Tag: " << EI_Tag::qval << "\n" );
     DECLARE_INPUT_EXCEPTION( ExcWrongCsvFormat, << EI_Specification::val << ",\n" << EI_TokenizerMsg::val << "\n" );
     DECLARE_INPUT_EXCEPTION( ExcMultipleDefinitionCsvColumn, << "Multiple definition of column with index " << EI_ColumnIndex::qval
     		<< " in included CSV file:\n" << EI_File::val << ",\n" );

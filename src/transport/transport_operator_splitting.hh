@@ -18,13 +18,14 @@
 #ifndef TRANSPORT_OPERATOR_SPLITTING_HH_
 #define TRANSPORT_OPERATOR_SPLITTING_HH_
 
-#include <boost/exception/info.hpp>             // for operator<<, error_inf...
+
 #include <memory>                               // for shared_ptr
 #include <vector>                               // for vector
 #include "coupling/equation.hh"
 #include "fields/field.hh"                      // for Field
 #include "fields/field_values.hh"
 #include "fields/field_set.hh"
+#include "fields/field_fe.hh"
 #include "fields/multi_field.hh"
 #include "transport/advection_process_base.hh"
 #include "input/accessors.hh"                   // for Record
@@ -59,6 +60,8 @@ namespace Input {
  */
 class ConcentrationTransportBase : public EquationBase {
 public:
+
+    typedef std::vector<std::shared_ptr<FieldFE< 3, FieldValue<3>::Scalar>>> FieldFEScalarVec;
 
     /**
      * Constructor.
@@ -100,8 +103,8 @@ public:
     /// Return substance indices used in balance.
     virtual const vector<unsigned int> &get_subst_idx() = 0;
 
-    /// Calculate the array of concentrations per element (for reactions).
-    virtual void calculate_concentration_matrix() = 0;
+    /// Compute P0 interpolation of the solution (used in reaction term).
+    virtual void compute_p0_interpolation() = 0;
 
     /// Perform changes to transport solution after reaction step.
     virtual void update_after_reactions(bool solution_changed) = 0;
@@ -109,23 +112,17 @@ public:
     /// Setter for output stream.
     virtual void set_output_stream(std::shared_ptr<OutputTime> stream) = 0;
 
-    /// Getter for output stream.
-    virtual std::shared_ptr<OutputTime> output_stream() = 0;
-
-    /// Getter for array of concentrations per element.
-	virtual double **get_concentration_matrix() = 0;
+    /// Getter for P0 interpolation by FieldFE.
+	virtual FieldFEScalarVec& get_p0_interpolation() = 0;
 
 	/// Return PETSc vector with solution for sbi-th substance.
-	virtual const Vec &get_solution(unsigned int sbi) = 0;
+	virtual Vec get_component_vec(unsigned int sbi) = 0;
 
 	/// Return array of indices of local elements and parallel distribution of elements.
 	virtual void get_par_info(LongIdx * &el_4_loc, Distribution * &el_ds) = 0;
 
 	/// Return global array of order of elements within parallel vector.
 	virtual LongIdx *get_row_4_el() = 0;
-
-	/// Pass velocity from flow to transport.
-    virtual void set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field) = 0;
 
     /// Returns number of trnasported substances.
     virtual unsigned int n_substances() = 0;
@@ -143,11 +140,11 @@ public:
 /**
  * Class with fields that are common to all transport models.
  */
-class TransportEqData : public FieldSet {
+class TransportEqFields : public FieldSet {
 public:
 
-	TransportEqData();
-	inline virtual ~TransportEqData() {};
+	TransportEqFields();
+	inline virtual ~TransportEqFields() {};
 
 	/// Mobile porosity - usually saturated water content in the case of unsaturated flow model
 	Field<3, FieldValue<3>::Scalar> porosity;
@@ -157,6 +154,9 @@ public:
 
 	/// Pointer to DarcyFlow field cross_section
 	Field<3, FieldValue<3>::Scalar > cross_section;
+
+    /// Flow flux, can be result of water flow model.
+    Field<3, FieldValue<3>::VectorFixed > flow_flux;
 
 	/// Concentration sources - density of substance source, only positive part is used.
 	MultiField<3, FieldValue<3>::Scalar> sources_density;
@@ -179,7 +179,8 @@ public:
 
     {
         // make module solved for ever
-        auto eq_mark_type = TimeGovernor::marks().new_mark_type();
+        TimeGovernor::marks().new_mark_type();
+        // auto eq_mark_type = TimeGovernor::marks().new_mark_type();
         time_= new TimeGovernor(TimeGovernor::inf_time, TimeGovernor::inf_time);
         time_->next_time();
     };
@@ -188,8 +189,6 @@ public:
     {
         if(time_) delete time_;
     }
-
-    inline void set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field) override {};
 
     inline virtual void output_data() override {};
 
@@ -227,8 +226,6 @@ public:
     /// Destructor.
     virtual ~TransportOperatorSplitting();
 
-    virtual void set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field) override;
-
     void initialize() override;
     void zero_time_step() override;
     void update_solution() override;
@@ -245,13 +242,8 @@ private:
 
     std::shared_ptr<ConcentrationTransportBase> convection;
     std::shared_ptr<ReactionTerm> reaction;
-
-    //double *** semchem_conc_ptr;   //dumb 3-dim array (for phases, which are not supported any more)
-    //Semchem_interface *Semchem_reactions;
     
     double cfl_convection; ///< Time restriction due to transport
-    double cfl_reaction;   ///< Time restriction due to reactions
-
 };
 
 

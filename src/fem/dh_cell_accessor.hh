@@ -21,7 +21,6 @@
 
 #include <armadillo>
 #include "mesh/accessors.hh"
-#include "mesh/side_impl.hh"
 #include "mesh/neighbours.h"
 #include "fem/finite_element.hh"
 #include "fem/dofhandler.hh"
@@ -86,7 +85,7 @@ public:
      *
      * @param indices Array of dof indices on the cell.
      */
-    LocDofVec get_loc_dof_indices() const
+    inline LocDofVec get_loc_dof_indices() const
     { return dof_handler_->get_loc_dof_indices(loc_ele_idx_); }
 
     /// Return number of dofs on given cell.
@@ -113,23 +112,12 @@ public:
      */
     template<unsigned int dim>
     FEPtr<dim> fe() const {
-        ElementAccessor<3> elm_acc = this->elm();
-        return dof_handler_->ds_->fe(elm_acc).get<dim>();
+        return dof_handler_->ds_->fe()[Dim<dim>{}];
     }
 
     /// Check validity of accessor (see default constructor)
     inline bool is_valid() const {
         return dof_handler_ != NULL;
-    }
-
-    /// Getter of elm_cache_index_.
-    inline unsigned int element_cache_index() const {
-        return elm_cache_index_;
-    }
-
-    /// Setter of elm_cache_index_.
-    inline void set_element_cache_index(unsigned int idx) const {
-        elm_cache_index_ = idx;
     }
 
     /// Returns range of cell sides
@@ -171,9 +159,6 @@ private:
     const DOFHandlerMultiDim * dof_handler_;
     /// Index into DOFHandler::el_4_loc array.
     unsigned int loc_ele_idx_;
-
-    /// Optional member used in field evaluation, holds index of cell in field data cache.
-    mutable unsigned int elm_cache_index_;
 
     friend class DHCellSide;
     friend class DHEdgeSide;
@@ -243,7 +228,7 @@ public:
     	return side().elem_idx();
     }
 
-    inline Boundary * cond() const {
+    inline Boundary cond() const {
         return side().cond();
     }
 
@@ -336,7 +321,7 @@ public:
 
     /// This class is implicitly convertible to DHCellSide.
     operator DHCellSide() const {
-    	SideIter side = dof_handler_->mesh()->edges[edge_idx_].side(side_idx_);
+    	SideIter side = dof_handler_->mesh()->edge(edge_idx_).side(side_idx_);
     	DHCellAccessor cell = dof_handler_->cell_accessor_from_element( side->elem_idx() );
         return DHCellSide(cell, side->side_idx());
     }
@@ -463,6 +448,10 @@ inline const Dof &DHCellAccessor::cell_dof(unsigned int idof) const
             return fe<3>()->dof(idof);
             break;
     }
+
+    ASSERT(0)(this->dim()).error("Unsupported FE dimension.");
+    // cannot be reached:
+    return fe<1>()->dof(idof);;
 }
 
 
@@ -489,9 +478,9 @@ inline RangeConvert<DHEdgeSide, DHCellSide> DHCellSide::edge_sides() const {
 
 inline unsigned int DHCellSide::n_edge_sides() const {
     unsigned int edge_idx = dh_cell_accessor_.elm()->edge_idx(side_idx_);
-    Edge *edg = &dh_cell_accessor_.dof_handler_->mesh()->edges[edge_idx];
-    for (int sid=0; sid<edg->n_sides; sid++)
-        if ( dh_cell_accessor_.dof_handler_->el_is_local(edg->side(sid)->element().idx()) ) return edg->n_sides;
+    Edge edg = dh_cell_accessor_.dof_handler_->mesh()->edge(edge_idx);
+    for (uint sid=0; sid<edg.n_sides(); sid++)
+        if ( dh_cell_accessor_.dof_handler_->el_is_local(edg.side(sid)->element().idx()) ) return edg.n_sides();
     return 0;
 }
 

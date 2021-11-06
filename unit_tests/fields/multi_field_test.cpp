@@ -87,9 +87,11 @@ formula_field_base: !FieldFormula
 fe_field: !FieldFE
   mesh_data_file: fields/simplest_cube_data.msh
   field_name: vector_fixed
+  default_value: 0.0
 interpolated_p0_field: !FieldFE
   mesh_data_file: fields/simplest_cube_3d.msh
   field_name: scalar
+  default_value: 0.0
   interpolation: P0_intersection
 )YAML";
 
@@ -100,14 +102,14 @@ public:
 
 protected:
     virtual void SetUp() {
-    	Profiler::initialize();
+    	Profiler::instance();
     	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
         PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
 
     	point(0)=1.0; point(1)=2.0; point(2)=3.0;
 
-        auto mesh_reader = reader_constructor("{mesh_file=\"fields/simplest_cube_data.msh\"}");
-        mesh = mesh_constructor("{mesh_file=\"fields/simplest_cube_data.msh\"}");
+        auto mesh_reader = reader_constructor("{ mesh_file=\"fields/simplest_cube_data.msh\", optimize_mesh=false }");
+        mesh = mesh_constructor("{ mesh_file=\"fields/simplest_cube_data.msh\", optimize_mesh=false }");
         mesh_reader->read_raw_mesh(mesh);
         mesh->setup_topology();
 
@@ -221,7 +223,7 @@ string eq_data_input = R"JSON(
 )JSON";
 
 TEST(Operators, assignment) {
-    Profiler::initialize();
+    Profiler::instance();
 
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     auto mesh_reader = reader_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");

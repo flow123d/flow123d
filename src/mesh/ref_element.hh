@@ -48,6 +48,7 @@
  *               E3: V1 -> V2
  *               E4: V1 -> V3
  *               E5: V2 -> V3
+
  *
  * - functions from DEAL.ii:
  *   bool is_inside_unit_cell( point )
@@ -123,25 +124,153 @@
  * 1        [0,1]              1        [0,1,0]            1        [0,1,0,0]
  *                             2        [0,0,1]            2        [0,0,1,0]
  *                                                         3        [0,0,0,1]
+ *
+ *
+ *
+ *  Element node permutation for matching sides
+ *
+ *  1. 2D case: Can add mesh elements in "layers" so that at most toe edges are prescribed and one is free.
+ *     possible cases, two edges A and B considered counter clockwise around a node:
+ *     A out, B out : vertex 0 to node, regular orientation (normal up)
+ *     A out, B in  : vertex 1 to node, regular orientation
+ *     A in , B out : vertex 1 to node, inverted orientation (normal down)
+ *     A in , B in  : vertex 2 to node regular orientation
+ *
+ *     Result: can be matched using two element orientations, element inversion in 1/3 of cases
+ *
+ *  2. 3d elements around an oriented edge
+ *     a. possible face configurations
+ *        U: side 0 attached to the edge, positive; face vertices: 0 (edge 0), 1 (edge 1), 2
+ *        V: side 1 attached to the edge, negative; face vertices: 0 (edge 0), 2 (edge 1), 1
+ *        W: side 2 attached to the edge, positive; face vertices: 1 (edge 0), 2 (edge 1), 0
+ *
+ *     b. faces of the element edges, configuration of faces attached to the element edge; edge pointing up, looking from outside position, face A on right, face B on left
+ *        E0: A (side 0) in  U, B (side 1) in U
+ *        E1: A (side 2) in  U, B (side 0) in V
+ *        E2: A (side 1) in  V, B (side 2) in V
+ *        E3. A (side 0) in  W, B (side 3) in U
+ *        E4: A (side 3) in  V, B (side 1) in W
+ *        E5: A (side 2) in  W, B (side 3) in W
+ *        not presented combination:
+ *        A in U, B in W   =  E3 inverted
+ *        A in V, B in U   =  E1 inverted
+ *        A in W, b in V   =  E4 inverted
+ *
+ *        Result can permute element veritices to arrange elements around an edge, possibly element inversion in 1/3 of cases
+ *
+ *  3. 3d elements around a node, up to 3 given faces, one free face
+ *     denote V0, V1, V2 vertices of the free face, V3 common vertex of given faces
+ *     Denote edges of this element ABCDEF with +- orientation
+ *     a. orientation of edges of the vertices
+ *     V0: E0+ >V1, E1+ >V2, E2+ >V3    +++
+ *     V1: E0- >V0, E3+ >V2, E4+ >V3    -++
+ *     V2: E1- >V0, E3- >V1, E5+ >V3    --+
+ *     V3: E2- >V0, E4- >V1, E5- >V2    ---
+ *
+*                   vertices   edges       normal (out = +)
+ *   3D - sides: S0: 0 1 2      E0 E1 E3    -
+ *               S1: 0 1 3      E0 E2 E4    +
+ *               S2: 0 2 3      E1 E2 E5    -
+ *               S3: 1 2 3      E3 E4 E5    -
+ *
+ *        edges: A E0: V0 -> V1  x direction
+ *               B E1: V0 -> V2  y direction
+ *               C E2: V0 -> V3  z direction
+ *               D E3: V1 -> V2
+ *               E E4: V1 -> V3
+ *               F E5: V2 -> V3
+
+                 CE -> A
+                 EF -> D
+                 FC -> B
+ *
+ *   with edges  DEF, other three edges ABC
+ *     configuration given by orientation of edges ABC and possibly by orientation of edges DEF
+ *     ABC orientation + down, - up; DEF orientation positive if match side 0, i.e. D (AB), E (AC), F (BC)
+ *     faces denoted fD,fE,fF, their configurations considered with respect to the edges DEF respectively
+ *     front face denoted: ff
+ *     vertices V0, V1, V2 top vertices with edges D (V0V1) E (V0V2) F (V1V2); V3 bottom
+ *     invalid = corner case, can not continue must either modify one of the faces, or introduce unmatching face
+ *     impossible = combination of edges that can not happen
+ *     edge cases arranged for the vertex 3
+ *
+ *     CEF ABD  face config: fD   fE  fF  ff
+ *     +++ +++               U    U   U
+ *     +++ ++-               U    U   U-
+ *     +++ +-+ invalid
+ *     +++ +--               U    U   U
+ *     +++ -++               U    U   U
+ *     +++ -+- invalid              U    U   U-
+ *     +++ --+
+ *     +++ ---               U    U   U
+ *
+ *     ++- +++ impossible              U    U   U
+ *     ++- ++- impossible              U    U   U-
+ *     ++- +-+ impossible
+ *     ++- +--               U    U   U
+ *     ++- -++ impossible              U    U   U
+ *     ++- -+- impossible             U    U   U-
+ *     ++- --+ impossible
+ *     ++- ---               U    U   U
+
+ *     +-+ +++ impossible              U    U   U
+ *     +-+ ++- impossible              U    U   U-
+ *     +-+ +-+ impossible
+ *     +-+ +--               U    U   U
+ *     +-+ -++ impossible              U    U   U
+ *     +-+ -+- impossible             U    U   U-
+ *     +-+ --+ impossible
+ *     +-+ ---               U    U   U
+
+ *     +-- +++ impossible              U    U   U
+ *     +-- ++- impossible              U    U   U-
+ *     +-- +-+ impossible
+ *     +-- +--               U    U   U
+ *     +-- -++ impossible              U    U   U
+ *     +-- -+- impossible             U    U   U-
+ *     +-- --+ impossible
+ *     +-- ---               U    U   U
+
+ *     -++ +++ impossible              U    U   U
+ *     -++ ++- impossible              U    U   U-
+ *     -++ +-+ impossible
+ *     -++ +--               U    U   U
+ *     -++ -++ impossible              U    U   U
+ *     -++ -+- impossible             U    U   U-
+ *     -++ --+ impossible
+ *     -++ ---               U    U   U
+
+ *     -+- +++ impossible              U    U   U
+ *     -+- ++- impossible              U    U   U-
+ *     -+- +-+ impossible
+ *     -+- +--               U    U   U
+ *     -+- -++ impossible              U    U   U
+ *     -+- -+- impossible             U    U   U-
+ *     -+- --+ impossible
+ *     -+- ---               U    U   U
+
+ *     --+ +++ impossible              U    U   U
+ *     --+ ++- impossible              U    U   U-
+ *     --+ +-+ impossible
+ *     --+ +--               U    U   U
+ *     --+ -++ impossible              U    U   U
+ *     --+ -+- impossible             U    U   U-
+ *     --+ --+ impossible
+ *     --+ ---               U    U   U
+
+ *     --- +++               U    U   U
+ *     --- ++-               U    U   U-
+ *     --- +-+ invalid
+ *     --- +--               U    U   U
+ *     --- -++               U    U   U
+ *     --- -+- invalid             U    U   U-
+ *     --- --+
+ *     --- ---               U    U   U
+ *
+ *
+ *
  */
 
-/** Auxilliary class representing vector of indices (unsigned int).
- * @tparam Size is the fixed size of the vector.
- */
-/*
-template<unsigned int Size>
-class IdxVector{
-    unsigned int data_[Size];   ///< Array with indices.
-    
-    public:
-        /// Constructor taking in array of indices.
-        IdxVector(std::array<unsigned int,Size> data_in);
-        /// Constructor enabling creating object with initializer list {...}.
-        IdxVector(std::initializer_list<unsigned int> data_in);
-        /// Getter for index @p idx.
-        unsigned int operator[](unsigned int idx) const;
-};
-*/
 
 template<std::size_t Size>
 using IdxVector = std::array<unsigned int, Size>;
@@ -159,6 +288,53 @@ struct Interaction {
     unsigned int i_;
 };
 
+
+
+class _AuxInteract {
+public:
+    // Order clockwise, faces opposite to the lines from node_lines.
+    // !! dependes on S3 inversion
+    static constexpr IdxVector<3> S3_node_sides [2][4]
+            = { { { 2, 1, 0 },
+                  { 3, 0, 1 },
+                  { 3, 2, 0 },
+                  { 3, 1, 2 }},
+                { { 2, 0, 1 },
+                  { 3, 1, 0 },
+                  { 3, 0, 2 },
+                  { 3, 2, 1 }}};
+
+    // faces adjecent to given edge, first is the right face when looking form outside with the edge pointing up.
+    // !! dependes on S3 inversion
+    static constexpr IdxVector<2> S3_line_sides [2][6]
+        = { { {0,1},
+              {2,0},
+              {1,2},
+              {0,3},
+              {3,1},
+              {2,3}},
+            { {1,0},
+              {0,2},
+              {2,1},
+              {3,0},
+              {1,3},
+              {3,2}}};
+
+    // Order clockwise looking over the vertex to center; smallest index first
+    // !! dependes on S3 inversion
+    static constexpr IdxVector<3> S3_node_lines [2][4]
+        = { { {0,1,2},
+              {0,4,3},
+              {1,3,5},
+              {2,5,4}},
+            { {0,2,1},
+              {0,3,4},
+              {1,5,3},
+              {2,4,5}}};
+
+};
+
+
 template<unsigned int dim>
 class RefElement
 {
@@ -172,6 +348,8 @@ public:
      */
     typedef Armor::ArmaVec<double, dim+1> BaryPoint;
     typedef Armor::ArmaVec<double, dim> FaceBaryPoint;
+
+    DECLARE_EXCEPTION( ExcInvalidPermutation, << "Side permutation not found.\n" );
         
 	/**
 	 * Return coordinates of given node.
@@ -231,50 +409,9 @@ public:
 	/// Number of lines, i.e. @p object of dimension @p dim-2 on the boundary of the reference element.
 	static const unsigned int n_lines = (unsigned int)((dim * (dim + 1)) / 2); //( dim == 3 ? 6 : dim == 2 ? 3 : dim == 1 ? 1 : 0); součet posloupnosti
 
-    
-// 	/**
-// 	 * Node numbers for each side.
-// 	 */
-// 	static const unsigned int side_nodes[n_sides][n_nodes_per_side];
-// 
-// 	/**
-// 	 * Indices of 1D lines of the 2D sides of an tetrahedron. Nonempty only for @p dim==3.
-// 	 */
-// 	static const unsigned int side_lines[n_sides][n_lines_per_side];
-// 
-// 	/**
-// 	 * Nodes of 1D lines of the tetrahedron.
-// 	 */
-//     static const unsigned int line_nodes[n_lines][2];
-//     
-//     /**
-//      * Indices of sides for each line. Nonempty only for @p dim==3 and @p dim==2.
-//      */
-//     static const unsigned int line_sides[n_lines][2];
-
 
     static const std::vector< std::vector< std::vector<unsigned int> > > nodes_of_subelements;
 
-	/**
-	 * Number of permutations of nodes on sides.
-	 * dim   value
-	 * -----------
-	 * 1     1
-	 * 2     2
-	 * 3     6
-	 */
-	static constexpr unsigned int n_side_permutations = (dim+1)*(2*dim*dim-5*dim+6)/6;
-
-	/**
-	 * Permutations of nodes on sides.
-	 */
-	static const unsigned int side_permutations[n_side_permutations][n_nodes_per_side];
-
-	/**
-	 * For a given permutation @p p of nodes finds its index within @p side_permutations.
-	 * @param p Permutation of nodes.
-	 */
-	static unsigned int permutation_index(unsigned int p[n_nodes_per_side]);
 
     /** @brief Converts from local to barycentric coordinates.
      * @param lp point in local coordinates (x,y)
@@ -385,20 +522,20 @@ public:
      * 
      */
     template < template <unsigned int OutDim, unsigned int InDim> class TInteraction, unsigned int OutDim, unsigned int InDim>
-    static const IdxVector< (InDim>OutDim ? InDim+1 : dim-InDim) > interact( TInteraction<OutDim,InDim> interaction );
+    static const IdxVector< (InDim>OutDim ? InDim+1 : dim-InDim) > interact( TInteraction<OutDim,InDim> interaction, bool inv = false );
 
 
 private:
     /// Internal part of the interact function.
     template<unsigned int OutDim, unsigned int InDim> 
-    static const IdxVector< (InDim>OutDim ? InDim+1 : dim-InDim) > interact_(unsigned int index);
+    static const IdxVector< (InDim>OutDim ? InDim+1 : dim-InDim) > interact_(unsigned int index, bool inv = false);
     
-    static const IdxVector<n_nodes_per_line> line_nodes_[n_lines]; ///< For given line, returns its nodes indices.
-    static const IdxVector<n_lines_per_node> node_lines_[n_nodes]; ///< For given node, returns lines indices.
-    static const IdxVector<n_nodes_per_side> side_nodes_[n_sides]; ///< For given side, returns nodes indices. For @p dim == 3.
-    static const IdxVector<n_sides_per_node> node_sides_[n_nodes]; ///< For given node, returns sides indices. For @p dim == 3.
-    static const IdxVector<n_sides_per_line> line_sides_[n_lines]; ///< For given line, returns sides indices. For @p dim == 3.
-    static const IdxVector<n_lines_per_side> side_lines_[n_sides]; ///< For given side, returns lines indices. For @p dim == 3.
+    static const std::vector<IdxVector<n_nodes_per_line>> line_nodes_; ///< [n_lines] For given line, returns its nodes indices.
+    static const std::vector<IdxVector<n_lines_per_node>> node_lines_; ///< [n_nodes] For given node, returns lines indices.
+    static const std::vector<IdxVector<n_nodes_per_side>> side_nodes_; ///< [n_sides] For given side, returns nodes indices. For @p dim == 3.
+    static const std::vector<IdxVector<n_sides_per_node>> node_sides_; ///< [n_nodes] For given node, returns sides indices. For @p dim == 3.
+    static const std::vector<IdxVector<n_sides_per_line>> line_sides_; ///< [n_lines] For given line, returns sides indices. For @p dim == 3.
+    static const std::vector<IdxVector<n_lines_per_side>> side_lines_; ///< [n_sides] For given side, returns lines indices. For @p dim == 3.
 
     //TODO: implement for 1d and 2d
     /**
@@ -412,34 +549,48 @@ private:
 };
 
 
-
-
-
-
-template<> const IdxVector<2> RefElement<1>::line_nodes_[];
-template<> const IdxVector<2> RefElement<2>::line_nodes_[];
-template<> const IdxVector<2> RefElement<3>::line_nodes_[];
-
-template<> const IdxVector<1> RefElement<1>::node_lines_[];
-template<> const IdxVector<2> RefElement<2>::node_lines_[];
-template<> const IdxVector<3> RefElement<3>::node_lines_[];
-
-template<> const IdxVector<3> RefElement<3>::side_nodes_[];
-template<> const IdxVector<3> RefElement<3>::node_sides_[];
-
-template<> const IdxVector<2> RefElement<3>::line_sides_[];
-
-template<> const IdxVector<3> RefElement<3>::side_lines_[];
-
-template<> const unsigned int RefElement<0>::side_permutations[][n_nodes_per_side];
-template<> const unsigned int RefElement<1>::side_permutations[][n_nodes_per_side];
-template<> const unsigned int RefElement<2>::side_permutations[][n_nodes_per_side];
-template<> const unsigned int RefElement<3>::side_permutations[][n_nodes_per_side];
+// Declarations of explicit specialization of static memebers.
 
 template<> const IdxVector<1> RefElement<0>::topology_zeros_[];
 template<> const IdxVector<2> RefElement<1>::topology_zeros_[];
 template<> const IdxVector<3> RefElement<2>::topology_zeros_[];
 template<> const IdxVector<6> RefElement<3>::topology_zeros_[];
+
+
+template<> const std::vector<IdxVector<2>> RefElement<1>::line_nodes_;
+template<> const std::vector<IdxVector<2>> RefElement<2>::line_nodes_;
+template<> const std::vector<IdxVector<2>> RefElement<3>::line_nodes_;
+template<> const std::vector<IdxVector<1>> RefElement<1>::node_lines_;
+template<> const std::vector<IdxVector<2>> RefElement<2>::node_lines_;
+
+template<> const std::vector<IdxVector<3>> RefElement<3>::node_lines_;
+template<> const std::vector<IdxVector<3>> RefElement<3>::side_nodes_;
+template<> const std::vector<IdxVector<3>> RefElement<3>::node_sides_;
+template<> const std::vector<IdxVector<2>> RefElement<3>::line_sides_;
+template<> const std::vector<IdxVector<3>> RefElement<3>::side_lines_;
+
+
+template<> const IdxVector<1> RefElement<0>::topology_zeros_[];
+template<> const IdxVector<2> RefElement<1>::topology_zeros_[];
+template<> const IdxVector<3> RefElement<2>::topology_zeros_[];
+template<> const IdxVector<6> RefElement<3>::topology_zeros_[];
+
+
+
+
+
+
+// 0: nodes of nodes
+// 1: nodes of lines
+// 2: nodes of sides
+// 3: nodes of tetrahedron
+template<> const std::vector< std::vector< std::vector<unsigned int> > > RefElement<0>::nodes_of_subelements;
+template<> const std::vector< std::vector< std::vector<unsigned int> > > RefElement<1>::nodes_of_subelements;
+template<> const std::vector< std::vector< std::vector<unsigned int> > > RefElement<2>::nodes_of_subelements;
+template<> const std::vector< std::vector< std::vector<unsigned int> > > RefElement<3>::nodes_of_subelements;
+
+
+
 
 
 
@@ -461,7 +612,7 @@ arma::mat::fixed<dim+1,subdim+1> RefElement<dim>::bary_coords(unsigned int sid){
         }       
     
         return bary_c;
-};
+}
 
 
 template<unsigned int dim> inline
@@ -484,25 +635,8 @@ template<unsigned int subdim>
 auto RefElement<dim>::interpolate(arma::vec::fixed<subdim+1> coord, int sub_simplex_idx) -> BaryPoint
 {
     return RefElement<dim>::bary_coords<subdim>(sub_simplex_idx)*coord;
-};
-/*
-template <unsigned int Size>
-IdxVector<Size>::IdxVector(std::array<unsigned int,Size> data_in)
-: data_(data_in){}
-
-template <unsigned int Size>
-IdxVector<Size>::IdxVector(std::initializer_list<unsigned int> data_in)
-{
-    ASSERT_EQ_DBG(data_in.size(), Size).error("Incorrect data size.");
-    std::copy(data_in.begin(), data_in.end(), data_);
 }
 
-template <unsigned int Size>
-inline unsigned int IdxVector<Size>::operator[](unsigned int idx) const
-{   ASSERT_LT_DBG(idx, Size).error("Index out of bounds.");
-    return data_[idx]; }
-    
-*/
 
 template<> template<> inline unsigned int RefElement<3>::count<0>()
 { return n_nodes; }
@@ -550,64 +684,64 @@ unsigned int RefElement<dim>::topology_idx(unsigned int zeros_positions)
 
 
 /// This function is for "side_nodes" - for given side, give me nodes (0->0, 1->1).
-template<> template<> inline const IdxVector<1> RefElement<1>::interact_<0,0>(unsigned int i)
-{   ASSERT_LT_DBG(i, RefElement<1>::n_nodes).error("Index out of bounds.");
+template<> template<> inline const IdxVector<1> RefElement<1>::interact_<0,0>(unsigned int i, bool inv)
+{   ASSERT_LT_DBG(i, RefElement<1>::n_nodes)(inv).error("Index out of bounds.");
     return IdxVector<1>({i});}
 
 /// For line i {0}, give me indices of its nodes.
-template<> template<> inline const IdxVector<2> RefElement<1>::interact_<0,1>(unsigned int i)
-{   ASSERT_LT_DBG(i, RefElement<1>::n_lines).error("Index out of bounds.");
+template<> template<> inline const IdxVector<2> RefElement<1>::interact_<0,1>(unsigned int i, bool inv)
+{   ASSERT_LT_DBG(i, RefElement<1>::n_lines)(inv).error("Index out of bounds.");
     return line_nodes_[i];}
 
 /// For line i {0,1,2}, give me indices of its nodes.
-template<> template<> inline const IdxVector<2> RefElement<2>::interact_<0,1>(unsigned int i)
-{   ASSERT_LT_DBG(i, RefElement<2>::n_lines).error("Index out of bounds.");
+template<> template<> inline const IdxVector<2> RefElement<2>::interact_<0,1>(unsigned int i, bool inv)
+{   ASSERT_LT_DBG(i, RefElement<2>::n_lines)(inv).error("Index out of bounds.");
     return line_nodes_[i];}
 
 /// For line i {0,1,2,3,4,5}, give me indices of its nodes.
-template<> template<> inline const IdxVector<2> RefElement<3>::interact_<0,1>(unsigned int i)
-{   ASSERT_LT_DBG(i, RefElement<3>::n_lines).error("Index out of bounds.");
+template<> template<> inline const IdxVector<2> RefElement<3>::interact_<0,1>(unsigned int i, bool inv)
+{   ASSERT_LT_DBG(i, RefElement<3>::n_lines)(inv).error("Index out of bounds.");
     return line_nodes_[i];}
 
 /// For node i {0,1}, give me indices of lines.
-template<> template<> inline const IdxVector<1> RefElement<1>::interact_<1,0>(unsigned int i)
-{   ASSERT_LT_DBG(i, RefElement<1>::n_nodes).error("Index out of bounds.");
+template<> template<> inline const IdxVector<1> RefElement<1>::interact_<1,0>(unsigned int i, bool inv)
+{   ASSERT_LT_DBG(i, RefElement<1>::n_nodes)(inv).error("Index out of bounds.");
     return node_lines_[i];}
 
 /// For node i {0,1,2}, give me indices of lines.
-template<> template<> inline const IdxVector<2> RefElement<2>::interact_<1,0>(unsigned int i)
-{   ASSERT_LT_DBG(i, RefElement<2>::n_nodes).error("Index out of bounds.");
+template<> template<> inline const IdxVector<2> RefElement<2>::interact_<1,0>(unsigned int i, bool inv)
+{   ASSERT_LT_DBG(i, RefElement<2>::n_nodes)(inv).error("Index out of bounds.");
     return node_lines_[i];}
 
 /// For node i {0,1,2,3}, give me indices of lines.
-template<> template<> inline const IdxVector<3> RefElement<3>::interact_<1,0>(unsigned int i)
+template<> template<> inline const IdxVector<3> RefElement<3>::interact_<1,0>(unsigned int i, bool inv)
 {   ASSERT_LT_DBG(i, RefElement<3>::n_nodes).error("Index out of bounds.");
-    return node_lines_[i];}
+    return _AuxInteract::S3_node_lines[inv][i];}
     
 /// For side i {0,1,2}, give me indices of its nodes.
-template<> template<> inline const IdxVector<3> RefElement<3>::interact_<0,2>(unsigned int i)
-{   ASSERT_LT_DBG(i, RefElement<3>::n_sides).error("Index out of bounds.");
+template<> template<> inline const IdxVector<3> RefElement<3>::interact_<0,2>(unsigned int i, bool inv)
+{   ASSERT_LT_DBG(i, RefElement<3>::n_sides)(inv).error("Index out of bounds.");
     return side_nodes_[i];}
 
 /// For node i {0,1,2,3}, give me indices of sides.
-template<> template<> inline const IdxVector<3> RefElement<3>::interact_<2,0>(unsigned int i)
+template<> template<> inline const IdxVector<3> RefElement<3>::interact_<2,0>(unsigned int i, bool inv)
 {   ASSERT_LT_DBG(i, RefElement<3>::n_sides).error("Index out of bounds.");
-    return node_sides_[i];}
+    return _AuxInteract::S3_node_sides[inv][i];}
     
 /// For line i {0,1,2,3}, give me indices of sides.
-template<> template<> inline const IdxVector<2> RefElement<3>::interact_<2,1>(unsigned int i)
+template<> template<> inline const IdxVector<2> RefElement<3>::interact_<2,1>(unsigned int i, bool inv)
 {   ASSERT_LT_DBG(i, RefElement<3>::n_lines).error("Index out of bounds.");
-    return line_sides_[i];}
+    return _AuxInteract::S3_line_sides[inv][i];}
 
 /// For side i {0,1,2}, give me indices of its lines.
-template<> template<> inline const IdxVector<3> RefElement<3>::interact_<1,2>(unsigned int i)
-{   ASSERT_LT_DBG(i, RefElement<3>::n_sides).error("Index out of bounds.");
+template<> template<> inline const IdxVector<3> RefElement<3>::interact_<1,2>(unsigned int i, bool inv)
+{   ASSERT_LT_DBG(i, RefElement<3>::n_sides)(inv).error("Index out of bounds.");
     return side_lines_[i];}
     
 template<unsigned int dim> template<unsigned int OutDim, unsigned int InDim> 
-inline const IdxVector< (InDim>OutDim ? InDim+1 : dim-InDim) > RefElement<dim>::interact_(unsigned int i)
+inline const IdxVector< (InDim>OutDim ? InDim+1 : dim-InDim) > RefElement<dim>::interact_(unsigned int i, bool inv)
 {
-    ASSERT(false)(dim)(OutDim)(InDim)(i).error("Not implemented.");
+    ASSERT(false)(dim)(OutDim)(InDim)(i)(inv).error("Not implemented.");
     //ASSERT_LT_DBG(OutDim, dim);
     //ASSERT_LT_DBG(InDim, dim);
     return IdxVector< (InDim>OutDim ? InDim+1 : dim-InDim) >();  // just to avoid warning for missing return
@@ -616,9 +750,9 @@ inline const IdxVector< (InDim>OutDim ? InDim+1 : dim-InDim) > RefElement<dim>::
 
 template<unsigned int dim>
 template < template <unsigned int OutDim, unsigned int InDim> class TInteraction, unsigned int OutDim, unsigned int InDim>
-inline  const IdxVector< (InDim>OutDim ? InDim+1 : dim-InDim) > RefElement<dim>::interact( TInteraction<OutDim,InDim> interaction )
+inline  const IdxVector< (InDim>OutDim ? InDim+1 : dim-InDim) > RefElement<dim>::interact( TInteraction<OutDim,InDim> interaction , bool inv)
 {
-    return interact_<OutDim,InDim>(interaction.i_);
+    return interact_<OutDim,InDim>(interaction.i_, inv);
 }
     
 #endif /* REF_ELEMENT_HH_ */

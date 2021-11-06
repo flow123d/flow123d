@@ -53,7 +53,7 @@ public:
 template<int spacedim, class Value>
 class FEShapeHandler<0, spacedim, Value> {
 public:
-	inline static typename Value::return_type fe_value(FEValues<3> &fe_val, unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
+	inline static typename Value::return_type fe_value(FEValues<3> &fe_val, unsigned int i_dof, unsigned int i_qp, FMT_UNUSED unsigned int comp_index)
 	{
 		return fe_val.scalar_view(comp_index).value(i_dof, i_qp);
 	}
@@ -98,7 +98,9 @@ void FEValueHandler<elemdim, spacedim, Value>::initialize(FEValueInitData init_d
 	dh_ = init_data.dh;
 	data_vec_ = init_data.data_vec;
     value_.set_n_comp(init_data.n_comp);
-    comp_index_ = init_data.comp_index;
+    range_begin_ = init_data.range_begin;
+    range_end_ = init_data.range_end;
+    fe_ = init_data.mixed_fe[Dim<elemdim>{}];
 }
 
 
@@ -132,17 +134,15 @@ void FEValueHandler<elemdim, spacedim, Value>::value_list(const Armor::array  &p
 	for (unsigned int k=0; k<point_list.size(); k++)
         quad.set(k) = RefElement<elemdim>::bary_to_local(MappingP1<elemdim,spacedim>::project_real_to_unit(point_list.vec<spacedim>(k), map_mat));
 	
-	MixedPtr<FiniteElement> fe_mixed_ptr = dh_->ds()->fe(elm);
-	std::shared_ptr<FiniteElement<elemdim>> fe_ptr = fe_mixed_ptr.get<elemdim>();
-	FEValues<spacedim> fe_values(quad, *fe_ptr, update_values);
+	FEValues<spacedim> fe_values(quad, *fe_, update_values);
     fe_values.reinit( elm );
 
     for (unsigned int k=0; k<point_list.size(); k++) {
 		Value envelope(value_list[k]);
 		envelope.zeros();
-		for (unsigned int i=0; i<loc_dofs.n_elem; i++) {
-			value_list[k] += data_vec_[loc_dofs[i]]
-							* FEShapeHandler<Value::rank_, spacedim, Value>::fe_value(fe_values, i, k, comp_index_);
+		for (unsigned int i=this->range_begin_, i_dof=0; i<this->range_end_; i++, i_dof++) {
+			value_list[k] += data_vec_.get(loc_dofs[i])
+							* FEShapeHandler<Value::rank_, spacedim, Value>::fe_value(fe_values, i_dof, k, 0);
 		}
 	}
 }
@@ -175,6 +175,8 @@ void FEValueHandler<0, spacedim, Value>::initialize(FEValueInitData init_data)
 	dh_ = init_data.dh;
 	data_vec_ = init_data.data_vec;
     value_.set_n_comp(init_data.n_comp);
+    range_begin_ = init_data.range_begin;
+    range_end_ = init_data.range_end;
 }
 
 
@@ -192,8 +194,8 @@ void FEValueHandler<0, spacedim, Value>::value_list(const Armor::array &point_li
 	for (unsigned int k=0; k<point_list.size(); k++) {
 		Value envelope(value_list[k]);
 		envelope.zeros();
-		for (unsigned int i=0; i<loc_dofs.n_elem; i++) {
-			envelope(i / envelope.n_cols(), i % envelope.n_rows()) += data_vec_[loc_dofs[i]];
+		for (unsigned int i=this->range_begin_; i<this->range_end_; i++) {
+			envelope(i / envelope.n_cols(), i % envelope.n_rows()) += data_vec_.get(loc_dofs[i]);
 		}
 	}
 }
@@ -215,12 +217,12 @@ template class FEValueHandler<dim, spacedim, FieldValue<spacedim>::TensorFixed >
 
 #define INSTANCE_VALUE_HANDLER(dim) \
 INSTANCE_VALUE_HANDLER_ALL(dim,3)
-//INSTANCE_VALUE_HANDLER_ALL(dim,2)   \
+//INSTANCE_VALUE_HANDLER_ALL(dim,2)
 
-INSTANCE_VALUE_HANDLER(0);
-INSTANCE_VALUE_HANDLER(1);
-INSTANCE_VALUE_HANDLER(2);
-INSTANCE_VALUE_HANDLER(3);
+INSTANCE_VALUE_HANDLER(0)
+INSTANCE_VALUE_HANDLER(1)
+INSTANCE_VALUE_HANDLER(2)
+INSTANCE_VALUE_HANDLER(3)
 
 template class FEShapeHandler<0, 3, FieldValue<0>::Enum >;
 template class FEShapeHandler<0, 3, FieldValue<0>::Integer >;

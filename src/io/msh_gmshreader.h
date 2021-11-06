@@ -19,7 +19,7 @@
 #ifndef _GMSHMESHREADER_H
 #define	_GMSHMESHREADER_H
 
-#include <boost/exception/info.hpp>  // for error_info::~error_info<Tag, T>
+
 #include <map>                       // for map, map<>::value_compare
 #include <string>                    // for string
 #include <vector>                    // for vector
@@ -38,11 +38,18 @@ public:
 	TYPEDEF_ERR_INFO(EI_Section, std::string);
 	TYPEDEF_ERR_INFO(EI_ElementId, int);
 	TYPEDEF_ERR_INFO(EI_ElementType, int);
+	TYPEDEF_ERR_INFO(EI_Position, std::string);
 	DECLARE_EXCEPTION(ExcMissingSection,
 			<< "Missing section " << EI_Section::qval << " in the GMSH input file: " << EI_GMSHFile::qval);
 	DECLARE_EXCEPTION(ExcUnsupportedType,
 			<< "Element " << EI_ElementId::val << "in the GMSH input file " << EI_GMSHFile::qval
 			<< " is of the unsupported type " << EI_ElementType::val );
+	DECLARE_EXCEPTION(ExcZeroNodes,
+			<< "Zero number of nodes, " << EI_Position::val << ".\n");
+	DECLARE_EXCEPTION(ExcZeroElements,
+			<< "Zero number of elements, " << EI_Position::val << ".\n");
+	DECLARE_EXCEPTION(ExcTooManyElementTags,
+			<< "At least two element tags have to be defined for element with id=" << EI_ElementId::val << ", " << EI_Position::val << ".\n");
 
     /**
      * Construct the GMSH format reader from given FilePath.
@@ -62,15 +69,6 @@ public:
      * assign regions to the boundary and are not used in actual FEM computations.
      */
     void read_physical_names(Mesh * mesh) override;
-
-    /**
-     * Empty method for GMSH reader now.
-     *
-     * Implements @p BaseMeshReader::check_compatible_mesh.
-     *
-     * OBSOLETE method - will be replace with Mesh::check_compatible_mesh after merge fields!
-     */
-    void check_compatible_mesh(Mesh &mesh) override;
 
     /**
      * Finds GMSH data header for ElementData given by time and field_name and stores it as \p actual_header_.

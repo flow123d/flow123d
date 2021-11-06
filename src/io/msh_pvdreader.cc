@@ -44,8 +44,9 @@ PvdMeshReader::~PvdMeshReader()
 }
 
 
-void PvdMeshReader::read_physical_names(Mesh * mesh) {
+void PvdMeshReader::read_physical_names(Mesh*) {
 	// will be implemented later
+	// ASSERT(0).error("Not implemented!");
 }
 
 
@@ -65,19 +66,6 @@ void PvdMeshReader::read_element_data(ElementDataCacheBase &data_cache, MeshData
 
 	ASSERT(!boundary_domain).error("Reading PVD data of boundary elements is not supported yet!\n");
 	list_it_->reader->read_element_data(data_cache, actual_header, n_components, boundary_domain);
-}
-
-
-void PvdMeshReader::check_compatible_mesh(Mesh &mesh) {
-	ASSERT(file_list_.size()).error("Empty PVD file, no DataSet tag found.\n");
-	ASSERT(file_list_[0].reader == nullptr).error("Method check_compatible_mesh must be called as first, before reading element data.\n");
-
-	file_list_[0].reader = new VtkMeshReader(file_list_[0].file_name, this->element_data_values_, file_list_[0].time);
-	file_list_[0].reader->check_compatible_mesh(mesh);
-
-	this->bulk_elements_id_ = file_list_[0].reader->bulk_elements_id_;
-	this->boundary_elements_id_ = file_list_[0].reader->boundary_elements_id_;
-	this->has_compatible_mesh_ = true;
 }
 
 

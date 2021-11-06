@@ -18,7 +18,6 @@
 
 
 #include "system/index_types.hh"
-#include "mesh/side_impl.hh"
 #include "mesh/bc_mesh.hh"
 #include "mesh/accessors.hh"
 #include "mesh/partitioning.hh"
@@ -51,8 +50,8 @@ Range<ElementAccessor<3>> BCMesh::elements_range() const
 }
 
 
-unsigned int BCMesh::n_elements(bool boundary) const {
-	return parent_mesh_->element_ids_.size()-parent_mesh_->bulk_size_;
+unsigned int BCMesh::n_elements() const {
+	return parent_mesh_->element_vec_.size()-parent_mesh_->bulk_size_;
 }
 
 
@@ -76,8 +75,8 @@ const LongIdx *BCMesh::get_local_part() {
 }
 
 
-bool BCMesh::check_compatible_mesh( Mesh & mesh, vector<LongIdx> & bulk_elements_id, vector<LongIdx> & boundary_elements_id ) {
-	return parent_mesh_->check_compatible_mesh(mesh, bulk_elements_id, boundary_elements_id);
+std::shared_ptr<EquivalentMeshMap> BCMesh::check_compatible_mesh( Mesh & input_mesh) {
+	return parent_mesh_->check_compatible_mesh(input_mesh);
 }
 
 

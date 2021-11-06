@@ -30,7 +30,6 @@
 #include <vector>                                      // for vector
 #include <armadillo>
 #include "fields/field_algo_base.hh"                   // for FieldAlgorithm...
-#include "fields/field_algo_base.impl.hh"              // for FieldAlgorithm...
 #include "fields/field_common.hh"                      // for FieldCommon::T...
 #include "fields/field_values.hh"                      // for FieldValue<>::...
 #include "fields/field_value_cache.hh"                 // for FieldValueCache
@@ -42,6 +41,7 @@
 #include "input/type_base.hh"                          // for Array
 #include "input/type_generic.hh"                       // for Instance
 #include "input/type_record.hh"                        // for Record::ExcRec...
+#include "input/input_exception.hh"                    // for Input::Exception
 #include "io/output_time.hh"                           // for OutputTime
 #include "mesh/elements.h"                             // for Element::dim
 #include "mesh/region.hh"                              // for RegionDB::ExcU...
@@ -56,6 +56,9 @@ class Observe;
 class EvalPoints;
 class BulkPoint;
 class EdgePoint;
+class CouplingPoint;
+class BoundaryPoint;
+class FieldSet;
 template <int spacedim> class ElementAccessor;
 template <int spacedim, class Value> class FieldFE;
 namespace detail
@@ -170,16 +173,26 @@ public:
     Field &operator=(const Field &other);
 
 
-    typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_> operator() (const ElementCacheMap &, BulkPoint &);
+    /// Return appropriate value to BulkPoint in FieldValueCache
+    typename Value::return_type operator() (BulkPoint &p);
 
 
-    typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_> operator() (const ElementCacheMap &, EdgePoint &);
+    /// Return appropriate value to EdgePoint in FieldValueCache
+    typename Value::return_type operator() (EdgePoint &p);
+
+
+    /// Return appropriate value to CouplingPoint in FieldValueCache
+    typename Value::return_type operator() (CouplingPoint &p);
+
+
+    /// Return appropriate value to BoundaryPoint in FieldValueCache
+    typename Value::return_type operator() (BoundaryPoint &p);
 
 
     /**
      * Returns reference to input type of particular field instance, this is static member @p input_type of the corresponding FieldBase class
      * (i.e. with same template parameters). However, for fields returning "Enum" we have to create whole unique Input::Type hierarchy using following method
-     * @p meka_input_tree.
+     * @p make_input_tree.
      * every instance since every such field use different Selection for initialization, even if all returns just unsigned int.
      */
     IT::Instance get_input_type() override;
@@ -218,21 +231,19 @@ public:
     bool is_constant(Region reg) override;
 
     /**
-     * Assigns given @p field to all regions in given region set @p domain.
+     * Assigns given @p field to all regions in region set given by @p region_set_names.
      * Field is added to the history with given time and possibly used in the next call of the set_time method.
      * Caller is responsible for correct construction of given field.
      *
      * Use this method only if necessary.
-     *
-     * Default time simplify setting steady fields.
      */
-    void set_field(const RegionSet &domain, FieldBasePtr field, double time=0.0);
+    void set(FieldBasePtr field, double time, std::vector<std::string> region_set_names = {"ALL"});
 
     /**
      * Same as before but the field is first created using FieldBase::function_factory(), from
      * given abstract record accessor @p a_rec.
      */
-    void set_field(const RegionSet &domain, const Input::AbstractRecord &a_rec, double time=0.0);
+    void set(const Input::AbstractRecord &a_rec, double time, std::vector<std::string> region_set_names = {"ALL"});
 
     /**
      * Check that whole field list is set, possibly use default values for unset regions
@@ -250,7 +261,7 @@ public:
     /**
      * Implementation of FieldCommonBase::output().
      */
-    void field_output(std::shared_ptr<OutputTime> stream) override;
+    void field_output(std::shared_ptr<OutputTime> stream, OutputTime::DiscreteSpaceFlags type) override;
 
     /**
      * Implementation of FieldCommonBase::observe_output().
@@ -324,28 +335,29 @@ public:
      * Interpolate given field into output discrete @p space_type and store the values
      * into storage of output time @p stream for postponed output.
      */
-    void compute_field_data(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream);
+    void compute_field_data(OutputTime::DiscreteSpaceFlags space_type, std::shared_ptr<OutputTime> stream);
 
     /// Implements FieldCommon::cache_allocate
-    void cache_allocate(std::shared_ptr<EvalPoints> eval_points) override;
+    void cache_reallocate(const ElementCacheMap &cache_map, unsigned int region_idx) const override;
 
     /// Implements FieldCommon::cache_update
-    void cache_update(ElementCacheMap &cache_map) override;
+    void cache_update(ElementCacheMap &cache_map, unsigned int region_patch_idx) const override;
 
-    /// returns reference to FieldValueCache.
-    inline const FieldValueCache<typename Value::element_type> &value_cache() const {
-        return value_cache_;
-    }
+    /// Implements FieldCommon::value_cache
+    FieldValueCache<double> * value_cache() override;
 
-    /// Same as previous but return non-const reference.
-    inline FieldValueCache<typename Value::element_type> &value_cache() {
-        return value_cache_;
-    }
+    /// Implements FieldCommon::value_cache
+    const FieldValueCache<double> * value_cache() const override;
+
+    /**
+     * Implementation of FieldCommon::set_dependency().
+     */
+    std::vector<const FieldCommon *> set_dependency(FieldSet &field_set, unsigned int i_reg) const override;
 
 protected:
 
     /// Return item of @p value_cache_ given by i_cache_point.
-    typename arma::Mat<typename Value::element_type>::template fixed<Value::NRows_, Value::NCols_> operator[] (unsigned int i_cache_point);
+    typename Value::return_type operator[] (unsigned int i_cache_point) const;
 
     /**
      * Read input into @p regions_history_ possibly pop some old values from the
@@ -353,7 +365,10 @@ protected:
      */
     void update_history(const TimeStep &time);
 
-
+    /// Fills acutally the data cache with field values, used in @p compute_field_data
+    void fill_data_cache(OutputTime::DiscreteSpace space_type,
+                         std::shared_ptr<OutputTime> stream,
+                         std::shared_ptr<ElementDataCache<typename Value::element_type>> data_cache);
 
     /**
      *  Check that whole field list (@p region_fields_) is set, possibly use default values for unset regions.
@@ -404,8 +419,14 @@ protected:
 
     /**
      * Field value data cache
+     *
+     * Data is ordered like three dimensional table. The highest level is determinated by subsets,
+     * those data ranges are holds in subset_starts. Data block size of each subset is determined
+     * by number of eval_points (of subset) and maximal number of stored elements.
+     * The table is allocated to hold all subsets, but only those marked in used_subsets are updated.
+     * Order of subsets is same as in eval_points.
      */
-    FieldValueCache<typename Value::element_type> value_cache_;
+    mutable FieldValueCache<typename Value::element_type> value_cache_;
 
 
 
@@ -454,7 +475,6 @@ inline void Field<spacedim,Value>::value_list(const Armor::array &point_list, co
 
     region_fields_[elm.region_idx().idx()]->value_list(point_list,elm, value_list);
 }
-
 
 
 

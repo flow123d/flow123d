@@ -28,7 +28,6 @@
 #include "system/tokenizer.hh"
 #include "boost/lexical_cast.hpp"
 
-#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 
 
@@ -42,6 +41,7 @@ GmshMeshReader::GmshMeshReader(const FilePath &file_name)
     tok_.set_comment_pattern( "#");
     data_section_name_ = "$ElementData";
     has_compatible_mesh_ = false;
+    can_have_components_ = true;
     make_header_table();
 }
 
@@ -63,7 +63,7 @@ void GmshMeshReader::read_nodes(Mesh * mesh) {
     	tok_.next_line(false);
         n_nodes = lexical_cast<unsigned int> (*tok_);
         mesh->init_node_vector( n_nodes );
-        INPUT_CHECK( n_nodes > 0, "Zero number of nodes, %s.\n", tok_.position_msg().c_str() );
+        if (n_nodes == 0) THROW( ExcZeroNodes() << EI_Position(tok_.position_msg()) );
         ++tok_; // end of line
 
         for (unsigned int i = 0; i < n_nodes; ++i) {
@@ -94,7 +94,7 @@ void GmshMeshReader::read_elements(Mesh * mesh) {
     try {
     	tok_.next_line(false);
         unsigned int n_elements = lexical_cast<unsigned int> (*tok_);
-        INPUT_CHECK( n_elements > 0, "Zero number of elements, %s.\n", tok_.position_msg().c_str());
+        if (n_elements == 0) THROW( ExcZeroElements() << EI_Position(tok_.position_msg()) );
         ++tok_; // end of line
 
         std::vector<unsigned int> node_ids; //node_ids of elements
@@ -134,8 +134,7 @@ void GmshMeshReader::read_elements(Mesh * mesh) {
 
             //get number of tags (at least 2)
             unsigned int n_tags = lexical_cast<unsigned int>(*tok_);
-            INPUT_CHECK(n_tags >= 2, "At least two element tags have to be defined for element with id=%d, %s.\n",
-                    id, tok_.position_msg().c_str());
+            if (n_tags < 2) THROW( ExcTooManyElementTags() << EI_ElementId(id) << EI_Position(tok_.position_msg()) );
             ++tok_;
 
             //get tags 1 and 2
@@ -157,8 +156,8 @@ void GmshMeshReader::read_elements(Mesh * mesh) {
     	THROW(ExcWrongFormat() << EI_Type("number") << EI_TokenizerMsg(tok_.position_msg()) << EI_MeshFile(tok_.f_name()) );
     }
 
-    mesh->create_boundary_elements();
-    MessageOut().fmt("... {} bulk elements, {} boundary elements. \n", mesh->n_elements(), mesh->n_elements(true));
+    unsigned int n_read_boundary = mesh->create_boundary_elements();
+    MessageOut().fmt("... {} bulk elements, {} boundary elements. \n", mesh->n_elements(), n_read_boundary);
 }
 
 
@@ -358,12 +357,4 @@ BaseMeshReader::MeshDataHeader & GmshMeshReader::find_header(BaseMeshReader::Hea
 	--headers_it;
 	actual_header_ = *headers_it;
 	return actual_header_;
-}
-
-void GmshMeshReader::check_compatible_mesh(Mesh &mesh)
-{
-	bulk_elements_id_.clear();
-	boundary_elements_id_.clear();
-	mesh.elements_id_maps(bulk_elements_id_, boundary_elements_id_);
-	has_compatible_mesh_ = true;
 }

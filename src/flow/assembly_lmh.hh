@@ -9,6 +9,7 @@
 #define SRC_ASSEMBLY_LMH_HH_
 
 #include "system/index_types.hh"
+#include "system/fmt/posix.h"
 #include "mesh/mesh.h"
 #include "mesh/accessors.hh"
 #include "mesh/neighbours.h"
@@ -20,7 +21,6 @@
 #include "fem/fe_system.hh"
 #include "quadrature/quadrature_lib.hh"
 
-#include "la/linsys.hh"
 #include "la/linsys_PETSC.hh"
 // #include "la/linsys_BDDC.hh"
 #include "la/schur.hh"
@@ -42,16 +42,17 @@ public:
     typedef std::shared_ptr<DarcyLMH::EqData> AssemblyDataPtrLMH;
     
     AssemblyLMH<dim>(AssemblyDataPtrLMH data)
-    : quad_(dim, 3),
+    : quad_(dim, 2),
       velocity_interpolation_quad_(dim, 0), // veloctiy values in barycenter
       ad_(data)
     {
-        fe_values_.initialize(quad_, fe_rt_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
+        fe_values_.initialize(quad_, fe_rt_, update_values | update_JxW_values | update_quadrature_points);
         velocity_interpolation_fv_.initialize(velocity_interpolation_quad_, fe_rt_, update_values | update_quadrature_points);
         // local numbering of dofs for MH system
         // note: this shortcut supposes that the fe_system is the same on all elements
-        // the function DiscreteSpace.fe(ElementAccessor) does not in fact depend on the element accessor
-        auto fe = ad_->dh_->ds()->fe(ad_->dh_->own_range().begin()->elm()).get<dim>();
+        // TODO the function should be DiscreteSpace.fe(ElementAccessor)
+        // and correct form fe(ad_->dh_->own_range().begin()->elm()) (see documentation of DiscreteSpace::fe)
+        auto fe = ad_->dh_->ds()->fe()[Dim<dim>{}];
         FESystem<dim>* fe_system = dynamic_cast<FESystem<dim>*>(fe.get());
         loc_side_dofs = fe_system->fe_dofs(0);
         loc_ele_dof = fe_system->fe_dofs(1)[0];
@@ -75,7 +76,7 @@ public:
     ~AssemblyLMH<dim>() override
     {}
     
-    void fix_velocity(const DHCellAccessor& dh_cell) override
+    void fix_velocity(const DHCellAccessor&) override
     {
         // if (mortar_assembly)
         //     mortar_assembly->fix_velocity(ele_ac);
@@ -124,11 +125,11 @@ public:
         //     mortar_assembly->assembly(dh_cell);
     }
 
-    void update_water_content(const DHCellAccessor& dh_cell) override
+    void update_water_content(const DHCellAccessor&) override
     {};
 
 protected:
-    static const unsigned int size()
+    static unsigned int size()
     {
         // dofs: velocity, pressure, edge pressure
         return RefElement<dim>::n_sides + 1 + RefElement<dim>::n_sides;
@@ -232,16 +233,16 @@ protected:
         const ElementAccessor<3> ele = dh_cell.elm();
         
         dirichlet_edge.resize(ele->n_sides());
-        for(DHCellSide side : dh_cell.side_range()){
-            unsigned int sidx = side.side_idx();
+        for(DHCellSide dh_side : dh_cell.side_range()){
+            unsigned int sidx = dh_side.side_idx();
             dirichlet_edge[sidx] = 0;
 
             // assemble BC
-            if (side.cond()) {
+            if (dh_side.side().is_boundary()) {
                 double cross_section = ad_->cross_section.value(ele.centre(), ele);
-                assemble_side_bc(side, cross_section, use_dirichlet_switch);
+                assemble_side_bc(dh_side, cross_section, use_dirichlet_switch);
 
-                ad_->balance->add_flux_values(ad_->water_balance_idx, side,
+                ad_->balance->add_flux_values(ad_->water_balance_idx, dh_side,
                                               {loc_system_.row_dofs[loc_side_dofs[sidx]]},
                                               {1}, 0);
             }
@@ -259,7 +260,7 @@ protected:
         const unsigned int side_row = loc_side_dofs[sidx];    //local
         const unsigned int edge_row = loc_edge_dofs[sidx];    //local
 
-        ElementAccessor<3> b_ele = side.cond()->element_accessor();
+        ElementAccessor<3> b_ele = side.cond().element_accessor();
         DarcyMH::EqData::BC_Type type = (DarcyMH::EqData::BC_Type)ad_->bc_type.value(b_ele.centre(), b_ele);
 
         if ( type == DarcyMH::EqData::none) {
@@ -314,7 +315,7 @@ protected:
                 // flux inequality leading may be accepted, while the error
                 // in pressure inequality is always satisfied.
 
-                double solution_head = ad_->p_edge_solution[loc_schur_.row_dofs[sidx]];
+                double solution_head = ad_->p_edge_solution.get(loc_schur_.row_dofs[sidx]);
 
                 if ( solution_head > bc_pressure) {
                     //DebugOut().fmt("x: {}, to dirich, p: {} -> p: {} f: {}\n",b_ele.centre()[0], solution_head, bc_pressure, bc_flux);
@@ -344,7 +345,7 @@ protected:
             double bc_flux = -ad_->bc_flux.value(b_ele.centre(), b_ele);
             double bc_sigma = ad_->bc_robin_sigma.value(b_ele.centre(), b_ele);
 
-            double solution_head = ad_->p_edge_solution[loc_schur_.row_dofs[sidx]];
+            double solution_head = ad_->p_edge_solution.get(loc_schur_.row_dofs[sidx]);
 
             // Force Robin type during the first iteration of the unsteady case.
             if (solution_head > bc_switch_pressure  || ad_->force_no_neumann_bc) {
@@ -362,7 +363,7 @@ protected:
             }
         } 
         else {
-            xprintf(UsrErr, "BC type not supported.\n");
+            THROW( ExcBCNotSupported() );
         }
     }
 
@@ -429,7 +430,7 @@ protected:
     }
     
     
-    void assemble_element(const DHCellAccessor& dh_cell){
+    void assemble_element(FMT_UNUSED const DHCellAccessor& dh_cell){
         // set block B, B': element-side, side-element
         
         for(unsigned int side = 0; side < loc_side_dofs.size(); side++){
@@ -453,7 +454,8 @@ protected:
         double cross_section = ad_->cross_section.value(ele.centre(), ele);
         double coef = alpha * ele.measure() * cross_section;
         
-        double source = ad_->water_source_density.value(ele.centre(), ele);
+        double source = ad_->water_source_density.value(ele.centre(), ele)
+                        + ad_->extra_source.value(ele.centre(), ele);
         double source_term = coef * source;
         
         // in unsteady, compute time term
@@ -462,7 +464,8 @@ protected:
         
         if(! ad_->use_steady_assembly_)
         {
-            storativity = ad_->storativity.value(ele.centre(), ele);
+            storativity = ad_->storativity.value(ele.centre(), ele)
+                          + ad_->extra_storativity.value(ele.centre(), ele);
             time_term = coef * storativity;
         }
         
@@ -471,10 +474,17 @@ protected:
             if(! ad_->use_steady_assembly_)
             {
                 time_term_diag = time_term / ad_->time_step_;
-                time_term_rhs = time_term_diag * ad_->p_edge_solution_previous_time[loc_schur_.row_dofs[i]];
+                time_term_rhs = time_term_diag * ad_->p_edge_solution_previous_time.get(loc_schur_.row_dofs[i]);
 
                 ad_->balance->add_mass_values(ad_->water_balance_idx, dh_cell,
                                               {loc_system_.row_dofs[loc_edge_dofs[i]]}, {time_term}, 0);
+            }
+            else
+            {
+                // Add zeros explicitely to keep the sparsity pattern.
+                // Otherwise Petsc would compress out the zeros in FinishAssembly.
+                ad_->balance->add_mass_values(ad_->water_balance_idx, dh_cell,
+                                              {loc_system_.row_dofs[loc_edge_dofs[i]]}, {0}, 0);
             }
 
             this->loc_system_.add_value(loc_edge_dofs[i], loc_edge_dofs[i],
@@ -538,7 +548,9 @@ protected:
                               * ad_->cross_section.value(ele.centre(), ele)
                               / ele->n_sides();
         
-        double edge_source_term = edge_scale * ad_->water_source_density.value(ele.centre(), ele);
+        double edge_source_term = edge_scale * 
+                ( ad_->water_source_density.value(ele.centre(), ele)
+                + ad_->extra_source.value(ele.centre(), ele));
       
         postprocess_velocity_specific(dh_cell, solution, edge_scale, edge_source_term);
     }
@@ -548,15 +560,16 @@ protected:
     {
         const ElementAccessor<3> ele = dh_cell.elm();
         
-        double storativity = ad_->storativity.value(ele.centre(), ele);
+        double storativity = ad_->storativity.value(ele.centre(), ele)
+                             + ad_->extra_storativity.value(ele.centre(), ele);
         double new_pressure, old_pressure, time_term = 0.0;
         
         for (unsigned int i=0; i<ele->n_sides(); i++) {
             
             if( ! ad_->use_steady_assembly_)
             {
-                new_pressure = ad_->p_edge_solution[loc_schur_.row_dofs[i]];
-                old_pressure = ad_->p_edge_solution_previous_time[loc_schur_.row_dofs[i]];
+                new_pressure = ad_->p_edge_solution.get(loc_schur_.row_dofs[i]);
+                old_pressure = ad_->p_edge_solution_previous_time.get(loc_schur_.row_dofs[i]);
                 time_term = edge_scale * storativity / ad_->time_step_ * (new_pressure - old_pressure);
             }
             solution[loc_side_dofs[i]] += edge_source_term - time_term;

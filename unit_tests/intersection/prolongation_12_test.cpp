@@ -13,7 +13,6 @@
 
 #include "system/global_defs.h"
 #include "system/file_path.hh"
-#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "io/msh_gmshreader.h"
 #include "mesh_constructor.hh"
@@ -132,7 +131,7 @@ TEST(intersection_prolongation_12d, all) {
     for(unsigned int s=0; s<filenames.size(); s++)
     {
         MessageOut() << "Computing intersection on mesh: " << filenames[s] << "\n";
-        string in_mesh_string = "{mesh_file=\"" + dir_name + filenames[s] + "\"}";
+        string in_mesh_string = "{ mesh_file=\"" + dir_name + filenames[s] + "\", optimize_mesh=false }";
         
         Mesh *mesh = mesh_constructor(in_mesh_string);
         // read mesh with gmshreader

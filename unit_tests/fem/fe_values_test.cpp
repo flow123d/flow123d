@@ -7,13 +7,13 @@
 
 #define FEAL_OVERRIDE_ASSERTS
 
-#include <flow_gtest.hh>
+#define TEST_USE_PETSC
+#include <flow_gtest_mpi.hh>
 #include <cmath>
 #include "arma_expect.hh"
 #include "armadillo"
 #include "system/armadillo_tools.hh"
 #include "system/sys_profiler.hh"
-#include "mesh/side_impl.hh"
 #include "quadrature/quadrature_lib.hh"
 #include "fem/fe_p.hh"
 #include "fem/fe_values.hh"
@@ -43,7 +43,7 @@ template <int dim>
 double integrate(ElementAccessor<3> &ele) {
     FE_P_disc<dim> fe(0);
     QGauss quad( dim, 2 );
-    MappingP1<dim,3> map;
+    //MappingP1<dim,3> map;
     FEValues<3> fe_values(quad, fe, update_JxW_values | update_quadrature_points);
     
     fe_values.reinit( ele );
@@ -56,7 +56,7 @@ double integrate(ElementAccessor<3> &ele) {
 }
 
 
-TEST(FeValues, test_all) {
+TEST(FeValues, test_basic) {
   // integrate a polynomial defined on the ref. element over an arbitrary element
     {
         // 1d case interval (1,3)   det(jac) = 2
@@ -102,6 +102,71 @@ TEST(FeValues, test_all) {
 }
 
 
+TEST(FeValues, test_normals) {
+    // 2 tetrahedra, one reference and one inverted, mirroring by XY plane
+    //
+    Mesh mesh;
+    mesh.init_node_vector(5);
+    mesh.add_node(0, arma::vec3("0 0 0"));
+    mesh.add_node(1, arma::vec3("1 0 0"));
+    mesh.add_node(2, arma::vec3("0 1 0"));
+    mesh.add_node(3, arma::vec3("0 0 1"));
+    mesh.add_node(4, arma::vec3("0 0 -1"));
+    mesh.init_element_vector(4);
+    mesh.add_element(0, 3, 1, 0, {0, 1, 2, 3});
+    mesh.add_element(1, 3, 1, 0, {0, 1, 2, 4});
+    //mesh.setup_topology();
+
+    //EXPECT_EQ( false, mesh.element_accessor(0).inverted());
+    //EXPECT_EQ( true, mesh.element_accessor(0).inverted());
+    mesh.setup_topology();
+
+    {
+       // Element 0 = reference el.
+        std::vector<arma::vec3>   expected_normals = {
+            {0, 0, -1}, {0, -1, 0}, {-1, 0, 0}, {1/sqrt(3), 1/sqrt(3), 1/sqrt(3)}};
+        const uint dim = 3;
+        FE_P_disc<dim> fe(0);
+        QGauss quad( dim-1, 1);
+        //MappingP1<dim,3> map;
+
+        FEValues<3> fe_values(quad, fe, update_normal_vectors);
+
+        auto ele = mesh.element_accessor(0);
+        for(uint iside=0; iside <= ele.dim();iside++) {
+            DebugOut() << "ele ID: " << ele.index() << "side: " << iside;
+            fe_values.reinit(*ele.side(iside));
+            for(uint q=0; q<quad.size(); q++) {
+                //DebugOut() << fe_values.normal_vector(q);
+                EXPECT_ARMA_EQ(expected_normals[iside], fe_values.normal_vector(q));
+            }
+        }
+    }
+
+    {
+       // Element 1 = reference el.
+        std::vector<arma::vec3>   expected_normals = {
+            {0, 0, 1}, {0, -1, 0}, {-1, 0, 0}, {1/sqrt(3), 1/sqrt(3), -1/sqrt(3)}};
+        const uint dim = 3;
+        FE_P_disc<dim> fe(0);
+        QGauss quad( dim-1, 1);
+        //MappingP1<dim,3> map;
+
+        FEValues<3> fe_values(quad, fe, update_normal_vectors);
+
+        auto ele = mesh.element_accessor(1);
+        for(uint iside=0; iside <= ele.dim();iside++) {
+            DebugOut() << "ele ID: " << ele.index() << "side: " << iside;
+            fe_values.reinit(*ele.side(iside));
+            for(uint q=0; q<quad.size(); q++) {
+                //DebugOut() << fe_values.normal_vector(q);
+                EXPECT_ARMA_EQ(expected_normals[iside], fe_values.normal_vector(q));
+            }
+        }
+    }
+
+}
+
 class TestElementMapping {
 public:
     TestElementMapping(std::vector<string> nodes_str)
@@ -124,7 +189,7 @@ public:
 
 
 TEST(ElementMapping, element_map) {
-    Profiler::initialize();
+    Profiler::instance();
     armadillo_setup();
     MappingP1<3,3> mapping;
 

@@ -12,7 +12,6 @@
 
 #include "system/global_defs.h"
 #include "system/file_path.hh"
-#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "mesh/range_wrapper.hh"
 #include "io/msh_gmshreader.h"
@@ -92,8 +91,8 @@ IntersectionLocal<1,3> permute_coords(IntersectionLocal<1,3> il,
 void compute_intersection_13d(Mesh *mesh, const IntersectionLocal<1,3> &il)
 {
     // compute intersection
-    IntersectionAux<1,3> is;
-    ComputeIntersection<1,3> CI(mesh->element_accessor(1), mesh->element_accessor(0), mesh);
+    IntersectionAux<1,3> is(0,1);
+    ComputeIntersection<1,3> CI(mesh->element_accessor(0), mesh->element_accessor(1), mesh);
     CI.init();
     CI.compute(is);
     
@@ -134,22 +133,26 @@ TEST(intersections_13d, all) {
         for(unsigned int p=0; p<np; p++)
         {
             MessageOut().fmt("Computing intersection on mesh #{} permutation #{} :  {}\n", s, p,  filenames[s]);
-            string in_mesh_string = "{mesh_file=\"" + dir_name + filenames[s] + "\"}";
+            string in_mesh_string = "{ mesh_file=\"" + dir_name + filenames[s] + "\", optimize_mesh=false }";
             
             Mesh *mesh = mesh_constructor(in_mesh_string);
             // read mesh with gmshreader
             auto reader = reader_constructor(in_mesh_string);
             reader->read_raw_mesh(mesh);
+            TestingMesh *tmesh = new TestingMesh(mesh);
+            tmesh->add_permute_dim(permutation_line, 1);
+            tmesh->add_permute_dim(permutations_triangle[0], 2);
+            tmesh->add_permute_dim(permutations_tetrahedron[p], 3);
         
-            // permute nodes:
-            for (auto ele : mesh->elements_range()) {
-                if(ele->dim() == 3)
-                    mesh->permute_tetrahedron(ele.idx(), permutations_tetrahedron[p]);
-            }
+//            // permute nodes:
+//            for (auto ele : mesh->elements_range()) {
+//                if(ele->dim() == 3)
+//                    mesh->permute_tetrahedron(ele.idx(), permutations_tetrahedron[p]);
+//            }
+//
+            //mesh->setup_topology();
             
-            mesh->setup_topology();
-            
-            compute_intersection_13d(mesh, permute_coords(solution[s], permutations_tetrahedron[p]));
+            compute_intersection_13d(tmesh, permute_coords(solution[s], permutations_tetrahedron[p]));
         }
     }
 }

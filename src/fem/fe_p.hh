@@ -19,8 +19,6 @@
 #ifndef FE_P_HH_
 #define FE_P_HH_
 
-#include <boost/exception/detail/error_info_impl.hpp>  // for error_info
-#include <boost/exception/info.hpp>                    // for operator<<
 #include <string>                                      // for string
 #include <vector>                                      // for vector
 #include <armadillo>
@@ -47,17 +45,17 @@ public:
 	 */
     PolynomialSpace(unsigned int degree, unsigned int dim);
 
-    const double basis_value(unsigned int basis_index,
-                             const arma::vec &point,
-                             unsigned int comp_index = 0
-                            ) const override;
+    double basis_value(unsigned int basis_index,
+                       const arma::vec &point,
+                       unsigned int comp_index = 0
+                       ) const override;
     
     const arma::vec basis_grad(unsigned int basis_index,
                                const arma::vec &point,
                                unsigned int comp_index = 0
                               ) const override;
 
-    const unsigned int dim() const override { return powers.size(); }
+    unsigned int dim() const override { return powers.size(); }
 
 private:
 

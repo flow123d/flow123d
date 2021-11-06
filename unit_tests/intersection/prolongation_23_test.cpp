@@ -11,7 +11,6 @@
 
 #include "system/global_defs.h"
 #include "system/file_path.hh"
-#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "io/msh_gmshreader.h"
 #include "mesh_constructor.hh"
@@ -62,8 +61,8 @@ void fill_23d_solution(std::vector<std::vector<std::vector<arma::vec3>>> &ils)
     ils[1][2] = {   {0.25, 0.5, 0.25},
                     {0.25, 0.5, 0},
                     {0.2, 0.5, 0}};
-    ils[1][3] = {   {0.25, 0.5, -1.25},
-                    {0.25, 0.5, -1},
+    ils[1][3] = {   {0.25, 0.5, -1},
+                    {0.25, 0.5, -1.25},
                     {0.2, 0.5, -1}};
                     
     // multiple nodes - face
@@ -176,8 +175,8 @@ TEST(intersection_prolongation_23d, all) {
     // for each mesh, compute intersection area and compare with old NGH
     for(unsigned int s=0; s< filenames.size(); s++)
     {
-        MessageOut() << "Computing intersection on mesh: " << filenames[s] << "\n";
-        string in_mesh_string = "{mesh_file=\"" + dir_name + filenames[s] + "\"}";
+        MessageOut() << "Case[s=" << s<< "] Computing intersection on mesh: " << filenames[s] << "\n";
+        string in_mesh_string = "{ mesh_file=\"" + dir_name + filenames[s] + "\", optimize_mesh=false }";
         
         Mesh *mesh = mesh_constructor(in_mesh_string);
         // read mesh with gmshreader

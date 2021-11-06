@@ -45,14 +45,14 @@
 #include "input/flow_attribute_lib.hh"
 #include "fem/fe_p.hh"
 
-FLOW123D_FORCE_LINK_IN_CHILD(transportOperatorSplitting);
+FLOW123D_FORCE_LINK_IN_CHILD(transportOperatorSplitting)
 
-FLOW123D_FORCE_LINK_IN_PARENT(firstOrderReaction);
-FLOW123D_FORCE_LINK_IN_PARENT(radioactiveDecay);
-FLOW123D_FORCE_LINK_IN_PARENT(dualPorosity);
-FLOW123D_FORCE_LINK_IN_PARENT(sorptionMobile);
-FLOW123D_FORCE_LINK_IN_PARENT(sorptionImmobile);
-FLOW123D_FORCE_LINK_IN_PARENT(sorption);
+FLOW123D_FORCE_LINK_IN_PARENT(firstOrderReaction)
+FLOW123D_FORCE_LINK_IN_PARENT(radioactiveDecay)
+FLOW123D_FORCE_LINK_IN_PARENT(dualPorosity)
+FLOW123D_FORCE_LINK_IN_PARENT(sorptionMobile)
+FLOW123D_FORCE_LINK_IN_PARENT(sorptionImmobile)
+FLOW123D_FORCE_LINK_IN_PARENT(sorption)
 
 
 using namespace Input::Type;
@@ -73,8 +73,7 @@ const Record & TransportOperatorSplitting::get_input_type() {
             " via operator splitting.")
 		.derive_from(AdvectionProcessBase::get_input_type())
 		.add_attribute( FlowAttribute::subfields_address(), "\"/problem/solute_equation/substances/*/name\"")
-		.declare_key("time", TimeGovernor::get_input_type(), Default::obligatory(),
-				"Time governor settings for the transport equation.")
+    .copy_keys(EquationBase::record_template())
 		.declare_key("balance", Balance::get_input_type(), Default("{}"),
 				"Settings for computing mass balance.")
 		.declare_key("output_stream", OutputTime::get_input_type(), Default("{}"),
@@ -104,7 +103,7 @@ const int TransportOperatorSplitting::registrar =
 
 
 
-TransportEqData::TransportEqData()
+TransportEqFields::TransportEqFields()
 {
     *this += porosity.name("porosity")
             .description("Porosity of the mobile phase.")
@@ -118,6 +117,10 @@ TransportEqData::TransportEqData()
             .flags_add(input_copy & in_time_term & in_main_matrix & in_rhs);
 
     *this += cross_section.name("cross_section")
+               .flags( FieldFlag::input_copy )
+               .flags_add(in_time_term & in_main_matrix & in_rhs);
+    
+    *this += flow_flux.name("flow_flux")
                .flags( FieldFlag::input_copy )
                .flags_add(in_time_term & in_main_matrix & in_rhs);
 
@@ -152,9 +155,7 @@ TransportEqData::TransportEqData()
 
 TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const Input::Record in_rec)
 : AdvectionProcessBase(init_mesh, in_rec),
-//  Semchem_reactions(NULL),
-  cfl_convection(numeric_limits<double>::max()),
-  cfl_reaction(numeric_limits<double>::max())
+  cfl_convection(numeric_limits<double>::max())
 {
 	START_TIMER("TransportOperatorSpliting");
 
@@ -165,13 +166,15 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 	convection = trans.factory< ConcentrationTransportBase, Mesh &, const Input::Record >(init_mesh, trans);
 
 	time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), TimeMark::none_type, false);
+  ASSERT( time_->is_default() == false ).error("Missing key 'time' in Coupling_OperatorSplitting.");
 	convection->set_time_governor(time());
 
 	// Initialize list of substances.
 	convection->substances().initialize(in_rec.val<Input::Array>("substances"));
 
 	// Initialize output stream.
-    convection->set_output_stream(OutputTime::create_output_stream("solute", in_rec.val<Input::Record>("output_stream"), time().get_unit_string()));
+	std::shared_ptr<OutputTime> stream = OutputTime::create_output_stream("solute", in_rec.val<Input::Record>("output_stream"), time().get_unit_conversion());
+    convection->set_output_stream(stream);
 
 
     // initialization of balance object
@@ -189,7 +192,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 
 	time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), convection->mark_type());
 
-    this->eq_data_ = &(convection->data());
+    this->eq_fieldset_ = &(convection->eq_fieldset());
 
     convection->get_par_info(el_4_loc, el_distribution);
     Input::Iterator<Input::AbstractRecord> reactions_it = in_rec.find<Input::AbstractRecord>("reaction_term");
@@ -205,11 +208,9 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
         dof_handler->distribute_dofs(ds);
 
         reaction->substances(convection->substances())
-                    .concentration_matrix(convection->get_concentration_matrix(),
-						el_distribution, el_4_loc, convection->get_row_4_el())
-				.output_stream(convection->output_stream())
-				.set_dh(dof_handler)
-				.set_time_governor((TimeGovernor &)convection->time());
+          .concentration_fields(convection->get_p0_interpolation())
+				  .output_stream(stream)
+				  .set_time_governor((TimeGovernor &)convection->time());
 
 		reaction->initialize();
 
@@ -235,7 +236,7 @@ void TransportOperatorSplitting::initialize()
           typeid(*reaction) == typeid(DualPorosity)
         )
   {
-    reaction->data().set_field("porosity", convection->data()["porosity"]);
+    reaction->eq_fieldset().set_field("porosity", convection->eq_fieldset()["porosity"]);
   }
 }
 
@@ -250,7 +251,6 @@ void TransportOperatorSplitting::output_data(){
 
         convection->output_data();
         if(reaction) reaction->output_data(); // do not perform write_time_frame
-        convection->output_stream()->write_time_frame();
 
         END_TIMER("TOS-output data");
 }
@@ -260,13 +260,12 @@ void TransportOperatorSplitting::zero_time_step()
 {
     //DebugOut() << "tos ZERO TIME STEP.\n";
     convection->zero_time_step();
-    convection->calculate_concentration_matrix();   // due to reading of init_conc in reactions
+    convection->compute_p0_interpolation();   // due to reading of init_conc in reactions
     if(reaction)
     {
       reaction->zero_time_step();
       reaction->output_data(); // do not perform write_time_frame
     }
-    convection->output_stream()->write_time_frame();
 
 }
 
@@ -287,16 +286,11 @@ void TransportOperatorSplitting::update_solution() {
     {
         steps++;
 	    // one internal step
-        // we call evaluate_time_constraint() of convection and reaction separately to
-        // make sure that both routines are executed.
-        bool cfl_convection_changed =  convection->evaluate_time_constraint(cfl_convection);
-        bool cfl_reaction_changed = (reaction?reaction->evaluate_time_constraint(cfl_reaction):0);
-        bool cfl_changed = cfl_convection_changed || cfl_reaction_changed;
+        bool cfl_changed =  convection->evaluate_time_constraint(cfl_convection);
         
         if (steps == 1 || cfl_changed)
         {
             convection->time().set_upper_constraint(cfl_convection, "Time step constrained by transport CFL condition (including both flow and sources).");
-            convection->time().set_upper_constraint(cfl_reaction, "Time step constrained by reaction CFL condition.");
             
             // fix step with new constraint
             convection->time().fix_dt_until_mark();
@@ -314,7 +308,7 @@ void TransportOperatorSplitting::update_solution() {
 			// save mass after transport step
 	    	for (unsigned int sbi=0; sbi<convection->n_substances(); sbi++)
 	    	{
-	    		balance_->calculate_mass(convection->get_subst_idx()[sbi], convection->get_solution(sbi), region_mass);
+	    		balance_->calculate_mass(convection->get_subst_idx()[sbi], convection->get_component_vec(sbi), region_mass);
 	    		source[sbi] = 0;
 	    		for (unsigned int ri=0; ri<mesh_->region_db().bulk_size(); ri++)
 	    			source[sbi] -= region_mass[ri];
@@ -324,7 +318,7 @@ void TransportOperatorSplitting::update_solution() {
 	    }
 
         if(reaction) {
-        	convection->calculate_concentration_matrix();
+        	convection->compute_p0_interpolation();
         	reaction->update_solution();
         	convection->update_after_reactions(true);
         }
@@ -342,7 +336,7 @@ void TransportOperatorSplitting::update_solution() {
 	    	for (unsigned int sbi=0; sbi<convection->n_substances(); sbi++)
 	    	{
 	    		// compute mass difference due to reactions
-	    		balance_->calculate_mass(convection->get_subst_idx()[sbi], convection->get_solution(sbi), region_mass);
+	    		balance_->calculate_mass(convection->get_subst_idx()[sbi], convection->get_component_vec(sbi), region_mass);
 	    		for (unsigned int ri=0; ri<mesh_->region_db().bulk_size(); ri++)
 	    			source[sbi] += region_mass[ri];
 
@@ -356,16 +350,3 @@ void TransportOperatorSplitting::update_solution() {
 
     LogOut().fmt("CONVECTION: steps: {}\n", steps);
 }
-
-
-
-
-
-void TransportOperatorSplitting::set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field)
-{
-	convection->set_velocity_field( flux_field );
-};
-
-
-
-

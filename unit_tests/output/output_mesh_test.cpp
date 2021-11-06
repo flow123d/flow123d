@@ -11,7 +11,6 @@
 #include "arma_expect.hh"
 
 #include <mesh_constructor.hh>
-#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "input/input_type.hh"
 #include "input/accessors.hh"
@@ -34,11 +33,11 @@ public:
         this->connectivity_->print_ascii_all(std::cout);
         std::cout << endl;
         std::cout << "offsets: ";
-        this->offsets_->print_ascii_all(std::cout);
+        this->offsets_->print_ascii_all(std::cout, 1);
         std::cout << endl;
 
         EXPECT_EQ(this->nodes_->n_values(), mesh->n_nodes());
-        EXPECT_EQ(this->offsets_->n_values(), mesh->n_elements());
+        EXPECT_EQ(this->offsets_->n_values()-1, mesh->n_elements());
     }
 
     ~OutputMeshTest() {}
@@ -50,7 +49,7 @@ TEST(OutputMesh, create_identical)
 {
     // read mesh - simplest cube from test1
     FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
-    Mesh *mesh = mesh_full_constructor("{mesh_file=\"" + (string)mesh_file + "\"}");
+    Mesh *mesh = mesh_full_constructor("{ mesh_file=\"" + (string)mesh_file + "\", optimize_mesh=false }");
     
     auto output_mesh = std::make_shared<OutputMeshTest>(*mesh);
     output_mesh->create_sub_mesh();

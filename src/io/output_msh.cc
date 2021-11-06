@@ -15,92 +15,19 @@
  * @brief   The functions for outputs to GMSH files.
  */
 
-#include "mesh/side_impl.hh"
 #include "output_msh.hh"
 #include "output_mesh.hh"
 #include "output_element.hh"
 #include "mesh/mesh.h"
 #include "element_data_cache_base.hh"
 #include "input/factory.hh"
-#include "tools/unit_si.hh"
+#include "tools/time_governor.hh"
 
 
 FLOW123D_FORCE_LINK_IN_CHILD(gmsh)
 
 
 using namespace Input::Type;
-
-
-/**
- * Auxiliary implementation of ElementDataCacheBase that performs output of single zero data for the fields that are
- * off for current time frame.
- */
-class DummyOutputData : public ElementDataCacheBase {
-public:
-
-    DummyOutputData(std::string field_name_in, unsigned int n_comp_in)
-   {
-        this->field_input_name_ = field_name_in;
-        this->n_comp_ = n_comp_in;
-        this->n_values_ = 1;
-    }
-
-    virtual ~DummyOutputData() override
-    {}
-
-    void print_ascii(ostream &out_stream, unsigned int idx) override
-    {
-        for(unsigned int i=0; i< n_comp_;i++) out_stream << 0 << " ";
-    }
-
-    void print_ascii_all(ostream &out_stream) override
-    {
-        for(unsigned int i=0; i< n_comp_;i++) out_stream << 0 << " ";
-    }
-
-    void print_binary_all(ostream &out_stream, bool print_data_size = true) override
-    {
-        ASSERT(false).error("Not implemented.");
-    }
-
-    void print_yaml_subarray(ostream &out_stream, unsigned int precision, unsigned int begin, unsigned int end) override
-    {}
-
-    void get_min_max_range(double &min, double &max) override
-    {}
-
-    void read_ascii_data(Tokenizer &tok, unsigned int n_components, unsigned int i_row) override
-    {}
-
-    void read_binary_data(std::istream &data_stream, unsigned int n_components, unsigned int i_row) override
-    {}
-
-    std::shared_ptr< ElementDataCacheBase > gather(Distribution *distr, LongIdx *local_to_global) override
-    {
-    	return std::make_shared<DummyOutputData>(this->field_input_name_, this->n_comp_);
-    }
-
-    std::shared_ptr< ElementDataCacheBase > element_node_cache_fixed_size(std::vector<unsigned int> &offset_vec) override
-    {
-    	return std::make_shared<DummyOutputData>(this->field_input_name_, this->n_comp_);
-    }
-
-    std::shared_ptr< ElementDataCacheBase > element_node_cache_optimize_size(std::vector<unsigned int> &offset_vec) override
-    {
-    	return std::make_shared<DummyOutputData>(this->field_input_name_, this->n_comp_);
-    }
-
-    std::shared_ptr< ElementDataCacheBase > compute_node_data(std::vector<unsigned int> &conn_vec, unsigned int data_size) override
-    {
-    	return std::make_shared<DummyOutputData>(this->field_input_name_, this->n_comp_);
-    }
-
-};
-
-
-
-
-
 
 
 const Record & OutputMSH::get_input_type() {
@@ -126,7 +53,10 @@ OutputMSH::OutputMSH()
 
 OutputMSH::~OutputMSH()
 {
-    this->write_tail();
+	// Perform output of last time step
+	this->write_time_frame();
+
+	this->write_tail();
 }
 
 
@@ -149,11 +79,15 @@ void OutputMSH::write_msh_geometry(void)
     // Write information about nodes
     file << "$Nodes" << endl;
     file << this->nodes_->n_values() << endl;
+    auto permutation_vec = output_mesh_->orig_mesh_->node_permutations();
+    bool is_corner_output = (this->nodes_->n_values() != permutation_vec.size());
+    unsigned int i_gmsh_node;
     auto &id_node_vec = *( this->node_ids_->get_component_data(0).get() );
-    unsigned int i_node=0;
     for(unsigned int i_node=0; i_node < id_node_vec.size(); ++i_node) {
-        file << id_node_vec[i_node] << " ";
-        this->nodes_->print_ascii(file, i_node);
+        if (is_corner_output) i_gmsh_node = i_node;
+        else i_gmsh_node = permutation_vec[i_node];
+        file << id_node_vec[i_gmsh_node] << " ";
+        this->nodes_->print_ascii(file, i_gmsh_node);
         file << endl;
     }
     file << "$EndNodes" << endl;
@@ -172,19 +106,34 @@ void OutputMSH::write_msh_topology(void)
 
     unsigned int n_nodes, i_node=0;
 
+    std::vector<unsigned int> gmsh_connectivity(4*id_elem_vec.size(), 0);
+    for(unsigned int i_elm=0; i_elm < id_elem_vec.size(); ++i_elm) {
+        n_nodes = offsets_vec[i_elm+1]-offsets_vec[i_elm];
+        for(unsigned int i=4*i_elm; i<4*i_elm+n_nodes; i++, i_node++) {
+            gmsh_connectivity[i] = connectivity_vec[i_node];
+        }
+    }
+
+
     // Write information about elements
     file << "$Elements" << endl;
-    file << this->offsets_->n_values() << endl;
+    file << this->offsets_->n_values()-1 << endl;
     ElementAccessor<OutputElement::spacedim> elm;
+    bool is_corner_output = (this->nodes_->n_values() != output_mesh_->orig_mesh_->node_permutations().size());
+    unsigned int gmsh_id;
+    auto permutation_vec = output_mesh_->orig_mesh_->element_permutations();
     for(unsigned int i_elm=0; i_elm < id_elem_vec.size(); ++i_elm) {
-    	n_nodes = (i_elm==0) ? (offsets_vec[0]) : (offsets_vec[i_elm]-offsets_vec[i_elm-1]);
+        unsigned int i_gmsh_elm = permutation_vec[i_elm];
+    	n_nodes = offsets_vec[i_gmsh_elm+1]-offsets_vec[i_gmsh_elm];
         // element_id element_type 3_other_tags material region partition
-        file << id_elem_vec[i_elm]
+    	if (is_corner_output) gmsh_id = i_elm;
+    	else gmsh_id = id_elem_vec[i_gmsh_elm];
+        file << gmsh_id
              << " " << gmsh_simplex_types_[ n_nodes-1 ]
-             << " 3 " << regions_vec[i_elm] << " " << regions_vec[i_elm] << " " << partition_vec[i_elm];
+             << " 3 " << regions_vec[i_gmsh_elm] << " " << regions_vec[i_gmsh_elm] << " " << partition_vec[i_gmsh_elm];
 
-        for(unsigned int i=0; i<n_nodes; i++, i_node++) {
-            file << " " << id_node_vec[connectivity_vec[i_node]];
+        for(unsigned int i=4*i_gmsh_elm; i<4*i_gmsh_elm+n_nodes; i++) {
+            file << " " << id_node_vec[gmsh_connectivity[i]];
         }
         file << endl;
     }
@@ -192,28 +141,18 @@ void OutputMSH::write_msh_topology(void)
 }
 
 
-void OutputMSH::write_msh_ascii_data(std::shared_ptr<ElementDataCache<unsigned int>> id_cache, OutputDataPtr output_data, bool discont)
+void OutputMSH::write_msh_ascii_data(std::shared_ptr<ElementDataCache<unsigned int>> id_cache, OutputDataPtr output_data,
+        const std::vector<unsigned int> &permutations)
 {
+    unsigned int i_gmsh;
 	ofstream &file = this->_base_file;
     auto &id_vec = *( id_cache->get_component_data(0).get() );
 
-    if (discont) { // corner data
-    	auto &offsets_vec = *( this->offsets_->get_component_data(0).get() );
-    	unsigned int n_nodes, i_corner=0;
-        for(unsigned int i=0; i < id_vec.size(); ++i) {
-        	n_nodes = (i==0) ? (offsets_vec[0]) : (offsets_vec[i]-offsets_vec[i-1]);
-            file << id_vec[i] << " " << n_nodes << " ";
-            for (unsigned int j=0; j<n_nodes; j++)
-            	output_data->print_ascii(file, i_corner++);
-            file << std::endl;
-        }
-    } else { // element / node data
-        for(unsigned int i=0; i < output_data->n_values(); ++i) {
-            file << id_vec[i] << " ";
-            output_data->print_ascii(file, i);
-            file << std::endl;
-        }
-
+    for(unsigned int i=0; i < output_data->n_values(); ++i) {
+        i_gmsh = permutations[i];
+        file << id_vec[i_gmsh] << " ";
+        output_data->print_ascii(file, i_gmsh);
+        file << std::endl;
     }
 }
 
@@ -221,8 +160,8 @@ void OutputMSH::write_msh_ascii_data(std::shared_ptr<ElementDataCache<unsigned i
 void OutputMSH::write_node_data(OutputDataPtr output_data)
 {
     ofstream &file = this->_base_file;
-    double time_fixed = isfinite(this->time)?this->time:0;
-    time_fixed /= UnitSI().s().convert_unit_from(this->unit_string_);
+    double time_fixed = isfinite(this->registered_time_)?this->registered_time_:0;
+    time_fixed /= this->time_unit_converter->get_coef();
 
     file << "$NodeData" << endl;
 
@@ -237,7 +176,16 @@ void OutputMSH::write_node_data(OutputDataPtr output_data)
     file << output_data->n_comp() << endl;   // number of components
     file << output_data->n_values() << endl;  // number of values
 
-    this->write_msh_ascii_data(this->node_ids_, output_data);
+    auto permutation_vec = output_mesh_->orig_mesh_->node_permutations();
+    this->write_msh_ascii_data(this->node_ids_, output_data, permutation_vec);
+    /*unsigned int i_gmsh;
+    auto &id_vec = *( this->node_ids_->get_component_data(0).get() );
+    for(unsigned int i=0; i < output_data->n_values(); ++i) {
+        i_gmsh = permutation_vec[i];
+        file << id_vec[i_gmsh] << " ";
+        output_data->print_ascii(file, i_gmsh);
+        file << std::endl;
+    }*/
 
     file << "$EndNodeData" << endl;
 }
@@ -246,7 +194,7 @@ void OutputMSH::write_node_data(OutputDataPtr output_data)
 void OutputMSH::write_corner_data(OutputDataPtr output_data)
 {
     ofstream &file = this->_base_file;
-    double time_fixed = isfinite(this->time)?this->time:0;
+    double time_fixed = isfinite(this->registered_time_)?this->registered_time_:0;
 
     file << "$ElementNodeData" << endl;
 
@@ -254,14 +202,27 @@ void OutputMSH::write_corner_data(OutputDataPtr output_data)
     file << "\"" << output_data->field_input_name() <<"\"" << endl;
 
     file << "1" << endl;     // one real tag
-    file << time_fixed << endl;    // first real tag = time
+    file << time_fixed << endl;    // first real tag = registered_time_
 
     file << "3" << endl;     // 3 integer tags
     file << this->current_step << endl;    // step number (start = 0)
     file << output_data->n_comp() << endl;   // number of components
-    file << this->offsets_->n_values() << endl; // number of values
+    file << this->offsets_->n_values()-1 << endl; // number of values
 
-    this->write_msh_ascii_data(this->elem_ids_, output_data, true);
+    //this->write_msh_ascii_data(this->elem_ids_, output_data, true);
+    auto &id_vec = *( this->elem_ids_->get_component_data(0).get() );
+	auto &offsets_vec = *( this->offsets_->get_component_data(0).get() );
+	unsigned int n_nodes, i_corner;
+	auto permutation_vec = output_mesh_->orig_mesh_->element_permutations();
+    for(unsigned int i=0; i < id_vec.size(); ++i) {
+    	unsigned int i_gmsh_elm = permutation_vec[i];
+    	n_nodes = offsets_vec[i_gmsh_elm+1]-offsets_vec[i_gmsh_elm];
+    	i_corner = offsets_vec[i_gmsh_elm];
+        file << id_vec[i] << " " << n_nodes << " ";
+        for (unsigned int j=0; j<n_nodes; j++)
+        	output_data->print_ascii(file, i_corner++);
+        file << std::endl;
+    }
 
     file << "$EndElementNodeData" << endl;
 }
@@ -269,7 +230,7 @@ void OutputMSH::write_corner_data(OutputDataPtr output_data)
 void OutputMSH::write_elem_data(OutputDataPtr output_data)
 {
     ofstream &file = this->_base_file;
-    double time_fixed = isfinite(this->time)?this->time:0;
+    double time_fixed = isfinite(this->registered_time_)?this->registered_time_:0;
 
     file << "$ElementData" << endl;
 
@@ -277,14 +238,23 @@ void OutputMSH::write_elem_data(OutputDataPtr output_data)
     file << "\"" << output_data->field_input_name() <<"\"" << endl;
 
     file << "1" << endl;     // one real tag
-    file << time_fixed << endl;    // first real tag = time
+    file << time_fixed << endl;    // first real tag = registered_time_
 
     file << "3" << endl;     // 3 integer tags
     file << this->current_step << endl;    // step number (start = 0)
     file << output_data->n_comp() << endl;   // number of components
     file << output_data->n_values() << endl;  // number of values
 
-    this->write_msh_ascii_data(this->elem_ids_, output_data);
+    auto permutation_vec = output_mesh_->orig_mesh_->element_permutations();
+    this->write_msh_ascii_data(this->elem_ids_, output_data, permutation_vec);
+    /*unsigned int i_gmsh;
+    auto &id_vec = *( this->elem_ids_->get_component_data(0).get() );
+    for(unsigned int i=0; i < output_data->n_values(); ++i) {
+        i_gmsh = permutation_vec[i];
+        file << id_vec[i_gmsh] << " ";
+        output_data->print_ascii(file, i_gmsh);
+        file << std::endl;
+    }*/
 
     file << "$EndElementData" << endl;
 }
@@ -353,34 +323,6 @@ int OutputMSH::write_tail(void)
 {
     return 1;
 }
-
-
-
-void OutputMSH::add_dummy_fields()
-{
-	const std::vector<OutputTime::DiscreteSpace> space_types = {OutputTime::NODE_DATA, OutputTime::CORNER_DATA, OutputTime::ELEM_DATA};
-	for (auto type_idx : space_types) {
-	    auto &dummy_data_list = dummy_data_list_[type_idx];
-	    auto &data_list = this->output_data_vec_[type_idx];
-
-        // Collect all output fields
-		if (dummy_data_list.size() == 0)
-			for(auto out_ptr : data_list)
-				dummy_data_list.push_back( std::make_shared<DummyOutputData>(out_ptr->field_input_name(), out_ptr->n_comp()));
-
-	    auto data_it = data_list.begin();
-	    for(auto dummy_it = dummy_data_list.begin(); dummy_it != dummy_data_list.end(); ++dummy_it) {
-	        if ( data_it == data_list.end() ) {
-	        	data_list.push_back( *dummy_it );
-	        } else if ((*dummy_it)->field_input_name() == (*data_it)->field_input_name()) {
-	        	++data_it;
-	        } else {
-	        	data_list.push_back( *dummy_it );
-	        }
-	    }
-	}
-}
-
 
 
 void OutputMSH::set_output_data_caches(std::shared_ptr<OutputMeshBase> mesh_ptr) {

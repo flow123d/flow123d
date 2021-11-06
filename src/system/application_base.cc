@@ -30,7 +30,7 @@
 #endif
 
 #include <string.h>                                    // for strsignal
-#include <boost/exception/detail/error_info_impl.hpp>  // for error_info
+
 #include <iostream>                                    // for cout
 #include <sstream>                                     // for operator<<, endl
 #include "mpi.h"                                       // for MPI_Comm_size
@@ -43,8 +43,9 @@
 
 
 
-// Function that catches all program signals.
-PetscErrorCode petsc_signal_handler(int signal, void *context)
+/// Function that catches all program signals.
+/// Note: context variable required by PETSc function PetscPushSignalHandler
+PetscErrorCode petsc_signal_handler(int signal, FMT_UNUSED void *context)
 {
   if (signal == SIGINT) {
       cout << "SIGINT\n";

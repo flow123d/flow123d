@@ -23,10 +23,11 @@
 #ifndef TRANSPORT_H_
 #define TRANSPORT_H_
 
-#include <boost/exception/info.hpp>                   // for operator<<, err...
+
 #include <memory>                                     // for shared_ptr
 #include <vector>                                     // for vector
 #include <petscmat.h>
+#include "fem/fe_values.hh"                           // for FEValues
 #include "fields/field.hh"                            // for Field
 #include "fields/bc_multi_field.hh"
 #include "fields/field_values.hh"
@@ -43,6 +44,7 @@
 #include "transport/substance.hh"                     // for SubstanceList
 #include "transport/transport_operator_splitting.hh"
 #include "quadrature/quadrature_lib.hh"
+#include "la/vector_mpi.hh"
 
 class OutputTime;
 class Mesh;
@@ -54,7 +56,6 @@ namespace Input {
 		class Selection;
 	}
 }
-template <int spacedim, class Value> class FieldFE;
 
 
 //=============================================================================
@@ -117,8 +118,7 @@ private:
  */
 class ConvectionTransport : public ConcentrationTransportBase {
 public:
-
-    class EqData : public TransportEqData {
+    class EqData : public TransportEqFields {
     public:
 
         EqData();
@@ -138,8 +138,9 @@ public:
 
 		Field<3, FieldValue<3>::Scalar> region_id;
         Field<3, FieldValue<3>::Scalar> subdomain;
-        MultiField<3, FieldValue<3>::Scalar>    conc_mobile;    ///< Calculated concentrations in the mobile zone.
 
+        MultiField<3, FieldValue<3>::Scalar>    conc_mobile;    ///< Calculated concentrations in the mobile zone.
+        FieldFEScalarVec conc_mobile_fe;                        ///< Underlaying FieldFE for each substance of conc_mobile.
 
         /// Fields indended for output, i.e. all input fields plus those representing solution.
         EquationOutput output_fields;
@@ -177,11 +178,15 @@ public:
 	/**
 	 * Calculates one time step of explicit transport.
 	 */
-	void update_solution() override;
+    void update_solution() override;
 
-	void calculate_concentration_matrix() override {};
+    /** Compute P0 interpolation of the solution (used reaction term).
+     * Empty - solution is already P0 interpolation.
+     */
+    void compute_p0_interpolation() override {};
 
-	void update_after_reactions(bool solution_changed) override {};
+    /// Not used in this class.
+	void update_after_reactions(bool) override {};
 
     /**
      * Set time interval which is considered as one time step by TransportOperatorSplitting.
@@ -214,9 +219,6 @@ public:
      */
     virtual void output_data() override;
 
-    inline void set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field) override
-    { velocity_field_ptr_ = flux_field; changed_ = true; }
-
     void set_output_stream(std::shared_ptr<OutputTime> stream) override
     { output_stream_ = stream; }
 
@@ -224,13 +226,11 @@ public:
 	/**
 	 * Getters.
 	 */
-	inline std::shared_ptr<OutputTime> output_stream() override
-	{ return output_stream_; }
 
-	double **get_concentration_matrix() override;
+    /// Getter for P0 interpolation by FieldFE.
+	FieldFEScalarVec& get_p0_interpolation() override;
 
-	const Vec &get_solution(unsigned int sbi) override
-	{ return vconc[sbi]; }
+	Vec get_component_vec(unsigned int sbi) override;
 
 	void get_par_info(LongIdx * &el_4_loc, Distribution * &el_ds) override;
 
@@ -264,12 +264,11 @@ private:
     void make_transport_partitioning(); //
 	void set_initial_condition();
 	void read_concentration_sources();
-	void set_boundary_conditions();
   
-    /** @brief Assembles concentration sources for each substance.
+    /** @brief Assembles concentration sources for each substance and set boundary conditions.
      * note: the source of concentration is multiplied by time interval (gives the mass, not the flow like before)
      */
-    void compute_concentration_sources();
+    void conc_sources_bdr_conditions();
     
 	/**
 	 * Finish explicit transport matrix (time step scaling)
@@ -296,7 +295,7 @@ private:
     static const int registrar;
 
     /**
-     *  Parameters of the equation, some are shared with other implementations since EqData is derived from TransportBase::TransportEqData
+     *  Parameters of the equation, some are shared with other implementations since EqData is derived from TransportBase::TransportEqFields
      */
     EqData data_;
 
@@ -312,8 +311,7 @@ private:
 	bool is_mass_diag_changed;
     //@}
     
-    double **sources_corr;
-    Vec *v_sources_corr;
+    vector<VectorMPI> corr_vec;
     
 
     TimeMark::Type target_mark_type;    ///< TimeMark type for time marks denoting end of every time interval where transport matrix remains constant.
@@ -337,23 +335,11 @@ private:
     double transport_matrix_time;
     double transport_bc_time;   ///< Time of the last update of the boundary condition terms.
 
-    /// Concentration vectors for mobile phase.
-    Vec *vconc; // concentration vector
-    /// Concentrations for phase, substance, element
-    double **conc;
-
     ///
     Vec *vpconc; // previous concentration vector
     Vec *bcvcorr; // boundary condition correction vector
     Vec *vcumulative_corr;
     double **cumulative_corr;
-
-    std::vector<VectorMPI> out_conc;
-
-    // Temporary objects holding pointers to appropriate FieldFE
-    // TODO remove after final fix of equations
-    /// Fields correspond with \p out_conc.
-    std::vector< std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> > output_field_ptr;
 
 	/// Record with input specification.
 	const Input::Record input_rec;
@@ -377,12 +363,6 @@ private:
 
 	/// List of indices used to call balance methods for a set of quantities.
 	vector<unsigned int> subst_idx;
-
-	/// Pointer to velocity field given from Flow equation.
-	std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> velocity_field_ptr_;
-
-	/// Indicator of change in velocity field.
-	bool changed_;
 
 	/// Finite element objects
 	FETransportObjects feo_;

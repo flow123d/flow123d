@@ -16,7 +16,7 @@
  * @author  Jan Stebel
  */
 
-#include "mesh/side_impl.hh"
+#include "mesh/accessors.hh"
 #include "fem/fe_system.hh"
 #include "system/global_defs.h"
 #include "quadrature/quadrature.hh"
@@ -64,7 +64,7 @@ FESystemFunctionSpace::FESystemFunctionSpace(const vector<shared_ptr<FunctionSpa
 }
 
 
-const double FESystemFunctionSpace::basis_value(unsigned int i,
+double FESystemFunctionSpace::basis_value(unsigned int i,
                              const arma::vec &p,
                              unsigned int comp) const
 {
@@ -73,7 +73,7 @@ const double FESystemFunctionSpace::basis_value(unsigned int i,
 
     // component index in the base FE
     int l_comp = comp-dof_indices_[i].component_offset;
-    if (l_comp >= 0 && l_comp < fs_[dof_indices_[i].fe_index]->n_components())
+    if (l_comp >= 0 && l_comp < static_cast<int>(fs_[dof_indices_[i].fe_index]->n_components()))
         return fs_[dof_indices_[i].fe_index]->basis_value(dof_indices_[i].basis_index, p, l_comp);
     else
         return 0;
@@ -89,7 +89,7 @@ const arma::vec FESystemFunctionSpace::basis_grad(const unsigned int i,
 
     // component index in the base FE
     int l_comp = comp-dof_indices_[i].component_offset;
-    if (l_comp >= 0 && l_comp < fs_[dof_indices_[i].fe_index]->n_components())
+    if (l_comp >= 0 && l_comp < static_cast<int>(fs_[dof_indices_[i].fe_index]->n_components()))
         return fs_[dof_indices_[i].fe_index]->basis_grad(dof_indices_[i].basis_index, p, l_comp);
     else
         return arma::zeros(space_dim());
@@ -200,7 +200,7 @@ void FESystem<dim>::initialize()
     // add footprint of nonzero components for each dof in FESystem
     for (auto fe : fe_)
     {
-      for (int i=0; i<fe->n_dofs(); ++i)
+      for (uint i=0; i<fe->n_dofs(); ++i)
       {
         std::vector<bool> nonzeros(this->function_space_->n_components(), false);
         for (unsigned int c=0; c<fe->n_components(); c++)\

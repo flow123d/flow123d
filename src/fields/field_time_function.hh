@@ -19,7 +19,6 @@
 #define FIELD_TIME_FUNCTION_HH_
 
 #include <string.h>                        // for memcpy
-#include <boost/exception/info.hpp>        // for error_info::error_info<Tag...
 #include <new>                             // for operator new[]
 #include <ostream>                         // for operator<<
 #include <string>                          // for operator<<, string
@@ -65,7 +64,7 @@ public:
      * with FieldConstant::init_from_input and move initizaliation of FieldConstant value
      * to set_time method.
      */
-    void init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data);
+    void init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data) override;
 
     /**
      * Set time and init value_.

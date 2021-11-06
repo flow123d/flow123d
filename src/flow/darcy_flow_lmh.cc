@@ -34,8 +34,8 @@
 #include "system/index_types.hh"
 #include "input/factory.hh"
 
-#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
+#include "mesh/bc_mesh.hh"
 #include "mesh/partitioning.hh"
 #include "mesh/accessors.hh"
 #include "mesh/range_wrapper.hh"
@@ -68,7 +68,7 @@
 #include "fem/fe_p.hh"
 
 
-FLOW123D_FORCE_LINK_IN_CHILD(darcy_flow_lmh);
+FLOW123D_FORCE_LINK_IN_CHILD(darcy_flow_lmh)
 
 
 
@@ -121,6 +121,7 @@ const it::Record & DarcyLMH::get_input_type() {
     
     return it::Record("Flow_Darcy_LMH", "Lumped Mixed-Hybrid solver for saturated Darcy flow.")
 		.derive_from(DarcyFlowInterface::get_input_type())
+        .copy_keys(EquationBase::record_template())
         .declare_key("gravity", it::Array(it::Double(), 3,3), it::Default("[ 0, 0, -1]"),
                 "Vector of the gravity force. Dimensionless.")
 		.declare_key("input_fields", it::Array( type_field_descriptor() ), it::Default::obligatory(),
@@ -138,8 +139,6 @@ const it::Record & DarcyLMH::get_input_type() {
                 "Includes raw output and some experimental functionality.")
         .declare_key("balance", Balance::get_input_type(), it::Default("{}"),
                 "Settings for computing mass balance.")
-        .declare_key("time", TimeGovernor::get_input_type(), it::Default("{}"),
-                "Time governor settings for the unsteady Darcy flow model.")
 		.declare_key("mortar_method", get_mh_mortar_selection(), it::Default("\"None\""),
 				"Method for coupling Darcy flow between dimensions on incompatible meshes. [Experimental]" )
 		.close();
@@ -174,7 +173,7 @@ DarcyLMH::EqData::EqData()
  *
  */
 //=============================================================================
-DarcyLMH::DarcyLMH(Mesh &mesh_in, const Input::Record in_rec)
+DarcyLMH::DarcyLMH(Mesh &mesh_in, const Input::Record in_rec, TimeGovernor *tm)
 : DarcyFlowInterface(mesh_in, in_rec),
     output_object(nullptr),
     data_changed_(false)
@@ -183,14 +182,24 @@ DarcyLMH::DarcyLMH(Mesh &mesh_in, const Input::Record in_rec)
     START_TIMER("Darcy constructor");
     {
         auto time_record = input_record_.val<Input::Record>("time");
-        //if ( in_rec.opt_val("time", time_record) )
+        if (tm == nullptr)
+        {
             time_ = new TimeGovernor(time_record);
-        //else
-        //    time_ = new TimeGovernor();
+        }
+        else
+        {
+            TimeGovernor tm_from_rec(time_record);
+            if (!tm_from_rec.is_default()) // is_default() == false when time record is present in input file
+            { 
+                MessageOut() << "Duplicate key 'time', time in flow equation is already initialized from parent class!";
+                ASSERT(false);
+            }
+            time_ = tm;
+        }
     }
 
     data_ = make_shared<EqData>();
-    EquationBase::eq_data_ = data_.get();
+    EquationBase::eq_fieldset_ = data_.get();
     
     data_->is_linear=true;
 
@@ -280,21 +289,25 @@ void DarcyLMH::initialize() {
     output_object = new DarcyFlowMHOutput(this, input_record_);
 
     { // construct pressure, velocity and piezo head fields
-		ele_flux_ptr = std::make_shared< FieldFE<3, FieldValue<3>::VectorFixed> >();
 		uint rt_component = 0;
-		ele_flux_ptr->set_fe_data(data_->dh_, rt_component);
-		ele_velocity_ptr = std::make_shared< FieldDivide<3, FieldValue<3>::VectorFixed> >(ele_flux_ptr, data_->cross_section);
-		data_->field_ele_velocity.set_field(mesh_->region_db().get_region_set("ALL"), ele_velocity_ptr);
-		data_->full_solution = ele_flux_ptr->get_data_vec();
+        data_->full_solution = data_->dh_->create_vector();
+        auto ele_flux_ptr = create_field_fe<3, FieldValue<3>::VectorFixed>(data_->dh_, &data_->full_solution, rt_component);
+        data_->flux.set(ele_flux_ptr, 0.0);
 
-		ele_pressure_ptr = std::make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
-		uint p_ele_component = 0;
-		ele_pressure_ptr->set_fe_data(data_->dh_, p_ele_component, ele_flux_ptr->get_data_vec());
-		data_->field_ele_pressure.set_field(mesh_->region_db().get_region_set("ALL"), ele_pressure_ptr);
+		auto ele_velocity_ptr = std::make_shared< FieldDivide<3, FieldValue<3>::VectorFixed> >(ele_flux_ptr, data_->cross_section);
+		data_->field_ele_velocity.set(ele_velocity_ptr, 0.0);
+
+		uint p_ele_component = 1;
+        auto ele_pressure_ptr = create_field_fe<3, FieldValue<3>::Scalar>(data_->dh_, &data_->full_solution, p_ele_component);
+		data_->field_ele_pressure.set(ele_pressure_ptr, 0.0);
+
+        uint p_edge_component = 2;
+        auto edge_pressure_ptr = create_field_fe<3, FieldValue<3>::Scalar>(data_->dh_, &data_->full_solution, p_edge_component);
+		data_->field_edge_pressure.set(edge_pressure_ptr, 0.0);
 
 		arma::vec4 gravity = (-1) * data_->gravity_;
-		ele_piezo_head_ptr = std::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar> >(gravity, ele_pressure_ptr);
-		data_->field_ele_piezo_head.set_field(mesh_->region_db().get_region_set("ALL"), ele_piezo_head_ptr);
+		auto ele_piezo_head_ptr = std::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar> >(gravity, ele_pressure_ptr);
+		data_->field_ele_piezo_head.set(ele_piezo_head_ptr, 0.0);
     }
 
     { // init DOF handlers represents element pressure DOFs
@@ -321,9 +334,9 @@ void DarcyLMH::initialize() {
     data_->p_edge_solution = data_->dh_cr_->create_vector();
     data_->p_edge_solution_previous = data_->dh_cr_->create_vector();
     data_->p_edge_solution_previous_time = data_->dh_cr_->create_vector();
-    
+
     // Initialize bc_switch_dirichlet to size of global boundary.
-    data_->bc_switch_dirichlet.resize(mesh_->n_elements()+mesh_->n_elements(true), 1);
+    data_->bc_switch_dirichlet.resize(mesh_->n_elements()+mesh_->get_bc_mesh()->n_elements(), 1);
 
 
     nonlinear_iteration_=0;
@@ -394,14 +407,14 @@ void DarcyLMH::read_initial_condition()
 		// set initial condition
         double init_value = data_->init_pressure.value(ele.centre(),ele);
         unsigned int p_idx = data_->dh_p_->parent_indices()[p_indices[0]];
-        data_->full_solution[p_idx] = init_value;
+        data_->full_solution.set(p_idx, init_value);
         
         for (unsigned int i=0; i<ele->n_sides(); i++) {
-             uint n_sides_of_edge =  ele.side(i)->edge()->n_sides;
+             uint n_sides_of_edge =  ele.side(i)->edge().n_sides();
              unsigned int l_idx = data_->dh_cr_->parent_indices()[l_indices[i]];
-             data_->full_solution[l_idx] += init_value/n_sides_of_edge;
+             data_->full_solution.add(l_idx, init_value/n_sides_of_edge);
 
-             data_->p_edge_solution[l_indices[i]] += init_value/n_sides_of_edge;
+             data_->p_edge_solution.add(l_indices[i], init_value/n_sides_of_edge);
          }
 	}
     
@@ -472,6 +485,15 @@ void DarcyLMH::update_solution()
     time_->next_time();
 
     time_->view("DARCY"); //time governor information output
+
+    solve_time_step();
+    
+    data_->full_solution.local_to_ghost_begin();
+    data_->full_solution.local_to_ghost_end();
+}
+
+void DarcyLMH::solve_time_step(bool output)
+{
     data_changed_ = data_->set_time(time_->step(), LimitSide::left) || data_changed_;
     bool zero_time_term_from_left=zero_time_term();
 
@@ -484,7 +506,8 @@ void DarcyLMH::update_solution()
         data_->use_steady_assembly_ = false;
 
         solve_nonlinear(); // with left limit data
-        accept_time_step();
+        if(output)
+            accept_time_step();
         if (jump_time) {
         	WarningOut() << "Output of solution discontinuous in time not supported yet.\n";
             //solution_output(T, left_limit); // output use time T- delta*dt
@@ -495,7 +518,8 @@ void DarcyLMH::update_solution()
     if (time_->is_end()) {
         // output for unsteady case, end_time should not be the jump time
         // but rether check that
-        if (! zero_time_term_from_left && ! jump_time) output_data();
+        if (! zero_time_term_from_left && ! jump_time && output)
+            output_data();
         return;
     }
 
@@ -505,7 +529,8 @@ void DarcyLMH::update_solution()
         // this flag is necesssary for switching BC to avoid setting zero neumann on the whole boundary in the steady case
         data_->use_steady_assembly_ = true;
         solve_nonlinear(); // with right limit data
-        accept_time_step();
+        if(output)
+            accept_time_step();
 
     } else if (! zero_time_term_from_left && jump_time) {
     	WarningOut() << "Discontinuous time term not supported yet.\n";
@@ -513,8 +538,8 @@ void DarcyLMH::update_solution()
         //solve_nonlinear(); // with right limit data
     }
     //solution_output(T,right_limit); // data for time T in any case
-    output_data();
-
+    if (output)
+        output_data();
 }
 
 bool DarcyLMH::zero_time_term(bool time_global) {
@@ -610,7 +635,8 @@ void DarcyLMH::solve_nonlinear()
         double mult = 1.0;
         if (nonlinear_iteration_ < 3) mult = 1.6;
         if (nonlinear_iteration_ > 7) mult = 0.7;
-        int result = time_->set_upper_constraint(time_->dt() * mult, "Darcy adaptivity.");
+        time_->set_upper_constraint(time_->dt() * mult, "Darcy adaptivity.");
+        // int result = time_->set_upper_constraint(time_->dt() * mult, "Darcy adaptivity.");
         //DebugOut().fmt("time adaptivity, res: {} it: {} m: {} dt: {} edt: {}\n", result, nonlinear_iteration_, mult, time_->dt(), time_->estimate_dt());
     }
 }
@@ -875,7 +901,7 @@ void DarcyLMH::create_linear_system(Input::AbstractRecord in_rec) {
 //             END_TIMER("BDDC set mesh data");
 // #else
 //             Exception
-//             xprintf(Err, "Flow123d was not build with BDDCML support.\n");
+//             THROW( ExcBddcmlNotSupported() );
 // #endif // FLOW123D_HAVE_BDDCML
 //         } 
 //         else
@@ -960,7 +986,7 @@ void DarcyLMH::create_linear_system(Input::AbstractRecord in_rec) {
             END_TIMER("PETSC PREALLOCATION");
         }
         else {
-            xprintf(Err, "Unknown solver type. Internal error.\n");
+            THROW( ExcUnknownSolver() );
         }
 
         END_TIMER("preallocation");
@@ -1278,11 +1304,6 @@ DarcyLMH::~DarcyLMH() {
     if(time_ != nullptr)
         delete time_;
     
-}
-
-
-std::shared_ptr< FieldFE<3, FieldValue<3>::VectorFixed> > DarcyLMH::get_velocity_field() {
-    return ele_flux_ptr;
 }
 
 

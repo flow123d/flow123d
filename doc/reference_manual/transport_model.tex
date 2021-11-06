@@ -145,18 +145,27 @@ F^c_{C1} = q^c_{21}.
 \end{equation}
 
 
-\paragraph{Two transport models.}
+\paragraph{Transport models.}
 Within the above presented model, Flow123d presents two possible approaches to solute transport.
 \begin{itemize}
-\item For modeling pure advection ($\tn D=0$) one can choose {\tt TransportOperatorSplitting} method, which represents an explicit in time finite volume solver. 
+%
+\item For modeling pure advection ($\tn D=0$) one can choose \Alink{IT::Solute-Advection-FV}{\tt Solute\_Advection\_FV} method, which represents an explicit in time finite volume solver. 
 Only the inflow/outflow boundary condition is available and the source term has the form
 \[ F_S^i = \delta f_S^i + \delta(c_S^i-c^i)^+\sigma_S^i. \]
 The solution process for one time step is faster, but the maximal time step is restricted. The resulting concentration is piecewise constant on mesh elements. This solver supports reaction term (involving simple chemical reactions, dual porosity and sorptions).
-\item The full model including dispersion is solved by {\tt SoluteTransport\_DG}, an implicit in time discontinuous Galerkin solver. It has no restriction of the computational time step and the space approximation is piecewise polynomial, currently up to order 3.
+%
+\item The full model including dispersion is solved by \Alink{IT::Solute-AdvectionDiffusion-DG}{\tt Solute\_AdvectionDiffusion\_DG}, an implicit in time discontinuous Galerkin solver. It has no restriction of the computational time step and the space approximation is piecewise polynomial, currently up to order 3.
 Reaction term is implemented only for the case of linear sorption, i.e.
 \[ F_R^i = -\partial_t\left((1-\th)\delta \varrho_s c_s^i\right), \quad c_s^i = k_l^i c, \]
 where $c_s^i$ \units{}{}{} is the relative concentration of sorbed substance, $k_l^i$ \units{-1}{3}{} is the \hyperA{Solute-AdvectionDiffusion-DG-Data::sorption-coefficient}{sorption coefficient}, $\varrho_s$ and $\varrho_l$ \units{1}{-3}{} is the \hyperA{Solute-AdvectionDiffusion-DG-Data::rock-density}{density of the solid} (rock) and of the \hyperA{Solute-AdvectionDiffusion-DG::solvent-density}{liquid} (solvent), respectively.
 The initial concentration in solid is assumed to be in equilibrium with the concentration in liquid. 
+%
+\item Finally, both previous methods can be coupled with the reaction term (see \ref{sec:reaction_term})
+using the \hyperA{IT::Coupling-OperatorSplitting}{\tt Coupling\_OperatorSplitting} model. The operator splitting 
+is essentially an explicit method requiring the time step set in its 
+{\tt time} key should be reasonable, however no automatic restriction 
+on the time step is forced. However this time step makes an upper bound for the time step 
+of the underlaying transport equation in use.
 \end{itemize}
 
 

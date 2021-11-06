@@ -20,9 +20,9 @@
 #include "system/logger.hh"
 
 #include <boost/core/explicit_operator_bool.hpp>              // for optiona...
-#include <boost/exception/detail/error_info_impl.hpp>         // for error_info
+
 #include <boost/exception/exception.hpp>                      // for exception
-#include <boost/exception/info.hpp>                           // for error_i...
+
 #include <boost/format/alt_sstream.hpp>                       // for basic_a...
 #include <boost/format/alt_sstream_impl.hpp>                  // for basic_a...
 #include <boost/optional/optional.hpp>                        // for get_poi...
@@ -174,7 +174,7 @@ Isotherm::ConcPair Isotherm::solve_conc( Isotherm::ConcPair c_pair, const Func &
 }
 
 // Isotherm None specialization
-template<> Isotherm::ConcPair Isotherm::solve_conc( Isotherm::ConcPair c_pair, const None &isotherm )
+template<> Isotherm::ConcPair Isotherm::solve_conc( Isotherm::ConcPair c_pair, const None &)
 {
     return c_pair;
 }
@@ -244,7 +244,7 @@ void Isotherm::make_table( const Func &isotherm, int n_steps )
 }
 
 // Isotherm None specialization
-template<> void Isotherm::make_table( const None &isotherm, int n_steps )
+template<> void Isotherm::make_table( const None &, int )
 {
     // Solve_conc returns the same, so we need to do that also in compute_projection.
     // We set size of the table to 1, so it follow the conditions into solve_conc again.

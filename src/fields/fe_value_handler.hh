@@ -25,6 +25,7 @@
 #include "la/vector_mpi.hh"
 #include <armadillo>
 #include "system/armor.hh"
+#include "tools/mixed.hh"
 
 class DOFHandlerMultiDim;
 template <int spacedim> class ElementAccessor;
@@ -41,8 +42,12 @@ struct FEValueInitData
     unsigned int ndofs;
     /// number of components
     unsigned int n_comp;
-    /// index of component (of vector_value/tensor_value)
-    unsigned int comp_index;
+    /// Holds begin of component range of evaluation.
+    unsigned int range_begin;
+    /// Holds end of component range of evaluation.
+    unsigned int range_end;
+    /// FiniteElement objects of all dimensions.
+    MixedPtr<FiniteElement> mixed_fe;
 };
 
 /**
@@ -72,7 +77,7 @@ public:
 	~FEValueHandler();
 
 	/// TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
-	inline void set_boundary_dofs_vector(std::shared_ptr< std::vector<Idx> > boundary_dofs) {
+	inline void set_boundary_dofs_vector(std::shared_ptr< std::vector<IntIdx> > boundary_dofs) {
 		this->boundary_dofs_ = boundary_dofs;
 	}
 
@@ -82,7 +87,7 @@ public:
         unsigned int ndofs = this->value_.n_rows() * this->value_.n_cols();
         // create armadillo vector on top of existing array
         // vec(ptr_aux_mem, number_of_elements, copy_aux_mem = true, strict = false)
-        Idx* mem_ptr = const_cast<Idx*>(&((*boundary_dofs_)[ndofs*cell_idx]));
+        IntIdx* mem_ptr = const_cast<IntIdx*>(&((*boundary_dofs_)[ndofs*cell_idx]));
         return LocDofVec(mem_ptr, ndofs, false, false);
     }
 private:
@@ -93,15 +98,19 @@ private:
     /// Last value, prevents passing large values (vectors) by value.
     Value value_;
     typename Value::return_type r_value_;
-    /// Index of component (of vector_value/tensor_value)
-    unsigned int comp_index_;
+    /// Begin of dof range of actual component
+    unsigned int range_begin_;
+    /// End of dof range of actual component
+    unsigned int range_end_;
+    /// Pointer to FiniteElement object used to computing values
+    std::shared_ptr<FiniteElement<elemdim>> fe_;
 
     /**
      * Hold dofs of boundary elements.
      *
      * TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
      */
-    std::shared_ptr< std::vector<Idx> > boundary_dofs_;
+    std::shared_ptr< std::vector<IntIdx> > boundary_dofs_;
 };
 
 
@@ -139,7 +148,7 @@ public:
 	~FEValueHandler() {}
 
 	/// TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
-	inline void set_boundary_dofs_vector(std::shared_ptr< std::vector<Idx> > boundary_dofs) {
+	inline void set_boundary_dofs_vector(std::shared_ptr< std::vector<IntIdx> > boundary_dofs) {
 		this->boundary_dofs_ = boundary_dofs;
 	}
 
@@ -149,7 +158,7 @@ public:
         unsigned int ndofs = this->value_.n_rows() * this->value_.n_cols();
         // create armadillo vector on top of existing array
         // vec(ptr_aux_mem, number_of_elements, copy_aux_mem = true, strict = false)
-        Idx* mem_ptr = const_cast<Idx*>(&((*boundary_dofs_)[ndofs*cell_idx]));
+        IntIdx* mem_ptr = const_cast<IntIdx*>(&((*boundary_dofs_)[ndofs*cell_idx]));
         return LocDofVec(mem_ptr, ndofs, false, false);
     }
 
@@ -161,13 +170,17 @@ private:
     /// Last value, prevents passing large values (vectors) by value.
     Value value_;
     typename Value::return_type r_value_;
+    /// Begin of dof range of actual component
+    unsigned int range_begin_;
+    /// End of dof range of actual component
+    unsigned int range_end_;
 
     /**
      * Hold dofs of boundary elements.
      *
      * TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
      */
-    std::shared_ptr< std::vector<Idx> > boundary_dofs_;
+    std::shared_ptr< std::vector<IntIdx> > boundary_dofs_;
 };
 
 

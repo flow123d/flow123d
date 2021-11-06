@@ -43,6 +43,12 @@ public:
     DECLARE_EXCEPTION(ExcFieldNotScalar, << "Field '" << FieldCommon::EI_Field::qval
                                          << "' is not scalar in spacedim 3.");
 
+    /// Configuration of output of one field. Pair of OutputTimeSet and DiscreteSpaces.
+    struct FieldOutputConfig {
+        OutputTimeSet output_set_;                    ///< Set of output times.
+        OutputTime::DiscreteSpaceFlags space_flags_;  ///< Array of used DiscreteSpaces
+    };
+
     /**
      * Input type of the configuration record.
      */
@@ -115,7 +121,7 @@ private:
     OutputTimeSet common_output_times_;
 
     /// Time sets of individual fields.
-    std::unordered_map<string, OutputTimeSet> field_output_times_;
+    std::unordered_map<string, FieldOutputConfig> field_output_times_;
 
     /// Set of observed fields. The observe points are given within the observe stream.
     std::unordered_set<string> observe_fields_;

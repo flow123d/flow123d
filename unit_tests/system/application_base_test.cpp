@@ -9,11 +9,14 @@
 
 class ApplicationBaseTest : public testing::Test, public ApplicationBase {
 public:
-	ApplicationBaseTest() : ApplicationBase(), testing::Test() {}
+	ApplicationBaseTest() : testing::Test(), ApplicationBase() {}
 protected:
 	void run() {
-		xprintf(Err, "testing error...\n");
+		ASSERT(false).error("testing error...\n");
 	}
+
+    void parse_cmd_line(const int, char **) override 
+    {}
 	
 	void seg_fault() {
       // Attempt to read from unallocated memory.
@@ -22,14 +25,14 @@ protected:
       printf("%d", i[0]);
     }
 
-    virtual void SetUp() {
-    }
-    virtual void TearDown() {
-    };
+    void SetUp() override
+    {}
+    void TearDown() override
+    {}
 };
 
 
 TEST_F(ApplicationBaseTest, Exceptions) {
-	EXPECT_THROW_WHAT( {run();}, ExcXprintfMsg, "testing error...");
+	EXPECT_THROW_WHAT( {run();}, feal::Exc_assert, "testing error...");
     EXPECT_THROW_WHAT( {seg_fault();}, ExcSignal, "Signal 11" );
 }

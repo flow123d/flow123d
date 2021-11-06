@@ -20,13 +20,12 @@
 #include <string>
 
 #include "system/system.hh"
-#include "mesh/side_impl.hh"
+#include "mesh/accessors.hh"
 #include "elements.h"
 #include "mesh/mesh.h"
 #include "mesh/ref_element.hh"
 
 // following deps. should be removed
-#include "mesh/boundaries.h"
 //#include "materials.hh"
 #include "mesh/accessors.hh"
 #include "la/distribution.hh"
@@ -36,6 +35,7 @@
 Element::Element()
 : boundary_idx_(NULL),
   neigh_vb(NULL),
+  inverted(false),
   pid_(0),
   n_neighs_vb_(0),
   dim_(0)
@@ -51,6 +51,7 @@ Element::Element(unsigned int dim, RegionIdx reg)
 
 
 void Element::init(unsigned int dim, RegionIdx reg) {
+    inverted = false;
     pid_=0;
     n_neighs_vb_=0;
     neigh_vb=NULL;
@@ -62,8 +63,8 @@ void Element::init(unsigned int dim, RegionIdx reg) {
     boundary_idx_ = NULL;
 
     for (unsigned int si=0; si<this->n_sides(); si++) {
-        edge_idx_[ si ]=Mesh::undef_idx;
-        permutation_idx_[si] = Mesh::undef_idx;
+        edge_idx_[ si ]=undef_idx;
+        permutation_idx_[si] = undef_idx;
     }
 }
 

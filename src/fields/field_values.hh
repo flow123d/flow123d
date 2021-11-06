@@ -20,9 +20,6 @@
 
 #include <string.h>                                    // for memcpy
 #include <boost/core/explicit_operator_bool.hpp>       // for optional::oper...
-#include <boost/exception/detail/error_info_impl.hpp>  // for error_info
-#include <boost/exception/info.hpp>                    // for operator<<
-#include <boost/format.hpp>                            // for str
 #include <boost/optional/optional.hpp>                 // for get_pointer
 #include <cmath>                                       // for abs
 #include <cstdlib>                                     // for abs
@@ -34,12 +31,15 @@
 #include <type_traits>                                 // for is_floating_point
 #include <vector>                                      // for vector
 #include <armadillo>
+
+#include "system/fmt/format.h"
 #include "input/accessors.hh"                          // for Array, Iterator
 #include "input/accessors_impl.hh"                     // for Array::size
 #include "input/input_exception.hh"                    // for ExcFV_Input::~...
 #include "input/type_base.hh"                          // for Array, String
 #include "input/type_generic.hh"                       // for Parameter
 #include "input/type_selection.hh"                     // for Selection
+#include "system/armor.hh"                             // for Armor::Array
 
 namespace IT=Input::Type;
 
@@ -111,9 +111,9 @@ struct ReturnType<NRows,1, FieldEnum> { typedef typename arma::Col<unsigned int>
 
 
 // Resolution of helper functions for raw constructor
-template <class RT> inline RT & set_raw_scalar(RT &val, double *raw_data) { return *raw_data;}
-template <class RT> inline RT & set_raw_scalar(RT &val, int *raw_data) { return *raw_data;}
-template <class RT> inline RT & set_raw_scalar(RT &val, FieldEnum *raw_data) { return *raw_data;}
+template <class RT> inline RT & set_raw_scalar(RT &, double *raw_data) { return *raw_data;}
+template <class RT> inline RT & set_raw_scalar(RT &, int *raw_data) { return *raw_data;}
+template <class RT> inline RT & set_raw_scalar(RT &, FieldEnum *raw_data) { return *raw_data;}
 
 template <class RT> inline RT & set_raw_vec(RT &val, double *raw_data) { arma::access::rw(val.mem) = raw_data; return val;}
 template <class RT> inline RT & set_raw_vec(RT &val, int *raw_data) { arma::access::rw(val.mem) = raw_data; return val;}
@@ -168,8 +168,9 @@ void init_matrix_from_input( MatrixType &value, Input::Array rec ) {
         } else {
             THROW( ExcFV_Input()
                     << EI_InputMsg(
-                            boost::str(boost::format("Initializing symmetric matrix %dx%d by vector of wrong size %d, should be 1, %d, or %d.")
-                            % nrows % ncols % rec.size() % nrows % ((nrows+1)*nrows/2)))
+                            fmt::format("Initializing symmetric matrix {:d}x{:d} by vector of wrong size {:d}, "
+                                    "should be 1, {:d}, or {:d}.",
+                                    nrows, ncols, rec.size(), nrows, (nrows+1)*nrows/2))
                     << rec.ei_address()
 
                  );
@@ -190,8 +191,8 @@ void init_matrix_from_input( MatrixType &value, Input::Array rec ) {
         } else {
             THROW( ExcFV_Input()
                     << EI_InputMsg(
-                            boost::str(boost::format("Initializing matrix %dx%d by matrix of wrong size %dx%d.")
-                                % nrows % ncols % rec.size() % it->size() ))
+                            fmt::format("Initializing symmetric matrix {:d}x{:d} by vector of wrong size {:d}x{:d}.",
+                                    nrows, ncols, rec.size(), it->size()))
                     << rec.ei_address()
                  );
         }
@@ -221,8 +222,8 @@ void init_vector_from_input( VectorType &value, Input::Array rec ) {
     } else {
         THROW( ExcFV_Input()
                 << EI_InputMsg(
-                        boost::str(boost::format("Initializing vector of size %d by vector of size %d.")
-                            % nrows % rec.size() ))
+                        fmt::format("Initializing vector of size {:d} by vector of size {%d.}",
+                            nrows, rec.size()))
                 << rec.ei_address()
              );
     }
@@ -254,7 +255,7 @@ public:
     const static int NCols_ = NCols;
     const static int rank_ = 2;
 
-    static std::string type_name() { return boost::str(boost::format("R[%d,%d]") % NRows % NCols); }
+    static std::string type_name() { return fmt::format("R[{:d},{:d}]", NRows, NCols); }
     static IT::Array get_input_type() {
 		if (NRows == NCols) {
 			// for square tensors allow initialization by diagonal vector, etc.
@@ -274,6 +275,11 @@ public:
     inline static const return_type &from_raw(return_type &val, ET *raw_data) {return internal::set_raw_fix(val, raw_data);}
     const ET * mem_ptr() const {
     	return value_.memptr();
+    }
+
+    /// Casts value stored in Armor::Array to return type.
+    inline static return_type get_from_array(const Armor::Array<element_type> &arr, uint idx) {
+        return arr.template mat<NRows, NCols>(idx);
     }
 
     void init_from_input( AccessType rec ) {
@@ -355,6 +361,11 @@ public:
     inline static const return_type &from_raw(return_type &val, ET *raw_data) {return internal::set_raw_scalar(val, raw_data);}
     const ET * mem_ptr() const { return &(value_); }
 
+    /// Casts value stored in Armor::Array to return type.
+    inline static return_type get_from_array(const Armor::Array<element_type> &arr, uint idx) {
+        return arr.scalar(idx);
+    }
+
     void init_from_input( AccessType val ) { value_ = return_type(val); }
 
     void set_n_comp(unsigned int) {};
@@ -364,7 +375,7 @@ public:
         { return 1; }
     inline ET &operator() ( unsigned int, unsigned int )
         { return value_; }
-    inline ET operator() ( unsigned int i, unsigned int j) const
+    inline ET operator() ( unsigned int, unsigned int) const
         { return value_; }
     inline operator return_type() const
         { return value_;}
@@ -421,6 +432,11 @@ public:
     inline static const return_type &from_raw(return_type &val, ET *raw_data) {return internal::set_raw_vec(val, raw_data);}
     const ET * mem_ptr() const { return value_.memptr(); }
 
+    /// Casts value stored in Armor::Array to return type.
+    inline static return_type get_from_array(const Armor::Array<element_type> &arr, uint idx) {
+        return arr.template vec<NRows_>(idx);
+    }
+
     inline FieldValue_(return_type &val) : value_(val) {}
 
 
@@ -435,7 +451,7 @@ public:
         { return value_.n_rows; }
     inline ET &operator() ( unsigned int i, unsigned int )
         { return value_.at(i); }
-    inline ET operator() ( unsigned int i, unsigned int j) const
+    inline ET operator() ( unsigned int i, unsigned int ) const
         { return value_.at(i); }
 
     inline operator return_type() const
@@ -484,7 +500,7 @@ public:
     const static int rank_ = 1;
 
 
-    static std::string type_name() { return boost::str(boost::format("R[%d]") % NRows ); }
+    static std::string type_name() { return fmt::format("R[{:d}]", NRows); }
     static IT::Array get_input_type() {
         return IT::Array( IT::Parameter("element_input_type"), 1, NRows);
     }
@@ -495,6 +511,11 @@ public:
     inline FieldValue_(return_type &val) : value_(val) {}
     inline static const return_type &from_raw(return_type &val, ET *raw_data) {return internal::set_raw_fix(val, raw_data);}
     const ET * mem_ptr() const { return value_.memptr(); }
+
+    /// Casts value stored in Armor::Array to return type.
+    inline static return_type get_from_array(const Armor::Array<element_type> &arr, uint idx) {
+        return arr.template vec<NRows>(idx);
+    }
 
     void init_from_input( AccessType rec ) {
         internal::init_vector_from_input(value_, rec);
@@ -507,7 +528,7 @@ public:
         { return NRows; }
     inline ET &operator() ( unsigned int i, unsigned int )
         { return value_.at(i); }
-    inline ET operator() ( unsigned int i, unsigned int j) const
+    inline ET operator() ( unsigned int i, unsigned int ) const
         { return value_.at(i); }
 
     inline operator return_type() const

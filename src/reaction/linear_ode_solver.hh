@@ -18,8 +18,8 @@
 #ifndef LINEAR_ODE_SOLVER_H_
 #define LINEAR_ODE_SOLVER_H_
 
-#include <boost/exception/detail/error_info_impl.hpp>  // for error_info
-#include <boost/exception/info.hpp>                    // for operator<<
+
+
 #include <iosfwd>                                      // for stringstream
 #include <string>                                      // for string, basic_...
 #include <vector>                                      // for vector
@@ -51,9 +51,6 @@ public:
      * @param output_vec is the column output vector containing the result
      */
     void update_solution(arma::vec &init_vec, arma::vec &output_vec);
-    
-    /// Estimate upper bound for time step. Return true if constraint was set.
-     virtual bool evaluate_time_constraint(double &time_constraint) { return false; }
                                  
 protected:
     arma::mat system_matrix_;     ///< the square matrix of ODE system

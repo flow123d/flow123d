@@ -51,13 +51,15 @@ public:
     TestOutputVTK()
     : OutputVTK()
     {
-        Profiler::initialize();
+        Profiler::instance();
         LoggerOptions::get_instance().set_log_file("");
 
         FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/fields/simplest_cube_3d.msh", FilePath::input_file);
-        this->_mesh = mesh_full_constructor("{mesh_file=\"" + (string)mesh_file + "\"}");
+        this->_mesh = mesh_full_constructor("{ mesh_file=\"" + (string)mesh_file + "\", optimize_mesh=false }");
 
         component_names = { "comp_0", "comp_1", "comp_2" };
+
+        this->write_time = 0.0; // hack: unset condition in OutputTime::write_time_frame and output is not performed
     }
 
     ~TestOutputVTK()
@@ -71,7 +73,7 @@ public:
     {
     	auto in_rec = Input::ReaderToStorage(input_yaml, const_cast<Input::Type::Record &>(OutputTime::get_input_type()), Input::FileFormat::format_YAML)
         				.get_root_interface<Input::Record>();
-        this->init_from_input("dummy_equation", in_rec, "s");
+        this->init_from_input("dummy_equation", in_rec, std::make_shared<TimeUnitConversion>());
 
         // create output mesh identical to computational mesh
         auto output_mesh = std::make_shared<OutputMesh>(*(this->_mesh));
@@ -104,7 +106,9 @@ public:
         //this->output_mesh_discont_->create_sub_mesh();
         //this->output_mesh_discont_->make_serial_master_mesh();
 
-		field.compute_field_data(ELEM_DATA, shared_from_this());
+	    auto output_types = OutputTime::empty_discrete_flags();
+	    output_types[OutputTime::ELEM_DATA] = true;
+		field.compute_field_data(output_types, shared_from_this());
 	}
 
 	template <class FieldVal>
@@ -123,17 +127,19 @@ public:
 		dh->distribute_dofs(ds);
 
 		VectorMPI v(size);
-        for (unsigned int i=0; i<size; ++i) v[i] = step*i;
+        for (unsigned int i=0; i<size; ++i) v.set(i, step*i);
 
-		auto native_data_ptr = make_shared< FieldFE<3, FieldVal> >();
-		native_data_ptr->set_fe_data(dh, 0, v);
+        auto native_data_ptr = make_shared< FieldFE<3, FieldVal> >();
+        native_data_ptr->set_fe_data(dh, v);
 
-		field.set_field(_mesh->region_db().get_region_set("ALL"), native_data_ptr);
-		field.output_type(OutputTime::NATIVE_DATA);
-		field.set_time(TimeGovernor(0.0, 1.0).step(), LimitSide::left);
+        field.set(native_data_ptr, 0.0);
+        field.output_type(OutputTime::NATIVE_DATA);
+        field.set_time(TimeGovernor(0.0, 1.0).step(), LimitSide::left);
 
-		field.compute_field_data(NATIVE_DATA, shared_from_this());
-	}
+        auto output_types = OutputTime::empty_discrete_flags();
+        output_types[OutputTime::NATIVE_DATA] = true;
+        field.compute_field_data(output_types, shared_from_this());
+    }
 
 	// check result
 	void check_result_file(std::string result_file, std::string ref_file)
@@ -177,17 +183,26 @@ TEST(TestOutputVTK, write_data_ascii) {
 	std::shared_ptr<TestOutputVTK> output_vtk = std::make_shared<TestOutputVTK>();
 
 	output_vtk->init_mesh(test_output_time_ascii);
+	output_vtk->set_current_step(0);
+	output_vtk->set_field_data< Field<3,FieldValue<0>::Scalar> > ("scalar_field", "0.5");
+	output_vtk->set_field_data< Field<3,FieldValue<3>::VectorFixed> > ("vector_field", "[0.5, 1.0, 1.5]");
+	output_vtk->set_field_data< Field<3,FieldValue<3>::TensorFixed> > ("tensor_field", "[[1, 2, 3], [4, 5, 6], [7, 8, 9]]");
+	output_vtk->set_native_field_data< FieldValue<0>::Scalar >("flow_data", 6, 0.2);
+	// output_vtk->write_data();
+	// output_vtk->check_result_file("test1/test1-000000.vtu", "test_output_vtk_ascii_ref.vtu");
+
+	output_vtk->clear_data();
 	output_vtk->set_current_step(1);
 	output_vtk->set_field_data< Field<3,FieldValue<0>::Scalar> > ("scalar_field", "0.5");
 	output_vtk->set_field_data< Field<3,FieldValue<3>::VectorFixed> > ("vector_field", "[0.5, 1.0, 1.5]");
 	output_vtk->set_field_data< Field<3,FieldValue<3>::TensorFixed> > ("tensor_field", "[[1, 2, 3], [4, 5, 6], [7, 8, 9]]");
 	output_vtk->set_native_field_data< FieldValue<0>::Scalar >("flow_data", 6, 0.2);
 	output_vtk->write_data();
-    EXPECT_EQ("./test1.pvd", output_vtk->base_filename());
+
+	EXPECT_EQ("./test1.pvd", output_vtk->base_filename());
     EXPECT_EQ("test1", output_vtk->main_output_basename());
     EXPECT_EQ(".", output_vtk->main_output_dir());
-
-    output_vtk->check_result_file("test1/test1-000001.vtu", "test_output_vtk_ascii_ref.vtu");
+	output_vtk->check_result_file("test1/test1-000001.vtu", "test_output_vtk_ascii_ref.vtu");
 }
 
 

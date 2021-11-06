@@ -24,6 +24,7 @@
 #include "fields/eval_subset.hh"
 #include "fields/eval_points.hh"
 #include "fields/field_value_cache.hh"
+#include "fields/field_set.hh"
 #include "input/input_exception.hh"
 #include "io/observe.hh"
 
@@ -41,6 +42,7 @@ MultiField<spacedim, Value>::MultiField(bool bc)
 // 	static_assert(Value::NRows_ == 1 && Value::NCols_ == 1, "");
 	this->multifield_ = true;
     this->shared_->bc_ = bc;
+    this->set_shape( Value::NRows_, Value::NCols_ );
 }
 
 
@@ -53,6 +55,7 @@ MultiField<spacedim, Value>::MultiField(const MultiField &other)
   no_check_control_field_(other.no_check_control_field_)
 {
 	this->multifield_ = true;
+	this->set_shape( Value::NRows_, Value::NCols_ );
 }
 
 
@@ -61,12 +64,12 @@ template<int spacedim, class Value>
 MultiField<spacedim,Value> &MultiField<spacedim,Value>::operator=(const MultiField<spacedim,Value> &other)
 {
 	//OLD_ASSERT( flags().match( FieldFlag::input_copy )  , "Try to assign to non-copy field '%s' from the field '%s'.", this->name().c_str(), other.name().c_str());
-	OLD_ASSERT(other.shared_->mesh_, "Must call set_mesh before assign to other field.\n");
-	OLD_ASSERT( !shared_->mesh_ || (shared_->mesh_==other.shared_->mesh_),
-	        "Assignment between multi fields with different meshes.\n");
-	OLD_ASSERT( shared_->comp_names_.size(), "Vector of component names can't be empty!\n");
-	OLD_ASSERT( shared_->comp_names_.size()==other.shared_->comp_names_.size(),
-	        "Both multi fields must have same size of vectors of component names.\n");
+	ASSERT_PTR_DBG(other.shared_->mesh_).error("Must call set_mesh before assign to other field.\n");
+	ASSERT_DBG( !shared_->mesh_ || (shared_->mesh_==other.shared_->mesh_))
+	        .error("Assignment between multi fields with different meshes.\n");
+	ASSERT_GT_DBG( shared_->comp_names_.size(), 0).error("Vector of component names can't be empty!\n");
+	ASSERT_EQ_DBG( shared_->comp_names_.size(), other.shared_->comp_names_.size())
+	        .error("Both multi fields must have same size of vectors of component names.\n");
 
 	// check for self assignement
 	if (&other == this) return *this;
@@ -82,6 +85,7 @@ MultiField<spacedim,Value> &MultiField<spacedim,Value>::operator=(const MultiFie
 	is_jump_time_ = other.is_jump_time_;
 	component_index_ = other.component_index_;
 	this->multifield_ = true;
+	this->shape_ = other.shape_;
 
 	// class members of Field class
 	if ( size() == 0 ) {
@@ -110,7 +114,7 @@ MultiField<spacedim,Value> &MultiField<spacedim,Value>::operator=(const MultiFie
 
 template<int spacedim, class Value>
 it::Instance MultiField<spacedim,Value>::get_input_type() {
-	OLD_ASSERT(false, "This method can't be used for MultiField");
+	ASSERT(false).error("This method can't be used for MultiField");
 
 	it::Abstract abstract = it::Abstract();
 	it::Instance inst = it::Instance( abstract, std::vector<it::TypeBase::ParameterPair>() );
@@ -171,7 +175,7 @@ void MultiField<spacedim, Value>::set_mesh(const Mesh &mesh) {
 
 template<int spacedim, class Value>
 void MultiField<spacedim, Value>::copy_from(const FieldCommon & other) {
-    ASSERT( flags().match(FieldFlag::equation_input))(other.name().c_str())(this->name().c_str())
+    ASSERT_DBG( flags().match(FieldFlag::equation_input))(other.name())(this->name())
             .error("Can not copy to the non-copy field.");
 
     // do not use copy if the field have its own input
@@ -191,13 +195,11 @@ void MultiField<spacedim, Value>::copy_from(const FieldCommon & other) {
 
 
 template<int spacedim, class Value>
-void MultiField<spacedim, Value>::field_output(std::shared_ptr<OutputTime> stream)
+void MultiField<spacedim, Value>::field_output(std::shared_ptr<OutputTime> stream, OutputTime::DiscreteSpaceFlags type)
 {
 	// currently we cannot output boundary fields
 	if (!is_bc()) {
-		const OutputTime::DiscreteSpace type = this->get_output_type();
-
-		ASSERT_LT(type, OutputTime::N_DISCRETE_SPACES).error();
+	    ASSERT( OutputTime::discrete_flags_defined(type) ).error();
 
 	    for (unsigned long index=0; index < this->size(); index++) {
             sub_fields_[index].compute_field_data( type, stream );
@@ -264,8 +266,8 @@ template<int spacedim, class Value>
 void MultiField<spacedim, Value>::setup_components() {
 	unsigned int comp_size = this->shared_->comp_names_.size();
 	string full_name;
-	OLD_ASSERT(comp_size, "Vector of component names is empty!\n");
-	OLD_ASSERT(this->shared_->mesh_, "Mesh is not set!\n");
+	ASSERT_GT(comp_size, 0).error("Vector of component names is empty!\n");
+	ASSERT_PTR(this->shared_->mesh_).error("Mesh is not set!\n");
 
     sub_fields_.reserve( comp_size );
     for(unsigned int i_comp=0; i_comp < comp_size; i_comp++)
@@ -375,16 +377,64 @@ bool MultiField<spacedim, Value>::MultiFieldFactory::is_active_field_descriptor(
 }
 
 
+template<int spacedim, class Value>
+std::vector<const FieldCommon *> MultiField<spacedim, Value>::set_dependency(FMT_UNUSED FieldSet &field_set, FMT_UNUSED unsigned int i_reg) const {
+    ASSERT(false).error("Set dependency of MultiField should be performed by individual components!\n");
+    return std::vector<const FieldCommon *>();
+}
+
+
 
 template<int spacedim, class Value>
-void MultiField<spacedim, Value>::cache_allocate(std::shared_ptr<EvalPoints> eval_points) {
-    for(auto &field : sub_fields_) field.cache_allocate(eval_points);
+void MultiField<spacedim, Value>::cache_reallocate(FMT_UNUSED const ElementCacheMap &cache_map, FMT_UNUSED unsigned int region_idx) const {
+    //for(auto &field : sub_fields_) field.cache_reallocate(cache_map);
+	ASSERT(false).error("Cache reallocate of MultiField should be performed by individual components!\n");
 }
 
 
 template<int spacedim, class Value>
-void MultiField<spacedim, Value>::cache_update(ElementCacheMap &cache_map) {
-    for(auto &field : sub_fields_) field.cache_update(cache_map);
+void MultiField<spacedim, Value>::cache_update(FMT_UNUSED ElementCacheMap &cache_map,
+        FMT_UNUSED unsigned int region_patch_idx) const {
+    ASSERT(false).error("Cache update of MultiField should be performed by individual components!\n");
+}
+
+
+template<int spacedim, class Value>
+void MultiField<spacedim, Value>::set(
+        std::vector<typename Field<spacedim, Value>::FieldBasePtr> field_vec,
+        double time,
+		std::vector<std::string> region_set_names)
+{
+	unsigned int comp_size = this->shared_->comp_names_.size();
+	ASSERT_GT_DBG(comp_size, 0).error("Vector of component names is empty!\n");
+	ASSERT_EQ_DBG(comp_size, field_vec.size());
+	ASSERT_PTR_DBG(this->shared_->mesh_).error("Mesh is not set!\n");
+
+    sub_fields_.reserve( comp_size );
+    for(unsigned int i_comp=0; i_comp < comp_size; i_comp++)
+    {
+    	sub_fields_.push_back( SubFieldType(i_comp, name(), "", is_bc()) );
+    	sub_fields_[i_comp].set_mesh( *(shared_->mesh_) );
+    	sub_fields_[i_comp].flags_ = this->flags_;
+    	sub_fields_[i_comp].set(field_vec[i_comp], time, region_set_names);
+    }
+}
+
+
+template<int spacedim, class Value>
+void MultiField<spacedim, Value>::set(
+        typename Field<spacedim, Value>::FieldBasePtr field,
+        double time,
+		std::vector<std::string> region_set_names)
+{
+	ASSERT_EQ_DBG(this->shared_->comp_names_.size(), 1).error("Size of component names vector must be 1!\n");
+	ASSERT_PTR_DBG(this->shared_->mesh_).error("Mesh is not set!\n");
+
+    sub_fields_.reserve(1);
+   	sub_fields_.push_back( SubFieldType(0, name(), "", is_bc()) );
+   	sub_fields_[0].set_mesh( *(shared_->mesh_) );
+   	sub_fields_[0].flags_ = this->flags_;
+   	sub_fields_[0].set(field, time, region_set_names);
 }
 
 

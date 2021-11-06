@@ -27,7 +27,7 @@
 
 #include <stdarg.h>                  // for va_list
 #include <stdio.h>                   // for FILE
-#include <boost/exception/info.hpp>  // for error_info::~error_info<Tag, T>
+
 #include "config.h"                  // for FLOW123D_HAVE_PETSC
 #include "petscsys.h"                // for PetscErrorCode
 #include "system/exceptions.hh"      // for ExcStream, operator<<, EI, TYPED...
@@ -105,9 +105,9 @@ protected:
 	/**
 	 * Parse command line parameters before Flow123D initialization.
 	 *
-	 * Method can be override in derived class.
+	 * Method must be implemented in derived class.
 	 */
-	virtual void parse_cmd_line(const int argc, char ** argv) {}
+	virtual void parse_cmd_line(const int argc, char ** argv) = 0;
 
 	/**
 	 * Implement printf function for PETSc with support for redirecting.

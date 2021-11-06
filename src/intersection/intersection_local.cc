@@ -2,7 +2,6 @@
 #include "intersection_local.hh"
 #include "intersection_aux.hh"
 #include "intersection_point_aux.hh"
-#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "mesh/accessors.hh"
 
@@ -73,7 +72,7 @@ double IntersectionLocal<2,3>::compute_measure() const
     
     if(i_points_.size() > 2)
     for(unsigned int j = 2; j < i_points_.size();j++){
-        //xprintf(Msg, "volani %d %d\n",j, i_points_.size());
+        //DebugOut().fmt("volani {} {}\n", j, i_points_.size());
         subtotal += fabs(i_points_[0].comp_coords()(0)*(i_points_[j-1].comp_coords()(1) - i_points_[j].comp_coords()(1)) +
                  i_points_[j-1].comp_coords()(0)*(i_points_[j].comp_coords()(1) - i_points_[0].comp_coords()(1)) +
                  i_points_[j].comp_coords()(0)*(i_points_[0].comp_coords()(1) - i_points_[j-1].comp_coords()(1)));

@@ -59,10 +59,10 @@ PolynomialSpace::PolynomialSpace(unsigned int degree, unsigned int dim)
 }
 
 
-const double PolynomialSpace::basis_value(unsigned int i,
-                                          const arma::vec &point,
-                                          unsigned int comp_index
-                                         ) const
+double PolynomialSpace::basis_value(unsigned int i,
+                                    const arma::vec &point,
+                                    unsigned int comp_index
+                                    ) const
 {
     ASSERT_EQ_DBG(comp_index, 0);
 	ASSERT_LE_DBG(i, powers.size());
@@ -170,7 +170,7 @@ void FE_P<dim>::init_dofs()
             
             // find index of n-face
             std::pair<unsigned int, unsigned int> zeros = RefElement<dim>::zeros_positions(coords);
-            unsigned int n_face_idx;
+            unsigned int n_face_idx = -1;
             switch (dim-zeros.first) {
                 case 0:
                     n_face_idx = RefElement<dim>::template topology_idx<0>(zeros.second);

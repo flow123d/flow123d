@@ -10,7 +10,6 @@
 #include <mesh_constructor.hh>
 
 #include "mesh/region.hh"
-#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "mesh/region_set.hh"
 #include "mesh/accessors.hh"
@@ -237,7 +236,7 @@ const string read_regions_yaml = R"YAML(
 )YAML";
 
 TEST(Region, read_regions_from_yaml) {
-    Profiler::initialize();
+    Profiler::instance();
 
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
@@ -328,7 +327,7 @@ const string invalid_input_3 = R"YAML(
 )YAML";
 
 TEST(Region, read_regions_error_messages) {
-    Profiler::initialize();
+    Profiler::instance();
 
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
@@ -409,11 +408,12 @@ void init_map(std::map<unsigned int, Item> &map,unsigned int size) {
  * O3       100     add_region_consistancy_check  825
  * O3       100     add_region_consistancy_check && using iterators  446
  */
-#ifdef FLOW123D_RUN_UNIT_BENCHMARKS
+
 #define STEPS (10*1000*1000)
 
 // RegionDB add_item(id, dim) overhead.
 TEST(RegionDB, speed_get_region_id) {
+    START_TIMER("speed_get_region_id");
         RegionDB region_db;
         init_db(region_db,50,50);
         int ii=0;
@@ -423,10 +423,13 @@ TEST(RegionDB, speed_get_region_id) {
             ii+= region_db.get_region(9, 1).idx();
         }
    cout << ii << endl;
+   END_TIMER("speed_get_region_id");
+   EXPECT_TIMER_LE("speed_get_region_id", 2.5);
 }
 
 // boost multi index overhead
 TEST(RegionDB, speed_find_id) {
+    START_TIMER("speed_find_id");
         RegionDB region_db;
         init_db(region_db,50,50);
         int ii=0;
@@ -436,10 +439,13 @@ TEST(RegionDB, speed_find_id) {
             ii+= region_db.find_id(9).idx();
         }
    cout << ii << endl;
+   END_TIMER("speed_find_id");
+   EXPECT_TIMER_LE("speed_find_id", 2.5);
 }
 
 // Simplest implementation for ID lookup.
 TEST(RegionDB, speed_map) {
+    START_TIMER("speed_map");
         std::map<unsigned int, Item> map;
         init_map(map, 100);
         int ii=0;
@@ -449,5 +455,6 @@ TEST(RegionDB, speed_map) {
             ii+= map.find(9)->second.id;
         }
    cout << ii << endl;
+   END_TIMER("speed_map");
+   EXPECT_TIMER_LE("speed_map", 1.5);
 }
-#endif // FLOW123D_RUN_UNIT_BENCHMARKS

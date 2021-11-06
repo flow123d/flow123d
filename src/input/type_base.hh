@@ -27,17 +27,10 @@
 //#include <iomanip>
 
 #include <stdint.h>                  // for int64_t
-#include <boost/exception/info.hpp>  // for error_info::~error_info<Tag, T>
+
 #include <memory>                    // for shared_ptr, __shared_ptr
 #include <utility>                   // for pair
 
-
-//#include <boost/type_traits.hpp>
-//#include <boost/tokenizer.hpp>
-//#include <boost/algorithm/string.hpp>
-
-//#include "system/global_defs.h"
-//#include "system/system.hh"
 #include "system/exceptions.hh"
 #include "system/file_path.hh"
 
@@ -601,6 +594,7 @@ public:
     TypeHash content_hash() const   override;
 
     /// Particular descendants can check validity of the string.
+    /// This returns always true.
     virtual bool match(const string &value) const;
 
     /// Implements @p TypeBase::make_instance.

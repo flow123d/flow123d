@@ -25,7 +25,6 @@
 #include "msh_vtkreader.hh"
 #include "system/system.hh"
 #include "system/index_types.hh"
-#include "mesh/side_impl.hh"
 #include "mesh/bih_tree.hh"
 #include "mesh/mesh.h"
 #include "mesh/accessors.hh"
@@ -71,6 +70,7 @@ VtkMeshReader::VtkMeshReader(const FilePath &file_name)
 {
     data_section_name_ = "DataArray";
     has_compatible_mesh_ = false;
+    can_have_components_ = false;
 	make_header_table();
 }
 
@@ -82,6 +82,7 @@ VtkMeshReader::VtkMeshReader(const FilePath &file_name, std::shared_ptr<ElementD
 {
 	data_section_name_ = "DataArray";
     has_compatible_mesh_ = false;
+    can_have_components_ = false;
 	make_header_table();
 }
 
@@ -106,6 +107,7 @@ void VtkMeshReader::read_base_vtk_attributes(pugi::xml_node vtk_node, unsigned i
 	if (header_type_ == DataType::undefined) {
 		data_format_ = DataFormat::ascii;
 	} else {
+        can_have_components_ = true;
 		if (header_type_!=DataType::uint64 && header_type_!=DataType::uint32) {
 			// Allowable values of header type are only 'UInt64' or 'UInt32'
 			THROW( ExcWrongType() << EI_ErrMessage("Forbidden") << EI_SectionTypeName("base parameter header_type")
@@ -344,19 +346,17 @@ void VtkMeshReader::read_element_data(ElementDataCacheBase &data_cache, MeshData
 
     switch (data_format_) {
 		case DataFormat::ascii: {
-			parse_ascii_data( data_cache, n_components, actual_header.n_entities, actual_header.position, boundary_domain );
+			parse_ascii_data( data_cache, n_components, actual_header.n_entities, actual_header.position );
 			break;
 		}
 		case DataFormat::binary_uncompressed: {
 			ASSERT_PTR(data_stream_).error();
-			parse_binary_data( data_cache, n_components, actual_header.n_entities, actual_header.position, boundary_domain,
-					actual_header.type );
+			parse_binary_data( data_cache, n_components, actual_header.n_entities, actual_header.position);
 			break;
 		}
 		case DataFormat::binary_zlib: {
 			ASSERT_PTR(data_stream_).error();
-			parse_compressed_data( data_cache, n_components, actual_header.n_entities, actual_header.position, boundary_domain,
-					actual_header.type);
+			parse_compressed_data( data_cache, n_components, actual_header.n_entities, actual_header.position);
 			break;
 		}
 		default: {
@@ -371,7 +371,7 @@ void VtkMeshReader::read_element_data(ElementDataCacheBase &data_cache, MeshData
 
 
 void VtkMeshReader::parse_ascii_data(ElementDataCacheBase &data_cache, unsigned int n_components, unsigned int n_entities,
-		Tokenizer::Position pos, bool boundary_domain)
+		Tokenizer::Position pos)
 {
     n_read_ = 0;
 
@@ -379,7 +379,7 @@ void VtkMeshReader::parse_ascii_data(ElementDataCacheBase &data_cache, unsigned 
     try {
     	tok_.next_line();
     	for (unsigned int i_row = 0; i_row < n_entities; ++i_row) {
-    		data_cache.read_ascii_data(tok_, n_components, get_element_vector(boundary_domain)[i_row]);
+    		data_cache.read_ascii_data(tok_, n_components, i_row);
             n_read_++;
     	}
 	} catch (boost::bad_lexical_cast &) {
@@ -390,22 +390,22 @@ void VtkMeshReader::parse_ascii_data(ElementDataCacheBase &data_cache, unsigned 
 
 
 void VtkMeshReader::parse_binary_data(ElementDataCacheBase &data_cache, unsigned int n_components, unsigned int n_entities,
-		Tokenizer::Position pos, bool boundary_domain, DataType value_type)
+		Tokenizer::Position pos)
 {
     n_read_ = 0;
 
     data_stream_->seekg(pos.file_position_);
-	uint64_t data_size = read_header_type(header_type_, *data_stream_) / type_value_size(value_type);
+	read_header_type(header_type_, *data_stream_);
 
 	for (unsigned int i_row = 0; i_row < n_entities; ++i_row) {
-		data_cache.read_binary_data(*data_stream_, n_components, get_element_vector(boundary_domain)[i_row]);
+		data_cache.read_binary_data(*data_stream_, n_components, i_row);
         n_read_++;
 	}
 }
 
 
 void VtkMeshReader::parse_compressed_data(ElementDataCacheBase &data_cache, unsigned int n_components, unsigned int n_entities,
-		Tokenizer::Position pos, bool boundary_domain, DataType value_type)
+		Tokenizer::Position pos)
 {
 	data_stream_->seekg(pos.file_position_);
 	uint64_t n_blocks = read_header_type(header_type_, *data_stream_);
@@ -450,122 +450,16 @@ void VtkMeshReader::parse_compressed_data(ElementDataCacheBase &data_cache, unsi
 
     n_read_ = 0;
 
-	uint64_t data_size = decompressed_data_size / type_value_size(value_type);
-
 	for (unsigned int i_row = 0; i_row < n_entities; ++i_row) {
-		data_cache.read_binary_data(decompressed_data, n_components, get_element_vector(boundary_domain)[i_row]);
+		data_cache.read_binary_data(decompressed_data, n_components, i_row);
         n_read_++;
 	}
 }
 
 
-void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
-{
-	this->create_node_element_caches();
-    std::vector<unsigned int> node_ids; // allow mapping ids of nodes from VTK mesh to GMSH
-    std::vector<unsigned int> offsets_vec; // value of offset section in VTK file
-
-	bulk_elements_id_.clear();
-
-    {
-        // read points data section, find corresponding nodes in GMSH trough BIH tree
-        // points in data section and nodes in GMSH must be in ratio 1:1
-        // store orders (mapping between VTK and GMSH file) into node_ids vector
-        std::vector<unsigned int> searched_elements; // for BIH tree
-        unsigned int i_node, i_elm_node;
-        const BIHTree &bih_tree=mesh.get_bih_tree();
-
-    	ElementDataFieldMap::iterator field_it=element_data_values_->find("Points");
-    	ASSERT(field_it != element_data_values_->end()).error("Missing cache of Points section. Did you call create_node_element_caches()?\n");
-
-    	// create nodes of mesh
-    	std::vector<double> &node_vec = *( dynamic_cast<ElementDataCache<double> &>(*(field_it->second)).get_component_data(0).get() );
-    	unsigned int n_nodes = node_vec.size() / 3;
-    	node_ids.resize(n_nodes);
-        for (unsigned int i=0; i<n_nodes; ++i) {
-            arma::vec3 point = { node_vec[3*i], node_vec[3*i+1], node_vec[3*i+2] };
-            int found_i_node = -1;
-            bih_tree.find_point(point, searched_elements);
-
-            for (std::vector<unsigned int>::iterator it = searched_elements.begin(); it!=searched_elements.end(); it++) {
-                ElementAccessor<3> ele = mesh.element_accessor( *it );
-                for (i_node=0; i_node<ele->n_nodes(); i_node++)
-                {
-                    if ( compare_points(*ele.node(i_node), point) ) {
-                    	i_elm_node = ele.node(i_node).idx();
-                        if (found_i_node == -1) found_i_node = i_elm_node;
-                        else if (found_i_node != i_elm_node) {
-                        	THROW( ExcIncompatibleMesh() << EI_ErrMessage("duplicate nodes found in GMSH file")
-                        			<< EI_VTKFile(tok_.f_name()));
-                        }
-                    }
-                }
-            }
-            if (found_i_node == -1) {
-            	THROW( ExcIncompatibleMesh() << EI_ErrMessage("no node found in GMSH file") << EI_VTKFile(tok_.f_name()));
-            }
-            node_ids[i] = (unsigned int)found_i_node;
-            searched_elements.clear();
-        }
-
-    }
-
-    {
-    	ElementDataFieldMap::iterator field_it=element_data_values_->find("offsets");
-    	ASSERT(field_it != element_data_values_->end()).error("Missing cache of offsets section. Did you call create_node_element_caches()?\n");
-
-        offsets_vec = *( dynamic_cast<ElementDataCache<unsigned int> &>(*(field_it->second)).get_component_data(0).get() );
-    }
-
-    {
-        // read connectivity data section, find corresponding elements in GMSH
-        // cells in data section and elements in GMSH must be in ratio 1:1
-        // store orders (mapping between VTK and GMSH file) into bulk_elements_id_ vector
-    	ElementDataFieldMap::iterator field_it=element_data_values_->find("connectivity");
-    	ASSERT(field_it != element_data_values_->end()).error("Missing cache of connectivity section. Did you call create_node_element_caches()?\n");
-
-        std::vector<unsigned int> &connectivity_vec = *( dynamic_cast<ElementDataCache<unsigned int> &>(*(field_it->second)).get_component_data(0).get() );
-        vector<unsigned int> node_list;
-        vector<unsigned int> candidate_list; // returned by intersect_element_lists
-        vector<unsigned int> result_list; // list of elements with same dimension as vtk element
-        bulk_elements_id_.clear();
-        bulk_elements_id_.resize(offsets_vec.size());
-        // iterate trough connectivity data, to each VTK cell must exist only one GMSH element
-        // fill bulk_elements_id_ vector
-        unsigned int i_con = 0, last_offset=0, dim;
-        for (unsigned int i=0; i<offsets_vec.size(); ++i) { // iterate trough offset - one value for every element
-        	dim = offsets_vec[i] - last_offset - 1; // dimension of vtk element
-            for ( ; i_con<offsets_vec[i]; ++i_con ) { // iterate trough all nodes of any element
-                node_list.push_back( node_ids[connectivity_vec[i_con]] );
-            }
-            mesh.intersect_element_lists(node_list, candidate_list);
-            for (auto i_elm : candidate_list) {
-            	if ( mesh.element_accessor(i_elm)->dim() == dim ) result_list.push_back(i_elm);
-            }
-            if (result_list.size() != 1) {
-            	THROW( ExcIncompatibleMesh() << EI_ErrMessage("intersect_element_lists must produce one element")
-            			<< EI_VTKFile(tok_.f_name()));
-            }
-            bulk_elements_id_[i] = (LongIdx)result_list[0];
-            node_list.clear();
-            result_list.clear();
-            last_offset = offsets_vec[i];
-        }
-    }
-
-    has_compatible_mesh_ = true;
-}
-
-
-bool VtkMeshReader::compare_points(const arma::vec3 &p1, const arma::vec3 &p2) {
-	return fabs(p1[0]-p2[0]) < point_tolerance
-		&& fabs(p1[1]-p2[1]) < point_tolerance
-		&& fabs(p1[2]-p2[2]) < point_tolerance;
-}
-
-
-void VtkMeshReader::read_physical_names(Mesh * mesh) {
+void VtkMeshReader::read_physical_names(Mesh*) {
 	// will be implemented later
+	// ASSERT(0).error("Not implemented!");
 }
 
 

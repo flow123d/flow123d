@@ -16,7 +16,6 @@
  */
 
 #include <string>
-//#include <limits>
 #include <regex>
 
 #include "system/exceptions.hh"                        // for ExcUnknownDesc...
@@ -25,13 +24,9 @@
 #include "input/type_generic.hh"
 #include "input/type_tuple.hh"
 #include "input/type_selection.hh"
-//#include "system/system.hh"
+
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/tokenizer.hpp>                         // for tokenizer<>::i...
-
-//#include <boost/iostreams/filtering_stream.hpp>
-//#include <boost/iostreams/concepts.hpp>
-//#include <boost/iostreams/operations.hpp> // put
 #include <boost/functional/hash.hpp>
 
 
@@ -353,7 +348,7 @@ void OutputText::print_impl(ostream& stream, const Abstract *type) {
 void OutputText::print_impl(ostream& stream, const AdHocAbstract *type) {
 	// Print documentation of adhoc abstract record
 	if (doc_type_ == key_record) {
-		stream << "AdHocAbstract";
+		stream << type->class_name();
 		/*string parent_name;
 		get_adhoc_parent_name(type, parent_name);
 		stream << "AdHocAbstract" << endl;
@@ -418,12 +413,12 @@ void OutputText::print_impl(ostream& stream, const Double *type) {
 }
 void OutputText::print_impl(ostream& stream, const Bool *type) {
 	if (doc_type_ == key_record) {
-		stream << "Bool";
+		stream << type->class_name();
 	}
 }
 void OutputText::print_impl(ostream& stream, const String *type) {
 	if (doc_type_ == key_record) {
-		stream << "String (generic)";
+		stream << type->class_name() + " (generic)";
 	}
 }
 void OutputText::print_impl(ostream& stream, const FileName *type) {
@@ -445,7 +440,7 @@ void OutputText::print_impl(ostream& stream, const FileName *type) {
 
 
 
-void OutputText::print_impl(ostream& stream, const Parameter *type) {
+void OutputText::print_impl(FMT_UNUSED ostream& stream, FMT_UNUSED const Parameter *type) {
 	ASSERT_DBG(false).error("Parameter appears in the IST. Check where Instance is missing.");
 }
 

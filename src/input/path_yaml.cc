@@ -63,6 +63,10 @@ bool PathYAML::down(unsigned int index) {
 bool PathYAML::down(const string& key, int index) {
 	ASSERT(head().IsMap()).error("Head node must be of type Record.");
 
+	// This does the check of uniqueness of keys.
+	std::set<std::string> key_list;
+	get_record_key_set(key_list);
+
     if ( head()[key] ) {
     	path_.push_back( make_pair( index, key) );
     	nodes_.push_back( head()[key] );
@@ -156,7 +160,14 @@ unsigned int PathYAML::get_node_type_index() const {
 bool PathYAML::get_record_key_set(std::set<std::string> &keys_list) const {
 	if ( head().IsMap() ) {
 		for (YAML::const_iterator it=head().begin(); it!=head().end(); ++it) {
-			keys_list.insert( it->first.as<std::string>() );
+			std::string key = it->first.as<std::string>();
+			// returns pair<iterator,true> if inserted, it expects uniqueness
+			bool key_inserted = keys_list.insert( key ).second;
+			if(! key_inserted)
+				THROW( ReaderInternalBase::ExcDuplicitTag()
+						<< ReaderInternalBase::EI_Tag(key)
+						<< EI_ErrorAddress(this->as_string())
+						<< EI_Address(this->as_string()));
 		}
         return true;
     }

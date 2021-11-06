@@ -17,7 +17,6 @@
 #include "input/input_type.hh"
 #include "system/armadillo_tools.hh"
 
-#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "mesh/bih_tree.hh"
 #include "mesh/region.hh"
@@ -25,7 +24,7 @@
 #include "io/observe.hh"
 #include "io/element_data_cache.hh"
 #include "fem/mapping_p1.hh"
-#include "tools/unit_si.hh"
+#include "tools/time_governor.hh"
 
 
 namespace IT = Input::Type;
@@ -338,9 +337,11 @@ ObservePointData ObservePoint::point_projection(unsigned int i_elm, ElementAcces
 const unsigned int Observe::max_observe_value_time = 1000;
 
 
-Observe::Observe(string observe_name, Mesh &mesh, Input::Array in_array, unsigned int precision, std::string unit_str)
+Observe::Observe(string observe_name, Mesh &mesh, Input::Array in_array,
+                 unsigned int precision, const std::shared_ptr<TimeUnitConversion>& time_unit_conv)
 : observe_name_(observe_name),
   precision_(precision),
+  time_unit_conversion_(time_unit_conv),
   point_ds_(nullptr),
   observe_time_idx_(0)
 {
@@ -371,9 +372,6 @@ Observe::Observe(string observe_name, Mesh &mesh, Input::Array in_array, unsigne
     auto last = std::unique(observed_element_indices_.begin(), observed_element_indices_.end());
     observed_element_indices_.erase(last, observed_element_indices_.end());
 
-    time_unit_str_ = unit_str;
-    time_unit_seconds_ = UnitSI().s().convert_unit_from(unit_str);
-
     if (points_.size() == 0) return;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank_);
     if (rank_==0) {
@@ -389,6 +387,9 @@ Observe::Observe(string observe_name, Mesh &mesh, Input::Array in_array, unsigne
 }
 
 Observe::~Observe() {
+    if (points_.size()>0 && observe_field_values_.size()>0)
+        flush_values();
+
     observe_file_.close();
     if (point_ds_!=nullptr) delete point_ds_;
 }
@@ -398,10 +399,11 @@ template <typename T>
 ElementDataCache<T> & Observe::prepare_compute_data(std::string field_name, double field_time, unsigned int n_rows,
 		unsigned int n_cols)
 {
+    double time_unit_seconds = time_unit_conversion_->get_coef();
     if ( std::isnan(observe_values_time_[observe_time_idx_]) )
-        observe_values_time_[observe_time_idx_] = field_time / time_unit_seconds_;
+        observe_values_time_[observe_time_idx_] = field_time / time_unit_seconds;
     else
-        ASSERT(fabs(field_time / time_unit_seconds_ - observe_values_time_[observe_time_idx_]) < 2*numeric_limits<double>::epsilon())
+        ASSERT(fabs(field_time / time_unit_seconds - observe_values_time_[observe_time_idx_]) < 2*numeric_limits<double>::epsilon())
               (field_time)(observe_values_time_[observe_time_idx_]);
 
     OutputDataFieldMap::iterator it=observe_field_values_.find(field_name);
@@ -426,8 +428,8 @@ OBSERVE_PREPARE_COMPUTE_DATA(double);
 void Observe::output_header() {
     unsigned int indent = 2;
     observe_file_ << "# Observation file: " << observe_name_ << endl;
-    observe_file_ << "time_unit: " << time_unit_str_ << endl;
-    observe_file_ << "time_unit_in_seconds: " << time_unit_seconds_ << endl;
+    observe_file_ << "time_unit: " << time_unit_conversion_->get_unit_string() << endl;
+    observe_file_ << "time_unit_in_seconds: " << time_unit_conversion_->get_coef() << endl;
     observe_file_ << "points:" << endl;
     for(auto &point : points_)
         point.output(observe_file_, indent, precision_);
@@ -435,7 +437,36 @@ void Observe::output_header() {
 
 }
 
-void Observe::output_time_frame(double time, bool flush) {
+void Observe::flush_values() {
+    std::vector<LongIdx> local_to_global(Observe::max_observe_value_time*point_4_loc_.size());
+    for (unsigned int i=0; i<Observe::max_observe_value_time; ++i)
+        for (unsigned int j=0; j<point_4_loc_.size(); ++j) local_to_global[i*point_4_loc_.size()+j] = i*points_.size()+point_4_loc_[j];
+
+    for(auto &field_data : observe_field_values_) {
+        auto serial_data = field_data.second->gather(point_ds_, &(local_to_global[0]));
+        if (rank_==0) field_data.second = serial_data;
+    }
+
+    if (rank_ == 0) {
+        unsigned int indent = 2;
+        DebugOut() << "Observe::output_time_frame WRITE\n";
+        for (unsigned int i_time=0; i_time<observe_time_idx_; ++i_time) {
+            observe_file_ << setw(indent) << "" << "- time: " << observe_values_time_[i_time] << endl;
+            for(auto &field_data : observe_field_values_) {
+                observe_file_ << setw(indent) << "" << "  " << field_data.second->field_input_name() << ": ";
+                field_data.second->print_yaml_subarray(observe_file_, precision_, i_time*points_.size(), (i_time+1)*points_.size());
+                observe_file_ << endl;
+            }
+        }
+    }
+
+    observe_values_time_.clear();
+    observe_values_time_.reserve(max_observe_value_time);
+    observe_values_time_.push_back(numeric_limits<double>::signaling_NaN());
+    observe_time_idx_ = 0;
+}
+
+void Observe::output_time_frame(bool flush) {
     if (points_.size() == 0) return;
     
     if ( ! no_fields_warning ) {
@@ -455,31 +486,7 @@ void Observe::output_time_frame(double time, bool flush) {
     
     observe_time_idx_++;
     if ( (observe_time_idx_==Observe::max_observe_value_time) || flush ) {
-    	std::vector<LongIdx> local_to_global(Observe::max_observe_value_time*point_4_loc_.size());
-    	for (unsigned int i=0; i<Observe::max_observe_value_time; ++i)
-    	    for (unsigned int j=0; j<point_4_loc_.size(); ++j) local_to_global[i*point_4_loc_.size()+j] = i*points_.size()+point_4_loc_[j];
-
-        for(auto &field_data : observe_field_values_) {
-        	auto serial_data = field_data.second->gather(point_ds_, &(local_to_global[0]));
-        	if (rank_==0) field_data.second = serial_data;
-        }
-
-        if (rank_ == 0) {
-            unsigned int indent = 2;
-            for (unsigned int i_time=0; i_time<observe_time_idx_; ++i_time) {
-                observe_file_ << setw(indent) << "" << "- time: " << observe_values_time_[i_time] << endl;
-                for(auto &field_data : observe_field_values_) {
-                    observe_file_ << setw(indent) << "" << "  " << field_data.second->field_input_name() << ": ";
-                    field_data.second->print_yaml_subarray(observe_file_, precision_, i_time*points_.size(), (i_time+1)*points_.size());
-                    observe_file_ << endl;
-                }
-            }
-        }
-
-        observe_values_time_.clear();
-        observe_values_time_.reserve(max_observe_value_time);
-        observe_values_time_.push_back(numeric_limits<double>::signaling_NaN());
-        observe_time_idx_ = 0;
+    	flush_values();
     } else {
         observe_values_time_.push_back( numeric_limits<double>::signaling_NaN() );
     }
