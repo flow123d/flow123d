@@ -170,7 +170,7 @@ public:
 		}
 
 		void alloc_transport_structs_mpi(unsigned int lsize) {
-		    this->cfl_flow_ = dh_->create_vector();
+		    this->cfl_flow_.resize(lsize);
 		    this->cfl_source_.resize(lsize);
 		}
 

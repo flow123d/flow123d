@@ -388,15 +388,15 @@ public:
         for( DHCellSide edge_side : edge_side_range )
         {
             fe_values_vec_[sid].reinit(edge_side.side());
-            auto p = *( this->edge_points(edge_side).begin() );
-            side_flux_[sid] = eq_fields_->side_flux(p, fe_values_vec_[sid]);
-            if (side_flux_[sid] > 0.0) {
-                eq_data_->cfl_flow_.add(edge_side.cell().local_idx(), -(side_flux_[sid] / edge_side.element().measure()) );
-                edg_flux += side_flux_[sid];
-            }
             edge_side.cell().get_dof_indices(dof_indices_i_);
             side_dofs_[sid] = dof_indices_i_[0];
             elm_meassures_[sid] = edge_side.element().measure();
+            auto p = *( this->edge_points(edge_side).begin() );
+            side_flux_[sid] = eq_fields_->side_flux(p, fe_values_vec_[sid]);
+            if (side_flux_[sid] > 0.0) {
+                eq_data_->cfl_flow_.add_global(side_dofs_[sid], -(side_flux_[sid] / edge_side.element().measure()) );
+                edg_flux += side_flux_[sid];
+            }
             ++sid;
         }
 
@@ -438,7 +438,7 @@ public:
 
         // volume drain - in-flow to higher dimension
         if (flux < 0.0) {
-            eq_data_->cfl_flow_.add( cell_lower_dim.local_idx(), (flux / cell_lower_dim.elm().measure()) );                           // diagonal drain
+            eq_data_->cfl_flow_.add_global( dof_indices_i_[0], (flux / cell_lower_dim.elm().measure()) );                           // diagonal drain
             aij = (-flux) / neighb_side.element().measure();
         } else aij=0;
         MatSetValue(eq_data_->tm, dof_indices_j_[0], dof_indices_i_[0], aij, INSERT_VALUES);
@@ -464,6 +464,8 @@ public:
 
         MatAssemblyBegin(eq_data_->tm, MAT_FINAL_ASSEMBLY);
         MatAssemblyEnd(eq_data_->tm, MAT_FINAL_ASSEMBLY);
+        VecAssemblyBegin(eq_data_->cfl_flow_.petsc_vec());
+        VecAssemblyEnd(eq_data_->cfl_flow_.petsc_vec());
 
         eq_data_->is_convection_matrix_scaled = false;
         eq_data_->transport_matrix_time = eq_data_->time_->t();
