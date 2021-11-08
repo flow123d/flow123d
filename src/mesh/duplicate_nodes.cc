@@ -30,10 +30,7 @@
 
 MeshObject::MeshObject(unsigned int dim)
     : dim_(dim)
-{
-  for (unsigned int i=0; i<4; i++)
-    faces[i] = nullptr;
-}
+{}
 
 
 DuplicateNodes::DuplicateNodes(MeshBase* mesh)
@@ -80,7 +77,7 @@ void DuplicateNodes::init_from_elements()
       l.nodes[i] = ele->node_idx(i);
     if (ele->dim() > 0)
       for (unsigned int i=0; i<ele->dim()+1; i++)
-        l.faces[i] = &objects_[ele->dim()-1][obj_4_edg_[ele->edge_idx(i)]];
+        l.faces[i] = obj_4_edg_[ele->edge_idx(i)];
     obj_4_el_.push_back(objects_[ele->dim()].size());
     objects_[ele->dim()].push_back(l);
   }
@@ -151,14 +148,15 @@ void DuplicateNodes::duplicate_nodes()
       for (auto el_idx : component) {
         // After we have complete graph tetrahedron-triangles-lines-points,
         // the updating of duplicated nodes will have to change.
-        MeshObject *elem = &objects_[mesh_->element_accessor(el_idx).dim()][obj_4_el_[el_idx]];
-        for (unsigned int i=0; i<mesh_->element_accessor(el_idx).dim()+1; i++)
+        const unsigned int el_dim = mesh_->element_accessor(el_idx).dim();
+        MeshObject *elem = &objects_[el_dim][obj_4_el_[el_idx]];
+        for (unsigned int i=0; i<el_dim+1; i++)
           if (elem->nodes[i] == n.idx())
             elem->nodes[i] = new_nid;
-        for (unsigned int fi=0; fi<mesh_->element_accessor(el_idx).dim()+1; fi++)
-          for (unsigned int ni=0; ni<mesh_->element_accessor(el_idx).dim(); ni++)
-            if (elem->faces[fi]->nodes[ni] == n.idx())
-              elem->faces[fi]->nodes[ni] = new_nid;
+        for (unsigned int fi=0; fi<el_dim+1; fi++)
+          for (unsigned int ni=0; ni<el_dim; ni++)
+            if (objects_[el_dim-1][elem->faces[fi]].nodes[ni] == n.idx())
+              objects_[el_dim-1][elem->faces[fi]].nodes[ni] = new_nid;
       }
     }
   }

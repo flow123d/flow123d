@@ -37,8 +37,8 @@ public:
   MeshObject(unsigned int dim);
   ~MeshObject() {}
   
-  /// (dim-1)-dimensional faces
-  MeshObject *faces[4];
+  /// Indices of (dim-1)-dimensional faces within the global vector of objects with given dimension.
+  unsigned int faces[4];
   
   /// Indices of nodes.
   unsigned int nodes[4];
