@@ -392,7 +392,7 @@ public:
                 //DebugOut().fmt("x: {}, robin, bcp: {}\n", b_ele.centre()[0], bc_pressure);
                 eq_data_->loc_system_[bulk_local_idx_].add_value(edge_row_, edge_row_,
                                         -b_ele.measure() * bc_sigma_ * cross_section_,
-                                        b_ele.measure() * cross_section_ * (bc_flux_ - bc_sigma_ * bc_switch_pressure_)  );
+                                        b_ele.measure() * cross_section_ * (bc_flux_ - bc_sigma_ * bc_pressure_)  );
             } else {
                 // Neumann BC
                 //DebugOut().fmt("x: {}, neuman, q: {}  bcq: {}\n", b_ele.centre()[0], bc_switch_pressure, bc_pressure);
