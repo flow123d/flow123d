@@ -104,7 +104,6 @@ public:
     /// Return value on given position
     inline double get(unsigned int pos) const {
         ASSERT_PTR_DBG(data_ptr_).error("Uninitialized data vector.\n");
-        ASSERT_LT_DBG(pos, data_ptr_->size()).error("Given 'pos' out of vector size!\n");
         return (*data_ptr_)[pos];
     }
 
