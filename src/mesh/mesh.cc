@@ -100,6 +100,8 @@ MeshBase::MeshBase()
     for (unsigned int sid=0; sid<RefElement<3>::n_sides; sid++)
         	for (unsigned int nid=0; nid<RefElement<3>::n_nodes_per_side; nid++)
         		side_nodes[2][sid][nid] = RefElement<3>::interact(Interaction<0,2>(sid))[nid];
+
+    for (int d=0; d<3; d++) max_edge_sides_[d] = 0;
 }
 
 MeshBase::~MeshBase()
@@ -226,8 +228,6 @@ void Mesh::init()
     n_lines = 0;
     n_triangles = 0;
     n_tetrahedras = 0;
-
-    for (int d=0; d<3; d++) max_edge_sides_[d] = 0;
 }
 
 
