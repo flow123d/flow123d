@@ -174,7 +174,7 @@ public:
         // reconstructed vector for the velocity and pressure
         // length = local Schur complement offset in LocalSystem
         eq_data_->schur_offset_[dim-1] = eq_data_->loc_edge_dofs[dim-1][0];
-//        reconstructed_solution_.zeros(schur_offset_);
+        reconstructed_solution_.zeros(eq_data_->schur_offset_[dim-1]);
     }
 
 
@@ -337,13 +337,12 @@ public:
                     // Magnitude of the error is abs(solution_flux - side_flux).
 
                     // try reconstructing local system for seepage BC
-//                    load_local_system(cell_side.cell());
-//                    double solution_flux = reconstructed_solution_[side_row_];
-//
-//                    if ( solution_flux < side_flux_) {
-//                        //DebugOut().fmt("x: {}, to neum, p: {} f: {} -> f: {}\n", b_ele.centre()[0], bc_pressure, solution_flux, side_flux);
-//                        switch_dirichlet=0;
-//                    }
+                    load_local_system(cell_side.cell());
+
+                    if ( reconstructed_solution_[side_row_] < side_flux_) {
+                        //DebugOut().fmt("x: {}, to neum, p: {} f: {} -> f: {}\n", b_ele.centre()[0], bc_pressure, reconstructed_solution_[side_row_], side_flux);
+                        switch_dirichlet = 0;
+                    }
                 } else {
                     // check and possibly switch to  pressure BC
                     // TODO: What is the appropriate DOF in not local?
@@ -567,6 +566,68 @@ private:
     }
 
 
+    /** Loads the local system from a map: element index -> LocalSystem,
+     * if it exits, or if the full solution is not yet reconstructed,
+     * and reconstructs the full solution on the element.
+     * Currently used only for seepage BC.
+     */
+    void load_local_system(const DHCellAccessor& dh_cell)
+    {
+        // do this only once per element
+        if (eq_data_->bc_fluxes_reconstruted[bulk_local_idx_])
+            return;
+
+        // possibly find the corresponding local system
+        auto ls = eq_data_->seepage_bc_systems.find(dh_cell.elm_idx());
+        if (ls != eq_data_->seepage_bc_systems.end())
+        {
+            arma::vec schur_solution = eq_data_->p_edge_solution.get_subvec(eq_data_->loc_schur_[bulk_local_idx_].row_dofs);
+            // reconstruct the velocity and pressure
+            ls->second.reconstruct_solution_schur(eq_data_->schur_offset_[dim-1], schur_solution, reconstructed_solution_);
+
+        	unsigned int pos_in_cache = this->element_cache_map_->position_in_cache(dh_cell.elm_idx());
+            postprocess_velocity(dh_cell, pos_in_cache, reconstructed_solution_);
+
+            eq_data_->bc_fluxes_reconstruted[bulk_local_idx_] = true;
+        }
+    }
+
+
+    void postprocess_velocity(const DHCellAccessor& dh_cell, unsigned int element_patch_idx, arma::vec& solution)
+    {
+        auto p = *( this->bulk_points(element_patch_idx).begin() );
+
+        edge_scale_ = dh_cell.elm().measure()
+                          * eq_fields_->cross_section(p)
+                          / dh_cell.elm()->n_sides();
+
+        edge_source_term_ = edge_scale_ *
+                ( eq_fields_->water_source_density(p)
+                + eq_fields_->extra_source(p));
+
+        postprocess_velocity_specific(dh_cell, element_patch_idx, solution, edge_scale_, edge_source_term_);
+    }
+
+
+    virtual void postprocess_velocity_specific(const DHCellAccessor& dh_cell, unsigned int element_patch_idx, arma::vec& solution,
+                                               double edge_scale, double edge_source_term)// override
+    {
+        auto p = *( this->bulk_points(element_patch_idx).begin() );
+
+        time_term_ = 0.0;
+        for (unsigned int i=0; i<dh_cell.elm()->n_sides(); i++) {
+
+            if( ! eq_data_->use_steady_assembly_)
+            {
+                new_pressure_ = eq_data_->p_edge_solution.get(eq_data_->loc_schur_[bulk_local_idx_].row_dofs[i]);
+                old_pressure_ = eq_data_->p_edge_solution_previous_time.get(eq_data_->loc_schur_[bulk_local_idx_].row_dofs[i]);
+                time_term_ = edge_scale * (eq_fields_->storativity(p) + eq_fields_->extra_storativity(p))
+                             / eq_data_->time_step_ * (new_pressure_ - old_pressure_);
+            }
+            solution[eq_data_->loc_side_dofs[dim-1][i]] += edge_source_term - time_term_;
+        }
+    }
+
     /// Sub field set contains fields used in calculation.
     FieldSet used_fields_;
 
@@ -586,6 +647,9 @@ private:
 
     bool use_dirichlet_switch_;                            ///< Skip BC change if only reconstructing the solution
 
+    /// Vector for reconstructed solution (velocity and pressure on element) from Schur complement.
+    arma::vec reconstructed_solution_;
+
     double scale_sides_;                                   ///< Precomputed value (1 / cross_section / conductivity)
     double rhs_val_, mat_val_;                             ///< Precomputed RHS and mat value
     double n_sides_, coef_, source_term_;                  ///< Variables used in compute lumped source.
@@ -598,6 +662,8 @@ private:
     double bc_pressure_, bc_switch_pressure_, bc_sigma_;   ///< Precomputed values in boundary assembly
     arma::vec3 nv_;                                        ///< Normal vector
     double ngh_value_;                                     ///< Precomputed ngh value
+    double edge_scale_, edge_source_term_;                 ///< Precomputed values in postprocess_velocity
+    double new_pressure_, old_pressure_;                   ///< Precomputed values in postprocess_velocity_specific
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;

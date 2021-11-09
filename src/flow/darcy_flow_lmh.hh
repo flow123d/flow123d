@@ -198,9 +198,6 @@ public:
 
 //        // std::shared_ptr<MortarAssemblyBase> mortar_assembly;
 //
-//        /// Index offset in the local system for the Schur complement.
-//        unsigned int schur_offset_;
-//
 //        /// Vector for reconstruted solution (velocity and pressure on element) from Schur complement.
 //        arma::vec reconstructed_solution_;
 
