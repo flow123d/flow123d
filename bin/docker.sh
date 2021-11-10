@@ -48,7 +48,7 @@ make_work_image ()
     if ! docker images | grep "$WORK_IMAGE" > /dev/null
     then            
         # setup the container
-        running_cont=`docker run -itd -v "${WORKDIR}":"${WORKDIR}" flow123d/flow-libs-dev-dbg`        
+        running_cont=`docker run -itd -v "${WORKDIR}":"${WORKDIR}" flow123d/flow-dev-gnu-dbg`
         
         # setup user and group
         docker exec ${running_cont} addgroup --gid $G_ID $GNAME
@@ -96,10 +96,10 @@ then
 elif [ "$1" == "update" ]
 then    
     remove_custom_image
-    # download flow-libs-dev-dbg image and recreates cusomized container
+    # download flow-dev-gnu-dbg image and recreates cusomized container
     # We can not use prebuild images until they are update on regular basis.
     #docker import http://flow.nti.tul.cz/developer-images/flow-libs-dev-dbg.tar.gz    
-    make -C $SCRIPT_DIR/docker/dockerfiles flow-libs-dev-dbg    
+    make -C $SCRIPT_DIR/docker/dockerfiles flow-dev-gnu-dbg
     make_work_image
 elif [ "$1" == "make" ]
 then
