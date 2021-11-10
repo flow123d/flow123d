@@ -197,9 +197,6 @@ public:
         std::array<unsigned int, 3> loc_ele_dof;
 
 //        // std::shared_ptr<MortarAssemblyBase> mortar_assembly;
-//
-//        /// Vector for reconstruted solution (velocity and pressure on element) from Schur complement.
-//        arma::vec reconstructed_solution_;
 
         std::vector<bool> save_local_system_;       ///< Flag for saving the local system. Currently used only in case of seepage BC.
         std::vector<bool> bc_fluxes_reconstruted;   ///< Flag indicating whether the fluxes for seepage BC has been reconstructed already.
