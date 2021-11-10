@@ -17,7 +17,7 @@
 ##
 ##
 ### Input
-####Geometry and mesh generation
+#### Geometry and mesh generation
 ##
 ##The simulation area $100 \times 100$ m is cut by two flow fractures from which two dead-end fractures separate (see Figure {@fig:mesh}).
 ##The cross-section of the fractures is 0.01 m.
@@ -29,7 +29,7 @@
 ##
 ##This ensures that the 2D mesh will adapt so that elements do not cross the fracture lines (see Figure {@fig:mesh}).
 ##
-##![Geometry and mesh of simulation area.](tutor_figures/04_geomesh.pdf){#fig:mesh width=100%}
+##![Geometry and mesh of simulation area.](tutor_figures/04_geomesh.pdf){#fig:mesh width=600px height=300px}
 ## 
 ##
 ##
@@ -73,7 +73,8 @@
 ##      conductivity: 31.5
 ##      cross_section: 0.01
 ##    - region: deadend_fractures
-##      conductivity: 3.15       # variant without dead-end fractures conductivity: 0.000315
+##      conductivity: 3.15
+##      # variant without dead-end fractures conductivity: 0.000315
 ##      cross_section: 0.01
 ##
 ##To eliminate the dead-end fractures from the model, one can set their conductivity identical to the rock. Other possibility is to use the same conductivity as in the flow-fractures.

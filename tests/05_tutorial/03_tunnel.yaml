@@ -2,7 +2,7 @@
 ##title: Flow123d tutorial 3 -- ``2D tunnel''
 ##---
 ##
-###Description
+### Description
 ##The tutorial models the seepage site 23 m under the surface of the water treatment plant tunnel Bedřichov in the granite rock massif.
 ##This seepage site has fast reaction to the precipitation and measurements of various chemical values are available.
 ##
@@ -44,7 +44,7 @@
 ##The results are shown in Figure {@fig:flow}, where the flux field and the pressure is shown.
 ##In the unsaturated layer the piezometric head is depicted.
 ##
-##![Pressure, boundary of water level and piezometric head in unsaturated zone and flux field.](tutor_figures/03_flow.pdf){#fig:flow width=100%}
+##![Pressure, boundary of water level and piezometric head in unsaturated zone and flux field.](tutor_figures/03_flow.pdf){#fig:flow width=593px height=424px}
 ##
 ### Transport of real isotopes
 ##The stable isotope O-18 was sampled in monthly steps in precipitation at nearby experimental catchment Uhlirska and at the seepage site 23m depth.
@@ -83,7 +83,7 @@
 ##
 ##![Concentration of O-18 on the seepage site 23m under the surface.](tutor_figures/03_mass_flux.pdf){#fig:conc_graph}
 ##
-##![Transport of isotopes in two-dimensional model.](tutor_figures/03_transport.pdf){#fig:mass_real width=100%}
+##![Transport of isotopes in two-dimensional model.](tutor_figures/03_transport.pdf){#fig:mass_real width=593px height=424px}
 ##
 ##
 ##
