@@ -190,10 +190,11 @@ DarcyLMH::EqData::EqData()
 
 void DarcyLMH::EqData::init()
 {
-    save_local_system_.resize(this->mesh->get_el_ds()->lsize());
-    bc_fluxes_reconstruted.resize(this->mesh->get_el_ds()->lsize());
-    loc_system_.resize(this->mesh->get_el_ds()->lsize());
-    loc_schur_.resize(this->mesh->get_el_ds()->lsize());
+    auto size = dh_p_->get_local_to_global_map().size();
+    save_local_system_.resize(size);
+    bc_fluxes_reconstruted.resize(size);
+    loc_system_.resize(size);
+    loc_schur_.resize(size);
 }
 
 
@@ -276,7 +277,6 @@ void DarcyLMH::init_eq_data()
 
     START_TIMER("data init");
     eq_data_->mesh = mesh_;
-    eq_data_->init();
     eq_fields_->set_mesh(*mesh_);
 
     auto gravity_array = input_record_.val<Input::Array>("gravity");
@@ -387,6 +387,8 @@ void DarcyLMH::initialize() {
 		eq_data_->dh_cr_disc_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
 		eq_data_->dh_cr_disc_->distribute_dofs(ds_cr_disc);
     }
+
+    eq_data_->init();
 
     // create solution vector for 2. Schur complement linear system
 //     p_edge_solution = new VectorMPI(eq_data_->dh_cr_->distr()->lsize());

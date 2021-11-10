@@ -479,7 +479,7 @@ private:
     // Common method with Schur reconstruct assembly
     void set_dofs() {
         unsigned int size, loc_size, loc_size_schur, elm_dim;;
-        for ( DHCellAccessor dh_cell : eq_data_->dh_->own_range() ) {
+        for ( DHCellAccessor dh_cell : eq_data_->dh_->local_range() ) {
             const ElementAccessor<3> ele = dh_cell.elm();
             const DHCellAccessor dh_cr_cell = dh_cell.cell_with_other_dh(eq_data_->dh_cr_.get());
 
