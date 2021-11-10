@@ -740,7 +740,7 @@ void Mesh::make_neighbours_and_edges()
             } // connected elements
 
             if (! is_neighbour)
-				ASSERT_EQ( (unsigned int) edg->n_sides, intersection_list.size())(e.index())(s).error("Missing edge sides.");
+				ASSERT_EQ( (unsigned int) edg->n_sides, intersection_list.size())(e.input_id())(s).error("Missing edge sides.");
 		} // for element sides
 	}   // for elements
 

@@ -179,7 +179,8 @@ public:
         return element_idx_;
     }
 
-    unsigned int index() const {
+    /// Return the element ID in the input mesh. Should be only used for special output.
+    unsigned int input_id() const {
     	return (unsigned int)(mesh_->find_elem_id(element_idx_) );
     }
     

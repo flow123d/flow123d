@@ -177,7 +177,7 @@ void InspectElementsAlgorithm<dim>::compute_intersections(const BIHTree& bih)
                      !intersection_exists(component_ele_idx,bulk_ele_idx) )
                 ) {
                     // check that tetrahedron element is numbered correctly and is not degenerated
-                    ASSERT_DBG(ele_3D.tetrahedron_jacobian() > 0).add_value(ele_3D.index(),"element index").error(
+                    ASSERT_DBG(ele_3D.tetrahedron_jacobian() > 0).add_value(ele_3D.input_id(),"element index").error(
                            "Tetrahedron element (%d) has wrong numbering or is degenerated (negative Jacobian).");
                     
                         // - find first intersection
@@ -358,7 +358,7 @@ void InspectElementsAlgorithm<dim>::compute_intersections_BB()
                      !intersection_exists(component_ele_idx,bulk_ele_idx) )
                 ){
                     // check that tetrahedron element is numbered correctly and is not degenerated
-                    ASSERT_DBG(ele_3D.tetrahedron_jacobian() > 0).add_value(ele_3D.index(),"element index").error(
+                    ASSERT_DBG(ele_3D.tetrahedron_jacobian() > 0).add_value(ele_3D.input_id(),"element index").error(
                            "Tetrahedron element (%d) has wrong numbering or is degenerated (negative Jacobian).");
                     
                         // - find first intersection
