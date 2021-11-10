@@ -32,7 +32,7 @@ BCMesh::BCMesh(Mesh* parent_mesh)
   local_part_(nullptr)
 {
 	this->region_db_ = parent_mesh_->region_db_;
-	this->init_element_vector(1);
+	this->init_element_vector(1);  // necessary to allocate 1 element due to elements_range() which otherwise fails for empty BCMesh
 	this->init_node_vector(0);
 	this->nodes_ = parent_mesh_->nodes_;
 	this->node_ids_ = parent_mesh_->node_ids_;

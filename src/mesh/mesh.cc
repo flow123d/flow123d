@@ -874,7 +874,7 @@ void Mesh::element_to_neigh_vb()
 
 	//MessageOut() << "Element to neighbours of vb2 type... "/*orig verb 5*/;
 
-	for (vector<Element>::iterator ele = element_vec_.begin(); ele!= element_vec_.end(); ++ele)
+	for (auto ele : elements_range())
 		ele->n_neighs_vb_ =0;
 
     // count vb neighs per element
