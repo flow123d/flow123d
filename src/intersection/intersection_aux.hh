@@ -76,8 +76,14 @@ public:
     
     /// Returns idx of face when all IPs lie on it; -1 otherwise.
     unsigned int ips_in_face() const;
+
+    // TODO: seems that duplicities are set only at one place and never used
+    // probable meaning is : how many times this intersecion can be reused.
+    // not clear how we can use this, probably can REMOVE
     unsigned int duplicities() const;
     void set_duplicities(unsigned int n_duplicities);
+
+
     void set_ips_in_face(unsigned int face_idx);
     
     /// Friend output operator.

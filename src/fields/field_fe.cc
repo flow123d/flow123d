@@ -682,13 +682,13 @@ void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>
 
         for (std::vector<unsigned int>::iterator it = searched_elements.begin(); it!=searched_elements.end(); it++)
         {
-            ElementAccessor<3> ele = source_mesh->element_accessor(*it);
-            if (ele->dim() == 3) {
+            ElementAccessor<3> source_elm = source_mesh->element_accessor(*it);
+            if (source_elm->dim() == 3) {
                 // get intersection (set measure = 0 if intersection doesn't exist)
                 switch (elm.dim()) {
                     case 0: {
                         arma::vec::fixed<3> real_point = *elm.node(0);
-                        arma::mat::fixed<3, 4> elm_map = MappingP1<3,3>::element_map(ele);
+                        arma::mat::fixed<3, 4> elm_map = MappingP1<3,3>::element_map(source_elm);
                         arma::vec::fixed<4> unit_point = MappingP1<3,3>::project_real_to_unit(real_point, elm_map);
 
                         measure = (std::fabs(arma::sum( unit_point )-1) <= 1e-14
@@ -697,8 +697,8 @@ void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>
                         break;
                     }
                     case 1: {
-                        IntersectionAux<1,3> is;
-                        ComputeIntersection<1,3> CI(elm, ele, source_mesh.get());
+                        IntersectionAux<1,3> is(elm.idx(), source_elm.idx());
+                        ComputeIntersection<1,3> CI(elm, source_elm, source_mesh.get());
                         CI.init();
                         CI.compute(is);
 
@@ -707,8 +707,8 @@ void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>
                         break;
                     }
                     case 2: {
-                        IntersectionAux<2,3> is;
-                        ComputeIntersection<2,3> CI(elm, ele, source_mesh.get());
+                        IntersectionAux<2,3> is(elm.idx(), source_elm.idx());
+                        ComputeIntersection<2,3> CI(elm, source_elm, source_mesh.get());
                         CI.init();
                         CI.compute(is);
 

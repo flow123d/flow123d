@@ -2,6 +2,10 @@
 enable_testing()
 
 # Set timeout for one unit test
+
+enable_testing()
+
+# Set timeout for one unit test
 set(TEST_TIMEOUT 15) # [s] Hard limit for Jenkins. Unit tests should run under 10 s.
 # Set timeout for one unit test running under valgrind
 set(VALGRIND_TIMEOUT 15000) # 1000x

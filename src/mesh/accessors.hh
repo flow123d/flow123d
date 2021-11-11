@@ -117,13 +117,44 @@ public:
     /// Computes the measure of the element.
     double measure() const;
 
-    /** Computes the Jacobian of the element.
-     * J = det ( 1  1  1  1 )
-     *           x1 x2 x3 x4
-     *           y1 y2 y3 y4
-     *           z1 z2 z3 z4
+    inline bool inverted() const {
+        return element()->inverted;
+    }
+
+    inline double sign() const {
+        return inverted() ? -1 : 1;
+    }
+
+    /**
+     * Returns Jacobian of 3D element.
+     * Used by measure and in intersections.
      */
-    double tetrahedron_jacobian() const;
+    inline double jacobian_S3() const {
+        ASSERT_DBG(dim() == 3)(dim()).error("Dimension mismatch.");
+        return arma::dot( arma::cross(*( node(1) ) - *( node(0) ),
+                                        *( node(2) ) - *( node(0) )),
+                        *( node(3) ) - *( node(0) )
+                        );
+    }
+
+    /**
+     * Returns Jacobian of 2D element.
+     */
+    inline double jacobian_S2() const {
+        ASSERT_DBG(dim() == 2)(dim()).error("Dimension mismatch.");
+        return arma::norm(
+            arma::cross(*( node(1) ) - *( node(0) ), *( node(2) ) - *( node(0) )),
+            2
+        );
+    }
+
+    /**
+     * Returns Jacobian of 1D element.
+     */
+    inline double jacobian_S1() const {
+        ASSERT_DBG(dim() == 1)(dim()).error("Dimension mismatch.");
+        return arma::norm(*( node(1) ) - *( node(0) ) , 2);
+    }
 
     /// Computes the barycenter.
     arma::vec::fixed<spacedim> centre() const;
@@ -134,6 +165,8 @@ public:
      *
      * We scale the measure so that is gives value 1 for regular elements. Line 1d elements
      * have always quality 1.
+     *
+     * We return signed value in order to detect inverted elements.
      */
     double quality_measure_smooth() const;
 
@@ -143,31 +176,38 @@ public:
 
 
 
-    bool is_regional() const {
-        return dim_ == undefined_dim_;
+    inline bool is_regional() const {
+        return r_idx_.is_valid();
     }
 
-    bool is_elemental() const {
+    inline bool is_elemental() const {
         return ( is_valid() && ! is_regional() );
     }
 
-    bool is_valid() const {
+    inline bool is_valid() const {
         return mesh_ != NULL;
     }
 
-    unsigned int dim() const
-        { return dim_; }
+    inline unsigned int dim() const {
+        ASSERT_DBG(! is_regional());
+        return element()->dim();
+    }
 
     inline const Element * element() const {
         return &(mesh_->element(element_idx_));
     }
     
 
-    Region region() const
-        { return Region( r_idx_, mesh_->region_db()); }
+    inline Region region() const
+        { return Region( region_idx(), mesh_->region_db()); }
 
-    RegionIdx region_idx() const
-        { return r_idx_; }
+    inline RegionIdx region_idx() const {
+        if (r_idx_.is_valid()) {
+            return r_idx_;
+        } else {
+            return element()->region_idx();
+        }
+    }
 
     /// We need this method after replacing Region by RegionIdx, and movinf RegionDB instance into particular mesh
     //unsigned int region_id() const {
@@ -185,6 +225,7 @@ public:
     }
     
     unsigned int proc() const {
+        ASSERT_DBG(is_elemental());
         return mesh_->get_el_ds()->get_proc(mesh_->get_row_4_el()[element_idx_]);
     }
 
@@ -232,17 +273,16 @@ private:
      */
     static const unsigned int undefined_dim_ = 100;
 
-    /// Dimension of reference element.
-    unsigned int dim_;
-
     /// Pointer to the mesh owning the element.
     const MeshBase *mesh_;
 
     /// Index into Mesh::element_vec_ array.
     unsigned int element_idx_;
 
-    /// Region index.
+    // Hack for sorption tables. TODO: remove
+    // undefined for regular elements
     RegionIdx r_idx_;
+
 };
 
 

@@ -77,16 +77,6 @@ struct EvalPointData {
 };
 
 
-/// Holds pair of positions of point in cache (element and eval point)
-struct PatchCacheLoc {
-    PatchCacheLoc() {}   ///< Default constructor
-    /// Constructor sets all data members
-	PatchCacheLoc(unsigned int i_elm, unsigned int i_ep)
-    : i_elm_(i_elm), i_ep_(i_ep) {}
-
-    unsigned int i_elm_;        ///< index of element in patch
-    unsigned int i_ep_;         ///< index of eval point in patch
-};
 
 
 /**
@@ -94,6 +84,8 @@ struct PatchCacheLoc {
  * explicitly (e.g. as input parameter).
  *
  * Implementation is done as singletone with two access through static methods 'get' and 'set'.
+ *
+ * TODO: This is actually a constant so make it a constant int in element cache map.
  */
 class CacheMapElementNumber {
 public:
@@ -132,11 +124,29 @@ private:
  * Manage storing and updating element data (elements of same dimension) to cache. We need only
  * one shared instance of this class for all fields in equation (but typically for dim = 1,2,3).
  *
- * IMPORTANT: Because there are combuned bulk and boundary elements, we must use mesh_idx value
+ * IMPORTANT: Because there are combined bulk and boundary elements, we must use mesh_idx value
  * to correct identification of elements.
  *
- * TODO: The logic of creating and updating this class is quite complex, describe in which order
- * the methods are supposed to be called and which internal structures are updated when.
+ * TODO:
+ * 1. Generic assembly pass through the patch collecting needed quadrature points. (PASS ORDER)
+ * 2. Then we sort these points for efficient chae_upadate of the fields (CACHE ORDER)
+ * 3. We pass through the patch again evaluating actual integrals. This second pass is currently inefficient since
+ *    we can not map efficiently from the PASS ORDER to the CACHE ORDER), this leads to many complications in
+ *    quad point classes.
+ * We should:
+ * 1. have templated patch iteration mechanism, so that we can iterate through the evaluated integrals
+ *    twice in consistent way performing:
+ *    FIRST: collection of evaluation points
+ *    SECOND: evaluation of integrals using the fields and fe_values
+ *    Having a consistent implementation allows us to assign unique indices to the integral points on the patch.
+ * 2. Sort collected points, remove duplicities, mark new indices to the original list of points.
+ * 3. SECOND pass, use unique index to find the point in the cache.
+ *
+ * Resulting simplifications:
+ * - no need for associating point operations for Edge, Coupling and Boundary points,
+ *   we add  assiciated eval point pairs as separate eval points with unique ids. Consistent integral iteration
+ *   allows us to simply take two succesive points at the second pass.
+ * - no need for the matrix mapping (element, eval_point)  to the cache index
  */
 class ElementCacheMap {
 public:
@@ -336,6 +346,7 @@ protected:
 
     // @}
 
+    // TODO: remove friend class
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
 };

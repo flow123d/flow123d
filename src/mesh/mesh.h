@@ -131,9 +131,6 @@ public:
     /// Return edge with given index.
     Edge edge(uint edge_idx) const;
 
-    /// Return range of edges.
-    Range<Edge> edge_range() const;
-
     /// Return neighbour with given index.
     const Neighbour &vb_neighbour(unsigned int nb) const;
 
@@ -154,9 +151,6 @@ public:
      * Returns nodes_elements vector, if doesn't exist creates its.
      */
     vector<vector<unsigned int> > const & node_elements();
-
-    /// Returns range of nodes
-    Range<NodeAccessor<3>> node_range() const;
 
     /// Return node id (in GMSH file) of node of given position in node vector.
     inline int find_node_id(unsigned int pos) const
@@ -184,8 +178,17 @@ public:
     /// Create and return ElementAccessor to element of given idx
     ElementAccessor<3> element_accessor(unsigned int idx) const;
 
+
+    // TODO: have also private non-const accessors and ranges
+
     /// Returns range of mesh elements
     Range<ElementAccessor<3>> elements_range() const;
+
+    /// Returns range of nodes
+    Range<NodeAccessor<3>> node_range() const;
+
+    /// Return range of edges.
+    Range<Edge> edge_range() const;
 
 
 
@@ -343,6 +346,8 @@ public:
     TYPEDEF_ERR_INFO( EI_RegIdx, unsigned int);
     TYPEDEF_ERR_INFO( EI_Dim, unsigned int);
     TYPEDEF_ERR_INFO( EI_DimOther, unsigned int);
+    TYPEDEF_ERR_INFO( EI_Quality, double);
+
 
     DECLARE_EXCEPTION(ExcDuplicateBoundary,
             << "Duplicate boundary elements! \n"
@@ -355,6 +360,8 @@ public:
             << ") by 'From_Elements' cannot have elements of different dimensions.\n"
             << "Thrown due to: dim " << EI_Dim::val << " neq dim " << EI_DimOther::val << " (ele id " << EI_ElemId::val << ").\n"
             << "Split elements by dim, create separate regions and then possibly use Union.\n" );
+    DECLARE_EXCEPTION(ExcBadElement,
+            << "Extremely bad quality element ID=" << EI_ElemId::val << ",(" << EI_Quality::val << "<4*epsilon).\n");
     DECLARE_EXCEPTION(ExcBdrElemMatchRegular,
             << "Boundary element (id: " << EI_ElemId::val << ") match a regular element (id: " << EI_ElemIdOther::val << ") of lower dimension.\n" );
 
@@ -390,6 +397,8 @@ public:
      * Do not process input record. That is done in init_from_input.
      */
     Mesh(Input::Record in_record, MPI_Comm com = MPI_COMM_WORLD);
+
+    Mesh(Mesh &other);
 
     /// Destructor.
     ~Mesh() override;
@@ -436,6 +445,17 @@ public:
      */
     void init_from_input();
 
+    /**
+     * Permute nodes of individual elements so that all elements have same edge orientations and aligned sides have same order of their nodes
+     * Canonical edge orientation in elements and faces is from nodes of lower local index to higher local index.
+     *
+     * Algorithm detals:
+     * 1. Orient all edges from lowe global node id to higher node id, fictional step. (substantial is orientation of yet non-oriented edges of a node in direction out of the node.
+     *    Can be proven (!?) that this prevents edge cycles of the length 3 (faces with cyclic edges).
+     * 2. Having all faces non-cyclic there exists a permutation of any element to the reference element.
+     *    Pass through the elements. Sort nodes by global ID.
+     */
+    void canonical_faces();
 
     /**
      * Initialize all mesh structures from raw information about nodes and elements (including boundary elements).
@@ -455,7 +475,7 @@ public:
      * @param input_mesh data mesh of input fields
      * @return vector that holds mapping between eleemnts of data and computational meshes
      *             for every element in computational mesh hold idx of equivalent element in input mesh.
-     *             If element doesn't exist in input mesh value is set to Mesh::undef_idx.
+     *             If element doesn't exist in input mesh value is set to undef_idx.
      *             If meshes are not compatible returns empty vector.
      */
     virtual std::shared_ptr<EquivalentMeshMap> check_compatible_mesh(Mesh & input_mesh);
@@ -492,9 +512,6 @@ public:
     int n_exsides; // # of external sides
     mutable int n_sides_; // total number of sides (should be easy to count when we have separated dimensions
 
-    int n_lines; // Number of line elements
-    int n_triangles; // Number of triangle elements
-    int n_tetrahedras; // Number of tetrahedra elements
 
     /**
      * Check usage of regions, set regions to elements defined by user, close RegionDB
@@ -533,12 +550,6 @@ public:
     {
         return node_ids_->get_position(node_id);
     }
-
-    /// Permute nodes of 3D elements of given elm_idx
-    void permute_tetrahedron(unsigned int elm_idx, std::vector<unsigned int> permutation_vec);
-
-    /// Permute nodes of 2D elements of given elm_idx
-    void permute_triangle(unsigned int elm_idx, std::vector<unsigned int> permutation_vec);
 
     /// Implement MeshBase::bc_mesh(), getter of boundary mesh
     BCMesh *bc_mesh() const override {
@@ -584,13 +595,6 @@ protected:
      *
      */
     void make_neighbours_and_edges();
-
-    /**
-     * On edges sharing sides of many elements it may happen that each side has its nodes ordered in a different way.
-     * This method finds the permutation for each side so as to obtain the ordering of side 0.
-     */
-    void make_edge_permutations();
-
 
     void element_to_neigh_vb();
 
