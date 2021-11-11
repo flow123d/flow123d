@@ -38,6 +38,7 @@ template<unsigned int dim> class FiniteElement;
 class Elasticity;
 template<unsigned int dim> class StiffnessAssemblyElasticity;
 template<unsigned int dim> class RhsAssemblyElasticity;
+template<unsigned int dim> class ConstraintAssemblyElasticity;
 template<unsigned int dim> class OutpuFieldsAssemblyElasticity;
 template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
@@ -73,6 +74,7 @@ public:
 		
 		/// Pointer to DarcyFlow field cross_section
         Field<3, FieldValue<3>::Scalar > cross_section;
+        Field<3, FieldValue<3>::Scalar > cross_section_min;
         Field<3, FieldValue<3>::Scalar > potential_load;   ///< Potential of an additional (external) load.
         Field<3, FieldValue<3>::Scalar > ref_potential_load; ///< Potential of reference external load on boundary. TODO: Switch to BCField when possible.
         Field<3, FieldValue<3>::Scalar> region_id;
@@ -107,10 +109,12 @@ public:
 	public:
 
 		EqData()
-        : ls(nullptr) {}
+        : ls(nullptr), constraint_matrix(nullptr), constraint_vec(nullptr) {}
 
 		~EqData() {
 		    if (ls!=nullptr) delete ls;
+            if (constraint_matrix!=nullptr) MatDestroy(&constraint_matrix);
+            if (constraint_vec!=nullptr) VecDestroy(&constraint_vec);
 		}
 
 		/// Create DOF handler objects
@@ -126,6 +130,12 @@ public:
 
     	/// Linear algebraic system.
     	LinSys *ls;
+
+        Mat constraint_matrix;
+        Vec constraint_vec;
+
+        // map local element -> constraint index
+        std::map<LongIdx,LongIdx> constraint_idx;
 
     	// @}
 
@@ -152,9 +162,6 @@ public:
      * @brief Initialize solution in the zero time.
      */
 	void zero_time_step() override;
-	
-    bool evaluate_time_constraint(double &)
-    { return false; }
 
     /**
      * @brief Computes the solution in one time instant.
@@ -211,7 +218,8 @@ private:
 
 	void preallocate();
 
-    
+
+	void assemble_constraint_matrix();
 
 
 	/// @name Physical parameters
@@ -227,7 +235,8 @@ private:
 	// @}
 
 
-	/// @name Output to file
+	
+    /// @name Output to file
 	// @{
 
     std::shared_ptr<OutputTime> output_stream_;
@@ -245,6 +254,7 @@ private:
     /// general assembly objects, hold assembly objects of appropriate dimension
     GenericAssembly< StiffnessAssemblyElasticity > * stiffness_assembly_;
     GenericAssembly< RhsAssemblyElasticity > * rhs_assembly_;
+    GenericAssembly< ConstraintAssemblyElasticity > * constraint_assembly_;
     GenericAssembly< OutpuFieldsAssemblyElasticity > * output_fields_assembly_;
 
 };

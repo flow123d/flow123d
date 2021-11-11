@@ -28,6 +28,7 @@
 #include "fem/fe_system.hh"
 #include "fields/field_fe.hh"
 #include "la/linsys_PETSC.hh"
+#include "la/linsys_PERMON.hh"
 #include "coupling/balance.hh"
 #include "mesh/neighbours.h"
 #include "coupling/generic_assembly.hh"
@@ -198,6 +199,11 @@ Elasticity::EqFields::EqFields()
       .name("cross_section")
       .units( UnitSI().m(3).md() )
       .flags(input_copy & in_time_term & in_main_matrix & in_rhs);
+    
+    *this+=cross_section_min
+      .name("cross_section_min")
+      .units( UnitSI().m(3).md() )
+      .input_default("0.0");
       
     *this+=potential_load
       .name("potential_load")
@@ -284,6 +290,7 @@ Elasticity::Elasticity(Mesh & init_mesh, const Input::Record in_rec, TimeGoverno
 		  input_rec(in_rec),
 		  stiffness_assembly_(nullptr),
 		  rhs_assembly_(nullptr),
+          constraint_assembly_(nullptr),
 		  output_fields_assembly_(nullptr)
 {
 	// Can not use name() + "constructor" here, since START_TIMER only accepts const char *
@@ -373,14 +380,46 @@ void Elasticity::initialize()
     petsc_default_opts = "-ksp_type cg -pc_type hypre -pc_hypre_type boomeramg";
     
     // allocate matrix and vector structures
-    LinSys_PETSC *ls = new LinSys_PETSC(eq_data_->dh_->distr().get(), petsc_default_opts);
+    bool gotContact = true;
+    //gotContact = false;
+    if (gotContact) {
+#ifndef FLOW123D_HAVE_PERMON
+      gotContact = false;
+      // TODO warning
+#endif //FLOW123D_HAVE_PERMON
+    }
+    LinSys *ls;
+    if (gotContact) {
+      ls = new LinSys_PERMON(eq_data_->dh_->distr().get(), petsc_default_opts);
+    } else {
+      ls = new LinSys_PETSC(eq_data_->dh_->distr().get(), petsc_default_opts);
+      ((LinSys_PETSC*)ls)->set_initial_guess_nonzero();
+    }
     ls->set_from_input( input_rec.val<Input::Record>("solver") );
     ls->set_solution(eq_fields_->output_field_ptr->vec().petsc_vec());
-    ls->set_initial_guess_nonzero();
     eq_data_->ls = ls;
+
+    // allocate constraint matrix
+    unsigned int n_own_constraints = 0; // count locally owned cells with neighbours
+    for (auto cell : eq_data_->dh_->own_range())
+        if (cell.elm()->n_neighs_vb() > 0)
+            n_own_constraints++;
+    unsigned int n_constraints = 0; // count all cells with neighbours
+    for (auto elm : mesh_->elements_range())
+        if (elm->n_neighs_vb() > 0)
+            eq_data_->constraint_idx[elm.idx()] = n_constraints++;
+    unsigned int nnz = eq_data_->dh_->ds()->fe()[1_d]->n_dofs()*mesh_->max_edge_sides(1) +
+                       eq_data_->dh_->ds()->fe()[2_d]->n_dofs()*mesh_->max_edge_sides(2) +
+                       eq_data_->dh_->ds()->fe()[3_d]->n_dofs()*mesh_->max_edge_sides(3);
+    MatCreateAIJ(PETSC_COMM_WORLD, n_own_constraints, eq_data_->dh_->lsize(), PETSC_DECIDE, PETSC_DECIDE, nnz, 0, nnz, 0, &eq_data_->constraint_matrix);
+    VecCreateMPI(PETSC_COMM_WORLD, n_own_constraints, PETSC_DECIDE, &eq_data_->constraint_vec);
+    if (gotContact) {
+      ((LinSys_PERMON*)ls)->set_inequality(eq_data_->constraint_matrix,eq_data_->constraint_vec);
+    }
 
     stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyElasticity >(eq_fields_.get(), eq_data_.get());
     rhs_assembly_ = new GenericAssembly< RhsAssemblyElasticity >(eq_fields_.get(), eq_data_.get());
+    constraint_assembly_ = new GenericAssembly< ConstraintAssemblyElasticity >(eq_fields_.get(), eq_data_.get());
     output_fields_assembly_ = new GenericAssembly< OutpuFieldsAssemblyElasticity >(eq_fields_.get(), eq_data_.get());
 
     // initialization of balance object
@@ -396,6 +435,7 @@ Elasticity::~Elasticity()
 
     if (stiffness_assembly_!=nullptr) delete stiffness_assembly_;
     if (rhs_assembly_!=nullptr) delete rhs_assembly_;
+    if (constraint_assembly_ != nullptr) delete constraint_assembly_;
     if (output_fields_assembly_!=nullptr) delete output_fields_assembly_;
 
     eq_data_.reset();
@@ -469,6 +509,8 @@ void Elasticity::preallocate()
 	eq_data_->ls->start_allocation();
     stiffness_assembly_->assemble(eq_data_->dh_);
     rhs_assembly_->assemble(eq_data_->dh_);
+
+    assemble_constraint_matrix();
 }
 
 
@@ -565,4 +607,17 @@ void Elasticity::calculate_cumulative_balance()
 //         balance_->calculate_cumulative(subst_idx, eq_data_->ls->get_solution());
 //     }
 }
+
+
+void Elasticity::assemble_constraint_matrix()
+{
+    MatZeroEntries(eq_data_->constraint_matrix);
+    VecZeroEntries(eq_data_->constraint_vec);
+    constraint_assembly_->assemble(eq_data_->dh_);
+    MatAssemblyBegin(eq_data_->constraint_matrix, MAT_FINAL_ASSEMBLY);
+    MatAssemblyEnd(eq_data_->constraint_matrix, MAT_FINAL_ASSEMBLY);
+    VecAssemblyBegin(eq_data_->constraint_vec);
+    VecAssemblyEnd(eq_data_->constraint_vec);
+}
+
 

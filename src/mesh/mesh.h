@@ -70,6 +70,27 @@ public:
     static Input::Type::Record input_type;
 };
 
+/** Auxiliary structure that keeps the separate
+ * element maps (bulk and boundary) for reading mesh and elementwise data.
+ * The mapping is considered from the source mesh (reading) to the target mesh (computation).
+ * Used by @p check_compatible_mesh().
+ */
+struct EquivalentMeshMap{
+    std::vector<LongIdx> bulk;
+    std::vector<LongIdx> boundary;
+
+    EquivalentMeshMap(){}
+    
+    EquivalentMeshMap(unsigned int bulk_size, unsigned int boundary_size, LongIdx def_val)
+    : bulk(bulk_size, def_val),
+      boundary(boundary_size, def_val)
+    {}
+
+    bool empty()
+    { return bulk.empty() && boundary.empty(); }
+};
+
+
 //=============================================================================
 // STRUCTURE OF THE MESH
 //=============================================================================
@@ -86,6 +107,8 @@ public:
     TYPEDEF_ERR_INFO( EI_RegIdx, unsigned int);
     TYPEDEF_ERR_INFO( EI_Dim, unsigned int);
     TYPEDEF_ERR_INFO( EI_DimOther, unsigned int);
+    TYPEDEF_ERR_INFO( EI_Quality, double);
+
 
     DECLARE_EXCEPTION(ExcDuplicateBoundary,
             << "Duplicate boundary elements! \n"
@@ -98,6 +121,8 @@ public:
             << ") by 'From_Elements' cannot have elements of different dimensions.\n"
             << "Thrown due to: dim " << EI_Dim::val << " neq dim " << EI_DimOther::val << " (ele id " << EI_ElemId::val << ").\n"
             << "Split elements by dim, create separate regions and then possibly use Union.\n" );
+    DECLARE_EXCEPTION(ExcBadElement,
+            << "Extremely bad quality element ID=" << EI_ElemId::val << ",(" << EI_Quality::val << "<4*epsilon).\n");
     DECLARE_EXCEPTION(ExcTooMatchingIds,
             << "Mesh: Duplicate dim-join lower dim elements: " << EI_ElemId::val << ", " << EI_ElemIdOther::val << ".\n" );
     DECLARE_EXCEPTION(ExcBdrElemMatchRegular,
@@ -118,7 +143,7 @@ public:
      */
     static const Input::Type::Selection & get_input_intersection_variant();
     
-    static const unsigned int undef_idx=-1;
+
     static const Input::Type::Record & get_input_type();
 
 
@@ -136,6 +161,8 @@ public:
      * Do not process input record. That is done in init_from_input.
      */
     Mesh(Input::Record in_record, MPI_Comm com = MPI_COMM_WORLD);
+
+    Mesh(Mesh &other);
 
     /// Destructor.
     virtual ~Mesh();
@@ -215,6 +242,17 @@ public:
      */
     void init_from_input();
 
+    /**
+     * Permute nodes of individual elements so that all elements have same edge orientations and aligned sides have same order of their nodes
+     * Canonical edge orientation in elements and faces is from nodes of lower local index to higher local index.
+     *
+     * Algorithm detals:
+     * 1. Orient all edges from lowe global node id to higher node id, fictional step. (substantial is orientation of yet non-oriented edges of a node in direction out of the node.
+     *    Can be proven (!?) that this prevents edge cycles of the length 3 (faces with cyclic edges).
+     * 2. Having all faces non-cyclic there exists a permutation of any element to the reference element.
+     *    Pass through the elements. Sort nodes by global ID.
+     */
+    void canonical_faces();
 
     /**
      * Initialize all mesh structures from raw information about nodes and elements (including boundary elements).
@@ -234,22 +272,10 @@ public:
      * @param input_mesh data mesh of input fields
      * @return vector that holds mapping between eleemnts of data and computational meshes
      *             for every element in computational mesh hold idx of equivalent element in input mesh.
-     *             If element doesn't exist in input mesh value is set to Mesh::undef_idx.
+     *             If element doesn't exist in input mesh value is set to undef_idx.
      *             If meshes are not compatible returns empty vector.
      */
-    virtual std::shared_ptr<std::vector<LongIdx>> check_compatible_mesh( Mesh & input_mesh);
-
-    /*
-     * Check if nodes and elements are compatible with discontinuous \p input_mesh.
-     *
-     * Call this method on computational mesh.
-     * @param input_mesh data mesh of input fields
-     * @return vector that holds mapping between eleemnts of data and computational meshes
-     *             for every element in computational mesh hold idx of equivalent element in input mesh.
-     *             If element doesn't exist in input mesh value is set to Mesh::undef_idx.
-     *             If meshes are not compatible returns empty vector.
-     */
-    virtual std::shared_ptr<std::vector<LongIdx>> check_compatible_discont_mesh( Mesh & input_mesh);
+    virtual std::shared_ptr<EquivalentMeshMap> check_compatible_mesh(Mesh & input_mesh);
 
     /// Create and return ElementAccessor to element of given idx
     virtual ElementAccessor<3> element_accessor(unsigned int idx) const;
@@ -299,9 +325,6 @@ public:
     int n_exsides; // # of external sides
     mutable int n_sides_; // total number of sides (should be easy to count when we have separated dimensions
 
-    int n_lines; // Number of line elements
-    int n_triangles; // Number of triangle elements
-    int n_tetrahedras; // Number of tetrahedra elements
 
     // Temporary solution for numbering of nodes on sides.
     // The data are defined in RefElement<dim>::side_nodes,
@@ -359,6 +382,8 @@ public:
 
     /// Initialize node_vec_, set size
     void init_node_vector(unsigned int size);
+
+    // TODO: have also private non-const accessors and ranges
 
     /// Returns range of bulk elements
     virtual Range<ElementAccessor<3>> elements_range() const;
@@ -419,12 +444,6 @@ public:
     /// Create boundary elements from data of temporary structure, this method MUST be call after read mesh from file, return number of read boundary elements
     unsigned int create_boundary_elements();
 
-    /// Permute nodes of 3D elements of given elm_idx
-    void permute_tetrahedron(unsigned int elm_idx, std::vector<unsigned int> permutation_vec);
-
-    /// Permute nodes of 2D elements of given elm_idx
-    void permute_triangle(unsigned int elm_idx, std::vector<unsigned int> permutation_vec);
-
     /// Create boundary mesh if doesn't exist and return it.
     BCMesh *get_bc_mesh();
 
@@ -467,11 +486,6 @@ protected:
      */
     void make_neighbours_and_edges();
 
-    /**
-     * On edges sharing sides of many elements it may happen that each side has its nodes ordered in a different way.
-     * This method finds the permutation for each side so as to obtain the ordering of side 0.
-     */
-    void make_edge_permutations();
     /**
      * Create element lists for nodes in Mesh::nodes_elements.
      */
@@ -532,6 +546,17 @@ protected:
 
     /// Sort elements and nodes by order stored in permutation vectors.
     void sort_permuted_nodes_elements(std::vector<int> new_node_ids, std::vector<int> new_elem_ids);
+
+    /**
+     * Looks for the same (compatible) elements between the @p source_mesh and @p target_mesh.
+     * Auxiliary function for check_compatible_mesh().
+     * Uses the nodal mapping @p node_ids.
+     * Fills the element mapping @p map.
+     * Returns the number of compatible elements.
+     */
+    unsigned int check_compatible_elements(Mesh* source_mesh, Mesh* target_mesh,
+                                           const std::vector<unsigned int>& node_ids,
+                                           std::vector<LongIdx>& map);
 
     /**
      * Flag for optimization perfomed at the beginning of setup_topology.

@@ -703,5 +703,112 @@ private:
 };
 
 
+
+/**
+ * Container class for assembly of constraint matrix for contact condition.
+ */
+template <unsigned int dim>
+class ConstraintAssemblyElasticity : public AssemblyBase<dim>
+{
+public:
+    typedef typename Elasticity::EqFields EqFields;
+    typedef typename Elasticity::EqData EqData;
+
+    static constexpr const char * name() { return "ConstraintAssemblyElasticity"; }
+
+    /// Constructor.
+    ConstraintAssemblyElasticity(EqFields *eq_fields, EqData *eq_data)
+    : AssemblyBase<dim>(1), eq_fields_(eq_fields), eq_data_(eq_data) {
+        this->active_integrals_ = ActiveIntegrals::coupling;
+        this->used_fields_ += eq_fields_->cross_section;
+        this->used_fields_ += eq_fields_->cross_section_min;
+    }
+
+    /// Destructor.
+    ~ConstraintAssemblyElasticity() {}
+
+    /// Initialize auxiliary vectors and other data members
+    void initialize(ElementCacheMap *element_cache_map) {
+        this->element_cache_map_ = element_cache_map;
+
+        shared_ptr<FE_P<dim>> fe_p = std::make_shared< FE_P<dim> >(1);
+        fe_ = std::make_shared<FESystem<dim>>(fe_p, FEVector, 3);
+        fe_values_side_.initialize(*this->quad_low_, *fe_,
+                update_values | update_side_JxW_values | update_normal_vectors);
+
+        n_dofs_ = fe_->n_dofs();
+        dof_indices_.resize(n_dofs_);
+        local_matrix_.resize(n_dofs_*n_dofs_);
+        vec_view_side_ = &fe_values_side_.vector_view(0);
+    }
+
+
+    /// Assembles between elements of different dimensions.
+    inline void dimjoin_intergral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
+    	if (dim == 1) return;
+        ASSERT_EQ_DBG(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
+
+        DHCellAccessor cell_higher_dim = eq_data_->dh_->cell_accessor_from_element( neighb_side.element().idx() );
+		cell_higher_dim.get_dof_indices(dof_indices_);
+
+		fe_values_side_.reinit(neighb_side.side());
+
+        for (unsigned int i=0; i<n_dofs_; i++)
+            local_matrix_[i] = 0;
+
+        // Assemble matrix and vector for contact conditions in the form B*x <= c,
+        // where B*x is the average jump of normal displacements and c is the average cross-section on element.
+        // Positive value means that the fracture closes.
+        unsigned int k=0;
+        double local_vector = 0;
+        for (auto p_high : this->coupling_points(neighb_side) )
+        {
+            auto p_low = p_high.lower_dim(cell_lower_dim);
+            arma::vec3 nv = fe_values_side_.normal_vector(k);
+
+            if (cell_lower_dim.is_own())
+                local_vector += (eq_fields_->cross_section(p_low) - eq_fields_->cross_section_min(p_low))*fe_values_side_.JxW(k) / cell_lower_dim.elm().measure() / cell_lower_dim.elm()->n_neighs_vb();
+
+            for (unsigned int i=0; i<n_dofs_; i++)
+            {
+                local_matrix_[i] += arma::dot(vec_view_side_->value(i,k), nv)*fe_values_side_.JxW(k) / cell_lower_dim.elm().measure();
+            }
+        	k++;
+        }
+
+        int arow[1] = { eq_data_->constraint_idx[cell_lower_dim.elm_idx()] };
+        MatSetValues(eq_data_->constraint_matrix, 1, arow, n_dofs_, dof_indices_.data(), &(local_matrix_[0]), ADD_VALUES);
+        VecSetValue(eq_data_->constraint_vec, arow[0], local_vector, ADD_VALUES);
+    }
+
+
+
+private:
+
+
+
+    shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
+
+    /// Data objects shared with Elasticity
+    EqFields *eq_fields_;
+    EqData *eq_data_;
+
+    /// Sub field set contains fields used in calculation.
+    FieldSet used_fields_;
+
+    unsigned int n_dofs_;                                     ///< Number of dofs
+    FEValues<3> fe_values_side_;                              ///< FEValues of side object
+
+    vector<LongIdx> dof_indices_;                             ///< Vector of global DOF indices
+    vector<vector<LongIdx> > side_dof_indices_;               ///< 2 items vector of DOF indices in neighbour calculation.
+    vector<PetscScalar> local_matrix_;                        ///< Auxiliary vector for assemble methods
+    const FEValuesViews::Vector<3> * vec_view_side_;          ///< Vector view in boundary / neighbour calculation.
+
+    template < template<IntDim...> class DimAssembly>
+    friend class GenericAssembly;
+
+};
+
+
 #endif /* ASSEMBLY_ELASTICITY_HH_ */
 
