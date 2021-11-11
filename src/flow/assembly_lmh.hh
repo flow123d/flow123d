@@ -189,7 +189,8 @@ public:
 
         { // Assemble sides
             auto ele = cell.elm();
-            scale_sides_ = 1 / eq_fields_->cross_section(p) / eq_fields_->conductivity(p);
+            conductivity_ = this->compute_conductivity(cell, p);
+            scale_sides_ = 1 / eq_fields_->cross_section(p) / conductivity_;
 
             fe_values_.reinit(ele);
             auto velocity = fe_values_.vector_view(0);
@@ -249,48 +250,8 @@ public:
 //            }
         }
 
-        { // Assemble source term
-            // compute lumped source
-            n_sides_ = cell.elm()->n_sides();
-            coef_ = (1.0 / n_sides_) * cell.elm().measure() * eq_fields_->cross_section(p);
-            source_term_ = coef_ * (eq_fields_->water_source_density(p) + eq_fields_->extra_source(p));
-
-            // in unsteady, compute time term
-            time_term_diag_ = 0.0;
-            time_term_ = 0.0;
-            time_term_rhs_ = 0.0;
-
-            if(! eq_data_->use_steady_assembly_)
-            {
-                time_term_ = coef_ * eq_fields_->storativity(p) + eq_fields_->extra_storativity(p);
-            }
-
-            for (unsigned int i=0; i<n_sides_; i++)
-            {
-                if(! eq_data_->use_steady_assembly_)
-                {
-                    time_term_diag_ = time_term_ / eq_data_->time_step_;
-                    time_term_rhs_ = time_term_diag_ * eq_data_->p_edge_solution_previous_time.get(eq_data_->loc_schur_[bulk_local_idx_].row_dofs[i]);
-
-                    eq_data_->balance->add_mass_values(eq_data_->water_balance_idx, cell,
-                                      {eq_data_->loc_system_[bulk_local_idx_].row_dofs[eq_data_->loc_edge_dofs[dim-1][i]]}, {time_term_}, 0);
-                }
-                else
-                {
-                    // Add zeros explicitely to keep the sparsity pattern.
-                    // Otherwise Petsc would compress out the zeros in FinishAssembly.
-                    eq_data_->balance->add_mass_values(eq_data_->water_balance_idx, cell,
-                                      {eq_data_->loc_system_[bulk_local_idx_].row_dofs[eq_data_->loc_edge_dofs[dim-1][i]]}, {0}, 0);
-                }
-
-                eq_data_->loc_system_[bulk_local_idx_].add_value(eq_data_->loc_edge_dofs[dim-1][i], eq_data_->loc_edge_dofs[dim-1][i],
-                                -time_term_diag_,
-                                -source_term_ - time_term_rhs_);
-
-                eq_data_->balance->add_source_values(eq_data_->water_balance_idx, cell.elm().region().bulk_idx(),
-                                {eq_data_->loc_system_[bulk_local_idx_].row_dofs[eq_data_->loc_edge_dofs[dim-1][i]]}, {0}, {source_term_});
-            }
-        }
+        // Assemble source term
+        this->assemble_source_term(cell, p);
     }
 
 
@@ -475,7 +436,7 @@ public:
         eq_data_->balance_->finish_flux_assembly(eq_data_->water_balance_idx);
     }
 
-private:
+protected:
     // Common method with Schur reconstruct assembly
     void set_dofs() {
         unsigned int size, loc_size, loc_size_schur, elm_dim;;
@@ -555,6 +516,50 @@ private:
         }
     }
 
+    virtual void assemble_source_term(const DHCellAccessor& cell, BulkPoint &p)
+    {
+        // compute lumped source
+        n_sides_ = cell.elm()->n_sides();
+        coef_ = (1.0 / n_sides_) * cell.elm().measure() * eq_fields_->cross_section(p);
+        source_term_ = coef_ * (eq_fields_->water_source_density(p) + eq_fields_->extra_source(p));
+
+        // in unsteady, compute time term
+        time_term_diag_ = 0.0;
+        time_term_ = 0.0;
+        time_term_rhs_ = 0.0;
+
+        if(! eq_data_->use_steady_assembly_)
+        {
+            time_term_ = coef_ * eq_fields_->storativity(p) + eq_fields_->extra_storativity(p);
+        }
+
+        for (unsigned int i=0; i<n_sides_; i++)
+        {
+            if(! eq_data_->use_steady_assembly_)
+            {
+                time_term_diag_ = time_term_ / eq_data_->time_step_;
+                time_term_rhs_ = time_term_diag_ * eq_data_->p_edge_solution_previous_time.get(eq_data_->loc_schur_[bulk_local_idx_].row_dofs[i]);
+
+                eq_data_->balance->add_mass_values(eq_data_->water_balance_idx, cell,
+                                  {eq_data_->loc_system_[bulk_local_idx_].row_dofs[eq_data_->loc_edge_dofs[dim-1][i]]}, {time_term_}, 0);
+            }
+            else
+            {
+                // Add zeros explicitely to keep the sparsity pattern.
+                // Otherwise Petsc would compress out the zeros in FinishAssembly.
+                eq_data_->balance->add_mass_values(eq_data_->water_balance_idx, cell,
+                                  {eq_data_->loc_system_[bulk_local_idx_].row_dofs[eq_data_->loc_edge_dofs[dim-1][i]]}, {0}, 0);
+            }
+
+            eq_data_->loc_system_[bulk_local_idx_].add_value(eq_data_->loc_edge_dofs[dim-1][i], eq_data_->loc_edge_dofs[dim-1][i],
+                            -time_term_diag_,
+                            -source_term_ - time_term_rhs_);
+
+            eq_data_->balance->add_source_values(eq_data_->water_balance_idx, cell.elm().region().bulk_idx(),
+                            {eq_data_->loc_system_[bulk_local_idx_].row_dofs[eq_data_->loc_edge_dofs[dim-1][i]]}, {0}, {source_term_});
+        }
+    }
+
     /// Temporary method find neighbour index in higher-dim cell
     inline unsigned int ngh_idx(DHCellAccessor &dh_cell, DHCellSide &neighb_side) {
         for (uint n_i=0; n_i<dh_cell.elm()->n_neighs_vb(); ++n_i) {
@@ -605,15 +610,13 @@ private:
                 ( eq_fields_->water_source_density(p)
                 + eq_fields_->extra_source(p));
 
-        postprocess_velocity_specific(dh_cell, element_patch_idx, solution, edge_scale_, edge_source_term_);
+        postprocess_velocity_specific(dh_cell, p, solution, edge_scale_, edge_source_term_);
     }
 
 
-    virtual void postprocess_velocity_specific(const DHCellAccessor& dh_cell, unsigned int element_patch_idx, arma::vec& solution,
+    virtual void postprocess_velocity_specific(const DHCellAccessor& dh_cell, BulkPoint &p, arma::vec& solution,
                                                double edge_scale, double edge_source_term)// override
     {
-        auto p = *( this->bulk_points(element_patch_idx).begin() );
-
         time_term_ = 0.0;
         for (unsigned int i=0; i<dh_cell.elm()->n_sides(); i++) {
 
@@ -628,9 +631,16 @@ private:
         }
     }
 
+
+    virtual double compute_conductivity(FMT_UNUSED const DHCellAccessor& cell, BulkPoint &p) {
+        return eq_fields_->conductivity(p);
+    }
+
+
     /// Sub field set contains fields used in calculation.
     FieldSet used_fields_;
 
+private:
     /// Data objects shared with DarcyFlow
     EqFields *eq_fields_;
     EqData *eq_data_;
@@ -650,7 +660,7 @@ private:
     /// Vector for reconstructed solution (velocity and pressure on element) from Schur complement.
     arma::vec reconstructed_solution_;
 
-    double scale_sides_;                                   ///< Precomputed value (1 / cross_section / conductivity)
+    double conductivity_, scale_sides_;                    ///< Precomputed value (1 / cross_section / conductivity)
     double rhs_val_, mat_val_;                             ///< Precomputed RHS and mat value
     double n_sides_, coef_, source_term_;                  ///< Variables used in compute lumped source.
     double time_term_diag_, time_term_, time_term_rhs_;    ///< Variables used in compute time term (unsteady)
