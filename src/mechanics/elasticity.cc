@@ -119,6 +119,8 @@ const Selection & Elasticity::EqFields::get_bc_type_selection() {
                   "Prescribed displacement in the normal direction to the boundary.")
             .add_value(bc_type_traction, "traction",
                   "Prescribed traction.")
+            .add_value(bc_type_stress, "stress",
+                  "Prescribed stress tensor.")
             .close();
 }
 
@@ -144,6 +146,13 @@ Elasticity::EqFields::EqFields()
     *this+=bc_traction
         .name("bc_traction")
         .description("Prescribed traction on boundary.")
+        .units( UnitSI().Pa() )
+        .input_default("0.0")
+        .flags_add(in_rhs);
+    
+    *this+=bc_stress
+        .name("bc_stress")
+        .description("Prescribed stress on boundary.")
         .units( UnitSI().Pa() )
         .input_default("0.0")
         .flags_add(in_rhs);

@@ -54,7 +54,8 @@ public:
         enum Bc_types {
           bc_type_displacement,
           bc_type_displacement_normal,
-          bc_type_traction
+          bc_type_traction,
+		  bc_type_stress,
         };
 
         EqFields();
@@ -64,6 +65,7 @@ public:
         BCField<3, FieldValue<3>::Enum > bc_type;
         BCField<3, FieldValue<3>::VectorFixed> bc_displacement;
         BCField<3, FieldValue<3>::VectorFixed> bc_traction;
+		BCField<3, FieldValue<3>::TensorFixed> bc_stress;
         Field<3, FieldValue<3>::VectorFixed> load;
         Field<3, FieldValue<3>::Scalar> young_modulus;
         Field<3, FieldValue<3>::Scalar> poisson_ratio;
@@ -72,6 +74,7 @@ public:
 		/// Pointer to DarcyFlow field cross_section
         Field<3, FieldValue<3>::Scalar > cross_section;
         Field<3, FieldValue<3>::Scalar > potential_load;   ///< Potential of an additional (external) load.
+        Field<3, FieldValue<3>::Scalar > ref_potential_load; ///< Potential of reference external load on boundary. TODO: Switch to BCField when possible.
         Field<3, FieldValue<3>::Scalar> region_id;
         Field<3, FieldValue<3>::Scalar> subdomain;
         
@@ -176,8 +179,12 @@ public:
 	// Recompute fields for output (stress, divergence etc.)
 	void update_output_fields();
     
-    void set_potential_load(const Field<3, FieldValue<3>::Scalar> &potential)
-    { eq_fields_->potential_load = potential; }
+    void set_potential_load(const Field<3, FieldValue<3>::Scalar> &potential,
+                            const Field<3, FieldValue<3>::Scalar> &ref_potential)
+    {
+        eq_fields_->potential_load = potential;
+        eq_fields_->ref_potential_load = ref_potential;
+    }
 
     void calculate_cumulative_balance();
 
