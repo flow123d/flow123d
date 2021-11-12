@@ -371,7 +371,7 @@ TEST_F(FieldFENewTest, bc_scalar) {
         // only 4 BC elements are compatible with the comp mesh
         for(unsigned int i=0; i < 4; i++) {
             auto ele = bc_mesh->element_accessor(i);
-            EXPECT_DOUBLE_EQ( j*0.1 + (ele.index()+1)*0.1 , field.value(point,ele) );
+            EXPECT_DOUBLE_EQ( j*0.1 + (ele.input_id()+1)*0.1 , field.value(point,ele) );
         }
     }
 }
@@ -403,7 +403,7 @@ TEST_F(FieldFENewTest, bc_scalar_unit_conv) {
         // only 4 BC elements are compatible with the comp mesh
         for(unsigned int i=0; i < 4; i++) {
             auto ele = bc_mesh->element_accessor(i);
-            EXPECT_DOUBLE_EQ(j*10.0+(ele.index()+1)*10.0 , field.value(point,ele) );
+            EXPECT_DOUBLE_EQ(j*10.0+(ele.input_id()+1)*10.0 , field.value(point,ele) );
         }
     }
 
