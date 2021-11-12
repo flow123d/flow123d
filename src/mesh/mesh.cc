@@ -1246,10 +1246,23 @@ void Mesh::output_internal_ngh_data()
         std::stringstream ss;
         ss << ele.index() << " ";
         ss << ele->n_sides() << " ";
-        
+
+        // use node permutation to permute sides
+        auto &new_to_old_node = ele.orig_nodes_order();
+        std::vector<uint> old_to_new_side(ele->n_sides());
+        for (unsigned int i = 0; i < ele->n_sides(); i++) {
+            // According to RefElement<dim>::opposite_node()
+            uint new_opp_node = ele->n_sides() - i - 1;
+            uint old_opp_node = new_to_old_node[new_opp_node];
+            uint old_iside = ele->n_sides() - old_opp_node - 1;
+            old_to_new_side[old_iside] = i;
+        }
+
         auto search_neigh = neigh_vb_map.end();
         for (unsigned int i = 0; i < ele->n_sides(); i++) {
-            unsigned int n_side_neighs = ele.side(i)->edge().n_sides()-1;  //n_sides - the current one
+            uint new_iside = old_to_new_side[i];
+
+            uint n_side_neighs = ele.side(new_iside)->edge().n_sides()-1;  //n_sides - the current one
             // check vb neighbors (lower dimension)
             if(n_side_neighs == 0){
                 //update search
@@ -1257,24 +1270,25 @@ void Mesh::output_internal_ngh_data()
                     search_neigh = neigh_vb_map.find(ele.idx());
                 
                 if(search_neigh != neigh_vb_map.end())
-                    if(search_neigh->second[i] != undefined_ele_id)
+                    if(search_neigh->second[new_iside] != undefined_ele_id)
                         n_side_neighs = 1;
             }
             ss << n_side_neighs << " ";
         }
         
         for (unsigned int i = 0; i < ele->n_sides(); i++) {
-            Edge edge = ele.side(i)->edge();
+            uint new_iside = old_to_new_side[i];
+            Edge edge = ele.side(new_iside)->edge();
             if(edge.n_sides() > 1){
                 for (uint j = 0; j < edge.n_sides(); j++) {
-                    if(edge.side(j) != ele.side(i))
+                    if(edge.side(j) != ele.side(new_iside))
                         ss << edge.side(j)->element().index() << " ";
                 }
             }
             //check vb neighbour
             else if(search_neigh != neigh_vb_map.end()
-                    && search_neigh->second[i] != undefined_ele_id){
-                auto neigh_ele = element_accessor(search_neigh->second[i]);
+                    && search_neigh->second[new_iside] != undefined_ele_id){
+                auto neigh_ele = element_accessor(search_neigh->second[new_iside]);
                 ss << neigh_ele.index() << " ";
             }
         }
