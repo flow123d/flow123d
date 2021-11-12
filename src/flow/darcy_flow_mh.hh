@@ -192,6 +192,7 @@ public:
         Field<3, FieldValue<3>::Scalar> field_edge_pressure;
 
         Field<3, FieldValue<3>::VectorFixed > gravity_field; /// Holds gravity vector acceptable in FieldModel
+        Field<3, FieldValue<3>::Scalar> init_piezo_head;
 
         /**
          * Gravity vector and constant shift of pressure potential. Used to convert piezometric head

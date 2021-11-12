@@ -306,6 +306,11 @@ DarcyMH::EqData::EqData()
             .input_default("0.0")
             .units( UnitSI::dimensionless() );
 
+    *this += init_piezo_head.name("init_piezo_head")
+	         .units(UnitSI().m())
+             .input_default("0.0")
+             .description("Init piezo head.");
+
     //time_term_fields = this->subset({"storativity"});
     //main_matrix_fields = this->subset({"anisotropy", "conductivity", "cross_section", "sigma", "bc_type", "bc_robin_sigma"});
     //rhs_fields = this->subset({"water_source_density", "bc_pressure", "bc_flux"});
