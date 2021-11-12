@@ -21,12 +21,12 @@ test_cases:
   time_limit: 120
 
   # due to skipping raw_output in parallel run
-- files: 04_unsteady_flow.yaml
-  proc: [2]
-  time_limit: 120
-  check_rules:
-    - vtkdiff:
-        files: ["*.vtu"]
-        interpolate: True
-    - ndiff:
-        files: ["*.pvd", "*_balance.txt"]
+#- files: 04_unsteady_flow.yaml
+  #proc: [2]
+  #time_limit: 120
+  #check_rules:
+    #- vtkdiff:
+        #files: ["*.vtu"]
+        #interpolate: False
+    #- ndiff:
+        #files: ["*.pvd", "*_balance.txt"]

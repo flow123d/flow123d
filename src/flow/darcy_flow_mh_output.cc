@@ -321,15 +321,28 @@ void DarcyFlowMHOutput::output_internal_flow_data()
 
         // number of sides
         ss << ele->n_sides() << " ";
+
+        // use node permutation to permute sides
+        auto &new_to_old_node = ele.orig_nodes_order();
+        std::vector<uint> old_to_new_side(ele->n_sides());
+        for (unsigned int i = 0; i < ele->n_sides(); i++) {
+            // According to RefElement<dim>::opposite_node()
+            uint new_opp_node = ele->n_sides() - i - 1;
+            uint old_opp_node = new_to_old_node[new_opp_node];
+            uint old_iside = ele->n_sides() - old_opp_node - 1;
+            old_to_new_side[old_iside] = i;
+        }
         
         // pressure on edges
-        unsigned int lid = ele->n_sides() + 1;
-        for (unsigned int i = 0; i < ele->n_sides(); i++, lid++) {
-            ss << data->full_solution.get(indices[lid]) << " ";
+        // unsigned int lid = ele->n_sides() + 1;
+        for (unsigned int i = 0; i < ele->n_sides(); i++) {
+            uint new_lid = ele->n_sides() + 1 + old_to_new_side[i];
+            ss << data->full_solution.get(indices[new_lid]) << " ";
         }
         // fluxes on sides
         for (unsigned int i = 0; i < ele->n_sides(); i++) {
-            ss << data->full_solution.get(indices[i]) << " ";
+            uint new_iside = old_to_new_side[i];
+            ss << data->full_solution.get(indices[new_iside]) << " ";
         }
         
         // remove last white space
