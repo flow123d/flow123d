@@ -234,6 +234,7 @@ void RichardsLMH::assembly_linear_system()
 
 void RichardsLMH::initialize_asm() {
 	read_init_cond_assembly_richards_ = new GenericAssembly< ReadInitCondAssemblyRichards >(this->eq_fields_.get(), this->eq_data_.get());
+	mh_matrix_assembly_richards_ = new GenericAssembly< MHMatrixAssemblyRichards >(this->eq_fields_.get(), this->eq_data_.get());
 }
 
 
@@ -242,9 +243,18 @@ void RichardsLMH::read_init_cond_asm() {
 }
 
 
+void RichardsLMH::mh_matrix_asm() {
+    this->mh_matrix_assembly_richards_->assemble(eq_data_->dh_);
+}
+
+
 RichardsLMH::~RichardsLMH() {
     if (read_init_cond_assembly_richards_!=nullptr) {
         delete read_init_cond_assembly_richards_;
         read_init_cond_assembly_richards_ = nullptr;
+    }
+    if (mh_matrix_assembly_richards_!=nullptr) {
+        delete mh_matrix_assembly_richards_;
+        mh_matrix_assembly_richards_ = nullptr;
     }
 }

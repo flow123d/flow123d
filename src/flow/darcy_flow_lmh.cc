@@ -763,7 +763,7 @@ void DarcyLMH::assembly_mh_matrix(FMT_UNUSED MultidimAssembly& assembler)
 //        unsigned int dim = dh_cell.dim();
 //        assembler[dim-1]->assemble(dh_cell);
 //    }
-    mh_matrix_assembly_->assemble(eq_data_->dh_);
+    this->mh_matrix_asm();
     
 
     balance_->finish_mass_assembly(eq_data_->water_balance_idx);
@@ -1406,6 +1406,11 @@ void DarcyLMH::initialize_asm() {
 
 void DarcyLMH::read_init_cond_asm() {
     this->read_init_cond_assembly_->assemble(eq_data_->dh_);
+}
+
+
+void DarcyLMH::mh_matrix_asm() {
+    this->mh_matrix_assembly_->assemble(eq_data_->dh_);
 }
 
 

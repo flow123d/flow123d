@@ -326,6 +326,9 @@ protected:
     /// Call assemble of read_init_cond_assembly_
     virtual void read_init_cond_asm();
 
+    /// Call assemble of mh_matrix_assembly_
+    virtual void mh_matrix_asm();
+
     std::shared_ptr<Balance> balance_;
 
     DarcyFlowMHOutput *output_object;
