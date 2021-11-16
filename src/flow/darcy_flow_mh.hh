@@ -72,8 +72,6 @@ namespace Input {
 }
 typedef std::vector<std::shared_ptr<AssemblyBase> > MultidimAssembly;
 
-template<int spacedim, class Value> class FieldAddPotential;
-
 /**
  * @brief Mixed-hybrid model of linear Darcy flow, possibly unsteady.
  *
@@ -192,7 +190,10 @@ public:
         Field<3, FieldValue<3>::Scalar> field_edge_pressure;
 
         Field<3, FieldValue<3>::VectorFixed > gravity_field; /// Holds gravity vector acceptable in FieldModel
+        BCField<3, FieldValue<3>::VectorFixed > bc_gravity; /// Same as previous but used in boundary fields
         Field<3, FieldValue<3>::Scalar> init_piezo_head;
+        BCField<3, FieldValue<3>::Scalar> bc_piezo_head;
+        BCField<3, FieldValue<3>::Scalar> bc_switch_piezo_head;
 
         /**
          * Gravity vector and constant shift of pressure potential. Used to convert piezometric head

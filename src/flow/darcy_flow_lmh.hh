@@ -74,8 +74,6 @@ namespace Input {
 	}
 }
 
-template<int spacedim, class Value> class FieldAddPotential;
-
 /**
  * @brief Mixed-hybrid model of linear Darcy flow, possibly unsteady.
  *

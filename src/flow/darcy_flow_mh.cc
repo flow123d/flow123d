@@ -306,10 +306,25 @@ DarcyMH::EqData::EqData()
             .input_default("0.0")
             .units( UnitSI::dimensionless() );
 
+    *this += bc_gravity.name("bc_gravity")
+            .description("Boundary gravity vector.")
+            .input_default("0.0")
+            .units( UnitSI::dimensionless() );
+
     *this += init_piezo_head.name("init_piezo_head")
 	         .units(UnitSI().m())
              .input_default("0.0")
              .description("Init piezo head.");
+
+    *this += bc_piezo_head.name("bc_piezo_head")
+	         .units(UnitSI().m())
+             .input_default("0.0")
+             .description("Boundary piezo head.");
+
+    *this += bc_switch_piezo_head.name("bc_switch_piezo_head")
+	         .units(UnitSI().m())
+             .input_default("0.0")
+             .description("Boundary switch piezo head.");
 
     //time_term_fields = this->subset({"storativity"});
     //main_matrix_fields = this->subset({"anisotropy", "conductivity", "cross_section", "sigma", "bc_type", "bc_robin_sigma"});
@@ -402,16 +417,17 @@ void DarcyMH::init_eq_data()
     auto field_algo=std::make_shared<FieldConstant<3, FieldValue<3>::VectorFixed>>();
     field_algo->set_value(gvalue);
     data_->gravity_field.set(field_algo, 0.0);
+    data_->bc_gravity.set(field_algo, 0.0);
 
     data_->bc_pressure.add_factory(
-        std::make_shared<FieldAddPotential<3, FieldValue<3>::Scalar>::FieldFactory>
-        (data_->gravity_, "bc_piezo_head") );
+            std::make_shared<AddPotentialFactory<3, FieldValue<3>::Scalar> >
+            (data_->bc_gravity, data_->X(), data_->bc_piezo_head) );
     data_->bc_switch_pressure.add_factory(
-            std::make_shared<FieldAddPotential<3, FieldValue<3>::Scalar>::FieldFactory>
-            (data_->gravity_, "bc_switch_piezo_head") );
+            std::make_shared<AddPotentialFactory<3, FieldValue<3>::Scalar> >
+            (data_->bc_gravity, data_->X(), data_->bc_switch_piezo_head) );
     data_->init_pressure.add_factory(
-            std::make_shared<FieldAddPotential<3, FieldValue<3>::Scalar>::FieldFactory>
-            (data_->gravity_, "init_piezo_head") );
+            std::make_shared<AddPotentialFactory<3, FieldValue<3>::Scalar> >
+            (data_->gravity_field, data_->X(), data_->init_piezo_head) );
 
 
     data_->set_input_list( this->input_record_.val<Input::Array>("input_fields"), *time_ );
