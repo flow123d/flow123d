@@ -59,10 +59,36 @@ public:
     typename Field<spacedim,Value>::FieldBasePtr create_field(Input::Record rec, const FieldCommon &) override {
         Input::AbstractRecord field_a_rec;
         if (rec.opt_val(field_name_, field_a_rec)) {
+
             FieldAlgoBaseInitData init_data(field_name_, Value::NRows_, UnitSI::dimensionless());
             auto inner_field_ptr = FieldAlgorithmBase<spacedim, Value>::function_factory( field_a_rec, init_data );
-            inner_field_.set(inner_field_ptr, 0.0);
+
+            // get domain specification
+            Input::Array domain_name_array;
+            unsigned int id;
+            const RegionDB &region_db = inner_field_.mesh()->region_db();
+		    if (rec.opt_val("region", domain_name_array)) {
+			    std::vector<string> domain_names = region_db.get_and_check_operands(domain_name_array);
+	            inner_field_.set(inner_field_ptr, 0.0, domain_names);
+
+            } else if (rec.opt_val("rid", id)) {
+                Region region;
+                try {
+                    region = region_db.find_id(id);
+                } catch (RegionDB::ExcUniqueRegionId &e) {
+                    e << rec.ei_address();
+                    throw;
+                }
+                if (region.is_valid())
+                    inner_field_.set(inner_field_ptr, 0.0, { region.label() });
+                else
+                    THROW(RegionDB::ExcUnknownRegion() << RegionDB::EI_ID(id) );
+            } else {
+                inner_field_.set(inner_field_ptr, 0.0); // set on all regions
+            }
+
            	return Model<3, FieldValue<3>::Scalar>::create(fn_add_potential(), gravity_, coords_, inner_field_);
+
         } else {
             return typename Field<spacedim,Value>::FieldBasePtr();
         }
