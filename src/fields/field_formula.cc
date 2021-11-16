@@ -345,7 +345,8 @@ std::vector<const FieldCommon * > FieldFormula<spacedim, Value>::set_dependency(
                     THROW( ExcParserError() << EI_BParserMsg(e.what()) << EI_Formula(expr) << Input::EI_Address( in_rec_.address_string() ) );
                 else throw;
             }
-            variables.insert(variables.end(), b_parser_[i_p].variables().begin(), b_parser_[i_p].variables().end());
+            auto free_symbols = b_parser_[i_p].free_symbols();
+            variables.insert(variables.end(), free_symbols.begin(), free_symbols.end());
         }
 
     std::sort( variables.begin(), variables.end() );
