@@ -302,7 +302,6 @@ add_library(coupling_lib
     fields/field_formula.cc
     fields/table_function.cc
     fields/field_time_function.cc
-    fields/field_divide.cc
     fields/field_fe.cc
     fields/fe_value_handler.cc
     fields/eval_subset.cc

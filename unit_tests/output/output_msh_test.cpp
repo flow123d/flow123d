@@ -60,39 +60,39 @@ public:
         this->init_from_input("dummy_equation", in_rec, std::make_shared<TimeUnitConversion>());
 
         // create output mesh identical to computational mesh
-        auto output_mesh = std::make_shared<OutputMesh>(*(this->_mesh));
-        output_mesh->create_sub_mesh();
-        output_mesh->make_serial_master_mesh();
-        this->set_output_data_caches(output_mesh);
+        output_mesh_ = std::make_shared<OutputMesh>(*(this->_mesh));
+        output_mesh_->create_sub_mesh();
+        output_mesh_->make_serial_master_mesh();
+        this->set_output_data_caches(output_mesh_);
 
     }
 
-	template <class FieldType>
-	void set_field_data(string field_name, string init)
+	template <int spacedim, class Value>
+	void set_field_data(string field_name, string init, string rval)
     {
+		typedef typename Value::element_type ElemType;
 
-		// make field init it form the init string
-	    FieldType field(field_name, false); // bulk field
+		// make field, init it form the init string
+		Field<spacedim, Value> field(field_name, false); // bulk field
 		field.input_default(init);
 		field.set_components(component_names);
 
 		field.set_mesh( *(this->_mesh) );
 		field.units(UnitSI::one());
 		field.set_time(TimeGovernor(0.0, 1.0).step(), LimitSide::left);
-
-        // create output mesh identical to computational mesh
-		output_mesh_ = std::make_shared<OutputMesh>( *(this->_mesh) );
-		output_mesh_->create_sub_mesh();
-		output_mesh_->make_serial_master_mesh();
-        this->set_output_data_caches(output_mesh_);
+		field.set_output_data_cache(OutputTime::ELEM_DATA, shared_from_this());
+	    auto output_cache_base = this->prepare_compute_data<ElemType>(field_name, OutputTime::ELEM_DATA,
+	            (unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
+	    std::shared_ptr<ElementDataCache<ElemType>> output_data_cache = std::dynamic_pointer_cast<ElementDataCache<ElemType>>(output_cache_base);
+	    arma::mat ret_value(rval);
+	    for (uint i=0; i<output_data_cache->n_values(); ++i)
+	        output_data_cache->store_value(i, ret_value.memptr() );
 
         //this->output_mesh_discont_ = std::make_shared<OutputMeshDiscontinuous>( *(this->_mesh) );
         //this->output_mesh_discont_->create_sub_mesh();
         //this->output_mesh_discont_->make_serial_master_mesh();
 
-	    auto output_types = OutputTime::empty_discrete_flags();
-	    output_types[OutputTime::ELEM_DATA] = true;
-		field.compute_field_data(output_types, shared_from_this());
+	    this->update_time(field.time());
 	}
 
 	// check result
@@ -127,19 +127,19 @@ public:
 
 TEST(TestOutputMSH, write_data) {
 	std::shared_ptr<TestOutputMSH> output_msh = std::make_shared<TestOutputMSH>();
-
 	output_msh->init_mesh(test_output_time);
+
 	output_msh->set_current_step(0);
-	output_msh->set_field_data< Field<3,FieldValue<0>::Scalar> > ("scalar_field", "0.5");
-	output_msh->set_field_data< Field<3,FieldValue<3>::VectorFixed> > ("vector_field", "[0.5, 1.0, 1.5]");
-	output_msh->set_field_data< Field<3,FieldValue<3>::TensorFixed> > ("tensor_field", "[[1, 2, 3], [4, 5, 6], [7, 8, 9]]");
+	output_msh->set_field_data<3, FieldValue<0>::Scalar> ("scalar_field", "0.5", "0.5");
+	output_msh->set_field_data<3, FieldValue<3>::VectorFixed> ("vector_field", "[0.5, 1.0, 1.5]", "0.5 1.0 1.5");
+	output_msh->set_field_data<3, FieldValue<3>::TensorFixed> ("tensor_field", "[[1, 2, 3], [4, 5, 6], [7, 8, 9]]", "1 2 3; 4 5 6; 7 8 9");
 	output_msh->write_data();
 
 	output_msh->clear_data();
 	output_msh->set_current_step(1);
-	output_msh->set_field_data< Field<3,FieldValue<0>::Scalar> > ("scalar_field", "0.75");
-	output_msh->set_field_data< Field<3,FieldValue<3>::VectorFixed> > ("vector_field", "[0.75, 1.5, 2.25]");
-	output_msh->set_field_data< Field<3,FieldValue<3>::TensorFixed> > ("tensor_field", "[[1, 4, 7], [2, 5, 8], [3, 6, 9]]");
+	output_msh->set_field_data<3, FieldValue<0>::Scalar> ("scalar_field", "0.75", "0.75");
+	output_msh->set_field_data<3, FieldValue<3>::VectorFixed> ("vector_field", "[0.75, 1.5, 2.25]", "0.75 1.5 2.25");
+	output_msh->set_field_data<3, FieldValue<3>::TensorFixed> ("tensor_field", "[[1, 4, 7], [2, 5, 8], [3, 6, 9]]", "1 4 7; 2 5 8; 3 6 9");
 	output_msh->write_data();
 
     EXPECT_EQ("./test_output.msh", output_msh->base_filename());

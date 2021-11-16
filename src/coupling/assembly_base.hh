@@ -34,29 +34,34 @@ template <unsigned int dim>
 class AssemblyBase
 {
 public:
+    typedef typename GenericAssemblyBase::BulkIntegralData BulkIntegralData;
+    typedef typename GenericAssemblyBase::EdgeIntegralData EdgeIntegralData;
+    typedef typename GenericAssemblyBase::CouplingIntegralData CouplingIntegralData;
+    typedef typename GenericAssemblyBase::BoundaryIntegralData BoundaryIntegralData;
+
 	/// Constructor
 	AssemblyBase(unsigned int quad_order) {
         quad_ = new QGauss(dim, 2*quad_order);
         quad_low_ = new QGauss(dim-1, 2*quad_order);
 	}
 
-	// Destructor
+	/// Destructor
     virtual ~AssemblyBase() {
         delete quad_;
         delete quad_low_;
     }
 
     /// Assembles the volume integrals on cell.
-    inline void cell_integral(FMT_UNUSED DHCellAccessor cell, FMT_UNUSED unsigned int element_patch_idx) {}
+    virtual inline void cell_integral(FMT_UNUSED DHCellAccessor cell, FMT_UNUSED unsigned int element_patch_idx) {}
 
     /// Assembles the fluxes on the boundary.
-    inline void boundary_side_integral(FMT_UNUSED DHCellSide cell_side) {}
+    virtual inline void boundary_side_integral(FMT_UNUSED DHCellSide cell_side) {}
 
     /// Assembles the fluxes between sides on the edge.
-    inline void edge_integral(FMT_UNUSED RangeConvert<DHEdgeSide, DHCellSide> edge_side_range) {}
+    virtual inline void edge_integral(FMT_UNUSED RangeConvert<DHEdgeSide, DHCellSide> edge_side_range) {}
 
     /// Assembles the fluxes between elements of different dimensions.
-    inline void dimjoin_intergral(FMT_UNUSED DHCellAccessor cell_lower_dim, FMT_UNUSED DHCellSide neighb_side) {}
+    virtual inline void dimjoin_intergral(FMT_UNUSED DHCellAccessor cell_lower_dim, FMT_UNUSED DHCellSide neighb_side) {}
 
     /// Method prepares object before assemblation (e.g. balance, ...).
     virtual void begin() {}
@@ -72,18 +77,24 @@ public:
     /// Create integrals according to dim of assembly object
     void create_integrals(std::shared_ptr<EvalPoints> eval_points, AssemblyIntegrals &integrals) {
     	if (active_integrals_ & ActiveIntegrals::bulk) {
+    	    ASSERT_PTR(quad_).error("Data member 'quad_' must be initialized if you use bulk integral!\n");
     	    integrals_.bulk_ = eval_points->add_bulk<dim>(*quad_);
     		integrals.bulk_[dim-1] = integrals_.bulk_;
     	}
     	if (active_integrals_ & ActiveIntegrals::edge) {
+    	    ASSERT_PTR(quad_low_).error("Data member 'quad_low_' must be initialized if you use edge integral!\n");
     	    integrals_.edge_ = eval_points->add_edge<dim>(*quad_low_);
     	    integrals.edge_[dim-1] = integrals_.edge_;
     	}
        	if ((dim>1) && (active_integrals_ & ActiveIntegrals::coupling)) {
+    	    ASSERT_PTR(quad_).error("Data member 'quad_' must be initialized if you use coupling integral!\n");
+    	    ASSERT_PTR(quad_low_).error("Data member 'quad_low_' must be initialized if you use coupling integral!\n");
     	    integrals_.coupling_ = eval_points->add_coupling<dim>(*quad_low_);
        	    integrals.coupling_[dim-2] = integrals_.coupling_;
        	}
        	if (active_integrals_ & ActiveIntegrals::boundary) {
+    	    ASSERT_PTR(quad_).error("Data member 'quad_' must be initialized if you use boundary integral!\n");
+    	    ASSERT_PTR(quad_low_).error("Data member 'quad_low_' must be initialized if you use boundary integral!\n");
     	    integrals_.boundary_ = eval_points->add_boundary<dim>(*quad_low_);
        	    integrals.boundary_[dim-1] = integrals_.boundary_;
        	}
@@ -112,6 +123,45 @@ public:
 	    return integrals_.boundary_->points(cell_side, element_cache_map_);
     }
 
+    /// Assembles the cell integrals for the given dimension.
+    virtual inline void assemble_cell_integrals(const RevertableList<BulkIntegralData> &bulk_integral_data) {
+    	for (unsigned int i=0; i<bulk_integral_data.permanent_size(); ++i) {
+            if (bulk_integral_data[i].cell.dim() != dim) continue;
+            this->cell_integral(bulk_integral_data[i].cell, element_cache_map_->position_in_cache(bulk_integral_data[i].cell.elm().mesh_idx()));
+    	}
+    	// Possibly optimization but not so fast as we would assume (needs change interface of cell_integral)
+        /*for (unsigned int i=0; i<element_cache_map_->n_elements(); ++i) {
+            unsigned int elm_start = element_cache_map_->element_chunk_begin(i);
+            if (element_cache_map_->eval_point_data(elm_start).i_eval_point_ != 0) continue;
+            this->cell_integral(i, element_cache_map_->eval_point_data(elm_start).dh_loc_idx_);
+        }*/
+    }
+
+    /// Assembles the boundary side integrals for the given dimension.
+    inline void assemble_boundary_side_integrals(const RevertableList<BoundaryIntegralData> &boundary_integral_data) {
+        for (unsigned int i=0; i<boundary_integral_data.permanent_size(); ++i) {
+            if (boundary_integral_data[i].side.dim() != dim) continue;
+            this->boundary_side_integral(boundary_integral_data[i].side);
+        }
+    }
+
+    /// Assembles the edge integrals for the given dimension.
+    inline void assemble_edge_integrals(const RevertableList<EdgeIntegralData> &edge_integral_data) {
+        for (unsigned int i=0; i<edge_integral_data.permanent_size(); ++i) {
+        	auto range = edge_integral_data[i].edge_side_range;
+            if (range.begin()->dim() != dim) continue;
+            this->edge_integral(edge_integral_data[i].edge_side_range);
+        }
+    }
+
+    /// Assembles the neighbours integrals for the given dimension.
+    inline void assemble_neighbour_integrals(const RevertableList<CouplingIntegralData> &coupling_integral_data) {
+        for (unsigned int i=0; i<coupling_integral_data.permanent_size(); ++i) {
+            if (coupling_integral_data[i].side.dim() != dim) continue;
+            this->dimjoin_intergral(coupling_integral_data[i].cell, coupling_integral_data[i].side);
+        }
+    }
+
 protected:
     /// Set of integral of given dimension necessary in assemblation
     struct DimIntegrals {
@@ -120,6 +170,14 @@ protected:
         std::shared_ptr<CouplingIntegral> coupling_;       ///< Coupling integrals between elements of dimensions dim and dim-1
         std::shared_ptr<BoundaryIntegral> boundary_;       ///< Boundary integrals betwwen side and boundary element of dim-1
     };
+
+	/**
+	 * Default constructor.
+	 *
+	 * Be aware if you use this constructor. Quadrature objects must be initialized manually in descendant.
+	 */
+	AssemblyBase()
+	: quad_(nullptr), quad_low_(nullptr) {}
 
     /// Print update flags to string format.
     std::string print_update_flags(UpdateFlags u) const {

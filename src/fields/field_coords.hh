@@ -64,7 +64,7 @@ public:
     }
 
     void set_mesh(const Mesh &mesh) override {
-        this->mesh_ = &mesh;
+        shared_->mesh_ = &mesh;
     }
 
     bool is_constant(FMT_UNUSED Region reg) override {
@@ -79,7 +79,7 @@ public:
         ASSERT(false).error("Forbidden method for FieldCoords!");
     }
 
-    void field_output(FMT_UNUSED std::shared_ptr<OutputTime> stream, FMT_UNUSED OutputTime::DiscreteSpaceFlags type) override {
+    void field_output(FMT_UNUSED std::shared_ptr<OutputTime> stream, FMT_UNUSED OutputTime::DiscreteSpace type) override {
         ASSERT(false).error("Forbidden method for FieldCoords!");
     }
 
@@ -116,7 +116,7 @@ public:
         for (unsigned int i_data = reg_chunk_begin; i_data < reg_chunk_end; ++i_data) { // i_eval_point_data
             unsigned int elm_idx = cache_map.eval_point_data(i_data).i_element_;
             if (elm_idx != last_element_idx) {
-                elm = mesh_->element_accessor( elm_idx );
+                elm = shared_->mesh_->element_accessor( elm_idx );
                 dim = elm.dim();
                 last_element_idx = elm_idx;
             }
@@ -189,8 +189,6 @@ private:
      * See implementation of Field<spacedim, Value>::value_cache_
      */
     mutable FieldValueCache<double> value_cache_;
-
-    const Mesh *mesh_;                 ///< Pointer to the mesh.
 };
 
 #endif /* FIELD_COORDS_HH_ */

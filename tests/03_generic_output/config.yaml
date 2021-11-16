@@ -65,17 +65,17 @@ test_cases:
     
     # binary VTKtest
     - 37_serial_vtk_binary.yaml
-    - 51_darcy_fv_output_mesh_1d_serial.yaml
-    - 53_darcy_fv_output_mesh_2d_serial.yaml
-    - 55_darcy_fv_output_mesh_3d_serial.yaml
+    #- 51_darcy_fv_output_mesh_1d_serial.yaml
+    #- 53_darcy_fv_output_mesh_2d_serial.yaml
+    #- 55_darcy_fv_output_mesh_3d_serial.yaml
   proc: [1]
 
 # parallel refined tests
 - files:
     #- 24_gmsh_refined_parallel_output.yaml
-    - 52_darcy_fv_output_mesh_1d_parallel.yaml
-    - 54_darcy_fv_output_mesh_2d_parallel.yaml
-    - 56_darcy_fv_output_mesh_3d_parallel.yaml
+    #- 52_darcy_fv_output_mesh_1d_parallel.yaml
+    #- 54_darcy_fv_output_mesh_2d_parallel.yaml
+    #- 56_darcy_fv_output_mesh_3d_parallel.yaml
     # test of generic fields subdomain and region_id
     - 13_generic_fields.yaml
   proc: [2]

@@ -204,7 +204,6 @@ void FieldSet::set_dependency(FieldSet &used_fieldset) {
     region_field_update_order_.clear();
     std::unordered_set<const FieldCommon *> used_fields;
 
-    unordered_map<std::string, unsigned int>::iterator it;
     for (unsigned int i_reg=0; i_reg<mesh_->region_db().size(); ++i_reg) {
         for (FieldListAccessor f_acc : used_fieldset.fields_range()) {
             topological_sort( f_acc.field(), i_reg, used_fields );

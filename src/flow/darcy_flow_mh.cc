@@ -51,6 +51,7 @@
 #include "flow/assembly_mh_old.hh"
 #include "flow/darcy_flow_mh.hh"
 #include "flow/darcy_flow_mh_output.hh"
+#include "flow/assembly_models.hh"
 
 #include "tools/time_governor.hh"
 #include "fields/field_algo_base.hh"
@@ -72,28 +73,6 @@
 FLOW123D_FORCE_LINK_IN_CHILD(darcy_flow_mh)
 
 
-
-
-/*******************************************************************************
- * Functors of FieldModels
- */
-using Sclr = double;
-using Vect = arma::vec3;
-
-// Functor computing velocity (flux / cross_section)
-struct fn_mh_velocity {
-	inline Vect operator() (Vect flux, Sclr csec) {
-        return flux / csec;
-    }
-};
-
-
-// Functor computing piezo_head_p0
-struct fn_mh_piezohead {
-	inline Sclr operator() (Vect gravity, Vect coords, Sclr pressure) {
-        return arma::dot((-1*gravity), coords) + pressure;
-    }
-};
 
 
 
@@ -324,10 +303,25 @@ DarcyMH::EqFields::EqFields()
             .input_default("0.0")
             .units( UnitSI::dimensionless() );
 
+    *this += bc_gravity.name("bc_gravity")
+            .description("Boundary gravity vector.")
+            .input_default("0.0")
+            .units( UnitSI::dimensionless() );
+
     *this += init_piezo_head.name("init_piezo_head")
 	         .units(UnitSI().m())
              .input_default("0.0")
              .description("Init piezo head.");
+
+    *this += bc_piezo_head.name("bc_piezo_head")
+	         .units(UnitSI().m())
+             .input_default("0.0")
+             .description("Boundary piezo head.");
+
+    *this += bc_switch_piezo_head.name("bc_switch_piezo_head")
+	         .units(UnitSI().m())
+             .input_default("0.0")
+             .description("Boundary switch piezo head.");
 
     //time_term_fields = this->subset({"storativity"});
     //main_matrix_fields = this->subset({"anisotropy", "conductivity", "cross_section", "sigma", "bc_type", "bc_robin_sigma"});
@@ -427,16 +421,17 @@ void DarcyMH::init_eq_data()
     auto field_algo=std::make_shared<FieldConstant<3, FieldValue<3>::VectorFixed>>();
     field_algo->set_value(gvalue);
     eq_fields_->gravity_field.set(field_algo, 0.0);
+    eq_fields_->bc_gravity.set(field_algo, 0.0);
 
     eq_fields_->bc_pressure.add_factory(
-        std::make_shared<FieldAddPotential<3, FieldValue<3>::Scalar>::FieldFactory>
-        (eq_data_->gravity_, "bc_piezo_head") );
+            std::make_shared<AddPotentialFactory<3, FieldValue<3>::Scalar> >
+            (eq_fields_->bc_gravity, eq_fields_->X(), eq_fields_->bc_piezo_head) );
     eq_fields_->bc_switch_pressure.add_factory(
-            std::make_shared<FieldAddPotential<3, FieldValue<3>::Scalar>::FieldFactory>
-            (eq_data_->gravity_, "bc_switch_piezo_head") );
+            std::make_shared<AddPotentialFactory<3, FieldValue<3>::Scalar> >
+            (eq_fields_->bc_gravity, eq_fields_->X(), eq_fields_->bc_switch_piezo_head) );
     eq_fields_->init_pressure.add_factory(
-            std::make_shared<FieldAddPotential<3, FieldValue<3>::Scalar>::FieldFactory>
-            (eq_data_->gravity_, "init_piezo_head") );
+            std::make_shared<AddPotentialFactory<3, FieldValue<3>::Scalar> >
+            (eq_fields_->gravity_field, eq_fields_->X(), eq_fields_->init_piezo_head) );
 
 
     eq_fields_->set_input_list( this->input_record_.val<Input::Array>("input_fields"), *time_ );

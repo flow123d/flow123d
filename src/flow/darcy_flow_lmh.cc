@@ -52,6 +52,7 @@
 #include "flow/darcy_flow_lmh.hh"
 #include "flow/darcy_flow_mh_output.hh"
 #include "flow/assembly_lmh.hh"
+#include "flow/assembly_models.hh"
 
 #include "tools/time_governor.hh"
 #include "fields/field_algo_base.hh"
@@ -73,28 +74,6 @@
 FLOW123D_FORCE_LINK_IN_CHILD(darcy_flow_lmh)
 
 
-
-
-/*******************************************************************************
- * Functors of FieldModels
- */
-using Sclr = double;
-using Vect = arma::vec3;
-
-// Functor computing velocity (flux / cross_section)
-struct fn_lmh_velocity {
-	inline Vect operator() (Vect flux, Sclr csec) {
-        return flux / csec;
-    }
-};
-
-
-// Functor computing piezo_head_p0
-struct fn_lmh_piezohead {
-	inline Sclr operator() (Vect gravity, Vect coords, Sclr pressure) {
-        return arma::dot((-1*gravity), coords) + pressure;
-    }
-};
 
 
 namespace it = Input::Type;
@@ -249,7 +228,6 @@ DarcyLMH::DarcyLMH(Mesh &mesh_in, const Input::Record in_rec, TimeGovernor *tm)
     }
 
     eq_fields_ = make_shared<EqFields>();
-    eq_fields_->add_coords_field();
     eq_data_ = make_shared<EqData>();
     this->eq_fieldset_ = eq_fields_.get();
     
@@ -290,19 +268,17 @@ void DarcyLMH::init_eq_data()
     auto field_algo=std::make_shared<FieldConstant<3, FieldValue<3>::VectorFixed>>();
     field_algo->set_value(gvalue);
     eq_fields_->gravity_field.set(field_algo, 0.0);
+    eq_fields_->bc_gravity.set(field_algo, 0.0);
 
     eq_fields_->bc_pressure.add_factory(
-        std::make_shared<FieldAddPotential<3, FieldValue<3>::Scalar>::FieldFactory>
-        (eq_data_->gravity_, "bc_piezo_head") );
+            std::make_shared<AddPotentialFactory<3, FieldValue<3>::Scalar> >
+            (eq_fields_->bc_gravity, eq_fields_->X(), eq_fields_->bc_piezo_head) );
     eq_fields_->bc_switch_pressure.add_factory(
-            std::make_shared<FieldAddPotential<3, FieldValue<3>::Scalar>::FieldFactory>
-            (eq_data_->gravity_, "bc_switch_piezo_head") );
+            std::make_shared<AddPotentialFactory<3, FieldValue<3>::Scalar> >
+            (eq_fields_->bc_gravity, eq_fields_->X(), eq_fields_->bc_switch_piezo_head) );
     eq_fields_->init_pressure.add_factory(
             std::make_shared<AddPotentialFactory<3, FieldValue<3>::Scalar> >
             (eq_fields_->gravity_field, eq_fields_->X(), eq_fields_->init_piezo_head) );
-//    eq_fields_->init_pressure.add_factory(
-//            std::make_shared<FieldAddPotential<3, FieldValue<3>::Scalar>::FieldFactory>
-//            (eq_data_->gravity_, "init_piezo_head") );
 
 
     eq_fields_->set_input_list( this->input_record_.val<Input::Array>("input_fields"), *time_ );
@@ -355,7 +331,7 @@ void DarcyLMH::initialize() {
         auto ele_flux_ptr = create_field_fe<3, FieldValue<3>::VectorFixed>(eq_data_->dh_, &eq_data_->full_solution, rt_component);
         eq_fields_->flux.set(ele_flux_ptr, 0.0);
 
-		eq_fields_->field_ele_velocity.set(Model<3, FieldValue<3>::VectorFixed>::create(fn_lmh_velocity(), eq_fields_->flux, eq_fields_->cross_section), 0.0);
+		eq_fields_->field_ele_velocity.set(Model<3, FieldValue<3>::VectorFixed>::create(fn_mh_velocity(), eq_fields_->flux, eq_fields_->cross_section), 0.0);
 
 		uint p_ele_component = 1;
         auto ele_pressure_ptr = create_field_fe<3, FieldValue<3>::Scalar>(eq_data_->dh_, &eq_data_->full_solution, p_ele_component);
@@ -366,7 +342,7 @@ void DarcyLMH::initialize() {
         eq_fields_->field_edge_pressure.set(edge_pressure_ptr, 0.0);
 
 		eq_fields_->field_ele_piezo_head.set(
-		        Model<3, FieldValue<3>::Scalar>::create(fn_lmh_piezohead(), eq_fields_->gravity_field, eq_fields_->X(), eq_fields_->field_ele_pressure),
+		        Model<3, FieldValue<3>::Scalar>::create(fn_mh_piezohead(), eq_fields_->gravity_field, eq_fields_->X(), eq_fields_->field_ele_pressure),
 		        0.0
 		);
     }

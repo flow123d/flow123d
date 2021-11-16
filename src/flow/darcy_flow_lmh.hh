@@ -73,7 +73,6 @@ namespace Input {
 		class Selection;
 	}
 }
-template<int spacedim, class Value> class FieldAddPotential;
 template<unsigned int dim> class ReadInitCondAssemblyLMH;
 template<unsigned int dim> class MHMatrixAssemblyLMH;
 template< template<IntDim...> class DimAssembly> class GenericAssembly;
