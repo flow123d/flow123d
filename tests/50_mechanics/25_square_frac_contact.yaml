@@ -17,6 +17,15 @@ problem: !Coupling_Sequential
         gravity: 0
     time:
       end_time: 1
+    output_stream:
+      file: iterative.msh
+      format: !gmsh
+        variant: ascii
+    output:
+      fields: []
+
+    a_tol: 0
+    r_tol: 1e-9
 
     flow_equation: !Flow_Richards_LMH
         input_fields:
@@ -25,6 +34,7 @@ problem: !Coupling_Sequential
             init_pressure: 0
           - region: fracture
             cross_section: 0.01
+            delta_0: 0.01
           - region: .BOUNDARY
             bc_type: dirichlet
             bc_pressure: 0
