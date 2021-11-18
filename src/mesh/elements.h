@@ -116,6 +116,7 @@ protected:
     /// indices to element's nodes
     std::array<unsigned int, 4> nodes_;
 
+    friend class MeshBase;
     friend class Mesh;
     friend class BCMesh;
 

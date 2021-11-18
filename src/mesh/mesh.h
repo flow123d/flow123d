@@ -250,6 +250,18 @@ public:
 protected:
 
     /**
+     * Permute nodes of individual elements so that all elements have same edge orientations and aligned sides have same order of their nodes
+     * Canonical edge orientation in elements and faces is from nodes of lower local index to higher local index.
+     *
+     * Algorithm detals:
+     * 1. Orient all edges from lowe global node id to higher node id, fictional step. (substantial is orientation of yet non-oriented edges of a node in direction out of the node.
+     *    Can be proven (!?) that this prevents edge cycles of the length 3 (faces with cyclic edges).
+     * 2. Having all faces non-cyclic there exists a permutation of any element to the reference element.
+     *    Pass through the elements. Sort nodes by global ID.
+     */
+    void canonical_faces();
+
+    /**
      * Create element lists for nodes in Mesh::nodes_elements.
      */
     void create_node_element_lists();
@@ -444,18 +456,6 @@ public:
      * Reads input record, creates regions, read the mesh, setup topology. creates region sets.
      */
     void init_from_input();
-
-    /**
-     * Permute nodes of individual elements so that all elements have same edge orientations and aligned sides have same order of their nodes
-     * Canonical edge orientation in elements and faces is from nodes of lower local index to higher local index.
-     *
-     * Algorithm detals:
-     * 1. Orient all edges from lowe global node id to higher node id, fictional step. (substantial is orientation of yet non-oriented edges of a node in direction out of the node.
-     *    Can be proven (!?) that this prevents edge cycles of the length 3 (faces with cyclic edges).
-     * 2. Having all faces non-cyclic there exists a permutation of any element to the reference element.
-     *    Pass through the elements. Sort nodes by global ID.
-     */
-    void canonical_faces();
 
     /**
      * Initialize all mesh structures from raw information about nodes and elements (including boundary elements).

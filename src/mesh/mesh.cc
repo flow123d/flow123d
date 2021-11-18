@@ -139,6 +139,24 @@ unsigned int MeshBase::n_vb_neighbours() const
     return vb_neighbours_.size();
 }
 
+//void Mesh::array_sort(std::array<uint, 4> &nodes) {
+//    // TODO: use templated insert sort with recursion over length of array so that compiler can
+//    // optimize for the small array size.
+//
+//    std::sort(nodes.begin(), nodes.end());
+//}
+
+void MeshBase::canonical_faces() {
+    // element_vec_ still contains both bulk and boundary elements
+    for (uint i_el=0; i_el < element_vec_.size(); i_el++) {
+        Element &ele = element_vec_[i_el];
+        std::sort(ele.nodes_.begin(), ele.nodes_.end());
+    }
+
+    if (bc_mesh() != nullptr) bc_mesh()->canonical_faces();
+
+}
+
 
 const Input::Type::Selection & Mesh::get_input_intersection_variant() {
     return Input::Type::Selection("Types of search algorithm for finding intersection candidates.")
@@ -380,22 +398,6 @@ void Mesh::check_mesh_on_read() {
     }
 }
 
-
-//void Mesh::array_sort(std::array<uint, 4> &nodes) {
-//    // TODO: use templated insert sort with recursion over length of array so that compiler can
-//    // optimize for the small array size.
-//
-//    std::sort(nodes.begin(), nodes.end());
-//}
-
-void Mesh::canonical_faces() {
-    // element_vec_ still contains both bulk and boundary elements
-    for (uint i_el=0; i_el < element_vec_.size(); i_el++) {
-        Element &ele = element_vec_[i_el];
-        std::sort(ele.nodes_.begin(), ele.nodes_.end());
-    }
-
-}
 
 void Mesh::setup_topology() {
     if (optimize_memory_locality) {
