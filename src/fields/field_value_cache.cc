@@ -42,7 +42,7 @@ ElementCacheMap::ElementCacheMap()
 
 ElementCacheMap::~ElementCacheMap() {
     if (element_eval_points_map_!=nullptr) {
-        delete element_eval_points_map_;
+        delete[] element_eval_points_map_;
     }
 }
 
