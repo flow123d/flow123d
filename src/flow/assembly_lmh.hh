@@ -178,6 +178,12 @@ public:
     }
 
 
+    /// Setter of use_dirichlet_switch data member
+    inline void set_dirichlet_switch(bool ds) {
+        this->use_dirichlet_switch_ = ds;
+    }
+
+
     /// Assemble source term (integral over element)
     inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
@@ -252,6 +258,13 @@ public:
 
         // Assemble source term
         this->assemble_source_term(cell, p);
+
+        // Specialized part of reconstruct from Schur
+        if (!use_dirichlet_switch_) {
+            eq_data_->postprocess_solution_[bulk_local_idx_].zeros(eq_data_->schur_offset_[dim-1]);
+            // postprocess the velocity
+            postprocess_velocity(cell, element_patch_idx, eq_data_->postprocess_solution_[bulk_local_idx_]);
+        }
     }
 
 
@@ -413,15 +426,22 @@ public:
     /// Implements @p AssemblyBase::begin.
     void begin() override
     {
-        // DebugOut() << "assembly_mh_matrix \n";
-        // set auxiliary flag for switchting Dirichlet like BC
-        eq_data_->force_no_neumann_bc = eq_data_->use_steady_assembly_ && (eq_data_->nonlinear_iteration_ == 0);
+    	if (use_dirichlet_switch_) {
+            // DebugOut() << "assembly_mh_matrix \n";
+            // set auxiliary flag for switchting Dirichlet like BC
+            eq_data_->force_no_neumann_bc = eq_data_->use_steady_assembly_ && (eq_data_->nonlinear_iteration_ == 0);
+
+            eq_data_->reset();
+    	} else {
+    	    eq_data_->full_solution.zero_entries();
+    	    eq_data_->p_edge_solution.local_to_ghost_begin();
+    	    eq_data_->p_edge_solution.local_to_ghost_end();
+    	}
 
         eq_data_->balance_->start_flux_assembly(eq_data_->water_balance_idx);
         eq_data_->balance_->start_source_assembly(eq_data_->water_balance_idx);
         eq_data_->balance_->start_mass_assembly(eq_data_->water_balance_idx);
 
-        eq_data_->reset();
         this->set_dofs();
     }
 
@@ -429,7 +449,14 @@ public:
     /// Implements @p AssemblyBase::end.
     void end() override
     {
-        this->schur_postprocess();
+        if (use_dirichlet_switch_) {
+            this->schur_postprocess();
+        } else {
+            this->reconstruct_schur_finish();
+
+            eq_data_->full_solution.local_to_ghost_begin();
+            eq_data_->full_solution.local_to_ghost_end();
+        }
 
         eq_data_->balance_->finish_mass_assembly(eq_data_->water_balance_idx);
         eq_data_->balance_->finish_source_assembly(eq_data_->water_balance_idx);
@@ -437,7 +464,6 @@ public:
     }
 
 protected:
-    // Common method with Schur reconstruct assembly
     void set_dofs() {
         unsigned int size, loc_size, loc_size_schur, elm_dim;;
         for ( DHCellAccessor dh_cell : eq_data_->dh_->local_range() ) {
@@ -497,7 +523,6 @@ protected:
     }
 
 
-    // Specialized method of MHMatrixAssemblyLMH
     inline void schur_postprocess() {
         for ( DHCellAccessor dh_cell : eq_data_->dh_->own_range() ) {
             eq_data_->loc_system_[dh_cell.local_idx()].compute_schur_complement(
@@ -513,6 +538,24 @@ protected:
             // TODO:
             // if (mortar_assembly)
             //     mortar_assembly->assembly(dh_cell);
+        }
+    }
+
+
+    inline void reconstruct_schur_finish() {
+        for ( DHCellAccessor dh_cell : eq_data_->dh_->local_range() ) {
+        	bulk_local_idx_ = dh_cell.local_idx();
+            arma::vec schur_solution = eq_data_->p_edge_solution.get_subvec(eq_data_->loc_schur_[bulk_local_idx_].row_dofs);
+            // reconstruct the velocity and pressure
+            eq_data_->loc_system_[bulk_local_idx_].reconstruct_solution_schur(eq_data_->schur_offset_[dh_cell.dim()-1],
+                                                                                  schur_solution, reconstructed_solution_);
+
+            reconstructed_solution_ += eq_data_->postprocess_solution_[bulk_local_idx_];
+
+            eq_data_->full_solution.set_subvec(eq_data_->loc_system_[dh_cell.dim()-1].row_dofs.head(
+                    eq_data_->schur_offset_[dh_cell.dim()-1]), reconstructed_solution_);
+            eq_data_->full_solution.set_subvec(eq_data_->loc_system_[dh_cell.dim()-1].row_dofs.tail(
+                    eq_data_->loc_schur_[dh_cell.dim()-1].row_dofs.n_elem), schur_solution);
         }
     }
 
