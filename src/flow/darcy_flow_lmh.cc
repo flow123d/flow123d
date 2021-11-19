@@ -174,6 +174,7 @@ void DarcyLMH::EqData::init()
     bc_fluxes_reconstruted.resize(size);
     loc_system_.resize(size);
     loc_schur_.resize(size);
+    postprocess_solution_.resize(size);
 }
 
 
@@ -205,7 +206,8 @@ DarcyLMH::DarcyLMH(Mesh &mesh_in, const Input::Record in_rec, TimeGovernor *tm)
     output_object(nullptr),
     data_changed_(false),
 	read_init_cond_assembly_(nullptr),
-	mh_matrix_assembly_(nullptr)
+	mh_matrix_assembly_(nullptr),
+	reconstruct_schur_assembly_(nullptr)
 {
 
     START_TIMER("Darcy constructor");
@@ -1091,7 +1093,10 @@ void DarcyLMH::assembly_linear_system() {
         
         eq_data_->time_step_ = time_->dt();
 
-        assembly_mh_matrix( eq_data_->multidim_assembler ); // fill matrix
+        START_TIMER("DarcyLMH::assembly_steady_mh_matrix");
+        this->mh_matrix_asm(); // fill matrix
+        END_TIMER("DarcyLMH::assembly_steady_mh_matrix");
+        //assembly_mh_matrix( eq_data_->multidim_assembler ); // fill matrix
 
         lin_sys_schur().finish_assembly();
         lin_sys_schur().set_matrix_changed();
@@ -1356,7 +1361,10 @@ DarcyLMH::~DarcyLMH() {
         delete mh_matrix_assembly_;
         mh_matrix_assembly_ = nullptr;
     }
-
+    if (reconstruct_schur_assembly_!=nullptr) {
+        delete reconstruct_schur_assembly_;
+        reconstruct_schur_assembly_ = nullptr;
+    }
 }
 
 
@@ -1377,6 +1385,10 @@ std::vector<int> DarcyLMH::get_component_indices_vec(unsigned int component) con
 void DarcyLMH::initialize_asm() {
     this->read_init_cond_assembly_ = new GenericAssembly< ReadInitCondAssemblyLMH >(eq_fields_.get(), eq_data_.get());
     this->mh_matrix_assembly_ = new GenericAssembly< MHMatrixAssemblyLMH >(eq_fields_.get(), eq_data_.get());
+    this->reconstruct_schur_assembly_ = new GenericAssembly< MHMatrixAssemblyLMH >(eq_fields_.get(), eq_data_.get());
+    this->reconstruct_schur_assembly_->multidim_assembly()[1_d]->set_dirichlet_switch(false);
+    this->reconstruct_schur_assembly_->multidim_assembly()[2_d]->set_dirichlet_switch(false);
+    this->reconstruct_schur_assembly_->multidim_assembly()[3_d]->set_dirichlet_switch(false);
 }
 
 
@@ -1387,6 +1399,11 @@ void DarcyLMH::read_init_cond_asm() {
 
 void DarcyLMH::mh_matrix_asm() {
     this->mh_matrix_assembly_->assemble(eq_data_->dh_);
+}
+
+
+void DarcyLMH::reconstruct_schur_asm() {
+    this->reconstruct_schur_assembly_->assemble(eq_data_->dh_);
 }
 
 

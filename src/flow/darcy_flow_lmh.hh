@@ -191,6 +191,7 @@ public:
 
         std::vector<LocalSystem> loc_system_;
         std::vector<LocalSystem> loc_schur_;
+        std::vector<arma::vec> postprocess_solution_;
         std::array<std::vector<unsigned int>, 3> loc_side_dofs;
         std::array<std::vector<unsigned int>, 3> loc_edge_dofs;
         std::array<unsigned int, 3> loc_ele_dof;
@@ -328,6 +329,9 @@ protected:
     /// Call assemble of mh_matrix_assembly_
     virtual void mh_matrix_asm();
 
+    /// Call assemble of reconstruct_schur_assembly_
+    virtual void reconstruct_schur_asm();
+
     std::shared_ptr<Balance> balance_;
 
     DarcyFlowMHOutput *output_object;
@@ -353,6 +357,7 @@ private:
     /// general assembly objects, hold assembly objects of appropriate dimension
     GenericAssembly< ReadInitCondAssemblyLMH > * read_init_cond_assembly_;
     GenericAssembly< MHMatrixAssemblyLMH > * mh_matrix_assembly_;
+    GenericAssembly< MHMatrixAssemblyLMH > * reconstruct_schur_assembly_;
 
     /// Registrar of class to factory
     static const int registrar;

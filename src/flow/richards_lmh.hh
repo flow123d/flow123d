@@ -129,6 +129,9 @@ protected:
     /// Call assemble of mh_matrix_assembly_richards_
     void mh_matrix_asm() override;
 
+    /// Call assemble of reconstruct_schur_assembly_richards_
+    void reconstruct_schur_asm() override;
+
 private:
 
     std::shared_ptr<EqFields> eq_fields_;
@@ -137,6 +140,7 @@ private:
     /// general assembly objects, hold assembly objects of appropriate dimension
     GenericAssembly< ReadInitCondAssemblyRichards > * read_init_cond_assembly_richards_;
     GenericAssembly< MHMatrixAssemblyRichards > * mh_matrix_assembly_richards_;
+    GenericAssembly< MHMatrixAssemblyRichards > * reconstruct_schur_assembly_richards_;
 
 };
 
