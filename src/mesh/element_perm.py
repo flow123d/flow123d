@@ -71,20 +71,39 @@ def edge_orientations(elem_perm):
     #print("   ", ori)
     return ori
 
-
-for i_edge_orientations in range(64):
-    edge_ori = bitfield(i_edge_orientations)
-    if is_possible(edge_ori):
-        valid_el_perms = [elem_perm for elem_perm in itertools.permutations(list(range(4))) if edge_ori == edge_orientations(elem_perm)]
-        msg = str(valid_el_perms)
-        #msg = "possible"
-    else:
-        msg = "impossible"
-    print(edge_ori, msg)
+def valid_edge_orientations_on_element():
+    for i_edge_orientations in range(64):
+        edge_ori = bitfield(i_edge_orientations)
+        if is_possible(edge_ori):
+            valid_el_perms = [elem_perm for elem_perm in itertools.permutations(list(range(4))) if edge_ori == edge_orientations(elem_perm)]
+            msg = str(valid_el_perms)
+            #msg = "possible"
+        else:
+            msg = "impossible"
+        print(edge_ori, msg)
             
             
-          
+def node_permutations():
+    """
+    Generate a C++ code for the array providing the new_to_old mapping for all 64 bitfield values of the 
+    all six node comparisons (assumes 4 nodes for all elements).
+    """
+    comparisons = 64 * [0]
+    # Generate permutations as new to old node mapping for single element.
+    for elem_perm in itertools.permutations(list(range(4))):
+        old_to_new = list(range(4))
+        for new, old in enumerate(elem_perm):
+            old_to_new[old] = new
+        perm_index = 0
+        for i, edge in enumerate(edges):
+            n0, n1 = edge
+            edge_comparison = (old_to_new[n0] > old_to_new[n1])
+            perm_index *= 2
+            perm_index += edge_comparison
+    
+        out_list = ",".join(map(str, elem_perm))    
+        print(f"element_nodes_original[{perm_index}] = {{{out_list}}};")
             
         
-
+node_permutations()
 #list()

@@ -626,6 +626,8 @@ protected:
     /// Vector of element permutations of optimized mesh (see class MeshOptimizer)
     std::vector<unsigned int> elem_permutation_;
 
+    ///
+    std::array<std::array<uint, 4>, 64> element_nodes_original_;
 
     friend class Edge;
     friend class Side;
