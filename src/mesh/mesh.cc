@@ -146,16 +146,57 @@ unsigned int MeshBase::n_vb_neighbours() const
 //    std::sort(nodes.begin(), nodes.end());
 //}
 
+std::array<std::pair<uint,uint>, 6> _comparisons = { {{0,1},{0,2},{0,3},{1,2},{1,3},{2,3}} };
+
+
 void MeshBase::canonical_faces() {
+	// Fill mappings from canonical element nodes to original
+	// for individual permitations.
+	// Permutations are numbered by the bifield of all six _comparisons.
+	element_nodes_original_[0] = {0,1,2,3};
+	element_nodes_original_[1] = {0,1,3,2};
+	element_nodes_original_[4] = {0,2,1,3};
+	element_nodes_original_[6] = {0,2,3,1};
+	element_nodes_original_[3] = {0,3,1,2};
+	element_nodes_original_[7] = {0,3,2,1};
+	element_nodes_original_[32] = {1,0,2,3};
+	element_nodes_original_[33] = {1,0,3,2};
+	element_nodes_original_[48] = {1,2,0,3};
+	element_nodes_original_[56] = {1,2,3,0};
+	element_nodes_original_[41] = {1,3,0,2};
+	element_nodes_original_[57] = {1,3,2,0};
+	element_nodes_original_[20] = {2,0,1,3};
+	element_nodes_original_[22] = {2,0,3,1};
+	element_nodes_original_[52] = {2,1,0,3};
+	element_nodes_original_[60] = {2,1,3,0};
+	element_nodes_original_[30] = {2,3,0,1};
+	element_nodes_original_[62] = {2,3,1,0};
+	element_nodes_original_[11] = {3,0,1,2};
+	element_nodes_original_[15] = {3,0,2,1};
+	element_nodes_original_[43] = {3,1,0,2};
+	element_nodes_original_[59] = {3,1,2,0};
+	element_nodes_original_[31] = {3,2,0,1};
+	element_nodes_original_[63] = {3,2,1,0};
+
+
     // element_vec_ still contains both bulk and boundary elements
     for (uint i_el=0; i_el < element_vec_.size(); i_el++) {
         Element &ele = element_vec_[i_el];
+    	uint cmp_bits = 0;
+        for(uint i=0; i<6; i++) {
+    		cmp_bits <<=1;
+    		cmp_bits += (ele.nodes_[_comparisons[i].first] > ele.nodes_[_comparisons[i].second]);
+    	}
+        ele.permutation_ = cmp_bits;
         std::sort(ele.nodes_.begin(), ele.nodes_.end());
     }
 
     if (bc_mesh() != nullptr) bc_mesh()->canonical_faces();
 
 }
+
+
+
 
 
 const Input::Type::Selection & Mesh::get_input_intersection_variant() {
@@ -399,6 +440,7 @@ void Mesh::check_mesh_on_read() {
 }
 
 
+
 void Mesh::setup_topology() {
     if (optimize_memory_locality) {
         START_TIMER("MESH - optimizer");
@@ -484,11 +526,12 @@ void Mesh::count_side_types()
 
     n_insides = 0;
     n_exsides = 0;
-	for (auto ele : this->elements_range())
+	for (auto ele : this->elements_range()) {
         for(SideIter sde = ele.side(0); sde->side_idx() < ele->n_sides(); ++sde) {
             if (sde->is_external()) n_exsides++;
             else n_insides++;
         }
+	}
 }
 
 
@@ -1189,14 +1232,30 @@ void Mesh::output_internal_ngh_data()
             }
         }
     }
-    
-    for (auto ele : this->elements_range()) {
-        raw_ngh_output_file << ele.idx() << " ";
-        raw_ngh_output_file << ele->n_sides() << " ";
-        
+
+    for (unsigned int i_elem=0; i_elem<n_elements(); ++i_elem)
+    {
+        auto ele = element_accessor(elem_permutation_[i_elem]);
+        std::stringstream ss;
+        ss << ele.input_id() << " ";
+        ss << ele->n_sides() << " ";
+
+        // use node permutation to permute sides
+        auto &new_to_old_node = ele.orig_nodes_order();
+        std::vector<uint> old_to_new_side(ele->n_sides());
+        for (unsigned int i = 0; i < ele->n_sides(); i++) {
+            // According to RefElement<dim>::opposite_node()
+            uint new_opp_node = ele->n_sides() - i - 1;
+            uint old_opp_node = new_to_old_node[new_opp_node];
+            uint old_iside = ele->n_sides() - old_opp_node - 1;
+            old_to_new_side[old_iside] = i;
+        }
+
         auto search_neigh = neigh_vb_map.end();
         for (unsigned int i = 0; i < ele->n_sides(); i++) {
-            unsigned int n_side_neighs = ele.side(i)->edge().n_sides()-1;  //n_sides - the current one
+            uint new_iside = old_to_new_side[i];
+
+            uint n_side_neighs = ele.side(new_iside)->edge().n_sides()-1;  //n_sides - the current one
             // check vb neighbors (lower dimension)
             if(n_side_neighs == 0){
                 //update search
@@ -1204,33 +1263,37 @@ void Mesh::output_internal_ngh_data()
                     search_neigh = neigh_vb_map.find(ele.idx());
                 
                 if(search_neigh != neigh_vb_map.end())
-                    if(search_neigh->second[i] != undefined_ele_id)
+                    if(search_neigh->second[new_iside] != undefined_ele_id)
                         n_side_neighs = 1;
             }
-            raw_ngh_output_file << n_side_neighs << " ";
+            ss << n_side_neighs << " ";
         }
         
         for (unsigned int i = 0; i < ele->n_sides(); i++) {
-            Edge edge = ele.side(i)->edge();
+            uint new_iside = old_to_new_side[i];
+            Edge edge = ele.side(new_iside)->edge();
             if(edge.n_sides() > 1){
                 for (uint j = 0; j < edge.n_sides(); j++) {
-                    if(edge.side(j) != ele.side(i))
-                        raw_ngh_output_file << edge.side(j)->element().idx() << " ";
+                    if(edge.side(j) != ele.side(new_iside))
+                        ss << edge.side(j)->element().input_id() << " ";
                 }
             }
             //check vb neighbour
             else if(search_neigh != neigh_vb_map.end()
-                    && search_neigh->second[i] != undefined_ele_id){
-                raw_ngh_output_file << search_neigh->second[i] << " ";
+                    && search_neigh->second[new_iside] != undefined_ele_id){
+                auto neigh_ele = element_accessor(search_neigh->second[new_iside]);
+                ss << neigh_ele.input_id() << " ";
             }
         }
         
         // list higher dim neighbours
-        raw_ngh_output_file << ele->n_neighs_vb() << " ";
+        ss << ele->n_neighs_vb() << " ";
         for (unsigned int i = 0; i < ele->n_neighs_vb(); i++)
-            raw_ngh_output_file << ele->neigh_vb[i]->side()->element().idx() << " ";
+            ss << ele->neigh_vb[i]->side()->element().input_id() << " ";
         
-        raw_ngh_output_file << endl;
+        // remove last white space
+        string line = ss.str();
+        raw_ngh_output_file << line.substr(0, line.size()-1) << endl;
         cit ++;
     }
     raw_ngh_output_file << "$EndFlowField\n" << endl;

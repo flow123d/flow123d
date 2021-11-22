@@ -315,6 +315,10 @@ protected:
     std::vector<unsigned int> elem_permutation_;
 
 
+    ///
+    std::array<std::array<uint, 4>, 64> element_nodes_original_;
+
+
     /// Index set assigning to global element index the local index used in parallel vectors.
     LongIdx *row_4_el;
 	/// Index set assigning to local element index its global index.
@@ -339,7 +343,7 @@ protected:
     // friend class BIHTree;
     // friend class Boundary;
     // friend class BCMesh;
-    // template <int spacedim> friend class ElementAccessor;
+    template <int spacedim> friend class ElementAccessor;
     template <int spacedim> friend class NodeAccessor;
 
 };
@@ -671,7 +675,6 @@ protected:
      * MPI communicator used for partitioning and ...
      */
     MPI_Comm comm_;
-
 
     friend class Edge;
     friend class Side;
