@@ -75,7 +75,6 @@ namespace Input {
 }
 
 template<int spacedim, class Value> class FieldAddPotential;
-template<int spacedim, class Value> class FieldDivide;
 
 /**
  * @brief Mixed-hybrid model of linear Darcy flow, possibly unsteady.

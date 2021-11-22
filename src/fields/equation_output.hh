@@ -23,6 +23,7 @@
 class OutputTime;
 class TimeGovernor;
 class TimeStep;
+class DOFHandlerMultiDim;
 namespace Input {
 	class Record;
 	namespace Type {
@@ -31,6 +32,9 @@ namespace Input {
                 class Selection;
 	}
 }
+template<unsigned int dim> class AssemblyOutputElemData;
+template<unsigned int dim> class AssemblyOutputNodeData;
+template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
 
 /**
@@ -54,6 +58,12 @@ public:
      */
     static Input::Type::Record &get_input_type();
     
+    /// Default constructor
+    EquationOutput();
+
+    /// Destructor
+    ~EquationOutput();
+
     /**
      * Make Input::Type for the output record. Particular selection of output fields is created
      * from the contents of *this FieldSet using provided equation name and additional description.
@@ -111,6 +121,9 @@ private:
      */
     void make_output_mesh(bool parallel);
 
+    /// Initialize data of Field given by passed Input::Record
+    void init_field_item(Input::Iterator<Input::Record> it, const TimeGovernor & tg);
+
     /// output stream (may be shared by more equation)
     std::shared_ptr<OutputTime> stream_;
     /// The time mark type of the equation.
@@ -140,6 +153,15 @@ private:
 
     /// Output mesh.
     std::shared_ptr<OutputMeshBase> output_mesh_;
+
+    /// Objects for distribution of dofs.
+    std::shared_ptr<DOFHandlerMultiDim> dh_;
+    std::shared_ptr<DOFHandlerMultiDim> dh_node_;
+
+    /// general assembly objects, hold assembly objects of appropriate dimension
+    GenericAssembly< AssemblyOutputElemData > * output_elem_data_assembly_;
+    GenericAssembly< AssemblyOutputNodeData > * output_node_data_assembly_;
+    GenericAssembly< AssemblyOutputNodeData > * output_corner_data_assembly_;
 
 };
 
