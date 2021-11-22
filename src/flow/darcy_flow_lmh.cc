@@ -51,6 +51,7 @@
 #include "flow/assembly_lmh.hh"
 #include "flow/darcy_flow_lmh.hh"
 #include "flow/darcy_flow_mh_output.hh"
+#include "flow/assembly_models.hh"
 
 #include "tools/time_governor.hh"
 #include "fields/field_algo_base.hh"
@@ -58,7 +59,8 @@
 #include "fields/field_values.hh"
 #include "fields/field_add_potential.hh"
 #include "fields/field_fe.hh"
-#include "fields/field_divide.hh"
+#include "fields/field_model.hh"
+#include "fields/field_constant.hh"
 
 #include "coupling/balance.hh"
 
@@ -235,6 +237,11 @@ void DarcyLMH::init_eq_data()
     data_->gravity_ =  arma::vec(gvec);
     data_->gravity_vec_ = data_->gravity_.subvec(0,2);
 
+    FieldValue<3>::VectorFixed gvalue(data_->gravity_vec_);
+    auto field_algo=std::make_shared<FieldConstant<3, FieldValue<3>::VectorFixed>>();
+    field_algo->set_value(gvalue);
+    data_->gravity_field.set(field_algo, 0.0);
+
     data_->bc_pressure.add_factory(
         std::make_shared<FieldAddPotential<3, FieldValue<3>::Scalar>::FieldFactory>
         (data_->gravity_, "bc_piezo_head") );
@@ -288,14 +295,15 @@ void DarcyLMH::initialize() {
     init_eq_data();
     output_object = new DarcyFlowMHOutput(this, input_record_);
 
+    data_->add_coords_field();
+
     { // construct pressure, velocity and piezo head fields
 		uint rt_component = 0;
         data_->full_solution = data_->dh_->create_vector();
         auto ele_flux_ptr = create_field_fe<3, FieldValue<3>::VectorFixed>(data_->dh_, &data_->full_solution, rt_component);
         data_->flux.set(ele_flux_ptr, 0.0);
 
-		auto ele_velocity_ptr = std::make_shared< FieldDivide<3, FieldValue<3>::VectorFixed> >(ele_flux_ptr, data_->cross_section);
-		data_->field_ele_velocity.set(ele_velocity_ptr, 0.0);
+		data_->field_ele_velocity.set(Model<3, FieldValue<3>::VectorFixed>::create(fn_mh_velocity(), data_->flux, data_->cross_section), 0.0);
 
 		uint p_ele_component = 1;
         auto ele_pressure_ptr = create_field_fe<3, FieldValue<3>::Scalar>(data_->dh_, &data_->full_solution, p_ele_component);
@@ -305,9 +313,10 @@ void DarcyLMH::initialize() {
         auto edge_pressure_ptr = create_field_fe<3, FieldValue<3>::Scalar>(data_->dh_, &data_->full_solution, p_edge_component);
 		data_->field_edge_pressure.set(edge_pressure_ptr, 0.0);
 
-		arma::vec4 gravity = (-1) * data_->gravity_;
-		auto ele_piezo_head_ptr = std::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar> >(gravity, ele_pressure_ptr);
-		data_->field_ele_piezo_head.set(ele_piezo_head_ptr, 0.0);
+		data_->field_ele_piezo_head.set(
+		        Model<3, FieldValue<3>::Scalar>::create(fn_mh_piezohead(), data_->gravity_field, data_->X(), data_->field_ele_pressure),
+		        0.0
+		);
     }
 
     { // init DOF handlers represents element pressure DOFs

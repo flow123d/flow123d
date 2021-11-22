@@ -26,9 +26,9 @@
 #include "tools/general_iterator.hh"  // for Iter
 #include "system/armor.hh"            // for Armor::array
 #include "system/index_types.hh"      // for LongIdx
+#include "la/distribution.hh"         // for Distribution
 
 class Mesh;
-class Distribution;
 class OutputElement;
 class OutputMesh;
 class OutputMeshDiscontinuous;
@@ -132,6 +132,22 @@ public:
 		else return shared_from_this();
 	};
 
+	/**
+	 * Return local element index to its global index.
+	 *
+	 * Temporary method. Used only in output assembly classes. DO NOT USE in other code!
+	 */
+	inline LongIdx get_loc_elem_idx(LongIdx global_idx) {
+	    ASSERT_LT_DBG(global_idx, (int)el_ds_->size()).error("Index of element is out of mesh.\n");
+	    ASSERT_DBG(loc_4_el_[global_idx] != -1)(global_idx).error("Element is not local.\n");
+	    return loc_4_el_[global_idx];
+	}
+
+    /// Getter to offsets data
+    inline std::shared_ptr<ElementDataCache<unsigned int>> offsets() const {
+        return offsets_;
+    }
+
 protected:
 	/**
 	 * Possible types of OutputMesh.
@@ -216,6 +232,7 @@ protected:
      *  - refined mesh creates own objects
      */
     LongIdx *el_4_loc_;           ///< Index set assigning to local element index its global index.
+    LongIdx *loc_4_el_;           ///< Index set assigning to global index its local element index.
     Distribution *el_ds_;         ///< Parallel distribution of elements.
     LongIdx *node_4_loc_;         ///< Index set assigning to local node index its global index.
     Distribution *node_ds_;       ///< Parallel distribution of nodes. Depends on elements distribution.

@@ -26,7 +26,7 @@
 
 
 FieldSet::FieldSet()
-{}
+: mesh_(nullptr) {}
 
 FieldSet &FieldSet::operator +=(FieldCommon &add_field) {
     FieldCommon *found_field = field(add_field.name());
@@ -204,7 +204,6 @@ void FieldSet::set_dependency(FieldSet &used_fieldset) {
     region_field_update_order_.clear();
     std::unordered_set<const FieldCommon *> used_fields;
 
-    unordered_map<std::string, unsigned int>::iterator it;
     for (unsigned int i_reg=0; i_reg<mesh_->region_db().size(); ++i_reg) {
         for (FieldListAccessor f_acc : used_fieldset.fields_range()) {
             topological_sort( f_acc.field(), i_reg, used_fields );
@@ -237,6 +236,11 @@ void FieldSet::add_coords_field() {
                .input_default("0.0")
                .flags( FieldFlag::input_copy )
                .description("Depth field.");
+
+    if (this->mesh_ != nullptr) {
+        X_.set_mesh(*this->mesh_);
+        depth_.set_mesh(*this->mesh_);
+    }
 
     depth_.set_field_coords(&X_);
 }
