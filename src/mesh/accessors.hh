@@ -254,6 +254,11 @@ public:
         return BoundingBox(this->vertex_list());
     }
 
+
+    inline auto &orig_nodes_order() const {
+    	return mesh_->element_nodes_original_[element()->permutation_];
+    }
+
     bool operator==(const ElementAccessor<spacedim>& other) const {
     	return (element_idx_ == other.element_idx_);
     }

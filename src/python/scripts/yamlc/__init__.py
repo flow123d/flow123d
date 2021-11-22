@@ -80,7 +80,10 @@ TEST_RESULTS = 'test_results'
 YAML = '.yaml'
 CONFIG_YAML = 'config.yaml'
 
-
+"""
+TODO: Remove defaults. As hot fix the check_rules default was removed. This
+cause failure if any reference file is present as there is no rule for it. 
+"""
 DEFAULTS = {
     TAG_PROC:           [1],
     TAG_TIME_LIMIT:     30,
@@ -88,13 +91,7 @@ DEFAULTS = {
     TAG_DEATH_TEST:     YamlDeathTest.FALSE,
     TAG_TAGS:           [],
     TAG_ARGS:           [],
-    TAG_CHECK_RULES: [
-        {
-            'ndiff': {
-                'files': ['*']
-            }
-        }
-    ]
+    TAG_CHECK_RULES: []
 }
 
 

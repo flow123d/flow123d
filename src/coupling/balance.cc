@@ -40,6 +40,9 @@ using namespace Input::Type;
 bool Balance::do_yaml_output_ = true;
 
 const Selection & Balance::get_format_selection_input_type() {
+	// TODO: keep just YAML and txt, adapt tests (version 4.0)
+	// TODO: keep just YAML output, move conversions to Python postprocessing
+
 	return Selection("Balance_output_format", "Format of output file for balance.")
 		.add_value(Balance::legacy, "legacy", "Legacy format used by previous program versions.")
 		.add_value(Balance::txt, "txt", "Excel format with tab delimiter.")
@@ -1063,6 +1066,11 @@ void Balance::output_csv(double time, char delimiter, const std::string& comment
 			if (repeat && (output_line_counter_%repeat == 0)) format_csv_output_header(delimiter, comment_string);
 
 			double error = sum_masses_[qi] - (initial_mass_[qi] + integrated_sources_[qi] + integrated_fluxes_[qi]);
+
+            // error makes trouble in ndiff due to cancellation - difference of two similar numbers
+            // DebugOut().fmt("error_[qi]={:.15e} sum_masses_[qi]={:.15e}, initial_mass_[qi]={:.15e}, integrated_sources_[qi]={:.15e}, integrated_fluxes_[qi]={:.15e}",
+                // error, sum_masses_[qi], initial_mass_[qi], integrated_sources_[qi], integrated_fluxes_[qi]);
+
 			output_ << format_csv_val(time / time_->get_coef(), delimiter, true)
 					<< format_csv_val("ALL", delimiter)
 					<< format_csv_val(quantities_[qi].name_, delimiter)
