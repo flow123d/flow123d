@@ -312,7 +312,7 @@ void DarcyFlowMHOutput::output_internal_flow_data()
 
         std::stringstream ss;
         // pressure
-        ss << fmt::format("{} {} ", dh_cell.elm().index(), data->full_solution.get(indices[ele->n_sides()]));
+        ss << fmt::format("{} {} ", dh_cell.elm().input_id(), data->full_solution.get(indices[ele->n_sides()]));
         
         // velocity at element center
         flux_in_center = data->field_ele_velocity.value(ele.centre(), ele);

@@ -491,7 +491,7 @@ void DarcyMH::initialize() {
     }
 
     // Initialize bc_switch_dirichlet to size of global boundary.
-    data_->bc_switch_dirichlet.resize(mesh_->n_elements()+mesh_->get_bc_mesh()->n_elements(), 1);
+    data_->bc_switch_dirichlet.resize(mesh_->n_elements()+mesh_->bc_mesh()->n_elements(), 1);
 
 
     nonlinear_iteration_=0;
