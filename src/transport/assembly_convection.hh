@@ -233,7 +233,7 @@ public:
             eq_data_->corr_vec[sbi].set(local_p0_dof, source);
             // addition to diagonal of the transport matrix
             diag = eq_fields_->sources_sigma[sbi](p) * eq_fields_->cross_section(p);
-            eq_data_->tm_diag[sbi][local_p0_dof] = - diag;
+            eq_data_->tm_diag[sbi].set(local_p0_dof, - diag);
 
             // compute maximal cfl condition over all substances
             max_cfl = std::max(max_cfl, fabs(diag));

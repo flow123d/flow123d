@@ -202,7 +202,7 @@ public:
         VectorMPI cfl_source_;      ///< Parallel vector for source term contribution to CFL condition.
         VectorMPI cfl_flow_;        ///< Parallel vector for flow contribution to CFL condition.
         Mat tm;                     ///< PETSc transport matrix
-        double **tm_diag;      //<<<< change destructor
+        vector<VectorMPI> tm_diag;  ///< additions to PETSC transport matrix on the diagonal - from sources (for each substance)
         Vec *bcvcorr;               ///< Boundary condition correction vector
         double transport_bc_time;   ///< Time of the last update of the boundary condition terms.
 		TimeGovernor *time_;
@@ -383,7 +383,7 @@ private:
 
     VecScatter vconc_out_scatter;
     Vec vpmass_diag;  // diagonal entries in mass matrix from last time (cross_section * porosity)
-    Vec *v_tm_diag; // additions to PETSC transport matrix on the diagonal - from sources (for each substance)
+//    Vec *v_tm_diag; // additions to PETSC transport matrix on the diagonal - from sources (for each substance)
 
     ///
     Vec *vpconc; // previous concentration vector

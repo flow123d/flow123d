@@ -177,7 +177,7 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record in
     eq_data_->dh_ = make_shared<DOFHandlerMultiDim>(init_mesh);
     shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>( &init_mesh, fe);
     eq_data_->dh_->distribute_dofs(ds);
-    eq_data_->tm_diag = nullptr;
+    cumulative_corr = nullptr;
 
 }
 
@@ -268,7 +268,7 @@ ConvectionTransport::~ConvectionTransport()
 {
     unsigned int sbi;
 
-    if (eq_data_->tm_diag) {
+    if (cumulative_corr) {
         //Destroy mpi vectors at first
         chkerr(MatDestroy(&eq_data_->tm));
         chkerr(VecDestroy(&eq_data_->mass_diag));
@@ -279,22 +279,18 @@ ConvectionTransport::~ConvectionTransport()
         	chkerr(VecDestroy(&vpconc[sbi]));
         	chkerr(VecDestroy(&eq_data_->bcvcorr[sbi]));
         	chkerr(VecDestroy(&vcumulative_corr[sbi]));
-        	chkerr(VecDestroy(&v_tm_diag[sbi]));
 
             // arrays of arrays
             delete cumulative_corr[sbi];
-            //delete eq_data_->tm_diag[sbi];
         }
 
         // arrays of mpi vectors
         delete vpconc;
         delete eq_data_->bcvcorr;
         delete vcumulative_corr;
-        delete v_tm_diag;
         
         // arrays of arrays
         delete cumulative_corr;
-        delete eq_data_->tm_diag;
 
         // assembly objects
         delete mass_assembly_;
@@ -334,11 +330,9 @@ void ConvectionTransport::alloc_transport_vectors() {
     unsigned int sbi, n_subst;
     n_subst = n_substances();
     
-    eq_data_->tm_diag = new double*[n_subst];
     cumulative_corr = new double*[n_subst];
     for (sbi = 0; sbi < n_subst; sbi++) {
       cumulative_corr[sbi] = new double[el_ds->lsize()];
-      eq_data_->tm_diag[sbi] = new double[el_ds->lsize()];
     }
 
     eq_fields_->conc_mobile_fe.resize(n_subst);
@@ -357,7 +351,7 @@ void ConvectionTransport::alloc_transport_structs_mpi() {
     vpconc = new Vec[n_subst];
     eq_data_->bcvcorr = new Vec[n_subst];
     vcumulative_corr = new Vec[n_subst];
-    v_tm_diag = new Vec[n_subst];
+    eq_data_->tm_diag.reserve(eq_data_->n_substances());
     eq_data_->corr_vec.reserve(eq_data_->n_substances());
     
 
@@ -374,8 +368,7 @@ void ConvectionTransport::alloc_transport_structs_mpi() {
         
         eq_data_->corr_vec.emplace_back(el_ds->lsize(), PETSC_COMM_WORLD);
         
-        VecCreateMPIWithArray(PETSC_COMM_WORLD,1, el_ds->lsize(), mesh_->n_elements(),
-                eq_data_->tm_diag[sbi], &v_tm_diag[sbi]);
+        eq_data_->tm_diag.emplace_back(el_ds->lsize(), PETSC_COMM_WORLD);
 
         VecZeroEntries(vcumulative_corr[sbi]);
     }
@@ -631,7 +624,7 @@ void ConvectionTransport::update_solution() {
         for (unsigned int sbi=0; sbi<n_substances(); sbi++)
         {
             VecScale(eq_data_->corr_vec[sbi].petsc_vec(), dt);
-            VecScale(v_tm_diag[sbi], dt);
+            VecScale(eq_data_->tm_diag[sbi].petsc_vec(), dt);
         }
         is_src_term_scaled = true;
     }
@@ -671,7 +664,7 @@ void ConvectionTransport::update_solution() {
       // Computation: first, we compute this diagonal addition D*pconc and save it temporaly into RHS
         
       // RHS = D*pconc, where D is diagonal matrix represented by a vector
-      VecPointwiseMult(vcumulative_corr[sbi], v_tm_diag[sbi], vconc); //w = x.*y
+      VecPointwiseMult(vcumulative_corr[sbi], eq_data_->tm_diag[sbi].petsc_vec(), vconc); //w = x.*y
       
       // Then we add boundary terms ans other source terms into RHS.
       // RHS = 1.0 * bcvcorr + 1.0 * corr_vec + 1.0 * rhs
