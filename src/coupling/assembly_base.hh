@@ -127,7 +127,7 @@ public:
     virtual inline void assemble_cell_integrals(const RevertableList<BulkIntegralData> &bulk_integral_data) {
     	for (unsigned int i=0; i<bulk_integral_data.permanent_size(); ++i) {
             if (bulk_integral_data[i].cell.dim() != dim) continue;
-            this->cell_integral(bulk_integral_data[i].cell, element_cache_map_->position_in_cache(bulk_integral_data[i].cell.elm().mesh_idx()));
+            this->cell_integral(bulk_integral_data[i].cell, element_cache_map_->position_in_cache(bulk_integral_data[i].cell.elm_idx()));
     	}
     	// Possibly optimization but not so fast as we would assume (needs change interface of cell_integral)
         /*for (unsigned int i=0; i<element_cache_map_->n_elements(); ++i) {

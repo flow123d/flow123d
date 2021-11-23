@@ -309,10 +309,6 @@ public:
 
 	void update_after_reactions(bool solution_changed);
 
-    void get_par_info(LongIdx * &el_4_loc, Distribution * &el_ds);
-
-    LongIdx *get_row_4_el();
-
     /// Access to balance object of Model
     inline std::shared_ptr<Balance> balance() const {
         return Model::balance_;

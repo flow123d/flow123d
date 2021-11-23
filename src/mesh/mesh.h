@@ -70,6 +70,7 @@ public:
     static Input::Type::Record input_type;
 };
 
+
 /** Auxiliary structure that keeps the separate
  * element maps (bulk and boundary) for reading mesh and elementwise data.
  * The mapping is considered from the source mesh (reading) to the target mesh (computation).
@@ -91,18 +92,272 @@ struct EquivalentMeshMap{
 };
 
 
+/// Base class for Mesh and BCMesh.
+class MeshBase {
+public:
+
+    TYPEDEF_ERR_INFO( EI_ElemId, int);
+    TYPEDEF_ERR_INFO( EI_ElemIdOther, int);
+
+    DECLARE_EXCEPTION(ExcTooMatchingIds,
+            << "Mesh: Duplicate dim-join lower dim elements: " << EI_ElemId::val << ", " << EI_ElemIdOther::val << ".\n" );
+
+    static const unsigned int undef_idx=-1;
+
+    MeshBase();
+
+    virtual ~MeshBase();
+
+    inline unsigned int n_elements() const
+    { return element_vec_.size(); }
+
+    inline unsigned int n_edges() const
+    { return edges.size(); }
+
+    unsigned int n_vb_neighbours() const;
+
+    inline Distribution *get_el_ds() const
+    { return el_ds; }
+
+    inline LongIdx *get_el_4_loc() const
+    { return el_4_loc; }
+
+    inline LongIdx *get_row_4_el() const
+    { return row_4_el; }
+
+    const Element &element(unsigned idx) const
+    { return element_vec_[idx]; }
+
+    /// Return edge with given index.
+    Edge edge(uint edge_idx) const;
+
+    /// Return neighbour with given index.
+    const Neighbour &vb_neighbour(unsigned int nb) const;
+
+    /// Return element id (in GMSH file) of element of given position in element vector.
+    int find_elem_id(unsigned int pos) const
+    { return element_ids_[pos]; }
+
+    /**
+     * Returns maximal number of sides of one edge, which connects elements of dimension @p dim.
+     * @param dim Dimension of elements sharing the edge.
+     */
+    unsigned int max_edge_sides(unsigned int dim) const { return max_edge_sides_[dim-1]; }
+
+    const DuplicateNodes *duplicate_nodes() const
+    { return duplicate_nodes_; }
+
+    /**
+     * Returns nodes_elements vector, if doesn't exist creates its.
+     */
+    vector<vector<unsigned int> > const & node_elements();
+
+    /// Return node id (in GMSH file) of node of given position in node vector.
+    inline int find_node_id(unsigned int pos) const
+    {
+        return (*node_ids_)[pos];
+    }
+
+    /// Check if given index is in element_vec_
+    void check_element_size(unsigned int elem_idx) const;
+
+    const std::vector<unsigned int> &get_side_nodes(unsigned int dim, unsigned int side) const
+    { return side_nodes[dim][side]; }
+
+    inline unsigned int n_nodes() const {
+        return nodes_->size();
+    }
+
+    inline const RegionDB &region_db() const {
+        return *region_db_;
+    }
+
+    /// Create and return NodeAccessor to node of given idx
+    NodeAccessor<3> node(unsigned int idx) const;
+
+    /// Create and return ElementAccessor to element of given idx
+    ElementAccessor<3> element_accessor(unsigned int idx) const;
+
+
+    // TODO: have also private non-const accessors and ranges
+
+    /// Returns range of mesh elements
+    Range<ElementAccessor<3>> elements_range() const;
+
+    /// Returns range of nodes
+    Range<NodeAccessor<3>> node_range() const;
+
+    /// Return range of edges.
+    Range<Edge> edge_range() const;
+
+
+
+    virtual Boundary boundary(uint edge_idx) const = 0;
+    virtual BCMesh *bc_mesh() const = 0;
+
+
+    /**
+     * Returns pointer to partitioning object. Partitioning is created during setup_topology.
+     */
+    virtual Partitioning *get_part() = 0;
+    virtual const LongIdx *get_local_part() = 0;
+
+    /*
+     * Check if nodes and elements are compatible with \p mesh.
+     */
+    virtual std::shared_ptr<EquivalentMeshMap> check_compatible_mesh( Mesh & input_mesh ) = 0;
+
+    /**
+     * Find intersection of element lists given by Mesh::node_elements_ for elements givne by @p nodes_list parameter.
+     * The result is placed into vector @p intersection_element_list. If the @p node_list is empty, and empty intersection is
+     * returned.
+     */
+    void intersect_element_lists(vector<unsigned int> const &nodes_list, vector<unsigned int> &intersection_element_list);
+
+    /// For element of given elem_id returns index in element_vec_ or (-1) if element doesn't exist.
+    inline int elem_index(int elem_id) const;
+
+        /// Initialize element_vec_, set size and reset counters of boundary and bulk elements.
+    void init_element_vector(unsigned int size);
+
+    /// Initialize node_vec_, set size
+    void init_node_vector(unsigned int size);
+
+    /// Return permutation vector of nodes
+    inline const std::vector<unsigned int> &node_permutations() const
+    { return node_permutation_; }
+
+    /// Return permutation vector of elements
+    inline const std::vector<unsigned int> &element_permutations() const
+    { return elem_permutation_; }
+
+
+    /// For each node the vector contains a list of elements that use this node
+    vector<vector<unsigned int> > node_elements_;
+
+    // Temporary solution for numbering of nodes on sides.
+    // The data are defined in RefElement<dim>::side_nodes,
+    // Mesh::side_nodes can be removed as soon as Element
+    // is templated by dimension.
+    //
+    // side_nodes[dim][elm_side_idx][side_node_idx]
+    // for every side dimension D = 0 .. 2
+    // for every element side 0 .. D+1
+    // for every side node 0 .. D
+    // index into element node array
+    vector< vector< vector<unsigned int> > > side_nodes;
+
+protected:
+
+    /**
+     * Permute nodes of individual elements so that all elements have same edge orientations and aligned sides have same order of their nodes
+     * Canonical edge orientation in elements and faces is from nodes of lower local index to higher local index.
+     *
+     * Algorithm detals:
+     * 1. Orient all edges from lowe global node id to higher node id, fictional step. (substantial is orientation of yet non-oriented edges of a node in direction out of the node.
+     *    Can be proven (!?) that this prevents edge cycles of the length 3 (faces with cyclic edges).
+     * 2. Having all faces non-cyclic there exists a permutation of any element to the reference element.
+     *    Pass through the elements. Sort nodes by global ID.
+     */
+    void canonical_faces();
+
+    /**
+     * Create element lists for nodes in Mesh::nodes_elements.
+     */
+    void create_node_element_lists();
+
+    /// Adds element to mesh data structures (element_vec_, element_ids_), returns pointer to this element.
+    Element * add_element_to_vector(int id, bool is_boundary = false);
+
+    /**
+     * Remove elements with dimension not equal to @p dim from @p element_list. Index of the first element of dimension @p dim-1,
+     * is returned in @p element_idx. If no such element is found the method returns false, if one such element is found the method returns true,
+     * if more elements are found we report an user input error.
+     */
+    bool find_lower_dim_element(vector<unsigned int> &element_list, unsigned int dim, unsigned int &element_idx);
+
+    /**
+     * Returns true if side @p si has same nodes as in the list @p side_nodes.
+     */
+    bool same_sides(const SideIter &si, vector<unsigned int> &side_nodes);
+
+    /**
+     * Vector of elements of the mesh.
+     *
+     * Store all elements of the mesh in order bulk elements - boundary elements
+     */
+    vector<Element> element_vec_;
+
+    /// Maps element ids to indexes into vector element_vec_
+    BidirectionalMap<int> element_ids_;
+
+    /// Vector of MH edges, this should not be part of the geometrical mesh
+    std::vector<EdgeData> edges;
+
+    /// Vector of compatible neighbourings.
+    vector<Neighbour> vb_neighbours_;
+
+    /// Maximal number of sides per one edge in the actual mesh (set in make_neighbours_and_edges()).
+    unsigned int max_edge_sides_[3];
+
+    /**
+     * Vector of nodes of the mesh.
+     */
+    shared_ptr<Armor::Array<double>> nodes_;
+
+    /// Maps node ids to indexes into vector node_vec_
+    shared_ptr<BidirectionalMap<int>> node_ids_;
+
+    /// Vector of node permutations of optimized mesh (see class MeshOptimizer)
+    std::vector<unsigned int> node_permutation_;
+
+    /// Vector of element permutations of optimized mesh (see class MeshOptimizer)
+    std::vector<unsigned int> elem_permutation_;
+
+
+    ///
+    std::array<std::array<uint, 4>, 64> element_nodes_original_;
+
+
+    /// Index set assigning to global element index the local index used in parallel vectors.
+    LongIdx *row_4_el;
+	/// Index set assigning to local element index its global index.
+    LongIdx *el_4_loc;
+	/// Parallel distribution of elements.
+	Distribution *el_ds;
+
+
+    DuplicateNodes *duplicate_nodes_;
+
+    /**
+     * Database of regions (both bulk and boundary) of the mesh. Regions are logical parts of the
+     * domain that allows setting of different data and boundary conditions on them.
+     */
+    std::shared_ptr<RegionDB> region_db_;
+
+
+    friend class Edge;
+    // friend class Side;
+    // friend class RegionSetBase;
+    friend class Element;
+    // friend class BIHTree;
+    // friend class Boundary;
+    // friend class BCMesh;
+    template <int spacedim> friend class ElementAccessor;
+    template <int spacedim> friend class NodeAccessor;
+
+};
+
 //=============================================================================
 // STRUCTURE OF THE MESH
 //=============================================================================
 
-class Mesh {
+class Mesh : public MeshBase {
 public:
     TYPEDEF_ERR_INFO( EI_ElemLast, int);
     TYPEDEF_ERR_INFO( EI_ElemNew, int);
     TYPEDEF_ERR_INFO( EI_RegLast, std::string);
     TYPEDEF_ERR_INFO( EI_RegNew, std::string);
-    TYPEDEF_ERR_INFO( EI_ElemId, int);
-    TYPEDEF_ERR_INFO( EI_ElemIdOther, int);
     TYPEDEF_ERR_INFO( EI_Region, std::string);
     TYPEDEF_ERR_INFO( EI_RegIdx, unsigned int);
     TYPEDEF_ERR_INFO( EI_Dim, unsigned int);
@@ -123,8 +378,6 @@ public:
             << "Split elements by dim, create separate regions and then possibly use Union.\n" );
     DECLARE_EXCEPTION(ExcBadElement,
             << "Extremely bad quality element ID=" << EI_ElemId::val << ",(" << EI_Quality::val << "<4*epsilon).\n");
-    DECLARE_EXCEPTION(ExcTooMatchingIds,
-            << "Mesh: Duplicate dim-join lower dim elements: " << EI_ElemId::val << ", " << EI_ElemIdOther::val << ".\n" );
     DECLARE_EXCEPTION(ExcBdrElemMatchRegular,
             << "Boundary element (id: " << EI_ElemId::val << ") match a regular element (id: " << EI_ElemIdOther::val << ") of lower dimension.\n" );
 
@@ -143,7 +396,6 @@ public:
      */
     static const Input::Type::Selection & get_input_intersection_variant();
     
-
     static const Input::Type::Record & get_input_type();
 
 
@@ -165,44 +417,19 @@ public:
     Mesh(Mesh &other);
 
     /// Destructor.
-    virtual ~Mesh();
-
-    virtual inline unsigned int n_nodes() const {
-        return nodes_.size();
-    }
+    ~Mesh() override;
 
     inline unsigned int n_boundaries() const {
         return boundary_.size();
     }
 
-    inline unsigned int n_edges() const {
-        return edges.size();
-    }
-
-    Edge edge(uint edge_idx) const;
-    Boundary boundary(uint edge_idx) const;
+    Boundary boundary(uint edge_idx) const override;
 
     unsigned int n_corners();
 
-    inline const RegionDB &region_db() const {
-        return region_db_;
-    }
+    Partitioning *get_part() override;
 
-    /**
-     * Returns pointer to partitioning object. Partitioning is created during setup_topology.
-     */
-    virtual Partitioning *get_part();
-
-    virtual const LongIdx *get_local_part();
-
-    Distribution *get_el_ds() const
-    { return el_ds; }
-
-    LongIdx *get_row_4_el() const
-    { return row_4_el; }
-
-    LongIdx *get_el_4_loc() const
-    { return el_4_loc; }
+    const LongIdx *get_local_part() override;
 
     Distribution *get_node_ds() const
     { return node_ds_; }
@@ -223,14 +450,6 @@ public:
 
     unsigned int n_sides() const;
 
-    unsigned int n_vb_neighbours() const;
-
-    /**
-     * Returns maximal number of sides of one edge, which connects elements of dimension @p dim.
-     * @param dim Dimension of elements sharing the edge.
-     */
-    unsigned int max_edge_sides(unsigned int dim) const { return max_edge_sides_[dim-1]; }
-
     /**
      * Reads mesh from stream.
      *
@@ -241,18 +460,6 @@ public:
      * Reads input record, creates regions, read the mesh, setup topology. creates region sets.
      */
     void init_from_input();
-
-    /**
-     * Permute nodes of individual elements so that all elements have same edge orientations and aligned sides have same order of their nodes
-     * Canonical edge orientation in elements and faces is from nodes of lower local index to higher local index.
-     *
-     * Algorithm detals:
-     * 1. Orient all edges from lowe global node id to higher node id, fictional step. (substantial is orientation of yet non-oriented edges of a node in direction out of the node.
-     *    Can be proven (!?) that this prevents edge cycles of the length 3 (faces with cyclic edges).
-     * 2. Having all faces non-cyclic there exists a permutation of any element to the reference element.
-     *    Pass through the elements. Sort nodes by global ID.
-     */
-    void canonical_faces();
 
     /**
      * Initialize all mesh structures from raw information about nodes and elements (including boundary elements).
@@ -277,12 +484,6 @@ public:
      */
     virtual std::shared_ptr<EquivalentMeshMap> check_compatible_mesh(Mesh & input_mesh);
 
-    /// Create and return ElementAccessor to element of given idx
-    virtual ElementAccessor<3> element_accessor(unsigned int idx) const;
-
-    /// Create and return NodeAccessor to node of given idx
-    NodeAccessor<3> node(unsigned int idx) const;
-
     /**
      * Reads elements and their affiliation to regions and region sets defined by user in input file
      * Format of input record is defined in method RegionSetBase::get_input_type()
@@ -291,10 +492,6 @@ public:
      */
     void read_regions_from_input(Input::Array region_list);
 
-    /**
-     * Returns nodes_elements vector, if doesn't exist creates its.
-     */
-    vector<vector<unsigned int> > const & node_elements();
 
     /// Vector of boundary sides where is prescribed boundary condition.
     /// TODO: apply all boundary conditions in the main assembling cycle over elements and remove this Vector.
@@ -314,29 +511,11 @@ public:
      */
     vector<vector<unsigned int> >  master_elements;
     
-    DuplicateNodes *tree;
-
-    /**
-     * Vector of compatible neighbourings.
-     */
-    vector<Neighbour> vb_neighbours_;
 
     int n_insides; // # of internal sides
     int n_exsides; // # of external sides
     mutable int n_sides_; // total number of sides (should be easy to count when we have separated dimensions
 
-
-    // Temporary solution for numbering of nodes on sides.
-    // The data are defined in RefElement<dim>::side_nodes,
-    // Mesh::side_nodes can be removed as soon as Element
-    // is templated by dimension.
-    //
-    // side_nodes[dim][elm_side_idx][side_node_idx]
-    // for every side dimension D = 0 .. 2
-    // for every element side 0 .. D+1
-    // for every side node 0 .. D
-    // index into element node array
-    vector< vector< vector<unsigned int> > > side_nodes;
 
     /**
      * Check usage of regions, set regions to elements defined by user, close RegionDB
@@ -348,13 +527,6 @@ public:
 
     /// Getter for BIH. Creates and compute BIH at first call.
     const BIHTree &get_bih_tree();\
-
-    /**
-     * Find intersection of element lists given by Mesh::node_elements_ for elements givne by @p nodes_list parameter.
-     * The result is placed into vector @p intersection_element_list. If the @p node_list is empty, and empty intersection is
-     * returned.
-     */
-    void intersect_element_lists(vector<unsigned int> const &nodes_list, vector<unsigned int> &intersection_element_list);
 
     /// Add new node of given id and coordinates to mesh
     void add_node(unsigned int node_id, arma::vec3 coords);
@@ -377,75 +549,17 @@ public:
     /// Maximal distance of observe point from Mesh relative to its size
     double global_snap_radius() const;
 
-    /// Initialize element_vec_, set size and reset counters of boundary and bulk elements.
-    void init_element_vector(unsigned int size);
-
-    /// Initialize node_vec_, set size
-    void init_node_vector(unsigned int size);
-
-    // TODO: have also private non-const accessors and ranges
-
-    /// Returns range of bulk elements
-    virtual Range<ElementAccessor<3>> elements_range() const;
-
-    /// Returns range of nodes
-    Range<NodeAccessor<3>> node_range() const;
-
-    /// Returns range of edges
-    Range<Edge> edge_range() const;
-
-    /// Returns count of boundary or bulk elements
-    virtual unsigned int n_elements() const {
-    	return bulk_size_;
-    }
-
-    /// For each node the vector contains a list of elements that use this node
-    vector<vector<unsigned int> > node_elements_;
-
-    /// For element of given elem_id returns index in element_vec_ or (-1) if element doesn't exist.
-    inline int elem_index(int elem_id) const
-    {
-        return element_ids_.get_position(elem_id);
-    }
-
-    /// Return element id (in GMSH file) of element of given position in element vector.
-    inline int find_elem_id(unsigned int pos) const
-    {
-        return element_ids_[pos];
-    }
-
-    /// Return permutation vector of elements
-    inline const std::vector<unsigned int> &element_permutations() const
-    {
-        return elem_permutation_;
-    }
-
     /// For node of given node_id returns index in element_vec_ or (-1) if node doesn't exist.
     inline int node_index(int node_id) const
     {
-        return node_ids_.get_position(node_id);
+        return node_ids_->get_position(node_id);
     }
 
-    /// Return node id (in GMSH file) of node of given position in node vector.
-    inline int find_node_id(unsigned int pos) const
-    {
-        return node_ids_[pos];
+    /// Implement MeshBase::bc_mesh(), getter of boundary mesh
+    BCMesh *bc_mesh() const override {
+        return bc_mesh_;
     }
 
-    /// Return permutation vector of nodes
-    inline const std::vector<unsigned int> &node_permutations() const
-    {
-        return node_permutation_;
-    }
-
-    /// Check if given index is in element_vec_
-    void check_element_size(unsigned int elem_idx) const;
-
-    /// Create boundary elements from data of temporary structure, this method MUST be call after read mesh from file, return number of read boundary elements
-    unsigned int create_boundary_elements();
-
-    /// Create boundary mesh if doesn't exist and return it.
-    BCMesh *get_bc_mesh();
 
 protected:
 
@@ -486,23 +600,6 @@ protected:
      */
     void make_neighbours_and_edges();
 
-    /**
-     * Create element lists for nodes in Mesh::nodes_elements.
-     */
-    void create_node_element_lists();
-    /**
-     * Remove elements with dimension not equal to @p dim from @p element_list. Index of the first element of dimension @p dim-1,
-     * is returned in @p element_idx. If no such element is found the method returns false, if one such element is found the method returns true,
-     * if more elements are found we report an user input error.
-     */
-    bool find_lower_dim_element(vector<unsigned int> &element_list, unsigned int dim, unsigned int &element_idx);
-
-    /**
-     * Returns true if side @p si has same nodes as in the list @p side_nodes.
-     */
-    bool same_sides(const SideIter &si, vector<unsigned int> &side_nodes);
-
-
     void element_to_neigh_vb();
 
     void count_element_types();
@@ -522,17 +619,11 @@ protected:
      */
     void modify_element_ids(const RegionDB::MapElementIDToRegionID &map);
 
-    /// Adds element to mesh data structures (element_vec_, element_ids_), returns pointer to this element.
-    Element * add_element_to_vector(int id);
-
     /// Initialize element
     void init_element(Element *ele, unsigned int elm_id, unsigned int dim, RegionIdx region_idx, unsigned int partition_id,
     		std::vector<unsigned int> node_ids);
 
     unsigned int n_bb_neigh, n_vb_neigh;
-
-    /// Maximal number of sides per one edge in the actual mesh (set in make_neighbours_and_edges()).
-    unsigned int max_edge_sides_[3];
 
     /// Output of neighboring data into raw output.
     void output_internal_ngh_data();
@@ -554,7 +645,7 @@ protected:
      * Fills the element mapping @p map.
      * Returns the number of compatible elements.
      */
-    unsigned int check_compatible_elements(Mesh* source_mesh, Mesh* target_mesh,
+    unsigned int check_compatible_elements(MeshBase* source_mesh, MeshBase* target_mesh,
                                            const std::vector<unsigned int>& node_ids,
                                            std::vector<LongIdx>& map);
 
@@ -564,11 +655,6 @@ protected:
      */
     bool optimize_memory_locality;
 
-    /**
-     * Database of regions (both bulk and boundary) of the mesh. Regions are logical parts of the
-     * domain that allows setting of different data and boundary conditions on them.
-     */
-    RegionDB region_db_;
     /**
      * Mesh partitioning. Created in setup_topology.
      */
@@ -590,43 +676,6 @@ protected:
      */
     MPI_Comm comm_;
 
-    /**
-     * Vector of elements of the mesh.
-     *
-     * Store all elements of the mesh in order bulk elements - boundary elements
-     */
-    vector<Element> element_vec_;
-
-    /// Hold data of boundary elements during reading mesh (allow to preserve correct order during reading of mix bulk-boundary element)
-    vector<ElementTmpData> bc_element_tmp_;
-
-    /// Count of bulk elements
-    unsigned int bulk_size_;
-
-    /// Count of boundary elements loaded from mesh file
-    unsigned int boundary_loaded_size_;
-
-    /// Maps element ids to indexes into vector element_vec_
-    BidirectionalMap<int> element_ids_;
-
-    /**
-     * Vector of nodes of the mesh.
-     */
-    Armor::Array<double> nodes_;
-
-    /// Maps node ids to indexes into vector node_vec_
-    BidirectionalMap<int> node_ids_;
-
-    /// Vector of MH edges, this should not be part of the geometrical mesh
-    std::vector<EdgeData> edges;
-
-    /// Vector of node permutations of optimized mesh (see class MeshOptimizer)
-    std::vector<unsigned int> node_permutation_;
-
-    /// Vector of element permutations of optimized mesh (see class MeshOptimizer)
-    std::vector<unsigned int> elem_permutation_;
-
-
     friend class Edge;
     friend class Side;
     friend class RegionSetBase;
@@ -644,12 +693,6 @@ private:
     /// Fill array node_4_loc_ and create object node_ds_ according to element distribution.
     void distribute_nodes();
 
-    /// Index set assigning to global element index the local index used in parallel vectors.
-    LongIdx *row_4_el;
-	/// Index set assigning to local element index its global index.
-    LongIdx *el_4_loc;
-	/// Parallel distribution of elements.
-	Distribution *el_ds;
 	/// Index set assigning to local node index its global index.
     LongIdx *node_4_loc_;
     /// Parallel distribution of nodes. Depends on elements distribution.
@@ -658,7 +701,7 @@ private:
     unsigned int n_local_nodes_;
 	/// Boundary mesh, object is created only if it's necessary
 	BCMesh *bc_mesh_;
-
+        
 };
 
 #endif

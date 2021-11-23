@@ -203,7 +203,7 @@ private:
     };
 
 	/// Create DofHandler object
-	void make_dof_handler(const Mesh *mesh);
+	void make_dof_handler(const MeshBase *mesh);
 
 	/// Interpolate data (use Gaussian distribution) over all elements of target mesh.
 	void interpolate_gauss(ElementDataCache<double>::ComponentDataPtr data_vec);
@@ -223,7 +223,7 @@ private:
 	/**
 	 * Fill data to boundary_dofs_ vector.
 	 *
-	 * TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
+	 * TODO: Temporary solution. REMOVE this method and fix all places where is boundary_dofs_ vector used.
 	 */
 	void fill_boundary_dofs();
 
