@@ -205,7 +205,7 @@ public:
         this->element_cache_map_ = element_cache_map;
 
         fe_ = std::make_shared< FE_P_disc<dim> >(0);
-        UpdateFlags u = update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points;
+        UpdateFlags u = update_values | update_side_JxW_values | update_normal_vectors | update_quadrature_points;
         fe_values_side_.initialize(*this->quad_low_, *fe_, u);
     }
 
@@ -363,7 +363,7 @@ public:
         this->element_cache_map_ = element_cache_map;
 
         fe_ = std::make_shared< FE_P_disc<dim> >(0);
-        UpdateFlags u = update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points;
+        UpdateFlags u = update_values | update_side_JxW_values | update_normal_vectors | update_quadrature_points;
         fe_values_side_.initialize(*this->quad_low_, *fe_, u);
         fe_values_vec_.resize(eq_data_->max_edg_sides);
         for (unsigned int sid=0; sid<eq_data_->max_edg_sides; sid++)
