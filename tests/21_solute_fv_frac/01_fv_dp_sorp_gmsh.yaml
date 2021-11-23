@@ -31,8 +31,6 @@ problem: !Coupling_Sequential
         bc_type: dirichlet
         bc_pressure: !FieldFormula
           value: x
-    balance:
-      format: gnuplot
     output:
       fields:
         - pressure_p0
@@ -61,7 +59,6 @@ problem: !Coupling_Sequential
       end_time: 5.0
     balance:
       cumulative: true
-      format: gnuplot
     reaction_term: !DualPorosity
       input_fields:
         - region: subset

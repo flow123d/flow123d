@@ -420,6 +420,9 @@ private:
 inline unsigned int DHCellAccessor::n_dofs() const
 {
     switch (this->dim()) {
+        case 0:
+            return fe<0>()->n_dofs();
+            break;
         case 1:
             return fe<1>()->n_dofs();
             break;
@@ -438,6 +441,9 @@ inline const Dof &DHCellAccessor::cell_dof(unsigned int idof) const
 {
     switch (this->dim())
     {
+        case 0:
+            return fe<0>()->dof(idof);
+            break;
         case 1:
             return fe<1>()->dof(idof);
             break;
@@ -451,7 +457,7 @@ inline const Dof &DHCellAccessor::cell_dof(unsigned int idof) const
 
     ASSERT(0)(this->dim()).error("Unsupported FE dimension.");
     // cannot be reached:
-    return fe<1>()->dof(idof);;
+    return fe<1>()->dof(idof);
 }
 
 

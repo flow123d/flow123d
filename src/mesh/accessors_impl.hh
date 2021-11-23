@@ -30,7 +30,7 @@ ElementAccessor<spacedim>::ElementAccessor()
  * Regional accessor.
  */
 template <int spacedim> inline
-ElementAccessor<spacedim>::ElementAccessor(const Mesh *mesh, RegionIdx r_idx)
+ElementAccessor<spacedim>::ElementAccessor(const MeshBase *mesh, RegionIdx r_idx)
 : mesh_(mesh),
   element_idx_(undef_idx),
   r_idx_(r_idx)
@@ -40,7 +40,7 @@ ElementAccessor<spacedim>::ElementAccessor(const Mesh *mesh, RegionIdx r_idx)
  * Element accessor.
  */
 template <int spacedim> inline
-ElementAccessor<spacedim>::ElementAccessor(const Mesh *mesh, unsigned int idx)
+ElementAccessor<spacedim>::ElementAccessor(const MeshBase *mesh, unsigned int idx)
 : mesh_(mesh),
   element_idx_(idx)
 {}
@@ -156,7 +156,7 @@ inline Edge::Edge()
   edge_idx_(undef_idx)
 {}
 
-inline Edge::Edge(const Mesh *mesh, unsigned int edge_idx)
+inline Edge::Edge(const MeshBase *mesh, unsigned int edge_idx)
 : mesh_(mesh),
   edge_idx_(edge_idx)
 {}
@@ -183,7 +183,7 @@ inline Side::Side()
 : mesh_(NULL), elem_idx_(0), side_idx_(0)
 {}
 
-inline Side::Side(const Mesh * mesh, unsigned int elem_idx, unsigned int set_lnum)
+inline Side::Side(const MeshBase * mesh, unsigned int elem_idx, unsigned int set_lnum)
 : mesh_(mesh), elem_idx_(elem_idx), side_idx_(set_lnum)
 {
 	mesh_->check_element_size(elem_idx);
@@ -204,7 +204,7 @@ inline bool Side::is_boundary() const {
 }
 
 inline NodeAccessor<3> Side::node(unsigned int i) const {
-    int i_n = mesh_->side_nodes[dim()][side_idx_][i];
+    int i_n = mesh_->get_side_nodes(dim(), side_idx_)[i];
 
     return element().node( i_n );
 }
@@ -253,7 +253,7 @@ inline Edge Boundary::edge()
 inline ElementAccessor<3> Boundary::element_accessor()
 {
     ASSERT_DBG(is_valid());
-    return boundary_data_->mesh_->element_accessor(boundary_data_->bc_ele_idx_);
+    return boundary_data_->mesh_->bc_mesh()->element_accessor(boundary_data_->bc_ele_idx_);
 }
 
 inline Region Boundary::region()
@@ -261,8 +261,8 @@ inline Region Boundary::region()
     return element_accessor().region();
 }
 
-inline Element * Boundary::element()
+inline const Element * Boundary::element()
 {
     ASSERT_DBG(is_valid());
-    return &( boundary_data_->mesh_->element_vec_[boundary_data_->bc_ele_idx_] );
+    return &( boundary_data_->mesh_->bc_mesh()->element(boundary_data_->bc_ele_idx_) );
 }
