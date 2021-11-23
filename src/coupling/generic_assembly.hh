@@ -23,6 +23,7 @@
 #include "fields/eval_points.hh"
 #include "fields/field_value_cache.hh"
 #include "tools/revertable_list.hh"
+#include "system/sys_profiler.hh"
 
 
 
@@ -51,25 +52,6 @@ struct AssemblyIntegrals {
 class GenericAssemblyBase
 {
 public:
-    GenericAssemblyBase(){}
-    virtual ~GenericAssemblyBase(){}
-    virtual void assemble(std::shared_ptr<DOFHandlerMultiDim> dh) = 0;
-};
-
-
-/**
- * @brief Generic class of assemblation.
- *
- * Class
- *  - holds assemblation structures (EvalPoints, Integral objects, Integral data table).
- *  - associates assemblation objects specified by dimension
- *  - provides general assemble method
- *  - provides methods that allow construction of element patches
- */
-template < template<IntDim...> class DimAssembly>
-class GenericAssembly : public GenericAssemblyBase
-{
-private:
 	/**
 	 * Helper structzre holds data of cell (bulk) integral
 	 *
@@ -159,8 +141,25 @@ private:
 	    unsigned int side_subset_index;    ///< Index (order) of subset on side of bulk element in EvalPoints object
 	};
 
-public:
+    GenericAssemblyBase(){}
+    virtual ~GenericAssemblyBase(){}
+    virtual void assemble(std::shared_ptr<DOFHandlerMultiDim> dh) = 0;
+};
 
+
+/**
+ * @brief Generic class of assemblation.
+ *
+ * Class
+ *  - holds assemblation structures (EvalPoints, Integral objects, Integral data table).
+ *  - associates assemblation objects specified by dimension
+ *  - provides general assemble method
+ *  - provides methods that allow construction of element patches
+ */
+template < template<IntDim...> class DimAssembly>
+class GenericAssembly : public GenericAssemblyBase
+{
+public:
     /// Constructor
     GenericAssembly( typename DimAssembly<1>::EqFields *eq_fields, typename DimAssembly<1>::EqData *eq_data)
     : multidim_assembly_(eq_fields, eq_data),
@@ -255,49 +254,6 @@ public:
     }
 
 private:
-    /// Assembles the cell integrals for the given dimension.
-    template<unsigned int dim>
-    inline void assemble_cell_integrals() {
-    	for (unsigned int i=0; i<bulk_integral_data_.permanent_size(); ++i) {
-            if (bulk_integral_data_[i].cell.dim() != dim) continue;
-            multidim_assembly_[Dim<dim>{}]->cell_integral(bulk_integral_data_[i].cell, element_cache_map_.position_in_cache(bulk_integral_data_[i].cell.elm().mesh_idx()));
-    	}
-    	// Possibly optimization but not so fast as we would assume (needs change interface of cell_integral)
-        /*for (unsigned int i=0; i<element_cache_map_.n_elements(); ++i) {
-            unsigned int elm_start = element_cache_map_.element_chunk_begin(i);
-            if (element_cache_map_.eval_point_data(elm_start).i_eval_point_ != 0) continue;
-            multidim_assembly_[Dim<dim>{}]->cell_integral(i, element_cache_map_.eval_point_data(elm_start).dh_loc_idx_);
-        }*/
-    }
-
-    /// Assembles the boundary side integrals for the given dimension.
-    template<unsigned int dim>
-    inline void assemble_boundary_side_integrals() {
-        for (unsigned int i=0; i<boundary_integral_data_.permanent_size(); ++i) {
-            if (boundary_integral_data_[i].side.dim() != dim) continue;
-            multidim_assembly_[Dim<dim>{}]->boundary_side_integral(boundary_integral_data_[i].side);
-        }
-    }
-
-    /// Assembles the edge integrals for the given dimension.
-    template<unsigned int dim>
-    inline void assemble_edge_integrals() {
-        for (unsigned int i=0; i<edge_integral_data_.permanent_size(); ++i) {
-        	auto range = edge_integral_data_[i].edge_side_range;
-            if (range.begin()->dim() != dim) continue;
-            multidim_assembly_[Dim<dim>{}]->edge_integral(edge_integral_data_[i].edge_side_range);
-        }
-    }
-
-    /// Assembles the neighbours integrals for the given dimension.
-    template<unsigned int dim>
-    inline void assemble_neighbour_integrals() {
-        for (unsigned int i=0; i<coupling_integral_data_.permanent_size(); ++i) {
-            if (coupling_integral_data_[i].side.dim() != dim) continue;
-            multidim_assembly_[Dim<dim>{}]->dimjoin_intergral(coupling_integral_data_[i].cell, coupling_integral_data_[i].side);
-        }
-    }
-
     /// Call assemblations when patch is filled
     void assemble_integrals() {
         START_TIMER("create_patch");
@@ -310,32 +266,32 @@ private:
 
         {
             START_TIMER("assemble_volume_integrals");
-            this->assemble_cell_integrals<1>();
-            this->assemble_cell_integrals<2>();
-            this->assemble_cell_integrals<3>();
+            multidim_assembly_[1_d]->assemble_cell_integrals(bulk_integral_data_);
+            multidim_assembly_[2_d]->assemble_cell_integrals(bulk_integral_data_);
+            multidim_assembly_[3_d]->assemble_cell_integrals(bulk_integral_data_);
             END_TIMER("assemble_volume_integrals");
         }
 
         {
             START_TIMER("assemble_fluxes_boundary");
-            this->assemble_boundary_side_integrals<1>();
-            this->assemble_boundary_side_integrals<2>();
-            this->assemble_boundary_side_integrals<3>();
+            multidim_assembly_[1_d]->assemble_boundary_side_integrals(boundary_integral_data_);
+            multidim_assembly_[2_d]->assemble_boundary_side_integrals(boundary_integral_data_);
+            multidim_assembly_[3_d]->assemble_boundary_side_integrals(boundary_integral_data_);
             END_TIMER("assemble_fluxes_boundary");
         }
 
         {
             START_TIMER("assemble_fluxes_elem_elem");
-            this->assemble_edge_integrals<1>();
-            this->assemble_edge_integrals<2>();
-            this->assemble_edge_integrals<3>();
+            multidim_assembly_[1_d]->assemble_edge_integrals(edge_integral_data_);
+            multidim_assembly_[2_d]->assemble_edge_integrals(edge_integral_data_);
+            multidim_assembly_[3_d]->assemble_edge_integrals(edge_integral_data_);
             END_TIMER("assemble_fluxes_elem_elem");
         }
 
         {
             START_TIMER("assemble_fluxes_elem_side");
-            this->assemble_neighbour_integrals<2>();
-            this->assemble_neighbour_integrals<3>();
+            multidim_assembly_[2_d]->assemble_neighbour_integrals(coupling_integral_data_);
+            multidim_assembly_[3_d]->assemble_neighbour_integrals(coupling_integral_data_);
             END_TIMER("assemble_fluxes_elem_side");
         }
         // clean integral data

@@ -251,7 +251,7 @@ public:
     /**
      * Implementation of FieldCommonBase::output().
      */
-    void field_output(std::shared_ptr<OutputTime> stream, OutputTime::DiscreteSpaceFlags type) override;
+    void field_output(std::shared_ptr<OutputTime> stream, OutputTime::DiscreteSpace type) override;
 
     /**
      * Implementation of FieldCommonBase::observe_output().
@@ -322,10 +322,16 @@ public:
     void set_input_list(const Input::Array &list, const TimeGovernor &tg) override;
 
     /**
+     * Create and return shared_ptr to ElementDataCache appropriate to Field. Data cache is given by discrete @p space_type
+     * and is stored into data structures of output time @p stream for postponed output too.
+     */
+    void set_output_data_cache(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream) override;
+
+    /**
      * Interpolate given field into output discrete @p space_type and store the values
      * into storage of output time @p stream for postponed output.
      */
-    void compute_field_data(OutputTime::DiscreteSpaceFlags space_type, std::shared_ptr<OutputTime> stream);
+    void compute_field_data(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream);
 
     /// Implements FieldCommon::cache_allocate
     void cache_reallocate(const ElementCacheMap &cache_map, unsigned int region_idx) const override;
@@ -344,6 +350,9 @@ public:
      */
     std::vector<const FieldCommon *> set_dependency(FieldSet &field_set, unsigned int i_reg) const override;
 
+    /// Implements FieldCommon::fill_data_value
+    void fill_data_value(const std::vector<int> &offsets) override;
+
 protected:
 
     /// Return item of @p value_cache_ given by i_cache_point.
@@ -354,11 +363,6 @@ protected:
      * history queue to keep its size less then @p history_length_limit_.
      */
     void update_history(const TimeStep &time);
-
-    /// Fills acutally the data cache with field values, used in @p compute_field_data
-    void fill_data_cache(OutputTime::DiscreteSpace space_type,
-                         std::shared_ptr<OutputTime> stream,
-                         std::shared_ptr<ElementDataCache<typename Value::element_type>> data_cache);
 
     /**
      *  Check that whole field list (@p region_fields_) is set, possibly use default values for unset regions.
@@ -417,6 +421,9 @@ protected:
      * Order of subsets is same as in eval_points.
      */
     mutable FieldValueCache<typename Value::element_type> value_cache_;
+
+    /// ElementDataCache used during field output, object is shared with OutputTime
+    std::shared_ptr<ElementDataCache<typename Value::element_type>> output_data_cache_;
 
 
 
