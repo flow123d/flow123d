@@ -388,7 +388,7 @@ private:
     ///
     Vec *vpconc; // previous concentration vector
     Vec *vcumulative_corr;
-    double **cumulative_corr;
+//    double **cumulative_corr;
 
 	/// Record with input specification.
 	const Input::Record input_rec;

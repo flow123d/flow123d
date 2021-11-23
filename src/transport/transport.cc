@@ -177,7 +177,7 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record in
     eq_data_->dh_ = make_shared<DOFHandlerMultiDim>(init_mesh);
     shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>( &init_mesh, fe);
     eq_data_->dh_->distribute_dofs(ds);
-    cumulative_corr = nullptr;
+    vcumulative_corr = nullptr;
 
 }
 
@@ -268,7 +268,7 @@ ConvectionTransport::~ConvectionTransport()
 {
     unsigned int sbi;
 
-    if (cumulative_corr) {
+    if (vcumulative_corr) {
         //Destroy mpi vectors at first
         chkerr(MatDestroy(&eq_data_->tm));
         chkerr(VecDestroy(&eq_data_->mass_diag));
@@ -279,9 +279,6 @@ ConvectionTransport::~ConvectionTransport()
         	chkerr(VecDestroy(&vpconc[sbi]));
         	chkerr(VecDestroy(&eq_data_->bcvcorr[sbi]));
         	chkerr(VecDestroy(&vcumulative_corr[sbi]));
-
-            // arrays of arrays
-            delete cumulative_corr[sbi];
         }
 
         // arrays of mpi vectors
@@ -289,9 +286,6 @@ ConvectionTransport::~ConvectionTransport()
         delete eq_data_->bcvcorr;
         delete vcumulative_corr;
         
-        // arrays of arrays
-        delete cumulative_corr;
-
         // assembly objects
         delete mass_assembly_;
         delete init_cond_assembly_;
@@ -327,15 +321,7 @@ ConvectionTransport::~ConvectionTransport()
 //=============================================================================
 void ConvectionTransport::alloc_transport_vectors() {
 
-    unsigned int sbi, n_subst;
-    n_subst = n_substances();
-    
-    cumulative_corr = new double*[n_subst];
-    for (sbi = 0; sbi < n_subst; sbi++) {
-      cumulative_corr[sbi] = new double[el_ds->lsize()];
-    }
-
-    eq_fields_->conc_mobile_fe.resize(n_subst);
+    eq_fields_->conc_mobile_fe.resize(this->n_substances());
 }
 
 //=============================================================================
@@ -363,8 +349,7 @@ void ConvectionTransport::alloc_transport_structs_mpi() {
         VecZeroEntries(vpconc[sbi]);
 
         // SOURCES
-        VecCreateMPIWithArray(PETSC_COMM_WORLD,1, el_ds->lsize(), mesh_->n_elements(),
-        		cumulative_corr[sbi],&vcumulative_corr[sbi]);
+        VecCreateMPI(PETSC_COMM_WORLD, el_ds->lsize(), mesh_->n_elements(), &vcumulative_corr[sbi]);
         
         eq_data_->corr_vec.emplace_back(el_ds->lsize(), PETSC_COMM_WORLD);
         
