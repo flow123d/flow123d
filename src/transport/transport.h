@@ -80,44 +80,6 @@ template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
 
 /**
- * Auxiliary container class for Finite element and related objects of all dimensions.
- * Its purpose is to provide templated access to these objects, applicable in
- * the assembling methods.
- */
-//class FETransportObjects {
-//public:
-//
-//	FETransportObjects();
-//	~FETransportObjects();
-//
-//	template<unsigned int dim>
-//	inline FiniteElement<dim> *fe();
-//
-//	inline Quadrature &q(unsigned int dim);
-//
-//	inline FEValues<3> &fe_values(unsigned int dim)
-//    {
-//        ASSERT_DBG( dim >= 1 && dim <= 3 );
-//        return fe_values_[dim-1];
-//    }
-//
-//private:
-//
-//	/// Finite elements for the solution of the advection-diffusion equation.
-//	FiniteElement<0> *fe0_;
-//	FiniteElement<1> *fe1_;
-//	FiniteElement<2> *fe2_;
-//	FiniteElement<3> *fe3_;
-//
-//	/// Quadratures used in assembling methods.
-//	QGauss::array q_;
-//
-//    /// FESideValues objects for side flux calculating.
-//	FEValues<3> fe_values_[3];
-//};
-
-
-/**
  * Class that implements explicit finite volumes scheme with upwind. The timestep is given by CFL condition.
  *
  */
@@ -315,42 +277,8 @@ public:
 
 private:
 
-    /**
-     * Assembly convection term part of the matrix and boundary matrix for application of boundary conditions.
-     *
-     * Discretization of the convection term use explicit time scheme and finite volumes with full upwinding.
-     * We count on with exchange between dimensions and mixing on edges where more then two elements connect (can happen for 2D and 1D elements in
-     * 3D embedding space)
-     *
-     * In order to get multiplication matrix for explicit transport one have to scale the convection part by the acctual time step and
-     * add time term, i. e. unit matrix (see. transport_matrix_step_mpi)
-     *
-     * Updates CFL time step constrain.
-     */
-//    void create_transport_matrix_mpi();
-//    void create_mass_matrix();
-
-//    void make_transport_partitioning(); //
-//	void set_initial_condition();
-  
-    /** @brief Assembles concentration sources for each substance and set boundary conditions.
-     * note: the source of concentration is multiplied by time interval (gives the mass, not the flow like before)
-     */
-//    void conc_sources_bdr_conditions();
-    
     void alloc_transport_vectors();
     void alloc_transport_structs_mpi();
-
-	/**
-	 * @brief Wrapper of following method, call side_flux with correct template parameter.
-	 */
-//	double side_flux(const DHCellSide &cell_side);
-
-	/**
-	 * @brief Calculate flux on side of given element specified by dimension.
-	 */
-//	template<unsigned int dim>
-//	double calculate_side_flux(const DHCellSide &cell);
 
 
 
@@ -379,23 +307,16 @@ private:
 
     VecScatter vconc_out_scatter;
     Vec vpmass_diag;  // diagonal entries in mass matrix from last time (cross_section * porosity)
-//    Vec *v_tm_diag; // additions to PETSC transport matrix on the diagonal - from sources (for each substance)
 
     ///
     Vec *vpconc; // previous concentration vector
     Vec *vcumulative_corr;
-//    double **cumulative_corr;
 
 	/// Record with input specification.
 	const Input::Record input_rec;
 
 	std::shared_ptr<OutputTime> output_stream_;
 
-
-	Distribution *el_ds;
-
-	/// Finite element objects
-//	FETransportObjects feo_;
 
     /// general assembly objects, hold assembly objects of appropriate dimension
     GenericAssembly< MassAssemblyConvection > * mass_assembly_;

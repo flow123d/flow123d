@@ -175,6 +175,9 @@ private:
 
 /**
  * Auxiliary container class for Finite element and related objects of given dimension.
+ *
+ * Assembles concentration sources for each substance and set boundary conditions.
+ * note: the source of concentration is multiplied by time interval (gives the mass, not the flow like before)
  */
 template <unsigned int dim>
 class ConcSourcesBdrAssemblyConvection : public AssemblyBase<dim>
@@ -338,6 +341,18 @@ public:
 
 /**
  * Auxiliary container class for Finite element and related objects of given dimension.
+ *
+ *
+ * Assembly convection term part of the matrix and boundary matrix for application of boundary conditions.
+ *
+ * Discretization of the convection term use explicit time scheme and finite volumes with full upwinding.
+ * We count on with exchange between dimensions and mixing on edges where more then two elements connect (can happen for 2D and 1D elements in
+ * 3D embedding space)
+ *
+ * In order to get multiplication matrix for explicit transport one have to scale the convection part by the acctual time step and
+ * add time term, i. e. unit matrix (see. transport_matrix_step_mpi)
+ *
+ * Updates CFL time step constrain.
  */
 template <unsigned int dim>
 class MatrixMpiAssemblyConvection : public AssemblyBase<dim>
