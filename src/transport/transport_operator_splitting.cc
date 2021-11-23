@@ -159,9 +159,6 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 {
 	START_TIMER("TransportOperatorSpliting");
 
-	Distribution *el_distribution;
-	LongIdx *el_4_loc;
-
 	Input::AbstractRecord trans = in_rec.val<Input::AbstractRecord>("transport");
 	convection = trans.factory< ConcentrationTransportBase, Mesh &, const Input::Record >(init_mesh, trans);
 
@@ -194,7 +191,6 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 
     this->eq_fieldset_ = &(convection->eq_fieldset());
 
-    convection->get_par_info(el_4_loc, el_distribution);
     Input::Iterator<Input::AbstractRecord> reactions_it = in_rec.find<Input::AbstractRecord>("reaction_term");
 	if ( reactions_it ) {
 		// TODO: allowed instances in this case are only

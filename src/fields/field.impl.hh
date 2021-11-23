@@ -159,21 +159,7 @@ typename Value::return_type Field<spacedim,Value>::operator() (BulkPoint &p) {
 
 
 template<int spacedim, class Value>
-typename Value::return_type Field<spacedim,Value>::operator() (EdgePoint &p) {
-    return p.elm_cache_map()->get_value<Value>(value_cache_, p.elem_patch_idx(), p.eval_point_idx());
-}
-
-
-
-template<int spacedim, class Value>
-typename Value::return_type Field<spacedim,Value>::operator() (CouplingPoint &p) {
-    return p.elm_cache_map()->get_value<Value>(value_cache_, p.elem_patch_idx(), p.eval_point_idx());
-}
-
-
-
-template<int spacedim, class Value>
-typename Value::return_type Field<spacedim,Value>::operator() (BoundaryPoint &p) {
+typename Value::return_type Field<spacedim,Value>::operator() (SidePoint &p) {
     return p.elm_cache_map()->get_value<Value>(value_cache_, p.elem_patch_idx(), p.eval_point_idx());
 }
 
