@@ -191,7 +191,7 @@ void ConvectionTransport::initialize()
     eq_fields_->set_input_list( input_rec.val<Input::Array>("input_fields"), *time_ );
     eq_fields_->set_mesh(*mesh_);
 
-    make_transport_partitioning();
+//    make_transport_partitioning();
     alloc_transport_vectors();
     alloc_transport_structs_mpi();
 
@@ -215,7 +215,7 @@ void ConvectionTransport::initialize()
 	//cout << "Transport." << endl;
 	//cout << time().marks();
 
-    balance_->allocate(el_ds->lsize(), 1);
+    balance_->allocate(mesh_->get_el_ds()->lsize(), 1);
     eq_data_->balance_ = this->balance();
     eq_data_->set_time_governor(this->time_);
     eq_data_->max_edg_sides = max(this->mesh_->max_edge_sides(1), max(this->mesh_->max_edge_sides(2), this->mesh_->max_edge_sides(3)));
@@ -237,16 +237,13 @@ Vec ConvectionTransport::get_component_vec(unsigned int sbi)
 //=============================================================================
 // MAKE TRANSPORT
 //=============================================================================
-void ConvectionTransport::make_transport_partitioning() {
-
+//void ConvectionTransport::make_transport_partitioning() {
+//
 //    int * id_4_old = new int[mesh_->n_elements()];
 //    int i = 0;
 //    for (auto ele : mesh_->elements_range()) id_4_old[i++] = ele.index();
 //    mesh_->get_part()->id_maps(mesh_->n_elements(), id_4_old, el_ds, el_4_loc, row_4_el);
 //    delete[] id_4_old;
-	el_ds = mesh_->get_el_ds();
-	el_4_loc = mesh_->get_el_4_loc();
-	row_4_el = mesh_->get_row_4_el();
 
     // TODO: make output of partitioning is usefull but makes outputs different
     // on different number of processors, which breaks tests.
@@ -259,8 +256,8 @@ void ConvectionTransport::make_transport_partitioning() {
     //for (auto ele : mesh_->elements_range()) {
     //    ele->pid()=el_ds->get_proc(row_4_el[ele.index()]);
     //}
-
-}
+//
+//}
 
 
 
@@ -329,8 +326,9 @@ void ConvectionTransport::alloc_transport_vectors() {
 //=============================================================================
 void ConvectionTransport::alloc_transport_structs_mpi() {
 
-    int sbi, n_subst;
+    int sbi, n_subst, lsize;
     n_subst = n_substances();
+    lsize = mesh_->get_el_ds()->lsize();
 
     MPI_Barrier(PETSC_COMM_WORLD);
 
@@ -342,30 +340,30 @@ void ConvectionTransport::alloc_transport_structs_mpi() {
     
 
     for (sbi = 0; sbi < n_subst; sbi++) {
-        VecCreateMPI(PETSC_COMM_WORLD, el_ds->lsize(), mesh_->n_elements(), &eq_data_->bcvcorr[sbi]);
+        VecCreateMPI(PETSC_COMM_WORLD, lsize, mesh_->n_elements(), &eq_data_->bcvcorr[sbi]);
         VecZeroEntries(eq_data_->bcvcorr[sbi]);
 
-        VecCreateMPI(PETSC_COMM_WORLD, el_ds->lsize(), mesh_->n_elements(), &vpconc[sbi]);
+        VecCreateMPI(PETSC_COMM_WORLD, lsize, mesh_->n_elements(), &vpconc[sbi]);
         VecZeroEntries(vpconc[sbi]);
 
         // SOURCES
-        VecCreateMPI(PETSC_COMM_WORLD, el_ds->lsize(), mesh_->n_elements(), &vcumulative_corr[sbi]);
+        VecCreateMPI(PETSC_COMM_WORLD, lsize, mesh_->n_elements(), &vcumulative_corr[sbi]);
         
-        eq_data_->corr_vec.emplace_back(el_ds->lsize(), PETSC_COMM_WORLD);
+        eq_data_->corr_vec.emplace_back(lsize, PETSC_COMM_WORLD);
         
-        eq_data_->tm_diag.emplace_back(el_ds->lsize(), PETSC_COMM_WORLD);
+        eq_data_->tm_diag.emplace_back(lsize, PETSC_COMM_WORLD);
 
         VecZeroEntries(vcumulative_corr[sbi]);
     }
 
 
-    MatCreateAIJ(PETSC_COMM_WORLD, el_ds->lsize(), el_ds->lsize(), mesh_->n_elements(),
+    MatCreateAIJ(PETSC_COMM_WORLD, lsize, lsize, mesh_->n_elements(),
             mesh_->n_elements(), 16, PETSC_NULL, 4, PETSC_NULL, &eq_data_->tm);
     
-    VecCreateMPI(PETSC_COMM_WORLD, el_ds->lsize(), mesh_->n_elements(), &eq_data_->mass_diag);
-    VecCreateMPI(PETSC_COMM_WORLD, el_ds->lsize(), mesh_->n_elements(), &vpmass_diag);
+    VecCreateMPI(PETSC_COMM_WORLD, lsize, mesh_->n_elements(), &eq_data_->mass_diag);
+    VecCreateMPI(PETSC_COMM_WORLD, lsize, mesh_->n_elements(), &vpmass_diag);
 
-    eq_data_->alloc_transport_structs_mpi(el_ds->lsize());
+    eq_data_->alloc_transport_structs_mpi(lsize);
 }
 
 
@@ -560,7 +558,7 @@ bool ConvectionTransport::evaluate_time_constraint(double& time_constraint)
     {
         // find maximum of sum of contribution from flow and sources: MAX(vcfl_flow_ + vcfl_source_)
         Vec cfl;
-        VecCreateMPI(PETSC_COMM_WORLD, el_ds->lsize(), PETSC_DETERMINE, &cfl);
+        VecCreateMPI(PETSC_COMM_WORLD, mesh_->get_el_ds()->lsize(), PETSC_DETERMINE, &cfl);
         VecWAXPY(cfl, 1.0, eq_data_->cfl_flow_.petsc_vec(), eq_data_->cfl_source_.petsc_vec());
         VecMaxPointwiseDivide(cfl, eq_data_->mass_diag, &cfl_max_step);
         // get a reciprocal value as a time constraint
@@ -815,20 +813,9 @@ ConvectionTransport::FieldFEScalarVec& ConvectionTransport::get_p0_interpolation
     return eq_fields_->conc_mobile_fe;
 }
 
-void ConvectionTransport::get_par_info(LongIdx * &el_4_loc_out, Distribution * &el_distribution_out){
-	el_4_loc_out = this->el_4_loc;
-	el_distribution_out = this->el_ds;
-	return;
-}
-
 //int *ConvectionTransport::get_el_4_loc(){
 //	return el_4_loc;
 //}
-
-LongIdx *ConvectionTransport::get_row_4_el(){
-	return row_4_el;
-}
-
 
 
 void ConvectionTransport::output_data() {

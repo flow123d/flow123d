@@ -118,12 +118,6 @@ public:
 	/// Return PETSc vector with solution for sbi-th substance.
 	virtual Vec get_component_vec(unsigned int sbi) = 0;
 
-	/// Return array of indices of local elements and parallel distribution of elements.
-	virtual void get_par_info(LongIdx * &el_4_loc, Distribution * &el_ds) = 0;
-
-	/// Return global array of order of elements within parallel vector.
-	virtual LongIdx *get_row_4_el() = 0;
-
     /// Returns number of trnasported substances.
     virtual unsigned int n_substances() = 0;
 

@@ -305,10 +305,6 @@ public:
 
 	Vec get_component_vec(unsigned int sbi) override;
 
-	void get_par_info(LongIdx * &el_4_loc, Distribution * &el_ds) override;
-
-	LongIdx *get_row_4_el() override;
-
     /// Returns number of transported substances.
     inline unsigned int n_substances() override
     { return eq_data_->substances_.size(); }
@@ -334,7 +330,7 @@ private:
 //    void create_transport_matrix_mpi();
 //    void create_mass_matrix();
 
-    void make_transport_partitioning(); //
+//    void make_transport_partitioning(); //
 //	void set_initial_condition();
   
     /** @brief Assembles concentration sources for each substance and set boundary conditions.
@@ -396,8 +392,6 @@ private:
 	std::shared_ptr<OutputTime> output_stream_;
 
 
-	LongIdx *row_4_el;
-	LongIdx *el_4_loc;
 	Distribution *el_ds;
 
 	/// Finite element objects
