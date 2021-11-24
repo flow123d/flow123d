@@ -510,7 +510,10 @@ void DarcyLMH::zero_time_step()
         // in the read_initial_condition(). (use the commented out version read_initial_condition() above)
         VectorMPI temp = eq_data_->dh_->create_vector();
         temp.copy_from(eq_data_->full_solution);
-        reconstruct_solution_from_schur(eq_data_->multidim_assembler);
+//        reconstruct_solution_from_schur(eq_data_->multidim_assembler);
+        START_TIMER("DarcyFlowMH::reconstruct_solution_from_schur");
+        this->reconstruct_schur_asm();
+        END_TIMER("DarcyFlowMH::reconstruct_solution_from_schur");
         eq_data_->full_solution.copy_from(temp);
 
         // print_matlab_matrix("matrix_zero");
@@ -673,7 +676,10 @@ void DarcyLMH::solve_nonlinear()
                 eq_data_->nonlinear_iteration_, si.n_iterations, si.converged_reason, residual_norm);
     }
     
-    reconstruct_solution_from_schur(eq_data_->multidim_assembler);
+//    reconstruct_solution_from_schur(eq_data_->multidim_assembler);
+    START_TIMER("DarcyFlowMH::reconstruct_solution_from_schur");
+    this->reconstruct_schur_asm();
+    END_TIMER("DarcyFlowMH::reconstruct_solution_from_schur");
 
     // adapt timestep
     if (! this->zero_time_term()) {
