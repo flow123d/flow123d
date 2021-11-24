@@ -552,10 +552,10 @@ protected:
 
             reconstructed_solution_ += eq_data_->postprocess_solution_[bulk_local_idx_];
 
-            eq_data_->full_solution.set_subvec(eq_data_->loc_system_[dh_cell.dim()-1].row_dofs.head(
+            eq_data_->full_solution.set_subvec(eq_data_->loc_system_[bulk_local_idx_].row_dofs.head(
                     eq_data_->schur_offset_[dh_cell.dim()-1]), reconstructed_solution_);
-            eq_data_->full_solution.set_subvec(eq_data_->loc_system_[dh_cell.dim()-1].row_dofs.tail(
-                    eq_data_->loc_schur_[dh_cell.dim()-1].row_dofs.n_elem), schur_solution);
+            eq_data_->full_solution.set_subvec(eq_data_->loc_system_[bulk_local_idx_].row_dofs.tail(
+                    eq_data_->loc_schur_[bulk_local_idx_].row_dofs.n_elem), schur_solution);
         }
     }
 
