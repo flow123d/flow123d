@@ -80,7 +80,7 @@ public:
                     //DebugOut() << "i: " << i << " node: " << nodes[i] ;
                     ASSERT(nodes[i] < n_nodes())(i)(nodes[i]);
                 }
-                this->add_element(ele.index(), dim, ele.region_idx().idx(), 0, nodes);
+                this->add_element(ele.input_id(), dim, ele.region_idx().idx(), 0, nodes);
             }
     }
 
@@ -94,7 +94,7 @@ public:
             //DebugOut() << "i: " << i << " node: " << nodes[i] ;
             ASSERT(nodes[i] < n_nodes())(i)(nodes[i]);
         }
-        this->add_element(ele.index(), ele.dim(), ele.region_idx().idx(), 0, nodes);
+        this->add_element(ele.input_id(), ele.dim(), ele.region_idx().idx(), 0, nodes);
     }
 
 };

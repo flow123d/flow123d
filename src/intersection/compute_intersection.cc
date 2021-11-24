@@ -766,7 +766,7 @@ ComputeIntersection<1,3>::ComputeIntersection(ElementAccessor<3> abscissa,
 {
     ASSERT_DBG(abscissa->dim() == 1);
     ASSERT_DBG(tetrahedron->dim() == 3);
-    ASSERT_DBG(tetrahedron.sign() * tetrahedron.jacobian_S3() > 0).add_value(tetrahedron.index(),"element index").error(
+    ASSERT_DBG(tetrahedron.sign() * tetrahedron.jacobian_S3() > 0).add_value(tetrahedron.input_id(),"element index").error(
            "Tetrahedron element (%d) has wrong numbering or is degenerated (negative Jacobian).");
 
     
@@ -1008,7 +1008,7 @@ ComputeIntersection<2,3>::ComputeIntersection(ElementAccessor<3> triangle,
 : ComputeIntersection()
 {
     ASSERT_DBG(tetrahedron.sign() * tetrahedron.jacobian_S3() > 0)
-            (tetrahedron.sign())(tetrahedron.jacobian_S3()).add_value(tetrahedron.index(),"element index").error(
+            (tetrahedron.sign())(tetrahedron.jacobian_S3()).add_value(tetrahedron.input_id(),"element index").error(
            "Tetrahedron element (%d) has wrong numbering or is degenerated (negative Jacobian).");
 
     mesh_ = mesh;

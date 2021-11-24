@@ -195,11 +195,11 @@ void MultiField<spacedim, Value>::copy_from(const FieldCommon & other) {
 
 
 template<int spacedim, class Value>
-void MultiField<spacedim, Value>::field_output(std::shared_ptr<OutputTime> stream, OutputTime::DiscreteSpaceFlags type)
+void MultiField<spacedim, Value>::field_output(std::shared_ptr<OutputTime> stream, OutputTime::DiscreteSpace type)
 {
 	// currently we cannot output boundary fields
 	if (!is_bc()) {
-	    ASSERT( OutputTime::discrete_flags_defined(type) ).error();
+	    ASSERT_LT( type, OutputTime::N_DISCRETE_SPACES ).error();
 
 	    for (unsigned long index=0; index < this->size(); index++) {
             sub_fields_[index].compute_field_data( type, stream );
@@ -265,20 +265,13 @@ std::string MultiField<spacedim, Value>::get_value_attribute() const
 template<int spacedim, class Value>
 void MultiField<spacedim, Value>::setup_components() {
 	unsigned int comp_size = this->shared_->comp_names_.size();
-	string full_name;
 	ASSERT_GT(comp_size, 0).error("Vector of component names is empty!\n");
 	ASSERT_PTR(this->shared_->mesh_).error("Mesh is not set!\n");
 
     sub_fields_.reserve( comp_size );
     for(unsigned int i_comp=0; i_comp < comp_size; i_comp++)
     {
-    	if (this->shared_->comp_names_[i_comp].length() == 0)
-    		full_name = name();
-    	else {
-    		full_name = this->shared_->comp_names_[i_comp] + "_" + name();
-    	}
-
-    	sub_fields_.push_back( SubFieldType(i_comp, name(), full_name, is_bc()) );
+    	sub_fields_.push_back( SubFieldType(i_comp, name(), this->full_comp_name(i_comp), is_bc()) );
     	sub_fields_[i_comp].units( units() );
         if (no_check_control_field_ != nullptr && no_check_control_field_->size() == sub_fields_.size())
           sub_fields_[i_comp].disable_where((*no_check_control_field_)[i_comp], shared_->no_check_values_);
