@@ -543,7 +543,7 @@ protected:
 
 
     inline void reconstruct_schur_finish() {
-        for ( DHCellAccessor dh_cell : eq_data_->dh_->local_range() ) {
+        for ( DHCellAccessor dh_cell : eq_data_->dh_->own_range() ) {
         	bulk_local_idx_ = dh_cell.local_idx();
             arma::vec schur_solution = eq_data_->p_edge_solution.get_subvec(eq_data_->loc_schur_[bulk_local_idx_].row_dofs);
             // reconstruct the velocity and pressure
