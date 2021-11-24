@@ -35,6 +35,7 @@
 #include "input/factory.hh"
 
 #include "mesh/mesh.h"
+#include "mesh/bc_mesh.hh"
 #include "mesh/partitioning.hh"
 #include "mesh/accessors.hh"
 #include "mesh/range_wrapper.hh"
@@ -50,6 +51,7 @@
 #include "flow/assembly_lmh.hh"
 #include "flow/darcy_flow_lmh.hh"
 #include "flow/darcy_flow_mh_output.hh"
+#include "flow/assembly_models.hh"
 
 #include "tools/time_governor.hh"
 #include "fields/field_algo_base.hh"
@@ -57,7 +59,8 @@
 #include "fields/field_values.hh"
 #include "fields/field_add_potential.hh"
 #include "fields/field_fe.hh"
-#include "fields/field_divide.hh"
+#include "fields/field_model.hh"
+#include "fields/field_constant.hh"
 
 #include "coupling/balance.hh"
 
@@ -198,7 +201,7 @@ DarcyLMH::DarcyLMH(Mesh &mesh_in, const Input::Record in_rec, TimeGovernor *tm)
     }
 
     data_ = make_shared<EqData>();
-    EquationBase::eq_data_ = data_.get();
+    EquationBase::eq_fieldset_ = data_.get();
     
     data_->is_linear=true;
 
@@ -233,6 +236,11 @@ void DarcyLMH::init_eq_data()
     gvec.push_back(0.0); // zero pressure shift
     data_->gravity_ =  arma::vec(gvec);
     data_->gravity_vec_ = data_->gravity_.subvec(0,2);
+
+    FieldValue<3>::VectorFixed gvalue(data_->gravity_vec_);
+    auto field_algo=std::make_shared<FieldConstant<3, FieldValue<3>::VectorFixed>>();
+    field_algo->set_value(gvalue);
+    data_->gravity_field.set(field_algo, 0.0);
 
     data_->bc_pressure.add_factory(
         std::make_shared<FieldAddPotential<3, FieldValue<3>::Scalar>::FieldFactory>
@@ -287,26 +295,28 @@ void DarcyLMH::initialize() {
     init_eq_data();
     output_object = new DarcyFlowMHOutput(this, input_record_);
 
+    data_->add_coords_field();
+
     { // construct pressure, velocity and piezo head fields
 		uint rt_component = 0;
-        auto ele_flux_ptr = create_field_fe<3, FieldValue<3>::VectorFixed>(data_->dh_, rt_component);
-        data_->full_solution = ele_flux_ptr->vec();
-        data_->flux.set_field(mesh_->region_db().get_region_set("ALL"), ele_flux_ptr);
+        data_->full_solution = data_->dh_->create_vector();
+        auto ele_flux_ptr = create_field_fe<3, FieldValue<3>::VectorFixed>(data_->dh_, &data_->full_solution, rt_component);
+        data_->flux.set(ele_flux_ptr, 0.0);
 
-		auto ele_velocity_ptr = std::make_shared< FieldDivide<3, FieldValue<3>::VectorFixed> >(ele_flux_ptr, data_->cross_section);
-		data_->field_ele_velocity.set_field(mesh_->region_db().get_region_set("ALL"), ele_velocity_ptr);
+		data_->field_ele_velocity.set(Model<3, FieldValue<3>::VectorFixed>::create(fn_mh_velocity(), data_->flux, data_->cross_section), 0.0);
 
-		uint p_ele_component = 0;
-        auto ele_pressure_ptr = create_field_fe<3, FieldValue<3>::Scalar>(data_->dh_, p_ele_component, &data_->full_solution);
-		data_->field_ele_pressure.set_field(mesh_->region_db().get_region_set("ALL"), ele_pressure_ptr);
+		uint p_ele_component = 1;
+        auto ele_pressure_ptr = create_field_fe<3, FieldValue<3>::Scalar>(data_->dh_, &data_->full_solution, p_ele_component);
+		data_->field_ele_pressure.set(ele_pressure_ptr, 0.0);
 
-        uint p_edge_component = 1;
-        auto edge_pressure_ptr = create_field_fe<3, FieldValue<3>::Scalar>(data_->dh_, p_edge_component, &data_->full_solution);
-		data_->field_edge_pressure.set_field(mesh_->region_db().get_region_set("ALL"), edge_pressure_ptr);
+        uint p_edge_component = 2;
+        auto edge_pressure_ptr = create_field_fe<3, FieldValue<3>::Scalar>(data_->dh_, &data_->full_solution, p_edge_component);
+		data_->field_edge_pressure.set(edge_pressure_ptr, 0.0);
 
-		arma::vec4 gravity = (-1) * data_->gravity_;
-		auto ele_piezo_head_ptr = std::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar> >(gravity, ele_pressure_ptr);
-		data_->field_ele_piezo_head.set_field(mesh_->region_db().get_region_set("ALL"), ele_piezo_head_ptr);
+		data_->field_ele_piezo_head.set(
+		        Model<3, FieldValue<3>::Scalar>::create(fn_mh_piezohead(), data_->gravity_field, data_->X(), data_->field_ele_pressure),
+		        0.0
+		);
     }
 
     { // init DOF handlers represents element pressure DOFs
@@ -335,7 +345,7 @@ void DarcyLMH::initialize() {
     data_->p_edge_solution_previous_time = data_->dh_cr_->create_vector();
 
     // Initialize bc_switch_dirichlet to size of global boundary.
-    data_->bc_switch_dirichlet.resize(mesh_->n_elements()+mesh_->n_elements(true), 1);
+    data_->bc_switch_dirichlet.resize(mesh_->n_elements()+mesh_->bc_mesh()->n_elements(), 1);
 
 
     nonlinear_iteration_=0;
@@ -406,14 +416,14 @@ void DarcyLMH::read_initial_condition()
 		// set initial condition
         double init_value = data_->init_pressure.value(ele.centre(),ele);
         unsigned int p_idx = data_->dh_p_->parent_indices()[p_indices[0]];
-        data_->full_solution[p_idx] = init_value;
+        data_->full_solution.set(p_idx, init_value);
         
         for (unsigned int i=0; i<ele->n_sides(); i++) {
              uint n_sides_of_edge =  ele.side(i)->edge().n_sides();
              unsigned int l_idx = data_->dh_cr_->parent_indices()[l_indices[i]];
-             data_->full_solution[l_idx] += init_value/n_sides_of_edge;
+             data_->full_solution.add(l_idx, init_value/n_sides_of_edge);
 
-             data_->p_edge_solution[l_indices[i]] += init_value/n_sides_of_edge;
+             data_->p_edge_solution.add(l_indices[i], init_value/n_sides_of_edge);
          }
 	}
     
@@ -900,7 +910,7 @@ void DarcyLMH::create_linear_system(Input::AbstractRecord in_rec) {
 //             END_TIMER("BDDC set mesh data");
 // #else
 //             Exception
-//             xprintf(Err, "Flow123d was not build with BDDCML support.\n");
+//             THROW( ExcBddcmlNotSupported() );
 // #endif // FLOW123D_HAVE_BDDCML
 //         } 
 //         else
@@ -985,7 +995,7 @@ void DarcyLMH::create_linear_system(Input::AbstractRecord in_rec) {
             END_TIMER("PETSC PREALLOCATION");
         }
         else {
-            xprintf(Err, "Unknown solver type. Internal error.\n");
+            THROW( ExcUnknownSolver() );
         }
 
         END_TIMER("preallocation");

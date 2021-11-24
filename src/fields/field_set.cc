@@ -18,9 +18,15 @@
 #include "fields/field_set.hh"
 #include "system/sys_profiler.hh"
 #include "input/flow_attribute_lib.hh"
+#include "fem/mapping_p1.hh"
+#include "mesh/ref_element.hh"
+#include "tools/bidirectional_map.hh"
 #include <boost/algorithm/string/replace.hpp>
+#include <queue>
 
 
+FieldSet::FieldSet()
+: mesh_(nullptr) {}
 
 FieldSet &FieldSet::operator +=(FieldCommon &add_field) {
     FieldCommon *found_field = field(add_field.name());
@@ -44,6 +50,7 @@ FieldSet &FieldSet::operator +=(const FieldSet &other) {
 
 FieldSet FieldSet::subset(std::vector<std::string> names) const {
     FieldSet set;
+    set.set_mesh( *this->mesh_ );
     for(auto name : names) set += (*this)[name];
     return set;
 }
@@ -181,6 +188,81 @@ bool FieldSet::is_jump_time() const {
     bool is_jump = false;
     for(auto field : field_list) is_jump = is_jump || field->is_jump_time();
     return is_jump;
+}
+
+
+void FieldSet::cache_update(ElementCacheMap &cache_map) {
+    ASSERT_GT_DBG(region_field_update_order_.size(), 0).error("Variable 'region_dependency_list' is empty. Did you call 'set_dependency' method?\n");
+    for (unsigned int i_reg_patch=0; i_reg_patch<cache_map.n_regions(); ++i_reg_patch) {
+        for (const FieldCommon *field : region_field_update_order_[cache_map.region_idx_from_chunk_position(i_reg_patch)])
+            field->cache_update(cache_map, i_reg_patch);
+    }
+}
+
+
+void FieldSet::set_dependency(FieldSet &used_fieldset) {
+    region_field_update_order_.clear();
+    std::unordered_set<const FieldCommon *> used_fields;
+
+    for (unsigned int i_reg=0; i_reg<mesh_->region_db().size(); ++i_reg) {
+        for (FieldListAccessor f_acc : used_fieldset.fields_range()) {
+            topological_sort( f_acc.field(), i_reg, used_fields );
+        }
+        used_fields.clear();
+    }
+}
+
+
+void FieldSet::topological_sort(const FieldCommon *f, unsigned int i_reg, std::unordered_set<const FieldCommon *> &used_fields) {
+    if (used_fields.find(f) != used_fields.end() ) return; // field processed
+    used_fields.insert(f);
+    auto dep_vec = f->set_dependency(*this, i_reg); // vector of dependent fields
+    for (auto f_dep : dep_vec) {
+        topological_sort(f_dep, i_reg, used_fields);
+    }
+    region_field_update_order_[i_reg].push_back(f);
+}
+
+
+void FieldSet::add_coords_field() {
+    *this += X_.name("X")
+               .units(UnitSI().m())
+               .input_default("0.0")
+               .flags( FieldFlag::input_copy )
+               .description("Coordinates field.");
+
+    *this += depth_.name("d")
+               .units(UnitSI().m())
+               .input_default("0.0")
+               .flags( FieldFlag::input_copy )
+               .description("Depth field.");
+
+    if (this->mesh_ != nullptr) {
+        X_.set_mesh(*this->mesh_);
+        depth_.set_mesh(*this->mesh_);
+    }
+
+    depth_.set_field_coords(&X_);
+}
+
+
+Range<FieldListAccessor> FieldSet::fields_range() const {
+    auto bgn_it = make_iter<FieldListAccessor>( FieldListAccessor(field_list, 0) );
+    auto end_it = make_iter<FieldListAccessor>( FieldListAccessor(field_list, field_list.size()) );
+    return Range<FieldListAccessor>(bgn_it, end_it);
+}
+
+
+std::string FieldSet::print_dependency() const {
+    ASSERT_GT_DBG(region_field_update_order_.size(), 0).error("Variable 'region_dependency_list' is empty. Did you call 'set_dependency' method?\n");
+    std::stringstream s;
+    for (auto reg_it : region_field_update_order_) {
+        s << "\nregion_idx " << reg_it.first << ": ";
+        for (auto f_it : reg_it.second) {
+            s << f_it->name() << ", ";
+        }
+    }
+    return s.str();
 }
 
 

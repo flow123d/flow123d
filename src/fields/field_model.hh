@@ -33,6 +33,7 @@
 #include "fields/field_value_cache.hh"
 #include "fields/field.hh"
 #include "fields/multi_field.hh"
+#include "system/fmt/posix.h"                          // for FMT_UNUSED
 
 template <int spacedim> class ElementAccessor;
 
@@ -76,10 +77,10 @@ namespace detail
     struct model_cache_item< CALLABLE, FIELD_TUPLE, 0 >
     {
         template< typename... Vs >
-        static auto eval(int i_cache, CALLABLE f, FIELD_TUPLE fields, Vs&&... args) -> decltype(auto)
+        static auto eval(FMT_UNUSED int i_cache, CALLABLE f, FMT_UNUSED FIELD_TUPLE fields, Vs&&... args) -> decltype(auto)
         {
             return f(std::forward<Vs>(args)...);
-        };
+        }
     };
 
     /**
@@ -104,7 +105,7 @@ namespace detail
 
     template<typename FIELD_TUPLE>
     struct n_components<FIELD_TUPLE, 0> {
-        static uint eval(FIELD_TUPLE fields, uint n_comp)
+        static uint eval(FMT_UNUSED FIELD_TUPLE fields, uint n_comp)
         {
             return n_comp;
         };
@@ -138,7 +139,7 @@ namespace detail
      * Return the field 'f'. Variant to previous method.
      */
     template<int spacedim, class Value>
-    auto field_component(const Field<spacedim, Value> &f, uint i_comp) -> decltype(auto)
+    auto field_component(const Field<spacedim, Value> &f, FMT_UNUSED uint i_comp) -> decltype(auto)
     {
         ASSERT(!f.is_multifield());
         return f;
@@ -154,22 +155,75 @@ namespace detail
         {
             const auto &single_field = std::get < INDEX - 1 > (std::forward<decltype(fields)>(fields));
             return std::tuple_cat(
-                    std::forward_as_tuple(field_component(single_field, i_comp)),
                     get_components<FIELD_TUPLE, INDEX - 1>::eval(
-                            std::forward<decltype(fields)>(fields), i_comp)
+                            std::forward<decltype(fields)>(fields), i_comp),
+                    std::forward_as_tuple(field_component(single_field, i_comp))
                     );
         };
     };
 
     template<typename FIELD_TUPLE>
     struct get_components<FIELD_TUPLE, 0> {
-        static auto eval(FIELD_TUPLE fields, uint n_comp) -> decltype(auto)
+        static auto eval(FMT_UNUSED FIELD_TUPLE fields, FMT_UNUSED uint n_comp) -> decltype(auto)
         {
             return std::forward_as_tuple<>();
         };
     };
 
+    /**
+     * Check common number of components of the input fields/multifields.
+     * Return number of components.
+     * Return 0 for no multifields.
+     * Throw for different number of components.
+     */
+    template<typename FIELD_TUPLE, int INDEX >
+    struct get_dependency {
+        static std::vector<const FieldCommon *> eval(FIELD_TUPLE fields) {
+            const auto &single_field = std::get < INDEX - 1 > (std::forward<decltype(fields)>(fields));
+            auto vec = get_dependency<FIELD_TUPLE, INDEX - 1>::eval(std::forward<decltype(fields)>(fields));
+            vec.push_back(&single_field);
+            return vec;
+        };
+    };
 
+    template<typename FIELD_TUPLE>
+    struct get_dependency<FIELD_TUPLE, 0> {
+        static std::vector<const FieldCommon *> eval(FMT_UNUSED FIELD_TUPLE fields)
+        {
+            return std::vector<const FieldCommon *>();
+        };
+    };
+
+
+
+    template< int spacedim, class Value, typename CALLABLE, typename FIELD_TUPLE, int INDEX >
+    struct field_value
+    {
+        typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
+
+        template< typename... Vs >
+        static auto eval(const Point &p, const ElementAccessor<spacedim> &elm, CALLABLE f, FIELD_TUPLE fields, Vs&&... args) -> decltype(auto) {
+            const auto &single_field = std::get < INDEX - 1 > (std::forward<decltype(fields)>(fields));
+            return field_value<spacedim, Value, CALLABLE, FIELD_TUPLE, INDEX - 1>::eval(
+                    p, elm, f, std::forward<decltype(fields)>(fields),
+                    single_field.value(p, elm), std::forward<Vs>(args)...);
+        }
+    };
+
+
+    /// terminal case - do the actual function call
+    template< int spacedim, class Value, typename CALLABLE, typename FIELD_TUPLE >
+    struct field_value< spacedim, Value, CALLABLE, FIELD_TUPLE, 0 >
+    {
+        typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
+
+        template< typename... Vs >
+        static auto eval(FMT_UNUSED const Point &p, FMT_UNUSED const ElementAccessor<spacedim> &elm, CALLABLE f, FMT_UNUSED FIELD_TUPLE fields,
+                Vs&&... args) -> decltype(auto)
+        {
+            return f(std::forward<Vs>(args)...);
+        }
+    };
 
 
     template<typename Function, typename Tuple>
@@ -210,8 +264,8 @@ namespace detail
   	auto f_product = Model<3, FieldValue<3>::VectorFixed>::create(FnProduct(), f_scal, f_vec);
   	// set field on all regions
     result.set_mesh( *mesh );
-  	result.set_field(mesh->region_db().get_region_set("ALL"), f_product);
-    result.cache_allocate(eval_points);
+  	result.set(f_product, time);
+    result.cache_reallocate(elm_cache_map);
     result.set_time(tg.step(), LimitSide::right);
 
   	// cache_update
@@ -223,28 +277,32 @@ template<int spacedim, class Value, typename Fn, class ... InputFields>
 class FieldModel : public FieldAlgorithmBase<spacedim, Value>
 {
 private:
-	Fn* fn;
+	Fn fn;
 	typedef std::tuple<InputFields...> FieldsTuple;
     FieldsTuple input_fields;
 
 public:
     typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
 
-    FieldModel(Fn* func, InputFields... args)
+    FieldModel(Fn func, InputFields... args)
     : fn(func), input_fields( std::forward_as_tuple((args)...) )
     {}
 
+    /// Implements FieldAlgoBase::set_dependency
+    std::vector<const FieldCommon *> set_dependency(FMT_UNUSED FieldSet &field_set) {
+    	return detail::get_dependency<
+    	                    decltype(input_fields),
+                            std::tuple_size<FieldsTuple>::value
+    	                >::eval(input_fields);
+    }
 
-
-
+    /// Implements FieldAlgoBase::cache_update
     void cache_update(FieldValueCache<typename Value::element_type> &data_cache,
-				ElementCacheMap &cache_map, unsigned int region_idx) override {
-        auto update_cache_data = cache_map.update_cache_data();
-        unsigned int region_in_cache = update_cache_data.region_cache_indices_range_.find(region_idx)->second;
-        unsigned int i_cache_el_begin = update_cache_data.region_value_cache_range_[region_in_cache];
-        unsigned int i_cache_el_end = update_cache_data.region_value_cache_range_[region_in_cache+1];
-        for(unsigned int i_cache=i_cache_el_begin; i_cache<i_cache_el_end; ++i_cache) {
-            data_cache.data().set(i_cache) =
+                ElementCacheMap &cache_map, unsigned int region_patch_idx) override {
+        unsigned int reg_chunk_begin = cache_map.region_chunk_begin(region_patch_idx);
+        unsigned int reg_chunk_end = cache_map.region_chunk_end(region_patch_idx);
+        for(unsigned int i_cache=reg_chunk_begin; i_cache<reg_chunk_end; ++i_cache) {
+            data_cache.set(i_cache) =
                 detail::model_cache_item<
                     Fn,
                     decltype(input_fields),
@@ -255,14 +313,19 @@ public:
 
     /// Implementation of virtual method
     typename Value::return_type const &value(const Point &p, const ElementAccessor<spacedim> &elm) override {
-        ASSERT(false).error("Forbidden method!\n");
+    	this->r_value_ = detail::field_value<
+                spacedim, Value, Fn, decltype(input_fields), std::tuple_size<FieldsTuple>::value
+		        >::eval(p, elm, fn, input_fields);
         return this->r_value_;
     }
 
     /// Implementation of virtual method
     void value_list(const Armor::array &point_list, const ElementAccessor<spacedim> &elm,
-                std::vector<typename Value::return_type>  &value_list) override {
-        ASSERT(false).error("Forbidden method!\n");
+    	        std::vector<typename Value::return_type> &value_list) override {
+        ASSERT_EQ_DBG(point_list.size(), value_list.size()).error("Different size of point list and value list.\n");
+
+        for (uint i=0; i<point_list.size(); ++i)
+            value_list[i] = this->value(point_list.template mat<Value::NRows_, Value::NCols_>(i), elm);
     }
 
 };
@@ -277,8 +340,12 @@ public:
     typedef FieldAlgorithmBase<spacedim, Value> FieldBaseType;
     typedef std::shared_ptr< FieldBaseType > FieldBasePtr;
 
+    /**
+     * Fn is a functor class and fn its instance.
+     */
     template<typename Fn, class ... InputFields>
-    static auto create(Fn *fn,  InputFields&&... inputs) -> decltype(auto)
+    //static auto create(Fn *fn, InputFields&&... inputs) -> decltype(auto)
+    static auto create(Fn fn,  InputFields&&... inputs) -> decltype(auto)
     {
         return std::make_shared<FieldModel<spacedim, Value, Fn, InputFields...>>(fn, std::forward<InputFields>(inputs)...);
     }
@@ -291,8 +358,12 @@ public:
         return create(f, std::get<I>(t) ...);
     }
 
+    /**
+     * Fn is a functor class and fn its instance.
+     */
     template<typename Fn, class ... InputFields>
-    static auto create_multi(Fn *fn,  InputFields&&... inputs) -> decltype(auto)
+    //static auto create_multi(Fn *fn, InputFields&&... inputs) -> decltype(auto)
+    static auto create_multi(Fn fn,  InputFields&&... inputs) -> decltype(auto)
     {
         typedef std::tuple<InputFields...> FieldTuple;
         FieldTuple field_tuple = std::forward_as_tuple((inputs)...);

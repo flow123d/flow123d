@@ -72,11 +72,13 @@ public:
      *
      * Has fix size of cache.
      *
-     * @param field_name Field name is written as parameter to output stream
-     * @param n_comp     Given from shape of field
-     * @param size       Count of rows of data cache
+     * @param field_name         Field name is written as parameter to output stream
+     * @param n_comp             Given from shape of field
+     * @param size               Count of rows of data cache
+     * @param fe_type            FiniteElement type (used only for native data)
+     * @param n_dofs_per_element Number of DOFs per element  (used only for native data)
      */
-	ElementDataCache(std::string field_name, unsigned int n_comp, unsigned int size);
+	ElementDataCache(std::string field_name, unsigned int n_comp, unsigned int size, std::string fe_type = "", unsigned int n_dofs_per_element = 1);
 
     /**
      * \brief Destructor of ElementDataCache
@@ -112,12 +114,12 @@ public:
      *       and possibly implement transposition. Set such property for individual file formats.
      *       Class OutputData stores always in raw-first order.
      */
-    void print_ascii_all(ostream &out_stream) override;
+    void print_ascii_all(ostream &out_stream, unsigned int start=0) override;
 
     /**
      * \brief Print all data stored in output data to appended binary format
      */
-    void print_binary_all(ostream &out_stream, bool print_data_size = true) override;
+    void print_binary_all(ostream &out_stream, bool print_data_size = true, unsigned int start = 0) override;
 
     void print_yaml_subarray(ostream &out_stream, unsigned int precision, unsigned int begin, unsigned int end) override;
 

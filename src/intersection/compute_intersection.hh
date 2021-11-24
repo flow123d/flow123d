@@ -444,7 +444,12 @@ private:
     std::vector<Plucker *> plucker_coordinates_tetrahedron;
     /// Pointers to Plucker products of abscissa and tetrahedron edges.
     std::vector<double *> plucker_products_;
-    /// Compute 1D-2D intersection objects [4x line X tetrahedron face]
+    /**
+     * Intersection objects for the tetrahedron's faces.
+     * Faces follows element node ordering, element inversion not handled at this stage.
+     * Element inversin is taken into account in the compute method.
+     * TODO: reuse these calculactions for elements with common face.
+     */
     ComputeIntersection<1,2> CI12[4];
 };
 
@@ -537,12 +542,28 @@ private:
     // 4 vertices, 6 edges, 4 faces, 1 volume, 3 corners, 3 sides, 1 surface; total 22
     std::vector<unsigned int> object_next;
 
-    bool obj_have_back_link(unsigned int i_obj);
+    //bool obj_have_back_link(unsigned int i_obj);
     auto edge_faces(uint i_edge) -> FacePair;
+
     auto vertex_faces(uint i_vtx) -> FacePair;
 
-
+    /**
+     * Returns true if: i_obj -> IP -> i_obj
+     * Returns false if i_obj -> no_idx OR i_obj -> IP -> j_obj != i_obj
+     *
+     * Backlink marks: end of the created chain
+     */
     inline bool have_backlink(uint i_obj);
+
+    /**
+     * Add raw intersection point.
+     */
+    inline unsigned int add_ip(const IPAux23 &ip) {
+        //DebugOut() << "IP[" << IP23_list.size() << "]:" << ip;
+        IP23_list.push_back(ip);
+        return IP23_list.size() - 1;
+    }
+
     /**
      * Set links: obj_before -> IP -> obj_after
      * if obj_after have null successor, set obj_after -> IP (backlink)
@@ -552,6 +573,7 @@ private:
     const std::vector<std::vector<arma::uvec>> on_faces;
     std::vector<std::vector<arma::uvec>> _on_faces();
 
+    bool S3_inverted;
     IntersectionAux<2,3>* intersection_;
     Mesh *mesh_;
 };

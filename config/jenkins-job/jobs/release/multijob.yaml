@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------- #
 # ---------- MULTIJOB -------------------------------------------------------- #
 # ---------------------------------------------------------------------------- #
-name: "Flow123d-{platform}-release-multijob"
+name: "Flow123d-{environment}-release-multijob"
 display-name: "release / Flow123d multijob"
 project-type: multijob
 defaults: flow123d-build
@@ -35,6 +35,7 @@ scm:
           - 2.2.0
           - 3.0.0_dev
           - 3.0.1
+          - MS_package
       basedir: flow123d
       browser: githubweb
       browser-url: https://github.com/flow123d/flow123d/
@@ -58,40 +59,40 @@ builders:
   # ---------- START IMAGE ----------------------------------------------- #
   - multijob:
       name: "Build flow123d Phase"
-      condition: COMPLETED
+      condition: SUCCESSFUL
       projects:
-        - name: "Flow123d-{platform}-release-build"
+        - name: "Flow123d-{environment}-release-build"
           current-parameters: true
 
   - multijob:
       name: "Unit tests"
       condition: COMPLETED
       projects:
-        - {name: "Flow123d-{platform}-release-unit-test-$PLACEHOLDER_unit_list$", current-parameters: true}
+        - {name: "Flow123d-{environment}-release-unit-test-$PLACEHOLDER_unit_list$", current-parameters: true}
 
   - multijob:
       name: "Integration tests"
       condition: COMPLETED
       projects:
-        - {name: "Flow123d-{platform}-release-test-$PLACEHOLDER_test_list$", current-parameters: true}
+        - {name: "Flow123d-{environment}-release-test-$PLACEHOLDER_test_list$", current-parameters: true}
 
   - multijob:
       name: "Make doc"
       condition: COMPLETED
       projects:
-        - name: "Flow123d-{platform}-release-make-doc"
+        - name: "Flow123d-{environment}-release-make-doc"
           current-parameters: true
 
   - multijob:
       name: "Package"
       condition: COMPLETED
       projects:
-        - name: "Flow123d-{platform}-release-package"
+        - name: "Flow123d-{environment}-release-package"
           current-parameters: true
   # ---------- STOP IMAGE ------------------------------------------------ #
   - multijob:
       name: "Stop image"
       condition: COMPLETED
       projects:
-        - name: "Flow123d-{platform}-release-stop-image"
+        - name: "Flow123d-{environment}-release-stop-image"
           current-parameters: true

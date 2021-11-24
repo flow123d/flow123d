@@ -1,6 +1,11 @@
 common_config:
   proc: [1, 2]
   memory_limit: 1000
+  check_rules:
+    - vtkdiff:
+        files: ["*.vtu"]
+    - ndiff:
+        files: ["*.pvd", "*.txt", "*.yaml", "*.msh"]
 
 test_cases:
 - files:
@@ -8,7 +13,7 @@ test_cases:
   - 02_dg_dp_sorp_small.yaml
   - 03_bc.yaml
   - 04_bc_short_pulse.yaml
-  - 06_sources.yaml
+  - 06_sources.yaml        
 
 - files:
   - 05_unsteady_flow.yaml

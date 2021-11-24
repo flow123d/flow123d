@@ -18,6 +18,8 @@
 #ifndef BC_MESH_H
 #define BC_MESH_H
 
+#define NOT_IMPLEMENTED { ASSERT(false); return 0; }
+
 
 #include "mesh/mesh.h"
 
@@ -32,7 +34,7 @@ class Neighbour;
  * elements and other functionality and structures necessary to work above boundary
  * part of mesh.
  */
-class BCMesh : public Mesh {
+class BCMesh : public MeshBase {
 public:
 	/**
 	 * Constructor from parent (bulk) Mesh.
@@ -40,13 +42,7 @@ public:
 	BCMesh(Mesh* parent_mesh);
 
 	/// Destructor
-	~BCMesh();
-
-    /// Returns range of boundary elements of parent mesh
-    Range<ElementAccessor<3>> elements_range() const override;
-
-    /// Returns count of boundary elements of parent mesh
-    unsigned int n_elements(bool boundary=false) const override;
+	~BCMesh() override;
 
     /// Overwrite Mesh::get_part()
     Partitioning *get_part() override;
@@ -55,20 +51,33 @@ public:
     const LongIdx *get_local_part() override;
 
     /// Overwrite Mesh::check_compatible_mesh()
-    std::shared_ptr<std::vector<LongIdx>> check_compatible_mesh( Mesh & input_mesh) override;
+    std::shared_ptr<EquivalentMeshMap> check_compatible_mesh( Mesh & input_mesh) override;
 
-    /// Overwrite Mesh::n_nodes()
-    unsigned int n_nodes() const override;
-
-    /// Overwrite Mesh::element_accessor()
-    ElementAccessor<3> element_accessor(unsigned int idx) const override;
+    /// Implement MeshBase::bc_mesh()
+    BCMesh *bc_mesh() const override {
+        return nullptr;
+    }
 
 private:
+
+    /// setup distribution of elements and related vectors
+    void init_distribution();
+
+    void make_neighbours_and_edges();
+
+    // unused methods (should not be used)
+    Boundary boundary(unsigned int) const override;
+
+
+
     /// Pointer to parent (bulk) mesh
 	Mesh *parent_mesh_;
 
 	/// Distribution of boundary elements to processors
 	LongIdx *local_part_;
+
+
+    friend class Mesh;
 
 };
 

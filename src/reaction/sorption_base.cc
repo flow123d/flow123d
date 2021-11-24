@@ -326,8 +326,9 @@ void SorptionBase::initialize_fields()
   data_->conc_solid_fe.resize(substances_.size());
   for (unsigned int sbi = 0; sbi < substances_.size(); sbi++)
   {
-    data_->conc_solid_fe[sbi] = create_field_fe< 3, FieldValue<3>::Scalar >(dof_handler_);
-		data_->conc_solid[sbi].set_field(mesh_->region_db().get_region_set("ALL"), data_->conc_solid_fe[sbi], 0);
+      // create shared pointer to a FieldFE and push this Field to output_field on all regions
+      data_->conc_solid_fe[sbi] = create_field_fe< 3, FieldValue<3>::Scalar >(dof_handler_);
+      data_->conc_solid[sbi].set(data_->conc_solid_fe[sbi], 0);
   }
   //output_stream_->add_admissible_field_names(output_array);
   data_->output_fields.initialize(output_stream_, mesh_, input_record_.val<Input::Record>("output"), time());
@@ -370,7 +371,7 @@ void SorptionBase::set_initial_condition()
         for (unsigned int sbi = 0; sbi < n_substances_; sbi++)
         {
             int subst_id = substance_global_idx_[sbi];
-            data_->conc_solid_fe[subst_id]->vec()[dof_p0] = data_->init_conc_solid[sbi].value(ele.centre(), ele);
+            data_->conc_solid_fe[subst_id]->vec().set( dof_p0, data_->init_conc_solid[sbi].value(ele.centre(), ele) );
         }
     }
 }
@@ -418,7 +419,7 @@ void SorptionBase::isotherm_reinit(unsigned int i_subst, const ElementAccessor<3
     }
     
     if ( common_ele_data.scale_sorbed <= 0.0)
-        xprintf(UsrErr, "Scaling parameter in sorption is not positive. Check the input for rock density and molar mass of %d. substance.",i_subst);
+        THROW( ExcNotPositiveScaling() << EI_Subst(i_subst) );
     
     isotherm.reinit(Isotherm::SorptionType(data_->sorption_type[i_subst].value(elem.centre(),elem)),
                     limited_solubility_on, solvent_density_,
@@ -456,7 +457,7 @@ void SorptionBase::update_max_conc()
         reg_idx = dh_cell.elm().region().bulk_idx();
         for(i_subst = 0; i_subst < n_substances_; i_subst++){
             subst_id = substance_global_idx_[i_subst];
-            max_conc[reg_idx][i_subst] = std::max(max_conc[reg_idx][i_subst], conc_mobile_fe[subst_id]->vec()[dof_p0]);
+            max_conc[reg_idx][i_subst] = std::max(max_conc[reg_idx][i_subst], conc_mobile_fe[subst_id]->vec().get(dof_p0));
       }
     }
 }
@@ -542,8 +543,11 @@ void SorptionBase::compute_reaction(const DHCellAccessor& dh_cell)
             Isotherm & isotherm = isotherms[reg_idx][i_subst];
             if (isotherm.is_precomputed()){
 //                 DebugOut().fmt("isotherms precomputed - interpolate, subst[{}]\n", i_subst);
-                isotherm.interpolate(conc_mobile_fe[subst_id]->vec()[dof_p0],
-                                     data_->conc_solid_fe[subst_id]->vec()[dof_p0]);
+                double c_aqua = conc_mobile_fe[subst_id]->vec().get(dof_p0);
+				double c_sorbed = data_->conc_solid_fe[subst_id]->vec().get(dof_p0);
+                isotherm.interpolate(c_aqua, c_sorbed);
+                conc_mobile_fe[subst_id]->vec().set(dof_p0, c_aqua);
+                data_->conc_solid_fe[subst_id]->vec().set(dof_p0, c_sorbed);
             }
             else{
 //                 DebugOut().fmt("isotherms reinit - compute , subst[{}]\n", i_subst);
@@ -553,14 +557,17 @@ void SorptionBase::compute_reaction(const DHCellAccessor& dh_cell)
                 }
                 
                 isotherm_reinit(i_subst, ele);
-                isotherm.compute(conc_mobile_fe[subst_id]->vec()[dof_p0],
-                                 data_->conc_solid_fe[subst_id]->vec()[dof_p0]);
+                double c_aqua = conc_mobile_fe[subst_id]->vec().get(dof_p0);
+				double c_sorbed = data_->conc_solid_fe[subst_id]->vec().get(dof_p0);
+                isotherm.compute(c_aqua, c_sorbed);
+                conc_mobile_fe[subst_id]->vec().set(dof_p0, c_aqua);
+                data_->conc_solid_fe[subst_id]->vec().set(dof_p0, c_sorbed);
             }
             
             // update maximal concentration per region (optimization for interpolation)
             if(table_limit_[i_subst] < 0)
                 max_conc[reg_idx][i_subst] = std::max(max_conc[reg_idx][i_subst],
-                                                      conc_mobile_fe[subst_id]->vec()[dof_p0]);
+                                                      conc_mobile_fe[subst_id]->vec().get(dof_p0));
         }
     }
     catch(ExceptionBase const &e)

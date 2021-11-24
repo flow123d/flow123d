@@ -134,7 +134,19 @@ private:
  */
 class Logger : public std::ostream {
 public:
-	/// Enum of types of Logger messages.
+
+    /**
+     * @brief Enum of types of Logger messages.
+     *
+     * Rules:
+     * 1. Warning and Error are the only messages that goes to CERR.
+     * 2. All messages goes to the log file unless it is suppressed by the _no_log option
+     * if the user provides empty log file name.
+     * 3. If the log file was not initialized YET all LOG output goes to COUT unless it already goes to CERR.
+     * 4. 'message' goes to the COUT if LOG is suppressed.
+     * 5.  'debug' goes to both COUT and LOG, but are suppresed by FLOW123D_DEBUG.
+     *
+     */
 	enum MsgType {
 		warning = 0,
 		message = 1,
@@ -234,6 +246,14 @@ Logger &operator<<(Logger & log, const std::vector<T> & vec)
 	return log;
 }
 
+template <class T, long unsigned int N>
+Logger &operator<<(Logger & log, const std::array<T, N> & vec)
+{
+    for (T const& c : vec)
+        log << c << " ";
+    return log;
+}
+
 
 template <class T>
 Logger &operator<<(Logger & log, const T & x)
@@ -272,7 +292,39 @@ Logger &operator<<(Logger & log, const T & x)
 #define print_var(var) \
     std::string(#var) << "=" << (var) << ", "
 
+#include <iostream>
+#include <vector>
 
+/**
+ * Manipulator template to print containers.
+ */
+namespace manipulators
+{
+    template <typename Cont, typename Delim=const char*>
+    struct Array {
+        Array(Cont const& v, Delim d = ", ") : _v(v), _d(std::move(d)) { }
+
+        Cont const& _v;
+        Delim _d;
+
+        friend std::ostream& operator<<(std::ostream& os, Array const& manip) {
+            using namespace std;
+            auto f = begin(manip._v), l(end(manip._v));
+
+            os << "{ ";
+            while (f != l)
+                if ((os << *f) && (++f != l))
+                    os << manip._d;
+            return os << " }";
+        }
+    };
+
+}
+
+template <typename T, typename Delim=const char*>
+manipulators::Array<T, Delim> format(T const& deduce, Delim delim = ", ") {
+    return { deduce, std::move(delim) };
+}
 
 
 #endif /* LOGGER_HH_ */

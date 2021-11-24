@@ -103,7 +103,7 @@ const int TransportOperatorSplitting::registrar =
 
 
 
-TransportEqData::TransportEqData()
+TransportEqFields::TransportEqFields()
 {
     *this += porosity.name("porosity")
             .description("Porosity of the mobile phase.")
@@ -155,9 +155,7 @@ TransportEqData::TransportEqData()
 
 TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const Input::Record in_rec)
 : AdvectionProcessBase(init_mesh, in_rec),
-//  Semchem_reactions(NULL),
-  cfl_convection(numeric_limits<double>::max()),
-  cfl_reaction(numeric_limits<double>::max())
+  cfl_convection(numeric_limits<double>::max())
 {
 	START_TIMER("TransportOperatorSpliting");
 
@@ -175,7 +173,8 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 	convection->substances().initialize(in_rec.val<Input::Array>("substances"));
 
 	// Initialize output stream.
-    convection->set_output_stream(OutputTime::create_output_stream("solute", in_rec.val<Input::Record>("output_stream"), time().get_unit_string()));
+	std::shared_ptr<OutputTime> stream = OutputTime::create_output_stream("solute", in_rec.val<Input::Record>("output_stream"), time().get_unit_conversion());
+    convection->set_output_stream(stream);
 
 
     // initialization of balance object
@@ -193,7 +192,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 
 	time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), convection->mark_type());
 
-    this->eq_data_ = &(convection->data());
+    this->eq_fieldset_ = &(convection->eq_fieldset());
 
     convection->get_par_info(el_4_loc, el_distribution);
     Input::Iterator<Input::AbstractRecord> reactions_it = in_rec.find<Input::AbstractRecord>("reaction_term");
@@ -210,7 +209,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 
         reaction->substances(convection->substances())
           .concentration_fields(convection->get_p0_interpolation())
-				  .output_stream(convection->output_stream())
+				  .output_stream(stream)
 				  .set_time_governor((TimeGovernor &)convection->time());
 
 		reaction->initialize();
@@ -237,7 +236,7 @@ void TransportOperatorSplitting::initialize()
           typeid(*reaction) == typeid(DualPorosity)
         )
   {
-    reaction->data().set_field("porosity", convection->data()["porosity"]);
+    reaction->eq_fieldset().set_field("porosity", convection->eq_fieldset()["porosity"]);
   }
 }
 
@@ -252,7 +251,6 @@ void TransportOperatorSplitting::output_data(){
 
         convection->output_data();
         if(reaction) reaction->output_data(); // do not perform write_time_frame
-        convection->output_stream()->write_time_frame();
 
         END_TIMER("TOS-output data");
 }
@@ -268,7 +266,6 @@ void TransportOperatorSplitting::zero_time_step()
       reaction->zero_time_step();
       reaction->output_data(); // do not perform write_time_frame
     }
-    convection->output_stream()->write_time_frame();
 
 }
 
@@ -289,16 +286,11 @@ void TransportOperatorSplitting::update_solution() {
     {
         steps++;
 	    // one internal step
-        // we call evaluate_time_constraint() of convection and reaction separately to
-        // make sure that both routines are executed.
-        bool cfl_convection_changed =  convection->evaluate_time_constraint(cfl_convection);
-        bool cfl_reaction_changed = (reaction?reaction->evaluate_time_constraint(cfl_reaction):0);
-        bool cfl_changed = cfl_convection_changed || cfl_reaction_changed;
+        bool cfl_changed =  convection->evaluate_time_constraint(cfl_convection);
         
         if (steps == 1 || cfl_changed)
         {
             convection->time().set_upper_constraint(cfl_convection, "Time step constrained by transport CFL condition (including both flow and sources).");
-            convection->time().set_upper_constraint(cfl_reaction, "Time step constrained by reaction CFL condition.");
             
             // fix step with new constraint
             convection->time().fix_dt_until_mark();

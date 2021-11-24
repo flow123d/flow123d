@@ -1,0 +1,99 @@
+# Variant of the 04_frac_diffusion, without dead-end fractures. Used for creating a figure in Tutorial 4 for the comparison.
+flow123d_version: 3.1.0
+problem: !Coupling_Sequential
+  description: Tutorial 4 - Fractures - diffusion, no dead-end fractures (auxiliary)
+  mesh:
+    mesh_file: 04_mesh.msh
+    regions:
+      - !Union
+        name: flow_fractures
+        regions:
+          - flow_fracture1
+          - flow_fracture2
+      - !Union
+        name: deadend_fractures
+        regions:
+          - deadend_fracture1
+          - deadend_fracture2
+      - !Union
+        name: BC_right
+        regions:
+          - .right
+          - .right_points
+      - !Union
+        name: BC_left
+        regions:
+          - .left
+          - .left_points
+  flow_equation: !Flow_Darcy_MH
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-15
+        r_tol: 1.0e-15
+    input_fields:
+      - region: rock
+        conductivity: 0.000315
+      - region: flow_fractures
+        conductivity: 31.5
+        cross_section: 0.01
+      - region: deadend_fractures
+        conductivity: 3.15e-4     # variant without dead-end fractures conductivity: 0.000315
+        cross_section: 0.01
+      - region: BC_left
+        bc_type: dirichlet
+        bc_piezo_head: 0.1
+      - region: BC_right
+        bc_type: dirichlet
+        bc_piezo_head: 0
+    balance: {}
+    output:
+      fields:
+        - piezo_head_p0
+        - pressure_p0
+        - velocity_p0
+    output_stream:
+      file: flow.msh
+      format: !gmsh
+  solute_equation: !Coupling_OperatorSplitting
+    transport: !Solute_AdvectionDiffusion_DG
+      input_fields:
+        - region: rock
+          init_conc: 0
+          porosity: 0.005
+          diff_m: 0.0369
+          disp_l: 5
+          disp_t: 0.5
+        - region: flow_fractures
+          init_conc: 0
+          porosity: 0.1
+          diff_m: 0.0369
+          disp_l: 5
+          disp_t: 0.5
+        - region: deadend_fractures
+          init_conc: 0
+          porosity: 0.1
+          diff_m: 0.0369
+          disp_l: 5
+          disp_t: 0.5
+        - region: .left_points
+          bc_type: dirichlet
+          bc_conc: !FieldFormula
+            value: 2.84959e-5*exp(-0.5*((t-2000)/700)^2)
+      solver: !Petsc
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
+    substances:
+      - I
+    time:
+      end_time: 50000
+    balance:
+      cumulative: true
+    output_stream:
+      times:
+        - step: 500
+          end: 5000
+        - begin: 5000
+          step: 5000
+      file: transport.pvd
+      format: !vtk
+        variant: ascii

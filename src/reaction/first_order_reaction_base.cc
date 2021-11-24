@@ -90,14 +90,14 @@ void FirstOrderReactionBase::compute_reaction(const DHCellAccessor& dh_cell)
 
     // save previous concentrations to column vector
     for(sbi = 0; sbi < n_substances_; sbi++)
-        prev_conc_(sbi) = conc_mobile_fe[sbi]->vec()[dof_p0];
+        prev_conc_(sbi) = conc_mobile_fe[sbi]->vec().get(dof_p0);
     
     // compute new concetrations R*c
     linear_ode_solver_->update_solution(prev_conc_, new_conc);
     
     // save new concentrations to the concentration matrix
     for(sbi = 0; sbi < n_substances_; sbi++)
-        conc_mobile_fe[sbi]->vec()[dof_p0] = new_conc(sbi);
+        conc_mobile_fe[sbi]->vec().set( dof_p0, new_conc(sbi) );
 }
 
 void FirstOrderReactionBase::update_solution(void)
@@ -125,14 +125,4 @@ unsigned int FirstOrderReactionBase::find_subst_name(const string &name)
                 if (name == substances_[k].name()) return k;
 
         return k;
-}
-
-
-bool FirstOrderReactionBase::evaluate_time_constraint(double &time_constraint)
-{
-    if (!linear_ode_solver_->evaluate_time_constraint(time_constraint)) return false;
-    
-    DebugOut().fmt("CFL constraint(first order reaction): {}.\n", time_constraint);
-    
-    return true;
 }

@@ -31,7 +31,7 @@ capture the 3D nature of the problem, we set \texttt{cross\_section}
 (width) of the rock region to 100 m (the value was gained from
 calibration), and the cross section of the wells to 0.04 m\({}^2\).
 
-\begin{longtable}[c]{@{}lr@{}}
+\begin{longtable}[]{@{}lr@{}}
 \caption{Geometrical parameters.
 \label{tbl:water_balance}}\tabularnewline
 \toprule
@@ -52,11 +52,13 @@ Well cross section & 0.04 m\({}^2\)\tabularnewline
 \bottomrule
 \end{longtable}
 
-\begin{figure}[htbp]
+\begin{figure}
+\hypertarget{fig:BCD}{%
 \centering
-\includegraphics[width=1.00000\textwidth]{tutor_figures/07_bcmesh.pdf}
+\includegraphics[width=6.25in,height=3.125in]{tutor_figures/07_bcmesh.pdf}
 \caption{Geometry, boundary conditions and computational
-mesh.\label{fig:BCD}}
+mesh.}\label{fig:BCD}
+}
 \end{figure}
 
 \subsubsection{Hydraulic model}
@@ -185,22 +187,28 @@ energy flux on the surface of the two wells) is depicted in Figure
 \ref{fig:flux} and the temperature field of the whole massif after 30
 years is depicted in Figure \ref{fig:tempr_grad}.
 
-\begin{figure}[htbp]
+\begin{figure}
+\hypertarget{fig:tempr}{%
 \centering
 \includegraphics{tutor_figures/07_power.pdf}
 \caption{The power of heat exchanger system in 30
-years.\label{fig:tempr}}
+years.}\label{fig:tempr}
+}
 \end{figure}
 
-\begin{figure}[htbp]
+\begin{figure}
+\hypertarget{fig:flux}{%
 \centering
-\includegraphics[width=0.80000\textwidth]{tutor_figures/07_flow.pdf}
-\caption{The flux field with piezometric head.\label{fig:flux}}
+\includegraphics[width=6.25in,height=6.25in]{tutor_figures/07_flow.pdf}
+\caption{The flux field with piezometric head.}\label{fig:flux}
+}
 \end{figure}
 
-\begin{figure}[htbp]
+\begin{figure}
+\hypertarget{fig:tempr_grad}{%
 \centering
-\includegraphics[width=0.80000\textwidth]{tutor_figures/07_transport.pdf}
+\includegraphics[width=6.25in,height=6.25in]{tutor_figures/07_transport.pdf}
 \caption{The temperature of exchanger after 30
-years.\label{fig:tempr_grad}}
+years.}\label{fig:tempr_grad}
+}
 \end{figure}

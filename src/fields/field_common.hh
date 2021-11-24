@@ -36,6 +36,7 @@
 #include "input/type_record.hh"                        // for Record
 #include "input/type_selection.hh"                     // for Selection
 #include "io/output_time.hh"                           // for OutputTime
+#include "io/output_time_set.hh"                       // for OutputTimeSet
 #include "mesh/region.hh"                              // for Region (ptr only)
 #include "system/asserts.hh"                           // for Assert, ASSERT
 #include "system/exc_common.hh"                        // for EI_Message
@@ -47,6 +48,8 @@ class Mesh;
 class Observe;
 class EvalPoints;
 class ElementCacheMap;
+class FieldSet;
+class BulkPoint;
 
 
 using namespace std;
@@ -75,12 +78,19 @@ class FieldCommon {
 public:
     TYPEDEF_ERR_INFO(EI_Time, double);
     TYPEDEF_ERR_INFO(EI_Field, std::string);
+    TYPEDEF_ERR_INFO( EI_FieldInputName, std::string);
+    TYPEDEF_ERR_INFO( EI_FieldName, std::string);
+    TYPEDEF_ERR_INFO( EI_RegId, unsigned int);
+    TYPEDEF_ERR_INFO( EI_RegLabel, std::string);
     DECLARE_INPUT_EXCEPTION(ExcNonascendingTime,
             << "Non-ascending time: " << EI_Time::val << " for field " << EI_Field::qval << ".\n");
     DECLARE_INPUT_EXCEPTION(ExcMissingDomain,
             << "Missing domain specification (region or r_id) in the field descriptor:");
     DECLARE_EXCEPTION(ExcFieldMeshDifference,
             << "Two copies of the field " << EI_Field::qval << "call set_mesh with different arguments.\n");
+    DECLARE_INPUT_EXCEPTION(ExcMissingFieldValue,
+            << "Missing value of the input field " << EI_FieldInputName::qval << " (" << EI_FieldName::qval
+            << ") on region ID: " << EI_RegId::val << " label: " << EI_RegLabel::qval << ".\n");
 
 
 
@@ -172,7 +182,7 @@ public:
      * If not set explicitly by this method, the default value is OutputTime::ELEM_DATA
      */
     FieldCommon & output_type(OutputTime::DiscreteSpace rt)
-    { if (rt!=OutputTime::UNDEFINED) type_of_output_data_ = rt; return *this; }
+    { if (rt!=OutputTime::UNDEFINED) default_output_data_ = rt; return *this; }
 
     /**
      * Set given mask to the field flags, ignoring default setting.
@@ -253,13 +263,25 @@ public:
     }
 
     OutputTime::DiscreteSpace get_output_type() const
-    { return type_of_output_data_; }
+    { return default_output_data_; }
 
     bool is_bc() const
     { return shared_->bc_;}
 
     unsigned int n_comp() const
     { return shared_->comp_names_.size();}
+
+    /**
+     * Returns full name of subfield on \p i_comp position created from component name and field name.
+     *
+     * If component name is empty returns only field name.
+     */
+    inline std::string full_comp_name(unsigned int i_comp) const
+    {
+        ASSERT_LT_DBG(i_comp, shared_->comp_names_.size());
+        return shared_->comp_names_[i_comp].empty() ? this->name()
+                : shared_->comp_names_[i_comp] + "_" + this->name();
+    }
 
     const Mesh * mesh() const
     { return shared_->mesh_;}
@@ -415,7 +437,7 @@ public:
      * The parameter @p output_fields is checked for value named by the field name. If the key exists,
      * then the output of the field is performed. If the key do not appear in the input, no output is done.
      */
-    virtual void field_output(std::shared_ptr<OutputTime> stream) =0;
+    virtual void field_output(std::shared_ptr<OutputTime> stream, OutputTime::DiscreteSpace type) =0;
 
     /**
      * Perform the observe output of the field.
@@ -424,6 +446,10 @@ public:
      */
     virtual void observe_output(std::shared_ptr<Observe> observe) =0;
 
+    /**
+     * Set reference of FieldSet to all instances of FieldFormula.
+     */
+    virtual std::vector<const FieldCommon *> set_dependency(FieldSet &field_set, unsigned int i_reg) const =0;
 
     /**
      * Sets @p component_index_
@@ -443,14 +469,46 @@ public:
     }
 
     /**
-     * Allocate data cache of dimension appropriate to subset object.
+     * Reallocate field value cache of Field on given region.
      */
-    virtual void cache_allocate(std::shared_ptr<EvalPoints> eval_points) = 0;
+    virtual void cache_reallocate(const ElementCacheMap &cache_map, unsigned int region_idx) const = 0;
 
     /**
      * Read data to cache for appropriate elements given by ElementCacheMap object.
      */
-    virtual void cache_update(ElementCacheMap &cache_map) = 0;
+    virtual void cache_update(ElementCacheMap &cache_map, unsigned int region_patch_idx) const = 0;
+
+
+    /**
+     *  Returns pointer to this (Field) or the sub-field component (MultiField).
+     */
+    virtual FieldCommon *get_component(FMT_UNUSED unsigned int idx) {
+        return this;
+    }
+
+
+    /**
+     *  Returns FieldValueCache if element_type of field is double or nullptr for other element_types.
+     */
+    virtual FieldValueCache<double> * value_cache() =0;
+
+
+    /**
+     * Same as previous but return const pointer
+     */
+    virtual const FieldValueCache<double> * value_cache() const =0;
+
+    /// Create and set shared_ptr to ElementDataCache. Used only in descendant Field<>.
+    virtual void set_output_data_cache(FMT_UNUSED OutputTime::DiscreteSpace space_type, FMT_UNUSED std::shared_ptr<OutputTime> stream)
+    {
+        ASSERT(false);
+    }
+
+    /// Fill data to ElementDataCache on given patch.
+    virtual void fill_data_value(FMT_UNUSED const std::vector<int> &offsets)
+    {
+        ASSERT(false);
+    }
 
 
     /**
@@ -464,6 +522,13 @@ public:
      * Virtual destructor.
      */
     virtual ~FieldCommon();
+
+    /**
+     * Hold shape of Field.
+     *
+     * Value is set in constructor of descendant class.
+     */
+    std::vector<uint> shape_;
 
 
 protected:
@@ -486,6 +551,11 @@ protected:
     void set_history_changed()
     {
         last_time_ = -numeric_limits<double>::infinity();
+    }
+
+    void set_shape(uint n_rows, uint n_cols) {
+        if (n_cols==1) this->shape_ = { n_rows };
+        else this->shape_ = { n_rows, n_cols };
     }
 
     /**
@@ -615,9 +685,9 @@ protected:
     bool is_jump_time_;
 
     /**
-     * Output data type used in the output() method. Can be different for different field copies.
+     * Default output data type used in the output() method. Can be different for different field copies.
      */
-    OutputTime::DiscreteSpace type_of_output_data_ = OutputTime::ELEM_DATA;
+    OutputTime::DiscreteSpace default_output_data_ = OutputTime::ELEM_DATA;
 
     /**
      * Specify if the field is part of a MultiField and which component it is

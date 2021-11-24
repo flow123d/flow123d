@@ -17,6 +17,9 @@ public:
     /// Typedef for usage of Input::Factory in child classes.
     typedef DarcyFlowInterface FactoryBaseType;
 
+    DECLARE_EXCEPTION( ExcBddcmlNotSupported, << "Flow123d was not build with BDDCML support.\n" );
+    DECLARE_EXCEPTION( ExcUnknownSolver, << "Unknown solver type. Internal error.\n" );
+
     static Input::Type::Abstract & get_input_type() {
         return Input::Type::Abstract("DarcyFlow",
                 "Darcy flow model. Abstraction of various porous media flow models.")

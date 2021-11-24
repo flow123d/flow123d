@@ -13,6 +13,7 @@
 #include "fields/field_set.hh"
 #include "tools/unit_si.hh"
 #include "fields/bc_field.hh"
+#include "fields/field_model.hh"
 
 #include "system/sys_profiler.hh"
 
@@ -279,6 +280,185 @@ TEST_F(SomeEquation, input_related) {
     EXPECT_TRUE(data.is_constant(front_3d));
     EXPECT_TRUE(tg.is_current(tg.marks().type_input()));
 
+}
+
+
+/******************************
+ *  TEST OF FIELD DEPENDENCY  *
+ ******************************/
+namespace IT = Input::Type;
+
+// Functor computing FieldModels
+struct fn_f_field {
+    inline arma::vec3 operator() (double a, arma::vec3 v) {
+        return a * v;
+    }
+};
+struct fn_c_field {
+    inline double operator() (arma::vec3 v) {
+        return arma::norm(v, 2);
+    }
+};
+struct fn_d_field {
+    inline double operator() (double a, double b) {
+        return a * b;
+    }
+};
+struct fn_g_field {
+    inline arma::vec3 operator() (double a, arma::vec3 u, arma::vec3 v) {
+        return u + a * v;
+    }
+};
+struct fn_e_field {
+    inline double operator() (double a) {
+        return 0.5 * a;
+    }
+};
+
+class TestDependency : public testing::Test {
+
+public:
+    class EqData : public FieldSet {
+    public:
+        EqData() {
+            *this += e_field
+                    .name("e_field")
+                    .description("Model: 0.5 * d_field")
+                    .units( UnitSI().m() );
+            *this += d_field
+                    .name("d_field")
+                    .description("Model: a_field * c_field")
+                    .units( UnitSI::dimensionless() );
+            *this += c_field
+                    .name("c_field")
+                    .description("Model: norm(b_field)")
+                    .units( UnitSI().m() );
+            *this += b_field
+                    .name("b_field")
+                    .description("Vector field")
+                    .units( UnitSI().m() );
+            *this += g_field
+                    .name("g_field")
+                    .description("Model: f_field + d_field * b_field")
+                    .units( UnitSI::dimensionless() );
+            *this += f_field
+                    .name("f_field")
+                    .description("Model: a_field * b_field")
+                    .units( UnitSI::dimensionless() );
+            *this += a_field
+                    .name("a_field")
+                    .description("Scalar field.")
+                    .units( UnitSI::dimensionless() );
+        }
+
+        /// Initialize FieldModels
+        void initialize() {
+        	c_field.set(Model<3, FieldValue<3>::Scalar>::create(fn_c_field(), b_field), 0.0);
+            d_field.set(Model<3, FieldValue<3>::Scalar>::create(fn_d_field(), a_field, c_field), 0.0);
+            e_field.set(Model<3, FieldValue<3>::Scalar>::create(fn_e_field(), d_field), 0.0);
+            f_field.set(Model<3, FieldValue<3>::VectorFixed>::create(fn_f_field(), a_field, b_field), 0.0);
+            g_field.set(Model<3, FieldValue<3>::VectorFixed>::create(fn_g_field(), d_field, f_field, b_field), 0.0);
+        }
+
+        /// Check result
+        void check() {
+        	/* print
+            std::cout << "Original order in field_list:\n";
+            for (auto f : this->field_list) std::cout << " " << f->name();
+            std::cout << "\n----------------------------------------------------\n";
+            std::cout << "Sorted order by regions:\n";
+            for (auto r : this->region_field_update_order_) {
+                std::cout << " " << r.first << ":  ";
+                for (auto f : r.second) std::cout << " " << f->name();
+                std::cout << "\n";
+            }
+            std::cout << "----------------------------------------------------\n";
+            // */
+
+            // check
+            std::vector<std::string> orig_order; // holds original order in field_list
+            for (auto f : this->field_list) orig_order.push_back(f->name());
+            for (auto r : this->region_field_update_order_) {
+                EXPECT_EQ(r.second.size(), 7);
+                if (r.first % 2) // only bulk regions are sorted
+                    for (unsigned int i=1; i<r.second.size(); ++i)
+                        // fields are sorted by name
+                        EXPECT_TRUE(r.second[i-1]->name() < r.second[i]->name());
+                else // boundary regions are in original order
+                	for (unsigned int i=0; i<r.second.size(); ++i)
+                	    EXPECT_EQ(r.second[i]->name(), orig_order[i]);
+            }
+        }
+
+        // fields
+        Field<3, FieldValue<3>::Scalar >      a_field;
+        Field<3, FieldValue<3>::VectorFixed > b_field;
+        Field<3, FieldValue<3>::Scalar >      c_field;
+        Field<3, FieldValue<3>::Scalar >      d_field;
+        Field<3, FieldValue<3>::Scalar >      e_field;
+        Field<3, FieldValue<3>::VectorFixed > f_field;
+        Field<3, FieldValue<3>::VectorFixed > g_field;
+    };
+
+    TestDependency() {
+        Profiler::instance();
+        FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+        mesh_ = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
+        data_ = std::make_shared<EqData>();
+    }
+
+    ~TestDependency() {
+        delete mesh_;
+    }
+
+    void read_input(const string &input) {
+        // read input string
+        Input::ReaderToStorage reader( input, get_input_type(), Input::FileFormat::format_YAML );
+        Input::Record in_rec=reader.get_root_interface<Input::Record>();
+
+        TimeGovernor tg(0.0, 1.0);
+
+        //data.set_components(component_names);        // set number of substances posibly read from elsewhere
+
+        static std::vector<Input::Array> inputs;
+        unsigned int input_last = inputs.size(); // position of new item
+        inputs.push_back( in_rec.val<Input::Array>("data") );
+
+        data_->set_mesh(*mesh_);
+        data_->initialize();
+        data_->set_input_list( inputs[input_last], tg );
+        data_->set_time(tg.step(), LimitSide::right);
+        data_->set_dependency( *(data_.get()) );
+    }
+
+    static Input::Type::Record & get_input_type() {
+        return IT::Record("TestDependency","")
+                .declare_key("data", IT::Array(
+                        IT::Record("TestDependency_Data", FieldCommon::field_descriptor_record_description("TestDependency_Data") )
+                        .copy_keys( TestDependency::EqData().make_field_descriptor_type("TestDependency") )
+                        .close()
+                        ), IT::Default::obligatory(), ""  )
+                .close();
+    }
+
+    Mesh * mesh_;
+    std::shared_ptr<EqData> data_;
+};
+
+string dependency_input = R"YAML(
+data:
+  - region: ALL
+    time: 0.0
+    a_field: !FieldConstant
+      value: 0.5
+    b_field: [1, 2, 3]
+)YAML";
+
+
+
+TEST_F(TestDependency, dependency_tree) {
+	this->read_input(dependency_input);
+    data_->check();
 }
 
 

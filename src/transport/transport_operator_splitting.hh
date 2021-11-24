@@ -112,9 +112,6 @@ public:
     /// Setter for output stream.
     virtual void set_output_stream(std::shared_ptr<OutputTime> stream) = 0;
 
-    /// Getter for output stream.
-    virtual std::shared_ptr<OutputTime> output_stream() = 0;
-
     /// Getter for P0 interpolation by FieldFE.
 	virtual FieldFEScalarVec& get_p0_interpolation() = 0;
 
@@ -143,11 +140,11 @@ public:
 /**
  * Class with fields that are common to all transport models.
  */
-class TransportEqData : public FieldSet {
+class TransportEqFields : public FieldSet {
 public:
 
-	TransportEqData();
-	inline virtual ~TransportEqData() {};
+	TransportEqFields();
+	inline virtual ~TransportEqFields() {};
 
 	/// Mobile porosity - usually saturated water content in the case of unsaturated flow model
 	Field<3, FieldValue<3>::Scalar> porosity;
@@ -245,13 +242,8 @@ private:
 
     std::shared_ptr<ConcentrationTransportBase> convection;
     std::shared_ptr<ReactionTerm> reaction;
-
-    //double *** semchem_conc_ptr;   //dumb 3-dim array (for phases, which are not supported any more)
-    //Semchem_interface *Semchem_reactions;
     
     double cfl_convection; ///< Time restriction due to transport
-    double cfl_reaction;   ///< Time restriction due to reactions
-
 };
 
 

@@ -76,7 +76,7 @@
 
 template <typename T>
 OutputTime::OutputDataPtr OutputTime::prepare_compute_data(std::string field_name,
-    DiscreteSpace space_type, unsigned int n_rows, unsigned int n_cols)
+    DiscreteSpace space_type, unsigned int n_rows, unsigned int n_cols, std::string fe_type, unsigned int n_dofs_per_element)
 {
     // get possibly existing data for the same field, check both name and type
     unsigned int size;
@@ -89,8 +89,10 @@ OutputTime::OutputDataPtr OutputTime::prepare_compute_data(std::string field_nam
             break;
         }
         case ELEM_DATA:
+            size = output_mesh_->offsets_->n_values()-1;
+            break;
         case NATIVE_DATA:
-            size = output_mesh_->offsets_->n_values();
+            size = output_mesh_->offsets_->n_values()-1;
             break;
         default:
             ASSERT(false).error("Should not happen.");
@@ -111,12 +113,12 @@ OutputTime::OutputDataPtr OutputTime::prepare_compute_data(std::string field_nam
     
     if(current_step == 0 && it == od_vec.end() ) {
         // DebugOut() << "OutputTime::prepare_compute_data: PUSH BACK " << field_name << "\n";
-        od_vec.push_back( std::make_shared< ElementDataCache<T> >(field_name, n_rows*n_cols, size) );
+        od_vec.push_back( std::make_shared< ElementDataCache<T> >(field_name, n_rows*n_cols, size, fe_type, n_dofs_per_element) );
         it=--od_vec.end();
     }
     else{
         ASSERT(it != od_vec.end()).error("Try to add non-existing output field after first step.");
-        *it = std::make_shared< ElementDataCache<T> >(field_name, n_rows*n_cols, size);
+        *it = std::make_shared< ElementDataCache<T> >(field_name, n_rows*n_cols, size, fe_type, n_dofs_per_element);
     }
 
     return *it;

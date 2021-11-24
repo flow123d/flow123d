@@ -26,7 +26,7 @@
 template<unsigned int dim> class FiniteElement;
 template<IntDim dim>
 using FEPtr = std::shared_ptr<FiniteElement<dim>>;
-class Mesh;
+class MeshBase;
 
 
 /**
@@ -41,7 +41,7 @@ class Mesh;
 class DiscreteSpace {
 public:
     
-  /// Number of dofs associated to node. @p nid is the node index in the mesh tree.
+  /// Number of dofs associated to node. @p nid is the node index in the mesh duplicate_nodes object.
   virtual unsigned int n_node_dofs(unsigned int nid) const = 0;
 
   /// Number of dofs associated to edge.
@@ -58,8 +58,17 @@ public:
     return 0;
   }
   
-  /// Return Mixed of finite element objects.
-  virtual MixedPtr<FiniteElement> fe(const ElementAccessor<3> &) const = 0;
+  /**
+   * Return Mixed of finite element objects.
+   *
+   * TODO:
+   * The function should be in foem fe(const ElementAccessor<3> &). But we do not in fact depend
+   * on the element accessor now. This is temporary solution, which would work only if its type is
+   * EqualOrderDiscreteSpace. Otherwise, the general way would require a new "element FE handler"
+   * that would manage FEValues for all FE types within a given DiscreteSpace.
+   *
+   */
+  virtual MixedPtr<FiniteElement> fe() const = 0;
 
   /// Destructor.
   virtual ~DiscreteSpace() {};
@@ -68,10 +77,10 @@ public:
 protected:
   
   /// Constructor.
-  DiscreteSpace(Mesh *mesh)
+  DiscreteSpace(MeshBase *mesh)
   : mesh_(mesh) {}
   
-  Mesh *mesh_;
+  MeshBase *mesh_;
 
 };
 
@@ -82,7 +91,7 @@ protected:
  */
 class EqualOrderDiscreteSpace : public DiscreteSpace {
 public:
-  EqualOrderDiscreteSpace(Mesh *mesh, MixedPtr<FiniteElement> fe)
+  EqualOrderDiscreteSpace(MeshBase *mesh, MixedPtr<FiniteElement> fe)
   : DiscreteSpace(mesh), fe_(fe),
     _n_elem_dofs(4, 0),
     _n_edge_dofs(4, 0),
@@ -101,9 +110,9 @@ public:
   {return _n_edge_dofs[edge.side(0)->dim() + 1];}
   
   unsigned int n_node_dofs(unsigned int nid) const override
-  {return _n_node_dofs[mesh_->tree->node_dim()[nid]];}
+  {return _n_node_dofs[mesh_->duplicate_nodes()->node_dim()[nid]];}
   
-  MixedPtr<FiniteElement> fe(const ElementAccessor<3> &cell) const override;
+  MixedPtr<FiniteElement> fe() const override;
   
   
 private:

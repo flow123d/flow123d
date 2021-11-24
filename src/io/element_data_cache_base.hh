@@ -86,12 +86,12 @@ public:
     /**
      * Print all data in ascii format at once stored in database
      */
-    virtual void print_ascii_all(ostream &out_stream) = 0;
+    virtual void print_ascii_all(ostream &out_stream, unsigned int start=0) = 0;
 
     /**
      * Print all data in binary format at once stored in database
      */
-    virtual void print_binary_all(ostream &out_stream, bool print_data_size = true) = 0;
+    virtual void print_binary_all(ostream &out_stream, bool print_data_size = true, unsigned int start = 0) = 0;
 
     /**
      * Print stored values in the YAML format (using JSON like arrays).
@@ -146,6 +146,13 @@ public:
     	return this->n_comp_;
     }
 
+    /**
+     * Get number of DOFs per element.
+     */
+    inline unsigned int n_dofs_per_element() const {
+        return this->n_dofs_per_element_;
+    }
+
     /// Get type of stored data
     inline VTKValueType vtk_type() const {
     	return this->vtk_type_;
@@ -163,6 +170,13 @@ public:
      */
     inline void set_dof_handler_hash(std::size_t hash) {
     	this->dof_handler_hash_ = hash;
+    }
+
+    /**
+     * Get fe_type_ value.
+     */
+    inline std::string fe_type() const {
+    	return this->fe_type_;
     }
 
     /**
@@ -251,6 +265,16 @@ protected:
     /// Hash of DOF handler (attribute of native VTK data)
     std::size_t dof_handler_hash_;
 
+    /**
+     * FiniteElement type (attribute of native VTK data)
+     */
+    std::string fe_type_;
+
+    /**
+     * Number of DOFs per element (attribute of native VTK data)
+     */
+    unsigned int n_dofs_per_element_;
+
     /// Is true for DummyElementDataCache
     bool is_dummy_;
 };
@@ -282,12 +306,12 @@ public:
         for(unsigned int i=0; i< n_comp_;i++) out_stream << 0 << " ";
     }
 
-    void print_ascii_all(ostream &out_stream) override
+    void print_ascii_all(ostream &out_stream, unsigned int start=0) override
     {
-        for(unsigned int i=0; i< n_comp_;i++) out_stream << 0 << " ";
+        for(unsigned int i=start; i< n_comp_;i++) out_stream << 0 << " ";
     }
 
-    void print_binary_all(ostream &, bool) override
+    void print_binary_all(ostream &, bool, unsigned int) override
     {
         ASSERT(false).error("Not implemented.");
     }

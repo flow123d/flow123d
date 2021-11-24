@@ -30,8 +30,8 @@ The user will learn how to:
 \subsubsection{Geometry and mesh generation}
 
 The simulation area \(100 \times 100\) m is cut by two flow fractures
-from which two blind fractures separate (see Figure \ref{fig:mesh}). The
-cross-section of the fractures is 0.01 m.
+from which two dead-end fractures separate (see Figure \ref{fig:mesh}).
+The cross-section of the fractures is 0.01 m.
 
 Instead of defining a geometry with thin 2D fractures (which would yield
 too large mesh), in Flow123d one can treat fractures as lines with
@@ -47,10 +47,12 @@ triangles, we use additional GMSH command in the file
 This ensures that the 2D mesh will adapt so that elements do not cross
 the fracture lines (see Figure \ref{fig:mesh}).
 
-\begin{figure}[htbp]
+\begin{figure}
+\hypertarget{fig:mesh}{%
 \centering
-\includegraphics[width=1.00000\textwidth]{tutor_figures/04_geomesh.pdf}
-\caption{Geometry and mesh of simulation area.\label{fig:mesh}}
+\includegraphics[width=6.25in,height=3.125in]{tutor_figures/04_geomesh.pdf}
+\caption{Geometry and mesh of simulation area.}\label{fig:mesh}
+}
 \end{figure}
 
 In the YAML file one can define regions in addition to those from MSH
@@ -68,10 +70,10 @@ mesh:
         - flow_fracture1
         - flow_fracture2
     - !Union
-      name: blind_fractures
+      name: deadend_fractures
       regions:
-        - blind_fracture1
-        - blind_fracture2
+        - deadend_fracture1
+        - deadend_fracture2
     - !Union
       name: BC_right
       regions:
@@ -89,7 +91,7 @@ mesh:
 We are interested in simulation for 50000 years, hence we use year as
 the time units in the definition of model parameters. Hydraulic
 conductivity \(k = 10^{-11}\) m/s (0.000315 m/yr) was considered for
-rock massif. For the flow fractures and for the blind fractures we
+rock massif. For the flow fractures and for the dead-end fractures we
 considered \(k = 10^{-6}\) (31.5 m/yr) and \(k = 10^{-7}\) (3.15 m/yr),
 respectively. These values are in accordance with typical values of
 conductivity of a massif considered for deep repository. The thickness
@@ -102,12 +104,13 @@ input_fields:
 - region: flow_fractures
   conductivity: 31.5
   cross_section: 0.01
-- region: blind_fractures
-  conductivity: 3.15       # variant without blind-fractures conductivity: 0.000315
+- region: deadend_fractures
+  conductivity: 3.15
+  # variant without dead-end fractures conductivity: 0.000315
   cross_section: 0.01
 \end{verbatim}
 
-To eliminate the blind fractures from the model, one can set their
+To eliminate the dead-end fractures from the model, one can set their
 conductivity identical to the rock. Other possibility is to use the same
 conductivity as in the flow-fractures.
 
@@ -159,7 +162,7 @@ fractures than in the rock (Table \ref{tbl:coefDiff}):
     diff_m: 0.0369
     disp_l: 5
     disp_t: 0.5
-  - region: blind_fractures
+  - region: deadend_fractures
     init_conc: 0
     porosity: 0.1
     diff_m: 0.0369
@@ -167,7 +170,7 @@ fractures than in the rock (Table \ref{tbl:coefDiff}):
     disp_t: 0.5
 \end{verbatim}
 
-\begin{longtable}[c]{@{}lrr@{}}
+\begin{longtable}[]{@{}lrr@{}}
 \caption{Coefficient of molecular diffusion prescribed in Flow123d.
 \label{tbl:coefDiff}}\tabularnewline
 \toprule
@@ -223,16 +226,18 @@ computational time step will adapt to this grid automatically.
 
 \subsection{Results}
 
-The result of model with and without blind fractures (file
-\texttt{04\_frac\_diffusion\_noblind.yaml}) is depicted in Figure
-\ref{fig:diff_res}. We can see that with blind fractures, the water is
-more contaminated at the outflow from the rock. The influence on flow
+The result of model with and without dead-end fractures (file
+\texttt{04\_frac\_diffusion\_nodeadend.yaml}) is depicted in Figure
+\ref{fig:diff_res}. We can see that with dead-end fractures, the water
+is more contaminated at the outflow from the rock. The influence on flow
 fractures is negligible.
 
-\begin{figure}[htbp]
+\begin{figure}
+\hypertarget{fig:diff_res}{%
 \centering
 \includegraphics{tutor_figures/04_mass_flux.pdf}
 \caption{Outgoing mass flux through the right part of the boundary.
-Comparison of results with and without blind
-fractures.\label{fig:diff_res}}
+Comparison of results with and without dead-end
+fractures.}\label{fig:diff_res}
+}
 \end{figure}

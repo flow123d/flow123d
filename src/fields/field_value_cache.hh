@@ -26,78 +26,95 @@
 #include "system/armor.hh"
 #include "fields/eval_points.hh"
 #include "mesh/accessors.hh"
+#include "tools/mixed.hh"
+#include "tools/revertable_list.hh"
+#include "fem/dofhandler.hh"
 
 class EvalPoints;
 class ElementCacheMap;
 class DHCellAccessor;
 class DHCellSide;
+template < template<IntDim...> class DimAssembly> class GenericAssembly;
 
 
 /**
  * @brief Class holds precomputed field values of selected element set.
  *
- * Every field in equation use own instance for every dimension of elements
- * (typically 3 instances for dim = 1,2,3).
+ * Every field in equation use own instance used for elements of all dimensions.
  */
-template<class elm_type>
-class FieldValueCache {
+template<class elm_type> using FieldValueCache = Armor::Array<elm_type>;
+
+
+/**
+ * Specifies eval points by idx of region, element and eval point.
+ *
+ * TODO Add better description after finish implementation
+ */
+struct EvalPointData {
+    EvalPointData() {}              ///< Default constructor
+    /// Constructor sets all data members
+    EvalPointData(unsigned int i_reg, unsigned int i_ele, unsigned int i_ep, unsigned int dh_loc_idx)
+    : i_reg_(i_reg), i_element_(i_ele), i_eval_point_(i_ep), dh_loc_idx_(dh_loc_idx) {}
+    /// Copy constructor
+    EvalPointData(const EvalPointData &other)
+    : i_reg_(other.i_reg_), i_element_(other.i_element_), i_eval_point_(other.i_eval_point_), dh_loc_idx_(other.dh_loc_idx_) {}
+
+
+    bool operator < (const EvalPointData &other) {
+        if (i_reg_ == other.i_reg_) {
+            if (i_element_ == other.i_element_)
+                return (i_eval_point_ < other.i_eval_point_);
+            else
+                return (i_element_ < other.i_element_);
+        } else
+            return (i_reg_ < other.i_reg_);
+    }
+
+    unsigned int i_reg_;            ///< region_idx of element
+    unsigned int i_element_;        ///< mesh_idx of ElementAccessor appropriate to element
+    unsigned int i_eval_point_;     ///< index of point in EvalPoint object
+    unsigned int dh_loc_idx_;       ///< local index of cell in DOF handler
+};
+
+
+
+
+/**
+ * @brief Auxiliary data class holds number of elements in cache and allow to set this value
+ * explicitly (e.g. as input parameter).
+ *
+ * Implementation is done as singletone with two access through static methods 'get' and 'set'.
+ *
+ * TODO: This is actually a constant so make it a constant int in element cache map.
+ */
+class CacheMapElementNumber {
 public:
-    /// Constructor
-    FieldValueCache(unsigned int n_rows, unsigned int n_cols);
+	/// Return number of stored elements
+	static unsigned int get() {
+	    return get_instance().n_elem_;
+	}
 
-    /// Destructor
-    ~FieldValueCache();
+	/// Set number of stored elements
+	static void set(unsigned int n_elem) {
+	    get_instance().n_elem_ = n_elem;
+	}
 
-    /// Initialize cache
-    void init(std::shared_ptr<EvalPoints> eval_points, unsigned int n_cache_elements);
-
-    /// Return size of data cache (number of stored field values)
-    inline unsigned int size() const {
-        return data_.size();
-
-    }
-
-    /// Return data vector.
-    inline const Armor::Array<elm_type> &data() const
-    {
-        return data_;
-    }
-
-    inline Armor::Array<elm_type> &data()
-    {
-        return data_;
-    }
-
-    /// Return data vector.
-    template<uint nr, uint nc = 1>
-    typename arma::Mat<elm_type>::template fixed<nr, nc> &get(uint i) {
-        return data_.template mat<nr, nc>(i);
-    }
-
-    /// Return number of elements that data is stored in cache.
-    inline unsigned int n_cache_points() const {
-        return n_cache_points_;
-    }
-
-    /// Return value of evaluation point given by DHCell and local point idx in EvalPoints.
-    template<class Value>
-    typename Value::return_type get_value(const ElementCacheMap &map,
-            const DHCellAccessor &dh_cell, unsigned int eval_points_idx);
+	CacheMapElementNumber(CacheMapElementNumber const&) = delete;  ///< We don't need copy constructor.
+	void operator=(CacheMapElementNumber const&)        = delete;  ///< We don't need assignment operator.
 
 private:
-    /**
-     * Data cache.
-     *
-     * Data is ordered like three dimensional table. The highest level is determinated by subsets,
-     * those data ranges are holds in subset_starts. Data block size of each subset is determined
-     * by number of eval_points (of subset) and maximal number of stored elements.
-     * The table is allocated to hold all subsets, but only those marked in used_subsets are updated.
-     * Order of subsets is same as in eval_points.
-     */
-    Armor::Array<elm_type> data_;
+	/// Forbiden default constructor
+	CacheMapElementNumber() : n_elem_(300) {}
 
-    /// Maximal number of points stored in cache.
-    unsigned int n_cache_points_;
+
+    static CacheMapElementNumber& get_instance()
+    {
+        static CacheMapElementNumber instance;
+        return instance;
+    }
+
+    /// Maximal number of elements stored in cache.
+    unsigned int n_elem_;
 };
 
 
@@ -107,79 +124,38 @@ private:
  * Manage storing and updating element data (elements of same dimension) to cache. We need only
  * one shared instance of this class for all fields in equation (but typically for dim = 1,2,3).
  *
- * TODO: The logic of creating and updating this class is quite complex, describe in which order
- * the methods are supposed to be called and which internal structures are updated when.
+ * IMPORTANT: Because there are combined bulk and boundary elements, we must use mesh_idx value
+ * to correct identification of elements.
+ *
+ * TODO:
+ * 1. Generic assembly pass through the patch collecting needed quadrature points. (PASS ORDER)
+ * 2. Then we sort these points for efficient chae_upadate of the fields (CACHE ORDER)
+ * 3. We pass through the patch again evaluating actual integrals. This second pass is currently inefficient since
+ *    we can not map efficiently from the PASS ORDER to the CACHE ORDER), this leads to many complications in
+ *    quad point classes.
+ * We should:
+ * 1. have templated patch iteration mechanism, so that we can iterate through the evaluated integrals
+ *    twice in consistent way performing:
+ *    FIRST: collection of evaluation points
+ *    SECOND: evaluation of integrals using the fields and fe_values
+ *    Having a consistent implementation allows us to assign unique indices to the integral points on the patch.
+ * 2. Sort collected points, remove duplicities, mark new indices to the original list of points.
+ * 3. SECOND pass, use unique index to find the point in the cache.
+ *
+ * Resulting simplifications:
+ * - no need for associating point operations for Edge, Coupling and Boundary points,
+ *   we add  assiciated eval point pairs as separate eval points with unique ids. Consistent integral iteration
+ *   allows us to simply take two succesive points at the second pass.
+ * - no need for the matrix mapping (element, eval_point)  to the cache index
  */
 class ElementCacheMap {
 public:
-    /// Number of cached elements which values are stored in cache.
-    static constexpr unsigned int n_cached_elements = 20;
-
     /// Index of invalid element in cache.
     static const unsigned int undef_elem_idx;
 
-    /**
-     * Holds elements indices of one region stored in cache.
-     *
-     * TODO: Auxilliary structure, needs optimization:
-     * Proposal -
-     *  - store element indices of all regions to one unique set (hold as data member of ElementCacheMap)
-     *  - sort elements by regions in prepare_elements_to_update method
-     *  - there is only problem that we have to construct ElementAccessors repeatedly
-     */
-    struct RegionData {
-    public:
-        /// Constructor
-        RegionData() : n_elements_(0) {}
-
-        /// Add element if does not exist
-        bool add(ElementAccessor<3> elm) {
-            if (std::find(elm_indices_.begin(), elm_indices_.begin()+n_elements_, elm.idx()) == elm_indices_.begin()+n_elements_) {
-                elm_indices_[n_elements_] = elm.idx();
-                n_elements_++;
-                return true;
-            } else
-                return false;
-        }
-
-        /// Array of elements idx, ensures element uniqueness
-        std::array<unsigned int, ElementCacheMap::n_cached_elements> elm_indices_;
-        /// Number of element indices
-        unsigned int n_elements_;
-    };
-
-    /**
-     * Holds data of regions (and their elements) stored in ElementCacheMap.
-     *
-     * TODO: Needs further optimization.
-     * Is this like a public par of the data?
-     * The name is too generic.
-     */
-    class UpdateCacheHelper {
-    public:
-        /// Maps of data of different regions in cache
-    	/// TODO: auxiliary data membershould be removed or moved to sepaate structure.
-        std::unordered_map<unsigned int, RegionData> region_cache_indices_map_;
-
-        /// Holds positions of regions in cache
-        /// TODO
-		/// Elements of the common region forms continuous chunks in the
-        /// ElementCacheMap table. This array gives start indices of the regions
-        /// in array of all cached elements.
-        /// The last value is number of actually cached elements.
-        std::unordered_map<unsigned int, unsigned int> region_cache_indices_range_;
-
-        /// Maps of begin and end positions of different regions data in FieldValueCache
-        std::array<unsigned int, ElementCacheMap::n_cached_elements+1> region_value_cache_range_;
-
-        /// Maps of begin and end positions of elements of different regions in ElementCacheMap
-        std::array<unsigned int, ElementCacheMap::n_cached_elements+1> region_element_cache_range_;
-
-        /// Number of elements in all regions holds in cache
-        // TODO: This is dulicated with the last element of region_cache_indices_range_
-        // We rather need number of regions, i.e. number of region chunks.
-        unsigned int n_elements_;
-    };
+    /// Size of block (evaluation of FieldFormula) must be multiple of this value.
+    /// TODO We should take this value from BParser and it should be dependent on processor configuration.
+    static const unsigned int simd_size_double;
 
     /// Constructor
     ElementCacheMap();
@@ -190,17 +166,22 @@ public:
     /// Init cache
     void init(std::shared_ptr<EvalPoints> eval_points);
 
-    /// Adds element to region_cache_indices_map_ set.
-    void add(const DHCellAccessor &dh_cell);
+    /// Create patch of cached elements before reading data to cache.
+    void create_patch();
 
-    /// Same as previous but passes DHCellSide as parameter.
-    void add(const DHCellSide &cell_side);
-
-    /// Prepare data member before reading data to cache.
-    void prepare_elements_to_update();
-
-    /// Create map of used eval points on cached elements.
-    void create_elements_points_map();
+    /// Reset all items of elements_eval_points_map
+    inline void clear_element_eval_points_map() {
+        ASSERT_PTR_DBG(element_eval_points_map_);
+        unsigned int last_element_idx = -1, i_elem_row = -1;
+        for (unsigned int i=0; i<eval_point_data_.permanent_size(); ++i) {
+            if (eval_point_data_[i].i_element_ != last_element_idx) { // new element
+                i_elem_row++;
+            	last_element_idx =eval_point_data_[i].i_element_;
+            }
+        	set_element_eval_point(i_elem_row, eval_point_data_[i].i_eval_point_, ElementCacheMap::unused_point);
+        }
+        eval_point_data_.reset();
+    }
 
     /// Start update of cache.
     void start_elements_update();
@@ -208,96 +189,166 @@ public:
     /// Finish update after reading data to cache.
     void finish_elements_update();
 
-    /// Return update cache data helper
-    inline const UpdateCacheHelper &update_cache_data() const {
-        return update_data_;
-    }
-
-    /// Return update cache data helper
-    inline UpdateCacheHelper &update_cache_data() {
-        return update_data_;
-    }
-
     /// Getter of eval_points object.
     inline std::shared_ptr<EvalPoints> eval_points() const {
         return eval_points_;
     }
 
-    /**
-     * Set used element eval points to value ElementCacheMap::point_in_proggress
+    /*
+     * Access to item of \p element_eval_points_map_ like to two-dimensional array.
      *
-     * @param dh_cell     Specified element
-     * @param subset_idx  Index of subset
-     * @param data_size   Number of points
-     * @param start_point Index of first used point in subset (e.g. subset holds eval points of all sides but EdgeIntegral represents only one of them)
+     * @param i_elem_in_cache  idx of ElementAccessor in ElementCacheMap
+     * @param i_eval_point     index of local point in EvalPoints
+     * @return                 index of point in FieldValueCache.
      */
-    void mark_used_eval_points(const DHCellAccessor &dh_cell, unsigned int subset_idx, unsigned int data_size, unsigned int start_point=0);
-
-    /// Return index of point in FieldValueCache
-    inline int get_field_value_cache_index(unsigned int elm_idx, unsigned int loc_point_idx) const {
+    inline int element_eval_point(unsigned int i_elem_in_cache, unsigned int i_eval_point) const {
         ASSERT_PTR_DBG(element_eval_points_map_);
-        return element_eval_points_map_[elm_idx][loc_point_idx];
+        return element_eval_points_map_[i_elem_in_cache*eval_points_->max_size()+i_eval_point];
     }
 
-    /// Return idx of element stored at given position of ElementCacheMap
+    /// Return mesh_idx of element stored at given position of ElementCacheMap
     inline unsigned int elm_idx_on_position(unsigned pos) const {
         return elm_idx_[pos];
     }
 
-    /// Set index of cell in ElementCacheMap (or undef value if cell is not stored in cache).
-    DHCellAccessor & operator() (DHCellAccessor &dh_cell) const;
+    /// Return position of element stored in ElementCacheMap
+    inline unsigned int position_in_cache(unsigned mesh_elm_idx, bool bdr=false) const {
+        std::unordered_map<unsigned int, unsigned int>::const_iterator it;
+        if (bdr) {
+            it = element_to_map_bdr_.find(mesh_elm_idx);
+            if ( it != element_to_map_bdr_.end() ) return it->second;
+            else return ElementCacheMap::undef_elem_idx;
+        } else {
+            it = element_to_map_.find(mesh_elm_idx);
+            if ( it != element_to_map_.end() ) return it->second;
+            else return ElementCacheMap::undef_elem_idx;
+        }
+    }
+
+    /// Return number of stored regions.
+    inline unsigned int n_regions() const {
+        return regions_starts_.permanent_size() - 1;
+    }
+
+    /// Return number of stored elements.
+    inline unsigned int n_elements() const {
+        return element_starts_.permanent_size() - 1;
+    }
+
+    /// Return begin position of element chunk in FieldValueCache
+    inline unsigned int element_chunk_begin(unsigned int elm_patch_idx) const {
+        ASSERT_LT_DBG(elm_patch_idx, n_elements());
+        return element_starts_[elm_patch_idx];
+    }
+
+    /// Return end position of element chunk in FieldValueCache
+    inline unsigned int element_chunk_end(unsigned int elm_patch_idx) const {
+        ASSERT_LT_DBG(elm_patch_idx, n_elements());
+        return element_starts_[elm_patch_idx+1];
+    }
+
+    /// Return begin position of region chunk in FieldValueCache
+    inline unsigned int region_chunk_begin(unsigned int region_patch_idx) const {
+        ASSERT_LT_DBG(region_patch_idx, n_regions());
+        return element_starts_[ regions_starts_[region_patch_idx] ];
+    }
+
+    /// Return end position of region chunk in FieldValueCache
+    inline unsigned int region_chunk_end(unsigned int region_patch_idx) const {
+        ASSERT_LT_DBG(region_patch_idx, n_regions());
+        return element_starts_[ regions_starts_[region_patch_idx+1] ];
+    }
+
+    /// Return begin position of region chunk specified by position in map
+    inline unsigned int region_chunk_by_map_index(unsigned int r_idx) const {
+        if (r_idx <= n_regions()) return element_starts_[ regions_starts_[r_idx] ];
+        else return ElementCacheMap::undef_elem_idx;
+    }
+
+    /// Return begin position of region chunk specified by position in map
+    inline unsigned int region_idx_from_chunk_position(unsigned int chunk_pos) const {
+    	return eval_point_data_[ this->region_chunk_by_map_index(chunk_pos) ].i_reg_;
+    }
+
+    /// Return item of eval_point_data_ specified by its position
+    inline const EvalPointData &eval_point_data(unsigned int point_idx) const {
+        return eval_point_data_[point_idx];
+    }
+
+    /// Return value of evaluation point given by idx of element in patch and local point idx in EvalPoints from cache.
+    template<class Value>
+    inline typename Value::return_type get_value(const FieldValueCache<typename Value::element_type> &field_cache,
+            unsigned int elem_patch_idx, unsigned int eval_points_idx) const {
+        ASSERT_EQ_DBG(Value::NRows_, field_cache.n_rows());
+        ASSERT_EQ_DBG(Value::NCols_, field_cache.n_cols());
+        unsigned int value_cache_idx = this->element_eval_point(elem_patch_idx, eval_points_idx);
+        ASSERT_DBG(value_cache_idx != ElementCacheMap::undef_elem_idx);
+        return Value::get_from_array(field_cache, value_cache_idx);
+    }
 protected:
 
     /// Special constant (@see element_eval_points_map_).
-    static const int unused_point = -2;
+    static const int unused_point = -1;
 
-    /// Special constant (@see element_eval_points_map_).
-    static const int point_in_proggress = -1;
+    /// Base number of stored regions in patch
+    static const unsigned int regions_in_chunk = 3;
 
-    /// Reset all items of elements_eval_points_map
-    void clear_element_eval_points_map();
+    /// Base number of stored elements in patch
+    static const unsigned int elements_in_chunk = 10;
 
-    /// Add element to appropriate region data of update_data_ object
-    void add_to_region(ElementAccessor<3> elm);
+    /// Set item of \p element_eval_points_map_.
+    inline void set_element_eval_point(unsigned int i_elem_in_cache, unsigned int i_eval_point, int val) const {
+        ASSERT_PTR_DBG(element_eval_points_map_);
+        element_eval_points_map_[i_elem_in_cache*eval_points_->max_size()+i_eval_point] = val;
+    }
 
     /// Vector of element indexes stored in cache.
-    /// TODO: could be moved to UpdateCacheHelper structure
     std::vector<unsigned int> elm_idx_;
-
-    /// Map of element indices stored in cache, allows reverse search to previous vector.
-    /// TODO: could be moved to UpdateCacheHelper structure
-    std::unordered_map<unsigned int, unsigned int> cache_idx_;
 
     /// Pointer to EvalPoints
     std::shared_ptr<EvalPoints> eval_points_;
-
-    /// Holds data used for cache update.
-    UpdateCacheHelper update_data_;
 
     /// Flag is set down during update of cache when this can't be read
     bool ready_to_reading_;
 
     /**
-     * Two dimensional array provides indexes to FieldValueCache.
+     * This array provides indexes to FieldValueCache.
+     *
+     * This one dimensional array behaves like two dimensional factually.
+     * Size is set to 'n_cached_elements * n_eval_points' and items are
+     * accessible through two indices:
      *
      * 1: Over elements holds in ElementCacheMap
      * 2: Over EvalPoints for each element
+     *
+     * Use always and only methods \p element_eval_point for read and
+     * \p set_element_eval_point (for write) to access to items!
      *
      * Array is filled in those three steps:
      * a. Reset - all items are set to ElementCacheMap::unused_point
      * b. Used eval points are set to ElementCacheMap::point_in_proggress
      * c. Eval points marked in previous step are sequentially numbered
+     *
+     * TODO improve description
      */
-    // TODO: What are the dimensions of the table?
-    // should be n_cached_elements * n_eval_points, document it.
-    //
-    // Better use just int *, and use just single allocation of the whole table
-    // current impl. have bad memory locality. Define a private access method.
-    int **element_eval_points_map_;
+    int *element_eval_points_map_;
 
+    ///< Holds data of evaluating points in patch.
+    RevertableList<EvalPointData> eval_point_data_;
 
-    /// Number of points stored in cache
-    unsigned int points_in_cache_;
+    /// @name Holds start positions and orders of region chunks and element chunks
+    // @{
+
+    RevertableList<unsigned int> regions_starts_;         ///< Start positions of elements in regions (size = n_regions+1, last value is end of last region)
+    RevertableList<unsigned int> element_starts_;         ///< Start positions of elements in eval_point_data_ (size = n_elements+1)
+    std::unordered_map<unsigned int, unsigned int> element_to_map_;     ///< Maps bulk element_idx to element index in patch - TODO remove
+    std::unordered_map<unsigned int, unsigned int> element_to_map_bdr_; ///< Maps boundary element_idx to element index in patch - TODO remove
+
+    // @}
+
+    // TODO: remove friend class
+    template < template<IntDim...> class DimAssembly>
+    friend class GenericAssembly;
 };
 
 

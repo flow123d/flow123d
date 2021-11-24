@@ -6,8 +6,8 @@
 ##
 ##This is a variant of ```04_frac_diffusion.yaml```. Instead of diffusion we consider advective transport with dual porosity.
 ##
-###Input
-##Dual porosity substitutes blind fractures in this task. The dual-porosity parameter ```diffusion_rate_immobile``` was calibrated to the value 5.64742e-06 for identical results with the model with the blind fractures. Other settings of transport are identical to the diffusion model.
+### Input
+##Dual porosity substitutes dead-end fractures in this task. The dual-porosity parameter ```diffusion_rate_immobile``` was calibrated to the value 5.64742e-06 for identical results with the model with the dead-end fractures. Other settings of transport are identical to the diffusion model.
 ##
 ##The dual porosity model is set by the following lines:
 ##
@@ -19,11 +19,11 @@
 ##          diffusion_rate_immobile: 5.64742e-06
 ##          porosity_immobile: 0.01
 ##          init_conc_immobile: 0
-##        - region: blind_fractures
+##        - region: deadend_fractures
 ##          init_conc_immobile: 0
 ##
-###Results and comparison
-##Results of calibration of the model with dual porosity and model with flow in blind fractures (file ```06_frac_nodualpor.yaml```) is depicted in Figure {@fig:calib}.
+### Results and comparison
+##Results of calibration of the model with dual porosity and model with flow in dead-end fractures (file ```06_frac_nodualpor.yaml```) is depicted in Figure {@fig:calib}.
 ##
 ##
 ##![Results of calibration.](tutor_figures/06_mass_flux.pdf){#fig:calib}
@@ -40,10 +40,10 @@ problem: !Coupling_Sequential
           - flow_fracture1
           - flow_fracture2
       - !Union
-        name: blind_fractures
+        name: deadend_fractures
         regions:
-          - blind_fracture1
-          - blind_fracture2
+          - deadend_fracture1
+          - deadend_fracture2
       - !Union
         name: BC_right
         regions:
@@ -66,7 +66,7 @@ problem: !Coupling_Sequential
       - region: flow_fractures
         conductivity: 31.5
         cross_section: 0.01
-      - region: blind_fractures
+      - region: deadend_fractures
         conductivity: 0.000315
         cross_section: 0.01
       - region: BC_left
@@ -81,13 +81,9 @@ problem: !Coupling_Sequential
         - piezo_head_p0
         - pressure_p0
         - velocity_p0
-    solver: !Petsc
-      r_tol: 1.0e-10
-      a_tol: 1.0e-10
     output_stream:
       file: flow
       format: !gmsh
-        variant: ascii
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_Advection_FV
       input_fields:
@@ -97,15 +93,11 @@ problem: !Coupling_Sequential
         - region: flow_fractures
           init_conc: 0
           porosity: 0.1
-        - region: blind_fractures
+        - region: deadend_fractures
           init_conc: 0
           porosity: 0.005
         - region: BC_left
-          bc_type: dirichlet
           bc_conc: 1.0e-05
-      solver: !Petsc
-        a_tol: 1.0e-12
-        r_tol: 1.0e-12
     substances:
       - I
     time:
@@ -118,7 +110,7 @@ problem: !Coupling_Sequential
           diffusion_rate_immobile: 5.64742e-06
           porosity_immobile: 0.01
           init_conc_immobile: 0
-        - region: blind_fractures
+        - region: deadend_fractures
           init_conc_immobile: 0
       scheme_tolerance: 0.0
       output:
@@ -129,6 +121,5 @@ problem: !Coupling_Sequential
     output_stream:
       file: transport
       format: !gmsh
-        variant: ascii
       times:
         - step: 20
