@@ -174,7 +174,7 @@ void HC_ExplicitSequential::advection_process_step(AdvectionData &pdata)
         // is not close to the solved_time of the water module
         // for simplicity we use only last velocity field
         if (pdata.velocity_changed) {
-            //DBGMSG("velocity update\n");
+            // DebugOut() << "flow_flux update\n";
             auto& flux = pdata.process->eq_fieldset()["flow_flux"];
             flux.copy_from(water->eq_fieldset()["flux"]);
             flux.set_time_result_changed();
@@ -211,6 +211,8 @@ void HC_ExplicitSequential::run_simulation()
     {
         START_TIMER("HC water zero time step");
         water->zero_time_step();
+        for(auto &process : processes_)
+            process.velocity_changed = true;
     }
 
 
@@ -257,6 +259,7 @@ void HC_ExplicitSequential::run_simulation()
 
         if (! water->time().is_end() ) {
             is_end_all_=false;
+            // DebugOut() << "min_velocity_time = " << min_velocity_time << "\n";
             if (water->solved_time() < min_velocity_time) {
 
                 // solve water over the nearest transport interval

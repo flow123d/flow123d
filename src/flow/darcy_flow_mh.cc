@@ -376,7 +376,28 @@ DarcyMH::DarcyMH(Mesh &mesh_in, const Input::Record in_rec, TimeGovernor *tm)
     
 }
 
-
+double DarcyMH::solved_time()
+{
+    // DebugOut() << "t = " << time_->t() << " step_end " << time_->step().end() << "\n";
+    if(use_steady_assembly_)
+    {
+        // In steady case, the solution is computed with the data present at time t,
+        // and the steady state solution is valid until another change in data,
+        // which should correspond to time (t+dt).
+        // "The data change appears immediatly."
+        double next_t = time_->t() + time_->estimate_dt();
+        // DebugOut() << "STEADY next_t = " << next_t << "\n";
+        return next_t - next_t * std::numeric_limits<double>::epsilon();
+    }
+    else
+    {
+        // In unsteady case, the solution is computed with the data present at time t,
+        // and the solution is valid at the time t+dt.
+        // "The data change does not appear immediatly, it is integrated over time interval dt."
+        // DebugOut() << "UNSTEADY\n";
+        return time_->t();
+    }
+}
 
 void DarcyMH::init_eq_data()
 //connecting data fields with mesh

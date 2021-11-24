@@ -250,6 +250,8 @@ public:
     virtual void postprocess();
     virtual void output_data() override;
 
+    virtual double solved_time() override;
+
     EqData &data() { return *data_; }
     
     void set_extra_storativity(const Field<3, FieldValue<3>::Scalar> &extra_stor)
