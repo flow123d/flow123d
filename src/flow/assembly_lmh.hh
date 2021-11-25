@@ -139,7 +139,6 @@ public:
         this->used_fields_ += eq_fields_->bc_type;
         this->used_fields_ += eq_fields_->bc_pressure;
         this->used_fields_ += eq_fields_->bc_flux;
-        this->used_fields_ += eq_fields_->bc_pressure;
         this->used_fields_ += eq_fields_->bc_robin_sigma;
         this->used_fields_ += eq_fields_->bc_switch_pressure;
     }
