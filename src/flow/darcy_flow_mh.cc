@@ -582,6 +582,9 @@ void DarcyMH::zero_time_step()
         // TODO: reconstruction of solution in zero time.
     }
     //solution_output(T,right_limit); // data for time T in any case
+
+    data_->full_solution.local_to_ghost_begin();
+    data_->full_solution.local_to_ghost_end();
     output_data();
 }
 
