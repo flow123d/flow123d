@@ -650,6 +650,7 @@ void TransportDG<Model>::output_region_statistics()
 {
     const unsigned int nreg = Model::mesh_->region_db().size();
     const unsigned int nsubst = eq_data_->n_substances();
+    bool is_root = (Model::mesh_->get_el_ds()->myp() == 0);
     //std::vector<unsigned int> active_region(nreg, 0); // indicates on which region we calculate statistics
     std::vector<double> r_area(nreg, 0);  // area of regions
     std::vector<std::vector<double>> r_avg(nreg, std::vector<double>(nsubst, 0)), // average value at regions
@@ -697,17 +698,17 @@ void TransportDG<Model>::output_region_statistics()
     }
 
     // communicate all values to process 0
-    MPI_Reduce(r_area.data(), r_area.data(), nreg, MPI_DOUBLE, MPI_SUM, 0, PETSC_COMM_WORLD);
+    MPI_Reduce(is_root?MPI_IN_PLACE:r_area.data(), r_area.data(), nreg, MPI_DOUBLE, MPI_SUM, 0, PETSC_COMM_WORLD);
     //MPI_Reduce(active_region.data(), active_region.data(), nreg, MPI_UNSIGNED, MPI_MAX, 0, PETSC_COMM_WORLD);
     for (unsigned int r=0; r<nreg; r++)
     {
-        MPI_Reduce(r_avg[r].data(), r_avg[r].data(), nsubst, MPI_DOUBLE, MPI_SUM, 0, PETSC_COMM_WORLD);
-        MPI_Reduce(r_max[r].data(), r_max[r].data(), nsubst, MPI_DOUBLE, MPI_MAX, 0, PETSC_COMM_WORLD);
-        MPI_Reduce(r_min[r].data(), r_min[r].data(), nsubst, MPI_DOUBLE, MPI_MIN, 0, PETSC_COMM_WORLD);
+        MPI_Reduce(is_root?MPI_IN_PLACE:r_avg[r].data(), r_avg[r].data(), nsubst, MPI_DOUBLE, MPI_SUM, 0, PETSC_COMM_WORLD);
+        MPI_Reduce(is_root?MPI_IN_PLACE:r_max[r].data(), r_max[r].data(), nsubst, MPI_DOUBLE, MPI_MAX, 0, PETSC_COMM_WORLD);
+        MPI_Reduce(is_root?MPI_IN_PLACE:r_min[r].data(), r_min[r].data(), nsubst, MPI_DOUBLE, MPI_MIN, 0, PETSC_COMM_WORLD);
     }
 
     // output values to yaml file
-    if (Model::mesh_->get_el_ds()->myp() == 0)
+    if (is_root)
     {
     	for(Region reg : Model::mesh_->region_db().get_region_set("ALL"))
         {
