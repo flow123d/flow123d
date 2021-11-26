@@ -437,43 +437,43 @@ void DarcyLMH::initialize_specific()
 //     initial_condition_postprocess();
 // }
 
-void DarcyLMH::read_initial_condition()
-{
-	DebugOut().fmt("Read initial condition\n");
-    
-	for ( DHCellAccessor dh_cell : eq_data_->dh_->own_range() ) {
-        
-        LocDofVec p_indices = dh_cell.cell_with_other_dh(eq_data_->dh_p_.get()).get_loc_dof_indices();
-        ASSERT_DBG(p_indices.n_elem == 1);
-        LocDofVec l_indices = dh_cell.cell_with_other_dh(eq_data_->dh_cr_.get()).get_loc_dof_indices();
-        ElementAccessor<3> ele = dh_cell.elm();
-        
-		// set initial condition
-        double init_value = eq_fields_->init_pressure.value(ele.centre(),ele);
-        unsigned int p_idx = eq_data_->dh_p_->parent_indices()[p_indices[0]];
-        eq_data_->full_solution.set(p_idx, init_value);
-        
-        for (unsigned int i=0; i<ele->n_sides(); i++) {
-             uint n_sides_of_edge =  ele.side(i)->edge().n_sides();
-             unsigned int l_idx = eq_data_->dh_cr_->parent_indices()[l_indices[i]];
-             eq_data_->full_solution.add(l_idx, init_value/n_sides_of_edge);
-
-             eq_data_->p_edge_solution.add(l_indices[i], init_value/n_sides_of_edge);
-         }
-	}
-
-    initial_condition_postprocess();
-    
-	eq_data_->full_solution.ghost_to_local_begin();
-	eq_data_->full_solution.ghost_to_local_end();
-    
-	eq_data_->p_edge_solution.ghost_to_local_begin();
-    eq_data_->p_edge_solution.ghost_to_local_end();
-    eq_data_->p_edge_solution_previous_time.copy_from(eq_data_->p_edge_solution);
-}
-
-void DarcyLMH::initial_condition_postprocess()
-{}
+//void DarcyLMH::read_initial_condition()
+//{
+//	DebugOut().fmt("Read initial condition\n");
+//
+//	for ( DHCellAccessor dh_cell : eq_data_->dh_->own_range() ) {
+//
+//        LocDofVec p_indices = dh_cell.cell_with_other_dh(eq_data_->dh_p_.get()).get_loc_dof_indices();
+//        ASSERT_DBG(p_indices.n_elem == 1);
+//        LocDofVec l_indices = dh_cell.cell_with_other_dh(eq_data_->dh_cr_.get()).get_loc_dof_indices();
+//        ElementAccessor<3> ele = dh_cell.elm();
+//
+//		// set initial condition
+//        double init_value = eq_fields_->init_pressure.value(ele.centre(),ele);
+//        unsigned int p_idx = eq_data_->dh_p_->parent_indices()[p_indices[0]];
+//        eq_data_->full_solution.set(p_idx, init_value);
+//
+//        for (unsigned int i=0; i<ele->n_sides(); i++) {
+//             uint n_sides_of_edge =  ele.side(i)->edge().n_sides();
+//             unsigned int l_idx = eq_data_->dh_cr_->parent_indices()[l_indices[i]];
+//             eq_data_->full_solution.add(l_idx, init_value/n_sides_of_edge);
+//
+//             eq_data_->p_edge_solution.add(l_indices[i], init_value/n_sides_of_edge);
+//         }
+//	}
+//
+//    initial_condition_postprocess();
+//
+//	eq_data_->full_solution.ghost_to_local_begin();
+//	eq_data_->full_solution.ghost_to_local_end();
+//
+//	eq_data_->p_edge_solution.ghost_to_local_begin();
+//    eq_data_->p_edge_solution.ghost_to_local_end();
+//    eq_data_->p_edge_solution_previous_time.copy_from(eq_data_->p_edge_solution);
+//}
+//
+//void DarcyLMH::initial_condition_postprocess()
+//{}
 
 void DarcyLMH::zero_time_step()
 {
@@ -495,7 +495,7 @@ void DarcyLMH::zero_time_step()
         //read_initial_condition(); // Possible solution guess for steady case.
         solve_nonlinear(); // with right limit data
     } else {
-        //read_initial_condition();
+//        read_initial_condition();
     	this->read_init_cond_asm();
         
         // we reconstruct the initial solution here
@@ -717,10 +717,10 @@ void DarcyLMH::output_data() {
 }
 
 
-double DarcyLMH::solution_precision() const
-{
-    return eq_data_->lin_sys_schur->get_solution_precision();
-}
+//double DarcyLMH::solution_precision() const
+//{
+//    return eq_data_->lin_sys_schur->get_solution_precision();
+//}
 
 
 // ===========================================================================================
@@ -729,32 +729,32 @@ double DarcyLMH::solution_precision() const
 //   are in fact pointers to allocating or filling functions - this is governed by Linsystem roitunes
 //
 // =======================================================================================
-void DarcyLMH::assembly_mh_matrix(FMT_UNUSED MultidimAssembly& assembler)
-{
-    START_TIMER("DarcyLMH::assembly_steady_mh_matrix");
-
-    // DebugOut() << "assembly_mh_matrix \n";
-    // set auxiliary flag for switchting Dirichlet like BC
-    eq_data_->force_no_neumann_bc = eq_data_->use_steady_assembly_ && (eq_data_->nonlinear_iteration_ == 0);
-
-    balance_->start_flux_assembly(eq_data_->water_balance_idx);
-    balance_->start_source_assembly(eq_data_->water_balance_idx);
-    balance_->start_mass_assembly(eq_data_->water_balance_idx);
-
-    // TODO: try to move this into balance, or have it in the generic assembler class, that should perform the cell loop
-    // including various pre- and post-actions
-//    for ( DHCellAccessor dh_cell : eq_data_->dh_->own_range() ) {
-//        unsigned int dim = dh_cell.dim();
-//        assembler[dim-1]->assemble(dh_cell);
-//    }
-    this->mh_matrix_asm();
-    
-
-    balance_->finish_mass_assembly(eq_data_->water_balance_idx);
-    balance_->finish_source_assembly(eq_data_->water_balance_idx);
-    balance_->finish_flux_assembly(eq_data_->water_balance_idx);
-
-}
+//void DarcyLMH::assembly_mh_matrix(FMT_UNUSED MultidimAssembly& assembler)
+//{
+//    START_TIMER("DarcyLMH::assembly_steady_mh_matrix");
+//
+//    // DebugOut() << "assembly_mh_matrix \n";
+//    // set auxiliary flag for switchting Dirichlet like BC
+//    eq_data_->force_no_neumann_bc = eq_data_->use_steady_assembly_ && (eq_data_->nonlinear_iteration_ == 0);
+//
+//    balance_->start_flux_assembly(eq_data_->water_balance_idx);
+//    balance_->start_source_assembly(eq_data_->water_balance_idx);
+//    balance_->start_mass_assembly(eq_data_->water_balance_idx);
+//
+//    // TODO: try to move this into balance, or have it in the generic assembler class, that should perform the cell loop
+//    // including various pre- and post-actions
+////    for ( DHCellAccessor dh_cell : eq_data_->dh_->own_range() ) {
+////        unsigned int dim = dh_cell.dim();
+////        assembler[dim-1]->assemble(dh_cell);
+////    }
+//    this->mh_matrix_asm();
+//
+//
+//    balance_->finish_mass_assembly(eq_data_->water_balance_idx);
+//    balance_->finish_source_assembly(eq_data_->water_balance_idx);
+//    balance_->finish_flux_assembly(eq_data_->water_balance_idx);
+//
+//}
 
 
 void DarcyLMH::allocate_mh_matrix()
@@ -1047,30 +1047,30 @@ void DarcyLMH::create_linear_system(Input::AbstractRecord in_rec) {
 void DarcyLMH::postprocess()
 {}
 
-void DarcyLMH::reconstruct_solution_from_schur(MultidimAssembly& assembler)
-{
-    START_TIMER("DarcyFlowMH::reconstruct_solution_from_schur");
-
-    eq_data_->full_solution.zero_entries();
-    eq_data_->p_edge_solution.local_to_ghost_begin();
-    eq_data_->p_edge_solution.local_to_ghost_end();
-
-    balance_->start_flux_assembly(eq_data_->water_balance_idx);
-    balance_->start_source_assembly(eq_data_->water_balance_idx);
-    balance_->start_mass_assembly(eq_data_->water_balance_idx);
-
-    for ( DHCellAccessor dh_cell : eq_data_->dh_->own_range() ) {
-        unsigned int dim = dh_cell.dim();
-        assembler[dim-1]->assemble_reconstruct(dh_cell);
-    }
-
-    eq_data_->full_solution.local_to_ghost_begin();
-    eq_data_->full_solution.local_to_ghost_end();
-
-    balance_->finish_mass_assembly(eq_data_->water_balance_idx);
-    balance_->finish_source_assembly(eq_data_->water_balance_idx);
-    balance_->finish_flux_assembly(eq_data_->water_balance_idx);
-}
+//void DarcyLMH::reconstruct_solution_from_schur(MultidimAssembly& assembler)
+//{
+//    START_TIMER("DarcyFlowMH::reconstruct_solution_from_schur");
+//
+//    eq_data_->full_solution.zero_entries();
+//    eq_data_->p_edge_solution.local_to_ghost_begin();
+//    eq_data_->p_edge_solution.local_to_ghost_end();
+//
+//    balance_->start_flux_assembly(eq_data_->water_balance_idx);
+//    balance_->start_source_assembly(eq_data_->water_balance_idx);
+//    balance_->start_mass_assembly(eq_data_->water_balance_idx);
+//
+//    for ( DHCellAccessor dh_cell : eq_data_->dh_->own_range() ) {
+//        unsigned int dim = dh_cell.dim();
+//        assembler[dim-1]->assemble_reconstruct(dh_cell);
+//    }
+//
+//    eq_data_->full_solution.local_to_ghost_begin();
+//    eq_data_->full_solution.local_to_ghost_end();
+//
+//    balance_->finish_mass_assembly(eq_data_->water_balance_idx);
+//    balance_->finish_source_assembly(eq_data_->water_balance_idx);
+//    balance_->finish_flux_assembly(eq_data_->water_balance_idx);
+//}
 
 void DarcyLMH::assembly_linear_system() {
     START_TIMER("DarcyFlowMH::assembly_linear_system");
@@ -1102,7 +1102,7 @@ void DarcyLMH::assembly_linear_system() {
         START_TIMER("DarcyLMH::assembly_steady_mh_matrix");
         this->mh_matrix_asm(); // fill matrix
         END_TIMER("DarcyLMH::assembly_steady_mh_matrix");
-        //assembly_mh_matrix( eq_data_->multidim_assembler ); // fill matrix
+//        assembly_mh_matrix( eq_data_->multidim_assembler ); // fill matrix
 
         lin_sys_schur().finish_assembly();
         lin_sys_schur().set_matrix_changed();

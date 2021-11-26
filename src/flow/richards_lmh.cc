@@ -166,15 +166,15 @@ void RichardsLMH::initialize_specific() {
 }
 
 
-void RichardsLMH::initial_condition_postprocess()
-{
-    // modify side fluxes in parallel
-    // for every local edge take time term on diagonal and add it to the corresponding flux
-    
-    for ( DHCellAccessor dh_cell : eq_data_->dh_->own_range() ) {
-    	eq_data_->multidim_assembler[dh_cell.elm().dim()-1]->update_water_content(dh_cell);
-    }
-}
+//void RichardsLMH::initial_condition_postprocess()
+//{
+//    // modify side fluxes in parallel
+//    // for every local edge take time term on diagonal and add it to the corresponding flux
+//
+//    for ( DHCellAccessor dh_cell : eq_data_->dh_->own_range() ) {
+//    	eq_data_->multidim_assembler[dh_cell.elm().dim()-1]->update_water_content(dh_cell);
+//    }
+//}
 
 
 void RichardsLMH::accept_time_step()

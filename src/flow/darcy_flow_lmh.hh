@@ -268,14 +268,14 @@ protected:
      * For the LMH scheme we have to be able to save edge pressures in order to
      * restart simulation or use results of one simulation as initial condition for other one.
      */
-    void read_initial_condition();
+//    void read_initial_condition();
     
     /**
      * In some circumstances, the intial condition must be processed.
      * It is called at the end of @p read_initial_condition().
      * This is used in Richards equation due the update of water content.
      */
-    virtual void initial_condition_postprocess();
+//    virtual void initial_condition_postprocess();
     
     /**
      * Allocates linear system matrix for MH.
@@ -293,9 +293,9 @@ protected:
      * - add support for Robin type sources
      * - support for nonlinear solvers - assembly either residual vector, matrix, or both (using FADBAD++)
      */
-    void assembly_mh_matrix(MultidimAssembly& assembler);
+//    void assembly_mh_matrix(MultidimAssembly& assembler);
     
-    void reconstruct_solution_from_schur(MultidimAssembly& assembler);
+//    void reconstruct_solution_from_schur(MultidimAssembly& assembler);
 
     /**
      * Assembly or update whole linear system.
@@ -308,7 +308,7 @@ protected:
      * TODO: Introduce Equation::compute_residual() updating
      * residual field, standard part of EqData.
      */
-    virtual double solution_precision() const;
+//    virtual double solution_precision() const;
     
     /// Print darcy flow matrix in matlab format into a file.
     void print_matlab_matrix(string matlab_file);

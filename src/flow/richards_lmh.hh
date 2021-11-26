@@ -117,7 +117,7 @@ protected:
 
     void initialize_specific() override;
 
-    void initial_condition_postprocess() override;
+//    void initial_condition_postprocess() override;
     void assembly_linear_system() override;
 
     /// Create and initialize assembly objects
