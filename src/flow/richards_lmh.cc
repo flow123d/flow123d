@@ -224,7 +224,10 @@ void RichardsLMH::assembly_linear_system()
         lin_sys_schur().mat_zero_entries();
         lin_sys_schur().rhs_zero_entries();
 
-        assembly_mh_matrix( eq_data_->multidim_assembler ); // fill matrix
+//        assembly_mh_matrix( eq_data_->multidim_assembler ); // fill matrix
+        START_TIMER("RichardsLMH::assembly_steady_mh_matrix");
+        this->mh_matrix_asm(); // fill matrix
+        END_TIMER("RichardsLMH::assembly_steady_mh_matrix");
 
         lin_sys_schur().finish_assembly();
         lin_sys_schur().set_matrix_changed();
