@@ -336,7 +336,7 @@ public:
     inline Range< EdgePoint > points(const DHCellSide &cell_side, const ElementCacheMap *elm_cache_map) const {
         ASSERT_EQ_DBG(cell_side.dim(), dim_);
         //DebugOut() << "points per side: " << n_points_per_side_;
-        uint element_patch_idx = elm_cache_map->position_in_cache(cell_side.element().mesh_idx());
+        uint element_patch_idx = elm_cache_map->position_in_cache(cell_side.element().idx());
         uint begin_idx = side_begin(cell_side);
         auto bgn_it = make_iter<EdgePoint>( EdgePoint(
                 BulkPoint(elm_cache_map, element_patch_idx, 0), this, begin_idx));
@@ -394,7 +394,7 @@ public:
     /// Returns range of side local points for appropriate cell side accessor
     inline Range< CouplingPoint > points(const DHCellSide &cell_side, const ElementCacheMap *elm_cache_map) const {
         ASSERT_EQ_DBG(cell_side.dim(), dim_);
-        uint element_patch_idx = elm_cache_map->position_in_cache(cell_side.element().mesh_idx());
+        uint element_patch_idx = elm_cache_map->position_in_cache(cell_side.element().idx());
         uint begin_idx = edge_integral_->side_begin(cell_side);
         auto bgn_it = make_iter<CouplingPoint>( CouplingPoint(
                 BulkPoint(elm_cache_map, element_patch_idx, 0), this, begin_idx) );
@@ -446,7 +446,7 @@ public:
     /// Returns range of bulk local points for appropriate cell accessor
     inline Range< BoundaryPoint > points(const DHCellSide &cell_side, const ElementCacheMap *elm_cache_map) const {
         ASSERT_EQ_DBG(cell_side.dim(), dim_);
-        uint element_patch_idx = elm_cache_map->position_in_cache(cell_side.element().mesh_idx());
+        uint element_patch_idx = elm_cache_map->position_in_cache(cell_side.element().idx());
         uint begin_idx = edge_integral_->side_begin(cell_side);
         auto bgn_it = make_iter<BoundaryPoint>( BoundaryPoint(
                 BulkPoint(elm_cache_map, element_patch_idx, 0), this, begin_idx) );
@@ -476,7 +476,7 @@ EdgePoint::EdgePoint(BulkPoint bulk, const EdgeIntegral *edge_integral, uint sid
 {}
 
 inline EdgePoint EdgePoint::point_on(const DHCellSide &edg_side) const {
-    uint element_patch_idx = elm_cache_map_->position_in_cache(edg_side.element().mesh_idx());
+    uint element_patch_idx = elm_cache_map_->position_in_cache(edg_side.element().idx());
     uint side_begin = integral_->side_begin(edg_side);
     return EdgePoint(BulkPoint(elm_cache_map_, element_patch_idx, local_point_idx_),
             integral_, side_begin);
@@ -490,7 +490,7 @@ CouplingPoint::CouplingPoint(BulkPoint bulk, const CouplingIntegral *coupling_in
 
 
 inline BulkPoint CouplingPoint::lower_dim(DHCellAccessor cell_lower) const {
-    unsigned int i_elm = elm_cache_map_->position_in_cache(cell_lower.elm().mesh_idx());
+    unsigned int i_elm = elm_cache_map_->position_in_cache(cell_lower.elm().idx());
     unsigned int i_ep = integral_->bulk_begin() + local_point_idx_;
     return BulkPoint(elm_cache_map_, i_elm, i_ep);
 }
@@ -506,7 +506,7 @@ BoundaryPoint::BoundaryPoint(BulkPoint bulk, const BoundaryIntegral *bdr_integra
 
 
 inline BulkPoint BoundaryPoint::point_bdr(ElementAccessor<3> bdr_elm) const {
-    unsigned int i_elm = elm_cache_map_->position_in_cache(bdr_elm.mesh_idx());
+    unsigned int i_elm = elm_cache_map_->position_in_cache(bdr_elm.idx(), true);
     unsigned int i_ep = integral_->bulk_begin() + local_point_idx_;
     //DebugOut() << "begin:" << integral_->bulk_begin() << "iloc " << local_point_idx_;
     return BulkPoint(elm_cache_map_, i_elm, i_ep);

@@ -19,8 +19,8 @@ namespace IT = Input::Type;
  */
 
 RegionSetBase::RegionSetBase(Mesh *mesh)
-: region_db_(mesh->region_db_),
-  el_to_reg_map_(mesh->region_db_.el_to_reg_map_) {}
+: region_db_(*mesh->region_db_),
+  el_to_reg_map_(mesh->region_db_->el_to_reg_map_) {}
 
 IT::Abstract & RegionSetBase::get_input_type() {
 	return IT::Abstract("Region", "Abstract record for Region.")

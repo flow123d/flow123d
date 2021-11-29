@@ -69,15 +69,15 @@ TEST(MeshTopology, make_neighbours_and_edges) {
     Mesh * mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
 
     EXPECT_EQ(9, mesh->n_elements());
-    EXPECT_EQ(18, mesh->get_bc_mesh()->n_elements());
+    EXPECT_EQ(18, mesh->bc_mesh()->n_elements());
 
     // check boundary elements
-    EXPECT_EQ(101 , mesh->element_accessor(9).region().id() );
-    EXPECT_EQ(101 , mesh->element_accessor(10).region().id() );
-    EXPECT_EQ(102 , mesh->element_accessor(11).region().id() );
-    EXPECT_EQ(102 , mesh->element_accessor(12).region().id() );
-    EXPECT_EQ( -3 , int( mesh->element_accessor(13).region().id() ) );
-    EXPECT_EQ( -3 , int( mesh->element_accessor(26).region().id() ) );
+    EXPECT_EQ(101 , mesh->bc_mesh()->element_accessor(0).region().id() );
+    EXPECT_EQ(101 , mesh->bc_mesh()->element_accessor(1).region().id() );
+    EXPECT_EQ(102 , mesh->bc_mesh()->element_accessor(2).region().id() );
+    EXPECT_EQ(102 , mesh->bc_mesh()->element_accessor(3).region().id() );
+    EXPECT_EQ( -3 , int( mesh->bc_mesh()->element_accessor(4).region().id() ) );
+    EXPECT_EQ( -3 , int( mesh->bc_mesh()->element_accessor(17).region().id() ) );
 
     //check edges
     EXPECT_EQ(28,mesh->n_edges());
@@ -201,17 +201,15 @@ TEST(BCMesh, element_ranges) {
     reader->read_physical_names(mesh);
     reader->read_raw_mesh(mesh);
 
-    BCMesh *bc_mesh = mesh->get_bc_mesh();
+    BCMesh *bc_mesh = mesh->bc_mesh();
     unsigned int expected_val = 0;
 
     for (auto elm : mesh->elements_range()) {
     	EXPECT_EQ(elm.idx(), expected_val);
-    	EXPECT_EQ(elm.mesh_idx(), expected_val);
     	expected_val++;
     }
     for (auto elm : bc_mesh->elements_range()) {
     	EXPECT_EQ(elm.idx(), expected_val-mesh->n_elements());
-    	EXPECT_EQ(elm.mesh_idx(), expected_val);
     	expected_val++;
     }
 

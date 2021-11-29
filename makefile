@@ -132,7 +132,7 @@ TUTORIALS_TEX=$(TUTORIALS_IN_DOC:.yaml=.tex)
 
 .PHONY: fast-ref-doc
 fast-ref-doc:
-	echo "This rule just build PDF. Use 'update-input-ref' to update 'input_refeence.tex'."
+	echo "This rule just build PDF. Use 'update-input-ref' to update 'input_reference.tex'."
 	mkdir -p $(BUILD_DIR)/doc/reference_manual
 	cd $(BUILD_DIR)/doc/reference_manual && cmake -D TUTORIALS="$(TUTORIALS_TEX)" $(SOURCE_DIR)/doc/reference_manual
 	make -C $(BUILD_DIR)/doc/reference_manual pdf

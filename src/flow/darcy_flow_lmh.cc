@@ -51,6 +51,7 @@
 #include "flow/assembly_lmh_old.hh"
 #include "flow/darcy_flow_lmh.hh"
 #include "flow/darcy_flow_mh_output.hh"
+#include "flow/assembly_models.hh"
 
 #include "tools/time_governor.hh"
 #include "fields/field_algo_base.hh"
@@ -58,7 +59,8 @@
 #include "fields/field_values.hh"
 #include "fields/field_add_potential.hh"
 #include "fields/field_fe.hh"
-#include "fields/field_divide.hh"
+#include "fields/field_model.hh"
+#include "fields/field_constant.hh"
 
 #include "coupling/balance.hh"
 
@@ -243,15 +245,21 @@ void DarcyLMH::init_eq_data()
     eq_data_->gravity_ =  arma::vec(gvec);
     eq_data_->gravity_vec_ = eq_data_->gravity_.subvec(0,2);
 
+    FieldValue<3>::VectorFixed gvalue(eq_data_->gravity_vec_);
+    auto field_algo=std::make_shared<FieldConstant<3, FieldValue<3>::VectorFixed>>();
+    field_algo->set_value(gvalue);
+    eq_fields_->gravity_field.set(field_algo, 0.0);
+    eq_fields_->bc_gravity.set(field_algo, 0.0);
+
     eq_fields_->bc_pressure.add_factory(
-        std::make_shared<FieldAddPotential<3, FieldValue<3>::Scalar>::FieldFactory>
-        (eq_data_->gravity_, "bc_piezo_head") );
+            std::make_shared<AddPotentialFactory<3, FieldValue<3>::Scalar> >
+            (eq_fields_->bc_gravity, eq_fields_->X(), eq_fields_->bc_piezo_head) );
     eq_fields_->bc_switch_pressure.add_factory(
-            std::make_shared<FieldAddPotential<3, FieldValue<3>::Scalar>::FieldFactory>
-            (eq_data_->gravity_, "bc_switch_piezo_head") );
+            std::make_shared<AddPotentialFactory<3, FieldValue<3>::Scalar> >
+            (eq_fields_->bc_gravity, eq_fields_->X(), eq_fields_->bc_switch_piezo_head) );
     eq_fields_->init_pressure.add_factory(
-            std::make_shared<FieldAddPotential<3, FieldValue<3>::Scalar>::FieldFactory>
-            (eq_data_->gravity_, "init_piezo_head") );
+            std::make_shared<AddPotentialFactory<3, FieldValue<3>::Scalar> >
+            (eq_fields_->gravity_field, eq_fields_->X(), eq_fields_->init_piezo_head) );
 
 
     eq_fields_->set_input_list( this->input_record_.val<Input::Array>("input_fields"), *time_ );
@@ -296,14 +304,15 @@ void DarcyLMH::initialize() {
     init_eq_data();
     output_object = new DarcyFlowMHOutput(this, input_record_);
 
+    eq_fields_->add_coords_field();
+
     { // construct pressure, velocity and piezo head fields
 		uint rt_component = 0;
 		eq_data_->full_solution = eq_data_->dh_->create_vector();
         auto ele_flux_ptr = create_field_fe<3, FieldValue<3>::VectorFixed>(eq_data_->dh_, &eq_data_->full_solution, rt_component);
         eq_fields_->flux.set(ele_flux_ptr, 0.0);
 
-		auto ele_velocity_ptr = std::make_shared< FieldDivide<3, FieldValue<3>::VectorFixed> >(ele_flux_ptr, eq_fields_->cross_section);
-		eq_fields_->field_ele_velocity.set(ele_velocity_ptr, 0.0);
+		eq_fields_->field_ele_velocity.set(Model<3, FieldValue<3>::VectorFixed>::create(fn_mh_velocity(), eq_fields_->flux, eq_fields_->cross_section), 0.0);
 
 		uint p_ele_component = 1;
         auto ele_pressure_ptr = create_field_fe<3, FieldValue<3>::Scalar>(eq_data_->dh_, &eq_data_->full_solution, p_ele_component);
@@ -313,9 +322,10 @@ void DarcyLMH::initialize() {
         auto edge_pressure_ptr = create_field_fe<3, FieldValue<3>::Scalar>(eq_data_->dh_, &eq_data_->full_solution, p_edge_component);
         eq_fields_->field_edge_pressure.set(edge_pressure_ptr, 0.0);
 
-		arma::vec4 gravity = (-1) * eq_data_->gravity_;
-		auto ele_piezo_head_ptr = std::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar> >(gravity, ele_pressure_ptr);
-		eq_fields_->field_ele_piezo_head.set(ele_piezo_head_ptr, 0.0);
+        eq_fields_->field_ele_piezo_head.set(
+                Model<3, FieldValue<3>::Scalar>::create(fn_mh_piezohead(), eq_fields_->gravity_field, eq_fields_->X(), eq_fields_->field_ele_pressure),
+                0.0
+        );
     }
 
     { // init DOF handlers represents element pressure DOFs
@@ -344,7 +354,7 @@ void DarcyLMH::initialize() {
     eq_data_->p_edge_solution_previous_time = eq_data_->dh_cr_->create_vector();
 
     // Initialize bc_switch_dirichlet to size of global boundary.
-    eq_data_->bc_switch_dirichlet.resize(mesh_->n_elements()+mesh_->get_bc_mesh()->n_elements(), 1);
+    eq_data_->bc_switch_dirichlet.resize(mesh_->n_elements()+mesh_->bc_mesh()->n_elements(), 1);
 
 
     nonlinear_iteration_=0;

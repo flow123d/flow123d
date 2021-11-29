@@ -56,6 +56,11 @@ namespace Input {
 		class Selection;
 	}
 }
+template<unsigned int dim> class MassAssemblyConvection;
+template<unsigned int dim> class InitCondAssemblyConvection;
+template<unsigned int dim> class ConcSourcesBdrAssemblyConvection;
+template<unsigned int dim> class MatrixMpiAssemblyConvection;
+template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
 
 //=============================================================================
@@ -75,57 +80,21 @@ namespace Input {
 
 
 /**
- * Auxiliary container class for Finite element and related objects of all dimensions.
- * Its purpose is to provide templated access to these objects, applicable in
- * the assembling methods.
- */
-class FETransportObjects {
-public:
-
-	FETransportObjects();
-	~FETransportObjects();
-
-	template<unsigned int dim>
-	inline FiniteElement<dim> *fe();
-
-	inline Quadrature &q(unsigned int dim);
-
-	inline FEValues<3> &fe_values(unsigned int dim)
-    { 
-        ASSERT_DBG( dim >= 1 && dim <= 3 );
-        return fe_values_[dim-1];
-    }
-
-private:
-
-	/// Finite elements for the solution of the advection-diffusion equation.
-	FiniteElement<0> *fe0_;
-	FiniteElement<1> *fe1_;
-	FiniteElement<2> *fe2_;
-	FiniteElement<3> *fe3_;
-
-	/// Quadratures used in assembling methods.
-	QGauss::array q_;
-
-    /// FESideValues objects for side flux calculating.
-	FEValues<3> fe_values_[3];
-};
-
-
-/**
  * Class that implements explicit finite volumes scheme with upwind. The timestep is given by CFL condition.
  *
  */
 class ConvectionTransport : public ConcentrationTransportBase {
 public:
-    class EqData : public TransportEqFields {
+    class EqFields : public TransportEqFields {
     public:
 
-        EqData();
-        virtual ~EqData() {};
+    	EqFields();
+        virtual ~EqFields() {};
 
-        /// Override generic method in order to allow specification of the boundary conditions through the old bcd files.
-        RegionSet read_boundary_list_item(Input::Record rec);
+        /// Calculate flux on given side point.
+        inline double side_flux(SidePoint &side_p, FEValues<3> &fe_side_values) {
+            return arma::dot(this->flow_flux(side_p), fe_side_values.normal_vector(0)) * fe_side_values.JxW(0);
+        }
 
 		/**
 		 * Boundary conditions (Dirichlet) for concentrations.
@@ -144,6 +113,72 @@ public:
 
         /// Fields indended for output, i.e. all input fields plus those representing solution.
         EquationOutput output_fields;
+    };
+
+
+    class EqData {
+    public:
+
+        EqData() : is_mass_diag_changed(false), cfl_source_(PETSC_COMM_WORLD), cfl_flow_(PETSC_COMM_WORLD) {}
+        virtual ~EqData() {};
+
+        /// Returns number of transported substances.
+        inline unsigned int n_substances()
+        { return substances_.size(); }
+
+		inline void set_time_governor(TimeGovernor *time) {
+		    ASSERT_PTR_DBG(time);
+		    this->time_ = time;
+		}
+
+		void alloc_transport_structs_mpi(unsigned int lsize) {
+		    this->cfl_flow_.resize(lsize);
+		    this->cfl_source_.resize(lsize);
+		}
+
+        /**
+         * Temporary solution how to pass velocity field form the flow model.
+         * TODO: introduce FieldDiscrete -containing true DOFHandler and data vector and pass such object together with other
+         * data. Possibly make more general set_data method, allowing setting data given by name. needs support from EqDataBase.
+         */
+        std::shared_ptr<DOFHandlerMultiDim> dh_;
+
+        /// object for calculation and writing the mass balance to file, shared with EquationBase.
+        std::shared_ptr<Balance> balance_;
+
+        /// Flag indicates that porosity or cross_section changed during last time.
+    	bool is_mass_diag_changed;
+
+        /// Transported substances.
+        SubstanceList substances_;
+
+    	/// List of indices used to call balance methods for a set of quantities.
+    	vector<unsigned int> subst_idx;
+
+    	Vec mass_diag;  // diagonal entries in pass matrix (cross_section * porosity)
+
+    	/// Flag indicates that sources part of equation was changed during last time.
+    	bool sources_changed_;
+
+        vector<VectorMPI> corr_vec;
+        VectorMPI cfl_source_;      ///< Parallel vector for source term contribution to CFL condition.
+        VectorMPI cfl_flow_;        ///< Parallel vector for flow contribution to CFL condition.
+        Mat tm;                     ///< PETSc transport matrix
+        vector<VectorMPI> tm_diag;  ///< additions to PETSC transport matrix on the diagonal - from sources (for each substance)
+        Vec *bcvcorr;               ///< Boundary condition correction vector
+        double transport_bc_time;   ///< Time of the last update of the boundary condition terms.
+		TimeGovernor *time_;
+
+	    /// Time when the transport matrix was created.
+	    /// TODO: when we have our own classes for LA objects, we can use lazy dependence to check
+	    /// necessity for matrix update
+	    double transport_matrix_time;
+
+		bool is_convection_matrix_scaled;   ///< Flag indicates the state of object
+
+		/// Maximal number of edge sides (evaluate from dim 1,2,3)
+		unsigned int max_edg_sides;
+
     };
 
 
@@ -212,7 +247,7 @@ public:
     void set_balance_object(std::shared_ptr<Balance> balance) override;
 
     const vector<unsigned int> &get_subst_idx() override
-	{ return subst_idx; }
+	{ return eq_data_->subst_idx; }
 
     /**
      * @brief Write computed fields.
@@ -232,62 +267,18 @@ public:
 
 	Vec get_component_vec(unsigned int sbi) override;
 
-	void get_par_info(LongIdx * &el_4_loc, Distribution * &el_ds) override;
-
-	LongIdx *get_row_4_el() override;
-
     /// Returns number of transported substances.
     inline unsigned int n_substances() override
-    { return substances_.size(); }
+    { return eq_data_->substances_.size(); }
 
     /// Returns reference to the vector of substance names.
     inline SubstanceList &substances() override
-    { return substances_; }
+    { return eq_data_->substances_; }
 
 private:
 
-    /**
-     * Assembly convection term part of the matrix and boundary matrix for application of boundary conditions.
-     *
-     * Discretization of the convection term use explicit time scheme and finite volumes with full upwinding.
-     * We count on with exchange between dimensions and mixing on edges where more then two elements connect (can happen for 2D and 1D elements in
-     * 3D embedding space)
-     *
-     * In order to get multiplication matrix for explicit transport one have to scale the convection part by the acctual time step and
-     * add time term, i. e. unit matrix (see. transport_matrix_step_mpi)
-     *
-     * Updates CFL time step constrain.
-     */
-    void create_transport_matrix_mpi();
-    void create_mass_matrix();
-
-    void make_transport_partitioning(); //
-	void set_initial_condition();
-	void read_concentration_sources();
-  
-    /** @brief Assembles concentration sources for each substance and set boundary conditions.
-     * note: the source of concentration is multiplied by time interval (gives the mass, not the flow like before)
-     */
-    void conc_sources_bdr_conditions();
-    
-	/**
-	 * Finish explicit transport matrix (time step scaling)
-	 */
-	void transport_matrix_step_mpi(double time_step); //
-
     void alloc_transport_vectors();
     void alloc_transport_structs_mpi();
-
-	/**
-	 * @brief Wrapper of following method, call side_flux with correct template parameter.
-	 */
-	double side_flux(const DHCellSide &cell_side);
-
-	/**
-	 * @brief Calculate flux on side of given element specified by dimension.
-	 */
-	template<unsigned int dim>
-	double calculate_side_flux(const DHCellSide &cell);
 
 
 
@@ -295,9 +286,10 @@ private:
     static const int registrar;
 
     /**
-     *  Parameters of the equation, some are shared with other implementations since EqData is derived from TransportBase::TransportEqFields
+     *  Parameters of the equation, some are shared with other implementations since EqFields is derived from TransportBase::TransportEqFields
      */
-    EqData data_;
+    std::shared_ptr<EqFields> eq_fields_;
+    std::shared_ptr<EqData> eq_data_;
 
     //@{
     /**
@@ -305,41 +297,20 @@ private:
      * If false, the object is freshly assembled and not rescaled.
      * If true, the object is scaled (not necessarily with the current time step).
      */
-	bool is_convection_matrix_scaled, is_src_term_scaled, is_bc_term_scaled;
+	bool is_src_term_scaled, is_bc_term_scaled;
 	
-	/// Flag indicates that porosity or cross_section changed during last time.
-	bool is_mass_diag_changed;
     //@}
-    
-    vector<VectorMPI> corr_vec;
-    
 
     TimeMark::Type target_mark_type;    ///< TimeMark type for time marks denoting end of every time interval where transport matrix remains constant.
     double cfl_max_step;    ///< Time step constraint coming from CFL condition.
     
-    Vec vcfl_flow_,     ///< Parallel vector for flow contribution to CFL condition.
-        vcfl_source_;   ///< Parallel vector for source term contribution to CFL condition.
-    double *cfl_flow_, *cfl_source_;
-
 
     VecScatter vconc_out_scatter;
-    Mat tm; // PETSc transport matrix
-    Vec mass_diag;  // diagonal entries in pass matrix (cross_section * porosity)
     Vec vpmass_diag;  // diagonal entries in mass matrix from last time (cross_section * porosity)
-    Vec *v_tm_diag; // additions to PETSC transport matrix on the diagonal - from sources (for each substance)
-    double **tm_diag;
-
-    /// Time when the transport matrix was created.
-    /// TODO: when we have our own classes for LA objects, we can use lazy dependence to check
-    /// necessity for matrix update
-    double transport_matrix_time;
-    double transport_bc_time;   ///< Time of the last update of the boundary condition terms.
 
     ///
     Vec *vpconc; // previous concentration vector
-    Vec *bcvcorr; // boundary condition correction vector
     Vec *vcumulative_corr;
-    double **cumulative_corr;
 
 	/// Record with input specification.
 	const Input::Record input_rec;
@@ -347,25 +318,11 @@ private:
 	std::shared_ptr<OutputTime> output_stream_;
 
 
-	LongIdx *row_4_el;
-	LongIdx *el_4_loc;
-	Distribution *el_ds;
-
-    /// Transported substances.
-    SubstanceList substances_;
-
-    /**
-     * Temporary solution how to pass velocity field form the flow model.
-     * TODO: introduce FieldDiscrete -containing true DOFHandler and data vector and pass such object together with other
-     * data. Possibly make more general set_data method, allowing setting data given by name. needs support from EqDataBase.
-     */
-    std::shared_ptr<DOFHandlerMultiDim> dh_;
-
-	/// List of indices used to call balance methods for a set of quantities.
-	vector<unsigned int> subst_idx;
-
-	/// Finite element objects
-	FETransportObjects feo_;
+    /// general assembly objects, hold assembly objects of appropriate dimension
+    GenericAssembly< MassAssemblyConvection > * mass_assembly_;
+    GenericAssembly< InitCondAssemblyConvection > * init_cond_assembly_;
+    GenericAssembly< ConcSourcesBdrAssemblyConvection > * conc_sources_bdr_assembly_;
+    GenericAssembly< MatrixMpiAssemblyConvection > * matrix_mpi_assembly_;
 
     friend class TransportOperatorSplitting;
 };

@@ -72,9 +72,6 @@ namespace Input {
 }
 typedef std::vector<std::shared_ptr<AssemblyFlowBase> > MultidimAssembly;
 
-template<int spacedim, class Value> class FieldAddPotential;
-template<int spacedim, class Value> class FieldDivide;
-
 /**
  * @brief Mixed-hybrid model of linear Darcy flow, possibly unsteady.
  *
@@ -163,6 +160,11 @@ public:
         /// Creation of all fields.
         EqFields();
 
+        /// Return coords field
+        FieldCoords &X() {
+            return this->X_;
+        }
+
 
         Field<3, FieldValue<3>::TensorFixed > anisotropy;
         Field<3, FieldValue<3>::Scalar > conductivity;
@@ -186,6 +188,12 @@ public:
         Field<3, FieldValue<3>::VectorFixed > field_ele_velocity;
         Field<3, FieldValue<3>::VectorFixed > flux;
         Field<3, FieldValue<3>::Scalar> field_edge_pressure;
+
+        Field<3, FieldValue<3>::VectorFixed > gravity_field; /// Holds gravity vector acceptable in FieldModel
+        BCField<3, FieldValue<3>::VectorFixed > bc_gravity; /// Same as previous but used in boundary fields
+        Field<3, FieldValue<3>::Scalar> init_piezo_head;
+        BCField<3, FieldValue<3>::Scalar> bc_piezo_head;
+        BCField<3, FieldValue<3>::Scalar> bc_switch_piezo_head;
     };
 
     /**
