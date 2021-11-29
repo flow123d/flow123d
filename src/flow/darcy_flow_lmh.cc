@@ -343,10 +343,10 @@ void DarcyLMH::initialize() {
         auto edge_pressure_ptr = create_field_fe<3, FieldValue<3>::Scalar>(eq_data_->dh_, &eq_data_->full_solution, p_edge_component);
         eq_fields_->field_edge_pressure.set(edge_pressure_ptr, 0.0);
 
-		eq_fields_->field_ele_piezo_head.set(
-		        Model<3, FieldValue<3>::Scalar>::create(fn_mh_piezohead(), eq_fields_->gravity_field, eq_fields_->X(), eq_fields_->field_ele_pressure),
-		        0.0
-		);
+        eq_fields_->field_ele_piezo_head.set(
+                Model<3, FieldValue<3>::Scalar>::create(fn_mh_piezohead(), eq_fields_->gravity_field, eq_fields_->X(), eq_fields_->field_ele_pressure),
+                0.0
+        );
     }
 
     { // init DOF handlers represents element pressure DOFs
