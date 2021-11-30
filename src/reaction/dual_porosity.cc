@@ -70,6 +70,7 @@ const int DualPorosity::registrar =
 		DualPorosity::get_input_type().size();
 
 DualPorosity::EqFields::EqFields()
+: ReactionTerm::EqFields()
 {
   *this += diffusion_rate_immobile
            .name("diffusion_rate_immobile")
@@ -112,12 +113,12 @@ DualPorosity::EqData::EqData()
 DualPorosity::DualPorosity(Mesh &init_mesh, Input::Record in_rec)
 	: ReactionTerm(init_mesh, in_rec)
 {
-    eq_data_ = std::make_shared<EqData>();
     eq_fields_ = std::make_shared<EqFields>();
     eq_fields_->add_coords_field();
     //set pointer to equation data fieldset
     this->eq_fieldset_ = eq_fields_.get();
-  
+    this->eq_fields_base_ = std::static_pointer_cast<ReactionTerm::EqFields>(eq_fields_);
+
     //reads input and creates possibly other reaction terms
     make_reactions();
     //read value from input
@@ -157,23 +158,23 @@ void DualPorosity::make_reactions() {
 void DualPorosity::initialize()
 {
   ASSERT(time_ != nullptr).error("Time governor has not been set yet.\n");
-  ASSERT_LT(0, substances_.size()).error("No substances for rection term.\n");
+  ASSERT_LT(0, eq_data_->substances_.size()).error("No substances for rection term.\n");
   ASSERT(output_stream_ != nullptr).error("Null output stream.\n");
   
   initialize_fields();
 
   if(reaction_mobile)
   {
-    reaction_mobile->substances(substances_)
+    reaction_mobile->substances(eq_data_->substances_)
                 .output_stream(output_stream_)
-                .concentration_fields(conc_mobile_fe)
+                .concentration_fields(eq_fields_->conc_mobile_fe)
                 .set_time_governor(*time_);
     reaction_mobile->initialize();
   }
 
   if(reaction_immobile)
   {
-    reaction_immobile->substances(substances_)
+    reaction_immobile->substances(eq_data_->substances_)
                 .output_stream(output_stream_)
                 .concentration_fields(eq_fields_->conc_immobile_fe)
                 .set_time_governor(*time_);
@@ -184,7 +185,7 @@ void DualPorosity::initialize()
 
 void DualPorosity::initialize_fields()
 {
-  eq_fields_->set_components(substances_.names());
+  eq_fields_->set_components(eq_data_->substances_.names());
   //setting fields that are set from input file
   input_field_set_ += *eq_fields_;
   input_field_set_.set_input_list(input_record_.val<Input::Array>("input_fields"), *time_);
@@ -193,18 +194,18 @@ void DualPorosity::initialize_fields()
   eq_fields_->set_mesh(*mesh_);
   
   //initialization of output
-  eq_fields_->output_fields.set_components(substances_.names());
+  eq_fields_->output_fields.set_components(eq_data_->substances_.names());
   eq_fields_->output_fields.set_mesh(*mesh_);
   eq_fields_->output_fields.output_type(OutputTime::ELEM_DATA);
   eq_fields_->conc_immobile.setup_components();
 
 
   //creating field fe and output multifield for sorbed concentrations
-  eq_fields_->conc_immobile_fe.resize(substances_.size());
-  for (unsigned int sbi = 0; sbi < substances_.size(); sbi++)
+  eq_fields_->conc_immobile_fe.resize(eq_data_->substances_.size());
+  for (unsigned int sbi = 0; sbi < eq_data_->substances_.size(); sbi++)
   {
       // create shared pointer to a FieldFE and push this Field to output_field on all regions
-	  eq_fields_->conc_immobile_fe[sbi] = create_field_fe< 3, FieldValue<3>::Scalar >(dof_handler_);
+	  eq_fields_->conc_immobile_fe[sbi] = create_field_fe< 3, FieldValue<3>::Scalar >(eq_data_->dof_handler_);
 	  eq_fields_->conc_immobile[sbi].set(eq_fields_->conc_immobile_fe[sbi], 0);
   }
 
@@ -215,7 +216,7 @@ void DualPorosity::initialize_fields()
 void DualPorosity::zero_time_step()
 {
   ASSERT(time_ != nullptr).error("Time governor has not been set yet.\n");
-  ASSERT_LT(0, substances_.size()).error("No substances for rection term.\n");
+  ASSERT_LT(0, eq_data_->substances_.size()).error("No substances for rection term.\n");
   ASSERT(output_stream_ != nullptr).error("Null output stream.\n");
   
   //coupling - passing fields
@@ -251,12 +252,12 @@ void DualPorosity::zero_time_step()
 
 void DualPorosity::set_initial_condition()
 {
-    for ( DHCellAccessor dh_cell : dof_handler_->own_range() ) {
+    for ( DHCellAccessor dh_cell : eq_data_->dof_handler_->own_range() ) {
         IntIdx dof_p0 = dh_cell.get_loc_dof_indices()[0];
         const ElementAccessor<3> ele = dh_cell.elm();
 
         //setting initial solid concentration for substances involved in adsorption
-        for (unsigned int sbi = 0; sbi < substances_.size(); sbi++)
+        for (unsigned int sbi = 0; sbi < eq_data_->substances_.size(); sbi++)
         {
             eq_fields_->conc_immobile_fe[sbi]->vec().set( dof_p0, eq_fields_->init_conc_immobile[sbi].value(ele.centre(), ele) );
         }
@@ -268,7 +269,7 @@ void DualPorosity::update_solution(void)
   eq_fields_->set_time(time_->step(-2), LimitSide::right);
  
   START_TIMER("dual_por_exchange_step");
-  for ( DHCellAccessor dh_cell : dof_handler_->own_range() )
+  for ( DHCellAccessor dh_cell : eq_data_->dof_handler_->own_range() )
   {
       compute_reaction(dh_cell);
   }
@@ -293,8 +294,8 @@ void DualPorosity::compute_reaction(const DHCellAccessor& dh_cell)
     IntIdx dof_p0 = dh_cell.get_loc_dof_indices()[0];
     por_mob = eq_fields_->porosity.value(ele.centre(),ele);
     por_immob = eq_fields_->porosity_immobile.value(ele.centre(),ele);
-    arma::Col<double> diff_vec(substances_.size());
-    for (sbi=0; sbi<substances_.size(); sbi++) // Optimize: SWAP LOOPS
+    arma::Col<double> diff_vec(eq_data_->substances_.size());
+    for (sbi=0; sbi<eq_data_->substances_.size(); sbi++) // Optimize: SWAP LOOPS
         diff_vec[sbi] = eq_fields_->diffusion_rate_immobile[sbi].value(ele.centre(), ele);
  
     // if porosity_immobile == 0 then mobile concentration stays the same 
@@ -304,11 +305,11 @@ void DualPorosity::compute_reaction(const DHCellAccessor& dh_cell)
     double exponent,
            temp_exponent = (por_mob + por_immob) / (por_mob * por_immob) * time_->dt();
   
-    for (sbi = 0; sbi < substances_.size(); sbi++) //over all substances
+    for (sbi = 0; sbi < eq_data_->substances_.size(); sbi++) //over all substances
     {
         exponent = diff_vec[sbi] * temp_exponent;
         //previous values
-        previous_conc_mob = conc_mobile_fe[sbi]->vec().get(dof_p0);
+        previous_conc_mob = eq_fields_->conc_mobile_fe[sbi]->vec().get(dof_p0);
         previous_conc_immob = eq_fields_->conc_immobile_fe[sbi]->vec().get(dof_p0);
         
         // ---compute average concentration------------------------------------------
@@ -340,7 +341,7 @@ void DualPorosity::compute_reaction(const DHCellAccessor& dh_cell)
             conc_immob = (previous_conc_immob - conc_average) * temp + conc_average;
         }
         
-        conc_mobile_fe[sbi]->vec().set(dof_p0, conc_mob);
+        eq_fields_->conc_mobile_fe[sbi]->vec().set(dof_p0, conc_mob);
         eq_fields_->conc_immobile_fe[sbi]->vec().set(dof_p0, conc_immob);
     }
 }

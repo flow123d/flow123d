@@ -96,14 +96,14 @@ public:
     /// Sets the immobile porosity field.
     inline void set_porosity_immobile(Field<3, FieldValue<3>::Scalar > &por_imm)
     {
-    	eq_fields_->immob_porosity_.copy_from(por_imm);
+        eq_fields_dual_->immob_porosity_.copy_from(por_imm);
     }
 
 protected:
     /// Computes @p CommonElementData. Pure virtual.
     virtual void compute_common_ele_data(const ElementAccessor<3> &elem) = 0;
 
-    EqFields *eq_fields_;  ///< Overwrites SorptionBase::eq_fields_.
+    std::shared_ptr<EqFields> eq_fields_dual_;  ///< Overwrites SorptionBase::eq_fields_.
 };
 
 

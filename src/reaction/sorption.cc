@@ -47,9 +47,9 @@ const IT::Record & SorptionSimple::get_input_type() {
 SorptionSimple::SorptionSimple(Mesh &init_mesh, Input::Record in_rec)
   : SorptionBase(init_mesh, in_rec)
 {
-    eq_fields_ = new EqFields("conc_solid", "Concentration solution in the solid phase.");
-    eq_data_ = new EqData();
-    this->eq_fieldset_ = eq_fields_;
+    eq_fields_ = std::make_shared<EqFields>("conc_solid", "Concentration solution in the solid phase.");
+    this->eq_fieldset_ = eq_fields_.get();
+    this->eq_fields_base_ = std::static_pointer_cast<ReactionTerm::EqFields>(eq_fields_);
 }
 
 const int SorptionSimple::registrar =
@@ -88,9 +88,10 @@ SorptionDual::SorptionDual(Mesh &init_mesh, Input::Record in_rec,
                            const string &output_conc_desc)
     : SorptionBase(init_mesh, in_rec)
 {
-    eq_fields_ = new EqFields(output_conc_name, output_conc_desc);
-    eq_data_ = new EqData();
-    this->eq_fieldset_ = eq_fields_;
+    eq_fields_dual_ = std::make_shared<EqFields>(output_conc_name, output_conc_desc);
+    this->eq_fieldset_ = eq_fields_dual_.get();
+    this->eq_fields_base_ = std::static_pointer_cast<ReactionTerm::EqFields>(eq_fields_dual_);
+    this->eq_fields_ = std::static_pointer_cast<SorptionBase::EqFields>(eq_fields_dual_);
 }
 
 SorptionDual::~SorptionDual(void)
@@ -127,9 +128,9 @@ SorptionMob::~SorptionMob(void)
 
 void SorptionMob::compute_common_ele_data(const ElementAccessor<3> &elem)
 {
-    double rock_density = eq_fields_->rock_density.value(elem.centre(),elem);
-    double por_m = eq_fields_->porosity.value(elem.centre(),elem);
-    double por_imm = eq_fields_->immob_porosity_.value(elem.centre(),elem);
+    double rock_density = eq_fields_dual_->rock_density.value(elem.centre(),elem);
+    double por_m = eq_fields_dual_->porosity.value(elem.centre(),elem);
+    double por_imm = eq_fields_dual_->immob_porosity_.value(elem.centre(),elem);
     double phi = por_m/(por_m + por_imm);
     
     this->common_ele_data.scale_aqua = por_m;
@@ -166,9 +167,9 @@ SorptionImmob::~SorptionImmob(void)
 
 void SorptionImmob::compute_common_ele_data(const ElementAccessor<3> &elem)
 {
-    double rock_density = eq_fields_->rock_density.value(elem.centre(),elem);
-    double por_m = eq_fields_->porosity.value(elem.centre(),elem);
-    double por_imm = eq_fields_->immob_porosity_.value(elem.centre(),elem);
+    double rock_density = eq_fields_dual_->rock_density.value(elem.centre(),elem);
+    double por_m = eq_fields_dual_->porosity.value(elem.centre(),elem);
+    double por_imm = eq_fields_dual_->immob_porosity_.value(elem.centre(),elem);
     double phi = por_m/(por_m + por_imm);
     
     this->common_ele_data.scale_aqua = por_m;

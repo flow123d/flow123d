@@ -76,6 +76,7 @@ const Record & SorptionBase::get_input_type() {
     
 
 SorptionBase::EqFields::EqFields(const string &output_field_name, const string &output_field_desc)
+: ReactionTerm::EqFields()
 {
     *this += rock_density.name("rock_density")
             .description("Rock matrix density.")
@@ -125,8 +126,7 @@ SorptionBase::EqData::EqData()
 
 
 SorptionBase::SorptionBase(Mesh &init_mesh, Input::Record in_rec)
-	: ReactionTerm(init_mesh, in_rec),
-	  eq_fields_(nullptr), eq_data_(nullptr)
+	: ReactionTerm(init_mesh, in_rec)
 {
   // creating reaction from input and setting their parameters
   make_reactions();
@@ -134,10 +134,7 @@ SorptionBase::SorptionBase(Mesh &init_mesh, Input::Record in_rec)
 
 
 SorptionBase::~SorptionBase(void)
-{
-    if (eq_fields_ != nullptr) delete eq_fields_;
-    if (eq_data_ != nullptr) delete eq_data_;
-}
+{}
 
 void SorptionBase::make_reactions()
 {
@@ -170,7 +167,7 @@ void SorptionBase::initialize()
 {
   ASSERT_PTR(time_).error("Time governor has not been set yet.\n");
   ASSERT(output_stream_).error("Null output stream.\n");
-  ASSERT_LT(0, substances_.size());
+  ASSERT_LT(0, eq_data_->substances_.size());
   
   initialize_substance_ids(); //computes present substances and sets indices
   initialize_from_input();          //reads non-field data from input
@@ -193,14 +190,14 @@ void SorptionBase::initialize()
   
   if(reaction_liquid)
   {
-    reaction_liquid->substances(substances_)
-      .concentration_fields(conc_mobile_fe)
+    reaction_liquid->substances(eq_data_->substances_)
+      .concentration_fields(eq_fields_->conc_mobile_fe)
       .set_time_governor(*time_);
     reaction_liquid->initialize();
   }
   if(reaction_solid)
   {
-    reaction_solid->substances(substances_)
+    reaction_solid->substances(eq_data_->substances_)
       .concentration_fields(eq_fields_->conc_solid_fe)
       .set_time_governor(*time_);
     reaction_solid->initialize();
@@ -219,9 +216,9 @@ void SorptionBase::initialize_substance_ids()
   {
     //finding the name of a substance in the global array of names
     found = false;
-    for(k = 0; k < substances_.size(); k++)
+    for(k = 0; k < eq_data_->substances_.size(); k++)
     {
-      if (*spec_iter == substances_[k].name())
+      if (*spec_iter == eq_data_->substances_[k].name())
       {
         global_idx = k;
         found = true;
@@ -311,7 +308,7 @@ void SorptionBase::initialize_fields()
   // and initialize eq_fields_ with their names
   std::vector<std::string> substances_sorption;
   for (unsigned int i : substance_global_idx_)
-    substances_sorption.push_back(substances_[i].name());
+    substances_sorption.push_back(eq_data_->substances_[i].name());
   eq_fields_->set_components(substances_sorption);
   
   // read fields from input file
@@ -321,17 +318,17 @@ void SorptionBase::initialize_fields()
 
   //initialization of output
   //output_array = input_record_.val<Input::Array>("output_fields");
-  eq_fields_->conc_solid.set_components(substances_.names());
+  eq_fields_->conc_solid.set_components(eq_data_->substances_.names());
   eq_fields_->output_fields.set_mesh(*mesh_);
   eq_fields_->output_fields.output_type(OutputTime::ELEM_DATA);
   eq_fields_->conc_solid.setup_components();
 
   //creating field fe and output multifield for sorbed concentrations
-  eq_fields_->conc_solid_fe.resize(substances_.size());
-  for (unsigned int sbi = 0; sbi < substances_.size(); sbi++)
+  eq_fields_->conc_solid_fe.resize(eq_data_->substances_.size());
+  for (unsigned int sbi = 0; sbi < eq_data_->substances_.size(); sbi++)
   {
       // create shared pointer to a FieldFE and push this Field to output_field on all regions
-	  eq_fields_->conc_solid_fe[sbi] = create_field_fe< 3, FieldValue<3>::Scalar >(dof_handler_);
+	  eq_fields_->conc_solid_fe[sbi] = create_field_fe< 3, FieldValue<3>::Scalar >(eq_data_->dof_handler_);
 	  eq_fields_->conc_solid[sbi].set(eq_fields_->conc_solid_fe[sbi], 0);
   }
   //output_stream_->add_admissible_field_names(output_array);
@@ -343,7 +340,7 @@ void SorptionBase::zero_time_step()
 {
   ASSERT_PTR(time_).error("Time governor has not been set yet.\n");
   ASSERT(output_stream_).error("Null output stream.\n");
-  ASSERT_LT(0, substances_.size());
+  ASSERT_LT(0, eq_data_->substances_.size());
   
   eq_fields_->set_time(time_->step(), LimitSide::right);
   std::stringstream ss; // print warning message with table of uninitialized fields
@@ -367,7 +364,7 @@ void SorptionBase::zero_time_step()
 
 void SorptionBase::set_initial_condition()
 {
-    for ( DHCellAccessor dh_cell : dof_handler_->own_range() ) {
+    for ( DHCellAccessor dh_cell : eq_data_->dof_handler_->own_range() ) {
         IntIdx dof_p0 = dh_cell.get_loc_dof_indices()[0];
         const ElementAccessor<3> ele = dh_cell.elm();
 
@@ -391,7 +388,7 @@ void SorptionBase::update_solution(void)
   clear_max_conc();
 
   START_TIMER("Sorption");
-  for ( DHCellAccessor dh_cell : dof_handler_->own_range() )
+  for ( DHCellAccessor dh_cell : eq_data_->dof_handler_->own_range() )
   {
       compute_reaction(dh_cell);
   }
@@ -456,12 +453,12 @@ void SorptionBase::update_max_conc()
     
     clear_max_conc();
     
-    for ( DHCellAccessor dh_cell : dof_handler_->own_range() ) {
+    for ( DHCellAccessor dh_cell : eq_data_->dof_handler_->own_range() ) {
         IntIdx dof_p0 = dh_cell.get_loc_dof_indices()[0];
         reg_idx = dh_cell.elm().region().bulk_idx();
         for(i_subst = 0; i_subst < n_substances_; i_subst++){
             subst_id = substance_global_idx_[i_subst];
-            max_conc[reg_idx][i_subst] = std::max(max_conc[reg_idx][i_subst], conc_mobile_fe[subst_id]->vec().get(dof_p0));
+            max_conc[reg_idx][i_subst] = std::max(max_conc[reg_idx][i_subst], eq_fields_->conc_mobile_fe[subst_id]->vec().get(dof_p0));
       }
     }
 }
@@ -547,10 +544,10 @@ void SorptionBase::compute_reaction(const DHCellAccessor& dh_cell)
             Isotherm & isotherm = isotherms[reg_idx][i_subst];
             if (isotherm.is_precomputed()){
 //                 DebugOut().fmt("isotherms precomputed - interpolate, subst[{}]\n", i_subst);
-                double c_aqua = conc_mobile_fe[subst_id]->vec().get(dof_p0);
-				double c_sorbed = eq_fields_->conc_solid_fe[subst_id]->vec().get(dof_p0);
+                double c_aqua = eq_fields_->conc_mobile_fe[subst_id]->vec().get(dof_p0);
+			    double c_sorbed = eq_fields_->conc_solid_fe[subst_id]->vec().get(dof_p0);
                 isotherm.interpolate(c_aqua, c_sorbed);
-                conc_mobile_fe[subst_id]->vec().set(dof_p0, c_aqua);
+                eq_fields_->conc_mobile_fe[subst_id]->vec().set(dof_p0, c_aqua);
                 eq_fields_->conc_solid_fe[subst_id]->vec().set(dof_p0, c_sorbed);
             }
             else{
@@ -561,17 +558,17 @@ void SorptionBase::compute_reaction(const DHCellAccessor& dh_cell)
                 }
                 
                 isotherm_reinit(i_subst, ele);
-                double c_aqua = conc_mobile_fe[subst_id]->vec().get(dof_p0);
+                double c_aqua = eq_fields_->conc_mobile_fe[subst_id]->vec().get(dof_p0);
 				double c_sorbed = eq_fields_->conc_solid_fe[subst_id]->vec().get(dof_p0);
                 isotherm.compute(c_aqua, c_sorbed);
-                conc_mobile_fe[subst_id]->vec().set(dof_p0, c_aqua);
+                eq_fields_->conc_mobile_fe[subst_id]->vec().set(dof_p0, c_aqua);
                 eq_fields_->conc_solid_fe[subst_id]->vec().set(dof_p0, c_sorbed);
             }
             
             // update maximal concentration per region (optimization for interpolation)
             if(table_limit_[i_subst] < 0)
                 max_conc[reg_idx][i_subst] = std::max(max_conc[reg_idx][i_subst],
-                                                      conc_mobile_fe[subst_id]->vec().get(dof_p0));
+                                                      eq_fields_->conc_mobile_fe[subst_id]->vec().get(dof_p0));
         }
     }
     catch(ExceptionBase const &e)

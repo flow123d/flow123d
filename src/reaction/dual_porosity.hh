@@ -58,7 +58,7 @@ public:
   static const Input::Type::Record & get_input_type();
 
   /// DualPorosity fields
-  class EqFields : public FieldSet
+  class EqFields : public ReactionTerm::EqFields
   {
   public:
 
@@ -77,16 +77,6 @@ public:
 
     /// Fields indended for output, i.e. all input fields plus those representing solution.
     EquationOutput output_fields;
-
-  };
-
-  /// DualPorosity data
-  class EqData
-  {
-  public:
-
-    /// Collect all fields
-    EqData();
 
   };
 
@@ -134,7 +124,6 @@ protected:
   void compute_reaction(const DHCellAccessor& dh_cell) override;
 
   std::shared_ptr<EqFields> eq_fields_;   ///< Equation fields - all fields are in this set.
-  std::shared_ptr<EqData> eq_data_;       ///< Equation data - all data needs in assembly class.
 
   /**
    * Input data set - fields in this set are read from the input file.

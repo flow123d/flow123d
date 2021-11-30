@@ -141,7 +141,7 @@ void FirstOrderReaction::initialize_from_input()
         {
             string reactant_name = reactant_it->val<string>("name");
             idx = find_subst_name(reactant_name);
-            if (idx < substances_.size())   
+            if (idx < eq_data_->substances_.size())
                 substance_ids_[i_reaction][0] = idx;
             else THROW(ReactionTerm::ExcUnknownSubstance() 
                     << ReactionTerm::EI_Substance(reactant_name) 
@@ -155,7 +155,7 @@ void FirstOrderReaction::initialize_from_input()
 		{
             string product_name = product_it->val<string>("name");
 			idx = find_subst_name(product_name);
-			if (idx < substances_.size())
+			if (idx < eq_data_->substances_.size())
                 substance_ids_[i_reaction][i_product+1] = idx;
 			else THROW(ReactionTerm::ExcUnknownSubstance() 
                         << ReactionTerm::EI_Substance(product_name) 

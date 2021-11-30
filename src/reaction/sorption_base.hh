@@ -76,7 +76,7 @@ public:
       return EqFields(output_field_name, output_field_desc).output_fields.make_output_type(equation_name, "");
   }
 
-  class EqFields : public FieldSet
+  class EqFields : public ReactionTerm::EqFields
   {
   public:
     /**
@@ -198,8 +198,7 @@ protected:
   /// Sets max conc to zeros on all regins.
   void clear_max_conc();
 
-  EqFields *eq_fields_;  ///< Pointer to equation data. The object is constructed in descendants.
-  EqData *eq_data_;      ///< Pointer to equation fields. The object is constructed in descendants.
+  std::shared_ptr<EqFields> eq_fields_;  ///< Pointer to equation fields. The object is constructed in descendants.
 
   /**
    * Temporary nr_of_points can be computed using step_length. Should be |nr_of_region x nr_of_substances| matrix later.
