@@ -57,13 +57,13 @@ public:
    */
   static const Input::Type::Record & get_input_type();
 
-  /// DualPorosity data
-  class EqData : public FieldSet
+  /// DualPorosity fields
+  class EqFields : public FieldSet
   {
   public:
 
     /// Collect all fields
-    EqData();
+    EqFields();
 
     MultiField<3, FieldValue<3>::Scalar > diffusion_rate_immobile;   ///< Mass transfer coefficients between mobile and immobile pores.
     Field<3, FieldValue<3>::Scalar > porosity_immobile;    ///< Immobile porosity field.
@@ -77,6 +77,16 @@ public:
 
     /// Fields indended for output, i.e. all input fields plus those representing solution.
     EquationOutput output_fields;
+
+  };
+
+  /// DualPorosity data
+  class EqData
+  {
+  public:
+
+    /// Collect all fields
+    EqData();
 
   };
 
@@ -123,15 +133,13 @@ protected:
   /// Compute reaction on a single element.
   void compute_reaction(const DHCellAccessor& dh_cell) override;
 
-  /**
-   * Equation data - all data fields are in this set.
-   */
-  EqData data_;
+  std::shared_ptr<EqFields> eq_fields_;   ///< Equation fields - all fields are in this set.
+  std::shared_ptr<EqData> eq_data_;       ///< Equation data - all data needs in assembly class.
 
   /**
    * Input data set - fields in this set are read from the input file.
    */
-  FieldSet input_data_set_;
+  FieldSet input_field_set_;
   
   std::shared_ptr<ReactionTerm> reaction_mobile;       ///< Reaction running in mobile zone
   std::shared_ptr<ReactionTerm> reaction_immobile;     ///< Reaction running in immobile zone
