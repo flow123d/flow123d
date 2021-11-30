@@ -121,9 +121,6 @@ SorptionBase::EqFields::EqFields(const string &output_field_name, const string &
                      .flags(FieldFlag::equation_result);
 }
 
-SorptionBase::EqData::EqData()
-{}
-
 
 SorptionBase::SorptionBase(Mesh &init_mesh, Input::Record in_rec)
 	: ReactionTerm(init_mesh, in_rec)

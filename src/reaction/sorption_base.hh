@@ -110,13 +110,6 @@ public:
 
   };
 
-  class EqData
-  {
-  public:
-    /// Constructor
-    EqData();
-  };
-
 
   /**
    *  Constructor with parameter for initialization of a new declared class member
