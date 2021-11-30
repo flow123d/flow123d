@@ -171,7 +171,7 @@ public:
     /**
      * Implementation of @p FieldCommonBase::output().
      */
-    void field_output(std::shared_ptr<OutputTime> stream, OutputTime::DiscreteSpaceFlags type) override;
+    void field_output(std::shared_ptr<OutputTime> stream, OutputTime::DiscreteSpace type) override;
 
     /**
      * Implementation of FieldCommonBase::observe_output().

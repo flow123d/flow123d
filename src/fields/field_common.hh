@@ -36,6 +36,7 @@
 #include "input/type_record.hh"                        // for Record
 #include "input/type_selection.hh"                     // for Selection
 #include "io/output_time.hh"                           // for OutputTime
+#include "io/output_time_set.hh"                       // for OutputTimeSet
 #include "mesh/region.hh"                              // for Region (ptr only)
 #include "system/asserts.hh"                           // for Assert, ASSERT
 #include "system/exc_common.hh"                        // for EI_Message
@@ -48,6 +49,7 @@ class Observe;
 class EvalPoints;
 class ElementCacheMap;
 class FieldSet;
+class BulkPoint;
 
 
 using namespace std;
@@ -269,6 +271,18 @@ public:
     unsigned int n_comp() const
     { return shared_->comp_names_.size();}
 
+    /**
+     * Returns full name of subfield on \p i_comp position created from component name and field name.
+     *
+     * If component name is empty returns only field name.
+     */
+    inline std::string full_comp_name(unsigned int i_comp) const
+    {
+        ASSERT_LT_DBG(i_comp, shared_->comp_names_.size());
+        return shared_->comp_names_[i_comp].empty() ? this->name()
+                : shared_->comp_names_[i_comp] + "_" + this->name();
+    }
+
     const Mesh * mesh() const
     { return shared_->mesh_;}
 
@@ -424,7 +438,7 @@ public:
      * The parameter @p output_fields is checked for value named by the field name. If the key exists,
      * then the output of the field is performed. If the key do not appear in the input, no output is done.
      */
-    virtual void field_output(std::shared_ptr<OutputTime> stream, OutputTime::DiscreteSpaceFlags type) =0;
+    virtual void field_output(std::shared_ptr<OutputTime> stream, OutputTime::DiscreteSpace type) =0;
 
     /**
      * Perform the observe output of the field.
@@ -484,6 +498,18 @@ public:
      * Same as previous but return const pointer
      */
     virtual const FieldValueCache<double> * value_cache() const =0;
+
+    /// Create and set shared_ptr to ElementDataCache. Used only in descendant Field<>.
+    virtual void set_output_data_cache(FMT_UNUSED OutputTime::DiscreteSpace space_type, FMT_UNUSED std::shared_ptr<OutputTime> stream)
+    {
+        ASSERT(false);
+    }
+
+    /// Fill data to ElementDataCache on given patch.
+    virtual void fill_data_value(FMT_UNUSED const std::vector<int> &offsets)
+    {
+        ASSERT(false);
+    }
 
 
     /**
