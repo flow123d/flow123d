@@ -73,10 +73,10 @@ public:
 
   static Input::Type::Instance make_output_type(const string &equation_name, const string &output_field_name, const string &output_field_desc )
   {
-      return EqData(output_field_name, output_field_desc).output_fields.make_output_type(equation_name, "");
+      return EqFields(output_field_name, output_field_desc).output_fields.make_output_type(equation_name, "");
   }
 
-  class EqData : public FieldSet
+  class EqFields : public FieldSet
   {
   public:
     /**
@@ -85,7 +85,7 @@ public:
     static const Input::Type::Selection & get_sorption_type_selection();
 
     /// Collect all fields
-    EqData(const string &output_field_name, const string &output_field_desc);
+    EqFields(const string &output_field_name, const string &output_field_desc);
 
     MultiField<3, FieldValue<3>::Enum > sorption_type; ///< Discrete need Selection for initialization.
     Field<3, FieldValue<3>::Scalar > rock_density;      ///< Rock matrix density.
@@ -103,12 +103,20 @@ public:
     FieldFEScalarVec conc_solid_fe;                     ///< Underlaying FieldFE for each substance of conc_solid.
 
     /// Input data set - fields in this set are read from the input file.
-    FieldSet input_data_set_;
+    FieldSet input_field_set_;
 
     /// Fields indended for output, i.e. all input fields plus those representing solution.
     EquationOutput output_fields;
 
   };
+
+  class EqData
+  {
+  public:
+    /// Constructor
+    EqData();
+  };
+
 
   /**
    *  Constructor with parameter for initialization of a new declared class member
@@ -190,8 +198,8 @@ protected:
   /// Sets max conc to zeros on all regins.
   void clear_max_conc();
 
-  /// Pointer to equation data. The object is constructed in descendants.
-  EqData *data_;
+  EqFields *eq_fields_;  ///< Pointer to equation data. The object is constructed in descendants.
+  EqData *eq_data_;      ///< Pointer to equation fields. The object is constructed in descendants.
 
   /**
    * Temporary nr_of_points can be computed using step_length. Should be |nr_of_region x nr_of_substances| matrix later.
