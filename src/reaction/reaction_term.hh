@@ -107,7 +107,7 @@ public:
     //@{
     ///Sets the names of substances considered in transport.
     ReactionTerm &substances(SubstanceList &substances)
-    {eq_data_->substances_.initialize(substances); return *this;}
+    {eq_data_base_->substances_.initialize(substances); return *this;}
 
     ///Sets the output stream which is given from transport class.
     ReactionTerm &output_stream(std::shared_ptr<OutputTime> ostream)
@@ -121,7 +121,7 @@ public:
     {
         ASSERT_PTR(eq_fields_base_);
         eq_fields_base_->conc_mobile_fe = conc_mobile;
-        eq_data_->dof_handler_ = eq_fields_base_->conc_mobile_fe[0]->get_dofhandler();
+        eq_data_base_->dof_handler_ = eq_fields_base_->conc_mobile_fe[0]->get_dofhandler();
         return *this;
     }
     //@}
@@ -149,7 +149,7 @@ protected:
     std::shared_ptr<EqFields> eq_fields_base_;
 
     /// Equation data - all data needs in assembly class.
-    std::shared_ptr<EqData> eq_data_;
+    std::shared_ptr<EqData> eq_data_base_;
 };
 
 #endif  // REACTION_TERM_H

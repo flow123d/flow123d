@@ -122,11 +122,18 @@ SorptionBase::EqFields::EqFields(const string &output_field_name, const string &
 }
 
 
+SorptionBase::EqData::EqData()
+: ReactionTerm::EqData() {}
+
+
 SorptionBase::SorptionBase(Mesh &init_mesh, Input::Record in_rec)
 	: ReactionTerm(init_mesh, in_rec)
 {
-  // creating reaction from input and setting their parameters
-  make_reactions();
+    eq_data_ = std::make_shared<EqData>();
+	this->eq_data_base_ = std::static_pointer_cast<ReactionTerm::EqData>(eq_data_);
+
+    // creating reaction from input and setting their parameters
+    make_reactions();
 }
 
 

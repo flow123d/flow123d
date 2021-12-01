@@ -38,6 +38,7 @@ FirstOrderReactionBase::FirstOrderReactionBase(Mesh &init_mesh, Input::Record in
 {
     linear_ode_solver_ = std::make_shared<LinearODESolver>();
     this->eq_fields_base_ = std::make_shared<EqFields>();
+    this->eq_data_base_ = std::make_shared<EqData>();
 }
 
 FirstOrderReactionBase::~FirstOrderReactionBase()
@@ -47,9 +48,9 @@ FirstOrderReactionBase::~FirstOrderReactionBase()
 void FirstOrderReactionBase::initialize()
 {
 	ASSERT(time_ != nullptr).error("Time governor has not been set yet.\n");
-	ASSERT_LT(0, eq_data_->substances_.size()).error("No substances for rection term.\n");
+	ASSERT_LT(0, eq_data_base_->substances_.size()).error("No substances for rection term.\n");
     
-    n_substances_ = eq_data_->substances_.size();
+    n_substances_ = eq_data_base_->substances_.size();
     initialize_from_input();
 
     // allocation
@@ -63,8 +64,8 @@ void FirstOrderReactionBase::initialize()
     molar_mat_inverse_.zeros();
     for (unsigned int i=0; i<n_substances_; ++i)
     {
-    	molar_matrix_(i,i) = eq_data_->substances_[i].molar_mass();
-    	molar_mat_inverse_(i,i) = 1./eq_data_->substances_[i].molar_mass();
+    	molar_matrix_(i,i) = eq_data_base_->substances_[i].molar_mass();
+    	molar_mat_inverse_(i,i) = 1./eq_data_base_->substances_[i].molar_mass();
     }
 }
 
@@ -72,7 +73,7 @@ void FirstOrderReactionBase::initialize()
 void FirstOrderReactionBase::zero_time_step()
 {
     ASSERT(time_ != nullptr).error("Time governor has not been set yet.\n");
-	ASSERT_LT(0, eq_data_->substances_.size()).error("No substances for rection term.\n");
+	ASSERT_LT(0, eq_data_base_->substances_.size()).error("No substances for rection term.\n");
 
     assemble_ode_matrix();
     // make scaling that takes into account different molar masses of substances
@@ -111,7 +112,7 @@ void FirstOrderReactionBase::update_solution(void)
 
     START_TIMER("linear reaction step");
 
-    for ( DHCellAccessor dh_cell : eq_data_->dof_handler_->own_range() )
+    for ( DHCellAccessor dh_cell : eq_data_base_->dof_handler_->own_range() )
     {
         compute_reaction(dh_cell);
     }
@@ -123,7 +124,7 @@ unsigned int FirstOrderReactionBase::find_subst_name(const string &name)
 {
     unsigned int k=0;
         for(; k < n_substances_; k++)
-                if (name == eq_data_->substances_[k].name()) return k;
+                if (name == eq_data_base_->substances_[k].name()) return k;
 
         return k;
 }

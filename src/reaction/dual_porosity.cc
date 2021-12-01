@@ -109,11 +109,12 @@ DualPorosity::EqFields::EqFields()
 }
 
 DualPorosity::EqData::EqData()
-{}
+: ReactionTerm::EqData() {}
 
 DualPorosity::DualPorosity(Mesh &init_mesh, Input::Record in_rec)
 	: ReactionTerm(init_mesh, in_rec),
-	  init_condition_assembly_(nullptr)
+	  init_condition_assembly_(nullptr),
+	  reaction_assembly_(nullptr)
 {
     eq_fields_ = std::make_shared<EqFields>();
     eq_fields_->add_coords_field();
@@ -121,15 +122,19 @@ DualPorosity::DualPorosity(Mesh &init_mesh, Input::Record in_rec)
     this->eq_fieldset_ = eq_fields_.get();
     this->eq_fields_base_ = std::static_pointer_cast<ReactionTerm::EqFields>(eq_fields_);
 
+    eq_data_ = std::make_shared<EqData>();
+    this->eq_data_base_ = std::static_pointer_cast<ReactionTerm::EqData>(eq_data_);
+
     //reads input and creates possibly other reaction terms
     make_reactions();
     //read value from input
-    scheme_tolerance_ = input_record_.val<double>("scheme_tolerance");
+    eq_data_->scheme_tolerance_ = input_record_.val<double>("scheme_tolerance");
 }
 
 DualPorosity::~DualPorosity(void)
 {
     if (init_condition_assembly_!=nullptr) delete init_condition_assembly_;
+    if (reaction_assembly_!=nullptr) delete reaction_assembly_;
 }
 
 
@@ -164,6 +169,8 @@ void DualPorosity::initialize()
   ASSERT_LT(0, eq_data_->substances_.size()).error("No substances for rection term.\n");
   ASSERT(output_stream_ != nullptr).error("Null output stream.\n");
   
+  eq_data_->time_ = this->time_;
+
   initialize_fields();
 
   if(reaction_mobile)
@@ -185,6 +192,7 @@ void DualPorosity::initialize()
   }
 
   init_condition_assembly_ = new GenericAssembly< InitConditionAssemblyDp >(eq_fields_.get(), eq_data_.get());
+  reaction_assembly_ = new GenericAssembly< ReactionAssemblyDp >(eq_fields_.get(), eq_data_.get());
 
 }
 
@@ -275,10 +283,11 @@ void DualPorosity::update_solution(void)
   eq_fields_->set_time(time_->step(-2), LimitSide::right);
  
   START_TIMER("dual_por_exchange_step");
-  for ( DHCellAccessor dh_cell : eq_data_->dof_handler_->own_range() )
-  {
-      compute_reaction(dh_cell);
-  }
+  reaction_assembly_->assemble(eq_data_->dof_handler_);
+//  for ( DHCellAccessor dh_cell : eq_data_->dof_handler_->own_range() )
+//  {
+//      compute_reaction(dh_cell);
+//  }
   END_TIMER("dual_por_exchange_step");
   
   if(reaction_mobile) reaction_mobile->update_solution();
@@ -328,7 +337,7 @@ void DualPorosity::compute_reaction(const DHCellAccessor& dh_cell)
         // 1) stability of forward Euler's method
         // 2) the error of forward Euler's method will not be large
         if(time_->dt() <= por_mob*por_immob/(max(diff_vec)*(por_mob+por_immob)) &&
-           conc_max <= (2*scheme_tolerance_/(exponent*exponent)*conc_average))               // forward euler
+           conc_max <= (2*eq_data_->scheme_tolerance_/(exponent*exponent)*conc_average))               // forward euler
         {
             double temp = diff_vec[sbi]*(previous_conc_immob - previous_conc_mob) * time_->dt();
             // ---compute concentration in mobile area

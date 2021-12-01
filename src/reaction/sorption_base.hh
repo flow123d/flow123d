@@ -111,6 +111,17 @@ public:
   };
 
 
+  /// DualPorosity data
+  class EqData : public ReactionTerm::EqData
+  {
+  public:
+
+    /// Collect all fields
+    EqData();
+
+  };
+
+
   /**
    *  Constructor with parameter for initialization of a new declared class member
    */
@@ -192,6 +203,7 @@ protected:
   void clear_max_conc();
 
   std::shared_ptr<EqFields> eq_fields_;  ///< Pointer to equation fields. The object is constructed in descendants.
+  std::shared_ptr<EqData> eq_data_;      ///< Equation data
 
   /**
    * Temporary nr_of_points can be computed using step_length. Should be |nr_of_region x nr_of_substances| matrix later.
