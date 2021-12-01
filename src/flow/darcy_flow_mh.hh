@@ -294,6 +294,8 @@ protected:
      */
     virtual void read_initial_condition();
 
+    void reconstruct_solution_from_schur(MultidimAssembly& assembler);
+
     /**
      * Part of per element assembly that is specific for MH and LMH respectively.
      *

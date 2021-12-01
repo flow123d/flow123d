@@ -552,13 +552,16 @@ void DarcyMH::zero_time_step()
         //read_initial_condition(); // Possible solution guess for steady case.
         use_steady_assembly_ = true;
         solve_nonlinear(); // with right limit data
+        // data_->full_solution.local_to_ghost_begin();
+        // data_->full_solution.local_to_ghost_end();
     } else {
         VecZeroEntries(schur0->get_solution());
         VecZeroEntries(previous_solution);
         read_initial_condition();
         assembly_linear_system(); // in particular due to balance
+
+        reconstruct_solution_from_schur(data_->multidim_assembler);
 //         print_matlab_matrix("matrix_zero");
-        // TODO: reconstruction of solution in zero time.
     }
     //solution_output(T,right_limit); // data for time T in any case
     output_data();
@@ -1442,19 +1445,53 @@ void mat_count_off_proc_values(Mat m, Vec v) {
 
 void DarcyMH::read_initial_condition()
 {
-	double *local_sol = schur0->get_solution_array();
-
-	// cycle over local element rows
-
 	DebugOut().fmt("Setup with dt: {}\n", time_->dt());
 	for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
 	    ElementAccessor<3> ele = dh_cell.elm();
-	    // set initial condition
-        // TODO: replace with DHCell getter when available for FESystem component
-        const IntIdx p_ele_dof = dh_cell.get_loc_dof_indices()[dh_cell.n_dofs()/2];
-	    local_sol[p_ele_dof] = data_->init_pressure.value(ele.centre(),ele);
+
+        double init_value = data_->init_pressure.value(ele.centre(),ele);
+
+        LocDofVec loc_dofs = dh_cell.get_loc_dof_indices();
+        for (unsigned int i=0; i<ele->n_sides(); i++) {
+            uint n_sides_of_edge =  ele.side(i)->edge().n_sides();
+            uint edge_dof = ele->n_sides()+1+i;
+            // set initial condition
+            data_->full_solution.add(loc_dofs[edge_dof], init_value/n_sides_of_edge);
+         }
 	}
+
+    data_->full_solution.ghost_to_local_begin();
+    data_->full_solution.ghost_to_local_end();
+    data_->full_solution.local_to_ghost_begin();
+    data_->full_solution.local_to_ghost_end();
 }
+
+
+void DarcyMH::reconstruct_solution_from_schur(MultidimAssembly& assembler)
+{
+    START_TIMER("DarcyFlowMH::reconstruct_solution_from_schur");
+
+    // data_->full_solution.zero_entries();
+    // data_->p_edge_solution.local_to_ghost_begin();
+    // data_->p_edge_solution.local_to_ghost_end();
+
+    balance_->start_flux_assembly(data_->water_balance_idx);
+    balance_->start_source_assembly(data_->water_balance_idx);
+    balance_->start_mass_assembly(data_->water_balance_idx);
+
+    for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
+        unsigned int dim = dh_cell.dim();
+        assembler[dim-1]->assemble_reconstruct(dh_cell);
+    }
+
+    data_->full_solution.local_to_ghost_begin();
+    data_->full_solution.local_to_ghost_end();
+
+    balance_->finish_mass_assembly(data_->water_balance_idx);
+    balance_->finish_source_assembly(data_->water_balance_idx);
+    balance_->finish_flux_assembly(data_->water_balance_idx);
+}
+
 
 void DarcyMH::setup_time_term() {
     // save diagonal of steady matrix

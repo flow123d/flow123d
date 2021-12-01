@@ -211,6 +211,8 @@ void HC_ExplicitSequential::run_simulation()
     {
         START_TIMER("HC water zero time step");
         water->zero_time_step();
+        for(auto &process : processes_)
+            process.velocity_changed = true;
     }
 
 
