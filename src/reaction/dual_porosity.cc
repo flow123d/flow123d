@@ -35,6 +35,7 @@
 #include "reaction/sorption.hh"
 #include "reaction/first_order_reaction.hh"
 #include "reaction/radioactive_decay.hh"
+#include "reaction/assembly_reaction.hh"
 #include "input/factory.hh"
 
 FLOW123D_FORCE_LINK_IN_CHILD(dualPorosity)
@@ -111,7 +112,8 @@ DualPorosity::EqData::EqData()
 {}
 
 DualPorosity::DualPorosity(Mesh &init_mesh, Input::Record in_rec)
-	: ReactionTerm(init_mesh, in_rec)
+	: ReactionTerm(init_mesh, in_rec),
+	  init_condition_assembly_(nullptr)
 {
     eq_fields_ = std::make_shared<EqFields>();
     eq_fields_->add_coords_field();
@@ -127,6 +129,7 @@ DualPorosity::DualPorosity(Mesh &init_mesh, Input::Record in_rec)
 
 DualPorosity::~DualPorosity(void)
 {
+    if (init_condition_assembly_!=nullptr) delete init_condition_assembly_;
 }
 
 
@@ -180,6 +183,8 @@ void DualPorosity::initialize()
                 .set_time_governor(*time_);
     reaction_immobile->initialize();
   }
+
+  init_condition_assembly_ = new GenericAssembly< InitConditionAssemblyDp >(eq_fields_.get(), eq_data_.get());
 
 }
 
@@ -238,7 +243,8 @@ void DualPorosity::zero_time_step()
   if ( FieldCommon::print_message_table(ss, "dual porosity") ) {
       WarningOut() << ss.str();
   }
-  set_initial_condition();
+  //set_initial_condition();
+  init_condition_assembly_->assemble(eq_data_->dof_handler_);
 
   output_data();
   

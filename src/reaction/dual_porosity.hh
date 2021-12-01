@@ -44,6 +44,8 @@ namespace Input {
 		class Record;
 	}
 }
+template<unsigned int dim> class InitConditionAssemblyDp;
+template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
 
 /// Class representing dual porosity model in transport.
@@ -139,6 +141,9 @@ protected:
    */
   double scheme_tolerance_;
   
+  /// general assembly objects, hold assembly objects of appropriate dimension
+  GenericAssembly< InitConditionAssemblyDp > * init_condition_assembly_;
+
 private:
   /// Registrar of class to factory
   static const int registrar;
