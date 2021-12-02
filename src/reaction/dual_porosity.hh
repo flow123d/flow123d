@@ -137,8 +137,6 @@ protected:
   /// Resolves construction of following reactions.
   void make_reactions();
   
-  /// Sets initial condition from input.
-  void set_initial_condition();
   /// Initializes field sets.
   void initialize_fields();
   
