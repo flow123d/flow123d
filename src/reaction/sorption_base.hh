@@ -52,6 +52,9 @@ namespace Input {
 	}
 }
 template <int spacedim> class ElementAccessor;
+template<unsigned int dim> class InitConditionAssemblySorp;
+template< template<IntDim...> class DimAssembly> class GenericAssembly;
+
 
 
 
@@ -119,6 +122,10 @@ public:
     /// Collect all fields
     EqData();
 
+    /// Mapping from local indexing of substances to global.
+    std::vector<unsigned int> substance_global_idx_;
+
+    unsigned int n_substances_;   ///< number of substances that take part in the sorption mode
   };
 
 
@@ -235,17 +242,15 @@ protected:
    */
   std::vector<std::vector<Isotherm> > isotherms;
   
-  unsigned int n_substances_;   //< number of substances that take part in the sorption mode
-  
-  /// Mapping from local indexing of substances to global.
-  std::vector<unsigned int> substance_global_idx_;
-
   /**
    * Reaction model that follows the sorption.
    */
   std::shared_ptr<ReactionTerm> reaction_liquid;
   std::shared_ptr<ReactionTerm> reaction_solid;
   
+  /// general assembly objects, hold assembly objects of appropriate dimension
+  GenericAssembly< InitConditionAssemblySorp > * init_condition_assembly_;
+
 
   /** Structure for data respectful to element, but indepedent of actual isotherm.
    * Reads mobile/immobile porosity, rock density and then computes concentration scaling parameters.

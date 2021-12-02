@@ -197,5 +197,61 @@ private:
     friend class GenericAssembly;
 };
 
+template <unsigned int dim>
+class InitConditionAssemblySorp : public AssemblyBase<dim>
+{
+public:
+    typedef typename SorptionBase::EqFields EqFields;
+    typedef typename SorptionBase::EqData EqData;
+
+    static constexpr const char * name() { return "InitConditionAssemblySorp"; }
+
+    /// Constructor.
+    InitConditionAssemblySorp(EqFields *eq_fields, EqData *eq_data)
+    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data) {
+        this->active_integrals_ = ActiveIntegrals::bulk;
+        this->used_fields_ += eq_fields_->init_conc_solid;
+    }
+
+    /// Destructor.
+    ~InitConditionAssemblySorp() {}
+
+    /// Initialize auxiliary vectors and other data members
+    void initialize(ElementCacheMap *element_cache_map) {
+        //this->balance_ = eq_data_->balance_;
+        this->element_cache_map_ = element_cache_map;
+    }
+
+
+    /// Assemble integral over element
+    inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
+    {
+        ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
+
+        dof_p0_ = cell.get_loc_dof_indices()[0];
+        auto p = *( this->bulk_points(element_patch_idx).begin() );
+
+        //setting initial solid concentration for substances involved in adsorption
+        for (unsigned int sbi = 0; sbi < eq_data_->n_substances_; sbi++)
+        {
+            eq_fields_->conc_solid_fe[ eq_data_->substance_global_idx_[sbi] ]->vec().set( dof_p0_, eq_fields_->init_conc_solid[sbi](p) );
+        }
+    }
+
+
+private:
+    /// Data objects shared with Elasticity
+    EqFields *eq_fields_;
+    EqData *eq_data_;
+
+    /// Sub field set contains fields used in calculation.
+    FieldSet used_fields_;
+
+    IntIdx dof_p0_;                                     ///< Index of local DOF
+
+    template < template<IntDim...> class DimAssembly>
+    friend class GenericAssembly;
+};
+
 #endif /* ASSEMBLY_REACTION_HH_ */
 
