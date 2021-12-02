@@ -557,10 +557,11 @@ void DarcyMH::zero_time_step()
     } else {
         VecZeroEntries(schur0->get_solution());
         VecZeroEntries(previous_solution);
-        read_initial_condition();
-        assembly_linear_system(); // in particular due to balance
 
+        read_initial_condition();
         reconstruct_solution_from_schur(data_->multidim_assembler);
+
+        assembly_linear_system(); // in particular due to balance
 //         print_matlab_matrix("matrix_zero");
     }
     //solution_output(T,right_limit); // data for time T in any case
@@ -1471,14 +1472,6 @@ void DarcyMH::reconstruct_solution_from_schur(MultidimAssembly& assembler)
 {
     START_TIMER("DarcyFlowMH::reconstruct_solution_from_schur");
 
-    // data_->full_solution.zero_entries();
-    // data_->p_edge_solution.local_to_ghost_begin();
-    // data_->p_edge_solution.local_to_ghost_end();
-
-    balance_->start_flux_assembly(data_->water_balance_idx);
-    balance_->start_source_assembly(data_->water_balance_idx);
-    balance_->start_mass_assembly(data_->water_balance_idx);
-
     for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
         unsigned int dim = dh_cell.dim();
         assembler[dim-1]->assemble_reconstruct(dh_cell);
@@ -1486,10 +1479,6 @@ void DarcyMH::reconstruct_solution_from_schur(MultidimAssembly& assembler)
 
     data_->full_solution.local_to_ghost_begin();
     data_->full_solution.local_to_ghost_end();
-
-    balance_->finish_mass_assembly(data_->water_balance_idx);
-    balance_->finish_source_assembly(data_->water_balance_idx);
-    balance_->finish_flux_assembly(data_->water_balance_idx);
 }
 
 
