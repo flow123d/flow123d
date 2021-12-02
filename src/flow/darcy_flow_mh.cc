@@ -387,7 +387,7 @@ double DarcyMH::solved_time()
         // "The data change appears immediatly."
         double next_t = time_->t() + time_->estimate_dt();
         // DebugOut() << "STEADY next_t = " << next_t << "\n";
-        return next_t - next_t * std::numeric_limits<double>::epsilon();
+        return next_t * (1 - 2*std::numeric_limits<double>::epsilon());
     }
     else
     {
