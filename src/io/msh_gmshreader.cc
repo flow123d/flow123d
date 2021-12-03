@@ -150,7 +150,7 @@ void GmshMeshReader::read_elements(Mesh * mesh) {
             	node_ids[ni] = lexical_cast<unsigned int>(*tok_);
                 ++tok_;
             }
-            mesh->add_element(id, dim, region_id, partition_id, node_ids);
+            mesh->add_element_from_input(id, dim, region_id, partition_id, node_ids);
         }
 
     } catch (bad_lexical_cast &) {

@@ -420,8 +420,10 @@ void Mesh::check_mesh_on_read() {
     // if some node erased, update node ids in elements
     if(n_nodes_new < nodes_new_idx.size()){
         
+/*
         DebugOut() << "Updating node-element numbering due to unused nodes: "
             << print_var(n_nodes_new) << print_var(nodes_new_idx.size()) << "\n";
+*/
 
         // throw away unused nodes
         nodes_->resize(n_nodes_new);
@@ -449,6 +451,7 @@ void Mesh::setup_topology() {
     }
 
     START_TIMER("MESH - setup topology");
+    ASSERT_EQ_DBG(element_vec_.size(), element_ids_.size());
 
     canonical_faces();
     check_mesh_on_read();
@@ -611,6 +614,16 @@ bool MeshBase::same_sides(const SideIter &si, vector<unsigned int> &side_nodes) 
     return ( ni == si->n_nodes() );
 }
 
+uint Mesh::add_boundary_data_(uint ele_idx, uint edg_idx) {
+	unsigned int bdr_idx=boundary_.size();
+    boundary_.resize(bdr_idx+1);
+    BoundaryData &bdr=boundary_.back();
+    bdr.bc_ele_idx_ = ele_idx;
+    bdr.edge_idx_ = edg_idx;
+    bdr.mesh_= this;
+	return bdr_idx;
+}
+
 /**
  * TODO:
  * - use std::is_any for setting is_neigbour
@@ -622,6 +635,7 @@ bool MeshBase::same_sides(const SideIter &si, vector<unsigned int> &side_nodes) 
 
 void Mesh::make_neighbours_and_edges()
 {
+	ASSERT_EQ_DBG(element_vec_.size(), element_ids_.size());
     Neighbour neighbour;
     EdgeData *edg = nullptr;
     unsigned int ngh_element_idx;
@@ -663,12 +677,7 @@ void Mesh::make_neighbours_and_edges()
             edg->side_ = new struct SideIter[ intersection_list.size() ];
 
             // common boundary object
-            unsigned int bdr_idx=boundary_.size();
-            boundary_.resize(bdr_idx+1);
-            BoundaryData &bdr=boundary_.back();
-            bdr.bc_ele_idx_ = i;
-            bdr.edge_idx_ = last_edge_idx;
-            bdr.mesh_=this;
+            uint bdr_idx = add_boundary_data_(i, last_edge_idx);
 
             // for 1d boundaries there can be more then one 1d elements connected to the boundary element
             // we do not detect this case later in the main search over bulk elements
@@ -704,9 +713,9 @@ void Mesh::make_neighbours_and_edges()
         }
 
 	}
+
 	// Now we go through all element sides and create edges and neighbours
-    unsigned int new_bc_elem_idx = bc_mesh_->n_elements();  //Mesh_idx of new boundary element generated in following block
-	for (auto e : this->elements_range()) {
+ 	for (auto e : this->elements_range()) {
 		for (unsigned int s=0; s<e->n_sides(); s++)
 		{
 			// skip sides that were already found
@@ -747,21 +756,16 @@ void Mesh::make_neighbours_and_edges()
 
                     unsigned int bdr_idx=boundary_.size()+1; // need for VTK mesh that has no boundary elements
                                                              // and bulk elements are indexed from 0
-                    boundary_.resize(bdr_idx+1);
-                    BoundaryData &bdr=boundary_.back();
-                    elm.boundary_idx_[s] = bdr_idx;
 
                     // fill boundary element
-                    Element * bc_ele = add_element_to_vector(-bdr_idx, true);
-                    bc_ele->init(e->dim()-1, region_db_->implicit_boundary_region() );
-                    region_db_->mark_used_region( bc_ele->region_idx_.idx() );
-                    for(unsigned int ni = 0; ni< side_nodes.size(); ni++) bc_ele->nodes_[ni] = side_nodes[ni];
+
+                    uint bcd_idx = bc_mesh_->add_element_(-bdr_idx-1);
+                    region_db_->mark_used_region( bc_mesh_->element_vec_[bcd_idx].region_idx_.idx() );
+                    for(unsigned int ni = 0; ni< side_nodes.size(); ni++) bc_mesh_->element_vec_[bcd_idx].nodes_[ni] = side_nodes[ni];
 
                     // fill Boundary object
-                    bdr.edge_idx_ = last_edge_idx;
-                    bdr.bc_ele_idx_ = new_bc_elem_idx; //bc_mesh()->elem_index(-bdr_idx);
-                    bdr.mesh_=this;
-                    new_bc_elem_idx++;
+                    add_boundary_data_(bcd_idx, last_edge_idx);
+
 
                     continue; // next side of element e
                 }
@@ -807,7 +811,6 @@ void Mesh::make_neighbours_and_edges()
 
 	MessageOut().fmt( "Created {} edges and {} neighbours.\n", edges.size(), vb_neighbours_.size() );
 }
-
 
 
 //=============================================================================
@@ -1085,7 +1088,7 @@ void Mesh::add_node(unsigned int node_id, arma::vec3 coords) {
 }
 
 
-void Mesh::add_element(unsigned int elm_id, unsigned int dim, unsigned int region_id, unsigned int partition_id,
+void Mesh::add_element_from_input(unsigned int elm_id, unsigned int dim, unsigned int region_id, unsigned int partition_id,
 		std::vector<unsigned int> node_ids) {
 	RegionIdx region_idx = region_db_->get_region( region_id, dim );
 	if ( !region_idx.is_valid() ) {
@@ -1093,11 +1096,13 @@ void Mesh::add_element(unsigned int elm_id, unsigned int dim, unsigned int regio
 	}
 	region_db_->mark_used_region(region_idx.idx());
 
-	if (!region_idx.is_boundary() && dim == 0) {
-        WarningOut().fmt("Bulk elements of zero size(dim=0) are not supported. Element ID: {}.\n", elm_id);
+	if (region_idx.is_boundary()) {
+		uint elm_idx = bc_mesh_->add_element_(elm_id);
+		this->init_element(&(bc_mesh_->element_vec_[elm_idx]), elm_id, dim, region_idx, partition_id, node_ids);
 	} else {
-        Element *ele = add_element_to_vector(elm_id, region_idx.is_boundary());
-        this->init_element(ele, elm_id, dim, region_idx, partition_id, node_ids);
+		if (dim == 0) WarningOut().fmt("Bulk elements of zero size(dim=0) are not supported. Element ID: {}.\n", elm_id);
+		uint elm_idx = add_element_(elm_id);
+        this->init_element(&(element_vec_[elm_idx]), elm_id, dim, region_idx, partition_id, node_ids);
 	}
 }
 
@@ -1152,17 +1157,15 @@ void MeshBase::init_node_vector(unsigned int size) {
 }
 
 
-Element * MeshBase::add_element_to_vector(int id, bool is_boundary) {
-    Element * elem;
-    if (is_boundary) {
-        elem = bc_mesh()->add_element_to_vector(id, false);
-    } else {
-        element_vec_.push_back( Element() );
-        elem = &element_vec_.back(); //[element_vec_.size()-1];
-        element_ids_.add_item((unsigned int)(id));
-        elem_permutation_.push_back(elem_permutation_.size());
-    }
-	return elem;
+uint MeshBase::add_element_(int id) {
+    uint elem_idx = element_vec_.size();
+	element_vec_.push_back( Element() );
+    element_vec_.back(); //[element_vec_.size()-1];
+    element_ids_.add_item((unsigned int)(id));
+    ASSERT_EQ_DBG(element_vec_.size(), element_ids_.size());
+    elem_permutation_.push_back(elem_permutation_.size());
+
+	return elem_idx;
 }
 
 Range<ElementAccessor<3>> MeshBase::elements_range() const {

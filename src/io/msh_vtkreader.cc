@@ -508,7 +508,7 @@ void VtkMeshReader::read_elements(Mesh * mesh) {
         for ( ; i_con<offsets_vec[i]; ++i_con ) { // iterate trough all nodes of any element
             node_list.push_back( connectivity_vec[i_con] );
         }
-		mesh->add_element(i, dim, dim, 0, node_list); // TODO need to set region_id (3rd parameter, now is created from dim)
+		mesh->add_element_from_input(i, dim, dim, 0, node_list); // TODO need to set region_id (3rd parameter, now is created from dim)
         bulk_elements_id_[i] = (LongIdx)i;
         node_list.clear();
         last_offset = offsets_vec[i];

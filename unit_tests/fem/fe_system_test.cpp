@@ -76,7 +76,7 @@ public:
   	mesh.add_node(3, arma::vec3("0 0 0"));
   	std::vector<unsigned int> node_ids = {3, 0, 1, 2};
 	mesh.init_element_vector(1);
-  	mesh.add_element(0, 3, 1, 0, node_ids);
+  	mesh.add_element_from_input(0, 3, 1, 0, node_ids);
   	ele = mesh.element_accessor(0);
 
   	for (unsigned int i=0; i<mesh.n_nodes(); i++)

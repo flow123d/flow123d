@@ -165,7 +165,7 @@ void generate_meshes(unsigned int N,
         std::vector<unsigned int> eleA_node_ids;
         for(unsigned int i =0; i < nA; i++)
         	eleA_node_ids.push_back(i);
-        mesh->add_element(0, dimA, 1, 0, eleA_node_ids);
+        mesh->add_element_from_input(0, dimA, 1, 0, eleA_node_ids);
 
         std::vector<unsigned int> eleB_node_ids;
         for(unsigned int i =0; i < nB; i++)
@@ -182,7 +182,7 @@ void generate_meshes(unsigned int N,
                 std::swap(eleB_node_ids[2], eleB_node_ids[3]);
             }
         }
-        mesh->add_element(1, dimB, 2, 0, eleB_node_ids);
+        mesh->add_element_from_input(1, dimB, 2, 0, eleB_node_ids);
         
         mesh->side_nodes.resize(3);
         switch(dimA){

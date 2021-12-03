@@ -267,7 +267,8 @@ protected:
     void create_node_element_lists();
 
     /// Adds element to mesh data structures (element_vec_, element_ids_), returns pointer to this element.
-    Element * add_element_to_vector(int id, bool is_boundary = false);
+    uint add_element_(int id);
+
 
     /**
      * Remove elements with dimension not equal to @p dim from @p element_list. Index of the first element of dimension @p dim-1,
@@ -315,7 +316,12 @@ protected:
     std::vector<unsigned int> elem_permutation_;
 
 
-    ///
+    /**
+     * Table of possible element node permutations.
+     * For a bit field of comparisons of the edge node indices (6 comparisons)
+     * provides permutation to sort the element nodes by their index.
+     * See Mesh::canonical_faces.
+     */
     std::array<std::array<uint, 4>, 64> element_nodes_original_;
 
 
@@ -531,8 +537,12 @@ public:
     /// Add new node of given id and coordinates to mesh
     void add_node(unsigned int node_id, arma::vec3 coords);
 
-    /// Add new element of given id to mesh
-    void add_element(unsigned int elm_id, unsigned int dim, unsigned int region_id, unsigned int partition_id,
+    /**
+     Add new element from the input file (e.g. GMSH).
+     Provides all information given by the input
+     note: Consistent internal adding of the element to the Mesh structures is done by 'add_element_'.
+    */
+    void add_element_from_input(unsigned int elm_id, unsigned int dim, unsigned int region_id, unsigned int partition_id,
     		std::vector<unsigned int> node_ids);
 
     /// Add new node of given id and coordinates to mesh
@@ -585,6 +595,9 @@ protected:
         unsigned int partition_id;
         std::vector<unsigned int> node_ids;
     };
+
+    uint add_boundary_data_(uint ele_idx, uint edg_idx);
+
 
     /**
      *  This replaces read_neighbours() in order to avoid using NGH preprocessor.

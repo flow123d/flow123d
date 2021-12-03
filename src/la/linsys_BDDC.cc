@@ -88,6 +88,8 @@ void LinSys_BDDC::set_tolerances(double  r_tol, FMT_UNUSED double a_tol, unsigne
 }
 
 
+#ifdef FLOW123D_HAVE_BDDCML
+
 void LinSys_BDDC::load_mesh( BDDCMatrixType matrix_type,
                              const int nDim, const int numNodes, FMT_UNUSED const int numDofs,
                              const std::vector<int> & inet, 
@@ -100,8 +102,6 @@ void LinSys_BDDC::load_mesh( BDDCMatrixType matrix_type,
                              const std::vector<double> & element_permeability,
                              const int meshDim ) 
 {
-#ifdef FLOW123D_HAVE_BDDCML
-
     uint num_of_local_subdomains = 1;
     bddcml_ = new Bddcml_( size_,
                            nndf.size(),
@@ -149,8 +149,25 @@ void LinSys_BDDC::load_mesh( BDDCMatrixType matrix_type,
     // scatter local solutions back to global one
     VecScatterBegin( VSpetscToSubScatter_, locSolVec_, solution_, INSERT_VALUES, SCATTER_REVERSE ); 
     VecScatterEnd(   VSpetscToSubScatter_, locSolVec_, solution_, INSERT_VALUES, SCATTER_REVERSE );
-#endif // FLOW123D_HAVE_BDDCML
 }
+#else // FLOW123D_HAVE_BDDCML
+
+
+void LinSys_BDDC::load_mesh( FMT_UNUSED BDDCMatrixType matrix_type,
+							 FMT_UNUSED const int nDim,
+							 FMT_UNUSED const int numNodes,
+							 FMT_UNUSED const int numDofs,
+							 FMT_UNUSED const std::vector<int> & inet,
+							 FMT_UNUSED const std::vector<int> & nnet,
+							 FMT_UNUSED const std::vector<int> & nndf,
+							 FMT_UNUSED const std::vector<int> & isegn,
+							 FMT_UNUSED const std::vector<int> & isngn,
+							 FMT_UNUSED const std::vector<int> & isvgvn,
+							 FMT_UNUSED const std::vector<double> & xyz,
+							 FMT_UNUSED const std::vector<double> & element_permeability,
+							 FMT_UNUSED const int meshDim )
+{}
+#endif // FLOW123D_HAVE_BDDCML
 
 void LinSys_BDDC::mat_set_values( int nrow, int *rows, int ncol, int *cols, double *vals )
 {

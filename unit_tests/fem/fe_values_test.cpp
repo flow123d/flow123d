@@ -66,7 +66,7 @@ TEST(FeValues, test_basic) {
     	mesh.add_node(1, arma::vec3("3 0 0"));
     	std::vector<unsigned int> node_ids = {0, 1};
     	mesh.init_element_vector(1);
-    	mesh.add_element(0, 1, 1, 0, node_ids);
+    	mesh.add_element_from_input(0, 1, 1, 0, node_ids);
     	ElementAccessor<3> elm_acc = mesh.element_accessor(0);
 
         EXPECT_DOUBLE_EQ( 2.5 * 2, integrate<1>( elm_acc ) );
@@ -87,7 +87,7 @@ TEST(FeValues, test_basic) {
     	mesh.add_node(2, arma::vec3("3 4 0"));
     	std::vector<unsigned int> node_ids = {0, 1, 2};
     	mesh.init_element_vector(1);
-    	mesh.add_element(1, 2, 1, 0, node_ids);
+    	mesh.add_element_from_input(1, 2, 1, 0, node_ids);
     	ElementAccessor<3> elm_acc = mesh.element_accessor(0);
 
         EXPECT_DOUBLE_EQ( 19.0 / 12.0 * 9.0 , integrate<2>( elm_acc ) );
@@ -113,8 +113,8 @@ TEST(FeValues, test_normals) {
     mesh.add_node(3, arma::vec3("0 0 1"));
     mesh.add_node(4, arma::vec3("0 0 -1"));
     mesh.init_element_vector(4);
-    mesh.add_element(0, 3, 1, 0, {0, 1, 2, 3});
-    mesh.add_element(1, 3, 1, 0, {0, 1, 2, 4});
+    mesh.add_element_from_input(0, 3, 1, 0, {0, 1, 2, 3});
+    mesh.add_element_from_input(1, 3, 1, 0, {0, 1, 2, 4});
     //mesh.setup_topology();
 
     //EXPECT_EQ( false, mesh.element_accessor(0).inverted());
@@ -176,7 +176,7 @@ public:
     	mesh_.init_element_vector(1);
     	for(auto str : nodes_str) mesh_.add_node(i++, arma::vec3(str));
     	std::vector<unsigned int> node_ids = {0, 1, 2, 3};
-    	mesh_.add_element(1, 3, 1, 0, node_ids);
+    	mesh_.add_element_from_input(1, 3, 1, 0, node_ids);
     }
 
     ElementAccessor<3> elem_accessor()
