@@ -760,8 +760,12 @@ void Mesh::make_neighbours_and_edges()
                     // fill boundary element
 
                     uint bcd_idx = bc_mesh_->add_element_(-bdr_idx-1);
-                    region_db_->mark_used_region( bc_mesh_->element_vec_[bcd_idx].region_idx_.idx() );
-                    for(unsigned int ni = 0; ni< side_nodes.size(); ni++) bc_mesh_->element_vec_[bcd_idx].nodes_[ni] = side_nodes[ni];
+                    Element &bc_ele = bc_mesh_->element_vec_[bcd_idx];
+                    bc_ele.init(e->dim()-1, region_db_->implicit_boundary_region() );
+                    //uint r_idx = .region_idx_.idx();
+                    //DebugOut() << "r idx: " << r_idx << "\n";
+                    region_db_->mark_used_region( bc_ele.region_idx_.idx() );
+                    for(unsigned int ni = 0; ni< side_nodes.size(); ni++) bc_ele.nodes_[ni] = side_nodes[ni];
 
                     // fill Boundary object
                     add_boundary_data_(bcd_idx, last_edge_idx);
