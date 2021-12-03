@@ -181,9 +181,6 @@ protected:
   /// Initializes field sets.
   void initialize_fields();
 
-  ///Reads and sets initial condition for concentration in solid.
-  void set_initial_condition();
-    
   /// Compute reaction on a single element.
   void compute_reaction(const DHCellAccessor& dh_cell) override;
   

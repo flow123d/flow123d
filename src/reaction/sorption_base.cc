@@ -357,7 +357,6 @@ void SorptionBase::zero_time_step()
   if ( FieldCommon::print_message_table(ss, "sorption") ) {
       WarningOut() << ss.str();
   }
-//  set_initial_condition();
   init_condition_assembly_->assemble(eq_data_->dof_handler_);
   
   update_max_conc();
@@ -371,21 +370,6 @@ void SorptionBase::zero_time_step()
   if(reaction_solid) reaction_solid->zero_time_step();
 
   output_data();
-}
-
-void SorptionBase::set_initial_condition()
-{
-    for ( DHCellAccessor dh_cell : eq_data_->dof_handler_->own_range() ) {
-        IntIdx dof_p0 = dh_cell.get_loc_dof_indices()[0];
-        const ElementAccessor<3> ele = dh_cell.elm();
-
-        //setting initial solid concentration for substances involved in adsorption
-        for (unsigned int sbi = 0; sbi < eq_data_->n_substances_; sbi++)
-        {
-            int subst_id = eq_data_->substance_global_idx_[sbi];
-            eq_fields_->conc_solid_fe[subst_id]->vec().set( dof_p0, eq_fields_->init_conc_solid[sbi].value(ele.centre(), ele) );
-        }
-    }
 }
 
 
