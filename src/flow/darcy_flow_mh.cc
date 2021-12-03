@@ -568,12 +568,14 @@ void DarcyMH::zero_time_step()
 
 
     if (zero_time_term_from_right) {
+        MessageOut() << "Flow zero time step - steady case\n";
         // steady case
         VecZeroEntries(schur0->get_solution());
         //read_initial_condition(); // Possible solution guess for steady case.
         use_steady_assembly_ = true;
         solve_nonlinear(); // with right limit data
     } else {
+        MessageOut() << "Flow zero time step - unsteady case\n";
         VecZeroEntries(schur0->get_solution());
         VecZeroEntries(previous_solution);
         read_initial_condition();
@@ -614,6 +616,7 @@ void DarcyMH::solve_time_step(bool output)
 
     bool jump_time = data_->storativity.is_jump_time();
     if (! zero_time_term_from_left) {
+        MessageOut() << "Flow time step - unsteady case\n";
         // time term not treated as zero
         // Unsteady solution up to the T.
 
@@ -639,6 +642,7 @@ void DarcyMH::solve_time_step(bool output)
     data_changed_ = data_->set_time(time_->step(), LimitSide::right) || data_changed_;
     bool zero_time_term_from_right=zero_time_term();
     if (zero_time_term_from_right) {
+        MessageOut() << "Flow time step - steady case\n";
         // this flag is necesssary for switching BC to avoid setting zero neumann on the whole boundary in the steady case
         use_steady_assembly_ = true;
         solve_nonlinear(); // with right limit data
