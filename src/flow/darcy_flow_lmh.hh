@@ -193,6 +193,7 @@ public:
     virtual void postprocess();
     virtual void output_data() override;
 
+    virtual double solved_time() override;
 
     EqData &data() { return *data_; }
 
