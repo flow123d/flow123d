@@ -52,7 +52,7 @@ public:
 		for (unsigned int i=0; i<bulk_elements_id_.size(); ++i) bulk_elements_id_[i]=i;
 
 		// set new cache
-	    ElementDataCacheBase *current_cache = new ElementDataCache<double>(actual_header.field_name, actual_header.time, 1,
+	    ElementDataCacheBase *current_cache = new ElementDataCache<double>(actual_header.field_name, actual_header.time,
 	    		actual_header.n_components*actual_header.n_entities);
 
 		switch (data_format_) {
@@ -77,7 +77,7 @@ public:
 		}
 
 		mesh->init_node_vector(actual_header.n_entities);
-		std::vector<double> &vect = *( static_cast< ElementDataCache<double> *>(current_cache)->get_component_data().get() );
+		std::vector<double> &vect = *( static_cast< ElementDataCache<double> *>(current_cache)->get_data().get() );
 		arma::vec3 point;
 		for (unsigned int i=0, ivec=0; i<actual_header.n_entities; ++i) {
 	        point[0]=vect[ivec]; ++ivec;
@@ -195,7 +195,7 @@ TEST(VtkReaderTest, read_binary_vtu) {
     BaseMeshReader::HeaderQuery vector_header_params("vector_field", 0.0, OutputTime::DiscreteSpace::ELEM_DATA);
 
     auto header = ReaderCache::get_reader(mesh_file)->find_header(vector_header_params);
-    typename ElementDataCache<double>::ComponentDataPtr multifield_data =
+    typename ElementDataCache<double>::CacheData multifield_data =
             ReaderCache::get_reader(mesh_file)->template get_element_data<double>(header, 6, 3, boundary_domain);
     std::vector<double> &vec = *( multifield_data.get() );
     EXPECT_EQ(18, vec.size());
@@ -209,7 +209,7 @@ TEST(VtkReaderTest, read_binary_vtu) {
     {
     	std::vector<double> ref_data = { 1, 4, 7, 2, 5, 8, 3, 6, 9 };
     	auto header = ReaderCache::get_reader(mesh_file)->find_header(tensor_header_params);
-    	typename ElementDataCache<double>::ComponentDataPtr field_data =
+    	typename ElementDataCache<double>::CacheData field_data =
     	        ReaderCache::get_reader(mesh_file)->template get_element_data<double>(header, 6, 9, boundary_domain);
     	std::vector<double> &vec = *( field_data.get() );
     	EXPECT_EQ(54, vec.size());
