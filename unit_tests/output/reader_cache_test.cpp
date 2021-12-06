@@ -114,7 +114,7 @@ TEST(ReaderCache, get_boundary_element_) {
     			ReaderCache::get_reader(file_name)->get_element_data<int>(header, n_entities, n_comp, true);
     	std::vector<int> &vec = *( field_.get() );
     	EXPECT_EQ(n_entities*n_comp, vec.size());
-    	for (j=0; j<n_entities*n_comp; j++) EXPECT_EQ( 5+(j%n_comp), vec[j] );
+    	for (j=0; j<n_entities*n_comp; j++) EXPECT_EQ( 5+(j%3), vec[j] );
     }
 
     delete mesh;

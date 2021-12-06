@@ -46,7 +46,7 @@ const it::Record & HM_Iterative::get_input_type() {
 		        IT::Default::obligatory(),
 		        "Input fields of the HM coupling.")
         .declare_key( "iteration_parameter", it::Double(), it::Default("1"),
-                "Tuning parameter for iterative splitting. Its default value"
+                "Tuning parameter for iterative splitting. Its default value "
                 "corresponds to a theoretically optimal value with fastest convergence." )
         .declare_key( "max_it", it::Integer(0), it::Default("100"),
                 "Maximal count of HM iterations." )
@@ -67,29 +67,40 @@ const int HM_Iterative::registrar = Input::register_class< HM_Iterative, Mesh &,
 HM_Iterative::EqData::EqData()
 {
     *this += alpha.name("biot_alpha")
+                     .description("Biot poroelastic coefficient.")
                      .units(UnitSI().dimensionless())
                      .input_default("0.0")
                      .flags_add(FieldFlag::in_rhs);
     
     *this += density.name("fluid_density")
+                     .description("Volumetric mass density of the fluid.")
                      .units(UnitSI().kg().m(-3))
                      .input_default("0.0")
                      .flags_add(FieldFlag::in_rhs);
     
     *this += gravity.name("gravity")
+                     .description("Gravitational acceleration constant.")
                      .units(UnitSI().m().s(-2))
                      .input_default("9.81")
                      .flags_add(FieldFlag::in_rhs);
     
     *this += beta.name("relaxation_beta")
+                     .description("Parameter of numerical method for iterative solution of hydro-mechanical coupling.")
                      .units(UnitSI().dimensionless())
                      .flags(FieldFlag::equation_external_output);
     
     *this += pressure_potential.name("pressure_potential")
+                     .description("Coupling term entering the mechanics equation.")
+                     .units(UnitSI().m())
+                     .flags(FieldFlag::equation_result);
+
+    *this += ref_pressure_potential.name("ref_pressure_potential")
+                     .description("Pressure potential on boundary (taking into account the flow boundary condition.")
                      .units(UnitSI().m())
                      .flags(FieldFlag::equation_result);
     
     *this += flow_source.name("extra_flow_source")
+                     .description("Coupling term entering the flow equation.")
                      .units(UnitSI().s(-1))
                      .flags(FieldFlag::equation_result);
 }
@@ -102,6 +113,9 @@ void HM_Iterative::EqData::initialize(Mesh &mesh)
     
     potential_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(mesh, MixedPtr<FE_CR>());
     pressure_potential.set(potential_ptr_, 0.0);
+
+    ref_potential_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(mesh, MixedPtr<FE_CR>());
+    ref_pressure_potential.set(ref_potential_ptr_, 0.0);
     
     beta_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(mesh, MixedPtr<FE_P_disc>(0));
     beta.set(beta_ptr_, 0.0);
@@ -151,7 +165,7 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
     data_.set_input_list( in_record.val<Input::Array>("input_fields"), time() );
 
     data_.initialize(*mesh_);
-    mechanics_->set_potential_load(data_.pressure_potential);
+    mechanics_->set_potential_load(data_.pressure_potential, data_.ref_pressure_potential);
 }
 
 
@@ -187,6 +201,7 @@ void HM_Iterative::zero_time_step()
     
     copy_field(*flow_->data().field("pressure_p0"), *data_.old_pressure_ptr_);
     copy_field(*flow_->data().field("pressure_p0"), *data_.old_iter_pressure_ptr_);
+    copy_field(mechanics_->eq_fields().output_divergence, *data_.old_div_u_ptr_);
     copy_field(mechanics_->eq_fields().output_divergence, *data_.div_u_ptr_);
 }
 
@@ -235,9 +250,11 @@ void HM_Iterative::update_after_converged()
 void HM_Iterative::update_potential()
 {
     auto potential_vec_ = data_.potential_ptr_->vec();
+    auto ref_potential_vec_ = data_.ref_potential_ptr_->vec();
     auto dh = data_.potential_ptr_->get_dofhandler();
     Field<3, FieldValue<3>::Scalar> field_edge_pressure;
     field_edge_pressure.copy_from(*flow_->data().field("pressure_edge"));
+
     for ( auto ele : dh->local_range() )
     {
         auto elm = ele.elm();
@@ -251,11 +268,29 @@ void HM_Iterative::update_potential()
             double potential = -alpha*density*gravity*pressure;
         
             potential_vec_.set( dof_indices[side.side_idx()], potential );
+
+            // The reference potential is applied only on dirichlet and total_flux b.c.,
+            // i.e. where only mechanical traction is prescribed.
+            if (side.side().is_boundary() &&
+                    (flow_->data().bc_type.value(side.centre(), side.cond().element_accessor()) == DarcyMH::EqData::dirichlet ||
+                    flow_->data().bc_type.value(side.centre(), side.cond().element_accessor()) == DarcyMH::EqData::total_flux)
+                )
+            {
+                double bc_pressure = flow_->data().bc_pressure.value(side.centre(), side.cond().element_accessor());
+                ref_potential_vec_.set(dof_indices[side.side_idx()], -alpha*density*gravity*bc_pressure);
+            }
+            else
+                ref_potential_vec_.set(dof_indices[side.side_idx()], 0);
         }
     }
     
+    potential_vec_.local_to_ghost_begin();
+    potential_vec_.local_to_ghost_end();
+    ref_potential_vec_.local_to_ghost_begin();
+    ref_potential_vec_.local_to_ghost_end();
     data_.pressure_potential.set_time_result_changed();
-    mechanics_->set_potential_load(data_.pressure_potential);
+    data_.ref_pressure_potential.set_time_result_changed();
+    mechanics_->set_potential_load(data_.pressure_potential, data_.ref_pressure_potential);
 }
 
 
@@ -273,7 +308,7 @@ void HM_Iterative::update_flow_fields()
         double alpha = data_.alpha.value(elm.centre(), elm);
         double young = mechanics_->eq_fields().young_modulus.value(elm.centre(), elm);
         double poisson = mechanics_->eq_fields().poisson_ratio.value(elm.centre(), elm);
-        double beta = beta_ * 0.5*alpha*alpha/(2*lame_mu(young, poisson)/elm.dim() + lame_lambda(young, poisson));
+        double beta = beta_*0.5*alpha*alpha/(2*lame_mu(young, poisson)/elm.dim() + lame_lambda(young, poisson));
         
         double old_p = data_.old_pressure_ptr_->value(elm.centre(), elm);
         double p = field_ele_pressure.value(elm.centre(), elm);
@@ -285,6 +320,10 @@ void HM_Iterative::update_flow_fields()
         src_vec.set(ele.local_idx(), src);
     }
     
+    beta_vec.local_to_ghost_begin();
+    src_vec.local_to_ghost_begin();
+    beta_vec.local_to_ghost_end();
+    src_vec.local_to_ghost_end();
     data_.beta.set_time_result_changed();
     data_.flow_source.set_time_result_changed();
     flow_->set_extra_storativity(data_.beta);
@@ -316,6 +355,9 @@ void HM_Iterative::compute_iteration_error(double& abs_error, double& rel_error)
     MessageOut().fmt("HM Iteration {} abs. difference: {}  rel. difference: {}\n"
                          "--------------------------------------------------------",
                          iteration(), abs_error, rel_error);
+
+    if(iteration() >= max_it_ && (abs_error > a_tol_ || rel_error > r_tol_))
+        MessageOut().fmt("HM solver did not converge in {} iterations.\n", iteration());
 }
 
 

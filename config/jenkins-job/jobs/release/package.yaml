@@ -1,0 +1,44 @@
+# ---------------------------------------------------------------------------- #
+# ---------- GNU PACKAGE ----------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
+name: "Flow123d-{environment}-release-package"
+display-name: "{build-type} / Flow123d package"
+defaults: flow123d-build
+builders:
+  - inject:
+      properties-file: prop.file
+  - shell: |
+      destination=$(pwd)/publish_{environment}
+      
+      imagesversion=$(cat flow123d/config/docker/image_tag)
+      
+      rm -rf $destination && mkdir -p $destination
+      rm -rf docker-config
+      git clone https://github.com/flow123d/docker-config.git
+
+      make -C docker-config/package \
+              container_name=cont{environment}{build-type} \
+              install_image="install-{environment}:$imagesversion" \
+              target_image=flow123d-{environment} \
+              destination=$destination \
+              all
+
+      make -C docker-config/package \
+              container_name=cont{environment}{build-type} \
+              target_image=flow123d-{environment} \
+              destination=$destination \
+              remove-unwanted
+
+      make -C docker-config/package \
+              container_name=cont{environment}{build-type} \
+              target_image=flow123d-{environment} \
+              push-to-hub
+
+      ls -la $destination
+
+publishers:
+  - cifs:
+      site: 'flow123d.at.public'
+      target: '/docker-images/${{DOCKER_IMAGE_NAME}}_{environment}/'
+      source: publish_{environment}/**/*
+      remove-prefix: publish_{environment}/

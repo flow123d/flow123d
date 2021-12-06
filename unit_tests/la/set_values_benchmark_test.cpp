@@ -17,7 +17,7 @@
 const int 
     m = 9,
     n_cols = 2,
-    n_loops = 5e6,
+    n_loops = 100000,
     ls_size = 100,
     offset = 20;
 
@@ -39,6 +39,7 @@ void print_matrix(std::string matlab_file, const Mat* mat){
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Test AIJ matrix assembly of an m x m continuous matrix, one by one.
 TEST(LinSys_PETSC, mat_set_value) {
     // setup FilePath directories
     FilePath::set_io_dirs(".",string(UNIT_TESTS_SRC_DIR)+"/la/","",".");
@@ -68,6 +69,7 @@ TEST(LinSys_PETSC, mat_set_value) {
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Test AIJ matrix assembly of an m x m continuous matrix, whole block at once.
 TEST(LinSys_PETSC, mat_set_values_mm) {
     // setup FilePath directories
     FilePath::set_io_dirs(".",string(UNIT_TESTS_SRC_DIR)+"/la/","",".");
@@ -102,6 +104,7 @@ TEST(LinSys_PETSC, mat_set_values_mm) {
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Test AIJ matrix assembly of an m x n_cols continuous matrix, whole block at once.
 TEST(LinSys_PETSC, mat_set_values_mcols) {
     // setup FilePath directories
     FilePath::set_io_dirs(".",string(UNIT_TESTS_SRC_DIR)+"/la/","",".");
@@ -137,6 +140,7 @@ TEST(LinSys_PETSC, mat_set_values_mcols) {
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Test AIJ matrix assembly of an m x n_cols continuous matrix, using LocalSystem (whole block at once).
 TEST(LinSys_PETSC, set_local_system_mm) {
     // setup FilePath directories
     FilePath::set_io_dirs(".",string(UNIT_TESTS_SRC_DIR)+"/la/","",".");
@@ -172,6 +176,7 @@ TEST(LinSys_PETSC, set_local_system_mm) {
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Test AIJ matrix direct PETSC assembly of an m x m continuous matrix, whole block at once.
 TEST(PETSC_mat, mat_set_values_mm) {
     // setup FilePath directories
     FilePath::set_io_dirs(".",string(UNIT_TESTS_SRC_DIR)+"/la/","",".");

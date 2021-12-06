@@ -2,6 +2,12 @@ flow123d_version: 3.1.0
 common_config:
   proc: [1, 2]
   memory_limit: 1000
+  check_rules:
+    - vtkdiff:
+        files: ["*.vtu"]
+        interpolate: False
+    - ndiff:
+        files: ["*.pvd", "*.txt", "*.yaml", "*.msh"]
 
 test_cases:
   - files:
@@ -9,4 +15,5 @@ test_cases:
       - 02_unsteady_MH_time_dep.yaml
       - 11_square_LMH.yaml
       - 12_unsteady_LMH_time_dep.yaml
+      - 13_storativity_jump_LMH.yaml
 

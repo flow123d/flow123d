@@ -260,6 +260,7 @@ void TransportDG<Model>::initialize()
     eq_data_->output_vec.resize(eq_data_->n_substances());
     eq_fields_->output_field.set_components(eq_data_->substances_.names());
     eq_fields_->output_field.set_mesh(*Model::mesh_);
+    eq_fields_->output_fields.set_mesh(*Model::mesh_);
     eq_fields_->output_type(OutputTime::CORNER_DATA);
 
     eq_fields_->output_field.setup_components();
@@ -683,14 +684,6 @@ void TransportDG<Model>::set_initial_condition()
 
 
 template<class Model>
-void TransportDG<Model>::get_par_info(LongIdx * &el_4_loc, Distribution * &el_ds)
-{
-    el_4_loc = Model::mesh_->get_el_4_loc();
-    el_ds = Model::mesh_->get_el_ds();
-}
-
-
-template<class Model>
 void TransportDG<Model>::update_after_reactions(bool solution_changed)
 {
     if (solution_changed)
@@ -719,12 +712,6 @@ void TransportDG<Model>::update_after_reactions(bool solution_changed)
     // update mass_vec for the case that mass matrix changes in next time step
     for (unsigned int sbi=0; sbi<eq_data_->n_substances(); ++sbi)
         MatMult(*(eq_data_->ls_dt[sbi]->get_matrix()), eq_data_->ls[sbi]->get_solution(), mass_vec[sbi]);
-}
-
-template<class Model>
-LongIdx *TransportDG<Model>::get_row_4_el()
-{
-    return Model::mesh_->get_row_4_el();
 }
 
 

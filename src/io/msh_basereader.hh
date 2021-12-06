@@ -182,7 +182,7 @@ public:
      *  @param n_entities count of entities (elements)
      *  @param n_components count of components (size of returned data is given by n_entities*n_components)
      *  @param boundary_domain flag determines that data is read for boundary or bulk elements
-     *  @param component_idx component index of MultiField
+     *  @param component_idx component index of MultiField; 0 for single component fields.
 	 */
     template<typename T>
     typename ElementDataCache<T>::ComponentDataPtr get_element_data(

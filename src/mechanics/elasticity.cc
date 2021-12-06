@@ -43,8 +43,9 @@
 using namespace Input::Type;
 
 
+
 const Record & Elasticity::get_input_type() {
-    std::string equation_name = std::string(Elasticity::EqData::name()) + "_FE";
+    std::string equation_name = std::string(name_) + "_FE";
 	return IT::Record(
                 std::string(equation_name),
                 "FEM for linear elasticity.")
@@ -62,13 +63,13 @@ const Record & Elasticity::get_input_type() {
 		        "Input fields of the equation.")
            .declare_key("output",
                 EqFields().output_fields.make_output_type(equation_name, ""),
-                IT::Default("{ \"fields\": [ "+Elasticity::EqData::default_output_field()+" ] }"),
+                IT::Default("{ \"fields\": [ \"displacement\" ] }"),
                 "Setting of the field output.")
 		   .close();
 }
 
 const int Elasticity::registrar =
-		Input::register_class< Elasticity, Mesh &, const Input::Record>(std::string(Elasticity::EqData::name()) + "_FE") +
+		Input::register_class< Elasticity, Mesh &, const Input::Record>(std::string(name_) + "_FE") +
 		Elasticity::get_input_type().size();
 
 
@@ -118,6 +119,8 @@ const Selection & Elasticity::EqFields::get_bc_type_selection() {
                   "Prescribed displacement in the normal direction to the boundary.")
             .add_value(bc_type_traction, "traction",
                   "Prescribed traction.")
+            .add_value(bc_type_stress, "stress",
+                  "Prescribed stress tensor.")
             .close();
 }
 
@@ -143,6 +146,13 @@ Elasticity::EqFields::EqFields()
     *this+=bc_traction
         .name("bc_traction")
         .description("Prescribed traction on boundary.")
+        .units( UnitSI().Pa() )
+        .input_default("0.0")
+        .flags_add(in_rhs);
+    
+    *this+=bc_stress
+        .name("bc_stress")
+        .description("Prescribed stress on boundary.")
         .units( UnitSI().Pa() )
         .input_default("0.0")
         .flags_add(in_rhs);
@@ -271,17 +281,14 @@ void Elasticity::EqData::create_dh(Mesh * mesh, unsigned int fe_order)
 
 Elasticity::Elasticity(Mesh & init_mesh, const Input::Record in_rec, TimeGovernor *tm)
         : EquationBase(init_mesh, in_rec),
-		  rhs(nullptr),
-		  stiffness_matrix(nullptr),
 		  input_rec(in_rec),
-		  allocation_done(false),
 		  stiffness_assembly_(nullptr),
 		  rhs_assembly_(nullptr),
 		  output_fields_assembly_(nullptr)
 {
 	// Can not use name() + "constructor" here, since START_TIMER only accepts const char *
 	// due to constexpr optimization.
-	START_TIMER(EqData::name());
+	START_TIMER(name_);
 
     eq_data_ = std::make_shared<EqData>();
     eq_fields_ = std::make_shared<EqFields>();
@@ -351,6 +358,7 @@ void Elasticity::initialize()
     eq_fields_->output_div_ptr = create_field_fe<3, FieldValue<3>::Scalar>(eq_data_->dh_scalar_);
     eq_fields_->output_divergence.set(eq_fields_->output_div_ptr, 0.);
     
+    eq_fields_->output_fields.set_mesh(*mesh_);
     eq_fields_->output_field.output_type(OutputTime::CORNER_DATA);
 
     // set time marks for writing the output
@@ -386,9 +394,6 @@ void Elasticity::initialize()
 Elasticity::~Elasticity()
 {
 //     delete time_;
-
-    if (stiffness_matrix!=nullptr) MatDestroy(&stiffness_matrix);
-    if (rhs!=nullptr) VecDestroy(&rhs);
 
     if (stiffness_assembly_!=nullptr) delete stiffness_assembly_;
     if (rhs_assembly_!=nullptr) delete rhs_assembly_;
@@ -428,7 +433,7 @@ void Elasticity::update_output_fields()
 
 void Elasticity::zero_time_step()
 {
-	START_TIMER(EqData::name());
+	START_TIMER(name_);
 	eq_fields_->mark_input_times( *time_ );
 	eq_fields_->set_time(time_->step(), LimitSide::right);
 	std::stringstream ss; // print warning message with table of uninitialized fields
@@ -436,8 +441,7 @@ void Elasticity::zero_time_step()
 		WarningOut() << ss.str();
 	}
 
-    // check first time assembly - needs preallocation
-    if (!allocation_done) preallocate();
+    preallocate();
     
 
     // after preallocation we assemble the matrices and vectors required for balance of forces
@@ -464,13 +468,8 @@ void Elasticity::preallocate()
 {
     // preallocate system matrix
 	eq_data_->ls->start_allocation();
-    stiffness_matrix = NULL;
-    rhs = NULL;
-
     stiffness_assembly_->assemble(eq_data_->dh_);
     rhs_assembly_->assemble(eq_data_->dh_);
-
-	allocation_done = true;
 }
 
 
@@ -506,7 +505,7 @@ void Elasticity::solve_linear_system()
     END_TIMER("data reinit");
     
     // assemble stiffness matrix
-    if (stiffness_matrix == NULL
+    if (eq_data_->ls->get_matrix() == NULL
         || eq_fields_->subset(FieldFlag::in_main_matrix).changed())
     {
         DebugOut() << "Mechanics: Assembling matrix.\n";
@@ -514,15 +513,10 @@ void Elasticity::solve_linear_system()
         eq_data_->ls->mat_zero_entries();
         stiffness_assembly_->assemble(eq_data_->dh_);
         eq_data_->ls->finish_assembly();
-
-        if (stiffness_matrix == NULL)
-            MatConvert(*( eq_data_->ls->get_matrix() ), MATSAME, MAT_INITIAL_MATRIX, &stiffness_matrix);
-        else
-            MatCopy(*( eq_data_->ls->get_matrix() ), stiffness_matrix, DIFFERENT_NONZERO_PATTERN);
     }
 
     // assemble right hand side (due to sources and boundary conditions)
-    if (rhs == NULL
+    if (eq_data_->ls->get_rhs() == NULL
         || eq_fields_->subset(FieldFlag::in_rhs).changed())
     {
         DebugOut() << "Mechanics: Assembling right hand side.\n";
@@ -530,9 +524,6 @@ void Elasticity::solve_linear_system()
         eq_data_->ls->rhs_zero_entries();
         rhs_assembly_->assemble(eq_data_->dh_);
         eq_data_->ls->finish_assembly();
-
-        if (rhs == nullptr) VecDuplicate(*( eq_data_->ls->get_rhs() ), &rhs);
-        VecCopy(*( eq_data_->ls->get_rhs() ), rhs);
     }
 
     START_TIMER("solve");

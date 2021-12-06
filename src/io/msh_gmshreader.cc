@@ -29,6 +29,7 @@
 #include "boost/lexical_cast.hpp"
 
 #include "mesh/mesh.h"
+#include "mesh/bc_mesh.hh"
 
 
 
@@ -155,8 +156,7 @@ void GmshMeshReader::read_elements(Mesh * mesh) {
     	THROW(ExcWrongFormat() << EI_Type("number") << EI_TokenizerMsg(tok_.position_msg()) << EI_MeshFile(tok_.f_name()) );
     }
 
-    unsigned int n_read_boundary = mesh->create_boundary_elements();
-    MessageOut().fmt("... {} bulk elements, {} boundary elements. \n", mesh->n_elements(), n_read_boundary);
+    MessageOut().fmt("... {} bulk elements, {} boundary elements. \n", mesh->n_elements(), mesh->bc_mesh()->n_elements());
 }
 
 

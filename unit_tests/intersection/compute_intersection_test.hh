@@ -8,6 +8,8 @@
 #include "mesh/elements.h"
 #include "mesh/accessors.hh"
 
+static const std::vector<unsigned int> permutation_line = {0,1};
+
 
 static const std::vector<std::vector<unsigned int>> permutations_triangle = {
     {0,1,2},

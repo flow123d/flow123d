@@ -14,7 +14,8 @@
 #include "input/type_record.hh"
 #include "io/msh_basereader.hh"
 #include "mesh/mesh.h"
-
+#include "mesh/node_accessor.hh"
+#include "mesh/accessors.hh"
 
 namespace IT = Input::Type;
 
@@ -51,5 +52,51 @@ Mesh * mesh_constructor(const std::string &input_str,
     return mesh;
 }
 
+class TestingMesh : public Mesh {
+public:
+    Mesh * source_mesh;
+
+    TestingMesh(Mesh *mesh)
+    : Mesh(*mesh), source_mesh(mesh)
+    {
+
+        this->init_node_vector(source_mesh->n_nodes());
+        for(auto node : source_mesh->node_range()) {
+            this->add_node(node.idx(), *node);
+        }
+
+        this->init_element_vector(source_mesh->n_elements());
+
+    }
+
+    void add_permute_dim( std::vector<unsigned int> permutation, uint dim)
+    {
+        std::vector<unsigned int>  nodes(4, 0);
+        for(auto &ele : source_mesh->elements_range())
+            if (ele.dim() == dim) {
+                nodes.resize(dim + 1);
+                for(unsigned int i=0; i<=dim; ++i) {
+                    nodes[i] = ele.node(permutation[i]).idx();
+                    //DebugOut() << "i: " << i << " node: " << nodes[i] ;
+                    ASSERT(nodes[i] < n_nodes())(i)(nodes[i]);
+                }
+                this->add_element(ele.input_id(), dim, ele.region_idx().idx(), 0, nodes);
+            }
+    }
+
+    void add_permute_idx(std::vector<unsigned int> permutation, uint idx)
+    {
+        std::vector<unsigned int>  nodes(4, 0);
+        auto ele = source_mesh->element_accessor(idx);
+        nodes.resize(ele.dim() + 1);
+        for(unsigned int i=0; i<=ele.dim(); ++i) {
+            nodes[i] = ele.node(permutation[i]).idx();
+            //DebugOut() << "i: " << i << " node: " << nodes[i] ;
+            ASSERT(nodes[i] < n_nodes())(i)(nodes[i]);
+        }
+        this->add_element(ele.input_id(), ele.dim(), ele.region_idx().idx(), 0, nodes);
+    }
+
+};
 
 #endif /* UNIT_TESTS_MESH_CONSTRUCTOR_HH_ */

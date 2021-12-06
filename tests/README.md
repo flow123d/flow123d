@@ -56,10 +56,12 @@ common_config:
                         #   order to pass the case, default is false
   tags: [foo, bar]      # str[]     - list of tags for the test cases
   args: ['--no-log']    # str[]     - additional arguments passed to the Flow123d binary
-  check_rules:          # object    - section where rules can be specified
-      - ndiff:          # object[]  - name of the rule, based on this name
-                        #   appropriate module will be loaded
-                        #   so far ndiff is supported
+  check_rules:          # object    - section where rules can be specified, for every key 
+                        #             appropriate module will be loaded 
+                        #             (`src/python/scripts/cocmparisons/modules`)
+                        #             description of supported comparison rules folows.
+      - ndiff:          # object[]  - Perl script `ndiff`, exact match of the text, numerical match of detected 
+                        #             numerical valuestext comparison using Perl script 
           files: ["*"]  # str[]     - list of selectors which will select
                         #   what files will be checked using this rule
                         #   by default all files in output directory
@@ -69,8 +71,25 @@ common_config:
                         #   To compare only vtu files located in #
                         #   some dir of output dir:
                         #       files: ["*/*.vtu"]
+                        #   Wildcards are searched recursively using `Path.walk`, see (`src/python/scripts/prescriptions/__init__.py:AbstractRun._get_ref_output_files).
           r_tol: 1e-3   # float     - optional relative error tolerance
           a_tol: 1e-6   # float     - optional absolute error tolerance
+      - regexp:         # Check presence of given regexp in the output file.
+          files:        # same as above
+          regex: "[Ee]rror"           # matches the word error or Error in line
+          substr: "error"             # looks for the word error in a line
+
+          
+      - vtkdiff:        # Compute Linf norm of the corresponding datasets using the VTK library. 
+                        # allows comparison of binary VTK files.
+                        # All datasets from the reference file must be presented. Additional datasets
+                        # in the result file are reported as Warning.
+          files:        # same as above
+          r_tol: 1e-3   # float     - optional relative error tolerance
+          a_tol: 1e-6   # float     - optional absolute error tolerance
+          interpolate:  # bool      - perform interpolation to the NodeData of the reference mesh before caclulation the norm
+              true 
+
 ```
 
 ## Syntax of `test_cases`
