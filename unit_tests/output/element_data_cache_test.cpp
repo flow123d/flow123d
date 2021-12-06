@@ -57,7 +57,7 @@ TEST(ElementDataCache, read_data)
     tok.next_line();
     for (unsigned int i=0; i<9; ++i) data_cache.read_ascii_data(tok, 1, i);
 
-    auto &data_vec = *( data_cache.get_component_data(0).get() );
+    auto &data_vec = *( data_cache.get_component_data().get() );
     for (unsigned int i=0; i<data_vec.size(); ++i) EXPECT_DOUBLE_EQ(data_vec[i], (double)i);
 
     EXPECT_EQ(data_cache.check_values(0.0, 0.0, 10.0), CheckResult::ok);
@@ -98,7 +98,7 @@ TEST(ElementDataCache, print_data)
 TEST(ElementDataCache, value_operations)
 {
 	ElementDataCache<double> data_cache("data_cache", 3, 3);
-	auto &data_vec = *( data_cache.get_component_data(0).get() );
+	auto &data_vec = *( data_cache.get_component_data().get() );
 	double val[] = { 0.0, 1.0, 2.0 };
 
 	for (unsigned int i=0; i<data_cache.n_values(); ++i) data_cache.store_value(i, val);

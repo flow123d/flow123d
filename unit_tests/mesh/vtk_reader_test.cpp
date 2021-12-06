@@ -77,7 +77,7 @@ public:
 		}
 
 		mesh->init_node_vector(actual_header.n_entities);
-		std::vector<double> &vect = *( static_cast< ElementDataCache<double> *>(current_cache)->get_component_data(0).get() );
+		std::vector<double> &vect = *( static_cast< ElementDataCache<double> *>(current_cache)->get_component_data().get() );
 		arma::vec3 point;
 		for (unsigned int i=0, ivec=0; i<actual_header.n_entities; ++i) {
 	        point[0]=vect[ivec]; ++ivec;

@@ -243,11 +243,11 @@ void OutputVTK::write_vtk_vtu_head(void)
 
 std::shared_ptr<ElementDataCache<unsigned int>> OutputVTK::fill_element_types_data()
 {    
-    auto &offsets = *( this->offsets_->get_component_data(0).get() );
+    auto &offsets = *( this->offsets_->get_component_data().get() );
     unsigned int n_elements = offsets.size()-1;
     
     auto types = std::make_shared<ElementDataCache<unsigned int>>("types", (unsigned int)ElementDataCacheBase::N_SCALAR, n_elements);
-    std::vector< unsigned int >& data = *( types->get_component_data(0).get() );
+    std::vector< unsigned int >& data = *( types->get_component_data().get() );
     int n_nodes;
     
     for(unsigned int i=0; i < n_elements; i++)

@@ -123,7 +123,7 @@ typename ElementDataCache<T>::ComponentDataPtr BaseMeshReader::get_element_data(
 	}
 
     ElementDataCache<T> &current_cache = dynamic_cast<ElementDataCache<T> &>(*(it->second));
-	return current_cache.get_component_data(0);
+	return current_cache.get_component_data();
 }
 
 CheckResult BaseMeshReader::scale_and_check_limits(string field_name, double coef, double default_val, double lower_bound,

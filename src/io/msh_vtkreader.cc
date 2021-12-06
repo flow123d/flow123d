@@ -465,7 +465,7 @@ void VtkMeshReader::read_nodes(Mesh * mesh) {
 	ASSERT(it != element_data_values_->end()).error("Missing cache of Points section. Did you call create_node_element_caches()?\n");
 
 	// create nodes of mesh
-	std::vector<double> &vect = *( dynamic_cast<ElementDataCache<double> &>(*(it->second)).get_component_data(0).get() );
+	std::vector<double> &vect = *( dynamic_cast<ElementDataCache<double> &>(*(it->second)).get_component_data().get() );
 	unsigned int n_nodes = vect.size()/3;
     mesh->init_node_vector( n_nodes );
 	arma::vec3 point;
@@ -484,12 +484,12 @@ void VtkMeshReader::read_elements(Mesh * mesh) {
     // read offset section in VTK file
 	ElementDataFieldMap::iterator offset_it=element_data_values_->find("offsets");
 	ASSERT(offset_it != element_data_values_->end()).error("Missing cache of offsets section. Did you call create_node_element_caches()?\n");
-    std::vector<unsigned int> &offsets_vec = *( dynamic_cast<ElementDataCache<unsigned int> &>(*(offset_it->second)).get_component_data(0).get() );
+    std::vector<unsigned int> &offsets_vec = *( dynamic_cast<ElementDataCache<unsigned int> &>(*(offset_it->second)).get_component_data().get() );
 
     // read connectivity data section
 	ElementDataFieldMap::iterator conn_it=element_data_values_->find("connectivity");
 	ASSERT(conn_it != element_data_values_->end()).error("Missing cache of offsets section. Did you call create_node_element_caches()?\n");
-    std::vector<unsigned int> &connectivity_vec = *( dynamic_cast<ElementDataCache<unsigned int> &>(*(conn_it->second)).get_component_data(0).get() );
+    std::vector<unsigned int> &connectivity_vec = *( dynamic_cast<ElementDataCache<unsigned int> &>(*(conn_it->second)).get_component_data().get() );
 
     // iterate trough connectivity data, create bulk elements
     // fill bulk_elements_id_ vector

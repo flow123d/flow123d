@@ -86,7 +86,7 @@ public:
     virtual ~ElementDataCache() override;
 
     /// Return vector of element data for get component.
-	ComponentDataPtr get_component_data(unsigned int component_idx);
+	ComponentDataPtr get_component_data();
 
 	/**
 	 * Create data cache with given count of columns (\p size_of_cache) and rows (\p row_vec_size).
