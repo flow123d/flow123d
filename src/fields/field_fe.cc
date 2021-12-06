@@ -520,7 +520,7 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 			n_entities = dh_->mesh()->n_elements();
 		} else {
             auto reader_mesh = ReaderCache::get_mesh(reader_file_);
-			n_entities = boundary ? reader_mesh->get_bc_mesh()->n_elements() : reader_mesh->n_elements();
+			n_entities = boundary ? reader_mesh->bc_mesh()->n_elements() : reader_mesh->n_elements();
 		}
 
         BaseMeshReader::HeaderQuery header_query(field_name_, read_time, this->discretization_, dh_->hash());
