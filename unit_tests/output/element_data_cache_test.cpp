@@ -31,7 +31,7 @@ TEST(ElementDataCache, base_data_cache)
 
     // 'Input' constructor.
     {
-        ElementDataCache<double> cache("field_cache", 1.0, 1, 6);
+        ElementDataCache<double> cache("field_cache", 1.0, 6);
         EXPECT_EQ(cache.field_input_name(), "field_cache");
         EXPECT_EQ(cache.get_time(), 1.0);
         EXPECT_TRUE(cache.is_actual(1.0, "field_cache"));
@@ -40,7 +40,7 @@ TEST(ElementDataCache, base_data_cache)
 
     // 'Output' constructor.
     {
-        ElementDataCache<double> cache("field_cache", 1, 3);
+        ElementDataCache<double> cache("field_cache", 1, 3, "");
         EXPECT_EQ(cache.field_input_name(), "field_cache");
         EXPECT_EQ(cache.vtk_type(), ElementDataCacheBase::VTKValueType::VTK_FLOAT64);
         EXPECT_EQ(cache.n_values(), 3);
@@ -53,11 +53,11 @@ TEST(ElementDataCache, read_data)
 {
     std::stringstream ss; ss << "0 1 2 3 4 5 6 7 8 \n";
     Tokenizer tok(ss);
-    ElementDataCache<double> data_cache("in_cache", 0.0, 1, 9);
+    ElementDataCache<double> data_cache("in_cache", 0.0, 9);
     tok.next_line();
     for (unsigned int i=0; i<9; ++i) data_cache.read_ascii_data(tok, 1, i);
 
-    auto &data_vec = *( data_cache.get_component_data().get() );
+    auto &data_vec = *( data_cache.get_data().get() );
     for (unsigned int i=0; i<data_vec.size(); ++i) EXPECT_DOUBLE_EQ(data_vec[i], (double)i);
 
     EXPECT_EQ(data_cache.check_values(0.0, 0.0, 10.0), CheckResult::ok);
@@ -70,7 +70,7 @@ TEST(ElementDataCache, read_data)
 TEST(ElementDataCache, print_data)
 {
 	std::string expect_output = "1 1.5 2 2.5 3 3.5 4 4.5 5 5.5 ";
-	ElementDataCache<double> data_cache("out_cache", 1, 10);
+	ElementDataCache<double> data_cache("out_cache", 1, 10, "");
 	for (unsigned int i=0; i<data_cache.n_values(); ++i) {
 		data_cache[i] = 1.0 + i*0.5;
     }
@@ -97,8 +97,8 @@ TEST(ElementDataCache, print_data)
 
 TEST(ElementDataCache, value_operations)
 {
-	ElementDataCache<double> data_cache("data_cache", 3, 3);
-	auto &data_vec = *( data_cache.get_component_data().get() );
+	ElementDataCache<double> data_cache("data_cache", 3, 3, "");
+	auto &data_vec = *( data_cache.get_data().get() );
 	double val[] = { 0.0, 1.0, 2.0 };
 
 	for (unsigned int i=0; i<data_cache.n_values(); ++i) data_cache.store_value(i, val);
@@ -120,7 +120,7 @@ TEST(ElementDataCache, cache_size_operations)
 	std::vector<unsigned int> opt_size_vec{ 0, 1, 0, 1, 2, 0, 1, 3, 0, 1, 2, 3 };
 	std::vector<unsigned int> fix_size_vec{ 0, 1, 0, 0, 0, 1, 2, 0, 0, 1, 3, 0, 0, 1, 2, 3 };
 	std::vector<double> avrg_vec{ 3.75, 4.75, 7, 9 };
-	ElementDataCache<unsigned int> idx_cache("int_cache", 1, 12);
+	ElementDataCache<unsigned int> idx_cache("int_cache", 1, 12, "");
 	for (unsigned int i=0; i<idx_cache.n_values(); ++i) idx_cache[i] = opt_size_vec[i];
 
 	std::shared_ptr< ElementDataCache<unsigned int> > fixed_size_cache =
@@ -131,7 +131,7 @@ TEST(ElementDataCache, cache_size_operations)
 	        std::dynamic_pointer_cast< ElementDataCache<unsigned int> >(fixed_size_cache->element_node_cache_optimize_size(offset_vec));
 	for (unsigned int i=0; i<optim_size_cache->n_values(); ++i) EXPECT_EQ( (*optim_size_cache)[i], opt_size_vec[i] );
 
-	ElementDataCache<double> data_cache("double_cache", 1, 12);
+	ElementDataCache<double> data_cache("double_cache", 1, 12, "");
 	for (unsigned int i=0; i<data_cache.n_values(); ++i) data_cache[i] = (double)i;
 	std::shared_ptr< ElementDataCache<double> > avrg_cache =
 	        std::dynamic_pointer_cast< ElementDataCache<double> >(data_cache.compute_node_data(opt_size_vec, 4));
@@ -149,7 +149,7 @@ TEST(ElementDataCache, gather)
     LongIdx local_to_global[4];
     local_to_global[0]=2*rank; local_to_global[1]=2*rank+1; local_to_global[2]=rank+2*n_proc; local_to_global[3]=rank+3*n_proc;
 
-    ElementDataCache<double> local_cache("field_cache", 1, 4);
+    ElementDataCache<double> local_cache("field_cache", 1, 4, "");
     for (unsigned int i=0; i<local_cache.n_values(); ++i) local_cache[i] = vals_vec[ local_to_global[i] ];
     auto gathered_cache = local_cache.gather(distr, local_to_global);
     if (rank == 0) {

@@ -266,16 +266,16 @@ void OutputTime::gather_output_data(void)
 {
     /* for serial output call gather of all data sets */
     if ( !parallel_ ) {
-    	auto &offset_vec = *( output_mesh_->offsets_->get_component_data().get() );
+    	auto &offset_vec = *( output_mesh_->offsets_->get_data().get() );
 
     	auto &node_data_map = this->output_data_vec_[NODE_DATA];
         for(unsigned int i=0; i<node_data_map.size(); ++i) {
             auto elem_node_cache = node_data_map[i]->element_node_cache_fixed_size(offset_vec);
             auto serial_fix_data_cache = elem_node_cache->gather(output_mesh_->el_ds_, output_mesh_->el_4_loc_);
             if (rank_==0) {
-            	auto &master_offset_vec = *( this->offsets_->get_component_data().get() );
+            	auto &master_offset_vec = *( this->offsets_->get_data().get() );
             	auto serial_data_cache = serial_fix_data_cache->element_node_cache_optimize_size(master_offset_vec);
-            	auto &master_conn_vec = *( this->connectivity_->get_component_data().get() );
+            	auto &master_conn_vec = *( this->connectivity_->get_data().get() );
             	node_data_map[i] = serial_data_cache->compute_node_data(master_conn_vec, this->nodes_->n_values());
             }
         }
@@ -285,7 +285,7 @@ void OutputTime::gather_output_data(void)
             auto elem_node_cache = corner_data_map[i]->element_node_cache_fixed_size(offset_vec);
             auto serial_fix_data_cache = elem_node_cache->gather(output_mesh_->el_ds_, output_mesh_->el_4_loc_);
             if (rank_==0) {
-                auto &master_offset_vec = *( this->offsets_->get_component_data().get() );
+                auto &master_offset_vec = *( this->offsets_->get_data().get() );
                 corner_data_map[i] = serial_fix_data_cache->element_node_cache_optimize_size(master_offset_vec);
             }
         }
@@ -306,7 +306,7 @@ void OutputTime::gather_output_data(void)
     	}
     } else {
         /* Parallel output needs compute node data (average values) */
-    	auto &conn_vec = *( output_mesh_->connectivity_->get_component_data().get() );
+    	auto &conn_vec = *( output_mesh_->connectivity_->get_data().get() );
     	auto &node_data_map = this->output_data_vec_[NODE_DATA];
     	for(unsigned int i=0; i<node_data_map.size(); ++i) {
     		node_data_map[i] = node_data_map[i]->compute_node_data(conn_vec, this->nodes_->n_values());

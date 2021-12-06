@@ -82,7 +82,7 @@ void OutputMSH::write_msh_geometry(void)
     auto permutation_vec = output_mesh_->orig_mesh_->node_permutations();
     bool is_corner_output = (this->nodes_->n_values() != permutation_vec.size());
     unsigned int i_gmsh_node;
-    auto &id_node_vec = *( this->node_ids_->get_component_data().get() );
+    auto &id_node_vec = *( this->node_ids_->get_data().get() );
     for(unsigned int i_node=0; i_node < id_node_vec.size(); ++i_node) {
         if (is_corner_output) i_gmsh_node = i_node;
         else i_gmsh_node = permutation_vec[i_node];
@@ -97,12 +97,12 @@ void OutputMSH::write_msh_topology(void)
 {
     ofstream &file = this->_base_file;
     const static unsigned int gmsh_simplex_types_[4] = {0, 1, 2, 4};
-    auto &id_elem_vec = *( this->elem_ids_->get_component_data().get() );
-    auto &id_node_vec = *( this->node_ids_->get_component_data().get() );
-    auto &connectivity_vec = *( this->connectivity_->get_component_data().get() );
-    auto &offsets_vec = *( this->offsets_->get_component_data().get() );
-    auto &regions_vec = *( this->region_ids_->get_component_data().get() );
-    auto &partition_vec = *( this->partitions_->get_component_data().get() );
+    auto &id_elem_vec = *( this->elem_ids_->get_data().get() );
+    auto &id_node_vec = *( this->node_ids_->get_data().get() );
+    auto &connectivity_vec = *( this->connectivity_->get_data().get() );
+    auto &offsets_vec = *( this->offsets_->get_data().get() );
+    auto &regions_vec = *( this->region_ids_->get_data().get() );
+    auto &partition_vec = *( this->partitions_->get_data().get() );
 
     unsigned int n_nodes, i_node=0;
 
@@ -150,7 +150,7 @@ void OutputMSH::write_msh_ascii_data(std::shared_ptr<ElementDataCache<unsigned i
 {
     unsigned int i_gmsh;
 	ofstream &file = this->_base_file;
-    auto &id_vec = *( id_cache->get_component_data().get() );
+    auto &id_vec = *( id_cache->get_data().get() );
 
     for(unsigned int i=0; i < output_data->n_values(); ++i) {
         i_gmsh = permutations[i];
@@ -214,8 +214,8 @@ void OutputMSH::write_corner_data(OutputDataPtr output_data)
     file << this->offsets_->n_values()-1 << endl; // number of values
 
     //this->write_msh_ascii_data(this->elem_ids_, output_data, true);
-    auto &id_vec = *( this->elem_ids_->get_component_data().get() );
-	auto &offsets_vec = *( this->offsets_->get_component_data().get() );
+    auto &id_vec = *( this->elem_ids_->get_data().get() );
+	auto &offsets_vec = *( this->offsets_->get_data().get() );
 	unsigned int n_nodes, i_corner;
 	auto permutation_vec = output_mesh_->orig_mesh_->element_permutations();
     for(unsigned int i=0; i < id_vec.size(); ++i) {

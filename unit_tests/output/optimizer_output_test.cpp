@@ -82,7 +82,7 @@ public:
         		(unsigned int)1, (unsigned int)1);
 
         auto output_data = std::dynamic_pointer_cast<ElementDataCache<unsigned int>>(output_data_base);
-        auto &data_vec = *( output_data->get_component_data().get() );
+        auto &data_vec = *( output_data->get_data().get() );
         for (uint i=0; i<data_vec.size(); ++i) {
             data_vec[i] = i;
         }

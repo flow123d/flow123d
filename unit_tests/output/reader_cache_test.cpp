@@ -56,7 +56,7 @@ TEST(ReaderCache, get_bulk_element_) {
     {
         BaseMeshReader::HeaderQuery header_params("vector_fixed", 0.0, OutputTime::DiscreteSpace::ELEM_DATA);
         auto header = ReaderCache::get_reader(file_name)->find_header(header_params);
-        typename ElementDataCache<int>::ComponentDataPtr multifield_ =
+        typename ElementDataCache<int>::CacheData multifield_ =
                 ReaderCache::get_reader(file_name)->get_element_data<int>(header, n_entities, n_comp, false);
         std::vector<int> &vec = *( multifield_.get() );
         EXPECT_EQ(n_entities*n_comp, vec.size());
@@ -66,7 +66,7 @@ TEST(ReaderCache, get_bulk_element_) {
     {
     	BaseMeshReader::HeaderQuery header_params("vector_fixed", 1.0, OutputTime::DiscreteSpace::ELEM_DATA);
     	auto header = ReaderCache::get_reader(file_name)->find_header(header_params);
-    	typename ElementDataCache<int>::ComponentDataPtr field_ =
+    	typename ElementDataCache<int>::CacheData field_ =
     			ReaderCache::get_reader(file_name)->get_element_data<int>(header, n_entities, n_comp, false);
     	std::vector<int> &vec = *( field_.get() );
     	EXPECT_EQ(n_entities*n_comp, vec.size());
@@ -99,7 +99,7 @@ TEST(ReaderCache, get_boundary_element_) {
     BaseMeshReader::HeaderQuery header_params("vector_fixed", 0.0, OutputTime::DiscreteSpace::ELEM_DATA);
     {
     	auto header = ReaderCache::get_reader(file_name)->find_header(header_params);
-        typename ElementDataCache<int>::ComponentDataPtr multifield_ =
+        typename ElementDataCache<int>::CacheData multifield_ =
         		ReaderCache::get_reader(file_name)->get_element_data<int>(header, n_entities, n_comp, true);
     	std::vector<int> &vec = *( multifield_.get() );
     	EXPECT_EQ(n_entities*n_comp, vec.size());
@@ -110,7 +110,7 @@ TEST(ReaderCache, get_boundary_element_) {
     {
     	BaseMeshReader::HeaderQuery header_params("vector_fixed", 1.0, OutputTime::DiscreteSpace::ELEM_DATA);
     	auto header = ReaderCache::get_reader(file_name)->find_header(header_params);
-    	typename ElementDataCache<int>::ComponentDataPtr field_ =
+    	typename ElementDataCache<int>::CacheData field_ =
     			ReaderCache::get_reader(file_name)->get_element_data<int>(header, n_entities, n_comp, true);
     	std::vector<int> &vec = *( field_.get() );
     	EXPECT_EQ(n_entities*n_comp, vec.size());

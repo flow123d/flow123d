@@ -555,7 +555,7 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 
 
 template <int spacedim, class Value>
-void FieldFE<spacedim, Value>::interpolate_gauss(ElementDataCache<double>::ComponentDataPtr data_vec)
+void FieldFE<spacedim, Value>::interpolate_gauss(ElementDataCache<double>::CacheData data_vec)
 {
 	static const unsigned int quadrature_order = 4; // parameter of quadrature
 	std::shared_ptr<Mesh> source_mesh = ReaderCache::get_mesh(reader_file_);
@@ -649,7 +649,7 @@ void FieldFE<spacedim, Value>::interpolate_gauss(ElementDataCache<double>::Compo
 
 
 template <int spacedim, class Value>
-void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>::ComponentDataPtr data_vec)
+void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>::CacheData data_vec)
 {
 	std::shared_ptr<Mesh> source_mesh = ReaderCache::get_mesh(reader_file_);
 	std::vector<unsigned int> searched_elements; // stored suspect elements in calculating the intersection
@@ -751,7 +751,7 @@ void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>
 
 
 template <int spacedim, class Value>
-void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>::ComponentDataPtr data_cache)
+void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>::CacheData data_cache)
 {
 	// Same algorithm as in output of Node_data. Possibly code reuse.
 	unsigned int dof_size, data_vec_i;
@@ -780,7 +780,7 @@ void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>:
 
 
 template <int spacedim, class Value>
-void FieldFE<spacedim, Value>::calculate_identic_values(ElementDataCache<double>::ComponentDataPtr data_cache)
+void FieldFE<spacedim, Value>::calculate_identic_values(ElementDataCache<double>::CacheData data_cache)
 {
 	// Same algorithm as in output of Node_data. Possibly code reuse.
 	unsigned int data_vec_i;
@@ -806,7 +806,7 @@ void FieldFE<spacedim, Value>::calculate_identic_values(ElementDataCache<double>
 
 
 template <int spacedim, class Value>
-void FieldFE<spacedim, Value>::calculate_equivalent_values(ElementDataCache<double>::ComponentDataPtr data_cache)
+void FieldFE<spacedim, Value>::calculate_equivalent_values(ElementDataCache<double>::CacheData data_cache)
 {
 	// Same algorithm as in output of Node_data. Possibly code reuse.
 	unsigned int data_vec_i;

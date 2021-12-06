@@ -185,7 +185,7 @@ public:
      *  @param component_idx component index of MultiField; 0 for single component fields.
 	 */
     template<typename T>
-    typename ElementDataCache<T>::ComponentDataPtr get_element_data(
+    typename ElementDataCache<T>::CacheData get_element_data(
             MeshDataHeader header, unsigned int expected_n_entities,
             unsigned int expected_n_components, bool boundary_domain);
 

@@ -86,7 +86,7 @@ std::vector<int> const & BaseMeshReader::get_element_vector(bool boundary_domain
 
 
 template<typename T>
-typename ElementDataCache<T>::ComponentDataPtr BaseMeshReader::get_element_data(
+typename ElementDataCache<T>::CacheData BaseMeshReader::get_element_data(
         MeshDataHeader header, unsigned int expected_n_entities,
         unsigned int expected_n_components, bool boundary_domain) {
 	ASSERT(has_compatible_mesh_)
@@ -101,8 +101,6 @@ typename ElementDataCache<T>::ComponentDataPtr BaseMeshReader::get_element_data(
     }
 
     if ( !it->second->is_actual(header.time, field_name) ) {
-    	unsigned int size_of_cache = 1; // count of vectors stored in cache
-
 	    // check that the header is valid - expected_n_entities
 	    if (header.n_entities != expected_n_entities) {
 	    	WarningOut().fmt("In file '{}', '{}' section for field '{}', time: {}.\nDifferent number of entities: {}, computation needs {}.\n",
@@ -117,13 +115,13 @@ typename ElementDataCache<T>::ComponentDataPtr BaseMeshReader::get_element_data(
         }
 
     	(*element_data_values_)[field_name] = std::make_shared< ElementDataCache<T> >(
-                field_name, header.time, size_of_cache,
+                field_name, header.time,
                 expected_n_components*expected_n_entities);
     	this->read_element_data(*(it->second), header, boundary_domain );
 	}
 
     ElementDataCache<T> &current_cache = dynamic_cast<ElementDataCache<T> &>(*(it->second));
-	return current_cache.get_component_data();
+	return current_cache.get_data();
 }
 
 CheckResult BaseMeshReader::scale_and_check_limits(string field_name, double coef, double default_val, double lower_bound,
@@ -143,7 +141,7 @@ CheckResult BaseMeshReader::scale_and_check_limits(string field_name, double coe
 
 // explicit instantiation of template methods
 #define MESH_READER_GET_ELEMENT_DATA(TYPE) \
-template typename ElementDataCache<TYPE>::ComponentDataPtr BaseMeshReader::get_element_data<TYPE>( \
+template typename ElementDataCache<TYPE>::CacheData BaseMeshReader::get_element_data<TYPE>( \
         MeshDataHeader header, unsigned int n_entities, \
 	    unsigned int n_components, bool boundary_domain);
 
