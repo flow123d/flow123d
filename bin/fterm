@@ -77,6 +77,7 @@ ${bold}Options:${reset}
   ${bold}-h|--help ${reset}       fterm documentation
   ${bold}-V|--no-verbose ${reset} turn off configuration summary when starting container
   ${bold}-x|--set-x ${reset}      turn on script debuging mode (set -x)
+  ${bold}-X|--xwin                setup X server connection  
   ${bold}-p|--privileged ${reset} add --privileged=true when starting docker container. SECURITY RISK
                    May be necessary on hosts with SELinux (mounting issues) or for using 
                    'gdb' within docker to turn off address space layout randomization. 
@@ -269,6 +270,7 @@ action=shell
 work=$(get_mount_dir $ABS_FLOW_DIR)
 contname=""
 docker_terminal="-it"
+xwin=""
 
 while [[ $# -gt 0 ]]
   do
@@ -301,6 +303,10 @@ while [[ $# -gt 0 ]]
     ;;
     -T|--no-term)
       docker_terminal=""
+      shift
+    ;;
+    -X|--xwin)
+      xwin="--device /dev/dri/ -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=$DISPLAY -h $HOSTNAME -v $HOME/.Xauthority:/mnt/$HOME/.Xauthority"
       shift
     ;;
     clean|shell|run|exec|update)
@@ -411,8 +417,9 @@ case $action in
     if [[ $autopull == "1" ]]; then
       update_images
     fi
+    
     dbg2 "Entering shell"
-    dbgc docker run --rm -it $envarg $mountargs $priv_true $base_image
+    dbgc docker run  --rm -it ${xwin} $envarg $mountargs $priv_true $base_image
   ;;
   update)
     update_images
