@@ -113,7 +113,7 @@ public:
 
 	/// Return @p unit_si_
 	inline UnitSI unit_si() const {
-		ASSERT(unit_si_.is_def()).error("UnitSI is not defined, first call convert method.");
+		ASSERT_DBG(unit_si_.is_def()).error("UnitSI is not defined, first call convert method.");
 		return unit_si_;
 	}
 

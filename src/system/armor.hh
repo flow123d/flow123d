@@ -616,8 +616,8 @@ public:
         template<long long unsigned int nr, long long unsigned int nc>
         ArrayMatSet &operator=(const ArmaMat<Type, nr, nc>& arma_x)
         {
-            ASSERT_EQ(n_rows_, nr);
-            ASSERT_EQ(n_cols_, nc);
+            ASSERT_EQ_DBG(n_rows_, nr);
+            ASSERT_EQ_DBG(n_cols_, nc);
             copy<nr, nc>(arma_x.memptr());
             return *this;
         }
@@ -625,8 +625,8 @@ public:
         template<long long unsigned int nr>
         ArrayMatSet &operator=(const ArmaVec<Type, nr>& arma_x)
         {
-            ASSERT_EQ(n_rows_, nr);
-            ASSERT_EQ(n_cols_, 1);
+            ASSERT_EQ_DBG(n_rows_, nr);
+            ASSERT_EQ_DBG(n_cols_, 1);
             copy<nr, 1>(arma_x.memptr());
             return *this;
         }
@@ -634,8 +634,8 @@ public:
 
         ArrayMatSet &operator=(const Type& arma_x)
         {
-            ASSERT_EQ(n_rows_, 1);
-            ASSERT_EQ(n_cols_, 1);
+            ASSERT_EQ_DBG(n_rows_, 1);
+            ASSERT_EQ_DBG(n_cols_, 1);
             copy<1, 1>(&arma_x);
             return *this;
         }

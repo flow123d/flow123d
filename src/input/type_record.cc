@@ -131,7 +131,7 @@ TypeBase::TypeHash Record::content_hash() const
 
 
 Record &Record::allow_auto_conversion(const string &from_key) {
-	ASSERT(data_->auto_conversion_key_idx == -1)(from_key).error("auto conversion key is already set");
+	ASSERT_EQ_DBG(data_->auto_conversion_key_idx, -1)(from_key).error("auto conversion key is already set");
     data_->auto_conversion_key_idx = 0;
     data_->auto_conversion_key=from_key;
 
@@ -142,7 +142,7 @@ Record &Record::allow_auto_conversion(const string &from_key) {
 
 void Record::make_copy_keys(Record &origin) {
 
-	ASSERT( origin.is_closed() ).error();
+	ASSERT_DBG( origin.is_closed() ).error();
 
 	std::vector<Key>::iterator it = data_->keys.begin();
 	if (data_->keys.size() && it->key_ == "TYPE") it++; // skip TYPE key if exists
@@ -194,8 +194,8 @@ void Record::make_copy_keys(Record &origin) {
 
 
 Record &Record::derive_from(Abstract &parent) {
-	ASSERT( parent.is_closed() )(parent.type_name()).error();
-	ASSERT( data_->keys.size() > 0 && data_->keys[0].key_ == "TYPE" )(this->type_name())
+	ASSERT_DBG( parent.is_closed() )(parent.type_name()).error();
+	ASSERT_DBG( data_->keys.size() > 0 && data_->keys[0].key_ == "TYPE" )(this->type_name())
 			.error("Derived record must have defined TYPE key!");
 
 	// check if parent exists in parent_vec_ vector
@@ -214,7 +214,7 @@ Record &Record::derive_from(Abstract &parent) {
 
 
 Record &Record::copy_keys(const Record &other) {
-	ASSERT( other.is_closed() )(other.type_name()).error();
+	ASSERT_DBG( other.is_closed() )(other.type_name()).error();
 
    	Record tmp(other);
    	make_copy_keys(tmp);
@@ -242,13 +242,13 @@ bool Record::is_closed() const {
 
 FinishStatus Record::finish(FinishStatus finish_type)
 {
-	ASSERT(finish_type != FinishStatus::none_).error();
-	ASSERT(finish_type != FinishStatus::in_perform_).error();
-	ASSERT(data_->finish_status_ != FinishStatus::in_perform_)(this->type_name())(this->type_name()).error("Recursion in the IST element of type Record.");
+	ASSERT_DBG(finish_type != FinishStatus::none_).error();
+	ASSERT_DBG(finish_type != FinishStatus::in_perform_).error();
+	ASSERT_DBG(data_->finish_status_ != FinishStatus::in_perform_)(this->type_name())(this->type_name()).error("Recursion in the IST element of type Record.");
 
 	if (this->is_finished()) return data_->finish_status_;
 
-	ASSERT(data_->closed_)(this->type_name()).error();
+	ASSERT_DBG(data_->closed_)(this->type_name()).error();
 
     data_->finish_status_ = FinishStatus::in_perform_;
     for (vector<Key>::iterator it=data_->keys.begin(); it!=data_->keys.end(); it++)
@@ -264,7 +264,7 @@ FinishStatus Record::finish(FinishStatus finish_type)
 			            << EI_Object(it->type_->type_name())
 			            << EI_TypeName(this->type_name()));
 			it->type_->finish(finish_type);
-			ASSERT(it->type_->is_finished()).error();
+			ASSERT_DBG(it->type_->is_finished()).error();
 			if (finish_type == FinishStatus::delete_) it->type_.reset();
         }
 
@@ -289,7 +289,7 @@ FinishStatus Record::finish(FinishStatus finish_type)
         // check that all other obligatory keys have default values
         for(KeyIter it=data_->keys.begin(); it != data_->keys.end(); ++it) {
         	const string &other_key = it->key_;
-        	ASSERT(!it->default_.is_obligatory() || (int)(it->key_index) == data_->auto_conversion_key_idx)
+        	ASSERT_DBG(!it->default_.is_obligatory() || (int)(it->key_index) == data_->auto_conversion_key_idx)
         			   (data_->auto_conversion_key_iter()->key_)(other_key)
 					   .error("Finishing auto convertible Record from given key, but other obligatory key has no default value.");
         }
@@ -302,7 +302,7 @@ FinishStatus Record::finish(FinishStatus finish_type)
 
 
 Record &Record::close() const {
-	ASSERT_GT(data_->keys.size(), 0)(this->type_name()).error("Empty Record!\n");
+	ASSERT_GT_DBG(data_->keys.size(), 0)(this->type_name()).error("Empty Record!\n");
     data_->closed_=true;
     Record & rec = *( Input::TypeRepository<Record>::get_instance().add_type( *this ) );
     for (auto &parent : data_->parent_vec_) {
@@ -465,11 +465,11 @@ void Record::RecordData::declare_key(const string &key,
                          const string &description,
                          TypeBase::attribute_map key_attributes)
 {
-	ASSERT(!closed_)(key)(this->type_name_).error();
+	ASSERT_DBG(!closed_)(key)(this->type_name_).error();
     // validity test of default value
 
-    ASSERT( finish_status_ == FinishStatus::none_ )(key)(type_name_).error("Declaration of key in finished Record");
-    ASSERT( key=="TYPE" || TypeBase::is_valid_identifier(key) )(key)(type_name_).error("Invalid key identifier in declaration of Record");
+    ASSERT_DBG( finish_status_ == FinishStatus::none_ )(key)(type_name_).error("Declaration of key in finished Record");
+    ASSERT_DBG( key=="TYPE" || TypeBase::is_valid_identifier(key) )(key)(type_name_).error("Invalid key identifier in declaration of Record");
 
     KeyHash key_h = key_hash(key);
     key_to_index_const_iter it = key_to_index.find(key_h);
@@ -478,7 +478,7 @@ void Record::RecordData::declare_key(const string &key,
        Key tmp_key = { (unsigned int)keys.size(), key, description, type, default_value, false, key_attributes };
        keys.push_back(tmp_key);
     } else {
-    	ASSERT( keys[it->second].derived )(key)(type_name_).error("Re-declaration of the key in Record");
+    	ASSERT_DBG( keys[it->second].derived )(key)(type_name_).error("Re-declaration of the key in Record");
         Key tmp_key = { it->second, key, description, type, default_value, false, {}};
         keys[ it->second ] = tmp_key;
     }

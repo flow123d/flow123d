@@ -430,7 +430,7 @@ protected:
 
     /// Assertion for finished Type::Record.
     inline void finished_check() const {
-    	ASSERT(is_finished())(this->type_name()).error();
+    	ASSERT_DBG(is_finished())(this->type_name()).error();
     }
 
     /// Auxiliary method that actually makes the copy of keys.
@@ -600,8 +600,8 @@ inline bool Record::has_key(const string& key) const
 
 
 inline unsigned int Record::size() const {
-	ASSERT(is_closed())(this->type_name()).error();
-	ASSERT_EQ(data_->keys.size(), data_->key_to_index.size()).error();
+	ASSERT_DBG(is_closed())(this->type_name()).error();
+	ASSERT_EQ_DBG(data_->keys.size(), data_->key_to_index.size()).error();
     return data_->keys.size();
 }
 

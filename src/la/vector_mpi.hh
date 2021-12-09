@@ -97,7 +97,7 @@ public:
     /// Return size of output data.
 	unsigned int size() const
 	{
-		ASSERT_PTR(data_ptr_).error("Uninitialized data vector.\n");
+		ASSERT_PTR_DBG(data_ptr_).error("Uninitialized data vector.\n");
 		return data_ptr_->size();
 	}
 

@@ -63,7 +63,7 @@ public:
      */
     void resize(std::size_t new_size)
     {
-    	ASSERT_GT(new_size, reserved_size());
+    	ASSERT_GT_DBG(new_size, reserved_size());
     	data_.reserve(new_size);
     }
 

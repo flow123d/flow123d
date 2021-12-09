@@ -229,7 +229,7 @@ inline typename Iterator<T>::OutputType Iterator<T>::operator *() const {
 
     auto new_address =address_.down(index_);
 
-    ASSERT_PTR(new_address->storage_head()).error();
+    ASSERT_PTR_DBG(new_address->storage_head()).error();
 
     return internal::TypeDispatch < DispatchType > ::value(*new_address, type_);
 }

@@ -50,7 +50,7 @@ Selection::Selection(const string &name, const string &desc)
 Selection &Selection::add_value(const int value, const std::string &key,
         const std::string &description, TypeBase::attribute_map attributes)
 {
-    ASSERT(!is_closed())(key)(type_name()).error("Declaration of new key in closed Selection.");
+    ASSERT_DBG(!is_closed())(key)(type_name()).error("Declaration of new key in closed Selection.");
 
     data_->add_value(value, key, description, attributes);
     return *this;
@@ -69,11 +69,11 @@ const Selection & Selection::close() const {
 
 
 FinishStatus Selection::finish(FinishStatus finish_type ) {
-	ASSERT(finish_type != FinishStatus::none_).error();
+	ASSERT_DBG(finish_type != FinishStatus::none_).error();
 
 	if (this->is_finished()) return data_->finish_status_;
 
-	ASSERT(data_->closed_)(this->type_name()).error();
+	ASSERT_DBG(data_->closed_)(this->type_name()).error();
 
 	data_->finish_status_ = finish_type;
 	return data_->finish_status_;
@@ -186,10 +186,10 @@ Selection::SelectionData::SelectionData(const string &name)
 void Selection::SelectionData::add_value(const int value, const std::string &key,
         const std::string &description, TypeBase::attribute_map attributes) {
     KeyHash key_h = TypeBase::key_hash(key);
-    ASSERT(key_to_index_.find(key_h) == key_to_index_.end())(key)(type_name_).error("Key already exists in Selection.");
+    ASSERT_DBG(key_to_index_.find(key_h) == key_to_index_.end())(key)(type_name_).error("Key already exists in Selection.");
     value_to_index_const_iter it = value_to_index_.find(value);
     const std::string &existing_key = keys_[it->second].key_;
-    ASSERT(it == value_to_index_.end())(value)(key)(existing_key)(type_name_)
+    ASSERT_DBG(it == value_to_index_.end())(value)(key)(existing_key)(type_name_)
     		.error("Value of new key conflicts with value of existing key in Selection");
 
     unsigned int new_idx = key_to_index_.size();

@@ -275,7 +275,7 @@ inline bool Selection::has_value(const int &val) const {
 
 inline unsigned int Selection::size() const {
     finished_check();
-    ASSERT_EQ(data_->keys_.size(), data_->key_to_index_.size()).error();
+    ASSERT_EQ_DBG(data_->keys_.size(), data_->key_to_index_.size()).error();
     return data_->keys_.size();
 }
 
@@ -283,7 +283,7 @@ inline unsigned int Selection::size() const {
 
 
 inline void Selection::finished_check() const {
-	ASSERT(data_->closed_)(this->type_name()).error();
+	ASSERT_DBG(data_->closed_)(this->type_name()).error();
 }
 
 

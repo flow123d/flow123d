@@ -77,7 +77,7 @@ TypeBase::MakeInstanceReturnType Parameter::make_instance(std::vector<ParameterP
 
 
 FinishStatus Parameter::finish(FinishStatus finish_type) {
-	ASSERT(finish_type != FinishStatus::none_).error();
+	ASSERT_DBG(finish_type != FinishStatus::none_).error();
 
 	if (finish_type == FinishStatus::regular_) THROW( ExcParamaterInIst() << EI_Object(this->name_));
 	return finish_type;
