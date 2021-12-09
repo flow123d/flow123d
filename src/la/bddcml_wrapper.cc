@@ -126,18 +126,18 @@ void la::BddcmlWrapper::loadRawMesh( const int nDim, const int numNodes,
     numElem_ = procElemStarts[ nProc_ ];
 
     // check sizes of arrays
-    OLD_ASSERT( std::accumulate( nnet.begin(), nnet.end(), 0 ) == (int)(inet.size()),
-                            "array inet size mismatch \n " );
-    OLD_ASSERT( std::accumulate( nndf.begin(), nndf.end(), 0 ) == numDofsSub_,
-                            "array nndf content mismatch: %d %d \n ",  std::accumulate( nndf.begin(), nndf.end(), 0 ), numDofsSub_ );
-    OLD_ASSERT( static_cast<int>(isvgvn.size()) == numDofsSub_,
-                            "array isvgvn size mismatch \n " );
-    OLD_ASSERT( static_cast<int>(nnet.size()) == numElemSub_,
-                            "array nnet size mismatch \n " );
-    OLD_ASSERT( static_cast<int>(nndf.size()) == numNodesSub_,
-                            "array nndf size mismatch \n " );
-    OLD_ASSERT( static_cast<int>(xyz.size()) == numNodesSub_ * nDim_,
-                            "array xyz size mismatch: %d %d \n ", static_cast<int>(xyz.size()), numNodesSub_ * nDim_ );
+    ASSERT_EQ( std::accumulate( nnet.begin(), nnet.end(), 0 ), (int)(inet.size()) )
+                            .error("array inet size mismatch \n");
+    ASSERT_EQ( std::accumulate( nndf.begin(), nndf.end(), 0 ), numDofsSub_ )
+                            .error("array nndf content mismatch \n");
+    ASSERT_EQ( static_cast<int>(isvgvn.size()), numDofsSub_ )
+                            .error("array isvgvn size mismatch \n");
+    ASSERT_EQ( static_cast<int>(nnet.size()), numElemSub_)
+                            .error("array nnet size mismatch \n");
+    ASSERT_EQ( static_cast<int>(nndf.size()), numNodesSub_)
+                            .error("array nndf size mismatch \n");
+    ASSERT_EQ( static_cast<int>(xyz.size()), (numNodesSub_ * nDim_) )
+                            .error("array xyz size mismatch \n");
 
     // Simply copy input data into the private object equivalents
     inet_.resize( inet.size() );
@@ -228,9 +228,8 @@ void la::BddcmlWrapper::insertToRhs( const SubVec_  & subVec,
         // map global dof index to subdomain dof
         Global2LocalMap_::iterator pos = global2LocalDofMap_.find( dofIndices[i] );
         /*
-        OLD_ASSERT( pos != global2LocalDofMap_.end(),
-                                "Cannot remap index %d to local indices in right-hand side," 
-                                " perhaps missing call to loadMesh() member function. \n ", dofIndices[i] );
+        ASSERT( pos != global2LocalDofMap_.end() )(dofIndices[i]).error(
+            "Cannot remap index to local indices in right-hand side, perhaps missing call to loadMesh() member function. \n");
         */
         if (pos == global2LocalDofMap_.end()) {
             DebugOut().every_proc() << "RHS, Missing map to local for idx: " << dofIndices[i];
@@ -323,8 +322,7 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
 {
 
     // check that mesh was loaded 
-    OLD_ASSERT( meshLoaded_ ,
-                            "Subdomain mesh was not loaded, perhaps missing call to loadMesh() member function. \n " );
+    ASSERT(meshLoaded_).error("Subdomain mesh was not loaded, perhaps missing call to loadMesh() member function. \n ");
    
     //============= initialize BDDC
     int numSub;                  //!< number of subdomains on first level   
@@ -336,12 +334,10 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
     if ( numSubAtLevels != NULL ) {
         // numbers are given 
         
-        OLD_ASSERT( numLevels == static_cast<int>((*numSubAtLevels).size()),
-                                "Inconsistent size of numbers of subdomains at levels: %d %d \n",
-                                numLevels, static_cast<int>((*numSubAtLevels).size()) );
-        OLD_ASSERT( (*numSubAtLevels)[0] == numSub, 
-                                "Inconsistent number of subdomains at first level: %d %d \n",
-                                (*numSubAtLevels)[0], numSub );
+        ASSERT_EQ( numLevels, static_cast<int>((*numSubAtLevels).size()) )
+                                .error("Inconsistent size of numbers of subdomains at given levels\n");
+        ASSERT_EQ( (*numSubAtLevels)[0], numSub )
+                                .error("Inconsistent number of subdomains at first level\n");
 
         std::copy( (*numSubAtLevels).begin(), (*numSubAtLevels).end(),
                     numSubLev.begin() );
@@ -367,7 +363,7 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
             numSubLev[numLevels-1] = 1;
         }
         else {
-            OLD_ASSERT( false, "Missing numbers of subdomains at levels. \n" );
+            ASSERT( false ).error("Missing numbers of subdomains at levels. \n" );
         }
     }
     //std::cout << "numSubLev ";
@@ -430,15 +426,15 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
         if ( i_sparse[inz] != indRow ) {
            indRow = i_sparse[inz];
            Global2LocalMap_::iterator pos = global2LocalDofMap_.find( static_cast<unsigned> ( indRow ) );
-           OLD_ASSERT( pos != global2LocalDofMap_.end(),
-                                   "Cannot remap index %d to local indices. \n ", indRow );
+           ASSERT( pos != global2LocalDofMap_.end() )(indRow)
+                                   .error("Cannot remap 'indRow' to local indices. \n");
            indRowLoc = static_cast<int> ( pos -> second );
         }
         if ( j_sparse[inz] != indCol ) {
            indCol = j_sparse[inz];
            Global2LocalMap_::iterator pos = global2LocalDofMap_.find( static_cast<unsigned> ( indCol ) );
-           OLD_ASSERT( pos != global2LocalDofMap_.end(),
-                                   "Cannot remap index %d to local indices. \n ", indCol );
+           ASSERT( pos != global2LocalDofMap_.end() )(indCol)
+                                   .error("Cannot remap 'indCol' to local indices. \n");
            indColLoc = static_cast<int> ( pos -> second );
         }
 
@@ -453,8 +449,8 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
     int la = a_sparse.size();
 
     // diagonal weights for BDDC loaded by user
-    OLD_ASSERT( diagWeightsCoo_.nnz() > 0,
-            "It appears that diagonal weights for BDDC are not loaded. This is currently mandatory. \n " );
+    ASSERT_GT( diagWeightsCoo_.nnz(), 0 )
+            .error("It appears that diagonal weights for BDDC are not loaded. This is currently mandatory. \n");
 
     std::vector<int>    i_diag_sparse;
     std::vector<int>    j_diag_sparse;
@@ -471,16 +467,16 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
     for ( unsigned inz = 0; inz < diag_sparse.size(); inz++ ) {
         indRow = i_diag_sparse[inz];
         Global2LocalMap_::iterator pos = global2LocalDofMap_.find( static_cast<unsigned> ( indRow ) );
-        OLD_ASSERT( pos != global2LocalDofMap_.end(),
-                                "Cannot remap index %d to local indices. \n ", indRow );
+        ASSERT( pos != global2LocalDofMap_.end() )(indRow)
+                                .error("Cannot remap 'indRow' to local indices. \n");
         indRowLoc = static_cast<int> ( pos -> second );
 
         i_diag_sparse[ inz ] = indRowLoc;
     }
 
     int lsub_diagonal = numDofsSub_;
-    OLD_ASSERT( lsub_diagonal == static_cast<int>(diag_sparse.size()),
-            "Array length mismatch: %d %d . \n ", lsub_diagonal, static_cast<int>(diag_sparse.size()) );
+    ASSERT_EQ( lsub_diagonal, static_cast<int>(diag_sparse.size()) )
+            .error("Array length mismatch.\n");
 
     std::vector<double> sub_diagonal( lsub_diagonal, -1. );
     // permute the vector according to subdomain indexing
@@ -489,8 +485,8 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
         double value = diag_sparse[i];
         sub_diagonal[indRowLoc] = value;
     }
-    OLD_ASSERT( std::find(sub_diagonal.begin(), sub_diagonal.end(), -1. ) == sub_diagonal.end(),
-            "There are missing entries in the diagonal of weights. \n " );
+    ASSERT( std::find(sub_diagonal.begin(), sub_diagonal.end(), -1. ) == sub_diagonal.end() )
+            .error("There are missing entries in the diagonal of weights. \n");
 
     // remove const attribute
     int numDofsInt    = static_cast<int> ( numDofs_ );
@@ -501,7 +497,7 @@ void la::BddcmlWrapper::solveSystem( double tol, int  numLevels, std::vector<int
     else if ( matrixType_ == SPD )                      matrixTypeInt = 1 ;
     else if ( matrixType_ == SYMMETRICGENERAL )         matrixTypeInt = 2 ;
     else if ( matrixType_ == SPD_VIA_SYMMETRICGENERAL ) matrixTypeInt = 2 ; 
-    else    {OLD_ASSERT( false, "Illegal matrixType \n " );}
+    else    {ASSERT( false ).error("Illegal matrixType \n" );}
 
     // download local solution
     int lsol = sol_.size();
