@@ -36,7 +36,7 @@
 #include "mpi.h"                                       // for MPI_Comm_size
 #include "petscerror.h"                                // for CHKERRQ, Petsc...
 #include "system/exc_common.hh"                        // for ExcAssertMsg
-#include "system/global_defs.h"                        // for OLD_ASSERT, msg
+#include "system/asserts.hh"                           // for ASSERT, msg
 #include "system/logger.hh"                            // for Logger, operat...
 #include "system/system.hh"                            // for SystemInfo
 
@@ -90,7 +90,7 @@ void ApplicationBase::system_init( MPI_Comm comm, const string &log_filename ) {
     ierr=MPI_Comm_rank(comm, &(sys_info.my_proc));
     ierr+=MPI_Comm_size(comm, &(sys_info.n_proc));
     LoggerOptions::get_instance().setup_mpi(comm);
-    OLD_ASSERT( ierr == MPI_SUCCESS,"MPI not initialized.\n");
+    ASSERT( ierr == MPI_SUCCESS ).error("MPI not initialized.\n");
 
     // determine logfile name or switch it off
     stringstream log_name;
