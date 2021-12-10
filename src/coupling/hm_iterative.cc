@@ -153,7 +153,7 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
     // setup mechanics
     Record mech_rec = in_record.val<Record>("mechanics_equation");
     mechanics_ = std::make_shared<Elasticity>(*mesh_, mech_rec, this->time_);
-    mechanics_->eq_fields()["cross_section"].copy_from(flow_->data()["cross_section"]);
+    mechanics_->eq_fields()["cross_section"].copy_from(flow_->eq_fields()["cross_section"]);
     mechanics_->initialize();
     
     // read parameters controlling the iteration
@@ -199,8 +199,8 @@ void HM_Iterative::zero_time_step()
     update_potential();
     mechanics_->zero_time_step();
     
-    copy_field(*flow_->data().field("pressure_p0"), *data_.old_pressure_ptr_);
-    copy_field(*flow_->data().field("pressure_p0"), *data_.old_iter_pressure_ptr_);
+    copy_field(*flow_->eq_fields().field("pressure_p0"), *data_.old_pressure_ptr_);
+    copy_field(*flow_->eq_fields().field("pressure_p0"), *data_.old_iter_pressure_ptr_);
     copy_field(mechanics_->eq_fields().output_divergence, *data_.old_div_u_ptr_);
     copy_field(mechanics_->eq_fields().output_divergence, *data_.div_u_ptr_);
 }
@@ -232,7 +232,7 @@ void HM_Iterative::update_after_iteration()
 {
     mechanics_->update_output_fields();
     copy_field(mechanics_->eq_fields().output_divergence, *data_.div_u_ptr_);
-    copy_field(*flow_->data().field("pressure_p0"), *data_.old_iter_pressure_ptr_);
+    copy_field(*flow_->eq_fields().field("pressure_p0"), *data_.old_iter_pressure_ptr_);
 }
 
 
@@ -242,7 +242,7 @@ void HM_Iterative::update_after_converged()
     flow_->output_data();
     mechanics_->output_data();
     
-    copy_field(*flow_->data().field("pressure_p0"), *data_.old_pressure_ptr_);
+    copy_field(*flow_->eq_fields().field("pressure_p0"), *data_.old_pressure_ptr_);
     copy_field(mechanics_->eq_fields().output_divergence, *data_.old_div_u_ptr_);
 }
 
@@ -253,7 +253,7 @@ void HM_Iterative::update_potential()
     auto ref_potential_vec_ = data_.ref_potential_ptr_->vec();
     auto dh = data_.potential_ptr_->get_dofhandler();
     Field<3, FieldValue<3>::Scalar> field_edge_pressure;
-    field_edge_pressure.copy_from(*flow_->data().field("pressure_edge"));
+    field_edge_pressure.copy_from(*flow_->eq_fields().field("pressure_edge"));
 
     for ( auto ele : dh->local_range() )
     {
@@ -272,11 +272,11 @@ void HM_Iterative::update_potential()
             // The reference potential is applied only on dirichlet and total_flux b.c.,
             // i.e. where only mechanical traction is prescribed.
             if (side.side().is_boundary() &&
-                    (flow_->data().bc_type.value(side.centre(), side.cond().element_accessor()) == DarcyMH::EqData::dirichlet ||
-                    flow_->data().bc_type.value(side.centre(), side.cond().element_accessor()) == DarcyMH::EqData::total_flux)
+                    (flow_->eq_fields().bc_type.value(side.centre(), side.cond().element_accessor()) == DarcyMH::EqFields::dirichlet ||
+                    flow_->eq_fields().bc_type.value(side.centre(), side.cond().element_accessor()) == DarcyMH::EqFields::total_flux)
                 )
             {
-                double bc_pressure = flow_->data().bc_pressure.value(side.centre(), side.cond().element_accessor());
+                double bc_pressure = flow_->eq_fields().bc_pressure.value(side.centre(), side.cond().element_accessor());
                 ref_potential_vec_.set(dof_indices[side.side_idx()], -alpha*density*gravity*bc_pressure);
             }
             else
@@ -300,7 +300,7 @@ void HM_Iterative::update_flow_fields()
     auto src_vec = data_.flow_source_ptr_->vec();
     auto dh = data_.beta_ptr_->get_dofhandler();
     Field<3,FieldValue<3>::Scalar> field_ele_pressure;
-    field_ele_pressure.copy_from(*flow_->data().field("pressure_p0"));
+    field_ele_pressure.copy_from(*flow_->eq_fields().field("pressure_p0"));
     for ( auto ele : dh->local_range() )
     {
         auto elm = ele.elm();
@@ -336,7 +336,7 @@ void HM_Iterative::compute_iteration_error(double& abs_error, double& rel_error)
     auto dh = data_.beta_ptr_->get_dofhandler();
     double p_dif2 = 0, p_norm2 = 0;
     Field<3,FieldValue<3>::Scalar> field_ele_pressure;
-    field_ele_pressure.copy_from(*flow_->data().field("pressure_p0"));
+    field_ele_pressure.copy_from(*flow_->eq_fields().field("pressure_p0"));
     for (auto cell : dh->own_range())
     {
         auto elm = cell.elm();
