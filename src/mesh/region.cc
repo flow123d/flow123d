@@ -107,7 +107,7 @@ Region RegionDB::add_region( unsigned int id, const std::string &label, unsigned
 
 
 Region RegionDB::rename_region( Region reg, const std::string &new_label ) {
-	OLD_ASSERT(reg.is_valid(), "Non-existing region can't be renamed to '%s'.\n", new_label.c_str());
+	ASSERT(reg.is_valid())(new_label).error("Non-existing region can't be renamed.\n");
 
 	// test if region with new_label exists
 	LabelIter it_label = region_table_.get<Label>().find(new_label);
@@ -202,7 +202,7 @@ Region RegionDB::find_id(unsigned int id) const
 
 const std::string & RegionDB::get_label(unsigned int idx) const {
     RegionTable::index<Index>::type::iterator it = region_table_.get<Index>().find(idx);
-    OLD_ASSERT( it!= region_table_.get<Index>().end(), "No region with index: %u\n", idx);
+    ASSERT_DBG( it!= region_table_.get<Index>().end() )(idx).error("No region with given idx\n");
     return  it->label;
 }
 
@@ -210,7 +210,7 @@ const std::string & RegionDB::get_label(unsigned int idx) const {
 
 unsigned int RegionDB::get_id(unsigned int idx) const {
     RegionTable::index<Index>::type::iterator it = region_table_.get<Index>().find(idx);
-    OLD_ASSERT( it!= region_table_.get<Index>().end(), "No region with index: %u\n", idx);
+    ASSERT_DBG( it!= region_table_.get<Index>().end() )(idx).error("No region with given idx\n");
     return  it->get_id();
 }
 
@@ -218,7 +218,7 @@ unsigned int RegionDB::get_id(unsigned int idx) const {
 
 unsigned int RegionDB::get_dim(unsigned int idx) const {
     RegionTable::index<Index>::type::iterator it = region_table_.get<Index>().find(idx);
-    OLD_ASSERT( it!= region_table_.get<Index>().end(), "No region with index: %u\n", idx);
+    ASSERT_DBG( it!= region_table_.get<Index>().end() )(idx).error("No region with given idx\n");
     return  it->dim();
 }
 
@@ -226,7 +226,7 @@ unsigned int RegionDB::get_dim(unsigned int idx) const {
 
 const std::string & RegionDB::get_region_address(unsigned int idx) const {
     RegionTable::index<Index>::type::iterator it = region_table_.get<Index>().find(idx);
-    OLD_ASSERT( it!= region_table_.get<Index>().end(), "No region with index: %u\n", idx);
+    ASSERT_DBG( it!= region_table_.get<Index>().end() )(idx).error("No region with given idx\n");
     return it->address;
 }
 
@@ -234,7 +234,7 @@ const std::string & RegionDB::get_region_address(unsigned int idx) const {
 
 void RegionDB::mark_used_region(unsigned int idx) {
     RegionTable::index<Index>::type::iterator it = region_table_.get<Index>().find(idx);
-    OLD_ASSERT( it!= region_table_.get<Index>().end(), "No region with index: %u\n", idx);
+    ASSERT_DBG( it!= region_table_.get<Index>().end() )(idx).error("No region with given idx\n");
     if ( !it->used ) {
     	unsigned int index = it->index;
     	RegionItem item(index, it->get_id(), it->label, it->dim(), it->address, true);
@@ -252,21 +252,21 @@ void RegionDB::close() {
 
 
 unsigned int RegionDB::size() const {
-	OLD_ASSERT(closed_, "RegionDB not closed yet.\n");
+	ASSERT_DBG(closed_).error("RegionDB not closed yet.\n");
     return 2* max(n_boundary_, n_bulk_);
 }
 
 
 
 unsigned int RegionDB::boundary_size() const {
-	OLD_ASSERT(closed_, "RegionDB not closed yet.\n");
+	ASSERT_DBG(closed_).error("RegionDB not closed yet.\n");
     return n_boundary_;
 }
 
 
 
 unsigned int RegionDB::bulk_size() const {
-	OLD_ASSERT(closed_, "RegionDB not closed yet.\n");
+	ASSERT_DBG(closed_).error("RegionDB not closed yet.\n");
     return n_bulk_;
 }
 
@@ -300,11 +300,11 @@ void RegionDB::add_set( const string& set_name, const RegionSet & set) {
 
 void RegionDB::erase_from_set( const string& set_name, Region region) {
 	RegionSetTable::iterator it = sets_.find(set_name);
-	OLD_ASSERT(it != sets_.end(), "Region set '%s' doesn't exist.", set_name.c_str());
+	ASSERT(it != sets_.end())(set_name).error("Region set doesn't exist.");
 	RegionSet & set = (*it).second;
 
 	auto set_it = std::find(set.begin(), set.end(), region);
-	OLD_ASSERT(set_it != set.end(), "Erased region was not found in set '%s'", set_name.c_str());
+	ASSERT(set_it != set.end())(set_name).error("Erased region was not found in set.");
 	set.erase(set_it);
 }
 
@@ -374,12 +374,13 @@ Region RegionDB::insert_region(unsigned int id, const std::string &label, unsign
 }
 
 Region RegionDB::replace_region_dim(DimIDIter it_undef_dim, unsigned int dim, bool boundary) {
-	OLD_ASSERT( it_undef_dim->dim() == undefined_dim,
-			"Dimension of replaced region with id=%u must be undefined_dim, actually is: %u\n", it_undef_dim->get_id(), it_undef_dim->dim());
+    unsigned int reg_id = it_undef_dim->get_id();
+	ASSERT_EQ( it_undef_dim->dim(), undefined_dim )(reg_id)
+			.error("Dimension of replaced region with 'reg_id' must be undefined_dim\n");
 
 	unsigned int index = it_undef_dim->index;
 
-	RegionItem item(index, it_undef_dim->get_id(), it_undef_dim->label, dim, this->get_region_address(index));
+	RegionItem item(index, reg_id, it_undef_dim->label, dim, this->get_region_address(index));
 	region_table_.replace(
 			region_table_.get<Index>().find(index),
             item);
@@ -387,7 +388,7 @@ Region RegionDB::replace_region_dim(DimIDIter it_undef_dim, unsigned int dim, bo
 	Region r_id=Region(index, *this);
     // check boundary
     if ( r_id.is_boundary() != boundary )
-        THROW(ExcInconsistentBoundary() << EI_Label(it_undef_dim->label) << EI_ID(it_undef_dim->get_id()) );
+        THROW(ExcInconsistentBoundary() << EI_Label(it_undef_dim->label) << EI_ID(reg_id) );
 
     return r_id;
 }

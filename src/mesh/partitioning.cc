@@ -76,14 +76,14 @@ Partitioning::~Partitioning() {
 }
 
 const Distribution * Partitioning::get_init_distr() const {
-	OLD_ASSERT(init_el_ds_, "NULL initial distribution.");
+	ASSERT_PTR_DBG(init_el_ds_).error("NULL initial distribution.");
     return init_el_ds_;
 }
 
 
 
 const LongIdx * Partitioning::get_loc_part() const {
-	OLD_ASSERT(loc_part_, "NULL local partitioning.");
+	ASSERT_PTR_DBG(loc_part_).error("NULL local partitioning.");
     return loc_part_;
 }
 

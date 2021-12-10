@@ -46,7 +46,7 @@
 #include "input/input_exception.hh"                    // for DECLARE_INPUT_...
 #include "system/exc_common.hh"                        // for ExcAssertMsg
 #include "system/exceptions.hh"                        // for operator<<
-#include "system/global_defs.h"                        // for OLD_ASSERT, msg
+#include "system/asserts.hh"                           // for ASSERT, ...
 
 namespace BMI=::boost::multi_index;
 
@@ -84,12 +84,12 @@ public:
 
     /// Returns index of the region in the boundary set.
     inline unsigned int boundary_idx() const {
-    	OLD_ASSERT( is_boundary(), "Try to get boundary index of a bulk region with internal idx: %d\n", idx_ );
+    	ASSERT_DBG( is_boundary() )(idx_)("Try to get boundary index of a bulk region with internal idx\n");
         return idx_ >> 1; }
 
     /// Returns index of the region in the bulk set.
     inline unsigned int bulk_idx() const {
-    	OLD_ASSERT( ! is_boundary(), "Try to get bulk index of boundary region with internal idx: %d\n", idx_ );
+    	ASSERT_DBG( ! is_boundary() )(idx_).error("Try to get bulk index of boundary region with internal idx\n");
         return idx_ >> 1; }
 
     /// Equality comparison operators for regions.
