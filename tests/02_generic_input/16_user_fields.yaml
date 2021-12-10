@@ -1,0 +1,70 @@
+#################
+# Test goal: Test time steps function defined in main YAML file.
+# Author: David Flanderka
+# Source for reference: qualitative
+
+flow123d_version: 3.1.0
+problem: !Coupling_Sequential
+  description: Test of timesteps of transport TG as function and output of timesteps to YAML format.
+  mesh:
+    mesh_file: ../00_mesh/rectangle_0.2x1_frac.msh
+  flow_equation: !Flow_Darcy_MH
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12    
+    input_fields:
+      - region: ALL
+        conductivity: 1
+      - region: .BOUNDARY
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: y
+    output:
+      fields:
+        - pressure_p0
+        - velocity_p0
+  solute_equation: !Coupling_OperatorSplitting
+    transport: !Solute_AdvectionDiffusion_DG
+      #user_fields:
+        #- name: bc_flux_x
+          #field: !FieldFormula
+            #value: 1 if (0.5 < y < 0.75) else 0
+        #- name: bc_flux_t
+          #field: !FieldTimeFunction
+            #time_function: 
+              #values: !include_csv
+                #file: ./includes/bc_time_function.csv
+                #separator: " "
+                #n_head_lines: 1
+                #format:
+                  #t:
+                    #time: $0
+                  #value: $1
+      input_fields:
+        - region: .left
+#          bc_conc: !FieldFormula
+#            value: bc_flux_x * bc_flux_t
+          bc_conc: 
+            - !FieldTimeFunction
+              time_function: 
+                values: !include_csv
+                  file: ./includes/bc_time_function.csv
+                  separator: " "
+                  n_head_lines: 1
+                  format:
+                    t: 
+                       time: $0
+                    value: $1 
+        - region: BULK
+          init_conc: 0
+          cross_section: 1
+          porosity: 1
+    output_stream:      
+      times:
+        - step: 0.5
+    substances:
+      - A
+    time:
+      end_time: 1.0
+      init_dt: 0.1
