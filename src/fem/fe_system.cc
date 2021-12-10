@@ -101,9 +101,9 @@ const arma::vec FESystemFunctionSpace::basis_grad(const unsigned int i,
 template<unsigned int dim>
 FESystem<dim>::FESystem(std::shared_ptr<FiniteElement<dim> > fe, FEType t)
 {
-  OLD_ASSERT(fe->n_components() == 1, "FEVectorContravariant and FEVectorPiola can only be created from scalar FE.");
-  OLD_ASSERT(t == FEType::FEVectorContravariant || t == FEType::FEVectorPiola,
-             "This constructor can be used only for FEVectorContravariant or FEVectorPiola.");
+  ASSERT_EQ_DBG(fe->n_components(), 1).error("FEVectorContravariant and FEVectorPiola can only be created from scalar FE.");
+  ASSERT_DBG(t == FEType::FEVectorContravariant || t == FEType::FEVectorPiola)
+             .error("This constructor can be used only for FEVectorContravariant or FEVectorPiola.");
   
   FiniteElement<dim>::init(false, t);
   fe_ = std::vector<std::shared_ptr<FiniteElement<dim> > >(dim, fe);
@@ -114,10 +114,10 @@ FESystem<dim>::FESystem(std::shared_ptr<FiniteElement<dim> > fe, FEType t)
 template<unsigned int dim>
 FESystem<dim>::FESystem(const std::shared_ptr<FiniteElement<dim> > &fe, FEType t, unsigned int n)
 {
-    OLD_ASSERT(t == FEType::FEVector || t == FEType::FETensor || t == FEType::FEMixedSystem,
-               "This constructor can be used only for FEVector, FETensor or FEMixedSystem.");
-    OLD_ASSERT(fe->n_components() == 1 || t == FEType::FEMixedSystem,
-               "FEVector and FETensor can only be created from scalar FE.");
+    ASSERT_DBG(t == FEType::FEVector || t == FEType::FETensor || t == FEType::FEMixedSystem)
+               .error("This constructor can be used only for FEVector, FETensor or FEMixedSystem.");
+    ASSERT_DBG(fe->n_components() == 1 || t == FEType::FEMixedSystem)
+               .error("FEVector and FETensor can only be created from scalar FE.");
     
     FiniteElement<dim>::init(false, t);
     fe_ = std::vector<std::shared_ptr<FiniteElement<dim> > >(n, fe);
@@ -160,7 +160,7 @@ void FESystem<dim>::initialize()
         tensor_components_.push_back(comp_offset);
         break;
       default:
-        OLD_ASSERT(false, "Not implemented.");
+        ASSERT(false).error("Not implemented.");
         break;
     }
 

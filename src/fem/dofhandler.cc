@@ -303,7 +303,7 @@ void DOFHandlerMultiDim::update_local_dofs(unsigned int proc,
 void DOFHandlerMultiDim::distribute_dofs(std::shared_ptr<DiscreteSpace> ds)
 {
 	// First check if dofs are already distributed.
-	OLD_ASSERT(ds_ == nullptr, "Attempt to distribute DOFs multiple times!");
+	ASSERT(ds_ == nullptr).error("Attempt to distribute DOFs multiple times!");
     
     ds_ = ds;
 

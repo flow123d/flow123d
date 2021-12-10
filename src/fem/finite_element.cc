@@ -59,7 +59,7 @@ template<class FS> double Dof::evaluate(const FS &function_space,
     }
         
     default:
-        OLD_ASSERT(false, "Dof evaluation not implemented for this type.");
+        ASSERT(false).error("Dof evaluation not implemented for this type.");
     }
     return 0;
 }

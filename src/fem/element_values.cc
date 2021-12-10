@@ -210,7 +210,7 @@ ElementValues<spacedim>::~ElementValues()
 template<unsigned int spacedim>
 void ElementValues<spacedim>::reinit(const ElementAccessor<spacedim> & cell)
 {
-	OLD_ASSERT_EQUAL( dim_, cell.dim() );
+	ASSERT_EQ_DBG( dim_, cell.dim() );
     data.cell = cell;
 
     // calculate Jacobian of mapping, JxW, inverse Jacobian
