@@ -133,7 +133,7 @@ public:
 
     /// Create new accessor with same local idx and given DOF handler. Actual and given DOF handler must be create on same Mesh.
     DHCellAccessor cell_with_other_dh(const DOFHandlerMultiDim * dh) const{
-    	ASSERT( (dh->mesh()->n_nodes() == dof_handler_->mesh()->n_nodes()) && (dh->mesh()->n_elements() == dof_handler_->mesh()->n_elements()) )
+    	ASSERT_DBG( (dh->mesh()->n_nodes() == dof_handler_->mesh()->n_nodes()) && (dh->mesh()->n_elements() == dof_handler_->mesh()->n_elements()) )
     			.error("Incompatible DOF handlers!");
     	return DHCellAccessor(dh, loc_ele_idx_);
     }
@@ -196,7 +196,7 @@ public:
 
     /// Return Side of given cell and side_idx.
     inline Side side() const {
-    	ASSERT( this->is_valid() );
+    	ASSERT_DBG( this->is_valid() );
    		return Side(dh_cell_accessor_.dof_handler_->mesh(), dh_cell_accessor_.elm_idx(), side_idx_ );
     }
 

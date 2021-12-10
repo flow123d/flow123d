@@ -248,7 +248,7 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
 
         // test if candidate is in region and update projection
         if (elm.region().is_in_region_set(region_set)) {
-            ASSERT_LE(candidate_data.distance_, observe_data_.distance_).error();
+            ASSERT_LE_DBG(candidate_data.distance_, observe_data_.distance_).error();
 
 			observe_data_.distance_ = candidate_data.distance_;
 			observe_data_.element_idx_ = candidate_data.element_idx_;
@@ -474,13 +474,13 @@ void Observe::output_time_frame(bool flush) {
         // check that observe fields are set
         if (std::isnan(observe_values_time_[observe_time_idx_])) {
             // first call and no fields
-            ASSERT(observe_field_values_.size() == 0);
+            ASSERT_DBG(observe_field_values_.size() == 0);
             WarningOut() << "No observe fields for the observation stream: " << observe_name_ << endl;
         }
     }
     
     if (std::isnan(observe_values_time_[observe_time_idx_])) {
-        ASSERT(observe_field_values_.size() == 0);
+        ASSERT_DBG(observe_field_values_.size() == 0);
         return;        
     }
     

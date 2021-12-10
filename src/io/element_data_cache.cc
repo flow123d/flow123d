@@ -94,7 +94,7 @@ void ElementDataCache<T>::read_ascii_data(Tokenizer &tok, unsigned int n_compone
 		idx = i_row * n_components;
 		std::vector<T> &vec = *( data_[i_vec].get() );
 		for (unsigned int i_col=0; i_col < n_components; ++i_col, ++idx) {
-            ASSERT_DBG(idx < vec.size());
+            ASSERT_LT_DBG(idx, vec.size());
 			vec[idx] = boost::lexical_cast<T>(*tok);
 			++tok;
 		}
@@ -124,7 +124,7 @@ void ElementDataCache<T>::read_binary_data(std::istream &data_stream, unsigned i
 template <typename T>
 void ElementDataCache<T>::print_ascii(ostream &out_stream, unsigned int idx)
 {
-	ASSERT_LT(idx, this->n_values_).error();
+	ASSERT_LT_DBG(idx, this->n_values_).error();
 	std::vector<T> &vec = *( this->data_[0].get() );
 	for(unsigned int i = n_comp_*n_dofs_per_element_*idx; i < n_comp_*n_dofs_per_element_*(idx+1); ++i )
 		out_stream << vec[i] << " ";
@@ -345,7 +345,7 @@ std::shared_ptr< ElementDataCacheBase > ElementDataCache<T>::gather(Distribution
         for (unsigned int i=0; i<n_global_data; ++i) {
             i_global_coord = this->n_comp() * this->n_dofs_per_element() * rec_indices_ids[i];
             for (unsigned int j=0; j<this->n_comp() * this->n_dofs_per_element(); ++j) { //loop over coords
-            	ASSERT_LT(i_global_coord+j, gather_vec.size());
+            	ASSERT_LT_DBG(i_global_coord+j, gather_vec.size());
                 gather_vec[ i_global_coord+j ] = rec_data[ this->n_comp()*this->n_dofs_per_element()*i+j ];
             }
         }
@@ -372,8 +372,8 @@ std::shared_ptr< ElementDataCacheBase > ElementDataCache<T>::element_node_cache_
         	i_old = i_conn*this->n_comp_*this->n_dofs_per_element_;
         	i_new = i_node*this->n_comp_*this->n_dofs_per_element_;
             for(unsigned int i = 0; i < this->n_comp_*this->n_dofs_per_element_; i++) {
-            	ASSERT_LT(i_new+i, data_out_vec.size());
-            	ASSERT_LT(i_old+i, data_in_vec.size());
+            	ASSERT_LT_DBG(i_new+i, data_out_vec.size());
+            	ASSERT_LT_DBG(i_old+i, data_in_vec.size());
             	data_out_vec[i_new+i] = data_in_vec[i_old+i];
             }
         }
@@ -396,8 +396,8 @@ std::shared_ptr< ElementDataCacheBase > ElementDataCache<T>::element_node_cache_
         	i_old = i_node*elem_node_cache->n_comp_*this->n_dofs_per_element_;
         	i_new = i_conn*elem_node_cache->n_comp_*this->n_dofs_per_element_;
             for(unsigned int i = 0; i < elem_node_cache->n_comp_*this->n_dofs_per_element_; i++) {
-            	ASSERT_LT(i_new+i, data_out_vec.size());
-            	ASSERT_LT(i_old+i, data_in_vec.size());
+            	ASSERT_LT_DBG(i_new+i, data_out_vec.size());
+            	ASSERT_LT_DBG(i_old+i, data_in_vec.size());
             	data_out_vec[i_new+i] = data_in_vec[i_old+i];
             }
         }
@@ -419,8 +419,8 @@ std::shared_ptr< ElementDataCacheBase > ElementDataCache<T>::compute_node_data(s
 
     auto &data_in_vec = *( this->get_component_data(0).get() );
     for (idx=0; idx < conn_vec.size(); idx++) {
-    	ASSERT_LT(conn_vec[idx], node_cache->n_values());
-    	ASSERT_LT(this->n_comp()*this->n_dofs_per_element()*idx, data_in_vec.size());
+    	ASSERT_LT_DBG(conn_vec[idx], node_cache->n_values());
+    	ASSERT_LT_DBG(this->n_comp()*this->n_dofs_per_element()*idx, data_in_vec.size());
     	node_cache->add( conn_vec[idx], &(data_in_vec[this->n_comp() * this->n_dofs_per_element() * idx]) );
     	count[ conn_vec[idx] ]++;
     }

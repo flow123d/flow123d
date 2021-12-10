@@ -91,7 +91,7 @@ bool TableFunction<Value>::initialized()
 template <class Value>
 typename TableFunction<Value>::return_type const &TableFunction<Value>::value(double t)
 {
-	ASSERT( this->initialized() ).error("Compute value of uninitialized TableFunction.");
+	ASSERT_DBG( this->initialized() ).error("Compute value of uninitialized TableFunction.");
 
 	if (t != last_t_) {
 		unsigned int last_idx = table_values_.size() - 1;
@@ -120,8 +120,8 @@ typename TableFunction<Value>::return_type const &TableFunction<Value>::value(do
 template <class Value>
 void TableFunction<Value>::interpolated(double coef, unsigned int idx)
 {
-	ASSERT(coef >= 0 && coef <= 1)(coef).error();
-	ASSERT(idx >= 0 && idx <= table_values_.size()-2)(idx).error();
+	ASSERT_DBG(coef >= 0 && coef <= 1)(coef).error();
+	ASSERT_DBG(idx >= 0 && idx <= table_values_.size()-2)(idx).error();
 
 	Value val_0(table_values_[idx].r_value_);
 	Value val_1(table_values_[idx+1].r_value_);

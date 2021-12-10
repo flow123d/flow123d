@@ -156,7 +156,7 @@ void Balance::init_from_input(
 
 void Balance::units(const UnitSI &unit)
 {
-    ASSERT(! allocation_done_);
+    ASSERT_DBG(! allocation_done_);
 
     units_ = unit;
     units_.undef(false);
@@ -164,7 +164,7 @@ void Balance::units(const UnitSI &unit)
 
 unsigned int Balance::add_quantity(const string &name)
 {
-    ASSERT(! allocation_done_);
+    ASSERT_DBG(! allocation_done_);
 
 	Quantity q(quantities_.size(), name);
 	quantities_.push_back(q);
@@ -185,7 +185,7 @@ std::vector<unsigned int> Balance::add_quantities(const std::vector<string> &nam
 void Balance::allocate(unsigned int n_loc_dofs,
 		unsigned int max_dofs_per_boundary)
 {
-    ASSERT(! allocation_done_);
+    ASSERT_DBG(! allocation_done_);
     n_loc_dofs_seq_ = n_loc_dofs;
 	n_loc_dofs_par_ = n_loc_dofs;
     max_dofs_per_boundary_ = max_dofs_per_boundary;
@@ -194,7 +194,7 @@ void Balance::allocate(unsigned int n_loc_dofs,
 void Balance::allocate(const std::shared_ptr<DOFHandlerMultiDim>& dh,
 		unsigned int max_dofs_per_boundary)
 {
-    ASSERT(! allocation_done_);
+    ASSERT_DBG(! allocation_done_);
 	// for sequential matrices, we need to include ghost values
     n_loc_dofs_seq_ = dh->get_local_to_global_map().size();
 	// for parallel matrices, we use the local size from dof distribution
@@ -413,7 +413,7 @@ void Balance::start_source_assembly(unsigned int quantity_idx)
 
 void Balance::finish_mass_assembly(unsigned int quantity_idx)
 {
-	ASSERT(allocation_done_);
+	ASSERT_DBG(allocation_done_);
     if (! balance_on_) return;
 
 	chkerr(MatAssemblyBegin(region_mass_matrix_[quantity_idx], MAT_FINAL_ASSEMBLY));
@@ -424,7 +424,7 @@ void Balance::finish_mass_assembly(unsigned int quantity_idx)
 
 void Balance::finish_flux_assembly(unsigned int quantity_idx)
 {
-    ASSERT(allocation_done_);
+    ASSERT_DBG(allocation_done_);
     if (! balance_on_) return;
 
     chkerr(MatAssemblyBegin(be_flux_matrix_[quantity_idx], MAT_FINAL_ASSEMBLY));
@@ -435,7 +435,7 @@ void Balance::finish_flux_assembly(unsigned int quantity_idx)
 
 void Balance::finish_source_assembly(unsigned int quantity_idx)
 {
-    ASSERT(allocation_done_);
+    ASSERT_DBG(allocation_done_);
     if (! balance_on_) return;
 
     chkerr(MatAssemblyBegin(region_source_matrix_[quantity_idx], MAT_FINAL_ASSEMBLY));

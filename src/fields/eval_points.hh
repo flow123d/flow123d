@@ -62,7 +62,7 @@ public:
     /// Return local coordinates of given local point and appropriate dim.
     template<unsigned int dim>
     inline arma::vec::fixed<dim> local_point(unsigned int local_point_idx) const {
-    	ASSERT_GT(dim, 0).error("Dimension 0 not supported!\n");
+    	ASSERT_GT_DBG(dim, 0).error("Dimension 0 not supported!\n");
         return dim_eval_points_[dim].local_point<dim>(local_point_idx);
     }
 

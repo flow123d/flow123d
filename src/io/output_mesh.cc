@@ -100,13 +100,13 @@ void OutputMeshBase::set_error_control_field(ErrorControlFieldFunc error_control
 
 unsigned int OutputMeshBase::n_elements()
 {
-    ASSERT_PTR(offsets_);
+    ASSERT_PTR_DBG(offsets_);
     return offsets_->n_values()-1;
 }
 
 unsigned int OutputMeshBase::n_nodes()
 {
-    ASSERT_PTR(nodes_);
+    ASSERT_PTR_DBG(nodes_);
     return nodes_->n_values();
 }
 
@@ -446,7 +446,7 @@ void OutputMeshDiscontinuous::refine_aux_element(const OutputMeshDiscontinuous::
     };
 //     DBGMSG("level = %d, %d\n", aux_element.level, max_refinement_level_);
  
-    ASSERT_DBG(dim == aux_element.nodes.size()-1);
+    ASSERT_EQ_DBG(dim, aux_element.nodes.size()-1);
     
     // if not refining any further, push into final vector
     if( ! refinement_criterion(aux_element, ele_acc) ) {
@@ -668,7 +668,7 @@ void OutputMeshDiscontinuous::create_refined_sub_mesh()
             case 1: this->refine_aux_element<1>(aux_ele, refinement, ele); break;
             case 2: this->refine_aux_element<2>(aux_ele, refinement, ele); break;
             case 3: this->refine_aux_element<3>(aux_ele, refinement, ele); break;
-            default: ASSERT(0 < dim && dim < 4);
+            default: ASSERT(0).error("Should not happen.\n");
         }
 
         //skip unrefined element

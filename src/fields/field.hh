@@ -449,7 +449,7 @@ template<int spacedim, class Value>
 inline typename Value::return_type const & Field<spacedim,Value>::value(const Point &p, const ElementAccessor<spacedim> &elm) const
 {
 
-    ASSERT(this->set_time_result_ != TimeStatus::unknown)(this->name()).error("Unknown time status.\n");
+    ASSERT_DBG(this->set_time_result_ != TimeStatus::unknown)(this->name()).error("Unknown time status.\n");
 	OLD_ASSERT(elm.region_idx().idx() < region_fields_.size(), "Region idx %u out of range %lu, field: %s\n",
            elm.region_idx().idx(), (unsigned long int) region_fields_.size(), name().c_str());
 	OLD_ASSERT( region_fields_[elm.region_idx().idx()] ,
@@ -463,7 +463,7 @@ template<int spacedim, class Value>
 inline void Field<spacedim,Value>::value_list(const Armor::array &point_list, const ElementAccessor<spacedim> &elm,
                    std::vector<typename Value::return_type>  &value_list) const
 {
-    ASSERT(this->set_time_result_ != TimeStatus::unknown)(this->name()).error("Unknown time status.\n");
+    ASSERT_DBG(this->set_time_result_ != TimeStatus::unknown)(this->name()).error("Unknown time status.\n");
 	OLD_ASSERT(elm.region_idx().idx() < region_fields_.size(), "Region idx %u out of range %lu, field: %s\n",
            elm.region_idx().idx(), (unsigned long int) region_fields_.size(), name().c_str());
 	OLD_ASSERT( region_fields_[elm.region_idx().idx()] ,

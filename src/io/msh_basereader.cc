@@ -72,7 +72,7 @@ Mesh * BaseMeshReader::mesh_factory(const Input::Record &input_mesh_rec) {
 }
 
 void BaseMeshReader::read_raw_mesh(Mesh * mesh) {
-	ASSERT(mesh).error("Argument mesh is NULL.\n");
+	ASSERT_PTR(mesh).error("Argument mesh is NULL.\n");
     tok_.set_position( Tokenizer::Position() );
     read_nodes(mesh);
     read_elements(mesh);

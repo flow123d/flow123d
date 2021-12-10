@@ -233,8 +233,8 @@ Field<spacedim,Value>::operator[] (Region reg)
 
 template <int spacedim, class Value>
 bool Field<spacedim, Value>::is_constant(Region reg) {
-	ASSERT(this->set_time_result_ != TimeStatus::unknown).error("Unknown time status.\n");
-	ASSERT_LT(reg.idx(), this->region_fields_.size());
+	ASSERT_DBG(this->set_time_result_ != TimeStatus::unknown).error("Unknown time status.\n");
+	ASSERT_LT_DBG(reg.idx(), this->region_fields_.size());
     FieldBasePtr region_field = this->region_fields_[reg.idx()];
     return ( region_field && region_field->is_constant_in_space() );
 }
@@ -327,7 +327,7 @@ bool Field<spacedim, Value>::set_time(const TimeStep &time_step, LimitSide limit
         double last_time_in_history = rh.front().first;
         unsigned int history_size=rh.size();
         unsigned int i_history;
-        ASSERT( time_step.ge(last_time_in_history) ).error("Setting field time back in history not fully supported yet!");
+        ASSERT_DBG( time_step.ge(last_time_in_history) ).error("Setting field time back in history not fully supported yet!");
 
         // set history index
         if ( time_step.gt(last_time_in_history) ) {
@@ -343,7 +343,7 @@ bool Field<spacedim, Value>::set_time(const TimeStep &time_step, LimitSide limit
             }
         }
         i_history=min(i_history, history_size - 1);
-        ASSERT(i_history >= 0).error("Empty field history.");
+        ASSERT_DBG(i_history >= 0).error("Empty field history.");
         // possibly update field pointer
 
         auto new_ptr = rh.at(i_history).second;
@@ -406,7 +406,7 @@ void Field<spacedim, Value>::observe_output(std::shared_ptr<Observe> observe)
                         Value( const_cast<typename Value::return_type &>(
                                 this->value(op_acc.observe_point().global_coords(),
                                         ElementAccessor<spacedim>(this->mesh(), ele_index)) ));
-        ASSERT_EQ(output_data.n_comp(), obs_value.n_rows()*obs_value.n_cols()).error();
+        ASSERT_EQ_DBG(output_data.n_comp(), obs_value.n_rows()*obs_value.n_cols()).error();
         output_data.store_value(loc_point_time_index, obs_value.mem_ptr());
     }
 }
@@ -688,7 +688,7 @@ void Field<spacedim,Value>::fill_data_value(const std::vector<int> &offsets)
 template<int spacedim, class Value>
 std::shared_ptr< FieldFE<spacedim, Value> > Field<spacedim,Value>::get_field_fe() {
 	ASSERT_EQ_DBG(this->mesh()->region_db().size(), region_fields_.size()).error();
-	ASSERT(!this->shared_->bc_).error("FieldFE output of native data is supported only for bulk fields!");
+	ASSERT_DBG(!this->shared_->bc_).error("FieldFE output of native data is supported only for bulk fields!");
 
 	std::shared_ptr< FieldFE<spacedim, Value> > field_fe_ptr;
 

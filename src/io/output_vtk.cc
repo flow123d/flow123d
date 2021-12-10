@@ -351,7 +351,7 @@ void OutputVTK::compress_data(stringstream &uncompressed_stream, stringstream &c
 		deflateInit(&strm, Z_BEST_COMPRESSION);
 		while (strm.avail_in != 0) {
 			int res = deflate(&strm, Z_NO_FLUSH);
-			ASSERT_EQ(res, Z_OK).error();
+			ASSERT_EQ_DBG(res, Z_OK).error();
 			if (strm.avail_out == 0) {
 				buffer.insert(buffer.end(), temp_buffer, temp_buffer + BUF_SIZE);
 				strm.next_out = temp_buffer;
@@ -367,7 +367,7 @@ void OutputVTK::compress_data(stringstream &uncompressed_stream, stringstream &c
 			}
 			deflate_res = deflate(&strm, Z_FINISH);
 		}
-		ASSERT_EQ(deflate_res, Z_STREAM_END).error();
+		ASSERT_EQ_DBG(deflate_res, Z_STREAM_END).error();
 		buffer.insert(buffer.end(), temp_buffer, temp_buffer + BUF_SIZE - strm.avail_out);
 		deflateEnd(&strm);
 

@@ -235,7 +235,7 @@ bool EquationOutput::is_field_output_time(const FieldCommon &field, TimeStep ste
     auto &marks = TimeGovernor::marks();
     auto field_times_it = field_output_times_.find(field.name());
     if (field_times_it == field_output_times_.end()) return false;
-    ASSERT( step.eq(field.time()) )(step.end())(field.time())(field.name()).error("Field is not set to the output time.");
+    ASSERT_DBG( step.eq(field.time()) )(step.end())(field.time())(field.name()).error("Field is not set to the output time.");
     auto current_mark_it = marks.current(step, equation_type_ | marks.type_output() );
     if (current_mark_it == marks.end(equation_type_ | marks.type_output()) ) return false;
     return (field_times_it->second.output_set_.contains(*current_mark_it) );

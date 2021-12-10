@@ -157,7 +157,7 @@ public:
      */
     FieldCommon & set_limits(double min, double max = std::numeric_limits<double>::max())
     {
-    	ASSERT(min < max)(min)(max).error("Invalid field limits!");
+    	ASSERT_LT(min, max).error("Invalid field limits!");
     	shared_->limits_ = std::make_pair(min, max);
     	return *this;
     }

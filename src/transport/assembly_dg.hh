@@ -428,7 +428,7 @@ public:
                 {
                     s2++;
                     if (s2<=s1) continue;
-                    ASSERT(edge_side1.is_valid()).error("Invalid side of edge.");
+                    ASSERT_DBG(edge_side1.is_valid()).error("Invalid side of edge.");
 
                     arma::vec3 nv = fe_values_vec_[s1].normal_vector(0);
 

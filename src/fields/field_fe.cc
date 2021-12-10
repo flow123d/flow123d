@@ -261,7 +261,7 @@ template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::value_list (const Armor::array &point_list, const ElementAccessor<spacedim> &elm,
                    std::vector<typename Value::return_type> &value_list)
 {
-	ASSERT_EQ( point_list.size(), value_list.size() ).error();
+	ASSERT_EQ_DBG( point_list.size(), value_list.size() ).error();
 	ASSERT_DBG( point_list.n_rows() == spacedim && point_list.n_cols() == 1).error("Invalid point size.\n");
 
 	switch (elm.dim()) {
@@ -496,8 +496,8 @@ template <int spacedim, class Value>
 bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 	// Time can be set only for field initialized from input.
 	if ( flags_.match(FieldFlag::equation_input) && flags_.match(FieldFlag::declare_input) ) {
-	    ASSERT(field_name_ != "").error("Uninitialized FieldFE, did you call init_from_input()?\n");
-		ASSERT_PTR(dh_)(field_name_).error("Null target mesh pointer of finite element field, did you call set_mesh()?\n");
+	    ASSERT_DBG(field_name_ != "").error("Uninitialized FieldFE, did you call init_from_input()?\n");
+		ASSERT_PTR_DBG(dh_)(field_name_).error("Null target mesh pointer of finite element field, did you call set_mesh()?\n");
 		if ( reader_file_ == FilePath() ) return false;
 
 		unsigned int n_components = this->value_.n_rows() * this->value_.n_cols();
