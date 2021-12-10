@@ -46,7 +46,7 @@ using namespace std;
 #include "mesh/region.hh"                              // for Region (ptr only)
 #include "system/exc_common.hh"                        // for ExcAssertMsg
 #include "system/exceptions.hh"                        // for ExcMessage::~E...
-#include "system/global_defs.h"                        // for OLD_ASSERT, msg
+#include "system/asserts.hh"                           // for ASSERT
 #include "tools/time_governor.hh"                      // for TimeStep
 
 class Mesh;

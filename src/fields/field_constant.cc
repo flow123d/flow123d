@@ -129,13 +129,12 @@ template <int spacedim, class Value>
 void FieldConstant<spacedim, Value>::value_list (const Armor::array &point_list, FMT_UNUSED const ElementAccessor<spacedim> &elm,
                    std::vector<typename Value::return_type>  &value_list)
 {
-	OLD_ASSERT_EQUAL( point_list.size(), value_list.size() );
+	ASSERT_EQ_DBG( point_list.size(), value_list.size() );
     ASSERT_DBG(point_list.n_rows() == spacedim && point_list.n_cols() == 1).error("Invalid point size.\n");
 
     for(unsigned int i=0; i< point_list.size(); i++) {
-    	OLD_ASSERT( Value(value_list[i]).n_rows()==this->value_.n_rows(),
-                "value_list[%d] has wrong number of rows: %d; should match number of components: %d\n",
-                i, Value(value_list[i]).n_rows(),this->value_.n_rows());
+    	ASSERT_EQ_DBG( Value(value_list[i]).n_rows(), this->value_.n_rows() )(i)
+                .error("value_list[i] has wrong number of rows\n");
 
 
         value_list[i]=this->r_value_;

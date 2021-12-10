@@ -63,7 +63,7 @@ MultiField<spacedim, Value>::MultiField(const MultiField &other)
 template<int spacedim, class Value>
 MultiField<spacedim,Value> &MultiField<spacedim,Value>::operator=(const MultiField<spacedim,Value> &other)
 {
-	//OLD_ASSERT( flags().match( FieldFlag::input_copy )  , "Try to assign to non-copy field '%s' from the field '%s'.", this->name().c_str(), other.name().c_str());
+	//ASSERT_DBG( flags().match( FieldFlag::input_copy )(this->name())(other.name()).error("Try to assign to non-copy field.");
 	ASSERT_PTR_DBG(other.shared_->mesh_).error("Must call set_mesh before assign to other field.\n");
 	ASSERT_DBG( !shared_->mesh_ || (shared_->mesh_==other.shared_->mesh_))
 	        .error("Assignment between multi fields with different meshes.\n");
@@ -331,7 +331,7 @@ void MultiField<spacedim,Value>::set_input_list(const Input::Array &list, const 
 // template<int spacedim, class Value>
 // void MultiField<spacedim, Value>::value_list(const std::vector< Point >  &point_list, const  ElementAccessor<spacedim> &elm,
 //                    std::vector<typename MultiFieldValue::return_type>  &value_list) const {
-// 	OLD_ASSERT_EQUAL( point_list.size(), value_list.size() );
+// 	ASSERT_EQ( point_list.size(), value_list.size() );
 // 	for(unsigned int i=0; i< point_list.size(); i++) {
 // 		value_list[i]=this->value(point_list[i], elm);
 // 	}
@@ -344,8 +344,8 @@ typename Field<spacedim,Value>::FieldBasePtr MultiField<spacedim, Value>::MultiF
 	Input::Array multifield_arr;
 	if (descriptor_rec.opt_val(field.input_name(), multifield_arr))
 	{
-		//OLD_ASSERT(multifield_arr.size() == 1 || multifield_arr.size() == field.n_comp(),
-		//		"Invalid size of Array defined for MultiField '%s'!\n", field.input_name().c_str());
+		//ASSERT(multifield_arr.size() == 1 || multifield_arr.size() == field.n_comp() )(field.input_name())
+		//		.error("Invalid size of Array defined for MultiField!\n";
 		unsigned int position = 0;
 		auto it = multifield_arr.begin<Input::AbstractRecord>();
 		if (multifield_arr.size() > 1)
