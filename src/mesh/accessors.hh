@@ -130,7 +130,7 @@ public:
      * Used by measure and in intersections.
      */
     inline double jacobian_S3() const {
-        ASSERT_DBG(dim() == 3)(dim()).error("Dimension mismatch.");
+        ASSERT_EQ_DBG(dim(), 3).error("Dimension mismatch.");
         return arma::dot( arma::cross(*( node(1) ) - *( node(0) ),
                                         *( node(2) ) - *( node(0) )),
                         *( node(3) ) - *( node(0) )
@@ -141,7 +141,7 @@ public:
      * Returns Jacobian of 2D element.
      */
     inline double jacobian_S2() const {
-        ASSERT_DBG(dim() == 2)(dim()).error("Dimension mismatch.");
+        ASSERT_EQ_DBG(dim(), 2).error("Dimension mismatch.");
         return arma::norm(
             arma::cross(*( node(1) ) - *( node(0) ), *( node(2) ) - *( node(0) )),
             2
@@ -152,7 +152,7 @@ public:
      * Returns Jacobian of 1D element.
      */
     inline double jacobian_S1() const {
-        ASSERT_DBG(dim() == 1)(dim()).error("Dimension mismatch.");
+        ASSERT_EQ_DBG(dim(), 1).error("Dimension mismatch.");
         return arma::norm(*( node(1) ) - *( node(0) ) , 2);
     }
 

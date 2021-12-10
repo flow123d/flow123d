@@ -641,7 +641,7 @@ void Mesh::make_neighbours_and_edges()
 	for( unsigned int i=0; i<bc_mesh()->n_elements(); ++i) {
 
 		ElementAccessor<3> bc_ele = bc_mesh_->element_accessor(i);
-		ASSERT(bc_ele.region().is_boundary());
+		ASSERT_DBG(bc_ele.region().is_boundary());
         // Find all elements that share this side.
         side_nodes.resize(bc_ele->n_nodes());
         for (unsigned n=0; n<bc_ele->n_nodes(); n++) side_nodes[n] = bc_ele->node_idx(n);

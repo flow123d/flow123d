@@ -110,7 +110,7 @@ void Partitioning::make_element_connection_graph() {
             Edge edg = ele.side(si)->edge();
 
             for (unsigned int li=0; li<edg.n_sides(); li++) {
-            	ASSERT(edg.side(li)->is_valid()).error("NULL side of edge.");
+            	ASSERT_DBG(edg.side(li)->is_valid()).error("NULL side of edge.");
                 e_idx = edg.side(li)->element().idx();
 
                 // for elements of connected elements, excluding element itself
