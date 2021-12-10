@@ -667,7 +667,7 @@ void DarcyMH::solve_nonlinear()
     VecDuplicate(schur0->get_solution(), &save_solution);
     while (nonlinear_iteration_ < this->min_n_it_ ||
            (residual_norm > this->tolerance_ &&  nonlinear_iteration_ < this->max_n_it_ )) {
-    	OLD_ASSERT_EQUAL( convergence_history.size(), nonlinear_iteration_ );
+    	ASSERT_EQ_DBG( convergence_history.size(), nonlinear_iteration_ );
         convergence_history.push_back(residual_norm);
 
         // stagnation test
@@ -702,7 +702,7 @@ void DarcyMH::solve_nonlinear()
         VecAXPBY(schur0->get_solution(), (1-alpha), alpha, save_solution);
 
         //LogOut().fmt("Linear solver ended with reason: {} \n", si.converged_reason );
-        //OLD_ASSERT( si.converged_reason >= 0, "Linear solver failed to converge. Convergence reason %d \n", si.converged_reason );
+        //ASSERT_GE( si.converged_reason, 0).error("Linear solver failed to converge. \n");
         assembly_linear_system();
 
         residual_norm = schur0->compute_residual();
@@ -1015,7 +1015,7 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
 
                 ISCreateGeneral(PETSC_COMM_SELF, side_dofs_vec.size(), &(side_dofs_vec[0]), PETSC_COPY_VALUES, &is);
                 //ISView(is, PETSC_VIEWER_STDOUT_SELF);
-                //OLD_ASSERT(err == 0,"Error in ISCreateStride.");
+                //ASSERT(err == 0).error("Error in ISCreateStride.");
 
                 SchurComplement *ls = new SchurComplement(&(*data_->dh_->distr()), is);
 
@@ -1040,7 +1040,7 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
 
                     ISCreateGeneral(PETSC_COMM_SELF, elem_dofs_vec.size(), &(elem_dofs_vec[0]), PETSC_COPY_VALUES, &is);
                     //ISView(is, PETSC_VIEWER_STDOUT_SELF);
-                    //OLD_ASSERT(err == 0,"Error in ISCreateStride.");
+                    //ASSERT(err == 0).error("Error in ISCreateStride.");
                     SchurComplement *ls1 = new SchurComplement(ds, is); // is is deallocated by SchurComplement
                     ls1->set_negative_definite();
 
@@ -1288,8 +1288,7 @@ void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
         // Maybe divide by cs
         coef = conduct*coef / 3;
 
-        OLD_ASSERT( coef > 0.,
-                "Zero coefficient of hydrodynamic resistance %f . \n ", coef );
+        ASSERT_GT_DBG( coef, 0. ).error("Zero coefficient of hydrodynamic resistance. \n");
         element_permeability.push_back( 1. / coef );
     }
 //    uint i_inet = 0;
@@ -1352,8 +1351,7 @@ void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
             int indGlob = inet[indInet];
             // map it to local node
             Global2LocalMap_::iterator pos = global2LocalNodeMap.find( indGlob );
-            OLD_ASSERT( pos != global2LocalNodeMap.end(),
-                    "Cannot remap node index %d to local indices. \n ", indGlob );
+            ASSERT_DBG( pos != global2LocalNodeMap.end() )(indGlob).error("Cannot remap node global index to local indices.\n");
             int indLoc = static_cast<int> ( pos -> second );
 
             // store the node
