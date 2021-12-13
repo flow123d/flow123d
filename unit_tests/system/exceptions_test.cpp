@@ -223,14 +223,14 @@ TEST(Exceptions, stack_trace) {
 
 }
 
-#include "system/global_defs.h"
+#include "system/asserts.hh"
 //------------------------------------------------------------------------
 // Test ASSERT using exceptions.
 TEST(Exceptions, assert_msg) {
 
     int zero=1;
 #ifdef FLOW123D_DEBUG_ASSERTS
-    EXPECT_THROW_WHAT( {OLD_ASSERT(zero==0, "Zero is %d not zero.\n", zero);} , ExcAssertMsg, "Violated Assert! Zero is 1 not zero." );
+    EXPECT_THROW_WHAT( { ASSERT_EQ(zero, 0) "Zero is not zero.\n");} , feal::Exc_assert, "Violated Assert! Zero is not zero." );
 #endif
 
 }
