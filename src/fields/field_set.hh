@@ -163,11 +163,12 @@ public:
 	/// Default constructor.
 	FieldSet();
 
-	/**
     /**
      * @brief Declare input record type of field defined by user.
      */
     const Input::Type::Record & get_user_field(const std::string &equation_name);
+
+    /**
 	 * Add an existing Field to the list. It stores just pointer to the field.
 	 * Be careful to not destroy passed Field before the FieldSet.
 	 *
