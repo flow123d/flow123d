@@ -16,6 +16,7 @@
  */
 
 #include "fields/field_set.hh"
+#include "fields/bc_field.hh"
 #include "system/sys_profiler.hh"
 #include "input/flow_attribute_lib.hh"
 #include "fem/mapping_p1.hh"
@@ -27,6 +28,17 @@
 
 FieldSet::FieldSet()
 : mesh_(nullptr) {}
+
+
+const Input::Type::Record & FieldSet::get_user_field(const std::string &equation_name) {
+    static Field<3, FieldValue<3>::Scalar> field;
+	return Input::Type::Record( equation_name+":UserData", "Record to set fields of the equation: "+equation_name+".")
+        .declare_key("name", Input::Type::String(), Input::Type::Default::obligatory(),
+                     "Name of user defined field.")
+        .declare_key("field", field.get_input_type(), Input::Type::Default::obligatory(),
+                     "Instance of FieldAlgoBase descendant.")
+		.close();
+}
 
 FieldSet &FieldSet::operator +=(FieldCommon &add_field) {
     FieldCommon *found_field = field(add_field.name());
@@ -152,6 +164,30 @@ FieldCommon *FieldSet::field(const std::string &field_name) const {
 
 
 
+FieldCommon *FieldSet::user_field(const std::string &field_name, const TimeStep &time) {
+//    for(auto field : user_field_list_)
+//        if (field.name() ==field_name) return field;
+    auto it = user_fields_input_.find(field_name);
+    if (it != user_fields_input_.end()) {
+    	uint new_index = user_field_list_.size();
+    	BCField<3, FieldValue<3>::Scalar> * field = new BCField<3, FieldValue<3>::Scalar>();
+    	user_field_list_.push_back( field );
+    	FieldCommon &user_field = *user_field_list_[new_index];
+        *this+=user_field
+                .name(field_name)
+                .description("")
+                .units( UnitSI::dimensionless() );
+        user_field.set_mesh(*mesh_);
+        field->set( it->second, time.end());
+        user_field.set_time(time, LimitSide::right);
+
+    	return &user_field;
+    } else
+        return nullptr;
+}
+
+
+
 FieldCommon &FieldSet::operator[](const std::string &field_name) const {
     FieldCommon *found_field=field(field_name);
     if (found_field) return *found_field;
@@ -263,6 +299,17 @@ std::string FieldSet::print_dependency() const {
         }
     }
     return s.str();
+}
+
+
+void FieldSet::set_user_fields_map(Input::Array input_list) {
+    this->user_fields_input_.clear();
+	for (Input::Iterator<Input::Record> it = input_list.begin<Input::Record>();
+                    it != input_list.end();
+                    ++it) {
+	    std::string name = it->val<std::string>("name");
+	    user_fields_input_[name] = it->val<Input::AbstractRecord>("field");
+	}
 }
 
 
