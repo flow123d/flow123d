@@ -55,7 +55,7 @@
 #include "system/exceptions.hh"                 // for ExcStream, operator<<
 #include "tools/time_governor.hh"               // for TimeGovernor
 
-class AssemblyBase;
+class AssemblyFlowBase;
 class Balance;
 class DarcyFlowMHOutput;
 class Element;
@@ -70,9 +70,7 @@ namespace Input {
 		class Selection;
 	}
 }
-typedef std::vector<std::shared_ptr<AssemblyBase> > MultidimAssembly;
-
-template<int spacedim, class Value> class FieldAddPotential;
+typedef std::vector<std::shared_ptr<AssemblyFlowBase> > MultidimAssembly;
 
 /**
  * @brief Mixed-hybrid model of linear Darcy flow, possibly unsteady.
@@ -142,7 +140,7 @@ public:
     * especially due to the common output class DarcyFlowMHOutput.
     * This is the only dependence between DarcyMH and DarcyLMH classes.
     */
-    class EqData : public FieldSet {
+    class EqFields : public FieldSet {
     public:
 
         /**
@@ -160,7 +158,7 @@ public:
         static const Input::Type::Selection & get_bc_type_selection();
 
         /// Creation of all fields.
-        EqData();
+        EqFields();
 
         /// Return coords field
         FieldCoords &X() {
@@ -192,6 +190,21 @@ public:
         Field<3, FieldValue<3>::Scalar> field_edge_pressure;
 
         Field<3, FieldValue<3>::VectorFixed > gravity_field; /// Holds gravity vector acceptable in FieldModel
+        BCField<3, FieldValue<3>::VectorFixed > bc_gravity; /// Same as previous but used in boundary fields
+        Field<3, FieldValue<3>::Scalar> init_piezo_head;
+        BCField<3, FieldValue<3>::Scalar> bc_piezo_head;
+        BCField<3, FieldValue<3>::Scalar> bc_switch_piezo_head;
+    };
+
+    /**
+     * Class with all data used in the equation DarcyFlow.
+     * This is common to all implementations since this provides interface
+     * to this equation for possible coupling.
+     */
+    class EqData {
+    public:
+        /// Constructor.
+        EqData();
 
         /**
          * Gravity vector and constant shift of pressure potential. Used to convert piezometric head
@@ -252,13 +265,14 @@ public:
 
     virtual double solved_time() override;
 
-    EqData &data() { return *data_; }
+    inline EqFields &eq_fields() { return *eq_fields_; }
+    inline EqData &eq_data() { return *eq_data_; }
     
     void set_extra_storativity(const Field<3, FieldValue<3>::Scalar> &extra_stor)
-    { data_->extra_storativity = extra_stor; }
+    { eq_fields_->extra_storativity = extra_stor; }
     
     void set_extra_source(const Field<3, FieldValue<3>::Scalar> &extra_src)
-    { data_->extra_source = extra_src; }
+    { eq_fields_->extra_source = extra_src; }
 
     virtual ~DarcyMH() override;
 
@@ -374,7 +388,8 @@ protected:
     Vec new_diagonal;
     Vec previous_solution;
 
-	std::shared_ptr<EqData> data_;
+	std::shared_ptr<EqFields> eq_fields_;
+	std::shared_ptr<EqData> eq_data_;
 
     friend class DarcyFlowMHOutput;
     //friend class P0_CouplingAssembler;
