@@ -198,11 +198,6 @@ public:
     std::vector<int> const & get_element_vector(bool boundary_domain);
 
     /**
-	 * Find data header for time and field given by @p header_query.
-	 */
-    virtual MeshDataHeader & find_header(HeaderQuery &header_query)=0;
-
-    /**
      * Scale and check data stored in ElementDataCache of given field.
      */
     CheckResult scale_and_check_limits(string field_name, double coef, double default_val,
@@ -236,6 +231,11 @@ protected:
      */
     virtual void read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader header,
     		bool boundary_domain)=0;
+
+    /**
+     * Find data section header by @p header_query.
+     */
+    virtual MeshDataHeader & find_header(HeaderQuery &header_query)=0;
 
     /**
      * Flag stores that check of compatible mesh was performed.

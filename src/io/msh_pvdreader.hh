@@ -48,11 +48,6 @@ public:
      */
     void read_physical_names(Mesh * mesh) override;
 
-    /**
-	 * Find header of DataArray section of VTK file given by field_name.
-	 */
-	MeshDataHeader & find_header(HeaderQuery &header_query) override;
-
 protected:
 	/// Represents data of one VTK file defined in PVD file.
 	struct VtkFileData {
@@ -86,6 +81,11 @@ protected:
      */
     void read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader header,
     		bool boundary_domain) override;
+
+    /**
+     * Find data section header of VTK file by @p header_query.
+     */
+    MeshDataHeader & find_header(HeaderQuery &header_query) override;
 
     /// Store list of VTK files and time steps declared in PVD file.
     std::vector<VtkFileData> file_list_;
