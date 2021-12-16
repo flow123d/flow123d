@@ -159,6 +159,8 @@ private:
 class FieldSet : public FieldFlag {
 public:
 	DECLARE_EXCEPTION(ExcUnknownField, << "Field set has no field with name: " << FieldCommon::EI_Field::qval);
+    DECLARE_INPUT_EXCEPTION(ExcFieldNotSet,
+            << "Field " << FieldCommon::EI_Field::qval << " is not set. Please set key 'scalar_field', 'vector_field' or 'tensor_field' at: \n");
 
 	/// Default constructor.
 	FieldSet();
@@ -421,8 +423,8 @@ protected:
     /// Field holds surface depth for computing of FieldFormulas
     FieldDepth depth_;
 
-    /// Map assigns Input::Abstract to each field defined in optional Input::Array 'user_fields'
-    std::unordered_map<std::string, Input::AbstractRecord> user_fields_input_;
+    /// Map assigns Input::Record to each field defined in optional Input::Array 'user_fields'
+    std::unordered_map<std::string, Input::Record> user_fields_input_;
 
     /**
      * Stream output operator

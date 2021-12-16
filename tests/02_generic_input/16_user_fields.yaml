@@ -28,11 +28,13 @@ problem: !Coupling_Sequential
     transport: !Solute_AdvectionDiffusion_DG
       user_fields:
         - name: bc_flux_x
-          field: !FieldFormula
+          is_boundary: true
+          scalar_field: !FieldFormula
             value: if(y<0.75,1,0)
             #value: 1 if (0.5 < y < 0.75) else 0
         - name: bc_flux_t
-          field: !FieldTimeFunction
+          is_boundary: true
+          scalar_field: !FieldTimeFunction
             time_function: 
               values: !include_csv
                 file: ./includes/bc_time_function.csv
@@ -45,7 +47,7 @@ problem: !Coupling_Sequential
       input_fields:
         - region: .left
           bc_conc: !FieldFormula
-            value: bc_flux_x * bc_flux_t
+            value: bc_flux_x * bc_flux_t + 0*t
 #          bc_conc: 
 #            - !FieldTimeFunction
 #              time_function: 
