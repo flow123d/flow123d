@@ -526,7 +526,7 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
         BaseMeshReader::HeaderQuery header_query(field_name_, read_time, this->discretization_, dh_->hash());
         auto reader = ReaderCache::get_reader(reader_file_);
 		auto input_data_cache = reader->template get_element_data<double>(
-            header_query, n_entities, n_components, boundary);
+            header_query, boundary, n_entities, n_components);
 		CheckResult checked_data = reader->scale_and_check_limits(field_name_,
 				this->unit_conversion_coefficient_, default_value_);
 
