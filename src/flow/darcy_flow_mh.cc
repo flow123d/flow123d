@@ -401,7 +401,28 @@ DarcyMH::DarcyMH(Mesh &mesh_in, const Input::Record in_rec, TimeGovernor *tm)
     
 }
 
-
+double DarcyMH::solved_time()
+{
+    // DebugOut() << "t = " << time_->t() << " step_end " << time_->step().end() << "\n";
+    if(use_steady_assembly_)
+    {
+        // In steady case, the solution is computed with the data present at time t,
+        // and the steady state solution is valid until another change in data,
+        // which should correspond to time (t+dt).
+        // "The data change appears immediatly."
+        double next_t = time_->t() + time_->estimate_dt();
+        // DebugOut() << "STEADY next_t = " << next_t << "\n";
+        return next_t * (1 - 2*std::numeric_limits<double>::epsilon());
+    }
+    else
+    {
+        // In unsteady case, the solution is computed with the data present at time t,
+        // and the solution is valid at the time t+dt.
+        // "The data change does not appear immediatly, it is integrated over time interval dt."
+        // DebugOut() << "UNSTEADY\n";
+        return time_->t();
+    }
+}
 
 void DarcyMH::init_eq_data()
 //connecting data fields with mesh
@@ -573,20 +594,29 @@ void DarcyMH::zero_time_step()
 
 
     if (zero_time_term_from_right) {
+        MessageOut() << "Flow zero time step - steady case\n";
         // steady case
         VecZeroEntries(schur0->get_solution());
         //read_initial_condition(); // Possible solution guess for steady case.
         use_steady_assembly_ = true;
         solve_nonlinear(); // with right limit data
+        // eq_data_->full_solution.local_to_ghost_begin();
+        // eq_data_->full_solution.local_to_ghost_end();
     } else {
+        MessageOut() << "Flow zero time step - unsteady case\n";
         VecZeroEntries(schur0->get_solution());
         VecZeroEntries(previous_solution);
+
         read_initial_condition();
+        reconstruct_solution_from_schur(eq_data_->multidim_assembler);
+
         assembly_linear_system(); // in particular due to balance
 //         print_matlab_matrix("matrix_zero");
-        // TODO: reconstruction of solution in zero time.
     }
     //solution_output(T,right_limit); // data for time T in any case
+
+    eq_data_->full_solution.local_to_ghost_begin();
+    eq_data_->full_solution.local_to_ghost_end();
     output_data();
 }
 
@@ -616,6 +646,7 @@ void DarcyMH::solve_time_step(bool output)
 
     bool jump_time = eq_fields_->storativity.is_jump_time();
     if (! zero_time_term_from_left) {
+        MessageOut() << "Flow time step - unsteady case\n";
         // time term not treated as zero
         // Unsteady solution up to the T.
 
@@ -641,6 +672,7 @@ void DarcyMH::solve_time_step(bool output)
     data_changed_ = eq_fields_->set_time(time_->step(), LimitSide::right) || data_changed_;
     bool zero_time_term_from_right=zero_time_term();
     if (zero_time_term_from_right) {
+        MessageOut() << "Flow time step - steady case\n";
         // this flag is necesssary for switching BC to avoid setting zero neumann on the whole boundary in the steady case
         use_steady_assembly_ = true;
         solve_nonlinear(); // with right limit data
@@ -1468,19 +1500,41 @@ void mat_count_off_proc_values(Mat m, Vec v) {
 
 void DarcyMH::read_initial_condition()
 {
-	double *local_sol = schur0->get_solution_array();
-
-	// cycle over local element rows
-
 	DebugOut().fmt("Setup with dt: {}\n", time_->dt());
 	for ( DHCellAccessor dh_cell : eq_data_->dh_->own_range() ) {
 	    ElementAccessor<3> ele = dh_cell.elm();
-	    // set initial condition
-        // TODO: replace with DHCell getter when available for FESystem component
-        const IntIdx p_ele_dof = dh_cell.get_loc_dof_indices()[dh_cell.n_dofs()/2];
-	    local_sol[p_ele_dof] = eq_fields_->init_pressure.value(ele.centre(),ele);
+
+        double init_value = eq_fields_->init_pressure.value(ele.centre(),ele);
+
+        LocDofVec loc_dofs = dh_cell.get_loc_dof_indices();
+        for (unsigned int i=0; i<ele->n_sides(); i++) {
+            uint n_sides_of_edge =  ele.side(i)->edge().n_sides();
+            uint edge_dof = ele->n_sides()+1+i;
+            // set initial condition
+            eq_data_->full_solution.add(loc_dofs[edge_dof], init_value/n_sides_of_edge);
+         }
 	}
+
+    eq_data_->full_solution.ghost_to_local_begin();
+    eq_data_->full_solution.ghost_to_local_end();
+    eq_data_->full_solution.local_to_ghost_begin();
+    eq_data_->full_solution.local_to_ghost_end();
 }
+
+
+void DarcyMH::reconstruct_solution_from_schur(MultidimAssembly& assembler)
+{
+    START_TIMER("DarcyFlowMH::reconstruct_solution_from_schur");
+
+    for ( DHCellAccessor dh_cell : eq_data_->dh_->own_range() ) {
+        unsigned int dim = dh_cell.dim();
+        assembler[dim-1]->assemble_reconstruct(dh_cell);
+    }
+
+    eq_data_->full_solution.local_to_ghost_begin();
+    eq_data_->full_solution.local_to_ghost_end();
+}
+
 
 void DarcyMH::setup_time_term() {
     // save diagonal of steady matrix

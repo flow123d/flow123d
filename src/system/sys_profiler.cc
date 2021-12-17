@@ -335,7 +335,7 @@ void Profiler::calibrate() {
         for(uint i=0; i<HALF; i++) {
             block[HALF+i] = block[i]*block[i] + i;
         }
-        delete block;
+        delete[] block;
         count++;
     }
 
