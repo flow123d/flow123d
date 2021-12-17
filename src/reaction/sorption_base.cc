@@ -120,6 +120,22 @@ SorptionBase::EqFields::EqFields(const string &output_field_name, const string &
                      .description(output_field_desc)
                      .units( UnitSI().dimensionless() )
                      .flags(FieldFlag::equation_result);
+
+    *this += scale_aqua.name("scale_aqua")
+            .description("Scale aqua computed by model.")
+            .input_default("0.0")
+            .units( UnitSI::dimensionless() );
+
+    *this += scale_sorbed.name("scale_sorbed")
+            .description("Scale sorbed computed by model.")
+            .input_default("0.0")
+            .units( UnitSI().kg().m(-3) );
+
+    *this += no_sorbing_surface_cond.name("no_sorbing_surface_cond")
+            .description("No sorbing surface condition computed by model.")
+            .input_default("0.0")
+            .units( UnitSI::dimensionless() );
+
 }
 
 
@@ -195,6 +211,7 @@ void SorptionBase::initialize()
   }   
   
   initialize_fields();
+  init_field_models();
   
   if(reaction_liquid)
   {
@@ -405,21 +422,25 @@ void SorptionBase::isotherm_reinit(unsigned int i_subst, const ElementAccessor<3
     
     bool limited_solubility_on = solubility_vec_[i_subst] > 0.0;
     
+    double scale_aqua = eq_fields_->scale_aqua.value(elem.centre(), elem);
+    double scale_sorbed = eq_fields_->scale_sorbed.value(elem.centre(), elem);
+    double no_sorbing_surface_cond = eq_fields_->no_sorbing_surface_cond.value(elem.centre(), elem);
+
     // in case of no sorbing surface, set isotherm type None
-    if( common_ele_data.no_sorbing_surface_cond <= std::numeric_limits<double>::epsilon())
+    if( no_sorbing_surface_cond <= std::numeric_limits<double>::epsilon())
     {
         isotherm.reinit(Isotherm::none, false, solvent_density_,
-                        common_ele_data.scale_aqua, common_ele_data.scale_sorbed,
+                        scale_aqua, scale_sorbed,
                         0,0,0);
         return;
     }
     
-    if ( common_ele_data.scale_sorbed <= 0.0)
+    if ( scale_sorbed <= 0.0)
         THROW( ExcNotPositiveScaling() << EI_Subst(i_subst) );
     
     isotherm.reinit(Isotherm::SorptionType(eq_fields_->sorption_type[i_subst].value(elem.centre(),elem)),
                     limited_solubility_on, solvent_density_,
-                    common_ele_data.scale_aqua, common_ele_data.scale_sorbed,
+                    scale_aqua, scale_sorbed,
                     solubility_vec_[i_subst], mult_coef, second_coef);
 }
 
@@ -474,7 +495,6 @@ void SorptionBase::make_tables(void)
             {
                 ElementAccessor<3> elm(this->mesh_, reg_iter);
 //                 DebugOut().fmt("isotherm reinit\n");
-                compute_common_ele_data(elm);
                 isotherm_reinit_all(elm);
             }
             
@@ -530,7 +550,6 @@ void SorptionBase::compute_reaction(const DHCellAccessor& dh_cell)
     IntIdx dof_p0 = dh_cell.get_loc_dof_indices()[0];
     unsigned int i_subst, subst_id;
     // for checking, that the common element data are computed once at maximum
-    bool is_common_ele_data_valid = false;
     
     try{
         for(i_subst = 0; i_subst < eq_data_->n_substances_; i_subst++)
@@ -547,10 +566,6 @@ void SorptionBase::compute_reaction(const DHCellAccessor& dh_cell)
             }
             else{
 //                 DebugOut().fmt("isotherms reinit - compute , subst[{}]\n", i_subst);
-                if(! is_common_ele_data_valid){
-                    compute_common_ele_data(ele);
-                    is_common_ele_data_valid = true;
-                }
                 
                 isotherm_reinit(i_subst, ele);
                 double c_aqua = eq_fields_->conc_mobile_fe[subst_id]->vec().get(dof_p0);
