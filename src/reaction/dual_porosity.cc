@@ -226,6 +226,7 @@ void DualPorosity::zero_time_step()
 	  reaction_immobile->eq_fieldset().set_field("porosity_immobile", data_["porosity_immobile"]);
   }
   
+  time_->step(0).use_fparser_ = true;
   data_.set_time(time_->step(0), LimitSide::right);
   std::stringstream ss; // print warning message with table of uninitialized fields
   if ( FieldCommon::print_message_table(ss, "dual porosity") ) {
@@ -259,6 +260,7 @@ void DualPorosity::set_initial_condition()
 
 void DualPorosity::update_solution(void) 
 {
+  time_->step(-2).use_fparser_ = true;
   data_.set_time(time_->step(-2), LimitSide::right);
  
   START_TIMER("dual_por_exchange_step");
@@ -342,6 +344,7 @@ void DualPorosity::compute_reaction(const DHCellAccessor& dh_cell)
 
 void DualPorosity::output_data(void )
 {
+    time_->step().use_fparser_ = true;
     data_.output_fields.set_time(time_->step(), LimitSide::right);
 
     // Register fresh output data

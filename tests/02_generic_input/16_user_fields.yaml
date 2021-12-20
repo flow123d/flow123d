@@ -47,7 +47,7 @@ problem: !Coupling_Sequential
       input_fields:
         - region: .left
           bc_conc: !FieldFormula
-            value: bc_flux_x * bc_flux_t + 0*t
+            value: bc_flux_x * bc_flux_t
 #          bc_conc: 
 #            - !FieldTimeFunction
 #              time_function: 

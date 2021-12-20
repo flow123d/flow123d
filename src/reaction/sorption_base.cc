@@ -341,6 +341,7 @@ void SorptionBase::zero_time_step()
   ASSERT(output_stream_).error("Null output stream.\n");
   ASSERT_LT(0, substances_.size());
   
+  time_->step().use_fparser_ = true;
   data_->set_time(time_->step(), LimitSide::right);
   std::stringstream ss; // print warning message with table of uninitialized fields
   if ( FieldCommon::print_message_table(ss, "sorption") ) {
@@ -379,6 +380,7 @@ void SorptionBase::set_initial_condition()
 
 void SorptionBase::update_solution(void)
 {
+  time_->step().use_fparser_ = true;
   data_->set_time(time_->step(), LimitSide::right); // set to the last computed time
 
   // if parameters changed during last time step, reinit isotherms and eventualy 
@@ -582,6 +584,7 @@ void SorptionBase::compute_reaction(const DHCellAccessor& dh_cell)
 
 void SorptionBase::output_data(void )
 {
+    time_->step().use_fparser_ = true;
     data_->output_fields.set_time(time().step(), LimitSide::right);
     // Register fresh output data
     data_->output_fields.output(time().step());
