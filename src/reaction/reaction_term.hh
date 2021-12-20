@@ -30,6 +30,7 @@
 #include "transport/substance.hh"    // for SubstanceList
 #include "fem/dofhandler.hh"         // for DOFHandlerMultiDim
 #include "fields/field_fe.hh"        // for FieldFE
+#include "fields/field_set.hh"        // for FieldSet
 
 class Distribution;
 class Mesh;
@@ -52,77 +53,103 @@ public:
     
     typedef std::vector<std::shared_ptr<FieldFE< 3, FieldValue<3>::Scalar>>> FieldFEScalarVec;
 
-  /**
-   * Static variable for definition of common input record in reaction term.
-   */
-  static Input::Type::Abstract & it_abstract_term();
-  static Input::Type::Abstract & it_abstract_mobile_term();
-  static Input::Type::Abstract & it_abstract_immobile_term();
-  static Input::Type::Abstract & it_abstract_reaction();
+    /**
+     * Static variable for definition of common input record in reaction term.
+     */
+    static Input::Type::Abstract & it_abstract_term();
+    static Input::Type::Abstract & it_abstract_mobile_term();
+    static Input::Type::Abstract & it_abstract_immobile_term();
+    static Input::Type::Abstract & it_abstract_reaction();
   
-  /// Constructor.
-  /** @param init_mesh is the reference to the computational mesh
-   *  @param in_rec is the input record
-   */
-  ReactionTerm(Mesh &init_mesh, Input::Record in_rec);
+    /// Reaction data
+    class EqFields : public FieldSet
+    {
+    public:
+        /// Constructor
+    	EqFields()
+    	{}
 
-  /// Destructor.
-  ~ReactionTerm(void);
+        /// FieldFEs representing P0 interpolation of mobile concentration (passed from transport).
+        FieldFEScalarVec conc_mobile_fe;
+    };
+
+    /// Reaction data
+    class EqData
+    {
+    public:
+        /// Constructor
+        EqData();
+
+        /**
+         * Names belonging to substances.
+         *
+         * Must be same as in the transport.
+         */
+        SubstanceList substances_;
+
+        /// Pointer to DOF handler used through the reaction tree
+        std::shared_ptr<DOFHandlerMultiDim> dof_handler_;
+    };
+
+    /**
+     * Constructor.
+     *
+     * @param init_mesh is the reference to the computational mesh
+     * @param in_rec is the input record
+     */
+    ReactionTerm(Mesh &init_mesh, Input::Record in_rec);
+
+    /// Destructor.
+    ~ReactionTerm(void);
   
 
-  ///@name Setters
-  //@{
-  ///Sets the names of substances considered in transport.
-  ReactionTerm &substances(SubstanceList &substances)
-  {substances_.initialize(substances); return *this;}
+    ///@name Setters
+    //@{
+    ///Sets the names of substances considered in transport.
+    ReactionTerm &substances(SubstanceList &substances)
+    {eq_data_->substances_.initialize(substances); return *this;}
 
-  ///Sets the output stream which is given from transport class.
-  ReactionTerm &output_stream(std::shared_ptr<OutputTime> ostream)
-  {output_stream_=ostream; return *this;}
+    ///Sets the output stream which is given from transport class.
+    ReactionTerm &output_stream(std::shared_ptr<OutputTime> ostream)
+    {output_stream_=ostream; return *this;}
   
-  /**
-   * Sets the pointer to concentration matrix for the mobile zone, 
-   * all substances and on all elements (given by transport).
-   */
-  ReactionTerm &concentration_fields(FieldFEScalarVec& conc_mobile)
-  {
-    conc_mobile_fe = conc_mobile;
-    dof_handler_ = conc_mobile_fe[0]->get_dofhandler();
-    return *this;
-  }
-  //@}
+    /**
+     * Sets the pointer to concentration matrix for the mobile zone,
+     * all substances and on all elements (given by transport).
+     */
+    ReactionTerm &concentration_fields(FieldFEScalarVec& conc_mobile)
+    {
+        ASSERT_PTR(eq_fields_base_);
+        eq_fields_base_->conc_mobile_fe = conc_mobile;
+        eq_data_->dof_handler_ = eq_fields_base_->conc_mobile_fe[0]->get_dofhandler();
+        return *this;
+    }
+    //@}
 
-  /** @brief Output method.
-   * 
-   * Some reaction models have their own data to output (sorption, dual porosity) 
-   * - this is where it must be reimplemented.
-   * On the other hand, some do not have (linear reaction, pade approximant) 
-   * - that is why it is not pure virtual.
-   */
-  virtual void output_data(void) override {};
+    /** @brief Output method.
+     *
+     * Some reaction models have their own data to output (sorption, dual porosity)
+     * - this is where it must be reimplemented.
+     * On the other hand, some do not have (linear reaction, pade approximant)
+     * - that is why it is not pure virtual.
+     */
+    virtual void output_data(void) override {};
 
-  /// Disable changes in TimeGovernor by empty method.
-  void choose_next_time(void) override;
+    /// Disable changes in TimeGovernor by empty method.
+    void choose_next_time(void) override;
 
 protected:
-  /// Compute reaction on a single element.
-  virtual void compute_reaction(const DHCellAccessor& dh_cell) = 0;
+    /// Compute reaction on a single element.
+    virtual void compute_reaction(const DHCellAccessor& dh_cell) = 0;
 
-  /// FieldFEs representing P0 interpolation of mobile concentration (passed from transport).
-  FieldFEScalarVec conc_mobile_fe;
-  
-  /// Names belonging to substances.
-  /**  
-   * Must be same as in the transport.
-   */
-  SubstanceList substances_;
+    /// Pointer to a transport output stream.
+    std::shared_ptr<OutputTime> output_stream_;
 
-  /// Pointer to a transport output stream.
-  std::shared_ptr<OutputTime> output_stream_;
+    /// Equation data - all fields needs in assembly class.
+    std::shared_ptr<EqFields> eq_fields_base_;
 
-  /// Pointer to DOF handler used through the reaction tree
-  std::shared_ptr<DOFHandlerMultiDim> dof_handler_;
-
+    /// Equation data - all data needs in assembly class.
+    std::shared_ptr<EqData> eq_data_;
 };
 
 #endif  // REACTION_TERM_H
