@@ -1,5 +1,5 @@
 /*
- * darcy_flow_assembly.hh
+ * assembly_mh_old.hh
  *
  *  Created on: Apr 21, 2016
  *      Author: jb
@@ -34,7 +34,7 @@
  * Is implemented in DarcyMH, DarcyLMH and RichardsLMH assembly classes,
  * which are independent of each other.
  */
-class AssemblyBase
+class AssemblyFlowBase
 {
 public:
     DECLARE_EXCEPTION( ExcBCNotSupported, << "BC type not supported.\n" );
@@ -50,14 +50,14 @@ public:
         * Generic creator of multidimensional assembly, i.e. vector of
         * particular assembly objects.
         */
-    template< template<int dim> class Impl, class Data>
-    static MultidimAssembly create(Data data) {
-        return { std::make_shared<Impl<1> >(data),
-            std::make_shared<Impl<2> >(data),
-            std::make_shared<Impl<3> >(data) };
+    template< template<int dim> class Impl, class Fields, class Data>
+    static MultidimAssembly create(Fields eq_fields, Data eq_data) {
+        return { std::make_shared<Impl<1> >(eq_fields, eq_data),
+            std::make_shared<Impl<2> >(eq_fields, eq_data),
+            std::make_shared<Impl<3> >(eq_fields, eq_data) };
     }
 
-    virtual ~AssemblyBase() {}
+    virtual ~AssemblyFlowBase() {}
 };
 
 
@@ -84,15 +84,17 @@ public:
  * the LMH version is stable and optimized.
  */
 template<int dim>
-class AssemblyMH : public AssemblyBase
+class AssemblyMH : public AssemblyFlowBase
 {
 public:
+    typedef std::shared_ptr<DarcyMH::EqFields>  AssemblyFieldsPtrMH;
     typedef std::shared_ptr<DarcyMH::EqData>  AssemblyDataPtrMH;
     
-    AssemblyMH<dim>(AssemblyDataPtrMH data)
+    AssemblyMH<dim>(AssemblyFieldsPtrMH eq_fields, AssemblyDataPtrMH eq_data)
     : quad_(dim, 2),
       velocity_interpolation_quad_(dim, 0), // veloctiy values in barycenter
-      ad_(data),
+      af_(eq_fields),
+      ad_(eq_data),
       loc_system_(size(), size()),
       loc_system_vb_(2,2)
 
@@ -133,15 +135,53 @@ public:
         loc_system_vb_.set_sparsity(sp);
 
         if (ad_->mortar_method_ == DarcyFlowInterface::MortarP0) {
-            mortar_assembly = std::make_shared<P0_CouplingAssembler>(ad_);
+            mortar_assembly = std::make_shared<P0_CouplingAssembler>(af_, ad_);
         } else if (ad_->mortar_method_ == DarcyFlowInterface::MortarP1) {
-            mortar_assembly = std::make_shared<P1_CouplingAssembler>(ad_);
+            mortar_assembly = std::make_shared<P1_CouplingAssembler>(af_, ad_);
         }
 
     }
 
-    void assemble_reconstruct(const DHCellAccessor&) override
-    {};
+    void assemble_reconstruct(const DHCellAccessor& dh_cell) override
+    {
+        ASSERT_EQ_DBG(dh_cell.dim(), dim);
+        loc_system_.reset();
+    
+        // assemble_local_system(dh_cell);   //do not switch dirichlet in seepage when reconstructing
+        set_dofs_and_bc(dh_cell, false);
+        // assemble_bc(dh_cell, use_dirichlet_switch);
+        assemble_sides(dh_cell);
+        assemble_element(dh_cell);
+        // assemble_source_term(dh_cell);
+        // assembly_dim_connections(dh_cell);
+        
+        // TODO:
+        // if (mortar_assembly)
+        //     mortar_assembly->assembly(ele_ac);
+        // if (mortar_assembly)
+        //     mortar_assembly->fix_velocity(ele_ac);
+
+        // arma::vec schur_solution = ad_->p_edge_solution.get_subvec(loc_schur_.row_dofs);
+        unsigned int nsides = dim+1;
+        unsigned int schur_offset = loc_edge_dofs[0];
+        LocDofVec loc_dofs = dh_cell.get_loc_dof_indices();
+        // get edge pressure
+        arma::vec schur_solution = ad_->full_solution.get_subvec(loc_dofs.subvec(nsides+1, size()-1));
+
+        // prepare vector for velocity and ele pressure
+        arma::vec reconstructed_solution;
+        reconstructed_solution.zeros(schur_offset);
+
+        // reconstruct the velocity and pressure
+        loc_system_.reconstruct_solution_schur(schur_offset, schur_solution, reconstructed_solution);
+
+        // postprocess the velocity
+        // postprocess_velocity(dh_cell, reconstructed_solution);
+        
+        ad_->full_solution.set_subvec(loc_dofs.head(schur_offset), reconstructed_solution);
+        // ad_->full_solution.set_subvec(loc_system_.row_dofs.tail(loc_schur_.row_dofs.n_elem), schur_solution);
+    }
+
     void update_water_content(const DHCellAccessor&) override
     {};
 
@@ -162,7 +202,7 @@ public:
         ASSERT_EQ_DBG(dh_cell.dim(), dim);
         loc_system_.reset();
     
-        set_dofs_and_bc(dh_cell);
+        set_dofs_and_bc(dh_cell, true);
         
         assemble_sides(dh_cell);
         assemble_element(dh_cell);
@@ -190,12 +230,12 @@ public:
         ngh_values_.fe_side_values_.reinit(neighb_side.side());
         nv = ngh_values_.fe_side_values_.normal_vector(0);
 
-        double value = ad_->sigma.value( ele.centre(), ele) *
-                        2*ad_->conductivity.value( ele.centre(), ele) *
-                        arma::dot(ad_->anisotropy.value( ele.centre(), ele)*nv, nv) *
-                        ad_->cross_section.value( neighb_side.centre(), ele_higher ) * // cross-section of higher dim. (2d)
-                        ad_->cross_section.value( neighb_side.centre(), ele_higher ) /
-                        ad_->cross_section.value( ele.centre(), ele ) *      // crossection of lower dim.
+        double value = af_->sigma.value( ele.centre(), ele) *
+                        2*af_->conductivity.value( ele.centre(), ele) *
+                        arma::dot(af_->anisotropy.value( ele.centre(), ele)*nv, nv) *
+						af_->cross_section.value( neighb_side.centre(), ele_higher ) * // cross-section of higher dim. (2d)
+						af_->cross_section.value( neighb_side.centre(), ele_higher ) /
+						af_->cross_section.value( ele.centre(), ele ) *      // crossection of lower dim.
 						neighb_side.measure();
 
         loc_system_vb_.add_value(0,0, -value);
@@ -211,7 +251,7 @@ protected:
         return RefElement<dim>::n_sides + 1 + RefElement<dim>::n_sides;
     }
     
-    void set_dofs_and_bc(const DHCellAccessor& dh_cell){
+    void set_dofs_and_bc(const DHCellAccessor& dh_cell, bool use_dirichlet_switch){
 
         local_dofs_ = dh_cell.get_loc_dof_indices();
         global_dofs_.resize(dh_cell.n_dofs());
@@ -241,38 +281,39 @@ protected:
             if (side.is_boundary()) {
                 Boundary bcd = side.cond();
                 ElementAccessor<3> b_ele = bcd.element_accessor();
-                DarcyMH::EqData::BC_Type type = (DarcyMH::EqData::BC_Type)ad_->bc_type.value(b_ele.centre(), b_ele);
+                DarcyMH::EqFields::BC_Type type = (DarcyMH::EqFields::BC_Type)af_->bc_type.value(b_ele.centre(), b_ele);
 
-                double cross_section = ad_->cross_section.value(ele.centre(), ele);
+                double cross_section = af_->cross_section.value(ele.centre(), ele);
 
-                if ( type == DarcyMH::EqData::none) {
+                if ( type == DarcyMH::EqFields::none) {
                     // homogeneous neumann
-                } else if ( type == DarcyMH::EqData::dirichlet ) {
-                    double bc_pressure = ad_->bc_pressure.value(b_ele.centre(), b_ele);
+                } else if ( type == DarcyMH::EqFields::dirichlet ) {
+                    double bc_pressure = af_->bc_pressure.value(b_ele.centre(), b_ele);
                     loc_system_.set_solution(loc_edge_dofs[i],bc_pressure,-1);
                     dirichlet_edge[i] = 1;
                     
-                } else if ( type == DarcyMH::EqData::total_flux) {
+                } else if ( type == DarcyMH::EqFields::total_flux) {
                     // internally we work with outward flux
-                    double bc_flux = -ad_->bc_flux.value(b_ele.centre(), b_ele);
-                    double bc_pressure = ad_->bc_pressure.value(b_ele.centre(), b_ele);
-                    double bc_sigma = ad_->bc_robin_sigma.value(b_ele.centre(), b_ele);
+                    double bc_flux = -af_->bc_flux.value(b_ele.centre(), b_ele);
+                    double bc_pressure = af_->bc_pressure.value(b_ele.centre(), b_ele);
+                    double bc_sigma = af_->bc_robin_sigma.value(b_ele.centre(), b_ele);
                     
                     dirichlet_edge[i] = 2;  // to be skipped in LMH source assembly
                     loc_system_.add_value(edge_row, edge_row,
                                             -b_ele.measure() * bc_sigma * cross_section,
                                             (bc_flux - bc_sigma * bc_pressure) * b_ele.measure() * cross_section);
                 }
-                else if (type==DarcyMH::EqData::seepage) {
+                else if (type == DarcyMH::EqFields::seepage) {
                     ad_->is_linear=false;
 
                     unsigned int loc_edge_idx = bcd.bc_ele_idx();
                     char & switch_dirichlet = ad_->bc_switch_dirichlet[loc_edge_idx];
-                    double bc_pressure = ad_->bc_switch_pressure.value(b_ele.centre(), b_ele);
-                    double bc_flux = -ad_->bc_flux.value(b_ele.centre(), b_ele);
+                    double bc_pressure = af_->bc_switch_pressure.value(b_ele.centre(), b_ele);
+                    double bc_flux = -af_->bc_flux.value(b_ele.centre(), b_ele);
                     double side_flux = bc_flux * b_ele.measure() * cross_section;
 
                     // ** Update BC type. **
+                    if (use_dirichlet_switch) {
                     if (switch_dirichlet) {
                         // check and possibly switch to flux BC
                         // The switch raise error on the corresponding edge row.
@@ -306,6 +347,7 @@ protected:
                             switch_dirichlet=1;
                         }
                     }
+                    }
                     
                         // ** Apply BCUpdate BC type. **
                         // Force Dirichlet type during the first iteration of the unsteady case.
@@ -318,13 +360,13 @@ protected:
                             loc_system_.add_value(edge_row, side_flux);
                         }
 
-                } else if (type==DarcyMH::EqData::river) {
+                } else if (type == DarcyMH::EqFields::river) {
                     ad_->is_linear=false;
 
-                    double bc_pressure = ad_->bc_pressure.value(b_ele.centre(), b_ele);
-                    double bc_switch_pressure = ad_->bc_switch_pressure.value(b_ele.centre(), b_ele);
-                    double bc_flux = -ad_->bc_flux.value(b_ele.centre(), b_ele);
-                    double bc_sigma = ad_->bc_robin_sigma.value(b_ele.centre(), b_ele);
+                    double bc_pressure = af_->bc_pressure.value(b_ele.centre(), b_ele);
+                    double bc_switch_pressure = af_->bc_switch_pressure.value(b_ele.centre(), b_ele);
+                    double bc_flux = -af_->bc_flux.value(b_ele.centre(), b_ele);
+                    double bc_sigma = af_->bc_robin_sigma.value(b_ele.centre(), b_ele);
                     ASSERT_DBG(ad_->dh_->distr()->is_local(global_dofs_[edge_row]))(global_dofs_[edge_row]);
                     unsigned int loc_edge_row = local_dofs_[edge_row];
                     double & solution_head = ls->get_solution_array()[loc_edge_row];
@@ -356,8 +398,8 @@ protected:
      void assemble_sides(const DHCellAccessor& dh_cell)
     {
         const ElementAccessor<3> ele = dh_cell.elm();
-        double cs = ad_->cross_section.value(ele.centre(), ele);
-        double conduct =  ad_->conductivity.value(ele.centre(), ele);
+        double cs = af_->cross_section.value(ele.centre(), ele);
+        double conduct =  af_->conductivity.value(ele.centre(), ele);
         double scale = 1 / cs /conduct;
         
         assemble_sides_scale(dh_cell, scale);
@@ -383,7 +425,7 @@ protected:
                 for (unsigned int j=0; j<ndofs; j++){
                     double mat_val = 
                         arma::dot(velocity.value(i,k), //TODO: compute anisotropy before
-                                    (ad_->anisotropy.value(ele.centre(), ele )).i()
+                                    (af_->anisotropy.value(ele.centre(), ele )).i()
                                         * velocity.value(j,k))
                         * scale * fe_values_.JxW(k);
                     
@@ -503,6 +545,7 @@ protected:
     FEValues<3> velocity_interpolation_fv_;
 
     // data shared by assemblers of different dimension
+    AssemblyFieldsPtrMH af_;
     AssemblyDataPtrMH ad_;
     std::vector<unsigned int> dirichlet_edge;
 
