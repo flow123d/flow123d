@@ -42,8 +42,8 @@ struct fn_simple_scale_aqua {
 };
 
 struct fn_simple_scale_sorbed {
-    inline double operator() (double por_m, double rock_density) {
-        return (1 - por_m) * rock_density;
+    inline double operator() (double surface_cond, double rock_density) {
+        return surface_cond * rock_density;
     }
 };
 
@@ -83,7 +83,8 @@ SorptionSimple::~SorptionSimple(void)
 void SorptionSimple::init_field_models()
 {
     eq_fields_->scale_aqua.set(Model<3, FieldValue<3>::Scalar>::create(fn_simple_scale_aqua(), eq_fields_->porosity), 0.0);
-    eq_fields_->scale_sorbed.set(Model<3, FieldValue<3>::Scalar>::create(fn_simple_scale_sorbed(), eq_fields_->porosity, eq_fields_->rock_density), 0.0);
+    eq_fields_->scale_sorbed.set(Model<3, FieldValue<3>::Scalar>::create(
+            fn_simple_scale_sorbed(), eq_fields_->no_sorbing_surface_cond, eq_fields_->rock_density), 0.0);
     eq_fields_->no_sorbing_surface_cond.set(Model<3, FieldValue<3>::Scalar>::create(fn_simple_surface_cond(), eq_fields_->porosity), 0.0);
 }
 
@@ -127,9 +128,9 @@ struct fn_mob_scale_aqua {
 };
 
 struct fn_mob_scale_sorbed {
-    inline double operator() (double por_m, double por_imm, double rock_density) {
+    inline double operator() (double por_m, double por_imm, double surface_cond, double rock_density) {
         double phi = por_m/(por_m + por_imm);
-    	return phi * (1 - por_m - por_imm) * rock_density;
+    	return phi * surface_cond * rock_density;
     }
 };
 
@@ -169,7 +170,8 @@ void SorptionMob::init_field_models()
 {
     eq_fields_->scale_aqua.set(Model<3, FieldValue<3>::Scalar>::create(fn_mob_scale_aqua(), eq_fields_->porosity), 0.0);
     eq_fields_->scale_sorbed.set(Model<3, FieldValue<3>::Scalar>::create(
-            fn_mob_scale_sorbed(), eq_fields_->porosity, eq_fields_dual_->immob_porosity_, eq_fields_->rock_density), 0.0);
+            fn_mob_scale_sorbed(), eq_fields_->porosity, eq_fields_dual_->immob_porosity_, eq_fields_->no_sorbing_surface_cond,
+	        eq_fields_->rock_density), 0.0);
     eq_fields_->no_sorbing_surface_cond.set(Model<3, FieldValue<3>::Scalar>::create(
             fn_mob_surface_cond(), eq_fields_->porosity, eq_fields_dual_->immob_porosity_), 0.0);
 }
@@ -187,9 +189,9 @@ struct fn_immob_scale_aqua {
 };
 
 struct fn_immob_scale_sorbed {
-    inline double operator() (double por_m, double por_imm, double rock_density) {
+    inline double operator() (double por_m, double por_imm, double surface_cond, double rock_density) {
         double phi = por_m/(por_m + por_imm);
-    	return (1 - phi) * (1 - por_m - por_imm) * rock_density;
+    	return (1 - phi) * surface_cond * rock_density;
     }
 };
 
@@ -226,7 +228,8 @@ void SorptionImmob::init_field_models()
 {
     eq_fields_->scale_aqua.set(Model<3, FieldValue<3>::Scalar>::create(fn_immob_scale_aqua(), eq_fields_->porosity), 0.0);
     eq_fields_->scale_sorbed.set(Model<3, FieldValue<3>::Scalar>::create(
-            fn_immob_scale_sorbed(), eq_fields_->porosity, eq_fields_dual_->immob_porosity_, eq_fields_->rock_density), 0.0);
+            fn_immob_scale_sorbed(), eq_fields_->porosity, eq_fields_dual_->immob_porosity_, eq_fields_->no_sorbing_surface_cond,
+	        eq_fields_->rock_density), 0.0);
     eq_fields_->no_sorbing_surface_cond.set(Model<3, FieldValue<3>::Scalar>::create(
             fn_immob_surface_cond(), eq_fields_->porosity, eq_fields_dual_->immob_porosity_), 0.0);
 }
