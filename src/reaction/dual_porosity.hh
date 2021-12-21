@@ -44,6 +44,9 @@ namespace Input {
 		class Record;
 	}
 }
+template<unsigned int dim> class InitConditionAssemblyDp;
+template<unsigned int dim> class ReactionAssemblyDp;
+template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
 
 /// Class representing dual porosity model in transport.
@@ -77,6 +80,25 @@ public:
 
     /// Fields indended for output, i.e. all input fields plus those representing solution.
     EquationOutput output_fields;
+
+  };
+
+  /// DualPorosity data
+  class EqData : public ReactionTerm::EqData
+  {
+  public:
+
+    /// Constructor
+    EqData();
+
+    /// Dual porosity computational scheme tolerance.
+    /** According to this tolerance the analytical solution of dual porosity concentrations or
+     * simple forward difference approximation of concentrations is chosen for computation.
+     */
+    double scheme_tolerance_;
+
+    /// TimeGovernor object shared with assembly classes.
+    TimeGovernor *time_;
 
   };
 
@@ -115,8 +137,6 @@ protected:
   /// Resolves construction of following reactions.
   void make_reactions();
   
-  /// Sets initial condition from input.
-  void set_initial_condition();
   /// Initializes field sets.
   void initialize_fields();
   
@@ -124,6 +144,7 @@ protected:
   void compute_reaction(const DHCellAccessor& dh_cell) override;
 
   std::shared_ptr<EqFields> eq_fields_;   ///< Equation fields - all fields are in this set.
+  std::shared_ptr<EqData> eq_data_;       ///< Equation data
 
   /**
    * Input data set - fields in this set are read from the input file.
@@ -133,12 +154,10 @@ protected:
   std::shared_ptr<ReactionTerm> reaction_mobile;       ///< Reaction running in mobile zone
   std::shared_ptr<ReactionTerm> reaction_immobile;     ///< Reaction running in immobile zone
   
-  /// Dual porosity computational scheme tolerance. 
-  /** According to this tolerance the analytical solution of dual porosity concentrations or
-   * simple forward difference approximation of concentrations is chosen for computation.
-   */
-  double scheme_tolerance_;
-  
+  /// general assembly objects, hold assembly objects of appropriate dimension
+  GenericAssembly< InitConditionAssemblyDp > * init_condition_assembly_;
+  GenericAssembly< ReactionAssemblyDp > * reaction_assembly_;
+
 private:
   /// Registrar of class to factory
   static const int registrar;

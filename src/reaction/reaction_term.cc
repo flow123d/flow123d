@@ -50,13 +50,16 @@ Abstract & ReactionTerm::it_abstract_reaction() {
 
 ReactionTerm::ReactionTerm(Mesh &init_mesh, Input::Record in_rec)
     : EquationBase(init_mesh, in_rec), eq_fields_base_(nullptr)
-{
-    eq_data_ = std::make_shared<EqData>();
-}
+{}
 
 ReactionTerm::~ReactionTerm()
 {}
 
+
+
+
+ReactionTerm::EqData::EqData()
+{}
 
 
 

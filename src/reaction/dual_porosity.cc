@@ -35,6 +35,7 @@
 #include "reaction/sorption.hh"
 #include "reaction/first_order_reaction.hh"
 #include "reaction/radioactive_decay.hh"
+#include "reaction/assembly_reaction.hh"
 #include "input/factory.hh"
 
 FLOW123D_FORCE_LINK_IN_CHILD(dualPorosity)
@@ -108,10 +109,12 @@ DualPorosity::EqFields::EqFields()
 }
 
 DualPorosity::EqData::EqData()
-{}
+: ReactionTerm::EqData() {}
 
 DualPorosity::DualPorosity(Mesh &init_mesh, Input::Record in_rec)
-	: ReactionTerm(init_mesh, in_rec)
+	: ReactionTerm(init_mesh, in_rec),
+	  init_condition_assembly_(nullptr),
+	  reaction_assembly_(nullptr)
 {
     eq_fields_ = std::make_shared<EqFields>();
     eq_fields_->add_coords_field();
@@ -119,14 +122,19 @@ DualPorosity::DualPorosity(Mesh &init_mesh, Input::Record in_rec)
     this->eq_fieldset_ = eq_fields_.get();
     this->eq_fields_base_ = std::static_pointer_cast<ReactionTerm::EqFields>(eq_fields_);
 
+    eq_data_ = std::make_shared<EqData>();
+    this->eq_data_base_ = std::static_pointer_cast<ReactionTerm::EqData>(eq_data_);
+
     //reads input and creates possibly other reaction terms
     make_reactions();
     //read value from input
-    scheme_tolerance_ = input_record_.val<double>("scheme_tolerance");
+    eq_data_->scheme_tolerance_ = input_record_.val<double>("scheme_tolerance");
 }
 
 DualPorosity::~DualPorosity(void)
 {
+    if (init_condition_assembly_!=nullptr) delete init_condition_assembly_;
+    if (reaction_assembly_!=nullptr) delete reaction_assembly_;
 }
 
 
@@ -161,6 +169,8 @@ void DualPorosity::initialize()
   ASSERT_LT(0, eq_data_->substances_.size()).error("No substances for rection term.\n");
   ASSERT(output_stream_ != nullptr).error("Null output stream.\n");
   
+  eq_data_->time_ = this->time_;
+
   initialize_fields();
 
   if(reaction_mobile)
@@ -180,6 +190,9 @@ void DualPorosity::initialize()
                 .set_time_governor(*time_);
     reaction_immobile->initialize();
   }
+
+  init_condition_assembly_ = new GenericAssembly< InitConditionAssemblyDp >(eq_fields_.get(), eq_data_.get());
+  reaction_assembly_ = new GenericAssembly< ReactionAssemblyDp >(eq_fields_.get(), eq_data_.get());
 
 }
 
@@ -238,7 +251,7 @@ void DualPorosity::zero_time_step()
   if ( FieldCommon::print_message_table(ss, "dual porosity") ) {
       WarningOut() << ss.str();
   }
-  set_initial_condition();
+  init_condition_assembly_->assemble(eq_data_->dof_handler_);
 
   output_data();
   
@@ -250,29 +263,12 @@ void DualPorosity::zero_time_step()
 
 }
 
-void DualPorosity::set_initial_condition()
-{
-    for ( DHCellAccessor dh_cell : eq_data_->dof_handler_->own_range() ) {
-        IntIdx dof_p0 = dh_cell.get_loc_dof_indices()[0];
-        const ElementAccessor<3> ele = dh_cell.elm();
-
-        //setting initial solid concentration for substances involved in adsorption
-        for (unsigned int sbi = 0; sbi < eq_data_->substances_.size(); sbi++)
-        {
-            eq_fields_->conc_immobile_fe[sbi]->vec().set( dof_p0, eq_fields_->init_conc_immobile[sbi].value(ele.centre(), ele) );
-        }
-    }
-}
-
 void DualPorosity::update_solution(void) 
 {
   eq_fields_->set_time(time_->step(-2), LimitSide::right);
  
   START_TIMER("dual_por_exchange_step");
-  for ( DHCellAccessor dh_cell : eq_data_->dof_handler_->own_range() )
-  {
-      compute_reaction(dh_cell);
-  }
+  reaction_assembly_->assemble(eq_data_->dof_handler_);
   END_TIMER("dual_por_exchange_step");
   
   if(reaction_mobile) reaction_mobile->update_solution();
@@ -280,70 +276,8 @@ void DualPorosity::update_solution(void)
 }
 
 
-void DualPorosity::compute_reaction(const DHCellAccessor& dh_cell)
+void DualPorosity::compute_reaction(FMT_UNUSED const DHCellAccessor& dh_cell)
 {
-    unsigned int sbi;
-    double conc_average, // weighted (by porosity) average of concentration
-          conc_mob, conc_immob,  // new mobile and immobile concentration
-          previous_conc_mob, previous_conc_immob, // mobile and immobile concentration in previous time step
-          conc_max, //difference between concentration and average concentration
-          por_mob, por_immob; // mobile and immobile porosity
-    
-    // get data from fields
-    ElementAccessor<3> ele = dh_cell.elm();
-    IntIdx dof_p0 = dh_cell.get_loc_dof_indices()[0];
-    por_mob = eq_fields_->porosity.value(ele.centre(),ele);
-    por_immob = eq_fields_->porosity_immobile.value(ele.centre(),ele);
-    arma::Col<double> diff_vec(eq_data_->substances_.size());
-    for (sbi=0; sbi<eq_data_->substances_.size(); sbi++) // Optimize: SWAP LOOPS
-        diff_vec[sbi] = eq_fields_->diffusion_rate_immobile[sbi].value(ele.centre(), ele);
- 
-    // if porosity_immobile == 0 then mobile concentration stays the same 
-    // and immobile concentration cannot change
-    if (por_immob == 0.0) return;
-    
-    double exponent,
-           temp_exponent = (por_mob + por_immob) / (por_mob * por_immob) * time_->dt();
-  
-    for (sbi = 0; sbi < eq_data_->substances_.size(); sbi++) //over all substances
-    {
-        exponent = diff_vec[sbi] * temp_exponent;
-        //previous values
-        previous_conc_mob = eq_fields_->conc_mobile_fe[sbi]->vec().get(dof_p0);
-        previous_conc_immob = eq_fields_->conc_immobile_fe[sbi]->vec().get(dof_p0);
-        
-        // ---compute average concentration------------------------------------------
-        conc_average = ((por_mob * previous_conc_mob) + (por_immob * previous_conc_immob)) 
-                       / (por_mob + por_immob);
-        
-        conc_max = std::max(previous_conc_mob-conc_average, previous_conc_immob-conc_average);
-        
-        // the following 2 conditions guarantee:
-        // 1) stability of forward Euler's method
-        // 2) the error of forward Euler's method will not be large
-        if(time_->dt() <= por_mob*por_immob/(max(diff_vec)*(por_mob+por_immob)) &&
-           conc_max <= (2*scheme_tolerance_/(exponent*exponent)*conc_average))               // forward euler
-        {
-            double temp = diff_vec[sbi]*(previous_conc_immob - previous_conc_mob) * time_->dt();
-            // ---compute concentration in mobile area
-            conc_mob = temp / por_mob + previous_conc_mob;
-
-            // ---compute concentration in immobile area
-            conc_immob = -temp / por_immob + previous_conc_immob;
-        }
-        else                                                        //analytic solution
-        {
-            double temp = exp(-exponent);
-            // ---compute concentration in mobile area
-            conc_mob = (previous_conc_mob - conc_average) * temp + conc_average;
-
-            // ---compute concentration in immobile area
-            conc_immob = (previous_conc_immob - conc_average) * temp + conc_average;
-        }
-        
-        eq_fields_->conc_mobile_fe[sbi]->vec().set(dof_p0, conc_mob);
-        eq_fields_->conc_immobile_fe[sbi]->vec().set(dof_p0, conc_immob);
-    }
 }
 
 

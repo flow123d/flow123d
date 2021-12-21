@@ -52,6 +52,9 @@ namespace Input {
 	}
 }
 template <int spacedim> class ElementAccessor;
+template<unsigned int dim> class InitConditionAssemblySorp;
+template< template<IntDim...> class DimAssembly> class GenericAssembly;
+
 
 
 
@@ -108,13 +111,26 @@ public:
     /// Fields indended for output, i.e. all input fields plus those representing solution.
     EquationOutput output_fields;
 
+    /// Instances of FieldModel used in assembly methods
+    Field<3, FieldValue<3>::Scalar > scale_aqua;
+    Field<3, FieldValue<3>::Scalar > scale_sorbed;
+    Field<3, FieldValue<3>::Scalar > no_sorbing_surface_cond;
+
   };
 
-  class EqData
+
+  /// DualPorosity data
+  class EqData : public ReactionTerm::EqData
   {
   public:
-    /// Constructor
+
+    /// Collect all fields
     EqData();
+
+    /// Mapping from local indexing of substances to global.
+    std::vector<unsigned int> substance_global_idx_;
+
+    unsigned int n_substances_;   ///< number of substances that take part in the sorption mode
   };
 
 
@@ -170,17 +186,12 @@ protected:
   /// Initializes field sets.
   void initialize_fields();
 
-  ///Reads and sets initial condition for concentration in solid.
-  void set_initial_condition();
-    
   /// Compute reaction on a single element.
   void compute_reaction(const DHCellAccessor& dh_cell) override;
   
   /// Reinitializes the isotherm.
   /**
    * On data change the isotherm is recomputed, possibly new interpolation table is made.
-   * NOTE: Be sure to update common element data (porosity, rock density etc.)
-   *       by @p compute_common_ele_data(), before calling reinitialization!
    */
   void isotherm_reinit(unsigned int i_subst, const ElementAccessor<3> &elm);
   
@@ -198,7 +209,11 @@ protected:
   /// Sets max conc to zeros on all regins.
   void clear_max_conc();
 
+  /// Initialize FieldModels, method is implemented in descendants.
+  virtual void init_field_models() = 0;
+
   std::shared_ptr<EqFields> eq_fields_;  ///< Pointer to equation fields. The object is constructed in descendants.
+  std::shared_ptr<EqData> eq_data_;      ///< Equation data
 
   /**
    * Temporary nr_of_points can be computed using step_length. Should be |nr_of_region x nr_of_substances| matrix later.
@@ -230,32 +245,16 @@ protected:
    */
   std::vector<std::vector<Isotherm> > isotherms;
   
-  unsigned int n_substances_;   //< number of substances that take part in the sorption mode
-  
-  /// Mapping from local indexing of substances to global.
-  std::vector<unsigned int> substance_global_idx_;
-
   /**
    * Reaction model that follows the sorption.
    */
   std::shared_ptr<ReactionTerm> reaction_liquid;
   std::shared_ptr<ReactionTerm> reaction_solid;
   
+  /// general assembly objects, hold assembly objects of appropriate dimension
+  GenericAssembly< InitConditionAssemblySorp > * init_condition_assembly_;
 
-  /** Structure for data respectful to element, but indepedent of actual isotherm.
-   * Reads mobile/immobile porosity, rock density and then computes concentration scaling parameters.
-   * Is kind of optimization, so that these data are computed only when necessary.
-   */
-  struct CommonElementData{
-    double scale_aqua;
-    double scale_sorbed;
-    double no_sorbing_surface_cond;
-  } common_ele_data;
-  
-  /** Computes @p CommonElementData.
-   * Is pure virtual, implemented differently for simple/mobile/immobile sorption class.
-   */
-  virtual void compute_common_ele_data(const ElementAccessor<3> &elem) = 0;
+
 };
 
 #endif  //SORPTION_BASE_H

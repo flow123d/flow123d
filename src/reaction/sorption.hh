@@ -63,8 +63,8 @@ public:
     ~SorptionSimple(void);
   
 protected:
-    /// Computes @p CommonElementData.
-    void compute_common_ele_data(const ElementAccessor<3> &elem) override;
+    /// Implements @p SorptionBase::init_field_models
+    void init_field_models() override;
 
 private:
     /// Registrar of class to factory
@@ -100,9 +100,6 @@ public:
     }
 
 protected:
-    /// Computes @p CommonElementData. Pure virtual.
-    virtual void compute_common_ele_data(const ElementAccessor<3> &elem) = 0;
-
     std::shared_ptr<EqFields> eq_fields_dual_;  ///< Overwrites SorptionBase::eq_fields_.
 };
 
@@ -124,8 +121,8 @@ public:
     ~SorptionMob(void);
   
 protected:
-    /// Computes @p CommonElementData.
-    void compute_common_ele_data(const ElementAccessor<3> &elem) override;
+    /// Implements @p SorptionBase::init_field_models
+    void init_field_models() override;
 
 private:
     /// Registrar of class to factory
@@ -150,8 +147,8 @@ public:
     ~SorptionImmob(void);
 
 protected:
-    /// Computes @p CommonElementData.
-    void compute_common_ele_data(const ElementAccessor<3> &elem) override;
+    /// Implements @p SorptionBase::init_field_models
+    void init_field_models() override;
 
 private:
     /// Registrar of class to factory
