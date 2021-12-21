@@ -197,6 +197,7 @@ public:
     virtual void postprocess();
     virtual void output_data() override;
 
+    virtual double solved_time() override;
 
     inline EqFields &eq_fields() { return *eq_fields_; }
     inline EqData &eq_data() { return *eq_data_; }

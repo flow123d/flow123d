@@ -18,6 +18,7 @@ test_cases:
   - 21_2d_displacement.yaml
   - 23_square_frac_chopped.yaml
   - 24_square_barrier_chopped.yaml
+  - 26_2d_bc_stress.yaml
   - 30_3d_block_load.yaml
 - files:
   - 04_terzaghi_3d.yaml

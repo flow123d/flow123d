@@ -63,8 +63,8 @@ public:
     ~SorptionSimple(void);
   
 protected:
-    /// Computes @p CommonElementData.
-    void compute_common_ele_data(const ElementAccessor<3> &elem) override;
+    /// Implements @p SorptionBase::init_field_models
+    void init_field_models() override;
 
 private:
     /// Registrar of class to factory
@@ -78,7 +78,14 @@ private:
 class SorptionDual:  public SorptionBase
 {
 public:
-    /// Constructor.
+	class EqFields : public SorptionBase::EqFields {
+	public:
+		EqFields(const string &output_field_name, const string &output_field_desc);
+
+		Field<3, FieldValue<3>::Scalar > immob_porosity_; //< Immobile porosity field copied from transport
+	};
+
+	/// Constructor.
     SorptionDual(Mesh &init_mesh, Input::Record in_rec,
                 const string &output_conc_name,
                 const string &output_conc_desc);
@@ -88,15 +95,12 @@ public:
     
     /// Sets the immobile porosity field.
     inline void set_porosity_immobile(Field<3, FieldValue<3>::Scalar > &por_imm)
-      { 
-        immob_porosity_.copy_from(por_imm); 
-      }
+    {
+        eq_fields_dual_->immob_porosity_.copy_from(por_imm);
+    }
 
 protected:
-    /// Computes @p CommonElementData. Pure virtual.
-    virtual void compute_common_ele_data(const ElementAccessor<3> &elem) = 0;
-    
-    Field<3, FieldValue<3>::Scalar > immob_porosity_; //< Immobile porosity field copied from transport
+    std::shared_ptr<EqFields> eq_fields_dual_;  ///< Overwrites SorptionBase::eq_fields_.
 };
 
 
@@ -117,8 +121,8 @@ public:
     ~SorptionMob(void);
   
 protected:
-    /// Computes @p CommonElementData.
-    void compute_common_ele_data(const ElementAccessor<3> &elem) override;
+    /// Implements @p SorptionBase::init_field_models
+    void init_field_models() override;
 
 private:
     /// Registrar of class to factory
@@ -143,8 +147,8 @@ public:
     ~SorptionImmob(void);
 
 protected:
-    /// Computes @p CommonElementData.
-    void compute_common_ele_data(const ElementAccessor<3> &elem) override;
+    /// Implements @p SorptionBase::init_field_models
+    void init_field_models() override;
 
 private:
     /// Registrar of class to factory

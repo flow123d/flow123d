@@ -283,7 +283,7 @@ std::shared_ptr<TimeUnitConversion> TimeStep::get_unit_conversion() const
 }
 
 ostream& operator<<(ostream& out, const TimeStep& t_step) {
-    out << "time: " << t_step.end() << "step: " << t_step.length() << endl;
+    out << "time: " << t_step.end() << " dt: " << t_step.length() << endl;
     return out;
 }
 
