@@ -103,7 +103,7 @@ struct fn_lame_lambda {
 // Functor computing base of dirichlet_penalty (without dividing by side meassure)
 struct fn_dirichlet_penalty {
 	inline double operator() (double lame_mu, double lame_lambda) {
-        return 1e3 * (2 * lame_mu + lame_lambda);
+        return 1e4 * (2 * lame_mu + lame_lambda);
     }
 };
 
@@ -186,6 +186,20 @@ Elasticity::EqFields::EqFields()
             .units( UnitSI::dimensionless() )
             .input_default("1.0")
             .flags_add(in_main_matrix & in_rhs);
+    *this+=roughness_angle
+            .name("roughness_angle")
+            .description(
+            "Angle of fracture roughness.")
+            .units( UnitSI::dimensionless() )
+            .input_default("0.0")
+            .flags_add(in_rhs);
+    *this+=roughness_height
+            .name("roughness_height")
+            .description(
+            "Height of fracture roughness.")
+            .units( UnitSI().m() )
+            .input_default("0.0")
+            .flags_add(in_rhs);
 
     *this += region_id.name("region_id")
     	        .units( UnitSI::dimensionless())
@@ -239,6 +253,12 @@ Elasticity::EqFields::EqFields()
             .description("Displacement divergence output.")
             .units( UnitSI().dimensionless() )
             .flags(equation_result);
+    
+    *this += output_displacement_jump
+            .name("displacement_jump")
+            .description("Displacement jump output.")
+            .units( UnitSI().m() )
+            .flags(equation_result);
 
     *this += lame_mu.name("lame_mu")
             .description("Field lame_mu.")
@@ -276,6 +296,12 @@ void Elasticity::EqData::create_dh(Mesh * mesh, unsigned int fe_order)
     dh_scalar_ = make_shared<DOFHandlerMultiDim>(*mesh);
 	std::shared_ptr<DiscreteSpace> ds_scalar = std::make_shared<EqualOrderDiscreteSpace>( mesh, fe_p_disc);
 	dh_scalar_->distribute_dofs(ds_scalar);
+
+
+    MixedPtr<FiniteElement> fe_v = mixed_fe_system(MixedPtr<FE_P_disc>(0), FEType::FEVector, 3);
+    dh_vector_ = make_shared<DOFHandlerMultiDim>(*mesh);
+	std::shared_ptr<DiscreteSpace> ds_vector = std::make_shared<EqualOrderDiscreteSpace>( mesh, fe_v);
+	dh_vector_->distribute_dofs(ds_vector);
 
 
     MixedPtr<FiniteElement> fe_t = mixed_fe_system(MixedPtr<FE_P_disc>(0), FEType::FETensor, 9);
@@ -364,6 +390,10 @@ void Elasticity::initialize()
     // setup output divergence
     eq_fields_->output_div_ptr = create_field_fe<3, FieldValue<3>::Scalar>(eq_data_->dh_scalar_);
     eq_fields_->output_divergence.set(eq_fields_->output_div_ptr, 0.);
+
+    // setup output displacement jump
+    eq_fields_->output_displ_jump_ptr = create_field_fe<3, FieldValue<3>::VectorFixed>(eq_data_->dh_vector_);
+    eq_fields_->output_displacement_jump.set(eq_fields_->output_displ_jump_ptr, 0.);
     
     eq_fields_->output_field.output_type(OutputTime::CORNER_DATA);
 
@@ -454,6 +484,7 @@ void Elasticity::update_output_fields()
 	eq_fields_->output_stress_ptr->vec().zero_entries();
 	eq_fields_->output_cross_section_ptr->vec().zero_entries();
 	eq_fields_->output_div_ptr->vec().zero_entries();
+    eq_fields_->output_displ_jump_ptr->vec().zero_entries();
     output_fields_assembly_->assemble(eq_data_->dh_);
 
     // update ghost values of computed fields
@@ -465,6 +496,8 @@ void Elasticity::update_output_fields()
     eq_fields_->output_cross_section_ptr->vec().local_to_ghost_end();
     eq_fields_->output_div_ptr->vec().local_to_ghost_begin();
     eq_fields_->output_div_ptr->vec().local_to_ghost_end();
+    eq_fields_->output_displ_jump_ptr->vec().local_to_ghost_begin();
+    eq_fields_->output_displ_jump_ptr->vec().local_to_ghost_end();
 }
 
 
@@ -544,6 +577,8 @@ void Elasticity::solve_linear_system()
     START_TIMER("data reinit");
     eq_fields_->set_time(time_->step(), LimitSide::right);
     END_TIMER("data reinit");
+
+    assemble_constraint_matrix();
     
     // assemble stiffness matrix
     if (eq_data_->ls->get_matrix() == NULL

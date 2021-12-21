@@ -71,6 +71,8 @@ public:
         Field<3, FieldValue<3>::Scalar> young_modulus;
         Field<3, FieldValue<3>::Scalar> poisson_ratio;
 		Field<3, FieldValue<3>::Scalar> fracture_sigma;    ///< Transition parameter for diffusive transfer on fractures.
+        Field<3, FieldValue<3>::Scalar> roughness_angle;
+        Field<3, FieldValue<3>::Scalar> roughness_height;
 		
 		/// Pointer to DarcyFlow field cross_section
         Field<3, FieldValue<3>::Scalar > cross_section;
@@ -85,6 +87,7 @@ public:
         Field<3, FieldValue<3>::Scalar> output_von_mises_stress;
         Field<3, FieldValue<3>::Scalar> output_cross_section;
         Field<3, FieldValue<3>::Scalar> output_divergence;
+        Field<3, FieldValue<3>::VectorFixed> output_displacement_jump;
         
 		/// @name Instances of FieldModel used in assembly methods
 		// @{
@@ -100,6 +103,7 @@ public:
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_von_mises_stress_ptr;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_cross_section_ptr;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_div_ptr;
+        std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed> > output_displ_jump_ptr;
 
         EquationOutput output_fields;
 
@@ -123,6 +127,7 @@ public:
         /// Objects for distribution of dofs.
         std::shared_ptr<DOFHandlerMultiDim> dh_;
         std::shared_ptr<DOFHandlerMultiDim> dh_scalar_;
+        std::shared_ptr<DOFHandlerMultiDim> dh_vector_;
         std::shared_ptr<DOFHandlerMultiDim> dh_tensor_;
 
     	/// @name Solution of algebraic system
