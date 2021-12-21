@@ -650,10 +650,12 @@ TEST(Field, init_from_input) {
 
 
 
-    sorption_type.set_time(TimeGovernor().step(), LimitSide::right);
-    init_conc.set_time(TimeGovernor().step(), LimitSide::right);
-    conductivity.set_time(TimeGovernor().step(), LimitSide::right);
-    conductivity_3d.set_time(TimeGovernor().step(), LimitSide::right);
+    auto step = TimeGovernor().step();
+    step.use_fparser_ = true;
+    sorption_type.set_time(step, LimitSide::right);
+    init_conc.set_time(step, LimitSide::right);
+    conductivity.set_time(step, LimitSide::right);
+    conductivity_3d.set_time(step, LimitSide::right);
 
     {	
 
