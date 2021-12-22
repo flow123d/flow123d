@@ -702,7 +702,7 @@ class TestPrinterStatus(object):
         result = '| wrong result: '
         for t in thread.comp.threads:
             if t.returncode != 0:
-                result += '\n{:18s}FAILED comprasion in {}'.format('', t.name)
+                result += '\n{:18s}FAILED comparison in {}'.format('', t.name)
         return result
 
     @classmethod
