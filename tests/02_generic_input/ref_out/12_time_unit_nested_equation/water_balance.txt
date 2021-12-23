@@ -1,12 +1,23 @@
-"time [s]"	"region"	"quantity [m(3)]"	"flux"	"flux_in"	"flux_out"	"mass"	"source"	"source_in"	"source_out"	"flux_increment"	"source_increment"	"flux_cumulative"	"source_cumulative"	"error"
+"time [min]"	"region"	"quantity [m(3)]"	"flux"	"flux_in"	"flux_out"	"mass"	"source"	"source_in"	"source_out"	"flux_increment"	"source_increment"	"flux_cumulative"	"source_cumulative"	"error"
 0	"1d_upper"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
 0	"1d_lower"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
 0	"1d_left_branch"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
 0	"2d"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
-0	".1d_top"	"water_volume"	17.8123	17.8123	0	0	0	0	0	0	0	0	0	0
-0	".1d_left"	"water_volume"	-8.97271	0	-8.97271	0	0	0	0	0	0	0	0	0
-0	".1d_bottom"	"water_volume"	-8.97796	0	-8.97796	0	0	0	0	0	0	0	0	0
-0	".2d_top"	"water_volume"	1.11365	1.11365	0	0	0	0	0	0	0	0	0	0
-0	".2d_right"	"water_volume"	0.901061	0.901061	0	0	0	0	0	0	0	0	0	0
-0	".2d_bottom"	"water_volume"	-0.974874	0.00154626	-0.97642	0	0	0	0	0	0	0	0	0
-0	".2d_left"	"water_volume"	-0.901475	0.00300279	-0.904477	0	0	0	0	0	0	0	0	0
+0	".1d_top"	"water_volume"	4.16676	4.16676	0	0	0	0	0	0	0	0	0	0
+0	".1d_left"	"water_volume"	-1.20001	0	-1.20001	0	0	0	0	0	0	0	0	0
+0	".1d_bottom"	"water_volume"	-2.98072	0	-2.98072	0	0	0	0	0	0	0	0	0
+0	".2d_top"	"water_volume"	0.179029	0.179029	0	0	0	0	0	0	0	0	0	0
+0	".2d_right"	"water_volume"	0.0288758	0.0288758	0	0	0	0	0	0	0	0	0	0
+0	".2d_bottom"	"water_volume"	-0.159752	0	-0.159752	0	0	0	0	0	0	0	0	0
+0	".2d_left"	"water_volume"	-0.0341872	0.0201991	-0.0543864	0	0	0	0	0	0	0	0	0
+0.00833333	"1d_upper"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
+0.00833333	"1d_lower"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
+0.00833333	"1d_left_branch"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
+0.00833333	"2d"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
+0.00833333	".1d_top"	"water_volume"	2.96218	2.96218	0	0	0	0	0	0	0	0	0	0
+0.00833333	".1d_left"	"water_volume"	-2.39127	0	-2.39127	0	0	0	0	0	0	0	0	0
+0.00833333	".1d_bottom"	"water_volume"	-0.612122	0	-0.612122	0	0	0	0	0	0	0	0	0
+0.00833333	".2d_top"	"water_volume"	0.0510531	0.0711076	-0.0200546	0	0	0	0	0	0	0	0	0
+0.00833333	".2d_right"	"water_volume"	0.162583	0.162583	0	0	0	0	0	0	0	0	0	0
+0.00833333	".2d_bottom"	"water_volume"	-0.0293994	0.0226274	-0.0520268	0	0	0	0	0	0	0	0	0
+0.00833333	".2d_left"	"water_volume"	-0.143022	0	-0.143022	0	0	0	0	0	0	0	0	0
