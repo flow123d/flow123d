@@ -48,15 +48,8 @@ template <int spacedim> class ElementAccessor;
 class ConcentrationTransportModel : public AdvectionDiffusionModel, public ConcentrationTransportBase {
 public:
 
-	class ModelEqData : public TransportEqData {
+	class ModelEqFields : public TransportEqFields {
 	public:
-
-		enum Concentration_bc_types {
-			bc_inflow,
-			bc_dirichlet,
-			bc_total_flux,
-			bc_diffusive_flux
-		};
 
 		/// Type of boundary condition (see also BC_Type)
         BCMultiField<3, FieldValue<3>::Enum > bc_type;
@@ -104,21 +97,34 @@ public:
 
     	// @}
 
+		enum Concentration_bc_types {
+			bc_inflow,
+			bc_dirichlet,
+			bc_total_flux,
+			bc_diffusive_flux
+		};
 
-		ModelEqData();
-
-		static constexpr const char * name() { return "Solute_AdvectionDiffusion"; }
-
-		static string default_output_field() { return "\"conc\""; }
+		ModelEqFields();
 
         static const Input::Type::Selection & get_bc_type_selection();
-
-		static IT::Selection get_output_selection();
 
 		/**
 		 * Initialize FieldModel instances.
 		 */
 		void initialize();
+
+	};
+
+   	class ModelEqData {
+   	public:
+
+		ModelEqData() {}
+
+		static constexpr const char * name() { return "Solute_AdvectionDiffusion"; }
+
+		static string default_output_field() { return "\"conc\""; }
+
+		static IT::Selection get_output_selection();
 
         /// Returns number of transported substances.
         inline unsigned int n_substances()
@@ -158,11 +164,11 @@ public:
 
     /// Returns number of transported substances.
     inline unsigned int n_substances() override
-    { return data().n_substances(); }
+    { return eq_data().n_substances(); }
 
     /// Returns reference to the vector of substance names.
     inline SubstanceList &substances() override
-    { return data().substances(); }
+    { return eq_data().substances(); }
 
 
     // Methods inherited from ConcentrationTransportBase:
@@ -173,14 +179,17 @@ public:
 	void set_balance_object(std::shared_ptr<Balance> balance) override;
 
     const vector<unsigned int> &get_subst_idx() override
-	{ return data().subst_idx(); }
+	{ return eq_data().subst_idx(); }
 
     void set_output_stream(std::shared_ptr<OutputTime> stream)
     { output_stream_ = stream; }
 
 
+	/// Derived class should implement getter for ModelEqFields instance.
+	virtual ModelEqFields &eq_fields() = 0;
+
 	/// Derived class should implement getter for ModelEqData instance.
-	virtual ModelEqData &data() = 0;
+	virtual ModelEqData &eq_data() = 0;
 
 protected:
 

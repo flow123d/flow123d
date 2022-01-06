@@ -107,7 +107,7 @@ public:
 
     /// Return maximal size of evaluation points objects.
     inline unsigned int max_size() const {
-        return std::max( std::max( size(0), size(1) ), std::max( size(2), size(3) ) );
+        return max_size_;
     }
 
 private:
@@ -153,16 +153,12 @@ private:
             return n_subsets_;
         }
 
-        /// Adds set of local point to local_points_ (bulk or side of given permutation).
+        /// Adds set of local point to local_points_ (bulk or side).
     	template <unsigned int dim>
         void add_local_points(const Armor::Array<double> & quad_points);
 
-        /// Find position of local point (coords) in subvector of local points given by limits <data_begin,  ... data_end)
-    	template <unsigned int dim>
-        unsigned int find_permute_point(arma::vec coords, unsigned int data_begin, unsigned int data_end);
-
         /// Adds new subset and its end size to subset_starts_ array.
-        void add_subset();
+        uint add_subset();
     private:
         Armor::Array<double> local_points_;                           ///< Local coords of points vector
         std::array<int, EvalPoints::max_subsets+1> subset_starts_;    ///< Indices of subsets data in local_points_ vector, used size is n_subsets_ + 1
@@ -170,8 +166,15 @@ private:
         unsigned int dim_;                                            ///< Dimension of local points
     };
 
+    inline void set_max_size() {
+        max_size_ = std::max( std::max( size(0), size(1) ), std::max( size(2), size(3) ) );
+    }
+
     /// Sub objects of dimensions 0,1,2,3
     std::array<DimEvalPoints, 4> dim_eval_points_;
+
+    /// Maximal number of used EvalPoints.
+    unsigned int max_size_;
 
 };
 

@@ -166,10 +166,12 @@ public:
         { return time_->estimate_time(); }
 
     /**
-     * Time of actual solution returned by get_solution_vector().
+     * Time until which the actual solution is valid.
+     * By default, it returns the actual time of the time governor.
+     * However, it can be overriden by a specific equation.
+     * E.g. it differs in Darcy flow in the steady case.
      */
-    inline double solved_time()
-        { return time_->t(); }
+    virtual double solved_time();
 
     /**
      * This getter method provides the computational mesh currently used by the model.
@@ -199,10 +201,10 @@ public:
      * Return reference to the equation data object containing all fields
      * that the equation needs or produce.
      */
-    FieldSet &data()
+    FieldSet &eq_fieldset()
     {
-    	OLD_ASSERT(eq_data_, "The equation %s did not set eq_data_ pointer.\n", input_record_.address_string().c_str());
-    	return *eq_data_;
+    	OLD_ASSERT(eq_fieldset_, "The equation %s did not set eq_fieldset_ pointer.\n", input_record_.address_string().c_str());
+    	return *eq_fieldset_;
     }
 
     /**
@@ -224,7 +226,7 @@ protected:
      * to set the pointer in its constructor. This is used by the general method
      * EqData::data(). This approach is simpler than making EqData::data() a virtual method.
      */
-    FieldSet *eq_data_;
+    FieldSet *eq_fieldset_;
     
     /// object for calculation and writing the mass balance to file.
     std::shared_ptr<Balance> balance_;

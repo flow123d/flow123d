@@ -89,31 +89,8 @@ const Input::Type::Instance & FieldAlgorithmBase<spacedim, Value>::get_input_typ
 
 template <int spacedim, class Value>
 const Input::Type::Record & FieldAlgorithmBase<spacedim, Value>::get_field_algo_common_keys() {
-    auto unit_record = it::Record("Unit",
-           "Specify unit of an input value. "
-           "Evaluation of the unit formula results into a coeficient and a "
-           "unit in terms of powers of base SI units. The unit must match "
-           "expected SI unit of the value, while the value provided on the input "
-           "is multiplied by the coefficient before further processing. "
-           "The unit formula have a form:\n"
-           "```\n"
-           "<UnitExpr>;<Variable>=<Number>*<UnitExpr>;...,\n"
-           "```\n"
-           "where ```<Variable>``` is a variable name and ```<UnitExpr>``` is a units expression "
-           "which consists of products and divisions of terms.\n\n"
-           "A term has a form: "
-           "```<Base>^<N>```, where ```<N>``` is an integer exponent and ```<Base>``` "
-           "is either a base SI unit, a derived unit, or a variable defined in the same unit formula. "
-           "Example, unit for the pressure head:\n\n"
-           "```MPa/rho/g_; rho = 990*kg*m^-3; g_ = 9.8*m*s^-2```"
-            )
-        .allow_auto_conversion("unit_formula")
-        .declare_key("unit_formula", it::String(), it::Default::obligatory(),
-                                   "Definition of unit." )
-        .close();
-
     return it::Record("FieldAlgorithmBase_common_aux", "")
-        .declare_key("unit", unit_record, it::Default::optional(),
+        .declare_key("unit", UnitConverter::get_input_type(), it::Default::optional(),
                                 "Unit of the field values provided in the main input file, in the external file, or "
                                 "by a function (FieldPython).")
         .close();
@@ -133,8 +110,7 @@ FieldAlgorithmBase<spacedim, Value>::function_factory(const Input::AbstractRecor
 
 template <int spacedim, class Value>
 void FieldAlgorithmBase<spacedim, Value>::init_from_input(const Input::Record &, const struct FieldAlgoBaseInitData&) {
-    xprintf(PrgErr, "The field '%s' do not support initialization from input.\n",
-            typeid(this).name());
+    THROW( ExcInputInitUnsupported() << EI_Field(typeid(this).name()) );
 }
 
 
@@ -163,9 +139,9 @@ template<int spacedim, class Value>
 void FieldAlgorithmBase<spacedim, Value>::cache_update(
             FMT_UNUSED FieldValueCache<typename Value::element_type> &data_cache,
 			FMT_UNUSED ElementCacheMap &cache_map,
-			FMT_UNUSED unsigned int region_idx)
+			FMT_UNUSED unsigned int region_patch_idx)
 {
-	   //ASSERT(false).error("Must be implemented in descendants!\n");
+    ASSERT_DBG(false).error("Must be implemented in descendants!\n");
 }
 
 

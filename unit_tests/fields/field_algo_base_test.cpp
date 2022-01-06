@@ -650,10 +650,12 @@ TEST(Field, init_from_input) {
 
 
 
-    sorption_type.set_time(TimeGovernor().step(), LimitSide::right);
-    init_conc.set_time(TimeGovernor().step(), LimitSide::right);
-    conductivity.set_time(TimeGovernor().step(), LimitSide::right);
-    conductivity_3d.set_time(TimeGovernor().step(), LimitSide::right);
+    auto step = TimeGovernor().step();
+    step.use_fparser_ = true;
+    sorption_type.set_time(step, LimitSide::right);
+    init_conc.set_time(step, LimitSide::right);
+    conductivity.set_time(step, LimitSide::right);
+    conductivity_3d.set_time(step, LimitSide::right);
 
     {	
 
@@ -847,7 +849,8 @@ TEST(Field, init_from_default) {
         // test death of set_time without default value
         scalar_field.set_mesh(*mesh);
 
-        EXPECT_THROW_WHAT( {scalar_field.set_time(TimeGovernor().step(), LimitSide::right);} , ExcXprintfMsg, "Missing value of the input field");
+        EXPECT_THROW_WHAT( {scalar_field.set_time(TimeGovernor().step(), LimitSide::right);} , FieldCommon::ExcMissingFieldValue,
+                "Missing value of the input field");
     }
 
     {
@@ -860,7 +863,7 @@ TEST(Field, init_from_default) {
 
         enum_field.set_time(TimeGovernor().step(), LimitSide::right);
 
-        EXPECT_EQ( 0 , enum_field.value(p, mesh->element_accessor(12)) );
+        EXPECT_EQ( 0 , enum_field.value(p, mesh->bc_mesh()->element_accessor(3)) );
 
     }
 
@@ -949,8 +952,8 @@ public:
 
     void add_cell_eval_points(DHCellAccessor cell, std::shared_ptr<BulkIntegral> bulk_int) {
         unsigned int reg_idx = cell.elm().region_idx().idx();
-        for (auto p : bulk_int->points(cell, this) ) {
-            EvalPointData epd(reg_idx, cell.elm_idx(), p.eval_point_idx());
+        for (auto p : bulk_int->points(this->position_in_cache(cell.elm_idx()), this) ) {
+            EvalPointData epd(reg_idx, cell.elm_idx(), p.eval_point_idx(), cell.local_idx());
             this->eval_point_data_.push_back(epd);
         }
         this->eval_point_data_.make_permanent();
@@ -1045,26 +1048,20 @@ TEST(Field, field_values) {
     std::shared_ptr<EdgeIntegral> side_eval = eval_points->add_edge<3>(*q_side );
     ElementCacheMapTest elm_cache_map;
     elm_cache_map.init(eval_points);
-    color_field.cache_reallocate(elm_cache_map);
-    int_field.cache_reallocate(elm_cache_map);
-    scalar_field.cache_reallocate(elm_cache_map);
-    vector_field.cache_reallocate(elm_cache_map);
-    tensor_field.cache_reallocate(elm_cache_map);
 
     // fill FieldValueCaches
     DHCellAccessor dh_cell(dh.get(), 4);
     elm_cache_map.start_elements_update();
     elm_cache_map.add_cell_eval_points(dh_cell, mass_eval);
     elm_cache_map.create_patch();
-    unsigned int reg_idx = dh_cell.elm().region_idx().idx();
-    color_field.cache_update(elm_cache_map, reg_idx);
-    int_field.cache_update(elm_cache_map, reg_idx);
-    scalar_field.cache_update(elm_cache_map, reg_idx);
-    vector_field.cache_update(elm_cache_map, reg_idx);
-    tensor_field.cache_update(elm_cache_map, reg_idx);
+    color_field.cache_update(elm_cache_map, 0);
+    int_field.cache_update(elm_cache_map, 0);
+    scalar_field.cache_update(elm_cache_map, 0);
+    vector_field.cache_update(elm_cache_map, 0);
+    tensor_field.cache_update(elm_cache_map, 0);
     elm_cache_map.finish_elements_update();
 
-    for(BulkPoint q_point: mass_eval->points(dh_cell, &elm_cache_map)) {
+    for(BulkPoint q_point: mass_eval->points(elm_cache_map.position_in_cache(dh_cell.elm_idx()), &elm_cache_map)) {
         EXPECT_EQ( 1, color_field(q_point) );
         EXPECT_EQ( -1, int_field(q_point) );
         EXPECT_DOUBLE_EQ( 1.5, scalar_field(q_point) );

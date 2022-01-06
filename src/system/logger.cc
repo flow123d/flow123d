@@ -20,7 +20,6 @@
 #include "system/logger_options.hh"
 #include "system/global_defs.h"
 #include "system/file_path.hh"
-#include "config.h"
 
 #include <iomanip>
 
@@ -85,7 +84,7 @@ Logger::~Logger()
 
 const std::string Logger::msg_type_string(MsgType msg_type, bool full_format)
 {
-	static std::vector<std::string> type_names = {"WARNING.", "MESSAGE.", "LOG.", "DEBUG.", "ERROR",
+	static std::vector<std::string> type_names = {"WARNING.", "MESSAGE.", "LOG.", "DEBUG.", "ERROR.",
 			                                      "Wrn", "Msg", "Log", "Dbg", "Err"};
 	int type_idx = msg_type;
 
@@ -120,33 +119,36 @@ void Logger::set_mask()
 {
 	if ( !every_process_ && (mpi_rank_ > 0) ) return;
 
+	bool no_log = LoggerOptions::get_instance().no_log_;
+	bool log_ready = LoggerOptions::get_instance().is_init();
+
 	switch (type_) {
 	case MsgType::warning:
 	case MsgType::error:
-		if (LoggerOptions::get_instance().no_log_)
+		if (no_log)
 			streams_mask_ = StreamMask::cerr;
 		else
 			streams_mask_ = StreamMask::cerr | StreamMask::log;
 		break;
 	case MsgType::message:
-		if (LoggerOptions::get_instance().no_log_)
+		if (no_log)
 			streams_mask_ = StreamMask::cout;
 		else
 			streams_mask_ = StreamMask::cout | StreamMask::log;
 		break;
 	case MsgType::log:
-        if (LoggerOptions::get_instance().no_log_)
+        if (no_log)
             streams_mask_ = StreamMask();
-        else if (LoggerOptions::get_instance().is_init())
+        else if (log_ready)
             streams_mask_ = StreamMask::log;
         else
             streams_mask_ = StreamMask::cout;
         break;
 #ifdef FLOW123D_DEBUG
     case MsgType::debug: // for debug build
-        if (LoggerOptions::get_instance().no_log_)
+        if (no_log)
             streams_mask_ = StreamMask();
-        else if (LoggerOptions::get_instance().is_init())
+        else if (log_ready)
             streams_mask_ = StreamMask::log | StreamMask::cout;
         else
             streams_mask_ = StreamMask::cout;

@@ -166,14 +166,25 @@ TEST_F(TestParallelOutput, continuous_mesh)
     /* Tests of output data */
     if (rank == 0) {
         std::vector<double> expected_nodes = { -3, 3, 0, 3, 3, 0, 3, -3, 0, -3, -3, 0 };
-        std::vector<unsigned int> expected_connectivities = { 0, 3, 2, 0, 2, 1 };
+        std::vector<unsigned int> expected_connectivities = { 0, 2, 3, 0, 1, 2 };
         std::vector<unsigned int> expected_offsets = { 0, 3, 6 };
         auto &node_vec = *( stream->nodes_cache()->get_component_data(0).get() );
-        for (unsigned int i=0; i<node_vec.size(); ++i) EXPECT_DOUBLE_EQ( node_vec[i], expected_nodes[i]);
+        for (unsigned int i=0; i<node_vec.size(); ++i) {
+            DebugOut() << "i node: " << i;
+            EXPECT_DOUBLE_EQ(expected_nodes[i],  node_vec[i]);
+        }
+
         auto &conn_vec = *( stream->connectivity_cache()->get_component_data(0).get() );
-        for (unsigned int i=0; i<conn_vec.size(); ++i) EXPECT_EQ( conn_vec[i], expected_connectivities[i]);
+        for (unsigned int i=0; i<conn_vec.size(); ++i) {
+            DebugOut() << "i conn: " << i;
+            EXPECT_EQ(expected_connectivities[i],  conn_vec[i]);
+        }
+
         auto &offs_vec = *( stream->offsets_cache()->get_component_data(0).get() );
-        for (unsigned int i=0; i<offs_vec.size(); ++i) EXPECT_EQ( offs_vec[i], expected_offsets[i]);
+        for (unsigned int i=0; i<offs_vec.size(); ++i) {
+            DebugOut() << "i offset: " << i;
+            EXPECT_EQ(expected_offsets[i], offs_vec[i]);
+        }
 
         std::map<string, std::vector<double>> expected_field_data;
         expected_field_data["init_scalar"] = { -1, 1 };
@@ -198,21 +209,37 @@ TEST_F(TestParallelOutput, discontinuous_mesh)
     make_output_mesh();
 
     /* Simulate field output */
-    data.init_scalar.field_output(stream);
-    data.init_vector.field_output(stream);
+    data.init_scalar.field_output(stream, OutputTime::ELEM_DATA);
+    data.init_vector.field_output(stream, OutputTime::ELEM_DATA);
     stream->gather_data(my_mesh);
 
     /* Tests of output data */
     if (rank == 0) {
-        std::vector<double> expected_nodes = { -3, 3, 0, -3, -3, 0, 3, -3, 0, -3, 3, 0, 3, -3, 0, 3, 3, 0 };
+        std::vector<double> expected_nodes = { -3, 3, 0, 3, -3,
+                                                0, -3, -3, 0, -3,
+                                                3, 0, 3, 3, 0,
+                                                3, -3, 0 };
         std::vector<unsigned int> expected_connectivities = { 0, 1, 2, 3, 4, 5 };
         std::vector<unsigned int> expected_offsets = { 0, 3, 6 };
+
         auto &node_vec = *( stream->nodes_cache()->get_component_data(0).get() );
-        for (unsigned int i=0; i<node_vec.size(); ++i) EXPECT_DOUBLE_EQ( node_vec[i], expected_nodes[i]);
+        for (unsigned int i=0; i<node_vec.size(); ++i) {
+            DebugOut() << "i node: " << i;
+            EXPECT_DOUBLE_EQ(expected_nodes[i],  node_vec[i]);
+        }
+
         auto &conn_vec = *( stream->connectivity_cache()->get_component_data(0).get() );
-        for (unsigned int i=0; i<conn_vec.size(); ++i) EXPECT_EQ( conn_vec[i], expected_connectivities[i]);
+        for (unsigned int i=0; i<conn_vec.size(); ++i) {
+            DebugOut() << "i conn: " << i;
+            EXPECT_EQ(expected_connectivities[i],  conn_vec[i]);
+        }
+
         auto &offs_vec = *( stream->offsets_cache()->get_component_data(0).get() );
-        for (unsigned int i=0; i<offs_vec.size(); ++i) EXPECT_EQ( offs_vec[i], expected_offsets[i]);
+        for (unsigned int i=0; i<offs_vec.size(); ++i) {
+            DebugOut() << "i offset: " << i;
+            EXPECT_EQ(expected_offsets[i], offs_vec[i]);
+        }
+
 
         std::map<string, std::vector<double>> expected_field_data;
         expected_field_data["init_scalar"] = { -1, 1 };

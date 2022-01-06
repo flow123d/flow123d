@@ -73,22 +73,23 @@ public:
     {
     	auto in_rec = Input::ReaderToStorage(input_yaml, const_cast<Input::Type::Record &>(OutputTime::get_input_type()), Input::FileFormat::format_YAML)
         				.get_root_interface<Input::Record>();
-        this->init_from_input("dummy_equation", in_rec, "s");
+        this->init_from_input("dummy_equation", in_rec, std::make_shared<TimeUnitConversion>());
 
         // create output mesh identical to computational mesh
-        auto output_mesh = std::make_shared<OutputMesh>(*(this->_mesh));
-        output_mesh->create_sub_mesh();
-        output_mesh->make_serial_master_mesh();
-        this->set_output_data_caches(output_mesh);
+        output_mesh_ = std::make_shared<OutputMesh>(*(this->_mesh));
+        output_mesh_->create_sub_mesh();
+        output_mesh_->make_serial_master_mesh();
+        this->set_output_data_caches(output_mesh_);
 
     }
 
-	template <class FieldType>
-	void set_field_data(string field_name, string init)
+	template <int spacedim, class Value>
+	void set_field_data(string field_name, string init, string rval)
     {
+		typedef typename Value::element_type ElemType;
 
-		// make field init it form the init string
-	    FieldType field(field_name, false); // bulk field
+		// make field, init it form the init string
+		Field<spacedim, Value> field(field_name, false); // bulk field
 		field.input_default(init);
 		field.set_components(component_names);
 
@@ -96,17 +97,19 @@ public:
 		field.units(UnitSI::one());
 		field.set_time(TimeGovernor(0.0, 1.0).step(), LimitSide::left);
 
-        // create output mesh identical to computational mesh
-		output_mesh_ = std::make_shared<OutputMesh>( *(this->_mesh) );
-		output_mesh_->create_sub_mesh();
-		output_mesh_->make_serial_master_mesh();
-        this->set_output_data_caches(output_mesh_);
+		field.set_output_data_cache(OutputTime::ELEM_DATA, shared_from_this());
+	    auto output_cache_base = this->prepare_compute_data<ElemType>(field_name, OutputTime::ELEM_DATA,
+	            (unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
+	    std::shared_ptr<ElementDataCache<ElemType>> output_data_cache = std::dynamic_pointer_cast<ElementDataCache<ElemType>>(output_cache_base);
+	    arma::mat ret_value(rval);
+	    for (uint i=0; i<output_data_cache->n_values(); ++i)
+	        output_data_cache->store_value(i, ret_value.memptr() );
 
         //this->output_mesh_discont_ = std::make_shared<OutputMeshDiscontinuous>( *(this->_mesh) );
         //this->output_mesh_discont_->create_sub_mesh();
         //this->output_mesh_discont_->make_serial_master_mesh();
 
-		field.compute_field_data(ELEM_DATA, shared_from_this());
+	    this->update_time(field.time());
 	}
 
 	template <class FieldVal>
@@ -125,17 +128,17 @@ public:
 		dh->distribute_dofs(ds);
 
 		VectorMPI v(size);
-        for (unsigned int i=0; i<size; ++i) v[i] = step*i;
+        for (unsigned int i=0; i<size; ++i) v.set(i, step*i);
 
-		auto native_data_ptr = make_shared< FieldFE<3, FieldVal> >();
-		native_data_ptr->set_fe_data(dh, v);
+        auto native_data_ptr = make_shared< FieldFE<3, FieldVal> >();
+        native_data_ptr->set_fe_data(dh, v);
 
-		field.set(native_data_ptr, 0.0);
-		field.output_type(OutputTime::NATIVE_DATA);
-		field.set_time(TimeGovernor(0.0, 1.0).step(), LimitSide::left);
+        field.set(native_data_ptr, 0.0);
+        field.output_type(OutputTime::NATIVE_DATA);
+        field.set_time(TimeGovernor(0.0, 1.0).step(), LimitSide::left);
 
-		field.compute_field_data(NATIVE_DATA, shared_from_this());
-	}
+        field.compute_field_data(OutputTime::NATIVE_DATA, shared_from_this());
+    }
 
 	// check result
 	void check_result_file(std::string result_file, std::string ref_file)
@@ -180,18 +183,18 @@ TEST(TestOutputVTK, write_data_ascii) {
 
 	output_vtk->init_mesh(test_output_time_ascii);
 	output_vtk->set_current_step(0);
-	output_vtk->set_field_data< Field<3,FieldValue<0>::Scalar> > ("scalar_field", "0.5");
-	output_vtk->set_field_data< Field<3,FieldValue<3>::VectorFixed> > ("vector_field", "[0.5, 1.0, 1.5]");
-	output_vtk->set_field_data< Field<3,FieldValue<3>::TensorFixed> > ("tensor_field", "[[1, 2, 3], [4, 5, 6], [7, 8, 9]]");
+	output_vtk->set_field_data<3, FieldValue<0>::Scalar> ("scalar_field", "0.5", "0.5");
+	output_vtk->set_field_data<3, FieldValue<3>::VectorFixed> ("vector_field", "[0.5, 1.0, 1.5]", "0.5 1.0 1.5");
+	output_vtk->set_field_data<3, FieldValue<3>::TensorFixed> ("tensor_field", "[[1, 2, 3], [4, 5, 6], [7, 8, 9]]", "1 2 3; 4 5 6; 7 8 9");
 	output_vtk->set_native_field_data< FieldValue<0>::Scalar >("flow_data", 6, 0.2);
 	// output_vtk->write_data();
 	// output_vtk->check_result_file("test1/test1-000000.vtu", "test_output_vtk_ascii_ref.vtu");
 
 	output_vtk->clear_data();
 	output_vtk->set_current_step(1);
-	output_vtk->set_field_data< Field<3,FieldValue<0>::Scalar> > ("scalar_field", "0.5");
-	output_vtk->set_field_data< Field<3,FieldValue<3>::VectorFixed> > ("vector_field", "[0.5, 1.0, 1.5]");
-	output_vtk->set_field_data< Field<3,FieldValue<3>::TensorFixed> > ("tensor_field", "[[1, 2, 3], [4, 5, 6], [7, 8, 9]]");
+	output_vtk->set_field_data<3, FieldValue<0>::Scalar> ("scalar_field", "0.5", "0.5");
+	output_vtk->set_field_data<3, FieldValue<3>::VectorFixed> ("vector_field", "[0.5, 1.0, 1.5]", "0.5 1.0 1.5");
+	output_vtk->set_field_data<3, FieldValue<3>::TensorFixed> ("tensor_field", "[[1, 2, 3], [4, 5, 6], [7, 8, 9]]", "1 2 3; 4 5 6; 7 8 9");
 	output_vtk->set_native_field_data< FieldValue<0>::Scalar >("flow_data", 6, 0.2);
 	output_vtk->write_data();
 
@@ -207,9 +210,9 @@ TEST(TestOutputVTK, write_data_binary) {
 
 	output_vtk->init_mesh(test_output_time_binary);
     output_vtk->set_current_step(0);
-    output_vtk->set_field_data< Field<3,FieldValue<0>::Scalar> > ("scalar_field", "0.5");
-    output_vtk->set_field_data< Field<3,FieldValue<3>::VectorFixed> > ("vector_field", "[0.5, 1.0, 1.5]");
-    output_vtk->set_field_data< Field<3,FieldValue<3>::TensorFixed> > ("tensor_field", "[[1, 2, 3], [4, 5, 6], [7, 8, 9]]");
+    output_vtk->set_field_data<3, FieldValue<0>::Scalar>("scalar_field", "0.5", "0.5");
+    output_vtk->set_field_data<3, FieldValue<3>::VectorFixed>("vector_field", "[0.5, 1.0, 1.5]", "0.5 1.0 1.5");
+    output_vtk->set_field_data<3, FieldValue<3>::TensorFixed>("tensor_field", "[[1, 2, 3], [4, 5, 6], [7, 8, 9]]", "1 2 3; 4 5 6; 7 8 9");
     output_vtk->write_data();
 
     output_vtk->check_result_file("test1/test1-000000.vtu", "test_output_vtk_binary_ref.vtu");
@@ -228,9 +231,9 @@ TEST(TestOutputVTK, write_data_compressed) {
 
 	output_vtk->init_mesh(test_output_time_compressed);
     output_vtk->set_current_step(0);
-    output_vtk->set_field_data< Field<3,FieldValue<0>::Scalar> > ("scalar_field", "0.5");
-    output_vtk->set_field_data< Field<3,FieldValue<3>::VectorFixed> > ("vector_field", "[0.5, 1.0, 1.5]");
-    output_vtk->set_field_data< Field<3,FieldValue<3>::TensorFixed> > ("tensor_field", "[[1, 2, 3], [4, 5, 6], [7, 8, 9]]");
+    output_vtk->set_field_data<3, FieldValue<0>::Scalar>("scalar_field", "0.5", "0.5");
+    output_vtk->set_field_data<3, FieldValue<3>::VectorFixed>("vector_field", "[0.5, 1.0, 1.5]", "0.5 1.0 1.5");
+    output_vtk->set_field_data<3, FieldValue<3>::TensorFixed>("tensor_field", "[[1, 2, 3], [4, 5, 6], [7, 8, 9]]", "1 2 3; 4 5 6; 7 8 9");
     output_vtk->write_data();
 
     output_vtk->check_result_file("test1/test1-000000.vtu", "test_output_vtk_zlib_ref.vtu");

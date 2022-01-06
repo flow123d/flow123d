@@ -40,6 +40,9 @@ using namespace Input::Type;
 bool Balance::do_yaml_output_ = true;
 
 const Selection & Balance::get_format_selection_input_type() {
+	// TODO: keep just YAML and txt, adapt tests (version 4.0)
+	// TODO: keep just YAML output, move conversions to Python postprocessing
+
 	return Selection("Balance_output_format", "Format of output file for balance.")
 		.add_value(Balance::legacy, "legacy", "Legacy format used by previous program versions.")
 		.add_value(Balance::txt, "txt", "Excel format with tab delimiter.")
@@ -204,8 +207,12 @@ void Balance::lazy_initialize()
     if (allocation_done_) return;
 
     auto &marks = TimeGovernor::marks();
-    if (add_output_times_)
+    if (add_output_times_){
         marks.add_to_type_all(output_mark_type_, balance_output_type_);
+		// add balance output time mark to init time
+		// due to balance output when there are no output fields
+		marks.add( TimeMark(time_->init_time(), balance_output_type_) );
+	}
     // if there are no balance marks turn balance off
     if (marks.begin(balance_output_type_) == marks.end(balance_output_type_) )
     {
@@ -864,7 +871,8 @@ void Balance::output_legacy(double time)
 	output_ << "# " << setw((w*c+wl-14)/2) << setfill('-') << "--"
 			<< " MASS BALANCE "
 	     	<< setw((w*c+wl-14)/2) << setfill('-') << "" << endl
-			<< "# Time: " << (time / time_->get_coef()) << "[" << time_->get_unit_string() << "]\n\n\n";
+			<< "# Time: " << (time / time_->get_coef())
+			<< "[" << time_->get_unit_conversion()->get_unit_string() << "]\n\n\n";
 
 	// header for table of boundary fluxes
 	output_ << "# Mass flux through boundary [M/T]:\n# "
@@ -1058,6 +1066,11 @@ void Balance::output_csv(double time, char delimiter, const std::string& comment
 			if (repeat && (output_line_counter_%repeat == 0)) format_csv_output_header(delimiter, comment_string);
 
 			double error = sum_masses_[qi] - (initial_mass_[qi] + integrated_sources_[qi] + integrated_fluxes_[qi]);
+
+            // error makes trouble in ndiff due to cancellation - difference of two similar numbers
+            // DebugOut().fmt("error_[qi]={:.15e} sum_masses_[qi]={:.15e}, initial_mass_[qi]={:.15e}, integrated_sources_[qi]={:.15e}, integrated_fluxes_[qi]={:.15e}",
+                // error, sum_masses_[qi], initial_mass_[qi], integrated_sources_[qi], integrated_fluxes_[qi]);
+
 			output_ << format_csv_val(time / time_->get_coef(), delimiter, true)
 					<< format_csv_val("ALL", delimiter)
 					<< format_csv_val(quantities_[qi].name_, delimiter)
@@ -1084,9 +1097,10 @@ void Balance::format_csv_output_header(char delimiter, const std::string& commen
 {
 	std::stringstream ss;
 	if (delimiter == ' ') {
-		ss << setw(output_column_width-comment_string.size()) << "\"time [" << time_->get_unit_string() << "]\"";
+		ss << setw(output_column_width-comment_string.size())
+		   << "\"time [" << time_->get_unit_conversion()->get_unit_string() << "]\"";
 	} else {
-		ss << "\"time [" << time_->get_unit_string() << "]\"";
+		ss << "\"time [" << time_->get_unit_conversion()->get_unit_string() << "]\"";
 	}
 
 	output_ << comment_string << ss.str()

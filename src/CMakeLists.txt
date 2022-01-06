@@ -302,7 +302,6 @@ add_library(coupling_lib
     fields/field_formula.cc
     fields/table_function.cc
     fields/field_time_function.cc
-    fields/field_divide.cc
     fields/field_fe.cc
     fields/fe_value_handler.cc
     fields/eval_subset.cc
@@ -319,17 +318,6 @@ target_link_libraries(coupling_lib
     bparser  
     armadillo
     ${Boost_LIBRARIES})
-
-
-
-# make separate library for Semchem (God save us!)
-#add_library(semchem 
-#    semchem/che_semchem.cc
-#    semchem/che_read.cc
-#)
-#set_target_properties(semchem 
-#    PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
-#)
 
 
 
@@ -353,7 +341,6 @@ add_library(flow123d_lib
     reaction/dual_porosity.cc
     reaction/isotherm.cc
     reaction/linear_ode_solver.cc
-    #semchem/semchem_interface.cc
 
     transport/concentration_model.cc
     transport/heat_model.cc

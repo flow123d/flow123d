@@ -17,4 +17,4 @@ sed '/^##.*$/{
         :sub-yes   # a label (the goto target of the 't' branch)
                    # fall through to final auto-pattern_print (2 lines)
        }
-     }' $1 | sed '/^##/!d;/^##/s/^##\(.*\)/\1/' | sed 's/^#/##/' | sed "1d;2s/^title: .*\`\`\(.*\)''\$/#\1\\n\\nFile: \`\`\`$1\`\`\`\\n/;3d" | pandoc -o ${1%.yaml}.tex --toc -N -V geometry="margin=1in" -f markdown-auto_identifiers --filter pandoc-fignos --filter pandoc-tablenos
+     }' $1 | sed '/^##/!d;/^##/s/^##\(.*\)/\1/' | sed 's/^#/##/' | sed "1d;2s/^title: .*\`\`\(.*\)''\$/# \1\\n\\nFile: \`\`\`$1\`\`\`\\n/;3d" | pandoc -o ${1%.yaml}.tex --toc -N -V geometry="margin=1in" -f markdown-auto_identifiers --filter pandoc-fignos --filter pandoc-tablenos

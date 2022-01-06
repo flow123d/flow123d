@@ -41,6 +41,7 @@
 #include "input/type_base.hh"                          // for Array
 #include "input/type_generic.hh"                       // for Instance
 #include "input/type_record.hh"                        // for Record::ExcRec...
+#include "input/input_exception.hh"                    // for Input::Exception
 #include "io/output_time.hh"                           // for OutputTime
 #include "mesh/elements.h"                             // for Element::dim
 #include "mesh/region.hh"                              // for RegionDB::ExcU...
@@ -54,9 +55,7 @@ class Mesh;
 class Observe;
 class EvalPoints;
 class BulkPoint;
-class EdgePoint;
-class CouplingPoint;
-class BoundaryPoint;
+class SidePoint;
 class FieldSet;
 template <int spacedim> class ElementAccessor;
 template <int spacedim, class Value> class FieldFE;
@@ -177,21 +176,13 @@ public:
 
 
     /// Return appropriate value to EdgePoint in FieldValueCache
-    typename Value::return_type operator() (EdgePoint &p);
-
-
-    /// Return appropriate value to CouplingPoint in FieldValueCache
-    typename Value::return_type operator() (CouplingPoint &p);
-
-
-    /// Return appropriate value to BoundaryPoint in FieldValueCache
-    typename Value::return_type operator() (BoundaryPoint &p);
+    typename Value::return_type operator() (SidePoint &p);
 
 
     /**
      * Returns reference to input type of particular field instance, this is static member @p input_type of the corresponding FieldBase class
      * (i.e. with same template parameters). However, for fields returning "Enum" we have to create whole unique Input::Type hierarchy using following method
-     * @p meka_input_tree.
+     * @p make_input_tree.
      * every instance since every such field use different Selection for initialization, even if all returns just unsigned int.
      */
     IT::Instance get_input_type() override;
@@ -260,7 +251,7 @@ public:
     /**
      * Implementation of FieldCommonBase::output().
      */
-    void field_output(std::shared_ptr<OutputTime> stream) override;
+    void field_output(std::shared_ptr<OutputTime> stream, OutputTime::DiscreteSpace type) override;
 
     /**
      * Implementation of FieldCommonBase::observe_output().
@@ -331,16 +322,22 @@ public:
     void set_input_list(const Input::Array &list, const TimeGovernor &tg) override;
 
     /**
+     * Create and return shared_ptr to ElementDataCache appropriate to Field. Data cache is given by discrete @p space_type
+     * and is stored into data structures of output time @p stream for postponed output too.
+     */
+    void set_output_data_cache(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream) override;
+
+    /**
      * Interpolate given field into output discrete @p space_type and store the values
      * into storage of output time @p stream for postponed output.
      */
     void compute_field_data(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream);
 
     /// Implements FieldCommon::cache_allocate
-    void cache_reallocate(const ElementCacheMap &cache_map) override;
+    void cache_reallocate(const ElementCacheMap &cache_map, unsigned int region_idx) const override;
 
     /// Implements FieldCommon::cache_update
-    void cache_update(ElementCacheMap &cache_map, unsigned int i_reg) const override;
+    void cache_update(ElementCacheMap &cache_map, unsigned int region_patch_idx) const override;
 
     /// Implements FieldCommon::value_cache
     FieldValueCache<double> * value_cache() override;
@@ -351,7 +348,10 @@ public:
     /**
      * Implementation of FieldCommon::set_dependency().
      */
-    std::vector<const FieldCommon *> set_dependency(FieldSet &field_set, unsigned int i_reg) override;
+    std::vector<const FieldCommon *> set_dependency(FieldSet &field_set, unsigned int i_reg) const override;
+
+    /// Implements FieldCommon::fill_data_value
+    void fill_data_value(const std::vector<int> &offsets) override;
 
 protected:
 
@@ -363,11 +363,6 @@ protected:
      * history queue to keep its size less then @p history_length_limit_.
      */
     void update_history(const TimeStep &time);
-
-    /// Fills acutally the data cache with field values, used in @p compute_field_data
-    void fill_data_cache(OutputTime::DiscreteSpace space_type,
-                         std::shared_ptr<OutputTime> stream,
-                         std::shared_ptr<ElementDataCache<typename Value::element_type>> data_cache);
 
     /**
      *  Check that whole field list (@p region_fields_) is set, possibly use default values for unset regions.
@@ -426,6 +421,9 @@ protected:
      * Order of subsets is same as in eval_points.
      */
     mutable FieldValueCache<typename Value::element_type> value_cache_;
+
+    /// ElementDataCache used during field output, object is shared with OutputTime
+    std::shared_ptr<ElementDataCache<typename Value::element_type>> output_data_cache_;
 
 
 

@@ -1,6 +1,12 @@
 common_config:
   proc: [1, 2]
   memory_limit: 1000
+  check_rules:
+    - vtkdiff:
+        files: ["*.vtu"]
+        interpolate: False
+    - ndiff:
+        files: ["*.pvd", "*.txt", "*.yaml", "*.msh"]
 
 test_cases:
 - files:

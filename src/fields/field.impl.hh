@@ -159,21 +159,7 @@ typename Value::return_type Field<spacedim,Value>::operator() (BulkPoint &p) {
 
 
 template<int spacedim, class Value>
-typename Value::return_type Field<spacedim,Value>::operator() (EdgePoint &p) {
-    return p.elm_cache_map()->get_value<Value>(value_cache_, p.elem_patch_idx(), p.eval_point_idx());
-}
-
-
-
-template<int spacedim, class Value>
-typename Value::return_type Field<spacedim,Value>::operator() (CouplingPoint &p) {
-    return p.elm_cache_map()->get_value<Value>(value_cache_, p.elem_patch_idx(), p.eval_point_idx());
-}
-
-
-
-template<int spacedim, class Value>
-typename Value::return_type Field<spacedim,Value>::operator() (BoundaryPoint &p) {
+typename Value::return_type Field<spacedim,Value>::operator() (SidePoint &p) {
     return p.elm_cache_map()->get_value<Value>(value_cache_, p.elem_patch_idx(), p.eval_point_idx());
 }
 
@@ -318,8 +304,11 @@ bool Field<spacedim, Value>::set_time(const TimeStep &time_step, LimitSide limit
     if (no_check_control_field_) {
             no_check_control_field_->set_time(time_step, limit_side);
     }
-        
-    set_time_result_ = TimeStatus::constant;
+    
+    if(set_time_result_ == TimeStatus::changed_forced)
+        set_time_result_ = TimeStatus::changed;
+    else
+        set_time_result_ = TimeStatus::constant;
     
     // read all descriptors satisfying time.ge(input_time)
     update_history(time_step);
@@ -392,14 +381,12 @@ void Field<spacedim, Value>::copy_from(const FieldCommon & other) {
 
 
 template<int spacedim, class Value>
-void Field<spacedim, Value>::field_output(std::shared_ptr<OutputTime> stream)
+void Field<spacedim, Value>::field_output(std::shared_ptr<OutputTime> stream, OutputTime::DiscreteSpace type)
 {
 	// currently we cannot output boundary fields
 	if (!is_bc()) {
-		const OutputTime::DiscreteSpace type = this->get_output_type();
-
-		ASSERT_LT(type, OutputTime::N_DISCRETE_SPACES).error();
-		this->compute_field_data( type, stream);
+	    ASSERT_LT( type, OutputTime::N_DISCRETE_SPACES ).error();
+	    this->compute_field_data( type, stream);
 	}
 }
 
@@ -563,8 +550,8 @@ void Field<spacedim,Value>::check_initialized_region_fields_() {
                 if (shared_->input_default_ != "") {    // try to use default
                     regions_to_init.push_back( reg );
                 } else {
-                	xprintf(UsrErr, "Missing value of the input field '%s' ('%s') on region ID: %d label: %s.\n",
-                			input_name().c_str(), name().c_str(), reg.id(), reg.label().c_str() );
+                	THROW( ExcMissingFieldValue() << EI_FieldInputName(input_name()) << EI_FieldName(name())
+                	        << EI_RegId(reg.id()) << EI_RegLabel(reg.label()) );
                 }
             }
         }
@@ -651,21 +638,36 @@ void Field<spacedim,Value>::set_input_list(const Input::Array &list, const TimeG
 
 
 template<int spacedim, class Value>
+void Field<spacedim,Value>::set_output_data_cache(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream) {
+    typedef typename Value::element_type ElemType;
+
+    auto output_cache_base = stream->prepare_compute_data<ElemType>(this->name(), space_type,
+            (unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
+    output_data_cache_ = std::dynamic_pointer_cast<ElementDataCache<ElemType>>(output_cache_base);
+}
+
+
+template<int spacedim, class Value>
 void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream) {
-	typedef typename Value::element_type ElemType;
+    std::shared_ptr<OutputMeshBase> output_mesh = stream->get_output_mesh_ptr();
+    ASSERT(output_mesh);
 
-    OutputTime::OutputDataPtr output_data_base = stream->prepare_compute_data<ElemType>(this->name(), space_type,
-    		(unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
+    ASSERT_EQ_DBG(space_type, OutputTime::NATIVE_DATA);
 
-    try{
+    /* Copy data to array */
+    std::shared_ptr< FieldFE<spacedim, Value> > field_fe_ptr = this->get_field_fe();
+
+    if (field_fe_ptr) {
+        auto native_output_data_base = stream->prepare_compute_data<double>(this->name(), space_type,
+                (unsigned int)Value::NRows_, (unsigned int)Value::NCols_,
+                typeid(field_fe_ptr->get_dofhandler()->ds()->fe()[0_d].get()).name(),  // should be used better solution of fe_type setting
+                                                                                       // e.g. method 'name()' of FiniteElement and descendants
+                field_fe_ptr->get_dofhandler()->max_elem_dofs());
         // try casting actual ElementDataCache
-        if( ! output_data_base->is_dummy()){
-            auto output_data = std::dynamic_pointer_cast<ElementDataCache<ElemType>>(output_data_base);
-            fill_data_cache(space_type, stream, output_data);
-        }
-
-    } catch(const std::bad_cast& e){
-        // skip
+        auto native_output_data = std::dynamic_pointer_cast<ElementDataCache<double>>(native_output_data_base);
+        field_fe_ptr->native_data_to_cache(*native_output_data);
+    } else {
+        WarningOut().fmt("Field '{}' of native data space type is not of type FieldFE. Output will be skipped.\n", this->name());
     }
 
     /* Set the last time */
@@ -673,71 +675,18 @@ void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_t
 
 }
 
+
 template<int spacedim, class Value>
-void Field<spacedim,Value>::fill_data_cache(OutputTime::DiscreteSpace space_type,
-                                            std::shared_ptr<OutputTime> stream,
-                                            std::shared_ptr<ElementDataCache<typename Value::element_type>> data_cache)
+void Field<spacedim,Value>::fill_data_value(const std::vector<int> &offsets)
 {
-    std::shared_ptr<OutputMeshBase> output_mesh = stream->get_output_mesh_ptr();
-    ASSERT(output_mesh);
-
-    /* Copy data to array */
-    switch(space_type) {
-        case OutputTime::NODE_DATA:
-        case OutputTime::CORNER_DATA: {
-            unsigned int node_index = 0;
-            for(const auto & ele : *output_mesh )
-            {
-                std::vector<Space<3>::Point> vertices = ele.vertex_list();
-                for(unsigned int i=0; i < ele.n_nodes(); i++)
-                {
-                    const Value &node_value =
-                            Value( const_cast<typename Value::return_type &>(
-                                    this->value(vertices[i],
-                                                ElementAccessor<spacedim>(ele.orig_mesh(), ele.orig_element_idx()) ))
-                                );
-                    ASSERT_EQ(data_cache->n_comp(), node_value.n_rows()*node_value.n_cols()).error();
-                    data_cache->store_value(node_index, node_value.mem_ptr() );
-                    ++node_index;
-                }
-            }
-        }
-        break;
-        case OutputTime::ELEM_DATA: {
-            for(const auto & ele : *output_mesh )
-            {
-                unsigned int ele_index = ele.idx();
-                const Value &ele_value =
-                            Value( const_cast<typename Value::return_type &>(
-                                    this->value(ele.centre(),
-                                                ElementAccessor<spacedim>(ele.orig_mesh(), ele.orig_element_idx()))
-                                                                            )
-                                );
-                ASSERT_EQ(data_cache->n_comp(), ele_value.n_rows()*ele_value.n_cols()).error();
-                data_cache->store_value(ele_index, ele_value.mem_ptr() );
-            }
-        }
-        break;
-        case OutputTime::NATIVE_DATA: {
-            std::shared_ptr< FieldFE<spacedim, Value> > field_fe_ptr = this->get_field_fe();
-
-            if (field_fe_ptr) {
-                auto native_output_data_base = stream->prepare_compute_data<double>(this->name(), space_type,
-                        (unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
-                // try casting actual ElementDataCache
-                auto native_output_data = std::dynamic_pointer_cast<ElementDataCache<double>>(native_output_data_base);
-                field_fe_ptr->native_data_to_cache(*native_output_data);
-            } else {
-                WarningOut().fmt("Field '{}' of native data space type is not of type FieldFE. Output will be skipped.\n", this->name());
-            }
-        }
-        break;
-        case OutputTime::MESH_DEFINITION:
-        case OutputTime::UNDEFINED:
-            //should not happen
-        break;
+    for (unsigned int i=0; i<offsets.size(); ++i) {
+        if (offsets[i] == -1) continue; // skip empty value
+        auto ret_value = Value::get_from_array(this->value_cache_, i);
+        const Value &ele_value = Value( ret_value );
+        output_data_cache_->store_value(offsets[i], ele_value.mem_ptr() );
     }
 }
+
 
 template<int spacedim, class Value>
 std::shared_ptr< FieldFE<spacedim, Value> > Field<spacedim,Value>::get_field_fe() {
@@ -762,23 +711,23 @@ std::shared_ptr< FieldFE<spacedim, Value> > Field<spacedim,Value>::get_field_fe(
 
 
 template<int spacedim, class Value>
-void Field<spacedim, Value>::cache_reallocate(const ElementCacheMap &cache_map) {
-    // Call cache_reinit of FieldAlgoBase descendants
-    for (auto reg_field : region_fields_) {
-    	if (reg_field) reg_field->cache_reinit(cache_map);
-    }
+void Field<spacedim, Value>::cache_reallocate(const ElementCacheMap &cache_map, unsigned int region_idx) const {
+    // Call cache_reinit of FieldAlgoBase descendant on appropriate region
+	if (region_fields_[region_idx] != nullptr)
+	    region_fields_[region_idx]->cache_reinit(cache_map);
 }
 
 
 template<int spacedim, class Value>
-void Field<spacedim, Value>::cache_update(ElementCacheMap &cache_map, unsigned int i_reg) const {
-    if (region_fields_[i_reg] != nullptr) // skips bounadry regions for bulk fields and vice versa
-        region_fields_[i_reg]->cache_update(value_cache_, cache_map, i_reg);
+void Field<spacedim, Value>::cache_update(ElementCacheMap &cache_map, unsigned int region_patch_idx) const {
+    unsigned int region_idx = cache_map.region_idx_from_chunk_position(region_patch_idx);
+    if (region_fields_[region_idx] != nullptr) // skips bounadry regions for bulk fields and vice versa
+        region_fields_[region_idx]->cache_update(value_cache_, cache_map, region_patch_idx);
 }
 
 
 template<int spacedim, class Value>
-std::vector<const FieldCommon *> Field<spacedim, Value>::set_dependency(FieldSet &field_set, unsigned int i_reg) {
+std::vector<const FieldCommon *> Field<spacedim, Value>::set_dependency(FieldSet &field_set, unsigned int i_reg) const {
    	if (region_fields_[i_reg] != nullptr) return region_fields_[i_reg]->set_dependency(field_set);
    	else return std::vector<const FieldCommon *>();
 }

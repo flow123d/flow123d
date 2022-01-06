@@ -23,6 +23,9 @@
 #include "fields/eval_points.hh"                       // for EvalPoints
 #include "fem/mapping_p1.hh"
 #include "mesh/ref_element.hh"
+#include "mesh/point.hh"                               // for Point
+
+template <int spacedim> class ElementAccessor;
 
 namespace IT=Input::Type;
 
@@ -32,6 +35,7 @@ namespace IT=Input::Type;
  */
 class FieldCoords : public FieldCommon {
 public:
+	typedef typename Space<3>::Point Point;
 
     /// Constructor
     FieldCoords()
@@ -60,7 +64,7 @@ public:
     }
 
     void set_mesh(const Mesh &mesh) override {
-        this->mesh_ = &mesh;
+        shared_->mesh_ = &mesh;
     }
 
     bool is_constant(FMT_UNUSED Region reg) override {
@@ -75,7 +79,7 @@ public:
         ASSERT(false).error("Forbidden method for FieldCoords!");
     }
 
-    void field_output(FMT_UNUSED std::shared_ptr<OutputTime> stream) override {
+    void field_output(FMT_UNUSED std::shared_ptr<OutputTime> stream, FMT_UNUSED OutputTime::DiscreteSpace type) override {
         ASSERT(false).error("Forbidden method for FieldCoords!");
     }
 
@@ -96,23 +100,28 @@ public:
     {}
 
     /// Implements FieldCommon::cache_allocate
-    void cache_reallocate(FMT_UNUSED const ElementCacheMap &cache_map) override
+    void cache_reallocate(FMT_UNUSED const ElementCacheMap &cache_map, FMT_UNUSED unsigned int region_idx) const override
     {}
 
     /// Implements FieldCommon::cache_update
-    void cache_update(ElementCacheMap &cache_map, unsigned int i_reg) const override {
+    void cache_update(ElementCacheMap &cache_map, unsigned int region_patch_idx) const override {
     	std::shared_ptr<EvalPoints> eval_points = cache_map.eval_points();
-        unsigned int reg_chunk_begin = cache_map.region_chunk_begin(i_reg);
-        unsigned int reg_chunk_end = cache_map.region_chunk_end(i_reg);
+        unsigned int reg_chunk_begin = cache_map.region_chunk_begin(region_patch_idx);
+        unsigned int reg_chunk_end = cache_map.region_chunk_end(region_patch_idx);
+        unsigned int region_idx = cache_map.eval_point_data(reg_chunk_begin).i_reg_;
         unsigned int last_element_idx = -1;
         ElementAccessor<3> elm;
     	arma::vec3 coords;
         unsigned int dim = 0;
 
+        const MeshBase *mesh; // Holds bulk or boundary mesh by region_idx
+        if (region_idx%2 == 1) mesh = shared_->mesh_;
+        else mesh = shared_->mesh_->bc_mesh();
+
         for (unsigned int i_data = reg_chunk_begin; i_data < reg_chunk_end; ++i_data) { // i_eval_point_data
             unsigned int elm_idx = cache_map.eval_point_data(i_data).i_element_;
             if (elm_idx != last_element_idx) {
-                elm = mesh_->element_accessor( elm_idx );
+                elm = mesh->element_accessor( elm_idx );
                 dim = elm.dim();
                 last_element_idx = elm_idx;
             }
@@ -152,8 +161,30 @@ public:
     }
 
     /// Implements FieldCommon::set_dependency().
-    std::vector<const FieldCommon *> set_dependency(FMT_UNUSED FieldSet &field_set, FMT_UNUSED unsigned int i_reg) override {
+    std::vector<const FieldCommon *> set_dependency(FMT_UNUSED FieldSet &field_set, FMT_UNUSED unsigned int i_reg) const override {
         return std::vector<const FieldCommon *>();
+    }
+
+    /// Returns one value of coordinates in one given point @p.
+    inline arma::vec3 const & value(const Point &p, FMT_UNUSED const ElementAccessor<3> &elm) const
+    {
+        return p;
+    }
+
+    inline void value_list(const Armor::array &point_list, const ElementAccessor<3> &elm,
+                       std::vector<arma::vec3> &value_list) const
+    {
+        ASSERT_DBG(point_list.n_rows() == 3 && point_list.n_cols() == 1).error("Invalid point size.\n");
+        ASSERT_EQ_DBG(point_list.size(), value_list.size()).error("Different size of point list and value list.\n");
+
+        for (uint i=0; i<point_list.size(); ++i)
+            value_list[i] = this->value(point_list.template vec<3>(i), elm);
+    }
+
+    /// Return item of @p value_cache_ given by i_cache_point.
+    arma::vec3 operator[] (unsigned int i_cache_point) const
+    {
+        return this->value_cache_.template vec<3>(i_cache_point);
     }
 
 private:
@@ -163,8 +194,6 @@ private:
      * See implementation of Field<spacedim, Value>::value_cache_
      */
     mutable FieldValueCache<double> value_cache_;
-
-    const Mesh *mesh_;                 ///< Pointer to the mesh.
 };
 
 #endif /* FIELD_COORDS_HH_ */

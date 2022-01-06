@@ -91,8 +91,8 @@ std::shared_ptr<AdvectionProcessBase> HC_ExplicitSequential::make_advection_proc
         auto process = (*it).factory< AdvectionProcessBase, Mesh &, const Input::Record >(*mesh, *it);
 
         // setup fields
-        process->data()["cross_section"]
-                .copy_from(water->data()["cross_section"]);
+        process->eq_fieldset()["cross_section"]
+                .copy_from(water->eq_fieldset()["cross_section"]);
         /*
         if (water_content_saturated_) // only for unsteady Richards water model
             process->data()["porosity"].copy_from(*water_content_saturated_);
@@ -103,8 +103,8 @@ std::shared_ptr<AdvectionProcessBase> HC_ExplicitSequential::make_advection_proc
 
         }*/
 
-        FieldCommon *porosity = process->data().field("porosity");
-        process->data()["water_content"].copy_from( *porosity );
+        FieldCommon *porosity = process->eq_fieldset().field("porosity");
+        process->eq_fieldset()["water_content"].copy_from( *porosity );
 
 
         process->initialize();
@@ -150,11 +150,11 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
     }
 
     RegionSet bulk_set = mesh->region_db().get_region_set("BULK");
-    water_content_saturated_ = water->data().field("water_content_saturated");
+    water_content_saturated_ = water->eq_fieldset().field("water_content_saturated");
     if (water_content_saturated_ && water_content_saturated_->field_result( bulk_set ) == result_zeros )
         water_content_saturated_ = nullptr;
 
-    water_content_p0_ = water->data().field("water_content_p0");
+    water_content_p0_ = water->eq_fieldset().field("water_content_p0");
     if (water_content_p0_ && water_content_p0_->field_result( bulk_set ) == result_zeros )
         water_content_p0_ = nullptr;
 
@@ -174,9 +174,9 @@ void HC_ExplicitSequential::advection_process_step(AdvectionData &pdata)
         // is not close to the solved_time of the water module
         // for simplicity we use only last velocity field
         if (pdata.velocity_changed) {
-            //DBGMSG("velocity update\n");
-            auto& flux = pdata.process->data()["flow_flux"];
-            flux.copy_from(water->data()["flux"]);
+            // DebugOut() << "flow_flux update\n";
+            auto& flux = pdata.process->eq_fieldset()["flow_flux"];
+            flux.copy_from(water->eq_fieldset()["flux"]);
             flux.set_time_result_changed();
             pdata.velocity_changed = false;
         }
@@ -187,6 +187,22 @@ void HC_ExplicitSequential::advection_process_step(AdvectionData &pdata)
    }
 }
 
+void HC_ExplicitSequential::flow_step(double requested_time)
+{
+    // DebugOut() << "water->solved_time() = " << water->solved_time() << "  requested_time = " << requested_time << "\n";
+    if (water->solved_time() < requested_time) {
+        // solve water over the requested_time (nearest transport interval)
+        water->update_solution();
+
+        // here possibly save solution from water for interpolation in time
+
+        //water->time().view("WATER");     //show water time governor
+        water->choose_next_time();
+
+        for(auto &pdata : processes_)
+            pdata.velocity_changed = true;
+    }
+}
 
 /**
  * TODO:
@@ -211,6 +227,8 @@ void HC_ExplicitSequential::run_simulation()
     {
         START_TIMER("HC water zero time step");
         water->zero_time_step();
+        for(auto &process : processes_)
+            process.velocity_changed = true;
     }
 
 
@@ -231,7 +249,14 @@ void HC_ExplicitSequential::run_simulation()
     is_end_all_=false;
     while (! is_end_all_) {
         is_end_all_ = true;
-
+        
+        // if any of the advection processes reached the current time of flow model,
+        // take a new flow step before setting a new time constraint for adv. process
+        for(auto &pdata : processes_){
+            if(! pdata.process->time().is_end())
+                flow_step(pdata.process->solved_time());
+        }
+        
         double water_dt=water->time().estimate_dt();
         if (water->time().is_end()) water_dt = TimeGovernor::inf_time;
 
@@ -247,6 +272,7 @@ void HC_ExplicitSequential::run_simulation()
                 min_velocity_time = min(min_velocity_time, pdata.velocity_time);
             }
         }
+        // DebugOut() << "min_velocity_time = " << min_velocity_time << "\n";
 
         // printing water and transport times every step
         //MessageOut().fmt("HC_EXPL_SEQ: velocity_interpolation_time: {}, water_time: {} transport time: {}\n",
@@ -257,21 +283,7 @@ void HC_ExplicitSequential::run_simulation()
 
         if (! water->time().is_end() ) {
             is_end_all_=false;
-            if (water->solved_time() < min_velocity_time) {
-
-                // solve water over the nearest transport interval
-                water->update_solution();
-
-                // here possibly save solution from water for interpolation in time
-
-                //water->time().view("WATER");     //show water time governor
-
-                //water->output_data();
-                water->choose_next_time();
-
-                for(auto &process : processes_) process.velocity_changed = true;
-
-            }
+            flow_step(min_velocity_time);
         }
         advection_process_step(processes_[0]); // solute
         advection_process_step(processes_[1]); // heat

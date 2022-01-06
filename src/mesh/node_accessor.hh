@@ -42,7 +42,7 @@ public:
     /**
      * Node accessor.
      */
-	NodeAccessor(const Mesh *mesh, unsigned int idx)
+	NodeAccessor(const MeshBase *mesh, unsigned int idx)
     : mesh_(mesh), node_idx_(idx)
     {}
 
@@ -69,12 +69,12 @@ public:
     }
 
     inline Point operator*() const
-    { return mesh_->nodes_.vec<spacedim>(node_idx_); }
+    { return mesh_->nodes_->vec<spacedim>(node_idx_); }
 
 
 private:
     /// Pointer to the mesh owning the node.
-    const Mesh *mesh_;
+    const MeshBase *mesh_;
 
     /// Index into Mesh::node_vec_ array.
     unsigned int node_idx_;

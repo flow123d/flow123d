@@ -10,8 +10,12 @@
 #include "input/accessors.hh"
 #include "fields/equation_output.hh"
 #include "fields/field.hh"
+#include "fields/assembly_output.hh"
 #include "io/output_time_set.hh"
 #include "input/flow_attribute_lib.hh"
+#include "fem/dofhandler.hh"
+#include "fem/discrete_space.hh"
+#include "fem/fe_p.hh"
 #include <memory>
 
 
@@ -36,7 +40,7 @@ IT::Record &EquationOutput::get_input_type() {
                     "The field name (from selection).")
             .declare_key("times", OutputTimeSet::get_input_type(), IT::Default::optional(),
                     "Output times specific to particular field.")
-            .declare_key("interpolation", interpolation_sel, IT::Default::read_time("Interpolation type of output data."),
+            .declare_key("interpolation", IT::Array( interpolation_sel ), IT::Default::read_time("Interpolation type of output data."),
 					"Optional value. Implicit value is given by field and can be changed.")
             .close();
 
@@ -59,6 +63,19 @@ IT::Record &EquationOutput::get_input_type() {
         .declare_key("observe_fields", IT::Array( IT::Parameter("output_field_selection")), IT::Default("[]"),
                 "Array of the fields evaluated in the observe points of the associated output stream.")
         .close();
+}
+
+
+
+EquationOutput::EquationOutput()
+: FieldSet(), output_elem_data_assembly_(nullptr), output_node_data_assembly_(nullptr), output_corner_data_assembly_(nullptr) {
+    this->add_coords_field();
+}
+
+EquationOutput::~EquationOutput() {
+    if (output_elem_data_assembly_ != nullptr) delete output_elem_data_assembly_;
+    if (output_node_data_assembly_ != nullptr) delete output_node_data_assembly_;
+    if (output_corner_data_assembly_ != nullptr) delete output_corner_data_assembly_;
 }
 
 
@@ -113,6 +130,24 @@ void EquationOutput::initialize(std::shared_ptr<OutputTime> stream, Mesh *mesh, 
     equation_type_ = tg.equation_mark_type();
     equation_fixed_type_ = tg.equation_fixed_mark_type();
     read_from_input(in_rec, tg);
+
+    { // DOF handler of element data output
+        MixedPtr<FE_P_disc> fe_p_disc(0);
+        dh_ = make_shared<DOFHandlerMultiDim>(*mesh_);
+	    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh_, fe_p_disc);
+	    dh_->distribute_dofs(ds);
+    }
+
+    { // DOF handler of node / corner data output
+        MixedPtr<FE_P_disc> fe_p_disc(1);
+        dh_node_ = make_shared<DOFHandlerMultiDim>(*mesh_);
+	    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh_, fe_p_disc);
+	    dh_node_->distribute_dofs(ds);
+    }
+
+	output_elem_data_assembly_ = new GenericAssembly< AssemblyOutputElemData >(this, this);
+	output_node_data_assembly_ = new GenericAssembly< AssemblyOutputNodeData >(this, this);
+	output_corner_data_assembly_ = new GenericAssembly< AssemblyOutputNodeData >(this, this);
 }
 
 
@@ -146,41 +181,64 @@ void EquationOutput::read_from_input(Input::Record in_rec, const TimeGovernor & 
     }
     auto fields_array = in_rec.val<Input::Array>("fields");
     for(auto it = fields_array.begin<Input::Record>(); it != fields_array.end(); ++it) {
-        string field_name = it -> val< Input::FullEnum >("field");
-        FieldCommon *found_field = field(field_name);
-        OutputTime::DiscreteSpace interpolation = it->val<OutputTime::DiscreteSpace>("interpolation", OutputTime::UNDEFINED);
-        found_field->output_type(interpolation);
-        Input::Array field_times_array;
-        if (it->opt_val("times", field_times_array)) {
-            OutputTimeSet field_times;
-            field_times.read_from_input(field_times_array, tg);
-            field_output_times_[field_name] = field_times;
-        } else {
-            field_output_times_[field_name] = common_output_times_;
-        }
-        // Add init time as the output time for every output field.
-        field_output_times_[field_name].add(tg.init_time(), equation_fixed_type_);
+        this->init_field_item(it, tg);
     }
     auto observe_fields_array = in_rec.val<Input::Array>("observe_fields");
     for(auto it = observe_fields_array.begin<Input::FullEnum>(); it != observe_fields_array.end(); ++it) {
         observe_fields_.insert(string(*it));
     }
 
-    // register interpolation type of fields to OutputStream
-    for(FieldCommon * field : this->field_list) {
-    	used_interpolations_.insert( field->get_output_type() );
+}
+
+void EquationOutput::init_field_item(Input::Iterator<Input::Record> it, const TimeGovernor & tg) {
+    string field_name = it -> val< Input::FullEnum >("field");
+    FieldCommon *found_field = field(field_name);
+
+    Input::Array interpolations;
+    OutputTime::DiscreteSpaceFlags interpolation = OutputTime::empty_discrete_flags();
+    if (it->opt_val("interpolation", interpolations)) {
+        // process interpolations
+        for(auto it_interp = interpolations.begin<OutputTime::DiscreteSpace>(); it_interp != interpolations.end(); ++it_interp) {
+            interpolation[ *it_interp ] = true;
+        }
+    } else {
+        OutputTime::set_discrete_flag(interpolation, found_field->get_output_type());
+    }
+    Input::Array field_times_array;
+    FieldOutputConfig field_config;
+    if (it->opt_val("times", field_times_array)) {
+        OutputTimeSet field_times;
+        field_times.read_from_input(field_times_array, tg);
+        field_config.output_set_ = field_times;
+    } else {
+        field_config.output_set_ = common_output_times_;
+    }
+    field_config.space_flags_ = interpolation;
+    // Add init time as the output time for every output field.
+    field_config.output_set_.add(tg.init_time(), equation_fixed_type_);
+    // register interpolation types of fields to OutputStream
+    for (uint i=0; i<OutputTime::N_DISCRETE_SPACES; ++i)
+	    if (interpolation[i]) used_interpolations_.insert( OutputTime::DiscreteSpace(i) );
+    // Set output configuration to field_output_times_
+    if (found_field->is_multifield()) {
+        for (uint i_comp=0; i_comp<found_field->n_comp(); ++i_comp) {
+            field_output_times_[ found_field->full_comp_name(i_comp) ] = field_config;
+        }
+    } else {
+        field_output_times_[field_name] = field_config;
     }
 }
 
 bool EquationOutput::is_field_output_time(const FieldCommon &field, TimeStep step) const
 {
+    if ( !field.get_flags().match(FieldFlag::allow_output) ) return false;
     auto &marks = TimeGovernor::marks();
     auto field_times_it = field_output_times_.find(field.name());
     if (field_times_it == field_output_times_.end()) return false;
     ASSERT( step.eq(field.time()) )(step.end())(field.time())(field.name()).error("Field is not set to the output time.");
     auto current_mark_it = marks.current(step, equation_type_ | marks.type_output() );
     if (current_mark_it == marks.end(equation_type_ | marks.type_output()) ) return false;
-    return (field_times_it->second.contains(*current_mark_it) );
+    return (field_times_it->second.output_set_.contains(*current_mark_it) );
 }
 
 
@@ -198,13 +256,70 @@ void EquationOutput::output(TimeStep step)
 
     this->make_output_mesh( stream_->is_parallel() );
 
-    for(FieldCommon * field : this->field_list) {
-
-        if ( field->flags().match( FieldFlag::allow_output) ) {
-            if (is_field_output_time(*field, step)) {
-                field->field_output(stream_);
+    // NODE_DATA
+    {
+        FieldSet used_fields;
+        for(FieldListAccessor f_acc : this->fields_range()) {
+            if (is_field_output_time( *(f_acc.field()), step) && field_output_times_[f_acc->name()].space_flags_[OutputTime::NODE_DATA]) {
+                f_acc->set_output_data_cache(OutputTime::NODE_DATA, stream_);
+                used_fields += *(f_acc.field());
             }
-            // observe output
+        }
+        if (used_fields.size()>0) {
+            auto mixed_assmbly = output_node_data_assembly_->multidim_assembly();
+            mixed_assmbly[1_d]->set_output_data(used_fields, stream_);
+            mixed_assmbly[2_d]->set_output_data(used_fields, stream_);
+            mixed_assmbly[3_d]->set_output_data(used_fields, stream_);
+            output_node_data_assembly_->assemble(this->dh_node_);
+        }
+    }
+
+    // CORNER_DATA
+    {
+        FieldSet used_fields;
+        for(FieldListAccessor f_acc : this->fields_range()) {
+            if (is_field_output_time( *(f_acc.field()), step) && field_output_times_[f_acc->name()].space_flags_[OutputTime::CORNER_DATA]) {
+                f_acc->set_output_data_cache(OutputTime::CORNER_DATA, stream_);
+                used_fields += *(f_acc.field());
+            }
+        }
+        if (used_fields.size()>0) {
+            auto mixed_assmbly = output_corner_data_assembly_->multidim_assembly();
+            mixed_assmbly[1_d]->set_output_data(used_fields, stream_);
+            mixed_assmbly[2_d]->set_output_data(used_fields, stream_);
+            mixed_assmbly[3_d]->set_output_data(used_fields, stream_);
+            output_corner_data_assembly_->assemble(this->dh_node_);
+        }
+    }
+
+    // ELEM_DATA
+    {
+        FieldSet used_fields;
+        for (FieldListAccessor f_acc : this->fields_range()) {
+            if (is_field_output_time( *(f_acc.field()), step) && field_output_times_[f_acc->name()].space_flags_[OutputTime::ELEM_DATA]) {
+                f_acc->set_output_data_cache(OutputTime::ELEM_DATA, stream_);
+                used_fields += *(f_acc.field());
+            }
+        }
+        if (used_fields.size()>0) {
+            auto mixed_assmbly = output_elem_data_assembly_->multidim_assembly();
+            mixed_assmbly[1_d]->set_output_data(used_fields, stream_);
+            mixed_assmbly[2_d]->set_output_data(used_fields, stream_);
+            mixed_assmbly[3_d]->set_output_data(used_fields, stream_);
+            output_elem_data_assembly_->assemble(this->dh_);
+        }
+    }
+
+    // NATIVE_DATA
+    for(FieldListAccessor f_acc : this->fields_range()) {
+        if (is_field_output_time( *(f_acc.field()), step) && field_output_times_[f_acc->name()].space_flags_[OutputTime::NATIVE_DATA]) {
+            f_acc->field_output(stream_, OutputTime::NATIVE_DATA);
+        }
+    }
+
+    // observe output
+    for(FieldCommon * field : this->field_list) {
+        if ( field->flags().match( FieldFlag::allow_output) ) {
             if (observe_fields_.find(field->name()) != observe_fields_.end()) {
                 field->observe_output( observe_ptr );
             }

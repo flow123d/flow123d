@@ -16,7 +16,7 @@
 #include "input/factory.hh"
 #include "flow/richards_lmh.hh"
 #include "flow/soil_models.hh"
-#include "flow/assembly_richards.hh"
+#include "flow/assembly_richards_old.hh"
 #include "flow/darcy_flow_mh_output.hh"
 #include "tools/time_governor.hh"
 
@@ -38,7 +38,7 @@ FLOW123D_FORCE_LINK_IN_CHILD(richards_lmh)
 namespace it=Input::Type;
 
 
-RichardsLMH::EqData::EqData()
+RichardsLMH::EqFields::EqFields()
 {
     *this += water_content.name("water_content")
             .units(UnitSI::dimensionless())
@@ -76,10 +76,14 @@ RichardsLMH::EqData::EqData()
 }
 
 
+RichardsLMH::EqData::EqData()
+: DarcyLMH::EqData::EqData() {}
+
+
 const it::Record & RichardsLMH::get_input_type() {
     it::Record field_descriptor = it::Record("RichardsLMH_Data",FieldCommon::field_descriptor_record_description("RichardsLMH_Data"))
     .copy_keys( DarcyLMH::type_field_descriptor() )
-    .copy_keys( RichardsLMH::EqData().make_field_descriptor_type("RichardsLMH_Data_aux") )
+    .copy_keys( RichardsLMH::EqFields().make_field_descriptor_type("RichardsLMH_Data_aux") )
     .close();
 
     auto model_selection = it::Selection("Soil_Model_Type", "")
@@ -96,14 +100,14 @@ const it::Record & RichardsLMH::get_input_type() {
                 "Fraction of the water content where we cut  and rescale the curve.")
         .close();
 
-    RichardsLMH::EqData eq_data;
+    RichardsLMH::EqFields eq_fields;
     
     return it::Record("Flow_Richards_LMH", "Lumped Mixed-Hybrid solver for unsteady unsaturated Darcy flow.")
         .derive_from(DarcyFlowInterface::get_input_type())
         .copy_keys(DarcyLMH::get_input_type())
         .declare_key("input_fields", it::Array( field_descriptor ), it::Default::obligatory(),
                 "Input data for Darcy flow model.")
-        .declare_key("output", DarcyFlowMHOutput::get_input_type(eq_data, "Flow_Richards_LMH"),
+        .declare_key("output", DarcyFlowMHOutput::get_input_type(eq_fields, "Flow_Richards_LMH"),
                 IT::Default("{ \"fields\": [ \"pressure_p0\", \"velocity_p0\" ] }"),
                 "Specification of output fields and output times.")
         .declare_key("soil_model", soil_rec, it::Default("\"van_genuchten\""),
@@ -121,10 +125,12 @@ const int RichardsLMH::registrar =
 RichardsLMH::RichardsLMH(Mesh &mesh_in, const  Input::Record in_rec, TimeGovernor *tm)
     : DarcyLMH(mesh_in, in_rec, tm)
 {
-    data_ = make_shared<EqData>();
-    DarcyLMH::data_ = data_;
-    EquationBase::eq_data_ = data_.get();
-    //data_->edge_new_local_4_mesh_idx_ = &(this->edge_new_local_4_mesh_idx_);
+    eq_fields_ = make_shared<EqFields>();
+    eq_data_ = make_shared<EqData>();
+    DarcyLMH::eq_data_ = eq_data_;
+    DarcyLMH::eq_fields_ = eq_fields_;
+    this->eq_fieldset_ = eq_fields_.get();
+    //eq_data_->edge_new_local_4_mesh_idx_ = &(this->edge_new_local_4_mesh_idx_);
 }
 
 
@@ -134,28 +140,28 @@ void RichardsLMH::initialize_specific() {
     auto model_type = model_rec.val<SoilModelBase::SoilModelType>("model_type");
     double fraction= model_rec.val<double>("cut_fraction");
     if (model_type == SoilModelBase::van_genuchten)
-        data_->soil_model_ = std::make_shared<SoilModel_VanGenuchten>(fraction);
+        eq_data_->soil_model_ = std::make_shared<SoilModel_VanGenuchten>(fraction);
     else if (model_type == SoilModelBase::irmay)
-        data_->soil_model_ = std::make_shared<SoilModel_Irmay>(fraction);
+        eq_data_->soil_model_ = std::make_shared<SoilModel_Irmay>(fraction);
     else
         ASSERT(false);
 
     // create edge vectors
-    data_->water_content_previous_time = data_->dh_cr_disc_->create_vector();
-    data_->capacity = data_->dh_cr_disc_->create_vector();
+    eq_data_->water_content_previous_time = eq_data_->dh_cr_disc_->create_vector();
+    eq_data_->capacity = eq_data_->dh_cr_disc_->create_vector();
 
     ASSERT_PTR(mesh_);
-    data_->mesh = mesh_;
-    data_->set_mesh(*mesh_);
+    eq_data_->mesh = mesh_;
+    eq_fields_->set_mesh(*mesh_);
 
-    data_->water_content_ptr = create_field_fe< 3, FieldValue<3>::Scalar >(data_->dh_cr_disc_);
-    data_->water_content.set(data_->water_content_ptr, 0.0);
+    eq_fields_->water_content_ptr = create_field_fe< 3, FieldValue<3>::Scalar >(eq_data_->dh_cr_disc_);
+    eq_fields_->water_content.set(eq_fields_->water_content_ptr, 0.0);
     
-    data_->conductivity_ptr = create_field_fe< 3, FieldValue<3>::Scalar >(data_->dh_p_);
-    data_->conductivity_richards.set(data_->conductivity_ptr, 0.0);
+    eq_fields_->conductivity_ptr = create_field_fe< 3, FieldValue<3>::Scalar >(eq_data_->dh_p_);
+    eq_fields_->conductivity_richards.set(eq_fields_->conductivity_ptr, 0.0);
 
 
-    data_->multidim_assembler = AssemblyBase::create< AssemblyRichards >(data_);
+    eq_data_->multidim_assembler = AssemblyFlowBase::create< AssemblyRichards >(eq_fields_, eq_data_);
 }
 
 
@@ -164,31 +170,31 @@ void RichardsLMH::initial_condition_postprocess()
     // modify side fluxes in parallel
     // for every local edge take time term on diagonal and add it to the corresponding flux
     
-    for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
-        data_->multidim_assembler[dh_cell.elm().dim()-1]->update_water_content(dh_cell);
+    for ( DHCellAccessor dh_cell : eq_data_->dh_->own_range() ) {
+    	eq_data_->multidim_assembler[dh_cell.elm().dim()-1]->update_water_content(dh_cell);
     }
 }
 
 
 void RichardsLMH::accept_time_step()
 {
-    data_->p_edge_solution_previous_time.copy_from(data_->p_edge_solution);
-    VectorMPI water_content_vec = data_->water_content_ptr->vec();
-    data_->water_content_previous_time.copy_from(water_content_vec);
+	eq_data_->p_edge_solution_previous_time.copy_from(eq_data_->p_edge_solution);
+    VectorMPI water_content_vec = eq_fields_->water_content_ptr->vec();
+    eq_data_->water_content_previous_time.copy_from(water_content_vec);
 
-    data_->p_edge_solution_previous_time.local_to_ghost_begin();
-    data_->p_edge_solution_previous_time.local_to_ghost_end();
+    eq_data_->p_edge_solution_previous_time.local_to_ghost_begin();
+    eq_data_->p_edge_solution_previous_time.local_to_ghost_end();
 }
 
 bool RichardsLMH::zero_time_term(bool time_global) {
     if (time_global) {
-        return (data_->storativity.input_list_size() == 0)
-                && (data_->water_content_saturated.input_list_size() == 0);
+        return (eq_fields_->storativity.input_list_size() == 0)
+                && (eq_fields_->water_content_saturated.input_list_size() == 0);
 
     } else {
-        return (data_->storativity.field_result(mesh_->region_db().get_region_set("BULK"))
+        return (eq_fields_->storativity.field_result(mesh_->region_db().get_region_set("BULK"))
                 == result_zeros)
-                && (data_->water_content_saturated.field_result(mesh_->region_db().get_region_set("BULK"))
+                && (eq_fields_->water_content_saturated.field_result(mesh_->region_db().get_region_set("BULK"))
                 == result_zeros);
     }
 }
@@ -198,10 +204,10 @@ void RichardsLMH::assembly_linear_system()
 {
     START_TIMER("RicharsLMH::assembly_linear_system");
 
-    data_->p_edge_solution.local_to_ghost_begin();
-    data_->p_edge_solution.local_to_ghost_end();
+    eq_data_->p_edge_solution.local_to_ghost_begin();
+    eq_data_->p_edge_solution.local_to_ghost_end();
 
-    data_->is_linear = data_->genuchten_p_head_scale.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
+    eq_data_->is_linear = eq_fields_->genuchten_p_head_scale.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
 
     //DebugOut() << "Assembly linear system\n";
         START_TIMER("full assembly");
@@ -212,12 +218,12 @@ void RichardsLMH::assembly_linear_system()
         
         lin_sys_schur().start_add_assembly();
             
-        data_->time_step_ = time_->dt();
+        eq_data_->time_step_ = time_->dt();
         
         lin_sys_schur().mat_zero_entries();
         lin_sys_schur().rhs_zero_entries();
 
-        assembly_mh_matrix( data_->multidim_assembler ); // fill matrix
+        assembly_mh_matrix( eq_data_->multidim_assembler ); // fill matrix
 
         lin_sys_schur().finish_assembly();
         lin_sys_schur().set_matrix_changed();

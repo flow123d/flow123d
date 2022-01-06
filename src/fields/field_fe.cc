@@ -35,6 +35,7 @@
 #include "quadrature/quadrature_lib.hh"
 
 #include "system/sys_profiler.hh"
+#include "tools/unit_converter.hh"
 #include "intersection/intersection_aux.hh"
 #include "intersection/intersection_local.hh"
 #include "intersection/compute_intersection.hh"
@@ -73,7 +74,7 @@ const Input::Type::Record & FieldFE<spacedim, Value>::get_input_type()
                 "The values of the Field are read from the ```$ElementData``` section with field name given by this key.")
         .declare_key("default_value", IT::Double(), IT::Default::optional(),
                 "Default value is set on elements which values have not been listed in the mesh data file.")
-        .declare_key("time_unit", IT::String(), IT::Default::read_time("Common unit of TimeGovernor."),
+        .declare_key("time_unit", UnitConverter::get_input_type(), TimeUnitConversion::get_input_default(),
                 "Definition of the unit of all times defined in the mesh data file.")
         .declare_key("read_time_shift", TimeGovernor::get_input_time_type(), IT::Default("0.0"),
                 "This key allows reading field data from the mesh data file shifted in time. Considering the time 't', field descriptor with time 'T', "
@@ -131,9 +132,40 @@ const int FieldFE<spacedim, Value>::registrar =
 template <int spacedim, class Value>
 FieldFE<spacedim, Value>::FieldFE( unsigned int n_comp)
 : FieldAlgorithmBase<spacedim, Value>(n_comp),
-  field_name_(""), fe_values_(4)
+  dh_(nullptr), field_name_(""), discretization_(OutputTime::DiscreteSpace::UNDEFINED), fe_values_(4)
 {
 	this->is_constant_in_space_ = false;
+}
+
+
+template<int spacedim, class Value>
+typename Field<spacedim,Value>::FieldBasePtr FieldFE<spacedim, Value>::NativeFactory::create_field(Input::Record rec, const FieldCommon &field) {
+	Input::Array multifield_arr;
+	if (rec.opt_val(field.input_name(), multifield_arr))
+	{
+		unsigned int position = 0;
+		auto it = multifield_arr.begin<Input::AbstractRecord>();
+		if (multifield_arr.size() > 1)
+			while (index_ != position) {
+				++it; ++position;
+			}
+
+        Input::Record field_rec = (Input::Record)(*it);
+        if (field_rec.val<std::string>("TYPE") == "FieldFE") {
+            OutputTime::DiscreteSpace discretization;
+            if (field_rec.opt_val<OutputTime::DiscreteSpace>("input_discretization", discretization)) {
+                if (discretization == OutputTime::DiscreteSpace::NATIVE_DATA) {
+                    std::shared_ptr< FieldFE<spacedim, Value> > field_fe = std::make_shared< FieldFE<spacedim, Value> >(field.n_comp());
+                    FieldAlgoBaseInitData init_data(field.input_name(), field.n_comp(), field.units(), field.limits(), field.get_flags());
+                    field_fe->init_from_input( *it, init_data );
+                    field_fe->set_fe_data(conc_dof_handler_, dof_vector_);
+                    return field_fe;
+                }
+            }
+        }
+	}
+
+	return NULL;
 }
 
 
@@ -191,8 +223,7 @@ VectorMPI FieldFE<spacedim, Value>::set_fe_data(std::shared_ptr<DOFHandlerMultiD
 	init_data.range_end = this->fe_item_[3].range_end_;
 	value_handler3_.initialize(init_data);
 
-	// set discretization
-	discretization_ = OutputTime::DiscreteSpace::UNDEFINED;
+	// set interpolation
 	interpolation_ = DataInterpolation::equivalent_msh;
 
 	return data_vec_;
@@ -255,15 +286,15 @@ void FieldFE<spacedim, Value>::value_list (const Armor::array &point_list, const
 
 template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::element_type> &data_cache,
-		ElementCacheMap &cache_map, unsigned int region_idx)
+		ElementCacheMap &cache_map, unsigned int region_patch_idx)
 {
     ASSERT( !boundary_dofs_ ).error("boundary field NOT supported!!\n");
     Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> mat_value;
 
-    unsigned int reg_chunk_begin = cache_map.region_chunk_begin(region_idx);
-    unsigned int reg_chunk_end = cache_map.region_chunk_end(region_idx);
+    unsigned int reg_chunk_begin = cache_map.region_chunk_begin(region_patch_idx);
+    unsigned int reg_chunk_end = cache_map.region_chunk_end(region_patch_idx);
     unsigned int last_element_idx = -1;
-    DHCellAccessor cell;
+    DHCellAccessor cell = *( dh_->local_range().begin() ); //needs set variable for correct compiling
     LocDofVec loc_dofs;
     unsigned int range_bgn=0, range_end=0;
 
@@ -283,7 +314,7 @@ void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::elem
         //DHCellAccessor cache_cell = cache_map(cell);
         mat_value.fill(0.0);
         for (unsigned int i_dof=range_bgn, i_cdof=0; i_dof<range_end; i_dof++, i_cdof++) {
-            mat_value += data_vec_[loc_dofs[i_dof]] * this->handle_fe_shape(cell.dim(), i_cdof, i_ep);
+            mat_value += data_vec_.get(loc_dofs[i_dof]) * this->handle_fe_shape(cell.dim(), i_cdof, i_ep);
         }
         data_cache.set(i_data) = mat_value;
     }
@@ -349,7 +380,7 @@ void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) 
             ReaderCache::get_element_ids(reader_file_, *(source_mesh.get()));
             if (this->interpolation_ == DataInterpolation::equivalent_msh) {
                 source_target_mesh_elm_map_ = ReaderCache::get_target_mesh_element_map(reader_file_, const_cast<Mesh *>(mesh));
-                if (source_target_mesh_elm_map_->size() == 0) { // incompatible meshes
+                if (source_target_mesh_elm_map_->empty()) { // incompatible meshes
                     this->interpolation_ = DataInterpolation::gauss_p0;
                     WarningOut().fmt("Source mesh of FieldFE '{}' is not compatible with target mesh.\nInterpolation of input data will be changed to 'P0_gauss'.\n",
                             field_name_);
@@ -362,7 +393,10 @@ void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) 
                 }
             }
         }
-        this->make_dof_handler(mesh);
+        if (dh_ == nullptr) {
+            if (boundary_domain) this->make_dof_handler( mesh->bc_mesh() );
+            else this->make_dof_handler( mesh );
+        }
 	}
 }
 
@@ -372,7 +406,7 @@ template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::fill_boundary_dofs() {
 	ASSERT(this->boundary_domain_);
 
-	auto bc_mesh = dh_->mesh()->get_bc_mesh();
+	auto bc_mesh = dh_->mesh()->bc_mesh();
 	unsigned int n_comp = this->value_.n_rows() * this->value_.n_cols();
 	boundary_dofs_ = std::make_shared< std::vector<IntIdx> >( n_comp * bc_mesh->n_elements() );
 	std::vector<IntIdx> &in_vec = *( boundary_dofs_.get() );
@@ -396,7 +430,7 @@ void FieldFE<spacedim, Value>::fill_boundary_dofs() {
 
 
 template <int spacedim, class Value>
-void FieldFE<spacedim, Value>::make_dof_handler(const Mesh *mesh) {
+void FieldFE<spacedim, Value>::make_dof_handler(const MeshBase *mesh) {
 
 	// temporary solution - these objects will be set through FieldCommon
 	MixedPtr<FiniteElement> fe;
@@ -419,8 +453,8 @@ void FieldFE<spacedim, Value>::make_dof_handler(const Mesh *mesh) {
 			ASSERT(false).error("Should not happen!\n");
 	}
 
-	std::shared_ptr<DOFHandlerMultiDim> dh_par = std::make_shared<DOFHandlerMultiDim>( const_cast<Mesh &>(*mesh) );
-    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( &const_cast<Mesh &>(*mesh), fe);
+	std::shared_ptr<DOFHandlerMultiDim> dh_par = std::make_shared<DOFHandlerMultiDim>( const_cast<MeshBase &>(*mesh) );
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( &const_cast<MeshBase &>(*mesh), fe);
 	dh_par->distribute_dofs(ds);
 	dh_ = dh_par;
     unsigned int ndofs = dh_->max_elem_dofs();
@@ -431,8 +465,7 @@ void FieldFE<spacedim, Value>::make_dof_handler(const Mesh *mesh) {
     this->fill_fe_item<3>();
     this->fe_ = dh_->ds()->fe();
 
-    if (this->boundary_domain_) fill_boundary_dofs(); // temporary solution for boundary mesh
-    else data_vec_ = VectorMPI::sequential( dh_->lsize() ); // allocate data_vec_
+    data_vec_ = VectorMPI::sequential( dh_->lsize() ); // allocate data_vec_
 
 	// initialization data of value handlers
 	FEValueInitData init_data;
@@ -468,7 +501,7 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 		if ( reader_file_ == FilePath() ) return false;
 
 		unsigned int n_components = this->value_.n_rows() * this->value_.n_cols();
-		double time_unit_coef = time.read_coef(in_rec_.find<string>("time_unit"));
+		double time_unit_coef = time.read_coef(in_rec_.find<Input::Record>("time_unit"));
 		double time_shift = time.read_time( in_rec_.find<Input::Tuple>("read_time_shift") );
 		double read_time = (time.end()+time_shift) / time_unit_coef;
 		BaseMeshReader::HeaderQuery header_query(field_name_, read_time, this->discretization_, dh_->hash());
@@ -483,10 +516,13 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 		} else {
 			boundary = false;
 		}
-		if (this->interpolation_==DataInterpolation::identic_msh) {
-			n_entities = boundary ? dh_->mesh()->get_bc_mesh()->n_elements() : dh_->mesh()->n_elements();
+		if (is_native) {
+		    n_entities = dh_->mesh()->n_elements();
+		    n_components *= dh_->max_elem_dofs();
+		} else if (this->interpolation_==DataInterpolation::identic_msh) {
+			n_entities = dh_->mesh()->n_elements();
 		} else {
-			n_entities = boundary ? ReaderCache::get_mesh(reader_file_)->get_bc_mesh()->n_elements() : ReaderCache::get_mesh(reader_file_)->n_elements();
+			n_entities = boundary ? ReaderCache::get_mesh(reader_file_)->bc_mesh()->n_elements() : ReaderCache::get_mesh(reader_file_)->n_elements();
 		}
 		auto input_data_cache = ReaderCache::get_reader(reader_file_)->template get_element_data<double>(n_entities, n_components,
 				boundary, this->component_idx_);
@@ -494,7 +530,7 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 				this->unit_conversion_coefficient_, default_value_);
 
 
-	    if (checked_data == CheckResult::not_a_number) {
+	    if ( !is_native && (checked_data == CheckResult::not_a_number) ) {
 	        THROW( ExcUndefElementValue() << EI_Field(field_name_) );
 	    }
 
@@ -599,13 +635,12 @@ void FieldFE<spacedim, Value>::interpolate_gauss(ElementDataCache<double>::Compo
 		}
 
 		LocDofVec loc_dofs;
-		if (this->boundary_domain_) loc_dofs = value_handler1_.get_loc_dof_indices(cell.elm_idx());
-		else loc_dofs = cell.get_loc_dof_indices();
+		loc_dofs = cell.get_loc_dof_indices();
 
 		ASSERT_LE_DBG(loc_dofs.n_elem, elem_value.size());
 		for (unsigned int i=0; i < elem_value.size(); i++) {
 			ASSERT_LT_DBG( loc_dofs[i], (int)data_vec_.size());
-			data_vec_[loc_dofs[i]] = elem_value[i] * this->unit_conversion_coefficient_;
+			data_vec_.set( loc_dofs[i], elem_value[i] * this->unit_conversion_coefficient_ );
 		}
 	}
 }
@@ -620,12 +655,9 @@ void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>
 	double total_measure;
 	double measure = 0;
 
-	Mesh *mesh;
-	if (this->boundary_domain_) mesh = dh_->mesh()->get_bc_mesh();
-	else mesh = dh_->mesh();
-	for (auto elm : mesh->elements_range()) {
+	for (auto elm : dh_->mesh()->elements_range()) {
 		if (elm.dim() == 3) {
-			xprintf(Err, "Dimension of element in target mesh must be 0, 1 or 2! elm.idx() = %d\n", elm.idx());
+			THROW( ExcInvalidElemeDim() << EI_ElemIdx(elm.idx()) );
 		}
 
 		double epsilon = 4* numeric_limits<double>::epsilon() * elm.measure();
@@ -650,13 +682,13 @@ void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>
 
         for (std::vector<unsigned int>::iterator it = searched_elements.begin(); it!=searched_elements.end(); it++)
         {
-            ElementAccessor<3> ele = source_mesh->element_accessor(*it);
-            if (ele->dim() == 3) {
+            ElementAccessor<3> source_elm = source_mesh->element_accessor(*it);
+            if (source_elm->dim() == 3) {
                 // get intersection (set measure = 0 if intersection doesn't exist)
                 switch (elm.dim()) {
                     case 0: {
                         arma::vec::fixed<3> real_point = *elm.node(0);
-                        arma::mat::fixed<3, 4> elm_map = MappingP1<3,3>::element_map(ele);
+                        arma::mat::fixed<3, 4> elm_map = MappingP1<3,3>::element_map(source_elm);
                         arma::vec::fixed<4> unit_point = MappingP1<3,3>::project_real_to_unit(real_point, elm_map);
 
                         measure = (std::fabs(arma::sum( unit_point )-1) <= 1e-14
@@ -665,8 +697,8 @@ void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>
                         break;
                     }
                     case 1: {
-                        IntersectionAux<1,3> is;
-                        ComputeIntersection<1,3> CI(elm, ele, source_mesh.get());
+                        IntersectionAux<1,3> is(elm.idx(), source_elm.idx());
+                        ComputeIntersection<1,3> CI(elm, source_elm, source_mesh.get());
                         CI.init();
                         CI.compute(is);
 
@@ -675,8 +707,8 @@ void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>
                         break;
                     }
                     case 2: {
-                        IntersectionAux<2,3> is;
-                        ComputeIntersection<2,3> CI(elm, ele, source_mesh.get());
+                        IntersectionAux<2,3> is(elm.idx(), source_elm.idx());
+                        ComputeIntersection<2,3> CI(elm, source_elm, source_mesh.get());
                         CI.init();
                         CI.compute(is);
 
@@ -700,18 +732,12 @@ void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>
 
 		// computes weighted average, store it to data vector
 		if (total_measure > epsilon) {
-			VectorMPI::VectorDataPtr data_vector = data_vec_.data_ptr();
-
-			LocDofVec loc_dofs;
-			if (this->boundary_domain_) loc_dofs = value_handler1_.get_loc_dof_indices(elm.idx());
-			else{
-				DHCellAccessor cell = dh_->cell_accessor_from_element(elm.idx());
-				loc_dofs = cell.get_loc_dof_indices();
-			}
+			DHCellAccessor cell = dh_->cell_accessor_from_element(elm.idx());
+			LocDofVec loc_dofs = cell.get_loc_dof_indices();
 
 			ASSERT_LE_DBG(loc_dofs.n_elem, value.size());
 			for (unsigned int i=0; i < value.size(); i++) {
-				(*data_vector)[ loc_dofs[i] ] = value[i] / total_measure;
+				data_vec_.set(loc_dofs[i], value[i] / total_measure);
 			}
 		} else {
 			WarningOut().fmt("Processed element with idx {} is out of source mesh!\n", elm.idx());
@@ -729,9 +755,8 @@ void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>:
 	unsigned int dof_size, data_vec_i;
 	std::vector<unsigned int> count_vector(data_vec_.size(), 0);
 	data_vec_.zero_entries();
-	VectorMPI::VectorDataPtr data_vector = data_vec_.data_ptr();
 	std::vector<LongIdx> global_dof_indices(dh_->max_elem_dofs());
-	std::vector<LongIdx> &source_target_vec = *(source_target_mesh_elm_map_.get());
+	std::vector<LongIdx> &source_target_vec = (dynamic_cast<BCMesh*>(dh_->mesh()) != nullptr) ? source_target_mesh_elm_map_->boundary : source_target_mesh_elm_map_->bulk;
 
 	// iterate through cells, assembly MPIVector
 	for (auto cell : dh_->own_range()) {
@@ -740,14 +765,14 @@ void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>:
 		data_vec_i = source_target_vec[cell.elm_idx()] * dof_size;
 		ASSERT_EQ_DBG(dof_size, loc_dofs.n_elem);
 		for (unsigned int i=0; i<dof_size; ++i, ++data_vec_i) {
-			(*data_vector)[ loc_dofs[i] ] += (*data_cache)[ data_vec_i ];
-			++count_vector[ loc_dofs[i] ];
+		    data_vec_.add( loc_dofs[i], (*data_cache)[ data_vec_i ] );
+		    ++count_vector[ loc_dofs[i] ];
 		}
 	}
 
 	// compute averages of values
 	for (unsigned int i=0; i<data_vec_.size(); ++i) {
-		if (count_vector[i]>0) (*data_vector)[i] /= count_vector[i];
+		if (count_vector[i]>0) data_vec_.normalize(i, count_vector[i]);
 	}
 }
 
@@ -756,43 +781,24 @@ template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::calculate_identic_values(ElementDataCache<double>::ComponentDataPtr data_cache)
 {
 	// Same algorithm as in output of Node_data. Possibly code reuse.
-	unsigned int data_vec_i, i_elm;
+	unsigned int data_vec_i;
 	std::vector<unsigned int> count_vector(data_vec_.size(), 0);
 	data_vec_.zero_entries();
 
-	if (this->boundary_domain_) {
-		// iterate through elements, assembly global vector and count number of writes
-		Mesh *mesh = dh_->mesh()->get_bc_mesh();
-		i_elm=0;
-		for (auto ele : mesh->elements_range()) {
-			LocDofVec loc_dofs = value_handler1_.get_loc_dof_indices(ele.idx());
-			data_vec_i = i_elm * dh_->max_elem_dofs();
-			for (unsigned int i=0; i<loc_dofs.n_elem; ++i, ++data_vec_i) {
-				ASSERT_LT_DBG(loc_dofs[i], (LongIdx)data_vec_.size());
-				data_vec_[ loc_dofs[i] ] += (*data_cache)[data_vec_i];
-				++count_vector[ loc_dofs[i] ];
-			}
-			i_elm++;
-		}
-	}
-	else {
-		// iterate through cells, assembly global vector and count number of writes - prepared solution for further development
-		i_elm=0;
-		for (auto cell : dh_->own_range()) {
-			LocDofVec loc_dofs = cell.get_loc_dof_indices();
-			data_vec_i = i_elm * dh_->max_elem_dofs();
-			for (unsigned int i=0; i<loc_dofs.n_elem; ++i, ++data_vec_i) {
-				ASSERT_LT_DBG(loc_dofs[i], (LongIdx)data_vec_.size());
-				data_vec_[ loc_dofs[i] ] += (*data_cache)[data_vec_i];
-				++count_vector[ loc_dofs[i] ];
-			}
-			i_elm++;
+	// iterate through cells, assembly global vector and count number of writes - prepared solution for further development
+	for (auto cell : dh_->own_range()) {
+		LocDofVec loc_dofs = cell.get_loc_dof_indices();
+		data_vec_i = cell.elm_idx() * dh_->max_elem_dofs();
+		for (unsigned int i=0; i<loc_dofs.n_elem; ++i, ++data_vec_i) {
+			ASSERT_LT_DBG(loc_dofs[i], (LongIdx)data_vec_.size());
+			data_vec_.add( loc_dofs[i], (*data_cache)[data_vec_i] );
+			++count_vector[ loc_dofs[i] ];
 		}
 	}
 
 	// compute averages of values
 	for (unsigned int i=0; i<data_vec_.size(); ++i) {
-		if (count_vector[i]>0) data_vec_[i] /= count_vector[i];
+		if (count_vector[i]>0) data_vec_.normalize(i, count_vector[i]);
 	}
 }
 
@@ -804,72 +810,47 @@ void FieldFE<spacedim, Value>::calculate_equivalent_values(ElementDataCache<doub
 	unsigned int data_vec_i;
 	std::vector<unsigned int> count_vector(data_vec_.size(), 0);
 	data_vec_.zero_entries();
-	std::vector<LongIdx> &source_target_vec = *(source_target_mesh_elm_map_.get());
+	std::vector<LongIdx> &source_target_vec = (dynamic_cast<BCMesh*>(dh_->mesh()) != nullptr) ? source_target_mesh_elm_map_->boundary : source_target_mesh_elm_map_->bulk;
 
 	// iterate through elements, assembly global vector and count number of writes
-	if (this->boundary_domain_) {
-		Mesh *mesh = dh_->mesh()->get_bc_mesh();
-		for (auto ele : mesh->elements_range()) {
-			LocDofVec loc_dofs = value_handler1_.get_loc_dof_indices(ele.idx());
-			if (source_target_vec[ele.mesh_idx()] == (int)(Mesh::undef_idx)) { // undefined value in input data mesh
-				if ( std::isnan(default_value_) )
-					THROW( ExcUndefElementValue() << EI_Field(field_name_) );
-				for (unsigned int i=0; i<loc_dofs.n_elem; ++i) {
-					ASSERT_LT_DBG(loc_dofs[i], (LongIdx)data_vec_.size());
-					data_vec_[ loc_dofs[i] ] += default_value_ * this->unit_conversion_coefficient_;
-					++count_vector[ loc_dofs[i] ];
-				}
-			} else {
-				data_vec_i = source_target_vec[ele.mesh_idx()] * dh_->max_elem_dofs();
-				for (unsigned int i=0; i<loc_dofs.n_elem; ++i, ++data_vec_i) {
-					ASSERT_LT_DBG(loc_dofs[i], (LongIdx)data_vec_.size());
-					data_vec_[ loc_dofs[i] ] += (*data_cache)[data_vec_i];
-					++count_vector[ loc_dofs[i] ];
-				}
+	for (auto cell : dh_->own_range()) {
+		LocDofVec loc_dofs = cell.get_loc_dof_indices();
+		if (source_target_vec[cell.elm_idx()] == (int)(Mesh::undef_idx)) { // undefined value in input data mesh
+			if ( std::isnan(default_value_) )
+				THROW( ExcUndefElementValue() << EI_Field(field_name_) );
+			for (unsigned int i=0; i<loc_dofs.n_elem; ++i) {
+				ASSERT_LT_DBG(loc_dofs[i], (LongIdx)data_vec_.size());
+				data_vec_.add( loc_dofs[i], default_value_ * this->unit_conversion_coefficient_ );
+				++count_vector[ loc_dofs[i] ];
 			}
-		}
-	}
-	else {
-		// iterate through cells, assembly global vector and count number of writes - prepared solution for further development
-		for (auto cell : dh_->own_range()) {
-			LocDofVec loc_dofs = cell.get_loc_dof_indices();
-			if (source_target_vec[cell.elm_idx()] == (int)(Mesh::undef_idx)) { // undefined value in input data mesh
-				if ( std::isnan(default_value_) )
-					THROW( ExcUndefElementValue() << EI_Field(field_name_) );
-				for (unsigned int i=0; i<loc_dofs.n_elem; ++i) {
-					ASSERT_LT_DBG(loc_dofs[i], (LongIdx)data_vec_.size());
-					data_vec_[ loc_dofs[i] ] += default_value_ * this->unit_conversion_coefficient_;
-					++count_vector[ loc_dofs[i] ];
-				}
-			} else {
-				data_vec_i = source_target_vec[cell.elm_idx()] * dh_->max_elem_dofs();
-				for (unsigned int i=0; i<loc_dofs.n_elem; ++i, ++data_vec_i) {
-					ASSERT_LT_DBG(loc_dofs[i], (LongIdx)data_vec_.size());
-					data_vec_[ loc_dofs[i] ] += (*data_cache)[data_vec_i];
-					++count_vector[ loc_dofs[i] ];
-				}
+		} else {
+			data_vec_i = source_target_vec[cell.elm_idx()] * dh_->max_elem_dofs();
+			for (unsigned int i=0; i<loc_dofs.n_elem; ++i, ++data_vec_i) {
+				ASSERT_LT_DBG(loc_dofs[i], (LongIdx)data_vec_.size());
+				data_vec_.add( loc_dofs[i], (*data_cache)[data_vec_i] );
+				++count_vector[ loc_dofs[i] ];
 			}
 		}
 	}
 
 	// compute averages of values
 	for (unsigned int i=0; i<data_vec_.size(); ++i) {
-		if (count_vector[i]>0) data_vec_[i] /= count_vector[i];
+		if (count_vector[i]>0) data_vec_.normalize(i, count_vector[i]);
 	}
 }
 
 
 template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::native_data_to_cache(ElementDataCache<double> &output_data_cache) {
-	ASSERT_EQ(output_data_cache.n_values() * output_data_cache.n_comp(), dh_->distr()->lsize()).error();
-	double loc_values[output_data_cache.n_comp()];
+	//ASSERT_EQ(output_data_cache.n_values() * output_data_cache.n_comp(), dh_->distr()->lsize()).error();
+	unsigned int n_vals = output_data_cache.n_comp() * output_data_cache.n_dofs_per_element();
+	double loc_values[n_vals];
 	unsigned int i;
 
-	VectorMPI::VectorDataPtr data_vec = data_vec_.data_ptr();
 	for (auto dh_cell : dh_->own_range()) {
 		LocDofVec loc_dofs = dh_cell.get_loc_dof_indices();
-		for (i=0; i<loc_dofs.n_elem; ++i) loc_values[i] = (*data_vec)[ loc_dofs[i] ];
-		for ( ; i<output_data_cache.n_comp(); ++i) loc_values[i] = numeric_limits<double>::signaling_NaN();
+		for (i=0; i<loc_dofs.n_elem; ++i) loc_values[i] = data_vec_.get( loc_dofs[i] );
+		for ( ; i<n_vals; ++i) loc_values[i] = numeric_limits<double>::signaling_NaN();
 		output_data_cache.store_value( dh_cell.local_idx(), loc_values );
 	}
 

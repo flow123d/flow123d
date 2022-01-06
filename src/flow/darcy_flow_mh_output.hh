@@ -174,7 +174,8 @@ protected:
         std::shared_ptr<SubDOFHandlerMultiDim> dh_;
 
         std::vector<int> velocity_mask;
-        DarcyMH::EqData* data_;
+        DarcyMH::EqFields* eq_fields_;
+        DarcyMH::EqData* eq_data_;
     } diff_data;
     
     //MixedPtr<FE_P_disc> fe_p0;

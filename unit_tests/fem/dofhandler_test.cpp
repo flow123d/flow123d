@@ -22,17 +22,28 @@ TEST(DOFHandler, test_all) {
   // except for the dofs lying on line 1
   // without the center point 3.
   {
-    // simple mesh consisting of 4 triangles and 1 line element
-    //
-    //  4---------------5
-    //  | \           / |
-    //  |   \   5   1   |
-    //  |     \   /     |
-    //  |  3    3    4  |
-    //  |     /   \     |
-    //  |   /   2   \   |
-    //  | /           \ |
-    //  1---------------2
+/*
+ *     -
+     simple mesh consisting of 4 triangles and 1 line element
+
+      4---------------5
+      | \           / |
+      |   \   5   1   |
+      |     \   /     |
+      |  3    3    4  |
+      |     /   \     |
+      |   /   2   \   |
+      | /           \ |
+      1---------------2
+
+    permuted elements:
+    1: 35
+    2: 123
+    3: 134
+    4: 235
+    5: 345
+ *
+ */
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     Mesh * mesh = mesh_full_constructor("{ mesh_file=\"fem/small_mesh.msh\", optimize_mesh=false }");
     
@@ -59,22 +70,22 @@ TEST(DOFHandler, test_all) {
     if (own_elem[1] & own_elem[2]) EXPECT_EQ( indices[1][0], indices[2][0] );
     
     // dof at node 2 is shared by elements 2, 4
-    if (own_elem[1] & own_elem[3]) EXPECT_EQ( indices[1][1], indices[3][1] );
+    if (own_elem[1] & own_elem[3]) EXPECT_EQ( indices[1][1], indices[3][0] );
     
     // dof at node 3 is shared by elements 2, 3, 4, 5
     if (own_elem[4] & own_elem[2]) EXPECT_EQ( indices[4][0], indices[2][1] );
     if (own_elem[2] & own_elem[1]) EXPECT_EQ( indices[2][1], indices[1][2] );
-    if (own_elem[1] & own_elem[3]) EXPECT_EQ( indices[1][2], indices[3][0] );
+    if (own_elem[1] & own_elem[3]) EXPECT_EQ( indices[1][2], indices[3][1] );
     
     // dof at node 3 is NOT shared by elements 1 and 5
     if (own_elem[0] & own_elem[4]) EXPECT_NE( indices[0][0], indices[4][0] );
     
     // dof at node 4 is shared by elements 3, 5
-    if (own_elem[2] & own_elem[4]) EXPECT_EQ( indices[2][2], indices[4][2] );
+    if (own_elem[2] & own_elem[4]) EXPECT_EQ( indices[2][2], indices[4][1] );
     
     // dof at node 5 is NOT shared by elements 1, 4 and 5
-    if (own_elem[4] & own_elem[0]) EXPECT_NE( indices[4][1], indices[0][1] );
-    if (own_elem[4] & own_elem[3]) EXPECT_NE( indices[4][1], indices[3][2] );
+    if (own_elem[4] & own_elem[0]) EXPECT_NE( indices[4][2], indices[0][1] );
+    if (own_elem[4] & own_elem[3]) EXPECT_NE( indices[4][2], indices[3][2] );
     
     delete mesh;
 
@@ -128,10 +139,10 @@ TEST(DOFHandler, test_all) {
     if (own_elem[4] & own_elem[3]) EXPECT_NE( indices[4][0], indices[3][0] );
     
     // dof at node 2 is shared by elements 4, 6
-    if (own_elem[3] & own_elem[5]) EXPECT_EQ( indices[3][1], indices[5][1] );
+    if (own_elem[3] & own_elem[5]) EXPECT_EQ( indices[3][1], indices[5][0] );
     
     // dof at node 3 is shared by elements 4, 6, 8
-    if (own_elem[3] & own_elem[5]) EXPECT_EQ( indices[3][2], indices[5][0] );
+    if (own_elem[3] & own_elem[5]) EXPECT_EQ( indices[3][2], indices[5][1] );
     if (own_elem[3] & own_elem[7]) EXPECT_EQ( indices[3][2], indices[7][0] );
     
     // dof at node 3 is shared by elements 1, 2, 3
@@ -200,7 +211,7 @@ TEST(DOFHandler, test_sub_handler)
     // init vec and update subvec
     for (auto cell : dh->own_range())
         for (unsigned int i=0; i<dh->ds()->n_elem_dofs(cell.elm()); i++)
-            vec[loc_indices[cell.elm_idx()][i]] = cell.elm_idx()*dh->max_elem_dofs()+i;
+            vec.set( loc_indices[cell.elm_idx()][i], cell.elm_idx()*dh->max_elem_dofs()+i );
     vec.local_to_ghost_begin();
     vec.local_to_ghost_end();
     sub_dh->update_subvector(vec, subvec);
@@ -214,7 +225,7 @@ TEST(DOFHandler, test_sub_handler)
             // local indices
             EXPECT_EQ( sub_dh->parent_indices()[loc_sub_indices[i]], loc_indices[cell.elm_idx()][i] );
             // values in mpi vectors
-            EXPECT_EQ( vec[loc_indices[cell.elm_idx()][i]], subvec[loc_sub_indices[i]] );
+            EXPECT_EQ( vec.get(loc_indices[cell.elm_idx()][i]), subvec.get(loc_sub_indices[i]) );
         }
     }
 
@@ -223,7 +234,7 @@ TEST(DOFHandler, test_sub_handler)
     {
         loc_sub_indices = cell.get_loc_dof_indices();
         for (unsigned int i=0; i<sub_dh->ds()->n_elem_dofs(cell.elm()); i++)
-            subvec[loc_sub_indices[i]] = -(cell.elm_idx()*dh->max_elem_dofs()+i);
+            subvec.set(loc_sub_indices[i], -(cell.elm_idx()*dh->max_elem_dofs()+i) );
     }
     subvec.local_to_ghost_begin();
     subvec.local_to_ghost_end();
@@ -233,7 +244,7 @@ TEST(DOFHandler, test_sub_handler)
     {
         loc_sub_indices = cell.get_loc_dof_indices();
         for (unsigned int i=0; i<cell.n_dofs(); i++)
-            EXPECT_EQ( vec[loc_indices[cell.elm_idx()][i]], subvec[loc_sub_indices[i]] );
+            EXPECT_EQ( vec.get(loc_indices[cell.elm_idx()][i]), subvec.get(loc_sub_indices[i]) );
     }
     
     delete mesh;
@@ -280,7 +291,7 @@ TEST(DOFHandler, test_rt)
     if (own_elem[3] & own_elem[5]) EXPECT_EQ( indices[3][2], indices[5][0] );
     
     // dof at el. 6 side 1 equals dof at el. 8 side 0
-    if (own_elem[5] & own_elem[7]) EXPECT_EQ( indices[5][1], indices[7][0] );
+    if (own_elem[5] & own_elem[7]) EXPECT_EQ( indices[5][2], indices[7][0] );
 
     delete mesh;
 

@@ -44,7 +44,7 @@ EquationBase::EquationBase()
   mesh_(NULL),
   time_(NULL),
   input_record_(),
-  eq_data_(nullptr)
+  eq_fieldset_(nullptr)
 {}
 
 
@@ -54,7 +54,7 @@ EquationBase::EquationBase(Mesh &mesh, const  Input::Record in_rec)
   mesh_(&mesh),
   time_(NULL),
   input_record_(in_rec),
-  eq_data_(nullptr)
+  eq_fieldset_(nullptr)
 {}
 
 
@@ -63,3 +63,7 @@ void EquationBase::set_time_governor(TimeGovernor &time)
   time_ = &time;
 }
 
+double EquationBase::solved_time()
+{
+    return time_->t();
+}

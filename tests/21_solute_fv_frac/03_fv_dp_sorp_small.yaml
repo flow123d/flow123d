@@ -32,12 +32,13 @@ problem: !Coupling_Sequential
     output:
       fields:
         - pressure_p0
+        #- pressure_p1  # ?? does pressure_p1 still work 
         - velocity_p0
     output_stream:
       file: flow.pvd
       format: !vtk
         variant: ascii
-    balance:
+    #balance:
   # primary equation
   solute_equation: !Coupling_OperatorSplitting
     substances:

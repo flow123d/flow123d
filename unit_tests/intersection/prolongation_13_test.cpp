@@ -64,8 +64,8 @@ void fill_13d_solution(std::vector<std::vector<std::vector<arma::vec3>>> &ils,
 
     
     ils[1].resize(7);
-    ils[1][0] = {arma::vec3({0.44,0.46,0}),arma::vec3({0.2,0.5,0.2})};
-    ils[1][1] = {arma::vec3({0.2,0.5,0.2}),arma::vec3({1,1,1})/4};
+    ils[1][0] = {arma::vec3({0.2,0.5,0.2}), arma::vec3({0.44,0.46,0})};
+    ils[1][1] = {arma::vec3({1,1,1})/4, arma::vec3({0.2,0.5,0.2})};
     ils[1][2] = {arma::vec3({1,1,1})/4,arma::vec3({0,1,1})*0.05};
     ils[1][3] = {arma::vec3({1,1,1})/4,arma::vec3({0.375,0,1./6})};
     ils[1][4] = {arma::vec3({0.375,0,1./6}),arma::vec3({0.4,-0.05,0.15})};
@@ -73,15 +73,15 @@ void fill_13d_solution(std::vector<std::vector<std::vector<arma::vec3>>> &ils,
     ils[1][6] = {arma::vec3({1,0,1})*0.3,arma::vec3({35,-25,35})*0.01};
     
     ils[2].resize(12);
-    ils[2][0] = {arma::vec3({0.44,0.46,0}),arma::vec3({0.2,0.5,0.2})};
-    ils[2][1] = {arma::vec3({0.2,0.5,0.2}),arma::vec3({1,1,1})/4};
+    ils[2][0] = {arma::vec3({0.2,0.5,0.2}), arma::vec3({0.44,0.46,0})};
+    ils[2][1] = {arma::vec3({1,1,1})/4, arma::vec3({0.2,0.5,0.2})};
     ils[2][2] = {arma::vec3({1,1,1})/4,arma::vec3({0,1,1})*0.05};
     ils[2][3] = {arma::vec3({1,1,1})/4,arma::vec3({0.375,0,1./6})};
     ils[2][4] = {arma::vec3({0.375,0,1./6}),arma::vec3({0.4,-0.05,0.15})};
     ils[2][5] = {arma::vec3({1,1,1})/4,arma::vec3({1,0,1})*0.3};
     ils[2][6] = {arma::vec3({1,0,1})*0.3,arma::vec3({35,-25,35})*0.01};
     
-    ils[2][7] = {arma::vec3({1,-1,1})*0.2,arma::vec3({0,-5,3})*0.1};
+    ils[2][7] = {arma::vec3({0,-5,3})*0.1, arma::vec3({1,-1,1})*0.2};
     ils[2][8] = {arma::vec3({0,2,5})*0.1,arma::vec3({1,0,3.5})*0.1};
     ils[2][9] = {arma::vec3({1,0,3.5})*0.1,arma::vec3({1,-1,1})*0.2};
     ils[2][10] = {arma::vec3({1./3,0,2./3})};
@@ -101,7 +101,7 @@ void fill_13d_solution(std::vector<std::vector<std::vector<arma::vec3>>> &ils,
     ils[4][2] = {arma::vec3({0,0,0.25}),arma::vec3({0,0.25,0.25})};
     
     ils[4][4] = {arma::vec3({0.5,0,0.5}),arma::vec3({0,0,0})};    
-    ils[4][5] = {arma::vec3({0.5,0,0.5}),arma::vec3({0,0,0})};
+    ils[4][5] = {arma::vec3({0.5,0,0.5}), arma::vec3({0,0,0})};
     
     ils[5].resize(2);
     ils[5][0] = {arma::vec3({0,0,0}),arma::vec3({0.25,0.25,0.25})};
@@ -114,7 +114,7 @@ void fill_13d_solution(std::vector<std::vector<std::vector<arma::vec3>>> &ils,
     
     ils[6][3] = {arma::vec3({0,0,0})};
     ils[6][4] = {arma::vec3({0,0,0})};
-    ils[6][5] = {arma::vec3({-0.1,-0.3,-0.1}),arma::vec3({0,0,0})};
+    ils[6][5] = {arma::vec3({0,0,0}), arma::vec3({-0.1,-0.3,-0.1})};
     ils[6][6] = {arma::vec3({0,0,0}),arma::vec3({0.3,0.1,0.1})};
     ils[6][7] = {arma::vec3({0,0,0})};
     ils[6][8] = {arma::vec3({0,0,0})};
@@ -213,7 +213,7 @@ TEST(intersection_prolongation_13d, all) {
         if (s == 6) continue;
         */
 
-        MessageOut() << "Computing intersection on mesh: " << filenames[s] << "\n";
+        MessageOut() << "Case[s=" << s<< "] Computing intersection on mesh: " << filenames[s] << "\n";
         string in_mesh_string = "{ mesh_file=\"" + dir_name + filenames[s] + "\", optimize_mesh=false }";
         
         Mesh *mesh = mesh_constructor(in_mesh_string);

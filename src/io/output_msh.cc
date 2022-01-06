@@ -21,7 +21,7 @@
 #include "mesh/mesh.h"
 #include "element_data_cache_base.hh"
 #include "input/factory.hh"
-#include "tools/unit_si.hh"
+#include "tools/time_governor.hh"
 
 
 FLOW123D_FORCE_LINK_IN_CHILD(gmsh)
@@ -109,8 +109,12 @@ void OutputMSH::write_msh_topology(void)
     std::vector<unsigned int> gmsh_connectivity(4*id_elem_vec.size(), 0);
     for(unsigned int i_elm=0; i_elm < id_elem_vec.size(); ++i_elm) {
         n_nodes = offsets_vec[i_elm+1]-offsets_vec[i_elm];
-        for(unsigned int i=4*i_elm; i<4*i_elm+n_nodes; i++, i_node++) {
-            gmsh_connectivity[i] = connectivity_vec[i_node];
+        auto &new_to_old_node = output_mesh_->orig_mesh_->element_accessor(i_elm).orig_nodes_order();
+        for(unsigned int i=0; i<n_nodes; i++, i_node++) {
+        	// permute element nodes to the order of the input mesh
+        	// works only for GMSH, serial output
+        	uint old_i = new_to_old_node[i];
+            gmsh_connectivity[4*i_elm+old_i] = connectivity_vec[i_node];
         }
     }
 
@@ -161,7 +165,7 @@ void OutputMSH::write_node_data(OutputDataPtr output_data)
 {
     ofstream &file = this->_base_file;
     double time_fixed = isfinite(this->registered_time_)?this->registered_time_:0;
-    time_fixed /= UnitSI().s().convert_unit_from(this->unit_string_);
+    time_fixed /= this->time_unit_converter->get_coef();
 
     file << "$NodeData" << endl;
 

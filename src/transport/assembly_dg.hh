@@ -36,23 +36,31 @@ template <unsigned int dim, class Model>
 class MassAssemblyDG : public AssemblyBase<dim>
 {
 public:
-    typedef typename TransportDG<Model>::EqData EqDataDG;
+    typedef typename TransportDG<Model>::EqFields EqFields;
+    typedef typename TransportDG<Model>::EqData EqData;
+
+    static constexpr const char * name() { return "MassAssemblyDG"; }
 
     /// Constructor.
-    MassAssemblyDG(EqDataDG *data)
-    : AssemblyBase<dim>(data->dg_order), data_(data) {
+    MassAssemblyDG(EqFields *eq_fields, EqData *eq_data)
+    : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
+        this->used_fields_ += eq_fields_->mass_matrix_coef;
+        this->used_fields_ += eq_fields_->retardation_coef;
     }
 
     /// Destructor.
     ~MassAssemblyDG() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(std::shared_ptr<Balance> balance) {
-        this->balance_ = balance;
+    void initialize(ElementCacheMap *element_cache_map) {
+        this->element_cache_map_ = element_cache_map;
 
-        fe_ = std::make_shared< FE_P_disc<dim> >(data_->dg_order);
-        fe_values_.initialize(*this->quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
+        fe_ = std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order);
+        UpdateFlags u = update_values | update_JxW_values | update_quadrature_points;
+        fe_values_.initialize(*this->quad_, *fe_, u);
+        if (dim==1) // print to log only one time
+            DebugOut() << "List of MassAssembly FEValues updates flags: " << this->print_update_flags(u);
         ndofs_ = fe_->n_dofs();
         dof_indices_.resize(ndofs_);
         local_matrix_.resize(4*ndofs_*ndofs_);
@@ -63,16 +71,17 @@ public:
 
 
     /// Assemble integral over element
-    inline void cell_integral(DHCellAccessor cell)
+    inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
         ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
+
         ElementAccessor<3> elm = cell.elm();
         unsigned int k;
 
         fe_values_.reinit(elm);
         cell.get_dof_indices(dof_indices_);
 
-        for (unsigned int sbi=0; sbi<data_->n_substances(); ++sbi)
+        for (unsigned int sbi=0; sbi<eq_data_->n_substances(); ++sbi)
         {
             // assemble the local mass matrix
             for (unsigned int i=0; i<ndofs_; i++)
@@ -81,9 +90,9 @@ public:
                 {
                     local_matrix_[i*ndofs_+j] = 0;
                     k=0;
-                    for (auto p : data_->mass_assembly_->bulk_points(cell) )
+                    for (auto p : this->bulk_points(element_patch_idx) )
                     {
-                        local_matrix_[i*ndofs_+j] += (data_->mass_matrix_coef(p)+data_->retardation_coef[sbi](p)) *
+                        local_matrix_[i*ndofs_+j] += (eq_fields_->mass_matrix_coef(p)+eq_fields_->retardation_coef[sbi](p)) *
                                 fe_values_.shape_value(j,k)*fe_values_.shape_value(i,k)*fe_values_.JxW(k);
                         k++;
                     }
@@ -95,49 +104,43 @@ public:
                 local_mass_balance_vector_[i] = 0;
                 local_retardation_balance_vector_[i] = 0;
                 k=0;
-                for (auto p : data_->mass_assembly_->bulk_points(cell) )
+                for (auto p : this->bulk_points(element_patch_idx) )
                 {
-                    local_mass_balance_vector_[i] += data_->mass_matrix_coef(p)*fe_values_.shape_value(i,k)*fe_values_.JxW(k);
-                    local_retardation_balance_vector_[i] -= data_->retardation_coef[sbi](p)*fe_values_.shape_value(i,k)*fe_values_.JxW(k);
+                    local_mass_balance_vector_[i] += eq_fields_->mass_matrix_coef(p)*fe_values_.shape_value(i,k)*fe_values_.JxW(k);
+                    local_retardation_balance_vector_[i] -= eq_fields_->retardation_coef[sbi](p)*fe_values_.shape_value(i,k)*fe_values_.JxW(k);
                     k++;
                 }
             }
 
-            balance_->add_mass_values(data_->subst_idx()[sbi], cell, cell.get_loc_dof_indices(),
+            eq_data_->balance_->add_mass_values(eq_data_->subst_idx()[sbi], cell, cell.get_loc_dof_indices(),
                                                local_mass_balance_vector_, 0);
 
-            data_->ls_dt[sbi]->mat_set_values(ndofs_, &(dof_indices_[0]), ndofs_, &(dof_indices_[0]), &(local_matrix_[0]));
-            VecSetValues(data_->ret_vec[sbi], ndofs_, &(dof_indices_[0]), &(local_retardation_balance_vector_[0]), ADD_VALUES);
+            eq_data_->ls_dt[sbi]->mat_set_values(ndofs_, &(dof_indices_[0]), ndofs_, &(dof_indices_[0]), &(local_matrix_[0]));
+            VecSetValues(eq_data_->ret_vec[sbi], ndofs_, &(dof_indices_[0]), &(local_retardation_balance_vector_[0]), ADD_VALUES);
         }
     }
 
     /// Implements @p AssemblyBase::begin.
     void begin() override
     {
-        balance_->start_mass_assembly( data_->subst_idx() );
+        eq_data_->balance_->start_mass_assembly( eq_data_->subst_idx() );
     }
 
     /// Implements @p AssemblyBase::end.
     void end() override
     {
-        balance_->finish_mass_assembly( data_->subst_idx() );
+        eq_data_->balance_->finish_mass_assembly( eq_data_->subst_idx() );
     }
-
-    /// Implements @p AssemblyBase::reallocate_cache.
-    void reallocate_cache(const ElementCacheMap &cache_map) override
-    {
-        data_->cache_reallocate(cache_map);
-    }
-
 
     private:
         shared_ptr<FiniteElement<dim>> fe_;                    ///< Finite element for the solution of the advection-diffusion equation.
 
-        /// Pointer to balance object
-        std::shared_ptr<Balance> balance_;
+        /// Data objects shared with TransportDG
+        EqFields *eq_fields_;
+        EqData *eq_data_;
 
-        /// Data object shared with TransportDG
-        EqDataDG *data_;
+        /// Sub field set contains fields used in calculation.
+        FieldSet used_fields_;
 
         unsigned int ndofs_;                                      ///< Number of dofs
         FEValues<3> fe_values_;                                   ///< FEValues of object (of P disc finite element type)
@@ -160,12 +163,23 @@ template <unsigned int dim, class Model>
 class StiffnessAssemblyDG : public AssemblyBase<dim>
 {
 public:
-    typedef typename TransportDG<Model>::EqData EqDataDG;
+    typedef typename TransportDG<Model>::EqFields EqFields;
+    typedef typename TransportDG<Model>::EqData EqData;
+
+    static constexpr const char * name() { return "StiffnessAssemblyDG"; }
 
     /// Constructor.
-    StiffnessAssemblyDG(EqDataDG *data)
-    : AssemblyBase<dim>(data->dg_order), data_(data) {
+    StiffnessAssemblyDG(EqFields *eq_fields, EqData *eq_data)
+    : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::edge | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
+        this->used_fields_ += eq_fields_->advection_coef;
+        this->used_fields_ += eq_fields_->diffusion_coef;
+        this->used_fields_ += eq_fields_->cross_section;
+        this->used_fields_ += eq_fields_->dg_penalty;
+        this->used_fields_ += eq_fields_->sources_sigma_out;
+        this->used_fields_ += eq_fields_->fracture_sigma;
+        this->used_fields_ += eq_fields_->bc_type;
+        this->used_fields_ += eq_fields_->bc_robin_sigma;
     }
 
     /// Destructor.
@@ -176,22 +190,30 @@ public:
     }
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(FMT_UNUSED std::shared_ptr<Balance> balance) {
-        fe_ = std::make_shared< FE_P_disc<dim> >(data_->dg_order);
-        fe_low_ = std::make_shared< FE_P_disc<dim-1> >(data_->dg_order);
-        fe_values_.initialize(*this->quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
+    void initialize(ElementCacheMap *element_cache_map) {
+        this->element_cache_map_ = element_cache_map;
+
+        fe_ = std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order);
+        fe_low_ = std::make_shared< FE_P_disc<dim-1> >(eq_data_->dg_order);
+        UpdateFlags u = update_values | update_gradients | update_JxW_values | update_quadrature_points;
+        UpdateFlags u_side = update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points;
+        fe_values_.initialize(*this->quad_, *fe_, u);
         if (dim>1) {
-            fe_values_vb_.initialize(*this->quad_low_, *fe_low_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
+            fe_values_vb_.initialize(*this->quad_low_, *fe_low_, u);
         }
-        fe_values_side_.initialize(*this->quad_low_, *fe_, update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
+        fe_values_side_.initialize(*this->quad_low_, *fe_, u_side);
+        if (dim==1) { // print to log only one time
+            DebugOut() << "List of StiffnessAssemblyDG FEValues (cell) updates flags: " << this->print_update_flags(u);
+            DebugOut() << "List of StiffnessAssemblyDG FEValues (side) updates flags: " << this->print_update_flags(u_side);
+        }
         ndofs_ = fe_->n_dofs();
         qsize_lower_dim_ = this->quad_low_->size();
         dof_indices_.resize(ndofs_);
         side_dof_indices_vb_.resize(2*ndofs_);
         local_matrix_.resize(4*ndofs_*ndofs_);
 
-        fe_values_vec_.resize(data_->max_edg_sides);
-        for (unsigned int sid=0; sid<data_->max_edg_sides; sid++)
+        fe_values_vec_.resize(eq_data_->max_edg_sides);
+        for (unsigned int sid=0; sid<eq_data_->max_edg_sides; sid++)
         {
             side_dof_indices_.push_back( vector<LongIdx>(ndofs_) );
             fe_values_vec_[sid].initialize(*this->quad_low_, *fe_,
@@ -204,8 +226,8 @@ public:
         fv_sb_[0] = &fe_values_vb_;
         fv_sb_[1] = &fe_values_side_;
 
-        averages.resize(data_->max_edg_sides);
-        for (unsigned int s=0; s<data_->max_edg_sides; s++)
+        averages.resize(eq_data_->max_edg_sides);
+        for (unsigned int s=0; s<eq_data_->max_edg_sides; s++)
             averages[s] = new double[qsize_lower_dim_*fe_->n_dofs()];
         waverages.resize(2);
         jumps.resize(2);
@@ -218,7 +240,7 @@ public:
 
 
     /// Assembles the cell (volume) integral into the stiffness matrix.
-    inline void cell_integral(DHCellAccessor cell)
+    inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
         ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
         if (!cell.is_own()) return;
@@ -230,28 +252,28 @@ public:
         unsigned int k;
 
         // assemble the local stiffness matrix
-        for (unsigned int sbi=0; sbi<data_->n_substances(); sbi++)
+        for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)
         {
             for (unsigned int i=0; i<ndofs_; i++)
                 for (unsigned int j=0; j<ndofs_; j++)
                     local_matrix_[i*ndofs_+j] = 0;
 
             k=0;
-            for (auto p : data_->stiffness_assembly_->bulk_points(cell) )
+            for (auto p : this->bulk_points(element_patch_idx) )
             {
                 for (unsigned int i=0; i<ndofs_; i++)
                 {
-                    arma::vec3 Kt_grad_i = data_->diffusion_coef[sbi](p).t()*fe_values_.shape_grad(i,k);
-                    double ad_dot_grad_i = arma::dot(data_->advection_coef[sbi](p), fe_values_.shape_grad(i,k));
+                    arma::vec3 Kt_grad_i = eq_fields_->diffusion_coef[sbi](p).t()*fe_values_.shape_grad(i,k);
+                    double ad_dot_grad_i = arma::dot(eq_fields_->advection_coef[sbi](p), fe_values_.shape_grad(i,k));
 
                     for (unsigned int j=0; j<ndofs_; j++)
                         local_matrix_[i*ndofs_+j] += (arma::dot(Kt_grad_i, fe_values_.shape_grad(j,k))
                                                   -fe_values_.shape_value(j,k)*ad_dot_grad_i
-                                                  +data_->sources_sigma_out[sbi](p)*fe_values_.shape_value(j,k)*fe_values_.shape_value(i,k))*fe_values_.JxW(k);
+                                                  +eq_fields_->sources_sigma_out[sbi](p)*fe_values_.shape_value(j,k)*fe_values_.shape_value(i,k))*fe_values_.JxW(k);
                 }
                 k++;
             }
-            data_->ls[sbi]->mat_set_values(ndofs_, &(dof_indices_[0]), ndofs_, &(dof_indices_[0]), &(local_matrix_[0]));
+            eq_data_->ls[sbi]->mat_set_values(ndofs_, &(dof_indices_[0]), ndofs_, &(dof_indices_[0]), &(local_matrix_[0]));
         }
     }
 
@@ -270,7 +292,7 @@ public:
         unsigned int k;
         double gamma_l;
 
-        for (unsigned int sbi=0; sbi<data_->n_substances(); sbi++)
+        for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)
         {
             std::fill(local_matrix_.begin(), local_matrix_.end(), 0);
 
@@ -278,43 +300,43 @@ public:
             // on Dirichlet boundaries we additionally apply the penalty which enforces the prescribed value.
             double side_flux = 0;
             k=0;
-            for (auto p : data_->stiffness_assembly_->boundary_points(cell_side) ) {
-                side_flux += arma::dot(data_->advection_coef[sbi](p), fe_values_side_.normal_vector(k))*fe_values_side_.JxW(k);
+            for (auto p : this->boundary_points(cell_side) ) {
+                side_flux += arma::dot(eq_fields_->advection_coef[sbi](p), fe_values_side_.normal_vector(k))*fe_values_side_.JxW(k);
                 k++;
             }
             double transport_flux = side_flux/side.measure();
 
-            auto p_side = *( data_->stiffness_assembly_->boundary_points(cell_side).begin() );
+            auto p_side = *( this->boundary_points(cell_side).begin() );
             auto p_bdr = p_side.point_bdr( side.cond().element_accessor() );
-            unsigned int bc_type = data_->bc_type[sbi](p_bdr);
+            unsigned int bc_type = eq_fields_->bc_type[sbi](p_bdr);
             if (bc_type == AdvectionDiffusionModel::abc_dirichlet)
             {
                 // set up the parameters for DG method
                 k=0; // temporary solution, set dif_coef until set_DG_parameters_boundary will not be removed
-                for (auto p : data_->stiffness_assembly_->boundary_points(cell_side) ) {
-                    data_->dif_coef[sbi][k] = data_->diffusion_coef[sbi](p);
+                for (auto p : this->boundary_points(cell_side) ) {
+                    eq_data_->dif_coef[sbi][k] = eq_fields_->diffusion_coef[sbi](p);
                     k++;
                 }
-                data_->set_DG_parameters_boundary(side, qsize_lower_dim_, data_->dif_coef[sbi], transport_flux, fe_values_side_.normal_vector(0), data_->dg_penalty[sbi](p_side), gamma_l);
-                data_->gamma[sbi][side.cond_idx()] = gamma_l;
+                eq_data_->set_DG_parameters_boundary(side, qsize_lower_dim_, eq_data_->dif_coef[sbi], transport_flux, fe_values_side_.normal_vector(0), eq_fields_->dg_penalty[sbi](p_side), gamma_l);
+                eq_data_->gamma[sbi][side.cond_idx()] = gamma_l;
                 transport_flux += gamma_l;
             }
 
             // fluxes and penalty
             k=0;
-            for (auto p : data_->stiffness_assembly_->boundary_points(cell_side) )
+            for (auto p : this->boundary_points(cell_side) )
             {
                 double flux_times_JxW;
                 if (bc_type == AdvectionDiffusionModel::abc_total_flux)
                 {
                     //sigma_ corresponds to robin_sigma
                     auto p_bdr = p.point_bdr(side.cond().element_accessor());
-                    flux_times_JxW = data_->cross_section(p)*data_->bc_robin_sigma[sbi](p_bdr)*fe_values_side_.JxW(k);
+                    flux_times_JxW = eq_fields_->cross_section(p)*eq_fields_->bc_robin_sigma[sbi](p_bdr)*fe_values_side_.JxW(k);
                 }
                 else if (bc_type == AdvectionDiffusionModel::abc_diffusive_flux)
                 {
                     auto p_bdr = p.point_bdr(side.cond().element_accessor());
-                    flux_times_JxW = (transport_flux + data_->cross_section(p)*data_->bc_robin_sigma[sbi](p_bdr))*fe_values_side_.JxW(k);
+                    flux_times_JxW = (transport_flux + eq_fields_->cross_section(p)*eq_fields_->bc_robin_sigma[sbi](p_bdr))*fe_values_side_.JxW(k);
                 }
                 else if (bc_type == AdvectionDiffusionModel::abc_inflow && side_flux < 0)
                     flux_times_JxW = 0;
@@ -330,15 +352,15 @@ public:
 
                         // flux due to diffusion (only on dirichlet and inflow boundary)
                         if (bc_type == AdvectionDiffusionModel::abc_dirichlet)
-                            local_matrix_[i*ndofs_+j] -= (arma::dot(data_->diffusion_coef[sbi](p)*fe_values_side_.shape_grad(j,k),fe_values_side_.normal_vector(k))*fe_values_side_.shape_value(i,k)
-                                    + arma::dot(data_->diffusion_coef[sbi](p)*fe_values_side_.shape_grad(i,k),fe_values_side_.normal_vector(k))*fe_values_side_.shape_value(j,k)*data_->dg_variant
+                            local_matrix_[i*ndofs_+j] -= (arma::dot(eq_fields_->diffusion_coef[sbi](p)*fe_values_side_.shape_grad(j,k),fe_values_side_.normal_vector(k))*fe_values_side_.shape_value(i,k)
+                                    + arma::dot(eq_fields_->diffusion_coef[sbi](p)*fe_values_side_.shape_grad(i,k),fe_values_side_.normal_vector(k))*fe_values_side_.shape_value(j,k)*eq_data_->dg_variant
                                     )*fe_values_side_.JxW(k);
                     }
                 }
                 k++;
             }
 
-            data_->ls[sbi]->mat_set_values(ndofs_, &(dof_indices_[0]), ndofs_, &(dof_indices_[0]), &(local_matrix_[0]));
+            eq_data_->ls[sbi]->mat_set_values(ndofs_, &(dof_indices_[0]), ndofs_, &(dof_indices_[0]), &(local_matrix_[0]));
         }
     }
 
@@ -354,7 +376,7 @@ public:
         int sid=0, s1, s2;
         for( DHCellSide edge_side : edge_side_range )
         {
-            auto dh_edge_cell = data_->dh_->cell_accessor_from_element( edge_side.elem_idx() );
+            auto dh_edge_cell = eq_data_->dh_->cell_accessor_from_element( edge_side.elem_idx() );
             dh_edge_cell.get_dof_indices(side_dof_indices_[sid]);
             fe_values_vec_[sid].reinit(edge_side.side());
             ++sid;
@@ -362,7 +384,7 @@ public:
         arma::vec3 normal_vector = fe_values_vec_[0].normal_vector(0);
 
         // fluxes and penalty
-        for (unsigned int sbi=0; sbi<data_->n_substances(); sbi++)
+        for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)
         {
             vector<double> fluxes(edge_side_range.begin()->n_edge_sides());
             double pflux = 0, nflux = 0; // calculate the total in- and out-flux through the edge
@@ -371,8 +393,8 @@ public:
             {
                 fluxes[sid] = 0;
                 k=0;
-                for (auto p : data_->stiffness_assembly_->edge_points(edge_side) ) {
-                    fluxes[sid] += arma::dot(data_->advection_coef[sbi](p), fe_values_vec_[sid].normal_vector(k))*fe_values_vec_[sid].JxW(k);
+                for (auto p : this->edge_points(edge_side) ) {
+                    fluxes[sid] += arma::dot(eq_fields_->advection_coef[sbi](p), fe_values_vec_[sid].normal_vector(k))*fe_values_vec_[sid].JxW(k);
                     k++;
                 }
                 fluxes[sid] /= edge_side.measure();
@@ -423,12 +445,12 @@ public:
 
                     delta[0] = 0;
                     delta[1] = 0;
-                    for (auto p1 : data_->stiffness_assembly_->edge_points(edge_side1) )
+                    for (auto p1 : this->edge_points(edge_side1) )
                     {
                         auto p2 = p1.point_on(edge_side2);
-                        delta[0] += dot(data_->diffusion_coef[sbi](p1)*normal_vector,normal_vector);
-                        delta[1] += dot(data_->diffusion_coef[sbi](p2)*normal_vector,normal_vector);
-                        local_alpha = max(data_->dg_penalty[sbi](p1), data_->dg_penalty[sbi](p2));
+                        delta[0] += dot(eq_fields_->diffusion_coef[sbi](p1)*normal_vector,normal_vector);
+                        delta[1] += dot(eq_fields_->diffusion_coef[sbi](p2)*normal_vector,normal_vector);
+                        local_alpha = max(eq_fields_->dg_penalty[sbi](p1), eq_fields_->dg_penalty[sbi](p2));
                     }
                     delta[0] /= qsize_lower_dim_;
                     delta[1] /= qsize_lower_dim_;
@@ -441,8 +463,8 @@ public:
                         omega[0] = delta[1]/delta_sum;
                         omega[1] = delta[0]/delta_sum;
                         double h = edge_side1.diameter();
-                        aniso1 = data_->elem_anisotropy(edge_side1.element());
-                        aniso2 = data_->elem_anisotropy(edge_side2.element());
+                        aniso1 = eq_data_->elem_anisotropy(edge_side1.element());
+                        aniso2 = eq_data_->elem_anisotropy(edge_side2.element());
                         gamma_l += local_alpha/h*aniso1*aniso2*(delta[0]*delta[1]/delta_sum);
                     }
                     else
@@ -455,7 +477,7 @@ public:
 
                     // precompute jumps and weighted averages of shape functions over the pair of sides (s1,s2)
                     k=0;
-                    for (auto p1 : data_->stiffness_assembly_->edge_points(edge_side1) )
+                    for (auto p1 : this->edge_points(edge_side1) )
                     {
                         auto p2 = p1.point_on(edge_side2);
                         for (unsigned int i=0; i<fe_->n_dofs(); i++)
@@ -463,7 +485,7 @@ public:
                             for (int n=0; n<2; n++)
                             {
                                 jumps[n][k*fe_->n_dofs()+i] = (n==0)*fe_values_vec_[s1].shape_value(i,k) - (n==1)*fe_values_vec_[s2].shape_value(i,k);
-                                waverages[n][k*fe_->n_dofs()+i] = arma::dot(data_->diffusion_coef[sbi]( (n==0 ? p1 : p2) )*fe_values_vec_[sd[n]].shape_grad(i,k),nv)*omega[n];
+                                waverages[n][k*fe_->n_dofs()+i] = arma::dot(eq_fields_->diffusion_coef[sbi]( (n==0 ? p1 : p2) )*fe_values_vec_[sd[n]].shape_grad(i,k),nv)*omega[n];
                             }
                         }
                         k++;
@@ -497,12 +519,12 @@ public:
 
                                         // terms due to diffusion
                                             - jumps[n][k*fe_->n_dofs()+i]*waverages[m][k*fe_->n_dofs()+j]
-                                            - data_->dg_variant*waverages[n][k*fe_->n_dofs()+i]*jumps[m][k*fe_->n_dofs()+j]
-                                            )*fe_values_vec_[0].JxW(k);
+                                            - eq_data_->dg_variant*waverages[n][k*fe_->n_dofs()+i]*jumps[m][k*fe_->n_dofs()+j]
+                                            )*fe_values_vec_[0].JxW(k) + LocalSystem::almost_zero;
                                     }
                                 }
                             }
-                            data_->ls[sbi]->mat_set_values(fe_values_vec_[sd[n]].n_dofs(), &(side_dof_indices_[sd[n]][0]), fe_values_vec_[sd[m]].n_dofs(), &(side_dof_indices_[sd[m]][0]), &(local_matrix_[0]));
+                            eq_data_->ls[sbi]->mat_set_values(fe_values_vec_[sd[n]].n_dofs(), &(side_dof_indices_[sd[n]][0]), fe_values_vec_[sd[m]].n_dofs(), &(side_dof_indices_[sd[m]][0]), &(local_matrix_[0]));
                         }
                     }
                 }
@@ -513,7 +535,7 @@ public:
 
 
     /// Assembles the fluxes between elements of different dimensions.
-    inline void neigbour_integral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
+    inline void dimjoin_intergral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
         if (dim == 1) return;
         ASSERT_EQ_DBG(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
 
@@ -529,7 +551,7 @@ public:
         fe_values_vb_.reinit(elm_lower_dim);
         n_dofs[0] = fv_sb_[0]->n_dofs();
 
-        DHCellAccessor cell_higher_dim = data_->dh_->cell_accessor_from_element( neighb_side.element().idx() );
+        DHCellAccessor cell_higher_dim = eq_data_->dh_->cell_accessor_from_element( neighb_side.element().idx() );
         n_indices = cell_higher_dim.get_dof_indices(dof_indices_);
         for(unsigned int i=0; i<n_indices; ++i) {
             side_dof_indices_vb_[i+n_dofs[0]] = dof_indices_[i];
@@ -543,7 +565,7 @@ public:
         own_element_id[1] = cell_higher_dim.is_own();
 
         unsigned int k;
-        for (unsigned int sbi=0; sbi<data_->n_substances(); sbi++) // Optimize: SWAP LOOPS
+        for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++) // Optimize: SWAP LOOPS
         {
             for (unsigned int i=0; i<n_dofs[0]+n_dofs[1]; i++)
                 for (unsigned int j=0; j<n_dofs[0]+n_dofs[1]; j++)
@@ -551,7 +573,7 @@ public:
 
             // set transmission conditions
             k=0;
-            for (auto p_high : data_->stiffness_assembly_->coupling_points(neighb_side) )
+            for (auto p_high : this->coupling_points(neighb_side) )
             {
                 auto p_low = p_high.lower_dim(cell_lower_dim);
                 // The communication flux has two parts:
@@ -561,10 +583,10 @@ public:
                 // The calculation differs from the reference manual, since ad_coef and dif_coef have different meaning
                 // than b and A in the manual.
                 // In calculation of sigma there appears one more csection_lower in the denominator.
-                double sigma = data_->fracture_sigma[sbi](p_low)*arma::dot(data_->diffusion_coef[sbi](p_low)*fe_values_side_.normal_vector(k),fe_values_side_.normal_vector(k))*
-                        2*data_->cross_section(p_high)*data_->cross_section(p_high)/(data_->cross_section(p_low)*data_->cross_section(p_low));
+                double sigma = eq_fields_->fracture_sigma[sbi](p_low)*arma::dot(eq_fields_->diffusion_coef[sbi](p_low)*fe_values_side_.normal_vector(k),fe_values_side_.normal_vector(k))*
+                        2*eq_fields_->cross_section(p_high)*eq_fields_->cross_section(p_high)/(eq_fields_->cross_section(p_low)*eq_fields_->cross_section(p_low));
 
-                double transport_flux = arma::dot(data_->advection_coef[sbi](p_high), fe_values_side_.normal_vector(k));
+                double transport_flux = arma::dot(eq_fields_->advection_coef[sbi](p_high), fe_values_side_.normal_vector(k));
 
                 comm_flux[0][0] =  (sigma-min(0.,transport_flux))*fv_sb_[0]->JxW(k);
                 comm_flux[0][1] = -(sigma-min(0.,transport_flux))*fv_sb_[0]->JxW(k);
@@ -579,18 +601,12 @@ public:
                         for (int m=0; m<2; m++)
                             for (unsigned int j=0; j<n_dofs[m]; j++)
                                 local_matrix_[(i+n*n_dofs[0])*(n_dofs[0]+n_dofs[1]) + m*n_dofs[0] + j] +=
-                                        comm_flux[m][n]*fv_sb_[m]->shape_value(j,k)*fv_sb_[n]->shape_value(i,k);
+                                        comm_flux[m][n]*fv_sb_[m]->shape_value(j,k)*fv_sb_[n]->shape_value(i,k) + LocalSystem::almost_zero;
                 }
                 k++;
             }
-            data_->ls[sbi]->mat_set_values(n_dofs[0]+n_dofs[1], &(side_dof_indices_vb_[0]), n_dofs[0]+n_dofs[1], &(side_dof_indices_vb_[0]), &(local_matrix_[0]));
+            eq_data_->ls[sbi]->mat_set_values(n_dofs[0]+n_dofs[1], &(side_dof_indices_vb_[0]), n_dofs[0]+n_dofs[1], &(side_dof_indices_vb_[0]), &(local_matrix_[0]));
         }
-    }
-
-    /// Implements @p AssemblyBase::reallocate_cache.
-    void reallocate_cache(const ElementCacheMap &cache_map) override
-    {
-        data_->cache_reallocate(cache_map);
     }
 
 
@@ -598,8 +614,12 @@ private:
     shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
     shared_ptr<FiniteElement<dim-1>> fe_low_;   ///< Finite element for the solution of the advection-diffusion equation (dim-1).
 
-    /// Data object shared with TransportDG
-    EqDataDG *data_;
+    /// Data objects shared with TransportDG
+    EqFields *eq_fields_;
+    EqData *eq_data_;
+
+    /// Sub field set contains fields used in calculation.
+    FieldSet used_fields_;
 
     unsigned int ndofs_;                                      ///< Number of dofs
     unsigned int qsize_lower_dim_;                            ///< Size of quadrature of dim-1
@@ -631,23 +651,32 @@ template <unsigned int dim, class Model>
 class SourcesAssemblyDG : public AssemblyBase<dim>
 {
 public:
-    typedef typename TransportDG<Model>::EqData EqDataDG;
+    typedef typename TransportDG<Model>::EqFields EqFields;
+    typedef typename TransportDG<Model>::EqData EqData;
+
+    static constexpr const char * name() { return "SourcesAssemblyDG"; }
 
     /// Constructor.
-    SourcesAssemblyDG(EqDataDG *data)
-    : AssemblyBase<dim>(data->dg_order), data_(data) {
+    SourcesAssemblyDG(EqFields *eq_fields, EqData *eq_data)
+    : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
+        this->used_fields_ += eq_fields_->sources_density_out;
+        this->used_fields_ += eq_fields_->sources_conc_out;
+        this->used_fields_ += eq_fields_->sources_sigma_out;
     }
 
     /// Destructor.
     ~SourcesAssemblyDG() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(std::shared_ptr<Balance> balance) {
-        this->balance_ = balance;
+    void initialize(ElementCacheMap *element_cache_map) {
+        this->element_cache_map_ = element_cache_map;
 
-        fe_ = std::make_shared< FE_P_disc<dim> >(data_->dg_order);
-        fe_values_.initialize(*this->quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
+        fe_ = std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order);
+        UpdateFlags u = update_values | update_JxW_values | update_quadrature_points;
+        fe_values_.initialize(*this->quad_, *fe_, u);
+        if (dim==1) // print to log only one time
+            DebugOut() << "List of SourcesAssemblyDG FEValues updates flags: " << this->print_update_flags(u);
         ndofs_ = fe_->n_dofs();
         dof_indices_.resize(ndofs_);
         local_rhs_.resize(ndofs_);
@@ -657,9 +686,9 @@ public:
 
 
     /// Assemble integral over element
-    inline void cell_integral(DHCellAccessor cell)
+    inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
-    	ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
+        ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
 
         ElementAccessor<3> elm = cell.elm();
         unsigned int k;
@@ -669,35 +698,35 @@ public:
         cell.get_dof_indices(dof_indices_);
 
         // assemble the local stiffness matrix
-        for (unsigned int sbi=0; sbi<data_->n_substances(); sbi++)
+        for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)
         {
             fill_n( &(local_rhs_[0]), ndofs_, 0 );
             local_source_balance_vector_.assign(ndofs_, 0);
             local_source_balance_rhs_.assign(ndofs_, 0);
 
             k=0;
-            for (auto p : data_->sources_assembly_->bulk_points(cell) )
+            for (auto p : this->bulk_points(element_patch_idx) )
             {
-                source = (data_->sources_density_out[sbi](p) + data_->sources_conc_out[sbi](p)*data_->sources_sigma_out[sbi](p))*fe_values_.JxW(k);
+                source = (eq_fields_->sources_density_out[sbi](p) + eq_fields_->sources_conc_out[sbi](p)*eq_fields_->sources_sigma_out[sbi](p))*fe_values_.JxW(k);
 
                 for (unsigned int i=0; i<ndofs_; i++)
                     local_rhs_[i] += source*fe_values_.shape_value(i,k);
                 k++;
             }
-            data_->ls[sbi]->rhs_set_values(ndofs_, &(dof_indices_[0]), &(local_rhs_[0]));
+            eq_data_->ls[sbi]->rhs_set_values(ndofs_, &(dof_indices_[0]), &(local_rhs_[0]));
 
             for (unsigned int i=0; i<ndofs_; i++)
             {
                 k=0;
-                for (auto p : data_->sources_assembly_->bulk_points(cell) )
+                for (auto p : this->bulk_points(element_patch_idx) )
                 {
-                    local_source_balance_vector_[i] -= data_->sources_sigma_out[sbi](p)*fe_values_.shape_value(i,k)*fe_values_.JxW(k);
+                    local_source_balance_vector_[i] -= eq_fields_->sources_sigma_out[sbi](p)*fe_values_.shape_value(i,k)*fe_values_.JxW(k);
                     k++;
                 }
 
                 local_source_balance_rhs_[i] += local_rhs_[i];
             }
-            balance_->add_source_values(data_->subst_idx()[sbi], elm.region().bulk_idx(),
+            eq_data_->balance_->add_source_values(eq_data_->subst_idx()[sbi], elm.region().bulk_idx(),
                                                  cell.get_loc_dof_indices(),
                                                  local_source_balance_vector_, local_source_balance_rhs_);
         }
@@ -706,30 +735,25 @@ public:
     /// Implements @p AssemblyBase::begin.
     void begin() override
     {
-        balance_->start_source_assembly( data_->subst_idx() );
+        eq_data_->balance_->start_source_assembly( eq_data_->subst_idx() );
     }
 
     /// Implements @p AssemblyBase::end.
     void end() override
     {
-        balance_->finish_source_assembly( data_->subst_idx() );
-    }
-
-    /// Implements @p AssemblyBase::reallocate_cache.
-    void reallocate_cache(const ElementCacheMap &cache_map) override
-    {
-        data_->cache_reallocate(cache_map);
+        eq_data_->balance_->finish_source_assembly( eq_data_->subst_idx() );
     }
 
 
     private:
         shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
 
-        /// Pointer to balance object
-        std::shared_ptr<Balance> balance_;
+        /// Data objects shared with TransportDG
+        EqFields *eq_fields_;
+        EqData *eq_data_;
 
-        /// Data object shared with TransportDG
-        EqDataDG *data_;
+        /// Sub field set contains fields used in calculation.
+        FieldSet used_fields_;
 
         unsigned int ndofs_;                                      ///< Number of dofs
         FEValues<3> fe_values_;                                   ///< FEValues of object (of P disc finite element type)
@@ -752,23 +776,36 @@ template <unsigned int dim, class Model>
 class BdrConditionAssemblyDG : public AssemblyBase<dim>
 {
 public:
-    typedef typename TransportDG<Model>::EqData EqDataDG;
+    typedef typename TransportDG<Model>::EqFields EqFields;
+    typedef typename TransportDG<Model>::EqData EqData;
+
+    static constexpr const char * name() { return "BdrConditionAssemblyDG"; }
 
     /// Constructor.
-    BdrConditionAssemblyDG(EqDataDG *data)
-    : AssemblyBase<dim>(data->dg_order), data_(data) {
+    BdrConditionAssemblyDG(EqFields *eq_fields, EqData *eq_data)
+    : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::boundary;
+        this->used_fields_ += eq_fields_->advection_coef;
+        this->used_fields_ += eq_fields_->diffusion_coef;
+        this->used_fields_ += eq_fields_->cross_section;
+        this->used_fields_ += eq_fields_->bc_type;
+        this->used_fields_ += eq_fields_->bc_dirichlet_value;
+        this->used_fields_ += eq_fields_->bc_robin_sigma;
+        this->used_fields_ += eq_fields_->bc_flux;
     }
 
     /// Destructor.
     ~BdrConditionAssemblyDG() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(std::shared_ptr<Balance> balance) {
-        this->balance_ = balance;
+    void initialize(ElementCacheMap *element_cache_map) {
+        this->element_cache_map_ = element_cache_map;
 
-        fe_ = std::make_shared< FE_P_disc<dim> >(data_->dg_order);
-        fe_values_side_.initialize(*this->quad_low_, *fe_, update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
+        fe_ = std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order);
+        UpdateFlags u = update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points;
+        fe_values_side_.initialize(*this->quad_low_, *fe_, u);
+        if (dim==1) // print to log only one time
+            DebugOut() << "List of BdrConditionAssemblyDG FEValues updates flags: " << this->print_update_flags(u);
         ndofs_ = fe_->n_dofs();
         dof_indices_.resize(ndofs_);
         local_rhs_.resize(ndofs_);
@@ -790,7 +827,7 @@ public:
         const DHCellAccessor &cell = cell_side.cell();
         cell.get_dof_indices(dof_indices_);
 
-        for (unsigned int sbi=0; sbi<data_->n_substances(); sbi++)
+        for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)
         {
             fill_n(&(local_rhs_[0]), ndofs_, 0);
             local_flux_balance_vector_.assign(ndofs_, 0);
@@ -798,22 +835,22 @@ public:
 
             double side_flux = 0;
             k=0;
-            for (auto p : data_->bdr_cond_assembly_->boundary_points(cell_side) ) {
-                side_flux += arma::dot(data_->advection_coef[sbi](p), fe_values_side_.normal_vector(k))*fe_values_side_.JxW(k);
+            for (auto p : this->boundary_points(cell_side) ) {
+                side_flux += arma::dot(eq_fields_->advection_coef[sbi](p), fe_values_side_.normal_vector(k))*fe_values_side_.JxW(k);
                 k++;
             }
             double transport_flux = side_flux/cell_side.measure();
 
-            auto p_side = *( data_->bdr_cond_assembly_->boundary_points(cell_side)).begin();
+            auto p_side = *( this->boundary_points(cell_side)).begin();
             auto p_bdr = p_side.point_bdr(cell_side.cond().element_accessor() );
-            unsigned int bc_type = data_->bc_type[sbi](p_bdr);
+            unsigned int bc_type = eq_fields_->bc_type[sbi](p_bdr);
             if (bc_type == AdvectionDiffusionModel::abc_inflow && side_flux < 0)
             {
                 k=0;
-                for (auto p : data_->bdr_cond_assembly_->boundary_points(cell_side) )
+                for (auto p : this->boundary_points(cell_side) )
                 {
                     auto p_bdr = p.point_bdr(bc_elm);
-                    double bc_term = -transport_flux*data_->bc_dirichlet_value[sbi](p_bdr)*fe_values_side_.JxW(k);
+                    double bc_term = -transport_flux*eq_fields_->bc_dirichlet_value[sbi](p_bdr)*fe_values_side_.JxW(k);
                     for (unsigned int i=0; i<ndofs_; i++)
                         local_rhs_[i] += bc_term*fe_values_side_.shape_value(i,k);
                     k++;
@@ -824,39 +861,39 @@ public:
             else if (bc_type == AdvectionDiffusionModel::abc_dirichlet)
             {
                 k=0;
-                for (auto p : data_->bdr_cond_assembly_->boundary_points(cell_side) )
+                for (auto p : this->boundary_points(cell_side) )
                 {
                     auto p_bdr = p.point_bdr(bc_elm);
-                    double bc_term = data_->gamma[sbi][cond_idx]*data_->bc_dirichlet_value[sbi](p_bdr)*fe_values_side_.JxW(k);
-                    arma::vec3 bc_grad = -data_->bc_dirichlet_value[sbi](p_bdr)*fe_values_side_.JxW(k)*data_->dg_variant*(arma::trans(data_->diffusion_coef[sbi](p))*fe_values_side_.normal_vector(k));
+                    double bc_term = eq_data_->gamma[sbi][cond_idx]*eq_fields_->bc_dirichlet_value[sbi](p_bdr)*fe_values_side_.JxW(k);
+                    arma::vec3 bc_grad = -eq_fields_->bc_dirichlet_value[sbi](p_bdr)*fe_values_side_.JxW(k)*eq_data_->dg_variant*(arma::trans(eq_fields_->diffusion_coef[sbi](p))*fe_values_side_.normal_vector(k));
                     for (unsigned int i=0; i<ndofs_; i++)
                         local_rhs_[i] += bc_term*fe_values_side_.shape_value(i,k)
                                 + arma::dot(bc_grad,fe_values_side_.shape_grad(i,k));
                     k++;
                 }
                 k=0;
-                for (auto p : data_->bdr_cond_assembly_->boundary_points(cell_side) )
+                for (auto p : this->boundary_points(cell_side) )
                 {
                     for (unsigned int i=0; i<ndofs_; i++)
                     {
-                        local_flux_balance_vector_[i] += (arma::dot(data_->advection_coef[sbi](p), fe_values_side_.normal_vector(k))*fe_values_side_.shape_value(i,k)
-                                - arma::dot(data_->diffusion_coef[sbi](p)*fe_values_side_.shape_grad(i,k),fe_values_side_.normal_vector(k))
-                                + data_->gamma[sbi][cond_idx]*fe_values_side_.shape_value(i,k))*fe_values_side_.JxW(k);
+                        local_flux_balance_vector_[i] += (arma::dot(eq_fields_->advection_coef[sbi](p), fe_values_side_.normal_vector(k))*fe_values_side_.shape_value(i,k)
+                                - arma::dot(eq_fields_->diffusion_coef[sbi](p)*fe_values_side_.shape_grad(i,k),fe_values_side_.normal_vector(k))
+                                + eq_data_->gamma[sbi][cond_idx]*fe_values_side_.shape_value(i,k))*fe_values_side_.JxW(k);
                     }
                     k++;
                 }
-                if (data_->time_->step().index() > 0)
+                if (eq_data_->time_->step().index() > 0)
                     for (unsigned int i=0; i<ndofs_; i++)
                         local_flux_balance_rhs_ -= local_rhs_[i];
             }
             else if (bc_type == AdvectionDiffusionModel::abc_total_flux)
             {
             	k=0;
-            	for (auto p : data_->bdr_cond_assembly_->boundary_points(cell_side) )
+            	for (auto p : this->boundary_points(cell_side) )
                 {
                     auto p_bdr = p.point_bdr(bc_elm);
-                    double bc_term = data_->cross_section(p) * (data_->bc_robin_sigma[sbi](p_bdr)*data_->bc_dirichlet_value[sbi](p_bdr) +
-                            data_->bc_flux[sbi](p_bdr)) * fe_values_side_.JxW(k);
+                    double bc_term = eq_fields_->cross_section(p) * (eq_fields_->bc_robin_sigma[sbi](p_bdr)*eq_fields_->bc_dirichlet_value[sbi](p_bdr) +
+                    		eq_fields_->bc_flux[sbi](p_bdr)) * fe_values_side_.JxW(k);
                     for (unsigned int i=0; i<ndofs_; i++)
                         local_rhs_[i] += bc_term*fe_values_side_.shape_value(i,k);
                     k++;
@@ -865,9 +902,9 @@ public:
                 for (unsigned int i=0; i<ndofs_; i++)
                 {
                     k=0;
-                    for (auto p : data_->bdr_cond_assembly_->boundary_points(cell_side) ) {
+                    for (auto p : this->boundary_points(cell_side) ) {
                         auto p_bdr = p.point_bdr(bc_elm);
-                        local_flux_balance_vector_[i] += data_->cross_section(p) * data_->bc_robin_sigma[sbi](p_bdr) *
+                        local_flux_balance_vector_[i] += eq_fields_->cross_section(p) * eq_fields_->bc_robin_sigma[sbi](p_bdr) *
                                 fe_values_side_.JxW(k) * fe_values_side_.shape_value(i,k);
                         k++;
                 	}
@@ -877,11 +914,11 @@ public:
             else if (bc_type == AdvectionDiffusionModel::abc_diffusive_flux)
             {
             	k=0;
-            	for (auto p : data_->bdr_cond_assembly_->boundary_points(cell_side) )
+            	for (auto p : this->boundary_points(cell_side) )
                 {
                     auto p_bdr = p.point_bdr(bc_elm);
-                    double bc_term = data_->cross_section(p) * (data_->bc_robin_sigma[sbi](p_bdr)*data_->bc_dirichlet_value[sbi](p_bdr) +
-                            data_->bc_flux[sbi](p_bdr)) * fe_values_side_.JxW(k);
+                    double bc_term = eq_fields_->cross_section(p) * (eq_fields_->bc_robin_sigma[sbi](p_bdr)*eq_fields_->bc_dirichlet_value[sbi](p_bdr) +
+                    		eq_fields_->bc_flux[sbi](p_bdr)) * fe_values_side_.JxW(k);
                     for (unsigned int i=0; i<ndofs_; i++)
                         local_rhs_[i] += bc_term*fe_values_side_.shape_value(i,k);
                     k++;
@@ -890,10 +927,10 @@ public:
                 for (unsigned int i=0; i<ndofs_; i++)
                 {
                     k=0;
-                    for (auto p : data_->bdr_cond_assembly_->boundary_points(cell_side) ) {
+                    for (auto p : this->boundary_points(cell_side) ) {
                         auto p_bdr = p.point_bdr(bc_elm);
-                        local_flux_balance_vector_[i] += data_->cross_section(p)*(arma::dot(data_->advection_coef[sbi](p), fe_values_side_.normal_vector(k)) +
-                                data_->bc_robin_sigma[sbi](p_bdr))*fe_values_side_.JxW(k)*fe_values_side_.shape_value(i,k);
+                        local_flux_balance_vector_[i] += eq_fields_->cross_section(p)*(arma::dot(eq_fields_->advection_coef[sbi](p), fe_values_side_.normal_vector(k)) +
+                        		eq_fields_->bc_robin_sigma[sbi](p_bdr))*fe_values_side_.JxW(k)*fe_values_side_.shape_value(i,k);
                         k++;
                 	}
                     local_flux_balance_rhs_ -= local_rhs_[i];
@@ -902,16 +939,16 @@ public:
             else if (bc_type == AdvectionDiffusionModel::abc_inflow && side_flux >= 0)
             {
                 k=0;
-                for (auto p : data_->bdr_cond_assembly_->boundary_points(cell_side) )
+                for (auto p : this->boundary_points(cell_side) )
                 {
                     for (unsigned int i=0; i<ndofs_; i++)
-                        local_flux_balance_vector_[i] += arma::dot(data_->advection_coef[sbi](p), fe_values_side_.normal_vector(k))*fe_values_side_.JxW(k)*fe_values_side_.shape_value(i,k);
+                        local_flux_balance_vector_[i] += arma::dot(eq_fields_->advection_coef[sbi](p), fe_values_side_.normal_vector(k))*fe_values_side_.JxW(k)*fe_values_side_.shape_value(i,k);
                     k++;
                 }
             }
-            data_->ls[sbi]->rhs_set_values(ndofs_, &(dof_indices_[0]), &(local_rhs_[0]));
+            eq_data_->ls[sbi]->rhs_set_values(ndofs_, &(dof_indices_[0]), &(local_rhs_[0]));
 
-            balance_->add_flux_values(data_->subst_idx()[sbi], cell_side,
+            eq_data_->balance_->add_flux_values(eq_data_->subst_idx()[sbi], cell_side,
                                           cell.get_loc_dof_indices(),
                                           local_flux_balance_vector_, local_flux_balance_rhs_);
         }
@@ -920,30 +957,25 @@ public:
     /// Implements @p AssemblyBase::begin.
     void begin() override
     {
-        balance_->start_flux_assembly( data_->subst_idx() );
+        eq_data_->balance_->start_flux_assembly( eq_data_->subst_idx() );
     }
 
     /// Implements @p AssemblyBase::end.
     void end() override
     {
-        balance_->finish_flux_assembly( data_->subst_idx() );
-    }
-
-    /// Implements @p AssemblyBase::reallocate_cache.
-    void reallocate_cache(const ElementCacheMap &cache_map) override
-    {
-        data_->cache_reallocate(cache_map);
+        eq_data_->balance_->finish_flux_assembly( eq_data_->subst_idx() );
     }
 
 
     private:
         shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
 
-        /// Pointer to balance object
-        std::shared_ptr<Balance> balance_;
+        /// Data objects shared with TransportDG
+        EqFields *eq_fields_;
+        EqData *eq_data_;
 
-        /// Data object shared with TransportDG
-        EqDataDG *data_;
+        /// Sub field set contains fields used in calculation.
+        FieldSet used_fields_;
 
         unsigned int ndofs_;                                      ///< Number of dofs
         FEValues<3> fe_values_side_;                              ///< FEValues of object (of P disc finite element type)
@@ -963,24 +995,33 @@ public:
  * Auxiliary container class sets the initial condition.
  */
 template <unsigned int dim, class Model>
-class InitConditionAssemblyDG : public AssemblyBase<dim>
+class InitProjectionAssemblyDG : public AssemblyBase<dim>
 {
 public:
-    typedef typename TransportDG<Model>::EqData EqDataDG;
+    typedef typename TransportDG<Model>::EqFields EqFields;
+    typedef typename TransportDG<Model>::EqData EqData;
+
+    static constexpr const char * name() { return "InitProjectionAssemblyDG"; }
 
     /// Constructor.
-    InitConditionAssemblyDG(EqDataDG *data)
-    : AssemblyBase<dim>(data->dg_order), data_(data) {
+    InitProjectionAssemblyDG(EqFields *eq_fields, EqData *eq_data)
+    : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
+        this->used_fields_ += eq_fields_->init_condition;
     }
 
     /// Destructor.
-    ~InitConditionAssemblyDG() {}
+    ~InitProjectionAssemblyDG() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(FMT_UNUSED std::shared_ptr<Balance> balance) {
-        fe_ = std::make_shared< FE_P_disc<dim> >(data_->dg_order);
-        fe_values_.initialize(*this->quad_, *fe_, update_values | update_gradients | update_JxW_values | update_quadrature_points);
+    void initialize(ElementCacheMap *element_cache_map) {
+        this->element_cache_map_ = element_cache_map;
+
+        fe_ = std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order);
+        UpdateFlags u = update_values | update_gradients | update_JxW_values | update_quadrature_points;
+        fe_values_.initialize(*this->quad_, *fe_, u);
+        // if (dim==1) // print to log only one time
+            // DebugOut() << "List of InitProjectionAssemblyDG FEValues updates flags: " << this->print_update_flags(u);
         ndofs_ = fe_->n_dofs();
         dof_indices_.resize(ndofs_);
         local_matrix_.resize(4*ndofs_*ndofs_);
@@ -989,7 +1030,7 @@ public:
 
 
     /// Assemble integral over element
-    inline void cell_integral(DHCellAccessor cell)
+    inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
         ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
 
@@ -998,7 +1039,7 @@ public:
         cell.get_dof_indices(dof_indices_);
         fe_values_.reinit(elem);
 
-        for (unsigned int sbi=0; sbi<data_->n_substances(); sbi++)
+        for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)
         {
             for (unsigned int i=0; i<ndofs_; i++)
             {
@@ -1008,9 +1049,9 @@ public:
             }
 
             k=0;
-            for (auto p : data_->init_cond_assembly_->bulk_points(cell) )
+            for (auto p : this->bulk_points(element_patch_idx) )
             {
-                double rhs_term = data_->init_condition[sbi](p)*fe_values_.JxW(k);
+                double rhs_term = eq_fields_->init_condition[sbi](p)*fe_values_.JxW(k);
 
                 for (unsigned int i=0; i<ndofs_; i++)
                 {
@@ -1021,22 +1062,20 @@ public:
                 }
                 k++;
             }
-            data_->ls[sbi]->set_values(ndofs_, &(dof_indices_[0]), ndofs_, &(dof_indices_[0]), &(local_matrix_[0]), &(local_rhs_[0]));
+            eq_data_->ls[sbi]->set_values(ndofs_, &(dof_indices_[0]), ndofs_, &(dof_indices_[0]), &(local_matrix_[0]), &(local_rhs_[0]));
         }
-    }
-
-    /// Implements @p AssemblyBase::reallocate_cache.
-    void reallocate_cache(const ElementCacheMap &cache_map) override
-    {
-        data_->cache_reallocate(cache_map);
     }
 
 
     private:
         shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
 
-        /// Data object shared with TransportDG
-        EqDataDG *data_;
+        /// Data objects shared with TransportDG
+        EqFields *eq_fields_;
+        EqData *eq_data_;
+
+        /// Sub field set contains fields used in calculation.
+        FieldSet used_fields_;
 
         unsigned int ndofs_;                                      ///< Number of dofs
         FEValues<3> fe_values_;                                   ///< FEValues of object (of P disc finite element type)
@@ -1051,6 +1090,74 @@ public:
 };
 
 
+/**
+ * Auxiliary container class sets the initial condition.
+ */
+template <unsigned int dim, class Model>
+class InitConditionAssemblyDG : public AssemblyBase<dim>
+{
+public:
+    typedef typename TransportDG<Model>::EqFields EqFields;
+    typedef typename TransportDG<Model>::EqData EqData;
+
+    static constexpr const char * name() { return "InitConditionAssemblyDG"; }
+
+    /// Constructor.
+    InitConditionAssemblyDG(EqFields *eq_fields, EqData *eq_data)
+    : AssemblyBase<dim>(), eq_fields_(eq_fields), eq_data_(eq_data) {
+        this->active_integrals_ = ActiveIntegrals::bulk;
+        this->used_fields_ += eq_fields_->init_condition;
+
+        this->quad_ = new Quadrature(dim, RefElement<dim>::n_nodes);
+        for(unsigned int i = 0; i<RefElement<dim>::n_nodes; i++)
+        {
+            this->quad_->weight(i) = 1.0;
+            this->quad_->set(i) = RefElement<dim>::node_coords(i);
+        }
+    }
+
+    /// Destructor.
+    ~InitConditionAssemblyDG() {}
+
+    /// Initialize auxiliary vectors and other data members
+    void initialize(ElementCacheMap *element_cache_map) {
+        this->element_cache_map_ = element_cache_map;
+    }
+
+
+    /// Assemble integral over element
+    inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
+    {
+        ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
+
+        unsigned int k;
+
+        for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)
+        {
+            k=0;
+            for (auto p : this->bulk_points(element_patch_idx) )
+            {
+                double val = eq_fields_->init_condition[sbi](p);
+
+                eq_data_->output_vec[sbi].set(cell.get_loc_dof_indices()[k], val);
+                k++;
+            }
+        }
+    }
+
+
+    private:
+        /// Data objects shared with TransportDG
+        EqFields *eq_fields_;
+        EqData *eq_data_;
+
+        /// Sub field set contains fields used in calculation.
+        FieldSet used_fields_;
+
+        template < template<IntDim...> class DimAssembly>
+        friend class GenericAssembly;
+
+};
 
 #endif /* ASSEMBLY_DG_HH_ */
 

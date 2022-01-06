@@ -630,7 +630,7 @@ public:
      *  Output the system in the Matlab format possibly with given ordering.
      *  Rather we shoud provide output operator <<, since it is more flexible.
      */
-    virtual void view()
+    virtual void view(string)
     {
     	OLD_ASSERT( false, "Function view is not implemented for linsys type %s \n.", typeid(*this).name() );
     }

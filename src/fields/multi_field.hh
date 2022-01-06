@@ -171,7 +171,7 @@ public:
     /**
      * Implementation of @p FieldCommonBase::output().
      */
-    void field_output(std::shared_ptr<OutputTime> stream) override;
+    void field_output(std::shared_ptr<OutputTime> stream, OutputTime::DiscreteSpace type) override;
 
     /**
      * Implementation of FieldCommonBase::observe_output().
@@ -209,14 +209,14 @@ public:
     /**
      * Implementation of FieldCommon::set_dependency().
      */
-    std::vector<const FieldCommon *> set_dependency(FieldSet &field_set, unsigned int i_reg) override;
+    std::vector<const FieldCommon *> set_dependency(FieldSet &field_set, unsigned int i_reg) const override;
 
     /**
      * Returns reference to the sub-field (component) of given index @p idx.
      */
     inline SubFieldType &operator[](unsigned int idx)
     {
-    	ASSERT_LT(idx, sub_fields_.size())(this->input_name()).error("Index of subfield in MultiField is out of range.\n");
+    	ASSERT_LT_DBG(idx, sub_fields_.size())(this->input_name()).error("Index of subfield in MultiField is out of range.\n");
     	return sub_fields_[idx];
     }
     
@@ -225,7 +225,7 @@ public:
      */
     inline const SubFieldType &operator[](unsigned int idx) const
     {
-    	ASSERT_LT(idx, sub_fields_.size())(this->input_name()).error("Index of subfield in MultiField is out of range.\n");
+    	ASSERT_LT_DBG(idx, sub_fields_.size())(this->input_name()).error("Index of subfield in MultiField is out of range.\n");
         return sub_fields_[idx];
     }
     
@@ -234,7 +234,7 @@ public:
      */
     FieldCommon *get_component(unsigned int idx) override
     {
-    	ASSERT_LT(idx, sub_fields_.size())(this->input_name()).error("Index of subfield in MultiField is out of range.\n");
+    	ASSERT_LT_DBG(idx, sub_fields_.size())(this->input_name()).error("Index of subfield in MultiField is out of range.\n");
     	return &(sub_fields_[idx]);
     }
 
@@ -262,10 +262,10 @@ public:
     void set_input_list(const Input::Array &list, const TimeGovernor &tg) override;
 
     /// Implements FieldCommon::cache_reallocate
-    void cache_reallocate(const ElementCacheMap &cache_map) override;
+    void cache_reallocate(const ElementCacheMap &cache_map, unsigned int region_idx) const override;
 
     /// Implements FieldCommon::cache_update
-    void cache_update(ElementCacheMap &cache_map, unsigned int i_reg) const override;
+    void cache_update(ElementCacheMap &cache_map, unsigned int region_patch_idx) const override;
 
     /**
      * Assigns fields from @p field_vec to individual components and all regions in region sets given by @p region_set_names.

@@ -196,6 +196,35 @@ namespace detail
 
 
 
+    template< int spacedim, class Value, typename CALLABLE, typename FIELD_TUPLE, int INDEX >
+    struct field_value
+    {
+        typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
+
+        template< typename... Vs >
+        static auto eval(const Point &p, const ElementAccessor<spacedim> &elm, CALLABLE f, FIELD_TUPLE fields, Vs&&... args) -> decltype(auto) {
+            const auto &single_field = std::get < INDEX - 1 > (std::forward<decltype(fields)>(fields));
+            return field_value<spacedim, Value, CALLABLE, FIELD_TUPLE, INDEX - 1>::eval(
+                    p, elm, f, std::forward<decltype(fields)>(fields),
+                    single_field.value(p, elm), std::forward<Vs>(args)...);
+        }
+    };
+
+
+    /// terminal case - do the actual function call
+    template< int spacedim, class Value, typename CALLABLE, typename FIELD_TUPLE >
+    struct field_value< spacedim, Value, CALLABLE, FIELD_TUPLE, 0 >
+    {
+        typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
+
+        template< typename... Vs >
+        static auto eval(FMT_UNUSED const Point &p, FMT_UNUSED const ElementAccessor<spacedim> &elm, CALLABLE f, FMT_UNUSED FIELD_TUPLE fields,
+                Vs&&... args) -> decltype(auto)
+        {
+            return f(std::forward<Vs>(args)...);
+        }
+    };
+
 
     template<typename Function, typename Tuple>
     auto call(Function f, Tuple t)
@@ -269,9 +298,9 @@ public:
 
     /// Implements FieldAlgoBase::cache_update
     void cache_update(FieldValueCache<typename Value::element_type> &data_cache,
-				ElementCacheMap &cache_map, unsigned int region_idx) override {
-        unsigned int reg_chunk_begin = cache_map.region_chunk_begin(region_idx);
-        unsigned int reg_chunk_end = cache_map.region_chunk_end(region_idx);
+                ElementCacheMap &cache_map, unsigned int region_patch_idx) override {
+        unsigned int reg_chunk_begin = cache_map.region_chunk_begin(region_patch_idx);
+        unsigned int reg_chunk_end = cache_map.region_chunk_end(region_patch_idx);
         for(unsigned int i_cache=reg_chunk_begin; i_cache<reg_chunk_end; ++i_cache) {
             data_cache.set(i_cache) =
                 detail::model_cache_item<
@@ -283,15 +312,20 @@ public:
     }
 
     /// Implementation of virtual method
-    typename Value::return_type const &value(FMT_UNUSED const Point &p, FMT_UNUSED const ElementAccessor<spacedim> &elm) override {
-        ASSERT(false).error("Forbidden method!\n");
+    typename Value::return_type const &value(const Point &p, const ElementAccessor<spacedim> &elm) override {
+    	this->r_value_ = detail::field_value<
+                spacedim, Value, Fn, decltype(input_fields), std::tuple_size<FieldsTuple>::value
+		        >::eval(p, elm, fn, input_fields);
         return this->r_value_;
     }
 
     /// Implementation of virtual method
-    void value_list(FMT_UNUSED const Armor::array &point_list, FMT_UNUSED const ElementAccessor<spacedim> &elm,
-    	        FMT_UNUSED std::vector<typename Value::return_type> &value_list) override {
-        ASSERT(false).error("Forbidden method!\n");
+    void value_list(const Armor::array &point_list, const ElementAccessor<spacedim> &elm,
+    	        std::vector<typename Value::return_type> &value_list) override {
+        ASSERT_EQ_DBG(point_list.size(), value_list.size()).error("Different size of point list and value list.\n");
+
+        for (uint i=0; i<point_list.size(); ++i)
+            value_list[i] = this->value(point_list.template mat<Value::NRows_, Value::NCols_>(i), elm);
     }
 
 };

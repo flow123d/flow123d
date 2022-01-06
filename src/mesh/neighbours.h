@@ -119,46 +119,48 @@ class Neighbour
 public:
     Neighbour();
 
-    void reinit(Mesh *mesh, unsigned int elem_idx, unsigned int edge_idx);
+    void reinit(MeshBase *mesh, unsigned int elem_idx, unsigned int edge_idx);
 
     // side of the edge in higher dim. mesh
-    inline SideIter side();
+    inline SideIter side() const;
 
-    inline unsigned int edge_idx();
+    inline unsigned int edge_idx() const;
 
     // edge of higher dimensional mesh in VB neigh.
-    inline Edge edge();
+    inline Edge edge() const;
 
     // element of lower dimension mesh in VB neigh.
-    inline ElementAccessor<3> element();
+    inline ElementAccessor<3> element() const;
 
 private:
-    Mesh * mesh_;            ///< Pointer to Mesh to which belonged
+    MeshBase * mesh_;            ///< Pointer to Mesh to which belonged
     unsigned int elem_idx_;  ///< Index of element in Mesh::element_vec_
     unsigned int edge_idx_;  ///< Index of Edge in Mesh
 
+    friend class MeshBase;
     friend class Mesh;
+    friend class BCMesh;
 };
 
 
 // side of the edge in higher dim. mesh
-inline SideIter Neighbour::side() {
+inline SideIter Neighbour::side() const {
 	OLD_ASSERT( edge().n_sides() == 1 , "VB neighbouring with %d sides.\n", edge().n_sides());
     //DebugOut().fmt("VB neighbouring with {} sides.\n", edge_->n_sides);
     return edge().side(0);
 }
 
-inline unsigned int Neighbour::edge_idx() {
+inline unsigned int Neighbour::edge_idx() const {
     return edge_idx_;
 }
 
 // edge of lower dimensional mesh in VB neigh.
-inline Edge Neighbour::edge() {
+inline Edge Neighbour::edge() const {
     return mesh_->edge(edge_idx_);
 }
 
 // element of higher dimension mesh in VB neigh.
-inline ElementAccessor<3> Neighbour::element() {
+inline ElementAccessor<3> Neighbour::element() const {
     return mesh_->element_accessor(elem_idx_);
 }
 

@@ -23,6 +23,7 @@
 class OutputTime;
 class TimeGovernor;
 class TimeStep;
+class DOFHandlerMultiDim;
 namespace Input {
 	class Record;
 	namespace Type {
@@ -31,6 +32,9 @@ namespace Input {
                 class Selection;
 	}
 }
+template<unsigned int dim> class AssemblyOutputElemData;
+template<unsigned int dim> class AssemblyOutputNodeData;
+template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
 
 /**
@@ -43,11 +47,23 @@ public:
     DECLARE_EXCEPTION(ExcFieldNotScalar, << "Field '" << FieldCommon::EI_Field::qval
                                          << "' is not scalar in spacedim 3.");
 
+    /// Configuration of output of one field. Pair of OutputTimeSet and DiscreteSpaces.
+    struct FieldOutputConfig {
+        OutputTimeSet output_set_;                    ///< Set of output times.
+        OutputTime::DiscreteSpaceFlags space_flags_;  ///< Array of used DiscreteSpaces
+    };
+
     /**
      * Input type of the configuration record.
      */
     static Input::Type::Record &get_input_type();
     
+    /// Default constructor
+    EquationOutput();
+
+    /// Destructor
+    ~EquationOutput();
+
     /**
      * Make Input::Type for the output record. Particular selection of output fields is created
      * from the contents of *this FieldSet using provided equation name and additional description.
@@ -105,6 +121,9 @@ private:
      */
     void make_output_mesh(bool parallel);
 
+    /// Initialize data of Field given by passed Input::Record
+    void init_field_item(Input::Iterator<Input::Record> it, const TimeGovernor & tg);
+
     /// output stream (may be shared by more equation)
     std::shared_ptr<OutputTime> stream_;
     /// The time mark type of the equation.
@@ -115,7 +134,7 @@ private:
     OutputTimeSet common_output_times_;
 
     /// Time sets of individual fields.
-    std::unordered_map<string, OutputTimeSet> field_output_times_;
+    std::unordered_map<string, FieldOutputConfig> field_output_times_;
 
     /// Set of observed fields. The observe points are given within the observe stream.
     std::unordered_set<string> observe_fields_;
@@ -134,6 +153,15 @@ private:
 
     /// Output mesh.
     std::shared_ptr<OutputMeshBase> output_mesh_;
+
+    /// Objects for distribution of dofs.
+    std::shared_ptr<DOFHandlerMultiDim> dh_;
+    std::shared_ptr<DOFHandlerMultiDim> dh_node_;
+
+    /// general assembly objects, hold assembly objects of appropriate dimension
+    GenericAssembly< AssemblyOutputElemData > * output_elem_data_assembly_;
+    GenericAssembly< AssemblyOutputNodeData > * output_node_data_assembly_;
+    GenericAssembly< AssemblyOutputNodeData > * output_corner_data_assembly_;
 
 };
 

@@ -120,16 +120,6 @@ public:
         return dof_handler_ != NULL;
     }
 
-    /// Getter of elm_cache_index_.
-    inline unsigned int element_cache_index() const {
-        return elm_cache_index_;
-    }
-
-    /// Setter of elm_cache_index_.
-    inline void set_element_cache_index(unsigned int idx) const {
-        elm_cache_index_ = idx;
-    }
-
     /// Returns range of cell sides
     Range<DHCellSide> side_range() const;
 
@@ -169,9 +159,6 @@ private:
     const DOFHandlerMultiDim * dof_handler_;
     /// Index into DOFHandler::el_4_loc array.
     unsigned int loc_ele_idx_;
-
-    /// Optional member used in field evaluation, holds index of cell in field data cache.
-    mutable unsigned int elm_cache_index_;
 
     friend class DHCellSide;
     friend class DHEdgeSide;
@@ -433,6 +420,9 @@ private:
 inline unsigned int DHCellAccessor::n_dofs() const
 {
     switch (this->dim()) {
+        case 0:
+            return fe<0>()->n_dofs();
+            break;
         case 1:
             return fe<1>()->n_dofs();
             break;
@@ -451,6 +441,9 @@ inline const Dof &DHCellAccessor::cell_dof(unsigned int idof) const
 {
     switch (this->dim())
     {
+        case 0:
+            return fe<0>()->dof(idof);
+            break;
         case 1:
             return fe<1>()->dof(idof);
             break;
@@ -464,7 +457,7 @@ inline const Dof &DHCellAccessor::cell_dof(unsigned int idof) const
 
     ASSERT(0)(this->dim()).error("Unsupported FE dimension.");
     // cannot be reached:
-    return fe<1>()->dof(idof);;
+    return fe<1>()->dof(idof);
 }
 
 

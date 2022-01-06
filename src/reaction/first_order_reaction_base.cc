@@ -37,6 +37,8 @@ FirstOrderReactionBase::FirstOrderReactionBase(Mesh &init_mesh, Input::Record in
     : ReactionTerm(init_mesh, in_rec)
 {
     linear_ode_solver_ = std::make_shared<LinearODESolver>();
+    this->eq_fields_base_ = std::make_shared<EqFields>();
+    this->eq_data_base_ = std::make_shared<EqData>();
 }
 
 FirstOrderReactionBase::~FirstOrderReactionBase()
@@ -46,9 +48,9 @@ FirstOrderReactionBase::~FirstOrderReactionBase()
 void FirstOrderReactionBase::initialize()
 {
 	ASSERT(time_ != nullptr).error("Time governor has not been set yet.\n");
-	ASSERT_LT(0, substances_.size()).error("No substances for rection term.\n");
+	ASSERT_LT(0, eq_data_base_->substances_.size()).error("No substances for rection term.\n");
     
-    n_substances_ = substances_.size();
+    n_substances_ = eq_data_base_->substances_.size();
     initialize_from_input();
 
     // allocation
@@ -62,8 +64,8 @@ void FirstOrderReactionBase::initialize()
     molar_mat_inverse_.zeros();
     for (unsigned int i=0; i<n_substances_; ++i)
     {
-    	molar_matrix_(i,i) = substances_[i].molar_mass();
-    	molar_mat_inverse_(i,i) = 1./substances_[i].molar_mass();
+    	molar_matrix_(i,i) = eq_data_base_->substances_[i].molar_mass();
+    	molar_mat_inverse_(i,i) = 1./eq_data_base_->substances_[i].molar_mass();
     }
 }
 
@@ -71,7 +73,7 @@ void FirstOrderReactionBase::initialize()
 void FirstOrderReactionBase::zero_time_step()
 {
     ASSERT(time_ != nullptr).error("Time governor has not been set yet.\n");
-	ASSERT_LT(0, substances_.size()).error("No substances for rection term.\n");
+	ASSERT_LT(0, eq_data_base_->substances_.size()).error("No substances for rection term.\n");
 
     assemble_ode_matrix();
     // make scaling that takes into account different molar masses of substances
@@ -90,14 +92,14 @@ void FirstOrderReactionBase::compute_reaction(const DHCellAccessor& dh_cell)
 
     // save previous concentrations to column vector
     for(sbi = 0; sbi < n_substances_; sbi++)
-        prev_conc_(sbi) = conc_mobile_fe[sbi]->vec()[dof_p0];
+        prev_conc_(sbi) = this->eq_fields_base_->conc_mobile_fe[sbi]->vec().get(dof_p0);
     
     // compute new concetrations R*c
     linear_ode_solver_->update_solution(prev_conc_, new_conc);
     
     // save new concentrations to the concentration matrix
     for(sbi = 0; sbi < n_substances_; sbi++)
-        conc_mobile_fe[sbi]->vec()[dof_p0] = new_conc(sbi);
+        this->eq_fields_base_->conc_mobile_fe[sbi]->vec().set( dof_p0, new_conc(sbi) );
 }
 
 void FirstOrderReactionBase::update_solution(void)
@@ -110,7 +112,7 @@ void FirstOrderReactionBase::update_solution(void)
 
     START_TIMER("linear reaction step");
 
-    for ( DHCellAccessor dh_cell : dof_handler_->own_range() )
+    for ( DHCellAccessor dh_cell : eq_data_base_->dof_handler_->own_range() )
     {
         compute_reaction(dh_cell);
     }
@@ -122,17 +124,7 @@ unsigned int FirstOrderReactionBase::find_subst_name(const string &name)
 {
     unsigned int k=0;
         for(; k < n_substances_; k++)
-                if (name == substances_[k].name()) return k;
+                if (name == eq_data_base_->substances_[k].name()) return k;
 
         return k;
-}
-
-
-bool FirstOrderReactionBase::evaluate_time_constraint(double &time_constraint)
-{
-    if (!linear_ode_solver_->evaluate_time_constraint(time_constraint)) return false;
-    
-    DebugOut().fmt("CFL constraint(first order reaction): {}.\n", time_constraint);
-    
-    return true;
 }

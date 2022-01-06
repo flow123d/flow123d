@@ -23,6 +23,7 @@
 #include "system/index_types.hh"
 #include "fields/field_algo_base.hh"
 #include "fields/fe_value_handler.hh"
+#include "fields/field.hh"
 #include "la/vector_mpi.hh"
 #include "mesh/mesh.h"
 #include "mesh/point.hh"
@@ -51,6 +52,7 @@ class FieldFE : public FieldAlgorithmBase<spacedim, Value>
 public:
     typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
     typedef FieldAlgorithmBase<spacedim, Value> FactoryBaseType;
+	typedef typename Field<spacedim, Value>::FactoryBase FieldFactoryBaseType;
 
 	/**
 	 * Possible interpolations of input data.
@@ -63,9 +65,12 @@ public:
 		interp_p0       //!< P0 interpolation (with the use of calculation of intersections)
 	};
 
-	static const unsigned int undef_uint = -1;
+    TYPEDEF_ERR_INFO( EI_ElemIdx, unsigned int);
+    DECLARE_EXCEPTION( ExcInvalidElemeDim, << "Dimension of element in target mesh must be 0, 1 or 2! elm.idx() = " << EI_ElemIdx::val << ".\n" );
 
-	/**
+    static const unsigned int undef_uint = -1;
+
+    /**
      * Default constructor, optionally we need number of components @p n_comp in the case of Vector valued fields.
      */
     FieldFE(unsigned int n_comp=0);
@@ -84,6 +89,27 @@ public:
      * Return Input selection that allow to set interpolation of input data.
      */
     static const Input::Type::Selection & get_interp_selection_input_type();
+
+    /**
+     * Factory class (descendant of @p Field<...>::FactoryBase) that is necessary
+     * for setting pressure values are piezometric head values.
+     */
+    class NativeFactory : public FieldFactoryBaseType {
+    public:
+        /// Constructor.
+        NativeFactory(unsigned int index, std::shared_ptr<DOFHandlerMultiDim> conc_dof_handler, VectorMPI dof_vector = VectorMPI::sequential(0))
+        : index_(index),
+          conc_dof_handler_(conc_dof_handler),
+          dof_vector_(dof_vector)
+        {}
+
+    	typename Field<spacedim,Value>::FieldBasePtr create_field(Input::Record rec, const FieldCommon &field) override;
+
+        unsigned int index_;
+        std::shared_ptr<DOFHandlerMultiDim> conc_dof_handler_;
+        VectorMPI dof_vector_;
+    };
+
 
     /**
      * Setter for the finite element data.
@@ -110,7 +136,7 @@ public:
      * Overload @p FieldAlgorithmBase::cache_update
      */
     void cache_update(FieldValueCache<typename Value::element_type> &data_cache,
-			ElementCacheMap &cache_map, unsigned int region_idx) override;
+			ElementCacheMap &cache_map, unsigned int region_patch_idx) override;
 
     /**
      * Overload @p FieldAlgorithmBase::cache_reinit
@@ -177,7 +203,7 @@ private:
     };
 
 	/// Create DofHandler object
-	void make_dof_handler(const Mesh *mesh);
+	void make_dof_handler(const MeshBase *mesh);
 
 	/// Interpolate data (use Gaussian distribution) over all elements of target mesh.
 	void interpolate_gauss(ElementDataCache<double>::ComponentDataPtr data_vec);
@@ -197,7 +223,7 @@ private:
 	/**
 	 * Fill data to boundary_dofs_ vector.
 	 *
-	 * TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
+	 * TODO: Temporary solution. REMOVE this method and fix all places where is boundary_dofs_ vector used.
 	 */
 	void fill_boundary_dofs();
 
@@ -284,7 +310,7 @@ private:
     std::vector<FEValues<spacedim>> fe_values_;
 
     /// Maps element indices between source (data) and target (computational) mesh if data interpolation is set to equivalent_msh
-    std::shared_ptr<std::vector<LongIdx>> source_target_mesh_elm_map_;
+    std::shared_ptr<EquivalentMeshMap> source_target_mesh_elm_map_;
 
     /// Holds specific data of field evaluation over all dimensions.
     std::array<FEItem, 4> fe_item_;

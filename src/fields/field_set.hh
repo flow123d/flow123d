@@ -159,11 +159,18 @@ private:
 class FieldSet : public FieldFlag {
 public:
 	DECLARE_EXCEPTION(ExcUnknownField, << "Field set has no field with name: " << FieldCommon::EI_Field::qval);
+    DECLARE_INPUT_EXCEPTION(ExcFieldNotSet,
+            << "Field " << FieldCommon::EI_Field::qval << " is not set. Please set key 'scalar_field', 'vector_field' or 'tensor_field' at: \n");
 
 	/// Default constructor.
 	FieldSet();
 
-	/**
+    /**
+     * @brief Declare input record type of field defined by user.
+     */
+    const Input::Type::Record & get_user_field(const std::string &equation_name);
+
+    /**
 	 * Add an existing Field to the list. It stores just pointer to the field.
 	 * Be careful to not destroy passed Field before the FieldSet.
 	 *
@@ -277,11 +284,16 @@ public:
     }
 
     /**
-     * Collective interface to @p FieldCommon::set_mesh().
+     * Collective interface to @p FieldCommon::set_input_list().
      */
     void set_input_list(Input::Array input_list, const TimeGovernor &tg) {
         for(FieldCommon *field : field_list) field->set_input_list(input_list, tg);
     }
+
+   /**
+    * Fill data of user defined fields to user_fields_input_ map.
+    */
+   void set_user_fields_map(Input::Array input_list);
 
     /**
      * Collective interface to @p FieldCommonBase::flags_add().
@@ -294,7 +306,7 @@ public:
     /**
      * Collective interface to @p FieldCommonBase::set_mesh().
      */
-    bool set_time(const TimeStep &time, LimitSide limit_side, bool set_dependency = false);
+    bool set_time(const TimeStep &time, LimitSide limit_side);
 
     /**
      * Collective interface to @p FieldCommonBase::output_type().
@@ -329,8 +341,15 @@ public:
     /**
      * Collective interface to @p FieldCommon::recache_allocate().
      */
-    void cache_reallocate(const ElementCacheMap &cache_map) {
-        for(auto field : field_list) field->cache_reallocate(cache_map);
+    void cache_reallocate(const ElementCacheMap &cache_map, FieldSet &used_fieldset) {
+    	this->set_dependency(used_fieldset);
+    	for (auto reg_it : region_field_update_order_) {
+    	    unsigned int region_idx = reg_it.first;
+    	    for (auto f_it : reg_it.second) {
+    	        f_it->cache_reallocate(cache_map, region_idx);
+    	    }
+    	}
+        //for(auto field : field_list) field->cache_reallocate(cache_map);
     }
 
     /**
@@ -341,7 +360,7 @@ public:
     /**
      * Set reference of FieldSet to all instances of FieldFormula.
      */
-    void set_dependency();
+    void set_dependency(FieldSet &used_fieldset);
 
     /**
      * Add coords field (X_) and depth field to field_list.
@@ -359,9 +378,30 @@ public:
     /// Returns range of Fields held in field_list
     Range<FieldListAccessor> fields_range() const;
 
+    /// Returns pointer to mesh.
+    inline const Mesh *mesh() const {
+        return mesh_;
+    }
+
+    /// Return order of evaluated fields by dependency and region_idx.
+    std::string print_dependency() const;
+
+    /**
+     * Return pointer to the field defined by user given by name @p field_name. Return nullptr if not found.
+     */
+    FieldCommon *user_field(const std::string &field_name, const TimeStep &time);
+
+
 protected:
+
+    /// Helper method sort used fields by dependency
+    void topological_sort(const FieldCommon *f, unsigned int i_reg, std::unordered_set<const FieldCommon *> &used_fields);
+
     /// List of all fields.
     std::vector<FieldCommon *> field_list;
+
+    /// List of fields defined by user.
+    std::vector<FieldCommon *> user_field_list_;
 
     /// Pointer to the mesh.
     const Mesh *mesh_;
@@ -374,11 +414,17 @@ protected:
      */
     std::map<unsigned int, std::vector<const FieldCommon *>> region_field_update_order_;
 
+    // Default fields.
+    // TODO derive from Field<>, make public, rename
+
     /// Field holds coordinates for computing of FieldFormulas
     FieldCoords X_;
 
     /// Field holds surface depth for computing of FieldFormulas
     FieldDepth depth_;
+
+    /// Map assigns Input::Record to each field defined in optional Input::Array 'user_fields'
+    std::unordered_map<std::string, Input::Record> user_fields_input_;
 
     /**
      * Stream output operator

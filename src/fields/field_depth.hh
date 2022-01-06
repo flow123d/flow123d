@@ -62,7 +62,7 @@ public:
     }
 
     void set_mesh(const Mesh &mesh) override {
-        this->mesh_ = &mesh;
+        shared_->mesh_ = &mesh;
     }
 
     bool is_constant(FMT_UNUSED Region reg) override {
@@ -77,7 +77,7 @@ public:
         ASSERT(false).error("Forbidden method for FieldCoords!");
     }
 
-    void field_output(FMT_UNUSED std::shared_ptr<OutputTime> stream) override {
+    void field_output(FMT_UNUSED std::shared_ptr<OutputTime> stream, FMT_UNUSED OutputTime::DiscreteSpace type) override {
         ASSERT(false).error("Forbidden method for FieldCoords!");
     }
 
@@ -98,16 +98,16 @@ public:
     {}
 
     /// Implements FieldCommon::cache_allocate
-    void cache_reallocate(FMT_UNUSED const ElementCacheMap &cache_map) override
+    void cache_reallocate(FMT_UNUSED const ElementCacheMap &cache_map, FMT_UNUSED unsigned int region_idx) const override
     {}
 
     /// Implements FieldCommon::cache_update
-    void cache_update(ElementCacheMap &cache_map, unsigned int i_reg) const override {
+    void cache_update(ElementCacheMap &cache_map, unsigned int region_patch_idx) const override {
     	if (surface_depth_ == nullptr) return;
 
     	std::shared_ptr<EvalPoints> eval_points = cache_map.eval_points();
-        unsigned int reg_chunk_begin = cache_map.region_chunk_begin(i_reg);
-        unsigned int reg_chunk_end = cache_map.region_chunk_end(i_reg);
+        unsigned int reg_chunk_begin = cache_map.region_chunk_begin(region_patch_idx);
+        unsigned int reg_chunk_end = cache_map.region_chunk_end(region_patch_idx);
         auto * coords_cache = field_coords_->value_cache();
     	arma::vec3 p; // evaluated point
 
@@ -128,7 +128,7 @@ public:
     }
 
     /// Implements FieldCommon::set_dependency().
-    std::vector<const FieldCommon *> set_dependency(FMT_UNUSED FieldSet &field_set, FMT_UNUSED unsigned int i_reg) override {
+    std::vector<const FieldCommon *> set_dependency(FMT_UNUSED FieldSet &field_set, FMT_UNUSED unsigned int i_reg) const override {
     	std::vector<const FieldCommon *> res;
     	res.push_back(field_coords_);
         return res;
@@ -155,7 +155,6 @@ private:
     /// Surface depth object calculate distance from surface.
     std::shared_ptr<SurfaceDepth> surface_depth_;
 
-    const Mesh *mesh_;                  ///< Pointer to the mesh.
     FieldCoords * field_coords_;        ///< Pointer to coordinates field.
 };
 

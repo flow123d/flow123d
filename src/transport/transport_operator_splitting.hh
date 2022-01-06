@@ -118,12 +118,6 @@ public:
 	/// Return PETSc vector with solution for sbi-th substance.
 	virtual Vec get_component_vec(unsigned int sbi) = 0;
 
-	/// Return array of indices of local elements and parallel distribution of elements.
-	virtual void get_par_info(LongIdx * &el_4_loc, Distribution * &el_ds) = 0;
-
-	/// Return global array of order of elements within parallel vector.
-	virtual LongIdx *get_row_4_el() = 0;
-
     /// Returns number of trnasported substances.
     virtual unsigned int n_substances() = 0;
 
@@ -140,11 +134,11 @@ public:
 /**
  * Class with fields that are common to all transport models.
  */
-class TransportEqData : public FieldSet {
+class TransportEqFields : public FieldSet {
 public:
 
-	TransportEqData();
-	inline virtual ~TransportEqData() {};
+	TransportEqFields();
+	inline virtual ~TransportEqFields() {};
 
 	/// Mobile porosity - usually saturated water content in the case of unsaturated flow model
 	Field<3, FieldValue<3>::Scalar> porosity;
@@ -242,13 +236,8 @@ private:
 
     std::shared_ptr<ConcentrationTransportBase> convection;
     std::shared_ptr<ReactionTerm> reaction;
-
-    //double *** semchem_conc_ptr;   //dumb 3-dim array (for phases, which are not supported any more)
-    //Semchem_interface *Semchem_reactions;
     
     double cfl_convection; ///< Time restriction due to transport
-    double cfl_reaction;   ///< Time restriction due to reactions
-
 };
 
 

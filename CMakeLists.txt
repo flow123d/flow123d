@@ -45,10 +45,10 @@ if (FLOW_BUILD_TYPE STREQUAL "AUTO")
   endif()
   
   # try to detect debug/release
-  if ("${DOCKER_VERSION}" MATCHES "dbg")
+  if ("${DOCKER_VERSION}" MATCHES "Debug")
     set(FLOW_BUILD_TYPE debug)
     MESSAGE(STATUS "Auto set FLOW_BUILD_TYPE to ${FLOW_BUILD_TYPE}")
-  elseif ("${DOCKER_VERSION}" MATCHES "rel")
+  elseif ("${DOCKER_VERSION}" MATCHES "Release")
     set(FLOW_BUILD_TYPE release)
     MESSAGE(STATUS "Auto set FLOW_BUILD_TYPE to ${FLOW_BUILD_TYPE}")
   else()
@@ -144,13 +144,14 @@ elseif(FLOW_BUILD_TYPE STREQUAL "release")
   # armadillo is configured using this definition
   add_definitions(-DARMA_NO_DEBUG)    # no bound checks in armadillo 
   flow_define(DEBUG_PROFILER)
-  flow_define(RUN_UNIT_BENCHMARKS)    # build benchmark unit tests
+  flow_define(BENCHMARK_ASSERTS)    # check time for benchmark unit tests
 elseif(FLOW_BUILD_TYPE STREQUAL "release_with_debug")
   # Release mode with debug info 
-  set(CMAKE_CXX_FLAGS "-O3")
-  set(CMAKE_C_FLAGS "-O3")
+  set(CMAKE_CXX_FLAGS "-O3 -g")
+  set(CMAKE_C_FLAGS "-O3 -g")
   set(CMAKE_BUILD_TYPE Debug)
   flow_define(DEBUG)
+  flow_define(BENCHMARK_ASSERTS)
 elseif(FLOW_BUILD_TYPE STREQUAL "coverage")
   # Coverage mode creates instrumented binary
   SET(CMAKE_CXX_FLAGS "-g -O0 --coverage")
@@ -189,7 +190,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
       # -Wvla - variable length arrays
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Wall -Wextra -Wno-vla -Wno-unused-local-typedefs -Wno-deprecated-declarations")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Wall -Wextra -Werror \
+-Wno-catch-value -Wno-deprecated-copy -Wno-misleading-indentation -Wno-implicit-fallthrough \
+-Wno-vla -Wno-unused-local-typedefs -Wno-deprecated-declarations")
 
 ## Compiler-specific C++11 activation.
 ## It was replaced in commit a66193035 with C++14 specification.
@@ -471,8 +474,30 @@ if (BDDCML_FOUND)
     message(STATUS "BDDCML_INCLUDES = ${BDDCML_INCLUDES}")
     message(STATUS "BDDCML_LIBRARY = ${BDDCML_LIBRARY}")
     message(STATUS "=======================================================\n\n") 
+    
+    include_directories(${BDDCML_INCLUDES})
 endif()
 
+
+
+################################################################################
+#  PERMON_FOUND - set to true if the library is found
+message(STATUS "=======================================================")
+message(STATUS "====== PERMON =========================================")
+message(STATUS "=======================================================")
+message(STATUS "PERMON_ROOT = ${PERMON_ROOT}")
+
+find_package(PERMON)
+if (PERMON_FOUND)
+    flow_define(HAVE_PERMON)
+    message(STATUS "-------------------------------------------------------")
+    message(STATUS "PERMON_FOUND = ${PERMON_FOUND}")
+    message(STATUS "PERMON_INCLUDES = ${PERMON_INCLUDES}")
+    message(STATUS "PERMON_LIBRARY = ${PERMON_LIBRARY}")
+    message(STATUS "=======================================================\n\n") 
+    
+    include_directories(${PERMON_INCLUDES})
+endif()
 
 
 #################################################################################
@@ -671,10 +696,6 @@ include_directories(
 #    ${CMAKE_SOURCE_DIR}/third_party/tbb43_20150316oss/include
 )
 
-if (BDDCML_FOUND)
-    include_directories(${BDDCML_INCLUDES})
-endif()    
-    
 ######################################################################################################################
 # custom targets
 
@@ -903,6 +924,7 @@ message(STATUS "Boost:      ${Boost_LIBRARIES}")
 message(STATUS "Petsc:      ${PETSC_LIBRARIES}")
 message(STATUS "   + :      ${PETSC_ADDITIONAL_LIBS}")
 message(STATUS "BDDCML:     ${BDDCML_LIBRARIES}")
+message(STATUS "PERMON:     ${PERMON_LIBRARIES}")
 message(STATUS "Armadillo:  ${ARMADILLO_LIBRARIES}")
 message(STATUS "Python:     ${PYTHON_INCLUDE_DIRS}")
 message(STATUS "YamlCpp:    ${YamlCpp_LIBRARY}")

@@ -26,8 +26,8 @@
 
 #include "flow/darcy_flow_mh.hh"
 #include "flow/darcy_flow_lmh.hh"
-#include "flow/assembly_mh.hh"
-#include "flow/assembly_lmh.hh"
+#include "flow/assembly_mh_old.hh"
+#include "flow/assembly_lmh_old.hh"
 #include "flow/darcy_flow_mh_output.hh"
 
 #include "io/output_time.hh"
@@ -134,7 +134,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowInterface *flow, Input::Record mai
     
     output_stream = OutputTime::create_output_stream("flow",
                                                      main_mh_in_rec.val<Input::Record>("output_stream"),
-                                                     darcy_flow->time().get_unit_string());
+                                                     darcy_flow->time().get_unit_conversion());
     prepare_output(in_rec_output);
 
     auto in_rec_specific = main_mh_in_rec.find<Input::Record>("output_specific");
@@ -177,7 +177,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowInterface *flow, Input::Record mai
 void DarcyFlowMHOutput::prepare_output(Input::Record in_rec)
 {
   	// we need to add data from the flow equation at this point, not in constructor of OutputFields
-	output_fields += darcy_flow->data();
+	output_fields += darcy_flow->eq_fieldset();
 	output_fields.set_mesh(*mesh_);
 
 	output_fields.subdomain = GenericField<3>::subdomain(*mesh_);
@@ -190,24 +190,27 @@ void DarcyFlowMHOutput::prepare_output(Input::Record in_rec)
 
 void DarcyFlowMHOutput::prepare_specific_output(Input::Record in_rec)
 {
-    diff_data.data_ = nullptr;
+    diff_data.eq_fields_ = nullptr;
+    diff_data.eq_data_ = nullptr;
     if(DarcyMH* d = dynamic_cast<DarcyMH*>(darcy_flow))
     {
-        diff_data.data_ = d->data_.get();
+        diff_data.eq_fields_ = d->eq_fields_.get();
+        diff_data.eq_data_ = d->eq_data_.get();
     }
     else if(DarcyLMH* d = dynamic_cast<DarcyLMH*>(darcy_flow))
     {
-        diff_data.data_ = d->data_.get();
+        diff_data.eq_fields_ = d->eq_fields_.get();
+        diff_data.eq_data_ = d->eq_data_.get();
     }
-    ASSERT_PTR(diff_data.data_);
+    ASSERT_PTR(diff_data.eq_data_);
 
     { // init DOF handlers represents element DOFs
         uint p_elem_component = 1;
-        diff_data.dh_ = std::make_shared<SubDOFHandlerMultiDim>(diff_data.data_->dh_, p_elem_component);
+        diff_data.dh_ = std::make_shared<SubDOFHandlerMultiDim>(diff_data.eq_data_->dh_, p_elem_component);
     }
 
     // mask 2d elements crossing 1d
-    if (diff_data.data_->mortar_method_ != DarcyMH::NoMortar) {
+    if (diff_data.eq_data_->mortar_method_ != DarcyMH::NoMortar) {
         diff_data.velocity_mask.resize(mesh_->n_elements(),0);
         for(IntersectionLocal<1,2> & isec : mesh_->mixed_intersections().intersection_storage12_) {
             diff_data.velocity_mask[ isec.bulk_ele_idx() ]++;
@@ -223,6 +226,7 @@ void DarcyFlowMHOutput::prepare_specific_output(Input::Record in_rec)
     diff_data.div_diff_ptr = create_field_fe<3, FieldValue<3>::Scalar>(diff_data.dh_);
     output_specific_fields.div_diff.set(diff_data.div_diff_ptr, 0);
 
+    darcy_flow->time().step().use_fparser_ = true;
     output_specific_fields.set_time(darcy_flow->time().step(), LimitSide::right);
     output_specific_fields.initialize(output_stream, mesh_, in_rec, darcy_flow->time() );
 }
@@ -253,6 +257,7 @@ void DarcyFlowMHOutput::output()
 
     {
         START_TIMER("evaluate output fields");
+        darcy_flow->time().step().use_fparser_ = true;
         output_fields.set_time(darcy_flow->time().step(), LimitSide::right);
         output_fields.output(darcy_flow->time().step());
     }
@@ -266,6 +271,7 @@ void DarcyFlowMHOutput::output()
     if(is_output_specific_fields)
     {
         START_TIMER("evaluate output fields");
+        darcy_flow->time().step().use_fparser_ = true;
         output_specific_fields.set_time(darcy_flow->time().step(), LimitSide::right);
         output_specific_fields.output(darcy_flow->time().step());
     }
@@ -291,47 +297,66 @@ void DarcyFlowMHOutput::output_internal_flow_data()
     raw_output_file <<  fmt::format("{}\n" , mesh_->n_elements() );
 
     
-    DarcyMH::EqData* data = nullptr;
+    DarcyMH::EqFields* eq_fields = nullptr;
+    DarcyMH::EqData* eq_data = nullptr;
     if(DarcyMH* d = dynamic_cast<DarcyMH*>(darcy_flow))
     {
-        data = d->data_.get();
+        eq_fields = d->eq_fields_.get();
+        eq_data = d->eq_data_.get();
     }
     else if(DarcyLMH* d = dynamic_cast<DarcyLMH*>(darcy_flow))
     {
-        data = d->data_.get();
+        eq_fields = d->eq_fields_.get();
+        eq_data = d->eq_data_.get();
     }
-    ASSERT_PTR(data);
+    ASSERT_PTR(eq_data);
     
     arma::vec3 flux_in_center;
     
-    auto permutation_vec = data->dh_->mesh()->element_permutations();
-    for (unsigned int i_elem=0; i_elem<data->dh_->own_size(); ++i_elem) {
-        ElementAccessor<3> ele(data->dh_->mesh(), permutation_vec[i_elem]);
-        DHCellAccessor dh_cell = data->dh_->cell_accessor_from_element( ele.idx() );
+    auto permutation_vec = eq_data->dh_->mesh()->element_permutations();
+    for (unsigned int i_elem=0; i_elem<eq_data->dh_->n_own_cells(); ++i_elem) {
+        ElementAccessor<3> ele(eq_data->dh_->mesh(), permutation_vec[i_elem]);
+        DHCellAccessor dh_cell = eq_data->dh_->cell_accessor_from_element( ele.idx() );
         LocDofVec indices = dh_cell.get_loc_dof_indices();
 
+        std::stringstream ss;
         // pressure
-        raw_output_file << fmt::format("{} {} ", dh_cell.elm().index(), data->full_solution[indices[ele->n_sides()]]);
+        ss << fmt::format("{} {} ", dh_cell.elm().input_id(), eq_data->full_solution.get(indices[ele->n_sides()]));
         
         // velocity at element center
-        flux_in_center = data->field_ele_velocity.value(ele.centre(), ele);
+        flux_in_center = eq_fields->field_ele_velocity.value(ele.centre(), ele);
         for (unsigned int i = 0; i < 3; i++)
-        	raw_output_file << flux_in_center[i] << " ";
+        	ss << flux_in_center[i] << " ";
 
         // number of sides
-        raw_output_file << ele->n_sides() << " ";
+        ss << ele->n_sides() << " ";
+
+        // use node permutation to permute sides
+        auto &new_to_old_node = ele.orig_nodes_order();
+        std::vector<uint> old_to_new_side(ele->n_sides());
+        for (unsigned int i = 0; i < ele->n_sides(); i++) {
+            // According to RefElement<dim>::opposite_node()
+            uint new_opp_node = ele->n_sides() - i - 1;
+            uint old_opp_node = new_to_old_node[new_opp_node];
+            uint old_iside = ele->n_sides() - old_opp_node - 1;
+            old_to_new_side[old_iside] = i;
+        }
         
         // pressure on edges
-        unsigned int lid = ele->n_sides() + 1;
-        for (unsigned int i = 0; i < ele->n_sides(); i++, lid++) {
-            raw_output_file << data->full_solution[indices[lid]] << " ";
+        // unsigned int lid = ele->n_sides() + 1;
+        for (unsigned int i = 0; i < ele->n_sides(); i++) {
+            uint new_lid = ele->n_sides() + 1 + old_to_new_side[i];
+            ss << eq_data->full_solution.get(indices[new_lid]) << " ";
         }
         // fluxes on sides
         for (unsigned int i = 0; i < ele->n_sides(); i++) {
-            raw_output_file << data->full_solution[indices[i]] << " ";
+            uint new_iside = old_to_new_side[i];
+            ss << eq_data->full_solution.get(indices[new_iside]) << " ";
         }
         
-        raw_output_file << endl;
+        // remove last white space
+        string line = ss.str();
+        raw_output_file << line.substr(0, line.size()-1) << endl;
     }    
     
     raw_output_file << "$EndFlowField\n" << endl;
@@ -364,8 +389,8 @@ void DarcyFlowMHOutput::l2_diff_local(DHCellAccessor dh_cell,
     fv_rt.reinit(ele);
     fe_values.reinit(ele);
     
-    double conductivity = result.data_->conductivity.value(ele.centre(), ele );
-    double cross = result.data_->cross_section.value(ele.centre(), ele );
+    double conductivity = result.eq_fields_->conductivity.value(ele.centre(), ele );
+    double cross = result.eq_fields_->cross_section.value(ele.centre(), ele );
 
 
     // get coefficients on the current element
@@ -373,12 +398,12 @@ void DarcyFlowMHOutput::l2_diff_local(DHCellAccessor dh_cell,
 //     vector<double> pressure_traces(dim+1);
 
     for (unsigned int li = 0; li < ele->n_sides(); li++) {
-        fluxes[li] = diff_data.data_->full_solution[ dh_cell.get_loc_dof_indices()[li] ];
+        fluxes[li] = diff_data.eq_data_->full_solution.get( dh_cell.get_loc_dof_indices()[li] );
 //         pressure_traces[li] = result.dh->side_scalar( *(ele->side( li ) ) );
     }
     const uint ndofs = dh_cell.n_dofs();
     // TODO: replace with DHCell getter when available for FESystem component
-    double pressure_mean = diff_data.data_->full_solution[ dh_cell.get_loc_dof_indices()[ndofs/2] ];
+    double pressure_mean = diff_data.eq_data_->full_solution.get( dh_cell.get_loc_dof_indices()[ndofs/2] );
 
     arma::vec analytical(5);
     arma::vec3 flux_in_q_point;
@@ -451,18 +476,18 @@ void DarcyFlowMHOutput::l2_diff_local(DHCellAccessor dh_cell,
     IntIdx idx = sub_dh_cell.get_loc_dof_indices()[0];
 
     auto velocity_data = result.vel_diff_ptr->vec();
-    velocity_data[ idx ] = sqrt(velocity_diff);
+    velocity_data.set( idx, sqrt(velocity_diff) );
     result.velocity_error[dim-1] += velocity_diff;
     if (dim == 2 && result.velocity_mask.size() != 0 ) {
     	result.mask_vel_error += (result.velocity_mask[ ele.idx() ])? 0 : velocity_diff;
     }
 
     auto pressure_data = result.pressure_diff_ptr->vec();
-    pressure_data[ idx ] = sqrt(pressure_diff);
+    pressure_data.set( idx, sqrt(pressure_diff) );
     result.pressure_error[dim-1] += pressure_diff;
 
     auto div_data = result.div_diff_ptr->vec();
-    div_data[ idx ] = sqrt(divergence_diff);
+    div_data.set( idx, sqrt(divergence_diff) );
     result.div_error[dim-1] += divergence_diff;
 
 }
@@ -502,7 +527,7 @@ void DarcyFlowMHOutput::compute_l2_difference() {
 
     //diff_data.ele_flux = &( ele_flux );
 
-    for (DHCellAccessor dh_cell : diff_data.data_->dh_->own_range()) {
+    for (DHCellAccessor dh_cell : diff_data.eq_data_->dh_->own_range()) {
 
     	switch (dh_cell.dim()) {
         case 1:

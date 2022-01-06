@@ -35,7 +35,6 @@
 #include <boost/format.hpp>
 
 #include "system/file_path.hh"
-#include "system/python_loader.hh"
 #include "mpi.h"
 #include "time_point.hh"
 
@@ -308,7 +307,9 @@ Profiler::Profiler()
 : actual_node(0),
   task_size_(1),
   start_time( time(NULL) ),
-  json_filepath("")
+  json_filepath(""),
+  none_timer_(CODE_POINT("NONE TIMER"), 0),
+  calibration_time_(-1)
 
 {
     static CONSTEXPR_ CodePoint main_cp = CODE_POINT("Whole Program");
@@ -318,6 +319,38 @@ Profiler::Profiler()
     timers_.push_back( Timer(main_cp, 0) );
     timers_[0].start();
 #endif
+}
+
+
+void Profiler::calibrate() {
+
+    uint SIZE = 64 * 1024;
+    uint HALF = SIZE / 2;
+    START_TIMER("UNIT_PAYLOAD");
+    Timer &timer = timers_[actual_node];
+
+    uint count = 0;
+    while(TimePoint() - timer.start_time < 0.1) {
+        double * block = new double[SIZE];
+        for(uint i=0; i<HALF; i++) {
+            block[HALF+i] = block[i]*block[i] + i;
+        }
+        delete[] block;
+        count++;
+    }
+
+
+
+    END_TIMER("UNIT_PAYLOAD");
+
+    const double reference_count = 7730;
+    // reference count is average of 5 measurements on payload free laptop:
+    // DELL Latitude E5570, Intel(R) Core(TM) i7-6820HQ CPU @ 2.70GHz
+    // new/delete makes about 3% of time
+    calibration_time_ = 10 * timer.cumul_time * reference_count / count;
+    LogOut() << "Profiler calibration count: " << count << std::endl;
+    LogOut() << "Profiler calibration time: " << calibration_time_ << std::endl;
+
 }
 
 
@@ -510,6 +543,14 @@ double Profiler::get_resolution () {
 }
 
 
+Timer Profiler::find_timer(string tag) {
+    for(auto t : timers_) {
+        if (t.tag() == tag) return t;
+    }
+    return none_timer_;
+}
+
+
 std::string common_prefix( std::string a, std::string b ) {
     if( a.size() > b.size() ) std::swap(a,b) ;
     return std::string( a.begin(), std::mismatch( a.begin(), a.end(), b.begin() ).first ) ;
@@ -553,19 +594,20 @@ void Profiler::add_timer_info(ReduceFunctor reduce, nlohmann::json* holder, int 
 
     // write times children timers using secured child_timers array
     nlohmann::json children;
-    bool has_children = false;
+
+    // sort childs by its index in Profiler::timers_ in order to preserve call order
+    std::vector<int> child_timers_values;
     for (unsigned int i = 0; i < Timer::max_n_childs; i++) {
-        if (timer.child_timers[i] != timer_no_child) {
-            add_timer_info (reduce, &children, timer.child_timers[i], cumul_time_sum);
-        /*
-		if (child_timers[i] != timer_no_child) {
-			add_timer_info (reduce, &children, child_timers[i], cumul_time_sum); */
-			has_children = true;
-		}
+            if (timer.child_timers[i] != timer_no_child)
+                child_timers_values.push_back(timer.child_timers[i]);
     }
+    std::sort(child_timers_values.begin(), child_timers_values.end());
+
+    for(int idx : child_timers_values)
+            add_timer_info(reduce, &children, idx, cumul_time_sum);
 
     // add children tag and other info if present
-    if (has_children) {
+    if (child_timers_values.size() > 0) {
     	node["children"] = children;
     }
 
@@ -786,6 +828,9 @@ void Profiler::output_header (nlohmann::json &root, int mpi_size) {
     char end_time_string[BUFSIZ] = {0};
     strftime(end_time_string, sizeof (end_time_string) - 1, format, localtime(&end_time));
 
+    if (timers_[0].cumul_time > 60) {
+        calibrate();
+    }
     // generate current run details
     root["program-name"] =        flow_name_;
     root["program-version"] =     flow_version_;
@@ -793,6 +838,7 @@ void Profiler::output_header (nlohmann::json &root, int mpi_size) {
     root["program-revision"] =    flow_revision_;
     root["program-build"] =       flow_build_;
     root["timer-resolution"] =    Profiler::get_resolution();
+    root["timer-calibration"] =    calibration_time_;
 
     // print some information about the task at the beginning
     root["task-description"] =    task_description_;
@@ -939,7 +985,7 @@ void operator delete[]( void *p, std::size_t) throw() {
 
 #else // def FLOW123D_DEBUG_PROFILER
 
-Profiler * Profiler::instance(bool clear) { 
+Profiler * Profiler::instance(bool) { 
     static Profiler * _instance = new Profiler();
     return _instance;
 } 
@@ -952,16 +998,7 @@ Profiler * Profiler::instance(bool clear) {
 //     }
 // }
 
-void Profiler::uninitialize() {
-    if (Profiler::instance()) {
-        ASSERT(Profiler::instance()->actual_node==0)(Profiler::instance()->timers_[Profiler::instance()->actual_node].tag())
-    			.error("Forbidden to uninitialize the Profiler when actual timer is not zero.");
-        set_memory_monitoring(false, false);
-        Profiler::instance()->stop_timer(0);
-        // delete _instance;
-        // _instance = NULL;
-    }
-}
+void Profiler::uninitialize() {}
 
 
 #endif // def FLOW123D_DEBUG_PROFILER

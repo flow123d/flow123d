@@ -1,0 +1,62 @@
+# Test goal: 2D linear elastic simple loading problem.
+# Author: Pavel Exner
+# Source for reference:
+# - same as 30_3d_block_load.yaml, reduced to 2D
+# - the 2D block is however half the size,
+#   so we double the force to get equal deformation
+
+flow123d_version: 3.1.0
+problem: !Coupling_Sequential
+  description: 2D linear elastic simple loading problem.
+  mesh:
+    mesh_file: ../00_mesh/square_1x1_xy_28el.msh
+  flow_equation: !Coupling_Iterative
+    input_fields:
+      - region: BULK
+        biot_alpha: 0
+        fluid_density: 1
+        gravity: 0
+    time:
+      end_time: 1
+    a_tol: 1e-15
+    r_tol: 1e-12
+
+    flow_equation: !Flow_Richards_LMH
+        input_fields:
+          - region: BULK
+            conductivity: 1
+            init_pressure: 0
+          - region: [.BOUNDARY]
+            bc_type: dirichlet
+            bc_pressure: 0
+        output:
+          fields: []
+
+    mechanics_equation:
+        output_stream:
+          file: mechanics.pvd
+          format: !vtk
+        output:
+          fields:
+            - displacement
+            - stress
+            - displacement_divergence
+        solver: !Petsc
+          a_tol: 1e-20
+          r_tol: 1e-15
+        input_fields:
+          - region: BULK
+            young_modulus: 80
+            poisson_ratio: 0.2
+
+          - region: [.left_x, .right_x]
+            bc_type: displacement_n
+            bc_displacement: 0
+
+          - region: [.bottom_y]
+            bc_type: displacement
+            bc_displacement: 0
+
+          - region: .top_y
+            bc_type: traction
+            bc_traction: [0,-20,0]
