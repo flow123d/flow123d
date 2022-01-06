@@ -37,14 +37,14 @@ using namespace bparser;
 
 class ArrayVectorized : public Array<double> {
 public:
-	ArrayVectorized(uint nr, uint nc = 1, uint size = 0)
+    ArrayVectorized(uint nr, uint nc = 1, uint size = 0)
     : Array<double>(nr, nc), subset_(nullptr)
     {
 	    change_reserved(size);
 	    change_size(this->reserved_);
     }
 
-	ArrayVectorized(const ArrayVectorized &other)
+    ArrayVectorized(const ArrayVectorized &other)
     : ArrayVectorized(other.n_rows_, other.n_cols_, other.size_)
     {
         for(uint i = 0; i < n_rows_ * n_cols_ * size(); i++) {
