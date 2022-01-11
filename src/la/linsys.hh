@@ -82,7 +82,7 @@
 #include "system/exc_common.hh"                        // for ExcAssertMsg
 #include "system/exceptions.hh"                        // for ExcAssertMsg::...
 #include "system/system.hh"                            // for chkerr
-#include "system/asserts.hh"                           // for ASSERT_PERMANENT, msg
+#include "system/asserts.hh"                           // for ASSERT, msg
 
 namespace Input { namespace Type { class Abstract; } }
 

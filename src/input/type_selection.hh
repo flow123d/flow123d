@@ -25,7 +25,7 @@
 
 #include "system/exceptions.hh"
 #include "type_base.hh"
-#include "system/asserts.hh"         // for Assert, ASSERT_PERMANENT, ASSERT_PERMANENT_EQ, _FEAL...
+#include "system/asserts.hh"         // for Assert, ASSERT, ASSERT_EQ, _FEAL...
 
 namespace Input {
 namespace Type {

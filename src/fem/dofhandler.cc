@@ -677,7 +677,7 @@ Range<DHCellAccessor> DOFHandlerMultiDim::ghost_range() const {
 
 const DHCellAccessor DOFHandlerMultiDim::cell_accessor_from_element(unsigned int elm_idx) const {
 	auto map_it = global_to_local_el_idx_.find((LongIdx)elm_idx); // find in global to local map
-	ASSERT_PERMANENT( map_it != global_to_local_el_idx_.end() )(elm_idx).error("DH accessor can be create only for own or ghost elements!\n");
+	ASSERT( map_it != global_to_local_el_idx_.end() )(elm_idx).error("DH accessor can be create only for own or ghost elements!\n");
 	return DHCellAccessor(this, map_it->second);
 }
 

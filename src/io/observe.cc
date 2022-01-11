@@ -403,7 +403,7 @@ ElementDataCache<T> & Observe::prepare_compute_data(std::string field_name, doub
     if ( std::isnan(observe_values_time_[observe_time_idx_]) )
         observe_values_time_[observe_time_idx_] = field_time / time_unit_seconds;
     else
-        ASSERT_PERMANENT(fabs(field_time / time_unit_seconds - observe_values_time_[observe_time_idx_]) < 2*numeric_limits<double>::epsilon())
+        ASSERT(fabs(field_time / time_unit_seconds - observe_values_time_[observe_time_idx_]) < 2*numeric_limits<double>::epsilon())
               (field_time)(observe_values_time_[observe_time_idx_]);
 
     OutputDataFieldMap::iterator it=observe_field_values_.find(field_name);

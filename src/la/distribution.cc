@@ -129,8 +129,8 @@ Distribution::Distribution(const Distribution &distr)
  */
 unsigned int Distribution::get_proc(unsigned  int idx) const
 {
-	ASSERT_PERMANENT_PTR( starts ).error("Distribution is not initialized.\n");
-	ASSERT_PERMANENT_LT(idx, size()).error("Index is greater than distribution size.\n");
+	ASSERT_PTR( starts ).error("Distribution is not initialized.\n");
+	ASSERT_LT(idx, size()).error("Index is greater than distribution size.\n");
 
     for(unsigned int i=0; i<np(); i++) {
         if (is_on_proc(idx,i)) return (i);

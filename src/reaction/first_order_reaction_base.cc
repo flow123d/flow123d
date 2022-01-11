@@ -70,8 +70,8 @@ void FirstOrderReactionBase::initialize()
 
 void FirstOrderReactionBase::zero_time_step()
 {
-    ASSERT_PERMANENT(time_ != nullptr).error("Time governor has not been set yet.\n");
-	ASSERT_PERMANENT_LT(0, substances_.size()).error("No substances for rection term.\n");
+    ASSERT(time_ != nullptr).error("Time governor has not been set yet.\n");
+	ASSERT_LT(0, substances_.size()).error("No substances for rection term.\n");
 
     assemble_ode_matrix();
     // make scaling that takes into account different molar masses of substances

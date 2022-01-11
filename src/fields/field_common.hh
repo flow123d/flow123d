@@ -253,7 +253,7 @@ public:
 
     const UnitSI &units() const
     {
-        ASSERT_PERMANENT(shared_->units_.is_def())(name()).error("Getting undefined unit.\n");
+        ASSERT(shared_->units_.is_def())(name()).error("Getting undefined unit.\n");
         return shared_->units_;
     }
 
@@ -362,7 +362,7 @@ public:
      */
     bool changed() const
     {
-    	ASSERT_PERMANENT( set_time_result_ != TimeStatus::unknown ).error("Invalid time status.");
+    	ASSERT( set_time_result_ != TimeStatus::unknown ).error("Invalid time status.");
         return ( (set_time_result_ == TimeStatus::changed) );
     }
 

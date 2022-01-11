@@ -54,7 +54,7 @@ ElementDataCache<T>::ElementDataCache(std::string field_name, unsigned int n_com
     this->field_input_name_ = this->field_name_;
 
     this->n_values_ = size;
-    ASSERT_PERMANENT_GT(n_comp, 0)(field_name).error("Output field returning variable size vectors. Try convert to MultiField.");
+    ASSERT_GT(n_comp, 0)(field_name).error("Output field returning variable size vectors. Try convert to MultiField.");
     this->n_comp_ = n_comp;
     this->fe_type_ = fe_type;
     this->n_dofs_per_element_ = n_dofs_per_element;
@@ -69,7 +69,7 @@ ElementDataCache<T>::~ElementDataCache() {}
 
 template <typename T>
 typename ElementDataCache<T>::ComponentDataPtr ElementDataCache<T>::get_component_data(unsigned int component_idx) {
-	ASSERT_PERMANENT_LT(component_idx, data_.size()).error("Index of component is out of range.\n");
+	ASSERT_LT(component_idx, data_.size()).error("Index of component is out of range.\n");
 	return data_[component_idx];
 }
 
@@ -408,7 +408,7 @@ std::shared_ptr< ElementDataCacheBase > ElementDataCache<T>::element_node_cache_
 
 template <typename T>
 std::shared_ptr< ElementDataCacheBase > ElementDataCache<T>::compute_node_data(std::vector<unsigned int> &conn_vec, unsigned int data_size) {
-    ASSERT_PERMANENT_EQ(conn_vec.size(), this->n_values());
+    ASSERT_EQ(conn_vec.size(), this->n_values());
     unsigned int idx;
 
     // set output data to zero

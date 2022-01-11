@@ -345,7 +345,7 @@ Array Array::deep_copy() const {
 Array::Array(std::shared_ptr<TypeBase> type, unsigned int min_size, unsigned int max_size)
 : data_(std::make_shared<ArrayData>(min_size, max_size))
 {
-	ASSERT_PERMANENT_LE(min_size, max_size).error("Wrong limits for size of Input::Type::Array");
+	ASSERT_LE(min_size, max_size).error("Wrong limits for size of Input::Type::Array");
 	ASSERT(type->is_closed()).error();
 
 	data_->type_of_values_ = type;

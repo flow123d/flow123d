@@ -47,7 +47,7 @@ ElementAccessor<spacedim>::ElementAccessor(const MeshBase *mesh, unsigned int id
 
 template <int spacedim> inline
 void ElementAccessor<spacedim>::inc() {
-    ASSERT_PERMANENT(!is_regional()).error("Do not call inc() for regional accessor!");
+    ASSERT(!is_regional()).error("Do not call inc() for regional accessor!");
     element_idx_++;
 }
 
@@ -87,7 +87,7 @@ double ElementAccessor<spacedim>::measure() const {
  */
 template <int spacedim> inline
 arma::vec::fixed<spacedim> ElementAccessor<spacedim>::centre() const {
-	ASSERT_PERMANENT(is_valid()).error("Invalid element accessor.");
+	ASSERT(is_valid()).error("Invalid element accessor.");
     if (is_regional() ) return arma::vec::fixed<spacedim>();
 
     arma::vec::fixed<spacedim> centre;
@@ -210,7 +210,7 @@ inline NodeAccessor<3> Side::node(unsigned int i) const {
 }
 
 inline ElementAccessor<3> Side::element() const {
-    ASSERT_PERMANENT( is_valid() ).error("Wrong use of uninitialized accessor.\n");
+    ASSERT( is_valid() ).error("Wrong use of uninitialized accessor.\n");
     return mesh_->element_accessor( elem_idx_ );
 }
 

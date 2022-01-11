@@ -608,8 +608,8 @@ public:
 //        ArrayMatSet &operator=(const typename arma::Base<Type, T>& arma_x)
 //        {
 //            const T &derived = arma_x.get_ref();
-//            ASSERT_PERMANENT_EQ(n_rows_, T::n_rows);
-//            ASSERT_PERMANENT_EQ(n_cols_, T::n_cols);
+//            ASSERT_EQ(n_rows_, T::n_rows);
+//            ASSERT_EQ(n_cols_, T::n_cols);
 //            copy<T::n_rows, T::n_cols>(derived.memptr());
 //        }
 

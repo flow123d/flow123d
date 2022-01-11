@@ -150,7 +150,7 @@ bool OutputMeshBase::is_created()
 
 void OutputMeshBase::create_sub_mesh()
 {
-	ASSERT_PERMANENT( !is_created() ).error("Multiple initialization of OutputMesh!\n");
+	ASSERT( !is_created() ).error("Multiple initialization of OutputMesh!\n");
 
 	DebugOut() << "Create output submesh containing only local elements.";
 
@@ -623,7 +623,7 @@ std::shared_ptr<ElementDataCache<unsigned int>> OutputMeshDiscontinuous::make_se
 
 void OutputMeshDiscontinuous::create_refined_sub_mesh()
 {
-    ASSERT_PERMANENT( !is_created() ).error("Multiple initialization of OutputMesh!\n");
+    ASSERT( !is_created() ).error("Multiple initialization of OutputMesh!\n");
 
     DebugOut() << "Create refined discontinuous submesh containing only local elements.";
     // initial guess of size: n_elements

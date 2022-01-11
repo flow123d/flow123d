@@ -37,7 +37,7 @@ LoggerOptions& LoggerOptions::get_instance() {
 std::string LoggerOptions::format_hh_mm_ss() {
 	TimePoint t = TimePoint();
 	double seconds = t-LoggerOptions::start_time;
-	ASSERT_PERMANENT(seconds > -numeric_limits<double>::epsilon())(seconds).error("Formating of negative time.");
+	ASSERT(seconds > -numeric_limits<double>::epsilon())(seconds).error("Formating of negative time.");
 
 	unsigned int h,m,s,ms;
 	unsigned int full_time = (int)(seconds * 1000); // in first step in miliseconds
@@ -88,14 +88,14 @@ int LoggerOptions::get_mpi_rank() {
 
 
 int LoggerOptions::setup_mpi(MPI_Comm comm) {
-	ASSERT_PERMANENT(!init_).error("Setup MPI must be performed before setting logger file.");
+	ASSERT(!init_).error("Setup MPI must be performed before setting logger file.");
 
 	return MPI_Comm_rank(comm, &mpi_rank_);
 }
 
 
 void LoggerOptions::set_log_file(std::string log_file_base) {
-	ASSERT_PERMANENT(!init_).error("Recurrent initialization of logger file stream.");
+	ASSERT(!init_).error("Recurrent initialization of logger file stream.");
 
 	if (log_file_base.size() == 0) { // empty string > no_log
 		no_log_ = true;

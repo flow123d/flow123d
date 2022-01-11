@@ -118,9 +118,9 @@ Field<spacedim,Value>::Field(const Field &other)
 template<int spacedim, class Value>
 Field<spacedim,Value> &Field<spacedim,Value>::operator=(const Field<spacedim,Value> &other)
 {
-	//ASSERT_PERMANENT( flags().match(FieldFlag::input_copy) )(this->name())(other.name()).error("Try to assign to non-copy field from the field.");
-	ASSERT_PERMANENT(other.shared_->mesh_).error("Must call set_mesh before assign to other field.\n");
-	ASSERT_PERMANENT( !shared_->mesh_ || (shared_->mesh_==other.shared_->mesh_) ).error("Assignment between fields with different meshes.\n");
+	//ASSERT( flags().match(FieldFlag::input_copy) )(this->name())(other.name()).error("Try to assign to non-copy field from the field.");
+	ASSERT(other.shared_->mesh_).error("Must call set_mesh before assign to other field.\n");
+	ASSERT( !shared_->mesh_ || (shared_->mesh_==other.shared_->mesh_) ).error("Assignment between fields with different meshes.\n");
 
 	// check for self assignement
 	if (&other == this) return *this;
@@ -246,10 +246,10 @@ void Field<spacedim, Value>::set(
 		double time,
 		std::vector<std::string> region_set_names)
 {
-	ASSERT_PERMANENT_PTR(field).error("Null field pointer.\n");
+	ASSERT_PTR(field).error("Null field pointer.\n");
 
-	ASSERT_PERMANENT_PTR( mesh() ).error("Null mesh pointer, set_mesh() has to be called before set().\n");
-    ASSERT_PERMANENT_EQ( field->n_comp() , shared_->n_comp_);
+	ASSERT_PTR( mesh() ).error("Null mesh pointer, set_mesh() has to be called before set().\n");
+    ASSERT_EQ( field->n_comp() , shared_->n_comp_);
     field->set_mesh( mesh() , is_bc() );
 
 	for (auto set_name : region_set_names) {
@@ -260,7 +260,7 @@ void Field<spacedim, Value>::set(
         for(const Region &reg: domain) {
     	    RegionHistory &region_history = data_->region_history_[reg.idx()];
     	    // insert hp into descending time sequence
-    	    ASSERT_PERMANENT( region_history.size() == 0 || region_history[0].first < hp.first)(hp.first)(region_history[0].first)
+    	    ASSERT( region_history.size() == 0 || region_history[0].first < hp.first)(hp.first)(region_history[0].first)
     		        .error("Can not insert smaller time then last time in field's history.\n");
     	    region_history.push_front(hp);
         }
@@ -285,7 +285,7 @@ void Field<spacedim, Value>::set(
 template<int spacedim, class Value>
 bool Field<spacedim, Value>::set_time(const TimeStep &time_step, LimitSide limit_side)
 {
-	ASSERT_PERMANENT_PTR( mesh() )( name() ).error("NULL mesh pointer of field with given name. set_mesh must be called before.\n");
+	ASSERT_PTR( mesh() )( name() ).error("NULL mesh pointer of field with given name. set_mesh must be called before.\n");
 
     // Skip setting time if the new time is equal to current time of the field
 	// and if either the field is continuous in that time or the current limit side is same as the new one.
@@ -362,7 +362,7 @@ bool Field<spacedim, Value>::set_time(const TimeStep &time_step, LimitSide limit
 
 template<int spacedim, class Value>
 void Field<spacedim, Value>::copy_from(const FieldCommon & other) {
-	ASSERT_PERMANENT( flags().match(FieldFlag::equation_input))(other.name().c_str())(this->name().c_str())
+	ASSERT( flags().match(FieldFlag::equation_input))(other.name())(this->name())
 	        .error("Can not copy to the non-input field.");
 
 	// do not use copy if the field have its own input
@@ -382,7 +382,7 @@ void Field<spacedim, Value>::field_output(std::shared_ptr<OutputTime> stream, Ou
 {
 	// currently we cannot output boundary fields
 	if (!is_bc()) {
-	    ASSERT_PERMANENT_LT( type, OutputTime::N_DISCRETE_SPACES ).error();
+	    ASSERT_LT( type, OutputTime::N_DISCRETE_SPACES ).error();
 	    this->compute_field_data( type, stream);
 	}
 }
@@ -452,7 +452,7 @@ std::string Field<spacedim,Value>::get_value_attribute() const
 
 template<int spacedim, class Value>
 void Field<spacedim,Value>::update_history(const TimeStep &time) {
-	ASSERT_PERMANENT_PTR( mesh() ).error("Null mesh pointer, set_mesh() has to be called before.\n");
+	ASSERT_PTR( mesh() ).error("Null mesh pointer, set_mesh() has to be called before.\n");
 
     // read input up to given time
 	double input_time;
@@ -492,7 +492,7 @@ void Field<spacedim,Value>::update_history(const TimeStep &time) {
 				if (field_instance)  // skip descriptors without related keys
 				{
 					// add to history
-					ASSERT_PERMANENT_EQ( field_instance->n_comp() , shared_->n_comp_);
+					ASSERT_EQ( field_instance->n_comp() , shared_->n_comp_);
 					field_instance->set_mesh( mesh() , is_bc() );
 					for(const Region &reg: domain) {
                         // if region history is empty, add new field
@@ -523,7 +523,7 @@ void Field<spacedim,Value>::update_history(const TimeStep &time) {
 
 template<int spacedim, class Value>
 void Field<spacedim,Value>::check_initialized_region_fields_() {
-	ASSERT_PERMANENT_PTR(mesh()).error("Null mesh pointer.");
+	ASSERT_PTR(mesh()).error("Null mesh pointer.");
     //if (shared_->is_fully_initialized_) return;
 
     // check there are no empty field pointers, collect regions to be initialized from default value
@@ -647,7 +647,7 @@ void Field<spacedim,Value>::set_output_data_cache(OutputTime::DiscreteSpace spac
 template<int spacedim, class Value>
 void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream) {
     std::shared_ptr<OutputMeshBase> output_mesh = stream->get_output_mesh_ptr();
-    ASSERT_PERMANENT(output_mesh);
+    ASSERT(output_mesh);
 
     ASSERT_EQ(space_type, OutputTime::NATIVE_DATA);
 

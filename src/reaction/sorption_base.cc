@@ -301,7 +301,7 @@ void SorptionBase::initialize_from_input()
 
 void SorptionBase::initialize_fields()
 {
-  ASSERT_PERMANENT_GT(n_substances_, 0).error("Number of substances is wrong, they might have not been set yet.\n");
+  ASSERT_GT(n_substances_, 0).error("Number of substances is wrong, they might have not been set yet.\n");
 
   // create vector of substances that are involved in sorption
   // and initialize data_ with their names
@@ -337,9 +337,9 @@ void SorptionBase::initialize_fields()
 
 void SorptionBase::zero_time_step()
 {
-  ASSERT_PERMANENT_PTR(time_).error("Time governor has not been set yet.\n");
-  ASSERT_PERMANENT(output_stream_).error("Null output stream.\n");
-  ASSERT_PERMANENT_LT(0, substances_.size());
+  ASSERT_PTR(time_).error("Time governor has not been set yet.\n");
+  ASSERT(output_stream_).error("Null output stream.\n");
+  ASSERT_LT(0, substances_.size());
   
   data_->set_time(time_->step(), LimitSide::right);
   std::stringstream ss; // print warning message with table of uninitialized fields

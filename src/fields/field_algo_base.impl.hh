@@ -156,10 +156,10 @@ void FieldAlgorithmBase<spacedim, Value>::value_list(
         const ElementAccessor<spacedim> &elm,
         std::vector<typename Value::return_type>  &value_list)
 {
-	ASSERT_PERMANENT_EQ( point_list.size(), value_list.size() ).error();
+	ASSERT_EQ( point_list.size(), value_list.size() ).error();
     ASSERT(point_list.n_rows() == spacedim && point_list.n_cols() == 1).error("Invalid point size.\n");
     for(unsigned int i=0; i< point_list.size(); i++) {
-    	ASSERT_PERMANENT( Value(value_list[i]).n_rows()==this->value_.n_rows() )(i)(Value(value_list[i]).n_rows())(this->value_.n_rows())
+    	ASSERT( Value(value_list[i]).n_rows()==this->value_.n_rows() )(i)(Value(value_list[i]).n_rows())(this->value_.n_rows())
                 .error("value_list has wrong number of rows");
         value_list[i]=this->value(point_list.vec<spacedim>(i), elm);
     }

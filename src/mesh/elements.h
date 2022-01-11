@@ -27,7 +27,7 @@
 #include <armadillo>
 #include "system/index_types.hh"
 #include "mesh/region.hh"                      // for RegionIdx, Region
-#include "system/asserts.hh"                   // for Assert, ASSERT_PERMANENT
+#include "system/asserts.hh"                   // for Assert, ASSERT
 
 class Mesh;
 class Neighbour;

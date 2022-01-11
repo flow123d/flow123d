@@ -53,7 +53,7 @@ void BIHTree::add_boxes(const std::vector<BoundingBox> &boxes) {
 
 
 void BIHTree::construct() {
-    ASSERT_PERMANENT_GT(elements_.size(), 0);
+    ASSERT_GT(elements_.size(), 0);
 
     max_n_levels = 2*log2(elements_.size());
     nodes_.reserve(2*elements_.size() / leaf_size_limit);
@@ -234,7 +234,7 @@ const BoundingBox &BIHTree::tree_box() const {
 void BIHTree::find_bounding_box(const BoundingBox &box, std::vector<unsigned int> &result_list, bool full_list) const
 {
 
-	ASSERT_PERMANENT_EQ(result_list.size() , 0);
+	ASSERT_EQ(result_list.size() , 0);
 
     unsigned int counter = 0;
     node_stack_.clear();

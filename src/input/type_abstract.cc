@@ -39,7 +39,7 @@
 #include "input/type_generic.hh"                       // for ExcGenericWith...
 #include "input/type_record.hh"                        // for Record, Default
 #include "input/type_selection.hh"                     // for Selection
-#include "system/asserts.hh"                           // for Assert, ASSERT_PERMANENT
+#include "system/asserts.hh"                           // for Assert, ASSERT
 #include "system/exceptions.hh"                        // for ExcGenericWith...
 
 
@@ -95,7 +95,7 @@ TypeBase::TypeHash Abstract::content_hash() const
 
 
 Abstract & Abstract::allow_auto_conversion(const string &type_default) {
-	ASSERT_PERMANENT(!child_data_->closed_)(type_name()).error("Can not specify default value for TYPE key as the Abstract is closed.");
+	ASSERT(!child_data_->closed_)(type_name()).error("Can not specify default value for TYPE key as the Abstract is closed.");
     child_data_->selection_default_=Default("\""+type_default+"\""); // default record is closed; other constructor creates the zero item
     return *this;
 }

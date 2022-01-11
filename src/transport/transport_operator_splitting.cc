@@ -163,7 +163,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 	convection = trans.factory< ConcentrationTransportBase, Mesh &, const Input::Record >(init_mesh, trans);
 
 	time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), TimeMark::none_type, false);
-  ASSERT_PERMANENT( time_->is_default() == false ).error("Missing key 'time' in Coupling_OperatorSplitting.");
+    ASSERT( time_->is_default() == false ).error("Missing key 'time' in Coupling_OperatorSplitting.");
 	convection->set_time_governor(time());
 
 	// Initialize list of substances.

@@ -199,7 +199,7 @@ void MultiField<spacedim, Value>::field_output(std::shared_ptr<OutputTime> strea
 {
 	// currently we cannot output boundary fields
 	if (!is_bc()) {
-	    ASSERT_PERMANENT_LT( type, OutputTime::N_DISCRETE_SPACES ).error();
+	    ASSERT_LT( type, OutputTime::N_DISCRETE_SPACES ).error();
 
 	    for (unsigned long index=0; index < this->size(); index++) {
             sub_fields_[index].compute_field_data( type, stream );
@@ -265,8 +265,8 @@ std::string MultiField<spacedim, Value>::get_value_attribute() const
 template<int spacedim, class Value>
 void MultiField<spacedim, Value>::setup_components() {
 	unsigned int comp_size = this->shared_->comp_names_.size();
-	ASSERT_PERMANENT_GT(comp_size, 0).error("Vector of component names is empty!\n");
-	ASSERT_PERMANENT_PTR(this->shared_->mesh_).error("Mesh is not set!\n");
+	ASSERT_GT(comp_size, 0).error("Vector of component names is empty!\n");
+	ASSERT_PTR(this->shared_->mesh_).error("Mesh is not set!\n");
 
     sub_fields_.reserve( comp_size );
     for(unsigned int i_comp=0; i_comp < comp_size; i_comp++)

@@ -20,7 +20,7 @@
 #include "input/input_type.hh"
 #include "input/csv_tokenizer.hh"
 
-#include "system/asserts.hh"                           // for Assert, ASSERT_PERMANENT
+#include "system/asserts.hh"                           // for Assert, ASSERT
 #include "system/file_path.hh"                         // for FilePath, File...
 #include "system/logger.hh"                            // for operator<<
 
@@ -346,7 +346,7 @@ vector<unsigned int> ReaderInternalCsvInclude::create_indexes_vector(PathBase &p
 {
 	vector<unsigned int> csv_storage_indexes( p.path_.size()-csv_subtree_depth_ );
 	for (unsigned int i_source=csv_subtree_depth_, i_target=0; i_source<p.path_.size(); ++i_source, ++i_target ) {
-		ASSERT_PERMANENT_GE(p.path_[i_source].first, 0).error();
+		ASSERT_GE(p.path_[i_source].first, 0).error();
 		csv_storage_indexes[i_target] = p.path_[i_source].first;
 	}
 	return csv_storage_indexes;
@@ -355,7 +355,7 @@ vector<unsigned int> ReaderInternalCsvInclude::create_indexes_vector(PathBase &p
 void ReaderInternalCsvInclude::set_storage_from_csv(unsigned int column_index, StorageBase * item_storage, StorageBase * new_storage)
 {
 	map<unsigned int, IncludeCsvData>::iterator it = csv_columns_map_.find(column_index);
-	ASSERT_PERMANENT(it!=csv_columns_map_.end()).error();
+	ASSERT(it!=csv_columns_map_.end()).error();
 
 	unsigned int i;
 	StorageBase *loop_storage = item_storage;

@@ -25,7 +25,7 @@
 
 #include "tools/unit_si.hh"         // for UnitSI
 #include "input/input_exception.hh"  // for DECLARE_INPUT_EXCEPTION, Exception
-#include "system/asserts.hh"         // for Assert, ASSERT_PERMANENT
+#include "system/asserts.hh"         // for Assert, ASSERT
 #include "system/exceptions.hh"      // for operator<<, ExcStream, EI, TYPED...
 
 namespace Input {

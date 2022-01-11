@@ -154,7 +154,7 @@ void EquationOutput::initialize(std::shared_ptr<OutputTime> stream, Mesh *mesh, 
 
 void EquationOutput::read_from_input(Input::Record in_rec, const TimeGovernor & tg)
 {
-    ASSERT_PERMANENT(stream_).error("The 'set_stream' method must be called before the 'read_from_input'.");
+    ASSERT(stream_).error("The 'set_stream' method must be called before the 'read_from_input'.");
     auto &marks = TimeGovernor::marks();
 
     Input::Array times_array;
@@ -244,7 +244,7 @@ bool EquationOutput::is_field_output_time(const FieldCommon &field, TimeStep ste
 
 void EquationOutput::output(TimeStep step)
 {
-    ASSERT_PERMANENT_PTR(mesh_).error();
+    ASSERT_PTR(mesh_).error();
 
     // automatically call of stream_->write_time_frame if the time in the TimeStep is higher then in output stream
     if (step.end() > stream_->registered_time()) {

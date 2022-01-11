@@ -104,7 +104,7 @@ inline void BidirectionalMap<T>::set_item(T val, unsigned int pos) {
 
 template<typename T>
 inline unsigned int BidirectionalMap<T>::add_item(T val) {
-	ASSERT_PERMANENT( vals_map_.find(val) == vals_map_.end() )(val).error("Can not add item since it already exists.");
+	ASSERT( vals_map_.find(val) == vals_map_.end() )(val).error("Can not add item since it already exists.");
 	vals_map_[val] = vals_vec_.size();
 	vals_vec_.push_back(val);
 	return vals_map_[val];
@@ -143,7 +143,7 @@ inline void BidirectionalMap<T>::reserve(unsigned int init_size) {
 
 template<typename T>
 inline T BidirectionalMap<T>::operator[](unsigned int pos) const {
-	ASSERT_PERMANENT( pos < vals_vec_.size() )(pos)(vals_vec_.size());
+	ASSERT( pos < vals_vec_.size() )(pos)(vals_vec_.size());
 	return vals_vec_[pos];
 }
 

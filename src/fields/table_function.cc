@@ -62,7 +62,7 @@ TableFunction<Value>::TableFunction()
 template <class Value>
 void TableFunction<Value>::init_from_input(const Input::Record &rec, const TimeStep &time)
 {
-	ASSERT_PERMANENT( !this->initialized() ).error("TableFunction can't be initialized more than once.");
+	ASSERT( !this->initialized() ).error("TableFunction can't be initialized more than once.");
 
 	Input::Array data_array = rec.val<Input::Array>("values");
 	double last_t = -1.0;

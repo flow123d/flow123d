@@ -66,7 +66,7 @@ void TimeMarks::reinit()
 }
 
 TimeMark::Type TimeMarks::new_mark_type() {
-	ASSERT_PERMANENT(next_mark_type_.equation_index_ != 0).error("Can not allocate new mark type. The limit is 255 mark types.\n");
+	ASSERT(next_mark_type_.equation_index_ != 0).error("Can not allocate new mark type. The limit is 255 mark types.\n");
     TimeMark::Type current_type = next_mark_type_;
 
     // add new subvector to marks_, insert start and end stoppers
@@ -104,8 +104,8 @@ TimeMark TimeMarks::add(const TimeMark &mark) {
 }
 
 void TimeMarks::add_time_marks(double time, double dt, double end_time, TimeMark::Type type) {
-	ASSERT_PERMANENT(end_time != TimeGovernor::inf_time).error("Can not add time marks on infinite interval.\n");
-	ASSERT_PERMANENT_GT(dt, numeric_limits<double>::epsilon()).error("TimeMark's step less then machine precision.\n");
+	ASSERT(end_time != TimeGovernor::inf_time).error("Can not add time marks on infinite interval.\n");
+	ASSERT_GT(dt, numeric_limits<double>::epsilon()).error("TimeMark's step less then machine precision.\n");
 
 	unsigned int n_steps=((end_time-time)/dt + TimeGovernor::time_step_precision);
 	for (unsigned int i = 0; i<=n_steps;i++) {
@@ -116,8 +116,8 @@ void TimeMarks::add_time_marks(double time, double dt, double end_time, TimeMark
 
 
 void  TimeMarks::add_to_type_all(TimeMark::Type filter_type, TimeMark::Type add_type) {
-    ASSERT_PERMANENT(filter_type.equation_index_ != 0).error();
-    ASSERT_PERMANENT( (filter_type.equation_index_ == add_type.equation_index_) || (add_type.equation_index_ == 0) )
+    ASSERT(filter_type.equation_index_ != 0).error();
+    ASSERT( (filter_type.equation_index_ == add_type.equation_index_) || (add_type.equation_index_ == 0) )
             ((unsigned int)filter_type.equation_index_)((unsigned int)add_type.equation_index_).error();
 
 	for(auto &mark : marks_[filter_type.equation_index_])
@@ -148,7 +148,7 @@ TimeMarks::iterator TimeMarks::current(const TimeStep &time_step, const TimeMark
 
 TimeMarks::iterator TimeMarks::next(const TimeGovernor &tg, const TimeMark::Type &mask) const
 {
-	ASSERT_PERMANENT(tg.equation_mark_type().equation_index_ == mask.equation_index_)
+	ASSERT(tg.equation_mark_type().equation_index_ == mask.equation_index_)
 			((unsigned int)tg.equation_mark_type().equation_index_)((unsigned int)mask.equation_index_).error();
 
 	unsigned char eq_index = mask.equation_index_;

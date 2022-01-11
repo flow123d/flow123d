@@ -286,7 +286,7 @@ void ConvectionTransport::alloc_transport_structs_mpi() {
 
 void ConvectionTransport::zero_time_step()
 {
-	ASSERT_PERMANENT_EQ(time_->tlevel(), 0);
+	ASSERT_EQ(time_->tlevel(), 0);
 
 	eq_fields_->mark_input_times(*time_);
 	eq_fields_->set_time(time_->step(), LimitSide::right);
@@ -318,7 +318,7 @@ void ConvectionTransport::zero_time_step()
 
 bool ConvectionTransport::evaluate_time_constraint(double& time_constraint)
 {
-	ASSERT_PERMANENT_PTR(eq_data_->dh_).error( "Null DOF handler object.\n" );
+	ASSERT_PTR(eq_data_->dh_).error( "Null DOF handler object.\n" );
     // read changed status before setting time
     bool changed_flux = eq_fields_->flow_flux.changed();
     eq_fields_->set_time(time_->step(), LimitSide::right); // set to the last computed time

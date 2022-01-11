@@ -107,7 +107,7 @@ Region RegionDB::add_region( unsigned int id, const std::string &label, unsigned
 
 
 Region RegionDB::rename_region( Region reg, const std::string &new_label ) {
-	ASSERT_PERMANENT(reg.is_valid())(new_label).error("Non-existing region can't be renamed.\n");
+	ASSERT(reg.is_valid())(new_label).error("Non-existing region can't be renamed.\n");
 
 	// test if region with new_label exists
 	LabelIter it_label = region_table_.get<Label>().find(new_label);
@@ -408,7 +408,7 @@ Region RegionDB::find_by_dimid(DimIDIter it_id, unsigned int id, const std::stri
 }
 
 void RegionDB::print_region_table(ostream& stream) const {
-	ASSERT_PERMANENT(closed_).error("RegionDB not closed yet.\n");
+	ASSERT(closed_).error("RegionDB not closed yet.\n");
 
 	// stratified regions by type
 	std::vector<std::string> boundaries, bulks, sets;
@@ -460,7 +460,7 @@ void RegionDB::print_region_table(ostream& stream) const {
 
 
 void RegionDB::check_regions() {
-	ASSERT_PERMANENT(closed_).error("RegionDB not closed yet.");
+	ASSERT(closed_).error("RegionDB not closed yet.");
 
 	if (n_bulk_+n_boundary_ >= max_n_regions) {
 		WarningOut().fmt("Too many regions are defined (bulk {} + boundary {} >= {}). This may have negative impact on performace.\n"

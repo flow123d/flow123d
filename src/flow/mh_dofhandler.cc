@@ -216,7 +216,7 @@ unsigned int MH_DofHandler::side_dof(const SideIter side) const {
 
 
 void MH_DofHandler::set_solution( double time, double * solution) {
-	ASSERT_PERMANENT_PTR( solution ).error("Empty solution.\n");
+	ASSERT_PTR( solution ).error("Empty solution.\n");
     mh_solution = solution;
     time_ = time;
 }

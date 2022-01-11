@@ -33,7 +33,7 @@
 #include <typeinfo>                                    // for type_info
 #include <utility>                                     // for pair
 #include <vector>                                      // for vector
-#include "system/asserts.hh"                           // for Assert, ASSERT_PERMANENT
+#include "system/asserts.hh"                           // for Assert, ASSERT
 #include "system/file_path.hh"                         // for FilePath, File...
 #include "system/logger.hh"                            // for operator<<
 
@@ -109,7 +109,7 @@ StorageBase *ReaderToStorage::get_storage()
 
 void ReaderToStorage::read_stream(istream &in, const Type::TypeBase &root_type, FileFormat format)
 {
-	ASSERT_PERMANENT(storage_==nullptr).error();
+	ASSERT(storage_==nullptr).error();
 
     PathBase * root_path;
 	if (format == FileFormat::format_JSON) {
@@ -134,7 +134,7 @@ void ReaderToStorage::read_stream(istream &in, const Type::TypeBase &root_type, 
 		throw;
 	}
 
-	ASSERT_PERMANENT_PTR(storage_).error();
+	ASSERT_PTR(storage_).error();
 }
 
 
@@ -149,7 +149,7 @@ void ReaderToStorage::read_stream(istream &in, const Type::TypeBase &root_type, 
 template <class T>
 T ReaderToStorage::get_root_interface() const
 {
-	ASSERT_PERMANENT_PTR(storage_).error();
+	ASSERT_PTR(storage_).error();
 
     Address addr(storage_, root_type_);
     // try to create an iterator just to check type

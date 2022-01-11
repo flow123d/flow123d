@@ -62,7 +62,7 @@ double __unit_cell_volume[] = { 1, 1, 0.5, 1./6 };
 template<uint dimension>
 void QGauss::init(uint order) {
     DimQuadList & quads = __gauss_quadratures[dimension];
-    ASSERT_PERMANENT_LT(order, quads.size()).error("Quadrature of given order is not implemented.");
+    ASSERT_LT(order, quads.size()).error("Quadrature of given order is not implemented.");
     auto &point_list = quads[order];
 
     this->quadrature_points.reinit(point_list->npoints);

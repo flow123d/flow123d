@@ -144,7 +144,7 @@ void RichardsLMH::initialize_specific() {
     data_->water_content_previous_time = data_->dh_cr_disc_->create_vector();
     data_->capacity = data_->dh_cr_disc_->create_vector();
 
-    ASSERT_PERMANENT_PTR(mesh_);
+    ASSERT_PTR(mesh_);
     data_->mesh = mesh_;
     data_->set_mesh(*mesh_);
 

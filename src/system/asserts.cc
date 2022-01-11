@@ -12,7 +12,7 @@
  *
  *
  * @file    asserts.cc
- * @brief   Definitions of ASSERT_PERMANENTS.
+ * @brief   Definitions of ASSERTS.
  */
 
 

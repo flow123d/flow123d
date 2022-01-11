@@ -22,7 +22,7 @@
 //
 
 #include <utility>                                     // for pair
-#include "system/asserts.hh"                           // for Assert, ASSERT_PERMANENT
+#include "system/asserts.hh"                           // for Assert, ASSERT
 namespace Input { class StorageBase; }
 
 

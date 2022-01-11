@@ -342,7 +342,7 @@ unsigned int VtkMeshReader::type_value_size(DataType data_type)
 void VtkMeshReader::read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader actual_header, unsigned int n_components,
 		bool boundary_domain) {
 
-	ASSERT_PERMANENT(!boundary_domain).error("Reading VTK data of boundary elements is not supported yet!\n");
+	ASSERT(!boundary_domain).error("Reading VTK data of boundary elements is not supported yet!\n");
 
     switch (data_format_) {
 		case DataFormat::ascii: {
@@ -350,12 +350,12 @@ void VtkMeshReader::read_element_data(ElementDataCacheBase &data_cache, MeshData
 			break;
 		}
 		case DataFormat::binary_uncompressed: {
-			ASSERT_PERMANENT_PTR(data_stream_).error();
+			ASSERT_PTR(data_stream_).error();
 			parse_binary_data( data_cache, n_components, actual_header.n_entities, actual_header.position);
 			break;
 		}
 		case DataFormat::binary_zlib: {
-			ASSERT_PERMANENT_PTR(data_stream_).error();
+			ASSERT_PTR(data_stream_).error();
 			parse_compressed_data( data_cache, n_components, actual_header.n_entities, actual_header.position);
 			break;
 		}
@@ -467,7 +467,7 @@ void VtkMeshReader::read_nodes(Mesh * mesh) {
 	this->create_node_element_caches();
 
 	ElementDataFieldMap::iterator it=element_data_values_->find("Points");
-	ASSERT_PERMANENT(it != element_data_values_->end()).error("Missing cache of Points section. Did you call create_node_element_caches()?\n");
+	ASSERT(it != element_data_values_->end()).error("Missing cache of Points section. Did you call create_node_element_caches()?\n");
 
 	// create nodes of mesh
 	std::vector<double> &vect = *( dynamic_cast<ElementDataCache<double> &>(*(it->second)).get_component_data(0).get() );
@@ -488,12 +488,12 @@ void VtkMeshReader::read_nodes(Mesh * mesh) {
 void VtkMeshReader::read_elements(Mesh * mesh) {
     // read offset section in VTK file
 	ElementDataFieldMap::iterator offset_it=element_data_values_->find("offsets");
-	ASSERT_PERMANENT(offset_it != element_data_values_->end()).error("Missing cache of offsets section. Did you call create_node_element_caches()?\n");
+	ASSERT(offset_it != element_data_values_->end()).error("Missing cache of offsets section. Did you call create_node_element_caches()?\n");
     std::vector<unsigned int> &offsets_vec = *( dynamic_cast<ElementDataCache<unsigned int> &>(*(offset_it->second)).get_component_data(0).get() );
 
     // read connectivity data section
 	ElementDataFieldMap::iterator conn_it=element_data_values_->find("connectivity");
-	ASSERT_PERMANENT(conn_it != element_data_values_->end()).error("Missing cache of offsets section. Did you call create_node_element_caches()?\n");
+	ASSERT(conn_it != element_data_values_->end()).error("Missing cache of offsets section. Did you call create_node_element_caches()?\n");
     std::vector<unsigned int> &connectivity_vec = *( dynamic_cast<ElementDataCache<unsigned int> &>(*(conn_it->second)).get_component_data(0).get() );
 
     // iterate trough connectivity data, create bulk elements
@@ -523,7 +523,7 @@ void VtkMeshReader::create_node_element_caches() {
 		return;
 	}
 
-	ASSERT_PERMANENT( !has_compatible_mesh_ ).error();
+	ASSERT( !has_compatible_mesh_ ).error();
 
 	has_compatible_mesh_ = true;
 

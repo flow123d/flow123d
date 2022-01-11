@@ -65,7 +65,7 @@ public:
 
     /// Getter of EvalPoints object.
     inline std::shared_ptr<EvalPoints> eval_points() const {
-        ASSERT_PERMANENT_PTR(elm_cache_map_).error("Invalid point.\n");
+        ASSERT_PTR(elm_cache_map_).error("Invalid point.\n");
         return elm_cache_map_->eval_points();
     }
 

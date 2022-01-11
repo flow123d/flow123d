@@ -64,7 +64,7 @@ auto GenericField<spacedim>::subdomain(Mesh &mesh) -> IndexField {
 	auto field_subdomain_data = mesh.get_part()->subdomain_id_field_data();
 	unsigned int data_size = field_subdomain_data->size();
 	VectorMPI data_vec(data_size);
-	ASSERT_PERMANENT_EQ(dh->max_elem_dofs(), 1);
+	ASSERT_EQ(dh->max_elem_dofs(), 1);
 	unsigned int i_ele=0;
 	for (auto cell : dh->own_range()) {
 		data_vec.set( cell.get_loc_dof_indices()(0), (*field_subdomain_data)[i_ele] );

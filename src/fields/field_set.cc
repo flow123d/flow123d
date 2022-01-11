@@ -31,7 +31,7 @@ FieldSet::FieldSet()
 FieldSet &FieldSet::operator +=(FieldCommon &add_field) {
     FieldCommon *found_field = field(add_field.name());
     if (found_field) {
-    	ASSERT_PERMANENT(&add_field==found_field)(add_field.name()).error("Another field of the same name exists when adding field\n");
+    	ASSERT(&add_field==found_field)(add_field.name()).error("Another field of the same name exists when adding field\n");
     } else {
         field_list.push_back(&add_field);
     }
@@ -89,7 +89,7 @@ Input::Type::Record FieldSet::make_field_descriptor_type(const std::string &equa
             } else {
                 field_type_ptr = std::make_shared<Input::Type::Instance>(field->get_input_type());
             }
-            ASSERT_PERMANENT( field->units().is_def() )(field->input_name()).error("units not def.");
+            ASSERT( field->units().is_def() )(field->input_name()).error("units not def.");
             Input::Type::TypeBase::attribute_map key_attributes = Input::Type::TypeBase::attribute_map(
                     { {FlowAttribute::field_unit(), field->units().json() },
                       {FlowAttribute::field_value_shape(), field->get_value_attribute()} }

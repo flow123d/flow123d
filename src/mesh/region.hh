@@ -16,7 +16,7 @@
  * @todo
  *  - komentar k RegionIdx
  *  - presun enum RegionType do public Region - komentar + pouzit v kodu
- *  - zkontrolovat chybove hlasky a ASSERT_PERMANENTY, co z toho by melo byt pres exception?
+ *  - zkontrolovat chybove hlasky a ASSERTY, co z toho by melo byt pres exception?
  *
  *  - Seems that GMSH allows repeating ID and Label on regions of different dimension, therefore
  *    label and ID are not unique without dimension.
@@ -46,7 +46,7 @@
 #include "input/input_exception.hh"                    // for DECLARE_INPUT_...
 #include "system/exc_common.hh"                        // for ExcAssertMsg
 #include "system/exceptions.hh"                        // for operator<<
-#include "system/asserts.hh"                           // for ASSERT_PERMANENT, ...
+#include "system/asserts.hh"                           // for ASSERT, ...
 
 namespace BMI=::boost::multi_index;
 

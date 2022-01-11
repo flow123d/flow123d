@@ -179,7 +179,7 @@ StorageBase * ReaderInternalTranspose::make_sub_storage(PathBase &p, const Type:
 }
 
 StorageBase * ReaderInternalTranspose::make_transposed_storage(PathBase &p, const Type::TypeBase *type) {
-	ASSERT_PERMANENT(p.is_array_type()).error();
+	ASSERT(p.is_array_type()).error();
 
 	int arr_size = p.get_array_size();
 	if ( arr_size == 0 ) {

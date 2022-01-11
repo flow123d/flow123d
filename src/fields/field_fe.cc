@@ -288,7 +288,7 @@ template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::element_type> &data_cache,
 		ElementCacheMap &cache_map, unsigned int region_patch_idx)
 {
-    ASSERT_PERMANENT( !boundary_dofs_ ).error("boundary field NOT supported!!\n");
+    ASSERT( !boundary_dofs_ ).error("boundary field NOT supported!!\n");
     Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> mat_value;
 
     unsigned int reg_chunk_begin = cache_map.region_chunk_begin(region_patch_idx);
@@ -371,7 +371,7 @@ template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) {
     // Mesh can be set only for field initialized from input.
     if ( flags_.match(FieldFlag::equation_input) && flags_.match(FieldFlag::declare_input) ) {
-        ASSERT_PERMANENT(field_name_ != "").error("Uninitialized FieldFE, did you call init_from_input()?\n");
+        ASSERT(field_name_ != "").error("Uninitialized FieldFE, did you call init_from_input()?\n");
         this->boundary_domain_ = boundary_domain;
         if (this->interpolation_ == DataInterpolation::identic_msh) {
             ReaderCache::get_element_ids(reader_file_, *mesh);
@@ -404,7 +404,7 @@ void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) 
 
 template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::fill_boundary_dofs() {
-	ASSERT_PERMANENT(this->boundary_domain_);
+	ASSERT(this->boundary_domain_);
 
 	auto bc_mesh = dh_->mesh()->bc_mesh();
 	unsigned int n_comp = this->value_.n_rows() * this->value_.n_cols();
@@ -842,7 +842,7 @@ void FieldFE<spacedim, Value>::calculate_equivalent_values(ElementDataCache<doub
 
 template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::native_data_to_cache(ElementDataCache<double> &output_data_cache) {
-	//ASSERT_PERMANENT_EQ(output_data_cache.n_values() * output_data_cache.n_comp(), dh_->distr()->lsize()).error();
+	//ASSERT_EQ(output_data_cache.n_values() * output_data_cache.n_comp(), dh_->distr()->lsize()).error();
 	unsigned int n_vals = output_data_cache.n_comp() * output_data_cache.n_dofs_per_element();
 	double loc_values[n_vals];
 	unsigned int i;

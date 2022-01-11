@@ -129,13 +129,13 @@ void OutputBase::print_generic(ostream& stream, const TypeBase *type) {
     // print possible generic
     if (type->generic_type_hash_ != TypeBase::none_hash) {
         const T *gen_type = Input::TypeRepository<T>::get_instance().find_hash(type->generic_type_hash_).get();
-        ASSERT_PERMANENT(gen_type)(type->hash_str())(type->type_name());
+        ASSERT(gen_type)(type->hash_str())(type->type_name());
         print_base(stream, gen_type);
     }
 }
 void OutputBase::print_base(ostream& stream, const TypeBase *type) {
 
-    ASSERT_PERMANENT(type);
+    ASSERT(type);
 
 	if (typeid(*type) == typeid(Type::Tuple)) {
 		print_impl(stream, static_cast<const Type::Record *>(type) );
@@ -248,7 +248,7 @@ ostream& OutputText::print(ostream& stream) {
 }
 
 void OutputText::print_impl(ostream& stream, const Record *type) {
-	ASSERT_PERMANENT(type->is_finished())(type->type_name())(type->class_name()).warning("Printing documentation of unfinished type.");
+	ASSERT(type->is_finished())(type->type_name())(type->class_name()).warning("Printing documentation of unfinished type.");
 	switch (doc_type_) {
 	case key_record:
 		stream << "" << type->class_name() << " '" << type->type_name() << "' (" << type->size() << " keys).";
@@ -371,7 +371,7 @@ void OutputText::print_impl(ostream& stream, const AdHocAbstract *type) {
 	}
 }
 void OutputText::print_impl(ostream& stream, const Selection *type) {
-	ASSERT_PERMANENT(type->is_finished())(type->type_name()).warning("Printing documentation of unfinished Input::Type::Selection.");
+	ASSERT(type->is_finished())(type->type_name()).warning("Printing documentation of unfinished Input::Type::Selection.");
 	switch (doc_type_) {
 	case key_record:
 		stream << "Selection '" << type->type_name() << "' of " << type->size() << " values.";

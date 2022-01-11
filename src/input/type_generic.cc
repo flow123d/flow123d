@@ -18,7 +18,7 @@
 #include <input/type_generic.hh>
 #include <input/type_repository.hh>
 #include <input/attribute_lib.hh>
-#include "system/asserts.hh"                           // for Assert, ASSERT_PERMANENT
+#include "system/asserts.hh"                           // for Assert, ASSERT
 
 #include <boost/functional/hash.hpp>
 

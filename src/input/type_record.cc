@@ -289,7 +289,7 @@ FinishStatus Record::finish(FinishStatus finish_type)
         // check that all other obligatory keys have default values
         for(KeyIter it=data_->keys.begin(); it != data_->keys.end(); ++it) {
         	const string &other_key = it->key_;
-        	ASSERT_PERMANENT(!it->default_.is_obligatory() || (int)(it->key_index) == data_->auto_conversion_key_idx)
+        	ASSERT(!it->default_.is_obligatory() || (int)(it->key_index) == data_->auto_conversion_key_idx)
         			   (data_->auto_conversion_key_iter()->key_)(other_key)
 					   .error("Finishing auto convertible Record from given key, but other obligatory key has no default value.");
         }
@@ -385,7 +385,7 @@ TypeBase::ParameterMap Record::set_instance_data(Record &instance_rec,  std::vec
     bool param_substituted = (p_map.size() > 0);
     auto generic_hash = this->content_hash();
 	auto instance_hash = instance_rec.content_hash();
-	ASSERT_PERMANENT(param_substituted == (generic_hash != instance_hash));
+	ASSERT(param_substituted == (generic_hash != instance_hash));
 	if (param_substituted) {
 	    // Avoid self reference for non-parametrized types.
 	    instance_rec.generic_type_hash_ = generic_hash;
@@ -469,7 +469,7 @@ void Record::RecordData::declare_key(const string &key,
     // validity test of default value
 
     ASSERT( finish_status_ == FinishStatus::none_ )(key)(type_name_).error("Declaration of key in finished Record");
-    ASSERT_PERMANENT( key=="TYPE" || TypeBase::is_valid_identifier(key) )(key)(type_name_).error("Invalid key identifier in declaration of Record");
+    ASSERT( key=="TYPE" || TypeBase::is_valid_identifier(key) )(key)(type_name_).error("Invalid key identifier in declaration of Record");
 
     KeyHash key_h = key_hash(key);
     key_to_index_const_iter it = key_to_index.find(key_h);
@@ -478,7 +478,7 @@ void Record::RecordData::declare_key(const string &key,
        Key tmp_key = { (unsigned int)keys.size(), key, description, type, default_value, false, key_attributes };
        keys.push_back(tmp_key);
     } else {
-    	ASSERT_PERMANENT( keys[it->second].derived )(key)(type_name_).error("Re-declaration of the key in Record");
+    	ASSERT( keys[it->second].derived )(key)(type_name_).error("Re-declaration of the key in Record");
         Key tmp_key = { it->second, key, description, type, default_value, false, {}};
         keys[ it->second ] = tmp_key;
     }

@@ -678,7 +678,7 @@ void Mesh::make_neighbours_and_edges()
                     SideIter si = elem.side(ecs);
                     if ( same_sides( si, side_nodes) ) {
                         if (elem->edge_idx(ecs) != undef_idx) {
-                        	ASSERT_PERMANENT_PTR(elem->boundary_idx_).error("Null boundary idx array.\n");
+                        	ASSERT_PTR(elem->boundary_idx_).error("Null boundary idx array.\n");
                             int last_bc_ele_idx=this->boundary_[elem->boundary_idx_[ecs]].bc_ele_idx_;
                             int new_bc_ele_idx=i;
                             THROW( ExcDuplicateBoundary()
@@ -801,7 +801,7 @@ void Mesh::make_neighbours_and_edges()
             } // connected elements
 
             if (! is_neighbour)
-				ASSERT_PERMANENT_EQ( (unsigned int) edg->n_sides, intersection_list.size())(e.input_id())(s).error("Missing edge sides.");
+				ASSERT_EQ( (unsigned int) edg->n_sides, intersection_list.size())(e.input_id())(s).error("Missing edge sides.");
 		} // for element sides
 	}   // for elements
 
@@ -1179,7 +1179,7 @@ Range<NodeAccessor<3>> MeshBase::node_range() const {
 
 inline void MeshBase::check_element_size(unsigned int elem_idx) const
 {
-    ASSERT_PERMANENT(elem_idx < element_vec_.size())(elem_idx)(element_vec_.size()).error("Index of element is out of bound of element vector!");
+    ASSERT(elem_idx < element_vec_.size())(elem_idx)(element_vec_.size()).error("Index of element is out of bound of element vector!");
 }
 
 /*
@@ -1304,7 +1304,7 @@ void Mesh::output_internal_ngh_data()
 
 
 void Mesh::distribute_nodes() {
-    ASSERT_PERMANENT_PTR(el_4_loc).error("Array 'el_4_loc' is not initialized. Did you call Partitioning::id_maps?\n");
+    ASSERT_PTR(el_4_loc).error("Array 'el_4_loc' is not initialized. Did you call Partitioning::id_maps?\n");
 
     unsigned int i_proc, i_node, i_ghost_node, elm_node;
     unsigned int my_proc = el_ds->myp();

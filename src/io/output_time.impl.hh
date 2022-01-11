@@ -117,7 +117,7 @@ OutputTime::OutputDataPtr OutputTime::prepare_compute_data(std::string field_nam
         it=--od_vec.end();
     }
     else{
-        ASSERT_PERMANENT(it != od_vec.end()).error("Try to add non-existing output field after first step.");
+        ASSERT(it != od_vec.end()).error("Try to add non-existing output field after first step.");
         *it = std::make_shared< ElementDataCache<T> >(field_name, n_rows*n_cols, size, fe_type, n_dofs_per_element);
     }
 

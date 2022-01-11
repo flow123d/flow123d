@@ -199,7 +199,7 @@ void DarcyFlowMHOutput::prepare_specific_output(Input::Record in_rec)
     {
         diff_data.data_ = d->data_.get();
     }
-    ASSERT_PERMANENT_PTR(diff_data.data_);
+    ASSERT_PTR(diff_data.data_);
 
     { // init DOF handlers represents element DOFs
         uint p_elem_component = 1;
@@ -300,7 +300,7 @@ void DarcyFlowMHOutput::output_internal_flow_data()
     {
         data = d->data_.get();
     }
-    ASSERT_PERMANENT_PTR(data);
+    ASSERT_PTR(data);
     
     arma::vec3 flux_in_center;
     

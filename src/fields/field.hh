@@ -45,10 +45,9 @@
 #include "io/output_time.hh"                           // for OutputTime
 #include "mesh/elements.h"                             // for Element::dim
 #include "mesh/region.hh"                              // for RegionDB::ExcU...
-#include "system/asserts.hh"                           // for Assert, ASSERT_PERMANENT
+#include "system/asserts.hh"                           // for Assert, ASSERT
 #include "system/exc_common.hh"                        // for ExcAssertMsg
 #include "system/exceptions.hh"                        // for ExcAssertMsg::...
-#include "system/asserts.hh"                           // for ASSERT_PERMANENT
 #include "tools/time_governor.hh"                      // for TimeStep
 
 class Mesh;

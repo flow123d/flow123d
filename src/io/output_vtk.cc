@@ -138,7 +138,7 @@ string pvd_dataset_line(double step, int rank, string file) {
 
 int OutputVTK::write_data(void)
 {
-    ASSERT_PERMANENT_PTR(this->nodes_).error();
+    ASSERT_PTR(this->nodes_).error();
 
     /* Output of serial format is implemented only in the first process */
     if ( (this->rank_ != 0) && (!parallel_) ) {
@@ -154,7 +154,7 @@ int OutputVTK::write_data(void)
 
     /* Write DataSets to the PVD file only in the first process */
     if (this->rank_ == 0) {
-        ASSERT_PERMANENT(this->_base_file.is_open())(this->_base_filename).error();
+        ASSERT(this->_base_file.is_open())(this->_base_filename).error();
 
         /* Set floating point precision to max */
         //this->_base_file.precision(std::numeric_limits<double>::digits10);
@@ -207,7 +207,7 @@ int OutputVTK::write_data(void)
 
 void OutputVTK::make_subdirectory()
 {
-	ASSERT_PERMANENT_EQ(this->_base_filename.extension(), ".pvd").error();
+	ASSERT_EQ(this->_base_filename.extension(), ".pvd").error();
 	main_output_dir_ = this->_base_filename.parent_path();
 	main_output_basename_ = this->_base_filename.stem();
 
