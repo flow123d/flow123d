@@ -11,7 +11,7 @@
 
 #include <flow_gtest.hh>
 #include "system/exceptions.hh"
-#include "system/global_defs.h"
+#include "system/asserts.hh"
 #include "system/system.hh"
 
 
@@ -40,6 +40,6 @@ TEST(CheckError, assert_message) {
 #ifdef FLOW123D_DEBUG_ASSERTS
 TEST(ASSERTS, assert_ptr) {
     void * test_ptr = nullptr;
-    EXPECT_THROW_WHAT( {OLD_ASSERT_PTR(test_ptr);}, ExcAssertMsg, "test_ptr");
+    EXPECT_THROW_WHAT( {ASSERT_PTR(test_ptr).error();}, feal::Exc_assert, "test_ptr");
 }
 #endif
